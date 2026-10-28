@@ -432,13 +432,13 @@
       <details class="card" id="grp-look" open><summary>Wormhole · look <small>MeerkatWormholeConfig · the bridge, everyone's</small></summary><div class="rows"></div>
         <p class="src"><b>One geometry for the wormhole and your reticle</b>: your reticle is this frame, bare. <b>A formed tunnel is its trunk</b> (round 20: the trunk is the wormhole, no spindles on it); only with the trunk hidden (<i>trunkVisibility</i> 0) does it show everyone this bridge: rings and ribs of spindles over a glass surface, in its maker's domain colour toward white (<i>bridgeWhite</i>) (the game will build it from its Spindle prefabs), condensing out of its centre as it forms and evaporating as it collapses. <i>bridgeVisibility</i> 0 leaves only the bent space.</p>
         <div class="btns"><button class="pick" type="button" data-reset="look">Reset</button></div></details>
-      <details class="card" id="grp-tree" open><summary>Wormhole · trunk (off) <small>MeerkatWormholeConfig · rounds 13-21; off since round 23</small></summary><div class="rows"></div>
+      <details class="card" id="grp-tree" open><summary>Wormhole · the old outer layer (off) <small>MeerkatWormholeConfig · rounds 13-21; off since round 23</small></summary><div class="rows"></div>
         <p class="src"><b>The tunnel's outer layer is a dead tree</b>, for everyone (its rider too). Pull RT and the tree <b>forms with the tunnel</b>, rippling out of its centre to both mouths; each <b>bare branch grows</b> out of the trunk's top half the moment the tunnel reaches its root. The way in is the trunk's <b>top cut</b> and the way out its <b>bottom cut</b>, the mouths in the cut faces among the <b>tree rings</b>. It is the <b>wall's own glass and bent space</b> (see-through in the middle, bright at its outline, the world behind it bent and flowing like water), and its bore is the tunnel's own wall: one log you fly through, with no rings or glass of its own inside (round 20). It grows with the tunnel (<i>throatDiameterMax</i>, <i>mouthDiameterMax</i>).</p>
         <div class="btns"><button class="pick" type="button" data-reset="tree">Reset</button></div></details>
-      <details class="card" id="grp-omni" open><summary>Omnicrystal · the wormhole network <small>MeerkatWormholeConfig · rounds 16-23</small></summary><div class="rows"></div>
+      <details class="card" id="grp-omni" open><summary>Omnicrystal · the network <small>MeerkatWormholeConfig · rounds 16-23</small></summary><div class="rows"></div>
         <p class="src"><b>The Meerkat's Omnicrystal ability: the wormhole network.</b> Fly through an <b>omnicrystal</b> (gold, on the course line; <i>omniCount</i> of them) and a <b>network of wormholes opens at once</b> from where you took it, spreading <b>every way</b> in 3D (<i>labyrinthSpread</i>), and you fly straight into it (<i>omniAtOnce</i>; 0: it arms your next RT instead). <b>Its size is your last tunnel's</b>: after the smallest you can dig, <i>labyrinthBranchPointsMin</i> forks, <i>labyrinthOpeningsMin</i> openings and <i>labyrinthRadiusMin</i> of reach; after the biggest a full Mass can dig, the <i>...Max</i> numbers - a very large network. <b>Round 23 (Yash, 2026-10-28: "We can't make it a root ... like our tube, same visuals ... just anomaly: tubes of wormholes"):</b> every channel is a <b>wormhole tube</b>, drawn exactly as a formed tunnel is, inside and out: its glass, its calm inner wall (<i>tubeInner</i>), the bent space round it, and the bridge's spindles only in the bridge look (<i>formedLook</i>). The roots' bark (<i>rootBarkVisibility</i>), their old inner wall (<i>rootOpacity</i>) and the soil are off; their sliders stay, to bring them back. The channels taper to <i>rootTip</i> at the openings and wander (<i>rootGnarl</i>). <b>Inside, you fly yourself on the left stick</b> (rounds 20-21): you <b>cruise along the tube</b> on your own (<i>rootCruise</i>), your nose following it; the <b>left stick</b> moves you round the tube, left and right, up and down, the way it would turn your nose (<i>rootMove</i>, calmed by <i>rootDrag</i>); <b>RT</b> pushes you faster (<i>rootThrust</i>, up to <i>rootMaxSpeed</i>). <b>The walls bounce you off</b> (<i>rootBounce</i>), and your nose follows the tube. <b>Steer into a wormhole at a fork to go down it</b> (the one on your side is lit, <i>forkHintSeconds</i> before); fly back past a fork and you are in the one before it. Out of an opening you fly on along it.</p>
-        <div class="btns"><button class="pick" type="button" id="omniGive" title="Open the wormhole network now, as if you had flown through an omnicrystal">Give me an omnicrystal</button><button class="pick" type="button" data-reset="omni">Reset</button></div></details>
-      <details class="card" id="grp-soil" open><summary>Omnicrystal · the soil (off) <small>MeerkatWormholeConfig · rounds 16-21; off since round 23</small></summary><div class="rows"></div>
+        <div class="btns"><button class="pick" type="button" id="omniGive" title="Open the network now, as if you had flown through an omnicrystal">Give me an omnicrystal</button><button class="pick" type="button" data-reset="omni">Reset</button></div></details>
+      <details class="card" id="grp-soil" open><summary>Network · the old ground (off) <small>MeerkatWormholeConfig · rounds 16-21; off since round 23</small></summary><div class="rows"></div>
         <p class="src"><b>Off since round 23</b> (the network is wormhole tubes; <i>soilVisibility</i> brings this back). <b>The network was dug through soil.</b> Every channel has a <b>wall of earth</b> round it (<i>soilWall</i> x its radius), see-through face-on and bright where it turns away, in <b>layered strata</b> - loam, clay, sand and stone (<i>soilStrata</i>, <i>soilStrataThickness</i>) - with grain and grit (<i>soilGrain</i>). <b>Stones</b> lie in the soil round the walls (<i>soilPebbles</i>) and <b>roots</b> hang onto the channels (<i>soilRoots</i>). It is dug out with the labyrinth and falls in with it. Riding, the strata stream past and the other channels show through the walls.</p>
         <div class="btns"><button class="pick" type="button" data-reset="soil">Reset</button></div></details>
       <details class="card" id="grp-space" open><summary>Space · look <small>MeerkatWormholeConfig · the bent space, everyone's</small></summary><div class="rows"></div>
@@ -552,7 +552,10 @@
     // we move farther distance"): your Mass (massLevel, plus massPerCrystal for every crystal you take this race, up to 10)
     // sets how much of the LT range you can dig (massLengthAtZero of it at Mass 0, all of it at 10) and how wide the trunk
     // is (massDiameterAtZero x at Mass 0, full at 10)
-    massPerCrystal: 0.5, massLengthAtZero: 0.3, massDiameterAtZero: 0.6,
+    // round 23 (Yash, 2026-10-28): "Mass sizes the trunk" goes with the tree. A wormhole is the same size at any Mass
+    // (massLengthAtZero and massDiameterAtZero ship at 1: Mass 0 digs the whole LT range at the full diameters); Mass sizes
+    // the omnicrystal's NETWORK instead (networkReachAtZero / networkReachAtFull, below)
+    massPerCrystal: 0.5, massLengthAtZero: 1, massDiameterAtZero: 1,
     reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, ovalShortest: 0.2, ovalLongest: 1.1, ovalMaxSharpness: 8, throatDiameter: 8, mouthDiameter: 26, keyRampSeconds: 0.5,
     // round 12: the size at the LONGEST tunnel (the two above are the shortest's); lengths between grow in between
     throatDiameterMax: 18, mouthDiameterMax: 56,
@@ -620,8 +623,17 @@
     // full Mass can dig): forks labyrinthBranchPointsMin..Max, openings labyrinthOpeningsMin..Max, reach labyrinthRadiusMin..Max.
     // They look like roots: tapering to rootTip x at the tips, gnarled by rootGnarl, a bark skin (rootGlass, rootRim,
     // rootGrain). Round 20: no spindle wireframe once dug (the reticle keeps its own); the roots are the roots
-    omniOn: 1, omniAtOnce: 1, omniCount: 3, labyrinthBranchPointsMin: 3, labyrinthBranchPointsMax: 12, labyrinthOpeningsMin: 5, labyrinthOpeningsMax: 30,
-    labyrinthRadiusMin: 90, labyrinthRadiusMax: 420, labyrinthSpread: 360, labyrinthRandomness: 0.45,
+    // round 23 (Yash, 2026-10-28: "The network of wormhole tubes will come by collecting omnicrystals ... it will always be
+    // large, despite the last wormhole's length or anything. Depending on mass, it can increase, decrease its size, but in
+    // general it's still pretty large. And if it has full mass, then it will be the largest, covering the entire cell"): the
+    // network's size no longer follows the last wormhole. Its reach is networkReachAtZero x the cell's radius at Mass 0 up to
+    // networkReachAtFull x at Mass 10 (ElementalFloat-style on Mass; the game's MeerkatWormholeConfig.networkReach), centred
+    // that share of the way from you to the cell's centre, so it always lies inside the cell and at full Mass fills it, its
+    // openings on the cell's race shell. It reaches at least labyrinthRadiusMin; its forks and openings grow with its reach,
+    // from labyrinthBranchPointsMin / labyrinthOpeningsMin at labyrinthRadiusMin to the ...Max numbers at labyrinthRadiusMax
+    networkReachAtZero: 0.5, networkReachAtFull: 1,
+    omniOn: 1, omniAtOnce: 1, omniCount: 3, labyrinthBranchPointsMin: 6, labyrinthBranchPointsMax: 22, labyrinthOpeningsMin: 12, labyrinthOpeningsMax: 56,
+    labyrinthRadiusMin: 240, labyrinthRadiusMax: 1080, labyrinthSpread: 360, labyrinthRandomness: 0.45,
     // round 20: inside the roots you fly free (labTransit): RT and the sticks push you, the walls bounce you off; from inside
     // the roots are a soft inner tube (rootOpacity, rootLamp, rootFog; never black, Yash 2026-10-28)
     // round 23 (Yash, 2026-10-28: "We can't make it a root, we need to make it smoother, like our tube, same visuals ... the
@@ -700,8 +712,8 @@
   };
   const SPEC = [
     ['shape', 'massPerCrystal', 'Mass: each crystal taken this race adds (levels, up to 10)', 0, 3, 0.1],
-    ['shape', 'massLengthAtZero', 'Mass 0 digs this share of the LT range (Mass 10: all of it)', 0.05, 1, 0.05],
-    ['shape', 'massDiameterAtZero', 'Mass 0 digs this x the diameters (Mass 10: full)', 0.1, 1, 0.05],
+    ['shape', 'massLengthAtZero', 'Mass 0 digs this share of the LT range (Mass 10: all of it; 1 since round 23: Mass sizes the network, not the wormhole)', 0.05, 1, 0.05],
+    ['shape', 'massDiameterAtZero', 'Mass 0 digs this x the diameters (Mass 10: full; 1 since round 23)', 0.1, 1, 0.05],
     ['shape', 'reticleAhead', 'The reticle rides this far ahead of the nose (u)', 0, 100, 1],
     ['shape', 'bendMaxDegrees', 'Sharpest bend, the right stick fully over (°)', 0, 180, 5],
     ['shape', 'shaftMin', 'The straight shaft before the bend, LT released (u)', 0, 600, 10],
@@ -742,46 +754,48 @@
     ['look', 'bridgeSpindleThickness', '...spindle thickness (u)', 0.1, 6, 0.05],
     ['look', 'bridgeShimmer', '...a shimmer running way in to way out', 0, 1, 0.05],
     ['look', 'bridgeWhite', '...its spindles\' colour: the domain colour toward white', 0, 1, 0.05],
-    ['tree', 'trunkVisibility', 'The tree: the tunnel\'s outer layer, for everyone (0 = hidden; off since round 23)', 0, 1, 0.05],
-    ['tree', 'trunkTop', 'Trunk at the way in (× the mouth\'s radius)', 1, 3, 0.05],
-    ['tree', 'trunkBase', 'Trunk at the way out (× the mouth\'s radius)', 1, 3, 0.05],
-    ['tree', 'trunkBark', 'Bark ridges: depth (× the radius)', 0, 0.5, 0.01],
-    ['tree', 'trunkRidges', '...ridges round the trunk', 3, 40, 1],
+    ['tree', 'trunkVisibility', 'The old outer layer round a wormhole (rounds 13-21), for everyone (0 = hidden; off since round 23)', 0, 1, 0.05],
+    ['tree', 'trunkTop', '...its size at the way in (× the mouth\'s radius)', 1, 3, 0.05],
+    ['tree', 'trunkBase', '...its size at the way out (× the mouth\'s radius)', 1, 3, 0.05],
+    ['tree', 'trunkBark', '...its ridges: depth (× the radius)', 0, 0.5, 0.01],
+    ['tree', 'trunkRidges', '...ridges round it', 3, 40, 1],
     ['tree', 'trunkGnarl', '...slow gnarled wobble', 0, 0.3, 0.01],
     ['tree', 'trunkGlass', 'Its glass face-on (the see-through middle)', 0, 0.5, 0.01],
     ['tree', 'trunkRim', 'Its glass at the silhouette (Fresnel)', 0, 2, 0.05],
     ['tree', 'trunkFresnel', '...how tight to the silhouette (power)', 0.5, 8, 0.1],
-    ['tree', 'trunkRings', 'Tree rings on the cut ends', 1, 20, 1],
-    ['tree', 'trunkWarp', 'Space bent by the tree (strength)', 0, 2, 0.05],
-    ['tree', 'trunkGrain', 'Bark grain: its fissures\' brightness', 0, 2, 0.05],
-    ['tree', 'trunkGrainLines', '...fissures round the wood', 4, 60, 1],
-    ['tree', 'branchCount', 'Branches, in pairs', 0, 16, 1],
+    ['tree', 'trunkRings', '...rings on its cut ends', 1, 20, 1],
+    ['tree', 'trunkWarp', '...space bent by it (strength)', 0, 2, 0.05],
+    ['tree', 'trunkGrain', '...its grain: the fissures\' brightness', 0, 2, 0.05],
+    ['tree', 'trunkGrainLines', '...fissures round it', 4, 60, 1],
+    ['tree', 'branchCount', '...spines, in pairs', 0, 16, 1],
     ['tree', 'branchLength', '...their length (× the mouth\'s radius)', 0, 4, 0.05],
     ['tree', 'branchThickness', '...thickness at the base (× the mouth\'s radius)', 0.02, 0.8, 0.01],
     ['tree', 'branchUp', '...leaning toward the top (°)', 0, 80, 1],
-    ['tree', 'branchZone', '...out of the trunk\'s top (share of its length)', 0.1, 1, 0.05],
+    ['tree', 'branchZone', '...spines out of its top (share of its length)', 0.1, 1, 0.05],
     ['tree', 'branchSymmetry', '...each pair mirrored (1) or each its own (0)', 0, 1, 0.05],
     ['tree', 'branchForks', '...times each forks', 0, 3, 1],
     ['tree', 'branchGrowSeconds', '...each grows over (s), once the tunnel reaches it', 0.1, 4, 0.05],
     ['omni', 'omniOn', 'The Omnicrystal ability: an omnicrystal opens the wormhole network (0 = off)', 0, 1, 1],
     ['omni', 'omniAtOnce', 'The omnicrystal opens the network at once where you take it (0 = it arms your next RT)', 0, 1, 1],
     ['omni', 'omniCount', 'Omnicrystals on the course (a new course or reset places them)', 0, 12, 1],
-    ['omni', 'labyrinthBranchPointsMin', 'The network: forks after the smallest tunnel', 1, 16, 1],
-    ['omni', 'labyrinthBranchPointsMax', '...forks after the biggest tunnel', 1, 24, 1],
-    ['omni', 'labyrinthOpeningsMin', '...openings after the smallest tunnel', 2, 48, 1],
-    ['omni', 'labyrinthOpeningsMax', '...openings after the biggest tunnel', 2, 72, 1],
-    ['omni', 'labyrinthRadiusMin', '...reach after the smallest tunnel (u)', 20, 900, 10],
-    ['omni', 'labyrinthRadiusMax', '...reach after the biggest tunnel (u)', 40, 1500, 10],
+    ['omni', 'networkReachAtZero', 'The network\'s reach at Mass 0 (× the cell\'s radius)', 0.1, 1.5, 0.05],
+    ['omni', 'networkReachAtFull', '...at Mass 10 (× the cell\'s radius; 1 = the whole cell)', 0.1, 1.5, 0.05],
+    ['omni', 'labyrinthRadiusMin', '...it reaches at least (u), however low your Mass', 20, 900, 10],
+    ['omni', 'labyrinthRadiusMax', '...a network reaching this far (u) has its most forks and openings', 40, 1500, 10],
+    ['omni', 'labyrinthBranchPointsMin', '...forks at its smallest (the least reach above)', 1, 16, 1],
+    ['omni', 'labyrinthBranchPointsMax', '...forks at its largest (the reach above)', 1, 24, 1],
+    ['omni', 'labyrinthOpeningsMin', '...openings at its smallest', 2, 48, 1],
+    ['omni', 'labyrinthOpeningsMax', '...openings at its largest', 2, 72, 1],
     ['omni', 'labyrinthSpread', '...its openings spread round it over (°, 360 = all round)', 20, 360, 5],
     ['omni', 'labyrinthRandomness', '...randomness', 0, 1, 0.05],
     ['omni', 'labyrinthDiameter', '...each wormhole\'s diameter (u)', 2, 60, 1],
     ['omni', 'labyrinthMouthDiameter', '...source and opening diameter (u)', 4, 120, 1],
-    ['omni', 'rootTip', 'The wormholes taper to (× the one at the source)', 0.1, 1, 0.05],
+    ['omni', 'rootTip', 'The network\'s wormholes taper to (× the one at its source)', 0.1, 1, 0.05],
     ['omni', 'rootGnarl', '...how much each wormhole wanders', 0, 1, 0.05],
-    ['omni', 'rootBarkVisibility', 'The network\'s root bark, for everyone (0 = hidden: the channels are wormhole tubes; off since round 23)', 0, 1, 0.05],
-    ['omni', 'rootGlass', '...their bark face-on', 0, 0.3, 0.005],
-    ['omni', 'rootRim', '...their bark at the silhouette (Fresnel)', 0, 2, 0.05],
-    ['omni', 'rootGrain', '...their bark grain', 0, 1.5, 0.05],
+    ['omni', 'rootBarkVisibility', 'The network\'s old outer skin, for everyone (0 = hidden: every tube is a wormhole; off since round 23)', 0, 1, 0.05],
+    ['omni', 'rootGlass', '...that skin face-on', 0, 0.3, 0.005],
+    ['omni', 'rootRim', '...that skin at the silhouette (Fresnel)', 0, 2, 0.05],
+    ['omni', 'rootGrain', '...that skin\'s grain', 0, 1.5, 0.05],
     ['omni', 'labyrinthRoughness', '...dug rough: the walls\' unevenness', 0, 0.6, 0.01],
     ['omni', 'labyrinthFormSeconds', '...digs itself out from the source over (s)', 0.05, 4, 0.05],
     ['omni', 'labyrinthRingSpacing', '...its wireframe: a ring every (u)', 3, 60, 1],
@@ -794,12 +808,12 @@
     ['omni', 'rootMaxSpeed', '...never faster than (u/s)', 10, 300, 1],
     ['omni', 'rootBounce', '...a wall bounces you off with (× your speed into it)', 0, 1, 0.05],
     ['omni', 'rootGravity', '...drawn to the tube\'s floor by (u/s², 0 = you float)', 0, 120, 1],
-    ['omni', 'rootOpacity', 'From inside: the roots\' old inner wall (0 = off, the tube\'s calm wall instead; off since round 23)', 0, 1, 0.01],
-    ['omni', 'tubeInner', 'Every tube\'s calm inner wall (a tunnel\'s and each channel\'s): a smooth sheen', 0, 0.6, 0.01],
+    ['omni', 'rootOpacity', 'From inside: the network\'s old inner wall (0 = off, the tube\'s calm wall instead; off since round 23)', 0, 1, 0.01],
+    ['omni', 'tubeInner', 'Every tube\'s calm inner wall (a wormhole\'s and each of the network\'s): a smooth sheen', 0, 0.6, 0.01],
     ['omni', 'rootLamp', '...your lamp on the walls round you', 0, 3, 0.05],
     ['omni', 'rootFog', '...far walls fade to clear this far off (u)', 20, 600, 5],
     ['omni', 'forkHintSeconds', '...the fork is called out this long before (s)', 0, 3, 0.05],
-    ['soil', 'soilVisibility', 'The soil round the network, for everyone (0 = hidden; off since round 23)', 0, 1, 0.05],
+    ['soil', 'soilVisibility', 'The old ground round the network, for everyone (0 = hidden; off since round 23)', 0, 1, 0.05],
     ['soil', 'soilWall', 'Its wall round each channel (× the channel\'s radius)', 1.05, 4, 0.05],
     ['soil', 'soilGlass', 'Its wall face-on (the see-through middle)', 0, 0.5, 0.01],
     ['soil', 'soilRim', 'Its wall at the silhouette (Fresnel)', 0, 2, 0.05],
@@ -809,7 +823,7 @@
     ['soil', 'soilGrain', 'Grain and grit', 0, 1.5, 0.05],
     ['soil', 'soilPebbles', 'Stones round the walls', 0, 1200, 10],
     ['soil', 'soilPebbleSize', '...their size (u)', 0.2, 8, 0.1],
-    ['soil', 'soilRoots', 'Roots hanging onto the channels', 0, 80, 1],
+    ['soil', 'soilRoots', 'Strands hanging onto the wormholes', 0, 80, 1],
     ['ai', 'aiWormhole', 'AI uses the wormhole (0 = no, 1 = yes)', 0, 1, 1],
     ['ai', 'aiStraightMinDistance', 'AI: a straight tunnel with its ring at least (u) away', 50, 2000, 10],
     ['ai', 'aiBentMinDistance', 'AI: a bending one from (u) away', 50, 2000, 10],
@@ -932,7 +946,7 @@
   const saved = lsGet(LS_KEY, {});
   // round 23: a browser that saved its settings before Yash turned the tree, the roots' look and the soil off takes the
   // new shipped values for those keys once (save version 7); everything else it saved is kept
-  if (!(saved.v >= 7) && saved.P) for (const k of ['trunkVisibility', 'soilVisibility', 'rootOpacity']) delete saved.P[k];
+  if (!(saved.v >= 7) && saved.P) for (const k of ['trunkVisibility', 'soilVisibility', 'rootOpacity', 'massLengthAtZero', 'massDiameterAtZero', 'labyrinthBranchPointsMin', 'labyrinthBranchPointsMax', 'labyrinthOpeningsMin', 'labyrinthOpeningsMax', 'labyrinthRadiusMin', 'labyrinthRadiusMax']) delete saved.P[k];
   const BP = Object.assign({}, SHIPPED); for (const k in (saved.P || {})) if (k in SHIPPED && Number.isFinite(saved.P[k])) BP[k] = saved.P[k];
   const P = Object.assign({}, BP);
   recomputeP();
@@ -1674,8 +1688,9 @@
       whC.addScaledVector(fwd, -whC.dot(fwd)); if (whC.lengthSq() > 1e-8) r.side.copy(whC.normalize()); else r.side.copy(right);
       Object.assign(r, sh); r.s0 = 0; r.s1 = r.L;
       if (ftLive.ab.omni && P.omniOn > 0.5) {   // round 16: an omnicrystal armed: the reticle is the labyrinth RT would dig
-        const key = ftLive.ab.omniSeed + '|' + ftLive.lastTrunk + '|' + LAB_KEYS.map((k) => P[k]).join();
-        if (r.labKey !== key) { r.lay = labLayout(P, ftLive.ab.omniSeed, ftLive.lastTrunk, false); r.labKey = key; }
+        const ns = networkSize(curPilot, r.A, right, up, fwd);   // round 23: sized by your Mass and the cell
+        const key = ftLive.ab.omniSeed + '|' + ns.rad.toFixed(0) + '|' + ns.c.toArray().map((x) => Math.round(x / 20)).join() + '|' + LAB_KEYS.map((k) => P[k]).join();
+        if (r.labKey !== key) { r.lay = labLayout(P, ftLive.ab.omniSeed, 0, false, ns); r.labKey = key; }
         r.right = (r.right || new V3()).copy(right); r.up = (r.up || new V3()).copy(up);
         r.net = labBuild(r.lay, r.A, r.t0, right, up);
       } else r.net = null;
@@ -3243,7 +3258,7 @@
   // labyrinthSpread degrees round its centre, labyrinthRadiusMax u out, jittered by labyrinthRandomness. You slide in; at
   // each fork you fly into the channel you want (round 20: RT and the sticks, bouncing off the walls). Every channel
   // is its own tunnel (a pair with its own wh on a sampled path, wh.poly), dug through soil (the soil, below).
-  const LAB_KEYS = ['labyrinthBranchPointsMin', 'labyrinthBranchPointsMax', 'labyrinthOpeningsMin', 'labyrinthOpeningsMax', 'labyrinthRadiusMin', 'labyrinthRadiusMax', 'labyrinthSpread', 'labyrinthRandomness'];
+  const LAB_KEYS = ['networkReachAtZero', 'networkReachAtFull', 'labyrinthBranchPointsMin', 'labyrinthBranchPointsMax', 'labyrinthOpeningsMin', 'labyrinthOpeningsMax', 'labyrinthRadiusMin', 'labyrinthRadiusMax', 'labyrinthSpread', 'labyrinthRandomness'];
   const iclamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(v)));
   // The labyrinth in the hull's own frame (x right, y up, z ahead), from a seed: a random tree of labyrinthBranchPointsMax
   // forks (each leaf grown in turn, shallow ones first, until there are that many), its extra openings added to random
@@ -3251,9 +3266,11 @@
   // (Fibonacci over the spread cone, jittered) dealt to the subtrees by splitting along the long axis, so neighbours share
   // a branch; each fork sits toward its openings' mean direction, deeper forks further out. depth = the path length from
   // the source (the burrow digs out along it).
-  function labLayout(Pv, seed, size, atOnce) {
-    const k = clamp01(size || 0), lerpK = (a, z) => a + (z - a) * k;
-    const R = rng(seed), Rad = Math.max(20, lerpK(Pv.labyrinthRadiusMin, Pv.labyrinthRadiusMax)), B = iclamp(lerpK(Pv.labyrinthBranchPointsMin, Pv.labyrinthBranchPointsMax), 1, 24);
+  // Round 23: with net (networkSize) the network's reach, its centre in this frame and its fork/opening share come from your
+  // Mass and the cell, not from size (the last tunnel's, round 17, kept for the tooltips' previews).
+  function labLayout(Pv, seed, size, atOnce, net) {
+    const k = net ? clamp01(net.counts) : clamp01(size || 0), lerpK = (a, z) => a + (z - a) * k;
+    const R = rng(seed), Rad = Math.max(20, net ? net.rad : lerpK(Pv.labyrinthRadiusMin, Pv.labyrinthRadiusMax)), B = iclamp(lerpK(Pv.labyrinthBranchPointsMin, Pv.labyrinthBranchPointsMax), 1, 24);
     const M = Math.max(B + 1, iclamp(lerpK(Pv.labyrinthOpeningsMin, Pv.labyrinthOpeningsMax), 2, 72)), half = Math.min(180, Math.max(10, Pv.labyrinthSpread / 2)) * Math.PI / 180, rnd = clamp01(Pv.labyrinthRandomness);
     const nodes = [{ parent: -1, kids: [], depth: 0 }];
     const add = (par) => { nodes.push({ parent: par, kids: [], depth: nodes[par].depth + 1 }); nodes[par].kids.push(nodes.length - 1); };
@@ -3286,7 +3303,7 @@
       for (const k of n.kids) { const c = nLeaves(k); assign(k, sorted.slice(at, at + c)); at += c; }
     };
     assign(0, dirs);
-    const maxD = Math.max(...nodes.map((n) => n.depth)), C = new V3(0, 0, Rad * (atOnce ? 0.2 : 0.8));   // at once: spreading every way from where you are
+    const maxD = Math.max(...nodes.map((n) => n.depth)), C = net ? net.c.clone() : new V3(0, 0, Rad * (atOnce ? 0.2 : 0.8));   // at once: spreading every way from where you are (round 23: round the network's centre, toward the cell's)
     nodes.forEach((n) => {
       const mean = n.dirs.reduce((a, p) => a.add(p), new V3());
       const m = mean.length() > 1e-6 ? mean.normalize() : new V3(0, 0, 1);
@@ -3305,7 +3322,27 @@
     walk(0);
     edges.forEach((e) => { e.kids = edges.map((k, j) => (k.ai === e.bi ? j : -1)).filter((j) => j >= 0); e.za = e.ai < 0 ? 0 : e.a.pd; e.zb = e.b.pd; });
     const D = Math.max(...edges.map((e) => e.zb));
-    return { D, nodes, edges, entry: 0, forks, openings: leaves, src, Rad, size: k };
+    return { D, nodes, edges, entry: 0, forks, openings: leaves, src, Rad, size: k, mass: net ? net.mass : null };
+  }
+  // Round 23 (Yash, 2026-10-28: "it will always be large, despite the last wormhole's length or anything. Depending on mass,
+  // it can increase, decrease its size, but in general it's still pretty large. And if it has full mass, then it will be the
+  // largest, covering the entire cell, and we can transport through those network of wormholes from one place to other").
+  // The cell the race is in: its centre the world's origin, its radius the race shell (Warpline's outer 1080 u; a stand-in
+  // circuit's farthest ring + 60 u). The game reads its cell's own (MeerkatNetworkCell).
+  function raceCell() {
+    let far = 0; for (const g of gates) far = Math.max(far, g.p.length());
+    return { c: new V3(0, 0, 0), R: Math.max(courseKind === 'warpline' ? WARPLINE.outer : 0, far + 60) };
+  }
+  // The network's size from your Mass (ElementalFloat-style, the game's MeerkatWormholeConfig.networkReach on Mass): its reach
+  // is share x the cell's radius, share running from networkReachAtZero at Mass 0 to networkReachAtFull at Mass 10, never
+  // under labyrinthRadiusMin; its centre lies that share of the way from its source (A) to the cell's centre, so it always
+  // lies inside the cell and at share 1 fills it, its openings on the race shell. Its forks and openings grow with its reach
+  // (counts: labyrinthRadiusMin -> labyrinthRadiusMax). c is the centre in the frame (right, up, fwd) at A.
+  function networkSize(id, A, rightV, upV, fwdV) {
+    const mass = massOf(id), share = Math.max(0.05, P.networkReachAtZero + (P.networkReachAtFull - P.networkReachAtZero) * mass / 10);
+    const cell = raceCell(), rad = Math.max(P.labyrinthRadiusMin, share * cell.R), d = cell.c.clone().sub(A).multiplyScalar(clamp01(share));
+    return { mass, share, rad, cellR: cell.R, c: new V3(d.dot(rightV), d.dot(upV), d.dot(fwdV)),
+      counts: clamp01((rad - P.labyrinthRadiusMin) / Math.max(1, P.labyrinthRadiusMax - P.labyrinthRadiusMin)) };
   }
   // A channel's centreline: a Hermite curve from a (heading ta) to b (heading tb), sampled evenly by length (NS points)
   // with a frame carried along it (no twist).
@@ -3433,7 +3470,7 @@
   // round 17: the omnicrystal's roots, grown at once from where you are, every way, sized by your last trunk; you slide in
   function rootsHere(sd) {
     basis();
-    const r = { lay: labLayout(P, sd, ftLive.lastTrunk, true), A: hull.position.clone(), t0: fwd.clone(), right: right.clone(), up: up.clone(), noGhost: true };
+    const r = { lay: labLayout(P, sd, 0, true, networkSize(curPilot, hull.position, right, up, fwd)), A: hull.position.clone(), t0: fwd.clone(), right: right.clone(), up: up.clone(), noGhost: true };
     labCommit(r);
   }
   function labCommit(r) {
@@ -4634,7 +4671,7 @@
     c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = cyan;
     c.fillText('MEERKAT · the wormhole', padL, pad + 13 * sc);
     c.font = font(11, 500); c.fillStyle = dim;
-    c.fillText('one thumb · space-time bent into a tunnel', padL, pad + 27 * sc);
+    c.fillText('one thumb · space-time bent into a wormhole', padL, pad + 27 * sc);
     if (stance) c.fillText('HOLDING STILL', padL, pad + 41 * sc);
     // the race with rivals: standings under the title, and each rival's name over its hull
     if (rivals.length) {
@@ -4657,15 +4694,15 @@
     if (race === 'running' && !stopped && !(isGM() && KIT.seat)) {   // round 18: in a sentinel seat the seat's lines replace the flyer's
       const g = ftLive.gate, ret = ftLive.ret;
       c.textAlign = 'center'; c.font = font(14, 700);
-      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText(lastGate.lab ? 'OUT OF THE WORMHOLE NETWORK · ' + lastGate.forks + (lastGate.forks === 1 ? ' fork · ' : ' forks · ') + lastGate.len + ' u flown' : 'OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u tunnel · speed kept', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
-      if (omniFlash > 0) { c.globalAlpha = Math.min(1, omniFlash); c.fillStyle = gold; c.font = font(20, 700); c.fillText(ftLive.gate && ftLive.gate.net && ftLive.gate.state === 'tube' ? 'OMNICRYSTAL! · the WORMHOLE NETWORK opens from here' : 'OMNICRYSTAL! · your next RT opens the WORMHOLE NETWORK', cw / 2, ch * 0.24); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText(lastGate.lab ? 'OUT OF THE NETWORK · ' + lastGate.forks + (lastGate.forks === 1 ? ' fork · ' : ' forks · ') + lastGate.len + ' u flown' : 'OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u wormhole · speed kept', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (omniFlash > 0) { c.globalAlpha = Math.min(1, omniFlash); c.fillStyle = gold; c.font = font(20, 700); c.fillText(ftLive.gate && ftLive.gate.net && ftLive.gate.state === 'tube' ? 'OMNICRYSTAL! · the NETWORK opens from here' : 'OMNICRYSTAL! · your next RT opens the NETWORK', cw / 2, ch * 0.24); c.globalAlpha = 1; c.font = font(14, 700); }
       if (ret && ret.net && ret.lay) {   // round 16: armed, the reticle is the labyrinth
         c.fillStyle = gold;
-        c.fillText('WORMHOLE NETWORK  ·  ' + ret.lay.forks + ' forks  ·  ' + ret.lay.openings + ' tips  ·  ' + Math.round(2 * ret.lay.Rad) + ' u across (your last trunk ' + Math.round(100 * ret.lay.size) + '%)', cw / 2, tY + pad + 14 * sc);
+        c.fillText('NETWORK  ·  ' + ret.lay.forks + ' forks  ·  ' + ret.lay.openings + ' openings  ·  ' + Math.round(2 * ret.lay.Rad) + ' u across  ·  MASS ' + (ret.lay.mass != null ? ret.lay.mass.toFixed(1) : '-'), cw / 2, tY + pad + 14 * sc);
         c.font = font(12, 600); c.fillStyle = dim; c.fillText('RT opens it and you fly in  ·  inside you cruise on: the left stick moves you round the tube, RT goes faster  ·  the walls bounce you', cw / 2, tY + pad + 30 * sc);
       } else if (g && g.net && g.pair.alive && g.state === 'tube') {
         const kids = g.pair.kids || [], left = Math.max(0, g.pair.wh.L - g.s) / Math.max(1, velNow.length());
-        c.fillStyle = gold; c.fillText('IN THE WORMHOLE NETWORK  ·  ' + g.forks + (g.forks === 1 ? ' fork taken' : ' forks taken') + '  ·  ' + (kids.length > 1 ? kids.length + ' wormholes ahead' : kids.length ? 'on to the next fork' : 'an opening ahead'), cw / 2, tY + pad + 14 * sc);
+        c.fillStyle = gold; c.fillText('IN THE NETWORK  ·  ' + g.forks + (g.forks === 1 ? ' fork taken' : ' forks taken') + '  ·  ' + (kids.length > 1 ? kids.length + ' wormholes ahead' : kids.length ? 'on to the next fork' : 'an opening ahead'), cw / 2, tY + pad + 14 * sc);
         if (kids.length > 1 && left <= Math.max(0, P.forkHintSeconds)) {   // the fork: each channel marked where it leads, the one you would take lit
           const pick = forkPick(g);
           for (const k of kids) {
@@ -4677,7 +4714,7 @@
           c.font = font(12, 600); c.fillStyle = dim; c.fillText('move into a wormhole to take it (the one on your side is lit)  ·  left stick round the tube, RT faster', cw / 2, ch * 0.66);
         }
       } else if (ret || (g && g.pair.alive && g.state === 'tube')) {
-        const wh = ret || g.pair.wh, line = 'TUNNEL ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°  ·  MASS ' + massOf(curPilot).toFixed(1);
+        const wh = ret || g.pair.wh, line = 'WORMHOLE ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°  ·  MASS ' + massOf(curPilot).toFixed(1);
         c.fillStyle = ret ? cyan : lime;
         c.fillText(ret ? line + '  ·  max ' + Math.round(P.bendMaxDegrees * wh.fat) + '°' : 'IN THE THROAT  ·  ' + line, cw / 2, tY + pad + 14 * sc);
         if (ret) { c.font = font(12, 600); c.fillStyle = dim; c.fillText('LT sets the shaft  ·  right stick bends its end  ·  RT forms it and you go  ·  left stick flies', cw / 2, tY + pad + 30 * sc); }
@@ -4685,7 +4722,7 @@
     }
     if (stopped) {
       c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#7fd7ff'; c.fillText('STOPPED · ' + fmtTime(raceT) + ' · the clock is paused', cw / 2, tY + pad + 50 * sc);
-      c.font = font(11, 500); c.fillStyle = ink; c.fillText('The world carries on: watch a tunnel stay, collapse and ripple. ▶ Resume (or P) to fly on.', cw / 2, tY + pad + 66 * sc);
+      c.font = font(11, 500); c.fillStyle = ink; c.fillText('The world carries on: watch a wormhole stay, collapse and ripple. ▶ Resume (or P) to fly on.', cw / 2, tY + pad + 66 * sc);
     }
     if (!aiOn && wasIdleAi && mode === 'fly') {
       c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = lime;
@@ -4696,14 +4733,14 @@
       c.fillText('AI PILOT · ' + youLevel.toUpperCase() + (P.aiWormhole > 0.5 ? '' : ' · NO WORMHOLE') + (courseKind === 'hairpin' ? ' · HAIRPINS' : ''), cw / 2, ch - pad - 4 * sc);
     }
     if (forkFlash > 0) { c.globalAlpha = Math.min(1, forkFlash * 2); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = lime; c.fillText('FORK TAKEN', cw / 2, ch * 0.7); c.globalAlpha = 1; }
-    if (ftLive.ab.omni && P.omniOn > 0.5 && !(ftLive.gate && ftLive.gate.state === 'tube')) { c.textAlign = 'left'; c.font = font(12, 700); c.fillStyle = gold; c.fillText('◆ OMNICRYSTAL: the wormhole network is armed (RT)', padL, pad + 41 * sc); }
-    if (portalFlash > 0 && !(isGM() && KIT.seat)) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText(ftLive.gate && ftLive.gate.net ? 'INTO THE WORMHOLE NETWORK' : 'INTO THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
+    if (ftLive.ab.omni && P.omniOn > 0.5 && !(ftLive.gate && ftLive.gate.state === 'tube')) { c.textAlign = 'left'; c.font = font(12, 700); c.fillStyle = gold; c.fillText('◆ OMNICRYSTAL: the network is armed (RT)', padL, pad + 41 * sc); }
+    if (portalFlash > 0 && !(isGM() && KIT.seat)) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText(ftLive.gate && ftLive.gate.net ? 'INTO THE NETWORK' : 'INTO THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
     // top-right: the race
     c.textAlign = 'right'; c.font = font(14, 700); c.fillStyle = ink;
     const lap = Math.min(laps, Math.floor(threaded / NG) + 1);
     c.fillText('LAP ' + lap + '/' + laps + '   RINGS ' + threaded + '/' + NG * laps, cw - padR, pad + 12 * sc);
     c.font = font(20, 700); c.fillStyle = gateFlash > 0 ? amber : ink; c.fillText(fmtTime(raceT), cw - padR, pad + 36 * sc);
-    c.font = font(11, 500); c.fillStyle = dim; c.fillText(slings + (slings === 1 ? ' tunnel' : ' tunnels'), cw - padR, pad + 51 * sc);
+    c.font = font(11, 500); c.fillStyle = dim; c.fillText(slings + (slings === 1 ? ' wormhole' : ' wormholes'), cw - padR, pad + 51 * sc);
     // bottom-left: speed
     const v = velNow.length();
     c.textAlign = 'left'; c.font = font(30, 700); c.fillStyle = ink; c.fillText(Math.round(v), pad, ch - pad - 26 * sc);
@@ -5426,29 +5463,29 @@
     reticleNearLight: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle is dimmer at its way in, by your nose, and brightest at its far end, so the bend at the other end stands out. This is the way in\'s brightness against the far end\'s; 1 lights it evenly.', lo: 'Only the far end shows.', hi: 'Even all along.' },
     reticleWhite: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle is the wormhole\'s wireframe (its rings, spindles and ribs are the bridge\'s, in the same places), in your domain colour mixed toward white by this much.', lo: 'Your domain colour.', hi: 'White.' },
     bridgeWhite: { scene: 'bridge', d: 'The bridge\'s spindles are its maker\'s domain colour mixed toward white by this much (its glass keeps the domain colour).', lo: 'The domain colour.', hi: 'White spindles.' },
-    throatDiameterMax: { scene: 'tunnel', d: 'The throat\'s diameter at the LONGEST tunnel the sticks can ask for (throatDiameter is the shortest\'s); lengths between grow in between, so a long tunnel is a thicker trunk.', lo: 'A thin long tunnel.', hi: 'A thick long trunk.' },
+    throatDiameterMax: { scene: 'tunnel', d: 'The throat\'s diameter at the LONGEST tunnel the sticks can ask for (throatDiameter is the shortest\'s); lengths between grow in between, so a long wormhole is a thicker one.', lo: 'A thin long wormhole.', hi: 'A thick long wormhole.' },
     mouthDiameterMax: { scene: 'tunnel', d: 'The entry and exit diameter at the LONGEST tunnel (mouthDiameter is the shortest\'s); lengths between grow in between.', lo: 'Narrow long mouths.', hi: 'Wide long mouths.' },
-    trunkVisibility: { scene: 'bridge', d: 'A tunnel\'s outer layer is a dead tree: its trunk round the tunnel, the way in its top cut and the way out its bottom cut, and bare branches out of its top. It forms with the tunnel the moment RT is pulled, in the wall\'s own glass and bent space. Everyone sees it, its rider too. 0 hides it. Yash turned it off on 2026-10-28 (round 23: "we have to turn off the tree visibility ... It needs to be just anomaly: tubes of wormholes"); with it off a tunnel is the wormhole\'s own tube (its bridge, glass and calm inner wall).', lo: 'No tree.', hi: 'The full tree.' },
-    trunkTop: { scene: 'bridge', d: 'The trunk\'s radius at the way in (its top cut), as a multiple of the mouth\'s radius. It never comes inside the tube.', lo: 'A thin rind round the mouth.', hi: 'A thick trunk.' },
-    trunkBase: { scene: 'bridge', d: 'The trunk\'s radius at the way out (its bottom cut), as a multiple of the mouth\'s radius: wider than the top, as a tree\'s base is.', lo: 'Straight trunk.', hi: 'A spreading base.' },
-    trunkBark: { scene: 'bridge', d: 'How deep the bark\'s ridges run, as a share of the trunk\'s radius.', lo: 'Smooth.', hi: 'Deep furrows.' },
-    trunkRidges: { scene: 'bridge', d: 'How many bark ridges run round the trunk.', lo: 'A few big ridges.', hi: 'Fine bark.' },
-    trunkGnarl: { scene: 'bridge', d: 'A slow, uneven wobble of the trunk\'s surface, so it is not a perfect log.', lo: 'Machined.', hi: 'Gnarled.' },
-    trunkGlass: { scene: 'bridge', d: 'The tree\'s glass where you look straight at it (the wall\'s glass): low keeps its middle see-through, so the tunnel inside shows.', lo: 'Clear middle.', hi: 'Milky.' },
-    trunkRim: { scene: 'bridge', d: 'The tree\'s glass at its silhouette (a Fresnel rim, as the wall\'s): where the surface turns away from you, it shines.', lo: 'Faint outline.', hi: 'Bright outline.' },
+    trunkVisibility: { scene: 'bridge', d: 'The old outer layer round every formed wormhole (rounds 13-21): a thick shell round the wormhole, cut at the way in and the way out, with spines out of its top, forming with the wormhole the moment RT is pulled, in the wall\'s own glass and bent space. Yash turned it off on 2026-10-28 (round 23): a wormhole is the simple tube (its glass, its calm inner wall, the bent space round it). 0 hides it; raise it to bring the old look back.', lo: 'The simple tube.', hi: 'The old outer layer.' },
+    trunkTop: { scene: 'bridge', d: 'The outer layer\'s radius at the way in (its top cut), as a multiple of the mouth\'s radius. It never comes inside the tube.', lo: 'A thin rind round the mouth.', hi: 'A thick outer layer.' },
+    trunkBase: { scene: 'bridge', d: 'The outer layer\'s radius at the way out (its bottom cut), as a multiple of the mouth\'s radius: wider than the top, as a outer layer\'s base is.', lo: 'Straight outer layer.', hi: 'A spreading base.' },
+    trunkBark: { scene: 'bridge', d: 'How deep the skin\'s ridges run, as a share of the outer layer\'s radius.', lo: 'Smooth.', hi: 'Deep furrows.' },
+    trunkRidges: { scene: 'bridge', d: 'How many skin ridges run round the outer layer.', lo: 'A few big ridges.', hi: 'Fine skin.' },
+    trunkGnarl: { scene: 'bridge', d: 'A slow, uneven wobble of the outer layer\'s surface, so it is not a perfect log.', lo: 'Machined.', hi: 'Gnarled.' },
+    trunkGlass: { scene: 'bridge', d: 'The outer layer\'s glass where you look straight at it (the wall\'s glass): low keeps its middle see-through, so the tunnel inside shows.', lo: 'Clear middle.', hi: 'Milky.' },
+    trunkRim: { scene: 'bridge', d: 'The outer layer\'s glass at its silhouette (a Fresnel rim, as the wall\'s): where the surface turns away from you, it shines.', lo: 'Faint outline.', hi: 'Bright outline.' },
     trunkFresnel: { scene: 'bridge', d: 'How tight the rim hugs the silhouette.', lo: 'A broad glow.', hi: 'A thin edge.' },
-    trunkRings: { scene: 'bridge', d: 'How many tree rings show on each cut end, round the mouth.', lo: 'One ring.', hi: 'Many rings.' },
-    trunkWarp: { scene: 'bridge', d: 'How strongly the tree bends the space seen through it, as the tunnel\'s wall does (the same warp), flowing slowly from top to bottom like water.', lo: 'Clear glass.', hi: 'Strongly bent, watery.' },
-    trunkGrain: { scene: 'bridge', d: 'The bark\'s grain: thin fissures running along the wood (the trunk and every branch), broken into lengths, brightest toward the silhouette. Riding through, they stream past along the walls.', lo: 'Smooth glass.', hi: 'Deeply grained wood.' },
-    trunkGrainLines: { scene: 'bridge', d: 'How many grain fissures run round the wood.', lo: 'A few deep cracks.', hi: 'Fine grain.' },
-    branchCount: { scene: 'bridge', d: 'How many bare branches the tree has, in pairs facing each other, each pair turned round the trunk.', lo: 'A bare trunk.', hi: 'A full crown.' },
-    branchLength: { scene: 'bridge', d: 'How long the branches are, as a multiple of the mouth\'s radius (all much alike).', lo: 'Stubs.', hi: 'Long boughs.' },
-    branchThickness: { scene: 'bridge', d: 'How thick a branch is where it leaves the trunk, as a share of the mouth\'s radius. It tapers to a point.', lo: 'Thin twigs.', hi: 'Heavy limbs.' },
-    branchUp: { scene: 'bridge', d: 'How far the branches lean toward the trunk\'s top (the way in), as a tree\'s branches reach upward.', lo: 'Straight out.', hi: 'Reaching up.' },
-    branchZone: { scene: 'bridge', d: 'How far down the trunk, from its top cut (the way in), the branches grow: 0.5 = its top half.', lo: 'Only at the top.', hi: 'All the way down.' },
-    branchSymmetry: { scene: 'bridge', d: 'How alike each pair is: 1 = the two branches mirror each other exactly; lower moves each to its own place and angle.', lo: 'Each its own.', hi: 'Mirrored pairs.' },
-    branchForks: { scene: 'bridge', d: 'How many times each branch forks (twice on alternate sides each time), as a bare dead tree\'s branches do.', lo: 'Single rods.', hi: 'Finely forked.' },
-    branchGrowSeconds: { scene: 'bridge', d: 'How long each branch takes to grow, starting the moment the forming tunnel reaches its root. It shrinks back as the tunnel collapses past it.', lo: 'Pops out with the tunnel.', hi: 'Grows slowly.' },
+    trunkRings: { scene: 'bridge', d: 'How many rings show on each cut end, round the mouth.', lo: 'One ring.', hi: 'Many rings.' },
+    trunkWarp: { scene: 'bridge', d: 'How strongly the outer layer bends the space seen through it, as the tunnel\'s wall does (the same warp), flowing slowly from top to bottom like water.', lo: 'Clear glass.', hi: 'Strongly bent, watery.' },
+    trunkGrain: { scene: 'bridge', d: 'The skin\'s grain: thin fissures running along it (the outer layer and every spine), broken into lengths, brightest toward the silhouette. Riding through, they stream past along the walls.', lo: 'Smooth glass.', hi: 'Deeply grained wood.' },
+    trunkGrainLines: { scene: 'bridge', d: 'How many grain fissures run round it.', lo: 'A few deep cracks.', hi: 'Fine grain.' },
+    branchCount: { scene: 'bridge', d: 'How many bare spines the outer layer has, in pairs facing each other, each pair turned round the outer layer.', lo: 'A bare outer layer.', hi: 'A full crown.' },
+    branchLength: { scene: 'bridge', d: 'How long the spines are, as a multiple of the mouth\'s radius (all much alike).', lo: 'Stubs.', hi: 'Long boughs.' },
+    branchThickness: { scene: 'bridge', d: 'How thick a spine is where it leaves the outer layer, as a share of the mouth\'s radius. It tapers to a point.', lo: 'Thin twigs.', hi: 'Heavy limbs.' },
+    branchUp: { scene: 'bridge', d: 'How far the spines lean toward the outer layer\'s top (the way in), as a outer layer\'s spines reach upward.', lo: 'Straight out.', hi: 'Reaching up.' },
+    branchZone: { scene: 'bridge', d: 'How far down the outer layer, from its top cut (the way in), the spines grow: 0.5 = its top half.', lo: 'Only at the top.', hi: 'All the way down.' },
+    branchSymmetry: { scene: 'bridge', d: 'How alike each pair is: 1 = the two spines mirror each other exactly; lower moves each to its own place and angle.', lo: 'Each its own.', hi: 'Mirrored pairs.' },
+    branchForks: { scene: 'bridge', d: 'How many times each spine forks (twice on alternate sides each time), as a bare outer layer\'s spines do.', lo: 'Single rods.', hi: 'Finely forked.' },
+    branchGrowSeconds: { scene: 'bridge', d: 'How long each spine takes to grow, starting the moment the forming wormhole reaches where it starts. It shrinks back as the tunnel collapses past it.', lo: 'Pops out with the tunnel.', hi: 'Grows slowly.' },
     bridgeShimmer: { scene: 'bridge', d: 'A shimmer of light running through the spindles from the way in to the way out, so the bridge reads as a passage. 0 = steady.', lo: 'Steady.', hi: 'A strong running pulse.' },
     aiWormhole: { scene: 'tunnel', cfg: { ai: true }, d: 'Whether the AI uses the wormhole at all. 0 flies the course on steering alone: the baseline.', lo: 'No wormhole.', hi: 'Uses it.' },
     aiStraightMinDistance: { scene: 'tunnel', cfg: { ai: true, aiFar: 600 }, d: 'The AI forms a straight tunnel only with its ring at least this far away.', lo: 'Straight hops even near a ring.', hi: 'Straight only on long legs.' },
@@ -5485,36 +5522,36 @@
     timeLevel: { scene: 'ability', cfg: { ab: 'time' }, at: [0.3, 0.6], d: 'The Time element\'s level. Level 5 and up unlocks Chain Dig (a proposal): late in a ride, RT digs the next tunnel from the far mouth and you carry straight on at throat speed.', lo: 'One tunnel at a time.', hi: 'Chain Dig.' },
     chainShare: { scene: 'ability', cfg: { ab: 'time', over: { timeLevel: 5 } }, d: 'L5 Chain Dig: from this share of the way through a tunnel you ride, RT digs the next one (the amber tick).', lo: 'Early: lots of time to aim.', hi: 'Late: right at the far mouth.' },
     aiNewAbilities: { scene: 'ability', cfg: { ab: 'charge' }, d: 'Whether the AI pilots use the round-8 abilities: Lookout when ready (with rivals or crystals near), Hardened Bridge with a rival within 600 u, Cave-in on a tunnel it has left with a rival in it (L5) or 6 prisms in reach, and Chain Dig when a tunnel from the far mouth fits the next leg. All by pressing the buttons a player has. Off: the AI flies as it did before round 8.', lo: 'Wormhole only.', hi: 'The whole kit.' },
-    omniOn: { scene: 'network', d: 'The Meerkat\'s Omnicrystal ability. Fly through an omnicrystal (gold, on the course line) and your next RT digs the wormhole network instead of a wormhole: a 3D network from one source, forks branching every way, openings all round, dug through soil. You slide through it and lean the left stick to choose at each fork. 0: omnicrystals do nothing.', lo: 'Off.', hi: 'On.' },
-    omniCount: { scene: 'network', d: 'How many omnicrystals sit on the course line, half way between rings. A new course, or a reset, places them.', lo: 'None.', hi: 'Plenty.' },
-    networkBranchPointsMax: { scene: 'network', cfg: { k: 1 }, d: 'How many forks the network has when your last trunk was the biggest a full Mass can dig (a smaller trunk gives fewer, down to networkBranchPointsMin).', lo: 'A few forks.', hi: 'A maze.' },
-    networkOpeningsMax: { scene: 'network', cfg: { k: 1 }, d: 'How many tips (ways out) the network has after the biggest trunk, spread round them. A fork splits two to four ways, so there are at most 3 x forks + 1 openings (and at least forks + 1).', lo: 'A few holes.', hi: 'Holes everywhere.' },
-    networkRadiusMax: { scene: 'network', cfg: { k: 1 }, d: 'How far the network reaches after the biggest trunk: their tips lie about this far from where they start.', lo: 'Compact.', hi: 'A huge park.' },
-    networkSpread: { scene: 'network', d: 'Over how wide a cone round its centre the openings spread, measured from straight ahead: 360 is all round, back toward you included.', lo: 'Openings ahead only.', hi: 'All round.' },
-    networkRandomness: { scene: 'network', d: 'How irregular it is: the forks wander off their even places and the openings off their even spread. Every network is new; this sets how wild.', lo: 'Orderly.', hi: 'Wackadoodle.' },
-    networkDiameter: { scene: 'network', d: 'How wide every channel is.', lo: 'Tight.', hi: 'Roomy.' },
-    networkMouthDiameter: { scene: 'network', d: 'How wide the source and the openings are: each channel flares to this at a mouth.', lo: 'Pinholes.', hi: 'Big holes.' },
+    omniOn: { scene: 'labyrinth', d: 'The Meerkat\'s Omnicrystal ability. Fly through an omnicrystal (gold, on the course line) and the network opens at once from where you took it: a big 3D network of wormhole tubes from one source, forks branching every way, openings all round, each tube looking exactly like a wormhole. You fly through it on the left stick and move into the wormhole you want at each fork. 0: omnicrystals do nothing.', lo: 'Off.', hi: 'On.' },
+    omniCount: { scene: 'labyrinth', d: 'How many omnicrystals sit on the course line, half way between rings. A new course, or a reset, places them.', lo: 'None.', hi: 'Plenty.' },
+    labyrinthBranchPointsMax: { scene: 'labyrinth', cfg: { k: 1 }, d: 'How many forks the network has at its largest (a reach of labyrinthRadiusMax or more). Forks grow with the network\'s reach, from labyrinthBranchPointsMin at labyrinthRadiusMin, so a whole-cell network still reads as a network, not a few long tubes.', lo: 'A few forks.', hi: 'A maze.' },
+    labyrinthOpeningsMax: { scene: 'labyrinth', cfg: { k: 1 }, d: 'How many openings (ways out) the network has at its largest, spread round it. A fork splits two to four ways, so there are at most 3 x forks + 1 openings (and at least forks + 1). Its wormholes number forks + openings.', lo: 'A few holes.', hi: 'Holes everywhere.' },
+    labyrinthRadiusMax: { scene: 'labyrinth', cfg: { k: 1 }, d: 'The reach (u) at which the network has its most forks and openings: one reaching this far or further has labyrinthBranchPointsMax and labyrinthOpeningsMax. It does not cap the reach (networkReachAtFull does: the whole cell).', lo: 'Busy when small.', hi: 'Sparse until huge.' },
+    labyrinthSpread: { scene: 'labyrinth', d: 'Over how wide a cone round its centre the openings spread, measured from straight ahead: 360 is all round, back toward you included.', lo: 'Openings ahead only.', hi: 'All round.' },
+    labyrinthRandomness: { scene: 'labyrinth', d: 'How irregular it is: the forks wander off their even places and the openings off their even spread. Every network is new; this sets how wild.', lo: 'Orderly.', hi: 'Wackadoodle.' },
+    labyrinthDiameter: { scene: 'labyrinth', d: 'How wide every channel is.', lo: 'Tight.', hi: 'Roomy.' },
+    labyrinthMouthDiameter: { scene: 'labyrinth', d: 'How wide the source and the openings are: each channel flares to this at a mouth.', lo: 'Pinholes.', hi: 'Big holes.' },
     labyrinthRoughness: { scene: 'labyrinth', d: 'How uneven the dug walls are: its wireframe rings and its soil walls wobble by this share.', lo: 'Bored smooth.', hi: 'Clawed out.' },
-    networkFormSeconds: { scene: 'network', d: 'RT: the wormhole network digs itself out from the source to every opening over this long, while you dive in.', lo: 'At once.', hi: 'Slowly.' },
+    labyrinthFormSeconds: { scene: 'labyrinth', d: 'RT: the wormhole network digs itself out from the source to every opening over this long, while you dive in.', lo: 'At once.', hi: 'Slowly.' },
     labyrinthRingSpacing: { scene: 'labyrinth', d: 'Its wireframe (your reticle while an omnicrystal is armed, and its dug channels): a ring of spindles every this many u.', lo: 'Dense rings.', hi: 'Sparse rings.' },
     labyrinthRingSides: { scene: 'labyrinth', d: 'How many spindles make each ring.', lo: 'A rough triangle.', hi: 'Round.' },
     labyrinthRibs: { scene: 'labyrinth', d: 'Spindles running along each channel, ring to ring.', lo: 'Rings only.', hi: 'A cage.' },
-    forkHintSeconds: { scene: 'network', d: 'How long before a fork its channels are marked on screen, the one you would take lit.', lo: 'At the last moment.', hi: 'Early warning.' },
-    soilVisibility: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The soil the labyrinth is dug through: a wall of layered earth round every channel, stones round it and roots hanging onto it, dug out with it and falling in with it. Everyone sees it, the rider too. 0 hides it. Yash turned it off on 2026-10-28 (round 23: the network is wormhole tubes, not roots in soil).', lo: 'No soil.', hi: 'All the soil.' },
-    soilWall: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How far the soil wall sits from each channel\'s centre, as a multiple of its radius.', lo: 'A skin of earth.', hi: 'Thick earth.' },
-    soilGlass: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The soil wall where you look straight at it: low keeps it see-through, so the channels behind show.', lo: 'Clear.', hi: 'Solid earth.' },
-    soilRim: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The soil wall where it turns away from you (a Fresnel rim): riding, this is the wall streaming past.', lo: 'Faint.', hi: 'Bright walls.' },
+    forkHintSeconds: { scene: 'labyrinth', d: 'How long before a fork its channels are marked on screen, the one you would take lit.', lo: 'At the last moment.', hi: 'Early warning.' },
+    soilVisibility: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The old ground the network is dug through: a wall of layered earth round every channel, stones round it and strands hanging onto it, dug out with it and falling in with it. Everyone sees it, the rider too. 0 hides it. Yash turned it off on 2026-10-28 (round 23: the network is wormhole tubes, not strands in ground).', lo: 'No ground.', hi: 'All the old ground.' },
+    soilWall: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How far the old ground wall sits from each channel\'s centre, as a multiple of its radius.', lo: 'A skin of earth.', hi: 'Thick earth.' },
+    soilGlass: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The old ground wall where you look straight at it: low keeps it see-through, so the channels behind show.', lo: 'Clear.', hi: 'Solid earth.' },
+    soilRim: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The old ground wall where it turns away from you (a Fresnel rim): riding, this is the wall streaming past.', lo: 'Faint.', hi: 'Bright walls.' },
     soilFresnel: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How tight the rim hugs the silhouette.', lo: 'A broad glow.', hi: 'A thin edge.' },
-    soilStrata: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How distinct the soil\'s layers are: loam, clay, sand and stone, level with the labyrinth, dark seams between them.', lo: 'One brown.', hi: 'Bold strata.' },
-    soilStrataThickness: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How thick one layer of soil is.', lo: 'Thin bands.', hi: 'Broad bands.' },
+    soilStrata: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How distinct the old ground\'s layers are: loam, clay, sand and stone, level with the network, dark seams between them.', lo: 'One brown.', hi: 'Bold strata.' },
+    soilStrataThickness: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How thick one layer of ground is.', lo: 'Thin bands.', hi: 'Broad bands.' },
     soilGrain: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The grain and grit in the walls, and the stones caught in them.', lo: 'Smooth clay.', hi: 'Gritty.' },
-    soilPebbles: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How many stones lie in the soil round the walls (lit, faceted).', lo: 'None.', hi: 'Stony ground.' },
+    soilPebbles: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How many stones lie in the old ground round the walls (lit, faceted).', lo: 'None.', hi: 'Stony ground.' },
     soilPebbleSize: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How big the stones are.', lo: 'Grit.', hi: 'Boulders.' },
-    soilRoots: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How many roots hang down from above onto the channels.', lo: 'None.', hi: 'Root-bound.' },
+    soilRoots: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How many strands hang down from above onto the network\'s wormholes (the old ground, off since round 23).', lo: 'None.', hi: 'Many.' },
     // round 18, the kits (lab-only: none of these is in the game; Yash judges them here first)
     kit: { scene: 'kit', cfg: { k: 'kit' }, at: [0.34, 0.67], d: 'Which kit every Meerkat in the race flies. Garrett\'s kit: his design as written (Space the soliton, Charge Sentinel mode with the dynamic-seat crew, Mass the exit portal, Time the rush, LB the pilot sight). The Mix: Garrett\'s with one change per decision (Chain Dig, no seats but an alarm, Cave-in, a throat floor and ceiling). Round 8 (archived): the round-8 proposals unchanged. Off: the wormhole alone, as before round 18. The Omnicrystal\'s wormhole network (rounds 16-23) is the fifth card in both kits, unchanged; who may fly into a network another pilot opened: Garrett\'s kit anyone (his soliton rule), the Mix your team only. Changing it starts a new race.', lo: 'Garrett\'s kit.', hi: 'The Mix.' },
     kChargeLevel: { scene: 'kit', cfg: { k: 'sentinel' }, at: [0.3, 0.6], d: 'The Charge element\'s level, L0 to L10, in Garrett\'s kit and the Mix. It sets how much of a petal a zap knocks out (zapPetalsL0 to zapPetalsL10), and at L5 and up the pool is sentinelPoolL5 (Garrett: six sentinels).', lo: 'Three sentinels, a light zap.', hi: 'Six sentinels, a heavier zap.' },
-    kMassLevel: { scene: 'kit', cfg: { k: 'portal' }, at: [0.3, 0.6], d: 'The Mass element\'s level in the kits. It sets the exit portal\'s prism size (portalSizeL0 to portalSizeL10); at L5 and up its six prisms are danger prisms. It is also the Mass round 18 sizes the trunk with (plus massPerCrystal a crystal this race): in the kits it replaces Vessel Config\'s Mass level.', lo: 'Small plain prisms.', hi: 'Larger danger prisms.' },
+    kMassLevel: { scene: 'kit', cfg: { k: 'portal' }, at: [0.3, 0.6], d: 'The Mass element\'s level in the kits. It sets the exit portal\'s prism size (portalSizeL0 to portalSizeL10); at L5 and up its six prisms are danger prisms. It is also the Mass that sizes the network (round 23) (plus massPerCrystal a crystal this race): in the kits it replaces Vessel Config\'s Mass level.', lo: 'Small plain prisms.', hi: 'Larger danger prisms.' },
     kSpaceLevel: { scene: 'kit', cfg: { k: 'area' }, at: [0.3, 0.6], d: 'The Space element\'s level. It sets the soliton\'s surface area (areaL0 to areaL10): at one area a longer tunnel is thinner. In the Mix, L5 and up unlocks Cave-in on B (it fills the Space L5 slot Garrett left open).', lo: 'A smaller area: thinner tunnels.', hi: 'A larger area: fatter tunnels.' },
     kTimeLevel: { scene: 'kit', cfg: { k: 'rush' }, at: [0.3, 0.6], d: 'The Time element\'s level. It sets the rush through every soliton (rushL0 to rushL10). L5 and up: Garrett\'s Boost out (out of every soliton faster), or in the Mix round 8\'s Chain Dig.', lo: 'A small rush.', hi: 'A big rush, and the L5 upgrade.' },
     sentinelPool: { scene: 'kit', cfg: { k: 'sentinel' }, d: 'How many sentinels (and so standing solitons) you keep at once below Charge L5 (Garrett: 3). With the pool used up and Sentinel mode on, the oldest retires and its soliton with it.', lo: 'Few.', hi: 'Many.' },
@@ -5549,30 +5586,32 @@
     worldSuper: { scene: 'kit', cfg: { k: 'world' }, d: 'The share of them that is super-shielded: never moved, never swallowed; a plain prism fired into one is destroyed, a shielded one bounces.', lo: 'Rare.', hi: 'Common.' },
     aiKit: { scene: 'kit', cfg: { k: 'ai' }, d: 'Whether the AI pilots use the kit: Sentinel mode on, flying into any standing soliton that saves time, and (the Mix) Cave-in. All by pressing what a player presses. Off: they fly the wormhole alone (the rush, the surface area and the portals still apply).', lo: 'Wormhole only.', hi: 'The whole kit.' },
     aiHopGain: { scene: 'kit', cfg: { k: 'ai' }, d: 'Garrett\'s kit: an AI crew hops to one of its own sentinels (and the old flyer becomes a sentinel) when that saves at least this many seconds to its next ring. Garrett left the hop to people; the AI\'s rule is the studio\'s proposal, open in Garrett\'s design.', lo: 'Hops for a little.', hi: 'Hops only for a lot.' },
-    massPerCrystal: { scene: 'tunnel', d: 'Your Mass sizes your trunk. It starts at the Mass level (Vessel Config) and every crystal you take this race adds this much, up to 10; it resets each race. More Mass: a longer, wider tunnel, so you go further, and a bigger root network from your next omnicrystal.', lo: 'Crystals do not grow you.', hi: 'Every crystal counts.' },
-    massLengthAtZero: { scene: 'tunnel', cfg: { lt: 1 }, d: 'At Mass 0 you can dig only this share of the LT range (shaftMin up to shaftMax); at Mass 10, all of it. Between, in proportion.', lo: 'Low Mass digs short.', hi: 'Mass barely matters.' },
-    massDiameterAtZero: { scene: 'tunnel', d: 'At Mass 0 the throat and mouths are this times their full size; at Mass 10, full.', lo: 'Low Mass digs thin.', hi: 'Mass barely matters.' },
-    omniAtOnce: { scene: 'network', d: 'On: the omnicrystal grows the network at once, spreading every way from where you took it, and you slide straight into them. Off: it arms your next RT instead (round 16).', lo: 'Arms RT.', hi: 'At once.' },
-    networkBranchPointsMin: { scene: 'network', cfg: { k: 0 }, d: 'How many forks the network has when your last trunk was the smallest you can dig. A bigger last trunk gives more, up to networkBranchPointsMax.', lo: 'A sprig.', hi: 'Bushy even small.' },
-    networkOpeningsMin: { scene: 'network', cfg: { k: 0 }, d: 'How many tips (ways out) the network has after the smallest trunk.', lo: 'A few.', hi: 'Many.' },
-    networkRadiusMin: { scene: 'network', cfg: { k: 0 }, d: 'How far the network reaches after the smallest trunk.', lo: 'Compact.', hi: 'Wide.' },
-    rootTip: { scene: 'network', d: 'The wormholes taper from the source to their tips: a tip is this times as wide as the channel at the source.', lo: 'Thin tips.', hi: 'No taper.' },
-    rootGnarl: { scene: 'network', d: 'How much each wormhole wanders as it goes, as real roots do.', lo: 'Smooth curves.', hi: 'Gnarled.' },
-    rootGlass: { scene: 'labyrinth', d: 'The roots\' bark where you look straight at it: keep it low, so a big network stays quiet on screen.', lo: 'Clear.', hi: 'Milky.' },
-    rootRim: { scene: 'labyrinth', d: 'The roots\' bark where it turns away from you (Fresnel): their outline.', lo: 'Faint.', hi: 'Bright.' },
-    rootGrain: { scene: 'labyrinth', d: 'The bark grain along the roots.', lo: 'Smooth.', hi: 'Deep grain.' },
-    rootThrust: { scene: 'network', d: 'Hold RT in the network and you go faster than your cruise, up to rootMaxSpeed; let go and you ease back to it.', lo: 'A drift.', hi: 'A rush.' },
-    rootCruise: { scene: 'network', d: 'Inside the network you cruise along the tube on your own at this speed, your nose following it, so you only steer.', lo: 'A crawl.', hi: 'Brisk.' },
-    rootMove: { scene: 'network', d: 'How hard the left stick moves you round the tube: left and right, up and down, the way it would turn your nose. Move into a wormhole at a fork to go down it.', lo: 'A nudge.', hi: 'Darting about.' },
-    rootDrag: { scene: 'network', d: 'How fast your drift across the tube dies away once you let the stick go. Low: you glide on to the wall and bounce.', lo: 'Slippery.', hi: 'Stops at once.' },
-    rootMaxSpeed: { scene: 'network', d: 'The fastest you go inside the network, so you can always find your way.', lo: 'A crawl.', hi: 'A rush.' },
-    rootBounce: { scene: 'network', d: 'Hit a wall and you bounce off it with this share of your speed into it (the rest is lost). The speed along the wall is kept.', lo: 'Thud.', hi: 'Rubber.' },
-    rootGravity: { scene: 'network', d: 'Draws you to the floor of the tube (the network\'s down), square to the root, so it never pulls you back down a climb. 0: you float.', lo: 'Float.', hi: 'Roll along the floor.' },
-    rootOpacity: { scene: 'labyrinth', d: 'Inside the roots (rounds 20-21): a soft, smooth inner wall, a little dense, the world outside still showing through it. It fades to clear with distance, never to black. The ends of every root stay open. Yash turned it off on 2026-10-28 (round 23): inside the network you see the wormhole tube\'s own calm wall (tubeInner) instead.', lo: 'Clear.', hi: 'Solid.' },
-    rootBarkVisibility: { scene: 'labyrinth', d: 'The roots\' bark round each channel of the network (rounds 17-21: rootGlass, rootRim, rootGrain, tapering with rootTip). Yash turned it off on 2026-10-28 (round 23: "We can\'t make it a root, we need to make it smoother, like our tube, same visuals"): with it off every channel draws exactly as a formed tunnel does (the bridge, its glass, the calm inner wall, the warp). Bring it back here.', lo: 'Wormhole tubes.', hi: 'Bark roots.' },
-    tubeInner: { scene: 'labyrinth', d: 'The calm inner wall of every wormhole tube you ride (round 23: a formed tunnel\'s and every channel of the network\'s; it was the trunk\'s bore): smooth, no lines, a gentle sheen, so the ride is calm.', lo: 'Clear.', hi: 'Milky.' },
-    rootLamp: { scene: 'network', d: 'Your lamp: the walls near you are lit by you, and the rest are dim.', lo: 'Dark.', hi: 'Bright.' },
-    rootFog: { scene: 'network', d: 'Inside the network, walls further off than this fade away to clear.', lo: 'Only the walls round you.', hi: 'See far.' },
+    massPerCrystal: { scene: 'tunnel', d: 'Your Mass. It starts at the Mass level (Vessel Config) and every crystal you take this race adds this much, up to 10; it resets each race. Round 23: Mass sizes the network your next omnicrystal opens (networkReachAtZero to networkReachAtFull), no longer the wormhole.', lo: 'Crystals do not grow you.', hi: 'Every crystal counts.' },
+    massLengthAtZero: { scene: 'tunnel', cfg: { lt: 1 }, d: 'At Mass 0 you can dig only this share of the LT range (shaftMin up to shaftMax); at Mass 10, all of it. Round 23: 1, so a wormhole is the same at any Mass (round 17\'s Mass sizing went with the old outer layer).', lo: 'Low Mass digs short.', hi: 'Mass barely matters.' },
+    massDiameterAtZero: { scene: 'tunnel', d: 'At Mass 0 the throat and mouths are this times their full size; at Mass 10, full. Round 23: 1, so Mass no longer sizes the wormhole.', lo: 'Low Mass digs thin.', hi: 'Mass barely matters.' },
+    omniAtOnce: { scene: 'labyrinth', d: 'On: the omnicrystal opens the network at once, spreading every way from where you took it, and you fly straight into it. Off: it arms your next RT instead (round 16).', lo: 'Arms RT.', hi: 'At once.' },
+    labyrinthBranchPointsMin: { scene: 'labyrinth', cfg: { k: 0 }, d: 'How many forks the network has at its smallest (a reach of labyrinthRadiusMin). A bigger network has more, up to labyrinthBranchPointsMax.', lo: 'A sprig.', hi: 'Bushy even small.' },
+    labyrinthOpeningsMin: { scene: 'labyrinth', cfg: { k: 0 }, d: 'How many openings the network has at its smallest.', lo: 'A few.', hi: 'Many.' },
+    labyrinthRadiusMin: { scene: 'labyrinth', cfg: { k: 0 }, d: 'The least the network reaches (u), whatever your Mass and however small the cell: it is always large.', lo: 'Compact.', hi: 'Wide.' },
+    networkReachAtZero: { scene: 'labyrinth', cfg: { k: 0 }, d: 'Round 23 (Yash, 2026-10-28: "it will always be large, despite the last wormhole\'s length ... if it has full mass, then it will be the largest, covering the entire cell"): the network\'s reach at Mass 0, as a share of the cell\'s radius (the race shell, 1080 u on Warpline). It sits that share of the way from you to the cell\'s centre, so it always lies inside the cell. Your Mass moves it toward networkReachAtFull, as an ElementalFloat on Mass (the game: MeerkatWormholeConfig.networkReach, read when you take the omnicrystal).', lo: 'Half the cell.', hi: 'The whole cell.' },
+    networkReachAtFull: { scene: 'labyrinth', cfg: { k: 1 }, d: 'The network\'s reach at Mass 10, as a share of the cell\'s radius: 1 is the whole cell, centred on the cell\'s centre with its openings on the race shell, so you can travel from one side of the cell to the other through it.', lo: 'Half the cell.', hi: 'The whole cell.' },
+    rootTip: { scene: 'labyrinth', d: 'The wormholes taper from the source to their tips: a tip is this times as wide as the channel at the source.', lo: 'Thin tips.', hi: 'No taper.' },
+    rootGnarl: { scene: 'labyrinth', d: 'How much each of the network\'s wormholes wanders as it goes, instead of running in a smooth curve.', lo: 'Smooth curves.', hi: 'Wandering.' },
+    rootGlass: { scene: 'labyrinth', d: 'The network\'s skin where you look straight at it: keep it low, so a big network stays quiet on screen.', lo: 'Clear.', hi: 'Milky.' },
+    rootRim: { scene: 'labyrinth', d: 'The network\'s skin where it turns away from you (Fresnel): their outline.', lo: 'Faint.', hi: 'Bright.' },
+    rootGrain: { scene: 'labyrinth', d: 'The skin grain along the network.', lo: 'Smooth.', hi: 'Deep grain.' },
+    rootThrust: { scene: 'labyrinth', d: 'Hold RT in the network and you go faster than your cruise, up to rootMaxSpeed; let go and you ease back to it.', lo: 'A drift.', hi: 'A rush.' },
+    rootCruise: { scene: 'labyrinth', d: 'Inside the network you cruise along the tube on your own at this speed, your nose following it, so you only steer.', lo: 'A crawl.', hi: 'Brisk.' },
+    rootMove: { scene: 'labyrinth', d: 'How hard the left stick moves you round the tube: left and right, up and down, the way it would turn your nose. Move into a wormhole at a fork to go down it.', lo: 'A nudge.', hi: 'Darting about.' },
+    rootDrag: { scene: 'labyrinth', d: 'How fast your drift across the tube dies away once you let the stick go. Low: you glide on to the wall and bounce.', lo: 'Slippery.', hi: 'Stops at once.' },
+    rootMaxSpeed: { scene: 'labyrinth', d: 'The fastest you go inside the network, so you can always find your way.', lo: 'A crawl.', hi: 'A rush.' },
+    rootBounce: { scene: 'labyrinth', d: 'Hit a wall and you bounce off it with this share of your speed into it (the rest is lost). The speed along the wall is kept.', lo: 'Thud.', hi: 'Rubber.' },
+    rootGravity: { scene: 'labyrinth', d: 'Draws you to the floor of the tube (the network\'s down), square to the tube, so it never pulls you back down a climb. 0: you float.', lo: 'Float.', hi: 'Roll along the floor.' },
+    rootOpacity: { scene: 'labyrinth', d: 'Inside the network (rounds 20-21): a soft, smooth inner wall, a little dense, the world outside still showing through it. It fades to clear with distance, never to black. The ends of every tube stay open. Yash turned it off on 2026-10-28 (round 23): inside the network you see the wormhole tube\'s own calm wall (tubeInner) instead.', lo: 'Clear.', hi: 'Solid.' },
+    rootBarkVisibility: { scene: 'labyrinth', d: 'The network\'s skin round each channel of the network (rounds 17-21: rootGlass, rootRim, rootGrain, tapering with rootTip). Yash turned it off on 2026-10-28 (round 23: "We can\'t make it a strand, we need to make it smoother, like our tube, same visuals"): with it off every channel draws exactly as a formed tunnel does (the bridge, its glass, the calm inner wall, the warp). Bring it back here.', lo: 'Wormhole tubes.', hi: 'Skin strands.' },
+    tubeInner: { scene: 'labyrinth', d: 'The calm inner wall of every wormhole tube you ride (round 23: a formed tunnel\'s and every channel of the network\'s; it was the outer layer\'s bore): smooth, no lines, a gentle sheen, so the ride is calm.', lo: 'Clear.', hi: 'Milky.' },
+    rootLamp: { scene: 'labyrinth', d: 'Your lamp: the walls near you are lit by you, and the rest are dim.', lo: 'Dark.', hi: 'Bright.' },
+    rootFog: { scene: 'labyrinth', d: 'Inside the network, walls further off than this fade away to clear.', lo: 'Only the walls round you.', hi: 'See far.' },
   };
 
   // ---------- the card ----------
@@ -5848,6 +5887,8 @@
     labyrinthBranchPointsMin: ['MeerkatWormholeConfig.labyrinthBranchPointsMin', 'linked'],
     labyrinthOpeningsMin: ['MeerkatWormholeConfig.labyrinthOpeningsMin', 'linked'],
     labyrinthRadiusMin: ['MeerkatWormholeConfig.labyrinthRadiusMin', 'linked'],
+    networkReachAtZero: ['MeerkatWormholeConfig.networkReach (ElementalFloat on Mass: its Min, at Mass 0)', 'field'],
+    networkReachAtFull: ['MeerkatWormholeConfig.networkReach (ElementalFloat on Mass: its Max, at Mass 10)', 'field'],
     rootTip: ['MeerkatWormholeConfig.rootTip', 'linked'],
     rootGnarl: ['MeerkatWormholeConfig.rootGnarl', 'linked'],
     rootGlass: ['MeerkatWormholeConfig.rootGlass', 'linked'],
@@ -6454,7 +6495,7 @@
     const lv = liveOf(0); if (!lv) return; lv.ab.omniSeed = sd != null ? sd >>> 0 : (Math.random() * 1e9) >>> 0; omniFlash = 1.8;
     if (P.omniAtOnce > 0.5 && mode === 'fly' && race === 'running' && !stopped && !(lv.gate && lv.gate.state === 'tube')) rootsHere(lv.ab.omniSeed); else lv.ab.omni = true;   // round 17
   }
-  $('omniGive').addEventListener('click', () => { grantOmni(); toast(P.omniAtOnce > 0.5 && race === 'running' ? 'Omnicrystal: the wormhole network opens from here.' : 'Omnicrystal armed: your next RT opens the wormhole network.'); });
+  $('omniGive').addEventListener('click', () => { grantOmni(); toast(P.omniAtOnce > 0.5 && race === 'running' ? 'Omnicrystal: the network opens from here.' : 'Omnicrystal armed: your next RT opens the network.'); });
   window.__meerkatStudio = { gateForm, get cam() { return cam; }, openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; },
     tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt)); } manualNow += dt * 1000; advance(dt, manualNow); },
     sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt)); } },
