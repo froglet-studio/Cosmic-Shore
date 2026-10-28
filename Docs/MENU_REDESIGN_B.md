@@ -1254,7 +1254,9 @@ stays green). One generator owns the item: `Tools/Build/author_ingame_hud.py` (`
   - The panel hides when the countdown starts or the Ready button returns for a new round.
   - Solo, and against AI only, it never shows, because the countdown follows the press at once.
 - **Countdown:** `CountdownTimer` draws text when its new `countdownText` is wired: 3, 2, 1 in
-  Light, then GO in the CTA green, in Aldrich at 260 px.
+  Light, then GO in the CTA green, in Aldrich at 260 px. (The beat text kept auto-size on, which capped it at the
+  Display role's 48 px, so 260 never showed. Rev 33 turned auto-size off and set 168 for the numbers and 132 for GO,
+  in a hex that fills each beat: section 99.4.)
   - Each beat rises from 0.7 to a 1.08 overshoot, settles, holds, and leaves at 1.3 as it fades.
     The beat length and the (empty) beep slot are unchanged.
   - The neon sprites stay as the fallback when the text is unwired.
