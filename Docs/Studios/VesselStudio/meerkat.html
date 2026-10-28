@@ -616,7 +616,7 @@
     // round 20: inside the roots you fly free (labTransit): RT and the sticks push you, the walls bounce you off; from inside
     // the roots are an opaque underground world (rootOpacity, rootLamp, rootFog)
     rootThrust: 90, rootMove: 55, rootDrag: 0.45, rootMaxSpeed: 90, rootBounce: 0.45, rootGravity: 0,
-    rootOpacity: 0.94, rootLamp: 1, rootFog: 160,
+    rootOpacity: 0.32, rootLamp: 1, rootFog: 240, tubeInner: 0.1,
     rootTip: 0.6, rootGnarl: 0.3, rootGlass: 0.015, rootRim: 0.35, rootGrain: 0.35,
     labyrinthDiameter: 40, labyrinthMouthDiameter: 46, labyrinthRoughness: 0.18, labyrinthFormSeconds: 0.8,
     labyrinthRingSpacing: 12, labyrinthRingSides: 10, labyrinthRibs: 4, forkHintSeconds: 0.9,
@@ -773,9 +773,10 @@
     ['omni', 'rootMaxSpeed', '...never faster than (u/s)', 10, 300, 1],
     ['omni', 'rootBounce', '...a wall bounces you off with (× your speed into it)', 0, 1, 0.05],
     ['omni', 'rootGravity', '...drawn to the root\'s floor by (u/s², 0 = you float)', 0, 120, 1],
-    ['omni', 'rootOpacity', 'From inside: the walls hide the world outside (1 = all of it)', 0, 1, 0.01],
+    ['omni', 'rootOpacity', 'From inside: how dense the soft inner wall is (0 = clear, 1 = solid)', 0, 1, 0.01],
+    ['omni', 'tubeInner', 'The tree\'s and roots\' inner tube: a smooth sheen, denser than the bark', 0, 0.6, 0.01],
     ['omni', 'rootLamp', '...your lamp on the walls round you', 0, 3, 0.05],
-    ['omni', 'rootFog', '...the dark swallows the roots this far off (u)', 20, 600, 5],
+    ['omni', 'rootFog', '...far walls fade to clear this far off (u)', 20, 600, 5],
     ['omni', 'forkHintSeconds', '...the fork is called out this long before (s)', 0, 3, 0.05],
     ['soil', 'soilVisibility', 'The soil round the labyrinth, for everyone (0 = hidden)', 0, 1, 0.05],
     ['soil', 'soilWall', 'Its wall round each channel (× the channel\'s radius)', 1.05, 4, 0.05],
@@ -2903,17 +2904,19 @@
   const treeVS = [
     'attribute float aS; attribute float aBi; attribute float aCap; attribute float aR; attribute float aB; attribute float aPhi; attribute vec3 aBase;',
     'uniform float bg[16];',
-    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV;',
+    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV; varying float vDist;',
     'void main(){',
     '  float g = 1.0; vec3 p = position;',
     '  if (aBi > -0.5) { g = bg[int(aBi + 0.5)]; p = aBase + (position - aBase) * g; }',   // a branch grows out of its root
-    '  vec4 mv = modelViewMatrix * vec4(p, 1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix * normal);',
+    '  vec4 mv = modelViewMatrix * vec4(p, 1.0); vV = normalize(-mv.xyz); vDist = length(mv.xyz); vN = normalize(normalMatrix * normal);',
     '  vS = aS; vCap = aCap; vR = aR; vB = aB; vPhi = aPhi; vG = g; gl_Position = projectionMatrix * mv; }',
   ].join('\n');
   // shared by both passes: outside the tunnel's window (f0..f1, way in 0 -> way out 1) nothing; condensing at its fronts
   const treeWin = [
     'uniform float f0; uniform float f1; uniform float edge; uniform float t;',
-    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV;',
+    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV; varying float vDist;',
+    // Yash, 2026-10-28: the ride must be calm - up close (inside the tube) the wood's lines and the warp fade away
+    'float near(){ return smoothstep(15.0, 90.0, vDist); }',
     'float win(){ if (vG < 0.01 || vS < f0 || vS > f1) discard; return smoothstep(0.0, edge, min(vS - f0, f1 - vS)); }',
     'float flow(){ return 0.75 + 0.25 * sin((vS + vB) * 23.0 - t * 2.4); }',   // water running top to bottom
   ].join('\n');
@@ -2921,11 +2924,11 @@
     const U = { bg: { value: new Array(BR_MAXN).fill(0) }, f0: { value: 0 }, f1: { value: 1 }, edge: { value: 0.06 }, t: { value: 0 } };
     const glass = new THREE.ShaderMaterial({
       uniforms: Object.assign({ cIn: { value: new THREE.Color() }, cOut: { value: new THREE.Color() }, alpha: { value: 1 }, glass: { value: 0.03 },
-        rim: { value: 0.6 }, power: { value: 2.5 }, rings: { value: 6 }, grain: { value: 0.5 }, grainN: { value: 22 } }, U),
+        rim: { value: 0.6 }, power: { value: 2.5 }, rings: { value: 6 }, grain: { value: 0.5 }, grainN: { value: 22 }, inner: { value: 0.1 } }, U),
       vertexShader: treeVS,
       fragmentShader: [treeWin,
         'uniform vec3 cIn; uniform vec3 cOut; uniform float alpha; uniform float glass; uniform float rim; uniform float power; uniform float rings;',
-        'uniform float grain; uniform float grainN;',
+        'uniform float grain; uniform float grainN; uniform float inner;',
         'void main(){',
         '  float w = win();',
         '  float fr = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), power);',   // the wall's glass: Fresnel at the silhouette
@@ -2933,7 +2936,9 @@
         // round 15: the bark's grain - fissures running along the wood, broken into lengths, lit from inside as from out
         '  float along = vS * 9.0 + vB * 5.0, wob = 0.18 * sin(along * 1.7 + vPhi * 11.0);',
         '  float line = pow(abs(sin((vPhi * grainN + wob) * 3.14159)), 18.0) * smoothstep(0.25, 0.6, fract(along + vPhi * 3.7));',
-        '  if (vCap < 0.5) a += grain * line * (0.35 + 0.65 * fr);',
+        '  if (vCap < 0.5) a += grain * line * (0.35 + 0.65 * fr) * near();',
+        // the bore (the tube you ride, aR 2): soft and smooth, a little denser than the bark - no lines, a gentle sheen
+        '  if (vR > 1.5 && vCap < 0.5) a = inner * (0.55 + 0.45 * pow(fr, 1.4));',
         '  if (vCap > 0.5) a = glass + rim * (0.6 * pow(0.5 + 0.5 * cos(vR * rings * 6.2831853), 8.0) + 0.4 * smoothstep(0.85, 1.0, vR));',
         '  gl_FragColor = vec4(mix(cIn, cOut, vS) * a * alpha * w * flow(), 1.0);',
         '}'].join('\n'),
@@ -2946,7 +2951,7 @@
         'uniform float k;',
         'void main(){',
         '  float w = win(); vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n; float rim = 1.0 - abs(dot(n, normalize(vV)));',
-        '  gl_FragColor = vec4(n.xy * sin(3.14159 * rim) * k * w * flow(), 0.0, 1.0);',   // the tube's warp (twMat), flowing
+        '  gl_FragColor = vec4(n.xy * sin(3.14159 * rim) * k * w * flow() * (vR > 1.5 ? 0.35 : 1.0) * near(), 0.0, 1.0);',   // the tube's warp (twMat), flowing
         '}'].join('\n'),
       transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
     });
@@ -2981,7 +2986,7 @@
     const bore = pos.length / 3;
     for (let r = 0; r <= TRUNK_RINGS; r++) for (let j = 0; j <= TRUNK_SEG; j++) {
       const u = r / TRUNK_RINGS, s = u * wh.L, phi = j / TRUNK_SEG * Math.PI * 2;
-      whSurf(wh, s, phi, fullR(wh, s), 0, q); push(q, u, -1, 0, 1, 0, q, j / TRUNK_SEG);
+      whSurf(wh, s, phi, fullR(wh, s), 0, q); push(q, u, -1, 0, 2, 0, q, j / TRUNK_SEG);   // aR 2 marks the bore (the smooth inner tube)
     }
     grid(bore, TRUNK_RINGS, TRUNK_SEG);
     // the cut faces: the annulus from the mouth's rim out to the bark, its tree rings by aR
@@ -3081,7 +3086,7 @@
       U.bg.value[i] = r ? Math.min(smooth(0, 1, (age - r.tReach) / grow), smooth(0, edge, Math.min(r.u - f0, f1 - r.u))) * cave : 0;
     }
     const G = tr.mats.glass.uniforms, base = pilotColor(pr.pilot);
-    G.cIn.value.copy(base); G.cOut.value.copy(brW).lerp(base, 0.4); G.alpha.value = A; G.glass.value = Math.max(0, P.trunkGlass);
+    G.cIn.value.copy(base); G.cOut.value.copy(brW).lerp(base, 0.4); G.alpha.value = A; G.glass.value = Math.max(0, P.trunkGlass); G.inner.value = Math.max(0, P.tubeInner);
     G.rim.value = Math.max(0, P.trunkRim); G.power.value = Math.max(0.5, P.trunkFresnel); G.rings.value = Math.max(1, P.trunkRings);
     G.grain.value = Math.max(0, P.trunkGrain); G.grainN.value = Math.max(2, Math.round(P.trunkGrainLines));
     tr.mats.warp.uniforms.k.value = 0.05 * Math.max(0, P.trunkWarp) * A;
@@ -3580,15 +3585,16 @@
         '  if (vS < f0 || vS > f1) discard;',
         '  float w = smoothstep(0.0, edge, min(vS - f0, f1 - vS)), sl = vS * len;',
         '  float ends = mix(lo0, 1.0, smoothstep(0.0, endW, sl)) * mix(lo1, 1.0, smoothstep(0.0, endW, len - sl));',   // its ends stay open
-        '  float fib = pow(abs(sin((vPhi * grainN + 0.12 * sin(sl * 0.13 + vPhi * 17.0)) * 3.14159)), 8.0);',          // fibres along the root
-        '  float n = 0.6 * vn(vW * 0.08) + 0.4 * vn(vW * 0.33);',
-        '  vec3 c = mix(vec3(0.17, 0.10, 0.055), vec3(0.40, 0.26, 0.14), n);',
-        '  c = mix(c, vec3(0.55, 0.38, 0.21), 0.45 * fib) * (0.7 + 0.3 * vn(vW * 0.025 + 7.0));',                     // fibres, knots
-        '  vec3 nn = normalize(vN); if (dot(nn, cameraPosition - vW) < 0.0) nn = -nn;',                                   // the face toward you
+        // Yash, 2026-10-28: no black fill. The inner tube is soft and smooth - one slow warm tone, no fibres - a little
+        // denser at its silhouette, lit by your lamp, and the far walls fade to CLEAR (not into the dark).
+        '  float n = vn(vW * 0.025);',
+        '  vec3 c = mix(vec3(0.44, 0.32, 0.22), vec3(0.66, 0.52, 0.38), n);',
+        '  vec3 nn = normalize(vN); if (dot(nn, cameraPosition - vW) < 0.0) nn = -nn;',
+        '  vec3 E = normalize(cameraPosition - vW); float fr = 1.0 - abs(dot(nn, E));',
         '  vec3 L = hullP - vW; float dh = max(1e-3, length(L));',
-        '  float lit = 0.45 + lamp * 1.4 * (0.35 + 0.65 * max(0.0, dot(nn, L / dh))) / (1.0 + dh * dh / (fall * fall));',                 // your lamp
-        '  c = mix(dark, c * lit, exp(-length(cameraPosition - vW) / fog));',                                               // the dark
-        '  gl_FragColor = vec4(c, op * w * ends);',
+        '  float lit = 0.75 + lamp * 0.6 * (0.4 + 0.6 * max(0.0, dot(nn, L / dh))) / (1.0 + dh * dh / (fall * fall));',
+        '  float fade = exp(-length(cameraPosition - vW) / fog);',
+        '  gl_FragColor = vec4(c * lit, op * (0.35 + 0.65 * fr) * fade * w * ends);',
         '}'].join('\n'),
       transparent: true, depthWrite: false, side: THREE.DoubleSide,
     });
@@ -5413,9 +5419,10 @@
     rootMaxSpeed: { scene: 'labyrinth', d: 'The fastest you go inside the roots, so you can always find your way.', lo: 'A crawl.', hi: 'A rush.' },
     rootBounce: { scene: 'labyrinth', d: 'Hit a wall and you bounce off it with this share of your speed into it (the rest is lost). The speed along the wall is kept.', lo: 'Thud.', hi: 'Rubber.' },
     rootGravity: { scene: 'labyrinth', d: 'Draws you to the floor of the root (the network\'s down), square to the root, so it never pulls you back down a climb. 0: you float.', lo: 'Float.', hi: 'Roll along the floor.' },
-    rootOpacity: { scene: 'labyrinth', d: 'From inside, the roots are an underground world: an earthen wall that hides the world outside. 1 hides it all; the ends of every root stay open, so you see the next root and the light at a tip.', lo: 'See-through.', hi: 'Underground.' },
+    rootOpacity: { scene: 'labyrinth', d: 'Inside the roots: a soft, smooth inner wall, a little dense, the world outside still showing through it. It fades to clear with distance, never to black (Yash, 2026-10-28). The ends of every root stay open.', lo: 'Clear.', hi: 'Solid.' },
+    tubeInner: { scene: 'labyrinth', d: 'The inner tube of the trunk you ride through: smooth, no lines, a little denser than the rough bark outside, so the ride is calm.', lo: 'Clear.', hi: 'Milky.' },
     rootLamp: { scene: 'labyrinth', d: 'Your lamp: the walls near you are lit by you, and the rest are dim.', lo: 'Dark.', hi: 'Bright.' },
-    rootFog: { scene: 'labyrinth', d: 'Inside the roots, walls further off than this fade into the dark.', lo: 'Close dark.', hi: 'See far.' },
+    rootFog: { scene: 'labyrinth', d: 'Inside the roots, walls further off than this fade away to clear.', lo: 'Only the walls round you.', hi: 'See far.' },
   };
 
   // ---------- the card ----------
@@ -5702,6 +5709,7 @@
     rootMaxSpeed: ['MeerkatWormholeConfig.rootMaxSpeed', 'new'],
     rootBounce: ['MeerkatWormholeConfig.rootBounce', 'new'],
     rootOpacity: ['MeerkatWormholeConfig.rootOpacity', 'new'],
+    tubeInner: ['MeerkatWormholeConfig.tubeInner', 'new'],
     rootLamp: ['MeerkatWormholeConfig.rootLamp', 'new'],
     rootFog: ['MeerkatWormholeConfig.rootFog', 'new'],
   };

@@ -914,3 +914,15 @@ The sounds watch the sim and never change it. They are the brief for the game's 
 sound design makes them (`MeerkatWormholeConfigSO.formEvent` / `collapseEvent` today); Unity plays none of these.
 Measured headless: every recipe renders (none silent, none clipping), and an AI race with an omnicrystal fires every
 wired sound with no page error.
+
+**The ride is calm (Yash, 2026-10-28: "there should not be any black colored fill ... the inner should be a little
+dense, the outer more transparent ... the outer part can be very rough and edgy, the inner tube need to be very soft
+... smooth ... calming, inviting"). ARTIFACT ONLY.**
+- **Inside the roots, no black.** Round 20's inside wall (94% opaque, fading to near-black) is now a soft, smooth inner
+  tube: one slow warm tone, no fibres, a little denser at its silhouette, lit by your lamp, the world outside still
+  showing through, and far walls fading to clear. `rootOpacity` 0.32 (was 0.94), `rootFog` 240 (fade to clear).
+- **Inside the trunk, smooth.** The bore (the tube you ride) has its own sheen, `tubeInner` (0.1): no bark lines, a little
+  denser than the bark outside. The bark keeps its rough ridges and grain from outside; up close (inside, 15-90 u) its
+  lines and the tree's warp fade away, and the bore's warp is a third of the bark's.
+- Measured headless: a race with an omnicrystal, before and after, inside a tunnel and inside the roots (no black fill,
+  no radiating streaks); check_studio passes; studio_to_unity 0 Meerkat drift (`tubeInner` is a new key).
