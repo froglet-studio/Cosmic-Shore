@@ -2731,7 +2731,7 @@
       const dnf = all.filter((r) => !r.finished).length, order = solo.filter((r) => med(r.Hard) <= med(r.Medium) && med(r.Medium) <= med(r.Easy)).length;
       const S = (f) => avg(field, (r) => f(r.stats));
       h += '<tr><td>' + KIT_NAMES[k] + '</td><td>' + (dnf ? '<b>' + dnf + ' DNF</b>' : 'all ' + all.length) + '</td><td>' + solo.map((r) => fmtTime(med(r.Hard))).join(' · ') + '</td><td>' + solo.map((r) => fmtTime(med(r.Easy))).join(' · ') + '</td><td>' + order + ' of ' + solo.length + '</td>'
-        + '<td>' + f1(S((s) => s.zaps)) + '</td><td>' + f1(S((s) => s.fired)) + ' · ' + f1(S((s) => s.destroyed)) + ' · ' + f1(S((s) => s.bounces)) + '</td><td>' + f1(S((s) => s.ridesOfYours)) + ' <small>+ ' + f1(S((s) => s.labRidesOfYours)) + ' labyrinth</small></td>'
+        + '<td>' + f1(S((s) => s.zaps)) + '</td><td>' + f1(S((s) => s.fired)) + ' · ' + f1(S((s) => s.destroyed)) + ' · ' + f1(S((s) => s.bounces)) + '</td><td>' + f1(S((s) => s.ridesOfYours)) + ' <small>+ ' + f1(S((s) => s.labRidesOfYours)) + ' roots</small></td>'
         + '<td>' + f1(S((s) => s.hops)) + ' · ' + f1(k === 3 ? avg(field, (r) => r.r8Caves) : S((s) => s.caveIns)) + '</td><td>' + f1(S((s) => s.lost)) + ' · ' + f1(S((s) => s.retired)) + '</td><td>' + (field.every((r) => r.conserved) ? 'yes' : '<b>no</b>') + '</td></tr>';
     }
     return h + '</tbody></table><p class="src">Alone: the level scorecard per kit (median of seeds ' + out.seeds.join(', ') + '). In a field: your hull at Hard against Hard, Medium and Easy rivals flying the same kit, every intensity, the same seeds; the columns after the fourth are per field race. A kit is lab-only: none of it is in the game.</p>';
