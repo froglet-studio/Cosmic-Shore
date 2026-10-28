@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
+using CosmicShore.Gameplay.Audio;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -36,6 +37,19 @@ namespace CosmicShore.Gameplay
     ///     invariant governs lifeforms; an Ark is a vessel-like home, not a creature), no
     ///     starvation clock, no reproduction. Its only deaths are active forces: fauna
     ///     consumption and player abilities.
+    ///
+    ///   • It can be DRAWN as a model (<see cref="UseModel"/>, <see cref="ArkModel"/>; every Arkway voyage's
+    ///     Ark is ArkReverse): the hull is then laid into the model's sockets - each prism its socket's shield tier
+    ///     (super-shielded, shielded, plain, danger) and size - the model wears the hull's domain, and its jets and
+    ///     wings fly its turns. The hull is still the same conserved mass in the same domain; the model only says
+    ///     where each prism sits. Without a model it is the procedural spindle below.
+    ///
+    ///   • Its REACTOR (<see cref="UseReactor"/>; Garrett, 2026-10-28): the omni crystal aboard powers the Ark's prism
+    ///     creation. An Ark is the one body that can contain an omni crystal and harvest its power instead of morphing it
+    ///     into something else, so a destroyed or taken hull prism grows back into its own slot at a FIXED RATE, one
+    ///     prism a beat, nearest the reactor first (<see cref="ArkReactor"/>). The mass law's fourth sign-off fences it
+    ///     (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): only an Ark, only into its own empty slots, at the fixed rate,
+    ///     each prism growing in. A fallen Ark (no hull left) never regrows.
     ///
     /// The Ark itself never removes mass and never runs a timer over anyone else's - the one
     /// clock it owns is its own unhurried course.
@@ -101,6 +115,35 @@ namespace CosmicShore.Gameplay
         int _aliveCount;
         CancellationTokenSource _layCts;
 
+        // ── Model ────────────────────────────────────────────────────────────
+        // An Ark given a model (UseModel) is drawn as that model, its hull laid into the model's sockets; without one it
+        // keeps the procedural spindle.
+        CosmicShore.ScriptableObjects.ArkModelDefinitionSO _modelDefinition;
+        ThemeManagerDataContainerSO _theme;
+        ArkModel _model;
+
+        // ── Reactor ──────────────────────────────────────────────────────────
+        // Every hull prism has a SLOT: where it was laid, on what, and which prism holds it now. An empty slot (its prism
+        // destroyed, or taken by the hold) is where the reactor's power grows a prism back.
+        sealed class HullSlot
+        {
+            public Transform Parent;
+            public PrismLay Lay;
+            public bool RidesBone;
+            public Vector3 ArkLocal;                       // the slot's centre in the Ark's space at rest
+            public Prism Prism;
+        }
+
+        const string RegrowOwnerId = "Ark::regrow";
+
+        readonly List<HullSlot> _slots = new();
+        readonly List<Vector3> _slotPositions = new();
+        readonly List<bool> _slotEmpty = new();
+        CosmicShore.ScriptableObjects.ArkReactorSO _reactorDefinition;
+        Prism _hullPrefab;
+        float _nextRegrowAt;
+        float _lastRegrowAt = float.NegativeInfinity;
+
         /// <summary>Raised ONCE, when the last hull prism has been destroyed or devoured.</summary>
         public event Action HullDestroyed;
 
@@ -145,6 +188,38 @@ namespace CosmicShore.Gameplay
             return ark;
         }
 
+        // ── Model ────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Draw this Ark as <paramref name="definition"/>'s model (call before <see cref="LayHullAsync"/>): the hull is
+        /// laid into the model's sockets, one prism per socket in its shield tier's kind and size, the model's Domain
+        /// slot wears the hull's domain (from <paramref name="theme"/>'s material sets), and its jets and wings fly the
+        /// Ark's turns (<see cref="ArkModel"/>). A null definition keeps the spindle.
+        /// </summary>
+        public void UseModel(CosmicShore.ScriptableObjects.ArkModelDefinitionSO definition, ThemeManagerDataContainerSO theme)
+        {
+            _modelDefinition = definition;
+            _theme = theme;
+        }
+
+        /// <summary>The model this Ark is drawn as, or null (the spindle).</summary>
+        public ArkModel Model => _model;
+
+        /// <summary>
+        /// Give this Ark a reactor (call before <see cref="LayHullAsync"/>): the omni crystal aboard regrows its hull at
+        /// a fixed rate. A null definition leaves the hull as laid: no regrowth.
+        /// </summary>
+        public void UseReactor(CosmicShore.ScriptableObjects.ArkReactorSO definition) => _reactorDefinition = definition;
+
+        /// <summary>True when this Ark's hull regrows (it was given a reactor).</summary>
+        public bool Regrows => _reactorDefinition;
+
+        /// <summary>Raised when one hull prism grows back into its slot.</summary>
+        public event Action<Prism> HullPrismRegrown;
+
+        /// <summary>Hull slots: the full-health prism count the reactor regrows toward.</summary>
+        public int SlotCount => _slots.Count;
+
         // ── Hull ─────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -165,18 +240,54 @@ namespace CosmicShore.Gameplay
             Domain = domain;
             _speed = _approachSpeed = _cruiseSpeed = Mathf.Max(1f, speed);
             _trail = new Trail();
+            _hullPrefab = prismPrefab;
 
             // The lay runs on the Ark's OWN linked token so RetireAsync can stop it: a retire
             // taken mid-lay (the voyage ended during the veiled build) must not leave the lay
             // producing pooled prisms AFTER the wither pass has swept - those would then die
             // with the Ark's GameObject, and pooled prisms destroyed outright corrupt the pool.
-            var lays = BuildHullLays(Mathf.Max(30f, hullLength), domain);
+            //
+            // With a model the hull is laid into the model's sockets (each prism its socket's shield tier and size,
+            // a jaw's blades riding the jaw) and the model wears the same domain; without one, the spindle.
+            _model = _modelDefinition ? ArkModel.Attach(this, _modelDefinition) : null;
+            List<ArkModel.LayBatch> batches;
+            if (_model)
+            {
+                _model.ApplyDomain(domain, _theme);
+                batches = _model.BuildLays(domain);
+            }
+            else
+            {
+                batches = new List<ArkModel.LayBatch>
+                {
+                    new(transform, BuildHullLays(Mathf.Max(30f, hullLength), domain), false),
+                };
+            }
             _laying = true;
             _layCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             try
             {
-                await PrismTrailBuilder.LayBudgetedAsync(prismPrefab, lays, transform, _trail,
-                    "Ark", 4f, _prisms, _layCts.Token);
+                foreach (var batch in batches)
+                {
+                    // A batch on a bone collects apart so the model can tell those prisms when the bone moves them;
+                    // whatever a cancelled batch did lay still joins the hull, so the retire's wither reaches it.
+                    var laid = batch.RidesBone ? new List<Prism>() : _prisms;
+                    int first = laid.Count;
+                    try
+                    {
+                        await PrismTrailBuilder.LayBudgetedAsync(prismPrefab, batch.Lays, batch.Parent, _trail,
+                            "Ark", 4f, laid, _layCts.Token, admitAuthoredScale: _model != null);
+                    }
+                    finally
+                    {
+                        AddSlots(batch, laid, first);
+                        if (laid != _prisms)
+                        {
+                            _prisms.AddRange(laid);
+                            _model.AddRiders(laid);
+                        }
+                    }
+                }
             }
             catch (OperationCanceledException)
             {
@@ -311,6 +422,131 @@ namespace CosmicShore.Gameplay
                 last = prism;
             }
             return last;
+        }
+
+        // ── Reactor ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Record one batch's slots: every lay is a slot, holding the prism laid for it (matched by the pose the lay
+        /// stated, so a lay that failed leaves its slot empty for the reactor rather than shifting the rest).
+        /// </summary>
+        void AddSlots(ArkModel.LayBatch batch, List<Prism> laid, int first)
+        {
+            int start = _slots.Count;
+            for (int i = 0; i < batch.Lays.Count; i++)
+            {
+                var lay = batch.Lays[i];
+                _slots.Add(new HullSlot
+                {
+                    Parent = batch.Parent,
+                    Lay = lay,
+                    RidesBone = batch.RidesBone,
+                    ArkLocal = batch.Parent
+                        ? transform.InverseTransformPoint(batch.Parent.TransformPoint(lay.Point.Position))
+                        : lay.Point.Position,
+                });
+            }
+            for (int k = first; k < laid.Count; k++)
+            {
+                var prism = laid[k];
+                if (!prism) continue;
+                var at = prism.transform.localPosition;
+                int best = -1;
+                float bestSqr = 0.01f;
+                for (int i = start; i < _slots.Count; i++)
+                {
+                    if (_slots[i].Prism) continue;
+                    float d = (_slots[i].Lay.Point.Position - at).sqrMagnitude;
+                    if (d < bestSqr) { bestSqr = d; best = i; }
+                }
+                if (best >= 0) _slots[best].Prism = prism;
+            }
+        }
+
+        /// <summary>The slot's prism is live and still the hull's (the hold re-parents what it hands a carrier).</summary>
+        static bool IsSeated(HullSlot slot) =>
+            slot.Prism && !slot.Prism.destroyed && slot.Prism.gameObject.activeInHierarchy
+            && slot.Prism.transform.parent == slot.Parent;
+
+        Transform ReactorTransform => _model ? _model.ReactorPivot : transform;
+
+        /// <summary>
+        /// The fixed rate: one beat every <see cref="CosmicShore.ScriptableObjects.ArkReactorSO.RegrowSeconds"/>, and a
+        /// beat regrows one prism when a slot is empty. A beat with nothing to regrow is not saved up.
+        /// </summary>
+        void TickReactor()
+        {
+            if (!_reactorDefinition || _retiring) return;
+            float now = Time.time;
+            float period = _reactorDefinition.RegrowSeconds;
+            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowOne())
+                _lastRegrowAt = now;
+
+            if (_model) _model.SetReactor(now - _lastRegrowAt < 2f * period);
+        }
+
+        /// <summary>
+        /// Grow one prism back into the empty slot nearest the reactor, through the canonical lay (it grows in on the
+        /// prism's own clock: nothing pops). A slot the food web emptied keeps its place in the hull list (the
+        /// full-health count already holds it); a slot the hold emptied gets its plating back, so the full-health count
+        /// rises with it.
+        /// </summary>
+        bool RegrowOne()
+        {
+            _slotPositions.Clear();
+            _slotEmpty.Clear();
+            bool any = false;
+            for (int i = 0; i < _slots.Count; i++)
+            {
+                var slot = _slots[i];
+                bool empty = slot.Parent && !IsSeated(slot);
+                _slotPositions.Add(slot.ArkLocal);
+                _slotEmpty.Add(empty);
+                any |= empty;
+            }
+            if (!any) return false;
+
+            int pick = ArkReactor.NearestEmpty(_slotPositions, _slotEmpty,
+                transform.InverseTransformPoint(ReactorTransform.position));
+            if (pick < 0) return false;
+            var target = _slots[pick];
+
+            var prism = PrismTrailBuilder.LayOne(_hullPrefab, target.Lay, target.Parent, _trail, RegrowOwnerId,
+                admitAuthoredScale: _model != null, watchForReveal: false);
+            if (!prism) return false;
+            // A hull prism is a mover's: it must not queue behind a growing corridor for its creation completion.
+            prism.CompletesAsLiveRibbon = true;
+
+            int at = IndexOfHullPrism(target.Prism);
+            if (at >= 0)
+            {
+                _prisms[at] = prism;
+            }
+            else
+            {
+                _prisms.Add(prism);
+                TotalCount++;
+            }
+            target.Prism = prism;
+            _aliveCount = Mathf.Min(TotalCount, _aliveCount + 1);
+            if (target.RidesBone && _model) _model.AddRider(prism);
+
+            FMODOneShotVolumeHelper.PlaySFXOneShot(_reactorDefinition.RegrowSound, prism.transform.position, 1f);
+            HullPrismRegrown?.Invoke(prism);
+            return true;
+        }
+
+        /// <summary>
+        /// Where <paramref name="prism"/> sits in the hull list, by REFERENCE, or -1 when it left the hull (the hold took
+        /// it) or was never laid. Never by Unity equality: a destroyed prism compares equal to null and to every other
+        /// destroyed one, so a lost slot would read as "taken" and its regrowth would count the plating twice.
+        /// </summary>
+        int IndexOfHullPrism(Prism prism)
+        {
+            if (ReferenceEquals(prism, null)) return -1;
+            for (int i = 0; i < _prisms.Count; i++)
+                if (ReferenceEquals(_prisms[i], prism)) return i;
+            return -1;
         }
 
         // ── Wake ─────────────────────────────────────────────────────────────
@@ -627,6 +863,8 @@ namespace CosmicShore.Gameplay
                 _nextAliveScanAt = Time.time + AliveScanSeconds;
                 ScanHullIntegrity();
             }
+
+            TickReactor();
         }
 
         /// <summary>

@@ -94,6 +94,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The artifacts aboard, by id.</summary>
         public IReadOnlyList<string> Artifacts => _artifacts;
 
+        /// <summary>Raised when this hold hands a payload to a carrier (the Ark's model slides its lance out).</summary>
+        public event Action<PayloadCarrier> ParcelGranted;
+
         internal void Bind(Ark ark)
         {
             if (_ark) _ark.HullDestroyed -= OnHullDestroyed;
@@ -186,6 +189,7 @@ namespace CosmicShore.Gameplay
             if (taken <= 0) return GrabResult.HoldEmpty;
 
             _carriers.Add(carrier);
+            ParcelGranted?.Invoke(carrier);
             return GrabResult.Granted;
         }
 
