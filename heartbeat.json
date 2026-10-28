@@ -12,13 +12,16 @@
   "torch": false
  },
  "cores": 3,
- "current": {
-  "job": "drive-manta-redline",
-  "max_evals": 150,
-  "minutes": 10.0,
-  "since": 1793188621
- },
+ "current": {},
  "host": "cloud-session",
+ "last": {
+  "best_start": 3.4612172126313037,
+  "epoch": "79c5de33fcb1",
+  "evals": 150,
+  "job": "drive-manta-redline",
+  "session_evals": 30,
+  "stopped": "max evals"
+ },
  "runs": [
   {
    "best_end": 4.279668468582069,
@@ -30,12 +33,23 @@
    "start": 1793188615,
    "stopped": "max evals",
    "unit": null
+  },
+  {
+   "best_end": 3.4612172126313037,
+   "best_start": 3.4612172126313037,
+   "end": 1793188630,
+   "epoch": "79c5de33fcb1",
+   "evals": 30,
+   "job": "drive-manta-redline",
+   "start": 1793188621,
+   "stopped": "max evals",
+   "unit": null
   }
  ],
  "totals": {
-  "sessions": 2
+  "sessions": 3
  },
- "updated": 1793188621,
+ "updated": 1793188630,
  "user": "shombith",
  "version": "1"
 }
