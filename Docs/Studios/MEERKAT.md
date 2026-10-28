@@ -716,13 +716,41 @@ The game has it first (`R_VesselActions/MEERKAT.md` §2.1: `reticleLook`, `forme
 page does not yet: its Wormhole look still shows round 4's bridge. The next round brings the lab's field onto this page
 and maps the new keys in `studio_to_unity/meerkat.json`.
 
-## Garrett's direction: the Meerkats and the soliton (2026-10-27, for Yash to judge)
+## Garrett's direction: the Meerkats and the soliton (2026-10-27; its element definition LOCKED 2026-10-28)
 
 Garrett, 2026-10-27: *"the meerkat should be producing a new fundamental (solitons) and therefore a new pilot that
 applies its vision power to them."* The design gate for the Meerkat's kit stays **Yash's** (round 8), so this section is
 Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Garrett gave it in six
-messages the same day; this section is all six together. **Built so far:** only the fleet-wide prism rule it leans on
-(shielded prisms bounce, `Docs/PRISM_MOTION.md` 1a). Everything else here is design.
+messages the same day; this section is all six together.
+
+> **LOCKED (Garrett, 2026-10-28): the element definition.** *"lock in the elemental definition so yash builds upon
+> them."* The table below is decided: which ability each element owns, what its level does, and its L5 upgrade.
+> - **Space**: the Soliton, its level sets the surface area; L5 **Steal**.
+> - **Time**: a passive faster ride through every soliton; L5 **Boost out**.
+> - **Charge**: Sentinel mode; its level sets the petals a zap knocks out; L5 **Six sentinels**.
+> - **Mass**: the exit portal; its level sets the portal prisms' size; L5 **Danger prisms**.
+>
+> **Everything else stays Yash's to build, tune and judge**: how each ability is built, every number (areas, speeds,
+> zap ticks, pool timing), the seats and the hop (§ Two kits D2/D6), the throat's floor and ceiling (D5), who may
+> slide into another's roots, and the look. The round-18 Mix's two element swaps (Chain Dig as Time L5, Cave-in in the
+> Space L5 slot) give way to the table; Cave-in or Chain Dig can still live elsewhere (a play style, a mode) if Yash
+> wants them.
+>
+> **Built so far:** the fleet-wide prism rule it leans on (shielded prisms bounce, `Docs/PRISM_MOTION.md` 1a, on
+> bleeding-edge and LOCKED with this); element levels that travel with a hull when it changes machines
+> (`ElementHandover`, `Docs/ELEMENTAL_ECONOMY.md` §2.0), which the Meerkats' one element meter rides on; and Yash's
+> round 23 (§ How it flies), which cloned the surface area and the soliton's swallow into Unity.
+
+**An option for the omnicrystal (Garrett, 2026-10-28, Yash's choice):** the **Omnicrystal Network Lab**
+(`Docs/Studios/OmnicrystalNetworkLab.html`, https://claude.ai/artifact/2Z6E7QSWuWuyCxVaHEW4rC) explores a network of
+tunnels grown from the omnicrystal to every exit: three bifurcations on every path, a decision straight before each
+fork, the turn right after it and a roll toward the way chosen, no path more than 20% longer than the straight line to
+its exit. Garrett: *"this is a direction that yash can choose to use."* It is not part of the locked definition: fold
+what helps into the roots (rounds 16-23) or leave it.
+- Measured at its defaults, 10 seeds: every path within 1.2× (worst 1.197×), no tubes crossing, rides 8.7-12.8 s.
+- What it found: three forced forks within 20% need exits at least about 475 u out (the labyrinth's
+  `labyrinthRadiusMax` is 420) and exit directions that follow the tree; scattered exits run to 1.5×.
+- Its numbers are lab-only; nothing in Unity reads them.
 
 **The soliton** is a standing tunnel in space: the wormhole the Meerkat already makes, now a thing in the world anyone
 can use. It is a new fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § Soliton) with its own pilot sight
@@ -925,6 +953,11 @@ animation at beginning of travel)"*):
 
 ## Two kits: Garrett's and the Mix (round 18, 2026-10-28, for Yash to judge)
 
+> **Since 2026-10-28 the element definition is locked to Garrett's** (§ Garrett's direction). In the table below, D1's
+> Chain Dig and D4's Cave-in give way to it: Time L5 is Boost out, and Space L5 is **Steal** (§ "Space L5, Steal", a
+> later message of 2026-10-27 that this table predates; it reads the slot as "L5 open"). D2, D5, D6, the roots and every number are not element
+> definitions and stay Yash's to judge.
+
 Yash, 2026-10-27: *"Make two variants, one with his kit only, one with a mix of his kit with the ones you recommend ...
 Do this for every decision ... whatever his extra features there are, add those. And remove our extra features which he
 already made."* The studio page (`Docs/Studios/VesselStudio/meerkat.html`, round 18) has a **Kit** dropdown at the top of
@@ -1080,17 +1113,20 @@ mode, the swap seats you in a sentinel and Y there hops you out; in the Mix the 
 
 - **The hull.** The Meerkat flies the Stoat's model and its lope as a stand-in, in the studio and in the game. A real
   hull is `/vessel-model` work.
-- **Its other three abilities and the element map** (`/vessel-studio` D37): proposed in round 8 (Lookout, Hardened
-  Bridge, Cave-in, Chain Dig), for Yash to judge here. Not decided, not in Unity: the game's map still has four open
-  slots and the wormhole is its one ability. Not modelled: a team-mate riding your hardened tunnel (only its maker
+- **Its other three abilities and the element map** (`/vessel-studio` D37): **the definition is LOCKED** (Garrett,
+  2026-10-28, § Garrett's direction: Space Soliton / Steal, Time passive ride / Boost out, Charge Sentinel mode / Six
+  sentinels, Mass exit portal / Danger prisms); round 8's proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are
+  archived. Building it is Yash's: the game's map (`ElementalAbilityMaps/Meerkat.asset`) still has four open slots, and
+  the surface area and swallow are the parts in Unity so far (round 23). Not modelled: a team-mate riding your hardened tunnel (only its maker
   rides a tunnel), scaling each ability by its element level, Garrett's after-RT look with a hardened tube (the page
   still draws round 4's bridge).
 - **The bridge from the game's `Spindle` prefabs.** The game draws each spindle as a tapered mesh (a prefab per spindle
   would be ~280 objects per tunnel).
 - **The game's Stoat still has round 18's straight warp gate on B** (`StoatModeAction` gate* fields, `StoatGateMath`).
   It is unlinked from the studio now. Removing it from the Stoat is Garrett's call (the Stoat's owner).
-- **The kit** (round 18): Garrett's kit and the Mix are prototypes in the studio (§ Two kits), for Yash to judge.
-  Neither is decided, and nothing of either is in Unity.
+- **The kit** (round 18): Garrett's kit and the Mix are prototypes in the studio (§ Two kits). Since 2026-10-28 the
+  element definition is Garrett's (locked); the choices that are not element definitions (D2 seats, D5 clamp, the
+  roots' rule) are still Yash's to judge.
 - **The play styles.** The Meerkat has none yet.
 - **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
 

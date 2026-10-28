@@ -646,9 +646,12 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 | Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
 
-### Meerkat ("Meerkats") — the soliton maker, a dynamic-seat crew vessel — DIRECTION (Garrett, 2026-10-27), design gate Yash's
+### Meerkat ("Meerkats") — the soliton maker, a dynamic-seat crew vessel — element definition LOCKED (Garrett, 2026-10-28); building it is Yash's
 
-Not implemented; the map has four open slots. Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's direction):
+Garrett, 2026-10-28: *"lock in the elemental definition so yash builds upon them."* The element → ability → level →
+L5 rows below are decided (`Docs/Studios/MEERKAT.md` § Garrett's direction). How each is built, tuned and drawn, every
+number, and the seat machinery stay Yash's. Not implemented yet: the map (`ElementalAbilityMaps/Meerkat.asset`) has
+four open slots; the surface area and the swallow are in Unity (Yash's round 23).
 - **Space · Soliton**: the wormhole makes a soliton; the level sets its surface area. It swallows prisms, shielded ones
   included, and fires them out. L5 **Steal**: what passes through is stolen, the steal starting as each prism starts
   its run.
@@ -669,8 +672,8 @@ Not implemented; the map has four open slots. Garrett's direction (`Docs/Studios
 - **Mass · passive**: a minimal exit portal, a few low-mass prisms in a hexagon round the outside of the exit, once
   per soliton, sized by Mass. L5 **Danger prisms**.
 
-Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are in the same doc. The two are to be judged
-in the artifact.
+Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are archived in the same doc, and the round-18
+Mix's L5 swaps (Chain Dig on Time, Cave-in on Space) give way to these rows.
 
 ## 3. Implementation notes for approved rows
 
