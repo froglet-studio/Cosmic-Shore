@@ -12,16 +12,14 @@
   "torch": false
  },
  "cores": 3,
- "current": {},
- "host": "cloud-session",
- "last": {
-  "best_start": 3.4056280524311346,
-  "epoch": "52c7cb0e7a63",
-  "evals": 2508,
-  "job": "drive-rhino-regatta",
-  "session_evals": 2420,
-  "stopped": "max evals"
+ "current": {
+  "job": "drive-rhino-regatta~r20261028-125904-5357",
+  "max_evals": 300,
+  "minutes": 60.0,
+  "request": "r20261028-125904-5357",
+  "since": 1793192363
  },
+ "host": "cloud-session",
  "runs": [
   {
    "best_end": 4.279668468582069,
@@ -82,7 +80,7 @@
  "totals": {
   "sessions": 6
  },
- "updated": 1793189076,
+ "updated": 1793192363,
  "user": "shombith",
  "version": "1"
 }
