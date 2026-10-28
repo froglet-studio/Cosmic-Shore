@@ -452,6 +452,11 @@
       "key": "rootFog",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "rootFog"
+    },
+    {
+      "key": "tubeInner",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "tubeInner"
     }
   ]
 }

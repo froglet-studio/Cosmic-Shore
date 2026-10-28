@@ -16,13 +16,17 @@ for line to URP HLSL.
 | `MeerkatWormholeLens.shader` (+ `MeerkatWormholeLensPass.cs`) | **The water pipe** (Garrett's Tube Lens Lab, Yash's round-11 numbers): every tunnel as bent space only | Each pixel's ray is marched through a thin shell on the tube's wall and turned by a field along the tube's contours; the pixel shows where the turned ray lands | Full-screen pass, after transparents |
 | `MeerkatWormholeWarp.shader` | The tube's wall as a screen-space offset, for the same lens pass | `normal.xy * sin(pi * rim)`: zero at the centre line AND at the silhouette, so there is no seam | Additive, into a half-float target |
 | `MeerkatWormholeGlass.shader` | The bridge's glass (with `formedLook` Bridge) | Fresnel only: `0.05 + 0.55 * rim^3` | Additive |
-| `MeerkatTree.shader` | **The tree** round every tunnel, and the **roots'** bark | Fresnel glass + bark fissures + tree rings on the cut faces + a slow flow; shows only the tunnel's live window; branches grow out of their roots in the vertex shader | Additive |
-| `MeerkatRootInside.shader` | The roots **from inside**: the underground world | The opposite of glass: an opaque earthen wall lit by the rider's lamp and fading into the dark; its ends stay open | Alpha |
+| `MeerkatTree.shader` | **The tree** round every tunnel, and the **roots'** bark | Fresnel glass + bark fissures (fading within 15-90 u of the camera) + tree rings on the cut faces + a slow flow; the bore (the tube you ride) a smooth sheen with no lines; shows only the tunnel's live window; branches grow out of their roots in the vertex shader | Additive |
+| `MeerkatRootInside.shader` | The roots **from inside** | A soft, smooth inner tube: one slow warm tone, a little dense, denser at its silhouette, lit by the rider's lamp, fading to CLEAR with distance (never to black); its ends stay open | Alpha |
 
 `rim` is always `1 - abs(dot(normal, viewDir))`: 0 where you look straight at the surface, 1 at its outline. `abs` makes
 it the same from inside and outside, so one material serves both.
 
 ## 2. What makes it read as water
+
+Yash's rule for a ride (2026-10-28): **rough and edgy outside, very soft inside; calming, inviting; never a black fill.**
+Detail (fissures, ribs, warp) fades as the camera comes close (`smoothstep(15, 90, distance)`), and the surface you ride
+inside is one smooth sheen.
 
 1. **See-through face-on, bright at the outline (Fresnel).** `a = glass + rim_strength * pow(rim, power)`. Keep `glass`
    tiny (0.01-0.05) and let the rim carry the shape. A higher power gives a thinner, sharper outline.

@@ -74,14 +74,14 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   Taking one grows the roots at once from the hull, sized by the last tunnel's shaft (`MeerkatRootMath`,
   `MeerkatRootNetwork`).
 - Inside the roots: cruise on, the left stick moves you round the root, RT faster, the walls bounce you, the camera on
-  the root's centreline, the inside an opaque earthen wall lit by your lamp (`MeerkatRootInside.shader`). The AI holds
+  the root's centreline, the inside a soft warm tube lit by your lamp (`MeerkatRootInside.shader`). The AI holds
   RT and steers across. Roots replicate through `MeerkatWormholeNetworkRelay.n_roots` (protocol 22).
 
 **Verified without the editor:**
 - `MeerkatRootMathTests` and `MeerkatWormholeMathTests`: 40/40 pass in dotnet with Unity stubs, against the page's own
   numbers (rng, four layouts, the built roots, a 500-step flight with forks and bounces).
 - Reference compile, player and editor: 0 errors in project code. Both new shaders compile (glslang, HLSL front end,
-  vertex and fragment). `studio_to_unity` 90 mapped, 0 drift; `author_meerkat_assets --check` and `--self-test` pass.
+  vertex and fragment). `studio_to_unity` 91 mapped, 0 drift; `author_meerkat_assets --check` and `--self-test` pass.
 
 **Verify in editor:**
 1. Toybox (lava lamp), Vessel Changer → Meerkat. Form a tunnel with RT: a dead tree in watery glass forms with it,
@@ -90,7 +90,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
    every way, and you are inside the first.
 3. Inside: you cruise on your own. The left stick moves you round the root (right goes right; up goes the way your nose
    goes outside). Hold RT to go faster. Hitting a wall bounces you. Move into a root at a fork to take it. The camera
-   never leaves the root; the inside is brown and opaque, lit near you, dark further off; the outside world barely shows.
+   never leaves the root; the inside is a soft warm tube, never black, lit near you, fading to clear further off, the
+   outside world faintly showing through. Inside a tunnel the bore is a smooth sheen with no bark lines.
 4. Out of a tip you fly on. Dig a longer tunnel (hold LT) before the next omnicrystal: its roots are bigger.
 5. Burrow Run with AI: the omnicrystals lie between rings; an AI that takes one flies its roots and comes out.
 6. Two players (protocol 22 on both): one takes an omnicrystal; the other sees the same roots and the crystal gone.

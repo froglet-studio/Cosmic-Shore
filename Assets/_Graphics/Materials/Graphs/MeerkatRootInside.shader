@@ -1,9 +1,9 @@
 // MeerkatRootInside.shader — the Meerkat's ROOTS seen from INSIDE (R_VesselActions/MEERKAT.md §7), the Vessel Studio's
-// rootInMat (Docs/Studios/VesselStudio/meerkat.html, round 20: "In the root, it will be pretty more opaque. With a very
-// less outside appearance visible ... It will be an underground world in 3D"): an earthen wall - fibres running along the
-// root, knots, grit - hiding _Op of the world outside, lit by the rider's lamp (_Lamp, falling off over _Fall u from
-// _HullP), fading into the dark _Fog u off. Each root's ends stay open (_Lo0/_Lo1: 0 at an opening, a little at a fork,
-// over _EndW u), so you see on into the next root and the light at a tip. Drawn only while the local pilot is inside this
+// rootInMat (Docs/Studios/VesselStudio/meerkat.html; round 20 made it an underground world, then Yash asked for it calm,
+// 2026-10-28: "there should not be any black colored fill ... the inner tube need to be very soft ... calming, inviting"):
+// a soft, smooth inner tube - one slow warm tone - a little dense (_Op), denser at its silhouette, the world outside still
+// showing through, lit by the rider's lamp (_Lamp, falling off over _Fall u from _HullP), fading to CLEAR _Fog u off.
+// Each root's ends stay open (_Lo0/_Lo1: 0 at an opening, a little at a fork, over _EndW u), so you see on into the next root and the light at a tip. Drawn only while the local pilot is inside this
 // network. Positions are in world space. The recipe and its family: Docs/Shaders/WATERY_GLASS.md.
 Shader "CosmicShore/MeerkatRootInside"
 {
@@ -21,9 +21,7 @@ Shader "CosmicShore/MeerkatRootInside"
         _Fall ("Lamp falls off over (u)", Float) = 80
         _Fog ("Dark after (u)", Float) = 160
         _HullP ("Lamp position", Vector) = (0, 0, 0, 0)
-        _Dark ("The dark", Color) = (0.025, 0.018, 0.012, 1)
         _Seed ("Seed", Float) = 0
-        _GrainN ("Fibres round the root", Float) = 13
     }
 
     SubShader
@@ -47,9 +45,8 @@ Shader "CosmicShore/MeerkatRootInside"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
-                float _F0, _F1, _Edge, _Len, _EndW, _Lo0, _Lo1, _Op, _Lamp, _Fall, _Fog, _Seed, _GrainN;
+                float _F0, _F1, _Edge, _Len, _EndW, _Lo0, _Lo1, _Op, _Lamp, _Fall, _Fog, _Seed;
                 float4 _HullP;
-                half4 _Dark;
             CBUFFER_END
 
             struct Attributes
@@ -93,17 +90,18 @@ Shader "CosmicShore/MeerkatRootInside"
                 if (vS < _F0 || vS > _F1) discard;
                 float w = smoothstep(0.0, _Edge, min(vS - _F0, _F1 - vS)), sl = vS * _Len;
                 float ends = lerp(_Lo0, 1.0, smoothstep(0.0, _EndW, sl)) * lerp(_Lo1, 1.0, smoothstep(0.0, _EndW, _Len - sl));   // its ends stay open
-                float fib = pow(abs(sin((vPhi * _GrainN + 0.12 * sin(sl * 0.13 + vPhi * 17.0)) * 3.14159)), 8.0);             // fibres along the root
-                float n = 0.6 * VN(i.positionWS * 0.08) + 0.4 * VN(i.positionWS * 0.33);
-                float3 c = lerp(float3(0.17, 0.10, 0.055), float3(0.40, 0.26, 0.14), n);
-                c = lerp(c, float3(0.55, 0.38, 0.21), 0.45 * fib) * (0.7 + 0.3 * VN(i.positionWS * 0.025 + 7.0));            // fibres, knots
+                // Yash, 2026-10-28: no black fill. The inner tube is soft and smooth - one slow warm tone, no fibres - a little
+                // denser at its silhouette, lit by your lamp, and the far walls fade to CLEAR (not into the dark).
+                float n = VN(i.positionWS * 0.025);
+                float3 c = lerp(float3(0.44, 0.32, 0.22), float3(0.66, 0.52, 0.38), n);
                 float3 nn = normalize(i.normalWS);
                 if (dot(nn, _WorldSpaceCameraPos - i.positionWS) < 0.0) nn = -nn;                                            // the face toward you
+                float fr = 1.0 - abs(dot(nn, normalize(_WorldSpaceCameraPos - i.positionWS)));
                 float3 L = _HullP.xyz - i.positionWS;
                 float dh = max(1e-3, length(L));
-                float lit = 0.45 + _Lamp * 1.4 * (0.35 + 0.65 * max(0.0, dot(nn, L / dh))) / (1.0 + dh * dh / (_Fall * _Fall));   // your lamp
-                c = lerp(_Dark.rgb, c * lit, exp(-length(_WorldSpaceCameraPos - i.positionWS) / _Fog));                          // the dark
-                return half4(c, _Op * w * ends);
+                float lit = 0.75 + _Lamp * 0.6 * (0.4 + 0.6 * max(0.0, dot(nn, L / dh))) / (1.0 + dh * dh / (_Fall * _Fall));   // your lamp
+                float fade = exp(-length(_WorldSpaceCameraPos - i.positionWS) / _Fog);                                         // far walls fade to clear
+                return half4(c * lit, _Op * (0.35 + 0.65 * fr) * fade * w * ends);
             }
             ENDHLSL
         }

@@ -147,9 +147,11 @@ thumbstick"), and the clone to Unity.**
 - **Measured** (seed 7, full Mass): you cruise in at 45 u/s; holding the stick right takes a different root at the
   second fork; RT takes you to 90 u/s.
 - **Cloned to Unity** (`/artifact-to-unity`, `R_VesselActions/MEERKAT.md` §7): the tree round every tunnel and the
-  Omnicrystal's roots, flown on the left stick, with the contour-field water pipe kept. 48 keys mapped (90 in all), 0 drift.
+  Omnicrystal's roots, flown on the left stick, with the contour-field water pipe kept. 49 keys mapped (91 in all), 0 drift.
   The page's root functions are held by 6 golden tests (`MeerkatRootMathTests`). Not ported: `trunkWarp`, `omniAtOnce` 0,
   the soil, the labyrinth wireframe keys, `forkHintSeconds`. The shaders are a recipe: `Docs/Shaders/WATERY_GLASS.md`.
+  - The calm ride (the other session's round, below: a soft inner tube with no black, `tubeInner`, the bark's lines fading
+    up close) is cloned too: 91 keys mapped, 0 drift.
 
 **Round 20 (Yash, 2026-10-28: "remove the rings of spindle. From the trunk as well as the roots, so there should not be
 any distinction between the wormhole and the trunk ... for the roots, we won't be traveling forward randomly. Rather, we
@@ -932,3 +934,15 @@ The sounds watch the sim and never change it. They are the brief for the game's 
 sound design makes them (`MeerkatWormholeConfigSO.formEvent` / `collapseEvent` today); Unity plays none of these.
 Measured headless: every recipe renders (none silent, none clipping), and an AI race with an omnicrystal fires every
 wired sound with no page error.
+
+**The ride is calm (Yash, 2026-10-28: "there should not be any black colored fill ... the inner should be a little
+dense, the outer more transparent ... the outer part can be very rough and edgy, the inner tube need to be very soft
+... smooth ... calming, inviting"). ARTIFACT ONLY.**
+- **Inside the roots, no black.** Round 20's inside wall (94% opaque, fading to near-black) is now a soft, smooth inner
+  tube: one slow warm tone, no fibres, a little denser at its silhouette, lit by your lamp, the world outside still
+  showing through, and far walls fading to clear. `rootOpacity` 0.32 (was 0.94), `rootFog` 240 (fade to clear).
+- **Inside the trunk, smooth.** The bore (the tube you ride) has its own sheen, `tubeInner` (0.1): no bark lines, a little
+  denser than the bark outside. The bark keeps its rough ridges and grain from outside; up close (inside, 15-90 u) its
+  lines and the tree's warp fade away, and the bore's warp is a third of the bark's.
+- Measured headless: a race with an omnicrystal, before and after, inside a tunnel and inside the roots (no black fill,
+  no radiating streaks); check_studio passes; studio_to_unity 0 Meerkat drift (`tubeInner` is a new key).

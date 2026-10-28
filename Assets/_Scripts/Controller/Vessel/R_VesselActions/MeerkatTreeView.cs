@@ -19,8 +19,9 @@ namespace CosmicShore.Gameplay
     /// contour field's water pipe (<see cref="MeerkatWormholeLensPass"/>) is still drawn inside it, as before.</item>
     /// <item><b>The roots</b>, every network's: each root's bark in the same glass, in a root's brown
     /// (<c>rootGlass</c>, <c>rootRim</c>, <c>rootGrain</c>), dug out from the source; and, while the local pilot is inside
-    /// a network, that network's inside as an opaque earthen wall (<c>MeerkatRootInside.shader</c>, <c>rootOpacity</c>,
-    /// <c>rootLamp</c>, <c>rootFog</c>).</item>
+    /// a network, that network's inside as a soft, smooth inner tube - a little dense, never black, fading to clear with
+    /// distance (<c>MeerkatRootInside.shader</c>, <c>rootOpacity</c>, <c>rootLamp</c>, <c>rootFog</c>). The trunk's bore is
+    /// the same smooth sheen (<c>tubeInner</c>), and its bark's lines fade up close, so the ride is calm.</item>
     /// </list>
     /// Meshes are built once (a tree when its tunnel forms, a root's skin when its network grows) and drawn each frame with
     /// a <see cref="MaterialPropertyBlock"/> through the two materials in <c>Resources/</c>.
@@ -58,7 +59,7 @@ namespace CosmicShore.Gameplay
             IdBg = Shader.PropertyToID("_Bg"), IdLen = Shader.PropertyToID("_Len"), IdEndW = Shader.PropertyToID("_EndW"),
             IdLo0 = Shader.PropertyToID("_Lo0"), IdLo1 = Shader.PropertyToID("_Lo1"), IdOp = Shader.PropertyToID("_Op"),
             IdLamp = Shader.PropertyToID("_Lamp"), IdFall = Shader.PropertyToID("_Fall"), IdFog = Shader.PropertyToID("_Fog"),
-            IdHullP = Shader.PropertyToID("_HullP"), IdSeed = Shader.PropertyToID("_Seed");
+            IdHullP = Shader.PropertyToID("_HullP"), IdSeed = Shader.PropertyToID("_Seed"), IdInner = Shader.PropertyToID("_Inner");
 
         /// <summary>Draws every tree and every root network; called once a frame by <see cref="MeerkatWormholeView"/>.</summary>
         public static void Draw()
@@ -114,6 +115,7 @@ namespace CosmicShore.Gameplay
                 mpb.SetColor(IdCOut, Color.Lerp(Color.white, t.Colour, 0.4f));
                 mpb.SetFloat(IdAlpha, A);
                 mpb.SetFloat(IdGlass, Mathf.Max(0f, cfg.TrunkGlass));
+                mpb.SetFloat(IdInner, Mathf.Max(0f, cfg.TubeInner));
                 mpb.SetFloat(IdRim, Mathf.Max(0f, cfg.TrunkRim));
                 mpb.SetFloat(IdPower, Mathf.Max(0.5f, cfg.TrunkFresnel));
                 mpb.SetFloat(IdRings, Mathf.Max(1, cfg.TrunkRings));
@@ -204,7 +206,7 @@ namespace CosmicShore.Gameplay
                     var rp = new RenderParams(s_tree) { matProps = mpb, shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
                     Graphics.RenderMesh(rp, net.Skins[i], 0, Matrix4x4.identity);
                     if (!drawInside) continue;
-                    // from inside: an opaque earthen wall over the world outside, its ends open
+                    // from inside: a soft inner tube, the world outside still showing through, its ends open
                     float b = (float)c.B;
                     mpb = Next();
                     mpb.SetFloat(IdF0, f0);

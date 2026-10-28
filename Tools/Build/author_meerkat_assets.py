@@ -130,7 +130,7 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRa
                "labyrinthOpeningsMax", "labyrinthRadiusMin", "labyrinthRadiusMax", "labyrinthSpread", "labyrinthRandomness",
                "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl", "rootGlass", "rootRim", "rootGrain",
                "labyrinthFormSeconds", "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootMaxSpeed", "rootBounce",
-               "rootGravity", "rootOpacity", "rootLamp", "rootFog"]
+               "rootGravity", "rootOpacity", "tubeInner", "rootLamp", "rootFog"]
 
 
 def shipped(page: str) -> dict:

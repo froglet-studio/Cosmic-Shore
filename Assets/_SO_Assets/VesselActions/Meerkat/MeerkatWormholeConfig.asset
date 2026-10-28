@@ -113,9 +113,10 @@ MonoBehaviour:
   rootMaxSpeed: 90
   rootBounce: 0.45
   rootGravity: 0
-  rootOpacity: 0.94
+  rootOpacity: 0.32
+  tubeInner: 0.1
   rootLamp: 1
-  rootFog: 160
+  rootFog: 240
   formEvent:
     Guid:
       Data1: 0

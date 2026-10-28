@@ -206,12 +206,14 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float rootBounce = 0.45f;
         [Tooltip("...drawn to the root's floor by (u/s², 0 = you float)")]
         [SerializeField, Range(0f, 120f)] float rootGravity = 0f;
-        [Tooltip("From inside: the walls hide the world outside (1 = all of it)")]
-        [SerializeField, Range(0f, 1f)] float rootOpacity = 0.94f;
+        [Tooltip("From inside: how dense the soft inner wall is (0 = clear, 1 = solid)")]
+        [SerializeField, Range(0f, 1f)] float rootOpacity = 0.32f;
+        [Tooltip("The tree's and roots' inner tube: a smooth sheen, denser than the bark")]
+        [SerializeField, Range(0f, 0.6f)] float tubeInner = 0.1f;
         [Tooltip("...your lamp on the walls round you")]
         [SerializeField, Range(0f, 3f)] float rootLamp = 1f;
-        [Tooltip("...the dark swallows the roots this far off (u)")]
-        [SerializeField, Range(20f, 600f)] float rootFog = 160f;
+        [Tooltip("...far walls fade to clear this far off (u)")]
+        [SerializeField, Range(20f, 600f)] float rootFog = 240f;
 
         [Header("After RT (Garrett, 2026-10-27: the Tube Lens Lab)")]
         [Tooltip("After RT, a formed tunnel shows as: ContourField = nothing drawn, only space bent in a thin shell on its " +
@@ -375,6 +377,7 @@ namespace CosmicShore.ScriptableObjects
         public float RootBounce => rootBounce;
         public float RootGravity => rootGravity;
         public float RootOpacity => rootOpacity;
+        public float TubeInner => tubeInner;
         public float RootLamp => rootLamp;
         public float RootFog => rootFog;
 

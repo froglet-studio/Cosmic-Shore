@@ -123,14 +123,14 @@ namespace CosmicShore.Gameplay
                 g.Push(q, u, -1f, 0f, 1f, 0f, q, j / (float)TrunkSeg);
             }
             g.Grid(0, TrunkRings, TrunkSeg);
-            // round 20: the bore - the tunnel's wall is the trunk's inside, in the same wood
+            // round 20: the bore - the tunnel's wall is the trunk's inside; aR 2 marks it (the smooth inner tube, tubeInner)
             int bore = g.Pos.Count;
             for (int r = 0; r <= TrunkRings; r++)
             for (int j = 0; j <= TrunkSeg; j++)
             {
                 float u = r / (float)TrunkRings, s = u * t.L, phi = j / (float)TrunkSeg * Mathf.PI * 2f;
                 var q = Surf(t, s, phi, FullR(t, s), out _);
-                g.Push(q, u, -1f, 0f, 1f, 0f, q, j / (float)TrunkSeg);
+                g.Push(q, u, -1f, 0f, 2f, 0f, q, j / (float)TrunkSeg);
             }
             g.Grid(bore, TrunkRings, TrunkSeg);
             // the cut faces: the annulus from the mouth's rim out to the bark, its tree rings by aR

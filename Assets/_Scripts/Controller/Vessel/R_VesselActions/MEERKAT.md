@@ -178,7 +178,7 @@ line for line:
 | Prefab and registrations | `Tools/Build/author_meerkat_assets.py` (`--check`, `--self-test`) |
 | The roots (§7) | `MeerkatRootMath.cs`, `MeerkatRootNetwork.cs`, `MeerkatOmnicrystalField.cs`, `Tests/Editor/MeerkatRootMathTests.cs` |
 | The tree and the roots' look (§7) | `MeerkatTreeMesh.cs`, `MeerkatTreeView.cs`, `_Graphics/Materials/Graphs/MeerkatTree.shader`, `MeerkatRootInside.shader`, `Resources/MeerkatTree.mat`, `Resources/MeerkatRootInside.mat` |
-| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (90 keys, `--check` 0 drift) |
+| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (91 keys, `--check` 0 drift) |
 
 ## 7. The tree and the roots (cloned 2026-10-28 from the artifact's rounds 13-21)
 
@@ -194,8 +194,10 @@ by left thumbstick."*
   - Every formed tunnel, everyone's, wears a dead tree: a trunk round the whole tunnel, `trunkTop` × the mouth at the way
     in (its top cut) to `trunkBase` × at the way out (its bottom cut), ridged (`trunkBark`, `trunkRidges`) and gnarled
     (`trunkGnarl`).
-  - Its bore is the tunnel's own wall (round 20: the trunk is the wormhole), and its cut faces carry `trunkRings` tree
-    rings.
+  - Its bore is the tunnel's own wall (round 20: the trunk is the wormhole): a smooth sheen with no lines, a little
+    denser than the bark (`tubeInner`). Its cut faces carry `trunkRings` tree rings.
+  - Up close (15-90 u from the camera) the bark's lines fade, so the ride is calm (Yash: "the outer part can be very rough
+    and edgy, the inner tube need to be very soft ... calming, inviting").
   - `branchCount` bare branches grow out of its top `branchZone`, in pairs (`branchSymmetry`), leaning `branchUp`,
     `branchLength` × the mouth long, forking `branchForks` times.
   - It is drawn in the wall's watery glass (`trunkGlass` face-on, `trunkRim` at the `trunkFresnel` silhouette, the bark's
@@ -231,10 +233,11 @@ by left thumbstick."*
       facing out.
   - **The camera** rides the root's centreline 12 u behind you (into the root behind you when that is behind), half your
     way out to the wall, so it is always inside the root.
-  - **From inside it is an underground world** (`MeerkatRootInside.shader`): while you are in a network, its roots draw
-    their inside as an earthen wall over the world outside (`rootOpacity`), lit by your lamp (`rootLamp`), fading into the
-    dark `rootFog` u off. Each root's ends stay open. From outside the roots are bark in the watery glass (`rootGlass`,
-    `rootRim`, `rootGrain`).
+  - **From inside, a soft inner tube** (`MeerkatRootInside.shader`; Yash, 2026-10-28: "there should not be any black
+    colored fill"): while you are in a network, its roots draw their inside as one slow warm tone, a little dense
+    (`rootOpacity` 0.32), denser at its silhouette, lit by your lamp (`rootLamp`). The world outside still shows through,
+    and far walls fade to clear `rootFog` (240) u off. Each root's ends stay open. From outside the roots are bark in the
+    watery glass (`rootGlass`, `rootRim`, `rootGrain`).
   - **The AI** (input only): in the roots it holds RT and steers across the root with the left stick, toward the middle,
     or at a fork toward the side of the root that leads nearest its ring. A rookie (`aiNoise`) sometimes picks wrong.
   - **The network**: the owner publishes each network (seed, trunk size, the hull's frame, the omnicrystal taken) and its
