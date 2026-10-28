@@ -44,7 +44,7 @@ ENUMS_CS = "Assets/_Scripts/Data/Voyages/VoyageEnums.cs"
 DOMAINS_CS = "Assets/_Scripts/Data/Enums/Domains.cs"
 ELEMENT_CS = "Assets/_Scripts/Data/Enums/Element.cs"
 LINES_FIELDS = ["VoyageName", "BoardOpen", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "HoldProgress", "Done",
-                "Failed", "Stowed", "Extracted", "ArkLost", "BroughtBy", "NoWork"]
+                "Failed", "Stowed", "Extracted", "ArkLost", "BroughtBy", "NoWork", "Following"]
 
 
 def guid_for(name):

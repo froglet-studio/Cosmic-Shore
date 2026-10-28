@@ -72,7 +72,10 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
    route (additive hooks in `ArkwayRun` and `CellConveyor`; with no route the Arkway is unchanged), the job beacons,
    the 3D chart beside the Ark, vault shells, wreck spills, the core hold, docking home, the fallen Ark, giving up.
    Saved on the device by `VoyageStore`.
-5. **Friends**: the host's voyage (job, leg, route seed) is sent to the party so every member sails the same course.
+5. **Built.** Friends: the host's course (embark, each leg with the host's galaxy and the leg's worlds, the end) is a
+   Netcode named message (`VoyageCourseLink`), so no networked object is added to the scene. Each friend deploys their
+   own seat and sails each leg with their own Ark, fauna and finds, and docks home with what they found; the board
+   and the news are the host's. Nothing counts people.
 6. **Hand tests** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The voyage slice") and a ticket (suggested, approved by a
    person).
 

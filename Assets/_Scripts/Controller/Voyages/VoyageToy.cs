@@ -12,7 +12,31 @@ namespace CosmicShore.Gameplay
         VoyageToyDefinitionSO _def;
         VoyageRun _run;
 
+        float _nextListen;
+
         public void Configure(VoyageToyDefinitionSO definition) => _def = definition;
+
+        // A friend's machine follows the host's voyage (Docs/Voyages/SLICE.md §4 step 5). The session can start after
+        // the toy does, so the listener is re-armed now and then; it is a no-op once registered.
+        protected override void Update()
+        {
+            base.Update();
+            if (UnityEngine.Time.unscaledTime < _nextListen) return;
+            _nextListen = UnityEngine.Time.unscaledTime + 1f;
+            VoyageCourseLink.Listen(OnCourse);
+        }
+
+        void OnCourse(CosmicShore.Data.VoyageCourse course)
+        {
+            EnsureRun();
+            _run.Follow(course);
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            VoyageCourseLink.Stop(OnCourse);
+        }
 
         protected override void OnActivated(IVesselStatus localVessel)
         {

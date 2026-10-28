@@ -77,5 +77,7 @@ namespace CosmicShore.ScriptableObjects
         public string BroughtBy = "brought by {pilot}";
         [Tooltip("Shown where a station would be when no seated pilot has work here.")]
         public string NoWork = "No pilot has work here. Seat other pilots, or sail on.";
+        [Tooltip("A friend's banner while the host's board decides the next job.")]
+        public string Following = "SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB";
     }
 }

@@ -17866,3 +17866,7 @@ compile has no errors in the changed files (player and editor).
    board offers a salvage job to the wreck, and the wreck's artifacts float where it fell.
 9. Mid-voyage, fly the Voyage toy again (or the harbour station). **Pass:** home, "JOB LEFT UNDONE", nothing kept.
 10. The plain Wander toy's Arkway. **Pass:** unchanged: it sails the shuffle-bag forever and never holds.
+11. Two machines in one freestyle party (a joined squad on the friend's side). The host flies the Voyage toy. **Pass:**
+    the friend is swapped to their seat's hull and sees "SAILING WITH YOUR HOST"; when the host takes a job the friend's
+    own Ark sails the same worlds to the same stop; the friend can crack a vault and stow a find; when the host takes the
+    way home both dock, and the friend keeps what the friend stowed. The host giving up ends the friend's voyage too.

@@ -65,6 +65,8 @@ namespace CosmicShore.Gameplay
         bool _held;
         int _holdLineSecond = -1;
         bool _active, _underway, _fallen, _fallTaken, _docked;
+        bool _following;
+        VoyageCourse _pendingLeg;
         float _nextLeashCheck;
 
         /// <summary>True from embarking until the voyage ends (docked, fallen or given up).</summary>
@@ -85,7 +87,9 @@ namespace CosmicShore.Gameplay
 
         // ── Embark ───────────────────────────────────────────────────────────
 
-        public void Embark(IVesselStatus local)
+        public void Embark(IVesselStatus local) => Embark(local, following: false);
+
+        void Embark(IVesselStatus local, bool following)
         {
             if (_active || local?.Transform == null) return;
             if (!_def || Content == null)
@@ -99,7 +103,9 @@ namespace CosmicShore.Gameplay
             _state = VoyageStore.Load();
             if (_state == null) _state = VoyageRules.NewGalaxy(Content, domain);
             else VoyageRules.Embark(_state, Content, domain);
-            VoyageStore.Save(_state);
+            _following = following;
+            _pendingLeg = null;
+            SaveState();
 
             _active = true;
             _underway = _fallen = _fallTaken = _docked = false;
@@ -118,8 +124,76 @@ namespace CosmicShore.Gameplay
             ArkFall.Settled -= OnFallSettled;
             ArkFall.Settled += OnFallSettled;
 
+            if (_following)
+            {
+                Banner(Lines.Following);
+                return;
+            }
             OpenBoard(local.Transform.position, local.Transform.forward);
             Banner(Lines.BoardOpen);
+            VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.Embark });
+        }
+
+        // ── Friends: following the host's course (SLICE.md §4 step 5) ────────
+
+        /// <summary>
+        /// The host's course reached this machine. A friend deploys their own seat and sails each leg the host takes,
+        /// with their own Ark, fauna and finds; the board and the news are the host's. A friend already on a voyage of
+        /// their own keeps it.
+        /// </summary>
+        public void Follow(VoyageCourse course)
+        {
+            if (course == null || _active && !_following) return;
+            switch (course.Kind)
+            {
+                case VoyageCourseKind.Embark:
+                    if (!_active) Embark(LocalVessel(), following: true);
+                    break;
+                case VoyageCourseKind.Leg:
+                    if (!_active) Embark(LocalVessel(), following: true);
+                    if (!_active) return;
+                    // Still sailing the last leg: take this one on arriving, so the stop is seen first.
+                    if (_sea.IsRunning && !_sea.IsHoldingAtRouteEnd) _pendingLeg = course;
+                    else SailLeg(course);
+                    break;
+                case VoyageCourseKind.End:
+                    // A friend already sailing home docks on their own; anywhere else the voyage ends with the host's.
+                    if (_active && _state.Current is not { IsReturn: true }) GiveUp("the host's voyage ended");
+                    break;
+            }
+        }
+
+        void SailLeg(VoyageCourse course)
+        {
+            var local = LocalVessel();
+            if (local == null || course.State == null || course.Job == null || course.Route is not { Count: > 0 }) return;
+            if (_state.Current != null && !_state.AtSea)
+                Resolve(VoyageRules.WorkDone(_state.Current, _stowedHere, _held) ? JobOutcome.Succeeded : JobOutcome.Failed);
+
+            // The galaxy is the host's; what this machine found and is owed stays its own.
+            var aboard = _state.Aboard;
+            var owed = _state.Owed;
+            _state = course.State;
+            _state.Normalize();
+            _state.Aboard = aboard ?? new List<string>();
+            _state.Owed = owed ?? new List<int>();
+
+            ClearBoard();
+            ClearStop();
+            _chart.Show(_state.At, course.Job.To);
+            if (_sea.IsRunning) _sea.ContinueRoute(course.Route);
+            else
+            {
+                _sea.SetRoute(course.Route);
+                _sea.Begin(local);
+            }
+            Banner(Line(Lines.Depart, course.Job.To));
+        }
+
+        void SaveState()
+        {
+            // A friend's galaxy is their own: the host's, followed, is never written over it.
+            if (!_following) VoyageStore.Save(_state);
         }
 
         /// <summary>The squad that sails: the one a party launch named, else the player's active squad, else the hull
@@ -265,8 +339,9 @@ namespace CosmicShore.Gameplay
 
             ClearBoard();
             ClearStop();
-            VoyageStore.Save(_state);
+            SaveState();
             _chart.Show(_state.At, job.To);
+            VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.Leg, State = _state, Job = job, Route = route });
 
             if (_sea.IsRunning)
             {
@@ -322,8 +397,17 @@ namespace CosmicShore.Gameplay
 
             StandStop(ark ? ark.Position : transform.position);
             if (VoyageRules.DoneOnArrival(job)) Resolve(JobOutcome.Succeeded);
-            VoyageStore.Save(_state);
-            if (ark) OpenBoard(ark.Position, ark.Forward);
+            SaveState();
+            if (!_following)
+            {
+                if (ark) OpenBoard(ark.Position, ark.Forward);
+                return;
+            }
+            Banner(Lines.Following);
+            if (_pendingLeg == null) return;
+            var leg = _pendingLeg;
+            _pendingLeg = null;
+            SailLeg(leg);
         }
 
         void OnArkFallen()
@@ -332,7 +416,7 @@ namespace CosmicShore.Gameplay
             _fallen = true;
             string where = _state.AtSea && _state.Current != null ? _state.Current.To : _state.At;
             var r = VoyageRules.ArkLost(_state, Content, where, _fallTaken, _holdMirror);
-            VoyageStore.Save(_state);
+            SaveState();
             Banner(string.IsNullOrEmpty(r.StoryLine) ? Lines.ArkLost : Lines.ArkLost + "\n" + r.StoryLine);
         }
 
@@ -349,7 +433,7 @@ namespace CosmicShore.Gameplay
             if (!_fallen && !_docked)
             {
                 VoyageRules.Abandon(_state, Content);
-                VoyageStore.Save(_state);
+                SaveState();
                 Banner(Lines.Failed);
             }
             Finish();
@@ -460,7 +544,7 @@ namespace CosmicShore.Gameplay
             _holdKnown = aboard.Count;
             Banner(Lines.Stowed);
             CheckWork();
-            VoyageStore.Save(_state);
+            SaveState();
         }
 
         /// <summary>A core is held by staying with the Ark there for its hold time.</summary>
@@ -481,7 +565,7 @@ namespace CosmicShore.Gameplay
             if (_heldFor < _arrival.HoldSeconds) return;
             _held = true;
             CheckWork();
-            VoyageStore.Save(_state);
+            SaveState();
         }
 
         void CheckWork()
@@ -496,7 +580,7 @@ namespace CosmicShore.Gameplay
             var r = VoyageRules.Resolve(_state, Content, outcome);
             string head = outcome == JobOutcome.Succeeded ? Lines.Done : Lines.Failed;
             Banner(string.IsNullOrEmpty(r.StoryLine) ? head : head + "\n" + r.StoryLine);
-            VoyageStore.Save(_state);
+            SaveState();
         }
 
         /// <summary>Home: everything aboard and every crystal owed is the player's now, and the voyage ends at the dock.</summary>
@@ -510,7 +594,7 @@ namespace CosmicShore.Gameplay
                     if (x.Crystals[e] > 0) PilotLoadoutStore.AddCrystals((Element)e, x.Crystals[e], "voyage");
                 Banner(TemplateText.Fill(Line(Lines.Extracted, _state.At), "count", x.Artifacts.Count.ToString()));
             }
-            VoyageStore.Save(_state);
+            SaveState();
             _docked = true;
             _sea.End(returnToCell: true, "the voyage docked at home");
         }
@@ -526,13 +610,16 @@ namespace CosmicShore.Gameplay
                 return;
             }
             VoyageRules.Abandon(_state, Content);
-            VoyageStore.Save(_state);
+            SaveState();
             Finish();
         }
 
         void Finish()
         {
+            if (!_following && !_docked) VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.End });
             _active = false;
+            _following = false;
+            _pendingLeg = null;
             _underway = false;
             ArkFall.Settled -= OnFallSettled;
             ClearBoard();

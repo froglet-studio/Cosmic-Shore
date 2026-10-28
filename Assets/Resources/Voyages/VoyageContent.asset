@@ -389,3 +389,4 @@ MonoBehaviour:
     ArkLost: THE ARK IS LOST
     BroughtBy: 'brought by {pilot}'
     NoWork: No pilot has work here. Seat other pilots, or sail on.
+    Following: 'SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB'
