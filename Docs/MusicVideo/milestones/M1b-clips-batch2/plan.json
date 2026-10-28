@@ -1,0 +1,238 @@
+{
+ "song": "Assets/_Audio/Music/SKY FIRE.ogg",
+ "song_name": "SKY FIRE.ogg",
+ "tempo": 0,
+ "segment": {
+  "start": 41.0,
+  "end": 56.0
+ },
+ "fps": 60,
+ "render": {
+  "fps": 60,
+  "step_hz": 240,
+  "accum": 2,
+  "size": "1920x1080",
+  "msaa": 8,
+  "render_scale": 2.0,
+  "aniso": 16,
+  "_why": "Nothing is real time: every sub-frame is drawn at 2x supersampling with 8x MSAA, and four 240 Hz sub-frames are averaged in linear light into each 60 fps output frame (a 180-degree shutter), so motion is smooth and blurred the way a camera sees it.",
+  "_shutter": "accum 2 of every 4 sub-frames = a 90-degree shutter: smooth, but a Sparrow round stays a glowing sphere instead of smearing into a white dash (Garrett, cut 3).",
+  "prefs": {
+   "gfx.Preset": 5,
+   "gfx.BasePreset": 5,
+   "gfx.Adaptive": 0,
+   "gfx.Ecosystem": 2,
+   "gfx.AA": 5,
+   "gfx.Vfx": 100,
+   "gfx.Physics": 1,
+   "gfx.RenderScale": 100,
+   "gfx.Upscale": 0,
+   "gfx.Texture": 0,
+   "gfx.Initialized": 1
+  },
+  "_prefs_why": "The game's own graphics settings for the shoot's profile (prefs.json): Ultra preset (presets 0-2 replace the HyperSea skybox with a baked panorama the engine cannot draw, cut cytoplasm to a quarter and cap the membrane), adaptive performance OFF (it had dropped the preset to Low at the software renderer's frame rate), Lush ecosystem, 8x MSAA, full VFX.",
+  "render_scale_long": 1.5,
+  "long_seconds": 20,
+  "_long": "A cut longer than long_seconds renders at render_scale_long (1.5x supersampling): a 60 s cut is 3600 frames, and 1.5x on 8x MSAA is still cleaner than Unity's TAA at 1x. The 2x is for the 15 s milestones."
+ },
+ "mapping": "Tools/Build/music_video/mapping.json",
+ "clips": [
+  "sparrow-guns",
+  "rhino-sword",
+  "brittlestar-ring"
+ ],
+ "shots": [
+  {
+   "name": "01-sparrow-guns",
+   "t0": 41.0,
+   "t1": 46.0,
+   "frames": 1200,
+   "every": 4,
+   "accum": 2,
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 1,
+   "stage": "menu",
+   "cell": "Zephyr",
+   "settle_frames": 1920,
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Zephyr",
+    "mv vessel Sparrow",
+    "mv spawn vessel Manta,Dolphin,Rhino,Squirrel,Serpent,Scarab 6 Ruby 40",
+    "mv in 240 circle ai0 40 5 local",
+    "mv in 240 circle ai1 50 6 local",
+    "mv in 240 circle ai2 35 4 local",
+    "mv in 240 circle ai3 55 7 local",
+    "mv in 240 circle ai4 45 5 local",
+    "mv in 240 circle ai5 60 6 local"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 18 7 7 14 1.6"
+   ],
+   "events": [
+    {
+     "t": 41.0,
+     "cmd": "aim local fleet",
+     "why": "clip"
+    },
+    {
+     "t": 41.2,
+     "cmd": "action local RightStickAction 280",
+     "why": "the gun, held"
+    },
+    {
+     "t": 43.5,
+     "cmd": "aim local ai2",
+     "why": "clip"
+    }
+   ],
+   "features": {
+    "energy": 0.5,
+    "brightness": 0.5,
+    "onset_density": 0.5
+   },
+   "archetype": "sparrow-guns",
+   "what": "The Sparrow, right trigger held, pours its gun into a rival fleet's trails ahead; the rounds (the glowing spheres Garrett liked in cut 3) burst the prisms they hit.",
+   "why": "clip library",
+   "vessel": "Sparrow"
+  },
+  {
+   "name": "02-rhino-sword",
+   "t0": 46.0,
+   "t1": 51.0,
+   "frames": 1200,
+   "every": 4,
+   "accum": 2,
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 1,
+   "stage": "menu",
+   "cell": "Boneyard",
+   "settle_frames": 1920,
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Boneyard",
+    "mv vessel Rhino",
+    "mv spawn vessel Manta,Dolphin,Squirrel,Serpent,Scarab,Sparrow 6 Ruby 35",
+    "mv in 240 circle ai0 30 4 local",
+    "mv in 240 circle ai1 40 5 local",
+    "mv in 240 circle ai2 28 4 local",
+    "mv in 240 circle ai3 45 6 local",
+    "mv in 240 circle ai4 35 5 local",
+    "mv in 240 circle ai5 50 6 local"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 46 16 18 30 1.6"
+   ],
+   "events": [
+    {
+     "t": 46.0,
+     "cmd": "aim local fleet",
+     "why": "clip"
+    },
+    {
+     "t": 46.3,
+     "cmd": "action local RightStickAction 70",
+     "why": "swipe right"
+    },
+    {
+     "t": 47.6,
+     "cmd": "action local LeftStickAction 70",
+     "why": "swipe left"
+    },
+    {
+     "t": 48.9,
+     "cmd": "action local RightStickAction 70",
+     "why": "clip"
+    },
+    {
+     "t": 50.0,
+     "cmd": "action local LeftStickAction 60",
+     "why": "clip"
+    }
+   ],
+   "features": {
+    "energy": 0.5,
+    "brightness": 0.5,
+    "onset_density": 0.5
+   },
+   "archetype": "rhino-sword",
+   "what": "The Rhino drives through a rival fleet's trails swinging its energy sword: every prism the blade sweeps is CUT along the plane, the halves parting and dissolving from the cut face.",
+   "why": "clip library",
+   "vessel": "Rhino"
+  },
+  {
+   "name": "03-brittlestar-ring",
+   "t0": 51.0,
+   "t1": 56.0,
+   "frames": 1200,
+   "every": 4,
+   "accum": 2,
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 1,
+   "stage": "menu",
+   "cell": "Geode",
+   "settle_frames": 1920,
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Geode",
+    "mv vessel BrittleStar",
+    "mv spawn vessel Manta,Dolphin,Squirrel,Serpent,Scarab,Sparrow 6 Ruby 35",
+    "mv in 240 circle ai0 30 4 local",
+    "mv in 240 circle ai1 40 5 local",
+    "mv in 240 circle ai2 28 4 local",
+    "mv in 240 circle ai3 45 6 local",
+    "mv in 240 circle ai4 35 5 local",
+    "mv in 240 circle ai5 50 6 local",
+    "mv in 480 action local Button3Action 10"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv orbit local 34 12 3"
+   ],
+   "events": [
+    {
+     "t": 51.0,
+     "cmd": "place crystal local 70 0 0",
+     "why": "clip"
+    },
+    {
+     "t": 51.0,
+     "cmd": "aim local crystal",
+     "why": "clip"
+    },
+    {
+     "t": 51.2,
+     "cmd": "action local RightStickAction 150",
+     "why": "the five guns"
+    },
+    {
+     "t": 53.2,
+     "cmd": "aim local fleet",
+     "why": "clip"
+    },
+    {
+     "t": 54.4,
+     "cmd": "action local LeftStickAction 20",
+     "why": "the ring thrown and detonated (a spare ring comes from the crystal)"
+    }
+   ],
+   "features": {
+    "energy": 0.5,
+    "brightness": 0.5,
+    "onset_density": 0.5
+   },
+   "archetype": "brittlestar-ring",
+   "what": "The Brittle Star in Space mode fires its five turret guns into the mass around it, then throws its ring: a flat disk explosion as wide as the nucleus that clears every prism in its plane.",
+   "why": "clip library",
+   "vessel": "BrittleStar"
+  }
+ ]
+}
