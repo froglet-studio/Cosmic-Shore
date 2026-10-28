@@ -10,14 +10,14 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Lavalamp wormhole lab (<c>LavalampWormholeLab.unity</c>): the Meerkat's ORIGINAL tube look (the full-screen
-    /// contour-field lens + the additive calm wall) and the NEW cheap mobile water pipe (<see cref="MeerkatWaterTubeView"/>)
+    /// contour-field lens + the additive calm wall) and the NEW cheap watery-glass tube, now the default (<see cref="MeerkatWaterTubeView"/>)
     /// side by side, switched live with on-screen buttons, with a frame-time readout, so the frame gain can be judged before
     /// anything is kept or deleted (Yash, 2026-10-28: "make a test scene of lavalamp, with bunch of buttons, to swap between
     /// original wormhole shader and the new version, to judge the frame gain").
     /// Everything is built at runtime from the game's own code: one hull-less <see cref="MeerkatWormholeExecutor"/> (its lab
     /// hooks) forms real tunnels and grows a real omnicrystal network from the shipped <see cref="MeerkatWormholeConfigSO"/>,
     /// and holds them open; the shipped views and lens pass draw them. The switch is <see cref="MeerkatTubeLook.Mode"/>; the
-    /// lab puts it back to Original when it closes.
+    /// lab puts it back to <see cref="MeerkatTubeLook.Default"/> (the watery-glass tube) when it closes.
     /// Controls: WASD/arrows move, Q/E down/up, right mouse drag (or one-finger drag) looks, Shift fast, the wheel sets the speed.
     /// Scene-local harness, IMGUI on purpose (no fonts, sprites or TMP), NOT in the build settings.
     /// </summary>
@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("The Meerkat's wormhole config (the shipped one). In the editor it is found by path if left empty.")]
         [SerializeField] MeerkatWormholeConfigSO config;
         [Tooltip("The look the lab opens with.")]
-        [SerializeField] MeerkatTubeLookMode startMode = MeerkatTubeLookMode.Original;
+        [SerializeField] MeerkatTubeLookMode startMode = MeerkatTubeLook.Default;
         [Tooltip("Tunnels formed side by side.")]
         [Range(0, 12)] [SerializeField] int tubeCount = 3;
         [Tooltip("Grow an omnicrystal's wormhole network too.")]
@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
             MeerkatTubeLookMode.WallOnly, MeerkatTubeLookMode.None, MeerkatTubeLookMode.WaterAndLens,
         };
         static readonly string[] s_modeNames =
-            { "Original (lens + wall)", "New water pipe", "Lens only", "Wall only", "None (off)", "Water + lens" };
+            { "Original (lens + wall)", "Watery glass (default)", "Lens only", "Wall only", "None (off)", "Water + lens" };
 
         Camera _cam;
         MeerkatWormholeExecutor _exec;
@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_exec) _exec.LabClear();
-            MeerkatTubeLook.Mode = MeerkatTubeLookMode.Original;
+            MeerkatTubeLook.Mode = MeerkatTubeLook.Default;
             MeerkatWaterTubeView.Tuning.Active = false;
             QualitySettings.vSyncCount = _oldVSync;
             Application.targetFrameRate = _oldTarget;
@@ -238,7 +238,7 @@ namespace CosmicShore.Gameplay
             if (++_benchIdx >= s_modes.Length)
             {
                 _bench = false;
-                MeerkatTubeLook.Mode = MeerkatTubeLookMode.Original;
+                MeerkatTubeLook.Mode = MeerkatTubeLook.Default;
                 return;
             }
             BeginBenchMode();
@@ -443,7 +443,7 @@ namespace CosmicShore.Gameplay
             if (cap != uncapFrameRate) { uncapFrameRate = cap; ApplyCap(); }
 
             GUILayout.Space(6f);
-            _tune = GUILayout.Toggle(_tune, " Tune the water pipe (live)");
+            _tune = GUILayout.Toggle(_tune, " Tune the watery-glass tube (live)");
             MeerkatWaterTubeView.Tuning.Active = _tune;
             if (_tune)
             {
@@ -452,6 +452,7 @@ namespace CosmicShore.Gameplay
                 Slider("Flow", ref MeerkatWaterTubeView.Tuning.Flow, 0f, 1f);
                 Slider("Caustic", ref MeerkatWaterTubeView.Tuning.Caustic, 0f, 1f);
                 Slider("Twist", ref MeerkatWaterTubeView.Tuning.Twist, -1f, 1f);
+                Slider("Refract", ref MeerkatWaterTubeView.Tuning.Refract, 0f, 0.15f);
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Cull", Rich(12), GUILayout.Width(70f));
                 string[] culls = { "Off", "Front", "Back" };

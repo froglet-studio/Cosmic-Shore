@@ -9,8 +9,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The calm inner wall of every Meerkat wormhole tube (<c>R_VesselActions/MEERKAT.md</c> §7a, round 26), the Vessel Studio's
     /// <c>drawBore</c> (<c>Docs/Studios/VesselStudio/meerkat.html</c>): a formed tunnel's and each channel of an omnicrystal's
-    /// wormhole network, a smooth sheen with no lines (<c>tubeInner</c>, the Fresnel at <c>trunkFresnel</c>), its maker's
-    /// domain colour toward white, showing exactly the tube's live window. It is round 21's bore on its own, because the tree
+    /// wormhole network, a smooth sheen with no lines (<c>tubeInner</c>, the Fresnel at <c>trunkFresnel</c>), the universal
+    /// tube colour toward white (<see cref="MeerkatTubeLook.TunnelColour"/>, NetworkColour: tunnels carry no domain), showing exactly the tube's live window. It is round 21's bore on its own, because the tree
     /// that carried it ships off (Yash, 2026-10-28: "just anomaly: tubes of wormholes, and the network of wormholes").
     /// A tube still wrapped in the old look (a tunnel in its tree, a channel in its bark) has no wall of its own: that look
     /// draws it (<see cref="MeerkatTreeView"/>). The contour field's water pipe (<see cref="MeerkatWormholeLensPass"/>) bends
@@ -102,7 +102,7 @@ namespace CosmicShore.Gameplay
                     net.Walls = new Mesh[net.Channels.Count];
                     for (int i = 0; i < net.Walls.Length; i++) net.Walls[i] = MeerkatTreeMesh.BuildTubeWall(net.Channels[i], cfg.RootTip);
                 }
-                var colour = net.Maker.Colour;
+                var colour = MeerkatTubeLook.NetworkColour;   // universal: no maker's domain
                 for (int i = 0; i < net.Channels.Count; i++)
                 {
                     ref var w = ref net.Life[i];
