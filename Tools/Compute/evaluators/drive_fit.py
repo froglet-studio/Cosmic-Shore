@@ -32,6 +32,10 @@ import course_port as cp
 import race_models as rm
 
 VERSION = "1"
+# What a manual run (manual_runs.py) may change, and to what: the course, the intensities, the course seeds, the time
+# limit. hull, model and shipped stay the job's (a different hull is a different job's drive).
+REQUEST_ARGS = {"mode": {"choices": ["Regatta", "Headlong", "Redline"]}, "intensities": {"subset": [1, 2, 3, 4]},
+                "seeds": {"subset": list(range(1, 11))}, "limit": {"lo": 60, "hi": 1200}}
 PATHS = ["Tools/Build/", "Assets/Resources/AIBoostPolicies/", "Assets/Resources/RaceLines/",
          "Assets/_Prefabs/Spacevessels/"]
 _CTX = {}

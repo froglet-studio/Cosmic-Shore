@@ -312,16 +312,65 @@ Besides the automatic queue (idle, `--between`, `--always`), anyone can run one 
   --arg 'intensities=[4]' --note "..." --push` files `Docs/Compute/requests/<id>.json` on the `compute-queue` branch
   (git plumbing; the checkout is not touched). Every worker takes the oldest open request it may run before its
   automatic queue, under its own idle rules, until the tries are spent across all of them.
-- **On the console**: New run (title bar, Runs, Home, and "Run this my way" on every search) is a form: pick the
-  search, set each setting to search / narrower range / hold at, change how it is scored, tries, where, note; or
-  describe it in words and let Claude fill the form in. It makes a token: a command to paste for your computer, or
-  for the team "File it now" (starts a cloud session that runs `request new --token ... --push`) or the same command
-  yourself. The terminal has `run <search> [--tries N] [--fix a=v] [--range a=lo:hi] [--arg k=v] [--note ...] [--team]`
-  and `requests`.
+- **On the console**: New run (title bar, also on a phone; Runs; Home; "Run this my way" on every search; any cell of
+  the vessel x mode grid at the top of Searches) picks in steps: **vessel** (all 15 hulls on the fleet roster),
+  **game mode** (every arcade and arena card that seats it, from `Docs/AI_SYSTEM/vessel_mode_chart.json`), the
+  **intensities** I1-I4, **tries** on a slider, then optionally each setting on a slider (drag the ends to narrow it,
+  or hold it at one value; the white tick is today's value), **where**, and a note. Blue pairs run today on the
+  offline race models (Rhino, Manta and Dolphin on Regatta, Headlong and Redline); gold pairs need the game itself
+  played headless, the next tier, and say so instead of making a run. Pick a vessel and mode and the console finds
+  the search behind it: the vessel's own drive job with its `mode` changed. **Run on this computer** gives one line
+  for PowerShell or Terminal (`compute.py run --request <token>`). For the team's computers, the live console (section
+  15) files it in one tap; the claude.ai snapshot offers "File it now" (a cloud session) or the same command to paste.
+  The terminal keeps `run <search> [--tries N] [--fix a=v] [--range a=lo:hi] [--arg k=v] [--note ...] [--team]` and
+  `requests`.
+- **What an evaluator lets a request change**: its `REQUEST_ARGS` (`drive_fit`: `mode` among the three modelled
+  courses, `intensities` a subset of 1-4, `seeds` a subset of 1-10, `limit` 60-1200 s). A request that sets anything
+  else, or a value outside these, is refused by `manual_runs.problems()`, on the console, the hub and every worker.
 - **Where results go**: each computer writes `requests/<id>.json` (its tries and best) to its results branch and
   runs the search as `<job>~<id>`, so a manual run never mixes with the job's own search; the evaluator still scores
   against the job's full space, so the numbers compare. Runs on the console shows every request, its state, tries,
   and its best against today's value under the same settings. `compute.py request list` and `request cancel <id>`.
+
+## 15. The live console and the always-on VM (Shombith, 2026-10-28)
+
+The claude.ai console is a snapshot: a page there can only read the files published with it. **The hub**
+(`compute.py hub`, `Tools/Compute/hub.py`) is the same page served live from one always-on computer: it rebuilds the
+data from git every minute, lays every computer's heartbeat on top the moment it arrives (a working computer posts one
+every ~20 s), and files manual runs on `compute-queue` from any browser or phone, guarded by the team key. The page
+notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refreshes every 15 s.
+
+**The VM: Oracle Cloud Always Free** (an Ampere A1 ARM machine, up to 4 cores and 24 GB free for good; we use 2 and 12):
+
+1. Oracle console, Compute > Instances > Create instance. Image **Canonical Ubuntu 24.04**; shape
+   **VM.Standard.A1.Flex**, 2 OCPUs, 12 GB; keep "Assign a public IPv4 address"; add your SSH public key (or let it
+   generate one and save the private key). "Out of capacity" is common on A1: try another availability domain, or
+   again later.
+2. Networking > Virtual cloud networks > the instance's VCN > its subnet's security list > Add ingress rules: source
+   `0.0.0.0/0`, TCP, destination ports **80** and **443**.
+3. A GitHub fine-grained token: Settings > Developer settings > Fine-grained tokens, resource owner
+   `froglet-studio`, only `Cosmic-Shore`, **Contents: read and write**, **Pull requests: read**. The organisation may
+   have to approve it.
+4. `ssh -i <key> ubuntu@<public ip>` (Windows has `ssh` built in), then:
+   ```
+   export GITHUB_TOKEN=github_pat_...
+   curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
+     https://raw.githubusercontent.com/froglet-studio/Cosmic-Shore/claude/eager-franklin-e6g77h/Tools/Compute/vm/setup-vm.sh | bash
+   ```
+   `Tools/Compute/vm/setup-vm.sh` installs git, Python, numpy and Caddy; opens 80/443 in the image's firewall; makes a
+   `froglet` service user with a partial, sparse clone (only Tools/Compute, Tools/Build, Docs/Compute, Docs/AI_SYSTEM,
+   Docs/TEAM.json; files over 1 MB stay on GitHub); writes the team key; runs the hub and a worker that works all the
+   time as systemd services (`froglet-hub`, `froglet-compute`, user `vm`, computer `oracle`); and puts the hub behind
+   HTTPS at `https://<ip-with-dashes>.sslip.io` (or `COMPUTE_DOMAIN`). It prints the address, the team key and the
+   line that puts a team computer on the live console. Running it again updates everything and keeps the key.
+5. On each team computer, from its Cosmic-Shore folder, the printed line (`setup.py ... --hub <address> --hub-key
+   <key>`): the computer's progress then shows on the live console within seconds. The Install sheet on the live
+   console adds these flags itself once the team key is entered.
+
+What it is not: the VM is ARM Linux with no GPU, so it runs the offline searches, not the Unity game. The gold pairs
+(the game played headless) stay on team PCs until that tier exists. sslip.io certificates come from Let's Encrypt
+and can hit its weekly limit for the shared domain; a domain of our own (`COMPUTE_DOMAIN`, an A record to the VM) avoids
+that. Logs: `journalctl -u froglet-hub -u froglet-compute -f`.
 
 ## 12. Verification status (2026-10-26)
 
@@ -347,3 +396,9 @@ all of them fail against the previous code (the negative control). `drive-rhino-
 **2026-10-28**: the first real push to origin worked. The cloud session published four jobs as
 `compute/shombith/cloud-session` (`drive-rhino-headlong` 154 evaluations, `drive-manta-redline` 120, `bioform-forge`
 1,512, `drive-rhino-regatta` 88), and the Compute Console reads them. Still not run: Windows, macOS, torch.
+
+**2026-10-28, later**: the hub's end to end joined the self-test (a wrong key is refused, a run outside its search
+is refused, a good run is filed on the throwaway remote's `compute-queue`, a worker's heartbeat shows live). The
+console's New run and vessel x mode grid were checked in Chromium at 1360 and 390 px with the hub's endpoints mocked:
+no script errors, no sideways scroll, the run posted is the one picked. `setup-vm.sh` passes `bash -n` but has not run
+on a real VM yet.

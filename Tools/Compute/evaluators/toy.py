@@ -7,6 +7,7 @@ import math
 
 VERSION = "1"
 PATHS = ["Tools/Compute/"]
+REQUEST_ARGS = {"target": {"lo": -5.0, "hi": 5.0}}
 
 
 def evaluate(params, ctx=None):

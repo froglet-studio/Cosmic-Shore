@@ -106,6 +106,18 @@ worth it), `sessions` and `ask` inside the claude.ai viewer, and a real approval
   its queue, ran 308 tries and recorded best 3.416 against today's 4.113 under the same settings (in the model).
   A token made by the console's form ran through the backend unchanged.
 
+### Vessel and mode picks, the live console and the VM (2026-10-28)
+
+- New run now picks a vessel (15 hulls), a game mode (every arcade and arena card that seats it), intensities and
+  tries on colourful sliders, and gives a PowerShell or Terminal line at once. Searches opens with a vessel x mode
+  grid. Only 5 of the 61 offered pairs run today (Rhino, Manta, Dolphin on the three modelled courses); the rest are
+  marked "needs the game" (README section 14).
+- The hub (`compute.py hub`) serves the console live: heartbeats every ~20 s, runs filed from a phone with the team
+  key. `Tools/Compute/vm/setup-vm.sh` sets it up on Oracle's Always Free ARM VM with HTTPS (README section 15).
+  Self-tested end to end against a throwaway remote (wrong key 401, out-of-bounds run 400, good run filed, a worker
+  shows live). The page was checked in Chromium at desktop and phone widths with the hub mocked. **Not yet run on a
+  real VM.**
+
 ## 4. Decisions that are yours
 
 - **Merge or not**, and onto what (`bleeding-edge` directly, or through your own branch).

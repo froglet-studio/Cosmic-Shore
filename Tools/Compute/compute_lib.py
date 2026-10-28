@@ -262,6 +262,35 @@ def commit_files(branch, files, message, push=True, cwd=None, quiet=False):
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def hub_config():
+    """(url, key) of the hub this computer reports to live, or (None, None): FROGLET_COMPUTE_HUB / _HUB_KEY, else the
+    hub and hub_key in ~/.froglet-compute/config.json (the setup writes them with --hub/--hub-key)."""
+    url, key = os.environ.get("FROGLET_COMPUTE_HUB"), os.environ.get("FROGLET_COMPUTE_HUB_KEY")
+    if not url:
+        cfg = read_json(os.path.join(cache_dir(), "config.json"), {}) or {}
+        url, key = cfg.get("hub"), cfg.get("hub_key")
+    return (url.rstrip("/"), key) if url and key else (None, None)
+
+
+def post_heartbeat(hb):
+    """Send a heartbeat to the hub in the background: a phone sees the run's progress in seconds. Never blocks the
+    worker and never fails it: a hub that is down only means the console falls back to git's slower updates."""
+    url, key = hub_config()
+    if not url:
+        return
+
+    def send():
+        try:
+            import urllib.request
+            r = urllib.request.Request(url + "/api/heartbeat", data=json.dumps(hb, default=float).encode(), method="POST",
+                                       headers={"Content-Type": "application/json", "X-Compute-Key": key})
+            urllib.request.urlopen(r, timeout=5).read()
+        except Exception:
+            pass
+    import threading
+    threading.Thread(target=send, daemon=True).start()
+
+
 # ── jobs ─────────────────────────────────────────────────────────────────────
 
 def _job_problems(j):

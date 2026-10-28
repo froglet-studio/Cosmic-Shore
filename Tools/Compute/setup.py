@@ -13,6 +13,7 @@ Options go after the dash (`... | python3 - --nights`):
     --no-first-run    skip the short first session that puts this computer on the console
     --dry-run         copy the code into ~/.froglet-compute/app and print what it would register; register nothing
     --uninstall       stop it and remove what it added
+    --hub URL --hub-key KEY   report live to the team's hub (the VM), so phones see this computer's runs in seconds
 
 What it does, in order, and nothing else:
     1. checks that this folder is a Cosmic-Shore checkout and that git and Python 3.8+ are here (numpy is optional)
@@ -76,6 +77,8 @@ def copy_app(ref):
 
 def main(argv):
     opts = set(argv)
+    if ("--hub" in opts) != ("--hub-key" in opts):
+        raise SystemExit("stopped: --hub and --hub-key go together (the console's Install sheet shows both)")
     dry = "--dry-run" in opts
     say("Froglet Compute setup")
     if sys.version_info < (3, 8):
@@ -110,8 +113,11 @@ def main(argv):
         args += ["--always"]
     say("3. registering the worker: " + " ".join(args[2:]))
     if not dry:                     # so commands typed by hand (compute.py run --request ...) find this checkout
+        cfg = {"repo": repo, "ref": ref, "queue": queue}
+        if "--hub" in argv and "--hub-key" in argv:
+            cfg["hub"], cfg["hub_key"] = argv[argv.index("--hub") + 1], argv[argv.index("--hub-key") + 1]
         with open(os.path.join(os.path.dirname(APP), "config.json"), "w", encoding="utf-8") as fh:
-            json.dump({"repo": repo, "ref": ref, "queue": queue}, fh, indent=1)
+            json.dump(cfg, fh, indent=1)
     if dry:
         args.append("--dry-run")
     rc = subprocess.call(args, cwd=repo)

@@ -36,6 +36,68 @@ def _git(*a, cwd, env=None):
     return p.stdout
 
 
+def hub_end_to_end(tmp, work, remote, script, env0):
+    """The hub: a wrong key is refused, a run outside its search is refused, a good one is filed on compute-queue, and
+    a worker that reports to the hub shows up live in /console.json."""
+    import socket
+    import time as _t
+    import urllib.error
+    import urllib.request
+    import manual_runs as R
+    bad = []
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+    home = os.path.join(tmp, "cache-hub")
+    envh = dict(env0, FROGLET_COMPUTE_HOME=home, FROGLET_COMPUTE_USER="selftest", FROGLET_COMPUTE_HOST="hub")
+    hub = subprocess.Popen([sys.executable, script, "hub", "--port", str(port), "--rebuild", "2", "--quiet",
+                            "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=envh,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    base = f"http://127.0.0.1:{port}"
+
+    def call(path, body=None, key=None):
+        r = urllib.request.Request(base + path, data=json.dumps(body).encode() if body is not None else None,
+                                   method="POST" if body is not None else "GET",
+                                   headers={"Content-Type": "application/json", **({"X-Compute-Key": key} if key else {})})
+        try:
+            with urllib.request.urlopen(r, timeout=30) as resp:
+                return resp.status, json.loads(resp.read().decode() or "{}")
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read().decode() or "{}")
+    try:
+        for _ in range(120):
+            try:
+                if call("/api/status")[1].get("built"):
+                    break
+            except Exception:
+                pass
+            _t.sleep(0.5)
+        key = (L.read_json(os.path.join(home, "hub.json"), {}) or {}).get("key")
+        good = R.build("toy-smoke", 20, fix=["x3=0.0"], note="from a phone")
+        if call("/api/requests", good, "wrong")[0] != 401:
+            bad.append("hub: a wrong team key was accepted")
+        if call("/api/requests", R.build("toy-smoke", 20, fix=["x0=99"]), key)[0] != 400:
+            bad.append("hub: a run outside its search's bounds was accepted")
+        code, ans = call("/api/requests", {"token": R.token(good)}, key)
+        if code != 201 or subprocess.run(["git", "cat-file", "-e", f"refs/heads/compute-queue:Docs/Compute/requests/{good['id']}.json"],
+                                         cwd=remote).returncode:
+            bad.append(f"hub: a good run was not filed on compute-queue ({code} {ans})")
+        envw = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-live"), FROGLET_COMPUTE_USER="selftest",
+                    FROGLET_COMPUTE_HOST="live", FROGLET_COMPUTE_HUB=base, FROGLET_COMPUTE_HUB_KEY=key or "")
+        subprocess.run([sys.executable, script, "run", "--no-update", "--always", "--once", "--no-push", "--cores", "2",
+                        "--max-evals", "16", "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=envw,
+                       capture_output=True, text=True, timeout=600)
+        _t.sleep(1.5)
+        d = call("/console.json")[1]
+        if "selftest/live" not in (d.get("live") or {}).get("machines", []):
+            bad.append(f"hub: a worker reporting to the hub did not show up live: {d.get('live')}")
+    finally:
+        hub.terminate()
+        hub.wait(timeout=10)
+    return bad
+
+
 def end_to_end():
     bad = []
     tmp = tempfile.mkdtemp(prefix="froglet-compute-selftest-")
@@ -136,6 +198,7 @@ def end_to_end():
                             "--queue", "bleeding-edge"], cwd=work, env=envr, capture_output=True, text=True, timeout=600)
         if p.returncode or "manual run" not in p.stdout:
             bad.append(f"manual runs: a token did not run at once:\n{p.stdout[-800:]}{p.stderr[-400:]}")
+        bad += hub_end_to_end(tmp, work, remote, script, env0)
         env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-board"))
         p = subprocess.run([sys.executable, script, "board", "--queue", "bleeding-edge"], cwd=work, env=env,
                            capture_output=True, text=True, timeout=300)

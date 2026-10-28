@@ -98,17 +98,43 @@ def problems(req, job):
             p.append(f"ranges: {name} needs [low, high] inside {d.get('lo')}..{d.get('hi')}")
     if len(req.get("fix") or {}) >= len(space):
         p.append("fix: leave at least one setting to search")
-    have = (job.get("evaluator") or {}).get("args") or {}
+    allowed = request_args(job)
     for k, v in (req.get("args") or {}).items():
-        if k not in have or k.startswith("_"):
-            p.append(f"args: {k} is not a setting this search's evaluator has")
-        elif not _plain(v):
-            p.append(f"args: {k} must be a number, text, true/false or a list of those")
+        rule = allowed.get(k)
+        if rule is None:
+            p.append(f"args: {k} cannot be changed in a manual run of this search")
+        elif not _plain(v) or not _fits(rule, v):
+            p.append(f"args: {k}={json.dumps(v)} is not allowed ({_describe(rule)})")
     if not MACHINE.fullmatch(str(req.get("machine", "any"))):
         p.append("machine must be any or <person>/<computer>")
     if len(str(req.get("note", ""))) > 2000:
         p.append("note: at most 2000 characters")
     return p
+
+
+def request_args(job):
+    """{arg: rule} a manual run of `job` may change: its evaluator's REQUEST_ARGS (nothing when it declares none)."""
+    try:
+        import importlib
+        return dict(getattr(importlib.import_module("evaluators." + job["evaluator"]["module"]), "REQUEST_ARGS", {}))
+    except Exception:
+        return {}
+
+
+def _fits(rule, v):
+    if "choices" in rule:
+        return v in rule["choices"]
+    if "subset" in rule:
+        return isinstance(v, list) and 0 < len(v) and all(x in rule["subset"] for x in v)
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and rule.get("lo", v) <= v <= rule.get("hi", v)
+
+
+def _describe(rule):
+    if "choices" in rule:
+        return "one of " + ", ".join(map(str, rule["choices"]))
+    if "subset" in rule:
+        return "a list from " + ", ".join(map(str, rule["subset"]))
+    return f"{rule.get('lo')}-{rule.get('hi')}"
 
 
 def _plain(v):
@@ -135,8 +161,14 @@ def derive(job, req):
     j["space_full"] = copy.deepcopy(job.get("space") or [])   # the evaluator scores as for the job itself
     j["space"], j["fixed"] = space, fix
     j["evaluator"] = dict(j.get("evaluator") or {}, args=dict((j.get("evaluator") or {}).get("args") or {}, **(req.get("args") or {})))
+    old_mode = ((job.get("evaluator") or {}).get("args") or {}).get("mode")
+    new_mode = (req.get("args") or {}).get("mode")
+    if new_mode and new_mode != old_mode and "shipped" in j["evaluator"]["args"]:
+        # Another course: today's values are the job's own (its `init`), not another mode's shipped asset.
+        j["evaluator"]["args"]["shipped"] = ""
     j["id"], j["request"], j["status"] = f"{job['id']}~{req['id']}", req, "ready"
-    j["title"] = "Manual run: " + (job.get("title") or job["id"])
+    hull = j["evaluator"]["args"].get("hull")
+    j["title"] = "Manual run: " + (f"{hull} in {new_mode}" if hull and new_mode else (job.get("title") or job["id"]))
     j.pop("convergence", None)
     return j
 
@@ -170,11 +202,12 @@ def progress(req, machines, now=None):
     """{state: open|running|done|cancelled, tries, best, machines, running_on, updated}: what every computer has
     published about this request."""
     now = now or L.now()
-    tries, best, who, updated, running = 0, None, [], 0, None
+    tries, best, who, updated, running, done_tries = 0, None, [], 0, None, 0
     for m in machines:
         r = (m.get("requests") or {}).get(req["id"])
         if r:
             tries += int(r.get("tries", 0))
+            done_tries += int(r.get("tries", 0))
             who.append(f"{m['user']}/{m['host']}")
             updated = max(updated, int(r.get("updated", 0)))
             if L.finite(r.get("best")) and (best is None or r["best"] < best):
@@ -188,8 +221,8 @@ def progress(req, machines, now=None):
                 best = cur["best"]
     budget = int((req.get("budget") or {}).get("tries", 0))
     state = "cancelled" if req.get("cancelled") else ("done" if tries >= budget > 0 else ("running" if running else "open"))
-    return {"state": state, "tries": tries, "budget": budget, "best": best, "machines": who, "running_on": running,
-            "updated": updated}
+    return {"state": state, "tries": tries, "done_tries": done_tries, "budget": budget, "best": best, "machines": who,
+            "running_on": running, "updated": updated}
 
 
 def pick(requests, jobs, machines, me, caps):
@@ -243,6 +276,7 @@ def self_test():
     for what, r in [("a value outside the bounds", build("toy", 100, fix=["a=11"])),
                     ("a setting the search does not have", build("toy", 100, fix=["z=1"])),
                     ("a new evaluator setting", build("toy", 100, args=["module=evil"])),
+                    ("an evaluator setting out of its range", build("toy", 100, args=["target=50"])),
                     ("a reversed range", build("toy", 100, ranges=["a=4:2"])),
                     ("no budget", dict(build("toy", 100), budget={"tries": 0})),
                     ("every setting fixed", build("toy", 100, fix=["a=1", "b=0", "c=\"x\""])),

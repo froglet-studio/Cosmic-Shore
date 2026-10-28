@@ -252,14 +252,15 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
 .run .facts b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* ── install sheet (a macOS sheet: drops from the title bar) ── */
-.sheetwrap { position: fixed; inset: 0; z-index: 40; background: rgba(0,1,10,0.55); display: grid; justify-items: center; align-items: start; padding: 64px 16px 16px; overflow-y: auto; }
+.sheetwrap { position: fixed; inset: 0; z-index: 40; background: rgba(0,1,10,0.55); display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-items: start; padding: 64px 16px 16px; overflow-y: auto; }
 .sheet { width: min(640px, 100%); background: rgba(14,19,58,0.98); border: 1px solid var(--line-hi); border-top: 0; box-shadow: 0 24px 60px rgba(0,1,10,0.7); padding: 22px 24px 20px; display: grid; gap: 14px;
   -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); animation: drop 0.22s ease-out; }
 @keyframes drop { from { transform: translateY(-14px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
+.sheet.still { animation: none; }
 .sheet h2 { font-size: 21px; }
 .sheet { grid-template-columns: minmax(0, 1fr); }
-.sheet > *, .card > *, .mrun > * { min-width: 0; }
+.sheet > *, .card > *, .mrun > *, .pane > * { min-width: 0; }
 .seg { display: inline-flex; background: var(--sunk); padding: 3px; gap: 3px; }
 .seg button { border: 0; background: transparent; color: var(--muted); padding: 6px 14px; cursor: pointer; font: 600 12.5px/1 var(--ui); }
 .seg button[aria-pressed="true"] { background: rgba(0,212,255,0.2); color: var(--text); }
@@ -277,7 +278,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
 .copyrow .btn { flex: none; }
 
 /* ── new run ── */
-.sheet.wide { width: min(780px, 100%); }
+.sheet.wide { width: min(780px, 100%); min-width: 0; }
 .flabel { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
 .flabel .field { color: var(--text); }
 select.field, input.field, textarea.field { width: 100%; font: inherit; font-size: 13px; color: var(--text); background: var(--sunk); border: 1px solid var(--line); padding: 7px 9px; }
@@ -304,11 +305,73 @@ textarea.field { min-height: 54px; resize: vertical; }
 .tour .tip .count { font: 11px/1 var(--mono); color: var(--dim); margin-right: auto; }
 @media (prefers-reduced-motion: reduce) { .tour .spot, .tour .tip { transition: none; } }
 
+/* New run: picks, colourful sliders, the live tag */
+.step { display: grid; gap: 8px; min-width: 0; }
+.step > b, .step > summary { font: 600 12px/1.2 var(--btn); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.step > summary { cursor: pointer; }
+details.step[open] > summary { margin-bottom: 4px; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.pick { display: inline-grid; gap: 2px; text-align: left; border: 1px solid var(--line); background: var(--sunk); color: var(--muted); padding: 7px 11px 6px; cursor: pointer; font: 600 12.5px/1.15 var(--ui); max-width: 100%;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+.pick small { font: 500 10.5px/1.1 var(--ui); color: var(--dim); }
+.pick:hover { border-color: var(--line-hi); color: var(--text); }
+.pick.now { border-left: 3px solid var(--jade); }
+.pick.game { border-left: 3px solid var(--gold-d); }
+.pick.game span { color: var(--dim); }
+.pick.on { color: var(--black); background: var(--jade); border-color: var(--jade); }
+.pick.on small { color: rgba(0,1,10,0.7); }
+.pick.game.on { background: var(--gold); border-color: var(--gold); }
+.pick.where.on { background: var(--cta); border-color: var(--cta); }
+.pick.int { min-width: 52px; text-align: center; font: 600 14px/1 var(--btn); padding: 10px 12px; }
+.pick.int.on.i1 { background: var(--jade); border-color: var(--jade); }
+.pick.int.on.i2 { background: var(--cta); border-color: var(--cta); }
+.pick.int.on.i3 { background: var(--gold); border-color: var(--gold); }
+.pick.int.on.i4 { background: var(--ruby); border-color: var(--ruby); color: var(--text); }
+.pick:focus-visible, .lock:focus-visible, .srange:focus-visible { outline: 2px solid var(--jade-l); outline-offset: 2px; }
+.srow { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.srange { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; cursor: pointer; margin: 0; }
+.srange { --a: 0%; --b: 50%; }
+.srange::-webkit-slider-runnable-track { height: 6px; background: linear-gradient(90deg, rgba(7,11,41,0.8) var(--a), transparent var(--a), transparent var(--b), rgba(7,11,41,0.8) var(--b)), linear-gradient(90deg, var(--jade), var(--ruby) 55%, var(--gold)); }
+.srange::-moz-range-track { height: 6px; background: linear-gradient(90deg, rgba(7,11,41,0.8) var(--a), transparent var(--a), transparent var(--b), rgba(7,11,41,0.8) var(--b)), linear-gradient(90deg, var(--jade), var(--ruby) 55%, var(--gold)); }
+.srange::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; background: var(--text); border: 3px solid var(--space); box-shadow: 0 0 0 2px var(--jade), 0 0 10px rgba(0,212,255,0.5); transform: rotate(45deg); }
+.srange::-moz-range-thumb { width: 14px; height: 14px; background: var(--text); border: 3px solid var(--space); box-shadow: 0 0 0 2px var(--jade); border-radius: 0; transform: rotate(45deg); }
+.bubble { flex: none; min-width: 64px; text-align: center; font: 600 15px/1 var(--btn); color: var(--black); background: linear-gradient(90deg, var(--jade), var(--gold)); padding: 8px 10px; }
+.tune { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 92px auto; gap: 10px; align-items: center; min-width: 0; }
+.tname { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track { position: relative; min-width: 0; }
+.dual { position: relative; height: 22px; }
+.dual .srange { position: absolute; inset: 0; pointer-events: none; }
+.dual .srange::-webkit-slider-thumb { pointer-events: auto; }
+.dual .srange::-moz-range-thumb { pointer-events: auto; }
+.dual .srange + .srange::-webkit-slider-runnable-track, .dual .srange + .srange::-moz-range-track { background: transparent; }
+.today { position: absolute; top: -3px; width: 2px; height: 28px; background: var(--text); opacity: 0.85; pointer-events: none; transform: translateX(-1px); }
+.sval { font-size: 11.5px; color: var(--jade-l); text-align: right; white-space: nowrap; }
+.lock { border: 1px solid var(--line); background: transparent; color: var(--dim); font: 600 10.5px/1 var(--btn); letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 8px; cursor: pointer; }
+.lock.on { background: var(--gold); border-color: var(--gold); color: var(--black); }
+.btn.big { font-size: 14px; padding: 16px 20px 15px; width: 100%; }
+.livetag { margin-left: 8px; font: 700 10px/1 var(--btn); letter-spacing: 0.14em; color: var(--black); background: var(--cta); padding: 4px 6px 3px; box-shadow: 0 0 10px rgba(153,255,128,0.6); }
+#vgrid { display: block; }
+#vgrid > * + * { margin-top: 10px; }
+.vm-grid td.cell { text-align: center; }
+.vm-grid td.cell button { width: 100%; min-width: 34px; height: 26px; border: 0; cursor: pointer; font: 600 11px/1 var(--btn); }
+.vm-grid td.cell button.now { background: rgba(0,212,255,0.22); color: var(--jade-l); }
+.vm-grid td.cell button.now:hover { background: var(--jade); color: var(--black); }
+.vm-grid td.cell button.game { background: rgba(255,174,0,0.12); color: var(--gold); }
+.vm-grid td.cell button.game:hover { background: rgba(255,174,0,0.28); color: var(--gold-l); }
+.vm-grid th.mh { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: 11px; padding: 6px 2px; }
+@media (max-width: 760px) {
+  .tune { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .lights { display: none; }
+  .tbtn { white-space: nowrap; }
+  .tune .track { grid-column: 1 / -1; grid-row: 2; }
+  .tune .sval { text-align: left; }
+}
+
 @media (max-width: 760px) {
   body { padding: 0; }
   .window { border-radius: 0; border: 0; min-height: 100%; }
   .titlebar { grid-template-columns: auto 1fr auto; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
-  .tright .fresh, #sb-right, #b-newrun { display: none; }
+  .tright .fresh, #sb-right, #b-tour { display: none; }
   .tright { justify-self: end; }
   .titlebar { gap: 14px; }
   .body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
@@ -330,7 +393,7 @@ textarea.field { min-height: 54px; resize: vertical; }
       <button class="y" data-g="−" id="l-yellow" aria-label="Hide the sidebar" title="Hide the sidebar"></button>
       <button class="g" data-g="+" id="l-green" aria-label="Zoom the window" title="Zoom the window"></button>
     </div>
-    <div class="wtitle"><span class="led" id="led"></span><b>Froglet Compute</b></div>
+    <div class="wtitle"><span class="led" id="led"></span><b>Froglet Compute</b><span class="livetag" id="livetag" hidden>LIVE</span></div>
     <div class="tright"><span class="fresh" id="fresh">loading</span><button class="tbtn" type="button" id="b-tour">Tour</button><button class="tbtn" type="button" id="b-newrun">New run</button><button class="tbtn cta" type="button" id="b-install">Install</button></div>
   </div>
   <div class="body">
@@ -568,6 +631,7 @@ textarea.field { min-height: 54px; resize: vertical; }
     var d = DATA;
     root.appendChild(title("Searches", "what the computers are looking for"));
     root.appendChild(h("p", { class: "lead", text: "Each search tries thousands of settings (an AI's driving numbers, a creature's body) in an offline model of the game and keeps the best. The percentage compares the best found with what the game ships today; the line shows it improving as tries add up. Lower scores are better." }));
+    root.appendChild(vesselGrid());
     [["Ready for a yes", function (j) { return j.converged && j.status !== "promoted"; }],
      ["Searching", function (j) { return !j.converged && runnable(j); }],
      ["Waiting for an earlier step", function (j) { return !j.converged && !runnable(j) && j.status !== "promoted" && j.status !== "retired"; }],
@@ -576,6 +640,23 @@ textarea.field { min-height: 54px; resize: vertical; }
       js.sort(function (a, b) { return (b.evals || 0) - (a.evals || 0); });
       root.appendChild(h("section", { class: "group", id: gi === 1 ? "searching-group" : null }, [h("h3", { text: g[0] + " · " + js.length })].concat(js.map(jobRow))));
     });
+  }
+
+  // every vessel x every mode it is offered in: a blue cell runs now (opens New run on that pair), a gold one needs the game
+  function vesselGrid() {
+    var c = catalog(), hulls = c.hulls.map(function (x) { return x.hull; }), n = 0, now = 0;
+    var runsNow = function (m) { return m.hulls.some(function (x) { return x.status === "now"; }) ? 0 : 1; };
+    var rows = c.modes.slice().sort(function (a, b) { return runsNow(a) - runsNow(b) || a.name.localeCompare(b.name); }).map(function (m) {
+      var by = {}; m.hulls.forEach(function (x) { by[x.hull] = x; n++; if (x.status === "now") now++; });
+      return h("tr", null, [h("td", null, [h("b", { text: m.name }), h("small", { class: "note", text: " " + m.kind })])].concat(hulls.map(function (hu) {
+        var x = by[hu]; if (!x) return h("td", { class: "cell" });
+        return h("td", { class: "cell" }, [h("button", { type: "button", class: x.status, title: hu + " in " + m.name + (x.status === "now" ? ": runs now" : ": needs the real game"), "aria-label": hu + " in " + m.name,
+          onclick: function () { openNewRun(null, hu, m.mode); }, text: x.status === "now" ? "▶" : "·" })]); })));
+    });
+    return h("details", { class: "card sliver", id: "vgrid", open: lsGet("fc-vgrid") === "0" ? null : true, ontoggle: function (e) { lsSet("fc-vgrid", e.target.open ? "1" : "0"); } }, [
+      h("summary", { text: "Every vessel in every mode · " + now + " of " + n + " pairs run now", style: "cursor:pointer;font-family:var(--head)" }),
+      h("p", { class: "note", text: "Pick a pair to start a run on it. Blue runs today on the offline race models; gold needs the real game played headless, the next tier." }),
+      h("div", { class: "tablewrap" }, [h("table", { class: "matrix vm-grid" }, [h("thead", null, [h("tr", null, [h("th", { text: "Mode" })].concat(hulls.map(function (hu) { return h("th", { class: "mh", text: hu }); })))]), h("tbody", null, rows)])])]);
   }
 
   // ── a search's sheet ──
@@ -732,6 +813,7 @@ textarea.field { min-height: 54px; resize: vertical; }
   function installCommand() {
     var i = DATA.install || {}, base = OS === "windows" ? i.windows : i.unix, extra = [];
     if (IOPT.nights) extra.push("--nights"); if (IOPT.always) extra.push("--always");
+    if (LIVE && KEY) extra.push("--hub " + location.origin + " --hub-key " + KEY);
     return (base || "") + (extra.length ? " " + extra.join(" ") : "");
   }
   function copyBtn(getText) {
@@ -763,6 +845,7 @@ textarea.field { min-height: 54px; resize: vertical; }
           h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: cmd })]), copyBtn(function () { return installCommand(); })])])]));
       sheet.appendChild(h("p", { class: "note", text: "It checks Python and git, copies its code into ~/.froglet-compute, registers itself with your " + (OS === "mac" ? "Mac" : OS === "windows" ? "PC" : "computer") + ", and does a two-minute first run so your computer shows up under Computers after the next refresh. Most searches need numpy: " + (OS === "windows" ? "python -m pip install --user numpy" : "python3 -m pip install --user numpy") + "." }));
       sheet.appendChild(h("p", { class: "note", text: "Stop it any time: the same line with --uninstall at the end." }));
+      if (LIVE) sheet.appendChild(h("p", { class: "note", text: KEY ? "This line also puts the computer on this live console: its progress shows here, and on any phone, within seconds." : "Enter the team key (New run → Send it asks for it) and this line will also put the computer on this live console." }));
       if ((DATA.install || {}).merged === false) sheet.appendChild(h("p", { class: "note", text: "Until Froglet Compute is merged into bleeding-edge, this installs from the " + DATA.install.ref + " branch." }));
     }
     draw();
@@ -771,28 +854,48 @@ textarea.field { min-height: 54px; resize: vertical; }
   }
   function closeInstall() { document.getElementById("sheet").hidden = true; }
 
-  // ── manual runs: the New run sheet (manual_runs.py is the backend) ──
-  var NR = null;
+  // ── manual runs: the New run sheet (manual_runs.py is the backend; the hub takes runs live from any phone) ──
+  var NR = null, LIVE = false, KEY = lsGet("fc-key") || "";
   function b64url(s) { var bin = ""; new TextEncoder().encode(s).forEach(function (b) { bin += String.fromCharCode(b); }); return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
   function newReqId() { var d = new Date(), p = function (n) { return String(n).padStart(2, "0"); };
     return "r" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + "-" + Math.floor(Math.random() * 65536).toString(16).padStart(4, "0"); }
   function formFor(jid) { return ((DATA && DATA.forms) || {})[jid]; }
+  function catalog() { return (DATA && DATA.catalog) || { hulls: [], modes: [] }; }
+  function hullInfo(h) { return catalog().hulls.filter(function (x) { return x.hull === h; })[0] || { hull: h, template: null, modes_now: [] }; }
+  function modesFor(hull) {
+    var hi = hullInfo(hull), seen = {}, out = [];
+    catalog().modes.forEach(function (m) { var c = m.hulls.filter(function (x) { return x.hull === hull; })[0];
+      if (c) { out.push({ mode: m.mode, name: m.name, kind: m.kind, status: c.status }); seen[m.mode] = 1; } });
+    (hi.modes_now || []).forEach(function (m) { if (!seen[m]) out.push({ mode: m, name: m, kind: "course", status: "now", extra: true }); });
+    return out.sort(function (a, b) { return (a.status === "now" ? 0 : 1) - (b.status === "now" ? 0 : 1) || a.name.localeCompare(b.name); });
+  }
   function freshNR(jid) {
     var f = formFor(jid) || { space: [], args: {} }, modes = {}, vals = {}, args = {};
     f.space.forEach(function (d) { modes[d.name] = "search"; vals[d.name] = { lo: d.lo, hi: d.hi, v: d.init != null ? d.init : (d.choices ? d.choices[0] : d.lo) }; });
     Object.keys(f.args).forEach(function (k) { args[k] = JSON.stringify(f.args[k]); });
-    return { job: jid, tries: 500, where: "here", modes: modes, vals: vals, args: args, note: "", describe: "", made: null, msg: "" };
+    return { job: jid, vessel: f.hull || null, mode: f.mode || null, tries: 500, where: "here", modes: modes, vals: vals, args: args, note: "", made: null };
   }
+  function nrFor(vessel, mode) {
+    var t = hullInfo(vessel).template, n = t ? freshNR(t) : { job: null, vessel: vessel, mode: mode, tries: 500, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
+    n.vessel = vessel; n.mode = mode;
+    if (t && mode && n.args.mode != null) n.args.mode = JSON.stringify(mode);
+    if (NR) { n.where = NR.where; n.tries = NR.tries; n.note = NR.note; }
+    return n;
+  }
+  function pairStatus() { if (!NR.vessel || !NR.mode) return null; var m = modesFor(NR.vessel).filter(function (x) { return x.mode === NR.mode; })[0]; return m ? m.status : null; }
   function nrRequest() {
-    var f = formFor(NR.job), req = { schema: "froglet-compute/request/1", id: newReqId(), job: NR.job, by: who(), created: Math.floor(Date.now() / 1000),
-      note: NR.note.trim(), budget: { tries: parseInt(NR.tries, 10) || 0 }, machine: NR.where === "here" || NR.where === "team" ? "any" : NR.where }, errs = [];
+    var f = formFor(NR.job), errs = [];
+    if (!f) return { req: null, errs: [NR.vessel + " in " + NR.mode + " needs the real game, which no computer can run yet."] };
+    var req = { schema: "froglet-compute/request/1", id: newReqId(), job: NR.job, by: who(), created: Math.floor(Date.now() / 1000), note: NR.note.trim(),
+      budget: { tries: parseInt(NR.tries, 10) || 0 }, machine: NR.where === "here" || NR.where === "team" ? "any" : NR.where };
     var fix = {}, ranges = {}, args = {};
     f.space.forEach(function (d) { var m = NR.modes[d.name], v = NR.vals[d.name];
       if (m === "fix") { var x = d.type === "choice" ? v.v : Number(v.v); if (d.type !== "choice" && (!isFinite(x) || x < d.lo || x > d.hi)) errs.push(d.name + " must be between " + d.lo + " and " + d.hi); fix[d.name] = x; }
-      if (m === "range") { var lo = Number(v.lo), hi = Number(v.hi); if (!(isFinite(lo) && isFinite(hi) && lo < hi && lo >= d.lo && hi <= d.hi)) errs.push(d.name + ": low must be under high, inside " + d.lo + "–" + d.hi); ranges[d.name] = [lo, hi]; } });
-    Object.keys(NR.args).forEach(function (k) { var t = NR.args[k], orig = JSON.stringify(f.args[k]); if (t === orig) return;
+      if (m === "range") { var lo = Number(v.lo), hi = Number(v.hi); if (!(isFinite(lo) && isFinite(hi) && lo < hi && lo >= d.lo && hi <= d.hi)) errs.push(d.name + ": the low end must be under the high end"); ranges[d.name] = [lo, hi]; } });
+    Object.keys(NR.args).forEach(function (k) { var t = NR.args[k]; if (t === JSON.stringify(f.args[k])) return;
       try { args[k] = JSON.parse(t); } catch (e) { errs.push(k + " is not a number or a list like [1, 2]"); } });
-    if (Object.keys(fix).length >= f.space.length) errs.push("leave at least one setting to search");
+    if (args.intensities && !args.intensities.length) errs.push("pick at least one intensity");
+    if (Object.keys(fix).length >= f.space.length) errs.push("leave at least one setting free to search");
     if (!(req.budget.tries >= 1 && req.budget.tries <= 200000)) errs.push("tries must be 1–200000");
     if (Object.keys(fix).length) req.fix = fix; if (Object.keys(ranges).length) req.ranges = ranges; if (Object.keys(args).length) req.args = args;
     return { req: req, errs: errs };
@@ -800,101 +903,151 @@ textarea.field { min-height: 54px; resize: vertical; }
   function appCmd(rest) {
     return OS === "windows" ? "python $HOME\\.froglet-compute\\app\\Tools\\Compute\\compute.py " + rest : "python3 ~/.froglet-compute/app/Tools/Compute/compute.py " + rest;
   }
-  function openNewRun(jid) {
+  function openNewRun(jid, vessel, mode) {
     if (!DATA) return;
-    var ids = Object.keys(DATA.forms || {}); if (!ids.length) return;
-    NR = freshNR(jid && formFor(jid) ? jid : (NR && NR.job) || ids[0]);
-    closeJob(); drawNewRun(); document.getElementById("sheet").hidden = false;
+    if (vessel) NR = nrFor(vessel, mode);
+    else if (jid && formFor(jid)) NR = freshNR(jid);
+    else if (!NR) { var first = catalog().hulls.filter(function (x) { return x.template; })[0]; NR = first ? nrFor(first.hull, (first.modes_now || [])[0]) : freshNR(Object.keys(DATA.forms || {})[0]); }
+    NR.made = null; closeJob(); drawNewRun(); document.getElementById("sheet").hidden = false;
+  }
+  function chip(label, on, cls, onclick, sub) {
+    return h("button", { type: "button", class: "pick " + (cls || "") + (on ? " on" : ""), "aria-pressed": on ? "true" : "false", onclick: onclick }, [h("span", { text: label }), sub ? h("small", { text: sub }) : null]);
+  }
+  function slider(id, lo, hi, step, val, oninput, label) {
+    var pct = function (v) { return ((v - lo) / (hi - lo || 1)) * 100; };
+    var inp = h("input", { type: "range", id: id, min: String(lo), max: String(hi), step: String(step), value: String(val), class: "srange", "aria-label": label || id });
+    var paint = function () { inp.style.setProperty("--b", pct(Number(inp.value)) + "%"); };
+    inp.addEventListener("input", function () { paint(); oninput(Number(inp.value)); });
+    paint(); return inp;
   }
   function drawNewRun() {
-    var w = document.getElementById("sheet"); w.textContent = "";
-    var sheet = h("div", { class: "sheet wide", role: "dialog", "aria-modal": "true", "aria-labelledby": "nr-title" }), f = formFor(NR.job), j = jobById(NR.job) || {};
+    var w = document.getElementById("sheet"), keepScroll = w.scrollTop, again = !w.hidden && !!w.querySelector("#nr-title"); w.textContent = "";
+    var sheet = h("div", { class: "sheet wide" + (again ? " still" : ""), role: "dialog", "aria-modal": "true", "aria-labelledby": "nr-title" }), st = pairStatus();
     w.appendChild(sheet);
     sheet.appendChild(h("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:12px" }, [h("h2", { id: "nr-title", text: "New run" }), h("button", { class: "btn", type: "button", onclick: closeInstall, text: "Close" })]));
-    sheet.appendChild(h("p", { class: "lead", text: "Run one search your way: hold some settings, narrow others, change how it is scored, and say what you want to learn. It runs now on your computer, or the team's computers take it ahead of their own queue." }));
-    var sel = h("select", { id: "nr-job", class: "field", onchange: function (e) { NR = freshNR(e.target.value); drawNewRun(); } },
-      Object.keys(DATA.forms).map(function (id) { var jj = jobById(id) || {}; return h("option", { value: id, text: jj.title || id }); }));
-    sel.value = NR.job;
-    sheet.appendChild(h("label", { class: "flabel" }, ["Search", sel]));
-    if (CAP.sample) {
-      var ask = h("textarea", { id: "nr-describe", class: "field", placeholder: "Or describe it: \"Rhino on I4 only, brake later, keep corner speed near today's\"" });
-      ask.value = NR.describe; ask.addEventListener("input", function () { NR.describe = ask.value; });
-      var askMsg = h("span", { class: "note" });
-      sheet.appendChild(h("div", { class: "card sliver" }, [h("b", { text: "Describe it in words" }), ask, h("div", { class: "btns" }, [h("button", { class: "btn", type: "button", onclick: function () { describeRun(askMsg); }, text: "Fill in the form" }), askMsg])]));
+    // 1. vessel
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "1  Vessel" }), h("div", { class: "picks" }, catalog().hulls.map(function (x) {
+      return chip(x.hull, NR.vessel === x.hull, x.template ? "now" : "game", function () { NR = nrFor(x.hull, (modesFor(x.hull).filter(function (m) { return m.status === "now"; })[0] || modesFor(x.hull)[0] || {}).mode); drawNewRun(); }, x.template ? "runs now" : "needs the game");
+    }))]));
+    // 2. mode
+    if (NR.vessel) sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "2  Game mode" }), h("div", { class: "picks" }, modesFor(NR.vessel).map(function (m) {
+      return chip(m.name, NR.mode === m.mode, m.status, function () { NR = nrFor(NR.vessel, m.mode); drawNewRun(); }, (m.kind === "arena" ? "arena" : m.kind === "arcade" ? "arcade" : "course") + (m.status === "now" ? "" : " · needs the game"));
+    }))]));
+    if (st === "game" || !NR.job) {
+      var mn = (modesFor(NR.vessel || "").filter(function (m) { return m.mode === NR.mode; })[0] || {}).name || NR.mode;
+      sheet.appendChild(h("div", { class: "banner gold" }, [h("b", { text: (NR.vessel || "This vessel") + (mn ? " in " + mn : "") + " needs the real game" }),
+        h("p", { class: "note", text: "The offline race models cover the Rhino, Manta and Dolphin on the Regatta, Headlong and Redline courses. Every other vessel and mode runs only in the game itself, played headless by a team computer with the game built: the next tier. Until then, pick a blue one." })]));
+      return;
     }
-    // settings
+    var f = formFor(NR.job);
+    // 3. intensities
+    if (NR.args.intensities != null) {
+      var cur = []; try { cur = JSON.parse(NR.args.intensities); } catch (e) {}
+      sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "3  Intensity" }), h("div", { class: "picks" }, [1, 2, 3, 4].map(function (i) {
+        var on = cur.indexOf(i) >= 0;
+        return chip("I" + i, on, "int i" + i, function () { var c = cur.filter(function (x) { return x !== i; }); if (!on) c.push(i); c.sort(); NR.args.intensities = JSON.stringify(c); drawNewRun(); });
+      }))]));
+    }
+    // 4. tries
+    var tv = h("output", { class: "bubble", text: String(NR.tries) });
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "4  How many tries" }), h("div", { class: "srow" }, [slider("nr-tries", 100, 5000, 100, Math.min(5000, Math.max(100, NR.tries)), function (v) { NR.tries = v; tv.textContent = String(v); }, "tries"), tv]),
+      h("p", { class: "note", text: "About " + Math.max(1, Math.round(NR.tries / 300)) + " min on a laptop for a drive search; more tries, better answers." })]));
+    // 5. tune (optional)
     var rows = f.space.map(function (d) {
-      var m = NR.modes[d.name], v = NR.vals[d.name];
-      var mode = h("select", { class: "field", "aria-label": d.name + " mode", onchange: function (e) { NR.modes[d.name] = e.target.value; drawNewRun(); } },
-        [["search", "search it"], ["range", "narrower range"], ["fix", "hold at"]].filter(function (o) { return !(d.type === "choice" && o[0] === "range"); }).map(function (o) { return h("option", { value: o[0], text: o[1] }); }));
-      mode.value = m;
-      var inp = null;
-      if (m === "fix") inp = d.type === "choice" ? h("select", { class: "field", onchange: function (e) { v.v = e.target.value; } }, d.choices.map(function (c) { return h("option", { value: c, text: String(c) }); }))
-        : h("input", { class: "field", type: "number", step: "any", value: String(v.v), oninput: function (e) { v.v = e.target.value; } });
-      if (m === "range") inp = h("span", { class: "pair" }, [h("input", { class: "field", type: "number", step: "any", value: String(v.lo), "aria-label": d.name + " low", oninput: function (e) { v.lo = e.target.value; } }),
-        h("input", { class: "field", type: "number", step: "any", value: String(v.hi), "aria-label": d.name + " high", oninput: function (e) { v.hi = e.target.value; } })]);
-      return h("tr", null, [h("td", { class: "mono", text: d.name }), h("td", { class: "num", text: d.init == null ? "–" : String(d.init) }), h("td", { class: "note", text: d.type === "choice" ? d.choices.join(" / ") : d.lo + " – " + d.hi }), h("td", null, [mode]), h("td", null, [inp])]);
+      if (d.type === "choice") return null;
+      var m = NR.modes[d.name], v = NR.vals[d.name], step = (d.hi - d.lo) / 200;
+      var lock = h("button", { type: "button", class: "lock" + (m === "fix" ? " on" : ""), title: m === "fix" ? "held at a value: click to search it" : "searched: click to hold it", "aria-label": d.name + (m === "fix" ? " held" : " searched"),
+        onclick: function () { NR.modes[d.name] = m === "fix" ? "search" : "fix"; if (NR.modes[d.name] === "fix" && (v.v == null)) v.v = d.init; drawNewRun(); }, text: m === "fix" ? "held" : "free" });
+      var val = h("span", { class: "sval mono" });
+      var body;
+      if (m === "fix") { val.textContent = fmt(Number(v.v), 2); body = slider("s-" + d.name, d.lo, d.hi, step, Number(v.v), function (x) { v.v = x; val.textContent = fmt(x, 2); }, d.name); }
+      else {
+        var lo = Number(v.lo), hi = Number(v.hi), show = function () { val.textContent = fmt(lo, 1) + " – " + fmt(hi, 1); NR.modes[d.name] = (lo > d.lo || hi < d.hi) ? "range" : "search"; v.lo = lo; v.hi = hi; };
+        var a = slider("s-" + d.name + "-lo", d.lo, d.hi, step, lo, function (x) { lo = Math.min(x, hi - step); show(); }, d.name + " low"),
+            b = slider("s-" + d.name + "-hi", d.lo, d.hi, step, hi, function (x) { hi = Math.max(x, lo + step); show(); }, d.name + " high");
+        var span = function () { a.style.setProperty("--a", ((lo - d.lo) / (d.hi - d.lo) * 100) + "%"); a.style.setProperty("--b", ((hi - d.lo) / (d.hi - d.lo) * 100) + "%"); };
+        a.addEventListener("input", span); b.addEventListener("input", span);
+        show(); span(); body = h("div", { class: "dual" }, [a, b]);
+      }
+      var mark = d.init != null ? h("i", { class: "today", style: "left:" + ((d.init - d.lo) / (d.hi - d.lo) * 100) + "%", title: "today's " + d.init }) : null;
+      return h("div", { class: "tune" }, [h("span", { class: "mono tname", text: d.name }), h("div", { class: "track" }, [body, mark]), val, lock]);
     });
-    sheet.appendChild(h("details", { class: "card sliver", open: Object.keys(NR.modes).some(function (k) { return NR.modes[k] !== "search"; }) || null }, [
-      h("summary", { text: "Settings (" + f.space.length + "): all searched unless you say otherwise", style: "cursor:pointer;font-family:var(--head)" }),
-      h("div", { class: "tablewrap" }, [h("table", null, [h("thead", null, [h("tr", null, ["Setting", "Today", "Allowed", "How", "Value"].map(function (t) { return h("th", { text: t }); }))]), h("tbody", null, rows)])])]));
-    var argKeys = Object.keys(NR.args);
-    if (argKeys.length) sheet.appendChild(h("details", { class: "card sliver" }, [h("summary", { text: "How it is scored", style: "cursor:pointer;font-family:var(--head)" }),
-      h("div", { class: "kv2" }, argKeys.map(function (k) { return h("label", { class: "flabel" }, [k, h("input", { class: "field mono", value: NR.args[k], oninput: function (e) { NR.args[k] = e.target.value; } })]); })),
-      h("p", { class: "note", text: "intensities picks which of I1–I4 are raced; seeds how many course variants; limit the longest a race may take." })]));
-    var tries = h("input", { class: "field", type: "number", min: "1", max: "200000", value: String(NR.tries), id: "nr-tries", oninput: function (e) { NR.tries = e.target.value; } });
-    var where = h("select", { class: "field", id: "nr-where", onchange: function (e) { NR.where = e.target.value; drawNewRun(); } },
-      [h("option", { value: "here", text: "My computer, now" }), h("option", { value: "team", text: "The team's computers (whichever is free)" })]
-        .concat(DATA.machines.map(function (m) { return h("option", { value: m.machine, text: "Only " + m.machine }); })));
-    where.value = NR.where;
-    var note = h("textarea", { class: "field", id: "nr-note", placeholder: "What do you want to learn? (shown with the results)" }); note.value = NR.note; note.addEventListener("input", function () { NR.note = note.value; });
-    sheet.appendChild(h("div", { class: "cols2" }, [h("label", { class: "flabel" }, ["Tries", tries]), h("label", { class: "flabel" }, ["Where", where])]));
-    sheet.appendChild(h("label", { class: "flabel" }, ["Note", note]));
+    var changed = Object.keys(NR.modes).filter(function (k) { return NR.modes[k] !== "search"; }).length;
+    sheet.appendChild(h("details", { class: "step", open: changed ? true : null }, [h("summary", { text: "5  Tune the settings (optional)" + (changed ? " · " + changed + " changed" : " · all searched freely") }),
+      h("p", { class: "note", text: "Drag the ends to narrow what is searched, or hold a setting at one value. The white tick is today's value." })].concat(rows)));
+    // 6. where + note
+    var places = [["here", "This computer, now"], ["team", "Any team computer"]].concat(DATA.machines.map(function (m) { return [m.machine, m.machine + (m.active ? " · busy" : "")]; }));
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "6  Where" }), h("div", { class: "picks" }, places.map(function (p) { return chip(p[1], NR.where === p[0], "where", function () { NR.where = p[0]; NR.made = null; drawNewRun(); }); }))]));
+    var note = h("textarea", { class: "field", id: "nr-note", placeholder: "What do you want to learn? (optional; shown with the results)" }); note.value = NR.note; note.addEventListener("input", function () { NR.note = note.value; });
+    sheet.appendChild(note);
     var out = h("div", { class: "approve", id: "nr-out" });
-    sheet.appendChild(h("div", { class: "btns" }, [h("button", { class: "btn cta", type: "button", id: "nr-make", onclick: function () { makeRun(out); }, text: NR.where === "here" ? "Make the command" : "Send it" })]));
+    var go = NR.where === "here" ? "Run on this computer" : (LIVE ? "Send it" : "Make the run");
+    sheet.appendChild(h("button", { class: "btn cta big", type: "button", id: "nr-make", onclick: function () { makeRun(out); }, text: go + " · " + NR.vessel + " in " + NR.mode }));
     sheet.appendChild(out);
     if (NR.made) showMade(out);
+    w.scrollTop = keepScroll;
   }
   function makeRun(out) {
     var r = nrRequest(); out.textContent = "";
     if (r.errs.length) { out.appendChild(h("div", { class: "banner bad" }, r.errs.map(function (e) { return h("p", { class: "note", text: e }); }))); return; }
     NR.made = r.req; showMade(out);
+    if (NR.where !== "here" && LIVE) sendLive(r.req, out);
+    out.scrollIntoView({ block: "nearest" });
   }
   function showMade(out) {
     var req = NR.made, tok = b64url(JSON.stringify(req)); out.textContent = "";
     if (NR.where === "here") {
-      out.appendChild(h("p", null, [h("b", { text: "Paste this into " + (OS === "windows" ? "PowerShell" : "Terminal") + ". " }), "It runs " + req.budget.tries + " tries now, without waiting for you to be away, and reports to Runs."]));
+      var term = OS === "windows" ? "PowerShell" : "Terminal";
+      out.appendChild(h("div", { class: "seg", role: "group", "aria-label": "Your computer" }, [["windows", "Windows"], ["mac", "macOS"], ["linux", "Linux"]].map(function (o) {
+        return h("button", { type: "button", "aria-pressed": OS === o[0] ? "true" : "false", onclick: function () { OS = o[0]; showMade(out); }, text: o[1] }); })));
+      out.appendChild(h("p", null, [h("b", { text: "Paste this into " + term + " and press Enter. " }), "It runs " + req.budget.tries + " tries now, without waiting for you to be away, and shows up under Runs."]));
       out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("run --request " + tok) })]), copyBtn(function () { return appCmd("run --request " + tok); })]));
-      out.appendChild(h("p", { class: "note", text: "Needs Froglet Compute installed on this computer (the Install button). From a checkout of the compute branch: python3 Tools/Compute/compute.py run --request <the same token>." }));
+      out.appendChild(h("p", { class: "note", text: "Needs Froglet Compute installed on this computer once (the Install button)." }));
       return;
     }
-    out.appendChild(h("p", null, [h("b", { text: "Request " + req.id + ". " }), "The team's computers take it ahead of their own queue once it is filed on the compute-queue branch."]));
+    if (LIVE) { out.appendChild(h("p", { class: "note", id: "nr-live", text: "Sending…" })); return; }
+    out.appendChild(h("p", null, [h("b", { text: "Request " + req.id + ". " }), "Computers take it ahead of their own queue once it is filed. Open this console from the team's live address (the VM) to send runs from any phone in one tap."]));
     if (CAP.mcp) {
       var msg = h("p", { class: "note" });
-      out.appendChild(h("div", { class: "btns" }, [h("button", { class: "btn cta", type: "button", onclick: function (e) { e.target.disabled = true; msg.textContent = "Starting a Claude Code session to file it…";
+      out.appendChild(h("button", { class: "btn cta", type: "button", onclick: function (e) { e.target.disabled = true; msg.textContent = "Starting a Claude Code session to file it…";
         createSession("File a Froglet Compute manual run. In froglet-studio/Cosmic-Shore (branch " + (DATA.branch || "the compute branch") + "), run `python3 Tools/Compute/compute.py request new --token " + tok + " --push` and report the request id and what it printed. Change nothing else.", "Compute console: file " + req.id)
-          .then(function (link) { msg.textContent = ""; msg.appendChild(document.createTextNode("Filing it: ")); if (link) msg.appendChild(link); },
-            function (er) { msg.textContent = er; e.target.disabled = false; }); }, text: "File it now (starts a cloud session)" })]));
+          .then(function (lk) { msg.textContent = "Filing it: "; if (lk) msg.appendChild(lk); }, function (er) { msg.textContent = er; e.target.disabled = false; }); }, text: "File it now (starts a cloud session)" }));
       out.appendChild(msg);
     }
-    out.appendChild(h("p", { class: "note", text: "Or file it yourself from a terminal:" }));
     out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("request new --token " + tok + " --push") })]), copyBtn(function () { return appCmd("request new --token " + tok + " --push"); })]));
   }
-  function describeRun(msg) {
-    if (!CAP.sample || !NR.describe.trim()) return;
-    var f = formFor(NR.job), j = jobById(NR.job) || {};
-    msg.textContent = "Thinking…";
-    CAP.sample.json("You turn a person's words into a Froglet Compute manual run for one search. The search: " + (j.title || NR.job) + ". Its settings (name, allowed low/high or choices, today's value): " + JSON.stringify(f.space) +
-      ". Its scoring settings (may be changed, same type): " + JSON.stringify(f.args) + ". Reply with only JSON: {\"tries\": number 100-20000, \"fix\": {name: value}, \"ranges\": {name: [low, high]}, \"args\": {name: value}, \"note\": \"the question in one sentence\"}. Use only names listed, keep every value inside its bounds, leave out what the person did not mention.\n\nThe person said: " + NR.describe,
-      { modelTier: "quick", cache: false }).then(function (o) {
-      o = o || {}; var n = 0;
-      Object.keys(o.fix || {}).forEach(function (k) { if (NR.modes[k] != null) { NR.modes[k] = "fix"; NR.vals[k].v = o.fix[k]; n++; } });
-      Object.keys(o.ranges || {}).forEach(function (k) { var r = o.ranges[k]; if (NR.modes[k] != null && Array.isArray(r)) { NR.modes[k] = "range"; NR.vals[k].lo = r[0]; NR.vals[k].hi = r[1]; n++; } });
-      Object.keys(o.args || {}).forEach(function (k) { if (NR.args[k] != null) { NR.args[k] = JSON.stringify(o.args[k]); n++; } });
-      if (o.tries) NR.tries = o.tries; if (o.note) NR.note = String(o.note);
-      NR.made = null; drawNewRun();
-      var m2 = document.querySelector("#sheet .card .note"); if (m2) m2.textContent = "Filled in " + n + " setting(s). Check them, then make the run.";
-    }, function (e) { msg.textContent = e.code === "not_granted" ? "Claude was not allowed for this page." : "Could not fill it in (" + e.code + ")."; });
+  function askKey(then) {
+    var w = document.getElementById("sheet"), box = h("div", { class: "banner" }, [h("b", { text: "The team key" }), h("p", { class: "note", text: "This console sends runs to the team's computers. Enter the team key once; this browser remembers it. Shombith has it (it is printed when the VM is set up)." })]);
+    var inp = h("input", { class: "field mono", id: "key-input", type: "password", autocomplete: "off", placeholder: "team key" });
+    box.appendChild(inp); box.appendChild(h("button", { class: "btn cta", type: "button", onclick: function () { KEY = inp.value.trim(); lsSet("fc-key", KEY); box.remove(); then(); }, text: "Save" }));
+    var out = document.getElementById("nr-out") || w.querySelector(".sheet"); out.appendChild(box); inp.focus();
+  }
+  function sendLive(req, out) {
+    if (!KEY) return askKey(function () { sendLive(req, out); });
+    var line = document.getElementById("nr-live") || out.appendChild(h("p", { class: "note" }));
+    fetch("api/requests", { method: "POST", headers: { "Content-Type": "application/json", "X-Compute-Key": KEY }, body: JSON.stringify(req) })
+      .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
+      .then(function (a) {
+        if (a[0] === 201) { line.textContent = "Sent. " + (NR.where === "team" ? "The first free computer" : NR.where) + " takes it within about two minutes when its person is away (a VM at once). Watch it under Runs."; refreshLive(); }
+        else if (a[0] === 401) { KEY = ""; lsSet("fc-key", ""); line.textContent = "That team key was not right."; askKey(function () { sendLive(req, out); }); }
+        else line.textContent = (a[1].error || "Not sent") + (a[1].problems ? ": " + a[1].problems.join("; ") : "");
+      }, function () { line.textContent = "Could not reach the hub. Try again in a moment."; });
+  }
+  function refreshLive() {
+    return fetch("console.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (!d) return; DATA = d;
+      var sheetOpen = !document.getElementById("sheet").hidden, typing = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+      if (!typing) { render(); if (OPEN) renderDrawer(); }
+      if (sheetOpen && NR && !typing && !NR.made) { /* leave the form as the person left it */ }
+    }).catch(function () {});
+  }
+  function goLive() {
+    fetch("api/status", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (s) {
+      if (!s || !s.hub) return;
+      LIVE = true; document.getElementById("win").classList.add("live");
+      var tag = document.getElementById("livetag"); if (tag) tag.hidden = false;
+      setInterval(refreshLive, 15000);
+    }).catch(function () {});
   }
 
   // ── tour: a spotlight on one control at a time ──
@@ -903,7 +1056,7 @@ textarea.field { min-height: 54px; resize: vertical; }
     { el: "#nav-home", view: "home", t: "Home", b: "Start here. One sentence says what is happening, Needs you lists anything waiting on a person, and Running now shows live work." },
     { el: "#b-install", t: "Install", b: "Add your computer with one line in your terminal. It works only while you are away and stops the moment you come back." },
     { el: "#nav-runs", view: "runs", t: "Runs", b: "Each run is one computer working on one search for up to an hour. Live runs show a progress bar and report every few minutes. Finished runs say what they found." },
-    { el: "#b-newrun", t: "New run", b: "Run one search your way: hold settings, narrow others, choose which intensities to race, and write what you want to learn. Run it now on your computer, or let the team's computers take it ahead of their queue. Manual runs show in Runs." },
+    { el: "#b-newrun", t: "New run", b: "Pick a vessel, a game mode and the intensities, drag the tries slider, and press Run. Running on this computer gives you one line for PowerShell or Terminal; on the team's live console (the VM) a run goes to any computer in one tap, from a phone too." },
     { el: "#nav-searches", view: "searches", t: "Searches", b: "Everything the computers look for: AI driving settings per vessel and mode, the Regatta balance, new swarm bodies. The green number is how much better the best find is than what the game ships today." },
     { el: "#searching-group .job", view: "searches", t: "Open a search", b: "Click any search for its race times per intensity, the settings it found, its runs, and, when you are one of the core four, a button to put it in the game." },
     { el: "#nav-recordings", view: "recordings", t: "Recordings", b: "Every race played in the Unity editor is recorded on its own. The AI learns from them every hour; this shows what it has learned from and what waits." },
@@ -1191,7 +1344,7 @@ textarea.field { min-height: 54px; resize: vertical; }
   buildTerm();
   route();
   fetch("console.json", { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then(function (d) {
-    DATA = d; render(); connect();
+    DATA = d; render(); connect(); goLive();
     if (!lsGet("fc-tour")) setTimeout(function () { startTour(0); }, 400);
   }).catch(function (e) {
     var root = document.getElementById("main"); root.textContent = "";

@@ -34,7 +34,9 @@ Say in two lines what it will and will not do (README section 2): it waits for 1
 at the lowest priority on all cores but one, stops the moment they touch the machine, never touches their checkout,
 publishes only to `compute/<them>/<machine>`, and updates itself from `bleeding-edge`. `compute.py uninstall` undoes it.
 
-- A box nobody sits at (a VM): `compute.py install --always`, or `run --always` in `tmux`/`screen`.
+- A box nobody sits at (a VM): `compute.py install --always`, or `run --always` in `tmux`/`screen`. The team's
+  always-on VM (Oracle Always Free) also serves the **live console** (`compute.py hub`): `Tools/Compute/vm/setup-vm.sh`,
+  README section 15. A computer joins the live console with `setup.py ... --hub <address> --hub-key <key>`.
 - Only at night, or any set hours: add `--between 22:00-07:00` (local time) to `run` or `install`.
 - A manual run (someone's instructions for one search): `compute.py run --request <id|token>` now on this computer,
   or `compute.py request new <search> --tries N --fix a=v --range a=lo:hi --arg k=v --note "..." --push` for the team

@@ -137,11 +137,11 @@ def runs(machines, jobs):
     return {"active": active, "recent": recent[:60]}
 
 
-def manual(jobs, machines, cwd=None):
+def manual(jobs, machines, cwd=None, refs=None):
     """Every manual run (manual_runs.py) with how far it has got, its best and today's value under its settings."""
     import manual_runs as R
     out = []
-    for req in sorted(R.load(cwd=cwd).values(), key=lambda r: -(r.get("created") or 0)):
+    for req in sorted(R.load(refs, cwd=cwd).values(), key=lambda r: -(r.get("created") or 0)):
         st = R.progress(req, machines)
         derived = f"{req.get('job')}~{req['id']}"
         base = None
@@ -153,7 +153,7 @@ def manual(jobs, machines, cwd=None):
                     "created": req.get("created"), "note": req.get("note"), "machine": req.get("machine", "any"),
                     "fix": req.get("fix") or {}, "ranges": req.get("ranges") or {}, "args": req.get("args") or {},
                     "problems": R.problems(req, job or None), "today": _num(base), **{k: st[k] for k in
-                    ("state", "tries", "budget", "machines", "running_on", "updated")}, "best": _num(st["best"])})
+                    ("state", "tries", "done_tries", "budget", "machines", "running_on", "updated")}, "best": _num(st["best"])})
     return out
 
 
@@ -164,11 +164,50 @@ def run_forms(jobs):
     for j in jobs.values():
         if j.get("kind") != "search":
             continue
+        import manual_runs as R
+        rules = R.request_args(j)
+        a = (j.get("evaluator") or {}).get("args") or {}
         out[j["id"]] = {"space": [{k: d.get(k) for k in ("name", "type", "lo", "hi", "choices", "init")} for d in j.get("space") or []],
-                        "args": {k: v for k, v in ((j.get("evaluator") or {}).get("args") or {}).items()
-                                 if not k.startswith("_") and (isinstance(v, (int, float, bool)) and not isinstance(v, bool) or
-                                                               (isinstance(v, list) and all(isinstance(x, (int, float)) for x in v)))}}
+                        "args": {k: a.get(k) for k in rules}, "rules": rules, "hull": a.get("hull"), "mode": a.get("mode")}
     return out
+
+
+CHART = "Docs/AI_SYSTEM/vessel_mode_chart.json"
+
+
+def catalog(jobs, cwd=None):
+    """Every vessel and every arcade and arena mode the game offers (the AI system's vessel-mode chart), and for each
+    pair whether it can run now: a drive search for that hull exists (its template) and its evaluator models that
+    course. Every other pair needs the real game (a headless build: README section 15)."""
+    import manual_runs as R
+    chart = None
+    for ref in (L.AI_REF, "origin/bleeding-edge"):
+        raw = L.git_ok("show", f"{ref}:{CHART}", cwd=cwd)
+        if raw:
+            try:
+                chart = json.loads(raw)
+                break
+            except Exception:
+                pass
+    chart = chart or L.read_json(os.path.join(L.REPO, CHART), {}) or {}
+    templates = {}
+    for j in sorted(jobs.values(), key=lambda j: j["id"]):
+        a = (j.get("evaluator") or {}).get("args") or {}
+        rule = R.request_args(j).get("mode") if j.get("kind") == "search" else None
+        if a.get("hull") and rule and j["id"] not in [t["job"] for t in templates.values()]:
+            templates.setdefault(a["hull"], {"job": j["id"], "modes": list(rule.get("choices") or [])})
+    modes = []
+    for c in chart.get("cards") or []:
+        cells = []
+        for hull in c.get("hulls") or []:
+            t = templates.get(hull)
+            now = bool(t and c["mode"] in t["modes"])
+            cells.append({"hull": hull, "status": "now" if now else "game", "job": t["job"] if now else None})
+        modes.append({"mode": c["mode"], "name": c.get("name") or c["mode"], "kind": "arena" if "ArenaGames" in (c.get("lists") or []) else "arcade",
+                      "gate_race": c["mode"] in (chart.get("gateRaceModes") or []), "hulls": cells})
+    hulls = [{"hull": h["hull"], "verb": h.get("verb"), "template": (templates.get(h["hull"]) or {}).get("job"),
+              "modes_now": (templates.get(h["hull"]) or {}).get("modes", [])} for h in chart.get("hulls") or []]
+    return {"hulls": hulls, "modes": modes}
 
 
 def install_info(cwd=None):
@@ -256,22 +295,72 @@ def core_four():
     return list(team.get("core") or [])
 
 
-def build(local=False, fetch=True, cwd=None, prs=None, url=None):
+LAST_JOBS = {}          # the jobs the last build read: the hub overlays live heartbeats with them
+
+
+def build(local=False, fetch=True, cwd=None, prs=None, url=None, queue=None):
+    """`queue`: the branches jobs and manual runs are read from (default compute_lib.QUEUE_REFS)."""
+    global LAST_JOBS
+    refs = [q if q.startswith("origin/") else "origin/" + q for q in queue] if queue else list(L.QUEUE_REFS)
     if fetch:
-        L.fetch([r.replace("origin/", "") for r in L.QUEUE_REFS] + ["Ys-bleeding-edge"], results=True, cwd=cwd, quiet=True)
+        L.fetch([r.replace("origin/", "") for r in refs] + ["Ys-bleeding-edge"], results=True, cwd=cwd, quiet=True)
         L.git_ok("fetch", "--quiet", "--no-tags", "origin", "+refs/heads/bugledger/*:refs/remotes/origin/bugledger/*",
                  cwd=cwd)
-    jobs = L.load_jobs(local=True, cwd=cwd) if local else L.load_jobs(cwd=cwd)
+    jobs = L.load_jobs(local=True, cwd=cwd) if local else L.load_jobs(refs, cwd=cwd)
+    LAST_JOBS = jobs
     machines = L.gather(cwd=cwd)
     out_jobs, out_machines = jobs_and_machines(jobs, machines, L.capabilities())
     run_data = runs(machines, jobs)
     return {"schema": SCHEMA, "generated": L.now(), "core": core_four(),
-            "queue": "working tree (--local)" if local else list(L.QUEUE_REFS),
+            "queue": "working tree (--local)" if local else refs,
             "jobs": out_jobs, "machines": out_machines, "runs": run_data, "install": install_info(cwd),
-            "manual": manual(jobs, machines, cwd), "forms": run_forms(jobs),
+            "manual": manual(jobs, machines, cwd, None if local else refs), "forms": run_forms(jobs), "catalog": catalog(jobs, cwd),
             "recordings": recordings(cwd), "ai": ai_branch_status(cwd),
             "git": git_snapshot(cwd), "pull_requests": pull_requests(prs), "repo": "froglet-studio/Cosmic-Shore",
             "branch": (L.git_ok("rev-parse", "--abbrev-ref", "HEAD", cwd=cwd) or "").strip(), "url": url}
+
+
+def overlay(data, live, jobs, now=None):
+    """The hub's live heartbeats (seconds old) on top of the git snapshot (minutes old): each computer's current run,
+    its progress and its runs log, and the manual runs it is working on."""
+    now = now or L.now()
+    fresh = {who: v for who, v in (live or {}).items() if now - v["at"] < 600}
+    if not fresh:
+        return data
+    d = dict(data)
+    machines = {m["machine"]: dict(m) for m in data.get("machines") or []}
+    pseudo = []
+    for who, v in fresh.items():
+        hb = v["hb"]
+        user, _, host = who.partition("/")
+        pseudo.append({"user": user, "host": host, "heartbeat": hb, "jobs": {}, "requests": {}})
+        cur = hb.get("current") or {}
+        caps = hb.get("caps") or {}
+        m = machines.get(who) or {"machine": who, "user": user, "host": host}
+        m.update({"updated": hb.get("updated"), "current": cur.get("job"), "unit": cur.get("unit"), "cores": hb.get("cores"),
+                  "caps": sorted(k for k, x in caps.items() if x is True), "os": caps.get("os"), "last": hb.get("last"),
+                  "sessions": (hb.get("totals") or {}).get("sessions"), "active": bool(cur.get("job")), "live": True})
+        machines[who] = m
+    d["machines"] = sorted(machines.values(), key=lambda m: -(m.get("updated") or 0))
+    lr = runs(pseudo, jobs)
+    old = data.get("runs") or {"active": [], "recent": []}
+    seen = {(r["machine"], r.get("start")) for r in lr["recent"]}
+    d["runs"] = {"active": [a for a in old["active"] if a["machine"] not in fresh] + lr["active"],
+                 "recent": sorted(lr["recent"] + [r for r in old["recent"] if (r["machine"], r.get("start")) not in seen],
+                                  key=lambda r: -(r.get("end") or 0))[:60]}
+    man = []
+    for r in data.get("manual") or []:
+        r = dict(r)
+        for who, v in fresh.items():
+            cur = (v["hb"].get("current") or {})
+            if cur.get("request") == r["id"]:
+                r.update(state="running", running_on=who, tries=int(r.get("done_tries") or 0) + int(cur.get("evals") or 0))
+                if L.finite(cur.get("best")) and (r.get("best") is None or cur["best"] < r["best"]):
+                    r["best"] = _num(cur["best"])
+        man.append(r)
+    d["manual"] = man
+    d["live"] = {"machines": sorted(fresh), "at": now}
+    return d
 
 
 SKELETON = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'

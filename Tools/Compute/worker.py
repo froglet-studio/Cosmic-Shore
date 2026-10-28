@@ -240,7 +240,7 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
             summary["baseline"] = {"loss": r["loss"], "metrics": r.get("metrics", {}), "params": base,
                                    "error": r.get("error")}
             L.log(f"{job['id']}: shipped values score {r['loss']:.5g}" + (f" ({r['error']})" if r.get("error") else ""), quiet)
-    last_save = time.time()
+    last_save = last_tick = time.time()
     stopped = "budget"
     try:
         while True:
@@ -281,6 +281,10 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
                 if not isinstance(opt, O.MapElites):
                     history.append([evals, best["loss"], L.now(), machine])
                 L.log(f"{job['id']}: new best {best['loss']:.6g} after {evals} evals", quiet)
+            if on_progress and time.time() - last_tick > 20:      # live: the hub hears every ~20 s
+                last_tick = time.time()
+                on_progress({"epoch": epoch, "evals": evals - evals0, "best": (best or {}).get("loss"),
+                             "best_start": best0, "live_only": True})
             if time.time() - last_save > 120:
                 _save(folder, state_path, opt, summary, best, evals, seconds + time.time() - t_start, history, errors,
                       space, sha)
@@ -570,7 +574,7 @@ def run(args):
                   + " - a session can find more: /compute-scout", quiet)
             if args.once:
                 return 1
-            time.sleep(1800)
+            time.sleep(120)           # look again soon: a manual run from someone's phone may arrive any minute
             continue
         job = pick["job"]
         if req is None:
@@ -586,9 +590,14 @@ def run(args):
         last_progress = [time.time()]
 
         def progress(p):
-            """While a session runs, the console shows how far it has got: published every few minutes."""
+            """While a session runs, the console shows how far it has got: to the hub every ~20 s (live), to git
+            every few minutes (everyone else)."""
+            live_only = p.pop("live_only", False)
             hb["current"].update(p)
             hb["updated"] = L.now()
+            L.post_heartbeat(hb)
+            if live_only:
+                return
             L.write_json(os.path.join(folder, "heartbeat.json"), hb)
             if not args.no_push and time.time() - last_progress[0] >= args.progress_minutes * 60:
                 L.publish(folder, *ident, f"compute: {job['id']} progress", quiet=True)
@@ -603,6 +612,7 @@ def run(args):
                                   on_claim=claim, on_progress=progress)
         else:
             L.write_json(os.path.join(folder, "heartbeat.json"), hb)
+            L.post_heartbeat(hb)
             if not args.no_push:
                 L.publish(folder, *ident, f"compute: {job['id']} started", quiet=quiet)
             out = search_session(job, root, sha, ident, machines, presence, args.session, cores,
@@ -632,6 +642,7 @@ def run(args):
         if out.get("stopped") != "budget" or args.once:
             hb["current"] = {}
         L.write_json(os.path.join(folder, "heartbeat.json"), hb)
+        L.post_heartbeat(hb)
         L.log(f"{job['id']}: session over ({out.get('stopped')}, {out.get('evals', '-')} evals)", quiet)
         if not args.no_push:
             sha_pub = L.publish(folder, *ident, f"compute: {job['id']} ({out.get('stopped')})", quiet=quiet)

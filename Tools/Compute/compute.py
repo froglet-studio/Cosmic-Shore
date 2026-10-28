@@ -356,6 +356,15 @@ def main(argv=None):
     common(p)
     p.add_argument("--write", action="store_true", help="write Docs/Compute/OPPORTUNITIES.md")
     p.add_argument("--propose", action="store_true", help="write job files for the mechanical opportunities")
+    p = sub.add_parser("hub", help="serve the console live (the Oracle VM): README section 15")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8080)
+    p.add_argument("--rebuild", type=int, default=60, help="seconds between rebuilds from git (default 60)")
+    p.add_argument("--queue", nargs="*", help="queue refs (default: bleeding-edge, ai, compute-queue)")
+    p.add_argument("--url", help="the console's public address")
+    p.add_argument("--key-file", help="the team key file (default ~/.froglet-compute/hub.json)")
+    p.add_argument("--github-token-file", help="a token file, to show open pull requests")
+    p.add_argument("--quiet", action="store_true")
     p = sub.add_parser("console")
     p.add_argument("--out", help="folder for console.json and the page (default ~/.froglet-compute/console)")
     p.add_argument("--local", action="store_true", help="read jobs from this checkout's Docs/Compute/jobs")
@@ -405,6 +414,9 @@ def main(argv=None):
         return cmd_run(args)
     if args.cmd == "doctor":
         return cmd_doctor(args)
+    if args.cmd == "hub":
+        import hub
+        return hub.run(args)
     if args.cmd == "request":
         return cmd_request(args)
     if args.cmd == "console":
