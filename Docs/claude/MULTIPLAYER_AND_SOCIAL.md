@@ -47,6 +47,10 @@ bleeding-edge 19 build (no `AiD`) cannot join a Ys-bleeding-edge 19 build (with 
 **22** (2026-10-28, `claude/adoring-cerf-m94x1o`; 21 is taken on `cece/lucid-brown-ykcmhu`) - `MeerkatWormholeNetworkRelay`'s
 `n_roots`: each network of roots a Meerkat grows from an omnicrystal (seed, trunk size, frame, the omnicrystal taken) and
 its rider's way out (`R_VesselActions/MEERKAT.md` §7).
+**23** (2026-10-28, `worktree-agent-a0cdd70864b1be2cf`; 23 was free on bleeding-edge and every in-flight branch, checked
+that day) - `MeerkatWormholeNetworkRelay.TunnelState` carries `Kit` (a byte: the soliton's sentinel and its Charge / Mass /
+Space L5 bits) and `PortalSize` (its exit portal's size): Garrett's kit, decided by the owner and published with each
+tunnel (`R_VesselActions/MEERKAT.md` §8.5).
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

@@ -65,6 +65,63 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Meerkat: Garrett's kit - the soliton, the faster ride, sentinels, the exit portal (`worktree-agent-a0cdd70864b1be2cf`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett's design, approved by Yash 2026-10-28; `R_VesselActions/MEERKAT.md` §8): `MeerkatSolitonKit` on the
+Meerkat (with `MeerkatSolitonPrisms`, `MeerkatSentinels`, `MeerkatExitPortal`, `MeerkatSolitonMath`), Y →
+`MeerkatSentinelModeAction`, the config's "Garrett's kit" sections, the element map's four rows, protocol version 23
+(`TunnelState.Kit`, `PortalSize`). `/verify-unity` was not available in this session (no Editor): nothing here has been
+compiled or run by Unity itself.
+
+**Verified without the editor:** 11/11 `MeerkatSolitonMathTests` on the page's own numbers (dotnet, Unity stubs;
+`Tools/Build/meerkat_kit_harness/run.sh --self-test`, 3 negative controls fire). Reference compile player-dev and editor:
+0 errors in project code. `element_ability_table.py Meerkat`: 4/4 · 4/4 · 4/4. `author_meerkat_assets.py --check` /
+`--self-test`, `studio_to_unity.py --check` (Meerkat 0 drift), console-logging, conditional-compilation, using-directive,
+elemental-float, network-prefab-hash and abstract-member gates green.
+
+**Verify in editor** (the Toybox's Vessel Changer → Meerkat, unless said; HUD console `elements` or crystals to raise a level):
+1. **Compile and load.** No console error on entering play mode or on swapping to the Meerkat. The ShipActions object
+   carries `MeerkatSolitonKit` with `MeerkatWormholeConfig` and Runtime GameData wired.
+2. **Space, the soliton's size.** Form a short tunnel (LT released, stick centred) and a long one (LT squeezed, stick
+   over). The short one is FAT (at Space 5: a ~17 u throat, ~54 u mouth) and the long one thin (~1-2 u throat); the reticle
+   shows the same size before RT. Raise Space: every tunnel gets fatter for its length.
+3. **Space, swallow and fire.** Form a tunnel whose way in is near prisms (the Garland bough). Within a quarter second the
+   prisms round its way in (1.5 × the mouth) slide into it, run the tube and leave the way out along its heading, gliding
+   to rest over ~3 s. A fired prism hitting a plain prism destroys both (your score goes up); a shielded one bounces off.
+   Super-shielded prisms never move. No prism vanishes without a collision.
+4. **Space L5, Steal.** At Space 5+, swallowed rival / neutral prisms turn your colour as they enter the tube.
+5. **Anyone rides.** With two Meerkats (a second player, or an AI Meerkat in an arena/race), fly into the other's
+   standing soliton's way in: you are carried through and out on its last heading; its own life is unchanged by you.
+   A non-Meerkat hull is NOT carried (not built).
+6. **Time.** Time 0 vs Time 10: the ride's peak is faster at 10 (×1.4 at the throat). At Time 5+ (Boost Out) you leave
+   every soliton visibly faster (1.8 × your speed before it), then ease back to cruise.
+7. **Charge, Sentinel mode.** Press Y (F on keyboard): nothing visible until the next RT. Form a tunnel: a still copy of
+   the hull stands up at its way in, nose to the sky. That tunnel no longer collapses after 10 s, and forming the next one
+   does not collapse it. Form four: the first sentinel and its tunnel go (pool 3). At Charge 5+: six stand. Press Y again:
+   new tunnels leave no sentinel; the standing ones stay.
+8. **Charge, the zap.** Let a rival (an AI on another domain) fly within 1.5 × a sentinel's mouth: crystals are knocked
+   out of it about five times a second's worth (0.1 → 0.25 of a petal a zap on each element; whole petals leave), its
+   abilities are silenced for what each hit is worth, and the shooter's score counts the hits. Your own domain's prisms in
+   the guard turn shielded.
+9. **Mass, the exit portal.** Every new tunnel sets six small prisms of your colour in a hexagon round its way out, square
+   to its heading, at 1.5 × the exit radius. Mass 10 makes them about twice the size of Mass 0's. At Mass 5+ they are
+   danger prisms (a rival hitting one takes the danger hit).
+10. **AI.** Seat an AI Meerkat in Warpline (and Burrow Run): it turns Sentinel mode on once, forms tunnels as before and
+    still finishes the race. Its sentinels and portals appear like a person's.
+11. **HUD.** The four-icon row: Charge fills with sentinels / pool, Mass with the last portal's standing prisms / 6, Space
+    with the reticle's growth, Time drains along a ride. Icons are the Stoat's placeholders.
+12. **MPPM, two clients.** Host + client, one Meerkat each. A tunnel formed with Sentinel mode on shows the same sentinel,
+    the same portal (size, danger) and holds on both screens; a zap on the other client takes petals once (on the victim's
+    machine) and both see the crystals. Protocol 23: an older build is refused at connect.
+
+**First-pass tuning (the artifact's shipped numbers; tune there and clone):** `areaL0/L10` 6,000 / 18,000 u², `swallowShare`
+1.5, `carrySpeed` 150, `fireSpeed` 120, `fireGlideSeconds` 3, `rushL0/L10` 1 / 1.4, `boostOut` 1.5, `sentinelPool` 3 / 6,
+`guardShare` 1.5, `aiZapRate` 5, `zapPetalsL0/L10` 0.1 / 0.25, `portalShare` 1.5, `portalSizeL0/L10` 0.4 / 0.9. Unity only:
+`solitonPrismCap` 64, `zapCooldownSeconds` 0.
+
+**Not built:** the sentinel seats, the hop and the element-holder rule (dynamic crew seats); a non-Meerkat hull riding a
+soliton; sentinels zapping sentinels; the Meerkat's own icons; the sound (five empty FMOD slots).
+
 ### 🔴 The Meerkat's tunnel bends round its middle, as one oval arc (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatWormholeMath.Conic`: the centreline is one conic arc symmetric about its middle, more oval as it

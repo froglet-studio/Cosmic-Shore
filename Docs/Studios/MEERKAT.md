@@ -930,8 +930,11 @@ mode, the swap seats you in a sentinel and Y there hops you out; in the Mix the 
   would be ~280 objects per tunnel).
 - **The game's Stoat still has round 18's straight warp gate on B** (`StoatModeAction` gate* fields, `StoatGateMath`).
   It is unlinked from the studio now. Removing it from the Stoat is Garrett's call (the Stoat's owner).
-- **The kit** (round 18): Garrett's kit and the Mix are prototypes in the studio (§ Two kits), for Yash to judge.
-  Neither is decided, and nothing of either is in Unity.
+- **The kit** (round 18): Garrett's kit and the Mix are prototypes in the studio (§ Two kits). **Garrett's kit is
+  decided and in Unity** (Yash, 2026-10-28: "Garrett has already defined all the elemental abilities, so we're gonna
+  implement those"; `R_VesselActions/MEERKAT.md` §8): the soliton's surface area and swallow-and-fire with its Steal,
+  the faster ride and Boost out, Sentinel mode on Y with its pool, guard and zap, the exit portal and its danger prisms.
+  Not in Unity: the sentinel seats and the hop (dynamic crew seats), and everything of the Mix.
 - **The play styles.** The Meerkat has none yet.
 - **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
 
