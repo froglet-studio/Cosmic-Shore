@@ -140,21 +140,6 @@ def rotated(fn, deg, cx=64.0, cy=64.0):
     return wrapped
 
 
-# -- Rhino ---------------------------------------------------------------------
-
-def rhino_ramp_spool(px, py):
-    """A ramp wedge with a wind-up arrow over it - Time spools the ramp faster."""
-    if triangle(px, py, (10, 20), (118, 20), (118, 66)):
-        return True
-    cx, cy, r, t = 52, 78, 22, 5.5
-    if arc(px, py, cx, cy, r, t, -10.0, 250.0):
-        return True
-    # Arrowhead at the -10 degree end, pointing clockwise (down the tangent).
-    a = math.radians(-10.0)
-    ex, ey = cx + r * math.cos(a), cy + r * math.sin(a)
-    return arrowhead(px, py, ex, ey, -10.0 - 90.0, 14, 12)
-
-
 # -- Serpent -------------------------------------------------------------------
 
 def _sniper_round(px, py):
@@ -256,7 +241,7 @@ HULLS = {
         # Rhino_SwordEnergy retired 2026-10-28: the Charge card is the icon kit's katana (specs/rhino.py).
         # Rhino_Afterimage retired 2026-10-28: the icon kit's trail of prism copies (specs/rhino.py).
         # Rhino_BladeReach retired 2026-10-28: the icon kit's katana and super-shielded prism (specs/rhino.py).
-        "Rhino_RampSpool-PLACEHOLDER.png": rhino_ramp_spool,
+        # Rhino_RampSpool retired 2026-10-28: the icon kit's Rhino, ward and danger prism (specs/rhino.py).
     },
     "Serpent": {
         "Serpent_SniperShot-PLACEHOLDER.png": serpent_sniper_shot,

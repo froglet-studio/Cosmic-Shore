@@ -547,3 +547,213 @@ REBIND += [
                                          "reachPrismBrokenSprite": ("icon", "Rhino_ReachPrismBroken"),
                                          "reachPostsSprite": ("icon", "Rhino_ReachPosts")})),
 ]
+
+
+# ---- Time: Ramp Spool options (2026-10-28) -------------------------------------------------------------------------
+# Hold full throttle dead straight and the ramp winds the Rhino up at a CONSTANT rate, cruise 50 -> top 840 u/s; Time
+# scales the rate (220 -> 550 u/s per s, floored 110), not the top. Time 5 is MOMENTUM: above 70% of top speed (588 u/s)
+# danger prisms cannot drain the Rhino (VesselElementalImmunity, WhileAboveTopSpeedFraction; RHINO_RAMP_BOOST.md).
+# Round 1 (R / T / U: the flat katana with streaks, chevrons, a ramp) - Garrett: "this ability is about the rhino and
+# its invulnerability to danger prisms so it should have a rhino silhouette and a tick on the meter like you did with
+# the sparrow that shows the barrier come up to protect against the danger prism". So: the Rhino seen from above, nose
+# up (the game's own HUD silhouette, Assets/_Graphics/Silhouettes/Rhino: RhinoBody + two RhinoWing, laid out at the
+# hull's measured pod offsets), the plate gauge = speed / top speed with ONE tick at 70%, and above it the barrier up
+# between the nose and a danger prism.
+SIL_DIR = "Assets/_Graphics/Silhouettes/Rhino/"
+SIL_PX_PER_U = 10.0                # RhinoBody: 56 px across the 5.6 u fuselage
+SIL_POD_X = 5.43                   # the pods' centres off the centreline (u, Docs/VesselModels/Rhino.md 5.2)
+SIL_POD_DROP = (6.43 + 4.47)       # nose tip (z +6.43) to the pods' centres (z -4.47), u
+SIL_WING_POD_Y = 77.0              # the pod's centre down the RhinoWing sprite (px)
+MOMENTUM01 = 0.7                   # the tick: Momentum's 70% of top speed
+TIME_MARKS = [MOMENTUM01]
+
+
+def _sil(name):
+    import os
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+    return Image.open(os.path.join(root, SIL_DIR + name + ".png")).convert("RGBA").split()[3]
+
+
+def _rhino_composite():
+    """The top view at the silhouette's own scale (10 px/u): the body, the two wing plates through their pods."""
+    body, wing = _sil("RhinoBody"), _sil("RhinoWing")
+    dx = SIL_POD_X * SIL_PX_PER_U
+    top = SIL_POD_DROP * SIL_PX_PER_U - SIL_WING_POD_Y          # the wings' top edge below the nose
+    W = int(2 * dx + wing.width) + 2
+    H = int(max(body.height, top + wing.height)) + 2
+    a = Image.new("L", (W, H), 0)
+    cx = W / 2
+    a.paste(body, (int(round(cx - body.width / 2)), 0), body)
+    for sx in (-1, 1):
+        a.paste(wing, (int(round(cx + sx * dx - wing.width / 2)), int(round(top))), wing)
+    return a
+
+
+def rhino_top(cx=64.0, nose_y=40.0, height=88.0):
+    """The Rhino from above, nose up at (cx, nose_y), `height` card px from nose to the back plates' ends."""
+    a = _rhino_composite()
+    k = height / a.height
+    w, h = a.width * k, a.height * k
+    full = Image.new("L", (N, N), 0)
+    s = N / 128.0
+    im = a.resize((max(1, int(round(w * s))), max(1, int(round(h * s)))), Image.LANCZOS)
+    full.paste(im, (int(round((cx - w / 2) * s)), int(round(nose_y * s))))
+    return np.asarray(full) > 127
+
+
+NOSE_Y = 38.0
+
+
+def danger_prism(cx, cy, angle=0.0, l=30.0, w=11.0):
+    """A plain prism (the trail's block), long across the Rhino's path, as the danger prisms lie in a rival's trail."""
+    return fill(rotate([(cx - l / 2, cy - w / 2), (cx + l / 2, cy - w / 2), (cx + l / 2, cy + w / 2), (cx - l / 2, cy + w / 2)],
+                       angle, cx, cy))
+
+
+def barrier_arc(cy=NOSE_Y - 8.0, r=40.0, half=50.0, t=6.0):
+    """The ward: a bow of light standing ahead of the nose, curving back around the shoulders."""
+    cx, oy = 64.0, cy + r
+    out, inn = [], []
+    for k in range(25):
+        a = math.radians(-90 - half + 2 * half * k / 24)
+        out.append((cx + r * math.cos(a), oy + r * math.sin(a)))
+        inn.append((cx + (r - t) * math.cos(a), oy + (r - t) * math.sin(a)))
+    return fill(out + inn[::-1])
+
+
+def barrier_wedge(cy=NOSE_Y - 10.0, half_w=36.0, depth=16.0, t=6.0):
+    """W: the ward as a plough's blade - a chevron ahead of the nose (the bulldozer that ignores mass)."""
+    sh = t / math.cos(math.atan2(depth, half_w))
+    return fill([(64 - half_w, cy + depth), (64, cy), (64 + half_w, cy + depth),
+                 (64 + half_w, cy + depth + t), (64, cy + sh), (64 - half_w, cy + depth + t)])
+
+
+def _clear_of(mask, *others, px=3.0):
+    import toy_portraits
+    keep = mask.copy()
+    for o in others:
+        keep &= ~toy_portraits.grown(o, px)
+    return keep
+
+
+# (name, speed / top, boosting, upgraded (Time 5), straight)
+RAMP_STATES = [("cruising: no ramp", 0.06, False, True, True),
+               ("winding up (lit)", 0.45, True, True, True),
+               ("past 70%, Time below 5: no ward", 0.85, True, False, True),
+               ("past 70% at Time 5: Momentum holds", 0.85, True, True, True),
+               ("bent line: the ramp grades down", 0.6, True, True, False)]
+_GAUGE_DIM = (120, 120, 140, 255)
+
+
+def _ramp_option(name, title, ward, prism_ahead, prism_glance):
+    hull = lambda: rhino_top(nose_y=NOSE_Y)
+    parts = dict(hull=hull, ward=lambda: _clear_of(ward(), hull()),
+                 ahead=lambda: _clear_of(prism_ahead(), hull()),
+                 glance=lambda: _clear_of(prism_glance(), ward(), hull()))
+    states, gauge = [], {}
+    for n, s, boosting, up, straight in RAMP_STATES:
+        warded = up and s >= MOMENTUM01
+        L = [("glance", "danger"), ("ward", "white")] if warded else [("ahead", "danger")]
+        states.append((n, L + [("hull", "domain")]))
+        gauge[n] = (s, None if straight else _GAUGE_DIM)
+    return dict(name=name, group="rampspool4", lockup_state=3, element="Time",
+                before=ICON_DIR + "Rhino_RampSpool-PLACEHOLDER.png", before_rev="899c25973", before_gauge_value=0.55,
+                gauge_marks=TIME_MARKS, gauge_marks_style="segments", title=title, parts=parts, states=states, gauge=gauge)
+
+
+# Round 3: "lets have the rhino travel left to right so it doesn't cause visual confusion between the impact event and
+# the threshold" - nose up put the ward and the prism at the TOP of the card, right under the plate's fill line and
+# its 70% ticks. The Rhino now flies nose RIGHT, the ward and the prism ahead of it on the right.
+SIDE_CY = 66.0
+SIDE_NOSE_X = 74.0
+SIDE_LEN = 70.0
+
+
+def rhino_right(nose_x=SIDE_NOSE_X, cy=SIDE_CY, length=SIDE_LEN):
+    """The Rhino from above flying RIGHT: the top view turned a quarter clockwise, nose at (nose_x, cy)."""
+    a = _rhino_composite().rotate(-90, expand=True)          # nose up -> nose right
+    k = length / a.width
+    w, h = a.width * k, a.height * k
+    full = Image.new("L", (N, N), 0)
+    s = N / 128.0
+    im = a.resize((max(1, int(round(w * s))), max(1, int(round(h * s)))), Image.LANCZOS)
+    full.paste(im, (int(round((nose_x - w) * s)), int(round((cy - h / 2) * s))))
+    return np.asarray(full) > 127
+
+
+def ward_right(x=SIDE_NOSE_X + 8.0, cy=SIDE_CY, half_h=34.0, depth=15.0, t=6.0):
+    """The plough's chevron ahead of the nose, pointing the way the Rhino flies."""
+    sh = t / math.cos(math.atan2(depth, half_h))
+    return fill([(x, cy - half_h), (x + depth, cy), (x, cy + half_h),
+                 (x - t, cy + half_h), (x + depth - sh, cy), (x - t, cy - half_h)])
+
+
+GLANCE_AT = (110.0, SIDE_CY + 36.0, -55.0)   # the deflected prism: down and away, clear of the plate's 70% ticks
+
+
+def spool_hull():
+    return rhino_right()
+
+
+def spool_ward():
+    return _clear_of(ward_right(), spool_hull())
+
+
+def spool_prism():
+    return _clear_of(danger_prism(112, SIDE_CY, angle=90, w=12.0), spool_hull())   # on the 40 px grid: it keeps its mass
+
+
+def spool_glance():
+    x, y, a = GLANCE_AT
+    return _clear_of(danger_prism(x, y, angle=a), ward_right(), spool_hull())
+
+
+def ramp_spool():
+    """The composite as Momentum holds: the card's fallback and the fleet sheet's tile."""
+    return spool_hull() | spool_ward() | spool_glance()
+
+
+# Time is W2 (Garrett 2026-10-28, round 4: "great lets proceed"). The HUD shows the hull (domain) always; the danger
+# prism ahead of the nose until Momentum holds; then the white ward up and the prism glanced away. The plate is the
+# speed meter with the ward's threshold as the Sparrow's edge ticks (RhinoVesselHUDView.SetMomentumMark).
+SPOOL_EXEMPT = dict(PART_EXEMPT, components="a part", thin="the ward is a chevron stroke")
+ICONS += [
+    dict(name="Rhino_RampSpool", element="Time", act="Ramp Spool / Momentum: the Rhino flying right, its ward up and a danger prism glancing off (composite; the HUD shows the parts by state)",
+         draw=ramp_spool, exempt={"components": "the hull, the ward and the prism", "in_box": "the hull, the ward and the prism run the card's width",
+                                  "box_fill": "a hull in flight", "coverage": "the top-view hull is slim"}),
+    dict(name="Rhino_SpoolHull", element="Time", act="Ramp Spool: the Rhino from above, flying right (domain colour)", draw=spool_hull,
+         subdir="Parts", family=False, exempt=dict(SPOOL_EXEMPT, specks="the silhouette's own cut-outs", gap="the wing plates")),
+    dict(name="Rhino_SpoolWard", element="Time", act="Momentum: the chevron ward ahead of the nose (white)", draw=spool_ward,
+         subdir="Parts", family=False, exempt=SPOOL_EXEMPT),
+    dict(name="Rhino_SpoolPrism", element="Time", act="Ramp Spool: the danger prism ahead (danger), until Momentum holds", draw=spool_prism,
+         subdir="Parts", family=False, exempt=SPOOL_EXEMPT),
+    dict(name="Rhino_SpoolGlance", element="Time", act="Momentum: the danger prism glanced away (danger)", draw=spool_glance,
+         subdir="Parts", family=False, exempt=SPOOL_EXEMPT),
+]
+LOCKUP["Time"] = dict(parts=dict(p=spool_prism, h=spool_hull), state=[("p", "danger"), ("h", "domain")], gauge=0.45,
+                      gauge_marks=TIME_MARKS, gauge_marks_style="segments")
+
+
+def _spool_card():
+    states, gauge = [], {}
+    for n, s, boosting, up, straight in RAMP_STATES:
+        warded = up and s >= MOMENTUM01
+        L = [("glance", "danger"), ("ward", "white")] if warded else [("prism", "danger")]
+        states.append((n, L + [("hull", "domain")]))
+        gauge[n] = (s, None if straight else _GAUGE_DIM)
+    return dict(name="rampspool", element="Time", before=ICON_DIR + "Rhino_RampSpool-PLACEHOLDER.png", before_rev="899c25973",
+                before_gauge=True, before_gauge_value=0.55, gauge_marks=TIME_MARKS, gauge_marks_style="segments",
+                title="Ramp Spool / Momentum: the Rhino flying right over the speed meter; past the 70% ticks at Time 5 its ward comes up and the danger prism glances away",
+                parts=dict(hull=spool_hull, ward=spool_ward, prism=spool_prism, glance=spool_glance), states=states, gauge=gauge)
+
+
+CARDS += [_spool_card()]
+REBIND += [
+    # The Time card: the icon Image becomes a transparent container over four parts, in draw order - the prism ahead
+    # and the glanced prism (danger), the ward (white), the hull (domain). The plate keeps its speed gauge (TimeGauge).
+    dict(file=VARIANT, pair=dict(container="7720000000000003045", view=VIEW, after="highlights",
+                                 children=[("SpoolPrism", "Rhino_SpoolPrism", "spoolPrismIcon"),
+                                           ("SpoolGlance", "Rhino_SpoolGlance", "spoolGlanceIcon"),
+                                           ("SpoolWard", "Rhino_SpoolWard", "spoolWardIcon"),
+                                           ("SpoolHull", "Rhino_SpoolHull", "spoolHullIcon")])),
+]

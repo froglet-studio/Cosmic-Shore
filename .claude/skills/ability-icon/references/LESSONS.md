@@ -359,3 +359,10 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     the game ships a top-view HUD silhouette in parts (`Assets/_Graphics/Silhouettes/Rhino/RhinoBody.png` + two
     `RhinoWing.png`), laid out at the dossier's measured pod offsets. Search `Assets/_Graphics/Silhouettes/` (and the
     sparse checkout's excluded paths: `git ls-files | grep -i <hull>`) before concluding a hull cannot be drawn.
+
+55. **Keep the act's motion away from the plate's marks.** The Time card's round 3 flew the Rhino nose UP, so the ward
+    and the danger prism sat at the top of the card, right under the fill line and the 70% ticks. Garrett: "lets have
+    the rhino travel left to right so it doesn't cause visual confusion between the impact event and the threshold".
+    The plate fills bottom to top, so anything the icon moves or strikes reads as part of the meter when it runs
+    vertically; run it ACROSS (a hull flies left to right, as the Sparrow's does) and send anything it throws off
+    sideways or down, clear of the marks. Check where every plate mark lands on the card before placing the act.
