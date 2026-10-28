@@ -1,8 +1,9 @@
+<meta charset="utf-8">
 <title>Froglet Compute Console</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;800&display=swap">
 <style>
 /* Froglet Compute Console: a macOS window (title bar, traffic lights, source-list sidebar, a Terminal panel) dressed
    in Cosmic Shore's style foundation (Docs/STYLE_FOUNDATION.md): deep-space neutrals, Jade for the active
@@ -410,32 +411,208 @@ details.step[open] > summary { margin-bottom: 4px; }
   .spark { width: 100%; }
   .term { height: 46vh; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+   Hyperdrive: the look of froglet.games (css/design-3-hyperdrive.css), 2026-10-28. Near-black space, glass cards with
+   hairline borders and 16 px corners, Orbitron eyebrows tracked wide over big Inter headings with one gradient word,
+   pill tabs, lime outline buttons, and few colours at once. This layer sits on top of the rules above and wins.
+   ════════════════════════════════════════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --space: #050810; --black: #020408;
+  --card: rgba(12, 20, 44, 0.55); --card-hi: rgba(18, 28, 60, 0.7); --sunk: rgba(2, 4, 8, 0.6);
+  --line: rgba(255, 255, 255, 0.08); --line-hi: rgba(255, 255, 255, 0.16);
+  --text: rgba(255, 255, 255, 0.95); --muted: rgba(255, 255, 255, 0.66); --dim: rgba(255, 255, 255, 0.42); --inactive: rgba(255, 255, 255, 0.22);
+  --jade: #00e5ff; --jade-l: #7ff2ff; --jade-d: #00606b;
+  --ruby: #e040fb; --ruby-l: #f08bff;
+  --gold: #ffc14d; --gold-l: #ffd98a; --gold-d: #7a5a12;
+  --cta: #7fff00; --danger: #ff4081;
+  --head: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "Orbitron", "Inter", system-ui, sans-serif;
+  --btn: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gradient: linear-gradient(135deg, #00e5ff, #e040fb);
+  --r: 16px;
+}
+body { font: 14.5px/1.6 var(--ui); color: rgba(255,255,255,0.72); background: var(--space); padding: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,0.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 68% 14%, rgba(255,255,255,0.35) 50%, transparent 51%),
+    radial-gradient(1px 1px at 84% 62%, rgba(127,242,255,0.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 32% 78%, rgba(255,255,255,0.3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 52% 46%, rgba(240,139,255,0.35) 50%, transparent 51%);
+  background-size: 360px 360px, 420px 420px, 520px 520px, 300px 300px, 460px 460px; background-attachment: fixed; }
+h1, h2, h3 { font-family: var(--head); font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+:focus-visible { outline: 2px solid var(--jade); outline-offset: 3px; border-radius: 6px; }
+
+/* the shell: a site, not a window */
+.window { max-width: none; height: 100%; min-height: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none; grid-template-rows: 68px minmax(0, 1fr); }
+.titlebar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 28px; padding: 0 max(28px, env(safe-area-inset-left, 0px));
+  background: rgba(5, 8, 16, 0.82); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line); box-shadow: none; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); white-space: nowrap; }
+.brand .mark { width: 26px; height: 26px; border-radius: 8px; background: var(--gradient); box-shadow: 0 0 18px rgba(0,229,255,0.35);
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 5px, #000 5.5px); mask: radial-gradient(circle at 50% 50%, transparent 5px, #000 5.5px); }
+.brand .bt { display: grid; line-height: 1; }
+.brand .bt b { font: 700 16px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.brand .bt i { font: 500 9.5px/1.4 var(--display); font-style: normal; letter-spacing: 0.42em; text-transform: uppercase; color: var(--jade); }
+.brand .led { margin-left: 4px; }
+.livetag { margin-left: 2px; font: 700 9.5px/1 var(--display); letter-spacing: 0.24em; text-transform: uppercase; color: var(--cta);
+  background: transparent; border: 1px solid rgba(127,255,0,0.6); border-radius: 999px; padding: 4px 8px 3px; box-shadow: 0 0 10px rgba(127,255,0,0.2); }
+.body { grid-template-columns: minmax(0, 1fr); }
+.side { flex-direction: row; align-items: center; justify-content: center; gap: 26px; background: none; border: 0; padding: 0; overflow-x: auto; scrollbar-width: none; }
+.side::-webkit-scrollbar { display: none; }
+.side a { padding: 6px 0; border-radius: 0; font: 600 11.5px/1 var(--ui); letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.45);
+  white-space: nowrap; border-bottom: 1px solid transparent; }
+.side a:hover { background: none; color: var(--text); }
+.side a[aria-current="page"] { background: none; box-shadow: none; color: var(--text); border-bottom-color: var(--jade); }
+.side a .n { margin-left: 6px; font: 600 10px/1 var(--ui); color: var(--jade); letter-spacing: 0; }
+.side a .n:empty { display: none; }
+.tright { gap: 10px; font: 500 11px/1 var(--ui); color: var(--dim); }
+.tbtn { font: 600 11px/1 var(--ui); letter-spacing: 0.16em; text-transform: uppercase; border-radius: 6px; padding: 10px 16px; cursor: pointer;
+  border: 1px solid var(--line-hi); background: transparent; color: var(--muted); clip-path: none; }
+.tbtn:hover { color: var(--text); border-color: rgba(255,255,255,0.32); background: rgba(255,255,255,0.03); }
+.tbtn.cta { border-color: var(--cta); color: var(--cta); background: transparent; box-shadow: 0 0 8px rgba(127,255,0,0.15); }
+.tbtn.cta:hover { background: rgba(127,255,0,0.08); box-shadow: 0 0 18px rgba(127,255,0,0.3); }
+.content { max-width: 1180px; width: 100%; margin: 0 auto; }
+.pane { max-width: none; padding: 44px max(28px, env(safe-area-inset-left, 0px)) 72px; gap: 26px; }
+
+/* page titles: an Orbitron eyebrow over a big heading */
+.ptitle { flex-direction: column-reverse; align-items: flex-start; gap: 10px; }
+.ptitle h2 { font: 700 clamp(30px, 4.2vw, 46px)/1.08 var(--head); letter-spacing: -0.02em; }
+.ptitle .sub { font: 500 12px/1 var(--display); letter-spacing: 0.42em; text-transform: uppercase; color: var(--jade); }
+.lead { font-size: 15.5px; color: rgba(255,255,255,0.66); max-width: 68ch; }
+.note { font-size: 12.5px; color: rgba(255,255,255,0.5); }
+.grad { background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* glass, not slivers */
+.sliver { clip-path: none !important; border-radius: var(--r); }
+.card, .tile, .banner, .job, .mrun, .mcard, .run, .tablewrap, .empty, .hero, .step3, .approve .banner { background: var(--card);
+  border: 1px solid var(--line); border-radius: var(--r); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.card { padding: 20px 22px; gap: 12px; }
+.card h3, .group h3 { font: 600 11px/1 var(--display); letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+.banner { border-left-width: 1px; padding: 16px 20px; }
+.banner.gold { border-color: rgba(255,193,77,0.35); } .banner.bad { border-color: rgba(255,64,129,0.4); } .banner.ruby { border-color: rgba(224,64,251,0.4); }
+.tile { padding: 16px 20px; }
+.tile b { font: 700 28px/1.1 var(--head); color: var(--text); }
+.hero { padding: 30px 32px; }
+.hero .big { font: 600 clamp(20px, 2.4vw, 28px)/1.35 var(--head); color: var(--text); letter-spacing: -0.01em; }
+.hero .big em { font-style: normal; background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* buttons: outline, uppercase, tracked */
+.btn { font: 600 11.5px/1 var(--ui); letter-spacing: 0.16em; text-transform: uppercase; border-radius: 6px; padding: 12px 20px;
+  clip-path: none; border: 1px solid var(--line-hi); background: transparent; color: var(--text); }
+.btn:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.3); }
+.btn.cta { background: transparent; color: var(--cta); border-color: var(--cta); box-shadow: 0 0 8px rgba(127,255,0,0.15); }
+.btn.cta:hover { background: rgba(127,255,0,0.08); box-shadow: 0 0 20px rgba(127,255,0,0.3); }
+.btn.big { padding: 18px 24px; font-size: 13px; letter-spacing: 0.2em; border-radius: 10px; }
+
+/* picks: pill tabs, one accent when chosen */
+.pick { border-radius: 999px; clip-path: none; border: 1px solid var(--line-hi); background: transparent; color: rgba(255,255,255,0.75);
+  padding: 9px 16px 8px; display: inline-flex; align-items: baseline; gap: 8px; font: 600 13px/1.1 var(--ui); }
+.pick small { font: 500 11px/1 var(--ui); color: rgba(255,255,255,0.4); }
+.pick:hover { border-color: rgba(255,255,255,0.32); color: var(--text); }
+.pick.now, .pick.game, .pick.unity { border-left-width: 1px; border-left-color: var(--line-hi); }
+.pick::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none; align-self: center; background: transparent; }
+.pick.now::before { background: var(--jade); } .pick.unity::before { background: var(--ruby); } .pick.game::before { background: rgba(255,255,255,0.25); }
+.pick.game span { color: rgba(255,255,255,0.45); }
+.pick.on, .pick.game.on, .pick.unity.on, .pick.where.on, .pick.int.on.i1, .pick.int.on.i2, .pick.int.on.i3, .pick.int.on.i4 {
+  background: rgba(0,229,255,0.1); border-color: var(--jade); color: var(--text); box-shadow: 0 0 14px rgba(0,229,255,0.18); }
+.pick.on small { color: rgba(255,255,255,0.6); }
+.pick.unity.on { background: rgba(224,64,251,0.1); border-color: var(--ruby); box-shadow: 0 0 14px rgba(224,64,251,0.2); }
+.pick.int { min-width: 0; padding: 10px 18px; font: 700 13px/1 var(--display); letter-spacing: 0.1em; }
+.pick.int::before { display: none; }
+.step > b, .step > summary { font: 600 11px/1 var(--display); letter-spacing: 0.3em; color: rgba(255,255,255,0.5); }
+.srange::-webkit-slider-runnable-track { height: 4px; border-radius: 4px;
+  background: linear-gradient(90deg, rgba(5,8,16,0.85) var(--a), transparent var(--a), transparent var(--b), rgba(5,8,16,0.85) var(--b)), var(--gradient); }
+.srange::-moz-range-track { height: 4px; border-radius: 4px;
+  background: linear-gradient(90deg, rgba(5,8,16,0.85) var(--a), transparent var(--a), transparent var(--b), rgba(5,8,16,0.85) var(--b)), var(--gradient); }
+.srange::-webkit-slider-thumb { width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; transform: none; background: #fff;
+  border: 0; box-shadow: 0 0 0 4px rgba(0,229,255,0.25), 0 0 14px rgba(0,229,255,0.6); }
+.srange::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; transform: none; background: #fff; border: 0; box-shadow: 0 0 0 4px rgba(0,229,255,0.25); }
+.bubble { background: transparent; color: var(--text); border: 1px solid var(--line-hi); border-radius: 999px; font: 700 14px/1 var(--display); padding: 8px 14px; }
+.lock { border-radius: 999px; } .lock.on { background: rgba(255,193,77,0.12); color: var(--gold); border-color: var(--gold); }
+.field { border-radius: 10px; background: var(--sunk); border-color: var(--line); }
+
+/* the sheet and the drawer */
+.sheetwrap { background: rgba(2,4,8,0.7); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); padding-top: 84px; }
+.sheet { background: rgba(8, 13, 30, 0.96); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 40px 100px rgba(0,0,0,0.6); padding: 28px 30px 26px; gap: 18px; }
+.sheet h2 { font: 700 28px/1.1 var(--head); }
+.panel { background: rgba(8, 13, 30, 0.97); border-left: 1px solid var(--line); }
+
+/* status: a dot and a word, not a filled block */
+.spill { background: transparent !important; color: var(--text) !important; padding: 0; font: 600 11px/1 var(--ui); letter-spacing: 0.14em; display: inline-flex; align-items: center; gap: 7px; }
+.spill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--inactive); }
+.spill.working::before { background: var(--jade); box-shadow: 0 0 10px var(--jade); } .spill.free::before { background: var(--cta); }
+.spill.in-use::before { background: var(--gold); } .spill.outside-hours::before { background: var(--ruby); } .spill.offline::before { background: var(--danger); }
+.mcard, .mcard.working, .mcard.free, .mcard.in-use, .mcard.outside-hours, .mcard.offline { border-left-width: 1px; border-left-color: var(--line); padding: 18px 20px; gap: 10px; }
+.mcard.working { border-color: rgba(0,229,255,0.35); box-shadow: 0 0 24px rgba(0,229,255,0.08); }
+.mcard .mtop b.mono { font: 700 15px/1 var(--head); letter-spacing: 0; }
+.flag { border-radius: 999px; background: transparent; border: 1px solid var(--line); color: rgba(255,255,255,0.5); letter-spacing: 0.08em; font-size: 10px; }
+.flag.on { background: transparent; color: var(--jade); border-color: rgba(0,229,255,0.45); }
+.prog { border-radius: 999px; overflow: hidden; height: 4px; background: rgba(255,255,255,0.07); }
+.prog i { background: var(--gradient); border-radius: 999px; }
+.pill { border-radius: 999px; }
+.fleet .fl { font-size: 12.5px; color: rgba(255,255,255,0.6); }
+
+/* tables and the grid: hairlines only */
+.tablewrap { padding: 4px 6px; }
+table th { font: 600 10px/1 var(--display); letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.42); }
+table td, table th { border-color: var(--line) !important; }
+.vm-grid td.cell button { border-radius: 999px; height: 24px; }
+.vm-grid td.cell button.now { background: rgba(0,229,255,0.14); color: var(--jade-l); }
+.vm-grid td.cell button.unity { background: rgba(224,64,251,0.16); color: var(--ruby-l); }
+.vm-grid td.cell button.game { background: transparent; color: rgba(255,255,255,0.3); border: 1px solid var(--line); }
+
+/* quiet the chrome */
+.statusbar { background: transparent; border-top: 1px solid var(--line); color: rgba(255,255,255,0.35); }
+.term { border-radius: 14px 14px 0 0; border: 1px solid var(--line); }
+
+/* round 2: fewer things at once */
+#nav-term { display: none; }
+.chead { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.chead .fleet { flex: 1; margin: 0; }
+@media (max-width: 860px) { .chead { justify-content: space-between; } .chead .fleet { flex-basis: 100%; order: 3; } }
+.side { justify-content: safe center; gap: 22px; }
+.btn.small { padding: 9px 14px; font-size: 10.5px; color: var(--muted); }
+.btn.small:hover { color: var(--text); }
+.mcard .row { margin-top: 2px; }
+.mflags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+@media (max-width: 1240px) { .tright .fresh, #b-tour { display: none; } }
+@media (max-width: 1040px) { #b-install { display: none; } .side { gap: 18px; } }
+
+@media (max-width: 860px) {
+  .window { grid-template-rows: auto minmax(0, 1fr); }
+  .titlebar { grid-template-columns: auto auto; grid-template-rows: 56px auto; gap: 0 12px; padding: 0 16px; }
+  .side { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; gap: 20px; padding: 10px 0 12px; border-top: 1px solid var(--line); }
+  .tright .fresh, #b-tour, #b-install { display: none; }
+  #b-newrun { display: inline-block; }
+  .pane { padding: 26px 16px 56px; }
+  .sheet { padding: 22px 18px; border-radius: 18px; }
+}
 </style>
 
 <div class="window" id="win">
-  <div class="titlebar">
-    <div class="lights">
-      <button class="r" data-g="×" id="l-red" aria-label="Close the open panel" title="Close the open panel"></button>
-      <button class="y" data-g="−" id="l-yellow" aria-label="Hide the sidebar" title="Hide the sidebar"></button>
-      <button class="g" data-g="+" id="l-green" aria-label="Zoom the window" title="Zoom the window"></button>
+  <header class="titlebar">
+    <div class="lights" hidden>
+      <button class="r" id="l-red" aria-label="Close the open panel"></button>
+      <button class="y" id="l-yellow" aria-label="Hide the sidebar"></button>
+      <button class="g" id="l-green" aria-label="Zoom the window"></button>
     </div>
-    <div class="wtitle"><span class="led" id="led"></span><b>Froglet Compute</b><span class="livetag" id="livetag" hidden>LIVE</span></div>
-    <div class="tright"><span class="fresh" id="fresh">loading</span><button class="tbtn" type="button" id="b-tour">Tour</button><button class="tbtn" type="button" id="b-newrun">New run</button><button class="tbtn cta" type="button" id="b-install">Install</button></div>
-  </div>
-  <div class="body">
+    <a class="brand" href="#home" aria-label="Froglet Compute, home"><span class="mark" aria-hidden="true"></span><span class="bt"><b>Froglet</b><i>Compute</i></span><span class="led" id="led"></span><span class="livetag" id="livetag" hidden>Live</span></a>
     <nav class="side" id="nav" aria-label="Views">
-      <div class="sec">Overview</div>
-      <a href="#home" data-view="home" id="nav-home"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 7.5 8 3l5.5 4.5V13h-11z"/><path d="M6.5 13V9.5h3V13"/></svg>Home</a>
-      <a href="#runs" data-view="runs" id="nav-runs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.5"/><path d="M8 4.8V8l2.2 1.6"/></svg>Runs<span class="n" id="n-runs"></span></a>
-      <a href="#searches" data-view="searches" id="nav-searches"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="4"/><path d="M10 10l3.5 3.5"/></svg>Searches<span class="n" id="n-searches"></span></a>
-      <div class="sec">Sources</div>
-      <a href="#machines" data-view="machines" id="nav-machines"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="8"/><path d="M5.5 14h5M8 11v3"/></svg>Computers<span class="n" id="n-machines"></span></a>
-      <a href="#recordings" data-view="recordings" id="nav-recordings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 8h2l1.5-4 2.5 8 2-6 1.5 2h3.5"/></svg>Recordings<span class="n" id="n-recordings"></span></a>
-      <a href="#ai" data-view="ai" id="nav-ai"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="3.5" r="1.5"/><circle cx="4" cy="12.5" r="1.5"/><circle cx="12" cy="6" r="1.5"/><path d="M4 5v6M12 7.5c0 2.5-3 3-8 3.5"/></svg>AI branch</a>
-      <div class="sec">Advanced</div>
-      <a href="#terminal" data-view="terminal" id="nav-term"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="13" height="11"/><path d="M4 6l2.5 2L4 10M8 10.5h4"/></svg>Terminal<span class="n">⌘J</span></a>
-      <div class="foot" id="sidefoot"></div>
+      <a href="#home" data-view="home" id="nav-home">Home</a>
+      <a href="#runs" data-view="runs" id="nav-runs">Runs<span class="n" id="n-runs"></span></a>
+      <a href="#machines" data-view="machines" id="nav-machines">Computers<span class="n" id="n-machines"></span></a>
+      <a href="#searches" data-view="searches" id="nav-searches">Searches<span class="n" id="n-searches"></span></a>
+      <a href="#recordings" data-view="recordings" id="nav-recordings">Recordings<span class="n" id="n-recordings"></span></a>
+      <a href="#ai" data-view="ai" id="nav-ai">AI branch</a>
+      <a href="#terminal" data-view="terminal" id="nav-term">Terminal</a>
+      <div class="foot" id="sidefoot" hidden></div>
     </nav>
+    <div class="tright"><span class="fresh" id="fresh">loading</span><button class="tbtn ghost" type="button" id="b-tour">Tour</button><button class="tbtn ghost" type="button" id="b-install">Add a computer</button><button class="tbtn cta" type="button" id="b-newrun">New run</button></div>
+  </header>
+  <div class="body">
     <div class="content">
       <div class="scroll" id="scroll"><div class="pane" id="main"><div class="empty sliver"><b>Loading</b><span>The console reads console.json, published next to it.</span></div></div></div>
       <div>
@@ -500,7 +677,10 @@ details.step[open] > summary { margin-bottom: 4px; }
     return [j.status, j.status === "blocked" ? "waiting" : j.status];
   }
   function jobById(id) { return DATA && DATA.jobs.filter(function (j) { return j.id === id; })[0]; }
-  function title(t, sub) { return h("div", { class: "ptitle" }, [h("h2", { text: t }), sub ? h("span", { class: "sub", text: sub }) : null]); }
+  function title(t, sub) {
+    var words = String(t).split(" "), last = words.pop();       // one gradient word, as on froglet.games
+    return h("div", { class: "ptitle" }, [h("h2", null, [words.length ? words.join(" ") + " " : "", h("span", { class: "grad", text: last })]), sub ? h("span", { class: "sub", text: sub }) : null]);
+  }
   function stopped(s) {
     return ({ "max evals": "finished its budget", "budget": "its time was up", "the person came back": "stopped: its person came back", "finished": "finished", "every unit is done or taken": "nothing left to take" })[s] || (s || "–");
   }
@@ -555,9 +735,9 @@ details.step[open] > summary { margin-bottom: 4px; }
     var sentence = [d.machines.length + (d.machines.length === 1 ? " computer has" : " computers have") + " spent ", h("em", { text: hours.toFixed(1) + " hours" }), " searching for better AI and creatures. ",
       act.length ? h("em", { text: act.length + (act.length === 1 ? " run is going now." : " runs are going now.") }) : "Nothing is running right now: computers start once their person has been away 10 minutes."];
     root.appendChild(h("div", { class: "hero sliver", id: "home-hero" }, [h("p", { class: "big" }, sentence),
-      h("div", { class: "row" }, [h("button", { class: "btn cta", type: "button", onclick: openInstall, text: "Install on this computer" }), h("button", { class: "btn", type: "button", onclick: function () { openNewRun(); }, text: "Start a run" }), h("button", { class: "btn", type: "button", onclick: function () { startTour(0); }, text: "Show me around" })])]));
+      h("div", { class: "row" }, [h("button", { class: "btn cta", type: "button", onclick: function () { openNewRun(); }, text: "Start a run" }), h("button", { class: "btn", type: "button", onclick: openInstall, text: "Add a computer" }), h("button", { class: "btn small", type: "button", onclick: function () { startTour(0); }, text: "Show me around" })])]));
     // the fleet: every computer, as it is now
-    if (d.machines.length) root.appendChild(h("div", { class: "card sliver", id: "home-fleet" }, [h("div", { class: "mtop" }, [h("h3", { text: "Computers" }), fleetLine(),
+    if (d.machines.length) root.appendChild(h("div", { class: "card sliver", id: "home-fleet" }, [h("div", { class: "chead" }, [h("h3", { text: "Computers" }), fleetLine(),
       h("button", { class: "tbtn", type: "button", onclick: function () { location.hash = "machines"; }, text: "Open" })]),
       h("div", { class: "mgrid" }, d.machines.slice(0, 3).map(machineCard))]));
     // needs you
@@ -806,7 +986,7 @@ details.step[open] > summary { margin-bottom: 4px; }
       h("div", { class: "mflags" }, [h("span", { class: "flag " + (unity ? "on" : ""), text: unity ? "Unity: yes" + (sp.unity_open ? " (open)" : "") : "Unity: no" }),
         h("span", { class: "flag " + (m.remote_start ? "on" : ""), title: m.remote_start ? "its owner lets a run sent from here start at once" : "a run sent here waits until it is free (its owner can turn this on: compute.py remote-start on)", text: m.remote_start ? "starts runs at once" : "runs wait until it is free" }),
         h("span", { class: "note", text: (m.live ? "live · " : "") + "heard " + ago(m.updated) })]),
-      h("div", { class: "row" }, [h("button", { class: "btn cta", type: "button", onclick: function () { openNewRun(null, null, null, m.machine); }, text: "Run on " + m.host }),
+      h("div", { class: "row" }, [h("button", { class: "btn small", type: "button", onclick: function () { openNewRun(null, null, null, m.machine); }, text: "Send a run" }),
         act && act.request ? h("button", { class: "btn", type: "button", onclick: function (e) { stopRun(act.request, e.target.parentElement); }, text: "Stop" }) : null])]);
     return card;
   }
@@ -815,7 +995,6 @@ details.step[open] > summary { margin-bottom: 4px; }
     root.appendChild(title("Computers", ms.length + " joined"));
     root.appendChild(h("p", { class: "lead", text: "Every computer that has joined, as it is now. Send a run to one: it starts when the computer is free, at a time you pick, or at once on a computer whose owner allows it." + (LIVE ? " Live: updated every few seconds." : " Open the team's live console to see them change by the second.") }));
     root.appendChild(fleetLine());
-    root.appendChild(h("div", { class: "row" }, [h("button", { class: "btn cta", type: "button", onclick: openInstall, text: "Add a computer" })]));
     if (!ms.length) { root.appendChild(h("div", { class: "empty sliver" }, [h("b", { text: "No computer has joined yet" })])); return; }
     var order = { working: 0, free: 1, "in use": 2, "outside hours": 3, offline: 4 };
     root.appendChild(h("div", { class: "mgrid" }, ms.slice().sort(function (a, b) { return order[mstatus(a)] - order[mstatus(b)]; }).map(machineCard)));
@@ -1128,7 +1307,7 @@ details.step[open] > summary { margin-bottom: 4px; }
       return;
     }
     if (LIVE) { out.appendChild(h("p", { class: "note", id: "nr-live", text: "Sending…" })); return; }
-    out.appendChild(h("p", null, [h("b", { text: "Request " + req.id + ". " }), "Computers take it ahead of their own queue once it is filed. Open this console from the team's live address (the VM) to send runs from any phone in one tap."]));
+    out.appendChild(h("p", null, [h("b", { text: "Request " + req.id + ". Nobody types anything on the other computer. " }), "After its one-time setup, Froglet Compute runs there from login and checks the team's queue every few minutes; once this request is on the queue, the computer you picked starts it (when it is free, at your time, or at once if its owner allows that). Open this console from the team's live address (the VM) to put it on the queue in one tap, from a phone too."]));
     if (CAP.mcp) {
       var msg = h("p", { class: "note" });
       out.appendChild(h("button", { class: "btn cta", type: "button", onclick: function (e) { e.target.disabled = true; msg.textContent = "Starting a Claude Code session to file it…";
@@ -1136,6 +1315,7 @@ details.step[open] > summary { margin-bottom: 4px; }
           .then(function (lk) { msg.textContent = "Filing it: "; if (lk) msg.appendChild(lk); }, function (er) { msg.textContent = er; e.target.disabled = false; }); }, text: "File it now (starts a cloud session)" }));
       out.appendChild(msg);
     }
+    out.appendChild(h("p", { class: "note", text: "Or put it on the queue from your own computer (any one with Froglet Compute installed), not the one that will run it:" }));
     out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("request new --token " + tok + " --push") })]), copyBtn(function () { return appCmd("request new --token " + tok + " --push"); })]));
   }
   function stopRun(id, place) {
@@ -1218,7 +1398,7 @@ details.step[open] > summary { margin-bottom: 4px; }
     { el: "#searching-group .job", view: "searches", t: "Open a search", b: "Click any search for its race times per intensity, the settings it found, its runs, and, when you are one of the core four, a button to put it in the game." },
     { el: "#nav-machines", view: "machines", t: "Computers", b: "Every computer that joined, as it is now: working, free (its person is away), in use, outside its hours or offline, with its cores, memory, disk and whether it has Unity. Send a run to one: when it is free, at a time you pick, or at once if its owner allows it. Stop a run from here too." },
     { el: "#nav-recordings", view: "recordings", t: "Recordings", b: "Every race played in the Unity editor is recorded on its own. The AI learns from them every hour; this shows what it has learned from and what waits." },
-    { el: "#nav-term", t: "Terminal", b: "For when you want more: type help. ask answers questions about this data, and task starts a Claude Code session to do work such as syncing the ai branch or refreshing this page." },
+    { el: "#sb-term", t: "Terminal", b: "For when you want more: type help. ask answers questions about this data, and task starts a Claude Code session to do work such as syncing the ai branch or refreshing this page." },
     { el: "#fresh", t: "How fresh it is", b: "The page is a snapshot of the computers' reports. In the Terminal, refresh rebuilds it. You can replay this tour any time with the Tour button." }
   ];
   var TI = -1;

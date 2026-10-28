@@ -448,7 +448,13 @@ and its OS, cores, memory, free disk, whether it has the project's Unity (and wh
 whether its owner lets runs start at once. The agent reports to the hub every minute (live), and to git when the
 status changes (at most every ten minutes) and every half hour, so the claude.ai snapshot shows the fleet too.
 
-**Sending a run to a computer** (New run, or "Run on <computer>" on its card): Where = that computer, then When:
+**Nobody types a command on the other computer.** Its owner sets it up once (the Install line); from then on its agent
+starts at login and polls the team's queue. Sending it a run means putting a request on that queue, which happens
+where YOU are: one tap on the live console (the hub on the VM, any phone), or from the claude.ai snapshot through
+"File it now" (a cloud session runs `request new --push`) or that same line in your own terminal. The agent on the
+picked computer sees the request and starts it under the rules below.
+
+**Sending a run to a computer** (New run, or "Send a run" on its card): Where = that computer, then When:
 - **When it's free**: once its person is away (the default; every computer).
 - **Now**: at once, even while its person uses it. Only on a computer whose owner allowed it:
   `compute.py remote-start on` there, or the setup with `--allow-remote-start` (off by default: a teammate's computer
