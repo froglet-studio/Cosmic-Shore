@@ -38,7 +38,8 @@ def shot_frames(d):
 
 def still(video, index, fps, out):
     """One frame of shot.mp4 as a PNG (for the contact sheet)."""
-    subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-ss", f"{index / fps:.4f}", "-i", video, "-frames:v", "1", out], check=True)
+    # seek half a frame early: a seek to exactly the last frame's time lands past the end and writes nothing
+    subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-ss", f"{max(index - 0.5, 0) / fps:.4f}", "-i", video, "-frames:v", "1", out], check=True)
     return out
 
 

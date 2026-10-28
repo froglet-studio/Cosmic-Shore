@@ -1,0 +1,994 @@
+{
+ "song": "/home/user/Cosmic-Shore/Assets/_Audio/Music/SKY FIRE.ogg",
+ "song_name": "SKY FIRE.ogg",
+ "tempo": 123.05,
+ "segment": {
+  "start": 30.0,
+  "end": 90.0
+ },
+ "fps": 60,
+ "render": {
+  "fps": 60,
+  "step_hz": 240,
+  "accum": 2,
+  "size": "1920x1080",
+  "msaa": 8,
+  "render_scale": 1.5,
+  "aniso": 16,
+  "_why": "Nothing is real time: every sub-frame is drawn at 2x supersampling with 8x MSAA, and four 240 Hz sub-frames are averaged in linear light into each 60 fps output frame (a 180-degree shutter), so motion is smooth and blurred the way a camera sees it.",
+  "_shutter": "accum 2 of every 4 sub-frames = a 90-degree shutter: smooth, but a Sparrow round stays a glowing sphere instead of smearing into a white dash (Garrett, cut 3).",
+  "prefs": {
+   "gfx.Preset": 5,
+   "gfx.BasePreset": 5,
+   "gfx.Adaptive": 0,
+   "gfx.Ecosystem": 2,
+   "gfx.AA": 5,
+   "gfx.Vfx": 100,
+   "gfx.Physics": 1,
+   "gfx.RenderScale": 100,
+   "gfx.Upscale": 0,
+   "gfx.Texture": 0,
+   "gfx.Initialized": 1
+  },
+  "_prefs_why": "The game's own graphics settings for the shoot's profile (prefs.json): Ultra preset (presets 0-2 replace the HyperSea skybox with a baked panorama the engine cannot draw, cut cytoplasm to a quarter and cap the membrane), adaptive performance OFF (it had dropped the preset to Low at the software renderer's frame rate), Lush ecosystem, 8x MSAA, full VFX.",
+  "render_scale_long": 1.5,
+  "long_seconds": 20,
+  "_long": "A cut longer than long_seconds renders at render_scale_long (1.5x supersampling): a 60 s cut is 3600 frames, and 1.5x on 8x MSAA is still cleaner than Unity's TAA at 1x. The 2x is for the 15 s milestones."
+ },
+ "mapping": "Tools/Build/music_video/mapping.json",
+ "shots": [
+  {
+   "name": "01-wormhole-run",
+   "t0": 30.0,
+   "t1": 40.589,
+   "frames": 2541,
+   "every": 4,
+   "accum": 2,
+   "payoff": 36.757,
+   "payoff_how": "downbeat",
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 2,
+   "settle_frames": 1920,
+   "stage": "menu",
+   "cell": "Crystal Wormhole",
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Crystal Wormhole",
+    "mv spawn flora Spire 4",
+    "mv spawn flora Reed 4",
+    "mv spawn fauna Swarm 2",
+    "mv spawn fauna QuadFish 30",
+    "mv spawn vessel all 12 cycle 55",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 61",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "events": [
+    {
+     "t": 30.047,
+     "cmd": "action ai0 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 30.999,
+     "cmd": "action ai1 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 30.999,
+     "cmd": "action ai0 Button1Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 30.999,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 31.486,
+     "cmd": "action ai2 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 31.974,
+     "cmd": "action ai3 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 32.438,
+     "cmd": "action ai4 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 32.926,
+     "cmd": "action ai5 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 32.926,
+     "cmd": "action ai1 Button2Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 32.926,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 33.413,
+     "cmd": "action ai6 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 33.878,
+     "cmd": "action ai7 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 34.83,
+     "cmd": "action ai8 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 34.83,
+     "cmd": "action ai2 Button3Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 34.83,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 35.294,
+     "cmd": "aim local fleet",
+     "why": "half"
+    },
+    {
+     "t": 35.318,
+     "cmd": "action ai9 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 35.805,
+     "cmd": "action ai10 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 36.27,
+     "cmd": "action ai11 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 36.757,
+     "cmd": "action local Button4Action 110",
+     "why": "payoff"
+    },
+    {
+     "t": 36.757,
+     "cmd": "action all Button4Action 90",
+     "why": "payoff"
+    },
+    {
+     "t": 36.757,
+     "cmd": "blast fleet 12 40",
+     "why": "payoff"
+    },
+    {
+     "t": 36.757,
+     "cmd": "action local FullSpeedStraightAction 150",
+     "why": "payoff"
+    },
+    {
+     "t": 36.757,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 38.684,
+     "cmd": "action ai0 Button1Action 45",
+     "why": "release_bar"
+    },
+    {
+     "t": 38.684,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 40.589,
+     "cmd": "action ai1 Button2Action 45",
+     "why": "release_bar"
+    },
+    {
+     "t": 40.589,
+     "cmd": "aim all local",
+     "why": "bar"
+    }
+   ],
+   "features": {
+    "energy": 0.524,
+    "peak": 1.0,
+    "brightness": 0.46,
+    "flatness": 0.234,
+    "bass": 0.852,
+    "onset_density": 0.75,
+    "trend": -0.189,
+    "section": "build",
+    "position": 0.118
+   },
+   "archetype": "wormhole-run",
+   "what": "The Crystal Wormhole: spires and reeds, two swarms and a quadfish shoal, twelve hulls in all four domains running with the pilot. Setup: the fleet boosts on the strong beats, the swarm rides the pilot's wake. Payoff: the pilot and the fleet fire ability 4 together, a fleet-wide burst. A build.",
+   "phrase": {
+    "setup": "the fleet boosts on the strong beats, the swarm on the wake",
+    "payoff": "ability 4 from the pilot and every hull, a fleet-wide burst"
+   },
+   "why": "closest target (distance 0.01); led by bass=0.852, energy=0.524, brightness=0.46; names the section (build)"
+  },
+  {
+   "name": "02-arboretum-kit-combo",
+   "t0": 40.589,
+   "t1": 50.202,
+   "frames": 2307,
+   "every": 4,
+   "accum": 2,
+   "payoff": 46.37,
+   "payoff_how": "section boundary (the drop)",
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 2,
+   "settle_frames": 1920,
+   "stage": "menu",
+   "cell": "Arboretum",
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Arboretum",
+    "mv spawn flora Borromean 3",
+    "mv spawn flora Coral Bloom 3",
+    "mv spawn flora Arbor 2",
+    "mv spawn fauna Shark 6",
+    "mv spawn fauna Brittlestar 40",
+    "mv spawn fauna Tadpole 20",
+    "mv spawn vessel all 14 Jade 55",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 63",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "events": [
+    {
+     "t": 40.589,
+     "cmd": "action local Button1Action 70",
+     "why": "setup_bar"
+    },
+    {
+     "t": 40.589,
+     "cmd": "action ai0 Button1Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 40.589,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 42.516,
+     "cmd": "action local Button2Action 70",
+     "why": "setup_bar"
+    },
+    {
+     "t": 42.516,
+     "cmd": "action ai1 Button2Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 42.516,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 44.466,
+     "cmd": "action local Button3Action 70",
+     "why": "setup_bar"
+    },
+    {
+     "t": 44.466,
+     "cmd": "action ai2 Button3Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 44.466,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 45.395,
+     "cmd": "aim local fleet",
+     "why": "half"
+    },
+    {
+     "t": 46.37,
+     "cmd": "action local Button4Action 110",
+     "why": "payoff"
+    },
+    {
+     "t": 46.37,
+     "cmd": "action local FullSpeedStraightAction 150",
+     "why": "payoff"
+    },
+    {
+     "t": 46.37,
+     "cmd": "blast local 10 35",
+     "why": "payoff"
+    },
+    {
+     "t": 46.37,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 47.81,
+     "cmd": "action ai0 FullSpeedStraightAction 30",
+     "why": "release_strong"
+    },
+    {
+     "t": 48.274,
+     "cmd": "action ai3 Button4Action 45",
+     "why": "release_bar"
+    },
+    {
+     "t": 48.274,
+     "cmd": "action ai1 FullSpeedStraightAction 30",
+     "why": "release_strong"
+    },
+    {
+     "t": 48.274,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 48.762,
+     "cmd": "action ai2 FullSpeedStraightAction 30",
+     "why": "release_strong"
+    },
+    {
+     "t": 49.249,
+     "cmd": "action ai3 FullSpeedStraightAction 30",
+     "why": "release_strong"
+    },
+    {
+     "t": 50.202,
+     "cmd": "action ai4 Button1Action 45",
+     "why": "release_bar"
+    },
+    {
+     "t": 50.202,
+     "cmd": "action ai4 FullSpeedStraightAction 30",
+     "why": "release_strong"
+    },
+    {
+     "t": 50.202,
+     "cmd": "aim all local",
+     "why": "bar"
+    }
+   ],
+   "features": {
+    "energy": 0.484,
+    "peak": 1.0,
+    "brightness": 0.734,
+    "flatness": 0.464,
+    "bass": 0.682,
+    "onset_density": 0.672,
+    "trend": 0.227,
+    "section": "build",
+    "position": 0.152
+   },
+   "archetype": "arboretum-kit-combo",
+   "what": "The Arboretum: Borromean, coral-bloom and arbor flora, sharks and a brittlestar shoal, tadpoles, a fleet of fourteen hulls on the pilot's wake. THE KIT COMBO: the pilot fires ability 1, 2 and 3 on the setup bars, one per bar, and on the payoff fires ability 4 with a boost while the prisms around it burst. A verse, a build.",
+   "phrase": {
+    "setup": "ability 1, 2, 3 on the setup bars",
+    "payoff": "ability 4 + boost + a burst of prisms on the payoff"
+   },
+   "why": "closest target (distance -0.00); led by onset_density=0.672, bass=0.682, brightness=0.734; names the section (build)"
+  },
+  {
+   "name": "03-tandava-joust",
+   "t0": 50.202,
+   "t1": 63.646,
+   "frames": 3227,
+   "every": 4,
+   "accum": 2,
+   "payoff": 59.791,
+   "payoff_how": "downbeat",
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 3,
+   "settle_frames": 1920,
+   "stage": "menu",
+   "cell": "Tandava",
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Tandava",
+    "mv spawn flora SchwarzP 3",
+    "mv spawn flora Mandelbulb 2",
+    "mv spawn flora Cacti 3",
+    "mv spawn fauna Shark 6",
+    "mv spawn fauna Piranha 20",
+    "mv spawn fauna Harrier 2",
+    "mv spawn vessel all 16 cycle 60",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 63",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "events": [
+    {
+     "t": 50.202,
+     "cmd": "aim local fleet",
+     "why": "start"
+    },
+    {
+     "t": 50.202,
+     "cmd": "aim local fleet",
+     "why": "setup_bar"
+    },
+    {
+     "t": 50.202,
+     "cmd": "aim all local",
+     "why": "setup_bar"
+    },
+    {
+     "t": 50.202,
+     "cmd": "action ai0 Button1Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 52.129,
+     "cmd": "aim local fleet",
+     "why": "setup_bar"
+    },
+    {
+     "t": 52.129,
+     "cmd": "aim all local",
+     "why": "setup_bar"
+    },
+    {
+     "t": 52.129,
+     "cmd": "action ai1 Button2Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 54.033,
+     "cmd": "aim local fleet",
+     "why": "setup_bar"
+    },
+    {
+     "t": 54.033,
+     "cmd": "aim all local",
+     "why": "setup_bar"
+    },
+    {
+     "t": 54.033,
+     "cmd": "action ai2 Button3Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 55.96,
+     "cmd": "aim local fleet",
+     "why": "setup_bar"
+    },
+    {
+     "t": 55.96,
+     "cmd": "aim all local",
+     "why": "setup_bar"
+    },
+    {
+     "t": 55.96,
+     "cmd": "action ai3 Button4Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 57.887,
+     "cmd": "aim local fleet",
+     "why": "setup_bar"
+    },
+    {
+     "t": 57.887,
+     "cmd": "aim all local",
+     "why": "setup_bar"
+    },
+    {
+     "t": 57.887,
+     "cmd": "action ai4 Button1Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 59.491,
+     "cmd": "action local FullSpeedStraightAction 120",
+     "why": "payoff-0.3"
+    },
+    {
+     "t": 59.791,
+     "cmd": "action all FullSpeedStraightAction 100",
+     "why": "payoff"
+    },
+    {
+     "t": 59.791,
+     "cmd": "blast local 10 35",
+     "why": "payoff"
+    },
+    {
+     "t": 59.791,
+     "cmd": "blast fleet 10 35",
+     "why": "payoff"
+    },
+    {
+     "t": 59.791,
+     "cmd": "action local Button4Action 90",
+     "why": "payoff"
+    },
+    {
+     "t": 61.719,
+     "cmd": "aim local flora",
+     "why": "release_bar"
+    },
+    {
+     "t": 61.719,
+     "cmd": "aim all local",
+     "why": "release_bar"
+    },
+    {
+     "t": 61.719,
+     "cmd": "action ai5 Button2Action 45",
+     "why": "release_bar"
+    },
+    {
+     "t": 63.646,
+     "cmd": "aim local flora",
+     "why": "release_bar"
+    },
+    {
+     "t": 63.646,
+     "cmd": "aim all local",
+     "why": "release_bar"
+    },
+    {
+     "t": 63.646,
+     "cmd": "action ai6 Button3Action 45",
+     "why": "release_bar"
+    }
+   ],
+   "features": {
+    "energy": 0.612,
+    "peak": 1.0,
+    "brightness": 0.657,
+    "flatness": 0.377,
+    "bass": 0.78,
+    "onset_density": 0.819,
+    "trend": 0.029,
+    "section": "drop",
+    "position": 0.19
+   },
+   "archetype": "tandava-joust",
+   "what": "The Tandava: SchwarzP, mandelbulb and cacti flora, sharks, piranhas and harriers, sixteen hulls. THE JOUST: setup, the pilot and the fleet are aimed head-on and close bar by bar, abilities cycling; payoff, they meet - boosts all round, bursts around the pilot and the fleet. A verse, a drop.",
+   "phrase": {
+    "setup": "the pilot and the fleet close head-on bar by bar",
+    "payoff": "they meet: boosts all round, bursts around both"
+   },
+   "why": "closest target (distance -0.00); led by onset_density=0.819, brightness=0.657, bass=0.78; names the section (drop)"
+  },
+  {
+   "name": "04-lattice-rally",
+   "t0": 63.646,
+   "t1": 77.09,
+   "frames": 3227,
+   "every": 4,
+   "accum": 2,
+   "payoff": 73.236,
+   "payoff_how": "downbeat",
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 3,
+   "settle_frames": 1920,
+   "stage": "menu",
+   "cell": "Lattice",
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Lattice",
+    "mv spawn flora Quasicrystal 3",
+    "mv spawn flora Nested Gyroid 3",
+    "mv spawn flora Gyroid 2",
+    "mv spawn fauna QuadFish 40",
+    "mv spawn fauna Tadpole 30",
+    "mv spawn vessel all 21 Blue 60",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 63",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "events": [
+    {
+     "t": 63.646,
+     "cmd": "domain Ruby",
+     "why": "setup_bar"
+    },
+    {
+     "t": 63.646,
+     "cmd": "action ai0 Button1Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 63.646,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 64.133,
+     "cmd": "action ai0 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 64.598,
+     "cmd": "action ai1 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 65.085,
+     "cmd": "action ai2 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 65.55,
+     "cmd": "domain Jade",
+     "why": "setup_bar"
+    },
+    {
+     "t": 65.55,
+     "cmd": "action ai1 Button2Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 65.55,
+     "cmd": "action ai3 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 65.55,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 66.038,
+     "cmd": "action ai4 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 66.99,
+     "cmd": "action ai5 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 67.477,
+     "cmd": "domain Gold",
+     "why": "setup_bar"
+    },
+    {
+     "t": 67.477,
+     "cmd": "action ai2 Button3Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 67.477,
+     "cmd": "action ai6 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 67.477,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 67.965,
+     "cmd": "action ai7 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 68.917,
+     "cmd": "action ai8 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 69.404,
+     "cmd": "domain Blue",
+     "why": "setup_bar"
+    },
+    {
+     "t": 69.404,
+     "cmd": "action ai3 Button4Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 69.404,
+     "cmd": "action ai9 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 69.404,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 69.892,
+     "cmd": "action ai10 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 70.368,
+     "cmd": "aim local fleet",
+     "why": "half"
+    },
+    {
+     "t": 70.844,
+     "cmd": "action ai11 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 71.308,
+     "cmd": "domain Ruby",
+     "why": "setup_bar"
+    },
+    {
+     "t": 71.308,
+     "cmd": "action ai4 Button1Action 45",
+     "why": "setup_bar"
+    },
+    {
+     "t": 71.308,
+     "cmd": "action ai0 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 71.308,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 71.796,
+     "cmd": "action ai1 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 72.284,
+     "cmd": "action ai2 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 72.771,
+     "cmd": "action ai3 FullSpeedStraightAction 30",
+     "why": "setup_strong"
+    },
+    {
+     "t": 73.236,
+     "cmd": "action all Button4Action 90",
+     "why": "payoff"
+    },
+    {
+     "t": 73.236,
+     "cmd": "blast fleet 12 40",
+     "why": "payoff"
+    },
+    {
+     "t": 73.236,
+     "cmd": "action local FullSpeedStraightAction 150",
+     "why": "payoff"
+    },
+    {
+     "t": 73.236,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 75.163,
+     "cmd": "action ai5 Button2Action 45",
+     "why": "release_bar"
+    },
+    {
+     "t": 75.163,
+     "cmd": "aim all local",
+     "why": "bar"
+    }
+   ],
+   "features": {
+    "energy": 0.596,
+    "peak": 1.0,
+    "brightness": 0.659,
+    "flatness": 0.488,
+    "bass": 0.713,
+    "onset_density": 0.756,
+    "trend": 0.004,
+    "section": "drop",
+    "position": 0.235
+   },
+   "archetype": "lattice-rally",
+   "what": "The Lattice: quasicrystal, nested-gyroid and gyroid flora in four elements, quadfish and tadpole shoals, ALL twenty-one hull classes released around the pilot. Setup: the pilot's domain shifts every bar (the mass effect in four colours) and hulls boost on the strong beats. Payoff: every hull fires its fourth ability and the fleet's prisms burst. Bright, fast: a drop.",
+   "phrase": {
+    "setup": "the domain shifts every bar; hulls boost on the strong beats",
+    "payoff": "every hull's ability 4 and a fleet-wide burst"
+   },
+   "why": "closest target (distance 0.02); led by energy=0.596, bass=0.713, brightness=0.659; names the section (drop)"
+  },
+  {
+   "name": "05-swarm-siege",
+   "t0": 77.09,
+   "t1": 90.0,
+   "frames": 3098,
+   "every": 4,
+   "accum": 2,
+   "payoff": 84.288,
+   "payoff_how": "section boundary",
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 2,
+   "settle_frames": 1920,
+   "stage": "menu",
+   "cell": "Swarm",
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Swarm",
+    "mv spawn flora Wall 3",
+    "mv spawn flora Nerve 3",
+    "mv spawn fauna Swarm Field 2",
+    "mv spawn fauna Swarm Grid 2",
+    "mv spawn fauna Locust 2",
+    "mv spawn fauna Mobber 2",
+    "mv spawn fauna Brittlestar 20",
+    "mv spawn vessel all 18 Ruby 55",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 64",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "events": [
+    {
+     "t": 77.09,
+     "cmd": "aim all local",
+     "why": "setup_bar"
+    },
+    {
+     "t": 77.09,
+     "cmd": "blast local 6 30",
+     "why": "setup_bar"
+    },
+    {
+     "t": 77.09,
+     "cmd": "herd follow local 25",
+     "why": "setup_bar"
+    },
+    {
+     "t": 78.994,
+     "cmd": "aim all local",
+     "why": "setup_bar"
+    },
+    {
+     "t": 78.994,
+     "cmd": "blast local 6 30",
+     "why": "setup_bar"
+    },
+    {
+     "t": 78.994,
+     "cmd": "herd follow local 25",
+     "why": "setup_bar"
+    },
+    {
+     "t": 80.921,
+     "cmd": "aim all local",
+     "why": "setup_bar"
+    },
+    {
+     "t": 80.921,
+     "cmd": "blast local 6 30",
+     "why": "setup_bar"
+    },
+    {
+     "t": 80.921,
+     "cmd": "herd follow local 25",
+     "why": "setup_bar"
+    },
+    {
+     "t": 82.826,
+     "cmd": "aim all local",
+     "why": "setup_bar"
+    },
+    {
+     "t": 82.826,
+     "cmd": "blast local 6 30",
+     "why": "setup_bar"
+    },
+    {
+     "t": 82.826,
+     "cmd": "herd follow local 25",
+     "why": "setup_bar"
+    },
+    {
+     "t": 83.545,
+     "cmd": "aim local fleet",
+     "why": "half"
+    },
+    {
+     "t": 84.288,
+     "cmd": "action local FullSpeedStraightAction 180",
+     "why": "payoff"
+    },
+    {
+     "t": 84.288,
+     "cmd": "action all Button3Action 90",
+     "why": "payoff"
+    },
+    {
+     "t": 84.288,
+     "cmd": "blast fleet 14 40",
+     "why": "payoff"
+    },
+    {
+     "t": 84.753,
+     "cmd": "action ai0 Button1Action 45",
+     "why": "release_bar"
+    },
+    {
+     "t": 86.68,
+     "cmd": "action ai1 Button2Action 45",
+     "why": "release_bar"
+    },
+    {
+     "t": 88.607,
+     "cmd": "action ai2 Button3Action 45",
+     "why": "release_bar"
+    }
+   ],
+   "features": {
+    "energy": 0.452,
+    "peak": 0.963,
+    "brightness": 0.756,
+    "flatness": 0.776,
+    "bass": 0.488,
+    "onset_density": 0.722,
+    "trend": -0.233,
+    "section": "drop",
+    "position": 0.279
+   },
+   "archetype": "swarm-siege",
+   "what": "The Swarm cell: swarm fields and grids, locusts and mobbers, wall and nerve flora, eighteen hulls. Setup: the fleet closes on the pilot while the swarm thickens around it and prisms burst on the bars. Payoff: the pilot boosts through, every hull fires ability 3 and the fleet's prisms burst. A noisy, textural drop.",
+   "phrase": {
+    "setup": "the fleet closes on the pilot, the swarm thickens, bursts on the bars",
+    "payoff": "the pilot boosts through; every hull's ability 3; a fleet-wide burst"
+   },
+   "why": "closest target (distance 0.16); led by energy=0.452, brightness=0.756, onset_density=0.722; names the section (drop)"
+  }
+ ]
+}

@@ -1,0 +1,86 @@
+{
+ "plan": "/home/user/Cosmic-Shore/Tools/Build/music_video/out/SKY-FIRE_30-90/plan.json",
+ "criteria": {
+  "motion_vs_energy": -0.0086,
+  "motion_vs_onsets": -0.0051,
+  "cut_alignment": 0.0007,
+  "luminance_vs_brightness": -0.6,
+  "dead_frames": 0.0,
+  "stuck_frames": 0.0,
+  "diversity": 1.0,
+  "shot_seconds": 12.0
+ },
+ "penalties": {
+  "motion_vs_energy": 1.2346,
+  "motion_vs_onsets": 0.3722,
+  "cut_alignment": -0.0149,
+  "luminance_vs_brightness": 0.96,
+  "dead_frames": -0.004,
+  "stuck_frames": -0.008,
+  "diversity": -0.008,
+  "shot_seconds": -0.04
+ },
+ "loss": 2.4919,
+ "below_floor": [
+  "motion_vs_energy",
+  "motion_vs_onsets",
+  "luminance_vs_brightness"
+ ],
+ "shots": [
+  {
+   "name": "01-wormhole-run",
+   "frames": 635,
+   "mean_luminance": 0.2623,
+   "mean_detail": 0.2224,
+   "mean_motion": 0.0614,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.46,
+   "energy": 0.524
+  },
+  {
+   "name": "02-arboretum-kit-combo",
+   "frames": 577,
+   "mean_luminance": 0.244,
+   "mean_detail": 0.2012,
+   "mean_motion": 0.048,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.734,
+   "energy": 0.484
+  },
+  {
+   "name": "03-tandava-joust",
+   "frames": 807,
+   "mean_luminance": 0.2673,
+   "mean_detail": 0.2163,
+   "mean_motion": 0.0735,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.657,
+   "energy": 0.612
+  },
+  {
+   "name": "04-lattice-rally",
+   "frames": 807,
+   "mean_luminance": 0.3114,
+   "mean_detail": 0.2231,
+   "mean_motion": 0.069,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.659,
+   "energy": 0.596
+  },
+  {
+   "name": "05-swarm-siege",
+   "frames": 775,
+   "mean_luminance": 0.1829,
+   "mean_detail": 0.1616,
+   "mean_motion": 0.0447,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.756,
+   "energy": 0.452
+  }
+ ]
+}
