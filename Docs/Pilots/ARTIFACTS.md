@@ -47,7 +47,12 @@ with what we have decided here").** Kept: the saved squads, `SquadSlot`, the clo
 artifacts and their ranks and stats, the 40 named pilots and the ability each rewrote (the Tomahawk throw), the
 default "base kit" pilots and `ElementalBoost`. `Docs/Pilots/PILOTS_AND_ARTIFACTS.md` is superseded.
 
-**Decided since (Garrett, 2026-10-27):** one Ark per squad of three vessels; an Ark felled by fauna spills its
+**Decided since (Garrett, 2026-10-28):** **one Ark per account, deploying one squad at a time** (friends join your
+Ark and fly in its squad); the Ark hoards the artifacts and each saved squad assigns one to each vessel; the Ark is
+why vessels have no health (all a vessel can lose is elements and the use of its abilities). The artifact economy
+waits for later. The plan: [`Docs/Voyages/VOYAGES.md`](../Voyages/VOYAGES.md) §2.
+
+**Decided earlier (Garrett, 2026-10-27):** one Ark per squad of three vessels (now: per account, one squad deployed); an Ark felled by fauna spills its
 artifacts for anyone, and uncollected ones are lost when the instance expires; the RB abilities moved to Y, so RB is
 free for the payload.
 
@@ -106,8 +111,14 @@ artifact). The four cards of a slot each decide one thing:
 | **Cost** | the Ark itself. Every payload thins the hull that protects every artifact aboard |
 
 **Why it is made of the Ark's own mass.**
-- *Mass is conserved:* nothing is minted. A payload is existing prisms moved off the Ark, and it spends itself
-  (an active force) when it fires. So the payload supply is the Ark's hull, and the Ark does not regrow.
+- *Mass is conserved:* a payload mints nothing. It is existing prisms moved off the Ark, and it spends itself
+  (an active force) when it fires. So the payload supply is the Ark's hull.
+- *The hull regrows at a fixed rate on the omni crystal aboard* (Garrett, 2026-10-28: "the omnicrystal on board the
+  ark powers the prism creation. arks are the only vessel that can contain and harvest the power of an omnicrystal
+  instead of morphing it into something else", and "regeneration should just be fixed rate"). Every emptied socket,
+  payload-taken ones included, grows back one prism at a time, one every 2 s (`ArkReactorSO`; the fourth sign-off in
+  `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`). A payload costs the Ark hull until it grows back, so a squad that
+  fires faster than the Ark regrows is thinning it.
 - *The Ark lives or dies by the food web* (`Docs/ECOSYSTEM.md` §41). Here that becomes the central tension: **every
   payload you fire makes your treasure easier to take.**
 
@@ -194,17 +205,19 @@ an element level:
   - *Protecting an Ark IS controlling the cell:* fauna defend or eat it by the shipped diet rules.
   - Your scored hits **silence raiders**, and a silenced pilot cannot harm an Ark's health prisms (`SILENCE.md`).
   - **Aegis** shields the hull, and **Keystone** walls it.
-  - Every payload you fire thins your own hull.
+  - Every payload you fire thins your own hull until it regrows, at a fixed rate.
 - **If fauna finish an Ark, nobody earned it, so its artifacts spill** (Garrett, 2026-10-27). They become loose
   objects in the world, and anyone can grab one with RB and carry it to their own Ark. **An artifact nobody collects is
   lost when the instance expires.** It is gone for good, not returned to its owner.
-- **One Ark per squad** (Garrett, 2026-10-27), and a squad is three vessels. An Ark's fall takes everything aboard,
+- **One Ark per account, one squad deployed at a time** (Garrett, 2026-10-28; it was "one per squad" on 2026-10-27),
+  and a squad is three vessels. An Ark's fall takes everything aboard,
   so a squad risks up to three artifacts (one per slot) plus anything it found and brought home on this voyage.
 
 ## 6. The loop
 
 1. **Bring.** Building the deck picks the three artifact cards: one per slot, from that player's collection. The
-   artifacts brought ride in the squad's one Ark; the rest of each collection stays safe at home.
+   artifacts brought ride in the Ark that deploys the squad. How much of the Ark's hoard is at stake on a voyage is an
+   artifact-economy question, left for later (Garrett, 2026-10-28).
 2. **Hunt.** Artifacts are found on voyages, never bought:
    - in **vaults**, small super-shielded shells in the HyperSea that a payload or a specialist opens;
    - in **hoards** (proposed, ecology owner's call), using the thieves of `Docs/BUILDERS_AND_THIEVES.md`;
@@ -225,13 +238,14 @@ super-shielded, and GALLEON shows Arks.
 
 ## 7. Rules (summary)
 
-1. Payloads come out of the Ark's hull. Nothing is minted.
+1. Payloads come out of the Ark's hull, and a payload mints nothing. The hull regrows at a fixed rate on the omni
+   crystal aboard (§2).
 2. A plain payload cracks super-shielded and shielded prisms in a radius. It is the second sanctioned super-shield
    crack, after the Grizzly sniper's.
 3. No artifact names a vessel class. One that must lean on a vessel names a shared concept the fleet has.
 4. An artifact never leaves its Ark during a voyage except in a finder's hands on the way home. Payloads carry its
    effect, not the artifact.
-5. An Ark's fall takes everything aboard. That is the only theft. One Ark per squad of three. If fauna fell it, its
+5. An Ark's fall takes everything aboard. That is the only theft. One Ark per account, deploying one squad of three. If fauna fell it, its
    artifacts spill for anyone, and any left uncollected are lost when the instance expires.
 6. A loaded payload touches vessels only by moving petals as a scored hit. Silence makes a carrier's payload harmless.
 7. Upgrades are elemental crystals on four tracks (0 to 10, a twist at 5), and they stay with the artifact.
@@ -268,8 +282,9 @@ Built on the types from `claude/pensive-dijkstra-qxoxo0` once they land, never b
    experience. Squads travel between specific locations on a shared galactic map (the HyperSea) and have unique
    experiences there. "Galactic traffic control" puts squads that meet into managed peer-to-peer instances that make
    sense for both sides' missions. The Arkway (`ECOSYSTEM.md` §41, `Docs/ToySystem/ARKWAY_PLAN.md`) is a toy that also
-   uses the Ark: the most voyage-like toy, a taste of a freestyle voyage, not the voyage itself. Voyages need their own
-   plan: the map, the locations, traffic control and the server-owned Ark. Nothing for Voyages is built yet.
+   uses the Ark: the most voyage-like toy, a taste of a freestyle voyage, not the voyage itself. **The plan is
+   [`Docs/Voyages/VOYAGES.md`](../Voyages/VOYAGES.md)**: the map, the locations, the jobs, traffic control, the
+   host-owned Ark (§8) and V1's build order (§9.1). Nothing for Voyages is built yet.
 6. **`/verify-unity`** before any C# commit (LOCKED).
 
 ## 9. Order

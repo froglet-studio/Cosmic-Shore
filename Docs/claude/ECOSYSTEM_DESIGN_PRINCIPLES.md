@@ -136,6 +136,23 @@ trio, and the traps).
   unravels around), so an interrupted wither can never destroy it with the husk and every later exit
   (`RemoveHusk`, `OnDestroy`) is a real recovery. The worm colony is deliberately excluded from the
   skeleton (its capitals carry danger prisms). Full record: `Docs/ECOSYSTEM.md §26`.
+- **THE FOURTH SIGN-OFF (the designer, 2026-10-28): the omni crystal aboard an Ark regrows its hull, at a fixed rate.**
+  "the omnicrystal on board the ark powers the prism creation. arks are the only vessel that can contain and harvest the
+  power of an omnicrystal instead of morphing it into something else", "regeneration should just be fixed rate", and
+  "the omnicrystal is always just one size". So mass may be MADE in one place: an Ark's reactor grows the Ark's own hull
+  prisms back (`ArkReactorSO`, `ArkReactor`, `Ark.RegrowOne`). It is fenced:
+  - one implementer (`Ark`); every vessel still morphs an omni crystal it collects into its own effect;
+  - only into the Ark's OWN empty hull slots (where a prism was laid, and the food web or the hold emptied it), never
+    past its full hull;
+  - at a FIXED RATE: one prism a beat (`ArkReactorSO.regrowSeconds`), and a beat with nothing to regrow is not saved up;
+  - each regrown prism grows in on the prism's own clock through the canonical lay (continuity of existence), in the
+    Ark's domain, as ordinary grazeable mass;
+  - a fallen Ark (its last hull prism gone) never regrows;
+  - the omni crystal is always one size: nothing (the reactor, a shape key) resizes it.
+
+  Nothing else changes: the hull is eaten, cracked and carried off exactly as before, and the payload still moves hull
+  mass rather than making it. An exception, never a precedent (`Docs/VesselModels/ArkReverse.md` § In the game,
+  `Docs/Pilots/ARTIFACTS.md` §2).
 - **LIVING MASS IS THE MASS THAT MOVES — a health prism rides its limb's sway.** §44 bent
   every spindle and stopped there, so the conserved mass BOLTED to the spindle stayed rigid
   and a Clawfish's fluke bent away from the four ribs lying on it. `PrismSway.hlsl` is the

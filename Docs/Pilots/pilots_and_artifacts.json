@@ -104,7 +104,8 @@
      "costStep": 1,
      "twist": "It cracks ordinary shields too."
     }
-   ]
+   ],
+   "foundOnVoyages": false
   },
   {
    "id": "artifact.aegis",
@@ -152,7 +153,107 @@
      "costStep": 1,
      "twist": "A cracked plate re-raises at once."
     }
-   ]
+   ],
+   "foundOnVoyages": false
+  },
+  {
+   "id": "artifact.hydra",
+   "name": "Hydra",
+   "transform": "Hydra",
+   "description": "Splits on release into heads that fan out across your heading, each carrying part of the payload, and each cracks where it lands.",
+   "transformTuning": {
+    "speed": 200,
+    "fanDegrees": 50,
+    "seekDegrees": 30,
+    "lingerPulseSeconds": 0.5
+   },
+   "tracks": [
+    {
+     "element": "Mass",
+     "label": "burst radius",
+     "atZero": 14,
+     "atTen": 40,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "Each head cracks along its path as it flies."
+    },
+    {
+     "element": "Space",
+     "label": "range",
+     "atZero": 120,
+     "atTen": 360,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "Each head turns toward the nearest rival super-shield ahead of it."
+    },
+    {
+     "element": "Time",
+     "label": "linger seconds",
+     "atZero": 0,
+     "atTen": 3,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "The lingering bursts grow to twice their width."
+    },
+    {
+     "element": "Charge",
+     "label": "heads",
+     "atZero": 3,
+     "atTen": 6,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "Each head splits again where it lands, into two more bursts beside it."
+    }
+   ],
+   "foundOnVoyages": true
+  },
+  {
+   "id": "artifact.aftershock",
+   "name": "Aftershock",
+   "transform": "Aftershock",
+   "description": "Lands down your heading and cracks, then cracks again in the same place a few seconds later, catching whatever was rebuilt.",
+   "transformTuning": {
+    "ringShare": 0.5
+   },
+   "tracks": [
+    {
+     "element": "Mass",
+     "label": "shock radius",
+     "atZero": 20,
+     "atTen": 50,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "The last shock reaches twice as far."
+    },
+    {
+     "element": "Space",
+     "label": "throw distance",
+     "atZero": 0,
+     "atTen": 240,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "Every shock after the first rings four smaller shocks around it."
+    },
+    {
+     "element": "Time",
+     "label": "seconds between shocks",
+     "atZero": 5,
+     "atTen": 2,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "One more shock follows."
+    },
+    {
+     "element": "Charge",
+     "label": "shocks",
+     "atZero": 2,
+     "atTen": 4,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "The later shocks shatter, leaving no shield behind."
+    }
+   ],
+   "foundOnVoyages": true
   }
  ]
 }

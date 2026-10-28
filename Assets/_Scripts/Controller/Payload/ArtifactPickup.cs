@@ -47,6 +47,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Pickups standing now, carried or not.</summary>
         public static int Count => s_loose.Count;
 
+        /// <summary>Every pickup standing now, carried or not (GALLEON reads them).</summary>
+        public static IReadOnlyList<ArtifactPickup> Loose => s_loose;
+
         /// <summary>Spill <paramref name="artifactId"/> at <paramref name="position"/>.</summary>
         public static ArtifactPickup Spill(string artifactId, Vector3 position)
         {

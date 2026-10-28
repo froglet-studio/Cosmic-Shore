@@ -240,8 +240,28 @@ danger color. the idea is to follow the actual sword" and "more like a katana.";
 well as rotate it so it is swiping with the sharp part" and "the both triggers chop should remove the curve so it looks
 like it is from behind". `RhinoVesselHUDView` generates the blade under the card on a pivot at the hilt; every frame it
 turns with the swipe (half the real angle), mirrors so the edge leads, shortens with the chop, swaps to the straight
-blade at the energize stance's summed pull, and is white dark / danger lit. The plate keeps the energize gauge. Next:
-the Rhino's Mass, Space and Time placeholders.
+blade at the energize stance's summed pull, and is white dark / danger lit. The plate keeps the energize gauge. **The
+Rhino's Mass card** (2026-10-28, one round of K / H / I / J, Garrett picked H): the sword (white) swinging right past two
+prism copies of itself in the pilot's domain colour, the nearer brighter; the copies show only while the afterimages are
+laid. "the after image is flipped the wrong way": the copies are the sword where it WAS in the same swing, so they are
+mirrored with it. Three prefab parts under a transparent container (`RhinoVesselHUDView.SetAfterimage`). **The
+Rhino's Space card** (2026-10-28, five rounds; Garrett picked O, then shaped it): the katana leaning across the card at
+the LIVE blade length (24 at rest -> 40 at Space 10) between two posts at the rest length and the full reach, its tip
+in a super-shielded prism - whole below Space 5, where the blade binds, shattered once Shield Breaker is active. A
+plate fill for the Space level went ("what is the fill showing?" - the length already shows it, and every vessel has
+an L5). The prism is the real stella octangula (`StellatedOctahedronMeshGenerator`), first shaded in three-quarter
+view ("that does not look like a stelated octahedron"), then flat down a body diagonal - the six-pointed star with its
+facets seamed - "we need a flatter design in order to play well with the others"; it stands clear of the sword and the
+posts, and breaks apart along its own facets ("a better flat destroyed state ... with the correct separation of
+faces"). `RhinoVesselHUDView.BuildReach` lays the five parts out live. **The Rhino's Time card** (2026-10-28, four
+rounds; Garrett picked W, then shaped it): Ramp Spool drawn as what it buys - the Rhino from above flying right (the
+game's own HUD silhouette, `Assets/_Graphics/Silhouettes/Rhino/`) in the domain colour, a danger prism ahead of its
+nose, and once Momentum holds (Time 5, above 70% of top speed) a white chevron ward up with the prism glanced away. The
+plate stays the speed meter, its 70% threshold the Sparrow's edge ticks. Round 1 drew the mechanic alone (streaks,
+chevrons, a slope: "this ability is about the rhino and its invulnerability to danger prisms"), round 2 put the
+threshold as a line across ("not the bar across. updated sparrow has a better solution"), round 3 had the Rhino
+flying up into the plate's ticks ("travel left to right so it doesn't cause visual confusion between the impact event
+and the threshold"). `RhinoVesselHUDView.SetMomentum` / `SetMomentumMark`. The Rhino is done; next: the Scarab.
 
 | Round | What | Why first |
 |---|---|---|

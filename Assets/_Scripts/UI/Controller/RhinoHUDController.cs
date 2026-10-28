@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 
 namespace CosmicShore.UI
 {
@@ -24,7 +26,13 @@ namespace CosmicShore.UI
     /// It used to show stored energy; the Rhino has none since 2026-10-26.</para>
     ///
     /// <para><b>MASS card</b> - lit while the sword is laying its afterimages (the window after an
-    /// energize, and the whole of an omni-crystal surge).</para>
+    /// energize, and the whole of an omni-crystal surge); the card's prism copies show in the pilot's
+    /// domain colour for exactly that window (<see cref="RhinoVesselHUDView.SetAfterimage"/>).</para>
+    ///
+    /// <para><b>SPACE card</b> - Blade Reach: the blade's live length (<c>Skimmer.ElementalScale01</c>), the
+    /// super-shielded prism at its tip shattered once Shield Breaker is active
+    /// (<see cref="ShieldSkimmerScaleDriver.SuperShieldUpgradeActive"/>), danger while lit
+    /// (<see cref="RhinoVesselHUDView.SetBladeReach"/>).</para>
     ///
     /// <para><b>TIME card</b> - the ramp. Lit while the ramp is BOOSTING (Garrett, 2026-10-17: "the
     /// time icon should respond to boosting"); its gauge fills with speed as a fraction of the
@@ -33,7 +41,10 @@ namespace CosmicShore.UI
     /// down to <see cref="bentLineGaugeAlpha"/>): how much of the boost the current line is costing the
     /// pilot, which they could otherwise only infer from speed they are not gaining. When the
     /// Time level-5 ward, <b>Momentum</b>, takes hold (upgraded and above 70% of top speed, danger
-    /// prisms cannot drain it) the card flashes once - the moment the pilot becomes warded.</para>
+    /// prisms cannot drain it) the card flashes once - the moment the pilot becomes warded - and its picture
+    /// changes: the Rhino's ward comes up and the danger prism ahead glances away
+    /// (<see cref="RhinoVesselHUDView.SetMomentum"/>; Garrett 2026-10-28). The ward's threshold is one mark on the
+    /// gauge, the Sparrow's edge ticks (<see cref="RhinoVesselHUDView.SetMomentumMark"/>).</para>
     ///
     /// <para>Polled rather than event-driven, deliberately: every value is a read of state the sword
     /// driver already owns, so there is no subscription to leak or double across a re-initialise -
@@ -70,6 +81,9 @@ namespace CosmicShore.UI
                  "the ramp is engaged (1 = never dims). A straight line, or no ramp engaged, draws it as authored.")]
         [SerializeField, Range(0f, 1f)] private float bentLineGaugeAlpha = 0.3f;
 
+        // The palette, for the Mass card's prism copies (the pilot's domain colour). Injected, as the Sparrow's.
+        [Inject] GameDataSO _gameData;
+
         IVesselStatus _vesselStatus;
         ITopSpeedSource _topSpeed;
 
@@ -77,8 +91,10 @@ namespace CosmicShore.UI
         float _chargeVeil = -1f;
         float _chargeGauge = -1f;
         bool _massLit;
+        Color _massColor;
         bool _timeLit;
         bool _warded;
+        Color _timeHullColor;
         float _timeGauge = -1f;
         float _timeGaugeAlpha = -1f;
         Color _timeGaugeColor;
@@ -108,8 +124,10 @@ namespace CosmicShore.UI
             _chargeVeil = -1f;
             _chargeGauge = -1f;
             _massLit = false;
+            _massColor = default;
             _timeLit = false;
             _warded = false;
+            _timeHullColor = default;
             _timeGauge = -1f;
             _timeGaugeAlpha = -1f;
             if (!view) return;
@@ -124,7 +142,9 @@ namespace CosmicShore.UI
             view.SetKatanaLit(false);
             view.SetKatanaPose(0f, 0f);
             view.SetAbilityPressed(Element.Mass, false);
+            view.SetAfterimage(false, ResolveDomainSignalColor());
             view.SetAbilityPressed(Element.Time, false);
+            view.SetMomentum(false, ResolveDomainSignalColor());
         }
 
         void Update()
@@ -132,10 +152,13 @@ namespace CosmicShore.UI
             if (!view || !IsHudAllowed) return;
 
             bool massLit = afterimage && afterimage.IsLaying;
-            if (massLit != _massLit)
+            var massColor = ResolveDomainSignalColor();
+            if (massLit != _massLit || massColor != _massColor)
             {
+                if (massLit != _massLit) view.SetAbilityPressed(Element.Mass, massLit);
                 _massLit = massLit;
-                view.SetAbilityPressed(Element.Mass, massLit);
+                _massColor = massColor;
+                view.SetAfterimage(massLit, massColor);
             }
 
             bool timeLit = _vesselStatus.IsBoosting;
@@ -147,6 +170,11 @@ namespace CosmicShore.UI
 
             bool warded = speedWard && speedWard.IsHolding;
             if (warded && !_warded) view.PlayAbilityFlash(Element.Time);
+            if (warded != _warded || massColor != _timeHullColor)
+            {
+                _timeHullColor = massColor;
+                view.SetMomentum(warded, massColor);
+            }
             _warded = warded;
 
             float top = _topSpeed != null ? _topSpeed.TopSpeed : 0f;
@@ -155,6 +183,7 @@ namespace CosmicShore.UI
             {
                 _timeGauge = speed01;
                 timeGauge.fillAmount = speed01;
+                view.SetMomentumMark(speedWard ? speedWard.TopSpeedFraction : 0f, speed01);
             }
             PushLineToTimeGauge();
 
@@ -172,6 +201,10 @@ namespace CosmicShore.UI
                 view.SetAbilityPressed(Element.Charge, lit);
             }
 
+            var skimmer = swordDriver.Skimmer;
+            view.SetBladeReach(skimmer ? skimmer.ElementalScale01 : 0f, swordDriver.SuperShieldUpgradeActive, lit,
+                ResolveShieldedColor());
+
             float veil = swordDriver.EnergizeCooldownRemaining01;
             if (!Mathf.Approximately(veil, _chargeVeil))
             {
@@ -185,6 +218,23 @@ namespace CosmicShore.UI
                 _chargeGauge = energize;
                 gauge.fillAmount = energize;
             }
+        }
+
+        // The pilot's domain colour (the domain can change mid-match); white until the palette resolves.
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _vesselStatus == null) return Color.white;
+            return colorSet.GetDomainSignalColor(_vesselStatus.Domain);
+        }
+
+        // The pilot's SHIELDED colour for the Space card's super-shielded prism; alpha 0 until the palette resolves
+        // (the view keeps the prism's authored colour), never a plausible stand-in - as the Sparrow's Mass card.
+        Color ResolveShieldedColor()
+        {
+            var theme = _gameData?.ThemeManagerData;
+            if (theme == null || _vesselStatus == null || _vesselStatus.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
+            return theme.GetShieldedSignalColor(_vesselStatus.Domain);
         }
 
         // The real sword's pose on the Charge card's katana: the swipe (-1..1) and the chop (0..1), each a fraction of

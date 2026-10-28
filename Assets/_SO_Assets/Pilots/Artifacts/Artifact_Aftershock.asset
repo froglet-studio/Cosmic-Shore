@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec69ea551184461c965b9ad5c413abae, type: 3}
+  m_Name: Artifact_Aftershock
+  m_EditorClassIdentifier:
+  id: artifact.aftershock
+  displayName: Aftershock
+  description: Lands down your heading and cracks, then cracks again in the same place a few seconds later, catching whatever was rebuilt.
+  lore: 
+  icon: {fileID: 0}
+  requirement:
+    Vessel: -1
+    Keywords: []
+  payloadTransform: {fileID: 11400000, guid: 15d3283294e718e09a3f99ab3e1db3d0, type: 2}
+  tracks:
+  - element: 2
+    label: shock radius
+    atZero: 20
+    atTen: 50
+    baseCost: 2
+    costStep: 1
+    twistLine: The last shock reaches twice as far.
+  - element: 3
+    label: throw distance
+    atZero: 0
+    atTen: 240
+    baseCost: 2
+    costStep: 1
+    twistLine: Every shock after the first rings four smaller shocks around it.
+  - element: 4
+    label: seconds between shocks
+    atZero: 5
+    atTen: 2
+    baseCost: 2
+    costStep: 1
+    twistLine: One more shock follows.
+  - element: 1
+    label: shocks
+    atZero: 2
+    atTen: 4
+    baseCost: 2
+    costStep: 1
+    twistLine: The later shocks shatter, leaving no shield behind.
+  foundOnVoyages: 1
+  loadSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  releaseSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
