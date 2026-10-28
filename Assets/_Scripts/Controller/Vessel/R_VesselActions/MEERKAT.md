@@ -197,6 +197,7 @@ line for line:
 | Prefab and registrations | `Tools/Build/author_meerkat_assets.py` (`--check`, `--self-test`) |
 | The roots (§7) | `MeerkatRootMath.cs`, `MeerkatRootNetwork.cs`, `MeerkatOmnicrystalField.cs`, `Tests/Editor/MeerkatRootMathTests.cs` |
 | The tree and the roots' look (§7) | `MeerkatTreeMesh.cs`, `MeerkatTreeView.cs`, `_Graphics/Materials/Graphs/MeerkatTree.shader`, `MeerkatRootInside.shader`, `Resources/MeerkatTree.mat`, `Resources/MeerkatRootInside.mat` |
+| The network's tube look (§7a) | `MeerkatTubeWallView.cs`, `MeerkatTreeMesh.BuildTubeWall`, `_Graphics/Materials/Graphs/MeerkatTubeWall.shader`, `Resources/MeerkatTubeWall.mat`; the channels in `MeerkatWormholeView.Tube` and `MeerkatWormholeLensPass` (`MWChannel`) |
 | The swallow (§8) | `Executors/MeerkatSwallow.cs` (run by the executor; its arithmetic is `MeerkatWormholeMath.PullVelocity` / `CarryDistortion` / `SurfaceAreaThroat`) |
 | Studio map | `Tools/Build/studio_to_unity/meerkat.json` (104 keys, `--check` 0 drift) |
 
@@ -272,6 +273,55 @@ by left thumbstick."*
   (forks and bounces) to the page's own numbers. All 40 Meerkat math tests pass outside Unity (dotnet, with Unity
   stubs). The tree, the field, the camera and the look have not been opened in the Editor yet
   (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
+## 7a. Round 25: the network of wormholes (cloned 2026-10-28 from the artifact's round 25)
+
+Yash, 2026-10-28: *"We will use two terminology. One is wormhole, another is network. Wormhole is what we get by just
+normally pressing triggers and right thumbstick ... the simple tube visual. The network of wormhole tubes will come by
+collecting omnicrystals ... it will also look same as the single wormhole tube ... it will always be large, despite the last
+wormhole's length or anything. Depending on mass, it can increase, decrease its size ... if it has full mass, then it will be
+the largest, covering the entire cell."* §7's tree and roots are switched off and the network is a network of wormholes.
+
+- **Off, kept:** `trunkVisibility` 0 (the tree round a wormhole), `rootBarkVisibility` 0 (new: the network's bark skin),
+  `rootOpacity` 0 (its old inside wall). `MeerkatTreeView` builds and draws nothing while they are off; the meshes, shaders
+  (`MeerkatTree.shader`, `MeerkatRootInside.shader`) and materials stay in the project, unreferenced at these values, so the
+  look can come back from the config.
+- **One tube, a wormhole's and each of the network's** (`MeerkatWormholeView.Tube`: the conic arc or a channel's polyline):
+  - the contour field's water pipe (`formedLook` ContourField, shipped): `MeerkatWormholeLensPass` takes the channels as 3D
+    polylines (`MWChannel` in `MeerkatWormholeLens.shader`, 25 points at even steps of s with their radius, the channel's
+    carried normal in `_MWTubeNorm`), the four tubes nearest the camera, wormholes and channels alike. A channel's distance
+    is to the nearest point of its dug window, a wormhole's to its middle, as before. The pass now also runs while only a
+    network is live;
+  - the Bridge look (YASH'S LOOK): the bridge and its glass on every channel too, through the same `BridgeFrame` / `Fill`;
+  - the warp tube (`warpStrength`, shipped 0): every channel too;
+  - the calm inner wall: `MeerkatTubeWallView` + `MeerkatTubeWall.shader` (`Resources/MeerkatTubeWall.mat`), round 21's bore on
+    its own (`tubeInner`, the Fresnel at `trunkFresnel`), built once per tube (`MeerkatTreeMesh.BuildTubeWall`). Cost: a
+    wormhole 57 × 25 vertices; a channel a ring every 4 u, at most 64 rings, so at most 1,625 vertices and 3,072 triangles a
+    channel and about 127,000 vertices for the largest network (78 channels). Not profiled yet.
+  - A tube still wrapped in the old look (tree or bark switched back on) has no bridge and no wall of its own, as rounds
+    20-22.
+- **Mass sizes the network** (`MeerkatWormholeConfig.networkReach`, an `ElementalFloat` on Mass: Min 0.5 at Mass 0, Max 1 at
+  Mass 10, floored at 0.05; the page's `networkReachAtZero` / `networkReachAtFull`, written by hand because
+  `studio_to_unity.py` cannot write an elemental block). When the omnicrystal is taken the owner reads it with `EvaluateLive`
+  (`NetworkShare`) and publishes it in the relay's size float (the payload layout is unchanged, so protocol 22 stays; both
+  machines must run this build, or a peer reads the share as round 17's trunk size). Every peer grows the same network
+  from it (`MeerkatRootNetwork.Grow`):
+  - the cell (`MeerkatRootNetwork.ResolveCell`): the nearest active `Cell`'s centre and the larger of its `SenseRadius` and,
+    in a race, `RaceCourseSource.DefaultOuterRadius` (1,080 u, the race shell) and the farthest ring + 60 u; with neither,
+    the race shell;
+  - `MeerkatRootMath.NetworkSize`: reach = share × the cell's radius, never under `labyrinthRadiusMin`; the centre that
+    share of the way from the hull to the cell's centre (inside the cell; the whole cell at Mass 10); its forks and openings
+    from `labyrinth*Min` to `labyrinth*Max` as its reach goes from `labyrinthRadiusMin` to `labyrinthRadiusMax`;
+  - `MeerkatRootMath.BuildNetwork` / `NetPlace`: every opening on the network's sphere, every fork on the straight line
+    toward its openings (Garrett's Omnicrystal Network Lab's layout rule: the way to an opening runs close to the straight
+    line, median 1.13-1.22 ×).
+  - The executor's only change: `GrowRootsHere` passes `NetworkShare` where it passed the last trunk.
+- **Kept:** the omnicrystal pickup (`StepOmni` on the simulating machine, AI or human: `MeerkatOmnicrystalField.TryTake`,
+  then `GrowRootsHere` at once, or the moment the hull is out of a wormhole; the artifact's `omniAtOnce` 1), left-stick
+  flight inside (`StepRoots`), the AI in the network (`RootAutopilot`: RT held, the fork leading nearest its ring), the camera
+  on the channel's centreline, the life and collapse.
+- **Tests:** `MeerkatRootMathTests`: `NetworkSize_IsThePages` and three `Network_*_MatchesThePage` layouts from the page's own
+  `labLayout` / `netPlace` (12/12 under dotnet with an NUnit stub; a 0.45 → 0.40 mutant of the fork step fails all three).
 
 ## 8. Garrett's soliton: the surface area and the swallow (cloned 2026-10-28 from the artifact's round 23)
 

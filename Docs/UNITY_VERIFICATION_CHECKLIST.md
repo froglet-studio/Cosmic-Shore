@@ -65,6 +65,45 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat's network of wormholes: no tree, no roots, sized by Mass up to the whole cell (`worktree-agent-ae182c824c56a2bb9`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (the artifact's round 25, cloned; `R_VesselActions/MEERKAT.md` §7a):
+- The tree, the network's bark and its old inside wall ship off (`trunkVisibility`, `rootBarkVisibility`, `rootOpacity` 0).
+- Every channel of the omnicrystal's network draws as a wormhole does: the contour field's water pipe (`MWChannel` in
+  `MeerkatWormholeLens.shader`), the bridge in YASH'S LOOK, the warp tube, and the calm inner wall every tube now has
+  (`MeerkatTubeWallView`, `MeerkatTubeWall.shader`, `tubeInner`).
+- The network's size comes from Mass, not the last wormhole: `networkReach` (an `ElementalFloat` on Mass, 0.5 → 1 × the
+  cell's radius), centred toward the cell's centre, its forks laid for transport (`MeerkatRootMath.BuildNetwork`).
+
+**Verified without the editor:** reference compile, player-dev and editor: 0 errors in project code. Both changed shaders
+compile (glslang, HLSL front end, vertex and fragment, URP mock; a planted typo fails). `MeerkatRootMathTests` 12/12 under
+dotnet (4 new, from the page's own `labLayout` / `netPlace`). `studio_to_unity --check`: the new keys match; 3 drifts
+(`bendRadius`, `throatDiameter`, `mouthDiameter`) are Yash's own Unity edits (ce548fc092), left as he set them.
+`author_meerkat_assets --check` / `--self-test` pass. The console-logging, conditional-compilation, using-directive and
+abstract-member gates pass. `/verify-unity` was not available (no editor in the session).
+
+**Verify in editor:**
+1. Toybox, Vessel Changer → Meerkat. Form a wormhole with RT: no tree, no branches. The wormhole is the water pipe (bent
+   space) with a faint calm inner wall in your domain colour; riding it is calm.
+2. Fly through a gold omnicrystal: a big network opens at once from you, every way. Every one of its tubes looks like the
+   wormhole: no bark, no soil, no stones, no brown inner wall. From outside you see the network's tubes; from inside the
+   one you are in bends space the same way as a wormhole.
+3. Inside: you cruise on, the left stick moves you round the tube, RT faster, the walls bounce you, move into a wormhole at
+   a fork to take it. Out of an opening you fly on.
+4. Mass: with Mass 0 the network reaches about half the cell; raise the Meerkat's Mass to 10 (crystals, or the element
+   debug) and take another omnicrystal: it fills the cell, its openings out at the race shell (Burrow Run: about 1,080 u from
+   the cell's centre), and you can cross the cell through it.
+5. YASH'S LOOK on the config's Inspector: every tube of the network shows the spindle bridge too; GARRETT'S LOOK takes it away.
+6. Profile a race with a full-Mass network up (`prof`): "MeerkatTubeWallView.Draw", "MeerkatWormholeView.Draw" and the
+   "Meerkat wormhole lens" pass (four nearest tubes, 256 march steps each).
+7. Two players on this build: one takes an omnicrystal; the other sees the same network (the relay's size float now carries
+   the reach share; a peer on an older build would read it as a trunk size).
+
+**First-pass tuning** (the artifact's numbers): `networkReachAtZero` 0.5, `networkReachAtFull` 1, `labyrinthRadiusMin` 240,
+`labyrinthRadiusMax` 1080, forks 6 → 22, openings 12 → 56 (40 to 78 wormholes).
+
+---
+
 ### 🔴 The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** the automatic ride is gone. The main tunnel is now a network of one channel flown by the roots' own

@@ -135,33 +135,65 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
 
 **Round 25 (Yash, 2026-10-28: "When we collect the omnicrystal ... we create this omnicrystal network, burrow network. We
 can't make it a root, we need to make it smoother, like our tube, same visuals. And ... we have to turn off the tree
-visibility also. We cannot make these trees and roots. It needs to be just anomaly: tubes of wormholes, and the network of
-wormholes (navigable using the left joystick) when we collect the omnicrystal"). Artifact and Unity.**
+visibility also ... It needs to be just anomaly: tubes of wormholes, and the network of wormholes (navigable using the left
+joystick)"; then: "We will use two terminology. One is wormhole, another is network ... it will always be large, despite the
+last wormhole's length or anything. Depending on mass, it can increase, decrease its size ... if it has full mass, then it
+will be the largest, covering the entire cell, and we can transport through those network of wormholes from one place to
+other"). Artifact and Unity.**
+- **Two words.** A **wormhole** is the single tube RT and the right stick make; the **network** is the omnicrystal's network
+  of wormholes. The HUD, the toasts, the cards, the slider labels and the ⓘ tooltips say only these. No roots, labyrinth,
+  burrow or tree is left in player- or tester-facing text; the keys keep their names (`labyrinth*`, `root*`, `trunk*`),
+  because the game already maps them (D33).
 - **No tree, no roots, no soil.** They ship off, their code and sliders kept, so the look can come back:
-  - `trunkVisibility` 0 (the tree round a tunnel, its branches with it);
-  - `rootBarkVisibility` 0, a new key (the roots' bark round each channel);
-  - `rootOpacity` 0 (the roots' old inside wall);
-  - `soilVisibility` 0 (the soil, its stones and its hanging roots).
-  - A browser that saved its settings before this round takes those values once (save version 7).
-- **One tube for every wormhole** (`drawTube`). A formed tunnel and every channel of the network draw the same way, inside
-  and out:
-  - the bridge's glass (`bridgeGlass`), in its maker's colour;
-  - the calm inner wall (`drawBore`: round 21's bore, `tubeInner`, a smooth sheen with no lines). It is the tube's own now,
-    no longer part of the tree;
-  - the bent space round it (`warpStrength`), from inside the network as from outside;
-  - the bridge's spindles only in the bridge look. The new `formedLook` (1, the water pipe, shipped) is the game's
-    `formedLook` switch, and the game keeps it in its Inspector (YASH'S LOOK / GARRETT'S LOOK), so it is not cloned. The
-    page has no contour field, so in the water-pipe look it draws the glass and the calm wall in its place.
-  - A tube still wrapped in the old look (a tunnel in its tree, a channel in its bark) draws exactly as rounds 20-22 did.
-- **The words:** the HUD, the toasts, the Omnicrystal card and the sliders say "the wormhole network", "a wormhole" and
-  "the tube" where they said roots and labyrinth. The keys keep their names (`labyrinth*`, `root*`), because the game
-  already maps them.
-- **Kept:** left-stick flight inside the network, the forks, the openings, how it opens at once from the omnicrystal and
-  how it collapses.
-- **Measured:** the race is unchanged, because this round changes only how the tubes look. Every level finishes every
-  ladder (seed 11); Hard 70.0 / 63.0 / 71.7 / 68.2 s, the same as round 22. Screenshots inside a tunnel and inside the
-  network (headless): the network is smooth glass tubes in the domain colour with no bark, soil or stones, and the ride
-  inside is the same calm tube as a tunnel's.
+  - `trunkVisibility` 0 (the old outer layer round a wormhole, its spines with it);
+  - `rootBarkVisibility` 0, a new key (the network's old outer skin);
+  - `rootOpacity` 0 (the network's old inside wall);
+  - `soilVisibility` 0 (the old ground, its stones and its hanging strands).
+  - A browser that saved its settings before this round takes the changed defaults once (save version 7).
+- **One tube for every wormhole** (`drawTube`). A formed wormhole and every wormhole of the network draw the same way,
+  inside and out: the bridge's glass (`bridgeGlass`) in its maker's colour, the calm inner wall (`drawBore`: round 21's bore,
+  `tubeInner`, now the tube's own), and the bent space round it (`warpStrength`, from inside the network as from outside).
+  The new `formedLook` (1, the water pipe, shipped) is the game's switch of that name: 0 adds the bridge's spindles to every
+  tube. The game keeps it in its Inspector (YASH'S LOOK / GARRETT'S LOOK), so it is not cloned. A tube still wrapped in the
+  old look draws exactly as rounds 20-22 did.
+- **Mass sizes the network, not the wormhole.** `massLengthAtZero` and `massDiameterAtZero` ship at 1 (round 23 already took
+  Mass sizing out of the kits; now Off and Round 8 too). The network's reach is `networkReachAtZero` (0.5) × the cell's
+  radius at Mass 0 up to `networkReachAtFull` (1) × at Mass 10, never under `labyrinthRadiusMin` (240 u). It is centred that
+  share of the way from you to the cell's centre, so it always lies inside the cell, and at full Mass it fills it, its
+  openings on the race shell (1,080 u on Warpline). The page's cell is the world's origin with Warpline's outer shell, or a
+  stand-in circuit's farthest ring + 60 u. The last wormhole no longer sizes it.
+- **Its forks and openings grow with its reach**, from `labyrinthBranchPointsMin` 6 / `labyrinthOpeningsMin` 12 at
+  `labyrinthRadiusMin` to `labyrinthBranchPointsMax` 22 / `labyrinthOpeningsMax` 56 at `labyrinthRadiusMax` (1,080 u): 40
+  wormholes at Mass 0, 59 at Mass 5, 78 at Mass 10.
+- **Laid for transport, after Garrett's Omnicrystal Network Lab** (`Docs/Studios/OmnicrystalNetworkLab.html`: "every path
+  within 20% of the straight line", the forks early, the long run last). `netPlace`: every opening is on the network's
+  sphere, and every fork lies on the straight line from the fork before it toward the middle of the openings it leads to. The
+  step is short while those openings spread wide and long once they lie together. Measured (seeds 3, 11, 29), the way to an
+  opening over the straight line to it:
+
+  | Mass | wormholes | openings | median | 90% | worst | over 1.2 |
+  |---|---|---|---|---|---|---|
+  | 0 | 40 | 28 | 1.13-1.20 | 1.54-1.60 | 1.78-1.97 | 8-14 of 28 |
+  | 5 | 59 | 42 | 1.13-1.20 | 1.47-1.54 | 1.66-1.85 | 14-20 of 42 |
+  | 10 | 78 | 56 | 1.15-1.22 | 1.42-1.50 | 1.66-2.31 | 21-31 of 56 |
+
+  Before `netPlace` (forks round the network's centre) the median was 1.9 and the worst 11. The lab's exact rule is not
+  ported. It is a strict 2^n tree (three bifurcations, 8 exits) built from Dubins turns and a comfort scorecard. Eight exits
+  across a whole cell would read as a few long tubes, against "it's still pretty large", and the full builder is a page of
+  its own to port with its goldens. Its layout rule is used; its 20% bound holds for the median, not for every opening (the
+  openings lie all round, some behind the source).
+- **Kept:** left-stick flight in the network, the forks, the openings, how it opens at once from the omnicrystal and how it
+  collapses. A wormhole's calm wall is capped at 64 rings (a ring every 4 u): at most 1,625 vertices and 3,072 triangles a
+  wormhole, about 127,000 vertices for the largest network.
+- **Measured** (the lab batch, seed 11, against `origin/Ys-bleeding-edge` round 24): every level finishes every ladder. I1,
+  I2 and I4 Hard are unchanged (78.5 / 77.1 / 77.9 s). Warpline I3 Hard went from 93.1 to 127.2 s, and I4 Medium from 97.5
+  to 127.1 s: an AI that takes an omnicrystal flies a whole-cell network, which costs it time. On I3 Hard is now the slowest
+  level. A finding for Yash, not tuned away.
+- **Unity** (`R_VesselActions/MEERKAT.md` §7a): the tree, bark and old inside wall off; every channel drawn by the
+  wormhole's own code (`MeerkatWormholeView.Tube`, the contour field's `MWChannel`, `MeerkatTubeWallView`); the network
+  sized by `MeerkatWormholeConfig.networkReach` (an `ElementalFloat` on Mass, read with `EvaluateLive` when the omnicrystal
+  is taken) and the cell (`MeerkatRootNetwork.ResolveCell`); `MeerkatRootMath.BuildNetwork` / `NetworkSize`, held to the
+  page by 4 golden tests.
 
 **Round 24 (Yash, 2026-10-28: "make the main tube as same as the roots ... we can slide through the main tube rather than
 making it an automated special move ... once we create the tube, main tube, we can also slide through it using our left
