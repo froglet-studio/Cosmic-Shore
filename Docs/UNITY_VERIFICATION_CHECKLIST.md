@@ -16653,7 +16653,8 @@ No Unity editor in the session (`/verify-unity` could not run). `CosmicShore.Liv
 3. Release a Space shark. **Pass:** it is the Mass shark's shape scaled up to about 1.65x its length (~335 u) but no
    thicker than the Mass shark through the head and barrel, its tail and fin tips full size, its wings still attached;
    its body prisms are thin needles inside the skin, its teeth inside its jaws, its heart the same round size and clear
-   of the skin. Watch it swim and turn: **Pass:** no prism clips its spindle and the skin does not tear or crease. The
+   of the skin - **round, not flattened** (the first push eroded the heart with the body; fixed). Watch it swim and turn: **Pass:** no prism clips its spindle and the skin does not tear or crease. The
    console shows no `cannot be eroded into a Space spindle` warning.
 4. A Brittlestar: **Pass:** its spines are thinner than before (0.3, no longer pushed up to 0.5).
 5. Kill a Space shark and let a Charge one spawn: **Pass:** the Charge shark has the prefab body and prisms.
+6. Kill a Space shark and look at the crystal it drops. **Pass:** a round Space crystal, the same as any other.

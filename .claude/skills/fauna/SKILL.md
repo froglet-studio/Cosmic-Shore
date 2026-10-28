@@ -213,6 +213,19 @@ local units (3.55 / root scale).
 it must not be possible to author one that does not. A connected COLONY is a population, so
 **every member carries its own heart**; only the colony ROOT is heartless.
 
+**Reshape the body, never what hangs below it (Garrett, 2026-10-28: "always be careful about stretching
+hierarchically").** Anything that changes a creature's SHAPE - a non-uniform scale on the root or a bone, a mesh
+eroded or stretched, a whole-hierarchy `GetComponentsInChildren` sweep - also reaches every child under it, and the
+heart is a child: the Space heart is a skinned mesh (`spacecrystalanim`), so the first Space-spindle pass swept it up
+with the wings and squashed the one round crystal (and a dead shark dropped the squashed copy). So: scale a root only
+UNIFORMLY (the heart divides its world size out of its parent, `LifeFormCrystal.SetWorldScale`, but a parent's shear
+cannot be divided out of a turning child); do shape changes on the body's own meshes and filter every sweep to the
+body's parts (`Fauna.IsSpindlePart`: nothing under a `Crystal`); and before handing back, measure the HEART after the
+change in the game's own code path (its extent must be equal on all three axes),
+not in a render that swaps a fresh crystal in afterwards (the offline renders did, which is how the squash got past them).
+A stated prism size also needs admitting: `Prism.Initialize` clamps targets into the scale animator's [0.5, 10] window,
+so body prisms take `Fauna.SeatAuthoredSize` after Initialize.
+
 ---
 
 ## 6. Units: the cliff that makes two measurements incomparable

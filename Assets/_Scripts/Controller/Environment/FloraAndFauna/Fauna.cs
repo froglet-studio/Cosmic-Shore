@@ -993,7 +993,7 @@ namespace CosmicShore.Gameplay
         /// scaled to bigger than mass, but we must erode and thin its thickest sections so the whole spindle gets more
         /// spindly"). The root is already scaled whole; this erodes every spindle of the body by
         /// <see cref="SpindleErosion"/> - the BODY (the skin with the most vertices) along its spine through the heart,
-        /// every other skin (the wings) along its own spine and then moved with the body where it is rooted, so it stays
+        /// every other skin of the body (the wings - never the heart, <see cref="IsSpindlePart"/>) along its own spine and then moved with the body where it is rooted, so it stays
         /// attached. Each body prism moves with the skin it sits in, and takes THE LATTICE FLORA'S PROPORTIONAL RULES:
         /// "an element authors the SHAPE of its plate, and the size is FITTED to the largest that clears" - the leaf law's
         /// shape (<see cref="FloraElementalForm.ShapeLeaf"/>, Space's needle), spanning its eroded socket's length less
@@ -1009,7 +1009,7 @@ namespace CosmicShore.Gameplay
             _authoredSpindleMeshes ??= new Dictionary<SkinnedMeshRenderer, Mesh>();
             foreach (var skin in skins)
             {
-                if (!skin || !skin.sharedMesh) continue;
+                if (!skin || !skin.sharedMesh || !IsSpindlePart(skin)) continue;
                 if (!_authoredSpindleMeshes.ContainsKey(skin)) _authoredSpindleMeshes[skin] = skin.sharedMesh;
                 if (!body || _authoredSpindleMeshes[skin].vertexCount > _authoredSpindleMeshes[body].vertexCount) body = skin;
             }
@@ -1054,7 +1054,7 @@ namespace CosmicShore.Gameplay
             _authoredPrismSeats ??= new Dictionary<HealthPrism, Vector3>();
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
             {
-                if (!hp || !hp.transform.parent) continue;
+                if (!hp || !hp.transform.parent || !IsSpindlePart(hp)) continue;
                 if (!_authoredPrismSeats.ContainsKey(hp)) _authoredPrismSeats[hp] = hp.transform.localPosition;
 
                 // the spindle it sits in: the one with a vertex nearest its centre
@@ -1106,6 +1106,15 @@ namespace CosmicShore.Gameplay
                 hp.TargetScale = target;
             }
         }
+
+        /// <summary>
+        /// True for a part of the creature's OWN body: not under its heart. Erosion is a change of shape, and anything
+        /// below the body in the hierarchy is carried along by it - the Space heart is a skinned mesh of its own
+        /// (<c>spacecrystalanim</c>) under the root, so the first pass eroded it with the wings, squashing the one round
+        /// crystal (and every crystal a dead Space shark dropped kept the squashed mesh). The heart has its own size law
+        /// (<see cref="LifeFormCrystal.ApplyHeartSize"/>); the body never reshapes it.
+        /// </summary>
+        static bool IsSpindlePart(Component part) => !part.GetComponentInParent<Crystal>(true);
 
         /// <summary>The cached eroded copy of <paramref name="source"/>, built on first use (null when the mesh is not
         /// readable - its import needs Read/Write - which is said once).</summary>

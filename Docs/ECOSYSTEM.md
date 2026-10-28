@@ -12392,7 +12392,13 @@ With size Mass's, Space's fauna identity is three things, one number - the plant
     wing erodes along its own spine and is then moved with the body where it is rooted, so it stays attached. A vertex
     keeps its place along the spine; normals take the map's inverse-transpose; skin weights and bones are untouched, so
     the rig drives the eroded skin as it drove the prefab's. One eroded mesh per prefab mesh, shared by every Space shark
-    (the shark model's import now has Read/Write on - `Shark_model.fbx.meta`);
+    (the shark model's import now has Read/Write on - `Shark_model.fbx.meta`). **Only the body's own skins are eroded,
+    never the heart** (`Fauna.IsSpindlePart`; Garrett, 2026-10-28: "you stretched it such that the crystal inside is also
+    getting stretched, always be careful about stretching hierarchically"): the Space heart is itself a skinned mesh under
+    the root, and the first pass took it with the wings and squashed it from 1.46 to 0.98 across two axes (a dead shark
+    dropped the squashed crystal too). The offline renders swapped a fresh crystal in after the erosion, so they could
+    not show it; the check now runs the game's `ApplyVariantTuning` with the Space heart provisioned first, as spawning
+    does, and the heart comes out 6.95 u on all three axes;
   - **an element authors the SHAPE, the size is FITTED to the largest that clears, less 3%** (the lattice's §49.10
     rule): each body prism moves with the skin it sits in and spans its own eroded SOCKET - the authored prism box, carried
     by the erosion - less 3%; the leaf law (`FloraElementalForm.ShapeLeaf`, anisotropy 2.11) says how thin it is against
