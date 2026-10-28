@@ -275,12 +275,11 @@ REBIND += [
 # every vessel has an L5, so a mark for it was inconsistent - then "show it hitting a supershielded prism and it breaking
 # above 5". So: the katana laid FLAT (apart from the upright Charge card) at the live length, its tip in a super-shielded
 # prism that stays whole below Space 5 and is shattered from Space 5. No plate meter.
-REACH_HILT = (22.0, 74.0)
-REACH_MAX = 66.0                  # the blade at Space 10 (40 u)
+REACH_HILT = (20.0, 112.0)
+REACH_ANGLE = 52.0                # the blade's lean, clockwise from upright: it reaches across the card's diagonal
+REACH_MAX = 68.0                  # the blade at Space 10 (40 u)
 REACH_REST = REACH_MAX * 24 / 40  # at rest (24 u)
-PRISM_R = 16.0                    # the prism's half-size (px)
-SHELL_GAP, SHELL_W = 3.0, 2.6     # the super-shield shell around it
-PRISM_BITE = 6.0                  # how far the tip sits inside the prism's near point
+PRISM_BITE = 2.0                  # how far the tip sits inside the prism's near point
 
 
 def reach_len(space01):
@@ -288,60 +287,111 @@ def reach_len(space01):
 
 
 def flat_katana(length, w=15.0):
-    return katana(90.0, hilt=REACH_HILT, length=length, w=w, sori=KATANA_SORI * length / KATANA_LEN, mirror=True)
+    return katana(REACH_ANGLE, hilt=REACH_HILT, length=length, w=w, sori=KATANA_SORI * length / KATANA_LEN, mirror=True)
+
+
+# The super-shielded prism, as the game builds it (StellatedOctahedronMeshGenerator): the stella octangula, two
+# tetrahedra through each other - eight spikes, tips at the cube corners, each spike three faces on a face of the
+# inscribed octahedron. Garrett 2026-10-28: "that does not look like a stelated octahedron". Drawn from the real
+# geometry (regular: a = b = c), turned to a three-quarter view, every visible face its own facet with a seam, in three
+# tones by how it faces the light. Shattered: the eight spikes flung out along their own corners, as the game's
+# 24-face shatter + explode-out.
+STELLA_YAW, STELLA_PITCH = 22.0, -30.0
+STELLA_LIGHT = (-0.55, 0.65, -0.5)       # toward the upper left, toward the viewer (view space, y up)
+STELLA_SEAM = 1.1                        # px the facets are pulled in from their edges
+
+
+def _stella_faces(explode=0.0):
+    """The 24 outer triangles in model space, (tip, base0, base1) per face, each spike pushed out by `explode`."""
+    faces = []
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                tip = np.array([sx, sy, sz], float)
+                base = [np.array([sx, 0, 0], float), np.array([0, sy, 0], float), np.array([0, 0, sz], float)]
+                push = tip / np.linalg.norm(tip) * explode
+                for i in range(3):
+                    faces.append([tip + push, base[i] + push, base[(i + 1) % 3] + push])
+    return faces
+
+
+def _view(p):
+    y, x = math.radians(STELLA_YAW), math.radians(STELLA_PITCH)
+    cy, sy, cx, sx = math.cos(y), math.sin(y), math.cos(x), math.sin(x)
+    X, Y, Z = p
+    X, Z = X * cy + Z * sy, -X * sy + Z * cy           # yaw about up
+    Y, Z = Y * cx - Z * sx, Y * sx + Z * cx            # pitch about right
+    return np.array([X, Y, Z])
+
+
+def stella_tones(cx, cy, r, explode=0.0):
+    """Three masks (light, mid, dark): the visible faces of the stella octangula centred (cx, cy), tips r px out."""
+    light = np.array(STELLA_LIGHT) / np.linalg.norm(STELLA_LIGHT)
+    k = r / math.sqrt(3)
+    tris = []
+    for f in _stella_faces(explode):
+        v = [_view(p) for p in f]
+        n = np.cross(v[1] - v[0], v[2] - v[0])
+        n /= np.linalg.norm(n)
+        centre = sum(v) / 3
+        if np.dot(n, centre) < 0:                        # orient outward
+            n = -n
+        if n[2] >= 0:                                    # facing away (the viewer looks down +z)
+            continue
+        lit = float(np.dot(n, light))
+        pts = [(cx + p[0] * k, cy - p[1] * k) for p in v]
+        tris.append((centre[2], lit, pts))
+    tris.sort(key=lambda t: -t[0])                       # far first
+    ranked = sorted(t[1] for t in tris)                   # the tones split the visible faces in thirds by light
+    cut_dark, cut_mid = ranked[len(ranked) // 3], ranked[2 * len(ranked) // 3]
+    tones = [empty(), empty(), empty()]
+    for _, lit, pts in tris:
+        mx = sum(x for x, _ in pts) / 3
+        my = sum(y for _, y in pts) / 3
+        inset = []
+        for x, y in pts:
+            d = math.hypot(x - mx, y - my) or 1.0
+            inset.append((x - (x - mx) / d * STELLA_SEAM, y - (y - my) / d * STELLA_SEAM))
+        full = fill(pts)
+        for t in tones:
+            t &= ~full                                    # a nearer face covers what is behind it
+        tone = 0 if lit >= cut_mid else 1 if lit >= cut_dark else 2
+        tones[tone] |= fill(inset)
+    return tones
+
+
+STELLA_ALPHA = (1.0, 0.7, 0.42)
+PRISM_R = 36.0
+
+
+def _reach_at(d_along, d_side=0.0):
+    """A point d_along the blade's line from the hilt, d_side toward its upper-left side."""
+    hx, hy = REACH_HILT
+    a = math.radians(REACH_ANGLE)
+    return (hx + math.sin(a) * d_along - math.cos(a) * d_side, hy - math.cos(a) * d_along - math.sin(a) * d_side)
 
 
 def prism_centre(length):
-    hx, hy = REACH_HILT
-    return hx + length - PRISM_BITE + PRISM_R + SHELL_GAP + SHELL_W, hy - KATANA_SORI * length / KATANA_LEN * 0.9
+    return _reach_at(length - PRISM_BITE + PRISM_R * 0.42, -KATANA_SORI * length / KATANA_LEN * 0.6)
 
 
-def _diamond(cx, cy, r):
-    return [(cx, cy - r), (cx + r * 0.8, cy), (cx, cy + r), (cx - r * 0.8, cy)]
-
-
-def shielded_prism(length):
-    """A super-shielded prism (an octahedron, its two lower facets cut by a seam) inside a shell, at the tip."""
+def shielded_prism(length, tone):
     cx, cy = prism_centre(length)
-    core = fill(_diamond(cx, cy, PRISM_R)) & ~fill([(cx - 0.9, cy - PRISM_R), (cx + 0.9, cy - PRISM_R), (cx + 0.9, cy + PRISM_R), (cx - 0.9, cy + PRISM_R)])
-    r1 = PRISM_R + SHELL_GAP
-    shell = fill(_diamond(cx, cy, r1 + SHELL_W)) & ~fill(_diamond(cx, cy, r1))
-    return core | shell
+    return stella_tones(cx, cy, PRISM_R)[tone]
 
 
-def shattered_prism(length):
-    """The same prism popped: its four facets and the shell's corners flung out from the tip."""
+def shattered_prism(length, tone):
     cx, cy = prism_centre(length)
-    m = empty()
-    r = PRISM_R
-    shards = [  # (facet triangle around the centre, the direction it flies)
-        ([(cx, cy - r), (cx + r * 0.8, cy), (cx, cy)], (0.7, -1.0)),
-        ([(cx + r * 0.8, cy), (cx, cy + r), (cx, cy)], (0.8, 0.9)),
-        ([(cx, cy + r), (cx - r * 0.8, cy), (cx, cy)], (-0.5, 1.0)),
-        ([(cx - r * 0.8, cy), (cx, cy - r), (cx, cy)], (-0.4, -1.0)),
-    ]
-    for tri, (dx, dy) in shards:
-        k = 12.0
-        tri = [(x + dx * k, y + dy * k) for x, y in tri]
-        sx = sum(x for x, _ in tri) / 3
-        sy = sum(y for _, y in tri) / 3
-        m |= fill([(sx + (x - sx) * 0.85, sy + (y - sy) * 0.85) for x, y in tri])
-    r1 = PRISM_R + SHELL_GAP + 14
-    for ang in (0, 90, 180, 270):          # the shell's four corners, broken off and thrown wide
-        a = math.radians(ang)
-        px, py = cx + math.cos(a) * r1 * (0.8 if ang in (0, 180) else 1.0), cy + math.sin(a) * r1
-        m |= fill(rotate([(px - 5, py - 1.6), (px + 5, py - 1.6), (px + 5, py + 1.6), (px - 5, py + 1.6)], ang + 45, px, py))
-    return m
+    return stella_tones(cx, cy, PRISM_R * 0.8, explode=0.75)[tone]
 
 
 def reach_posts():
     """O (Garrett's pick of N / O / P): two posts over the blade's line, at its rest length and its full reach, so the
     live tip reads against how far it can grow."""
-    hx, hy = REACH_HILT
     m = empty()
     for L in (REACH_REST, REACH_MAX):
-        x = hx + L
-        m |= fill([(x - 2.4, hy - 46), (x + 2.4, hy - 46), (x + 2.4, hy - 28), (x - 2.4, hy - 28)])
+        x, y = _reach_at(L, 30.0)
+        m |= fill(rotate([(x - 2.4, y - 8), (x + 2.4, y - 8), (x + 2.4, y + 8), (x - 2.4, y + 8)], REACH_ANGLE - 90, x, y))
     return m
 
 
@@ -358,9 +408,11 @@ def reach_card():
     for k, (n, s01, broken, lit) in enumerate(REACH_STATES):
         L = reach_len(s01)
         parts[f"b{k}"] = (lambda L=L: flat_katana(L))
-        parts[f"p{k}"] = (lambda L=L, broken=broken: shattered_prism(L) if broken else shielded_prism(L))
+        for t in range(3):
+            parts[f"p{k}_{t}"] = (lambda L=L, broken=broken, t=t: shattered_prism(L, t) if broken else shielded_prism(L, t))
         parts["posts"] = reach_posts
-        states.append((n, [("posts", "white", 0.6), (f"p{k}", "shielded"), (f"b{k}", "danger" if lit else "white")]))
+        states.append((n, [(f"p{k}_{t}", "shielded", STELLA_ALPHA[t]) for t in range(3)]
+                       + [(f"b{k}", "danger" if lit else "white"), ("posts", "white", 0.6)]))
     return dict(name="bladereach_round2", group="bladereach2", lockup_state=3, element="Space",
                 before=ICON_DIR + "Rhino_BladeReach-PLACEHOLDER.png",
                 title="Blade Reach: the katana flat at its live length between posts at its rest and full reach (O), its tip in a super-shielded prism - bound below Space 5, shattered from Space 5; no plate meter",
