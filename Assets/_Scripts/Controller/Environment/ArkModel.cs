@@ -25,6 +25,12 @@ namespace CosmicShore.Gameplay
     ///     about its ring's yawed axis like a real gimbal. Nothing is played past full: a bone two inputs move (a jet
     ///     pitches AND banks about its own x axis) shares one take's worth between them (<see cref="ArkRigTable.Budget"/>),
     ///     the envelope the model's clearance gate proved over every blend the Ark can fly.
+    ///   • <b>The actions</b> are the model's other takes, played on events: the hangar's clam-jaw doors open while a
+    ///     squadmate is in the hold's grab reach (the hold is open to you: a world fact shown in the world), and the
+    ///     lance slides out of its cradles when the hold hands a payload over (<see cref="ArkHold.ParcelGranted"/>).
+    ///   • <b>The reactor</b> (<see cref="Ark.Reactor"/>): the omni crystal in the well is as big as the charge aboard
+    ///     and its collar turns, faster while the hull regrows; a harvested crystal flies into it
+    ///     (<see cref="ReactorPivot"/>).
     /// </summary>
     public sealed class ArkModel : MonoBehaviour
     {
@@ -47,12 +53,18 @@ namespace CosmicShore.Gameplay
         {
             public Transform Bone;
             public Quaternion RestLocal, RestInArk;
+            public Vector3 RestLocalPosition;
             public Quaternion PitchUp, PitchDown, YawRight, YawLeft, RollRight, RollLeft, SpeedUp, SpeedDown;
             public Vector4 Moves;                          // 1 per input (pitch, yaw, roll, speed) that has a take on this bone
+            public Quaternion Release, HangarOpen;         // the action takes (identity = the action leaves the bone)
+            public Vector3 ReleaseOffset;                  // the release take's slide, in the bone's parent's space
         }
 
         const float FrameMismatchTolerance = 0.5f;        // model units: a bone further than this from its table pivot
         const float RiderNotifyInput = 0.005f;            // a jaw move below this much input (~0.035 deg) is not worth a re-file
+        const float HangarScanSeconds = 0.25f;            // how often the hangar looks for a squadmate in reach
+        const string ReactorBone = "omni";                // the omni crystal in the reactor well
+        const string ReactorCollarBone = "omni.ring";     // its collar
 
         ArkModelDefinitionSO _def;
         Ark _ark;
@@ -69,11 +81,33 @@ namespace CosmicShore.Gameplay
         Vector4 _input;                                    // smoothed: pitch, yaw, roll, speed in [-1, 1]
         Vector4 _riderInputAtNotify;
 
+        // Actions: 0 = rest, 1 = the take in full.
+        float _release, _hangar;
+        float _releaseUntil = float.NegativeInfinity;
+        bool _hangarWanted;
+        float _nextHangarScanAt;
+        ArkHold _hold;
+
+        // Reactor: the omni crystal shows the charge, its collar turns.
+        Transform _reactor, _collar;
+        Vector3 _reactorRestScale = Vector3.one;
+        Quaternion _collarRestLocal, _collarRestInArk;
+        float _reactorFill = 1f, _shownFill = 1f, _collarAngle;
+        bool _regrowing, _reactorDriven;              // an Ark without a reactor leaves the crystal as built
+
         /// <summary>The sockets the hull wears - its full-health count.</summary>
         public int SocketCount => _table?.sockets.Length ?? 0;
 
         /// <summary>The live input blend (pitch, yaw, roll, speed), for the HUD or a test.</summary>
         public Vector4 Input => _input;
+
+        /// <summary>Where the omni crystal sits in the reactor well (a harvested crystal flies here); the Ark's root when
+        /// the model has no reactor bone.</summary>
+        public Transform ReactorPivot => _reactor ? _reactor : (_ark ? _ark.transform : transform);
+
+        /// <summary>The action takes now, 0..1: the lance out, the hangar open.</summary>
+        public float ReleaseAmount => _release;
+        public float HangarAmount => _hangar;
 
         /// <summary>
         /// Instantiate <paramref name="def"/>'s model under <paramref name="ark"/> and bind its rig table. Null (with a
@@ -117,6 +151,35 @@ namespace CosmicShore.Gameplay
 
             IndexBones(_root);
             BindPuppets();
+            BindReactor();
+
+            _hold = ark.Hold;
+            if (_hold) _hold.ParcelGranted += OnParcelGranted;
+        }
+
+        void OnDestroy()
+        {
+            if (_hold) _hold.ParcelGranted -= OnParcelGranted;
+        }
+
+        void OnParcelGranted(PayloadCarrier carrier) => _releaseUntil = Time.time + _def.ReleaseSeconds;
+
+        void BindReactor()
+        {
+            if (_bones.TryGetValue(ReactorBone, out _reactor)) _reactorRestScale = _reactor.localScale;
+            if (_bones.TryGetValue(ReactorCollarBone, out _collar))
+            {
+                _collarRestLocal = _collar.localRotation;
+                _collarRestInArk = Quaternion.Inverse(_ark.transform.rotation) * _collar.rotation;
+            }
+        }
+
+        /// <summary>The reactor's state, from the Ark: how full it is (0..1) and whether the hull is regrowing.</summary>
+        public void SetReactor(float fill01, bool regrowing)
+        {
+            _reactorFill = Mathf.Clamp01(fill01);
+            _regrowing = regrowing;
+            _reactorDriven = true;
         }
 
         void IndexBones(Transform t)
@@ -143,11 +206,21 @@ namespace CosmicShore.Gameplay
                     Bone = bone,
                     RestLocal = bone.localRotation,
                     RestInArk = arkRotationInverse * bone.rotation,
+                    RestLocalPosition = bone.localPosition,
                     PitchUp = ArkRigTable.Q(entry.pitchUp), PitchDown = ArkRigTable.Q(entry.pitchDown),
                     YawRight = ArkRigTable.Q(entry.yawRight), YawLeft = ArkRigTable.Q(entry.yawLeft),
                     RollRight = ArkRigTable.Q(entry.rollRight), RollLeft = ArkRigTable.Q(entry.rollLeft),
                     SpeedUp = ArkRigTable.Q(entry.speedUp), SpeedDown = ArkRigTable.Q(entry.speedDown),
+                    Release = ArkRigTable.Q(entry.release), HangarOpen = ArkRigTable.Q(entry.hangarOpen),
                 };
+                // The release take's slide is a model-space vector (the Ark's space, scaled); the bone moves in its
+                // parent's space, so it is carried there once, at rest.
+                var slide = entry.ReleaseMove * _scale;
+                if (slide.sqrMagnitude > 1e-8f)
+                {
+                    var world = _ark.transform.TransformVector(slide);
+                    puppet.ReleaseOffset = bone.parent ? bone.parent.InverseTransformVector(world) : world;
+                }
                 puppet.Moves = new Vector4(Moves(puppet.PitchUp, puppet.PitchDown), Moves(puppet.YawRight, puppet.YawLeft),
                                            Moves(puppet.RollRight, puppet.RollLeft), Moves(puppet.SpeedUp, puppet.SpeedDown));
                 _puppets.Add(puppet);
@@ -205,10 +278,36 @@ namespace CosmicShore.Gameplay
             return batches;
         }
 
+        /// <summary>
+        /// The hull as <paramref name="def"/>'s model wears it, one lay per socket in the model's own space (scaled), in
+        /// <paramref name="domain"/>: the Ark's shape without an Ark, for a miniature (the Wander toy's emblem). Null
+        /// when the definition has no readable rig table.
+        /// </summary>
+        public static List<PrismLay> SocketLays(ArkModelDefinitionSO def, Domains domain)
+        {
+            if (!def || !def.RigTable) return null;
+            var table = ArkRigTable.Parse(def.RigTable.text, out _);
+            if (table == null) return null;
+            var lays = new List<PrismLay>(table.sockets.Length);
+            foreach (var socket in table.sockets)
+            {
+                if (socket == null) continue;
+                lays.Add(new PrismLay(new SpawnPoint(socket.Position * def.Scale, socket.Rotation, socket.Size * def.Scale),
+                                      domain, socket.Kind));
+            }
+            return lays;
+        }
+
         /// <summary>Prisms laid on a bone: the puppetry tells them when it moves them.</summary>
         public void AddRiders(List<Prism> prisms)
         {
             if (prisms != null) _riders.AddRange(prisms);
+        }
+
+        /// <summary>One prism regrown on a bone (<see cref="Ark"/>'s reactor).</summary>
+        public void AddRider(Prism prism)
+        {
+            if (prism) _riders.Add(prism);
         }
 
         /// <summary>
@@ -273,7 +372,46 @@ namespace CosmicShore.Gameplay
 
             float follow = 1f - Mathf.Exp(-dt / _def.Response);
             _input += (target - _input) * follow;
+
+            TickActions(dt);
             Pose(_input * _def.Amplitude);
+            PoseReactor(dt);
+        }
+
+        /// <summary>
+        /// The actions ease toward what the world says: the lance out for a while after the hold hands a payload over,
+        /// the hangar open while a squadmate is in the hold's grab reach (and never on a fallen Ark).
+        /// </summary>
+        void TickActions(float dt)
+        {
+            float now = Time.time;
+            if (now >= _nextHangarScanAt)
+            {
+                _nextHangarScanAt = now + HangarScanSeconds;
+                _hangarWanted = !_ark.IsHullLost && SquadmateInReach();
+            }
+            float follow = 1f - Mathf.Exp(-dt / _def.ActionResponse);
+            _release += ((now < _releaseUntil && !_ark.IsHullLost ? 1f : 0f) - _release) * follow;
+            _hangar += ((_hangarWanted ? 1f : 0f) - _hangar) * follow;
+        }
+
+        /// <summary>A live vessel of the Ark's domain within the hold's grab reach: the one who could take a payload.</summary>
+        bool SquadmateInReach()
+        {
+            float reach = _def.HangarReach > 0f ? _def.HangarReach : ArkHold.Config.GrabReach;
+            float reachSqr = reach * reach;
+            var centre = _ark.Position;
+            var live = VesselStatus.Live;
+            for (int i = 0; i < live.Count; i++)
+            {
+                var vessel = live[i];
+                if (!vessel) continue;
+                IVesselStatus status = vessel;
+                // A vessel with no player yet has no side to ask (its Domain getter would log one).
+                if (status.Player == null || status.Domain != _ark.Domain) continue;
+                if ((vessel.transform.position - centre).sqrMagnitude <= reachSqr) return true;
+            }
+            return false;
         }
 
         void Pose(Vector4 a)
@@ -285,8 +423,12 @@ namespace CosmicShore.Gameplay
                 var delta = ArkRigTable.Blend(p.PitchUp, p.PitchDown, b.x)
                             * ArkRigTable.Blend(p.YawRight, p.YawLeft, b.y)
                             * ArkRigTable.Blend(p.RollRight, p.RollLeft, b.z)
-                            * ArkRigTable.Blend(p.SpeedUp, p.SpeedDown, b.w);
+                            * ArkRigTable.Blend(p.SpeedUp, p.SpeedDown, b.w)
+                            * ArkRigTable.Blend(p.Release, Quaternion.identity, _release)
+                            * ArkRigTable.Blend(p.HangarOpen, Quaternion.identity, _hangar);
                 p.Bone.localRotation = ArkRigTable.PoseLocal(p.RestLocal, p.RestInArk, delta);
+                if (p.ReleaseOffset != Vector3.zero)
+                    p.Bone.localPosition = p.RestLocalPosition + p.ReleaseOffset * Mathf.Clamp01(_release);
             }
 
             // The jaws' blades ride the jaws: re-file them (spatial index, shell, render entity) when the jaws moved.
@@ -305,6 +447,28 @@ namespace CosmicShore.Gameplay
                 }
                 if (!prism.destroyed && prism.gameObject.activeInHierarchy)
                     prism.NotifyPositionChanged();
+            }
+        }
+
+        /// <summary>
+        /// The omni crystal in the well is as big as the charge aboard (a spent reactor holds a small dark seed, never
+        /// nothing), easing so a harvest swells it and a regrowth draws it down; its collar turns about the well's axis,
+        /// faster while the hull regrows. Model bones, moved like the jets - never a prism.
+        /// </summary>
+        void PoseReactor(float dt)
+        {
+            if (!_reactorDriven) return;
+            if (_reactor)
+            {
+                _shownFill += (_reactorFill - _shownFill) * (1f - Mathf.Exp(-dt / _def.ActionResponse));
+                _reactor.localScale = _reactorRestScale * Mathf.Lerp(_def.EmptyCrystalScale, 1f, _shownFill);
+            }
+            if (_collar)
+            {
+                float spin = _reactorFill <= 0f ? 0f : _regrowing ? _def.CollarSpinRegrowing : _def.CollarSpinIdle;
+                _collarAngle = Mathf.Repeat(_collarAngle + spin * dt, 360f);
+                _collar.localRotation = ArkRigTable.PoseLocal(_collarRestLocal, _collarRestInArk,
+                    Quaternion.AngleAxis(_collarAngle, Vector3.up));
             }
         }
     }

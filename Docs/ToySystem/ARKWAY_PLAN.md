@@ -175,7 +175,8 @@ until a voyage opens with the Ark in view every time.
     lays through it onto the hull container (`Ark.AdoptPrism`, honouring the §41.2 mover contract:
     the adopted prism keeps its `PrismSpatialIndex` registration and its `NotifyPositionChanged`).
     The hull is then exactly the plates that exist: mass conserved, no HP pool, no clock, no
-    regeneration. It composes Switch × Mass × Ark and adds no fundamental. *Note the collision to
+    regeneration. It composes Switch × Mass × Ark and adds no fundamental. (Not built. The repair
+    that WAS built is the omni reactor's paid regrowth, 2026-10-28: see Anti-patterns below.) *Note the collision to
     check first: `SelfTrailContactConfigSO` declines a pilot's own FRESH ribbon from the skimmer's
     prism branch, so adoption must not be built as a skimmer effect on newly-laid mass.*
   - **The corridor remembers, within a session.** When a traversal cell retires, snapshot
@@ -233,7 +234,10 @@ until a voyage opens with the Ark in view every time.
 - **A threat script.** No aggro table, no "fauna target the Ark", no wave that spawns because the
   Ark arrived. If the swarm does not come, the lever is the ecology's own targeting.
 - **A clock on the Ark.** No hull regeneration on a timer, no decay, no lifespan. Repair is paid
-  for (a crystal); loss is an active force (a bite).
+  for (a crystal); loss is an active force (a bite). **Built that way (2026-10-28):** the Ark's
+  reactor regrows its hull only on omni power, one prism of charge per prism, refuelled from omni
+  crystals no pilot took first (`ArkReactorSO`, `Docs/VesselModels/ArkReverse.md` § In the game).
+  The regrowth's pace (one prism every 0.6 s) is a rate cap on what is paid for, never free repair.
 - **A score or an end condition.** A voyage ends when the player ends it or the Ark falls. A
   "distance sailed" number on screen is a score wearing a costume.
 - **Waypoints everywhere.** One arrow, and only when the Ark is lost. The cells are their own

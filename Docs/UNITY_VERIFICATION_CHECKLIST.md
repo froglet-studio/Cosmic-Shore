@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Ark's omni reactor regrows its hull; hangar, lance and crystal hooked up; the emblem is the model (`cece/upbeat-johnson-j7izg7`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "the omnicrystal on board the ark powers the prism creation. arks are the only vessel that
+can contain and harvest the power of an omnicrystal instead of morphing it into something else, so please add the
+regeneration. please fix the stuff not hooked up yet."):
+- `ArkReactor.asset` (on `Wander_WithArk.asset`) gives the Ark one omni crystal's power, 36 prisms. Every emptied hull
+  socket, grazed or taken for a payload, regrows one prism every 0.6 s, nearest the reactor first.
+- Under way, the Ark harvests omni crystals within 160 (each traversal cell's core lies on its course) unless a pilot
+  took them first.
+- The model's omni crystal shows the charge and its collar turns.
+- The hangar opens while a squadmate is within payload grab reach, and the lance slides out when a payload is granted.
+- The Wander emblem is built from the model's sockets.
+
+The fence on the locked mass rule is the fourth sign-off in `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`. The C#
+compiled clean headless (`unity_refcompile`, player and `--config editor`: 0 errors in project code). `ArkModelTests`
+compiled but did not run. No Unity Editor was open, so `/verify-unity` did not run.
+
+**Verify in editor:**
+1. Run `ArkModelTests` (13 tests): all pass.
+2. Fly Wander → **With Ark**:
+   - at the dock beside the Ark, the hangar's clam-jaw doors (the prow, between the jaws) swing open;
+   - fly beyond 160 and they close.
+3. With RB beside the Ark, take a payload:
+   - the lance slides aft out of its cradles and back over about 1.5 s;
+   - the six plates the parcel took leave their sockets;
+   - within a few seconds they grow back, one at a time, in the Ark's colour, the ones nearest the reactor well first.
+4. Let fauna graze the hull. Emptied sockets regrow, and the omni crystal in the well shrinks as it spends (a seed when
+   empty, never gone). Its collar spins faster while regrowing.
+5. Sail into a cell without taking its core crystal. When the Ark reaches the core, the crystal flies into the reactor
+   well and dissolves (pickup sound only if one is wired), and the well's crystal swells.
+6. Do it again but take the core crystal yourself first. Your vessel's omni effect plays, and the Ark gets nothing.
+7. Let the reactor run dry (graze a lot without harvesting). Regrowth stops and empty sockets stay empty.
+8. Let the hull fall: nothing regrows after the fall.
+9. The Wander toy's With Ark station shows a miniature of the model's hull (108 prisms) in your domain colour, not the
+   spindle.
+10. Console: no new warning.
+
+**First-pass tuning** (on `ArkReactor.asset`): 36 prisms per crystal, 1 crystal at the start, room for 2, one regrowth
+every 0.6 s, harvest within 160. On `ArkReverseModel.asset`: lance out 1.2 s, hangar reach = the payload grab reach
+(160), actions ease over 0.3 s, empty crystal 0.35 of its size, collar 12°/s idle and 90°/s regrowing. The harvest and
+regrowth sounds ship empty.
+
 ### 🔴 The Arkway's Ark is the ArkReverse model: hull prisms in its sockets, domain trim, jets and wings fly the turn (`cece/upbeat-johnson-j7izg7`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett: "use this, but animate it so it moves its jets and wings appropriately when turning. use

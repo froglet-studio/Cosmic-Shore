@@ -29,6 +29,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The model the Ark is drawn as (sockets, domain, jets and wings). Null keeps the spindle hull.</summary>
         public ArkModelDefinitionSO ArkModel;
 
+        /// <summary>The Ark's reactor (omni-powered regrowth, harvest). Null: the hull never regrows.</summary>
+        public ArkReactorSO ArkReactor;
+
         /// <summary>Units of travel between wake prisms. 0 = no wake.</summary>
         public float ArkWakeSpacing = 45f;
 
@@ -302,6 +305,8 @@ namespace CosmicShore.Gameplay
                     // Drawn as the model when the settings name one: its prisms in the model's sockets, the model in
                     // the same domain as the hull (the theme's ship material), its jets and wings flying the turns.
                     _ark.UseModel(_cfg.ArkModel, ToyFactory.Theme(_context));
+                    // The omni crystal aboard powers its regrowth; it refuels at the cores no pilot emptied first.
+                    _ark.UseReactor(_cfg.ArkReactor);
                     await _ark.LayHullAsync(_cfg.PrismPrefab, vessel.Domain,
                         _cfg.ArkHullLength, _cfg.ArkSpeed, ct);
 

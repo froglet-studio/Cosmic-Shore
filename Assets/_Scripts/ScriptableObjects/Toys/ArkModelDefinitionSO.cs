@@ -6,9 +6,10 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// The model an <see cref="CosmicShore.Gameplay.Ark"/> is drawn with and how it moves: the FBX, its rig table
     /// (<see cref="CosmicShore.Gameplay.ArkRigTable"/>: the sockets the hull's prisms regenerate into and the takes the
-    /// jets and wings play), the Domain-slot material the Ark's domain replaces, and how hard a turn must be to play a
-    /// take in full. Every Ark that is given one (<see cref="CosmicShore.Gameplay.Ark.UseModel"/>) is this model; an
-    /// Ark without one keeps the procedural spindle hull.
+    /// jets and wings play), the Domain-slot material the Ark's domain replaces, how hard a turn must be to play a
+    /// take in full, how the action takes play (the lance on a payload, the hangar for a squadmate in reach) and how
+    /// the reactor's omni crystal shows the charge. Every Ark that is given one
+    /// (<see cref="CosmicShore.Gameplay.Ark.UseModel"/>) is this model; an Ark without one keeps the procedural spindle hull.
     /// </summary>
     [CreateAssetMenu(fileName = "ArkModel", menuName = "ScriptableObjects/Toys/Ark Model")]
     public sealed class ArkModelDefinitionSO : ScriptableObject
@@ -50,6 +51,27 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f), Tooltip("Scale on every take. Capped at 1: the model's clearance gate proved one full take per bone (a bone two inputs move shares it), not more.")]
         float amplitude = 1f;
 
+        [Header("Actions - the model's other takes, played on events")]
+        [SerializeField, Min(0.1f), Tooltip("Seconds the lance stays out of its cradles after the hold hands a payload over.")]
+        float releaseSeconds = 1.2f;
+
+        [SerializeField, Min(0f), Tooltip("How close to the Ark a squadmate must be for the hangar to open. 0 = the hold's grab " +
+                                          "reach (PayloadConfig), so the open hangar says a payload can be taken here.")]
+        float hangarReach;
+
+        [SerializeField, Min(0.01f), Tooltip("Seconds the actions and the reactor's crystal take to follow (exponential).")]
+        float actionResponse = 0.3f;
+
+        [Header("Reactor - the omni crystal in the well")]
+        [SerializeField, Range(0.05f, 1f), Tooltip("The crystal's size when the reactor is spent, as a fraction of its built size: a seed, never nothing.")]
+        float emptyCrystalScale = 0.35f;
+
+        [SerializeField, Min(0f), Tooltip("Degrees per second the crystal's collar turns while the reactor holds charge.")]
+        float collarSpinIdle = 12f;
+
+        [SerializeField, Min(0f), Tooltip("Degrees per second the collar turns while the hull is regrowing.")]
+        float collarSpinRegrowing = 90f;
+
         public GameObject Model => model;
         public TextAsset RigTable => rigTable;
         public float Scale => scale;
@@ -60,5 +82,11 @@ namespace CosmicShore.ScriptableObjects
         public float AccelFull => accelFull;
         public float Response => response;
         public float Amplitude => amplitude;
+        public float ReleaseSeconds => releaseSeconds;
+        public float HangarReach => hangarReach;
+        public float ActionResponse => actionResponse;
+        public float EmptyCrystalScale => emptyCrystalScale;
+        public float CollarSpinIdle => collarSpinIdle;
+        public float CollarSpinRegrowing => collarSpinRegrowing;
     }
 }

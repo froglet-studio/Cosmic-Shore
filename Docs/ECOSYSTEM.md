@@ -7514,6 +7514,16 @@ them. A blade the hold hands to a payload carrier (`Ark.TakeHullPrisms`) leaves 
 and the model's riders, since it is the carrier's to move. No CPU animation of a prism is introduced: the riders move because their parent bone does,
 the fauna-body pattern.
 
+**The Ark's reactor (Oct 2026)** is the one place mass is MADE, by the designer's fourth sign-off
+(`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`): the omni crystal's power regrows the Ark's own hull.
+Every hull prism has a slot (where it was laid, on what), and `Ark.RegrowOne` grows one prism into
+the empty slot nearest the reactor, one prism of charge each, through `PrismTrailBuilder.LayOne`
+(`watchForReveal: false`, a continuous source like the wake). A slot the food web emptied keeps its
+place in the full-health count; a slot the hold emptied gets its plating back, so `TotalCount` rises
+with it. The Ark refuels under way from omni crystals within reach (`ArkReactorSO.harvestRadius`
+160, above `CellConveyor.ArriveDistance`), which is where each traversal cell's core lies, unless a
+pilot took the core first. A fallen Ark never regrows.
+
 ### 41.3 Mass accounting, stated plainly
 
 - **The hull is conserved mass while it lives.** Fauna eating it is the food web. Its volume

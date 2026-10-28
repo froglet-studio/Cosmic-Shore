@@ -59,6 +59,11 @@ namespace CosmicShore.ScriptableObjects
                                  "Empty keeps the procedural spindle hull.")]
         ArkModelDefinitionSO arkModel;
 
+        [SerializeField, Tooltip("The Ark's reactor: the omni crystal aboard powers its hull's regrowth, and it harvests the omni " +
+                                 "crystals it reaches that no pilot took first (each traversal cell's core lies on its course). " +
+                                 "Empty: the hull never regrows.")]
+        ArkReactorSO arkReactor;
+
         [SerializeField, Min(0f), Tooltip("Units of travel between WAKE prisms - the ribbon the Ark " +
                                           "leaves behind. Ordinary conserved mass in the Ark's domain: " +
                                           "grazeable, rideable, and struck with the cell it was laid " +
@@ -158,6 +163,7 @@ namespace CosmicShore.ScriptableObjects
             ArkCruiseSpeedFactor = arkCruiseSpeedFactor,
             ArkHullLength = arkHullLength,
             ArkModel = arkModel,
+            ArkReactor = arkReactor,
             ArkWakeSpacing = arkWakeSpacing,
             ArkWakeScale = arkWakeScale,
             ArkWakeBudget = arkWakeBudget,

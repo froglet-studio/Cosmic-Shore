@@ -23,6 +23,7 @@ namespace CosmicShore.Tests
         const string DefinitionPath = "Assets/_SO_Assets/Toys/ArkReverseModel.asset";
         const string ArkwaySettingsPath = "Assets/_SO_Assets/Toys/Wander_WithArk.asset";
         const string DomainPlaceholderPath = "Assets/_Graphics/Materials/GreenAccentVesselMaterial.mat";
+        const string ReactorPath = "Assets/_SO_Assets/Toys/ArkReactor.asset";
 
         static ArkRigTable LoadTable()
         {
@@ -155,6 +156,82 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void RigTable_ActionTakes_SlideTheLanceAndOpenTheHangar()
+        {
+            var table = LoadTable();
+            ArkRigTable.Bone Find(string name) => table.bones.FirstOrDefault(b => b.bone == name);
+
+            var lance = Find("payload");
+            Assert.IsNotNull(lance, "the table does not carry the lance's release take");
+            Assert.AreEqual(20f, lance.ReleaseMove.magnitude, 0.05f, "the release take slides the lance 20 out of its cradles");
+            foreach (var door in new[] { "hangar.door.T", "hangar.door.B" })
+            {
+                var bone = Find(door);
+                Assert.IsNotNull(bone, $"the table does not carry {door}'s hangarOpen take");
+                float angle = Quaternion.Angle(Quaternion.identity, ArkRigTable.Q(bone.hangarOpen));
+                Assert.That(angle, Is.InRange(60f, 80f), $"{door} opens {angle:0.#} degrees");
+            }
+        }
+
+        [Test]
+        public void Reactor_TakesOnlyAWholeCrystal_AndSpendsOnePrismAtATime()
+        {
+            var reactor = new ArkReactor(prismsPerCrystal: 36, capacityCrystals: 2f, startingCrystals: 1f);
+            Assert.AreEqual(36f, reactor.Charge, 1e-4f, "one crystal aboard at the start");
+            Assert.AreEqual(0.5f, reactor.Fill01, 1e-4f);
+            Assert.IsTrue(reactor.HasRoomForCrystal);
+            Assert.IsTrue(reactor.TryHarvest());
+            Assert.AreEqual(72f, reactor.Charge, 1e-4f);
+            Assert.IsFalse(reactor.TryHarvest(), "a full reactor leaves the crystal for the pilots");
+
+            Assert.IsTrue(reactor.TrySpend());
+            Assert.AreEqual(71f, reactor.Charge, 1e-4f);
+            Assert.IsFalse(reactor.HasRoomForCrystal, "35 of room is not a whole crystal: it would waste one");
+
+            var spent = new ArkReactor(36, 1f, 0f);
+            Assert.IsFalse(spent.CanRegrow);
+            Assert.IsFalse(spent.TrySpend(), "a spent reactor grows nothing");
+            Assert.AreEqual(0f, spent.Charge);
+        }
+
+        [Test]
+        public void Reactor_RegrowsTheEmptySlotNearestTheReactor()
+        {
+            var positions = new List<Vector3> { new(0, 0, 50), new(0, 0, 5), new(0, 0, -5), new(0, 0, -60) };
+            var empty = new List<bool> { true, false, true, true };
+            Assert.AreEqual(2, ArkReactor.NearestEmpty(positions, empty, Vector3.zero), "the seated slot at 5 is skipped");
+            Assert.AreEqual(-1, ArkReactor.NearestEmpty(positions, new List<bool> { false, false, false, false }, Vector3.zero));
+        }
+
+        [Test]
+        public void EveryArkwayVoyage_HasAReactor()
+        {
+            var reactor = AssetDatabase.LoadAssetAtPath<ArkReactorSO>(ReactorPath);
+            Assert.IsNotNull(reactor, ReactorPath);
+            Assert.Greater(reactor.StartingCrystals, 0f, "the Ark sails with the omni crystal aboard");
+            Assert.GreaterOrEqual(reactor.CapacityCrystals, reactor.StartingCrystals);
+            Assert.Greater(reactor.HarvestRadius, CellConveyor.ArriveDistance,
+                "a core crystal no pilot took must be within reach when the Ark arrives at the core");
+            foreach (var guid in AssetDatabase.FindAssets("t:ArkwaySettingsSO"))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var settings = AssetDatabase.LoadAssetAtPath<ArkwaySettingsSO>(path);
+                Assert.AreEqual(reactor, settings.BuildConfig("test").ArkReactor, $"{path} gives its Ark no reactor");
+            }
+        }
+
+        [Test]
+        public void SocketLays_AreTheModelsHull_ForTheEmblem()
+        {
+            var definition = AssetDatabase.LoadAssetAtPath<ArkModelDefinitionSO>(DefinitionPath);
+            var lays = ArkModel.SocketLays(definition, Domains.Ruby);
+            Assert.IsNotNull(lays);
+            Assert.AreEqual(LoadTable().sockets.Length, lays.Count);
+            Assert.IsTrue(lays.All(l => l.Domain == Domains.Ruby));
+            Assert.IsNull(ArkModel.SocketLays(null, Domains.Ruby), "no definition: the emblem falls back to the spindle");
+        }
+
+        [Test]
         public void Model_HasEveryBoneTheTablePuppetsAndEverySocketRides()
         {
             var table = LoadTable();
@@ -165,6 +242,9 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(names.Contains(bone.bone), $"the model has no bone '{bone.bone}' (optimizeBones strips a bone that skins nothing)");
             foreach (var socket in table.sockets.Where(s => !s.RidesHull))
                 Assert.IsTrue(names.Contains(socket.bone), $"socket {socket.name} rides '{socket.bone}', which the model lacks");
+            // The reactor's crystal and collar are bound by name (ArkModel.ReactorPivot).
+            foreach (var bone in new[] { "omni", "omni.ring" })
+                Assert.IsTrue(names.Contains(bone), $"the model has no '{bone}': the reactor has nothing to show its charge with");
         }
     }
 }

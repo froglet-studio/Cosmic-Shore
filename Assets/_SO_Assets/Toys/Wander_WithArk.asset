@@ -18,6 +18,7 @@ MonoBehaviour:
   arkCruiseSpeedFactor: 4
   arkHullLength: 110
   arkModel: {fileID: 11400000, guid: 8caf2baf516a4c169ca47fe0558a3c2c, type: 2}
+  arkReactor: {fileID: 11400000, guid: 5e8973a51ced43f9a809a069d31a8ee1, type: 2}
   arkWakeSpacing: 45
   arkWakeScale: {x: 6, y: 6, z: 12}
   arkWakeBudget: 400

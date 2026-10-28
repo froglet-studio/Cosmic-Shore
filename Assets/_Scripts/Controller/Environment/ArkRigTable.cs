@@ -57,15 +57,21 @@ namespace CosmicShore.Gameplay
             public bool RidesHull => string.IsNullOrEmpty(bone) || bone == HullBone;
         }
 
-        /// <summary>One puppeted bone: the rotation each flight take applies to it (empty = the take leaves it).</summary>
+        /// <summary>
+        /// One puppeted bone: the rotation each flight take applies to it (empty = the take leaves it), and the ACTION
+        /// takes the game plays on events - <c>release</c> (the lance slides out, its slide in <c>releaseMove</c>) and
+        /// <c>hangarOpen</c> (the hangar's doors).
+        /// </summary>
         [Serializable]
         public sealed class Bone
         {
             public string bone;
             public float[] head;
             public float[] pitchUp, pitchDown, yawRight, yawLeft, rollRight, rollLeft, speedUp, speedDown;
+            public float[] release, releaseMove, hangarOpen;
 
             public Vector3 Head => ArkRigTable.V3(head);
+            public Vector3 ReleaseMove => ArkRigTable.V3(releaseMove);
         }
 
         /// <summary>Parse a table; null (with the reason) when the text is not one.</summary>

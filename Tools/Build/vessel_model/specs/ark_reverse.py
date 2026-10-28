@@ -1542,11 +1542,18 @@ def build(ctx):
                                  "up": U(upn), "size": [round(v, 4) for v in size], "bone": jaw_socket.get(nm_, "hull")})
     INPUTS = (("pitchUp", "pitchup"), ("pitchDown", "pitchdown"), ("yawRight", "yawright"), ("yawLeft", "yawleft"),
               ("rollRight", "rollright"), ("rollLeft", "rollleft"), ("speedUp", "speedup"), ("speedDown", "speeddown"))
+    # The ACTIONS the game plays on events, not on the turn: the lance slides out when the hold hands a payload over,
+    # the hangar opens while a squadmate is in grab reach. A take's translation (the lance's) rides as `<field>Move`,
+    # in model space like the rotation.
+    ACTIONS = (("release", "release"), ("hangarOpen", "hangaropen"))
     moved = {}
-    for field, take in INPUTS:
+    for field, take in INPUTS + ACTIONS:
         for b_, spec_ in poses[take].items():
             rot = spec_.get("rot", (0, 0, 0)) if isinstance(spec_, dict) else spec_
+            loc = spec_.get("loc", (0, 0, 0)) if isinstance(spec_, dict) else (0, 0, 0)
             moved.setdefault(b_, {})[field] = Uq(rot)
+            if any(abs(v) > 1e-9 for v in loc):
+                moved[b_][field + "Move"] = U(loc)
     for b_ in sorted(moved):
         entry = {"bone": b_, "head": U(arm.data.bones[b_].head_local)}
         entry.update(moved[b_])

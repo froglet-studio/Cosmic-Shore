@@ -17,6 +17,12 @@ namespace CosmicShore.Gameplay
 
         bool IsImpacting;
 
+        // An Ark's reactor is drawing this crystal in: its flight outlasts the impact latch, and nothing else may
+        // take it (or the Ark take it twice) on the way.
+        bool _harvesting;
+
+        void OnEnable() => _harvesting = false;
+
         /// <summary>
         /// Omni crystals are collectible by any vessel regardless of domain.
         /// Override in <see cref="TeamCrystalImpactor"/> for strict domain matching.
@@ -116,7 +122,7 @@ namespace CosmicShore.Gameplay
         /// must not be a way around a gate a hull cannot pass.
         /// </summary>
         public bool CanBlastConsume(Domains blastDomain) =>
-            !IsNetworkClient() && !IsImpacting
+            !IsNetworkClient() && !IsImpacting && !_harvesting
             && Crystal != null && !Crystal.IsExploding
             && IsDomainMatching(blastDomain);
 
@@ -158,6 +164,116 @@ namespace CosmicShore.Gameplay
                 Crystal.Explode(explode);
 
             Crystal.Respawn();
+        }
+
+        /// <summary>
+        /// True when an Ark of <paramref name="arkDomain"/> may harvest this crystal now: the gate a blast or a vessel
+        /// passes (domain, not mid-impact, not exploding, not a network client), and never a living heart.
+        /// </summary>
+        public bool CanHarvest(Domains arkDomain) => CanBlastConsume(arkDomain) && !Crystal.IsEmbedded;
+
+        /// <summary>
+        /// An ARK takes this crystal into its reactor (<see cref="CosmicShore.ScriptableObjects.ArkReactorSO"/>; Garrett,
+        /// 2026-10-28). An Ark is the one body that contains an omni crystal and harvests its power instead of morphing
+        /// it into something else, so no vessel effect runs: the crystal flies into <paramref name="reactor"/> on the
+        /// project's capture feel (<see cref="CrystalCaptureConfigSO"/>: snatch, suction, absorb) and dissolves there,
+        /// with its pickup sound and no husk (its body went into the well). The caller credits the power at this call,
+        /// as scoring is credited at contact, never at the end of a flourish. A crystal a manager owns is the manager's
+        /// to retire and respawn, so it takes the blast path's explode-and-respawn instead of a flight it would fight.
+        /// Returns false, changing nothing, when the crystal cannot be taken.
+        /// </summary>
+        public bool HarvestInto(Domains arkDomain, Transform reactor)
+        {
+            if (!reactor || !CanHarvest(arkDomain)) return false;
+
+            IsImpacting = true;
+            WaitForImpact().Forget();
+
+            OnCrystalCollected?.Raise(
+                new CrystalStats()
+                {
+                    PlayerName = string.Empty,   // an Ark is not a pilot: nobody scores the harvest
+                    Element = Crystal.crystalProperties.Element,
+                    Value = Crystal.crystalProperties.crystalValue,
+                }
+            );
+
+            if (Crystal.CrystalManager != null)
+            {
+                Vector3 toward = reactor.position - Crystal.transform.position;
+                Crystal.NotifyManagerToExplodeCrystal(new Crystal.ExplodeParams
+                {
+                    Course = toward.sqrMagnitude > 1e-4f ? toward.normalized : Vector3.forward,
+                    Speed = 0f,
+                    PlayerName = string.Empty,
+                });
+                Crystal.Respawn();
+                return true;
+            }
+
+            _harvesting = true;
+            FlyIntoReactor(reactor).Forget();
+            return true;
+        }
+
+        async UniTaskVoid FlyIntoReactor(Transform reactor)
+        {
+            var crystal = Crystal;
+            if (crystal.TryGetComponent(out Collider col)) col.enabled = false;
+            // The idle tumble and the tint block are the flight's for its duration (the capture's own rule).
+            foreach (var spinner in crystal.GetComponentsInChildren<CosmicShore.UI.JustRotate>(true)) spinner.canRotate = false;
+            crystal.BeginCaptureVisual();
+
+            var cfg = CrystalCaptureConfigSO.Load();
+            var t = crystal.transform;
+            Vector3 baseScale = t.localScale;
+            Quaternion baseRotation = t.rotation;
+            float radius = Mathf.Max(0.01f, t.lossyScale.x);
+            Vector3 start = t.position;
+            Vector3 target = reactor ? reactor.position : start;
+            Vector3 toReactor = target - start;
+            Vector3 away = toReactor.sqrMagnitude > 1e-4f ? -toReactor.normalized : UnityEngine.Random.onUnitSphere;
+            Vector3 anchor = start + away * (cfg.SnatchRecoilRadii * radius);
+            Vector3 arcAxis = Vector3.Cross(toReactor.sqrMagnitude > 1e-4f ? toReactor : away, Vector3.up);
+            arcAxis = arcAxis.sqrMagnitude > 1e-4f ? arcAxis.normalized : Vector3.right;
+            Vector3 spinAxis = UnityEngine.Random.onUnitSphere;
+
+            float elapsed = 0f;
+            float total = cfg.TotalDuration;
+            while (elapsed < total)
+            {
+                if (!crystal) return;   // its cell was struck mid-flight: the power was already credited
+                var phase = cfg.ResolvePhase(elapsed, out float u);
+                if (phase == CrystalCaptureConfigSO.Phase.Done) break;
+
+                // Track the reactor live: the Ark is under way.
+                if (reactor) target = reactor.position;
+                Vector3 position = phase switch
+                {
+                    CrystalCaptureConfigSO.Phase.Snatch =>
+                        Vector3.LerpUnclamped(start, anchor, CrystalCaptureConfigSO.SnatchProgress01(u)),
+                    CrystalCaptureConfigSO.Phase.Suction =>
+                        Vector3.LerpUnclamped(anchor, target, cfg.FlightProgress01(u))
+                        + arcAxis * (CrystalCaptureConfigSO.ArcOffset01(u) * cfg.SuctionArcRadii * radius),
+                    _ => target,
+                };
+                t.SetPositionAndRotation(position, baseRotation * Quaternion.AngleAxis(cfg.SpinDegrees(phase, u), spinAxis));
+                t.localScale = baseScale * cfg.ScaleMultiplier(phase, u);
+                crystal.ApplyCaptureVisual(cfg.FlareMultiplier(phase, u), CrystalCaptureConfigSO.Opacity(phase, u));
+
+                elapsed += Time.deltaTime;
+                await UniTask.Yield(PlayerLoopTiming.Update);
+            }
+            if (!crystal) return;
+
+            crystal.Explode(new Crystal.ExplodeParams
+            {
+                Course = reactor ? reactor.forward : Vector3.forward,
+                Speed = 0f,
+                PlayerName = string.Empty,
+                SuppressHusk = true,
+            });
+            crystal.Respawn();
         }
 
         void ExecuteEffect(VesselImpactor vesselImpactee)

@@ -106,8 +106,14 @@ artifact). The four cards of a slot each decide one thing:
 | **Cost** | the Ark itself. Every payload thins the hull that protects every artifact aboard |
 
 **Why it is made of the Ark's own mass.**
-- *Mass is conserved:* nothing is minted. A payload is existing prisms moved off the Ark, and it spends itself
-  (an active force) when it fires. So the payload supply is the Ark's hull, and the Ark does not regrow.
+- *Mass is conserved:* a payload mints nothing. It is existing prisms moved off the Ark, and it spends itself
+  (an active force) when it fires. So the payload supply is the Ark's hull.
+- *The hull regrows only on omni power* (Garrett, 2026-10-28: "the omnicrystal on board the ark powers the prism
+  creation. arks are the only vessel that can contain and harvest the power of an omnicrystal instead of morphing it
+  into something else"). The Ark's reactor holds one omni crystal's power at the start of a voyage and regrows an
+  emptied socket, payload-taken ones included, at one prism of charge each. It refuels by harvesting the omni crystals
+  it reaches that no pilot took first. A pilot who takes a cell's core crystal gets their vessel's omni effect, and
+  the Ark goes without (`ArkReactorSO`; the fourth sign-off in `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`).
 - *The Ark lives or dies by the food web* (`Docs/ECOSYSTEM.md` §41). Here that becomes the central tension: **every
   payload you fire makes your treasure easier to take.**
 
@@ -194,7 +200,8 @@ an element level:
   - *Protecting an Ark IS controlling the cell:* fauna defend or eat it by the shipped diet rules.
   - Your scored hits **silence raiders**, and a silenced pilot cannot harm an Ark's health prisms (`SILENCE.md`).
   - **Aegis** shields the hull, and **Keystone** walls it.
-  - Every payload you fire thins your own hull.
+  - Every payload you fire thins your own hull, until omni power regrows it. Leaving the cells' core crystals to your
+  Ark is a defence too.
 - **If fauna finish an Ark, nobody earned it, so its artifacts spill** (Garrett, 2026-10-27). They become loose
   objects in the world, and anyone can grab one with RB and carry it to their own Ark. **An artifact nobody collects is
   lost when the instance expires.** It is gone for good, not returned to its owner.
@@ -225,7 +232,8 @@ super-shielded, and GALLEON shows Arks.
 
 ## 7. Rules (summary)
 
-1. Payloads come out of the Ark's hull. Nothing is minted.
+1. Payloads come out of the Ark's hull, and a payload mints nothing. The hull regrows only on the omni power in the
+   Ark's reactor (§2).
 2. A plain payload cracks super-shielded and shielded prisms in a radius. It is the second sanctioned super-shield
    crack, after the Grizzly sniper's.
 3. No artifact names a vessel class. One that must lean on a vessel names a shared concept the fleet has.
