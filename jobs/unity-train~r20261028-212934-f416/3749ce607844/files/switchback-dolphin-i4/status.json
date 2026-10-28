@@ -1,1 +1,1 @@
-{"phase": "training", "scenario": "Dolphin_Switchback_I4", "episodes_total": 8, "unit_episodes": 10, "episodes": 8, "generation": 0, "best_fitness": -119.48568725585938, "loss": 119.48568725585938, "updated": 1793203793.329}
+{"phase": "loading the match", "scenario": "Dolphin_Switchback_I4", "episodes_total": 12, "unit_episodes": 10, "episodes": 12, "generation": 0, "best_fitness": -119.48568725585938, "loss": 119.48568725585938, "updated": 1793203887.138}

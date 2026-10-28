@@ -1,10 +1,12 @@
 {
  "done": false,
  "files": [
-  "status.json"
+  "status.json",
+  "result.json",
+  "genome.json"
  ],
- "progress": 0.8,
+ "progress": 1.2,
  "score": 119.48568725585938,
  "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
- "updated": 1793203793
+ "updated": 1793204400
 }
