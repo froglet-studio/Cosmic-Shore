@@ -458,8 +458,7 @@ def main():
     # rectangle. Sized at the zero-overlap maximum, so the plates are as large as they
     # can be while still literally never interpenetrating.
     #
-    # Mass: chunkier, exactly as the gyroid's Mass is chunkier than its Charge/Time -
-    # a squarer footprint AND a thicker slab. Still measured at zero overlap.
+    # Mass: no longer fitted here (see below) - the chunky slab it used to take is still measured, for the report.
     #
     # Space: the largest aspect, and the ONE element that is not a flush plate. It is a
     # STRUT that deliberately spans several site spacings so the structure reads
@@ -481,23 +480,19 @@ def main():
     space_spacing = float(np.mean(sd.min(axis=0)))
     space = space_leaf()
 
-    # CHARGE IS NO LONGER THIS FITTER'S TO SIZE, and re-imposing the flush fit here would
-    # silently revert it depending on which script ran last - the exact run-order hazard
-    # write_variant's own comment warns about. Charge SHIELDS (Flora.ResolveShieldPeriod),
-    # and a shield is the CIRCUMSCRIBING octahedron - 3x the prism's reach - so what decides
-    # its size is whether those octahedra interpenetrate, not whether the plates do. That is
-    # fitted by Tools/Build/fit_shield_clearance.py (Docs/ECOSYSTEM.md 35); this reads it
-    # back so the report and the writes both describe what actually ships.
-    charge = shipped_leaf("Charge")
-    print(f"\n  NOTE Charge is sized by fit_shield_clearance.py, not by the flush fit: its")
-    print(f"       shields are 3x its plates and they, not the plates, are what crowd. The")
-    print(f"       flush fit would be {pleasant[0]:g} x {pleasant[1]:g} x {pleasant[2]:g}; "
-          f"it ships {charge[0]:g} x {charge[1]:g} x {charge[2]:g}.")
+    # MASS IS NOT THIS FITTER'S TO SIZE (2026-10-28, Docs/ECOSYSTEM.md 65): Mass is the ARMOURED element and has
+    # SIZE - Time's plate at the Mass volume on a lattice grown until its octahedra and its heart's swing clear -
+    # which Tools/Build/fit_shield_clearance.py fits (leaf AND LatticeScale). This reads it back, so the report and
+    # the writes describe what actually ships and the two tools cannot revert each other. CHARGE is this fitter's
+    # again: it is unshielded now (every prism a danger prism), so it takes the flush reference plate with Time.
+    mass = shipped_leaf("Mass")
+    print(f"\n  NOTE Mass is sized by fit_shield_clearance.py (armoured, grown): it ships "
+          f"{mass[0]:g} x {mass[1]:g} x {mass[2]:g}; the chunky flush fit it used to take "
+          f"would be {chunky[0]:g} x {chunky[1]:g} x {chunky[2]:g}.")
 
     elements = [
-        ("Charge", charge, (86, 196, 232)),
+        ("Charge", pleasant, (86, 196, 232)),
         ("Time", pleasant, (150, 214, 130)),
-        ("Mass", chunky, (232, 168, 96)),
         ("Space", space, (196, 140, 232)),
     ]
 

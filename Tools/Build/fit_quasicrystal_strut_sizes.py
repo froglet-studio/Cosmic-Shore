@@ -27,17 +27,22 @@ authored is an edit in the direction nobody is looking (Docs/ECOSYSTEM.md
 34.10).
 
   * Time   - the reference strut.
-  * Mass   - the heavy element: thick, and short by consequence (a fat tip
-             needs more clearance at a 63-degree node).
+  * Mass   - ARMOURED and has SIZE (2026-10-28, Docs/ECOSYSTEM.md 65): Time's
+             strut at the lattice law's Mass volume (x1.279 on every axis), on a
+             lattice x3.868 - the lattice on which Time's own strut's octahedra
+             clear by 10% (x3.0251, bisected over the pair census), times 1.279 -
+             with its own HEART SEAT (FloraVariantTuning.HeartSeatInset 36.5u):
+             the struts touching a heart hold back until their octahedra clear the
+             Mass heart's full swing (mass_armour_lib.swing_need(), 12.44u). The
+             seat is Garrett's call over growing the whole plant x2.95 for it.
   * Space  - reach: LatticeScale 2 doubles the edge; the strut spans it.
-  * Charge - ARMOURED (Flora.ResolveShieldPeriod floors every Charge flora at
-             a 1s cadence): the shield is the octahedron CIRCUMSCRIBING the
-             box at 3x the half-extents (Docs/ECOSYSTEM.md 35), so Charge is
-             checked TWICE - plain struts flush, and the octahedra flush - and
-             its authored leaf is short enough to leave the armour room. NOTE:
-             Tools/Build/fit_shield_clearance.py does NOT know this species -
-             THIS script owns the Charge leaf, and says so, because two
-             fitters must never own one asset field (Docs/ECOSYSTEM.md 35.3).
+  * Charge - every strut a DANGER prism and never shielded (it was the
+             armoured element until 2026-10-28): it takes Time's strut.
+  The ARMOURED element (Mass) is checked THREE times - plain struts flush, the
+  octahedra (3x the box, Docs/ECOSYSTEM.md 35) flush, and the octahedra clear of
+  the heart's swing. Tools/Build/fit_shield_clearance.py does NOT know this
+  species - THIS script owns its leaves, and says so, because two fitters must
+  never own one asset field (Docs/ECOSYSTEM.md 35.3).
 
 THE HEART SEAT
 --------------
@@ -73,6 +78,7 @@ import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from verify_icosahedral_quasilattice_tables import Lattice, parse_cs  # noqa: E402
+import mass_armour_lib as armour  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 LIFEFORMS = ROOT / "Assets/_SO_Assets/Lifeforms"
@@ -104,9 +110,9 @@ GRAZE_TOLERANCE_EDGE_FRACTION = 0.005
 # Charge shorter still: a short strut is what leaves its 3x shield room.
 ELEMENTS = {
     "Time":   dict(leaf=(22.0, 1.0, 1.0), lattice_scale=1.0),
-    "Mass":   dict(leaf=(15.0, 3.0, 3.0), lattice_scale=1.0),
+    "Mass":   dict(leaf=(28.128, 1.278, 1.278), lattice_scale=3.868, shielded=True, heart_seat=36.5),
     "Space":  dict(leaf=(44.0, 0.7, 0.7), lattice_scale=2.0),
-    "Charge": dict(leaf=(7.0, 1.0, 1.0), lattice_scale=1.0, shielded=True),
+    "Charge": dict(leaf=(22.0, 1.0, 1.0), lattice_scale=1.0),
 }
 
 PATCH_VERTS = 9000   # struts for the pair census; every angle class appears many times
@@ -324,7 +330,7 @@ def flush_length(lat, classes, frames, cross, lattice_scale):
     return math.floor(lo * 100) / 100
 
 
-def verify_leaf(lat, classes, frames, leaf, lattice_scale, name, f):
+def verify_leaf(lat, classes, frames, leaf, lattice_scale, name, f, heart_seat=HEART_SEAT):
     """Prove an AUTHORED leaf. Flush is the goal; a graze under
     GRAZE_TOLERANCE_EDGE_FRACTION passes with its depth REPORTED, so an
     accepted hairline is a stated number rather than something found later."""
@@ -332,7 +338,7 @@ def verify_leaf(lat, classes, frames, leaf, lattice_scale, name, f):
     tolerance = GRAZE_TOLERANCE_EDGE_FRACTION * edge_world
     worst, grazing, deepest = 10.0, 0, 0.0
     for cls in classes:
-        (ca, ia, la), (cb, ib, lb) = class_struts(lat, cls, edge_world, leaf[0], HEART_SEAT)
+        (ca, ia, la), (cb, ib, lb) = class_struts(lat, cls, edge_world, leaf[0], heart_seat)
         hA = (la / 2, leaf[1] / 2, leaf[2] / 2)
         hB = (lb / 2, leaf[1] / 2, leaf[2] / 2)
         worst = min(worst, obb_touch_scale(ca, hA, frames[ia], cb, hB, frames[ib]))
@@ -354,14 +360,14 @@ def verify_leaf(lat, classes, frames, leaf, lattice_scale, name, f):
 
 
 def measure_heart_seat(lat, seat_classes, frames, plain_len, half_y, half_z,
-                       edge_world, n_hearts, f, label):
+                       edge_world, n_hearts, f, label, heart_seat=HEART_SEAT):
     """Clear radius at a heart: distance from the vertex to the nearest strut OBB
     over every (heart, nearby strut) configuration class - incident struts hold
     back by construction; this also catches any non-incident strut passing near."""
     worst = 1e9
     for i, delta, ha, hb in seat_classes:
         (c, _, ln), _ = class_struts(lat, (i, i, (0,) * 6, ha, hb, ha, hb),
-                                     edge_world, plain_len, HEART_SEAT)
+                                     edge_world, plain_len, heart_seat)
         origin = lat.par_of(delta) * edge_world   # strut minus-end relative to the heart
         c = origin + c
         x, y, z = frames[i]
@@ -375,11 +381,11 @@ def measure_heart_seat(lat, seat_classes, frames, plain_len, half_y, half_z,
     f.check(worst >= CRYSTAL_NEED,
             f"{label}: every heart's crystal seat is clear",
             f"min clear radius {worst:.2f}u >= authored-heart need {CRYSTAL_NEED}u "
-            f"(seat inset {HEART_SEAT}u, {len(seat_classes)} seat classes, "
+            f"(seat inset {heart_seat:g}u, {len(seat_classes)} seat classes, "
             f"{n_hearts} hearts in patch)")
 
 
-def shield_census(lat, classes, frames, leaf, edge_world, name, f):
+def shield_census(lat, classes, frames, leaf, edge_world, name, f, heart_seat=HEART_SEAT):
     """Charge is ARMOURED, and a shield is the octahedron CIRCUMSCRIBING the box at
     3x its half-extents (Docs/ECOSYSTEM.md 35) - so an armoured species must be
     proven for a body 3x its prism's reach, not just for the prism. This is the
@@ -387,7 +393,7 @@ def shield_census(lat, classes, frames, leaf, edge_world, name, f):
     worst = 10.0
     over = 0
     for cls in classes:
-        (ca, ia, la), (cb, ib, lb) = class_struts(lat, cls, edge_world, leaf[0], HEART_SEAT)
+        (ca, ia, la), (cb, ib, lb) = class_struts(lat, cls, edge_world, leaf[0], heart_seat)
         rA = (SHIELD_SCALE * la / 2, SHIELD_SCALE * leaf[1] / 2, SHIELD_SCALE * leaf[2] / 2)
         rB = (SHIELD_SCALE * lb / 2, SHIELD_SCALE * leaf[1] / 2, SHIELD_SCALE * leaf[2] / 2)
         sc = octa_touch_scale(ca, rA, frames[ia], cb, rB, frames[ib])
@@ -400,11 +406,27 @@ def shield_census(lat, classes, frames, leaf, edge_world, name, f):
     return worst
 
 
+def swing_census(lat, seat_classes, frames, leaf, edge_world, heart_seat, name, f):
+    """An ARMOURED plant's heart needs its whole swing clear of every OCTAHEDRON near it - incident struts and any
+    strut passing by - not just of the boxes (Docs/ECOSYSTEM.md 65): the Mass rule the fauna and the other lattice
+    species keep, measured exactly (mass_armour_lib.octahedron_distance)."""
+    need = armour.swing_need()
+    worst = 1e9
+    for i, delta, ha, hb in seat_classes:
+        (c, _, ln), _ = class_struts(lat, (i, i, (0,) * 6, ha, hb, ha, hb), edge_world, leaf[0], heart_seat)
+        c = lat.par_of(delta) * edge_world + c
+        semi = (SHIELD_SCALE * ln / 2, SHIELD_SCALE * leaf[1] / 2, SHIELD_SCALE * leaf[2] / 2)
+        worst = min(worst, armour.octahedron_distance(np.zeros(3), c, np.column_stack(frames[i]), semi))
+    f.check(worst >= need - 1e-6, f"{name}: the heart's full swing clears every octahedron",
+            f"min clear radius {worst:.2f}u >= {need:.2f}u (seat {heart_seat:g}u)")
+    return worst
+
+
 # ---------------------------------------------------------------------------
 # Authoring
 # ---------------------------------------------------------------------------
 
-def write_leaf(name, leaf, lattice_scale, failures):
+def write_leaf(name, leaf, lattice_scale, failures, heart_seat=None):
     path = LIFEFORMS / f"Quasicrystal Flora {name}.asset"
     if not path.exists():
         failures.check(False, f"missing asset {path.name}")
@@ -419,8 +441,16 @@ def write_leaf(name, leaf, lattice_scale, failures):
                           f"    LatticeScale: {lattice_scale:g}", text, count=1, flags=re.M)
         if n != 1:
             raise SystemExit(f"{path.name}: LatticeScale not found exactly once")
+    seat = heart_seat if heart_seat else -1
+    row = f"    HeartSeatInset: {seat:g}"
+    if re.search(r"^    HeartSeatInset: [-\d.]+$", text, re.M):
+        text = re.sub(r"^    HeartSeatInset: [-\d.]+$", row, text, count=1, flags=re.M)
+    elif heart_seat:
+        text, n = re.subn(r"^(    LatticeScale: [-\d.]+)$", r"\1\n" + row, text, count=1, flags=re.M)
+        if n != 1:
+            raise SystemExit(f"{path.name}: no LatticeScale row to put the HeartSeatInset after")
     path.write_text(text)
-    print(f"  wrote {path.name}: LeafSize {leaf}, LatticeScale {lattice_scale:g}")
+    print(f"  wrote {path.name}: LeafSize {leaf}, LatticeScale {lattice_scale:g}, HeartSeatInset {seat:g}")
 
 
 def shipped_leaf(name):
@@ -445,6 +475,12 @@ def shipped_lattice_scale(name):
         return None
     v = float(m.group(1))
     return 1.0 if v <= 0 else v
+
+
+def shipped_element_seat(name):
+    path = LIFEFORMS / f"Quasicrystal Flora {name}.asset"
+    m = re.search(r"^    HeartSeatInset: ([-\d.]+)$", path.read_text(), re.M) if path.exists() else None
+    return float(m.group(1)) if m and float(m.group(1)) > 0 else None
 
 
 def shipped_heart_seat():
@@ -499,13 +535,15 @@ def main() -> int:
         print(f"---- {name} " + "-" * (72 - len(name)))
         leaf, scale = spec["leaf"], spec["lattice_scale"]
         edge_world = EDGE * scale
-        fits[name] = (leaf, scale)
+        fits[name] = (leaf, scale, spec.get("heart_seat"))
 
-        verify_leaf(lat, pair_classes, frames, leaf, scale, name, f)
+        seat = spec.get("heart_seat", HEART_SEAT)
+        verify_leaf(lat, pair_classes, frames, leaf, scale, name, f, seat)
         if spec.get("shielded"):
-            shield_census(lat, pair_classes, frames, leaf, edge_world, name, f)
+            shield_census(lat, pair_classes, frames, leaf, edge_world, name, f, seat)
+            swing_census(lat, seat_classes, frames, leaf, edge_world, seat, name, f)
         measure_heart_seat(lat, seat_classes, frames, leaf[0], leaf[1] / 2, leaf[2] / 2,
-                           edge_world, n_hearts, f, name)
+                           edge_world, n_hearts, f, name, seat)
 
         # Headroom: what the geometry would allow at this cross-section, and the
         # gap the strut leaves at each node (the heart seat overrides it at 2.6).
@@ -520,10 +558,10 @@ def main() -> int:
 
     print("-" * 78)
     if args.write:
-        for name, (leaf, scale) in fits.items():
-            write_leaf(name, leaf, scale, f)
+        for name, (leaf, scale, seat) in fits.items():
+            write_leaf(name, leaf, scale, f, seat)
     else:
-        for name, (leaf, scale) in fits.items():
+        for name, (leaf, scale, seat) in fits.items():
             shipped = shipped_leaf(name)
             if args.check:
                 f.check(shipped is not None and all(abs(a - b) < 1e-6 for a, b in zip(shipped, leaf)),
@@ -533,6 +571,10 @@ def main() -> int:
                 f.check(shipped_scale is not None and abs(shipped_scale - scale) < 1e-6,
                         f"shipped {name} LatticeScale matches the fit's lattice",
                         f"shipped x{shipped_scale} vs fit x{scale:g}")
+                shipped_seat = shipped_element_seat(name)
+                f.check((shipped_seat or None) == seat,
+                        f"shipped {name} HeartSeatInset matches the fit's seat",
+                        f"shipped {shipped_seat} vs fit {seat}")
             else:
                 state = "SHIPPED" if shipped == leaf else f"shipped {shipped}"
                 print(f"  {name:<7} authored {leaf}  lattice x{scale:g}  ({state})")

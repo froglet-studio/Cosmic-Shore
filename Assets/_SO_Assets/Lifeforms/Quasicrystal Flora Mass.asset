@@ -27,9 +27,10 @@ MonoBehaviour:
   Element: 2
   Variant:
     Enabled: 1
-    LeafSize: {x: 15, y: 3, z: 3}
+    LeafSize: {x: 28.128, y: 1.278, z: 1.278}
     GrowPeriod: -1
-    LatticeScale: -1
+    LatticeScale: 3.868
+    HeartSeatInset: 36.5
     PlantScale: -1
     ShieldPeriod: 1
     WitherRingInterval: -1

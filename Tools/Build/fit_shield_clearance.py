@@ -1,10 +1,27 @@
 #!/usr/bin/env python3
 """
-Fit a SHIELDED lattice species' leaf size so its octahedra have room on its own lattice.
+Fit an ARMOURED (Mass) lattice species so its octahedra, and its heart's swing, have room on its own lattice.
 
     python3 Tools/Build/fit_shield_clearance.py            # measure + report every species
-    python3 Tools/Build/fit_shield_clearance.py --write    # + author the Charge assets
+    python3 Tools/Build/fit_shield_clearance.py --write    # + author the Mass (and gyroid Charge) assets
     python3 Tools/Build/fit_shield_clearance.py --check    # CI: assert the shipped fits
+
+THE ARMOUR MOVED TO MASS (2026-10-28, Docs/ECOSYSTEM.md 65)
+-----------------------------------------------------------
+Until 2026-10-28 the shielded element was CHARGE, and this tool shrank Charge's plate until its octahedra cleared
+(section 35, kept below as the history of the method). Garrett moved the shield to MASS, retired Mass's "chunky"
+plate, and gave Mass SIZE ("mass has size, it needs to add volume and it needs the crystal clearance. lets keep it
+consistent"); Charge's prisms are all danger now and need no fit. So a Mass plant is:
+
+  1. the anchor's (Time's) plate at the lattice law's Mass volume - x mass_armour_lib.mass_axis() (1.279) on every
+     axis, the shape kept, so it ADDS volume (x2.09 per prism, the leaf law's own Mass multiplier);
+  2. on a lattice grown (LatticeScale) until those plates' octahedra clear by CLEARANCE - a similarity of the Time
+     plate's own shield fit, so it is exact rather than searched;
+  3. then grown WHOLE again, if its heart's full swing (mass_armour_lib.swing_need(): the Mass crystal's 11.85 u
+     reach x 1.05, the Mass fauna's rule, Docs/ECOSYSTEM.md 64.8) does not clear every octahedron.
+
+The lattice tolerance family that 34.8 warns about scales with LatticeScale already (Space uses it on all three
+lattice species), so a grown Mass lattice drags nothing the assemblers do not scale.
 
 WHY THIS IS MEASURED AND NOT AUTHORED BY EYE
 --------------------------------------------
@@ -97,6 +114,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from verify_gyroid_lattice_scale import (  # noqa: E402
     MEASURED_SEPARATION, look_rotation, parse_bond_table,
 )
+import mass_armour_lib as armour  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 LIFEFORMS = ROOT / "Assets/_SO_Assets/Lifeforms"
@@ -104,6 +122,7 @@ OCTAHEDRON_CS = ROOT / "Assets/_Scripts/Utility/OctahedronMeshGenerator.cs"
 HEALTH_BLOCK = ROOT / "Assets/_Prefabs/Trails/HealthBlock.prefab"
 VARIANT_CS = ROOT / "Assets/_Scripts/Utility/DataContainers/FloraConfigurationSO.cs"
 FLORA_CS = ROOT / "Assets/_Scripts/Controller/Environment/FloraAndFauna/Flora.cs"
+OCTAGON_CS = ROOT / "Assets/_Scripts/Controller/Assemblers/GyroidOctagonData.cs"
 
 SITES = ("TopRight", "TopLeft", "BottomLeft", "BottomRight")
 ELEMENTS = ("Charge", "Mass", "Space", "Time")
@@ -219,7 +238,34 @@ def gyroid_frames(lattice_scale):
             nodes.append((child, Rc, e["BlockType"]))
             frontier.append(len(nodes) - 1)
 
+    gyroid_frames.types = [n[2] for n in nodes]
     return np.array([n[0] for n in nodes]), np.array([n[1] for n in nodes])
+
+
+def gyroid_hearts(lattice_scale):
+    """Every octagon centre the walk reaches: a ring prism of a type GyroidOctagonData knows places its octagon's
+    centre at pos + R (OwnCenter x LatticeScale) - AssembledFlora.RegisterDangerPrism's arithmetic, and the crystal
+    sits there (PlaceCrystalAtCenter)."""
+    own = {m.group(1): np.array([float(m.group(2)), float(m.group(3)), float(m.group(4))])
+           for m in re.finditer(r"GyroidBlockType\.(\w+), new Vector3\(([-\d.]+)f, ([-\d.]+)f, ([-\d.]+)f\)",
+                                OCTAGON_CS.read_text(encoding="utf-8-sig").split("OwnCenter = new()")[1].split("};")[0])}
+    P, Rs = gyroid_frames(lattice_scale)
+    hearts = []
+    for pos, R, bt in zip(P, Rs, gyroid_frames.types):
+        if bt in own:
+            c = pos + R @ (own[bt] * lattice_scale)
+            if all(np.linalg.norm(c - h) > 3.0 * lattice_scale for h in hearts):
+                hearts.append(c)
+    return np.array(hearts)
+
+
+def schwarz_hearts(lattice_scale):
+    """Every tile centre of the block (SchwarzPSurfaceFrame.TileCenterWorld - PlaceCrystalAtTileCentre)."""
+    import fit_schwarz_p_leaf_sizes as sp
+    from verify_schwarz_p_tile_tables import tile_center
+    ws = sp.WORLD_SCALE * lattice_scale
+    r = range(-SCHWARZ_RADIUS, SCHWARZ_RADIUS + 1)
+    return np.array([np.array(tile_center(ijk)) * ws for ijk in itertools.product(r, r, r)])
 
 
 def schwarz_frames(lattice_scale):
@@ -243,8 +289,8 @@ def schwarz_frames(lattice_scale):
 # species here stamps its leaf through Flora.AddHealthBlock, which is what admits_target_scale
 # checks - add one whose prisms are sized elsewhere and that check needs to learn about it.
 SPECIES = (
-    ("gyroid", "Gyroid", gyroid_frames),
-    ("SchwarzP", "SchwarzP", schwarz_frames),
+    ("gyroid", "Gyroid", gyroid_frames, gyroid_hearts),
+    ("SchwarzP", "SchwarzP", schwarz_frames, schwarz_hearts),
 )
 
 
@@ -405,159 +451,163 @@ def write_leaf_size(path, leaf):
 
 
 def measure_species(name, asset_prefix, frames, shield_scale):
-    """Report every element of one species; return the Charge row (the shielded one)."""
+    """Report every element of one species as shipped (box and shield clearance, shield on or off)."""
     print(f"\n{name}")
     print(f"{'element':>8} {'shield':>7} {'lattice':>8} {'spacing':>8} "
-          f"{'leaf':>22} {'box s*':>8} {'shield s*':>10}  interpenetrating")
-
-    charge = None
-    cache = {}
+          f"{'leaf':>26} {'box s*':>8} {'shield s*':>10}  interpenetrating")
+    cache, rows = {}, {}
     for element in ELEMENTS:
         leaf, lattice, shield_period = variant(asset_prefix, element)
         if lattice not in cache:
             cache[lattice] = frames(lattice)
         P, Rs = cache[lattice]
-
         D = np.linalg.norm(P[:, None, :] - P[None, :, :], axis=2)
         np.fill_diagonal(D, np.inf)
         spacing = float(D.min(axis=1).mean())
-
         half = leaf / 2.0
         box_s, *_ = worst_pair(P, Rs, half, 1.0)
-        sh_s, sh_pairs, sh_total, sh_ties = worst_pair(P, Rs, half, shield_scale)
-
+        sh_s, sh_pairs, sh_total, _ = worst_pair(P, Rs, half, shield_scale)
         leaf_txt = f"{leaf[0]:g} x {leaf[1]:g} x {leaf[2]:g}"
-        print(f"{element:>8} {('ON' if shield_period > 0 else 'off'):>7} "
-              f"{lattice:>8.4f} {spacing:>8.2f} {leaf_txt:>22} "
-              f"{fmt_s(box_s):>8} {fmt_s(sh_s):>10}  {sh_pairs} of {sh_total}")
-
-        if element == "Charge":
-            charge = dict(species=name, asset=asset_prefix, leaf=leaf, shield_s=sh_s,
-                          ties=sh_ties, shield=shield_period, P=P, Rs=Rs)
-    return charge
+        print(f"{element:>8} {('ON' if shield_period > 0 else 'off'):>7} {lattice:>8.4f} {spacing:>8.2f} "
+              f"{leaf_txt:>26} {fmt_s(box_s):>8} {fmt_s(sh_s):>10}  {sh_pairs} of {sh_total}")
+        rows[element] = dict(leaf=leaf, lattice=lattice, shield=shield_period, box_s=box_s, shield_s=sh_s)
+    return rows
 
 
-def fit(charge, shield_scale, window):
-    """Print the fit for one species' Charge leaf; return (fitted leaf, settled?)."""
-    s = charge["shield_s"]
-    # The CORRECTION to apply to whatever is shipped, so re-running is idempotent: the fit
-    # is the FIXED POINT s* = 1 / (1 - CLEARANCE), not a fresh multiply of the current leaf.
-    # A fitter that re-multiplies its own output walks the value every time it is run.
-    k = s * (1.0 - CLEARANCE)
-    settled = abs(k - 1.0) <= FIT_TOLERANCE
-    fitted = charge["leaf"] if settled else np.floor(charge["leaf"] * k * 100.0) / 100.0
+def heart_clear(frames, hearts, lattice, leaf):
+    """The tightest heart's clear radius to every shield of the patch."""
+    P, Rs = frames(lattice)
+    H = hearts(lattice)
+    sizes = np.broadcast_to(leaf, P.shape)
+    centre = P.mean(axis=0)
+    # hearts whose neighbourhood the patch fully contains - an edge heart reads clearer than it is
+    span = np.linalg.norm(P - centre, axis=1).max()
+    inner = [h for h in H if np.linalg.norm(h - centre) < 0.6 * span] or list(H)
+    return min(armour.heart_clearance(h, P, Rs, sizes) for h in inner)
 
-    print(f"\n  {charge['species']} Charge")
-    print(f"    shipped leaf      {charge['leaf'][0]:g} x {charge['leaf'][1]:g} x "
-          f"{charge['leaf'][2]:g}   (volume {np.prod(charge['leaf']):.2f} per prism)")
-    print(f"    shields touch at  x{s:.4f}  ->  "
-          + (f"they overlap {1.0 / s:.2f}x oversize" if s < 1.0
-             else f"they clear by {s - 1.0:.0%}"))
-    print(f"    worst shared by   {charge['ties']} pairs - a repeating lattice "
-          f"relationship, not one outlier")
-    print(f"    target            {CLEARANCE:.0%} clearance, s* = "
-          f"{1.0 / (1.0 - CLEARANCE):.4f}  ->  correction x{k:.4f}")
-    if settled:
-        print(f"    fitted leaf       unchanged - inside the +-{FIT_TOLERANCE:.0%} band")
-    else:
-        print(f"    fitted leaf       {fitted[0]:g} x {fitted[1]:g} x {fitted[2]:g}   "
-              f"(volume {np.prod(fitted):.2f} per prism, "
-              f"x{np.prod(fitted) / np.prod(charge['leaf']):.3f})")
 
-    check_s, check_pairs, *_ = worst_pair(charge["P"], charge["Rs"], fitted / 2.0,
-                                          shield_scale)
-    if check_pairs or check_s < 1.0:
-        raise SystemExit(f"FAILED: the fitted {charge['species']} size still interpenetrates")
-    box_check, *_ = worst_pair(charge["P"], charge["Rs"], fitted / 2.0, 1.0)
-    print(f"    verified          shields s* {check_s:.3f}, 0 interpenetrating; "
-          f"plates s* {fmt_s(box_check)}")
+def fit_mass(name, frames, hearts, rows, shield_scale, window):
+    """The Mass fit: Time's plate x mass_axis, on a lattice grown until its shields clear, grown again for the swing."""
+    T = rows["Time"]
+    m = armour.mass_axis()
+    need = armour.swing_need()
+    target = 1.0 / (1.0 - CLEARANCE)
+    s_T = T["shield_s"]                      # Time's plate shielded, at Time's lattice: touching scale
+    # a similarity: plates x m on a lattice x k touch at s_T x k / m, so k = m x target / s_T clears by CLEARANCE
+    k = T["lattice"] * m * target / s_T
+    leaf = T["leaf"] * m
+    clear = heart_clear(frames, hearts, k, leaf)
+    grow = max(1.0, need / clear)
+    k_fit, leaf_fit = k * grow, leaf * grow
+    # round CONSERVATIVELY: the plate down, the lattice up - both only add room
+    leaf_fit = np.floor(leaf_fit * 1000.0) / 1000.0
+    k_fit = math.ceil(k_fit * 1000.0) / 1000.0
 
-    # The silent clamp (Docs/ECOSYSTEM.md 34.9): a fitted axis outside the prefab's authored
-    # [minScale, maxScale] is replaced inside the setter with no log and no return value.
+    P, Rs = frames(k_fit)
+    sh_s, sh_pairs, *_ = worst_pair(P, Rs, leaf_fit / 2.0, shield_scale)
+    box_s, *_ = worst_pair(P, Rs, leaf_fit / 2.0, 1.0)
+    clear_fit = heart_clear(frames, hearts, k_fit, leaf_fit)
+    print(f"\n  {name} Mass  (armoured, has size)")
+    print(f"    anchor            Time {T['leaf'][0]:g} x {T['leaf'][1]:g} x {T['leaf'][2]:g} on lattice x{T['lattice']:g}"
+          f"; its shields touch at x{s_T:.4f}")
+    print(f"    Mass plate        x{m:.4f} on every axis (volume x{m ** 3:.3f}), lattice x{k:.4f} for {CLEARANCE:.0%} "
+          f"shield clearance")
+    print(f"    heart's swing     needs {need:.2f} u, has {clear:.2f} u  ->  grown whole x{grow:.4f}")
+    print(f"    fitted            {leaf_fit[0]:g} x {leaf_fit[1]:g} x {leaf_fit[2]:g} on lattice x{k_fit:g}  "
+          f"(volume {np.prod(leaf_fit):.2f} per prism, Time's {np.prod(T['leaf']):.2f})")
+    print(f"    verified          shields s* {sh_s:.3f} ({sh_pairs} interpenetrating), plates s* {fmt_s(box_s)}, "
+          f"heart clear {clear_fit:.2f} u")
+    if sh_pairs or sh_s < 1.0 or clear_fit < need - 1e-6:
+        raise SystemExit(f"FAILED: the fitted {name} Mass plant still fuses its shields or clips its heart's swing")
     min_scale, max_scale = window
-    outside = [(ax, v, lo, hi) for ax, v, lo, hi
-               in zip("xyz", fitted, min_scale, max_scale) if v < lo or v > hi]
-    if outside:
-        for ax, v, lo, hi in outside:
-            print(f"    NOTE              {ax} = {v:g} is outside the prefab's clamp "
-                  f"[{lo:g}, {hi:g}]")
-        if not admits_target_scale():
-            raise SystemExit("FAILED: the fitted size would be silently clamped - "
-                             "Flora.AddHealthBlock no longer calls AdmitTargetScale")
-        print("    ...admitted by Flora.AddHealthBlock's AdmitTargetScale, which lowers "
-              "minScale before stating the size")
+    outside = [(ax, v, lo, hi) for ax, v, lo, hi in zip("xyz", leaf_fit, min_scale, max_scale) if v < lo or v > hi]
+    for ax, v, lo, hi in outside:
+        print(f"    NOTE              {ax} = {v:g} is outside the prefab's clamp [{lo:g}, {hi:g}]")
+    if outside and not admits_target_scale():
+        raise SystemExit("FAILED: the fitted size would be silently clamped - Flora.AddHealthBlock no longer calls "
+                         "AdmitTargetScale")
+    return leaf_fit, k_fit
 
-    return fitted, settled
+
+def write_row(path, key, value):
+    """Replace one Variant row (LeafSize or LatticeScale) - every other decision in the block survives untouched."""
+    text = path.read_text()
+    if key == "LeafSize":
+        row = f"    LeafSize: {{x: {value[0]:g}, y: {value[1]:g}, z: {value[2]:g}}}"
+        pat = r"^    LeafSize: \{[^}]*\}$"
+    else:
+        row = f"    {key}: {value:g}"
+        pat = rf"^    {key}: [-\d.]+$"
+    new, n = re.subn(pat, row, text, count=1, flags=re.M)
+    if n != 1:
+        raise SystemExit(f"could not find a {key} row in {path.name}")
+    if new != text:
+        path.write_text(new)
+        return True
+    return False
+
+
+def close(a, b):
+    a, b = np.atleast_1d(np.asarray(a, float)), np.atleast_1d(np.asarray(b, float))
+    return bool(np.all(np.abs(a - b) <= FIT_TOLERANCE * np.maximum(np.abs(b), 1e-9)))
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--write", action="store_true",
-                    help="author the fitted leaf size onto each species' Charge asset")
-    ap.add_argument("--check", action="store_true",
-                    help="fail if a shipped Charge leaf is not the fitted one")
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--write", action="store_true", help="author the fitted Mass (and gyroid Charge) assets")
+    ap.add_argument("--check", action="store_true", help="fail if a shipped asset is not at the fit")
     args = ap.parse_args()
 
     self_test()
+    armour.self_test()
 
     shield_scale = circumscribing_scale()
     box_size, box_centre, min_scale, max_scale = health_block_box()
     if not np.allclose(box_size, 1.0) or not np.allclose(box_centre, 0.0):
-        raise SystemExit(f"HealthBlock.prefab BoxCollider is {box_size} @ {box_centre}; "
-                         "this fit assumes the shipped unit cube centred on the origin - "
-                         "re-derive the half-extent mapping before trusting the numbers")
+        raise SystemExit(f"HealthBlock.prefab BoxCollider is {box_size} @ {box_centre}; this fit assumes the shipped "
+                         "unit cube centred on the origin - re-derive the half-extent mapping before trusting it")
 
     print("=" * 78)
-    print("Shield clearance - fitting each SHIELDED lattice species to its own lattice")
+    print("Shield clearance - fitting each ARMOURED (Mass) lattice species to its own lattice")
     print("=" * 78)
-    print(f"OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = {shield_scale:g}  ->  a shield "
-          f"reaches {shield_scale / 2:g} x leafSize from the prism centre")
-    print(f"HealthBlock BoxCollider {box_size[0]:g} x {box_size[1]:g} x {box_size[2]:g} "
-          f"centred - so world half-extent = leafSize / 2")
-    print(f"HealthBlock scale clamp min {min_scale[0]:g}, max {max_scale[0]:g} "
-          f"(per axis; widened by AdmitTargetScale for an AUTHORED size)")
+    print(f"a shield reaches {shield_scale / 2:g} x leafSize from the prism centre; the Mass heart needs "
+          f"{armour.swing_need():.2f} u clear")
 
-    charges = [measure_species(name, prefix, frames, shield_scale)
-               for name, prefix, frames in SPECIES]
-
-    print("\n" + "-" * 78)
-    print("The fit")
-    print("-" * 78)
-    print("s* is the uniform scale at which the WORST pair exactly touches: >= 1 is clear")
-    print("as shipped, < 1 is the factor that would stop the interpenetration. Only the")
-    print("SHIELDED element has to answer for its octahedra - the other three draw the box")
-    print("they were fitted as.")
-
-    results = []
-    for charge in charges:
-        if charge["shield"] <= 0:
-            print(f"\n  {charge['species']} Charge does not shield "
-                  f"(ShieldPeriod <= 0) - nothing to fit.")
-            continue
-        results.append((charge, *fit(charge, shield_scale, (min_scale, max_scale))))
+    plan, drift = [], []
+    for name, prefix, frames, hearts in SPECIES:
+        rows = measure_species(name, prefix, frames, shield_scale)
+        leaf, lattice = fit_mass(name, frames, hearts, rows, shield_scale, (min_scale, max_scale))
+        mass_path = LIFEFORMS / f"{prefix} Flora Mass.asset"
+        plan.append((mass_path, "LeafSize", leaf))
+        plan.append((mass_path, "LatticeScale", lattice))
+        if not (close(rows["Mass"]["leaf"], leaf) and close(rows["Mass"]["lattice"], lattice)):
+            drift.append(f"{name} Mass")
+        # Charge is unshielded and its prisms are all danger: it takes the anchor's own plate. This tool owns that
+        # leaf on the GYROID; Schwarz P's Charge is fit_schwarz_p_leaf_sizes.py's flush fit (the same plate).
+        T, C = rows["Time"], rows["Charge"]
+        print(f"  {name} Charge     unshielded, every prism danger: plates s* {fmt_s(C['box_s'])}"
+              + ("" if C["shield"] <= 0 else "  (STILL SHIELDED - run author_flora_armour.py)"))
+        if name == "gyroid":
+            plan.append((LIFEFORMS / f"{prefix} Flora Charge.asset", "LeafSize", T["leaf"]))
+            if not close(C["leaf"], T["leaf"]):
+                drift.append("gyroid Charge")
+        if C["shield"] > 0 or rows["Mass"]["shield"] <= 0:
+            drift.append(f"{name} armour (author_flora_armour.py)")
 
     if args.write:
         print()
-        for charge, fitted, settled in results:
-            path = LIFEFORMS / f"{charge['asset']} Flora Charge.asset"
-            if settled:
-                print(f"  {path.name} is already at the fit - nothing written.")
-            else:
-                write_leaf_size(path, fitted)
-                print(f"  wrote {path.relative_to(ROOT)}")
+        for path, key, value in plan:
+            if write_row(path, key, value):
+                print(f"  wrote {key} on {path.relative_to(ROOT)}")
         return 0
-
     if args.check:
-        drift = [c["species"] for c, _, settled in results if not settled]
         if drift:
             print(f"\nFAILED: not at the fit: {', '.join(drift)}")
             return 1
-        print("\nevery shielded lattice species is at its fit")
+        print("\nevery armoured lattice species is at its fit")
         return 0
-
-    if any(not settled for _, _, settled in results):
-        print("\n(re-run with --write to author it)")
+    if drift:
+        print(f"\n(not at the fit: {', '.join(drift)} - re-run with --write)")
     return 0
 
 

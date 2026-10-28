@@ -286,6 +286,8 @@ namespace CosmicShore.Gameplay
             // that need it do not exist yet (they are created per prism), so every creation
             // site pushes it - see ApplyLatticeSpacing.
             if (tuning.LatticeScale > 0f) _latticeScaleOverride = tuning.LatticeScale;
+            // A quasicrystal element's heart seat (absolute units - crystals do not scale with the lattice).
+            if (tuning.HeartSeatInset > 0f) _heartSeatOverride = tuning.HeartSeatInset;
 
             // Pacing overrides - the prefab's throttles are shared by every biome's plants,
             // so a cell that wants a different pace authors it in config instead.
@@ -656,6 +658,7 @@ namespace CosmicShore.Gameplay
         int _idleGrowTicks;
 
         float _latticeScaleOverride = -1f;
+        float _heartSeatOverride = -1f;
         float? _latticeScaleCached;
 
         /// <summary>
@@ -768,6 +771,7 @@ namespace CosmicShore.Gameplay
             if (target is QuasicrystalAssembler quasi)
             {
                 if (_latticeScaleOverride > 0f) quasi.ApplyLatticeScale(_latticeScaleOverride);
+                if (_heartSeatOverride > 0f) quasi.ConfigureHeartSeat(_heartSeatOverride);
                 quasi.ConfigureStrutLength(LeafSize.x);
                 return;
             }

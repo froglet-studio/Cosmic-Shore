@@ -3,8 +3,10 @@
 
 The law is one sentence per element:
 
-    CHARGE armours its leaves.        (a state - Flora.ResolveShieldPeriod, §35)
-    MASS   is the most cumulative prism volume, in the most CUBIC leaf.
+    CHARGE is dangerous: every prism.  (a state - Flora.ArmLeaf, ElementalArmour, §65)
+    MASS   is the most cumulative prism volume, ARMOURED, and has SIZE - in the
+           species' own SHAPE (the "chunky" cubic Mass leaf was retired on 2026-10-28,
+           §65: Mass took the shield and size instead).
     SPACE  is the highest ASPECT RATIO - its long axis trades that volume for the
            BOUNDING VOLUME of the assembly.
     TIME   is the fastest clock: it grows and reproduces fastest.
@@ -13,9 +15,13 @@ This tool exists because the two shape halves are CONSTANTS, and a constant nobo
 re-derive is a constant nobody can check. It does four separate jobs, and they answer four
 different questions:
 
-  1. MEASURE   - re-derives the shipped constants from the assets that already state the
-                 law, so `FloraElementalForm`'s numbers are a measurement rather than a
-                 taste. Three lattice species author four fitted leaves each; the eight
+  1. MEASURE   - re-derives the shipped SPACE constants (and the neutrality normaliser) from
+                 the assets that already state the law, so `FloraElementalForm`'s numbers are
+                 a measurement rather than a taste. MASS's volume is DECIDED since
+                 2026-10-28 (§65: the lattice species author their Mass leaf FROM the law,
+                 then grow it for the heart's swing), so re-deriving it would be circular:
+                 it is checked instead - every lattice species ships at least the law's
+                 Mass volume, in its Time leaf's shape. Three lattice species author four fitted leaves each; the eight
                  Hesperides phyllotactics share ONE authored cross-section ladder. Each
                  FAMILY gets one vote (eight species sharing one table is one decision, not
                  eight), and the law is the geometric mean of the two family medians.
@@ -254,7 +260,7 @@ def main() -> int:
     print("  DERIVED (one vote per FAMILY - the eight phyllotactics share one authored")
     print("  table, so they are one decision; geometric mean of the two family medians):")
     derived = {}
-    for element in ("Mass", "Space"):
+    for element in ("Space",):
         lat = statistics.median(lattice_vol[element])
         phy = statistics.median(phyllo_vol[element]) if phyllo_vol[element] else None
         raw = geo_mean([lat, phy]) if phy else lat
@@ -264,15 +270,25 @@ def main() -> int:
               f"{phy if phy is None else round(phy,3)} -> raw x{raw:6.3f}")
         print(f"    {element:6s} aspect: lattice median A={derived[f'{element}Anisotropy']:+.3f} "
               f"(phyllotactic authors a SQUARE cross-section, so it has no opinion)")
+    # MASS is DECIDED (§65): its volume against the neutral form is the law's own ratio, and its shape is the species'.
+    mass_ratio = consts["MassLeafVolume"] / consts["NeutralLeafVolume"]
+    print(f"    Mass   volume: DECIDED - the law's x{mass_ratio:.3f} against the neutral leaf (lattice species "
+          f"author it, then grow it for the heart's swing); aspect: the species' own (A = 1)")
+    for got in lattice_vol["Mass"]:
+        if got < mass_ratio * 0.98:
+            failures.append(f"a lattice species' Mass leaf is x{got:.3f} its Time leaf, under the law's x{mass_ratio:.3f}")
+    for a in lattice_ani["Mass"]:
+        if abs(a - 1.0) > 0.08:
+            failures.append(f"a lattice species' Mass leaf is not its Time leaf's shape (A={a:+.3f}, the law says 1)")
 
     # Normalise volume so the four average to exactly 1 - the neutrality property.
-    raw = [1.0, derived["MassVolume"], derived["SpaceVolume"], 1.0]
+    raw = [1.0, mass_ratio, derived["SpaceVolume"], 1.0]
     norm = sum(raw) / 4.0
     expect = dict(
         NeutralLeafVolume=1.0 / norm,
-        MassLeafVolume=derived["MassVolume"] / norm,
+        MassLeafVolume=mass_ratio / norm,
         SpaceLeafVolume=derived["SpaceVolume"] / norm,
-        MassLeafAnisotropy=derived["MassAnisotropy"],
+        MassLeafAnisotropy=1.0,
         SpaceLeafAnisotropy=derived["SpaceAnisotropy"],
     )
     print(f"\n    normalised by x{1/norm:.4f} so the four average to exactly 1")
@@ -374,11 +390,11 @@ def main() -> int:
         else:
             failures.append(f"{name}: SPACE does not have the highest aspect ratio "
                             f"({max(asps, key=asps.get)} does)")
-        if min(asps[e] for e in ("Mass", "Space", "Time")) == asps["Mass"]:
-            ok.append("Mass most cubic")
+        if abs(m["Mass"]["anisotropy"] - 1.0) <= 0.08:
+            ok.append("Mass in Time's shape")
         else:
-            failures.append(f"{name}: MASS is not its most cubic leaf - the Mass law says "
-                            f"x, y and z sit closest together")
+            failures.append(f"{name}: MASS's leaf is not its Time leaf's shape (A={m['Mass']['anisotropy']:+.3f}) - "
+                            f"the chunky Mass leaf is retired (Docs/ECOSYSTEM.md §65)")
         print(f"    {name:20s} " + ", ".join(ok))
 
     # ── the stated limitation ──────────────────────────────────────────────────────────
@@ -477,8 +493,9 @@ def self_test() -> int:
     # (d) an exempt species contradicting the law
     asset = LIFEFORMS / "Gyroid Flora Mass.asset"
     a_backup = asset.read_text()
-    a_mut = a_backup.replace("LeafSize: {x: 7, y: 4.5, z: 3.5}",
-                             "LeafSize: {x: 0.7, y: 0.45, z: 0.35}")
+    a_mut = re.sub(r"LeafSize: \{x: ([\d.]+), y: ([\d.]+), z: ([\d.]+)\}",
+                   lambda g: "LeafSize: {x: %g, y: %g, z: %g}" % tuple(float(v) / 10 for v in g.groups()),
+                   a_backup, count=1)
     assert a_mut != a_backup, "the gyroid Mass leaf moved - update the self-test"
     asset.write_text(a_mut)
     try:
