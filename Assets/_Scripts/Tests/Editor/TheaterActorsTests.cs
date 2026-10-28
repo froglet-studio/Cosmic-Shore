@@ -235,6 +235,33 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f - 120000f, field.Positions[0].z, 1e-2f);
             Assert.AreEqual(9f - 120000f, field.Morphs[0].Position.z, 1e-2f);
         }
+
+        [Test]
+        public void Stays_ClampBeforeTheFirst_HoldBetween_AndFollowTheLatest()
+        {
+            // One crystal id, two stays in the scene (it was taken, then respawned elsewhere a second later).
+            var first = new TheaterActorTrack { Kind = TheaterActorKind.Crystal, Key = 3 };
+            first.Observe(1f, new Vector3(1f, 0f, 0f), Quaternion.identity, Vector3.one, Thin);
+            first.Observe(2f, new Vector3(2f, 0f, 0f), Quaternion.identity, Vector3.one, Thin);
+            first.Close();
+            var second = new TheaterActorTrack { Kind = TheaterActorKind.Crystal, Key = 3 };
+            second.Observe(3f, new Vector3(50f, 0f, 0f), Quaternion.identity, Vector3.one, Thin);
+            second.Observe(4f, new Vector3(50f, 0f, 0f), Quaternion.identity, Vector3.one, Thin);
+            second.Close();
+            var stays = new System.Collections.Generic.List<TheaterActorTrack> { first, second };
+
+            Assert.IsTrue(TheaterActorTrack.TryEvaluateStays(stays, 0.9f, out var before, out _, out _));
+            Assert.AreEqual(1f, before.x, 1e-6f, "the Go frame shows where it first stood");
+            Assert.IsTrue(TheaterActorTrack.TryEvaluateStays(stays, 1.5f, out var during, out _, out _));
+            Assert.AreEqual(1.5f, during.x, 1e-5f);
+            Assert.IsTrue(TheaterActorTrack.TryEvaluateStays(stays, 2.5f, out var between, out _, out _));
+            Assert.AreEqual(2f, between.x, 1e-6f, "between stays it holds where it was last seen");
+            Assert.IsTrue(TheaterActorTrack.TryEvaluateStays(stays, 3.5f, out var later, out _, out _));
+            Assert.AreEqual(50f, later.x, 1e-6f);
+            Assert.IsTrue(TheaterActorTrack.TryEvaluateStays(stays, 9f, out var after, out _, out _));
+            Assert.AreEqual(50f, after.x, 1e-6f);
+            Assert.IsFalse(TheaterActorTrack.TryEvaluateStays(new System.Collections.Generic.List<TheaterActorTrack>(), 1f, out _, out _, out _));
+        }
     }
 }
 #endif

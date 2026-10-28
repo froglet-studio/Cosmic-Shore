@@ -26,8 +26,9 @@ namespace CosmicShore.Utility
     /// early; it ends when the recording does.</item>
     /// </list>
     /// What the vessels' actions do to the world (prisms broken, crystals taken, creatures caught) is the game
-    /// computing it again from the same paths and actions. The ecology rolls its own dice per run, so
-    /// creatures that wandered are not guaranteed to wander the same way (§6.3 lists it).
+    /// computing it again from the same paths and actions. Where the crystals, plants, creatures and cytoplasm
+    /// shards stand is the recording's when it carries them (<see cref="ReplayActorSync"/>, §6.4), not this run's
+    /// dice; an older recording without them leaves the ecology to roll its own (§6.3 lists it).
     ///
     /// <para><b>Controls</b> (none clash with the free camera's sticks, shoulders, triggers, WASD/QE and
     /// mouse): A / Space pause; D-pad left / right or J / L skip 5 s back / forward; D-pad up / down or
@@ -69,6 +70,7 @@ namespace CosmicShore.Utility
         float _fastForwardTo = -1f;
         readonly List<Binding> _bindings = new();
         readonly Binding[] _byTrack = new Binding[64];
+        readonly ReplayActorSync _actors = new();
 
         CameraManager _cameras;
         Transform _rig;
@@ -95,6 +97,7 @@ namespace CosmicShore.Utility
         void OnDestroy()
         {
             if (_gameData) _gameData.OnMiniGameTurnStarted.OnRaised -= HandleGo;
+            _actors.End();
             Time.timeScale = 1f;
             if (_rig && _cameras) _cameras.RestoreGameplayCamera();
         }
@@ -119,6 +122,7 @@ namespace CosmicShore.Utility
             float t = _recording.StartTime + Position;
             for (int i = 0; i < _bindings.Count; i++) Drive(_bindings[i], t);
             RunActions(t);
+            _actors.Apply(t);
             UpdateFastForward();
             UpdateCamera();
 
@@ -177,6 +181,7 @@ namespace CosmicShore.Utility
                 monitors.enabled = false;
 
             Bind();
+            _actors.Begin(_recording.Actors, ReplayConfigSO.Resolve().ActorJumpDistance);
             _goTime = Time.time - ReplayMatch.StartAt;
             _actionCursor = 0;
             _phase = Phase.Playing;

@@ -178,6 +178,36 @@ namespace CosmicShore.Utility
             scale = Vector3.LerpUnclamped(a.Scale, b.Scale, t);
             return true;
         }
+
+        /// <summary>
+        /// The pose of an actor with these tracks (one per stay in the scene, oldest first) at <paramref name="t"/>:
+        /// the stay covering it; before the first, the first pose (a crystal the manager spawned on
+        /// the Go frame was first sampled a frame later); between two stays, or after the last, the latest pose seen.
+        /// </summary>
+        public static bool TryEvaluateStays(List<TheaterActorTrack> tracks, float t,
+                                            out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            scale = Vector3.one;
+            if (tracks == null || tracks.Count == 0) return false;
+
+            if (t <= tracks[0].StartTime) return tracks[0].TryEvaluate(t, out position, out rotation, out scale, clampStart: true);
+
+            for (int i = tracks.Count - 1; i >= 0; i--)
+            {
+                var track = tracks[i];
+                if (track.StartTime > t) continue;
+                if (track.TryEvaluate(t, out position, out rotation, out scale)) return true;
+                // Gone by t: hold where it was last seen until the next stay starts.
+                var last = track.Poses[track.Poses.Count - 1];
+                position = last.Position;
+                rotation = last.Rotation;
+                scale = last.Scale;
+                return true;
+            }
+            return false;
+        }
     }
 
     /// <summary>One shard a dying limb left in a cell's cytoplasm (<c>SnowChanger.AddMorphedShard</c>).</summary>
