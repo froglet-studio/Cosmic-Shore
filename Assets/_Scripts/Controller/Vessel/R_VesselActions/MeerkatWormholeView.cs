@@ -149,7 +149,6 @@ namespace CosmicShore.Gameplay
                 if (hasGhost) DrawReticle(ghost, e.Config, eye, colour);
             }
 
-            bool lens = MeerkatTubeLook.LensOn;   // the default watery-glass look needs no warp mesh: skip building it
             var live = MeerkatWormholeExecutor.Live;
             for (int i = 0; i < live.Count; i++)
             {
@@ -159,7 +158,7 @@ namespace CosmicShore.Gameplay
                 var tube = Tube.Conic(t.A, t.T0, t.Side, t.Path, t.B, t.M, t.W.S0, t.W.S1);
                 if (cfg.FormedLook == ScriptableObjects.MeerkatFormedLook.Bridge && !TunnelWrapped(cfg))
                     DrawBridge(tube, cfg, t.Fade, t.Colour, eye);
-                if (lens) AddWarpTube(tube, t.Fade, cfg);   // only the full-screen lens reads the warp mesh
+                AddWarpTube(tube, t.Fade, cfg);
             }
 
             // round 26: the network's channels are wormhole tubes, drawn exactly as a formed tunnel
@@ -172,9 +171,9 @@ namespace CosmicShore.Gameplay
                 if (!cfg) continue;
                 bool wrapped = ChannelWrapped(cfg);
                 bool bridge = cfg.FormedLook == ScriptableObjects.MeerkatFormedLook.Bridge && !wrapped;
-                bool warp = lens && cfg.WarpStrength > 0f && !(wrapped && inside == net);   // the page: roots in bark are earth from inside
+                bool warp = cfg.WarpStrength > 0f && !(wrapped && inside == net);   // the page: roots in bark are earth from inside
                 if (!bridge && !warp) continue;
-                var colour = MeerkatTubeLook.NetworkColour;   // universal: no maker's domain
+                var colour = net.Maker.Colour;
                 for (int i = 0; i < net.Channels.Count; i++)
                 {
                     ref var w = ref net.Life[i];
@@ -194,7 +193,7 @@ namespace CosmicShore.Gameplay
 
             MeerkatTreeView.Draw();       // the tree round a tunnel and the roots' bark, while switched on (MEERKAT.md §7)
             MeerkatTubeWallView.Draw();   // round 26: every tube's calm inner wall
-            MeerkatWaterTubeView.Draw();  // the default watery-glass tube (MeerkatTubeLook; the lab can A/B it against the lens)
+            MeerkatWaterTubeView.Draw();  // the cheap water pipe, only while the Lavalamp lab picks it (MeerkatTubeLook)
 
             var additive = new RenderParams(s_additive) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
             var glassParams = new RenderParams(s_glassMat) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };

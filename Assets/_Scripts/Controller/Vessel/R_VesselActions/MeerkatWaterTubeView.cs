@@ -3,38 +3,26 @@ using CosmicShore.Utility;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// THE Meerkat wormhole tube (Yash, 2026-10-29: "a watery-glassy tunnel, like looking from an underwater aquarium at the
-    /// outside world ... tunnels won't have domains ... the networked tunnel a little upgraded look"): every formed tunnel and
-    /// every channel of an omnicrystal's network drawn as one premultiplied-alpha skin through <c>MeerkatWaterTube.shader</c>.
-    /// <list type="bullet">
-    /// <item>a single tunnel: <c>Resources/MeerkatWaterTube.mat</c>, the watery-glass pane (the opaque world behind it, bent
-    /// along the wall's normal and rippling, under a faint aqua tint, a Fresnel rim, flow bands and a caustic shimmer);</item>
-    /// <item>a network channel: <c>Resources/MeerkatWaterTubeNetwork.mat</c>, the same shader with MEERKAT_TUBE_NETWORK on
-    /// (an iridescent rim, energy streaks racing along it, an HDR glow).</item>
-    /// </list>
-    /// No domain colour: tunnels are universal. The pane's bend reads URP's opaque copy (<c>_CameraOpaqueTexture</c>), which
-    /// the project's URP asset leaves off; <see cref="SceneColour"/> switches it on for the game cameras only while a tube
-    /// draws (one half-res copy a frame) and tells the shader through <c>_MeerkatTubeSceneOn</c>; without it the tube is a
-    /// clear glass skin. It draws while <see cref="MeerkatTubeLook.WaterOn"/>, the default. It reuses the calm wall's mesh
-    /// (<see cref="MeerkatTreeMesh.BuildTubeWall(MeerkatWormholeExecutor.Tunnel)"/>) but keeps its own copies, so it never
-    /// disturbs <see cref="MeerkatTubeWallView"/>'s cache.
+    /// The CHEAP mobile water pipe (Yash, 2026-10-28: "a transparent watery tube, mobile friendly, an illusion of a wormhole"):
+    /// every formed tunnel and every channel of an omnicrystal's network drawn as one alpha-blended skin through
+    /// <c>Resources/MeerkatWaterTube.mat</c> (<c>MeerkatWaterTube.shader</c>): no screen copy, no grab pass, no ray march.
+    /// It draws ONLY while <see cref="MeerkatTubeLook.WaterOn"/> (the Lavalamp lab's buttons); the game's default look is
+    /// unchanged. It reuses the calm wall's mesh (<see cref="MeerkatTreeMesh.BuildTubeWall(MeerkatWormholeExecutor.Tunnel)"/>)
+    /// but keeps its own copies, so it never disturbs <see cref="MeerkatTubeWallView"/>'s cache.
     /// </summary>
     public static class MeerkatWaterTubeView
     {
         public const string MaterialPath = "MeerkatWaterTube";
-        public const string NetworkMaterialPath = "MeerkatWaterTubeNetwork";
-        public const string NetworkKeyword = "MEERKAT_TUBE_NETWORK";
 
         /// <summary>Live overrides of the material's look (the lab's sliders); <see cref="Active"/> false keeps the material's.</summary>
         public static class Tuning
         {
             public static bool Active;
-            public static float Clarity = 0.03f, Rim = 0.4f, Flow = 0.1f, Caustic = 0.22f, Twist = 0.15f, Refract = 0.04f, Cull;
+            public static float Clarity = 0.04f, Rim = 0.45f, Flow = 0.12f, Caustic = 0.25f, Twist = 0.15f, Cull;
         }
 
         static readonly ProfilerMarker s_marker = new("MeerkatWaterTubeView.Draw");
@@ -51,11 +39,10 @@ namespace CosmicShore.Gameplay
         static readonly List<MeerkatRootNetwork> s_goneN = new();
         static readonly List<MaterialPropertyBlock> s_blocks = new();
         static int s_used;
-        static Material s_mat, s_netMat;
-        static bool s_resolved, s_netMatOwned;
+        static Material s_mat;
+        static bool s_resolved;
 
-        static readonly int IdAlpha = Shader.PropertyToID("_Alpha"), IdSceneOn = Shader.PropertyToID("_MeerkatTubeSceneOn"),
-            IdRefract = Shader.PropertyToID("_Refract"),
+        static readonly int IdDomain = Shader.PropertyToID("_Domain"), IdAlpha = Shader.PropertyToID("_Alpha"),
             IdF0 = Shader.PropertyToID("_F0"), IdF1 = Shader.PropertyToID("_F1"), IdEdge = Shader.PropertyToID("_Edge"),
             IdL = Shader.PropertyToID("_L"), IdT = Shader.PropertyToID("_T"), IdClarity = Shader.PropertyToID("_Clarity"),
             IdRim = Shader.PropertyToID("_Rim"), IdFlow = Shader.PropertyToID("_Flow"), IdCaustic = Shader.PropertyToID("_Caustic"),
@@ -67,16 +54,14 @@ namespace CosmicShore.Gameplay
             if (!MeerkatTubeLook.WaterOn)
             {
                 if (s_tunnels.Count > 0 || s_nets.Count > 0) ReleaseAll();
-                SceneColour.Hold(false);
                 return;
             }
             using var _ = s_marker.Auto();
-            if (!Resolve()) { SceneColour.Hold(false); return; }
+            if (!Resolve()) return;
             s_used = 0;
             float now = Time.time;
             DrawTunnels(now);
             DrawNetworks(now);
-            SceneColour.Hold(s_used > 0);   // the opaque copy only while a tube draws (none: no copy)
         }
 
         static void DrawTunnels(float now)
@@ -97,7 +82,7 @@ namespace CosmicShore.Gameplay
                     skin.Mesh.name = "MeerkatWaterTube";
                     skin.L = t.L; skin.B = t.B; skin.M = t.M;
                 }
-                Render(skin.Mesh, s_mat, A, t.W.S0 / t.L, t.W.S1 / t.L, t.L, now);
+                Render(skin.Mesh, t.Colour, A, t.W.S0 / t.L, t.W.S1 / t.L, t.L, now);
             }
             if (s_tunnels.Count == 0) return;
             s_goneT.Clear();
@@ -129,6 +114,7 @@ namespace CosmicShore.Gameplay
                     for (int i = 0; i < meshes.Length; i++) meshes[i] = MeerkatTreeMesh.BuildTubeWall(net.Channels[i], cfg.RootTip);
                     s_nets[net] = meshes;
                 }
+                var colour = net.Maker.Colour;
                 for (int i = 0; i < net.Channels.Count; i++)
                 {
                     var w = net.Life[i];
@@ -136,7 +122,7 @@ namespace CosmicShore.Gameplay
                     var c = net.Channels[i];
                     float L = (float)c.L, fade = MeerkatWormholeView.ChannelFade(w);
                     if (fade <= 0.004f || w.S1 - w.S0 < 0.5) continue;
-                    Render(meshes[i], s_netMat, fade, (float)(w.S0 / c.L), (float)(w.S1 / c.L), L, now);
+                    Render(meshes[i], colour, fade, (float)(w.S0 / c.L), (float)(w.S1 / c.L), L, now);
                 }
             }
             if (s_nets.Count == 0) return;
@@ -154,12 +140,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        static void Render(Mesh mesh, Material mat, float alpha, float f0, float f1, float L, float now)
+        static void Render(Mesh mesh, Color colour, float alpha, float f0, float f1, float L, float now)
         {
-            if (!mesh || !mat) return;
+            if (!mesh) return;
             if (f0 <= 1e-3f) f0 = -1f;   // a finished end is open, not a front
             if (f1 >= 1f - 1e-3f) f1 = 2f;
             var mpb = Next();
+            mpb.SetColor(IdDomain, colour);
             mpb.SetFloat(IdAlpha, alpha);
             mpb.SetFloat(IdF0, f0);
             mpb.SetFloat(IdF1, f1);
@@ -173,10 +160,9 @@ namespace CosmicShore.Gameplay
                 mpb.SetFloat(IdFlow, Tuning.Flow);
                 mpb.SetFloat(IdCaustic, Tuning.Caustic);
                 mpb.SetFloat(IdTwist, Tuning.Twist);
-                mpb.SetFloat(IdRefract, Tuning.Refract);
                 mpb.SetFloat(IdCull, Tuning.Cull);
             }
-            Graphics.RenderMesh(new RenderParams(mat) { matProps = mpb, shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false },
+            Graphics.RenderMesh(new RenderParams(s_mat) { matProps = mpb, shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false },
                                 mesh, 0, Matrix4x4.identity);
         }
 
@@ -201,95 +187,14 @@ namespace CosmicShore.Gameplay
             s_nets.Clear();
         }
 
-        /// <summary>
-        /// Holds URP's opaque copy (<c>_CameraOpaqueTexture</c>, half resolution per the URP asset's Opaque Downsampling) on
-        /// for every base game camera while a tube draws, and puts each camera back as it was when none does. The copy is
-        /// one blit after opaques; the shader reads it once per tube pixel. <c>_MeerkatTubeSceneOn</c> turns 1 only from
-        /// the frame AFTER the cameras were asked (so the first frame never reads a copy that was not made).
-        /// </summary>
-        static class SceneColour
-        {
-            static readonly Dictionary<Camera, CameraOverrideOption> s_patched = new();
-            static readonly List<Camera> s_stale = new();
-            static Camera[] s_buffer = new Camera[8];
-            static bool s_held;
-            static int s_since;
-
-            public static void Hold(bool on)
-            {
-                if (!on)
-                {
-                    if (!s_held) return;
-                    s_held = false;
-                    Restore();
-                    Shader.SetGlobalFloat(IdSceneOn, 0f);
-                    return;
-                }
-                if (!s_held) { s_held = true; s_since = Time.frameCount; }
-                Patch();
-                Shader.SetGlobalFloat(IdSceneOn, Time.frameCount > s_since ? 1f : 0f);
-            }
-
-            static void Patch()
-            {
-                if (s_buffer.Length < Camera.allCamerasCount) s_buffer = new Camera[Mathf.NextPowerOfTwo(Camera.allCamerasCount)];
-                int n = Camera.GetAllCameras(s_buffer);
-                for (int i = 0; i < n; i++)
-                {
-                    var cam = s_buffer[i];
-                    s_buffer[i] = null;
-                    if (cam == null || cam.cameraType != CameraType.Game || s_patched.ContainsKey(cam)) continue;
-                    var data = cam.GetUniversalAdditionalCameraData();
-                    if (data == null || data.renderType != CameraRenderType.Base) continue;
-                    s_patched[cam] = data.requiresColorOption;
-                    data.requiresColorOption = CameraOverrideOption.On;
-                }
-                if (s_patched.Count == 0) return;
-                foreach (var cam in s_patched.Keys)   // forget destroyed cameras (scene changes)
-                    if (cam == null) s_stale.Add(cam);
-                foreach (var cam in s_stale) s_patched.Remove(cam);
-                s_stale.Clear();
-            }
-
-            static void Restore()
-            {
-                foreach (var kv in s_patched)
-                {
-                    if (kv.Key == null) continue;
-                    var data = kv.Key.GetUniversalAdditionalCameraData();
-                    if (data != null) data.requiresColorOption = kv.Value;
-                }
-                s_patched.Clear();
-            }
-
-            public static void ResetOnLoad()
-            {
-                s_patched.Clear();
-                s_held = false;
-                Shader.SetGlobalFloat(IdSceneOn, 0f);
-            }
-        }
-
         static bool Resolve()
         {
             if (s_resolved) return s_mat;
             s_resolved = true;
             s_mat = Resources.Load<Material>(MaterialPath);
             if (!s_mat)
-            {
-                CSDebug.LogWarning($"[Meerkat] Resources/{MaterialPath}.mat is missing: the wormhole tubes are not drawn.");
-                return false;
-            }
-            s_netMat = Resources.Load<Material>(NetworkMaterialPath);
-            if (!s_netMat)
-            {
-                // the shipped asset keeps the network variant in builds; this clone is an editor safety net only
-                CSDebug.LogWarning($"[Meerkat] Resources/{NetworkMaterialPath}.mat is missing: the network look is cloned at run time.");
-                s_netMat = new Material(s_mat) { name = NetworkMaterialPath };
-                s_netMat.EnableKeyword(NetworkKeyword);
-                s_netMatOwned = true;
-            }
-            return true;
+                CSDebug.LogWarning($"[Meerkat] Resources/{MaterialPath}.mat is missing: the water-pipe look is not drawn.");
+            return s_mat;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -298,11 +203,8 @@ namespace CosmicShore.Gameplay
             s_tunnels.Clear();
             s_nets.Clear();
             s_resolved = false;
-            if (s_netMatOwned && s_netMat) Object.Destroy(s_netMat);
-            s_mat = s_netMat = null;
-            s_netMatOwned = false;
+            s_mat = null;
             s_blocks.Clear();
-            SceneColour.ResetOnLoad();
         }
     }
 }

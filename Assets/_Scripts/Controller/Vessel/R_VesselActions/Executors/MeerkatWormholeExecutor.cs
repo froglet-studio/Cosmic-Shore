@@ -58,7 +58,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Every number of the wormhole (the Vessel Studio's Meerkat keys, by the same names).")]
         [SerializeField] MeerkatWormholeConfigSO config;
 
-        [Tooltip("The game data the domain palette is read from (the pilot's aiming reticle takes its domain colour; tunnels are universal and take none).")]
+        [Tooltip("The game data the domain palette is read from (a tunnel and its bridge take their maker's domain colour).")]
         [SerializeField] GameDataSO gameData;
 
         /// <summary>One formed tunnel, everyone's (the page's <c>pr.wh</c>).</summary>
@@ -422,7 +422,7 @@ namespace CosmicShore.Gameplay
             {
                 A = a, T0 = t0, Side = side, L = sh.L, S = sh.S, R = sh.R, B = sh.B, M = sh.M, Theta = sh.Theta, FormT = formT,
                 Path = new MeerkatWormholeMath.Conic(sh.L, sh.Theta, sh.Oval),
-                W = MeerkatWormholeMath.NewWindow(sh.L), Colour = MeerkatTubeLook.TunnelColour, Maker = this, Seq = seq, Born = Time.time,
+                W = MeerkatWormholeMath.NewWindow(sh.L), Colour = DomainColour(), Maker = this, Seq = seq, Born = Time.time,
             };
             _mine = t;
             s_tunnels.Add(t);
@@ -1112,8 +1112,7 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ helpers
 
-        /// <summary>This pilot's domain colour, the one its aiming reticle takes. Its tunnels take none (they are universal:
-        /// <see cref="MeerkatTubeLook.TunnelColour"/>).</summary>
+        /// <summary>This pilot's domain colour, the one its tunnels and its bridge-look reticle take.</summary>
         public Color Colour => DomainColour();
 
         Color DomainColour()
