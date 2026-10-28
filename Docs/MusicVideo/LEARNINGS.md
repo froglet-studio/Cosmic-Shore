@@ -312,6 +312,13 @@ Mapping v3 answers each line:
   ffmpeg (`shot.mp4`, H.264 4:4:4 crf 8, near-lossless; ~0.4 MB a frame) and the PNG is deleted, so a shot
   holds two frames on disk; `frames.csv` still carries every frame's game time, and assemble.py / score.py
   read `shot.mp4` (the sheet's stills are extracted from it).
+- **Three players at most on a 16 GB box.** A player recording a populated cell at 1080p / 1.5x / 8x MSAA
+  holds 3.3-3.5 GB; four of them tripped the memory cgroup's OOM killer (the player log ends in "Killed",
+  `dmesg` says `Memory cgroup out of memory`, the control port answers "Remote end closed connection").
+  Two songs side by side are `--jobs 2` for one and `--jobs 1` for the other. And the rule the skill already
+  states was paid for again: `pkill -f` with the runner's path in the pattern matched the calling shell
+  (exit 144) and killed the runner but not its players; stop players by PID (`ps` + `[c]ontrol-port` bracket
+  patterns), never by a pattern your own command line contains.
 - **The different vibe picks itself**: SPACE GLIDING (108 bpm, mean energy 0.18, the quietest song in the
   project) opens on the shoal and the loop (yggdra-shoal, hesperides-loop) and only reaches a siege in its drop;
   SKY FIRE (123 bpm) runs wormhole-run → the kit combo on the drop → joust → rally → swarm siege.
