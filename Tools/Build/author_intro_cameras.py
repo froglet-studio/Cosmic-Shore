@@ -31,6 +31,17 @@ ASSET_GUID = '0b7e3c5a9d2f4e61a8c47f19d6e2b305'
 GAME_LISTS = ['Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset',
               'Assets/_SO_Assets/Games/GameLists/ArenaGames.asset']
 
+# The caption look (IntroCameraLibrarySO's Look header).
+LETTERBOX = 0.1222                 # 132 units of a 1080 frame: a 2.39:1 picture
+ALDRICH = 'Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/ALDRICH-REGULAR SDF.asset'
+CHAKRA = 'Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset'
+
+
+def font_guid(path):
+    with open(os.path.join(ROOT, path + '.meta')) as fh:
+        return re.search(r'^guid: (\w+)', fh.read(), re.M).group(1)
+
+
 ANCHOR = {'Center': 0, 'Player': 1, 'Rival': 2, 'Teammate': 3, 'Pilots': 4, 'Crystal': 5, 'Gate': 6, 'Landmark': 7}
 SPACE = {'arena': 0, 'units': 1, 'local': 2, 'localunits': 3}
 KIND = {'move': 0, 'orbit': 1, 'path': 2, 'vertigo': 3, 'cuts': 4, 'hold': 5}
@@ -542,9 +553,13 @@ def build():
         L.append(f'    tagline: {text(tagline)}')
         L.append(f'    objective: {text(objective)}')
         L.append(f'    pilots: {text(pilots)}')
-    L += ['  referenceRadius: 240', '  scaleMultiplier: 1', '  letterbox: 0.085', '  captionFont: {fileID: 0}',
-          '  titleFontSize: 110', '  taglineFontSize: 32', '  objectiveFontSize: 24', '  lowerTitleFontSize: 44',
-          '  lowerLineFontSize: 18']
+    # The look is the Rev 33 cell-gate board's (Docs/MENU_REDESIGN_B.md section 99, board A): 132 px bars at 1080,
+    # the title and the lower third's name in Aldrich, the smaller lines in Chakra Petch SemiBold (the kit's faces).
+    L += ['  referenceRadius: 240', '  scaleMultiplier: 1', f'  letterbox: {LETTERBOX}',
+          f'  captionFont: {{fileID: 11400000, guid: {font_guid(ALDRICH)}, type: 2}}',
+          f'  detailFont: {{fileID: 11400000, guid: {font_guid(CHAKRA)}, type: 2}}',
+          '  titleFontSize: 118', '  taglineFontSize: 26', '  objectiveFontSize: 15', '  lowerTitleFontSize: 34',
+          '  lowerLineFontSize: 13']
     return '\n'.join(L) + '\n'
 
 

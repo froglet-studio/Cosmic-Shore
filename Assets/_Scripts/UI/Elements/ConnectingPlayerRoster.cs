@@ -3,6 +3,7 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,10 +19,16 @@ namespace CosmicShore.UI
     /// the panel never has to explain the wait in prose: the row IS the answer, and the status line
     /// only names it.</para>
     ///
-    /// <para><b>AI are deliberately absent.</b> The row exists to show what is being waited on, and
-    /// nothing ever waits on an AI — it has no machine of its own to finish loading
-    /// (<see cref="IPlayer.IsArenaReady"/> is true for one by construction). A row that listed them
-    /// would show chips that could never change, which reads as players who never arrive.</para>
+    /// <para><b>AI are absent from the wait.</b> Nothing ever waits on an AI — it has no machine of its own
+    /// to finish loading (<see cref="IPlayer.IsArenaReady"/> is true for one by construction) — so AI never
+    /// count in <see cref="AllHumansReady"/>. A chip row leaves them out; the ROW MODE (the Rev 33 cell-gate
+    /// loading screen's pilots panel, Docs/MENU_REDESIGN_B.md section 99) can list them with
+    /// <see cref="showAI"/>, tagged and already ready, because that panel is the match's line-up, not
+    /// only the wait.</para>
+    ///
+    /// <para><b>Row mode</b> is the chip with words: wire any of the template's name, tag, hull line, state
+    /// word and pip and they are filled per player (every word authored here). Unwired parts are simply
+    /// not drawn, so the chip row is unchanged.</para>
     /// </summary>
     public class ConnectingPlayerRoster : MonoBehaviour
     {
@@ -84,6 +91,40 @@ namespace CosmicShore.UI
 
         [SerializeField, Min(16f)] float builtEntrySize = 64f;
 
+        [Tooltip("The domain-coloured ring behind each entry. Off for a row whose template is a panel " +
+                 "rather than a round avatar: a halo the shape of a row reads as a coloured box.")]
+        [SerializeField] bool domainHalo = true;
+
+        [Header("Row mode (optional - the template's words)")]
+        [Tooltip("List AI seats too, tagged and already ready. They never count in the wait.")]
+        [SerializeField] bool showAI;
+        [Tooltip("The player's name.")]
+        [SerializeField] TMP_Text templateNameText;
+        [Tooltip("\"You\" on the local pilot, \"AI\" on an AI seat, nothing on another human.")]
+        [SerializeField] TMP_Text templateBadgeText;
+        [Tooltip("The line under the name, from Line Template.")]
+        [SerializeField] TMP_Text templateLineText;
+        [Tooltip("\"Loading\" until that pilot's arena is built, then \"Ready\".")]
+        [SerializeField] TMP_Text templateStateText;
+        [Tooltip("The dot beside the state word: the Waiting colour, then the Ready colour.")]
+        [SerializeField] Image templatePip;
+        [Tooltip("Where a hull's name is looked up for {hull}.")]
+        [SerializeField] SO_VesselList vessels;
+        [SerializeField] string youWord = "You";
+        [SerializeField] string aiWord = "AI";
+        [SerializeField] string waitingWord = "Loading";
+        [SerializeField] string readyWord = "Ready";
+        [Tooltip("The line under the name. {hull} is the pilot's vessel. Empty shows no line.")]
+        [SerializeField] string lineTemplate = "{hull}";
+        [Tooltip("Optional count of the listed pilots who are ready, e.g. \"2 / 3 Ready\".")]
+        [SerializeField] TMP_Text countText;
+        [Tooltip("{ready} and {total} are filled. Empty shows nothing.")]
+        [SerializeField] string countTemplate = "{ready} / {total} Ready";
+        [SerializeField] UIColorToken readyToken = UIColorToken.Cta;
+        [SerializeField] UIColorToken waitingToken = UIColorToken.NeutralLightest;
+        [SerializeField] UIColorToken youToken = UIColorToken.Selection;
+        [SerializeField] UIColorToken otherBadgeToken = UIColorToken.NeutralLightest;
+
         class Chip
         {
             public IPlayer Player;
@@ -91,16 +132,21 @@ namespace CosmicShore.UI
             public Image Avatar;
             public Image Plate;      // optional authored domain plate
             public Image Halo;       // the domain ring behind the avatar
+            public TMP_Text Name, Badge, Line, State;
+            public Image Pip;
             public float Lit01;
+            public bool Ready;
         }
 
         readonly List<Chip> _chips = new();
         readonly List<IPlayer> _humans = new();
+        readonly List<IPlayer> _shown = new();
         RectTransform _container;
         RectTransform _template;
         Sprite _templateSprite;
-        string _avatarPath, _domainPath;
+        string _avatarPath, _domainPath, _namePath, _badgePath, _linePath, _statePath, _pipPath;
         bool _running;
+        int _shownReady = -1;
 
         /// <summary>Human pilots this row is tracking.</summary>
         public int HumanCount => _humans.Count;
@@ -166,15 +212,38 @@ namespace CosmicShore.UI
             float dt = Time.unscaledDeltaTime;
             float breath = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * glowPulseHz * Mathf.PI * 2f);
 
+            int readyCount = 0;
             for (int i = 0; i < _chips.Count; i++)
+            {
                 TickChip(_chips[i], dt, breath);
+                if (_chips[i].Ready) readyCount++;
+            }
+            DrawCount(readyCount);
         }
+
+        static bool IsReady(IPlayer player) => player != null && (player.IsInitializedAsAI || player.IsArenaReady);
+
+        // The listed pilots' count, written only when it changes.
+        void DrawCount(int ready)
+        {
+            if (!countText || ready == _shownReady) return;
+            _shownReady = ready;
+            countText.text = TemplateText.Fill(countTemplate, "ready", ready.ToString(), "total", _chips.Count.ToString());
+            countText.color = Theme(ready >= _chips.Count && _chips.Count > 0 ? readyToken : waitingToken);
+        }
+
+        static Color Theme(UIColorToken token) => UITheme.Resolve(null, token);
 
         void TickChip(Chip chip, float deltaTime, float breath01)
         {
             if (chip?.Root == null) return;
 
-            bool ready = chip.Player != null && chip.Player.IsArenaReady;
+            bool ready = IsReady(chip.Player);
+            if (ready != chip.Ready)
+            {
+                chip.Ready = ready;
+                DrawState(chip);
+            }
             chip.Lit01 = Mathf.MoveTowards(chip.Lit01, ready ? 1f : 0f, deltaTime / litRiseSeconds);
 
             Color domain = DomainColor(chip.Player);
@@ -202,6 +271,8 @@ namespace CosmicShore.UI
 
         // ── Roster ──────────────────────────────────────────────────────────
 
+        bool Listed(IPlayer p) => p != null && (showAI || !p.IsInitializedAsAI);
+
         bool RosterChanged()
         {
             int seen = 0;
@@ -211,44 +282,91 @@ namespace CosmicShore.UI
                 for (int i = 0; i < players.Count; i++)
                 {
                     var p = players[i];
-                    if (p == null || p.IsInitializedAsAI) continue;
-                    if (seen >= _humans.Count || !ReferenceEquals(_humans[seen], p)) return true;
+                    if (!Listed(p)) continue;
+                    if (seen >= _shown.Count || !ReferenceEquals(_shown[seen], p)) return true;
                     seen++;
                 }
             }
-            return seen != _humans.Count;
+            return seen != _shown.Count;
         }
 
         void Rebuild()
         {
             _humans.Clear();
+            _shown.Clear();
             var players = gameData != null ? gameData.Players : null;
             if (players != null)
                 for (int i = 0; i < players.Count; i++)
-                    if (players[i] != null && !players[i].IsInitializedAsAI)
-                        _humans.Add(players[i]);
+                {
+                    var p = players[i];
+                    if (p != null && !p.IsInitializedAsAI) _humans.Add(p);
+                    if (Listed(p)) _shown.Add(p);
+                }
 
-            while (_chips.Count > _humans.Count)
+            while (_chips.Count > _shown.Count)
             {
                 var last = _chips[^1];
                 _chips.RemoveAt(_chips.Count - 1);
                 if (last?.Root) Destroy(last.Root.gameObject);
             }
-            while (_chips.Count < _humans.Count)
+            while (_chips.Count < _shown.Count)
             {
                 var chip = BuildChip();
                 if (chip == null) break;
                 _chips.Add(chip);
             }
 
+            _shownReady = -1;
             for (int i = 0; i < _chips.Count; i++)
             {
-                _chips[i].Player = _humans[i];
-                _chips[i].Lit01 = _humans[i] != null && _humans[i].IsArenaReady ? 1f : 0f;
-                ApplyAvatar(_chips[i], _humans[i]);
-                if (_chips[i].Root) _chips[i].Root.gameObject.SetActive(true);
-                TickChip(_chips[i], 0f, 1f);
+                var chip = _chips[i];
+                chip.Player = _shown[i];
+                chip.Ready = IsReady(_shown[i]);
+                chip.Lit01 = chip.Ready ? 1f : 0f;
+                ApplyAvatar(chip, _shown[i]);
+                ApplyWords(chip, _shown[i]);
+                DrawState(chip);
+                if (chip.Root) chip.Root.gameObject.SetActive(true);
+                TickChip(chip, 0f, 1f);
             }
+        }
+
+        // Row mode: the name, the tag and the hull line. Fixed for a player, so written on (re)build only.
+        void ApplyWords(Chip chip, IPlayer player)
+        {
+            if (chip.Name) chip.Name.text = player?.Name ?? string.Empty;
+            if (chip.Badge)
+            {
+                bool you = player != null && player.IsLocalPilot;
+                bool ai = player != null && player.IsInitializedAsAI;
+                chip.Badge.text = you ? youWord : ai ? aiWord : string.Empty;
+                chip.Badge.color = Theme(you ? youToken : otherBadgeToken);
+                chip.Badge.gameObject.SetActive(!string.IsNullOrEmpty(chip.Badge.text));
+            }
+            if (chip.Line) chip.Line.text = TemplateText.Fill(lineTemplate, "hull", HullName(player));
+        }
+
+        // Row mode: the state word and the pip.
+        void DrawState(Chip chip)
+        {
+            var c = Theme(chip.Ready ? readyToken : waitingToken);
+            if (chip.State)
+            {
+                chip.State.text = chip.Ready ? readyWord : waitingWord;
+                chip.State.color = c;
+            }
+            if (chip.Pip) chip.Pip.color = c;
+        }
+
+        string HullName(IPlayer player)
+        {
+            var status = player?.Vessel?.VesselStatus;
+            if (status == null) return string.Empty;
+            var hull = status.VesselType;
+            if (vessels != null && vessels.TryGetVesselByClass(hull, out var so, reportMissing: false) &&
+                !string.IsNullOrEmpty(so.Name))
+                return so.Name;
+            return hull.ToString();
         }
 
         /// <summary>
@@ -302,6 +420,11 @@ namespace CosmicShore.UI
             _templateSprite = own ? own.sprite : null;
             _avatarPath = RelativePath(_template, templateAvatarImage);
             _domainPath = RelativePath(_template, templateDomainImage);
+            _namePath = RelativePath(_template, templateNameText);
+            _badgePath = RelativePath(_template, templateBadgeText);
+            _linePath = RelativePath(_template, templateLineText);
+            _statePath = RelativePath(_template, templateStateText);
+            _pipPath = RelativePath(_template, templatePip);
 
             // Hidden, not destroyed: it is the source the chips are cut from, and a layout group
             // ignores an inactive child, so it costs the row nothing.
@@ -327,7 +450,7 @@ namespace CosmicShore.UI
             wrapper.sizeDelta = _template ? _template.sizeDelta : new Vector2(builtEntrySize, builtEntrySize);
 
             var chip = new Chip { Root = wrapper };
-            chip.Halo = BuildHalo(wrapper);
+            if (domainHalo) chip.Halo = BuildHalo(wrapper);
 
             RectTransform visual;
             if (_template)
@@ -372,7 +495,20 @@ namespace CosmicShore.UI
                 chip.Avatar.preserveAspect = true;
             }
             if (chip.Plate) chip.Plate.raycastTarget = false;
+
+            chip.Name = ResolveText(visual, _namePath);
+            chip.Badge = ResolveText(visual, _badgePath);
+            chip.Line = ResolveText(visual, _linePath);
+            chip.State = ResolveText(visual, _statePath);
+            chip.Pip = Resolve(visual, _pipPath);
             return chip;
+        }
+
+        static TMP_Text ResolveText(RectTransform clone, string path)
+        {
+            if (path == null || !clone) return null;
+            var found = path.Length == 0 ? clone : clone.Find(path);
+            return found ? found.GetComponent<TMP_Text>() : null;
         }
 
         Image BuildAvatar(RectTransform visual)

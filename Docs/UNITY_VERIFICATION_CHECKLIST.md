@@ -65,6 +65,51 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rev 33 A: the Cell gate loading screen, the hex countdown, the intro's new layout and the mode-entry lag fixes (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (Docs/MENU_REDESIGN_B.md section 99.4):
+- `ConnectingPanel.prefab` rebuilt as board A by `author_ingame_hud.py`. It covers the arena with the sea and a hex
+  hole, has the Omni crystal in its hex, ENTERING and the brief, the steps panel, the pilots panel (roster row mode)
+  and the tip and bar. `ConnectingGateView` opens the crystal's hex into the arena when the load ends.
+- The panel's camera and arena preview are removed from the prefab. The gameplay camera is parked while covered, the
+  build runs at 80 ms with `LoadGateCovered`, and the floor is 1 s (was 4).
+- `MultiplayerMiniGameControllerBase` brackets its InitDelayMs wait with `BeginArenaBuild` / `EndArenaBuild`. The
+  cell skips its 0.75 s settle while the gate holds. `SceneLoader` collects once on the way in, and
+  `waitBeforeLoading` is 0.1 s.
+- The intro is prepared during the hold, its clock is clamped, its overlay is reused, its bars ease in, and its
+  captions use board A's layout and fonts.
+- `CountdownTimer` gained a hex that fills through each number, a lime ring at GO, and 168 / 132 sizes. The beat
+  text no longer auto-sizes (it had been capped at 48 px).
+
+**Verified without the editor:**
+- Reference compile, player and editor: 0 errors in project code.
+- `author_ingame_hud.py --check` / `--self-test` (7 new negative controls fire).
+- `author_intro_cameras.py --check` / `--self-test` and `author_safe_area_layers.py --check`.
+- The prefab is structurally consistent: every component has its GameObject, every child its father, and
+  GameCanvas's overrides into the panel all resolve.
+- Rendered offline. That renderer cannot draw `HexApertureGraphic`, `LoadCrystalGraphic` or the sea material.
+
+**Verify in editor:**
+1. Arcade > Skim Race, intensity 3. From the first frame the screen is the sea, not the arena, with no flicker of the
+   world behind it. The crystal fills with the build. The steps tick 01-04 and each gets its check. The pilots list
+   you (YOU, blue), the AI pilots (AI) and their hulls, and each turns Ready in lime. The tip is one of the card's
+   tips and the bar reaches 100%.
+2. At the end the brief fades and the crystal flashes. Its hex opens onto the arena, glides to the centre and bursts
+   past the screen. The intro's bars come in with it, not in one frame.
+3. Intro: the title rises at the lower left with the tagline and the objective chip under it. The lower third is at
+   the lower right. Skip still works on a press.
+4. Countdown: 3, 2, 1 sit in a hex that fills from the bottom each second. At GO the hex bursts, a lime ring leaves
+   it and GO is lime and large (not the old small 48 px beat).
+5. A heavy arena (Cleave) and a six-seat mode: the pilots panel grows to fit every row, and the screen stays up until
+   the arena is built.
+6. Load Time Insights: the next "Game launch" reports should show no 1.2-1.9 s double freeze after "Connecting
+   panel shown", and START-to-ready down from 8.9 s typical. Profile one entry (`prof`) if the freeze persists. The
+   shader warm-up collection is still empty.
+7. Back to the menu: the cell-change screen (`EnvironmentLoadVeil`) is unchanged (its crystal is the same
+   `LoadCrystalGraphic`, defaults kept).
+
+---
+
 ### 🔴 The Meerkat's round 11: a water-pipe tunnel and a reticle lit from its far end (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:**
