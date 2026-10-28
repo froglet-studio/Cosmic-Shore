@@ -333,3 +333,91 @@ REBIND += [
                                            ("SwitchNear", "Scarab_SwitchNear", "switchNearIcon")],
                                  fields={"switchChargeColors": "[]"})),
 ]
+
+
+# ---- Space: Ball Forge options (2026-10-28) -------------------------------------------------------------------------
+# Ball Forge (SCARAB.md 4.1, SCARAB_CRYSTAL_MORPH.md): the skimmer touches an OMNI crystal and the crystal BECOMES a
+# ball, in place, at rest - its own body carried onto the ball's hull - and the hull strikes it. Space grows the ball
+# it mints: ScarabBallForge.BallSizeScale x1 -> x4, stamped at forge time. The ball wears the pilot's domain for life
+# (4.2), so it is the domain colour; the crystal is white. LESSONS 59: the BALL is held at one bold size and Space shows
+# as the crystal SHRINKING against it (1 / ball scale) - the ball a crystal makes grows.
+FORGE_MAX = 4.0
+BALL_PX = 30.0
+
+
+def omni_crystal(cx, cy, h):
+    """The omni crystal as a gem: a tall, narrow hexagonal bipyramid seen side on - long points, short shoulders -
+    its centre seam and upper facet seams cut through it (a squat one reads as a cube)."""
+    w = h * 0.3
+    sh = h * 0.08
+    body = fill([(cx, cy - h / 2), (cx + w, cy - sh), (cx + w, cy + sh), (cx, cy + h / 2),
+                 (cx - w, cy + sh), (cx - w, cy - sh)])
+    seam = max(1.6, h * 0.04)
+    seams = (stroke([(cx, cy - h / 2 + seam * 2), (cx, cy + h / 2 - seam * 2)], w=seam)
+             | stroke([(cx - w, cy - sh), (cx, cy + sh * 0.5), (cx + w, cy - sh)], w=seam))
+    return body & ~seams
+
+
+def _crystal_h(scale):
+    return 2 * BALL_PX / scale          # Space 1: as tall as the ball is wide; Space 10 (x4): a quarter
+
+
+@functools.lru_cache(None)
+def f1(scale):
+    """F1 BECOMES: the crystal at the left, a chevron, the ball it becomes at the right (left to right)."""
+    crystal = omni_crystal(26.0, 64.0, _crystal_h(scale))
+    chev = stroke([(46, 52), (56, 64), (46, 76)], w=6.0)
+    ball = disc(88.0, 64.0, BALL_PX)
+    return dict(crystal=crystal, chev=chev, ball=ball)
+
+
+@functools.lru_cache(None)
+def f2(scale):
+    """F2 IN PLACE: the ball with the crystal it was standing in front of it, knocked out of it - the crystal becomes
+    the ball where it stood."""
+    ball = disc(64.0, 64.0, BALL_PX * 1.5)
+    crystal = omni_crystal(64.0, 64.0, _crystal_h(scale) * 1.3)
+    return dict(ball=_clear_of(ball, crystal, px=3.0), crystal=crystal)
+
+
+@functools.lru_cache(None)
+def f3(scale):
+    """F3 THE HULL IT WEARS: the ball (domain) wearing the crystal's facets - seams cut across it in the crystal's
+    pattern (SCARAB_CRYSTAL_MORPH: the crystal's body carried onto the ball's hull), and a white crystal beside it at
+    the live Space size."""
+    r = BALL_PX * 1.4
+    cx = 74.0
+    ball = disc(cx, 64.0, r)
+    seam = 3.0
+    facets = (stroke([(cx - r, 64 - r * 0.25), (cx, 64 - r * 0.05), (cx + r, 64 - r * 0.25)], w=seam)
+              | stroke([(cx, 64 - r * 0.05), (cx, 64 + r)], w=seam)
+              | stroke([(cx - r * 0.7, 64 - r * 0.7), (cx, 64 - r * 0.05), (cx + r * 0.7, 64 - r * 0.7)], w=seam))
+    crystal = omni_crystal(18.0, 64.0, _crystal_h(scale) * 0.7)
+    return dict(ball=ball & ~facets, crystal=crystal)
+
+
+def _forge_card(name, title, fn, layers, lit):
+    keys = {k for k, _c in layers}
+    parts = {f"{k}{t}": (lambda k=k, sc=sc: fn(sc)[k]) for k in keys for t, sc in (("1", 1.0), ("10", FORGE_MAX))}
+    at = lambda sfx: [(k + sfx, c) for k, c in layers]
+    return dict(name=name, group="ballforge", lockup_state=0, element="Space",
+                before=ICON_DIR + "Scarab_BallForge-PLACEHOLDER.png", title=title, parts=parts,
+                states=[("Space 1", at("1")), ("Space 10: the ball 4x (the crystal smaller against it)", at("10")),
+                        ("forging (lit)", [(k + "1", *rest) for k, *rest in lit])])
+
+
+CARDS += [
+    _forge_card("space_option_f1",
+                "F1 - BECOMES: the omni crystal (white) at the left, a chevron, the ball it becomes in your colour; Space "
+                "grows the ball, so the crystal shrinks against it (x1 -> x4)",
+                f1, [("crystal", "white"), ("chev", "white"), ("ball", "domain")],
+                [("crystal", "white", 0.4), ("chev", "white"), ("ball", "domain")]),
+    _forge_card("space_option_f2",
+                "F2 - IN PLACE: the ball in your colour with the crystal it was, cut out of it in white - the crystal "
+                "becomes the ball where it stood",
+                f2, [("ball", "domain"), ("crystal", "white")], [("ball", "domain"), ("crystal", "white", 0.4)]),
+    _forge_card("space_option_f3",
+                "F3 - THE HULL IT WEARS: the ball in your colour wearing the crystal's facets (the morph carries the "
+                "crystal's body onto it), a white crystal beside it at the live Space size",
+                f3, [("crystal", "white"), ("ball", "domain")], [("crystal", "white", 0.4), ("ball", "domain")]),
+]
