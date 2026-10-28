@@ -27,8 +27,10 @@ WHERE EACH CRYSTAL GETS ITS COLOUR in the free (lime, anyone collects) state:
 THE RULE is the runtime tint's, in one place for both: the element's shade at the donor colour's brightness (its
 brightest channel), so a shade whose brightest channel is 1 lands on the donor's peak and the darker shades stay
 darker by the same ratio. Only the BRIGHT colour moves on the Fresnel materials: their dark end is near-black.
-The omni (OmniCrystalBody, OmniDepthPrisms) keeps the palette's lime, and the embedded (blue-white) materials are
-untouched: colour still says WHO can collect (Docs/PALETTE.md), and each lime shade says WHICH element.
+The omni wears all four shades, each on its element's shapes (Garrett, 2026-10-28, Docs/PALETTE.md §2.12):
+author_omni_crystal_triangles.py writes them into OmniCrystalBody / OmniDepthPrisms / OmniChargeArcs with recolor()
+below. The embedded (blue-white) materials are untouched: colour still says WHO can collect (Docs/PALETTE.md), and
+each lime shade says WHICH element.
 """
 import hashlib
 import os

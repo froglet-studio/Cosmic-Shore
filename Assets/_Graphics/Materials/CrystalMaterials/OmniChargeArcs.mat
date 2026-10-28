@@ -29,6 +29,6 @@ Material:
     - _GlowIntensity: 1
     m_Colors:
     - _ArcCoreColor: {r: 0.85, g: 0.95, b: 1, a: 1}
-    - _BrightColor: {r: 0.4862745, g: 0.9882354, b: 0, a: 1}
+    - _BrightColor: {r: 0.6186, g: 0.9882, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

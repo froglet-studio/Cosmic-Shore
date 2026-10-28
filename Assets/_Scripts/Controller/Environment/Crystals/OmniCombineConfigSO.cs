@@ -27,19 +27,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] TextAsset combineData;
 
         [Header("Materials")]
-        [Tooltip("The Space, Time and Charge crystals. OmniCrystalBody: the omni's own body material, so each flies in its own shade of lime on the omni's look and lands in the omni's lime (Palette), and nothing changes at the hand-off. (Charge's own material differed, and its pentagons came in the wrong hue; its contrast is its lit state, the seam walk.)")]
+        [Tooltip("The Space, Time and Charge crystals. OmniCrystalBody: the omni's own body material, which paints each plate in its element's shade of lime (_ElementShades), so each crystal flies in its own shade on the omni's look, lands as the omni's plates in that same shade, and nothing changes at the hand-off. (Charge's own material differed, and its pentagons came in the wrong hue; its contrast is its lit state, the seam walk.)")]
         [SerializeField] Material shellMaterial;
         [Tooltip("The Mass crystal, as it is drawn in play: MassDepthPrisms (the depth-prism shader). The crystal itself is the game's MassCrystalPrisms mesh, carried in the combine data.")]
         [SerializeField] Material massMaterial;
-        [Tooltip("The finished omni crystal's body. OmniCrystalBody.")]
+        [Tooltip("The finished omni crystal's body. OmniCrystalBody: each plate in its element's shade of lime.")]
         [SerializeField] Material omniMaterial;
-        [Tooltip("The omni's triangles, as they are drawn in play: OmniDepthPrisms.")]
+        [Tooltip("The omni's triangles, as they are drawn in play: OmniDepthPrisms, in the Mass shade.")]
         [SerializeField] Material omniTrianglesMaterial;
-        [Tooltip("The palette whose EnvironmentColors.ElementalCrystalColors give each crystal its shade of lime (the free " +
-                 "elemental crystals' shades in play, the Wrasse's lasso shades). Each crystal flies in its shade at the " +
-                 "omni body's brightness and turns to the omni's lime as its plates morph, so it is the omni's colour by " +
-                 "the time it lands (Garrett, 2026-10-27). Empty, or a shade unauthored: that crystal flies in the omni's lime.")]
-        [SerializeField] SO_ColorSet palette;
 
         [Header("Depth prisms (the game's)")]
         [Tooltip("The omni's triangle prisms: OmniCrystalTriangles.asset (Read/Write), turned onto the combine's omni by the rotation in the combine data.")]
@@ -112,7 +107,6 @@ namespace CosmicShore.Gameplay
         public Material OmniMaterial => omniMaterial;
         public Material MassMaterial => massMaterial;
         public Material OmniTrianglesMaterial => omniTrianglesMaterial;
-        public SO_ColorSet Palette => palette;
         public Mesh OmniTrianglesMesh => omniTrianglesMesh;
         public CrystalDepthPrismProfileSO DepthProfile => depthProfile;
         public OmniCrystalCadenceSO Cadence => cadence;
