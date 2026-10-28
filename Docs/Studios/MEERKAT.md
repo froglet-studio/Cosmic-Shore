@@ -851,10 +851,14 @@ The parked black/white-hole look for tunnels is in `Docs/Studios/STOAT_PARKED_HO
 
 ## Sound (2026-10-28, artifact only)
 
-Yash: *"sound effects to the Meerkat's abilities, all that we are creating ... add sound effects one by one ... I will
-test and confirm."* **Vessel Config > Sound** lists every ability's sound (the shared `studio-audio.js`, synthesized in
-the browser, no files): **Play**, On, Volume, Pitch, Length, Brightness, then **Confirm** or **Redo**, which records
-"Sound: <name>" in the decision log with the four numbers. Settings stay in this browser.
+**On / off:** the **Sound: on / off** button at the top centre of the stage, the **M** key, or **Sound on** at the top
+of **Vessel Config > Sound**. All three are one switch, remembered in this browser (`vessel-studio-sound-on`).
+
+**The sound set (rebuilt the same day, Yash: "professional space sounds, not childish ones ... common good sounds").**
+Every sound is made of what film and game space sound is made of: deep sub impacts and swells (a softly saturated
+sine), airy filtered whooshes and risers, soft bell tones with long tails, and pads, all through one shared 4 s space
+reverb and a gentle compressor. No square-wave beeps or arpeggios. The ride inside a tunnel is deep bass with a rare
+high glint. Each sound keeps its Play, On, Volume, Pitch, Length, Brightness and Confirm / Redo.
 
 | Group | Sounds | Wired in the page |
 |---|---|---|

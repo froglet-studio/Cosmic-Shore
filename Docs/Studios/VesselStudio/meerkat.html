@@ -6024,6 +6024,7 @@
   }
   (function mountSound() {
     const host = $('soundPanel'); if (!host || !window.VesselStudioAudio) return;
+    VesselStudioAudio.mountToggle($('viewport'));   // Sound: on / off on the stage (and the M key), remembered in this browser
     VesselStudioAudio.mountPanel(host, {
       state: lsGet(SOUND_KEY, {}), onChange: (st) => lsSet(SOUND_KEY, st),
       onVerdict: (name, verdict, c) => record({ topic: 'Sound: ' + c.label, choice: (verdict === 'confirmed' ? 'Confirmed: ' : 'Redo: ') + c.label,
