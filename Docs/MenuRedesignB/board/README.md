@@ -302,6 +302,17 @@ avatars are the weekly leaderboard board's). The chat runs on Unity Vivox (`Docs
 - [`R27PortStates.dc.html`](R27PortStates.dc.html) - Rev 27 - Port: empty, loading, offline, not sent
 - [`R27Notes.dc.html`](R27Notes.dc.html) - Rev 27 - notes and decisions
 
+### Rev 33 - Into a game mode  (page `rev33`)
+
+Copied 2026-10-28 from canvas version `1793157683-c2fa`. The loading screen, intro and countdown, in the cell-change
+screen's look, and the lag reading (`Docs/MENU_REDESIGN_B.md` section 99). Awaiting a pick.
+
+- [`R33A.dc.html`](R33A.dc.html) - A: Cell gate (recommended) - the crystal fills with the build, its hex opens into the intro - interactive
+- [`R33B.dc.html`](R33B.dc.html) - B: Lineup - Regatta's six pilots light up as they load - interactive
+- [`R33C.dc.html`](R33C.dc.html) - C: Briefing - Dog Fight's map develops as the cell builds, then grows into the intro - interactive
+- [`R33D.dc.html`](R33D.dc.html) - D: Intro and countdown, shared by whichever loading screen wins - interactive
+- [`R33Notes.dc.html`](R33Notes.dc.html) - notes: 28 measured launches, why it lags, what the new screens change
+
 ### Rev 32 - Port: brighter messages and field  (page `rev32`)
 
 Copied 2026-10-27 from canvas version `1793129499-cf66`. Four looks for the message backgrounds and the field; D was
