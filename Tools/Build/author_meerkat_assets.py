@@ -128,7 +128,7 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRa
                "branchUp", "branchZone", "branchSymmetry", "branchForks", "branchGrowSeconds",
                "omniOn", "omniCount", "labyrinthBranchPointsMin", "labyrinthBranchPointsMax", "labyrinthOpeningsMin",
                "labyrinthOpeningsMax", "labyrinthRadiusMin", "labyrinthRadiusMax", "labyrinthSpread", "labyrinthRandomness",
-               "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl", "rootGlass", "rootRim", "rootGrain",
+               "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl", "rootBarkVisibility", "rootGlass", "rootRim", "rootGrain",
                "labyrinthFormSeconds", "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootMaxSpeed", "rootBounce",
                "rootGravity", "rootOpacity", "tubeInner", "rootLamp", "rootFog"]
 

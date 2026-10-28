@@ -170,12 +170,16 @@ namespace CosmicShore.Gameplay
                 var net = nets[n];
                 var cfg = net.Maker ? net.Maker.Config : null;
                 if (!cfg) continue;
+                // round 23: the bark (rootBarkVisibility) and the old inside wall (rootOpacity) ship off - the channels are
+                // wormhole tubes (MeerkatWormholeView, MeerkatTubeWallView) - and nothing is built while both are off
+                float bark = Mathf.Clamp01(cfg.RootBarkVisibility);
+                bool drawInside = inside == net && cfg.RootOpacity > 0.004f;
+                if (bark <= 0.004f && !drawInside) continue;
                 if (net.Skins == null || net.Skins.Length != net.Channels.Count)
                 {
                     net.Skins = new Mesh[net.Channels.Count];
                     for (int i = 0; i < net.Skins.Length; i++) net.Skins[i] = MeerkatTreeMesh.BuildRootSkin(net.Channels[i], cfg.RootTip);
                 }
-                bool drawInside = inside == net && cfg.RootOpacity > 0.004f;
                 for (int i = 0; i < net.Channels.Count; i++)
                 {
                     ref var w = ref net.Life[i];
@@ -187,24 +191,28 @@ namespace CosmicShore.Gameplay
                     if (f0 <= 1e-3f) f0 = -1f;
                     if (f1 >= 1f - 1e-3f) f1 = 2f;
                     float edge = Mathf.Max(4f, 0.06f * L) / L;
-                    // the bark: the trunk's own glass, in a root's brown
-                    var mpb = Next();
-                    mpb.SetColor(IdCIn, RootIn);
-                    mpb.SetColor(IdCOut, RootOut);
-                    mpb.SetFloat(IdAlpha, fade);
-                    mpb.SetFloat(IdGlass, Mathf.Max(0f, cfg.RootGlass));
-                    mpb.SetFloat(IdRim, Mathf.Max(0f, cfg.RootRim));
-                    mpb.SetFloat(IdPower, Mathf.Max(0.5f, cfg.TrunkFresnel));
-                    mpb.SetFloat(IdRings, 1f);
-                    mpb.SetFloat(IdGrain, Mathf.Max(0f, cfg.RootGrain));
-                    mpb.SetFloat(IdGrainN, Mathf.Max(2, Mathf.RoundToInt(cfg.TrunkGrainLines * 0.6f)));
-                    mpb.SetFloat(IdF0, f0);
-                    mpb.SetFloat(IdF1, f1);
-                    mpb.SetFloat(IdEdge, edge);
-                    mpb.SetFloat(IdT, now);
-                    mpb.SetFloatArray(IdBg, s_bg);
-                    var rp = new RenderParams(s_tree) { matProps = mpb, shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
-                    Graphics.RenderMesh(rp, net.Skins[i], 0, Matrix4x4.identity);
+                    MaterialPropertyBlock mpb;
+                    if (bark > 0.004f)
+                    {
+                        // the bark: the trunk's own glass, in a root's brown
+                        mpb = Next();
+                        mpb.SetColor(IdCIn, RootIn);
+                        mpb.SetColor(IdCOut, RootOut);
+                        mpb.SetFloat(IdAlpha, fade * bark);
+                        mpb.SetFloat(IdGlass, Mathf.Max(0f, cfg.RootGlass));
+                        mpb.SetFloat(IdRim, Mathf.Max(0f, cfg.RootRim));
+                        mpb.SetFloat(IdPower, Mathf.Max(0.5f, cfg.TrunkFresnel));
+                        mpb.SetFloat(IdRings, 1f);
+                        mpb.SetFloat(IdGrain, Mathf.Max(0f, cfg.RootGrain));
+                        mpb.SetFloat(IdGrainN, Mathf.Max(2, Mathf.RoundToInt(cfg.TrunkGrainLines * 0.6f)));
+                        mpb.SetFloat(IdF0, f0);
+                        mpb.SetFloat(IdF1, f1);
+                        mpb.SetFloat(IdEdge, edge);
+                        mpb.SetFloat(IdT, now);
+                        mpb.SetFloatArray(IdBg, s_bg);
+                        var rp = new RenderParams(s_tree) { matProps = mpb, shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
+                        Graphics.RenderMesh(rp, net.Skins[i], 0, Matrix4x4.identity);
+                    }
                     if (!drawInside) continue;
                     // from inside: a soft inner tube, the world outside still showing through, its ends open
                     float b = (float)c.B;

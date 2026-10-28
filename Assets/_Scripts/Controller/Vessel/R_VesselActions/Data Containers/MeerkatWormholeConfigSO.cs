@@ -120,8 +120,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float bridgeWhite = 0.45f;
 
         [Header("Tree (the artifact's Play Style Config > Wormhole · trunk: the tunnel's outer layer, round 14)")]
-        [Tooltip("The tree: the tunnel's outer layer, for everyone (0 = hidden)")]
-        [SerializeField, Range(0f, 1f)] float trunkVisibility = 1f;
+        [Tooltip("The tree: the tunnel's outer layer, for everyone (0 = hidden; off since round 23)")]
+        [SerializeField, Range(0f, 1f)] float trunkVisibility = 0f;
         [Tooltip("Trunk at the way in (× the mouth's radius)")]
         [SerializeField, Range(1f, 3f)] float trunkTop = 1.5f;
         [Tooltip("Trunk at the way out (× the mouth's radius)")]
@@ -161,35 +161,37 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("...each grows over (s), once the tunnel reaches it")]
         [SerializeField, Range(0.1f, 4f)] float branchGrowSeconds = 0.5f;
 
-        [Header("Omnicrystal · the roots (the artifact's Play Style Config > Omnicrystal, rounds 16-21)")]
-        [Tooltip("The Omnicrystal ability: an omnicrystal arms the labyrinth (0 = off)")]
+        [Header("Omnicrystal · the wormhole network (the artifact's Play Style Config > Omnicrystal, rounds 16-23)")]
+        [Tooltip("The Omnicrystal ability: an omnicrystal opens the wormhole network (0 = off)")]
         [SerializeField] bool omniOn = true;
         [Tooltip("Omnicrystals on the course (a new course or reset places them)")]
         [SerializeField, Range(0, 12)] int omniCount = 3;
-        [Tooltip("Roots: forks after the smallest trunk")]
+        [Tooltip("The network: forks after the smallest tunnel")]
         [SerializeField, Range(1, 16)] int labyrinthBranchPointsMin = 3;
-        [Tooltip("...forks after the biggest trunk")]
+        [Tooltip("...forks after the biggest tunnel")]
         [SerializeField, Range(1, 24)] int labyrinthBranchPointsMax = 12;
-        [Tooltip("...openings (tips) after the smallest trunk")]
+        [Tooltip("...openings after the smallest tunnel")]
         [SerializeField, Range(2, 48)] int labyrinthOpeningsMin = 5;
-        [Tooltip("...openings after the biggest trunk")]
+        [Tooltip("...openings after the biggest tunnel")]
         [SerializeField, Range(2, 72)] int labyrinthOpeningsMax = 30;
-        [Tooltip("...reach after the smallest trunk (u)")]
+        [Tooltip("...reach after the smallest tunnel (u)")]
         [SerializeField, Range(20f, 900f)] float labyrinthRadiusMin = 90f;
-        [Tooltip("...reach after the biggest trunk (u)")]
+        [Tooltip("...reach after the biggest tunnel (u)")]
         [SerializeField, Range(40f, 1500f)] float labyrinthRadiusMax = 420f;
         [Tooltip("...its openings spread round it over (°, 360 = all round)")]
         [SerializeField, Range(20f, 360f)] float labyrinthSpread = 360f;
         [Tooltip("...randomness")]
         [SerializeField, Range(0f, 1f)] float labyrinthRandomness = 0.45f;
-        [Tooltip("...channel diameter (u)")]
+        [Tooltip("...each wormhole's diameter (u)")]
         [SerializeField, Range(2f, 60f)] float labyrinthDiameter = 40f;
         [Tooltip("...source and opening diameter (u)")]
         [SerializeField, Range(4f, 120f)] float labyrinthMouthDiameter = 46f;
-        [Tooltip("Roots taper to (× the channel at the source)")]
+        [Tooltip("The wormholes taper to (× the one at the source)")]
         [SerializeField, Range(0.1f, 1f)] float rootTip = 0.6f;
-        [Tooltip("...gnarled: how much each root wanders")]
+        [Tooltip("...how much each wormhole wanders")]
         [SerializeField, Range(0f, 1f)] float rootGnarl = 0.3f;
+        [Tooltip("The network's root bark, for everyone (0 = hidden: the channels are wormhole tubes; off since round 23)")]
+        [SerializeField, Range(0f, 1f)] float rootBarkVisibility = 0f;
         [Tooltip("...their bark face-on")]
         [SerializeField, Range(0f, 0.3f)] float rootGlass = 0.015f;
         [Tooltip("...their bark at the silhouette (Fresnel)")]
@@ -198,23 +200,23 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1.5f)] float rootGrain = 0.35f;
         [Tooltip("...digs itself out from the source over (s)")]
         [SerializeField, Range(0.05f, 4f)] float labyrinthFormSeconds = 0.8f;
-        [Tooltip("In the roots: you cruise along the root at (u/s)")]
+        [Tooltip("In the network: you cruise along the tube at (u/s)")]
         [SerializeField, Range(0f, 200f)] float rootCruise = 45f;
         [Tooltip("...RT pushes you faster by (u/s²)")]
         [SerializeField, Range(0f, 300f)] float rootThrust = 90f;
-        [Tooltip("...the left stick moves you round the root by (u/s²)")]
+        [Tooltip("...the left stick moves you round the tube by (u/s²)")]
         [SerializeField, Range(0f, 200f)] float rootMove = 55f;
-        [Tooltip("...across the root, your drift dies away at (per s)")]
+        [Tooltip("...across the tube, your drift dies away at (per s)")]
         [SerializeField, Range(0f, 3f)] float rootDrag = 0.45f;
         [Tooltip("...never faster than (u/s)")]
         [SerializeField, Range(10f, 300f)] float rootMaxSpeed = 90f;
         [Tooltip("...a wall bounces you off with (× your speed into it)")]
         [SerializeField, Range(0f, 1f)] float rootBounce = 0.45f;
-        [Tooltip("...drawn to the root's floor by (u/s², 0 = you float)")]
+        [Tooltip("...drawn to the tube's floor by (u/s², 0 = you float)")]
         [SerializeField, Range(0f, 120f)] float rootGravity = 0f;
-        [Tooltip("From inside: how dense the soft inner wall is (0 = clear, 1 = solid)")]
-        [SerializeField, Range(0f, 1f)] float rootOpacity = 0.32f;
-        [Tooltip("The tree's and roots' inner tube: a smooth sheen, denser than the bark")]
+        [Tooltip("From inside: the roots' old inner wall (0 = off, the tube's calm wall instead; off since round 23)")]
+        [SerializeField, Range(0f, 1f)] float rootOpacity = 0f;
+        [Tooltip("Every tube's calm inner wall (a tunnel's and each channel's): a smooth sheen")]
         [SerializeField, Range(0f, 0.6f)] float tubeInner = 0.1f;
         [Tooltip("...your lamp on the walls round you")]
         [SerializeField, Range(0f, 3f)] float rootLamp = 1f;
@@ -383,6 +385,8 @@ namespace CosmicShore.ScriptableObjects
         public float RootBounce => rootBounce;
         public float RootGravity => rootGravity;
         public float RootOpacity => rootOpacity;
+        /// <summary>Round 23: the roots' bark round each channel (0, shipped: every channel is a wormhole tube).</summary>
+        public float RootBarkVisibility => rootBarkVisibility;
         public float TubeInner => tubeInner;
         public float RootLamp => rootLamp;
         public float RootFog => rootFog;

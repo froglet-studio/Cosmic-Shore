@@ -27,7 +27,11 @@ namespace CosmicShore.Gameplay
     /// pixel's ray through a thin shell on the tunnel's wall (<c>fieldInner</c> × r inside to <c>fieldOuter</c> × r outside,
     /// graded to zero at its edge). Inside the shell the ray is turned by a field whose lines on the wall are the tube's own
     /// contours (<c>fieldPitch</c> 0° along it, 90° round its rings), then it carries on; where it lands on screen is what
-    /// that pixel shows. The four tunnels nearest the camera take part (<see cref="MaxTubes"/>).
+    /// that pixel shows. The four tubes nearest the camera take part (<see cref="MaxTubes"/>).
+    /// <b>Round 23</b> (Yash, 2026-10-28: "the network of wormholes ... like our tube, same visuals"): a channel of an
+    /// omnicrystal's network is a tube too. It joins the same bank as a 3D polyline (<see cref="PathPoints"/> points at even
+    /// steps of s, each its radius, and the channel's carried normal), flagged by <c>Shape.y</c> 1, so the water pipe bends
+    /// space round the network exactly as round a tunnel; the nearest tubes are taken, tunnels and channels alike.
     /// Injected from script on every base game camera while a tunnel or a ripple is live (URP's "inject a pass via
     /// scripting" route); a scene with none pays nothing. The camera depth texture (a vessel in front of a mouth is not
     /// bent) is held on through <see cref="BlackHoleLens.CameraSupport"/> while anything is live.
@@ -54,6 +58,7 @@ namespace CosmicShore.Gameplay
         static readonly int TubeWinId = Shader.PropertyToID("_MWTubeWin");
         static readonly int TubeBoundId = Shader.PropertyToID("_MWTubeBound");
         static readonly int TubePathId = Shader.PropertyToID("_MWTubePath");
+        static readonly int TubeNormId = Shader.PropertyToID("_MWTubeNorm");
         static readonly int Field0Id = Shader.PropertyToID("_MWField0");
         static readonly int Field1Id = Shader.PropertyToID("_MWField1");
         static readonly int Field2Id = Shader.PropertyToID("_MWField2");
@@ -71,15 +76,25 @@ namespace CosmicShore.Gameplay
         static readonly Vector4[] s_c = new Vector4[MaxWells];
         static readonly Vector4[] s_p = new Vector4[MaxWells];
         static readonly ContourTubes s_tubes = new();
-        static readonly List<MeerkatWormholeExecutor.Tunnel> s_near = new();
-        static readonly List<float> s_nearD = new();
+        /// <summary>One tube the contour field may take: a tunnel, or (round 23) a channel of a network.</summary>
+        struct Near
+        {
+            public MeerkatWormholeExecutor.Tunnel Tunnel;
+            public MeerkatRootNetwork Net;
+            public int Channel;
+            public float D;
+            public ScriptableObjects.MeerkatWormholeConfigSO Config => Tunnel != null ? Tunnel.Config : Net.Maker.Config;
+        }
+        static readonly Near[] s_near = new Near[MaxTubes];
+        static int s_nearN;
 
         /// <summary>The contour field's bank for one camera: up to <see cref="MaxTubes"/> tunnels, the field's numbers, the eye.</summary>
         public sealed class ContourTubes
         {
             public readonly Matrix4x4[] W2L = new Matrix4x4[MaxTubes];
-            public readonly Vector4[] Shape = new Vector4[MaxTubes];   // L, 0, theta, throat (round 22)
-            public readonly Vector4[] Path = new Vector4[MaxTubes * PathPoints];   // per point: across, ahead (its own frame), s, turned
+            public readonly Vector4[] Shape = new Vector4[MaxTubes];   // L, 0 a tunnel / 1 a channel (round 23), theta, throat (round 22)
+            public readonly Vector4[] Path = new Vector4[MaxTubes * PathPoints];   // per point: across, ahead (its own frame), s, turned; a channel: x, y, z, radius
+            public readonly Vector4[] Norm = new Vector4[MaxTubes * PathPoints];   // a channel's carried normal per point (round 23)
             public readonly Vector4[] Win = new Vector4[MaxTubes];     // s0, s1, fade, mouth
             public readonly Vector4[] Bound = new Vector4[MaxTubes];   // world centre, radius
             public Vector4 F0, F1, F2, F3, CamPos, CamR, CamU, CamF;
@@ -92,6 +107,7 @@ namespace CosmicShore.Gameplay
                 System.Array.Copy(Win, o.Win, MaxTubes);
                 System.Array.Copy(Bound, o.Bound, MaxTubes);
                 System.Array.Copy(Path, o.Path, MaxTubes * PathPoints);
+                System.Array.Copy(Norm, o.Norm, MaxTubes * PathPoints);
                 o.F0 = F0; o.F1 = F1; o.F2 = F2; o.F3 = F3;
                 o.CamPos = CamPos; o.CamR = CamR; o.CamU = CamU; o.CamF = CamF;
                 o.Count = Count;
@@ -123,7 +139,8 @@ namespace CosmicShore.Gameplay
             profilingSampler = new ProfilingSampler("MeerkatWormholeLens");
         }
 
-        static bool AnythingLive => MeerkatWormholeExecutor.Live.Count > 0 || MeerkatWormholeExecutor.Ripples.Count > 0;
+        static bool AnythingLive => MeerkatWormholeExecutor.Live.Count > 0 || MeerkatWormholeExecutor.Ripples.Count > 0 ||
+                                    MeerkatRootNetwork.Live.Count > 0;   // round 23: a network bends space as a tunnel does
 
         static void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {
@@ -238,6 +255,7 @@ namespace CosmicShore.Gameplay
                     d.block.SetVectorArray(TubeWinId, t.Win);
                     d.block.SetVectorArray(TubeBoundId, t.Bound);
                     d.block.SetVectorArray(TubePathId, t.Path);
+                    d.block.SetVectorArray(TubeNormId, t.Norm);
                     d.block.SetVector(Field0Id, t.F0);
                     d.block.SetVector(Field1Id, t.F1);
                     d.block.SetVector(Field2Id, t.F2);
@@ -297,54 +315,119 @@ namespace CosmicShore.Gameplay
         public static int ContourTubesFor(Camera cam, ContourTubes bank)
         {
             var eye = cam.transform.position;
-            s_near.Clear(); s_nearD.Clear();
+            s_nearN = 0;
             var live = MeerkatWormholeExecutor.Live;
             for (int i = 0; i < live.Count; i++)
             {
                 var t = live[i];
                 var cfg = t.Config;
                 if (!cfg || !cfg.ContourFieldOn || t.W.S1 - t.W.S0 < 1f || t.Fade <= 0.004f) continue;
-                float d = Vector3.Distance(eye, t.At(0.5f * (t.W.S0 + t.W.S1), out _));
-                int at = s_nearD.Count;
-                while (at > 0 && s_nearD[at - 1] > d) at--;
-                if (at >= MaxTubes) continue;
-                s_near.Insert(at, t); s_nearD.Insert(at, d);
-                if (s_near.Count > MaxTubes) { s_near.RemoveAt(MaxTubes); s_nearD.RemoveAt(MaxTubes); }
+                Offer(new Near { Tunnel = t, D = Vector3.Distance(eye, t.At(0.5f * (t.W.S0 + t.W.S1), out _)) });
             }
-            int n = s_near.Count;
-            bank.Count = n;
+            // round 23: every channel of a network is a wormhole tube; its distance is to the nearest point of its dug window
+            var nets = MeerkatRootNetwork.Live;
+            var eyeD = MeerkatRootNetwork.D(eye);
+            for (int n = 0; n < nets.Count; n++)
+            {
+                var net = nets[n];
+                var cfg = net.Maker ? net.Maker.Config : null;
+                if (!cfg || !cfg.ContourFieldOn || MeerkatWormholeView.ChannelWrapped(cfg)) continue;
+                for (int i = 0; i < net.Channels.Count; i++)
+                {
+                    ref var w = ref net.Life[i];
+                    if (w.Phase == MeerkatRootMath.Phase.Gone || w.S1 - w.S0 < 1 || MeerkatWormholeView.ChannelFade(w) <= 0.004f) continue;
+                    var c = net.Channels[i];
+                    double s = System.Math.Max(w.S0, System.Math.Min(w.S1, MeerkatRootMath.Nearest(c.Path, eyeD)));
+                    var at = MeerkatRootMath.At(c.Path, s, out _);
+                    float d = Mathf.Max(0f, (float)at.DistanceTo(eyeD) - (float)MeerkatRootMath.Radius(c, s, cfg.RootTip));
+                    Offer(new Near { Net = net, Channel = i, D = d });
+                }
+            }
+            int count = s_nearN;
+            bank.Count = count;
             for (int i = 0; i < MaxTubes; i++)
             {
-                if (i >= n)
+                for (int j = 0; j < PathPoints; j++) bank.Norm[i * PathPoints + j] = Vector4.zero;
+                if (i >= count)
                 {
                     bank.W2L[i] = Matrix4x4.identity; bank.Shape[i] = bank.Win[i] = bank.Bound[i] = Vector4.zero;
                     for (int j = 0; j < PathPoints; j++) bank.Path[i * PathPoints + j] = Vector4.zero;
                     continue;
                 }
-                var t = s_near[i];
-                float outer = Mathf.Max(0f, t.Config.FieldOuter);
-                var mid = t.At(0.5f * (t.W.S0 + t.W.S1), out _);
-                bank.W2L[i] = MeerkatWormholeMath.TubeWorldToLocal(t.A, t.T0, t.Side);
-                bank.Shape[i] = new Vector4(t.L, 0f, t.Theta, t.B);
-                for (int j = 0; j < PathPoints; j++)   // round 22: the arc in the tube's own frame (x across, z ahead)
-                {
-                    float sj = t.L * j / (PathPoints - 1);
-                    t.Path.At(sj, out float ahead, out float across, out float turned);
-                    bank.Path[i * PathPoints + j] = new Vector4(across, ahead, sj, turned);
-                }
-                bank.Win[i] = new Vector4(t.W.S0, t.W.S1, t.Fade, t.M);
-                bank.Bound[i] = new Vector4(mid.x, mid.y, mid.z, 0.5f * (t.W.S1 - t.W.S0) + Mathf.Max(t.B, t.M) * (1f + outer) + 4f);
+                if (s_near[i].Tunnel != null) WriteTunnel(bank, i, s_near[i].Tunnel);
+                else WriteChannel(bank, i, s_near[i].Net, s_near[i].Channel);
             }
-            if (n == 0) return 0;
-            var c = s_near[0].Config;
-            bank.F0 = new Vector4(c.FieldStrength * Mathf.Deg2Rad, c.FieldPitch * Mathf.Deg2Rad, c.FieldDrag, c.FieldTwist);
-            bank.F1 = new Vector4(c.FieldGlass, c.FieldGlassIndex, c.FieldGrazing, (float)c.FieldFlow);
-            bank.F2 = new Vector4(c.FieldInner, c.FieldOuter, (float)c.FieldProfile, c.FieldRibs);
-            bank.F3 = new Vector4(c.FieldRibSharpness, Time.time * c.FieldRibTravel, Mathf.Max(2, c.FieldRibRings), Mathf.Max(1, c.FieldRibLines));
+            if (count == 0) return 0;
+            var c0 = s_near[0].Config;
+            bank.F0 = new Vector4(c0.FieldStrength * Mathf.Deg2Rad, c0.FieldPitch * Mathf.Deg2Rad, c0.FieldDrag, c0.FieldTwist);
+            bank.F1 = new Vector4(c0.FieldGlass, c0.FieldGlassIndex, c0.FieldGrazing, (float)c0.FieldFlow);
+            bank.F2 = new Vector4(c0.FieldInner, c0.FieldOuter, (float)c0.FieldProfile, c0.FieldRibs);
+            bank.F3 = new Vector4(c0.FieldRibSharpness, Time.time * c0.FieldRibTravel, Mathf.Max(2, c0.FieldRibRings), Mathf.Max(1, c0.FieldRibLines));
             var ct = cam.transform;
             bank.CamPos = new Vector4(eye.x, eye.y, eye.z, Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * 0.5f));
             bank.CamR = ct.right; bank.CamU = ct.up; bank.CamF = ct.forward;
-            return n;
+            return count;
+        }
+
+        /// <summary>Keeps the <see cref="MaxTubes"/> nearest tubes, nearest first.</summary>
+        static void Offer(in Near c)
+        {
+            int at = s_nearN;
+            while (at > 0 && s_near[at - 1].D > c.D) at--;
+            if (at >= MaxTubes) return;
+            int last = Mathf.Min(s_nearN, MaxTubes - 1);
+            for (int k = last; k > at; k--) s_near[k] = s_near[k - 1];
+            s_near[at] = c;
+            if (s_nearN < MaxTubes) s_nearN++;
+        }
+
+        static void WriteTunnel(ContourTubes bank, int i, MeerkatWormholeExecutor.Tunnel t)
+        {
+            float outer = Mathf.Max(0f, t.Config.FieldOuter);
+            var mid = t.At(0.5f * (t.W.S0 + t.W.S1), out _);
+            bank.W2L[i] = MeerkatWormholeMath.TubeWorldToLocal(t.A, t.T0, t.Side);
+            bank.Shape[i] = new Vector4(t.L, 0f, t.Theta, t.B);
+            for (int j = 0; j < PathPoints; j++)   // round 22: the arc in the tube's own frame (x across, z ahead)
+            {
+                float sj = t.L * j / (PathPoints - 1);
+                t.Path.At(sj, out float ahead, out float across, out float turned);
+                bank.Path[i * PathPoints + j] = new Vector4(across, ahead, sj, turned);
+            }
+            bank.Win[i] = new Vector4(t.W.S0, t.W.S1, t.Fade, t.M);
+            bank.Bound[i] = new Vector4(mid.x, mid.y, mid.z, 0.5f * (t.W.S1 - t.W.S0) + Mathf.Max(t.B, t.M) * (1f + outer) + 4f);
+        }
+
+        /// <summary>
+        /// Round 23: a channel of a network in the bank. Its frame is the world's, moved to its source (so the numbers stay
+        /// small); its path is <see cref="PathPoints"/> points at even steps of s, each (x, y, z, its radius), with the
+        /// channel's carried normal beside each; its window is its dug window and fade.
+        /// </summary>
+        static void WriteChannel(ContourTubes bank, int i, MeerkatRootNetwork net, int ch)
+        {
+            var c = net.Channels[ch];
+            var cfg = net.Maker.Config;
+            ref var w = ref net.Life[ch];
+            var a = MeerkatRootNetwork.V(c.A);
+            float L = (float)c.L, outer = Mathf.Max(0f, cfg.FieldOuter), rMax = 0f;
+            bank.W2L[i] = Matrix4x4.Translate(-a);
+            bank.Shape[i] = new Vector4(L, 1f, 0f, 0f);
+            Vector3 lo = new(float.MaxValue, float.MaxValue, float.MaxValue), hi = -lo;
+            for (int j = 0; j < PathPoints; j++)
+            {
+                double sj = c.L * j / (PathPoints - 1);
+                var p = MeerkatRootNetwork.V(MeerkatRootMath.At(c.Path, sj, out _)) - a;
+                MeerkatRootMath.Frame(c.Path, sj, out var nd, out _);
+                float r = (float)MeerkatRootMath.Radius(c, sj, cfg.RootTip);
+                bank.Path[i * PathPoints + j] = new Vector4(p.x, p.y, p.z, r);
+                var nn = MeerkatRootNetwork.V(nd);
+                bank.Norm[i * PathPoints + j] = new Vector4(nn.x, nn.y, nn.z, 0f);
+                if (sj < w.S0 - 1e-3 || sj > w.S1 + 1e-3) continue;
+                lo = Vector3.Min(lo, p); hi = Vector3.Max(hi, p); rMax = Mathf.Max(rMax, r);
+            }
+            if (lo.x > hi.x) { lo = hi = MeerkatRootNetwork.V(MeerkatRootMath.At(c.Path, 0.5 * (w.S0 + w.S1), out _)) - a; rMax = (float)c.M; }
+            var mid = a + 0.5f * (lo + hi);
+            bank.Win[i] = new Vector4((float)w.S0, (float)w.S1, MeerkatWormholeView.ChannelFade(w), 0f);
+            bank.Bound[i] = new Vector4(mid.x, mid.y, mid.z, 0.5f * (hi - lo).magnitude + rMax * (1f + outer) + 4f);
         }
 
         /// <summary>The page's <c>rippleUniform</c>: the strongest live ripple as this camera sees it (x strength, y its

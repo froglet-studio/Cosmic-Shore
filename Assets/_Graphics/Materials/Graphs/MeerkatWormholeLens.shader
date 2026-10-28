@@ -65,6 +65,7 @@ Shader "CosmicShore/MeerkatWormholeLens"
             float4 _MWTubeWin[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubeBound[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubePath[MEERKAT_LENS_MAX_TUBES * MEERKAT_LENS_PATH];
+            float4 _MWTubeNorm[MEERKAT_LENS_MAX_TUBES * MEERKAT_LENS_PATH];   // round 23: a channel's carried normal per point
             float4 _MWField0;   // strength (rad per wall crossing), pitch (rad), drag, twist
             float4 _MWField1;   // glass, glass index, grazing, flow (0 even, 1 in then out, 2 throat)
             float4 _MWField2;   // inner, outer (x local radius), profile (0 smooth, 1 smoother, 2 linear, 3 bell), ribs
@@ -85,6 +86,52 @@ Shader "CosmicShore/MeerkatWormholeLens"
 
             // The wall of tube i near world point pw: signed distance (- inside, + outside; past a live mouth, the distance to
             // its lip), the way along its live window u, the angle round it, its radius and slope, and its frame (local).
+            // Round 23: a channel of an omnicrystal's network (Shape.y 1) - a 3D polyline at even steps of s, each point
+            // (x, y, z, radius) in its own frame (the world's, moved to its source), its carried normal in _MWTubeNorm.
+            MWTQ MWChannel(int i, float3 p, float L, float s0, float s1)
+            {
+                MWTQ q;
+                int base0 = i * MEERKAT_LENS_PATH;
+                float seg = L / (MEERKAT_LENS_PATH - 1);
+                float best = 1e30, s = 0.0;
+                for (int j = 0; j < MEERKAT_LENS_PATH - 1; j++)
+                {
+                    float4 pa = _MWTubePath[base0 + j], pb = _MWTubePath[base0 + j + 1];
+                    float3 ab = pb.xyz - pa.xyz;
+                    float ll = max(dot(ab, ab), 1e-6), t = dot(p - pa.xyz, ab) / ll;
+                    float tc = saturate(t);
+                    float3 cc = pa.xyz + ab * tc;
+                    float dd = dot(p - cc, p - cc);
+                    if (dd < best)
+                    {
+                        best = dd;
+                        float tu = (j == 0 && t < 0.0) || (j == MEERKAT_LENS_PATH - 2 && t > 1.0) ? t : tc;
+                        s = (j + tu) * seg;
+                    }
+                }
+                float sc = clamp(s, s0, s1), fj = saturate(sc / L) * (MEERKAT_LENS_PATH - 1);
+                int jj = min((int)fj, MEERKAT_LENS_PATH - 2);
+                float tj = fj - jj;
+                float4 qa = _MWTubePath[base0 + jj], qb = _MWTubePath[base0 + jj + 1];
+                float3 c = lerp(qa.xyz, qb.xyz, tj), dT = qb.xyz - qa.xyz;
+                float3 T = dot(dT, dT) > 1e-10 ? normalize(dT) : float3(0.0, 0.0, 1.0);
+                float3 N = lerp(_MWTubeNorm[base0 + jj].xyz, _MWTubeNorm[base0 + jj + 1].xyz, tj);
+                N = N - dot(N, T) * T;
+                N = dot(N, N) > 1e-10 ? normalize(N) : normalize(cross(T, abs(T.y) < 0.9 ? float3(0.0, 1.0, 0.0) : float3(1.0, 0.0, 0.0)));
+                float3 Bn = cross(T, N);
+                float span = max(1e-3, s1 - s0);
+                q.r = lerp(qa.w, qb.w, tj);
+                q.drds = (qb.w - qa.w) / max(seg, 1e-3);
+                q.u = (sc - s0) / span;
+                float3 vv = p - c; float h = dot(vv, T); float3 vr = vv - h * T; float rho = length(vr);
+                q.n = rho > 1e-5 ? vr / rho : N;
+                q.d = (s >= s0 && s <= s1) ? rho - q.r : length(float2(h, rho - q.r));
+                q.T = T;
+                q.phi = atan2(dot(q.n, Bn), dot(q.n, N));
+                q.scale = 1.0;   // the polyline carries no bend radius: the inside of a bend is not shortened
+                return q;
+            }
+
             MWTQ MWTube(int i, float3 pw)
             {
                 MWTQ q;
@@ -92,6 +139,7 @@ Shader "CosmicShore/MeerkatWormholeLens"
                 float L = max(_MWTubeShape[i].x, 1e-3), theta = _MWTubeShape[i].z;
                 float b0 = _MWTubeShape[i].w, m0 = _MWTubeWin[i].w;
                 float s0 = _MWTubeWin[i].x, s1 = _MWTubeWin[i].y;
+                if (_MWTubeShape[i].y > 0.5) return MWChannel(i, p, L, s0, s1);
                 // round 22: the nearest point on the centreline (the arc's polyline, in the x-z plane); past the way in or out,
                 // s runs on along the end's heading
                 int base0 = i * MEERKAT_LENS_PATH;

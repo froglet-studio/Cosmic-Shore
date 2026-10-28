@@ -1,5 +1,5 @@
 {
-  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. Lab-only (never in the game): aiTau (the sim's steering response - the game's AI flies with AIPilot), the stand-in hull's lope*. cruise / pitchYaw / roll / bankShare are the prefab's MeerkatVesselTransformer (bankShare x roll = RollScaler, set by author_meerkat_assets.py), not plain fields. Rounds 13-21 (the tree round the wormhole and the Omnicrystal's roots, MEERKAT.md section 7) map to the same config by the same names; trunkWarp, omniAtOnce, soil*, labyrinthRing*, labyrinthRibs, labyrinthRoughness and forkHintSeconds are not ported yet. Edit this file, never the assets by hand.",
+  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. Lab-only (never in the game): aiTau (the sim's steering response - the game's AI flies with AIPilot), the stand-in hull's lope*. cruise / pitchYaw / roll / bankShare are the prefab's MeerkatVesselTransformer (bankShare x roll = RollScaler, set by author_meerkat_assets.py), not plain fields. Rounds 13-21 (the tree round the wormhole and the Omnicrystal's roots, MEERKAT.md section 7) map to the same config by the same names; trunkWarp, omniAtOnce, soil*, labyrinthRing*, labyrinthRibs, labyrinthRoughness and forkHintSeconds are not ported yet. Round 23 (Yash, 2026-10-28: tubes of wormholes, no tree, no roots): trunkVisibility, rootOpacity and the new rootBarkVisibility ship at 0; the page's formedLook is not mapped, because the game keeps that switch in the config's Inspector (YASH'S LOOK / GARRETT'S LOOK). Edit this file, never the assets by hand.",
   "vessel": "Meerkat",
   "page": "Docs/Studios/VesselStudio/meerkat.html",
   "rows": [
@@ -442,6 +442,11 @@
       "key": "rootOpacity",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "rootOpacity"
+    },
+    {
+      "key": "rootBarkVisibility",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rootBarkVisibility"
     },
     {
       "key": "rootLamp",

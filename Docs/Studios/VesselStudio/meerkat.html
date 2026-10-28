@@ -3226,7 +3226,7 @@
     if (f0 <= 1e-3) f0 = -1; if (f1 >= 1 - 1e-3) f1 = 2;   // a finished end is open, not a front
     const U = bo.mats.U, G = bo.mats.glass.uniforms, base = pilotColor(pr.pilot);
     U.f0.value = f0; U.f1.value = f1; U.edge.value = Math.max(4, 0.06 * wh.L) / wh.L; U.t.value = simT;
-    G.cIn.value.copy(base); G.cOut.value.copy(brW).lerp(base, 0.4); G.alpha.value = A; G.inner.value = Math.max(0, P.tubeInner);
+    G.cIn.value.copy(base); G.cOut.value.copy(brW).lerp(base, 0.4); G.alpha.value = A; G.inner.value = Math.max(0, P.tubeInner); G.power.value = Math.max(0.5, P.trunkFresnel);   // the bore's own Fresnel, as round 21's
     bo.mesh.visible = true;
   }
   function sweepBores() {   // a tube gone: its wall goes with it

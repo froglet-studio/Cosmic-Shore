@@ -71,7 +71,7 @@ MonoBehaviour:
   aiBentMinDistance: 120
   aiShapeSeconds: 0.3
   aiNoise: 0
-  trunkVisibility: 1
+  trunkVisibility: 0
   trunkTop: 1.5
   trunkBase: 1.9
   trunkBark: 0.22
@@ -105,6 +105,7 @@ MonoBehaviour:
   labyrinthMouthDiameter: 46
   rootTip: 0.6
   rootGnarl: 0.3
+  rootBarkVisibility: 0
   rootGlass: 0.015
   rootRim: 0.35
   rootGrain: 0.35
@@ -116,7 +117,7 @@ MonoBehaviour:
   rootMaxSpeed: 90
   rootBounce: 0.45
   rootGravity: 0
-  rootOpacity: 0.32
+  rootOpacity: 0
   tubeInner: 0.1
   rootLamp: 1
   rootFog: 240

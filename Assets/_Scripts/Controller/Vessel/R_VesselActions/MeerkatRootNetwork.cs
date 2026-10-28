@@ -25,6 +25,8 @@ namespace CosmicShore.Gameplay
         public readonly System.Func<int, bool> AliveFn;
         /// <summary>The root skins, built and destroyed by <see cref="MeerkatTreeView"/>.</summary>
         internal Mesh[] Skins;
+        /// <summary>Round 23: each channel's calm inner wall, built and destroyed by <see cref="MeerkatTubeWallView"/>.</summary>
+        internal Mesh[] Walls;
 
         MeerkatRootNetwork(List<MeerkatRootMath.Channel> channels, MeerkatRootMath.D3 up, MeerkatWormholeExecutor maker, int seq,
             double formSeconds)
@@ -82,6 +84,7 @@ namespace CosmicShore.Gameplay
         {
             s_live.Remove(this);
             MeerkatTreeView.Release(this);
+            MeerkatTubeWallView.Release(this);
         }
 
         public static MeerkatRootMath.D3 D(Vector3 v) => new(v.x, v.y, v.z);

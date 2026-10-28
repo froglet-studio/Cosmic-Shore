@@ -258,5 +258,50 @@ namespace CosmicShore.Gameplay
             g.Grid(0, nA, RootSides);
             return g.ToMesh("MeerkatRoot");
         }
+
+        // ------------------------------------------------------------------ round 23: every tube's calm wall (buildBore)
+
+        /// <summary>The sides round a tube's calm wall (the page's <c>BORE_SIDES</c>).</summary>
+        public const int WallSides = 24;
+
+        /// <summary>
+        /// The page's round-23 <c>buildBore</c> on a tunnel: its calm inner wall, the tunnel's whole hyperboloid
+        /// (<see cref="FullR"/>) in <see cref="TrunkRings"/> rings; uv0.x the share of the way along (aR 2, the bore). Drawn by
+        /// <see cref="MeerkatTubeWallView"/> through <c>MeerkatTubeWall.shader</c>.
+        /// </summary>
+        public static Mesh BuildTubeWall(MeerkatWormholeExecutor.Tunnel t)
+        {
+            var g = new Builder();
+            for (int r = 0; r <= TrunkRings; r++)
+            for (int j = 0; j <= WallSides; j++)
+            {
+                float u = r / (float)TrunkRings, s = u * t.L, phi = j / (float)WallSides * Mathf.PI * 2f;
+                var v = Surf(t, s, phi, FullR(t, s), out _);
+                g.Push(v, u, -1f, 0f, 2f, 0f, v, j / (float)WallSides);
+            }
+            g.Grid(0, TrunkRings, WallSides);
+            return g.ToMesh("MeerkatTubeWall");
+        }
+
+        /// <summary>The page's round-23 <c>buildBore</c> on a channel of the wormhole network: its calm inner wall at the
+        /// channel's own radius (<see cref="MeerkatRootMath.Radius"/>), a ring every 4 u.</summary>
+        public static Mesh BuildTubeWall(MeerkatRootMath.Channel c, double rootTip)
+        {
+            var g = new Builder();
+            int nA = Mathf.Max(4, Mathf.RoundToInt((float)c.L / 4f));
+            for (int r = 0; r <= nA; r++)
+            for (int j = 0; j <= WallSides; j++)
+            {
+                double s = c.L * r / nA, phi = j / (double)WallSides * System.Math.PI * 2;
+                var p = MeerkatRootMath.At(c.Path, s, out _);
+                MeerkatRootMath.Frame(c.Path, s, out var n, out var bn);
+                double rad = MeerkatRootMath.Radius(c, s, rootTip);
+                var q = p + n * (rad * System.Math.Cos(phi)) + bn * (rad * System.Math.Sin(phi));
+                var v = new Vector3((float)q.X, (float)q.Y, (float)q.Z);
+                g.Push(v, r / (float)nA, -1f, 0f, 2f, 0f, v, j / (float)WallSides);
+            }
+            g.Grid(0, nA, WallSides);
+            return g.ToMesh("MeerkatTubeWall");
+        }
     }
 }
