@@ -8,6 +8,7 @@
 3. "Less like a darthvader panel meets a child's toy ... menacing, intimidating ... more torn like cyberpunk ... a touch of whimsy, but the current placement of the prisms looks like it has stars and buttons all over it ... more wickedness."
 4. "This is still a bubbly pokemon. Think hierarchical and heterarchical. Look at the dolphin and the details of its contours ... this ark should have 5 hierarchies that have 2 to 5 heterarchies each. It should look sophisticated like it belongs on the cover of a sci fi novel, not like megaknight turned into a toy spaceship."
 5. "Excellent. Now apply these 5 levels to more of the components. The engines alone should not read low poly. Each should have the feel of these five levels."
+6. "Animate it so it moves its jets and wings appropriately when turning ... definitely complete and polish the ark first." So the turn takes now move the wings with the jets (below), and the jets' glow sits deep in the nozzle bell.
 
 ## Round 5: the form language
 The Dolphin's lesson is what its parts are made of:
@@ -108,6 +109,12 @@ The takes vector the thrust the way the manoeuvre needs, in the fleet convention
 - `speedup` draws the splayed jets in toward straight aft.
 - `speeddown` fans them out (an air brake).
 
+**The wings move with the jets** (round 7). The Ark has no aircraft wings. Its wings are a scallop's:
+- **The jaws** are the scallop's auricles, which anatomy also calls its wings. They pitch as canards about their roots, 7°: both tips rise for `pitchup` and drop for `pitchdown`. They work against each other for a roll: in `rollright` the left tip rises and the right one drops.
+- **The outer shell plates are spoilers.** Each twists about its own centreline so its OUTER edge lifts on the inside of the turn: 6° on the outermost plate and 4.5° on the next. `rollright` lifts the right pair (`shell.0`, `shell.1`) and `rollleft` the left pair; a yaw lifts the outermost plate on that side. A raised spoiler drops its side and drags it round. The plates only ever lift, because each one's outer edge is a 1.8 shadow seam above its bulwark.
+
+The game blends these takes by turn input, the same way it puppets every vessel, so the Ark banks its jets and wings when it turns.
+
 Also `release` (the lance slides 20 aft) and `hangaropen` (the doors swing out, hinged on their outer faces). All are single-frame poses, with `rest` first.
 
 ## Shapes
@@ -121,7 +128,7 @@ None of them moves a plate, a cradle, a socket bone or a hole.
 ## Gates
 - `build.py ark_reverse` (codec + assimp + re-import) and `build.py ark_reverse --check`. The check is repeatable because the kit puts every boolean's inputs in a canonical order, so two builds cut the same mesh.
 - `assembly_report.py --floating shell.0..7,umbo,auricle.L,auricle.R,omni.ring,omni,payload,keel,hangar.door.T,hangar.door.B,engine.0..7,engine.0..7.ring`.
-- **`pose_clearance.py ArkReverse.fbx --parts "engine.*,payload,hangar.door.*" --takes all`**: plays every take and fails on a part that comes within 0.4% of the diagonal of a neighbour in any pose.
+- **`pose_clearance.py ArkReverse.fbx --parts "engine.*,payload,hangar.door.*,shell.*,auricle.*" --takes all`**: plays every take and fails on a part that comes within 0.4% of the diagonal of a neighbour in any pose. The shell plates and the jaws are on the list since they became wings.
 
 ## What round 5 taught (for the next spec that cuts holes)
 - **An EXACT boolean is only as good as its target.** The umbo is a polar solid with inset panels. A grid column narrower than twice an inset's thickness turns inside out, the mesh starts intersecting itself, and the solver then silently keeps a few hundred vertices of a 10k-vertex part (or leaves the cutter's cap behind). `_cols` now drops any grid column within a degree or so of a forced one, and the panel insets skip narrow columns.

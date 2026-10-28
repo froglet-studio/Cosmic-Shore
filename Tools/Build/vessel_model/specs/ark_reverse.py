@@ -54,8 +54,10 @@ open at the stern gape (fly in between the jets) and through the grooves. The HA
 doors, three escort pads, arched frames) between the jaws, and a TUNNEL runs from its back wall down the spine and
 curves out through the keel; the bulwarks' tops are walkways along the leading edges.
 
-ENGINES THAT MANOEUVRE: each jet pivots in its octagonal gimbal ring in the gape; the nine flight takes vector the thrust
-(fleet convention), `pose_clearance.py --parts "engine.*,payload,hangar.door.*" --takes all` proves nothing touches.
+ENGINES AND WINGS THAT MANOEUVRE: each jet pivots in its octagonal gimbal ring in the gape; the flight takes vector the
+thrust (fleet convention), and the wings move with them: the jaws (the scallop's auricles, its "wings") pitch as canards,
+and the outer shell plates lift as spoilers on the inside of a roll or a yaw.
+`pose_clearance.py --parts "engine.*,payload,hangar.door.*,shell.*,auricle.*" --takes all` proves nothing touches.
 
 A HOVERING ASSEMBLY: `assembly_report.py ArkReverse.fbx --floating shell.0,...,shell.7,umbo,auricle.L,auricle.R,
 omni.ring,omni,payload,engine.0,...,engine.7,engine.0.ring,...,engine.7.ring,keel,hangar.door.T,hangar.door.B`.
@@ -73,10 +75,12 @@ Contract (FLEET_CONVENTION sections 1-4 for a NEW body):
             Space: the jaws' knuckles reach and the sensor masts rise; Time: the jets stretch. None moves a plate, a
             cradle, a socket bone or a hole.
   takes     rest (first); pitchup, pitchdown, yawleft, yawright, rollleft, rollright, speedup, speeddown (the jets
-            manoeuvring); release (the lance slides aft out of its cradles); hangaropen (the clam-jaw doors open).
+            manoeuvring; the jaws pitch with pitch and roll, the outer plates lift as spoilers with roll and yaw);
+            release (the lance slides aft out of its cradles); hangaropen (the clam-jaw doors open).
 """
 
 import math
+import os
 from _ark_kit import SLOTS, D, H, W, J
 
 NAME = "ArkReverse"
@@ -1177,7 +1181,7 @@ def build(ctx):
                 (R1, 0.8), (R1, 1.6), (rr, 2.2), (rr, 7.6), (rr * 1.14, 8.0), (R2, 8.4),
                 (R2, 10.6), (RCO, 10.8), (RCO, 11.8), (R2, 12.0), (R2, 14.4), (RCO, 14.6), (RCO, 15.4), (R2, 15.6),
                 (R2, 16.6), (rr * 1.14, 17.4), (rr * 1.08, 17.6), (rr * 1.08, 18.4),
-                (rr * 1.22, ln - 0.25), (rr * 1.25, ln), (rr * 1.15, ln), (rr * 0.92, ln - 3.0),
+                (rr * 1.22, ln - 0.25), (rr * 1.25, ln), (rr * 1.15, ln), (rr * 1.04, ln - 1.4), (rr * 0.92, ln - 3.0),
                 (rr * 0.66, ln - 3.6), (rr * 0.44, ln - 3.2), (rr * 0.38, ln - 1.7), (rr * 0.24, ln - 0.7), (0.0, ln - 0.5)]
         body = lathe_ob("jet", prof, axis, o, 32)
         f.paint(body, J, lambda c, n, i: S(c) < 1.75 and RR(c) < rr * 0.8)                        # L2 the intake's core
@@ -1189,8 +1193,8 @@ def build(ctx):
         def liner(c, n):
             d = c - o
             radial = d - axis * d.dot(axis)
-            return S(c) > ln - 3.9 and (radial.length < rr * 0.7 or n.dot(radial.normalized()) < -0.05)
-        f.paint(body, J, lambda c, n, i: liner(c, n))                                                # the bell's liner, the plug
+            return S(c) > ln - 3.9 and (radial.length < rr * 0.7 or (n.dot(radial.normalized()) < -0.05 and S(c) < ln - 1.0))
+        f.paint(body, J, lambda c, n, i: liner(c, n))                                # the glow deep in the bell (its lip ring dark), the plug
         inset_where(body, lambda c, n: 12.1 < S(c) < 14.3 and RR(c) > rr * 1.2, 0.07, 0.04)          # L4 panel seams
         inset_where(body, lambda c, n: 8.5 < S(c) < 10.5 and RR(c) > rr * 1.2 and near(ANG(c), (0.0, 180.0), 36.0), 0.1, 0.14)   # vents
         parts = [piece(body, None, 50, bevel=0.04)]
@@ -1475,13 +1479,32 @@ def build(ctx):
     # point: pitchup tilts every nozzle up, yawright swings them right, rollright lifts the right side's nozzles.
     jets = sorted(eng)
     right = [e for e in jets if eng[e][0].x < 0]
+    # THE WINGS move with the jets. The jaws are the scallop's auricles (its "wings"): they pitch as canards, together
+    # for pitch and against each other for roll (a canard's tip up lifts its side). The outer shell plates are spoilers:
+    # a plate twists about its own centreline so its OUTER edge lifts on the inside of a roll or a yaw (a raised spoiler
+    # drops that side and drags it round). They only ever lift: the bulwark is a shadow seam (1.8) below the outer edge.
+    def spoiler(k, deg):
+        b = arm.data.bones["shell.%d" % k]
+        ax_ = (b.tail_local - b.head_local).normalized()
+        sgn = 1.0 if MIDS[k] > 0 else -1.0
+        outward = Vector((*fan_perp(MIDS[k]), 0.0)) * sgn
+        a = math.radians(deg)
+        if (Matrix.Rotation(a, 3, ax_) @ outward).z < 0:
+            a = -a
+        return tuple(math.degrees(v) for v in Matrix.Rotation(a, 3, ax_).to_euler("XYZ"))
+    SPOIL = {0: 6.0, 1: 4.5, NPLATE - 1: 6.0, NPLATE - 2: 4.5}
+    right_sp = {"shell.%d" % k: spoiler(k, SPOIL[k]) for k in (0, 1)}
+    left_sp = {"shell.%d" % k: spoiler(k, SPOIL[k]) for k in (NPLATE - 1, NPLATE - 2)}
+    JAWP = 7.0                                           # a canard's tip up = -X (+X turns a point AHEAD of the pivot down)
     poses = {
-        "pitchup": {e: (PITCH, 0, 0) for e in jets},
-        "pitchdown": {e: (-PITCH, 0, 0) for e in jets},
-        "yawright": {e + ".ring": (0, 0, YAW) for e in jets},
-        "yawleft": {e + ".ring": (0, 0, -YAW) for e in jets},
-        "rollright": {e: ((PITCH if e in right else -PITCH), 0, 0) for e in jets},
-        "rollleft": {e: ((-PITCH if e in right else PITCH), 0, 0) for e in jets},
+        "pitchup": {**{e: (PITCH, 0, 0) for e in jets}, "auricle.L": (-JAWP, 0, 0), "auricle.R": (-JAWP, 0, 0)},
+        "pitchdown": {**{e: (-PITCH, 0, 0) for e in jets}, "auricle.L": (JAWP, 0, 0), "auricle.R": (JAWP, 0, 0)},
+        "yawright": {**{e + ".ring": (0, 0, YAW) for e in jets}, "shell.0": right_sp["shell.0"]},
+        "yawleft": {**{e + ".ring": (0, 0, -YAW) for e in jets}, "shell.%d" % (NPLATE - 1): left_sp["shell.%d" % (NPLATE - 1)]},
+        "rollright": {**{e: ((PITCH if e in right else -PITCH), 0, 0) for e in jets}, **right_sp,
+                      "auricle.L": (-JAWP, 0, 0), "auricle.R": (JAWP, 0, 0)},
+        "rollleft": {**{e: ((-PITCH if e in right else PITCH), 0, 0) for e in jets}, **left_sp,
+                     "auricle.L": (JAWP, 0, 0), "auricle.R": (-JAWP, 0, 0)},
         "speedup": {e + ".ring": (0, 0, 0.35 * MIDS[int(e.split(".")[1])]) for e in jets},
         "speeddown": {e + ".ring": (0, 0, -0.25 * MIDS[int(e.split(".")[1])]) for e in jets},
         "release": {"payload": {"rot": (0, 0, 0), "loc": tuple(pax * 20.0)}},
@@ -1491,6 +1514,49 @@ def build(ctx):
     for p in names:
         takes.pose_take(arm, p, poses[p])
     takes.clear_pose(arm)
+
+    # ================================================================== THE RIG TABLE (the game reads it: Ark, ArkModel)
+    # Unity binds the Ark's hull to the SOCKETS and puppets its jets and wings from the TAKES. Both are written here, in
+    # Unity's model space (Unity x, y, z = Blender -x, z, -y; a reflection, so a rotation R becomes M R M^T), from the
+    # same numbers the takes were built from - one source, and pose_clearance has proved every one of them. The file
+    # lands beside the FBX: `ArkReverse.rig.json` (a TextAsset in Unity).
+    Mb = Matrix(((-1.0, 0.0, 0.0), (0.0, 0.0, 1.0), (0.0, -1.0, 0.0)))
+
+    def U(v):
+        return [round(-v[0], 4), round(v[2], 4), round(-v[1], 4)]
+
+    def Uq(rot_deg):
+        q = (Mb @ Euler([math.radians(a) for a in rot_deg], "XYZ").to_matrix() @ Mb.transposed()).to_quaternion()
+        return [round(q.x, 6), round(q.y, 6), round(q.z, 6), round(q.w, 6)]
+    from mathutils import Euler
+    TIER = {"supershielded": ("SuperShielded", [2 * STELLA_A] * 3), "shielded": ("Shielded", [2 * OCTA_A] * 3),
+            "prism": ("Plain", list(SLAB)), "danger": ("Danger", list(SLAB))}
+    table = {"model": NAME, "frame": "Unity model space: x right (pilot's right), y up, z nose; units = Blender metres",
+             "noseToJets": NOSE_TO_JETS, "sockets": [], "bones": []}
+    for nm_, head, tail, up in kit.socket_bones:
+        tier = nm_.split(".")[1]
+        fwd = (tail - head).normalized()
+        upn = (up - fwd * up.dot(fwd)).normalized()
+        kind, size = TIER[tier]
+        table["sockets"].append({"name": nm_, "tier": tier, "kind": kind, "position": U(head), "forward": U(fwd),
+                                 "up": U(upn), "size": [round(v, 4) for v in size], "bone": jaw_socket.get(nm_, "hull")})
+    INPUTS = (("pitchUp", "pitchup"), ("pitchDown", "pitchdown"), ("yawRight", "yawright"), ("yawLeft", "yawleft"),
+              ("rollRight", "rollright"), ("rollLeft", "rollleft"), ("speedUp", "speedup"), ("speedDown", "speeddown"))
+    moved = {}
+    for field, take in INPUTS:
+        for b_, spec_ in poses[take].items():
+            rot = spec_.get("rot", (0, 0, 0)) if isinstance(spec_, dict) else spec_
+            moved.setdefault(b_, {})[field] = Uq(rot)
+    for b_ in sorted(moved):
+        entry = {"bone": b_, "head": U(arm.data.bones[b_].head_local)}
+        entry.update(moved[b_])
+        table["bones"].append(entry)
+    import json
+    rig_path = os.path.join(ctx.out_dir, NAME + ".rig.json")
+    with open(rig_path, "w") as fh:
+        json.dump(table, fh, indent=1, sort_keys=True)
+        fh.write("\n")
+    ctx.log("rig table: %d sockets, %d puppeted bones -> %s" % (len(table["sockets"]), len(table["bones"]), os.path.basename(rig_path)))
 
     lo, hi = f.bounds(mesh)
     ctx.log("bounds (blender) %s .. %s; nose to jets %.1f (want %.1f), jets %.1f long" % (
@@ -1506,12 +1572,12 @@ def build(ctx):
             "pose_takes": [ARMATURE + "|" + p for p in names],
             "sheet_poses": ("pitchup", "yawright", "rollright", "hangaropen"),
             "pose_expect": {
-                "pitchup": [("engine.3", "z", +1, 0.6)],
-                "pitchdown": [("engine.3", "z", -1, 0.6)],
+                "pitchup": [("engine.3", "z", +1, 0.6), ("auricle.L", "z", +1, 0.6), ("auricle.R", "z", +1, 0.6)],
+                "pitchdown": [("engine.3", "z", -1, 0.6), ("auricle.L", "z", -1, 0.6), ("auricle.R", "z", -1, 0.6)],
                 "yawright": [("engine.3", "x", -1, 0.6)],
                 "yawleft": [("engine.3", "x", +1, 0.6)],
-                "rollright": [("engine.0", "z", +1, 0.6), ("engine.7", "z", -1, 0.6)],
-                "rollleft": [("engine.0", "z", -1, 0.6), ("engine.7", "z", +1, 0.6)],
+                "rollright": [("engine.0", "z", +1, 0.6), ("engine.7", "z", -1, 0.6), ("auricle.L", "z", +1, 0.6), ("auricle.R", "z", -1, 0.6)],
+                "rollleft": [("engine.0", "z", -1, 0.6), ("engine.7", "z", +1, 0.6), ("auricle.L", "z", -1, 0.6), ("auricle.R", "z", +1, 0.6)],
                 "speedup": [("engine.0", "x", +1, 0.3), ("engine.7", "x", -1, 0.3)],
                 "speeddown": [("engine.0", "x", -1, 0.3), ("engine.7", "x", +1, 0.3)],
                 "release": [("payload", "y", +1, 10.0)],
