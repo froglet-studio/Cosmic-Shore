@@ -41,7 +41,10 @@ namespace CosmicShore.UI
     /// down to <see cref="bentLineGaugeAlpha"/>): how much of the boost the current line is costing the
     /// pilot, which they could otherwise only infer from speed they are not gaining. When the
     /// Time level-5 ward, <b>Momentum</b>, takes hold (upgraded and above 70% of top speed, danger
-    /// prisms cannot drain it) the card flashes once - the moment the pilot becomes warded.</para>
+    /// prisms cannot drain it) the card flashes once - the moment the pilot becomes warded - and its picture
+    /// changes: the Rhino's ward comes up and the danger prism ahead glances away
+    /// (<see cref="RhinoVesselHUDView.SetMomentum"/>; Garrett 2026-10-28). The ward's threshold is one mark on the
+    /// gauge, the Sparrow's edge ticks (<see cref="RhinoVesselHUDView.SetMomentumMark"/>).</para>
     ///
     /// <para>Polled rather than event-driven, deliberately: every value is a read of state the sword
     /// driver already owns, so there is no subscription to leak or double across a re-initialise -
@@ -91,6 +94,7 @@ namespace CosmicShore.UI
         Color _massColor;
         bool _timeLit;
         bool _warded;
+        Color _timeHullColor;
         float _timeGauge = -1f;
         float _timeGaugeAlpha = -1f;
         Color _timeGaugeColor;
@@ -123,6 +127,7 @@ namespace CosmicShore.UI
             _massColor = default;
             _timeLit = false;
             _warded = false;
+            _timeHullColor = default;
             _timeGauge = -1f;
             _timeGaugeAlpha = -1f;
             if (!view) return;
@@ -139,6 +144,7 @@ namespace CosmicShore.UI
             view.SetAbilityPressed(Element.Mass, false);
             view.SetAfterimage(false, ResolveDomainSignalColor());
             view.SetAbilityPressed(Element.Time, false);
+            view.SetMomentum(false, ResolveDomainSignalColor());
         }
 
         void Update()
@@ -164,6 +170,11 @@ namespace CosmicShore.UI
 
             bool warded = speedWard && speedWard.IsHolding;
             if (warded && !_warded) view.PlayAbilityFlash(Element.Time);
+            if (warded != _warded || massColor != _timeHullColor)
+            {
+                _timeHullColor = massColor;
+                view.SetMomentum(warded, massColor);
+            }
             _warded = warded;
 
             float top = _topSpeed != null ? _topSpeed.TopSpeed : 0f;
@@ -172,6 +183,7 @@ namespace CosmicShore.UI
             {
                 _timeGauge = speed01;
                 timeGauge.fillAmount = speed01;
+                view.SetMomentumMark(speedWard ? speedWard.TopSpeedFraction : 0f, speed01);
             }
             PushLineToTimeGauge();
 

@@ -253,7 +253,15 @@ an L5). The prism is the real stella octangula (`StellatedOctahedronMeshGenerato
 view ("that does not look like a stelated octahedron"), then flat down a body diagonal - the six-pointed star with its
 facets seamed - "we need a flatter design in order to play well with the others"; it stands clear of the sword and the
 posts, and breaks apart along its own facets ("a better flat destroyed state ... with the correct separation of
-faces"). `RhinoVesselHUDView.BuildReach` lays the five parts out live. Next: the Rhino's Time placeholder.
+faces"). `RhinoVesselHUDView.BuildReach` lays the five parts out live. **The Rhino's Time card** (2026-10-28, four
+rounds; Garrett picked W, then shaped it): Ramp Spool drawn as what it buys - the Rhino from above flying right (the
+game's own HUD silhouette, `Assets/_Graphics/Silhouettes/Rhino/`) in the domain colour, a danger prism ahead of its
+nose, and once Momentum holds (Time 5, above 70% of top speed) a white chevron ward up with the prism glanced away. The
+plate stays the speed meter, its 70% threshold the Sparrow's edge ticks. Round 1 drew the mechanic alone (streaks,
+chevrons, a slope: "this ability is about the rhino and its invulnerability to danger prisms"), round 2 put the
+threshold as a line across ("not the bar across. updated sparrow has a better solution"), round 3 had the Rhino
+flying up into the plate's ticks ("travel left to right so it doesn't cause visual confusion between the impact event
+and the threshold"). `RhinoVesselHUDView.SetMomentum` / `SetMomentumMark`. The Rhino is done; next: the Scarab.
 
 | Round | What | Why first |
 |---|---|---|

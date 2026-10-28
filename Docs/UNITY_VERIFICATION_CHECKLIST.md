@@ -17813,6 +17813,24 @@ Unity CLI in the session: nothing here was compiled.
    when the laying window ends.
 3. Change domain mid-match if the mode allows it. **Pass:** the copies take the new colour.
 
+## Rhino Time card: Ramp Spool / Momentum, the Rhino and its ward (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `RhinoVesselHUDView.cs` (four `spool*Icon` parts; `SetMomentum`, `MomentumPartsFor`, `SetMomentumMark`
+generating `MomentumGap` / `MomentumTickL` / `MomentumTickR` under the Time gauge), `RhinoHUDController.cs` (pushes the
+ward's hold and the domain colour, and the mark with the speed), `VesselElementalImmunity.cs` (`TopSpeedFraction`
+getter), `RhinoHUDVariant.prefab` (the Time icon is a transparent container over SpoolPrism, SpoolGlance, SpoolWard,
+SpoolHull). Sheet: `Docs/Icons/sheets/rhino_rampspool.png`. No .NET and no Unity CLI in the session: nothing here was
+compiled.
+
+1. Run `RhinoMomentumCardTests`. **Pass:** green.
+2. Fly the Rhino below Time 5. **Pass:** the Time card shows the Rhino from above, nose right, in your colour, an orange
+   danger prism standing ahead of its nose, and short dim ticks at 70% height on both slanted edges of the plate.
+3. Ramp up (full throttle, straight). **Pass:** the speed fill climbs; past 70% the ticks become a gap through the fill;
+   the picture does not change (no ward below Time 5).
+4. Reach Time 5 and ramp past 70%. **Pass:** the card flashes once, a white chevron ward appears ahead of the nose and
+   the prism shows glanced away down-right; dropping below 70% puts the prism back ahead and the ward away.
+5. If the ticks sit off the slanted edge, tune `momentumTickSlantInset` (the Sparrow's `gunHeatTickSlantInset` is 9).
+
 ## Rhino Space card: Blade Reach, the katana and the super-shielded prism (2026-10-28) - NOT EDITOR-VERIFIED
 
 **Files:** `RhinoVesselHUDView.cs` (`BuildReach` generates `BladeReach` > `Prism`, `HiltPivot` > `Hilt` + `BladeScale` >

@@ -688,18 +688,72 @@ def ward_right(x=SIDE_NOSE_X + 8.0, cy=SIDE_CY, half_h=34.0, depth=15.0, t=6.0):
                  (x - t, cy + half_h), (x + depth - sh, cy), (x - t, cy - half_h)])
 
 
-def _side_option():
-    hull = rhino_right
-    ahead = lambda: danger_prism(114, SIDE_CY, angle=90)
-    glance = lambda: danger_prism(110, SIDE_CY + 36, angle=-55)
-    parts = dict(hull=hull, ward=lambda: _clear_of(ward_right(), hull()),
-                 ahead=lambda: _clear_of(ahead(), hull()),
-                 glance=lambda: _clear_of(glance(), ward_right(), hull()))
-    c = _ramp_option("time_option_w2",
-                     "W2 - THE PLOUGH, flying right: past the 70% mark (edge ticks) at Time 5 the chevron ward stands ahead of the nose and the danger prism glances away",
-                     ward_right, ahead, glance)
-    c["parts"] = parts
-    return c
+GLANCE_AT = (110.0, SIDE_CY + 36.0, -55.0)   # the deflected prism: down and away, clear of the plate's 70% ticks
 
 
-CARDS += [_side_option()]
+def spool_hull():
+    return rhino_right()
+
+
+def spool_ward():
+    return _clear_of(ward_right(), spool_hull())
+
+
+def spool_prism():
+    return _clear_of(danger_prism(112, SIDE_CY, angle=90, w=12.0), spool_hull())   # on the 40 px grid: it keeps its mass
+
+
+def spool_glance():
+    x, y, a = GLANCE_AT
+    return _clear_of(danger_prism(x, y, angle=a), ward_right(), spool_hull())
+
+
+def ramp_spool():
+    """The composite as Momentum holds: the card's fallback and the fleet sheet's tile."""
+    return spool_hull() | spool_ward() | spool_glance()
+
+
+# Time is W2 (Garrett 2026-10-28, round 4: "great lets proceed"). The HUD shows the hull (domain) always; the danger
+# prism ahead of the nose until Momentum holds; then the white ward up and the prism glanced away. The plate is the
+# speed meter with the ward's threshold as the Sparrow's edge ticks (RhinoVesselHUDView.SetMomentumMark).
+SPOOL_EXEMPT = dict(PART_EXEMPT, components="a part", thin="the ward is a chevron stroke")
+ICONS += [
+    dict(name="Rhino_RampSpool", element="Time", act="Ramp Spool / Momentum: the Rhino flying right, its ward up and a danger prism glancing off (composite; the HUD shows the parts by state)",
+         draw=ramp_spool, exempt={"components": "the hull, the ward and the prism", "in_box": "the hull, the ward and the prism run the card's width",
+                                  "box_fill": "a hull in flight", "coverage": "the top-view hull is slim"}),
+    dict(name="Rhino_SpoolHull", element="Time", act="Ramp Spool: the Rhino from above, flying right (domain colour)", draw=spool_hull,
+         subdir="Parts", family=False, exempt=dict(SPOOL_EXEMPT, specks="the silhouette's own cut-outs", gap="the wing plates")),
+    dict(name="Rhino_SpoolWard", element="Time", act="Momentum: the chevron ward ahead of the nose (white)", draw=spool_ward,
+         subdir="Parts", family=False, exempt=SPOOL_EXEMPT),
+    dict(name="Rhino_SpoolPrism", element="Time", act="Ramp Spool: the danger prism ahead (danger), until Momentum holds", draw=spool_prism,
+         subdir="Parts", family=False, exempt=SPOOL_EXEMPT),
+    dict(name="Rhino_SpoolGlance", element="Time", act="Momentum: the danger prism glanced away (danger)", draw=spool_glance,
+         subdir="Parts", family=False, exempt=SPOOL_EXEMPT),
+]
+LOCKUP["Time"] = dict(parts=dict(p=spool_prism, h=spool_hull), state=[("p", "danger"), ("h", "domain")], gauge=0.45,
+                      gauge_marks=TIME_MARKS, gauge_marks_style="segments")
+
+
+def _spool_card():
+    states, gauge = [], {}
+    for n, s, boosting, up, straight in RAMP_STATES:
+        warded = up and s >= MOMENTUM01
+        L = [("glance", "danger"), ("ward", "white")] if warded else [("prism", "danger")]
+        states.append((n, L + [("hull", "domain")]))
+        gauge[n] = (s, None if straight else _GAUGE_DIM)
+    return dict(name="rampspool", element="Time", before=ICON_DIR + "Rhino_RampSpool-PLACEHOLDER.png", before_rev="899c25973",
+                before_gauge=True, before_gauge_value=0.55, gauge_marks=TIME_MARKS, gauge_marks_style="segments",
+                title="Ramp Spool / Momentum: the Rhino flying right over the speed meter; past the 70% ticks at Time 5 its ward comes up and the danger prism glances away",
+                parts=dict(hull=spool_hull, ward=spool_ward, prism=spool_prism, glance=spool_glance), states=states, gauge=gauge)
+
+
+CARDS += [_spool_card()]
+REBIND += [
+    # The Time card: the icon Image becomes a transparent container over four parts, in draw order - the prism ahead
+    # and the glanced prism (danger), the ward (white), the hull (domain). The plate keeps its speed gauge (TimeGauge).
+    dict(file=VARIANT, pair=dict(container="7720000000000003045", view=VIEW, after="highlights",
+                                 children=[("SpoolPrism", "Rhino_SpoolPrism", "spoolPrismIcon"),
+                                           ("SpoolGlance", "Rhino_SpoolGlance", "spoolGlanceIcon"),
+                                           ("SpoolWard", "Rhino_SpoolWard", "spoolWardIcon"),
+                                           ("SpoolHull", "Rhino_SpoolHull", "spoolHullIcon")])),
+]
