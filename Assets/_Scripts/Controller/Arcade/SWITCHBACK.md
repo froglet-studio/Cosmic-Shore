@@ -441,6 +441,48 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
     moves into last place must also open. The console must be silent: any
     `ArcadeExploreView - the … card sits N units past …` error means the fit did not settle.
 
+## Fun types (2026-10-28, test surface - NOT editor-verified)
+
+Five families of intensity, picked on the launch panel BEFORE the intensity, so every (fun type, intensity) pair is
+its own world (5 x 4 = 20). Enum: `SwitchbackFunType` (`Assets/_Scripts/Data/Enums/SwitchbackFunType.cs`).
+
+| Fun type (panel label) | Course | Features | Clock |
+|---|---|---|---|
+| `Baseline` (CLASSIC) | the shipped ladder, **bit-identical** (pinned by `SwitchbackFunTypeTests.BaselineCoursesAreTheShippedCourses`) | shipped I3 skim walls / I4 danger prisms | the run log line + a personal best only |
+| `Plan1_LevelShapes` (LEVEL SHAPES) | hairpin ladder 0, 1/3, 1/2, 2/3; one corner pattern per intensity (I1 arcs, I2 S-bends, I3 long legs into hairpins, I4 punchy back-to-back hairpins); needle rings (a mouth 0.65 x, floored at 5 hull radii) every 4th/3rd/2nd ordinary corner at I2/I3/I4 | shipped | log + PB |
+| `Plan3_ParMedals` (PAR & MEDALS) | shipped | shipped | a PAR toast at the start, a split vs par every 5th gate, a GOLD (<= par) / SILVER (<= 1.2 x) / BRONZE (<= 1.5 x) toast at the finish, a personal best per world |
+| `Plan2_LiveFeatures` (LIVE FEATURES) | shipped | charge ribbons I1-I3 (skim one end to end within 14 u for a 1.4 x throttle burst, 1.5 s); shortcut rings I2-I4 (a needle ring on the chord of each hairpin - threading it while the hairpin is next credits the hairpin); moving danger clusters at I4 (22 u sweeps, 4 s period) | log + PB |
+| `Combined` (COMBINED) | Plan 1 | Plan 2 | Plan 3 |
+
+Code: `SwitchbackCourseSettings.ForIntensity(intensity, funType)` (Plan 1), `SwitchbackPar` (Plan 3's par model:
+an average 235 u/s from the Dolphin's measured cruise/boost, plus a turn cost for each hairpin), `SwitchbackLiveFeatures`
+(Plan 2's layout, a pure function like `SwitchbackFeatures`), `SwitchbackFunTypeRuntime` (the per-peer behaviour: the
+moving prisms, the skim burst, the shortcut highlight, the toasts, the PB and the log line).
+
+**How it travels.** The host's panel writes `GameDataSO.SwitchbackFunType` / `SwitchbackFixedSeed`. The server builds
+the course for it (`GateRaceController.PrepareCourseSource`) and `SyncCourse_ClientRpc` now carries the fun type
+(`CourseVariant`) and every gate's radius (needles), so a client flies the host's world whatever its own panel says.
+A weekly challenge, the quest funnel and every other mode always fly Classic.
+
+**The picker** (`ArcadeGameConfigureModal.SwitchbackFunTypePicker.cs`) is built in code - a test surface, not a
+designed control: a strip floating just above the intensity row with `FUN: <type> >` (tap to cycle) and
+`SEED: RANDOM / FIXED`. Host only; remembered in PlayerPrefs (`Switchback.FunType`, `Switchback.FixedSeed`).
+FIXED flies `SwitchbackFunTypes.WorldSeed` = 45000 + 100 x funType + intensity (an authored `courseSeed` or a forced
+seed still wins), so a world is the same course every run.
+
+**Every run logs one line** (all builds, `CSDebug.Log`), for comparing worlds:
+`[Switchback] RUN funType=... intensity=... seed=... time=... par=... gates=... skims=... prismsDestroyed=... medal=... pb=...`
+Personal bests: PlayerPrefs `Switchback.PB.<funType>.I<n>` (seconds).
+
+**Stubbed / not done:** the AI flies every fun type with the shipped policy - it does not skim ribbons, take shortcuts
+or plan for Plan 1's corner patterns (an I3 policy was asked for "if feasible"; it is not in this change). No ghost.
+`ReplayMatch` does not carry the fun type (a replay flies the host's CURRENT panel choice). A client's log line has
+`seed=0` (the seed is not broadcast; the course is). Ribbons and shortcuts are local-pilot only.
+
+**How to test each.** Arcade -> Switchback -> the card: set FUN, set SEED: FIXED, pick the intensity, launch. Then
+see the "Switchback fun types" entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Headless: `SwitchbackFunTypeTests`
+(EditMode).
+
 ## Known limitations / follow-ups
 
 - **The arcade grid had to grow to show this card, and growing it takes TWO changes.**
