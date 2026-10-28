@@ -343,6 +343,22 @@ What this says about cuts 5 and 6, read honestly:
   graphs (SpindleWireGraph, SpindleLodMid/Far, SpindleDepth - the flora's limbs) do not compile in the engine and
   draw as the generic family, so every flora looks wrong; and there are z-fighting frames.
 
+What the faults were, measured (2026-10-28):
+- **The spindle shaders**: the four Spindle graphs (SpindleLodMid/Far, SpindleWire, SpindleDepth) called eight
+  custom functions (`SpindleLodVertex_float` and the rest of SpindleLod.hlsl, on top of IncorporealDepth.hlsl)
+  that the engine's GLSL library never defined, so they failed to link and drew as the generic family. The
+  engine's own test (`ShaderGraphCompilerTests.EveryCustomFunctionTheProjectCalls_IsInTheGlslLibrary`) was
+  failing on exactly this. Both files are ported now (`ShaderGraphLibrary.glsl`), the test passes, and a
+  rendering player no longer reports the graphs. Read the PLAYER log's `[Render]` warnings before shooting:
+  every graph that "did not compile" is a surface the footage will get wrong.
+- **The "z-fighting" frames are one-frame white flashes**: a flicker scan over every shot (a frame that
+  differs from both its neighbours while they agree) put them at the top of every shot, and the director's
+  new `giants` watch named the object: the AOE explosion shells (`AOEGrizzlyExplosion`, `AOEExplosion`,
+  `AOEShieldExplosion`, 400 u across at full size) crossing the camera, their fresnel rim at grazing
+  incidence filling the frame for the one frame the shell passes through the camera. The rule for a clip: no
+  blast, bomb or ability explosion inside ~250 u of the camera, and the camera never inside an explosion.
+  (`StoatRipple` and the cell's `HalfNucleus` are large by design.)
+
 The next milestone is therefore **M1 again, as short clips**: fix the spindle graphs and the depth artifacts in
 the engine first, make the featured hull the local vessel (`mv vessel CLASS`, the Vessel Changer's own swap), and
 shoot one 4-6 s clip per vessel ability, each composed from stills before it is recorded. Cuts 5-6 stay in
