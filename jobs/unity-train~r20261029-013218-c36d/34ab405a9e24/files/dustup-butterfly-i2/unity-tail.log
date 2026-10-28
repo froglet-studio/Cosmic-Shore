@@ -1,0 +1,80 @@
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 19520 (child process of PID 22372) has been terminated.
+SUCCESS: The process with PID 22372 (child process of PID 11216) has been terminated.
+Killing ADB server in 0.0848548 seconds.
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedPlayerCount.asset using Guid(15256dcf0be30b4489190913d1f305db) (NativeFormatImporter) -> (artifact id: '0a06f472a8a92a02e09c75f594e15deb') in 0.0037049 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedAIIntensity.asset using Guid(490485287c38a2f4e9178566394efd69) (NativeFormatImporter) -> (artifact id: 'cf4f9e2229881d2c4812210b39ee5abb') in 0.0051719 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) (NativeFormatImporter) -> (artifact id: '8f3fd7b2fad3fa2eadcdd59f5aad6498') in 0.0039063 seconds
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 46.74 ms, found 15 plugins.
+Preloading 2 native plugins for Editor in 0.23 ms.
+Asset Pipeline Refresh (id=762096cd3fc10a14e98f75daceede551): Total: 1.779 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+	Summary:
+		Imports: total=3 (actual=3, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=151 ms
+		Asset DB Callback time: managed=1482 ms, native=145 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4653, non-scripts=12350
+		Asset File Changes: new=0, changed=3, moved=0, deleted=0
+		Scan Filter Count: 6
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 0.001ms
+	ApplyChangesToAssetFolders: 0.434ms
+	Scan: 22.110ms
+	OnSourceAssetsModified: 0.079ms
+	CategorizeAssetsWithTransientArtifact: 0.023ms
+	ProcessAssetsWithTransientArtifactChanges: 0.311ms
+	CategorizeAssets: 80.353ms
+	ImportOutOfDateAssets: 28.908ms (1.206ms without children)
+		ImportManagerImport: 19.623ms (1.536ms without children)
+			ImportInProcess: 18.039ms
+			UpdateCategorizedAssets: 0.049ms
+		ReloadNativeAssets: 1.925ms
+		UnloadImportedAssets: 0.464ms
+		ReloadImportedAssets: 0.000ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 3.188ms
+		InitializingProgressBar: 0.054ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.002ms
+		OnDemandSchedulerStart: 2.445ms
+	PostProcessAllAssets: 1577.246ms
+	Hotreload: 50.116ms
+	GatherAllCurrentPrimaryArtifactRevisions: 1.174ms
+	UnloadStreamsBegin: 0.006ms
+	PersistCurrentRevisions: 1.021ms
+	UnloadStreamsEnd: 0.002ms
+	Untracked: 17.480ms
+
+Unloading 166 unused Assets / (7.2 KB). Loaded Objects now: 38593.
+Memory consumption went from 0.86 GB to 0.86 GB.
+Total: 160.300100 ms (FindLiveObjects: 3.435200 ms CreateObjectMapping: 3.143700 ms MarkObjects: 153.488700 ms  DeleteObjects: 0.231100 ms)
+
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread stopped.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Logcat] [WorkThread] 01:46:34.7491 Worker thread exited
+[Logcat] [MainThread]01:46:34.7501 Dispatcher shutting down
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-Shombith-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-Shombith channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Leak Detected : Persistent allocates 3 individual allocations. To find out more please enable 'Preferences > Jobs > Leak Detection Level > Enabled With Stack Trace' and reproduce the leak again.
+abort_threads: Failed aborting id: 0000000000003EB0, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000003EB0, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4544
+[usbmuxd] Stop listen thread
+[usbmuxd] Error: 
+[usbmuxd] Listen thread exiting
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+Internal: There are remaining Allocations on the JobTempAlloc. This is a leak, and will impact performance
+To Debug, run app with -diag-job-temp-memory-leak-validation cmd line argument. This will output the callstacks of the leaked allocations.
+Internal: There are remaining Allocations on the JobTempAlloc. This is a leak, and will impact performance
+To Debug, run app with -diag-job-temp-memory-leak-validation cmd line argument. This will output the callstacks of the leaked allocations.
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1793218597317,"processId":11216,"allocatedMemory":51381356,"memoryLabels":[{"Default":29313},{"Permanent":15236},{"NewDelete":74365},{"Thread":4244344},{"Manager":3109616},{"VertexData":8},{"Geometry":816},{"Texture":1656},{"Shader":87989},{"Material":24},{"GfxDevice":58112},{"GfxThread":18432},{"Animation":392},{"Audio":3040},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":231048},{"Input":14984},{"JobScheduler":33024},{"TextLib":18520},{"Mono":32},{"MonoCode":128},{"ScriptingNativeRuntime":155060},{"BaseObject":1620992},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":235640},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":11137},{"DynamicArray":723431},{"HashMap":299660},{"Utility":2660418},{"PoolAlloc":10744},{"AI":80},{"TypeTree":5341},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":6768},{"WebRequest":67787},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"NativeArray":16843524},{"Camera":17},{"Secure":4225},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":560},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":398957},{"EditorUtility":359428},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19508836},{"EditorGi":328},{"UnityConnect":29472},{"Upm":1896},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":266},{"ProfilerEditor":9778},{"CoreBusinessMetrics":2920},{"TLS":20682},{"Licensing":776},{"AssetReference":32},{"IPCStream":32}]}
+Internal: There are remaining Allocations on the JobTempAlloc. This is a leak, and will impact performance
+To Debug, run app with -diag-job-temp-memory-leak-validation cmd line argument. This will output the callstacks of the leaked allocations.
