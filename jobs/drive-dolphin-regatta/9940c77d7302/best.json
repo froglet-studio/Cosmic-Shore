@@ -1,0 +1,28 @@
+{
+ "descriptors": null,
+ "evals_at": 558,
+ "loss": 4.1445774719220605,
+ "metrics": {
+  "dnf": 0,
+  "limits": "point mass; no break-off; the scalar charge economy (DOLPHIN_ENERGY_ECONOMY.md 2)",
+  "model": "dolphin_drive",
+  "races": 4,
+  "seconds_by_intensity": {
+   "1": 52.2,
+   "2": 62.3,
+   "3": 69.9,
+   "4": 69.7
+  }
+ },
+ "params": {
+  "alignDegrees": 24.69725905020822,
+  "engageRunwaySeconds": 0.5700378195833471,
+  "maxHoldOffSeconds": 4.5794364646089,
+  "minDischargeSeconds": 0.057991230945397806,
+  "minPulseGainUnits": 2.915420682104354,
+  "peakMarginUnits": 20.912716831903573,
+  "spendAtCharge01": 0.9963124191589556
+ },
+ "sha": "168c3e3d3240ae0ea2ce1f5516a4ba5387d3b0ba",
+ "time": 1793188748
+}

@@ -12,13 +12,16 @@
   "torch": false
  },
  "cores": 3,
- "current": {
-  "job": "drive-dolphin-regatta",
-  "max_evals": 600,
-  "minutes": 14.0,
-  "since": 1793188651
- },
+ "current": {},
  "host": "cloud-session",
+ "last": {
+  "best_start": null,
+  "epoch": "9940c77d7302",
+  "evals": 603,
+  "job": "drive-dolphin-regatta",
+  "session_evals": 603,
+  "stopped": "max evals"
+ },
  "runs": [
   {
    "best_end": 4.279668468582069,
@@ -52,12 +55,23 @@
    "start": 1793188635,
    "stopped": "max evals",
    "unit": null
+  },
+  {
+   "best_end": 4.1445774719220605,
+   "best_start": null,
+   "end": 1793188755,
+   "epoch": "9940c77d7302",
+   "evals": 603,
+   "job": "drive-dolphin-regatta",
+   "start": 1793188651,
+   "stopped": "max evals",
+   "unit": null
   }
  ],
  "totals": {
-  "sessions": 4
+  "sessions": 5
  },
- "updated": 1793188651,
+ "updated": 1793188755,
  "user": "shombith",
  "version": "1"
 }
