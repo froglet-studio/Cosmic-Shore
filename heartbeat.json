@@ -12,19 +12,34 @@
   "torch": false
  },
  "cores": 11,
- "current": {
-  "job": "drive-manta-redline",
-  "max_evals": 60,
-  "minutes": 3.0,
-  "request": null,
-  "since": 1793192952
- },
+ "current": {},
  "host": "dragonsweapon",
- "runs": [],
- "totals": {
-  "sessions": 0
+ "last": {
+  "best_start": null,
+  "epoch": "c5c7f8e4ef2d",
+  "evals": 60,
+  "job": "drive-manta-redline",
+  "session_evals": 60,
+  "stopped": "max evals"
  },
- "updated": 1793192952,
+ "runs": [
+  {
+   "best_end": 3.4612172126313028,
+   "best_start": null,
+   "end": 1793192972,
+   "epoch": "c5c7f8e4ef2d",
+   "evals": 60,
+   "job": "drive-manta-redline",
+   "request": null,
+   "start": 1793192952,
+   "stopped": "max evals",
+   "unit": null
+  }
+ ],
+ "totals": {
+  "sessions": 1
+ },
+ "updated": 1793192972,
  "user": "shombithofficial",
  "version": "1"
 }

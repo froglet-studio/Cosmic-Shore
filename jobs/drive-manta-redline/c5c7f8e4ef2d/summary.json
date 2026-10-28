@@ -1,0 +1,60 @@
+{
+ "baseline": {
+  "error": null,
+  "loss": 3.5329213999552658,
+  "metrics": {
+   "dnf": 0,
+   "limits": "point mass; no break-off, no nose lag; Regatta's through-the-centre steering in every mode",
+   "model": "manta_drive",
+   "races": 12,
+   "seconds_by_intensity": {
+    "1": 27.83,
+    "2": 33.03,
+    "3": 38.2,
+    "4": 39.17
+   }
+  },
+  "params": {
+   "BoostStickBand": 0.35,
+   "YastriStickBand": 0.75
+  }
+ },
+ "errors": {},
+ "evals": 60,
+ "history": [
+  [
+   6,
+   3.4845697983460293,
+   1793192963,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   12,
+   3.465538734164277,
+   1793192964,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   24,
+   3.462394786680622,
+   1793192966,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   36,
+   3.4621710728997326,
+   1793192968,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   42,
+   3.4612172126313028,
+   1793192969,
+   "shombithofficial/dragonsweapon"
+  ]
+ ],
+ "restarts": 0,
+ "seconds": 13.6,
+ "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
+ "updated": 1793192972
+}
