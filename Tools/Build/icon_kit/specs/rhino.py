@@ -69,6 +69,57 @@ def sword(angle=0.0, chop=0.0, guard=True, length=SWORD_LEN, w=SWORD_W):
     return m
 
 
+# Round 3 (Garrett 2026-10-28: "more like a katana."): the same blade on the same pivot, drawn as a katana - a long
+# shallow curve (sori) bending back toward the spine, one cutting edge on the convex side, the angled kissaki point
+# (the edge turns up at the yokote and meets the spine), a small tsuba where the blade leaves the nose and a long tsuka.
+KATANA_HILT = (60.0, 100.0)  # the pivot sits higher than the straight sword's so the long grip fits under it
+KATANA_LEN = 92              # habaki to point (px)
+KATANA_W = 12                # the blade's depth: a katana is slimmer than the capsule's 10 : 1
+KATANA_SORI = 14             # how far the point sits off the hilt's straight line (px): the curve
+
+
+def katana(angle=0.0, chop=0.0, tsuba=True, tsuka=True, length=KATANA_LEN, w=KATANA_W, sori=KATANA_SORI, hilt=KATANA_HILT):
+    hx, hy = hilt
+    L = length * math.cos(math.radians(chop))
+    k = min(0.17, 15.0 / max(L, 1.0))          # the kissaki's share of the blade
+    steps = 24
+
+    def centre(t):                              # the curve: off the line by sori * t^2, bending to the spine (+x)
+        return sori * t * t * (L / length), -L * t
+
+    def normal(t):                              # the unit vector toward the spine side at t
+        dx, dy = 2 * sori * t * (L / length), -L
+        n = math.hypot(dx, dy)
+        return -dy / n, dx / n
+
+    spine, edge = [], []
+    for i in range(steps + 1):
+        t = (1 - k) * i / steps
+        cx, cy = centre(t)
+        nx, ny = normal(t)
+        hw = w / 2 * (1 - 0.25 * t)              # a slight taper toward the point
+        spine.append((cx + nx * hw, cy + ny * hw))
+        edge.append((cx - nx * hw, cy - ny * hw))
+    # the kissaki: the spine runs on and dips to the point; the edge turns up at the yokote and runs straight to it
+    tx, ty = centre(1.0)
+    nx, ny = normal(1.0)
+    hw = w / 2 * 0.75
+    point = (tx + nx * hw * 0.6, ty + ny * hw * 0.6)
+    sx, sy = centre(1 - k * 0.45)
+    snx, sny = normal(1 - k * 0.45)
+    spine.append((sx + snx * hw, sy + sny * hw))
+    pts = spine + [point] + edge[::-1]
+    m = fill(rotate([(hx + x, hy + y) for x, y in pts], angle, hx, hy))
+    if tsuba:                                   # the guard: a flat octagon across the blade's root
+        g = [(-w * 0.95, 1), (-w * 0.7, -1.5), (w * 0.7, -1.5), (w * 0.95, 1), (w * 0.95, 5), (w * 0.7, 7.5),
+             (-w * 0.7, 7.5), (-w * 0.95, 5)]
+        m |= fill(rotate([(hx + x, hy + y) for x, y in g], angle, hx, hy))
+    if tsuka:                                   # the grip: long, a touch narrower than the blade, its end cut square
+        grip = [(-w * 0.42, 9), (w * 0.42, 9), (w * 0.38, 25), (-w * 0.38, 25)]
+        m |= fill(rotate([(hx + x, hy + y) for x, y in grip], angle, hx, hy))
+    return m
+
+
 # The states the sheet shows: (name, swipe deg, chop deg, lit, plate = EnergizeGauge01).
 SWORD_STATES = [("at rest: upright", 0.0, 0.0, False, 0.0),
                 ("swiped right (RT)", 70.0, 0.0, False, 0.0),
@@ -79,10 +130,11 @@ SWORD_STATES = [("at rest: upright", 0.0, 0.0, False, 0.0),
                 ("cooling down", 0.0, 0.0, False, 0.0)]
 
 
-def sword_card(name, title, guard):
+def sword_card(name, title, guard, draw=None):
+    draw = draw or (lambda ang, chop: sword(ang, chop, guard=guard))
     parts, states, gauge = {}, [], {}
     for k, (n, ang, chop, lit, g) in enumerate(SWORD_STATES):
-        parts[f"s{k}"] = (lambda ang=ang, chop=chop: sword(ang * CARD_SWIPE, chop, guard=guard))
+        parts[f"s{k}"] = (lambda ang=ang, chop=chop: draw(ang * CARD_SWIPE, chop))
         states.append((n, [(f"s{k}", "danger" if lit else "white")]))
         gauge[n] = (g, None)
     return dict(name=name, group="energize", lockup_state=4, element="Charge", **_BEFORE, title=title,
@@ -99,6 +151,10 @@ LOCKUP = dict(
 )
 
 CARDS = [
+    sword_card("energize_option_f", "F - THE KATANA: curved, one edge, the angled point, a small tsuba and the long grip; turned with the live swipe; white dark, danger lit", None,
+               lambda a, c: katana(a, c)),
+    sword_card("energize_option_g", "G - THE KATANA, BLADE AND TSUBA: F without the grip, so the blade runs the card's full height", None,
+               lambda a, c: katana(a, c, tsuka=False, length=100, hilt=(60.0, 114.0))),
     sword_card("energize_option_d", "D - THE SWORD: the blade on its hilt, turned about the hilt with the live swipe and shortened by the chop; white dark, danger lit", True),
     sword_card("energize_option_e", "E - THE BLADE ALONE: D without the guard - only what the game draws, the blade off the nose", False),
 ]
