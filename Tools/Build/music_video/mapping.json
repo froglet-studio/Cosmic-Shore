@@ -417,14 +417,11 @@
     {
      "on": "bar",
      "cmd": "aim all local"
-    },
-    {
-     "on": "half",
-     "cmd": "aim local fleet"
     }
    ],
    "settle_seconds": 8,
-   "luminance": 0.2
+   "luminance": 0.2,
+   "_loop_note": "No `half` re-aim here: the circle must run uninterrupted to the payoff (the first cut-6 loop shot re-aimed the pilot at the fleet half way through and broke the loop)."
   },
   {
    "name": "wormhole-run",
