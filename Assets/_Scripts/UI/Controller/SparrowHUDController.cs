@@ -154,11 +154,11 @@ namespace CosmicShore.UI
             yield return null;
             view?.InitializeMissileIcon();
 
-            // Seed the charge gauge from the LIVE tank, not from a resting value: the pilot may
-            // arrive mid-match (a vessel swap, a replay) with a part-charged bay, and a gauge
-            // that starts at zero and then jumps on the next destroyed prism reads as a bug.
+            // Seed the bay from the LIVE tank, not from a resting value: the pilot may arrive
+            // mid-match (a vessel swap, a replay) with a part-charged bay, and a bay that starts
+            // empty and then jumps on the next destroyed prism reads as a bug.
             if (fireGunExecutor != null)
-                view?.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
+                HandleAmmoChanged(fireGunExecutor.Ammo01);
 
             _initialAmmoRoutine = null;
         }
@@ -189,6 +189,7 @@ namespace CosmicShore.UI
             view.SetAfterburnerHullColor(domain);
             view.SetStanceColors(domain, ResolveShieldedColor());
             view.SetGunSprayColor(domain);
+            view.SetBayColor(domain);
             view.SetBoosting(_vesselStatus.IsBoosting);
         }
 
@@ -209,9 +210,9 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// One ammo change, two readouts: the icon ladder says how many rockets the bay HOLDS,
-        /// the Charge card's gauge says how close the next one is. They are driven from the same
-        /// event so they can never disagree, and the gauge is asked of the executor rather than
+        /// One ammo change, two readouts on the Charge card's bay: how many rockets it HOLDS (solid),
+        /// and how close the next one is (the rocket after them, filling tail to nose). They are driven from the same
+        /// event so they can never disagree, and the charge is asked of the executor rather than
         /// derived here — the shot's cost is the weapon's business, and re-deriving it in the HUD
         /// is how a UI number drifts from the one the gun spends.
         /// </summary>
@@ -219,7 +220,7 @@ namespace CosmicShore.UI
         {
             if (!view) return;
 
-            // The COST comes from the executor, never from the HUD: the icon ladder counts
+            // The COST comes from the executor, never from the HUD: the bay counts
             // rockets, and a count re-derived here would drift from the number the gun spends
             // the moment the weapon's price changes (it just did - a base rocket is half what
             // it was, so the bay holds four).

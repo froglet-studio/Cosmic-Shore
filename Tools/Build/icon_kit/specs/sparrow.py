@@ -1,10 +1,11 @@
 """The Sparrow's ability-row icons (Resources/ElementalAbilityMaps/Sparrow.asset), angular, one object each.
 
-  Charge  Skyburst Rockets   the rack: four rockets on a rail, as a LADDER of five sprites (0..4 held) the view
-                             steps through (SparrowHUDView.SetMissilesFromAmmo01); a spent slot is a ghost, so
-                             the count reads as "n of 4" and the card's own sprite is the full rack
-                             (before: three 32 px rockets, then a three-rung ladder with a dark decagon PLATE
-                             baked into the art, sitting on the lockup's own plate)
+  Charge  Skyburst Rockets   THE BAY: four of the real rocket (Sparrow Missile.fbx, side-on, nose up), never touching;
+                             a held rocket solid, an empty one a ghost, the one charging FILLING tail to nose with its
+                             own charge - the view generates the four from one part (SparrowHUDView.BuildBay). No
+                             meter on the plate: the rockets are the meter (Garrett 2026-10-27: "go with N"). The
+                             Ladder/ sprites are the bay at 0..4 held, the fallback and the card's own sprite.
+                             (before: a rack of four drawn rockets on a rail as a ladder over a charge gauge)
   Mass    Turret Stance      the Sparrow from above (fans spread: it has STOPPED), firing PRISM rounds from both
                              gun pods at their real spacing - a round, then the same round swollen (Mass is the
                              substance). Live parts: the rounds are a GHOST while flying, solid in the stance
@@ -131,27 +132,9 @@ def afterburner_rest():
     return afterburner_hull_rest() | afterburner_jets_rest()
 
 
-def rocket(cx, cy, h):
-    """A rocket, nose up: a pointed nose, a straight body, two swept fins. h = overall height."""
-    w = h * 0.2
-    return fill([(cx, cy - h / 2), (cx + w / 2, cy - h / 2 + h * 0.26), (cx + w / 2, cy + h * 0.2),
-                 (cx + w * 1.0, cy + h / 2), (cx + w * 0.4, cy + h * 0.34), (cx - w * 0.4, cy + h * 0.34),
-                 (cx - w * 1.0, cy + h / 2), (cx - w / 2, cy + h * 0.2), (cx - w / 2, cy - h / 2 + h * 0.26)])
-
-
-def rockets(n, total=4):
-    """The rack: `n` solid rockets and `total - n` ghosts on one rail, the row centred."""
-    pitch = 26
-    x0 = 64 - pitch * (total - 1) / 2
-    rail = rect(12, 108, 116, 118)
-    solid, ghost = rail, rect(0, 0, 0, 0)
-    for i in range(total):
-        r = rocket(x0 + i * pitch, 56, 92)
-        if i < n:
-            solid |= r
-        else:
-            ghost |= r
-    return [(solid, 1.0), (ghost, 0.6)]   # a ghost at exactly 0.5 sits on the gates' threshold and vanishes at 40 px
+def rockets(n):
+    """The bay at `n` held, nothing charging: the Ladder/ sprites (the fallback, and the card's own sprite)."""
+    return bay(n, 0.0, UPRIGHT)
 
 
 # ---- Pulsefire Cannons (Space): THE SPRAY over the segmented heat gauge (Garrett 2026-10-27: "option E2 looks great").
@@ -245,6 +228,66 @@ def pierce_prism():
     return block(**PIERCE_PRISM)
 
 
+# ---- Skyburst Rockets (Charge): THE BAY, option N of round 2 (Garrett 2026-10-27: "go with N and move on"). Measured on the HUD first: the card is a LADDER of five
+# rack sprites (0..4 held, SetMissilesFromAmmo01) over the plate gauge filling toward the NEXT rocket (SetMissileCharge)
+# - two readings of one tank (FireGunActionExecutor: Ammo01, a rocket costs ShotCost01 = 0.25, a heavy one from the
+# stance two). Garrett on round 1 (K / L / M put the count on the plate): "when a resource is filling up a use of
+# something i do like it when it fills up one use at a time on the sub icon it is filling. i don't like how they were
+# scaled to intersect in the previous version. lets use the profile of the actual rocket the sparrow shoots". So the
+# icon is the BAY: four rockets in the real profile of `Sparrow Missile.fbx` (SkyBurstProjectile.prefab's
+# MissileVisual), never touching; a held rocket is solid, an empty one a ghost, and the one charging fills tail to
+# nose with its own charge. No meter on the plate: the rockets are the meter.
+from functools import lru_cache as _lru_cache
+SKY_FBX = "Assets/_Models/Sparrow Missile.fbx"
+SKY_LEN = 108            # the rocket's length on the card (px)
+SKY_PITCH = 30           # centre-to-centre in the upright bay: ~25 px wide rockets, a 5 px gap
+
+
+@_lru_cache(maxsize=None)
+def sky_rocket(cx, cy, length=SKY_LEN, heading=90.0):
+    """The real rocket, side-on (the swept tail fin shows), nose toward `heading` degrees (0 = right, 90 = up)."""
+    return mesh_silhouette.silhouette(SKY_FBX, pitch=90, yaw=0, box=length, cx=cx, cy=cy, roll=-heading, dilate_px=1.2)
+
+
+def sky_fill(mask, cx, cy, length, heading, f):
+    """The part of a rocket mask from its tail up to fraction `f` of its length (the charge, tail to nose)."""
+    n = mask.shape[0]
+    yy, xx = np.mgrid[0:n, 0:n] / (n / 128.0)
+    h = np.radians(heading)
+    t = (xx - cx) * np.cos(h) - (yy - cy) * np.sin(h)        # along the nose axis, -length/2 at the tail
+    return mask & (t <= -length / 2 + f * length)
+
+
+def bay(held, charge, poses):
+    """[(solid, 1.0), (ghost, 0.6)]: `held` rockets solid, the next one filled to `charge`, the rest ghosts."""
+    solid, ghost = empty(), empty()
+    for i, (cx, cy, length, heading) in enumerate(poses):
+        r = sky_rocket(cx, cy, length, heading).copy()
+        if i < held:
+            solid |= r
+        elif i == held and charge > 0:
+            part = sky_fill(r, cx, cy, length, heading, charge)
+            solid |= part
+            ghost |= r & ~part
+        else:
+            ghost |= r
+    return [(solid, 1.0), (ghost, 0.6)]
+
+
+UPRIGHT = [(64 + (i - 1.5) * SKY_PITCH, 64, SKY_LEN, 90.0) for i in range(4)]   # SparrowHUDView.bayRocketPitch
+
+
+def bay_rocket():
+    """The part the view clones four times: one rocket, nose up, at the sprite's centre."""
+    return sky_rocket(64, 64)
+
+SKY_STATES = [("empty: charging the first", 0, 0.6),
+              ("2 held, charging the third", 2, 0.5),
+              ("bay full: 4 held", 4, 0.0)]
+
+
+BAY_EXEMPT = {"components": "four real rockets, each a body and its tail fin", "gap": "the real mesh"}
+
 ICONS = [
     dict(name="Sparrow_TurretStance", element="Mass", act="Turret Stance: the stopped Sparrow firing swelling rounds from both pods (composite)", draw=turret_stance,
          exempt={"gap": "Garrett 2026-10-26 - the real mesh", "components": "a hull and four rounds", "specks": "the blocks' seam slivers"}),
@@ -254,6 +297,8 @@ ICONS = [
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "four rounds", "specks": "seam slivers", "gap": "seams", "thin": "seams", "at40": "the seams close at 40 px, the blocks stay"}),
     dict(name="Sparrow_TurretStanceRoundsShielded", element="Mass", act="Turret Stance: the rounds part at Mass 5 (octahedrons, the shielded colour)", draw=turret_stance_rounds_shielded, subdir="Parts", family=False,
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "four rounds"}),
+    dict(name="Sparrow_BayRocket", element="Charge", act="Skyburst Rockets: one rocket, the part the view clones into the bay and fills", draw=bay_rocket, subdir="Parts", family=False,
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "the real rocket: body and tail fin", "gap": "the real mesh"}),
     dict(name="Sparrow_Cannons", element="Space", act="Pulsefire Cannons: the cold spray, one stream (composite; the HUD lays the rounds out live)", draw=cannons,
          exempt={"coverage": "a line of rounds: the cold spray", "components": "five rounds", "at40": "the rounds hold at 40 px"}),
     dict(name="Sparrow_GunSprayRound", element="Space", act="Pulsefire Cannons: one round, the part the view clones onto the live cone", draw=gun_spray_round, subdir="Parts", family=False,
@@ -274,11 +319,11 @@ ICONS = [
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "two plumes", "thin": "the plumes taper", "at40": "a part"}),
     dict(name="Sparrow_AfterburnerJetsBoost", element="Time", act="Afterburner: the jets part at full burn (the HUD blue)", draw=afterburner_jets_boost, subdir="Parts", family=False,
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "two plumes", "thin": "the plumes taper", "at40": "a part"}),
-    dict(name="Sparrow_Rockets_4", element="Charge", act="Skyburst Rockets: 4 of 4", draw=lambda: rockets(4), subdir="Ladder", family=False, before=ART + "Missiles/missileGauge_2.png"),
-    dict(name="Sparrow_Rockets_3", element="Charge", act="rack: 3 of 4", draw=lambda: rockets(3), subdir="Ladder", family=False),
-    dict(name="Sparrow_Rockets_2", element="Charge", act="rack: 2 of 4", draw=lambda: rockets(2), subdir="Ladder", family=False, before=ART + "Missiles/missileGauge_1.png"),
-    dict(name="Sparrow_Rockets_1", element="Charge", act="rack: 1 of 4", draw=lambda: rockets(1), subdir="Ladder", family=False),
-    dict(name="Sparrow_Rockets_0", element="Charge", act="rack: 0 of 4", draw=lambda: rockets(0), subdir="Ladder", family=False, before=ART + "Missiles/missileGauge_0.png"),
+    dict(name="Sparrow_Rockets_4", element="Charge", act="Skyburst Rockets: 4 of 4", draw=lambda: rockets(4), subdir="Ladder", family=False, exempt=BAY_EXEMPT, before=ART + "Missiles/missileGauge_2.png"),
+    dict(name="Sparrow_Rockets_3", element="Charge", act="the bay: 3 of 4 held (the fallback)", draw=lambda: rockets(3), subdir="Ladder", family=False, exempt=BAY_EXEMPT),
+    dict(name="Sparrow_Rockets_2", element="Charge", act="the bay: 2 of 4 held (the fallback)", draw=lambda: rockets(2), subdir="Ladder", family=False, exempt=BAY_EXEMPT, before=ART + "Missiles/missileGauge_1.png"),
+    dict(name="Sparrow_Rockets_1", element="Charge", act="the bay: 1 of 4 held (the fallback)", draw=lambda: rockets(1), subdir="Ladder", family=False, exempt=BAY_EXEMPT),
+    dict(name="Sparrow_Rockets_0", element="Charge", act="the bay: 0 of 4 held (the fallback)", draw=lambda: rockets(0), subdir="Ladder", family=False, exempt=BAY_EXEMPT, before=ART + "Missiles/missileGauge_0.png"),
     dict(name="Sparrow_PrismRounds", element="Space", act="stance: the cold spray in prism rounds", draw=prism_rounds, subdir="Modes", family=False,
          exempt={"coverage": "a line of rounds", "components": "five rounds", "specks": "seam slivers", "thin": "seams", "gap": "seams", "at40": "seams"}),
 ]
@@ -319,12 +364,20 @@ REBIND = [
                                  fields={"gunSprayRoundSprite": ("icon", "Sparrow_GunSprayRound"),
                                          "gunSprayPrismRoundSprite": ("icon", "Sparrow_GunSprayPrismRound"),
                                          "gunSprayPierceSprite": ("icon", "Sparrow_GunSprayPierce")})),
+    # The Charge card: the icon Image becomes a transparent container; the view GENERATES the bay under it (four
+    # rockets, each a ghost and a fill) from the one part. The plate's charge gauge is unbound and switched off -
+    # the rockets are the meter - and the gauge's reset tween goes with it.
+    dict(file=VARIANT, pair=dict(container="3855639277037614910", view="7983934951929746178", after="gunSprayPierceSprite",
+                                 children=[], binding=dict(element=1, gauge=None),
+                                 fields={"bayRocketSprite": ("icon", "Sparrow_BayRocket"),
+                                         "missileChargeResetTweenDuration": None})),
+    dict(file=VARIANT, deactivate="7710340118500001104"),
 ]
 
 
 # The hull's other cards as the HUD draws them today (states.py options sheets show a candidate beside them).
 LOCKUP = dict(
-    Charge=dict(parts=dict(rack=lambda: rockets(4)), state=[("rack", "white")]),
+    Charge=dict(parts=dict(bay=lambda: rockets(4)[0][0]), state=[("bay", "domain")]),
     Mass=dict(parts=dict(hull=turret_stance_hull, rounds=turret_stance_rounds), state=[("rounds", "domain", 0.6), ("hull", "domain")]),
     Space=dict(parts=dict(guns=cannons), state=[("guns", "domain")], gauge=0.10, gauge_marks=GUN_MARKS),
     Time=dict(parts=dict(hull=afterburner_hull_rest, jets=afterburner_jets_rest), state=[("jets", "blue"), ("hull", "domain")]),
@@ -354,4 +407,10 @@ CARDS = [
                    ("Space 5: rounds pierce prisms", [("prism", "danger", 0.6), ("pierce", "domain")])],
          gauge={**{n: (g, None) for n, g, _r in HEAT_STATES}, "turret stance at 7.5 deg: prism rounds": (0.75, None),
                 "Space 5: rounds pierce prisms": (0.10, None)}),
+    dict(name="skyburst", element="Charge", before="Assets/_Graphics/Icons/AbilityIcons/Sparrow/Ladder/Sparrow_Rockets_2.png", before_rev="c69911438",
+         before_gauge_marks=[], before_gauge_value=0.48,
+         title="Skyburst Rockets: the bay - four real rockets, held solid, empty a ghost, the next filling tail to nose; no meter on the plate",
+         parts={**{f"s{k}": (lambda h=h, c=c: bay(h, c, UPRIGHT)[0][0]) for k, (_n, h, c) in enumerate(SKY_STATES)},
+                **{f"g{k}": (lambda h=h, c=c: bay(h, c, UPRIGHT)[1][0]) for k, (_n, h, c) in enumerate(SKY_STATES)}},
+         states=[(n, [(f"g{k}", "domain", 0.6), (f"s{k}", "domain")]) for k, (n, _h, _c) in enumerate(SKY_STATES)]),
 ]

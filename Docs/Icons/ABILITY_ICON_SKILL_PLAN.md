@@ -224,7 +224,11 @@ moves; the view swaps hull and jets on the live boost flag. The **Sparrow's Mass
 rounds from both pods - a ghost while flying, solid in the stance, shielded octahedrons at Mass 5. The **Sparrow's
 Space card** (2026-10-27, three option rounds, Garrett picked E2): ten rounds on their rays inside the gun's LIVE
 cone over the heat gauge cut into one bar per level reached - the view generates the rounds and lays them out by the
-real half-angle; options are now shown in the hull's whole lockup. Next: the Sparrow's Charge card. **The Grizzly
+real half-angle; options are now shown in the hull's whole lockup. The **Sparrow's Charge card** (2026-10-27, two
+option rounds, Garrett picked N): the bay - four rockets in the real profile of `Sparrow Missile.fbx`, never touching,
+a held rocket solid, an empty one a ghost, the one charging FILLING tail to nose ("when a resource is filling up a use
+of something i do like it when it fills up one use at a time on the sub icon it is filling"); the plate's charge gauge
+is unbound - the rockets are the meter. The Sparrow is done. **The Grizzly
 (2026-10-27)**: its four placeholders (Smash, Zap, Cannon, Boost) replaced by four kit icons drawn from its new model (`specs/grizzly.py`,
 `Docs/Icons/sheets/grizzly.png`): Dig In (the real hull side-on in its `dig` take, the anchor sunk into a ground plate),
 Weapon Systems (a three-chamber drum), Charged Cannon (a shell leaving its blast), Rush (the hull leaning into two
