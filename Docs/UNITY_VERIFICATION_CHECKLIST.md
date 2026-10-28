@@ -18259,3 +18259,19 @@ references); the shader was never compiled.
    cheaper than Original on a phone (build the scene into a dev build by hand to measure on device).
 8. Stop Play, then play a normal scene. **Pass:** the look is back to Original (the lab resets it on destroy and on
    domain/subsystem reload).
+
+## Lava lamp (Menu_Main) spawns the Meerkat by default (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scenes/Menu_Main.unity` (`MainMenuController.menuVesselClass` 6 Squirrel -> 28 Meerkat) and
+`MainMenuController.cs` (the field's code default and tooltip, Squirrel -> Meerkat). Yash: "Make Meerkat the default
+character spawn of lavalamp." Nothing else changed: the Vessel Changer toy still swaps hulls, and a game launched from
+the menu still uses the hull picked for it. No Unity in the session.
+
+1. Open Menu_Main, select the MainMenuController object. **Pass:** Menu Vessel Class reads Meerkat.
+2. Boot from the Bootstrap/Auth scene into the menu. **Pass:** the lava-lamp autopilot behind the menu is a Meerkat
+   (cyan for its domain) and its AI forms tunnels on its own.
+3. Click into freestyle. **Pass:** you fly the Meerkat; the right stick bends a tunnel, RT dives through it; collecting
+   omnicrystals grows the network; the HUD is the Meerkat's.
+4. Play any arcade game with another hull and return to the menu. **Pass:** the lava lamp is a Meerkat again.
+5. Vessel Changer toy -> Squirrel, then back to Meerkat. **Pass:** both swaps work.
+6. A party guest joining the host's menu. **Pass:** the guest's own hull is unchanged (the field drives the host only).
