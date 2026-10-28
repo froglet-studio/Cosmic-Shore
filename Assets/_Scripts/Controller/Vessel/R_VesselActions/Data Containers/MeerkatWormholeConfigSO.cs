@@ -161,6 +161,10 @@ namespace CosmicShore.ScriptableObjects
         [Header("Omnicrystal · the network (the artifact's Play Style Config > Omnicrystal, rounds 16-26)")]
         [Tooltip("The Omnicrystal ability: an omnicrystal opens the wormhole network (0 = off)")]
         [SerializeField] bool omniOn = true;
+        [Tooltip("Perf (2026-10-29): the menu's autopilot Meerkat (the lava lamp behind Menu_Main) grows root networks from " +
+                 "omnicrystals too. Off: it takes none, so the lava lamp keeps its frame rate; a person flying in freestyle, " +
+                 "and every match, grow them as ever")]
+        [SerializeField] bool menuAutopilotRoots = false;
         [Tooltip("Round 26 (Yash, 2026-10-28: \"it will always be large ... if it has full mass, then it will be the largest, " +
                  "covering the entire cell\"): the network's reach as a share of its cell's radius (MeerkatNetworkCell), on Mass - " +
                  "Min the page's networkReachAtZero (0.5, at Mass 0), Max its networkReachAtFull (1, the whole cell, at Mass 10). " +
@@ -462,6 +466,7 @@ namespace CosmicShore.ScriptableObjects
         public int BranchForks => branchForks;
         public float BranchGrowSeconds => branchGrowSeconds;
         public bool OmniOn => omniOn;
+        public bool MenuAutopilotRoots => menuAutopilotRoots;
         public int OmniCount => omniCount;
         public int LabyrinthBranchPointsMin => labyrinthBranchPointsMin;
         public int LabyrinthBranchPointsMax => labyrinthBranchPointsMax;

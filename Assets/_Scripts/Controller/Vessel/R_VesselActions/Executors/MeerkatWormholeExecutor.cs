@@ -4,6 +4,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -117,6 +118,19 @@ namespace CosmicShore.Gameplay
         static readonly List<Tunnel> s_tunnels = new();
         static readonly List<Ripple> s_ripples = new();
         static readonly List<MeerkatWormholeExecutor> s_executors = new();
+
+        // Per-step markers (perf, 2026-10-29: the Lavalamp captures showed 3-8 ms of Update self time with no breakdown).
+        // They show up by name in the profiler and in PerfAutoCapture's prof_*.json.
+        static readonly ProfilerMarker s_mTunnels = new("Meerkat.Executor.StepTunnels");
+        static readonly ProfilerMarker s_mSwallow = new("Meerkat.Swallow.Step");
+        static readonly ProfilerMarker s_mRoots = new("Meerkat.Executor.StepRootNetworks");
+        static readonly ProfilerMarker s_mRipples = new("Meerkat.Executor.StepRipples");
+        static readonly ProfilerMarker s_mCamera = new("Meerkat.Executor.StepCamera");
+        static readonly ProfilerMarker s_mAutopilot = new("Meerkat.Executor.Autopilot");
+        static readonly ProfilerMarker s_mOmni = new("Meerkat.Executor.StepOmni");
+        static readonly ProfilerMarker s_mGrowRoots = new("Meerkat.Executor.GrowRoots");
+        static readonly ProfilerMarker s_mRideSoliton = new("Meerkat.Executor.TryRideAnySoliton");
+        static readonly ProfilerMarker s_mReticle = new("Meerkat.Executor.StepReticle");
 
         /// <summary>Every tunnel alive now, everyone's.</summary>
         public static IReadOnlyList<Tunnel> Live => s_tunnels;
@@ -297,21 +311,24 @@ namespace CosmicShore.Gameplay
         {
             if (!config || _status == null) return;
             float dt = Time.deltaTime;
-            StepTunnels(dt);
-            _swallow.Step(this, dt);
-            StepRootNetworks(dt);
-            StepRipples();
+            using (s_mTunnels.Auto()) StepTunnels(dt);
+            using (s_mSwallow.Auto()) _swallow.Step(this, dt);
+            using (s_mRoots.Auto()) StepRootNetworks(dt);
+            using (s_mRipples.Auto()) StepRipples();
             TrackLocalPilot();
             if (_ghostAlpha > 0f) _ghostAlpha -= dt / Mathf.Max(0.05f, _ghostFormT);
             if (!IsAuthority) return;
-            StepSpeedTunnelScale();
-            StepRideCamera();
+            using (s_mCamera.Auto())
+            {
+                StepSpeedTunnelScale();
+                StepRideCamera();
+            }
             if (_ltHeld) _ltHeldFor += dt;
-            if (_status.AutoPilotEnabled) Autopilot(dt);
+            if (_status.AutoPilotEnabled) { using (s_mAutopilot.Auto()) Autopilot(dt); }
             else _aiShaping = false;
-            StepOmni();
-            if (_kit) TryRideAnySoliton();   // [Garrett's kit hook] anyone rides any soliton
-            StepReticle(dt);
+            using (s_mOmni.Auto()) StepOmni();
+            if (_kit) { using (s_mRideSoliton.Auto()) TryRideAnySoliton(); }   // [Garrett's kit hook] anyone rides any soliton
+            using (s_mReticle.Auto()) StepReticle(dt);
         }
 
         void LateUpdate() => MeerkatWormholeView.DrawOncePerFrame();
@@ -798,6 +815,11 @@ namespace CosmicShore.Gameplay
         {
             var hull = _status.Transform;
             if (!config.OmniOn || !hull) return;
+            if (!RootsGrowHere())
+            {
+                _omniArmed = false;   // the lava lamp's autopilot: a crystal it took (or was armed with in freestyle) grows nothing
+                return;
+            }
             if (!_freestyleChecked)
             {
                 // a scene with no course (the Toybox): the local pilot's Meerkat lays the omnicrystals ahead of itself
@@ -816,11 +838,20 @@ namespace CosmicShore.Gameplay
             if (_omniArmed && _ride == null && _flight == null) GrowRootsHere();
         }
 
+        /// <summary>
+        /// Perf (2026-10-29): the Menu_Main autopilot (the lava lamp behind the menu, <see cref="CrewStations.MenuLive"/> and
+        /// flown by its AI) grows no root networks from omnicrystals unless <c>menuAutopilotRoots</c> is on. Each network is
+        /// built in one frame and then drawn and steered every frame, a large share of the lava lamp's fps drop in the
+        /// 2026-10-29 captures. A person flying the Meerkat in freestyle still grows them, and every match is unaffected.
+        /// </summary>
+        bool RootsGrowHere() => !(CrewStations.MenuLive && _status.AutoPilotEnabled && !config.MenuAutopilotRoots);
+
         /// <summary>The page's <c>rootsHere</c> + <c>labCommit</c>: the network grows from the hull, every way, sized by this
         /// hull's Mass (round 26: <c>networkReach</c>, read now and published, never the last tunnel); the hull is in its
         /// source. The last tunnel and the last network collapse now.</summary>
         void GrowRootsHere()
         {
+            using var _ = s_mGrowRoots.Auto();
             _omniArmed = false;
             var hull = _status.Transform;
             CollapseLast();
@@ -925,7 +956,11 @@ namespace CosmicShore.Gameplay
             {
                 var net = live[i];
                 if (net.Maker != this) continue;
-                if (net.Step(config.StaySeconds, config.CollapseSeconds, dt)) continue;
+                if (net.Step(config.StaySeconds, config.CollapseSeconds, dt))
+                {
+                    MeerkatTreeView.PrepareSkins(net, config);   // no-op once built, or while the skins are off
+                    continue;
+                }
                 if (_roots == net) { _roots = null; _flight = null; }
                 net.Remove();
             }
@@ -1077,7 +1112,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void OnOmniCrystal(IVesselStatus collector, Vector3 at)
         {
-            if (!config || !config.OmniOn || collector != _status || !IsAuthority) return;
+            if (!config || !config.OmniOn || collector != _status || !IsAuthority || !RootsGrowHere()) return;
             _omniArmed = true;
             _omniCrystal = -1;   // not one of the Meerkat field's (the relay's crystal -1 marks none taken)
             _omniSeed = unchecked((uint)(GetInstanceID() * 977 + Mathf.FloorToInt(at.x * 7f + at.y * 13f + at.z * 17f) +

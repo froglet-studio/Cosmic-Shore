@@ -68,6 +68,7 @@ MonoBehaviour:
   branchForks: 3
   branchGrowSeconds: 0.5
   omniOn: 1
+  menuAutopilotRoots: 0
   networkReach:
     Enabled: 1
     Value: 0.5
@@ -76,8 +77,8 @@ MonoBehaviour:
     element: 2
     UseFloor: 1
     Floor: 0.05
-  omniCount: 7
-  labyrinthBranchPointsMin: 16
+  omniCount: 3
+  labyrinthBranchPointsMin: 6
   labyrinthBranchPointsMax: 12
   labyrinthOpeningsMin: 16
   labyrinthOpeningsMax: 50
@@ -89,7 +90,7 @@ MonoBehaviour:
   labyrinthMouthDiameter: 13.9
   rootTip: 0.309
   rootGnarl: 0.779
-  rootBarkVisibility: 0.645
+  rootBarkVisibility: 0
   rootGlass: 0.0232
   rootRim: 1.573
   rootGrain: 1.172
@@ -101,20 +102,20 @@ MonoBehaviour:
   rootMaxSpeed: 119
   rootBounce: 0.45
   rootGravity: 0
-  rootOpacity: 0.32
+  rootOpacity: 0
   tubeInner: 0
   rootLamp: 0.352
   rootFog: 240
   areaL0: 6000
   areaL10: 18000
-  suckRadius: 90
+  suckRadius: 40
   suckSpeed: 30
   swallowShare: 1.5
   carryStretch: 2
   carryTwist: 0.5
   fireSpeed: 120
   fireGlideSeconds: 3
-  swallowPrismCap: 256
+  swallowPrismCap: 48
   formedLook: 1
   fieldStrength: 6
   fieldPitch: 0

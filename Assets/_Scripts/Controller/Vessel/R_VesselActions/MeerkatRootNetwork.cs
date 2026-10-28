@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -12,6 +13,7 @@ namespace CosmicShore.Gameplay
     public sealed class MeerkatRootNetwork
     {
         static readonly List<MeerkatRootNetwork> s_live = new();
+        static readonly ProfilerMarker s_mGrow = new("Meerkat.RootNetwork.Grow");
 
         /// <summary>Every network alive now, everyone's.</summary>
         public static IReadOnlyList<MeerkatRootNetwork> Live => s_live;
@@ -51,6 +53,7 @@ namespace CosmicShore.Gameplay
         public static MeerkatRootNetwork Grow(ScriptableObjects.MeerkatWormholeConfigSO cfg, MeerkatWormholeExecutor maker, int seq,
             uint seed, float share, Vector3 a, Vector3 t0, Vector3 right, Vector3 up)
         {
+            using var _ = s_mGrow.Auto();
             var p = cfg.RootLayout();
             ResolveCell(a, out var o, out float cellR);
             MeerkatRootMath.NetworkSize(p, share, cellR, D(a), D(o), out double rad, out var centre, out double counts);
@@ -60,6 +63,7 @@ namespace CosmicShore.Gameplay
             var channels = MeerkatRootMath.Build(lay, cfg.RootChannel(), D(a), D(t0), D(right), D(up));
             var net = new MeerkatRootNetwork(channels, D(up), maker, seq, cfg.LabyrinthFormSeconds);
             s_live.Add(net);
+            MeerkatTreeView.PrepareSkins(net, cfg);   // built once here, never inside a draw
             return net;
         }
 

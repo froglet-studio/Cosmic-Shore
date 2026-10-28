@@ -23,8 +23,11 @@ namespace CosmicShore.Gameplay
     /// distance (<c>MeerkatRootInside.shader</c>, <c>rootOpacity</c>, <c>rootLamp</c>, <c>rootFog</c>). The trunk's bore is
     /// the same smooth sheen (<c>tubeInner</c>), and its bark's lines fade up close, so the ride is calm.</item>
     /// </list>
-    /// Meshes are built once (a tree when its tunnel forms, a root's skin when its network grows) and drawn each frame with
-    /// a <see cref="MaterialPropertyBlock"/> through the two materials in <c>Resources/</c>.
+    /// Meshes are built once (a tree when its tunnel forms, a root's skin when its network grows, <see cref="PrepareSkins"/>)
+    /// and drawn each frame with a <see cref="MaterialPropertyBlock"/> through the two materials in <c>Resources/</c>. The
+    /// root skins are never built inside <see cref="Draw"/> (perf, 2026-10-29: building every channel's skin in the draw the
+    /// first frame a network showed put a burst of mesh building and garbage under <c>MeerkatTreeView.Draw</c> in the
+    /// Lavalamp captures).
     /// </summary>
     public static class MeerkatTreeView
     {
@@ -32,6 +35,10 @@ namespace CosmicShore.Gameplay
         public const string RootInsideMaterialPath = "MeerkatRootInside";
 
         static readonly ProfilerMarker s_marker = new("MeerkatTreeView.Draw");
+        static readonly ProfilerMarker s_mTrees = new("Meerkat.TreeView.Trees");
+        static readonly ProfilerMarker s_mBuildTree = new("Meerkat.TreeView.BuildTree");
+        static readonly ProfilerMarker s_mRoots = new("Meerkat.TreeView.Roots");
+        static readonly ProfilerMarker s_mBuildSkins = new("Meerkat.TreeView.BuildSkins");
         static readonly Color RootIn = new(0.55f, 0.36f, 0.2f), RootOut = new(0.82f, 0.7f, 0.5f);
 
         sealed class Tree
@@ -68,8 +75,8 @@ namespace CosmicShore.Gameplay
             if (!Resolve()) return;
             s_used = 0;
             float now = Time.time;
-            DrawTrees(now);
-            DrawRoots(now);
+            using (s_mTrees.Auto()) DrawTrees(now);
+            using (s_mRoots.Auto()) DrawRoots(now);
         }
 
         // ------------------------------------------------------------------ the tree (drawTrunk)
@@ -93,6 +100,7 @@ namespace CosmicShore.Gameplay
                 }
                 if (!tree.Mesh || tree.Key != key)   // built the frame RT formed it; a slider moved: rebuilt in place
                 {
+                    using var build = s_mBuildTree.Auto();
                     if (tree.Mesh) Object.Destroy(tree.Mesh);
                     tree.Mesh = MeerkatTreeMesh.BuildTree(t, settings, tree.Seed, tree.Roots);
                     tree.Key = key;
@@ -175,11 +183,8 @@ namespace CosmicShore.Gameplay
                 float bark = Mathf.Clamp01(cfg.RootBarkVisibility);
                 bool drawInside = inside == net && cfg.RootOpacity > 0.004f;
                 if (bark <= 0.004f && !drawInside) continue;
-                if (net.Skins == null || net.Skins.Length != net.Channels.Count)
-                {
-                    net.Skins = new Mesh[net.Channels.Count];
-                    for (int i = 0; i < net.Skins.Length; i++) net.Skins[i] = MeerkatTreeMesh.BuildRootSkin(net.Channels[i], cfg.RootTip);
-                }
+                // built when the network grew, or by its maker's Update the frame a slider turned the skins on (PrepareSkins)
+                if (!HasSkins(net)) continue;
                 for (int i = 0; i < net.Channels.Count; i++)
                 {
                     ref var w = ref net.Life[i];
@@ -242,6 +247,28 @@ namespace CosmicShore.Gameplay
             var b = s_blocks[s_used++];
             b.Clear();
             return b;
+        }
+
+        /// <summary>The root skins draw at all: the bark (<c>rootBarkVisibility</c>) or the inside tube (<c>rootOpacity</c>).</summary>
+        public static bool WantsSkins(ScriptableObjects.MeerkatWormholeConfigSO cfg) =>
+            cfg && (Mathf.Clamp01(cfg.RootBarkVisibility) > 0.004f || cfg.RootOpacity > 0.004f);
+
+        static bool HasSkins(MeerkatRootNetwork net) => net.Skins != null && net.Skins.Length == net.Channels.Count;
+
+        /// <summary>
+        /// Builds <paramref name="net"/>'s root skins once, outside any draw: when it grows (<see cref="MeerkatRootNetwork.Grow"/>)
+        /// and, cheaply checked each frame by its maker (<c>MeerkatWormholeExecutor.StepRootNetworks</c>), the first frame the
+        /// skins are turned on for a network grown while they were off. Nothing is built while both looks are off, and the
+        /// meshes are reused every frame until <see cref="Release"/> (the network is removed).
+        /// </summary>
+        public static void PrepareSkins(MeerkatRootNetwork net, ScriptableObjects.MeerkatWormholeConfigSO cfg)
+        {
+            if (net == null || HasSkins(net) || !WantsSkins(cfg)) return;
+            using var _ = s_mBuildSkins.Auto();
+            Release(net);
+            var skins = new Mesh[net.Channels.Count];
+            for (int i = 0; i < skins.Length; i++) skins[i] = MeerkatTreeMesh.BuildRootSkin(net.Channels[i], cfg.RootTip);
+            net.Skins = skins;
         }
 
         /// <summary>A network gone: its root skins go with it.</summary>

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using Unity.Collections;
 using Unity.Mathematics;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -38,6 +39,11 @@ namespace CosmicShore.Gameplay
     sealed class MeerkatSwallow
     {
         enum Stage { Pull, Tube, Glide }
+
+        // perf (2026-10-29): the swallow's share of MeerkatWormholeExecutor.Update, by step, for the profiler and prof_*.json
+        static readonly ProfilerMarker s_mCatch = new("Meerkat.Swallow.Catch");
+        static readonly ProfilerMarker s_mMove = new("Meerkat.Swallow.Move");
+        static readonly ProfilerMarker s_mCrystals = new("Meerkat.Swallow.Crystals");
 
         sealed class Body
         {
@@ -109,11 +115,14 @@ namespace CosmicShore.Gameplay
                 var t = live[i];
                 if (t.Maker != ex || !Standing(t) || Time.time < t.SwallowLook) continue;
                 t.SwallowLook = Time.time + LookSeconds;
-                CatchPrisms(ex, t);
-                CatchCrystals(cfg, t);
+                using (s_mCatch.Auto())
+                {
+                    CatchPrisms(ex, t);
+                    CatchCrystals(cfg, t);
+                }
             }
-            if (_bodies.Count > 0) MovePrisms(ex, dt);
-            if (_crystals.Count > 0) MoveCrystals(ex, dt);
+            if (_bodies.Count > 0) { using (s_mMove.Auto()) MovePrisms(ex, dt); }
+            if (_crystals.Count > 0) { using (s_mCrystals.Auto()) MoveCrystals(ex, dt); }
         }
 
         /// <summary>The hull goes (a swap or despawn): what is in a tube is set down where it is with its own scale, what moves
