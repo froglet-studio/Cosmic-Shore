@@ -187,7 +187,8 @@ def _global_best_u(space, epoch):
     return None
 
 
-def search_session(job, root, sha, ident, machines, presence, minutes, cores, max_evals=None, quiet=False):
+def search_session(job, root, sha, ident, machines, presence, minutes, cores, max_evals=None, quiet=False,
+                   on_progress=None):
     module = _evaluator(job)
     ev_args = job["evaluator"].get("args") or {}
     inputs = module.inputs(ev_args) if hasattr(module, "inputs") else []
@@ -219,6 +220,7 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
     pool = Pool(cores, root, job)
     t_start = time.time()
     evals = int(summary.get("evals", 0))
+    evals0, best0 = evals, (best or {}).get("loss")
     seconds = float(summary.get("seconds", 0.0))
     history = summary.get("history", [])
     errors = summary.get("errors", {})
@@ -280,10 +282,14 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
                 _save(folder, state_path, opt, summary, best, evals, seconds + time.time() - t_start, history, errors,
                       space, sha)
                 last_save = time.time()
+                if on_progress:
+                    on_progress({"epoch": epoch, "evals": evals - evals0, "best": (best or {}).get("loss"),
+                                 "best_start": best0})
     finally:
         pool.close(kill=stopped == "the person came back")
         _save(folder, state_path, opt, summary, best, evals, seconds + time.time() - t_start, history, errors, space, sha)
-    return {"job": job["id"], "epoch": epoch, "evals": evals, "stopped": stopped, "best": best}
+    return {"job": job["id"], "epoch": epoch, "evals": evals, "session_evals": evals - evals0, "stopped": stopped,
+            "best": best, "best_start": best0}
 
 
 def _save(folder, state_path, opt, summary, best, evals, seconds, history, errors, space, sha):
@@ -333,7 +339,8 @@ def _read_metric(spec, out_dir):
     return v
 
 
-def command_session(job, root, sha, ident, machines, presence, minutes, cores, quiet=False, on_claim=None):
+def command_session(job, root, sha, ident, machines, presence, minutes, cores, quiet=False, on_claim=None,
+                    on_progress=None):
     c = job["command"]
     user, host = ident
     epoch = L.epoch_key(job, c.get("version", "1"))
@@ -348,7 +355,7 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
             busy.add(cur.get("unit"))
     units = [u for u in c["units"] if not (merged["units"].get(u["id"]) or {}).get("done") and u["id"] not in busy]
     if not units:
-        return {"job": job["id"], "stopped": "every unit is done or taken"}
+        return {"job": job["id"], "epoch": epoch, "stopped": "every unit is done or taken"}
     # Relay first: the unit with the most progress somewhere picks up where that machine stopped.
     units.sort(key=lambda u: -float((merged["units"].get(u["id"]) or {}).get("progress", 0)))
     unit = units[0]
@@ -388,6 +395,8 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
             if time.time() - last_pub > 600:
                 _save_unit(job, folder, unit, run_dir, c, sha, done=False)
                 last_pub = time.time()
+                if on_progress:
+                    on_progress({"epoch": epoch, "unit": unit["id"], "progress": _read_metric(c.get("progress"), run_dir)})
         if proc.poll() is None:
             try:
                 proc.send_signal(signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT)
@@ -398,7 +407,7 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
     progress = _read_metric(c.get("progress"), run_dir)
     done = rc == 0 and (progress is None or float(progress) >= 1.0)
     _save_unit(job, folder, unit, run_dir, c, sha, done=done)
-    return {"job": job["id"], "unit": unit["id"], "stopped": "finished" if done else stopped, "rc": rc}
+    return {"job": job["id"], "epoch": epoch, "unit": unit["id"], "stopped": "finished" if done else stopped, "rc": rc}
 
 
 def _save_unit(job, folder, unit, run_dir, c, sha, done):
@@ -520,8 +529,22 @@ def run(args):
         job = pick["job"]
         module = _evaluator(job)
         root, sha = prepare_target(job, module, quiet=quiet)
+        prev_hb = L.read_json(os.path.join(folder, "heartbeat.json"), {}) or {}
+        since = L.now()
         hb = {"user": ident[0], "host": ident[1], "caps": caps, "cores": cores, "version": VERSION,
-              "updated": L.now(), "current": {"job": job["id"], "since": L.now()}}
+              "updated": since, "current": {"job": job["id"], "since": since, "minutes": args.session,
+                                            "max_evals": args.max_evals or None},
+              "runs": prev_hb.get("runs", []), "totals": prev_hb.get("totals", {"sessions": 0})}
+        last_progress = [time.time()]
+
+        def progress(p):
+            """While a session runs, the console shows how far it has got: published every few minutes."""
+            hb["current"].update(p)
+            hb["updated"] = L.now()
+            L.write_json(os.path.join(folder, "heartbeat.json"), hb)
+            if not args.no_push and time.time() - last_progress[0] >= args.progress_minutes * 60:
+                L.publish(folder, *ident, f"compute: {job['id']} progress", quiet=True)
+                last_progress[0] = time.time()
         if job["kind"] == "command":
             def claim(unit_id):
                 hb["current"]["unit"] = unit_id
@@ -529,19 +552,23 @@ def run(args):
                 if not args.no_push:
                     L.publish(folder, *ident, f"compute: {job['id']}/{unit_id} claimed", quiet=quiet)
             out = command_session(job, root, sha, ident, machines, presence, args.session, cores, quiet=quiet,
-                                  on_claim=claim)
+                                  on_claim=claim, on_progress=progress)
         else:
             L.write_json(os.path.join(folder, "heartbeat.json"), hb)
             if not args.no_push:
                 L.publish(folder, *ident, f"compute: {job['id']} started", quiet=quiet)
             out = search_session(job, root, sha, ident, machines, presence, args.session, cores,
-                                 max_evals=args.max_evals, quiet=quiet)
+                                 max_evals=args.max_evals, quiet=quiet, on_progress=progress)
         hb["updated"] = L.now()
-        prev = L.read_json(os.path.join(folder, "heartbeat.json"), {}) or {}
-        totals = prev.get("totals", {"sessions": 0})
+        totals = hb.get("totals") or {"sessions": 0}
         totals["sessions"] = int(totals.get("sessions", 0)) + 1
         hb["totals"] = totals
         hb["last"] = {k: v for k, v in out.items() if k != "best"}
+        # The runs log the console shows: one row per session, newest last, the last 30 kept.
+        hb["runs"] = (hb.get("runs") or [])[-29:] + [{
+            "job": job["id"], "epoch": out.get("epoch"), "unit": out.get("unit"), "start": since, "end": L.now(),
+            "evals": out.get("session_evals"), "stopped": out.get("stopped"), "best_start": out.get("best_start"),
+            "best_end": (out.get("best") or {}).get("loss")}]
         if out.get("stopped") != "budget":
             hb["current"] = {}
         L.write_json(os.path.join(folder, "heartbeat.json"), hb)

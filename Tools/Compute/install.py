@@ -23,16 +23,22 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 LABEL = "studio.froglet.compute"
 
 
-def _cmd(minutes, between=None, always=False):
+def _cmd(minutes, between=None, always=False, home=None, repo=None, queue=None):
     cmd = [sys.executable, os.path.join(HERE, "compute.py"), "run", "--when-idle", str(minutes), "--quiet"]
     if between:
         cmd += ["--between", between]
     if always:
         cmd += ["--always"]
+    if home:
+        cmd += ["--home", home]
+    if repo:
+        cmd += ["--repo", os.path.abspath(repo)]
+    if queue:
+        cmd += ["--queue", *queue]
     return cmd
 
 
-def install(minutes=10, dry=False, between=None, always=False):
+def install(minutes=10, dry=False, between=None, always=False, home=None, repo=None, queue=None):
     system = platform.system()
     if between:
         import compute_lib
@@ -41,7 +47,8 @@ def install(minutes=10, dry=False, between=None, always=False):
         except ValueError as e:
             print(e)
             return 2
-    cmd = _cmd(minutes, between, always)
+    cmd = _cmd(minutes, between, always, home, repo, queue)
+    workdir = os.path.abspath(repo) if repo else REPO
     log = os.path.join(os.path.expanduser("~"), ".froglet-compute", "worker.log")
     os.makedirs(os.path.dirname(log), exist_ok=True)
     if system == "Windows":
@@ -55,7 +62,7 @@ def install(minutes=10, dry=False, between=None, always=False):
                 '<plist version="1.0"><dict>\n'
                 f'  <key>Label</key><string>{LABEL}</string>\n'
                 '  <key>ProgramArguments</key><array>' + "".join(f"<string>{c}</string>" for c in cmd) + '</array>\n'
-                f'  <key>WorkingDirectory</key><string>{REPO}</string>\n'
+                f'  <key>WorkingDirectory</key><string>{workdir}</string>\n'
                 '  <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>\n'
                 '  <key>ProcessType</key><string>Background</string><key>LowPriorityIO</key><true/><key>Nice</key><integer>19</integer>\n'
                 f'  <key>StandardOutPath</key><string>{log}</string><key>StandardErrorPath</key><string>{log}</string>\n'
@@ -72,7 +79,7 @@ def install(minutes=10, dry=False, between=None, always=False):
     if shutil.which("systemctl"):
         unit = os.path.join(unit_dir, "froglet-compute.service")
         body = ("[Unit]\nDescription=Froglet Compute worker (runs when the machine is idle)\n\n[Service]\n"
-                f"WorkingDirectory={REPO}\nExecStart={' '.join(cmd)}\nRestart=always\nRestartSec=60\nNice=19\n"
+                f"WorkingDirectory={workdir}\nExecStart={' '.join(cmd)}\nRestart=always\nRestartSec=60\nNice=19\n"
                 "IOSchedulingClass=idle\n\n[Install]\nWantedBy=default.target\n")
         if dry:
             print(body)
@@ -82,7 +89,7 @@ def install(minutes=10, dry=False, between=None, always=False):
             fh.write(body)
         subprocess.run(["systemctl", "--user", "daemon-reload"], capture_output=True)
         return _do(["systemctl", "--user", "enable", "--now", "froglet-compute.service"], False, f"systemd user unit {unit}")
-    line = f"@reboot cd {REPO} && {' '.join(cmd)} >> {log} 2>&1  # froglet-compute"
+    line = f"@reboot cd {workdir} && {' '.join(cmd)} >> {log} 2>&1  # froglet-compute"
     if dry:
         print(line)
         return 0

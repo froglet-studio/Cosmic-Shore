@@ -28,6 +28,10 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+# --repo <checkout>: the person's Cosmic-Shore checkout, when this code runs from a copy outside it (the one-line
+# setup installs into ~/.froglet-compute/app). compute_lib reads it at import, so it is taken before the import.
+if "--repo" in sys.argv[:-1]:
+    os.environ["FROGLET_COMPUTE_REPO"] = os.path.abspath(sys.argv[sys.argv.index("--repo") + 1])
 
 import compute_lib as L  # noqa: E402
 
@@ -264,6 +268,8 @@ def main(argv=None):
     p.add_argument("--on-battery", action="store_true", help="also work on battery power")
     p.add_argument("--cores", type=int, default=0, help="worker processes (default: all cores but one)")
     p.add_argument("--session", type=float, default=60.0, help="minutes per job before re-ranking (default 60)")
+    p.add_argument("--progress-minutes", type=float, default=5.0, help="publish progress this often while a session runs")
+    p.add_argument("--repo", help="the Cosmic-Shore checkout, when running from a copy outside it")
     p.add_argument("--job", help="only this job")
     p.add_argument("--once", action="store_true", help="one session, then exit")
     p.add_argument("--max-evals", type=int, default=0)
@@ -277,6 +283,9 @@ def main(argv=None):
     p.add_argument("--when-idle", type=float, default=10.0)
     p.add_argument("--between", help="only work inside these local hours, e.g. 22:00-07:00")
     p.add_argument("--always", action="store_true", help="a dedicated box (a VM): work without waiting for idle")
+    p.add_argument("--home", help="where the worker's own code comes from (default origin/bleeding-edge)")
+    p.add_argument("--repo", help="the Cosmic-Shore checkout, when this code runs from a copy outside it")
+    p.add_argument("--queue", nargs="*", help="queue refs (default: bleeding-edge, ai, compute-queue)")
     p.add_argument("--dry-run", action="store_true")
     sub.add_parser("uninstall")
     p = sub.add_parser("board")
@@ -322,7 +331,8 @@ def main(argv=None):
         return console.run(args)
     if args.cmd == "install":
         import install
-        return install.install(args.when_idle, dry=args.dry_run, between=args.between, always=args.always)
+        return install.install(args.when_idle, dry=args.dry_run, between=args.between, always=args.always,
+                               home=args.home, repo=args.repo, queue=args.queue)
     if args.cmd == "uninstall":
         import install
         return install.uninstall()
