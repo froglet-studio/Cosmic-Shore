@@ -27,6 +27,7 @@ namespace CosmicShore.Render
             Forcefield = 7,
             PrismSlice = 8,
             Vessel = 9,
+            CloakGhost = 10,         // hand-written additive rim ghost: the Serpent's cloaked hull as its pilot sees it
         }
 
         /// <summary>guid → (family, the asset it was written against).</summary>
@@ -41,11 +42,12 @@ namespace CosmicShore.Render
             ["0d2382aa91a61b6220c03dc1763fd26f"] = (Kind.Forcefield, "Assets/_Graphics/Materials/Graphs/ForcefieldCrackle.shader"),
             ["7056edc966584b3b99b6509922ebffe6"] = (Kind.PrismSlice, "Assets/_Graphics/Materials/Graphs/PrismSlice.shader"),
             ["0236447d5f06b0541a43756d85b5f222"] = (Kind.Vessel, "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph"),
+            ["3d37f897d98a45149820ed07d0873542"] = (Kind.CloakGhost, "Assets/_Graphics/Materials/Graphs/CloakGhost.shader"),
         };
 
         /// <summary>True for the families the renderer draws even when the shader compiles: the prism graphs, the slice, the forcefield.</summary>
         public static bool WinsOverCompiled(Kind kind)
-            => kind is Kind.BlockGraph or Kind.ExplodingBlockGraph or Kind.PrismSlice or Kind.Forcefield;
+            => kind is Kind.BlockGraph or Kind.ExplodingBlockGraph or Kind.PrismSlice or Kind.Forcefield or Kind.CloakGhost;
 
         /// <summary>The hand-tuned family of a shader, by guid (a shader with no asset has none).</summary>
         public static Kind For(Shader shader)

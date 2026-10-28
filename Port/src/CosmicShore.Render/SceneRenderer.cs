@@ -428,7 +428,7 @@ flat in vec2 vPhase;
 uniform vec4 uSliceP0, uSliceP1, uSliceP2, uSliceP3;
 uniform vec4 uSliceHot;       // _CutHotColor
 uniform int uPrismGraph;
-uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal, 7 crackle, 8 slice, 9 built-in
+uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal, 7 crackle, 8 slice, 9 built-in, 10 cloak ghost
 uniform vec4 uParam;          // family-specific
 uniform vec4 uParam2;         // family-specific (9: camera fade near, inverse fade distance, alpha clip, fade flags)
 uniform vec3 uCamFwd;
@@ -457,6 +457,12 @@ uniform vec3 uCamPosOS;
 uniform vec4 uCrackleA, uCrackleB, uRimColor;
 uniform vec4 uCrackleP0;      // arcDensity, arcSharpness, ringThickness, centerFill
 uniform vec4 uCrackleP1;      // rippleSpeed, rimIntensity, rimPower, -
+// CloakGhost (first-party CloakGhost.shader, translated): the Serpent's cloaked hull, an additive fresnel rim.
+uniform vec4 uGhostColor;
+uniform vec4 uGhostP0;        // rimPower, rimGain, rimWhiten, fill
+uniform vec4 uGhostP1;        // bandSpacing, bandSpeed, bandGain, fade
+uniform vec4 uGhostP2;        // flare
+uniform vec3 uGhostForward;   // the hull's forward in world space (the shimmer runs nose to tail)
 uniform vec3 uOccTarget;       // _PrismOcclusionTarget: the local pilot's vessel
 uniform vec3 uOccParams;       // _PrismOcclusionParams: (outer radius, inner radius, core alpha); x <= 0 = off
 uniform float uOccNear;        // _PrismOcclusionNearRadius: the frustum's radius at the lens
@@ -817,6 +823,16 @@ void main(){
   } else if (uFamily == 7) {
     vec3 nOS = gl_FrontFacing ? vObjNormal : -vObjNormal;
     col = crackle(vObj, nOS, uCamPosOS - vObj);
+  } else if (uFamily == 10) {
+    float rim = pow(1.0 - clamp(abs(dot(N, V)), 0.0, 1.0), uGhostP0.x);
+    float along = dot(vWorld - vOrigin, uGhostForward);
+    float spacing = max(uGhostP1.x, 1e-3);
+    float band = 0.5 + 0.5 * sin((along + uTime * uGhostP1.y) / spacing * 6.2831853);
+    float shimmer = mix(1.0 - uGhostP1.z, 1.0, band);
+    vec3 rimColour = mix(uGhostColor.rgb, vec3(1.0), uGhostP0.z * rim);
+    vec3 ghost = (rimColour * (rim * uGhostP0.y) + uGhostColor.rgb * uGhostP0.w) * shimmer;
+    vec3 flare = uGhostColor.rgb * uGhostP2.x * (0.3 + rim);
+    col = vec4((ghost + flare) * uGhostP1.w, 1.0);
   } else if (uFamily == 2) {
     // FresnelPower4: back-facing normals keep a faint term (d+1)*0.2 instead of clamping.
     float d = dot(N, V);
@@ -1242,7 +1258,7 @@ void main(){
             int solo = 0;
             foreach (var it in _transparent)
             {
-                bool single = it.State.Family == 7 || it.Skinned;
+                bool single = it.State.Family == 7 || it.State.Family == 10 || it.Skinned;
                 var key = single ? ((object)it.Mesh, it.Submesh, (object)it.Material, it.State.Queue, ++solo)
                                  : ((object)it.Mesh, it.Submesh, (object)it.Material, it.State.Queue, 0);
                 if (!_tGroups.TryGetValue(key, out var group))
@@ -1714,6 +1730,10 @@ void main(){
             {
                 st.Family = 7; // hand-written: Blend One One, ZWrite Off, Cull Off (see the fix-up below)
             }
+            else if (family == MaterialFamilies.Kind.CloakGhost)
+            {
+                st.Family = 10; // hand-written: Blend One One, ZWrite Off, Cull Back; an additive fresnel rim with a shimmer (see the fix-up below)
+            }
             else if (TryCompiledGraph(m, st, out why)) { }
             else if (family == MaterialFamilies.Kind.Snow)
             {
@@ -1777,7 +1797,7 @@ void main(){
                 MaterialFamilies.WarnUntranslated(m.shader, st.Family == 1 ? "Lit (base colour x texture, N.L)" : "Unlit (base colour x texture)", why);
             }
             if (st.Graph == null && family is not (MaterialFamilies.Kind.None or MaterialFamilies.Kind.BlockGraph or MaterialFamilies.Kind.ExplodingBlockGraph
-                    or MaterialFamilies.Kind.PrismSlice or MaterialFamilies.Kind.Forcefield))
+                    or MaterialFamilies.Kind.PrismSlice or MaterialFamilies.Kind.Forcefield or MaterialFamilies.Kind.CloakGhost))
                 st.Route = "family-fallback";
 
             // The GPU's values: a plain colour property linearised, an HDR one as stored (ColorSpaceRules).
@@ -1820,6 +1840,11 @@ void main(){
             {
                 st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.One;
                 st.ZWrite = false; st.Cull = 0; st.Cutoff = -1f;
+            }
+            if (st.Family == 10)
+            {
+                st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.One;
+                st.ZWrite = false; st.Cull = 2; st.Cutoff = -1f;
             }
             if (st.Builtin != BuiltinShader.None) ApplyBuiltinState(m, st);
             if (st.Graph != null) ApplyGraphState(m, st);
@@ -2088,6 +2113,7 @@ void main(){
             if (st.Graph != null) { DrawGraphBatch(items, entry, st); return; }
 
             if (st.Family == 7 && first.Renderer != null) SetCrackleUniforms(first);
+            if (st.Family == 10 && first.Renderer != null) SetGhostUniforms(first);
             if (st.Family == 8)
             {
                 _program.Set("uSliceP0", st.SliceP0.x, st.SliceP0.y, st.SliceP0.z, st.SliceP0.w);
@@ -2216,6 +2242,30 @@ void main(){
             UploadVec4Array("uImpactParams", b?.GetVectorArray(IdImpactParams));
             var camOS = it.Renderer.transform.InverseTransformPoint(_camPos);
             _gl.Uniform3(_program.Loc("uCamPosOS"), camOS.x, camOS.y, camOS.z);
+        }
+
+        static readonly int IdGhostColor = Shader.PropertyToID("_GhostColor");
+        static readonly int[] IdGhostFloats =
+        {
+            Shader.PropertyToID("_RimPower"), Shader.PropertyToID("_RimGain"), Shader.PropertyToID("_RimWhiten"), Shader.PropertyToID("_Fill"),
+            Shader.PropertyToID("_BandSpacing"), Shader.PropertyToID("_BandSpeed"), Shader.PropertyToID("_BandGain"), Shader.PropertyToID("_Fade"),
+            Shader.PropertyToID("_Flare"),
+        };
+
+        /// <summary>CosmicShore/CloakGhost (hand-written, translated): the material's terms and the hull's own forward.</summary>
+        void SetGhostUniforms(in Item it)
+        {
+            var m = it.Material;
+            var b = it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
+            float F(int id, float dflt) => b != null && b.HasFloat(id) ? b.GetFloat(id) : m.HasStoredProperty(id) ? m.GetFloat(id) : dflt;
+            var c = b != null && b.TryGetShaderVector(IdGhostColor, out var v) ? new Color(v.x, v.y, v.z, v.w) : m.HasStoredProperty(IdGhostColor) ? m.GetShaderColor(IdGhostColor) : new Color(0.55f, 0.85f, 1f, 1f);
+            var f = IdGhostFloats;
+            _program.Set("uGhostColor", c.r, c.g, c.b, c.a);
+            _program.Set("uGhostP0", F(f[0], 2.5f), F(f[1], 1.6f), F(f[2], 0.55f), F(f[3], 0.06f));
+            _program.Set("uGhostP1", F(f[4], 1.5f), F(f[5], 2.5f), F(f[6], 0.4f), F(f[7], 1f));
+            _program.Set("uGhostP2", F(f[8], 0f), 0f, 0f, 0f);
+            var fwd = it.Renderer.transform.forward;
+            _gl.Uniform3(_program.Loc("uGhostForward"), fwd.x, fwd.y, fwd.z);
         }
 
         unsafe void UploadVec4Array(string name, Vector4[] values)
