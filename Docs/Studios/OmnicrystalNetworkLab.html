@@ -33,7 +33,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--ui
 .pad button { font: 600 18px var(--ui); color: #f4ead2; background: rgba(30, 26, 18, .7); border: 1px solid rgba(232, 194, 106, .35); border-radius: 10px; cursor: pointer; }
 .pad button[data-live="1"] { border-color: #ffd88a; color: #ffd88a; }
 .pad button[data-picked="1"] { background: #e8c26a; color: #1a1408; }
-.pad .u { grid-column: 2; grid-row: 1; } .pad .l { grid-column: 1; grid-row: 2; } .pad .r { grid-column: 3; grid-row: 2; } .pad .d { grid-column: 2; grid-row: 3; }
+.pad .u { grid-column: 2; grid-row: 1; } .pad .l { grid-column: 1; grid-row: 2; } .pad .r { grid-column: 3; grid-row: 2; } .pad .d { grid-column: 2; grid-row: 3; } .pad .c { grid-column: 2; grid-row: 2; } .pad .b { grid-column: 3; grid-row: 3; font-size: 15px; }
 .building { position: absolute; right: 12px; top: 10px; font: 500 12px var(--ui); color: #d9cfbb; background: rgba(10,9,6,.7); padding: 3px 8px; border-radius: 6px; pointer-events: none; }
 .banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font: 600 28px var(--ui); color: #ffd88a; text-shadow: 0 2px 12px rgba(0,0,0,.6); pointer-events: none; }
 .rack { background: var(--rack); border-left: 1px solid var(--line); overflow-y: auto; min-height: 0;
@@ -93,13 +93,15 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
       <button type="button" class="l" data-slot="left" aria-label="Left at the next junction">◀</button>
       <button type="button" class="r" data-slot="right" aria-label="Right at the next junction">▶</button>
       <button type="button" class="d" data-slot="down" aria-label="Down at the next junction">▼</button>
+      <button type="button" class="c" data-slot="ahead" aria-label="Straight ahead at the crystal">●</button>
+      <button type="button" class="b" data-slot="behind" aria-label="Back the way you came in, at the crystal">↺</button>
     </div>
   </div>
 
   <aside class="rack">
     <header>
       <h1>Omnicrystal Network Lab</h1>
-      <p class="lede">The Meerkat's omnicrystal grows a tunnel network to every exit. Each junction comes after a straight so you can choose, the twists come right after the fork, and the tube rolls you with it like a waterslide. Every path is scored for comfort.</p>
+      <p class="lede">The Meerkat's omnicrystal grows a tunnel network to every exit. You fly into the crystal and pick one of its six points; every later junction comes after a straight so you can choose, the turns come right after the fork, and the tube rolls you toward the way you chose. No path runs more than 20% longer than the straight line to its exit, and every path is scored for comfort.</p>
     </header>
 
     <section>
@@ -112,7 +114,7 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
         <button type="button" class="primary" id="btnRide">Ride from the crystal</button>
         <button type="button" id="btnReroll">New exits</button>
       </div>
-      <p class="note">Riding: pick at each junction with the arrow keys, WASD or the pad (it lights the ways that exist). With no pick you follow the path to the highlighted exit.</p>
+      <p class="note">Riding: pick at each junction with the arrow keys, WASD or the pad (it lights the ways that exist); at the crystal, Space or the centre button goes straight ahead and X or the corner button goes back the way you came in. With no pick you follow the path to the highlighted exit.</p>
     </section>
 
     <section>
@@ -123,18 +125,15 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
     <section>
       <h2>Every path <small>click a row to highlight, double-click to ride</small></h2>
       <div class="tablewrap"><table id="paths"><thead><tr>
-        <th>Exit</th><th>Junctions</th><th>Ride s</th><th>Decide s</th><th>Turn °/s</th><th>Roll °/s</th><th>Side</th>
+        <th>Exit</th><th>Forks</th><th>×</th><th>Ride s</th><th>Decide s</th><th>Turn °/s</th><th>Roll °/s</th><th>Side</th>
       </tr></thead><tbody></tbody></table></div>
-      <p class="note"><b>Decide</b>: the shortest straight before a junction on the path, in seconds. <b>Turn</b>: the fastest the view swings (pitch and yaw). <b>Roll</b>: the fastest roll. <b>Side</b>: the average sideways push through the bends, as a share of the push of the tightest allowed turn taken flat (banking is what brings it down; the peak, at the start of a bend before the roll catches up, is in the stats). Green is comfortable, amber is lively, red is where people get sick.</p>
+      <p class="note"><b>Forks</b>: the junctions on the path, the crystal included. <b>×</b>: the path from the crystal to the exit, over the straight line between them. <b>Decide</b>: the shortest straight before a junction on the path, in seconds. <b>Turn</b>: the fastest the view swings (pitch and yaw). <b>Roll</b>: the fastest roll. <b>Side</b>: the average sideways push through the bends, as a share of the push of the tightest allowed turn taken flat (banking is what brings it down; the peak, at the start of a bend before the roll catches up, is in the stats). Green is comfortable, amber is lively, red is where people get sick.</p>
     </section>
 
     <section>
       <h2>Exits</h2>
       <div id="g-exits"></div>
-      <div class="seg" id="orientSeg" role="group" aria-label="Exit orientation">
-        <button type="button" data-v="any">Any orientation</button>
-        <button type="button" data-v="out">Facing out</button>
-      </div>
+      <p class="note">Exits sit anywhere, rolled any way. Their facing stays within a cone round straight out: an exit facing back toward the crystal cannot be reached without a detour, and past about 50° the 20% limit no longer holds.</p>
     </section>
 
     <section>
@@ -143,7 +142,7 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
     </section>
 
     <section>
-      <h2>Roll and helix <small>the tube rolls the rider</small></h2>
+      <h2>Roll <small>the tube rolls the rider</small></h2>
       <div class="seg" id="bankSeg" role="group" aria-label="Banking">
         <button type="button" data-v="0">No banking</button>
         <button type="button" data-v="1">Pitch plane</button>
@@ -165,9 +164,9 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
     <details>
       <summary>How the network is built</summary>
       <div>
-        <p class="note">From the crystal the tube runs straight to the first junction. At each junction the exits still to reach are split by where they lie around the rider (right, up, left, down in the rider's own frame) into two to four groups, one per way out.</p>
-        <p class="note">Each way out is three pieces. A <b>split</b> peels off toward its direction. A <b>twist</b> is a steered path. It never turns tighter than the tightest-turn radius, eases into and out of each turn over the turn ramp like a slide's clothoid, and loops round if it needs room to line up. A <b>straight</b> leads into the next junction, or into the exit lined up with the exit's position, facing and up.</p>
-        <p class="note">The rider's frame is carried along without spin (a rotation-minimising frame) and then rolled. <b>Banking</b> turns the rider so a bend is felt as pitch rather than a sideways shove. Through a <b>helix</b> (a waterslide spiral in the tube's path right after the fork) the banking rolls the rider round with it, which is what makes a helix feel good rather than sickening. An exit's own roll eases in over the end of its run. No straight before a junction ever rolls.</p>
+        <p class="note">You fly into the crystal along a straight from the emptiest direction. The crystal is the first fork: its six points (ahead, behind, right, left, up, down, in the frame you fly in with) each take the exits nearest their direction. A point with one exit leaves on the single arc that meets the exit's facing; a point with several runs straight toward them to its first junction.</p>
+        <p class="note">At each later junction the exits still to reach are split by where they lie around the rider (right, up, left, down) into up to four ways. An exit too near for another junction on its way, or one whose path ran over the detour limit on the last build, gets a way of its own. Each way is a <b>split</b> that peels off toward where it is going, a <b>turn</b> that never bends tighter than the tightest-turn radius and eases in and out over the turn ramp, and a <b>straight</b> into the next junction or the exit. The next junction sits where the turn naturally ends, so no way bends off a line and back onto it.</p>
+        <p class="note">The rider's frame is carried along without spin (a rotation-minimising frame) and then rolled. <b>Banking</b> turns the rider so a bend is felt as pitch rather than a sideways shove. The <b>twist roll</b> rolls the rider toward the way they chose, during the turn after each fork: a helical feel that costs no length. An exit's own roll joins it. No straight before a junction ever rolls.</p>
       </div>
     </details>
 
@@ -187,42 +186,42 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
 const SHIPPED = { labyrinthDiameter: 12, labyrinthMouthDiameter: 22, labyrinthRadiusMin: 90, labyrinthRadiusMax: 420, labyrinthOpeningsMin: 5, labyrinthOpeningsMax: 30, labyrinthSpread: 360 };
 // ============ LAB: Garrett's network (2026-10-28) ============
 const DEFAULTS = {
-  seed: 7, exits: 12, reachMin: 160, reachMax: 420, orient: 'any',
+  seed: 7, exits: 12, reachMin: 160, reachMax: 420, exitCone: 35,
   maxBranches: 4, splitAngle: 28, splitLength: 30, twistLength: 150, minRadius: 70, turnRamp: 30, straightLength: 80, exitStraight: 40, spacing: 0.45,
-  bank: 1, bankAmount: 1, corkTurns: 0.75, corkRadius: 90, corkLength: 160, rollSmooth: 10, maxRollRate: 90,
+  bank: 1, bankAmount: 1, twistRoll: 0.25, rollSmooth: 10, maxRollRate: 90,
   speed: 55, forkGain: 1.06, tubeRadius: SHIPPED.labyrinthDiameter / 2,
-  okTurn: 45, badTurn: 90, okRoll: 60, badRoll: 120, okSlip: 25, badSlip: 50, okDecide: 1.2, badDecide: 0.8,
+  maxDetour: 1.2, okTurn: 45, badTurn: 90, okRoll: 60, badRoll: 120, okSlip: 25, badSlip: 50, okDecide: 1.2, badDecide: 0.8,
   mode: 'orbit', sel: 0,
 };
 // Every other slider is lab-only: the game has no asset for the network yet, so its "shipped" value is this lab's proposal.
 for (const k in DEFAULTS) if (!(k in SHIPPED) && typeof DEFAULTS[k] === 'number' && k !== 'sel') SHIPPED[k] = DEFAULTS[k];
 const P = Object.assign({}, DEFAULTS);
-try { const s = JSON.parse(localStorage.getItem('omniNetLab.v1') || 'null'); if (s) for (const k in s) if (k in P) P[k] = s[k]; } catch (e) {}
-function save() { try { const d = {}; for (const k in P) if (P[k] !== DEFAULTS[k]) d[k] = P[k]; localStorage.setItem('omniNetLab.v1', JSON.stringify(d)); } catch (e) {} }
+try { const s = JSON.parse(localStorage.getItem('omniNetLab.v2') || 'null'); if (s) for (const k in s) if (k in P) P[k] = s[k]; } catch (e) {}
+function save() { try { const d = {}; for (const k in P) if (P[k] !== DEFAULTS[k]) d[k] = P[k]; localStorage.setItem('omniNetLab.v2', JSON.stringify(d)); } catch (e) {} }
 
 const SPEC = [
   ['exits', 'exits', 'Exits', 3, 30, 1, 'labyrinthOpenings 5..30'],
   ['exits', 'reachMin', 'Nearest exit (u from the crystal)', 40, 600, 10, 'labyrinthRadiusMin 90'],
   ['exits', 'reachMax', 'Farthest exit (u)', 80, 900, 10, 'labyrinthRadiusMax 420'],
+  ['exits', 'exitCone', 'Exit facing: most it turns from straight out (°)', 0, 90, 5, null],
   ['exits', 'seed', 'Layout seed', 1, 99, 1, null],
   ['branch', 'maxBranches', 'Most ways out of a junction', 2, 4, 1, null],
   ['branch', 'straightLength', 'Straight before each junction (u)', 20, 200, 5, null],
   ['branch', 'splitAngle', 'Split: how hard each way peels off (°)', 10, 60, 1, null],
   ['branch', 'splitLength', 'Split length (u)', 10, 80, 2, null],
-  ['branch', 'twistLength', 'Room for the twist before the next straight (u)', 60, 400, 10, null],
+  ['branch', 'twistLength', 'Least room for a turn before the next straight (u)', 20, 300, 10, null],
   ['branch', 'minRadius', 'Tightest turn radius (u)', 20, 200, 5, null],
   ['branch', 'turnRamp', 'Turn ramp: how gently a turn begins and ends (u)', 5, 120, 5, null],
-  ['branch', 'spacing', 'Junction spacing (share of the way to its group)', 0.2, 0.8, 0.05, null],
+  ['branch', 'spacing', 'Junction spacing (share of the way to the group\'s nearest exit)', 0.2, 0.8, 0.05, null],
   ['branch', 'exitStraight', 'Straight into an exit (u)', 0, 150, 5, null],
   ['roll', 'bankAmount', 'Banking strength', 0, 1, 0.05, null],
-  ['roll', 'corkTurns', 'Helix turns right after each fork (a waterslide spiral)', 0, 3, 0.25, null],
-  ['roll', 'corkRadius', 'Helix curve radius (u; never under the tightest turn)', 60, 300, 5, null],
-  ['roll', 'corkLength', 'Helix rise per turn, along its axis (u)', 40, 280, 10, null],
+  ['roll', 'twistRoll', 'Twist roll after each fork, toward the way you chose (turns)', 0, 1, 0.05, null],
   ['roll', 'maxRollRate', 'Fastest the tube rolls you (°/s at ride speed)', 20, 360, 5, null],
   ['roll', 'rollSmooth', 'Roll smoothing (u)', 2, 60, 1, null],
   ['ride', 'speed', 'Ride speed (u/s)', 20, 160, 5, null],
   ['ride', 'forkGain', 'Faster at every fork (×)', 1, 1.3, 0.01, "Yash's round 16"],
   ['ride', 'tubeRadius', 'Tube radius (u)', 3, 20, 0.5, 'labyrinthDiameter 12'],
+  ['comfort', 'maxDetour', 'Longest path allowed (× the straight line to its exit)', 1, 2, 0.01, null],
   ['comfort', 'okTurn', 'Turn rate, comfortable up to (°/s)', 10, 120, 5, null],
   ['comfort', 'badTurn', 'Turn rate, sickening from (°/s)', 30, 240, 5, null],
   ['comfort', 'okRoll', 'Roll rate, comfortable up to (°/s)', 10, 200, 5, null],
@@ -243,7 +242,7 @@ for (const [g, key, label, mn, mx, st, gn] of SPEC) {
   inp.addEventListener('input', () => { P[key] = +inp.value; changedSoon(); });
 }
 function segBind(id, key, cast) { const el = document.getElementById(id); el.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; P[key] = cast(b.dataset.v); changed(key !== 'mode'); if (key === 'mode') setMode(P.mode); }); return el; }
-const segs = { mode: segBind('modeSeg', 'mode', String), orient: segBind('orientSeg', 'orient', String), bank: segBind('bankSeg', 'bank', Number) };
+const segs = { mode: segBind('modeSeg', 'mode', String), bank: segBind('bankSeg', 'bank', Number) };
 
 // ============ vector helpers (plain arrays) ============
 const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -264,26 +263,40 @@ function segDist(a, b, c, d) {
   return len(sub(add(w, mul(u, sc)), mul(v, tc)));
 }
 function makeExits() {
-  // any position, any orientation; an exit whose run-in would pass through the trunk or another exit's run-in is drawn again
-  const r = rng(P.seed * 7919 + 13), ex = [], trunk = [[0, 0, -P.tubeRadius * 3], [0, 0, P.straightLength + 90]], clear = 4 * P.tubeRadius + 12;
+  // any position; facing within exitCone of straight out (an exit facing back toward the crystal cannot be reached within
+  // the detour limit), any roll; an exit whose run-in would pass through another's is drawn again
+  const r = rng(P.seed * 7919 + 13), ex = [], clear = 4 * P.tubeRadius + 12, cone = P.exitCone * Math.PI / 180;
   for (let i = 0; i < P.exits; i++) {
     let e;
     for (let tries = 0; tries < 40; tries++) {
       const z = 2 * r() - 1, a = 2 * Math.PI * r(), rr = Math.sqrt(1 - z * z), dir = [rr * Math.cos(a), z, rr * Math.sin(a)];
       const reach = P.reachMin + (Math.max(P.reachMin, P.reachMax) - P.reachMin) * Math.cbrt(r());
       const pos = mul(dir, reach);
-      let face;
-      if (P.orient === 'out') face = dir;
-      else { const z2 = 2 * r() - 1, a2 = 2 * Math.PI * r(), r2 = Math.sqrt(1 - z2 * z2); face = [r2 * Math.cos(a2), z2, r2 * Math.sin(a2)]; }
+      // a direction uniform on the cap round straight out
+      const side = norm(cross(dir, [0.3, 1, 0.2]));
+      const ct = 1 - r() * (1 - Math.cos(cone)), st = Math.sqrt(Math.max(0, 1 - ct * ct));
+      const face = norm(add(mul(dir, ct), mul(rotAbout(side, dir, 2 * Math.PI * r()), st)));
       let up = cross(face, [0.3 + r(), 1, r()]); if (len(up) < 1e-3) up = [0, 1, 0]; up = norm(cross(cross(face, up), face));
       up = rotAbout(up, face, 2 * Math.PI * r());
-      e = { i, pos, face, up, approach: sub(pos, mul(face, P.exitStraight)), lineup: sub(pos, mul(face, P.exitStraight + 3 * P.minRadius + 45)) };
-      e.runIn = sub(pos, mul(face, P.exitStraight + 3 * P.minRadius));
-      if (segDist(e.runIn, pos, trunk[0], trunk[1]) > clear + 40 && ex.every((o) => segDist(e.runIn, pos, o.runIn, o.pos) > clear)) break;
+      e = { i, pos, face, up, dist: reach, approach: sub(pos, mul(face, P.exitStraight)) };
+      e.runIn = sub(pos, mul(face, P.exitStraight + 2 * P.minRadius));
+      if (ex.every((o) => segDist(e.runIn, pos, o.runIn, o.pos) > clear)) break;
     }
+    e.leafBy = Infinity;   // the most junctions its path may pass; lowered when the path runs over the detour limit
     ex.push(e);
   }
   return ex;
+}
+// The way in: you fly into the crystal along a straight (the decision before its fork) from the emptiest direction.
+function entranceFrame(exits) {
+  let best = null;
+  for (let i = 0; i < 300; i++) {
+    const z = 1 - 2 * (i + 0.5) / 300, a = i * 2.399963, q = Math.sqrt(1 - z * z), d = [q * Math.cos(a), z, q * Math.sin(a)];
+    const m = Math.min(...exits.map((e) => 1 - dot(d, norm(e.pos))));   // 1 - cos of the angle to the nearest exit
+    if (!best || m > best.m) best = { m, d };
+  }
+  const T = mul(best.d, -1); let U = sub([0, 1, 0], mul(T, T[1])); if (len(U) < 1e-3) U = sub([1, 0, 0], mul(T, T[0]));
+  U = norm(U); return { T, U, R: cross(T, U), p: [0, 0, 0] };
 }
 
 // ============ building the network ============
@@ -291,26 +304,123 @@ function makeExits() {
 const SLOTS = [['right', 0], ['up', Math.PI / 2], ['left', Math.PI], ['down', -Math.PI / 2]];
 const angDist = (a, b) => { let d = Math.abs(a - b) % (2 * Math.PI); return d > Math.PI ? 2 * Math.PI - d : d; };
 function combos(arr, k) { const out = []; (function rec(s, cur) { if (cur.length === k) { out.push(cur.slice()); return; } for (let i = s; i < arr.length; i++) { cur.push(arr[i]); rec(i + 1, cur); cur.pop(); } })(0, []); return out; }
-function groupExits(pos, F, exits) {
-  const ang = exits.map((e) => { const v = sub(e.lineup, pos); return Math.atan2(dot(v, F.U), dot(v, F.R)); });
-  for (let k = Math.min(P.maxBranches, exits.length); k >= 2; k--) {
+function groupExits(pos, F, exits, isLeaf = () => false) {
+  // by where each exit lies round the rider (right, up, left, down); an exit that must be a leaf here gets a way to itself
+  const ang = new Map(exits.map((e) => { const v = sub(e.approach, pos); return [e, Math.atan2(dot(v, F.U), dot(v, F.R))]; }));
+  const leaves = exits.filter(isLeaf), groups = [], near = (e, fr) => Math.min(...fr.map((s) => angDist(ang.get(e), s[1])));
+  let rest = exits.filter((e) => !isLeaf(e)), free = SLOTS.slice();
+  leaves.sort((a, b) => near(a, free) - near(b, free));
+  for (const e of leaves) {
+    const keep = rest.length ? 1 : 0;
+    if (free.length - keep < 1 || groups.length >= P.maxBranches - keep) { rest.push(e); continue; }
+    const sl = free.reduce((a, s) => angDist(ang.get(e), s[1]) < angDist(ang.get(e), a[1]) ? s : a);
+    groups.push({ slot: sl[0], dir: sl[1], exits: [e] }); free = free.filter((s) => s !== sl);
+  }
+  if (!rest.length) return groups;
+  const most = Math.min(P.maxBranches - groups.length, rest.length, free.length), least = groups.length ? 1 : Math.min(2, most);
+  for (let k = most; k >= least; k--) {
     let best = null;
-    for (const set of combos(SLOTS, k)) {
-      const groups = set.map(() => []); let cost = 0;
-      exits.forEach((e, j) => { let bi = 0, bd = 9; set.forEach((s, si) => { const d = angDist(ang[j], s[1]); if (d < bd) { bd = d; bi = si; } }); groups[bi].push(e); cost += bd; });
-      if (groups.every((g) => g.length) && (!best || cost < best.cost)) best = { cost, set, groups };
+    for (const set of combos(free, k)) {
+      const gs = set.map(() => []); let cost = 0;
+      rest.forEach((e) => { let bi = 0, bd = 9; set.forEach((s, si) => { const d = angDist(ang.get(e), s[1]); if (d < bd) { bd = d; bi = si; } }); gs[bi].push(e); cost += bd; });
+      if (gs.every((g) => g.length) && (!best || cost < best.cost)) best = { cost, set, gs };
     }
-    if (best) return best.set.map((s, i) => ({ slot: s[0], dir: s[1], exits: best.groups[i] }));
+    if (best) return groups.concat(best.set.map((s, i) => ({ slot: s[0], dir: s[1], exits: best.gs[i] })));
   }
   // every exit lies in one direction: split by angle order so the network still branches
-  const order = exits.map((e, j) => [ang[j], e]).sort((a, b) => a[0] - b[0]), half = Math.ceil(order.length / 2);
+  const order = rest.map((e) => [ang.get(e), e]).sort((a, b) => a[0] - b[0]), half = Math.ceil(order.length / 2);
   return [{ slot: 'right', dir: 0, exits: order.slice(0, half).map((x) => x[1]) }, { slot: 'left', dir: Math.PI, exits: order.slice(half).map((x) => x[1]) }];
 }
-
+// The crystal's fork: its six points in the frame you fly in with. The exits are grouped by direction (spherical k-means,
+// at most six groups, seeded by the farthest-apart directions so it is deterministic) and each group takes the point
+// nearest its middle, each point once.
+const CRYSTAL_WAYS = [['ahead', 'T', 1], ['behind', 'T', -1], ['right', 'R', 1], ['left', 'R', -1], ['up', 'U', 1], ['down', 'U', -1]];
+function crystalGroups(F, exits) {
+  // k-means over the directions of the exits not yet given a point of their own
+  const kmeans = (rest, k) => {
+    const dirs = rest.map((e) => norm(e.approach)), cs = k ? [dirs[0]] : [];
+    while (cs.length < k) { let bi = 0, bd = -1; dirs.forEach((d, i) => { const m = Math.min(...cs.map((c) => 1 - dot(c, d))); if (m > bd) { bd = m; bi = i; } }); cs.push(dirs[bi]); }
+    let lab = [];
+    for (let it = 0; it < 20; it++) {
+      lab = dirs.map((d) => cs.reduce((bi, c, i) => dot(c, d) > dot(cs[bi], d) ? i : bi, 0));
+      for (let i = 0; i < k; i++) { const m = dirs.filter((d, j) => lab[j] === i).reduce((a, d) => add(a, d), [0, 0, 0]); if (len(m) > 1e-6) cs[i] = norm(m); }
+    }
+    return cs.map((c, i) => ({ axis: c, exits: rest.filter((e, j) => lab[j] === i) })).filter((g) => g.exits.length);
+  };
+  // the path an exit would ride through its group's first junction, estimated before anything is built: the leg to the
+  // junction, the rest of the way, and what the two turns (after the junction, into the exit's facing) add; Infinity when
+  // there is no room to make those turns without looping
+  const splitL = Math.max(P.splitLength, 1.5 * P.splitAngle * Math.PI / 180 * P.minRadius), R = P.minRadius;
+  const firstLeg = (g) => Math.max(P.straightLength + 40, P.spacing * Math.min(...g.exits.map((x) => len(x.approach))));
+  const estimate = (g, e, axis = g.axis, r1 = firstLeg(g)) => {
+    const J = mul(axis, r1);
+    const v = sub(e.approach, J), d = len(v), u = norm(v);
+    const t1 = Math.acos(Math.max(-1, Math.min(1, dot(axis, u)))), t2 = Math.acos(Math.max(-1, Math.min(1, dot(u, e.face))));
+    if (dot(v, axis) < 0 || d < splitL + P.exitStraight + 0.6 * R * (t1 + t2)) return Infinity;
+    return (r1 + d + P.exitStraight + 0.25 * R * (t1 + t2)) / len(e.pos);
+  };
+  // add singles worst-first and keep the grouping with the fewest exits estimated over the limit (a group with more exits
+  // than a junction has ways counts its overflow as over: they would need another junction)
+  const judge = (groups) => {
+    let bad = 0, worst = 0;
+    for (const g of groups) {
+      if (g.exits.length === 1) continue;
+      if (g.exits.length > P.maxBranches) bad += g.exits.length - P.maxBranches;
+      for (const e of g.exits) { const r = e.leafBy <= 1 ? Infinity : estimate(g, e); worst = Math.max(worst, r); if (r > P.maxDetour) bad++; }   // a measured overrun outranks the estimate
+    }
+    return { bad, worst };
+  };
+  const singles = [];
+  let groups = kmeans(exits, Math.min(6, exits.length)), pick = { groups, singles: [], ...judge(groups) };
+  while (singles.length < 5) {
+    let worst = null;
+    for (const g of groups) if (g.exits.length > 1) for (const e of g.exits) { const r = e.leafBy <= 1 ? Infinity : estimate(g, e); if (r > P.maxDetour - 0.02 && (!worst || r > worst.r)) worst = { e, r }; }
+    if (!worst) break;
+    singles.push(worst.e);
+    const rest = exits.filter((e) => !singles.includes(e));
+    if (!rest.length) break;
+    groups = kmeans(rest, Math.min(6 - singles.length, rest.length));
+    const j = judge(groups);
+    if (j.bad < pick.bad || (j.bad === pick.bad && j.worst < pick.worst)) pick = { groups, singles: singles.slice(), ...j };
+  }
+  groups = pick.groups; singles.length = 0; singles.push(...pick.singles);
+  // each group's first junction: a few distances (from just past the crystal to the usual spacing) and directions (the
+  // middle, and leaning a third of the way toward each exit), the one with the lowest worst estimate
+  for (const g of groups) {
+    if (g.exits.length < 2) continue;
+    let bestJ = null;
+    const dirsJ = [g.axis].concat(g.exits.map((e) => norm(add(mul(g.axis, 2), norm(e.approach)))));
+    for (const r1 of [P.straightLength + 15, P.straightLength + 40, firstLeg(g)]) for (const ax of dirsJ) {
+      const w = Math.max(...g.exits.map((e) => estimate(g, e, ax, r1)));
+      if (!bestJ || w < bestJ.w - 1e-9) bestJ = { w, ax, r1 };
+    }
+    g.axis = bestJ.ax; g.r1 = bestJ.r1;
+  }
+  const all = groups.concat(singles.map((e) => ({ axis: norm(e.approach), exits: [e] })));
+  const axes = CRYSTAL_WAYS.map(([slot, ax, sg]) => ({ slot, axis: mul(F[ax], sg) }));
+  // the labelling that best matches the groups' middles (every assignment of six points tried)
+  let best = null;
+  (function rec(i, used, sum, pick) {
+    if (i === all.length) { if (!best || sum > best.sum) best = { sum, pick: pick.slice() }; return; }
+    for (let a = 0; a < 6; a++) if (!used[a]) { used[a] = 1; pick.push(a); rec(i + 1, used, sum + dot(axes[a].axis, all[i].axis), pick); pick.pop(); used[a] = 0; }
+  })(0, [], 0, []);
+  return all.map((g, i) => Object.assign(g, { slot: axes[best.pick[i]].slot }));
+}
 const STEP = 2;   // u between samples
-function sampleSplit(p0, F, slotDir, out) {
-  // the split peels off toward the slot over splitLength: its heading eases from T toward the slot by splitAngle (zero curvature at both ends)
-  const side = norm(add(mul(F.R, Math.cos(slotDir)), mul(F.U, Math.sin(slotDir)))), a = P.splitAngle * Math.PI / 180;
+function sampleSplit(p0, F, slotDir, out, toward) {
+  // the split peels off over splitLength, its heading easing from T by up to splitAngle (zero curvature at both ends)
+  let side = norm(add(mul(F.R, Math.cos(slotDir)), mul(F.U, Math.sin(slotDir))));
+  let a = P.splitAngle * Math.PI / 180;
+  if (toward) {
+    // never more than the way is off straight ahead (half of splitAngle at least, so the ways part before their mouths end),
+    // and toward it, but within 20° of its own way's side, so two ways never peel the same way
+    const perp = sub(toward, mul(F.T, dot(toward, F.T))), th = Math.acos(Math.max(-1, Math.min(1, dot(toward, F.T))));
+    if (len(perp) > 0.05) {
+      const da = Math.atan2(dot(perp, F.U), dot(perp, F.R)) - slotDir, w = Math.atan2(Math.sin(da), Math.cos(da)), lim = Math.PI / 9;
+      const ang = slotDir + Math.max(-lim, Math.min(lim, w)); side = norm(add(mul(F.R, Math.cos(ang)), mul(F.U, Math.sin(ang))));
+    }
+    a = Math.max(a / 2, Math.min(a, th));
+  }
   const L = Math.max(P.splitLength, 1.5 * a * P.minRadius);   // smoothstep heading: peak curvature 1.5a/L, kept within the tightest turn
   const n = Math.max(2, Math.round(L / STEP)); let p = p0.slice();
   for (let i = 1; i <= n; i++) {
@@ -321,14 +431,12 @@ function sampleSplit(p0, F, slotDir, out) {
   return { p, t: norm(add(mul(F.T, Math.cos(a)), mul(side, Math.sin(a)))) };
 }
 // The twist: a steered path, not a fitted curve. A point flies from the split's end, never turning tighter than the tightest
-// turn radius (minRadius), its curvature ramping in and out over turnRamp (a waterslide's clothoid). It follows a plan: the
-// helix, then the shortest way round onto the next straight (steerPlan). Only when it cannot follow the plan does the older
-// steer take over (steerTry): pure pursuit onto the straight's guide line through a staging point, with the corkscrew as a
-// curvature added on top. Pure pursuit alone wandered in loops of up to 1200 u and crossed the trunk, hence the plan.
-const STAGING = [[1.5, 1, 1, 0.5, 3, 0], [2.5, 1, 1.8, 0.6, 2, 0.3], [4, 2, 3, 1, 2, 0.3]];   // shortest first (measured offline)
+// turn radius (minRadius), its curvature ramping in and out over turnRamp (a waterslide's clothoid), following a plan: the
+// shortest way round onto the next straight. It spends length only on turning toward where it is going.
 function sampleSteer(p0, t0, Q, dq, out, v) {
   if (steerPlan(p0, t0, Q, dq, out, v)) return true;
-  for (let i = v.st; i < STAGING.length; i++) if (steerTry(p0, t0, Q, dq, out, STAGING[i], i === STAGING.length - 1, v)) return true;
+  const n = Math.max(1, Math.round(len(sub(Q, p0)) / STEP));   // no plan: a straight line, which the scorecard will show
+  for (let i = 1; i <= n; i++) out.push({ p: add(p0, mul(sub(Q, p0), i / n)), kind: 'twist' });
   return false;
 }
 // The shortest way round (a 3D Dubins path): turn, straight, turn, each turn in its own plane at radius R, either way round
@@ -406,29 +514,10 @@ function dubinsPlan(p0, t0, Q, dq, R, alt = 0) {
   if (!pts.length || len(sub(pts[pts.length - 1], Q)) > 0.01) pts.push(Q.slice());
   return { pts, length: best.length, d };
 }
-// The corkscrew: a waterslide helix right after the fork. corkTurns turns, its curvature radius corkRadius (never under
-// minRadius), rising corkLength along its axis each turn. Of the two helices with that curvature and pitch it is the sweeping one
-// (a spiral round a wide axis), not the tight coil. Its axis leans toward the target, turned about the heading by ph.
-function helixPlan(p0, t0, Q, v) {
-  const n = P.corkTurns; if (!(n > 0)) return null;
-  const rho = Math.max(P.corkRadius, 1.1 * P.minRadius), c = Math.min(P.corkLength / (2 * Math.PI), 0.499 * rho);
-  const a = (rho + Math.sqrt(rho * rho - 4 * c * c)) / 2, k = Math.hypot(a, c), sb = c / k, cb = a / k;
-  let q = sub(sub(Q, p0), mul(t0, dot(sub(Q, p0), t0))); if (len(q) < 1e-3) { q = cross(t0, [0, 1, 0]); if (len(q) < 1e-3) q = cross(t0, [1, 0, 0]); }
-  q = rotAbout(norm(q), t0, v.ph);
-  const A = norm(add(mul(t0, sb), mul(q, cb))), m = norm(sub(t0, mul(A, dot(t0, A)))), u0 = mul(norm(cross(m, A)), v.hand), C = sub(p0, mul(u0, a));
-  const at = (th) => add(C, add(add(mul(u0, a * Math.cos(th)), mul(m, a * Math.sin(th))), mul(A, c * th)));
-  const tan = (th) => norm(add(add(mul(u0, -a * Math.sin(th)), mul(m, a * Math.cos(th))), mul(A, c)));
-  const TH = 2 * Math.PI * n, N = Math.ceil(TH * k), pts = [];
-  for (let i = 1; i <= N; i++) pts.push(at(TH * i / N));
-  return { pts, end: at(TH), T: tan(TH), T0: tan(0), length: TH * k, a, c };
-}
-// Fly the plan: the helix (when there is one), then the shortest way to the next straight. The steering point (curvature
-// within 1/minRadius, ramped over turnRamp) chases a point a little ahead on it; the plan is drawn wider than minRadius so
-// the ramps have room to keep up.
+// Fly the plan: a steering point (curvature within 1/minRadius, ramped over turnRamp) chases a point a little ahead on it; the
+// plan is drawn a little wider than minRadius so the ramps have room to keep up. If it cannot keep up, the plan itself is used.
 function steerPlan(p0, t0, Q, dq, out, v) {
-  const R = P.minRadius, hx = v.helix ? helixPlan(p0, t0, Q, v) : null;
-  const tail = dubinsPlan(hx ? hx.end : p0, hx ? hx.T : t0, Q, dq, R * v.rs, v.alt); if (!tail) return false;
-  const plan = { pts: (hx ? hx.pts : []).concat(tail.pts), length: (hx ? hx.length : 0) + tail.length };
+  const R = P.minRadius, plan = dubinsPlan(p0, t0, Q, dq, R * v.rs, v.alt); if (!plan) return false;
   const D = plan.pts, nD = D.length, look = 30, kmax = 1 / R, dk = kmax / Math.max(1, P.turnRamp), ds = 1, pts = [];
   let p = p0.slice(), T = t0.slice(), k = [0, 0, 0], s = 0, idx = 0, done = false;
   for (let it = 0; it < plan.length * 1.6 + 200; it++) {
@@ -445,7 +534,7 @@ function steerPlan(p0, t0, Q, dq, out, v) {
     const along = dot(sub(p, Q), dq);
     if (idx >= nD - look && along >= -1) { done = len(sub(add(Q, mul(dq, along)), p)) < 6 && Math.acos(Math.max(-1, Math.min(1, dot(T, dq)))) < 0.2; break; }
   }
-  if (!done) return false;
+  if (!done) { for (const q of plan.pts) out.push({ p: q, kind: 'twist' }); return true; }
   blendEnd(pts, Q, dq, T, ds, out);
   return true;
 }
@@ -458,40 +547,6 @@ function blendEnd(pts, Q, dq, T, ds, out) {
     if (i >= from) { const u = (i - from) / Math.max(1, n - 1 - from); q = add(q, add(mul(err, 3 * u * u - 2 * u * u * u), mul(dT, Lb * (u * u * u - u * u)))); }
     out.push({ p: q, kind: 'twist' });
   }
-}
-function steerTry(p0, t0, Q, dq, out, cfg, last, v) {
-  const [WA, WL, CA, CL, CR, CD] = cfg;
-  const R = P.minRadius, look = 45, kmax = 1 / R, dk = kmax / Math.max(1, P.turnRamp), ds = 1;
-  const W = add(Q, mul(dq, -WA * R - WL * look)), pts = [];
-  const kh = P.corkTurns > 0 ? Math.min(kmax * 0.95, 1 / Math.max(1, P.corkRadius)) : 0, Lh = P.corkTurns > 0 ? P.corkLength : 0;
-  const wh = Lh > 0 ? v.hand * 2 * Math.PI * P.corkTurns / Lh : 0;
-  let H = cross(t0, [0, 1, 0]); if (len(H) < 1e-3) H = cross(t0, [1, 0, 0]); H = rotAbout(norm(H), t0, v.ph);
-  let p = p0.slice(), T = t0.slice(), k = [0, 0, 0], staging = null, done = false, s = 0;
-  for (let it = 0; it < (last ? 6000 : 2500); it++) {
-    const along = dot(sub(p, Q), dq), foot = add(Q, mul(dq, along)), lat = sub(foot, p), latL = len(lat);
-    if (staging === null) staging = !(along < -(R * (Math.acos(Math.max(-1, Math.min(1, dot(T, dq)))) + 0.5) + 2 * look) && latL < 2 * R);
-    if (staging && along < -CA * R - CL * look && latL < CR * R && dot(T, dq) > CD) staging = false;
-    if (!staging && along > 1.5) staging = true;
-    let h;
-    if (staging) h = norm(sub(W, p));
-    else { const ahead = Math.min(0, along + look); h = along + look > 0 ? norm(add(mul(dq, look), lat)) : norm(sub(add(Q, mul(dq, ahead)), p)); }
-    const c = Math.max(-1, Math.min(1, dot(h, T))), perp = sub(h, mul(T, c));
-    let kd;
-    if (len(perp) > 1e-9) kd = mul(norm(perp), Math.min(kmax, 2 * Math.acos(c) / (R * 0.6)));
-    else if (c < 0) { let side = cross(T, [0, 1, 0]); if (len(side) < 1e-3) side = cross(T, [1, 0, 0]); kd = mul(norm(side), kmax); }
-    else kd = [0, 0, 0];
-    if (kh > 0 && s < Lh) { H = norm(sub(H, mul(T, dot(H, T)))); H = rotAbout(H, T, wh * ds); kd = add(kd, mul(H, kh * Math.sin(Math.PI * s / Lh))); }
-    if (len(kd) > kmax) kd = mul(kd, kmax / len(kd));
-    const diff = sub(kd, k), dl = len(diff); k = dl > dk ? add(k, mul(diff, dk / dl)) : kd;
-    k = sub(k, mul(T, dot(k, T)));
-    T = norm(add(T, mul(k, ds))); p = add(p, mul(T, ds)); s += ds; pts.push(p);
-    const head = Math.acos(Math.max(-1, Math.min(1, dot(T, dq))));
-    if (s > Lh && !staging && along >= -1 && along <= 1.5 && latL < 3 && head < 0.1) { done = true; break; }
-  }
-  if (!done && !last) return false;
-  if (!done) { const d = norm(sub(Q, p0)); const n = Math.max(1, Math.round(len(sub(Q, p0)) / STEP)); for (let i = 1; i <= n; i++) out.push({ p: add(p0, mul(sub(Q, p0), i / n)), kind: 'twist' }); return false; }
-  blendEnd(pts, Q, dq, T, ds, out);
-  return true;
 }
 function sampleStraight(p0, t, L, out) { const n = Math.max(1, Math.round(L / STEP)); for (let i = 1; i <= n; i++) out.push({ p: add(p0, mul(t, L * i / n)), kind: 'straight' }); }
 
@@ -526,7 +581,8 @@ function curvatureAt(pts, i) {
   const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], ds = b.s - a.s;
   return ds > 1e-6 ? mul(sub(b.T, a.T), 1 / ds) : [0, 0, 0];
 }
-// The roll: banking (from the curvature, in the twist window), the helix, and an exit's own roll; it eases in and out so straights never roll.
+// The roll: banking (from the curvature, in the twist window), the twist roll toward the way you chose, and an exit's own
+// roll; it changes only in the twist window, so a straight never rolls.
 function applyRoll(edge) {
   const pts = edge.pts, n = pts.length;
   let w0 = -1, w1 = -1;
@@ -557,15 +613,22 @@ function applyRoll(edge) {
       for (let j = Math.max(w0, i - rad); j <= Math.min(w1, i + rad); j++) { const w = Math.exp(-0.5 * ((j - i) / sig) ** 2); acc += tgt[j] * w; wsum += w; }
       sm[i] = acc / wsum;
     }
-    // an exit's own roll joins the signal before the limit: eased in over the twist's second half, held into the exit
-    let endVal = 0;
-    if (edge.exit) {
-      const e = pts[n - 1];
-      endVal = Math.atan2(dot(cross(e.U, edge.exit.up), e.T), dot(e.U, edge.exit.up));
-      for (let i = w0; i <= w1; i++) sm[i] += endVal * smooth5(((pts[i].s - pts[w0].s) / L - 0.4) / 0.6);
-    }
+    // the twist roll (twistRoll turns toward the way you chose: right and up roll right, left and down roll left) and an
+    // exit's own roll join the signal before the limit, eased in over the window and held after it; an exit takes whichever
+    // equivalent of its roll is nearest the twist, so the twist never adds a turn just to undo it
     const vMax = P.speed * Math.pow(P.forkGain, 6);   // the limit holds at the fastest a deep path is ridden
     const lim = (P.maxRollRate * Math.PI / 180) / Math.max(1, vMax);   // radians per unit of length
+    const reach = 0.8 * lim * L;   // the most roll the window can make at the fastest comfortable rate
+    let twist = (edge.slot === 'left' || edge.slot === 'down' || edge.slot === 'behind' ? -1 : 1) * 2 * Math.PI * P.twistRoll;
+    if (Math.abs(twist) > reach) twist = Math.sign(twist) * reach;
+    let endVal = twist;
+    if (edge.exit) {
+      // of the exit roll's equivalents, the one nearest the twist that the window can reach, else the smallest
+      const e = pts[n - 1], own = Math.atan2(dot(cross(e.U, edge.exit.up), e.T), dot(e.U, edge.exit.up));
+      const cands = [-1, 0, 1].map((k) => own + 2 * Math.PI * k), ok = cands.filter((c) => Math.abs(c) <= reach);
+      endVal = (ok.length ? ok : cands).reduce((a, c) => (ok.length ? Math.abs(c - twist) < Math.abs(a - twist) : Math.abs(c) < Math.abs(a)) ? c : a);
+    }
+    for (let i = w0; i <= w1; i++) sm[i] += endVal * smooth5(((pts[i].s - pts[w0].s) / L - 0.1) / 0.8);
     const fw = new Float64Array(n), bw = new Float64Array(n);
     for (let i = w0; i <= w1; i++) { const prevR = i === w0 ? 0 : fw[i - 1], d = (pts[i].s - (i === w0 ? pts[w0].s : pts[i - 1].s)) * lim; fw[i] = Math.max(prevR - d, Math.min(prevR + d, sm[i])); }
     for (let i = w1; i >= w0; i--) { const nextR = i === w1 ? endVal : bw[i + 1], d = ((i === w1 ? pts[w1].s : pts[i + 1].s) - pts[i].s) * lim; bw[i] = Math.max(nextR - d, Math.min(nextR + d, fw[i])); }
@@ -580,68 +643,112 @@ function applyRoll(edge) {
 const frameEnd = (edge) => { const p = edge.pts[edge.pts.length - 1]; return { T: p.T, U: p.UU, R: p.RR, p: p.p }; };
 
 let NET = null;
+// The network is built, every path measured against the straight line from the crystal to its exit, and an exit whose path
+// runs over the detour limit is given a way of its own one junction earlier; then it is built again (at most four times,
+// the best kept).
 function build() {
   PLAN_CACHE.clear();
-  const exits = makeExits(), edges = [], junctions = [];
-  const F0 = { T: [0, 0, 1], U: [0, 1, 0], R: cross([0, 0, 1], [0, 1, 0]) };
-  // the crystal: the tube starts at it and runs straight to the first junction, toward the exits' middle
-  const root = { id: 0, parent: null, start: [0, 0, 0], raw: [], depth: 0, slot: 'crystal', children: [] };
-  sampleStraight([0, 0, 0], F0.T, P.straightLength, root.raw);
-  finishEdge(root, F0); edges.push(root);
+  const exits = makeExits(); let best = null;
+  for (let pass = 0; pass < 4; pass++) {
+    NET = buildOnce(exits); scorePaths();
+    const over = NET.paths.filter((p) => p.detour > P.maxDetour + 1e-9), excess = over.reduce((a, p) => a + p.detour - P.maxDetour, 0);
+    if (!best || excess < best.excess) best = { net: NET, excess };
+    const movable = over.filter((p) => p.junctions > 1 && p.exit.leafBy > p.junctions - 1);
+    if (!movable.length) break;
+    for (const p of movable) p.exit.leafBy = p.junctions - 1;
+  }
+  NET = best.net; scorePaths(); measureClearance();
+}
+function buildOnce(exits) {
+  const edges = [], junctions = [], F0 = entranceFrame(exits), O = [0, 0, 0];
+  // the way in: a straight into the crystal, the decision before its fork
+  const root = { id: 0, parent: null, start: mul(F0.T, -P.straightLength), raw: [], depth: 0, slot: 'entrance', children: [] };
+  sampleStraight(root.start, F0.T, P.straightLength, root.raw); finishEdge(root, F0); edges.push(root);
+  const lenSplit = 1.5 * P.splitAngle * Math.PI / 180 * P.minRadius, splitL = Math.max(P.splitLength, lenSplit);
+  // an exit nearer than this to a junction has no room for another junction on its way, so it leaves here
+  const roomForJunction = 2 * splitL + P.straightLength + 0.5 * P.twistLength + P.exitStraight + P.minRadius;
+  const towardOf = (g, from) => g.exits.length === 1 ? norm(sub(g.exits[0].approach, from)) : norm(g.exits.reduce((a, e) => add(a, norm(sub(e.approach, from))), [0, 0, 0]));
+  function place(edge, g, depth, make) {
+    // every way is built a few ways (variantsFor); none more than 8% longer than the shortest is kept (a way that dodges a
+    // crossing by looping wastes the rider's time, so the crossing is shown instead), and of those the shortest that clears
+    // the tubes already built by a tube radius stays, else the clearest
+    const cands = variantsFor(g.exits.length === 1).map((v) => make(v));
+    // a leaf with no room to line up at the tightest comfortable turn would loop: it turns tighter instead (its turn rate
+    // goes red on the scorecard), because a loop wastes the rider's time and a tight turn only costs comfort
+    if (g.exits.length === 1 && cands.every((c) => c.length > 1.35 * c.direct + 20)) for (const rs of [0.7, 0.5]) cands.push(make(Object.assign({}, variantsFor(true)[0], { rs })));
+    const shortest = Math.min(...cands.map((c) => c.length));
+    let best = null;
+    for (const child of cands.filter((c) => c.length <= shortest * 1.08 + 4).sort((x, y) => x.length - y.length)) {
+      const gap = gapTo(child), ok = gap >= P.tubeRadius;
+      if (!best || (ok && !best.ok) || (!ok && !best.ok && gap > best.gap)) best = { child, gap, ok };
+      if (ok) break;
+    }
+    const child = best.child;
+    child.id = edges.length; edge.children.push(child); edges.push(child); addToGrid(child);
+    if (g.exits.length > 1) grow(child, g.exits, depth + 1);
+  }
+  // the crystal's fork: each way leaves the crystal toward its exits; a single exit's way leaves along the one arc that
+  // meets the exit's facing, a group's runs straight to its first junction
+  function crystalFork() {
+    const groups = crystalGroups(F0, exits);
+    junctions.push({ p: O, F: F0, depth: 0, ways: groups.map((g) => g.slot) });
+    for (const g of groups) {
+      const t = g.exits.length > 1 ? g.axis : towardOf(g, O), gh = { id: -1, parent: root, start: O, raw: [], mouthMin: 40 };
+      sampleStraight(O, t, 60, gh.raw); finishEdge(gh, frameAlong(F0, t)); gh.pts.forEach((q) => { q.kind = 'split'; }); addToGrid(gh);
+    }
+    for (const g of groups) place(root, g, 0, (v) => {
+      const t = towardOf(g, O), child = { id: -1, parent: root, start: O, raw: [], depth: 1, slot: g.slot, children: [], group: g, mouthMin: 40 };
+      if (g.exits.length === 1) {
+        const ex = g.exits[0], c = norm(ex.approach); child.exit = ex; child.direct = len(ex.pos);
+        let t0 = norm(sub(mul(c, 2 * dot(c, ex.face)), ex.face));   // the face mirrored across the chord: one arc meets it
+        if (dot(t0, c) < 0.5) t0 = norm(add(mul(c, 2), t0));
+        sampleSteer(O, t0, ex.approach, ex.face, child.raw, v); sampleStraight(ex.approach, ex.face, P.exitStraight, child.raw);
+        finishEdge(child, frameAlong(F0, t0));
+      } else {
+        const r1 = g.r1 * v.ch, ax = g.axis;
+        sampleStraight(O, ax, r1, child.raw); child.direct = r1; finishEdge(child, frameAlong(F0, ax));
+      }
+      return child;
+    });
+  }
   function grow(edge, set, depth) {
     const F = frameEnd(edge);
-    if (set.length === 1) return;   // edge is a leaf already ending at its exit
-    const groups = groupExits(F.p, F, set);
+    const isLeaf = (e) => e.leafBy <= depth + 1 || len(sub(e.approach, F.p)) < roomForJunction;
+    const groups = groupExits(F.p, F, set, isLeaf);
     junctions.push({ p: F.p, F, depth, ways: groups.map((g) => g.slot) });
-    // every branch's mouth is known before any branch is built, so an early branch cannot loop back across a later one's
+    // every way's mouth and every decision straight is known before any way is built, so an early way cannot cross a later one's
     for (const g of groups) {
-      const gh = { id: -1, parent: edge, start: F.p, raw: [] }, sp = sampleSplit(F.p, F, g.dir, gh.raw); finishEdge(gh, F); addToGrid(gh);
-      if (g.exits.length > 1) { const { Q, dq } = nextJunction(F, g, sp, variantsFor(false)[0]); addGhostLine(sub(Q, mul(dq, 20)), add(Q, mul(dq, P.straightLength)), g); }
+      const gh = { id: -1, parent: edge, start: F.p, raw: [] }, sp = sampleSplit(F.p, F, g.dir, gh.raw, towardOf(g, F.p)); finishEdge(gh, F); addToGrid(gh);
+      if (g.exits.length > 1) { const { Q, dq } = nextJunction(g, sp, variantsFor(false)[0]); addGhostLine(sub(Q, mul(dq, 20)), add(Q, mul(dq, P.straightLength)), g); }
     }
-    for (const g of groups) {
-      // a branch that would cross a tube already built is built again another way (variantsFor): the first that clears by a
-      // tube radius stays, else the clearest
-      let best = null;
-      for (const v of variantsFor(g.exits.length === 1)) {
-        const child = makeChild(edge, F, g, depth, v), gap = gapTo(child);
-        if (!best || gap > best.gap) best = { child, gap, v };
-        if (gap >= P.tubeRadius) break;
+    for (const g of groups) place(edge, g, depth, (v) => {
+      const child = { id: -1, parent: edge, start: F.p, raw: [], depth: depth + 1, slot: g.slot, children: [], group: g };
+      const sp = sampleSplit(F.p, F, g.dir, child.raw, towardOf(g, F.p));
+      if (g.exits.length === 1) {
+        const ex = g.exits[0]; child.exit = ex; child.direct = len(sub(ex.pos, F.p));
+        sampleSteer(sp.p, sp.t, ex.approach, ex.face, child.raw, v); sampleStraight(ex.approach, ex.face, P.exitStraight, child.raw);
+      } else {
+        const { Q, dq } = nextJunction(g, sp, v); child.direct = len(sub(add(Q, mul(dq, P.straightLength)), F.p));
+        sampleSteer(sp.p, sp.t, Q, dq, child.raw, v); sampleStraight(Q, dq, P.straightLength, child.raw);
       }
-      const child = best.child;
-      child.id = edges.length; edge.children.push(child); edges.push(child); addToGrid(child);
-      grow(child, g.exits, depth + 1);
-    }
+      finishEdge(child, F);
+      return child;
+    });
   }
-  // where a group's next junction goes and the heading of the straight into it
-  function nextJunction(F, g, sp, v) {
-    const C = mul(g.exits.reduce((a, e) => add(a, e.lineup), [0, 0, 0]), 1 / g.exits.length);
-    const dq = norm(sub(C, sp.p)), D = len(sub(C, sp.p));
-    const chord = Math.max(P.twistLength * 0.8, (D - P.straightLength) * P.spacing) * v.ch;
-    // a branch that must turn back lines up beside its own fork, on the side it peeled off to, never back through it
-    let side = add(mul(F.R, Math.cos(g.dir)), mul(F.U, Math.sin(g.dir))); side = sub(side, mul(dq, dot(side, dq)));
-    const back = (1 - dot(sp.t, dq)) / 2, Q = add(add(sp.p, mul(dq, chord)), mul(len(side) > 1e-3 ? norm(side) : [0, 0, 0], 2 * P.minRadius * back * v.lat));
-    return { Q, dq };
+  // the next junction lies where the turn toward the group naturally ends (one arc, then the straight), so the way never
+  // bends off and back onto a line: no length is spent on anything but turning toward the exits
+  function nextJunction(g, sp, v) {
+    const dq = towardOf(g, sp.p), R = P.minRadius * v.rs, c = Math.max(-1, Math.min(1, dot(sp.t, dq))), a = Math.acos(c);
+    let e = sub(dq, mul(sp.t, c)); e = len(e) > 1e-6 ? norm(e) : [0, 0, 0];
+    const arcEnd = add(sp.p, add(mul(sp.t, R * Math.sin(a)), mul(e, R * (1 - Math.cos(a)))));
+    const room = Math.max(20, (P.spacing * Math.min(...g.exits.map((x) => len(sub(x.approach, sp.p)))) - R * a) * v.ch, 0.5 * P.twistLength - R * a);
+    return { Q: add(arcEnd, mul(dq, room)), dq };
   }
   // a straight known before its tube is built (an exit's run-in, a junction's decision straight) is an obstacle from the start
   function addGhostLine(a, b, owner) {
     const gh = { id: -1, ghostOf: owner, pts: [], mouthS: -1 }, n = Math.max(1, Math.ceil(len(sub(b, a)) / STEP));
     for (let i = 0; i <= n; i++) gh.pts.push({ p: add(a, mul(sub(b, a), i / n)), s: i * STEP, kind: 'straight' });
     gh.len = n * STEP; addToGrid(gh);
-  }
-  function makeChild(edge, F, g, depth, v) {
-    const child = { id: -1, parent: edge, start: F.p, raw: [], depth: depth + 1, slot: g.slot, children: [] };
-    const sp = sampleSplit(F.p, F, g.dir, child.raw);
-    if (g.exits.length === 1) {
-      const ex = g.exits[0]; child.exit = ex;
-      sampleSteer(sp.p, sp.t, ex.approach, ex.face, child.raw, v);
-      sampleStraight(ex.approach, ex.face, P.exitStraight, child.raw);
-    } else {
-      const { Q, dq } = nextJunction(F, g, sp, v); child.group = g;
-      sampleSteer(sp.p, sp.t, Q, dq, child.raw, v);
-      sampleStraight(Q, dq, P.straightLength, child.raw);
-    }
-    finishEdge(child, F);
-    return child;
   }
   // the tubes built so far, in a grid, for the crossing test
   const cell = 30, grid = new Map(), gkey = (x, y, z) => x + ',' + y + ',' + z;
@@ -659,14 +766,17 @@ function build() {
   }
   addToGrid(root);
   for (const ex of exits) addGhostLine(sub(ex.pos, mul(ex.face, P.exitStraight + 30)), ex.pos, ex);
-  if (exits.length === 1) { root.exit = exits[0]; }
-  grow(root, exits, 0);
-  // paths: crystal -> each exit
+  crystalFork();
+  // paths: the way in, then the crystal to each exit
   const paths = [];
   for (const e of edges) if (e.exit) { const chain = []; let x = e; while (x) { chain.unshift(x); x = x.parent; } paths.push({ exit: e.exit, chain }); }
   paths.sort((a, b) => a.exit.i - b.exit.i);
-  NET = { exits, edges, junctions, paths };
-  scorePaths(); measureClearance();
+  return { exits, edges, junctions, paths, F0 };
+}
+// a frame heading along t, its up as near the given frame's as it can be
+function frameAlong(F, t) {
+  let U = sub(F.U, mul(t, dot(F.U, t))); if (len(U) < 1e-3) U = sub(F.T, mul(t, dot(F.T, t)));
+  U = norm(U); return { T: t, U, R: cross(t, U) };
 }
 
 // ============ comfort ============
@@ -678,29 +788,34 @@ function rideSamples(path) {
 }
 function scorePaths() {
   for (const path of NET.paths) {
+    // the way in counts toward the first decision only; time, length and comfort run from the crystal
     const S = rideSamples(path); let t = 0, maxTurn = 0, maxRoll = 0, peakSide = 0, sideSum = 0, sideN = 0, minDecide = Infinity, straightRun = 0;
     for (let i = 1; i < S.length - 1; i++) {
-      const a = S[i - 1], b = S[i], c = S[i + 1], ds = len(sub(b.p, a.p)) || STEP, dt = ds / b.v; t += dt;
-      // angular velocity of the rider's frame, in the rider's frame
-      const dT = sub(c.T, a.T), dU = sub(c.U, a.U), chord = len(sub(c.p, a.p)) || 2 * STEP, dt2 = chord / b.v;
-      const pitch = dot(dT, b.U) / dt2, yaw = -dot(dT, b.R) / dt2, roll = dot(dU, b.R) / dt2;
-      maxTurn = Math.max(maxTurn, Math.hypot(pitch, yaw) * 180 / Math.PI); maxRoll = Math.max(maxRoll, Math.abs(roll) * 180 / Math.PI);
-      // sideways push: the bend's pull along the rider's right, as a share of the tightest allowed turn taken flat;
-      // averaged over the turning stretches (a real bend), its peak kept as well
-      const k = mul(dT, 1 / chord), side = Math.abs(dot(k, b.R)) * P.minRadius * 100;
-      peakSide = Math.max(peakSide, side); if (len(k) * P.minRadius > 0.3) { sideSum += side; sideN++; }
+      const a = S[i - 1], b = S[i], c = S[i + 1], ds = len(sub(b.p, a.p)) || STEP, dt = ds / b.v;
+      if (b.edge.depth > 0) t += dt;
+      if (a.edge.depth > 0) {
+        // angular velocity of the rider's frame, in the rider's frame
+        const dT = sub(c.T, a.T), dU = sub(c.U, a.U), chord = len(sub(c.p, a.p)) || 2 * STEP, dt2 = chord / b.v;
+        const pitch = dot(dT, b.U) / dt2, yaw = -dot(dT, b.R) / dt2, roll = dot(dU, b.R) / dt2;
+        maxTurn = Math.max(maxTurn, Math.hypot(pitch, yaw) * 180 / Math.PI); maxRoll = Math.max(maxRoll, Math.abs(roll) * 180 / Math.PI);
+        // sideways push: the bend's pull along the rider's right, as a share of the tightest allowed turn taken flat;
+        // averaged over the turning stretches (a real bend), its peak kept as well
+        const k = mul(dT, 1 / chord), side = Math.abs(dot(k, b.R)) * P.minRadius * 100;
+        peakSide = Math.max(peakSide, side); if (len(k) * P.minRadius > 0.3) { sideSum += side; sideN++; }
+      }
       if (b.kind === 'straight') straightRun += dt; else straightRun = 0;
       if (b.edge !== c.edge && !b.edge.exit) minDecide = Math.min(minDecide, straightRun);
     }
     path.time = t; path.turn = maxTurn; path.roll = maxRoll; path.side = sideN ? sideSum / sideN : 0; path.peakSide = peakSide;
     path.decide = minDecide === Infinity ? 0 : minDecide; path.junctions = path.chain.length - 1;
+    path.length = path.chain.reduce((a, e) => a + (e.depth > 0 ? e.length : 0), 0); path.detour = path.length / len(path.exit.pos);
   }
 }
 // Where a parent ends and its children begin, the tubes share a mouth; tubes that meet at a fork are compared only away from it.
 function markMouth(e) {
   if (e.len !== undefined) return;
   let sEnd = 0; for (const p of e.pts) if (p.kind === 'split') sEnd = p.s;
-  e.mouthS = sEnd + 4 * P.tubeRadius; e.len = e.pts[e.pts.length - 1].s;
+  e.mouthS = Math.max(e.mouthMin || 0, sEnd + 4 * P.tubeRadius); e.len = e.pts[e.pts.length - 1].s;
 }
 function sharedMouth(ea, pa, eb, pb) {
   const nearStart = (e, p) => p.s < e.mouthS, nearEnd = (e, p) => e.len - p.s < 4 * P.tubeRadius + P.splitLength;
@@ -715,16 +830,11 @@ function sharedMouth(ea, pa, eb, pb) {
   if (eb.parent === ea) return nearStart(eb, pb) && nearEnd(ea, pa);
   return false;
 }
-// the ways a branch can be built again when it would cross a tube: the helix turned about the heading or mirrored, the turns
-// wider, the junction nearer or farther; without its helix only as the last resort
+// the ways a branch can be built: the plan drawn a little wider than the tightest turn, then at it, then (a leaf with little
+// room only) a tenth inside it rather than looping; the next-shortest plan; the next junction a little nearer or farther
 function variantsFor(toExit) {
-  const V = [], cork = P.corkTurns > 0, base = { ph: 0, hand: 1, ch: 1, st: 0, rs: 1.25, helix: cork, alt: 0, lat: 1 }, v = (o) => V.push(Object.assign({}, base, o));
-  const shapes = [{}, { alt: 1 }, { alt: 2 }, { alt: 3 }, { rs: 1.7 }, { rs: 1.7, alt: 1 }];
-  if (!toExit) shapes.push({ ch: 1.35 }, { ch: 0.75 }, { lat: 2 }, { lat: 0 }, { lat: 2, ch: 1.35 }, { lat: 1.5, ch: 0.75 });
-  if (cork) for (let i = 0; i < 8; i++) v({ ph: i * Math.PI / 4, hand: i % 2 ? -1 : 1 });
-  for (const sh of shapes) v(Object.assign({ helix: false }, sh));
-  if (cork) for (const sh of shapes.slice(1)) for (let i = 0; i < 4; i++) v(Object.assign({ ph: i * Math.PI / 2, hand: i % 2 ? -1 : 1 }, sh));
-  return V;
+  const base = { ch: 1, rs: 1.25, alt: 0 }, V = [base, { rs: 1 }].concat(toExit ? [{ rs: 0.9 }, { alt: 1 }] : [{ alt: 1 }, { ch: 0.8 }, { ch: 1.25 }]);
+  return V.map((o) => Object.assign({}, base, o));
 }
 let clearance = Infinity, clearanceAt = null;
 function measureClearance() {
@@ -855,11 +965,15 @@ function stepRide(dt) {
   while (ride.s >= ride.edge.length) {
     if (ride.edge.exit) { banner.textContent = 'Exit ' + (ride.edge.exit.i + 1); banner.hidden = false; ride.done = 1.6; ride.s = ride.edge.length; break; }
     const kids = ride.edge.children, picked = ride.pick && kids.find((k) => k.slot === ride.pick);
+    if (ride.edge.depth === 0) ride.blend = 0.8;   // through the crystal the heading changes at once: the view eases round instead
     ride.s -= ride.edge.length; ride.edge = picked || defaultChild(ride.edge); ride.pick = null; ride.v *= P.forkGain;
   }
   const f = sampleAt(ride.edge, ride.s);
+  if (ride.blend > 0 && ride.T) { const k = 1 - Math.exp(-dt / 0.18); ride.T = norm(add(ride.T, mul(sub(f.T, ride.T), k))); ride.U = norm(add(ride.U, mul(sub(f.U, ride.U), k))); ride.blend -= dt; }
+  else { ride.T = f.T; ride.U = f.U; }
+  const T = ride.T, U = ride.U;
   cam.position.set(f.p[0] + f.U[0] * P.tubeRadius * 0.25, f.p[1] + f.U[1] * P.tubeRadius * 0.25, f.p[2] + f.U[2] * P.tubeRadius * 0.25);
-  cam.up.set(...f.U); cam.lookAt(new THREE.Vector3(...add(f.p, mul(f.T, 30))).add(new THREE.Vector3(...mul(f.U, P.tubeRadius * 0.25))));
+  cam.up.set(...U); cam.lookAt(new THREE.Vector3(...add(f.p, mul(T, 30))).add(new THREE.Vector3(...mul(f.U, P.tubeRadius * 0.25))));
 }
 function placeOrbit() {
   const c = Math.cos(orbit.pitch);
@@ -878,7 +992,7 @@ canvas.addEventListener('pointermove', (e) => {
 const pu = (e) => { ptr.delete(e.pointerId); if (ptr.size < 2) pinch = 0; };
 canvas.addEventListener('pointerup', pu); canvas.addEventListener('pointercancel', pu);
 canvas.addEventListener('wheel', (e) => { if (P.mode !== 'orbit') return; e.preventDefault(); orbit.dist = Math.max(80, Math.min(4000, orbit.dist * Math.exp(e.deltaY * 0.0012))); }, { passive: false });
-const KEYS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
+const KEYS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'ahead', KeyX: 'behind' };
 window.addEventListener('keydown', (e) => { if (P.mode !== 'ride' || !ride || !KEYS[e.code]) return; e.preventDefault(); ride.pick = KEYS[e.code]; });
 document.getElementById('pad').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b || !ride) return; ride.pick = b.dataset.slot; });
 
@@ -896,10 +1010,13 @@ function updateHud() {
   }
 }
 function renderPanel() {
-  const total = NET.edges.reduce((a, e) => a + e.length, 0), depth = Math.max(...NET.paths.map((p) => p.junctions));
+  const total = NET.edges.reduce((a, e) => a + (e.depth > 0 ? e.length : 0), 0), depth = Math.max(...NET.paths.map((p) => p.junctions));
+  const det = (v) => v <= P.maxDetour + 1e-9 ? 'g' : v <= P.maxDetour + 0.1 ? 'w' : 'b';
   const worst = (k) => Math.max(...NET.paths.map((p) => p[k])), minDec = Math.min(...NET.paths.map((p) => p.decide));
   const st = [
+    ['×' + worst('detour').toFixed(2), 'longest path, over its straight line', det(worst('detour'))],
     [Math.round(total) + ' u', 'tube in all'], [NET.junctions.length, 'junctions'], [depth, 'most junctions on a path'],
+    [worst('time').toFixed(1) + ' s', 'longest ride, crystal to exit'],
     [minDec.toFixed(2) + ' s', 'shortest decision', grade(minDec, P.okDecide, P.badDecide, true)],
     [Math.round(worst('turn')) + '°/s', 'fastest turn', grade(worst('turn'), P.okTurn, P.badTurn)],
     [Math.round(worst('peakSide')) + '%', 'peak sideways push'],
@@ -907,7 +1024,7 @@ function renderPanel() {
   ];
   document.getElementById('stats').innerHTML = st.map(([v, l, c]) => '<div class="stat"><b class="' + (c || '') + '">' + v + '</b><span>' + l + '</span></div>').join('');
   const tb = document.querySelector('#paths tbody');
-  tb.innerHTML = NET.paths.map((p, i) => '<tr data-i="' + i + '" data-sel="' + (i === P.sel ? 1 : 0) + '"><td>' + (p.exit.i + 1) + '</td><td>' + p.junctions + '</td><td>' + p.time.toFixed(1) + '</td>' +
+  tb.innerHTML = NET.paths.map((p, i) => '<tr data-i="' + i + '" data-sel="' + (i === P.sel ? 1 : 0) + '"><td>' + (p.exit.i + 1) + '</td><td>' + p.junctions + '</td><td class="' + det(p.detour) + '">' + p.detour.toFixed(2) + '</td><td>' + p.time.toFixed(1) + '</td>' +
     '<td class="' + grade(p.decide, P.okDecide, P.badDecide, true) + '">' + p.decide.toFixed(2) + '</td>' +
     '<td class="' + grade(p.turn, P.okTurn, P.badTurn) + '">' + Math.round(p.turn) + '</td>' +
     '<td class="' + grade(p.roll, P.okRoll, P.badRoll) + '">' + Math.round(p.roll) + '</td>' +
@@ -959,7 +1076,8 @@ requestAnimationFrame(frame);
 // the test surface: a manual clock, seeded rebuilds and a headless scorecard (labmaker §2.2)
 function score() {
   const ps = NET.paths, mx = (k) => Math.max(...ps.map((p) => p[k]));
-  return { exits: NET.exits.length, junctions: NET.junctions.length, tube: Math.round(NET.edges.reduce((a, e) => a + e.length, 0)),
+  return { exits: NET.exits.length, junctions: NET.junctions.length, tube: Math.round(NET.edges.reduce((a, e) => a + (e.depth > 0 ? e.length : 0), 0)),
+    longestDetour: +mx('detour').toFixed(3), overDetour: ps.filter((p) => p.detour > P.maxDetour + 1e-9).length,
     shortestDecision: +Math.min(...ps.map((p) => p.decide)).toFixed(2), fastestTurn: Math.round(mx('turn')), fastestRoll: Math.round(mx('roll')),
     worstAverageSidePush: Math.round(mx('side')), peakSidePush: Math.round(mx('peakSide')), longestRide: +mx('time').toFixed(1),
     shortestRide: +Math.min(...ps.map((p) => p.time)).toFixed(1), closestTubes: Math.round(clearance) };
