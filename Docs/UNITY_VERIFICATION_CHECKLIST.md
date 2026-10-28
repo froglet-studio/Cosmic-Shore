@@ -17777,3 +17777,37 @@ nothing here was compiled.
 6. If the fill line sits off the rocket's tail or nose, change `bayRocketTail01` / `bayRocketNose01` on the HUD
    prefab's `SparrowHUDView`.
 
+
+## Rhino Charge card: the katana that follows the sword (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `RhinoVesselHUDView.cs` (generates `KatanaPivot`/`Katana` under the Charge card's icon from
+`Rhino_KatanaCurved` and `Rhino_KatanaChop`; `SetKatanaPose`, `SetKatanaLit`, the pure `KatanaPose`),
+`RhinoHUDController.cs` (pushes `ShieldSwipeActionExecutor.CurrentPose`, normalised by its config, every frame; the lit
+state), `ShieldSwipeActionExecutor.cs` (a read-only `Config` getter), `RhinoHUDVariant.prefab` (the Charge icon is a
+transparent container; the two sprite fields). Sheet: `Docs/Icons/sheets/rhino_energize.png`. No .NET and no Unity CLI
+in the session: nothing here was compiled.
+
+1. Run `RhinoKatanaPoseTests`. **Pass:** green.
+2. Fly the Rhino and look at the Charge card at rest. **Pass:** a white curved katana standing on its hilt, its tsuba
+   and grip low on the card; the plate under it empty.
+3. Pull the right trigger slowly. **Pass:** the katana turns clockwise about its hilt with your finger, up to 45 deg,
+   and flips at once so its curved (convex) edge leads to the right. Release: it returns upright and does not flip back.
+4. Pull the left trigger. **Pass:** it turns counterclockwise with the edge leading left.
+5. Pull both triggers fully. **Pass:** the blade goes straight (no curve) and a little shorter: the sword from behind.
+6. Hold until it energizes. **Pass:** the katana turns the danger orange while lit and white again when it goes dark.
+7. If the katana does not turn about where the blade meets the tsuba, change `katanaHilt` on the HUD prefab's
+   `RhinoVesselHUDView`; if it turns the wrong way for a trigger, report it (the sign comes from the config's yaw).
+
+## Rhino Mass card: the afterimage trail (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `RhinoVesselHUDView.cs` (`SetAfterimage`: the two prism copies on only while laying, in the domain colour at
+`afterimageNearAlpha` / `afterimageFarAlpha`; the sword part white), `RhinoHUDController.cs` (injects `GameDataSO` for the
+domain colour, pushes it with the laying state), `RhinoHUDVariant.prefab` (the Mass icon is a transparent container over
+`AfterimageFar`, `AfterimageNear`, `AfterimageBlade`). Sheet: `Docs/Icons/sheets/rhino_afterimage.png`. No .NET and no
+Unity CLI in the session: nothing here was compiled.
+
+1. Fly the Rhino. **Pass:** the Mass card shows one white katana tilted right, its edge on the right; no copies.
+2. Energize the blade and let it go dark. **Pass:** while the afterimages are laid, two prism copies of the katana appear
+   behind it to the left in your domain colour, the nearer one brighter, curving the same way as the sword; they vanish
+   when the laying window ends.
+3. Change domain mid-match if the mode allows it. **Pass:** the copies take the new colour.
