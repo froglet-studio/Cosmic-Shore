@@ -17373,6 +17373,28 @@ releases through it), `PayloadRelease.cs` (`SpendParcel`), `Ark.cs` (`GetLiveHul
 10. FLUME: seat FLUME, fly a Meerkat, open two tunnels and hold LB. **Pass:** white marks trace each tunnel mouth to
    mouth and fade with it; with no tunnel, LB shows nothing new.
 
+## Sparrow Space card: the live spray cone over a segmented heat gauge (2026-10-27) - NOT EDITOR-VERIFIED
+
+**Files:** `SparrowHUDView.cs` (generates ten round Images under the Space card's icon and lays them out on their
+rays by the live angle, `SprayCardAngle`; heat phase joins drawn as gaps through the fill once passed and dim edge
+ticks while ahead; Space 5 shows a danger prism the rounds pierce), `SparrowHUDController.cs` (pushes
+`GunSprayAccuracy.HalfAngleDegrees` and the profile's caps every frame, the domain colour with the other cards),
+`SparrowHUDVariant.prefab` (the Space icon is a transparent container; three new sprite fields), the round sprites
+under `Assets/_Graphics/Icons/AbilityIcons/Sparrow/Parts/`. Sheet: `Docs/Icons/sheets/sparrow_cannons.png`. No .NET
+and no Unity CLI in the session: nothing here was compiled.
+
+1. Run `SparrowGunSprayCardAngleTests`. **Pass:** green.
+2. Fly the Sparrow and look at the Space card cold. **Pass:** five rounds in one straight line from the card's left
+   edge, in your domain colour; the plate shows no fill and five dim ticks at the slanted edges.
+3. Hold fire for 30 s, then let go. **Pass:** the rounds fan out as heat climbs - a little at 1.5°, clearly at
+   7.5°, the card's full height in the collapse - and close back to one line as the gun cools; each phase passed cuts
+   one more gap through the fill and its edge ticks disappear. No round sits stacked in the card's centre on the
+   first frame (the layout re-runs once the card has a size).
+4. Take the turret stance. **Pass:** every round becomes a prism, upright, on the same rays.
+5. Reach Space 5. **Pass:** a dim danger-red prism sits on the centre line under the rounds.
+6. If the cone reads too wide or too narrow at a level, change `gunSprayCardAngles` on the HUD prefab's
+   `SparrowHUDView` (and `SPRAY_CAPS_CARD` in `Tools/Build/icon_kit/specs/sparrow.py`, then `author.py sparrow`).
+
 ## 🔴 2026-10-27 — Each AI seat its own difficulty (every Arena and Arcade card) (unverified: no Unity editor in the session)
 
 **Files:** `ArcadeGameConfigSO.AIDifficulties`, `ArcadeGameConfigureModal(.ConfigChangeHandlers/.SeatLineup)`,
@@ -17642,3 +17664,24 @@ Affects: Shombith's pilots. The reference compile has no errors in the changed f
 6. Launch the squad into a non-arena mode with Javelin on your card, press RB at the Ark. **Pass:** a Javelin payload.
 7. Launch an arena game (one with `ArenaRules` on its card) with Javelin slotted. **Pass:** the payload is plain; every
    peer agrees.
+
+## Sparrow Charge card: the bay of real rockets, each filling on its own (2026-10-27) - NOT EDITOR-VERIFIED
+
+**Files:** `SparrowHUDView.cs` (generates four rockets under the Charge card's icon from `Sparrow_BayRocket`, each a
+ghost with a vertical fill over it; held rockets full, the next one filled by `ChargeToNextShot01`, `BayRocketFill`),
+`SparrowHUDController.cs` (seeds the bay from the live tank, pushes the domain colour with the other cards),
+`SparrowHUDVariant.prefab` (the Charge icon is a transparent container; `bayRocketSprite`; the `MissileCharge` gauge is
+unbound and switched off). Sheet: `Docs/Icons/sheets/sparrow_skyburst.png`. No .NET and no Unity CLI in the session:
+nothing here was compiled.
+
+1. Run `SparrowBayRocketFillTests`. **Pass:** green.
+2. Fly the Sparrow with an empty bay. **Pass:** four upright rockets in your domain colour, dim, side by side and not
+   touching; the plate under them shows no fill.
+3. Destroy prisms. **Pass:** the first rocket fills from its tail toward its nose a step per prism; when it is full it
+   stays solid and the second starts filling. No rocket fills backwards.
+4. Fire a rocket. **Pass:** the last solid rocket goes dim at once; a heavy shot from the turret stance dims two.
+5. Look at the card on its first frame. **Pass:** the rockets are spread across the card, not stacked in its centre
+   (the layout re-runs once the card has a size).
+6. If the fill line sits off the rocket's tail or nose, change `bayRocketTail01` / `bayRocketNose01` on the HUD
+   prefab's `SparrowHUDView`.
+

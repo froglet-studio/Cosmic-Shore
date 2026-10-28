@@ -82,7 +82,7 @@ every gate and named nothing.
 | The PLATE GAUGE | the act has a how-much | `pair=` child with icon None + `binding=`; `card.py gauge=` on sheets | `AbilityIconBinding.gauge`; the view writes `fillAmount` only |
 | A generated readout | the shape IS data (the Dolphin's blast profile) | nothing to draw; measure and leave | `EnsureGeneratedAbilityIcons` |
 
-Worked examples, in order: the Squirrel's Crystal Joust (pair), Skimming (trio), Drift (live parts), the Dolphin's
+Worked examples, in order: the Squirrel's Crystal Joust (pair), Skimming (trio), Drift (live parts), the Sparrow's Space card (N generated parts on a live layout over a segmented gauge), the Dolphin's
 Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
 
 ## 3. The round
@@ -93,8 +93,13 @@ Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
    ("your before pictures are not accurate or exhaustive").
 1. **Brief, one line per icon**: the act, and the ONE object that names it. Write it in the spec's
    docstring, with what the old icon was.
-2. **Options with the OLD first** ("show the old when comparing"): three or four candidates on the real card, each
-   in its states (rest, mid, landed) at 60 and 40 and 128, gate verdicts under each, the recommendation named.
+2. **Options with the OLD first, in the hull's whole LOCKUP** ("show the old when comparing"; "going forward when showing
+   vessel icons lets show the before and the other icons of the vessel so we can consider how they distinguish
+   themselves too", Garrett 2026-10-27): three or four candidates on the real card, each in its states (rest, mid,
+   landed) at 60 and 40 and 128, gate verdicts under each, the recommendation named. Give the candidates' `CARDS`
+   entries one `group=` and the spec a `LOCKUP` (the hull's other cards as the HUD draws them today): `author.py`
+   then writes `<hull>_<group>_options.png` - the BEFORE row and one row per candidate, each the full four-card row
+   with the candidate in its slot. That is the sheet the owner gets; a candidate is never shown alone.
    When a hull is in the picture, send the mesh grid first (`mesh_silhouette.py <fbx> --out ...`, `--mirror` when
    the file frame's nose is -Y) and let the owner pick the view. Then draw, preview, look at 40 px first. Say
    what fails the language in words before touching numbers (round 1 of the Manta: "the lobes read as ears - a
