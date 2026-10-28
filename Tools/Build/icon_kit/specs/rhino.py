@@ -24,7 +24,7 @@ import math
 import numpy as np
 from PIL import Image
 
-from canvas import N, empty, fill, rect, rotate
+from canvas import GX, GY, N, empty, fill, rect, rotate
 
 HULL = "Rhino"
 ICON_DIR = "Assets/_Graphics/Icons/AbilityIcons/Rhino/"
@@ -189,3 +189,74 @@ REBIND = [
                                  fields={"katanaCurvedSprite": ("icon", "Rhino_KatanaCurved"),
                                          "katanaChopSprite": ("icon", "Rhino_KatanaChop")})),
 ]
+
+
+# ---- Mass: Afterimage options (2026-10-28) ------------------------------------------------------------------------
+# The unlit blade keeps leaving PRISMS in its own shape and pose for 5 s (RHINO_SWORD_AFTERIMAGE.md): copies of the
+# sword, built of prisms, hanging where it swung. A prism copy is the katana's blade cut across into blocks.
+PRISM_PITCH = 13.0   # one prism's length along the blade (px)
+PRISM_SEAM = 3.0     # the seam between prisms (px)
+
+
+def prism_katana(angle, hilt=KATANA_HILT, length=KATANA_LEN, mirror=False):
+    """The blade alone (no tsuba, no grip) at `angle`, cut across into prisms: an afterimage. Scaled with `length`
+    (a copy further away is smaller), a touch wider than the sword so the blocks read."""
+    hx, hy = hilt
+    k = length / KATANA_LEN
+    m = katana(angle, tsuba=False, tsuka=False, hilt=hilt, length=length, w=KATANA_W * 1.15 * k,
+               sori=KATANA_SORI * k, mirror=mirror)
+    a = math.radians(angle)
+    along = (GX - hx) * math.sin(a) - (GY - hy) * math.cos(a)     # distance out along the blade from the hilt
+    return m & ((along % (PRISM_PITCH * k)) >= PRISM_SEAM * max(k, 0.7))
+
+
+AFTER_ANGLES = (-50.0, -25.0)  # the copies left behind, the blade swinging right past them
+
+
+def after_trail(n=2, angles=AFTER_ANGLES):
+    def draw():
+        m = empty()
+        for ang in angles[-n:]:
+            m |= prism_katana(ang)
+        return m
+    return draw
+
+
+def after_blade(angle=0.0, mirror=True):
+    return lambda: katana(angle, mirror=mirror)
+
+
+# Option H: the sword now, white, swinging right past two prism copies of itself in the domain colour.
+# Option I: the same without the sword - only the afterimages, three prism copies fanned on the arc.
+# Option J: one copy, square behind the sword (the stance it was in 5 s ago), the sword turned away from it.
+MASS_OPTIONS = [
+    ("mass_option_k", "K - LEFT BEHIND: the sword (white) up front, two prism copies of it receding behind the Rhino as it flies on, smaller and fainter with distance",
+     dict(blade=lambda: katana(0.0, hilt=(36.0, 106.0), length=88), c1=lambda: prism_katana(0.0, hilt=(66.0, 98.0), length=76),
+          c2=lambda: prism_katana(0.0, hilt=(94.0, 88.0), length=62)),
+     [("idle: no afterimages", [("blade", "white")]),
+      ("laying (lit)", [("c2", "domain", 0.5), ("c1", "domain", 0.8), ("blade", "white")])],
+     [("c2", "domain", 0.5), ("c1", "domain", 0.8), ("blade", "white")]),
+    ("mass_option_h", "H - THE TRAIL: the sword (white) swinging right past two prism copies of itself (your colour), the copy nearer it brighter",
+     dict(blade=after_blade(20.0), c1=lambda: prism_katana(-45.0), c2=lambda: prism_katana(-15.0)),
+     [("idle: no afterimages", [("blade", "white")]),
+      ("laying (lit)", [("c1", "domain", 0.45), ("c2", "domain", 0.8), ("blade", "white")])],
+     [("c1", "domain", 0.45), ("c2", "domain", 0.8), ("blade", "white")]),
+    ("mass_option_i", "I - THE AFTERIMAGES ALONE: three prism copies fanned on the swing's arc, oldest faintest; no sword",
+     dict(c1=lambda: prism_katana(-40.0), c2=lambda: prism_katana(0.0), c3=lambda: prism_katana(40.0)),
+     [("idle: the copies dim", [("c1", "domain", 0.25), ("c2", "domain", 0.35), ("c3", "domain", 0.45)]),
+      ("laying (lit)", [("c1", "domain", 0.4), ("c2", "domain", 0.7), ("c3", "domain")])],
+     [("c1", "domain", 0.4), ("c2", "domain", 0.7), ("c3", "domain")]),
+    ("mass_option_j", "J - THE ECHO: one prism copy standing where the sword was, the sword swung away from it",
+     dict(blade=after_blade(35.0), c1=lambda: prism_katana(-10.0)),
+     [("idle: no afterimage", [("blade", "white")]),
+      ("laying (lit)", [("c1", "domain"), ("blade", "white")])],
+     [("c1", "domain"), ("blade", "white")]),
+]
+
+
+def mass_card(name, title, parts, states, shown):
+    return dict(name=name, group="afterimage", lockup_state=1, element="Mass",
+                before=ICON_DIR + "Rhino_Afterimage-PLACEHOLDER.png", title=title, parts=parts, states=states)
+
+
+CARDS += [mass_card(*o[:4], o[4]) for o in MASS_OPTIONS]
