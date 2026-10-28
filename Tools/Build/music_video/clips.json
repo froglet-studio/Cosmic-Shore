@@ -197,7 +197,9 @@
     }
    ],
    "stills": [],
-   "learned": []
+   "learned": [
+    "probe 5: the Sparrow reads; its rounds' sparks use CosmicShore/SoftSpark, untranslated in the engine (drawn unlit), so the gun's look waits on that port."
+   ]
   },
   "rhino-sword": {
    "vessel": "Rhino",
@@ -215,7 +217,7 @@
     "mv in {1s} circle ai5 50 6 local"
    ],
    "camera": [
-    "mv mount local 20 8 9 14 1.6"
+    "mv mount local 46 16 18 30 1.6"
    ],
    "settle_seconds": 8,
    "events": [
@@ -243,7 +245,9 @@
     }
    ],
    "stills": [],
-   "learned": []
+   "learned": [
+    "probe 5: the Rhino is a big hull - at back 20 it filled the frame and hid the blade; back 46."
+   ]
   },
   "brittlestar-ring": {
    "vessel": "BrittleStar",
@@ -268,7 +272,11 @@
    "events": [
     {
      "at": 0.0,
-     "cmd": "aim local fleet"
+     "cmd": "place crystal local 70 0 0"
+    },
+    {
+     "at": 0.0,
+     "cmd": "aim local crystal"
     },
     {
      "at": 0.2,
@@ -276,13 +284,19 @@
      "why": "the five guns"
     },
     {
-     "at": 3.2,
+     "at": 2.2,
+     "cmd": "aim local fleet"
+    },
+    {
+     "at": 3.4,
      "cmd": "action local LeftStickAction 20",
-     "why": "the ring thrown and detonated"
+     "why": "the ring thrown and detonated (a spare ring comes from the crystal)"
     }
    ],
    "stills": [],
-   "learned": []
+   "learned": [
+    "probe 5: the ring (a pentagon) and the trails read but no disk explosion came: a throw needs a SPARE ring, one per crystal collected, so a crystal is now placed on the path first."
+   ]
   }
  }
 }
