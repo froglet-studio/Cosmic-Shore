@@ -18,7 +18,7 @@ The hull is the Scarab's own mesh from straight above, nose RIGHT (pitch 0, yaw 
 grid on 2026-10-28), flying across the card (LESSONS 55: the act runs across, clear of the plate's marks).
 """
 import mesh_silhouette
-from canvas import N, chamfered_rect, disc, empty, fill, rotate
+from canvas import N, chamfered_rect, disc, empty, fill, rotate, stroke
 from motifs import prism
 
 import numpy as np
@@ -200,4 +200,123 @@ REBIND += [
                                            ("BlastPlate", "Scarab_BlastPlate", "blastPlateIcon"),
                                            ("BlastHull", "Scarab_BlastHull", "blastHullIcon")],
                                  fields={"blastReadyColor": None, "blastSpentColor": None})),
+]
+
+
+# ---- Mass: Switch options (2026-10-28) ------------------------------------------------------------------------------
+# The switch (SCARAB.md section 5, ScarabSwitch.cs): a bare low-poly RING in the pilot's domain prism material, planted
+# 150 ahead along the course; ANY ball that threads its mouth pays the placer (a charge back, and a scarab-wing dais
+# rises round the spent ring). Mass grows the ring: ringRadius 24 x switchScale 1 -> 2.5 (PlaceSwitchAction.asset).
+# To scale (LESSONS 56): ball radius 7 (AstroLeagueBall.prefab, scale 14 x 0.5), hull 10.6 long. One switch, recharged
+# in 60 s (the fleet's cooldown veil on this card). The ring is seen at an angle - a tall ellipse, its plane across the
+# ball's path - so a ball crossing left to right (LESSONS 55) passes THROUGH it: the ring's near arc drawn over the
+# ball in a knock-out, its far arc behind. Faceted like the toy rings (ToyFactory.AddSwitchRing), not round.
+RING_R = 24.0
+RING_MAX = 2.5
+BALL_R = 7.0
+RING_PX = 50.0            # the ring's radius on the card, FIXED: one bold mass (LESSONS 58); Mass shows as the ball
+                          # SHRINKING inside it - the mouth growing against the ball it has to swallow, to scale
+RING_SIDES = 12
+RING_W = 10.0
+
+
+def ball_px(scale):
+    return RING_PX * BALL_R / (RING_R * scale)       # Mass 1: 14.6 px; Mass 10 (x2.5): 5.8 px
+
+
+def _ring_pts(cx, cy, r_px, squash, sides=RING_SIDES):
+    return [(cx + r_px * squash * math.sin(2 * math.pi * (k + 0.5) / sides), cy - r_px * math.cos(2 * math.pi * (k + 0.5) / sides))
+            for k in range(sides)]
+
+
+def ring_halves(cx, cy, r_px, squash, w=RING_W):
+    """(near, far): the faceted ring split down its vertical axis - the left arc is the near side."""
+    m = stroke(_ring_pts(cx, cy, r_px, squash), w=w, closed=True)
+    xs = (np.arange(N) / (N / 128.0))[None, :]
+    near = m & (xs < cx)
+    return near, m & ~near
+
+
+import functools   # noqa: E402  (each part set is built once: the knock-outs cost seconds)
+import math   # noqa: E402  (the Mass section's trig)
+
+
+# S1: THREAD - the ring seen at an angle (its plane across the path), a white ball through its mouth with its wake
+# coming in from the left BEHIND the ring's near arc: the ball came through. The ring is yours (domain).
+@functools.lru_cache(None)
+def s1(scale):
+    cx, cy, sq = 70.0, 64.0, 0.5
+    near, far = ring_halves(cx, cy, RING_PX, sq)
+    rb = ball_px(scale)
+    bx = cx + 4.0
+    ball = disc(bx, cy, rb)
+    wake = empty()
+    for dy, x0 in ((-7.0, 14.0), (0.0, 4.0), (7.0, 14.0)):
+        y = cy + dy
+        wake |= fill([(x0, y - 2.5), (bx - rb - 3.0, y - 2.5), (bx - rb - 3.0, y + 2.5), (x0, y + 2.5)])
+    near_k = toy_grown(near, 2.5)
+    return dict(near=near, far=_clear_of(far, ball), ball=ball & ~near_k, wake=wake & ~near_k & ~toy_grown(ball, 2.0))
+
+
+# S2: FACE-ON - the ring as the toy ring it is, square to the eye, the ball in its mouth.
+@functools.lru_cache(None)
+def s2(scale):
+    ring = stroke(_ring_pts(64.0, 64.0, RING_PX, 1.0), w=RING_W, closed=True)
+    return dict(ring=ring, ball=disc(64.0, 64.0, ball_px(scale)))
+
+
+# S3: PAYS - S1 at Mass 1 and, as the ball threads, the dais's first wing pair and its sun rising off the ring's far
+# side: the payout (a charge back, the rosette) the ring exists for.
+@functools.lru_cache(None)
+def s3_parts():
+    cx, cy, sq = 40.0, 64.0, 0.5
+    near, far = ring_halves(cx, cy, RING_PX * 0.86, sq)
+    rb = ball_px(1.0) * 0.86
+    ball = disc(cx + 3.0, cy, rb)
+    sun = prism(106, 64, 11.0)
+    wings = stroke([(cx + 24, 30), (86, 24), (106, 44)], w=7.0) | stroke([(cx + 24, 98), (86, 104), (106, 84)], w=7.0)
+    return dict(near=near, far=_clear_of(far, ball), ball=ball & ~toy_grown(near, 2.5),
+                wings=_clear_of(wings, sun, far, near), sun=sun)
+
+
+def toy_grown(m, px):
+    import toy_portraits
+    return toy_portraits.grown(m, px)
+
+
+def _scaled(fn, scale, key):
+    return lambda: fn(scale)[key]
+
+
+def _switch_card(name, title, parts, states):
+    return dict(name=name, group="switch", lockup_state=0, element="Mass",
+                before=ICON_DIR + "Scarab_Switch-PLACEHOLDER.png", title=title, parts=parts, states=states)
+
+
+def _three(key1, key10, layers):
+    """Mass 1 / Mass 10 / recharging rows over the same layer list."""
+    def at(sfx, alpha=None):
+        return [(k + sfx, c) if alpha is None else (k + sfx, c, alpha) for k, c in layers]
+    return [("Mass 1: a switch banked", at(key1)), ("Mass 10: the mouth 2.5x (the ball smaller in it)", at(key10)),
+            ("recharging (the veil)", at(key1, 0.3))]
+
+
+CARDS += [
+    _switch_card("mass_option_s1",
+                 "S1 - THREAD: your ring at an angle, a white ball through its mouth, its wake coming in BEHIND the near "
+                 "arc; Mass grows the mouth, so the ball shrinks inside it (to scale: ring 24 -> 60, ball 7)",
+                 {f"{k}{t}": _scaled(s1, sc, k) for k in ("near", "far", "ball", "wake") for t, sc in (("1", 1.0), ("10", RING_MAX))},
+                 _three("1", "10", [("far", "domain"), ("wake", "white"), ("ball", "white"), ("near", "domain")])),
+    _switch_card("mass_option_s2",
+                 "S2 - FACE-ON: the toy ring square to the eye, the ball in its mouth; Mass shrinks the ball inside it",
+                 {f"{k}{t}": _scaled(s2, sc, k) for k in ("ring", "ball") for t, sc in (("1", 1.0), ("10", RING_MAX))},
+                 _three("1", "10", [("ring", "domain"), ("ball", "white")])),
+    _switch_card("mass_option_s3",
+                 "S3 - PAYS: S1 at Mass 1, and as the ball threads, the dais's first wings and sun rise off the ring",
+                 dict(near=lambda: s3_parts()["near"], far=lambda: s3_parts()["far"], ball=lambda: s3_parts()["ball"],
+                      wings=lambda: s3_parts()["wings"], sun=lambda: s3_parts()["sun"]),
+                 [("a switch banked", [("far", "domain"), ("ball", "white"), ("near", "domain")]),
+                  ("threaded (lit): it pays", [("far", "domain"), ("ball", "white"), ("near", "domain"),
+                                               ("wings", "white"), ("sun", "shielded")]),
+                  ("recharging (the veil)", [("far", "domain", 0.3), ("ball", "white", 0.3), ("near", "domain", 0.3)])]),
 ]
