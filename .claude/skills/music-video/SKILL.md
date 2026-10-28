@@ -32,7 +32,24 @@ Read the sections and the candidate windows it prints. For a milestone segment p
 section boundary inside it (a build into a drop is the best 15 s a song has). For a whole song the
 segment is 0 to the end and `--beats` is about one per section (see §6).
 
-## 2. Compose
+## 1.5 Short clips first (the current milestone, Garrett 2026-10-28)
+
+Cuts 5-6 were rejected: a Squirrel wandering with a camera behind it is not gameplay, however populated the
+cell. **A clip is one vessel doing ITS thing, framed so it reads**: the Dolphin's echo cone and crystal
+blast, the Thresher's ball and chain slicing a rival trail, the Serpent's seed wall growing while it holds
+the turret stance, a gyroid lattice flown through. The library is `Tools/Build/music_video/clips.json`;
+`clips.py NAME... --render size=960x540 --render render_scale=1 --render msaa=4 --render accum=1 --render
+step_hz=60` composes a cheap PROBE plan (5 s clips back to back on the song), `shoot.py` shoots it in
+minutes, and the sheet says what to change. Iterate on the sheet, never on a 1080p render: every clip's
+`learned` list is the record of its rounds. The featured hull is the LOCAL vessel (`mv vessel CLASS`); it is
+set down where the action is (`mv teleport local name:GyroidFlora -110`), its targets are put on its path
+(`mv place crystal local 100`, a rival fleet circling it with `mv circle aiN R S local`), its ability fires
+at a known second, and the camera is a tight mount (these hulls are a few units long: back 14-20) or a
+slow orbit of the thing. Keep every explosion 250 u from the camera (an AOE shell crossing the lens is a
+one-frame white flash). Read the player log's `[Render]` warnings: a shader with "no translation" or a
+graph that "did not compile" is a surface the clip will get wrong - port it in the engine first.
+
+## 2. Compose (a whole song, from the mapping)
 
 ```bash
 python3 Tools/Build/music_video/compose.py "Tools/Build/music_video/out/<song>.analysis.json" --start S --end E
@@ -124,13 +141,14 @@ With a player on a control port (`Port/CLAUDE.md` § The loop), `do "mv ..."`: `
 `autopilot on|off`, `camera main|replay`, `mount SUBJECT BACK UP SIDE [LEAD] [SMOOTH]`, `orbit SUBJECT DIST HEIGHT DEGPS`,
 `dolly X,Y,Z X,Y,Z FRAMES [SUBJECT]`, `fov F`, `action SUBJECT|all INPUTEVENT [FRAMES]` (Button1Action..Button4Action
 are the hull's four abilities, FullSpeedStraightAction the boost), `aim SUBJECT|all SUBJECT2|X,Y,Z|clear`,
-`circle SUBJECT RADIUS SECONDS [CENTRE]` (the pilot flies one loop that closes after SECONDS), `converge A B`,
+`circle SUBJECT RADIUS SECONDS [CENTRE]` (the pilot flies one loop that closes after SECONDS; an AI hull with CENTRE `local` circles the pilot), `converge A B`,
+`vessel CLASS` (the Vessel Changer's swap: the local pilot becomes that hull), `teleport SUBJECT TARGET DIST [UP] [SIDE]` (SetPose, facing the target), `place THING SUBJECT DIST [UP] [SIDE]`, `giants [EXTENT]` (log renderers drawn huge near the camera),
 `blast SUBJECT N [FORCE]`, `herd X,Y,Z DIST [NAME]` / `herd follow SUBJECT DIST` / `herd off`, `domain Ruby|Jade|Blue|Gold`,
 `cell NAME` (swap the scene's cell to any cell config; `cells` lists them), `spawn vessel CLASS|all N [DOMAIN|cycle] [R]`
 (AI pilots of the roster's 21 classes, Menu_Main only), `spawn fauna|flora NAME N [ELEMENT]` (multi-word names work;
 `lifeforms` lists the Toy Box catalogue), `cue N CMD` (N frames after the next record starts), `record DIR FRAMES
 [EVERY] [ACCUM]`, `in N CMD`, `release`, `status`. Subjects: `local`, `ai0`.., `all` (actions and aims), `nearest`,
-`fastest`, `fleet` (the AI fleet's centre), `flora` / `fauna` (the nearest life), `name:TEXT`. `vessels` prints every
+`fastest`, `fleet` (the AI fleet's centre), `flora` / `fauna` / `crystal` (the nearest), `name:TEXT`. `vessels` prints every
 vessel's distance and screen position from the camera; `screenshot` shows the shot. A camera straight behind a hull
 on its axis showed nothing at 23 u; sit off-axis (behind, above and beside). Build a new archetype from stills
 before putting it in the mapping.

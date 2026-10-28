@@ -11,6 +11,16 @@ two songs with different vibes (cut 6: SKY FIRE 30-90 s and SPACE GLIDING 20-80 
 skill and tools a cheaper model repeats for a new song. Status and the lessons per milestone:
 [`LEARNINGS.md`](LEARNINGS.md).
 
+## Where it stands (2026-10-28): short clips, composed one vessel at a time
+
+Garrett rejected cuts 5-6 (a minute each of populated cells with a Squirrel wandering through them): "nothing
+but erratic flights of a squirrel with a camera lazily following it... where is the dolphin shooting things,
+the thresher slicing things, the serpent building a wall, where are the gyroids?" The current milestone is
+short clips: `Tools/Build/music_video/clips.json` is the library (one vessel, its ability, its targets staged
+on its path, a tight camera), `clips.py` composes a plan of them, and each clip is iterated on cheap probe
+renders before it is shot at full quality. Two engine faults the footage exposed are fixed in the renderer:
+the Spindle graphs (every flora limb) now link, and the Serpent's cloak ghost shader is translated.
+
 ## The pipeline (four tools, one engine verb)
 
 All under `Tools/Build/music_video/`; every tool prints what it decided and why, and writes JSON the
