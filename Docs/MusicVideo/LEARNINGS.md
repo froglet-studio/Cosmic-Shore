@@ -323,6 +323,31 @@ Mapping v3 answers each line:
   project) opens on the shoal and the loop (yggdra-shoal, hesperides-loop) and only reaches a siege in its drop;
   SKY FIRE (123 bpm) runs wormhole-run → the kit combo on the drop → joust → rally → swarm siege.
 
+### Garrett's feedback on cut 6 (2026-10-28): rejected, back to short clips
+
+Garrett: *"this footage was nothing but erratic flights of a squirrel with a camera lazily following it. that is a
+vanishingly small and not understandable subset of the gameplay we offer. where is the dolphin shooting things, the
+thresher slicing things, the serpent building a wall, where are the gyroids? this is not even usable yet, and no
+where close to the level of composition that we would want to be showing off our trailer. the spindle shaders look
+wrong. there were frames with artifacts like z fighting. lets go back to you making short clips because you are
+still way off the mark."*
+
+What this says about cuts 5 and 6, read honestly:
+- **The subject was always the Squirrel**, the menu's default local vessel, on the lava-lamp autopilot - a hull
+  wandering a cell. Population and events around it did not make it gameplay: the camera followed a pilot doing
+  nothing legible. The fleet's abilities fired on the AI hulls off-screen.
+- **Composition means a vessel doing ITS thing, framed so the thing reads**: the Dolphin's echo cone taking
+  prisms, the Thresher's ball and chain slicing a trail, the Serpent laying its seed wall, a gyroid lattice flown
+  through. One action, one clear frame, a few seconds.
+- **The renderer has faults that disqualify the footage before composition is judged**: the Spindle shader
+  graphs (SpindleWireGraph, SpindleLodMid/Far, SpindleDepth - the flora's limbs) do not compile in the engine and
+  draw as the generic family, so every flora looks wrong; and there are z-fighting frames.
+
+The next milestone is therefore **M1 again, as short clips**: fix the spindle graphs and the depth artifacts in
+the engine first, make the featured hull the local vessel (`mv vessel CLASS`, the Vessel Changer's own swap), and
+shoot one 4-6 s clip per vessel ability, each composed from stills before it is recorded. Cuts 5-6 stay in
+`milestones/` as the record of what populated-but-aimless footage looks like.
+
 ## Log
 
 | Date | Cut | Score said | Person said | Changed |

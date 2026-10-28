@@ -163,12 +163,15 @@ namespace CosmicShore.Player
                     return;
                 case "circle": Circle(w[1], F(w[2]), F(w[3]), w.Length > 4 ? w[4] : null); return;
                 case "domain": Inspector.Domain(string.Join(' ', w.Skip(1))); return;   // the Domain Changer toy's call, so a cue can shift the pilot's domain (cut 5's cues said "unknown command")
+                case "vessel": SwapVessel(w[1]); return;
+                case "place": Place(w[1], w[2], F(w[3]), w.Length > 4 ? F(w[4]) : 0f, w.Length > 5 ? F(w[5]) : 0f); return;
+                case "giants": _giantThreshold = w.Length > 1 ? F(w[1]) : 60f; Console.WriteLine($"[mv] giants {(_giantThreshold > 0 ? "on, extents over " + _giantThreshold : "off")}"); return;
                 case "release": Release(); return;
                 case "status":
                 {
                     var local = Resolve("local");
                     var st = local != null ? local.GetComponent<CosmicShore.Gameplay.IVesselStatus>() : null;
-                    Console.WriteLine($"[mv] frame {_frame} mode {_mode} subject {_subjectSpec} ({(_subject != null ? _subject.name : "none")}) cam {(_cam != null ? _cam.position.ToString() : "none")} fov {_fov} herd {_herding} schedule {_schedule.Count} hidden canvases {_hiddenCanvases.Count} local speed {(st != null ? st.Speed : 0f).ToString("F1", CultureInfo.InvariantCulture)} vessels {Vessels().Count} swapping {(HostCell()?.IsSwappingConfig ?? false)}");
+                    Console.WriteLine($"[mv] frame {_frame} mode {_mode} subject {_subjectSpec} ({(_subject != null ? _subject.name : "none")}) cam {(_cam != null ? _cam.position.ToString() : "none")} fov {_fov} herd {_herding} schedule {_schedule.Count} hidden canvases {_hiddenCanvases.Count} local {(local != null ? local.name : "none")} speed {(st != null ? st.Speed : 0f).ToString("F1", CultureInfo.InvariantCulture)} vessels {Vessels().Count} swapping {(HostCell()?.IsSwappingConfig ?? false)}");
                     foreach (var kv in _schedule) foreach (var c in kv.Value) Console.WriteLine($"[mv]   {kv.Key}: {c}");
                     return;
                 }
@@ -204,9 +207,64 @@ namespace CosmicShore.Player
             if (_herding) Herd();
         }
 
+        static float _giantThreshold;
+        static readonly Dictionary<int, int> _giantSeen = new();
+
+        /// <summary>
+        /// A diagnostic for the one-frame flashes in cut 6 (a white sheet or sphere filling the frame for a single
+        /// frame): every frame, name any active renderer whose bounds are larger than the threshold and within
+        /// 400 u of the camera, once per object per 60 frames, with its scale - so the object that is drawn huge
+        /// for a frame before its first update sizes it can be found without rendering.
+        /// </summary>
+        static void WatchGiants()
+        {
+            if (_giantThreshold <= 0f) return;
+            var cam = _cam != null ? _cam.position : (Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+            foreach (var r in CosmicShore.Engine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+            {
+                if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
+                var b = r.bounds;
+                float ext = b.extents.magnitude;
+                if (ext < _giantThreshold || (b.center - cam).magnitude > 400f + ext) continue;
+                int id = r.GetInstanceID();
+                if (_giantSeen.TryGetValue(id, out int last) && _frame - last < 60) continue;
+                _giantSeen[id] = _frame;
+                var t = r.transform;
+                string path = t.name; for (var p = t.parent; p != null; p = p.parent) path = p.name + "/" + path;
+                Console.WriteLine($"[mv] GIANT frame {_frame}: {path} ({r.GetType().Name}) extents {ext:F0} at {(b.center - cam).magnitude:F0} u, scale {t.lossyScale}, material {(r.sharedMaterial != null ? r.sharedMaterial.name : "none")}");
+            }
+        }
+
+        /// <summary>
+        /// Put a thing on the subject's path: `place name:Crystal local 60 [UP] [SIDE]` moves the named object (or any
+        /// subject) to DIST ahead of the subject, so a clip can stage the crystal a Dolphin flies into, or the flora a
+        /// hull aims at, exactly where the camera will see it.
+        /// </summary>
+        static void Place(string what, string subject, float dist, float up, float side)
+        {
+            var t = Resolve(what); var s = Resolve(subject);
+            if (t == null || s == null) { Console.WriteLine($"[mv] place: no '{(t == null ? what : subject)}'"); return; }
+            var right = Vector3.Cross(s.up, s.forward).normalized;
+            t.position = s.position + s.forward * dist + s.up * up + right * side;
+            Console.WriteLine($"[mv] placed {t.name} {dist} ahead of {s.name} at {t.position}");
+        }
+
+        /// <summary>The Vessel Changer's own call: the local pilot swaps to another hull class (Menu_Main only).</summary>
+        static void SwapVessel(string cls)
+        {
+            var init = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.MenuServerPlayerVesselInitializer>(FindObjectsSortMode.None).FirstOrDefault();
+            if (init == null) { Console.WriteLine("[mv] vessel: no MenuServerPlayerVesselInitializer (Menu_Main only)"); return; }
+            if (!Enum.TryParse<CosmicShore.Data.VesselClassType>(cls, true, out var vc)) { Console.WriteLine($"[mv] vessel: no class '{cls}'"); return; }
+            if (init.IsSwapping) { Console.WriteLine("[mv] vessel: a swap is already in flight"); return; }
+            init.RequestSwap(vc);
+            _subject = null; _haveSmoothed = false;
+            Console.WriteLine($"[mv] vessel -> {vc} (swapping {init.IsSwapping})");
+        }
+
         /// <summary>After the engine tick, before the frame is drawn: the camera on where the subject IS this frame.</summary>
         public static void AfterTick(int frame, float step)
         {
+            WatchGiants();
             if (_mode == CamMode.None || _cam == null) return;
             if (_useMain && _stoodDown.Count > 0 && Camera.main != null && Camera.main.transform != _cam)
             {
@@ -373,6 +431,15 @@ namespace CosmicShore.Player
                 s_fleetAnchor.position = c;
                 s_fleetAnchor.rotation = others[0].rotation;
                 return s_fleetAnchor;
+            }
+            if (spec == "crystal")
+            {
+                // The nearest crystal to the local pilot: what a Dolphin is flown into, what a Serpent's wall drinks from.
+                var from = local != null ? local.position : Vector3.zero;
+                Transform best = null; float bestD = float.MaxValue;
+                foreach (var c in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Crystal>(FindObjectsSortMode.None))
+                { if (c == null || !c.gameObject.activeInHierarchy) continue; float d = (c.transform.position - from).sqrMagnitude; if (d < bestD) { bestD = d; best = c.transform; } }
+                return best;
             }
             if (spec == "flora" || spec == "fauna")
             {

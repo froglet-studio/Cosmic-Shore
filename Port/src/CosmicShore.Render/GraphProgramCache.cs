@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using CosmicShore.Engine;
 using CosmicShore.Engine.Rendering;
@@ -120,10 +121,14 @@ namespace CosmicShore.Render
             return e.Program != null ? e : null;
         }
 
+        /// <summary>The first line of a compile log, plus every line that names an error (a driver puts its
+        /// warnings first, and a report that kept only the first line hid the error behind them).</summary>
         static string FirstLine(string s)
         {
             int i = s.IndexOf('\n');
-            return i < 0 ? s : s.Substring(0, i) + " ...";
+            if (i < 0) return s;
+            var errors = s.Split('\n').Skip(1).Where(l => l.Contains("error", StringComparison.OrdinalIgnoreCase)).Take(4);
+            return s.Substring(0, i) + " ... " + string.Join(" | ", errors);
         }
 
         /// <summary>Every program built so far (for the shader check).</summary>

@@ -1,0 +1,127 @@
+{
+ "_about": "The clip library clips.py composes from: one vessel doing its thing, staged on its path and framed so it reads (Garrett, cut 6). `stage` runs after the cell swap and the vessel swap, `camera` after the settle, `events` at seconds from the clip's start (any mv verb). `stills` names the probe stills a clip was composed from and `learned` what each attempt taught.",
+ "clips": {
+  "gyroid-run": {
+   "vessel": "Manta",
+   "cell": "Lattice",
+   "what": "The Manta flies through a lattice of nested-gyroid and gyroid flora, the limbs swaying as it passes (the spindle graphs, fixed 2026-10-28).",
+   "stage": [
+    "mv cell Lattice",
+    "mv vessel Manta",
+    "mv spawn flora Nested Gyroid 3",
+    "mv spawn flora Gyroid 3",
+    "mv aim local flora"
+   ],
+   "camera": [
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "settle_seconds": 6,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "aim local flora"
+    },
+    {
+     "at": 2.5,
+     "cmd": "action local FullSpeedStraightAction 120"
+    }
+   ],
+   "stills": [],
+   "learned": []
+  },
+  "serpent-wall": {
+   "vessel": "Serpent",
+   "cell": "Garland",
+   "what": "The Serpent stops in the turret stance beside a rival fleet's trails; its seed prism pulls the loose prisms into a self-assembling herringbone wall, stealing them as they land.",
+   "stage": [
+    "mv cell Garland",
+    "mv vessel Serpent",
+    "mv spawn vessel Manta,Dolphin,Rhino,Sparrow 8 Ruby 30",
+    "mv aim all local",
+    "mv herd off"
+   ],
+   "camera": [
+    "mv orbit local 36 14 3"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "action local Button2Action 10",
+     "why": "the stance: the seed is laid"
+    },
+    {
+     "at": 0.0,
+     "cmd": "aim all local"
+    }
+   ],
+   "stills": [],
+   "learned": []
+  },
+  "dolphin-echo": {
+   "vessel": "Dolphin",
+   "cell": "Arboretum",
+   "what": "The Dolphin, right trigger held, lights every prism in its echo cone, flies into a crystal and the crystal blast obliterates the mass ahead.",
+   "stage": [
+    "mv cell Arboretum",
+    "mv vessel Dolphin",
+    "mv spawn vessel Rhino,Manta,Serpent,Sparrow 8 Ruby 30",
+    "mv aim all local"
+   ],
+   "camera": [
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "place crystal local 90 0 0"
+    },
+    {
+     "at": 0.0,
+     "cmd": "aim local crystal"
+    },
+    {
+     "at": 0.2,
+     "cmd": "action local RightStickAction 300",
+     "why": "echo sight held"
+    }
+   ],
+   "stills": [],
+   "learned": []
+  },
+  "thresher-slice": {
+   "vessel": "Thresher",
+   "cell": "Tandava",
+   "what": "The Thresher whips its wrecking ball round on a rigid chain through a rival fleet's trails: the chain slices every rival prism it crosses, the ball at smash speed bursts them.",
+   "stage": [
+    "mv cell Tandava",
+    "mv vessel Thresher",
+    "mv spawn vessel Manta,Dolphin,Rhino,Squirrel 10 Ruby 30",
+    "mv aim all local"
+   ],
+   "camera": [
+    "mv mount local 34 16 34 20 1.6"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "action local Button1Action 10",
+     "why": "mass mode off: the ball breaks"
+    },
+    {
+     "at": 0.0,
+     "cmd": "action local RightStickAction 300",
+     "why": "winch: the chain rigid"
+    },
+    {
+     "at": 0.2,
+     "cmd": "circle local 28 3.0"
+    }
+   ],
+   "stills": [],
+   "learned": []
+  }
+ }
+}
