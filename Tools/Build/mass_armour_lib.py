@@ -25,7 +25,8 @@ import pathlib
 import re
 import sys
 
-import numpy as np
+# numpy is imported inside the geometry helpers that need it: the constants (mass_axis, swing_need) are read by
+# generators that run where numpy is not installed (the CI conditional-compilation job runs every author_* --check).
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 assert (ROOT / "Assets").is_dir(), ROOT
@@ -79,6 +80,7 @@ def octahedron_distance(p, centre, axes, semi):
     axes: (3, 3) with COLUMNS the prism's local axes (unit). In the prism frame with |q| folded into the positive
     octant, the body is {y >= 0, sum y_i/s_i <= 1}; the nearest point lies on the facet sum y_i/s_i = 1 restricted to
     some subset F of free coordinates (the rest at 0) - project onto each such face and keep the feasible minimum."""
+    import numpy as np
     q = np.abs(axes.T @ (np.asarray(p, float) - np.asarray(centre, float)))
     s = np.asarray(semi, float)
     if float(np.sum(q / s)) <= 1.0:
@@ -101,6 +103,7 @@ def octahedron_distance(p, centre, axes, semi):
 def heart_clearance(heart, centres, frames, sizes):
     """The heart's clear radius against every shield: min over prisms of the exact distance. `frames` are (n, 3, 3)
     with COLUMNS the local axes, `sizes` (n, 3) the FULL prism sizes."""
+    import numpy as np
     k = shield_semi_axis()
     d = np.linalg.norm(np.asarray(centres) - heart, axis=1)
     reach = k * np.asarray(sizes).max(axis=1)
@@ -111,6 +114,7 @@ def heart_clearance(heart, centres, frames, sizes):
 
 
 def self_test():
+    import numpy as np
     I = np.eye(3)
     # on an axis: a unit octahedron's vertex is at 1, so a point at x=3 is 2 away
     assert abs(octahedron_distance([3, 0, 0], np.zeros(3), I, (1, 1, 1)) - 2.0) < 1e-12
