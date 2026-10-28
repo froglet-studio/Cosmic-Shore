@@ -5,6 +5,7 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -165,13 +166,26 @@ namespace CosmicShore.UI
                 _reconnectButton.gameObject.SetActive(offerReconnect && CanReconnect);
             if (_dismissButton != null) _dismissButton.gameObject.SetActive(offerReconnect);
             _targetAlpha = 1f;
-            if (_group != null) _group.blocksRaycasts = true;
+            SetLive(true);
+            // A pad reaches RECONNECT as a submit (A); B is the dismiss button's own press.
+            var focus = _reconnectButton != null && _reconnectButton.gameObject.activeSelf ? _reconnectButton
+                      : _dismissButton != null && _dismissButton.gameObject.activeSelf ? _dismissButton : null;
+            if (focus != null && EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(focus.gameObject);
         }
 
         void Hide()
         {
             _targetAlpha = 0f;
-            if (_group != null) _group.blocksRaycasts = false;
+            SetLive(false);
+        }
+
+        // Interactable gates the window's B press (ControllerButtonPress reads the group) as well as raycasts.
+        void SetLive(bool live)
+        {
+            if (_group == null) return;
+            _group.blocksRaycasts = live;
+            _group.interactable = live;
         }
 
         bool CanReconnect
@@ -245,7 +259,13 @@ namespace CosmicShore.UI
 
             _group = canvasGo.GetComponent<CanvasGroup>();
             _group.alpha = 0f;
-            _group.blocksRaycasts = false;
+            SetLive(false);
+
+            if (_config.WindowPrefab != null)
+            {
+                BuildWindow(canvasGo.transform);
+                return;
+            }
 
             var scrim = NewRect("Scrim", canvasGo.transform);
             Stretch(scrim);
@@ -274,6 +294,31 @@ namespace CosmicShore.UI
             _dismissButton = AddButton(panel, "DismissButton", _config.DismissLabel,
                                        _config.SecondaryButtonColor, new Vector2(150f, 56f), out _);
             _dismissButton.onClick.AddListener(OnDismiss);
+        }
+
+        // The style-B window: layout from the prefab, every word from the config.
+        void BuildWindow(Transform canvas)
+        {
+            var view = Instantiate(_config.WindowPrefab, canvas, false);
+            Stretch((RectTransform)view.transform);
+            if (view.Group != null)
+            {
+                // The window's group carries the fade, so the B press (which reads it) is live only while shown.
+                _group.alpha = 1f;
+                _group.blocksRaycasts = _group.interactable = true;
+                _group = view.Group;
+                _group.alpha = 0f;
+                SetLive(false);
+            }
+            _title = view.Title;
+            _body = view.Body;
+            _reconnectButton = view.ReconnectButton;
+            _reconnectLabel = view.ReconnectLabel;
+            _dismissButton = view.DismissButton;
+            if (_reconnectLabel != null) _reconnectLabel.text = _config.ReconnectLabel;
+            if (view.DismissLabel != null) view.DismissLabel.text = _config.DismissLabel;
+            if (_reconnectButton != null) _reconnectButton.onClick.AddListener(OnReconnect);
+            if (_dismissButton != null) _dismissButton.onClick.AddListener(OnDismiss);
         }
 
         static RectTransform NewRect(string name, Transform parent)
