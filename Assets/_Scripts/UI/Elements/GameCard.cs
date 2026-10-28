@@ -59,6 +59,13 @@ namespace CosmicShore.UI
                  "genre is one element.")]
         [SerializeField] Image GenrePetalSecondary;
 
+        [Tooltip("The element icons the genre petals draw, Charge, Mass, Space, Time: each element's SHAPE " +
+                 "(Assets/_Graphics/ElementShapes: pentagon, triangle, kite, diamond), the icon the Codex and the " +
+                 "ability rows draw. Shombith, 2026-10-28: \"the arcade cards again are using the old elelmental " +
+                 "icons\" - the lone HUD petal read as the old diamond set. An empty slot falls back to the fleet's " +
+                 "petal sprite (ElementalBarsConfigSO), the card's look before this field.")]
+        [SerializeField] Sprite[] GenreShapes = new Sprite[4];
+
         [Header("Genre Flower (Rev 24)")]
         [Tooltip("The genre's element as the HUD's whole flower, filled to the level the PLAYER has bought for that " +
                  "element on the mode's hull in the Hangar (HangarUpgradeStore; every element starts at 1). Shombith, " +
@@ -347,8 +354,16 @@ namespace CosmicShore.UI
             if (!_bars) return;
 
             tint = _bars.WhiteColor;
-            primary = _bars.GetPetalSprite(first);
-            if (second != Element.None) secondary = _bars.GetPetalSprite(second);
+            primary = GenreIcon(first);
+            if (second != Element.None) secondary = GenreIcon(second);
+        }
+
+        // The element's authored shape, else the fleet's petal (Charge=1..Time=4 index the shapes from 0).
+        Sprite GenreIcon(Element element)
+        {
+            int i = (int)element - 1;
+            if (GenreShapes != null && i >= 0 && i < GenreShapes.Length && GenreShapes[i]) return GenreShapes[i];
+            return _bars.GetPetalSprite(element);
         }
 
         // Both assets are shipped singletons and the grid rebuilds every card on every refresh
