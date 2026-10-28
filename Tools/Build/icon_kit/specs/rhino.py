@@ -551,155 +551,125 @@ REBIND += [
 
 # ---- Time: Ramp Spool options (2026-10-28) -------------------------------------------------------------------------
 # Hold full throttle dead straight and the ramp winds the Rhino up at a CONSTANT rate, cruise 50 -> top 840 u/s; Time
-# scales the rate (220 -> 550 u/s per s, floored 110), not the top. A bent line grades it down. Time 5 is MOMENTUM:
-# above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino (RHINO_RAMP_BOOST.md). The HUD today: lit
-# while boosting, the plate gauge = speed / top speed, dimmed as the line bends, one flash when Momentum takes hold.
-# The katana lies flat pointing ahead (the way the Rhino charges), apart from the upright Charge and diagonal Space.
-RAMP_HILT = (30.0, 58.0)
-RAMP_LEN = 80.0
-MOMENTUM01 = 0.7           # VesselElementalImmunity's WhileAboveTopSpeedFraction
+# scales the rate (220 -> 550 u/s per s, floored 110), not the top. Time 5 is MOMENTUM: above 70% of top speed (588 u/s)
+# danger prisms cannot drain the Rhino (VesselElementalImmunity, WhileAboveTopSpeedFraction; RHINO_RAMP_BOOST.md).
+# Round 1 (R / T / U: the flat katana with streaks, chevrons, a ramp) - Garrett: "this ability is about the rhino and
+# its invulnerability to danger prisms so it should have a rhino silhouette and a tick on the meter like you did with
+# the sparrow that shows the barrier come up to protect against the danger prism". So: the Rhino seen from above, nose
+# up (the game's own HUD silhouette, Assets/_Graphics/Silhouettes/Rhino: RhinoBody + two RhinoWing, laid out at the
+# hull's measured pod offsets), the plate gauge = speed / top speed with ONE tick at 70%, and above it the barrier up
+# between the nose and a danger prism.
+SIL_DIR = "Assets/_Graphics/Silhouettes/Rhino/"
+SIL_PX_PER_U = 10.0                # RhinoBody: 56 px across the 5.6 u fuselage
+SIL_POD_X = 5.43                   # the pods' centres off the centreline (u, Docs/VesselModels/Rhino.md 5.2)
+SIL_POD_DROP = (6.43 + 4.47)       # nose tip (z +6.43) to the pods' centres (z -4.47), u
+SIL_WING_POD_Y = 77.0              # the pod's centre down the RhinoWing sprite (px)
+MOMENTUM01 = 0.7                   # the tick: Momentum's 70% of top speed
+TIME_MARKS = [MOMENTUM01]
 
 
-def ramp_katana(hilt=RAMP_HILT, length=RAMP_LEN, angle=90.0):
-    return katana(angle, hilt=hilt, length=length, w=14.0, sori=KATANA_SORI * length / KATANA_LEN, mirror=True)
+def _sil(name):
+    import os
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+    return Image.open(os.path.join(root, SIL_DIR + name + ".png")).convert("RGBA").split()[3]
 
 
-def _bar(x0, x1, y, h=5.0):
-    """A speed streak: a flat bar, its tail cut on a slant."""
-    return fill([(x0 + h, y - h / 2), (x1, y - h / 2), (x1, y + h / 2), (x0, y + h / 2)])
+def _rhino_composite():
+    """The top view at the silhouette's own scale (10 px/u): the body, the two wing plates through their pods."""
+    body, wing = _sil("RhinoBody"), _sil("RhinoWing")
+    dx = SIL_POD_X * SIL_PX_PER_U
+    top = SIL_POD_DROP * SIL_PX_PER_U - SIL_WING_POD_Y          # the wings' top edge below the nose
+    W = int(2 * dx + wing.width) + 2
+    H = int(max(body.height, top + wing.height)) + 2
+    a = Image.new("L", (W, H), 0)
+    cx = W / 2
+    a.paste(body, (int(round(cx - body.width / 2)), 0), body)
+    for sx in (-1, 1):
+        a.paste(wing, (int(round(cx + sx * dx - wing.width / 2)), int(round(top))), wing)
+    return a
 
 
-def ramp_streak(i):
-    """R: three streaks trailing behind and under the blade, longest nearest it; the HUD shows one per third of top."""
-    ys = (80.0, 92.0, 104.0)
-    x1 = (100.0, 84.0, 68.0)
-    x0 = (40.0, 34.0, 28.0)
-    return _bar(x0[i], x1[i], ys[i])
+def rhino_top(cx=64.0, nose_y=40.0, height=88.0):
+    """The Rhino from above, nose up at (cx, nose_y), `height` card px from nose to the back plates' ends."""
+    a = _rhino_composite()
+    k = height / a.height
+    w, h = a.width * k, a.height * k
+    full = Image.new("L", (N, N), 0)
+    s = N / 128.0
+    im = a.resize((max(1, int(round(w * s))), max(1, int(round(h * s)))), Image.LANCZOS)
+    full.paste(im, (int(round((cx - w / 2) * s)), int(round(nose_y * s))))
+    return np.asarray(full) > 127
 
 
-def ramp_bow():
-    """Momentum: a bow wave ahead of the point, the ward the danger prisms break on."""
-    m = empty()
-    cx, cy = 64.0, 58.0
-    pts_o, pts_i = [], []
-    for k in range(13):
-        a = math.radians(-60 + 10 * k)
-        pts_o.append((cx + 62 * math.cos(a), cy + 62 * math.sin(a)))
-        pts_i.append((cx + 55 * math.cos(a), cy + 55 * math.sin(a)))
-    return m | fill(pts_o + pts_i[::-1])
+NOSE_Y = 38.0
 
 
-def ramp_chevron(i):
-    """T: three chevrons ahead of a shorter blade; the HUD lights one per third of top speed."""
-    x = 84.0 + 12.0 * i
-    y = 58.0
-    return fill([(x, y - 13), (x + 11, y), (x, y + 13), (x - 5, y + 13), (x + 6, y), (x - 5, y - 13)])
+def danger_prism(cx, cy, angle=0.0, l=30.0, w=11.0):
+    """A plain prism (the trail's block), long across the Rhino's path, as the danger prisms lie in a rival's trail."""
+    return fill(rotate([(cx - l / 2, cy - w / 2), (cx + l / 2, cy - w / 2), (cx + l / 2, cy + w / 2), (cx - l / 2, cy + w / 2)],
+                       angle, cx, cy))
 
 
-# U: the ramp itself - a rising wedge under the blade, a straight slope because the wind-up is a constant rate. It IS
-# the meter (the plate gauge is unbound, as on the Sparrow's rockets): it fills left to right with speed / top, the
-# blade riding its top edge tilted up the slope; a notch at 70% marks where Momentum holds.
-WEDGE = (14.0, 112.0, 114.0, 72.0)    # x0, y at x0 (the floor), x1, y at x1 (the top of the slope)
+def barrier_arc(cy=NOSE_Y - 8.0, r=40.0, half=50.0, t=6.0):
+    """The ward: a bow of light standing ahead of the nose, curving back around the shoulders."""
+    cx, oy = 64.0, cy + r
+    out, inn = [], []
+    for k in range(25):
+        a = math.radians(-90 - half + 2 * half * k / 24)
+        out.append((cx + r * math.cos(a), oy + r * math.sin(a)))
+        inn.append((cx + (r - t) * math.cos(a), oy + (r - t) * math.sin(a)))
+    return fill(out + inn[::-1])
 
 
-def wedge(f0=0.0, f1=1.0):
-    x0, yb, x1, yt = WEDGE
-    a, b = x0 + (x1 - x0) * f0, x0 + (x1 - x0) * f1
-
-    def top(x):
-        return yb + (yt - yb) * (x - x0) / (x1 - x0)
-    m = fill([(a, top(a)), (b, top(b)), (b, yb), (a, yb)])
-    nx = x0 + (x1 - x0) * MOMENTUM01                 # the Momentum notch, cut through the wedge
-    return m & ~fill([(nx - 1.5, 0), (nx + 1.5, 0), (nx + 1.5, 128), (nx - 1.5, 128)])
+def barrier_wedge(cy=NOSE_Y - 10.0, half_w=36.0, depth=16.0, t=6.0):
+    """W: the ward as a plough's blade - a chevron ahead of the nose (the bulldozer that ignores mass)."""
+    sh = t / math.cos(math.atan2(depth, half_w))
+    return fill([(64 - half_w, cy + depth), (64, cy), (64 + half_w, cy + depth),
+                 (64 + half_w, cy + depth + t), (64, cy + sh), (64 - half_w, cy + depth + t)])
 
 
-def wedge_ghost():
-    return wedge()
+def _clear_of(mask, *others, px=3.0):
+    import toy_portraits
+    keep = mask.copy()
+    for o in others:
+        keep &= ~toy_portraits.grown(o, px)
+    return keep
 
 
-def ramp_slope_katana():
-    x0, yb, x1, yt = WEDGE
-    ang = 90.0 - math.degrees(math.atan2(yb - yt, x1 - x0))
-    return ramp_katana(hilt=(34.0, 58.0), length=74.0, angle=ang)
+# (name, speed / top, boosting, upgraded (Time 5), straight)
+RAMP_STATES = [("cruising: no ramp", 0.06, False, True, True),
+               ("winding up (lit)", 0.45, True, True, True),
+               ("past 70%, Time below 5: no ward", 0.85, True, False, True),
+               ("past 70% at Time 5: Momentum holds", 0.85, True, True, True),
+               ("bent line: the ramp grades down", 0.6, True, True, False)]
+_GAUGE_DIM = (120, 120, 140, 255)
 
 
-def ramp_short_katana():
-    return ramp_katana(hilt=(24.0, 58.0), length=56.0)
-
-
-# (name, speed / top, boosting, Momentum holding, line straightness)
-RAMP_STATES = [("cruising: no ramp", 0.06, False, False, 1.0),
-               ("winding up (lit)", 0.4, True, False, 1.0),
-               ("bent line: the ramp grades down", 0.55, True, False, 0.3),
-               ("near top: Momentum holds (Time 5)", 0.9, True, True, 1.0)]
-_GAUGE_DIM = (255, 255, 255, 90)
-
-
-def _ramp_option(name, title, parts, layers_for, plate=True):
+def _ramp_option(name, title, ward, prism_ahead, prism_glance):
+    hull = lambda: rhino_top(nose_y=NOSE_Y)
+    parts = dict(hull=hull, ward=lambda: _clear_of(ward(), hull()),
+                 ahead=lambda: _clear_of(prism_ahead(), hull()),
+                 glance=lambda: _clear_of(prism_glance(), ward(), hull()))
     states, gauge = [], {}
-    for n, s, boosting, mom, straight in RAMP_STATES:
-        states.append((n, layers_for(s, boosting, mom)))
-        gauge[n] = (s if plate else None, _GAUGE_DIM if (plate and straight < 1.0) else None)
-    return dict(name=name, group="rampspool", lockup_state=1, element="Time",
+    for n, s, boosting, up, straight in RAMP_STATES:
+        warded = up and s >= MOMENTUM01
+        L = [("glance", "danger"), ("ward", "white")] if warded else [("ahead", "danger")]
+        states.append((n, L + [("hull", "domain")]))
+        gauge[n] = (s, None if straight else _GAUGE_DIM)
+    return dict(name=name, group="rampspool2", lockup_state=3, element="Time",
                 before=ICON_DIR + "Rhino_RampSpool-PLACEHOLDER.png", before_rev="899c25973", before_gauge_value=0.55,
-                title=title, parts=parts, states=states, gauge=gauge)
-
-
-def _r_layers(s, boosting, mom):
-    L = [(f"s{i}", "domain") for i in range(3) if boosting and s >= (i + 1) / 3 - 0.05]
-    if mom:
-        L.append(("bow", "shielded"))
-    return L + [("k", "white")]
-
-
-def _t_layers(s, boosting, mom):
-    L = [(f"c{i}", ("shielded" if mom else "domain") if boosting and s >= (i + 1) / 3 - 0.05 else "white",
-          1.0 if boosting and s >= (i + 1) / 3 - 0.05 else 0.3) for i in range(3)]
-    return L + [("k", "white")]
-
-
-def _u_layers(s, boosting, mom):
-    L = [("ghost", "white", 0.25)]
-    if s > 0:
-        L.append(("fill_lo", "domain"))
-        if s > MOMENTUM01:
-            L.append(("fill_hi", "shielded" if mom else "domain"))
-    return L + [("k", "white")]
-
-
-def _u_parts():
-    p = dict(ghost=wedge_ghost, k=ramp_slope_katana)
-    return p
-
-
-def _u_option():
-    c = _ramp_option("time_option_u",
-                     "U - THE RAMP: the blade riding a rising slope (a constant-rate wind-up is a straight line); the slope fills with speed, a notch at Momentum's 70%; no plate meter",
-                     {}, _u_layers, plate=False)
-    parts = dict(ghost=wedge_ghost, k=ramp_slope_katana)
-    states = []
-    for k, (n, s, boosting, mom, straight) in enumerate(RAMP_STATES):
-        parts[f"lo{k}"] = (lambda s=s: wedge(0.0, min(s, MOMENTUM01)))
-        parts[f"hi{k}"] = (lambda s=s: wedge(MOMENTUM01, max(s, MOMENTUM01)))
-        a = 1.0 if straight >= 1.0 else 0.45
-        L = [("ghost", "white", 0.25)]
-        if boosting or s > 0.1:
-            L.append((f"lo{k}", "domain", a))
-            if s > MOMENTUM01:
-                L.append((f"hi{k}", "shielded" if mom else "domain", a))
-        states.append((n, L + [("k", "white")]))
-    c.update(parts=parts, states=states)
-    return c
+                gauge_marks=TIME_MARKS, gauge_marks_style="lines", title=title, parts=parts, states=states, gauge=gauge)
 
 
 CARDS += [
-    _ramp_option("time_option_r",
-                 "R - THE STREAKS: the katana flat, pointing ahead; speed streaks trail it in your colour, one per third of top; Momentum adds a bow wave ahead of the point; the plate stays the speed meter",
-                 dict(k=ramp_katana, s0=lambda: ramp_streak(0), s1=lambda: ramp_streak(1), s2=lambda: ramp_streak(2), bow=ramp_bow),
-                 _r_layers),
-    _ramp_option("time_option_t",
-                 "T - THE CHEVRONS: a shorter katana driving into three chevrons that light one per third of top speed, in the shielded colour while Momentum holds; the plate stays the speed meter",
-                 dict(k=ramp_short_katana, c0=lambda: ramp_chevron(0), c1=lambda: ramp_chevron(1), c2=lambda: ramp_chevron(2)),
-                 _t_layers),
-    _u_option(),
+    _ramp_option("time_option_v",
+                 "V - THE BOW: the Rhino from above in your colour; past the 70% tick at Time 5 a white bow stands off the nose and the danger prism glances away",
+                 barrier_arc, lambda: danger_prism(64, 14), lambda: danger_prism(100, 16, angle=-35)),
+    _ramp_option("time_option_w",
+                 "W - THE PLOUGH: V with the ward drawn as a chevron blade ahead of the nose (the bulldozer that ignores mass)",
+                 barrier_wedge, lambda: danger_prism(64, 14), lambda: danger_prism(100, 16, angle=-35)),
+    _ramp_option("time_option_x",
+                 "X - THE SPLIT: the bow, the danger prism broken in two halves thrown to either side (it cannot drain you)",
+                 barrier_arc, lambda: danger_prism(64, 14),
+                 lambda: danger_prism(30, 18, angle=30, l=15) | danger_prism(98, 18, angle=-30, l=15)),
 ]
