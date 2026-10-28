@@ -92,7 +92,14 @@ LISTED = False
 # Rev 13 (Shombith, 2026-10-25: "add it as a unlocked voyage game"): Tandava is Voyage 1, launched from the Voyage window
 # (author_menu_mission.py) - still on no screen's GRID, but back on the MASTER roster, the by-mode lookup a party guest,
 # the AI spawner and the return-from-match path resolve a card through. The card stays parked in _Archive.
-VOYAGE = True
+# SUPERSEDED (Shombith, 2026-10-28: "lets completely redesign the tandava"): GameModes.Tandava is now SHIVA'S CELL, authored
+# by author_shiva_assets.py (its own card, scene, settings and controller; TANDAVA.md §0). This script keeps writing the
+# first design's assets BYTE FOR BYTE - they are Tandava: Severing's donors (author_tandava_severing_assets.py reads this
+# card, scene, settings, swarm config and scripts every run, and must keep finding exactly what it reads today) - but it
+# no longer puts them in front of a player: the card leaves the master roster, and its toasts and preview leave their
+# libraries (a mode has one of each, and Shiva's are the ones that run).
+SUPERSEDED = True
+VOYAGE = not SUPERSEDED
 CARD_LISTED_REL = "Assets/_SO_Assets/Games/ArcadeGameTandava.asset"
 CARD_PARKED_REL = "Assets/_SO_Assets/Games/_Archive/ArcadeGameTandava.asset"
 CARD_REL = CARD_LISTED_REL if LISTED else CARD_PARKED_REL
@@ -703,7 +710,14 @@ g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tandava.asset", G_AS
              "".join(lib.toast(TOAST[k], "{0}", domain_names=0) for k in ("MatchStart", "FormTaken", "Completed", "Broken", "Feeding")) +
              lib.toast(TOAST["DenyHint"], "Break its meals - strike the body while it eats", domain_names=0, idle=1, idle_seconds=40) +
              "".join(lib.toast(TOAST[k], "{0}", domain_names=0) for k in ("MealBroken", "Rising", "HaloLit", "HaloBroken", "Lunge")))
-g.register_toast_config(G_ASSET["GameToastConfigTandava"])
+def unregister(library, asset_guid):
+    g.emit(library, re.sub(rf"(?m)^  - \{{fileID: 11400000, guid: {asset_guid}, type: 2\}}\n", "", g.read_current(library)))
+
+
+if SUPERSEDED:
+    unregister(lib.TOAST_LIBRARY, G_ASSET["GameToastConfigTandava"])
+else:
+    g.register_toast_config(G_ASSET["GameToastConfigTandava"])
 
 
 def fmt4(x):
@@ -731,7 +745,10 @@ g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Tandava.asset", G_ASSE
   SpawnPoints:
 """ + "".join(f"  - position: {{x: {fmt4(SPAWN_X)}, y: 0, z: {fmt4(z)}}}\n"
               f"    rotation: {{x: 0, y: {fmt4(SPAWN_ROT[1])}, z: 0, w: {fmt4(SPAWN_ROT[3])}}}\n" for z in SPAWN_Z))
-g.register_preview(G_ASSET["ModePreviewTandava"])
+if SUPERSEDED:
+    unregister(lib.PREVIEW_LIBRARY, G_ASSET["ModePreviewTandava"])
+else:
+    g.register_preview(G_ASSET["ModePreviewTandava"])
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 5. The scene: clone MinigameBroodRush - a ONE-SHOT that stands down once its donor moves on

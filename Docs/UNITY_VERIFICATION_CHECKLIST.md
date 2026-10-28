@@ -14232,6 +14232,39 @@ The **Rhino's energised sword** lands a Strike and drains nothing — it is now 
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
 
+## 🔴 Shiva's Cell — Tandava redesigned (`claude/tandava-arena-mode`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+`/verify-unity` could not run: no Unity editor or `unity` CLI in the authoring session. Checked headless: the reference
+compile (0 project errors), the swarm harness's Shiva mode (S1-S9, parity with `Docs/Studios/ShivaLab`), and
+`author_shiva_assets.py --check`, `author_tandava_assets.py --check`, `author_tandava_severing_assets.py --check`,
+`author_menu_mission.py --check`. Design: `Assets/_Scripts/Controller/Arcade/TANDAVA.md` §0. Affects: Garrett's Voyage 2
+(Tandava: Severing; none of its donor files changed), Shombith's Voyage window (Voyage 1 now opens Shiva's card).
+
+- **QA-SHIVA-1** Open `MinigameTandavaShiva.unity`. **Pass:** no `Missing (Mono Script)`; the controller is
+  `ShivaController` with `settings = ShivaSettings`, `rule = ShivaScoringRule`; the Cell lists `Shiva Cell Config`.
+- **QA-SHIVA-2** Menu_Main > the Voyage window. **Pass:** Voyage 1 reads Tandava with three forms (The Still Shiva,
+  Nataraja, The Devouring Mouth); Set sail opens the launch panel with the hull carousel; Voyage 2 (Severing) is
+  unchanged.
+- **QA-SHIVA-3** Launch solo, any hull. **Pass:** the squad spawns facing along the circuit with the first lit ring
+  ~400 u ahead; Shiva stands in the middle (crown, three eyes, four arms, moon) turning to face you; seven planets ring
+  the cell; three shells of danger prisms surround him; the goals (top left) read Form 1 of 3 / Rings 0/10 / Drum /
+  Shells 3/3.
+- **QA-SHIVA-4** Fly the circuit. **Pass:** each ring threaded advances the count and lights the next; flying into a
+  shell stings and shoves you out; serpents guard rings ahead and lunge; sharks come out of his hands.
+- **QA-SHIVA-5** Thread the last ring. **Pass:** the outer shell shatters; he claps; a wave runs out from his hands,
+  your trail prisms in its path break, your element bars drop and crystals spill from your vessel if you were within
+  ~950 u; the flora collapses and a new cell grows in ~3 s with a new tint; a new swarm comes out.
+- **QA-SHIVA-6** Form 2 (Nataraja). **Pass:** the rings wheel slowly round him and bob; they can still be threaded;
+  piranha and clawfish join.
+- **QA-SHIVA-7** Form 3 (The Devouring Mouth). **Pass:** his mouth opens on a black hole that pulls you; thrust bleeds
+  the pull; the last ring breaks the inner shell and the figure shatters in a gold burst with a flash: VICTORY.
+- **QA-SHIVA-8** Let a drum run out. **Pass:** DEFEAT, "THE DRUM STOPS IN <FORM>"; nothing moves after.
+- **QA-SHIVA-9** Two machines, a squad of two. **Pass:** both see the same rings (same seed), the same clap and wave
+  at the same moment, the same swarm; a ring threaded by either counts for both.
+- **QA-SHIVA-10** With AI wingmates. **Pass:** they fly at the lit ring's axis and thread rings.
+- **QA-SHIVA-11** Profile in a build: the figure's instanced draw and the shells. **Pass:** no frame-time spike at a
+  clap (the wave's shatter and the regrow).
+
 ## 🔴 Tandava — the co-op arena hunt (`claude/tandava-arena-mode`, 2026-10-06) — NOT EDITOR-VERIFIED
 
 **Unlisted since 2026-10-25: the card is on no roster, so nothing below can be reached from the UI.** To run these

@@ -13,7 +13,7 @@
 #   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> lod      # round 11f: the swarm as an IMacroPopulation
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>   # Tandava: the levers, the feed pose + the director (T1-T15)
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> tandava-severing <tandava plans> <fork plans>   # Tandava: Severing (T1-T32)
-#   bash Tools/Build/swarm_core_harness/run.sh <plans> shiva   # Tandava redesigned as Shiva's Cell: the director, parity with Docs/Studios/ShivaLab (S1-S8)
+#   bash Tools/Build/swarm_core_harness/run.sh <plans> shiva   # Tandava redesigned as Shiva's Cell: the director, parity with Docs/Studios/ShivaLab (S1-S9)
 #   bash Tools/Build/swarm_core_harness/run.sh evofate <plans> <fixture.json>   # exactness vs Python (evofate_fixture.py)
 #   bash Tools/Build/swarm_core_harness/run.sh export <plans> <out.json> 7,23,41   # states for score_grid.py / score_sort.py
 #   bash Tools/Build/swarm_core_harness/run.sh smoothsort <plans> <out.json> 7 researchSortFeelF8 0:1,...  # swarm_smooth events (score_sortfeel.py)

@@ -919,6 +919,18 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `relight`, `assignTargets` (`toWall`), `wantCombine` in `omega-studio.js`; CONCEPT_FLEET.md section 10.1.
 - Promoted: no
 
+### L-STU-156 — When a lab lays its course from the seed beside the squad, the port must SEARCH the seed, not move the squad
+- Lab: Shiva's Cell (`Docs/Studios/ShivaLab/`) · Branch: `claude/tandava-arena-mode` · By: Claude session for Shombith · Date: 2026-10-28
+- What happened: the lab starts each squad beside ring 0, wherever the seed's first draw put it. The Unity scene has
+  authored spawn points, and every peer lays the rings from the replicated seed alone, so "start beside ring 0" could
+  not be ported by moving the pilots without a second replicated fact. The parity gate compared circuits per seed and
+  stayed green while the squad would have spawned up to half a cell from the first ring.
+- Do instead: keep the seed the only replicated fact. The server searches seeds from its random start for one whose
+  first draw opens ring 0 a lead angle ahead of the spawn azimuth (`ShivaDirectorCore.SeedFacing`), and the harness
+  asserts it for every start and side, with a one-try search as the negative control.
+- Evidence: `ShivaDirectorCore.SeedFacing`; harness S9 (`Tools/Build/swarm_core_harness/ShivaHarness.cs`).
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-STU-146 — A combine bolted onto autonomous vessels has no loop; design the parts so neither phase can do the other's work

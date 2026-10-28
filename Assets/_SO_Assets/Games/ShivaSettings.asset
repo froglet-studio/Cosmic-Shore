@@ -1,0 +1,165 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bebc623858035bd8af0092619cc08aac, type: 3}
+  m_Name: ShivaSettings
+  m_EditorClassIdentifier:
+  Director:
+    CellRadius: 1600
+    Mouth: 72
+    RingsStill: 10
+    RingsNataraja: 12
+    RingsMouth: 12
+    RingOuter: 1350
+    RingStepDegrees: 42
+    RingRise: 240
+    RingInset: 85
+    DanceSpeed: 0.02
+    DanceBob: 110
+    DanceSway: 90
+    ClockStill: 110
+    ClockNataraja: 180
+    ClockMouth: 170
+    ShellOuter: 620
+    ShellMiddle: 520
+    ShellInner: 430
+    WaveSpeed: 1100
+    ClapReach: 950
+    RegrowSeconds: 3
+    ClapSeconds: 1.2
+    HandsMeetSeconds: 0.6
+    WaveStartRadius: 160
+    MouthOpenRate: 0.8
+    TurnRate: 0.12
+  Forms:
+  - DisplayName: The Still Shiva
+    BeginLine: 
+    SerpentCount: 2
+    SerpentPlanIndex: 15
+    RearPlanIndex: 20
+    StrikePlanIndex: 21
+    Fauna:
+    - Config: {fileID: 11400000, guid: a690f25bf21e486ba0e500563b90f1ea, type: 2}
+      Count: 3
+    Flora:
+    - Config: {fileID: 11400000, guid: bcb09b7b37a24707a3934db2bf658d5f, type: 2}
+      Count: 6
+    - Config: {fileID: 11400000, guid: 016e18462b534f838d81604470e4962e, type: 2}
+      Count: 4
+    Crystals: 60
+    Palette:
+      MembraneBright: {r: 0.42, g: 0.5, b: 1.5, a: 1}
+      MembraneDull: {r: 0.03, g: 0.04, b: 0.22, a: 1}
+      NucleusEdge: {r: 0.3, g: 0.4, b: 1, a: 0.4}
+      NucleusStraight: {r: 0.4, g: 0.5, b: 1.1, a: 0.4}
+      Cytoplasm: {r: 0.32, g: 0.36, b: 0.7, a: 1}
+  - DisplayName: Nataraja
+    BeginLine: Nataraja dances. His rings will not keep still.
+    SerpentCount: 3
+    SerpentPlanIndex: 22
+    RearPlanIndex: 27
+    StrikePlanIndex: 28
+    Fauna:
+    - Config: {fileID: 11400000, guid: a690f25bf21e486ba0e500563b90f1ea, type: 2}
+      Count: 2
+    - Config: {fileID: 11400000, guid: b8f6ead6f21447acb7ac74b9e8ccf1a3, type: 2}
+      Count: 16
+    - Config: {fileID: 11400000, guid: c7ff7791587d4467ba9fbe88358b2119, type: 2}
+      Count: 3
+    Flora:
+    - Config: {fileID: 11400000, guid: c79b896ebbd141d5b46fa76a9f151b1b, type: 2}
+      Count: 6
+    - Config: {fileID: 11400000, guid: 44339d43234c4273b7be825a8521387d, type: 2}
+      Count: 4
+    Crystals: 60
+    Palette:
+      MembraneBright: {r: 1.4, g: 1.05, b: 0.45, a: 1}
+      MembraneDull: {r: 0.16, g: 0.08, b: 0.2, a: 1}
+      NucleusEdge: {r: 1, g: 0.75, b: 0.35, a: 0.45}
+      NucleusStraight: {r: 1.1, g: 0.9, b: 0.5, a: 0.45}
+      Cytoplasm: {r: 0.8, g: 0.55, b: 0.75, a: 1}
+  - DisplayName: The Devouring Mouth
+    BeginLine: His mouth opens on a black hole. Do not get drawn in.
+    SerpentCount: 2
+    SerpentPlanIndex: 29
+    RearPlanIndex: 34
+    StrikePlanIndex: 35
+    Fauna:
+    - Config: {fileID: 11400000, guid: 58835b82ea284255855af2649ef185a5, type: 2}
+      Count: 3
+    - Config: {fileID: 11400000, guid: b8f6ead6f21447acb7ac74b9e8ccf1a3, type: 2}
+      Count: 12
+    - Config: {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
+      Count: 4
+    Flora:
+    - Config: {fileID: 11400000, guid: 6e701b36d4cf67162c0c8be83591d947, type: 2}
+      Count: 5
+    - Config: {fileID: 11400000, guid: 77b554ddd8defe5c3d8afd3fcd35efd8, type: 2}
+      Count: 5
+    Crystals: 60
+    Palette:
+      MembraneBright: {r: 1.5, g: 0.3, b: 0.55, a: 1}
+      MembraneDull: {r: 0.1, g: 0, b: 0.04, a: 1}
+      NucleusEdge: {r: 1, g: 0.25, b: 0.4, a: 0.45}
+      NucleusStraight: {r: 1.1, g: 0.35, b: 0.5, a: 0.45}
+      Cytoplasm: {r: 0.6, g: 0.2, b: 0.35, a: 1}
+  SwarmConfig: {fileID: 11400000, guid: 089a2139ed5858f13c72a46eb93a95b6, type: 2}
+  SerpentSpecies: {fileID: 11400000, guid: f40529e9fe9ddcc6a5eb6f47e4a6c396, type: 2}
+  GuardCruise: 1
+  GuardTurn: 1.6
+  StrikeCruise: 2.4
+  StrikeTurn: 3
+  LungeRange: 380
+  LungeCooldown: 6
+  RearSeconds: 0.6
+  StrikeSeconds: 2.5
+  GuardOrbit: 1.4
+  NudgeThreshold: 25
+  NudgeFraction: 0.2
+  MaxNudge: 8
+  ShellSpacing: 70
+  ShellPrismScale: {x: 10, y: 10, z: 2}
+  ShellDomain: 3
+  PrismChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
+  FigureMesh: {fileID: 4300000, guid: 8f4a329b97818584886f68265bb01988, type: 2}
+  FigureMaterial: {fileID: 2100000, guid: 052ad6cedfeeddc4fb21fcb46fc2606e, type: 2}
+  FigureSpacing: 14
+  BodyBright: {r: 0.32, g: 0.5, b: 1.6, a: 1}
+  BodyDark: {r: 0.02, g: 0.04, b: 0.3, a: 1}
+  EyeColor: {r: 2.2, g: 2.2, b: 2.6, a: 1}
+  ThirdEyeColor: {r: 2.6, g: 1.6, b: 0.4, a: 1}
+  VasukiColor: {r: 0.15, g: 0.9, b: 0.6, a: 1}
+  HairColor: {r: 0.12, g: 0.1, b: 0.32, a: 1}
+  MoonColor: {r: 2, g: 1.85, b: 1.3, a: 1}
+  WaveShards: 240
+  StripSpeed: 40
+  TransitionFlash: 0.6
+  TransitionSeconds: 2
+  RestoreSeconds: 3
+  BlackHoleStrength: 30
+  WinShards: 500
+  BurstSpeed: 260
+  BurstScale: 9
+  FlashRadius: 1800
+  FlashStrength: 1
+  FlashSeconds: 4
+  MaxPlausibleSpeed: 1600
+  StartLine: Thread his rings. Break his shield.
+  ShellLine: 'A shell breaks. {left} to go.'
+  ClapLine: Shiva claps.
+  SwarmLine: His swarm comes out of his hands.
+  WonLine: The Tandava is broken. The cell is yours.
+  LostLine: The drum stops. His dance ends the cell.
+  FormLabel: 'Form {form} of {forms}'
+  RingsLabel: Rings
+  DrumLabel: Drum
+  ShellsLabel: Shells
+  RegrowLabel: The cell grows again

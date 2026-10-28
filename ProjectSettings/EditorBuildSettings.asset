@@ -42,6 +42,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity
     guid: f74a3006a41c4c9a403272d8adca0a84
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameTandavaShiva.unity
+    guid: cc48c83251ed1d64a657ad1e5a7a7a92
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTandavaSevering.unity
     guid: 4be368117b9b0f6e4d9749a00ae2fb84
   - enabled: 1

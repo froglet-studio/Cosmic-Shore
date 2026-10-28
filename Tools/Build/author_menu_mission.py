@@ -144,7 +144,9 @@ def build_card():
 # --------------------------------------------------------------------------------------------
 
 QUEST_LIST = "5eee61facaac4bb46b9e9892512f74cb"          # GameModeQuestList.asset (SO_UnlockList), the Profile's before
-TANDAVA_CARD = "a7460784ce7229f7440d35280ae4b04f"        # Games/_Archive/ArcadeGameTandava.asset (author_tandava_assets VOYAGE)
+# Voyage 1 is Tandava redesigned as SHIVA'S CELL (Shombith, 2026-10-28): Games/_Archive/ArcadeGameTandavaShiva.asset
+# (author_shiva_assets.py). The escaping creature's card, ArcadeGameTandava.asset, stays as Voyage 2's donor only.
+TANDAVA_CARD = "8f9f1dcfa3595ece0adfc072980160a1"
 # Voyage 2 (Garrett, 2026-10-26: the severing work "contained on a second voyage card in the voyages"): Tandava's fork,
 # GameModes.TandavaSevering - Games/_Archive/ArcadeGameTandavaSevering.asset (author_tandava_severing_assets.py)
 SEVERING_CARD = "b6df7010e0f34e18798473f6c68f26a4"
@@ -156,10 +158,13 @@ EPISODES_W = 1760 - VOYAGES_W - COLUMN_GAP
 TRACK_TOP, QUEST_GAP, QUEST_H, QUEST_ART_H = 78, 16, 500, 140
 QUEST_W = (EPISODES_W - 56 - 4 * QUEST_GAP) // 5
 EPISODE_H, EPISODE_GAP, LOCKED_EP_H = TRACK_TOP + QUEST_H + 22, 16, 64
-FORMS = (("Great Serpent", "eats coiled, wrapped or in a figure-eight"), ("Many-Headed Serpent", "every head rears, then strikes"),
-         ("Lord of the Dance", "rises in a halo of 12 rings to a drum"), ("Antlion", "lunges with its jaws wide"))
-# Voyage 2's creature climbs the same ladder, and on its way up to the dance it tears between a whale and a jelly
-SEVERING_FORMS = (FORMS[0], FORMS[1], ("Whale-Jelly Chimera", "torn between two shapes"), FORMS[2], FORMS[3])
+# Shiva's three forms (ShivaSettings.asset Forms[].DisplayName): thread each form's ring circuit before its drum runs out
+FORMS = (("The Still Shiva", "thread his ring circuit through the serpents"), ("Nataraja", "the rings dance as you thread them"),
+         ("The Devouring Mouth", "a black hole drags at every ring"))
+# Voyage 2's creature climbs the escaping creature's ladder, and on its way up to the dance it tears between a whale and a jelly
+ESCAPE_FORMS = (("Great Serpent", "eats coiled, wrapped or in a figure-eight"), ("Many-Headed Serpent", "every head rears, then strikes"),
+                ("Lord of the Dance", "rises in a halo of 12 rings to a drum"), ("Antlion", "lunges with its jaws wide"))
+SEVERING_FORMS = (ESCAPE_FORMS[0], ESCAPE_FORMS[1], ("Whale-Jelly Chimera", "torn between two shapes"), ESCAPE_FORMS[2], ESCAPE_FORMS[3])
 
 
 def panel_frame(node, key, accent="SurfaceDark"):

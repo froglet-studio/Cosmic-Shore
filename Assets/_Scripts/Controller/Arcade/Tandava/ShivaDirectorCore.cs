@@ -329,6 +329,17 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>The server's credit for a ring a peer has already tested (the peer that simulates the vessel owns the
+        /// geometry; the server checks plausibility and that it is the lit ring). Same effect as a TryThread hit.</summary>
+        public bool ThreadLitRing(int pilot)
+        {
+            if (State != ShivaState.Play || RingIndex >= Rings.Length) return false;
+            Rings[RingIndex].Done = true; RingIndex++;
+            Events.Add(new ShivaEvent(ShivaEventKind.Threaded, pilot, RingIndex - 1));
+            if (RingIndex >= Rings.Length) CompleteForm();
+            return true;
+        }
+
         void CompleteForm()
         {
             ShellUp[Form] = false; FormSeconds[Form] = FormTime; ClockLeft[Form] = Clock;
@@ -340,6 +351,25 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True while the wave's front passed <paramref name="distance"/> from him this step.</summary>
         public bool WaveSwept(float distance) => WaveRadius > 0f && distance >= WaveRadiusBefore && distance < WaveRadius;
+
+        /// <summary>The first seed from <paramref name="start"/> whose first circuit opens beside a squad at azimuth
+        /// <paramref name="squadAzimuth"/> (atan2(z, x) about him): ring 0 a little AHEAD of them round the circuit, so they
+        /// enter it the way <see cref="EntryPoint"/> lays them, as the lab starts its squads. The server searches; the seed
+        /// it finds is what replicates, so every peer still lays the same rings from the seed alone.</summary>
+        public static uint SeedFacing(uint start, float squadAzimuth, float lead = 0.31f, float tolerance = 0.12f, int tries = 4096)
+        {
+            uint best = start == 0 ? 1u : start; float bestErr = float.MaxValue;
+            for (int i = 0; i < tries; i++)
+            {
+                uint seed = start + (uint)i; if (seed == 0) continue;
+                var rnd = new ShivaRandom(seed);
+                float d = rnd.Next() * 6.283f - (squadAzimuth + lead);
+                float err = MathF.Abs(MathF.IEEERemainder(d, 6.2831853f));
+                if (err < bestErr) { bestErr = err; best = seed; }
+                if (err <= tolerance) break;
+            }
+            return best;
+        }
 
         // ── the circuit (sim.js layRings / orientRings / danceAt - the parity gate holds these to the lab) ─────────────
         /// <summary>A form's circuit as the director laid it from <paramref name="seed"/>: every peer replays the same draws,

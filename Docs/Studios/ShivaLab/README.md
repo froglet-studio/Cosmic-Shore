@@ -74,3 +74,10 @@ Mean seconds per form; every run won (3 seeds).
 | `app.js` | the three.js view (the prism figure, shells, rings, orrery, swarm, wave, black hole, the end), input, settings, scorecard, decision log |
 | `build_plans.py` / `build.py` | cut the shipped serpent plans and assemble the page |
 | `check.js` | the headless scorecard |
+
+## In the game
+
+Ported 2026-10-28 as `GameModes.Tandava` (Voyage 1): `Assets/_Scripts/Controller/Arcade/TANDAVA.md` §0. The numbers
+cross by `Tools/Build/author_shiva_assets.py`, which reads this lab's `SHIPPED` and writes `ShivaSettings.asset`; the
+director's C# twin is held to `sim.js` by `bash Tools/Build/swarm_core_harness/run.sh "" shiva` (S1-S9; the fixture is
+`parity_fixture.js`). Not yet run in the Unity editor.

@@ -1,7 +1,64 @@
 # Tandava
 
+**Now Shiva's Cell (§0, 2026-10-28). §1-§8 describe the superseded escape design, kept as Voyage 2's donor.**
+
 `GameModes.Tandava = 69` · ARENA card · Squirrel, Sparrow, Rhino · co-op (every pilot on one domain) · scene
 `MinigameTandava` · assets owned by `Tools/Build/author_tandava_assets.py` (`--check`, `--self-test`).
+
+## 0. Shiva's Cell - the redesign (2026-10-28, Shombith)
+
+> "lets completely redesign the tandava. As this is a voyage game and you go in with your squad. I want the shiva theme
+> to be there but rather than the creature trying to escape its us trying to destroy a creature in a barren cell,
+> shiva s cell." (with a reference image of a cosmic Shiva)
+
+**`GameModes.Tandava` (69) now plays Shiva's Cell**: Voyage 1's card (`Games/_Archive/ArcadeGameTandavaShiva.asset`,
+scene `MinigameTandavaShiva`, `ShivaController`), authored by `Tools/Build/author_shiva_assets.py` (`--check`). The
+escaping-creature design below (§1-§8) is **superseded but kept**: its card, scene, settings, swarm config, toasts and
+preview are the donor files `author_tandava_severing_assets.py` (Garrett's Voyage 2, `GameModes.TandavaSevering`)
+re-derives from by exact string, so none of them changed. `author_tandava_assets.py` now sets `SUPERSEDED = True`, which
+takes the old card off the master roster and its toast config and preview out of the libraries; Shiva's are registered
+instead. The lab came first: **Shiva's Cell** (`Docs/Studios/ShivaLab/`, published as a claude.ai artifact, listed in
+`.claude/skills/labmaker/CATALOG.md`).
+
+**Status: authored headless, NOT run in the Unity editor.** Checked: the reference compile (`unity_refcompile`, 0
+project errors); the swarm harness's Shiva mode (`bash Tools/Build/swarm_core_harness/run.sh "" shiva`, S1-S9: the C#
+director lays the lab's circuits to a fraction of a unit for six seeds and three forms, with a planted change that must
+fail); the generators' `--check` (Shiva, the superseded Tandava, Tandava: Severing, the Voyage window). QA: § Shiva's
+Cell in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+### 0.1 The game
+
+| | |
+|---|---|
+| Who | a squad of 1-3 on one domain, any of the 9 squad hulls (the AskUserQuestion answer "any squad hull") |
+| Where | a barren cell (no nucleus; a 1,600 u membrane) with **Shiva in the middle**: a prism figure to the waist - crown and hair, three eyes, four arms, Vasuki and the moon (`ShivaFigure`, instanced, ~no colliders) - and seven planets wheeling round him (`SpawnableShivaOrrery`: the orrery's phyllotaxis planets without its sun and spokes, because the middle is his) |
+| The shield | three shells of real **danger prisms** round him (620 / 520 / 430 u, Blue - the environment's, so every squad is stung). He cannot be attacked |
+| The goal | **thread the full ring circuit** of each form (10 / 12 / 12 race rings spiralling in from 1,350 u, `RaceGateRing`); the last ring of a circuit cracks that form's shell |
+| The clap | when a circuit is done he claps: the hands meet, a wave leaves at 160 u and runs out at 1,100 u/s. It shatters every player prism it sweeps, and rips every elemental crystal off a vessel inside 950 u. Then the cell collapses and regrows in ~3 s: new flora grown by a cellular automaton (a different rule per form), new crystals, a new tint |
+| The swarms | three, one per form, out of his hands: many-headed serpents (5 / 7 / 10 heads) that guard rings ahead and lunge at pilots, plus Sharks, Piranha and Clawfish (2 / 3 / 2 serpents; 3 / 2 / 3 sharks; 0 / 16 / 12 piranha; 0 / 3 / 4 clawfish) |
+| The forms | **The Still Shiva** (the rings stand still) -> **Nataraja** (the circuit wheels round him, each ring bobs and sways) -> **The Devouring Mouth** (his mouth opens on a black hole that drags at every ring) |
+| The loss | a **cosmic clock**: a drum per form (110 / 180 / 170 s). Run out and the dance ends the cell |
+| The win | the third shell breaks: the figure shatters in a majestic gold burst and a flash across the cell |
+| Score | 10 per ring a pilot threads (counted server-side) + 1 per crystal (`ShivaScoringRuleSO`) |
+
+### 0.2 The files
+
+| File | What |
+|---|---|
+| `Tandava/ShivaDirectorCore.cs` | the pure director (System.Numerics): rings, dance, clap timeline, wave, the serpent brain, the figure's joints, the seed search (`SeedFacing`). Held to the lab by the harness |
+| `Tandava/ShivaController.cs` | the game glue (`MultiplayerDomainGamesController`, `ISwarmDirector`, `IGoalSource`): replication, rings, shells, wave, strip, regrow, swarms, the black hole, the HUD goals, the end |
+| `Tandava/ShivaFigure.cs` | the figure, drawn with `Graphics.RenderMeshInstanced` |
+| `Tandava/ShivaSettingsSO.cs` / `Games/ShivaSettings.asset` | every number and every word |
+| `Scoring/ShivaScoringRuleSO.cs` / `ShivaScoringRule.asset` | the outcome-based rule |
+| `Environment/MiniGameObjects/SpawnableShivaOrrery.cs` | the planets |
+| `Tandava/TandavaObjectiveProvider.cs` | AI objective: Shiva's lit ring when Shiva is running, else Tandava's swarm |
+| `Tools/Build/author_shiva_assets.py` | the cell, the settings (numbers read from the lab's SHIPPED), the card, toasts, preview, scene, registries |
+
+**Decisions the lab put to the designer (open, `Docs/Studios/ShivaLab/README.md` round 1):** the ring credit is
+shared, so the pilot nearest the lit ring runs free while the swarm hits the other two (the swarm costs a squad only
+5-20%); and one drum cannot fit every squad (a Fast squad finishes a form in a quarter of the drum, a sloppy Slow squad
+needs most of it). Also open: in the lab the old swarm dies in
+the wave; in Unity it survives the clap (no imposed death) and the new one joins it.
 
 **Status: authored headless, NOT yet run in the Unity editor.** Everything below that describes behaviour is from the
 headless harness (`Tools/Build/swarm_core_harness`, mode `tandava`, T1-T19), the reference compile (`unity_refcompile`,

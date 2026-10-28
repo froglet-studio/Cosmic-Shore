@@ -14,6 +14,8 @@
 // S7  a serpent: the guard rings spread along the circuit and move on two ahead; it lunges only past its cooldown, only
 //     at a pilot in range and only while the drum runs; it rears, strikes, and stops at the pilot or out of reach
 // S8  his figure turns with his yaw: a quarter turn carries the mouth from +z to +x
+// S9  the server's seed search: from any start, the first ring opens just ahead of the squad round the circuit, and
+//     the director laid from that seed agrees (EntryPoint is on the squad's side, behind ring 0)
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,6 +40,7 @@ static class ShivaHarness
         S6(s);
         S7(s);
         S8();
+        S9(s);
         Console.WriteLine(s_fail == 0 ? "shiva: OK" : $"shiva: {s_fail} FAILED");
         return s_fail == 0 ? 0 : 1;
     }
@@ -284,5 +287,29 @@ static class ShivaHarness
         Ok(MathF.Abs(d.Yaw - MathF.PI / 2f) < 1e-3f, "he begins facing the squad");
         var clap = ShivaDirectorCore.Figure(0, 0.5f, 0f, 0f, 0f);
         Ok((clap.HandLL - clap.HandLR).Length() < 20f, $"mid-clap his front hands meet ({(clap.HandLL - clap.HandLR).Length():F0} u apart)");
+    }
+
+    // ── S9: the seed search ──
+    static void S9(ShivaDirectorSettings s)
+    {
+        Console.WriteLine("S9 the first ring opens beside the squad");
+        float worst = 0f, worstEntry = 0f;
+        uint[] starts = { 1, 2, 77, 12345, 0x3ffff000 };
+        float[] azimuths = { MathF.PI / 2f, 0f, -2.5f, 3.0f };
+        foreach (var start in starts)
+        foreach (var az in azimuths)
+        {
+            uint seed = ShivaDirectorCore.SeedFacing(start, az);
+            var squad = new Vector3(1380f * MathF.Cos(az), 0f, 1380f * MathF.Sin(az));
+            var d = new ShivaDirectorCore(s, seed, squad);
+            var c = d.Rings[0].Centre;
+            float err = MathF.Abs(MathF.IEEERemainder(MathF.Atan2(c.Z, c.X) - (az + 0.31f), 2f * MathF.PI));
+            worst = MathF.Max(worst, err);
+            worstEntry = MathF.Max(worstEntry, (d.EntryPoint(1, 3) - squad).Length());
+        }
+        Ok(worst <= 0.12f, $"ring 0 is within 0.12 rad of 0.31 rad ahead of the squad, every start and side (worst {worst:F3})");
+        Ok(worstEntry < 450f, $"the director's entry point is beside the squad (worst {worstEntry:F0} u away)");
+        var far = ShivaDirectorCore.SeedFacing(1, 0f, 0.31f, 1e-9f, 1);
+        Ok(far == 1u, "a search allowed one try returns the start (a negative control: the search, not luck, places the ring)");
     }
 }

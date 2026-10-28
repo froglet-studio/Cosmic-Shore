@@ -40,7 +40,7 @@ makes sense for both sides' missions. Whatever is aboard the Ark when the squad 
   `ArkwayRun.BeginVoyageAsync`, `ARKWAY_PLAN.md`). In this document a voyage always means the fourth location; an
   Arkway run is called an Arkway run. Renaming the Arkway's identifiers is its owner's call, not part of this design.
 - **Voyages replace missions.** The Home hub already says Voyage (`Docs/MENU_REDESIGN_B.md` §69 and §71). Today the
-  Voyage window lists Tandava as Voyage 1, launched through the arena launch panel. In this design Tandava becomes the
+  Voyage window lists Tandava as Voyage 1, launched through the arena launch panel. (Since 2026-10-28 Voyage 1 plays Tandava redesigned as Shiva's Cell, `Assets/_Scripts/Controller/Arcade/TANDAVA.md` §0.) In this design Tandava becomes the
   first **location experience** (§5), *Tandava's lair*, rather than a voyage of its own. The window's layout is
   Shombith's (§10).
 - **Universality.** A voyage is the same HyperSea under the same rules (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`

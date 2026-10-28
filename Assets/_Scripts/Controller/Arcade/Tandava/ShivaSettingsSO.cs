@@ -104,8 +104,8 @@ namespace CosmicShore.Gameplay
         public float ShellSpacing = 70f;
         [Tooltip("A shell prism's size (u).")]
         public Vector3 ShellPrismScale = new(10f, 10f, 2f);
-        [Tooltip("The domain the shell's danger prisms carry.")]
-        public Domains ShellDomain = Domains.Ruby;
+        [Tooltip("The domain the shell's danger prisms carry. Blue, the environment's: no squad domain owns it, so it stings every squad.")]
+        public Domains ShellDomain = Domains.Blue;
         [Tooltip("The prism spawn channel (the vessels' own; BoostRingBuilder.LayOne).")]
         public PrismEventChannelWithReturnSO PrismChannel;
 
@@ -156,18 +156,18 @@ namespace CosmicShore.Gameplay
         [Header("Text (every word the player reads)")]
         [Tooltip("The toast when the match begins.")]
         public string StartLine = "Thread his rings. Break his shield.";
-        [Tooltip("A shell cracks. {0} = the shells left.")]
-        public string ShellLine = "A shell breaks. {0} to go.";
+        [Tooltip("A shell cracks. {left} = the shells left.")]
+        public string ShellLine = "A shell breaks. {left} to go.";
         [Tooltip("He claps.")]
         public string ClapLine = "Shiva claps.";
         [Tooltip("The swarm comes out of his hands.")]
         public string SwarmLine = "His swarm comes out of his hands.";
         [Tooltip("The squad won.")]
         public string WonLine = "The Tandava is broken. The cell is yours.";
-        [Tooltip("The drum ran out. {0} = the form.")]
+        [Tooltip("The drum ran out.")]
         public string LostLine = "The drum stops. His dance ends the cell.";
-        [Tooltip("The goal row naming the form.")]
-        public string FormLabel = "Form {0} of 3";
+        [Tooltip("The goal row naming the form. {form} = this form (1-based), {forms} = how many.")]
+        public string FormLabel = "Form {form} of {forms}";
         [Tooltip("The goal row counting the rings.")]
         public string RingsLabel = "Rings";
         [Tooltip("The goal row showing the drum.")]
