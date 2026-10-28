@@ -141,7 +141,9 @@ namespace CosmicShore.Tests
         static MeerkatWormholeMath.PlanSettings PlanShipped => new()
         {
             ReticleAhead = 30f, ShapeSeconds = 0.3f, Shape = Shipped,
-            MeanRideMultiplier = MeerkatWormholeMath.MeanRideMultiplier(1f, 2.5f, 1.2f), TurnRateRadians = 120f * Mathf.Deg2Rad,
+            // round 24: the plan's ride speed is the slide's (rootMaxSpeed); these goldens were made with the round-6 ride's
+            // mean multiplier at 60 u/s (1.1 + 2/pi x 1.4), which the page's slideMul gives at this top speed
+            SlideSpeed = 60f * (1.1f + 2f / Mathf.PI * 1.4f), TurnRateRadians = 120f * Mathf.Deg2Rad,
         };
 
         // the target in the hull's frame (Unity: z forward), the judge noise and its roll, turn-only -> LT, stick
@@ -190,28 +192,86 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(y, MeerkatWormholeMath.Ease(MeerkatWormholeMath.EaseInverse(y)), 1e-3f);
         }
 
-        [Test]
-        public void Ride_StartsAndEndsAtTheEntrySpeed_AndPeaksAtTheThroat()
+        // ---- round 24: the main tunnel is slid as the roots are (a network of one) ----
+
+        /// <summary>The executor's SlidePath, over the same arithmetic: the conic arc, straight on past either end; the
+        /// hyperboloid wall.</summary>
+        sealed class TestTube : MeerkatRootMath.ITubePath
         {
-            // round 6: entry 1, middle 2.5, exit 1.2 x the speed before the tunnel (the page measured 60 in, ~150 at the throat,
-            // 72 out of the far mouth, easing back to cruise)
-            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, -40f, 300f), 1e-4f, "the dive");
-            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, 0f, 300f), 1e-4f, "the way in");
-            Assert.AreEqual(150f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, 150f, 300f), 1e-3f, "the throat");
-            Assert.AreEqual(72f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, 300f, 300f), 1e-3f, "the way out");
-            Assert.AreEqual(1f + 1.5f * Mathf.Sin(Mathf.PI * 0.25f), MeerkatWormholeMath.RideMultiplier(1f, 2.5f, 1.2f, 0.25f), 1e-5f);
-            Assert.AreEqual(1.2f + 1.3f * Mathf.Sin(Mathf.PI * 0.75f), MeerkatWormholeMath.RideMultiplier(1f, 2.5f, 1.2f, 0.75f), 1e-5f);
+            public readonly MeerkatWormholeMath.Conic Path;
+            public readonly float L, B, M;
+
+            public TestTube(float L, float theta, float b, float m)
+            {
+                this.L = L; B = b; M = m;
+                Path = new MeerkatWormholeMath.Conic(L, theta, MeerkatWormholeMath.OvalOf(Shipped, L, theta));
+            }
+
+            static MeerkatRootMath.D3 D(Vector3 v) => new(v.x, v.y, v.z);
+            static Vector3 V(MeerkatRootMath.D3 v) => new((float)v.X, (float)v.Y, (float)v.Z);
+
+            public MeerkatRootMath.D3 At(double s, out MeerkatRootMath.D3 tangent)
+            {
+                float f = (float)s;
+                Vector3 p, tan;
+                if (f <= 0f) { tan = Vector3.forward; p = Vector3.forward * f; }
+                else if (f >= L) { p = MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, Path, L, out tan); p += tan * (f - L); }
+                else p = MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, Path, f, out tan);
+                tangent = D(tan);
+                return D(p);
+            }
+
+            public double Nearest(MeerkatRootMath.D3 p) =>
+                MeerkatWormholeMath.NearestAlong(Vector3.zero, Vector3.forward, Vector3.right, Path, L, V(p));
+
+            public double Radius(double s) => MeerkatWormholeMath.Radius(B, M, L, 0f, L, Mathf.Clamp((float)s, 0f, L));
         }
 
         [Test]
-        public void Ride_ComesOutOnTheTunnelsLastHeading()
+        public void NearestAlong_FindsTheArcsOwnPoints_AndRunsOnPastItsEnds()
         {
-            // 196 u turning 1.2 rad round its middle (round 22): the hull comes out on the arc's last heading
-            var path = new MeerkatWormholeMath.Conic(196f, 1.2f, MeerkatWormholeMath.OvalOf(Shipped, 196f, 1.2f));
-            float turned = MeerkatWormholeMath.BendAngle(path, 196f) - MeerkatWormholeMath.BendAngle(path, 0f);
-            var q = MeerkatWormholeMath.RideRotation(Vector3.up, turned, Quaternion.identity);
-            MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, path, 196f, out var tangent);
-            Assert.Less(Vector3.Angle(q * Vector3.forward, tangent), 0.01f);
+            var tube = new TestTube(196f, 1.2f, 4f, 13f);
+            foreach (float s in new[] { 10f, 60f, 98f, 150f, 190f })
+            {
+                var p = MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, tube.Path, s, out _);
+                Assert.AreEqual(s, MeerkatWormholeMath.NearestAlong(Vector3.zero, Vector3.forward, Vector3.right, tube.Path, 196f, p), 0.05f);
+            }
+            Assert.AreEqual(-20f, MeerkatWormholeMath.NearestAlong(Vector3.zero, Vector3.forward, Vector3.right, tube.Path, 196f,
+                new Vector3(0f, 0f, -20f)), 1e-3f, "before the way in");
+            var e = MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, tube.Path, 196f, out var te);
+            Assert.AreEqual(196f + 500f, MeerkatWormholeMath.NearestAlong(Vector3.zero, Vector3.forward, Vector3.right, tube.Path, 196f,
+                e + te * 500f), 0.05f, "far past the way out (the page's bug: L x 48 / 48 need not be L)");
+        }
+
+        [Test]
+        public void Slide_RunsTheTunnelInside_AndComesOutOnItsLastHeading()
+        {
+            // the page's labTransit over a network of one: cruising (no RT, no stick) from 40 u before the way in at 60 u/s
+            var tube = new TestTube(196f, 1.2f, 4f, 13f);
+            var net = MeerkatRootMath.Single(tube, 196f);
+            var g = MeerkatRootMath.Enter(net, 0, new MeerkatRootMath.D3(0, 0, -40), 60, new MeerkatRootMath.D3(0, 1, 0));
+            var p = new MeerkatRootMath.FlightSettings { Cruise = 45, Thrust = 90, Move = 55, Drag = 0.45, MaxSpeed = 90, Bounce = 0.45, Tip = 0.6, ExitMultiplier = 1.2 };
+            MeerkatRootMath.FlightResult res = MeerkatRootMath.FlightResult.Riding;
+            MeerkatRootMath.D3 nose = default;
+            int steps = 0;
+            for (; steps < 60 * 30 && res == MeerkatRootMath.FlightResult.Riding; steps++)
+            {
+                res = MeerkatRootMath.Step(g, net, null, in p, 0, 0, 0, 1.0 / 60, out nose);
+                if (g.Free && g.S > 0 && g.S < 196)
+                {
+                    var c = tube.At(System.Math.Min(196, System.Math.Max(0, g.S)), out _);
+                    Assert.LessOrEqual(c.DistanceTo(g.Pos), tube.Radius(g.S) + 1e-3, "inside its wall");
+                }
+            }
+            Assert.AreEqual(MeerkatRootMath.FlightResult.OutOfTip, res, "out of the far mouth");
+            MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, tube.Path, 196f, out var last);
+            Assert.Less(Vector3.Angle(new Vector3((float)nose.X, (float)nose.Y, (float)nose.Z), last), 1f, "on its last heading");
+            // RT held all the way: out sooner
+            var g2 = MeerkatRootMath.Enter(net, 0, new MeerkatRootMath.D3(0, 0, -40), 60, new MeerkatRootMath.D3(0, 1, 0));
+            int steps2 = 0;
+            for (res = MeerkatRootMath.FlightResult.Riding; steps2 < 60 * 30 && res == MeerkatRootMath.FlightResult.Riding; steps2++)
+                res = MeerkatRootMath.Step(g2, net, null, in p, 1, 0, 0, 1.0 / 60, out _);
+            Assert.Less(steps2, steps);
         }
 
         [Test]

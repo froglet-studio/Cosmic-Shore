@@ -46,10 +46,17 @@ the prefab:
     (`reticleNearLight` 0.25, round 11).
   - Its own controls are its brightness (`reticleIdleAlpha` at rest, full while you shape it) and its colour: your
     domain colour toward white by `reticleWhite`. The bridge's spindles take `bridgeWhite` the same way.
-- **The ride.** `MeerkatVesselTransformer` lets the tunnel fly the hull (`StepRide`). It dives straight to the mouth,
-  then runs the shaft and the bend mouth to mouth, turning only on the bend. Its speed is the speed before the tunnel × `rideEntryMultiplier` going in (1), rising
-  to `rideMidMultiplier` at the throat (2.5) and easing to `rideExitMultiplier` at the way out (1.2, round 6). It comes out
-  on the tunnel's last heading, a little boosted, and eases back to cruise.
+- **The slide** (round 24, Yash: *"make the main tube as same as the roots ... we can slide through the main tube rather
+  than making it an automated special move ... Both are same things. One single, one a network"*). The tunnel is a
+  network of ONE channel (`MeerkatRootMath.Single`, through `MeerkatRootMath.ITubePath`: its centreline the exact conic
+  arc, its wall the hyperboloid), flown by the roots' own flight (`MeerkatRootMath.Step`, §7), read the same way:
+  - the hull dives straight to the mouth, then carries its speed in (up to `rootMaxSpeed`);
+  - it cruises along the tube at `rootCruise` (45) on its own, its nose following the tube;
+  - **RT** pushes it faster by `rootThrust` up to `rootMaxSpeed` (90);
+  - the **left stick** moves it round the tube (`rootMove`, calmed by `rootDrag`); the wall bounces it (`rootBounce`);
+  - it comes out of the far mouth on the tunnel's last heading, or back out of the way in, at `rideExitMultiplier` (1.2)
+    × its speed before the tunnel, and eases back to cruise.
+  - Round 6's `rideEntryMultiplier` and `rideMidMultiplier` (the automatic ride) are retired.
 - **Out.** The reticle comes back after `reticleDelaySeconds`, growing out of its centre over `reticleGrowSeconds`.
 - **The camera** (round 10, Yash: "the cameras, why offset should always be zero, the vessel should be in the center of
   the screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow"):
@@ -66,7 +73,7 @@ the prefab:
   - Round 8's `rideCameraBack`, `rideCameraLookAhead` and `rideCameraBlendSeconds` are retired.
 - **The dolly zoom.** While a tunnel flies the hull, the game's speed tunnel (`VesselSpeedTunnel`: the narrower field of
   view and relaxed Panini every vessel gets with speed) is `rideSpeedTunnelScale` (5) × its normal strength
-  (`Docs/SPEED_TUNNEL.md` § The ride scale). The push-in peaks at the throat, where the ride is fastest.
+  (`Docs/SPEED_TUNNEL.md` § The ride scale). The push-in follows the slide's speed (round 24).
 - **Its life.** It forms out of its centre over `formSeconds` (never longer than 0.9 × the dive), stays `staySeconds`
   after its rider is out, then collapses to its centre over `collapseSeconds`. It then fades over 0.7 s.
 
@@ -145,11 +152,13 @@ line for line:
 1. It waits until its reticle is back and its ring is more than `aiBentMinDistance` away. Only a bent tunnel is planned
    inside `aiStraightMinDistance`.
 2. It tries 21 bends × 9 shafts (LT), and among those whose way out heads within 0.26 rad of the ring with 60 u to
-   spare keeps the one that reaches the ring soonest: the ride at its mean speed, the flight on, and the turn left at
+   spare keeps the one that reaches the ring soonest: the slide at `rootMaxSpeed` (round 24: it holds RT), the flight on, and the turn left at
    the hull's `YawScaler` (round 7).
 3. It holds its line (no left stick) while the right stick bends the reticle and LT squeezes for `aiShapeSeconds`.
 4. It waits for its eased reticle to catch up (within 0.03, 1 s at most).
 5. It presses RT through the REPLICATED press path.
+6. Inside (round 24) it holds RT and keeps to the middle of the tube with the left stick (`SlideAutopilot`, the
+   roots' `AiStick`).
 
 `aiNoise` bends it off the mark (0, Hard, by default). Easy and Medium race on the gate race's own handicap
 (`GateRaceHandicap`) in Burrow Run. `aiWormhole` off flies without tunnels.

@@ -1,5 +1,5 @@
 {
-  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. Lab-only (never in the game): aiTau (the sim's steering response - the game's AI flies with AIPilot), the stand-in hull's lope*. cruise / pitchYaw / roll / bankShare are the prefab's MeerkatVesselTransformer (bankShare x roll = RollScaler, set by author_meerkat_assets.py), not plain fields. Rounds 13-21 (the tree round the wormhole and the Omnicrystal's roots, MEERKAT.md section 7) map to the same config by the same names; trunkWarp, omniAtOnce, soil*, labyrinthRing*, labyrinthRibs, labyrinthRoughness and forkHintSeconds are not ported yet. Edit this file, never the assets by hand. Round 23 (Garrett's soliton): areaL0 / areaL10 (the surface area by the hull's Space level, read at use time from its ResourceSystem, so kSpaceLevel is lab-only), suckRadius, suckSpeed, swallowShare, carrySpeed, carryStretch, carryTwist, fireSpeed, fireGlideSeconds (MeerkatSwallow); bounceRestitution is the shared PrismMotionConfig's shieldBounceRestitution (0.6), not a Meerkat field.",
+  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. Lab-only (never in the game): aiTau (the sim's steering response - the game's AI flies with AIPilot), the stand-in hull's lope*. cruise / pitchYaw / roll / bankShare are the prefab's MeerkatVesselTransformer (bankShare x roll = RollScaler, set by author_meerkat_assets.py), not plain fields. Rounds 13-21 (the tree round the wormhole and the Omnicrystal's roots, MEERKAT.md section 7) map to the same config by the same names; trunkWarp, omniAtOnce, soil*, labyrinthRing*, labyrinthRibs, labyrinthRoughness and forkHintSeconds are not ported yet. Edit this file, never the assets by hand. Round 23 (Garrett's soliton): areaL0 / areaL10 (the surface area by the hull's Space level, read at use time from its ResourceSystem, so kSpaceLevel is lab-only), suckRadius, suckSpeed, swallowShare, carrySpeed, carryStretch, carryTwist, fireSpeed, fireGlideSeconds (MeerkatSwallow); bounceRestitution is the shared PrismMotionConfig's shieldBounceRestitution (0.6), not a Meerkat field. Round 24: the tunnel is slid as the roots are, so rideEntryMultiplier and rideMidMultiplier are retired (the root* keys fly both).",
   "vessel": "Meerkat",
   "page": "Docs/Studios/VesselStudio/meerkat.html",
   "rows": [
@@ -197,16 +197,6 @@
       "key": "rideSpeedTunnelScale",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "rideSpeedTunnelScale"
-    },
-    {
-      "key": "rideEntryMultiplier",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rideEntryMultiplier"
-    },
-    {
-      "key": "rideMidMultiplier",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rideMidMultiplier"
     },
     {
       "key": "rideExitMultiplier",
