@@ -14,16 +14,15 @@
   "unity": true
  },
  "cores": 11,
- "current": {},
- "host": "dragonsweapon",
- "last": {
-  "count": 32,
-  "epoch": "a7bc0307f194",
-  "job": "unity-train~r20261028-205229-b55f",
-  "rc": 0,
-  "stopped": "finished",
-  "unit": "switchback-dolphin-i2"
+ "current": {
+  "job": "unity-train~r20261028-212934-f416",
+  "max_evals": 10,
+  "minutes": 60.0,
+  "request": "r20261028-212934-f416",
+  "since": 1793203187,
+  "unit": "switchback-dolphin-i4"
  },
+ "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -77,7 +76,7 @@
  "totals": {
   "sessions": 4
  },
- "updated": 1793202589,
+ "updated": 1793203187,
  "user": "shombithofficial",
  "version": "1"
 }
