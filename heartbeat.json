@@ -15,9 +15,14 @@
  },
  "cores": 11,
  "current": {
+  "best": 54.1131591796875,
+  "epoch": "34ab405a9e24",
+  "evals": 4,
   "job": "unity-train~r20261029-013218-c36d",
   "max_evals": 10,
   "minutes": 60.0,
+  "phase": "training",
+  "progress": 0.4,
   "request": "r20261029-013218-c36d",
   "since": 1793217751,
   "unit": "dustup-butterfly-i2"
@@ -76,7 +81,7 @@
  "totals": {
   "sessions": 4
  },
- "updated": 1793217751,
+ "updated": 1793218367,
  "user": "shombithofficial",
  "version": "1"
 }
