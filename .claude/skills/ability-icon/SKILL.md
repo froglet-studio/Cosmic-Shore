@@ -108,13 +108,16 @@ Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
    the file frame's nose is -Y) and let the owner pick the view. Then draw, preview, look at 40 px first. Say
    what fails the language in words before touching numbers (round 1 of the Manta: "the lobes read as ears - a
    fox, not a ray").
-2.5 **Review the sheet against the round-costing mistakes before sending** (LESSONS 44-55; each one cost Garrett a
+2.5 **Review the sheet against the round-costing mistakes before sending** (LESSONS 44-58; each one cost Garrett a
    round): (a) every part and the plate answer "what is this showing?" with something nothing else on the card
    shows, and no level-5 mark - the upgrade is a state; (b) a moving part and every copy of it face the way they move
    (mirror, curve); (c) flat: one colour per part, seams not shading; (d) no part covers the focal object or a
    reference mark at 40 px; (e) a broken state is real pieces apart; (f) plate marks are "segments", never lines
    across; (g) objects are drawn from their real mesh or generator; (h) the act runs ACROSS the card, clear of the
-   plate's fill line and marks (LESSONS 55). Fix a failure before the owner sees it.
+   plate's fill line and marks (LESSONS 55); (i) anything with a size is to scale, measured from the prefabs
+   (LESSONS 56); (j) what the ability destroys is negative space, what it spares is whole outside (57); (k) a region
+   is a filled white shape, not an outline or a grey fill, and the card sits beside `sparrow.png` / `rhino.png` at the
+   same weight (58). Fix a failure before the owner sees it.
 3. **Gates green** (`verify.py`: white 128, coverage 0.10-0.45, long axis ≥ 80 % of the 116 px
    optical box and inside it, thin share ≤ 0.35, tight-gap boundary ≤ 0.25, ≤ 4 components, no
    specks, ≥ 85 % mass at 40 px, the hull's four tell apart at 24 px). A gate that is wrong is

@@ -262,6 +262,16 @@ chevrons, a slope: "this ability is about the rhino and its invulnerability to d
 threshold as a line across ("not the bar across. updated sparrow has a better solution"), round 3 had the Rhino
 flying up into the plate's ticks ("travel left to right so it doesn't cause visual confusion between the impact event
 and the threshold"). `RhinoVesselHUDView.SetMomentum` / `SetMomentumMark`. The Rhino is done; next: the Scarab.
+**The Scarab's Charge card** (2026-10-28, four rounds; Garrett picked A3, "looks good enough. lets ship it"): Cavitation
+Blast drawn TO SCALE - the punch's swept volume (54 ahead of the hull, mirrored 54 behind, 90 across, measured from
+`Scarab.prefab` and `AOEScarabCavitation.prefab`) as one white bubble, square against the plate and rounded behind, the
+true-size Scarab (~9 px) in domain colour in its own knock-out, whole prisms (blue) outside it. As the punch lands the
+prisms inside are cut out of the volume as forward-pointing slivers; recharging greys the volume and the plate. Round 1
+drew an edge-on plate throwing prisms ("show the relative size of the volume affected relative to the scarab"), round 2
+an outlined box ("whole prisms outside and shattered prisms that convey the destructive direction inside", then "lets
+not have a box. lets go more flat and have a negative space prisms inside"), round 3 a grey slab ("more cohesive with
+the rest of our polished icons"). `ScarabHUDView.SetBlastReady` / `BlastPartsFor` / `SetBlastHullColor`. Next: the
+Scarab's Mass (Switch).
 
 | Round | What | Why first |
 |---|---|---|
