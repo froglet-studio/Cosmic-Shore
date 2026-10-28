@@ -656,16 +656,50 @@ def _ramp_option(name, title, ward, prism_ahead, prism_glance):
         L = [("glance", "danger"), ("ward", "white")] if warded else [("ahead", "danger")]
         states.append((n, L + [("hull", "domain")]))
         gauge[n] = (s, None if straight else _GAUGE_DIM)
-    return dict(name=name, group="rampspool3", lockup_state=3, element="Time",
+    return dict(name=name, group="rampspool4", lockup_state=3, element="Time",
                 before=ICON_DIR + "Rhino_RampSpool-PLACEHOLDER.png", before_rev="899c25973", before_gauge_value=0.55,
                 gauge_marks=TIME_MARKS, gauge_marks_style="segments", title=title, parts=parts, states=states, gauge=gauge)
 
 
-# Round 2 (V / W / X): "not the bar across. updated sparrow has a better solution. w is good otherwise" - so W, with the
-# 70% mark drawn the Sparrow's way (card.py "segments": a dim tick at the plate's edges while it is ahead, a gap through
-# the fill once passed; SparrowHUDView.PaintGunHeatMarks).
-CARDS += [
-    _ramp_option("time_option_w",
-                 "W - THE PLOUGH: the Rhino from above; past the 70% mark (the Sparrow's edge ticks) at Time 5 a chevron ward stands ahead of the nose and the danger prism glances away",
-                 barrier_wedge, lambda: danger_prism(64, 14), lambda: danger_prism(100, 16, angle=-35)),
-]
+# Round 3: "lets have the rhino travel left to right so it doesn't cause visual confusion between the impact event and
+# the threshold" - nose up put the ward and the prism at the TOP of the card, right under the plate's fill line and
+# its 70% ticks. The Rhino now flies nose RIGHT, the ward and the prism ahead of it on the right.
+SIDE_CY = 66.0
+SIDE_NOSE_X = 74.0
+SIDE_LEN = 70.0
+
+
+def rhino_right(nose_x=SIDE_NOSE_X, cy=SIDE_CY, length=SIDE_LEN):
+    """The Rhino from above flying RIGHT: the top view turned a quarter clockwise, nose at (nose_x, cy)."""
+    a = _rhino_composite().rotate(-90, expand=True)          # nose up -> nose right
+    k = length / a.width
+    w, h = a.width * k, a.height * k
+    full = Image.new("L", (N, N), 0)
+    s = N / 128.0
+    im = a.resize((max(1, int(round(w * s))), max(1, int(round(h * s)))), Image.LANCZOS)
+    full.paste(im, (int(round((nose_x - w) * s)), int(round((cy - h / 2) * s))))
+    return np.asarray(full) > 127
+
+
+def ward_right(x=SIDE_NOSE_X + 8.0, cy=SIDE_CY, half_h=34.0, depth=15.0, t=6.0):
+    """The plough's chevron ahead of the nose, pointing the way the Rhino flies."""
+    sh = t / math.cos(math.atan2(depth, half_h))
+    return fill([(x, cy - half_h), (x + depth, cy), (x, cy + half_h),
+                 (x - t, cy + half_h), (x + depth - sh, cy), (x - t, cy - half_h)])
+
+
+def _side_option():
+    hull = rhino_right
+    ahead = lambda: danger_prism(114, SIDE_CY, angle=90)
+    glance = lambda: danger_prism(110, SIDE_CY + 36, angle=-55)
+    parts = dict(hull=hull, ward=lambda: _clear_of(ward_right(), hull()),
+                 ahead=lambda: _clear_of(ahead(), hull()),
+                 glance=lambda: _clear_of(glance(), ward_right(), hull()))
+    c = _ramp_option("time_option_w2",
+                     "W2 - THE PLOUGH, flying right: past the 70% mark (edge ticks) at Time 5 the chevron ward stands ahead of the nose and the danger prism glances away",
+                     ward_right, ahead, glance)
+    c["parts"] = parts
+    return c
+
+
+CARDS += [_side_option()]
