@@ -182,6 +182,30 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void VoyageFinds_AreLockedUntilFound_TheRestAreFree()
+        {
+            Assert.IsTrue(Artifact("artifact.hydra").FoundOnVoyages);
+            Assert.IsTrue(Artifact("artifact.aftershock").FoundOnVoyages);
+            Assert.IsFalse(Artifact("artifact.javelin").FoundOnVoyages);
+            Assert.IsFalse(Artifact("artifact.aegis").FoundOnVoyages);
+            Assert.IsTrue(PilotLoadoutStore.Holds("artifact.javelin"), "a free artifact is always held");
+
+            bool had = PilotLoadoutStore.Holds("artifact.hydra");
+            try
+            {
+                PilotLoadoutStore.Forget("artifact.hydra");
+                Assert.IsFalse(PilotLoadoutStore.Holds("artifact.hydra"), "not found yet: locked");
+                PilotLoadoutStore.Grant("artifact.hydra");
+                Assert.IsTrue(PilotLoadoutStore.Holds("artifact.hydra"), "found and docked home: held");
+            }
+            finally
+            {
+                if (had) PilotLoadoutStore.Grant("artifact.hydra");
+                else PilotLoadoutStore.Forget("artifact.hydra");
+            }
+        }
+
+        [Test]
         public void Price_PaysTheNextLevel_RefusesShortBalances_AndStopsAtTheTop()
         {
             var t = new ArtifactTrack { baseCost = 2, costStep = 1 };

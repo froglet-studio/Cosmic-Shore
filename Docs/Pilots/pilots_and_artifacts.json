@@ -104,7 +104,8 @@
      "costStep": 1,
      "twist": "It cracks ordinary shields too."
     }
-   ]
+   ],
+   "foundOnVoyages": false
   },
   {
    "id": "artifact.aegis",
@@ -152,7 +153,8 @@
      "costStep": 1,
      "twist": "A cracked plate re-raises at once."
     }
-   ]
+   ],
+   "foundOnVoyages": false
   },
   {
    "id": "artifact.hydra",
@@ -202,7 +204,8 @@
      "costStep": 1,
      "twist": "Each head splits again where it lands, into two more bursts beside it."
     }
-   ]
+   ],
+   "foundOnVoyages": true
   },
   {
    "id": "artifact.aftershock",
@@ -249,7 +252,8 @@
      "costStep": 1,
      "twist": "The later shocks shatter, leaving no shield behind."
     }
-   ]
+   ],
+   "foundOnVoyages": true
   }
  ]
 }

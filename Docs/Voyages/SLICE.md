@@ -86,9 +86,9 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
   host-owned networked Ark is V2.
 - **No fixed 4-person cap is built in.** Garrett, 2026-10-28: squad vs squad needs at least 6 people, three squads at
   least 9, more with multi-seat vessels; peer-to-peer limits constrain it for now. Nothing in the slice counts people.
-- **Found artifacts**: see the decision asked in the thread (whether voyage-only artifacts are locked until found).
-  Until it is answered, every artifact stays free (Shombith's rule) and a find is recorded with
-  `PilotLoadoutStore.Grant`, so locking is one switch.
+- **Found artifacts are locked until found** (Garrett, 2026-10-28, on the decision card): Hydra and Aftershock
+  (`ArtifactSO.FoundOnVoyages`) are held only once one has been docked home from a voyage
+  (`PilotLoadoutStore.Grant`); every other artifact stays free (Shombith's rule).
 - **Each seat's artifact rides in the Ark** from the moment it sails, so it is at stake with the finds: a raided or
   wrecked Ark takes it too. The player's collection keeps it (artifacts are free), the wreck carries a copy.
 - **Job beacons carry words** (title, and who brought it), the painting-choice exception (`ToyChoiceLabel`): three

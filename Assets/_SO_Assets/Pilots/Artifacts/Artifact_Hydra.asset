@@ -50,6 +50,7 @@ MonoBehaviour:
     baseCost: 2
     costStep: 1
     twistLine: Each head splits again where it lands, into two more bursts beside it.
+  foundOnVoyages: 1
   loadSound:
     Guid:
       Data1: 0

@@ -251,6 +251,7 @@ def artifact_asset(a, any_vessel, element_values, script, transform_guid):
         f"    Keywords: []\n"
         f"  payloadTransform: {{fileID: 11400000, guid: {transform_guid}, type: 2}}\n"
         f"  tracks:\n{tracks}"
+        f"  foundOnVoyages: {1 if a.get('foundOnVoyages') else 0}\n"
     ) + empty_event("loadSound") + empty_event("releaseSound")
 
 

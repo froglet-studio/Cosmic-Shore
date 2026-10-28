@@ -17845,7 +17845,8 @@ compile has no errors in the changed files (player and editor).
 
 1. Run `VoyageRulesTests`, `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`. **Pass:** green.
 2. Ark > SQUADS: a squad of three different vessels, three elements, three pilots of different faction types (CITADEL a
-   hunter, VOLT a merchant, BANDIT a pirate), Hydra on one card. Freestyle, fly the **Voyage** toy (at 90 degrees round
+   hunter, VOLT a merchant, BANDIT a pirate), Javelin on one card (Hydra and Aftershock show
+   locked in the Hangar until found). Freestyle, fly the **Voyage** toy (at 90 degrees round
    the membrane). **Pass:** you are swapped to your seat's vessel; two AI wingmates appear on your flanks in the other two
    hulls; each vessel's element bar starts at level 5 in its slot's element; LB shows each seat's own pilot sight; up
    to three job beacons stand around you with a title and "brought by <name>" over each, plus a chart of the map.
@@ -17858,7 +17859,8 @@ compile has no errors in the changed files (player and editor).
 5. Fly a courier or defence job to a port or core. **Pass:** a courier is done on arrival; a core counts down while you
    stay with the Ark ("HOLDING ...: N") and is done at 0.
 6. Take the way home. **Pass:** the Ark sails to your harbour's world and the voyage ends at the dock: "DOCKED AT ...: N
-   FOUND ARTIFACTS ARE YOURS"; the wingmates are gone; crystals owed are paid; the Hangar shows the find held.
+   FOUND ARTIFACTS ARE YOURS"; the wingmates are gone; crystals owed are paid; the found Hydra or Aftershock is
+   now held in the Hangar and can go on a squad card.
 7. Voyage again. **Pass:** the board reflects last voyage's news (a delivered dispatch opens new work at that port).
 8. Let fauna eat the Ark with a find aboard. **Pass:** "THE ARK IS LOST"; home with nothing; next voyage, the nearest port's
    board offers a salvage job to the wreck, and the wreck's artifacts float where it fell.
