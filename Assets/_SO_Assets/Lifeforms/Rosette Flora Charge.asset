@@ -31,7 +31,7 @@ MonoBehaviour:
     HeartWorldScale: 2.504
     LeafSize: {x: 4.76, y: 4.76, z: 1}
     GrowPeriod: 1.6
-    ShieldPeriod: 1.0
+    ShieldPeriod: 0
     MaxTotalSpawnedObjects: 76
     PlantRadiusCellFraction: 0.6
   SpreadElements: 0

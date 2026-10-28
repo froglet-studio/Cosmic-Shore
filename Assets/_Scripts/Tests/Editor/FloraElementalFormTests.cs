@@ -80,33 +80,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Mass_PullsTheAxesTogether_AndSpaceDrivesThemApart(
+        public void SpaceDrivesTheAxesApart(
             [ValueSource(nameof(Leaves))] Vector3 leaf)
         {
             float authored = Aspect(leaf);
-            float mass = Aspect(FloraElementalForm.ShapeLeaf(leaf, Element.Mass));
             float space = Aspect(FloraElementalForm.ShapeLeaf(leaf, Element.Space));
 
             if (Mathf.Approximately(authored, 1f))
             {
                 // A cube has no long axis to exaggerate - the exponent is a no-op on it, and
                 // the law must not invent an aspect a species never authored.
-                Assert.That(mass, Is.EqualTo(1f).Within(1e-4f));
                 Assert.That(space, Is.EqualTo(1f).Within(1e-4f));
                 return;
             }
 
-            Assert.That(mass, Is.LessThan(authored), "MASS: x, y and z sit closest together.");
             Assert.That(space, Is.GreaterThan(authored), "SPACE: the highest aspect ratio.");
         }
 
         [Test]
-        public void ChargeAndTime_KeepTheSpeciesOwnShape(
+        public void ChargeMassAndTime_KeepTheSpeciesOwnShape(
             [ValueSource(nameof(Leaves))] Vector3 leaf)
         {
-            // Charge's identity is armour and Time's is tempo, so neither restates the
-            // species' form - they take it, scaled only by the neutrality normaliser.
-            foreach (var e in new[] { Element.Charge, Element.Time })
+            // Charge's identity is danger, Time's is tempo and Mass's is armour and size (Docs/ECOSYSTEM.md §65: the
+            // "chunky" Mass plate is retired), so none of the three restates the species' form - they take it, scaled
+            // only by their volume.
+            foreach (var e in new[] { Element.Charge, Element.Mass, Element.Time })
                 Assert.That(Aspect(FloraElementalForm.ShapeLeaf(leaf, e)),
                     Is.EqualTo(Aspect(leaf)).Within(1e-4f * Aspect(leaf)), $"{e}");
         }

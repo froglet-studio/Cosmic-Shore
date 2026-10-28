@@ -10,11 +10,14 @@ namespace CosmicShore.Utility
     /// grows, and each of the four says exactly ONE thing:</para>
     ///
     /// <list type="bullet">
-    /// <item><b>CHARGE armours its leaves.</b> Its mass is shielded, so grazing it costs two
-    /// passes (<c>Flora.ResolveShieldPeriod</c>, Docs/ECOSYSTEM.md §35). Charge is silent in
-    /// this file - its identity is a state, not a shape.</item>
-    /// <item><b>MASS is the most cumulative prism volume, in the most CUBIC leaf.</b> Its
-    /// x, y and z sit closest together, so a Mass plant reads as slabs and blocks.</item>
+    /// <item><b>CHARGE is dangerous.</b> Every prism it lays is a danger prism (<c>Flora.ArmLeaf</c>,
+    /// <see cref="ElementalArmour"/>, Docs/ECOSYSTEM.md §65). Charge is silent in this file - its identity is a state,
+    /// not a shape.</item>
+    /// <item><b>MASS is the most cumulative prism volume, ARMOURED, and has SIZE.</b> Its leaf keeps the species' own
+    /// SHAPE at the heaviest volume (until 2026-10-28 it was also the most CUBIC - anisotropy 0.45, the "chunky" plate,
+    /// retired when Mass took the shield and size: Garrett, "we are going to loose the chunky prisms now that we have
+    /// these scaled up versions of mass"). Its prisms are shielded (<c>Flora.ResolveShieldPeriod</c>), so a species
+    /// fits a Mass plant for its octahedra and grows it until its heart's swing clears them.</item>
     /// <item><b>SPACE is the opposite: the highest ASPECT RATIO.</b> Its long axis costs it
     /// cumulative prism volume and buys it the BOUNDING VOLUME of the assembly - the same
     /// plant, spent as a wide skeleton of needles instead of a compact block.</item>
@@ -59,7 +62,7 @@ namespace CosmicShore.Utility
     /// the law in its own data instead</b> (<c>Flora.PrismSizeFixedByGrowthRule</c>): a lattice
     /// bonds at offsets measured in absolute units, so a transformed leaf lays prisms the bond
     /// table no longer describes (Docs/ECOSYSTEM.md §34.8). Those species are CHECKED against
-    /// the law offline rather than transformed at runtime - and a Charge leaf re-fitted for its
+    /// the law offline rather than transformed at runtime - and a Mass leaf re-fitted for its
     /// armour (<c>Tools/Build/fit_shield_clearance.py</c>) is fitted against what the species
     /// authors, so the two cannot fight.</para>
     ///
@@ -82,7 +85,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Per-leaf VOLUME multiplier for the two elements whose identity is not shape -
-        /// CHARGE (armour) and TIME (tempo). They take the species' own authored form, scaled
+        /// CHARGE (danger) and TIME (tempo). They take the species' own authored form, scaled
         /// only by the normaliser that keeps the four-element mean at 1.
         /// </summary>
         public const float NeutralLeafVolume = 0.8778f;
@@ -93,8 +96,10 @@ namespace CosmicShore.Utility
         // volume-preserving: <1 pulls every axis toward the geometric mean (toward a cube),
         // >1 drives them apart (a needle gets longer AND thinner). 1 is the authored shape.
 
-        /// <summary>Anisotropy exponent for a MASS plant - pulls x, y and z toward each other.</summary>
-        public const float MassLeafAnisotropy = 0.45f;
+        /// <summary>Anisotropy exponent for a MASS plant: 1, the species' own shape. It was 0.45 (pulling x, y and z
+        /// toward a cube, the "chunky" Mass plate) until Mass took the shield and size on 2026-10-28 (Docs/ECOSYSTEM.md
+        /// §65): a shield is drawn as the octahedron circumscribing the prism, so a cube-ward plate is not what shows.</summary>
+        public const float MassLeafAnisotropy = 1f;
 
         /// <summary>Anisotropy exponent for a SPACE plant - drives the long axis out.</summary>
         public const float SpaceLeafAnisotropy = 2.11f;

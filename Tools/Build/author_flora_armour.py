@@ -1,34 +1,30 @@
 #!/usr/bin/env python3
 """
-Author the CHARGE elemental identity - armoured leaves - onto every Charge flora asset.
+Author THE ARMOUR LAW onto every flora asset (Docs/ECOSYSTEM.md §65): a MASS plant's leaves are armoured, a CHARGE
+plant's never are.
 
-    python3 Tools/Build/author_charge_flora_shields.py            # write + print the table
-    python3 Tools/Build/author_charge_flora_shields.py --check    # verify, exit 1 on drift
+    python3 Tools/Build/author_flora_armour.py            # write + print the table
+    python3 Tools/Build/author_flora_armour.py --check    # verify, exit 1 on drift
 
 WHAT THIS IS
 ------------
-Charge is the element whose mass is SHIELDED. A shielded prism sheds its shield instead of
-being eaten (Prism.Consume), so a herbivore has to strip a Charge plant before it can graze
-it and the plant re-armours one leaf every FloraVariantTuning.ShieldPeriod seconds.
-
-The Charge gyroid has carried that identity since the elemental contract landed, and the
-eight phyllotactic garden species followed it - but six Charge species never did (five
-whose whole Variant block is disabled, plus SchwarzP at the keep-the-prefab sentinel, and
-every flora PREFAB ships shieldPeriod 0). This states the identity on all of them so the
-canonical per-element assets read the same.
+Mass is the element whose mass is SHIELDED (until 2026-10-28 it was Charge; Garrett moved the shield to Mass with the
+"chunky" Mass plate, and gave Charge danger instead: every Charge prism is a danger prism). A shielded prism sheds its
+shield instead of being eaten (Prism.Consume), so a herbivore has to strip a Mass plant before it can graze it, and the
+plant re-armours one leaf every FloraVariantTuning.ShieldPeriod seconds. A shield CLEARS danger, so a Charge asset must
+not author a cadence at all.
 
 IT IS NOT THE ENFORCEMENT
 -------------------------
-Flora.ResolveShieldPeriod is - and it has to be, because a config with an EMPTY element
-palette (FloraConfigurationSO.SpreadElements with no siblings) rolls an element and then
-applies its OWN variant block to it, so the two Hesperides topiary configs would hand a
-Charge plant a cadence of 0 and no asset authoring here could reach them. The law floors
-Charge at Flora.ChargeShieldPeriod; this file is the data saying the same thing, which is
-what a reader checks first. --check keeps the two from drifting apart.
+ElementalArmour.ResolveShieldPeriod (through Flora.ResolveShieldPeriod) is - and it has to be, because a config with an
+EMPTY element palette (FloraConfigurationSO.SpreadElements with no siblings) rolls an element and then applies its OWN
+variant block to it, so the two Hesperides topiary configs would hand a Mass plant a cadence of 0 and no asset authoring
+here could reach them. The law floors Mass at ElementalArmour.ShieldPeriod and zeroes Charge; this file is the data
+saying the same thing, which is what a reader checks first. --check keeps the two from drifting apart.
 
-An authored cadence still WINS over the floor, so a species may be armoured faster or
-slower than the fleet - it just may not be unarmoured. Only assets sitting at "off"
-(0 or the -1 keep-the-prefab sentinel, where every prefab ships 0) are rewritten.
+An authored Mass cadence still WINS over the floor (armoured faster or slower than the fleet, never unarmoured): only
+Mass assets sitting at "off" (0 or the -1 keep-the-prefab sentinel, where every prefab ships 0) are rewritten. A Charge
+asset that authors a positive cadence is set to 0.
 """
 
 from __future__ import annotations
@@ -40,15 +36,15 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 LIFEFORMS = ROOT / "Assets/_SO_Assets/Lifeforms"
 VARIANT_CS = ROOT / "Assets/_Scripts/Utility/DataContainers/FloraConfigurationSO.cs"
-FLORA_CS = ROOT / "Assets/_Scripts/Controller/Environment/FloraAndFauna/Flora.cs"
+ARMOUR_CS = ROOT / "Assets/_Scripts/Utility/DataContainers/ElementalArmour.cs"
 
-CHARGE = 1   # CosmicShore.Data.Element.Charge
+CHARGE, MASS = 1, 2   # CosmicShore.Data.Element.Charge / .Mass
 
 
-def charge_period():
-    """Flora.ChargeShieldPeriod - read from the C# so the data cannot drift from the law."""
-    src = FLORA_CS.read_text(encoding="utf-8-sig")
-    return float(re.search(r"ChargeShieldPeriod\s*=\s*([\d.]+)f", src).group(1))
+def armour_period():
+    """ElementalArmour.ShieldPeriod - read from the C# so the data cannot drift from the law."""
+    src = ARMOUR_CS.read_text(encoding="utf-8-sig")
+    return float(re.search(r"ShieldPeriod\s*=\s*([\d.]+)f", src).group(1))
 
 
 def variant_fields():
@@ -74,6 +70,20 @@ def variant_block(text):
     if not m:
         return None, {}
     return m.group(0), dict(re.findall(r"^    (\w+): (.+)$", m.group(1), re.M))
+
+
+def disarm(path, check):
+    """A Charge asset authors no cadence: a positive ShieldPeriod becomes 0 (the law would zero it anyway)."""
+    text = path.read_text()
+    raw, fields = variant_block(text)
+    if raw is None:
+        return "no Variant block", False
+    if float(fields.get("ShieldPeriod", -1)) <= 0:
+        return f"ok (ShieldPeriod {fields.get('ShieldPeriod', 'unset')}, every prism danger)", False
+    block = re.sub(r"^    ShieldPeriod: .+$", "    ShieldPeriod: 0", raw, count=1, flags=re.M)
+    if not check:
+        path.write_text(text.replace(raw, block, 1))
+    return f"ShieldPeriod {fields['ShieldPeriod']} -> 0 (every prism danger)", True
 
 
 def rewrite(path, period, check):
@@ -124,32 +134,32 @@ def rewrite(path, period, check):
 
 def main():
     check = "--check" in sys.argv
-    period = charge_period()
+    period = armour_period()
 
-    print(f"Charge flora shield cadence (Flora.ChargeShieldPeriod = {period:g}s)")
-    print("-" * 62)
+    print(f"Flora armour (ElementalArmour.ShieldPeriod = {period:g}s on Mass; Charge never shields)")
+    print("-" * 70)
 
     drift = []
     for path in sorted(LIFEFORMS.glob("*Flora *.asset")):
         text = path.read_text()
         element = re.search(r"^  Element: (\d+)$", text, re.M)
-        if not element or int(element.group(1)) != CHARGE:
+        if not element or int(element.group(1)) not in (CHARGE, MASS):
             continue
-        note, changed = rewrite(path, period, check)
-        print(f"  {path.stem:<28} {note}")
+        if int(element.group(1)) == MASS:
+            note, changed = rewrite(path, period, check)
+        else:
+            note, changed = disarm(path, check)
+        print(f"  {path.stem:<34} {note}")
         if changed:
             drift.append(path.stem)
 
     if check and drift:
-        print(f"\nFAILED: {len(drift)} Charge flora do not carry the shield cadence: "
-              + ", ".join(drift))
+        print(f"\nFAILED: {len(drift)} flora assets do not state the armour law: " + ", ".join(drift))
         return 1
     if check:
-        print("\nevery Charge flora asset states the armour")
+        print("\nevery Mass flora asset states the armour and no Charge one does")
     elif drift:
         print(f"\nwrote {len(drift)} asset(s)")
-    else:
-        print("\nnothing to write")
     return 0
 
 

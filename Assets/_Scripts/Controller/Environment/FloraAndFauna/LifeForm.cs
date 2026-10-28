@@ -228,8 +228,8 @@ namespace CosmicShore.Gameplay
             // config's variant block, and after the cell's overrides, because it is the only
             // point where every one of them has already been applied AND the crystal that
             // carries the element has been resolved (two lines up). See
-            // Flora.ResolveShieldPeriod: Charge armours its mass, and a config must not be
-            // able to author that away by leaving the field at 0.
+            // Flora.ResolveShieldPeriod: Mass armours its mass, and a config must not be
+            // able to author that away by leaving the field at 0 (nor armour a Charge plant, whose prisms are danger).
             shieldPeriod = ResolveShieldPeriod(shieldPeriod);
 
             if (shieldPeriod > 0)
@@ -461,7 +461,7 @@ namespace CosmicShore.Gameplay
         /// <see cref="Initialize"/> with whatever the prefab + config + cell overrides
         /// resolved to. The base keeps it exactly as authored; a subclass overrides only to
         /// express an ELEMENTAL law that must hold on every spawn path
-        /// (<c>Flora.ResolveShieldPeriod</c> - Charge armours its leaves).
+        /// (<c>Flora.ResolveShieldPeriod</c> - Mass armours its leaves, Charge never does; <c>ElementalArmour</c>).
         ///
         /// <para>It is a hook rather than a line in <see cref="ApplyVariantTuning"/> because
         /// the element is not known there: the crystal is resolved in Initialize, and the
@@ -471,7 +471,7 @@ namespace CosmicShore.Gameplay
         protected virtual float ResolveShieldPeriod(float authored) => authored;
 
         // Scratch + cached yield for ShieldRegenCoroutine. This runs forever on every SHIELDED
-        // lifeform, and Charge floors every Charge plant at a 1 s period (Flora.ChargeShieldPeriod),
+        // lifeform, and Mass floors every Mass plant at a 1 s period (ElementalArmour.ShieldPeriod),
         // so the old body allocated a fresh List per cycle AND a WaitForSeconds PER PRISM - on a
         // plant with dozens of prisms, dozens of allocations a second, times the population.
         // Measured contribution in a boot-world spike frame: Docs/archive/PERFORMANCE_LOG_2026.md §0.8.
@@ -523,7 +523,10 @@ namespace CosmicShore.Gameplay
                     for (int i = 0; i < _shieldRegenScratch.Count; i++)
                     {
                         var block = _shieldRegenScratch[i];
-                        if (block) block.ActivateShield();
+                        // A danger prism is never armoured over: a shield CLEARS danger (PrismStateManager.ApplyShieldState),
+                        // so the regen used to strip every authored danger prism of an armoured plant within a cycle -
+                        // a Charge gyroid's octagon ring was danger for its first few seconds only (Docs/ECOSYSTEM.md §65).
+                        if (block && block.prismProperties is not { IsDangerous: true }) block.ActivateShield();
                         yield return _shieldWait;
                     }
                 }

@@ -28,11 +28,20 @@ MonoBehaviour:
   Element: 2
   Variant:
     Enabled: 1
-    HeartWorldScale: 2.905
     LeafSize: {x: 2.97, y: 7.29, z: 1.1}
     GrowPeriod: 0.91
-    ShieldPeriod: 0.0
+    LatticeScale: -1
+    PlantScale: -1
+    ShieldPeriod: 1
+    WitherRingInterval: -1
     MaxTotalSpawnedObjects: 144
+    MaxTotalSpawnedObjectsScale: -1
+    ItemsPerGrow: -1
+    RandomItems: -1
+    MaturationSeconds: -1
+    MaxSpawnsPerFrame: -1
+    HeartWorldScale: 2.905
     PlantRadiusCellFraction: 0.5
+    PlantRadiusCellFractionMin: -1
   SpreadElements: 0
   ElementPalette: []
