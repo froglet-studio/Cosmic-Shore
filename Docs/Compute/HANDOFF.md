@@ -96,6 +96,16 @@ worth it), `sessions` and `ask` inside the claude.ai viewer, and a real approval
   setup's first run would have done nothing on a machine that had worked the search before). It is now per session;
   the self-test's second box1 session proves it (and fails against the old check).
 
+### Windows install fix and manual runs (2026-10-28)
+
+- Shombith's first Windows install failed: Task Scheduler's /TR takes 261 characters and the worker's full command
+  was longer. The task now runs `"<pythonw>" "<~/.froglet-compute/worker.pyw>"`; it also passed `/I 10.0` (needs a
+  whole number) and would have opened console windows. Self-tested with a Store Python path; not yet run on Windows.
+- Manual runs (README section 14): a real request was filed on origin's `compute-queue`
+  (`r20261028-125904-5357`, the Rhino Regatta drive with the brake held at 0.5 s on I4 only); a worker took it ahead of
+  its queue, ran 308 tries and recorded best 3.416 against today's 4.113 under the same settings (in the model).
+  A token made by the console's form ran through the backend unchanged.
+
 ## 4. Decisions that are yours
 
 - **Merge or not**, and onto what (`bleeding-edge` directly, or through your own branch).

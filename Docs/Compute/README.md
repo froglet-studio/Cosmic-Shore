@@ -298,6 +298,31 @@ then serves as is from GitHub Pages (a private Pages site needs GitHub Enterpris
 `sessions` say they need the claude.ai console. Moving approvals or tasks to such a host needs a backend of its own
 (for example a Cloudflare Worker with a GitHub App), which is a separate decision.
 
+## 14. Manual runs: your instructions for one search (Shombith, 2026-10-28)
+
+Besides the automatic queue (idle, `--between`, `--always`), anyone can run one search their way
+(`Tools/Compute/manual_runs.py`):
+
+- **What a request can say**: which search; how many tries; settings held at a value (`--fix name=value`), settings
+  searched in a narrower range (`--range name=low:high`), the evaluator's own settings set differently (`--arg
+  intensities=[4]`); which computer (`any` or `<person>/<computer>`); and a note in your words. Only what the job
+  already allows: values inside its bounds, settings it has, evaluator settings it already sets. Never new code.
+- **Now, on your computer**: `compute.py run --request <id|token|file>` runs it at once, without waiting for idle.
+- **For the team's computers**: `compute.py request new <search> --tries 800 --fix brakeLeadSeconds=0.5
+  --arg 'intensities=[4]' --note "..." --push` files `Docs/Compute/requests/<id>.json` on the `compute-queue` branch
+  (git plumbing; the checkout is not touched). Every worker takes the oldest open request it may run before its
+  automatic queue, under its own idle rules, until the tries are spent across all of them.
+- **On the console**: New run (title bar, Runs, Home, and "Run this my way" on every search) is a form: pick the
+  search, set each setting to search / narrower range / hold at, change how it is scored, tries, where, note; or
+  describe it in words and let Claude fill the form in. It makes a token: a command to paste for your computer, or
+  for the team "File it now" (starts a cloud session that runs `request new --token ... --push`) or the same command
+  yourself. The terminal has `run <search> [--tries N] [--fix a=v] [--range a=lo:hi] [--arg k=v] [--note ...] [--team]`
+  and `requests`.
+- **Where results go**: each computer writes `requests/<id>.json` (its tries and best) to its results branch and
+  runs the search as `<job>~<id>`, so a manual run never mixes with the job's own search; the evaluator still scores
+  against the job's full space, so the numbers compare. Runs on the console shows every request, its state, tries,
+  and its best against today's value under the same settings. `compute.py request list` and `request cancel <id>`.
+
 ## 12. Verification status (2026-10-26)
 
 Run in the cloud session that built it (Linux, 4 cores, Python 3.13, numpy, no torch, no .NET):

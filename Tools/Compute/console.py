@@ -112,6 +112,12 @@ def jobs_and_machines(jobs, machines, caps):
 def runs(machines, jobs):
     """What each computer is doing now (progress published every few minutes) and its recent sessions."""
     titles = {j["id"]: j.get("title") for j in jobs.values()}
+    for jid in list(titles):
+        titles[jid + "~"] = "Manual run: " + (titles[jid] or jid)
+
+    def title(job_id):
+        job_id = job_id or ""
+        return titles.get(job_id) or (titles.get(job_id.split("~")[0] + "~") if "~" in job_id else None)
     t = L.now()
     active, recent = [], []
     for m in machines:
@@ -119,15 +125,50 @@ def runs(machines, jobs):
         who = f"{m['user']}/{m['host']}"
         cur = hb.get("current") or {}
         if cur.get("job") and t - int(hb.get("updated", 0) or 0) < 3 * 3600:
-            active.append({"machine": who, "job": cur["job"], "title": titles.get(cur["job"]), "since": cur.get("since"),
+            active.append({"machine": who, "job": cur["job"], "title": title(cur["job"]), "request": cur.get("request"),
+                           "since": cur.get("since"),
                            "updated": hb.get("updated"), "minutes": cur.get("minutes"), "max_evals": cur.get("max_evals"),
                            "evals": cur.get("evals"), "best": _num(cur.get("best")), "best_start": _num(cur.get("best_start")),
                            "unit": cur.get("unit"), "progress": cur.get("progress")})
         for r in hb.get("runs") or []:
-            recent.append(dict(r, machine=who, title=titles.get(r.get("job")),
+            recent.append(dict(r, machine=who, title=title(r.get("job")),
                                best_start=_num(r.get("best_start")), best_end=_num(r.get("best_end"))))
     recent.sort(key=lambda r: -(r.get("end") or 0))
     return {"active": active, "recent": recent[:60]}
+
+
+def manual(jobs, machines, cwd=None):
+    """Every manual run (manual_runs.py) with how far it has got, its best and today's value under its settings."""
+    import manual_runs as R
+    out = []
+    for req in sorted(R.load(cwd=cwd).values(), key=lambda r: -(r.get("created") or 0)):
+        st = R.progress(req, machines)
+        derived = f"{req.get('job')}~{req['id']}"
+        base = None
+        for m in machines:
+            for e in (m["jobs"].get(derived) or {}).values():
+                base = base or ((e.get("summary") or {}).get("baseline") or {}).get("loss")
+        job = jobs.get(req.get("job")) or {}
+        out.append({"id": req["id"], "job": req.get("job"), "title": job.get("title") or req.get("job"), "by": req.get("by"),
+                    "created": req.get("created"), "note": req.get("note"), "machine": req.get("machine", "any"),
+                    "fix": req.get("fix") or {}, "ranges": req.get("ranges") or {}, "args": req.get("args") or {},
+                    "problems": R.problems(req, job or None), "today": _num(base), **{k: st[k] for k in
+                    ("state", "tries", "budget", "machines", "running_on", "updated")}, "best": _num(st["best"])})
+    return out
+
+
+def run_forms(jobs):
+    """What the console's New run form needs per search: its settings with bounds and today's values, and the
+    evaluator settings a manual run may change."""
+    out = {}
+    for j in jobs.values():
+        if j.get("kind") != "search":
+            continue
+        out[j["id"]] = {"space": [{k: d.get(k) for k in ("name", "type", "lo", "hi", "choices", "init")} for d in j.get("space") or []],
+                        "args": {k: v for k, v in ((j.get("evaluator") or {}).get("args") or {}).items()
+                                 if not k.startswith("_") and (isinstance(v, (int, float, bool)) and not isinstance(v, bool) or
+                                                               (isinstance(v, list) and all(isinstance(x, (int, float)) for x in v)))}}
+    return out
 
 
 def install_info(cwd=None):
@@ -227,6 +268,7 @@ def build(local=False, fetch=True, cwd=None, prs=None, url=None):
     return {"schema": SCHEMA, "generated": L.now(), "core": core_four(),
             "queue": "working tree (--local)" if local else list(L.QUEUE_REFS),
             "jobs": out_jobs, "machines": out_machines, "runs": run_data, "install": install_info(cwd),
+            "manual": manual(jobs, machines, cwd), "forms": run_forms(jobs),
             "recordings": recordings(cwd), "ai": ai_branch_status(cwd),
             "git": git_snapshot(cwd), "pull_requests": pull_requests(prs), "repo": "froglet-studio/Cosmic-Shore",
             "branch": (L.git_ok("rev-parse", "--abbrev-ref", "HEAD", cwd=cwd) or "").strip(), "url": url}

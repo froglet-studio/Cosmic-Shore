@@ -36,6 +36,9 @@ publishes only to `compute/<them>/<machine>`, and updates itself from `bleeding-
 
 - A box nobody sits at (a VM): `compute.py install --always`, or `run --always` in `tmux`/`screen`.
 - Only at night, or any set hours: add `--between 22:00-07:00` (local time) to `run` or `install`.
+- A manual run (someone's instructions for one search): `compute.py run --request <id|token>` now on this computer,
+  or `compute.py request new <search> --tries N --fix a=v --range a=lo:hi --arg k=v --note "..." --push` for the team
+  (README section 14). A token pasted from the console's New run is `request new --token <it> --push`.
 - Joining from a person's machine: the console's Install button, or from their Cosmic-Shore folder
   `git fetch origin <ref> && git show origin/<ref>:Tools/Compute/setup.py | python3 -` (README section 1).
 - The board people read is the **Compute Console** (README section 13, https://claude.ai/artifact/54nfQFCxNBFHYQ2mCErPt1).

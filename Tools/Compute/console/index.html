@@ -258,6 +258,8 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
 @keyframes drop { from { transform: translateY(-14px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
 .sheet h2 { font-size: 21px; }
+.sheet { grid-template-columns: minmax(0, 1fr); }
+.sheet > *, .card > *, .mrun > * { min-width: 0; }
 .seg { display: inline-flex; background: var(--sunk); padding: 3px; gap: 3px; }
 .seg button { border: 0; background: transparent; color: var(--muted); padding: 6px 14px; cursor: pointer; font: 600 12.5px/1 var(--ui); }
 .seg button[aria-pressed="true"] { background: rgba(0,212,255,0.2); color: var(--text); }
@@ -273,6 +275,22 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
 .copyrow { display: flex; gap: 8px; align-items: stretch; min-width: 0; }
 .copyrow .cmdline { flex: 1; }
 .copyrow .btn { flex: none; }
+
+/* ── new run ── */
+.sheet.wide { width: min(780px, 100%); }
+.flabel { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.flabel .field { color: var(--text); }
+select.field, input.field, textarea.field { width: 100%; font: inherit; font-size: 13px; color: var(--text); background: var(--sunk); border: 1px solid var(--line); padding: 7px 9px; }
+textarea.field { min-height: 54px; resize: vertical; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.kv2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.mrun { display: grid; gap: 6px; background: var(--card); padding: 14px 18px; }
+.mrun .top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.mrun .top b { font: 400 15px/1.3 var(--head); }
+.mrun q { color: var(--jade-l); font-style: normal; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font: 11px/1 var(--mono); padding: 4px 7px; background: rgba(0,212,255,0.1); color: var(--jade-l); }
 
 /* ── tour ── */
 .tour { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
@@ -290,7 +308,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   body { padding: 0; }
   .window { border-radius: 0; border: 0; min-height: 100%; }
   .titlebar { grid-template-columns: auto 1fr auto; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
-  .tright .fresh, #sb-right { display: none; }
+  .tright .fresh, #sb-right, #b-newrun { display: none; }
   .tright { justify-self: end; }
   .titlebar { gap: 14px; }
   .body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
@@ -313,7 +331,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
       <button class="g" data-g="+" id="l-green" aria-label="Zoom the window" title="Zoom the window"></button>
     </div>
     <div class="wtitle"><span class="led" id="led"></span><b>Froglet Compute</b></div>
-    <div class="tright"><span class="fresh" id="fresh">loading</span><button class="tbtn" type="button" id="b-tour">Tour</button><button class="tbtn cta" type="button" id="b-install">Install</button></div>
+    <div class="tright"><span class="fresh" id="fresh">loading</span><button class="tbtn" type="button" id="b-tour">Tour</button><button class="tbtn" type="button" id="b-newrun">New run</button><button class="tbtn cta" type="button" id="b-install">Install</button></div>
   </div>
   <div class="body">
     <nav class="side" id="nav" aria-label="Views">
@@ -448,7 +466,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
     var sentence = [d.machines.length + (d.machines.length === 1 ? " computer has" : " computers have") + " spent ", h("em", { text: hours.toFixed(1) + " hours" }), " searching for better AI and creatures. ",
       act.length ? h("em", { text: act.length + (act.length === 1 ? " run is going now." : " runs are going now.") }) : "Nothing is running right now: computers start once their person has been away 10 minutes."];
     root.appendChild(h("div", { class: "hero sliver", id: "home-hero" }, [h("p", { class: "big" }, sentence),
-      h("div", { class: "row" }, [h("button", { class: "btn cta", type: "button", onclick: openInstall, text: "Install on this computer" }), h("button", { class: "btn", type: "button", onclick: function () { startTour(0); }, text: "Show me around" })])]));
+      h("div", { class: "row" }, [h("button", { class: "btn cta", type: "button", onclick: openInstall, text: "Install on this computer" }), h("button", { class: "btn", type: "button", onclick: function () { openNewRun(); }, text: "Start a run" }), h("button", { class: "btn", type: "button", onclick: function () { startTour(0); }, text: "Show me around" })])]));
     // needs you
     var needs = [];
     d.jobs.filter(function (j) { return j.converged && j.status !== "promoted"; }).forEach(function (j) { needs.push(["", j.title, "Finished searching: " + (delta(j) ? pctText(delta(j)) + " AI, in the model" : "a result") + ". Any of the core four can approve it.", "Review", function () { openJob(j.id); }]); });
@@ -491,13 +509,36 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
         r.best != null ? h("span", null, ["best ", h("b", { text: fmt(r.best) }), better ? h("span", { class: "delta good", text: " (improved this run)" }) : ""]) : null,
         h("span", null, ["last heard ", h("b", { text: ago(r.updated) })])])]);
   }
+  function manualBox(m) {
+    var better = m.best != null && m.today != null && m.best < m.today, frac = m.budget ? Math.min(1, (m.tries || 0) / m.budget) : 0;
+    var chips = [];
+    Object.keys(m.fix).forEach(function (k) { chips.push(k + " = " + m.fix[k]); });
+    Object.keys(m.ranges).forEach(function (k) { chips.push(k + " in " + m.ranges[k][0] + "–" + m.ranges[k][1]); });
+    Object.keys(m.args).forEach(function (k) { chips.push(k + ": " + JSON.stringify(m.args[k])); });
+    return h("div", { class: "mrun sliver" }, [
+      h("div", { class: "top" }, [h("span", { class: "pill " + ({ done: "learned", running: "ready", open: "waiting", cancelled: "idle" })[m.state], text: m.state === "open" ? "waiting for a computer" : m.state }),
+        h("b", { text: m.title }), h("span", { class: "note", text: "by " + (m.by || "?") + " · " + ago(m.created) + (m.machine !== "any" ? " · only " + m.machine : "") })]),
+      m.note ? h("q", { text: m.note }) : null,
+      chips.length ? h("div", { class: "chips" }, chips.map(function (c) { return h("span", { class: "chip", text: c }); })) : null,
+      h("div", { class: "prog" + (m.state === "running" ? " live" : "") }, [h("i", { style: "width:" + Math.max(2, Math.round(frac * 100)) + "%" })]),
+      h("div", { class: "run" , style: "padding:0;background:none" }, [h("div", { class: "facts" }, [h("span", null, [h("b", { text: (m.tries || 0) + " / " + m.budget }), " tries"]),
+        m.best != null ? h("span", null, ["best ", h("b", { text: fmt(m.best) }), m.today != null ? " vs today's " + fmt(m.today) + " under these settings" : "", better ? h("span", { class: "delta good", text: " (" + ((m.today - m.best) / Math.abs(m.today) * 100).toFixed(1) + "% better)" }) : ""]) : null,
+        m.running_on ? h("span", null, ["on ", h("b", { text: m.running_on })]) : (m.machines.length ? h("span", { text: "on " + m.machines.join(", ") }) : null),
+        m.problems.length ? h("span", { class: "delta worse", text: "cannot run: " + m.problems.join("; ") }) : null])]),
+      h("div", { class: "note mono", text: m.id })]);
+  }
   function renderRuns(root) {
     var act = (DATA.runs || {}).active || [], recent = (DATA.runs || {}).recent || [];
     root.appendChild(title("Runs", "what each computer is doing"));
     root.appendChild(h("p", { class: "lead", text: "A run is one session on one computer: it picks the search that most needs time, works on it for up to an hour (or until its person comes back), then reports. While it runs it reports progress every few minutes." }));
+    root.appendChild(h("button", { class: "btn cta", type: "button", style: "justify-self:start", onclick: function () { openNewRun(); }, text: "New run" }));
     root.appendChild(h("h3", { text: "Running now" }));
     if (act.length) act.forEach(function (r) { root.appendChild(runBox(r, true)); });
     else root.appendChild(h("div", { class: "empty sliver" }, [h("b", { text: "Nothing is running right now" }), h("span", { text: "Computers start on their own once their person has been away 10 minutes." }), h("button", { class: "btn cta", type: "button", onclick: openInstall, text: "Install on this computer" })]));
+    var man = DATA.manual || [];
+    root.appendChild(h("h3", { text: "Manual runs" + (man.length ? " · " + man.length : "") }));
+    if (!man.length) root.appendChild(h("p", { class: "note", text: "None yet. New run makes one: your settings, your question." }));
+    man.forEach(function (m) { root.appendChild(manualBox(m)); });
     root.appendChild(h("h3", { text: "Recent runs" }));
     if (!recent.length) { root.appendChild(h("p", { class: "note", text: "No finished run has been reported yet." })); return; }
     root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["When", "Computer", "Search", "Took", "Tries", "Result", "Ended because"].map(function (t) { return h("th", { text: t }); }))]),
@@ -580,6 +621,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
       return h("p", { class: "note", text: ago(r.end) + " · " + r.machine + " · " + (r.evals || 0) + " tries in " + dur(r.end - r.start) + " · " + (r.best_end != null ? "best " + fmt(r.best_end) : "") + " · " + stopped(r.stopped) }); }))));
     var pt = paramsTable(j); if (pt) p.appendChild(pt);
     if (j.best && j.best.limits) p.appendChild(h("div", { class: "banner gold" }, [h("h3", { text: "What the model does not see" }), h("p", { class: "note", text: j.best.limits })]));
+    if (formFor(j.id)) p.appendChild(h("button", { class: "btn", type: "button", style: "justify-self:start", onclick: function () { openNewRun(j.id); }, text: "Run this my way" }));
     p.appendChild(approvalCard(j));
     if (j.promote) p.appendChild(h("details", { class: "card sliver" }, [h("summary", { text: "How a yes reaches the game", style: "cursor:pointer;font-family:var(--head)" }), h("p", { class: "note", text: j.promote })]));
     p.appendChild(h("p", { class: "note mono", text: "epoch " + (j.epoch || "–") + " · code from " + j.ref }));
@@ -729,12 +771,139 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   }
   function closeInstall() { document.getElementById("sheet").hidden = true; }
 
+  // ── manual runs: the New run sheet (manual_runs.py is the backend) ──
+  var NR = null;
+  function b64url(s) { var bin = ""; new TextEncoder().encode(s).forEach(function (b) { bin += String.fromCharCode(b); }); return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function newReqId() { var d = new Date(), p = function (n) { return String(n).padStart(2, "0"); };
+    return "r" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + "-" + Math.floor(Math.random() * 65536).toString(16).padStart(4, "0"); }
+  function formFor(jid) { return ((DATA && DATA.forms) || {})[jid]; }
+  function freshNR(jid) {
+    var f = formFor(jid) || { space: [], args: {} }, modes = {}, vals = {}, args = {};
+    f.space.forEach(function (d) { modes[d.name] = "search"; vals[d.name] = { lo: d.lo, hi: d.hi, v: d.init != null ? d.init : (d.choices ? d.choices[0] : d.lo) }; });
+    Object.keys(f.args).forEach(function (k) { args[k] = JSON.stringify(f.args[k]); });
+    return { job: jid, tries: 500, where: "here", modes: modes, vals: vals, args: args, note: "", describe: "", made: null, msg: "" };
+  }
+  function nrRequest() {
+    var f = formFor(NR.job), req = { schema: "froglet-compute/request/1", id: newReqId(), job: NR.job, by: who(), created: Math.floor(Date.now() / 1000),
+      note: NR.note.trim(), budget: { tries: parseInt(NR.tries, 10) || 0 }, machine: NR.where === "here" || NR.where === "team" ? "any" : NR.where }, errs = [];
+    var fix = {}, ranges = {}, args = {};
+    f.space.forEach(function (d) { var m = NR.modes[d.name], v = NR.vals[d.name];
+      if (m === "fix") { var x = d.type === "choice" ? v.v : Number(v.v); if (d.type !== "choice" && (!isFinite(x) || x < d.lo || x > d.hi)) errs.push(d.name + " must be between " + d.lo + " and " + d.hi); fix[d.name] = x; }
+      if (m === "range") { var lo = Number(v.lo), hi = Number(v.hi); if (!(isFinite(lo) && isFinite(hi) && lo < hi && lo >= d.lo && hi <= d.hi)) errs.push(d.name + ": low must be under high, inside " + d.lo + "–" + d.hi); ranges[d.name] = [lo, hi]; } });
+    Object.keys(NR.args).forEach(function (k) { var t = NR.args[k], orig = JSON.stringify(f.args[k]); if (t === orig) return;
+      try { args[k] = JSON.parse(t); } catch (e) { errs.push(k + " is not a number or a list like [1, 2]"); } });
+    if (Object.keys(fix).length >= f.space.length) errs.push("leave at least one setting to search");
+    if (!(req.budget.tries >= 1 && req.budget.tries <= 200000)) errs.push("tries must be 1–200000");
+    if (Object.keys(fix).length) req.fix = fix; if (Object.keys(ranges).length) req.ranges = ranges; if (Object.keys(args).length) req.args = args;
+    return { req: req, errs: errs };
+  }
+  function appCmd(rest) {
+    return OS === "windows" ? "python $HOME\\.froglet-compute\\app\\Tools\\Compute\\compute.py " + rest : "python3 ~/.froglet-compute/app/Tools/Compute/compute.py " + rest;
+  }
+  function openNewRun(jid) {
+    if (!DATA) return;
+    var ids = Object.keys(DATA.forms || {}); if (!ids.length) return;
+    NR = freshNR(jid && formFor(jid) ? jid : (NR && NR.job) || ids[0]);
+    closeJob(); drawNewRun(); document.getElementById("sheet").hidden = false;
+  }
+  function drawNewRun() {
+    var w = document.getElementById("sheet"); w.textContent = "";
+    var sheet = h("div", { class: "sheet wide", role: "dialog", "aria-modal": "true", "aria-labelledby": "nr-title" }), f = formFor(NR.job), j = jobById(NR.job) || {};
+    w.appendChild(sheet);
+    sheet.appendChild(h("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:12px" }, [h("h2", { id: "nr-title", text: "New run" }), h("button", { class: "btn", type: "button", onclick: closeInstall, text: "Close" })]));
+    sheet.appendChild(h("p", { class: "lead", text: "Run one search your way: hold some settings, narrow others, change how it is scored, and say what you want to learn. It runs now on your computer, or the team's computers take it ahead of their own queue." }));
+    var sel = h("select", { id: "nr-job", class: "field", onchange: function (e) { NR = freshNR(e.target.value); drawNewRun(); } },
+      Object.keys(DATA.forms).map(function (id) { var jj = jobById(id) || {}; return h("option", { value: id, text: jj.title || id }); }));
+    sel.value = NR.job;
+    sheet.appendChild(h("label", { class: "flabel" }, ["Search", sel]));
+    if (CAP.sample) {
+      var ask = h("textarea", { id: "nr-describe", class: "field", placeholder: "Or describe it: \"Rhino on I4 only, brake later, keep corner speed near today's\"" });
+      ask.value = NR.describe; ask.addEventListener("input", function () { NR.describe = ask.value; });
+      var askMsg = h("span", { class: "note" });
+      sheet.appendChild(h("div", { class: "card sliver" }, [h("b", { text: "Describe it in words" }), ask, h("div", { class: "btns" }, [h("button", { class: "btn", type: "button", onclick: function () { describeRun(askMsg); }, text: "Fill in the form" }), askMsg])]));
+    }
+    // settings
+    var rows = f.space.map(function (d) {
+      var m = NR.modes[d.name], v = NR.vals[d.name];
+      var mode = h("select", { class: "field", "aria-label": d.name + " mode", onchange: function (e) { NR.modes[d.name] = e.target.value; drawNewRun(); } },
+        [["search", "search it"], ["range", "narrower range"], ["fix", "hold at"]].filter(function (o) { return !(d.type === "choice" && o[0] === "range"); }).map(function (o) { return h("option", { value: o[0], text: o[1] }); }));
+      mode.value = m;
+      var inp = null;
+      if (m === "fix") inp = d.type === "choice" ? h("select", { class: "field", onchange: function (e) { v.v = e.target.value; } }, d.choices.map(function (c) { return h("option", { value: c, text: String(c) }); }))
+        : h("input", { class: "field", type: "number", step: "any", value: String(v.v), oninput: function (e) { v.v = e.target.value; } });
+      if (m === "range") inp = h("span", { class: "pair" }, [h("input", { class: "field", type: "number", step: "any", value: String(v.lo), "aria-label": d.name + " low", oninput: function (e) { v.lo = e.target.value; } }),
+        h("input", { class: "field", type: "number", step: "any", value: String(v.hi), "aria-label": d.name + " high", oninput: function (e) { v.hi = e.target.value; } })]);
+      return h("tr", null, [h("td", { class: "mono", text: d.name }), h("td", { class: "num", text: d.init == null ? "–" : String(d.init) }), h("td", { class: "note", text: d.type === "choice" ? d.choices.join(" / ") : d.lo + " – " + d.hi }), h("td", null, [mode]), h("td", null, [inp])]);
+    });
+    sheet.appendChild(h("details", { class: "card sliver", open: Object.keys(NR.modes).some(function (k) { return NR.modes[k] !== "search"; }) || null }, [
+      h("summary", { text: "Settings (" + f.space.length + "): all searched unless you say otherwise", style: "cursor:pointer;font-family:var(--head)" }),
+      h("div", { class: "tablewrap" }, [h("table", null, [h("thead", null, [h("tr", null, ["Setting", "Today", "Allowed", "How", "Value"].map(function (t) { return h("th", { text: t }); }))]), h("tbody", null, rows)])])]));
+    var argKeys = Object.keys(NR.args);
+    if (argKeys.length) sheet.appendChild(h("details", { class: "card sliver" }, [h("summary", { text: "How it is scored", style: "cursor:pointer;font-family:var(--head)" }),
+      h("div", { class: "kv2" }, argKeys.map(function (k) { return h("label", { class: "flabel" }, [k, h("input", { class: "field mono", value: NR.args[k], oninput: function (e) { NR.args[k] = e.target.value; } })]); })),
+      h("p", { class: "note", text: "intensities picks which of I1–I4 are raced; seeds how many course variants; limit the longest a race may take." })]));
+    var tries = h("input", { class: "field", type: "number", min: "1", max: "200000", value: String(NR.tries), id: "nr-tries", oninput: function (e) { NR.tries = e.target.value; } });
+    var where = h("select", { class: "field", id: "nr-where", onchange: function (e) { NR.where = e.target.value; drawNewRun(); } },
+      [h("option", { value: "here", text: "My computer, now" }), h("option", { value: "team", text: "The team's computers (whichever is free)" })]
+        .concat(DATA.machines.map(function (m) { return h("option", { value: m.machine, text: "Only " + m.machine }); })));
+    where.value = NR.where;
+    var note = h("textarea", { class: "field", id: "nr-note", placeholder: "What do you want to learn? (shown with the results)" }); note.value = NR.note; note.addEventListener("input", function () { NR.note = note.value; });
+    sheet.appendChild(h("div", { class: "cols2" }, [h("label", { class: "flabel" }, ["Tries", tries]), h("label", { class: "flabel" }, ["Where", where])]));
+    sheet.appendChild(h("label", { class: "flabel" }, ["Note", note]));
+    var out = h("div", { class: "approve", id: "nr-out" });
+    sheet.appendChild(h("div", { class: "btns" }, [h("button", { class: "btn cta", type: "button", id: "nr-make", onclick: function () { makeRun(out); }, text: NR.where === "here" ? "Make the command" : "Send it" })]));
+    sheet.appendChild(out);
+    if (NR.made) showMade(out);
+  }
+  function makeRun(out) {
+    var r = nrRequest(); out.textContent = "";
+    if (r.errs.length) { out.appendChild(h("div", { class: "banner bad" }, r.errs.map(function (e) { return h("p", { class: "note", text: e }); }))); return; }
+    NR.made = r.req; showMade(out);
+  }
+  function showMade(out) {
+    var req = NR.made, tok = b64url(JSON.stringify(req)); out.textContent = "";
+    if (NR.where === "here") {
+      out.appendChild(h("p", null, [h("b", { text: "Paste this into " + (OS === "windows" ? "PowerShell" : "Terminal") + ". " }), "It runs " + req.budget.tries + " tries now, without waiting for you to be away, and reports to Runs."]));
+      out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("run --request " + tok) })]), copyBtn(function () { return appCmd("run --request " + tok); })]));
+      out.appendChild(h("p", { class: "note", text: "Needs Froglet Compute installed on this computer (the Install button). From a checkout of the compute branch: python3 Tools/Compute/compute.py run --request <the same token>." }));
+      return;
+    }
+    out.appendChild(h("p", null, [h("b", { text: "Request " + req.id + ". " }), "The team's computers take it ahead of their own queue once it is filed on the compute-queue branch."]));
+    if (CAP.mcp) {
+      var msg = h("p", { class: "note" });
+      out.appendChild(h("div", { class: "btns" }, [h("button", { class: "btn cta", type: "button", onclick: function (e) { e.target.disabled = true; msg.textContent = "Starting a Claude Code session to file it…";
+        createSession("File a Froglet Compute manual run. In froglet-studio/Cosmic-Shore (branch " + (DATA.branch || "the compute branch") + "), run `python3 Tools/Compute/compute.py request new --token " + tok + " --push` and report the request id and what it printed. Change nothing else.", "Compute console: file " + req.id)
+          .then(function (link) { msg.textContent = ""; msg.appendChild(document.createTextNode("Filing it: ")); if (link) msg.appendChild(link); },
+            function (er) { msg.textContent = er; e.target.disabled = false; }); }, text: "File it now (starts a cloud session)" })]));
+      out.appendChild(msg);
+    }
+    out.appendChild(h("p", { class: "note", text: "Or file it yourself from a terminal:" }));
+    out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("request new --token " + tok + " --push") })]), copyBtn(function () { return appCmd("request new --token " + tok + " --push"); })]));
+  }
+  function describeRun(msg) {
+    if (!CAP.sample || !NR.describe.trim()) return;
+    var f = formFor(NR.job), j = jobById(NR.job) || {};
+    msg.textContent = "Thinking…";
+    CAP.sample.json("You turn a person's words into a Froglet Compute manual run for one search. The search: " + (j.title || NR.job) + ". Its settings (name, allowed low/high or choices, today's value): " + JSON.stringify(f.space) +
+      ". Its scoring settings (may be changed, same type): " + JSON.stringify(f.args) + ". Reply with only JSON: {\"tries\": number 100-20000, \"fix\": {name: value}, \"ranges\": {name: [low, high]}, \"args\": {name: value}, \"note\": \"the question in one sentence\"}. Use only names listed, keep every value inside its bounds, leave out what the person did not mention.\n\nThe person said: " + NR.describe,
+      { modelTier: "quick", cache: false }).then(function (o) {
+      o = o || {}; var n = 0;
+      Object.keys(o.fix || {}).forEach(function (k) { if (NR.modes[k] != null) { NR.modes[k] = "fix"; NR.vals[k].v = o.fix[k]; n++; } });
+      Object.keys(o.ranges || {}).forEach(function (k) { var r = o.ranges[k]; if (NR.modes[k] != null && Array.isArray(r)) { NR.modes[k] = "range"; NR.vals[k].lo = r[0]; NR.vals[k].hi = r[1]; n++; } });
+      Object.keys(o.args || {}).forEach(function (k) { if (NR.args[k] != null) { NR.args[k] = JSON.stringify(o.args[k]); n++; } });
+      if (o.tries) NR.tries = o.tries; if (o.note) NR.note = String(o.note);
+      NR.made = null; drawNewRun();
+      var m2 = document.querySelector("#sheet .card .note"); if (m2) m2.textContent = "Filled in " + n + " setting(s). Check them, then make the run.";
+    }, function (e) { msg.textContent = e.code === "not_granted" ? "Claude was not allowed for this page." : "Could not fill it in (" + e.code + ")."; });
+  }
+
   // ── tour: a spotlight on one control at a time ──
   var TOUR = [
-    { t: "Welcome to Froglet Compute", b: "This page shows what the team's computers are searching for while their people are away, what they have found, and what needs a decision. Eight short stops." },
+    { t: "Welcome to Froglet Compute", b: "This page shows what the team's computers are searching for while their people are away, what they have found, and what needs a decision. Ten short stops." },
     { el: "#nav-home", view: "home", t: "Home", b: "Start here. One sentence says what is happening, Needs you lists anything waiting on a person, and Running now shows live work." },
     { el: "#b-install", t: "Install", b: "Add your computer with one line in your terminal. It works only while you are away and stops the moment you come back." },
     { el: "#nav-runs", view: "runs", t: "Runs", b: "Each run is one computer working on one search for up to an hour. Live runs show a progress bar and report every few minutes. Finished runs say what they found." },
+    { el: "#b-newrun", t: "New run", b: "Run one search your way: hold settings, narrow others, choose which intensities to race, and write what you want to learn. Run it now on your computer, or let the team's computers take it ahead of their queue. Manual runs show in Runs." },
     { el: "#nav-searches", view: "searches", t: "Searches", b: "Everything the computers look for: AI driving settings per vessel and mode, the Regatta balance, new swarm bodies. The green number is how much better the best find is than what the game ships today." },
     { el: "#searching-group .job", view: "searches", t: "Open a search", b: "Click any search for its race times per intensity, the settings it found, its runs, and, when you are one of the core four, a button to put it in the game." },
     { el: "#nav-recordings", view: "recordings", t: "Recordings", b: "Every race played in the Unity editor is recorded on its own. The AI learns from them every hour; this shows what it has learned from and what waits." },
@@ -783,7 +952,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   var HELP = [["status", "everything at a glance"], ["runs", "what each computer is doing"], ["jobs", "every search"], ["job <id>", "one search: best, today's, why it waits"],
     ["open <view|job>", "show home, runs, searches, machines, recordings, ai, or a search"], ["recordings [person]", "races sent from the editor"], ["ai", "the ai branch"],
     ["git log [bleeding-edge|ai|Ys-bleeding-edge]", "recent commits"], ["git branches", "branches this console reads"], ["prs", "open pull requests"],
-    ["approve <job> [note] / decline <job>", "decide a search's best (core four)"], ["install", "the one-line install"], ["tour", "the guided tour"],
+    ["approve <job> [note] / decline <job>", "decide a search's best (core four)"], ["run <search> [--tries N] [--fix a=v] [--range a=lo:hi] [--arg k=v] [--note …] [--team]", "a manual run, your way"], ["requests", "every manual run"], ["install", "the one-line install"], ["tour", "the guided tour"],
     ["ask <question>", "ask Claude about this data"], ["task <prompt>", "start a Claude Code cloud session on the repo"], ["sync", "task: bring the ai branch up to date"],
     ["refresh", "task: rebuild this page's data and republish it"], ["sessions", "your recent Claude Code sessions"], ["env [n]", "pick where tasks run"], ["clear", "clear the screen"]];
   var CMDS = {
@@ -825,6 +994,21 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
     prs: function () { var p = DATA.pull_requests || []; if (!p.length) return out("no pull requests in this snapshot · `refresh` adds them", "warn");
       p.forEach(function (r) { out([{ t: "#" + pad(r.number, 6), c: "hl" }, pad((r.draft ? "[draft] " : "") + r.title, 72), { t: " " + (r.user || "") + " → " + (r.base || ""), c: "dim" }, " ", link(r.url, "↗")]); }); },
     approve: function (args) { decideFromTerm("approve", args); }, decline: function (args) { decideFromTerm("decline", args); },
+    run: function (args) { var j = args.shift(); if (!formFor(j)) return out("run <search> [--tries N] [--fix name=value] [--range name=low:high] [--arg key=value] [--note \"…\"] [--team]  · or New run", "err");
+      NR = freshNR(j); var team = false;
+      for (var i = 0; i < args.length; i++) { var a = args[i], v = args[i + 1];
+        if (a === "--tries") { NR.tries = v; i++; } else if (a === "--team") team = true; else if (a === "--note") { NR.note = v; i++; }
+        else if (a === "--fix" && v) { var kv = v.split("="); if (NR.modes[kv[0]] != null) { NR.modes[kv[0]] = "fix"; NR.vals[kv[0]].v = kv[1]; } i++; }
+        else if (a === "--range" && v) { var kr = v.split("="), lh = (kr[1] || "").split(":"); if (NR.modes[kr[0]] != null) { NR.modes[kr[0]] = "range"; NR.vals[kr[0]].lo = lh[0]; NR.vals[kr[0]].hi = lh[1]; } i++; }
+        else if (a === "--arg" && v) { var ka = v.split("="); if (NR.args[ka[0]] != null) NR.args[ka[0]] = ka.slice(1).join("="); i++; } }
+      NR.where = team ? "team" : "here";
+      var r = nrRequest(); if (r.errs.length) return r.errs.forEach(function (e) { out(e, "err"); });
+      var tok = b64url(JSON.stringify(r.req));
+      out([{ t: "request " + r.req.id, c: "b" }, "  " + r.req.budget.tries + " tries" + (r.req.note ? " · " + r.req.note : "")]);
+      out([{ t: "now, on your computer:  ", c: "dim" }, { t: appCmd("run --request " + tok), c: "hl" }]);
+      out([{ t: "for the team:           ", c: "dim" }, { t: appCmd("request new --token " + tok + " --push"), c: "hl" }, { t: "  (or New run → File it now)", c: "dim" }]); },
+    requests: function () { var m = DATA.manual || []; if (!m.length) return out("no manual runs · `run <search> …` or New run", "dim");
+      m.forEach(function (r) { out([{ t: pad(r.state, 10), c: r.state === "done" ? "ok" : (r.state === "running" ? "hl" : "warn") }, pad(r.job, 24), pad((r.tries || 0) + "/" + r.budget, 12), pad(r.best != null ? "best " + fmt(r.best) : "", 14), { t: (r.note || "").slice(0, 60), c: "dim" }]); }); },
     install: function () { out(installCommand(), "hl"); out("Run it from your Cosmic-Shore folder. The Install button explains each step.", "dim"); openInstall(); },
     tour: function () { toggleTerm(false); startTour(0); },
     ask: function (args, raw) { ask(raw.replace(/^ask\s+/, "")); },
@@ -874,6 +1058,17 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
     if (!CAP.mcp) return out("tasks need the claude.ai console (Claude Code Remote)", "err");
     T.pending = p; out([{ t: "task  ", c: "ruby" }, p]);
     out([{ t: "This starts a Claude Code cloud session on your account, on " + (DATA.repo || "the repo") + (DATA.branch ? " @ " + DATA.branch : "") + ". It can change and push code like any session. Type ", c: "dim" }, { t: "yes", c: "hl" }, { t: " to start or ", c: "dim" }, { t: "no", c: "hl" }, { t: ".", c: "dim" }]);
+  }
+  function createSession(prompt, title) {
+    return (T.env ? Promise.resolve(T.env) : envs(null, true)).then(function (env) {
+      if (!env) throw "No Claude Code environment on your account.";
+      var input = { prompt: prompt, title: title, environment_id: env.environment_id, source_url: "https://github.com/" + (DATA.repo || "froglet-studio/Cosmic-Shore") };
+      if (DATA.branch && DATA.branch !== "HEAD") input.source_revision = DATA.branch;
+      return CAP.mcp.callTool(CCR, "create_session", input).then(function (r) {
+        var pl = ccrPayload(r), id = pl.session_id || pl.id || (pl.session && pl.session.id);
+        return id ? link("https://claude.ai/code/" + id, "open the session") : null;
+      }, function (e) { mcpError(e); throw "Claude Code Remote failed (" + ((e && e.code) || "error") + ")."; });
+    });
   }
   function startTask(p) {
     out("starting…", "dim");
@@ -983,6 +1178,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   document.getElementById("l-green").addEventListener("click", function () { document.getElementById("win").classList.toggle("zoomed"); });
   document.getElementById("b-install").addEventListener("click", openInstall);
   document.getElementById("b-tour").addEventListener("click", function () { startTour(0); });
+  document.getElementById("b-newrun").addEventListener("click", function () { openNewRun(); });
   document.getElementById("scrim").addEventListener("click", closeJob);
   document.getElementById("sheet").addEventListener("click", function (e) { if (e.target.id === "sheet") closeInstall(); });
   document.addEventListener("keydown", function (e) {
