@@ -15,9 +15,14 @@
  },
  "cores": 11,
  "current": {
+  "best": 119.48568725585938,
+  "epoch": "3749ce607844",
+  "evals": 8,
   "job": "unity-train~r20261028-212934-f416",
   "max_evals": 10,
   "minutes": 60.0,
+  "phase": "training",
+  "progress": 0.8,
   "request": "r20261028-212934-f416",
   "since": 1793203187,
   "unit": "switchback-dolphin-i4"
@@ -76,7 +81,7 @@
  "totals": {
   "sessions": 4
  },
- "updated": 1793203187,
+ "updated": 1793203793,
  "user": "shombithofficial",
  "version": "1"
 }
