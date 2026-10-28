@@ -375,19 +375,72 @@ def prism_centre(length):
     return _reach_at(length - PRISM_BITE + PRISM_R * 0.42, -KATANA_SORI * length / KATANA_LEN * 0.6)
 
 
-def stella(cx, cy, r, explode=0.0):
-    t = stella_tones(cx, cy, r, explode)
-    return t[0] | t[1] | t[2]
+def stella_facets(cx, cy, r):
+    """The flat star's facets: (mask, centroid) per visible face, each already cut back by the faces in front of it
+    and inset by the seam - the separation the game's shatter breaks along."""
+    k = r / math.sqrt(3)
+    tris = []
+    for f in _stella_faces():
+        v = [_view(p) for p in f]
+        n = np.cross(v[1] - v[0], v[2] - v[0])
+        centre = sum(v) / 3
+        if np.dot(n, centre) < 0:
+            n = -n
+        if n[2] >= 0:
+            continue
+        tris.append((centre[2], [(cx + p[0] * k, cy - p[1] * k) for p in v]))
+    tris.sort(key=lambda t: -t[0])
+    facets = []
+    for _, pts in tris:
+        full = fill(pts)
+        facets = [(m & ~full, c) for m, c in facets]
+        mx = sum(x for x, _ in pts) / 3
+        my = sum(y for _, y in pts) / 3
+        inset = []
+        for x, y in pts:
+            d = math.hypot(x - mx, y - my) or 1.0
+            inset.append((x - (x - mx) / d * STELLA_SEAM, y - (y - my) / d * STELLA_SEAM))
+        facets.append((fill(inset), (mx, my)))
+    return [(m, c) for m, c in facets if m.any()]
+
+
+def _shift(mask, dx, dy):
+    """A mask moved by (dx, dy) icon px, edges filled empty."""
+    sx, sy = int(round(dx * N / 128)), int(round(dy * N / 128))
+    out = np.zeros_like(mask)
+    h, w = mask.shape
+    out[max(0, sy):min(h, h + sy), max(0, sx):min(w, w + sx)] = mask[max(0, -sy):min(h, h - sy), max(0, -sx):min(w, w - sx)]
+    return out
+
+
+STELLA_BURST = 0.7   # how far each facet flies, as a fraction of its distance from the centre
+
+
+def stella(cx, cy, r, broken=False):
+    """The flat super-shield. Broken: every facet flies straight out from the centre along its own centroid, so the
+    star comes apart along its real faces (the game's 24-face shatter + explode-out), each piece whole."""
+    m = empty()
+    for f, (mx, my) in stella_facets(cx, cy, r):
+        m |= _shift(f, (mx - cx) * STELLA_BURST, (my - cy) * STELLA_BURST) if broken else f
+    return m
+
+
+KNOCKOUT = 2.5        # px the prism stands clear of the sword and the posts
+
+
+def _clear(mask, length):
+    from toy_portraits import grown
+    return mask & ~grown(flat_katana(length) | reach_posts(), KNOCKOUT)
 
 
 def shielded_prism(length):
     cx, cy = prism_centre(length)
-    return stella(cx, cy, PRISM_R)
+    return _clear(stella(cx, cy, PRISM_R), length)
 
 
 def shattered_prism(length):
     cx, cy = prism_centre(length)
-    return stella(cx, cy, PRISM_R * 0.72, explode=1.1)
+    return _clear(stella(cx, cy, PRISM_R * 0.74, broken=True), length)
 
 
 def reach_posts():
