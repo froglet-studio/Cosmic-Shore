@@ -120,6 +120,16 @@ MonoBehaviour:
   tubeInner: 0.1
   rootLamp: 1
   rootFog: 240
+  areaL0: 6000
+  areaL10: 18000
+  suckRadius: 90
+  suckSpeed: 30
+  swallowShare: 1.5
+  carrySpeed: 150
+  carryStretch: 2
+  carryTwist: 0.5
+  fireSpeed: 120
+  fireGlideSeconds: 3
   formEvent:
     Guid:
       Data1: 0

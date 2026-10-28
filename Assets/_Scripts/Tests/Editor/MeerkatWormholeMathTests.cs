@@ -254,5 +254,64 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(0f, Vector3.Distance(Vector3.up, m.MultiplyVector(binormal)), 1e-4f, "binormal");
             }
         }
+
+        // ---- round 23: Garrett's surface area, the soliton's pull and its carry (goldens: the page's kitThroat and pullVel
+        // in node, at the shipped numbers - throat 8, mouth 26, area 6,000 at Space L0 to 18,000 at L10)
+
+        [TestCase(5f, 60f, 16.54691f, 53.77745f)]
+        [TestCase(5f, 200f, 4.96407f, 16.13324f)]
+        [TestCase(5f, 757f, 1.31151f, 4.26241f)]
+        [TestCase(0f, 400f, 1.24102f, 4.03331f)]
+        [TestCase(10f, 120f, 12.41018f, 40.33309f)]
+        public void SurfaceAreaThroat_MatchesThePage(float spaceLevel, float L, float b, float m)
+        {
+            MeerkatWormholeMath.SurfaceAreaThroat(4f, 13f, MeerkatWormholeMath.ByLevel(6000f, 18000f, spaceLevel), L,
+                out float gotB, out float gotM);
+            Assert.AreEqual(b, gotB, Tol, "throat radius");
+            Assert.AreEqual(m, gotM, Tol, "mouth radius");
+        }
+
+        [Test]
+        public void SurfaceArea_ALongerTunnelIsThinner_AndShapeForUsesIt()
+        {
+            var p = Shipped;
+            p.Area = 12000f;
+            var shortOne = MeerkatWormholeMath.ShapeFor(p, 0f, 0f, 0f);
+            var longOne = MeerkatWormholeMath.ShapeFor(p, 1f, 1f, 0f);
+            Assert.Greater(longOne.L, shortOne.L);
+            Assert.Less(longOne.B, shortOne.B, "at one area a longer tunnel is thinner (Garrett)");
+            Assert.AreEqual(longOne.M / longOne.B, shortOne.M / shortOne.B, 1e-4f, "the mouth stays a fixed multiple of the throat");
+            // no area: the authored fixed size, as before round 23
+            var fixedOne = MeerkatWormholeMath.ShapeFor(Shipped, 1f, 1f, 0f);
+            Assert.AreEqual(4f, fixedOne.B, Tol);
+        }
+
+        // the page's axes are three.js's (z back): these are its cases with z mirrored, and its answers with z mirrored
+        [TestCase(0f, 0f, 0f, 0f, 0f, 1f, 30f, 10f, -5f, -82.11663f, -17.06474f, 13.17073f)]
+        [TestCase(5f, -3f, -2f, 0.6f, 0f, 0.8f, 5f, 80f, -2f, -7.92f, -32.53012f, 5.94f)]
+        [TestCase(0f, 0f, 0f, 1f, 0f, 0f, 2f, 1f, 0f, -134.16408f, -67.08204f, 0.55f)]
+        public void PullVelocity_MatchesThePage(float ax, float ay, float az, float tx, float ty, float tz, float px, float py,
+            float pz, float vx, float vy, float vz)
+        {
+            var v = MeerkatWormholeMath.PullVelocity(new Vector3(ax, ay, az), new Vector3(tx, ty, tz).normalized,
+                new Vector3(px, py, pz), 30f, 90f, 150f);
+            Assert.AreEqual(vx, v.x, Tol);
+            Assert.AreEqual(vy, v.y, Tol);
+            Assert.AreEqual(vz, v.z, Tol);
+        }
+
+        [Test]
+        public void CarryDistortion_StretchesMostAtTheMiddle_AndKeepsTheVolume()
+        {
+            MeerkatWormholeMath.CarryDistortion(0f, 300f, 2f, 0.5f, 0, out float a0, out float c0, out float r0);
+            MeerkatWormholeMath.CarryDistortion(150f, 300f, 2f, 0.5f, 0, out float a1, out float c1, out float r1);
+            MeerkatWormholeMath.CarryDistortion(300f, 300f, 2f, 0.5f, 0, out float a2, out _, out float r2);
+            Assert.AreEqual(1f, a0, Tol, "none at the way in");
+            Assert.AreEqual(3f, a1, Tol, "1 + carryStretch at the middle");
+            Assert.AreEqual(1f, a2, Tol, "none at the way out");
+            Assert.AreEqual(1f, a1 * c1 * c1, Tol, "squeezed across to keep its volume");
+            Assert.AreEqual(0f, r0, Tol);
+            Assert.AreEqual(Mathf.PI, r2, Tol, "half a turn mouth to mouth at carryTwist 0.5");
+        }
     }
 }

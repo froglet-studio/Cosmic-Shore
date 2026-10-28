@@ -133,6 +133,37 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 23 (Yash, 2026-10-28: "first we're gonna revert the mass ability as Garrett has said. So the width of the tubes
+shell will be dependent on this mass ability. The longer the tube, the thinner ... Or whatever Garrett has said ... the prism
+gets sucked in from this one side and gets sucked out on the other ... distorted while traveling through this wormhole ...
+From a certain radius"). Artifact and Unity.**
+- **Garrett's rule, as he wrote it.** Space sets the soliton's surface area (`areaL0` 6,000 to `areaL10` 18,000 u²), so a
+  longer tunnel is thinner and a shorter one fatter (b = A / (2π L g(k)), § "Garrett's direction" below). Mass makes the
+  exit portal. So in Garrett's kit and the Mix, Mass no longer sizes the trunk: round 17's `massLengthAtZero` /
+  `massDiameterAtZero` now act only in Off and Round 8. The HUD's tunnel line shows the Space level and the area in the
+  kits. Yash asked for Mass, "or whatever Garrett has said"; Garrett's rule puts the area on Space, so that is what is built.
+  Moving it to Mass is one line on the page and one in `MeerkatWormholeExecutor.SpaceLevel`.
+- **The pull** (`suckRadius` 90 u, `suckSpeed` 30 u/s). Every prism (shielded too, never super-shielded) and every race
+  crystal within `suckRadius` of a standing soliton's way in is drawn to it, faster as it nears (`suckSpeed` × `suckRadius` /
+  distance, up to `carrySpeed`), swirling round the axis. It is swallowed within `swallowShare` × the opening radius. A pulled
+  prism is a moving prism, but one soliton's pulled prisms never break each other.
+- **The distortion** (`carryStretch` 2, `carryTwist` 0.5). Inside the tube a prism or crystal is stretched along it, to 3 ×
+  its length at the middle and none at the mouths, squeezed across to keep its volume, twisted half a turn, and held to the
+  wall's narrowing. It is fired out of the way out as before (crystals at half the fire speed).
+- **Measured** (`runKitScorecard`, Garrett's kit, seed 11, a field race, against round 22):
+  - swallowed: 4,280 prisms a race against 2,514;
+  - lifted out of the field: 184 against 11;
+  - destroyed by the movers: 323 against 15;
+  - bounces: 574 against 42;
+  - crystals: 30 pulled, 17 fired out;
+  - mass conserved;
+  - no DNF.
+- **Race times.** The AI now digs the whole LT range, so its tunnels are longer and thinner. Hard I1-I4 was 70.8 / 62.7 /
+  78.7 / 67.9 s and is now 67.9 / 66.9 / 87.8 / 68.5 s; Easy was 89.4 / 67.5 / 83.1 / 76.9 s and is now 77.3 / 73.6 /
+  96.9 / 85.1 s. Warpline I3 is the slow one, a finding left for Yash to judge rather than tuned away.
+- **In Unity** (cloned the same day): `MeerkatWormholeMath.SurfaceAreaThroat` / `PullVelocity` / `CarryDistortion` and
+  `MeerkatSwallow`. Details: `Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md` §8.
+
 **Round 22 (Yash, 2026-10-28: "Make sure the reticle or the path of this trunk or simple watery effect always follows the
 circumference of a oval. With a specified epicenter. So it should always turn from center ... The longer the length of the
 tube, the more ovalish it will bend. We can make it circular but a little bit of hyperbola will be good ... It should
