@@ -1181,6 +1181,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ---
 
+### L-SIM-5 — A model's asset generator that tunes an element ON TOP of a fleet law applies the element twice
+- Lab: ecosim's Hesperides generator (`Tools/ecosim/gen_hesperides_assets.py`) · Branch: `cece/keen-feynman-unrdda` · Date: 2026-10-28
+- What happened: the model's intensity ladder authored Mass x1.35 and Charge x0.85 leaf cross-sections. Those rungs predated the fleet-wide element law (Docs/ECOSYSTEM.md §65), which already sizes every element's leaf. Once the law landed, a Mass Hesperides plant was enlarged twice: by the law and by the rung. Nothing failed. The generator's own output matched its recipe, and the game's law tests do not read a lab's assets.
+- Do instead: when a platform law takes over a dimension, every lab that tuned that dimension per element sets its rungs to 1 (the species' own leaf), edits only the lines it owns, and says in its docstring which law now owns the number. Grep the labs' generators for the law's element keys whenever a law lands.
+- Evidence: `gen_hesperides_assets.py` (ladder Mass/Charge rungs -> 1, shield Mass 1 / Charge 0); Docs/ECOSYSTEM.md §65.6.
+- Promoted: no
+
 ## EDT — in-editor lab windows
 
 ### L-EDT-1 — A lab window's preview must run the SHIPPED GPU code, and Measure must run the shipped metric
