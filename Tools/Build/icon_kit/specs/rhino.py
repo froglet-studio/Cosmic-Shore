@@ -265,3 +265,81 @@ REBIND += [
                                            ("AfterimageNear", "Rhino_AfterimageNear", "afterimageNearIcon"),
                                            ("AfterimageBlade", "Rhino_AfterimageBlade", "afterimageBladeIcon")])),
 ]
+
+
+# ---- Space: Blade Reach options (2026-10-28) ------------------------------------------------------------------------
+# Space alone sets the blade's length: 24 at rest -> 40 at Space 10 (ShieldSkimmerScaleDriver.UpdateLength, the
+# Skimmer's live Space scale); at Space 5 an energized blade pops super-shields (Breaker). The card lays the katana
+# FLAT, pointing out of the card the way the sword reaches, so it reads apart from the upright Charge card.
+REACH_HILT = (30.0, 44.0)
+REACH_MAX = 92.0                 # the blade at Space 10 (40 u)
+REACH_REST = REACH_MAX * 24 / 40  # at rest (24 u)
+
+
+def reach_len(space01):
+    return REACH_REST + (REACH_MAX - REACH_REST) * space01
+
+
+def flat_katana(length, w=15.0, tsuba=True, tsuka=True):
+    return katana(90.0, hilt=REACH_HILT, length=length, w=w, sori=KATANA_SORI * length / KATANA_LEN, tsuba=tsuba,
+                  tsuka=tsuka, mirror=True)
+
+
+def reach_ghost():
+    """The reach still to grow: the blade at Space 10, minus nothing - drawn faint under the live blade."""
+    return flat_katana(REACH_MAX, tsuba=False, tsuka=False)
+
+
+def reach_ticks(n=2):
+    """O: two short posts across the blade's line, at the rest length and the full reach."""
+    hx, hy = REACH_HILT
+    m = empty()
+    for L in (REACH_REST, REACH_MAX)[:n]:
+        x = hx + L
+        m |= fill([(x - 1.6, hy - 22), (x + 1.6, hy - 22), (x + 1.6, hy - 12), (x - 1.6, hy - 12)])
+    return m
+
+
+def reach_chevrons():
+    """P: two chevrons beyond the tip, pointing on - 'it reaches further'."""
+    hx, hy = REACH_HILT
+    m = empty()
+    for x in (hx + REACH_REST + 12, hx + REACH_REST + 30):
+        m |= fill([(x, hy - 16), (x + 13, hy - 3), (x, hy + 10), (x - 6, hy + 10), (x + 7, hy - 3), (x - 6, hy - 16)])
+    return m
+
+
+SPACE_LEVELS = [("Space 0: rest reach (24)", 0.0), ("Space 5", 0.5), ("Space 10: full reach (40)", 1.0)]
+# the plate fills with the Space level; one mark at Space 5, where Breaker (the level-5 upgrade) arrives
+SPACE_MARKS = [0.5]
+
+
+def reach_card(name, title, extra=None, ghost=True, plate=True):
+    parts, states, gauge = {}, [], {}
+    for k, (n, s01) in enumerate(SPACE_LEVELS):
+        parts[f"b{k}"] = (lambda s01=s01: flat_katana(reach_len(s01)))
+        layers = []
+        if ghost:
+            parts["ghost"] = reach_ghost
+            layers.append(("ghost", "white", 0.3))
+        if extra:
+            parts["extra"] = extra
+            layers.append(("extra", "white", 0.6))
+        layers.append((f"b{k}", "white"))
+        states.append((n, layers))
+        gauge[n] = (s01 if plate else None, None)
+    # Space 5 and up, energized: the blade lit, popping super-shields (Breaker)
+    states.append(("Space 5+, energized: Breaker (lit)", ([("ghost", "white", 0.3)] if ghost else []) + [("b1", "danger")]))
+    gauge["Space 5+, energized: Breaker (lit)"] = (0.5 if plate else None, None)
+    d = dict(name=name, group="bladereach", lockup_state=1, element="Space",
+             before=ICON_DIR + "Rhino_BladeReach-PLACEHOLDER.png", title=title, parts=parts, states=states, gauge=gauge)
+    if plate:
+        d.update(gauge_marks=SPACE_MARKS, gauge_marks_style="lines")
+    return d
+
+
+CARDS += [
+    reach_card("space_option_n", "N - THE REACH: the katana laid flat, as long as the live blade (24 at rest -> 40 at Space 10), over a faint blade at full reach; the plate fills with the Space level, a mark at Space 5 (Breaker)"),
+    reach_card("space_option_o", "O - THE MEASURE: N with two posts marking the rest length and the full reach, no faint blade", extra=lambda: reach_ticks(), ghost=False),
+    reach_card("space_option_p", "P - REACHING ON: the katana at its live length with two chevrons pointing past its tip; no plate", extra=reach_chevrons, ghost=False, plate=False),
+]
