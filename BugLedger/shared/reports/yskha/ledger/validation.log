@@ -382,3 +382,11 @@
 2026-10-28T13:32:42.332Z E-79fe6514ac: fix 4cd26c01e taken (PlayMode); needs 2 clean run(s)
 2026-10-28T13:34:21.906Z editor load: play=False capture=True minPlay=15s issues=22
 2026-10-28T15:37:01.905Z PlayMode session ended (531s play run, exiting play mode): 1 fix(es) waiting; counted: E-79fe6514ac 1/2
+2026-10-28T16:18:32.467Z EditMode session ended (169min editor span, script reload): 1 fix(es) waiting; counted: none
+2026-10-28T16:18:51.196Z editor load: play=False capture=True minPlay=15s issues=22
+2026-10-28T16:30:46.511Z PlayMode session ended (98s play run, exiting play mode): 1 fix(es) waiting; counted: E-79fe6514ac 2/2; fired: E-a2a3f23a3c E-e5ff2abb8c E-e6054bc064
+2026-10-28T16:31:27.295Z EditMode session ended (12min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-a2a3f23a3c E-e5ff2abb8c E-e6054bc064
+2026-10-28T16:31:39.758Z editor load: play=False capture=True minPlay=15s issues=24
+2026-10-28T17:06:49.810Z EditMode session ended (35min editor span, script reload): 0 fix(es) waiting; counted: none
+2026-10-28T17:06:58.494Z editor load: play=False capture=True minPlay=15s issues=24
+2026-10-28T17:22:19.582Z PlayMode session ended (884s play run, exiting play mode): 0 fix(es) waiting; counted: none
