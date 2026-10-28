@@ -3,6 +3,8 @@
 **Status: DESIGN DRAFT** (Garrett, 2026-10-28; first draft written the same day). Nothing in this document is built.
 It is the plan that `Docs/Pilots/ARTIFACTS.md` §8.5 asks for before vaults, hunting and extraction can be built.
 Every default marked **(default)** is a guess waiting for Garrett's answer; §11 lists them.
+Sources beyond the repo: the Notion design docs *Mission Overview*, *Initial Onboarding*, *Ark Design Document* and
+*Pilot Design Document* (faction types, notoriety, the Ark's bunks). The Figma voyage boards have not been read yet.
 
 > "voyages are what we have instead of missions as the fourth game location after toybox, arcade, arena, come
 > voyages. the arkway is a toy that also uses the ark and is the most voyage like of the toys. it is meant to get a
@@ -16,8 +18,9 @@ Every default marked **(default)** is a guess waiting for Garrett's answer; §11
 
 A squad (three vessels, each with its vessel, element, pilot and artifact cards, and one Ark that carries the
 artifacts) sets sail from its home port onto **one shared galactic map, the HyperSea**. The map is a set of named
-**locations** joined by **lanes**. The squad picks where to go and why. Each lane is flown with the Ark, the way the
-Arkway flies it, and each location is a real cell with an experience of its own: a vault field, a lair, a wreck, a
+**locations** joined by **lanes**. The squad picks where to go from the jobs its own pilots drum up at port, each
+for their faction, and much of that work is carrying information, which only couriers on the HyperSea can move
+faster than light. Each lane is flown with the Ark, the way the Arkway flies it, and each location is a real cell with an experience of its own: a vault field, a lair, a wreck, a
 contested core, a harbour. When squads' paths cross, **galactic traffic control** (a small server-side director)
 decides who meets whom, and puts them together in one managed peer-to-peer instance chosen so that the meeting
 makes sense for both sides' missions. Whatever is aboard the Ark when the squad gets home is theirs.
@@ -53,6 +56,13 @@ Already decided (Garrett, 2026-10-27; `Docs/Pilots/ARTIFACTS.md`, `Docs/Pilots/C
   it spills the artifacts for anyone.
 - A squad is a domain for now (Jade, Ruby or Gold).
 
+New on 2026-10-28 (Garrett):
+
+- **The crew lives on the Ark.** Your Ark carries a crew of pilots, more than the three who fly (the Notion *Ark
+  Design Document* starts it at three bunks and lets it grow). Each pilot is a unique person with a callsign shared
+  with pilots in other crews, a crew holds one of each callsign, and each pilot belongs to one faction. The crew
+  decides which jobs you can find (§6.2).
+
 New here:
 
 - **(default)** **A squad is 1 to 3 people.** Any seat with no person in it is flown by its AI, exactly like an arena
@@ -76,7 +86,7 @@ name ("the Lantern Reach vaults") is a place people can plan to meet at, talk ab
   comes here for).
 - **Lanes** join locations. A lane has a length (in Ark travel time), a danger (how much fauna it carries, from the
   cells along it) and sometimes a **crossing**: a point along the lane where traffic control may hold an encounter
-  (§6.4).
+  (§6.5).
 - **Regions.** Each domain has a home region around its harbour. The middle of the map is contested. Distance from
   home is risk: the far locations hold the best finds and the longest trip back.
 - **Folds.** A crystal wormhole (`Docs/CRYSTAL_WORMHOLE.md`) can be a lane: a short, risky shortcut. It is the one
@@ -100,7 +110,7 @@ The map is **data**, written by a generator (the repo's pattern: one `author_*.p
 
 The Voyage window gains the **chart**: the galaxy, your squad's position, where you can sail from here, and, faintly,
 the other squads that are out (how many, roughly where; never exactly who until you meet). Choosing a destination
-also chooses a **mission** (§6.2). The chart is shown in 3D in the world, not as flat text where it describes a world
+also chooses a **job** that one of your pilots found at port (§6.2). The chart is shown in 3D in the world, not as flat text where it describes a world
 fact (`Docs/claude/SHADERS_AND_PERFORMANCE.md`, the LOCKED "show a world fact in the world" rule): the natural home
 for it is the Ark itself, a star chart aboard the Ark screen.
 
@@ -172,59 +182,127 @@ Every squad out on a voyage files a **flight plan** with GTC whenever it chooses
 |---|---|
 | squad id, domain, party members, how many are people | who, and how many people seats it takes |
 | from, to, departure time, expected arrival | where and when the squad will be |
-| mission for this leg (§6.2) | what the squad came for |
+| the job for this leg (§6.2), and the squad it targets, if any | what the squad came for, and whom |
 | stake: how much is aboard the Ark (artifact count and level band) | fair meetings |
 | region / connection quality | a playable peer-to-peer instance |
 | recent encounters | so the same two squads are not thrown together over and over |
 | friends and rendezvous requests | so friends can meet on purpose |
 
-### 6.2 Missions
+### 6.2 Jobs: your crew finds the work
 
-A mission is the squad's declared reason for the leg, picked on the chart with the destination. It is not a quest
-with steps; it is a stance that tells GTC what kind of meeting would make sense. **(default)** five to start:
+> "your crew of pilots are unique with their own stories, races, and other flavor fluff, but their callsign is tied
+> to their ability and shared with other members of other crew. so you can only have one of each callsign and that
+> pilot will be tied to a particular faction of a general type. when they are at port they will drum up work related
+> to their faction." (Garrett, 2026-10-28)
 
-| Mission | The squad wants to | Good meetings |
-|---|---|---|
-| **Explore** | see a location, take what it offers | other explorers (co-op or neutral), a hunter |
-| **Hunt** | open vaults, kill a lair's creature | a rival hunter (a race), a raider (a fight) |
-| **Haul** | get a full Ark home | a raider (the classic chase), an escort |
-| **Raid** | take down a rival Ark | a hauler, a hunter coming out loaded |
-| **Escort** | protect someone else's Ark | a hauler (co-op), the raider chasing it |
+A voyage does not start from a menu of mission types. It starts from **your crew**:
 
-The pairing table GTC uses is this matrix written as data, so it can be tuned without code: each pair of missions
-has a weight (how good a meeting it is) and a **relation** (co-op, race or hostile) that the instance announces to
-both squads on arrival. Nobody is told "you are now in PvP"; they see who is here and what they came for.
+- **A pilot is a person and a callsign.** The person is unique to your crew: their name, story, race and look. The
+  callsign is their ability (`Docs/Pilots/CALLSIGNS.md`), and other crews have pilots with the same callsign. **A crew
+  holds at most one pilot of each callsign.**
+- **Every pilot belongs to one faction.** A faction is one of many of its **faction type**, and each faction type
+  belongs to a domain. For example, a made-up "Black Tide" would be one of dozens of pirate factions, and pirates are a Ruby faction
+  type. The faction types come from the Notion design docs (*Mission Overview*, *Initial Onboarding*):
 
-PvP stays petals only (LOCKED, `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`). "Hostile" means: your Ark is fair game,
+  | Domain | Faction types |
+  |---|---|
+  | Ruby (freedom) | hunter, pirate, explorer, activist, thief |
+  | Gold (commerce) | merchant, bounty hunter, gatherer, contractor, sport |
+  | Jade (order) | aristocrat (militant, diplomat), researcher, preservationist, first responder, priest |
+
+- **At port, each pilot drums up work for their faction.** The port's job board is whatever your crew's pilots
+  bring you, so two crews docked at the same port see different boards. A job names a destination, a reward and the
+  faction paying it. A **job is the mission** that GTC matches on (§6.1).
+
+The first jobs, one per faction type in Notion's roll-out order (merchant, hunter, aristocrat), plus the two that
+prey on them:
+
+| Pilot's faction type | Finds | The squad sets out to | Natural opponents |
+|---|---|---|---|
+| **Merchant** | a **courier contract**: carry cargo or a sealed dispatch from here to a named port, by a deadline | arrive with it aboard | a pirate holding a tip on this very contract |
+| **Hunter** | a **sighting**: a kaiju (a lair, §5) or a vault field nearby | kill it or open the vaults, bring the find home | other hunters chasing the same sighting (a race) |
+| **Aristocrat (militant)** | a **defence**: hold a named cell's core for the faction | keep the nucleus claim | whoever is told to take it |
+| **Pirate** | a **tip**: word of another squad's courier contract carrying something valuable | intercept that squad and take down its Ark | that courier squad |
+| **Bounty hunter** | a **bounty**: a named squad whose notoriety put a price on it | find that squad and take down its Ark | that squad |
+
+- **Escort is gone, and haul is now the courier contract.** "Haul and escort sound too similar" (Garrett,
+  2026-10-28). A squad that wants to protect someone else's courier takes the Jade defence job. A Jade defence job
+  can also name a moving thing (a courier's Ark) rather than a cell.
+- **Bounties come from notoriety.** In the Notion docs, Ruby's currency is notoriety. It grows quickly with missions
+  and decays over time, and the more of it a squad has, the bigger the bounty on it. A bounty job points at a real
+  squad.
+- **Tips and bounties point at real squads.** A pirate's tip is another squad's real contract, and a bounty is
+  another squad's real notoriety. When GTC pairs the two, the meeting makes sense to both sides by construction: one
+  squad is carrying the cargo and the other came to take it. This is the strongest form of "make sense for both
+  players' missions".
+- **The other faction types come later.** Activists, thieves, gatherers, researchers, preservationists, first
+  responders and priests each get a job when their location experience exists. A thief steals information (§6.3).
+
+The pairing table GTC uses is written as data, so it can be tuned without code. Each pair of jobs has a weight (how
+good a meeting it is) and a **relation**: co-op, race or hostile. The instance announces the relation to both squads
+on arrival. Nobody is told "you are now in PvP". They see who is here and what they came for.
+
+PvP stays petals only (LOCKED, `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`). "Hostile" means your Ark is fair game,
 your scored hits silence each other, and vaults and wrecks are a race. It never means vessels destroying vessels.
 
-### 6.3 When GTC decides: at arrival
+### 6.3 Information: the news travels by courier
+
+> "many hauling jobs will be shuttling information and that information will make it to the port you are at and that
+> will effect the voyages your crew can find. information is one of the most valuable resources across the galaxy and
+> the navigating the hypersea is the only way for couriers to beat the speed of light." (Garrett, 2026-10-28)
+
+- **A dispatch is cargo.** Many courier contracts carry a **dispatch**, a sealed piece of information, in the Ark's
+  hold. It rides there by id, the same way an artifact does (`ArkHold`). When the Ark falls, the dispatch goes to the
+  credited squad with everything else aboard.
+- **A port only knows what has reached it.** Each port keeps a **news ledger**: the dispatches delivered there. A
+  pilot can only drum up work from news their port has. A kaiju sighted out at the Lantern Reach becomes a hunter's
+  job only at ports a courier has brought that news to. Until then, the job does not exist there.
+- **News makes jobs.** A delivered dispatch adds entries to the port's ledger, and each entry is a job seed. A
+  sighting gives hunters work, a convoy schedule gives pirates tips, a bounty posting gives bounty hunters targets,
+  and a call for aid gives the Jade a defence job. Delivering a dispatch therefore changes the voyages that every
+  crew docked at that port can find.
+- **News ages.** A dispatch is worth most when fresh: a sighting goes stale once the kaiju is killed, and a tip is
+  useless once the convoy has docked. So speed matters, which is why the courier's flight is a real crossing and why
+  folds (§3.1) are valuable.
+- **Stolen news lands somewhere else.** A dispatch taken from a fallen courier can be delivered by the raider to a
+  port of their choosing, or sold to the pirates instead. Who carries information, and where, decides what the galaxy
+  knows.
+- **Nothing is minted.** Dispatches are born from events, the way mass in the HyperSea comes from somewhere: a lair
+  spawning, a squad's notoriety crossing a line, a contract posted, a cell's health changing. They are not invented to
+  fill a board. This is the information twin of the conservation rule (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`).
+- **Where it lives.** The news ledgers are backend state (§8), written when a courier's delivery is confirmed at
+  extraction. In V1 (§9) they are simulated on the device from authored events. In V3 a real courier's delivery
+  changes other players' boards.
+
+### 6.4 When GTC decides: at arrival
 
 The main encounter point is **arrival at a location**. When a squad's Ark nears its destination, GTC looks at every
 squad arriving at the same location in a window around that time (**(default)** 60 s either side) and picks the best
-pairing by: mission weight, stake fairness, connection, the human cap, and freshness. Then:
+pairing by: job weight, stake fairness, connection, the human cap, and freshness. Then:
 
+- **A targeted job comes first.** A tip or a bounty names a squad. GTC routes the hunting squad to meet its target at
+  the target's next arrival (or, from V4, at a crossing), if the target's job allows a hostile meeting there.
 - **A match:** both squads are told which instance to join (§7). They arrive into the location together.
 - **No match yet:** the squad arrives alone. GTC can still bring a second squad in while the first is there, as long
   as the location's experience has not resolved (the vaults are not all open, the creature is alive).
 - **Nobody waits** **(default)**: no squad is ever held on a lane or outside a location waiting for a match. If no
-  real squad fits within a few seconds, the squad arrives alone, and GTC may place an **AI squad** instead (§6.5).
+  real squad fits within a few seconds, the squad arrives alone, and GTC may place an **AI squad** instead (§6.6).
 
-### 6.4 Crossings (later)
+### 6.5 Crossings (later)
 
 Some lanes have a crossing: a point mid-lane where two lanes meet or where a lane passes near another location.
-GTC can hold an encounter there between squads whose courses cross at about the same time (a raider intercepting a
-hauler). This is phase V4; arrivals come first because they are simpler (§9).
+GTC can hold an encounter there between squads whose courses cross at about the same time (a pirate intercepting a
+courier). This is phase V4; arrivals come first because they are simpler (§9).
 
-### 6.5 AI squads
+### 6.6 AI squads
 
 The HyperSea should never feel empty, and a solo player should get the same kinds of meeting a group does. An AI squad
 is three AI vessels with an AI-flown Ark, filed with GTC like any squad, and placed by the same rules. It carries
-artifacts that are really at stake (a raid on one pays). Because AI learning is automatic and learns from recorded
+artifacts and dispatches that are really at stake (a raid on one pays), and it takes jobs from its own pilots' factions, so an AI courier can be a pirate's real tip. Because AI learning is automatic and learns from recorded
 human play (`CLAUDE.md` § AI learning is automatic, `Docs/AI_SYSTEM/`), AI squads get better at voyages the more
-people play them. What an AI squad needs from the AI work (a voyage policy: haul, raid, escort) is Yash's area (§10).
+people play them. What an AI squad needs from the AI work (a voyage policy for each job: courier, hunt, defence, pirate, bounty) is Yash's area (§10).
 
-### 6.6 Rules GTC never breaks
+### 6.7 Rules GTC never breaks
 
 1. **No more than 4 people in one instance.** "A party is 4. Never 6, anywhere" (`Docs/MULTIPLAYER_START_HERE.md`
    §2). Two squads of two people meet; a squad of three meets a squad of one, or an AI squad. Vessels are not capped
@@ -232,7 +310,7 @@ people play them. What an AI squad needs from the AI work (a voyage policy: haul
 2. **No rival squad in a harbour.**
 3. **Friends who asked to meet are matched first**, and never with a third squad that would push past the cap.
 4. **A squad that just lost its Ark to another squad is not matched with that squad again on the same voyage.**
-5. **A meeting must make sense for both sides.** A pairing whose mission weight is zero is never made, however long
+5. **A meeting must make sense for both sides.** A pairing whose job weight is zero is never made, however long
    anyone has been out.
 
 ## 7. Instances
@@ -320,7 +398,7 @@ Each phase is playable on its own and proves the riskiest thing left.
 | Phase | What | Proves | Networking |
 |---|---|---|---|
 | **V0** | this document, answered | the shape | none |
-| **V1** | **one squad, a small map, no strangers.** The chart, 4 to 6 locations (harbour, vault field, Tandava's lair, a wreck), flown legs, extraction, the voyage record kept on the device | that a voyage is fun alone | the squad's own party only |
+| **V1** | **one squad, a small map, no strangers.** The crew's job board at port (courier, hunt, defence) with news simulated from authored events, the chart, 4 to 6 locations (harbour, vault field, Tandava's lair, a wreck), flown legs, extraction, the voyage record kept on the device | that a voyage is fun alone | the squad's own party only |
 | **V2** | **the networked Ark and AI squads.** The Ark as a host-owned network object; AI squads met at arrival, placed by a GTC rule set that runs on the client | meetings and stakes, without a backend | party only |
 | **V3** | **GTC on the backend; two real squads meet at arrival.** Flight plans, the pairing table, the hand-off (§7.3), escrow and two-witness transfers | the shared HyperSea | UGS sessions + Relay + backend |
 | **V4** | **crossings, rendezvous with friends, the galactic war** (which domain holds each location, summed from instance results, shown on the chart) | the living map | as V3 |
@@ -334,7 +412,7 @@ V1 can start as soon as the questions in §11 are answered. It needs nothing fro
 | The Voyage window, the menus (`Docs/MENU_REDESIGN_B.md`) | Shombith's menu redesign | the chart in the Voyage window; Tandava moving from "Voyage 1" to a location |
 | UGS, Cloud Code, the backend, fair play | Shombith (Yash does the Cloud Code work for now) | GTC, the voyage record, escrow, two-witness transfers (V3) |
 | Multiplayer, party, Relay (`Ys-bleeding-edge`) | Yash's multiplayer programme | the squad-to-squad hand-off (§7.3), reconnection grace |
-| AI | Yash | AI squads' voyage policy (§6.5) |
+| AI | Yash | AI squads' voyage policy (§6.6) |
 | The Ark, the Arkway, the ecology (`ECOSYSTEM.md` §41) | the Arkway's owner (check `who_works_where.py` before touching it) | the corridor drawn from a lane; the networked Ark |
 | Pilots, artifacts, the payload (`claude/squad-payload-pilots-artifacts`) | Garrett's squad-layer build, in flight | vaults and extraction land here once V1 exists |
 
@@ -343,18 +421,23 @@ V1 can start as soon as the questions in §11 are answered. It needs nothing fro
 Each has a default the draft is written to; a different answer changes the section named.
 
 1. **People per squad.** Is a squad 1 to 3 people with AI in the other seats (default), or always one person flying
-   three vessels? (§2, §6.6)
+   three vessels? (§2, §6.7)
 2. **The 4-person cap.** Two squads of three people would be 6, and the multiplayer rules say never more than 4.
    Keep the cap, so a full squad of three only ever meets a solo squad or an AI squad (default)? Or should voyages be
-   the one place that raises it? (§6.6)
+   the one place that raises it? (§6.7)
 3. **One fixed galaxy** that everyone shares (default), or a fresh map per season? (§3.1)
 4. **Flown lanes, Arkway style** (default), or jumps on a map with the fights only at locations? (§4)
 5. **Can a squad refuse a meeting?** The default is no: you see who arrived and what they came for, and you decide
-   what to do about it. Opt-in PvP would make the "raid" and "haul" missions hollow. (§6.3)
+   what to do about it. Opt-in PvP would make the pirate and courier jobs hollow. (§6.4)
 6. **Abandoned voyages.** If the whole squad quits mid-voyage, is what is aboard lost (default), or returned home?
    (§4.3)
-7. **The five missions** (explore, hunt, haul, raid, escort). Right set? (§6.2)
-8. **Does the galactic war belong in voyages** (which domain holds each location, summed across all players), and is
+7. **The first five jobs** (courier, hunt, defence, pirate, bounty; escort dropped, haul is the courier contract).
+   Right set, and is Notion's faction-type table still current? (§6.2)
+8. **Pilots as people.** On the squad-layer branch a pilot *is* its callsign (17 pilots, one per callsign). Your
+   2026-10-28 note adds a unique person (story, race, faction) on top of the callsign. Is the person a layer over the
+   callsign record (so one crew's VOLT is a different person from another crew's VOLT, and the ability is the same),
+   and is a pilot's faction fixed when they are recruited? (§2, §6.2)
+9. **Does the galactic war belong in voyages** (which domain holds each location, summed across all players), and is
    a domain the right side to fight for, or should squads belong to factions of their own? (§9, V4)
-9. **Tandava** becomes the first lair location instead of "Voyage 1". That changes Shombith's Voyage window, so it
+10. **Tandava** becomes the first lair location instead of "Voyage 1". That changes Shombith's Voyage window, so it
    needs his yes too. (§1, §5)
