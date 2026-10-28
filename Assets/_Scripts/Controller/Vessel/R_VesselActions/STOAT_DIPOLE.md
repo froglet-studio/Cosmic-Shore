@@ -634,6 +634,29 @@ before the split. Two small fixes came with it:
 - The decision log tags new entries `studio: 'stoat'` and shows only the Stoat's, the older untagged ones included,
   because the Meerkat writes to the same shared collection.
 
+## 1q. Time mode is the SKIM SLING (2026-10-29, first playable slice)
+
+Yash's decisions (design plan: "Stoat Skim Sling: design plan"): the Skim Sling **replaces** Time mode's catch; it is
+built straight in Unity (no Vessel Studio round first); rivals may **opt in** to riding it (`Docs/ELEMENTAL_ECONOMY.md`
+§9b, flagged for Garrett, not wired). Names: the **Skimshell** (sphere of radius R round the pair's midpoint), the
+**Skimline** (its equator, square to the spin axis), the **Tidepool** (the capture zone, `tidepoolScale` × R), a **Skip**
+(one launch).
+
+| Step | What happens | Where |
+|---|---|---|
+| Press | A light pair is laid `layAhead` ahead and `laySide` toward the pressed side, its axis the hull's up, poles at ±`poleHalfGap`·R. It spins the trigger's way (spin axis up for RT, down for LT), so the prisms' frame drag shows the spin | `StoatSlingExecutor.LaySkim` |
+| Capture | Inside the Tidepool, as you pass (centre ≥ `catchDegrees` off the nose; inside R always). Entry angle θ against the surface sets the kept speed `lerp(plunkCarry, 1, cos²θ)`: flat keeps it all, straight in **plunks** | `StoatSkimMath.Captures / EntryCarry` |
+| Ride | Pinned to R at `captureRate`; the nose eases onto the surface (`settleRate`) and follows a great circle (ω = v/R), drawn onto the Skimline at `precess`. The squeeze sets the spin `spinSpeedMax·s^spinExponent`; the ride's extra speed eases toward the spin's flow along your heading at `spinGrip` (with the spin gains, against it bleeds) | `StepSkim`, `StoatSkimMath.SpinFlow / SpinTarget / Precess` |
+| Release | Launch along the surface at `min(capCruises × cruise, v_ride × (1 + G·Q'·rate·skipDecay^n))`, G = lerp(`launchGainMin`, `launchGainMax`, deepest squeeze), Q' = lerp(`missShare`, 1, the sweet spot on the angle ridden: `sweetSpotDegrees` ± `sweetSpotHalfWidth`, `sweetSpotFalloff`) | `LaunchSkim`, `StoatSkimMath.LaunchSpeed` |
+| Hook | For `curveSeconds` after launch the course keeps turning about the spin axis at `curve` × spin/R, fading to 0 | `StepHook` |
+| Skips | A capture within `skipWindow` of the last launch is the next skip of a run (n+1, to `maxSkips`); each pays `skipDecay^n` of the gain. Graze bounces and the perfect window are the next slice | `StoatSkimMath.SkipIndex` |
+| Limits | `maxRideDegrees` ridden, or `holdMax` seconds held, launches you on your own; the let-go pair closes at `driftSpeed` and annihilates (the Charge ripple as before) | |
+| Drawn | World dots only (no screen-space warp): a faint camera-facing **Tidepool** ring until captured, and the **Skimline** whose dots scroll with the spin, brighter once riding and lime in the sweet window. The catch warp is off in skim | `StoatPathfinderExecutor.AddSkimRings` |
+| AI | Unchanged verbs: presses toward its turn, lets go when the target is in its cone (or wider in the sweet window), gives up an uncaptured shell after `aiCatchGiveUpSeconds` | `AutopilotSling` |
+
+Config: `StoatSkimConfigSO` (`Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset`), referenced by
+`StoatSlingConfigSO.skim`. Empty it to fall back to the catch (§1b). Tests: `StoatSkimTests`.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |

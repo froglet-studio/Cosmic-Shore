@@ -581,6 +581,27 @@ The `Vessel Prism Effects/` family stays outside the gate for the reason above �
 (the bounce off mass, the danger prism's slow and burn) — so the gate never has to know which hull
 laid the prism. Since 2026-10-17 that family holds no input mute either.
 
+### 9b. Opt-in riding: a rival may CHOOSE to ride a Stoat's Skimshell (2026-10-29) — ⚠ FLAGGED FOR GARRETT
+
+**Rule change, proposed by Yash, NOT yet reviewed by Garrett.** The Stoat's Time mode is now the Skim Sling
+(`R_VesselActions/STOAT_DIPOLE.md` §1q): the Stoat lays a black/white hole pair and rides the sphere round it (the
+Skimshell). Yash's call: *rival vessels CAN choose to ride your Skimshell* — opt-in by the rival, e.g. entering flat and
+holding their own input — and it *must never forcibly move an opposing vessel against its will*.
+
+How it stays inside this section's spirit:
+
+| | |
+|---|---|
+| who decides | the RIVAL. Only a rival that opts in rides (`StoatSkimMath.RivalOptsIn`: the rule is on, the rival holds its own input, and it entered flat, incidence ≤ `grazeAngle`). A rival that does not opt in is never touched — no pull, no pin, no spin. |
+| who moves the rival | the rival's OWN executor on its own machine, never the Stoat's and never `BlackHoleVesselPull` (owned holes still move no opposing vessel). Letting go of its own input drops it off at once. |
+| what the Stoat gains or takes | nothing from the rival: no petals, no controls. A shared Skimshell is a piece of the arena the Stoat made, used by choice. |
+
+**Status:** the rule ships **OFF** (`StoatSkimConfigSO.rivalRiding = 0`) and is **not wired** — the first playable slice
+(branch `stoat/skim-sling`) flies the owner's own vessel only. The hook is `StoatSkimMath.RivalOptsIn` plus the comment at
+the owned-hole skip in `BlackHoleVesselPull`. `check_vessel_on_vessel_motion.py` is unchanged and must stay green: a
+rival's ride is applied by the rival's own vessel action, never by a victim-facing effect. **Garrett: please confirm or
+veto this exception before it is wired.**
+
 ---
 
 ## 10. SILENCE: a scored hit also buys a window (Oct 2026)

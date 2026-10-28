@@ -253,7 +253,11 @@ namespace CosmicShore.Gameplay
                 if (_dots) _dots.Hide();
                 _worldDots ??= new StoatPathfinderWorldDots();
                 if (!_worldDots.Begin(cam)) return;
-                if (_timeMode) AddRings(hull: _status.Transform);
+                if (_timeMode)
+                {
+                    if (_sling && _sling.UsesSkim) AddSkimRings(cam, _status.Transform);
+                    else AddRings(hull: _status.Transform);
+                }
                 if (_gate) AddGateMouth(cam);
                 if (!_timeMode)
                     _worldDots.Add(_points, _path.Count, _jumps, _path.JumpCount, PathColor(),
@@ -314,6 +318,38 @@ namespace CosmicShore.Gameplay
             orbit.a *= caught ? 1f : sc.OrbitRingAlpha;
             n = StoatSlingMath.Ring(centre, normal, _sling.OrbitRadius, RingSegments, _ring);
             _worldDots.Add(_ring, n, null, 0, orbit, sc.RingDotSize, sc.RingDotSpacing, config.WorldDotMinPixels, closed: true);
+        }
+
+        /// <summary>
+        /// Time mode's Skim Sling (STOAT_DIPOLE.md §1q), world dots only - no screen-space warp. The TIDEPOOL: a faint ring
+        /// at its radius facing the camera (the capture sphere's outline), until the hull is captured. The SKIMLINE: the
+        /// Skimshell's equator round the spin axis, its dots SCROLLING with the spin (faster = harder squeeze), brightening
+        /// once you ride and lime while a release would pay the whole gain.
+        /// </summary>
+        void AddSkimRings(Camera cam, Transform hull)
+        {
+            var sc = _sling ? _sling.Config : null;
+            var skim = sc ? sc.Skim : null;
+            if (!skim || !cam || !hull || !_sling.HasPair) return;
+            var centre = _sling.SkimCentre;
+            bool riding = _sling.IsOrbiting;
+            int n;
+            if (!riding)
+            {
+                var facing = cam.transform.position - centre;
+                if (facing.sqrMagnitude > 1e-6f)
+                {
+                    var pool = config.OpenColor;
+                    pool.a *= skim.TidepoolAlpha;
+                    n = StoatSkimMath.Ring(centre, facing.normalized, _sling.DetectionRadius, 0f, RingSegments, _ring);
+                    _worldDots.Add(_ring, n, null, 0, pool, skim.RingDotSize, skim.RingDotSpacing * 1.5f, config.WorldDotMinPixels, closed: true);
+                }
+            }
+            float timing = _sling.Timing01;
+            var line = Color.Lerp(config.OpenColor, config.WarpedColor, timing >= 0.999f ? 1f : 0.35f * timing);
+            line.a *= riding ? 1f : skim.SkimlineAlpha;
+            n = StoatSkimMath.Ring(centre, _sling.SkimAxis, _sling.OrbitRadius, _sling.SpinPhaseDegrees, RingSegments, _ring);
+            _worldDots.Add(_ring, n, null, 0, line, skim.RingDotSize, skim.RingDotSpacing, config.WorldDotMinPixels, closed: true);
         }
 
         void HideDots()

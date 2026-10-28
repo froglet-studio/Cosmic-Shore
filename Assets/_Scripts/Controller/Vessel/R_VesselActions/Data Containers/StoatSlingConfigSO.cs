@@ -10,6 +10,9 @@ namespace CosmicShore.ScriptableObjects
     /// an attractor–repulsor wormhole pair beside the hull. The pair itself is the black hole's
     /// (<c>Docs/BLACK_HOLE.md</c> §11) — this file only decides where, how big and how long.
     ///
+    /// <para><b>Time mode is the SKIM SLING</b> since 2026-10-29 whenever <see cref="Skim"/> is set
+    /// (<see cref="StoatSkimConfigSO"/>, <c>STOAT_DIPOLE.md</c> §1q); the catch below is its fallback.</para>
+    ///
     /// <para><b>Time mode — the catch</b> (2026-10-14, the studio's dipole sling: <c>STOAT_DIPOLE.md</c> §1b). PRESS lays a
     /// LIGHT attractor <see cref="CatchAhead"/> ahead and <see cref="CatchSide"/> to the trigger's side, the repulsor
     /// mirrored on the other — in front of the hull, where the camera sees it. Two rings are drawn round it: the ORBIT
@@ -35,6 +38,11 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("The autopilot writes no trigger; its every sling is this fraction of a full squeeze.")]
         [SerializeField, Range(0f, 1f)] float autopilotHold01 = 0.5f;
+
+        [Header("Time mode - the SKIM SLING (2026-10-29: replaces the catch below while set)")]
+        [Tooltip("The Skim Sling (STOAT_DIPOLE.md §1q): set, Time mode's triggers lay a Skimshell to ride and launch off; " +
+                 "empty, they fly the catch below (kept as the fallback).")]
+        [SerializeField] StoatSkimConfigSO skim;
 
         [Header("Time mode - the catch (press lays it ahead, fly past and it catches you, hold orbits, release slings)")]
         [Tooltip("How far AHEAD of the hull the pair is laid, world units (the studio's dpAhead) - in front, where you see it.")]
@@ -188,6 +196,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Played once when the pair is slung. Empty = silent.")]
         [SerializeField] EventReference slingEvent;
 
+        public StoatSkimConfigSO Skim => skim;
         public float MinStrength => Mathf.Max(0.01f, Mathf.Min(minStrength, maxStrength));
         public float MaxStrength => Mathf.Max(MinStrength, maxStrength);
         public float HoldExponent => Mathf.Clamp(holdExponent, 0.5f, 4f);
