@@ -16,9 +16,17 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-28 from canvas version `1793216111-643c`: Rev 3 to Rev 35, 304 boards on 36 pages. The canvas's launch page is `rev35`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-10-28 from canvas version `1793216666-7774`: Rev 3 to Rev 36, 309 boards on 37 pages. The canvas's launch page is `rev36`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
+
+### Rev 36 - FTUE, redrawn: the captain arrives  (page `rev36`)
+
+- [`R36Compare.dc.html`](R36Compare.dc.html) - Rev 36 - the three entrances side by side on the Home step, frame by frame
+- [`R36A.dc.html`](R36A.dc.html) - Rev 36 A - Wingman: her Squirrel streaks in on a skim trail that ends at the control, and her comm opens off the hull (recommended) - interactive
+- [`R36B.dc.html`](R36B.dc.html) - Rev 36 B - Comms: a tall portrait window docks on the far edge with her voice line and the prompt - interactive
+- [`R36C.dc.html`](R36C.dc.html) - Rev 36 C - Cinematic: she leans in large from the edge, name and line set big beside her - interactive
+- [`R36Notes.dc.html`](R36Notes.dc.html) - Rev 36 - notes: what was wrong with Rev 34, the entrance timing, the words, the build
 
 ### Rev 35 - Hover: how the menu answers the pointer  (page `rev35`)
 

@@ -4696,7 +4696,7 @@ re-derived each run):
 - the hex countdown runs;
 - the freeze after the screen appears.
 
-## 100. Rev 34 mockups: FTUE, the captain guides from the side (2026-10-28, awaiting a pick)
+## 100. Rev 34 mockups: FTUE, the captain guides from the side (2026-10-28, rejected; redrawn as Rev 36, section 102)
 
 **Asked (Shombith, 2026-10-28):** "Create FTUE mpckups - look at the old desing the captain/pilot shouldcome from the
 side and guidethe players".
@@ -4716,6 +4716,9 @@ holds: one control lit in lime, everything else dimmed and dead except Settings,
 - **R34C, Briefing:** bars come in, a bust rises in the lower corner, and her line runs wide along the bottom. The most
   cinematic; the bottom bar is a gradient so the hub buttons show through.
 - **R34Compare:** the three entrances side by side on one step. **R34Notes:** the asks, the side rule and the build notes.
+
+**Rejected (Shombith, 2026-10-28):** "for the ftue I do not like them once bit. Up your game bhai", then "Leave that
+ref, just make it good". Section 102 is the redraw.
 
 **Why A:** it says most clearly that a pilot is here with you, and the leader line ties her words to the control without a
 second spotlight. B is the fallback for in-match steps, which could use B even if A is picked for the menu.
@@ -4757,7 +4760,7 @@ Other leftover popups:
 - The freestyle `Pause_Menu_Panel` and the quest `DialogueSetUI` are still the legacy look. The dialogue panel waits on the
   Rev 34 pick (the captain's line is its replacement).
 
-## 101. Rev 35 mockups: hover, how the menu answers the pointer (2026-10-28, awaiting a pick)
+## 101. Rev 35 mockups: hover, how the menu answers the pointer (2026-10-28; Shombith picked C, built in 101.1)
 
 **Asked (Shombith, 2026-10-28):** "Then we need some new hover animations".
 
@@ -4792,3 +4795,65 @@ player least.
 - One kit component, `KitHover`, would replace `KitHoverTint` on KitButton, KitTile, the game card and the nav tab.
 - The look and its timings would live on the theme asset (`UIThemeSO`), so a pick changes every control at once.
 - It animates only on enter and exit, so it costs nothing per frame while resting.
+
+### 101.1 Hover C (Sheen), built (2026-10-28, awaiting in-editor approval)
+
+**Picked (Shombith, 2026-10-28):** "I like C for the hover effects".
+
+- **`KitHoverSheen`** (new, `Assets/_Scripts/UI/Kit/`): when the pointer enters a control, one soft band sweeps across
+  it once (eased out, unscaled time), then the control rests.
+  - It is built the first time a control is hovered: a `HoverSheen` child with a `RectMask2D` that layouts ignore, and
+    a `Band` image inside it.
+  - The band is switched off between sweeps, so a resting control costs nothing per frame.
+  - Touch gets no sheen (`UIPointerType.Touch`), and the pad keeps the blue focus ring.
+- **Where it plays:** `KitSelectableBase.OnPointerEnter` (every KitButton, KitTile, KitTextTab, KitBrandButton and the
+  game cards) and `KitHoverTint.OnPointerEnter` (the nav tabs and keycaps). A locked tab's KitHoverTint is disabled,
+  so it plays nothing.
+- **The look lives on the theme:** `UIThemeSO` gains `hoverSheenSprite`, `hoverSheenSeconds` (0.52), `hoverSheenAlpha`
+  (0.16) and `hoverSheenWidth` (0.45 of the control's width).
+  - `UITheme.asset` is written by `Tools/Build/author_ui_lattice.py`, with a validation for the sprite and the timing.
+  - Clearing `hoverSheenSprite` turns the sheen off everywhere.
+- **The sprite:** `kit_sheen.png` (64 x 32 units, leaning about 15 degrees) comes from `Tools/Build/author_ui_kit_sprites.py`,
+  with invariants (clear at both sides, solid on the centre line, leans the right way).
+- The existing hover tints stay: KitButton's fill lift and KitHoverTint's word lift.
+
+## 102. Rev 36 mockups: FTUE, redrawn - the captain arrives (2026-10-28, awaiting a pick)
+
+**Asked (Shombith, 2026-10-28):** "for the ftue I do not like them once bit. Up your game bhai", then "Leave that ref,
+just make it good".
+
+**What Rev 34 got wrong:**
+- The screens behind her were empty seas with a placeholder line.
+- She was a static cut-out stuck in a corner.
+- The dim flattened the whole screen.
+- In C, her line ran over the button she pointed at.
+
+**On the canvas:** page "Rev 36 - FTUE, redrawn: the captain arrives"; the copies are
+`Docs/MenuRedesignB/board/R36*.dc.html`.
+
+Every step is a full game screen:
+1. Home: the live cell, the nav with its icons, the pilot card, the four hub buttons.
+2. Arcade: the window with six cards (the element shapes) and this week's game.
+3. Configure: Skim Race, the Squirrel, intensity, pilots, START.
+4. The first race: timer, goal, the four-hex ability row, boost.
+5. The finish: 1st, 1:24.6, +120 crystals, RACE AGAIN.
+
+On each step one control is lit in lime inside a hole in a 72 % dim. Settings and Skip guide (Y) stay live above it.
+Trace enters from the side away from the control, and her panel never covers it. Each option board replays her
+entrance per step.
+- **R36A, Wingman (recommended):** her Squirrel streaks in along a skim trail that draws itself and ends on the
+  control. Her comm opens beside the hull: hex portrait, name, the line typing at 45 characters a second, the prompt.
+- **R36B, Comms:** a tall portrait window docks on the far edge. Her voice bars run while the line types, and a lime
+  line runs to the control.
+- **R36C, Cinematic:** the edge darkens, she leans in large, and her name (76 px), a rule, her line and the prompt
+  are set beside her.
+- **R36Compare:** the three options at rest on Home, Configure and the first race. **R36Notes:** the critique of
+  Rev 34, the timings, the build.
+
+**Why A:** her vessel does the game's own move (a skim trail), and the trail is the pointer, so the eye follows it to
+the control without an arrow. B suits in-match lines, since it covers least. C has the most character.
+
+**Differs from the build:**
+- The words go in the guide asset (MainQuest), one line per step, with the speaker from the pilot roster.
+- The entrance, the trail and the spotlight hole are new view work on `MainMenuDialogueView`.
+- Open (Shombith, Caleb): her voice, and her name.

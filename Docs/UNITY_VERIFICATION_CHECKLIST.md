@@ -65,6 +65,15 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Hover C: the kit's sheen (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor). Not opened in the editor.
+- [ ] Menu_Main with a mouse: pointing at a hub button, an arcade card, a nav tab and a Settings tab sweeps one soft band across it (about half a second) and nothing loops.
+- [ ] Moving across a row of buttons quickly: each sweep starts fresh and never sticks on.
+- [ ] Locked PORT: no sheen. Touch (Device Simulator): no sheen. Pad focus: only the blue ring.
+- [ ] Layout groups (button labels, card rows) do not move when a control is first hovered (`HoverSheen` ignores layout).
+- [ ] UITheme.asset: clearing `hoverSheenSprite` turns it off everywhere.
+
 ### 🔴 Connection-lost popup in style B + arcade card element shapes (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (`unity_refcompile`, player and editor); `gates.sh` all OK. Not opened in the editor.

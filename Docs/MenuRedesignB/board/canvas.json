@@ -2420,6 +2420,49 @@
       "h": 900,
       "page": "rev35",
       "title": "Rev 35 - notes: what hover means, how it differs from focus, timings and the build"
+    },
+    "R36Compare.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev36",
+      "title": "Rev 36 - the three entrances side by side on the Home step, frame by frame"
+    },
+    "R36A.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev36",
+      "title": "Rev 36 A - Wingman: her Squirrel streaks in on a skim trail that ends at the control, and her comm opens off the hull (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R36B.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev36",
+      "title": "Rev 36 B - Comms: a tall portrait window docks on the far edge with her voice line and the prompt - interactive",
+      "is_interactive": true
+    },
+    "R36C.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev36",
+      "title": "Rev 36 C - Cinematic: she leans in large from the edge, name and line set big beside her - interactive",
+      "is_interactive": true
+    },
+    "R36Notes.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 900,
+      "page": "rev36",
+      "title": "Rev 36 - notes: what was wrong with Rev 34, the entrance timing, the words, the build"
     }
   },
   "createdOnFiles": {
@@ -2429,7 +2472,7 @@
   "designSystems": [],
   "launch": {
     "view": "canvas",
-    "page": "rev35"
+    "page": "rev36"
   },
   "notes": {
     "hud_end": {
@@ -2861,7 +2904,12 @@
     "R35B.dc.html",
     "R35C.dc.html",
     "R35D.dc.html",
-    "R35Notes.dc.html"
+    "R35Notes.dc.html",
+    "R36Compare.dc.html",
+    "R36A.dc.html",
+    "R36B.dc.html",
+    "R36C.dc.html",
+    "R36Notes.dc.html"
   ],
   "pages": [
     {
@@ -3007,6 +3055,10 @@
     {
       "id": "rev35",
       "name": "Rev 35 - Hover: how the menu answers the pointer"
+    },
+    {
+      "id": "rev36",
+      "name": "Rev 36 - FTUE, redrawn: the captain arrives"
     }
   ],
   "title": "Menu Redesign B"
