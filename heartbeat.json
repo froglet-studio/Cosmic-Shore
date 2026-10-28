@@ -12,12 +12,18 @@
   "torch": false
  },
  "cores": 3,
- "current": {
-  "job": "drive-rhino-regatta",
-  "since": 1793187503
- },
+ "current": {},
  "host": "cloud-session",
- "updated": 1793187503,
+ "last": {
+  "epoch": "52c7cb0e7a63",
+  "evals": 88,
+  "job": "drive-rhino-regatta",
+  "stopped": "max evals"
+ },
+ "totals": {
+  "sessions": 1
+ },
+ "updated": 1793187517,
  "user": "shombith",
  "version": "1"
 }
