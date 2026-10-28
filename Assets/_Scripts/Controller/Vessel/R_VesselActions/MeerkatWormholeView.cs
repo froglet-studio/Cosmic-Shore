@@ -92,6 +92,8 @@ namespace CosmicShore.Gameplay
             Upload(ref s_warp, "MeerkatWormholeWarp", s_wv, null, s_wn, s_wuv, s_wi, MeshTopology.Triangles);
             WarpMesh = s_wi.Count > 0 ? s_warp : null;
 
+            MeerkatTreeView.Draw();   // the tree round every tunnel, and the roots (MEERKAT.md §7)
+
             var additive = new RenderParams(s_additive) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
             var glassParams = new RenderParams(s_glassMat) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
             if (s_ti.Count > 0) Graphics.RenderMesh(additive, s_tris, 0, Matrix4x4.identity);

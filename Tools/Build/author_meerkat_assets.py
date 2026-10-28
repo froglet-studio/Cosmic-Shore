@@ -121,7 +121,16 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRa
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
                "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "reticleNearLight", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
                "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "bridgeWhite", "aiWormhole", "aiStraightMinDistance",
-               "aiBentMinDistance", "aiShapeSeconds", "aiNoise"]
+               "aiBentMinDistance", "aiShapeSeconds", "aiNoise",
+               # the tree and the roots (MEERKAT.md section 7, the artifact's rounds 13-21)
+               "trunkVisibility", "trunkTop", "trunkBase", "trunkBark", "trunkRidges", "trunkGnarl", "trunkGlass", "trunkRim",
+               "trunkFresnel", "trunkRings", "trunkGrain", "trunkGrainLines", "branchCount", "branchLength", "branchThickness",
+               "branchUp", "branchZone", "branchSymmetry", "branchForks", "branchGrowSeconds",
+               "omniOn", "omniCount", "labyrinthBranchPointsMin", "labyrinthBranchPointsMax", "labyrinthOpeningsMin",
+               "labyrinthOpeningsMax", "labyrinthRadiusMin", "labyrinthRadiusMax", "labyrinthSpread", "labyrinthRandomness",
+               "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl", "rootGlass", "rootRim", "rootGrain",
+               "labyrinthFormSeconds", "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootMaxSpeed", "rootBounce",
+               "rootGravity", "rootOpacity", "rootLamp", "rootFog"]
 
 
 def shipped(page: str) -> dict:
@@ -151,7 +160,7 @@ def config_asset(values: dict) -> str:
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
             f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatWormholeConfigSO')}, type: 3}}\n"
             "  m_Name: MeerkatWormholeConfig\n  m_EditorClassIdentifier: \n" + body +
-            empty_event("formEvent") + empty_event("collapseEvent"))
+            empty_event("formEvent") + empty_event("collapseEvent") + empty_event("rootsEvent"))
 
 
 # Studio keys renamed after the config was first written: old -> new (round 6: the ride's three multipliers).
@@ -182,6 +191,8 @@ def config_retrofit(cfg: str, values: dict) -> str:
         prev = next((m for m in (re.search(r"^  %s: .*\n" % q, cfg, re.M) for q in reversed(CONFIG_KEYS[:i])) if m), None)
         at = prev.end() if prev else cfg.index("  formEvent:\n")
         cfg = cfg[:at] + f"  {k}: {num(values[k])}\n" + cfg[at:]
+    if not re.search(r"^  rootsEvent:\n", cfg, re.M):   # the roots' sound (MEERKAT.md section 7), shipped empty
+        cfg = cfg.rstrip("\n") + "\n" + empty_event("rootsEvent")
     return cfg
 
 

@@ -133,6 +133,24 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 21 (Yash, 2026-10-28: "it need to be easily navigable. Our controls inside the root will be controlled by left
+thumbstick"), and the clone to Unity.**
+- **Inside the roots, the left stick:**
+  - you cruise along the root on your own (`rootCruise` 45 u/s), your nose following it;
+  - the left stick moves you round the root (left and right, up and down), the way it would turn your nose (Invert Y
+    included), by `rootMove`;
+  - `rootDrag` now only calms your drift across the root;
+  - RT still pushes you faster (`rootThrust`, up to `rootMaxSpeed`); the right stick does nothing in the roots.
+  - The AI steers with the left stick alone.
+- **An omnicrystal taken inside a tunnel** grows its roots the moment you are out (it used to arm your next RT). The game
+  does the same.
+- **Measured** (seed 7, full Mass): you cruise in at 45 u/s; holding the stick right takes a different root at the
+  second fork; RT takes you to 90 u/s.
+- **Cloned to Unity** (`/artifact-to-unity`, `R_VesselActions/MEERKAT.md` §7): the tree round every tunnel and the
+  Omnicrystal's roots, flown on the left stick, with the contour-field water pipe kept. 48 keys mapped (90 in all), 0 drift.
+  The page's root functions are held by 6 golden tests (`MeerkatRootMathTests`). Not ported: `trunkWarp`, `omniAtOnce` 0,
+  the soil, the labyrinth wireframe keys, `forkHintSeconds`. The shaders are a recipe: `Docs/Shaders/WATERY_GLASS.md`.
+
 **Round 20 (Yash, 2026-10-28: "remove the rings of spindle. From the trunk as well as the roots, so there should not be
 any distinction between the wormhole and the trunk ... for the roots, we won't be traveling forward randomly. Rather, we
 will also control going forward using our trigger inside the root ... use the left thumbstick to go forward, backward,

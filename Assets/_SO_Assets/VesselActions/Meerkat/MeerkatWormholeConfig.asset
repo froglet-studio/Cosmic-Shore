@@ -68,6 +68,54 @@ MonoBehaviour:
   aiBentMinDistance: 120
   aiShapeSeconds: 0.3
   aiNoise: 0
+  trunkVisibility: 1
+  trunkTop: 1.5
+  trunkBase: 1.9
+  trunkBark: 0.22
+  trunkRidges: 16
+  trunkGnarl: 0.14
+  trunkGlass: 0.012
+  trunkRim: 0.28
+  trunkFresnel: 3
+  trunkRings: 7
+  trunkGrain: 0.22
+  trunkGrainLines: 22
+  branchCount: 6
+  branchLength: 2.4
+  branchThickness: 0.28
+  branchUp: 28
+  branchZone: 0.85
+  branchSymmetry: 0.45
+  branchForks: 2
+  branchGrowSeconds: 0.5
+  omniOn: 1
+  omniCount: 3
+  labyrinthBranchPointsMin: 3
+  labyrinthBranchPointsMax: 12
+  labyrinthOpeningsMin: 5
+  labyrinthOpeningsMax: 30
+  labyrinthRadiusMin: 90
+  labyrinthRadiusMax: 420
+  labyrinthSpread: 360
+  labyrinthRandomness: 0.45
+  labyrinthDiameter: 40
+  labyrinthMouthDiameter: 46
+  rootTip: 0.6
+  rootGnarl: 0.3
+  rootGlass: 0.015
+  rootRim: 0.35
+  rootGrain: 0.35
+  labyrinthFormSeconds: 0.8
+  rootCruise: 45
+  rootThrust: 90
+  rootMove: 55
+  rootDrag: 0.45
+  rootMaxSpeed: 90
+  rootBounce: 0.45
+  rootGravity: 0
+  rootOpacity: 0.94
+  rootLamp: 1
+  rootFog: 160
   formEvent:
     Guid:
       Data1: 0
@@ -76,6 +124,13 @@ MonoBehaviour:
       Data4: 0
     Path: 
   collapseEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  rootsEvent:
     Guid:
       Data1: 0
       Data2: 0

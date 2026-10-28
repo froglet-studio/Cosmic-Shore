@@ -65,6 +65,39 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat's tree and the Omnicrystal's roots, flown on the left stick (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- The tree round every formed tunnel: trunk, bore, cut faces and branches (`MeerkatTreeMesh`, `MeerkatTreeView`,
+  `MeerkatTree.shader`). The contour-field water pipe is unchanged.
+- Omnicrystals (`MeerkatOmnicrystalField`) in Burrow Run between the rings, and in the Toybox ahead of your Meerkat.
+  Taking one grows the roots at once from the hull, sized by the last tunnel's shaft (`MeerkatRootMath`,
+  `MeerkatRootNetwork`).
+- Inside the roots: cruise on, the left stick moves you round the root, RT faster, the walls bounce you, the camera on
+  the root's centreline, the inside an opaque earthen wall lit by your lamp (`MeerkatRootInside.shader`). The AI holds
+  RT and steers across. Roots replicate through `MeerkatWormholeNetworkRelay.n_roots` (protocol 22).
+
+**Verified without the editor:**
+- `MeerkatRootMathTests` and `MeerkatWormholeMathTests`: 40/40 pass in dotnet with Unity stubs, against the page's own
+  numbers (rng, four layouts, the built roots, a 500-step flight with forks and bounces).
+- Reference compile, player and editor: 0 errors in project code. Both new shaders compile (glslang, HLSL front end,
+  vertex and fragment). `studio_to_unity` 90 mapped, 0 drift; `author_meerkat_assets --check` and `--self-test` pass.
+
+**Verify in editor:**
+1. Toybox (lava lamp), Vessel Changer → Meerkat. Form a tunnel with RT: a dead tree in watery glass forms with it,
+   rippling out of its centre, branches growing from its top half. Ride through: the water pipe is still there inside.
+2. Fly on: three gold omnicrystals lie ahead (300 u, then 200 u apart). Fly through one. Roots grow at once from you,
+   every way, and you are inside the first.
+3. Inside: you cruise on your own. The left stick moves you round the root (right goes right; up goes the way your nose
+   goes outside). Hold RT to go faster. Hitting a wall bounces you. Move into a root at a fork to take it. The camera
+   never leaves the root; the inside is brown and opaque, lit near you, dark further off; the outside world barely shows.
+4. Out of a tip you fly on. Dig a longer tunnel (hold LT) before the next omnicrystal: its roots are bigger.
+5. Burrow Run with AI: the omnicrystals lie between rings; an AI that takes one flies its roots and comes out.
+6. Two players (protocol 22 on both): one takes an omnicrystal; the other sees the same roots and the crystal gone.
+7. Profile a race with roots up (`prof`): "MeerkatTreeView.Draw".
+
+---
+
 ### 🔴 The Meerkat's round 11: a water-pipe tunnel and a reticle lit from its far end (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:**

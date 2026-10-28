@@ -14,6 +14,10 @@ namespace CosmicShore.Gameplay
     /// heading. On the way out it keeps the speed it went in with (the page's <c>gateOut</c>), and the turn picks up from
     /// the tunnel's last heading.</para>
     ///
+    /// <para><b>The roots</b> (<c>MEERKAT.md</c> §7): inside the roots an omnicrystal grew, the roots' flight
+    /// (<see cref="MeerkatWormholeExecutor.StepRoots"/>) replaces the turn and the move the same way: the left stick moves the
+    /// hull round the root, RT pushes it faster, and it leaves at the speed it went in with × <c>rideExitMultiplier</c>.</para>
+    ///
     /// <para><b>The AI shaping its reticle</b> holds its line (the page's left stick at rest while the right one bends):
     /// <see cref="MeerkatWormholeExecutor.AIHoldsLine"/> skips the turn for those frames.</para>
     /// </summary>
@@ -44,7 +48,7 @@ namespace CosmicShore.Gameplay
         protected override void RotateShip()
         {
             var wormhole = Wormhole;
-            if (wormhole && wormhole.IsRiding) return;   // MoveShip flies the ride, facing and all
+            if (wormhole && (wormhole.IsRiding || wormhole.IsInRoots)) return;   // MoveShip flies the ride (or the roots), facing and all
             if (wormhole && wormhole.AIHoldsLine)
             {
                 VesselStatus.Course = transform.forward;
@@ -58,6 +62,16 @@ namespace CosmicShore.Gameplay
             var wormhole = Wormhole;
             if (wormhole && wormhole.StepRide(Time.deltaTime, transform.rotation, out var position, out var rotation,
                     out float rideSpeed, out var heading, out bool cameOut))
+            {
+                transform.SetPositionAndRotation(position, rotation);
+                accumulatedRotation = rotation;
+                VesselStatus.Course = heading;
+                VesselStatus.Speed = rideSpeed;
+                _rodeLastFrame = true;
+                if (cameOut) LeaveRide(rideSpeed);
+                return;
+            }
+            if (wormhole && wormhole.StepRoots(Time.deltaTime, out position, out rotation, out rideSpeed, out heading, out cameOut))
             {
                 transform.SetPositionAndRotation(position, rotation);
                 accumulatedRotation = rotation;
