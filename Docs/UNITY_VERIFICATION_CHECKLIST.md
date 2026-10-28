@@ -178,7 +178,7 @@ compiled but did not run. No Unity Editor was open, so `/verify-unity` did not r
 
 ### 🔴 Meerkat: Garrett's kit - the soliton, the faster ride, sentinels, the exit portal (`worktree-agent-a0cdd70864b1be2cf`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed** (Garrett's design, approved by Yash 2026-10-28; `R_VesselActions/MEERKAT.md` §9): `MeerkatSolitonKit` on the
+**What landed** (Garrett's design, approved by Yash 2026-10-28; `R_VesselActions/MEERKAT.md` §10): `MeerkatSolitonKit` on the
 Meerkat (with `MeerkatSentinels`, `MeerkatExitPortal`, `MeerkatSolitonMath`; the L5 Steal hooked on round 23's
 `MeerkatSwallow`), Y →
 `MeerkatSentinelModeAction`, the config's "Garrett's kit" sections, the element map's four rows, protocol version 23
