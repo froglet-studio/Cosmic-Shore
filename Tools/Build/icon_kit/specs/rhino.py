@@ -293,12 +293,13 @@ def flat_katana(length, w=15.0):
 # The super-shielded prism, as the game builds it (StellatedOctahedronMeshGenerator): the stella octangula, two
 # tetrahedra through each other - eight spikes, tips at the cube corners, each spike three faces on a face of the
 # inscribed octahedron. Garrett 2026-10-28: "that does not look like a stelated octahedron". Drawn from the real
-# geometry (regular: a = b = c), turned to a three-quarter view, every visible face its own facet with a seam, in three
-# tones by how it faces the light. Shattered: the eight spikes flung out along their own corners, as the game's
+# geometry (regular: a = b = c), seen straight down a body diagonal - the flat six-pointed star with its facets cut by
+# seams, ONE colour ("we need a flatter design in order to play well with the others"; a shaded three-quarter view was
+# round 3). Shattered: the eight spikes flung out along their own corners, as the game's
 # 24-face shatter + explode-out.
-STELLA_YAW, STELLA_PITCH = 22.0, -30.0
+STELLA_YAW, STELLA_PITCH = 45.0, -35.26   # down a body diagonal: the flat six-point star, the row's flat language
 STELLA_LIGHT = (-0.55, 0.65, -0.5)       # toward the upper left, toward the viewer (view space, y up)
-STELLA_SEAM = 1.1                        # px the facets are pulled in from their edges
+STELLA_SEAM = 1.5                        # px the facets are pulled in from their edges (a seam of ~3 px)
 
 
 def _stella_faces(explode=0.0):
@@ -360,7 +361,6 @@ def stella_tones(cx, cy, r, explode=0.0):
     return tones
 
 
-STELLA_ALPHA = (1.0, 0.7, 0.42)
 PRISM_R = 36.0
 
 
@@ -375,14 +375,19 @@ def prism_centre(length):
     return _reach_at(length - PRISM_BITE + PRISM_R * 0.42, -KATANA_SORI * length / KATANA_LEN * 0.6)
 
 
-def shielded_prism(length, tone):
-    cx, cy = prism_centre(length)
-    return stella_tones(cx, cy, PRISM_R)[tone]
+def stella(cx, cy, r, explode=0.0):
+    t = stella_tones(cx, cy, r, explode)
+    return t[0] | t[1] | t[2]
 
 
-def shattered_prism(length, tone):
+def shielded_prism(length):
     cx, cy = prism_centre(length)
-    return stella_tones(cx, cy, PRISM_R * 0.8, explode=0.75)[tone]
+    return stella(cx, cy, PRISM_R)
+
+
+def shattered_prism(length):
+    cx, cy = prism_centre(length)
+    return stella(cx, cy, PRISM_R * 0.72, explode=1.1)
 
 
 def reach_posts():
@@ -408,11 +413,9 @@ def reach_card():
     for k, (n, s01, broken, lit) in enumerate(REACH_STATES):
         L = reach_len(s01)
         parts[f"b{k}"] = (lambda L=L: flat_katana(L))
-        for t in range(3):
-            parts[f"p{k}_{t}"] = (lambda L=L, broken=broken, t=t: shattered_prism(L, t) if broken else shielded_prism(L, t))
+        parts[f"p{k}"] = (lambda L=L, broken=broken: shattered_prism(L) if broken else shielded_prism(L))
         parts["posts"] = reach_posts
-        states.append((n, [(f"p{k}_{t}", "shielded", STELLA_ALPHA[t]) for t in range(3)]
-                       + [(f"b{k}", "danger" if lit else "white"), ("posts", "white", 0.6)]))
+        states.append((n, [(f"p{k}", "shielded")] + [(f"b{k}", "danger" if lit else "white"), ("posts", "white", 0.6)]))
     return dict(name="bladereach_round2", group="bladereach2", lockup_state=3, element="Space",
                 before=ICON_DIR + "Rhino_BladeReach-PLACEHOLDER.png",
                 title="Blade Reach: the katana flat at its live length between posts at its rest and full reach (O), its tip in a super-shielded prism - bound below Space 5, shattered from Space 5; no plate meter",
