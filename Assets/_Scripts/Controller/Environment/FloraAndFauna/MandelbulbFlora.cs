@@ -57,12 +57,13 @@ namespace CosmicShore.Gameplay
         /// ROLLED per plant so no per-element asset field can reach a config that rolls
         /// (Docs/ECOSYSTEM.md §38's argument, applied to shape instead of tempo).
         ///
-        /// <para>The cross-section is per-element for one geometric reason: <b>a CHARGE plant's
-        /// leaves are shielded by law</b> (<c>Flora.ResolveShieldPeriod</c>), and a shield
-        /// replaces the box with the octahedron CIRCUMSCRIBING it — 3x the half-extents, reaching
-        /// 1.5 x leafSize (Docs/ECOSYSTEM.md §35). Charge is therefore fitted against its ARMOUR
-        /// and comes out thinner: its ribbons read as a sparse skeleton and its octahedra fill the
-        /// cage in, exactly as the gyroid and Schwarz P Charge variants shipped.</para>
+        /// <para>The cross-section is per-element for one geometric reason: <b>a MASS plant's
+        /// leaves are shielded by law</b> (<c>ElementalArmour</c>, Docs/ECOSYSTEM.md §65 - Charge's
+        /// until 2026-10-28), and a shield replaces the box with the octahedron CIRCUMSCRIBING it,
+        /// reaching 1.5 x the prism on every axis. A Mass prism is at LAW size (the Time prism x1.2786,
+        /// its shape kept), so the fit grows the PLANT instead of thinning the prism: its ribbon is laid
+        /// at a 0.30 dash of its stride and its shell is grown by <see cref="ShellScale"/>, which keeps the
+        /// world prism law-sized while a curve's consecutive octahedra clear (s* = 1/(3 x 0.30)).</para>
         /// </summary>
         [Serializable]
         public struct ElementalForm
@@ -74,6 +75,12 @@ namespace CosmicShore.Gameplay
             public Vector2 CrossSection;
 
             public MandelbulbSurface.GrowthRules Rules;
+
+            [Tooltip("How much further this element's shell is grown than its reach alone - the ARMOUR's growth " +
+                     "(Docs/ECOSYSTEM.md §65): 1 / the dash on an armoured (Mass) element, so its chain of " +
+                     "octahedra clears while its world prism stays law-sized; 1 on every other. 0 reads as 1. " +
+                     "Written by Tools/Build/author_mandelbulb_flora_assets.py from mandelbulb_flora_model.armour_growth.")]
+            public float ShellScale;
         }
 
         [Header("Form")]
@@ -88,11 +95,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// THE REACH — §51's assembly clause, and the one this family did not spend until
-        /// <c>Docs/ECOSYSTEM.md §56</c>: <c>ReachScale = volume^(-1/3)</c>, normalised on TIME so
+        /// <c>Docs/ECOSYSTEM.md §56</c>: <c>FloraElementalForm.ReachScale</c>, normalised on TIME so
         /// the species' AUTHORED shell is the neutral plant. A SPACE plant reaches x1.288 and a
-        /// MASS plant draws in to x0.781 — a 1.65x span in how big a plant IS — while CHARGE and
-        /// TIME sit at exactly 1, which is the law read literally: their identity is a state and a
-        /// tempo rather than a shape, so only the two SHAPE elements move.
+        /// MASS plant, which has SIZE (§65), is the neutral plant grown whole x1.2786 (it drew in to
+        /// x0.781 until 2026-10-28) — while CHARGE and TIME sit at exactly 1. A Mass plant's ARMOUR
+        /// grows its shell further still (<see cref="ElementalForm.ShellScale"/>).
         ///
         /// <para>On this family a prism's length IS the walk's step, so the shell is simultaneously
         /// the plant's extent and its prism size — which is why <c>Flora.ElementalReachScale</c>
@@ -284,7 +291,7 @@ namespace CosmicShore.Gameplay
             // AFTER base.Initialize: this is the first point at which Element is final (prefab ->
             // rolled variant -> cell overrides -> the crystal that carries it).
             _form = ResolveForm();
-            _shell = shellRadius * ElementalReach;
+            _shell = shellRadius * ElementalReach * ArmourShell(_form);
 
             int seed = PlantSeed();
             ResolveWeights(seed, out float w0, out float w1, out float w2);
@@ -298,6 +305,9 @@ namespace CosmicShore.Gameplay
             _limb.Clear();
             _pending.Clear();
         }
+
+        /// <summary>The armour's shell growth for a form (<see cref="ElementalForm.ShellScale"/>); an unauthored 0 is 1.</summary>
+        static float ArmourShell(in ElementalForm form) => form.ShellScale > 0f ? form.ShellScale : 1f;
 
         ElementalForm ResolveForm()
         {
@@ -844,7 +854,7 @@ namespace CosmicShore.Gameplay
             if (into == null || budget <= 0) return false;
 
             var form = ResolveForm();
-            float shell = shellRadius * ElementalReach;
+            float shell = shellRadius * ElementalReach * ArmourShell(form);
             ResolveWeights(seed == 0 ? 1 : seed, out float w0, out float w1, out float w2);
             var surface = ResolveSurface(Element, w0, w1, w2);
             var growth = new MandelbulbSurface.Growth(surface, form.Rules, seed == 0 ? 1 : seed);

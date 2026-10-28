@@ -64,7 +64,7 @@ MonoBehaviour:
   plantRadiusCellFractionMin: 0.25
   formByElement:
   - Element: 1
-    CrossSection: {x: 0.0186642, y: 0.00870996}
+    CrossSection: {x: 0.026967, y: 0.0125846}
     Rules:
       Field: 2
       SwirlDegrees: 0
@@ -82,7 +82,7 @@ MonoBehaviour:
       RadiusMin: 0.3
       RadiusMax: 2
       MinRun: 3
-      LengthFactor: 0.311538
+      LengthFactor: 0.9
       GirthTaper: 0.4
       TwistDegreesPerStep: 0
       DiveCount: 14
@@ -96,7 +96,7 @@ MonoBehaviour:
       DiveAxisAlign: 1
       DiveDescent: 0.1
       SkeletonSeeds: 1
-      WalkStep: 0.065
+      WalkStep: 0.05
       MinPersistence: 0
       GirthReference: 10
       GasketLevels: 0
@@ -110,14 +110,15 @@ MonoBehaviour:
       GasketOctave: 0
       DiscRelaxRate: 0
       RingGirthFloor: 0
+    ShellScale: 1
   - Element: 2
-    CrossSection: {x: 0.0388716, y: 0.057657}
+    CrossSection: {x: 0.0082168, y: 0.00383451}
     Rules:
       Field: 2
       SwirlDegrees: 0
       FieldMix: 1
       Momentum: 0
-      StepSize: 0.0431207
+      StepSize: 0.045
       MaxSteps: 120
       LanesPerSeed: 4
       LaneGap: 0
@@ -129,13 +130,13 @@ MonoBehaviour:
       RadiusMin: 0.3
       RadiusMax: 2
       MinRun: 3
-      LengthFactor: 1.07802
+      LengthFactor: 0.3
       GirthTaper: 0.4
       TwistDegreesPerStep: 0
       DiveCount: 12
       DiveStepFraction: 0.4
       DiveAngleDegrees: 60
-      DiveStopRadius: 0.06
+      DiveStopRadius: 0.0506013
       DiveMaxSteps: 160
       DiveSwirlDegrees: 0
       DiveStrideCeiling: 0.7
@@ -157,6 +158,7 @@ MonoBehaviour:
       GasketOctave: 0
       DiscRelaxRate: 0
       RingGirthFloor: 0
+    ShellScale: 3.75
   - Element: 3
     CrossSection: {x: 0.0354802, y: 0.0033161}
     Rules:
@@ -204,6 +206,7 @@ MonoBehaviour:
       GasketOctave: 0
       DiscRelaxRate: 0
       RingGirthFloor: 0
+    ShellScale: 1
   - Element: 4
     CrossSection: {x: 0.03, y: 0.014}
     Rules:
@@ -251,6 +254,7 @@ MonoBehaviour:
       GasketOctave: 0
       DiscRelaxRate: 0
       RingGirthFloor: 0
+    ShellScale: 1
   shellRadius: 75
   fieldWidth: 192
   weightSpread: 1

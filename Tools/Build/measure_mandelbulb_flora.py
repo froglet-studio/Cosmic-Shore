@@ -3,7 +3,7 @@
 
 Everything this species claims about itself is a number from here: prism counts, per-prism
 and per-plant volume, the size spread, how evenly a plant covers its own surface, how
-deeply two prisms may interleave, the Charge shield fit, THE FALL (the log-spiral dive to
+deeply two prisms may interleave, the Mass armour fit, THE FALL (the log-spiral dive to
 the heart) and THE WATERSHED (the Morse–Smale skeleton species). The growth rule itself
 lives in mandelbulb_flora_model.py, which walks the SHIPPED spherical-harmonic table.
 
@@ -13,7 +13,7 @@ lives in mandelbulb_flora_model.py, which walks the SHIPPED spherical-harmonic t
                                                 # not looked at, and an offline model can
                                                 # report a perfect size distribution for a
                                                 # form that reads as gravel
-    measure_mandelbulb_flora.py --shields       # re-solve Charge's cross-section
+    measure_mandelbulb_flora.py --shields       # sweep Mass's cross-section against its armour (a report)
     measure_mandelbulb_flora.py --fit-volume    # re-solve VOLUME_GAIN
 
 EVERY GATE IS A MEASUREMENT ON THE PLANT THE GAME LAYS — the walk, then the claim
@@ -27,17 +27,16 @@ an angle have bounding boxes that must overlap. It states instead (1) what fract
 TOUCHING pairs interpenetrate at all and (2) how deeply the worst of them does — a zero you
 cannot have is worse than a bound you can measure.
 
-THE CHARGE ORDERING. Armouring multiplies a plant's own silhouette by exactly
-0.5 * CIRCUMSCRIBING_SCALE^2 = 4.5, so a correctly fitted Charge plant is the DENSEST of
-the four while shielded and the sparsest once stripped. That ordering is the two-pass
-grazing cost made visible, and --check fails if it ever flips.
+THE ARMOUR IS MASS'S (Docs/ECOSYSTEM.md §65; it was Charge's until 2026-10-28). Armouring multiplies a plant's own
+silhouette by exactly 0.5 * CIRCUMSCRIBING_SCALE^2 = 4.5, so an armoured Mass plant is the DENSEST of the four while
+shielded - and, because Mass has SIZE (its prisms are the Time prism x1.2786 and its shell is grown until its
+octahedra clear along every chain, mandelbulb_flora_model.armour_growth), it is no longer the sparsest stripped: that
+half of the old Charge ordering was a statement about a shrunk prism and is retired with it.
 
-CHARGE IS THEREFORE MEASURED ARMOURED WHEREVER THE QUESTION IS "WHAT IS ON SCREEN" — a
-Charge plant's leaves are shielded by law, so the bare box is a body nobody sees. That is
-the gasket LADDER (`arena_octaves(shield=True)`, measured: it is what takes the tuned
-Apollonia Charge from 1 legible octave to 3) and it is NOT the interpenetration bounds,
-which are about how the plant is BUILT. Where the armour is measured, the bare figure is
-reported beside it, because the pair IS the ordering above.
+MASS IS THEREFORE MEASURED ARMOURED WHEREVER THE QUESTION IS "WHAT IS ON SCREEN" - its leaves are shielded by law, so
+the bare box is a body nobody sees. That is the gasket LADDER (`arena_octaves(shield=True)`) and it is NOT the
+interpenetration bounds, which are about how the plant is BUILT. Where the armour is measured, the bare figure is
+reported beside it. Charge is measured bare like Space and Time.
 
 A BOUND'S POPULATION IS PART OF THE BOUND. Three of the gates here were stated over a
 population wider than the one their own prose described and their own levers could reach —
@@ -77,6 +76,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mandelbulb_flora_model as M                                    # noqa: E402
+import mass_armour_lib as ARMOUR                                       # noqa: E402
+
+# THE ARMOURED ELEMENT (Docs/ECOSYSTEM.md §65): every "armour" gate below is about it. It was CHARGE until 2026-10-28,
+# when the shield moved to Mass and Charge became the element whose every prism is a danger prism (never shielded).
+ARMOURED = M.ARMOURED[0]
 
 # PrismStateManager.ActivateShield engages the octahedron CIRCUMSCRIBING the prism:
 # OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE on the box HALF-extents.
@@ -135,7 +139,8 @@ PEAK_TOUCH_STEPS = 1.5           # walk steps within which a ridge end "reaches"
 # azimuthal spectrum's line.
 BULB_ORDER = {"Charge": 8, "Mass": 5, "Space": 3, "Time": 12}
 
-# Charge's armour at the CORE. The Fall converges every dive on one point, so the tightest
+# The armour at the CORE (MASS's since 2026-10-28, Docs/ECOSYSTEM.md §65 - the measurements quoted below were taken
+# on CHARGE, which wore it then). The Fall converges every dive on one point, so the tightest
 # packing in the species is the innermost bundle and the whole-plant armour figure cannot
 # see it (53 of 2800 prisms). Measured inside this fraction of the plant's own radius.
 #
@@ -167,11 +172,11 @@ BULB_ORDER = {"Charge": 8, "Mass": 5, "Space": 3, "Time": 12}
 # FractalFoliage's un-split core runs 10.3% -> 0.0% over the same sweep — which is exactly
 # why a species-shaped claim here would be wrong half the time.
 #
-# CHARGE_DASH is 0.45 by law — fitted on the SURFACE, where that inversion (34.6% fused
-# armoured against the siblings' 94.9% bare) is the whole Docs/ECOSYSTEM.md §50 Charge
-# result. So the chain is MEASURED AND REPORTED beside the bound, with its closed form, and
-# the bound states what the gate's own prose always described: "the Fall's BUNDLE has fused
-# into a rod".
+# Charge's dash was 0.45 - fitted on the SURFACE (34.6% fused armoured against the siblings' 94.9% bare, the §50
+# result) - which is why two of the four species fused along their chain. Mass's dash is M.MASS_ARMOUR_DASH = 0.30 on
+# EVERY species (the shell carries the rest, M.armour_growth), so its chain closed form is 1/(3 x 0.30) = 1.11 on all
+# four. The chain is still MEASURED AND REPORTED beside the bound, with its closed form, and the bound states what the
+# gate's own prose always described: "the Fall's BUNDLE has fused into a rod".
 CORE_RADIUS_FRACTION = 0.15
 CORE_ARMOURED_MAX = 0.15
 
@@ -390,7 +395,7 @@ def grow_detail(species, element, budget=None):
     surface = M.surface_for(element, tables=tables, degree=degree, width=M.FIELD_WIDTH)
     rules = M.rules_for(element, species)
     raw, raw_curves, dives_spent = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
-    shell = M.shell_for(element)
+    shell = M.shell_for(element, species=species)
     centres = [M._mul(M.pose(surface, p)[0], shell) for p in raw]
     # AFTER THE CLAIM, BEFORE THE BUDGET, kept separately: the two answer different
     # questions and conflating them reads a budget cut as a broken curve (see
@@ -446,7 +451,7 @@ def skeleton_report(species, element, budget=None):
     one lane hop, and nothing else."""
     d = grow_detail(species, element, budget)
     surface, raw = d["surface"], d["raw"]
-    shell = M.shell_for(element)
+    shell = M.shell_for(element, species=species)
     centres = [M._mul(M.pose(surface, p)[0], shell) for p in raw]
     forward = [-1] * 0
     roots, forward_edges = [], []
@@ -483,7 +488,7 @@ def skeleton_report(species, element, budget=None):
     rules = d["rules"]
     unit = max(1e-6, max(rules.step,
                          rules.walk_step if rules.walk_step > 0 else rules.step,
-                         rules.lane_gap) * M.shell_for(element))
+                         rules.lane_gap) * M.shell_for(element, species=species))
     bonds = []
     for i, p in enumerate(raw):
         anchor_pt = centres[p.parent] if p.parent >= 0 else (0.0, 0.0, 0.0)
@@ -582,7 +587,7 @@ def seam_pairs(species, element, budget=None):
 
 
 def element_report(element, shell=None, cross=None, budget=None, species="FractalFoliage"):
-    shell = shell or M.shell_for(element)
+    shell = shell or M.shell_for(element, species=species)
     cross = cross or M.cross_section_for(element, species)
     surface, rules, prisms, curves = grow_element(element, budget, species)
     boxes = [obb(surface, p, shell, cross) for p in prisms]
@@ -777,7 +782,7 @@ def fall_report(species, element, report):
     d = grow_detail(species, element)
     rules, kept, boxes = d["rules"], d["kept"], report["boxes"]
     walk = d["walk_index"]
-    shell = M.shell_for(element)
+    shell = M.shell_for(element, species=species)
     stop_world = rules.dive_stop * shell
     twist = abs(M.SPECIES[species]["twist"])
 
@@ -815,6 +820,12 @@ def fall_report(species, element, report):
     out["tip_min"] = min((M._len(boxes[i][0]) - kept[i].length * shell * 0.5
                           for i in dive_i), default=float("nan"))
     out["centre_min"] = min(M._len(b[0]) for b in boxes)
+    # (b1) THE ARMOURED HEART (Docs/ECOSYSTEM.md §65): a Mass plant's heart keeps its depth prisms' full swing clear of
+    # every OCTAHEDRON its prisms wear - ElementalArmour.HeartSwingClearance, the number every armoured fit is held to
+    # (mass_armour_lib.swing_need). Exact distance, over the whole plant (the dive bundle is where it binds).
+    if element in M.ARMOURED:
+        out["armour_clear"] = heart_armour_clearance(boxes)
+        out["armour_need"] = ARMOUR.swing_need()
 
     # (b2) AMPUTATION — where each dive actually ENDS, which is a different question from
     # (b) and is a real hole in this file's coverage rather than a re-statement of one.
@@ -851,6 +862,13 @@ def fall_report(species, element, report):
     out["surf_len_max"] = max(surf_len, default=0.0)
     out["surf_len_median"] = median(surf_len) if surf_len else float("nan")
     out["hole_bound"] = DIVE_HOLE_FACTOR * out["surf_len_median"]
+    # An ARMOURED ribbon is DASHED (M.MASS_ARMOUR_DASH, Docs/ECOSYSTEM.md §65): its prisms fill 0.30 of the stride that
+    # spaces them, so an intact chain already leaves 2.33 prism lengths of air between two neighbours. The bound is
+    # therefore stated in STRIDES there (median prism / its length factor) - "a refused prism" is a missing stride.
+    out["hole_unit"] = "prism"
+    if element in M.ARMOURED and rules.length_factor > 0:
+        out["hole_bound"] /= rules.length_factor
+        out["hole_unit"] = "stride"
 
     # (d) the largest HOLE the claim filter left in a dive. A dive is emitted end to end,
     # so every hole here is a prism the claim refused — and a spiral with a hole in the
@@ -1003,6 +1021,16 @@ def fall_report(species, element, report):
     return out
 
 
+def heart_armour_clearance(boxes):
+    """The heart's clear radius against every shield of a plant: exact distance to each octahedron
+    (mass_armour_lib.heart_clearance), from the boxes' centres, axes and half-extents."""
+    import numpy as _np
+    centres = _np.array([b[0] for b in boxes], float)
+    frames = _np.array([_np.array(b[1], float).T for b in boxes])
+    sizes = _np.array([[2 * h for h in b[2]] for b in boxes], float)
+    return ARMOUR.heart_clearance(_np.zeros(3), centres, frames, sizes)
+
+
 def fall_gates(species, element, f, heart_half):
     """Every Fall bound, as (ok, message) — the message states the measured number and the
     bound on every line, passing or failing, so a reader never has to go and look one up."""
@@ -1014,12 +1042,23 @@ def fall_gates(species, element, f, heart_half):
                    f"{f['dive_ends_over']} of them amputated by the claim filter outside "
                    f"{f['dive_end_bound']:.1f} u, the worst ending at {f['dive_end_max']:.1f} u) "
                    f"— the mechanism is authored and most of it is not reaching the heart")
-    if not (f["tip_min"] >= heart_half + DIVE_TIP_MARGIN):
+    if "armour_clear" in f:
+        # An ARMOURED plant's reach is stated against its octahedra and its heart's swing, not its box centres: the
+        # innermost shield must clear the swing (ElementalArmour.HeartSwingClearance) and come within the unarmoured
+        # band's own width of it, so the Fall still ALMOST reaches the crystal (Docs/ECOSYSTEM.md §65).
+        need, got = f["armour_need"], f["armour_clear"]
+        top = need + (DIVE_CENTRE_BAND[1] - DIVE_CENTRE_BAND[0]) * M.ELEMENT_REACH[element]
+        if not (need <= got <= top):
+            bad.append(f"{tag} FALL armour: the heart is {got:.2f} u from the nearest octahedron (band "
+                       f"[{need:.2f}, {top:.2f}] = the Mass swing, plus the reach band's width) — "
+                       + ("a shield is in the crystal's swing" if got < need else
+                          "the armoured Fall stops short of its crystal"))
+    elif not (f["tip_min"] >= heart_half + DIVE_TIP_MARGIN):
         bad.append(f"{tag} FALL clearance: the nearest dive TIP is {f['tip_min']:.3f} u from "
                    f"the centre (bound {heart_half + DIVE_TIP_MARGIN:.3f} = heart half-extent "
                    f"{heart_half:.3f} + {DIVE_TIP_MARGIN} margin) — a prism is inside the crystal")
     lo, hi = DIVE_CENTRE_BAND
-    if not (lo <= f["centre_min"] <= hi):
+    if "armour_clear" not in f and not (lo <= f["centre_min"] <= hi):
         bad.append(f"{tag} FALL reach: the innermost laid prism CENTRE is {f['centre_min']:.3f} u "
                    f"(band [{lo}, {hi}]) — a thread that REACHES the crystal is a different, "
                    f"worse object than one that almost does, and one that stops short is invisible")
@@ -1030,7 +1069,7 @@ def fall_gates(species, element, f, heart_half):
                    f"letting the spiral lay a spike")
     if f["hole_max"] > f["hole_bound"]:
         bad.append(f"{tag} FALL hole: the claim left a {f['hole_max']:.3f} u gap inside a dive "
-                   f"(bound {f['hole_bound']:.3f} = {DIVE_HOLE_FACTOR}x the median surface prism "
+                   f"(bound {f['hole_bound']:.3f} = {DIVE_HOLE_FACTOR}x the median surface {f['hole_unit']} "
                    f"{f['surf_len_median']:.3f}) — a spiral with a hole in it still winds the "
                    f"full angle, so the winding gate cannot see this")
     if not (f["winding_per_efold_median"] >= DIVE_WINDING_PER_EFOLD):
@@ -1273,7 +1312,7 @@ def watershed_report(species, element, report, inert=True):
     d = grow_detail(species, element)
     rules, kept, boxes = d["rules"], d["kept"], report["boxes"]
     walk, surface = d["walk_index"], d["surface"]
-    shell = M.shell_for(element)
+    shell = M.shell_for(element, species=species)
     sads = M.saddles(surface)
     out = ring_census(surface, element)
     out["walk_step"] = rules.walk_step if rules.walk_step > 0 else rules.step
@@ -1419,7 +1458,7 @@ def watershed_report(species, element, report, inert=True):
             for value in (a, b):
                 values = rules.as_list()
                 values[idx] = value
-                got = _lay(surface, M.Rules(*values), M.budget_for(species), M.shell_for(element))
+                got = _lay(surface, M.Rules(*values), M.budget_for(species), M.shell_for(element, species=species))
                 if got != base:
                     n = abs(len(got) - len(base)) + sum(1 for x, y in zip(got, base) if x != y)
                     worst = max(worst, n)
@@ -1486,7 +1525,7 @@ def watershed_gates(species, element, w):
     if any(v == 0 for v in w["lane_share"].values()):
         bad.append(f"{tag} LANES: only {sum(1 for v in w['lane_share'].values() if v)} of "
                    f"{w['lanes_authored']} authored lanes reached the plant at all")
-    if element != "Charge":
+    if element not in M.ARMOURED:          # the armoured element is DASHED on purpose (M.MASS_ARMOUR_DASH)
         lo, hi = LENGTH_FACTOR_MIN, 1.0 / M.CLAIM_FACTOR
         if not (lo <= w["length_factor"] < hi):
             bad.append(f"{tag} LENGTH FACTOR {w['length_factor']:.4f} outside [{lo}, {hi:.4f}) "
@@ -1535,7 +1574,10 @@ OCTAVE_FRAME_MIN = 0.005         # share of the arena frame one octave must pain
 OCTAVE_PX_MIN = 2.0              # its median prism's projected LENGTH, pixels
 OCTAVE_LEGIBLE_MIN = 3           # octaves that must clear BOTH
 TANGENCY_MEDIAN_MAX = 0.05       # a child's worst gap to its three parents, over rho_child
-COARSENESS_ORDER = ("Space", "Charge", "Time", "Mass")   # N: <, <=, <
+# N: Space < each of the other three. Mass shares Time's step from 2026-10-28 (Docs/ECOSYSTEM.md §65): its prism is the Time prism x1.2786,
+# shape kept, so its rings sample like Time's and Mass shows itself by its SIZE and its dashed armour, not by a finer
+# ring. Space stays strictly the coarsest - that is its long axis.
+COARSENESS_ORDER = ("Space", "Charge", "Time", "Mass")
 COARSENESS_RATIO_MIN = 1.5       # N_Mass / N_Space
 SAMPLES_ROUND_MARGIN = 0.05      # |circ/step - round(circ/step)|: REPORTED, see gasket_report
 ARENA_TILE = 700                 # the judging sheet's tile, so "1% of the frame" is ITS frame
@@ -1642,11 +1684,11 @@ def arena_octaves(boxes, lanes, axis, tile=ARENA_TILE, shield=False):
     UNION, never a sum of areas: an octave's rings overlap each other on screen and a sum
     would report a dense small octave as covering more of the frame than it can.
 
-    `shield` RASTERISES THE ARMOUR RATHER THAN THE BOX, which is what a CHARGE plant actually
-    draws: a Charge plant's leaves are shielded by law (Flora.ResolveShieldPeriod floors every
-    Charge plant's shield period) and `PrismStateManager.ActivateShield` engages the
+    `shield` RASTERISES THE ARMOUR RATHER THAN THE BOX, which is what a MASS plant actually
+    draws: a Mass plant's leaves are shielded by law (ElementalArmour, Docs/ECOSYSTEM.md §65 -
+    Charge's until 2026-10-28) and `PrismStateManager.ActivateShield` engages the
     octahedron CIRCUMSCRIBING the box, reaching CIRCUMSCRIBING_SCALE x the HALF-extents — i.e.
-    1.5 x leafSize from the centre on all three axes. Measuring Charge's ladder on the bare
+    1.5 x leafSize from the centre on all three axes. Measuring Mass's ladder on the bare
     box measures a plant that never renders. An octahedron's silhouette is the hull of its six
     VERTICES (`centre +- 3h` along each axis), which projects exactly the way the box's eight
     corners do, so this is the same instrument pointed at the body that is on screen.
@@ -1819,20 +1861,18 @@ def gasket_report(species, element, report, inert=True):
     view = R.SHEET_VIEWS[0]
     cd = (math.cos(view[2]) * math.cos(view[1]), math.cos(view[2]) * math.sin(view[1]),
           math.sin(view[2]))
-    # The camera cross-check is measured on the SAME BODY as the gate (armoured for Charge),
+    # The camera cross-check is measured on the SAME BODY as the gate (armoured for Mass),
     # or it stops being a cross-check on the axis and becomes one on the armour as well.
-    oct_cam, _, _, _ = arena_octaves(boxes, lanes, cd, shield=(element == "Charge"))
+    oct_cam, _, _, _ = arena_octaves(boxes, lanes, cd, shield=(element in M.ARMOURED))
     out["ppu"], out["eye"], out["extent"] = ppu, dist, ext
     out["octaves"] = oct_z
     out["octaves_camera"] = oct_cam
-    # CHARGE IS MEASURED ARMOURED, because a Charge plant ships armoured — the ladder is a
-    # claim about what is ON SCREEN and the bare box is not what renders. A shield reaches
-    # 1.5 x leafSize on all three half-extents, so the silhouette it draws is
-    # 0.5 x CIRCUMSCRIBING_SCALE^2 = 4.5x the box's, which is the whole reason a Charge plant
-    # is the DENSEST of the four shielded and the sparsest bare (Docs/ECOSYSTEM.md §50). The
-    # BARE table is kept and reported beside it: the pair is the inversion made visible, and
-    # a bound read against the wrong one of them is a bound on a plant nobody sees.
-    out["armoured"] = element == "Charge"
+    # MASS IS MEASURED ARMOURED, because a Mass plant ships armoured (Docs/ECOSYSTEM.md §65) — the
+    # ladder is a claim about what is ON SCREEN and the bare box is not what renders. A shield
+    # reaches 1.5 x leafSize on all three half-extents, so the silhouette it draws is
+    # 0.5 x CIRCUMSCRIBING_SCALE^2 = 4.5x the box's. The BARE table is kept and reported beside
+    # it, because a bound read against the wrong one of them is a bound on a plant nobody sees.
+    out["armoured"] = element in M.ARMOURED
     if out["armoured"]:
         oct_arm, _, _, _ = arena_octaves(boxes, lanes, (0.0, 0.0, 1.0), shield=True)
     else:
@@ -1906,7 +1946,7 @@ def gasket_report(species, element, report, inert=True):
             for value in (a, b):
                 values = rules.as_list()
                 values[idx] = value
-                got = _lay(d["surface"], M.Rules(*values), M.budget_for(species), M.shell_for(element))
+                got = _lay(d["surface"], M.Rules(*values), M.budget_for(species), M.shell_for(element, species=species))
                 if got != base:
                     worst = max(worst, abs(len(got) - len(base))
                                 + sum(1 for p, q in zip(got, base) if p != q))
@@ -1940,7 +1980,7 @@ def gasket_gates(species, element, g):
         shares = ", ".join(f"oct{k} {v['frame']:.2%}/{v['px']:.1f}px"
                            for k, v in sorted(g["octaves_ladder"].items()))
         if g["armoured"]:
-            shares += ("  [ARMOURED, which is what a Charge plant draws; bare: "
+            shares += ("  [ARMOURED, which is what a Mass plant draws; bare: "
                        + ", ".join(f"oct{k} {v['frame']:.2%}/{v['px']:.1f}px"
                                    for k, v in sorted(g["octaves"].items())) + "]")
         bad.append(f"{tag} LADDER: {len(g['legible'])} octaves paint >= "
@@ -1995,9 +2035,10 @@ def gasket_species_gates(species, gs):
     RING COARSENESS is this species' §51 identity, and it is the only place in the family
     where an element's long axis is spent on SAMPLING rather than on a longer prism: the
     ring's chord is set by its own geometry, so what the law's step buys here is how many
-    bars go round it. Space draws the coarsest polygon of long blades and Mass the finest
-    mosaic of bricks — and if N ever comes out equal across the four, the element has
-    stopped being visible in the form."""
+    bars go round it. Space draws the coarsest polygon of long blades — and if Space's N ever
+    comes out equal to the others, Space has stopped being visible in the form. (Mass drew the
+    finest mosaic of bricks until 2026-10-28; it now samples like Time, in Time's shape, and
+    shows itself by its size and its armour, Docs/ECOSYSTEM.md §65.)"""
     bad = []
     n = {e: g["samples"] for e, g in gs.items()}
     if n and len(n) != len(COARSENESS_ORDER):
@@ -2010,11 +2051,12 @@ def gasket_species_gates(species, gs):
                    f"rather than a passing one")
     if len(n) == len(COARSENESS_ORDER):
         a, b, c, dd = (n[e] for e in COARSENESS_ORDER)
-        if not (a < b <= c < dd):
-            rel = (f"{COARSENESS_ORDER[0]} < {COARSENESS_ORDER[1]} <= "
-                   f"{COARSENESS_ORDER[2]} < {COARSENESS_ORDER[3]}")
+        # Charge, Time and Mass share the neutral STEP since 2026-10-28 (Docs/ECOSYSTEM.md §65), so their N differ only
+        # by their own disc sets and are not an identity any more; SPACE strictly coarsest is what stays.
+        if not a < min(b, c, dd):
+            rel = f"{COARSENESS_ORDER[0]} < every other element"
             bad.append(f"{species} RING COARSENESS: N must run {rel} (Space strictly "
-                       f"coarsest, Mass strictly finest); measured {n} — an element's "
+                       f"coarsest); measured {n} — an element's "
                        f"long axis is spent "
                        f"here as ring COARSENESS, so equal N is the element not showing up")
         if n["Space"] and n["Mass"] / float(n["Space"]) < COARSENESS_RATIO_MIN:
@@ -2025,7 +2067,7 @@ def gasket_species_gates(species, gs):
     return bad
 
 
-# ── Charge's armour at the core ────────────────────────────────────────────────
+# ── the armour at the core (Mass, §65) ────────────────────────────────────────────────
 
 SHIELD_SAMPLE = 3000     # octahedron SAT is 88 axes; the estimate is sampled, seed fixed
 
@@ -2041,14 +2083,14 @@ def sample(pairs, n=SHIELD_SAMPLE, seed=1):
 
 
 def armoured_census(boxes, chain=frozenset()):
-    """Charge's octahedra against each other over a given set of boxes, SPLIT into the two
+    """The armoured element's octahedra against each other over a given set of boxes, SPLIT into the two
     populations the armour has — a curve's own consecutive prisms (`chain`, given as index
     pairs into `boxes`) and everything else (the BUNDLE: ribbons that cross).
 
     Both are returned because they answer different questions and only one of them is a
     tuning surface. See CORE_ARMOURED_MAX: the chain's touching scale is the closed form
     1/(3 x LengthFactor), which contains no dive parameter and no cross-section, so it is a
-    fact about CHARGE_DASH against the 1/3 cliff rather than a number this species can move."""
+    fact about the dash (M.MASS_ARMOUR_DASH) against the 1/3 cliff rather than a number this species can move."""
     out = {"pairs": 0, "inter": 0, "fraction": 0.0,
            "chain_pairs": 0, "chain_inter": 0, "chain_fraction": 0.0,
            "bundle_pairs": 0, "bundle_inter": 0, "bundle_fraction": 0.0}
@@ -2125,17 +2167,18 @@ def core_boxes(report, fraction=CORE_RADIUS_FRACTION):
 
 
 def shield_report(reports, species="FractalFoliage"):
-    """Charge armoured against its siblings bare — the bar this species has to clear."""
+    """The armoured element (Mass) against its siblings bare — the bar this species has to clear."""
     out = {}
-    charge = reports["Charge"]
+    charge = reports[ARMOURED]
+    siblings = [e for e in M.ELEMENTS if e != ARMOURED]
     # The armour measurement keeps the CHAIN, unlike the bare one. A shield reaches
     # 1.5 x leafSize, and a prism's leafSize includes its LENGTH, so a ribbon laid end to end
     # fuses into a solid tube along its own curve unless something is done about it — which is
     # exactly the Skein rail's finding (a rail's armour meets its neighbour's and "which rail am
     # I on" loses its answer). Excluding the chain here would measure everything except the one
-    # thing that goes wrong. What is done about it is that Charge's ribbon is DASHED
-    # (LengthFactor 0.45): its prisms are shorter than the step that spaces them, so the armour
-    # has room to close and the dashes are what the octahedra fill in.
+    # thing that goes wrong. What is done about it is that the armoured ribbon is DASHED
+    # (LengthFactor M.MASS_ARMOUR_DASH): its prisms are shorter than the stride that spaces them,
+    # so the armour has room to close and the dashes are what the octahedra fill in.
     inter, n, frac = armoured_fraction(charge["boxes"])
     out["armoured_pairs"] = n
     out["armoured_interpenetrating"] = inter
@@ -2158,13 +2201,15 @@ def shield_report(reports, species="FractalFoliage"):
     out["core_bundle_pairs"] = cc["bundle_pairs"]
     out["core_bundle_interpenetrating"] = cc["bundle_inter"]
     out["core_bundle_fraction"] = cc["bundle_fraction"]
-    out["charge_length_factor"] = M.rules_for("Charge", species).length_factor
+    _r = M.rules_for(ARMOURED, species)
+    # The DASH: the share of a STRIDE a prism fills (a skeleton species strides at its own walk step).
+    out["charge_length_factor"] = _r.length_factor
     out["chain_touching_scale"] = chain_touching_scale(out["charge_length_factor"])
     # The bar is measured the same way: ALL touching pairs, chain included.
-    out["sibling_bare"] = max(reports[e]["all_fraction"] for e in ("Mass", "Space", "Time"))
+    out["sibling_bare"] = max(reports[e]["all_fraction"] for e in siblings)
     out["charge_bare_area"] = charge["area"]
     out["armoured_area"] = charge["area"] * 0.5 * CIRCUMSCRIBING_SCALE ** 2
-    out["sibling_bare_area"] = sum(reports[e]["area"] for e in ("Mass", "Space", "Time")) / 3
+    out["sibling_bare_area"] = sum(reports[e]["area"] for e in siblings) / len(siblings)
     return out
 
 
@@ -2173,7 +2218,7 @@ def main():
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--render", metavar="DIR")
     ap.add_argument("--shields", action="store_true",
-                    help="solve Charge's cross-section against its armour and print it")
+                    help="sweep Mass's cross-section against its armour and print it (a report)")
     ap.add_argument("--species", default=None,
                     help="measure ONE species (default: every species in the model)")
     ap.add_argument("--fit-volume", action="store_true",
@@ -2399,7 +2444,7 @@ def measure_species(species, args):
                   + f" (camera {g['legible_camera']}), "
                   # The header promises the bare figure is REPORTED beside the armoured one
                   # wherever the armour is gated; `frame_total` follows `octaves_ladder`, so
-                  # on Charge it is the armoured number and saying only "frame total" would
+                  # on Mass it is the armoured number and saying only "frame total" would
                   # have made this the one place that promise was not kept.
                   + (f"frame total {g['frame_total']:.2%} armoured / "
                      f"{g['frame_total_bare']:.2%} bare" if g["armoured"] else
@@ -2442,14 +2487,13 @@ def measure_species(species, args):
                       f"prove byte-identical; READ: {', '.join(g['inert_read']) or 'none'}")
         n = {e: g["samples"] for e, g in gaskets.items()}
         print(f"    ring coarseness N {n} — the element's long axis spent as SAMPLING, "
-              f"required {COARSENESS_ORDER[0]} < {COARSENESS_ORDER[1]} <= "
-              f"{COARSENESS_ORDER[2]} < {COARSENESS_ORDER[3]} and N_Mass/N_Space >= "
+              f"required {COARSENESS_ORDER[0]} < every other element and N_Mass/N_Space >= "
               f"{COARSENESS_RATIO_MIN}")
 
     s = shield_report(reports, species)
-    print(f"\n  Charge armour: {s['armoured_interpenetrating']}/{s['armoured_pairs']} "
+    print(f"\n  {ARMOURED} armour: {s['armoured_interpenetrating']}/{s['armoured_pairs']} "
           f"({s['armoured_fraction']:.1%}) against its siblings' bare {s['sibling_bare']:.1%}")
-    print(f"  Charge armour at the CORE (inside {CORE_RADIUS_FRACTION:.2f} R = "
+    print(f"  {ARMOURED} armour at the CORE (inside {CORE_RADIUS_FRACTION:.2f} R = "
           f"{s['core_radius']:.1f} u, {s['core_prisms']} prisms): BUNDLE "
           f"{s['core_bundle_interpenetrating']}/{s['core_bundle_pairs']} = "
           f"{s['core_bundle_fraction']:.1%} (bound {CORE_ARMOURED_MAX:.0%}) | CHAIN "
@@ -2458,7 +2502,7 @@ def measure_species(species, args):
           f"{s['charge_length_factor']:.4f}) = {s['chain_touching_scale']:.4f}, REPORTED and "
           f"not gated | both together {s['core_interpenetrating']}/{s['core_pairs']} = "
           f"{s['core_fraction']:.1%}")
-    print(f"  silhouette: Charge bare {s['charge_bare_area']:,.0f}, armoured "
+    print(f"  silhouette: {ARMOURED} bare {s['charge_bare_area']:,.0f}, armoured "
           f"{s['armoured_area']:,.0f}, siblings bare {s['sibling_bare_area']:,.0f}")
 
     cap = M.MAX_LIVE_POPULATION
@@ -2489,15 +2533,17 @@ def measure_species(species, args):
                 bad.append(f"{element}: only {filled}/8 equal-area bands carry 2% of the "
                            f"plant — it has grown a cap, not a bulb")
         if s["armoured_fraction"] > s["sibling_bare"]:
-            bad.append(f"Charge wearing its shields is MORE fused ({s['armoured_fraction']:.1%}) "
+            bad.append(f"{ARMOURED} wearing its shields is MORE fused ({s['armoured_fraction']:.1%}) "
                        f"than a sibling is bare ({s['sibling_bare']:.1%})")
-        if not s["armoured_area"] > s["sibling_bare_area"] > s["charge_bare_area"]:
-            bad.append("the Charge ordering flipped: armoured must be the DENSEST of the four "
-                       "and bare the sparsest — that ordering IS the two-pass grazing cost")
+        # Shielded, the armoured plant is the DENSEST of the four - the two-pass grazing cost made visible. (Its bare
+        # silhouette is no longer the sparsest: Mass has SIZE, Docs/ECOSYSTEM.md §65.)
+        if not s["armoured_area"] > s["sibling_bare_area"]:
+            bad.append(f"the {ARMOURED} ordering flipped: armoured must be the DENSEST of the four "
+                       f"({s['armoured_area']:,.0f} against the siblings' bare {s['sibling_bare_area']:,.0f})")
         # THE FALL's convergence is the tightest packing in the species, and it is 2% of the
         # plant, so the whole-plant armour figure above cannot see it.
         if s["core_bundle_fraction"] > CORE_ARMOURED_MAX:
-            bad.append(f"Charge ARMOUR AT THE CORE: {s['core_bundle_interpenetrating']}/"
+            bad.append(f"{ARMOURED} ARMOUR AT THE CORE: {s['core_bundle_interpenetrating']}/"
                        f"{s['core_bundle_pairs']} = {s['core_bundle_fraction']:.1%} of armoured "
                        f"BUNDLE pairs inside {CORE_RADIUS_FRACTION:.2f} R "
                        f"({s['core_radius']:.1f} u, {s['core_prisms']} prisms) interpenetrate "
@@ -2510,8 +2556,8 @@ def measure_species(species, args):
                        f"this bound: its touching scale is the closed form 1/(3 x "
                        f"LengthFactor {s['charge_length_factor']:.4f}) = "
                        f"{s['chain_touching_scale']:.4f}, which no dive dial and no "
-                       f"cross-section appears in — the lever there is CHARGE_DASH or this "
-                       f"species' own Charge walk step, and both are §35/§51 decisions)")
+                       f"cross-section appears in — the lever there is M.MASS_ARMOUR_DASH, a §65 "
+                       f"decision)")
 
         for element in M.ELEMENTS:
             bad += skeleton_gates(species, element, skeletons[element])
@@ -2543,15 +2589,23 @@ def measure_species(species, args):
         if max(asp, key=asp.get) != "Space":
             bad.append(f"SPACE must have the highest prism aspect ratio; "
                        f"{max(asp, key=asp.get)} does ({ {k: round(v,2) for k,v in asp.items()} })")
-        if min(asp, key=asp.get) != "Mass":
-            bad.append(f"MASS must have the most CUBIC prism (x, y and z closest together); "
-                       f"{min(asp, key=asp.get)} does ({ {k: round(v,2) for k,v in asp.items()} })")
-        # SPACE trades that volume for the assembly's BOUNDING VOLUME.
-        reach = {e: reports[e]["dims"][1] for e in M.ELEMENTS}
-        if reports["Space"]["radius"] <= reports["Mass"]["radius"]:
+        # MASS IN TIME'S SHAPE (Docs/ECOSYSTEM.md §65): the "most cubic" Mass prism is retired with the chunky plate.
+        # The authored prism (before its girth) is the Time prism x1.2786 on every axis, so the aspects agree to the
+        # ratio the per-element girth compensation (VOLUME_GAIN, uniform on the cross-section) leaves between them.
+        ratio = asp["Mass"] / asp["Time"]
+        gain_ratio = (M.VOLUME_GAIN.get(species, {}).get("Mass", 1.0)
+                      / M.VOLUME_GAIN.get(species, {}).get("Time", 1.0))
+        if not (min(1.0, gain_ratio, 1.0 / gain_ratio) - 1e-3 <= ratio <= max(1.0, gain_ratio, 1.0 / gain_ratio) + 1e-3):
+            bad.append(f"MASS must keep TIME's prism shape (aspect {asp['Mass']:.3f} against {asp['Time']:.3f}, "
+                       f"x{ratio:.3f}; the girth compensation alone accounts for x{gain_ratio:.3f})")
+        # SPACE trades that volume for the assembly's BOUNDING VOLUME - against the NEUTRAL plant. Against MASS it no
+        # longer can: Mass has SIZE and its armour grows its shell (M.armour_growth), so it out-spans every element.
+        if reports["Space"]["radius"] <= reports["Time"]["radius"]:
             bad.append(f"SPACE's plant ({reports['Space']['radius']:.0f}) must reach further "
-                       f"than MASS's ({reports['Mass']['radius']:.0f}) - the bounding volume "
+                       f"than TIME's ({reports['Time']['radius']:.0f}) - the bounding volume "
                        f"is what its lost prism volume buys")
+        if reports["Mass"]["radius"] <= max(reports[e]["radius"] for e in M.ELEMENTS if e != "Mass"):
+            bad.append(f"MASS has SIZE: its plant ({reports['Mass']['radius']:.0f}) must out-span every other element")
         if bad:
             print(f"\nFAIL ({len(bad)} bounds broken)")
             # The failures go to stderr and the report to stdout, so a redirect that merges
@@ -2583,11 +2637,8 @@ def fit_volume(only=None):
         solved = {}
         for element in M.ELEMENTS:
             want = M.ELEMENT_VOLUME[element]
-            if element == "Charge":
-                # Charge's armour fit deliberately takes it BELOW the neutral, so its target
-                # is the neutral scaled by the shrink it was fitted to - the law does not
-                # claim Charge's bare prism is a neutral one, only that its SHAPE is.
-                want *= M.CHARGE_SHIELD_SHRINK ** 2 * M.CHARGE_DASH
+            # Every element's target is the law's ratio: Mass's armour fit grows the PLANT and leaves its
+            # prism at law size (M.armour_growth), and Charge is the neutral (Docs/ECOSYSTEM.md §65).
             got = reports[element]["volume"] / ref
             gain = current.get(element, 1.0) * math.sqrt(want / got)
             solved[element] = round(gain, 4)
@@ -2599,8 +2650,10 @@ def fit_volume(only=None):
 
 
 def solve_charge(only=None):
-    """Shrink Charge's ribbon uniformly (its ASPECT is its identity, so uniformly) until
-    its armour is no more fused than a sibling is bare.
+    """Sweep the ARMOURED element's (Mass's, Docs/ECOSYSTEM.md §65) ribbon uniformly against its armour - a REPORT,
+    not the fit: Mass's prism is at law size and its fit is the plant's growth (M.armour_growth). The sweep shows what
+    thinning it would and would not buy. The measurements quoted below were taken on Charge, which wore the armour
+    until 2026-10-28, before that fit; they describe the instrument, not today's plant.
 
     TWO bars, because the Fall gave this species a second place to fuse: the WHOLE plant
     against a sibling's bare interpenetration, and the CORE — the prisms inside
@@ -2621,8 +2674,8 @@ def solve_charge(only=None):
     denominator collapses to the pairs that were already fused. The levers that do reach it
     are the Fall's own: DiveStopRadius, DiveGirthFloor and DiveCount."""
     for species in ([only] if only else list(M.SPECIES)):
-        print(f"\n{species}: Charge cross-section against its armour")
-        reports = {e: element_report(e, species=species) for e in ("Mass", "Space", "Time")}
+        print(f"\n{species}: {ARMOURED} cross-section against its armour")
+        reports = {e: element_report(e, species=species) for e in M.ELEMENTS if e != ARMOURED}
         # The same statistic --check compares against: ALL touching pairs, chain included.
         # `interpenetrating_fraction` excludes a curve's own chain and is reported beside it,
         # because a --shields run that said "clears" on a different statistic from the one
@@ -2636,12 +2689,9 @@ def solve_charge(only=None):
         # CROSS_SECTION view — that one is the FractalFoliage back-compat table, so a sweep
         # keyed on it measured the wrong species' ribbon on the other two. Same class of
         # single-species leftover as the undefined `species` this function used to carry.
-        base = M.cross_section_for("Space", species)
-        shipped = M.cross_section_for("Charge", species)
-        print(f"  sweep base = this species' SPACE cross {base[0]:.4f} x {base[1]:.4f}; the "
-              f"SHIPPED Charge cross {shipped[0]:.4f} x {shipped[1]:.4f} sits at "
-              f"k={shipped[0] / max(base[0], 1e-9):.3f}")
-        lenf = M.rules_for("Charge", species).length_factor
+        base = M.cross_section_for(ARMOURED, species)
+        print(f"  sweep base = this species' SHIPPED {ARMOURED} cross {base[0]:.4f} x {base[1]:.4f} (k = 1)")
+        lenf = M.rules_for(ARMOURED, species).length_factor
         s_star = chain_touching_scale(lenf)
         print(f"  the CORE column is the BUNDLE (cross-curve) fraction, which is what --check "
               f"gates; the CHAIN is printed beside it and sits at the closed form "
@@ -2655,7 +2705,7 @@ def solve_charge(only=None):
                  f"this statistic is not visible on this species at all."))
         for k in (1.0, 0.8, 0.65, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25):
             cross = (base[0] * k, base[1] * k)
-            r = element_report("Charge", cross=cross, species=species)
+            r = element_report(ARMOURED, cross=cross, species=species)
             _, n, frac = armoured_fraction(r["boxes"])
             cb, limit, cchain = core_boxes(r)
             cc = armoured_census(cb, cchain)
