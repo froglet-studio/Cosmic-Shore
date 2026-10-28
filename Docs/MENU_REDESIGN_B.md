@@ -1254,7 +1254,9 @@ stays green). One generator owns the item: `Tools/Build/author_ingame_hud.py` (`
   - The panel hides when the countdown starts or the Ready button returns for a new round.
   - Solo, and against AI only, it never shows, because the countdown follows the press at once.
 - **Countdown:** `CountdownTimer` draws text when its new `countdownText` is wired: 3, 2, 1 in
-  Light, then GO in the CTA green, in Aldrich at 260 px.
+  Light, then GO in the CTA green, in Aldrich at 260 px. (The beat text kept auto-size on, which capped it at the
+  Display role's 48 px, so 260 never showed. Rev 33 turned auto-size off and set 168 for the numbers and 132 for GO,
+  in a hex that fills each beat: section 99.4.)
   - Each beat rises from 0.7 to a 1.08 overshoot, settles, holds, and leaves at 1.3 as it fades.
     The beat length and the (empty) beep slot are unchanged.
   - The neon sprites stay as the fallback when the text is unwired.
@@ -4494,3 +4496,202 @@ normal vessel but just the domain parts should look silver".
   - The body, windows and engines wear the ship's own materials again.
   - Only the domain-role slots change (`VesselModelBuilder.TryBuildLive`, as before §98.2). They wear
     `ClassLiveryVesselMaterial`, now a neutral silver: rim 0.96 / 0.97 / 1, face 0.60 / 0.63 / 0.70.
+
+## 99. Rev 33: into a game mode, and why it lags (2026-10-28; Shombith picked A, built in 99.4)
+
+Shombith: "Next up is the intro to game modes, I hate the old UI, create mockups maybe look it like when we swap cells,
+it lags when we get into a game mode, make it look a bit AAA". Published on the canvas, page `rev33` (version
+`1793157683-c2fa`), and copied to `Docs/MenuRedesignB/board/`. Each board plays the whole entry on a loop. The BOARD
+buttons at its top-left pause it on each phase.
+
+- **A Cell gate (recommended).** The cell-change screen (`EnvironmentLoadVeil`, section 47.4) grown into the mode
+  entry. The Omni crystal in its hex fills with the build. ENTERING sits over the mode's title, tagline, objective and
+  intensity. The four real steps tick, the pilots' READY pips turn lime, and the tip and slim bar sit below. At 100% the
+  crystal flashes, its hex becomes a window onto the arena, and then it bursts into the intro's letterbox. The
+  countdown fills the hex a third per beat; GO is lime. Shown with Skim Race.
+- **B Lineup.** Regatta's six seats as tall pilot cards in three domain groups. A card lights up when its pilot
+  finishes loading. At 100% the lineup takes one impact and the outer domains turn to face the middle. The art pushes
+  into the title, and a crystal counts down.
+- **C Briefing.** Dog Fight in the Boneyard as a calm briefing:
+  - the arena map, framed at the size its render holds up at, develops under a scan line as the cell builds;
+  - the objective, and the tagline's two numbers (GUNS 1, MISSILES 50);
+  - your Sparrow and pilot, both squads with ready pips;
+  - a launch bar that turns READY.
+  Then the map grows into the intro.
+- **D Intro and countdown.** The part every loading screen hands into (today's `IntroCameraOverlay` and the
+  Ready / waiting / countdown HUD), restyled:
+  - a backlit title slam, the objective tag, and a pilot card (hull, pilot, player);
+  - hold to skip, with a hex ring that fills while held;
+  - the "Waiting for pilots" card;
+  - a crystal that fills on 3-2-1 and breaks open on GO.
+  Every element maps to an existing overlay slot. The new authored fields it needs are listed on the board's notes:
+  the Entering kicker, the title sweep, the intensity template, the pilot line, the skip hold time and the countdown
+  crystal.
+- **Shared rules.** Elements carry no colour. Lime appears only for ready and GO, blue only for you, and domain
+  colours only for teams. The card art is only ever shown blurred, or framed at its native size.
+- **Open points from the art-director passes:**
+  - The Omni crystal render is close to the ready lime.
+  - Squirrel has two pilot portraits, so a three-seat lineup repeats one.
+  - The intro is shown over the blurred card art, standing in for the real intro camera.
+  - D's letterbox is 120 px, against the shipped 0.085 of the screen height.
+
+### 99.1 What was measured
+
+The 28 "Game launch" reports Load Time Insights recorded on its own and sent to the `bugledger/*` branches (Windows
+Editor, 2026-10-25 to 27, 11 modes; a build is faster):
+
+- **START to the arena ready (the connecting screen done):** 8.9 s typical, 12.3 s at p90, 18.8 s slowest (Cleave).
+  About 4.1 s of that is behind the splash (the scene load is about 2.5 s); the connecting screen is up about 4 s.
+- **Every launch froze twice right after the connecting screen appeared.** Two back-to-back frames of 1.2 to 1.9 s,
+  2.6 s together typically, up to 5.7 s. Both start within about 50 ms of the "Connecting panel shown" mark. The span
+  names the reports give these frames (the InitDelayMs gate, preSpawnDelayMs, a prism lay) are just whatever span
+  happened to be open.
+- **15 of 28 sat out the screen's floor** (about 3.5 to 4 s) with nothing left to build; heavy arenas run 6 to 10 s.
+- **About 38 frames a second typical while loading**, 23 at the low end.
+
+### 99.2 Why, from the code
+
+Three readers traced the path. A skeptic re-checked every claim against the code, and these are the ones that held.
+
+- **Two more cameras at the freeze.** `ConnectingPanelController.ShowAsync` turns on the panel's own camera and
+  `ConnectingArenaPreview.Begin` creates the preview camera and its render texture. Both render the arena with shadows
+  (`ConnectingPanelController.cs:266`, `:281-282`), in the same continuation as the "shown" mark
+  (`MiniGameHUD.cs:663-667`). The panel camera draws behind the panel's opaque, full-screen image, so nothing it draws
+  is seen. Shader compiles are likely part of the freeze:
+  - the editor compiles shaders synchronously (`EditorSettings.asset` `m_AsyncShaderCompilation: 0`);
+  - the warm-up collection is empty (`GameplayShaderWarmup.shadervariants` `m_Shaders: {}`).
+  This is the most likely cause of the measured freeze, but it is not proven without a profiler capture.
+- **The gameplay camera is never rested.** The preview mutes `Camera.main` (`ConnectingArenaPreview.cs:500`), but the
+  live player camera, `CM PlayerCam`, is Untagged (`Bootstrap.unity:763-764`). Up to three cameras draw the arena every
+  frame of the hold.
+- **The watched build tempo.** The panel slices the build at 25 ms (lay and integration) plus 18 ms (creation) a
+  frame (`ConnectingPanel.prefab:126-127`, `ConnectingPanelController.cs:269-272`). That is under about 20 fps while
+  laying, and slower overall than the covered 80 ms of the cell-change screen. The preview's 20 Hz cap does nothing
+  below 20 fps (`ConnectingArenaPreview.cs:278-283`).
+- **The grow-in is waited out.** Only `EnvironmentLoadVeil` sets `PrismTrailBuilder.LoadGateCovered`
+  (`EnvironmentLoadVeil.cs:431`), so the game's hold never snaps the bloom (`PrismTrailBuilder.cs:420`). That is about
+  3 to 4 s on laid arenas; the measured "Arena settle" has a median of 3.2 s.
+- **Floors and fixed waits:**
+  - `dwellSeconds: 4` in `ConnectingPanel.prefab:132` (the code default and its comments say 2);
+  - `waitBeforeLoading` 0.5 s (`SceneLoader.cs:34`);
+  - `InitDelayMs` 1 s (`MultiplayerMiniGameControllerBase.cs:23`);
+  - the cell's 0.75 s settle before it builds (`Cell.cs:2199`).
+- **At the intro.** One frame runs all of these (`MiniGameHUD.cs:699-717`):
+  - a `FindObjectsByType<MeshRenderer>` scan of every prism (`IntroCameraScene.cs:141`);
+  - a `Resources.Load` of the intro library (`PreGameCinematicController.cs:126`);
+  - building the overlay's 9 GameObjects and 5 texts (`IntroCameraOverlay.cs`).
+  The intro clock adds raw `Time.deltaTime` (`PreGameCinematicController.cs:287`), so that hitch shows as a camera jump.
+- **Also:**
+  - two full `GC.Collect` calls per host entry (`SceneLoader.cs:533`, `:303`);
+  - online, the slowest peer holds everyone, for up to 45 s (`ConnectingPanel.prefab:129`).
+
+### 99.3 What the new screens change, and next steps
+
+- **A, B and C all cover the arena while it builds.** Built that way, the preview and the panel camera go. The build
+  can run at the veil's tempo and set `LoadGateCovered`, which skips the grow-in. Estimates, to be measured:
+  - about 3 s off laid arenas;
+  - very likely the 2.6 s freeze, too.
+- **A floor of about 1 s instead of 4 s** takes up to 3 s off every light mode.
+- **D prepares the intro during the load:**
+  - take the landmarks from the spawners instead of a scene scan;
+  - hold the library by reference;
+  - build the overlay once and reuse it;
+  - clamp the intro clock.
+  Recording the shader warm-up collection takes the first-use compiles off the reveal.
+- **Measuring.** Load Time Insights stops when the connecting screen ends. Adding spans for the panel's first frame,
+  the dwell and the peer wait would name the freeze in the next recordings, which arrive on their own.
+- **Status.** Shombith picked A and asked for the lag fixes (99.4). The areas they touch:
+  - the connecting screen and load path are mostly Yash's;
+  - the prism build (`PrismTrailBuilder`, used through its load-gate API, not changed) and the cell's build timing
+    are Garrett's;
+  - the intro cameras (#1582) are Shombith's.
+
+### 99.4 Built: A, the Cell gate, and the lag fixes (2026-10-28)
+
+Shombith: "Implement a. Also Fix the loading lag". Not opened in the editor. Compiled against the Unity reference
+assemblies (player and editor), and the generators check and self-test clean.
+
+**The loading screen** (`ConnectingPanel.prefab`, generated by `author_ingame_hud.py` section 12c, every object
+re-derived each run):
+- It **covers the arena**. The panel's own camera and the arena preview (`ConnectingArenaPreview`, kept in the
+  tree, no longer used here) are gone. The backdrop is two `HexApertureGraphic` layers: a solid base and the sea
+  (`Sea_Window.mat`). Each is a full-screen cover with a hex hole that starts at radius 0, so at rest nothing shows
+  through. The panel's own Image is transparent and still blocks input.
+- The **Omni crystal** sits in a `LoadCrystalGraphic` hex at the board's place: glass, spokes and outline, the Omni
+  render faint behind, the same render filled from the bottom, and a level line. The crystal's level follows the
+  cell-change screen's own stage math (`EnvironmentLoadVeil.StepFor` / `CrystalLevel`).
+- **The brief.** ENTERING (the veil's word, between two hairlines), then:
+  - the mode's title: Aldrich 124, auto-sized down to 48;
+  - the tagline and objective: the intro library's words for the mode;
+  - the intensity chip with four pips.
+- **The steps panel** (left). Its header is the phase: Connecting to shore, Building the arena, Settling the arena,
+  Waiting for pilots. Below are the four real steps (the veil's words). Each step has:
+  - a hex tick that fills while its step runs;
+  - a check mark once it is done;
+  - an underline that grows across the step.
+  The panel ends with the `{done} / {total} prisms` count.
+- **The pilots panel** (right) is `ConnectingPlayerRoster` in a new **row mode**:
+  - one row per pilot, AI included: a domain stripe, the avatar, the name with a YOU (Selection) or AI badge, the
+    hull's name, and a pip and Loading / Ready in lime;
+  - the `{ready} / {total} Ready` count in the header;
+  - the panel grows past the board's 340 for the modes that seat up to 12.
+  The old AvatarDomain chip is kept as the row template, so GameCanvas's four overrides into it still land.
+- **The footer**: TIP and one of the mode card's own tips, LOADING, the slim bar (the existing Slider) and its
+  percentage (`{pct}%`).
+- **The gate** (`ConnectingGateView.Open`, 1.7 s):
+  - the brief and the panels fade;
+  - the crystal charges to white and flashes;
+  - the hole opens as the crystal's hex, glides to the centre at radius 452, and bursts past the screen, with a white
+    ring on its edge.
+  The panel stops blocking input as the gate starts. The intro starts underneath it, so its bars come in through the
+  hole.
+
+**The intro** (`IntroCameraOverlay`, the look in `IntroCameraLibrary.asset` via `author_intro_cameras.py`):
+- 132-unit bars (0.1222 of the frame) that ease in over 0.8 s instead of popping on (`barsInSeconds`).
+- The title (Aldrich 118, rising out of its own mask), the tagline (Chakra 26) and the objective in a framed chip sit
+  on a column 128 units in from the left, low on the frame.
+- The lower third is a framed panel at the same margin on the right, with a bar in the pilot's colour.
+- The library gained `detailFont` (Chakra Petch SemiBold); `captionFont` is Aldrich.
+- Skip is unchanged: a press, not D's hold. Hold to skip is not built.
+
+**The countdown** (`CountdownTimer`, the text path):
+- The count sits in a 124-radius hex (`beatHex`) that fills from the bottom through each number.
+- At GO the hex bursts outward and a lime ring leaves it (`goRing`). The numbers are 168 and GO is 132
+  (`numberSize`, `goSize`).
+- Found on the way: the beat text auto-sized, so the authored 260 was capped at the Display role's 48. Auto-size is
+  now off, and the generator fails if it comes back.
+
+**The lag fixes** (99.2's causes, in order):
+- **No camera renders the world under the screen.** The panel and preview cameras are gone. The gameplay camera
+  (`CustomCameraController.Camera`, Untagged, so `Camera.main` never found it) is parked with `PilotCameraPark` and
+  released when the gate opens.
+- **The covered tempo.** Laying runs at the cell-change screen's 80 ms slice, with 512 creation completions a frame
+  (`coveredLayBudgetMs`, `coveredCreationBudgetMs`). `LoadGateCovered` is set, so the build skips the grow-in.
+- **A 1 s floor** (`dwellSeconds`, was 4). The race the old floor hid is closed:
+  - `MultiplayerMiniGameControllerBase.InitializeAfterDelay` now brackets the InitDelayMs wait and
+    `InitializeGame` with `PrismTrailBuilder.BeginArenaBuild` / `EndArenaBuild`, so the arena-ready poll cannot pass
+    before the build starts;
+  - the cell skips its 0.75 s settle while the load gate holds.
+- **One GC on the way in.** `SceneLoader` skips the after-load collect when it collected before the load. A return
+  to the menu keeps both. `waitBeforeLoading` is 0.1 s (was 0.5).
+- **The intro is prepared during the hold** (`PreGameCinematicController.Prepare`, called by `MiniGameHUD` the first
+  time the arena-ready poll passes). It loads the library, picks the intro, gathers the arena and builds the overlay
+  once, then reuses it.
+  - Crystals come from `Crystal.Active`.
+  - The landmark scan runs only for an intro that uses landmarks.
+  - The intro clock is clamped to 1/30 s a step (`maxClockStep`), so a hitch slows the camera instead of jumping it.
+
+**Not done, still open:**
+- The shader warm-up collection is still empty. It needs the editor (record the variants after a play of each mode).
+- Load Time Insights spans for the panel's first frame, the dwell and the peer wait.
+- ETA text.
+- Hold to skip.
+- Measured before/after numbers. The next Load Time Insights reports arrive on their own.
+
+**Hand test** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 33 A"): launch Skim Race, a heavy arena (Cleave) and a
+6-seat mode. Watch:
+- the screen covers from the first frame;
+- the steps tick and the pilots turn Ready;
+- the gate opens into the intro;
+- the hex countdown runs;
+- the freeze after the screen appears.

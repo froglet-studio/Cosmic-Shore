@@ -111,6 +111,32 @@ namespace CosmicShore.Tests
             Assert.Empty(o.Candidates);
         }
 
+        // git 2.55 (GitHub's ubuntu runners) quotes the term: "first 'bad' commit". The parser read
+        // only the bare form, so the real-bisect test above failed on CI and passed on git 2.47.
+        // Both spellings, without needing a particular git installed.
+        [Theory]
+        [InlineData("bad")]
+        [InlineData("'bad'")]
+        public void Reads_the_first_bad_commit_in_either_git_spelling(string term)
+        {
+            const string bad = "f062ef42072585c6f12a4c7a9f54d0c8c981c84a", good = "dda3b46fdde26150b2f38840d4f544312d826e0c";
+            var run = $"running 'sh' '../step.sh'\n{bad} is the first {term} commit\ncommit {bad}\n";
+            var log = $"git bisect start 'HEAD' 'HEAD~9' '--' 'Port/'\n# bad: [{bad}] plant\ngit bisect bad {bad}\n"
+                    + $"# good: [{good}] c3\ngit bisect good {good}\n# first {term} commit: [{bad}] plant\n";
+            var o = BisectOutcome.Parse(run, log);
+            Assert.Equal(bad, o.FirstBad);
+            Assert.Equal("plant", o.FirstBadSubject);
+            Assert.Equal(2, o.Steps.Count);
+
+            // The run output alone is enough when the log line is missing.
+            Assert.Equal(bad, BisectOutcome.Parse(run, "git bisect start\n").FirstBad);
+
+            const string a = "1111111111111111111111111111111111111111", b = "2222222222222222222222222222222222222222";
+            var skipped = BisectOutcome.Parse($"The first {term} commit could be any of:\n{a}\n{b}\nWe cannot bisect more!\n", "");
+            Assert.Null(skipped.FirstBad);
+            Assert.Equal(new[] { a, b }, skipped.Candidates);
+        }
+
         [Fact]
         public void Only_skipped_commits_left_names_the_candidates()
         {
