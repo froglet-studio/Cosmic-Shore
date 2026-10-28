@@ -284,7 +284,7 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Meerkat Flight Studio</h1>
-    <span class="round">Round 23 · Garrett's surface area, the soliton's pull and stretch</span>
+    <span class="round">Round 24 · slide the tunnel as you slide the roots</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways; your left thumb flies, your right thumb bends the tunnel, the RT handle forms it; ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Input tab); a phone opening this page gets touch sticks instead. </span><b>The Meerkat is the wormhole vessel</b> (Yash, 2026-10-27: the Stoat's Gate mode, rounds 19-26, became its own vessel; the Stoat keeps Mass and Time). One ability, flown on <b>one thumb</b>: the left stick flies at full throttle, so the right thumb is always free. The cyan grid on your nose is the tunnel RT would form now: the <b>right stick bends it</b> any way (further = shorter and fatter), <b>LT shortens it</b>, <b>RT forms it</b> and you ride it, coming out with the speed you went in with. Only you see the grid; everyone sees the tube as bent space-time. A ridden tunnel stays a while, then collapses to its centre with a subtle ripple at the screen's edges. Every parameter shows the game's name for it under its slider (<code>MeerkatWormholeConfig</code>); save any section as a profile. Every setting has an ⓘ. <b>Round 18 (Yash, 2026-10-27: "two variants, one with his kit only, one with a mix of his kit with the ones you recommend"):</b> the <b>Kit</b> dropdown at the top of <b>Play Style Config</b> picks what every Meerkat in the race flies. <b>Garrett's kit</b> is his design as written (his branch <code>origin/cece/lucid-brown-ykcmhu</code>, <code>Docs/Studios/MEERKAT.md</code>): Space is the <b>soliton</b> (the wormhole sized by its surface area, which <b>anyone rides</b>, swallowing prisms at its way in and firing them out of its way out as moving prisms), Charge is <b>Sentinel mode</b> on <kbd>Y</kbd> / <kbd>F</kbd> (a sentinel at each new tunnel's way in that zaps rivals in sub-petal ticks and shields your prisms), Mass a passive <b>exit portal</b>, Time a passive <b>rush</b> (L5 Boost out), and the <b>crew</b>: <kbd>[</kbd> <kbd>]</kbd> / D-pad take a sentinel seat (its perched view: click a prism to shield it, a rival to zap it), <kbd>Y</kbd> there <b>hops</b> you out as the flyer; the meerkat you sit in holds the elements and any other dies of an element hit. <b>The Mix</b> is Garrett's with one change per decision: Time L5 Chain Dig, sentinels without seats plus an alarm, Space L5 Cave-in on <kbd>B</kbd>, the throat held 3 to 25 u. In both, <kbd>LB</kbd> / <kbd>Q</kbd> held is the pilot sight, <b>FLUME</b>; the kit's Mass level is the Mass round 17 sizes the trunk with, and the Omnicrystal's roots are the fifth card (anyone may slide into yours in Garrett's kit, your team only in the Mix). Every kit event has its sound (<b>Vessel Config</b> &gt; Sound): swallow, fire, shatter, bounce, Boost out, Chain Dig, the sentinel's stand-up, zap, shield, loss and alarm, the hop and the seat swap, the portal, Cave-in, and FLUME's loop while LB is held. <b>Score the kits</b> (AI Config) races all four. Prototypes for Yash to judge: nothing reaches Unity without his say-so, and Garrett's design is his to change. <b>Round 8 (archived, the Kit dropdown's "Round 8"; LB now conflicts with the pilot sight):</b> the full four-ability kit, one per element, in <b>Vessel Config</b> (its Section dropdown): <b>Charge · Lookout</b> (<kbd>Y</kbd>: marks crystals, shows every rival's reticle and next ring; L5 Alarm Call draws the crystals to you), <b>Mass · Hardened Bridge</b> (<kbd>LB</kbd> arms the next tunnel: its bridge becomes a lasting prism tube others cannot cross; L5 Shielded Bridge), <b>Space · Cave-in</b> (<kbd>B</kbd>: your standing tunnel collapses now, destroying every prism near it; L5 Burial costs a rival inside it a petal and silences it, never pushes it) and <b>Time · the wormhole</b> (L5 Chain Dig: <kbd>RT</kbd> late in a ride digs the next tunnel from the far mouth). Their numbers are lab-only. The race is now <b>Warpline</b>, the Meerkat's Time race: 5 rings a lap, 2 laps.</p>
   </header>
@@ -424,7 +424,7 @@
         <p class="src"><b>The reticle is always on your nose</b>: the tunnel RT would form now, <i>reticleAhead</i> in front of you. It is a <b>straight shaft, then a bend</b> - an umbrella handle: <b>LT</b> sets how long the shaft runs before it bends (<i>shaftMin</i> released to <i>shaftMax</i> squeezed), and the <b>right stick</b> sets which way it bends and how far, up to <i>bendMaxDegrees</i>, round a bend of radius <i>bendRadius</i>. <b>RT</b> confirms. Its size is fixed: a <i>throatDiameter</i> throat between <i>mouthDiameter</i> mouths, however it is shaped (set here, never by the sticks). <b>Round 17: your Mass sizes the trunk</b> (the HUD shows it): your Mass level plus <i>massPerCrystal</i> for every crystal you take this race, up to 10. At Mass 0 LT reaches only <i>massLengthAtZero</i> of its range and the trunk is <i>massDiameterAtZero</i> as wide; at 10, all of it - more Mass, a bigger trunk, further to go. Your last trunk's size then sizes the roots of your next omnicrystal.</p>
         <div class="btns"><button class="pick" type="button" data-reset="shape">Reset</button></div></details>
       <details class="card" id="grp-ride" open><summary>Wormhole · ride <small>MeerkatWormholeConfig</small></summary><div class="rows"></div>
-        <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>The ride</b> is your speed before the tunnel times three multipliers: <i>rideEntryMultiplier</i> going in (1 = no change), rising to <i>rideMidMultiplier</i> at the throat and easing to <i>rideExitMultiplier</i> at the way out - a little boost you come out with, on the tunnel's last heading, before you ease back to cruise. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
+        <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>Round 24: you slide it, as you slide the roots</b> (Yash: "both are same things - one single, one a network"): you carry your speed in, cruise along it at <i>rootCruise</i>, <b>RT</b> pushes you faster up to <i>rootMaxSpeed</i>, the <b>left stick</b> moves you round it (<i>rootMove</i>), its wall bounces you, and you come out of the far mouth at <i>rideExitMultiplier</i> x your speed before the tunnel, on its last heading - or back out of the way you came in. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
         <div class="btns"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course (any setting you change shows on its next wormhole).">Watch the AI fly it</button><button class="pick" type="button" data-reset="ride">Reset</button></div></details>
       <details class="card" id="grp-reticle" open><summary>Reticle · feel &amp; look <small>MeerkatWormholeConfig · yours alone</small></summary><div class="rows"></div>
         <p class="src"><b>Only you see your reticle</b>: the tunnel RT would form now. It <b>eases</b> toward what the right stick and LT ask for over <i>reticleSmoothSeconds</i> (0 snaps), and it is <b>the wormhole's own wireframe</b>: the bridge's rings, spindles, ribs and thickness (Wormhole · look), in the same places, with no glass. Its colour is your domain colour toward white (<i>reticleWhite</i>); faint at rest (<i>reticleIdleAlpha</i>), bright while you shape it.</p>
@@ -491,7 +491,7 @@
         <p class="src">Once per soliton, as it forms: six small prisms of its maker's domain on a regular hexagon square to the way out, <i>portalShare</i> x the exit radius out, each laid along its edge. Mass sets their size; at Mass L5 they are <b>danger prisms</b> (a rival touching one loses <i>dangerPetals</i>). Mass is conserved, so the count is kept small.</p>
         <div class="btns"><button class="pick" type="button" data-reset="kPortal">Reset</button></div></details>
       <details class="card" id="grp-kTime" open><summary>Kit · Time · the rush <small>passive · lab</small></summary><div class="rows"></div>
-        <p class="src">Every Meerkat rides <b>every</b> soliton faster, its own or anyone's: the throat's multiplier x <i>rushL0</i> to <i>rushL10</i> by Time. <b>Garrett's L5, Boost out</b>: out of every soliton at <i>boostOut</i> x the exit multiplier, easing back to cruise. (The Mix's Time L5 is Chain Dig instead.)</p>
+        <p class="src">Every Meerkat slides <b>every</b> soliton faster, its own or anyone's: the slide's cruise and top speed x <i>rushL0</i> to <i>rushL10</i> by Time (round 24). <b>Garrett's L5, Boost out</b>: out of every soliton at <i>boostOut</i> x the exit multiplier, easing back to cruise. (The Mix's Time L5 is Chain Dig instead.)</p>
         <div class="btns"><button class="pick" type="button" data-reset="kTime">Reset</button></div></details>
       <details class="card" id="grp-kMix" open><summary>Kit · the Mix's own <small>floor and ceiling, Chain Dig, Cave-in, alarm · lab</small></summary><div class="rows"></div>
         <p class="src">Only the Mix reads these. The throat is held between <i>throatFloorDiameter</i> and <i>throatCeilingDiameter</i>. <b>Time L5, Chain Dig</b> (round 8): RT from <i>mixChainShare</i> of a ride digs the next tunnel from the far mouth, at throat speed. <b>Space L5, Cave-in</b> on B (round 8): your nearest soliton fires out everything it holds at once and collapses; a rival riding it takes a scored hit (<i>mixBurialPetals</i>, never pushed). <b>The alarm</b> (round 8 Lookout's job): a rival entering any of your sentinels' guards is marked for you for <i>mixAlarmSeconds</i>.</p>
@@ -556,14 +556,14 @@
     reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, ovalShortest: 0.2, ovalLongest: 1.1, ovalMaxSharpness: 8, throatDiameter: 8, mouthDiameter: 26, keyRampSeconds: 0.5,
     // round 12: the size at the LONGEST tunnel (the two above are the shortest's); lengths between grow in between
     throatDiameterMax: 18, mouthDiameterMax: 56,
-    // ride and life (round 6, Yash: "it should enter the wormhole with v and then it will speed up to v plus dv, and then while
-    // exiting it will exit at little bit boosted"): the ride is your speed before the tunnel x rideEntryMultiplier going in,
-    // rideMidMultiplier at the throat, rideExitMultiplier coming out (rideMultiplier); the reticle comes back reticleDelaySeconds
+    // ride and life: you slide the tunnel as you slide the roots (round 24; rootCruise, rootThrust, rootMaxSpeed) and come out
+    // at rideExitMultiplier x your speed before the tunnel (round 6: "exit at little bit boosted"; round 24 retired its
+    // rideEntryMultiplier and rideMidMultiplier with the automatic ride); the reticle comes back reticleDelaySeconds
     // after you are out and ripples into shape over reticleGrowSeconds; a tunnel forms over formSeconds, stays staySeconds
     // after you are out, then collapses back to its centre over collapseSeconds
     // round 5: riding, the game's speed tunnel (its dolly zoom) is rideSpeedTunnelScale x its normal strength
     rideSpeedTunnelScale: 5,
-    rideEntryMultiplier: 1, rideMidMultiplier: 2.5, rideExitMultiplier: 1.2, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
+    rideExitMultiplier: 1.2, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
     // look: what everyone sees (the tube's warp, its mouths' dents, the collapse's edge ripple) and what only you see (your
     // reticle's brightness at rest, its glass)
     // round 4 (Yash, 2026-10-27: "Turn off all lensing"): the warp, the dents and the ripple ship at 0 - the bridge and your
@@ -707,8 +707,6 @@
     ['shape', 'throatDiameterMax', 'Throat diameter, longest tunnel (u)', 2, 120, 1],
     ['shape', 'mouthDiameterMax', 'Entry and exit diameter, longest tunnel (u)', 4, 200, 1],
     ['shape', 'keyRampSeconds', 'LT on a key or touch: full after (s)', 0.05, 3, 0.05],
-    ['ride', 'rideEntryMultiplier', 'Ride: going in (× your speed before the tunnel)', 0.5, 3, 0.05],
-    ['ride', 'rideMidMultiplier', 'Ride: fastest, at the throat (× your speed before the tunnel)', 0.5, 8, 0.1],
     ['ride', 'rideExitMultiplier', 'Ride: coming out (× your speed before the tunnel)', 0.5, 3, 0.05],
     ['ride', 'rideSpeedTunnelScale', 'Riding: the speed tunnel\'s dolly zoom (× its normal strength)', 0, 5, 0.1],
     ['ride', 'reticleDelaySeconds', 'The reticle comes back after you are out in (s)', 0, 3, 0.05],
@@ -777,10 +775,10 @@
     ['omni', 'labyrinthRingSpacing', '...its wireframe: a ring every (u)', 3, 60, 1],
     ['omni', 'labyrinthRingSides', '...spindles round each ring', 3, 32, 1],
     ['omni', 'labyrinthRibs', '...ribs along each channel (0 = none)', 0, 16, 1],
-    ['omni', 'rootCruise', 'In the roots: you cruise along the root at (u/s)', 0, 200, 1],
+    ['omni', 'rootCruise', 'In a tunnel or the roots: you cruise along it at (u/s)', 0, 200, 1],
     ['omni', 'rootThrust', '...RT pushes you faster by (u/s²)', 0, 300, 1],
-    ['omni', 'rootMove', '...the left stick moves you round the root by (u/s²)', 0, 200, 1],
-    ['omni', 'rootDrag', '...across the root, your drift dies away at (per s)', 0, 3, 0.05],
+    ['omni', 'rootMove', '...the left stick moves you round it by (u/s²)', 0, 200, 1],
+    ['omni', 'rootDrag', '...across it, your drift dies away at (per s)', 0, 3, 0.05],
     ['omni', 'rootMaxSpeed', '...never faster than (u/s)', 10, 300, 1],
     ['omni', 'rootBounce', '...a wall bounces you off with (× your speed into it)', 0, 1, 0.05],
     ['omni', 'rootGravity', '...drawn to the root\'s floor by (u/s², 0 = you float)', 0, 120, 1],
@@ -895,12 +893,13 @@
   const isR8 = (Pv) => kitOf(Pv) === 3, isG = (Pv) => kitOf(Pv) === 1, isMix = (Pv) => kitOf(Pv) === 2;
   const isGM = (Pv) => { const k = kitOf(Pv); return k === 1 || k === 2; };
   const lerpLv = (a, b, lv) => a + (b - a) * clamp01(lv / 10);   // an ElementalFloat: its L0 value to its L10 value
-  // Time (Garrett): a passive faster ride through EVERY soliton - the throat's multiplier x the rush's ElementalFloat; his
+  // Time (Garrett): a passive faster ride through EVERY soliton - the slide's cruise and top speed x the rush's ElementalFloat
+  // (round 24; before it, the automatic ride's throat multiplier); his
   // Time L5 is Boost out (out of every soliton at boostOut x the exit multiplier). The Mix keeps the rush; its Time L5 is
   // round 8's Chain Dig instead.
   function kitOverrides(o) {
     const k = Math.round(o.kit || 0); if (k !== 1 && k !== 2) return o;
-    o.rideMidMultiplier = o.rideMidMultiplier * Math.max(0.05, lerpLv(o.rushL0, o.rushL10, o.kTimeLevel));
+    o.slideRush = Math.max(0.05, lerpLv(o.rushL0, o.rushL10, o.kTimeLevel));
     if (k === 1 && o.kTimeLevel >= 5) o.rideExitMultiplier = o.rideExitMultiplier * Math.max(1, o.boostOut);
     return o;
   }
@@ -1394,7 +1393,7 @@
     const m = new THREE.Matrix4().lookAt(hull.position, tv.copy(hull.position).add(g.n), Y); hull.quaternion.setFromRotationMatrix(m);
     speed = 0; stopped = false; ripples.length = 0; showStopBtn(); ftLive = newFtLive(); stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
     for (const pr of pairs) if (pr.owned) pr.alive = false;
-    myPair = null; snapCam = true; ai.tracking = -1; ai.misjudged = false; ai.unnoticed = false; ai.mistakes = 0; ai.gHold = 0; ai.gShaping = false;
+    myPair = null; snapCam = true; ai.tracking = -1; ai.misjudged = false; ai.unnoticed = false; ai.mistakes = 0; ai.chainAt = -1; ai.chainRun = 0; ai.gHold = 0; ai.gShaping = false;
     resetRivals();
     PIL = {}; walls = []; pulses = []; lastCave = null; reviveField(); dyingPrisms.length = 0; resetCrystals(); resetOmni();   // round 8: every race starts from the same world
     kitReset();   // round 18: the kits' prisms, sentinels and seats, as the race starts
@@ -1496,7 +1495,7 @@
   // ab (round 8): this pilot's abilities - when each is ready again (simT), Mass armed, the lookout's end, a Chain Dig asked for
   // kit (round 18): Sentinel mode on or off, Cave-in's cooldown (the Mix), the last soliton ridden (not re-entered at once)
   function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0, ab: { readyY: 0, readyLB: 0, readyB: 0, armed: false, lookUntil: -1, lookAt: -1, alarm: false, chainReq: false, omni: false, omniSeed: 1 }, kit: { sentinel: false, readyB: 0, lastRide: null, lastRideT: -9 }, lastTrunk: 0 }; }
-  const whA = new V3(), whB = new V3(), whC = new V3(), whN = new V3(), whBn = new V3(), whQ = new THREE.Quaternion();
+  const whC = new V3(), whQ = new THREE.Quaternion();
   // The shape the right stick and LT ask for (round 7): a straight SHAFT, shaftMin with LT released to shaftMax squeezed,
   // then a BEND round bendRadius, as far as the right stick is pushed up to bendMaxDegrees, the way it is pushed. Its size
   // is fixed: throat throatDiameter, mouths mouthDiameter (round 10: diameters; b and M are their radii). Returns the length mouth to mouth (L = S + R theta), the shaft (S),
@@ -1719,36 +1718,13 @@
     if (stance) stance = false;
     if (!curPilot) portalFlash = 1;
   }
-  // In the throat: carried along the curve, at your speed before the tunnel x rideMultiplier (round 6), turned
-  // with it; out of the white hole, slung on its heading (gateOut).
-  function gateTransit(dt) {
-    if (ftLive.gate.net) { labTransit(dt); return; }   // round 16: sliding the labyrinth
-    const g = ftLive.gate, wh = g.pair.wh;
-    const u = clamp01(g.s / Math.max(1e-3, wh.L));   // 0 on the dive in (the ride runs the whole tube, mouth 0 to mouth L, however much of it has formed)
-    // round 6: your speed before the tunnel x rideMultiplier - the entry multiplier on the dive in and at the way in, the
-    // middle one at the throat, the exit one at the way out
-    // round 8, Chain Dig: the throat's multiplier held through the join (out of the throat of the first tunnel, into the
-    // throat of the next)
-    const high = (g.startHigh && u <= 0.5) || (g.next && u >= 0.5);
-    const v = g.vIn * (high ? Math.max(0.05, P.rideMidMultiplier) : rideMultiplier(P, g.s < 0 ? 0 : u));
-    g.s = Math.min(wh.L, g.s + v * dt);
-    if (g.s < 0) { hull.position.copy(wh.A).addScaledVector(wh.t0, g.s); whB.copy(wh.t0); }   // still diving to the mouth
-    else {
-      whAt(wh, g.s, whA, whB); whFrame(wh, g.s, whN, whBn);
-      hull.position.copy(whA).addScaledVector(whN, g.oN).addScaledVector(whBn, g.oB);
-      whQ.setFromAxisAngle(whBn, bendAngle(wh, g.s) - bendAngle(wh, g.sIn)); hull.quaternion.copy(whQ).multiply(g.q0).normalize();
-    }
-    velNow.copy(whB).multiplyScalar(v);
-    if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
-    if (g.s >= wh.L - 1e-6) { if (g.next) chainOn(g); else gateOut(g); }
-  }
-  // The ride's multiplier at u (0 the way in, 1 the way out) on your speed before the tunnel (round 6): it rises from
-  // rideEntryMultiplier to rideMidMultiplier at the throat and eases to rideExitMultiplier at the way out, smoothly - its
-  // slope is 0 at the throat (sin(pi u) on each half).
-  function rideMultiplier(Pv, u) {
-    const w = Math.sin(Math.PI * clamp01(u)), e = Math.max(0.05, Pv.rideEntryMultiplier), m = Math.max(0.05, Pv.rideMidMultiplier), x = Math.max(0.05, Pv.rideExitMultiplier);
-    return u < 0.5 ? e + (m - e) * w : x + (m - x) * w;
-  }
+  // Round 24 (Yash, 2026-10-28: "make the main tube as same as the roots ... we can slide through the main tube rather
+  // than making it an automated special move ... once we create the tube, main tube, we can also slide through it using our
+  // left thumbstick, just like how we do that in the root ... Both are same things. One single, one a network"): every
+  // tunnel is flown as the roots are (labTransit): you cruise along it at rootCruise, RT pushes you faster up to
+  // rootMaxSpeed, the left stick moves you round it, its wall bounces you, and you leave out of its far mouth (or back out
+  // of its way in). The main tunnel is a network of one: its centreline the conic arc (round 22), its wall the hyperboloid.
+  function gateTransit(dt) { labTransit(dt); }
   // Out of the far mouth on the tunnel's last heading, at rideExitMultiplier x your speed before the tunnel (round 6: a little
   // boost, which eases back to cruise as you fly on); the tunnel stays staySeconds, then goes back to its centre.
   function gateOut(g) {
@@ -1787,13 +1763,13 @@
   function tubeLocal(wh, p) {
     let s = tlQ.subVectors(p, wh.A).dot(wh.t0);   // along it (the whole tube when it does not bend)
     if (wh.theta >= 1e-4) {   // round 22: the nearest of 48 points along the arc, refined
-      const n = 48; let bs = 0, bd = Infinity;
-      for (let i = 0; i <= n; i++) { const si = wh.L * i / n, d = whAt(wh, si, tlP).distanceToSquared(p); if (d < bd) { bd = d; bs = si; } }
+      const n = 48; let bs = 0, bd = Infinity, bi = 0;   // round 24: bi, which sample (L * n / n need not be exactly L)
+      for (let i = 0; i <= n; i++) { const si = wh.L * i / n, d = whAt(wh, si, tlP).distanceToSquared(p); if (d < bd) { bd = d; bs = si; bi = i; } }
       let lo = Math.max(0, bs - wh.L / n), hi = Math.min(wh.L, bs + wh.L / n);
       for (let it = 0; it < 18; it++) { const m1 = lo + (hi - lo) * 0.382, m2 = lo + (hi - lo) * 0.618; if (whAt(wh, m1, tlP).distanceToSquared(p) < whAt(wh, m2, tlP).distanceToSquared(p)) hi = m2; else lo = m1; }
       s = 0.5 * (lo + hi);
-      if (bs === 0 && tlQ.subVectors(p, wh.A).dot(wh.t0) < 0) s = tlQ.dot(wh.t0);   // before the way in
-      else if (bs === wh.L) { whAt(wh, wh.L, tlP, tlC); const a = tlQ.subVectors(p, tlP).dot(tlC); if (a > 0) s = wh.L + a; }   // past the way out
+      if (bi === 0 && tlQ.subVectors(p, wh.A).dot(wh.t0) < 0) s = tlQ.dot(wh.t0);   // before the way in
+      else if (bi === n) { whAt(wh, wh.L, tlP, tlC); const a = tlQ.subVectors(p, tlP).dot(tlC); if (a > 0) s = wh.L + a; }   // past the way out
     }
     tl.inside = s > 0 && s < wh.L; s = Math.max(0, Math.min(wh.L, s));
     whAt(wh, s, tlP); tl.n.subVectors(p, tlP); tl.d = tl.n.length(); if (tl.d > 1e-6) tl.n.divideScalar(tl.d); tl.s = s;
@@ -1937,7 +1913,7 @@
     cdQ.setFromUnitVectors(fwd, cdT);
     if (sh.m >= 0.05) cdD.copy(right).multiplyScalar(sh.dx).addScaledVector(up, sh.dy); else cdD.copy(right);
     cdD.applyQuaternion(cdQ); cdD.addScaledVector(cdT, -cdD.dot(cdT)); if (cdD.lengthSq() < 1e-8) cdD.copy(right).applyQuaternion(cdQ); cdD.normalize();
-    const vIn = g.vIn, toMouth = Math.max(0, w1.L - g.s) / Math.max(1, vIn * Math.max(0.05, P.rideMidMultiplier));
+    const vIn = g.vIn, toMouth = Math.max(0, w1.L - g.s) / Math.max(1, g.vel ? g.vel.length() : vIn);   // round 24: at the slide's speed
     const wh = { A: cdE.clone(), t0: cdT.clone(), side: cdD.clone(), L: sh.L, S: sh.S, R: sh.R, b: sh.b, M: sh.M, theta: sh.theta, fat: sh.fat, m: sh.m, s0: 0.5 * sh.L, s1: 0.5 * sh.L, t: 0,
       phase: 'form', grow: 0, formT: Math.min(Math.max(0.05, P.formSeconds), Math.max(0.1, 0.9 * toMouth)), stay: 0, out: false, chained: true };
     const pr = new Pair(whAt(wh, 0.5 * wh.L, new V3()), true); pr.wh = wh; whSync(pr); pairs.push(pr);
@@ -2500,7 +2476,7 @@
   const kA = new V3(), kE = new V3(), kT = new V3(), kR = new V3();
   function kitRideTimes() {
     const v = Math.max(20, P.cruise), rate = Math.max(0.2, P.pitchYaw * Math.PI / 180);
-    const ends = 0.5 * (rideMultiplier(P, 0) + rideMultiplier(P, 1)), meanMul = ends + (2 / Math.PI) * (Math.max(0.05, P.rideMidMultiplier) - ends);
+    const meanMul = Math.max(5, P.rootMaxSpeed) * (P.slideRush || 1) / v;   // round 24: the slide, RT held
     return { v, rate, meanMul };
   }
   const angTo = (a, b) => Math.acos(Math.max(-1, Math.min(1, a.dot(b) / Math.max(1e-6, a.length() * b.length()))));
@@ -3494,6 +3470,28 @@
   // steered into; back past a root's start you are in its parent again. Out of a tip (or back out of the source) you leave.
   // (Round 19's wall slide, which carried you along on its own, is gone.)
   const HULL_R = 2.5, rnC = new V3(), rnT = new V3(), rnA = new V3(), rnB = new V3(), rnD = new V3(), rnG = new V3(), rnM = new THREE.Matrix4(), rnX = new V3(), rnY = new V3(), rnZ = new V3();
+  // Round 24: the slide reads any tube through these - a root's sampled path (wh.poly) or the main tunnel's conic arc, past
+  // either end straight on along its end heading; its radius, a root's chanRadius or the main tunnel's hyperboloid.
+  const slE = new V3(), slT = new V3(), slQ = new V3();
+  function slAt(wh, s, outP, outT) {
+    if (wh.poly) return polyAt(wh, s, outP, outT);
+    if (s <= 0) { outP.copy(wh.A).addScaledVector(wh.t0, s); if (outT) outT.copy(wh.t0); return outP; }
+    if (s >= wh.L) { whAt(wh, wh.L, outP, slT); outP.addScaledVector(slT, s - wh.L); if (outT) outT.copy(slT); return outP; }
+    return whAt(wh, s, outP, outT);
+  }
+  const slR = (wh, s) => wh.chan ? chanRadius(wh, s) : tubeR(wh, Math.max(0, Math.min(wh.L, s))) * (wh.cave != null ? Math.max(0.02, wh.cave) : 1);
+  function slNear(wh, p) {
+    if (wh.poly) return chanNearest(wh, p);
+    const a = slQ.subVectors(p, wh.A).dot(wh.t0);
+    if (wh.theta < 1e-4) return a;   // straight: along it, past either end too
+    const n = 48; let bs = 0, bd = Infinity, bi = 0;   // bi: which sample (L * n / n need not be exactly L)
+    for (let i = 0; i <= n; i++) { const si = wh.L * i / n, d = whAt(wh, si, slE).distanceToSquared(p); if (d < bd) { bd = d; bs = si; bi = i; } }
+    let lo = Math.max(0, bs - wh.L / n), hi = Math.min(wh.L, bs + wh.L / n);
+    for (let it = 0; it < 18; it++) { const m1 = lo + (hi - lo) * 0.382, m2 = lo + (hi - lo) * 0.618; if (whAt(wh, m1, slE).distanceToSquared(p) < whAt(wh, m2, slE).distanceToSquared(p)) hi = m2; else lo = m1; }
+    if (bi === 0 && a < 0) return a;   // before the way in
+    if (bi === n) { whAt(wh, wh.L, slE, slT); const b = slQ.subVectors(p, slE).dot(slT); if (b > 0) return wh.L + b; }   // past the way out
+    return 0.5 * (lo + hi);
+  }
   // The share of the way along a channel nearest p (as s; past an end, on along its end heading, so s < 0 or s > L).
   function chanNearest(wh, p) {
     const pp = wh.poly.P, n = NS - 1, seg = wh.L / n; let bs = 0, bd = Infinity;
@@ -3508,13 +3506,14 @@
     return bs;
   }
   // How deep inside a root p is: its distance off the centreline as a share of the radius there (under 1: inside)
-  function rootScore(pr, p) { const wh = pr.wh, s = chanNearest(wh, p), sc = Math.max(0, Math.min(wh.L, s)); polyAt(wh, sc, rnC); return { pr, s, q: rnC.distanceTo(p) / Math.max(1, chanRadius(wh, sc)) }; }
+  function rootScore(pr, p) { const wh = pr.wh, s = slNear(wh, p), sc = Math.max(0, Math.min(wh.L, s)); slAt(wh, sc, rnC); return { pr, s, q: rnC.distanceTo(p) / Math.max(1, slR(wh, sc)) }; }
   function rootPose(h, u) {   // nose along h, up u
     rnY.copy(u); rnZ.copy(h).negate(); rnX.crossVectors(rnY, rnZ).normalize(); rnY.crossVectors(rnZ, rnX).normalize();
     rnM.makeBasis(rnX, rnY, rnZ); hull.quaternion.setFromRotationMatrix(rnM);
   }
   function rootLeave(g, nose) {
     rnG.copy(g.upv).addScaledVector(nose, -g.upv.dot(nose)); if (rnG.lengthSq() < 1e-6) rnG.set(0, 1, 0).addScaledVector(nose, -nose.y); rootPose(nose, rnG.normalize());
+    if (!g.net) { velNow.copy(nose).multiplyScalar(g.vIn * Math.max(0.05, P.rideExitMultiplier)); gateOut(g); return; }   // round 24: out of the main tunnel
     g.state = 'done'; g.used = true;
     for (const pr of g.net.pairs) { pr.wh.out = true; if (pr.wh.phase === 'open') pr.wh.phase = 'stay'; }
     speed = g.vIn * Math.max(0.05, P.rideExitMultiplier); velNow.copy(nose).multiplyScalar(speed);
@@ -3523,21 +3522,23 @@
   }
   function labTransit(dt) {
     const g = ftLive.gate; let wh = g.pair.wh;
-    const vMax = Math.max(5, P.rootMaxSpeed);
+    if (!g.net && !g.up0) g.up0 = new V3(0, 1, 0).applyQuaternion(hull.quaternion);   // round 24: the main tunnel's up is the hull's as it went in
+    const netUp = g.net ? g.net.up : g.up0;
+    const rush = g.net ? 1 : (P.slideRush || 1), vMax = Math.max(5, P.rootMaxSpeed) * rush;   // round 24: Garrett's Time rush, every soliton
     if (!g.free && g.s < 0) {   // the dive to the source's mouth (roots dug by a reticle lie ahead of you)
       g.s += g.vIn * dt; g.dist += g.vIn * dt;
       hull.position.copy(wh.A).addScaledVector(wh.t0, Math.min(0, g.s)); velNow.copy(wh.t0).multiplyScalar(g.vIn);
-      if (g.s < 0) return;
+      if (g.s < 0) { rootPose(wh.t0, netUp); return; }
     }
     if (!g.free) {   // in: you carry your speed in (up to rootMaxSpeed), along the root
-      g.s = Math.max(0, chanNearest(wh, hull.position)); polyAt(wh, Math.min(g.s, wh.L), rnC, rnT);
-      Object.assign(g, { free: true, h: rnT.clone(), vel: rnT.clone().multiplyScalar(Math.min(g.vIn, vMax)), upv: g.net.up.clone(), side: new V3(), dr: new V3(), er: null, bumps: 0, dist: g.dist || 0 });
+      g.s = Math.max(0, slNear(wh, hull.position)); slAt(wh, Math.min(g.s, wh.L), rnC, rnT);
+      Object.assign(g, { free: true, h: rnT.clone(), vel: rnT.clone().multiplyScalar(Math.min(g.vIn, vMax)), upv: netUp.clone(), side: new V3(), dr: new V3(), er: null, bumps: 0, dist: g.dist || 0 });
     }
     const th = holds.R.on ? holds.R.live : 0, mv = Math.max(0, P.rootMove);
-    const sc0 = Math.max(0, Math.min(wh.L, g.s)), r0 = chanRadius(wh, sc0); polyAt(wh, sc0, rnC, rnT);
+    const sc0 = Math.max(0, Math.min(wh.L, g.s)), r0 = slR(wh, sc0); slAt(wh, sc0, rnC, rnT);
     // the nose follows the root, the way you face along it; up is the network's up, square to the nose
     rnD.copy(rnT).multiplyScalar(g.h.dot(rnT) < 0 ? -1 : 1); g.h.lerp(rnD, 1 - Math.exp(-6 * dt)).normalize();
-    rnG.copy(g.net.up).addScaledVector(g.h, -g.net.up.dot(g.h));
+    rnG.copy(netUp).addScaledVector(g.h, -netUp.dot(g.h));
     if (rnG.lengthSq() > 0.06) g.upv.lerp(rnG.normalize(), 1 - Math.exp(-3 * dt));
     g.upv.addScaledVector(g.h, -g.upv.dot(g.h)); if (g.upv.lengthSq() < 1e-6) g.upv.crossVectors(g.h, rnB.set(Math.abs(g.h.x) < 0.9 ? 1 : 0, Math.abs(g.h.x) < 0.9 ? 0 : 1, 0)); g.upv.normalize();
     g.side.crossVectors(g.h, g.upv).normalize();
@@ -3545,9 +3546,9 @@
     // stick pushes you (rootMove), gravity (square to the root) draws you to its floor, and rootDrag calms you
     let vf = g.vel.dot(g.h); rnB.copy(g.vel).addScaledVector(g.h, -vf);
     if (th > 0.02) vf = Math.min(vMax, vf + Math.max(0, P.rootThrust) * th * dt);
-    else vf += (Math.min(vMax, Math.max(0, P.rootCruise)) - vf) * (1 - Math.exp(-1.5 * dt));
+    else vf += (Math.min(vMax, Math.max(0, P.rootCruise) * rush) - vf) * (1 - Math.exp(-1.5 * dt));
     rnA.copy(g.side).multiplyScalar(mv * (ftLive.rootSide || 0)).addScaledVector(g.upv, mv * (ftLive.rootRise || 0));
-    rnG.copy(g.net.up).addScaledVector(rnT, -g.net.up.dot(rnT)); rnA.addScaledVector(rnG, -Math.max(0, P.rootGravity));
+    rnG.copy(netUp).addScaledVector(rnT, -netUp.dot(rnT)); rnA.addScaledVector(rnG, -Math.max(0, P.rootGravity));
     rnB.addScaledVector(rnA, dt).multiplyScalar(Math.exp(-Math.max(0, P.rootDrag) * dt));
     g.vel.copy(g.h).multiplyScalar(vf).add(rnB);
     const sp0 = g.vel.length(); if (sp0 > vMax) g.vel.multiplyScalar(vMax / sp0);
@@ -3566,12 +3567,12 @@
     g.s = best.s;
     const sp = g.vel.length(); g.dist += sp * dt;
     if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, sp); raceStats.dist += sp * dt; }
-    if (g.s >= wh.L && !(g.pair.kids || []).length) { polyAt(wh, wh.L, rnC, rnT); rootLeave(g, rnT.clone()); return; }   // out of a tip, on along it
+    if (g.s >= wh.L && !(g.pair.kids || []).length) { if (g.next) { chainOn(g); return; } slAt(wh, wh.L, rnC, rnT); rootLeave(g, rnT.clone()); return; }   // round 24: Chain Dig joins the next tunnel there   // out of a tip, on along it
     if (g.s <= -HULL_R && !g.pair.parent) { rootLeave(g, wh.t0.clone().negate()); camTail = null; snapCam = true; return; }   // back out of the source
     // the wall: you bounce off it
-    const sc = Math.max(0, Math.min(wh.L, g.s)); polyAt(wh, sc, rnC, rnT);
+    const sc = Math.max(0, Math.min(wh.L, g.s)); slAt(wh, sc, rnC, rnT);
     rnD.subVectors(hull.position, rnC); rnD.addScaledVector(rnT, -rnD.dot(rnT));
-    const rIn = Math.max(1, chanRadius(wh, sc) - HULL_R), off = rnD.length();
+    const rIn = Math.max(1, slR(wh, sc) - HULL_R), off = rnD.length();
     if (off > rIn) {
       rnD.multiplyScalar(1 / off); hull.position.addScaledVector(rnD, rIn - off);
       const vn = g.vel.dot(rnD); if (vn > 0) { g.vel.addScaledVector(rnD, -(1 + clamp01(P.rootBounce)) * vn); if (vn > 4) g.bumps++; }   // a bump, not a graze
@@ -4128,10 +4129,13 @@
   // and reaches it soonest, then bend the reticle toward the ring as far as the plan asks and squeeze LT as it says. A
   // rookie bends it off the mark. null: no tunnel fits this leg. turnOnly: a ring nearer than aiStraightMinDistance gets
   // only a tunnel that bends at least 20 deg (a straight one is for long legs).
+  // Round 24: a slide with RT held runs at about rootMaxSpeed (you carry your speed in, up to it, and RT holds you there):
+  // the plans' mean ride multiplier on the speed v you go in with.
+  const slideMul = (v) => Math.max(5, P.rootMaxSpeed) * (P.slideRush || 1) / Math.max(1, v);
   function aiGatePlan(loc, n, turnOnly, aheadAt) {   // aheadAt: where the tunnel starts (Chain Dig: 0, the far mouth)
     const ahead = aheadAt != null ? aheadAt : Math.max(0, P.reticleAhead) + speed * Math.max(0, P.aiShapeSeconds);   // where the tunnel will start when it pulls RT
     const tx = -loc.z, ty = Math.hypot(loc.x, loc.y), v = Math.max(1, speed), turnRate = Math.max(0.2, P.pitchYaw * Math.PI / 180);
-    const ends = 0.5 * (rideMultiplier(P, 0) + rideMultiplier(P, 1)), meanMul = ends + (2 / Math.PI) * (Math.max(0.05, P.rideMidMultiplier) - ends);
+    const meanMul = slideMul(v);
     let best = null;
     for (let j = 0; j <= 20; j++) for (let i = 0; i <= 8; i++) {
       const t = j / 20, sq = i / 8;   // the bend (the right stick), and LT's squeeze (harder: a longer shaft before it)
@@ -4174,9 +4178,32 @@
     // The one-thumb mix: the LEFT stick flies (yaw, pitch; full throttle), the RIGHT stick bends the reticle, LT lengthens its shaft
     // it, an RT press forms it. The AI holds its line while it shapes (aiShapeSeconds), then presses RT.
     const gate = ftLive.gate, riding = !!(gate && gate.state === 'tube'); let lt = 0, rt = 0, bend = false;
-    if (riding && gate.net) {   // round 20, the roots: it holds RT and steers across the root for the one that leads nearest its ring (a rookie sometimes picks wrong)
+    if (riding) {   // round 24: every tube is slid (round 20, the roots: it holds RT and steers across the root for the one that leads nearest its ring (a rookie sometimes picks wrong)
+      // it holds RT. Chain Dig (the Mix's / Round 8's Time L5, an RT PRESS from chainShare of the way): a little before that
+      // point it plans the next tunnel from the far mouth once; with a plan it lets go of RT and presses it again (bending the
+      // right stick for it) once it is past that point; with none it keeps holding RT, so no straight chain is dug by
+      // accident. Round 24: at most two chains in a row between rings.
       ai.gHold = 0; ai.gShaping = false; rt = 1;
       const kids = gate.pair.kids || [], wh = gate.pair.wh;
+      const relS = chainShareOf(P) * wh.L, relW = Math.max(2, (gate.vel ? gate.vel.length() : speed) * 0.05);
+      if (!gate.net && aiChainOn() && !blind && !gate.next && !gate.aiChainTried && gate.s >= relS - relW
+        && (ai.chainAt !== threaded || (ai.chainRun || 0) < 2)) {
+        gate.aiChainTried = true;
+        whAt(wh, wh.L, cdE, cdT); cdQ.setFromUnitVectors(fwd, cdT);
+        const eR = tv.copy(right).applyQuaternion(cdQ), eU = tv2.copy(up).applyQuaternion(cdQ), dE = aiTo.subVectors(tgt, cdE), dist = dE.length();
+        const locE = aiLoc2.set(dE.dot(eR), dE.dot(eU), -dE.dot(cdT));
+        const plan = dist > Math.min(P.aiStraightMinDistance, P.aiBentMinDistance) ? aiGatePlan(locE, clamp01(P.aiNoise), dist <= P.aiStraightMinDistance, 0) : null;
+        if (plan) { const lh = Math.hypot(locE.x, locE.y); gate.aiChainPlan = { x: lh > 1e-6 ? locE.x / lh * plan.m : 0, y: lh > 1e-6 ? locE.y / lh * plan.m : 0, lq: plan.lq }; ai.chainHeld = true; }
+      }
+      if (gate.aiChainPlan && !gate.next) {
+        if (gate.s < relS || ai.chainHeld) { rt = 0; if (gate.s >= relS) ai.chainHeld = false; }   // let go (a frame at least), then press past the point
+        else {
+          const cp = gate.aiChainPlan; gate.aiChainPlan = null;
+          inp.R.x = easeInv(cp.x) / 2; inp.R.y = easeInv(cp.y) / 2; lt = cp.lq; rt = 1; ai.chains = (ai.chains || 0) + 1;
+          if (ai.chainAt !== threaded) { ai.chainAt = threaded; ai.chainRun = 0; }
+          ai.chainRun++;
+        }
+      }
       aiTo.set(0, 0, 0);   // where across the root it wants to be: the middle, or the fork's side
       if (kids.length > 1 && !blind) {
         if (!gate.aiPick || !kids.includes(gate.aiPick)) {
@@ -4185,7 +4212,7 @@
           gate.aiPick = kids[bi];
         }
         whAt(wh, wh.L, fkP, fkT); forkSide(gate.aiPick, fkQ);
-        if (fkQ.lengthSq() > 1e-6) aiTo.copy(fkQ.normalize()).multiplyScalar(0.55 * chanRadius(wh, wh.L));
+        if (fkQ.lengthSq() > 1e-6) aiTo.copy(fkQ.normalize()).multiplyScalar(0.55 * slR(wh, wh.L));
       }
       if (gate.free) {   // a spring to it: the push across the root, into the left stick
         const mv = Math.max(1, P.rootMove);
@@ -4193,24 +4220,6 @@
         aiTo.sub(gate.dr).multiplyScalar(2.25).addScaledVector(aiLoc2, -2.1);
         const sx = Math.max(-1, Math.min(1, aiTo.dot(gate.side) / mv)), sy = Math.max(-1, Math.min(1, aiTo.dot(gate.upv) / mv));
         inp.L.x = easeInv(0.98 * sx) / 2; let pb = easeInv(0.98 * sy) / 2; if (invertY) pb = -pb; inp.L.y = pb;
-      }
-    }
-    else if (riding) {
-
-      ai.gHold = 0; ai.gShaping = false;
-      // round 8, Chain Dig (Time L5): past chainShare of the ride, if a tunnel from the far mouth fits the next leg, bend
-      // the right stick for it and press RT. One try a tunnel.
-      if (aiChainOn() && !blind && !gate.next && !gate.aiChainTried && gate.s >= chainShareOf(P) * gate.pair.wh.L) {
-        gate.aiChainTried = true;
-        const w1 = gate.pair.wh; whAt(w1, w1.L, cdE, cdT); cdQ.setFromUnitVectors(fwd, cdT);
-        const eR = tv.copy(right).applyQuaternion(cdQ), eU = tv2.copy(up).applyQuaternion(cdQ), dE = aiTo.subVectors(tgt, cdE), dist = dE.length();
-        const locE = aiLoc2.set(dE.dot(eR), dE.dot(eU), -dE.dot(cdT));
-        const plan = dist > Math.min(P.aiStraightMinDistance, P.aiBentMinDistance) ? aiGatePlan(locE, clamp01(P.aiNoise), dist <= P.aiStraightMinDistance, 0) : null;
-        if (plan) {
-          const lh = Math.hypot(locE.x, locE.y);
-          inp.R.x = easeInv(lh > 1e-6 ? locE.x / lh * plan.m : 0) / 2; inp.R.y = easeInv(lh > 1e-6 ? locE.y / lh * plan.m : 0) / 2;
-          lt = plan.lq; rt = 1; ai.chains = (ai.chains || 0) + 1;
-        }
       }
     }
     else if (!blind && P.aiWormhole > 0.5 && ftLive.ab.omni && ftLive.ret && ftLive.ret.net && ftLive.ret.emerge >= 0.6 && loc.z < 0 && d > 0.5 * Math.max(40, P.labyrinthRadiusMax)) {
@@ -4477,7 +4486,7 @@
   // Round 20, inside the roots: back u behind you along the root's centreline (into the root before it when that is
   // behind you), half your way out to the wall, so the camera is always inside the root.
   function rootCam(g, back, out) {
-    const wh = g.pair.wh; polyAt(wh, Math.max(0, Math.min(wh.L, g.s)), rnB, rnT);
+    const wh = g.pair.wh; slAt(wh, Math.max(0, Math.min(wh.L, g.s)), rnB, rnT);
     const hs = g.h.dot(rnT) < 0 ? -1 : 1, s = g.s - hs * back;
     if (s < 0 && g.pair.parent) whAtX(g.pair.parent.wh, g.pair.parent.wh.L + s, out);
     else if (s > wh.L && (g.pair.kids || []).length) { const k = g.pair.kids.includes(g.prev) ? g.prev : g.pair.kids[0]; whAtX(k.wh, s - wh.L, out); }
@@ -4505,7 +4514,7 @@
     // Out of the far mouth the camera keeps to the tunnel's line until it is past the mouth itself (camTail): straight
     // behind the nose would cut the bend for its first `back` u, a sideways jump at the way out.
     const gr = ftLive.gate && ftLive.gate.state === 'tube' && camMode !== 'free' ? ftLive.gate : null;
-    if (gr) { camTail = { wh: gr.pair.wh, s: gr.s }; if (gr.net && gr.free) rootCam(gr, back, want); else if (gr.s - back < 0 && gr.prev) whAtX(gr.prev.wh, gr.prev.wh.L + gr.s - back, want); else whAtX(gr.pair.wh, gr.s - back, want); look.copy(hull.position); }
+    if (gr) { camTail = { wh: gr.pair.wh, s: gr.s }; if (gr.free) rootCam(gr, back, want);   /* round 24: the main tunnel's slide too */ else if (gr.s - back < 0 && gr.prev) whAtX(gr.prev.wh, gr.prev.wh.L + gr.s - back, want); else whAtX(gr.pair.wh, gr.s - back, want); look.copy(hull.position); }
     else if (camTail && camMode !== 'free' && mode === 'fly') {
       camTail.s += Math.max(0, speed) * dt;
       if (camTail.s - back >= camTail.wh.L) camTail = null; else { whAtX(camTail.wh, camTail.s - back, want); look.copy(hull.position); }
@@ -4513,7 +4522,7 @@
     const k = snapCam || camMode !== 'free' ? 1 : 1 - Math.exp(-12 * dt);
     cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
     if (camMode === 'free' || camMode === 'follow') cam.up.set(0, 1, 0);
-    else if (gr && gr.net) cam.up.lerp(up, 1 - Math.exp(-4 * dt)).normalize();   // round 20: turning with you as the root turns, gently
+    else if (gr && gr.free) cam.up.lerp(up, 1 - Math.exp(-4 * dt)).normalize();   // round 20: turning with you as the root turns, gently
     else cam.up.copy(up);
     cam.lookAt(camLook);
     cam.updateMatrixWorld();
@@ -4726,7 +4735,7 @@
     c.font = font(11, 500); c.fillStyle = dim; c.fillText('u/s   cruise ' + P.cruise, pad + 52 * sc, ch - pad - 28 * sc);
     const bw = 180 * sc, by = ch - pad - 14 * sc;
     c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(pad, by, bw, 5 * sc);
-    c.fillStyle = v > P.cruise * 1.05 ? lime : ink; c.fillRect(pad, by, bw * Math.min(1, v / (P.cruise * Math.max(1, P.rideMidMultiplier))), 5 * sc);
+    c.fillStyle = v > P.cruise * 1.05 ? lime : ink; c.fillRect(pad, by, bw * Math.min(1, v / Math.max(P.cruise, Math.max(5, P.rootMaxSpeed) * (P.slideRush || 1))), 5 * sc);
     // bottom-right: the two triggers (LT sets the shaft, RT forms)
     const trig = (side, x) => {
       const h = holds[side], r = 22 * sc, y = ch - pad - r - 6 * sc;
@@ -5035,9 +5044,9 @@
   SCENES.tunnel = {
     make(Pv, cfg) {
       const ms = cfg.sticks || [0.5, 1], tubes = ms.map((m) => tunnelPlan(Pv, cfg.lt || 0, m));
-      // a dot riding the sharpest one: the entry multiplier, up to the middle one at the throat, the exit one at the way out
-      const main = tubes[tubes.length - 1], ride = [0]; let t = 0;
-      for (let i = 1; i < main.pts.length; i++) { const u = (i - 0.5) / (main.pts.length - 1); t += 1 / rideMultiplier(Pv, u); ride.push(t); }
+      // a dot sliding the sharpest one at the slide's top speed (round 24), in units of your speed before the tunnel
+      const main = tubes[tubes.length - 1], ride = [0]; let t = 0, mul = Math.max(5, Pv.rootMaxSpeed) / Math.max(1, Pv.cruise);
+      for (let i = 1; i < main.pts.length; i++) { t += 1 / mul; ride.push(t); }
       return { tubes, main, ride, rideT: t };
     },
     bounds(st, cfg) {
@@ -5137,8 +5146,7 @@
   // ---------- a tunnel's life on a clock: the reticle, RT, the ride, the stay, the collapse ----------
   SCENES.tunnelLife = {
     make(Pv, cfg) {
-      const ends = 0.5 * (rideMultiplier(Pv, 0) + rideMultiplier(Pv, 1)), meanMul = ends + (2 / Math.PI) * (Math.max(0.05, Pv.rideMidMultiplier) - ends);   // the curve's mean
-      const ride = Math.max(0.3, Math.max(Pv.shaftMin, Pv.shaftMax) / Math.max(1, Pv.cruise * meanMul));
+      const ride = Math.max(0.3, Math.max(Pv.shaftMin, Pv.shaftMax) / Math.max(5, Pv.rootMaxSpeed));   // round 24: slid at the top speed
       const shape = cfg.ai ? Math.max(0, Pv.aiShapeSeconds) : 0.6, form = Math.max(0.05, Pv.formSeconds);
       const tRT = shape, tOut = tRT + Math.max(form, ride), tCol = tOut + Math.max(0, Pv.staySeconds), tGone = tCol + Math.max(0.05, Pv.collapseSeconds);
       const tRet = tOut + Math.max(0, Pv.reticleDelaySeconds), tRetFull = tRet + Math.max(0.05, Pv.reticleGrowSeconds);
@@ -5346,17 +5354,15 @@
         foot(danger ? 'Mass L5: danger prisms, a rival touching one loses ' + Pv.dangerPetals + ' petal' : 'danger prisms at Mass L5');
         return;
       }
-      if (k === 'rush') {   // the ride's speed along the tunnel, with the rush (and Garrett's Boost out)
+      if (k === 'rush') {   // round 24: the slide's cruise and top speed, with the rush (and Garrett's Boost out)
         const x0 = 20, x1 = W - 20, y0 = H - 26, top = 22, rush = lerpLv(Pv.rushL0, Pv.rushL10, lv('time'));
-        const mid = Pv.rideMidMultiplier * rush, ex = Pv.rideExitMultiplier * (kitN === 1 && lv('time') >= 5 ? Math.max(1, Pv.boostOut) : 1), en = Pv.rideEntryMultiplier, vmax = Math.max(mid, ex, en, 1) * 1.1;
-        const Yv = (m) => y0 - (y0 - top) * m / vmax;
-        c.strokeStyle = 'rgba(255,255,255,0.2)'; c.beginPath(); c.moveTo(x0, Yv(Pv.rideMidMultiplier)); c.lineTo(x1, Yv(Pv.rideMidMultiplier)); c.stroke();
-        c.strokeStyle = cyn; c.lineWidth = 2; c.beginPath();
-        for (let i = 0; i <= 50; i++) { const u = i / 50, w = Math.sin(Math.PI * u), m = u < 0.5 ? en + (mid - en) * w : ex + (mid - ex) * w, x = x0 + (x1 - x0) * u; if (i) c.lineTo(x, Yv(m)); else c.moveTo(x, Yv(m)); }
-        c.stroke(); c.lineWidth = 1;
-        const u = (tt / 4.5) % 1, w = Math.sin(Math.PI * u), m = u < 0.5 ? en + (mid - en) * w : ex + (mid - ex) * w;
-        ship(c, x0 + (x1 - x0) * u, Yv(m), 1, 0, '#9dff2e', 5);
-        txt(c, 'the throat ' + mid.toFixed(2) + ' x your speed (rush ' + rush.toFixed(2) + ' at Time L' + lv('time') + '), out ' + ex.toFixed(2) + ' x', 6, 13, ink, 10);
+        const cr = Math.max(0, Pv.rootCruise) * rush, mx = Math.max(5, Pv.rootMaxSpeed) * rush, ex = Pv.cruise * Pv.rideExitMultiplier * (kitN === 1 && lv('time') >= 5 ? Math.max(1, Pv.boostOut) : 1), vmax = Math.max(cr, mx, ex, Pv.cruise) * 1.1;
+        const Yv = (v) => y0 - (y0 - top) * v / vmax;
+        c.strokeStyle = 'rgba(255,255,255,0.2)'; c.beginPath(); c.moveTo(x0, Yv(Pv.cruise)); c.lineTo(x1, Yv(Pv.cruise)); c.stroke();
+        c.strokeStyle = cyn; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, Yv(cr)); c.lineTo(x1, Yv(cr)); c.stroke();
+        c.strokeStyle = '#9dff2e'; c.beginPath(); c.moveTo(x0, Yv(mx)); c.lineTo(x1, Yv(mx)); c.stroke(); c.lineWidth = 1;
+        const u = (tt / 4.5) % 1; ship(c, x0 + (x1 - x0) * u, Yv(mx), 1, 0, '#9dff2e', 5);
+        txt(c, 'slide: cruise ' + Math.round(cr) + ' u/s, RT up to ' + Math.round(mx) + ' u/s (rush ' + rush.toFixed(2) + ' at Time L' + lv('time') + '), out at ' + Math.round(ex) + ' u/s from cruise', 6, 13, ink, 10);
         foot(kitN === 2 ? 'the Mix: Time L5 is Chain Dig, not Boost out' : lv('time') >= 5 ? "Garrett's L5 Boost out: out at " + Pv.boostOut + ' x the exit' : 'Boost out at Time L5');
         return;
       }
@@ -5419,8 +5425,6 @@
     mouthDiameter: { scene: 'tunnel', d: 'How wide the entry and the exit are at the SHORTEST tunnel; a longer one grows toward mouthDiameterMax. The tube narrows from its mouths to its throat.', lo: 'Small mouths.', hi: 'Wide funnels.' },
     keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT lengthens the straight shaft before the bend.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
     rideSpeedTunnelScale: { scene: 'tunnelLife', d: 'Every vessel has the game\'s speed tunnel: the faster you fly, the narrower the camera\'s view (and the flatter its Panini projection) - a dolly zoom. While a tunnel flies you it is this many times as strong, so the push-in peaks at the throat, where the ride is fastest. 1 = the normal law; 0 = none while riding. The studio shows the field of view; the game also relaxes the Panini projection.', lo: 'No push-in.', hi: 'A deep dolly zoom.' },
-    rideEntryMultiplier: { scene: 'tunnel', d: 'The ride is your speed before the tunnel times a multiplier: this one going in (the dive to the mouth and the way in). 1 = you enter at exactly the speed you had. The green dot rides the sharpest tunnel.', lo: 'Slows you as you enter.', hi: 'A kick going in.' },
-    rideMidMultiplier: { scene: 'tunnel', d: 'The ride rises from the entry multiplier to this many times your speed before the tunnel at the throat, then eases to the exit multiplier. The green dot rides the sharpest tunnel.', lo: 'A steady ride.', hi: 'A rush through the middle.' },
     rideExitMultiplier: { scene: 'tunnel', d: 'You come out of the far mouth at this many times your speed before the tunnel, on its last heading, and ease back to cruise as you fly on. A little over 1 = a small boost for taking the tunnel.', lo: 'Out at your speed.', hi: 'A big boost out.' },
     reticleDelaySeconds: { scene: 'tunnelLife', d: 'Out of a tunnel (and at the start), your reticle comes back after this long, so you see the clean exit first.', lo: 'Back at once.', hi: 'A longer clean view.' },
     reticleGrowSeconds: { scene: 'tunnelLife', d: 'The reticle ripples out of its centre into the full tube over this long; you can reshape it meanwhile, and pull RT once it is 60% there.', lo: 'Pops back.', hi: 'Grows slowly.' },
@@ -5555,7 +5559,7 @@
     portalSizeL0: { scene: 'kit', cfg: { k: 'portal' }, d: 'The portal\'s prism size at Mass L0, as a share of a field prism ("go minimal").', lo: 'Tiny.', hi: 'Big.' },
     portalSizeL10: { scene: 'kit', cfg: { k: 'portal' }, d: 'The portal\'s prism size at Mass L10.', lo: 'Tiny.', hi: 'Big.' },
     dangerPetals: { scene: 'kit', cfg: { k: 'portal' }, d: 'At Mass L5 the portal\'s prisms are danger prisms: a rival hull touching one takes a hit of this much of a petal (once per prism). The amount is the studio\'s reading, open in Garrett\'s design.', lo: 'A scratch.', hi: 'A real cost.' },
-    rushL0: { scene: 'kit', cfg: { k: 'rush' }, d: 'Time is a passive faster ride through every soliton, its own or anyone\'s: the throat\'s multiplier (rideMidMultiplier) times this at Time L0.', lo: 'No rush.', hi: 'A rush.' },
+    rushL0: { scene: 'kit', cfg: { k: 'rush' }, d: 'Time is a passive faster slide through every soliton, its own or anyone\'s: the slide\'s cruise and top speed (rootCruise, rootMaxSpeed) times this at Time L0.', lo: 'No rush.', hi: 'A rush.' },
     rushL10: { scene: 'kit', cfg: { k: 'rush' }, d: 'The rush at Time L10; levels between are in between.', lo: 'A small rush at the top.', hi: 'A big rush at the top.' },
     boostOut: { scene: 'kit', cfg: { k: 'rush' }, d: 'Garrett\'s Time L5, Boost out: the Meerkat leaves every soliton at this many times the exit multiplier, easing back to cruise. (The Mix has Chain Dig at Time L5 instead.)', lo: 'Barely a boost.', hi: 'A big boost out.' },
     throatFloorDiameter: { scene: 'kit', cfg: { k: 'mix' }, d: 'The Mix: the throat\'s diameter never goes below this, so a long tunnel is not a pinhole. (Garrett\'s kit keeps only a 0.5 u safety floor.)', lo: 'A thin floor.', hi: 'A fat floor.' },
@@ -5582,11 +5586,11 @@
     rootGlass: { scene: 'labyrinth', d: 'The roots\' bark where you look straight at it: keep it low, so a big network stays quiet on screen.', lo: 'Clear.', hi: 'Milky.' },
     rootRim: { scene: 'labyrinth', d: 'The roots\' bark where it turns away from you (Fresnel): their outline.', lo: 'Faint.', hi: 'Bright.' },
     rootGrain: { scene: 'labyrinth', d: 'The bark grain along the roots.', lo: 'Smooth.', hi: 'Deep grain.' },
-    rootThrust: { scene: 'labyrinth', d: 'Hold RT in the roots and you go faster than your cruise, up to rootMaxSpeed; let go and you ease back to it.', lo: 'A drift.', hi: 'A rush.' },
-    rootCruise: { scene: 'labyrinth', d: 'Inside the roots you cruise along the root on your own at this speed, your nose following it, so you only steer.', lo: 'A crawl.', hi: 'Brisk.' },
+    rootThrust: { scene: 'labyrinth', d: 'Hold RT in a tunnel or the roots and you go faster than your cruise, up to rootMaxSpeed; let go and you ease back to it.', lo: 'A drift.', hi: 'A rush.' },
+    rootCruise: { scene: 'labyrinth', d: 'Inside a tunnel or the roots (round 24: one flight for both) you cruise along it on your own at this speed, your nose following it, so you only steer.', lo: 'A crawl.', hi: 'Brisk.' },
     rootMove: { scene: 'labyrinth', d: 'How hard the left stick moves you round the root: left and right, up and down, the way it would turn your nose. Move into a root at a fork to go down it.', lo: 'A nudge.', hi: 'Darting about.' },
     rootDrag: { scene: 'labyrinth', d: 'How fast your drift across the root dies away once you let the stick go. Low: you glide on to the wall and bounce.', lo: 'Slippery.', hi: 'Stops at once.' },
-    rootMaxSpeed: { scene: 'labyrinth', d: 'The fastest you go inside the roots, so you can always find your way.', lo: 'A crawl.', hi: 'A rush.' },
+    rootMaxSpeed: { scene: 'labyrinth', d: 'The fastest you go inside a tunnel or the roots, so you can always find your way.', lo: 'A crawl.', hi: 'A rush.' },
     rootBounce: { scene: 'labyrinth', d: 'Hit a wall and you bounce off it with this share of your speed into it (the rest is lost). The speed along the wall is kept.', lo: 'Thud.', hi: 'Rubber.' },
     rootGravity: { scene: 'labyrinth', d: 'Draws you to the floor of the root (the network\'s down), square to the root, so it never pulls you back down a climb. 0: you float.', lo: 'Float.', hi: 'Roll along the floor.' },
     rootOpacity: { scene: 'labyrinth', d: 'Inside the roots: a soft, smooth inner wall, a little dense, the world outside still showing through it. It fades to clear with distance, never to black (Yash, 2026-10-28). The ends of every root stay open.', lo: 'Clear.', hi: 'Solid.' },
@@ -5782,8 +5786,6 @@
     throatDiameter: ['MeerkatWormholeConfig.throatDiameter', 'linked'],
     mouthDiameter: ['MeerkatWormholeConfig.mouthDiameter', 'linked'],
     keyRampSeconds: ['MeerkatWormholeConfig.keyRampSeconds', 'linked'],
-    rideEntryMultiplier: ['MeerkatWormholeConfig.rideEntryMultiplier', 'linked'],
-    rideMidMultiplier: ['MeerkatWormholeConfig.rideMidMultiplier', 'linked'],
     rideExitMultiplier: ['MeerkatWormholeConfig.rideExitMultiplier', 'linked'],
     rideSpeedTunnelScale: ['MeerkatWormholeConfig.rideSpeedTunnelScale', 'linked'],
     reticleDelaySeconds: ['MeerkatWormholeConfig.reticleDelaySeconds', 'linked'],
@@ -6288,7 +6290,7 @@
     const inTube = !!(live && g && g.state === 'tube');
     if (inTube && !snd.tube) { if (g.net) { A.play('burrowGrow'); A.play('burrowEnter'); } else A.play('form'); snd.forks = g.forks || 0; snd.net = !!g.net; }
     if (inTube) {
-      A.loop('ride', 'rideRush', clamp01(speed / Math.max(1, P.cruise * Math.max(1, P.rideMidMultiplier))));
+      A.loop('ride', 'rideRush', clamp01(speed / Math.max(1, P.cruise, Math.max(5, P.rootMaxSpeed) * (P.slideRush || 1))));
       if (g.net && (g.forks || 0) > snd.forks) { A.play('forkTake', { pan: Math.max(-1, Math.min(1, fl.leanX || 0)) }); snd.forks = g.forks; }
     } else A.stop('ride');
     if (!inTube && snd.tube && live) A.play(snd.net ? 'burrowExit' : 'exitPop');

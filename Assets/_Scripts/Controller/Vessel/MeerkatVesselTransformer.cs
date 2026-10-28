@@ -9,10 +9,10 @@ namespace CosmicShore.Gameplay
     /// the prefab: <c>pitchYaw</c> 120 °/s is <c>PitchScaler</c> = <c>YawScaler</c>, the bank <c>bankShare</c> × <c>roll</c>
     /// (0.12 × 130 = 15.6 °/s) is <c>RollScaler</c>, <c>cruise</c> 60 is <c>DefaultThrottleScaler</c>.
     ///
-    /// <para><b>The ride.</b> While a tunnel flies the hull (<see cref="MeerkatWormholeExecutor.StepRide"/>) it replaces
-    /// both the turn and the move: the hull is placed along the tunnel, faces along it, and reports the ride's speed and
-    /// heading. On the way out it keeps the speed it went in with (the page's <c>gateOut</c>), and the turn picks up from
-    /// the tunnel's last heading.</para>
+    /// <para><b>The slide.</b> Inside a tunnel (<see cref="MeerkatWormholeExecutor.StepRide"/>; round 24, the same flight
+    /// as the roots) it replaces both the turn and the move: the left stick moves the hull round the tube, RT pushes it
+    /// faster, the wall bounces it; on the way out it leaves at the speed it went in with × <c>rideExitMultiplier</c> (the
+    /// page's <c>gateOut</c>), and the turn picks up from the tunnel's last heading.</para>
     ///
     /// <para><b>The roots</b> (<c>MEERKAT.md</c> §7): inside the roots an omnicrystal grew, the roots' flight
     /// (<see cref="MeerkatWormholeExecutor.StepRoots"/>) replaces the turn and the move the same way: the left stick moves the

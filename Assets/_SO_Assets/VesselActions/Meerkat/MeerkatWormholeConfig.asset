@@ -23,8 +23,6 @@ MonoBehaviour:
   throatDiameter: 20
   mouthDiameter: 40
   keyRampSeconds: 0.5
-  rideEntryMultiplier: 1
-  rideMidMultiplier: 2.5
   rideExitMultiplier: 1.2
   rideSpeedTunnelScale: 5
   reticleDelaySeconds: 0.5

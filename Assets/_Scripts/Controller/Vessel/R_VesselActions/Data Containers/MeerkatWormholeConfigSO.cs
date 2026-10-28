@@ -1,7 +1,6 @@
 using CosmicShore.Gameplay;
 using FMODUnity;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -60,12 +59,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("LT on a key or touch: full after (s)")]
         [SerializeField, Range(0.05f, 3f)] float keyRampSeconds = 0.5f;
 
+        // Round 24: the tunnel is slid as the roots are (the root* keys below); rideEntryMultiplier and rideMidMultiplier,
+        // the automatic ride's, are retired. Coming out is still rideExitMultiplier.
         [Header("Wormhole ride (the artifact's Play Style Config > Wormhole ride)")]
-        [Tooltip("Ride: going in (× your speed before the tunnel)")]
-        [SerializeField, Range(0.5f, 3f)] float rideEntryMultiplier = 1f;
-        [Tooltip("Ride: fastest, at the throat (× your speed before the tunnel)")]
-        [FormerlySerializedAs("throatSpeed")]
-        [SerializeField, Range(0.5f, 8f)] float rideMidMultiplier = 2.5f;
         [Tooltip("Ride: coming out (× your speed before the tunnel)")]
         [SerializeField, Range(0.5f, 3f)] float rideExitMultiplier = 1.2f;
         [Tooltip("Riding: the speed tunnel's dolly zoom (× its normal strength)")]
@@ -198,13 +194,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1.5f)] float rootGrain = 0.35f;
         [Tooltip("...digs itself out from the source over (s)")]
         [SerializeField, Range(0.05f, 4f)] float labyrinthFormSeconds = 0.8f;
-        [Tooltip("In the roots: you cruise along the root at (u/s)")]
+        [Tooltip("In a tunnel or the roots: you cruise along it at (u/s)")]
         [SerializeField, Range(0f, 200f)] float rootCruise = 45f;
         [Tooltip("...RT pushes you faster by (u/s²)")]
         [SerializeField, Range(0f, 300f)] float rootThrust = 90f;
-        [Tooltip("...the left stick moves you round the root by (u/s²)")]
+        [Tooltip("...the left stick moves you round it by (u/s²)")]
         [SerializeField, Range(0f, 200f)] float rootMove = 55f;
-        [Tooltip("...across the root, your drift dies away at (per s)")]
+        [Tooltip("...across it, your drift dies away at (per s)")]
         [SerializeField, Range(0f, 3f)] float rootDrag = 0.45f;
         [Tooltip("...never faster than (u/s)")]
         [SerializeField, Range(10f, 300f)] float rootMaxSpeed = 90f;
@@ -311,8 +307,6 @@ namespace CosmicShore.ScriptableObjects
 
         public float ReticleAhead => reticleAhead;
         public float KeyRampSeconds => keyRampSeconds;
-        public float RideEntryMultiplier => rideEntryMultiplier;
-        public float RideMidMultiplier => rideMidMultiplier;
         public float RideExitMultiplier => rideExitMultiplier;
         public float RideSpeedTunnelScale => rideSpeedTunnelScale;
         public float ReticleDelaySeconds => reticleDelaySeconds;
@@ -471,7 +465,7 @@ namespace CosmicShore.ScriptableObjects
         public MeerkatWormholeMath.PlanSettings Plan(float turnRateDegrees, float spaceLevel = -1f) => new()
         {
             ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(spaceLevel),
-            MeanRideMultiplier = MeerkatWormholeMath.MeanRideMultiplier(rideEntryMultiplier, rideMidMultiplier, rideExitMultiplier),
+            SlideSpeed = rootMaxSpeed,   // round 24: the AI slides with RT held
             TurnRateRadians = turnRateDegrees * Mathf.Deg2Rad,
         };
     }
