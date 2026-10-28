@@ -47,6 +47,22 @@ RESULTS_PREFIX = "compute"              # refs/heads/compute/<user>/<host>
 # The AI's own branch: bleeding-edge plus AI work, owned by no person (Tools/Compute/ai_branch.py keeps it current).
 AI_REF = "origin/ai"
 QUEUE_REFS = ("origin/bleeding-edge", AI_REF, "origin/compute-queue")
+
+
+def _configured_queue():
+    """The queue the one-line setup recorded (config.json "queue": until Froglet Compute is merged, its own branch is
+    on it), so a command typed by hand - a manual run pasted from the console - reads the same jobs the worker does."""
+    home = os.environ.get("FROGLET_COMPUTE_HOME") or os.path.join(os.path.expanduser("~"), ".froglet-compute")
+    try:
+        with open(os.path.join(home, "config.json"), encoding="utf-8") as fh:
+            extra = json.load(fh).get("queue") or []
+    except Exception:
+        extra = []
+    refs = list(QUEUE_REFS) + [q if q.startswith("origin/") else "origin/" + q for q in extra if isinstance(q, str) and q]
+    return tuple(dict.fromkeys(refs))
+
+
+QUEUE_REFS = _configured_queue()
 # What a worker EXECUTES, as opposed to what it reads. A job file may sit on any queue ref, but the code it runs comes
 # only from refs the team shares: bleeding-edge (every change a reviewed pull request) and ai (bleeding-edge plus AI
 # work). No person's own branch is one of them. compute-queue is pushed by the scout sweep without a pull request, so
@@ -350,6 +366,15 @@ def validate_job(j):
     return _job_problems(j)
 
 
+def app_ref():
+    """The ref this computer's Froglet Compute itself was installed from (config.json "ref", written by the setup),
+    as origin/<ref>, or None. The worker already runs Tools/Compute from it, so a command job filed on that same ref
+    asks for no trust the person has not already given: until Froglet Compute is merged, that is how the compute
+    branch's own command jobs (unity-train) run on the computers installed from it."""
+    ref = os.environ.get("FROGLET_COMPUTE_APP_REF") or (read_json(os.path.join(cache_dir(), "config.json"), {}) or {}).get("ref")
+    return ("origin/" + ref.replace("origin/", "")) if ref else None
+
+
 def untrusted(j):
     """Why a worker will not EXECUTE `j` (CODE_REFS, COMMAND_REFS), or None. A job read from the working tree
     (`--local`, the self-test) is the person's own and is trusted."""
@@ -359,8 +384,8 @@ def untrusted(j):
     ref = j.get("ref") or "origin/bleeding-edge"
     if ref not in CODE_REFS:
         return f"its code ref {ref} is not one workers run ({', '.join(CODE_REFS)})"
-    if j.get("kind") == "command" and source not in COMMAND_REFS:
-        return f"a command job runs only from {', '.join(COMMAND_REFS)} (this one is on {source})"
+    if j.get("kind") == "command" and source not in COMMAND_REFS and source != app_ref():
+        return f"a command job runs only from {', '.join(COMMAND_REFS)} or this computer's own install ref (this one is on {source})"
     return None
 
 
@@ -465,6 +490,11 @@ def capabilities(refresh=False):
     dotnet_root = os.environ.get("DOTNET_ROOT") or os.path.join(os.path.expanduser("~"), ".dotnet")
     caps["dotnet8"] = bool(shutil.which("dotnet")) or os.path.isdir(os.path.join(dotnet_root, "sdk"))
     caps["bash"] = shutil.which("bash") is not None
+    try:                    # the Unity editor of the project's own version: the real game, for the unity-train job
+        import unity_run
+        caps["unity"] = unity_run.find_editor(unity_run.project_version(rev("origin/bleeding-edge")))[0] is not None
+    except Exception:
+        caps["unity"] = False
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(caps, fh, indent=1)
     return caps

@@ -76,8 +76,10 @@ def problems(req, job):
         p.append("id must look like r20261028-120300-ab12")
     if job is None:
         return p + [f"no search named {req.get('job')}"]
+    if job.get("kind") == "command":
+        return p + _command_problems(req, job)
     if job.get("kind") != "search":
-        p.append("only search jobs take manual runs")
+        p.append("only search and command jobs take manual runs")
     tries = (req.get("budget") or {}).get("tries")
     if not isinstance(tries, int) or isinstance(tries, bool) or not 1 <= tries <= MAX_TRIES:
         p.append(f"budget.tries must be a whole number 1-{MAX_TRIES}")
@@ -105,6 +107,38 @@ def problems(req, job):
             p.append(f"args: {k} cannot be changed in a manual run of this search")
         elif not _plain(v) or not _fits(rule, v):
             p.append(f"args: {k}={json.dumps(v)} is not allowed ({_describe(rule)})")
+    if not MACHINE.fullmatch(str(req.get("machine", "any"))):
+        p.append("machine must be any or <person>/<computer>")
+    if len(str(req.get("note", ""))) > 2000:
+        p.append("note: at most 2000 characters")
+    return p
+
+
+def _command_problems(req, job):
+    """A command job takes a manual run only when it declares `command.pairs` (what may be played) and
+    `command.request` (the intensities and match counts allowed): the unity-train job. The request picks one pair and
+    one intensity, and its budget is the number of matches; nothing else about the command can change."""
+    p, c = [], job.get("command") or {}
+    pairs, rule = c.get("pairs") or {}, c.get("request") or {}
+    if not pairs:
+        return ["this job takes no manual runs (it declares no command.pairs)"]
+    if req.get("fix") or req.get("ranges"):
+        p.append("a run in the game has no settings to hold or narrow (only mode, vessel, intensity, matches)")
+    a = req.get("args") or {}
+    extra = sorted(set(a) - {"mode", "vessel", "intensity"})
+    if extra:
+        p.append("args: only mode, vessel and intensity can be set (" + ", ".join(extra) + " cannot)")
+    pair = pairs.get(a.get("mode"))
+    if pair is None:
+        p.append(f"args: mode must be one of {', '.join(sorted(pairs))}")
+    elif a.get("vessel", pair["vessels"][0]) not in pair["vessels"]:
+        p.append(f"args: {pair.get('name', a.get('mode'))} is played by {', '.join(pair['vessels'])}")
+    if a.get("intensity", 4) not in (rule.get("intensity") or [4]):
+        p.append(f"args: intensity must be one of {rule.get('intensity') or [4]}")
+    ep = rule.get("episodes") or {"lo": 1, "hi": 2000}
+    tries = (req.get("budget") or {}).get("tries")
+    if not isinstance(tries, int) or isinstance(tries, bool) or not ep["lo"] <= tries <= ep["hi"]:
+        p.append(f"budget.tries (matches) must be a whole number {ep['lo']}-{ep['hi']}")
     if not MACHINE.fullmatch(str(req.get("machine", "any"))):
         p.append("machine must be any or <person>/<computer>")
     if len(str(req.get("note", ""))) > 2000:
@@ -145,6 +179,8 @@ def _plain(v):
 
 def derive(job, req):
     """The job a request runs: its own id (<job>~<request>), the narrower space, the fixed values, the settings."""
+    if job.get("kind") == "command":
+        return _derive_command(job, req)
     j = copy.deepcopy(job)
     fix = dict(req.get("fix") or {})
     space = []
@@ -170,6 +206,19 @@ def derive(job, req):
     hull = j["evaluator"]["args"].get("hull")
     j["title"] = "Manual run: " + (f"{hull} in {new_mode}" if hull and new_mode else (job.get("title") or job["id"]))
     j.pop("convergence", None)
+    return j
+
+
+def _derive_command(job, req):
+    """One unit: the pair, the intensity, the matches asked for."""
+    j, a = copy.deepcopy(job), req.get("args") or {}
+    pair = j["command"]["pairs"][a["mode"]]
+    vessel, intensity = a.get("vessel") or pair["vessels"][0], int(a.get("intensity", 4))
+    unit = {"id": f"{a['mode'].lower()}-{vessel.lower()}-i{intensity}",
+            "args": {"mode": pair["token"], "vessel": vessel, "intensity": intensity, "episodes": int(req["budget"]["tries"])}}
+    j["command"]["units"] = [unit]
+    j["id"], j["request"], j["status"] = f"{job['id']}~{req['id']}", req, "ready"
+    j["title"] = f"Manual run: {vessel} in {pair.get('name', a['mode'])}, I{intensity} (in the game)"
     return j
 
 
@@ -290,4 +339,25 @@ def self_test():
         bad.append("requests: derive lost the fixed values, the settings or the id")
     if from_token(token(ok)) != ok:
         bad.append("requests: a token does not round-trip")
+    # A run in the game (a command job with pairs): one pair, one intensity, a number of matches, nothing else.
+    game = {"id": "unity-train", "kind": "command", "command": {
+        "argv": ["x"], "units": [], "request": {"intensity": [1, 2, 3, 4], "episodes": {"lo": 5, "hi": 2000}},
+        "pairs": {"AstroLeague": {"token": "AstroLeague", "name": "Astro League", "vessels": ["Rhino", "Scarab"]},
+                  "Joust": {"token": "Joust", "name": "Joust", "vessels": ["Squirrel"], "locked": True}}}}
+    g = build("unity-train", 40, args=["mode=\"AstroLeague\"", "vessel=\"Scarab\"", "intensity=2"])
+    if problems(g, game):
+        bad.append(f"requests: a valid run in the game was refused: {problems(g, game)}")
+    for what, r in [("a hull the mode does not seat", build("unity-train", 40, args=["mode=\"Joust\"", "vessel=\"Rhino\""])),
+                    ("a mode without a trainer scenario", build("unity-train", 40, args=["mode=\"Regatta\""])),
+                    ("intensity 7", build("unity-train", 40, args=["mode=\"Joust\"", "intensity=7"])),
+                    ("a held setting", build("unity-train", 40, fix=["a=1"], args=["mode=\"Joust\""])),
+                    ("another argument", build("unity-train", 40, args=["mode=\"Joust\"", "argv=\"rm\""])),
+                    ("too few matches", build("unity-train", 2, args=["mode=\"Joust\""]))]:
+        if not problems(r, game):
+            bad.append(f"requests: {what} was accepted for a run in the game")
+    dg = derive(game, g)
+    u = dg["command"]["units"]
+    if len(u) != 1 or u[0]["args"] != {"mode": "AstroLeague", "vessel": "Scarab", "intensity": 2, "episodes": 40} \
+            or dg["id"] != f"unity-train~{g['id']}":
+        bad.append(f"requests: derive for a run in the game made {u}")
     return bad

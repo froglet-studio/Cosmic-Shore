@@ -322,6 +322,10 @@ details.step[open] > summary { margin-bottom: 4px; }
 .pick.on small { color: rgba(0,1,10,0.7); }
 .pick.game.on { background: var(--gold); border-color: var(--gold); }
 .pick.where.on { background: var(--cta); border-color: var(--cta); }
+.pick.unity { border-left: 3px solid var(--ruby); }
+.pick.unity.on { background: var(--ruby); border-color: var(--ruby); color: var(--text); }
+.pick.unity.on small { color: rgba(230,233,255,0.8); }
+.banner.ruby { border-left-color: var(--ruby); }
 .pick.int { min-width: 52px; text-align: center; font: 600 14px/1 var(--btn); padding: 10px 12px; }
 .pick.int.on.i1 { background: var(--jade); border-color: var(--jade); }
 .pick.int.on.i2 { background: var(--cta); border-color: var(--cta); }
@@ -357,6 +361,8 @@ details.step[open] > summary { margin-bottom: 4px; }
 .vm-grid td.cell button.now { background: rgba(0,212,255,0.22); color: var(--jade-l); }
 .vm-grid td.cell button.now:hover { background: var(--jade); color: var(--black); }
 .vm-grid td.cell button.game { background: rgba(255,174,0,0.12); color: var(--gold); }
+.vm-grid td.cell button.unity { background: rgba(166,0,255,0.24); color: var(--ruby-l); }
+.vm-grid td.cell button.unity:hover { background: var(--ruby); color: var(--text); }
 .vm-grid td.cell button.game:hover { background: rgba(255,174,0,0.28); color: var(--gold-l); }
 .vm-grid th.mh { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: 11px; padding: 6px 2px; }
 @media (max-width: 760px) {
@@ -644,18 +650,18 @@ details.step[open] > summary { margin-bottom: 4px; }
 
   // every vessel x every mode it is offered in: a blue cell runs now (opens New run on that pair), a gold one needs the game
   function vesselGrid() {
-    var c = catalog(), hulls = c.hulls.map(function (x) { return x.hull; }), n = 0, now = 0;
-    var runsNow = function (m) { return m.hulls.some(function (x) { return x.status === "now"; }) ? 0 : 1; };
+    var c = catalog(), hulls = c.hulls.map(function (x) { return x.hull; }), n = 0, now = 0, inGame = 0;
+    var runsNow = function (m) { return m.hulls.some(function (x) { return x.status === "now"; }) ? 0 : (m.hulls.some(function (x) { return x.status === "unity"; }) ? 1 : 2); };
     var rows = c.modes.slice().sort(function (a, b) { return runsNow(a) - runsNow(b) || a.name.localeCompare(b.name); }).map(function (m) {
-      var by = {}; m.hulls.forEach(function (x) { by[x.hull] = x; n++; if (x.status === "now") now++; });
+      var by = {}; m.hulls.forEach(function (x) { by[x.hull] = x; n++; if (x.status === "now") now++; if (x.status === "unity") inGame++; });
       return h("tr", null, [h("td", null, [h("b", { text: m.name }), h("small", { class: "note", text: " " + m.kind })])].concat(hulls.map(function (hu) {
         var x = by[hu]; if (!x) return h("td", { class: "cell" });
-        return h("td", { class: "cell" }, [h("button", { type: "button", class: x.status, title: hu + " in " + m.name + (x.status === "now" ? ": runs now" : ": needs the real game"), "aria-label": hu + " in " + m.name,
-          onclick: function () { openNewRun(null, hu, m.mode); }, text: x.status === "now" ? "▶" : "·" })]); })));
+        return h("td", { class: "cell" }, [h("button", { type: "button", class: x.status, title: hu + " in " + m.name + ": " + STATUS_WORDS[x.status], "aria-label": hu + " in " + m.name,
+          onclick: function () { openNewRun(null, hu, m.mode); }, text: x.status === "game" ? "·" : "▶" })]); })));
     });
     return h("details", { class: "card sliver", id: "vgrid", open: lsGet("fc-vgrid") === "0" ? null : true, ontoggle: function (e) { lsSet("fc-vgrid", e.target.open ? "1" : "0"); } }, [
-      h("summary", { text: "Every vessel in every mode · " + now + " of " + n + " pairs run now", style: "cursor:pointer;font-family:var(--head)" }),
-      h("p", { class: "note", text: "Pick a pair to start a run on it. Blue runs today on the offline race models; gold needs the real game played headless, the next tier." }),
+      h("summary", { text: "Every vessel in every mode · " + (now + inGame) + " of " + n + " pairs can run", style: "cursor:pointer;font-family:var(--head)" }),
+      h("p", { class: "note", text: "Pick a pair to start a run on it. Blue (" + now + ") runs on the offline race models, on any computer, in minutes. Purple (" + inGame + ") plays real matches in the game: the Unity trainer, started with no window on a team PC that has Unity. Gold (" + (n - now - inGame) + ") has no trainer scenario yet." }),
       h("div", { class: "tablewrap" }, [h("table", { class: "matrix vm-grid" }, [h("thead", null, [h("tr", null, [h("th", { text: "Mode" })].concat(hulls.map(function (hu) { return h("th", { class: "mh", text: hu }); })))]), h("tbody", null, rows)])])]);
   }
 
@@ -862,12 +868,21 @@ details.step[open] > summary { margin-bottom: 4px; }
   function formFor(jid) { return ((DATA && DATA.forms) || {})[jid]; }
   function catalog() { return (DATA && DATA.catalog) || { hulls: [], modes: [] }; }
   function hullInfo(h) { return catalog().hulls.filter(function (x) { return x.hull === h; })[0] || { hull: h, template: null, modes_now: [] }; }
+  var STATUS_WORDS = { now: "runs now (offline model)", unity: "in the game (needs Unity)", game: "no trainer yet" };
+  function unityInfo() { return catalog().unity || null; }
+  function unityMachines() { return (DATA.machines || []).filter(function (m) { return (m.caps || []).indexOf("unity") >= 0; }); }
+  function hullStatus(hull) {
+    if (hullInfo(hull).template) return "now";
+    return modesFor(hull).some(function (m) { return m.status === "unity"; }) ? "unity" : "game";
+  }
+  function modeName(mode) { var m = catalog().modes.filter(function (x) { return x.mode === mode; })[0]; return m ? m.name : mode; }
   function modesFor(hull) {
     var hi = hullInfo(hull), seen = {}, out = [];
     catalog().modes.forEach(function (m) { var c = m.hulls.filter(function (x) { return x.hull === hull; })[0];
       if (c) { out.push({ mode: m.mode, name: m.name, kind: m.kind, status: c.status }); seen[m.mode] = 1; } });
     (hi.modes_now || []).forEach(function (m) { if (!seen[m]) out.push({ mode: m, name: m, kind: "course", status: "now", extra: true }); });
-    return out.sort(function (a, b) { return (a.status === "now" ? 0 : 1) - (b.status === "now" ? 0 : 1) || a.name.localeCompare(b.name); });
+    var rank = { now: 0, unity: 1, game: 2 };
+    return out.sort(function (a, b) { return rank[a.status] - rank[b.status] || a.name.localeCompare(b.name); });
   }
   function freshNR(jid) {
     var f = formFor(jid) || { space: [], args: {} }, modes = {}, vals = {}, args = {};
@@ -876,6 +891,12 @@ details.step[open] > summary { margin-bottom: 4px; }
     return { job: jid, vessel: f.hull || null, mode: f.mode || null, tries: 500, where: "here", modes: modes, vals: vals, args: args, note: "", made: null };
   }
   function nrFor(vessel, mode) {
+    var pm = modesFor(vessel).filter(function (x) { return x.mode === mode; })[0], u = unityInfo();
+    if (pm && pm.status === "unity" && u) {
+      var un = { job: u.job, unity: true, vessel: vessel, mode: mode, intensity: 4, matches: 50, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
+      if (NR) { un.where = NR.where; un.note = NR.note; if (NR.unity) { un.intensity = NR.intensity; un.matches = NR.matches; } }
+      return un;
+    }
     var t = hullInfo(vessel).template, n = t ? freshNR(t) : { job: null, vessel: vessel, mode: mode, tries: 500, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
     n.vessel = vessel; n.mode = mode;
     if (t && mode && n.args.mode != null) n.args.mode = JSON.stringify(mode);
@@ -884,6 +905,14 @@ details.step[open] > summary { margin-bottom: 4px; }
   }
   function pairStatus() { if (!NR.vessel || !NR.mode) return null; var m = modesFor(NR.vessel).filter(function (x) { return x.mode === NR.mode; })[0]; return m ? m.status : null; }
   function nrRequest() {
+    if (NR.unity) {
+      var ue = [], ur = { schema: "froglet-compute/request/1", id: newReqId(), job: NR.job, by: who(), created: Math.floor(Date.now() / 1000), note: NR.note.trim(),
+        budget: { tries: parseInt(NR.matches, 10) || 0 }, machine: NR.where === "here" || NR.where === "team" ? "any" : NR.where,
+        args: { mode: NR.mode, vessel: NR.vessel, intensity: NR.intensity } };
+      var lim = (unityInfo() || {}).episodes || { lo: 5, hi: 2000 };
+      if (!(ur.budget.tries >= lim.lo && ur.budget.tries <= lim.hi)) ue.push("matches must be " + lim.lo + "–" + lim.hi);
+      return { req: ur, errs: ue };
+    }
     var f = formFor(NR.job), errs = [];
     if (!f) return { req: null, errs: [NR.vessel + " in " + NR.mode + " needs the real game, which no computer can run yet."] };
     var req = { schema: "froglet-compute/request/1", id: newReqId(), job: NR.job, by: who(), created: Math.floor(Date.now() / 1000), note: NR.note.trim(),
@@ -927,18 +956,46 @@ details.step[open] > summary { margin-bottom: 4px; }
     sheet.appendChild(h("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:12px" }, [h("h2", { id: "nr-title", text: "New run" }), h("button", { class: "btn", type: "button", onclick: closeInstall, text: "Close" })]));
     // 1. vessel
     sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "1  Vessel" }), h("div", { class: "picks" }, catalog().hulls.map(function (x) {
-      return chip(x.hull, NR.vessel === x.hull, x.template ? "now" : "game", function () { NR = nrFor(x.hull, (modesFor(x.hull).filter(function (m) { return m.status === "now"; })[0] || modesFor(x.hull)[0] || {}).mode); drawNewRun(); }, x.template ? "runs now" : "needs the game");
+      var hs = hullStatus(x.hull);
+      return chip(x.hull, NR.vessel === x.hull, hs, function () { NR = nrFor(x.hull, (modesFor(x.hull)[0] || {}).mode); drawNewRun(); }, { now: "runs now", unity: "in the game", game: "no trainer yet" }[hs]);
     }))]));
     // 2. mode
     if (NR.vessel) sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "2  Game mode" }), h("div", { class: "picks" }, modesFor(NR.vessel).map(function (m) {
-      return chip(m.name, NR.mode === m.mode, m.status, function () { NR = nrFor(NR.vessel, m.mode); drawNewRun(); }, (m.kind === "arena" ? "arena" : m.kind === "arcade" ? "arcade" : "course") + (m.status === "now" ? "" : " · needs the game"));
+      return chip(m.name, NR.mode === m.mode, m.status, function () { NR = nrFor(NR.vessel, m.mode); drawNewRun(); }, (m.kind === "arena" ? "arena" : m.kind === "arcade" ? "arcade" : "course") + ({ now: "", unity: " · in the game", game: " · no trainer yet" }[m.status]));
     }))]));
     if (st === "game" || !NR.job) {
       var mn = (modesFor(NR.vessel || "").filter(function (m) { return m.mode === NR.mode; })[0] || {}).name || NR.mode;
       sheet.appendChild(h("div", { class: "banner gold" }, [h("b", { text: (NR.vessel || "This vessel") + (mn ? " in " + mn : "") + " needs the real game" }),
-        h("p", { class: "note", text: "The offline race models cover the Rhino, Manta and Dolphin on the Regatta, Headlong and Redline courses. Every other vessel and mode runs only in the game itself, played headless by a team computer with the game built: the next tier. Until then, pick a blue one." })]));
+        h("p", { class: "note", text: "Nothing can run this pair yet. Blue pairs run on the offline race models (the Rhino, Manta and Dolphin on Regatta, Headlong and Redline); purple pairs run in the game itself through the Unity trainer, which has scenarios for 12 modes. This one needs a trainer scenario (a fitness for the mode) first: that is the trainer owners' call." })]));
       return;
     }
+    if (NR.unity) drawUnitySteps(sheet);
+    else drawSearchSteps(sheet);
+    // 6. where + note
+    var um = unityMachines();
+    var places = [["here", "This computer, now"], ["team", NR.unity ? "Any team computer with Unity" : "Any team computer"]].concat((NR.unity ? um : DATA.machines).map(function (m) { return [m.machine, m.machine + (m.active ? " · busy" : "")]; }));
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: (NR.unity ? "5" : "6") + "  Where" }), h("div", { class: "picks" }, places.map(function (p) { return chip(p[1], NR.where === p[0], "where", function () { NR.where = p[0]; NR.made = null; drawNewRun(); }); }))]));
+    if (NR.unity && !um.length) sheet.appendChild(h("p", { class: "note", text: "No team computer has reported Unity yet. Run it on this computer (it needs Unity " + "of the project's version, installed with Unity Hub), or install Froglet Compute on a PC that has Unity." }));
+    var note = h("textarea", { class: "field", id: "nr-note", placeholder: "What do you want to learn? (optional; shown with the results)" }); note.value = NR.note; note.addEventListener("input", function () { NR.note = note.value; });
+    sheet.appendChild(note);
+    var out = h("div", { class: "approve", id: "nr-out" });
+    var go = NR.where === "here" ? "Run on this computer" : (LIVE ? "Send it" : "Make the run");
+    sheet.appendChild(h("button", { class: "btn cta big", type: "button", id: "nr-make", onclick: function () { makeRun(out); }, text: go + " · " + NR.vessel + " in " + modeName(NR.mode) }));
+    sheet.appendChild(out);
+    if (NR.made) showMade(out);
+    w.scrollTop = keepScroll;
+  }
+  function drawUnitySteps(sheet) {
+    sheet.appendChild(h("div", { class: "banner ruby" }, [h("b", { text: NR.vessel + " in " + modeName(NR.mode) + " plays in the real game" }),
+      h("p", { class: "note", text: "The AI trainer plays all-AI matches in a Unity with no window and keeps the best AI it finds. It runs on a computer with Unity installed, in Froglet Compute's own copy of the project (your project and your open Unity are left alone). The first run on a computer imports the project once: an hour or more." })]));
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "3  Intensity" }), h("div", { class: "picks" }, ((unityInfo() || {}).intensities || [4]).map(function (i) {
+      return chip("I" + i, NR.intensity === i, "int i" + i, function () { NR.intensity = i; NR.made = null; drawNewRun(); });
+    }))]));
+    var mv = h("output", { class: "bubble", text: String(NR.matches) });
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "4  How many matches" }), h("div", { class: "srow" }, [slider("nr-matches", 10, 500, 10, Math.min(500, Math.max(10, NR.matches)), function (v) { NR.matches = v; mv.textContent = String(v); }, "matches"), mv]),
+      h("p", { class: "note", text: "Each match tests a few of the trainer's AIs at once, one per seat, played at up to four times game speed; a generation is several matches. The trainer keeps its population between runs, so more matches keep improving it." })]));
+  }
+  function drawSearchSteps(sheet) {
     var f = formFor(NR.job);
     // 3. intensities
     if (NR.args.intensities != null) {
@@ -975,17 +1032,6 @@ details.step[open] > summary { margin-bottom: 4px; }
     var changed = Object.keys(NR.modes).filter(function (k) { return NR.modes[k] !== "search"; }).length;
     sheet.appendChild(h("details", { class: "step", open: changed ? true : null }, [h("summary", { text: "5  Tune the settings (optional)" + (changed ? " · " + changed + " changed" : " · all searched freely") }),
       h("p", { class: "note", text: "Drag the ends to narrow what is searched, or hold a setting at one value. The white tick is today's value." })].concat(rows)));
-    // 6. where + note
-    var places = [["here", "This computer, now"], ["team", "Any team computer"]].concat(DATA.machines.map(function (m) { return [m.machine, m.machine + (m.active ? " · busy" : "")]; }));
-    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "6  Where" }), h("div", { class: "picks" }, places.map(function (p) { return chip(p[1], NR.where === p[0], "where", function () { NR.where = p[0]; NR.made = null; drawNewRun(); }); }))]));
-    var note = h("textarea", { class: "field", id: "nr-note", placeholder: "What do you want to learn? (optional; shown with the results)" }); note.value = NR.note; note.addEventListener("input", function () { NR.note = note.value; });
-    sheet.appendChild(note);
-    var out = h("div", { class: "approve", id: "nr-out" });
-    var go = NR.where === "here" ? "Run on this computer" : (LIVE ? "Send it" : "Make the run");
-    sheet.appendChild(h("button", { class: "btn cta big", type: "button", id: "nr-make", onclick: function () { makeRun(out); }, text: go + " · " + NR.vessel + " in " + NR.mode }));
-    sheet.appendChild(out);
-    if (NR.made) showMade(out);
-    w.scrollTop = keepScroll;
   }
   function makeRun(out) {
     var r = nrRequest(); out.textContent = "";
@@ -1000,9 +1046,9 @@ details.step[open] > summary { margin-bottom: 4px; }
       var term = OS === "windows" ? "PowerShell" : "Terminal";
       out.appendChild(h("div", { class: "seg", role: "group", "aria-label": "Your computer" }, [["windows", "Windows"], ["mac", "macOS"], ["linux", "Linux"]].map(function (o) {
         return h("button", { type: "button", "aria-pressed": OS === o[0] ? "true" : "false", onclick: function () { OS = o[0]; showMade(out); }, text: o[1] }); })));
-      out.appendChild(h("p", null, [h("b", { text: "Paste this into " + term + " and press Enter. " }), "It runs " + req.budget.tries + " tries now, without waiting for you to be away, and shows up under Runs."]));
+      out.appendChild(h("p", null, [h("b", { text: "Paste this into " + term + " and press Enter. " }), (NR.unity ? "It starts Unity with no window and plays " + req.budget.tries + " matches now" : "It runs " + req.budget.tries + " tries now") + ", without waiting for you to be away, and shows up under Runs."]));
       out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("run --request " + tok) })]), copyBtn(function () { return appCmd("run --request " + tok); })]));
-      out.appendChild(h("p", { class: "note", text: "Needs Froglet Compute installed on this computer once (the Install button)." }));
+      out.appendChild(h("p", { class: "note", text: "Needs Froglet Compute installed on this computer once (the Install button)" + (NR.unity ? ", and Unity of the project's version from Unity Hub. Check with: " + appCmd("unity --find") : ".") }));
       return;
     }
     if (LIVE) { out.appendChild(h("p", { class: "note", id: "nr-live", text: "Sending…" })); return; }

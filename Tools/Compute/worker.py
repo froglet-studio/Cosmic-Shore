@@ -347,7 +347,7 @@ def _read_metric(spec, out_dir):
 
 
 def command_session(job, root, sha, ident, machines, presence, minutes, cores, quiet=False, on_claim=None,
-                    on_progress=None):
+                    on_progress=None, manual=False):
     c = job["command"]
     user, host = ident
     epoch = L.epoch_key(job, c.get("version", "1"))
@@ -376,7 +376,8 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
     if float(theirs.get("progress", 0)) > float(mine.get("progress", 0)) and theirs.get("machine") != me:
         _pull_unit_files(job, epoch, unit["id"], theirs, run_dir, machines)
         L.log(f"{job['id']}/{unit['id']}: relayed from {theirs['machine']} at {theirs.get('progress')}", quiet)
-    env = {"python": sys.executable, "out": run_dir, "root": root, "tools": TOOLS, "threads": max(1, cores), **{f"unit.{k}": v for k, v in unit.get("args", {}).items()}}
+    env = {"python": sys.executable, "out": run_dir, "root": root, "tools": TOOLS, "threads": max(1, cores),
+           "sha": sha, "repo": L.REPO, "minutes": minutes, **{f"unit.{k}": v for k, v in unit.get("args", {}).items()}}
     argv = [_fmt(a, env) for a in c["argv"]]
     if c.get("resume") and any(os.path.exists(os.path.join(run_dir, f)) for f in c.get("resume_if", [])):
         argv += [_fmt(a, env) for a in c["resume"]]
@@ -388,12 +389,19 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
     else:
         kw["preexec_fn"] = lambda: os.nice(19)
     t0 = time.time()
+    count0 = _read_metric(c.get("count"), run_dir) or 0         # live "evals" are this session's, as for a search
     with open(log_path, "a", encoding="utf-8") as logf:
-        proc = subprocess.Popen(argv, cwd=root, stdout=logf, stderr=subprocess.STDOUT, **kw)
+        penv = dict(os.environ, FROGLET_COMPUTE_REPO=L.REPO, **({"FROGLET_COMPUTE_MANUAL": "1"} if manual else {}))
+        proc = subprocess.Popen(argv, cwd=root, stdout=logf, stderr=subprocess.STDOUT, env=penv, **kw)
         stopped = "budget"
         last_pub = time.time()
         while proc.poll() is None:
             time.sleep(15)
+            if on_progress:         # live: the hub hears how far the unit has got every ~15 s
+                on_progress({"epoch": epoch, "unit": unit["id"], "progress": _read_metric(c.get("progress"), run_dir),
+                             "evals": max(0, int((_read_metric(c.get("count"), run_dir) or 0) - count0)), "best": _read_metric(c.get("score"), run_dir),
+                             "phase": _read_metric({"file": (c.get("progress") or {}).get("file", ""), "key": "phase"}, run_dir)
+                             if c.get("progress") else None, "live_only": True})
             if presence.back():
                 stopped = "the person came back"
                 break
@@ -414,7 +422,12 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
     progress = _read_metric(c.get("progress"), run_dir)
     done = rc == 0 and (progress is None or float(progress) >= 1.0)
     _save_unit(job, folder, unit, run_dir, c, sha, done=done)
-    return {"job": job["id"], "epoch": epoch, "unit": unit["id"], "stopped": "finished" if done else stopped, "rc": rc}
+    if rc not in (0, None) and stopped == "budget":
+        stopped = f"failed (exit {rc}; see {log_path})"
+    count = _read_metric(c.get("count"), run_dir)
+    score = _read_metric(c.get("score"), run_dir)
+    return {"job": job["id"], "epoch": epoch, "unit": unit["id"], "stopped": "finished" if done else stopped, "rc": rc,
+            "count": int(count) if L.finite(count) else None, "best": {"loss": score} if L.finite(score) else None}
 
 
 def _save_unit(job, folder, unit, run_dir, c, sha, done):
@@ -609,7 +622,18 @@ def run(args):
                 if not args.no_push:
                     L.publish(folder, *ident, f"compute: {job['id']}/{unit_id} claimed", quiet=quiet)
             out = command_session(job, root, sha, ident, machines, presence, args.session, cores, quiet=quiet,
-                                  on_claim=claim, on_progress=progress)
+                                  on_claim=claim, on_progress=progress, manual=bool(manual))
+            if req:
+                # A command request's tries are its unit's count (the Unity trainer: matches played), its best the
+                # unit's score.
+                path = os.path.join(folder, "requests", req["id"] + ".json")
+                mine = L.read_json(path, {}) or {}
+                best = (out.get("best") or {}).get("loss")
+                if L.finite(mine.get("best")) and (best is None or mine["best"] < best):
+                    best = mine["best"]
+                L.write_json(path, {"id": req["id"], "job": req["job"], "derived": job["id"], "epoch": out.get("epoch"),
+                                    "tries": max(int(mine.get("tries", 0)), int(out.get("count") or 0)),
+                                    "best": best, "updated": L.now(), "stopped": out.get("stopped")})
         else:
             L.write_json(os.path.join(folder, "heartbeat.json"), hb)
             L.post_heartbeat(hb)
@@ -637,7 +661,7 @@ def run(args):
         hb["runs"] = (hb.get("runs") or [])[-29:] + [{
             "job": job["id"], "request": (req or {}).get("id"), "epoch": out.get("epoch"), "unit": out.get("unit"),
             "start": since, "end": L.now(),
-            "evals": out.get("session_evals"), "stopped": out.get("stopped"), "best_start": out.get("best_start"),
+            "evals": out.get("session_evals") if out.get("session_evals") is not None else out.get("count"), "stopped": out.get("stopped"), "best_start": out.get("best_start"),
             "best_end": (out.get("best") or {}).get("loss")}]
         if out.get("stopped") != "budget" or args.once:
             hb["current"] = {}

@@ -307,6 +307,10 @@ def cmd_validate(args):
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if argv[:1] == ["unity"]:                       # its own flags, passed through untouched (unity_run.py)
+        import unity_run
+        return unity_run.main(argv[1:])
     ap = argparse.ArgumentParser(prog="compute.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
@@ -365,6 +369,9 @@ def main(argv=None):
     p.add_argument("--key-file", help="the team key file (default ~/.froglet-compute/hub.json)")
     p.add_argument("--github-token-file", help="a token file, to show open pull requests")
     p.add_argument("--quiet", action="store_true")
+    p = sub.add_parser("unity", help="the Unity trainer run: --find says which Unity this computer uses (README section 16)",
+                       add_help=False)
+    p.add_argument("rest", nargs=argparse.REMAINDER)
     p = sub.add_parser("console")
     p.add_argument("--out", help="folder for console.json and the page (default ~/.froglet-compute/console)")
     p.add_argument("--local", action="store_true", help="read jobs from this checkout's Docs/Compute/jobs")

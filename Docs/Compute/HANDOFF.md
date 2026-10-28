@@ -118,6 +118,13 @@ worth it), `sessions` and `ask` inside the claude.ai viewer, and a real approval
   shows live). The page was checked in Chromium at desktop and phone widths with the hub mocked. **Not yet run on a
   real VM.**
 
+### Runs in the real game (2026-10-28)
+
+- `unity-train` + `unity_run.py` + `unity/FrogletComputeTraining.cs` (README section 16): Froglet Compute starts the
+  game's own AI trainer in a Unity with no window, in its own copy of the project, on PCs with Unity. 21 more pairs
+  (purple on the console). Compiled against the real Unity references; self-tested with a fake Unity; **not yet run
+  in a real Unity** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). Job status `proposed` until then.
+
 ## 4. Decisions that are yours
 
 - **Merge or not**, and onto what (`bleeding-edge` directly, or through your own branch).

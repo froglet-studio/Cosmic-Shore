@@ -177,8 +177,9 @@ CHART = "Docs/AI_SYSTEM/vessel_mode_chart.json"
 
 def catalog(jobs, cwd=None):
     """Every vessel and every arcade and arena mode the game offers (the AI system's vessel-mode chart), and for each
-    pair whether it can run now: a drive search for that hull exists (its template) and its evaluator models that
-    course. Every other pair needs the real game (a headless build: README section 15)."""
+    pair how it can run: "now" (a drive search for that hull exists and its evaluator models that course), "unity" (the
+    Unity trainer has a scenario for it: the unity-train job, on a team PC with Unity, README section 16), or "game"
+    (nothing can run it yet)."""
     import manual_runs as R
     chart = None
     for ref in (L.AI_REF, "origin/bleeding-edge"):
@@ -196,18 +197,27 @@ def catalog(jobs, cwd=None):
         rule = R.request_args(j).get("mode") if j.get("kind") == "search" else None
         if a.get("hull") and rule and j["id"] not in [t["job"] for t in templates.values()]:
             templates.setdefault(a["hull"], {"job": j["id"], "modes": list(rule.get("choices") or [])})
+    # The Unity trainer's pairs (the unity-train job): played in the real game on a team PC with Unity installed.
+    unity = next((j for j in sorted(jobs.values(), key=lambda j: j["id"])
+                  if j.get("kind") == "command" and (j.get("command") or {}).get("pairs") and "~" not in j["id"]), None)
+    upairs = (unity or {}).get("command", {}).get("pairs") or {}
     modes = []
     for c in chart.get("cards") or []:
         cells = []
         for hull in c.get("hulls") or []:
             t = templates.get(hull)
             now = bool(t and c["mode"] in t["modes"])
-            cells.append({"hull": hull, "status": "now" if now else "game", "job": t["job"] if now else None})
+            inunity = not now and hull in ((upairs.get(c["mode"]) or {}).get("vessels") or [])
+            cells.append({"hull": hull, "status": "now" if now else ("unity" if inunity else "game"),
+                          "job": t["job"] if now else (unity["id"] if inunity else None)})
         modes.append({"mode": c["mode"], "name": c.get("name") or c["mode"], "kind": "arena" if "ArenaGames" in (c.get("lists") or []) else "arcade",
                       "gate_race": c["mode"] in (chart.get("gateRaceModes") or []), "hulls": cells})
     hulls = [{"hull": h["hull"], "verb": h.get("verb"), "template": (templates.get(h["hull"]) or {}).get("job"),
               "modes_now": (templates.get(h["hull"]) or {}).get("modes", [])} for h in chart.get("hulls") or []]
-    return {"hulls": hulls, "modes": modes}
+    rule = (unity or {}).get("command", {}).get("request") or {}
+    return {"hulls": hulls, "modes": modes,
+            "unity": {"job": unity["id"], "intensities": rule.get("intensity") or [4],
+                      "episodes": rule.get("episodes") or {"lo": 5, "hi": 2000}} if unity else None}
 
 
 def install_info(cwd=None):

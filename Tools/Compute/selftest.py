@@ -11,6 +11,7 @@
        export of Tools/Compute from bleeding-edge is exercised too.
     6. the trust rules (compute_lib.untrusted): what a queue ref may make a worker execute, with negative controls
     7. the ai branch sync (ai_branch.self_test): AI changes come over from Ys-bleeding-edge, non-AI changes do not
+    8. Unity runs (skipped by --quick): the unity-train job against a fake Unity (unity_end_to_end)
 """
 import json
 import os
@@ -277,6 +278,185 @@ def trust_rules():
     for job, runs, what in cases:
         if (L.untrusted(job) is None) != runs:
             bad.append(f"trust: {what} should {'run' if runs else 'be refused'} ({L.untrusted(job)})")
+    # The installed app's own ref (config.json "ref"): its command jobs run on that computer, no other branch's do.
+    old_env = os.environ.get("FROGLET_COMPUTE_APP_REF")
+    os.environ["FROGLET_COMPUTE_APP_REF"] = "claude/compute-branch"
+    try:
+        for job, runs, what in [
+            (dict(command, ref=L.AI_REF, _ref="origin/claude/compute-branch"), True, "a command job from this computer's install ref"),
+            (dict(command, ref=L.AI_REF, _ref="origin/claude/other-branch"), False, "a command job from another branch"),
+            (dict(command, ref="origin/claude/compute-branch", _ref="origin/claude/compute-branch"), False,
+             "a command job from the install ref whose CODE ref is a personal branch"),
+        ]:
+            if (L.untrusted(job) is None) != runs:
+                bad.append(f"trust: {what} should {'run' if runs else 'be refused'} ({L.untrusted(job)})")
+    finally:
+        if old_env is None:
+            os.environ.pop("FROGLET_COMPUTE_APP_REF", None)
+        else:
+            os.environ["FROGLET_COMPUTE_APP_REF"] = old_env
+    return bad
+
+
+FAKE_UNITY = r"""
+import json, os, sys, time
+a = sys.argv[1:]
+def arg(n, d=None):
+    return a[a.index(n) + 1] if n in a else d
+out, proj, log = arg("-frogletTrain"), arg("-projectPath"), arg("-logFile")
+mode = os.environ.get("FAKE_UNITY_MODE", "ok")
+with open(log, "a") as fh:
+    fh.write("fake unity " + " ".join(a) + "\n")
+    if mode == "compile":
+        fh.write("Assets/X.cs(1,1): error CS0103: The name 'x' does not exist\n")
+        fh.flush()
+        time.sleep(120)
+        sys.exit(1)
+inj = os.path.join(proj, "Assets", "Editor", "FrogletCompute", "FrogletComputeTraining.cs")
+if not os.path.exists(inj) or "-executeMethod" not in a:
+    open(os.path.join(out, "result.json"), "w").write(json.dumps({"schema": "froglet-compute/unity-train/1", "ok": False, "reason": "not injected"}))
+    sys.exit(1)
+state = os.path.join(proj, "Assets", "_SO_Assets", "AI Training", "SessionState.asset")
+k = int(open(state).read().split(":")[1]) if os.path.exists(state) else 0
+k0, target, reason = k, int(arg("-trainEpisodes")), "finished: the target episodes are done"
+def status(phase):
+    json.dump({"phase": phase, "episodes_total": k, "unit_episodes": target, "episodes": k - k0, "generation": k // 3,
+               "best_fitness": 10.0 + k, "loss": -(10.0 + k)}, open(os.path.join(out, "status.json"), "w"))
+while k < target:
+    if os.path.exists(os.path.join(out, "stop")):
+        reason = "stopped by Froglet Compute"
+        break
+    time.sleep(1.0 if mode == "slow" else 0.1)
+    k += 1
+    open(state, "w").write("EpisodesCompleted: %d" % k)
+    status("training")
+json.dump({"schema": "froglet-compute/unity-train/1", "ok": True, "reason": reason, "episodes": k - k0,
+           "episodes_total": k, "best_fitness": 10.0 + k}, open(os.path.join(out, "result.json"), "w"))
+json.dump({"genes": [k]}, open(os.path.join(out, "genome.json"), "w"))
+"""
+
+
+def unity_end_to_end():
+    """The unity-train job against a FAKE Unity (a script that follows FrogletComputeTraining.cs's contract): the worker
+    runs a unit from the queue into Froglet Compute's own project copy and publishes it; the wrapper resumes a saved
+    session, stops cleanly on Ctrl-C, stops on a compile error, waits while the person's Unity is open, and says when
+    Unity is missing. Skipped on Windows (the fake is a shell script)."""
+    if os.name == "nt":
+        return []
+    import signal
+    import time
+    bad = []
+    tmp = tempfile.mkdtemp(prefix="froglet-compute-unity-")
+    try:
+        remote, work = os.path.join(tmp, "remote.git"), os.path.join(tmp, "work")
+        _git("init", "--bare", "-q", remote, cwd=tmp)
+        _git("init", "-q", "-b", "bleeding-edge", work, cwd=tmp)
+        shutil.copytree(HERE, os.path.join(work, "Tools", "Compute"), ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        os.makedirs(os.path.join(work, "ProjectSettings"))
+        open(os.path.join(work, "ProjectSettings", "ProjectVersion.txt"), "w").write("m_EditorVersion: 6000.3.17f1\n")
+        st = os.path.join(work, "Assets", "_SO_Assets", "AI Training")
+        os.makedirs(st)
+        open(os.path.join(st, "SessionState.asset"), "w").write("EpisodesCompleted: 0")
+        os.makedirs(os.path.join(work, "Docs", "Compute", "jobs"))
+        job = json.load(open(os.path.join(REPO, "Docs", "Compute", "jobs", "unity-train.json")))
+        job.update(status="ready", ref="origin/bleeding-edge")
+        job["command"]["units"] = [{"id": "skimrace-squirrel-i4", "args": {"mode": "HexRace", "vessel": "Squirrel", "intensity": 4, "episodes": 5}}]
+        json.dump(job, open(os.path.join(work, "Docs", "Compute", "jobs", "unity-train.json"), "w"))
+        open(os.path.join(work, ".gitignore"), "w").write("Temp/\n")
+        env0 = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+        _git("add", "-A", cwd=work, env=env0)
+        _git("commit", "-qm", "init", cwd=work, env=env0)
+        _git("remote", "add", "origin", remote, cwd=work)
+        _git("push", "-q", "origin", "bleeding-edge", cwd=work)
+        _git("fetch", "-q", "origin", cwd=work)
+        fake_py = os.path.join(tmp, "fake_unity.py")
+        open(fake_py, "w").write(FAKE_UNITY)
+        fake = os.path.join(tmp, "Unity")
+        open(fake, "w").write(f"#!/bin/sh\nexec {sys.executable} {fake_py} \"$@\"\n")
+        os.chmod(fake, 0o755)
+        home = os.path.join(tmp, "home")
+        env = dict(env0, FROGLET_COMPUTE_HOME=home, FROGLET_COMPUTE_USER="selftest", FROGLET_COMPUTE_HOST="unitybox",
+                   FROGLET_COMPUTE_UNITY=fake, FROGLET_COMPUTE_UNITY_POLL="0.5")
+        script = os.path.join(work, "Tools", "Compute", "compute.py")
+        # 1. the worker takes the unit from the queue and finishes it
+        p = subprocess.run([sys.executable, script, "run", "--no-update", "--always", "--once", "--job", "unity-train",
+                            "--queue", "bleeding-edge"], cwd=work, env=env, capture_output=True, text=True, timeout=300)
+        if p.returncode != 0:
+            return [f"unity: worker exited {p.returncode}:\n{p.stdout[-1500:]}{p.stderr[-1500:]}"]
+        ref = "refs/heads/compute/selftest/unitybox"
+        listing = _git("ls-tree", "-r", "--name-only", ref, cwd=remote)
+        unit = [x for x in listing.split() if x.endswith("unit-skimrace-squirrel-i4.json")]
+        if not unit:
+            bad.append("unity: no unit result was published")
+        else:
+            u = json.loads(_git("show", f"{ref}:{unit[0]}", cwd=remote))
+            if not (u.get("done") and u.get("progress") == 1.0 and u.get("score") == -15.0):
+                bad.append(f"unity: the unit should be done at 5/5 with loss -15 ({u})")
+            for f in ("genome.json", "SessionState.asset", "status.json", "result.json"):
+                if f not in (u.get("files") or []):
+                    bad.append(f"unity: {f} was not kept")
+        proj = os.path.join(home, "unity", "Cosmic-Shore")
+        if not os.path.exists(os.path.join(proj, "Assets", "Editor", "FrogletCompute", "FrogletComputeTraining.cs")):
+            bad.append("unity: the batch entry was not copied into the project copy")
+        if _git("status", "--porcelain", cwd=work).strip():
+            bad.append("unity: the person's checkout was changed")
+        if os.path.exists(os.path.join(work, "Assets", "Editor")):
+            bad.append("unity: the batch entry leaked into the person's checkout")
+        sha = _git("rev-parse", "HEAD", cwd=work).strip()
+        runner = os.path.join(work, "Tools", "Compute", "unity_run.py")
+
+        def wrap(out, extra_env=None, episodes=5, wait=True):
+            argv = [sys.executable, runner, "--sha", sha, "--out", out, "--mode", "HexRace", "--vessel", "Squirrel",
+                    "--episodes", str(episodes), "--minutes", "5", "--quiet"]
+            e = dict(env, **(extra_env or {}))
+            if wait:
+                return subprocess.run(argv, cwd=work, env=e, capture_output=True, text=True, timeout=120)
+            return subprocess.Popen(argv, cwd=work, env=e, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # 2. resume: a saved session at 3 of 5 plays the last 2
+        out = os.path.join(tmp, "resume")
+        os.makedirs(out)
+        open(os.path.join(out, "SessionState.asset"), "w").write("EpisodesCompleted: 3")
+        p = wrap(out)
+        r = L.read_json(os.path.join(out, "result.json"), {}) or {}
+        if p.returncode != 0 or r.get("episodes") != 2 or r.get("episodes_total") != 5:
+            bad.append(f"unity: resume should play 2 more matches to 5 ({p.returncode}, {r})")
+        # 3. Ctrl-C stops Unity cleanly and keeps the session
+        out = os.path.join(tmp, "stop")
+        proc = wrap(out, {"FAKE_UNITY_MODE": "slow"}, episodes=100, wait=False)
+        t0 = time.time()
+        while time.time() - t0 < 30 and ((L.read_json(os.path.join(out, "status.json"), {}) or {}).get("episodes_total") or 0) < 2:
+            time.sleep(0.3)
+        proc.send_signal(signal.SIGINT)
+        try:
+            rc = proc.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            rc = "hung"
+        r = L.read_json(os.path.join(out, "result.json"), {}) or {}
+        if rc != 0 or "stopped" not in str(r.get("reason")) or not os.path.exists(os.path.join(out, "SessionState.asset")):
+            bad.append(f"unity: Ctrl-C should stop cleanly and keep the session ({rc}, {r})")
+        # 4. a project that does not compile stops at once
+        out = os.path.join(tmp, "compile")
+        t0 = time.time()
+        p = wrap(out, {"FAKE_UNITY_MODE": "compile"})
+        if p.returncode != 6 or time.time() - t0 > 60:
+            bad.append(f"unity: a compile error should stop the run with exit 6 ({p.returncode}, {time.time() - t0:.0f} s)")
+        # 5. the person's own Unity open: an automatic run waits, a manual one goes ahead
+        os.makedirs(os.path.join(work, "Temp"), exist_ok=True)
+        open(os.path.join(work, "Temp", "UnityLockfile"), "w").close()
+        p = wrap(os.path.join(tmp, "locked"))
+        if p.returncode != 75:
+            bad.append(f"unity: with the person's Unity open an automatic run should wait (exit 75, got {p.returncode})")
+        p = wrap(os.path.join(tmp, "locked-manual"), {"FROGLET_COMPUTE_MANUAL": "1"})
+        if p.returncode != 0:
+            bad.append(f"unity: a manual run should go ahead while the person's Unity is open ({p.returncode})")
+        shutil.rmtree(os.path.join(work, "Temp"))
+        # 6. no Unity: says so (negative control for the capability)
+        p = wrap(os.path.join(tmp, "nounity"), {"FROGLET_COMPUTE_UNITY": os.path.join(tmp, "nope")})
+        if p.returncode != 4:
+            bad.append(f"unity: a missing Unity should exit 4 ({p.returncode})")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     return bad
 
 
@@ -337,5 +517,9 @@ def run(quick=False):
         e2e = end_to_end()
         print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched)" if not e2e else "FAILED"))
         failures += e2e
+        ue = unity_end_to_end()
+        print("unity runs: " + ("ok (a fake Unity: queued unit done and published, resume, Ctrl-C, compile error, your Unity open, no Unity)"
+                                if not ue else "FAILED"))
+        failures += ue
     print("\ncompute self-test: " + ("ok" if not failures else "FAILED\n  " + "\n  ".join(failures)))
     return 1 if failures else 0

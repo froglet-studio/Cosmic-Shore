@@ -316,9 +316,10 @@ Besides the automatic queue (idle, `--between`, `--always`), anyone can run one 
   the vessel x mode grid at the top of Searches) picks in steps: **vessel** (all 15 hulls on the fleet roster),
   **game mode** (every arcade and arena card that seats it, from `Docs/AI_SYSTEM/vessel_mode_chart.json`), the
   **intensities** I1-I4, **tries** on a slider, then optionally each setting on a slider (drag the ends to narrow it,
-  or hold it at one value; the white tick is today's value), **where**, and a note. Blue pairs run today on the
-  offline race models (Rhino, Manta and Dolphin on Regatta, Headlong and Redline); gold pairs need the game itself
-  played headless, the next tier, and say so instead of making a run. Pick a vessel and mode and the console finds
+  or hold it at one value; the white tick is today's value), **where**, and a note. Blue pairs run on the offline race
+  models (Rhino, Manta and Dolphin on Regatta, Headlong and Redline); purple pairs play real matches through the Unity
+  trainer on a PC with Unity (section 16), and the run asks for an intensity and a number of matches instead of
+  tries and settings; gold pairs have no trainer scenario yet and say so instead of making a run. Pick a vessel and mode and the console finds
   the search behind it: the vessel's own drive job with its `mode` changed. **Run on this computer** gives one line
   for PowerShell or Terminal (`compute.py run --request <token>`). For the team's computers, the live console (section
   15) files it in one tap; the claude.ai snapshot offers "File it now" (a cloud session) or the same command to paste.
@@ -367,10 +368,43 @@ notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refre
    <key>`): the computer's progress then shows on the live console within seconds. The Install sheet on the live
    console adds these flags itself once the team key is entered.
 
-What it is not: the VM is ARM Linux with no GPU, so it runs the offline searches, not the Unity game. The gold pairs
-(the game played headless) stay on team PCs until that tier exists. sslip.io certificates come from Let's Encrypt
+What it is not: the VM is ARM Linux with no GPU, so it runs the offline searches, not the Unity game. The purple pairs
+(the game itself, section 16) run on team PCs with Unity. sslip.io certificates come from Let's Encrypt
 and can hit its weekly limit for the shared domain; a domain of our own (`COMPUTE_DOMAIN`, an A record to the VM) avoids
 that. Logs: `journalctl -u froglet-hub -u froglet-compute -f`.
+
+## 16. Runs in the real game: the Unity trainer, headless (Shombith, 2026-10-28)
+
+The offline models are fast (hundreds of races a minute, any computer) but each one is a hand-made copy of one vessel
+on one course, so only 5 of the 61 vessel x mode pairs have one. Everything else has to be played in the game. The
+game already has an AI trainer (`Assets/_Scripts/Utility/AITraining`, studyholic, Garrett and Shombith): all-AI
+matches, a population of AIs, the best kept. Froglet Compute now starts it with nobody there:
+
+- **`unity-train`** (`Docs/Compute/jobs/unity-train.json`) is a command job with one unit per vessel, mode and
+  intensity: the 21 pairs the trainer has scenarios for (Skim Race, Crystal Capture, Joust, Rampage, Cleave, Wildlife
+  Liberation, Dog Fight, The Bends, Scarab Scramble, Salvo, Brood Rush, Astro League, with every hull those cards
+  seat where the scenario lets the hull change). It needs a computer with the project's exact Unity (capability
+  `unity`; `compute.py unity --find` says which editor, or why not). Status `proposed`: manual runs only, until a
+  first run on a real PC has been looked at.
+- **`Tools/Compute/unity_run.py`** runs one unit: keeps Froglet Compute's own copy of the project in
+  `~/.froglet-compute/unity/Cosmic-Shore` (a `git clone --shared` of the person's repository; its Library stays, so
+  only the first run imports everything, an hour or more), copies in `Tools/Compute/unity/FrogletComputeTraining.cs`,
+  puts back the unit's saved trainer session, and starts `Unity -batchmode -executeMethod ...FrogletComputeTraining.Run`.
+  That entry does what the trainer window's Learn button does, at up to 4x game speed with audio and camera off, and
+  writes `status.json` (live), `result.json` and `genome.json`. The person's checkout and their open Unity are never
+  touched; an automatic run waits while their own Unity has the project open (the two would race), a manual run goes
+  ahead.
+- **A manual run** for a purple pair names the pair, the intensity and the number of matches
+  (`args: {mode, vessel, intensity}`, `budget.tries` = matches); `manual_runs.problems()` refuses anything else.
+  The console's New run gives the line for PowerShell or Terminal, or sends it to the team's computers with Unity.
+- **Trust**: a command job runs from bleeding-edge, or from the ref this computer's Froglet Compute was installed from
+  (config.json "ref"): that code already runs on it, so the same ref's command job asks for nothing more. That is how
+  `unity-train` runs before Froglet Compute is merged. Its code ref is `origin/ai`.
+- **Results**: the unit's `genome.json` is a proposal. Import it on the AI Training window's Archive tab for that
+  vessel, mode and intensity; the trainer's owners and the AI owner (Yash) decide whether it deploys.
+- **What is left**: the 35 gold pairs need trainer scenarios (a fitness the mode can score per pilot), and gate races
+  such as Regatta have none yet: the trainer's owners' call. A dedicated Linux game build (no editor, no licence on
+  each machine) would let x86 Linux servers run these too; not built.
 
 ## 12. Verification status (2026-10-26)
 
@@ -402,3 +436,8 @@ is refused, a good run is filed on the throwaway remote's `compute-queue`, a wor
 console's New run and vessel x mode grid were checked in Chromium at 1360 and 390 px with the hub's endpoints mocked:
 no script errors, no sideways scroll, the run posted is the one picked. `setup-vm.sh` passes `bash -n` but has not run
 on a real VM yet.
+
+**2026-10-28, Unity runs**: `FrogletComputeTraining.cs` compiles against the real Unity references with 0 errors
+(`unity_refcompile --config editor`; a planted error in it failed the same run). The self-test's "unity runs" drives
+the whole path against a fake Unity that keeps the same contract. **Not run: a real Unity.** The first person with
+Unity 6000.3.17f1: the steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Froglet Compute runs the AI trainer").
