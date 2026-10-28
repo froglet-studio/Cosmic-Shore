@@ -9,6 +9,11 @@ Maintains `Docs/UI_REDESIGN_TASKS.md` for the Cosmic Shore UI overhaul. Runs **b
 
 The point of this skill is not bookkeeping. It is to catch the gap between what a task specified and what actually landed, while that gap is still cheap to close.
 
+The BOARD side is `/design-board` (`.claude/skills/design-board/`): opening the Menu Redesign B canvas in a session,
+comparing a new design against the board and the build, planning and publishing a round, refreshing the repo copy, and
+the offline board check of T16 as a tool (`design_board.py check <root> --only R<N>`). This skill verifies the BUILD
+against the board the doc names as picked.
+
 ## Core rule
 
 **Never tick a criterion you have not verified against the working tree.** A commit message, a PR description, or a previous assistant turn claiming a task is done is not evidence. Open the file, read the value, run the check. If a criterion cannot be verified without the Unity editor or a play session, mark it `[~]` and say so — do not mark it `[x]` and do not mark it `[ ]`.
