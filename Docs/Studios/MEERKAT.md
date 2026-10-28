@@ -133,6 +133,11 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 18 (Yash, 2026-10-27: "two variants, one with his kit only, one with a mix of his kit with the ones you
+recommend"). ARTIFACT ONLY; lab-only keys, no Unity-mapped value changed.** The Kit dropdown (Garrett's kit, the Mix,
+Round 8 archived, Off), built over round 17's Mass-sized trunks and roots. It was started as "round 17" on another branch
+while round 17 landed on Ys-bleeding-edge, so it is round 18. Everything is in § "Two kits: Garrett's and the Mix" below.
+
 **Round 17 (Yash, 2026-10-28: "our trunk size will be determined by ... our mass ... it is more mass we have, we create
 bigger trunks, we move farther distance. But the trunks look need to be pretty subtle ... the bigger the trunk the bigger
 the network of the branches will be ... the last trunk size will determine how big of a network you can get by getting
@@ -622,11 +627,11 @@ any useful area is very fat, so the throat may need a floor and a ceiling.
 5. **Diameter.** Round 7 fixed the throat ("the diameter of entry can stay fixed"); Garrett's surface area couples it to
    the length again. A floor and ceiling on the throat is one way to keep both.
 
-## Two kits: Garrett's and the Mix (round 17, 2026-10-28, for Yash to judge)
+## Two kits: Garrett's and the Mix (round 18, 2026-10-28, for Yash to judge)
 
 Yash, 2026-10-27: *"Make two variants, one with his kit only, one with a mix of his kit with the ones you recommend ...
 Do this for every decision ... whatever his extra features there are, add those. And remove our extra features which he
-already made."* The studio page (`Docs/Studios/VesselStudio/meerkat.html`, round 17) has a **Kit** dropdown at the top of
+already made."* The studio page (`Docs/Studios/VesselStudio/meerkat.html`, round 18) has a **Kit** dropdown at the top of
 Play Style Config. It picks what every Meerkat in the race flies, and it is kept in the page's saved state and in
 section profiles:
 
@@ -648,30 +653,43 @@ Round 8's Lookout and Hardened Bridge are not in Garrett's kit or the Mix: his S
 - Nothing reaches Unity without Yash's say-so.
 - Garrett's design is his to change.
 
-**Byte-identical to round 16.** Off's headless races match the round-16 page with round 8's abilities switched off.
-Round 8's races match that page as it shipped. Both were checked with `runBatch`.
+**Byte-identical to round 17.** Off's headless races match the round-17 page (`origin/Ys-bleeding-edge`, a44f8f5835)
+with round 8's abilities switched off and Mass left at 5; Round 8's races match that page as it ships. Both were checked
+with `runBatch` (seed 11, every level and course).
 
-**Round 16's Omnicrystal labyrinth is the fifth card (omni) in both kits, unchanged.** The one choice per kit is who may
-slide into a labyrinth another pilot dug:
+**Round 17's Mass in the kits.** In Garrett's kit and the Mix the kit's one Mass level (`kMassLevel`) is the Mass that
+round 17 sizes the trunk with (plus `massPerCrystal` a crystal this race), so one Mass sets both the trunk's reach and
+the exit portal. Space still sets the throat by surface area (D5). Off and Round 8 keep Vessel Config's `massLevel`.
+
+**The Omnicrystal's roots (rounds 16-17) are the fifth card (omni) in both kits, unchanged**: since round 17 they grow
+at once where you take an omnicrystal, every way, sized by your last trunk (taken inside a tube, it arms your next RT).
+The one choice per kit is who may slide into roots another pilot grew:
 - **Garrett's kit**: anyone. This is his soliton rule, so rivals slide into yours.
 - **The Mix**: the maker's team only.
 
-In Garrett's kit, FLUME shows a labyrinth's channels as solitons. Swallow-and-fire, Cave-in and sentinels do not act on
-a labyrinth: that is not modelled.
+In Garrett's kit, FLUME shows the roots' channels as solitons. Swallow-and-fire, Cave-in and sentinels do not act on
+roots: that is not modelled.
 
-**Sound.** Every kit event plays a guarded `VesselStudioAudio` sound. The sounds are: swallow, fire, shatter, bounce,
-boostOut, chainDig, sentinelPlace, zap, shieldZap, sentinelLost, alarm, hop, seatSwap, portal or dangerPortal, caveIn,
-and a flume loop while LB is held. The parent session loads `studio-audio.js` and its panel. Headless runs play nothing.
+**Sound.** Every kit event calls `VesselStudioAudio.play(name, sndAt(position))` through one guarded helper
+(`kitSnd`): `sndAt` pans it to the camera's side and fades it to nothing by ~900 u, so a far rival's event is not heard.
+The names: swallow, fire, shatter, bounce, boostOut (Garrett's Time L5), chainDig (the Mix's Time L5), sentinelPlace,
+zap, shieldZap, sentinelLost, alarm (the Mix), hop and seatSwap (Garrett's), portal or dangerPortal (Mass L5), caveIn
+(the Mix's B); FLUME loops (`loop('flume','flume',1)`) while LB is held and stops on release. The sounds only listen:
+batch and headless runs play nothing, and the level batch is byte-identical with a stub audio object present and absent.
+Measured live with a stub (90 s, Hard, Hard and Medium rivals): Garrett's kit fired zap 239, boostOut 101,
+sentinelPlace 77, dangerPortal 76, swallow and fire 51, hop 15, shatter 13, bounce 6; the Mix fired zap 321, swallow
+and fire 228, sentinelPlace 111, dangerPortal 109, shatter 55, chainDig 48, bounce 38, alarm 29, caveIn 28, shieldZap
+22. Holding Q started the flume loop once and releasing it stopped it once. seatSwap needs a person (the AI never swaps).
 
 | Decision | Garrett's kit | The Mix | Why the Mix differs (measured below) |
 |---|---|---|---|
-| **D1** the wormhole's element | Space: the soliton. Time: a passive faster ride through every soliton; L5 **Boost out** | The same, but Time L5 is round 8's **Chain Dig** (RT late in a ride digs the next tunnel from the far mouth) | Boost out is passive. Chain Dig keeps a racing decision at every tunnel: when, and which way, to dig on. The Mix's AI chained 6.2 times a field race |
-| **D2** Charge | **Sentinel mode** on Y: pool 3, 6 at L5; zaps in sub-petal ticks (0.1 to 0.25 of a petal by Charge); shields its own prisms; the oldest retires with its soliton; **sentinels are seats** | Sentinel mode the same, **without seats**: every sentinel is AI-guarded. It also does Lookout's job: a rival entering any of your guards is **marked for you** for 4 s | In a one-person studio a seat costs the race. A person who sat in sentinels for 72 s lost the flyer twice (the element-holder rule) and finished in 1:32.6. The AI crew's field races took 1:07.1 to 1:22.3. The alarm keeps round 8's "see the rival" job in a passive form: 18.7 alarms a field race |
+| **D1** the wormhole's element | Space: the soliton. Time: a passive faster ride through every soliton; L5 **Boost out** | The same, but Time L5 is round 8's **Chain Dig** (RT late in a ride digs the next tunnel from the far mouth) | Boost out is passive. Chain Dig keeps a racing decision at every tunnel: when, and which way, to dig on. The Mix's AI chained 7.4 times a field race |
+| **D2** Charge | **Sentinel mode** on Y: pool 3, 6 at L5; zaps in sub-petal ticks (0.1 to 0.25 of a petal by Charge); shields its own prisms; the oldest retires with its soliton; **sentinels are seats** | Sentinel mode the same, **without seats**: every sentinel is AI-guarded. It also does Lookout's job: a rival entering any of your guards is **marked for you** for 4 s | In a one-person studio a seat costs the race. A person who sat in sentinels for 72 s lost the flyer twice (the element-holder rule) and finished in 1:32.6. The AI crew's field races took 1:03.5 to 1:23.0 (round 18). The alarm keeps round 8's "see the rival" job in a passive form: 20.4 alarms a field race |
 | **D3** Mass | **Exit portal**: six small prisms on a hexagon at 1.5 x the exit radius, once per soliton, size by Mass; danger prisms at L5 | The same. **Hardened Bridge removed** | His portal is the minimal-mass version of the same idea, and it frees LB for the pilot sight |
-| **D4** Space | **Swallow and fire**: prisms at the way in (shielded too, never super-shielded) run the tube and leave the way out as moving prisms (`Docs/PRISM_MOTION.md` 1 and 1a). L5 open | The same, **plus Cave-in on B** in the open Space L5 slot: your nearest soliton fires out everything it holds at once and collapses, and a rival riding it takes a scored hit (round 8's Burial; never pushed) | It gives Space an active verb and a reason to time the fire. 12.3 Cave-ins and 6.9 burials a field race |
-| **D5** diameter | **Surface area** A = 2 pi L b g(k), so b = A / (2 pi L g(k)); unclamped but for a 0.5 u safety floor | Surface area, with the throat's diameter held between a **floor and ceiling** (sliders: 3 u and 25 u) | At Space L5 (A = 12,000 u2), Garrett's shortest tunnel has a 33 u throat and a 107 u mouth, and the longest a 2.6 u throat. The clamp keeps a long tunnel's mouth wide enough to swallow: 73.4 prisms fired a field race against 15.3 |
+| **D4** Space | **Swallow and fire**: prisms at the way in (shielded too, never super-shielded) run the tube and leave the way out as moving prisms (`Docs/PRISM_MOTION.md` 1 and 1a). L5 open | The same, **plus Cave-in on B** in the open Space L5 slot: your nearest soliton fires out everything it holds at once and collapses, and a rival riding it takes a scored hit (round 8's Burial; never pushed) | It gives Space an active verb and a reason to time the fire. 11.7 Cave-ins and 6.7 burials a field race |
+| **D5** diameter | **Surface area** A = 2 pi L b g(k), so b = A / (2 pi L g(k)); unclamped but for a 0.5 u safety floor | Surface area, with the throat's diameter held between a **floor and ceiling** (sliders: 3 u and 25 u) | At Space L5 (A = 12,000 u2), Garrett's shortest tunnel has a 33 u throat and a 107 u mouth, and the longest a 2.6 u throat. The clamp keeps a long tunnel's mouth wide enough to swallow: 67.3 prisms fired a field race against 19.2 |
 | **D6** dynamic seats | **The crew**: D-pad left / right (keys `[` `]`, phone SEAT or a two-finger swipe) steps the flyer, then each sentinel. A sentinel seat has a perched 2.5D view over its way in: click or tap a prism to shield it (any domain), or a rival to zap it (gamepad: right stick cursor, RT). **Y hops**: ride its soliton out as the flyer, while the old flyer becomes a sentinel at a new soliton its AI planner shapes. The meerkat you sit in holds the elements; any other dies of an element hit | **None** (D2). The flyer always holds the elements; sentinels still die of any element hit | See D2 |
-| **Omni** (round 16) | The labyrinth, unchanged; **anyone** may slide into yours | The labyrinth, unchanged; **your team only** | The Mix keeps the labyrinth a private shortcut. In Garrett's kit rivals slid into yours 1.8 times a field race |
+| **Omni** (rounds 16-17) | The roots, unchanged; **anyone** may slide into yours | The roots, unchanged; **your team only** | The Mix keeps the roots a private shortcut. In Garrett's kit pilots slid into another's roots 2.6 times a field race (1.8 of them into yours) |
 | **LB** | The pilot sight, **FLUME**: hold LB (Q; phone SIGHT) and every soliton is outlined through anything, with where it leads (the ring its way out heads at) and how long it is | The same | The fleet's rule (`Docs/Pilots/CALLSIGNS.md`) |
 
 **Open in Garrett's design, and the reading the page takes:**
@@ -686,61 +704,81 @@ and a flume loop while LB is held. The parent session loads `studio-audio.js` an
 
 "Seated longest" is the person: the studio has one person and no teammates.
 
-**Measured** (headless, seeded, 2026-10-28, Warpline, seed 7, round 16's omnicrystals on). **Score the kits** in AI
-Config makes these tables.
+**Measured** (headless, seeded, 2026-10-28, after the merge with round 17, which changed the sim: Mass sizes the trunk
+and the roots grow at once). Warpline, course seed 7, AI seeds 11, 23 and 37, omnicrystals on (the default). **Score
+the kits** in AI Config makes these tables. No DNF in any of the 240 races, field races included; mass conserved in
+every one.
 
-*Race times, your hull alone* (the median of 3 AI seeds, m:ss.s; no DNF in any of the 240 races, field races included):
+*Race times, your hull alone* (the median of the 3 seeds, m:ss.s, Easy / Medium / Hard):
 
-| Kit | I1 Easy / Medium / Hard | I2 | I3 | I4 | Hard fastest? | No wormhole |
+| Kit | I1 | I2 | I3 | I4 | Levels in order | No wormhole I1-I4 |
 |---|---|---|---|---|---|---|
-| Off | 1:32.6 / 1:30.6 / 1:29.3 | 1:30.2 / 1:28.9 / 1:28.6 | 1:41.4 / 1:33.4 / 1:31.8 | 1:36.3 / 1:31.0 / 1:29.2 | 4 of 4 | 1:50.9 · 1:50.5 · 2:02.0 · 1:51.5 |
-| Garrett's | 1:23.0 / 1:20.4 / 1:20.5 | 1:07.8 / 1:06.8 / 1:07.1 | 1:27.6 / 1:23.9 / 1:22.3 | 1:22.2 / 1:20.2 / 1:17.7 | 2 of 4 (I1, I2: Medium) | the same |
-| Mix | 1:23.5 / 1:21.6 / 1:19.6 | 1:22.5 / 1:19.0 / 1:14.1 | 1:25.4 / 1:23.0 / 1:19.5 | 1:20.5 / 1:14.8 / 1:14.6 | 4 of 4 | the same |
-| Round 8 | 1:26.5 / 1:21.8 / 1:18.7 | 1:23.3 / 1:20.5 / 1:21.4 | 1:26.5 / 1:25.0 / 1:22.8 | 1:21.9 / 1:19.4 / 1:20.2 | 2 of 4 | the same |
+| Off | 1:31.5 / 1:36.1 / 1:35.0 | 1:27.5 / 1:26.5 / 1:26.2 | 1:44.3 / 1:43.4 / 1:40.1 | 1:32.8 / 1:28.2 / 1:25.4 | 3 of 4 | 1:50.6 · 1:52.7 · 2:01.7 · 1:52.1 |
+| Garrett's | 1:22.2 / 1:18.9 / 1:24.1 | 1:21.1 / 1:23.6 / 1:03.5 | 1:32.8 / 1:21.9 / 1:30.2 | 1:21.8 / 1:17.8 / 1:16.5 | 1 of 4 | 1:50.1 · 1:52.6 · 2:03.8 · 1:51.1 |
+| Mix | 1:25.2 / 1:20.4 / 1:27.3 | 1:23.8 / 1:23.5 / 1:25.6 | 1:24.2 / 1:25.5 / 1:17.0 | 1:20.0 / 1:16.2 / 1:10.2 | 1 of 4 | 1:50.5 · 1:52.5 · 2:02.0 · 1:51.7 |
+| Round 8 | 1:28.7 / 1:21.4 / 1:20.3 | 1:31.5 / 1:23.5 / 1:25.0 | 1:26.5 / 1:29.6 / 1:32.3 | 1:21.8 / 1:19.5 / 1:17.2 | 2 of 4 | as Off |
+
+("Levels in order" counts Off's I1 as out: Medium is slowest there.)
+
+*The same with omnicrystals off* (round 17's roots-at-once taken out, everything else the same):
+
+| Kit | I1 | I2 | I3 | I4 | Levels in order |
+|---|---|---|---|---|---|
+| Off | 1:31.3 / 1:30.1 / 1:28.7 | 1:26.4 / 1:25.5 / 1:24.3 | 1:34.4 / 1:33.2 / 1:31.2 | 1:30.2 / 1:28.6 / 1:26.0 | 4 of 4 |
+| Garrett's | 1:22.2 / 1:21.1 / 1:19.4 | 1:17.3 / 1:15.0 / 1:06.7 | 1:25.2 / 1:21.9 / 1:22.3 | 1:21.8 / 1:21.2 / 1:19.2 | 3 of 4 |
+| Mix | 1:22.8 / 1:18.7 / 1:16.4 | 1:19.9 / 1:15.8 / 1:13.2 | 1:22.0 / 1:20.0 / 1:15.4 | 1:19.6 / 1:15.2 / 1:10.2 | 4 of 4 |
+| Round 8 | 1:23.2 / 1:18.7 / 1:17.6 | 1:22.3 / 1:18.8 / 1:19.3 | 1:25.5 / 1:23.3 / 1:22.2 | 1:21.8 / 1:18.5 / 1:20.9 | 2 of 4 |
+
+So the roots grown at once scramble the level order in every kit (they take a pilot wherever they lead, and which
+pilot meets an omnicrystal is luck of the line); without them the Mix and Off are in order on all four courses.
 
 *In a field* (your hull at Hard against Hard, Medium and Easy rivals flying the same kit; I1 to I4 x 3 seeds = 12
-races a kit; each number is the mean a race):
+races a kit; each number is the mean a race; omnicrystals on):
 
 | | Garrett's | Mix |
 |---|---|---|
-| Your time (median by I1 / I2 / I3 / I4) | 1:10.0 / 1:07.1 / 1:22.3 / 1:10.4 | 1:22.1 / 1:16.8 / 1:25.5 / 1:15.6 |
-| Zaps (all sentinels) · of them yours · petals knocked out | 125.2 · 97.4 · 21.6 | 127.0 · 54.8 · 21.4 |
-| Own prisms zapped shielded | 0 | 10.4 |
-| Prisms fired · destroyed · bounced | 15.3 · 7.2 · 8.2 | 73.4 · 43.5 · 27.6 |
-| Rival rides through your solitons · into your labyrinths | 26.6 · 1.8 | 12.1 · 0 (team only) |
-| Hops (the AI's rule) | 2.6 | none (no seats) |
-| Cave-ins · burials | none (no Cave-in) | 12.3 · 6.9 |
-| Sentinels lost (killed) · of them yours · retired | 5.7 · 0.9 · 4.6 | 15.8 · 2.8 · 3.0 |
-| Solitons made · portal prisms set down | 23.4 · 140.5 | 47.2 · 283 |
+| Your time (median by I1 / I2 / I3 / I4) | 1:07.1 / 1:07.0 / 1:23.0 / 1:16.3 | 1:26.3 / 1:15.9 / 1:19.5 / 1:10.2 |
+| Zaps (all sentinels) · of them yours · petals knocked out | 120.2 · 84.2 · 20.3 | 137.1 · 69.5 · 22.3 |
+| Own prisms zapped shielded | 0.4 | 10.0 |
+| Prisms fired · destroyed · bounced | 19.2 · 10.8 · 7.7 | 67.3 · 38.5 · 23.1 |
+| Rival rides through your solitons · rides into another's roots (into yours) | 20.0 · 2.6 (1.8) | 16.3 · 0 (team only) |
+| Hops (the AI's rule) | 4.6 | none (no seats) |
+| Cave-ins · burials | none (no Cave-in) | 11.7 · 6.7 |
+| Sentinels lost (killed) · of them yours · retired | 8.5 · 1.6 · 2.6 | 15.8 · 1.8 · 3.3 |
+| Alarms · Chain Digs | none | 20.4 · 7.4 |
+| Solitons made · portal prisms set down | 28.9 · 173.5 | 46.8 · 281 |
 | Mass conserved (moved, never deleted, but for a destroyed plain pair) | yes, every race | yes, every race |
 
-*A person in a sentinel seat* (Garrett's kit, scripted: the AI flew 20 s, then a person took a seat and stayed in seats
-for 72 s): the flyer died twice, zapped while the person held the elements in the seat. Each time the AI hopped the
-person out after 3 s. The race finished in 1:32.6.
+Off makes no kit events; Round 8 makes its own (6.4 Cave-ins and 7.3 Chain Digs a field race).
 
-**Our read (for Yash):**
-- **The Mix races better.** Its levels are in order on all four intensities. Garrett's are out of order on I1 and I2,
-  where Medium edges Hard. Alone, the Mix's Hard is faster on three of the four courses (Garrett's I2 is the fastest
-  race of all). Its prisms do something: five times as many fired and six times as many destroyed.
-- **Garrett's kit is the more original game.** Rivals ride your solitons 27 times a race and slide into your
-  labyrinths, and your sentinels zap them 97 times. The crew and the hop are new, and only a person can judge how they
-  feel.
-- **Garrett's weak spots:**
-  - in a one-person studio a seat costs the race, because the flyer dies;
-  - unclamped surface area makes short tunnels huge (a 107 u mouth) and long ones pinholes, so little is swallowed.
-- **The Mix's weak spots:**
-  - your own time in a field is worse (Cave-ins and zaps cut both ways);
-  - sentinels kill each other on the shared race line (15.8 a race);
-  - mass piles up: 283 portal prisms a race, and none of them ever leaves.
-- Both need a person to judge the feel. The seat view, the hop and FLUME were driven by scripts here, not played.
+*A person in a sentinel seat* (Garrett's kit, scripted, the earlier run): the AI flew 20 s, then a person took a seat
+and stayed in seats for 72 s; the flyer died twice, zapped while the person held the elements in the seat. Each time
+the AI hopped the person out after 3 s. The race finished in 1:32.6. Re-checked after the merge: Y toggles Sentinel
+mode, the swap seats you in a sentinel and Y there hops you out; in the Mix the swap is refused (no seats).
+
+**Our read (for Yash), measured:**
+- **The Mix races better, and it is the one to fly first.** With the roots out of the picture its levels are in order
+  on all four courses and its Hard is the fastest alone on I1, I3 and I4 (1:16.4, 1:15.4, 1:10.2). Its prisms do
+  something: 3.5 times as many fired and destroyed as Garrett's.
+- **Garrett's kit has the single fastest race** (I2 Hard, 1:03.5 with the roots, 1:06.7 without) **and the more original
+  game**: rivals ride your solitons 20 times a race, your sentinels zap them 84 times, and the crew and the hop are new.
+  Only a person can judge how they feel.
+- **Garrett's weak spots**: a seat costs the race in a one-person studio (the flyer dies); unclamped surface area makes
+  short tunnels huge (a 107 u mouth) and long ones pinholes, so little is swallowed (19 prisms a race); its levels are
+  out of order even without the roots (I3).
+- **The Mix's weak spots**: your own field time is worse on I1 (1:26.3 against Garrett's 1:07.1: Cave-ins and zaps cut
+  both ways); sentinels kill each other on the shared race line (15.8 a race); mass piles up (281 portal prisms a race,
+  none ever leaves).
+- **Both, since round 17**: the roots grown at once undo the level order. A finding for Yash, not tuned away.
+- The seat view, the hop and FLUME were driven by scripts here, not played.
 
 **Not modelled:**
 - a fired prism hitting a hull;
 - teammates, so seats for another person and "seated longest" across people;
 - the hull's trail being swallowed;
 - danger prisms on the field's own prisms;
-- the AI choosing another pilot's labyrinth (a rival slides in only when its path crosses the source);
-- swallow-and-fire, Cave-in and sentinels on a labyrinth.
+- the AI choosing another pilot's roots (a rival slides in only when its path crosses their source);
+- swallow-and-fire, Cave-in and sentinels on the roots.
 
 ## What is not decided or not built
 
@@ -755,7 +793,7 @@ person out after 3 s. The race finished in 1:32.6.
   would be ~280 objects per tunnel).
 - **The game's Stoat still has round 18's straight warp gate on B** (`StoatModeAction` gate* fields, `StoatGateMath`).
   It is unlinked from the studio now. Removing it from the Stoat is Garrett's call (the Stoat's owner).
-- **The kit** (round 17): Garrett's kit and the Mix are prototypes in the studio (§ Two kits), for Yash to judge.
+- **The kit** (round 18): Garrett's kit and the Mix are prototypes in the studio (§ Two kits), for Yash to judge.
   Neither is decided, and nothing of either is in Unity.
 - **The play styles.** The Meerkat has none yet.
 - **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
@@ -773,11 +811,11 @@ the browser, no files): **Play**, On, Volume, Pitch, Length, Brightness, then **
 |---|---|---|
 | Wormhole | reticle hum (loop, rises with the bend), tunnel forms, ride rush (loop, follows the ride speed), out of the tunnel, tunnel collapses | yes (rivals' tunnels by distance and side) |
 | Omnicrystal: labyrinth | collected, armed, digs, slide in, take a fork (panned to the side), out of an opening, falls in | yes |
-| Space: soliton | swallow, fire, annihilate, shielded bounce, surface area, Cave-in | by the kit round, at its own events |
-| Time | Boost out, Chain Dig | by the kit round |
-| Charge: sentinel | stands up, zap (rate-limited for ~5 a second), shields a prism, lost, alarm call, hop, seat swap | by the kit round |
-| Mass | exit portal, danger portal | by the kit round |
-| Pilot | FLUME sight (loop while LB is held) | by the kit round |
+| Space: soliton | swallow, fire, annihilate, shielded bounce, surface area, Cave-in | yes, at the kit's own events (`kitSnd`: `sndAt`'s pan and distance) |
+| Time | Boost out, Chain Dig | yes, at the kit's own events |
+| Charge: sentinel | stands up, zap (rate-limited for ~5 a second), shields a prism, lost, alarm call, hop, seat swap | yes, at the kit's own events |
+| Mass | exit portal, danger portal | yes, at the kit's own events |
+| Pilot | FLUME sight (loop while LB is held) | yes, at the kit's own events |
 
 The sounds watch the sim and never change it. They are the brief for the game's FMOD events, which ship empty until
 sound design makes them (`MeerkatWormholeConfigSO.formEvent` / `collapseEvent` today); Unity plays none of these.
