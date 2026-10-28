@@ -298,9 +298,9 @@ Mass sizing was never ported here, so in the game "revert" is only the area.
 
 | Stage | What happens | Keys |
 |---|---|---|
-| Pull | Every prism (shielded too, never super-shielded) and every crystal (an omni crystal, or an elemental one not yet collected) within `suckRadius` of a standing tunnel's way in is drawn to it: `suckSpeed` × `suckRadius` / distance, up to `carrySpeed`, swirling round the axis at a third of that. Four looks a second. A plant's prism is plucked first (`HealthPrism.LeaveAsSkeleton`); a creature's body, a prism still growing in and our own fresh trail are left alone | `suckRadius` 90, `suckSpeed` 30 |
+| Pull | Every prism (shielded too, never super-shielded) and every crystal (an omni crystal, or an elemental one not yet collected) within `suckRadius` of a standing tunnel's way in is drawn to it: `suckSpeed` × `suckRadius` / distance, up to `rootMaxSpeed`, swirling round the axis at a third of that. Four looks a second. A plant's prism is plucked first (`HealthPrism.LeaveAsSkeleton`); a creature's body, a prism still growing in and our own fresh trail are left alone | `suckRadius` 90, `suckSpeed` 30 |
 | Swallow | Within `swallowShare` × the opening radius it enters, its place across the mouth kept as a share of the radius | `swallowShare` 1.5 |
-| Carry | Along the centreline at `carrySpeed`, held to the wall's narrowing, stretched along the tube to 1 + `carryStretch` at the middle (none at the mouths), squeezed across by 1 / √ of that so its volume is kept, and twisted `carryTwist` turns mouth to mouth (`CarryDistortion`) | `carrySpeed` 150, `carryStretch` 2, `carryTwist` 0.5 |
+| Carry | Along the centreline at the slide's top speed (`rootMaxSpeed`; round 25 retired `carrySpeed`), never nearer than 6 u behind the rider ahead of it (`TubeAdvance`: first in, first out), held to the wall's narrowing, stretched along the tube to 1 + `carryStretch` at the middle (none at the mouths), squeezed across by 1 / √ of that so its volume is kept, and twisted `carryTwist` turns mouth to mouth (`CarryDistortion`) | `rootMaxSpeed` 90, `carryStretch` 2, `carryTwist` 0.5 |
 | Fire | Out of the way out along its last heading at `fireSpeed` (a crystal at half), its own scale back, gliding to rest over `fireGlideSeconds`. A tunnel that collapses fires out all it holds at once | `fireSpeed` 120, `fireGlideSeconds` 3 |
 
 - **A moving prism** (`Docs/PRISM_MOTION.md`): a pulled or gliding prism that runs into a plain prism destroys both,
@@ -315,4 +315,29 @@ Mass sizing was never ported here, so in the game "revert" is only the area.
   picks boxes or spheres by the count.
 - **Not modelled:** the Meerkat's own omnicrystals (`MeerkatOmnicrystalField`) are not swallowed; a carried prism is not
   hit by a rider in the same tube.
+
+## 9. Inside a tube is another dimension; the game's omni crystal grows the roots (round 25, 2026-10-28)
+
+Yash, 2026-10-28: *"anything that passes through the tunnel doesn't interact with the outer world ... It's like going
+through another dimension, without interacting with real objects. When it comes out of the hole, then it interactable
+again"*; *"the prisms that get sucked in that same wormhole ... hits my vessel inside the hole ... Make sure the prisms
+and the vessels both travel in the same speed variations. So that anything that enters the wormhole at first will get out
+of the wormhole also without clashing"*; *"I am collecting omnicrystals in lava lamp, yet I don't see the network
+wormholes getting created"*.
+
+- **Phased.** While a tunnel or the roots fly the hull, `MeerkatVesselTransformer` (the hull's `IHullContactGate`) says
+  its touch takes no prism and no crystal. That is read by both halves of every contact: the hull's
+  (`VesselImpactor`), the prism's (`PrismImpactor`), the crystals' (`ElementalCrystalImpactor`, `OmniCrystalImpactor`)
+  and now the skimmer's prism skim too (`SkimmerImpactor.HullTakesPrisms`). Out of the mouth, it is solid again.
+  - A race ring threaded inside still counts: rings are a sweep (`CrystalRaceRing`), not a touch.
+- **First in, first out.** A carried prism or crystal moves at the slide's top speed, never nearer than
+  `MeerkatWormholeMath.TubeGap` (6 u) behind this Meerkat's rider ahead of it (`TubeAdvance`). So a stream that went in
+  after you stays behind you, and nothing inside overtakes anything. Carried prisms are posed, not contact-tested
+  (§8), and the phased hull ignores them anyway.
+- **The game's omni crystal.** Any omni crystal this hull collects arms the roots, as a Meerkat omnicrystal does: the cell's,
+  the freestyle conveyor's, Lava Lamp's, any mode's. It comes through `OmniCrystalImpactor.CollectedByVessel`, raised where
+  the crystal's vessel effects run: on the machine that resolves the collect, and on the pilot's machine when it replays
+  them. The executor acts on it only on its hull's simulating machine, so the player's machine for a player and the
+  server for the AI. Before this, only the Meerkat's own gold omnicrystals did it, and those are laid for the local human
+  pilot only, so in Lava Lamp nothing grew.
 

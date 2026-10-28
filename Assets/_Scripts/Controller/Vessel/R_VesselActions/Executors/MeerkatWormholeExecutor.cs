@@ -184,6 +184,10 @@ namespace CosmicShore.Gameplay
         public int SwallowedPrisms => _swallow.PrismCount;
         /// <summary>...and the crystals.</summary>
         public int SwallowedCrystals => _swallow.CrystalCount;
+        /// <summary>The tunnel this hull is sliding now, or null (round 25: what it carries keeps behind the rider).</summary>
+        internal Tunnel RidingTunnel => _ride;
+        /// <summary>How far along it the rider is (u; below 0 while it dives to the mouth).</summary>
+        internal float RideAlong => _rideS;
         /// <summary>True while a tunnel flies this hull (from the press to its way out).</summary>
         public bool IsRiding => _ride != null;
         /// <summary>The reticle's growth, 0..1 (RT forms from <see cref="MeerkatWormholeMath.FormableEmerge"/>); 0 riding.</summary>
@@ -985,11 +989,29 @@ namespace CosmicShore.Gameplay
         void OnEnable()
         {
             if (_status != null && !s_executors.Contains(this)) s_executors.Add(this);
+            OmniCrystalImpactor.CollectedByVessel -= OnOmniCrystal;
+            OmniCrystalImpactor.CollectedByVessel += OnOmniCrystal;
+        }
+
+        /// <summary>
+        /// The game's own omni crystal counts as an omnicrystal (Yash, 2026-10-28: "I am collecting omnicrystals in lava lamp,
+        /// yet I don't see the network wormholes getting created"): the cell's omni crystal, the freestyle conveyor's, any
+        /// mode's, collected by this hull on its simulating machine, arms the roots exactly as a Meerkat omnicrystal does
+        /// (<see cref="StepOmni"/> grows them at once, or the moment the hull is out of a tunnel). For the player and the AI.
+        /// </summary>
+        void OnOmniCrystal(IVesselStatus collector, Vector3 at)
+        {
+            if (!config || !config.OmniOn || collector != _status || !IsAuthority) return;
+            _omniArmed = true;
+            _omniCrystal = -1;   // not one of the Meerkat field's (the relay's crystal -1 marks none taken)
+            _omniSeed = unchecked((uint)(GetInstanceID() * 977 + Mathf.FloorToInt(at.x * 7f + at.y * 13f + at.z * 17f) +
+                                         Mathf.FloorToInt(Time.time * 10f)));
         }
 
         // A vessel swap or despawn: this hull's tunnels go with it, and a ride ends where it is.
         void OnDisable()
         {
+            OmniCrystalImpactor.CollectedByVessel -= OnOmniCrystal;
             for (int i = s_tunnels.Count - 1; i >= 0; i--)
                 if (s_tunnels[i].Maker == this) s_tunnels.RemoveAt(i);
             s_executors.Remove(this);

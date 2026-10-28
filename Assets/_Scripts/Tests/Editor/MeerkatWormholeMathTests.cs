@@ -373,5 +373,25 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0f, r0, Tol);
             Assert.AreEqual(Mathf.PI, r2, Tol, "half a turn mouth to mouth at carryTwist 0.5");
         }
+
+        [Test]
+        public void TubeAdvance_MovesAtTheSlidesTopSpeed_AndNeverPassesTheRiderAhead()
+        {
+            // round 25: first in, first out - a carried prism at the slide's top speed (90 u/s), held 6 u behind a rider ahead
+            Assert.AreEqual(11.5f, MeerkatWormholeMath.TubeAdvance(10f, 90f, 1f / 60f, false, 0f), 1e-4f, "no rider: 90 u/s");
+            Assert.AreEqual(51.5f, MeerkatWormholeMath.TubeAdvance(50f, 90f, 1f / 60f, true, 20f), 1e-4f, "a rider behind it: on at 90 u/s");
+            Assert.AreEqual(44f, MeerkatWormholeMath.TubeAdvance(43f, 90f, 1f / 60f, true, 50f), 1e-4f, "a rider ahead: held 6 u behind it");
+            Assert.AreEqual(47f, MeerkatWormholeMath.TubeAdvance(47f, 90f, 1f / 60f, true, 50f), 1e-4f, "already nearer: it waits, never goes back");
+            // a slow rider and a stream behind it: nobody passes anybody
+            float rider = 0f, a = -10f, b = -20f;
+            for (int k = 0; k < 600; k++)
+            {
+                rider += 45f / 60f;
+                a = MeerkatWormholeMath.TubeAdvance(a, 90f, 1f / 60f, true, rider);
+                b = MeerkatWormholeMath.TubeAdvance(b, 90f, 1f / 60f, true, rider);
+                Assert.LessOrEqual(a, rider - MeerkatWormholeMath.TubeGap + 1e-3f);
+                Assert.LessOrEqual(b, rider - MeerkatWormholeMath.TubeGap + 1e-3f);
+            }
+        }
     }
 }

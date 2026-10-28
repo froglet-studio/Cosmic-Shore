@@ -65,6 +65,31 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat: phased inside a tube, first in first out, the omni crystal grows the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `MEERKAT.md` §9.
+- Inside a tunnel or the roots, the Meerkat touches no prism and no crystal, and nothing touches it. This uses
+  `IHullContactGate` on `MeerkatVesselTransformer`, and the skimmer's prism skim now honours the gate too.
+- Carried prisms and crystals move at the slide's top speed and stay 6 u behind the rider ahead of them. `carrySpeed`
+  is retired.
+- Any omni crystal the hull collects grows its roots (`OmniCrystalImpactor.CollectedByVessel`), for the player and the AI.
+
+**Verified without the editor:**
+- 59/59 dotnet tests (new: `TubeAdvance`, no one passes anyone).
+- Reference compile clean.
+- The artifact's kit races finish.
+
+**Verify in editor:**
+1. Lava Lamp, the Meerkat: fly into the cell's omni crystal. Its roots grow round you at once and you are inside them.
+   Watch an AI Meerkat take one: its roots grow too.
+2. Form a tunnel whose mouth is next to prisms and ride it. The prisms pulled in behind you never catch you, and your
+   hull loses no petal and breaks nothing inside the tunnel.
+3. Form a tunnel straight through a wall of prisms: you pass through it untouched, and the wall stays standing.
+4. Out of the far mouth you are solid again: hit a prism and it breaks as usual.
+5. Burrow Run: a ring threaded while inside a tunnel still counts.
+
+---
+
 ### 🔴 The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** the automatic ride is gone. The main tunnel is now a network of one channel flown by the roots' own

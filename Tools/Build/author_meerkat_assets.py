@@ -132,7 +132,7 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRa
                "labyrinthFormSeconds", "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootMaxSpeed", "rootBounce",
                "rootGravity", "rootOpacity", "tubeInner", "rootLamp", "rootFog",
                # Garrett's soliton (round 23): the surface area, the pull, the carry, the fire
-               "areaL0", "areaL10", "suckRadius", "suckSpeed", "swallowShare", "carrySpeed", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
+               "areaL0", "areaL10", "suckRadius", "suckSpeed", "swallowShare", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
 
 
 def shipped(page: str) -> dict:
