@@ -13,6 +13,10 @@
  },
  "cores": 3,
  "current": {
+  "best": 3.3186902490668757,
+  "best_start": 3.4056280524311346,
+  "epoch": "52c7cb0e7a63",
+  "evals": 1595,
   "job": "drive-rhino-regatta",
   "max_evals": 2500,
   "minutes": 25.0,
@@ -68,7 +72,7 @@
  "totals": {
   "sessions": 5
  },
- "updated": 1793188893,
+ "updated": 1793189016,
  "user": "shombith",
  "version": "1"
 }
