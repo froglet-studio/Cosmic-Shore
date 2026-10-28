@@ -41,12 +41,14 @@ namespace CosmicShore.Editor.Studios
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     if (FrogletEditorPalette.ColorButton("YASH'S LOOK", FrogletEditorPalette.Cyan, 150f, 26f,
-                            "After RT: the spindle bridge and its glass (your reticle is always its wireframe).",
+                            "After RT: the spindle bridge and its glass (your reticle is always its wireframe). In the PC look " +
+                            "(MeerkatTubeLook HighQuality) the lens also bends space, with a visible outer layer of water-glass.",
                             outline: now != "Yash's look"))
                         Set(MeerkatFormedLook.Bridge);
                     if (FrogletEditorPalette.ColorButton("GARRETT'S LOOK", FrogletEditorPalette.Violet, 150f, 26f,
                             "After RT: nothing drawn, only space bent in a thin shell on the wall (the contour field, the Tube Lens " +
-                            "Lab). Your reticle is the same wireframe either way.",
+                            "Lab). Your reticle is the same wireframe either way. In the PC look (MeerkatTubeLook HighQuality) the " +
+                            "outer layer is only a whisper: the lensing sells it.",
                             outline: now != "Garrett's look"))
                         Set(MeerkatFormedLook.ContourField);
                 }

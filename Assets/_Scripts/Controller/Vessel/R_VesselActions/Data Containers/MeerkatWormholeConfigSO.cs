@@ -259,7 +259,8 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("After RT (Garrett, 2026-10-27: the Tube Lens Lab)")]
         [Tooltip("After RT, a formed tunnel shows as: ContourField = nothing drawn, only space bent in a thin shell on its " +
-                 "wall (Garrett: \"lets the lensing alone sell the effect\"); Bridge = round 3's spindle bridge and glass.")]
+                 "wall (Garrett: \"lets the lensing alone sell the effect\"); Bridge = round 3's spindle bridge and glass. " +
+                 "In the PC look (MeerkatTubeLook HighQuality) both bend space; Bridge adds a visible outer layer and the bridge.")]
         [SerializeField] MeerkatFormedLook formedLook = MeerkatFormedLook.ContourField;
 
         [Header("Contour field (the Tube Lens Lab's gateField* keys, Docs/Studios/StoatTubeLensLab.html)")]
@@ -436,9 +437,10 @@ namespace CosmicShore.ScriptableObjects
         public int FieldRibRings => fieldRibRings;
         public int FieldRibLines => fieldRibLines;
         /// <summary>A formed tunnel bends space through the contour field (the look is on and some coupling bends).</summary>
-        public bool ContourFieldOn => formedLook == MeerkatFormedLook.ContourField &&
-                                      (fieldStrength > 0f && (fieldDrag > 0f || fieldTwist > 0f) ||
-                                       fieldGlass > 0f && fieldGlassIndex > 0f);
+        public bool ContourFieldOn => formedLook == MeerkatFormedLook.ContourField && ContourFieldBends;
+        /// <summary>The contour field's numbers bend at all (some coupling is on), whatever the look.</summary>
+        public bool ContourFieldBends => fieldStrength > 0f && (fieldDrag > 0f || fieldTwist > 0f) ||
+                                         fieldGlass > 0f && fieldGlassIndex > 0f;
         public bool AiWormhole => aiWormhole;
         public float AiStraightMinDistance => aiStraightMinDistance;
         public float AiBentMinDistance => aiBentMinDistance;

@@ -156,7 +156,7 @@ namespace CosmicShore.Gameplay
                 var cfg = t.Config;
                 if (!cfg) continue;
                 var tube = Tube.Conic(t.A, t.T0, t.Side, t.Path, t.B, t.M, t.W.S0, t.W.S1);
-                if (cfg.FormedLook == ScriptableObjects.MeerkatFormedLook.Bridge && !TunnelWrapped(cfg))
+                if (MeerkatTubeLook.Formed(cfg) == ScriptableObjects.MeerkatFormedLook.Bridge && !TunnelWrapped(cfg))
                     DrawBridge(tube, cfg, t.Fade, t.Colour, eye);
                 AddWarpTube(tube, t.Fade, cfg);
             }
@@ -170,7 +170,7 @@ namespace CosmicShore.Gameplay
                 var cfg = net.Maker ? net.Maker.Config : null;
                 if (!cfg) continue;
                 bool wrapped = ChannelWrapped(cfg);
-                bool bridge = cfg.FormedLook == ScriptableObjects.MeerkatFormedLook.Bridge && !wrapped;
+                bool bridge = MeerkatTubeLook.Formed(cfg) == ScriptableObjects.MeerkatFormedLook.Bridge && !wrapped;
                 bool warp = cfg.WarpStrength > 0f && !(wrapped && inside == net);   // the page: roots in bark are earth from inside
                 if (!bridge && !warp) continue;
                 var colour = net.Maker.Colour;

@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("The Meerkat's wormhole config (the shipped one). In the editor it is found by path if left empty.")]
         [SerializeField] MeerkatWormholeConfigSO config;
         [Tooltip("The look the lab opens with.")]
-        [SerializeField] MeerkatTubeLookMode startMode = MeerkatTubeLookMode.Original;
+        [SerializeField] MeerkatTubeLookMode startMode = MeerkatTubeLookMode.HighQuality;
         [Tooltip("Tunnels formed side by side.")]
         [Range(0, 12)] [SerializeField] int tubeCount = 3;
         [Tooltip("Grow an omnicrystal's wormhole network too.")]
@@ -51,9 +51,11 @@ namespace CosmicShore.Gameplay
         {
             MeerkatTubeLookMode.Original, MeerkatTubeLookMode.WaterOnly, MeerkatTubeLookMode.LensOnly,
             MeerkatTubeLookMode.WallOnly, MeerkatTubeLookMode.None, MeerkatTubeLookMode.WaterAndLens,
+            MeerkatTubeLookMode.HighQuality,
         };
         static readonly string[] s_modeNames =
-            { "Original (lens + wall)", "New water pipe", "Lens only", "Wall only", "None (off)", "Water + lens" };
+            { "Original (lens + wall)", "New water pipe", "Lens only", "Wall only", "None (off)", "Water + lens",
+              "PC high quality (lens + layer)" };
 
         Camera _cam;
         MeerkatWormholeExecutor _exec;
@@ -135,8 +137,10 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_exec) _exec.LabClear();
-            MeerkatTubeLook.Mode = MeerkatTubeLookMode.Original;
+            MeerkatTubeLook.Mode = MeerkatTubeLook.Default;
+            MeerkatTubeLook.FormedOverride = null;
             MeerkatWaterTubeView.Tuning.Active = false;
+            MeerkatWormholeHQ.Tuning.Active = false;
             QualitySettings.vSyncCount = _oldVSync;
             Application.targetFrameRate = _oldTarget;
         }
@@ -238,7 +242,7 @@ namespace CosmicShore.Gameplay
             if (++_benchIdx >= s_modes.Length)
             {
                 _bench = false;
-                MeerkatTubeLook.Mode = MeerkatTubeLookMode.Original;
+                MeerkatTubeLook.Mode = MeerkatTubeLook.Default;
                 return;
             }
             BeginBenchMode();
@@ -441,6 +445,36 @@ namespace CosmicShore.Gameplay
             if (_scenery && sc != _scenery.activeSelf) _scenery.SetActive(sc);
             bool cap = GUILayout.Toggle(uncapFrameRate, " Uncapped frame rate (vSync off)");
             if (cap != uncapFrameRate) { uncapFrameRate = cap; ApplyCap(); }
+
+            GUILayout.Space(6f);
+            GUILayout.Label("Formed look (not saved to the config)", Rich(13));
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Toggle(MeerkatTubeLook.FormedOverride == null, "Config's", GUI.skin.button)) MeerkatTubeLook.FormedOverride = null;
+            if (GUILayout.Toggle(MeerkatTubeLook.FormedOverride == ScriptableObjects.MeerkatFormedLook.Bridge, "YASH'S", GUI.skin.button))
+                MeerkatTubeLook.FormedOverride = ScriptableObjects.MeerkatFormedLook.Bridge;
+            if (GUILayout.Toggle(MeerkatTubeLook.FormedOverride == ScriptableObjects.MeerkatFormedLook.ContourField, "GARRETT'S", GUI.skin.button))
+                MeerkatTubeLook.FormedOverride = ScriptableObjects.MeerkatFormedLook.ContourField;
+            GUILayout.EndHorizontal();
+
+            bool hqTune = GUILayout.Toggle(MeerkatWormholeHQ.Tuning.Active, " Tune the PC look (live)");
+            if (hqTune && !MeerkatWormholeHQ.Tuning.Active)   // start from the preset on screen
+                MeerkatWormholeHQ.Tuning.Live = MeerkatTubeLook.FormedOverride == ScriptableObjects.MeerkatFormedLook.ContourField
+                    ? MeerkatWormholeHQ.GarrettPreset : MeerkatWormholeHQ.YashPreset;
+            MeerkatWormholeHQ.Tuning.Active = hqTune;
+            if (hqTune)
+            {
+                ref var L = ref MeerkatWormholeHQ.Tuning.Live;
+                Slider("Layer", ref L.Outer, 0f, 0.5f);
+                Slider("Rim", ref L.Rim, 0f, 1f);
+                Slider("Rim power", ref L.RimPower, 0.5f, 8f);
+                Slider("Absorb", ref L.Absorb, 0f, 1f);
+                Slider("Glint", ref L.Glint, 0f, 2f);
+                Slider("Dispersion", ref L.Dispersion, 0f, 0.2f);
+                Slider("Net dispersion", ref L.NetDispersion, 0f, 0.3f);
+                Slider("Net iridescence", ref L.NetIridescence, 0f, 1f);
+                Slider("Net pulses", ref L.NetPulse, 0f, 1f);
+                Slider("Net glow", ref L.NetGlow, 0f, 4f);
+            }
 
             GUILayout.Space(6f);
             _tune = GUILayout.Toggle(_tune, " Tune the water pipe (live)");

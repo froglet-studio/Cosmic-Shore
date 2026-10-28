@@ -39,6 +39,7 @@ Paths below are relative to the repository root. The two folders used most often
 | 6 | The tree (the outer layer, rounds 13-15) and the roots' bark | `Graphs/MeerkatTree.shader` | `RVA/MeerkatTreeView.cs`, `RVA/MeerkatTreeMesh.cs` | `MeerkatTree.mat` | Off since round 23 (`trunkVisibility` 0, `rootBarkVisibility` 0) |
 | 7 | The roots from inside | `Graphs/MeerkatRootInside.shader` | `MeerkatTreeView.cs` | `MeerkatRootInside.mat` | Draws only inside a wrapped network (off with the bark) |
 | 8 | The Butterfly fold and crystal wormhole mouths (a different wormhole) | `Graphs/Wormhole.shader` | `Assets/_Scripts/Controller/Environment/Wormhole/WormholeView.cs`, `WormholeMouth.cs` | `Assets/_Graphics/Materials/Wormhole.mat`, `WormholeSeamless.mat` | Ships (`Docs/WORMHOLES.md`, `Docs/CRYSTAL_WORMHOLE.md`) |
+| 11 | **The PC look** (YASH'S and GARRETT'S presets, the network upgrade) | `Graphs/MeerkatWormholeLens.shader` with `_MW_HQ` | `MeerkatWormholeLensPass.cs`, `RVA/MeerkatWormholeHQ.cs` | runtime clone of `MeerkatWormholeLens.mat`, keyword on | Default on `feat/wormhole-pc-unified` (`MeerkatTubeLook` HighQuality) |
 | 9 | Sibling lenses: black hole, vortex ring | `Graphs/BlackHoleLens.shader` and `.hlsl`, `Graphs/VortexRingLens.shader` and `.hlsl` | `BlackHoleLensPass.cs`, `VortexRingLensPass.cs` | `BlackHoleLens.mat`, `VortexRingLens.mat` | Ship (`Docs/BLACK_HOLE.md` §5) |
 
 **Which look draws** is decided by three switches:
@@ -57,6 +58,7 @@ Paths below are relative to the repository root. The two folders used most often
 | WallOnly (3) | no | yes | no |
 | None (4) | no | no | no |
 | WaterAndLens (5) | yes | no | yes |
+| HighQuality (6) | yes, with `_MW_HQ` (§11), in both looks | no | no |
 
 The bridge (§2) and the reticle draw in every mode, whenever `formedLook` is Bridge.
 
@@ -517,3 +519,75 @@ holds the shared glslang URP mock.
 3. **In Unity:** open `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` and press Play. Its IMGUI panel switches
    `MeerkatTubeLook`, rides a tunnel or the network, and benches each look for 4 s with the camera held (CPU ms, plus GPU
    ms when Frame Timing Stats is on).
+
+---
+
+## 11. The PC look: one shader, YASH'S and GARRETT'S presets, the networked holes (`_MW_HQ`)
+
+Yash, 2026-10-29: *"Make the shader good for a good quality PC. Keep the final one shader ... a nice subtle wormhole and
+its networked holes."*
+
+**One shader.** `MeerkatWormholeLens.shader` gets a local keyword, `_MW_HQ`. Without it, the pass is byte for byte the
+§1 lens: `MeerkatTubeLook` Original is the A/B fallback.
+
+With it, **the same march runs on the same numbers** (§1.3, the artifact's water pipe, glass 0.139), and three things are
+added on top.
+
+1. **The outer layer.** While the bent ray is inside a shell, it accumulates optical depth: the shell profile × (0.6 + 0.4
+   × rib) × fade / thickness × step. This is graded like the field, and the ribs show only faintly. Then, with
+   `layer = 1 − e^{−depth}`:
+   - The world behind is tinted toward `Tint` by `layer·Absorb`. This is the water's faint absorption.
+   - The layer glows `Tint·Outer·layer`.
+   - A Fresnel rim, `Tint·Rim·(1 − e^{−Σ grazeᴾ})` with `graze = 1 − |dir·n|`, brightens the silhouette where the ray
+     skims the layer.
+   - A glint of the scene's sun (`RenderSettings.sun`, otherwise a soft key from above) adds Blinn `|n·h|^48` off the
+     shell.
+   - Only shell that the ray crosses in front of the opaque scene counts, so a vessel in front of the tube stays clean.
+2. **Real light bending, dispersed.** Red is read at `p + disp·(1 + k)`, green at `p + disp` and blue at
+   `p + disp·(1 − k)`, so the bent world splits faintly into colour, as through glass.
+3. **The networked holes** (a channel of an omnicrystal's network, `_MWTubeShape.y` 1). The layer's share that came from a
+   channel (`net`) blends in:
+   - a thin-film iridescence round the channel: a cosine palette on `φ/2π·IriScale + u + 0.05t`, weighted by `Iridescence`
+   - pulses of light running along it: `(0.5 + 0.5cos 2π(u·count − t·speed))^12`, weighted by `Pulse`
+   - glow × `NetGlow`
+   - dispersion `NetDispersion` instead of `Dispersion`
+
+**Presets** (`MeerkatWormholeHQ.YashPreset` / `GarrettPreset`). The pass takes the preset of the **nearest** tube's look.
+
+| Value | YASH'S LOOK (`formedLook` Bridge) | GARRETT'S LOOK (ContourField) |
+|---|---|---|
+| Outer (layer glow) | 0.10 | 0.02 |
+| Rim / rim power | 0.22 / 3 | 0.05 / 4 |
+| Absorb | 0.35 | 0.12 |
+| Tint | (0.82, 0.94, 1) | (0.86, 0.95, 1) |
+| Glint | 0.5 | 0.25 |
+| Dispersion / network | 0.035 / 0.08 | 0.02 / 0.06 |
+| Network iridescence / pulses | 0.65 / 0.18 | 0.5 / 0.12 |
+| Iri scale, pulses along, pulse speed | 1.5, 3, 0.6 | 1.5, 3, 0.6 |
+| Network glow (× Outer) | 1.6 | 2 |
+| Bridge spindles | drawn (`bridgeVisibility` 0.163) | not drawn |
+
+In the PC look the contour field runs in **both** looks (`MeerkatTubeLook.FieldOn`). In Original, it runs only in
+Garrett's, as before.
+
+**Uniforms (MaterialPropertyBlock):**
+- `_MWHQ0` = (Outer, Rim, RimPower, Absorb)
+- `_MWHQ1` = (Tint.rgb, Glint)
+- `_MWHQ2` = (Dispersion, NetDispersion, NetIridescence, NetPulse)
+- `_MWHQ3` = (NetIriScale, NetPulseCount, NetPulseSpeed, NetGlow)
+- `_MWLightDir` = (toward the light, strength)
+
+**Selecting it:**
+- `MeerkatTubeLook.Mode` defaults to HighQuality on this branch. The Lavalamp lab's "PC high quality (lens + layer)"
+  button selects it; "Original (lens + wall)" is the fallback.
+- The lab's "Formed look" row (Config's / YASH'S / GARRETT'S) sets `MeerkatTubeLook.FormedOverride` without touching the
+  config asset. The Inspector buttons still set the asset.
+- "Tune the PC look (live)" puts every number above on sliders. This is `MeerkatWormholeHQ.Tuning`, starting from the
+  preset on screen.
+- The networked look needs no switch: ride or watch an omnicrystal network (the lab's RideNetwork).
+
+**Cost over §1.** The march and its taps are unchanged. Inside a shell, each step adds one `pow` and one normalize. The
+pixel does two more scene reads (dispersion), and a pixel the layer covers no longer discards.
+
+**To recreate it:** take `MeerkatWormholeLens.shader` at the branch's head (search for `_MW_HQ`), `MeerkatWormholeHQ.cs`,
+and the pass's `Resolve()`, which clones the lens material and enables the keyword.

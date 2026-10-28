@@ -67,9 +67,17 @@ namespace CosmicShore.Gameplay
         static readonly int CamRId = Shader.PropertyToID("_MWCamR");
         static readonly int CamUId = Shader.PropertyToID("_MWCamU");
         static readonly int CamFId = Shader.PropertyToID("_MWCamF");
+        static readonly int HQ0Id = Shader.PropertyToID("_MWHQ0");
+        static readonly int HQ1Id = Shader.PropertyToID("_MWHQ1");
+        static readonly int HQ2Id = Shader.PropertyToID("_MWHQ2");
+        static readonly int HQ3Id = Shader.PropertyToID("_MWHQ3");
+        static readonly int LightDirId = Shader.PropertyToID("_MWLightDir");
+        /// <summary>The lens shader's high-quality PC variant (<see cref="MeerkatTubeLookMode.HighQuality"/>).</summary>
+        public const string HighQualityKeyword = "_MW_HQ";
 
         static MeerkatWormholeLensPass s_pass;
-        static Material s_lens, s_warp;
+        static Material s_lens, s_lensHQ, s_warp;
+        static ScriptableObjects.MeerkatFormedLook s_nearLook;
         static bool s_resolved, s_holdingCameras;
         static readonly ProfilerMarker s_marker = new("MeerkatWormholeLens.Maintain");
 
@@ -129,6 +137,7 @@ namespace CosmicShore.Gameplay
             public readonly Vector4[] c = new Vector4[MaxWells];
             public readonly Vector4[] p = new Vector4[MaxWells];
             public Vector4 ripple, view;
+            public Vector4 hq0, hq1, hq2, hq3, light;
             public readonly ContourTubes tubes = new();
         }
 
@@ -230,7 +239,14 @@ namespace CosmicShore.Gameplay
             // 3. Everything at once, bending that copy onto the camera colour.
             using (var builder = renderGraph.AddRasterRenderPass<LensData>("Meerkat wormhole lens", out var data, profilingSampler))
             {
-                data.material = s_lens;
+                bool hq = MeerkatTubeLook.HighQuality && s_lensHQ;
+                data.material = hq ? s_lensHQ : s_lens;
+                if (hq)
+                {
+                    MeerkatWormholeHQ.For(s_nearLook).Pack(out data.hq0, out data.hq1, out data.hq2, out data.hq3);
+                    data.light = MeerkatWormholeHQ.LightDir();
+                }
+                else data.hq0 = data.hq1 = data.hq2 = data.hq3 = data.light = Vector4.zero;
                 System.Array.Copy(s_c, data.c, MaxWells);
                 System.Array.Copy(s_p, data.p, MaxWells);
                 data.ripple = ripple;
@@ -265,6 +281,11 @@ namespace CosmicShore.Gameplay
                     d.block.SetVector(CamRId, t.CamR);
                     d.block.SetVector(CamUId, t.CamU);
                     d.block.SetVector(CamFId, t.CamF);
+                    d.block.SetVector(HQ0Id, d.hq0);
+                    d.block.SetVector(HQ1Id, d.hq1);
+                    d.block.SetVector(HQ2Id, d.hq2);
+                    d.block.SetVector(HQ3Id, d.hq3);
+                    d.block.SetVector(LightDirId, d.light);
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, d.material, 0, MeshTopology.Triangles, 3, 1, d.block);
                 });
             }
@@ -322,7 +343,7 @@ namespace CosmicShore.Gameplay
             {
                 var t = live[i];
                 var cfg = t.Config;
-                if (!cfg || !cfg.ContourFieldOn || t.W.S1 - t.W.S0 < 1f || t.Fade <= 0.004f) continue;
+                if (!cfg || !MeerkatTubeLook.FieldOn(cfg) || t.W.S1 - t.W.S0 < 1f || t.Fade <= 0.004f) continue;
                 Offer(new Near { Tunnel = t, D = Vector3.Distance(eye, t.At(0.5f * (t.W.S0 + t.W.S1), out _)) });
             }
             // round 26: every channel of a network is a wormhole tube; its distance is to the nearest point of its dug window
@@ -332,7 +353,7 @@ namespace CosmicShore.Gameplay
             {
                 var net = nets[n];
                 var cfg = net.Maker ? net.Maker.Config : null;
-                if (!cfg || !cfg.ContourFieldOn || MeerkatWormholeView.ChannelWrapped(cfg)) continue;
+                if (!cfg || !MeerkatTubeLook.FieldOn(cfg) || MeerkatWormholeView.ChannelWrapped(cfg)) continue;
                 for (int i = 0; i < net.Channels.Count; i++)
                 {
                     ref var w = ref net.Life[i];
@@ -346,6 +367,7 @@ namespace CosmicShore.Gameplay
             }
             int count = s_nearN;
             bank.Count = count;
+            if (count > 0) s_nearLook = MeerkatTubeLook.Formed(s_near[0].Config);   // the PC look's preset: the nearest tube's
             for (int i = 0; i < MaxTubes; i++)
             {
                 for (int j = 0; j < PathPoints; j++) bank.Norm[i * PathPoints + j] = Vector4.zero;
@@ -463,6 +485,12 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[Meerkat] The wormhole lens cannot draw: {reason}. Tunnels show their bridge, not bent space.");
                 s_lens = s_warp = null;
             }
+            else
+            {
+                // the PC look: the same shader and material with _MW_HQ on (one shader; the keyword off is the shipped lens)
+                s_lensHQ = new Material(s_lens) { name = "MeerkatWormholeLens (HQ)", hideFlags = HideFlags.HideAndDontSave };
+                s_lensHQ.EnableKeyword(HighQualityKeyword);
+            }
             return s_lens && s_warp;
         }
 
@@ -489,6 +517,8 @@ namespace CosmicShore.Gameplay
         {
             s_resolved = false;
             s_lens = s_warp = null;
+            if (s_lensHQ) UnityEngine.Object.Destroy(s_lensHQ);
+            s_lensHQ = null;
             s_holdingCameras = false;
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
