@@ -11,7 +11,7 @@ prisms per payload (`Ark.TakeHullPrisms`, never the last dozen); `PayloadCarrier
 plain one, `PayloadCrackPrismEffectSO`, shares `SuperShieldCrack` with the Grizzly sniper. Hand tests:
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The plain payload on RB". **Squad = domain** for now: a vessel takes payloads
 only from its own domain's Ark. The Ark is the local toy's, so the hold arbitrates on the machine that holds it; a
-networked Ark (the voyage, §8.5) makes the hold a server object.
+networked Ark (Voyages, §8.5) makes the hold a server object.
 
 **The fall (§8.4), also built 2026-10-27, unverified in the editor.** The hold carries artifacts by id (the id
 `SquadSlot.ArtifactId` names on Shombith's branch; no second artifact type). When the last hull prism goes,
@@ -263,8 +263,13 @@ Built on the types from `claude/pensive-dijkstra-qxoxo0` once they land, never b
    backend, so it goes through Shombith. The Ark screen gets an artifact panel beside the Converter.
 4. **The fall.** When `Ark` dies, the hold's contents move to the credited squad's Ark, server-side, in one step. With
    no squad to credit (fauna), they spawn as `ArtifactPickup`s that the instance deletes, uncollected, when it ends.
-5. **The voyage.** Vaults, the hold and extraction belong to the voyage mode built on the Arkway (`ECOSYSTEM.md` §41),
-   through `/arcadegame`'s recipe.
+5. **Voyages.** Vaults, hunting and extraction belong to Voyages, not to the Arkway. Garrett (2026-10-28): voyages
+   replace missions as the fourth game location after Toybox, Arcade and Arena, and they are the game's culminating
+   experience. Squads travel between specific locations on a shared galactic map (the HyperSea) and have unique
+   experiences there. "Galactic traffic control" puts squads that meet into managed peer-to-peer instances that make
+   sense for both sides' missions. The Arkway (`ECOSYSTEM.md` §41, `Docs/ToySystem/ARKWAY_PLAN.md`) is a toy that also
+   uses the Ark: the most voyage-like toy, a taste of a freestyle voyage, not the voyage itself. Voyages need their own
+   plan: the map, the locations, traffic control and the server-owned Ark. Nothing for Voyages is built yet.
 6. **`/verify-unity`** before any C# commit (LOCKED).
 
 ## 9. Order
@@ -275,7 +280,7 @@ The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BU
 2. Two artifacts on any vessel: Javelin (offence) and Aegis (defence).
 3. An Ark's fall transferring its hold.
 4. Element tracks and crystal spending, once per-element balances exist.
-5. Vaults and extraction in a voyage.
+5. Vaults and extraction in Voyages (the fourth location, §8.5), once Voyages have a plan.
 
 ## 10. Open decisions
 
