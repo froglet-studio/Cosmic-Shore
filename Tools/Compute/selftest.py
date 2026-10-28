@@ -95,6 +95,17 @@ def end_to_end():
             bad.append("end to end: the supervisor did not run box2 from an export of bleeding-edge's Tools/Compute")
         if not os.path.isfile(os.path.join(work, "Docs", "Compute", "jobs", "toy-smoke.json")):
             bad.append("end to end: the person's checkout lost files")
+        # A second session on the same machine gets its own --max-evals budget (it used to count the machine's total
+        # and stop at once), and the runs log the console shows records it.
+        env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-box1"), FROGLET_COMPUTE_USER="selftest",
+                   FROGLET_COMPUTE_HOST="box1")
+        subprocess.run([sys.executable, script, "run", "--no-update", "--always", "--once", "--job", "toy-smoke",
+                        "--max-evals", "40", "--cores", "2", "--queue", "bleeding-edge"], cwd=work, env=env,
+                       capture_output=True, text=True, timeout=600)
+        hb = L.read_json(os.path.join(tmp, "cache-box1", "results", "selftest", "box1", "heartbeat.json"), {}) or {}
+        runs = hb.get("runs") or []
+        if len(runs) < 2 or int(runs[-1].get("evals") or 0) < 40:
+            bad.append(f"end to end: a second session did not get its own budget or was not logged: {runs[-1:] or 'no runs log'}")
         env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-board"))
         p = subprocess.run([sys.executable, script, "board", "--queue", "bleeding-edge"], cwd=work, env=env,
                            capture_output=True, text=True, timeout=300)

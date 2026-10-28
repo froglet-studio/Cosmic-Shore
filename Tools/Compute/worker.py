@@ -246,7 +246,7 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
                 break
             if time.time() - t_start > minutes * 60:
                 break
-            if max_evals and evals >= max_evals:
+            if max_evals and evals - evals0 >= max_evals:      # this session's budget, not the machine's total
                 stopped = "max evals"
                 break
             us = opt.ask()

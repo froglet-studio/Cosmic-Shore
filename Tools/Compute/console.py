@@ -109,6 +109,37 @@ def jobs_and_machines(jobs, machines, caps):
     return out_jobs, out_machines
 
 
+def runs(machines, jobs):
+    """What each computer is doing now (progress published every few minutes) and its recent sessions."""
+    titles = {j["id"]: j.get("title") for j in jobs.values()}
+    t = L.now()
+    active, recent = [], []
+    for m in machines:
+        hb = m.get("heartbeat") or {}
+        who = f"{m['user']}/{m['host']}"
+        cur = hb.get("current") or {}
+        if cur.get("job") and t - int(hb.get("updated", 0) or 0) < 3 * 3600:
+            active.append({"machine": who, "job": cur["job"], "title": titles.get(cur["job"]), "since": cur.get("since"),
+                           "updated": hb.get("updated"), "minutes": cur.get("minutes"), "max_evals": cur.get("max_evals"),
+                           "evals": cur.get("evals"), "best": _num(cur.get("best")), "best_start": _num(cur.get("best_start")),
+                           "unit": cur.get("unit"), "progress": cur.get("progress")})
+        for r in hb.get("runs") or []:
+            recent.append(dict(r, machine=who, title=titles.get(r.get("job")),
+                               best_start=_num(r.get("best_start")), best_end=_num(r.get("best_end"))))
+    recent.sort(key=lambda r: -(r.get("end") or 0))
+    return {"active": active, "recent": recent[:60]}
+
+
+def install_info(cwd=None):
+    """Where the one-line setup comes from: bleeding-edge once Froglet Compute is merged, the compute branch until then."""
+    import setup
+    on_be = L.git_ok("cat-file", "-e", "origin/bleeding-edge:Tools/Compute/setup.py", cwd=cwd) is not None
+    ref = "bleeding-edge" if on_be else setup.APP_REF
+    return {"ref": ref, "merged": on_be,
+            "unix": f"git fetch origin {ref} && git show origin/{ref}:Tools/Compute/setup.py | python3 -",
+            "windows": f"git fetch origin {ref}; git show origin/{ref}:Tools/Compute/setup.py | python -"}
+
+
 def recordings(cwd=None):
     """Every flight people's play sent (origin/bugledger/*), and whether the AI learning sweep learned from it."""
     seen = {}
@@ -192,9 +223,11 @@ def build(local=False, fetch=True, cwd=None, prs=None, url=None):
     jobs = L.load_jobs(local=True, cwd=cwd) if local else L.load_jobs(cwd=cwd)
     machines = L.gather(cwd=cwd)
     out_jobs, out_machines = jobs_and_machines(jobs, machines, L.capabilities())
+    run_data = runs(machines, jobs)
     return {"schema": SCHEMA, "generated": L.now(), "core": core_four(),
             "queue": "working tree (--local)" if local else list(L.QUEUE_REFS),
-            "jobs": out_jobs, "machines": out_machines, "recordings": recordings(cwd), "ai": ai_branch_status(cwd),
+            "jobs": out_jobs, "machines": out_machines, "runs": run_data, "install": install_info(cwd),
+            "recordings": recordings(cwd), "ai": ai_branch_status(cwd),
             "git": git_snapshot(cwd), "pull_requests": pull_requests(prs), "repo": "froglet-studio/Cosmic-Shore",
             "branch": (L.git_ok("rev-parse", "--abbrev-ref", "HEAD", cwd=cwd) or "").strip(), "url": url}
 

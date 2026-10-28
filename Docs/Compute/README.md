@@ -14,6 +14,18 @@ board), `/compute-job` (define a space and a loss), `/compute-scout` (find what 
 
 ## 1. Start (any collaborator, any OS, about two minutes)
 
+**The easy way: the Install button on the Compute Console** (section 13) shows one line to paste from your
+Cosmic-Shore folder. On macOS or Linux:
+
+```
+git fetch origin <ref> && git show origin/<ref>:Tools/Compute/setup.py | python3 -
+```
+
+(`python -` and `;` instead of `&&` in Windows PowerShell; `<ref>` is the compute branch until Froglet Compute is on
+`bleeding-edge`.) `Tools/Compute/setup.py` copies the code into `~/.froglet-compute/app`, installs the worker
+(`--repo` your checkout, `--home` and `--queue` the ref), and does a two-minute first run. Add `--nights`, `--always`,
+`--no-first-run`, `--dry-run` or `--uninstall` after the dash. By hand, from a checkout of the branch:
+
 ```
 python3 Tools/Compute/compute.py doctor      # what this machine can run, and what to install to run more
 python3 Tools/Compute/compute.py top         # the queue, ranked, and what this machine would run next
@@ -251,10 +263,15 @@ decide, not something to start without them.
 in Cosmic Shore's style foundation (`Docs/STYLE_FOUNDATION.md`: the deep-space neutrals, Jade for the selection, CTA
 green for the one call to action, Gold for "waits for a person", corner slivers, Aldrich and Chakra Petch).
 
+It opens on Home, and a first visit starts a guided tour (nine stops; the Tour button replays it). The Install
+button (title bar, Home, Computers) opens a sheet with the one line for macOS, Windows or Linux (section 1).
+
 | View | What it shows |
 |---|---|
-| Queue | every job in the order a machine takes it: state, evaluations, the team's best against the shipped value, a best-so-far line; a job's sheet adds race seconds per intensity, the best values, the model's limits, and Approve / Decline |
-| Machines | every `compute/<user>/<host>` branch: working now or not, last session, cores, what it can run |
+| Home | one sentence on what is happening, Needs you (results ready for a yes, the ai branch behind, races not learned yet), Running now, the best finds, how it works in four steps |
+| Runs | each computer's live run (a progress bar from the progress it publishes every few minutes, tries, best now) and the recent runs log (when, which search, how long, tries, best before and after, why it ended) |
+| Searches | every job, grouped by what it waits for: the best find against today's value as a percentage, a best-so-far line; a search's sheet adds race time per intensity, its runs, the settings found, the model's limits, and "Yes, put it in" / "Not this one" |
+| Computers | every `compute/<user>/<host>` branch: running now or not, last heard, runs, cores, what it can run |
 | Recordings | every race the editor sent (`origin/bugledger/*`), learned / waiting / not seen yet by the AI learning sweep, by vessel and mode |
 | AI branch | `origin/ai` against bleeding-edge and Ys-bleeding-edge's AI work, and its recent commits |
 | Terminal (`⌘J`) | `help`, `status`, `jobs`, `job <id>`, `open`, `machines`, `recordings`, `ai`, `git log`, `git branches`, `prs`, `approve` / `decline`; `ask <question>` (Claude reads the console's data); `task <prompt>` (starts a Claude Code cloud session on the repo on the viewer's account, after a typed `yes`: GitHub, pushes, anything a session does), `sync`, `refresh`, `sessions`, `env` |

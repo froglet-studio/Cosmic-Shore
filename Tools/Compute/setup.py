@@ -11,7 +11,7 @@ Options go after the dash (`... | python3 - --nights`):
     --nights          work only 22:00-07:00 instead of whenever you are away
     --always          a computer nobody sits at (a VM): work all the time
     --no-first-run    skip the short first session that puts this computer on the console
-    --dry-run         print what it would do, change nothing
+    --dry-run         copy the code into ~/.froglet-compute/app and print what it would register; register nothing
     --uninstall       stop it and remove what it added
 
 What it does, in order, and nothing else:
@@ -56,10 +56,8 @@ def ref_with_compute():
                      "Is this the Cosmic-Shore repository, and can you fetch from it?")
 
 
-def copy_app(ref, dry):
+def copy_app(ref):
     say(f"2. copying Tools/Compute from origin/{ref} into {APP}")
-    if dry:
-        return
     tmp = APP + ".part"
     shutil.rmtree(tmp, ignore_errors=True)
     os.makedirs(tmp)
@@ -100,7 +98,7 @@ def main(argv):
     except ImportError:
         say("   numpy: no. Most jobs need it: " + os.path.basename(sys.executable) + " -m pip install --user numpy")
     ref = ref_with_compute()
-    copy_app(ref, dry)
+    copy_app(ref)
     args = [sys.executable, compute, "install", "--repo", repo, "--home", f"origin/{ref}"]
     # Until Froglet Compute is on bleeding-edge its job files live on the compute branch: read the queue there too.
     queue = ["bleeding-edge", "ai", "compute-queue"] + ([ref] if ref != "bleeding-edge" else [])

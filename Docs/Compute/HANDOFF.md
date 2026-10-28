@@ -86,6 +86,16 @@ phone widths (no sideways scroll at 400 px), the terminal's offline commands, th
 (`create_session`'s answer shape is read defensively, since creating a session only to learn its shape was not
 worth it), `sessions` and `ask` inside the claude.ai viewer, and a real approval round trip.
 
+### Install, runs and the tour (2026-10-28)
+
+- One-line setup (`Tools/Compute/setup.py`, README section 1) behind the console's Install button; dry-run from the
+  pushed branch and a first session from the installed copy both ran here. Not run on Windows or macOS.
+- Workers publish progress every few minutes while a session runs and keep a runs log; the console's Runs view and
+  Home show both.
+- Fixed: `--max-evals` counted the machine's total tries on a search, so a second session stopped at once (a
+  setup's first run would have done nothing on a machine that had worked the search before). It is now per session;
+  the self-test's second box1 session proves it (and fails against the old check).
+
 ## 4. Decisions that are yours
 
 - **Merge or not**, and onto what (`bleeding-edge` directly, or through your own branch).
