@@ -254,10 +254,111 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool AddMorphedShard(Vector3 position, Quaternion limbRotation, float startTime, float duration)
         {
+            // A match replay places the shards the match's limbs left (AddRecordedMorphedShard), not this run's.
+            if (ReplayHoldsMorphs) return false;
             if (_morphedShards >= MorphedShardCap) return false;
             if (!_instanced && shards == null) return false;
             if (_dyingLimbs++ % Mathf.Max(1, limbsPerMorphedShard) != 0) return false;
 
+            AddMorphedShardUngated(position, limbRotation, startTime, duration);
+            MorphedShardAdded?.Invoke(this, position, limbRotation, startTime, duration);
+            return true;
+        }
+
+        // ---- Match replay (Docs/REPLAYS.md §6.4). Additive: nothing here runs unless a replay asks. ----
+
+        /// <summary>Raised after a dying limb's shard joined a field (field, position, limb rotation, start time, duration):
+        /// the match recorder keeps it so a replay can leave the same shard at the same moment.</summary>
+        public static event System.Action<SnowChanger, Vector3, Quaternion, float, float> MorphedShardAdded;
+
+        /// <summary>While a match replay plays, live dying limbs leave no shards; the replay adds the recorded ones.</summary>
+        public static bool ReplayHoldsMorphs { get; set; }
+
+        // Fast enter-play-mode keeps statics: a replay that never reached its teardown must not hold the next session's morphs.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetReplayState()
+        {
+            ReplayHoldsMorphs = false;
+            MorphedShardAdded = null;
+        }
+
+        /// <summary>How many shards the field holds now (its own and the limbs').</summary>
+        public int ShardTotal => ShardCount;
+
+        /// <summary>Every shard's position, in field order, into <paramref name="into"/> (cleared first).</summary>
+        public void CopyShardPositions(List<Vector3> into)
+        {
+            into.Clear();
+            int n = ShardCount;
+            for (int i = 0; i < n; i++)
+            {
+                if (_instanced) into.Add(_shardPos[i]);
+                else into.Add(shards[i] ? shards[i].transform.position : Vector3.zero);
+            }
+        }
+
+        /// <summary>
+        /// Stand the field's shards at <paramref name="positions"/> (a recorded field), growing or trimming it to that
+        /// many; each then points and sizes by the shard law as usual. Any shard still condensing is settled. False,
+        /// changing nothing, before <see cref="Initialize"/> built the field or for an empty list.
+        /// </summary>
+        public bool ApplyShardPositions(IReadOnlyList<Vector3> positions)
+        {
+            if (positions == null || positions.Count == 0) return false;
+            if (!_instanced && shards == null) return false;
+            _condensing.Clear();
+            int n = positions.Count;
+
+            if (_instanced)
+            {
+                while (_matrices.Length < n) GrowInstancedCapacity();
+                for (int i = 0; i < n; i++)
+                {
+                    if (i >= _count)
+                    {
+                        _shardRot[i] = snow ? snow.transform.rotation : Quaternion.identity;
+                        _shardScale[i] = Vector3.one * nodeScaler;
+                    }
+                    _shardPos[i] = positions[i];
+                    WriteMatrix(i);
+                }
+                _count = n;
+            }
+            else
+            {
+                for (int i = shards.Count - 1; i >= n; i--)
+                {
+                    if (shards[i]) Destroy(shards[i]);
+                    shards.RemoveAt(i);
+                }
+                for (int i = 0; i < n; i++)
+                {
+                    if (i >= shards.Count || !shards[i])
+                    {
+                        var shard = Instantiate(snow, transform, true);
+                        shard.transform.localScale = Vector3.one * nodeScaler;
+                        if (_tintMaterial) AssignTint(shard);
+                        if (i >= shards.Count) shards.Add(shard); else shards[i] = shard;
+                    }
+                    shards[i].transform.position = positions[i];
+                }
+            }
+
+            ChangeSnowOrientation();
+            return true;
+        }
+
+        /// <summary>A recorded limb's shard, as <see cref="AddMorphedShard"/> adds one but without its thinning or cap
+        /// (the recording already kept only the shards the match's field took).</summary>
+        public bool AddRecordedMorphedShard(Vector3 position, Quaternion limbRotation, float startTime, float duration)
+        {
+            if (!_instanced && shards == null) return false;
+            AddMorphedShardUngated(position, limbRotation, startTime, duration);
+            return true;
+        }
+
+        void AddMorphedShardUngated(Vector3 position, Quaternion limbRotation, float startTime, float duration)
+        {
             int index;
             if (_instanced)
             {
@@ -281,7 +382,6 @@ namespace CosmicShore.Gameplay
 
             _morphedShards++;
             _condensing.Add(new Condensing { Index = index, StartTime = startTime, Duration = Mathf.Max(0.01f, duration), From = limbRotation });
-            return true;
         }
 
         void GrowInstancedCapacity()

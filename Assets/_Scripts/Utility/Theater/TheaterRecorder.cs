@@ -37,6 +37,7 @@ namespace CosmicShore.Utility
         float _recordedSeconds;
         float _limitSeconds = float.MaxValue;
         TheaterWorldRecorder _world;
+        TheaterActorRecorder _actors;
         bool _watchingActions;
         readonly Dictionary<TheaterTrack, int> _trackIndex = new();
 
@@ -65,6 +66,9 @@ namespace CosmicShore.Utility
             _world?.Detach();
             _world = null;
             _recording.World = null;
+            _actors?.Detach();
+            _actors = null;
+            _recording.Actors = null;
             StopWatchingActions();
             _recording.Tracks.Clear();
             _recording.Actions.Clear();
@@ -133,6 +137,23 @@ namespace CosmicShore.Utility
                     Speed = status.Speed
                 });
             }
+
+            _actors?.Sample(now);
+        }
+
+        /// <summary>
+        /// Record the crystals, plants, creatures and cytoplasm shards beside the vessels, on the same samples
+        /// (<c>Docs/REPLAYS.md</c> §6.4). Call after <see cref="Begin"/>; false when not recording.
+        /// </summary>
+        public bool RecordActors(TheaterActorRecorder actors)
+        {
+            if (!IsRecording || actors == null) return false;
+            _actors?.Detach();
+            _actors = actors;
+            _recording.Actors = actors.Actors;
+            actors.Attach();
+            actors.Sample(Time.time);
+            return true;
         }
 
         /// <summary>
@@ -212,6 +233,8 @@ namespace CosmicShore.Utility
             IsRecording = false;
             _world?.Detach();
             _world = null;
+            _actors?.Detach();
+            _actors = null;
             StopWatchingActions();
         }
 

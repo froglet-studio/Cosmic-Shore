@@ -1604,6 +1604,12 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Read-only view of what this cell's spawners registered (plants, creatures and their managers). For the
+        /// match replay's census (<c>TheaterActorRecorder</c>, Docs/REPLAYS.md §6.4); entries may be destroyed.
+        /// </summary>
+        public IReadOnlyList<GameObject> SpawnedLifeForms => spawnedLifeForms;
+
         public void RegisterSpawnedObject(GameObject obj)
         {
             if (!obj) return;

@@ -115,6 +115,16 @@ namespace CosmicShore.ScriptableObjects
                  "Empty uses a lit material built at runtime.")]
         [SerializeField] Material worldPrismMaterial;
 
+        [Header("The actors")]
+        [Tooltip("Record where every crystal, plant, creature and cytoplasm shard stands beside the vessels, so a " +
+                 "replay puts each one where it was in the match instead of where this run's dice put it " +
+                 "(Docs/REPLAYS.md §6.4).")]
+        [SerializeField] bool recordActors = true;
+
+        [Tooltip("An actor that moves this far between two samples jumped (a crystal respawning): the replay snaps " +
+                 "it there instead of gliding.")]
+        [SerializeField, Range(1f, 100f)] float actorJumpDistance = 8f;
+
         [Header("Watching: the camera")]
         [Tooltip("The camera a replay opens on. Free is the Theater's free-flying camera (sticks / WASD, the Third " +
                  "Eye's way of watching), seeded from the orbit framing so the race is in shot.")]
@@ -122,6 +132,16 @@ namespace CosmicShore.ScriptableObjects
 
         public TheaterShot StartShot => startShot;
         public bool RecordWorld => recordWorld;
+        public bool RecordActors => recordActors;
+        public float ActorJumpDistance => actorJumpDistance;
+
+        /// <summary>An actor recorder set up from these settings.</summary>
+        public TheaterActorRecorder NewActorRecorder()
+        {
+            var thin = TheaterActorThinning.Default;
+            thin.JumpDistance = actorJumpDistance;
+            return new TheaterActorRecorder(thin);
+        }
         public Material WorldPrismMaterial => worldPrismMaterial;
 
         /// <summary>A world recorder set up from these settings.</summary>

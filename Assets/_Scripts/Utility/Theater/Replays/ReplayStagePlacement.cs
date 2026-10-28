@@ -19,7 +19,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Add <paramref name="offset"/> to every pose of every track, and to every recorded prism of
-        /// its world. Times, rotations, speeds and scales are untouched.
+        /// its world, and to every recorded crystal, plant, creature and shard. Times, rotations, speeds and scales are untouched.
         /// </summary>
         public static void Shift(TheaterRecording recording, Vector3 offset)
         {
@@ -35,6 +35,7 @@ namespace CosmicShore.Utility
                 }
             }
             recording.World?.Shift(offset);
+            recording.Actors?.Shift(offset);
         }
     }
 }

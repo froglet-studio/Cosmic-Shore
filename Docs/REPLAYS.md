@@ -107,6 +107,8 @@ returns the summaries that are not on this device.
 | Move Jump Distance | 8 | A prism that jumps this far is recorded at once |
 | Max World Events | 250000 | Prism events one replay keeps (about 50 bytes each); past it new prisms stop being recorded, and the log says so once |
 | World Prism Material | empty | Material the recorded prisms are drawn with, tinted per domain (GPU instancing on); empty builds a lit URP material at runtime |
+| Record Actors | on | Record the crystals, plants, creatures and cytoplasm shards beside the vessels (section 6.4) |
+| Actor Jump Distance | 8 | A recorded actor that moves this far between samples is a cut (a respawn): the replay snaps it there instead of gliding, and a crystal that far from its recorded place is moved through its manager |
 
 Sample rate, length cap, ghosts and cameras stay on `TheaterConfigSO`.
 
@@ -270,15 +272,50 @@ fast-forwards to the moment); **D-pad up / down** or **= / -** speed (0.25x to 4
 `replay list` lists them. A replay being watched is never recorded again.
 
 **What it is not, yet:**
-- **The ecology rolls its own dice.** Flora and fauna spawn and wander from the global `UnityEngine.Random` on each run
-  (`CellNetworkSync` says so), so creatures are the scene's own but not the match's exact ones. Making them match is
-  either seeding every life spawner or applying the recorded world (6.2) to the live scene, its own task.
-- **Crystal positions** are drawn per run from the same RNG; vessels on recorded paths still take the crystals they
-  reach. Recording the crystal slots and relocating them (`NetworkCrystalManager.RelocateCrystal`) is the next step.
+- **The ecology and the crystals still roll their own dice**, but since 2026-10-29 the replay overrides where they
+  stand: crystals, plants, creatures and the cytoplasm shards are recorded as outcomes and placed every frame (6.4).
 - **Analog inputs** (stick and trigger values) are not recorded: the pose is, and an action reads its vessel's pose.
 - **No on-screen replay bar yet** in the scene (the menu's playback HUD is the in-menu picture's); the game's own HUD
   shows, with the live crystal counter.
 - Verified end to end in Amoebius (`Docs/claude/VIDEOS_AND_PREVIEWS.md`); not yet in the Unity editor.
+
+### 6.4 Crystals, plants, creatures and shards where the match had them (2026-10-29)
+
+Yash, 2026-10-29: "I want Crystal's position, flora, fauna, shards, etc everyone's position, orientation, to mimic the
+whole game pixel by pixel". The scene's own spawners still draw at random (6.3), so a replay records **outcomes** and
+puts each live actor where its recorded one was, the way the vessels ride their tracks.
+
+- **Recording** (`TheaterActorRecorder`, on with **Record Actors**; `TheaterRecorder.RecordActors`). On every vessel
+  sample it takes a census: each manager crystal (`Crystal.Active`, id > 0; a heart crystal rides its plant or
+  creature), each plant and creature root the enabled cells hold (`Cell.SpawnedLifeForms`, `Cell.LiveFauna`) gets its
+  position, rotation and scale looked at, and its track keeps the pose when it changed (`TheaterActorThinning`: 1 cm,
+  0.25 deg, a 0.001 scale; the still pose before a move is kept too, so a glide starts where it should). A move past
+  **Actor Jump Distance** is flagged a cut. An actor no longer present has its track closed. At Go every cell's
+  cytoplasm field is taken whole (`SnowChanger.CopyShardPositions`), and every shard a dying limb leaves afterwards
+  is logged with its moment, place, heading, condense start and duration (`SnowChanger.MorphedShardAdded`).
+- **On disk.** Stream 4 (`TheaterRecording.StreamActors`, `TheaterActors`), written last: per track 14 bytes plus its
+  name plus 45 per pose; per shard field 13 bytes plus its cell name, 12 per shard and 40 per limb shard. An older
+  build skips the stream by its length; a recording without it reads as before. `ReplayStagePlacement` shifts it with
+  the rest.
+- **Playback** (`ReplayActorSync`, driven by `ReplayMatchDirector` after the vessels each frame).
+  - **Crystals** pair by crystal id (a manager hands ids out in the same order every run). Between a crystal's stays
+    the last pose holds; a cut snaps. A crystal further than the jump distance from its recorded place is moved
+    through its own manager (`CrystalManager.RelocateCrystal`, so the cell's slots, bloom and item listeners agree),
+    and every frame its pose and scale are set.
+  - **Plants and creatures** pair by species (prefab name without "(Clone)") and nearness: every 6 frames each live
+    one without a partner takes the nearest free recorded one of its species present at that moment; from then on its
+    root stands where that one stood. A live one with no partner is hidden (its renderers) until one is free; the
+    renderers come back when the replay ends.
+  - **Shards** pair by field (cell config name and order among the enabled cells of that config). Each field is stood
+    at its recorded positions once (`SnowChanger.ApplyShardPositions`, grown or trimmed to the recorded count), then
+    the recorded limb shards are added at their moments with their own condense start (`AddRecordedMorphedShard`).
+    While a replay plays, live dying limbs leave none (`SnowChanger.ReplayHoldsMorphs`). Where a shard points and how
+    long it is follow from the replayed crystal by the shard law, as in the match.
+- **Not covered yet:** a plant's prism growth shape (its prisms are in the world stream, 6.2, but the live plant grows
+  its own); swarm and virtual members and child creatures (only roots are driven); a crystal's own model animation; heart
+  crystals (they ride their host); a recorded actor with no live counterpart gets no stand-in; a hidden plant or
+  creature keeps its colliders; on a networked match `RelocateCrystal` goes through a ServerRpc (a replay is local, so
+  the host is the player). None of it is verified in the Unity editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 
 ## 7. Try it now
 
@@ -295,7 +332,8 @@ browser", and "Replays inside the arena").
 
 | Next | What | Notes |
 |---|---|---|
-| The rest of the world | Crystals, projectiles, blasts, the cell's membrane and nucleus | The Theater's P2 (`Docs/THEATER.md` §6). Prisms are recorded (section 6.2). |
+| The rest of the world | Projectiles, blasts, the cell's membrane and nucleus | The Theater's P2 (`Docs/THEATER.md` §6). Prisms (section 6.2) and crystals, plants, creatures and shards (section 6.4) are recorded. |
+| Life forms in full | A plant's growth shape, swarm members, child creatures, stand-ins for unmatched actors | Section 6.4's "Not covered yet". |
 | Prisms in their own look | The prism shader on recorded prisms | Recorded prisms are lit, domain-coloured boxes; assign **World Prism Material** for another look. |
 | Rings that move | Skim Race's crystal rings | Captured once, at Go; a ring that moves with its crystal later in the match stays at its first place. |
 | A mode with no preview definition | Maelstrom (and any mode the preview library lacks) | Recorded and watchable, on the dark stage. |
@@ -310,6 +348,11 @@ brought onto this branch unchanged apart from three things recorded in its landi
 `Docs/claude/DOCUMENTATION_INDEX.md`, and `TheaterDirector` gained `PlayFile(path)`. Check with Will before changing
 anything else in it. The replay player reads `TheaterPlayback`'s public API and configures its stage through a runtime
 copy of `TheaterConfigSO`; it changes nothing in the Theater.
+
+The actor recording (6.4) adds, all additive: `TheaterRecording` stream 4 (`StreamActors`, `Actors`, written last; the
+other streams unchanged), `TheaterRecorder.RecordActors`, `Cell.SpawnedLifeForms` (read-only), and on `SnowChanger`
+`CopyShardPositions`, `ApplyShardPositions`, `AddRecordedMorphedShard`, the `MorphedShardAdded` event and the
+`ReplayHoldsMorphs` gate (its one change to existing behaviour: while a replay plays, `AddMorphedShard` adds nothing).
 
 The world recording adds one hook to the prism spatial index (`PrismSpatialIndex.LifeObserver`, `VisitLive`, and the
 observer calls in `Register`, `Unregister`, `MarkDestroyed`, `MarkRestored`, `UpdatePosition` and
