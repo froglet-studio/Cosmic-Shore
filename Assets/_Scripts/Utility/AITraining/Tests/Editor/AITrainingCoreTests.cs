@@ -353,6 +353,20 @@ namespace CosmicShore.Utility.AITraining.Tests
         }
 
         [Test]
+        public void Pilot_TargetModeSetAfterBind_AppliesAtBeginEpisode()
+        {
+            // The runner's order: BindVessel builds the sensors, then TargetMode is set, then BeginEpisode.
+            var go = new GameObject("pilot");
+            var pilot = go.AddComponent<TrainingPilot>();
+            pilot.BindVessel(null, null, null);
+            pilot.TargetMode = TargetSensor.TargetMode.NextGate;
+            pilot.BeginEpisode(0);
+            Assert.AreEqual(TargetSensor.TargetMode.NextGate, pilot.ActiveTargetMode);
+            pilot.EndEpisode();
+            Object.DestroyImmediate(go);
+        }
+
+        [Test]
         public void TargetSensor_NextGate_NoRace_HasNoTarget()
         {
             var sensor = new TargetSensor(null, null) { Mode = TargetSensor.TargetMode.NextGate };

@@ -671,7 +671,9 @@ def run(args):
             hb["current"] = {}
         L.write_json(os.path.join(folder, "heartbeat.json"), hb)
         L.post_heartbeat(hb)
-        L.log(f"{job['id']}: session over ({out.get('stopped')}, {out.get('evals', '-')} evals)", quiet)
+        n = out.get("evals", out.get("count"))
+        L.log(f"{job['id']}: session over ({out.get('stopped')}, {n if n is not None else '-'} "
+              f"{'matches' if job['kind'] == 'command' and out.get('count') is not None else 'evals'})", quiet)
         if not args.no_push:
             sha_pub = L.publish(folder, *ident, f"compute: {job['id']} ({out.get('stopped')})", quiet=quiet)
             L.log(f"published {('compute/' + ident[0] + '/' + ident[1])} @ {(sha_pub or '?')[:9]}", quiet)

@@ -173,11 +173,14 @@ def prepare_project(sha, repo=None, dest=None, quiet=False, overlay_sha=None, ov
 
 # ── one run ──────────────────────────────────────────────────────────────────
 
-def unity_argv(unity, project, out, args, deadline):
-    argv = [unity, "-batchmode", "-projectPath", project, "-executeMethod", ENTRY,
+def unity_argv(unity, project, out, args, deadline, watch=False):
+    # Watching: Unity opens with its window and plays the match in the Game view, camera and sound on, at game speed.
+    argv = [unity] + ([] if watch else ["-batchmode"]) + ["-projectPath", project, "-executeMethod", ENTRY,
             "-logFile", os.path.join(out, "unity.log"), "-frogletTrain", out,
             "-trainMode", args.mode, "-trainIntensity", str(args.intensity), "-trainEpisodes", str(args.episodes),
-            "-trainDeadline", str(int(deadline)), "-trainTimeScale", str(args.time_scale)]
+            "-trainDeadline", str(int(deadline)), "-trainTimeScale", str(1.0 if watch else args.time_scale)]
+    if watch:
+        argv.append("-trainWatch")
     if args.vessel:
         argv += ["-trainVessel", args.vessel]
     if args.nographics:
@@ -244,7 +247,8 @@ def run(args):
     saved = os.path.join(out, "SessionState.asset")
     if os.path.exists(saved):                       # resume this unit's population where it stopped
         shutil.copy2(saved, os.path.join(project, *STATE_ASSET.split("/")))
-    argv = unity_argv(unity, project, out, args, deadline)
+    watch = args.watch or os.environ.get("FROGLET_COMPUTE_UNITY_WATCH") == "1"
+    argv = unity_argv(unity, project, out, args, deadline, watch=watch)
     L.log("unity: " + " ".join(argv), args.quiet)
     _status(out, phase="opening Unity (importing on the first run)", unit_episodes=args.episodes)
 
@@ -325,6 +329,8 @@ def main(argv=None):
                     "laid over the code while the code ref has not touched them (a trainer change not merged yet)")
     ap.add_argument("--overlay", action="append", help="a path taken from --overlay-ref (repeatable)")
     ap.add_argument("--nographics", action="store_true", help="start Unity with -nographics")
+    ap.add_argument("--watch", action="store_true", help="open Unity with its window and play at game speed, to watch "
+                    "the AIs (also FROGLET_COMPUTE_UNITY_WATCH=1, which `compute.py run --watch` sets)")
     ap.add_argument("--poll", type=float, default=float(os.environ.get("FROGLET_COMPUTE_UNITY_POLL") or 5.0))
     ap.add_argument("--quiet", action="store_true")
     a = ap.parse_args(argv)

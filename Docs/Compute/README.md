@@ -397,6 +397,13 @@ matches, a population of AIs, the best kept. Froglet Compute now starts it with 
   writes `status.json` (live), `result.json` and `genome.json`. The person's checkout and their open Unity are never
   touched; an automatic run waits while their own Unity has the project open (the two would race), a manual run goes
   ahead.
+- **Watching it**: `compute.py run --request <token> --watch` (the console's "Show the game", on by default for this
+  computer) opens Unity with its window instead of `-batchmode`, camera and sound on, at game speed: the AIs play in
+  the Game view. Without it the run has no window and plays at up to 4x.
+- **First real run (Shombith's PC, 2026-10-28)**: Dolphin in Switchback at I2, 32 matches, the import included, in 27
+  minutes, result published. Every AI scored 0 gates: the trainer built each new pilot's target sensor before the
+  scenario's target mode was set, so every pilot sought crystals (`TrainingPilot.BeginEpisode` now applies it). That
+  also hit the enemy-seeking modes (Joust, Dog Fight, The Bends) whenever a match reloads its scene.
 - **A manual run** for a purple pair names the pair, the intensity and the number of matches
   (`args: {mode, vessel, intensity}`, `budget.tries` = matches); `manual_runs.problems()` refuses anything else.
   The console's New run gives the line for PowerShell or Terminal, or sends it to the team's computers with Unity.

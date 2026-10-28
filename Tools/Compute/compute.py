@@ -96,6 +96,8 @@ def _home_worktree(ref):
 
 def cmd_run(args):
     import worker as W
+    if getattr(args, "watch", False):
+        os.environ["FROGLET_COMPUTE_UNITY_WATCH"] = "1"       # unity_run.py, started by the worker, reads it
     if args.in_home or args.no_update or args.local or args.request:
         args.once = True if args.in_home else args.once
         return W.run(args)
@@ -373,6 +375,7 @@ def main(argv=None):
     p.add_argument("--progress-minutes", type=float, default=5.0, help="publish progress this often while a session runs")
     p.add_argument("--repo", help="the Cosmic-Shore checkout, when running from a copy outside it")
     p.add_argument("--request", help="a manual run: a request id, a token from the console, or a request file; runs now")
+    p.add_argument("--watch", action="store_true", help="a run in the game: open Unity with its window to watch it")
     p.add_argument("--no-requests", action="store_true", help="skip other people's manual runs (the automatic queue only)")
     p.add_argument("--job", help="only this job")
     p.add_argument("--once", action="store_true", help="one session, then exit")

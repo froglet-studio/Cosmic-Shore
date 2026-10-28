@@ -112,9 +112,11 @@ namespace CosmicShore.Utility.AITraining.Editor
             control.HumanPlaysThisLaunch = false;
             control.TargetEpisodes = episodes;
             if (control.WatchdogSeconds <= 0f) control.WatchdogSeconds = 180f;
-            control.SimulationTimeScale = FloatArg("-trainTimeScale", 4f);
-            control.MuteAudio = true;
-            control.DisableCameraRendering = true;
+            // -trainWatch: Unity was opened with its window so a person can watch the match: camera and sound stay on.
+            bool watch = HasArg("-trainWatch");
+            control.SimulationTimeScale = FloatArg("-trainTimeScale", watch ? 1f : 4f);
+            control.MuteAudio = !watch;
+            control.DisableCameraRendering = !watch;
             control.AutoStartOnPlay = true;
             if (control.Telemetry != null) control.Telemetry.IsRunning = false;   // a crashed run can leave it on
             EditorUtility.SetDirty(scenario);
@@ -280,6 +282,8 @@ namespace CosmicShore.Utility.AITraining.Editor
                 if (args[i] == name) return args[i + 1];
             return null;
         }
+
+        static bool HasArg(string name) => Array.IndexOf(Environment.GetCommandLineArgs(), name) >= 0;
 
         static int IntArg(string name, int fallback) =>
             int.TryParse(Arg(name), NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : fallback;

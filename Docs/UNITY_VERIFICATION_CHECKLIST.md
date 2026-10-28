@@ -85,6 +85,11 @@ self-test (a fresh pair passes; a drifted TargetMode, a missing profile and a re
    episodes 6, Learn: the AIs fly toward the next ring (not crystals), the gate count climbs, fitness is positive
    after a match. Repeat with **Regatta** (arena: hull Manta) and **Broadside** (combat points move).
 3. **Wrasse Run** (a crew hull): note whether the trainer drives the pilot seat at all.
+4. The first real run (Switchback, Dolphin, I2, 32 matches through Froglet Compute) scored 0 gates on every AI: a pilot
+   new to the match kept the default "closest crystal" target because the runner sets `TargetMode` after
+   `BindVessel` built the sensors. `TrainingPilot.BeginEpisode` now applies it (test
+   `Pilot_TargetModeSetAfterBind_AppliesAtBeginEpisode`). Re-run Switchback with "Show the game": the Dolphins should
+   head for the rings.
 
 ### 🔴 Froglet Compute runs the AI trainer in a Unity with no window (`claude/eager-franklin-e6g77h`, 2026-10-28) — NOT EDITOR-VERIFIED
 

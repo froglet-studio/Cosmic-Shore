@@ -893,8 +893,8 @@ details.step[open] > summary { margin-bottom: 4px; }
   function nrFor(vessel, mode) {
     var pm = modesFor(vessel).filter(function (x) { return x.mode === mode; })[0], u = unityInfo();
     if (pm && pm.status === "unity" && u) {
-      var un = { job: u.job, unity: true, vessel: vessel, mode: mode, intensity: 4, matches: 50, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
-      if (NR) { un.where = NR.where; un.note = NR.note; if (NR.unity) { un.intensity = NR.intensity; un.matches = NR.matches; } }
+      var un = { job: u.job, unity: true, vessel: vessel, mode: mode, intensity: 4, matches: 50, watch: true, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
+      if (NR) { un.where = NR.where; un.note = NR.note; if (NR.unity) { un.intensity = NR.intensity; un.matches = NR.matches; un.watch = NR.watch; } }
       return un;
     }
     var t = hullInfo(vessel).template, n = t ? freshNR(t) : { job: null, vessel: vessel, mode: mode, tries: 500, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
@@ -994,6 +994,9 @@ details.step[open] > summary { margin-bottom: 4px; }
     var mv = h("output", { class: "bubble", text: String(NR.matches) });
     sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "4  How many matches" }), h("div", { class: "srow" }, [slider("nr-matches", 10, 500, 10, Math.min(500, Math.max(10, NR.matches)), function (v) { NR.matches = v; mv.textContent = String(v); }, "matches"), mv]),
       h("p", { class: "note", text: "Each match tests a few of the trainer's AIs at once, one per seat, played at up to four times game speed; a generation is several matches. The trainer keeps its population between runs, so more matches keep improving it." })]));
+    if (NR.where === "here") sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "   Watch it" }), h("div", { class: "picks" }, [
+      chip("Show the game", NR.watch, "where", function () { NR.watch = true; NR.made = null; drawNewRun(); }, "Unity opens with its window, game speed"),
+      chip("No window", !NR.watch, "where", function () { NR.watch = false; NR.made = null; drawNewRun(); }, "faster: up to 4x, nothing to see")])]));
   }
   function drawSearchSteps(sheet) {
     var f = formFor(NR.job);
@@ -1047,7 +1050,8 @@ details.step[open] > summary { margin-bottom: 4px; }
       out.appendChild(h("div", { class: "seg", role: "group", "aria-label": "Your computer" }, [["windows", "Windows"], ["mac", "macOS"], ["linux", "Linux"]].map(function (o) {
         return h("button", { type: "button", "aria-pressed": OS === o[0] ? "true" : "false", onclick: function () { OS = o[0]; showMade(out); }, text: o[1] }); })));
       out.appendChild(h("p", null, [h("b", { text: "Paste this into " + term + " and press Enter. " }), (NR.unity ? "It starts Unity with no window and plays " + req.budget.tries + " matches now" : "It runs " + req.budget.tries + " tries now") + ", without waiting for you to be away, and shows up under Runs."]));
-      out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("run --request " + tok) })]), copyBtn(function () { return appCmd("run --request " + tok); })]));
+      var runLine = appCmd("run --request " + tok + (NR.unity && NR.watch ? " --watch" : ""));
+      out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: runLine })]), copyBtn(function () { return runLine; })]));
       out.appendChild(h("p", { class: "note", text: "Needs Froglet Compute installed on this computer once (the Install button)" + (NR.unity ? ", and Unity of the project's version from Unity Hub. Check with: " + appCmd("unity --find") : ".") }));
       return;
     }

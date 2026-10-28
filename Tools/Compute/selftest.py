@@ -305,6 +305,7 @@ def arg(n, d=None):
     return a[a.index(n) + 1] if n in a else d
 out, proj, log = arg("-frogletTrain"), arg("-projectPath"), arg("-logFile")
 mode = os.environ.get("FAKE_UNITY_MODE", "ok")
+json.dump(a, open(os.path.join(out, "argv.json"), "w"))
 with open(log, "a") as fh:
     fh.write("fake unity " + " ".join(a) + "\n")
     if mode == "compile":
@@ -420,6 +421,15 @@ def unity_end_to_end():
         r = L.read_json(os.path.join(out, "result.json"), {}) or {}
         if p.returncode != 0 or r.get("episodes") != 2 or r.get("episodes_total") != 5:
             bad.append(f"unity: resume should play 2 more matches to 5 ({p.returncode}, {r})")
+        argv0 = L.read_json(os.path.join(out, "argv.json"), []) or []
+        if "-batchmode" not in argv0 or "-trainWatch" in argv0:
+            bad.append(f"unity: an ordinary run should be -batchmode without -trainWatch ({argv0})")
+        out = os.path.join(tmp, "watch")
+        p = wrap(out, {"FROGLET_COMPUTE_UNITY_WATCH": "1"}, episodes=1)
+        argv1 = L.read_json(os.path.join(out, "argv.json"), []) or []
+        if p.returncode != 0 or "-batchmode" in argv1 or "-trainWatch" not in argv1 or \
+                argv1[argv1.index("-trainTimeScale") + 1] != "1.0":
+            bad.append(f"unity: --watch should open Unity with its window at game speed ({p.returncode}, {argv1})")
         # 3. Ctrl-C stops Unity cleanly and keeps the session
         out = os.path.join(tmp, "stop")
         proc = wrap(out, {"FAKE_UNITY_MODE": "slow"}, episodes=100, wait=False)
