@@ -413,6 +413,25 @@ prism-bodied mothership in the player's domain, the new fundamental's first body
 corridor at its own unhurried pace. It is the stepping stone toward faction missions: venturing
 into the hypersea with, and for, a mothership.
 
+**The Ark is a model** (Oct 2026: `ArkwaySettingsSO.arkModel` → `ArkReverseModel.asset`, an
+`ArkModelDefinitionSO`; `ArkwayRun` calls `Ark.UseModel` before `LayHullAsync`; `ArkModel` binds
+it). The hull prisms are laid one per socket of the model's rig table (`ArkReverse.rig.json`,
+written by the model's build beside the FBX): kind, pose and size from the socket, domain the
+Ark's, through the same `PrismTrailBuilder.LayBudgetedAsync` path. The model's Domain slot wears
+the domain's ship material, and its jets and wings play the model's own takes, blended by the
+Ark's turn rate and acceleration. Each bone shares one take's worth between the inputs that move
+it, the envelope the model's clearance gate proved. The hangar opens while a squadmate is in the
+hold's grab reach, and the lance slides out when the hold hands a payload over. The Wander
+emblem's miniature is the model's sockets (`ArkModel.SocketLays`). With `arkModel` empty, the Ark
+keeps the procedural spindle (`Ark.BuildHullLays`, `arkHullLength`). Record:
+`Docs/VesselModels/ArkReverse.md` § In the game.
+
+**The Ark's hull regrows at a fixed rate** (Oct 2026: `ArkwaySettingsSO.arkReactor` →
+`ArkReactor.asset`, `Ark.UseReactor`, `ArkReactor`). The omni crystal aboard powers it: every emptied
+hull slot (grazed, cracked or taken for a payload) regrows, one prism every 2 s, nearest the reactor
+first. The crystal is always one size. The mass-law fence is the fourth sign-off in
+`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`.
+
 **A traversal cell is an ORDINARY CELL** — a nucleus, a control zone, and a crystal at its core —
 and the fight is the shipped ecology, composed (full record: `Docs/ECOSYSTEM.md` §41). It keeps
 `NucleusIsControlZone` at its default `true`, so control is the NUCLEUS CLAIM (lay environment
@@ -430,7 +449,7 @@ across the open water — at `arkWakeScale` (6×6×12), far larger than a vessel
 so it reads as a ship's wake rather than another pilot's line. It is ordinary conserved mass in
 the Ark's domain, laid through `PrismTrailBuilder.LayOne` into its own `Trail`, on a STATIONARY
 root (the hull rides the Ark's transform; a wake that rode it too would just be a longer hull).
-It is also the honest answer to *why does nothing eat the Ark*: 150 hull prisms against a ~10,000
+It is also the honest answer to *why does nothing eat the Ark*: 150 hull prisms (108 on the model) against a ~10,000
 prism world are a rounding error to a swarm steering at `GetDensestRegionAnyDomain`, and the
 targeting grid counts PRISMS, not volume — so a bigger hull would not have helped. A wake is a
 dense LINE through the feeding ground that leads to the ship, and its freshest prism is always

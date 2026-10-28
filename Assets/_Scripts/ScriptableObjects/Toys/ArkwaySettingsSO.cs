@@ -50,9 +50,18 @@ namespace CosmicShore.ScriptableObjects
                                           "deceleration IS entering the cell.")]
         float arkCruiseSpeedFactor = 4f;
 
-        [SerializeField, Min(30f), Tooltip("Hull length, world units. Prism count scales with it (the " +
-                                           "default hull is ~150 prisms at 110).")]
+        [SerializeField, Min(30f), Tooltip("Hull length, world units, of the procedural spindle hull. Prism count scales with it " +
+                                           "(the default hull is ~150 prisms at 110). Unused while an Ark model is set below.")]
         float arkHullLength = 110f;
+
+        [SerializeField, Tooltip("The model every voyage's Ark is drawn as (ArkReverse): its hull prisms seated in the model's sockets " +
+                                 "in their shield tiers, the model in the voyage's domain, its jets and wings flying the turns. " +
+                                 "Empty keeps the procedural spindle hull.")]
+        ArkModelDefinitionSO arkModel;
+
+        [SerializeField, Tooltip("The Ark's reactor: the omni crystal aboard regrows its emptied hull slots at a fixed rate. " +
+                                 "Empty: the hull never regrows.")]
+        ArkReactorSO arkReactor;
 
         [SerializeField, Min(0f), Tooltip("Units of travel between WAKE prisms - the ribbon the Ark " +
                                           "leaves behind. Ordinary conserved mass in the Ark's domain: " +
@@ -152,6 +161,8 @@ namespace CosmicShore.ScriptableObjects
             ArkSpeed = arkSpeed,
             ArkCruiseSpeedFactor = arkCruiseSpeedFactor,
             ArkHullLength = arkHullLength,
+            ArkModel = arkModel,
+            ArkReactor = arkReactor,
             ArkWakeSpacing = arkWakeSpacing,
             ArkWakeScale = arkWakeScale,
             ArkWakeBudget = arkWakeBudget,
