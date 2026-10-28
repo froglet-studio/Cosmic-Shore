@@ -208,6 +208,28 @@ namespace CosmicShore.Utility
             }
             return false;
         }
+
+        /// <summary>
+        /// The track among <paramref name="candidates"/> (one species) that a live actor standing at
+        /// <paramref name="near"/> should play: not already <paramref name="taken"/>, present at <paramref name="t"/>, and
+        /// nearest to it there. Null when every recorded one of the species is taken or absent - the live actor has no
+        /// counterpart now.
+        /// </summary>
+        public static TheaterActorTrack PickNearest(IReadOnlyList<TheaterActorTrack> candidates, ICollection<TheaterActorTrack> taken,
+                                                    Vector3 near, float t)
+        {
+            TheaterActorTrack best = null;
+            float bestSqr = float.MaxValue;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                var track = candidates[i];
+                if (taken != null && taken.Contains(track)) continue;
+                if (!track.TryEvaluate(t, out var position, out _, out _)) continue;
+                float sqr = (position - near).sqrMagnitude;
+                if (sqr < bestSqr) { bestSqr = sqr; best = track; }
+            }
+            return best;
+        }
     }
 
     /// <summary>One shard a dying limb left in a cell's cytoplasm (<c>SnowChanger.AddMorphedShard</c>).</summary>

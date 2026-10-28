@@ -262,6 +262,33 @@ namespace CosmicShore.Tests
             Assert.AreEqual(50f, after.x, 1e-6f);
             Assert.IsFalse(TheaterActorTrack.TryEvaluateStays(new System.Collections.Generic.List<TheaterActorTrack>(), 1f, out _, out _, out _));
         }
+
+        [Test]
+        public void PickNearest_TakesTheClosestFreeOneThatIsPresent()
+        {
+            TheaterActorTrack Creature(float x, float from, float to)
+            {
+                var track = new TheaterActorTrack { Kind = TheaterActorKind.Fauna, Name = "Tadpole" };
+                track.Observe(from, new Vector3(x, 0f, 0f), Quaternion.identity, Vector3.one, Thin);
+                track.Observe(to, new Vector3(x, 0f, 0.5f), Quaternion.identity, Vector3.one, Thin);
+                track.Close();
+                return track;
+            }
+
+            var near = Creature(1f, 0f, 10f);
+            var far = Creature(30f, 0f, 10f);
+            var unborn = Creature(0f, 5f, 10f);
+            var species = new System.Collections.Generic.List<TheaterActorTrack> { far, near, unborn };
+            var taken = new System.Collections.Generic.HashSet<TheaterActorTrack>();
+
+            Assert.AreSame(near, TheaterActorTrack.PickNearest(species, taken, Vector3.zero, 1f),
+                           "the creature not born yet is not a partner, however close");
+            taken.Add(near);
+            Assert.AreSame(far, TheaterActorTrack.PickNearest(species, taken, Vector3.zero, 1f));
+            taken.Add(far);
+            Assert.IsNull(TheaterActorTrack.PickNearest(species, taken, Vector3.zero, 1f), "no counterpart: hide it");
+            Assert.AreSame(unborn, TheaterActorTrack.PickNearest(species, taken, Vector3.zero, 6f));
+        }
     }
 }
 #endif

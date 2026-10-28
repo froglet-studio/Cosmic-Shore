@@ -18,6 +18,8 @@ namespace CosmicShore.Utility
         readonly Dictionary<Object, TheaterActorTrack> _live = new();
         readonly HashSet<Object> _seen = new();
         readonly List<Object> _gone = new();
+        readonly List<GameObject> _lifeForms = new();
+        readonly HashSet<GameObject> _notActors = new();
         bool _attached;
 
         public TheaterActorRecorder() : this(TheaterActorThinning.Default) { }
@@ -35,6 +37,7 @@ namespace CosmicShore.Utility
         {
             foreach (var track in _live.Values) track.Close();
             _live.Clear();
+            _notActors.Clear();
             _attached = false;
         }
 
@@ -43,6 +46,7 @@ namespace CosmicShore.Utility
         {
             _seen.Clear();
             SampleCrystals(now);
+            SampleLifeForms(now);
 
             _gone.Clear();
             foreach (var pair in _live)
@@ -65,6 +69,64 @@ namespace CosmicShore.Utility
                 Observe(crystal, TheaterActorKind.Crystal, crystal.Id, "Crystal", (int)crystal.ownDomain,
                         crystal.transform, now);
             }
+        }
+
+        void SampleLifeForms(float now)
+        {
+            CollectLifeForms(_lifeForms);
+            for (int i = 0; i < _lifeForms.Count; i++)
+            {
+                var go = _lifeForms[i];
+                if (_live.TryGetValue(go, out var known))
+                {
+                    _seen.Add(go);
+                    var tr = go.transform;
+                    known.Observe(now, tr.position, tr.rotation, tr.localScale, _thin);
+                    continue;
+                }
+                if (_notActors.Contains(go)) continue;
+                if (!TryClassify(go, out var kind, out int domain)) { _notActors.Add(go); continue; }
+                Observe(go, kind, 0, SpeciesName(go.name), domain, go.transform, now);
+            }
+        }
+
+        /// <summary>
+        /// Every live plant and creature root in the enabled cells: what the spawners registered
+        /// (<c>Cell.SpawnedLifeForms</c>) and the lineage-registered fauna (<c>Cell.LiveFauna</c>), once each,
+        /// active ones only. The recorder and the replay walk the scene the same way, so they see the same actors.
+        /// </summary>
+        public static void CollectLifeForms(List<GameObject> into)
+        {
+            into.Clear();
+            s_dedupe.Clear();
+            var cells = Cell.ActiveCellsSnapshot;
+            for (int c = 0; c < cells.Count; c++)
+            {
+                var cell = cells[c];
+                if (!cell) continue;
+                var spawned = cell.SpawnedLifeForms;
+                for (int i = 0; i < spawned.Count; i++) Add(spawned[i], into);
+                var fauna = cell.LiveFauna;
+                for (int i = 0; i < fauna.Count; i++) if (fauna[i]) Add(fauna[i].gameObject, into);
+            }
+        }
+
+        static readonly HashSet<GameObject> s_dedupe = new();
+
+        static void Add(GameObject go, List<GameObject> into)
+        {
+            if (!go || !go.activeInHierarchy) return;
+            if (s_dedupe.Add(go)) into.Add(go);
+        }
+
+        /// <summary>A plant (<c>Flora</c> on the root) or a creature (<c>Fauna</c> on the root); anything else is not recorded.</summary>
+        public static bool TryClassify(GameObject go, out TheaterActorKind kind, out int domain)
+        {
+            if (go.TryGetComponent(out Flora flora)) { kind = TheaterActorKind.Flora; domain = (int)flora.Domain; return true; }
+            if (go.TryGetComponent(out Fauna fauna)) { kind = TheaterActorKind.Fauna; domain = (int)fauna.Domain; return true; }
+            kind = default;
+            domain = 0;
+            return false;
         }
 
         void Observe(Object key, TheaterActorKind kind, int id, string name, int domain, Transform transform, float now)
