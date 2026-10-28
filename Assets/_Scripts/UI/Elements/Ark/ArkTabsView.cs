@@ -12,7 +12,8 @@ namespace CosmicShore.UI
 
     /// <summary>
     /// The Ark's tabs (Shombith, 2026-10-27: "add two more tabs along with the converter"): CONVERTER, SQUADS and DECOR
-    /// in one row of word tabs (<see cref="KitTextTab"/>), each with its page; one page shows at a time.
+    /// in one row of word tabs (<see cref="KitTextTab"/>), each with its page; one page shows at a time. ARTIFACTS joined
+    /// them on 2026-10-27 (Garrett, Docs/Pilots/ARTIFACTS.md §4: crystals raise an artifact's tracks).
     ///
     /// <para>A tab whose <see cref="Tab.availability"/> is not Available refuses the press the way every menu entry
     /// does (<see cref="MenuAvailabilityView"/>: the sting, the shake, "Not open yet.") and its page never shows. DECOR
@@ -37,7 +38,7 @@ namespace CosmicShore.UI
             public MenuAvailabilityView availability;
         }
 
-        [Tooltip("The tabs, left to right: Converter, Squads, Decor.")]
+        [Tooltip("The tabs, left to right: Converter, Squads, Artifacts, Decor.")]
         [SerializeField] private Tab[] tabs = Array.Empty<Tab>();
         [Tooltip("The tab shown the first time the Ark opens.")]
         [SerializeField, Min(0)] private int defaultTab;

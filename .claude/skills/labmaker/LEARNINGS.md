@@ -1151,6 +1151,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: Tools/ecosim/README.md.
 - Promoted: §0
 
+### L-SIM-2 — Model URP's bloom from its source, not from a doc's table: the threshold is gamma, the clamp per channel
+- Lab: crystal bloom preview (`Tools/Build/crystal_bloom_preview.py`) · Branch: `cece/charming-bell-m70ac8` · Date: 2026-10-27
+- What happened: the question was whether the free crystals still read as distinct limes after the gameplay bloom. URP 17's `PostProcessPassRenderGraph` passes `Mathf.GammaToLinearSpace(threshold)` (0.2 → 0.033 linear), hard-codes the knee at half that, and `Bloom.shader` clamps each channel to `clamp` (0.5) BEFORE the threshold. The per-channel clamp is what pushes a yellow-green toward yellow in its glow; a luminance clamp would not. The URP source was already on disk in the reference-compile cache (`/tmp/unity_refcompile_cache/graphics/Packages/com.unity.render-pipelines.universal`).
+- Do instead: port the effect's passes from the package source (prefilter, the mip chain with its sizes from the FRAME, the scatter lerp, the composite), read the profile's overridden values from its asset, and convert material and property-block colours gamma → linear as Unity does in a Linear project.
+- Evidence: `crystal_bloom_preview.py` `bloom()`; `Docs/PALETTE.md` §2.11.
+- Promoted: no
+
+### L-SIM-3 — Judge a glow's colour from the light it ADDS, and take its hue in sRGB
+- Lab: crystal bloom preview · Branch: `cece/charming-bell-m70ac8` · Date: 2026-10-27
+- What happened: two wrong measurements, each of which flipped the verdict. Classifying the composite pixels called every crystal's far halo green, because a dim glow over the navy sky borrows its blue. Taking HSV on LINEAR values called the omni 100% green (`#7cfc00` is 90° in sRGB HSV and 108° in linear). The lime window (75-105°) is defined on sRGB colours.
+- Do instead: subtract the backdrop, weight by the added luminance, normalise each pixel's added light to its peak, encode to sRGB, then take the hue. Sanity-check the classifier on a colour whose answer you know before trusting a table of them.
+- Evidence: `crystal_bloom_preview.py` `classify()`.
+- Promoted: no
+
+### L-SIM-4 — A render that is linear in its colours is three renders; search over the table, cached
+- Lab: crystal bloom preview · Branch: `cece/charming-bell-m70ac8` · Date: 2026-10-27
+- What happened: the shade search needed each crystal at hundreds of candidate colours. The shading is linear in the bright and dark colours and the supersample is a mean, so `img = B + Ab·bright + Ad·dark` from three renders gives every candidate before the (non-linear) bloom. The first full search still took about 20 minutes, and each change to the search's RULES (characters, distinctness) re-ran it, until the per-candidate measurements were cached keyed on the candidates, the bloom settings and the looks; after that a rule change runs in seconds.
+- Do instead: separate the expensive per-candidate measurement from the cheap combination search, cache the first, and expect the rules to change more often than the renders.
+- Evidence: `crystal_bloom_preview.py` `_components()`, `proposal_cache.json`.
+- Promoted: no
+
 ---
 
 ## EDT — in-editor lab windows
