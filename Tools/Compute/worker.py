@@ -245,7 +245,7 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
     try:
         while True:
             if presence.back():
-                stopped = "the person came back"
+                stopped = getattr(presence, "reason", None) or "the person came back"
                 break
             if time.time() - t_start > minutes * 60:
                 break
@@ -293,7 +293,7 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
                     on_progress({"epoch": epoch, "evals": evals - evals0, "best": (best or {}).get("loss"),
                                  "best_start": best0})
     finally:
-        pool.close(kill=stopped == "the person came back")
+        pool.close(kill=stopped in ("the person came back", "stopped from the console"))
         _save(folder, state_path, opt, summary, best, evals, seconds + time.time() - t_start, history, errors, space, sha)
     return {"job": job["id"], "epoch": epoch, "evals": evals, "session_evals": evals - evals0, "stopped": stopped,
             "best": best, "best_start": best0}
@@ -403,7 +403,7 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
                              "phase": _read_metric({"file": (c.get("progress") or {}).get("file", ""), "key": "phase"}, run_dir)
                              if c.get("progress") else None, "live_only": True})
             if presence.back():
-                stopped = "the person came back"
+                stopped = getattr(presence, "reason", None) or "the person came back"
                 break
             if time.time() - t0 > minutes * 60:
                 break
@@ -619,13 +619,19 @@ def run(args):
             if not args.no_push and time.time() - last_progress[0] >= args.progress_minutes * 60:
                 L.publish(folder, *ident, f"compute: {job['id']} progress", quiet=True)
                 last_progress[0] = time.time()
+        # A run from the console can be stopped from the console: the session checks every 30 s and stops as it does
+        # for a returning person (agent.StopWhenCancelled).
+        sess_presence = presence
+        if req:
+            import agent as A
+            sess_presence = A.StopWhenCancelled(presence, req["id"], [q if q.startswith("origin/") else "origin/" + q for q in queue])
         if job["kind"] == "command":
             def claim(unit_id):
                 hb["current"]["unit"] = unit_id
                 L.write_json(os.path.join(folder, "heartbeat.json"), hb)
                 if not args.no_push:
                     L.publish(folder, *ident, f"compute: {job['id']}/{unit_id} claimed", quiet=quiet)
-            out = command_session(job, root, sha, ident, machines, presence, args.session, cores, quiet=quiet,
+            out = command_session(job, root, sha, ident, machines, sess_presence, args.session, cores, quiet=quiet,
                                   on_claim=claim, on_progress=progress, manual=bool(manual))
             if req:
                 # A command request's tries are its unit's count (the Unity trainer: matches played), its best the
@@ -643,7 +649,7 @@ def run(args):
             L.post_heartbeat(hb)
             if not args.no_push:
                 L.publish(folder, *ident, f"compute: {job['id']} started", quiet=quiet)
-            out = search_session(job, root, sha, ident, machines, presence, args.session, cores,
+            out = search_session(job, root, sha, ident, machines, sess_presence, args.session, cores,
                                  max_evals=max_evals, quiet=quiet, on_progress=progress)
             if req:
                 # This computer's part of the request: its tries so far and its best, read by the console and by

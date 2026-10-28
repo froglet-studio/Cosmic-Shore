@@ -426,6 +426,58 @@ matches, a population of AIs, the best kept. Froglet Compute now starts it with 
   dedicated Linux game build (no editor, no licence on
   each machine) would let x86 Linux servers run these too; not built.
 
+## 17. The mothership: every computer, live, and runs sent to the one you pick (Shombith, 2026-10-28)
+
+**The agent.** Each registered computer runs one agent (`compute.py run`, the supervisor loop; `Tools/Compute/agent.py`)
+from login, on every OS: Windows a `FrogletCompute.vbs` in the Startup folder (it replaced the Task Scheduler ON IDLE
+task, which only existed while the computer was idle, so the console could neither see the computer nor start a run on
+it while its person used it), macOS a LaunchAgent, Linux a systemd user service. It holds a lock, so a computer has one
+agent. It still works only when its person is away, at the lowest priority.
+
+**What the console shows for each computer** (Computers page, and the first three on Home):
+
+| Status | Means |
+|---|---|
+| Working | a session runs (a search or a game), with its progress |
+| Free | its person is away: it works on the queue |
+| In use | its person is using it |
+| Outside its hours | it was installed with set hours (`--nights`, `--between`) and it is not one of them |
+| Offline | nothing heard for 3 minutes (live console) or 45 minutes (git) |
+
+and its OS, cores, memory, free disk, whether it has the project's Unity (and whether its person has Unity open), and
+whether its owner lets runs start at once. The agent reports to the hub every minute (live), and to git when the
+status changes (at most every ten minutes) and every half hour, so the claude.ai snapshot shows the fleet too.
+
+**Sending a run to a computer** (New run, or "Run on <computer>" on its card): Where = that computer, then When:
+- **When it's free**: once its person is away (the default; every computer).
+- **Now**: at once, even while its person uses it. Only on a computer whose owner allowed it:
+  `compute.py remote-start on` there, or the setup with `--allow-remote-start` (off by default: a teammate's computer
+  is theirs). Elsewhere the choice is greyed out and says so.
+- **At a time**: not before the time picked (`not_before`), then as above.
+The agent looks for such runs every minute through the hub (every 3 minutes through git without one). In a terminal:
+`compute.py request new <job> --machine <person>/<computer> --start now --at 22:00 --push`.
+
+**Stopping a run**: Stop on the computer's card or on the run (Runs page) marks it cancelled (`POST /api/cancel` on the
+live console, `compute.py request cancel <id>` otherwise); the computer working on it checks every 30 s and stops as it
+does for a returning person (`agent.StopWhenCancelled`), keeping what it found.
+
+**The hub** gained `GET /api/requests` (the open runs, whole, for the agents), `GET /api/requests/<id>` and
+`POST /api/cancel`, all behind the team key. Without the hub everything above works through git, minutes slower.
+
+**Blue pairs in the real game**: a pair the offline models cover (Rhino, Manta, Dolphin on the three courses) that the
+Unity trainer also has a scenario for offers both in New run: "Offline race model" or "The real game (Unity)".
+
+**People's races per pair**: New run says how often people raced the chosen vessel in that mode, and how many races the
+hourly AI learning sweep (Yash's, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) learned from. That sweep is how the game's own AI
+(AIPilot and its drives) learns from play: recordings go to `bugledger/<user>`, the sweep learns them into
+`Ys-bleeding-edge`, and `ai_branch.py sync` brings AI files to `ai`. The Unity trainer (TrainingPilot genomes) is a
+second, separate AI: it does not learn from recordings yet.
+
+**Verification**: the self-test's end to end runs a hub and an agent: the agent outside its hours shows so live, takes
+a run started from the console at once (its owner allowed it), and stops a long run stopped from the console; with
+remote start off the run waits (the negative control). The page was checked in Chromium at desktop and phone widths
+with five computers in every status. Not run yet: the Windows Startup launcher on a real Windows login.
+
 ## 12. Verification status (2026-10-26)
 
 Run in the cloud session that built it (Linux, 4 cores, Python 3.13, numpy, no torch, no .NET):

@@ -10,7 +10,10 @@ A request names an existing search job and says how to run it differently, withi
      "ranges": {"cornerSpeed": [900, 1300]},           parameters searched in a narrower range (inside the bounds)
      "args": {"seeds": 5},                             evaluator settings the job already has, set differently
      "machine": "any" | "<user>/<host>",               who may run it
-     "cancelled": false}
+     "start": "free" | "now",                         when: once that computer's person is away (the default), or at
+                                                      once - only on a computer whose owner allows remote starts
+     "not_before": 1793230800,                        a scheduled run: nothing starts it before this time
+     "cancelled": false}                              stopped from the console: a running session stops within 30 s
 
 Where requests live: Docs/Compute/requests/<id>.json on the `compute-queue` branch (data only, never code; the same
 trust rules as every job: the code a request runs is its job's, from bleeding-edge or ai). `request new --push`
@@ -76,6 +79,7 @@ def problems(req, job):
         p.append("id must look like r20261028-120300-ab12")
     if job is None:
         return p + [f"no search named {req.get('job')}"]
+    p += _when_problems(req)
     if job.get("kind") == "command":
         return p + _command_problems(req, job)
     if job.get("kind") != "search":
@@ -111,6 +115,16 @@ def problems(req, job):
         p.append("machine must be any or <person>/<computer>")
     if len(str(req.get("note", ""))) > 2000:
         p.append("note: at most 2000 characters")
+    return p
+
+
+def _when_problems(req):
+    p = []
+    if req.get("start", "free") not in ("free", "now"):
+        p.append("start must be free or now")
+    nb = req.get("not_before")
+    if nb is not None and (not isinstance(nb, (int, float)) or isinstance(nb, bool) or nb < 0):
+        p.append("not_before must be a time (unix seconds)")
     return p
 
 
@@ -280,6 +294,8 @@ def pick(requests, jobs, machines, me, caps):
         st = progress(req, machines)
         if st["state"] != "open" or req.get("machine", "any") not in ("any", me):
             continue
+        if int(req.get("not_before") or 0) > L.now():          # scheduled for later
+            continue
         job = jobs.get(req.get("job"))
         if problems(req, job) or L.untrusted(job) or L.missing_requirements(job, caps):
             continue
@@ -294,6 +310,17 @@ def file(req, push=True, cwd=None, quiet=False):
                           push=push, cwd=cwd, quiet=quiet)
 
 
+def cancel(req_id, refs=None, push=True, cwd=None, quiet=False):
+    """Stop a request from the console or a terminal: marked cancelled on compute-queue; a computer working on it
+    stops within about 30 s (agent.StopWhenCancelled). Returns the request, or None when there is no such request."""
+    r = load(refs, cwd=cwd).get(req_id)
+    if not r:
+        return None
+    r = {k: v for k, v in r.items() if not k.startswith("_")}
+    r["cancelled"], r["cancelled_at"] = True, L.now()
+    return r if file(r, push=push, cwd=cwd, quiet=quiet) else None
+
+
 def parse_value(text):
     try:
         return json.loads(text)
@@ -301,9 +328,13 @@ def parse_value(text):
         return text
 
 
-def build(job_id, tries, fix=(), ranges=(), args=(), machine="any", note="", by=None):
+def build(job_id, tries, fix=(), ranges=(), args=(), machine="any", note="", by=None, start=None, not_before=None):
     req = {"schema": SCHEMA, "id": new_id(), "job": job_id, "by": by or L.identity()[0], "created": L.now(),
            "note": note or "", "budget": {"tries": int(tries)}, "machine": machine or "any"}
+    if start:
+        req["start"] = start
+    if not_before:
+        req["not_before"] = int(not_before)
     if fix:
         req["fix"] = {k: parse_value(v) for k, v in (s.split("=", 1) for s in fix)}
     if ranges:
@@ -355,6 +386,14 @@ def self_test():
                     ("too few matches", build("unity-train", 2, args=["mode=\"Joust\""]))]:
         if not problems(r, game):
             bad.append(f"requests: {what} was accepted for a run in the game")
+    for what, r in [("an unknown start", dict(g, start="whenever")), ("a negative schedule", dict(g, not_before=-5))]:
+        if not problems(r, game):
+            bad.append(f"requests: {what} was accepted")
+    if problems(dict(g, start="now", not_before=1793230800), game):
+        bad.append("requests: a scheduled start-now run was refused")
+    later = dict(g, id="r20990101-000000-abcd", not_before=L.now() + 3600)
+    if pick({later["id"]: later}, {"unity-train": game}, [], "u/h", {}) is not None:
+        bad.append("requests: a run scheduled for later was picked now")
     dg = derive(game, g)
     u = dg["command"]["units"]
     if len(u) != 1 or u[0]["args"] != {"mode": "AstroLeague", "vessel": "Scarab", "intensity": 2, "episodes": 40} \

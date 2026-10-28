@@ -93,6 +93,67 @@ def hub_end_to_end(tmp, work, remote, script, env0):
         d = call("/console.json")[1]
         if "selftest/live" not in (d.get("live") or {}).get("machines", []):
             bad.append(f"hub: a worker reporting to the hub did not show up live: {d.get('live')}")
+        # The mothership: an agent (the supervisor loop) outside its hours shows as such, takes a run started from the
+        # console at once (its owner allowed remote starts), and stops a run when it is stopped from the console.
+        if call("/api/requests")[0] != 401 or call("/api/cancel", {"id": good["id"]}, "wrong")[0] != 401:
+            bad.append("hub: the runs list or a stop answered without the team key")
+        listed = [r["id"] for r in (call("/api/requests", None, key)[1] or {}).get("requests", [])] if key else []
+        ahome = os.path.join(tmp, "cache-agent")
+        os.makedirs(ahome, exist_ok=True)
+        L.write_json(os.path.join(ahome, "config.json"), {"remote_start": True})
+        enva = dict(env0, FROGLET_COMPUTE_HOME=ahome, FROGLET_COMPUTE_USER="selftest", FROGLET_COMPUTE_HOST="agent",
+                    FROGLET_COMPUTE_HUB=base, FROGLET_COMPUTE_HUB_KEY=key or "", FROGLET_COMPUTE_AGENT_POLL="2",
+                    FROGLET_COMPUTE_STOP_CHECK="2")
+        hour = _t.localtime().tm_hour
+        closed = f"{(hour + 2) % 24:02d}:00-{(hour + 3) % 24:02d}:00"          # a window that is not now
+        agent = subprocess.Popen([sys.executable, script, "run", "--home", "origin/bleeding-edge", "--between", closed,
+                                  "--cores", "2", "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=enva,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            def machine(name):
+                for m in (call("/console.json")[1] or {}).get("machines") or []:
+                    if m.get("machine") == name:
+                        return m
+                return {}
+            st = None
+            for _ in range(60):
+                st = machine("selftest/agent").get("status")
+                if st == "outside hours":
+                    break
+                _t.sleep(0.5)
+            if st != "outside hours":
+                bad.append(f"agent: a computer outside its hours should show so live (got {st})")
+            now_run = R.build("toy-smoke", 12, machine="selftest/agent", start="now", note="started from the console")
+            call("/api/requests", now_run, key)
+            state = None
+            for _ in range(240):
+                rows = {m["id"]: m for m in (call("/console.json")[1] or {}).get("manual") or []}
+                state = (rows.get(now_run["id"]) or {}).get("state")
+                if state == "done":
+                    break
+                _t.sleep(0.5)
+            if state != "done":
+                bad.append(f"agent: a run started from the console was not run at once (state {state})")
+            long_run = R.build("toy-smoke", 100000, machine="selftest/agent", start="now", note="to be stopped")
+            call("/api/requests", long_run, key)
+            for _ in range(240):
+                if machine("selftest/agent").get("status") == "working":
+                    break
+                _t.sleep(0.5)
+            code, _ans = call("/api/cancel", {"id": long_run["id"]}, key)
+            stopped = False
+            for _ in range(120):
+                if (machine("selftest/agent").get("last") or {}).get("stopped") == "stopped from the console":
+                    stopped = True
+                    break
+                _t.sleep(0.5)
+            if code != 200 or not stopped:
+                bad.append(f"agent: a run stopped from the console did not stop ({code}, {machine('selftest/agent').get('last')})")
+            if listed and good["id"] not in listed:
+                bad.append("hub: the runs list did not include an open run")
+        finally:
+            agent.terminate()
+            agent.wait(timeout=20)
     finally:
         hub.terminate()
         hub.wait(timeout=10)
@@ -257,6 +318,9 @@ def windows_task():
         bad.append(f"windows: the launcher is not valid Python: {e}")
     if "--quiet" in text or "--between" not in text:
         bad.append("windows: the launcher's argv is wrong")
+    vbs, vtext = install.windows_startup(py, launcher)
+    if not vbs.endswith("FrogletCompute.vbs") or "Startup" not in vbs or f'""{py}""' not in vtext or ", 0, False" not in vtext:
+        bad.append(f"windows: the Startup launcher should run the agent hidden ({vbs}: {vtext!r})")
     return bad
 
 
@@ -552,6 +616,10 @@ def run(quick=False):
     mr = manual_runs.self_test()
     print("manual runs: " + ("ok (refuses everything outside its search, narrows and fixes, tokens round-trip)" if not mr else "FAILED"))
     failures += mr
+    import agent as _agent
+    ag = _agent.self_test()
+    print("agent: " + ("ok (status from a heartbeat's age; a run starts at once only with its owner's consent)" if not ag else "FAILED"))
+    failures += ag
     sched = schedule_window()
     print("schedule window: " + ("ok" if not sched else "FAILED"))
     failures += sched
@@ -565,7 +633,7 @@ def run(quick=False):
         failures += ai
     if not quick:
         e2e = end_to_end()
-        print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched)" if not e2e else "FAILED"))
+        print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched; the hub; an agent shows live, runs what the console starts, stops when stopped)" if not e2e else "FAILED"))
         failures += e2e
         ue = unity_end_to_end()
         print("unity runs: " + ("ok (a fake Unity: queued unit done and published, resume, Ctrl-C, compile error, your Unity open, the trainer overlay, no Unity)"

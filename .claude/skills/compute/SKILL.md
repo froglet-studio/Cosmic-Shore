@@ -37,6 +37,9 @@ publishes only to `compute/<them>/<machine>`, and updates itself from `bleeding-
 - A box nobody sits at (a VM): `compute.py install --always`, or `run --always` in `tmux`/`screen`. The team's
   always-on VM (Oracle Always Free) also serves the **live console** (`compute.py hub`): `Tools/Compute/vm/setup-vm.sh`,
   README section 15. A computer joins the live console with `setup.py ... --hub <address> --hub-key <key>`.
+- The fleet and sending runs: the console's Computers page (working / free / in use / outside hours / offline);
+  a run sent to one computer starts when free, at a time, or at once where `compute.py remote-start on` was run; Stop
+  cancels it (README section 17).
 - A vessel and mode the offline models do not cover: the `unity-train` job plays it in the real game through the AI
   trainer, on a PC with Unity (`compute.py unity --find`; README section 16).
 - Only at night, or any set hours: add `--between 22:00-07:00` (local time) to `run` or `install`.

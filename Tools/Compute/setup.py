@@ -10,6 +10,9 @@
 Options go after the dash (`... | python3 - --nights`):
     --nights          work only 22:00-07:00 instead of whenever you are away
     --always          a computer nobody sits at (a VM): work all the time
+    --allow-remote-start   let a run sent from the console start at once, even while you use this computer
+                      (without it, a run sent here waits until you are away; change it later with
+                      compute.py remote-start on|off)
     --no-first-run    skip the short first session that puts this computer on the console
     --dry-run         copy the code into ~/.froglet-compute/app and print what it would register; register nothing
     --uninstall       stop it and remove what it added
@@ -121,7 +124,15 @@ def main(argv):
         args += ["--always"]
     say("3. registering the worker: " + " ".join(args[2:]))
     if not dry:                     # so commands typed by hand (compute.py run --request ...) find this checkout
-        cfg = {"repo": repo, "ref": ref, "queue": queue}
+        cfg_path = os.path.join(os.path.dirname(APP), "config.json")
+        try:
+            with open(cfg_path, encoding="utf-8") as fh:
+                cfg = json.load(fh)                 # keep what an earlier setup or `remote-start` said
+        except Exception:
+            cfg = {}
+        cfg.update({"repo": repo, "ref": ref, "queue": queue})
+        if "--allow-remote-start" in opts:
+            cfg["remote_start"] = True
         if "--hub" in argv and "--hub-key" in argv:
             cfg["hub"], cfg["hub_key"] = argv[argv.index("--hub") + 1], argv[argv.index("--hub-key") + 1]
         with open(os.path.join(os.path.dirname(APP), "config.json"), "w", encoding="utf-8") as fh:

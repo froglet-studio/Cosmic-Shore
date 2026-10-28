@@ -11,6 +11,10 @@ manual runs from the page and files them on compute-queue, so a run can be start
     POST /api/heartbeat    a worker's heartbeat (header X-Compute-Key)
     POST /api/requests     a manual run: the request JSON or {"token": ...} (header X-Compute-Key); checked with
                            manual_runs.problems() against the job, then filed on compute-queue
+    GET  /api/requests     the runs not finished or stopped, whole (header X-Compute-Key): the agents read it every
+                           minute to start a run sent to them at once
+    GET  /api/requests/ID  one run, whole (X-Compute-Key): a computer working on it checks whether it was stopped
+    POST /api/cancel       {"id": ...} (X-Compute-Key): stop a run; filed on compute-queue, the computer stops in ~30 s
 
 Run it behind a TLS proxy (Caddy on the VM: Tools/Compute/vm/setup-vm.sh); it listens on 127.0.0.1 by default. The
 team key lives in ~/.froglet-compute/hub.json ({"key": ...}); the page asks for it once and keeps it in the browser.
@@ -37,6 +41,7 @@ class Hub:
         self.github_token = github_token
         self.lock = threading.Lock()
         self.data, self.jobs, self.live, self.filed = None, {}, {}, []
+        self.requests = {}                  # every request, whole, by id (git plus what this hub filed since)
         self.prs, self.prs_at = [], 0
         self.posts = {}
 
@@ -51,8 +56,17 @@ class Hub:
             L.write_json(prs_file, self.prs)
         data = C.build(fetch=True, prs=prs_file, url=self.url, queue=self.queue)
         data["hub"] = True
+        refs = [q if q.startswith("origin/") else "origin/" + q for q in (self.queue or L.QUEUE_REFS)]
+        try:
+            reqs = R.load(refs)
+        except Exception:
+            reqs = {}
         with self.lock:
             self.data, self.jobs = data, dict(C.LAST_JOBS)
+            for rid, r in reqs.items():
+                mine = self.requests.get(rid)
+                if not (mine and mine.get("cancelled") and not r.get("cancelled")):     # a stop not yet in git stays
+                    self.requests[rid] = {k: v for k, v in r.items() if not k.startswith("_")}
             self.filed = [f for f in self.filed if f["id"] not in {m["id"] for m in data.get("manual") or []}]
 
     def loop(self):
@@ -103,6 +117,8 @@ class Hub:
         sha = R.file(req, quiet=True)
         if not sha:
             return 502, {"error": "could not file it on compute-queue (git push failed)"}
+        with self.lock:
+            self.requests[req["id"]] = {k: v for k, v in req.items() if not k.startswith("_")}
         st = {"state": "open", "tries": 0, "done_tries": 0, "budget": req["budget"]["tries"], "machines": [],
               "running_on": None, "updated": L.now()}
         entry = {"id": req["id"], "job": req["job"], "title": (job or {}).get("title"), "by": req.get("by"),
@@ -113,6 +129,31 @@ class Hub:
             self.filed.insert(0, entry)
         L.log(f"hub: filed {req['id']} ({req['job']}) by {req.get('by')}", self.quiet)
         return 201, {"id": req["id"], "sha": sha}
+
+    def open_requests(self):
+        """The runs not stopped and not finished, whole (what an agent needs to start one)."""
+        manual = {m["id"]: m for m in (self.snapshot() or {}).get("manual") or []}      # snapshot() takes the lock
+        with self.lock:
+            items = list(self.requests.items())
+        return [r for rid, r in items
+                if not r.get("cancelled") and (manual.get(rid) or {}).get("state", "open") in ("open", "running")]
+
+    def cancel(self, body):
+        rid = str(body.get("id", ""))
+        with self.lock:
+            known = self.requests.get(rid)
+        if not R.ID.fullmatch(rid) or not known:
+            return 404, {"error": f"no run {rid}"}
+        req = dict(known, cancelled=True, cancelled_at=L.now())
+        if not R.file(req, quiet=True):
+            return 502, {"error": "could not file the stop on compute-queue (git push failed)"}
+        with self.lock:
+            self.requests[rid] = req
+            for f in self.filed:
+                if f["id"] == rid:
+                    f["state"] = "cancelled"
+        L.log(f"hub: stopped {rid}", self.quiet)
+        return 200, {"id": rid, "cancelled": True}
 
     def rate_ok(self, ip, limit=60):
         t = time.time()
@@ -147,6 +188,13 @@ def handler(hub, page):
             if path == "/console.json":
                 d = hub.snapshot()
                 return self._send(200, d) if d else self._send(503, {"error": "the first build is still running"})
+            if path in ("/api/requests",) or path.startswith("/api/requests/"):
+                if not hub.allowed(self.headers.get("X-Compute-Key")):
+                    return self._send(401, {"error": "the team key is missing or wrong"})
+                if path == "/api/requests":
+                    return self._send(200, {"requests": hub.open_requests()})
+                r = hub.requests.get(path.rsplit("/", 1)[1])
+                return self._send(200, r) if r else self._send(404, {"error": "no such run"})
             if path == "/api/status":
                 d = hub.snapshot() or {}
                 return self._send(200, {"hub": True, "built": d.get("generated"), "live": (d.get("live") or {}).get("machines", [])})
@@ -166,6 +214,11 @@ def handler(hub, page):
                 return self._send(400, {"error": "not JSON"})
             if path == "/api/heartbeat":
                 return self._send(*hub.heartbeat(body))
+            if path == "/api/cancel":
+                try:
+                    return self._send(*hub.cancel(body))
+                except Exception as e:
+                    return self._send(400, {"error": f"not a stop: {e}"})
             if path == "/api/requests":
                 if not hub.rate_ok(ip):
                     return self._send(429, {"error": "too many runs from here this hour"})

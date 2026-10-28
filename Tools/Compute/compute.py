@@ -109,16 +109,20 @@ def cmd_run(args):
         return 2
     passthrough = [a for a in sys.argv[2:] if a != "--once"]
     said = False
-    while True:
-        if not presence.away():
-            if not said:
-                L.log(f"waiting for {presence.waiting_for()} ({args.when_idle} min idle)", args.quiet)
-                said = True
-            if args.once:
-                return 0
-            time.sleep(30)
-            continue
-        said = False
+    # The agent (README section 17): one per computer, it keeps the computer on the console between sessions (working,
+    # free, in use, outside hours) and starts what the console sends it.
+    import agent as A
+    if not args.once and not A.single_instance():
+        L.log("another Froglet Compute agent already runs on this computer: this one stops", args.quiet)
+        return 0
+    ident = L.identity()
+    me = f"{ident[0]}/{ident[1]}"
+    queue = [q if q.startswith("origin/") else "origin/" + q for q in (args.queue or L.QUEUE_REFS)]
+    beacon = A.Beacon(ident, quiet=args.quiet, push=not args.no_push)
+    poll_every = int(os.environ.get("FROGLET_COMPUTE_AGENT_POLL") or (60 if L.hub_config()[0] else 180))
+    last_poll = 0.0
+
+    def session(extra):
         if not args.no_fetch:
             L.fetch([args.home.replace("origin/", "")], results=False, quiet=True)
         home = _home_worktree(args.home)
@@ -129,18 +133,70 @@ def cmd_run(args):
             out = {"stdout": sys.stdout.fileno(), "stderr": sys.stderr.fileno()}
         except Exception:
             pass
-        rc = subprocess.call([sys.executable, script, "run", *passthrough, "--in-home"], cwd=L.REPO,
-                             env=dict(os.environ, FROGLET_COMPUTE_REPO=L.REPO), **out, **L.NO_WINDOW)
+        argv = [sys.executable, script, "run", *(extra or passthrough)]
+        if "--in-home" not in argv:
+            argv.append("--in-home")
+        return subprocess.call(argv, cwd=L.REPO, env=dict(os.environ, FROGLET_COMPUTE_REPO=L.REPO), **out, **L.NO_WINDOW)
+
+    while True:
+        idle = L.idle_seconds()
+        if not args.once and time.time() - last_poll >= poll_every:
+            last_poll = time.time()
+            try:
+                due = A.due_now(A.open_requests(queue, fetch=not args.no_fetch), me, L.gather())
+            except Exception as e:
+                due = []
+                L.log(f"agent: could not read the console's runs ({e})", args.quiet)
+            if due:
+                r = due[0]
+                L.log(f"agent: the console started {r['id']} ({r['job']}) here now", args.quiet)
+                beacon.tick("working", idle, force=True)
+                session(["--request", r["id"], "--queue", *[q.replace("origin/", "") for q in queue]])
+                continue
+        if not presence.away():
+            if not args.once:
+                beacon.tick(A.status_of(presence), idle)
+            if not said:
+                L.log(f"waiting for {presence.waiting_for()} ({args.when_idle} min idle)", args.quiet)
+                said = True
+            if args.once:
+                return 0
+            time.sleep(30)
+            continue
+        said = False
+        if not args.once:
+            beacon.tick("working", idle, force=True)
+        rc = session(None)
         if args.once:
             return rc
         if rc not in (0, 1):
             L.log(f"session exited {rc}; retrying in 5 min", args.quiet)
             time.sleep(300)
-        elif rc == 1:
-            time.sleep(1800)                     # nothing this machine can run: look again in half an hour
+        elif rc == 1:                            # nothing this machine can run: look again in half an hour,
+            for _ in range(60):                  # still telling the console it is free and starting what it sends
+                beacon.tick(A.status_of(presence), L.idle_seconds())
+                if time.time() - last_poll >= poll_every:
+                    break
+                time.sleep(30)
 
 
 # ── doctor ───────────────────────────────────────────────────────────────────
+
+def _parse_at(text):
+    """`--at`: HH:MM (the next time it comes round, local) or YYYY-MM-DDTHH:MM (local) -> unix seconds, or None."""
+    if not text:
+        return None
+    import datetime as dt
+    now = dt.datetime.now()
+    if len(text) <= 5 and ":" in text:
+        h, m = (int(x) for x in text.split(":"))
+        t = now.replace(hour=h, minute=m, second=0, microsecond=0)
+        if t <= now:
+            t += dt.timedelta(days=1)
+    else:
+        t = dt.datetime.fromisoformat(text)
+    return int(t.timestamp())
+
 
 def cmd_request(args):
     """Manual runs (manual_runs.py): make one, list them, cancel one."""
@@ -150,7 +206,8 @@ def cmd_request(args):
         if args.token:
             req = R.from_token(args.token)
         elif args.job:
-            req = R.build(args.job, args.tries, args.fix, args.range, args.arg, args.machine, args.note)
+            req = R.build(args.job, args.tries, args.fix, args.range, args.arg, args.machine, args.note,
+                          start=args.start, not_before=_parse_at(args.at))
         else:
             print("name a search (compute.py request new <job> ...) or pass --token from the console")
             return 2
@@ -186,12 +243,12 @@ def cmd_request(args):
         return 0
     if args.rcmd == "cancel":
         L.fetch(queue, results=False, quiet=True)
-        r = R.load().get(args.id)
+        r = R.cancel(args.id)
         if not r:
-            print(f"no request {args.id} on the queue")
+            print(f"no request {args.id} on the queue (or the push failed)")
             return 2
-        r["cancelled"] = True
-        return 0 if R.file(r) else 1
+        print(f"stopped {args.id}: a computer working on it stops within about 30 s")
+        return 0
     return 2
 
 
@@ -436,11 +493,16 @@ def main(argv=None):
     q.add_argument("--token", help="a request made on the Compute Console (instead of the options above)")
     q.add_argument("--push", action="store_true", help="file it on compute-queue for the team's computers")
     q.add_argument("--local", action="store_true", help="check it against this checkout's job files")
+    q.add_argument("--start", choices=["free", "now"], help="free: when the computer's person is away (default); "
+                   "now: at once, on a computer whose owner allows remote starts")
+    q.add_argument("--at", help="schedule it: not before this local time (HH:MM today or tomorrow, or YYYY-MM-DDTHH:MM)")
     q = rs.add_parser("list", help="every manual run and how far it has got")
     q.add_argument("--local", action="store_true")
     q.add_argument("--no-fetch", action="store_true")
     q = rs.add_parser("cancel", help="stop a manual run (the computers drop it)")
     q.add_argument("id")
+    p = sub.add_parser("remote-start", help="let (on) or stop (off) runs sent from the console starting at once here")
+    p.add_argument("state", choices=["on", "off", "show"])
     p = sub.add_parser("eval")
     p.add_argument("job")
     p.add_argument("--params")
@@ -466,6 +528,13 @@ def main(argv=None):
     if args.cmd == "hub":
         import hub
         return hub.run(args)
+    if args.cmd == "remote-start":
+        import agent as A
+        if args.state != "show":
+            A.set_remote_start(args.state == "on")
+        print("runs sent from the console may start at once on this computer" if A.remote_start_allowed() else
+              "runs sent from the console wait until this computer is free (remote-start off)")
+        return 0
     if args.cmd == "request":
         return cmd_request(args)
     if args.cmd == "console":

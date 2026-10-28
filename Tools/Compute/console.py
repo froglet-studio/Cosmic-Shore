@@ -25,6 +25,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path[:0] = [HERE, os.path.join(HERE, "evaluators")]
+import agent as A  # noqa: E402
 import compute_lib as L  # noqa: E402
 import worker as W  # noqa: E402
 
@@ -103,7 +104,8 @@ def jobs_and_machines(jobs, machines, caps):
                              "unit": cur.get("unit"), "cores": hb.get("cores"),
                              "caps": sorted(k for k, v in (hb.get("caps") or {}).items() if v is True),
                              "os": (hb.get("caps") or {}).get("os"), "sessions": (hb.get("totals") or {}).get("sessions"),
-                             "last": hb.get("last"),
+                             "last": hb.get("last"), "status": A.machine_status(hb, t), "specs": hb.get("specs"),
+                             "remote_start": hb.get("remote_start"), "idle_seconds": hb.get("idle_seconds"),
                              "active": bool(cur.get("job")) and t - int(hb.get("updated", 0) or 0) < 3 * 3600})
     out_machines.sort(key=lambda m: -(m["updated"] or 0))
     return out_jobs, out_machines
@@ -149,10 +151,16 @@ def manual(jobs, machines, cwd=None, refs=None):
             for e in (m["jobs"].get(derived) or {}).values():
                 base = base or ((e.get("summary") or {}).get("baseline") or {}).get("loss")
         job = jobs.get(req.get("job")) or {}
-        out.append({"id": req["id"], "job": req.get("job"), "title": job.get("title") or req.get("job"), "by": req.get("by"),
+        probs = R.problems(req, job or None)
+        try:
+            title = R.derive(job, req)["title"] if job and not probs else (job.get("title") or req.get("job"))
+        except Exception:
+            title = job.get("title") or req.get("job")
+        out.append({"id": req["id"], "job": req.get("job"), "title": title, "by": req.get("by"),
                     "created": req.get("created"), "note": req.get("note"), "machine": req.get("machine", "any"),
+                    "start": req.get("start", "free"), "not_before": req.get("not_before"),
                     "fix": req.get("fix") or {}, "ranges": req.get("ranges") or {}, "args": req.get("args") or {},
-                    "problems": R.problems(req, job or None), "today": _num(base), **{k: st[k] for k in
+                    "problems": probs, "today": _num(base), **{k: st[k] for k in
                     ("state", "tries", "done_tries", "budget", "machines", "running_on", "updated")}, "best": _num(st["best"])})
     return out
 
@@ -207,9 +215,11 @@ def catalog(jobs, cwd=None):
         for hull in c.get("hulls") or []:
             t = templates.get(hull)
             now = bool(t and c["mode"] in t["modes"])
-            inunity = not now and hull in ((upairs.get(c["mode"]) or {}).get("vessels") or [])
+            ingame = hull in ((upairs.get(c["mode"]) or {}).get("vessels") or [])
+            inunity = not now and ingame
             cells.append({"hull": hull, "status": "now" if now else ("unity" if inunity else "game"),
-                          "job": t["job"] if now else (unity["id"] if inunity else None)})
+                          "job": t["job"] if now else (unity["id"] if inunity else None),
+                          "unity": bool(ingame)})
         modes.append({"mode": c["mode"], "name": c.get("name") or c["mode"], "kind": "arena" if "ArenaGames" in (c.get("lists") or []) else "arcade",
                       "gate_race": c["mode"] in (chart.get("gateRaceModes") or []), "hulls": cells})
     listed = [h["hull"] for h in chart.get("hulls") or []]
@@ -351,7 +361,9 @@ def overlay(data, live, jobs, now=None):
         cur = hb.get("current") or {}
         caps = hb.get("caps") or {}
         m = machines.get(who) or {"machine": who, "user": user, "host": host}
-        m.update({"updated": hb.get("updated"), "current": cur.get("job"), "unit": cur.get("unit"), "cores": hb.get("cores"),
+        m.update({"status": A.machine_status(hb, now, live=True), "specs": hb.get("specs") or m.get("specs"),
+                  "remote_start": hb.get("remote_start"), "idle_seconds": hb.get("idle_seconds"),
+                  "updated": hb.get("updated"), "current": cur.get("job"), "unit": cur.get("unit"), "cores": hb.get("cores") or (hb.get("specs") or {}).get("cores"),
                   "caps": sorted(k for k, x in caps.items() if x is True), "os": caps.get("os"), "last": hb.get("last"),
                   "sessions": (hb.get("totals") or {}).get("sessions"), "active": bool(cur.get("job")), "live": True})
         machines[who] = m

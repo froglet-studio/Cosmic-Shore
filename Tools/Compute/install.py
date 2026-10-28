@@ -1,7 +1,9 @@
 """Set and forget: start the worker whenever this computer is idle - `compute.py install` / `uninstall`.
 
-    Windows  a Task Scheduler task "FrogletCompute" with an ON IDLE trigger (schtasks /SC ONIDLE /I <minutes>);
-             Windows stops it when you come back, and the worker also yields by itself
+    Windows  FrogletCompute.vbs in the Startup folder: the agent starts, windowless, at every login and stays (it
+             waits for idle itself and keeps the computer on the console while you use it). Until 2026-10-28 this
+             was a Task Scheduler ON IDLE task, which only existed while the computer was idle, so the console could
+             not see the computer, nor start a run on it, while its person used it; install removes that task.
     macOS    a LaunchAgent (~/Library/LaunchAgents/studio.froglet.compute.plist), kept alive; the worker waits
              for idle itself
     Linux    a systemd user service (~/.config/systemd/user/froglet-compute.service, Restart=always), or a crontab
@@ -65,6 +67,27 @@ def windows_task(cmd, home_dir, pythonw):
     return launcher, text, f'"{pythonw}" "{launcher}"'
 
 
+def startup_dir():
+    return os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "Microsoft", "Windows", "Start Menu",
+                        "Programs", "Startup")
+
+
+def windows_startup(pythonw, launcher):
+    """(path, text) of the Startup-folder script that starts the agent at login, with no window (wscript runs it;
+    every Windows has it, unlike a .pyw file association)."""
+    q = lambda s: s.replace('"', '""')
+    text = ("' Froglet Compute: starts the agent at login, with no window. `compute.py uninstall` removes this file.\r\n"
+            f'CreateObject("WScript.Shell").Run """{q(pythonw)}"" ""{q(launcher)}""", 0, False\r\n')
+    return os.path.join(startup_dir(), "FrogletCompute.vbs"), text
+
+
+def _stop_windows_agents():
+    """Stop running agents (the launcher's pythonw) so a new install starts the new code, once."""
+    ps = ("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*froglet-compute*worker.pyw*' } | "
+          "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }")
+    subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, creationflags=0x08000000)
+
+
 def install(minutes=10, dry=False, between=None, always=False, home=None, repo=None, queue=None):
     system = platform.system()
     if between:
@@ -80,18 +103,23 @@ def install(minutes=10, dry=False, between=None, always=False, home=None, repo=N
     os.makedirs(os.path.dirname(log), exist_ok=True)
     if system == "Windows":
         launcher, text, tr = windows_task(cmd, os.path.dirname(log), windowless(sys.executable))
-        if len(tr) > 261:
-            print(f"failed: the task line is {len(tr)} characters and Task Scheduler takes at most 261:\n{tr}\n"
-                  "Install Python from python.org into a shorter path, or move your user folder's .froglet-compute.")
-            return 2
-        idle = str(max(1, int(round(minutes))))             # /I takes whole minutes, 1-999
-        args = ["schtasks", "/Create", "/F", "/TN", "FrogletCompute", "/SC", "ONIDLE", "/I", idle, "/TR", tr]
+        pythonw = windowless(sys.executable)
+        vbs, vtext = windows_startup(pythonw, launcher)
         if dry:
-            print(f"{launcher}:\n{text}")
-            return _do(args, True, "")
+            print(f"{launcher}:\n{text}\n{vbs}:\n{vtext}")
+            return 0
         with open(launcher, "w", encoding="utf-8") as fh:
             fh.write(text)
-        return _do(args, False, f"Task Scheduler: FrogletCompute (on idle {idle} min); its log: {log}")
+        os.makedirs(os.path.dirname(vbs), exist_ok=True)
+        with open(vbs, "w", encoding="utf-8") as fh:
+            fh.write(vtext)
+        # The old ON IDLE task (installs before 2026-10-28) and any running agent go; the new one starts now.
+        subprocess.run(["schtasks", "/Delete", "/F", "/TN", "FrogletCompute"], capture_output=True, creationflags=0x08000000)
+        _stop_windows_agents()
+        subprocess.Popen([pythonw, launcher], cwd=workdir, close_fds=True,
+                         creationflags=0x00000008 | 0x00000200 | 0x08000000)   # detached, own group, no window
+        print(f"installed: the agent starts at login ({vbs}) and runs now; its log: {log}")
+        return 0
     if system == "Darwin":
         plist = os.path.join(os.path.expanduser("~"), "Library", "LaunchAgents", LABEL + ".plist")
         body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -140,11 +168,14 @@ def install(minutes=10, dry=False, between=None, always=False, home=None, repo=N
 def uninstall():
     system = platform.system()
     if system == "Windows":
-        rc = _do(["schtasks", "/Delete", "/F", "/TN", "FrogletCompute"], False, "removed FrogletCompute", verb="removed")
-        launcher = os.path.join(os.path.expanduser("~"), ".froglet-compute", "worker.pyw")
-        if os.path.exists(launcher):
-            os.remove(launcher)
-        return rc
+        subprocess.run(["schtasks", "/Delete", "/F", "/TN", "FrogletCompute"], capture_output=True, creationflags=0x08000000)
+        _stop_windows_agents()
+        for path in (os.path.join(startup_dir(), "FrogletCompute.vbs"),
+                     os.path.join(os.path.expanduser("~"), ".froglet-compute", "worker.pyw")):
+            if os.path.exists(path):
+                os.remove(path)
+        print("removed the Froglet Compute agent (Startup folder) and stopped it")
+        return 0
     if system == "Darwin":
         plist = os.path.join(os.path.expanduser("~"), "Library", "LaunchAgents", LABEL + ".plist")
         subprocess.run(["launchctl", "unload", plist], capture_output=True)

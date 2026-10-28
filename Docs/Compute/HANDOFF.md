@@ -128,6 +128,13 @@ worth it), `sessions` and `ask` inside the claude.ai viewer, and a real approval
   `TargetSensor.TargetMode.NextGate`, assets by `Tools/Build/author_training_scenarios.py`): 57 pairs in all, 4 left
   (Maelstrom, Grizzly Charge). Affects: the trainer's owners (studyholic, Garrett, Shombith).
 
+### The mothership (2026-10-28)
+
+- Every computer runs one resident agent (Windows: Startup folder, no longer an ON IDLE task) that shows it live as
+  working / free / in use / outside its hours / offline with its specs; runs can be sent to one computer to start when
+  it is free, at a time, or at once (only where its owner ran `compute.py remote-start on`), and stopped from the
+  console (README section 17). Self-tested end to end with a hub and an agent, plus a negative control.
+
 ## 4. Decisions that are yours
 
 - **Merge or not**, and onto what (`bleeding-edge` directly, or through your own branch).
