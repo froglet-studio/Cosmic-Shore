@@ -196,17 +196,54 @@ own crystal, so `heart = K · body^0.5` made the heart's size a function of the 
 (`Docs/ECOSYSTEM.md §45.3a`). **After any placement change, re-run the authoring gate — and
 if it moves a number it should not, look for a loop rather than assuming you caused it.**
 
-**HOW BIG — `Docs/ECOSYSTEM.md §40`:** authored per element in that species' own
-`FaunaVariantTuning.HeartWorldScale`, never a curve and never a per-prefab accident.
-**Never hand-edit it** — `python3 Tools/Build/author_lifeform_heart_sizes.py [--check]`
-owns the whole band (`K · bodyDiameter^0.5`, solved so the largest lifeform lands on
-`HEART_MAX` 4.6) and **fails the build** on an overshoot, on a non-monotone measurement,
-and on any drift. A bigger kill pays more, because the collect reward reads the crystal's
-world scale.
+**HOW BIG — `Docs/ECOSYSTEM.md §64`:** every heart is ONE size,
+`ElementalCrystalSetSO.CrystalWorldScale` (3.55), like every elemental crystal, and is worth
+exactly one petal (Garrett, 2026-10-26). `FaunaVariantTuning.HeartWorldScale` is still
+serialized and still written by `author_lifeform_heart_sizes.py`, and nothing reads it — the
+§40.2 band it describes is retired. **The BODY is scaled to the heart instead** (§64.4): each
+creature's body is k = 3.55 / its retired heart, through its prefab root (LightFauna), its variant
+`BaseBodyScale` (Boid), `KaijuScale` (worm), `UnitScale` + `ElementBodyScale` (swarm),
+`SubstrateSpeciesSO.bodyScale`, `BuilderColonyConfigSO.BodyScale` or `VoxelSize` (NCA). **A new species is
+sized the same way**: decide the heart:body proportion you want and set the body, never the heart; scale every
+length measured from the body with it (separation, reach, bite, contact radii, heart gap) and leave speeds
+and senses in world units. A seat still has to hold the heart: `verify_fauna_heart_seat.py` measures it in
+local units (3.55 / root scale).
 
 **Every lifeform drops exactly one elemental crystal** — enforced by `LifeFormCrystal`, and
 it must not be possible to author one that does not. A connected COLONY is a population, so
 **every member carries its own heart**; only the colony ROOT is heartless.
+
+**Reshape the body, never what hangs below it (Garrett, 2026-10-28: "always be careful about stretching
+hierarchically").** Anything that changes a creature's SHAPE - a non-uniform scale on the root or a bone, a mesh
+eroded or stretched, a whole-hierarchy `GetComponentsInChildren` sweep - also reaches every child under it, and the
+heart is a child: the Space heart is a skinned mesh (`spacecrystalanim`), so the first Space-spindle pass swept it up
+with the wings and squashed the one round crystal (and a dead shark dropped the squashed copy). So: scale a root only
+UNIFORMLY (the heart divides its world size out of its parent, `LifeFormCrystal.SetWorldScale`, but a parent's shear
+cannot be divided out of a turning child); do shape changes on the body's own meshes and filter every sweep to the
+body's parts (`Fauna.IsSpindlePart`: nothing under a `Crystal`); and before handing back, measure the HEART after the
+change in the game's own code path (its extent must be equal on all three axes),
+not in a render that swaps a fresh crystal in afterwards (the offline renders did, which is how the squash got past them).
+A stated prism size also needs admitting: `Prism.Initialize` clamps targets into the scale animator's [0.5, 10] window,
+so body prisms take `Fauna.SeatAuthoredSize` after Initialize.
+
+**A creature wears its element's ARMOUR on its body (Docs/ECOSYSTEM.md §65).** Mass is shielded (every plain body
+prism, re-armoured one a second), Charge is dangerous (every body prism), via `Fauna.ArmourBody` - call it from a new
+species' `Initialize` once its body prisms are initialised and its heart is in place, as `LightFauna`, `Boid` and
+`WormSegmentFauna` do. A population drawn as DATA (a swarm, a builder colony, a substrate) has no body prisms of its
+own: its frame carries the law through `SwarmInstance.ElementLaw` (the swarm's `SwarmTickJob.MemberTier`, a scripted
+plan excepted), its proxies take the published tier and shield, and its hearts are drawn by `CrystalHeartDraw` with the
+elemental crystal's own models and materials - never by a member shader's look of its own, which is how the Swarm cell's
+hearts went stale (§65.7). An NCA creature applies the law to its look, its index entries, its hit prism and a vessel's
+pass. Two consequences to carry:
+- **"Danger" no longer means "teeth".** On a Charge creature every prism is dangerous, so anything that finds the
+  MOUTH, the jaws or a tooth reads `Fauna.IsAuthoredDanger`, never `IsDangerous` - a mouth at the centroid of the
+  whole body is no mouth. The authored set is captured before anything arms the body, and only what the element
+  armed is undone on a pooled body's next life (a prefab's own shielded cage keeps its shield).
+- **A Mass heart's swing is measured to its body's SHIELDS**, which reach 3x the box: 12.44 u
+  (`ElementalArmour.HeartSwingClearance`) to every plain prism's octahedron. A heart INSIDE a prism's shield (the
+  Mass tadpole) cannot be cleared by growth - scaling about the heart keeps it inside - only by moving the heart.
+A species whose body's danger or shield is its BEHAVIOUR (the swarm tiers: `SwarmTadpoleFauna`,
+`SubstrateAgentFauna`) does not call it; say so in its doc comment.
 
 ---
 

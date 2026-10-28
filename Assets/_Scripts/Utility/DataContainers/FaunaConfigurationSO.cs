@@ -192,6 +192,14 @@ namespace CosmicShore.Utility
                  "Mass/Time tadpoles author 0.8 x 0.8 x 7 long tail prisms; Space keeps the " +
                  "spindle default). Zero = keep the prefab's authored prism scale.")]
         public Vector3 BodyPrismScale = Vector3.zero;
+        [Tooltip("SPACE's spindle: erode the body's thickest sections toward its spine by the lattice's Space exponent " +
+                 "(1/2.11), thin sections left whole, so the thickest comes back to 1/1.647 of its girth " +
+                 "(FaunaElementalForm.ErodedGirth). Pair it with a BaseBodyScale of FaunaElementalForm.SpaceLengthOverMass " +
+                 "(1.647) x the species' Mass scale: the Space body is the Mass body's length x1.647 and its girth. Wings " +
+                 "erode along their own spines and stay attached; body prisms move with the skin and take the leaf law, " +
+                 "the largest that fits their eroded socket less 3% (Docs/ECOSYSTEM.md 64.9); danger prisms keep their " +
+                 "shape. Needs the body mesh's Read/Write import flag.")]
+        public bool ErodeSpindle = false;
         [Tooltip("Material applied to the body's Spindle renderers (the per-element body look). " +
                  "None = keep the prefab's authored material.")]
         public Material BodyMaterial;
@@ -207,21 +215,21 @@ namespace CosmicShore.Utility
         public float CohesionRadius = -1f;
         public float BehaviorUpdateRate = -1f;
         public float TrailBlockInteractionRadius = -1f;
+        [Tooltip("Boid-to-boid separation distance, world units. A BODY length: it scales with " +
+                 "BaseBodyScale, so a variant that changes its body size states its own. -1 = keep prefab.")]
+        public float SeparationRadius = -1f;
+        [Tooltip("Radius of one mouthful around the faced prism, world units. A BODY length " +
+                 "(the mouth's reach): it scales with BaseBodyScale. -1 = keep prefab.")]
+        public float FeedingClusterRadius = -1f;
         public float GoalWeight = -1f;
         public float MinSpeed = -1f;
         public float MaxSpeed = -1f;
 
         [Header("Heart")]
-        [Tooltip("WORLD scale this variant's heart (its elemental crystal) renders at - sized " +
-                 "to suit THIS creature, so a piranha's heart is a piranha's and a shark's is a " +
-                 "shark's. 0 = keep the platform default on ElementalCrystalSet.\n\n" +
-                 "This is a GAMEPLAY number as well as a visual one: the collect reward reads " +
-                 "the heart's world scale, so a bigger " +
-                 "creature's heart is worth more to whoever takes it. The whole authored band " +
-                 "must therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past " +
-                 "it two visibly different hearts pay the same. Authored by " +
-                 "Tools/Build/author_lifeform_heart_sizes.py, which measures the body and fails " +
-                 "the build on an overshoot; do not hand-edit one in isolation.")]
+        [Tooltip("RETIRED, not read (2026-10-26). Every elemental crystal, a lifeform's heart " +
+                 "included, is one size (ElementalCrystalSetSO.CrystalWorldScale) and worth one " +
+                 "petal. Still written by Tools/Build/author_lifeform_heart_sizes.py; nothing in " +
+                 "the game reads it.")]
         [Min(0f)] public float HeartWorldScale = 0f;
 
         [Header("Audio")]

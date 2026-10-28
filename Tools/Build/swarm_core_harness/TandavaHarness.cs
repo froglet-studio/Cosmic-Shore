@@ -31,22 +31,27 @@ using CosmicShore.Gameplay;
 /// <summary>The arena author_tandava_assets.py lays (its MEMBRANE_RADIUS, the flora band, the flora table).</summary>
 static class TandavaArena
 {
-    public const float MembraneRadius = 800f;    // TandavaMembrane: the CapsuleMembrane at two thirds - a crowded hunt
+    // The world is the research body's x K = 2.044 (the one heart size grew UnitScale 2 -> 4.088; Docs/ECOSYSTEM.md 64.6):
+    // 800, 240-720, 160 and -430 at the research body.
+    /// <summary>The world's growth round the one heart size (author_tandava_assets.py K): a test's creature-sized distance
+    /// (where a pilot sits off the body, a tolerance on where it roams) is its research-body value x K.</summary>
+    public const float K = 2.044f;
+    public const float MembraneRadius = 1635.2f;  // TandavaMembrane: the CapsuleMembrane, grown with its creature - a crowded hunt
     public const float NucleusRadius = 196f;     // HalfNucleus (the Scurry cell's core): fauna eat nothing inside it
-    public const float PlantInner = 240f, PlantOuter = 720f;    // the flora band (world, from the centre)
-    public const float BodyReach = 160f;          // the longest body's half-length: its centre roams the membrane less this
-    public static readonly Vector3 Hatch = new(-430f, 0f, 0f);
+    public const float PlantInner = 490.56f, PlantOuter = 1471.68f;    // the flora band (world, from the centre)
+    public const float BodyReach = 327.04f;       // the longest body's half-length: its centre roams the membrane less this
+    public static readonly Vector3 Hatch = new(-878.92f, 0f, 0f);
     /// <summary>The cramped reef: species, element (research index), how many, prisms a plant may grow, one leaf's volume
-    /// (its canonical LeafSize - the generator reads every row back).</summary>
+    /// (its canonical LeafSize x PlantScale^3, every plant grown whole - the generator reads every row back).</summary>
     public static readonly (string Species, int Element, int Count, int Prisms, float Leaf)[] Flora =
     {
-        ("Borromean", 1, 5, 60, 72.866f),
-        ("Coral", 1, 5, 110, 24.640f),
-        ("Lantern", 1, 4, 70, 43.740f),
-        ("Reed", 1, 4, 130, 16.796f),
-        ("Frond", 1, 3, 120, 22.964f),
-        ("Tendril", 2, 3, 84, 3.268f),
-        ("Coral", 2, 3, 140, 3.377f),
+        ("Borromean", 1, 5, 60, 42.164f),
+        ("Coral", 1, 5, 110, 236.806f),
+        ("Lantern", 1, 4, 70, 420.366f),
+        ("Reed", 1, 4, 130, 161.420f),
+        ("Frond", 1, 3, 120, 220.692f),
+        ("Tendril", 2, 3, 84, 57.222f),
+        ("Coral", 2, 3, 140, 59.201f),
     };
 }
 
@@ -55,15 +60,15 @@ static class TandavaHarness
     static int _fail;
 
     // ── the swarm config (TandavaSwarmFaunaConfig) - author_tandava_assets.py reads every one of these back
-    const float UnitScale = 2f, TickHz = 10f;
+    const float UnitScale = 4.088f, TickHz = 10f;   // the sort config's: the one heart size (2 at the research body)
     const int Density = 3;
     const int SeedMembers = 180;          // x Density, capped at the seeded form's plan: it hatches WHOLE
-    static readonly float[] EggVolume = { 20.45f, 40.31f, 22.18f, 12.8f };
+    static readonly float[] EggVolume = { 75.45f, 344.25f, 81.84f, 109.31f };   // the sort config's grown eggs
     const int StomachEggs = 500;
-    const float SortVMaxScale = 3f;       // a re-sort reads in about a second (x the research's top member speed)
+    const float SortVMaxScale = 1.4677f;  // a re-sort reads in about a second (3 at the research body: the world speed kept)
     const float SortWellClip = 1f;
-    static readonly float StomachCapacity = StomachEggs * Density * (20.45f + 40.31f + 22.18f + 12.8f) * 0.25f;   // SwarmFauna.StomachCapacity
-    const float Cruise = 3.0f;            // voxels/step: x UnitScale 2 x 10 Hz = 60 u/s calm (126 fleeing)
+    static readonly float StomachCapacity = StomachEggs * Density * EggVolume.Sum() * 0.25f;   // SwarmFauna.StomachCapacity
+    const float Cruise = 1.4677f;         // voxels/step: x UnitScale 4.088 x 10 Hz = 60 u/s calm (126 fleeing) - the world speed
     const float TurnPerStep = 0.03f;
     const float SortTurnCarry = 1f;
     const float SortLayRate = 0.084f;
@@ -73,7 +78,7 @@ static class TandavaHarness
     const int BitersPerStep = 8;
     const int SortWellsPerType = 24;
     const float SortWellDead = 0f;
-    const float StarvationSeconds = 30f, ShedIntervalSeconds = 0.25f, ForageBelow = 0.5f;
+    const float StarvationSeconds = 61.32f, ShedIntervalSeconds = 0.25f, ForageBelow = 0.5f;   // 30 s at the research body: the way to food is K x longer
     const float BodyFill = 0.939f;        // SortBodyFill
 
     // ── the economy (author_tandava_assets.py build_forms: the same arithmetic)
@@ -81,18 +86,20 @@ static class TandavaHarness
     // the banks, as shares of the stomach - RISING, so what one form carries over never skips the next, and all under
     // the 0.98 fill at which a meal ends full (a bank above it could never be reached: a full stomach stops grazing)
     static readonly float[] BankShare = { 0.15f, 0.28f, 0f, 0.4f };   // Great Serpent, Many-Headed (the dance's offering), -, Antlion (the feast)
-    const float MealVolume = 4000f;       // one meal (flora volume): most of a 60-prism plant - about 13 s at it
+    const float MealVolume = 26483f;      // one meal (flora volume): 90% of the reef's biggest plant (Docs/ECOSYSTEM.md 65 - was 4,000 x the eggs' mass ratio)
 
     // ── the food (a bite is one prism: its species' leaf)
-    const float PlantRadius = 28f, BiteRadius = 10f;
+    const float PlantScale = 2.597f;      // every reef plant grown whole (LatticeScale / PlantScale): the eggs' mass ratio^(1/3) x the reef's growth 1.4 (Docs/ECOSYSTEM.md 65)
+    const float PlantRadius = 28f * PlantScale, BiteRadius = 4.96f;   // author_tandava_assets.BITE_RADIUS: the coils close on a plant grown less than the body
     const float RegrowPrismsPerSecond = 7.5f, RegrowPause = 2f, ReplantSeconds = 120f;
     const int DiesAtPrisms = 4;
 
     // ── the halo
     const int HaloCount = 12, HaloToBreak = 9, GuardMembers = 6, GuardElement = 3;   // Time: the attendant packs
-    const float GuardRadius = 40f;
-    /// <summary>A test run's length: the hunt has no clock, so a test stops itself.</summary>
-    const float RunCap = 420f;
+    const float GuardRadius = 81.76f;      // 40 at the research body
+    /// <summary>A test run's length: the hunt has no clock, so a test stops itself (420 s at the research body; its journeys
+    /// are K x longer at the same world speed).</summary>
+    const float RunCap = 420f * TandavaArena.K;
 
     /// <summary>Every plan, in the swarm config's ScriptedPlans order (tandava_plans.plan_keys - the generator checks).</summary>
     public static readonly string[] Keys =
@@ -756,13 +763,17 @@ static class TandavaHarness
             Console.WriteLine($"      a meal by form {MealsByForm(s)}; coils/wraps/eights {string.Join("/", s.CoilMeals)}");
             Check(d.Outcome == TandavaOutcome.Completed && s.Commits.Select(x => x.form).SequenceEqual(new[] { 1, 2, 3 }),
                   $"picks {tag}: Great Serpent -> Many-Headed -> Lord of the Dance -> Antlion -> the cycle completes");
-            Check(d.Clock < 200f, $"unopposed it completes in {d.Clock:F0} s (< 200 s): the forms come fast, so the pilots must stop it, not wait it out");
+            // 200 s at the research body: its world is K x wider at the same world speed, so every journey is K x longer
+            Check(d.Clock < 200f * TandavaArena.K, $"unopposed it completes in {d.Clock:F0} s (< {200f * TandavaArena.K:F0} s): the forms come fast, so the pilots must stop it, not wait it out");
             Check(s.Commits.Count == 3 && s.Commits[0].t < 60f, $"its first change comes at {s.Commits[0].t:F0} s (< 60 s)");
             Check(s.LaidWhileFeeding == 0, "it never laid an egg while it ate (the hold: it cannot heal at the table)");
             float roam = MathF.Max(DirectorSettings().RoamRadius, s.Forms.Max(f => f.CoilRoamRadius));   // rolled up, it reaches further
-            Check(s.MaxRadius <= roam + 40f, $"it never left the cell (max radius {s.MaxRadius:F0} of {roam:F0})");
+            Check(s.MaxRadius <= roam + 40f * TandavaArena.K, $"it never left the cell (max radius {s.MaxRadius:F0} of {roam:F0})");
+            // the dance ground is where it stood, pulled in from the wall by at most DanceReach - from wherever it may roam,
+            // and rolled up it roams to its coils' reach (the cell check above): a rise from a coil at the wall is pulled
+            // in that much further, which is the director's rule, not a miss
             if (s.RiseAt >= 0f)
-                Check(Vector3.Distance(s.RiseAnchor, d.DancePoint) <= DirectorSettings().DanceReach + 20f,
+                Check(Vector3.Distance(s.RiseAnchor, d.DancePoint) <= DirectorSettings().DanceReach + (roam - DirectorSettings().RoamRadius) + 20f * TandavaArena.K,
                       $"it rose where it stood ({Vector3.Distance(s.RiseAnchor, d.DancePoint):F0} u from the dance ground)");
             if (seed == 31) Dump(s.C, "free_run_end");
         }
@@ -776,16 +787,16 @@ static class TandavaHarness
             RunFor(s, 12f);
             var c = s.C;
             if (hurt) { int cut = Cut(c, (int)(0.4f * Active(c)), c.BX); s.Lost += cut; Array.Clear(c.Stomach); s.Plants.Clear(); }   // and nothing to regrow from, nor to eat
-            var pilot = new Pilot { At = c.Anchor * UnitScale + Vector3.Normalize(new Vector3(0.3f, 0.2f, 1f)) * 600f };
+            var pilot = new Pilot { At = c.Anchor * UnitScale + Vector3.Normalize(new Vector3(0.3f, 0.2f, 1f)) * 600f * TandavaArena.K };
             s.Pilots.Add(pilot);
             float wary = -1f, flee = -1f, lunge = -1f, fast = 0f; bool away = true, toward = true; int awaySamples = 0, towardSamples = 0; string why = null;
-            for (int q = 0; q < 150 && s.D.Outcome == TandavaOutcome.Running; q++)
+            for (int q = 0; q < (int)(150 * TandavaArena.K) && s.D.Outcome == TandavaOutcome.Running; q++)   // 15 s at the research body
             {
                 var a0 = c.Anchor;
                 Tick(s, x =>
                 {
                     var to = x.C.Anchor * UnitScale - pilot.At; float dd = to.Length();
-                    pilot.Vel = dd > 200f ? to / dd * 110f : Vector3.Zero;   // it comes in, and sits 200 u off the body
+                    pilot.Vel = dd > 200f * TandavaArena.K ? to / dd * 110f : Vector3.Zero;   // it comes in, and sits off the body (200 u at the research body)
                 });
                 var me = c.Anchor * UnitScale;
                 if (wary < 0 && s.D.Mood >= TandavaMood.Wary) wary = s.Now;
@@ -800,7 +811,7 @@ static class TandavaHarness
                     // it aims its JAWS (its lunge pose's mouth, or the strike pose's) at the pilot, led by the pilot's velocity
                     var f = s.D.Form;
                     var jawsAim = s.D.Goal + TandavaDirectorCore.InBody(State(s), f.LungePlanIndex >= 0 ? f.LungeMouth : f.FeedMouth);
-                    bool at = Vector3.Distance(jawsAim, pilot.At) < 80f, bared = c.PlanIx == f.FeedPlanIndex || c.PlanIx == f.LungePlanIndex ||
+                    bool at = Vector3.Distance(jawsAim, pilot.At) < 80f * TandavaArena.K, bared = c.PlanIx == f.FeedPlanIndex || c.PlanIx == f.LungePlanIndex ||
                                                                                c.PlanIx == f.SnapPlanIndex || s.Now - lunge <= 0.3f;
                     if ((!at || !bared) && why == null) why = $" (at {s.Now:F1} s: jaws aimed {Vector3.Distance(jawsAim, pilot.At):F0} u from it, plan {Keys[c.PlanIx]}, pilot {Vector3.Distance(pilot.At, me):F0} u off)";
                     toward &= at && bared; towardSamples++;
@@ -865,7 +876,7 @@ static class TandavaHarness
             Tick(s); Tick(s);
             int target = (int)(0.22f * plan), killed = 0;
             float brokenAt = -1f;
-            s.Pilots.Add(new Pilot { At = s.C.Anchor * UnitScale - s.C.BX * 60f });
+            s.Pilots.Add(new Pilot { At = s.C.Anchor * UnitScale - s.C.BX * 60f * TandavaArena.K });
             for (int q = 0; q < 40 && brokenAt < 0f; q++)
             {
                 Tick(s, x =>
@@ -893,7 +904,7 @@ static class TandavaHarness
             float strikeAt = -1f; int killedThisMeal = 0;
             RunFor(s, RunCap, x =>
             {
-                if (!x.D.Feeding || x.Now < 25f) { strikeAt = -1f; killedThisMeal = 0; return; }   // they spawn across the cell
+                if (!x.D.Feeding || x.Now < 25f * TandavaArena.K) { strikeAt = -1f; killedThisMeal = 0; return; }   // they spawn across the cell
                 if (strikeAt < 0f) strikeAt = x.Now + 3f;   // the pilots arrive three seconds into every meal
                 if (x.Now < strikeAt) return;
                 int target = (int)(0.21f * x.D.Form.PlanCount);
@@ -1011,20 +1022,20 @@ static class TandavaHarness
         Console.WriteLine("T17 pressed, it still eats");
         {
             var s = MakeSim(b, new[] { 0, 0, 0, 0 }, 67);
-            var pilot = new Pilot { At = TandavaArena.Hatch + new Vector3(0f, 250f, 0f) };
+            var pilot = new Pilot { At = TandavaArena.Hatch + new Vector3(0f, 250f * TandavaArena.K, 0f) };
             s.Pilots.Add(pilot);
             int lunges = 0; var was = TandavaMood.Calm;
-            RunFor(s, 120f, x =>
+            RunFor(s, 120f * TandavaArena.K, x =>   // two minutes at the research body
             {
                 var me = x.C.Anchor * UnitScale;
-                var want = me + Vector3.Normalize(pilot.At - me + new Vector3(0f, 1f, 0f)) * 250f;   // it hangs 250 u off the body
+                var want = me + Vector3.Normalize(pilot.At - me + new Vector3(0f, 1f, 0f)) * 250f * TandavaArena.K;   // it hangs off the body (250 u at the research body)
                 var to = want - pilot.At; float dd = to.Length();
                 pilot.Vel = dd > 5f ? to / dd * MathF.Min(150f, dd * 4f) : Vector3.Zero;
                 if (x.D.Mood == TandavaMood.Lunging && was != TandavaMood.Lunging) lunges++;
                 was = x.D.Mood;
             });
             Check(lunges >= 3 && s.Meals >= 2,
-                  $"a pilot hanging 250 u off it for two minutes was charged {lunges} times, and it still ate {s.Meals} meals (form {s.D.Form.Name})");
+                  $"a pilot hanging {250f * TandavaArena.K:F0} u off it for {120f * TandavaArena.K:F0} s was charged {lunges} times, and it still ate {s.Meals} meals (form {s.D.Form.Name})");
         }
 
         // ── T18: a serpent eats ROLLED UP - a formation drawn per meal, never the same one twice running, and the body
@@ -1086,9 +1097,9 @@ static class TandavaHarness
                 }
                 float PlanMeasure(SwarmPlanData pl) => Measure(Enumerable.Range(0, pl.N).Where(u => pl.Elem[u] == elem).Select(u => pl.P[0][u]));
                 float charged = PlanMeasure(chargePlan), struck = PlanMeasure(strikePlan);
-                // the weapon: danger plates on the jaws (the Antlion's teeth, within 11 u of a jaw unit) or on the heads
+                // the weapon: danger plates on the jaws (the Antlion's teeth, within 11 u x K of a jaw unit) or on the heads
                 int danger = Enumerable.Range(0, strikePlan.N).Count(u => strikePlan.Elem[u] == 0 && strikePlan.Tier[u] == 1 &&
-                    (f == 1 || Enumerable.Range(0, strikePlan.N).Any(w => strikePlan.Elem[w] == 3 && Vector3.Distance(strikePlan.P[0][u], strikePlan.P[0][w]) * UnitScale < 11f))) / Density;
+                    (f == 1 || Enumerable.Range(0, strikePlan.N).Any(w => strikePlan.Elem[w] == 3 && Vector3.Distance(strikePlan.P[0][u], strikePlan.P[0][w]) * UnitScale < 11f * TandavaArena.K))) / Density;
                 int wantDanger = f == 3 ? 6 : 2 * MANY_HEADS(key);
                 // the form alone, healthy and lightly fed, its bank out of reach, with a pilot loitering in lunge range
                 var forms = BuildForms(b, new[] { f == 0 ? 0 : 0, f == 1 ? Array.IndexOf(Variants[1], key) : 0, 0, f == 3 ? Array.IndexOf(Variants[3], key) : 0 });
@@ -1099,15 +1110,15 @@ static class TandavaHarness
                 s.D = new TandavaDirectorCore(s.Forms, DirectorSettings(), 71);
                 s.Plants = LayPlants(71);
                 RunFor(s, 8f);   // it grows whole
-                var pilot = new Pilot { At = s.C.Anchor * UnitScale + new Vector3(0f, 250f, 0f) };
+                var pilot = new Pilot { At = s.C.Anchor * UnitScale + new Vector3(0f, 250f * TandavaArena.K, 0f) };
                 s.Pilots.Add(pilot);
                 int charging = 0, striking = 0, ended = 0, endedStruck = 0; bool struckThis = false;
                 var was = TandavaMood.Calm; float atStrike = 0f, best = 0f, cocked = float.NaN; bool inStrike = false;
                 var swings = new List<float>();
-                RunFor(s, 40f, x =>
+                RunFor(s, 40f * TandavaArena.K, x =>   // 40 s at the research body
                 {
                     var me = x.C.Anchor * UnitScale;
-                    var want = me + Vector3.Normalize(pilot.At - me + new Vector3(0f, 1f, 0f)) * 250f;
+                    var want = me + Vector3.Normalize(pilot.At - me + new Vector3(0f, 1f, 0f)) * 250f * TandavaArena.K;
                     var to = want - pilot.At; float dd = to.Length();
                     pilot.Vel = dd > 5f ? to / dd * MathF.Min(150f, dd * 4f) : Vector3.Zero;
                     var c = x.C;

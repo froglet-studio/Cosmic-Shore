@@ -21,9 +21,9 @@ MonoBehaviour:
   MaxProxies: 18
   ProxyLingerSeconds: 2
   TickHz: 10
-  BodyScale: {x: 1.4, y: 0.9, z: 2.6}
+  BodyScale: {x: 2.163, y: 1.39, z: 4.017}
   HeartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
-  HeartPrismGap: 0.6
+  HeartPrismGap: 0.9269
   BirthBloomSeconds: 0.8
   VesselRadius: 9
   SettleSeconds: 0.35
