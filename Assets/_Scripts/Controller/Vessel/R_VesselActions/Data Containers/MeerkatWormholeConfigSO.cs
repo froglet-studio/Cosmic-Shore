@@ -263,36 +263,38 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] MeerkatFormedLook formedLook = MeerkatFormedLook.ContourField;
 
         [Header("Contour field (the Tube Lens Lab's gateField* keys, Docs/Studios/StoatTubeLensLab.html)")]
+        // Defaults = the water pipe chosen in the Tube Lens Lab artifact (round 11, 53b34e076) with Yash's Unity glass 0.139
+        // (767f849e2): the same numbers MeerkatWormholeConfig.asset ships. Garrett's own pick (round 2): Docs/Shaders/WORMHOLE_SHADERS.md.
         [Tooltip("Strength (bend per wall crossing, °)")]
-        [SerializeField, Range(0f, 40f)] float fieldStrength = 18f;
+        [SerializeField, Range(0f, 40f)] float fieldStrength = 6f;
         [Tooltip("Pitch: along the tube 0°, round it 90° (°)")]
-        [SerializeField, Range(0f, 90f)] float fieldPitch = 90f;
+        [SerializeField, Range(0f, 90f)] float fieldPitch;
         [Tooltip("Drag: pull rays along the field lines")]
-        [SerializeField, Range(0f, 2f)] float fieldDrag = 1f;
+        [SerializeField, Range(0f, 2f)] float fieldDrag = 0.5f;
         [Tooltip("Twist: turn rays round the field lines")]
         [SerializeField, Range(0f, 2f)] float fieldTwist;
         [Tooltip("Glass: refract across the shell")]
-        [SerializeField, Range(0f, 2f)] float fieldGlass = 0.4f;
+        [SerializeField, Range(0f, 2f)] float fieldGlass = 0.139f;
         [Tooltip("Glass index at the wall (Δn)")]
-        [SerializeField, Range(0f, 0.25f)] float fieldGlassIndex = 0.04f;
+        [SerializeField, Range(0f, 0.25f)] float fieldGlassIndex = 0.05f;
         [Tooltip("Grazing: 0 physical, 1 every crossing bends alike")]
-        [SerializeField, Range(0f, 1f)] float fieldGrazing = 0.6f;
+        [SerializeField, Range(0f, 1f)] float fieldGrazing = 0.9f;
         [Tooltip("Flow along the tube: Even, In then out (bent in at the way in, out at the way out), Throat")]
-        [SerializeField] MeerkatFieldFlow fieldFlow = MeerkatFieldFlow.InThenOut;
+        [SerializeField] MeerkatFieldFlow fieldFlow = MeerkatFieldFlow.Even;
         [Tooltip("Inner thickness (× local radius)")]
         [SerializeField, Range(0f, 0.6f)] float fieldInner = 0.1f;
         [Tooltip("Outer thickness (× local radius)")]
-        [SerializeField, Range(0f, 1f)] float fieldOuter = 0.12f;
+        [SerializeField, Range(0f, 1f)] float fieldOuter = 0.15f;
         [Tooltip("Fall-off shape across the shell, from the wall to zero at its edge")]
-        [SerializeField] MeerkatFieldProfile fieldProfile = MeerkatFieldProfile.Smooth;
+        [SerializeField] MeerkatFieldProfile fieldProfile = MeerkatFieldProfile.Smoother;
         [Tooltip("Ribs: concentrate the field on the grid lines")]
-        [SerializeField, Range(0f, 1f)] float fieldRibs = 0.9f;
+        [SerializeField, Range(0f, 1f)] float fieldRibs = 0.25f;
         [Tooltip("Rib sharpness")]
-        [SerializeField, Range(1f, 24f)] float fieldRibSharpness = 8f;
+        [SerializeField, Range(1f, 24f)] float fieldRibSharpness = 3f;
         [Tooltip("Ribs travel toward the exit (rings per second)")]
-        [SerializeField, Range(-4f, 4f)] float fieldRibTravel = 1.5f;
+        [SerializeField, Range(-4f, 4f)] float fieldRibTravel = 1.2f;
         [Tooltip("Rib rings along the tube (the studio grid's WH_RINGS)")]
-        [SerializeField, Range(2, 64)] int fieldRibRings = 22;
+        [SerializeField, Range(2, 64)] int fieldRibRings = 16;
         [Tooltip("Rib lines round the tube (the studio grid's WH_LONG)")]
         [SerializeField, Range(1, 48)] int fieldRibLines = 12;
 
