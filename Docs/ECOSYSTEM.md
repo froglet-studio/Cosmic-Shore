@@ -12528,9 +12528,16 @@ Mouths, jaws and the Space erosion's "a tooth keeps its size" read `Fauna.IsAuth
 prism is dangerous, and a mouth at the centroid of its whole body would be no mouth.
 
 At the §64.8 body scales the Mass shark, QuadFish, Clawfish and Brittlestar keep their 12.44 u swing clear of every
-shield (nearest 15.6 / 23.5 / 53.1 / 17.7 u), so no Mass creature is regrown. **The Mass tadpole's heart sits INSIDE
-its one body prism's shield.** Growing it cannot clear it (scaling about the heart keeps the heart inside), so it joins
-the tadpole size decision §64.8 left open.
+shield (nearest 15.6 / 23.5 / 53.1 / 17.7 u), so no Mass creature is regrown. **The Mass tadpole's heart sat INSIDE
+its one body prism's shield** (a 0.65 x 0.65 x 5.7 needle trailing 4.75 u behind it: its octahedron reached 3.8 u past
+the heart). Growing it alone cannot clear that, so (Garrett, 2026-10-28: "increase the mass tadpole prism in the other
+dimensions and decrease in the problematic one. with a scale up it should still have a large prism") its prism is
+SHORT along its swim axis and wide across it - `BodyPrismScale` 0.8 x 0.8 x 7 -> 2.117 x 2.117 x 1, the same local
+volume - on a body grown x3.67 (`BaseBodyScale` 0.8175 -> 3, the Mass shark's own ratio over its siblings): a
+6.35 x 6.35 x 3.0 u prism 17.4 u behind the heart, its shield 12.93 u clear, 49x the Time tadpole's volume. Its school
+spacing follows its body (`SeparationRadius` 30.66 -> 112.5, `FeedingClusterRadius` 20.44 -> 75, `CohesionRadius`
+102.2 -> 150 so it stays above separation); its senses stay world. Its SKIN's head basket is still the §64.8 cavity
+question.
 
 `SwarmTadpoleFauna` and `SubstrateAgentFauna` are not armoured: their body's danger and shield are their behaviour (the
 swarm tiers).
