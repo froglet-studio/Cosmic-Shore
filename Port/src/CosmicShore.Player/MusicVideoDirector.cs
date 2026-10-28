@@ -291,7 +291,7 @@ namespace CosmicShore.Player
             {
                 case CamMode.Mount:
                 {
-                    var s = Subject(); if (s == null) return;
+                    var s = Subject() ?? Resolve("fleet"); if (s == null) return;
                     if (!_haveSmoothed) { _smoothedFwd = s.forward; _smoothedUp = s.up; _haveSmoothed = true; }
                     float k = 1f - Mathf.Exp(-_smooth * step);
                     _smoothedFwd = Vector3.Lerp(_smoothedFwd, s.forward, k).normalized;
@@ -304,7 +304,8 @@ namespace CosmicShore.Player
                 }
                 case CamMode.Orbit:
                 {
-                    var s = Subject(); if (s == null) return;
+                    // A named subject that dies (a kaiju head cut by the fleet) hands the orbit to the fleet's centre.
+                    var s = Subject() ?? Resolve("fleet"); if (s == null) return;
                     _phase += _degPerSec * step;
                     float a = _phase * Mathf.Deg2Rad;
                     pos = s.position + new Vector3(Mathf.Cos(a) * _dist, _height, Mathf.Sin(a) * _dist);

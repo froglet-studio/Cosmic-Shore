@@ -186,7 +186,7 @@
   {
    "name": "kaiju-siege",
    "stage": "menu",
-   "what": "The Garland cell with a Worm Colony kaiju released ahead of the pilot: the camera orbits the worm's head while twelve hulls and the pilot are sent at it, prisms burst around the head on every downbeat, every hull's abilities cycle on the strong beats. The drop. (A pilot aimed at the head reaches it and stops - cut 5's first shoot sat on it for four seconds - so the pilot chases the fleet and the camera owns the kaiju.)",
+   "what": "The Garland cell with a Worm Colony kaiju released ahead of the pilot: the camera orbits the worm's head while twelve hulls and the pilot are sent at it, prisms burst around the head on every downbeat, every hull's abilities cycle on the strong beats. The drop. (A pilot aimed at the head reaches it and stops - cut 5's first shoot sat on it for four seconds - so the pilot chases the fleet and the camera owns the kaiju.) Prisms burst around the pilot and the fleet, never at the worm: its body IS prisms, and a blast at its head killed it in two bars.",
    "mode": "Menu_Main",
    "players": 0,
    "target": {
@@ -213,7 +213,15 @@
    "events": [
     {
      "on": "bar",
-     "cmd": "blast name:WormHead 10 40"
+     "cmd": "blast local 8 35"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all name:WormHead"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim local fleet"
     },
     {
      "on": "strong",
@@ -228,15 +236,7 @@
     {
      "on": "onset",
      "min_energy": 0.7,
-     "cmd": "blast local 6 30"
-    },
-    {
-     "on": "bar",
-     "cmd": "aim all name:WormHead"
-    },
-    {
-     "on": "bar",
-     "cmd": "aim local fleet"
+     "cmd": "blast fleet 6 30"
     }
    ],
    "settle_seconds": 6,

@@ -1,30 +1,29 @@
 {
  "plan": "/home/user/Cosmic-Shore/Tools/Build/music_video/out/SKY-FIRE_41-56-cut5/plan.json",
  "criteria": {
-  "motion_vs_energy": -0.236,
-  "motion_vs_onsets": 0.0922,
+  "motion_vs_energy": -0.229,
+  "motion_vs_onsets": 0.0962,
   "cut_alignment": 0.0007,
   "luminance_vs_brightness": -0.5,
   "dead_frames": 0.0,
-  "stuck_frames": 0.3333,
-  "diversity": 0.3333
+  "stuck_frames": 0.1093,
+  "diversity": 1.0
  },
  "penalties": {
-  "motion_vs_energy": 2.144,
-  "motion_vs_onsets": 0.1388,
+  "motion_vs_energy": 2.1158,
+  "motion_vs_onsets": 0.1292,
   "cut_alignment": -0.0149,
   "luminance_vs_brightness": 0.8,
   "dead_frames": -0.004,
-  "stuck_frames": 0.7467,
-  "diversity": 1.8133
+  "stuck_frames": 0.0299,
+  "diversity": -0.008
  },
- "loss": 5.6239,
+ "loss": 3.048,
  "below_floor": [
   "motion_vs_energy",
   "motion_vs_onsets",
   "luminance_vs_brightness",
-  "stuck_frames",
-  "diversity"
+  "stuck_frames"
  ],
  "shots": [
   {
@@ -41,11 +40,11 @@
   {
    "name": "02-kaiju-siege",
    "frames": 230,
-   "mean_luminance": 0.1302,
-   "mean_detail": 0.1292,
-   "mean_motion": 0.0005,
+   "mean_luminance": 0.1675,
+   "mean_detail": 0.1252,
+   "mean_motion": 0.0156,
    "dead_frames": 0.0,
-   "stuck_frames": 1.0,
+   "stuck_frames": 0.328,
    "brightness": 0.705,
    "energy": 0.643
   },
