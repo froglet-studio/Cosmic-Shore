@@ -293,3 +293,69 @@ consider how they distinguish themselves too."
     threshold the game already uses (here the energize stance's summed pull) rather than cross-faded: a cross-fade of
     two silhouettes reads as a double image. Pin the facing in a pure function with a test, since a sign slip draws a
     plausible wrong card. A tool that is the Vessel's own (a sword, a weapon) wears white / danger, not the domain.
+
+## 2026-10-28 - the Rhino's Mass, Space and Time cards: the mistakes that cost a round each
+
+Garrett, after the Rhino's third card: "look over the iterative mistakes made and be sure to update the icon creation
+skills with your learning so you get progressively better at developing icons for vessels." Every lesson below cost at
+least one options round; together they are the pre-send review in SKILL.md §3 step 2.5.
+
+45. **A copy of a moving part is mirrored WITH it.** The Mass card (Afterimage) drew the sword's prism copies at the
+    right angles, but "the after image is flipped the wrong way": the copies are the sword where it WAS in the same
+    swing, so they take the sword's facing as well as its angle. Lesson 44 applied to every ghost, trail and echo of a
+    part: whatever transform the live part gets (mirror, foreshortening, the curve's side), its copies get too. Check
+    a ghost against the part it echoes before sending, not against the brief.
+
+46. **Every mark on the card must answer "what is this showing?" with something nothing else on the card shows.** The
+    Space card's first round put a plate fill under a blade whose LENGTH already was the Space level. Garrett: "what is
+    the fill showing?" - and on the Space 5 tick: "yeah everything has an L5 upgrade so that is inconsistent". Two
+    rules: (a) one quantity, one place - if the icon draws a how-much (a length, a count), the plate does not repeat
+    it, and vice versa; (b) the level-5 upgrade is never marked as a level (every ability has one), it is drawn as the
+    ACT it unlocks. Before sending, name in one line what each part and the plate tell; a part with no line goes.
+
+47. **Draw the upgrade as the act on its real target.** "show it hitting a supershielded prism and it breaking above
+    5": Shield Breaker became the blade's tip in a super-shielded prism, whole below Space 5 and shattered from it. The
+    level-5 state is a STATE of the card (a swap the HUD makes off the real upgrade flag), not a badge.
+
+48. **A game object is drawn from its real geometry, not from memory.** "that does not look like a stelated
+    octahedron, you need a better supershielded prisms icon": the hand-drawn star was a guess. The fix read the game's
+    generator (`StellatedOctahedronMeshGenerator`), built the solid (the two tetrahedra, every face), and projected
+    it. Lesson 24 ("fidelity means the hull's real geometry") holds for every object on the card - prisms, crystals,
+    projectiles - and the source is the mesh or the generator, found before the first sketch.
+
+49. **Flat, one colour, in its most iconic projection.** The first true stella octangula was a shaded three-quarter
+    view; Garrett: "we need a flatter design in order to play well with the others". The row is flat: one colour per
+    part, facets told by SEAMS (a few px of knock-out), never by shade. Choose the projection where the solid reads as
+    its own glyph (a stella octangula down a body diagonal is the six-point star) - pick it by measuring several
+    views, not by default.
+
+50. **A secondary object knocks out around the primary; it never covers it.** "it should not occlude the sword or the
+    max length ticks". Cut every secondary part clear of the parts above it in meaning with a grown mask (`toy_portraits
+    .grown(mask, px)`, ~2.5 px) - the same knock-out the seams use - so the focal object and every reference mark stay
+    whole at 40 px. Check overlaps part by part, at 40 px, before sending.
+
+51. **A destroyed state is the object's real pieces separated along its real seams.** "it should have a better flat
+    destroyed state than the flat state with some erased. it should remake with the correct separation of faces." A
+    broken thing is not the whole thing with holes: split it into the pieces the game breaks it into (here each spike's
+    facets), push each out along its own direction (a fraction of its distance from the centre), keep each piece whole.
+
+52. **Draw the mechanic, AND what it means for the vessel.** The Time card (Ramp Spool) went out as three ways to draw
+    "speed": streaks, chevrons, a slope. Garrett: "i think this ability is about the rhino and its invulnerability to
+    danger prisms so it should have a rhino silhouette and a tick on the meter ... that shows the barrier come up to
+    protect against the danger prism." Then: "also using the mechanic to produce icons still seems very sensible to
+    not discard." So the mechanic stays the source (the speed is the plate, its 70% threshold the tick, the ward and the
+    danger prism the real objects the code names) - what the first round missed is the PAYOFF the pilot plays for (the
+    level-5 ward, untouchable above 70%) and WHO gains it (the hull). Brief every card from the mechanic first, then ask
+    "who gains what, against what"; when the act changes the vessel itself (protected, faster, heavier), the vessel is
+    on the card.
+
+53. **A threshold on the plate is the Sparrow's segment mark, never a line across.** The 70% Momentum mark went out as a
+    full-width line; "not the bar across. updated sparrow has a better solution": `gauge_marks_style="segments"` - a
+    short dim tick at each slanted edge while it is ahead, a gap through the fill once passed
+    (`SparrowHUDView.PaintGunHeatMarks`). Lesson 43 already said it for levels; it holds for a single threshold too.
+    Default every plate mark to "segments"; "lines" is the rejected style.
+
+54. **Reuse the game's own 2D art before drawing a hull.** The Rhino's FBX cannot be posed without Blender here, but
+    the game ships a top-view HUD silhouette in parts (`Assets/_Graphics/Silhouettes/Rhino/RhinoBody.png` + two
+    `RhinoWing.png`), laid out at the dossier's measured pod offsets. Search `Assets/_Graphics/Silhouettes/` (and the
+    sparse checkout's excluded paths: `git ls-files | grep -i <hull>`) before concluding a hull cannot be drawn.
