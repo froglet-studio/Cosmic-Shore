@@ -8,24 +8,26 @@
    "stage": [
     "mv cell Lattice",
     "mv vessel Manta",
-    "mv in {2s} teleport local name:GyroidFlora -200 8 0",
-    "mv in {2.2s} aim local name:GyroidFlora"
+    "mv spawn flora Nested Gyroid 3",
+    "mv spawn flora Gyroid 3",
+    "mv in {3s} teleport local name:GyroidFlora -170 6 0",
+    "mv in {3.2s} aim local name:GyroidFlora"
    ],
    "camera": [
-    "mv mount local 24 8 6 18 1.6"
+    "mv orbit name:GyroidFlora 95 26 3"
    ],
-   "settle_seconds": 3,
+   "settle_seconds": 4,
    "events": [
     {
      "at": 0.0,
      "cmd": "aim local name:GyroidFlora"
     },
     {
-     "at": 1.0,
-     "cmd": "action local FullSpeedStraightAction 200"
+     "at": 1.5,
+     "cmd": "action local FullSpeedStraightAction 150"
     },
     {
-     "at": 3.5,
+     "at": 2.5,
      "cmd": "aim local fleet"
     }
    ],
@@ -35,7 +37,8 @@
     "probe 2: `flora` resolved the nearest flora, a quasicrystal, and the mount on the hull showed membrane. The gyroid is now named (name:GyroidFlora), the camera orbits the plant slowly and the hull flies through it.",
     "probe 3: the gyroid is in frame at last (the braided limbs render since the port) but an orbit at 55 u sat inside the plant's own prisms; 95 u shows the whole lattice with the Manta flying through.",
     "probe 4: the 95 u orbit showed the plant (a braided arch over a floor of slab prisms) but the Manta was lost in it; the clip is the hull flying THROUGH the arch, so the camera rides the hull at back 24 from 140 u out.",
-    "final 1 (1080p): empty membrane again - the name matched one of the three gyroid SEEDLINGS planted two seconds earlier, not the Lattice cell's own grown colony the probe had found. No more planting: the cell's own gyroids, 200 u out, boost through."
+    "final 1 (1080p): empty membrane again - the name matched one of the three gyroid SEEDLINGS planted two seconds earlier, not the Lattice cell's own grown colony the probe had found. No more planting: the cell's own gyroids, 200 u out, boost through.",
+    "final 2: without the plantings the named colony resolved to something with no mass in sight; the hull-mounted run showed membrane twice at 1080p where the plant-orbit of probe 4 showed the arch and its slab floor every time. The final is probe 4's staging: the camera orbits the plant, the Manta is sent through it."
    ]
   },
   "serpent-wall": {
