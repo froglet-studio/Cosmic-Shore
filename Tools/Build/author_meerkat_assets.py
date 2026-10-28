@@ -33,7 +33,7 @@ WHAT IT MAKES (R_VesselActions/MEERKAT.md)
     the other three abilities, are not designed - /vessel section 3); four CrystalHullFusionConfig entries (the Stoat's:
     the Meerkat draws the Stoat's mesh).
 
-GARRETT'S KIT (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 9), retrofitted onto the
+GARRETT'S KIT (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 10), retrofitted onto the
 committed prefab and assets, idempotently:
     - MeerkatSolitonKit beside the wormhole executor (listed by the ActionExecutorRegistry, wired to the config and the
       Runtime GameData), and the HUD's `kit` reference to it

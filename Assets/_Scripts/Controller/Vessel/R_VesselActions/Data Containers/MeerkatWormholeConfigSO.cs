@@ -296,7 +296,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("AI sloppiness (0 = perfect, 1 = rookie)")]
         [SerializeField, Range(0f, 1f)] float aiNoise;
 
-        // ---- Garrett's kit (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 9): the
+        // ---- Garrett's kit (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 10): the
         // artifact's Play Style Config > Kit, "Garrett's kit", by the page's own keys. Plain numbers are written by
         // studio_to_unity.py (Tools/Build/studio_to_unity/meerkat.json); each ElementalFloat is the page's L0 -> L10 pair
         // (rushL0/rushL10, zapPetalsL0/zapPetalsL10, portalSizeL0/portalSizeL10), authored once by author_meerkat_assets.py.

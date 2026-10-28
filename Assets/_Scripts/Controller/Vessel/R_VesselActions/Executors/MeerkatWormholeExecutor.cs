@@ -128,7 +128,7 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         MeerkatWormholeNetworkRelay _relay;
         ToggleTranslationModeActionExecutor _stance;
-        MeerkatSolitonKit _kit;   // [Garrett's kit hook] the soliton kit beside this executor (R_VesselActions/MEERKAT.md section 9)
+        MeerkatSolitonKit _kit;   // [Garrett's kit hook] the soliton kit beside this executor (R_VesselActions/MEERKAT.md section 10)
         Tunnel _lastRide;         // [Garrett's kit hook] the soliton last ridden, and when (not re-entered for RideAgainSeconds)
         float _lastRideAt = -10f;
 
