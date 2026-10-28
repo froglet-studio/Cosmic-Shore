@@ -247,7 +247,7 @@ Since round 9, **your reticle is always this wireframe** (`DrawReticle` → `Bri
 | `bridgeSpindleThickness` | 0.25 | Spindle width (u) |
 | `bridgeShimmer` | 0.5 | Shimmer running in → out |
 | `bridgeWhite` | 0.45 | Whitening of the domain colour |
-| `reticleWhite`, `reticleIdleAlpha`, `reticleNearLight` | 0.45, 0.4, 0.25 | The reticle's version |
+| `reticleWhite`, `reticleIdleAlpha`, `reticleNearLight` | 0.45, 0.053, 0.25 | The reticle's version |
 
 ### 2.3 The procedure
 
@@ -457,12 +457,12 @@ Added in round 26 (b61e575a2). The Vessel Studio's round-21 bore, drawn on its o
   | `branchUp` | 28° |
   | `branchZone` | 0.85 |
   | `branchSymmetry` | 0.45 |
-  | `branchForks` | 2 |
+  | `branchForks` | 3 |
   | `branchGrowSeconds` | 0.5 |
   | `rootBarkVisibility` | 0 |
-  | `rootGlass` | 0.015 |
-  | `rootRim` | 0.35 |
-  | `rootGrain` | 0.35 |
+  | `rootGlass` | 0.0232 |
+  | `rootRim` | 1.573 |
+  | `rootGrain` | 1.172 |
 
 - **To recreate:** set `trunkVisibility` (for tunnels) and `rootBarkVisibility` (for the network) above 0. A wrapped tube
   skips the bridge and the lens (`TunnelWrapped` / `ChannelWrapped`).
@@ -470,7 +470,7 @@ Added in round 26 (b61e575a2). The Vessel Studio's round-21 bore, drawn on its o
 ## 7. The roots from inside (`MeerkatRootInside.shader`)
 
 - **Look:** a soft, smooth inner tube in one slow warm tone. It is slightly dense (`_Op`, from `rootOpacity`, which ships
-  at 0), denser at its silhouette, and lit by the rider's lamp (`rootLamp` 1, falloff `_Fall`). It fades to **clear**
+  at 0), denser at its silhouette, and lit by the rider's lamp (`rootLamp` 0.352, falloff `_Fall`). It fades to **clear**
   (never to black) by `rootFog` 240 u, and its ends stay open.
 - **When it draws:** only while the local pilot is inside a bark-wrapped network.
 - **Procedure:** alpha blend; `_Lamp`, `_HullP`, `_Fog`, `_Lo0`/`_Lo1` (the openings over `_EndW`). Same mesh layout as
