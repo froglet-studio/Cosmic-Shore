@@ -1,5 +1,5 @@
 {
- "_about": "The music -> gameplay mapping the composer reads. Every number here is a decision somebody can change after watching a cut; LEARNINGS.md says why each one is what it is. Features are normalised against the SONG (0..1), not the segment, so a quiet song's loudest bar still reads as its drop. Since cut 3 the music is answered by ORCHESTRATED GAMEPLAY (events), never by the camera: cameras are steady mounts or slow orbits, and there are no pulses or shakes.",
+ "_about": "The music -> gameplay mapping the composer reads. Every number here is a decision somebody can change after watching a cut; LEARNINGS.md says why each one is what it is. Features are normalised against the SONG (0..1), not the segment, so a quiet song's loudest bar still reads as its drop. Since cut 3 the music is answered by ORCHESTRATED GAMEPLAY (events), never by the camera. Since cut 6 (v3) every shot is a PHRASE: a setup over its bars and a payoff on the section boundary or the downbeat near its end, staged in one of twelve cells.",
  "render": {
   "fps": 60,
   "step_hz": 240,
@@ -23,7 +23,24 @@
    "gfx.Texture": 0,
    "gfx.Initialized": 1
   },
-  "_prefs_why": "The game's own graphics settings for the shoot's profile (prefs.json): Ultra preset (presets 0-2 replace the HyperSea skybox with a baked panorama the engine cannot draw, cut cytoplasm to a quarter and cap the membrane), adaptive performance OFF (it had dropped the preset to Low at the software renderer's frame rate), Lush ecosystem, 8x MSAA, full VFX."
+  "_prefs_why": "The game's own graphics settings for the shoot's profile (prefs.json): Ultra preset (presets 0-2 replace the HyperSea skybox with a baked panorama the engine cannot draw, cut cytoplasm to a quarter and cap the membrane), adaptive performance OFF (it had dropped the preset to Low at the software renderer's frame rate), Lush ecosystem, 8x MSAA, full VFX.",
+  "render_scale_long": 1.5,
+  "long_seconds": 20,
+  "_long": "A cut longer than long_seconds renders at render_scale_long (1.5x supersampling): a 60 s cut is 3600 frames, and 1.5x on 8x MSAA is still cleaner than Unity's TAA at 1x. The 2x is for the 15 s milestones."
+ },
+ "shots": {
+  "_why": "Garrett (cut 5): 'longer shots where you could build up a narrative and some payoff'. Shots follow the song's sections: a section shorter than min_seconds merges into its shorter neighbour, one longer than max_seconds splits on downbeats, and a shot that ends where a drop begins runs payoff_tail_bars into the drop so the payoff lands ON the drop. A shot's payoff is the section boundary inside it, else the downbeat nearest payoff_position through it.",
+  "min_seconds": 6,
+  "max_seconds": 16,
+  "payoff_tail_bars": 2,
+  "payoff_position": 0.7,
+  "payoff_margin_seconds": 1.5
+ },
+ "camera": {
+  "_why": "Sickness-safe grammar (Garrett, cut 5: 'less erratic camera movements that are gonna make people sick'): every camera is a steady MOUNT riding behind, above and beside the pilot, heading smoothed over ~1.6 s, the horizon leaning only a quarter of the way with the hull; or an ORBIT no faster than 4 deg/s. No dollies, no pulses, no shakes, no cuts inside a shot. The field of view stays in 56-66. Back 40 / up 13 / side 12 keeps the pilot's hull readable at 1080p (at back 50 it was a speck in the smoke test); the loop mount sits behind and above (no side) so the circle reads as a circle.",
+  "mount": "mv mount local 40 13 12 28 1.6",
+  "mount_loop": "mv mount local 46 19 0 32 1.8",
+  "orbit_max_degps": 4
  },
  "feature_weights": {
   "energy": 1.0,
@@ -32,8 +49,11 @@
   "brightness": 0.5,
   "flatness": 0.3
  },
+ "section_bonus": 0.25,
  "diversity_penalty": 0.9,
+ "same_cell_penalty": 0.9,
  "same_mode_penalty": 0.0,
+ "_diversity": "An archetype used earlier in the cut costs diversity_penalty, a cell already seen costs same_cell_penalty (Garrett, cut 5: 'scenes 5 times as diverse'); an archetype whose `sections` names the shot's section earns section_bonus.",
  "intensity_by_energy": [
   0.3,
   0.55,
@@ -41,76 +61,88 @@
  ],
  "fov": {
   "min": 56,
-  "max": 68
- },
- "accents": {
-  "_why": "Camera accents (FOV pulses, shakes) made cuts 1-2 jitter; they are off. The beat lands through events.",
-  "downbeat_pulse": {
-   "min_energy": 2.0,
-   "amount_per_strength": 0.0,
-   "frames": 1
-  },
-  "beat_pulse": {
-   "min_energy": 2.0,
-   "amount_per_strength": 0.0,
-   "frames": 1
-  },
-  "onset_shake": {
-   "min_energy": 2.0,
-   "min_onset": 2.0,
-   "amount": 0.0,
-   "frames": 1
-  }
+  "max": 66
  },
  "events": {
-  "_about": "Orchestration templates. `on`: start (the shot's first frame), bar (every downbeat), beat (every beat), strong (beats in the top half of beat strength), onset (hard onsets, top quartile), half (half way through the shot). `min_energy` gates a template by the beat's energy. {i} cycles 0,1,2,3 per firing; {dir} cycles the four herd directions per firing.",
+  "_about": "Orchestration templates. `on`: start (the shot's first frame), half, bar (every downbeat), beat, strong (beats in the top half of beat strength), onset (hard onsets, top quartile); the PHRASE kinds: setup_bar / setup_beat / setup_strong (before the payoff), payoff, payoff-N / payoff+N (N seconds around it), release_bar / release_beat / release_strong (after it). `min_energy` gates a template by the shot's energy. `action all EVENT FRAMES` fires every AI hull at once (the payoff). {i} cycles 0-3, {j} 0-11 (the twelve nearest hulls), {b} Button 1-4, {b3} Button 1-3, {dir} the four herd directions, {dom} the four domains, {loop_s} the seconds from the shot's start to its payoff (one loop of `circle` closes on the payoff).",
   "defaults": {
-   "max_per_second": 6
+   "max_per_second": 8
   }
  },
  "archetypes": [
   {
-   "name": "arboretum-fleet",
+   "name": "arboretum-kit-combo",
    "stage": "menu",
-   "what": "The Arboretum cell: Borromean and coral-bloom flora, sharks and a brittlestar swarm, a fleet of ten hull classes laying their wakes around the pilot. The pilot's mount rides through it; abilities fire on the bars, the swarm turns every bar. A build, a verse.",
+   "cell": "Arboretum",
+   "what": "The Arboretum: Borromean, coral-bloom and arbor flora, sharks and a brittlestar shoal, tadpoles, a fleet of fourteen hulls on the pilot's wake. THE KIT COMBO: the pilot fires ability 1, 2 and 3 on the setup bars, one per bar, and on the payoff fires ability 4 with a boost while the prisms around it burst. A verse, a build.",
    "mode": "Menu_Main",
    "players": 0,
    "target": {
-    "energy": 0.45,
+    "energy": 0.5,
     "onset_density": 0.5,
-    "bass": 0.45,
-    "brightness": 0.6,
-    "flatness": 0.45
+    "bass": 0.5,
+    "brightness": 0.55,
+    "flatness": 0.4
    },
+   "sections": [
+    "verse",
+    "build"
+   ],
    "stage_commands": [
     "mv cell Arboretum",
     "mv spawn flora Borromean 3",
-    "mv spawn flora Coral Bloom 2",
-    "mv spawn fauna Shark 3",
-    "mv spawn fauna Brittlestar 24",
-    "mv spawn vessel all 10 Jade 50",
+    "mv spawn flora Coral Bloom 3",
+    "mv spawn flora Arbor 2",
+    "mv spawn fauna Shark 6",
+    "mv spawn fauna Brittlestar 40",
+    "mv spawn fauna Tadpole 20",
+    "mv spawn vessel all 14 Jade 55",
     "mv aim local flora",
     "mv aim all local",
     "mv herd follow local 40"
    ],
    "camera": [
     "mv camera main",
-    "mv mount local 44 15 16 30 1.5"
+    "mv mount local 40 13 12 28 1.6"
    ],
+   "phrase": {
+    "setup": "ability 1, 2, 3 on the setup bars",
+    "payoff": "ability 4 + boost + a burst of prisms on the payoff"
+   },
    "events": [
     {
-     "on": "bar",
+     "on": "setup_bar",
+     "cmd": "action local Button{b3}Action 70"
+    },
+    {
+     "on": "setup_bar",
      "cmd": "action ai{j} Button{b}Action 45"
     },
     {
-     "on": "strong",
-     "min_energy": 0.4,
-     "cmd": "action local FullSpeedStraightAction 40"
+     "on": "payoff",
+     "cmd": "action local Button4Action 110"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local FullSpeedStraightAction 150"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast local 10 35"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "release_strong",
+     "cmd": "action ai{j} FullSpeedStraightAction 30",
+     "min_energy": 0.4
     },
     {
      "on": "onset",
-     "min_energy": 0.6,
-     "cmd": "blast local 5 25"
+     "cmd": "blast local 5 25",
+     "min_energy": 0.65
     },
     {
      "on": "bar",
@@ -127,49 +159,79 @@
   {
    "name": "lattice-rally",
    "stage": "menu",
-   "what": "The Lattice cell: lattice, gyroid and quasicrystal flora in their four elements, quadfish shoals, tadpoles, and all twenty-one hull classes released around the pilot, boosting on the strong beats, their abilities cycling on the bars; the pilot's domain shifts every bar (the mass effect in four colours). Bright, fast.",
+   "cell": "Lattice",
+   "what": "The Lattice: quasicrystal, nested-gyroid and gyroid flora in four elements, quadfish and tadpole shoals, ALL twenty-one hull classes released around the pilot. Setup: the pilot's domain shifts every bar (the mass effect in four colours) and hulls boost on the strong beats. Payoff: every hull fires its fourth ability and the fleet's prisms burst. Bright, fast: a drop.",
    "mode": "Menu_Main",
    "players": 0,
    "target": {
-    "energy": 0.7,
+    "energy": 0.75,
     "onset_density": 0.75,
     "bass": 0.5,
-    "brightness": 0.75,
+    "brightness": 0.8,
     "flatness": 0.3
    },
+   "sections": [
+    "drop"
+   ],
    "stage_commands": [
     "mv cell Lattice",
-    "mv spawn flora Quasicrystal 2",
-    "mv spawn flora Nested Gyroid 2",
-    "mv spawn fauna QuadFish 12",
-    "mv spawn fauna Tadpole 10",
-    "mv spawn vessel all 21 Blue 55",
+    "mv spawn flora Quasicrystal 3",
+    "mv spawn flora Nested Gyroid 3",
+    "mv spawn flora Gyroid 2",
+    "mv spawn fauna QuadFish 40",
+    "mv spawn fauna Tadpole 30",
+    "mv spawn vessel all 21 Blue 60",
     "mv aim local flora",
     "mv aim all local",
     "mv herd follow local 40"
    ],
    "camera": [
     "mv camera main",
-    "mv mount local 44 15 16 30 1.5"
+    "mv mount local 40 13 12 28 1.6"
    ],
+   "phrase": {
+    "setup": "the domain shifts every bar; hulls boost on the strong beats",
+    "payoff": "every hull's ability 4 and a fleet-wide burst"
+   },
    "events": [
     {
-     "on": "bar",
-     "cmd": "action ai{j} Button{b}Action 45"
-    },
-    {
-     "on": "bar",
+     "on": "setup_bar",
      "cmd": "domain {dom}"
     },
     {
-     "on": "strong",
-     "min_energy": 0.5,
-     "cmd": "action ai{j} FullSpeedStraightAction 30"
+     "on": "setup_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "setup_strong",
+     "cmd": "action ai{j} FullSpeedStraightAction 30",
+     "min_energy": 0.5
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all Button4Action 90"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast fleet 12 40"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local FullSpeedStraightAction 150"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "release_beat",
+     "cmd": "action ai{j} FullSpeedStraightAction 25",
+     "min_energy": 0.6
     },
     {
      "on": "onset",
-     "min_energy": 0.65,
-     "cmd": "blast ai{i} 5 30"
+     "cmd": "blast ai{i} 5 30",
+     "min_energy": 0.7
     },
     {
      "on": "bar",
@@ -186,94 +248,854 @@
   {
    "name": "kaiju-siege",
    "stage": "menu",
-   "what": "The Garland cell with a Worm Colony kaiju released ahead of the pilot: the camera orbits the worm's head while twelve hulls and the pilot are sent at it, prisms burst around the head on every downbeat, every hull's abilities cycle on the strong beats. The drop. (A pilot aimed at the head reaches it and stops - cut 5's first shoot sat on it for four seconds - so the pilot chases the fleet and the camera owns the kaiju.) Prisms burst around the pilot and the fleet, never at the worm: its body IS prisms, and a blast at its head killed it in two bars.",
+   "cell": "Garland",
+   "what": "The Garland with a Worm Colony kaiju: sixteen hulls, sharks, a brittlestar shoal and a pack hunter. The camera orbits the worm's head slowly. Setup: the fleet converges on the head bar by bar, abilities cycling. Payoff: every hull boosts in at once and the prisms around the fleet burst. Prisms burst around the pilot and the fleet, never at the worm (its body IS prisms). The heaviest drop.",
    "mode": "Menu_Main",
    "players": 0,
    "target": {
-    "energy": 0.85,
+    "energy": 0.9,
     "onset_density": 0.8,
-    "bass": 0.8,
-    "brightness": 0.5,
+    "bass": 0.85,
+    "brightness": 0.45,
     "flatness": 0.3
    },
+   "sections": [
+    "drop"
+   ],
    "stage_commands": [
     "mv cell Garland",
-    "mv spawn fauna Worm 1",
-    "mv spawn fauna Shark 4",
-    "mv spawn fauna Brittlestar 16",
-    "mv spawn vessel all 12 Ruby 50",
-    "mv aim all name:WormHead",
-    "mv herd follow local 50",
-    "mv aim local fleet"
-   ],
-   "camera": [
-    "mv camera main",
-    "mv orbit name:WormHead 80 22 9"
-   ],
-   "events": [
-    {
-     "on": "bar",
-     "cmd": "blast local 8 35"
-    },
-    {
-     "on": "bar",
-     "cmd": "aim all name:WormHead"
-    },
-    {
-     "on": "bar",
-     "cmd": "aim local fleet"
-    },
-    {
-     "on": "strong",
-     "min_energy": 0.5,
-     "cmd": "action ai{j} Button{b}Action 40"
-    },
-    {
-     "on": "beat",
-     "min_energy": 0.6,
-     "cmd": "action ai{j} FullSpeedStraightAction 25"
-    },
-    {
-     "on": "onset",
-     "min_energy": 0.7,
-     "cmd": "blast fleet 6 30"
-    }
-   ],
-   "settle_seconds": 6,
-   "luminance": 0.2
-  },
-  {
-   "name": "garland-shoal",
-   "stage": "menu",
-   "what": "The Garland cell in a slow orbit: sharks and a brittlestar shoal herded through the pilot's wake, six hulls circling, flora blooming. A breakdown, a held bar.",
-   "mode": "Menu_Main",
-   "players": 0,
-   "target": {
-    "energy": 0.3,
-    "onset_density": 0.3,
-    "bass": 0.4,
-    "brightness": 0.5,
-    "flatness": 0.55
-   },
-   "stage_commands": [
-    "mv cell Garland",
-    "mv spawn flora Coral 2",
-    "mv spawn flora Lantern 2",
-    "mv spawn fauna Shark 4",
-    "mv spawn fauna Brittlestar 30",
-    "mv spawn vessel all 6 Gold 50",
+    "mv spawn flora Spire 3",
+    "mv spawn fauna Worm Colony 1",
+    "mv spawn fauna Shark 8",
+    "mv spawn fauna Brittlestar 40",
+    "mv spawn fauna Pack Hunter 1",
+    "mv spawn vessel all 16 Ruby 55",
     "mv aim local flora",
     "mv aim all local",
     "mv herd follow local 40"
    ],
    "camera": [
     "mv camera main",
-    "mv orbit local 48 14 5"
+    "mv orbit name:WormHead 95 26 4"
    ],
+   "phrase": {
+    "setup": "the fleet converges on the kaiju bar by bar",
+    "payoff": "every hull boosts in at once; the fleet's prisms burst"
+   },
    "events": [
     {
-     "on": "bar",
+     "on": "start",
+     "cmd": "aim all name:WormHead"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "aim all name:WormHead"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "aim local fleet"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "blast local 8 35"
+    },
+    {
+     "on": "setup_strong",
+     "cmd": "action ai{j} Button{b}Action 40",
+     "min_energy": 0.5
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all FullSpeedStraightAction 120"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast fleet 14 40"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all Button4Action 90"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "aim all name:WormHead"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "aim local fleet"
+    },
+    {
+     "on": "release_beat",
+     "cmd": "action ai{j} FullSpeedStraightAction 25",
+     "min_energy": 0.6
+    },
+    {
+     "on": "release_bar",
+     "cmd": "blast fleet 8 35"
+    },
+    {
+     "on": "onset",
+     "cmd": "blast local 6 30",
+     "min_energy": 0.7
+    }
+   ],
+   "settle_seconds": 6,
+   "luminance": 0.2
+  },
+  {
+   "name": "hesperides-loop",
+   "stage": "menu",
+   "cell": "Hesperides",
+   "what": "The Hesperides: lantern, coral and frond flora, a brittlestar shoal and clawfish, eight hulls following the pilot. THE LOOP: the pilot flies one full circle through its own wake, the loop closing exactly on the payoff, when it fires ability 4 and the prisms it laid burst behind it. A verse, a breakdown.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.35,
+    "onset_density": 0.35,
+    "bass": 0.4,
+    "brightness": 0.5,
+    "flatness": 0.45
+   },
+   "sections": [
+    "verse",
+    "breakdown",
+    "build"
+   ],
+   "stage_commands": [
+    "mv cell Hesperides",
+    "mv spawn flora Lantern 3",
+    "mv spawn flora Coral 3",
+    "mv spawn flora Frond 2",
+    "mv spawn fauna Brittlestar 50",
+    "mv spawn fauna Clawfish 10",
+    "mv spawn vessel all 8 Gold 50",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 46 19 0 32 1.8"
+   ],
+   "phrase": {
+    "setup": "the pilot lays one loop, closing on the payoff",
+    "payoff": "the loop closes: ability 4, a boost, the wake bursts"
+   },
+   "events": [
+    {
+     "on": "start",
+     "cmd": "circle local 38 {loop_s}"
+    },
+    {
+     "on": "setup_bar",
      "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "payoff",
+     "cmd": "aim local fleet"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local Button4Action 110"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local FullSpeedStraightAction 150"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast local 12 30"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "aim local flora"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "wormhole-run",
+   "stage": "menu",
+   "cell": "Crystal Wormhole",
+   "what": "The Crystal Wormhole: spires and reeds, two swarms and a quadfish shoal, twelve hulls in all four domains running with the pilot. Setup: the fleet boosts on the strong beats, the swarm rides the pilot's wake. Payoff: the pilot and the fleet fire ability 4 together, a fleet-wide burst. A build.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.65,
+    "onset_density": 0.7,
+    "bass": 0.6,
+    "brightness": 0.6,
+    "flatness": 0.35
+   },
+   "sections": [
+    "build",
+    "drop"
+   ],
+   "stage_commands": [
+    "mv cell Crystal Wormhole",
+    "mv spawn flora Spire 4",
+    "mv spawn flora Reed 4",
+    "mv spawn fauna Swarm 2",
+    "mv spawn fauna QuadFish 30",
+    "mv spawn vessel all 12 cycle 55",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "phrase": {
+    "setup": "the fleet boosts on the strong beats, the swarm on the wake",
+    "payoff": "ability 4 from the pilot and every hull, a fleet-wide burst"
+   },
+   "events": [
+    {
+     "on": "setup_strong",
+     "cmd": "action ai{j} FullSpeedStraightAction 30",
+     "min_energy": 0.4
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "action ai{j} Button{b3}Action 45"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local Button4Action 110"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all Button4Action 90"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast fleet 12 40"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local FullSpeedStraightAction 150"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "release_beat",
+     "cmd": "action ai{j} FullSpeedStraightAction 25",
+     "min_energy": 0.6
+    },
+    {
+     "on": "onset",
+     "cmd": "blast local 6 30",
+     "min_energy": 0.7
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "yggdra-shoal",
+   "stage": "menu",
+   "cell": "Yggdra",
+   "what": "The Yggdra: pines, arbors and rosettes, two shoals, forty tadpoles and a leviathan, six hulls drifting with the pilot in a slow orbit. Setup: the shoal gathers on the pilot's wake bar by bar. Payoff: the shoal scatters upward as every hull fires ability 2. An intro, a breakdown.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.2,
+    "onset_density": 0.2,
+    "bass": 0.35,
+    "brightness": 0.4,
+    "flatness": 0.5
+   },
+   "sections": [
+    "intro",
+    "breakdown",
+    "outro"
+   ],
+   "stage_commands": [
+    "mv cell Yggdra",
+    "mv spawn flora Pine 3",
+    "mv spawn flora Arbor 3",
+    "mv spawn flora Rosette 3",
+    "mv spawn fauna Shoal 2",
+    "mv spawn fauna Tadpole 40",
+    "mv spawn fauna Leviathan 1",
+    "mv spawn vessel all 6 cycle 50",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv orbit local 58 18 3"
+   ],
+   "phrase": {
+    "setup": "the shoal gathers on the pilot's wake",
+    "payoff": "the shoal scatters upward; every hull fires ability 2"
+   },
+   "events": [
+    {
+     "on": "setup_bar",
+     "cmd": "herd follow local 30"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "action ai{j} Button1Action 45"
+    },
+    {
+     "on": "payoff",
+     "cmd": "herd 0,1,0 140"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all Button2Action 90"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "herd 0,1,0 140"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "swarm-siege",
+   "stage": "menu",
+   "cell": "Swarm",
+   "what": "The Swarm cell: swarm fields and grids, locusts and mobbers, wall and nerve flora, eighteen hulls. Setup: the fleet closes on the pilot while the swarm thickens around it and prisms burst on the bars. Payoff: the pilot boosts through, every hull fires ability 3 and the fleet's prisms burst. A noisy, textural drop.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.8,
+    "onset_density": 0.85,
+    "bass": 0.6,
+    "brightness": 0.55,
+    "flatness": 0.7
+   },
+   "sections": [
+    "drop",
+    "build"
+   ],
+   "stage_commands": [
+    "mv cell Swarm",
+    "mv spawn flora Wall 3",
+    "mv spawn flora Nerve 3",
+    "mv spawn fauna Swarm Field 2",
+    "mv spawn fauna Swarm Grid 2",
+    "mv spawn fauna Locust 2",
+    "mv spawn fauna Mobber 2",
+    "mv spawn fauna Brittlestar 20",
+    "mv spawn vessel all 18 Ruby 55",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "phrase": {
+    "setup": "the fleet closes on the pilot, the swarm thickens, bursts on the bars",
+    "payoff": "the pilot boosts through; every hull's ability 3; a fleet-wide burst"
+   },
+   "events": [
+    {
+     "on": "setup_bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "blast local 6 30"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "herd follow local 25"
+    },
+    {
+     "on": "setup_strong",
+     "cmd": "action ai{j} Button{b}Action 40",
+     "min_energy": 0.5
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local FullSpeedStraightAction 180"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all Button3Action 90"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast fleet 14 40"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "release_beat",
+     "cmd": "action ai{j} FullSpeedStraightAction 25",
+     "min_energy": 0.6
+    },
+    {
+     "on": "onset",
+     "cmd": "blast fleet 6 30",
+     "min_energy": 0.7
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "tandava-joust",
+   "stage": "menu",
+   "cell": "Tandava",
+   "what": "The Tandava: SchwarzP, mandelbulb and cacti flora, sharks, piranhas and harriers, sixteen hulls. THE JOUST: setup, the pilot and the fleet are aimed head-on and close bar by bar, abilities cycling; payoff, they meet - boosts all round, bursts around the pilot and the fleet. A verse, a drop.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.6,
+    "onset_density": 0.6,
+    "bass": 0.65,
+    "brightness": 0.5,
+    "flatness": 0.35
+   },
+   "sections": [
+    "verse",
+    "drop"
+   ],
+   "stage_commands": [
+    "mv cell Tandava",
+    "mv spawn flora SchwarzP 3",
+    "mv spawn flora Mandelbulb 2",
+    "mv spawn flora Cacti 3",
+    "mv spawn fauna Shark 6",
+    "mv spawn fauna Piranha 20",
+    "mv spawn fauna Harrier 2",
+    "mv spawn vessel all 16 cycle 60",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "phrase": {
+    "setup": "the pilot and the fleet close head-on bar by bar",
+    "payoff": "they meet: boosts all round, bursts around both"
+   },
+   "events": [
+    {
+     "on": "start",
+     "cmd": "aim local fleet"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "aim local fleet"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "payoff-0.3",
+     "cmd": "action local FullSpeedStraightAction 120"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all FullSpeedStraightAction 100"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast local 10 35"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast fleet 10 35"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local Button4Action 90"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "aim local flora"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "onset",
+     "cmd": "blast local 5 25",
+     "min_energy": 0.65
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "geode-bloom",
+   "stage": "menu",
+   "cell": "Geode",
+   "what": "The Geode: coral blooms, lanterns, apollonia and watershed flora, a brittlestar shoal, ten hulls. THE BLOOM: a new flora is planted on every setup bar (the cell grows under the pilot), and on the payoff a shoal of twenty brittlestars is released at once as the pilot fires ability 4. A build.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.45,
+    "onset_density": 0.45,
+    "bass": 0.4,
+    "brightness": 0.7,
+    "flatness": 0.4
+   },
+   "sections": [
+    "build",
+    "verse"
+   ],
+   "stage_commands": [
+    "mv cell Geode",
+    "mv spawn flora Coral Bloom 3",
+    "mv spawn flora Lantern 3",
+    "mv spawn flora Apollonia 2",
+    "mv spawn flora Watershed 2",
+    "mv spawn fauna Brittlestar 40",
+    "mv spawn fauna Tadpole 20",
+    "mv spawn vessel all 10 Jade 50",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "phrase": {
+    "setup": "a new flora planted on every bar",
+    "payoff": "twenty brittlestars released at once; ability 4 and a burst"
+   },
+   "events": [
+    {
+     "on": "setup_bar",
+     "cmd": "spawn flora Coral Bloom 1"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "payoff",
+     "cmd": "spawn fauna Brittlestar 20"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local Button4Action 110"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast local 8 30"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local FullSpeedStraightAction 120"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "spawn flora Lantern 1"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "orrery-drift",
+   "stage": "menu",
+   "cell": "Orrery",
+   "what": "The Orrery: rosettes, tendrils and fronds, a shoal, tadpoles and clawfish, eight hulls in a slow orbit around the pilot. Setup: the life gathers on the wake. Payoff: every hull fires ability 1 together and the shoal scatters. An outro, a breakdown.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.25,
+    "onset_density": 0.25,
+    "bass": 0.45,
+    "brightness": 0.45,
+    "flatness": 0.55
+   },
+   "sections": [
+    "breakdown",
+    "outro",
+    "intro"
+   ],
+   "stage_commands": [
+    "mv cell Orrery",
+    "mv spawn flora Rosette 4",
+    "mv spawn flora Tendril 3",
+    "mv spawn flora Frond 3",
+    "mv spawn fauna Shoal 1",
+    "mv spawn fauna Tadpole 30",
+    "mv spawn fauna Clawfish 8",
+    "mv spawn vessel all 8 Gold 50",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv orbit local 56 16 3"
+   ],
+   "phrase": {
+    "setup": "the life gathers on the pilot's wake",
+    "payoff": "every hull's ability 1 together; the shoal scatters"
+   },
+   "events": [
+    {
+     "on": "setup_bar",
+     "cmd": "herd follow local 30"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "action ai{j} Button{b3}Action 45"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all Button1Action 90"
+    },
+    {
+     "on": "payoff",
+     "cmd": "herd 1,0,0 140"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "boneyard-stampede",
+   "stage": "menu",
+   "cell": "Boneyard",
+   "what": "The Boneyard: spires and walls, two stampedes, two pack hunters, sharks and a brittlestar shoal, fourteen Ruby hulls. Setup: the fleet boosts in on every beat, the stampede on the pilot's heels. Payoff: a fleet-wide burst as every hull fires ability 4. A bass-heavy drop.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.85,
+    "onset_density": 0.7,
+    "bass": 0.9,
+    "brightness": 0.35,
+    "flatness": 0.3
+   },
+   "sections": [
+    "drop"
+   ],
+   "stage_commands": [
+    "mv cell Boneyard",
+    "mv spawn flora Spire 3",
+    "mv spawn flora Wall 2",
+    "mv spawn fauna Stampede 2",
+    "mv spawn fauna Pack Hunter 2",
+    "mv spawn fauna Shark 8",
+    "mv spawn fauna Brittlestar 30",
+    "mv spawn vessel all 14 Ruby 55",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "phrase": {
+    "setup": "the fleet boosts in on every beat, the stampede on the pilot's heels",
+    "payoff": "a fleet-wide burst; every hull's ability 4"
+   },
+   "events": [
+    {
+     "on": "setup_beat",
+     "cmd": "action ai{j} FullSpeedStraightAction 25",
+     "min_energy": 0.5
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "blast local 6 30"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast fleet 14 45"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all Button4Action 90"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local FullSpeedStraightAction 150"
+    },
+    {
+     "on": "release_beat",
+     "cmd": "action ai{j} FullSpeedStraightAction 25",
+     "min_energy": 0.6
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "onset",
+     "cmd": "blast fleet 6 30",
+     "min_energy": 0.7
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "zephyr-rally",
+   "stage": "menu",
+   "cell": "Zephyr",
+   "what": "The Zephyr: reeds and fronds, a quadfish shoal and harriers, all twenty-one hulls in all four domains. Setup: the pilot's domain shifts every bar, the fleet cycles its abilities. Payoff: the pilot's ability 4 and a boost, every hull's ability 2. Bright, airy: a verse.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.55,
+    "onset_density": 0.6,
+    "bass": 0.35,
+    "brightness": 0.85,
+    "flatness": 0.45
+   },
+   "sections": [
+    "verse",
+    "build"
+   ],
+   "stage_commands": [
+    "mv cell Zephyr",
+    "mv spawn flora Reed 4",
+    "mv spawn flora Frond 3",
+    "mv spawn fauna QuadFish 40",
+    "mv spawn fauna Harrier 3",
+    "mv spawn fauna Tadpole 20",
+    "mv spawn vessel all 21 cycle 60",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 40 13 12 28 1.6"
+   ],
+   "phrase": {
+    "setup": "the domain shifts every bar; the fleet cycles its abilities",
+    "payoff": "the pilot's ability 4 and boost; every hull's ability 2"
+   },
+   "events": [
+    {
+     "on": "setup_bar",
+     "cmd": "domain {dom}"
+    },
+    {
+     "on": "setup_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "setup_strong",
+     "cmd": "action ai{j} FullSpeedStraightAction 30",
+     "min_energy": 0.45
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local Button4Action 110"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action local FullSpeedStraightAction 150"
+    },
+    {
+     "on": "payoff",
+     "cmd": "action all Button2Action 90"
+    },
+    {
+     "on": "payoff",
+     "cmd": "blast local 8 30"
+    },
+    {
+     "on": "release_bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "onset",
+     "cmd": "blast ai{i} 5 25",
+     "min_energy": 0.7
     },
     {
      "on": "bar",
@@ -288,6 +1110,7 @@
    "luminance": 0.2
   }
  ],
+ "_population": "Garrett (cut 5): '10 times as populated'. Every scene releases 60-100 fauna (shoals of 20-50, 6-8 sharks, a kaiju or a leviathan where it fits), 6-12 flora of 2-4 species, and 6-21 hulls - all twenty-one classes in the rallies. The settle (8 s) is the pilot's flight into the life.",
  "_luminance_note": "Measured mean luminance of the first cut's shots (0..1): Skim Race I2 0.03, Joust I3 0.11, Wildlife cage I3 0.19. The brightness targets follow that order so a bright bar lands in a bright arena.",
- "_stage_note": "Since cut 5 every archetype is STAGED in Menu_Main's lava-lamp cell (stage: menu): the cell selector's cells (any CellConfigDataSO by name), the Toy Box's spawn pipelines (the roster's 21 vessel classes as AI pilots, every catalogue species of fauna and flora) and the director's events compose each scene like an orchestra. The arcade-mode archetypes of cuts 1-4 are kept in milestones/ for the record."
+ "_stage_note": "Every archetype is STAGED in Menu_Main's lava-lamp cell (stage: menu): the cell selector's cells (any CellConfigDataSO by name), the Toy Box's spawn pipelines (the roster's 21 vessel classes as AI pilots, every catalogue species of fauna and flora) and the director's events compose each scene like an orchestra. The arcade-mode archetypes of cuts 1-4 and the four scenes of cut 5 are kept in milestones/ for the record."
 }

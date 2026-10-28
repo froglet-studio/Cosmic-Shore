@@ -6,8 +6,8 @@ visuals for the music, moment by moment. **Secondary goal:** span the game's lan
 the point:** every step is a tool a cheaper model runs, every decision is a number in a mapping table a
 person can change after watching, and every cut is scored so the mapping improves with use.
 
-Milestones: **M1** three ~5 s beats over ~15 s of one song (this document's first cut, waiting on
-Garrett's feedback) → **M2** a whole song → **M3** every song in `Assets/_Audio/Music` → **M4** the
+Milestones: **M1** three ~5 s beats over ~15 s of one song (five cuts, each judged by Garrett) → **M2** a minute of
+two songs with different vibes (cut 6: SKY FIRE 30-90 s and SPACE GLIDING 20-80 s), then a whole song → **M3** every song in `Assets/_Audio/Music` → **M4** the
 skill and tools a cheaper model repeats for a new song. Status and the lessons per milestone:
 [`LEARNINGS.md`](LEARNINGS.md).
 
@@ -19,7 +19,7 @@ next one reads. A session (or `/music-video`) runs them in order:
 | Step | Tool | Reads | Writes |
 |---|---|---|---|
 | 1. Measure the song | `analyze_song.py SONG` | the audio (anything ffmpeg decodes) | `out/<song>.analysis.json`: tempo, beats, downbeats, onsets, sections labelled intro / build / drop / breakdown / verse / outro, per-frame curves (43 Hz: loudness, spectral centroid = brightness, flatness, bass share, highs share, onset strength), and the best 15 s windows ranked by how much changes inside them |
-| 2. Compose | `compose.py ANALYSIS --start S --end E [--beats N]` | the analysis + [`mapping.json`](../../Tools/Build/music_video/mapping.json) | `out/<song>_S-E/plan.json`: the cut points (snapped to a section boundary, else a downbeat, else a beat), one **shot** per beat with its mode, player count, intensity, steady camera mount, field of view and the **orchestration events** (boosts, prism bursts, AI jousters steered at the pilot, swarm herding) at exact song times, plus the beat's features and the reason for every choice; the `render` block (60 fps from 240 Hz sub-frames averaged 4:1, 1080p, 8x MSAA, 2x supersampling) |
+| 2. Compose | `compose.py ANALYSIS --start S --end E [--beats auto]` | the analysis + [`mapping.json`](../../Tools/Build/music_video/mapping.json) | `out/<song>_S-E/plan.json`: one **shot per section** of the song (6-16 s: short sections merged, long ones split on downbeats, a build carried two bars into its drop), each shot a **phrase** - its archetype (a cell, a population, a steady camera), its **payoff** time (the section boundary inside it, else the downbeat near 70 % through) and the **orchestration events** at exact song times: the setup over the bars before the payoff (abilities 1, 2, 3; a loop being laid; a fleet converging; a shoal gathering), the payoff (ability 4 with a boost and a burst; the loop closing; every hull boosting in; the shoal scattering), the release after it - plus the shot's features and the reason for every choice; the `render` block (60 fps from 240 Hz sub-frames averaged 2:1, 1080p, 8x MSAA, 2x supersampling, 1.5x for a cut over 20 s) |
 | 3. Shoot | `shoot.py PLAN [--jobs 2]` | the plan, the built player | `frames/<shot>/f*.png` + `frames.csv` (game time per frame) + `shoot.log` per shot |
 | 4. Assemble | `assemble.py PLAN [--captions]` | frames + the song | `video.mp4` at true game speed with the song segment, and `video_sheet.png` (first / middle / last frame of every shot) |
 | 5. Score | `score.py PLAN` | frames + analysis | `scorecard.json`: the criteria, the leaky-ReLU penalties, the loss, what is below its floor |
@@ -27,12 +27,15 @@ next one reads. A session (or `/music-video`) runs them in order:
 The engine side is one verb, **`mv`**, on the Amoebius player (`Port/src/CosmicShore.Player/MusicVideoDirector.cs`,
 reachable from `--do` and the control port): it hides the HUD, puts the local pilot on autopilot, takes the
 gameplay camera (its rig stood down, so the look is the game's own) and poses it AFTER every simulation tick
-as a steady **mount** on a subject (`local`, `ai0`…, `nearest`, `fastest`, `name:Worm`), a slow orbit or a
-dolly; it **orchestrates the game** (`action` fires a vessel's ability, `aim` / `converge` steer AI pilots,
-`blast` devastates the prisms around a subject with the game's own damage, `herd` draws every swarm creature
-toward a direction) at frames the song chose (`cue`); and it starts a `FrameRecorder` range from the next
-frame, averaging sub-frames in linear light for motion blur. Because a scripted run steps every clock by a
-fixed step (1/240 s for a cut), a beat computed from the song lands on an exact frame whatever the software
+as a steady **mount** on a subject (`local`, `ai0`…, `fleet`, `flora`, `name:WormHead`) or a slow orbit (≤ 4 deg/s;
+nothing faster, no dollies, no pulses: the camera is never what makes a viewer sick); it **stages** the scene in
+the menu's lava-lamp cell (`cell` swaps to any of the 61 cell configs, `spawn` releases the roster's 21 hull
+classes as AI pilots and every Toy Box species of fauna and flora); it **orchestrates the game** (`action` fires a
+hull's ability or boost, `all` at once; `aim` / `converge` / `circle` steer AI pilots; `blast` devastates the prisms
+around a subject with the game's own damage; `herd` draws every swarm creature toward a subject or a direction;
+`domain` shifts the pilot's colour) at frames the song chose (`cue`); and it starts a `FrameRecorder` range from
+the next frame, averaging sub-frames in linear light for motion blur. Because a scripted run steps every clock by
+a fixed step (1/240 s for a cut), a beat computed from the song lands on an exact frame whatever the software
 renderer's speed. Nothing is rendered in real time: every sub-frame is drawn at full quality (`--step-hz`,
 `--msaa`, `--render-scale`, `--aniso`, `--size`).
 
@@ -56,6 +59,14 @@ profile's `prefs.json` before every player starts, so a cut is always shot at th
   from a cut becomes a change there, with the reason in `LEARNINGS.md`.
 - **The music is answered by the game, never by the camera** (Garrett, 2026-10-27): the camera is a steady
   mount; the beat lands as a boost, a burst of prisms, a joust pass, a swarm turning.
+- **Every shot is a phrase with a setup and a payoff** (Garrett, 2026-10-28: "longer shots where you could build
+  up a narrative and some payoff... a set up and payoff from a combo or loop completion within a kit"): shots
+  follow the song's sections, and each archetype says what accumulates over its bars and what spends it on the
+  payoff - the kit combo (abilities 1, 2, 3, then 4 with a boost), the loop (`circle` closes exactly on the
+  payoff), the siege (the fleet converges, then boosts in at once), the bloom (a flora per bar, then a shoal
+  released), the joust (head-on, then the meeting).
+- **Populated and diverse** (Garrett, 2026-10-28: "5 times as diverse and 10 times as populated"): twelve
+  archetypes in twelve cells, each with 60-100 fauna, 6-12 flora and 6-21 hulls; a cut never reuses a cell.
 - **The loss is a Pareto front with leaky-ReLU floors, not one scalar.** Each criterion (motion tracks
   loudness, accents land on onsets, cuts sit on beats, bright bars read bright, no dead frames, no stuck
   frames, modes are diverse) has a floor; below it the penalty is steep, above it a small slope still
@@ -102,13 +113,14 @@ sheet (CLAUDE.md § AI learning is automatic).
 export PATH=/opt/dotnet:$PATH DOTNET_ROOT=/opt/dotnet            # .NET 10 SDK (Port/CLAUDE.md item 13)
 dotnet build Port/src/CosmicShore.Player                          # the engine, with the mv verb
 python3 Tools/Build/music_video/analyze_song.py "Assets/_Audio/Music/SKY FIRE.ogg"
-python3 Tools/Build/music_video/compose.py "Tools/Build/music_video/out/SKY FIRE.analysis.json" --start 41 --end 56 --beats 3
-python3 Tools/Build/music_video/shoot.py Tools/Build/music_video/out/SKY-FIRE_41-56/plan.json --jobs 2
-python3 Tools/Build/music_video/assemble.py Tools/Build/music_video/out/SKY-FIRE_41-56/plan.json
-python3 Tools/Build/music_video/score.py Tools/Build/music_video/out/SKY-FIRE_41-56/plan.json
+python3 Tools/Build/music_video/compose.py "Tools/Build/music_video/out/SKY FIRE.analysis.json" --start 30 --end 90
+python3 Tools/Build/music_video/shoot.py Tools/Build/music_video/out/SKY-FIRE_30-90/plan.json --jobs 2
+python3 Tools/Build/music_video/assemble.py Tools/Build/music_video/out/SKY-FIRE_30-90/plan.json
+python3 Tools/Build/music_video/score.py Tools/Build/music_video/out/SKY-FIRE_30-90/plan.json
 ```
 
 The shoot needs `xvfb-run` (a server without a display) and a profile that has answered the game's
 first-run prompts; `shoot.py` answers them itself on a fresh profile (birth year, data collection
-**declined**, pilot name "Director"). Two players at once on a 4-core box; a 5 s shot takes about two to
-four minutes (the menu and the settle are simulated without drawing; only recorded frames are rendered).
+**declined**, pilot name "Director"). Two players at once on a 4-core box; a populated 12 s shot at 1080p takes about an hour (the menu and the
+settle are simulated without drawing; only recorded sub-frames are rendered), so a minute of a song is two to
+three hours and two songs shoot side by side.

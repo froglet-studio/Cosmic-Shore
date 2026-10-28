@@ -9,7 +9,7 @@ person said, and what changed in `Tools/Build/music_video/mapping.json` (or the 
 | Milestone | State | Where |
 |---|---|---|
 | M1: three ~5 s beats over ~15 s of one song | **cuts 1-2 judged by Garrett (prototype look, jitter, camera dances - see below); cut 3 judged by Garrett (sky missing, too austere, the Sparrow rounds smeared); cut 4 (Ultra preset, procedural sky) judged by Garrett too sparse; cut 5 stages every shot in the lava-lamp cell with the cell selector's cells, the 21-class fleet, fauna, flora and the kaiju, and is the current cut.** Cuts 1-2 (2026-10-27) (SKY FIRE 41.0-56.0 s: build → the drop at 46.37 → drop). Cut 1: Skim Race flyby → Joust chase → Wildlife chase. Cut 2 (closer cameras, bright bars in brighter arenas, the alive-subject rule): Wildlife chase → Joust chase → Skim Race chase. The scorecard prefers cut 2 on five of seven criteria (no dead frames, luminance now follows brightness, less stuck time); motion-vs-energy and motion-vs-onsets are still under their floors in both. | `milestones/M1-sky-fire-41-56/cut1`, `cut2` |
-| M2: a whole song | not started (same pipeline, `--start 0 --end <duration> --beats <sections>`) | |
+| M2: a minute of two songs with different vibes, then a whole song | **cut 6 (2026-10-28): SKY FIRE 30-90 s and SPACE GLIDING 20-80 s, shot from mapping v3** (section-aligned phrases, twelve cells, 10x the population, sickness-safe mounts). The results are in the log below. A whole song is the same command with `--start 0 --end <duration>`. | `milestones/M2-sky-fire-30-90`, `milestones/M2-space-gliding-20-80` |
 | M3: every song in `Assets/_Audio/Music` | not started | |
 | M4: the skill and tools a cheaper model repeats for a new song | the skill exists (`/music-video`) and ran this cut end to end; it is proven when a session that is not this one makes M2 from it | |
 
@@ -260,6 +260,54 @@ What staging a populated scene taught (the first cut-5 shoot was as empty as cut
   subject dies now hands over to the fleet's centre; the fleet fights the worm with its own abilities.
 - **A species name matches exactly before it matches by substring** (`Borromean` was finding "Swarm
   Borromean" first).
+
+### Garrett's feedback on cut 5 and what cut 6 does (2026-10-28): the phrase, the population, the camera
+
+Garrett: *"A lot of room for improvement, and I'd like to see more that feels like fun accessible gameplay and
+less erratic camera movements that are gonna make people sick. The scenes still feel like they could be 5 times
+as diverse and 10 times as populated. I'm looking forward to more shots with greater diversity, longer shots
+where you could build up a narrative and some payoff. Showcase a set up and payoff from a combo or loop
+completion within a kit. Take these ideas and see what you can do to update the skill itself and then apply it
+to 60 seconds of a song and 60 seconds of a different song with a different vibe."*
+
+Mapping v3 answers each line:
+- **Longer shots with a narrative: shots follow the song's sections** (`shots` in the mapping, `compose.py
+  --beats auto`): one shot per section, 6-16 s (a short section merges into its shorter neighbour, a long one
+  splits on downbeats), and a shot that ends where a drop begins runs two bars INTO the drop so its payoff
+  lands on the drop. SKY FIRE 30-90 s became five shots of 9.6-13.4 s; SPACE GLIDING 20-80 s five of
+  9.5-15.7 s. The 5 s beats of M1 were too short for a setup and a payoff (the scorer now has a
+  `shot_seconds` criterion, floor 8 s; cut 5 scores +1.2 on it).
+- **Setup and payoff: every shot is a phrase.** The payoff is the section boundary inside the shot (the drop)
+  or the downbeat nearest 70 % through it; the event templates are split into `setup_bar` / `setup_beat` /
+  `setup_strong` (before it), `payoff` and `payoff±N` (around it) and `release_*` (after it). Each archetype
+  names its phrase: **the kit combo** (abilities 1, 2, 3 on the setup bars, ability 4 + boost + a burst of the
+  pilot's own prisms on the payoff), **the loop** (`mv circle local R {loop_s}`: the pilot's AI chases a point
+  circling at R, one loop per `{loop_s}` = the seconds to the payoff, so the loop closes ON the payoff and the
+  wake bursts), **the siege** (the fleet converges on the kaiju bar by bar, then every hull boosts in at once),
+  **the joust** (pilot and fleet aimed head-on, then the meeting), **the bloom** (a flora planted per bar, then
+  twenty brittlestars released at once), **the shoal** (herded onto the wake, then scattered upward). Director
+  additions for it: `circle`, `action all` (every AI hull at once: the fleet's payoff), `domain` forwarded
+  from the director's cues (cut 5's `domain {dom}` cues had answered "unknown command" in the player log -
+  read the player log's `[mv]` answers, not just shoot.log), and multi-word species names (`spawn flora Coral
+  Bloom 3`: cut 5's "Coral Bloom" had failed to parse as a count and planted nothing).
+- **5x the diversity: twelve archetypes in twelve cells** (Arboretum, Lattice, Garland, Hesperides, Crystal
+  Wormhole, Yggdra, Swarm, Tandava, Geode, Orrery, Boneyard, Zephyr), each with its own flora set, fauna set,
+  fleet size and domain, and a `sections` list that earns a bonus when it names the shot's section; an archetype
+  AND a cell already used in the cut are penalised, so a five-shot minute visits five cells.
+- **10x the population**: 60-100 fauna per scene in shoals (40 brittlestars, 40 quadfish, 30 tadpoles, 6-8
+  sharks, a leviathan, stampedes, pack hunters, the kaiju), 6-12 flora of 2-4 species, 6-21 hulls (all 21 in
+  the rallies). The smoke test (Arboretum, 66 fauna, 8 flora, 14 hulls) simulated at about 20 ticks a second
+  at 240 Hz: a 12 s shot is 2-3 minutes of settle and sim before its render, which dominates anyway.
+- **Sickness-safe cameras**: every camera is a mount whose heading is smoothed over ~1.6 s with the horizon
+  leaning only a quarter of the way with the hull (the roll was what made cut 5 erratic), or an orbit at ≤ 4
+  deg/s; no dollies; FOV 56-66. The mount sits at back 40 / up 13 / side 12 (at back 50 the pilot was a speck
+  in the smoke test, and "fun accessible gameplay" needs the pilot's hull readable).
+- **Render**: a cut over 20 s renders at 1.5x supersampling (`render_scale_long`) instead of 2x, still on
+  8x MSAA; a populated 12 s shot at 1080p is about an hour, so a minute is 2-3 hours per song and the two
+  songs shoot side by side (four players on four cores, ~2 GB each).
+- **The different vibe picks itself**: SPACE GLIDING (108 bpm, mean energy 0.18, the quietest song in the
+  project) opens on the shoal and the loop (yggdra-shoal, hesperides-loop) and only reaches a siege in its drop;
+  SKY FIRE (123 bpm) runs wormhole-run → the kit combo on the drop → joust → rally → swarm siege.
 
 ## Log
 

@@ -53,6 +53,8 @@ namespace CosmicShore.Player
     ///   mv spawn vessel CLASS|all [N] [DOMAIN] [R]  release N AI-piloted vessels (the roster's 21 classes, cycled) in a ring
     ///                                              of radius R ahead of the local pilot (the lava lamp's pipeline)
     ///   mv spawn fauna|flora NAME [N] [ELEMENT]    release N lifeforms of a Toy Box catalogue species (mv lifeforms lists them)
+    ///   mv circle SUBJECT RADIUS SECONDS [CENTRE]  the subject's AI pilot traces a loop of RADIUS, one per SECONDS (a setup
+    ///                                              that pays off when the loop closes through its own wake)
     ///   mv release                                 give the camera back to the game
     ///   mv status                                  print the camera, subject, herd and schedule
     /// </summary>
@@ -122,7 +124,7 @@ namespace CosmicShore.Player
                 }
                 case "mount":
                     TakeCamera(); _mode = CamMode.Mount; SetSubject(w[1]); _back = F(w[2]); _up = F(w[3]); _side = F(w[4]);
-                    _lead = w.Length > 5 ? F(w[5]) : 40f; _smooth = w.Length > 6 ? F(w[6]) : 2f; _haveSmoothed = false;
+                    _lead = w.Length > 5 ? F(w[5]) : 40f; _smooth = w.Length > 6 ? F(w[6]) : 1.2f; _haveSmoothed = false;
                     Console.WriteLine($"[mv] mount {_subjectSpec} back {_back} up {_up} side {_side} lead {_lead} smooth {_smooth}");
                     return;
                 case "orbit":
@@ -150,9 +152,17 @@ namespace CosmicShore.Player
                 case "lifeforms": ListLifeforms(w.Length > 1 ? w[1] : null); return;
                 case "spawn":
                     if (w[1] == "vessel") SpawnVessels(w[2], w.Length > 3 ? I(w[3]) : 1, w.Length > 4 ? w[4] : null, w.Length > 5 ? F(w[5]) : 60f);
-                    else if (w[1] == "fauna" || w[1] == "flora") SpawnLifeforms(w[1] == "fauna", w[2], w.Length > 3 ? I(w[3]) : 1, w.Length > 4 ? w[4] : null);
+                    else if (w[1] == "fauna" || w[1] == "flora")
+                    {
+                        // The species name may be several words ("Coral Bloom", "Worm Colony"): it runs until the first number.
+                        int k = 2; while (k < w.Length && !int.TryParse(w[k], out _)) k++;
+                        string species = string.Join(' ', w.Skip(2).Take(k - 2));
+                        SpawnLifeforms(w[1] == "fauna", species, w.Length > k ? I(w[k]) : 1, w.Length > k + 1 ? w[k + 1] : null);
+                    }
                     else Console.WriteLine("[mv] spawn vessel CLASS|all [N] [DOMAIN] [RADIUS] | spawn fauna|flora NAME [N] [ELEMENT]");
                     return;
+                case "circle": Circle(w[1], F(w[2]), F(w[3]), w.Length > 4 ? w[4] : null); return;
+                case "domain": Inspector.Domain(string.Join(' ', w.Skip(1))); return;   // the Domain Changer toy's call, so a cue can shift the pilot's domain (cut 5's cues said "unknown command")
                 case "release": Release(); return;
                 case "status":
                 {
@@ -299,7 +309,9 @@ namespace CosmicShore.Player
                     var right = Vector3.Cross(_smoothedUp, _smoothedFwd).normalized;
                     pos = s.position - _smoothedFwd * _back + _smoothedUp * _up + right * _side;
                     look = s.position + _smoothedFwd * _lead;
-                    up = Vector3.Lerp(Vector3.up, _smoothedUp, 0.6f).normalized;
+                    // The horizon leans only a quarter of the way with the hull: a camera that rolls with a barrel
+                    // roll is the one that makes people sick (Garrett, cut 5).
+                    up = Vector3.Lerp(Vector3.up, _smoothedUp, 0.25f).normalized;
                     break;
                 }
                 case CamMode.Orbit:
@@ -407,6 +419,13 @@ namespace CosmicShore.Player
 
         static void Action(string subject, string ev, int frames)
         {
+            if (subject == "all")
+            {
+                // Every AI hull at once: the fleet's payoff (every hull fires its fourth ability on the drop).
+                int n = Vessels().Count(v => !(v.GetComponent<CosmicShore.Gameplay.IVesselStatus>()?.Player?.IsLocalPilot ?? false));
+                for (int i = 0; i < n; i++) Action($"ai{i}", ev, frames);
+                return;
+            }
             var t = Resolve(subject);
             var vc = t != null ? t.GetComponent<CosmicShore.Gameplay.VesselController>() : null;
             if (vc == null) { Console.WriteLine($"[mv] action: no vessel for {subject}"); return; }
@@ -446,6 +465,30 @@ namespace CosmicShore.Player
             if (other == null) { Console.WriteLine($"[mv] aim: no subject '{target}'"); return; }
             pilot.SetExternalTargetProvider(() => other != null ? other.position + other.forward * 10f : t.position + t.forward * 50f);
             Console.WriteLine($"[mv] aim {t.name} at {other.name}");
+        }
+
+        /// <summary>
+        /// The subject's AI pilot chases a point that circles the subject's current position (or a centre
+        /// subject) at RADIUS, one loop per SECONDS - so the hull traces a loop through its own wake and
+        /// closes it: a setup (the loop being laid) with a payoff (the loop closing) a phrase later.
+        /// </summary>
+        static void Circle(string subject, float radius, float seconds, string centreSpec)
+        {
+            var t = Resolve(subject);
+            var pilot = t != null ? t.GetComponent<CosmicShore.Gameplay.IVesselStatus>()?.AIPilot : null;
+            if (pilot == null) { Console.WriteLine($"[mv] circle: no AI pilot on {subject}"); return; }
+            var centreT = centreSpec != null ? Resolve(centreSpec) : null;
+            var centre = centreT != null ? centreT.position : t.position + t.right * radius;
+            var fwd = t.forward; var right = Vector3.Cross(Vector3.up, fwd).normalized; var up = Vector3.Cross(fwd, right).normalized;
+            float t0 = Time.time, w = 2f * Mathf.PI / Mathf.Max(seconds, 0.5f);
+            float lead = 0.35f; // radians ahead of the hull's own angle: the point the pilot chases runs ahead on the ring
+            pilot.SetExternalTargetProvider(() =>
+            {
+                var c = centreT != null ? centreT.position : centre;
+                float a = (Time.time - t0) * w + Mathf.PI + lead;
+                return c + (fwd * Mathf.Sin(a) + right * Mathf.Cos(a)) * radius;
+            });
+            Console.WriteLine($"[mv] circle {t.name} radius {radius} every {seconds:F1} s around {(centreT != null ? centreT.name : centre.ToString())}");
         }
 
         static void Blast(string subject, int count, float force)

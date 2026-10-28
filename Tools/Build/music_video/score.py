@@ -16,7 +16,8 @@ being told:
   dead_frames        Fraction of frames with nearly no detail (a camera inside a wall, or
                      nothing in shot) - a hard floor: a dead frame is wrong whatever the music.
   stuck_frames       Fraction of frames with nearly no motion in a beat whose energy is high.
-  diversity          Distinct modes / shots (the secondary goal: span the landscape).
+  diversity          Distinct scenes / shots (the secondary goal: span the landscape).
+  shot_seconds       Mean shot length: a shot needs room for a setup and a payoff (Garrett, cut 5).
 
 Each criterion gets a leaky-ReLU shaped penalty: nothing to pay above its floor (just a small
 slope that still rewards doing better), a steep slope below it. The scorecard keeps the raw
@@ -37,11 +38,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_LOSS = {
     "floors": {"motion_vs_energy": 0.3, "motion_vs_onsets": 0.15, "cut_alignment": 0.15, "luminance_vs_brightness": 0.0,
-               "dead_frames": 0.02, "stuck_frames": 0.1, "diversity": 0.9},
+               "dead_frames": 0.02, "stuck_frames": 0.1, "diversity": 0.9, "shot_seconds": 8.0},
     "weights": {"motion_vs_energy": 1.0, "motion_vs_onsets": 0.6, "cut_alignment": 1.0, "luminance_vs_brightness": 0.4,
-                "dead_frames": 2.0, "stuck_frames": 0.8, "diversity": 0.8},
+                "dead_frames": 2.0, "stuck_frames": 0.8, "diversity": 0.8, "shot_seconds": 0.1},
     "higher_is_better": {"motion_vs_energy": True, "motion_vs_onsets": True, "cut_alignment": False, "luminance_vs_brightness": True,
-                         "dead_frames": False, "stuck_frames": False, "diversity": True},
+                         "dead_frames": False, "stuck_frames": False, "diversity": True, "shot_seconds": True},
     "leak": 0.1, "steep": 4.0,
 }
 
@@ -130,6 +131,7 @@ def main(argv=None):
     crit["dead_frames"] = float(np.mean([x["dead_frames"] for x in rows])) if rows else 1.0
     crit["stuck_frames"] = float(np.mean([x["stuck_frames"] for x in rows])) if rows else 1.0
     crit["diversity"] = len({s.get("archetype", s["mode"]) for s in plan["shots"]}) / max(len(plan["shots"]), 1)
+    crit["shot_seconds"] = float(np.mean([s["t1"] - s["t0"] for s in plan["shots"]])) if plan["shots"] else 0.0
     penalties = {k: round(leaky(v, loss_cfg["floors"][k], loss_cfg["higher_is_better"][k], loss_cfg["leak"], loss_cfg["steep"]) * loss_cfg["weights"][k], 4)
                  for k, v in crit.items()}
     total = round(sum(penalties.values()), 4)

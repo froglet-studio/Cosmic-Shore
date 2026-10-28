@@ -35,12 +35,18 @@ segment is 0 to the end and `--beats` is about one per section (see §6).
 ## 2. Compose
 
 ```bash
-python3 Tools/Build/music_video/compose.py "Tools/Build/music_video/out/<song>.analysis.json" --start S --end E --beats N
+python3 Tools/Build/music_video/compose.py "Tools/Build/music_video/out/<song>.analysis.json" --start S --end E
 ```
 
-Read what it prints: each beat's features, the archetype it chose and WHY. If a choice reads wrong before
-shooting (the mapping, not the song, is wrong), fix `mapping.json` and re-compose; pinning a beat with
-`--force i=archetype` is for a one-off experiment only and goes in LEARNINGS when it taught something.
+`--beats auto` (the default) makes one shot per SECTION of the song, 6-16 s each (`mapping.json`
+`shots`): a short section merges into its neighbour, a long one splits on downbeats, and a shot that
+ends where a drop begins runs two bars into the drop so its payoff lands on it. Every shot is a
+**phrase**: a setup over its bars and a payoff on the section boundary inside it (else the downbeat
+near 70 % through). Read what it prints: each shot's length and section, the archetype and its
+setup/payoff line, the payoff time and WHY. If a choice reads wrong before shooting (the mapping, not
+the song, is wrong), fix `mapping.json` and re-compose; `--force i=archetype` pins a shot for a one-off
+experiment and goes in LEARNINGS when it taught something. `--beats N` is the old equal split for a
+15 s milestone.
 
 ## 3. Shoot
 
@@ -49,10 +55,13 @@ python3 Tools/Build/music_video/shoot.py Tools/Build/music_video/out/<plan dir>/
 ```
 
 Two players at once on 4 cores. Each shot's `shoot.log` is the record: the engine answers every command
-(`[mv] took Camera.main (3 rig behaviours stood down)`, `[mv] recording ... frames A-B every 2`). A shot
-with 0 frames failed; read its log before re-running (`--only NAME`). Never run `pkill -f` with the
-player's path in the pattern (it kills your shell): stop a stray player with its control port's `quit`
-or by PID from `ps -eo pid,args | awk '/net10.0\/CosmicShore.dll/'`.
+(`[mv] took Camera.main (3 rig behaviours stood down)`, `[mv] planted 3/3 Borromean flora`, `[mv] released
+Manta (Jade)`, `[mv] recording ... frames A-B every 4`). A shot with 0 frames failed; a `failed:` or
+`unknown command` answer in the log means a stage command or a cue did nothing (read it before
+re-running with `--only NAME`). A populated 12 s shot at 1080p / 1.5x is about 40-60 min of wall time;
+budget a 60 s cut at two to three hours. Never run `pkill -f` with the player's path in the pattern (it
+kills your shell): stop a stray player with its control port's `quit` or by PID from
+`ps -eo pid,args | awk '/net10.0\/CosmicShore.dll/'`.
 
 ## 4. Assemble and look
 
@@ -79,38 +88,48 @@ the score said, what the person said, what changed in the mapping.
 
 | The person says | Change in `mapping.json` |
 |---|---|
-| "the drop needs a fight, not a race" | raise the fight archetype's `target.energy` / lower the race's; or add an archetype |
-| "it cuts too often / too rarely" | `--beats`, and the composer's cut snapping (section boundary > downbeat > beat) |
-| "the camera is inside the wall" | that archetype's camera distance (orbit) or intensity; see LEARNINGS (Joust I3 orbit) |
+| "the drop needs a fight, not a race" | raise the fight archetype's `target.energy` / lower the race's, or add `drop` to its `sections`; or add an archetype |
+| "it cuts too often / too rarely", "longer shots" | `shots.min_seconds` / `max_seconds` (section-aligned since v3), `payoff_tail_bars` |
+| "there is no payoff / nothing builds" | the archetype's `events`: `setup_bar` templates that accumulate (abilities 1, 2, 3; a `circle` loop; `aim all local`), a `payoff` that spends them (ability 4 + boost + `blast`; `action all`; a herd scatter) |
+| "the camera is inside the wall" | that archetype's camera distance (mount back/up/side, orbit distance) |
 | "nothing happens on the hits" | the archetype's `events` (boosts, blasts, converges, herds on `bar` / `strong` / `onset`); never a camera accent |
-| "it jitters / it is not smooth" | the camera is a `mount` or a slow `orbit` (≤ 8 deg/s); `render.accum` 4 at `step_hz` 240 for motion blur; never pulses or shakes |
-| "there is no skybox / it is too austere" | the game's quality preset: `render.prefs` keeps `gfx.Preset` 5 and `gfx.Adaptive` 0 (presets 0-2 bake the sky and cut cytoplasm, the membrane and HDR; adaptive performance lowers the preset on a slow renderer); check `eval RenderSettings.skybox` reads `HyperSeaSkybox` |
+| "erratic camera / it makes people sick" | `camera`: every camera is a mount with smooth ≥ 1.6 or an orbit ≤ 4 deg/s; no dolly; the horizon leans a quarter; FOV 56-66 |
+| "it jitters / it is not smooth" | `render.accum` 2-4 at `step_hz` 240 for motion blur; never pulses or shakes |
+| "there is no skybox / it is too austere" | the game's quality preset: `render.prefs` keeps `gfx.Preset` 5 and `gfx.Adaptive` 0 |
 | "the small FX smear into streaks" | `render.accum` 2 (a 90-degree shutter) instead of 4 |
-| "it looks cheap / like a prototype" | `render`: 1080p+, `msaa` 8, `render_scale` 2, `aniso` 16; compare a still with Unity before touching the engine |
+| "it looks cheap / like a prototype" | `render`: 1080p+, `msaa` 8, `render_scale` 2 (1.5 for a cut over `long_seconds`), `aniso` 16 |
 | "too dark / too bright for the music" | `fov` range, or the archetype's `target.brightness` |
-| "too sparse / populate it" | stage the shot in the menu's lava-lamp cell (`stage: menu`): `stage_commands` with `mv cell`, `mv spawn vessel all N`, `mv spawn fauna/flora`; the arcade arenas are purpose-built and sparse |
-| "I want to see X (a kaiju, a crack drift, a ring joust)" | a new archetype: mode, players, intensity, camera, target; shoot a still of it first with the control port (`mv orbit name:Worm ...`) |
+| "too sparse / populate it" | the archetype's `stage_commands`: 60-100 fauna in shoals, 6-12 flora of 2-4 species, 6-21 hulls (`spawn vessel all 21`); `mv lifeforms` lists every species |
+| "the scenes all look the same" | a new archetype in a cell not yet used (`mv cells` lists 61 configs); `same_cell_penalty` keeps a cut from reusing one |
+| "I want to see X (a kaiju, a loop, a joust)" | a new archetype: cell, population, camera, phrase, target, sections; shoot a still of it first with the control port |
 
 Every change gets a LEARNINGS row with the reason. The loss is a Pareto front with leaky-ReLU floors
 (score.py's docstring): compare cuts criterion by criterion, and let a person's one named complaint be
 the criterion that moves.
 
-## 7. Whole song and new songs (M2, M3)
+## 7. A minute, a whole song, new songs (M2, M3)
 
-A whole song is the same pipeline with `--start 0 --end <duration>` and `--beats` ≈ the section count
-(the composer cuts on section boundaries first). Shoot in batches of `--jobs 2`; each 5 s shot is 2-4
-min of wall time. For a new song that is not in the project, pass its path to analyze_song.py; the
-mapping is song-agnostic because every feature is normalised against the song itself.
+A minute or a whole song is the same pipeline with `--start S --end E` (the composer cuts on sections).
+Pick the window from the sections `analyze_song.py --brief` prints: a build into a drop and the drop's
+first bars is the best minute a song has. Shoot in `--jobs 2`; a 60 s cut is 2-3 hours, so shoot two
+songs side by side (two `shoot.py` runs, different `--port` and `--profile`). For a new song that is not
+in the project, pass its path to analyze_song.py; the mapping is song-agnostic because every feature is
+normalised against the song itself. A different vibe picks itself: a quiet song's shots fall to the
+shoal, loop and drift archetypes; a loud one's to the rallies, sieges and jousts.
 
 ## 8. The engine verb, when a shot needs a hand
 
 With a player on a control port (`Port/CLAUDE.md` § The loop), `do "mv ..."`: `hud off|on`,
 `autopilot on|off`, `camera main|replay`, `mount SUBJECT BACK UP SIDE [LEAD] [SMOOTH]`, `orbit SUBJECT DIST HEIGHT DEGPS`,
-`dolly X,Y,Z X,Y,Z FRAMES [SUBJECT]`, `fov F`, `action SUBJECT INPUTEVENT [FRAMES]`, `aim SUBJECT SUBJECT2|X,Y,Z|clear`,
-`converge A B`, `blast SUBJECT N [FORCE]`, `herd X,Y,Z DIST [NAME]` / `herd off`, `cell NAME` (swap the scene's cell to any
-cell config; `cells` lists them), `spawn vessel CLASS|all N [DOMAIN] [R]` (AI pilots of the roster's 21 classes, Menu_Main
-only), `spawn fauna|flora NAME N [ELEMENT]` (`lifeforms` lists the Toy Box catalogue), `cue N CMD` (N frames after the
-next record starts), `record DIR FRAMES [EVERY] [ACCUM]`, `in N CMD`, `release`, `status`. Subjects: `local`,
-`ai0`.., `nearest`, `fastest`, `name:TEXT`. `vessels` prints every vessel's distance and screen position from the
-camera; `screenshot` shows the shot. A camera straight behind a hull on its axis showed nothing at 23 u; sit
-off-axis (behind, above and beside). Build a new archetype from stills before putting it in the mapping.
+`dolly X,Y,Z X,Y,Z FRAMES [SUBJECT]`, `fov F`, `action SUBJECT|all INPUTEVENT [FRAMES]` (Button1Action..Button4Action
+are the hull's four abilities, FullSpeedStraightAction the boost), `aim SUBJECT|all SUBJECT2|X,Y,Z|clear`,
+`circle SUBJECT RADIUS SECONDS [CENTRE]` (the pilot flies one loop that closes after SECONDS), `converge A B`,
+`blast SUBJECT N [FORCE]`, `herd X,Y,Z DIST [NAME]` / `herd follow SUBJECT DIST` / `herd off`, `domain Ruby|Jade|Blue|Gold`,
+`cell NAME` (swap the scene's cell to any cell config; `cells` lists them), `spawn vessel CLASS|all N [DOMAIN|cycle] [R]`
+(AI pilots of the roster's 21 classes, Menu_Main only), `spawn fauna|flora NAME N [ELEMENT]` (multi-word names work;
+`lifeforms` lists the Toy Box catalogue), `cue N CMD` (N frames after the next record starts), `record DIR FRAMES
+[EVERY] [ACCUM]`, `in N CMD`, `release`, `status`. Subjects: `local`, `ai0`.., `all` (actions and aims), `nearest`,
+`fastest`, `fleet` (the AI fleet's centre), `flora` / `fauna` (the nearest life), `name:TEXT`. `vessels` prints every
+vessel's distance and screen position from the camera; `screenshot` shows the shot. A camera straight behind a hull
+on its axis showed nothing at 23 u; sit off-axis (behind, above and beside). Build a new archetype from stills
+before putting it in the mapping.
