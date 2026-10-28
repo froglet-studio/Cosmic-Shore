@@ -293,6 +293,39 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AFinishedJobAnchorsTheSquadThere_AndTheNextVoyageSetsOutFromIt()
+        {
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            var job = Find(VoyageRules.Board(s, c, new[] { Hunter }), "hunt");
+            VoyageRules.Take(s, c, job);
+            VoyageRules.Arrive(s, c);
+            VoyageRules.Stowed(s, "artifact.a");
+            var r = VoyageRules.Anchor(s, c, workDone: true);
+            Assert.AreEqual(JobOutcome.Succeeded, r.Outcome);
+            Assert.AreEqual(job.To, s.At, "anchored at the job's destination");
+            CollectionAssert.Contains(s.Aboard, "artifact.a", "still aboard, still at stake");
+
+            VoyageRules.Resume(s, c, Domains.Jade);
+            Assert.AreEqual(job.To, s.At, "the next voyage sets out from the anchorage");
+            CollectionAssert.Contains(s.Aboard, "artifact.a");
+            Assert.IsTrue(VoyageRules.Board(s, c, new[] { Hunter }).Any(j => j.IsReturn), "the way home is on offer");
+        }
+
+        [Test]
+        public void ALegCutOffAtSeaIsAVoyageGivenUp()
+        {
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            VoyageRules.Take(s, c, Find(VoyageRules.Board(s, c, new[] { Hunter }), "hunt"));
+            s.Aboard.Add("artifact.a");
+            VoyageRules.Resume(s, c, Domains.Jade);
+            Assert.IsTrue(s.IsHome());
+            CollectionAssert.IsEmpty(s.Aboard);
+            Assert.IsNull(s.Current);
+        }
+
+        [Test]
         public void ARecordFromAPartialSaveIsRepaired()
         {
             var s = new VoyageState { Aboard = null, Ledgers = null, Wrecks = new List<WreckRecord> { null }, Current = new VoyageJob(), AtSea = true };

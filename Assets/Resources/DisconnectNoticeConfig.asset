@@ -22,6 +22,7 @@ MonoBehaviour:
   RestoredDwellSeconds: 2.5
   FadeSeconds: 0.2
   SuppressDuringLaunch: 1
+  WindowPrefab: {fileID: 740998004000551072, guid: af63aee8517fadb8bf94b1e30e393c4b, type: 3}
   ScrimColor: {r: 0, g: 0, b: 0, a: 0.72}
   PanelColor: {r: 0.1, g: 0.1, b: 0.15, a: 0.98}
   TitleColor: {r: 1, g: 1, b: 1, a: 1}

@@ -4695,3 +4695,165 @@ re-derived each run):
 - the gate opens into the intro;
 - the hex countdown runs;
 - the freeze after the screen appears.
+
+## 100. Rev 34 mockups: FTUE, the captain guides from the side (2026-10-28, rejected; redrawn as Rev 36, section 102)
+
+**Asked (Shombith, 2026-10-28):** "Create FTUE mpckups - look at the old desing the captain/pilot shouldcome from the
+side and guidethe players".
+
+**The old design (Rev 21, `Docs/MenuRedesignB/board/R21*.dc.html`).** The same six steps (Home, Arcade, Configure, the Lesson, the first race, the first
+finish) were guided by a caption strip under the lit control. No one spoke: the guide, the Lesson and the Mentor were text.
+
+**On the canvas:** page "Rev 34 - FTUE: the captain guides from the side"; the copies are `Docs/MenuRedesignB/board/R34*.dc.html`.
+Each option board steps through all six steps (CSS-only, radio tabs). In every option the captain of the first hull (Trace,
+the Squirrel's pilot) enters from the side AWAY from the lit control. That is left for Home, Arcade, the race and the finish,
+and right for Configure and the Lesson. She says one line and leaves when the player presses. The LOCKED guided-path rule
+holds: one control lit in lime, everything else dimmed and dead except Settings, and the player presses it.
+- **R34A, Wingmate (recommended):** her portrait and a line plate slide in from the side. A dashed lime leader runs from
+  the plate to the lit control, and the plate moves off the control when they would overlap.
+- **R34B, Comm link:** a compact transmission card docks mid-height on the far side. It has the smallest footprint and
+  reads like a radio call, so it also works in the match.
+- **R34C, Briefing:** bars come in, a bust rises in the lower corner, and her line runs wide along the bottom. The most
+  cinematic; the bottom bar is a gradient so the hub buttons show through.
+- **R34Compare:** the three entrances side by side on one step. **R34Notes:** the asks, the side rule and the build notes.
+
+**Rejected (Shombith, 2026-10-28):** "for the ftue I do not like them once bit. Up your game bhai", then "Leave that
+ref, just make it good". Section 102 is the redraw.
+
+**Why A:** it says most clearly that a pilot is here with you, and the leader line ties her words to the control without a
+second spotlight. B is the fallback for in-match steps, which could use B even if A is picked for the menu.
+
+**Differs from the build:**
+- The words move into the guide asset (MainQuest / the Lesson seed), one line per step.
+- The captain comes from the hull's pilot roster, using a portrait the roster already has.
+- The dialogue system (`DialogueSpeaker`, `MainMenuDialogueView`) already carries the speaker and the line; the side and
+  the entrance are new view work.
+- Open (Shombith, Caleb): the captain's name and voice, and whether the Mentor's preview tips become hers.
+
+### 100.1 The arcade cards draw the element shapes (2026-10-28)
+
+Shombith: "the arcade cards again are using the old elelmental icons again". The card's genre image drew the lone HUD
+petal (`ElementPetals/*_petal.png`, one of the flower's five), which reads as the old diamond icon set. It now draws the
+element's SHAPE (pentagon, triangle, kite, diamond from `Assets/_Graphics/ElementShapes`), the icon the Codex and the ability
+rows use (section 89). It stays white, 24 px, centred in its 34 px slot. `GameCard.GenreShapes` holds the four (Charge to
+Time; an empty slot falls back to the petal), `author_menu_arcade.py` writes them, and the validation fails when they are
+not the four shapes ("the genre icon back to the petal" plant).
+
+### 100.2 Connection lost, in style B (2026-10-28)
+
+Shombith: "complete the leftover popups like connection lost". `DisconnectNotice`, the notice that appears in every scene
+when the device goes offline, was the last popup still built in code in the old flat look. It now instantiates
+`Assets/_Prefabs/UI Elements/Popups/DisconnectNoticeView.prefab` (written by `Tools/Build/author_disconnect_notice.py`,
+`--check` / `--self-test`):
+- The window looks like the boot Retry window: a slivered window with corner brackets, the "Connection" eyebrow, the
+  title and the line, over a 0.82 dim.
+- RECONNECT is the lime Play button with an A keycap. It is selected when the notice opens, so A arrives as a submit.
+- CONTINUE OFFLINE is grey with a B keycap. It answers the pad's B, but only while the window's group is live.
+- Every word still comes from `DisconnectNoticeConfig.asset`, which now names the prefab in `WindowPrefab`. If that field
+  is empty, the notice falls back to the old code-built panel.
+- Known limit: while freestyle hands the pad to the vessel (`sendNavigationEvents` off), the pad cannot press either
+  button. Mouse and touch still can.
+
+Other leftover popups:
+- The boot Retry window was already in style B.
+- `PopupPanel.prefab` and `ReconnectButton.cs` are unused.
+- The freestyle `Pause_Menu_Panel` and the quest `DialogueSetUI` are still the legacy look. The dialogue panel waits on the
+  Rev 34 pick (the captain's line is its replacement).
+
+## 101. Rev 35 mockups: hover, how the menu answers the pointer (2026-10-28; Shombith picked C, built in 101.1)
+
+**Asked (Shombith, 2026-10-28):** "Then we need some new hover animations".
+
+**Today:**
+- `KitButton` lightens its fill 8 % and its border 10 % on hover.
+- `KitHoverTint` lifts a word to TextLight (nav tabs, keycaps).
+- Tiles and cards have no hover at all, and nothing moves, so the pointer gets almost no answer.
+
+**On the canvas:** page "Rev 35 - Hover: how the menu answers the pointer"; the copies are
+`Docs/MenuRedesignB/board/R35*.dc.html`. The four option boards show the same Arcade screen: nav tabs, hub tiles, six
+game cards with the element shapes (section 100.1), friend rows, and PLAY / BACK. Hover is live on each board (point at
+anything), and one card wears the blue focus ring.
+- **R35A, Lift (recommended):** the control rises 3 px, its border turns white and a white rule grows under it. Enter
+  takes 160 ms, eased out; exit takes 120 ms.
+- **R35B, Trace:** one white light runs once around the cut border (420 ms), then the border rests one step brighter.
+- **R35C, Sheen:** one soft band sweeps across the fill (520 ms), then the fill rests 8 % lighter.
+- **R35D, Brackets:** the kit's corner brackets close in from outside (180 ms) and stay while the pointer is over.
+- **R35Compare:** a button, a nav tab and a hub row at rest, hovered, focused and live, for all four options.
+- **R35Notes:** the rules and the build notes.
+
+**Rules every option keeps:**
+- Hover is white. It is never the Selection blue (nothing is chosen yet), and elements have no colour.
+- It plays once on enter and then rests; nothing idles.
+- It is pointer-only. The pad and keys keep the sky-blue focus ring, and a control under both shows focus.
+- Touch gets no hover, and locked controls answer nothing.
+
+**Why A:** the rise and the rule say "this one" without a second colour, and it is cheap (one transform and one width).
+B and D are the quiet choices where a control must not move (dense lists, the HUD). C looks richest but tells the
+player least.
+
+**Differs from the build:**
+- One kit component, `KitHover`, would replace `KitHoverTint` on KitButton, KitTile, the game card and the nav tab.
+- The look and its timings would live on the theme asset (`UIThemeSO`), so a pick changes every control at once.
+- It animates only on enter and exit, so it costs nothing per frame while resting.
+
+### 101.1 Hover C (Sheen), built (2026-10-28, awaiting in-editor approval)
+
+**Picked (Shombith, 2026-10-28):** "I like C for the hover effects".
+
+- **`KitHoverSheen`** (new, `Assets/_Scripts/UI/Kit/`): when the pointer enters a control, one soft band sweeps across
+  it once (eased out, unscaled time), then the control rests.
+  - It is built the first time a control is hovered: a `HoverSheen` child with a `RectMask2D` that layouts ignore, and
+    a `Band` image inside it.
+  - The band is switched off between sweeps, so a resting control costs nothing per frame.
+  - Touch gets no sheen (`UIPointerType.Touch`), and the pad keeps the blue focus ring.
+- **Where it plays:** `KitSelectableBase.OnPointerEnter` (every KitButton, KitTile, KitTextTab, KitBrandButton and the
+  game cards) and `KitHoverTint.OnPointerEnter` (the nav tabs and keycaps). A locked tab's KitHoverTint is disabled,
+  so it plays nothing.
+- **The look lives on the theme:** `UIThemeSO` gains `hoverSheenSprite`, `hoverSheenSeconds` (0.52), `hoverSheenAlpha`
+  (0.16) and `hoverSheenWidth` (0.45 of the control's width).
+  - `UITheme.asset` is written by `Tools/Build/author_ui_lattice.py`, with a validation for the sprite and the timing.
+  - Clearing `hoverSheenSprite` turns the sheen off everywhere.
+- **The sprite:** `kit_sheen.png` (64 x 32 units, leaning about 15 degrees) comes from `Tools/Build/author_ui_kit_sprites.py`,
+  with invariants (clear at both sides, solid on the centre line, leans the right way).
+- The existing hover tints stay: KitButton's fill lift and KitHoverTint's word lift.
+
+## 102. Rev 36 mockups: FTUE, redrawn - the captain arrives (2026-10-28, awaiting a pick)
+
+**Asked (Shombith, 2026-10-28):** "for the ftue I do not like them once bit. Up your game bhai", then "Leave that ref,
+just make it good".
+
+**What Rev 34 got wrong:**
+- The screens behind her were empty seas with a placeholder line.
+- She was a static cut-out stuck in a corner.
+- The dim flattened the whole screen.
+- In C, her line ran over the button she pointed at.
+
+**On the canvas:** page "Rev 36 - FTUE, redrawn: the captain arrives"; the copies are
+`Docs/MenuRedesignB/board/R36*.dc.html`.
+
+Every step is a full game screen:
+1. Home: the live cell, the nav with its icons, the pilot card, the four hub buttons.
+2. Arcade: the window with six cards (the element shapes) and this week's game.
+3. Configure: Skim Race, the Squirrel, intensity, pilots, START.
+4. The first race: timer, goal, the four-hex ability row, boost.
+5. The finish: 1st, 1:24.6, +120 crystals, RACE AGAIN.
+
+On each step one control is lit in lime inside a hole in a 72 % dim. Settings and Skip guide (Y) stay live above it.
+Trace enters from the side away from the control, and her panel never covers it. Each option board replays her
+entrance per step.
+- **R36A, Wingman (recommended):** her Squirrel streaks in along a skim trail that draws itself and ends on the
+  control. Her comm opens beside the hull: hex portrait, name, the line typing at 45 characters a second, the prompt.
+- **R36B, Comms:** a tall portrait window docks on the far edge. Her voice bars run while the line types, and a lime
+  line runs to the control.
+- **R36C, Cinematic:** the edge darkens, she leans in large, and her name (76 px), a rule, her line and the prompt
+  are set beside her.
+- **R36Compare:** the three options at rest on Home, Configure and the first race. **R36Notes:** the critique of
+  Rev 34, the timings, the build.
+
+**Why A:** her vessel does the game's own move (a skim trail), and the trail is the pointer, so the eye follows it to
+the control without an arrow. B suits in-match lines, since it covers least. C has the most character.
+
+**Differs from the build:**
+- The words go in the guide asset (MainQuest), one line per step, with the speaker from the pilot roster.
+- The entrance, the trail and the spotlight hole are new view work on `MainMenuDialogueView`.
+- Open (Shombith, Caleb): her voice, and her name.

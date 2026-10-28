@@ -60,8 +60,15 @@ namespace CosmicShore.Gameplay
         [SerializeField] Shader memberShader;
         [Tooltip("The palette agents wear (plain / danger tier pairs of their domain, the neutral living-heart pair).")]
         [SerializeField] ThemeManagerDataContainerSO theme;
-        [Tooltip("World scale of each agent's heart crystal, per element (x Charge, y Mass, z Space, w Time).")]
+        [Tooltip("The body at this multiple of the research body (Docs/ECOSYSTEM.md 64.4): 3.55 / the retired heart " +
+                 "size, so the body keeps its proportion to the one elemental crystal size. Stocks go by its cube and " +
+                 "contact radii by it (SubstrateSpeciesParams.WithBodyScale); speeds and senses stay world units. 1 = the research body.")]
+        [SerializeField, Min(0.01f)] float bodyScale = 1f;
+        [Tooltip("RETIRED, not read (2026-10-26): every heart is the one elemental crystal size, " +
+                 "ElementalCrystalSetSO.CrystalWorldScale. Still written by author_substrate_fauna.py.")]
+#pragma warning disable CS0414 // kept serialized so the shipped assets and their generator stay in step
         [SerializeField] Vector4 heartWorldScale = new(2.298f, 1.737f, 2.298f, 1.737f);
+#pragma warning restore CS0414
         [Tooltip("World gap between the heart and the front of the body prism.")]
         [SerializeField, Min(0f)] float heartPrismGap = 0.6f;
         [Tooltip("A body prism is w wide, Thin*w tall and aspect*w long, with volume = the agent's stock (mass).")]
@@ -120,7 +127,9 @@ namespace CosmicShore.Gameplay
         public SubstrateAgentFauna AgentPrefab => agentPrefab;
         public Shader MemberShader => memberShader;
         public ThemeManagerDataContainerSO Theme => theme;
-        public Vector4 HeartWorldScaleByElement => heartWorldScale;
+        /// <summary>The heart's world scale per element (x Charge, y Mass, z Space, w Time): the one
+        /// elemental crystal size in all four.</summary>
+        public Vector4 HeartWorldScaleByElement => Vector4.one * CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale;
         public float HeartPrismGap => heartPrismGap;
         public float BodyThin => bodyThin;
         public float EngageRadius => engageRadius;
@@ -137,17 +146,10 @@ namespace CosmicShore.Gameplay
         public float ThawReserveSeconds => thawReserveSeconds;
 
         /// <summary>A private copy for one population (a tuned asset never changes a live core under it).</summary>
-        public SubstrateSpeciesParams ToParams() => (species ?? new SubstrateSpeciesParams()).Clone();
+        public SubstrateSpeciesParams ToParams() => (species ?? new SubstrateSpeciesParams()).WithBodyScale(bodyScale);
 
-        /// <summary>The heart's world scale for <paramref name="e"/>.</summary>
-        public float HeartWorldScale(Element e) => e switch
-        {
-            Element.Charge => heartWorldScale.x,
-            Element.Mass => heartWorldScale.y,
-            Element.Space => heartWorldScale.z,
-            Element.Time => heartWorldScale.w,
-            _ => heartWorldScale.y,
-        };
+        /// <summary>The heart's world scale: the one elemental crystal size, whatever the element.</summary>
+        public float HeartWorldScale(Element e) => CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale;
 
         /// <summary>Research element index (0 Charge, 1 Mass, 2 Space, 3 Time) - the member shader's and the core's.</summary>
         public static int ToIndex(Element e) => e switch

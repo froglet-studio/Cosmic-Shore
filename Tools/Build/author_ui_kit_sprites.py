@@ -23,6 +23,8 @@ Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_
                                              three corners flip it by scale
     kit_spark / kit_spark_v                  the travelling highlight (KitSpark): a 48 x 2 streak (and its
                                              2 x 48 vertical twin) clear at both ends, solid in the middle
+    kit_sheen                                the hover sheen (Rev 35 C, KitHoverSheen): a 64 x 32 soft band
+                                             leaning 15 degrees, clear at both sides and solid along its middle
     kit_oct_line2                            the octagon's 2-unit outline, 48 x 48: an open seat's ring
                                              (section 74, the configure pedestals)
     kit_pool / kit_pool_rim                  the pool of light a configure pedestal's pilot stands on, 120 x 30:
@@ -92,6 +94,8 @@ OCT_CUT = 0.29               # corner cut as a fraction of the side - the mockup
 GRID = 24                    # blueprint grid pitch, canvas units (§5 spacing scale)
 BRACKET = 22                 # corner bracket arm, canvas units
 SPARK_W, SPARK_H = 48, 2     # spark streak, canvas units
+SHEEN_W, SHEEN_H = 64, 32    # hover sheen band, canvas units (stretched over the control's height)
+SHEEN_LEAN = 0.27            # how far the band leans across its height, in widths (about 15 degrees on a 2:1 tile)
 POOL_W, POOL_H = 120, 30     # a pedestal's pool of light, canvas units (drawn simple)
 POOL_RIM = 1.5               # the pool's rim, canvas units
 # The Codex's orbit (Docs/MENU_REDESIGN_B.md section 98): a thin circle stretched into each ring's ellipse, and a soft
@@ -365,6 +369,15 @@ def build_spark():
     return np.repeat(bump[None, :], h, axis=0), 0
 
 
+def build_sheen():
+    """A raised-cosine band along x that leans with y: clear at both sides, solid on its centre line."""
+    w, h = SHEEN_W * TEXELS_PER_UNIT, SHEEN_H * TEXELS_PER_UNIT
+    x = (np.arange(w)[None, :] + 0.5) / w
+    y = (np.arange(h)[:, None] + 0.5) / h
+    u = (x - 0.5) / (1 - SHEEN_LEAN) + (y - 0.5) * SHEEN_LEAN / (1 - SHEEN_LEAN)
+    return np.clip(0.5 + 0.5 * np.cos(np.pi * np.clip(u * 2, -1, 1)), 0, 1), 0
+
+
 HANGAR_CRADLE = (CRADLE_W, CRADLE_H, CRADLE_LEAN, CRADLE_KNEE, CRADLE_RAMP)
 CARD_CRADLE = (CARD_W, CARD_H, CARD_LEAN, CARD_KNEE, CARD_RAMP)
 
@@ -470,6 +483,8 @@ def sprite_set():
     a, _ = build_spark()
     out.append(("kit_spark", a, (0, 0, 0, 0), dict(spark=True)))
     out.append(("kit_spark_v", a.T.copy(), (0, 0, 0, 0), dict(spark_v=True)))
+    a, _ = build_sheen()
+    out.append(("kit_sheen", a, (0, 0, 0, 0), dict(sheen=True)))
     a, _ = build_cradle_fill()
     out.append(("kit_cradle_fill", a, (0, 0, 0, 0), dict(cradle=HANGAR_CRADLE)))
     a, _ = build_cradle_fill(CARD_CRADLE)
@@ -590,6 +605,13 @@ def check_sprite(name, alpha, border, meta):
         assert np.allclose(row, row[::-1], atol=1e-6), f"{name}: the streak must be symmetric"
         assert row[0] < 0.05 and row[-1] < 0.05, f"{name}: the streak must be clear at both ends"
         assert row[len(row) // 2] > 0.95, f"{name}: the streak must be solid in the middle"
+    elif meta.get("sheen"):
+        assert alpha.shape == (SHEEN_H * TEXELS_PER_UNIT, SHEEN_W * TEXELS_PER_UNIT), f"{name}: wrong size"
+        assert alpha[:, 0].max() < 0.02 and alpha[:, -1].max() < 0.02, f"{name}: the band must be clear at both sides"
+        mid = alpha.shape[0] // 2
+        assert alpha[mid].max() > 0.98, f"{name}: the band must be solid on its centre line"
+        top, bottom = int(np.argmax(alpha[0])), int(np.argmax(alpha[-1]))
+        assert bottom < top, f"{name}: the band must lean (its peak sits further left at the bottom)"
     elif meta.get("spark_v"):
         check_sprite(name, alpha.T, border, dict(spark=True))
     elif meta.get("open_tile"):

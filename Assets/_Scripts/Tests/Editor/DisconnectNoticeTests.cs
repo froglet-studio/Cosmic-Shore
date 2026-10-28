@@ -64,6 +64,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheConfig_NamesTheStyleBWindow()
+        {
+            var config = LoadConfig();
+            Assert.IsNotNull(config);
+            // Section 100.2: without it the notice falls back to the legacy code-built panel.
+            Assert.IsNotNull(config.WindowPrefab,
+                "DisconnectNoticeConfig.WindowPrefab is empty - run Tools/Build/author_disconnect_notice.py.");
+            Assert.IsNotNull(config.WindowPrefab.Title, "the window's title is unwired");
+            Assert.IsNotNull(config.WindowPrefab.ReconnectButton, "the window's RECONNECT is unwired");
+            Assert.IsNotNull(config.WindowPrefab.DismissButton, "the window's CONTINUE OFFLINE is unwired");
+        }
+
+        [Test]
         public void TheNotice_DrawsAboveEverythingElse()
         {
             var config = LoadConfig();

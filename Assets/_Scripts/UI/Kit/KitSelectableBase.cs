@@ -138,6 +138,13 @@ namespace CosmicShore.UI
             base.OnDeselect(eventData);
         }
 
+        public override void OnPointerEnter(PointerEventData eventData)
+        {
+            base.OnPointerEnter(eventData);
+            // Rev 35 C (section 101.1): the theme's sheen sweeps once across a control the pointer enters.
+            if (IsInteractable()) KitHoverSheen.Play(this, theme, eventData);
+        }
+
         public override void OnPointerDown(PointerEventData eventData)
         {
             // A click on an already-focused control hides the ring, as :focus-visible does.

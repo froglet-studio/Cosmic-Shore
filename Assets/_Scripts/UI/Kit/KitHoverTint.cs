@@ -35,6 +35,7 @@ namespace CosmicShore.UI
         public void OnPointerEnter(PointerEventData eventData)
         {
             _hovered = true;
+            KitHoverSheen.Play(this, theme, eventData);       // Rev 35 C: the same sheen the kit buttons play
             var c = UITheme.Resolve(theme, hoverToken);
             if (texts != null)
                 foreach (var t in texts)

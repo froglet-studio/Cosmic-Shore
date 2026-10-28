@@ -151,10 +151,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// ONE PETAL: one integer element level, in the normalized units this class works in.
         /// It is the quantum of the elemental economy - one step of the HUD flower, one
-        /// <see cref="IncrementLevel"/>, and exactly one ejected crystal at world scale 1
-        /// (<c>SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain</c> is
-        /// <c>lossyScale * 0.1</c>). Named here so the transfer path, the crystal ejector and
-        /// the drain table all quote the same constant instead of three loose 0.1s.
+        /// <see cref="IncrementLevel"/>, and exactly one elemental crystal of any kind
+        /// (<see cref="SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal"/>). Named
+        /// here so the transfer path, the crystal pickup and the drain table all quote the same
+        /// constant instead of three loose 0.1s.
         /// </summary>
         public const float PetalNormalized = 1f / LevelScale;
 

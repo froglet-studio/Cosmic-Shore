@@ -60,23 +60,33 @@ NUCLEUS_RADIUS = 392.0
 MEMBRANE_RADIUS = 1200.0
 SWARM_BANDS = [(470, 620), (690, 840), (910, 1080)]
 
+RESEARCH_BODY, RESEARCH_GAP = (1.4, 0.9, 2.6), 0.6
+
+
+def body(k):
+    """A member's body prism and its heart gap at k x the research size: k = 3.55 / the retired heart, so the body
+    keeps its proportion to the one elemental crystal size (Docs/ECOSYSTEM.md 64.4)."""
+    x, y, z = (float(f"{v * k:.4g}") for v in RESEARCH_BODY)
+    return {"BodyScale": f"{{x: {x:g}, y: {y:g}, z: {z:g}}}", "HeartPrismGap": f"{float(f'{RESEARCH_GAP * k:.4g}'):g}"}
+
+
 SPECIES = [
     dict(key="Fortress", species=0, prefab="BuilderFortressColony.prefab", config="FortressColonyConfig.asset",
          band=(845, 905), element="Mass", count=1,
-         overrides={"MaxProxies": 24, "EngageRadius": 140}),
+         overrides={"MaxProxies": 24, "EngageRadius": 140, **body(3.55 / 1.737)}),
     dict(key="Thief Nest", species=1, prefab="BuilderThiefNest.prefab", config="ThiefNestConfig.asset",
          band=(1085, 1140), element="Space", count=1,
          # thieves fly at 150 u/s: the proxy ring is wider so a ship meets a real body, and no wider than the hoard raid
          # SpotRange 400 (round 11-14, Docs/SWARM_FAUNA.md §26.6): the research's 700 u sight, from a nest on the
          # 1085-1140 shell, put every pilot anywhere in a 1,200 u cell inside the nest's sight sphere, so the nest never
          # roosted; at ScoutRange it sees the ships whose wake it can reach
-         overrides={"MaxProxies": 18, "EngageRadius": 200, "SpotRange": 400}),
+         overrides={"MaxProxies": 18, "EngageRadius": 200, "SpotRange": 400, **body(3.55 / 2.298)}),
     dict(key="Wearer", species=2, prefab="BuilderWearer.prefab", config="WearerConfig.asset",
          band=(400, 465), element="Charge", count=1,
          # 16 proxies (+32 colliders) keeps the engaged worst case at 1,192 / 1,200 with the threat grove; a creature's
          # worn prisms are the platform's own (0 new colliders) - Docs/BUILDERS_AND_THIEVES.md §10.4
          # WearSight 400 (round 11-14): 700 u from hearts in the 400-465 gap is the whole cell - the colony never roosted
-         overrides={"MaxProxies": 16, "EngageRadius": 160, "WearSight": 400}),
+         overrides={"MaxProxies": 16, "EngageRadius": 160, "WearSight": 400, **body(3.55 / 2.298)}),
 ]
 # the member cap field of each species (its bodies' worst case in the phase ladder)
 MEMBER_CAP = {0: "MaxWorkers", 1: "MaxThieves", 2: "MaxWearerHearts"}
@@ -298,7 +308,7 @@ def body_volume():
     for s in SPECIES:
         def val(k):
             return float(s["overrides"].get(k, f[k]))
-        scale = [float(x.split(":")[1]) for x in f["BodyScale"].strip("{}").split(",")]
+        scale = [float(x.split(":")[1]) for x in str(s["overrides"].get("BodyScale", f["BodyScale"])).strip("{}").split(",")]
         total += s["count"] * val(MEMBER_CAP[s["species"]]) * abs(scale[0] * scale[1] * scale[2])
     return total
 
