@@ -12,18 +12,33 @@
   "torch": false
  },
  "cores": 3,
- "current": {
-  "job": "drive-rhino-headlong",
-  "max_evals": 150,
-  "minutes": 10.0,
-  "since": 1793188615
- },
+ "current": {},
  "host": "cloud-session",
- "runs": [],
- "totals": {
-  "sessions": 1
+ "last": {
+  "best_start": 4.279668468582069,
+  "epoch": "b010fc595603",
+  "evals": 154,
+  "job": "drive-rhino-headlong",
+  "session_evals": 0,
+  "stopped": "max evals"
  },
- "updated": 1793188615,
+ "runs": [
+  {
+   "best_end": 4.279668468582069,
+   "best_start": 4.279668468582069,
+   "end": 1793188617,
+   "epoch": "b010fc595603",
+   "evals": 0,
+   "job": "drive-rhino-headlong",
+   "start": 1793188615,
+   "stopped": "max evals",
+   "unit": null
+  }
+ ],
+ "totals": {
+  "sessions": 2
+ },
+ "updated": 1793188617,
  "user": "shombith",
  "version": "1"
 }
