@@ -32,7 +32,7 @@
   }
  },
  "errors": {},
- "evals": 1683,
+ "evals": 2508,
  "history": [
   [
    11,
@@ -315,10 +315,142 @@
    3.3186902490668757,
    1793189016,
    "shombith/cloud-session"
+  ],
+  [
+   1738,
+   3.3186870326525963,
+   1793189023,
+   "shombith/cloud-session"
+  ],
+  [
+   1760,
+   3.3186815929840208,
+   1793189025,
+   "shombith/cloud-session"
+  ],
+  [
+   1782,
+   3.318679464790778,
+   1793189027,
+   "shombith/cloud-session"
+  ],
+  [
+   1837,
+   3.318678539613267,
+   1793189030,
+   "shombith/cloud-session"
+  ],
+  [
+   1848,
+   3.3186719812904437,
+   1793189031,
+   "shombith/cloud-session"
+  ],
+  [
+   1859,
+   3.3186673719523063,
+   1793189032,
+   "shombith/cloud-session"
+  ],
+  [
+   1914,
+   3.3186651930926008,
+   1793189036,
+   "shombith/cloud-session"
+  ],
+  [
+   1991,
+   3.3186537121056863,
+   1793189041,
+   "shombith/cloud-session"
+  ],
+  [
+   2035,
+   3.318650877651024,
+   1793189044,
+   "shombith/cloud-session"
+  ],
+  [
+   2090,
+   3.3186497273312576,
+   1793189048,
+   "shombith/cloud-session"
+  ],
+  [
+   2101,
+   3.318641273487209,
+   1793189048,
+   "shombith/cloud-session"
+  ],
+  [
+   2112,
+   3.318632154339001,
+   1793189049,
+   "shombith/cloud-session"
+  ],
+  [
+   2123,
+   3.3186311003634614,
+   1793189050,
+   "shombith/cloud-session"
+  ],
+  [
+   2189,
+   3.3186216377685946,
+   1793189054,
+   "shombith/cloud-session"
+  ],
+  [
+   2211,
+   3.3186203210184266,
+   1793189056,
+   "shombith/cloud-session"
+  ],
+  [
+   2222,
+   3.3186183349255463,
+   1793189057,
+   "shombith/cloud-session"
+  ],
+  [
+   2233,
+   3.3186167030598748,
+   1793189057,
+   "shombith/cloud-session"
+  ],
+  [
+   2288,
+   3.3186152083466207,
+   1793189061,
+   "shombith/cloud-session"
+  ],
+  [
+   2321,
+   3.318612744536301,
+   1793189063,
+   "shombith/cloud-session"
+  ],
+  [
+   2354,
+   3.3186126453021023,
+   1793189065,
+   "shombith/cloud-session"
+  ],
+  [
+   2497,
+   3.318612199982824,
+   1793189076,
+   "shombith/cloud-session"
+  ],
+  [
+   2508,
+   3.318610519702796,
+   1793189076,
+   "shombith/cloud-session"
   ]
  ],
  "restarts": 0,
- "seconds": 132.9,
+ "seconds": 192.7,
  "sha": "168c3e3d3240ae0ea2ce1f5516a4ba5387d3b0ba",
- "updated": 1793189016
+ "updated": 1793189076
 }
