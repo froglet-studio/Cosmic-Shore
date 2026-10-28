@@ -1333,7 +1333,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < prisms.Length; i++)
             {
                 var hp = prisms[i];
-                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);
+                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent, recycleWhenDestroyed: true);
             }
         }
 
