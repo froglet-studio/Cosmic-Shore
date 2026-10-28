@@ -9,16 +9,39 @@ namespace CosmicShore.Gameplay
     /// the prefab: <c>pitchYaw</c> 120 °/s is <c>PitchScaler</c> = <c>YawScaler</c>, the bank <c>bankShare</c> × <c>roll</c>
     /// (0.12 × 130 = 15.6 °/s) is <c>RollScaler</c>, <c>cruise</c> 60 is <c>DefaultThrottleScaler</c>.
     ///
-    /// <para><b>The ride.</b> While a tunnel flies the hull (<see cref="MeerkatWormholeExecutor.StepRide"/>) it replaces
-    /// both the turn and the move: the hull is placed along the tunnel, faces along it, and reports the ride's speed and
-    /// heading. On the way out it keeps the speed it went in with (the page's <c>gateOut</c>), and the turn picks up from
-    /// the tunnel's last heading.</para>
+    /// <para><b>The slide.</b> Inside a tunnel (<see cref="MeerkatWormholeExecutor.StepRide"/>; round 24, the same flight
+    /// as the roots) it replaces both the turn and the move: the left stick moves the hull round the tube, RT pushes it
+    /// faster, the wall bounces it; on the way out it leaves at the speed it went in with × <c>rideExitMultiplier</c> (the
+    /// page's <c>gateOut</c>), and the turn picks up from the tunnel's last heading.</para>
+    ///
+    /// <para><b>The roots</b> (<c>MEERKAT.md</c> §7): inside the roots an omnicrystal grew, the roots' flight
+    /// (<see cref="MeerkatWormholeExecutor.StepRoots"/>) replaces the turn and the move the same way: the left stick moves the
+    /// hull round the root, RT pushes it faster, and it leaves at the speed it went in with × <c>rideExitMultiplier</c>.</para>
     ///
     /// <para><b>The AI shaping its reticle</b> holds its line (the page's left stick at rest while the right one bends):
     /// <see cref="MeerkatWormholeExecutor.AIHoldsLine"/> skips the turn for those frames.</para>
     /// </summary>
-    public class MeerkatVesselTransformer : SingleStickVesselTransformer
+    public class MeerkatVesselTransformer : SingleStickVesselTransformer, IHullContactGate
     {
+        /// <summary>
+        /// Round 25 (Yash, 2026-10-28: "anything that passes through the tunnel doesn't interact with the outer world ... It's
+        /// like going through another dimension ... When it comes out of the hole, then it interactable again"): while a tunnel
+        /// or the roots fly this hull it is PHASED - its touch meets no prism and takes no crystal, and no prism or crystal
+        /// touches it (<see cref="IHullContactGate"/>, read by both halves of every contact, the skimmer's too). A race ring
+        /// threaded inside still counts (it is a sweep, not a touch).
+        /// </summary>
+        public bool Phased
+        {
+            get
+            {
+                var wormhole = Wormhole;
+                return wormhole && (wormhole.IsRiding || wormhole.IsInRoots);
+            }
+        }
+
+        public bool TakesCrystalsByContact => !Phased;
+        public bool TakesPrismsByContact => !Phased;
+
         MeerkatWormholeExecutor _wormhole;
         bool _resolved;
         bool _rodeLastFrame;
@@ -44,7 +67,7 @@ namespace CosmicShore.Gameplay
         protected override void RotateShip()
         {
             var wormhole = Wormhole;
-            if (wormhole && wormhole.IsRiding) return;   // MoveShip flies the ride, facing and all
+            if (wormhole && (wormhole.IsRiding || wormhole.IsInRoots)) return;   // MoveShip flies the ride (or the roots), facing and all
             if (wormhole && wormhole.AIHoldsLine)
             {
                 VesselStatus.Course = transform.forward;
@@ -65,6 +88,16 @@ namespace CosmicShore.Gameplay
                 VesselStatus.Speed = rideSpeed;
                 _rodeLastFrame = true;
                 if (cameOut) LeaveRide(TrackedExitSpeed(rideSpeed, wormhole.RideExitMultiplier));
+                return;
+            }
+            if (wormhole && wormhole.StepRoots(Time.deltaTime, out position, out rotation, out rideSpeed, out heading, out cameOut))
+            {
+                transform.SetPositionAndRotation(position, rotation);
+                accumulatedRotation = rotation;
+                VesselStatus.Course = heading;
+                VesselStatus.Speed = rideSpeed;
+                _rodeLastFrame = true;
+                if (cameOut) LeaveRide(TrackedExitSpeed(rideSpeed, wormhole.RideExitMultiplier));   // the roots' way out is published too
                 return;
             }
             if (_rodeLastFrame) LeaveRide(speed);

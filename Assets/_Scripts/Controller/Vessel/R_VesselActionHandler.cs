@@ -127,6 +127,54 @@ namespace CosmicShore.Gameplay
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// This hull's BASE element levels, normalized (x Charge, y Mass, z Space, w Time): the petals it holds, at a
+        /// hundredth of a petal. Owner-write. It is not for peers' outcomes (they read <see cref="NetElementLevels"/>); it is
+        /// what a machine that takes the hull over adopts, so the levels travel with the hull (<see cref="ElementHandover"/>,
+        /// <c>R_VesselElementalAbilityHandler</c>). Protocol version 21.
+        /// </summary>
+        public NetworkVariable<Vector4> NetElementBase = new(
+            Vector4.zero,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
+        /// <summary>Whether <see cref="NetElementBase"/> has been written by an owner yet: a hull handed over before its
+        /// first owner ever published keeps the new owner's own levels rather than adopting zeros. Protocol version 21.</summary>
+        public NetworkVariable<bool> NetElementBasePublished = new(
+            false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
+        /// <summary>
+        /// Raised on the machine that has just TAKEN this hull over from another (a pilot swap, a crew seat change, the
+        /// Cellular Duel swap), never at spawn: <see cref="ElementHandover.IsHandover"/>. The elemental handler adopts the
+        /// published base levels here, before it simulates or publishes anything.
+        /// </summary>
+        public event Action OwnershipHandedOver;
+
+        bool _spawnSeen, _ownedBefore;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            _spawnSeen = true;
+            _ownedBefore = IsOwner;
+        }
+
+        public override void OnGainedOwnership()
+        {
+            base.OnGainedOwnership();
+            bool handover = ElementHandover.IsHandover(_spawnSeen, _ownedBefore);
+            _ownedBefore = true;
+            if (handover) OwnershipHandedOver?.Invoke();
+        }
+
+        public override void OnLostOwnership()
+        {
+            base.OnLostOwnership();
+            _ownedBefore = false;
+        }
+
         [Header("Executors")]
         [SerializeField] ActionExecutorRegistry _executors;
 
@@ -263,6 +311,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            _spawnSeen = false;
             if (IsOwner) UnsubscribeFromInputEvents();
             // Stop the reconcile with it: between despawn and the deferred Destroy (a vessel swap)
             // Update would otherwise re-subscribe the dying hull to the global button channel.

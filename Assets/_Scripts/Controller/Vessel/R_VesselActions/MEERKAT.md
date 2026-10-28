@@ -4,8 +4,19 @@ Cloned from the Vessel Studio (2026-10-27, `/artifact-to-unity`): the Meerkat pa
 (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa, source `Docs/Studios/VesselStudio/meerkat.html`, design
 `Docs/Studios/MEERKAT.md`). The artifact is the source of truth: tune there, then clone (`studio_to_unity.py`).
 
+**Where it stands (2026-10-28, Ys-bleeding-edge):** rounds 1-26 of the artifact are cloned. Every wormhole is slid with the
+left stick like the network (§1, round 24); inside any tube the hull is phased (§9, round 25); Space's surface area sizes
+a wormhole (§8, round 23) and Mass sizes the network (§7a, round 26); Garrett's four abilities are in (§10). Nothing here
+is editor-verified yet: the open hand tests are the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the
+report is `Docs/Reports/MEERKAT.md`.
+
 Yash, 2026-10-27: *"This will be Meerkat, a new vessel ... with all its things similar to the Stoat. Just rename to
 Meerkat and keep only one ability of the wormhole."* It is the Stoat studio's Gate mode, made its own vessel.
+
+**Its four abilities are Garrett's kit** (§10, with §8's surface area and swallow, 2026-10-28; Garrett's design, approved by Yash 2026-10-28: *"Garrett has
+already defined all the elemental abilities, so we're gonna implement those, and it also has the Space ability, which
+pulls prisms inside the tube"*): Space **Soliton** (the wormhole, RT), Time **Faster Ride** (passive), Mass **Exit
+Portal** (passive), Charge **Sentinel Mode** (Y).
 
 ## 1. How it flies
 
@@ -25,9 +36,17 @@ the prefab:
 | RT (`RightStickAction`) | Forms the tunnel once the reticle is 60% grown, and dives in. The last tunnel collapses at once |
 | X (`Button1Action`) | The stance (`StoatHoldAction`), kept from the Stoat; forming a tunnel ends it |
 
-- **The shape** (round 7, the umbrella handle): a straight shaft of S, then one bend of radius `bendRadius` through the
-  stick's angle θ, so the tunnel is S + `bendRadius` × θ long (`MeerkatWormholeMath.ShapeFor` / `At` / `BendAngle`). The
-  throat (`throatDiameter`, 8 u) and the entry and exit (`mouthDiameter`, 26 u since round 10) are fixed: set on the
+- **The shape** (round 22, Yash: *"it should always bend from the center rather than bending from one of the ends to a
+  small knot"*): the tunnel is still S (LT's shaft) + `bendRadius` × θ (the stick's turn) long, but its centreline is ONE
+  conic arc, symmetric about its middle, the conic's vertex where it turns sharpest (`MeerkatWormholeMath.Conic`,
+  `OvalOf`, `At`, `BendAngle`).
+  - How oval it is grows with its length: `ovalShortest` (0.2, nearly a circle) at the shortest tunnel to `ovalLongest`
+    (1.1, a little hyperbola) at the longest.
+  - Its middle never turns more than `ovalMaxSharpness` (8) × as sharply as its ends, so a long, sharply turning tunnel
+    stays a smooth oval and never a knot at its centre; gentle long turns are hyperbolas, with nearly straight arms.
+  - Round 7's straight shaft, then a hook at the far end, is gone. The reticle, the bridge, the tree, the warp tube, the
+    ride, the AI's plan and the water pipe's lens all follow the same arc.
+  - The throat (`throatDiameter`, 8 u) and the entry and exit (`mouthDiameter`, 26 u since round 10) are fixed: set on the
   config at edit time, never by the sticks.
 - **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it.
   - It eases toward what the right stick and LT ask for over `reticleSmoothSeconds`, so it glides rather than snaps.
@@ -38,10 +57,17 @@ the prefab:
     (`reticleNearLight` 0.25, round 11).
   - Its own controls are its brightness (`reticleIdleAlpha` at rest, full while you shape it) and its colour: your
     domain colour toward white by `reticleWhite`. The bridge's spindles take `bridgeWhite` the same way.
-- **The ride.** `MeerkatVesselTransformer` lets the tunnel fly the hull (`StepRide`). It dives straight to the mouth,
-  then runs the shaft and the bend mouth to mouth, turning only on the bend. Its speed is the speed before the tunnel × `rideEntryMultiplier` going in (1), rising
-  to `rideMidMultiplier` at the throat (2.5) and easing to `rideExitMultiplier` at the way out (1.2, round 6). It comes out
-  on the tunnel's last heading, a little boosted, and eases back to cruise.
+- **The slide** (round 24, Yash: *"make the main tube as same as the roots ... we can slide through the main tube rather
+  than making it an automated special move ... Both are same things. One single, one a network"*). The tunnel is a
+  network of ONE channel (`MeerkatRootMath.Single`, through `MeerkatRootMath.ITubePath`: its centreline the exact conic
+  arc, its wall the hyperboloid), flown by the roots' own flight (`MeerkatRootMath.Step`, §7), read the same way:
+  - the hull dives straight to the mouth, then carries its speed in (up to `rootMaxSpeed`);
+  - it cruises along the tube at `rootCruise` (45) on its own, its nose following the tube;
+  - **RT** pushes it faster by `rootThrust` up to `rootMaxSpeed` (90);
+  - the **left stick** moves it round the tube (`rootMove`, calmed by `rootDrag`); the wall bounces it (`rootBounce`);
+  - it comes out of the far mouth on the tunnel's last heading, or back out of the way in, at `rideExitMultiplier` (1.2)
+    × its speed before the tunnel, and eases back to cruise.
+  - Round 6's `rideEntryMultiplier` and `rideMidMultiplier` (the automatic ride) are retired.
 - **Out.** The reticle comes back after `reticleDelaySeconds`, growing out of its centre over `reticleGrowSeconds`.
 - **The camera** (round 10, Yash: "the cameras, why offset should always be zero, the vessel should be in the center of
   the screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow"):
@@ -58,7 +84,7 @@ the prefab:
   - Round 8's `rideCameraBack`, `rideCameraLookAhead` and `rideCameraBlendSeconds` are retired.
 - **The dolly zoom.** While a tunnel flies the hull, the game's speed tunnel (`VesselSpeedTunnel`: the narrower field of
   view and relaxed Panini every vessel gets with speed) is `rideSpeedTunnelScale` (5) × its normal strength
-  (`Docs/SPEED_TUNNEL.md` § The ride scale). The push-in peaks at the throat, where the ride is fastest.
+  (`Docs/SPEED_TUNNEL.md` § The ride scale). The push-in follows the slide's speed (round 24).
 - **Its life.** It forms out of its centre over `formSeconds` (never longer than 0.9 × the dive), stays `staySeconds`
   after its rider is out, then collapses to its centre over `collapseSeconds`. It then fades over 0.7 s.
 
@@ -89,7 +115,8 @@ the prefab:
 **One-click swap** (Yash, 2026-10-27): the config's Inspector has **YASH'S LOOK** (`formedLook` Bridge: the spindle
 bridge after RT) and **GARRETT'S LOOK** (ContourField), from `Editor/Studios/MeerkatWormholeConfigSOEditor.cs`. They set
 that one switch. Round 9 retired `reticleLook`: the reticle is always the wormhole's wireframe. The contour field
-measures round 7's tunnel: a straight shaft, then the bend (`MeerkatWormholeLens.shader` `MWTube`).
+measures the tunnel's centreline (`MeerkatWormholeLens.shader` `MWTube`; round 22: 25 points along the oval arc, with circle
+arcs between them, within 0.07 u of the exact arc).
 
 Garrett flew the Tube Lens Lab (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF, source
 `Docs/Studios/StoatTubeLensLab.html`) and picked a look: *"this looks so good it doesn't need the grid or anything else,
@@ -136,11 +163,13 @@ line for line:
 1. It waits until its reticle is back and its ring is more than `aiBentMinDistance` away. Only a bent tunnel is planned
    inside `aiStraightMinDistance`.
 2. It tries 21 bends × 9 shafts (LT), and among those whose way out heads within 0.26 rad of the ring with 60 u to
-   spare keeps the one that reaches the ring soonest: the ride at its mean speed, the flight on, and the turn left at
+   spare keeps the one that reaches the ring soonest: the slide at `rootMaxSpeed` (round 24: it holds RT), the flight on, and the turn left at
    the hull's `YawScaler` (round 7).
 3. It holds its line (no left stick) while the right stick bends the reticle and LT squeezes for `aiShapeSeconds`.
 4. It waits for its eased reticle to catch up (within 0.03, 1 s at most).
 5. It presses RT through the REPLICATED press path.
+6. Inside (round 24) it holds RT and keeps to the middle of the tube with the left stick (`SlideAutopilot`, the
+   roots' `AiStick`).
 
 `aiNoise` bends it off the mark (0, Hard, by default). Easy and Medium race on the gate race's own handicap
 (`GateRaceHandicap`) in Burrow Run. `aiWormhole` off flies without tunnels.
@@ -154,10 +183,13 @@ line for line:
 ## 5. Stand-ins and open slots
 
 - **Hull:** the Stoat's model and lope, as in the studio. A real Meerkat hull is `/vessel-model` work.
-- **HUD:** the Stoat's `StoatHUDVariant` with `MeerkatHUDController`: the Time card fills as the reticle grows back
-  (ready once RT would form) and empties along the ride.
-- **The element map** (`ElementalAbilityMaps/Meerkat.asset`): four OPEN design slots. Which element the wormhole is,
-  the other three abilities and the level-5 upgrades are not designed (`/vessel` §3: never invented).
+- **HUD:** the Stoat's `StoatHUDVariant` with `MeerkatHUDController` (the LOCKED four-icon row, charge → mass → space →
+  time): Charge, the sentinels standing out of the pool; Mass, the last exit portal's prisms still standing (of six);
+  Space, the reticle growing back (full once RT would form); Time, the ride's progress through any soliton (in the ready
+  colour while riding). The Stoat's view has no ready colour on its Charge and Space gauges.
+- **The element map** (`ElementalAbilityMaps/Meerkat.asset`): Garrett's four rows (§10; Space's area and swallow are §8), written by
+  `author_meerkat_assets.py`. `element_ability_table.py Meerkat`: 4/4 abilities, scaling 4/4, L5 gates 4/4.
+- **The ability icons** are the Stoat's placeholders (`StoatHUDVariant`); the Meerkat's own four are `/ability-icon` work.
 - **No `[CliCommand]`, no Unity tuning window:** tune in the artifact and clone. In play mode the
   `MeerkatWormholeConfig` asset's inspector changes are read live, for a quick look.
 - **Touch:** no per-hull phone profile yet (`TouchInputStrategy` raises RT/LT the fleet's way; the right stick on a phone
@@ -176,4 +208,324 @@ line for line:
 | The contour field's lab | `Docs/Studios/StoatTubeLensLab.html` (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF) |
 | HUD | `UI/Controller/MeerkatHUDController.cs` |
 | Prefab and registrations | `Tools/Build/author_meerkat_assets.py` (`--check`, `--self-test`) |
-| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (42 keys, `--check` 0 drift) |
+| The roots (§7) | `MeerkatRootMath.cs`, `MeerkatRootNetwork.cs`, `MeerkatOmnicrystalField.cs`, `Tests/Editor/MeerkatRootMathTests.cs` |
+| The tree and the roots' look (§7) | `MeerkatTreeMesh.cs`, `MeerkatTreeView.cs`, `_Graphics/Materials/Graphs/MeerkatTree.shader`, `MeerkatRootInside.shader`, `Resources/MeerkatTree.mat`, `Resources/MeerkatRootInside.mat` |
+| The network's tube look (§7a) | `MeerkatTubeWallView.cs`, `MeerkatTreeMesh.BuildTubeWall`, `_Graphics/Materials/Graphs/MeerkatTubeWall.shader`, `Resources/MeerkatTubeWall.mat`; the channels in `MeerkatWormholeView.Tube` and `MeerkatWormholeLensPass` (`MWChannel`) |
+| The swallow (§8) | `Executors/MeerkatSwallow.cs` (run by the executor; its arithmetic is `MeerkatWormholeMath.PullVelocity` / `CarryDistortion` / `SurfaceAreaThroat` / `TubeAdvance`) |
+| The slide (§1, round 24) | `MeerkatRootMath.ITubePath` / `Single` / `Step` (one flight for a wormhole and the network), `MeerkatWormholeMath.NearestAlong`, `MeerkatWormholeExecutor.StepRide` / `SlideAutopilot` |
+| Phased inside a tube (§9, round 25) | `MeerkatVesselTransformer.Phased` (the hull's `IHullContactGate`), `SkimmerImpactor.HullTakesPrisms`; the game's omni crystal arms the network through `OmniCrystalImpactor.CollectedByVessel` |
+| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (108 keys, `--check` 0 drift) |
+| Garrett's kit (§10) | `Executors/MeerkatSolitonKit.cs` (the kit, its four L5 gates, the zap), `MeerkatSentinels.cs`, `MeerkatExitPortal.cs`, `MeerkatSolitonMath.cs` + `Tests/Editor/MeerkatSolitonMathTests.cs` (run outside Unity: `Tools/Build/meerkat_kit_harness/run.sh --self-test`), `Data Containers/MeerkatSentinelModeActionSO.cs`, `_SO_Assets/VesselActions/Meerkat/MeerkatSentinelModeAction.asset`; Space L5 Steal hooks `MeerkatSwallow` |
+
+## 7. The tree and the roots (cloned 2026-10-28 from the artifact's rounds 13-21)
+
+Yash, 2026-10-28: *"in our YS bleeding edge, we already have a effect created. That's the very subtle watery tube. So that
+one you need to keep in the project. Then the second one is this tree and this root ... the tree is just you get to travel
+faster, but the OmniCrystal collection will actually trigger the root creation, the network of roots, just like in the
+artifact. And we can navigate the root ... it need to be easily navigable. Our controls inside the root will be controlled
+by left thumbstick."*
+
+- **The water pipe stays.** `formedLook` ContourField and its round-11 numbers (§2.1) are unchanged: a formed tunnel is
+  still the subtle watery tube, and the bridge is still one switch away.
+- **The tree** (the artifact's rounds 13-15 and 20; `MeerkatTreeMesh.BuildTree`, `MeerkatTreeView`, `MeerkatTree.shader`):
+  - Every formed tunnel, everyone's, wears a dead tree: a trunk round the whole tunnel, `trunkTop` × the mouth at the way
+    in (its top cut) to `trunkBase` × at the way out (its bottom cut), ridged (`trunkBark`, `trunkRidges`) and gnarled
+    (`trunkGnarl`).
+  - Its bore is the tunnel's own wall (round 20: the trunk is the wormhole): a smooth sheen with no lines, a little
+    denser than the bark (`tubeInner`). Its cut faces carry `trunkRings` tree rings.
+  - Up close (15-90 u from the camera) the bark's lines fade, so the ride is calm (Yash: "the outer part can be very rough
+    and edgy, the inner tube need to be very soft ... calming, inviting").
+  - `branchCount` bare branches grow out of its top `branchZone`, in pairs (`branchSymmetry`), leaning `branchUp`,
+    `branchLength` × the mouth long, forking `branchForks` times.
+  - It is drawn in the wall's watery glass (`trunkGlass` face-on, `trunkRim` at the `trunkFresnel` silhouette, the bark's
+    fissures `trunkGrain` × `trunkGrainLines`), the maker's domain colour toward white, flowing slowly.
+  - It shows exactly the tunnel's live window, so it ripples out with the tunnel and collapses with it. Each branch grows
+    over `branchGrowSeconds` once the tunnel's front reaches its root. `trunkVisibility` 0 hides it.
+  - The ride is unchanged: the tree is the tunnel's look, and the tunnel is how you travel faster.
+  - Not ported: `trunkWarp` (the tree bending space would need the lens pass).
+- **The Omnicrystal ability, the roots** (rounds 16-21; `MeerkatRootMath`, `MeerkatRootNetwork`, `MeerkatOmnicrystalField`,
+  the executor's roots half):
+  - **Omnicrystals** (`omniCount`, gold; `omniOn` 0 switches the ability off):
+    - In Burrow Run, half way between the rings of a lap (`BurrowRunController.OnCourseRaised`).
+    - In a scene with no course (the Toybox's Vessel Changer), the local Meerkat lays them ahead of itself, 300 u on and
+      200 u apart. It lays them again 6 s after the last is taken.
+    - Fly within 18 u of one and it is yours.
+  - **The roots grow at once** from the hull, spreading every way (`labyrinthSpread`). Taken inside a tunnel, they grow
+    the moment you are out (round 21, the artifact does the same).
+  - **Their size is your last trunk's**: its shaft against the longest LT digs. The smallest trunk gives
+    `labyrinthBranchPointsMin` forks, `labyrinthOpeningsMin` tips and `labyrinthRadiusMin` reach; the biggest gives the
+    `...Max` numbers.
+  - The roots are `labyrinthDiameter` wide, flaring to `labyrinthMouthDiameter` at the source and the tips, and taper to
+    `rootTip` × toward the tips. They wander (`rootGnarl`) and dig out from the source over `labyrinthFormSeconds`.
+  - They stay `staySeconds` once you are out, then collapse like a tunnel. A new omnicrystal's roots, or a new tunnel,
+    collapse the last ones.
+  - **Inside you fly on the left stick** (`MeerkatVesselTransformer` hands the move to `MeerkatWormholeExecutor.StepRoots`):
+    - you cruise along the root on your own (`rootCruise` 45 u/s), your nose following it;
+    - the left stick moves you round the root, the way it turns your nose outside (right is right; up is nose-up, so
+      Invert Y applies), by `rootMove`, and `rootDrag` calms the drift;
+    - RT pushes you faster (`rootThrust`, up to `rootMaxSpeed` 90);
+    - the walls bounce you off (`rootBounce`); `rootGravity` (0 = off) can draw you to the floor;
+    - move into a root at a fork to go down it; fly back past a fork and you are in the root before it;
+    - out of a tip you fly on along it at your entry speed × `rideExitMultiplier`; back out of the source you leave
+      facing out.
+  - **The camera** rides the root's centreline 12 u behind you (into the root behind you when that is behind), half your
+    way out to the wall, so it is always inside the root.
+  - **From inside, a soft inner tube** (`MeerkatRootInside.shader`; Yash, 2026-10-28: "there should not be any black
+    colored fill"): while you are in a network, its roots draw their inside as one slow warm tone, a little dense
+    (`rootOpacity` 0.32), denser at its silhouette, lit by your lamp (`rootLamp`). The world outside still shows through,
+    and far walls fade to clear `rootFog` (240) u off. Each root's ends stay open. From outside the roots are bark in the
+    watery glass (`rootGlass`, `rootRim`, `rootGrain`).
+  - **The AI** (input only): in the roots it holds RT and steers across the root with the left stick, toward the middle,
+    or at a fork toward the side of the root that leads nearest its ring. A rookie (`aiNoise`) sometimes picks wrong.
+  - **The network**: the owner publishes each network (seed, trunk size, the hull's frame, the omnicrystal taken) and its
+    rider's way out through `MeerkatWormholeNetworkRelay.n_roots` (protocol version 22). Every peer grows the same roots,
+    because `MeerkatRootMath` is double precision and ported from the page bit for bit (its `rng` included).
+  - Not ported: the soil (`soil*`: strata walls, stones, hanging roots), `omniAtOnce` 0 (an omnicrystal arming the next
+    RT), the labyrinth reticle's wireframe (`labyrinthRing*`, `labyrinthRibs`, `labyrinthRoughness`), and the fork call-out
+    (`forkHintSeconds`, a HUD line). No HUD text was added (player-facing text needs authored fields first). The roots'
+    sound is the empty `rootsEvent` slot.
+- **The shaders** are a recipe now: `Docs/Shaders/WATERY_GLASS.md`.
+- **Tests**: `Tests/Editor/MeerkatRootMathTests.cs` holds the rng, four layouts, the built roots and a 500-step flight
+  (forks and bounces) to the page's own numbers. All 40 Meerkat math tests pass outside Unity (dotnet, with Unity
+  stubs). The tree, the field, the camera and the look have not been opened in the Editor yet
+  (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
+## 7a. Round 26: the network of wormholes (cloned 2026-10-28 from the artifact's round 26)
+
+Yash, 2026-10-28: *"We will use two terminology. One is wormhole, another is network. Wormhole is what we get by just
+normally pressing triggers and right thumbstick ... the simple tube visual. The network of wormhole tubes will come by
+collecting omnicrystals ... it will also look same as the single wormhole tube ... it will always be large, despite the last
+wormhole's length or anything. Depending on mass, it can increase, decrease its size ... if it has full mass, then it will be
+the largest, covering the entire cell."* §7's tree and roots are switched off and the network is a network of wormholes.
+
+- **Off, kept:** `trunkVisibility` 0 (the tree round a wormhole), `rootBarkVisibility` 0 (new: the network's bark skin),
+  `rootOpacity` 0 (its old inside wall). `MeerkatTreeView` builds and draws nothing while they are off; the meshes, shaders
+  (`MeerkatTree.shader`, `MeerkatRootInside.shader`) and materials stay in the project, unreferenced at these values, so the
+  look can come back from the config.
+- **One tube, a wormhole's and each of the network's** (`MeerkatWormholeView.Tube`: the conic arc or a channel's polyline):
+  - the contour field's water pipe (`formedLook` ContourField, shipped): `MeerkatWormholeLensPass` takes the channels as 3D
+    polylines (`MWChannel` in `MeerkatWormholeLens.shader`, 25 points at even steps of s with their radius, the channel's
+    carried normal in `_MWTubeNorm`), the four tubes nearest the camera, wormholes and channels alike. A channel's distance
+    is to the nearest point of its dug window, a wormhole's to its middle, as before. The pass now also runs while only a
+    network is live;
+  - the Bridge look (YASH'S LOOK): the bridge and its glass on every channel too, through the same `BridgeFrame` / `Fill`;
+  - the warp tube (`warpStrength`, shipped 0): every channel too;
+  - the calm inner wall: `MeerkatTubeWallView` + `MeerkatTubeWall.shader` (`Resources/MeerkatTubeWall.mat`), round 21's bore on
+    its own (`tubeInner`, the Fresnel at `trunkFresnel`), built once per tube (`MeerkatTreeMesh.BuildTubeWall`). Cost: a
+    wormhole 57 × 25 vertices; a channel a ring every 4 u, at most 64 rings, so at most 1,625 vertices and 3,072 triangles a
+    channel and about 127,000 vertices for the largest network (78 channels). Not profiled yet.
+  - A tube still wrapped in the old look (tree or bark switched back on) has no bridge and no wall of its own, as rounds
+    20-22.
+- **Mass sizes the network** (`MeerkatWormholeConfig.networkReach`, an `ElementalFloat` on Mass: Min 0.5 at Mass 0, Max 1 at
+  Mass 10, floored at 0.05; the page's `networkReachAtZero` / `networkReachAtFull`, written by hand because
+  `studio_to_unity.py` cannot write an elemental block). When the omnicrystal is taken the owner reads it with `EvaluateLive`
+  (`NetworkShare`) and publishes it in the relay's size float (the payload layout is unchanged, so protocol 22 stays; both
+  machines must run this build, or a peer reads the share as round 17's trunk size). Every peer grows the same network
+  from it (`MeerkatRootNetwork.Grow`):
+  - the cell (`MeerkatRootNetwork.ResolveCell`): the nearest active `Cell`'s centre and the larger of its `SenseRadius` and,
+    in a race, `RaceCourseSource.DefaultOuterRadius` (1,080 u, the race shell) and the farthest ring + 60 u; with neither,
+    the race shell;
+  - `MeerkatRootMath.NetworkSize`: reach = share × the cell's radius, never under `labyrinthRadiusMin`; the centre that
+    share of the way from the hull to the cell's centre (inside the cell; the whole cell at Mass 10); its forks and openings
+    from `labyrinth*Min` to `labyrinth*Max` as its reach goes from `labyrinthRadiusMin` to `labyrinthRadiusMax`;
+  - `MeerkatRootMath.BuildNetwork` / `NetPlace`: every opening on the network's sphere, every fork on the straight line
+    toward its openings (Garrett's Omnicrystal Network Lab's layout rule: the way to an opening runs close to the straight
+    line, median 1.13-1.22 ×).
+  - The executor's only change: `GrowRootsHere` passes `NetworkShare` where it passed the last trunk.
+- **Kept:** the omnicrystal pickup (`StepOmni` on the simulating machine, AI or human: `MeerkatOmnicrystalField.TryTake`,
+  then `GrowRootsHere` at once, or the moment the hull is out of a wormhole; the artifact's `omniAtOnce` 1), left-stick
+  flight inside (`StepRoots`), the AI in the network (`RootAutopilot`: RT held, the fork leading nearest its ring), the camera
+  on the channel's centreline, the life and collapse.
+- **Tests:** `MeerkatRootMathTests`: `NetworkSize_IsThePages` and three `Network_*_MatchesThePage` layouts from the page's own
+  `labLayout` / `netPlace` (12/12 under dotnet with an NUnit stub; a 0.45 → 0.40 mutant of the fork step fails all three).
+
+## 8. Garrett's soliton: the surface area and the swallow (cloned 2026-10-28 from the artifact's round 23)
+
+Yash, 2026-10-28: *"first we're gonna revert the mass ability as Garrett has said. So the width of the tubes shell will be
+dependent on this mass ability. The longer the tube, the thinner the tube gonna be ... make sure you follow Garrett's rules
+... we also need to make so that the prism gets sucked in from this one side and gets sucked out on the other. And the
+prisms will be distorted while traveling through this wormhole. The prisms and all the environmental materials that are
+destructible or interactable ... sucked in. From a certain radius. And sucked out from the other side."*
+
+**The size: Garrett's surface area** (`Docs/Studios/MEERKAT.md` § "Garrett's direction: the soliton kit"). At a given
+**Space** level a soliton keeps one surface area A, so a longer tube is thinner and a shorter one fatter. Garrett puts the
+area on Space and gives Mass the exit portal, so Mass no longer sizes the tunnel in the artifact's kits; round 17's
+Mass sizing was never ported here, so in the game "revert" is only the area.
+- `MeerkatWormholeMath.SurfaceAreaThroat` (the page's `kitThroat`): b = A / (2π L g(k)), g(k) = (k + asinh(√(k²−1)) /
+  √(k²−1)) / 2, with k the authored mouth / throat (26 / 8 = 3.25), a 0.25 u safety floor and the mouth k·b.
+- A = `areaL0` (6,000 u²) to `areaL10` (18,000 u²) by the hull's Space level (`ResourceSystem.GetLevel(Element.Space)`,
+  read every frame the reticle is shaped, so a crystal taken mid-flight resizes the next tunnel; the AI plans with it
+  too). A hull with no element levels keeps the authored fixed size.
+- At Space 5 (A = 12,000 u²): the shortest tunnel (60 u) has a 33 u throat and a 108 u mouth; a 200 u tunnel 9.9 u and
+  32 u; the longest (757 u) 2.6 u and 8.5 u. Remote peers get the owner's b and M with the tunnel, so everyone draws the
+  same size.
+
+**The swallow** (`MeerkatSwallow`, run by `MeerkatWormholeExecutor` for its tunnels, on every peer):
+
+| Stage | What happens | Keys |
+|---|---|---|
+| Pull | Every prism (shielded too, never super-shielded) and every crystal (an omni crystal, or an elemental one not yet collected) within `suckRadius` of a standing tunnel's way in is drawn to it: `suckSpeed` × `suckRadius` / distance, up to `rootMaxSpeed`, swirling round the axis at a third of that. Four looks a second. A plant's prism is plucked first (`HealthPrism.LeaveAsSkeleton`); a creature's body, a prism still growing in and our own fresh trail are left alone | `suckRadius` 90, `suckSpeed` 30 |
+| Swallow | Within `swallowShare` × the opening radius it enters, its place across the mouth kept as a share of the radius | `swallowShare` 1.5 |
+| Carry | Along the centreline at the slide's top speed (`rootMaxSpeed`; round 25 retired `carrySpeed`), never nearer than 6 u behind the rider ahead of it (`TubeAdvance`: first in, first out), held to the wall's narrowing, stretched along the tube to 1 + `carryStretch` at the middle (none at the mouths), squeezed across by 1 / √ of that so its volume is kept, and twisted `carryTwist` turns mouth to mouth (`CarryDistortion`) | `rootMaxSpeed` 90, `carryStretch` 2, `carryTwist` 0.5 |
+| Fire | Out of the way out along its last heading at `fireSpeed` (a crystal at half), its own scale back, gliding to rest over `fireGlideSeconds`. A tunnel that collapses fires out all it holds at once | `fireSpeed` 120, `fireGlideSeconds` 3 |
+
+- **A moving prism** (`Docs/PRISM_MOTION.md`): a pulled or gliding prism that runs into a plain prism destroys both,
+  scored to the tunnel's maker (`PrismMotion.Annihilate`); a shielded collision bounces (`PrismBounce`, the shared
+  `shieldBounceRestitution` 0.6 = the page's `bounceRestitution`). Everything one Meerkat moves is a mover of the same
+  step (`PrismMotion.MoverSteps`), so what it pulls in together never breaks itself, as the Jacks' net's catch does not.
+  Carried prisms are not contact-tested (they are inside the tube).
+- **Crystals** move on each machine, as the Jacks' net carries them; the machine that decides the hull relocates the
+  cell's omni crystal where it comes to rest (`CrystalManager.RelocateCrystal`). A crystal another hull picks up or
+  something else moves (more than 15 u from where the swallow left it) is let go.
+- **Caps:** `swallowPrismCap` (256, a performance cap, not in the artifact) prisms per Meerkat; the prism-motion ladder
+  picks boxes or spheres by the count.
+- **Not modelled:** the Meerkat's own omnicrystals (`MeerkatOmnicrystalField`) are not swallowed; a carried prism is not
+  hit by a rider in the same tube.
+
+## 9. Inside a tube is another dimension; the game's omni crystal grows the roots (round 25, 2026-10-28)
+
+Yash, 2026-10-28: *"anything that passes through the tunnel doesn't interact with the outer world ... It's like going
+through another dimension, without interacting with real objects. When it comes out of the hole, then it interactable
+again"*; *"the prisms that get sucked in that same wormhole ... hits my vessel inside the hole ... Make sure the prisms
+and the vessels both travel in the same speed variations. So that anything that enters the wormhole at first will get out
+of the wormhole also without clashing"*; *"I am collecting omnicrystals in lava lamp, yet I don't see the network
+wormholes getting created"*.
+
+- **Phased.** While a tunnel or the roots fly the hull, `MeerkatVesselTransformer` (the hull's `IHullContactGate`) says
+  its touch takes no prism and no crystal. That is read by both halves of every contact: the hull's
+  (`VesselImpactor`), the prism's (`PrismImpactor`), the crystals' (`ElementalCrystalImpactor`, `OmniCrystalImpactor`)
+  and now the skimmer's prism skim too (`SkimmerImpactor.HullTakesPrisms`). Out of the mouth, it is solid again.
+  - A race ring threaded inside still counts: rings are a sweep (`CrystalRaceRing`), not a touch.
+- **First in, first out.** A carried prism or crystal moves at the slide's top speed, never nearer than
+  `MeerkatWormholeMath.TubeGap` (6 u) behind this Meerkat's rider ahead of it (`TubeAdvance`). So a stream that went in
+  after you stays behind you, and nothing inside overtakes anything. Carried prisms are posed, not contact-tested
+  (§8), and the phased hull ignores them anyway.
+- **The game's omni crystal.** Any omni crystal this hull collects arms the roots, as a Meerkat omnicrystal does: the cell's,
+  the freestyle conveyor's, Lava Lamp's, any mode's. It comes through `OmniCrystalImpactor.CollectedByVessel`, raised where
+  the crystal's vessel effects run: on the machine that resolves the collect, and on the pilot's machine when it replays
+  them. The executor acts on it only on its hull's simulating machine, so the player's machine for a player and the
+  server for the AI. Before this, only the Meerkat's own gold omnicrystals did it, and those are laid for the local human
+  pilot only, so in Lava Lamp nothing grew.
+
+## 10. Garrett's kit: the four abilities (2026-10-28)
+
+**Garrett's design, approved by Yash 2026-10-28.** The design is Garrett's (`Docs/Studios/MEERKAT.md` § "Garrett's
+direction: the Meerkats and the soliton", on `cece/lucid-brown-ykcmhu`); the artifact models it under the Kit dropdown's
+"Garrett's kit" (`Docs/Studios/VesselStudio/meerkat.html`, round 18), and this is a port of the page's kit functions and
+numbers (`kitOverrides`, `kitAddSentinel`, `kitZaps`, `kitPortal`, `kitTryRide`; `kitThroat` and the swallow are §8's
+round-23 port). The arithmetic is `MeerkatSolitonMath` (6 tests on the page's own numbers); the kit is
+`MeerkatSolitonKit`, a component beside the wormhole executor, which (with `MeerkatSwallow`) carries only small hooks
+marked `[Garrett's kit hook]`.
+
+| Element | Ability | Input | Scales with the level | L5 |
+|---|---|---|---|---|
+| Space | Soliton | RT (`RightStickAction`) | the surface area `areaL0` / `areaL10` 6,000 → 18,000 u² (§8) | Steal |
+| Time | Faster Ride | passive | the rush `rush` 1 → 1.4 | Boost Out |
+| Mass | Exit Portal | passive | the portal's size `portalSize` 0.4 → 0.9 | Danger Portal |
+| Charge | Sentinel Mode | Y (`Button4Action`, F on a keyboard) | the petals a zap takes `zapPetals` 0.1 → 0.25 | Six Sentinels |
+
+Every number is the page's shipped value, by the page's own key (`MeerkatWormholeConfig`, its "Garrett's kit" headers):
+the plain keys are mapped in `studio_to_unity/meerkat.json`; each ElementalFloat is the page's L0 / L10 pair.
+
+### 10.1 Space: the Soliton (RT)
+
+- **The wormhole IS the soliton**: a standing tunnel in space that anyone may ride.
+- **Its surface area (the Space level) and its swallow and fire are §8** (round 23: `MeerkatWormholeMath.SurfaceAreaThroat`,
+  `MeerkatSwallow`). This kit's own surface-area function and swallow (`MeerkatSolitonPrisms`) were removed in the merge
+  with round 23, which is the one port: the numbers were the same (6,000 → 18,000 u², the 0.25 u floor, at least 10 u), and
+  round 23 reads the integer Space level (0-10) where the kit read an ElementalFloat.
+- **L5 Steal** (`MeerkatSolitonKit.Stamp` sets the tunnel's steal bit, published with it; `MeerkatSwallow.Swallow` steals):
+  each prism the soliton swallows is stolen into the Meerkat's domain (`Prism.Steal`) the moment its run through the tube
+  starts, so it leaves the way out already theirs. Super-shielded mass is never moved, so it is never stolen.
+- **Shielded prisms bounce** (`PrismBounce`, rule 1a): on Ys-bleeding-edge since commit e6b5c988ec (2026-10-27).
+- **Anyone rides it** (the page's `kitTryRide`, `MeerkatWormholeExecutor.TryRideAnySoliton`): a Meerkat, its maker or any
+  other, that flies into a standing soliton's way in (1 u before the mouth to 10 u past it, inside the mouth, the nose
+  within 72° of the tunnel) is carried through it at the speed it went in with, out on its last heading. A rider leaves
+  another's soliton untouched (only the maker's ride starts its stay). Not re-entered within 1.5 s. **Only Meerkat hulls
+  can ride**: the ride is flown by `MeerkatVesselTransformer`, and giving every other hull a ride needs a hook in the
+  fleet's `VesselTransformer`, which is not contained (a follow-up for the transformer's owners).
+- A fired prism plays `prismFiredEvent` (§10.6), hooked on `MeerkatSwallow`'s fire.
+
+### 10.2 Time: Faster Ride (passive)
+
+- **The ride through every soliton** (its own or anyone's) rushes faster: the throat's multiplier `rideMidMultiplier`
+  (2.5) × `rush` (1 at Time 0, 1.2 at 5, 1.4 at 10), the page's `kitOverrides`.
+- **L5 Boost Out**: every soliton is left at `boostOut` (1.5) × the exit multiplier (1.2 → 1.8 × the speed before the
+  tunnel), and the hull eases back to cruise from there.
+
+### 10.3 Charge: Sentinel Mode (Y)
+
+- **Y toggles it** (`MeerkatSentinelModeActionSO`, a press-and-forget toggle: release does nothing, vessel rule 37).
+  Off, no new sentinels; the standing ones stay.
+- **While on, each new soliton leaves a sentinel** just back from its way in: an AFTERIMAGE of the hull, standing up (its
+  nose to the sky, its back to the way in), baked once from the hull's own renderers and drawn with its materials, with no
+  collider (a simple visual, as asked).
+- **The pool is `sentinelPool` (3)**; with it used up the oldest sentinel retires, and its soliton with it.
+- **A soliton with a sentinel lasts as long as the sentinel**: it is HELD (its stay never runs out, and a new tunnel or a
+  root network does not collapse it).
+- **The guard is a sphere of `guardShare` (1.5) × the opening radius** round the way in.
+- **It zaps** at `aiZapRate` (5 a second; every sentinel is AI-guarded, seats are not built): the nearest RIVAL hull in
+  the guard, or failing that the nearest of its own domain's unshielded prisms there, which it SHIELDS (so the soliton
+  fires them out as bouncing ammunition). Nothing in the guard, it looks again in 0.2 s.
+- **A zap on a rival hull** is a scored hit inside PvP-is-petals-only (`MeerkatSolitonKit.ZapVessel`): decided on the
+  Meerkat's owner (`ElementalTransfer.IsDecidedHere`), admitted through `CombatHitDrain.TryAdmit` as a Bullet
+  (`zapCooldownSeconds` 0, so every zap is admitted; a warded victim is neither scored on nor robbed; a silenced Meerkat's
+  zaps are refused; the admitted hit SILENCES the victim, `SILENCE.md`), then `zapPetals` (0.1 at Charge 0 → 0.25 at 10)
+  of a petal on each element through the economy's accrual (`ElementalTransfer.ApplyAllAuthoritative`, Eject:
+  `ResourceSystem.AccrueElementalLoss` settles only whole petals), EJECTED as free crystals, and the hit on
+  `Event_CombatHitStats`. The Sparrow's bullets take the same path at 0.1 of a petal. The zap is priced as a Bullet
+  (1 point), so its score and its silence are a bullet's while its take grows with Charge.
+- **L5 Six Sentinels**: the pool is `sentinelPoolL5` (6).
+- **The AI** presses Y once (through the replicated press path, as a person would) to turn Sentinel mode on, and leaves
+  it on.
+- **Not built, and why:** the sentinel SEATS (taking a sentinel with the D-pad, the perched 2.5D view, tap to shield or
+  zap) and the HOP (the sentinel and the flyer change places) need dynamic crew seats, which the crew system does not have
+  yet (`Docs/CREW_STATIONS.md`); "one meerkat holds the elements, any other dies of an element hit" rides on those seats
+  too. A sentinel zapping another Meerkat's sentinel (the page's "sentinels zap sentinels") and danger prisms killing
+  sentinels are not ported either: sentinels end only by retiring or with their soliton.
+
+### 10.4 Mass: Exit Portal (passive)
+
+- **Once per soliton, when it forms**, it sets down six prisms on a regular hexagon square to the exit heading, its
+  corners `portalShare` (1.5) × the exit radius out, each at its edge's midpoint and laid along the edge, so the six close
+  into one outline (the page's `kitPortal`, `perpBasis`).
+- **Their size** is the hull's own trail prism (x halved, as the fleet's single trail lays it) × `portalSize` (0.4 at
+  Mass 0 → 0.9 at 10, read at the replicated level). They are the Meerkat's domain and its pilot's.
+- **L5 Danger Portal**: they are danger prisms (a silenced Meerkat's come out plain). A rival touching one takes what the
+  platform's danger-prism effects take (the page's `dangerPetals` is lab-only).
+- Mass is conserved: a portal is never taken back.
+
+### 10.5 The network
+
+- The owner decides each soliton's kit when it forms it (`MeerkatSolitonKit.Stamp`: a sentinel or not, the Charge / Mass /
+  Space L5 bits, the portal's size) and publishes it with the tunnel: `MeerkatWormholeNetworkRelay.TunnelState.Kit` and
+  `PortalSize` (**protocol version 23**). The throat and mouth were already published.
+- Every peer then lays the same portal, stands the same sentinels (and holds the same solitons) and steals the same
+  swallowed prisms from the same tunnels, on its own prisms: prisms are per-peer, as every mover of the prism-motion fundamental is
+  (`Docs/PRISM_MOTION.md` §4), so two peers can disagree on a collision at the edge of a contact.
+- A zap's petals are decided on the Meerkat's owner and settled on the victim's owner (`ElementalTransfer`'s relay); a
+  peer's own copy of a sentinel only plays the zap's sound and shields its own prisms.
+- The ride (anyone's) and Time's two numbers run on the rider's simulating machine; the hull's pose replicates as every
+  vessel's does.
+
+### 10.6 Sound
+
+Five empty `EventReference` slots on `MeerkatWormholeConfig` (the FMOD rule: shipped EMPTY until sound design wires
+them): `zapEvent` (a zap on a rival, about five a second at most), `sentinelPlacedEvent`, `sentinelLostEvent` (lost or
+retired), `portalEvent` (at the way out) and `prismFiredEvent` (one per tube fired at once). The artifact's synthesized
+sounds are their brief.
+
+### 10.7 Testing
+
+- `Tests/Editor/MeerkatSolitonMathTests.cs` (6 tests): the ride's rush and Boost Out, the way in, the sentinel pool retiring the oldest, the zap's petals per Charge and its clock, the hexagon (three
+  page goldens, the edges closing). The surface area's goldens are §8's (`MeerkatWormholeMathTests`). `Tools/Build/meerkat_kit_harness/run.sh --self-test` runs them under
+  dotnet and proves three wrong ports fail.
+- Hand tests: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Meerkat: Garrett's kit".
+
+### 10.8 Follow-ups
+
+- The sentinel seats and the hop (dynamic crew seats), and the element-holder rule that rides on them.
+- A non-Meerkat hull riding a soliton (a ride hook in `VesselTransformer`).
+- The Meerkat's own HUD view and four icons (`/ability-icon`); a ready colour on the Charge and Space cards.
+- A zap's look in the world (today its cues are the victim's ejected crystals and the empty `zapEvent`).
+- The AI does not yet seek a soliton to ride (the page's `kitAiSoliton`); it only rides one it flies into.

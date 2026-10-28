@@ -143,6 +143,9 @@
   /* round 29: an on / off row (SPEC 'toggle') and the ability cards */
   .row input[type=checkbox] { flex: 0 0 auto; width: 18px; height: 18px; margin: 0 auto 0 0; accent-color: var(--accent); }
   .abcard.off > .rows > .row + .row { opacity: 0.5; }
+  /* round 30: a dropdown row (SPEC 'select'); the select shows the value, so the output is hidden */
+  .row.selrow select { flex: 1 1 140px; min-width: 0; max-width: 100%; }
+  .row.selrow output { display: none; }
   .ablvl { color: var(--fg); }
   .ablvl b.up { color: var(--accent); }
   .tbtn.abil { position: absolute; top: calc(46% + 18px + env(safe-area-inset-top, 0px)); min-width: 86px; padding: 12px 10px; background: rgba(232,236,255,0.2); color: #e8ecff; border: 2px solid rgba(232,236,255,0.55); }
@@ -276,9 +279,9 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 29 · the four-ability kit (proposals)</span>
+    <span class="round">Round 30 · Ripple's trigger: Garrett's pilot sight vs the Mix</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
-    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 29: the Stoat's full four-ability kit, proposals for Yash to fly and judge</b> (lab-only numbers, none approved for Unity: the /vessel §3 design gate). The ability row, lower right on the stage, in the locked order Charge, Mass, Space, Time. <b>Charge · Ripple</b> (LB, <kbd>F</kbd>): a gravity wave draws crystals to you and shows you each rival's next ring and path; level 5 <b>Siphon</b> takes a Time petal from each rival it passes. <b>Mass · Field Trajectory</b> (LT/RT in Mass mode): the warped stretch you fly lays an accretion trail of prisms; level 5 <b>Armoured Wake</b> shields them. <b>Space · Collapse</b> (Y, <kbd>G</kbd>): with a pair held, its black hole implodes every prism within the radius and the pair is spent; level 5 <b>Spaghettify</b> costs a rival inside it a Space petal. <b>Time · Catch Sling</b> (LT/RT in Time mode): level 5 <b>Whip</b>, let go just past the orbit's fastest point for an extra burst. PvP is petals only: no ability moves or slows a rival; a hit moves one petal and silences the victim for a second. Each ability has an on / off switch, a level L0-L10 and its own sliders in <b>Vessel Config</b> (Section: Ability · ...); <b>AI Config ▸ AI uses the new abilities</b> gives the rivals one input-only rule each. All four off, the page flies exactly as round 28. Round 28: the wormhole (Gate mode) became the Meerkat; the Stoat keeps Mass and Time, B switches them. <b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
+    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 30: what fires the Ripple, two versions to judge.</b> Garrett's pilots change (<code>Docs/Pilots/CALLSIGNS.md</code> §5, PR #1589) makes <b>LB the pilot sight</b> on every vessel, and round 29 had put the Ripple on LB. Yash (2026-10-27): where we conflict with Garrett, build Garrett's way and a mix with our recommendation, so he can judge. <b>Vessel Config ▸ Ability · Charge · Ripple ▸ Ripple trigger</b>: <b>Fleet rule</b> (Garrett's way): LB is the pilot sight and the Ripple has no button; it pulses on its own every recharge while a crystal or a rival is inside the reach. <b>Mix</b> (our recommendation, the default): LB is the pilot sight, and the Ripple fires the moment you <b>let go</b> of a pair or a sling, recharge kept: no button, but a skill (let go near crystals and rivals). <b>Round 29</b> (archived): the Ripple on LB, which takes the pilot sight away. Hold <b>LB</b> (<kbd>F</kbd>, the phone's <b>LB · Sight</b>) for the sight: every crystal and rival is marked with a halo through the prisms, a stand-in for your pilot's own sight that changes nothing in the race. The ability row's Charge tile says <b>AUTO</b>, <b>LET GO</b> or <b>LB</b>. The AI presses nothing for the Ripple under the first two (it just flies; the trigger is automatic). With the abilities off every race is byte-identical to round 29; the trigger is saved with your settings and in the Ripple section's profiles. <b>Round 29: the Stoat's full four-ability kit, proposals for Yash to fly and judge</b> (lab-only numbers, none approved for Unity: the /vessel §3 design gate). The ability row, lower right on the stage, in the locked order Charge, Mass, Space, Time. <b>Charge · Ripple</b> (LB, <kbd>F</kbd>): a gravity wave draws crystals to you and shows you each rival's next ring and path; level 5 <b>Siphon</b> takes a Time petal from each rival it passes. <b>Mass · Field Trajectory</b> (LT/RT in Mass mode): the warped stretch you fly lays an accretion trail of prisms; level 5 <b>Armoured Wake</b> shields them. <b>Space · Collapse</b> (Y, <kbd>G</kbd>): with a pair held, its black hole implodes every prism within the radius and the pair is spent; level 5 <b>Spaghettify</b> costs a rival inside it a Space petal. <b>Time · Catch Sling</b> (LT/RT in Time mode): level 5 <b>Whip</b>, let go just past the orbit's fastest point for an extra burst. PvP is petals only: no ability moves or slows a rival; a hit moves one petal and silences the victim for a second. Each ability has an on / off switch, a level L0-L10 and its own sliders in <b>Vessel Config</b> (Section: Ability · ...); <b>AI Config ▸ AI uses the new abilities</b> gives the rivals one input-only rule each. All four off, the page flies exactly as round 28. Round 28: the wormhole (Gate mode) became the Meerkat; the Stoat keeps Mass and Time, B switches them. <b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
   <div class="stage">
@@ -294,7 +297,7 @@
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
-        <button type="button" class="tbtn abil l" id="tLB" title="LB: Ripple (Charge)">LB · Ripple</button><button type="button" class="tbtn abil r" id="tY" title="Y: Collapse (Space)">Y · Collapse</button>
+        <button type="button" class="tbtn abil l" id="tLB" title="LB (hold): the pilot sight - every crystal and rival marked">LB · Sight</button><button type="button" class="tbtn abil r" id="tY" title="Y: Collapse (Space)">Y · Collapse</button>
         <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn mode" id="tMode" title="B: the Stoat's mode (Mass, Time), as the game's Mass card">B · Mass</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
         <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
@@ -310,7 +313,9 @@
           <tr><td>Thumbs opposite, up / down</td><td>Roll</td></tr>
           <tr><td>Thumbs apart / together</td><td>Throttle</td></tr>
           <tr><td><b>LT</b> / <b>RT</b> handle: drag down, hold, lift</td><td>Lay the pair on that side (how far down = strength), stay in its grip, slingshot out</td></tr>
-          <tr><td><b>LB · Ripple</b> / <b>Y · Collapse</b> buttons, beside the trigger handles</td><td>The Charge and Space abilities (round 29 proposals), as LB and Y on a gamepad</td></tr>
+          <tr><td><b>LB · Sight</b> button (hold), beside the left trigger handle</td><td>The <b>pilot sight</b> (round 30, the fleet's LB): every crystal and every rival marked through the prisms while you hold it. Under the archived round-29 Ripple trigger it reads <b>LB · Ripple</b> and fires the Ripple instead</td></tr>
+          <tr><td><b>Y · Collapse</b> button, beside the right trigger handle</td><td>The Space ability (round 29 proposal), as Y on a gamepad</td></tr>
+          <tr><td>Lift a trigger handle (let go of a pair)</td><td>Under the <b>Mix</b> Ripple trigger (the default), letting go fires the Ripple; under the fleet rule it pulses on its own</td></tr>
           <tr><td>Start · Stop · Back · ✕ (top bar)</td><td>Start or go again · stop and watch · back to the start line · back to the settings</td></tr>
         </tbody></table></div>
       </div>
@@ -326,7 +331,8 @@
           <tr><td><b>LT</b>: press, hold, let go</td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Press: a black hole ahead-LEFT, its white hole ahead-right. Squeeze depth = strength (a key gives the keyboard squeeze on the rail). Hold = stay in its grip and go round. Let go = slingshot out. One pair at a time: no new one until this one has vanished.</td></tr>
           <tr><td><b>RT</b>: press, hold, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>The mirror: black hole ahead-RIGHT. Pressing it while the other is held lets that one go first.</td></tr>
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running); a sling breaks it</td></tr>
-          <tr><td><b>LB</b></td><td><kbd>F</kbd></td><td><b>Ripple</b> (Charge, round 29 proposal): a gravity wave rings out; crystals it passes are drawn to you, rivals it passes show you their next ring and path. Level 5 Siphon: each rival it passes gives you one Time petal</td></tr>
+          <tr><td><b>LB</b> (hold)</td><td><kbd>F</kbd> (hold)</td><td><b>Pilot sight</b> (round 30: the fleet rule from Garrett's pilots change, <code>Docs/Pilots/CALLSIGNS.md</code> §5): every crystal and every rival is marked with a halo that reads through the prisms while you hold it, fading in and out. A stand-in for your pilot's own sight; it changes nothing in the race. Under the archived <b>Round 29</b> Ripple trigger, LB fires the Ripple instead and there is no sight</td></tr>
+          <tr><td>LT / RT let go</td><td><kbd>J</kbd> / <kbd>L</kbd> up</td><td><b>Ripple</b> (Charge, Vessel Config ▸ Ripple trigger). <b>Mix</b> (default): it fires the moment you let go of a pair or a sling. <b>Fleet rule</b>: no input at all, it pulses every recharge while a crystal or a rival is in reach. Either way a gravity wave rings out; crystals it passes are drawn to you, rivals it passes show you their next ring and path. Level 5 Siphon: each rival it passes gives you one Time petal</td></tr>
           <tr><td><b>Y</b></td><td><kbd>G</kbd></td><td><b>Collapse</b> (Space, round 29 proposal): with a pair held, or just after letting it go, its black hole implodes every prism within the radius and the pair is spent. Level 5 Spaghettify: a rival inside the radius loses a Space petal</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
           <tr><td><b>❚❚ Pause</b> on the stage</td><td><kbd>P</kbd></td><td>Pause: the Stoat halts and the clock pauses while the world carries on; press again (<b>▶ Resume</b>) to resume</td></tr>
@@ -468,9 +474,10 @@
         </div>
         <p class="src">Stand-in courses on the shipped numbers, the mouth per intensity. <b>Circuit</b>: 8 rings on a circle, harder with each intensity (above). <b>Hairpins</b>: 8 rings that alternate direction, 120–190 u apart, then a long straight home (rewards tight turns). Not the shipped HeadlongCircuit solver.</p>
         <div class="btns"><button class="pick" type="button" data-reset="flight">Reset to shipped</button></div></details>
-      <details class="card abcard" id="grp-abC" open><summary>Ability · Charge · Ripple <small>LB · round 29 proposal</small></summary><div class="rows"></div>
+      <details class="card abcard" id="grp-abC" open><summary>Ability · Charge · Ripple <small>trigger: Ripple trigger · round 30</small></summary><div class="rows"></div>
+        <p class="src ablvl" id="abC-trig"></p>
         <p class="src ablvl" id="abl-C"></p>
-        <p class="src"><b>LB</b> (<kbd>F</kbd>, the phone's LB button): a gravity wave rings out from your hull to the reach. Every crystal it passes is drawn to you (and counts as a petal of its element when it reaches you); every rival it passes shows you its next ring and the path it is flying for a few seconds. <b>Level 5, Siphon</b>: every rival it passes loses one Time petal and you gain it (a scored hit; it is silenced for a second). It never pushes anyone. <b>Lab-only</b>: the game has no such ability or fields.</p>
+        <p class="src"><b>What fires it</b> (round 30, <b>Ripple trigger</b>): Garrett's pilots change (<code>Docs/Pilots/CALLSIGNS.md</code> §5) makes <b>LB the pilot sight</b> on every vessel, so two versions are here to judge. <b>Fleet rule</b> (Garrett's way): no button, it pulses on its own every recharge while a crystal or a rival is inside the reach. <b>Mix</b> (our recommendation, the default): no button either, it fires the moment you <b>let go</b> of a pair (Mass) or a sling (Time), recharge kept, so letting go near crystals and rivals is the skill. <b>Round 29</b> (archived): on LB, which takes the pilot sight away. Under the first two, hold <b>LB</b> (<kbd>F</kbd>, the phone's LB button) for the pilot sight. The ripple itself: a gravity wave rings out from your hull to the reach. Every crystal it passes is drawn to you (and counts as a petal of its element when it reaches you); every rival it passes shows you its next ring and the path it is flying for a few seconds. <b>Level 5, Siphon</b>: every rival it passes loses one Time petal and you gain it (a scored hit; it is silenced for a second). It never pushes anyone. <b>Lab-only</b>: the game has no such ability or fields.</p>
         <div class="btns"><button class="pick" type="button" data-reset="abC">Reset</button></div></details>
       <details class="card abcard" id="grp-abM" open><summary>Ability · Mass · Field Trajectory <small>LT / RT in Mass mode · round 29 proposal</small></summary><div class="rows"></div>
         <p class="src ablvl" id="abl-M"></p>
@@ -570,6 +577,13 @@
     // Charge: Ripple (LB). A gravity wave rings out to abCReach: crystals it passes are drawn to you, rivals it passes show
     // you their next ring and path for abCReveal s; L5 Siphon: each rival it passes gives you one of its Time petals.
     abCOn: 1, abCLevel: 5, abCReach: 260, abCCool: 6, abCReveal: 4, abCPull: 160,
+    // round 30 (Yash, 2026-10-27: where we conflict with Garrett, build both): what fires the Ripple. Garrett's pilots
+    // change (Docs/Pilots/CALLSIGNS.md section 5, PR #1589) makes LB the PILOT SIGHT on every vessel, so LB is no longer free.
+    //   0 = Garrett's fleet rule: passive, no button; it pulses every abCCool s while a crystal or a rival is inside abCReach
+    //   1 = the Mix (our recommendation, the default): it fires the moment you LET GO of a pair or a sling (cooldown kept)
+    //   2 = round 29, archived: on LB (conflicts with the fleet's pilot sight)
+    // Under 0 and 1, LB (F, the phone's LB button) is held for the pilot sight.
+    abCTrigger: 1,
     // Mass: Field Trajectory (LT/RT in Mass mode). The warped stretch you fly lays an accretion trail, abMDensity prisms per
     // 100 u, each living abMLife s; L5 Armoured Wake: those prisms are shielded (the Space ability cannot destroy them).
     abMOn: 1, abMLevel: 5, abMDensity: 6, abMLife: 8,
@@ -583,6 +597,13 @@
     // the AI rivals (and your hull when the AI flies it) use the new abilities by an input-only rule each
     abAI: 1,
   };
+  // round 30: the three ways the Ripple can fire (P.abCTrigger is the index). key: what the ability row prints under the
+  // Charge tile; lb: what LB does under it.
+  const RIPPLE_TRIGGERS = [
+    { name: 'Fleet rule: passive pulse (Garrett)', short: 'passive', key: 'AUTO', lb: 'sight' },
+    { name: 'Mix: on letting go (recommended)', short: 'on release', key: 'LET GO', lb: 'sight' },
+    { name: 'Round 29: on LB (archived, conflicts)', short: 'LB', key: 'LB', lb: 'ripple' },
+  ];
   let GM_PER_STRENGTH = 20000, HORIZON_PER_STRENGTH = 2;   // refreshed from the Black hole group every frame
   const MIN_HORIZON = 1.5;
   const SPEC = [
@@ -741,6 +762,8 @@
     // round 29: the four abilities (lab-only proposals). A seventh entry 'toggle' draws the row as an on / off switch.
     ['ai', 'abAI', 'AI uses the new abilities', 0, 1, 1, 'toggle'],
     ['abC', 'abCOn', 'Ripple in the kit', 0, 1, 1, 'toggle'],
+    // round 30: a seventh entry 'select' draws the row as a dropdown of the eighth entry's names (value = the index)
+    ['abC', 'abCTrigger', 'Ripple trigger', 0, 2, 1, 'select', RIPPLE_TRIGGERS.map((t) => t.name)],
     ['abC', 'abCLevel', 'Charge level (L5+ = Siphon)', 0, 10, 1],
     ['abC', 'abCReach', 'Ripple reach (u)', 50, 800, 10],
     ['abC', 'abCCool', 'Recharge (s)', 1, 30, 0.5],
@@ -1507,7 +1530,7 @@
     const v = Math.max(speed, 1), r = orbitRadius(holds[side].live), rs = r / Math.max(3, P.orbitHorizons);
     const toAtt = right.clone().multiplyScalar(side === 'L' ? -1 : 1);
     myPair = new Pair('A', hull.position, toAtt.clone().negate(), up, circGM(v, r, rs) / GM_PER_STRENGTH, true, { rs, h0: r, held: true });
-    pairs.push(myPair);
+    pairs.push(myPair); ab.laid = myPair;   // round 30
     slingOrbit = { side, pair: myPair, r, angle: 0 };
     slings++; runStyles.add('A');
     if (stance) stance = false;                          // a sling is a launch
@@ -1568,7 +1591,7 @@
     const q = holds[side].live;
     myPair = new Pair('A', att.clone().add(rep).multiplyScalar(0.5), tv.subVectors(rep, att), up, 0, true,
       { rs: 0.02, held: true, dipole: { att, rep, rsR: 0.02, SR: 0 } });   // born from a point
-    pairs.push(myPair);
+    pairs.push(myPair); ab.laid = myPair;   // round 30: the pair this press laid (the Mix's Ripple fires as it is let go)
     spawnWave('in', rep);
     if (raceStats && race === 'running') raceStats.slings++;
     slingDipole = { side, pair: myPair, q, turned: 0, sweep: 0, captured: false, rc: 0, rHold: 0, reach: 0, t: 0, gain0: gravSpeed };
@@ -1882,7 +1905,7 @@
     const mid = hull.position.clone().addScaledVector(fwd, P.ftAhead);
     const pr = new Pair('A', mid, right, up, 0, true, { rs: 0.02, held: true, dipole: { att: mid.clone(), rep: mid.clone(), rsR: 0.02, SR: 0 } });
     pr.field = true; pr.lat = 0; pr.lon = 0; pr.sep = 0; pr.mid0 = mid.clone(); pr.right0 = right.clone(); pr.fwd0 = fwd.clone();
-    pairs.push(pr); myPair = pr; runStyles.add('F');
+    pairs.push(pr); myPair = pr; ab.laid = pr; runStyles.add('F');   // ab.laid: round 30
     spawnWave('in', mid);
     fieldSling = { side, pair: pr };
     if (raceStats && race === 'running') raceStats.slings++;
@@ -2075,6 +2098,7 @@
   function newAb() {
     return { cdC: 0, cdS: 0, petals: { Charge: AB_PETALS, Mass: AB_PETALS, Space: AB_PETALS, Time: AB_PETALS }, silenced: 0, heldPair: null, released: -1e9,
       accDist: 0, whipPair: null, whipPeak: 0, whipPeakDeg: 0, whipPassed: false, whipLit: false, hitT: 0, hitText: '', aiScanT: 0,
+      trig: false, laid: null,   // round 30: a trigger held last step; the pair this pilot's press laid (the Mix fires as it is let go)
       n: { ripples: 0, collapses: 0, whips: 0, destroyed: 0, laid: 0, crystals: 0, hits: 0, taken: 0 } };
   }
   // the abilities' own clock: 0 at every race's start, so a race replays the same whatever ran before it (labmaker: a
@@ -2106,11 +2130,22 @@
   }
   // ---- Charge: Ripple ----
   let ripples = [];
-  function fireRipple() {
+  // round 30: which trigger fires it (P.abCTrigger, per pilot like every P value): 0 passive, 1 on letting go, 2 LB
+  const rippleTrigger = () => Math.max(0, Math.min(2, Math.round(P.abCTrigger)));
+  // LB is YOUR pilot sight unless your Ripple is on the archived round-29 LB (BP: the person's own setting)
+  const lbIsSight = () => Math.round(BP.abCTrigger) !== 2;
+  function fireRipple(quiet) {
     if (!abOn('C')) return;
-    if (ab.cdC > 0) { if (!curPilot) flashAb('RIPPLE RECHARGING · ' + ab.cdC.toFixed(1) + ' s'); return; }
+    if (ab.cdC > 0) { if (!curPilot && !quiet) flashAb('RIPPLE RECHARGING · ' + ab.cdC.toFixed(1) + ' s'); return; }
     ab.cdC = P.abCCool; ab.n.ripples++;
     ripples.push({ owner: curPilot, c: hull.position.clone(), t0: abT, reach: P.abCReach, pull: P.abCPull, reveal: P.abCReveal, siphon: abUp('C'), hit: new Set(), crystals: 0, seen: 0 });
+  }
+  // Garrett's fleet rule (trigger 0): is a crystal it has not drawn, or a rival, inside the reach right now?
+  function rippleHasTarget() {
+    const R = P.abCReach, at = hull.position;
+    for (const c of crystals) if (c.mesh.visible && c.pullBy == null && c.p.distanceTo(at) <= R) return true;
+    for (const id of otherPilots()) if (pilotPos(id).distanceTo(at) <= R) return true;
+    return false;
   }
   // the wave moves out from where it was rung; whatever it passes is touched once
   function stepRipples() {
@@ -2243,8 +2278,13 @@
     ab.cdC = Math.max(0, ab.cdC - dt); ab.cdS = Math.max(0, ab.cdS - dt); ab.silenced = Math.max(0, ab.silenced - dt); ab.hitT = Math.max(0, ab.hitT - dt);
     if (myPair && myPair.alive && myPair.held && !myPair.dying) ab.heldPair = myPair;
     else if (ab.heldPair) { ab.released = abT; ab.heldPair = null; }
+    // round 30: the moment this pilot lets go of the pair its press laid (both triggers up, the pair still alive and not
+    // spent by a Collapse): a pair (Mass) or a sling (Time) alike
+    const trig = holds.L.on || holds.R.on, lp = ab.laid, letGo = ab.trig && !trig && !!lp && lp.alive && !lp.dying;
+    ab.trig = trig; if (!trig) ab.laid = null;
     if (race !== 'running' || stance) return;
-    if (inp && inp.lb) fireRipple();
+    const tr = rippleTrigger();
+    if (tr === 2 ? inp && inp.lb : tr === 1 ? letGo : ab.cdC <= 0 && abOn('C') && rippleHasTarget()) fireRipple(tr === 0);
     if (inp && inp.y) fireCollapse(inp);
     layAccretion(dt); stepWhip();
   }
@@ -2272,7 +2312,7 @@
   function aiAbilities(inp, dt) {
     inp.ai = true;
     if (race !== 'running' || stopped || P.abAI < 0.5 || !anyAbility()) return;
-    if (abOn('C') && ab.cdC <= 0) {
+    if (abOn('C') && ab.cdC <= 0 && rippleTrigger() === 2) {   // round 30: under the fleet rule and the Mix there is no button to press
       const R = 0.9 * P.abCReach; let go = false;
       for (const c of crystals) { if (!c.mesh.visible || c.pullBy != null) continue; const d = c.p.distanceTo(hull.position); if (d <= R && d > 20) { go = true; break; } }
       if (!go && abUp('C')) for (const id of otherPilots()) if (pilotPos(id).distanceTo(hull.position) <= R) { go = true; break; }
@@ -2340,6 +2380,51 @@
       }
       cageMesh.count = nc; accMesh.instanceMatrix.needsUpdate = true; cageMesh.instanceMatrix.needsUpdate = true; accDirty = false;
     }
+  }
+
+  // ---- round 30: the PILOT SIGHT on LB (Garrett's pilots change, Docs/Pilots/CALLSIGNS.md section 5) ----
+  // Hold LB (F, the phone's LB button) and you see what a pilot sight shows: every crystal and every rival marked with a
+  // halo that reads through the prisms (Echo Sight's two-part mark: the thing driven to its saturated colour, plus an
+  // additive halo drawn without a depth test). A STAND-IN for the pilot's own sight (each callsign sees one thing; this
+  // studio has no pilots, so it marks both). It touches nothing but photons: no step, no AI and no scorecard reads it,
+  // and it fades up and down (nothing pops). Under the archived round-29 trigger LB is the Ripple and there is no sight.
+  let sightAmt = 0, sightTouch = false, sightForced = false;
+  const SIGHT_FADE_S = 0.18;
+  const sightTex = (() => {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d');
+    const gr = g.createRadialGradient(64, 64, 18, 64, 64, 62);
+    gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.08)'); gr.addColorStop(0.8, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.9, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(cv);
+  })();
+  const sightPool = [];
+  function sightSprite(k) {
+    while (sightPool.length <= k) {
+      const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: sightTex, color: 0xffffff, transparent: true, opacity: 0, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+      m.renderOrder = 999; m.visible = false; m.frustumCulled = false; scene.add(m); sightPool.push(m);
+    }
+    return sightPool[k];
+  }
+  function sightHeldNow() {
+    if (sightForced) return true;
+    if (!lbIsSight() || mode !== 'fly') return false;
+    if (keys.has('KeyF') || sightTouch) return true;
+    const g = readPad(); return !!(g && g.buttons[4] && g.buttons[4].pressed);
+  }
+  function updateSight(dt) {
+    const want = sightHeldNow() ? 1 : 0;
+    sightAmt += (want - sightAmt) * (1 - Math.exp(-dt / SIGHT_FADE_S)); if (Math.abs(want - sightAmt) < 0.004) sightAmt = want;
+    let k = 0;
+    const mark = (pos, col, size) => {
+      const m = sightSprite(k++), d = cam.position.distanceTo(pos), sc = Math.max(size, d * 0.055) * (1 + 0.08 * Math.sin(simT * 5 + k));   // a near hull keeps a hull-sized ring, a far one a findable one
+      m.position.copy(pos); m.scale.set(sc, sc, 1); m.material.color.setHex(col); m.material.opacity = 0.95 * sightAmt; m.visible = true;
+    };
+    if (sightAmt > 0.003) {
+      for (const c of crystals) if (c.mesh.visible) mark(c.mesh.position, c.kind.col, 16);
+      for (const r of rivals) mark(r.pos, r.seat.color, 14);
+    }
+    for (let j = k; j < sightPool.length; j++) sightPool[j].visible = false;
+    for (const c of crystals) c.mesh.material.emissiveIntensity = 0.9 + 1.6 * sightAmt;   // driven toward its saturated colour
   }
 
   // ---- the sling ----
@@ -2527,7 +2612,8 @@
   $('tStart').addEventListener('click', playPause);
   $('tBack').addEventListener('click', () => stopRace());
   $('tMode').addEventListener('click', () => toggleMechanic());
-  $('tLB').addEventListener('pointerdown', (e) => { pendingAb.lb = true; e.preventDefault(); });   // round 29: LB Ripple, Y Collapse on a phone
+  $('tLB').addEventListener('pointerdown', (e) => { pendingAb.lb = true; sightTouch = true; try { $('tLB').setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ } e.preventDefault(); });   // round 29: LB Ripple, Y Collapse on a phone; round 30: held, LB is the pilot sight
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) $('tLB').addEventListener(ev, () => { sightTouch = false; });
   $('tY').addEventListener('pointerdown', (e) => { pendingAb.y = true; e.preventDefault(); });   // B on a phone: the game's Mass card is this button
   function syncTouchBar() {
     if (!playMode) return;
@@ -3538,6 +3624,12 @@
     c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
     c.fillText(playMode ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - padR, rowTop - 6 * sc);
     drawReveals(c, cw, ch, sc, font);
+    if (sightAmt > 0.02) {   // round 30: say what the halos are (the marks themselves are in the world, in 3D)
+      c.globalAlpha = Math.min(1, sightAmt * 1.4); c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = '#ffb347';
+      c.fillText('PILOT SIGHT', cw / 2, pad + 64 * sc);
+      c.font = font(10.5, 500); c.fillStyle = dim; c.fillText('a stand-in for your pilot\'s own sight: every crystal and every rival, marked through the prisms', cw / 2, pad + 79 * sc);
+      c.globalAlpha = 1;
+    }
     if (abFlash > 0) { c.globalAlpha = Math.min(1, abFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = ink; c.fillText(abFlashText, cw / 2, ch * 0.7); c.globalAlpha = 1; }
     abFlash = Math.max(0, abFlash - dt);
     swapFlash = Math.max(0, swapFlash - dt); slingFlash = Math.max(0, slingFlash - dt); blockFlash = Math.max(0, blockFlash - dt); styleFlash = Math.max(0, styleFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
@@ -3595,7 +3687,7 @@
     // lower right on a PC; on a phone in touch play the lower corners are the thumbs', so the row sits under the race clock
     const s = 36 * sc, gap = 6 * sc, total = 4 * s + 3 * gap, x0 = cw - padR - total, y0 = playMode ? pad + 94 * sc : ch - pad - 100 * sc - s;
     const ink = '#e8ecff', dim = '#9aa6d6', accent = '#ffb347';
-    const KEY = { Charge: 'LB', Mass: 'LT·RT', Space: 'Y', Time: 'LT·RT' };
+    const KEY = { Charge: RIPPLE_TRIGGERS[rippleTrigger()].key, Mass: 'LT·RT', Space: 'Y', Time: 'LT·RT' };   // round 30: the Charge tile says what fires it
     const mass = style === 'A' && slingMode === 'field', time = style === 'A' && isCatch(slingMode);
     ELEMENTS.forEach((el, i) => {
       const k = AB_KEY[el], on = abOn(k), lv = Math.round(P['ab' + k + 'Level']), up = abUp(k), x = x0 + i * (s + gap), y = y0;
@@ -3682,7 +3774,7 @@
           : style === 'A'
           ? '<p>Pair <b style="color:#b9a4ff">A</b>: <b>press</b> <kbd>LT</kbd> or <kbd>RT</kbd> and the attractor appears on that side; <b>hold</b> and you orbit it (squeeze harder, tighter circle); <b>let go</b> to slingshot out along your nose.</p>'
           : '<p>Pair <b style="color:#6fe3d0">B</b>: squeeze <kbd>LT</kbd> or <kbd>RT</kbd> and let go to lay the crystal pair across your nose, the attractor on that side.</p>') +
-        (anyAbility() ? '<p><b>Round 29, the four abilities</b> (lower right): <kbd>LB</kbd> / <kbd>F</kbd> Ripple, <kbd>Y</kbd> / <kbd>G</kbd> Collapse a held pair; Mass lays an accretion trail as you warp, Time\'s level-5 Whip pays a release just past the fastest point. Vessel Config ▸ Ability sections.</p>' : '') +
+        (anyAbility() ? '<p><b>The four abilities</b> (lower right): ' + (lbIsSight() ? 'hold <kbd>LB</kbd> / <kbd>F</kbd> for the pilot sight; the Ripple fires ' + (Math.round(BP.abCTrigger) === 1 ? 'as you let go of a pair' : 'on its own') : '<kbd>LB</kbd> / <kbd>F</kbd> Ripple') + ', <kbd>Y</kbd> / <kbd>G</kbd> Collapse a held pair; Mass lays an accretion trail as you warp, Time\'s level-5 Whip pays a release just past the fastest point. Vessel Config ▸ Ability sections.</p>' : '') +
         (layout === 'phone'
           ? ''
           : '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine()) +
@@ -4461,9 +4553,29 @@
       const ink = '#e8ecff', dim = '#9aa6d6', accent = '#ffb347', k = cfg.kind, key = k === 'ripple' ? 'C' : k === 'accrete' ? 'M' : k === 'collapse' ? 'S' : 'T';
       const on = Pv['ab' + key + 'On'] >= 0.5, up = on && Pv['ab' + key + 'Level'] >= 5;
       if (k === 'ai') {
-        const lines = [['Ripple', 'a crystal it has not drawn is within 90% of the reach'], ['Collapse', 'just after it lets go, a prism in the radius sits on its line'], ['Whip', 'the Time tile lights with its nose near the ring']];
+        const lines = [['Ripple', Math.round(Pv.abCTrigger) === 2 ? 'LB: a crystal it has not drawn is within 90% of the reach' : 'no press: the trigger fires it (' + RIPPLE_TRIGGERS[Math.round(Pv.abCTrigger)].short + ')'], ['Collapse', 'just after it lets go, a prism in the radius sits on its line'], ['Whip', 'the Time tile lights with its nose near the ring']];
         txt(c, Pv.abAI >= 0.5 ? 'The AI presses, like a player:' : 'Off: the AI never presses LB or Y, and never whips', 8, 16, Pv.abAI >= 0.5 ? ink : dim, 10.5, 'left', 700);
         lines.forEach(([n, w], i) => { txt(c, n, 12, 38 + i * 30, Pv.abAI >= 0.5 ? accent : dim, 10.5, 'left', 700); txt(c, w, 12, 52 + i * 30, Pv.abAI >= 0.5 ? ink : dim, 9.5); });
+        return;
+      }
+      if (k === 'trigger') {   // round 30: 20 s of a race on one strip - when the pairs are held, when the Ripple fires, what LB does
+        const tr = Math.max(0, Math.min(2, Math.round(Pv.abCTrigger))), T = RIPPLE_TRIGGERS[tr], cool = Math.max(0.5, Pv.abCCool);
+        const x0 = 12, x1 = W - 12, sx = (t) => x0 + (x1 - x0) * t / 20, yH = H * 0.42, yR = H * 0.66, now = (tt / 5) * 20;
+        const held = [[2, 4.5], [8.5, 10.5], [13, 16]], reach = [[0, 6], [7.5, 20]], press = [3, 9.6, 12, 17.5];
+        txt(c, 'pairs held', x0, yH - 12, dim, 9); txt(c, 'Ripple', x0, yR - 12, dim, 9);
+        c.fillStyle = 'rgba(232,236,255,0.10)'; for (const [a, b] of reach) c.fillRect(sx(a), yR - 6, sx(b) - sx(a), 12);
+        c.fillStyle = 'rgba(196,139,255,0.55)'; for (const [a, b] of held) c.fillRect(sx(a), yH - 5, sx(b) - sx(a), 10);
+        const fires = []; let ready = 0;
+        if (on && tr === 0) for (let t = 0; t <= 20; t += 0.25) { if (t >= ready && reach.some(([a, b]) => t >= a && t <= b)) { fires.push(t); ready = t + cool; } }
+        if (on && tr === 1) for (const [, b] of held) if (b >= ready) { fires.push(b); ready = b + cool; }
+        if (on && tr === 2) for (const t of press) if (t >= ready) { fires.push(t); ready = t + cool; }
+        for (const t of fires) { const lit = now >= t && now < t + 0.8; c.strokeStyle = lit ? accent : ink; c.lineWidth = lit ? 2.5 : 1.5; c.beginPath(); c.arc(sx(t), yR, lit ? 7 + 8 * (now - t) : 5, 0, TAU); c.stroke(); }
+        if (tr === 1) { c.fillStyle = dim; for (const [, b] of held) { c.beginPath(); c.moveTo(sx(b), yH + 7); c.lineTo(sx(b) - 3, yH + 12); c.lineTo(sx(b) + 3, yH + 12); c.fill(); } }
+        if (tr === 2) { c.fillStyle = dim; for (const t of press) txt(c, 'LB', sx(t), yR + 20, dim, 8.5, 'center', 700); }
+        c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 1; c.beginPath(); c.moveTo(sx(now), yH - 10); c.lineTo(sx(now), yR + 10); c.stroke();
+        txt(c, !on ? 'off: no ripple' : tr === 0 ? 'every ' + cool.toFixed(1) + ' s while a crystal or rival is in reach' : tr === 1 ? 'the moment you let go of a pair (' + cool.toFixed(1) + ' s recharge)' : 'when you press LB (' + cool.toFixed(1) + ' s recharge)', 6, 13, on ? ink : dim, 10);
+        txt(c, T.lb === 'sight' ? 'LB (hold): the pilot sight' : 'LB: Ripple · no pilot sight (conflicts)', 6, H - 8, T.lb === 'sight' ? accent : '#ff8a8a', 9.5, 'left', 700);
+        txt(c, fires.length + ' ripples in 20 s', W - 6, H - 8, dim, 9, 'right');
         return;
       }
       if (k === 'whip') {   // speed through the swing: the peak, the window after it, the release and its burst
@@ -4526,10 +4638,11 @@
   const TIPS = {
     // round 29: the four abilities (lab-only proposals; the game has none of these fields)
     abAI: { scene: 'abil', cfg: { kind: 'ai' }, d: 'Whether the AI pilots (every rival, and your hull when the AI flies it) use the new abilities. Each has one input-only rule: it presses LB or Y, or lets go of its trigger, the way a player would. Off: the AI flies exactly as round 28.', lo: 'Off: no presses.', hi: 'On: the three rules.' },
-    abCOn: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'Ripple, the Charge ability, on LB. Off, LB does nothing and nothing about the Stoat changes.', lo: 'Off.', hi: 'On.' },
+    abCOn: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'Ripple, the Charge ability (what fires it: Ripple trigger). Off, it never fires and nothing about the Stoat changes; LB stays the pilot sight unless the trigger is the archived round-29 LB.', lo: 'Off.', hi: 'On.' },
+    abCTrigger: { scene: 'abil', cfg: { kind: 'trigger' }, at: [0, 0.5], d: 'What fires the Ripple. Garrett\'s pilots change makes LB the pilot sight on every vessel (hold LB: see what your pilot sees), so LB is no longer free. Fleet rule (Garrett): no button, it pulses every recharge while a crystal or a rival is inside the reach. Mix (recommended, the default): no button either, it fires the moment you let go of a pair or a sling, so letting go near crystals and rivals is the skill. Round 29 (archived): LB, which takes the pilot sight away. The AI presses nothing under the first two: the trigger is automatic.', lo: 'Passive: it fires on a timer whenever something is in reach; nothing you do changes when.', hi: 'On release: it fires when you let go; pick the moment.' },
     abCLevel: { scene: 'abil', cfg: { kind: 'ripple' }, at: [0.3, 0.5], d: 'The Charge element level, L0-L10. Level 5 unlocks Siphon: every rival the ripple passes loses one Time petal to you (a scored hit, a second of silence). The level does nothing else here.', lo: 'Level 3: no Siphon.', hi: 'Level 5: Siphon.' },
     abCReach: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'How far the gravity wave rings out from your hull. Crystals inside it are drawn to you; rivals inside it show you their path.', lo: 'A short ring: only nearby crystals.', hi: 'A wide ring: most of a lap\'s crystals.' },
-    abCCool: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'Seconds before LB rings again. The LB tile shades while it recharges.', lo: 'Often.', hi: 'Rarely.' },
+    abCCool: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'Seconds before the Ripple can ring again, whatever fires it (Ripple trigger). The Charge tile shades while it recharges.', lo: 'Often.', hi: 'Rarely.' },
     abCReveal: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'How long a rival the wave passed keeps showing you its next ring and the path it is flying, in its colour.', lo: 'A glimpse.', hi: 'A long look.' },
     abCPull: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'How much faster than you a drawn crystal flies at you, so it always arrives. Whoever reaches a crystal first still takes it.', lo: 'Crystals drift in.', hi: 'Crystals snap to you.' },
     abMOn: { scene: 'abil', cfg: { kind: 'accrete' }, d: 'The accretion trail on the Mass ability (the field trajectory). On, the warped stretch you fly lays prisms; off, the field lays nothing, as round 28.', lo: 'Off.', hi: 'On.' },
@@ -4711,9 +4824,16 @@
     tipEl.querySelector('.what').textContent = tip.d;
     const caps = tipEl.querySelectorAll('figcaption');
     const [fa, fb] = tipFracs(key);
+    const names = spec[6] === 'select' ? spec[7] : null;   // a dropdown (round 30): the two previews are two of its options
+    if (names) {
+      caps[0].innerHTML = '<b>' + escapeHtml(names[Math.round(vLo)]) + '</b><br>'; caps[0].appendChild(document.createTextNode(tip.lo));
+      caps[1].innerHTML = '<b>' + escapeHtml(names[Math.round(vHi)]) + '</b><br>'; caps[1].appendChild(document.createTextNode(tip.hi));
+      tipEl.querySelector('.foot').textContent = 'Options: ' + names.join(' · ') + ' · default ' + names[Math.round(SHIPPED[key])] + ' · your setting ' + names[Math.round(BP[key])] + (pinned ? ' · pinned (Esc or ⓘ to close)' : '');
+    } else {
     caps[0].innerHTML = '<b>Lower</b> · ' + Math.round(fa * 100) + '% of the range: <b>' + fmtNum(vLo, step) + '</b><br>'; caps[0].appendChild(document.createTextNode(tip.lo));
     caps[1].innerHTML = '<b>Higher</b> · ' + Math.round(fb * 100) + '% of the range: <b>' + fmtNum(vHi, step) + '</b><br>'; caps[1].appendChild(document.createTextNode(tip.hi));
     tipEl.querySelector('.foot').textContent = 'Range ' + fmtNum(lo, step) + ' – ' + fmtNum(hi, step) + ' · shipped ' + fmtNum(SHIPPED[key], step) + ' · your setting ' + fmtNum(BP[key], step) + (Math.abs(P[key] - BP[key]) > 1e-6 ? ' · with the play styles ' + fmtNum(P[key], step) : '') + (pinned ? ' · pinned (Esc or ⓘ to close)' : '');
+    }
     const cvs = tipEl.querySelectorAll('canvas');
     let view = null;
     if (scene.bounds) { const b = bUnion(scene.bounds(sLo, cfg), scene.bounds(sHi, cfg)); view = { b }; }
@@ -4753,12 +4873,13 @@
   function attachTip(row, key, label) {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'tipbtn'; btn.textContent = 'i'; btn.setAttribute('aria-label', 'What does ' + label + ' do?'); btn.setAttribute('aria-expanded', 'false');
-    row.insertBefore(btn, row.querySelector('input'));
+    const ctl = row.querySelector('input, select');   // a slider, a switch or (round 30) a dropdown
+    row.insertBefore(btn, ctl);
     row.addEventListener('mouseenter', () => { clearTimeout(tipHide); clearTimeout(tipShowT); tipShowT = setTimeout(() => showTip(key, row, false), 220); });
     row.addEventListener('mouseleave', () => { clearTimeout(tipShowT); tipHide = setTimeout(() => hideTip(false), 160); });
     btn.addEventListener('click', (e) => { e.stopPropagation(); if (tipState && tipState.key === key && tipState.pinned) hideTip(true); else { hideTip(true); showTip(key, row, true); } });
-    row.querySelector('input').addEventListener('focus', () => showTip(key, row, false));
-    row.querySelector('input').addEventListener('blur', () => hideTip(false));
+    ctl.addEventListener('focus', () => showTip(key, row, false));
+    ctl.addEventListener('blur', () => hideTip(false));
   }
   tipEl.addEventListener('mouseenter', () => clearTimeout(tipHide));
   tipEl.addEventListener('mouseleave', () => { tipHide = setTimeout(() => hideTip(false), 160); });
@@ -4886,6 +5007,7 @@
     // round 29: the four-ability kit, every row a proposal for Yash to judge (no game field yet, /vessel section 3)
     abAI: ['lab: round 29 proposal, not in the game', 'lab'],
     abCOn: ['lab: round 29 proposal, not in the game', 'lab'],
+    abCTrigger: ['lab: round 30, Garrett\'s rule vs the Mix (the game\'s Ripple fires as a pair annihilates)', 'lab'],
     abCLevel: ['lab: round 29 proposal, not in the game', 'lab'],
     abCReach: ['lab: round 29 proposal, not in the game', 'lab'],
     abCCool: ['lab: round 29 proposal, not in the game', 'lab'],
@@ -5036,19 +5158,22 @@
   // ================= rail =================
   const outputs = {};
   function buildRail() {
-    for (const [grp, key, label, lo, hi, step, kind] of SPEC) {
+    for (const [grp, key, label, lo, hi, step, kind, names] of SPEC) {
       const host = document.querySelector('#grp-' + grp + ' .rows');
-      const row = document.createElement('div'); row.className = 'row';
+      const row = document.createElement('div'); row.className = 'row' + (kind === 'select' ? ' selrow' : '');
       const id = 'p-' + key;
       const gn = GAME_NAMES[key];
-      row.innerHTML = '<label for="' + id + '">' + label + '</label>' + (kind === 'toggle' ? '<input type="checkbox" id="' + id + '">' : '<input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '">') + '<output></output>'
+      const ctl = kind === 'toggle' ? '<input type="checkbox" id="' + id + '">'
+        : kind === 'select' ? '<select id="' + id + '" class="arp-seg">' + names.map((n, i) => '<option value="' + i + '">' + escapeHtml(n) + '</option>').join('') + '</select>'
+          : '<input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '">';
+      row.innerHTML = '<label for="' + id + '">' + label + '</label>' + ctl + '<output></output>'
         + (gn ? '<code class="gname gn-' + gn[1] + '" title="' + (gn[1] === 'linked' ? 'The game\'s field: the artifact writes it (studio_to_unity.py)' : gn[1] === 'field' ? 'The game\'s field: not linked yet (check its units when porting)' : gn[1] === 'new' ? 'The field the game will get, by this exact name' : 'The studio\'s own: never in the game') + '">' + escapeHtml(gn[0]) + (gn[1] === 'linked' || gn[1] === 'lab' ? '' : ' · ' + gn[1]) + '</code>' : '');
       host.appendChild(row);
       attachTip(row, key, label);
-      const inp = row.querySelector('input'), out = row.querySelector('output');
-      inp.value = P[key]; outputs[key] = { inp, out, step, toggle: kind === 'toggle' };
+      const inp = row.querySelector('input, select'), out = row.querySelector('output');
+      inp.value = kind === 'select' ? String(Math.round(P[key])) : P[key]; outputs[key] = { inp, out, step, toggle: kind === 'toggle', names: kind === 'select' ? names : null };
       if (kind === 'toggle') inp.checked = P[key] >= 0.5;
-      inp.addEventListener(kind === 'toggle' ? 'change' : 'input', () => { BP[key] = kind === 'toggle' ? (inp.checked ? 1 : 0) : parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); markTypes(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
+      inp.addEventListener(kind === 'toggle' || kind === 'select' ? 'change' : 'input', () => { BP[key] = kind === 'toggle' ? (inp.checked ? 1 : 0) : parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); markTypes(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
       refreshOut(key);
     }
   }
@@ -5057,6 +5182,12 @@
   const AB_UPGRADE = { C: ['Siphon', 'a rival the ripple passes loses one Time petal and you gain it'], M: ['Armoured Wake', 'the accretion prisms are shielded: no Collapse destroys them'],
     S: ['Spaghettify', 'a rival inside the radius takes a scored hit (one Space petal, a brief silence)'], T: ['Whip', 'let go just past the orbit\'s fastest point for an extra burst'] };
   function markAbilities() {
+    // round 30: LB is the pilot sight unless the Ripple is on the archived round-29 LB; the Ripple card says what fires it
+    const tr = Math.max(0, Math.min(2, Math.round(BP.abCTrigger))), T = RIPPLE_TRIGGERS[tr], tlb = $('tLB'), sm = $('abC-trig');
+    if (tlb) { tlb.textContent = T.lb === 'sight' ? 'LB · Sight' : 'LB · Ripple'; tlb.title = T.lb === 'sight' ? 'LB (hold): the pilot sight - every crystal and rival marked' : 'LB: Ripple (Charge), the archived round-29 trigger'; }
+    if (sm) sm.innerHTML = tr === 0 ? '<b>Fleet rule</b> (Garrett\'s way): passive, it pulses every recharge while a crystal or a rival is in reach. LB is the pilot sight.'
+      : tr === 1 ? '<b>Mix</b> (our recommendation): it fires the moment you let go of a pair or a sling. LB is the pilot sight.'
+        : '<b>Round 29</b> (archived): on LB. <b>Conflicts with the fleet\'s pilot sight</b> (Garrett\'s pilots change): LB shows no sight under it.';
     for (const k of ['C', 'M', 'S', 'T']) {
       const el = $('abl-' + k), card = $('grp-ab' + k); if (!el || !card) continue;
       const on = BP['ab' + k + 'On'] >= 0.5, lv = Math.round(BP['ab' + k + 'Level']), [name, what] = AB_UPGRADE[k];
@@ -5072,6 +5203,13 @@
       o.inp.checked = b >= 0.5; o.out.textContent = b >= 0.5 ? 'on' : 'off';
       o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9); o.out.classList.remove('styled');
       o.out.title = 'shipped ' + (SHIPPED[key] >= 0.5 ? 'on' : 'off'); return;
+    }
+    if (o.names) {   // a dropdown row (round 30): the select shows BP, the value reads the option's short name
+      const i = Math.max(0, Math.min(o.names.length - 1, Math.round(b)));
+      if (document.activeElement !== o.inp && o.inp.value !== String(i)) o.inp.value = String(i);
+      o.out.textContent = key === 'abCTrigger' ? RIPPLE_TRIGGERS[i].short : String(i);
+      o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9); o.out.classList.remove('styled');
+      o.out.title = 'default: ' + o.names[Math.round(SHIPPED[key])]; return;
     }
     if (document.activeElement !== o.inp && Math.abs(parseFloat(o.inp.value) - b) > 1e-9) o.inp.value = b;
     o.out.textContent = (styled ? e : b).toFixed(dec);
@@ -5551,7 +5689,7 @@
     } else simStep(dt, pilotInput(dt), true);
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
-    syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); drawAbilityFx(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
+    syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); drawAbilityFx(); updateCamera(dt); updateSight(dt); updateAiThinking(); updateGhosts(); updateRings(now);
     renderAll(); drawHud(dt);
   }
   // ================= the editor layout: tabbed docks and mini windows =================
@@ -5685,6 +5823,9 @@
     // round 29: the four-ability kit
     get ab() { return ab; }, get acc() { return acc; }, get ripples() { return ripples; }, get dead() { return dead; }, revealUntil, ELEMENTS,
     pressLB() { pendingAb.lb = true; }, pressY() { pendingAb.y = true; }, anyAbility, ownPairForCollapse,
+    // round 30: the Ripple's trigger and the pilot sight (sight = true holds LB for a recorder; it draws only)
+    RIPPLE_TRIGGERS, get rippleTrigger() { return Math.round(BP.abCTrigger); }, set rippleTrigger(v) { BP.abCTrigger = Math.max(0, Math.min(2, Math.round(v))); recomputeP(); refreshAllOuts(); persist(); },
+    get sight() { return sightForced; }, set sight(v) { sightForced = !!v; }, get sightAmt() { return sightAmt; }, lbIsSight,
   }));
   window.__lab = window.__stoatStudio;
 })();

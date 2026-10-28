@@ -499,6 +499,7 @@ namespace CosmicShore.UI
             ApplyWeeklyChallengePresentation();
             ApplyAIDifficultyPresentation();
             InitializeConfigControls(selectedGame);
+            RefreshSwitchbackFunTypePicker();
             InitializeDefaultShipFromAvailable();
             RefreshVesselPicker();
             RefreshStartAvailability();
@@ -3153,6 +3154,9 @@ namespace CosmicShore.UI
             // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;
 
+            // Switchback's fun type and seed mode (ArcadeGameConfigureModal.SwitchbackFunTypePicker.cs).
+            SyncSwitchbackFunType();
+
             // How well the AI flies. A card that does not offer the setting launches on the
             // default, so a value remembered on a card nobody could see never reaches a match.
             gameData.RequestedAIDifficulty = OffersAIDifficulty ? config.AIDifficulty : AIDifficultyRules.Default;
@@ -3268,6 +3272,7 @@ namespace CosmicShore.UI
             InitializeGameMetaView(game);
             ApplyAIDifficultyPresentation();
             InitializeConfigControls(game);
+            RefreshSwitchbackFunTypePicker();
             InitializeDefaultShipFromAvailable();
             RefreshVesselPicker();
             RefreshStartAvailability();
