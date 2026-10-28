@@ -29,6 +29,7 @@ namespace CosmicShore.UI
         readonly List<TMP_Text> _labels = new();
         TMP_Text _labelTemplate;
         float _minX, _maxX, _minZ, _maxZ;
+        Vector2 _placedFor;
 
         /// <summary>The text whose font, size and colour every location's label copies.</summary>
         public void SetLabelTemplate(TMP_Text template) => _labelTemplate = template;
@@ -72,9 +73,13 @@ namespace CosmicShore.UI
             return r.center + new Vector2(l.ChartX - centre.x, l.ChartZ - centre.y) * scale;
         }
 
-        public override void OnRectTransformDimensionsChange()
+        // The labels follow the map's size. Watched here rather than by overriding OnRectTransformDimensionsChange, whose
+        // access differs between the shipped uGUI (protected) and the compile gate's publicized reference (public).
+        void LateUpdate()
         {
-            base.OnRectTransformDimensionsChange();
+            var size = rectTransform.rect.size;
+            if (size == _placedFor) return;
+            _placedFor = size;
             PlaceLabels();
         }
 
