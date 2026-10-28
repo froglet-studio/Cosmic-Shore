@@ -34,7 +34,8 @@ source and the repo disagree, the repo wins unless the row says the point is ope
 | The Voyages screen: pick from three missions, estimated time, difficulty, reward range, the lore before it, the main track, episodes | FigJam (Voyages) | §3.4 |
 | Faction chat, clout, daily faction leaderboard, promotions (member, team leader, general, faction leader) | FigJam (Port), Figma Port boards | §6.2.1 (ranks open) |
 | The Ark's bunks, bought with omnicrystals; the crew lives aboard | Ark Design Document, FigJam | §2 |
-| The Ark as "the persistent player representation in the hyper-sea", named, with cosmetics (banner, skins) | Ark Design Document, FigJam (Ark, Decor) | not yet; see open questions |
+| One Ark per account, "the persistent player representation in the hyper-sea", named, with cosmetics (banner, skins) | Ark Design Document, FigJam (Ark, Decor) | §2 (one per account; cosmetics not yet) |
+| The Ark is what makes vessels invulnerable | Onboarding ("the Ark is what provides vessels their invulnerability") | §2 |
 
 ## Out of date (do not build from these)
 
@@ -55,12 +56,11 @@ source and the repo disagree, the repo wins unless the row says the point is ope
 
 ## Open: sources and the repo disagree, or the repo is silent
 
-1. **One Ark per account or one per squad?** The Ark Design Document says one Ark per account, permanently named,
-   the player's identity in the HyperSea. `ARTIFACTS.md` says one Ark per squad of three. Both hold if a squad sails
-   in **its leader's Ark** and the other players' Arks stay home. Is that it?
+1. **Settled 2026-10-28:** one Ark per account, deploying one squad at a time; friends join your Ark (Garrett). The
+   Ark Design Document was right.
 2. **Can artifacts be traded?** The FigJam board lets members **post artifacts to faction chat** and **bid on
    artifacts that appear in chat**. `ARTIFACTS.md` says artifacts are found on voyages, never bought, and an Ark's
-   fall is the only theft. Keep a faction auction, or drop it?
+   fall is the only theft. **Deferred**: the artifact economy is for later (Garrett, 2026-10-28).
 3. **Faction missions on a daily ticket.** The Figma Port boards give one faction-mission ticket every 24 hours. Do
    jobs cost a ticket, or are they free and limited only by your crew and the news?
 4. **Knowledge impart.** The Figma Port boards let a member request knowledge of a vessel's ability and other

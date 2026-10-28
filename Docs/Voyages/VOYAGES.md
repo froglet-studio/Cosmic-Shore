@@ -52,12 +52,26 @@ makes sense for both sides' missions. Whatever is aboard the Ark when the squad 
 Already decided (Garrett, 2026-10-27; `Docs/Pilots/ARTIFACTS.md`, `Docs/Pilots/CALLSIGNS.md`):
 
 - A squad is **three vessels**. Each vessel has its own pilot (required) and its own artifact (optional).
-- **One Ark per squad.** The artifacts brought ride in it. Taking down an Ark takes everything aboard; fauna felling
-  it spills the artifacts for anyone.
+- Taking down an Ark takes everything aboard; fauna felling it spills the artifacts for anyone.
 - A squad is a domain for now (Jade, Ruby or Gold).
 
 New on 2026-10-28 (Garrett):
 
+> "a squad protects the ark. and ark deploys one squad at a time. the ark is the thematic reasoning behind the vessels
+> lack of health or real high stakes vulnerability. the ark powers their imperviousness outside the loss of elements and
+> a silence. there is one ark per account so players join each others ark and fly on their squads. arks hoard
+> artifacts and can assign them to squads as part of their saved squad confurations" (Garrett, 2026-10-28)
+
+- **One Ark per account, one squad deployed at a time.** Your Ark is yours for good, and it deploys one squad: three
+  vessels that protect it. Friends fly with you by **joining your Ark** and taking seats in the squad it deploys; they
+  leave their own Arks at home. A meeting of two squads on the HyperSea is therefore a meeting of two Arks.
+- **The Ark is why vessels have no health.** The Ark powers its squad's imperviousness. All a vessel can lose is
+  elements (petals, `IMPACT_EFFECTS_AND_AUDIO.md`) and the use of its abilities (silence, `SILENCE.md`). The real
+  stake is the Ark.
+- **The Ark hoards artifacts.** The collection lives in the Ark, and each saved squad configuration assigns artifacts
+  to its vessels (one per vessel), since each vessel's artifact transforms the payloads that vessel takes.
+  Questions about the artifact economy (trading, auctions, how much of the hoard is at stake) wait for later
+  (Garrett, 2026-10-28).
 - **The crew lives on the Ark.** Your Ark carries a crew of pilots, more than the three who fly (the Notion *Ark
   Design Document* starts it at three bunks and lets it grow). Each pilot is a unique person layered on a callsign that
   pilots in other crews share, a crew holds one of each callsign, and each pilot belongs to one faction. The crew
@@ -68,8 +82,10 @@ New here:
 - **(default)** **A squad is 1 to 3 people.** Any seat with no person in it is flown by its AI, exactly like an arena
   backfill or a freestyle companion (`Docs/CREW_STATIONS.md`: "every seat no person holds is the AI's"). A solo
   player sails with two AI wingmates.
-- **The squad's party is its crew.** A squad of more than one person is a party (`HostConnectionService`,
-  `PartyInviteController`). The party leader charts the course.
+- **The Ark's owner charts the course.** The people aboard someone's Ark are a party (`HostConnectionService`,
+  `PartyInviteController`) led by the Ark's owner. The squad, its pilots and its jobs are the owner's: the saved
+  squad configuration, the owner's crew and the owner's factions. **(default)** A guest flies the owner's pilot in
+  their seat.
 - **The Ark is the squad's clock and its stake.** As in the Arkway, the Ark sets the pace of travel, and its hull is
   the payload supply (`ArkHold`). A voyage ends when the squad docks at home, or when its Ark falls.
 
@@ -195,7 +211,7 @@ Every squad out on a voyage files a **flight plan** with GTC whenever it chooses
 
 | Field | Why |
 |---|---|
-| squad id, domain, party members, how many are people | who, and how many people seats it takes |
+| Ark id and owner, the deployed squad, its members, how many are people | who, and how many people seats it takes |
 | from, to, departure time, expected arrival | where and when the squad will be |
 | the job for this leg (§6.2), and the squad it targets, if any | what the squad came for, and whom |
 | stake: how much is aboard the Ark (artifact count and level band) | fair meetings |
