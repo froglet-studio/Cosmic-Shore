@@ -2195,8 +2195,12 @@ namespace CosmicShore.Gameplay
             while (gameData != null && gameData.LocalPlayer == null && Time.unscaledTime < deadline)
                 yield return null;
             // A settle beat after readiness so spawn-chain tail work (camera snap, autopilot
-            // activation, HUD fades) clears the frame before the build takes the gate.
-            yield return new WaitForSecondsRealtime(0.75f);
+            // activation, HUD fades) clears the frame before the build takes the gate. Only for a
+            // gate-less, booting scene (Menu_Main): when a loading screen already holds the gate, the
+            // scene is quiescent and covered, and the beat was 0.75 s of waiting on every game entry
+            // (Docs/MENU_REDESIGN_B.md section 99.2).
+            if (!PrismTrailBuilder.IsLoadGateHolding)
+                yield return new WaitForSecondsRealtime(0.75f);
             BuildEnvironmentNow();
         }
 

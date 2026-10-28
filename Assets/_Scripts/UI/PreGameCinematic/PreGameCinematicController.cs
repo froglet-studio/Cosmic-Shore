@@ -52,6 +52,16 @@ namespace CosmicShore.UI
         [Tooltip("The family intros and each mode's words. Empty loads Resources/IntroCameraLibrary.")]
         [SerializeField] private IntroCameraLibrarySO introLibrary;
 
+        [Tooltip("Longest step the intro clock takes in one frame, in seconds. A long frame (a GC, a first " +
+                 "shader use) then slows the camera for that frame instead of jumping it - the clock used to " +
+                 "take the raw frame time, so a 1.5 s hitch read as a 0.33 s lurch in the flythrough.")]
+        [SerializeField, Min(0.005f)] private float maxClockStep = 1f / 30f;
+
+        [Tooltip("Seconds the letterbox takes to come in. The loading screen's gate opens over the intro's first " +
+                 "moments (Docs/MENU_REDESIGN_B.md section 99), and bars that slide in with it read as one move; bars " +
+                 "that pop on in one frame slice through the opening hex.")]
+        [SerializeField, Min(0f)] private float barsInSeconds = 0.8f;
+
         public event Action OnCinematicFinished;
 
         private Camera _mainCamera;
@@ -64,6 +74,12 @@ namespace CosmicShore.UI
         private Vector3 _playerCameraFollowOffset = new(0f, 10f, 0f);
         private float _playerFov;
         private IntroCameraOverlay _overlay;
+
+        // What Prepare made ready behind the loading screen, used by the next Play for the same mode.
+        private bool _prepared;
+        private GameModes _preparedMode;
+        private IntroSequence _preparedSequence;
+        private IntroCameraScene _preparedScene;
 
         /// <summary>
         /// Whether the cinematic is currently playing.
@@ -123,19 +139,64 @@ namespace CosmicShore.UI
         {
             if (_isPlaying) return;
 
-            if (!introLibrary) introLibrary = IntroCameraLibrarySO.Load();
-            if (!introLibrary || !introLibrary.TryPick(mode, out var sequence))
+            if (!_prepared || _preparedMode != mode)
+                Prepare(lookAtCenter, playerTarget, mode, vessels, accent);
+            var sequence = _preparedSequence;
+            var scene = _preparedScene;
+            _prepared = false;
+            _preparedSequence = null;
+            _preparedScene = null;
+
+            if (sequence == null)
             {
                 Play(lookAtCenter, playerTarget);
                 return;
             }
 
             if (!TryTakeCamera(playerTarget)) return;
-            var scene = IntroCameraScene.Gather(lookAtCenter, playerTarget, vessels,
-                                                introLibrary.ReferenceRadius, introLibrary.ScaleMultiplier);
-            _overlay = CreateOverlay(introLibrary, accent);
+            if (_overlay) _overlay.gameObject.SetActive(true);
             _runningCoroutine = StartCoroutine(RunIntro(sequence, introLibrary.WordsFor(mode), scene));
         }
+
+        /// <summary>
+        /// Everything the intro needs before its first frame - the library, the pick, the arena read and
+        /// the overlay's objects - done while the loading screen still covers the arena, so the frame the
+        /// screen opens only starts the camera (Docs/MENU_REDESIGN_B.md section 99.2: one frame used to
+        /// load the library, scan every renderer and build the caption UI). The next <see cref="Play"/>
+        /// for the same mode uses it; a different mode prepares again.
+        /// </summary>
+        public void Prepare(Vector3 lookAtCenter, Transform playerTarget, GameModes mode,
+                            IReadOnlyList<IVessel> vessels, Color accent)
+        {
+            if (_isPlaying) return;
+            _prepared = true;
+            _preparedMode = mode;
+            _preparedSequence = null;
+            _preparedScene = null;
+
+            if (!introLibrary) introLibrary = IntroCameraLibrarySO.Load();
+            if (!introLibrary || !introLibrary.TryPick(mode, out var sequence)) return;
+
+            _preparedSequence = sequence;
+            _preparedScene = IntroCameraScene.Gather(lookAtCenter, playerTarget, vessels,
+                                                     introLibrary.ReferenceRadius, introLibrary.ScaleMultiplier,
+                                                     sequence.UsesAnchor(IntroAnchor.Landmark));
+            if (!_overlay) _overlay = CreateOverlay(introLibrary, accent);
+            else _overlay.SetAccent(accent);
+            _overlay.Clear();
+            _overlay.gameObject.SetActive(false);
+        }
+
+        // How far the bars are in at intro time t (an ease-in-out over barsInSeconds).
+        private float BarsIn(float t)
+        {
+            if (barsInSeconds <= 0f) return 1f;
+            float u = Mathf.Clamp01(t / barsInSeconds);
+            return u * u * (3f - 2f * u);
+        }
+
+        // One intro frame's step: the frame time, capped so a hitch slows the camera rather than jumping it.
+        private float ClockStep => Mathf.Min(Time.deltaTime, maxClockStep);
 
         // Takes the camera from the player camera controller. False (and OnCinematicFinished
         // raised) when there is no camera to take.
@@ -284,9 +345,9 @@ namespace CosmicShore.UI
 
             while (t < total && !_skipped)
             {
-                t = Mathf.Min(total, t + Time.deltaTime);
+                t = Mathf.Min(total, t + ClockStep);
                 ApplyPose(PoseAt(shots, t, scene));
-                DrawOverlay(shots, words, t, 1f, lowerFrom);
+                DrawOverlay(shots, words, t, BarsIn(t), lowerFrom);
                 yield return null;
             }
 
@@ -415,7 +476,7 @@ namespace CosmicShore.UI
             float elapsed = 0f;
             while (elapsed < duration && !_skipped)
             {
-                elapsed += Time.deltaTime;
+                elapsed += ClockStep;
                 float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
 
                 _cameraTransform.position = Vector3.Lerp(fromPos, toPos, t);
@@ -449,7 +510,7 @@ namespace CosmicShore.UI
 
             while (elapsed < duration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += ClockStep;
                 float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
 
                 // Recalculate target each frame in case player moves
@@ -489,12 +550,14 @@ namespace CosmicShore.UI
             OnCinematicFinished?.Invoke();
         }
 
-        // Gives back the player camera's field of view and removes the bars and captions.
+        // Gives back the player camera's field of view and puts the bars and captions away. The overlay is
+        // kept (hidden) for the next match rather than rebuilt: building it was part of the reveal-frame cost.
         private void ReleaseIntroLook()
         {
             if (_mainCamera) _mainCamera.fieldOfView = _playerFov;
-            if (_overlay) Destroy(_overlay.gameObject);
-            _overlay = null;
+            if (!_overlay) return;
+            _overlay.Clear();
+            _overlay.gameObject.SetActive(false);
         }
 
         /// <summary>

@@ -8221,10 +8221,11 @@ MonoBehaviour:
     pilots: Every domain
   referenceRadius: 240
   scaleMultiplier: 1
-  letterbox: 0.085
-  captionFont: {fileID: 0}
-  titleFontSize: 110
-  taglineFontSize: 32
-  objectiveFontSize: 24
-  lowerTitleFontSize: 44
-  lowerLineFontSize: 18
+  letterbox: 0.1222
+  captionFont: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
+  detailFont: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
+  titleFontSize: 118
+  taglineFontSize: 26
+  objectiveFontSize: 15
+  lowerTitleFontSize: 34
+  lowerLineFontSize: 13

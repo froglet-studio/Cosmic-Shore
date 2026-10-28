@@ -4,6 +4,33 @@ The screen every game scene shows while its arena is built — `ConnectingPanelC
 MiniGameHUD. It holds for a short dwell and then until `PrismTrailBuilder.PollArenaReady()` says the
 arena is complete, so the player never sees the structure lay or bloom in.
 
+## Now (Rev 33, 2026-10-28): the Cell gate COVERS the arena
+
+The panel was rebuilt as the "Cell gate" (Docs/MENU_REDESIGN_B.md section 99, board A; built in 99.4). The live
+preview, the status line and the watched tempo below are **retired from the panel**:
+- `ConnectingArenaPreview` stays in the tree but nothing uses it.
+- Sections 2 and 3 record why they existed and what they cost, which was the measured mode-entry lag (99.1, 99.2).
+
+What the panel is now:
+- **It covers the arena.** The backdrop is two `HexApertureGraphic` layers (a solid base and the sea) with a hex
+  hole at radius 0, and the panel has no camera. The gameplay camera is parked (`PilotCameraPark`) while the panel
+  is up.
+- **It builds at the cell-change screen's tempo** (`coveredLayBudgetMs` 80, `coveredCreationBudgetMs` 0 = the
+  gate's 512 completions a frame). It sets `PrismTrailBuilder.LoadGateCovered`, so the grow-in is skipped.
+- **The floor is 1 s** (`dwellSeconds`). `MultiplayerMiniGameControllerBase` brackets its pre-build wait with
+  `BeginArenaBuild` / `EndArenaBuild`, so the arena-ready poll cannot pass on an empty arena.
+- **Its look is `ConnectingGateView`:**
+  - the Omni crystal in a `LoadCrystalGraphic` hex, filling with the build (`EnvironmentLoadVeil.StepFor` /
+    `CrystalLevel`, the cell-change screen's own math);
+  - the mode's brief under ENTERING;
+  - the four steps, with the veil's words;
+  - the tip and the bar.
+- **The pilots panel is the roster below in row mode** (`ConnectingPlayerRoster`, `showAI`, the row template's
+  name, badge, line, state and pip).
+- **At the end the gate opens.** The crystal's hex becomes a hole that glides to the centre and bursts past the
+  screen. The panel stops blocking input as it starts, and the intro starts underneath.
+- `author_ingame_hud.py` section 12c generates all of it and checks that no camera or preview comes back.
+
 It answers one question — *is this doing anything?* — in three ways, deliberately different in kind:
 
 | Surface | What it is |
@@ -82,7 +109,7 @@ the capsule drawn at half height. The prefab now zeroes the insets and spans bot
 
 ---
 
-## 2. The arena preview
+## 2. The arena preview (retired from the panel, Rev 33)
 
 `ConnectingArenaPreview` (`UI/Elements/`) renders the cell being built into the panel's RawImage —
 the same idea as the arcade card's preview window, pointed at the world *this* scene is standing up.
@@ -225,7 +252,7 @@ is reporting on. So the camera is left **disabled** and stepped by hand at `rend
 
 ---
 
-## 3. A WATCHED hold pays for the view
+## 3. A WATCHED hold pays for the view (retired: the panel is covered again, Rev 33)
 
 The load gate runs the build at a deliberately brutal tempo — **a 250 ms lay slice per frame**
 (`PrismTrailBuilder.LoadGateLayBudgetMs`) and **512 prism creation completions per frame**
@@ -365,16 +392,14 @@ behaves exactly as it did before. To light them up:
 
 | Field | Wire to |
 |---|---|
-| `progressSlider` | the panel's Slider |
-| `arenaPreview` | a `ConnectingArenaPreview` on the panel |
-| …its `surface` | the panel's Level Preview RawImage |
-| …its `settingsTemplate` | the panel's existing `connectingCamera`, for clear flags and culling mask |
-| …its `previewCamera` | **nothing** — the preview creates and owns one per scene |
+| `progressSlider` | the panel's Slider (in the gate's footer) |
+| `gate` | the `ConnectingGateView` on the panel's root (generated) |
+| `introWords` | `Resources/IntroCameraLibrary` — the tagline and objective under the title |
 | `playerRoster` | nothing — ensured at `Awake`; wire one only to author its references |
 | …its `container` | nothing — a descendant named `PlayerIcons` is adopted |
 | …its `entryTemplate` | nothing — the container's first child is adopted (and hidden) |
 
-`ConnectingArenaPreview.previewCamera` is left **empty** unless a scene needs a specific one.
+The preview's own wiring (`arenaPreview`, `connectingCamera`) was removed with it in Rev 33.
 
 ## The preview's far plane is sized against the CELL, not the arena
 

@@ -36,6 +36,22 @@ namespace CosmicShore.Gameplay
         [SerializeField] UIColorToken goToken = UIColorToken.Cta;
         [Tooltip("Optional. Hidden when the countdown starts - the 'waiting for pilots' state ends here.")]
         [SerializeField] ReadyWaitingPanel waitingPanel;
+        [Tooltip("The numbers' size; 0 keeps the text's own.")]
+        [SerializeField, Min(0f)] float numberSize = 168f;
+        [Tooltip("GO's size; 0 keeps the text's own.")]
+        [SerializeField, Min(0f)] float goSize = 132f;
+
+        [Header("Hex frame (Rev 33, Docs/MENU_REDESIGN_B.md section 99)")]
+        [Tooltip("Optional. The hex the count sits in: it fills from the bottom through each number - the cell-change " +
+                 "screen's crystal, counting - and bursts outward at GO so GO stands free.")]
+        [SerializeField] LoadCrystalGraphic beatHex;
+        [Tooltip("The hex's group: it opens in with the count and fades as it bursts.")]
+        [SerializeField] CanvasGroup beatHexGroup;
+        [Tooltip("Optional. The ring that leaves the hex at GO (its outline is GO's colour; it is shown only at GO).")]
+        [SerializeField] LoadCrystalGraphic goRing;
+        [Tooltip("The hex's fill.")]
+        [SerializeField] UIColorToken hexFillToken = UIColorToken.TextLight;
+        [SerializeField, Range(0f, 1f)] float hexFillAlpha = 0.26f;
 
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
@@ -137,6 +153,7 @@ namespace CosmicShore.Gameplay
             string[] beats = { "3", "2", "1", goWord };
             float rise = countdownDuration * 0.25f, settle = countdownDuration * 0.2f, leave = countdownDuration * 0.15f;
             float hold = Mathf.Max(0f, countdownDuration - rise - settle - leave);
+            RestHex();
             for (int i = 0; i < beats.Length; i++)
             {
                 string word = beats[i];
@@ -144,10 +161,14 @@ namespace CosmicShore.Gameplay
                 _seq.AppendCallback(() =>
                 {
                     countdownText.text = word;
+                    float size = go ? goSize : numberSize;
+                    if (size > 0f) countdownText.fontSize = size;
                     var c = UITheme.Resolve(null, go ? goToken : beatToken);
                     c.a = 0f;
                     countdownText.color = c;
                     t.localScale = Vector3.one * 0.7f;
+                    if (beatHex) beatHex.Level = 0f;
+                    if (go) BurstHex();
                     if (!countdownBeepEvent.IsNull)
                         AudioSystem.Instance.PlaySFXEvent(countdownBeepEvent);
                 });
@@ -159,11 +180,76 @@ namespace CosmicShore.Gameplay
                 _seq.Join(t.DOScale(1.3f, leave).SetEase(Ease.InQuad));
             }
 
+            // After the beats: an Insert before them would lengthen the sequence, and every Append after it would start late.
+            InsertHex(beats.Length - 1);
             _seq.OnComplete(() =>
             {
+                RestHex();
                 countdownDisplay.gameObject.SetActive(false);
                 onComplete?.Invoke();
             });
+        }
+
+        // The hex opens in with the count and fills through each numbered beat, on the sequence's own clock (inserted at
+        // absolute times into the beats already appended).
+        void InsertHex(int numbers)
+        {
+            if (!beatHex) return;
+            var fill = UITheme.Resolve(null, hexFillToken);
+            fill.a *= hexFillAlpha;
+            beatHex.SetFill(fill);
+            var hexT = beatHex.rectTransform;
+            hexT.localScale = Vector3.one * 0.7f;
+            if (beatHexGroup)
+            {
+                beatHexGroup.alpha = 0f;
+                _seq.Insert(0f, beatHexGroup.DOFade(1f, countdownDuration * 0.4f));
+            }
+            _seq.Insert(0f, hexT.DOScale(1f, countdownDuration * 0.4f).SetEase(Ease.OutCubic));
+            for (int i = 0; i < numbers; i++)
+                _seq.Insert(i * countdownDuration, DOVirtual.Float(0f, 1f, countdownDuration * 0.97f, v => beatHex.Level = v)
+                    .SetEase(Ease.Linear));
+        }
+
+        // GO: the hex bursts outward and the ring leaves it, so GO stands free.
+        void BurstHex()
+        {
+            float burst = countdownDuration * 0.42f;
+            if (beatHex)
+            {
+                beatHex.rectTransform.DOScale(1.45f, burst).SetEase(Ease.InCubic).SetUpdate(true);
+                if (beatHexGroup) beatHexGroup.DOFade(0f, burst).SetUpdate(true);
+            }
+            if (!goRing) return;
+            var c = goRing.color;
+            c.a = 1f;
+            goRing.color = c;
+            goRing.rectTransform.localScale = Vector3.one;
+            goRing.rectTransform.DOScale(3.4f, countdownDuration * 0.9f).SetEase(Ease.OutCubic).SetUpdate(true);
+            goRing.DOFade(0f, countdownDuration * 0.9f).SetUpdate(true);
+        }
+
+        void RestHex()
+        {
+            if (beatHex)
+            {
+                beatHex.rectTransform.DOKill();
+                beatHex.Level = 0f;
+                beatHex.rectTransform.localScale = Vector3.one;
+            }
+            if (beatHexGroup)
+            {
+                beatHexGroup.DOKill();
+                beatHexGroup.alpha = 0f;
+            }
+            if (goRing)
+            {
+                goRing.DOKill();
+                goRing.rectTransform.DOKill();
+                var c = goRing.color;
+                c.a = 0f;
+                goRing.color = c;
+            }
         }
 
         private void OnDestroy()
