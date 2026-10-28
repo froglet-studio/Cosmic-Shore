@@ -21,6 +21,50 @@ namespace CosmicShore.Tests
             new SquadSlot(VesselClassType.Sparrow, Element.Time, null, "artifact.sparrow.afterburner"));
 
         [Test]
+        public void KeepCardsOwn_SwapsTheSamePilotAndClearsTheSameArtifact()
+        {
+            // The leader just took ENSIGN (it had CITADEL) and Javelin.
+            var squad = new SavedSquad("s",
+                new SquadSlot(VesselClassType.Manta, Element.Mass, "pilot.ensign", "artifact.javelin"),
+                new SquadSlot(VesselClassType.Dolphin, Element.Charge, "pilot.ensign", "artifact.aegis"),
+                new SquadSlot(VesselClassType.Sparrow, Element.Time, "pilot.volt", "artifact.javelin"));
+
+            Assert.IsTrue(squad.KeepCardsOwn(0, "pilot.citadel"));
+            Assert.AreEqual("pilot.ensign", squad.Leader.PilotId);
+            Assert.AreEqual("pilot.citadel", squad.RogueOne.PilotId, "the other vessel takes the leader's old pilot");
+            Assert.AreEqual("artifact.aegis", squad.RogueOne.ArtifactId);
+            Assert.AreEqual("pilot.volt", squad.RogueTwo.PilotId);
+            Assert.IsNull(squad.RogueTwo.ArtifactId);
+            Assert.IsFalse(squad.KeepCardsOwn(0, "pilot.citadel"));
+        }
+
+        [Test]
+        public void FillPilots_GivesEveryVesselItsOwnPilot()
+        {
+            var squad = new SavedSquad("s",
+                new SquadSlot(VesselClassType.Manta, Element.Mass, "pilot.volt"),
+                new SquadSlot(VesselClassType.Dolphin, Element.Charge),
+                new SquadSlot(VesselClassType.Sparrow, Element.Time, "pilot.volt"));
+            var ids = new[] { "pilot.ensign", "pilot.volt", "pilot.citadel" };
+
+            Assert.IsTrue(squad.FillPilots(ids));
+            Assert.AreEqual("pilot.volt", squad.Leader.PilotId);
+            Assert.AreEqual("pilot.ensign", squad.RogueOne.PilotId);
+            Assert.AreEqual("pilot.citadel", squad.RogueTwo.PilotId, "a repeated pilot is replaced too");
+            Assert.IsFalse(squad.FillPilots(ids));
+        }
+
+        [Test]
+        public void KeepCardsOwn_LeavesEmptyCardsAlone()
+        {
+            var squad = new SavedSquad("s",
+                new SquadSlot(VesselClassType.Manta, Element.Mass),
+                new SquadSlot(VesselClassType.Dolphin, Element.Charge),
+                new SquadSlot(VesselClassType.Sparrow, Element.Time));
+            Assert.IsFalse(squad.KeepCardsOwn(0, null));
+        }
+
+        [Test]
         public void EmptyBook_HasNoActiveSquad()
         {
             var book = new SquadBook();

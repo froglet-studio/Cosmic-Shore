@@ -1,5 +1,4 @@
 using CosmicShore.Core;
-using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Obvious.Soap;
@@ -40,12 +39,6 @@ namespace CosmicShore.Gameplay
     /// container (top right, under Settings). A held trigger is never a tap, so positioning
     /// the sword is untouched. Detection reads the replicated trigger MIRRORS (the same values
     /// the energize stance reads), so every peer calls the same combo. See RHINO_SWORD_COMBOS.md.
-    ///
-    /// TOMAHAWK (a pilot, Docs/Pilots/PILOTS_AND_ARTIFACTS.md; 2026-10-26): with Tomahawk in the seat the two-tap strings
-    /// RR and LL THROW the sword to that side instead of playing their flourishes (<see cref="TomahawkThrowConfigSO"/>).
-    /// The blade spins out on a loop posed in the hull's frame (so it follows the turn), cuts with its own contact
-    /// effects all the way round, and returns to the fingers. It starts where a flourish would - from the replicated
-    /// mirrors and the replicated seat (<c>VesselPilotLoadout</c>) - so it plays on every peer with no message of its own.
     /// </summary>
     public sealed class ShieldSwipeActionExecutor : ShipActionExecutorBase
     {
@@ -104,22 +97,15 @@ namespace CosmicShore.Gameplay
         SwordPoseChannels _lastApplied;        // last pose written to the sword, in channel space
         RhinoSwordFXController _fx;            // the blade's own FX (same GameObject as shieldRoot)
 
-        // --- Tomahawk (a pilot): the thrown sword -------------------------------------------
-        TomahawkThrowConfigSO _throw;          // the seated Tomahawk's numbers while a throw flies
-        float _throwElapsed = -1f;             // seconds into the throw; < 0 when the sword is in hand
-        int _throwSide;                        // +1 right, -1 left
-        Vector3 _throwEntryPos;                // the pose the throw leaves from
-        Quaternion _throwEntryRot;
-
-        /// <summary>True while the sword is thrown (Tomahawk). For FX/HUD/AI.</summary>
-        public bool IsThrown => _throwElapsed >= 0f;
-
         /// <summary>The flourish currently playing, or null. For FX/HUD/diagnostics.</summary>
         public RhinoSwordComboPath ActiveFlourish => _flourish;
 
         /// <summary>The pose last written to the blade (the swipe, the chop and any flourish), in
         /// channel space; zero at rest. <see cref="RhinoAnimation"/> leans the wings with it.</summary>
         public SwordPoseChannels CurrentPose => _lastApplied;
+
+        /// <summary>The swipe/chop tuning, so a reader can normalise <see cref="CurrentPose"/> (the HUD's katana).</summary>
+        public RhinoShieldSwipeConfigSO Config => config;
 
         /// <summary>The frame <see cref="CurrentPose"/>'s sweep is expressed in: the blade's parent,
         /// whose origin it pivots about. Null until the blade resolves.</summary>
@@ -192,15 +178,6 @@ namespace CosmicShore.Gameplay
             // Lateral recovery gates the SWIPE axis only; the chop (sum) passes through untouched.
             diffTarget = ApplySwipeRecovery(diffTarget);
 
-            // A thrown sword flies its loop; the fingers keep driving underneath so it lands where they are.
-            if (_throwElapsed >= 0f)
-            {
-                _diff = Drive(_diff, diffTarget, analog);
-                _sum = Drive(_sum, sumTarget, analog);
-                AdvanceThrow(Time.deltaTime);
-                return;
-            }
-
             // A resting pose still has to be re-applied when the blade's LENGTH moved: the hilt
             // anchor is a function of that length, so skipping the write would leave the sword
             // growing out of both ends of its mount again (the staff read this fix removes).
@@ -257,8 +234,6 @@ namespace CosmicShore.Gameplay
             float lt = ApplyDeadzone(input.LeftTriggerAnalog);
             float rt = ApplyDeadzone(input.RightTriggerAnalog);
             if (!_comboDetector.Step(Time.time, lt, rt, out var combo)) return;
-
-            if (TryThrow(combo.Sequence)) return;
 
             bool energized = Sword is { IsEnergized: true };
             if (!library.TryGet(combo.Sequence, energized, out var path)) return;
@@ -325,91 +300,6 @@ namespace CosmicShore.Gameplay
                 return live;
             }
             return SwordPoseChannels.Lerp(_flourish.EndPose.Wrapped(), live, Smooth01(outT));
-        }
-
-        /// <summary>
-        /// Tomahawk: a two-tap string the seated Tomahawk throws with sends the sword out instead of its flourish. Every
-        /// peer reaches this from the same mirrors and the same replicated seat, so every peer throws.
-        /// </summary>
-        bool TryThrow(string sequence)
-        {
-            if (_throwElapsed >= 0f || !VesselPilotLoadout.IsPilot(_status, PilotIds.Tomahawk)) return false;
-            var tuning = VesselPilotLoadout.TuningOf<TomahawkThrowConfigSO>(_status);
-            if (!tuning) return false;
-            int side = tuning.SideOf(sequence);
-            if (side == 0) return false;
-
-            _throw = tuning;
-            _throwSide = side;
-            _throwElapsed = 0f;
-            _throwEntryPos = shieldRoot.localPosition;
-            _throwEntryRot = shieldRoot.localRotation;
-            _flourish = null;
-            ClearSwipeRecovery();
-
-            // The chain closes: no third press upgrades a throw into a finisher, and nothing links until it is home.
-            _comboDetector.Reset();
-            _comboDetector.SuppressPressesUntil(Time.time + tuning.FlightSeconds + tuning.ReturnBlendSeconds);
-
-            if (!tuning.ThrowSound.IsNull && AudioSystem.Instance)
-                AudioSystem.Instance.PlaySFXEventAttached(tuning.ThrowSound, shieldRoot.gameObject);
-            if (!_fx) shieldRoot.TryGetComponent(out _fx);
-            if (_fx) _fx.NotifyCombo(false, Sword is { IsEnergized: true });
-
-            if (_status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI && !_status.AutoPilotEnabled
-                && !string.IsNullOrEmpty(tuning.ToastLine))
-                ToastNotificationAPI.Show(tuning.ToastLine);
-            return true;
-        }
-
-        /// <summary>
-        /// One frame of the thrown sword: blend off the fingers' pose onto the loop, fly it spinning flat (centred on the
-        /// blade, as a thrown blade turns), then blend back into the fingers' live pose once home.
-        /// </summary>
-        void AdvanceThrow(float dt)
-        {
-            _throwElapsed += dt;
-            float flight = _throw.FlightSeconds;
-            float bladeLength = 2f * AnchorOffsetLocal();
-
-            if (_throwElapsed <= flight)
-            {
-                ThrowPose(_throwElapsed / flight, out var pos, out var rot);
-                float w = Smooth01(_throwElapsed / _throw.BlendInSeconds);
-                shieldRoot.localPosition = Vector3.Lerp(_throwEntryPos, pos, w);
-                shieldRoot.localRotation = Quaternion.Slerp(_throwEntryRot, rot, w);
-                _lastApplied = default;
-                _appliedAnchor = float.NaN;
-                return;
-            }
-
-            float outT = (_throwElapsed - flight) / _throw.ReturnBlendSeconds;
-            ThrowPose(1f, out var homePos, out var homeRot);
-            ApplyShieldPose(AnalogChannels());                       // where the fingers are now
-            if (outT >= 1f)
-            {
-                EndThrow();
-                return;
-            }
-            float s = Smooth01(outT);
-            shieldRoot.localPosition = Vector3.Lerp(homePos, shieldRoot.localPosition, s);
-            shieldRoot.localRotation = Quaternion.Slerp(homeRot, shieldRoot.localRotation, s);
-            _appliedAnchor = float.NaN;
-
-            void ThrowPose(float u, out Vector3 pos, out Quaternion rot)
-            {
-                float spin = _throwSide * _throw.SpinTurnsPerSecond * 360f * Mathf.Min(_throwElapsed, flight);
-                rot = Quaternion.AngleAxis(spin, Vector3.up) * Quaternion.AngleAxis(90f, Vector3.right) * _baseLocalRot;
-                pos = _baseLocalPos + _throw.LoopOffset(u, _throwSide, bladeLength);
-            }
-        }
-
-        void EndThrow()
-        {
-            _throwElapsed = -1f;
-            _throw = null;
-            _throwSide = 0;
-            ClearSwipeRecovery();
         }
 
         void EndFlourish()
@@ -728,7 +618,6 @@ namespace CosmicShore.Gameplay
             _flourishElapsed = 0f;
             _lastApplied = default;
             _comboDetector?.Reset();
-            EndThrow();
 
             // Drop the energize gesture too, so a turn-end/despawn mid-hold can't leave
             // the sword charging forever off a stance edge that will never release.
