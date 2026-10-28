@@ -5,11 +5,13 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The <b>Voyage</b> toy (Docs/Voyages/SLICE.md): fly it and your squad deploys - you fly your seat's vessel, AI
-    /// wingmates fly the others, each with its slot's pilot, artifact and element - and the job board stands around you,
-    /// one job from each seated pilot. Thread a job and the Ark sails the lanes to it; at each stop the next board
-    /// stands, and the jobs chain through the news each outcome writes. Dock at home to keep what you found. Fly the toy
-    /// again (or the harbour station) to give the voyage up.
+    /// The <b>voyage harbour</b> (Docs/Voyages/SLICE.md): the voyage's settings, and the toybox entry that stands its
+    /// runner in freestyle. It is NOT a toy the player sees (Garrett, 2026-10-28: the Voyage toy "is confusing" in the Toy
+    /// Box): it builds no station and lists in no Toy Box. Voyages are chosen in the app shell, the Voyage window, where
+    /// each job on offer is a voyage card drawn over the galaxy map (<c>VoyageJobsView</c>). Setting sail deploys the
+    /// squad - you fly your seat's vessel, AI wingmates fly the others, each with its slot's pilot, artifact and element -
+    /// and the Ark sails the lanes to the job. Its work done, the squad anchors there and the window offers the next jobs
+    /// from that spot; the jobs chain through the news each outcome writes. Dock at home to keep what you found.
     ///
     /// <para>It is the Arkway with a route: the Ark, the corridor, the leash and the payloads are the Arkway's own
     /// (<see cref="ArkwayRun"/>), sailed from <see cref="withArk"/>'s settings. The map, crew, jobs and every line are
@@ -25,25 +27,6 @@ namespace CosmicShore.ScriptableObjects
 
         [SerializeField, Tooltip("The map, crew, jobs and lines. Empty = the shipped Resources/Voyages/VoyageContent.")]
         VoyageContentSO content;
-
-        [Header("Voyage - the board")]
-        [SerializeField, Min(40f), Tooltip("How far from you (or the Ark) a job's beacon stands, on its destination's bearing.")]
-        float boardDistance = 260f;
-
-        [SerializeField, Min(20f), Tooltip("Least gap between two beacons; a beacon on a crowded bearing turns aside.")]
-        float beaconSpacing = 110f;
-
-        [SerializeField, Min(2f), Tooltip("A job beacon's body radius.")]
-        float beaconBodyRadius = 9f;
-
-        [SerializeField, Min(4f), Tooltip("A job beacon's trigger (and ring) radius.")]
-        float beaconTriggerRadius = 26f;
-
-        [SerializeField, Tooltip("A standing job's beacon colour.")]
-        Color jobColor = new(0.70f, 1f, 0.35f, 1f);
-
-        [SerializeField, Tooltip("The way home's beacon colour.")]
-        Color homeColor = new(1f, 0.78f, 0.25f, 1f);
 
         [Header("Voyage - the squad")]
         [SerializeField, Range(0f, 1f), Tooltip("Element level a seat starts in its slot's element (normalized: 0.1 is one " +
@@ -72,14 +55,14 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(50f), Tooltip("How close to the Ark the pilot must stay for a core's hold to run.")]
         float holdRadius = 700f;
 
-        [Header("Voyage - the chart")]
-        [SerializeField, Min(10f), Tooltip("The chart's width in world units: the HyperSea map floating beside the Ark.")]
-        float chartSize = 90f;
+        [Header("Voyage - the galaxy map (the Voyage window's cards)")]
+        [SerializeField, Tooltip("The course a card's job sails, drawn over the map.")]
+        Color routeColor = new(0.70f, 1f, 0.35f, 1f);
 
-        [SerializeField, Tooltip("Where the chart floats, in the Ark's frame (x starboard, y up, z bow), world units.")]
-        Vector3 chartOffset = new(-160f, 70f, 0f);
+        [SerializeField, Tooltip("Where the squad is now.")]
+        Color hereColor = new(1f, 0.78f, 0.25f, 1f);
 
-        [SerializeField, Tooltip("A port's (and a harbour's, before its domain colour) marker colour.")]
+        [SerializeField, Tooltip("A port's (and a harbour's) marker colour.")]
         Color portColor = new(0.96f, 0.94f, 0.86f, 1f);
 
         [SerializeField, Tooltip("A vault field's marker colour.")]
@@ -91,46 +74,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("A lane's colour.")]
         Color laneColor = new(1f, 1f, 1f, 0.35f);
 
-        [Header("Voyage - the menu")]
-        [SerializeField, Tooltip("The art on the Voyage window's card for this voyage. Empty = the card shows no art.")]
-        Sprite cardArt;
-
-        [SerializeField, Tooltip("The Toy Box's option to set out (the row's name).")]
-        string shellLabel = "Set sail";
-
-        [SerializeField, Tooltip("The second line under it.")]
-        string shellDetail = "deploy your squad and take a job from the board";
-
-        [SerializeField, Tooltip("The button that sets out.")]
-        string shellSetSailVerb = "Set sail";
-
-        [SerializeField, Tooltip("The option's name while a voyage is under way.")]
-        string shellUnderwayLabel = "Under way";
-
-        [SerializeField, Tooltip("The second line while a voyage is under way.")]
-        string shellUnderwayDetail = "give the voyage up - what is aboard is lost";
-
-        [SerializeField, Tooltip("The button that gives a voyage up.")]
-        string shellGiveUpVerb = "Give up";
-
         public override ToyCategory Category => ToyCategory.World;
-
-        public Sprite CardArt => cardArt;
-        public string ShellLabel => shellLabel;
-        public string ShellDetail => shellDetail;
-        public string ShellSetSailVerb => shellSetSailVerb;
-        public string ShellUnderwayLabel => shellUnderwayLabel;
-        public string ShellUnderwayDetail => shellUnderwayDetail;
-        public string ShellGiveUpVerb => shellGiveUpVerb;
 
         public ArkwaySettingsSO WithArk => withArk;
         public VoyageContentSO Content => content ? content : VoyageContentSO.Load();
-        public float BoardDistance => boardDistance;
-        public float BeaconSpacing => beaconSpacing;
-        public float BeaconBodyRadius => beaconBodyRadius;
-        public float BeaconTriggerRadius => beaconTriggerRadius;
-        public Color JobColor => jobColor;
-        public Color HomeColor => homeColor;
+        public Color RouteColor => routeColor;
+        public Color HereColor => hereColor;
         public float SeedElementLevel => seedElementLevel;
         public float WingmateLeash => wingmateLeash;
         public float FindDistance => findDistance;
@@ -139,8 +88,6 @@ namespace CosmicShore.ScriptableObjects
         public Vector3 VaultPrismScale => vaultPrismScale;
         public float VaultOpenShare => vaultOpenShare;
         public float HoldRadius => holdRadius;
-        public float ChartSize => chartSize;
-        public Vector3 ChartOffset => chartOffset;
         public Color PortColor => portColor;
         public Color VaultColor => vaultColor;
         public Color CoreColor => coreColor;
@@ -156,12 +103,8 @@ namespace CosmicShore.ScriptableObjects
             return cfg;
         }
 
-        public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
-        {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
-            var toy = go.AddComponent<VoyageToy>();
-            toy.Configure(this);
-            toy.Initialize(this, context, placement);
-        }
+        /// <summary>Stands the voyage's runner (no station, no ring: nothing to fly through).</summary>
+        public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context) =>
+            VoyageHarbour.Create(this, parent, context);
     }
 }

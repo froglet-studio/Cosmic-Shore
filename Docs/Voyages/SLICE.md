@@ -16,13 +16,15 @@ is what decides which jobs that pilot brings; joining, captains and emissaries w
 ## 1. The loop
 
 1. **Build the squad** in the Ark's Squads tab (shipped): three vessels, each with vessel, element, pilot and artifact.
-2. **Dock at your harbour** in freestyle and start a voyage. Your squad is deployed: you fly slot 0's vessel, friends
-   who joined fly their seats, and every other seat is an AI wingmate flying its slot's vessel.
-3. **The job board.** Each pilot seated in the squad drums up one job from the news this port holds, so the three
-   pilots you seat decide the three jobs you are offered. Each job stands in the harbour as a beacon on the bearing of
-   its destination. Fly through one to take it.
-4. **The chart.** A small 3D chart of the HyperSea floats beside the Ark: the locations, the lanes, where you are, where
-   the job goes.
+2. **Pick a voyage in the Voyage window** (the app shell, never the Toy Box or the world; Garrett, 2026-10-28: "the
+   galaxy map should be in the app shell not the game. the jobs should be the different voyages"). Each pilot seated
+   in the squad drums up one job from the news the squad's port holds, so the three pilots you seat decide the three
+   jobs you are offered; each job is a voyage card drawn over the **galaxy map** (the locations, the lanes, where you
+   are, the job's course), with the way home as one more card when you are away.
+3. **Set sail.** The game enters freestyle and your squad deploys: you fly your seat's vessel, friends who joined fly
+   theirs, and every other seat is an AI wingmate flying its slot's vessel.
+4. **(retired)** The in-world job board and the floating 3D chart were removed on 2026-10-28: Garrett could not tell
+   the voyage from the Arkway with them in the world.
 5. **Sail the leg.** The Ark flies the lane's cells (the Arkway's corridor, drawn from the lane instead of a shuffle
    bag). Fauna graze the hull, payloads come off it, sights find what matters.
 6. **Arrive.** The destination's experience stands around the Ark: a vault field (super-shielded shells with an
@@ -30,8 +32,11 @@ is what decides which jobs that pilot brings; joining, captains and emissaries w
 7. **Resolve the job.** Deliver the dispatch, open the vaults, hold the core. The outcome writes **news** (dispatches) to
    ports, and the news is what the next board is made of. Jobs chain: a delivered sighting becomes a hunter's job, a
    hunt that leaves a wreck becomes a salvage rumour, a convoy schedule becomes a pirate's tip.
-8. **Sail on or go home.** Docking at your harbour extracts: every artifact aboard joins your collection. An Ark that
-   falls loses everything aboard (to the raider, or spilled for anyone).
+8. **Choose the next voyage.** The banner sends you back to the Voyage window (leave freestyle); the squad is anchored
+   at the job's destination with what it found still aboard and still at stake (`VoyageRules.Anchor`), and the window
+   offers the jobs from there, grown from the news the outcome wrote. Docking at your harbour (the way home card)
+   extracts: every artifact aboard joins your collection. An Ark that falls loses everything aboard (to the raider, or
+   spilled for anyone); leaving freestyle mid-leg gives the voyage up and loses what was found.
 
 Limitless repeatability comes from the chain, not from content volume: each outcome seeds new jobs at new ports,
 vaults restock, and the board is always the three seated pilots crossed with the news that has reached this port.
@@ -94,17 +99,18 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
   (`PilotLoadoutStore.Grant`); every other artifact stays free (Shombith's rule).
 - **Each seat's artifact rides in the Ark** from the moment it sails, so it is at stake with the finds: a raided or
   wrecked Ark takes it too. The player's collection keeps it (artifacts are free), the wreck carries a copy.
-- **Job beacons carry words** (title, and who brought it), the painting-choice exception (`ToyChoiceLabel`): three
-  identical rings that send the Ark three different places. Story lines and outcomes are the voyage banner.
-- **A job left undone fails when the next is taken**, and the next board stands as soon as the Ark arrives, so the
-  squad decides when to move on. Giving the voyage up away from home loses what was found (VOYAGES.md §11's default).
+- **Each job is a voyage of its own** (Garrett, 2026-10-28): one card per job in the Voyage window, set sail, do the
+  work, leave freestyle and pick the next. A job still open when the player leaves at the stop is done if its work is,
+  left undone if not. Story lines and outcomes are the voyage banner.
 - **AI wingmates escort the Ark**: one that ranges past the leash is brought back to its flank, and they are taken back
   when the voyage ends. Taking the helm of another seat is not built yet.
 
-- **Reached from the menu two ways** (Garrett, 2026-10-28: "put it in as the third voyage"): the Voyage toy is an
-  `IToyShellSurface`, so the Toy Box lists it, and the Voyage window's third voyage (`VoyageToyView` on
-  `MissionView.prefab`'s `Voyage3`) opens the same toy window. Both set sail through the toy's one option, after the
-  shell enters freestyle. Its lines and card art are fields on `Toy_Voyage.asset` (the spec's `toy.menu` block).
+- **The Voyage window's third voyage is the job cards** (Garrett, 2026-10-28: "put it in as the third voyage", then "it
+  is confusing that it is still in the toybox"): `VoyageJobsView` on the window's Voyages list stands one
+  `VoyageJobCard` per job, copies of `MissionView.prefab`'s `Voyage3`, each with a `VoyageMapGraphic` in its art's
+  place. The runner is `VoyageHarbour`, which `Toy_Voyage.asset` stands in freestyle with the toybox but which is no
+  toy: no station, not in the Toy Box. Its words are the content's `hud` lines (`CardRoute`, `CardHomeRoute`,
+  `CardUnderway`, `NoWork`, `ChooseNext`) and the map's colours are the spec's `toy` block.
 
 ## 6. Hand tests in the Unity editor
 
