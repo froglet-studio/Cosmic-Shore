@@ -40,6 +40,7 @@ Shader "CosmicShore/MeerkatWormholeLens"
 
             #define MEERKAT_LENS_MAX_WELLS 8
             #define MEERKAT_LENS_MAX_TUBES 4
+            #define MEERKAT_LENS_PATH 25
             #define MEERKAT_FIELD_STEPS 256
             #define MW_PI 3.14159265
 
@@ -54,13 +55,16 @@ Shader "CosmicShore/MeerkatWormholeLens"
             float4 _MWView;
 
             // The contour field (MeerkatWormholeLensPass.ContourTubesFor): per tube, world to its own frame (the way in at the
-            // origin, its first heading +z, its bend toward +x), its shape (shaft S, bend radius R, theta, throat), its live
-            // window (s0, s1, fade, mouth) and a bounding sphere (world centre, radius). Round 7 (the umbrella handle): a tube
-            // runs straight along +z for S, then bends round (R, 0, S) through theta, so it is S + R theta long.
+            // origin, its first heading +z, its bend toward +x), its shape (L, -, theta, throat), its live window (s0, s1,
+            // fade, mouth), a bounding sphere (world centre, radius), and (round 22: one conic arc bending round its middle,
+            // MeerkatWormholeMath.Conic) its centreline as MEERKAT_LENS_PATH points at even steps of s: (x across, z ahead,
+            // s, how far it has turned). Measured against the exact arc (a brute-force search over 400 random tubes and
+            // points): within 0.07 u.
             float4x4 _MWTubeW2L[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubeShape[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubeWin[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubeBound[MEERKAT_LENS_MAX_TUBES];
+            float4 _MWTubePath[MEERKAT_LENS_MAX_TUBES * MEERKAT_LENS_PATH];
             float4 _MWField0;   // strength (rad per wall crossing), pitch (rad), drag, twist
             float4 _MWField1;   // glass, glass index, grazing, flow (0 even, 1 in then out, 2 throat)
             float4 _MWField2;   // inner, outer (x local radius), profile (0 smooth, 1 smoother, 2 linear, 3 bell), ribs
@@ -85,39 +89,41 @@ Shader "CosmicShore/MeerkatWormholeLens"
             {
                 MWTQ q;
                 float3 p = mul(_MWTubeW2L[i], float4(pw, 1.0)).xyz;
-                float S = _MWTubeShape[i].x, R = max(_MWTubeShape[i].y, 1e-3), theta = _MWTubeShape[i].z;
-                float b0 = _MWTubeShape[i].w, m0 = _MWTubeWin[i].w, L = S + R * theta;
+                float L = max(_MWTubeShape[i].x, 1e-3), theta = _MWTubeShape[i].z;
+                float b0 = _MWTubeShape[i].w, m0 = _MWTubeWin[i].w;
                 float s0 = _MWTubeWin[i].x, s1 = _MWTubeWin[i].y;
-                float s, sc, invR = 0.0;
-                float3 c, T, N;
-                // the shaft: the straight run [0, S] along +z (MeerkatWormholeMath.At before the bend)
-                bool shaftLive = s0 <= S || theta < 1e-3;
-                float sS = p.z, scS = clamp(sS, s0, theta < 1e-3 ? s1 : min(s1, S));
-                float3 cS = float3(0.0, 0.0, scS);
-                float dS = shaftLive ? dot(p - cS, p - cS) : 1e30;
-                // the bend: round (R, 0, S) through theta, s = S + R a
-                float sB = 0.0, scB = 0.0, dB = 1e30;
-                float3 cB = 0.0;
-                if (theta >= 1e-3 && s1 >= S)
+                // round 22: the nearest point on the centreline (the arc's polyline, in the x-z plane); past the way in or out,
+                // s runs on along the end's heading
+                int base0 = i * MEERKAT_LENS_PATH;
+                float best = 1e30, s = 0.0;
+                for (int j = 0; j < MEERKAT_LENS_PATH - 1; j++)
                 {
-                    float3 v = p - float3(R, 0.0, S);
-                    float a = atan2(v.z, -v.x);
-                    if (a < 0.5 * theta - MW_PI) a += 2.0 * MW_PI;
-                    sB = S + R * a; scB = clamp(sB, max(s0, S), s1);
-                    float ac = (scB - S) / R;
-                    cB = float3(R - R * cos(ac), 0.0, S + R * sin(ac));
-                    dB = dot(p - cB, p - cB);
+                    float4 pa = _MWTubePath[base0 + j], pb = _MWTubePath[base0 + j + 1];
+                    float3 a3 = float3(pa.x, 0.0, pa.y), ab = float3(pb.x - pa.x, 0.0, pb.y - pa.y);
+                    float ll = max(dot(ab, ab), 1e-6), t = dot(p - a3, ab) / ll;
+                    float tc = saturate(t);
+                    float3 cc = a3 + ab * tc;
+                    float dd = dot(p - cc, p - cc);
+                    if (dd < best)
+                    {
+                        best = dd;
+                        float tu = (j == 0 && t < 0.0) || (j == MEERKAT_LENS_PATH - 2 && t > 1.0) ? t : tc;
+                        s = lerp(pa.z, pb.z, tu);
+                    }
                 }
-                if (dS <= dB)
-                {
-                    s = sS; sc = scS; c = cS; T = float3(0.0, 0.0, 1.0); N = float3(1.0, 0.0, 0.0);
-                }
-                else
-                {
-                    float ac = (scB - S) / R;
-                    s = sB; sc = scB; c = cB; invR = 1.0 / R;
-                    T = float3(sin(ac), 0.0, cos(ac)); N = float3(cos(ac), 0.0, -sin(ac));
-                }
+                // the point at s clamped to the live window, its heading and how sharply it turns there
+                float sc = clamp(s, s0, s1), fj = saturate(sc / L) * (MEERKAT_LENS_PATH - 1);
+                int jj = min((int)fj, MEERKAT_LENS_PATH - 2);
+                float tj = fj - jj;
+                float4 qa = _MWTubePath[base0 + jj], qb = _MWTubePath[base0 + jj + 1];
+                float dTurn = qb.w - qa.w, ac = qa.w + dTurn * tj;
+                float invR = dTurn / max(qb.z - qa.z, 1e-3);   // the turn per unit length (1 / radius)
+                // between two points the centreline is a circle's arc from the first's heading to the second's (the chord
+                // alone would cut inside the curve)
+                float3 c = abs(dTurn) > 1e-5
+                    ? float3(qa.x + (cos(qa.w) - cos(ac)) / invR, 0.0, qa.y + (sin(ac) - sin(qa.w)) / invR)
+                    : float3(lerp(qa.x, qb.x, tj), 0.0, lerp(qa.y, qb.y, tj));
+                float3 T = float3(sin(ac), 0.0, cos(ac)), N = float3(cos(ac), 0.0, -sin(ac));
                 // MeerkatWormholeMath.Radius: a hyperboloid over the live window, narrower while the window is short
                 float span = max(1e-3, s1 - s0), k = min(1.0, span / L), b = b0 * k, M = max(b, m0 * k), w = 2.0 * (sc - s0) / span - 1.0;
                 q.r = sqrt(b * b + (M * M - b * b) * w * w);

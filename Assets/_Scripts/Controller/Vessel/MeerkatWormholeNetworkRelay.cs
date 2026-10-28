@@ -13,6 +13,11 @@ namespace CosmicShore.Gameplay
     /// tunnel's frame and shape (<see cref="PublishFormed"/>) and its rider's way out (<see cref="PublishRiderOut"/>); a
     /// remote peer forms its copy and starts its stay from those. The hull's pose replicates as every vessel's does.</para>
     ///
+    /// <para><b>The roots</b> (<c>MEERKAT.md</c> §7, protocol version 22): the owner publishes each network of roots it
+    /// grows from an omnicrystal - its seed, the last trunk's size, the hull's frame where it grew, and which omnicrystal it
+    /// took (<see cref="PublishRoots"/>) - and its rider's way out (<see cref="PublishRootsOut"/>). Every peer grows the same
+    /// roots from those (<see cref="MeerkatRootMath"/> is double precision for exactly this).</para>
+    ///
     /// <para>Off the network (a menu vessel, an un-spawned editor test) nothing is sent: the executor is its own
     /// authority.</para>
     /// </summary>
@@ -46,6 +51,36 @@ namespace CosmicShore.Gameplay
                                                   L == o.L && S == o.S && R == o.R && B == o.B && M == o.M && Theta == o.Theta && FormT == o.FormT;
         }
 
+        /// <summary>One network of roots: its sequence number, seed and size, the frame it grew in, the omnicrystal taken,
+        /// and whether its rider is out.</summary>
+        public struct RootsState : INetworkSerializable, System.IEquatable<RootsState>
+        {
+            public int Seq, Crystal;
+            public uint Seed;
+            public float Size;
+            public Vector3 A, T0, Right, Up;
+            public bool Out;
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref Seq);
+                serializer.SerializeValue(ref Crystal);
+                serializer.SerializeValue(ref Seed);
+                serializer.SerializeValue(ref Size);
+                serializer.SerializeValue(ref A);
+                serializer.SerializeValue(ref T0);
+                serializer.SerializeValue(ref Right);
+                serializer.SerializeValue(ref Up);
+                serializer.SerializeValue(ref Out);
+            }
+
+            public bool Equals(RootsState o) => Seq == o.Seq && Crystal == o.Crystal && Seed == o.Seed && Size == o.Size && A == o.A &&
+                                                 T0 == o.T0 && Right == o.Right && Up == o.Up && Out == o.Out;
+        }
+
+        readonly NetworkVariable<RootsState> n_roots = new(
+            readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+
         readonly NetworkVariable<TunnelState> n_tunnel = new(
             readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
@@ -53,9 +88,42 @@ namespace CosmicShore.Gameplay
 
         internal void Bind(MeerkatWormholeExecutor executor) => _executor = executor;
 
-        public override void OnNetworkSpawn() => n_tunnel.OnValueChanged += OnTunnelChanged;
+        public override void OnNetworkSpawn()
+        {
+            n_tunnel.OnValueChanged += OnTunnelChanged;
+            n_roots.OnValueChanged += OnRootsChanged;
+        }
 
-        public override void OnNetworkDespawn() => n_tunnel.OnValueChanged -= OnTunnelChanged;
+        public override void OnNetworkDespawn()
+        {
+            n_tunnel.OnValueChanged -= OnTunnelChanged;
+            n_roots.OnValueChanged -= OnRootsChanged;
+        }
+
+        /// <summary>Owner: roots grew from an omnicrystal.</summary>
+        internal void PublishRoots(int seq, uint seed, float size, Vector3 a, Vector3 t0, Vector3 right, Vector3 up, int crystal)
+        {
+            if (!IsSpawned || !IsOwner) return;
+            n_roots.Value = new RootsState { Seq = seq, Seed = seed, Size = size, A = a, T0 = t0, Right = right, Up = up, Crystal = crystal };
+        }
+
+        /// <summary>Owner: its rider came out of roots <paramref name="seq"/>.</summary>
+        internal void PublishRootsOut(int seq)
+        {
+            if (!IsSpawned || !IsOwner) return;
+            var s = n_roots.Value;
+            if (s.Seq != seq || s.Out) return;
+            s.Out = true;
+            n_roots.Value = s;
+        }
+
+        void OnRootsChanged(RootsState before, RootsState now)
+        {
+            if (IsOwner || !_executor) return;
+            if (now.Seq != before.Seq)
+                _executor.GrowRootsRemote(now.Seq, now.Seed, now.Size, now.A, now.T0, now.Right, now.Up, now.Crystal);
+            if (now.Out && (!before.Out || now.Seq != before.Seq)) _executor.RootsOutRemote(now.Seq);
+        }
 
         /// <summary>Owner: a tunnel was formed.</summary>
         internal void PublishFormed(MeerkatWormholeExecutor.Tunnel t)

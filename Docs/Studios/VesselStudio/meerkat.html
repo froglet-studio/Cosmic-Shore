@@ -284,7 +284,7 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Meerkat Flight Studio</h1>
-    <span class="round">Round 18 · two kits: Garrett's and the Mix</span>
+    <span class="round">Round 23 · Garrett's surface area, the soliton's pull and stretch</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways; your left thumb flies, your right thumb bends the tunnel, the RT handle forms it; ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Input tab); a phone opening this page gets touch sticks instead. </span><b>The Meerkat is the wormhole vessel</b> (Yash, 2026-10-27: the Stoat's Gate mode, rounds 19-26, became its own vessel; the Stoat keeps Mass and Time). One ability, flown on <b>one thumb</b>: the left stick flies at full throttle, so the right thumb is always free. The cyan grid on your nose is the tunnel RT would form now: the <b>right stick bends it</b> any way (further = shorter and fatter), <b>LT shortens it</b>, <b>RT forms it</b> and you ride it, coming out with the speed you went in with. Only you see the grid; everyone sees the tube as bent space-time. A ridden tunnel stays a while, then collapses to its centre with a subtle ripple at the screen's edges. Every parameter shows the game's name for it under its slider (<code>MeerkatWormholeConfig</code>); save any section as a profile. Every setting has an ⓘ. <b>Round 18 (Yash, 2026-10-27: "two variants, one with his kit only, one with a mix of his kit with the ones you recommend"):</b> the <b>Kit</b> dropdown at the top of <b>Play Style Config</b> picks what every Meerkat in the race flies. <b>Garrett's kit</b> is his design as written (his branch <code>origin/cece/lucid-brown-ykcmhu</code>, <code>Docs/Studios/MEERKAT.md</code>): Space is the <b>soliton</b> (the wormhole sized by its surface area, which <b>anyone rides</b>, swallowing prisms at its way in and firing them out of its way out as moving prisms), Charge is <b>Sentinel mode</b> on <kbd>Y</kbd> / <kbd>F</kbd> (a sentinel at each new tunnel's way in that zaps rivals in sub-petal ticks and shields your prisms), Mass a passive <b>exit portal</b>, Time a passive <b>rush</b> (L5 Boost out), and the <b>crew</b>: <kbd>[</kbd> <kbd>]</kbd> / D-pad take a sentinel seat (its perched view: click a prism to shield it, a rival to zap it), <kbd>Y</kbd> there <b>hops</b> you out as the flyer; the meerkat you sit in holds the elements and any other dies of an element hit. <b>The Mix</b> is Garrett's with one change per decision: Time L5 Chain Dig, sentinels without seats plus an alarm, Space L5 Cave-in on <kbd>B</kbd>, the throat held 3 to 25 u. In both, <kbd>LB</kbd> / <kbd>Q</kbd> held is the pilot sight, <b>FLUME</b>; the kit's Mass level is the Mass round 17 sizes the trunk with, and the Omnicrystal's roots are the fifth card (anyone may slide into yours in Garrett's kit, your team only in the Mix). Every kit event has its sound (<b>Vessel Config</b> &gt; Sound): swallow, fire, shatter, bounce, Boost out, Chain Dig, the sentinel's stand-up, zap, shield, loss and alarm, the hop and the seat swap, the portal, Cave-in, and FLUME's loop while LB is held. <b>Score the kits</b> (AI Config) races all four. Prototypes for Yash to judge: nothing reaches Unity without his say-so, and Garrett's design is his to change. <b>Round 8 (archived, the Kit dropdown's "Round 8"; LB now conflicts with the pilot sight):</b> the full four-ability kit, one per element, in <b>Vessel Config</b> (its Section dropdown): <b>Charge · Lookout</b> (<kbd>Y</kbd>: marks crystals, shows every rival's reticle and next ring; L5 Alarm Call draws the crystals to you), <b>Mass · Hardened Bridge</b> (<kbd>LB</kbd> arms the next tunnel: its bridge becomes a lasting prism tube others cannot cross; L5 Shielded Bridge), <b>Space · Cave-in</b> (<kbd>B</kbd>: your standing tunnel collapses now, destroying every prism near it; L5 Burial costs a rival inside it a petal and silences it, never pushes it) and <b>Time · the wormhole</b> (L5 Chain Dig: <kbd>RT</kbd> late in a ride digs the next tunnel from the far mouth). Their numbers are lab-only. The race is now <b>Warpline</b>, the Meerkat's Time race: 5 rings a lap, 2 laps.</p>
   </header>
@@ -430,13 +430,13 @@
         <p class="src"><b>Only you see your reticle</b>: the tunnel RT would form now. It <b>eases</b> toward what the right stick and LT ask for over <i>reticleSmoothSeconds</i> (0 snaps), and it is <b>the wormhole's own wireframe</b>: the bridge's rings, spindles, ribs and thickness (Wormhole · look), in the same places, with no glass. Its colour is your domain colour toward white (<i>reticleWhite</i>); faint at rest (<i>reticleIdleAlpha</i>), bright while you shape it.</p>
         <div class="btns"><button class="pick" type="button" data-reset="reticle">Reset</button></div></details>
       <details class="card" id="grp-look" open><summary>Wormhole · look <small>MeerkatWormholeConfig · the bridge, everyone's</small></summary><div class="rows"></div>
-        <p class="src"><b>One geometry for the wormhole and your reticle</b>: your reticle is this frame, bare. <b>A formed tunnel shows everyone its bridge</b>: rings and ribs of spindles over a glass surface, in its maker's domain colour toward white (<i>bridgeWhite</i>) (the game will build it from its Spindle prefabs), condensing out of its centre as it forms and evaporating as it collapses. <i>bridgeVisibility</i> 0 leaves only the bent space.</p>
+        <p class="src"><b>One geometry for the wormhole and your reticle</b>: your reticle is this frame, bare. <b>A formed tunnel is its trunk</b> (round 20: the trunk is the wormhole, no spindles on it); only with the trunk hidden (<i>trunkVisibility</i> 0) does it show everyone this bridge: rings and ribs of spindles over a glass surface, in its maker's domain colour toward white (<i>bridgeWhite</i>) (the game will build it from its Spindle prefabs), condensing out of its centre as it forms and evaporating as it collapses. <i>bridgeVisibility</i> 0 leaves only the bent space.</p>
         <div class="btns"><button class="pick" type="button" data-reset="look">Reset</button></div></details>
       <details class="card" id="grp-tree" open><summary>Wormhole · trunk <small>MeerkatWormholeConfig · its outside, for a third eye</small></summary><div class="rows"></div>
-        <p class="src"><b>The tunnel's outer layer is a dead tree</b>, for everyone (its rider too). Pull RT and the tree <b>forms with the tunnel</b>, rippling out of its centre to both mouths; each <b>bare branch grows</b> out of the trunk's top half the moment the tunnel reaches its root. The way in is the trunk's <b>top cut</b> and the way out its <b>bottom cut</b>, the mouths in the cut faces among the <b>tree rings</b>. It is the <b>wall's own glass and bent space</b> (see-through in the middle, bright at its outline, the world behind it bent and flowing like water), so the tunnel shows inside it. It grows with the tunnel (<i>throatDiameterMax</i>, <i>mouthDiameterMax</i>).</p>
+        <p class="src"><b>The tunnel's outer layer is a dead tree</b>, for everyone (its rider too). Pull RT and the tree <b>forms with the tunnel</b>, rippling out of its centre to both mouths; each <b>bare branch grows</b> out of the trunk's top half the moment the tunnel reaches its root. The way in is the trunk's <b>top cut</b> and the way out its <b>bottom cut</b>, the mouths in the cut faces among the <b>tree rings</b>. It is the <b>wall's own glass and bent space</b> (see-through in the middle, bright at its outline, the world behind it bent and flowing like water), and its bore is the tunnel's own wall: one log you fly through, with no rings or glass of its own inside (round 20). It grows with the tunnel (<i>throatDiameterMax</i>, <i>mouthDiameterMax</i>).</p>
         <div class="btns"><button class="pick" type="button" data-reset="tree">Reset</button></div></details>
       <details class="card" id="grp-omni" open><summary>Omnicrystal · the roots <small>MeerkatWormholeConfig · rounds 16-17 proposal</small></summary><div class="rows"></div>
-        <p class="src"><b>The Meerkat's Omnicrystal ability.</b> Fly through an <b>omnicrystal</b> (gold, on the course line; <i>omniCount</i> of them) and <b>roots grow at once</b> from where you took it, spreading <b>every way</b> in 3D (<i>labyrinthSpread</i>), and you slide straight into them (<i>omniAtOnce</i>; 0: it arms your next RT instead). <b>Their size is your last trunk's</b>: after the smallest trunk you can dig, <i>labyrinthBranchPointsMin</i> forks, <i>labyrinthOpeningsMin</i> tips and <i>labyrinthRadiusMin</i> of reach; after the biggest a full Mass can dig, the <i>...Max</i> numbers - a very large network. They look like <b>roots</b>: tapering to <i>rootTip</i> at the tips, wandering (<i>rootGnarl</i>), in a faint bark (<i>rootGlass</i>, <i>rootRim</i>, <i>rootGrain</i>), dug through soil. You <b>slide</b>, faster at every fork (<i>forkBoost</i>); at each fork <b>lean the left stick toward a root</b> - left, right, up, down - to take it (marked <i>forkHintSeconds</i> before; no lean: the straightest). Out of a tip you fly on along it.</p>
+        <p class="src"><b>The Meerkat's Omnicrystal ability.</b> Fly through an <b>omnicrystal</b> (gold, on the course line; <i>omniCount</i> of them) and <b>roots grow at once</b> from where you took it, spreading <b>every way</b> in 3D (<i>labyrinthSpread</i>), and you slide straight into them (<i>omniAtOnce</i>; 0: it arms your next RT instead). <b>Their size is your last trunk's</b>: after the smallest trunk you can dig, <i>labyrinthBranchPointsMin</i> forks, <i>labyrinthOpeningsMin</i> tips and <i>labyrinthRadiusMin</i> of reach; after the biggest a full Mass can dig, the <i>...Max</i> numbers - a very large network. They look like <b>roots</b>: tapering to <i>rootTip</i> at the tips, wandering (<i>rootGnarl</i>), in a faint bark (<i>rootGlass</i>, <i>rootRim</i>, <i>rootGrain</i>), dug through soil. <b>Inside, you fly yourself on the left stick</b> (rounds 20-21): you <b>cruise along the root</b> on your own (<i>rootCruise</i>), your nose following it; the <b>left stick</b> moves you round the root, left and right, up and down, the way it would turn your nose (<i>rootMove</i>, calmed by <i>rootDrag</i>); <b>RT</b> pushes you faster (<i>rootThrust</i>, up to <i>rootMaxSpeed</i>). <b>The walls bounce you off</b> (<i>rootBounce</i>), and your nose follows the root. <b>Steer into a root at a fork to go down it</b> (the one on your side is lit, <i>forkHintSeconds</i> before); fly back past a fork and you are in the root before it. <b>From inside it is an underground world</b>: an earthen wall hiding the world outside (<i>rootOpacity</i>), lit by your lamp (<i>rootLamp</i>), fading into the dark (<i>rootFog</i>), each root's ends open onto the next. Out of a tip you fly on along it. The roots and the trunk draw <b>no spindle rings</b>: the trunk is the wormhole.</p>
         <div class="btns"><button class="pick" type="button" id="omniGive" title="Arm the labyrinth now, as if you had flown through an omnicrystal">Give me an omnicrystal</button><button class="pick" type="button" data-reset="omni">Reset</button></div></details>
       <details class="card" id="grp-soil" open><summary>Omnicrystal · the soil <small>MeerkatWormholeConfig · everyone's, the rider's too</small></summary><div class="rows"></div>
         <p class="src"><b>The labyrinth is dug through soil.</b> Every channel has a <b>wall of earth</b> round it (<i>soilWall</i> x its radius), see-through face-on and bright where it turns away, in <b>layered strata</b> - loam, clay, sand and stone (<i>soilStrata</i>, <i>soilStrataThickness</i>) - with grain and grit (<i>soilGrain</i>). <b>Stones</b> lie in the soil round the walls (<i>soilPebbles</i>) and <b>roots</b> hang onto the channels (<i>soilRoots</i>). It is dug out with the labyrinth and falls in with it. Riding, the strata stream past and the other channels show through the walls.</p>
@@ -485,7 +485,7 @@
         <p class="src"><b>Y</b> toggles Sentinel mode. On, each tunnel you make leaves a <b>sentinel</b> at its way in: an afterimage of the Meerkat standing up on watch. Its soliton stands as long as it does. With the pool used up the oldest retires, and its soliton with it. In its <b>guard</b> (<i>guardShare</i> x the opening radius) it <b>zaps</b> rival vessels, knocking out <i>zapPetalsL0</i> to <i>zapPetalsL10</i> of a petal a zap by Charge (sub-petal ticks: whole petals leave as ejected crystals, and the hit silences its victim for what it is worth), and zaps your own domain's plain prisms <b>shielded</b>. An empty sentinel's AI zaps <i>aiZapRate</i> a second; in Garrett's kit you can sit in one and tap.</p>
         <div class="btns"><button class="pick" type="button" data-reset="kSentinel">Reset</button></div></details>
       <details class="card" id="grp-kSoliton" open><summary>Kit · Space · the soliton <small>RT · surface area, swallow and fire · lab</small></summary><div class="rows"></div>
-        <p class="src">The wormhole is a <b>soliton</b>: a standing tunnel <b>anyone rides</b>. Space sets its <b>surface area</b> (<i>areaL0</i> to <i>areaL10</i>), so the throat is b = A / (2 pi L g(k)): a long tunnel thin, a short one fat (the mouth stays 3.25 x the throat). It <b>swallows</b> prisms within <i>swallowShare</i> x the opening radius of its way in (shielded too, never super-shielded), carries them at <i>carrySpeed</i>, and fires them out of its way out at <i>fireSpeed</i>, gliding to rest over <i>fireGlideSeconds</i>.</p>
+        <p class="src">The wormhole is a <b>soliton</b>: a standing tunnel <b>anyone rides</b>. Space sets its <b>surface area</b> (<i>areaL0</i> to <i>areaL10</i>), so the throat is b = A / (2 pi L g(k)): a long tunnel thin, a short one fat (the mouth stays 3.25 x the throat). <b>Round 23:</b> it <b>pulls</b> every prism and crystal within <i>suckRadius</i> of its way in (at <i>suckSpeed</i>, faster as they near), <b>swallows</b> them within <i>swallowShare</i> x the opening radius (shielded too, never super-shielded), carries them at <i>carrySpeed</i>, <b>stretched</b> along the tube (up to 1 + <i>carryStretch</i> at its middle, squeezed across, twisted <i>carryTwist</i> turns), and fires them out of its way out at <i>fireSpeed</i>, gliding to rest over <i>fireGlideSeconds</i>. Mass no longer sizes the tunnel here: only the surface area does (Garrett).</p>
         <div class="btns"><button class="pick" type="button" data-reset="kSoliton">Reset</button></div></details>
       <details class="card" id="grp-kPortal" open><summary>Kit · Mass · exit portal <small>passive · lab</small></summary><div class="rows"></div>
         <p class="src">Once per soliton, as it forms: six small prisms of its maker's domain on a regular hexagon square to the way out, <i>portalShare</i> x the exit radius out, each laid along its edge. Mass sets their size; at Mass L5 they are <b>danger prisms</b> (a rival touching one loses <i>dangerPetals</i>). Mass is conserved, so the count is kept small.</p>
@@ -553,7 +553,7 @@
     // sets how much of the LT range you can dig (massLengthAtZero of it at Mass 0, all of it at 10) and how wide the trunk
     // is (massDiameterAtZero x at Mass 0, full at 10)
     massPerCrystal: 0.5, massLengthAtZero: 0.3, massDiameterAtZero: 0.6,
-    reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, throatDiameter: 8, mouthDiameter: 26, keyRampSeconds: 0.5,
+    reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, ovalShortest: 0.2, ovalLongest: 1.1, ovalMaxSharpness: 8, throatDiameter: 8, mouthDiameter: 26, keyRampSeconds: 0.5,
     // round 12: the size at the LONGEST tunnel (the two above are the shortest's); lengths between grow in between
     throatDiameterMax: 18, mouthDiameterMax: 56,
     // ride and life (round 6, Yash: "it should enter the wormhole with v and then it will speed up to v plus dv, and then while
@@ -602,20 +602,24 @@
     // over labyrinthSpread degrees round its centre, labyrinthRadiusMax u out, labyrinthRandomness of jitter; channels
     // labyrinthDiameter wide flaring to labyrinthMouthDiameter, dug rough (labyrinthRoughness), digging out from the source
     // over labyrinthFormSeconds; drawn as rings every labyrinthRingSpacing u of labyrinthRingSides spindles and labyrinthRibs
-    // ribs. You slide (the ride multipliers, plus forkBoost a fork); at each fork the left stick leaned past forkLean toward a
-    // channel takes it (called out forkHintSeconds before). It is dug through soil (soil*): strata walls, stones, roots.
+    // ribs. Round 20: inside you fly free (RT and the sticks), bouncing off the walls; at a fork the root you steer into is
+    // the one you take (called out forkHintSeconds before). It is dug through soil (soil*): strata walls, stones, roots.
     // round 17 (Yash: "the bigger the trunk the bigger the network of the branches ... the last trunk size will determine how
     // big of a network you can get by getting that omnicrystal ... Three-dimensional roots. Spread out any direction from the
     // omnicrystal's position"): with omniAtOnce the omnicrystal grows the ROOTS at once, from where you took it, and you slide
     // into them (0: it arms your next RT, round 16). Their size follows your last trunk (its length against the longest a
     // full Mass can dig): forks labyrinthBranchPointsMin..Max, openings labyrinthOpeningsMin..Max, reach labyrinthRadiusMin..Max.
     // They look like roots: tapering to rootTip x at the tips, gnarled by rootGnarl, a bark skin (rootGlass, rootRim,
-    // rootGrain), the wireframe at labyrinthFrame x the bridge's brightness
+    // rootGrain). Round 20: no spindle wireframe once dug (the reticle keeps its own); the roots are the roots
     omniOn: 1, omniAtOnce: 1, omniCount: 3, labyrinthBranchPointsMin: 3, labyrinthBranchPointsMax: 12, labyrinthOpeningsMin: 5, labyrinthOpeningsMax: 30,
     labyrinthRadiusMin: 90, labyrinthRadiusMax: 420, labyrinthSpread: 360, labyrinthRandomness: 0.45,
-    rootTip: 0.35, rootGnarl: 0.3, rootGlass: 0.015, rootRim: 0.35, rootGrain: 0.35, labyrinthFrame: 0.3,
-    labyrinthDiameter: 12, labyrinthMouthDiameter: 22, labyrinthRoughness: 0.18, labyrinthFormSeconds: 0.8,
-    labyrinthRingSpacing: 12, labyrinthRingSides: 10, labyrinthRibs: 4, forkBoost: 0.08, forkLean: 0.25, forkHintSeconds: 0.9,
+    // round 20: inside the roots you fly free (labTransit): RT and the sticks push you, the walls bounce you off; from inside
+    // the roots are a soft inner tube (rootOpacity, rootLamp, rootFog; never black, Yash 2026-10-28)
+    rootCruise: 45, rootThrust: 90, rootMove: 55, rootDrag: 0.45, rootMaxSpeed: 90, rootBounce: 0.45, rootGravity: 0,
+    rootOpacity: 0.32, rootLamp: 1, rootFog: 240, tubeInner: 0.1,
+    rootTip: 0.6, rootGnarl: 0.3, rootGlass: 0.015, rootRim: 0.35, rootGrain: 0.35,
+    labyrinthDiameter: 40, labyrinthMouthDiameter: 46, labyrinthRoughness: 0.18, labyrinthFormSeconds: 0.8,
+    labyrinthRingSpacing: 12, labyrinthRingSides: 10, labyrinthRibs: 4, forkHintSeconds: 0.9,
     soilVisibility: 0.45, soilWall: 1.5, soilGlass: 0.025, soilRim: 0.45, soilFresnel: 2.2, soilStrata: 0.85, soilStrataThickness: 7,
     soilGrain: 0.55, soilPebbles: 700, soilPebbleSize: 1.3, soilRoots: 30,
     // the AI's wormhole
@@ -651,8 +655,9 @@
     // recommend"): the KIT every Meerkat in the race flies - 0 Off (no kit: the wormhole alone, the page as before round
     // 15 with round 8's abilities switched off), 1 Garrett's kit (his design, origin/cece/lucid-brown-ykcmhu,
     // Docs/Studios/MEERKAT.md "Garrett's direction: the Meerkats and the soliton"), 2 the Mix (Garrett's with our changes,
-    // one per decision), 3 Round 8 (archived, the round-8 proposals above, unchanged). LAB-ONLY, every key below: no
-    // MeerkatWormholeConfig field, nothing in Tools/Build/studio_to_unity/meerkat.json, nothing for Unity without Yash's say-so.
+    // one per decision), 3 Round 8 (archived, the round-8 proposals above, unchanged). LAB-ONLY, every key below
+    // but the soliton's (round 23, Yash: bring its surface area, pull, carry and fire to the game): areaL0 to fireGlideSeconds,
+    // suckRadius to carryTwist are MeerkatWormholeConfig fields (Tools/Build/studio_to_unity/meerkat.json).
     kit: 1,
     // the kits' element levels (L0-L10; L5 and up unlocks each element's upgrade)
     kChargeLevel: 5, kMassLevel: 5, kSpaceLevel: 5, kTimeLevel: 5,
@@ -664,6 +669,12 @@
     // within swallowShare x the opening radius of its way in, carries them at carrySpeed, fires them out at fireSpeed; they
     // glide to rest over fireGlideSeconds; a shielded one bounces keeping bounceRestitution of the closing speed
     areaL0: 6000, areaL10: 18000, swallowShare: 1.5, carrySpeed: 150, fireSpeed: 120, fireGlideSeconds: 3, bounceRestitution: 0.6,
+    // round 23 (Yash, 2026-10-28: "the prism gets sucked in from this one side and gets sucked out on the other ... the prisms
+    // will be distorted while traveling through this wormhole ... From a certain radius"): prisms and crystals within
+    // suckRadius of a standing soliton's way in are PULLED to it, at suckSpeed at the edge of that reach, faster as they near
+    // (up to carrySpeed), swirling round its axis; inside the tube each is stretched along it up to 1 + carryStretch at the
+    // middle (squeezed across to keep its volume) and turned carryTwist turns, and held to the wall's narrowing
+    suckRadius: 90, suckSpeed: 30, carryStretch: 2, carryTwist: 0.5,
     // Mass, the exit portal: six prisms on a hexagon portalShare x the exit radius out, sized portalSizeL0 -> portalSizeL10;
     // at Mass L5 they are danger prisms (a rival touching one takes dangerPetals)
     portalShare: 1.5, portalSizeL0: 0.4, portalSizeL10: 0.9, dangerPetals: 0.5,
@@ -688,6 +699,9 @@
     ['shape', 'shaftMin', 'The straight shaft before the bend, LT released (u)', 0, 600, 10],
     ['shape', 'shaftMax', '...LT fully squeezed (u)', 20, 1500, 10],
     ['shape', 'bendRadius', 'The bend\'s radius (u)', 10, 300, 5],
+    ['shape', 'ovalShortest', 'The bend round the middle: how oval at the shortest tunnel (0 = a circle, 1 = a parabola)', 0, 1.5, 0.01],
+    ['shape', 'ovalLongest', '...at the longest (over 1 = a hyperbola: straighter arms)', 0, 1.5, 0.01],
+    ['shape', 'ovalMaxSharpness', '...but its middle turns at most this many times as sharply as its ends', 1, 40, 0.5],
     ['shape', 'throatDiameter', 'Throat diameter, shortest tunnel (u)', 2, 60, 1],
     ['shape', 'mouthDiameter', 'Entry and exit diameter, shortest tunnel (u)', 4, 120, 1],
     ['shape', 'throatDiameterMax', 'Throat diameter, longest tunnel (u)', 2, 120, 1],
@@ -758,14 +772,22 @@
     ['omni', 'rootGlass', '...their bark face-on', 0, 0.3, 0.005],
     ['omni', 'rootRim', '...their bark at the silhouette (Fresnel)', 0, 2, 0.05],
     ['omni', 'rootGrain', '...their bark grain', 0, 1.5, 0.05],
-    ['omni', 'labyrinthFrame', '...their spindle wireframe, once dug (× the bridge\'s brightness)', 0, 2, 0.05],
     ['omni', 'labyrinthRoughness', '...dug rough: the walls\' unevenness', 0, 0.6, 0.01],
     ['omni', 'labyrinthFormSeconds', '...digs itself out from the source over (s)', 0.05, 4, 0.05],
     ['omni', 'labyrinthRingSpacing', '...its wireframe: a ring every (u)', 3, 60, 1],
     ['omni', 'labyrinthRingSides', '...spindles round each ring', 3, 32, 1],
     ['omni', 'labyrinthRibs', '...ribs along each channel (0 = none)', 0, 16, 1],
-    ['omni', 'forkBoost', 'Slide: each fork taken adds (× your speed before it)', 0, 0.5, 0.01],
-    ['omni', 'forkLean', 'At a fork: lean the left stick past this toward a channel', 0.05, 0.9, 0.05],
+    ['omni', 'rootCruise', 'In the roots: you cruise along the root at (u/s)', 0, 200, 1],
+    ['omni', 'rootThrust', '...RT pushes you faster by (u/s²)', 0, 300, 1],
+    ['omni', 'rootMove', '...the left stick moves you round the root by (u/s²)', 0, 200, 1],
+    ['omni', 'rootDrag', '...across the root, your drift dies away at (per s)', 0, 3, 0.05],
+    ['omni', 'rootMaxSpeed', '...never faster than (u/s)', 10, 300, 1],
+    ['omni', 'rootBounce', '...a wall bounces you off with (× your speed into it)', 0, 1, 0.05],
+    ['omni', 'rootGravity', '...drawn to the root\'s floor by (u/s², 0 = you float)', 0, 120, 1],
+    ['omni', 'rootOpacity', 'From inside: how dense the soft inner wall is (0 = clear, 1 = solid)', 0, 1, 0.01],
+    ['omni', 'tubeInner', 'The tree\'s and roots\' inner tube: a smooth sheen, denser than the bark', 0, 0.6, 0.01],
+    ['omni', 'rootLamp', '...your lamp on the walls round you', 0, 3, 0.05],
+    ['omni', 'rootFog', '...far walls fade to clear this far off (u)', 20, 600, 5],
     ['omni', 'forkHintSeconds', '...the fork is called out this long before (s)', 0, 3, 0.05],
     ['soil', 'soilVisibility', 'The soil round the labyrinth, for everyone (0 = hidden)', 0, 1, 0.05],
     ['soil', 'soilWall', 'Its wall round each channel (× the channel\'s radius)', 1.05, 4, 0.05],
@@ -827,8 +849,12 @@
     ['kSentinel', 'zapPetalsL10', '...at Charge L10 (petal)', 0, 1, 0.01],
     ['kSoliton', 'areaL0', 'Surface area, Space L0 (u²)', 1000, 60000, 500],
     ['kSoliton', 'areaL10', '...at Space L10 (u²)', 1000, 60000, 500],
+    ['kSoliton', 'suckRadius', 'Pulls prisms and crystals in from (u round the way in)', 0, 400, 5],
+    ['kSoliton', 'suckSpeed', '...at (u/s at that reach; faster as they near)', 0, 300, 5],
     ['kSoliton', 'swallowShare', 'Swallows prisms within (× the opening radius)', 0, 4, 0.1],
     ['kSoliton', 'carrySpeed', 'Carries them through at (u/s)', 20, 600, 10],
+    ['kSoliton', 'carryStretch', 'Inside, stretched along the tube by (+ × its length, at the middle)', 0, 6, 0.1],
+    ['kSoliton', 'carryTwist', '...and twisted (turns, mouth to mouth)', 0, 4, 0.05],
     ['kSoliton', 'fireSpeed', 'Fires them out at (u/s)', 0, 400, 5],
     ['kSoliton', 'fireGlideSeconds', '...gliding to rest over (s)', 0.2, 10, 0.1],
     ['kSoliton', 'bounceRestitution', 'A shielded prism bounces, keeping (× its speed)', 0, 1, 0.05],
@@ -1166,8 +1192,9 @@
   // it was before them. Every race starts with them all back where they were. Drawn as the studio crystal (D19's
   // faceted core and wireframe shell), instanced.
   const CR_MAX = 64, CRYSTAL_PICK = 14, CR_COL = new THREE.Color(0xbff6ff);
-  const crys = { n: 0, home: [], pos: [], alive: new Uint8Array(CR_MAX), marked: new Uint8Array(CR_MAX) };
-  for (let i = 0; i < CR_MAX; i++) { crys.home.push(new V3()); crys.pos.push(new V3()); }
+  // round 23: a soliton pulls them (pull), carries them (tube, ts, off: a share of the wall's radius) and sets them out (vel)
+  const crys = { n: 0, home: [], pos: [], alive: new Uint8Array(CR_MAX), marked: new Uint8Array(CR_MAX), pull: [], tube: [], ts: new Float32Array(CR_MAX), off: [], vel: [] };
+  for (let i = 0; i < CR_MAX; i++) { crys.home.push(new V3()); crys.pos.push(new V3()); crys.off.push(new V3()); crys.vel.push(new V3()); crys.pull.push(null); crys.tube.push(null); }
   const crCore = new THREE.InstancedMesh(new THREE.OctahedronGeometry(3.2, 0), new THREE.MeshStandardMaterial({ color: CR_COL, emissive: CR_COL.clone().multiplyScalar(0.55), roughness: 0.2, metalness: 0.1, flatShading: true }), CR_MAX);
   const crShell = new THREE.InstancedMesh(new THREE.OctahedronGeometry(4.4, 0), new THREE.MeshBasicMaterial({ color: CR_COL, wireframe: true, transparent: true, opacity: 0.35, depthWrite: false }), CR_MAX);
   for (const m of [crCore, crShell]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.count = 0; scene.add(m); }
@@ -1188,6 +1215,8 @@
   function resetOmni() { for (let i = 0; i < OMNI_MAX; i++) omni.alive[i] = 1; }
   let omniFlash = 0;
   function stepOmni() {
+    // round 21: an omnicrystal taken inside a tunnel grows its roots the moment you are out (the game does the same)
+    if (ftLive.ab.omni && P.omniOn > 0.5 && P.omniAtOnce > 0.5 && !(ftLive.gate && ftLive.gate.state === 'tube') && race === 'running' && !stopped) rootsHere(ftLive.ab.omniSeed);
     for (let i = 0; i < omni.n; i++) {
       if (!omni.alive[i] || omni.home[i].distanceTo(hull.position) > OMNI_PICK) continue;
       omni.alive[i] = 0;
@@ -1222,7 +1251,7 @@
     }
     crys.n = n; resetCrystals();
   }
-  function resetCrystals() { for (let i = 0; i < crys.n; i++) { crys.pos[i].copy(crys.home[i]); crys.alive[i] = 1; crys.marked[i] = 0; } }
+  function resetCrystals() { for (let i = 0; i < crys.n; i++) { crys.pos[i].copy(crys.home[i]); crys.alive[i] = 1; crys.marked[i] = 0; crys.pull[i] = crys.tube[i] = null; crys.vel[i].set(0, 0, 0); } }
   // Every step, for the pilot flying now: Alarm Call's pull (its lookout's crystals drawn in), then any crystal it touches.
   function stepCrystals(dt) {
     const ab = ftLive.ab, pull = ab && simT < ab.lookUntil && ab.alarm && !silenced(curPilot);
@@ -1237,7 +1266,11 @@
     let k = 0;
     for (let i = 0; i < crys.n; i++) {
       if (!crys.alive[i]) continue;
-      dum.position.copy(crys.pos[i]); dum.rotation.set(0, simT * 1.3 + i, 0); dum.scale.set(1, 1.35, 1); dum.updateMatrix();
+      dum.position.copy(crys.pos[i]);
+      if (crys.tube[i] && crys.tube[i].wh) {   // round 23: stretched and twisted through the tube
+        const wh = crys.tube[i].wh; carryPose(wh, crys.ts[i], i); dum.updateMatrix(); crCore.setMatrixAt(k, dum.matrix); crShell.setMatrixAt(k, dum.matrix); k++; continue;
+      }
+      dum.rotation.set(0, simT * 1.3 + i, 0); dum.scale.set(1, 1.35, 1); dum.updateMatrix();
       crCore.setMatrixAt(k, dum.matrix); dum.rotation.set(0, -simT * 0.7 - i, 0); dum.updateMatrix(); crShell.setMatrixAt(k, dum.matrix); k++;
     }
     crCore.count = crShell.count = mode === 'fly' ? k : 0; crCore.instanceMatrix.needsUpdate = crShell.instanceMatrix.needsUpdate = true;
@@ -1403,7 +1436,9 @@
     if (inp.pad) { XSum = ease(2 * inp.L.x); YSum = -ease(2 * inp.L.y); TX = ease(2 * inp.R.x); TY = ease(2 * inp.R.y); }
     else { XSum = inp.kYaw; YSum = -inp.kPitch; TX = inp.kTx || 0; TY = inp.kTy || 0; }
     if (invertY) YSum = -YSum;
-    ftLive.leanX = XSum; ftLive.leanUp = -YSum;   // round 16: riding the labyrinth, the left stick's lean chooses at the forks
+    ftLive.leanX = XSum;   // the left stick's lean (the fork sound's pan)
+    // round 21: in the roots the LEFT stick moves you round the root, the way it would turn your nose (Invert Y included)
+    ftLive.rootSide = XSum; ftLive.rootRise = -YSum;
     YDiff -= Math.max(0, P.bankShare) * XSum;   // the bank into the turn (the one-thumb hulls' RollScaler)
     const rad = Math.PI / 180;
     gateHold(dt);
@@ -1472,7 +1507,10 @@
   const massOf = (id) => Math.min(10, Math.max(0, (isGM() ? P.kMassLevel : P.massLevel) + pil(id).crystals * Math.max(0, P.massPerCrystal)));
   const massK = (id) => massOf(id) / 10;
   function shapeFor(Pv, lq, sx, sy, mk) {
-    const k = mk == null ? 1 : clamp01(mk), kLen = Pv.massLengthAtZero + (1 - Pv.massLengthAtZero) * k, kDia = Pv.massDiameterAtZero + (1 - Pv.massDiameterAtZero) * k;
+    // round 23 (Yash, 2026-10-28: "revert the mass ability as Garrett has said"): in Garrett's kit and the Mix, Mass no longer
+    // sizes the trunk - its reach is the whole LT range and its width is the surface area's alone (Space, kitThroat); Mass
+    // makes the exit portal. Off and Round 8 keep round 17's Mass sizing.
+    const k = (mk == null || isGM(Pv)) ? 1 : clamp01(mk), kLen = Pv.massLengthAtZero + (1 - Pv.massLengthAtZero) * k, kDia = Pv.massDiameterAtZero + (1 - Pv.massDiameterAtZero) * k;
     const tx = Math.max(-1, Math.min(1, sx)), ty = Math.max(-1, Math.min(1, sy));
     const mRaw = Math.hypot(tx, ty), m = Math.min(1, mRaw), t = clamp01((m - 0.05) / 0.95);
     const S = Math.max(0, Pv.shaftMin + (Math.max(Pv.shaftMin, Pv.shaftMax) - Pv.shaftMin) * clamp01(lq) * kLen);
@@ -1488,14 +1526,67 @@
   }
   const whShape = (lq, sx, sy) => shapeFor(P, lq, sx, sy, massK(curPilot));
 
-  // How far the centreline has turned at s (round 7): nothing along the shaft, then (s - S) / R round the bend.
-  function bendAngle(wh, s) { return wh.theta < 1e-4 ? 0 : Math.max(0, Math.min(wh.theta, (s - wh.S) / wh.R)); }
-  // s u along the centreline: straight along t0 for the shaft S, then an arc of radius R bending toward side by theta.
+  // Round 22 (Yash, 2026-10-28: "the reticle or the path of this trunk ... always follows the circumference of a oval. With a
+  // specified epicenter. So it should always turn from center ... The longer the length of the tube, the more ovalish it
+  // will bend. We can make it circular but a little bit of hyperbola will be good ... It should always bend from the center
+  // rather than bending from one of the ends to a small knot"): the centreline is ONE conic arc, symmetric about its middle -
+  // the conic's vertex, its epicentre, where it turns sharpest - turning theta in all over its length L (still LT's shaft +
+  // bendRadius x theta). How oval grows with the length: ovalShortest at the shortest tunnel to ovalLongest at the longest
+  // (the eccentricity: 0 a circle's arc, turning evenly; 1 a parabola; over 1 a hyperbola, its arms running nearly
+  // straight), never gathered so much that its middle turns more than ovalMaxSharpness x as sharply as its ends (a long,
+  // sharply turning tunnel stays an oval, not a knot at its centre). In the conic's own frame (its vertex at the origin, x along the
+  // heading there, y toward the bend): x^2 = 2 rho y - (1 - e^2) y^2; the point heading psi (m = tan psi) is
+  // (m / q, m^2 / (q (1 + q))) x rho, q = sqrt(1 + (1 - e^2) m^2); rho scales the arc to L. The way in heads along t0.
+  const CONIC_N = 96;
+  function ovalOf(Pv, L, theta) {
+    const Lmin = Math.max(10, Pv.shaftMin), Lmax = Math.max(Lmin + 1, Math.max(Pv.shaftMin, Pv.shaftMax) + Math.max(1, Pv.bendRadius) * Math.max(0, Pv.bendMaxDegrees) * Math.PI / 180);
+    const g = clamp01((L - Lmin) / (Lmax - Lmin));
+    let e = Math.max(0, Pv.ovalShortest + (Pv.ovalLongest - Pv.ovalShortest) * g);
+    const m = Math.tan(Math.min(1.55, theta / 2)), m2 = m * m;
+    if (m2 < 1e-12) return e;
+    // the turn's sharpness at the ends against the middle is ((1 + k m^2) / (1 + m^2))^1.5 (k = 1 - e^2, m the ends' slope):
+    // at most ovalMaxSharpness to one; and a hyperbola opens no wider than the turn allows (1 + k m^2 > 0)
+    const kMin = Math.max((Math.pow(Math.max(1, Pv.ovalMaxSharpness), -2 / 3) * (1 + m2) - 1) / m2, -0.9 / m2);
+    return Math.min(e, Math.sqrt(Math.max(0, 1 - kMin)));
+  }
+  function conicXY(k, psi, out) { const m = Math.tan(psi), q = Math.sqrt(Math.max(1e-9, 1 + k * m * m)); out[0] = m / q; out[1] = m * m / (q * (1 + q)); return out; }
+  // The arc's table (cached on the tunnel): headings psi from -theta/2 to theta/2 and the length along it to each.
+  function conicOf(wh, Pv) {
+    const e = ovalOf(Pv || P, wh.L, wh.theta), key = wh.L + '|' + wh.theta + '|' + e;
+    if (wh._cn && wh._cn.key === key) return wh._cn;
+    const k = 1 - e * e, h = wh.theta / 2, psi = new Float64Array(CONIC_N + 1), cum = new Float64Array(CONIC_N + 1), xy = [0, 0];
+    let px = 0, py = 0;
+    for (let i = 0; i <= CONIC_N; i++) {
+      psi[i] = -h + wh.theta * i / CONIC_N; conicXY(k, psi[i], xy);
+      if (i) cum[i] = cum[i - 1] + Math.hypot(xy[0] - px, xy[1] - py);
+      px = xy[0]; py = xy[1];
+    }
+    const rho = wh.L / Math.max(1e-9, cum[CONIC_N]);
+    for (let i = 0; i <= CONIC_N; i++) cum[i] *= rho;
+    conicXY(k, -h, xy);
+    return (wh._cn = { key, e, k, rho, psi, cum, x0: xy[0], y0: xy[1], c: Math.cos(h), sn: Math.sin(h), theta: wh.theta });
+  }
+  // s along the arc: the heading psi there (the table, interpolated), and the point (ahead along t0, across toward side) and
+  // the turn so far (out[2], 0 at the way in, theta at the way out)
+  const cnXY = [0, 0];
+  function conicAt(cn, s, out) {
+    const n = CONIC_N, sc = Math.max(0, Math.min(cn.cum[n], s));
+    let lo = 0, hi = n; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cn.cum[mid] <= sc) lo = mid; else hi = mid; }
+    const psi = cn.psi[lo] + (cn.psi[hi] - cn.psi[lo]) * (sc - cn.cum[lo]) / Math.max(1e-12, cn.cum[hi] - cn.cum[lo]);
+    conicXY(cn.k, psi, cnXY);
+    const lx = cn.rho * (cnXY[0] - cn.x0), ly = cn.rho * (cnXY[1] - cn.y0);
+    out[0] = lx * cn.c - ly * cn.sn; out[1] = lx * cn.sn + ly * cn.c; out[2] = psi + 0.5 * cn.theta;
+    return out;
+  }
+  const cnOut = [0, 0, 0];
+  // How far the centreline has turned at s (round 22: along the whole arc, fastest at its middle).
+  function bendAngle(wh, s) { return wh.theta < 1e-4 ? 0 : conicAt(conicOf(wh), s, cnOut)[2]; }
+  // s u along the centreline: straight along t0 before the way in (s < 0); the conic arc, bending toward side by theta.
   function whAt(wh, s, outP, outT) {
     if (wh.poly) return polyAt(wh, s, outP, outT);
-    if (wh.theta < 1e-4 || s <= wh.S) { outP.copy(wh.A).addScaledVector(wh.t0, s); if (outT) outT.copy(wh.t0); return outP; }
-    const a = bendAngle(wh, s), R = wh.R;
-    outP.copy(wh.A).addScaledVector(wh.t0, wh.S + R * Math.sin(a)).addScaledVector(wh.side, R * (1 - Math.cos(a)));
+    if (wh.theta < 1e-4 || s <= 0) { outP.copy(wh.A).addScaledVector(wh.t0, s); if (outT) outT.copy(wh.t0); return outP; }
+    const o = conicAt(conicOf(wh), s, cnOut), a = o[2];
+    outP.copy(wh.A).addScaledVector(wh.t0, o[0]).addScaledVector(wh.side, o[1]);
     if (outT) outT.copy(wh.t0).multiplyScalar(Math.cos(a)).addScaledVector(wh.side, Math.sin(a));
     return outP;
   }
@@ -1691,17 +1782,18 @@
   const pilotIds = () => [0].concat(rivals.map((r) => r.id));
   function pilotPos(id) { return id === curPilot ? hull.position : id === 0 ? youSlot.pos : seatState[id - 1].pos; }
   // A point's place round a tube (its frozen full shape): s along the centreline (clamped to 0..L), d from it, and the
-  // unit radial direction (n). Round 7's umbrella handle: a straight shaft S along t0 from A, then an arc of radius R in
-  // the plane of t0 and side, centred at A + t0 x S + side x R; the nearer of the two answers wins.
+  // unit radial direction (n). Round 22: the nearest point on the conic arc.
   const tlC = new V3(), tlQ = new V3(), tlP = new V3(), tl = { s: 0, d: 0, n: new V3(), inside: false };
   function tubeLocal(wh, p) {
-    let s = tlQ.subVectors(p, wh.A).dot(wh.t0);   // along the shaft (the whole tube when it does not bend)
-    if (wh.theta >= 1e-4) {
-      const sS = Math.max(0, Math.min(wh.S, s)), dS = tlP.copy(wh.A).addScaledVector(wh.t0, sS).distanceTo(p);
-      tlC.copy(wh.A).addScaledVector(wh.t0, wh.S).addScaledVector(wh.side, wh.R); tlQ.subVectors(p, tlC);
-      const a = Math.atan2(tlQ.dot(wh.t0), -tlQ.dot(wh.side)), sA = wh.S + Math.max(0, Math.min(wh.theta, a)) * wh.R;
-      const dA = whAt(wh, sA, tlP).distanceTo(p);
-      s = dS <= dA ? (s < wh.S ? s : sS) : wh.S + a * wh.R;
+    let s = tlQ.subVectors(p, wh.A).dot(wh.t0);   // along it (the whole tube when it does not bend)
+    if (wh.theta >= 1e-4) {   // round 22: the nearest of 48 points along the arc, refined
+      const n = 48; let bs = 0, bd = Infinity;
+      for (let i = 0; i <= n; i++) { const si = wh.L * i / n, d = whAt(wh, si, tlP).distanceToSquared(p); if (d < bd) { bd = d; bs = si; } }
+      let lo = Math.max(0, bs - wh.L / n), hi = Math.min(wh.L, bs + wh.L / n);
+      for (let it = 0; it < 18; it++) { const m1 = lo + (hi - lo) * 0.382, m2 = lo + (hi - lo) * 0.618; if (whAt(wh, m1, tlP).distanceToSquared(p) < whAt(wh, m2, tlP).distanceToSquared(p)) hi = m2; else lo = m1; }
+      s = 0.5 * (lo + hi);
+      if (bs === 0 && tlQ.subVectors(p, wh.A).dot(wh.t0) < 0) s = tlQ.dot(wh.t0);   // before the way in
+      else if (bs === wh.L) { whAt(wh, wh.L, tlP, tlC); const a = tlQ.subVectors(p, tlP).dot(tlC); if (a > 0) s = wh.L + a; }   // past the way out
     }
     tl.inside = s > 0 && s < wh.L; s = Math.max(0, Math.min(wh.L, s));
     whAt(wh, s, tlP); tl.n.subVectors(p, tlP); tl.d = tl.n.length(); if (tl.d > 1e-6) tl.n.divideScalar(tl.d); tl.s = s;
@@ -1968,7 +2060,7 @@
     if (batching || !pos) return;
     if (window.VesselStudioAudio) VesselStudioAudio.play(name, sndAt(pos));
   }
-  function newKitStats() { return { zaps: 0, zapsYou: 0, harmless: 0, petalsZapped: 0, shields: 0, swallowed: 0, lifted: 0, fired: 0, destroyed: 0, kpDestroyed: 0, fieldDestroyed: 0, bounces: 0, rides: 0, rivalRides: 0, ridesOfYours: 0, hops: 0, swaps: 0, caveIns: 0, buried: 0, sentinels: 0, lost: 0, lostYours: 0, retired: 0, portals: 0, portalSkipped: 0, dangerHits: 0, alarms: 0, flyerDeaths: 0, ejected: 0, seeded: 0, solitons: 0, labRides: 0, labRidesOfYours: 0 }; }
+  function newKitStats() { return { zaps: 0, zapsYou: 0, harmless: 0, petalsZapped: 0, shields: 0, swallowed: 0, lifted: 0, fired: 0, destroyed: 0, kpDestroyed: 0, fieldDestroyed: 0, bounces: 0, rides: 0, rivalRides: 0, ridesOfYours: 0, hops: 0, swaps: 0, caveIns: 0, buried: 0, sentinels: 0, lost: 0, lostYours: 0, retired: 0, portals: 0, portalSkipped: 0, dangerHits: 0, alarms: 0, flyerDeaths: 0, ejected: 0, seeded: 0, solitons: 0, labRides: 0, labRidesOfYours: 0, crystalsPulled: 0, crystalsFired: 0 }; }
   let KS = newKitStats();
   let batchRivals = false, rivalSeedBump = 0, kitSeatPoll = false;   // a headless field race (rivals while batching); the seat's own input read
   // the seeded prisms round the race line (Scene Config, Kits · prisms): plain, shielded and super-shielded, the same on
@@ -1989,7 +2081,8 @@
   }
   // kind: 0 plain, 1 shielded, 2 super-shielded (never moved); team: a domain key or null (neutral); by: the pilot whose
   // soliton fired it (a hit is scored to them); tube: the soliton carrying it, ts how far along
-  function kpNew(p, q, kind, team, size, danger) { return { p: p.clone(), v: new V3(), q: q.clone(), kind, team, size, danger: !!danger, alive: true, moving: false, by: -1, tube: null, ts: 0, off: new V3(), age: 0, hit: null }; }
+  let kpSeedN = 0;   // round 23: each prism's own twist offset through a tube
+  function kpNew(p, q, kind, team, size, danger) { return { p: p.clone(), v: new V3(), q: q.clone(), kind, team, size, danger: !!danger, alive: true, moving: false, by: -1, tube: null, ts: 0, off: new V3(), age: 0, hit: null, pull: null, seed: kpSeedN++ }; }
   function kitReset() {
     KIT.seat = null; KIT.flyerDead = false; KIT.deadT = 0; KIT.alarm = {}; KIT.zaps.length = 0; KIT.ejected.length = 0; KIT.sentinels.length = 0; KIT.seatRT = false; KIT.curOn = false;
     KIT.kp = []; for (const w of kpWorld) KIT.kp.push(kpNew(w.p, w.q, w.kind, null, 1, false));
@@ -2180,26 +2273,84 @@
   // of). A field prism it swallows is lifted out of the field into the kit's prisms: moved, never deleted. ----
   const standing = (pr) => pr.alive && !pr.dying && pr.wh && !pr.wh.chan && (pr.wh.phase === 'open' || pr.wh.phase === 'stay') && pr.wh.s0 <= 0.5 && pr.wh.s1 >= pr.wh.L - 0.5;
   const movers = [];   // the kit's prisms moving this step (kitMovers fills it)
+  // Round 23: the PULL. A standing soliton draws every prism within suckRadius of its way in (a field prism is lifted into
+  // the kit's prisms to move: moved, never deleted) and every crystal, at suckSpeed at that reach and faster as it nears
+  // (suckSpeed x suckRadius / d, at most carrySpeed), swirling a little round its axis; inside swallowShare x the opening
+  // radius it is swallowed. A pulled prism is a moving prism (it breaks what it runs into), but the prisms one soliton pulls
+  // never break each other: they travel together, as the Jacks' net's do.
   function kitSwallow() {
     if (fieldGridKind !== fieldKind) fieldRebuild();
     if (kpDirty) kpRebuild();
     for (const pr of pairs) {
       if (!standing(pr)) continue;
       const wh = pr.wh, rz = Math.max(0, P.swallowShare) * wh.M; if (rz <= 0) continue;
-      const take = (k) => { k.tube = pr; k.ts = 0; k.moving = false; k.v.set(0, 0, 0); k.off.subVectors(k.p, wh.A); k.off.addScaledVector(wh.t0, -k.off.dot(wh.t0)); const m = k.off.length(), lim = 0.5 * wh.b; if (m > lim) k.off.multiplyScalar(lim / m); KS.swallowed++; kitSnd('swallow', wh.A); };
-      for (const k of movers) if (k.alive && k.moving && k.kind !== 2 && k.p.distanceTo(wh.A) <= rz) take(k);   // a moving prism flying into its mouth
+      const rs = Math.max(rz, P.suckRadius);
+      const take = (k) => { k.tube = pr; k.pull = null; k.ts = 0; k.moving = false; k.v.set(0, 0, 0); k.off.subVectors(k.p, wh.A); k.off.addScaledVector(wh.t0, -k.off.dot(wh.t0)); const m = k.off.length(), lim = 0.5 * wh.b; if (m > lim) k.off.multiplyScalar(lim / m); k.off.multiplyScalar(1 / Math.max(0.25, wh.M)); KS.swallowed++; kitSnd('swallow', wh.A); };
+      const pull = (k) => { if (k.tube || k.pull === pr) return; if (k.p.distanceTo(wh.A) <= rz) { take(k); return; } if (!k.moving) kpDirty = true; k.pull = pr; k.moving = true; k.age = 0; };
+      for (const k of movers) if (k.alive && k.moving && k.kind !== 2 && !k.tube && k.p.distanceTo(wh.A) <= rs) pull(k);   // a moving prism flying into its reach
       if (simT < (pr.swT || -1)) continue; pr.swT = simT + 0.25 - 1e-6;   // the resting prisms round its mouth: four looks a second
-      kpNear(wh.A, rz, (k) => { if (k.kind !== 2) take(k); });
-      gridNear(fieldGrid, wh.A, rz, (i) => {
-        if (dead[i] || KIT.kp.length >= KP_MAX) return; const j = i * 3; tv.set(bp[j], bp[j + 1], bp[j + 2]); if (tv.distanceTo(wh.A) > rz) return;
+      kpNear(wh.A, rs, (k) => { if (k.kind !== 2 && !k.tube && k.p.distanceTo(wh.A) <= rs) pull(k); });
+      gridNear(fieldGrid, wh.A, rs, (i) => {
+        if (dead[i] || KIT.kp.length >= KP_MAX) return; const j = i * 3; tv.set(bp[j], bp[j + 1], bp[j + 2]); if (tv.distanceTo(wh.A) > rs) return;
         dead[i] = 10; act[i] = 2; KS.lifted++;   // out of the field (hidden), into the kit's prisms: moved, never deleted
-        const k = kpNew(tv, tq.fromArray(bq, i * 4), 0, null, 1, false); KIT.kp.push(k); take(k);
+        const k = kpNew(tv, tq.fromArray(bq, i * 4), 0, null, 1, false); KIT.kp.push(k); pull(k);
       });
+      for (let i = 0; i < crys.n; i++) {   // the race's crystals too: pulled, carried, set out of the way out
+        if (!crys.alive[i] || crys.tube[i] || crys.pull[i] === pr) continue;
+        if (crys.pos[i].distanceTo(wh.A) <= rs) { crys.pull[i] = pr; KS.crystalsPulled++; }
+      }
+    }
+  }
+  // The pull's velocity for anything at p drawn to a soliton's way in (round 23)
+  const puD = new V3(), puS = new V3();
+  function pullVel(pr, p, out) {
+    const wh = pr.wh, d = Math.max(1e-3, puD.subVectors(wh.A, p).length());
+    const sp = Math.min(Math.max(1, P.carrySpeed), Math.max(0, P.suckSpeed) * Math.max(1, P.suckRadius) / Math.max(d, 1));
+    puD.multiplyScalar(1 / d); puS.crossVectors(wh.t0, puD);   // a swirl round its axis, a third of the pull, fading at the mouth
+    return out.copy(puD).multiplyScalar(sp).addScaledVector(puS, sp * 0.33 * clamp01(d / Math.max(1, P.suckRadius)));
+  }
+  function kitPull() {   // each pulled prism's velocity this step: toward the mouth; one that reaches it is swallowed
+    for (const k of KIT.kp) {
+      if (!k.alive || !k.pull) continue;
+      const pr = k.pull;
+      if (!standing(pr)) { k.pull = null; continue; }   // it collapsed under it: it glides on, and rests where it stops
+      const rz = Math.max(0, P.swallowShare) * pr.wh.M;
+      if (k.p.distanceTo(pr.wh.A) <= rz) { k.tube = pr; k.pull = null; k.ts = 0; k.moving = false; k.v.set(0, 0, 0); k.off.subVectors(k.p, pr.wh.A); k.off.addScaledVector(pr.wh.t0, -k.off.dot(pr.wh.t0)); const m = k.off.length(), lim = 0.5 * pr.wh.b; if (m > lim) k.off.multiplyScalar(lim / m); k.off.multiplyScalar(1 / Math.max(0.25, pr.wh.M)); KS.swallowed++; kitSnd('swallow', pr.wh.A); continue; }
+      pullVel(pr, k.p, k.v); k.moving = true; k.age = 0;
+    }
+  }
+  const crE = new V3(), crT = new V3();
+  function kitCrystals(dt) {   // the pulled and carried crystals (round 23)
+    if (!crys.n) return;
+    const glide = Math.max(0.1, P.fireGlideSeconds);
+    for (let i = 0; i < crys.n; i++) {
+      if (!crys.alive[i]) continue;
+      const pr = crys.tube[i] || crys.pull[i];
+      if (crys.tube[i]) {
+        const wh = pr.wh;
+        if (!pr.alive || pr.dying || !wh || wh.phase === 'collapse' || wh.phase === 'cavein' || (crys.ts[i] += Math.max(1, P.carrySpeed) * dt) >= wh.L) {
+          whAt(wh, wh.L, crE, crT); crys.pos[i].copy(crE).addScaledVector(crys.off[i], tubeR(wh, wh.L)); crys.vel[i].copy(crT).multiplyScalar(0.5 * Math.max(0, P.fireSpeed)); crys.tube[i] = null; KS.crystalsFired++; continue;
+        }
+        whAt(wh, crys.ts[i], crys.pos[i]).addScaledVector(crys.off[i], tubeR(wh, crys.ts[i]));
+        continue;
+      }
+      if (pr) {
+        if (!standing(pr)) { crys.pull[i] = null; continue; }
+        const wh = pr.wh;
+        if (crys.pos[i].distanceTo(wh.A) <= Math.max(0, P.swallowShare) * wh.M) {
+          crys.pull[i] = null; crys.tube[i] = pr; crys.ts[i] = 0; crys.vel[i].set(0, 0, 0);
+          const o = crys.off[i].subVectors(crys.pos[i], wh.A); o.addScaledVector(wh.t0, -o.dot(wh.t0)); const m = o.length(), lim = 0.5 * wh.b; if (m > lim) o.multiplyScalar(lim / m); o.multiplyScalar(1 / Math.max(0.25, wh.M));
+          continue;
+        }
+        pullVel(pr, crys.pos[i], crys.vel[i]);
+      } else if (crys.vel[i].lengthSq() > 1e-4) crys.vel[i].multiplyScalar(Math.exp(-dt / glide));
+      else continue;
+      crys.pos[i].addScaledVector(crys.vel[i], dt);
     }
   }
   function kitFire(k, pr) {
     const wh = pr.wh; whAt(wh, wh.L, kpE, kpT);
-    k.p.copy(kpE).add(k.off); k.v.copy(kpT).multiplyScalar(Math.max(0, P.fireSpeed));
+    k.p.copy(kpE).addScaledVector(k.off, tubeR(wh, wh.L)); k.v.copy(kpT).multiplyScalar(Math.max(0, P.fireSpeed));
     if (k.off.lengthSq() > 1e-6) k.v.addScaledVector(kpU.copy(k.off).normalize(), 0.06 * Math.max(0, P.fireSpeed));
     k.tube = null; k.moving = k.v.lengthSq() > 9; k.by = pr.pilot; k.age = 0; KS.fired++; kitSnd('fire', k.p);
     if (!k.moving) kpRest(k);
@@ -2210,7 +2361,7 @@
       const pr = k.tube;
       if (!pr.alive || pr.dying || !pr.wh || pr.wh.phase === 'collapse' || pr.wh.phase === 'cavein') { kitFire(k, pr); continue; }   // it collapses: all of it out at once
       k.ts += Math.max(1, P.carrySpeed) * dt;
-      if (k.ts >= pr.wh.L) kitFire(k, pr); else whAt(pr.wh, k.ts, k.p).add(k.off);
+      if (k.ts >= pr.wh.L) kitFire(k, pr); else whAt(pr.wh, k.ts, k.p).addScaledVector(k.off, tubeR(pr.wh, k.ts));   // held to the wall's narrowing (round 23)
     }
   }
   // ---- moving prisms (Docs/PRISM_MOTION.md): a moving prism that RUNS INTO another (apart, then touching over the step)
@@ -2231,6 +2382,7 @@
       const reach = KP_R * (m.size + 1.6) + m.v.length() * dt + 1;
       let hit = null, hd = 1e9;
       const meet = (k) => {   // apart at the step's start, touching at its end (PRISM_MOTION.md 2: "runs into")
+        if (m.pull && m.pull === k.pull) return;   // round 23: pulled into one soliton together, they travel together
         const c = KP_R * (m.size + k.size), d1 = mvP1.distanceTo(k.p); if (d1 >= c || mvP0.distanceTo(k.p) < c) return;
         if (d1 < hd) { hd = d1; hit = { k, c, kind: k.kind, team: k.team, pos: k.p }; }
       };
@@ -2255,7 +2407,8 @@
           if (m.by >= 0) pil(m.by).prisms = (pil(m.by).prisms || 0) + 2; continue;
         }
       }
-      m.p.copy(mvP1); m.v.multiplyScalar(Math.exp(-dt / glide)); m.age += dt;
+      m.p.copy(mvP1); if (m.pull) continue;   // pulled: kitPull sets its velocity every step
+      m.v.multiplyScalar(Math.exp(-dt / glide)); m.age += dt;
       if (m.v.lengthSq() < 9 || m.age > 25) { m.moving = false; m.v.set(0, 0, 0); kpRest(m); }   // at rest where it stopped: moved, never deleted
     }
   }
@@ -2298,7 +2451,7 @@
     const running = race === 'running' && !stopped && mode === 'fly';
     kitSentinelsSweep();
     if (running) { kitZaps(dt); kitSwallow(); }
-    kitTube(dt); kitMovers(dt);
+    kitPull(); kitTube(dt); kitMovers(dt); kitCrystals(dt);
     if (running) { kitDanger(); kitPickups(); kitDeadFlyer(dt); }
     if (KIT.zaps.length) KIT.zaps = KIT.zaps.filter((z) => simT - z.t < 0.15);
   }
@@ -2497,6 +2650,18 @@
   const FL_MAX = 6000, flGeo = new THREE.BufferGeometry(); flGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(FL_MAX * 6), 3)); flGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(FL_MAX * 6), 3));
   const flume = new THREE.LineSegments(flGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9, depthTest: false, depthWrite: false })); flume.frustumCulled = false; flume.renderOrder = 10; scene.add(flume);
   const flA = new V3(), flB = new V3(), flT = new V3(), flU = new V3(), flW = new V3(), flC = new THREE.Color();
+  // Round 23: how a carried thing is distorted at s along a tube: its length along the tube's heading, stretched to
+  // 1 + carryStretch at the middle (none at the mouths) and squeezed across by 1 / sqrt of that (its volume kept), turned
+  // carryTwist turns from mouth to mouth (and a little more for each one, by its seed, so a stream is not in lockstep).
+  // Sets dum's rotation and scale; its position is the caller's.
+  const cpT = new V3(), cpP = new V3(), cpQ = new THREE.Quaternion();
+  function carryPose(wh, s, seed) {
+    const u = clamp01(s / Math.max(1e-3, wh.L)), st = 1 + Math.max(0, P.carryStretch) * Math.sin(Math.PI * u), sq = 1 / Math.sqrt(st);
+    whAt(wh, Math.min(s, wh.L), cpP, cpT);
+    dum.quaternion.setFromUnitVectors(ZAX, cpT.normalize());
+    dum.quaternion.multiply(cpQ.setFromAxisAngle(ZAX, KTAU * (Math.max(0, P.carryTwist) * u + 0.137 * seed)));
+    dum.scale.set(sq, sq, st);
+  }
   function kitDraw() {
     const on = isGM() && mode === 'fly';
     let n = 0;
@@ -2505,7 +2670,9 @@
       dum.position.copy(k.p);
       if (k.moving && k.v.lengthSq() > 9) dum.quaternion.setFromUnitVectors(ZAX, tv.copy(k.v).normalize()); else dum.quaternion.copy(k.q);
       const near = smooth(6, 40, k.p.distanceTo(cam.position)); if (near <= 0.01) continue;   // like the bridge: none fills the camera
-      dum.scale.setScalar(k.size * (k.kind === 2 ? 1.25 : 1) * near); dum.updateMatrix(); kpMesh.setMatrixAt(n, dum.matrix);
+      if (k.tube && k.tube.wh) { carryPose(k.tube.wh, k.ts, k.seed); dum.scale.multiplyScalar(k.size * near); }   // round 23: distorted through the tube
+      else dum.scale.setScalar(k.size * (k.kind === 2 ? 1.25 : 1) * near);
+      dum.updateMatrix(); kpMesh.setMatrixAt(n, dum.matrix);
       if (k.danger) kcC.copy(KC.danger); else if (k.kind === 2) kcC.copy(KC.sup); else { if (k.team && DOMAIN[k.team] != null) kcC.setHex(DOMAIN[k.team]).multiplyScalar(0.8); else kcC.copy(KC.plain); if (k.kind === 1) kcC.lerp(KC.shield, 0.7); }
       kpMesh.setColorAt(n, kcC); n++;
     }
@@ -2825,12 +2992,14 @@
     const wh = pr.wh, vis = clamp01(P.bridgeVisibility); if (!wh || vis <= 0.004) return nFill;
     const span = wh.s1 - wh.s0; if (span < 1) return nFill;
     const fade = pr.dying ? Math.max(0, 1 - pr.dieT / FADE_S) : 1, A = vis * fade; if (A <= 0.004) return nFill;
+    // round 20 (Yash, 2026-10-28: "remove the rings of spindle. From the trunk as well as the roots, so there should not be
+    // any distinction between the wormhole and the trunk. It's the same thing"): a tunnel with its trunk shown, and every
+    // root, draws no bridge at all - no spindles, no glass of its own. The trunk IS the wormhole (its bore is the tunnel's
+    // wall, buildTree), and a root is its bark. The bridge stays only for a tunnel whose trunk is hidden (trunkVisibility 0).
+    if (wh.chan || clamp01(P.trunkVisibility) > 0.004) return nFill;
     const base = pilotColor(pr.pilot), col = base.clone().lerp(brW, clamp01(P.bridgeWhite));
     if (whFill(nFill, wh, A, base, brW.clone().lerp(base, 0.4), P.bridgeGlass)) nFill++;
-    if (wh.chan) {   // round 16: a labyrinth channel; the one you would take at the next fork is lit
-      const g = ftLive.gate, next = g && g.state === 'tube' && g.net === pr.net && (g.pair.kids || []).length > 1 ? forkPick(g) : null;
-      drawChanFrame(wh, A * Math.max(0, P.labyrinthFrame) * (pr === next ? 3 : 1), col, BR_CAM_NEAR, BR_CAM_FULL, 1);
-    } else drawFrame(wh, A, col, BR_CAM_NEAR, BR_CAM_FULL);
+    drawFrame(wh, A, col, BR_CAM_NEAR, BR_CAM_FULL);
     return nFill;
   }
   // The wormhole's geometry (round 9, Yash: "the reticles and the bridges geometry need to be same, and the same position same
@@ -2888,17 +3057,19 @@
   const treeVS = [
     'attribute float aS; attribute float aBi; attribute float aCap; attribute float aR; attribute float aB; attribute float aPhi; attribute vec3 aBase;',
     'uniform float bg[16];',
-    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV;',
+    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV; varying float vDist;',
     'void main(){',
     '  float g = 1.0; vec3 p = position;',
     '  if (aBi > -0.5) { g = bg[int(aBi + 0.5)]; p = aBase + (position - aBase) * g; }',   // a branch grows out of its root
-    '  vec4 mv = modelViewMatrix * vec4(p, 1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix * normal);',
+    '  vec4 mv = modelViewMatrix * vec4(p, 1.0); vV = normalize(-mv.xyz); vDist = length(mv.xyz); vN = normalize(normalMatrix * normal);',
     '  vS = aS; vCap = aCap; vR = aR; vB = aB; vPhi = aPhi; vG = g; gl_Position = projectionMatrix * mv; }',
   ].join('\n');
   // shared by both passes: outside the tunnel's window (f0..f1, way in 0 -> way out 1) nothing; condensing at its fronts
   const treeWin = [
     'uniform float f0; uniform float f1; uniform float edge; uniform float t;',
-    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV;',
+    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV; varying float vDist;',
+    // Yash, 2026-10-28: the ride must be calm - up close (inside the tube) the wood's lines and the warp fade away
+    'float near(){ return smoothstep(15.0, 90.0, vDist); }',
     'float win(){ if (vG < 0.01 || vS < f0 || vS > f1) discard; return smoothstep(0.0, edge, min(vS - f0, f1 - vS)); }',
     'float flow(){ return 0.75 + 0.25 * sin((vS + vB) * 23.0 - t * 2.4); }',   // water running top to bottom
   ].join('\n');
@@ -2906,11 +3077,11 @@
     const U = { bg: { value: new Array(BR_MAXN).fill(0) }, f0: { value: 0 }, f1: { value: 1 }, edge: { value: 0.06 }, t: { value: 0 } };
     const glass = new THREE.ShaderMaterial({
       uniforms: Object.assign({ cIn: { value: new THREE.Color() }, cOut: { value: new THREE.Color() }, alpha: { value: 1 }, glass: { value: 0.03 },
-        rim: { value: 0.6 }, power: { value: 2.5 }, rings: { value: 6 }, grain: { value: 0.5 }, grainN: { value: 22 } }, U),
+        rim: { value: 0.6 }, power: { value: 2.5 }, rings: { value: 6 }, grain: { value: 0.5 }, grainN: { value: 22 }, inner: { value: 0.1 } }, U),
       vertexShader: treeVS,
       fragmentShader: [treeWin,
         'uniform vec3 cIn; uniform vec3 cOut; uniform float alpha; uniform float glass; uniform float rim; uniform float power; uniform float rings;',
-        'uniform float grain; uniform float grainN;',
+        'uniform float grain; uniform float grainN; uniform float inner;',
         'void main(){',
         '  float w = win();',
         '  float fr = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), power);',   // the wall's glass: Fresnel at the silhouette
@@ -2918,7 +3089,9 @@
         // round 15: the bark's grain - fissures running along the wood, broken into lengths, lit from inside as from out
         '  float along = vS * 9.0 + vB * 5.0, wob = 0.18 * sin(along * 1.7 + vPhi * 11.0);',
         '  float line = pow(abs(sin((vPhi * grainN + wob) * 3.14159)), 18.0) * smoothstep(0.25, 0.6, fract(along + vPhi * 3.7));',
-        '  if (vCap < 0.5) a += grain * line * (0.35 + 0.65 * fr);',
+        '  if (vCap < 0.5) a += grain * line * (0.35 + 0.65 * fr) * near();',
+        // the bore (the tube you ride, aR 2): soft and smooth, a little denser than the bark - no lines, a gentle sheen
+        '  if (vR > 1.5 && vCap < 0.5) a = inner * (0.55 + 0.45 * pow(fr, 1.4));',
         '  if (vCap > 0.5) a = glass + rim * (0.6 * pow(0.5 + 0.5 * cos(vR * rings * 6.2831853), 8.0) + 0.4 * smoothstep(0.85, 1.0, vR));',
         '  gl_FragColor = vec4(mix(cIn, cOut, vS) * a * alpha * w * flow(), 1.0);',
         '}'].join('\n'),
@@ -2931,7 +3104,7 @@
         'uniform float k;',
         'void main(){',
         '  float w = win(); vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n; float rim = 1.0 - abs(dot(n, normalize(vV)));',
-        '  gl_FragColor = vec4(n.xy * sin(3.14159 * rim) * k * w * flow(), 0.0, 1.0);',   // the tube's warp (twMat), flowing
+        '  gl_FragColor = vec4(n.xy * sin(3.14159 * rim) * k * w * flow() * (vR > 1.5 ? 0.35 : 1.0) * near(), 0.0, 1.0);',   // the tube's warp (twMat), flowing
         '}'].join('\n'),
       transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
     });
@@ -2961,6 +3134,14 @@
       whSurf(wh, s, phi, trunkR(wh, s, phi, seed), 0, q); push(q, u, -1, 0, 1, 0, q, j / TRUNK_SEG);
     }
     grid(0, TRUNK_RINGS, TRUNK_SEG);
+    // round 20: the bore - the tunnel's wall is the trunk's inside, in the same wood, so the trunk and the wormhole are one
+    // thing: a log you fly through. Nothing else is drawn on it.
+    const bore = pos.length / 3;
+    for (let r = 0; r <= TRUNK_RINGS; r++) for (let j = 0; j <= TRUNK_SEG; j++) {
+      const u = r / TRUNK_RINGS, s = u * wh.L, phi = j / TRUNK_SEG * Math.PI * 2;
+      whSurf(wh, s, phi, fullR(wh, s), 0, q); push(q, u, -1, 0, 2, 0, q, j / TRUNK_SEG);   // aR 2 marks the bore (the smooth inner tube)
+    }
+    grid(bore, TRUNK_RINGS, TRUNK_SEG);
     // the cut faces: the annulus from the mouth's rim out to the bark, its tree rings by aR
     for (const end of [0, 1]) {
       const s = end * wh.L, start = pos.length / 3, mouth = fullR(wh, s);
@@ -3058,7 +3239,7 @@
       U.bg.value[i] = r ? Math.min(smooth(0, 1, (age - r.tReach) / grow), smooth(0, edge, Math.min(r.u - f0, f1 - r.u))) * cave : 0;
     }
     const G = tr.mats.glass.uniforms, base = pilotColor(pr.pilot);
-    G.cIn.value.copy(base); G.cOut.value.copy(brW).lerp(base, 0.4); G.alpha.value = A; G.glass.value = Math.max(0, P.trunkGlass);
+    G.cIn.value.copy(base); G.cOut.value.copy(brW).lerp(base, 0.4); G.alpha.value = A; G.glass.value = Math.max(0, P.trunkGlass); G.inner.value = Math.max(0, P.tubeInner);
     G.rim.value = Math.max(0, P.trunkRim); G.power.value = Math.max(0.5, P.trunkFresnel); G.rings.value = Math.max(1, P.trunkRings);
     G.grain.value = Math.max(0, P.trunkGrain); G.grainN.value = Math.max(2, Math.round(P.trunkGrainLines));
     tr.mats.warp.uniforms.k.value = 0.05 * Math.max(0, P.trunkWarp) * A;
@@ -3078,7 +3259,7 @@
   // omnicrystal (omniPerLap on the course line) and your next RT digs the labyrinth instead of a wormhole: one entrance on
   // your nose line (the source), labyrinthBranchPointsMax forks branching in 3D, labyrinthOpeningsMax openings spread over
   // labyrinthSpread degrees round its centre, labyrinthRadiusMax u out, jittered by labyrinthRandomness. You slide in; at
-  // each fork the left stick, leaned toward a channel (past forkLean), takes it (no lean: the straightest). Every channel
+  // each fork you fly into the channel you want (round 20: RT and the sticks, bouncing off the walls). Every channel
   // is its own tunnel (a pair with its own wh on a sampled path, wh.poly), dug through soil (the soil, below).
   const LAB_KEYS = ['labyrinthBranchPointsMin', 'labyrinthBranchPointsMax', 'labyrinthOpeningsMin', 'labyrinthOpeningsMax', 'labyrinthRadiusMin', 'labyrinthRadiusMax', 'labyrinthSpread', 'labyrinthRandomness'];
   const iclamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(v)));
@@ -3246,8 +3427,8 @@
       drawChanFrame(wh, A * (i === r.net.entry ? 1.6 : 1), col, RET_NEAR, RET_FULL, P.reticleNearLight);
     });
   }
-  // The fork ahead of a rider: which channel it takes there - the one whose start points most along the left stick's lean
-  // (held past forkLean any time on the way: g.leanW, in the world), else the straightest.
+  // The fork ahead of a rider: which channel it would go down - the one leaving on the side of the root it is on (g.er),
+  // else the straightest (round 20: you fly into it yourself; this only lights it).
   const fkP = new V3(), fkT = new V3(), fkQ = new V3();
   function forkSide(k, out) { whAt(k.wh, Math.min(k.wh.L, 30), out).sub(fkP); return out.addScaledVector(fkT, -out.dot(fkT)); }
   function forkPick(g) {
@@ -3256,7 +3437,8 @@
     let best = kids[0], bs = -Infinity;
     for (const k of kids) {
       forkSide(k, fkQ);
-      const sc = g.leanW ? (fkQ.lengthSq() > 1e-6 ? fkQ.normalize().dot(g.leanW) : -1) : -fkQ.length();
+      const want = g.er;   // round 20: the side of the root you are on
+      const sc = want ? (fkQ.lengthSq() > 1e-6 ? fkQ.normalize().dot(want) : -1) : -fkQ.length();
       if (sc > bs) { bs = sc; best = k; }
     }
     return best;
@@ -3285,6 +3467,7 @@
       const pr = new Pair(whAt(wh, 0.5 * wh.L, new V3()), true); pr.wh = wh; pr.net = net; pr.edge = i; whSync(pr); pairs.push(pr); net.pairs.push(pr);
     });
     built.edges.forEach((e, i) => { net.pairs[i].kids = e.kids.map((k) => net.pairs[k]); });
+    for (const pr of net.pairs) for (const k of pr.kids) k.parent = pr;   // round 20: you can fly back up a root
     seedNet(net);
     ftLive.lastNet = net; ftLive.ab.omni = false;
     myPair = net.pairs[built.entry];
@@ -3298,37 +3481,105 @@
     if (stance) stance = false;
     if (!curPilot) portalFlash = 1;
   }
-  // Sliding the labyrinth: the entry multiplier rising to the middle one through the forks, easing to the exit one on the
-  // last channel, plus forkBoost a fork taken; at each fork into the channel forkPick chooses.
+  // Round 20 (Yash, 2026-10-28: "for the roots, we won't be traveling forward randomly. Rather, we will also control going
+  // forward using our trigger inside the root. So once we are inside the root, then we can use the left thumbstick to go
+  // forward, backward, left, right, and on hitting the surfaces, we will bounce off a little bit and move like that. Inside
+  // the root, and this way we can navigate through the root. In a funny way"): inside the roots you FLY yourself.
+  // Round 21 (Yash: "it need to be easily navigable. Our controls inside the root will be controlled by left thumbstick"):
+  // along the root you cruise at rootCruise on your own (RT pushes you faster, rootThrust, up to rootMaxSpeed); the LEFT
+  // stick moves you round the root - left and right, up and down, the way it would turn your nose (rootMove; rootDrag
+  // calms you across it). The walls bounce
+  // you off (rootBounce of your speed into them; the speed along the wall is kept), and rootGravity (0: off) draws you to
+  // the floor. Your nose follows the root you are in, the way you face along it. Past a fork you are in whichever root you
+  // steered into; back past a root's start you are in its parent again. Out of a tip (or back out of the source) you leave.
+  // (Round 19's wall slide, which carried you along on its own, is gone.)
+  const HULL_R = 2.5, rnC = new V3(), rnT = new V3(), rnA = new V3(), rnB = new V3(), rnD = new V3(), rnG = new V3(), rnM = new THREE.Matrix4(), rnX = new V3(), rnY = new V3(), rnZ = new V3();
+  // The share of the way along a channel nearest p (as s; past an end, on along its end heading, so s < 0 or s > L).
+  function chanNearest(wh, p) {
+    const pp = wh.poly.P, n = NS - 1, seg = wh.L / n; let bs = 0, bd = Infinity;
+    for (let i = 0; i < n; i++) {
+      rnA.subVectors(pp[i + 1], pp[i]); const l2 = rnA.lengthSq();
+      const k = l2 > 1e-9 ? Math.max(0, Math.min(1, rnB.subVectors(p, pp[i]).dot(rnA) / l2)) : 0;
+      const d = rnB.copy(pp[i]).addScaledVector(rnA, k).distanceToSquared(p);
+      if (d < bd) { bd = d; bs = (i + k) * seg; }
+    }
+    if (bs <= 1e-6) { const a = rnB.subVectors(p, pp[0]).dot(wh.poly.T[0]); if (a < 0) bs = a; }
+    if (bs >= wh.L - 1e-6) { const a = rnB.subVectors(p, pp[n]).dot(wh.poly.T[n]); if (a > 0) bs = wh.L + a; }
+    return bs;
+  }
+  // How deep inside a root p is: its distance off the centreline as a share of the radius there (under 1: inside)
+  function rootScore(pr, p) { const wh = pr.wh, s = chanNearest(wh, p), sc = Math.max(0, Math.min(wh.L, s)); polyAt(wh, sc, rnC); return { pr, s, q: rnC.distanceTo(p) / Math.max(1, chanRadius(wh, sc)) }; }
+  function rootPose(h, u) {   // nose along h, up u
+    rnY.copy(u); rnZ.copy(h).negate(); rnX.crossVectors(rnY, rnZ).normalize(); rnY.crossVectors(rnZ, rnX).normalize();
+    rnM.makeBasis(rnX, rnY, rnZ); hull.quaternion.setFromRotationMatrix(rnM);
+  }
+  function rootLeave(g, nose) {
+    rnG.copy(g.upv).addScaledVector(nose, -g.upv.dot(nose)); if (rnG.lengthSq() < 1e-6) rnG.set(0, 1, 0).addScaledVector(nose, -nose.y); rootPose(nose, rnG.normalize());
+    g.state = 'done'; g.used = true;
+    for (const pr of g.net.pairs) { pr.wh.out = true; if (pr.wh.phase === 'open') pr.wh.phase = 'stay'; }
+    speed = g.vIn * Math.max(0.05, P.rideExitMultiplier); velNow.copy(nose).multiplyScalar(speed);
+    if (raceStats && race === 'running') raceStats.catches++;
+    lastGate = { lab: true, len: Math.round(g.dist), forks: g.forks }; slingFlash = 1.6;
+  }
   function labTransit(dt) {
     const g = ftLive.gate; let wh = g.pair.wh;
-    const lm = Math.hypot(ftLive.leanX || 0, ftLive.leanUp || 0);
-    if (lm > Math.max(0.05, P.forkLean)) { basis(); g.leanW = new V3().addScaledVector(right, ftLive.leanX / lm).addScaledVector(up, ftLive.leanUp / lm); }
-    const u = clamp01(g.s / Math.max(1e-3, wh.L)), e = Math.max(0.05, P.rideEntryMultiplier), m = Math.max(0.05, P.rideMidMultiplier), x = Math.max(0.05, P.rideExitMultiplier);
-    const mul = wh.mouthIn && wh.mouthOut ? rideMultiplier(P, u) : wh.mouthIn ? e + (m - e) * smooth(0, 1, u) : wh.mouthOut ? x + (m - x) * (1 - smooth(0, 1, u)) : m;
-    const v = g.vIn * mul * (1 + Math.max(0, P.forkBoost) * g.forks);
-    g.s += v * dt; g.dist += v * dt;
-    while (g.s >= wh.L && (g.pair.kids || []).length) {
-      const pick = forkPick(g), many = g.pair.kids.length > 1;
-      whAt(wh, wh.L, whA, whB); whQ.setFromUnitVectors(g.tIn, whB); g.q0 = whQ.clone().multiply(g.q0); g.tIn = whB.clone();
-      g.s -= wh.L; g.prev = g.pair; g.pair = pick; if (many) { g.forks++; if (!curPilot) forkFlash = 0.9; }
-      g.leanW = null; g.aiPick = null; wh = pick.wh;
+    const vMax = Math.max(5, P.rootMaxSpeed);
+    if (!g.free && g.s < 0) {   // the dive to the source's mouth (roots dug by a reticle lie ahead of you)
+      g.s += g.vIn * dt; g.dist += g.vIn * dt;
+      hull.position.copy(wh.A).addScaledVector(wh.t0, Math.min(0, g.s)); velNow.copy(wh.t0).multiplyScalar(g.vIn);
+      if (g.s < 0) return;
     }
-    if (g.s < 0) { hull.position.copy(wh.A).addScaledVector(wh.t0, g.s); whB.copy(wh.t0); }
-    else {
-      whAt(wh, Math.min(g.s, wh.L), whA, whB);
-      hull.position.copy(whA);
-      whQ.setFromUnitVectors(g.tIn, whB); hull.quaternion.copy(whQ).multiply(g.q0).normalize();
+    if (!g.free) {   // in: you carry your speed in (up to rootMaxSpeed), along the root
+      g.s = Math.max(0, chanNearest(wh, hull.position)); polyAt(wh, Math.min(g.s, wh.L), rnC, rnT);
+      Object.assign(g, { free: true, h: rnT.clone(), vel: rnT.clone().multiplyScalar(Math.min(g.vIn, vMax)), upv: g.net.up.clone(), side: new V3(), dr: new V3(), er: null, bumps: 0, dist: g.dist || 0 });
     }
-    velNow.copy(whB).multiplyScalar(v);
-    if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
-    if (g.s >= wh.L - 1e-6) {   // out of an opening, on its heading
-      g.state = 'done'; g.used = true;
-      for (const pr of g.net.pairs) { pr.wh.out = true; if (pr.wh.phase === 'open') pr.wh.phase = 'stay'; }
-      speed = g.vIn * x;
-      if (raceStats && race === 'running') raceStats.catches++;
-      lastGate = { lab: true, len: Math.round(g.dist), forks: g.forks }; slingFlash = 1.6;
+    const th = holds.R.on ? holds.R.live : 0, mv = Math.max(0, P.rootMove);
+    const sc0 = Math.max(0, Math.min(wh.L, g.s)), r0 = chanRadius(wh, sc0); polyAt(wh, sc0, rnC, rnT);
+    // the nose follows the root, the way you face along it; up is the network's up, square to the nose
+    rnD.copy(rnT).multiplyScalar(g.h.dot(rnT) < 0 ? -1 : 1); g.h.lerp(rnD, 1 - Math.exp(-6 * dt)).normalize();
+    rnG.copy(g.net.up).addScaledVector(g.h, -g.net.up.dot(g.h));
+    if (rnG.lengthSq() > 0.06) g.upv.lerp(rnG.normalize(), 1 - Math.exp(-3 * dt));
+    g.upv.addScaledVector(g.h, -g.upv.dot(g.h)); if (g.upv.lengthSq() < 1e-6) g.upv.crossVectors(g.h, rnB.set(Math.abs(g.h.x) < 0.9 ? 1 : 0, Math.abs(g.h.x) < 0.9 ? 0 : 1, 0)); g.upv.normalize();
+    g.side.crossVectors(g.h, g.upv).normalize();
+    // along the root you cruise at rootCruise (easing to it), RT pushes you faster up to rootMaxSpeed; across it the left
+    // stick pushes you (rootMove), gravity (square to the root) draws you to its floor, and rootDrag calms you
+    let vf = g.vel.dot(g.h); rnB.copy(g.vel).addScaledVector(g.h, -vf);
+    if (th > 0.02) vf = Math.min(vMax, vf + Math.max(0, P.rootThrust) * th * dt);
+    else vf += (Math.min(vMax, Math.max(0, P.rootCruise)) - vf) * (1 - Math.exp(-1.5 * dt));
+    rnA.copy(g.side).multiplyScalar(mv * (ftLive.rootSide || 0)).addScaledVector(g.upv, mv * (ftLive.rootRise || 0));
+    rnG.copy(g.net.up).addScaledVector(rnT, -g.net.up.dot(rnT)); rnA.addScaledVector(rnG, -Math.max(0, P.rootGravity));
+    rnB.addScaledVector(rnA, dt).multiplyScalar(Math.exp(-Math.max(0, P.rootDrag) * dt));
+    g.vel.copy(g.h).multiplyScalar(vf).add(rnB);
+    const sp0 = g.vel.length(); if (sp0 > vMax) g.vel.multiplyScalar(vMax / sp0);
+    hull.position.addScaledVector(g.vel, dt);
+    // which root you are in now: this one; past its end, one of its kids; back past its start, its parent or a sibling
+    let best = rootScore(g.pair, hull.position);
+    const cand = [];
+    if (g.s > wh.L - 2.5 * r0) cand.push(...(g.pair.kids || []));
+    if (g.s < 2.5 * r0 && g.pair.parent) cand.push(g.pair.parent, ...g.pair.parent.kids.filter((k) => k !== g.pair));
+    for (const pr of cand) { if (!pr.alive) continue; const r = rootScore(pr, hull.position); if (r.q < best.q) best = r; }
+    if (best.pr !== g.pair) {
+      const old = g.pair;
+      if ((old.kids || []).includes(best.pr) && old.kids.length > 1) { g.forks++; if (!curPilot) forkFlash = 0.9; }
+      g.prev = old; g.pair = best.pr; wh = best.pr.wh; g.aiPick = null;
     }
+    g.s = best.s;
+    const sp = g.vel.length(); g.dist += sp * dt;
+    if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, sp); raceStats.dist += sp * dt; }
+    if (g.s >= wh.L && !(g.pair.kids || []).length) { polyAt(wh, wh.L, rnC, rnT); rootLeave(g, rnT.clone()); return; }   // out of a tip, on along it
+    if (g.s <= -HULL_R && !g.pair.parent) { rootLeave(g, wh.t0.clone().negate()); camTail = null; snapCam = true; return; }   // back out of the source
+    // the wall: you bounce off it
+    const sc = Math.max(0, Math.min(wh.L, g.s)); polyAt(wh, sc, rnC, rnT);
+    rnD.subVectors(hull.position, rnC); rnD.addScaledVector(rnT, -rnD.dot(rnT));
+    const rIn = Math.max(1, chanRadius(wh, sc) - HULL_R), off = rnD.length();
+    if (off > rIn) {
+      rnD.multiplyScalar(1 / off); hull.position.addScaledVector(rnD, rIn - off);
+      const vn = g.vel.dot(rnD); if (vn > 0) { g.vel.addScaledVector(rnD, -(1 + clamp01(P.rootBounce)) * vn); if (vn > 4) g.bumps++; }   // a bump, not a graze
+      g.dr.copy(rnD).multiplyScalar(rIn);
+    } else g.dr.copy(rnD);
+    g.er = off > 0.2 * rIn ? (g.er || new V3()).copy(g.dr).normalize() : null;   // your side of the root (forkPick: the root you would take)
+    rootPose(g.h, g.upv);
+    velNow.copy(g.vel);
   }
   let forkFlash = 0;
   // ================= round 16: the soil the labyrinth is dug through =================
@@ -3470,20 +3721,70 @@
     g.setAttribute('aBase', new THREE.Float32BufferAttribute(pos.slice(), 3));
     g.setIndex(idx); g.computeVertexNormals(); return g;
   }
+  // Round 20 (Yash, 2026-10-28: "in the root, it won't be just the warping of space-time, so it won't be transparent from
+  // inside. In the root, it will be pretty more opaque. With a very less outside appearance visible ... It will be an
+  // underground world in 3D"): while you are inside a network, its roots also draw their INSIDE as an earthen wall -
+  // fibres running along the root, knots, grit - hiding rootOpacity of the world outside, lit by your lamp (rootLamp, the
+  // walls near you) and fading into the dark rootFog u off. The ends of every root stay open (an opening fully, a fork
+  // only a little), so you see on into the next root and the light at a tip. From outside nothing changes.
+  const ROOT_DARK = new THREE.Color(0.025, 0.018, 0.012);
+  function rootInMat() {
+    return new THREE.ShaderMaterial({
+      uniforms: { f0: { value: 0 }, f1: { value: 1 }, edge: { value: 0.05 }, len: { value: 100 }, endW: { value: 20 }, lo0: { value: 0 }, lo1: { value: 0 },
+        op: { value: 0.94 }, lamp: { value: 1 }, fall: { value: 60 }, fog: { value: 160 }, hullP: { value: new V3() }, dark: { value: ROOT_DARK.clone() }, seed: { value: 0 }, grainN: { value: 13 } },
+      vertexShader: 'attribute float aS; attribute float aPhi; varying float vS; varying float vPhi; varying vec3 vW; varying vec3 vN; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); vS = aS; vPhi = aPhi; gl_Position = projectionMatrix * viewMatrix * w; }',
+      fragmentShader: [
+        'uniform float f0; uniform float f1; uniform float edge; uniform float len; uniform float endW; uniform float lo0; uniform float lo1;',
+        'uniform float op; uniform float lamp; uniform float fall; uniform float fog; uniform vec3 hullP; uniform vec3 dark; uniform float seed; uniform float grainN;',
+        'varying float vS; varying float vPhi; varying vec3 vW; varying vec3 vN;',
+        'float h(vec3 q){ return fract(sin(dot(q, vec3(127.1, 311.7, 74.7)) + seed) * 43758.5453); }',
+        'float vn(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);',
+        '  return mix(mix(mix(h(i), h(i + vec3(1,0,0)), f.x), mix(h(i + vec3(0,1,0)), h(i + vec3(1,1,0)), f.x), f.y),',
+        '             mix(mix(h(i + vec3(0,0,1)), h(i + vec3(1,0,1)), f.x), mix(h(i + vec3(0,1,1)), h(i + vec3(1,1,1)), f.x), f.y), f.z); }',
+        'void main(){',
+        '  if (vS < f0 || vS > f1) discard;',
+        '  float w = smoothstep(0.0, edge, min(vS - f0, f1 - vS)), sl = vS * len;',
+        '  float ends = mix(lo0, 1.0, smoothstep(0.0, endW, sl)) * mix(lo1, 1.0, smoothstep(0.0, endW, len - sl));',   // its ends stay open
+        // Yash, 2026-10-28: no black fill. The inner tube is soft and smooth - one slow warm tone, no fibres - a little
+        // denser at its silhouette, lit by your lamp, and the far walls fade to CLEAR (not into the dark).
+        '  float n = vn(vW * 0.025);',
+        '  vec3 c = mix(vec3(0.44, 0.32, 0.22), vec3(0.66, 0.52, 0.38), n);',
+        '  vec3 nn = normalize(vN); if (dot(nn, cameraPosition - vW) < 0.0) nn = -nn;',
+        '  vec3 E = normalize(cameraPosition - vW); float fr = 1.0 - abs(dot(nn, E));',
+        '  vec3 L = hullP - vW; float dh = max(1e-3, length(L));',
+        '  float lit = 0.75 + lamp * 0.6 * (0.4 + 0.6 * max(0.0, dot(nn, L / dh))) / (1.0 + dh * dh / (fall * fall));',
+        '  float fade = exp(-length(cameraPosition - vW) / fog);',
+        '  gl_FragColor = vec4(c * lit, op * (0.35 + 0.65 * fr) * fade * w * ends);',
+        '}'].join('\n'),
+      transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    });
+  }
+  function youInRoots() { const y = liveOf(0), g = y && y.gate; return g && g.net && g.state === 'tube' ? g.net : null; }
   function drawRootSkin(pr, A) {
     const wh = pr.wh;
-    if (!pr.skin && pr.alive) { const mats = treeMaterials(), mesh = new THREE.Mesh(buildRootSkin(wh), mats.glass); mesh.frustumCulled = false; mesh.renderOrder = 3; scene.add(mesh); pr.skin = { mesh, mats }; }
+    if (!pr.skin && pr.alive) {
+      const mats = treeMaterials(), geo = buildRootSkin(wh), mesh = new THREE.Mesh(geo, mats.glass), inMesh = new THREE.Mesh(geo, rootInMat());
+      mesh.frustumCulled = inMesh.frustumCulled = false; mesh.renderOrder = 3; inMesh.renderOrder = 8; scene.add(mesh); scene.add(inMesh); pr.skin = { mesh, mats, inMesh };
+    }
     if (!pr.skin) return;
     let f0 = wh.s0 / wh.L, f1 = wh.s1 / wh.L; if (f0 <= 1e-3) f0 = -1; if (f1 >= 1 - 1e-3) f1 = 2;
     const U = pr.skin.mats.U, G = pr.skin.mats.glass.uniforms;
     U.f0.value = f0; U.f1.value = f1; U.edge.value = Math.max(4, 0.06 * wh.L) / wh.L; U.t.value = simT;
     G.cIn.value.copy(ROOT_IN); G.cOut.value.copy(ROOT_OUT); G.alpha.value = A; G.glass.value = Math.max(0, P.rootGlass); G.rim.value = Math.max(0, P.rootRim);
-    G.power.value = Math.max(0.5, P.trunkFresnel); G.rings.value = 1; G.grain.value = Math.max(0, P.rootGrain); G.grainN.value = Math.max(2, Math.round(P.trunkGrainLines * 0.6));
+    G.power.value = Math.max(0.5, P.trunkFresnel); G.grain.value = Math.max(0, P.rootGrain); G.grainN.value = Math.max(2, Math.round(P.trunkGrainLines * 0.6));
     pr.skin.mesh.visible = A > 0.004 && pr.alive;
+    const inNet = youInRoots(), I = pr.skin.inMesh.material.uniforms;
+    pr.skin.inMesh.visible = pr.skin.mesh.visible && !!inNet && inNet === pr.net && P.rootOpacity > 0.004;
+    if (pr.skin.inMesh.visible) {
+      I.f0.value = f0; I.f1.value = f1; I.edge.value = U.edge.value; I.len.value = wh.L; I.endW.value = 0.6 * wh.b;
+      I.lo0.value = wh.mouthIn ? 0 : 0.85; I.lo1.value = wh.mouthOut ? 0 : 0.85;
+      I.op.value = clamp01(P.rootOpacity) * A; I.lamp.value = Math.max(0, P.rootLamp); I.fall.value = Math.max(10, 4 * wh.b); I.fog.value = Math.max(5, P.rootFog);
+      I.hullP.value.copy(hull.position); I.seed.value = wh.seed || 0;
+    }
   }
   function sweepSoil() {   // a channel gone: its soil and its bark go with it
     for (const pr of pairs) if (pr.soil && (!pr.alive)) { scene.remove(pr.soil); pr.soil.geometry.dispose(); pr.soil.material.dispose(); pr.soil = null; }
-    for (const pr of pairs) if (pr.skin && (!pr.alive)) { scene.remove(pr.skin.mesh); pr.skin.mesh.geometry.dispose(); pr.skin.mats.glass.dispose(); pr.skin.mats.warp.dispose(); pr.skin = null; }
+    for (const pr of pairs) if (pr.skin && (!pr.alive)) { scene.remove(pr.skin.mesh); scene.remove(pr.skin.inMesh); pr.skin.mesh.geometry.dispose(); pr.skin.mats.glass.dispose(); pr.skin.mats.warp.dispose(); pr.skin.inMesh.material.dispose(); pr.skin = null; }
   }
 
   // Your reticle (rounds 23, 26): faint at rest, full while the right stick or LT shapes it, rippling out of its centre as
@@ -3543,10 +3844,11 @@
     return (twMeshes[i] = m);
   }
   function updateTubeWarp() {
-    let n = 0;
+    let n = 0; const inNet = youInRoots();
     twMat.uniforms.k.value = 0.05 * Math.max(0, P.warpStrength);
     if (mode === 'fly' && P.warpStrength > 0) for (const pr of pairs) {
       if (!pr.wh || !pr.alive || n >= TW_MAX) continue;
+      if (pr.wh.chan && pr.net === inNet) continue;   // round 20: from inside, the roots are earth, not bent space
       const wh = pr.wh, span = wh.s1 - wh.s0; if (span < 1) continue;
       const fade = pr.dying ? Math.max(0, 1 - pr.dieT / FADE_S) : 1;
       const m = twMesh(n++), pos = m.geometry.attributes.position, nor = m.geometry.attributes.normal, sg = m.geometry.attributes.aSign;
@@ -3835,7 +4137,7 @@
       const t = j / 20, sq = i / 8;   // the bend (the right stick), and LT's squeeze (harder: a longer shaft before it)
       const sh = shapeFor(P, sq, 0.05 + 0.95 * t, 0, massK(curPilot)), th = sh.theta;
       if (turnOnly && th < 0.35) continue;
-      const x = ahead + sh.S + sh.R * Math.sin(th), y = sh.R * (1 - Math.cos(th));
+      const end = th < 1e-4 ? [sh.L, 0] : conicAt(conicOf({ L: sh.L, theta: th }), sh.L, cnOut), x = ahead + end[0], y = end[1];   // round 22: the arc's way out
       const hx = Math.cos(th), hy = Math.sin(th), dx = tx - x, dy = ty - y, along = dx * hx + dy * hy;
       if (along < 60) continue;
       // round 7: the plan that reaches the ring SOONEST - the ride at its mean speed, then the flight from the way out to the
@@ -3872,21 +4174,29 @@
     // The one-thumb mix: the LEFT stick flies (yaw, pitch; full throttle), the RIGHT stick bends the reticle, LT lengthens its shaft
     // it, an RT press forms it. The AI holds its line while it shapes (aiShapeSeconds), then presses RT.
     const gate = ftLive.gate, riding = !!(gate && gate.state === 'tube'); let lt = 0, rt = 0, bend = false;
-    if (riding && gate.net) {   // round 16, the labyrinth: at a fork, lean toward the channel that leads nearest the ring (once a fork; a rookie sometimes leans wrong)
-      ai.gHold = 0; ai.gShaping = false;
-      const kids = gate.pair.kids || [];
+    if (riding && gate.net) {   // round 20, the roots: it holds RT and steers across the root for the one that leads nearest its ring (a rookie sometimes picks wrong)
+      ai.gHold = 0; ai.gShaping = false; rt = 1;
+      const kids = gate.pair.kids || [], wh = gate.pair.wh;
+      aiTo.set(0, 0, 0);   // where across the root it wants to be: the middle, or the fork's side
       if (kids.length > 1 && !blind) {
-        if (!gate.aiPick) {
+        if (!gate.aiPick || !kids.includes(gate.aiPick)) {
           const ds = kids.map((k) => netReach(k, tgt)); let bi = ds.indexOf(Math.min(...ds));
           if (aiRand() < 0.35 * clamp01(P.aiNoise)) bi = (bi + 1) % kids.length;
           gate.aiPick = kids[bi];
         }
-        whAt(gate.pair.wh, gate.pair.wh.L, fkP, fkT); forkSide(gate.aiPick, fkQ);
-        const lx = fkQ.dot(right), ly = fkQ.dot(up), lm = Math.hypot(lx, ly);
-        if (lm > 1e-6) { inp.L.x = easeInv(0.9 * lx / lm) / 2; let pb = easeInv(0.9 * ly / lm) / 2; if (invertY) pb = -pb; inp.L.y = pb; }
+        whAt(wh, wh.L, fkP, fkT); forkSide(gate.aiPick, fkQ);
+        if (fkQ.lengthSq() > 1e-6) aiTo.copy(fkQ.normalize()).multiplyScalar(0.55 * chanRadius(wh, wh.L));
+      }
+      if (gate.free) {   // a spring to it: the push across the root, into the left stick
+        const mv = Math.max(1, P.rootMove);
+        aiLoc2.copy(gate.vel).addScaledVector(gate.h, -gate.vel.dot(gate.h));
+        aiTo.sub(gate.dr).multiplyScalar(2.25).addScaledVector(aiLoc2, -2.1);
+        const sx = Math.max(-1, Math.min(1, aiTo.dot(gate.side) / mv)), sy = Math.max(-1, Math.min(1, aiTo.dot(gate.upv) / mv));
+        inp.L.x = easeInv(0.98 * sx) / 2; let pb = easeInv(0.98 * sy) / 2; if (invertY) pb = -pb; inp.L.y = pb;
       }
     }
     else if (riding) {
+
       ai.gHold = 0; ai.gShaping = false;
       // round 8, Chain Dig (Time L5): past chainShare of the ride, if a tunnel from the far mouth fits the next leg, bend
       // the right stick for it and press RT. One try a tunnel.
@@ -4151,12 +4461,12 @@
   function speedTunnel(dt, r) {
     const live = r ? r.ftLive : ftLive, vel = r ? r.velNow : velNow, v = vel ? vel.length() : 0;
     const riding = !!(live && live.gate && live.gate.state === 'tube');
-    const want = Math.min(ST_MAX_EFFECT, clamp01((v - ST_MIN) / (ST_MAX - ST_MIN)) * (riding ? Math.max(0, P.rideSpeedTunnelScale) : 1));
+    const want = Math.min(ST_MAX_EFFECT, clamp01((v - ST_MIN) / (ST_MAX - ST_MIN)) * (riding && !live.gate.net ? Math.max(0, P.rideSpeedTunnelScale) : 1));
     stEffect += (want - stEffect) * (1 - Math.exp(-ST_RESP * dt));
     const fov = Math.max(1, CAM_HOME_FOV - ST_FOV_DROP * stEffect);
     if (Math.abs(fov - cam.fov) > 1e-3) { cam.fov = fov; cam.updateProjectionMatrix(); }
   }
-  const CAM_CHASE_BACK = 21, CAM_FOLLOW_BACK = 62;   // the chase and follow cameras, straight behind the hull
+  const CAM_CHASE_BACK = 21, CAM_FOLLOW_BACK = 62, CAM_ROOT_BACK = 12;   // the chase and follow cameras, straight behind the hull
   let camTail = null;   // after the way out: the tunnel and how far along its line you are, until the camera is past the mouth
   // A point s along a tunnel's centreline, the straight run in before its mouth and out after it included.
   function whAtX(wh, s, out) {
@@ -4164,13 +4474,24 @@
     if (s >= wh.L) { whAt(wh, wh.L, out, wt1); return out.addScaledVector(wt1, s - wh.L); }
     return whAt(wh, s, out);
   }
+  // Round 20, inside the roots: back u behind you along the root's centreline (into the root before it when that is
+  // behind you), half your way out to the wall, so the camera is always inside the root.
+  function rootCam(g, back, out) {
+    const wh = g.pair.wh; polyAt(wh, Math.max(0, Math.min(wh.L, g.s)), rnB, rnT);
+    const hs = g.h.dot(rnT) < 0 ? -1 : 1, s = g.s - hs * back;
+    if (s < 0 && g.pair.parent) whAtX(g.pair.parent.wh, g.pair.parent.wh.L + s, out);
+    else if (s > wh.L && (g.pair.kids || []).length) { const k = g.pair.kids.includes(g.prev) ? g.prev : g.pair.kids[0]; whAtX(k.wh, s - wh.L, out); }
+    else whAtX(wh, s, out);
+    return out.addScaledVector(g.dr, 0.5);
+  }
   function cameraStep(dt) {
     basis();
     // Round 10 (Yash, 2026-10-28: "the cameras, why offset should always be zero, the vessel should be in the center of the
     // screen ... It is like a sparrow, it's always center"): both cameras sit straight behind the hull on its own axis, with no
     // height and no lag (the game's MeerkatCameraSettingsSO: offset (0, 0, -21), hard-attached), so the hull is always at the
     // centre of the screen. CAM_BACK is how far behind.
-    const back = camMode === 'follow' ? CAM_FOLLOW_BACK : CAM_CHASE_BACK;
+    const inRoots = !!(ftLive.gate && ftLive.gate.net && ftLive.gate.state === 'tube');
+    const back = camMode === 'follow' ? CAM_FOLLOW_BACK : inRoots ? CAM_ROOT_BACK : CAM_CHASE_BACK;   // round 19: close behind you in the roots, so it stays inside them (round 20: on the root's centreline, rootCam)
     const want = tv.set(0, 0, back).applyQuaternion(hull.quaternion).add(hull.position);
     const look = tv2.copy(hull.position).addScaledVector(fwd, camMode === 'follow' ? 60 : 40);
     if (camMode === 'free') {   // orbit the Meerkat: drag to turn, wheel to zoom
@@ -4184,14 +4505,16 @@
     // Out of the far mouth the camera keeps to the tunnel's line until it is past the mouth itself (camTail): straight
     // behind the nose would cut the bend for its first `back` u, a sideways jump at the way out.
     const gr = ftLive.gate && ftLive.gate.state === 'tube' && camMode !== 'free' ? ftLive.gate : null;
-    if (gr) { camTail = { wh: gr.pair.wh, s: gr.s }; if (gr.s - back < 0 && gr.prev) whAtX(gr.prev.wh, gr.prev.wh.L + gr.s - back, want); else whAtX(gr.pair.wh, gr.s - back, want); look.copy(hull.position); }
+    if (gr) { camTail = { wh: gr.pair.wh, s: gr.s }; if (gr.net && gr.free) rootCam(gr, back, want); else if (gr.s - back < 0 && gr.prev) whAtX(gr.prev.wh, gr.prev.wh.L + gr.s - back, want); else whAtX(gr.pair.wh, gr.s - back, want); look.copy(hull.position); }
     else if (camTail && camMode !== 'free' && mode === 'fly') {
       camTail.s += Math.max(0, speed) * dt;
       if (camTail.s - back >= camTail.wh.L) camTail = null; else { whAtX(camTail.wh, camTail.s - back, want); look.copy(hull.position); }
     } else camTail = null;
     const k = snapCam || camMode !== 'free' ? 1 : 1 - Math.exp(-12 * dt);
     cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
-    if (camMode === 'free' || camMode === 'follow') cam.up.set(0, 1, 0); else cam.up.copy(up);
+    if (camMode === 'free' || camMode === 'follow') cam.up.set(0, 1, 0);
+    else if (gr && gr.net) cam.up.lerp(up, 1 - Math.exp(-4 * dt)).normalize();   // round 20: turning with you as the root turns, gently
+    else cam.up.copy(up);
     cam.lookAt(camLook);
     cam.updateMatrixWorld();
   }
@@ -4350,12 +4673,12 @@
     if (race === 'running' && !stopped && !(isGM() && KIT.seat)) {   // round 18: in a sentinel seat the seat's lines replace the flyer's
       const g = ftLive.gate, ret = ftLive.ret;
       c.textAlign = 'center'; c.font = font(14, 700);
-      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText(lastGate.lab ? 'OUT OF THE ROOTS · ' + lastGate.forks + (lastGate.forks === 1 ? ' fork · ' : ' forks · ') + lastGate.len + ' u of slide' : 'OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u tunnel · speed kept', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText(lastGate.lab ? 'OUT OF THE ROOTS · ' + lastGate.forks + (lastGate.forks === 1 ? ' fork · ' : ' forks · ') + lastGate.len + ' u flown' : 'OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u tunnel · speed kept', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
       if (omniFlash > 0) { c.globalAlpha = Math.min(1, omniFlash); c.fillStyle = gold; c.font = font(20, 700); c.fillText(ftLive.gate && ftLive.gate.net && ftLive.gate.state === 'tube' ? 'OMNICRYSTAL! · the ROOTS grow from here' : 'OMNICRYSTAL! · your next RT digs the ROOTS', cw / 2, ch * 0.24); c.globalAlpha = 1; c.font = font(14, 700); }
       if (ret && ret.net && ret.lay) {   // round 16: armed, the reticle is the labyrinth
         c.fillStyle = gold;
         c.fillText('ROOTS  ·  ' + ret.lay.forks + ' forks  ·  ' + ret.lay.openings + ' tips  ·  ' + Math.round(2 * ret.lay.Rad) + ' u across (your last trunk ' + Math.round(100 * ret.lay.size) + '%)', cw / 2, tY + pad + 14 * sc);
-        c.font = font(12, 600); c.fillStyle = dim; c.fillText('RT grows them and you slide in  ·  lean the left stick toward a root at each fork', cw / 2, tY + pad + 30 * sc);
+        c.font = font(12, 600); c.fillStyle = dim; c.fillText('RT grows them and you fly in  ·  inside you cruise on: the left stick moves you round the root, RT goes faster  ·  the walls bounce you', cw / 2, tY + pad + 30 * sc);
       } else if (g && g.net && g.pair.alive && g.state === 'tube') {
         const kids = g.pair.kids || [], left = Math.max(0, g.pair.wh.L - g.s) / Math.max(1, velNow.length());
         c.fillStyle = gold; c.fillText('IN THE ROOTS  ·  ' + g.forks + (g.forks === 1 ? ' fork taken' : ' forks taken') + '  ·  ' + (kids.length > 1 ? kids.length + ' channels ahead' : kids.length ? 'on to the next fork' : 'an opening ahead'), cw / 2, tY + pad + 14 * sc);
@@ -4367,10 +4690,10 @@
             const x = (tv.x * 0.5 + 0.5) * cw, y = (-tv.y * 0.5 + 0.5) * ch, on = k === pick;
             c.strokeStyle = on ? lime : 'rgba(232,236,255,0.45)'; c.lineWidth = on ? 4 : 2; c.beginPath(); c.arc(x, y, (on ? 18 : 12) * sc, 0, Math.PI * 2); c.stroke();
           }
-          c.font = font(12, 600); c.fillStyle = dim; c.fillText(g.leanW ? 'leaning: the lit channel' : 'lean the left stick toward a channel · no lean: the straightest', cw / 2, ch * 0.66);
+          c.font = font(12, 600); c.fillStyle = dim; c.fillText('move into a root to take it (the one on your side is lit)  ·  left stick round the root, RT faster', cw / 2, ch * 0.66);
         }
       } else if (ret || (g && g.pair.alive && g.state === 'tube')) {
-        const wh = ret || g.pair.wh, line = 'TUNNEL ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°  ·  MASS ' + massOf(curPilot).toFixed(1);
+        const wh = ret || g.pair.wh, line = 'TUNNEL ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°  ·  ' + (isGM() ? 'SPACE L' + Math.round(P.kSpaceLevel) + ' · AREA ' + Math.round(lerpLv(P.areaL0, P.areaL10, P.kSpaceLevel)) + ' u²' : 'MASS ' + massOf(curPilot).toFixed(1));
         c.fillStyle = ret ? cyan : lime;
         c.fillText(ret ? line + '  ·  max ' + Math.round(P.bendMaxDegrees * wh.fat) + '°' : 'IN THE THROAT  ·  ' + line, cw / 2, tY + pad + 14 * sc);
         if (ret) { c.font = font(12, 600); c.fillStyle = dim; c.fillText('LT sets the shaft  ·  right stick bends its end  ·  RT forms it and you go  ·  left stick flies', cw / 2, tY + pad + 30 * sc); }
@@ -4702,8 +5025,8 @@
   function tunnelPlan(Pv, lq, m) {   // the 2D twin of whShape + whAt + whRadius: x right (the bend's way), y ahead
     const sh = shapeFor(Pv, lq, m, 0), A = Math.max(0, Pv.reticleAhead), n = 64, pts = [], L2 = [], R2 = [];
     for (let i = 0; i <= n; i++) {
-      const sA = sh.L * i / n, a = sh.theta < 1e-4 ? 0 : Math.max(0, Math.min(sh.theta, (sA - sh.S) / sh.R));
-      const x = sh.theta < 1e-4 || sA <= sh.S ? 0 : sh.R * (1 - Math.cos(a)), y = A + (sh.theta < 1e-4 || sA <= sh.S ? sA : sh.S + sh.R * Math.sin(a));
+      const sA = sh.L * i / n, o = sh.theta < 1e-4 ? [sA, 0, 0] : conicAt(conicOf({ L: sh.L, theta: sh.theta }, Pv), sA, [0, 0, 0]), a = o[2];   // round 22: the oval arc
+      const x = o[1], y = A + o[0];
       const u = i / n, r = Math.sqrt(sh.b * sh.b + (sh.M * sh.M - sh.b * sh.b) * (2 * u - 1) ** 2), nx = Math.cos(a), ny = -Math.sin(a);
       pts.push([x, y]); L2.push([x - nx * r, y - ny * r]); R2.push([x + nx * r, y + ny * r]);
     }
@@ -4997,14 +5320,16 @@
         const xi = 40, xo = W * 0.62, cy = H * 0.5, M = 16, rz = M * Math.max(0, Pv.swallowShare), sc = (W - 60) / 900;
         c.strokeStyle = cyn; c.beginPath(); c.moveTo(xi, cy - M); c.quadraticCurveTo((xi + xo) / 2, cy - 5, xo, cy - M); c.moveTo(xi, cy + M); c.quadraticCurveTo((xi + xo) / 2, cy + 5, xo, cy + M); c.stroke();
         c.strokeStyle = 'rgba(255,255,255,0.25)'; c.setLineDash([3, 4]); c.beginPath(); c.arc(xi, cy, rz, 0, TAU); c.stroke(); c.setLineDash([]);
+        const rsu = Math.min(xi + 30, rz + Math.max(0, Pv.suckRadius) * sc); c.strokeStyle = 'rgba(120,220,255,0.18)'; c.setLineDash([2, 6]); c.beginPath(); c.arc(xi, cy, rsu, 0, TAU); c.stroke(); c.setLineDash([]);   // round 23: the pull's reach
         const carryT = (xo - xi) / Math.max(1, Pv.carrySpeed * sc), glide = Math.max(0.1, Pv.fireGlideSeconds), vOut = Math.max(0, Pv.fireSpeed) * sc;
         for (let i = 0; i < 5; i++) {
           const t0 = i * 0.35, t = tt - t0; let x = xi - rz * 0.9, y = cy + (i - 2) * rz * 0.25;
-          if (t > 0 && t < carryT) { x = xi + (xo - xi) * (t / carryT); y = cy + (i - 2) * 2; }
+          let st = 1;
+          if (t > 0 && t < carryT) { x = xi + (xo - xi) * (t / carryT); y = cy + (i - 2) * 2; st = 1 + Math.max(0, Pv.carryStretch) * Math.sin(Math.PI * t / carryT); }
           else if (t >= carryT) { const u = t - carryT; x = xo + vOut * glide * (1 - Math.exp(-u / glide)); y = cy + (i - 2) * 4 * (1 + u); }
-          const shielded = i === 2; c.fillStyle = shielded ? '#eaf2ff' : '#4a6bd8'; c.fillRect(x - 4, y - 1.5, 8, 3);
+          const shielded = i === 2; c.fillStyle = shielded ? '#eaf2ff' : '#4a6bd8'; c.fillRect(x - 4 * st, y - 1.5 / Math.sqrt(st), 8 * st, 3 / Math.sqrt(st));
         }
-        txt(c, 'swallows within ' + Pv.swallowShare + ' x the opening · carried ' + Pv.carrySpeed + ' u/s · out ' + Pv.fireSpeed + ' u/s', 6, 13, ink, 10);
+        txt(c, 'pulls from ' + Pv.suckRadius + ' u · swallows within ' + Pv.swallowShare + ' x the opening · carried ' + Pv.carrySpeed + ' u/s, stretched x' + (1 + Pv.carryStretch) + ' · out ' + Pv.fireSpeed + ' u/s', 6, 13, ink, 10);
         foot('a fired prism glides to rest over ' + Pv.fireGlideSeconds + ' s; a shielded one bounces keeping ' + Pv.bounceRestitution + ' of its speed');
         return;
       }
@@ -5086,7 +5411,10 @@
     bendMaxDegrees: { scene: 'tunnel', d: 'The right stick pushed fully over bends the tunnel this far at the end of its shaft, any way; half over, half as far: 90, 120, 150 degrees.', lo: 'Gentle bends only.', hi: 'Turns you right round.' },
     shaftMin: { scene: 'tunnel', cfg: { sticks: [0.6, 1] }, d: 'The tunnel is a straight shaft, then a bend. With LT released the shaft runs this far before it bends (the right stick centred: the whole tunnel is this straight shaft).', lo: 'Bends at once.', hi: 'A long run first.' },
     shaftMax: { scene: 'tunnel', cfg: { sticks: [0.6, 1], lt: 1 }, d: 'With LT fully squeezed the shaft runs this far before it bends: a long umbrella handle. Half squeezed, half way between.', lo: 'Short handles only.', hi: 'Very long handles.' },
-    bendRadius: { scene: 'tunnel', d: 'The bend at the shaft\'s end turns round this radius: small for a tight hook, large for a sweeping one. A 150-degree bend is this x 2.6 long.', lo: 'A tight hook.', hi: 'A wide sweep.' },
+    bendRadius: { scene: 'tunnel', d: 'With LT\'s shaft it sets how long a tunnel is: a turn of theta adds this x theta to its length (a 150-degree turn, this x 2.6). Round 22: the turn itself is spread over the whole tunnel, round its middle.', lo: 'Short turns.', hi: 'Long sweeps.' },
+    ovalShortest: { scene: 'tunnel', d: 'Round 22: a tunnel bends round its MIDDLE, along one oval arc whose sharpest point is half way. This is how oval it is for the shortest tunnel: 0 bends as an even circle\'s arc, 1 as a parabola.', lo: 'A circle.', hi: 'An oval.' },
+    ovalMaxSharpness: { scene: 'tunnel', d: 'How much an oval may gather its turn into its middle: the middle turns at most this many times as sharply as the two ends. It keeps a long, sharply turning tunnel a smooth oval instead of a knot at its centre; gentle turns can still be hyperbolas.', lo: 'Nearly a circle.', hi: 'A sharp middle.' },
+    ovalLongest: { scene: 'tunnel', d: 'How oval the longest tunnel bends; tunnels in between take their share. Over 1 is a hyperbola: the turn gathers at the middle and the two ends run nearly straight (never wider than the turn allows).', lo: 'A circle.', hi: 'A hyperbola.' },
     throatDiameter: { scene: 'tunnel', d: 'How wide the tube is at its middle at the SHORTEST tunnel; a longer one grows toward throatDiameterMax. Set here; the sticks only choose the length.', lo: 'A needle.', hi: 'A wide tube.' },
     mouthDiameter: { scene: 'tunnel', d: 'How wide the entry and the exit are at the SHORTEST tunnel; a longer one grows toward mouthDiameterMax. The tube narrows from its mouths to its throat.', lo: 'Small mouths.', hi: 'Wide funnels.' },
     keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT lengthens the straight shaft before the bend.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
@@ -5188,8 +5516,6 @@
     labyrinthRingSpacing: { scene: 'labyrinth', d: 'Its wireframe (your reticle while an omnicrystal is armed, and its dug channels): a ring of spindles every this many u.', lo: 'Dense rings.', hi: 'Sparse rings.' },
     labyrinthRingSides: { scene: 'labyrinth', d: 'How many spindles make each ring.', lo: 'A rough triangle.', hi: 'Round.' },
     labyrinthRibs: { scene: 'labyrinth', d: 'Spindles running along each channel, ring to ring.', lo: 'Rings only.', hi: 'A cage.' },
-    forkBoost: { scene: 'labyrinth', d: 'The slide: each fork you take adds this much (x your speed before the labyrinth), on top of the ride multipliers, so a deep run is a fast one.', lo: 'No extra.', hi: 'Faster every fork.' },
-    forkLean: { scene: 'labyrinth', d: 'At a fork, lean the LEFT stick toward the channel you want (left, right, up, down or between) past this much; a lean held any time on the way counts. No lean: the straightest channel.', lo: 'A touch chooses.', hi: 'A firm lean.' },
     forkHintSeconds: { scene: 'labyrinth', d: 'How long before a fork its channels are marked on screen, the one you would take lit.', lo: 'At the last moment.', hi: 'Early warning.' },
     soilVisibility: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The soil the labyrinth is dug through: a wall of layered earth round every channel, stones round it and roots hanging onto it, dug out with it and falling in with it. Everyone sees it, the rider too. 0 hides it.', lo: 'No soil.', hi: 'All the soil.' },
     soilWall: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How far the soil wall sits from each channel\'s centre, as a multiple of its radius.', lo: 'A skin of earth.', hi: 'Thick earth.' },
@@ -5216,6 +5542,10 @@
     zapPetalsL10: { scene: 'kit', cfg: { k: 'sentinel' }, d: 'How much of a petal a zap knocks out at Charge L10 (Garrett\'s start: 0.25); levels between are in between.', lo: 'Light at the top.', hi: 'Heavy at the top.' },
     areaL0: { scene: 'kit', cfg: { k: 'area' }, d: 'The soliton\'s surface area at Space L0. Garrett: at a given Space level a soliton keeps one surface area, so the throat is b = A / (2 pi L g(k)): a long tunnel thin, a short one fat. The numbers are open in Garrett\'s design (his examples: 15,000 and 40,000 u2).', lo: 'Thin tunnels.', hi: 'Fat tunnels.' },
     areaL10: { scene: 'kit', cfg: { k: 'area' }, d: 'The surface area at Space L10; levels between are in between.', lo: 'Thin at the top.', hi: 'Fat at the top.' },
+    suckRadius: { scene: 'kit', cfg: { k: 'swallow' }, d: 'Round 23 (Yash: "they need to get in. Sucked in. From a certain radius"): every prism (shielded too, never super-shielded) and every crystal within this many units of a standing soliton\'s way in is pulled to it, then swallowed, carried through and set out of the way out.', lo: 'Only what touches the mouth.', hi: 'A wide whirlpool.' },
+    suckSpeed: { scene: 'kit', cfg: { k: 'swallow' }, d: 'How fast the pull draws them at the edge of its reach; it grows as they near (suckSpeed x suckRadius / distance), up to the carry speed, with a little swirl round the tunnel\'s axis. A pulled prism is a moving prism: it breaks a plain prism it runs into (a shielded one bounces), but the prisms one soliton pulls never break each other.', lo: 'A slow drift.', hi: 'A hard suck.' },
+    carryStretch: { scene: 'kit', cfg: { k: 'swallow' }, d: 'Round 23 (Yash: "the prisms will be distorted while traveling through this wormhole"): inside the tube a prism or crystal is stretched along it, to 1 + this times its length at the middle and none at the mouths, and squeezed across so its volume is kept. It is also held to the wall\'s narrowing.', lo: 'Rigid.', hi: 'Spaghetti.' },
+    carryTwist: { scene: 'kit', cfg: { k: 'swallow' }, d: 'How many turns a carried prism or crystal twists round the tube\'s heading from the way in to the way out.', lo: 'No twist.', hi: 'A corkscrew.' },
     swallowShare: { scene: 'kit', cfg: { k: 'swallow' }, d: 'A standing soliton swallows prisms within this many times its opening radius of its way in, shielded ones included, never super-shielded. Open in Garrett\'s design: the simplest reading is the sentinel\'s guard, 1.5 x the opening.', lo: 'Only at the mouth.', hi: 'A wide intake.' },
     carrySpeed: { scene: 'kit', cfg: { k: 'swallow' }, d: 'How fast a swallowed prism runs the tube to the way out (open in Garrett\'s design).', lo: 'A slow pipe.', hi: 'A fast pipe.' },
     fireSpeed: { scene: 'kit', cfg: { k: 'swallow' }, d: 'How fast a prism leaves the way out, along its last heading: a MOVING prism. One that runs into a plain prism destroys both (scored to the soliton\'s maker); a shielded one bounces. Open in Garrett\'s design.', lo: 'Dribbled out.', hi: 'Shot out.' },
@@ -5252,7 +5582,17 @@
     rootGlass: { scene: 'labyrinth', d: 'The roots\' bark where you look straight at it: keep it low, so a big network stays quiet on screen.', lo: 'Clear.', hi: 'Milky.' },
     rootRim: { scene: 'labyrinth', d: 'The roots\' bark where it turns away from you (Fresnel): their outline.', lo: 'Faint.', hi: 'Bright.' },
     rootGrain: { scene: 'labyrinth', d: 'The bark grain along the roots.', lo: 'Smooth.', hi: 'Deep grain.' },
-    labyrinthFrame: { scene: 'labyrinth', d: 'The dug roots\' spindle wireframe, as a multiple of the bridge\'s brightness (your reticle keeps its own).', lo: 'Bark only.', hi: 'A bright cage.' },
+    rootThrust: { scene: 'labyrinth', d: 'Hold RT in the roots and you go faster than your cruise, up to rootMaxSpeed; let go and you ease back to it.', lo: 'A drift.', hi: 'A rush.' },
+    rootCruise: { scene: 'labyrinth', d: 'Inside the roots you cruise along the root on your own at this speed, your nose following it, so you only steer.', lo: 'A crawl.', hi: 'Brisk.' },
+    rootMove: { scene: 'labyrinth', d: 'How hard the left stick moves you round the root: left and right, up and down, the way it would turn your nose. Move into a root at a fork to go down it.', lo: 'A nudge.', hi: 'Darting about.' },
+    rootDrag: { scene: 'labyrinth', d: 'How fast your drift across the root dies away once you let the stick go. Low: you glide on to the wall and bounce.', lo: 'Slippery.', hi: 'Stops at once.' },
+    rootMaxSpeed: { scene: 'labyrinth', d: 'The fastest you go inside the roots, so you can always find your way.', lo: 'A crawl.', hi: 'A rush.' },
+    rootBounce: { scene: 'labyrinth', d: 'Hit a wall and you bounce off it with this share of your speed into it (the rest is lost). The speed along the wall is kept.', lo: 'Thud.', hi: 'Rubber.' },
+    rootGravity: { scene: 'labyrinth', d: 'Draws you to the floor of the root (the network\'s down), square to the root, so it never pulls you back down a climb. 0: you float.', lo: 'Float.', hi: 'Roll along the floor.' },
+    rootOpacity: { scene: 'labyrinth', d: 'Inside the roots: a soft, smooth inner wall, a little dense, the world outside still showing through it. It fades to clear with distance, never to black (Yash, 2026-10-28). The ends of every root stay open.', lo: 'Clear.', hi: 'Solid.' },
+    tubeInner: { scene: 'labyrinth', d: 'The inner tube of the trunk you ride through: smooth, no lines, a little denser than the rough bark outside, so the ride is calm.', lo: 'Clear.', hi: 'Milky.' },
+    rootLamp: { scene: 'labyrinth', d: 'Your lamp: the walls near you are lit by you, and the rest are dim.', lo: 'Dark.', hi: 'Bright.' },
+    rootFog: { scene: 'labyrinth', d: 'Inside the roots, walls further off than this fade away to clear.', lo: 'Only the walls round you.', hi: 'See far.' },
   };
 
   // ---------- the card ----------
@@ -5423,6 +5763,17 @@
   // MeerkatWormholeConfig ('new'; Tools/Build/studio_to_unity/meerkat.json links each one once it exists); 'lab' is the
   // studio's own (never in the game). Shown under every slider.
   const GAME_NAMES = {
+    areaL0: ['MeerkatWormholeConfig.areaL0', 'linked'],
+    areaL10: ['MeerkatWormholeConfig.areaL10', 'linked'],
+    suckRadius: ['MeerkatWormholeConfig.suckRadius', 'linked'],
+    suckSpeed: ['MeerkatWormholeConfig.suckSpeed', 'linked'],
+    swallowShare: ['MeerkatWormholeConfig.swallowShare', 'linked'],
+    carrySpeed: ['MeerkatWormholeConfig.carrySpeed', 'linked'],
+    carryStretch: ['MeerkatWormholeConfig.carryStretch', 'linked'],
+    carryTwist: ['MeerkatWormholeConfig.carryTwist', 'linked'],
+    fireSpeed: ['MeerkatWormholeConfig.fireSpeed', 'linked'],
+    fireGlideSeconds: ['MeerkatWormholeConfig.fireGlideSeconds', 'linked'],
+    kSpaceLevel: ['lab: the game reads the hull\'s own Space level (ResourceSystem) for the surface area', 'lab'],
     reticleAhead: ['MeerkatWormholeConfig.reticleAhead', 'linked'],
     bendMaxDegrees: ['MeerkatWormholeConfig.bendMaxDegrees', 'linked'],
     shaftMin: ['MeerkatWormholeConfig.shaftMin', 'linked'],
@@ -5457,27 +5808,27 @@
     bridgeWhite: ['MeerkatWormholeConfig.bridgeWhite', 'linked'],
     reticleWhite: ['MeerkatWormholeConfig.reticleWhite', 'linked'],
     reticleNearLight: ['MeerkatWormholeConfig.reticleNearLight', 'linked'],
-    trunkVisibility: ['MeerkatWormholeConfig.trunkVisibility', 'new'],
-    trunkTop: ['MeerkatWormholeConfig.trunkTop', 'new'],
-    trunkBase: ['MeerkatWormholeConfig.trunkBase', 'new'],
-    trunkBark: ['MeerkatWormholeConfig.trunkBark', 'new'],
-    trunkRidges: ['MeerkatWormholeConfig.trunkRidges', 'new'],
-    trunkGnarl: ['MeerkatWormholeConfig.trunkGnarl', 'new'],
-    trunkGlass: ['MeerkatWormholeConfig.trunkGlass', 'new'],
-    trunkRim: ['MeerkatWormholeConfig.trunkRim', 'new'],
-    trunkFresnel: ['MeerkatWormholeConfig.trunkFresnel', 'new'],
-    trunkRings: ['MeerkatWormholeConfig.trunkRings', 'new'],
+    trunkVisibility: ['MeerkatWormholeConfig.trunkVisibility', 'linked'],
+    trunkTop: ['MeerkatWormholeConfig.trunkTop', 'linked'],
+    trunkBase: ['MeerkatWormholeConfig.trunkBase', 'linked'],
+    trunkBark: ['MeerkatWormholeConfig.trunkBark', 'linked'],
+    trunkRidges: ['MeerkatWormholeConfig.trunkRidges', 'linked'],
+    trunkGnarl: ['MeerkatWormholeConfig.trunkGnarl', 'linked'],
+    trunkGlass: ['MeerkatWormholeConfig.trunkGlass', 'linked'],
+    trunkRim: ['MeerkatWormholeConfig.trunkRim', 'linked'],
+    trunkFresnel: ['MeerkatWormholeConfig.trunkFresnel', 'linked'],
+    trunkRings: ['MeerkatWormholeConfig.trunkRings', 'linked'],
     trunkWarp: ['MeerkatWormholeConfig.trunkWarp', 'new'],
-    trunkGrain: ['MeerkatWormholeConfig.trunkGrain', 'new'],
-    trunkGrainLines: ['MeerkatWormholeConfig.trunkGrainLines', 'new'],
-    branchCount: ['MeerkatWormholeConfig.branchCount', 'new'],
-    branchLength: ['MeerkatWormholeConfig.branchLength', 'new'],
-    branchThickness: ['MeerkatWormholeConfig.branchThickness', 'new'],
-    branchUp: ['MeerkatWormholeConfig.branchUp', 'new'],
-    branchGrowSeconds: ['MeerkatWormholeConfig.branchGrowSeconds', 'new'],
-    branchZone: ['MeerkatWormholeConfig.branchZone', 'new'],
-    branchSymmetry: ['MeerkatWormholeConfig.branchSymmetry', 'new'],
-    branchForks: ['MeerkatWormholeConfig.branchForks', 'new'],
+    trunkGrain: ['MeerkatWormholeConfig.trunkGrain', 'linked'],
+    trunkGrainLines: ['MeerkatWormholeConfig.trunkGrainLines', 'linked'],
+    branchCount: ['MeerkatWormholeConfig.branchCount', 'linked'],
+    branchLength: ['MeerkatWormholeConfig.branchLength', 'linked'],
+    branchThickness: ['MeerkatWormholeConfig.branchThickness', 'linked'],
+    branchUp: ['MeerkatWormholeConfig.branchUp', 'linked'],
+    branchGrowSeconds: ['MeerkatWormholeConfig.branchGrowSeconds', 'linked'],
+    branchZone: ['MeerkatWormholeConfig.branchZone', 'linked'],
+    branchSymmetry: ['MeerkatWormholeConfig.branchSymmetry', 'linked'],
+    branchForks: ['MeerkatWormholeConfig.branchForks', 'linked'],
     throatDiameterMax: ['MeerkatWormholeConfig.throatDiameterMax', 'new'],
     mouthDiameterMax: ['MeerkatWormholeConfig.mouthDiameterMax', 'new'],
     aiWormhole: ['MeerkatWormholeConfig.aiWormhole', 'linked'],
@@ -5494,22 +5845,20 @@
     lopeRate: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
     lopeArch: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
     lopeSquash: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
-    omniOn: ['MeerkatWormholeConfig.omniOn', 'new'],
-    omniCount: ['MeerkatWormholeConfig.omniCount', 'new'],
-    labyrinthBranchPointsMax: ['MeerkatWormholeConfig.labyrinthBranchPointsMax', 'new'],
-    labyrinthOpeningsMax: ['MeerkatWormholeConfig.labyrinthOpeningsMax', 'new'],
-    labyrinthRadiusMax: ['MeerkatWormholeConfig.labyrinthRadiusMax', 'new'],
-    labyrinthSpread: ['MeerkatWormholeConfig.labyrinthSpread', 'new'],
-    labyrinthRandomness: ['MeerkatWormholeConfig.labyrinthRandomness', 'new'],
-    labyrinthDiameter: ['MeerkatWormholeConfig.labyrinthDiameter', 'new'],
-    labyrinthMouthDiameter: ['MeerkatWormholeConfig.labyrinthMouthDiameter', 'new'],
+    omniOn: ['MeerkatWormholeConfig.omniOn', 'linked'],
+    omniCount: ['MeerkatWormholeConfig.omniCount', 'linked'],
+    labyrinthBranchPointsMax: ['MeerkatWormholeConfig.labyrinthBranchPointsMax', 'linked'],
+    labyrinthOpeningsMax: ['MeerkatWormholeConfig.labyrinthOpeningsMax', 'linked'],
+    labyrinthRadiusMax: ['MeerkatWormholeConfig.labyrinthRadiusMax', 'linked'],
+    labyrinthSpread: ['MeerkatWormholeConfig.labyrinthSpread', 'linked'],
+    labyrinthRandomness: ['MeerkatWormholeConfig.labyrinthRandomness', 'linked'],
+    labyrinthDiameter: ['MeerkatWormholeConfig.labyrinthDiameter', 'linked'],
+    labyrinthMouthDiameter: ['MeerkatWormholeConfig.labyrinthMouthDiameter', 'linked'],
     labyrinthRoughness: ['MeerkatWormholeConfig.labyrinthRoughness', 'new'],
-    labyrinthFormSeconds: ['MeerkatWormholeConfig.labyrinthFormSeconds', 'new'],
+    labyrinthFormSeconds: ['MeerkatWormholeConfig.labyrinthFormSeconds', 'linked'],
     labyrinthRingSpacing: ['MeerkatWormholeConfig.labyrinthRingSpacing', 'new'],
     labyrinthRingSides: ['MeerkatWormholeConfig.labyrinthRingSides', 'new'],
     labyrinthRibs: ['MeerkatWormholeConfig.labyrinthRibs', 'new'],
-    forkBoost: ['MeerkatWormholeConfig.forkBoost', 'new'],
-    forkLean: ['MeerkatWormholeConfig.forkLean', 'new'],
     forkHintSeconds: ['MeerkatWormholeConfig.forkHintSeconds', 'new'],
     soilVisibility: ['MeerkatWormholeConfig.soilVisibility', 'new'],
     soilWall: ['MeerkatWormholeConfig.soilWall', 'new'],
@@ -5526,15 +5875,28 @@
     massLengthAtZero: ['MeerkatWormholeConfig.massLengthAtZero', 'new'],
     massDiameterAtZero: ['MeerkatWormholeConfig.massDiameterAtZero', 'new'],
     omniAtOnce: ['MeerkatWormholeConfig.omniAtOnce', 'new'],
-    labyrinthBranchPointsMin: ['MeerkatWormholeConfig.labyrinthBranchPointsMin', 'new'],
-    labyrinthOpeningsMin: ['MeerkatWormholeConfig.labyrinthOpeningsMin', 'new'],
-    labyrinthRadiusMin: ['MeerkatWormholeConfig.labyrinthRadiusMin', 'new'],
-    rootTip: ['MeerkatWormholeConfig.rootTip', 'new'],
-    rootGnarl: ['MeerkatWormholeConfig.rootGnarl', 'new'],
-    rootGlass: ['MeerkatWormholeConfig.rootGlass', 'new'],
-    rootRim: ['MeerkatWormholeConfig.rootRim', 'new'],
-    rootGrain: ['MeerkatWormholeConfig.rootGrain', 'new'],
-    labyrinthFrame: ['MeerkatWormholeConfig.labyrinthFrame', 'new'],
+    labyrinthBranchPointsMin: ['MeerkatWormholeConfig.labyrinthBranchPointsMin', 'linked'],
+    labyrinthOpeningsMin: ['MeerkatWormholeConfig.labyrinthOpeningsMin', 'linked'],
+    labyrinthRadiusMin: ['MeerkatWormholeConfig.labyrinthRadiusMin', 'linked'],
+    rootTip: ['MeerkatWormholeConfig.rootTip', 'linked'],
+    rootGnarl: ['MeerkatWormholeConfig.rootGnarl', 'linked'],
+    rootGlass: ['MeerkatWormholeConfig.rootGlass', 'linked'],
+    rootRim: ['MeerkatWormholeConfig.rootRim', 'linked'],
+    rootGrain: ['MeerkatWormholeConfig.rootGrain', 'linked'],
+    rootGravity: ['MeerkatWormholeConfig.rootGravity', 'linked'],
+    rootThrust: ['MeerkatWormholeConfig.rootThrust', 'linked'],
+    rootMove: ['MeerkatWormholeConfig.rootMove', 'linked'],
+    rootDrag: ['MeerkatWormholeConfig.rootDrag', 'linked'],
+    rootMaxSpeed: ['MeerkatWormholeConfig.rootMaxSpeed', 'linked'],
+    rootBounce: ['MeerkatWormholeConfig.rootBounce', 'linked'],
+    rootOpacity: ['MeerkatWormholeConfig.rootOpacity', 'linked'],
+    tubeInner: ['MeerkatWormholeConfig.tubeInner', 'linked'],
+    rootLamp: ['MeerkatWormholeConfig.rootLamp', 'linked'],
+    rootFog: ['MeerkatWormholeConfig.rootFog', 'linked'],
+    rootCruise: ['MeerkatWormholeConfig.rootCruise', 'linked'],
+    ovalShortest: ['MeerkatWormholeConfig.ovalShortest', 'linked'],
+    ovalLongest: ['MeerkatWormholeConfig.ovalLongest', 'linked'],
+    ovalMaxSharpness: ['MeerkatWormholeConfig.ovalMaxSharpness', 'linked'],
   };
   // round 8: the proposed kit. Lab-only until Yash decides (no MeerkatWormholeConfig field, no studio_to_unity map row).
   for (const [grp, key] of SPEC) if (/^ab/.test(grp) || key === 'aiNewAbilities') GAME_NAMES[key] = ['lab: round 8 proposal, not in the game (Yash judges it here first)', 'lab'];
@@ -5949,6 +6311,7 @@
   }
   (function mountSound() {
     const host = $('soundPanel'); if (!host || !window.VesselStudioAudio) return;
+    VesselStudioAudio.mountToggle($('viewport'));   // Sound: on / off on the stage (and the M key), remembered in this browser
     VesselStudioAudio.mountPanel(host, {
       state: lsGet(SOUND_KEY, {}), onChange: (st) => lsSet(SOUND_KEY, st),
       onVerdict: (name, verdict, c) => record({ topic: 'Sound: ' + c.label, choice: (verdict === 'confirmed' ? 'Confirmed: ' : 'Redo: ') + c.label,
@@ -6140,8 +6503,10 @@
     // round 16: the Omnicrystal ability - arm it, read the live labyrinths and the ride
     grantOmni, get omni() { return omni; },
     labyrinths() { const nets = [...new Set(pairs.filter((pr) => pr.net).map((pr) => pr.net))]; return nets.map((n) => ({ channels: n.pairs.length, alive: n.pairs.filter((pr) => pr.alive).length, openings: n.pairs.filter((pr) => pr.wh.mouthOut).length, dug: +(n.pairs.reduce((a, pr) => a + (pr.wh.s1 - pr.wh.s0) / pr.wh.L, 0) / n.pairs.length).toFixed(2), soil: n.pairs.filter((pr) => pr.soil && pr.soil.visible).length, pebbles: n.pebbles.length, roots: n.roots.length })); },
-    labRide() { const g = ftLive.gate; return g && g.net && g.state === 'tube' ? { edge: g.pair.edge, s: +g.s.toFixed(1), forks: g.forks, kids: (g.pair.kids || []).map((k) => k.edge), next: forkPick(g) ? forkPick(g).edge : null, lean: !!g.leanW } : null; },
+    labRide() { const g = ftLive.gate; return g && g.net && g.state === 'tube' ? { edge: g.pair.edge, s: +g.s.toFixed(1), forks: g.forks, kids: (g.pair.kids || []).map((k) => k.edge), next: forkPick(g) ? forkPick(g).edge : null, free: !!g.free, v: g.vel ? +g.vel.length().toFixed(1) : null, bumps: g.bumps || 0 } : null; },
     get pebbleCount() { return pebMesh.count; },
+    // round 20: where you are in the roots (s along the root you are in, your distance off its centreline, its radius, your speed, bounces, the inside wall shown), for a recorder
+    rootProbe() { const g = ftLive.gate; if (!g || !g.net || g.state !== 'tube') return null; const wh = g.pair.wh, sc = Math.max(0, Math.min(wh.L, g.s)), c = whAt(wh, sc, new V3()); return { edge: g.pair.edge, s: +g.s.toFixed(1), L: +wh.L.toFixed(1), off: +hull.position.distanceTo(c).toFixed(2), r: +chanRadius(wh, sc).toFixed(2), v: g.vel ? +g.vel.length().toFixed(1) : null, bumps: g.bumps || 0, forks: g.forks, inside: !!(g.pair.skin && g.pair.skin.inMesh.visible), cam: +cam.position.distanceTo(whAt(wh, Math.max(0, Math.min(wh.L, chanNearest(wh, cam.position))), new V3())).toFixed(2), camR: +chanRadius(wh, Math.max(0, Math.min(wh.L, chanNearest(wh, cam.position)))).toFixed(2) }; },
     // rounds 13-14: each live tree's state (for a recorder): shown, the tunnel window it shows, its brightness, its age, branch growth
     trunks() { return [...trunks].map(([pr, tr]) => { const U = tr.mats.U; return { visible: tr.glass.visible, warp: tr.warp.visible, f0: +U.f0.value.toFixed(3), f1: +U.f1.value.toFixed(3), alpha: +tr.mats.glass.uniforms.alpha.value.toFixed(3), age: +(simT - tr.t0).toFixed(2), verts: tr.glass.geometry.attributes.position.count, branches: tr.roots.map((r, i) => +U.bg.value[i].toFixed(2)), centre: whAt(pr.wh, 0.5 * pr.wh.L, new V3()).toArray().map((x) => +x.toFixed(1)) }; }); },
     reset(sd) { if (sd != null) seed = sd; ai.seed = 1; buildCourse(); spawn(); },

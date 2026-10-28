@@ -21,6 +21,14 @@ namespace CosmicShore.ScriptableObjects
     /// page's shipped value. <c>Tools/Build/studio_to_unity/meerkat.json</c> maps each key here; the artifact is the one
     /// source of truth, so tune it there and clone (<c>/artifact-to-unity</c>), never by hand in this asset.
     ///
+    /// <para><b>The tree and the roots</b> (the artifact's rounds 13-21; <c>MEERKAT.md</c> §7): the <c>trunk*</c> and
+    /// <c>branch*</c> keys draw the dead tree round every tunnel (<see cref="MeerkatTreeMesh"/>); the <c>omni*</c>,
+    /// <c>labyrinth*</c> and <c>root*</c> keys are the Omnicrystal ability, the roots and the flight inside them
+    /// (<see cref="MeerkatRootMath"/>). Not ported yet: <c>trunkWarp</c> (the tree bending space needs the lens pass),
+    /// <c>omniAtOnce</c> 0 (an omnicrystal arming the next RT; the game always grows the roots at once), the soil
+    /// (<c>soil*</c>), the dug wireframe (<c>labyrinthRing*</c>, <c>labyrinthRibs</c>, <c>labyrinthRoughness</c>) and the fork
+    /// call-out (<c>forkHintSeconds</c>).</para>
+    ///
     /// <para>Not here, because they shape only the lab: <c>aiTau</c> (the sim's own steering response; the game's AI
     /// flies with <c>AIPilot</c>), <c>cruise</c> / <c>pitchYaw</c> / <c>roll</c> (the hull's
     /// <c>MeerkatVesselTransformer</c> on the prefab) and the stand-in hull's <c>lope*</c>.</para>
@@ -39,6 +47,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(20f, 1500f)] float shaftMax = 600f;
         [Tooltip("The bend's radius (u)")]
         [SerializeField, Range(10f, 300f)] float bendRadius = 60f;
+        [Tooltip("The bend round the middle: how oval at the shortest tunnel (0 = a circle, 1 = a parabola)")]
+        [SerializeField, Range(0f, 1.5f)] float ovalShortest = 0.2f;
+        [Tooltip("...at the longest (over 1 = a hyperbola: straighter arms)")]
+        [SerializeField, Range(0f, 1.5f)] float ovalLongest = 1.1f;
+        [Tooltip("...but its middle turns at most this many times as sharply as its ends")]
+        [SerializeField, Range(1f, 40f)] float ovalMaxSharpness = 8f;
         [Tooltip("Throat diameter, fixed (u)")]
         [SerializeField, Range(2f, 60f)] float throatDiameter = 8f;
         [Tooltip("Entry and exit diameter, fixed (u)")]
@@ -105,6 +119,137 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("...its spindles' colour: the domain colour toward white")]
         [SerializeField, Range(0f, 1f)] float bridgeWhite = 0.45f;
 
+        [Header("Tree (the artifact's Play Style Config > Wormhole · trunk: the tunnel's outer layer, round 14)")]
+        [Tooltip("The tree: the tunnel's outer layer, for everyone (0 = hidden)")]
+        [SerializeField, Range(0f, 1f)] float trunkVisibility = 1f;
+        [Tooltip("Trunk at the way in (× the mouth's radius)")]
+        [SerializeField, Range(1f, 3f)] float trunkTop = 1.5f;
+        [Tooltip("Trunk at the way out (× the mouth's radius)")]
+        [SerializeField, Range(1f, 3f)] float trunkBase = 1.9f;
+        [Tooltip("Bark ridges: depth (× the radius)")]
+        [SerializeField, Range(0f, 0.5f)] float trunkBark = 0.22f;
+        [Tooltip("...ridges round the trunk")]
+        [SerializeField, Range(3, 40)] int trunkRidges = 16;
+        [Tooltip("...slow gnarled wobble")]
+        [SerializeField, Range(0f, 0.3f)] float trunkGnarl = 0.14f;
+        [Tooltip("Its glass face-on (the see-through middle)")]
+        [SerializeField, Range(0f, 0.5f)] float trunkGlass = 0.012f;
+        [Tooltip("Its glass at the silhouette (Fresnel)")]
+        [SerializeField, Range(0f, 2f)] float trunkRim = 0.28f;
+        [Tooltip("...how tight to the silhouette (power)")]
+        [SerializeField, Range(0.5f, 8f)] float trunkFresnel = 3f;
+        [Tooltip("Tree rings on the cut ends")]
+        [SerializeField, Range(1, 20)] int trunkRings = 7;
+        [Tooltip("Bark grain: its fissures' brightness")]
+        [SerializeField, Range(0f, 2f)] float trunkGrain = 0.22f;
+        [Tooltip("...fissures round the wood")]
+        [SerializeField, Range(4, 60)] int trunkGrainLines = 22;
+        [Tooltip("Branches, in pairs")]
+        [SerializeField, Range(0, 16)] int branchCount = 6;
+        [Tooltip("...their length (× the mouth's radius)")]
+        [SerializeField, Range(0f, 4f)] float branchLength = 2.4f;
+        [Tooltip("...thickness at the base (× the mouth's radius)")]
+        [SerializeField, Range(0.02f, 0.8f)] float branchThickness = 0.28f;
+        [Tooltip("...leaning toward the top (°)")]
+        [SerializeField, Range(0f, 80f)] float branchUp = 28f;
+        [Tooltip("...out of the trunk's top (share of its length)")]
+        [SerializeField, Range(0.1f, 1f)] float branchZone = 0.85f;
+        [Tooltip("...each pair mirrored (1) or each its own (0)")]
+        [SerializeField, Range(0f, 1f)] float branchSymmetry = 0.45f;
+        [Tooltip("...times each forks")]
+        [SerializeField, Range(0, 3)] int branchForks = 2;
+        [Tooltip("...each grows over (s), once the tunnel reaches it")]
+        [SerializeField, Range(0.1f, 4f)] float branchGrowSeconds = 0.5f;
+
+        [Header("Omnicrystal · the roots (the artifact's Play Style Config > Omnicrystal, rounds 16-21)")]
+        [Tooltip("The Omnicrystal ability: an omnicrystal arms the labyrinth (0 = off)")]
+        [SerializeField] bool omniOn = true;
+        [Tooltip("Omnicrystals on the course (a new course or reset places them)")]
+        [SerializeField, Range(0, 12)] int omniCount = 3;
+        [Tooltip("Roots: forks after the smallest trunk")]
+        [SerializeField, Range(1, 16)] int labyrinthBranchPointsMin = 3;
+        [Tooltip("...forks after the biggest trunk")]
+        [SerializeField, Range(1, 24)] int labyrinthBranchPointsMax = 12;
+        [Tooltip("...openings (tips) after the smallest trunk")]
+        [SerializeField, Range(2, 48)] int labyrinthOpeningsMin = 5;
+        [Tooltip("...openings after the biggest trunk")]
+        [SerializeField, Range(2, 72)] int labyrinthOpeningsMax = 30;
+        [Tooltip("...reach after the smallest trunk (u)")]
+        [SerializeField, Range(20f, 900f)] float labyrinthRadiusMin = 90f;
+        [Tooltip("...reach after the biggest trunk (u)")]
+        [SerializeField, Range(40f, 1500f)] float labyrinthRadiusMax = 420f;
+        [Tooltip("...its openings spread round it over (°, 360 = all round)")]
+        [SerializeField, Range(20f, 360f)] float labyrinthSpread = 360f;
+        [Tooltip("...randomness")]
+        [SerializeField, Range(0f, 1f)] float labyrinthRandomness = 0.45f;
+        [Tooltip("...channel diameter (u)")]
+        [SerializeField, Range(2f, 60f)] float labyrinthDiameter = 40f;
+        [Tooltip("...source and opening diameter (u)")]
+        [SerializeField, Range(4f, 120f)] float labyrinthMouthDiameter = 46f;
+        [Tooltip("Roots taper to (× the channel at the source)")]
+        [SerializeField, Range(0.1f, 1f)] float rootTip = 0.6f;
+        [Tooltip("...gnarled: how much each root wanders")]
+        [SerializeField, Range(0f, 1f)] float rootGnarl = 0.3f;
+        [Tooltip("...their bark face-on")]
+        [SerializeField, Range(0f, 0.3f)] float rootGlass = 0.015f;
+        [Tooltip("...their bark at the silhouette (Fresnel)")]
+        [SerializeField, Range(0f, 2f)] float rootRim = 0.35f;
+        [Tooltip("...their bark grain")]
+        [SerializeField, Range(0f, 1.5f)] float rootGrain = 0.35f;
+        [Tooltip("...digs itself out from the source over (s)")]
+        [SerializeField, Range(0.05f, 4f)] float labyrinthFormSeconds = 0.8f;
+        [Tooltip("In the roots: you cruise along the root at (u/s)")]
+        [SerializeField, Range(0f, 200f)] float rootCruise = 45f;
+        [Tooltip("...RT pushes you faster by (u/s²)")]
+        [SerializeField, Range(0f, 300f)] float rootThrust = 90f;
+        [Tooltip("...the left stick moves you round the root by (u/s²)")]
+        [SerializeField, Range(0f, 200f)] float rootMove = 55f;
+        [Tooltip("...across the root, your drift dies away at (per s)")]
+        [SerializeField, Range(0f, 3f)] float rootDrag = 0.45f;
+        [Tooltip("...never faster than (u/s)")]
+        [SerializeField, Range(10f, 300f)] float rootMaxSpeed = 90f;
+        [Tooltip("...a wall bounces you off with (× your speed into it)")]
+        [SerializeField, Range(0f, 1f)] float rootBounce = 0.45f;
+        [Tooltip("...drawn to the root's floor by (u/s², 0 = you float)")]
+        [SerializeField, Range(0f, 120f)] float rootGravity = 0f;
+        [Tooltip("From inside: how dense the soft inner wall is (0 = clear, 1 = solid)")]
+        [SerializeField, Range(0f, 1f)] float rootOpacity = 0.32f;
+        [Tooltip("The tree's and roots' inner tube: a smooth sheen, denser than the bark")]
+        [SerializeField, Range(0f, 0.6f)] float tubeInner = 0.1f;
+        [Tooltip("...your lamp on the walls round you")]
+        [SerializeField, Range(0f, 3f)] float rootLamp = 1f;
+        [Tooltip("...far walls fade to clear this far off (u)")]
+        [SerializeField, Range(20f, 600f)] float rootFog = 240f;
+
+        // Round 23 (Yash, 2026-10-28: "revert the mass ability as Garrett has said ... the prism gets sucked in from this one
+        // side and gets sucked out on the other ... distorted while traveling through this wormhole ... From a certain
+        // radius"): Garrett's soliton. Space sets its surface area, so a longer tunnel is thinner; it pulls the prisms and
+        // crystals round its way in, carries them through stretched and twisted, and fires them out of its way out.
+        [Header("Kit · Space · the soliton (the artifact's Play Style Config > Kit · Space · the soliton, round 23)")]
+        [Tooltip("Surface area, Space L0 (u²)")]
+        [SerializeField, Range(1000f, 60000f)] float areaL0 = 6000f;
+        [Tooltip("...at Space L10 (u²)")]
+        [SerializeField, Range(1000f, 60000f)] float areaL10 = 18000f;
+        [Tooltip("Pulls prisms and crystals in from (u round the way in)")]
+        [SerializeField, Range(0f, 400f)] float suckRadius = 90f;
+        [Tooltip("...at (u/s at that reach; faster as they near)")]
+        [SerializeField, Range(0f, 300f)] float suckSpeed = 30f;
+        [Tooltip("Swallows prisms within (× the opening radius)")]
+        [SerializeField, Range(0f, 4f)] float swallowShare = 1.5f;
+        [Tooltip("Carries them through at (u/s)")]
+        [SerializeField, Range(20f, 600f)] float carrySpeed = 150f;
+        [Tooltip("Inside, stretched along the tube by (+ × its length, at the middle)")]
+        [SerializeField, Range(0f, 6f)] float carryStretch = 2f;
+        [Tooltip("...and twisted (turns, mouth to mouth)")]
+        [SerializeField, Range(0f, 4f)] float carryTwist = 0.5f;
+        [Tooltip("Fires them out at (u/s)")]
+        [SerializeField, Range(0f, 400f)] float fireSpeed = 120f;
+        [Tooltip("...gliding to rest over (s)")]
+        [SerializeField, Range(0.2f, 10f)] float fireGlideSeconds = 3f;
+        [Tooltip("At most this many prisms in one Meerkat's pull, tube and glide at once (a performance cap, not in the " +
+                 "artifact: the prism-motion ladder, Docs/PRISM_MOTION.md §3, drops to spheres past 256 movers)")]
+        [SerializeField, Range(16, 1024)] int swallowPrismCap = 256;
+
         [Header("After RT (Garrett, 2026-10-27: the Tube Lens Lab)")]
         [Tooltip("After RT, a formed tunnel shows as: ContourField = nothing drawn, only space bent in a thin shell on its " +
                  "wall (Garrett: \"lets the lensing alone sell the effect\"); Bridge = round 3's spindle bridge and glass.")]
@@ -161,6 +306,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] EventReference formEvent;
         [Tooltip("A tunnel collapsed (at its centre).")]
         [SerializeField] EventReference collapseEvent;
+        [Tooltip("An omnicrystal was taken and the roots grew (at the hull).")]
+        [SerializeField] EventReference rootsEvent;
 
         public float ReticleAhead => reticleAhead;
         public float KeyRampSeconds => keyRampSeconds;
@@ -178,6 +325,17 @@ namespace CosmicShore.ScriptableObjects
         public float RippleStrength => rippleStrength;
         public float RippleEdge => rippleEdge;
         public float RippleSeconds => rippleSeconds;
+        public float AreaL0 => areaL0;
+        public float AreaL10 => areaL10;
+        public float SuckRadius => suckRadius;
+        public float SuckSpeed => suckSpeed;
+        public float SwallowShare => swallowShare;
+        public float CarrySpeed => carrySpeed;
+        public float CarryStretch => carryStretch;
+        public float CarryTwist => carryTwist;
+        public float FireSpeed => fireSpeed;
+        public float FireGlideSeconds => fireGlideSeconds;
+        public int SwallowPrismCap => swallowPrismCap;
         public float ReticleSmoothSeconds => reticleSmoothSeconds;
         public float ReticleIdleAlpha => reticleIdleAlpha;
         public float ReticleWhite => reticleWhite;
@@ -218,18 +376,101 @@ namespace CosmicShore.ScriptableObjects
         public float AiNoise => aiNoise;
         public EventReference FormEvent => formEvent;
         public EventReference CollapseEvent => collapseEvent;
+        public EventReference RootsEvent => rootsEvent;
+        public float TrunkVisibility => trunkVisibility;
+        public float TrunkTop => trunkTop;
+        public float TrunkBase => trunkBase;
+        public float TrunkBark => trunkBark;
+        public int TrunkRidges => trunkRidges;
+        public float TrunkGnarl => trunkGnarl;
+        public float TrunkGlass => trunkGlass;
+        public float TrunkRim => trunkRim;
+        public float TrunkFresnel => trunkFresnel;
+        public int TrunkRings => trunkRings;
+        public float TrunkGrain => trunkGrain;
+        public int TrunkGrainLines => trunkGrainLines;
+        public int BranchCount => branchCount;
+        public float BranchLength => branchLength;
+        public float BranchThickness => branchThickness;
+        public float BranchUp => branchUp;
+        public float BranchZone => branchZone;
+        public float BranchSymmetry => branchSymmetry;
+        public int BranchForks => branchForks;
+        public float BranchGrowSeconds => branchGrowSeconds;
+        public bool OmniOn => omniOn;
+        public int OmniCount => omniCount;
+        public int LabyrinthBranchPointsMin => labyrinthBranchPointsMin;
+        public int LabyrinthBranchPointsMax => labyrinthBranchPointsMax;
+        public int LabyrinthOpeningsMin => labyrinthOpeningsMin;
+        public int LabyrinthOpeningsMax => labyrinthOpeningsMax;
+        public float LabyrinthRadiusMin => labyrinthRadiusMin;
+        public float LabyrinthRadiusMax => labyrinthRadiusMax;
+        public float LabyrinthSpread => labyrinthSpread;
+        public float LabyrinthRandomness => labyrinthRandomness;
+        public float LabyrinthDiameter => labyrinthDiameter;
+        public float LabyrinthMouthDiameter => labyrinthMouthDiameter;
+        public float RootTip => rootTip;
+        public float RootGnarl => rootGnarl;
+        public float RootGlass => rootGlass;
+        public float RootRim => rootRim;
+        public float RootGrain => rootGrain;
+        public float LabyrinthFormSeconds => labyrinthFormSeconds;
+        public float RootCruise => rootCruise;
+        public float RootThrust => rootThrust;
+        public float RootMove => rootMove;
+        public float RootDrag => rootDrag;
+        public float RootMaxSpeed => rootMaxSpeed;
+        public float RootBounce => rootBounce;
+        public float RootGravity => rootGravity;
+        public float RootOpacity => rootOpacity;
+        public float TubeInner => tubeInner;
+        public float RootLamp => rootLamp;
+        public float RootFog => rootFog;
 
-        public MeerkatWormholeMath.ShapeSettings Shape() => new()
+        /// <summary>The roots' layout keys (<see cref="MeerkatRootMath.BuildLayout"/>).</summary>
+        public MeerkatRootMath.LayoutSettings RootLayout() => new()
+        {
+            BranchPointsMin = labyrinthBranchPointsMin, BranchPointsMax = labyrinthBranchPointsMax, OpeningsMin = labyrinthOpeningsMin,
+            OpeningsMax = labyrinthOpeningsMax, RadiusMin = labyrinthRadiusMin, RadiusMax = labyrinthRadiusMax, Spread = labyrinthSpread,
+            Randomness = labyrinthRandomness,
+        };
+
+        /// <summary>A root's size keys (<see cref="MeerkatRootMath.Build"/>).</summary>
+        public MeerkatRootMath.ChannelSettings RootChannel() => new()
+        {
+            Diameter = labyrinthDiameter, MouthDiameter = labyrinthMouthDiameter, Gnarl = rootGnarl, Tip = rootTip,
+        };
+
+        /// <summary>The flight inside the roots (<see cref="MeerkatRootMath.Step"/>).</summary>
+        public MeerkatRootMath.FlightSettings RootFlight() => new()
+        {
+            Cruise = rootCruise, Thrust = rootThrust, Move = rootMove, Drag = rootDrag, MaxSpeed = rootMaxSpeed, Bounce = rootBounce,
+            Gravity = rootGravity, Tip = rootTip, ExitMultiplier = rideExitMultiplier,
+        };
+
+        /// <summary>The tree's keys (<see cref="MeerkatTreeMesh.BuildTree"/>).</summary>
+        public MeerkatTreeMesh.TreeSettings Tree() => new()
+        {
+            Top = trunkTop, Base = trunkBase, Bark = trunkBark, Ridges = trunkRidges, Gnarl = trunkGnarl, BranchCount = branchCount,
+            BranchLength = branchLength, BranchThickness = branchThickness, BranchUp = branchUp, BranchZone = branchZone,
+            BranchSymmetry = branchSymmetry, BranchForks = branchForks,
+        };
+
+        /// <summary>The shape rows. <paramref name="spaceLevel"/> (0-10, the hull's Space level) sets the soliton's surface
+        /// area (round 23); without it the size is the authored throat and mouth.</summary>
+        public MeerkatWormholeMath.ShapeSettings Shape(float spaceLevel = -1f) => new()
         {
             ShaftMin = shaftMin, ShaftMax = shaftMax, BendRadius = bendRadius, BendMaxDegrees = bendMaxDegrees,
             ThroatRadius = 0.5f * throatDiameter, MouthRadius = 0.5f * mouthDiameter,   // round 10: authored as diameters
+            OvalShortest = ovalShortest, OvalLongest = ovalLongest, OvalMaxSharpness = ovalMaxSharpness,   // round 22: the oval arc
+            Area = spaceLevel < 0f ? 0f : MeerkatWormholeMath.ByLevel(areaL0, areaL10, spaceLevel),     // round 23: Garrett's area
         };
 
         /// <summary>The AI's plan rows; <paramref name="turnRateDegrees"/> is the hull's own turn (its transformer's YawScaler,
         /// the studio's pitchYaw).</summary>
-        public MeerkatWormholeMath.PlanSettings Plan(float turnRateDegrees) => new()
+        public MeerkatWormholeMath.PlanSettings Plan(float turnRateDegrees, float spaceLevel = -1f) => new()
         {
-            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(),
+            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(spaceLevel),
             MeanRideMultiplier = MeerkatWormholeMath.MeanRideMultiplier(rideEntryMultiplier, rideMidMultiplier, rideExitMultiplier),
             TurnRateRadians = turnRateDegrees * Mathf.Deg2Rad,
         };

@@ -133,6 +133,174 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 23 (Yash, 2026-10-28: "first we're gonna revert the mass ability as Garrett has said. So the width of the tubes
+shell will be dependent on this mass ability. The longer the tube, the thinner ... Or whatever Garrett has said ... the prism
+gets sucked in from this one side and gets sucked out on the other ... distorted while traveling through this wormhole ...
+From a certain radius"). Artifact and Unity.**
+- **Garrett's rule, as he wrote it.** Space sets the soliton's surface area (`areaL0` 6,000 to `areaL10` 18,000 u²), so a
+  longer tunnel is thinner and a shorter one fatter (b = A / (2π L g(k)), § "Garrett's direction" below). Mass makes the
+  exit portal. So in Garrett's kit and the Mix, Mass no longer sizes the trunk: round 17's `massLengthAtZero` /
+  `massDiameterAtZero` now act only in Off and Round 8. The HUD's tunnel line shows the Space level and the area in the
+  kits. Yash asked for Mass, "or whatever Garrett has said"; Garrett's rule puts the area on Space, so that is what is built.
+  Moving it to Mass is one line on the page and one in `MeerkatWormholeExecutor.SpaceLevel`.
+- **The pull** (`suckRadius` 90 u, `suckSpeed` 30 u/s). Every prism (shielded too, never super-shielded) and every race
+  crystal within `suckRadius` of a standing soliton's way in is drawn to it, faster as it nears (`suckSpeed` × `suckRadius` /
+  distance, up to `carrySpeed`), swirling round the axis. It is swallowed within `swallowShare` × the opening radius. A pulled
+  prism is a moving prism, but one soliton's pulled prisms never break each other.
+- **The distortion** (`carryStretch` 2, `carryTwist` 0.5). Inside the tube a prism or crystal is stretched along it, to 3 ×
+  its length at the middle and none at the mouths, squeezed across to keep its volume, twisted half a turn, and held to the
+  wall's narrowing. It is fired out of the way out as before (crystals at half the fire speed).
+- **Measured** (`runKitScorecard`, Garrett's kit, seed 11, a field race, against round 22):
+  - swallowed: 4,280 prisms a race against 2,514;
+  - lifted out of the field: 184 against 11;
+  - destroyed by the movers: 323 against 15;
+  - bounces: 574 against 42;
+  - crystals: 30 pulled, 17 fired out;
+  - mass conserved;
+  - no DNF.
+- **Race times.** The AI now digs the whole LT range, so its tunnels are longer and thinner. Hard I1-I4 was 70.8 / 62.7 /
+  78.7 / 67.9 s and is now 67.9 / 66.9 / 87.8 / 68.5 s; Easy was 89.4 / 67.5 / 83.1 / 76.9 s and is now 77.3 / 73.6 /
+  96.9 / 85.1 s. Warpline I3 is the slow one, a finding left for Yash to judge rather than tuned away.
+- **In Unity** (cloned the same day): `MeerkatWormholeMath.SurfaceAreaThroat` / `PullVelocity` / `CarryDistortion` and
+  `MeerkatSwallow`. Details: `Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md` §8.
+
+**Round 22 (Yash, 2026-10-28: "Make sure the reticle or the path of this trunk or simple watery effect always follows the
+circumference of a oval. With a specified epicenter. So it should always turn from center ... The longer the length of the
+tube, the more ovalish it will bend. We can make it circular but a little bit of hyperbola will be good ... It should
+always bend from the center rather than bending from one of the ends to a small knot"). Artifact and Unity.**
+- **One conic arc, round its middle.** The tunnel's centreline is no longer a straight shaft and then a hook. It is one
+  conic arc turning theta in all, symmetric about its middle: the conic's vertex, its epicentre, where it turns sharpest.
+  Its length is unchanged (LT's shaft + `bendRadius` × theta), so rides and the AI's timing scale as before.
+- **More oval with length:** the eccentricity runs from `ovalShortest` (0.2, nearly a circle) at the shortest tunnel to
+  `ovalLongest` (1.1, a little hyperbola) at the longest.
+- **Never a knot:** the middle turns at most `ovalMaxSharpness` (8) × as sharply as the ends. Without it, a long tunnel
+  turning 150 degrees went near-parabolic: about 700 × sharper in the middle, a 10 u turn at its centre. Now it stays an
+  oval: a 114 u turn at the middle, against 822 u at the ends. Gentle long turns keep their hyperbola.
+  - The cap is exact: a conic's sharpness at its ends against its vertex is ((1 + k m²) / (1 + m²))^1.5, with
+    k = 1 - e² and m the ends' slope.
+- **In the conic's own frame**, the point heading psi is (m / q, m² / (q (1 + q))) × rho, with m = tan psi and
+  q = sqrt(1 + k m²). A table of 96 headings and lengths turns s into the heading there.
+- **Everything follows it:** the reticle, the bridge, the tree, the warp tube, the ride, the AI's plan, the plan diagram
+  and the tube's nearest-point search (`tubeLocal`).
+- **Measured (the page's own functions):**
+  - half the turn is done exactly at the middle, and the way out heads along theta;
+  - AI scorecard (seed 11), every level finishing every ladder: Hard 70.0 / 63.0 / 71.7 / 68.2 s (round 21:
+    77.8 / 78.9 / 81.2 / 82.7 s). Tunnels that turn round their middle reach the rings sooner.
+- **Unity**:
+  - `MeerkatWormholeMath.Conic` is the same arc, used by the view, the ride, the AI's plan and the tree.
+  - The water pipe's lens shader measures 25 points along it, joined by circle arcs: within 0.07 u of the exact arc,
+    checked against brute force over 400 random tubes. Plain chords between 17 points were 1.4 u out.
+  - 3 new keys mapped (94 in all), 0 drift. 48/48 math tests pass against the page's numbers.
+
+**Round 21 (Yash, 2026-10-28: "it need to be easily navigable. Our controls inside the root will be controlled by left
+thumbstick"), and the clone to Unity.**
+- **Inside the roots, the left stick:**
+  - you cruise along the root on your own (`rootCruise` 45 u/s), your nose following it;
+  - the left stick moves you round the root (left and right, up and down), the way it would turn your nose (Invert Y
+    included), by `rootMove`;
+  - `rootDrag` now only calms your drift across the root;
+  - RT still pushes you faster (`rootThrust`, up to `rootMaxSpeed`); the right stick does nothing in the roots.
+  - The AI steers with the left stick alone.
+- **An omnicrystal taken inside a tunnel** grows its roots the moment you are out (it used to arm your next RT). The game
+  does the same.
+- **Measured** (seed 7, full Mass): you cruise in at 45 u/s; holding the stick right takes a different root at the
+  second fork; RT takes you to 90 u/s.
+- **Cloned to Unity** (`/artifact-to-unity`, `R_VesselActions/MEERKAT.md` §7): the tree round every tunnel and the
+  Omnicrystal's roots, flown on the left stick, with the contour-field water pipe kept. 49 keys mapped (91 in all), 0 drift.
+  The page's root functions are held by 6 golden tests (`MeerkatRootMathTests`). Not ported: `trunkWarp`, `omniAtOnce` 0,
+  the soil, the labyrinth wireframe keys, `forkHintSeconds`. The shaders are a recipe: `Docs/Shaders/WATERY_GLASS.md`.
+  - The calm ride (the other session's round, below: a soft inner tube with no black, `tubeInner`, the bark's lines fading
+    up close) is cloned too: 91 keys mapped, 0 drift.
+
+**Round 20 (Yash, 2026-10-28: "remove the rings of spindle. From the trunk as well as the roots, so there should not be
+any distinction between the wormhole and the trunk ... for the roots, we won't be traveling forward randomly. Rather, we
+will also control going forward using our trigger inside the root ... use the left thumbstick to go forward, backward,
+left, right, and on hitting the surfaces, we will bounce off a little bit ... the root need to be wide enough so our camera
+view always stays inside the root ... In the root, it will be pretty more opaque ... It will be an underground world in
+3D"). ARTIFACT ONLY.**
+- **The trunk is the wormhole.** A formed tunnel draws no bridge (no spindle rings or ribs, no glass tube of its own)
+  while its trunk shows. The trunk got a bore: the tunnel's wall is the trunk's inside, in the same wood. So it is one log
+  you fly through. The bridge comes back only if the trunk is hidden (`trunkVisibility` 0). The reticle keeps its frame.
+  - Unity still draws the bridge (its `bridge*` values are unchanged, 0 drift). Porting this is a later clone.
+- **The roots draw no spindle frame** once dug (`labyrinthFrame`, `labyrinthRideFrame` and round 19's inner glow,
+  `rootInside`, are gone).
+- **Inside the roots you fly yourself** (`labTransit`; round 19's wall slide is gone, with `rootSlideSpeed`, `rootThrow`,
+  `rootFriction`, `rootSteer`, `rootWallRide`, `forkBoost`, `forkLean`):
+  - RT pushes you on along the root (`rootThrust` 90 u/s²).
+  - The left stick pushes you on and back (up / down) and left and right; the right stick up and down (`rootMove` 55).
+    Keys: W S A D, the arrows up and down.
+  - Nothing held, you coast (`rootDrag` 0.45 /s), never faster than `rootMaxSpeed` 90 u/s. You carry your speed in, up to
+    that.
+  - A wall bounces you off with `rootBounce` (0.45) of your speed into it; the speed along the wall is kept.
+  - `rootGravity` (0 = off) can draw you to the root's floor, square to the root so it never pulls you back down a climb.
+  - Your nose follows the root you are in, the way you face along it; up is the network's up.
+  - Past a fork you are in whichever root you steered into; back past a root's start you are in its parent again. Out of
+    a tip you fly on along it; back out of the source you leave the way you came.
+  - The AI holds RT and steers across the root (a spring on the sticks) for the root that leads nearest its ring.
+- **The camera stays inside:** in the roots it sits 12 u back along the root's centreline (into the root behind you when
+  that is behind), half your way out to the wall. The roots are wider: `labyrinthDiameter` 24 → 40 u, mouths 30 → 46 u,
+  `rootTip` 0.5 → 0.6.
+- **From inside, the roots are an underground world.** While you are in a network, its roots also draw their inside as
+  an earthen wall (fibres along the root, knots, grit), drawn over everything outside:
+  - `rootOpacity` 0.94 of the world outside is hidden;
+  - your lamp lights the walls near you (`rootLamp`), and walls `rootFog` (160 u) off fade into the dark;
+  - each root's ends stay open: an opening (a tip, the source) fully, a fork only a little, so you see the light at a tip.
+  - From inside, the roots' space-time warp is off: they are earth, not bent space. From outside nothing changed.
+- **Measured** (headless, seed 7, full Mass): coasting in, your speed dies from 64 to 28 u/s in 2 s; holding RT you reach
+  90 u/s and go through two forks; holding the stick back slows you; you bump the walls in the bends; the camera sat 7 u
+  off the centreline of a root 18.6 u in radius, inside it.
+- **The scorecard (seed 11, I1-I4):** every level finishes every ladder. Hard 77.8 / 78.9 / 81.2 / 80.8 s (round 19's
+  slide: 85.9 / 86.9 / 94.6 / 79.1 s); Easy 80.2 / 78.8 / 81.7 / 84.3 s; Medium 78.7 / 80.4 / 81.7 / 82.0 s.
+
+**Round 19 (Yash, 2026-10-28: "it's non-navigable. What I want is to navigate the routes. So the speed of the vessel
+inside the roots need to be little less. So that I can at least slide ... it will follow the inner wall of the root like a
+ball flowing through the root canal. And it's friction will be very less ... with my thumbstick I can just make it a
+little bit of direction control. Very less. Most of the time I will be just sliding through the walls of the inner
+root"). ARTIFACT ONLY.**
+- **Inside the roots you are a ball on the inner wall** (`labTransit`), `rootWallRide` (0.72) × the root's radius out
+  from its centreline, at an angle round it. Your feet are on the wall (up = toward the centre).
+  - The camera sits behind you on the same side of the wall, and rolls with you gently.
+  - The speed tunnel's push-in stays at its normal strength in the roots.
+- **Along the root you slide slower** than a wormhole ride: `rootSlideSpeed` (1.1) × your speed before the roots, plus
+  `forkBoost` for every fork, easing to it. About 70-80 u/s against the wormhole's 160 or so.
+- **Round the wall you sway:**
+  - A bend throws you up its outside wall (`rootThrow` 0.3 × v² × the curvature), and `rootGravity` (45 u/s²) draws
+    you back to the bottom (the network's down).
+  - `rootFriction` (0.8 /s) slowly calms the sway. The swing is as slow as on a wall at least 10 u round (`SWING_R`),
+    so it never whirls.
+  - The curvature is read over a sample's length or more, because shorter steps read the sampled path's joints as kinks.
+- **The left stick only nudges you round the wall** (`rootSteer` 35 u/s², under gravity's 45). It pushes toward a
+  fixed side of the root (the network's up, and across), not the rolling hull's, so holding it right settles you on the
+  right wall.
+- **Where you ride on the wall chooses the root at a fork:** the one leaving on your side. The HUD and the 3D light it
+  before the fork.
+- **The first try failed, and why.** Before the fixes above, the ball whirled round the pipe at the swing-speed cap:
+  - the thin roots' bends threw it several times harder than gravity;
+  - the curvature was read over 2 u, so the sampled path's joints read as kinks;
+  - the stick pushed in the hull's own rolling frame, so it drove the ball round for ever.
+- **Measured** (`sim()` stepping, full Mass):
+  - With no stick, the ball rides the bottom with a gentle sway (under 1 rad/s).
+  - Holding right, it settles about 2.4 rad round and takes a different route.
+  - Holding up, it takes a third route.
+- **The AI** leans in the same frame toward the root that leads nearest its ring.
+- **The scorecard (Hard, I1-I4, seed 11, before the kits merged in):** 85.9 / 86.9 / 94.6 / 79.1 s, against round 17's
+  77.6 / 83.5 / 89.9 / 79.6 s. The slide is slower than the old root ride, as asked, so an omnicrystal no longer buys
+  time on most ladders. Easy 83.9 / 93.4 / 84.8 / 81.4 s, Medium 81.9 / 92.9 / 90.0 / 78.3 s.
+- **Merged over round 18 (the kits, another session):** this was built as round 18 alongside it, so it is round 19.
+  The slide runs the same in every kit (Off, Garrett's, the Mix), including a ride into someone else's roots.
+- **The walls show from inside.** The roots' bark lit only where it turns edge-on, and a pipe seen from inside faces
+  you at about 56 degrees, so the walls you slide on were all but invisible: a flat haze about 13 brightness levels up.
+  - The inner wall now has a glow of its own (`rootInside` 0.6, seen only from inside, so the outside stays faint),
+    carrying the bark grain and a ring every 12 u streaming past.
+  - The roots round you (the one you are in, the one behind, the ones after the next fork) show their spindle rings
+    at `labyrinthRideFrame` (1.2 × the bridge), while the rest stay at `labyrinthFrame`.
+  - Found on the way: the tube's triangles face outward, so "inside" is the back face. The first try had it backwards
+    and lit the outside instead.
+- **The roots are wider and the camera is closer**, so there is a wall to slide on:
+  - `labyrinthDiameter` 12 → 24 u, `labyrinthMouthDiameter` 22 → 30 u.
+  - `rootTip` 0.35 → 0.5: tips are half as wide as the source.
+  - In the roots the chase camera sits 12 u behind you (`CAM_ROOT_BACK`), not 21, so it stays inside them in bends.
+
 **Round 18 (Yash, 2026-10-27: "two variants, one with his kit only, one with a mix of his kit with the ones you
 recommend"). ARTIFACT ONLY; lab-only keys, no Unity-mapped value changed.** The Kit dropdown (Garrett's kit, the Mix,
 Round 8 archived, Off), built over round 17's Mass-sized trunks and roots. It was started as "round 17" on another branch
@@ -930,10 +1098,14 @@ The parked black/white-hole look for tunnels is in `Docs/Studios/STOAT_PARKED_HO
 
 ## Sound (2026-10-28, artifact only)
 
-Yash: *"sound effects to the Meerkat's abilities, all that we are creating ... add sound effects one by one ... I will
-test and confirm."* **Vessel Config > Sound** lists every ability's sound (the shared `studio-audio.js`, synthesized in
-the browser, no files): **Play**, On, Volume, Pitch, Length, Brightness, then **Confirm** or **Redo**, which records
-"Sound: <name>" in the decision log with the four numbers. Settings stay in this browser.
+**On / off:** the **Sound: on / off** button at the top centre of the stage, the **M** key, or **Sound on** at the top
+of **Vessel Config > Sound**. All three are one switch, remembered in this browser (`vessel-studio-sound-on`).
+
+**The sound set (rebuilt the same day, Yash: "professional space sounds, not childish ones ... common good sounds").**
+Every sound is made of what film and game space sound is made of: deep sub impacts and swells (a softly saturated
+sine), airy filtered whooshes and risers, soft bell tones with long tails, and pads, all through one shared 4 s space
+reverb and a gentle compressor. No square-wave beeps or arpeggios. The ride inside a tunnel is deep bass with a rare
+high glint. Each sound keeps its Play, On, Volume, Pitch, Length, Brightness and Confirm / Redo.
 
 | Group | Sounds | Wired in the page |
 |---|---|---|
@@ -949,3 +1121,15 @@ The sounds watch the sim and never change it. They are the brief for the game's 
 sound design makes them (`MeerkatWormholeConfigSO.formEvent` / `collapseEvent` today); Unity plays none of these.
 Measured headless: every recipe renders (none silent, none clipping), and an AI race with an omnicrystal fires every
 wired sound with no page error.
+
+**The ride is calm (Yash, 2026-10-28: "there should not be any black colored fill ... the inner should be a little
+dense, the outer more transparent ... the outer part can be very rough and edgy, the inner tube need to be very soft
+... smooth ... calming, inviting"). ARTIFACT ONLY.**
+- **Inside the roots, no black.** Round 20's inside wall (94% opaque, fading to near-black) is now a soft, smooth inner
+  tube: one slow warm tone, no fibres, a little denser at its silhouette, lit by your lamp, the world outside still
+  showing through, and far walls fading to clear. `rootOpacity` 0.32 (was 0.94), `rootFog` 240 (fade to clear).
+- **Inside the trunk, smooth.** The bore (the tube you ride) has its own sheen, `tubeInner` (0.1): no bark lines, a little
+  denser than the bark outside. The bark keeps its rough ridges and grain from outside; up close (inside, 15-90 u) its
+  lines and the tree's warp fade away, and the bore's warp is a third of the bark's.
+- Measured headless: a race with an omnicrystal, before and after, inside a tunnel and inside the roots (no black fill,
+  no radiating streaks); check_studio passes; studio_to_unity 0 Meerkat drift (`tubeInner` is a new key).

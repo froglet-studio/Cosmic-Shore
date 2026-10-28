@@ -35,6 +35,15 @@ namespace CosmicShore.Gameplay
     /// <c>aiShapeSeconds</c>, then presses RT through the REPLICATED press path, as a person's would be.</item>
     /// </list>
     ///
+    /// <para><b>The Omnicrystal ability, the roots</b> (<c>MEERKAT.md</c> §7, the artifact's rounds 16-21): fly through an
+    /// omnicrystal (<see cref="MeerkatOmnicrystalField"/>) and roots grow at once from the hull, every way, sized by the
+    /// last trunk this hull dug (<see cref="MeerkatRootNetwork.Grow"/>); taken inside a tunnel, they grow the moment it is
+    /// out. Inside, the hull flies itself (<see cref="StepRoots"/>, <see cref="MeerkatRootMath.Step"/>): it cruises along the
+    /// root on its own, the LEFT stick moves it round the root, RT pushes it faster, the walls bounce it, and it goes down
+    /// whichever root it moves into; the camera rides the root's centreline behind it. The AI holds RT and steers across
+    /// the root for the one that leads nearest its ring. The owner publishes each network it grows (its seed and frame) and
+    /// its rider's way out; every peer grows the same roots from them.</para>
+    ///
     /// <para><b>Where it runs.</b> The reticle, the ride and the AI run on the simulating machine only
     /// (<see cref="MantaStingActionExecutor.IsSimAuthority"/>). Every peer draws every tunnel: the owner publishes each
     /// one it forms, and its rider's way out, through <see cref="MeerkatWormholeNetworkRelay"/>; every peer runs the
@@ -54,17 +63,20 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 A, T0, Side;
             public float L, S, R, B, M, Theta, FormT;   // round 7: L = S (the shaft) + R (the bend's radius) x Theta
+            public MeerkatWormholeMath.Conic Path;       // round 22: its centreline, one conic arc round its middle
             public MeerkatWormholeMath.Window W;
             public bool Dying;
             public float DieT;
             public Color Colour;
             public MeerkatWormholeExecutor Maker;
             public int Seq;
+            public float Born;   // when it formed here (its tree's branches grow from then, MeerkatTreeView)
+            public float SwallowLook;   // its swallow's next look round its way in (MeerkatSwallow, round 23)
 
-            public Vector3 At(float s, out Vector3 tangent) => MeerkatWormholeMath.At(A, T0, Side, S, R, Theta, s, out tangent);
+            public Vector3 At(float s, out Vector3 tangent) => MeerkatWormholeMath.At(A, T0, Side, Path, s, out tangent);
             public void Frame(float s, out Vector3 normal, out Vector3 binormal) =>
-                MeerkatWormholeMath.Frame(T0, Side, S, R, Theta, s, out normal, out binormal);
-            public float BendAngle(float s) => MeerkatWormholeMath.BendAngle(S, R, Theta, s);
+                MeerkatWormholeMath.Frame(T0, Side, Path, s, out normal, out binormal);
+            public float BendAngle(float s) => MeerkatWormholeMath.BendAngle(Path, s);
             /// <summary>The page's <c>whAtX</c>: the centreline at s, carried on straight before the way in and after the way out.</summary>
             public Vector3 AtExtended(float s)
             {
@@ -82,6 +94,7 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 A, T0, Side;
             public MeerkatWormholeMath.Shape Shape;
+            public MeerkatWormholeMath.Conic Path;   // its centreline (round 22)
             public float S0, S1, Alpha;
             public bool Ghost;
         }
@@ -115,6 +128,7 @@ namespace CosmicShore.Gameplay
         float _retEmerge;
         Vector3 _retA, _retT0, _retSide = Vector3.right;
         MeerkatWormholeMath.Shape _retShape;
+        readonly MeerkatWormholeMath.Conic _retPath = new(), _ghostPath = new();   // the reticle's centreline, and the fading one's
         Vector2 _stick;   // the right stick the reticle reads (the page's r.sx / r.sy, from the frame before)
         Vector2 _eased;   // ...the reticle easing toward it over reticleSmoothSeconds (the page's r.fx / r.fy, round 3)
         float _easedLq;   // ...and toward LT's squeeze (r.flq)
@@ -140,10 +154,31 @@ namespace CosmicShore.Gameplay
         bool _aiShaping, _aiPlanned;
         Vector2 _aiStick;
         System.Random _aiRand;
+
+        // the roots (§7): the network this hull grew last, the flight inside it, the omnicrystal it holds
+        const float RootCameraBack = 12f;   // the page's CAM_ROOT_BACK: close behind you, so the camera stays inside the root
+        MeerkatRootNetwork _roots;
+        MeerkatRootMath.Flight _flight;
+        CustomCameraController _rootCam;
+        int _rootSeq, _omniCrystal = -1, _rootAiPick = -1, _rootAiChan = -1;
+        float _lastTrunk;
+        uint _omniSeed;
+        bool _omniArmed, _rtHeld, _freestyleChecked;
+        Vector2 _rootAiStick;
+        static MeerkatRootNetwork s_localRoots;
+        static Vector3 s_localHull;
         InputEvents? _formInput;
+        // the soliton's swallow (round 23): the prisms and crystals its tunnels pull in, carry through and fire out
+        readonly MeerkatSwallow _swallow = new();
         readonly List<ShipActionSO> _bindScratch = new();
 
         public MeerkatWormholeConfigSO Config => config;
+        /// <summary>The hull this Meerkat flies.</summary>
+        public IVesselStatus Status => _status;
+        /// <summary>The prisms this Meerkat's tunnels are moving now (pulled, carried or fired; round 23).</summary>
+        public int SwallowedPrisms => _swallow.PrismCount;
+        /// <summary>...and the crystals.</summary>
+        public int SwallowedCrystals => _swallow.CrystalCount;
         /// <summary>True while a tunnel flies this hull (from the press to its way out).</summary>
         public bool IsRiding => _ride != null;
         /// <summary>The reticle's growth, 0..1 (RT forms from <see cref="MeerkatWormholeMath.FormableEmerge"/>); 0 riding.</summary>
@@ -156,6 +191,12 @@ namespace CosmicShore.Gameplay
         public bool AIHoldsLine => _aiShaping;
         /// <summary>Tunnels this hull has formed since it spawned.</summary>
         public int Formed => _seq;
+        /// <summary>True while this hull flies inside its roots (from the omnicrystal to its way out).</summary>
+        public bool IsInRoots => _flight != null;
+        /// <summary>The roots the local pilot is inside, or null (<see cref="MeerkatTreeView"/> draws their inside).</summary>
+        public static MeerkatRootNetwork LocalRootNetwork => s_localRoots;
+        /// <summary>The local pilot's hull (the lamp that lights the roots' walls).</summary>
+        public static Vector3 LocalHullPosition => s_localHull;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -175,6 +216,9 @@ namespace CosmicShore.Gameplay
             _aiShaping = _aiPlanned = false;
             _formInput = null;
             _aiRand = new System.Random(GetInstanceID());
+            _flight = null;
+            _omniArmed = _rtHeld = _freestyleChecked = false;
+            _omniCrystal = -1;
             if (!s_executors.Contains(this)) s_executors.Add(this);
             if (config == null)
                 CSDebug.LogError($"[Meerkat] {name}: MeerkatWormholeExecutor has no MeerkatWormholeConfig - RT will form nothing. " +
@@ -188,6 +232,7 @@ namespace CosmicShore.Gameplay
         /// <summary>RT: form the tunnel the reticle shows and dive in (the page's <c>gateForm</c>).</summary>
         public void Form()
         {
+            _rtHeld = true;   // inside the roots RT pushes you faster while held
             if (!config || !IsAuthority) return;
             if (!_retLive || _retEmerge < MeerkatWormholeMath.FormableEmerge) return;   // still rippling into shape
             Commit();
@@ -201,6 +246,18 @@ namespace CosmicShore.Gameplay
         }
 
         public void EndShorten() => _ltHeld = false;
+
+        /// <summary>RT released.</summary>
+        public void EndForm() => _rtHeld = false;
+
+        float RtLive()
+        {
+            if (_status.AutoPilotEnabled) return 1f;   // the AI holds RT in the roots
+            if (!_rtHeld) return 0f;
+            var input = _status.InputStatus;
+            bool analog = input != null && input.ActiveInputDevice == InputDeviceType.Gamepad;
+            return analog ? MeerkatWormholeMath.Clamp01(input.RightTriggerAnalog) : 1f;
+        }
 
         float LtLive()
         {
@@ -220,7 +277,10 @@ namespace CosmicShore.Gameplay
             if (!config || _status == null) return;
             float dt = Time.deltaTime;
             StepTunnels(dt);
+            _swallow.Step(this, dt);
+            StepRootNetworks(dt);
             StepRipples();
+            TrackLocalPilot();
             if (_ghostAlpha > 0f) _ghostAlpha -= dt / Mathf.Max(0.05f, _ghostFormT);
             if (!IsAuthority) return;
             StepSpeedTunnelScale();
@@ -228,6 +288,7 @@ namespace CosmicShore.Gameplay
             if (_ltHeld) _ltHeldFor += dt;
             if (_status.AutoPilotEnabled) Autopilot(dt);
             else _aiShaping = false;
+            StepOmni();
             StepReticle(dt);
         }
 
@@ -237,7 +298,7 @@ namespace CosmicShore.Gameplay
         void StepReticle(float dt)
         {
             var hull = _status.Transform;
-            bool live = hull && _ride == null && !_status.IsStationary;
+            bool live = hull && _ride == null && _flight == null && !_status.IsStationary;
             if (!live)
             {
                 _retLive = false;
@@ -256,14 +317,26 @@ namespace CosmicShore.Gameplay
             float ke = MeerkatWormholeMath.ReticleEase(dt, config.ReticleSmoothSeconds);
             _eased += (_stick - _eased) * ke;
             _easedLq += (LtLive() - _easedLq) * ke;
-            var sh = MeerkatWormholeMath.ShapeFor(config.Shape(), _easedLq, _eased.x, _eased.y);
+            var sh = MeerkatWormholeMath.ShapeFor(config.Shape(SpaceLevel()), _easedLq, _eased.x, _eased.y);   // round 23: Space sets its area
             Vector3 c = sh.Stick >= 0.05f ? right * sh.Dx + up * sh.Dy : _retSide;
             c -= fwd * Vector3.Dot(c, fwd);
             _retSide = c.sqrMagnitude > 1e-8f ? c.normalized : right;
             _retShape = sh;
+            _retPath.Set(sh.L, sh.Theta, sh.Oval);
             // the right stick bends the reticle from the next frame (the page sets r.sx / r.sy after gateHold)
             _stick = _status.AutoPilotEnabled ? _aiStick
                 : _status.InputStatus != null ? _status.InputStatus.EasedRightJoystickPosition : Vector2.zero;
+        }
+
+        /// <summary>
+        /// The hull's Space level, 0-10 (round 23, Garrett: "at a given Space level a soliton keeps one surface area"): read at
+        /// use time, every frame the reticle is shaped, so a crystal taken mid-flight resizes the next tunnel. -1 (the
+        /// authored fixed size) when the hull has no element levels.
+        /// </summary>
+        float SpaceLevel()
+        {
+            var resources = _status?.ResourceSystem;
+            return resources ? Mathf.Clamp(resources.GetLevel(Element.Space), 0, 10) : -1f;
         }
 
         /// <summary>The page's <c>gateCommit</c>.</summary>
@@ -272,8 +345,12 @@ namespace CosmicShore.Gameplay
             var hull = _status.Transform;
             if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);   // the last one goes back to its centre now
             float vIn = Mathf.Max(1f, _status.Speed), dive = Vector3.Distance(hull.position, _retA) / vIn;
+            // round 17: the trunk's size (its shaft against the longest LT digs) sizes the roots of the next omnicrystal
+            var shape = config.Shape();
+            _lastTrunk = MeerkatWormholeMath.Clamp01((_retShape.S - shape.ShaftMin) / Mathf.Max(1f, shape.ShaftMax - shape.ShaftMin));
             var t = AddTunnel(_retA, _retT0, _retSide, _retShape, MeerkatWormholeMath.FormTime(config.FormSeconds, dive), ++_seq);
-            _ghost = new Reticle { A = _retA, T0 = _retT0, Side = _retSide, Shape = _retShape, S0 = 0f, S1 = _retShape.L, Ghost = true };
+            _ghostPath.Set(_retShape.L, _retShape.Theta, _retShape.Oval);
+            _ghost = new Reticle { A = _retA, T0 = _retT0, Side = _retSide, Shape = _retShape, Path = _ghostPath, S0 = 0f, S1 = _retShape.L, Ghost = true };
             _ghostAlpha = 1f;
             _ghostFormT = t.FormT;
             // the ride starts at the hull: it dives straight down to the mouth the reticle showed (s < 0), then into the throat
@@ -295,7 +372,8 @@ namespace CosmicShore.Gameplay
             var t = new Tunnel
             {
                 A = a, T0 = t0, Side = side, L = sh.L, S = sh.S, R = sh.R, B = sh.B, M = sh.M, Theta = sh.Theta, FormT = formT,
-                W = MeerkatWormholeMath.NewWindow(sh.L), Colour = DomainColour(), Maker = this, Seq = seq,
+                Path = new MeerkatWormholeMath.Conic(sh.L, sh.Theta, sh.Oval),
+                W = MeerkatWormholeMath.NewWindow(sh.L), Colour = DomainColour(), Maker = this, Seq = seq, Born = Time.time,
             };
             _mine = t;
             s_tunnels.Add(t);
@@ -308,7 +386,8 @@ namespace CosmicShore.Gameplay
         {
             if (!config || IsAuthority) return;
             if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);
-            AddTunnel(a, t0, side, new MeerkatWormholeMath.Shape { L = L, S = shaft, R = bendRadius, B = b, M = m, Theta = theta },
+            AddTunnel(a, t0, side, new MeerkatWormholeMath.Shape { L = L, S = shaft, R = bendRadius, B = b, M = m, Theta = theta,
+                    Oval = MeerkatWormholeMath.OvalOf(config.Shape(), L, theta) },   // the same config, so the same arc as its owner's
                 formT, seq);
         }
 
@@ -421,7 +500,7 @@ namespace CosmicShore.Gameplay
                           (0.35f + 0.65f * e);
             reticle = new Reticle
             {
-                A = _retA, T0 = _retT0, Side = _retSide, Shape = _retShape, Alpha = alpha,
+                A = _retA, T0 = _retT0, Side = _retSide, Shape = _retShape, Path = _retPath, Alpha = alpha,
                 S0 = e >= 1f ? 0f : 0.5f * _retShape.L * (1f - e), S1 = e >= 1f ? _retShape.L : 0.5f * _retShape.L * (1f + e),
             };
             return true;
@@ -463,6 +542,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void StepRideCamera()
         {
+            if (StepRootCamera()) return;
             float dt = Time.deltaTime;
             if (_ride != null) { _camTunnel = _ride; _camS = _rideS; }
             else if (_camTunnel != null) _camS += Mathf.Max(0f, _status.Speed) * dt;
@@ -510,6 +590,7 @@ namespace CosmicShore.Gameplay
             _aiShaping = false;
             var ai = _status.AIPilot;
             var hull = _status.Transform;
+            if (_flight != null) { RootAutopilot(); return; }
             if (!config.AiWormhole || !ai || !hull) return;
             if (_ride != null)
             {
@@ -535,7 +616,7 @@ namespace CosmicShore.Gameplay
                 }
             }
             else if (d > Mathf.Min(config.AiStraightMinDistance, config.AiBentMinDistance) && CanForm &&
-                     MeerkatWormholeMath.TryPlan(config.Plan(TurnRateDegrees()), local, Mathf.Max(1f, _status.Speed),
+                     MeerkatWormholeMath.TryPlan(config.Plan(TurnRateDegrees(), SpaceLevel()), local, Mathf.Max(1f, _status.Speed),
                          MeerkatWormholeMath.Clamp01(config.AiNoise), (float)_aiRand.NextDouble(),
                          d <= config.AiStraightMinDistance, out float lq, out float m))
             {
@@ -593,6 +674,245 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        // ------------------------------------------------------------------ the roots (§7)
+
+        /// <summary>The page's <c>stepOmni</c>: take an omnicrystal the hull flies through; the roots grow at once from here
+        /// (round 17), or, taken inside a tunnel or the roots, the moment it is out (round 21). Simulating machine only.</summary>
+        void StepOmni()
+        {
+            var hull = _status.Transform;
+            if (!config.OmniOn || !hull) return;
+            if (!_freestyleChecked)
+            {
+                // a scene with no course (the Toybox): the local pilot's Meerkat lays the omnicrystals ahead of itself
+                _freestyleChecked = true;
+                if (!MeerkatOmnicrystalField.Instance && _status.IsLocalUser && !_status.IsInitializedAsAI &&
+                    !FindAnyObjectByType<GateRaceController>())
+                    MeerkatOmnicrystalField.EnsureFreestyle(hull);
+            }
+            var field = MeerkatOmnicrystalField.Instance;
+            if (field && field.TryTake(hull.position, out int index))
+            {
+                _omniArmed = true;
+                _omniCrystal = index;
+                _omniSeed = unchecked((uint)(GetInstanceID() * 977 + index * 131 + Mathf.FloorToInt(Time.time * 10f)));
+            }
+            if (_omniArmed && _ride == null && _flight == null) GrowRootsHere();
+        }
+
+        /// <summary>The page's <c>rootsHere</c> + <c>labCommit</c>: the roots grow from the hull, every way, sized by the last
+        /// trunk; the hull is in their source. The last tunnel and the last roots collapse now.</summary>
+        void GrowRootsHere()
+        {
+            _omniArmed = false;
+            var hull = _status.Transform;
+            if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);
+            if (_roots != null) _roots.CollapseNow();
+            _roots = MeerkatRootNetwork.Grow(config, this, ++_rootSeq, _omniSeed, _lastTrunk, hull.position, hull.forward, hull.right, hull.up);
+            _flight = MeerkatRootMath.Enter(_roots.Channels, 0, MeerkatRootNetwork.D(hull.position), Mathf.Max(1f, _status.Speed), _roots.Up);
+            _rootAiPick = _rootAiChan = -1;
+            if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
+            if (_relay) _relay.PublishRoots(_rootSeq, _omniSeed, _lastTrunk, hull.position, hull.forward, hull.right, hull.up, _omniCrystal);
+            PlayOneShot(config.RootsEvent, hull.position);
+            CSDebug.LogVerbose(CSLogChannel.BlackHole,
+                $"[Meerkat] roots {_rootSeq}: {_roots.Channels.Count} channels from trunk {_lastTrunk:F2}");
+        }
+
+        /// <summary>A remote peer's copy of the roots its owner grew (<see cref="MeerkatWormholeNetworkRelay"/>).</summary>
+        internal void GrowRootsRemote(int seq, uint seed, float size, Vector3 a, Vector3 t0, Vector3 right, Vector3 up, int crystal)
+        {
+            if (!config || IsAuthority) return;
+            if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);
+            if (_roots != null) _roots.CollapseNow();
+            _roots = MeerkatRootNetwork.Grow(config, this, seq, seed, size, a, t0, right, up);
+            var field = MeerkatOmnicrystalField.Instance;
+            if (field) field.MarkTaken(crystal);
+        }
+
+        /// <summary>A remote peer hears that its owner's rider came out of roots <paramref name="seq"/>.</summary>
+        internal void RootsOutRemote(int seq)
+        {
+            if (IsAuthority || _roots == null || _roots.Seq != seq) return;
+            _roots.RiderOut();
+        }
+
+        /// <summary>
+        /// The page's <c>labTransit</c> (rounds 20-21), flown by <see cref="MeerkatVesselTransformer"/> in place of its own
+        /// move: where the roots put the hull this frame, its facing, speed and heading. The left stick (the eased stick the
+        /// hull steers by, Invert Y included) moves it round the root, RT pushes it faster; an AI's stick comes from
+        /// <see cref="RootAutopilot"/>. False when the hull is not in its roots. <paramref name="cameOut"/> is true on the
+        /// frame it leaves (its speed is then the speed it went in with × <c>rideExitMultiplier</c>).
+        /// </summary>
+        public bool StepRoots(float dt, out Vector3 position, out Quaternion rotation, out float speed, out Vector3 heading,
+            out bool cameOut)
+        {
+            var hull = _status.Transform;
+            position = hull ? hull.position : Vector3.zero;
+            rotation = hull ? hull.rotation : Quaternion.identity;
+            speed = 0f;
+            heading = default;
+            cameOut = false;
+            var g = _flight;
+            if (g == null) return false;
+            if (_roots == null || !Contains(MeerkatRootNetwork.Live, _roots))
+            {
+                _flight = null;   // the roots went from under the hull (a despawn): fly on
+                return false;
+            }
+            float side, rise, th;
+            if (_status.AutoPilotEnabled) { side = _rootAiStick.x; rise = _rootAiStick.y; th = 1f; }
+            else
+            {
+                var input = _status.InputStatus;
+                var stick = input != null ? input.EasedLeftJoystickPosition : Vector2.zero;
+                side = stick.x;
+                rise = stick.y;   // the way the stick turns the nose outside (SingleStickVesselTransformer: + y is nose up)
+                th = RtLive();
+            }
+            var res = MeerkatRootMath.Step(g, _roots.Channels, _roots.AliveFn, config.RootFlight(), th, side, rise, dt, out var nose);
+            position = MeerkatRootNetwork.V(g.Pos);
+            heading = MeerkatRootNetwork.V(nose);
+            var up = g.Free ? MeerkatRootNetwork.V(g.Upv) : (hull ? hull.up : Vector3.up);
+            rotation = Pose(heading, up, rotation);
+            speed = (float)(g.Free ? System.Math.Sqrt(g.Vel.LengthSq) : g.VIn);
+            if (res == MeerkatRootMath.FlightResult.Riding) return true;
+            // out of a tip (on along it), or back out of the source (turned to face out)
+            cameOut = true;
+            speed = (float)g.VIn * Mathf.Max(0.05f, config.RideExitMultiplier);
+            _flight = null;
+            _roots.RiderOut();
+            if (_relay) _relay.PublishRootsOut(_roots.Seq);
+            return true;
+        }
+
+        static Quaternion Pose(Vector3 nose, Vector3 up, Quaternion fallback)
+        {
+            if (nose.sqrMagnitude < 1e-8f) return fallback;
+            up -= nose * Vector3.Dot(up, nose);
+            if (up.sqrMagnitude < 1e-8f) up = Vector3.Cross(nose, Mathf.Abs(nose.x) < 0.9f ? Vector3.right : Vector3.up);
+            return Quaternion.LookRotation(nose, up);
+        }
+
+        static bool Contains(IReadOnlyList<MeerkatRootNetwork> list, MeerkatRootNetwork net)
+        {
+            for (int i = 0; i < list.Count; i++) if (list[i] == net) return true;
+            return false;
+        }
+
+        /// <summary>This hull's networks dig, stay, collapse and fade (every peer runs the same life).</summary>
+        void StepRootNetworks(float dt)
+        {
+            var live = MeerkatRootNetwork.Live;
+            for (int i = live.Count - 1; i >= 0; i--)
+            {
+                var net = live[i];
+                if (net.Maker != this) continue;
+                if (net.Step(config.StaySeconds, config.CollapseSeconds, dt)) continue;
+                if (_roots == net) { _roots = null; _flight = null; }
+                net.Remove();
+            }
+        }
+
+        /// <summary>The local pilot's roots and lamp, for <see cref="MeerkatTreeView"/>.</summary>
+        void TrackLocalPilot()
+        {
+            if (_status.Player == null || !_status.IsLocalUser || _status.IsInitializedAsAI) return;
+            s_localRoots = _flight != null && _flight.Free ? _roots : null;
+            var hull = _status.Transform;
+            if (hull) s_localHull = hull.position;
+        }
+
+        /// <summary>
+        /// The page's AI in the roots (round 21, input only): RT held, and the left stick pushing it across the root toward
+        /// the middle, or, at a fork, toward the side of the root that leads nearest its ring (a rookie sometimes picks
+        /// wrong, by <c>aiNoise</c>).
+        /// </summary>
+        void RootAutopilot()
+        {
+            _rootAiStick = Vector2.zero;
+            _aiShaping = false;
+            var g = _flight;
+            if (g == null || !g.Free || _roots == null) return;
+            var net = _roots.Channels;
+            var c = net[g.Chan];
+            if (g.Chan != _rootAiChan) { _rootAiChan = g.Chan; _rootAiPick = -1; }
+            var want = MeerkatRootMath.D3.Zero;
+            var ai = _status.AIPilot;
+            if (c.Kids.Count > 1 && ai)
+            {
+                if (_rootAiPick < 0)
+                {
+                    var target = MeerkatRootNetwork.D(ai.ObjectivePosition);
+                    int bi = 0;
+                    double best = double.PositiveInfinity;
+                    for (int k = 0; k < c.Kids.Count; k++)
+                    {
+                        double d = MeerkatRootMath.Reach(net, c.Kids[k], target);
+                        if (d < best) { best = d; bi = k; }
+                    }
+                    if (_aiRand.NextDouble() < 0.35 * MeerkatWormholeMath.Clamp01(config.AiNoise)) bi = (bi + 1) % c.Kids.Count;
+                    _rootAiPick = c.Kids[bi];
+                }
+                var fp = MeerkatRootMath.At(c.Path, c.L, out var ft);
+                var q = MeerkatRootMath.ForkSide(net[_rootAiPick], fp, ft);
+                if (q.LengthSq > 1e-6) want = q.Normalized * (0.55 * MeerkatRootMath.Radius(c, c.L, config.RootTip));
+            }
+            MeerkatRootMath.AiStick(g, want, config.RootMove, out double side, out double rise);
+            _rootAiStick = new Vector2((float)side, (float)rise);
+        }
+
+        /// <summary>
+        /// The page's <c>rootCam</c> (round 20): inside the roots the camera rides the root's centreline
+        /// <see cref="RootCameraBack"/> u behind the hull (into the root behind it when that is behind), half the hull's way out
+        /// to the wall, looking at the hull, so it is always inside the root. Only the local human pilot's camera. False when
+        /// the hull is not in its roots.
+        /// </summary>
+        bool StepRootCamera()
+        {
+            var g = _flight;
+            if (g == null || !g.Free || _roots == null)
+            {
+                ReleaseRootCamera();
+                return false;
+            }
+            bool mine = _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI;
+            var cam = mine && CameraManager.Instance != null ? CameraManager.Instance.GetActiveController() as CustomCameraController : null;
+            var hull = _status.Transform;
+            if (cam && (cam.PlacementAnchor.HasValue || !cam.FollowTarget ||
+                        (cam.FollowTarget != hull && !cam.FollowTarget.IsChildOf(hull))))
+                cam = null;   // a cinematic or end-of-match camera pointed elsewhere is not ours to move
+            if (cam != _rootCam) ReleaseRootCamera();
+            ReleaseRideCamera();
+            _camTunnel = null;
+            if (!cam) return true;
+            _rootCam = cam;
+            var net = _roots.Channels;
+            var c = net[g.Chan];
+            MeerkatRootMath.At(c.Path, System.Math.Max(0, System.Math.Min(c.L, g.S)), out var t);
+            double hs = g.H.Dot(t) < 0 ? -1 : 1, s = g.S - hs * RootCameraBack;
+            MeerkatRootMath.D3 p;
+            if (s < 0 && c.Parent >= 0) p = MeerkatRootMath.At(net[c.Parent].Path, net[c.Parent].L + s, out _);
+            else if (s > c.L && c.Kids.Count > 0)
+            {
+                int k = c.Kids.Contains(g.Prev) ? g.Prev : c.Kids[0];
+                p = MeerkatRootMath.At(net[k].Path, s - c.L, out _);
+            }
+            else p = MeerkatRootMath.At(c.Path, s, out _);
+            cam.SpectateBlendSeconds = 0f;
+            cam.Spectate = new CustomCameraController.SpectateView
+            {
+                Position = MeerkatRootNetwork.V(p + g.Dr * 0.5), LookAt = hull.position, Up = hull.up,
+            };
+            return true;
+        }
+
+        void ReleaseRootCamera()
+        {
+            if (!_rootCam) { _rootCam = null; return; }
+            _rootCam.Spectate = null;   // back to the follow camera, behind the hull at the root's mouth
+            _rootCam = null;
+        }
+
         // ------------------------------------------------------------------ helpers
 
         /// <summary>This pilot's domain colour, the one its tunnels and its bridge-look reticle take.</summary>
@@ -626,6 +946,15 @@ namespace CosmicShore.Gameplay
             s_executors.Remove(this);
             ReleaseSpeedTunnelScale();
             ReleaseRideCamera();
+            ReleaseRootCamera();
+            _swallow.Release(this);
+            var nets = MeerkatRootNetwork.Live;
+            for (int i = nets.Count - 1; i >= 0; i--)
+                if (nets[i].Maker == this) nets[i].Remove();
+            if (s_localRoots == _roots) s_localRoots = null;
+            _roots = null;
+            _flight = null;
+            _omniArmed = _rtHeld = false;
             _camTunnel = null;
             _ride = null;
             _mine = null;
@@ -641,6 +970,7 @@ namespace CosmicShore.Gameplay
             s_tunnels.Clear();
             s_ripples.Clear();
             s_executors.Clear();
+            s_localRoots = null;
         }
     }
 }
