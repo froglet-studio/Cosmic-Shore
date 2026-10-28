@@ -78,10 +78,15 @@ namespace CosmicShore.UI
         /// <summary>
         /// Reads the live arena: the cell nearest the pilot, <paramref name="vessels"/>, every
         /// <see cref="Crystal"/>, every <see cref="RaceGateRing"/>, and the largest mesh renderers.
-        /// One pass when the intro starts; nothing here runs per frame.
+        /// One pass, before the intro starts (behind the covered loading screen); nothing here runs
+        /// per frame.
         /// </summary>
+        /// <param name="withLandmarks">Only when the intro frames a <see cref="IntroAnchor.Landmark"/>: finding
+        /// them walks every enabled MeshRenderer in the scene, every prism included (Docs/MENU_REDESIGN_B.md
+        /// section 99.2), and most intros never look at one.</param>
         public static IntroCameraScene Gather(Vector3 fallbackCenter, Transform player,
-                                              IReadOnlyList<IVessel> vessels, float referenceRadius, float scaleMultiplier)
+                                              IReadOnlyList<IVessel> vessels, float referenceRadius, float scaleMultiplier,
+                                              bool withLandmarks = true)
         {
             Vector3 probe = player ? player.position : fallbackCenter;
             var cell = Cell.FindNearestActiveCell(probe);
@@ -105,9 +110,11 @@ namespace CosmicShore.UI
                 roots.Add(player.root);
             }
 
-            var crystals = new List<Vector3>();
-            foreach (var c in Object.FindObjectsByType<Crystal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-                if (c) crystals.Add(c.transform.position);
+            // The live registry (OnEnable/OnDisable), not a scene scan.
+            var live = Crystal.Active;
+            var crystals = new List<Vector3>(live.Count);
+            for (int i = 0; i < live.Count; i++)
+                if (live[i]) crystals.Add(live[i].transform.position);
 
             var rings = new List<RaceGateRing>(Object.FindObjectsByType<RaceGateRing>(FindObjectsInactive.Exclude, FindObjectsSortMode.None));
             rings.Sort((a, b) => a.Index.CompareTo(b.Index));
@@ -116,7 +123,7 @@ namespace CosmicShore.UI
                 gates.Add(new Pose(r.transform.position, Quaternion.LookRotation(r.Axis.sqrMagnitude > 1e-6f ? r.Axis : Vector3.forward)));
 
             if (radius <= 0f) radius = EstimateRadius(center, pilots, crystals, gates, referenceRadius);
-            var landmarks = FindLandmarks(center, radius, roots);
+            var landmarks = withLandmarks ? FindLandmarks(center, radius, roots) : null;
 
             float scale = radius / Mathf.Max(1f, referenceRadius) * Mathf.Max(0.01f, scaleMultiplier);
             return new IntroCameraScene(center, radius, scale, player, pilots, crystals, gates, landmarks);
