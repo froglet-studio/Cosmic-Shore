@@ -2,7 +2,6 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using FMODUnity;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -61,12 +60,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("LT on a key or touch: full after (s)")]
         [SerializeField, Range(0.05f, 3f)] float keyRampSeconds = 0.5f;
 
+        // Round 24: the tunnel is slid as the roots are (the root* keys below); rideEntryMultiplier and rideMidMultiplier,
+        // the automatic ride's, are retired. Coming out is still rideExitMultiplier.
         [Header("Wormhole ride (the artifact's Play Style Config > Wormhole ride)")]
-        [Tooltip("Ride: going in (× your speed before the tunnel)")]
-        [SerializeField, Range(0.5f, 3f)] float rideEntryMultiplier = 1f;
-        [Tooltip("Ride: fastest, at the throat (× your speed before the tunnel)")]
-        [FormerlySerializedAs("throatSpeed")]
-        [SerializeField, Range(0.5f, 8f)] float rideMidMultiplier = 2.5f;
         [Tooltip("Ride: coming out (× your speed before the tunnel)")]
         [SerializeField, Range(0.5f, 3f)] float rideExitMultiplier = 1.2f;
         [Tooltip("Riding: the speed tunnel's dolly zoom (× its normal strength)")]
@@ -121,7 +117,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float bridgeWhite = 0.45f;
 
         [Header("Tree (the artifact's Play Style Config > Wormhole · trunk: the tunnel's outer layer, round 14)")]
-        [Tooltip("The old outer layer round a wormhole (rounds 13-21), for everyone (0 = hidden; off since round 24)")]
+        [Tooltip("The old outer layer round a wormhole (rounds 13-21), for everyone (0 = hidden; off since round 25)")]
         [SerializeField, Range(0f, 1f)] float trunkVisibility = 0f;
         [Tooltip("...its size at the way in (× the mouth's radius)")]
         [SerializeField, Range(1f, 3f)] float trunkTop = 1.5f;
@@ -162,10 +158,10 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("...each grows over (s), once the tunnel reaches it")]
         [SerializeField, Range(0.1f, 4f)] float branchGrowSeconds = 0.5f;
 
-        [Header("Omnicrystal · the network (the artifact's Play Style Config > Omnicrystal, rounds 16-24)")]
+        [Header("Omnicrystal · the network (the artifact's Play Style Config > Omnicrystal, rounds 16-25)")]
         [Tooltip("The Omnicrystal ability: an omnicrystal opens the wormhole network (0 = off)")]
         [SerializeField] bool omniOn = true;
-        [Tooltip("Round 24 (Yash, 2026-10-28: \"it will always be large ... if it has full mass, then it will be the largest, " +
+        [Tooltip("Round 25 (Yash, 2026-10-28: \"it will always be large ... if it has full mass, then it will be the largest, " +
                  "covering the entire cell\"): the network's reach as a share of its cell's radius (MeerkatNetworkCell), on Mass - " +
                  "Min the page's networkReachAtZero (0.5, at Mass 0), Max its networkReachAtFull (1, the whole cell, at Mass 10). " +
                  "Read when the omnicrystal is taken (EvaluateLive). An ElementalFloat block, so studio_to_unity.py cannot write it: " +
@@ -197,7 +193,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.1f, 1f)] float rootTip = 0.6f;
         [Tooltip("...how much each wormhole wanders")]
         [SerializeField, Range(0f, 1f)] float rootGnarl = 0.3f;
-        [Tooltip("The network's old outer skin, for everyone (0 = hidden: every tube is a wormhole; off since round 24)")]
+        [Tooltip("The network's old outer skin, for everyone (0 = hidden: every tube is a wormhole; off since round 25)")]
         [SerializeField, Range(0f, 1f)] float rootBarkVisibility = 0f;
         [Tooltip("...that skin face-on")]
         [SerializeField, Range(0f, 0.3f)] float rootGlass = 0.015f;
@@ -207,13 +203,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1.5f)] float rootGrain = 0.35f;
         [Tooltip("...digs itself out from the source over (s)")]
         [SerializeField, Range(0.05f, 4f)] float labyrinthFormSeconds = 0.8f;
-        [Tooltip("In the network: you cruise along the tube at (u/s)")]
+        [Tooltip("In a wormhole or the network: you cruise along it at (u/s)")]
         [SerializeField, Range(0f, 200f)] float rootCruise = 45f;
         [Tooltip("...RT pushes you faster by (u/s²)")]
         [SerializeField, Range(0f, 300f)] float rootThrust = 90f;
-        [Tooltip("...the left stick moves you round the tube by (u/s²)")]
+        [Tooltip("...the left stick moves you round it by (u/s²)")]
         [SerializeField, Range(0f, 200f)] float rootMove = 55f;
-        [Tooltip("...across the tube, your drift dies away at (per s)")]
+        [Tooltip("...across it, your drift dies away at (per s)")]
         [SerializeField, Range(0f, 3f)] float rootDrag = 0.45f;
         [Tooltip("...never faster than (u/s)")]
         [SerializeField, Range(10f, 300f)] float rootMaxSpeed = 90f;
@@ -221,7 +217,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float rootBounce = 0.45f;
         [Tooltip("...drawn to the tube's floor by (u/s², 0 = you float)")]
         [SerializeField, Range(0f, 120f)] float rootGravity = 0f;
-        [Tooltip("From inside: the network's old inner wall (0 = off, the tube's calm wall instead; off since round 24)")]
+        [Tooltip("From inside: the network's old inner wall (0 = off, the tube's calm wall instead; off since round 25)")]
         [SerializeField, Range(0f, 1f)] float rootOpacity = 0f;
         [Tooltip("Every tube's calm inner wall (a wormhole's and each of the network's): a smooth sheen")]
         [SerializeField, Range(0f, 0.6f)] float tubeInner = 0.1f;
@@ -320,8 +316,6 @@ namespace CosmicShore.ScriptableObjects
 
         public float ReticleAhead => reticleAhead;
         public float KeyRampSeconds => keyRampSeconds;
-        public float RideEntryMultiplier => rideEntryMultiplier;
-        public float RideMidMultiplier => rideMidMultiplier;
         public float RideExitMultiplier => rideExitMultiplier;
         public float RideSpeedTunnelScale => rideSpeedTunnelScale;
         public float ReticleDelaySeconds => reticleDelaySeconds;
@@ -414,7 +408,7 @@ namespace CosmicShore.ScriptableObjects
         public int LabyrinthOpeningsMax => labyrinthOpeningsMax;
         public float LabyrinthRadiusMin => labyrinthRadiusMin;
         public float LabyrinthRadiusMax => labyrinthRadiusMax;
-        /// <summary>Round 24: the network's reach as a share of its cell's radius, on this hull's live Mass (at least 0.05).</summary>
+        /// <summary>Round 25: the network's reach as a share of its cell's radius, on this hull's live Mass (at least 0.05).</summary>
         public float NetworkShare(IVesselStatus status) => Mathf.Max(0.05f, networkReach.EvaluateLive(status));
         public float LabyrinthSpread => labyrinthSpread;
         public float LabyrinthRandomness => labyrinthRandomness;
@@ -434,7 +428,7 @@ namespace CosmicShore.ScriptableObjects
         public float RootBounce => rootBounce;
         public float RootGravity => rootGravity;
         public float RootOpacity => rootOpacity;
-        /// <summary>Round 24: the roots' bark round each channel (0, shipped: every channel is a wormhole tube).</summary>
+        /// <summary>Round 25: the roots' bark round each channel (0, shipped: every channel is a wormhole tube).</summary>
         public float RootBarkVisibility => rootBarkVisibility;
         public float TubeInner => tubeInner;
         public float RootLamp => rootLamp;
@@ -484,7 +478,7 @@ namespace CosmicShore.ScriptableObjects
         public MeerkatWormholeMath.PlanSettings Plan(float turnRateDegrees, float spaceLevel = -1f) => new()
         {
             ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(spaceLevel),
-            MeanRideMultiplier = MeerkatWormholeMath.MeanRideMultiplier(rideEntryMultiplier, rideMidMultiplier, rideExitMultiplier),
+            SlideSpeed = rootMaxSpeed,   // round 24: the AI slides with RT held
             TurnRateRadians = turnRateDegrees * Mathf.Deg2Rad,
         };
     }

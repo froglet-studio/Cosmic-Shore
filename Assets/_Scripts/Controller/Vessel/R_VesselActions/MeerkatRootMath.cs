@@ -119,7 +119,7 @@ namespace CosmicShore.Gameplay
             Lay(p, seed, Clamp01(size), atOnce, false, 0, D3.Zero);
 
         /// <summary>
-        /// Round 24, the page's <c>labLayout</c> with <c>net</c> (<c>networkSize</c>): the NETWORK in the hull's frame, its
+        /// Round 25, the page's <c>labLayout</c> with <c>net</c> (<c>networkSize</c>): the NETWORK in the hull's frame, its
         /// reach <paramref name="rad"/> (u), its centre <paramref name="centre"/> (the hull's frame, from the source), its
         /// forks and openings at <paramref name="counts"/> of the way from the Min to the Max numbers, its forks placed for
         /// transport (<see cref="NetPlace"/>).
@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The page's round-24 <c>netPlace</c> (after Garrett's Omnicrystal Network Lab: every path near the straight line,
+        /// The page's round-25 <c>netPlace</c> (after Garrett's Omnicrystal Network Lab: every path near the straight line,
         /// the forks early): every opening on the network's sphere, every fork on the line from the fork before it (the
         /// source, for the first) toward the middle of its openings, a short step while they spread wide, a long one once they
         /// lie together. No randomness, so every peer lays the same forks.
@@ -347,18 +347,41 @@ namespace CosmicShore.Gameplay
             public double Diameter, MouthDiameter, Gnarl, Tip;
         }
 
-        /// <summary>One root (the page's channel <c>wh</c> with <c>chan</c> and <c>root</c> set).</summary>
+        /// <summary>
+        /// A tube the flight can slide that is not a sampled root (round 24, the page's <c>slAt</c> / <c>slNear</c> /
+        /// <c>slR</c>): the Meerkat's main tunnel, its centreline the exact conic arc and its wall the hyperboloid. Past either
+        /// end, straight on along the end heading.
+        /// </summary>
+        public interface ITubePath
+        {
+            D3 At(double s, out D3 tangent);
+            double Nearest(D3 p);
+            double Radius(double s);
+        }
+
+        /// <summary>One root (the page's channel <c>wh</c> with <c>chan</c> and <c>root</c> set), or, with
+        /// <see cref="Tube"/> set, the main tunnel as a network of one (round 24: "one single, one a network").</summary>
         public sealed class Channel
         {
             public int Index;
             public Poly Path;
+            public ITubePath Tube;
             public double L, B, M, Za, Zb, D, Seed;
             public bool MouthIn, MouthOut;
             public int Parent = -1;
             public List<int> Kids = new();
-            public D3 A => Path.P[0];
-            public D3 T0 => Path.T[0];
+            public D3 A => Tube != null ? Tube.At(0, out _) : Path.P[0];
+            public D3 T0 { get { if (Tube == null) return Path.T[0]; Tube.At(0, out var t); return t; } }
         }
+
+        /// <summary>The main tunnel as a network of one channel (round 24): no mouths of its own to flare, no kids, no parent.</summary>
+        public static List<Channel> Single(ITubePath tube, double L) => new() { new Channel { Index = 0, Tube = tube, L = L } };
+
+        /// <summary>The point s along any channel and its heading: a root's sampled path, or a tube's own.</summary>
+        public static D3 ChanAt(Channel c, double s, out D3 tangent) => c.Tube != null ? c.Tube.At(s, out tangent) : At(c.Path, s, out tangent);
+
+        /// <summary>How far along any channel the point nearest p lies (past an end, on along its end heading).</summary>
+        public static double ChanNearest(Channel c, D3 p) => c.Tube != null ? c.Tube.Nearest(p) : Nearest(c.Path, p);
 
         /// <summary>
         /// The page's <c>labBuild</c>: the layout in the world - its source at <paramref name="a"/>, its axis along
@@ -413,6 +436,7 @@ namespace CosmicShore.Gameplay
         /// (round 17), flaring to the mouth over 3 mouth radii at the source and at an opening.</summary>
         public static double Radius(Channel c, double s, double rootTip)
         {
+            if (c.Tube != null) return c.Tube.Radius(s);
             double fl = Math.Min(0.35 * c.L, 3 * c.M);
             double tip = 1 - (1 - Clamp01(rootTip)) * Clamp01((c.Za + (c.Zb - c.Za) * s / c.L) / Math.Max(1, c.D));
             double r = c.B * tip;
@@ -569,8 +593,8 @@ namespace CosmicShore.Gameplay
             if (!g.Free)
             {
                 // in: you carry your speed in (up to rootMaxSpeed), along the root
-                g.S = Math.Max(0, Nearest(c.Path, g.Pos));
-                At(c.Path, Math.Min(g.S, c.L), out var t0);
+                g.S = Math.Max(0, ChanNearest(c, g.Pos));
+                ChanAt(c, Math.Min(g.S, c.L), out var t0);
                 g.Free = true;
                 g.H = t0;
                 g.Vel = t0 * Math.Min(g.VIn, vMax);
@@ -582,7 +606,7 @@ namespace CosmicShore.Gameplay
             }
             double th = throttle, mv = Math.Max(0, p.Move);
             double sc0 = Math.Max(0, Math.Min(c.L, g.S)), r0 = Radius(c, sc0, p.Tip);
-            At(c.Path, sc0, out var rnT);
+            ChanAt(c, sc0, out var rnT);
             // the nose follows the root, the way you face along it; up is the network's up, square to the nose
             var want = rnT * (g.H.Dot(rnT) < 0 ? -1 : 1);
             g.H = D3.Lerp(g.H, want, 1 - Math.Exp(-6 * dt)).Normalized;
@@ -632,11 +656,11 @@ namespace CosmicShore.Gameplay
             g.S = bestS;
             double sp = g.Vel.Length;
             g.Dist += sp * dt;
-            if (g.S >= c.L && c.Kids.Count == 0) { At(c.Path, c.L, out nose); return FlightResult.OutOfTip; }   // out of a tip, on along it
+            if (g.S >= c.L && c.Kids.Count == 0) { ChanAt(c, c.L, out nose); return FlightResult.OutOfTip; }   // out of a tip, on along it
             if (g.S <= -HullR && c.Parent < 0) { nose = -c.T0; return FlightResult.OutOfSource; }              // back out of the source
             // the wall: you bounce off it
             double sc = Math.Max(0, Math.Min(c.L, g.S));
-            var cp = At(c.Path, sc, out var tn);
+            var cp = ChanAt(c, sc, out var tn);
             var dr = g.Pos - cp;
             dr = dr - tn * dr.Dot(tn);
             double rIn = Math.Max(1, Radius(c, sc, p.Tip) - HullR), off = dr.Length;
@@ -659,8 +683,8 @@ namespace CosmicShore.Gameplay
         /// centreline as a share of the radius there; under 1, inside).</summary>
         static double Score(Channel c, D3 p, double tip, out double q)
         {
-            double s = Nearest(c.Path, p), sc = Math.Max(0, Math.Min(c.L, s));
-            var cp = At(c.Path, sc, out _);
+            double s = ChanNearest(c, p), sc = Math.Max(0, Math.Min(c.L, s));
+            var cp = ChanAt(c, sc, out _);
             q = cp.DistanceTo(p) / Math.Max(1, Radius(c, sc, tip));
             return s;
         }
@@ -672,7 +696,7 @@ namespace CosmicShore.Gameplay
             var c = net[g.Chan];
             if (c.Kids.Count == 0) return -1;
             if (c.Kids.Count < 2) return c.Kids[0];
-            var fp = At(c.Path, c.L, out var ft);
+            var fp = ChanAt(c, c.L, out var ft);
             int best = c.Kids[0];
             double bs = double.NegativeInfinity;
             foreach (int k in c.Kids)
@@ -687,7 +711,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The page's <c>forkSide</c>: where a kid heads off, across its parent's end heading.</summary>
         public static D3 ForkSide(Channel kid, D3 fp, D3 ft)
         {
-            var q = At(kid.Path, Math.Min(kid.L, 30), out _) - fp;
+            var q = ChanAt(kid, Math.Min(kid.L, 30), out _) - fp;
             return q - ft * q.Dot(ft);
         }
 
@@ -695,7 +719,7 @@ namespace CosmicShore.Gameplay
         public static double Reach(IReadOnlyList<Channel> net, int i, D3 target)
         {
             var c = net[i];
-            if (c.Kids.Count == 0) return At(c.Path, c.L, out _).DistanceTo(target);
+            if (c.Kids.Count == 0) return ChanAt(c, c.L, out _).DistanceTo(target);
             double m = double.PositiveInfinity;
             foreach (int k in c.Kids) m = Math.Min(m, Reach(net, k, target));
             return m;

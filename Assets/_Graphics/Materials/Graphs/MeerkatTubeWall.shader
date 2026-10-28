@@ -1,6 +1,6 @@
-// MeerkatTubeWall.shader — the calm inner wall of every Meerkat wormhole tube (R_VesselActions/MEERKAT.md §7a, round 24):
+// MeerkatTubeWall.shader — the calm inner wall of every Meerkat wormhole tube (R_VesselActions/MEERKAT.md §7a, round 25):
 // a formed tunnel's and each channel of an omnicrystal's wormhole network. It is the Vessel Studio's round-21 bore
-// (Docs/Studios/VesselStudio/meerkat.html, treeMaterials' glass where aR is 2, drawn by drawBore since round 24) on its own,
+// (Docs/Studios/VesselStudio/meerkat.html, treeMaterials' glass where aR is 2, drawn by drawBore since round 25) on its own,
 // because the tree that carried it ships off: a smooth sheen with no lines, _Inner x (0.55 + 0.45 x Fresnel^1.4) with the
 // Fresnel at _Power, its maker's domain colour at the way in toward white at the way out, flowing slowly like water. It shows
 // only the tube's live window (_F0.._F1, the share of the way along), condensing at its fronts (_Edge). Added to the scene.

@@ -117,7 +117,7 @@ def script_guid(name: str) -> str:
 
 # ----------------------------------------------------------------------------- the studio's shipped numbers
 CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "ovalShortest", "ovalLongest", "ovalMaxSharpness", "throatDiameter", "mouthDiameter",
-               "keyRampSeconds", "rideEntryMultiplier", "rideMidMultiplier", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
+               "keyRampSeconds", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
                "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "reticleNearLight", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
                "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "bridgeWhite", "aiWormhole", "aiStraightMinDistance",
@@ -580,9 +580,16 @@ def self_test():
         fails.append("the config retrofit does not add a key the studio added later")
     if config_retrofit(cfg, values) != cfg:
         fails.append("the config retrofit is not idempotent")
-    renamed = cfg.replace("  rideMidMultiplier: ", "  throatSpeed: ")
-    if "  rideMidMultiplier: 2.5\n" not in config_retrofit(renamed, values) or "  throatSpeed:" in config_retrofit(renamed, values):
-        fails.append("the config retrofit does not carry a renamed key's number to its new name")
+    # a planted rename onto a live key (round 24 retired rideMidMultiplier, the one real rename's target, so the control
+    # plants its own pair rather than testing a key the config no longer has)
+    RENAMED["selfTestOldName"] = "reticleAhead"
+    try:
+        renamed = cfg.replace("  reticleAhead: ", "  selfTestOldName: ")
+        carried = config_retrofit(renamed, values)
+        if "  reticleAhead: %s\n" % num(values["reticleAhead"]) not in carried or "  selfTestOldName:" in carried:
+            fails.append("the config retrofit does not carry a renamed key's number to its new name")
+    finally:
+        del RENAMED["selfTestOldName"]
     retired = cfg.replace("  shaftMin: 60\n", "  lengthStraight: 600\n  shaftMin: 60\n")
     if check_config(retired, values) == [] or "lengthStraight" in config_retrofit(retired, values):
         fails.append("a retired key is neither flagged nor removed by the retrofit")

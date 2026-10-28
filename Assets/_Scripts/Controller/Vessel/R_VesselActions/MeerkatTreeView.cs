@@ -170,7 +170,7 @@ namespace CosmicShore.Gameplay
                 var net = nets[n];
                 var cfg = net.Maker ? net.Maker.Config : null;
                 if (!cfg) continue;
-                // round 24: the bark (rootBarkVisibility) and the old inside wall (rootOpacity) ship off - the channels are
+                // round 25: the bark (rootBarkVisibility) and the old inside wall (rootOpacity) ship off - the channels are
                 // wormhole tubes (MeerkatWormholeView, MeerkatTubeWallView) - and nothing is built while both are off
                 float bark = Mathf.Clamp01(cfg.RootBarkVisibility);
                 bool drawInside = inside == net && cfg.RootOpacity > 0.004f;

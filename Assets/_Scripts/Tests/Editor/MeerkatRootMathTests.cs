@@ -300,7 +300,7 @@ namespace CosmicShore.Tests
             Assert.IsFalse(alive, "and is gone after its fade");
         }
 
-        // ------------------------------------------------------------------ round 24: the network (BuildNetwork, NetworkSize)
+        // ------------------------------------------------------------------ round 25: the network (BuildNetwork, NetworkSize)
 
         static readonly MeerkatRootMath.LayoutSettings Net = new()
         {

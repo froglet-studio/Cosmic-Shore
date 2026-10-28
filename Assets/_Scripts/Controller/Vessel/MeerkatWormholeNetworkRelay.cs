@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// remote peer forms its copy and starts its stay from those. The hull's pose replicates as every vessel's does.</para>
     ///
     /// <para><b>The roots</b> (<c>MEERKAT.md</c> §7, protocol version 22): the owner publishes each network of roots it
-    /// grows from an omnicrystal - its seed, its size (round 24: the reach share of the cell the owner read from its Mass;
+    /// grows from an omnicrystal - its seed, its size (round 25: the reach share of the cell the owner read from its Mass;
     /// the same float as before, so the layout of the payload, and the protocol version, are unchanged), the hull's frame where it grew, and which omnicrystal it
     /// took (<see cref="PublishRoots"/>) - and its rider's way out (<see cref="PublishRootsOut"/>). Every peer grows the same
     /// roots from those (<see cref="MeerkatRootMath"/> is double precision for exactly this).</para>

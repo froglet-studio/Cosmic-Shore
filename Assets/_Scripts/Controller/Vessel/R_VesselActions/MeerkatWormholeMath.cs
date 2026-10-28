@@ -406,47 +406,51 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The page's <c>rideMultiplier</c> (round 6, Yash: "enter the wormhole with v and then it will speed up to v plus dv,
-        /// and then while exiting it will exit at little bit boosted"): at <paramref name="u"/> (0 the way in, 1 the way out) the
-        /// multiplier on the speed before the tunnel rises from <paramref name="entry"/> to <paramref name="mid"/> at the throat
-        /// and eases to <paramref name="exit"/> at the way out, smoothly (sin(pi u) on each half: its slope is 0 at the throat).
+        /// The page's <c>slNear</c> for the main tunnel (round 24: it is slid as the roots are): how far along the conic arc the
+        /// point nearest <paramref name="p"/> lies - the nearest of 49 points along it, refined by a golden-section search;
+        /// before the way in, minus the distance back along <paramref name="t0"/>; past the way out, L plus the distance on
+        /// along the last heading. A straight tunnel is just the distance along t0.
         /// </summary>
-        public static float RideMultiplier(float entry, float mid, float exit, float u)
+        public static float NearestAlong(Vector3 a, Vector3 t0, Vector3 side, Conic c, float L, Vector3 p)
         {
-            u = Clamp01(u);
-            float w = Mathf.Sin(Mathf.PI * u), e = Mathf.Max(0.05f, entry), m = Mathf.Max(0.05f, mid), x = Mathf.Max(0.05f, exit);
-            return u < 0.5f ? e + (m - e) * w : x + (m - x) * w;
-        }
-
-        /// <summary>
-        /// The page's <c>gateTransit</c> speed: the speed before the tunnel <paramref name="vIn"/> × <see cref="RideMultiplier"/>;
-        /// the dive to the mouth (<paramref name="s"/> &lt; 0) is at the entry multiplier.
-        /// </summary>
-        public static float RideSpeed(float vIn, float entry, float mid, float exit, float s, float L) =>
-            vIn * RideMultiplier(entry, mid, exit, s < 0f ? 0f : s / Mathf.Max(1e-3f, L));
-
-        /// <summary>The ride's facing: the entry facing <paramref name="q0"/> turned about the binormal by the angle the
-        /// centreline has turned since the way in (<see cref="BendAngle"/> at s minus at the entry).</summary>
-        public static Quaternion RideRotation(Vector3 binormal, float turnedRadians, Quaternion q0) =>
-            Quaternion.AngleAxis(turnedRadians * Mathf.Rad2Deg, binormal) * q0;
-
-        /// <summary>The page's <c>meanMul</c>: the mean of <see cref="RideMultiplier"/> over the ride (each half's sin averages 2/pi).</summary>
-        public static float MeanRideMultiplier(float entry, float mid, float exit)
-        {
-            float ends = 0.5f * (RideMultiplier(entry, mid, exit, 0f) + RideMultiplier(entry, mid, exit, 1f));
-            return ends + 2f / Mathf.PI * (Mathf.Max(0.05f, mid) - ends);
+            float along = Vector3.Dot(p - a, t0);
+            if (c.Straight) return along;
+            const int n = 48;
+            float bs = 0f, bd = float.PositiveInfinity;
+            int bi = 0;   // which sample: L * n / n need not be exactly L
+            for (int i = 0; i <= n; i++)
+            {
+                float si = L * i / n, d = (At(a, t0, side, c, si, out _) - p).sqrMagnitude;
+                if (d < bd) { bd = d; bs = si; bi = i; }
+            }
+            float lo = Mathf.Max(0f, bs - L / n), hi = Mathf.Min(L, bs + L / n);
+            for (int it = 0; it < 18; it++)
+            {
+                float m1 = lo + (hi - lo) * 0.382f, m2 = lo + (hi - lo) * 0.618f;
+                if ((At(a, t0, side, c, m1, out _) - p).sqrMagnitude < (At(a, t0, side, c, m2, out _) - p).sqrMagnitude) hi = m2;
+                else lo = m1;
+            }
+            if (bi == 0 && along < 0f) return along;   // before the way in
+            if (bi == n)
+            {
+                var e = At(a, t0, side, c, L, out var te);
+                float b = Vector3.Dot(p - e, te);
+                if (b > 0f) return L + b;   // past the way out
+            }
+            return 0.5f * (lo + hi);
         }
 
         /// <summary>The AI rows (<see cref="ScriptableObjects.MeerkatWormholeConfigSO"/>'s ai group, with the shape and ride rows it reads).</summary>
         public struct PlanSettings
         {
-            public float ReticleAhead, ShapeSeconds, MeanRideMultiplier, TurnRateRadians;
+            public float ReticleAhead, ShapeSeconds, TurnRateRadians;
+            public float SlideSpeed;   // round 24: a slide with RT held runs at about rootMaxSpeed (the page's slideMul)
             public ShapeSettings Shape;
         }
 
         /// <summary>
         /// The page's <c>aiGatePlan</c> (round 7): try every bend (21) and LT squeeze - the shaft before the bend - (9), keep the
-        /// one whose way out heads within 0.26 rad of the target with 60 u to spare and reaches it SOONEST: the ride at its mean
+        /// one whose way out heads within 0.26 rad of the target with 60 u to spare and reaches it SOONEST: the slide at its top
         /// speed, the flight from the way out to the target at <paramref name="speed"/>, and the turn its error leaves, with a
         /// hair's preference for straighter. <paramref name="local"/> is the target in the hull's frame (Unity axes).
         /// <paramref name="noise"/> × (<paramref name="rand01"/> − 0.5) bends it off the mark (a rookie). <paramref name="turnOnly"/>:
@@ -459,7 +463,7 @@ namespace CosmicShore.Gameplay
         {
             float ahead = Mathf.Max(0f, p.ReticleAhead) + speed * Mathf.Max(0f, p.ShapeSeconds);
             float tx = local.z, ty = Mathf.Sqrt(local.x * local.x + local.y * local.y), v = Mathf.Max(1f, speed);
-            float turnRate = Mathf.Max(0.2f, p.TurnRateRadians), meanMul = Mathf.Max(0.05f, p.MeanRideMultiplier);
+            float turnRate = Mathf.Max(0.2f, p.TurnRateRadians), meanMul = Mathf.Max(5f, p.SlideSpeed) / v;   // round 24: the slide's speed
             bool found = false;
             float bestScore = 0f, bestT = 0f, bestSq = 0f;
             for (int j = 0; j <= 20; j++)

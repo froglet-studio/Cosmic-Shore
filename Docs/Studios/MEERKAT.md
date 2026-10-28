@@ -133,7 +133,7 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
-**Round 24 (Yash, 2026-10-28: "When we collect the omnicrystal ... we create this omnicrystal network, burrow network. We
+**Round 25 (Yash, 2026-10-28: "When we collect the omnicrystal ... we create this omnicrystal network, burrow network. We
 can't make it a root, we need to make it smoother, like our tube, same visuals. And ... we have to turn off the tree
 visibility also. We cannot make these trees and roots. It needs to be just anomaly: tubes of wormholes, and the network of
 wormholes (navigable using the left joystick) when we collect the omnicrystal"). Artifact and Unity.**
@@ -162,6 +162,41 @@ wormholes (navigable using the left joystick) when we collect the omnicrystal").
   ladder (seed 11); Hard 70.0 / 63.0 / 71.7 / 68.2 s, the same as round 22. Screenshots inside a tunnel and inside the
   network (headless): the network is smooth glass tubes in the domain colour with no bark, soil or stones, and the ride
   inside is the same calm tube as a tunnel's.
+
+**Round 24 (Yash, 2026-10-28: "make the main tube as same as the roots ... we can slide through the main tube rather than
+making it an automated special move ... once we create the tube, main tube, we can also slide through it using our left
+thumbstick, just like how we do that in the root ... Both are same things. One single, one a network"). Artifact and Unity.**
+- **One flight for every tube.** The tunnel is flown by the roots' own flight (the page's `labTransit`, Unity's
+  `MeerkatRootMath.Step`). It is a network of one channel: its centreline the conic arc (round 22), its wall the
+  hyperboloid at Garrett's surface area (round 23).
+  - You dive to the mouth and carry your speed in, then cruise at `rootCruise` (45 u/s).
+  - RT pushes you faster up to `rootMaxSpeed` (90 u/s).
+  - The left stick moves you round the tube, and the wall bounces you.
+  - You come out of the far mouth on its last heading, or back out of the way in, at `rideExitMultiplier` (1.2) × your
+    speed before the tunnel.
+- **Retired:** round 6's `rideEntryMultiplier` and `rideMidMultiplier` (the automatic ride). Garrett's Time rush now
+  scales the slide's cruise and top speed in the kits (1.2 at Time 5).
+- **The AI** holds RT and keeps to the middle. Its plans ride at `rootMaxSpeed`. Chain Dig (the Mix, Round 8) plans
+  first and only then lets go of RT and presses it, at most twice in a row between rings.
+- **Two bugs found and fixed.**
+  - A float equality (`L × 48 / 48 ≠ L`) meant "past the way out" never fired on a bent tunnel, so a rider could fly
+    on still held by it. It was in `tubeLocal` too.
+  - A Chain Dig try with no plan pressed RT anyway and dug straight chain tunnels forever.
+- **Measured** (seed 11, Hard I1-I4, every race finished):
+
+  | Kit | Hard I1-I4 (s) | Without tunnels (s) |
+  |---|---|---|
+  | Garrett's | 79.6 / 77.3 / 90.7 / 78.1 | 110.2 / 110.9 / 120.3 / 109.7 |
+  | The Mix | 85.8 / 83.3 / 93.1 / 90.0 | 105.0 / 110.9 / 121.3 / 110.7 |
+  | Round 8 | 86.1 / 83.8 / 90.9 / 89.4 | 107.9 / 110.9 / 121.3 / 110.7 |
+  | Off | 87.5 / 83.7 / 94.1 / 90.0 | 110.8 / 110.9 / 121.3 / 110.7 |
+
+  Round 23's automatic ride was faster (Garrett's kit 67.9 / 66.9 / 87.8 / 68.5 s). The lever, if wanted, is
+  `rootMaxSpeed`, which the roots share.
+- **To judge:** a long tunnel is thin at Garrett's area (537 u: a 3.6 u throat), so the left stick has little room
+  there; a short one is fat (85 u: 23 u).
+- **In Unity** (the same day): `MeerkatRootMath.ITubePath` / `Single`, `MeerkatWormholeMath.NearestAlong`,
+  `MeerkatWormholeExecutor.StepRide` and `SlideAutopilot`. Details: `Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md` §1.
 
 **Round 23 (Yash, 2026-10-28: "first we're gonna revert the mass ability as Garrett has said. So the width of the tubes
 shell will be dependent on this mass ability. The longer the tube, the thinner ... Or whatever Garrett has said ... the prism
@@ -666,7 +701,7 @@ just spindles. Tiny thinning spindles"):**
 | shape | `mouthDiameter` | 26 u | The entry and exit diameter at the shortest tunnel (round 10: was 20; round 12: the shortest's) |
 | shape | `throatDiameterMax` | 18 u | The throat at the longest tunnel (round 12, artifact only so far) |
 | shape | `mouthDiameterMax` | 56 u | The entry and exit at the longest tunnel (round 12, artifact only so far) |
-| tree | `trunkVisibility` … `branchGrowSeconds` | see the page | The tunnel's outer layer, a dead tree in the wall's glass and bent space, formed with the tunnel (rounds 13-14, artifact only so far; replaced round 12's plate tree). Off since round 24 (`trunkVisibility` 0) |
+| tree | `trunkVisibility` … `branchGrowSeconds` | see the page | The tunnel's outer layer, a dead tree in the wall's glass and bent space, formed with the tunnel (rounds 13-14, artifact only so far; replaced round 12's plate tree). Off since round 25 (`trunkVisibility` 0) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |

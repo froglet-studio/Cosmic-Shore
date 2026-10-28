@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The calm inner wall of every Meerkat wormhole tube (<c>R_VesselActions/MEERKAT.md</c> §7a, round 24), the Vessel Studio's
+    /// The calm inner wall of every Meerkat wormhole tube (<c>R_VesselActions/MEERKAT.md</c> §7a, round 25), the Vessel Studio's
     /// <c>drawBore</c> (<c>Docs/Studios/VesselStudio/meerkat.html</c>): a formed tunnel's and each channel of an omnicrystal's
     /// wormhole network, a smooth sheen with no lines (<c>tubeInner</c>, the Fresnel at <c>trunkFresnel</c>), its maker's
     /// domain colour toward white, showing exactly the tube's live window. It is round 21's bore on its own, because the tree
