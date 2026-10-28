@@ -219,17 +219,20 @@ def export_tree(sha, paths, parent, name, cwd=None, keep=3):
         shutil.rmtree(tmp, ignore_errors=True)
         os.makedirs(tmp)
         if present:
-            p = subprocess.Popen(["git", "archive", "--format=tar", sha, "--", *[x.rstrip("/") for x in present]],
-                                 cwd=cwd or REPO, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **NO_WINDOW)
-            with tarfile.open(fileobj=p.stdout, mode="r|") as tar:
+            # To a file, not through a pipe: tarfile stops at the end marker while git still writes its padding, and a
+            # Windows pipe is too small to hold it - both would wait for ever (Shombith's install, 2026-10-28).
+            tar_path = tmp + ".tar"
+            p = subprocess.run(["git", "archive", "--format=tar", "-o", tar_path, sha, "--",
+                                *[x.rstrip("/") for x in present]], cwd=cwd or REPO, capture_output=True, **NO_WINDOW)
+            if p.returncode != 0:
+                shutil.rmtree(tmp, ignore_errors=True)
+                raise RuntimeError(f"git archive {sha[:9]}: {p.stderr.decode(errors='replace').strip()}")
+            with tarfile.open(tar_path) as tar:
                 if hasattr(tarfile, "data_filter"):
                     tar.extractall(tmp, filter="data")
                 else:
                     tar.extractall(tmp)
-            err = p.stderr.read().decode(errors="replace")
-            if p.wait() != 0:
-                shutil.rmtree(tmp, ignore_errors=True)
-                raise RuntimeError(f"git archive {sha[:9]}: {err.strip()}")
+            os.remove(tar_path)
         with open(os.path.join(tmp, ".froglet-export"), "w") as fh:
             fh.write(sha + "\n" + "\n".join(present) + "\n")
         os.replace(tmp, path)

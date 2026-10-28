@@ -63,14 +63,17 @@ def copy_app(ref):
     tmp = APP + ".part"
     shutil.rmtree(tmp, ignore_errors=True)
     os.makedirs(tmp)
-    p = subprocess.Popen(["git", "archive", "--format=tar", f"origin/{ref}", "--", "Tools/Compute"], stdout=subprocess.PIPE)
-    with tarfile.open(fileobj=p.stdout, mode="r|") as tar:
+    # To a file, not through a pipe: tarfile stops reading at the archive's end marker while git still writes its
+    # padding, and a Windows pipe is too small to hold it, so both would wait on each other for ever.
+    tar_path = tmp + ".tar"
+    if subprocess.run(["git", "archive", "--format=tar", "-o", tar_path, f"origin/{ref}", "--", "Tools/Compute"]).returncode:
+        raise SystemExit("\nstopped: git archive failed")
+    with tarfile.open(tar_path) as tar:
         if hasattr(tarfile, "data_filter"):
             tar.extractall(tmp, filter="data")
         else:
             tar.extractall(tmp)
-    if p.wait():
-        raise SystemExit("\nstopped: git archive failed")
+    os.remove(tar_path)
     shutil.rmtree(APP, ignore_errors=True)
     os.replace(tmp, APP)
     # Which Tools/Compute this copy is: compute.py runs a newer one for a pasted command when the ref moves on.
