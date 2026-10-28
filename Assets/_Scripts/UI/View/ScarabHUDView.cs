@@ -11,11 +11,14 @@ namespace CosmicShore.UI
     /// gauges are named by the ELEMENT they sit under, never by "the third icon":
     /// <b>Cavitation Blast (charge) · Switch (mass) · Ball Forge (space) · Throttle (time)</b>.
     ///
-    /// 1. <b>Cavitation blast</b> (charge) — binary ready / recharging on the Charge icon, plus an
-    ///    optional radial ring that sweeps 0→1 over the live cooldown. The cooldown length is
-    ///    handed in with the edge, so the sweep is ONE tween per use, never a per-frame poll.
-    ///    Binary stays visibly binary on the icon itself (a partial icon fill would read as a
-    ///    meter and reopen the question it exists to close).
+    /// 1. <b>Cavitation blast</b> (charge) — the card is the punch's volume drawn TO SCALE around the
+    ///    Scarab (Garrett 2026-10-28, Docs/Icons/ABILITY_ICON_SKILL_PLAN.md §8): parts under the icon
+    ///    (the kit's <c>specs/scarab.py</c> writes them, a rebind wires them): whole prisms outside
+    ///    (blue), the volume (white), the volume with the claimed prisms cut out as forward-flung
+    ///    slivers (white, shown for a beat as the punch lands), the plate (white) and the hull (the
+    ///    pilot's domain colour). Ready is white; recharging greys the volume and the plate. Still
+    ///    binary on the card, plus the optional radial ring that sweeps 0→1 over the live cooldown
+    ///    — the cooldown length is handed in with the edge, so the sweep is ONE tween per use.
     /// 2. <b>Switch charges</b> (mass) — a discrete count (0..3) shown by tinting the Switch icon
     ///    through an authored colour ramp, so "can I place one?" is answerable at a glance.
     /// 3. <b>Ball energy</b> (space) — a radial fill on a ring sibling of the row, mirrored as a
@@ -60,13 +63,29 @@ namespace CosmicShore.UI
         };
 
         [Header("Cavitation blast (Charge row)")]
-        [Tooltip("The Cavitation Blast ability icon, tinted ready / recharging.")]
+        [Tooltip("The Cavitation Blast card's container (the ability icon Image, transparent): punched as one on a spend.")]
         [SerializeField] Image blastIcon;
+        [Tooltip("Whole prisms outside the volume (Scarab_BlastPrisms), always shown in blastPrismColor.")]
+        [SerializeField] Image blastPrismsIcon;
+        [Tooltip("The punch's volume, the hull knocked out (Scarab_BlastField): white ready, blastSpentColor recharging.")]
+        [SerializeField] Image blastFieldIcon;
+        [Tooltip("The volume with the claimed prisms cut out as forward-flung slivers (Scarab_BlastFieldShattered), " +
+                 "shown for blastShatterSeconds as the punch lands, in place of the volume.")]
+        [SerializeField] Image blastShatteredIcon;
+        [Tooltip("The plate, the volume's front edge (Scarab_BlastPlate): white ready, blastSpentColor recharging.")]
+        [SerializeField] Image blastPlateIcon;
+        [Tooltip("The Scarab at true scale (Scarab_BlastHull), in the pilot's domain colour (SetBlastHullColor).")]
+        [SerializeField] Image blastHullIcon;
         [Tooltip("OPTIONAL radial-fill Image that sweeps 0 -> 1 over the cooldown. Leave unwired " +
-                 "for the tint-only readout.")]
+                 "for the card-only readout.")]
         [SerializeField] Image blastCooldownRing;
-        [SerializeField] Color blastReadyColor = new(1f, 0.55f, 0.35f, 1f);
-        [SerializeField] Color blastSpentColor = new(0.35f, 0.4f, 0.45f, 0.5f);
+        [SerializeField] Color blastPartColor = Color.white;
+        [Tooltip("The volume and the plate while the blast recharges: grey means not ready, fleet-wide.")]
+        [SerializeField] Color blastSpentColor = new(1f, 1f, 1f, 0.3f);
+        [Tooltip("The whole prisms outside the volume: the HUD's blue (ElementalBarsConfigSO.BlueColor).")]
+        [SerializeField] Color blastPrismColor = new(0.2196f, 0.5098f, 1f, 1f);
+        [Tooltip("How long the shattered volume shows as the punch lands, before the card greys for the recharge.")]
+        [SerializeField, Min(0f)] float blastShatterSeconds = 0.35f;
         [SerializeField, Min(0.01f)] float blastTweenDuration = 0.15f;
         [SerializeField, Min(0f)] float blastSpendPunchScale = 0.3f;
 
@@ -137,23 +156,51 @@ namespace CosmicShore.UI
             switchIcon.DOColor(switchChargeColors[index], blastTweenDuration).SetLink(switchIcon.gameObject);
         }
 
+        /// <summary>Which of the Cavitation Blast card's parts show, and how: the pure rule the view paints.</summary>
+        public struct BlastParts
+        {
+            public bool Field, Shattered, Spent;
+        }
+
         /// <summary>
-        /// Cavitation blast availability — deliberately binary on the icon. When the optional ring
-        /// is wired, <paramref name="cooldownSeconds"/> drives ONE sweep tween for the whole
-        /// recharge, so the analog readout costs nothing per frame.
+        /// Ready: the volume, white. Landing (the beat after a spend): the shattered volume in its place, still white.
+        /// Recharging: the volume and the plate grey.
+        /// </summary>
+        public static BlastParts BlastPartsFor(bool ready, bool landing)
+            => new() { Field = ready || !landing, Shattered = !ready && landing, Spent = !ready && !landing };
+
+        /// <summary>The Charge card's hull, in the pilot's <paramref name="domain"/> colour.</summary>
+        public void SetBlastHullColor(Color domain)
+        {
+            if (blastHullIcon) blastHullIcon.color = domain;
+        }
+
+        /// <summary>
+        /// Cavitation blast availability — deliberately binary on the card. A spend shows the shattered volume for
+        /// <see cref="blastShatterSeconds"/>, then greys the volume and the plate for the recharge. When the optional
+        /// ring is wired, <paramref name="cooldownSeconds"/> drives ONE sweep tween for the whole recharge, so the
+        /// analog readout costs nothing per frame.
         /// </summary>
         public void SetBlastReady(bool ready, float cooldownSeconds)
         {
-            if (blastIcon)
+            if (blastPrismsIcon) blastPrismsIcon.color = blastPrismColor;
+            bool landing = !ready && _seeded && blastShatterSeconds > 0f;
+            PaintBlast(BlastPartsFor(ready, landing));
+            if (blastShatteredIcon)
             {
-                blastIcon.DOKill();
-                blastIcon.DOColor(ready ? blastReadyColor : blastSpentColor, blastTweenDuration)
-                         .SetLink(blastIcon.gameObject);
+                blastShatteredIcon.DOKill();
+                if (landing)
+                    DOVirtual.DelayedCall(blastShatterSeconds, () => PaintBlast(BlastPartsFor(false, false)))
+                             .SetTarget(blastShatteredIcon).SetLink(blastShatteredIcon.gameObject);
+            }
 
-                if (!ready && _seeded && blastSpendPunchScale > 0f)
-                    blastIcon.transform
-                        .DOPunchScale(Vector3.one * blastSpendPunchScale, blastTweenDuration * 2f, 1, 0.5f)
-                        .SetLink(blastIcon.gameObject);
+            if (blastIcon && !ready && _seeded && blastSpendPunchScale > 0f)
+            {
+                blastIcon.transform.DOKill();
+                blastIcon.transform.localScale = AbilityIconRestScale(Element.Charge);
+                blastIcon.transform
+                    .DOPunchScale(Vector3.one * blastSpendPunchScale, blastTweenDuration * 2f, 1, 0.5f)
+                    .SetLink(blastIcon.gameObject);
             }
 
             if (!blastCooldownRing) return;
@@ -169,6 +216,21 @@ namespace CosmicShore.UI
                                  .SetEase(Ease.Linear)
                                  .SetLink(blastCooldownRing.gameObject);
             }
+        }
+
+        void PaintBlast(BlastParts parts)
+        {
+            if (blastFieldIcon)
+            {
+                blastFieldIcon.enabled = parts.Field;
+                blastFieldIcon.color = parts.Spent ? blastSpentColor : blastPartColor;
+            }
+            if (blastShatteredIcon)
+            {
+                blastShatteredIcon.enabled = parts.Shattered;
+                blastShatteredIcon.color = blastPartColor;
+            }
+            if (blastPlateIcon) blastPlateIcon.color = parts.Spent ? blastSpentColor : blastPartColor;
         }
 
         /// <summary>
@@ -201,7 +263,14 @@ namespace CosmicShore.UI
             if (energyRing) { energyRing.DOKill(); energyRing.transform.localScale = Vector3.one; }
             if (ballIcon) { ballIcon.DOKill(); ballIcon.transform.localScale = AbilityIconRestScale(Element.Space); }
             if (switchIcon) switchIcon.DOKill();
-            if (blastIcon) { blastIcon.DOKill(); blastIcon.transform.localScale = AbilityIconRestScale(Element.Charge); }
+            if (blastIcon) { blastIcon.transform.DOKill(); blastIcon.transform.localScale = AbilityIconRestScale(Element.Charge); }
+            if (blastShatteredIcon)
+            {
+                // A hide mid-landing would leave the shattered volume up with nothing left to swap it back.
+                bool wasLanding = blastShatteredIcon.enabled;
+                blastShatteredIcon.DOKill();
+                if (wasLanding) PaintBlast(BlastPartsFor(false, false));
+            }
             if (blastCooldownRing) blastCooldownRing.DOKill();
         }
     }
