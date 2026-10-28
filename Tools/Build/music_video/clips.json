@@ -10,26 +10,31 @@
     "mv vessel Manta",
     "mv spawn flora Nested Gyroid 3",
     "mv spawn flora Gyroid 3",
-    "mv in {2s} teleport local flora -160 10 0",
-    "mv in {2.2s} aim local flora"
+    "mv in {3s} teleport local name:GyroidFlora -110 6 0",
+    "mv in {3.2s} aim local name:GyroidFlora"
    ],
    "camera": [
-    "mv mount local 30 10 10 24 1.6"
+    "mv orbit name:GyroidFlora 55 14 3"
    ],
-   "settle_seconds": 5,
+   "settle_seconds": 4,
    "events": [
     {
      "at": 0.0,
-     "cmd": "aim local flora"
+     "cmd": "aim local name:GyroidFlora"
     },
     {
-     "at": 2.0,
+     "at": 1.5,
      "cmd": "action local FullSpeedStraightAction 150"
+    },
+    {
+     "at": 2.5,
+     "cmd": "aim local fleet"
     }
    ],
    "stills": [],
    "learned": [
-    "probe 1 (2026-10-28): the flora were planted at the cell's own sites hundreds of units from the pilot; 5 s of flying toward them showed empty membrane. The pilot is now teleported 160 u before the nearest flora (SetPose) once the plants are in."
+    "probe 1 (2026-10-28): the flora were planted at the cell's own sites hundreds of units from the pilot; 5 s of flying toward them showed empty membrane. The pilot is now teleported 160 u before the nearest flora (SetPose) once the plants are in.",
+    "probe 2: `flora` resolved the nearest flora, a quasicrystal, and the mount on the hull showed membrane. The gyroid is now named (name:GyroidFlora), the camera orbits the plant slowly and the hull flies through it."
    ]
   },
   "serpent-wall": {
@@ -46,7 +51,7 @@
     "mv in {2.5s} aim all local"
    ],
    "camera": [
-    "mv orbit local 30 10 3"
+    "mv orbit local 22 8 3"
    ],
    "settle_seconds": 10,
    "events": [
@@ -61,7 +66,8 @@
    ],
    "stills": [],
    "learned": [
-    "probe 1: the stance worked (the Serpent stopped, the rival fleet circled it laying trails) but 5 s from the toggle showed no wall yet, and the hull drew as a solid white blob: the stance's cloak ghost (CosmicShore/CloakGhost, a hand-written additive shader) had no translation in the engine. The stance now happens 7.5 s before the recording so the wall is growing on frame one."
+    "probe 1: the stance worked (the Serpent stopped, the rival fleet circled it laying trails) but 5 s from the toggle showed no wall yet, and the hull drew as a solid white blob: the stance's cloak ghost (CosmicShore/CloakGhost, a hand-written additive shader) had no translation in the engine. The stance now happens 7.5 s before the recording so the wall is growing on frame one.",
+    "probe 2: the stance 7.5 s before the recording gave a dense violet prism field round the Serpent (the wall?); the hull was the untranslated cloak ghost, ported since. Orbit closer: 22."
    ]
   },
   "dolphin-echo": {
@@ -80,7 +86,7 @@
     "mv in {1s} circle ai5 35 4 local"
    ],
    "camera": [
-    "mv mount local 24 8 7 20 1.6"
+    "mv mount local 14 5 4 12 1.6"
    ],
    "settle_seconds": 8,
    "events": [
@@ -104,7 +110,8 @@
    ],
    "stills": [],
    "learned": [
-    "probe 1: the Dolphin was a speck at back 40 and the rival trails were far off its path; nothing of the cone or the blast read. The fleet now circles the pilot (trails wrap its path), the mount sits at back 24, the crystal is placed 100 u ahead at the first frame."
+    "probe 1: the Dolphin was a speck at back 40 and the rival trails were far off its path; nothing of the cone or the blast read. The fleet now circles the pilot (trails wrap its path), the mount sits at back 24, the crystal is placed 100 u ahead at the first frame.",
+    "probe 2: at back 24 the Dolphin was still a speck - the hull is a few units long; back 14."
    ]
   },
   "thresher-slice": {
@@ -123,7 +130,7 @@
     "mv in {1s} circle ai5 60 6 local"
    ],
    "camera": [
-    "mv mount local 26 12 22 16 1.6"
+    "mv mount local 16 8 12 10 1.6"
    ],
    "settle_seconds": 8,
    "events": [
@@ -144,7 +151,8 @@
    ],
    "stills": [],
    "learned": [
-    "probe 1: the ball went red and the chain whipped - the clip's subject works - but the hull was small and the rival trails were elsewhere. The fleet now circles the Thresher so the chain crosses their trails; the mount is a tighter three-quarter view."
+    "probe 1: the ball went red and the chain whipped - the clip's subject works - but the hull was small and the rival trails were elsewhere. The fleet now circles the Thresher so the chain crosses their trails; the mount is a tighter three-quarter view.",
+    "probe 2: the fleet's trails now wrap the Thresher (a pink wall in the last frames, the ball red through it) but the hull was tiny at back 26; back 16."
    ]
   }
  }
