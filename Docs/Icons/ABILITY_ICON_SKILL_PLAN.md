@@ -240,8 +240,12 @@ danger color. the idea is to follow the actual sword" and "more like a katana.";
 well as rotate it so it is swiping with the sharp part" and "the both triggers chop should remove the curve so it looks
 like it is from behind". `RhinoVesselHUDView` generates the blade under the card on a pivot at the hilt; every frame it
 turns with the swipe (half the real angle), mirrors so the edge leads, shortens with the chop, swaps to the straight
-blade at the energize stance's summed pull, and is white dark / danger lit. The plate keeps the energize gauge. Next:
-the Rhino's Mass, Space and Time placeholders.
+blade at the energize stance's summed pull, and is white dark / danger lit. The plate keeps the energize gauge. **The
+Rhino's Mass card** (2026-10-28, one round of K / H / I / J, Garrett picked H): the sword (white) swinging right past two
+prism copies of itself in the pilot's domain colour, the nearer brighter; the copies show only while the afterimages are
+laid. "the after image is flipped the wrong way": the copies are the sword where it WAS in the same swing, so they are
+mirrored with it. Three prefab parts under a transparent container (`RhinoVesselHUDView.SetAfterimage`). Next: the
+Rhino's Space and Time placeholders.
 
 | Round | What | Why first |
 |---|---|---|

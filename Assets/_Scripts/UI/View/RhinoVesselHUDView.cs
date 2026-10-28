@@ -18,6 +18,10 @@ namespace CosmicShore.UI
     /// triggers are in the chop. White while dark, danger while lit (<see cref="SetKatanaLit"/>).
     /// Sprites and the hilt come from Tools/Build/icon_kit/specs/rhino.py.</para>
     ///
+    /// <para><b>MASS card - the afterimages</b> (Garrett 2026-10-28). The card's icon is a transparent
+    /// container over three prefab parts: the sword (white) and two prism copies of it in the pilot's
+    /// domain colour, shown only while the afterimages are being laid (<see cref="SetAfterimage"/>).</para>
+    ///
     /// <para>It used to carry a pre-lockup STATUS CLUSTER beside the row - a skimmer-size ring, a
     /// "slowed" counter, a slow-line flash, a debuff timer, laser and crystal indicators - wired
     /// through six fields here and three GameObjects the Rhino prefab added to this HUD. Those fields,
@@ -50,6 +54,18 @@ namespace CosmicShore.UI
         [Tooltip("The katana while the blade is lit (energized): the danger tint (ElementalBarsConfigSO.FireColor).")]
         [SerializeField] private Color katanaLitColor = new(1f, 0.3294f, 0.1020f, 1f);
 
+        [Header("Mass card - the afterimages")]
+        [Tooltip("The sword part (Rhino_AfterimageBlade), always shown, white.")]
+        [SerializeField] private Image afterimageBladeIcon;
+        [Tooltip("The nearer prism copy (Rhino_AfterimageNear), shown in the domain colour while the afterimages are laid.")]
+        [SerializeField] private Image afterimageNearIcon;
+        [Tooltip("The further prism copy (Rhino_AfterimageFar), shown in the domain colour while the afterimages are laid.")]
+        [SerializeField] private Image afterimageFarIcon;
+        [Tooltip("The nearer copy's opacity, as a fraction of the domain colour's.")]
+        [SerializeField, Range(0f, 1f)] private float afterimageNearAlpha = 0.8f;
+        [Tooltip("The further copy's opacity, as a fraction of the domain colour's.")]
+        [SerializeField, Range(0f, 1f)] private float afterimageFarAlpha = 0.45f;
+
         RectTransform _katanaPivot;
         Image _katana;
         float _katanaFacing = 1f;   // +1: edge left (as drawn), -1: mirrored, edge right. Kept at rest.
@@ -77,6 +93,25 @@ namespace CosmicShore.UI
         {
             _katanaLit = lit;
             if (_katana) _katana.color = lit ? katanaLitColor : katanaDarkColor;
+        }
+
+        /// <summary>
+        /// The Mass card: the prism copies show, in the pilot's <paramref name="domain"/> colour, only while
+        /// the afterimages are being <paramref name="laying"/>; the sword part is always shown, white.
+        /// </summary>
+        public void SetAfterimage(bool laying, Color domain)
+        {
+            if (afterimageBladeIcon) afterimageBladeIcon.color = Color.white;
+            PaintCopy(afterimageNearIcon, laying, domain, afterimageNearAlpha);
+            PaintCopy(afterimageFarIcon, laying, domain, afterimageFarAlpha);
+        }
+
+        static void PaintCopy(Image copy, bool laying, Color domain, float alpha)
+        {
+            if (!copy) return;
+            copy.enabled = laying;
+            domain.a *= alpha;
+            copy.color = domain;
         }
 
         /// <summary>What <see cref="SetKatanaPose"/> draws, as a pure function so it is tested without a canvas.</summary>

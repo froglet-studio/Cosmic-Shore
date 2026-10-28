@@ -251,8 +251,9 @@ RHINO_ROOT_RT = "1335802071243411841"
 RHINO_VIEW = "5161366343835098938"
 RHINO_BASE = 7720000000000003000
 # None: the icon kit owns that card (Tools/Build/icon_kit/specs/rhino.py) - its icon Image is a transparent, sprite-less
-# CONTAINER the view generates the art under (Charge: the katana, 2026-10-28), so this script expects exactly that.
-RHINO_ICONS = {CHARGE: None, MASS: "Rhino_Afterimage-PLACEHOLDER.png",
+# CONTAINER the view draws the art under (Charge: the katana; Mass: the afterimage trail; 2026-10-28), so this script
+# expects exactly that.
+RHINO_ICONS = {CHARGE: None, MASS: None,
                SPACE: "Rhino_BladeReach-PLACEHOLDER.png", TIME: "Rhino_RampSpool-PLACEHOLDER.png"}
 # The Mass and Time hosts were the first pass (2026-10-06); Charge and Space were open design slots.
 RHINO_FIRST_PASS = (MASS, TIME)
@@ -530,7 +531,9 @@ def main() -> int:
             blocks = host_blocks(slot_ids(RHINO_BASE, el), el, RHINO_ROOT_RT, rhino_frame(el),
                                  sprite_guid("Rhino", png) if png else "0" * 32, gauge=el in RHINO_GAUGES)
             if png is None:
+                # the kit's container: no sprite, and its RectTransform holds the kit's parts, so it is not checked
                 blocks[5] = kit_container(blocks[5])
+                del blocks[3]
             needles += blocks
         late = [el for el in RHINO_ICONS if el not in RHINO_FIRST_PASS and f"&{ids[el]}\n" not in have]
         stale = any(n not in have for n in needles)

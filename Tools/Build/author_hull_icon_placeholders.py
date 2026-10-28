@@ -142,14 +142,6 @@ def rotated(fn, deg, cx=64.0, cy=64.0):
 
 # -- Rhino ---------------------------------------------------------------------
 
-def rhino_afterimage(px, py):
-    """A blade trailed by two thinner, fainter-reading copies of itself - Mass lays the copies."""
-    for dx, w in ((0, 7.5), (-22, 5), (-42, 3)):
-        if capsule(px, py, 46 + dx, 14, 104 + dx, 112, w):
-            return True
-    return False
-
-
 def rhino_blade_reach(px, py):
     """A long blade over a two-headed reach arrow - Space lengthens the sword."""
     if capsule(px, py, 30, 80, 120, 80, 7):                      # the blade
@@ -274,7 +266,7 @@ def scarab_throttle(px, py):
 HULLS = {
     "Rhino": {
         # Rhino_SwordEnergy retired 2026-10-28: the Charge card is the icon kit's katana (specs/rhino.py).
-        "Rhino_Afterimage-PLACEHOLDER.png": rhino_afterimage,
+        # Rhino_Afterimage retired 2026-10-28: the icon kit's trail of prism copies (specs/rhino.py).
         "Rhino_BladeReach-PLACEHOLDER.png": rhino_blade_reach,
         "Rhino_RampSpool-PLACEHOLDER.png": rhino_ramp_spool,
     },
