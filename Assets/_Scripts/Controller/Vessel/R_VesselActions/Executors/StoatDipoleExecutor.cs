@@ -304,8 +304,8 @@ namespace CosmicShore.Gameplay
             _source.OwnerVessel = OwnerTransform();
             _age = 0f;
             // The white hole's birth: its light converging from far away onto the pair (the studio's spawnWave('in', mid)).
-            // Off by default (StoatDipoleConfigSO.AnnihilationWaves): in play it read as the annihilation flash at CREATION.
-            if (config.AnnihilationWaves)
+            // Its own switch (StoatDipoleConfigSO.BirthWave), off: in play a wave at CREATION read as the annihilation flash.
+            if (config.BirthWave)
                 BlackHoleWaves.Spawn(BlackHoleWaves.Kind.In, 0.5f * (sinkAt + sourceAt), inSeconds: config.SourceGrowSeconds);
             ApplyOwnerRules();
             return true;

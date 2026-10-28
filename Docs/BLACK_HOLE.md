@@ -439,8 +439,8 @@ The Vessel Studio's pairs are born and die with waves, and Unity now draws them,
 
 | Wave | When | What you see | Parameters (the studio's 'life' rows, `BlackHoleConfig` unless noted) |
 |---|---|---|---|
-| **In** — the white hole's light converging onto its spot | a pair is laid (`StoatDipoleExecutor.Spawn`) | a thin bright shell shrinking from far away onto the pair, bending the view across its front | `whInFrom` 700 u; its duration is the white hole's birth, `whInS` (= `StoatDipoleConfig.sourceGrowSeconds` 1.1 s); `shellBend` 6 |
-| **Gravitational** — the burst the pair's mass leaves as | the pair annihilates (`Close(annihilate: true)`) | a ripple moving out at `gwSpeed`, ringing (`gwPeriod`) and dying away (`gwRingdown`), weaker as 1/r (flat inside 60 u), loudest sideways to the line the holes met on and silent along it; crests a little brighter, troughs a little darker (`gwGlow`); the whole view stretches one way and squeezes the other as it passes YOU (`gwShake`); every prism it crosses stretches along its own x and squeezes along its own y (`gwPrism`, `PrismGravityWarp.hlsl`) | `gwAmp` 12, `gwSpeed` 120, `gwPeriod` 0.35, `gwRingdown` 1.0, `gwPrism` 0.6, `gwShake` 1, `gwGlow` 1; its mass is the pair's strength / 6 in 0.3–2 |
+| **In** — the white hole's light converging onto its spot | a pair is laid (`StoatDipoleExecutor.Spawn`), only with `StoatDipoleConfig.birthWave` on (ships OFF: a wave at creation read as a flash in play; the studio always fires it) | a thin bright shell shrinking from far away onto the pair, bending the view across its front | `whInFrom` 700 u; its duration is the white hole's birth, `whInS` (= `StoatDipoleConfig.sourceGrowSeconds` 1.1 s); `shellBend` 6 |
+| **Gravitational** — the burst the pair's mass leaves as | the pair annihilates (`Close(annihilate: true)`), with `StoatDipoleConfig.annihilationWaves` on (ships ON) | a ripple moving out at `gwSpeed`, ringing (`gwPeriod`) and dying away (`gwRingdown`), weaker as 1/r (flat inside 60 u), loudest sideways to the line the holes met on and silent along it; crests a little brighter, troughs a little darker (`gwGlow`); the whole view stretches one way and squeezes the other as it passes YOU (`gwShake`); every prism it crosses stretches along its own x and squeezes along its own y (`gwPrism`, `PrismGravityWarp.hlsl`) | `gwAmp` 12, `gwSpeed` 120, `gwPeriod` 0.35, `gwRingdown` 1.0, `gwPrism` 0.6, `gwShake` 1, `gwGlow` 1; its mass is the pair's strength / 6 in 0.3–2 |
 | **Out** — the white hole's light leaving | the pair annihilates | a bright shell growing from the white hole, and a soft wash of light as it passes you | `whOutSpeed` 450, `whOutFade` 1.6, `shellBend` 6 |
 
 Both poles also **sink to a point over `dieS`** (`StoatDipoleConfig.dieSeconds` 0.7 s) along the studio's curve,
@@ -452,9 +452,17 @@ Both poles also **sink to a point over `dieS`** (`StoatDipoleConfig.dieSeconds` 
 **How it draws.** `BlackHoleWaves` keeps the live waves (dropped when the studio's `waveAlive` says they are over: an In
 shell after `whInS`, an Out shell after 6 × `whOutFade`, the gravitational wave after 4000 u / `gwSpeed` + 8 ringdowns)
 and lays the newest four on screen per camera (`ScreenWaves`). The lens pass (`BlackHoleLensPass`) keeps running while
-any wave is alive, even after every hole is gone. `BlackHoleWarp.Flush` publishes the newest four gravitational waves to
+any wave is alive, even after every hole is gone. **Where the light goes on (2026-10-28).** The studio adds a shell's
+glow (0.35 × its envelope), a gravitational wave's crest glow and a shell's wash to its FINAL picture in display values
+(an 8-bit target, no bloom, no tonemapping). Added in the lens pass, before post-processing, they were linear HDR light
+that the gameplay bloom (threshold 0.2, intensity 2.5) blew into a white flash. So the lens pass (shader pass 0) keeps
+the bend, a wave's squeeze and the holes' own light, and a second `BlackHoleLensPass`, at `AfterRenderingPostProcessing`
+while a wave is alive, draws shader pass 1 (`BlackHoleWaveLight`): the waves' light added in sRGB to a copy of the
+post-processed picture (skipping a hole's shadow, which the studio draws last). The two sum to the studio's composite.
+Stated limit: a hole's ring glow and core still bloom. `BlackHoleWarp.Flush` publishes the newest four gravitational waves to
 the prism shader. Proof: `verify_black_hole_lens.py` 1b (45,000 pixels of random waves with holes, the view stretched and
-a shell's wash, against the studio's GLSL: 1.2e-7) and 5b (a negative control), C2 (`BlackHoleWaves.cs` compiled against
+a shell's wash, against the studio's GLSL, through both passes: 1.2e-7), 5b and 5c (negative controls; 5c drops the
+wave-light pass's wash), C2 (`BlackHoleWaves.cs` compiled against
 stubs vs the page's `setWaveUniforms` run in node, with its own negative control); `verify_prism_gravity_warp.py` 16 (the
 strain is the page's `gwStrainAt`, the prism stretch is 1 ± gh along its own axes; a flipped-axis control fails it).
 

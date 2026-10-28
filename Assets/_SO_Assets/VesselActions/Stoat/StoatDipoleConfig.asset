@@ -38,7 +38,8 @@ MonoBehaviour:
   sourceGrowSeconds: 1.1
   dieSeconds: 0.7
   sourceSizeX: 1
-  annihilationWaves: 0
+  annihilationWaves: 1
+  birthWave: 0
   throughZoneRadius: 135
   throughDegrees: 200
   turnCap: 12

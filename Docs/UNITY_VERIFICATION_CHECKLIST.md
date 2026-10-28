@@ -65,6 +65,39 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat annihilation waves back: the wiggle and the light shell, with no flash (`stoat/annihilation-waves`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+`Docs/BLACK_HOLE.md` §5.2, `R_VesselActions/STOAT_DIPOLE.md` §1c. Root cause of the 2026-10-14 "far too big and bright"
+flash: the studio adds a light shell's glow and screen wash to its final picture in display values (no bloom, no
+tonemapping); Unity added them before post-processing as HDR light, and the gameplay bloom (threshold 0.2, intensity 2.5)
+blew them into a white flash. The waves' light is now `BlackHoleLens.shader` pass 1 (`BlackHoleWaveLight`), drawn by a
+second `BlackHoleLensPass` at `AfterRenderingPostProcessing` and added in sRGB; pass 0 keeps the bend, the squeeze and
+the holes' own light. `StoatDipoleConfig.annihilationWaves` is ON again; the creation wave has its own switch,
+`birthWave`, OFF. Every studio wave value unchanged. No editor in this session. Headless proof:
+`verify_black_hole_lens.py --require-real` (1b: both passes vs the studio's GLSL, worst 1.2e-7; 5c negative control;
+B1 glslang + B2 DXC on D3D11 / Vulkan / Metal, both passes), `verify_prism_gravity_warp.py`, `studio_to_unity.py --vessel
+stoat --check`, `author_stoat_assets.py --check`, `unity_refcompile` player-dev. `BlackHoleTests` was edited, not run.
+
+1. **Mass mode, press a trigger.** NO shell converges on the new pair, nothing washes the screen, nothing blooms white.
+2. **Let go.** Where the poles meet: the Charge ripple's strike, plus a fast faint wiggle of the scene moving out
+   (the gravitational wave: crests a touch brighter, troughs a touch darker; prisms it crosses stretch and squeeze) and a
+   thin pale shell growing outward; as it passes you, a short gentle wash (at most ~0.3 in display value, NOT a
+   white-out) and a brief stretch / squeeze of the whole view (`gwShake`). Gone within a few seconds.
+3. **Press again while a pair is live.** The old pair collapses (0.3 s) and its waves leave near the new pair just
+   after it appears: this is the OLD pair's annihilation, not a birth flash. Report if it reads as a flash at creation.
+4. **Frame Debugger.** With a wave alive: `BlackHoleLens` after the transparents AND `BlackHoleWaveLight` after
+   post-processing; with no wave alive, no `BlackHoleWaveLight`. A hole with no wave: unchanged from before.
+5. **`birthWave` on (StoatDipoleConfig).** The studio's converging shell plays at a fresh pair, faint, no flash.
+6. **Known, not fixed here:** the Charge ripple's PICTURE (`StoatRipple`, `LightMode = BlackHoleLens`) has not been
+   drawn since `BlackHoleLensPass` stopped drawing renderers (2026-10-10, one full-screen draw); its strike still works.
+
+| Knob | Where | Ships |
+|---|---|---|
+| Death waves (GW + outgoing shell) | `StoatDipoleConfig` `annihilationWaves` | 1 |
+| Birth wave (converging shell) | `StoatDipoleConfig` `birthWave` | 0 |
+| Wave look | `BlackHoleConfig` `gwAmp`, `gwSpeed`, `gwPeriod`, `gwRingdown`, `gwPrism`, `gwShake`, `gwGlow`, `whInFrom`, `whOutSpeed`, `whOutFade`, `shellBend` | 12, 120, 0.35, 1, 0.6, 1, 1, 700, 450, 1.6, 6 |
+| Poles sink | `StoatDipoleConfig` `dieSeconds` | 0.7 |
+
 ### 🔴 The Meerkat's network of wormholes: no tree, no roots, sized by Mass up to the whole cell (`worktree-agent-ae182c824c56a2bb9`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed** (the artifact's round 26, cloned; `R_VesselActions/MEERKAT.md` §7a):

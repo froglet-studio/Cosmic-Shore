@@ -17,6 +17,10 @@ A. THE PIXEL (clang++). The studio's fragment shader (GLSL, extracted from the p
         zero past it, so the lens never ends at an edge. (The sphere's sky swap drew a large disc in lava lamp.)
      4. FOREGROUND: a pixel whose depth is in front of a hole by more than its margin is not bent by that hole.
      5. NEGATIVE CONTROL: the shipped HLSL with the photon ring moved (1.03 -> 1.10) must FAIL parity.
+   The Unity side is BOTH passes of BlackHoleLens.shader, as BlackHoleLensPass draws them: pass 0 (the bend, the
+   squeeze, the holes' own light) and, on its result, pass 1 "BlackHoleWaveLight" (the waves' glow and a shell's
+   wash, which the game adds AFTER post-processing in display values; the studio's buffer IS display values, so
+   here the display encoding is the identity). 5c: pass 1 with its wash dropped must FAIL the wave parity.
 
 B. COMPILE. BlackHoleLens.shader's vertex and fragment stages with the shipped .hlsl included.
    B1 (glslang, HLSL mode) against a declarations-only mock of the URP library laid out FILE BY FILE at the
@@ -154,26 +158,40 @@ def shipped_hlsl_to_cpp(hlsl):
     out = out.replace(".rgb", ".xyz()").replace("tint.a", "tint.w")
     out = re.sub(r"\b(\w+)\.xy\b(?!\()", r"\1.xy()", out)
     for name in ("void BlackHoleLensWell(", "float2 BlackHoleLensSampleUV(", "float3 BlackHoleLensComposite(",
-                 "bool BlackHoleLensUntouched(", "BLACK_HOLE_LENS_MAX_WELLS"):
+                 "bool BlackHoleLensUntouched(", "BLACK_HOLE_LENS_MAX_WELLS", "float3 BlackHoleLensWaveLight(",
+                 "bool BlackHoleLensWaveLightUntouched("):
         assert name in out, f"{name} missing from the shipped HLSL"
     return out
 
 
-def shipped_frag_to_cpp(shader):
-    """The fragment function of BlackHoleLens.shader, as C++: the URP calls bound to the test's inputs."""
-    prog = re.search(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S).group(1)
-    frag = re.search(r"half4 BlackHoleLensFrag\(Varyings input\) : SV_Target\s*\{.*?\n            \}", prog, re.S)
-    assert frag, "BlackHoleLensFrag not found in BlackHoleLens.shader"
+def _shipped_frag_body(prog, name, cpp_name):
+    frag = re.search(r"half4 " + name + r"\(Varyings input\) : SV_Target\s*\{.*?\n            \}", prog, re.S)
+    assert frag, f"{name} not found in BlackHoleLens.shader"
     body = frag.group(0)
-    body = body.replace("half4 BlackHoleLensFrag(Varyings input) : SV_Target", "static float4 shipped_frag()")
+    body = body.replace(f"half4 {name}(Varyings input) : SV_Target", f"static float4 {cpp_name}()")
     body = body.replace("GetNormalizedScreenSpaceUV(input.positionCS)", "g_uv")
     body = body.replace("LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams)", "g_sceneZ")
-    body = body.replace("SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, suv, 0).rgb", "scene_colour(suv)")
     body = body.replace("discard;", "return float4(-1.0f, -1.0f, -1.0f, -1.0f);")
     body = body.replace("half4(", "float4(")
-    body = re.sub(r"\(int\)(\w+)", r"(int)\1", body)
-    assert "g_uv" in body and "g_sceneZ" in body and "scene_colour(suv)" in body, "the shipped fragment changed shape"
+    assert "g_uv" in body and "g_sceneZ" in body, "the shipped fragment changed shape"
     return body
+
+
+def shipped_frag_to_cpp(shader):
+    """Both fragment functions of BlackHoleLens.shader, as C++: the URP calls bound to the test's inputs.
+    Pass 0 (BlackHoleLensFrag) samples the scene; pass 1 (BlackHoleWaveLightFrag) samples what pass 0 left at the
+    pixel, in display values (the studio's buffer: the encoding is the identity here)."""
+    programs = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+    assert len(programs) == 2, f"expected the lens pass and the wave-light pass, found {len(programs)}"
+    lens = _shipped_frag_body(programs[0], "BlackHoleLensFrag", "shipped_frag")
+    lens = lens.replace("SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, suv, 0).rgb", "scene_colour(suv)")
+    assert "scene_colour(suv)" in lens, "the shipped lens fragment changed shape"
+    light = _shipped_frag_body(programs[1], "BlackHoleWaveLightFrag", "shipped_wave_light_frag")
+    light = light.replace("SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, uv, 0).rgb", "g_pass0")
+    assert "g_pass0" in light and "BLACK_HOLE_TO_DISPLAY(" in light and "BLACK_HOLE_FROM_DISPLAY(" in light, \
+        "the shipped wave-light fragment changed shape"
+    return ("#define BLACK_HOLE_TO_DISPLAY(c) (c)\n#define BLACK_HOLE_FROM_DISPLAY(c) (c)\n"
+            + lens + "\n\n" + light)
 
 
 HARNESS = r"""
@@ -210,6 +228,7 @@ static float _BHWaveCount;
 static float4 _BHWave;
 static float2 g_uv;
 static float g_sceneZ;
+static float3 g_pass0;
 #include "frag.h"
 }
 
@@ -218,6 +237,7 @@ struct Well { float4 c, p, m; };
 // stretch (gwCam), a passing shell's wash, the crests' glow.
 struct WaveSet { int n = 0; float4 c[4], p[4], q[4]; float2 ax[4]; float gwCam = 0, shellWash = 0, gwGlow = 1; };
 static WaveSet g_waves;
+static bool g_lightDrawn = false;   // the last run_unity drew pass 1 (it discards below 1/1024 of light, as pass 0 does)
 struct Look { float kShadow, kCore, ringGlow, ringWidth, lensFade, coreBright, coreMix, aspect; };
 
 static float3 run_studio(const std::vector<Well>& wells, const Look& L, float2 uv, float sceneZ)
@@ -251,10 +271,15 @@ static bool run_unity(const std::vector<Well>& wells, const Look& L, float2 uv, 
     _BHWaveCount = (float)g_waves.n;
     _BHWave = float4(g_waves.gwCam, g_waves.shellWash, g_waves.gwGlow, 0);
     g_uv = uv; g_sceneZ = sceneZ;
+    // pass 0, then pass 1 on what pass 0 left (BlackHoleLensPass: the lens before post-processing, the waves' light after)
     float4 r = shipped_frag();
-    if (r.x == -1.0f && r.w == -1.0f) { out = scene_colour(uv); return false; }   // discarded: the camera's own pixel
-    out = r.xyz();
-    return true;
+    bool lens = !(r.x == -1.0f && r.w == -1.0f);
+    g_pass0 = lens ? r.xyz() : scene_colour(uv);   // discarded: the camera's own pixel
+    float4 l = shipped_wave_light_frag();
+    bool light = !(l.x == -1.0f && l.w == -1.0f);
+    out = light ? l.xyz() : g_pass0;
+    g_lightDrawn = light;
+    return lens || light;
 }
 
 static Well random_well(std::mt19937& rng, float type)
@@ -361,8 +386,9 @@ int main(int argc, char** argv)
                 float3 a = run_studio(wells, L, uv, sceneZ);
                 float3 b; bool touched = run_unity(wells, L, uv, sceneZ, b);
                 float d = std::max(std::fabs(a.x - b.x), std::max(std::fabs(a.y - b.y), std::fabs(a.z - b.z)));
-                float tol = touched ? 2e-4f : 1.0f / 1024.0f * 3.0f + 1e-5f;
-                if (touched) wworst = std::max(wworst, d);
+                // a pixel pass 1 left alone may lack light below its 1/1024 threshold, as an untouched pixel may
+                float tol = touched && g_lightDrawn ? 2e-4f : 1.0f / 1024.0f * 3.0f + 1e-5f;
+                if (touched && g_lightDrawn) wworst = std::max(wworst, d);
                 CHECK(d <= tol, "waves case %d pixel (%.4f, %.4f): studio (%.5f %.5f %.5f) vs Unity (%.5f %.5f %.5f)%s", c, uv.x, uv.y, a.x, a.y, a.z, b.x, b.y, b.z, touched ? "" : " [untouched]");
                 wpx++; if (touched) wtouched++;
             }
@@ -437,6 +463,10 @@ float4 GetFullScreenTriangleVertexPosition(uint vertexID, float z = UNITY_NEAR_C
 }
 SamplerState sampler_PointClamp;
 SamplerState sampler_LinearClamp;
+""",
+    CORE + "Color.hlsl": r"""// mock: core Color.hlsl - NOT reached from URP Core.hlsl (the wave-light pass includes it)
+float3 LinearToSRGB(float3 c) { return pow(c, 1.0 / 2.4); }
+float3 SRGBToLinear(float3 c) { return pow(c, 2.4); }
 """,
     CORE + "EntityLighting.hlsl": r"""// mock: core EntityLighting.hlsl - NOT reached from URP Core.hlsl
 half3 DecodeHDREnvironment(half4 encoded, half4 instructions) { return encoded.rgb * instructions.x; }
@@ -962,6 +992,15 @@ def main():
         fired = rc is not None and rc != 0 and "waves case" in out
         print(f"5b. negative control [a wave's trough darkening 0.14 -> 0.24]: {'FIRED' if fired else 'DID NOT FIRE'}")
         ok &= fired
+
+        mutated = hlsl.replace("return col + waveGlow + float3(1.0, 0.96, 0.86) * shellWash;", "return col + waveGlow;")
+        assert mutated != hlsl, "the wave-light pass's wash moved: update the negative control"
+        with open(os.path.join(work, "shipped.h"), "w") as f:
+            f.write(shipped_hlsl_to_cpp(mutated))
+        rc, out = build_and_run(work, HARNESS, [], "control_wash")
+        fired = rc is not None and rc != 0 and "waves case" in out
+        print(f"5c. negative control [the wave-light pass drops a shell's wash]: {'FIRED' if fired else 'DID NOT FIRE'}")
+        ok &= fired
         with open(os.path.join(work, "shipped.h"), "w") as f:
             f.write(shipped_hlsl_to_cpp(hlsl))
 
@@ -969,17 +1008,18 @@ def main():
         write_mock_library(work)
         shutil.copy(HLSL, os.path.join(work, "BlackHoleLens.hlsl"))
         programs = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
-        assert len(programs) == 1, f"expected 1 pass, found {len(programs)}"
-        prog = programs[0]
-        vert = re.search(r"#pragma vertex (\w+)", prog).group(1)
-        frag = re.search(r"#pragma fragment (\w+)", prog).group(1)
-        for stage, entry in (("vert", vert), ("frag", frag)):
-            rc, out = glslang_compile(work, prog, stage, entry)
-            if rc != 0:
-                print(f"COMPILE FAIL {entry} [{stage}]\n{out}")
-                ok = False
-            else:
-                print(f"compiled {entry} [{stage}]")
+        assert len(programs) == 2, f"expected 2 passes (the lens, the waves' light), found {len(programs)}"
+        entries = [(pr, re.search(r"#pragma vertex (\w+)", pr).group(1), re.search(r"#pragma fragment (\w+)", pr).group(1))
+                   for pr in programs]
+        prog, vert, frag = entries[0]
+        for pr, ve, fr in entries:
+            for stage, entry in (("vert", ve), ("frag", fr)):
+                rc, out = glslang_compile(work, pr, stage, entry)
+                if rc != 0:
+                    print(f"COMPILE FAIL {entry} [{stage}]\n{out}")
+                    ok = False
+                else:
+                    print(f"compiled {entry} [{stage}]")
         assert DEPTH_INCLUDE in prog, "the shader no longer includes DeclareDepthTexture.hlsl"
         nodepth = prog.replace(DEPTH_INCLUDE, "")
         rc, out = glslang_compile(work, nodepth, "frag", frag)
@@ -995,14 +1035,15 @@ def main():
         else:
             print(f"library: {toolchain[1]}")
             for api in REAL_APIS:
-                for profile, entry, stage_define in (("vs_6_0", vert, "SHADER_STAGE_VERTEX"),
-                                                     ("ps_6_0", frag, "SHADER_STAGE_FRAGMENT")):
-                    rc, errors = dxc_compile(work, toolchain, prog, profile, entry, stage_define, api)
-                    if rc != 0:
-                        print(f"COMPILE FAIL {entry} [{api}, {profile}]\n  " + "\n  ".join(errors[:8]))
-                        ok = False
-                    else:
-                        print(f"compiled {entry} [{api}, {profile}]")
+                for pr, ve, fr in entries:
+                    for profile, entry, stage_define in (("vs_6_0", ve, "SHADER_STAGE_VERTEX"),
+                                                         ("ps_6_0", fr, "SHADER_STAGE_FRAGMENT")):
+                        rc, errors = dxc_compile(work, toolchain, pr, profile, entry, stage_define, api)
+                        if rc != 0:
+                            print(f"COMPILE FAIL {entry} [{api}, {profile}]\n  " + "\n  ".join(errors[:8]))
+                            ok = False
+                        else:
+                            print(f"compiled {entry} [{api}, {profile}]")
             rc, errors = dxc_compile(work, toolchain, nodepth, "ps_6_0", frag, "SHADER_STAGE_FRAGMENT", REAL_APIS[0])
             fired = rc != 0 and any("SampleSceneDepth" in e for e in errors)
             print(f"B2 negative control [DeclareDepthTexture.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")

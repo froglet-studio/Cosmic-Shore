@@ -28,18 +28,37 @@ namespace CosmicShore.Gameplay
     /// documented "inject a pass via scripting" route — so nothing is added to any asset and a scene with no
     /// hole pays nothing. A camera that sees no hole skips the copy too.</para>
     ///
+    /// <para><b>The waves' light goes on AFTER post-processing (2026-10-28).</b> A second instance of this pass,
+    /// at <see cref="RenderPassEvent.AfterRenderingPostProcessing"/>, draws the shader's pass 1
+    /// (<c>BlackHoleWaveLight</c>): a light shell's glow, a gravitational wave's prism glow and a shell's
+    /// screen wash, added to the FINAL picture in display values (sRGB), as the studio adds them to its own
+    /// buffer (three r128: an 8-bit target, no bloom, no tonemapping). Added before post-processing they were
+    /// linear HDR light: the gameplay profile's bloom (threshold 0.2, intensity 2.5) blew a shell's 0.35 glow and
+    /// its ≤0.3 wash into a screen-filling white flash — why annihilation waves were switched off on 2026-10-14.
+    /// Pass 0 keeps the bend, the wave's squeeze (trough darkening) and the holes' own light. The two passes
+    /// sum to the studio's composite exactly (Tools/Shaders/verify_black_hole_lens.py, 1b).</para>
+    ///
     /// <para><b>Stated limit.</b> A TRANSPARENT between the camera and the hole is in the copy too, so it is bent
     /// with the background. Opaque mass in front is not: the shader skips a hole for every pixel whose opaque
-    /// depth is in front of it.</para>
+    /// depth is in front of it. The holes' own ring glow and core are still drawn before post-processing, so they
+    /// still bloom.</para>
     /// </summary>
     public sealed class BlackHoleLensPass : ScriptableRenderPass
     {
         /// <summary>The LightMode of the lens shader's pass — drawn by this pass and nothing else.</summary>
         public const string LightModeName = "BlackHoleLens";
 
+        /// <summary>The LightMode of the shader's second pass: the waves' light, drawn after post-processing.</summary>
+        public const string WaveLightModeName = "BlackHoleWaveLight";
+
+        const int LensShaderPass = 0;
+        const int WaveLightShaderPass = 1;
+
         static readonly int SceneColorId = Shader.PropertyToID("_BlackHoleSceneColor");
 
         static BlackHoleLensPass s_pass;
+        static BlackHoleLensPass s_waveLightPass;
+        readonly int shaderPass;
         static int s_users;
 
         static readonly int WellCId = Shader.PropertyToID("_BHWellC");
@@ -77,6 +96,7 @@ namespace CosmicShore.Gameplay
             public readonly Vector4[] wa = new Vector4[BlackHoleWaves.MaxDrawn];
             public int waveCount;
             public Vector4 wave;
+            public int shaderPass;
         }
 
         // This camera's holes, filled before the graph is built (a camera that sees none skips the pass).
@@ -90,12 +110,15 @@ namespace CosmicShore.Gameplay
         static readonly Vector4[] s_wa = new Vector4[BlackHoleWaves.MaxDrawn];
         static bool s_waves;
 
-        BlackHoleLensPass()
+        BlackHoleLensPass(int shaderPass)
         {
-            renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
+            this.shaderPass = shaderPass;
+            renderPassEvent = shaderPass == LensShaderPass
+                ? RenderPassEvent.AfterRenderingTransparents
+                : RenderPassEvent.AfterRenderingPostProcessing;
             // The copy reads the camera colour as a texture: the backbuffer cannot be read.
             requiresIntermediateTexture = true;
-            profilingSampler = new ProfilingSampler("BlackHoleLens");
+            profilingSampler = new ProfilingSampler(shaderPass == LensShaderPass ? "BlackHoleLens" : "BlackHoleWaveLight");
         }
 
         internal static void Acquire() => s_users++;
@@ -121,8 +144,13 @@ namespace CosmicShore.Gameplay
                 renderer = asset != null ? asset.scriptableRenderer : null;
             }
             if (renderer == null) return;
-            s_pass ??= new BlackHoleLensPass();
+            s_pass ??= new BlackHoleLensPass(LensShaderPass);
             renderer.EnqueuePass(s_pass);
+            if (s_waves)
+            {
+                s_waveLightPass ??= new BlackHoleLensPass(WaveLightShaderPass);
+                renderer.EnqueuePass(s_waveLightPass);
+            }
         }
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
@@ -140,9 +168,12 @@ namespace CosmicShore.Gameplay
             int waveCount = BlackHoleWaves.ScreenWaves(cam.worldToCameraMatrix, cam.transform.position, cam.fieldOfView,
                 cam.nearClipPlane, BlackHoleWaves.Now, config, s_wc, s_wp, s_wq, s_wa, out float gwCam, out float shellWash);
             if (count == 0 && waveCount == 0 && gwCam == 0f && shellWash == 0f) return;
+            // The waves' light: nothing to add without a wave or a wash.
+            if (shaderPass == WaveLightShaderPass && waveCount == 0 && shellWash == 0f) return;
             TextureHandle colour = resources.activeColorTexture;
 
-            // 1. The scene as drawn so far — opaques, skybox AND transparents — resolved, single-sample.
+            // 1. The scene as drawn so far — opaques, skybox AND transparents (pass 1: the post-processed picture) —
+            //    resolved, single-sample.
             var desc = renderGraph.GetTextureDesc(colour);
             desc.name = "_BlackHoleSceneColor";
             desc.msaaSamples = MSAASamples.None;
@@ -152,7 +183,8 @@ namespace CosmicShore.Gameplay
             desc.wrapMode = TextureWrapMode.Clamp;
             TextureHandle copy = renderGraph.CreateTexture(desc);
 
-            using (var builder = renderGraph.AddRasterRenderPass<CopyData>("BlackHole scene copy", out var data, profilingSampler))
+            string copyName = shaderPass == LensShaderPass ? "BlackHole scene copy" : "BlackHole wave light copy";
+            using (var builder = renderGraph.AddRasterRenderPass<CopyData>(copyName, out var data, profilingSampler))
             {
                 data.source = colour;
                 builder.UseTexture(colour, AccessFlags.Read);
@@ -163,10 +195,12 @@ namespace CosmicShore.Gameplay
                     Blitter.BlitTexture(ctx.cmd, d.source, new Vector4(1f, 1f, 0f, 0f), 0f, false));
             }
 
-            // 2. Every hole at once, bending that copy onto the camera colour.
-            using (var builder = renderGraph.AddRasterRenderPass<LensData>("BlackHole lens", out var data, profilingSampler))
+            // 2. Every hole at once, bending that copy onto the camera colour (pass 1: every wave's light on it).
+            string drawName = shaderPass == LensShaderPass ? "BlackHole lens" : "BlackHole wave light";
+            using (var builder = renderGraph.AddRasterRenderPass<LensData>(drawName, out var data, profilingSampler))
             {
                 data.material = material;
+                data.shaderPass = shaderPass;
                 data.count = count;
                 System.Array.Copy(s_c, data.c, BlackHoleLens.MaxWells);
                 System.Array.Copy(s_p, data.p, BlackHoleLens.MaxWells);
@@ -202,7 +236,7 @@ namespace CosmicShore.Gameplay
                     d.block.SetVectorArray(WaveAId, d.wa);
                     d.block.SetFloat(WaveCountId, d.waveCount);
                     d.block.SetVector(WaveId, d.wave);
-                    ctx.cmd.DrawProcedural(Matrix4x4.identity, d.material, 0, MeshTopology.Triangles, 3, 1, d.block);
+                    ctx.cmd.DrawProcedural(Matrix4x4.identity, d.material, d.shaderPass, MeshTopology.Triangles, 3, 1, d.block);
                 });
             }
         }

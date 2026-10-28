@@ -283,6 +283,10 @@ namespace CosmicShore.Tests
                 "the lens shader no longer reads the depth texture and BlackHoleLensPass's scene copy.");
             Assert.IsTrue(shader.Contains($"\"LightMode\" = \"{BlackHoleLensPass.LightModeName}\""),
                 "the lens pass must carry LightMode BlackHoleLens, so URP's own passes never draw it.");
+            Assert.IsTrue(shader.Contains($"\"LightMode\" = \"{BlackHoleLensPass.WaveLightModeName}\"") &&
+                          shader.Contains("BlackHoleWaveLightFrag") && shader.Contains("LinearToSRGB"),
+                "the waves' light must be its own pass, added AFTER post-processing in display values — added to the lens " +
+                "pass before bloom, a light shell's glow blooms into a white flash (2026-10-14).");
             Assert.IsFalse(shader.Contains("SampleSceneColor") || shader.Contains("DeclareOpaqueTexture"),
                 "the lens reads URP's opaque copy again — taken before the transparents, it has no shards in it.");
             Assert.IsTrue(shader.Contains("GetFullScreenTriangleVertexPosition") && shader.Contains("BlackHoleLensWell("),
