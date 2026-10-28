@@ -339,13 +339,15 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     broken thing is not the whole thing with holes: split it into the pieces the game breaks it into (here each spike's
     facets), push each out along its own direction (a fraction of its distance from the centre), keep each piece whole.
 
-52. **Start from what the ability MEANS for the vessel, not from the mechanic's verb.** The Time card (Ramp Spool) went
-    out as three ways to draw "speed": streaks, chevrons, a slope. Garrett: "i think this ability is about the rhino and
-    its invulnerability to danger prisms so it should have a rhino silhouette and a tick on the meter ... that shows the
-    barrier come up to protect against the danger prism." The ramp is HOW; the payoff the pilot plays for (the level-5
-    ward, untouchable above 70%) is WHAT, and the hull is who benefits - so the hull's silhouette, the threat, and the
-    ward appear past the threshold. Brief every card as "who gains what, against what" before choosing an object; when
-    the act is the VESSEL being changed (protected, faster, heavier), the vessel is on the card.
+52. **Draw the mechanic, AND what it means for the vessel.** The Time card (Ramp Spool) went out as three ways to draw
+    "speed": streaks, chevrons, a slope. Garrett: "i think this ability is about the rhino and its invulnerability to
+    danger prisms so it should have a rhino silhouette and a tick on the meter ... that shows the barrier come up to
+    protect against the danger prism." Then: "also using the mechanic to produce icons still seems very sensible to
+    not discard." So the mechanic stays the source (the speed is the plate, its 70% threshold the tick, the ward and the
+    danger prism the real objects the code names) - what the first round missed is the PAYOFF the pilot plays for (the
+    level-5 ward, untouchable above 70%) and WHO gains it (the hull). Brief every card from the mechanic first, then ask
+    "who gains what, against what"; when the act changes the vessel itself (protected, faster, heavier), the vessel is
+    on the card.
 
 53. **A threshold on the plate is the Sparrow's segment mark, never a line across.** The 70% Momentum mark went out as a
     full-width line; "not the bar across. updated sparrow has a better solution": `gauge_marks_style="segments"` - a

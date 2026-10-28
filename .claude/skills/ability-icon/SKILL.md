@@ -91,8 +91,9 @@ Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
    move on"). Measure the HUD first: what the card is today (a sprite, a pair, a readout, a ladder) and what the
    view writes on it per frame. The BEFORE sheet is the card as the HUD draws it, every state, never the raw PNG
    ("your before pictures are not accurate or exhaustive").
-1. **Brief, one line per icon**: WHO gains WHAT, against WHAT (the payoff the pilot plays for, the level-5 state
-   included - not the mechanic's verb), and the ONE object that names it. When the act changes the vessel itself
+1. **Brief, one line per icon**: the MECHANIC first (measured in code: what moves, which number, which threshold -
+   the source of every part and every plate mark), then WHO gains WHAT, against WHAT (the payoff the pilot plays for,
+   the level-5 state included), and the ONE object that names it. When the act changes the vessel itself
    (protected, faster), the vessel is on the card (LESSONS 52). Find the real geometry of every object on the card
    first - the hull's mesh or the game's own silhouettes (`Assets/_Graphics/Silhouettes/`), a prism's generator
    (LESSONS 48, 54). Write the brief in the spec's docstring, with what the old icon was.
