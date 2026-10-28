@@ -225,7 +225,11 @@ PLANT_INNER, PLANT_OUTER = world(240.0), world(720.0)    # the flora band: clear
 # the reef: (species, element as a research index, how many, prisms a plant may grow). The Mass species carry the food
 # (each plant 2,000-4,400 volume at the research body, x M now - about half a meal or most of one); the Space ones are colour and a snack. Every row is
 # the harness's TandavaArena.Flora (read back below), its leaf volume read off the canonical config
-FLORA_TABLE = [("Borromean", 1, 5, 60), ("Coral", 1, 5, 110), ("Lantern", 1, 4, 70), ("Reed", 1, 4, 130),
+# The Borromean's 230 holds its plant's FOOD where it was (60 x the chunky Mass plate's 72.9 -> 230 x the law-size 19.0,
+# Docs/ECOSYSTEM.md 65): a meal is most of the biggest plant, and volume - not count - is what the economy reads. The
+# phyllotactic Mass rungs lost 45% a prism the same day (the x1.35 ladder rung that doubled the law) and keep their
+# counts: each sits at its species' own budget already.
+FLORA_TABLE = [("Borromean", 1, 5, 230), ("Coral", 1, 5, 110), ("Lantern", 1, 4, 70), ("Reed", 1, 4, 130),
                ("Frond", 1, 3, 120), ("Tendril", 2, 3, 84), ("Coral", 2, 3, 140)]
 
 # The swarm (TandavaSwarmFaunaConfig)
@@ -579,9 +583,15 @@ def flora_fork(f):
         t, n = re.subn(r"(?m)^    LatticeScale: .*$", f"    LatticeScale: {num(PLANT_SCALE)}", t, count=1)
         assert n == 1, f"{f['name']}: LatticeScale not found"
     else:
-        assert not re.search(r"(?m)^    PlantScale:", t), f"{f['name']}: the canonical config now sets PlantScale - set it"
-        m = re.search(r"(?m)^  Variant:\n(?:    .*\n)*", t)
-        t = t[:m.end()] + f"    PlantScale: {num(PLANT_SCALE)}\n" + t[m.end():]
+        # A canonical config may carry the -1 sentinel (author_flora_armour.py emits a block's whole field set,
+        # Docs/ECOSYSTEM.md 65); only a REAL PlantScale on it would be a second owner of this fork's number.
+        own = re.search(r"(?m)^    PlantScale: (.+)$", t)
+        assert not own or float(own.group(1)) < 0, f"{f['name']}: the canonical config now sets PlantScale - set it"
+        if own:
+            t = t[:own.start()] + f"    PlantScale: {num(PLANT_SCALE)}" + t[own.end():]
+        else:
+            m = re.search(r"(?m)^  Variant:\n(?:    .*\n)*", t)
+            t = t[:m.end()] + f"    PlantScale: {num(PLANT_SCALE)}\n" + t[m.end():]
     if not t.endswith("\n"):
         t += "\n"
     t += (f"  PlantRadiusCellFractionMaxOverride: {g5(PLANT_OUTER / MEMBRANE_RADIUS)}\n"

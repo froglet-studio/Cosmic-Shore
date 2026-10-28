@@ -45,11 +45,11 @@ static class TandavaArena
     /// (its canonical LeafSize x PlantScale^3, every plant grown whole - the generator reads every row back).</summary>
     public static readonly (string Species, int Element, int Count, int Prisms, float Leaf)[] Flora =
     {
-        ("Borromean", 1, 5, 60, 465.111f),
-        ("Coral", 1, 5, 110, 157.280f),
-        ("Lantern", 1, 4, 70, 279.197f),
-        ("Reed", 1, 4, 130, 107.211f),
-        ("Frond", 1, 3, 120, 146.582f),
+        ("Borromean", 1, 5, 230, 121.518f),
+        ("Coral", 1, 5, 110, 86.300f),
+        ("Lantern", 1, 4, 70, 153.194f),
+        ("Reed", 1, 4, 130, 58.827f),
+        ("Frond", 1, 3, 120, 80.427f),
         ("Tendril", 2, 3, 84, 20.860f),
         ("Coral", 2, 3, 140, 21.575f),
     };

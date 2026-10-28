@@ -280,7 +280,7 @@ MonoBehaviour:
     HaloToBreak: 9
     DanceReach: 511
     MatchSeconds: 0
-  FoodPerPrism: 465.109
+  FoodPerPrism: 121.518
   FoodCheckSeconds: 0.5
   HaloRadius: 341.96
   HaloMouthRadius: 24

@@ -103,6 +103,20 @@ def rewrite(path, period, check):
     if already:
         return f"ok (ShieldPeriod {fields['ShieldPeriod']})", False
 
+    was = fields.get("ShieldPeriod", "unset")
+    if fields.get("Enabled") == "1":
+        # An ENABLED block is somebody's authored data (author_flora_populations.py's budget, the species generators'
+        # leaf, author_tandava_assets.py quotes it line for line): set the one line this script owns and nothing else.
+        # Re-emitting the whole field set here added every sentinel to 44 assets and broke the generators that quote
+        # them (author_tandava_assets.py's "the canonical config now sets PlantScale" assert).
+        if "ShieldPeriod" in fields:
+            body = re.sub(r"(?m)^    ShieldPeriod: .*$", f"    ShieldPeriod: {period:g}", raw, count=1)
+        else:
+            body = re.sub(r"(?m)^(    Enabled: 1\n)", rf"\g<1>    ShieldPeriod: {period:g}\n", raw, count=1)
+        if not check:
+            path.write_text(text.replace(raw, body, 1))
+        return f"ShieldPeriod {was} -> {period:g}", True
+
     lines = ["  Variant:", "    Enabled: 1"]
     for name, kind in variant_fields():
         if name == "Enabled":
@@ -126,7 +140,6 @@ def rewrite(path, period, check):
         raise SystemExit(f"{path.name}: variant key mismatch "
                          f"missing={declared - written} unknown={written - declared}")
 
-    was = fields.get("ShieldPeriod", "unset")
     if not check:
         path.write_text(text.replace(raw, block, 1))
     return f"ShieldPeriod {was} -> {period:g}", True
