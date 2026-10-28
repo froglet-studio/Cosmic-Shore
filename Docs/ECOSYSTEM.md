@@ -12556,3 +12556,8 @@ Mass, re-derived for a law-size prism on a shell grown until the chain clears, 3
 0.85 -> 13.8: the Charge plate is the anchor's, not the shrunken armour fit), so their phase-ladder headroom needs re-measuring
 (`FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines`). The Lattice cell was regenerated (`FrenzyEnterVolume`
 3,295,000 → 2,720,000).
+A rough offline estimate (cap x plant budget x the configs' raw leaf, averaged over each palette - the runtime law
+is not applied, so treat it as a direction): Blob's mature flora +23%, Wildlife Blitz cell 4's +44%, Tollway's -15%.
+The Tandava reef was re-balanced in its generator (the Borromean lays 230 prisms to keep its plant's food; §64.5).
+
+Before / after, the growth-rule families: `Docs/Ecology/Armour/growth_flora_before_after.png`.
