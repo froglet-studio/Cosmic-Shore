@@ -16,9 +16,18 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-28 from canvas version `1793214758-ba2b`: Rev 3 to Rev 34, 298 boards on 35 pages. The canvas's launch page is `rev34`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-10-28 from canvas version `1793216111-643c`: Rev 3 to Rev 35, 304 boards on 36 pages. The canvas's launch page is `rev35`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
+
+### Rev 35 - Hover: how the menu answers the pointer  (page `rev35`)
+
+- [`R35Compare.dc.html`](R35Compare.dc.html) - Rev 35 - the same five controls (button, card, nav tab, hub tile, list row) at rest, hovered and focused, for all four looks
+- [`R35A.dc.html`](R35A.dc.html) - Rev 35 A - Lift: the control rises 3 px, its border turns white and a white rule grows under it (recommended) - interactive
+- [`R35B.dc.html`](R35B.dc.html) - Rev 35 B - Trace: one white light runs once around the cut border - interactive
+- [`R35C.dc.html`](R35C.dc.html) - Rev 35 C - Sheen: one soft band sweeps across the fill, nothing moves - interactive
+- [`R35D.dc.html`](R35D.dc.html) - Rev 35 D - Brackets: the corner brackets close in from outside, nothing moves - interactive
+- [`R35Notes.dc.html`](R35Notes.dc.html) - Rev 35 - notes: what hover means, how it differs from focus, timings and the build
 
 ### Rev 34 - FTUE: the captain guides from the side  (page `rev34`)
 

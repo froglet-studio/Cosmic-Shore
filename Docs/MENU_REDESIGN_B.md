@@ -4756,3 +4756,39 @@ Other leftover popups:
 - `PopupPanel.prefab` and `ReconnectButton.cs` are unused.
 - The freestyle `Pause_Menu_Panel` and the quest `DialogueSetUI` are still the legacy look. The dialogue panel waits on the
   Rev 34 pick (the captain's line is its replacement).
+
+## 101. Rev 35 mockups: hover, how the menu answers the pointer (2026-10-28, awaiting a pick)
+
+**Asked (Shombith, 2026-10-28):** "Then we need some new hover animations".
+
+**Today:**
+- `KitButton` lightens its fill 8 % and its border 10 % on hover.
+- `KitHoverTint` lifts a word to TextLight (nav tabs, keycaps).
+- Tiles and cards have no hover at all, and nothing moves, so the pointer gets almost no answer.
+
+**On the canvas:** page "Rev 35 - Hover: how the menu answers the pointer"; the copies are
+`Docs/MenuRedesignB/board/R35*.dc.html`. The four option boards show the same Arcade screen: nav tabs, hub tiles, six
+game cards with the element shapes (section 100.1), friend rows, and PLAY / BACK. Hover is live on each board (point at
+anything), and one card wears the blue focus ring.
+- **R35A, Lift (recommended):** the control rises 3 px, its border turns white and a white rule grows under it. Enter
+  takes 160 ms, eased out; exit takes 120 ms.
+- **R35B, Trace:** one white light runs once around the cut border (420 ms), then the border rests one step brighter.
+- **R35C, Sheen:** one soft band sweeps across the fill (520 ms), then the fill rests 8 % lighter.
+- **R35D, Brackets:** the kit's corner brackets close in from outside (180 ms) and stay while the pointer is over.
+- **R35Compare:** a button, a nav tab and a hub row at rest, hovered, focused and live, for all four options.
+- **R35Notes:** the rules and the build notes.
+
+**Rules every option keeps:**
+- Hover is white. It is never the Selection blue (nothing is chosen yet), and elements have no colour.
+- It plays once on enter and then rests; nothing idles.
+- It is pointer-only. The pad and keys keep the sky-blue focus ring, and a control under both shows focus.
+- Touch gets no hover, and locked controls answer nothing.
+
+**Why A:** the rise and the rule say "this one" without a second colour, and it is cheap (one transform and one width).
+B and D are the quiet choices where a control must not move (dense lists, the HUD). C looks richest but tells the
+player least.
+
+**Differs from the build:**
+- One kit component, `KitHover`, would replace `KitHoverTint` on KitButton, KitTile, the game card and the nav tab.
+- The look and its timings would live on the theme asset (`UIThemeSO`), so a pick changes every control at once.
+- It animates only on enter and exit, so it costs nothing per frame while resting.

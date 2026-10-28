@@ -2368,6 +2368,58 @@
       "h": 900,
       "page": "rev34",
       "title": "Rev 34 - notes: the old FTUE (Rev 21), what the captain changes, who speaks, the side rule"
+    },
+    "R35Compare.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev35",
+      "title": "Rev 35 - the same five controls (button, card, nav tab, hub tile, list row) at rest, hovered and focused, for all four looks"
+    },
+    "R35A.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev35",
+      "title": "Rev 35 A - Lift: the control rises 3 px, its border turns white and a white rule grows under it (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R35B.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev35",
+      "title": "Rev 35 B - Trace: one white light runs once around the cut border - interactive",
+      "is_interactive": true
+    },
+    "R35C.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev35",
+      "title": "Rev 35 C - Sheen: one soft band sweeps across the fill, nothing moves - interactive",
+      "is_interactive": true
+    },
+    "R35D.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev35",
+      "title": "Rev 35 D - Brackets: the corner brackets close in from outside, nothing moves - interactive",
+      "is_interactive": true
+    },
+    "R35Notes.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 900,
+      "page": "rev35",
+      "title": "Rev 35 - notes: what hover means, how it differs from focus, timings and the build"
     }
   },
   "createdOnFiles": {
@@ -2377,7 +2429,7 @@
   "designSystems": [],
   "launch": {
     "view": "canvas",
-    "page": "rev34"
+    "page": "rev35"
   },
   "notes": {
     "hud_end": {
@@ -2803,7 +2855,13 @@
     "R34A.dc.html",
     "R34B.dc.html",
     "R34C.dc.html",
-    "R34Notes.dc.html"
+    "R34Notes.dc.html",
+    "R35Compare.dc.html",
+    "R35A.dc.html",
+    "R35B.dc.html",
+    "R35C.dc.html",
+    "R35D.dc.html",
+    "R35Notes.dc.html"
   ],
   "pages": [
     {
@@ -2945,6 +3003,10 @@
     {
       "id": "rev34",
       "name": "Rev 34 - FTUE: the captain guides from the side"
+    },
+    {
+      "id": "rev35",
+      "name": "Rev 35 - Hover: how the menu answers the pointer"
     }
   ],
   "title": "Menu Redesign B"
