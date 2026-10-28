@@ -29,6 +29,11 @@ namespace CosmicShore.UI
     /// energize, and the whole of an omni-crystal surge); the card's prism copies show in the pilot's
     /// domain colour for exactly that window (<see cref="RhinoVesselHUDView.SetAfterimage"/>).</para>
     ///
+    /// <para><b>SPACE card</b> - Blade Reach: the blade's live length (<c>Skimmer.ElementalScale01</c>), the
+    /// super-shielded prism at its tip shattered once Shield Breaker is active
+    /// (<see cref="ShieldSkimmerScaleDriver.SuperShieldUpgradeActive"/>), danger while lit
+    /// (<see cref="RhinoVesselHUDView.SetBladeReach"/>).</para>
+    ///
     /// <para><b>TIME card</b> - the ramp. Lit while the ramp is BOOSTING (Garrett, 2026-10-17: "the
     /// time icon should respond to boosting"); its gauge fills with speed as a fraction of the
     /// ramp's top speed, so the wind-up the Time element scales is visible as it happens, and the gauge
@@ -184,6 +189,10 @@ namespace CosmicShore.UI
                 view.SetAbilityPressed(Element.Charge, lit);
             }
 
+            var skimmer = swordDriver.Skimmer;
+            view.SetBladeReach(skimmer ? skimmer.ElementalScale01 : 0f, swordDriver.SuperShieldUpgradeActive, lit,
+                ResolveShieldedColor());
+
             float veil = swordDriver.EnergizeCooldownRemaining01;
             if (!Mathf.Approximately(veil, _chargeVeil))
             {
@@ -205,6 +214,15 @@ namespace CosmicShore.UI
             var colorSet = _gameData?.ThemeManagerData?.ColorSet;
             if (colorSet == null || _vesselStatus == null) return Color.white;
             return colorSet.GetDomainSignalColor(_vesselStatus.Domain);
+        }
+
+        // The pilot's SHIELDED colour for the Space card's super-shielded prism; alpha 0 until the palette resolves
+        // (the view keeps the prism's authored colour), never a plausible stand-in - as the Sparrow's Mass card.
+        Color ResolveShieldedColor()
+        {
+            var theme = _gameData?.ThemeManagerData;
+            if (theme == null || _vesselStatus == null || _vesselStatus.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
+            return theme.GetShieldedSignalColor(_vesselStatus.Domain);
         }
 
         // The real sword's pose on the Charge card's katana: the swipe (-1..1) and the chop (0..1), each a fraction of

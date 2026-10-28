@@ -22,6 +22,13 @@ namespace CosmicShore.UI
     /// container over three prefab parts: the sword (white) and two prism copies of it in the pilot's
     /// domain colour, shown only while the afterimages are being laid (<see cref="SetAfterimage"/>).</para>
     ///
+    /// <para><b>SPACE card - Blade Reach</b> (Garrett 2026-10-28). A transparent container over a layout
+    /// this view generates from five parts: the katana leaning across the card, its blade SCALED along
+    /// itself to the live length (24 at rest -> 40 at Space 10), two posts at the rest length and the full
+    /// reach, and a super-shielded prism (the flat stella octangula) at the live tip - whole below Space 5,
+    /// where the blade binds on it, shattered along its facets once Shield Breaker is active
+    /// (<see cref="SetBladeReach"/>).</para>
+    ///
     /// <para>It used to carry a pre-lockup STATUS CLUSTER beside the row - a skimmer-size ring, a
     /// "slowed" counter, a slow-line flash, a debuff timer, laser and crystal indicators - wired
     /// through six fields here and three GameObjects the Rhino prefab added to this HUD. Those fields,
@@ -65,6 +72,36 @@ namespace CosmicShore.UI
         [SerializeField, Range(0f, 1f)] private float afterimageNearAlpha = 0.8f;
         [Tooltip("The further copy's opacity, as a fraction of the domain colour's.")]
         [SerializeField, Range(0f, 1f)] private float afterimageFarAlpha = 0.45f;
+
+        [Header("Space card - Blade Reach")]
+        [Tooltip("The tsuba and grip (Rhino_ReachHilt), upright on reachPartHilt.")]
+        [SerializeField] private Sprite reachHiltSprite;
+        [Tooltip("The blade at full reach (Rhino_ReachBlade), upright on reachPartHilt; scaled to the live length.")]
+        [SerializeField] private Sprite reachBladeSprite;
+        [Tooltip("The super-shielded prism (Rhino_ReachPrism), centred on its sprite.")]
+        [SerializeField] private Sprite reachPrismSprite;
+        [Tooltip("The prism shattered along its facets (Rhino_ReachPrismBroken), centred: Shield Breaker.")]
+        [SerializeField] private Sprite reachPrismBrokenSprite;
+        [Tooltip("The posts at the rest length and the full reach (Rhino_ReachPosts), in card space.")]
+        [SerializeField] private Sprite reachPostsSprite;
+        [Tooltip("Where the upright parts' hilt sits on their sprites, authored px from the top-left (specs/rhino.py PART_HILT).")]
+        [SerializeField] private Vector2 reachPartHilt = new(64f, 100f);
+        [Tooltip("Where the hilt sits on the card, authored px from the top-left (REACH_HILT).")]
+        [SerializeField] private Vector2 reachCardHilt = new(20f, 112f);
+        [Tooltip("The katana's lean, degrees clockwise from upright (REACH_ANGLE).")]
+        [SerializeField] private float reachAngle = 52f;
+        [Tooltip("The blade's length on the card at rest and at full reach, authored px (REACH_REST, REACH_MAX).")]
+        [SerializeField] private Vector2 reachLengthRestMax = new(40.8f, 68f);
+        [Tooltip("The prism's centre past the blade's tip, authored px (PRISM_ALONG).")]
+        [SerializeField] private float reachPrismAlong = 13.12f;
+        [Tooltip("The prism's centre to the blade's side per px of blade (PRISM_SIDE_PER_LENGTH; + is up-left).")]
+        [SerializeField] private float reachPrismSidePerLength = -0.0913f;
+        [Tooltip("The posts' opacity.")]
+        [SerializeField, Range(0f, 1f)] private float reachPostsAlpha = 0.6f;
+
+        RectTransform _reachHost, _reachPivot, _reachBladeScale, _reachPrismRt;
+        Image _reachHilt, _reachBlade, _reachPrism, _reachPosts;
+        float _reach01 = -1f;
 
         RectTransform _katanaPivot;
         Image _katana;
@@ -114,6 +151,63 @@ namespace CosmicShore.UI
             copy.color = domain;
         }
 
+        /// <summary>
+        /// The Space card: the blade at <paramref name="reach01"/> of its range (0 rest, 1 Space 10), the prism
+        /// shattered when <paramref name="breaker"/> (Shield Breaker active), the blade danger while
+        /// <paramref name="lit"/>, the prism in <paramref name="prismColor"/> (alpha 0 keeps the authored colour).
+        /// </summary>
+        public void SetBladeReach(float reach01, bool breaker, bool lit, Color prismColor)
+        {
+            if (!_reachHost) return;
+            var color = lit ? katanaLitColor : katanaDarkColor;
+            if (_reachHilt) _reachHilt.color = color;
+            if (_reachBlade) _reachBlade.color = color;
+            if (_reachPosts) _reachPosts.color = new Color(1f, 1f, 1f, reachPostsAlpha);
+            if (_reachPrism)
+            {
+                var sprite = breaker && reachPrismBrokenSprite ? reachPrismBrokenSprite : reachPrismSprite;
+                if (_reachPrism.sprite != sprite) _reachPrism.sprite = sprite;
+                if (prismColor.a > 0f) _reachPrism.color = prismColor;
+            }
+            reach01 = Mathf.Clamp01(reach01);
+            if (Mathf.Approximately(reach01, _reach01) && _reachHost.rect.size == _reachLaidSize) return;
+            _reach01 = reach01;
+            LayOutReach();
+        }
+
+        Vector2 _reachLaidSize;
+
+        /// <summary>
+        /// Where the Space card's prism centre sits, in authored px from the card's top-left, for a blade
+        /// <paramref name="length"/> px long: past the tip along the blade, leaning with its curve. Pure, so it
+        /// is tested without a canvas (the twin of specs/rhino.py prism_centre).
+        /// </summary>
+        public static Vector2 ReachPrismCentre(Vector2 hilt, float angleDeg, float length, float along, float sidePerLength)
+        {
+            float a = angleDeg * Mathf.Deg2Rad;
+            float d = length + along, side = sidePerLength * length;
+            return new Vector2(hilt.x + Mathf.Sin(a) * d - Mathf.Cos(a) * side,
+                               hilt.y - Mathf.Cos(a) * d - Mathf.Sin(a) * side);
+        }
+
+        void LayOutReach()
+        {
+            var size = _reachHost.rect.size;
+            _reachLaidSize = size;
+            float px = katanaAuthoredSize > 0f ? katanaAuthoredSize : 128f;
+            var k = new Vector2(size.x / px, size.y / px);
+
+            // the hilt pivot: the upright parts' hilt moved onto the card's hilt, turned to the lean
+            _reachPivot.anchoredPosition = new Vector2((reachCardHilt.x - reachPartHilt.x) * k.x,
+                                                       -(reachCardHilt.y - reachPartHilt.y) * k.y);
+            _reachPivot.localRotation = Quaternion.Euler(0f, 0f, -reachAngle);
+            float length = Mathf.Lerp(reachLengthRestMax.x, reachLengthRestMax.y, _reach01);
+            _reachBladeScale.localScale = new Vector3(1f, reachLengthRestMax.y > 0f ? length / reachLengthRestMax.y : 1f, 1f);
+
+            var c = ReachPrismCentre(reachCardHilt, reachAngle, length, reachPrismAlong, reachPrismSidePerLength);
+            _reachPrismRt.anchoredPosition = new Vector2((c.x - px * 0.5f) * k.x, -(c.y - px * 0.5f) * k.y);
+        }
+
         /// <summary>What <see cref="SetKatanaPose"/> draws, as a pure function so it is tested without a canvas.</summary>
         public struct KatanaPoseResult
         {
@@ -151,6 +245,70 @@ namespace CosmicShore.UI
         {
             base.EnsureGeneratedAbilityIcons();
             BuildKatana();
+            BuildReach();
+        }
+
+        // Find-or-create the Space card's layout under its icon (a transparent container since 2026-10-28): the prism,
+        // the hilt pivot (hilt part + a scale node holding the blade, both pivoted on the part hilt), the posts on top.
+        void BuildReach()
+        {
+            if (!reachBladeSprite || !TryGetAbilityIcon(Element.Space, out var host) || !host) return;
+            if (_reachHost) return;
+
+            var hostImage = ResolveGeneratedChild<Image>(host.rectTransform, "BladeReach");   // a holder: it draws nothing
+            hostImage.enabled = false;
+            hostImage.raycastTarget = false;
+            _reachHost = hostImage.rectTransform;
+            StretchReach(_reachHost, new Vector2(0.5f, 0.5f));
+
+            float px = katanaAuthoredSize > 0f ? katanaAuthoredSize : 128f;
+            var partPivot = new Vector2(reachPartHilt.x / px, 1f - reachPartHilt.y / px);
+
+            _reachPrism = ResolveGeneratedChild<Image>(_reachHost, "Prism");
+            _reachPrism.raycastTarget = false;
+            _reachPrism.sprite = reachPrismSprite;
+            _reachPrismRt = _reachPrism.rectTransform;
+            StretchReach(_reachPrismRt, new Vector2(0.5f, 0.5f));
+
+            var pivotImage = ResolveGeneratedChild<Image>(_reachHost, "HiltPivot");
+            pivotImage.enabled = false;
+            pivotImage.raycastTarget = false;
+            _reachPivot = pivotImage.rectTransform;
+            StretchReach(_reachPivot, partPivot);
+
+            _reachHilt = ResolveGeneratedChild<Image>(_reachPivot, "Hilt");
+            _reachHilt.raycastTarget = false;
+            _reachHilt.sprite = reachHiltSprite;
+            StretchReach(_reachHilt.rectTransform, new Vector2(0.5f, 0.5f));
+
+            var scaleImage = ResolveGeneratedChild<Image>(_reachPivot, "BladeScale");
+            scaleImage.enabled = false;
+            scaleImage.raycastTarget = false;
+            _reachBladeScale = scaleImage.rectTransform;
+            StretchReach(_reachBladeScale, partPivot);
+
+            _reachBlade = ResolveGeneratedChild<Image>(_reachBladeScale, "Blade");
+            _reachBlade.raycastTarget = false;
+            _reachBlade.sprite = reachBladeSprite;
+            StretchReach(_reachBlade.rectTransform, new Vector2(0.5f, 0.5f));
+
+            _reachPosts = ResolveGeneratedChild<Image>(_reachHost, "Posts");
+            _reachPosts.raycastTarget = false;
+            _reachPosts.sprite = reachPostsSprite;
+            StretchReach(_reachPosts.rectTransform, new Vector2(0.5f, 0.5f));
+
+            _reach01 = 0f;
+            SetBladeReach(0f, false, false, new Color(0f, 0f, 0f, 0f));
+            LayOutReach();
+        }
+
+        static void StretchReach(RectTransform rt, Vector2 pivot)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.sizeDelta = Vector2.zero;
+            rt.pivot = pivot;
+            rt.anchoredPosition = Vector2.zero;
         }
 
         // Find-or-create the katana under the Charge card's icon (a transparent container since 2026-10-28): a pivot

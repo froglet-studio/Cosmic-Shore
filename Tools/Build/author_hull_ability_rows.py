@@ -251,10 +251,10 @@ RHINO_ROOT_RT = "1335802071243411841"
 RHINO_VIEW = "5161366343835098938"
 RHINO_BASE = 7720000000000003000
 # None: the icon kit owns that card (Tools/Build/icon_kit/specs/rhino.py) - its icon Image is a transparent, sprite-less
-# CONTAINER the view draws the art under (Charge: the katana; Mass: the afterimage trail; 2026-10-28), so this script
+# CONTAINER the view draws the art under (Charge: the katana; Mass: the afterimage trail; Space: Blade Reach; 2026-10-28), so this script
 # expects exactly that.
-RHINO_ICONS = {CHARGE: None, MASS: None,
-               SPACE: "Rhino_BladeReach-PLACEHOLDER.png", TIME: "Rhino_RampSpool-PLACEHOLDER.png"}
+RHINO_ICONS = {CHARGE: None, MASS: None, SPACE: None,
+               TIME: "Rhino_RampSpool-PLACEHOLDER.png"}
 # The Mass and Time hosts were the first pass (2026-10-06); Charge and Space were open design slots.
 RHINO_FIRST_PASS = (MASS, TIME)
 # Cards with a meter (2026-10-17): Charge fills with the sword's energy, Time with speed as a

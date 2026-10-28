@@ -469,10 +469,81 @@ def reach_card():
         parts[f"p{k}"] = (lambda L=L, broken=broken: shattered_prism(L) if broken else shielded_prism(L))
         parts["posts"] = reach_posts
         states.append((n, [(f"p{k}", "shielded")] + [(f"b{k}", "danger" if lit else "white"), ("posts", "white", 0.6)]))
-    return dict(name="bladereach_round2", group="bladereach2", lockup_state=3, element="Space",
-                before=ICON_DIR + "Rhino_BladeReach-PLACEHOLDER.png",
-                title="Blade Reach: the katana flat at its live length between posts at its rest and full reach (O), its tip in a super-shielded prism - bound below Space 5, shattered from Space 5; no plate meter",
+    return dict(name="bladereach", element="Space",
+                before=ICON_DIR + "Rhino_BladeReach-PLACEHOLDER.png", before_rev="3367d4308",
+                title="Blade Reach: the katana at its live length between posts at its rest and full reach (O), its tip in a super-shielded prism - bound below Space 5, shattered from Space 5; no plate meter",
                 parts=parts, states=states)
 
 
+# ---- the Space card's PARTS (Garrett 2026-10-28, round 5: "excellent"). The view lays them out live:
+# a pivot at the hilt turned REACH_ANGLE holds the hilt part and the blade, the blade SCALED along itself to the live
+# length (Skimmer.ElementalScale01: 24 at rest -> 40 at Space 10); the prism is placed at the live tip, whole or broken
+# (Shield Breaker active); the posts are fixed. The upright parts stand on PART_HILT so the long grip fits in the sprite.
+PART_HILT = (64.0, 100.0)
+PRISM_ALONG = PRISM_R * 0.42 - PRISM_BITE              # the prism's centre past the tip, along the blade (px)
+PRISM_SIDE_PER_LENGTH = -KATANA_SORI * 0.6 / KATANA_LEN  # and to its side, per px of blade (the curve's lean)
+
+
+def reach_part_hilt():
+    full = katana(0.0, hilt=PART_HILT, length=REACH_MAX, w=15.0, sori=KATANA_SORI * REACH_MAX / KATANA_LEN, mirror=True)
+    return full & ~reach_part_blade()
+
+
+def reach_part_blade():
+    return katana(0.0, hilt=PART_HILT, length=REACH_MAX, w=15.0, sori=KATANA_SORI * REACH_MAX / KATANA_LEN,
+                  tsuba=False, tsuka=False, mirror=True)
+
+
+def _prism_part(broken):
+    """The prism centred on the sprite, cut clear of the blade as it enters (baked at Space 5's length: the blade
+    always meets the prism the same way, only the distance changes)."""
+    L0 = reach_len(0.5)
+    cx, cy = prism_centre(L0)
+    m = shattered_prism(L0) if broken else shielded_prism(L0)
+    return _shift(m, 64.0 - cx, 64.0 - cy)
+
+
+def reach_part_prism():
+    return _prism_part(False)
+
+
+def reach_part_prism_broken():
+    return _prism_part(True)
+
+
+def blade_reach():
+    """The composite at Space 4 (bound): the card's fallback and the fleet sheet's tile."""
+    L = reach_len(0.4)
+    return flat_katana(L) | shielded_prism(L) | reach_posts()
+
+
+REACH_PART_EXEMPT = dict(PART_EXEMPT, components="a part of several pieces", specks="the facet seams", gap="the facet seams")
+ICONS += [
+    dict(name="Rhino_BladeReach", element="Space", act="Blade Reach: the katana at its live length, its tip in a super-shielded prism (composite; the HUD lays the parts out)",
+         draw=blade_reach, exempt={"components": "the sword, the prism's facets and the posts", "specks": "the facet seams",
+                                   "gap": "the facet seams", "thin": "the katana is slim", "in_box": "the sword runs corner to corner"}),
+    dict(name="Rhino_ReachHilt", element="Space", act="Blade Reach: the tsuba and grip, upright on the part hilt", draw=reach_part_hilt,
+         subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+    dict(name="Rhino_ReachBlade", element="Space", act="Blade Reach: the blade at full reach, upright; the view scales it to the live length",
+         draw=reach_part_blade, subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+    dict(name="Rhino_ReachPrism", element="Space", act="Blade Reach: the super-shielded prism (flat stella octangula), centred", draw=reach_part_prism,
+         subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+    dict(name="Rhino_ReachPrismBroken", element="Space", act="Blade Reach: the prism shattered along its facets (Shield Breaker), centred",
+         draw=reach_part_prism_broken, subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+    dict(name="Rhino_ReachPosts", element="Space", act="Blade Reach: the posts at the rest length and the full reach, in card space",
+         draw=reach_posts, subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+]
+LOCKUP["Space"] = dict(parts=dict(p=lambda: shielded_prism(reach_len(0.4)), b=lambda: flat_katana(reach_len(0.4)), t=reach_posts),
+                       state=[("p", "shielded"), ("b", "white"), ("t", "white", 0.6)])
+
 CARDS += [reach_card()]
+REBIND += [
+    # The Space card: the icon Image becomes a transparent container; the view generates the layout under it from
+    # the five parts (no prefab children: the layout is the view's serialized numbers).
+    dict(file=VARIANT, pair=dict(container="7720000000000003035", view=VIEW, after="highlights", children=[],
+                                 fields={"reachHiltSprite": ("icon", "Rhino_ReachHilt"),
+                                         "reachBladeSprite": ("icon", "Rhino_ReachBlade"),
+                                         "reachPrismSprite": ("icon", "Rhino_ReachPrism"),
+                                         "reachPrismBrokenSprite": ("icon", "Rhino_ReachPrismBroken"),
+                                         "reachPostsSprite": ("icon", "Rhino_ReachPosts")})),
+]

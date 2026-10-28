@@ -244,8 +244,16 @@ blade at the energize stance's summed pull, and is white dark / danger lit. The 
 Rhino's Mass card** (2026-10-28, one round of K / H / I / J, Garrett picked H): the sword (white) swinging right past two
 prism copies of itself in the pilot's domain colour, the nearer brighter; the copies show only while the afterimages are
 laid. "the after image is flipped the wrong way": the copies are the sword where it WAS in the same swing, so they are
-mirrored with it. Three prefab parts under a transparent container (`RhinoVesselHUDView.SetAfterimage`). Next: the
-Rhino's Space and Time placeholders.
+mirrored with it. Three prefab parts under a transparent container (`RhinoVesselHUDView.SetAfterimage`). **The
+Rhino's Space card** (2026-10-28, five rounds; Garrett picked O, then shaped it): the katana leaning across the card at
+the LIVE blade length (24 at rest -> 40 at Space 10) between two posts at the rest length and the full reach, its tip
+in a super-shielded prism - whole below Space 5, where the blade binds, shattered once Shield Breaker is active. A
+plate fill for the Space level went ("what is the fill showing?" - the length already shows it, and every vessel has
+an L5). The prism is the real stella octangula (`StellatedOctahedronMeshGenerator`), first shaded in three-quarter
+view ("that does not look like a stelated octahedron"), then flat down a body diagonal - the six-pointed star with its
+facets seamed - "we need a flatter design in order to play well with the others"; it stands clear of the sword and the
+posts, and breaks apart along its own facets ("a better flat destroyed state ... with the correct separation of
+faces"). `RhinoVesselHUDView.BuildReach` lays the five parts out live. Next: the Rhino's Time placeholder.
 
 | Round | What | Why first |
 |---|---|---|
