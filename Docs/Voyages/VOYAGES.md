@@ -3,8 +3,8 @@
 **Status: DESIGN DRAFT** (Garrett, 2026-10-28; first draft written the same day). Nothing in this document is built.
 It is the plan that `Docs/Pilots/ARTIFACTS.md` §8.5 asks for before vaults, hunting and extraction can be built.
 Every default marked **(default)** is a guess waiting for Garrett's answer; §11 lists them.
-Sources beyond the repo: the Notion design docs *Mission Overview*, *Initial Onboarding*, *Ark Design Document* and
-*Pilot Design Document* (faction types, notoriety, the Ark's bunks). The Figma voyage boards have not been read yet.
+Sources beyond the repo: the Figma file *Cosmic Shore for Alpha* (page *UI for vLater*: the old Port faction boards), the Notion design docs *Mission Overview*, *Initial Onboarding*, *Ark Design Document* and
+*Pilot Design Document* (faction types, notoriety, the Ark's bunks). 
 
 > "voyages are what we have instead of missions as the fourth game location after toybox, arcade, arena, come
 > voyages. the arkway is a toy that also uses the ark and is the most voyage like of the toys. it is meant to get a
@@ -59,9 +59,9 @@ Already decided (Garrett, 2026-10-27; `Docs/Pilots/ARTIFACTS.md`, `Docs/Pilots/C
 New on 2026-10-28 (Garrett):
 
 - **The crew lives on the Ark.** Your Ark carries a crew of pilots, more than the three who fly (the Notion *Ark
-  Design Document* starts it at three bunks and lets it grow). Each pilot is a unique person with a callsign shared
-  with pilots in other crews, a crew holds one of each callsign, and each pilot belongs to one faction. The crew
-  decides which jobs you can find (§6.2).
+  Design Document* starts it at three bunks and lets it grow). Each pilot is a unique person layered on a callsign that
+  pilots in other crews share, a crew holds one of each callsign, and each pilot belongs to one faction. The crew
+  decides which jobs you can find (§6.2), and your captain decides your faction (§6.2.1).
 
 New here:
 
@@ -237,6 +237,42 @@ prey on them:
   players' missions".
 - **The other faction types come later.** Activists, thieves, gatherers, researchers, preservationists, first
   responders and priests each get a job when their location experience exists. A thief steals information (§6.3).
+
+#### 6.2.1 Pilots, captains, factions and emissaries
+
+> "a unique person layered on a callsign. so a new pilot in your ark crew grants access to new voyage types and a
+> new vision ability (denoted by callsign) when the pilot is added to a squad. pilots can also be promoted to captain
+> which how you join a faction. you join your captain's faction. as factions fill with users we spawn new factions of
+> the same type and mint new pilots in the new faction instead of overcrowding factions of optimal size. players can
+> send emissaries from their faction to a friend. if that friend accepts them into their crew then they can both
+> engage with the same faction." (Garrett, 2026-10-28)
+
+- **A pilot is a person layered on a callsign.** The callsign record (`Docs/Pilots/CALLSIGNS.md`, the squad layer's
+  17) is the ability and the sight. The person (name, story, race, faction) is a record of its own that points at one
+  callsign. Two crews can each have a VOLT, and they are different people with the same ability.
+- **A new pilot opens two things.** Recruiting a pilot into the Ark crew adds their faction's jobs to what the crew
+  can find at port (§6.2). Seating that pilot in a squad also brings their callsign's sight (LB) into the voyage.
+- **Your captain decides your faction.** Any pilot in the crew can be promoted to **captain**. Promoting one is how a
+  player joins a faction: the player joins the captain's faction. Changing captain changes faction.
+- **Factions split instead of crowding.** Each faction has an **optimal size** (**(default)** 50 members, the size
+  the old Port boards show as "34/50 members"). When every faction of a type is full, the backend spawns a new
+  faction of the same type with its own name. From then on, new pilots of that type are minted into the new faction,
+  so recruiting a pirate pilot puts you in the youngest pirate faction with room, not the oldest one.
+- **Emissaries bring friends together.** A player can send an **emissary**, a pilot from their own faction, to a
+  friend. If the friend accepts the emissary into their crew, both players can take that faction's jobs, and once the
+  friend promotes the emissary to captain they are in the same faction. The Notion *Ark Design Document* adds that an
+  emissary opens a bunk of its own, and that factions grant free emissaries by rank.
+- **What GTC gets out of it.** Faction membership is a meeting preference: squads of the same faction are matched
+  as co-op where their jobs allow it, and a faction's own rival factions (a pirate faction and the bounty hunters
+  hunting it) are what the hostile pairings feed on.
+
+What the old Port boards in Figma (*Cosmic Shore for Alpha*, page *UI for vLater*, 2024) already drew for factions,
+for reference: a **primary** faction and **ally** faction slots (buy a slot, replace a faction, "You will always be
+able to rejoin this faction later"); faction **recruiters** who notice you when you upgrade classes and set high
+scores; a faction screen with members online, chat and a daily faction challenge with its own leaderboard; **faction
+missions** paid for with a ticket that arrives every 24 hours (the example is the Pirates' *Raid of the Celestial
+Booty*); and **knowledge requests**, where a member asks for knowledge of a vessel's ability and other members
+**impart** it. Those boards predate voyages. The captain rule above replaces how you pick a primary faction there.
 
 The pairing table GTC uses is written as data, so it can be tuned without code. Each pair of jobs has a weight (how
 good a meeting it is) and a **relation**: co-op, race or hostile. The instance announces the relation to both squads
@@ -433,10 +469,9 @@ Each has a default the draft is written to; a different answer changes the secti
    (§4.3)
 7. **The first five jobs** (courier, hunt, defence, pirate, bounty; escort dropped, haul is the courier contract).
    Right set, and is Notion's faction-type table still current? (§6.2)
-8. **Pilots as people.** On the squad-layer branch a pilot *is* its callsign (17 pilots, one per callsign). Your
-   2026-10-28 note adds a unique person (story, race, faction) on top of the callsign. Is the person a layer over the
-   callsign record (so one crew's VOLT is a different person from another crew's VOLT, and the ability is the same),
-   and is a pilot's faction fixed when they are recruited? (§2, §6.2)
+8. **Primary and ally factions.** Your captain's faction is the one you belong to. Are the other pilots' factions
+   "allies" (you take their jobs, you are not a member), as the old Port boards' primary and ally slots suggest? And
+   is 50 the optimal faction size? (§6.2.1)
 9. **Does the galactic war belong in voyages** (which domain holds each location, summed across all players), and is
    a domain the right side to fight for, or should squads belong to factions of their own? (§9, V4)
 10. **Tandava** becomes the first lair location instead of "Voyage 1". That changes Shombith's Voyage window, so it
