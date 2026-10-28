@@ -572,6 +572,14 @@
       1,
       1,
       0.35
-    ]
+    ],
+    "menu": {
+      "shellLabel": "Set sail",
+      "shellDetail": "deploy your squad and take a job from the board",
+      "shellSetSailVerb": "Set sail",
+      "shellUnderwayLabel": "Under way",
+      "shellUnderwayDetail": "give the voyage up - what is aboard is lost",
+      "shellGiveUpVerb": "Give up"
+    }
   }
 }

@@ -40,3 +40,10 @@ MonoBehaviour:
   vaultColor: {r: 0.55, g: 0.75, b: 1, a: 1}
   coreColor: {r: 1, g: 0.45, b: 0.35, a: 1}
   laneColor: {r: 1, g: 1, b: 1, a: 0.35}
+  cardArt: {fileID: 0}
+  shellLabel: Set sail
+  shellDetail: deploy your squad and take a job from the board
+  shellSetSailVerb: Set sail
+  shellUnderwayLabel: Under way
+  shellUnderwayDetail: give the voyage up - what is aboard is lost
+  shellGiveUpVerb: Give up

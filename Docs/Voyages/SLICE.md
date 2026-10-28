@@ -101,6 +101,11 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
 - **AI wingmates escort the Ark**: one that ranges past the leash is brought back to its flank, and they are taken back
   when the voyage ends. Taking the helm of another seat is not built yet.
 
+- **Reached from the menu two ways** (Garrett, 2026-10-28: "put it in as the third voyage"): the Voyage toy is an
+  `IToyShellSurface`, so the Toy Box lists it, and the Voyage window's third voyage (`VoyageToyView` on
+  `MissionView.prefab`'s `Voyage3`) opens the same toy window. Both set sail through the toy's one option, after the
+  shell enters freestyle. Its lines and card art are fields on `Toy_Voyage.asset` (the spec's `toy.menu` block).
+
 ## 6. Hand tests in the Unity editor
 
 Kept in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, section "The voyage slice", as each increment lands.
