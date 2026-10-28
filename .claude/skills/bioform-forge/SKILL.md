@@ -36,9 +36,10 @@ training target). Look before choosing: the research viewers (`Tools/NCA/build_s
 render a plan; a short `/labmaker` page that loops a plan's eight frames is a fine way to show Garrett a shortlist.
 Pick for the game, not the loss: legible silhouettes, an animal a player would name, and the thin elements first.
 
-## 3. Wiring a body into a swarm (the owner's yes first)
+## 3. Wiring a body into a swarm (a yes first)
 
-A forged plan is data. To let a swarm become it, a session with the swarm owner's go-ahead:
+A forged plan is data. To let a swarm become it, a session with a yes from any of the core four (the swarm's owner
+told; `Docs/Compute/README.md` section 8):
 commits the chosen `SwarmPlan_forge_*.json` next to the plans it joins (`Assets/_SO_Assets/Swarm Fauna/...`) through the
 generator that owns that folder (`author_swarm_fauna.py` or `author_tandava_assets.py`: add the source there, never
 drop a file in by hand), adds it to the config's `ScriptedPlans`, and runs the swarm gates

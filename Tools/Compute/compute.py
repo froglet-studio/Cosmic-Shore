@@ -93,13 +93,18 @@ def cmd_run(args):
     if args.in_home or args.no_update or args.local:
         args.once = True if args.in_home else args.once
         return W.run(args)
-    presence = W.Presence(args.when_idle, always=args.always, on_battery=args.on_battery, quiet=args.quiet)
+    try:
+        presence = W.Presence(args.when_idle, always=args.always, on_battery=args.on_battery, quiet=args.quiet,
+                              between=args.between)
+    except ValueError as e:
+        print(e)
+        return 2
     passthrough = [a for a in sys.argv[2:] if a != "--once"]
     said = False
     while True:
         if not presence.away():
             if not said:
-                L.log(f"waiting until you are away ({args.when_idle} min idle)", args.quiet)
+                L.log(f"waiting for {presence.waiting_for()} ({args.when_idle} min idle)", args.quiet)
                 said = True
             if args.once:
                 return 0
@@ -253,6 +258,7 @@ def main(argv=None):
     common(p)
     p.add_argument("--when-idle", type=float, default=10.0, help="minutes of no input before working (default 10)")
     p.add_argument("--always", action="store_true", help="a dedicated box: do not wait for idle")
+    p.add_argument("--between", help="only work inside these local hours, e.g. 22:00-07:00 (with or without --always)")
     p.add_argument("--on-battery", action="store_true", help="also work on battery power")
     p.add_argument("--cores", type=int, default=0, help="worker processes (default: all cores but one)")
     p.add_argument("--session", type=float, default=60.0, help="minutes per job before re-ranking (default 60)")
@@ -267,6 +273,8 @@ def main(argv=None):
     sub.add_parser("doctor")
     p = sub.add_parser("install")
     p.add_argument("--when-idle", type=float, default=10.0)
+    p.add_argument("--between", help="only work inside these local hours, e.g. 22:00-07:00")
+    p.add_argument("--always", action="store_true", help="a dedicated box (a VM): work without waiting for idle")
     p.add_argument("--dry-run", action="store_true")
     sub.add_parser("uninstall")
     p = sub.add_parser("board")
@@ -300,7 +308,7 @@ def main(argv=None):
         return cmd_doctor(args)
     if args.cmd == "install":
         import install
-        return install.install(args.when_idle, dry=args.dry_run)
+        return install.install(args.when_idle, dry=args.dry_run, between=args.between, always=args.always)
     if args.cmd == "uninstall":
         import install
         return install.uninstall()

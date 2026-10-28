@@ -139,11 +139,14 @@ class Pool:
 class Presence:
     """Is the person away? `when_idle` minutes of no input, on mains power (unless allowed on battery)."""
 
-    def __init__(self, when_idle, always=False, on_battery=False, quiet=False):
+    def __init__(self, when_idle, always=False, on_battery=False, quiet=False, between=None):
         self.when_idle, self.always, self.allow_battery, self.quiet = when_idle, always, on_battery, quiet
+        self.window = L.parse_window(between)        # --between 22:00-07:00: only inside these hours
         self._warned = False
 
     def away(self):
+        if not L.in_window(self.window):
+            return False
         if self.always:
             return True
         if not self.allow_battery and L.on_battery():
@@ -157,8 +160,17 @@ class Presence:
             return True
         return idle >= self.when_idle * 60
 
+    def waiting_for(self):
+        """What the worker is waiting on, in words."""
+        if not L.in_window(self.window):
+            (h1, m1), (h2, m2) = self.window
+            return f"the {h1:02d}:{m1:02d}-{h2:02d}:{m2:02d} window"
+        return "you to be away"
+
     def back(self):
-        """The person touched the machine: yield NOW (checkpoint and stop)."""
+        """The person touched the machine, or the --between window closed: yield NOW (checkpoint and stop)."""
+        if not L.in_window(self.window):
+            return True
         if self.always:
             return False
         if not self.allow_battery and L.on_battery():
@@ -464,7 +476,12 @@ def run(args):
     caps = L.capabilities()
     ident = L.identity()
     cores = args.cores or max(1, (os.cpu_count() or 2) - 1)
-    presence = Presence(args.when_idle, always=args.always, on_battery=args.on_battery, quiet=quiet)
+    try:
+        presence = Presence(args.when_idle, always=args.always, on_battery=args.on_battery, quiet=quiet,
+                            between=args.between)
+    except ValueError as e:
+        print(e)
+        return 2
     folder = L.results_folder(*ident)
     L.log(f"froglet-compute worker {ident[0]}/{ident[1]}: {cores} cores, "
           + ", ".join(k for k, v in caps.items() if v is True), quiet)
@@ -472,7 +489,7 @@ def run(args):
     while True:
         if not presence.away():
             if not waiting_said:
-                L.log(f"waiting until you are away ({args.when_idle} min idle"
+                L.log(f"waiting for {presence.waiting_for()} ({args.when_idle} min idle"
                       + ("" if args.on_battery else ", on mains power") + ")", quiet)
                 waiting_said = True
             if args.once:

@@ -50,7 +50,8 @@ editor is the measurement.
 Regatta's own variants (`<policy>_Regatta`, the drive each hull flies IN Regatta, which stage 2 races):
 `drive-rhino-regatta`, `drive-manta-regatta`, `drive-dolphin-regatta` (ready).
 
-**Promotion** (Yash decides): `compute.py promote <job>` shows the team's best; if Yash agrees, the fields are written
+**Promotion** (any of the core four approves, Yash is told; `Docs/Compute/README.md` section 8): `compute.py promote
+<job>` shows the team's best; with that yes, the fields are written
 into `Assets/Resources/AIBoostPolicies/<policy>_<Mode>.asset` with the learner's writer (`learn_drives_from_flights.py`),
 never by hand, on the `ai` branch (`Docs/Compute/README.md` section 7.1); the hourly AI learning sweep keeps imitating people on top of it wherever they
 play. Each promotion adds an editor race to `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

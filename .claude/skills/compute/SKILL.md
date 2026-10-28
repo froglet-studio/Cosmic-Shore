@@ -34,7 +34,8 @@ Say in two lines what it will and will not do (README section 2): it waits for 1
 at the lowest priority on all cores but one, stops the moment they touch the machine, never touches their checkout,
 publishes only to `compute/<them>/<machine>`, and updates itself from `bleeding-edge`. `compute.py uninstall` undoes it.
 
-- A box nobody sits at: `compute.py run --always` (in `tmux`/`screen`, or `install` and edit nothing).
+- A box nobody sits at (a VM): `compute.py install --always`, or `run --always` in `tmux`/`screen`.
+- Only at night, or any set hours: add `--between 22:00-07:00` (local time) to `run` or `install`.
 - A laptop that should also work on battery: `--on-battery`. Fewer cores: `--cores N`.
 - One job only (the person cares about one plan): `run --job <id>`.
 - Never install without the person's yes; never install on a machine you are not running on.
@@ -65,8 +66,9 @@ python3 Tools/Compute/compute.py promote <job> [--out <dir>]
 ```
 
 It prints the team's best (and bakes bioform elites with `--out`) and the job's `promote` line: what the answer
-changes, with which tool, and who must agree. Then follow README section 8: the area owner's go-ahead (`python3
-Tools/Build/who_works_where.py query <paths>`), the area's own writer (never a hand edit), its gates, an
+changes, with which tool, and who must agree. Then follow README section 8: a yes from any of the core four (Garrett, Caleb,
+Shombith, Yash) in their own session, the area owner told (`python3 Tools/Build/who_works_where.py query <paths>`),
+the area's own writer (never a hand edit), its gates, an
 `Affects: <owner>'s <area>` line, an editor check in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the job's `status`
 set to `promoted` (unblocking whatever waits `after` it).
 

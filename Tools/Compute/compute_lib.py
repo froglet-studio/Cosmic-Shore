@@ -405,6 +405,26 @@ def idle_seconds():
     return None
 
 
+def parse_window(spec):
+    """'22:00-07:00' -> ((22, 0), (7, 0)); a window may wrap past midnight. None for no window."""
+    if not spec:
+        return None
+    m = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*", spec)
+    if not m or int(m.group(1)) > 23 or int(m.group(3)) > 23 or int(m.group(2)) > 59 or int(m.group(4)) > 59:
+        raise ValueError(f"--between wants HH:MM-HH:MM in local time, e.g. 22:00-07:00 (got {spec!r})")
+    return (int(m.group(1)), int(m.group(2))), (int(m.group(3)), int(m.group(4)))
+
+
+def in_window(window, when=None):
+    """Is local time `when` (default now) inside `window` (from parse_window)? No window means always."""
+    if window is None:
+        return True
+    t = time.localtime(when) if when is None or isinstance(when, (int, float)) else when
+    m = t.tm_hour * 60 + t.tm_min
+    start, end = window[0][0] * 60 + window[0][1], window[1][0] * 60 + window[1][1]
+    return start <= m < end if start <= end else (m >= start or m < end)
+
+
 def on_battery():
     system = platform.system()
     try:

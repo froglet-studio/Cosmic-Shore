@@ -23,13 +23,25 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 LABEL = "studio.froglet.compute"
 
 
-def _cmd(minutes):
-    return [sys.executable, os.path.join(HERE, "compute.py"), "run", "--when-idle", str(minutes), "--quiet"]
+def _cmd(minutes, between=None, always=False):
+    cmd = [sys.executable, os.path.join(HERE, "compute.py"), "run", "--when-idle", str(minutes), "--quiet"]
+    if between:
+        cmd += ["--between", between]
+    if always:
+        cmd += ["--always"]
+    return cmd
 
 
-def install(minutes=10, dry=False):
+def install(minutes=10, dry=False, between=None, always=False):
     system = platform.system()
-    cmd = _cmd(minutes)
+    if between:
+        import compute_lib
+        try:
+            compute_lib.parse_window(between)       # fail here, not at 3 am
+        except ValueError as e:
+            print(e)
+            return 2
+    cmd = _cmd(minutes, between, always)
     log = os.path.join(os.path.expanduser("~"), ".froglet-compute", "worker.log")
     os.makedirs(os.path.dirname(log), exist_ok=True)
     if system == "Windows":

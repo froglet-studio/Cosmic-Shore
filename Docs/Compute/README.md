@@ -22,8 +22,10 @@ python3 Tools/Compute/compute.py install     # done: it works whenever you have 
 
 `install` registers the worker with the OS (a Task Scheduler ON IDLE task on Windows, a LaunchAgent on macOS, a
 systemd user service or a crontab line on Linux). `uninstall` removes exactly that. To run by hand instead:
-`compute.py run` (it waits for idle), or `compute.py run --always` on a box nobody sits at. Python 3.8+ is all it
-needs; numpy unlocks the Regatta jobs, torch the NCA trainings, Node.js the lab scorecards.
+`compute.py run` (it waits for idle), or `compute.py run --always` on a box nobody sits at. `--between 22:00-07:00`
+(local time, on `run` or `install`) limits either to those hours: outside them it waits, and a running session
+checkpoints and stops when the window closes. One job by hand: `run --once --job <id> --max-evals N`; one point:
+`eval <job> --params '{...}'`. Python 3.8+ is all it needs; numpy unlocks the Regatta jobs, torch the NCA trainings, Node.js the lab scorecards.
 
 ## 2. What it does on your computer, and what it never does
 
@@ -75,7 +77,7 @@ One JSON file per job in `Docs/Compute/jobs/<id>.json` (`compute.py new <id> --e
 | Field | Meaning |
 |---|---|
 | `id`, `title`, `goal` | lower-kebab id; one line; the ambitious goal it serves (the board shows it) |
-| `asked_by`, `area_owner` | who asked (raises priority x1.3) and whose area its RESULT changes (they decide promotion) |
+| `asked_by`, `area_owner` | who asked (raises priority x1.3) and whose area its RESULT changes (told when it is promoted, section 8) |
 | `plan`, `stage` | a multi-stage plan it belongs to (`regatta-balance`, `bioforms`) and its stage |
 | `kind` | `search` (an evaluator scores points the searcher proposes) or `command` (a long training run in exclusive units) |
 | `status` | `ready` (runnable), `proposed` (needs a person's or session's yes), `blocked` (waits; `blocked_reason` says on what), `paused`, `converged`, `promoted`, `retired` |
@@ -180,14 +182,16 @@ person. Every compute AI job reads it.
 - `ai` reaches `bleeding-edge` by an ordinary pull request.
 - Compute promotions (section 8) are written on `ai`.
 
-## 8. Promotion: a converged answer reaches the game only through its owner
+## 8. Promotion: a converged answer reaches the game only with a person's yes
 
 A job's result is a **proposal**. `compute.py promote <id>` prints the team's best (and for a bioform job, `--out`
-bakes the chosen elites). Then a session, with the `area_owner`'s go-ahead (`who_works_where.py query` names them;
-CLAUDE.md: never re-tune another collaborator's work without them):
+bakes the chosen elites). **Any of the core four (Garrett, Caleb, Shombith, Yash; `Docs/TEAM.json` `core`) can
+approve a promotion** (Shombith, 2026-10-28). The approver says yes in their own session, which counts as the
+confirmation CLAUDE.md asks for before re-tuning another collaborator's work. The job's `area_owner` is told in the
+commit, not asked. Then that session:
 
 1. writes the numbers with the area's own tool (a learner's writer, a generator such as `author_regatta_assets.py`),
-   never by hand, with an `Affects: <owner>'s <area>` line;
+   never by hand, with an `Affects: <owner>'s <area>` line and `Approved-by: <name>`;
 2. runs the area's gates and harnesses, and adds the editor check to `Docs/UNITY_VERIFICATION_CHECKLIST.md` (an
    offline model is not the game; the editor is the measurement);
 3. sets the job's `status` to `promoted` (or `retired` with why), and lifts any job `after` it out of `blocked`.
@@ -212,8 +216,8 @@ A Claude scheduled task runs this section once a day; change what it does HERE, 
    search would answer, though nobody asked for one? Write each as a `proposed` job (`compute.py new`) whose `goal`
    says whose problem it answers and why a search fits, and whose `promote` names the owner. Never `ready` - a person
    or a session flips it once the evaluator exists (`/compute-job`).
-5. For each converged job, write one line under "Waiting on" in the board's commit message naming its owner. Never
-   promote here.
+5. For each converged job, write one line under "Waiting on" in the board's commit message: it waits on any of the
+   core four. Never promote here.
 6. Commit only `Docs/Compute/**` (`chore(compute): board and opportunities (<n> jobs, <m> machines)`) and push to
    `compute-queue` (fetch, merge, push; retry on a race). Never push to `bleeding-edge`, never open a pull request,
    never file a team ticket (a session may only SUGGEST one, CLAUDE.md).

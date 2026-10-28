@@ -32,7 +32,8 @@ whether it converged; what blocks the next stage; the ONE next step and who take
   job; needs `dotnet8`). The Stoat is **held** for Garrett's configuration (issue 1198): build nothing for it.
 - **People's play stays the primary teacher** where they play (`AUTO_LEARNING.md`). Compute fills the intensities
   nobody plays and checks the person-learned drives; when the two disagree, show Yash both numbers and the races.
-- **Promotion (Yash's call)**: `compute.py promote drive-<hull>-<mode>`; with his yes, write the fields into
+- **Promotion (any of the core four; Yash, who owns the AI, is told)**: `compute.py promote drive-<hull>-<mode>`; with
+  that yes, write the fields into
   `<policy>_<Mode>` with the learner's writer on `ai` (`Tools/Compute/ai_branch.py sync --push` first), run the gates, add an editor race to
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`, set the job `promoted`.
 - **Done when** every Regatta hull (but the held Stoat) has a promoted drive that finishes all four intensities of its
@@ -43,7 +44,7 @@ whether it converged; what blocks the next stage; the ONE next step and who take
 - **Jobs** `regatta-course-i1..i4` (`regatta_course`: ln(slowest/fastest) with rail, length and character penalties).
 - **Unblock** (a session, once stage 1 is done): set each job's `evaluator.args.roster` to the promoted drive assets,
   set `status: ready`, push on `ai`. Tell Yash the stage moved.
-- **Promotion (Yash's call)**: the settings become `RegattaCourse.ForIntensity`'s row and seed (Yash's code; the
+- **Promotion (any of the core four; Yash is told)**: the settings become `RegattaCourse.ForIntensity`'s row and seed (Yash's code; the
   generator is shared with Headlong and Redline through `HeadlongCircuit`, so change only Regatta's settings); then
   `regatta_course_harness/run.sh` -> `regatta_course_measurements.json`, `export_course.sh` -> `course.js`,
   `author_regatta_assets.py --check`, `course_port.py --self-test` (it must still match the regenerated harness), and

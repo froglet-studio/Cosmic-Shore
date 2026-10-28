@@ -111,6 +111,26 @@ def end_to_end():
     return bad
 
 
+def schedule_window():
+    """--between: inside, outside, and a window that wraps past midnight; a bad spec is refused."""
+    import time as _t
+    bad = []
+    at = lambda h, m: _t.struct_time((2026, 10, 28, h, m, 0, 2, 301, -1))
+    night, day = L.parse_window("22:00-07:00"), L.parse_window("09:30-17:00")
+    for window, h, m, want in ((night, 23, 0, True), (night, 3, 0, True), (night, 12, 0, False), (night, 7, 0, False),
+                               (day, 9, 30, True), (day, 16, 59, True), (day, 17, 0, False), (day, 8, 0, False)):
+        if L.in_window(window, at(h, m)) != want:
+            bad.append(f"schedule: {h:02d}:{m:02d} in {window} should be {want}")
+    if not L.in_window(None):
+        bad.append("schedule: no window should mean always")
+    try:
+        L.parse_window("10pm-7am")
+        bad.append("schedule: a malformed --between was accepted")
+    except ValueError:
+        pass
+    return bad
+
+
 def trust_rules():
     """What a queue ref may make a worker execute. Each case is (job, why it must or must not run)."""
     bad = []
@@ -163,6 +183,9 @@ def run(quick=False):
     trust = trust_rules()
     print("trust rules: " + ("ok" if not trust else "FAILED"))
     failures += trust
+    sched = schedule_window()
+    print("schedule window: " + ("ok" if not sched else "FAILED"))
+    failures += sched
     if not quick:
         import contextlib
         import io
