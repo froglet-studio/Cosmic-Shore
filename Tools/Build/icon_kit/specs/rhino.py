@@ -24,7 +24,7 @@ import math
 import numpy as np
 from PIL import Image
 
-from canvas import N, empty, fill, rect, rotate
+from canvas import GX, GY, N, empty, fill, rect, rotate
 
 HULL = "Rhino"
 ICON_DIR = "Assets/_Graphics/Icons/AbilityIcons/Rhino/"
@@ -188,4 +188,80 @@ REBIND = [
     dict(file=VARIANT, pair=dict(container="7720000000000003015", view=VIEW, after="highlights", children=[],
                                  fields={"katanaCurvedSprite": ("icon", "Rhino_KatanaCurved"),
                                          "katanaChopSprite": ("icon", "Rhino_KatanaChop")})),
+]
+
+
+# ---- Mass: Afterimage options (2026-10-28) ------------------------------------------------------------------------
+# The unlit blade keeps leaving PRISMS in its own shape and pose for 5 s (RHINO_SWORD_AFTERIMAGE.md): copies of the
+# sword, built of prisms, hanging where it swung. A prism copy is the katana's blade cut across into blocks.
+PRISM_PITCH = 13.0   # one prism's length along the blade (px)
+PRISM_SEAM = 3.0     # the seam between prisms (px)
+
+
+def prism_katana(angle, hilt=KATANA_HILT, length=KATANA_LEN, mirror=False):
+    """The blade alone (no tsuba, no grip) at `angle`, cut across into prisms: an afterimage. Scaled with `length`
+    (a copy further away is smaller), a touch wider than the sword so the blocks read."""
+    hx, hy = hilt
+    k = length / KATANA_LEN
+    m = katana(angle, tsuba=False, tsuka=False, hilt=hilt, length=length, w=KATANA_W * 1.15 * k,
+               sori=KATANA_SORI * k, mirror=mirror)
+    a = math.radians(angle)
+    along = (GX - hx) * math.sin(a) - (GY - hy) * math.cos(a)     # distance out along the blade from the hilt
+    return m & ((along % (PRISM_PITCH * k)) >= PRISM_SEAM * max(k, 0.7))
+
+
+# Mass is THE TRAIL (Garrett 2026-10-28, option H of K / H / I / J): the sword (white, as on the Charge card) swinging
+# right past two prism copies of itself in the pilot's domain colour - they are the pilot's prisms - the copy nearer it
+# brighter. Garrett on H: "the after image is flipped the wrong way": the copies are the sword where it WAS in the same
+# swing, so they are mirrored with it, the edge leading right.
+AFTER_BLADE_ANGLE = 20.0
+AFTER_NEAR_ANGLE = -15.0
+AFTER_FAR_ANGLE = -45.0
+AFTER_NEAR_ALPHA = 0.8      # the view's afterimageNearAlpha
+AFTER_FAR_ALPHA = 0.45      # the view's afterimageFarAlpha
+
+
+def afterimage_blade():
+    return katana(AFTER_BLADE_ANGLE, mirror=True)
+
+
+def afterimage_near():
+    return prism_katana(AFTER_NEAR_ANGLE, mirror=True)
+
+
+def afterimage_far():
+    return prism_katana(AFTER_FAR_ANGLE, mirror=True)
+
+
+def afterimage():
+    return afterimage_blade() | afterimage_near() | afterimage_far()
+
+
+AFTER_LIT = [("far", "domain", AFTER_FAR_ALPHA), ("near", "domain", AFTER_NEAR_ALPHA), ("blade", "white")]
+ICONS += [
+    dict(name="Rhino_Afterimage", element="Mass", act="Afterimage: the sword swinging past two prism copies of itself (composite; the HUD draws the parts)",
+         draw=afterimage, exempt={"components": "the sword and its prism copies", "specks": "the prism seams",
+                                  "gap": "the prism seams", "thin": "the katana is slim", "in_box": "the sword runs the card's height"}),
+    dict(name="Rhino_AfterimageBlade", element="Mass", act="Afterimage: the sword part (white)", draw=afterimage_blade,
+         subdir="Parts", family=False, exempt=PART_EXEMPT),
+    dict(name="Rhino_AfterimageNear", element="Mass", act="Afterimage: the nearer prism copy (domain colour)", draw=afterimage_near,
+         subdir="Parts", family=False, exempt=dict(PART_EXEMPT, components="a copy built of prisms", specks="the prism seams", gap="the prism seams")),
+    dict(name="Rhino_AfterimageFar", element="Mass", act="Afterimage: the further prism copy (domain colour, fainter)", draw=afterimage_far,
+         subdir="Parts", family=False, exempt=dict(PART_EXEMPT, components="a copy built of prisms", specks="the prism seams", gap="the prism seams")),
+]
+LOCKUP["Mass"] = dict(parts=dict(blade=afterimage_blade, near=afterimage_near, far=afterimage_far), state=AFTER_LIT)
+
+CARDS += [dict(name="afterimage", element="Mass", before=ICON_DIR + "Rhino_Afterimage-PLACEHOLDER.png", before_rev="80877373e",
+               title="Afterimage: the sword (white) swinging past two prism copies of itself in your colour, shown while the copies are being laid",
+               parts=dict(blade=afterimage_blade, near=afterimage_near, far=afterimage_far),
+               states=[("idle: no afterimages", [("blade", "white")]),
+                       ("laying (lit)", AFTER_LIT)])]
+
+REBIND += [
+    # The Mass card: the icon Image becomes a transparent container over three parts - the two prism copies (domain
+    # colour, shown only while the afterimages are being laid) and the sword (white).
+    dict(file=VARIANT, pair=dict(container="7720000000000003025", view=VIEW, after="highlights",
+                                 children=[("AfterimageFar", "Rhino_AfterimageFar", "afterimageFarIcon"),
+                                           ("AfterimageNear", "Rhino_AfterimageNear", "afterimageNearIcon"),
+                                           ("AfterimageBlade", "Rhino_AfterimageBlade", "afterimageBladeIcon")])),
 ]
