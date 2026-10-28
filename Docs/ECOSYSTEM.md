@@ -12557,6 +12557,26 @@ question.
 `SwarmTadpoleFauna` and `SubstrateAgentFauna` are not armoured: their body's danger and shield are their behaviour (the
 swarm tiers).
 
+**Space always out-spans Mass among the creatures too** (Garrett: "space should always have greater span but
+significantly less volume, more spindly, and thinner where it is thickest"). Only the shark had §64.9's Space body; the
+other four Space variants sat at their prefab size, SMALLER than their grown Mass siblings. Each now authors
+`BaseBodyScale` = `FaunaElementalForm.SpaceLengthOverMass` (1.6477) x its Mass sibling's and `ErodeSpindle` 1:
+
+| Space variant | root | length (Mass sibling) | thickest section after erosion | heart / nearest body prism |
+|---|---|---|---|---|
+| QuadFish | 2.029 -> 8.782 | 200.8 (121.9) | 0.607 of its girth | 6.95 / 27.8 |
+| Clawfish | 1.641 -> 11.353 | 197.2 (119.6) | 0.607 | 6.95 / 111-139 |
+| Brittlestar | 1.382 -> 2.277 | 132.2 across (80.3) | disc whole; arms eroded | 9.6 / 35.6 |
+| Tadpole | 1.081 -> 4.943 | 37.4 (22.7) | 0.607; its prism refit to 1.89 x 1.89 x 24.0, thinner than the Mass one | 9.6 / 16.7 |
+
+`Fauna.ErodeSpindle` now erodes a static `MeshFilter` spindle as well as a skin (the QuadFish, Clawfish and tadpole
+bodies are MeshFilters, so the erosion did nothing to them), and `SpindleErosion.HasSpine` leaves a body with no spine
+whole: the Brittlestar disc's second principal spread is ~0.85 of its first (a fish's ~0.5), and slicing it along an
+arbitrary in-plane axis squashed it into an ellipse. The four models import readable (`bonita.fbx` is shared with the
+flora branch spindles, which never erode: memory only). The Space tadpole's school spacing follows its body (x4.573,
+on top of the Space spread); its senses stay world. The Space shark is unchanged (334.8 long); its teeth still sit
+in its crystal, as §64.8 records. Measured through the game's own `AssignLineage` in Amoebius at bind pose.
+
 ### 65.5 The Mandelbulb family
 
 *(In progress on this branch: its Charge armour fit - `CHARGE_SHIELD_SHRINK`, `CHARGE_DASH`, the armoured ladder - moves to
