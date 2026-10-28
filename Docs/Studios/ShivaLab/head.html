@@ -1,0 +1,161 @@
+<title>Shiva's Cell</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Hind:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: an editor lab - the cell in the middle, a settings dock on the right, scorecard/decisions below.
+     One committed dark world (the night sky round the god): no light theme. */
+  :root {
+    color-scheme: dark;
+    --night: #06071a; --deep: #0c0f2b; --panel: #10142f; --line: #252a52; --ink: #dfe3f7; --muted: #8e95bf;
+    --shiva: #5d8bff; --gold: #f2c14e; --danger: #ff3fb0; --ok: #57d69a; --warn: #f0a050;
+    --charge: #f9bf2e; --mass: #ee4561; --space: #3d99f2; --time: #9e6bf0;
+    --f-display: 'Yatra One', 'Hind', Georgia, serif; --f-body: 'Hind', system-ui, -apple-system, 'Segoe UI', sans-serif; --f-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--night); color: var(--ink); font: 14px/1.45 var(--f-body); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 330px; grid-template-rows: auto minmax(0, 1fr) 190px;
+    grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding-block: 8px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--deep); border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font: 400 22px/1 var(--f-display); color: var(--gold); letter-spacing: 0.02em; }
+  header .meta { color: var(--muted); font-size: 13px; }
+  header .spacer { flex: 1; }
+  #diff { color: var(--shiva); font-size: 13px; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 5px 12px; cursor: pointer; font: 500 13px var(--f-body); }
+  .btn:hover { border-color: var(--shiva); }
+  .btn:focus-visible, .tabs button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .btn.primary { background: var(--gold); color: #1b1400; border-color: var(--gold); }
+  .btn.on { border-color: var(--gold); color: var(--gold); }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: #000; overflow: hidden; }
+  #stage { width: 100%; height: 100%; display: block; touch-action: none; }
+  #dock { grid-area: dock; background: var(--deep); border-left: 1px solid var(--line); overflow: auto; padding: 10px 16px 16px; }
+  #bottom { grid-area: bottom; background: var(--deep); border-top: 1px solid var(--line); overflow: auto; padding: 8px 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 3px 11px; cursor: pointer; font: 500 12px var(--f-body); }
+  .tabs button[aria-selected="true"] { color: var(--night); background: var(--gold); border-color: var(--gold); }
+  .row { display: grid; grid-template-columns: 1fr 60px; gap: 2px 8px; margin: 10px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+  .row label .key { color: var(--muted); font: 11px var(--f-mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--gold); }
+  .row output { text-align: right; font: 12px var(--f-mono); font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--shiva); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .field { display: grid; grid-template-columns: 90px 1fr; gap: 8px; align-items: center; margin: 8px 0; }
+  .field span { color: var(--muted); font-size: 13px; }
+  select, input[type=text], textarea { width: 100%; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  table { border-collapse: collapse; width: 100%; font: 12px var(--f-mono); font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 7px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 400; }
+  .scroll-x { overflow-x: auto; }
+  .best { color: var(--ok); font-weight: 600; } .bad { color: var(--danger); }
+  .hint { color: var(--muted); font-size: 12px; }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  .note { color: var(--muted); font-size: 13px; max-width: 70ch; }
+  .note b { color: var(--ink); font-weight: 600; }
+
+  /* the HUD over the cell */
+  .hud { position: absolute; pointer-events: none; color: #e9ecff; text-shadow: 0 1px 3px #000; }
+  #phaseCard { left: 14px; top: 12px; min-width: 210px; }
+  #phaseCard .form { font: 400 24px/1.1 var(--f-display); color: var(--gold); }
+  #phaseCard .sub { font-size: 12px; color: #b8bfe6; text-transform: uppercase; letter-spacing: 0.08em; }
+  #phaseCard .clock { font: 600 30px/1 var(--f-mono); margin-top: 6px; }
+  #phaseCard .clock.low { color: var(--danger); }
+  #phaseCard .rings { font: 13px var(--f-mono); margin-top: 4px; }
+  .shells { display: flex; gap: 5px; margin-top: 6px; }
+  .shells i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--danger); display: block; }
+  .shells i.up { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+  #squad { right: 14px; top: 12px; display: grid; gap: 6px; width: 190px; }
+  .pcard { background: rgba(8, 10, 30, 0.62); border: 1px solid rgba(93, 139, 255, 0.35); border-radius: 8px; padding: 5px 8px; }
+  .pcard .nm { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+  .pcard .nm em { font-style: normal; color: var(--muted); font-weight: 400; }
+  .pcard.you { border-color: var(--gold); }
+  .bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin-top: 4px; }
+  .bars div { height: 5px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; }
+  .bars div span { display: block; height: 100%; }
+  .chips { display: flex; gap: 4px; margin-top: 4px; min-height: 16px; flex-wrap: wrap; }
+  .chips b { font: 600 10px var(--f-mono); padding: 1px 5px; border-radius: 4px; background: var(--danger); color: #fff; }
+  .chips b.slow { background: #6b5bd6; } .chips b.strip { background: var(--gold); color: #1b1400; }
+  #toasts { left: 50%; top: 16%; transform: translateX(-50%); text-align: center; display: grid; gap: 6px; }
+  #toasts div { font: 400 22px/1.2 var(--f-display); color: var(--gold); opacity: 0; animation: toast 3.2s ease forwards; }
+  #toasts div.small { font: 500 15px var(--f-body); color: #e9ecff; }
+  @keyframes toast { 0% { opacity: 0; transform: translateY(8px); } 12% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
+  #meter { left: 50%; bottom: 18px; transform: translateX(-50%); width: 220px; }
+  #meter .lbl { font: 11px var(--f-mono); color: #b8bfe6; display: flex; justify-content: space-between; }
+  #meter .track { height: 6px; background: rgba(255, 255, 255, 0.12); border-radius: 3px; overflow: hidden; }
+  #meter .track span { display: block; height: 100%; background: var(--shiva); }
+  #ctrlHint { left: 14px; bottom: 12px; font-size: 12px; color: #b8bfe6; }
+  #brief { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at center, rgba(6, 7, 26, 0.55), rgba(6, 7, 26, 0.88)); }
+  #brief .card { max-width: 560px; margin: 0 16px; padding: 22px 26px; background: rgba(12, 15, 43, 0.92); border: 1px solid var(--line); border-radius: 12px; }
+  #brief h2 { margin: 0 0 6px; font: 400 34px/1.1 var(--f-display); color: var(--gold); text-wrap: balance; }
+  #brief p { margin: 8px 0; color: #c9cfee; }
+  #brief ol { margin: 8px 0 12px; padding-left: 20px; color: #c9cfee; }
+  #brief li { margin: 3px 0; }
+  #brief .go { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  #endCard { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  #endCard .t { text-align: center; padding: 26px 40px; border-radius: 16px; background: radial-gradient(ellipse at center, rgba(6, 7, 26, 0.86), rgba(6, 7, 26, 0.55) 70%, rgba(6, 7, 26, 0)); }
+  #endCard .t h2 { margin: 0; font: 400 46px/1.1 var(--f-display); color: var(--gold); text-shadow: 0 0 24px rgba(242, 193, 78, 0.6); }
+  #endCard .t p { margin: 6px 0 0; font-size: 16px; color: #e9ecff; }
+  #endCard .t .again { pointer-events: auto; margin-top: 14px; }
+  #glfail { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); padding: 16px; text-align: center; }
+  #touch { position: absolute; inset: 0; pointer-events: none; }
+  #touch .stick { position: absolute; width: 96px; height: 96px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.25); transform: translate(-50%, -50%); }
+  #touch .knob { position: absolute; width: 40px; height: 40px; border-radius: 50%; background: rgba(242, 193, 78, 0.5); transform: translate(-50%, -50%); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 4 / 5; max-height: 78vh; width: 100%; max-width: 100%; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    #squad { width: 150px; }
+    #phaseCard { min-width: 0; }
+    #phaseCard .form { font-size: 18px; } #phaseCard .clock { font-size: 22px; }
+    #toasts div { font-size: 17px; }
+    #brief h2 { font-size: 26px; }
+  }
+  @media (prefers-reduced-motion: reduce) { #toasts div { animation-duration: 0.01s; opacity: 1; } }
+</style>
+<div id="app">
+  <header>
+    <h1>Shiva's Cell</h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="flyBtn">Fly seat 1</button>
+    <button class="btn" id="camBtn">Camera: cinematic</button>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap">
+    <canvas id="stage"></canvas>
+    <div class="hud" id="phaseCard"><div class="sub" id="hPhaseN"></div><div class="form" id="hForm"></div><div class="clock" id="hClock"></div><div class="rings" id="hRings"></div><div class="shells" id="hShells"><i></i><i></i><i></i></div></div>
+    <div class="hud" id="squad"></div>
+    <div class="hud" id="toasts"></div>
+    <div class="hud" id="meter" hidden><div class="lbl"><span>BOOST</span><span id="hSpeed"></span></div><div class="track"><span id="hMeter"></span></div></div>
+    <div class="hud" id="ctrlHint" hidden></div>
+    <div id="touch" hidden><div class="stick" id="tStick"></div><div class="knob" id="tKnob"></div></div>
+    <div id="endCard" hidden><div class="t"><h2 id="endTitle"></h2><p id="endLine"></p><button class="btn primary again" id="againBtn">Fly again</button></div></div>
+    <div id="brief">
+      <div class="card">
+        <h2>Shiva's Cell</h2>
+        <p>A barren cell, the planets of an orrery wheeling round a god. Your squad of three has come to break him. He sits inside three shells of danger prisms; you cannot touch him, so you thread his rings to get close.</p>
+        <ol>
+          <li><b>Thread the lit ring.</b> The rings spiral in. Thread the whole circuit before the drum (the clock) runs out and one shell cracks.</li>
+          <li><b>He claps.</b> The wave wipes every prism your squad laid and rips every element off a vessel near him. The cell collapses and grows anew.</li>
+          <li><b>He changes.</b> The Still Shiva, then Nataraja (the rings dance), then the Devouring Mouth (a black hole in his mouth pulls you in).</li>
+          <li><b>The swarm guards the rings.</b> Many-headed serpents coil round them and lunge, sharks ram, piranha nip, clawfish latch on.</li>
+        </ol>
+        <p class="hint">Keys: W/S pitch, A/D yaw (or the arrows), Space or Shift boosts. A gamepad's left stick and right trigger work too, and on a phone the left thumb steers and the right thumb boosts.</p>
+        <div class="go"><button class="btn primary" id="briefFly">Fly seat 1</button><button class="btn" id="briefWatch">Watch the squad</button></div>
+      </div>
+    </div>
+    <div id="glfail" hidden>WebGL is not available here, so the cell cannot be drawn. The scorecard below still runs.</div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
