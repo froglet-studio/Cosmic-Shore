@@ -167,6 +167,9 @@ namespace CosmicShore.Gameplay
         Tunnel _ride;
         CustomCameraController _rideCam;   // the camera this hull's ride is holding on the centreline (round 8)
         Tunnel _camTunnel;                 // the tunnel the ride camera follows, through the ride and just past its way out
+        float _rideCamBlendSeconds;        // the camera's own SpectateBlendSeconds, put back when the ride lets it go
+        bool _ridePiloted;                 // the ride was formed by the pilot, not by the autopilot (the lava lamp's AI)
+        bool _wasAutopilot;                // last frame's AutoPilotEnabled, to see the hand-over
         float _camS;                       // how far along that tunnel's line the hull is (past L after the way out)
         float _rideS;
         // the slide (round 24): the tunnel as a network of one, and the flight through it
@@ -214,6 +217,8 @@ namespace CosmicShore.Gameplay
         internal float RideAlong => _rideS;
         /// <summary>True while a tunnel flies this hull (from the press to its way out).</summary>
         public bool IsRiding => _ride != null;
+        /// <summary>The way out's speed over the way in's (the config's rideExitMultiplier, as <see cref="StepRide"/> applies it).</summary>
+        public float RideExitMultiplier => config ? Mathf.Max(0.05f, RideExit) : 1f;
         /// <summary>The reticle's growth, 0..1 (RT forms from <see cref="MeerkatWormholeMath.FormableEmerge"/>); 0 riding.</summary>
         public float Ready01 => _retLive ? _retEmerge : 0f;
         /// <summary>True while RT would form a tunnel.</summary>
@@ -318,13 +323,16 @@ namespace CosmicShore.Gameplay
             TrackLocalPilot();
             if (_ghostAlpha > 0f) _ghostAlpha -= dt / Mathf.Max(0.05f, _ghostFormT);
             if (!IsAuthority) return;
+            bool autopilot = _status.AutoPilotEnabled;
+            if (autopilot != _wasAutopilot) HandOver();
+            _wasAutopilot = autopilot;
             using (s_mCamera.Auto())
             {
                 StepSpeedTunnelScale();
                 StepRideCamera();
             }
             if (_ltHeld) _ltHeldFor += dt;
-            if (_status.AutoPilotEnabled) { using (s_mAutopilot.Auto()) Autopilot(dt); }
+            if (autopilot) { using (s_mAutopilot.Auto()) Autopilot(dt); }
             else _aiShaping = false;
             using (s_mOmni.Auto()) StepOmni();
             if (_kit) { using (s_mRideSoliton.Auto()) TryRideAnySoliton(); }   // [Garrett's kit hook] anyone rides any soliton
@@ -397,6 +405,7 @@ namespace CosmicShore.Gameplay
             _slideNet = MeerkatRootMath.Single(new SlidePath(t), t.L);
             _slide = MeerkatRootMath.Enter(_slideNet, 0, MeerkatRootNetwork.D(hull.position), vIn, MeerkatRootNetwork.D(hull.up));
             _rideS = (float)_slide.S;
+            _ridePiloted = !_status.AutoPilotEnabled;
             _retLive = false;
             _retAge = 0f;
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();   // the page's `if (stance) stance = false`
@@ -676,10 +685,13 @@ namespace CosmicShore.Gameplay
         {
             if (StepRootCamera()) return;
             float dt = Time.deltaTime;
-            if (_ride != null) { _camTunnel = _ride; _camS = _rideS; }
+            // only a ride the PILOT formed: the autopilot's (the lava lamp's AI) never moves anyone's camera, and a ride it
+            // was in the middle of when the pilot clicked to fly is left to the follow camera the menu just handed over to
+            if (_ride != null) { _camTunnel = _ridePiloted ? _ride : null; _camS = _rideS; }
             else if (_camTunnel != null) _camS += Mathf.Max(0f, _status.Speed) * dt;
             var t = _camTunnel;
-            bool mine = t != null && s_tunnels.Contains(t) && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI;
+            bool mine = t != null && s_tunnels.Contains(t) && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI
+                        && !_status.AutoPilotEnabled;
             var cam = mine && CameraManager.Instance != null
                 ? CameraManager.Instance.GetActiveController() as CustomCameraController
                 : null;
@@ -693,6 +705,7 @@ namespace CosmicShore.Gameplay
             if (!cam) _camTunnel = null;
             if (cam != _rideCam) ReleaseRideCamera();
             if (!cam) return;
+            if (_rideCam != cam) _rideCamBlendSeconds = cam.SpectateBlendSeconds;
             _rideCam = cam;
             cam.SpectateBlendSeconds = 0f;   // a cut both ways: the two cameras coincide where they hand over
             cam.Spectate = new CustomCameraController.SpectateView
@@ -704,8 +717,28 @@ namespace CosmicShore.Gameplay
         void ReleaseRideCamera()
         {
             if (!_rideCam) { _rideCam = null; return; }
-            _rideCam.Spectate = null;   // back to the follow camera, which is on the same line by then
+            // back to the follow camera, which is on the same line by then: a cut, done now rather than by leaving the
+            // blend at 0 (that leaked into every later Spectate, and a camera switched off mid-ride - the menu - kept
+            // its stale vantage blended in until it next ran)
+            _rideCam.EndSpectateNow();
+            _rideCam.SpectateBlendSeconds = _rideCamBlendSeconds;
             _rideCam = null;
+        }
+
+        /// <summary>
+        /// The pilot took the hull from the autopilot (the lava lamp's AI hands over when you click to fly), or gave it
+        /// back. What the AI was shaping is not the pilot's: drop its plan, its held line and its sticks, and let go of
+        /// the ride camera so the follow camera the menu hands over to is the one that frames the hull.
+        /// </summary>
+        void HandOver()
+        {
+            _aiHold = 0f;
+            _aiPlanned = false;
+            _aiShaping = false;
+            _aiStick = Vector2.zero;
+            _aiLt = 0f;
+            _camTunnel = null;
+            ReleaseRideCamera();
         }
 
         // ------------------------------------------------------------------ the AI (input only)
@@ -1148,6 +1181,7 @@ namespace CosmicShore.Gameplay
             _ltHeld = false;
             _formInput = null;
             _aiShaping = _aiPlanned = false;
+            _ridePiloted = false;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

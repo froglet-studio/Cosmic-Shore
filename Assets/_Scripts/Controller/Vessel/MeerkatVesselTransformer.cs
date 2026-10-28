@@ -87,7 +87,7 @@ namespace CosmicShore.Gameplay
                 VesselStatus.Course = heading;
                 VesselStatus.Speed = rideSpeed;
                 _rodeLastFrame = true;
-                if (cameOut) LeaveRide(rideSpeed);
+                if (cameOut) LeaveRide(TrackedExitSpeed(rideSpeed, wormhole.RideExitMultiplier));
                 return;
             }
             if (wormhole && wormhole.StepRoots(Time.deltaTime, out position, out rotation, out rideSpeed, out heading, out cameOut))
@@ -97,20 +97,38 @@ namespace CosmicShore.Gameplay
                 VesselStatus.Course = heading;
                 VesselStatus.Speed = rideSpeed;
                 _rodeLastFrame = true;
-                if (cameOut) LeaveRide(rideSpeed);
+                if (cameOut) LeaveRide(TrackedExitSpeed(rideSpeed, wormhole.RideExitMultiplier));   // the roots' way out is published too
                 return;
             }
             if (_rodeLastFrame) LeaveRide(speed);
             base.MoveShip();
         }
 
-        /// <summary>Out of the tunnel: fly on from where it left the hull, at the speed it went in with.</summary>
-        void LeaveRide(float exitSpeed)
+        /// <summary>Out of the tunnel: fly on from where it left the hull, at the speed it went in with.
+        /// <paramref name="trackedSpeed"/> is in the transformer's own units (<see cref="VesselTransformer.TrackedSpeed"/>).</summary>
+        void LeaveRide(float trackedSpeed)
         {
             _rodeLastFrame = false;
-            SetInitialSpeed(exitSpeed);
-            AdoptCurrentMotion();
-            SetInitialSpeed(exitSpeed);
+            AdoptCurrentMotion();   // the facing (and the vector model) from where the tunnel left the hull
+            SetInitialSpeed(trackedSpeed);
+        }
+
+        /// <summary>
+        /// The ride's way-out speed (a PUBLISHED speed, <c>VesselStatus.Speed</c>: the entry speed read after the
+        /// throttle modifier and the warp field, times rideExitMultiplier) as the tracked speed <see cref="MoveShip"/>
+        /// multiplies by those two again. Writing the published speed straight into the tracked one applied them twice,
+        /// so every tunnel ratcheted the hull by rideExit x throttle modifier x warp; the lava lamp's AI chains a tunnel
+        /// every couple of seconds and the eased fall back to cruise (1.5/s) could not keep up, so the hull ran away to
+        /// infinity (worst in a warp field's far side, where the scale grows the further out it flies). Never more than
+        /// rideExitMultiplier x the cruise it is heading for, so nothing a tunnel is fed can compound.
+        /// </summary>
+        float TrackedExitSpeed(float publishedExitSpeed, float exitMultiplier)
+        {
+            float scale = throttleMultiplier * WarpFieldRuntime.ScaleAt(transform.position);
+            float tracked = scale > 1e-3f ? publishedExitSpeed / scale : publishedExitSpeed;
+            float cap = Mathf.Max(0f, Mathf.Max(CurrentThrottleTarget, CruiseSpeed)) * Mathf.Max(1f, exitMultiplier);
+            if (float.IsNaN(tracked) || float.IsInfinity(tracked)) tracked = cap;
+            return Mathf.Clamp(tracked, 0f, cap);
         }
     }
 }

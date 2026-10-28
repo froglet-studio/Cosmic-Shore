@@ -110,6 +110,20 @@ namespace CosmicShore.Gameplay
         public float SpectateBlendSeconds { get; set; } = 0.6f;
 
         /// <summary>
+        /// Clear the <see cref="Spectate"/> vantage with a CUT rather than the ease back: the camera is put back on the
+        /// follow pose it kept underneath, and the next frame is the plain follow camera. For a vantage that coincides
+        /// with the follow camera where it lets go (the Meerkat's ride camera), and safe on a camera that is switched
+        /// off at the time, which would otherwise keep the stale vantage blended in until it next ran.
+        /// </summary>
+        public void EndSpectateNow()
+        {
+            if (_spectateBlend > 0f)
+                transform.SetPositionAndRotation(_followPosePosition, _followPoseRotation);
+            _spectate = null;
+            _spectateBlend = 0f;
+        }
+
+        /// <summary>
         /// A cap (degrees/second) on how fast the FOLLOW FRAME — the rotation the offset is laid
         /// out in, and whose up the camera looks along — may turn toward the target's rotation.
         /// 0 (the default, and the only value any other vessel ever sees) makes the frame the
@@ -1039,6 +1053,9 @@ namespace CosmicShore.Gameplay
 
             _lastTargetPos = followPoint;
             _velocity = Vector3.zero;
+            // A snap is a cut: no vantage left over from before it is still blended in on top (one that is still SET
+            // eases back in from here, as any new one does).
+            _spectateBlend = 0f;
 
             // The pose was just written whole, so there is no feel on it to take off, and a snap is a cut.
             _feelApplied = false;
