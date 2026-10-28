@@ -15,9 +15,14 @@
  },
  "cores": 11,
  "current": {
+  "best": null,
+  "epoch": "a7bc0307f194",
+  "evals": 0,
   "job": "unity-train~r20261028-205229-b55f",
   "max_evals": 30,
   "minutes": 60.0,
+  "phase": "opening Unity (importing on the first run)",
+  "progress": null,
   "request": "r20261028-205229-b55f",
   "since": 1793200973,
   "unit": "switchback-dolphin-i2"
@@ -64,7 +69,7 @@
  "totals": {
   "sessions": 3
  },
- "updated": 1793200973,
+ "updated": 1793201580,
  "user": "shombithofficial",
  "version": "1"
 }
