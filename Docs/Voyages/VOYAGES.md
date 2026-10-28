@@ -33,6 +33,9 @@ makes sense for both sides' missions. Whatever is aboard the Ark when the squad 
 
 - **The Arkway stays a toy.** It is a taste of a freestyle voyage: one Ark, one player's corridor of cells, no map,
   no other squads, nothing at stake. Voyages reuse its machinery (§4) and do not change it.
+- **One word, two meanings, for now.** The Arkway's own code and plan call a toy run a "voyage" (`ArkwayVoyageHud`,
+  `ArkwayRun.BeginVoyageAsync`, `ARKWAY_PLAN.md`). In this document a voyage always means the fourth location; an
+  Arkway run is called an Arkway run. Renaming the Arkway's identifiers is its owner's call, not part of this design.
 - **Voyages replace missions.** The Home hub already says Voyage (`Docs/MENU_REDESIGN_B.md` §69 and §71). Today the
   Voyage window lists Tandava as Voyage 1, launched through the arena launch panel. In this design Tandava becomes the
   first **location experience** (§5), *Tandava's lair*, rather than a voyage of its own. The window's layout is
@@ -294,9 +297,21 @@ A peer-to-peer host is a player's machine. Anything that outlives an instance ca
   reports what it saw. The backend applies the transfer when they agree, and flags it when they do not. A host
   cannot invent a fall the other side did not see. This is the fair-play shape the AntiCheat work is already
   building for (`Docs/AntiCheat/README.md`); the details are Shombith's.
-- **The networked Ark.** Today the Ark is the local toy's, and the hold arbitrates on the machine that holds it
-  (`ARTIFACTS.md`, top). In a voyage the Ark is a host-owned network object, one per squad, rebuilt in each instance
-  from the voyage record's hull count. This is the "server-owned Ark" that `ARTIFACTS.md` §8.5 waits on.
+- **The networked Ark, and who hosts it.** Today the Ark is the local toy's: `ArkHold` and `ArtifactPickup` run with
+  `IsAuthority` true, so whichever machine holds the Ark arbitrates (`ARTIFACTS.md`, top). Garrett wants the server to
+  arbitrate every grab, transfer and spill. In a voyage the "server" is the **instance host** (§7.3): **every Ark in
+  an instance, the guest squad's included, is a NetworkObject owned by the host**, rebuilt in each instance from the
+  voyage record's hull count and hold. `ArkHold`, `PayloadCarrier`'s grab, `ArkFall` and `ArtifactPickup` then run
+  only on the host, and clients ask by RPC, the shape of the arena's lobby hull claim. A guest squad therefore trusts
+  the rival squad's machine for the life of the meeting, which is why anything that outlives the instance goes
+  through the backend's two witnesses above. This is the "server-owned Ark" that `ARTIFACTS.md` §8.5 waits on.
+- **Artifacts load in a voyage.** `VesselPilotLoadout` drops artifacts when `GameDataSO.IsArenaMatch` is set; the
+  voyage mode leaves it off, so slotted artifacts load (Garrett, 2026-10-27: voyages allow artifacts, never require
+  them).
+- **Extraction is the main backend dependency.** The collection and artifact track levels are still device-local
+  (`PilotLoadoutStore`); only the elemental crystals are on the profile. Until extraction, escrow and transfers write
+  the collection server-side, theft and extraction can be faked by editing a device. That move to the profile is
+  Shombith's (`ARTIFACTS.md` §8.3), and it gates phase V3.
 
 ## 9. Phases
 
