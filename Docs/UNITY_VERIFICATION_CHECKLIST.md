@@ -17583,6 +17583,11 @@ not compiled by a Unity shader compiler here. `Docs/ECOSYSTEM.md` §65.7.
    bodies draw as before and the hearts are still the current crystals.
 7. The profiler on the Swarm cell. **Pass:** `CrystalHeartDraw` adds a few draws per swarm per element model and its
    Burst pose (`SwarmHeartPoseJob`) costs well under 0.1 ms a frame for the whole cell.
+8. The Swarm cell's Inner band (470-620 u). **Pass:** its forest is Time Borromean (3 plants at most) and the Inner
+   whale grazes it and grows, staying well short of a full whale (expected, by decision); no Mass Borromean grows in
+   the cell. The Spawn Matrix's "Swarm Borromean" row shows Space and Time stations.
+9. Wrecking Ball. **Pass:** its Charge Borromean plants are danger and unshielded, its Mass ones shielded, matching
+   Rampage's.
 
 ## 🔴 2026-10-26 — Per-mode intro cameras, shuffled within families (unverified: no Unity editor in the session)
 

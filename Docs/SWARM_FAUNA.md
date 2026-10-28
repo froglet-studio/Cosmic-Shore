@@ -1435,6 +1435,14 @@ own element at its price and the rest at `CrossElementCost` 2. The author script
 at cap cannot pay its body once (a grazed plant regrows, so this is a floor on the economy). Charge is
 never food (armoured leaves), so the pufferfish's Charge majority is always paid at the cross price.
 
+**Since 2026-10-28 the armoured element is MASS** (Docs/ECOSYSTEM.md §65.7), and an armoured plant is no food outside a
+Frenzy, so the table's inner row is history: the whale's band grazes **Borromean Time** (Garrett: "graze Time, stay
+small"). At the scaled body (§64.4) its 3 plants hold 76,705 against a full whale's 451,260 at the cross price, about a
+sixth, so the Inner whale stays small. More plants would break the collider ceiling, and the plants needed would be
+about 440 u across in a 100 u planting band. `author_swarm_fauna.py` REPORTS that band (`underfed`) instead of failing;
+every other band still fails if its forest cannot pay. The table's numbers are round 7's; `--check` prints the current
+ones. Charge plants are food now (danger, not armoured); the pufferfish band still grazes Time, unchanged.
+
 **Volume ladder - MODELLED, re-derive in the editor.** A GPU-drawn member is not a registered prism, so
 the cell's LiveVolume holds the flora, skeletons, trails and the proxies - not the bodies. The ladder is
 derived from the modelled mature forest (5,688 prisms, 93,122 volume) plus a full proxy engagement:

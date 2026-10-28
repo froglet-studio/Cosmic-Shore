@@ -134,8 +134,11 @@ ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 # precedent: the cell's own generator owns the cell's copies). It is the cheapest family at steady state -
 # no per-frame Update (PhyllotacticFlora's was 11% of the frame in the round-6b capture), and a COMPACT plant
 # that closes and stops: a finished plant's grow tick is one compare. Few plants, sized against the egg bill
-# of the three bodies (report() prints both). Charge is never food (armoured leaves), so the pufferfish band
-# grows Time plants and its Charge majority is paid at the cross-element price - the feeding-ground lever.
+# of the three bodies (report() prints both). Armoured leaves are never food outside a Frenzy, so a band whose
+# swarm's own element is armoured grows Time plants and pays its majority at the cross-element price - the
+# feeding-ground lever. The pufferfish band took it when Charge was the armoured element; since the element law
+# moved the armour to MASS (Docs/ECOSYSTEM.md §65.7) the whale band takes it too (Garrett, 2026-10-28: "graze Time,
+# stay small" - its 3 plants pay about a sixth of a full whale, so the Inner whale stays small; UNDERFED below).
 # flora_band (round 11-10, Docs/SWARM_FAUNA.md §27): where a region's flora is PLANTED, when it is not the swarm's band.
 # The Middle forest reaches into the 625-690 gap, the mobbers' shell: the bestiary's mobbers roost ON a plant
 # (mobber.py: roost = the arena's plants), and penned to a plant-free gap the cell's 40 starved by minute 3 with 0 bites
@@ -152,7 +155,10 @@ ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 FLORA_INSET, FLORA_INSET_DEG = 25, 10
 REGIONS = [
     dict(key="Inner", band=(470, 620), start="Mass", plan="whale", model="Sort", swarms=1,
-         flora="Borromean", food="Mass", floor=2, cap=3, flora_band=(470 + FLORA_INSET, 620 - FLORA_INSET)),
+         flora="Borromean", food="Time", floor=2, cap=3, flora_band=(470 + FLORA_INSET, 620 - FLORA_INSET),
+         # its forest pays only part of a full whale (the bill at the cross price is ~6x what 3 plants hold): more plants
+         # breaks the collider ceiling and bigger ones outgrow the band, so the whale stays small by decision
+         underfed="Garrett, 2026-10-28: graze Time, stay small (Docs/ECOSYSTEM.md 65.7)"),
     dict(key="Middle", band=(690, 840), start="Charge", plan="pufferfish", model="Sort", swarms=1,
          flora="Borromean", food="Time", floor=10, cap=13, flora_band=(625 + FLORA_INSET // 2, 840 - FLORA_INSET),
          # (axis about the cell centre or None, half-angle deg, inner u, outer u): the three grazer sector pens of
@@ -940,7 +946,11 @@ def verify(out, tot, rows):
     for row in rows:
         at_cap = row["r"]["cap"] * row["plant_volume"]
         if at_cap < row["bill"]:
-            problems.append(f"{row['r']['key']}: its forest at cap ({at_cap:,.0f}) cannot pay its {row['r']['plan']}'s egg bill ({row['bill']:,.0f})")
+            line = f"{row['r']['key']}: its forest at cap ({at_cap:,.0f}) cannot pay its {row['r']['plan']}'s egg bill ({row['bill']:,.0f})"
+            if row["r"].get("underfed"):
+                print(f"  REPORTED, not gated: {line} - {row['r']['underfed']}")
+            else:
+                problems.append(line)
     # the C# defaults of the sort fields are the authored values (an SO created by hand matches the cell)
     so = read(os.path.join(SCRIPT_DIR, "SwarmFaunaConfigSO.cs"))
     for k, v in SORT:

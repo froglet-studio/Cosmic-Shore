@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
-  m_Name: Swarm Inner Borromean Flora Mass Config Data
+  m_Name: Swarm Inner Borromean Flora Time Config Data
   m_EditorClassIdentifier:
   FloraPrefab: {fileID: 8186157953239024492, guid: 421bf59ddd3f6def5e0ad21fb5cbbcf1, type: 3}
   SpawnProbability: 1
@@ -19,21 +19,21 @@ MonoBehaviour:
   NewPlantPeriod: 9999999
   PopulationSize: 2
   MaxLivePopulation: 3
-  GrowthPerOffspring: 76
+  GrowthPerOffspring: 126
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0.5
-  OffspringSpread: 81
-  Element: 2
+  OffspringSpread: 83
+  Element: 4
   Variant:
     Enabled: 1
-    HeartWorldScale: 3.372
-    LeafSize: {x: 5.60606, y: 4.67172, z: 2.7822}
+    HeartWorldScale: 3.209
+    LeafSize: {x: 4.66849, y: 2.76242, z: 0.70626}
     GrowPeriod: -1
-    LatticeScale: 1.942
+    LatticeScale: 1.983
     ShieldPeriod: -1
     WitherRingInterval: -1
-    MaxTotalSpawnedObjects: 216
+    MaxTotalSpawnedObjects: 360
     MaxTotalSpawnedObjectsScale: -1
     ItemsPerGrow: -1
     RandomItems: -1

@@ -12697,3 +12697,13 @@ law leaves as it was) now takes the law when it is Mass or Charge: its body is d
 material, its segments' index entries are shielded, its hit prism is shielded or danger, a vessel's pass through a Mass
 body sheds that segment's shield before it can bite (one shed segment re-armed every `ElementalArmour.ShieldPeriod`),
 and a pass through a Charge body lands the danger contact (`NcaCreatureConfigSO.ContactEffect`).
+
+**The Swarm cell's whale band lost its food, and grazes Time now.** An armoured plant is no food outside a Frenzy
+(`Fauna.IsInedibleShield`), so once Mass carried the armour, the Inner whale's Mass Borromean forest became inedible:
+the old law's pufferfish problem, with the elements swapped. Its band now grazes Borromean Time, as the pufferfish's
+always has (Garrett, 2026-10-28: "graze Time, stay small"). Its 3 plants pay about a sixth of a full whale at the
+cross-element price, so the whale stays small. More plants break the collider ceiling, and big enough plants would
+outgrow the band (`Docs/SWARM_FAUNA.md` §14.2). The Spawn Matrix's "Swarm Borromean" row offers the cell's Space and
+Time forks; the canonical Borromean row still offers Mass. Found by sweeping every `author_*.py --check` at ship
+time, not only the ones the gates run. The Wrecking Ball's Borromean forks (Rampage's, re-armoured on this branch) and
+the Clawfish anatomy generator (whose seat predated the body scale) had drifted the same silent way.

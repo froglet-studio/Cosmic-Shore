@@ -237,7 +237,6 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 000b83422a748f6434eaeeecc2be7400, type: 2}
   - Name: Swarm Borromean
     ElementConfigs:
-    - {fileID: 11400000, guid: d3e3605fbf12b6442910427f63b6e3b5, type: 2}
     - {fileID: 11400000, guid: ba725d5d74c6d403c4ba8b2512d5e61e, type: 2}
     - {fileID: 11400000, guid: 9b690c31d50dd62c84f46f9b37375f27, type: 2}
   - Name: Gyroid Topiary

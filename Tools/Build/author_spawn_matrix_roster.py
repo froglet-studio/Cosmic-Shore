@@ -148,8 +148,9 @@ FAUNA = [
 FLORA = [
     *[(n, lifeform_set(n)) for n in
       ("Arbor", "Coral", "Frond", "Lantern", "Reed", "Rosette", "Spire", "Tendril")],
+    # the Swarm cell grows no Mass forest since the element law armoured Mass (Docs/ECOSYSTEM.md 65.7: its whale band
+    # grazes Time), so the cell's row is its Space and Time forks; the canonical Borromean row still offers Mass
     ("Swarm Borromean", [
-        "Cell Configs/Swarm Cell/Swarm Inner Borromean Flora Mass Config Data.asset",
         "Cell Configs/Swarm Cell/Swarm Outer Borromean Flora Space Config Data.asset",
         "Cell Configs/Swarm Cell/Swarm Middle Borromean Flora Time Config Data.asset",
     ]),
