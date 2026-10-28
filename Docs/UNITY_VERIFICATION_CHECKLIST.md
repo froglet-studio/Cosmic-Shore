@@ -17986,3 +17986,8 @@ compile has no errors in the changed files (player and editor).
     the friend is swapped to their seat's hull and sees "SAILING WITH YOUR HOST"; when the host takes a job the friend's
     own Ark sails the same worlds to the same stop; the friend can crack a vault and stow a find; when the host takes the
     way home both dock, and the friend keeps what the friend stowed. The host giving up ends the friend's voyage too.
+12. Menu_Main, open the Toy Box. **Pass:** a Voyage card is in the grid; opening it shows one row, "Set sail", and
+    pressing Set sail enters freestyle and stands the job board around you. Open it again while under way: the row reads
+    "Under way" and Give up ends the voyage.
+13. Menu_Main, open the Voyage window. **Pass:** the third voyage is a full card titled "Voyage" (no art yet, the
+    toy's `cardArt` is empty), not the locked slot; Set sail opens the same Voyage toy window as step 12.

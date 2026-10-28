@@ -91,7 +91,37 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("A lane's colour.")]
         Color laneColor = new(1f, 1f, 1f, 0.35f);
 
+        [Header("Voyage - the menu")]
+        [SerializeField, Tooltip("The art on the Voyage window's card for this voyage. Empty = the card shows no art.")]
+        Sprite cardArt;
+
+        [SerializeField, Tooltip("The Toy Box's option to set out (the row's name).")]
+        string shellLabel = "Set sail";
+
+        [SerializeField, Tooltip("The second line under it.")]
+        string shellDetail = "deploy your squad and take a job from the board";
+
+        [SerializeField, Tooltip("The button that sets out.")]
+        string shellSetSailVerb = "Set sail";
+
+        [SerializeField, Tooltip("The option's name while a voyage is under way.")]
+        string shellUnderwayLabel = "Under way";
+
+        [SerializeField, Tooltip("The second line while a voyage is under way.")]
+        string shellUnderwayDetail = "give the voyage up - what is aboard is lost";
+
+        [SerializeField, Tooltip("The button that gives a voyage up.")]
+        string shellGiveUpVerb = "Give up";
+
         public override ToyCategory Category => ToyCategory.World;
+
+        public Sprite CardArt => cardArt;
+        public string ShellLabel => shellLabel;
+        public string ShellDetail => shellDetail;
+        public string ShellSetSailVerb => shellSetSailVerb;
+        public string ShellUnderwayLabel => shellUnderwayLabel;
+        public string ShellUnderwayDetail => shellUnderwayDetail;
+        public string ShellGiveUpVerb => shellGiveUpVerb;
 
         public ArkwaySettingsSO WithArk => withArk;
         public VoyageContentSO Content => content ? content : VoyageContentSO.Load();
