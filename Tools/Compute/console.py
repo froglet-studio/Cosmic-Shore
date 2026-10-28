@@ -479,6 +479,8 @@ def run(args):
             print("no approvals")
         return 0
     data = build(local=args.local, fetch=not args.no_fetch, prs=args.prs, url=args.url)
+    if getattr(args, "sync_every", None):
+        data["sync_every"] = args.sync_every
     out = write(args.out or os.path.join(L.cache_dir(), "console"), data, standalone=args.standalone)
     print(f"wrote {out}/console.json ({len(data['jobs'])} jobs, {len(data['machines'])} machines, "
           f"{len(data['recordings']['flights'])} recordings) and {out}/index.html")

@@ -260,6 +260,45 @@ def end_to_end():
                             "--queue", "bleeding-edge"], cwd=work, env=envr, capture_output=True, text=True, timeout=600)
         if p.returncode or "manual run" not in p.stdout:
             bad.append(f"manual runs: a token did not run at once:\n{p.stdout[-800:]}{p.stderr[-400:]}")
+        # A token run started on its computer goes on the queue too (aimed there, `here`), so Stop reaches it.
+        here = R.build("toy-smoke", 8, note="here")
+        p = subprocess.run([sys.executable, script, "run", "--request", R.token(here), "--cores", "2",
+                            "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=envr, capture_output=True, text=True, timeout=600)
+        filed = _git("show", f"refs/heads/compute-queue:Docs/Compute/requests/{here['id']}.json", cwd=remote) if \
+            subprocess.run(["git", "cat-file", "-e", f"refs/heads/compute-queue:Docs/Compute/requests/{here['id']}.json"],
+                           cwd=remote).returncode == 0 else ""
+        filed = json.loads(filed) if filed else {}
+        if not (filed.get("here") and filed.get("machine") == "selftest/box3"):
+            bad.append(f"stop: a token run was not put on the queue for its own computer: {filed or p.stdout[-600:]}")
+        if filed:
+            jobs_w, caps_w = L.load_jobs(local=True, cwd=work), L.capabilities()
+            if R.pick({here["id"]: filed}, jobs_w, [], "selftest/box3", caps_w):
+                bad.append("stop: an agent would pick up a run started by hand on its computer")
+            if not R.pick({here["id"]: dict(filed, here=False)}, jobs_w, [], "selftest/box3", caps_w):
+                bad.append("stop: the negative control failed (the same run without `here` should be picked)")
+        # The claude.ai console's outbox: a run and a stop sent from the page are filed; junk is refused; filed items
+        # are not filed twice.
+        later = R.build("toy-smoke", 12, note="from the outbox")
+        box = [{"id": "viewer1", "data": {"items": {"item-run-1": {"kind": "run", "token": R.token(later), "at": 1},
+                                                    "item-stop-1": {"kind": "stop", "id": here["id"], "at": 2},
+                                                    "item-junk-1": {"kind": "run", "token": "not a token", "at": 3}}}}]
+        bf, of = os.path.join(tmp, "outbox.json"), os.path.join(tmp, "sent.json")
+        L.write_json(bf, box)
+        L.write_json(os.path.join(tmp, "names.json"), {"viewer1": "shombith"})
+        p = subprocess.run([sys.executable, script, "request", "outbox", bf, "--names", os.path.join(tmp, "names.json"),
+                            "--out", of, "--push"], cwd=work, env=envr, capture_output=True, text=True, timeout=300)
+        sent = L.read_json(of, {}) or {}
+        queued = R.load(["refs/heads/compute-queue"], cwd=remote)
+        if not ((sent.get("item-run-1") or {}).get("ok") and (queued.get(later["id"]) or {}).get("by") == "shombith"):
+            bad.append(f"outbox: a run sent from the page was not filed under its sender:\n{p.stdout[-600:]}{p.stderr[-600:]}")
+        if not ((sent.get("item-stop-1") or {}).get("ok") and (queued.get(here["id"]) or {}).get("cancelled")):
+            bad.append(f"outbox: a stop sent from the page did not cancel its run: {sent.get('item-stop-1')}")
+        if (sent.get("item-junk-1") or {}).get("ok", True):
+            bad.append("outbox: a junk item was filed")
+        p = subprocess.run([sys.executable, script, "request", "outbox", bf, "--sent", of], cwd=work, env=envr,
+                           capture_output=True, text=True, timeout=300)
+        if "nothing new" not in p.stdout:
+            bad.append(f"outbox: items already filed were filed again:\n{p.stdout[-400:]}")
         bad += hub_end_to_end(tmp, work, remote, script, env0)
         env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-board"))
         p = subprocess.run([sys.executable, script, "board", "--queue", "bleeding-edge"], cwd=work, env=env,

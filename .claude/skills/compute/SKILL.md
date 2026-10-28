@@ -52,6 +52,8 @@ publishes only to `compute/<them>/<machine>`, and updates itself from `bleeding-
   To refresh it: `compute.py console --out <dir> --prs <open PRs as JSON> --url <its url>`, then republish the
   artifact from `<dir>/index.html` with `console.json` beside it. Act on its approvals with
   `compute.py console --approvals <file> --profiles <file>` (only the VALID rows).
+  File what people sent from the page (its `outbox`) with `compute.py request outbox <outbox.json> --sent <sent.json>
+  --out <done.json> --push --local`, then write each result to `sent/<item id>` (README section 17).
 - A laptop that should also work on battery: `--on-battery`. Fewer cores: `--cores N`.
 - One job only (the person cares about one plan): `run --job <id>`.
 - Never install without the person's yes; never install on a machine you are not running on.

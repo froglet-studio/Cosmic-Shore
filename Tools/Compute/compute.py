@@ -241,6 +241,26 @@ def cmd_request(args):
             print(f"{r['id']}  {st['state']:<9} {st['tries']:>6}/{st['budget']:<6} best {best:<9} {r['job']}  "
                   f"by {r.get('by')}" + (f" on {st['running_on']}" if st["running_on"] else "") + (f"  \"{r['note']}\"" if r.get("note") else ""))
         return 0
+    if args.rcmd == "outbox":
+        # The claude.ai console without a hub keeps runs and stops people send in its `outbox`; the hourly sync
+        # session exports it and files it here (README section 17).
+        L.fetch(queue, results=False, quiet=True)
+        export = L.read_json(args.file)
+        if export is None:
+            print(f"cannot read {args.file}")
+            return 2
+        sent = L.read_json(args.sent, {}) if args.sent else {}
+        if isinstance(sent, list):
+            sent = {r.get("id"): r.get("data", r) for r in sent if isinstance(r, dict)}
+        names = L.read_json(args.names, {}) if args.names else {}
+        done = R.apply_outbox(export, sent, L.load_jobs(local=True) if args.local else L.load_jobs(), push=args.push, names=names)
+        for k, r in done.items():
+            print(f"{k}: {r['kind']} {'ok' if r['ok'] else 'NOT DONE'} - {r.get('note', '')}")
+        if not done:
+            print("nothing new in the outbox")
+        if args.out:
+            L.write_json(args.out, done)
+        return 0 if all(r["ok"] for r in done.values()) else 1
     if args.rcmd == "cancel":
         L.fetch(queue, results=False, quiet=True)
         r = R.cancel(args.id)
@@ -478,9 +498,10 @@ def main(argv=None):
     p.add_argument("--prs", help="a JSON file of open pull requests (GitHub list_pull_requests) to include")
     p.add_argument("--url", help="where the console is published")
     p.add_argument("--standalone", action="store_true", help="write a full HTML document (GitHub Pages, Cloudflare, a local server)")
+    p.add_argument("--sync-every", help='how often the page is rebuilt and republished (e.g. "hour"), shown on it')
     p.add_argument("--approvals", help="check approvals exported from the page's store instead of building")
     p.add_argument("--profiles", help="with --approvals: the profiles the store's ids resolve to")
-    p = sub.add_parser("request", help="manual runs: new, list, cancel")
+    p = sub.add_parser("request", help="manual runs: new, list, cancel, outbox")
     rs = p.add_subparsers(dest="rcmd", required=True)
     q = rs.add_parser("new", help="a manual run of one search with your settings")
     q.add_argument("job", nargs="?")
@@ -496,6 +517,13 @@ def main(argv=None):
     q.add_argument("--start", choices=["free", "now"], help="free: when the computer's person is away (default); "
                    "now: at once, on a computer whose owner allows remote starts")
     q.add_argument("--at", help="schedule it: not before this local time (HH:MM today or tomorrow, or YYYY-MM-DDTHH:MM)")
+    q = rs.add_parser("outbox", help="file the runs and stops sent from the claude.ai console (its outbox)")
+    q.add_argument("file", help="the page's outbox collection, exported with ArtifactData")
+    q.add_argument("--sent", help="its sent collection (items already filed are skipped)")
+    q.add_argument("--names", help="{viewer id: first name}, from the viewers' profiles")
+    q.add_argument("--out", help="write {item id: result} here, for the sent collection")
+    q.add_argument("--push", action="store_true", help="push to compute-queue (without it nothing leaves this checkout)")
+    q.add_argument("--local", action="store_true", help="check runs against this checkout's job files")
     q = rs.add_parser("list", help="every manual run and how far it has got")
     q.add_argument("--local", action="store_true")
     q.add_argument("--no-fetch", action="store_true")

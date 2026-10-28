@@ -173,7 +173,7 @@ def due_now(requests, me, machines, now=None):
     allowed = remote_start_allowed()
     out = []
     for r in sorted(requests.values(), key=lambda r: r.get("created", 0)):
-        if r.get("cancelled") or r.get("machine", "any") not in ("any", me):
+        if r.get("cancelled") or r.get("here") or r.get("machine", "any") not in ("any", me):
             continue
         if int(r.get("not_before") or 0) > now or r.get("start") != "now" or not allowed:
             continue

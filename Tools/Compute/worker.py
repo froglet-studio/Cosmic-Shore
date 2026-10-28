@@ -564,6 +564,16 @@ def run(args):
                           "Froglet Compute updated: run the Install line again)", False)
                 return 2
             job = R.derive(base, req)
+            # A run started from a token or a file is not on the queue yet: file it (aimed at this computer and marked
+            # `here`, so no other computer and no agent picks it up), so Stop on the console and `request cancel`
+            # find it like any other run.
+            if not args.local and not args.no_push and not R.ID.fullmatch(manual):
+                on_queue = R.load([f"origin/{q}" for q in queue]).get(req["id"])
+                if not on_queue:
+                    req = dict(req, machine=me, here=True)
+                    if not R.file(req, push=True, quiet=True):
+                        L.log("could not put this run on the team queue: Stop on the console will not reach it "
+                              "(Ctrl+C here still stops it)", False)
         elif not args.job and not getattr(args, "no_requests", False):
             reqs = R.load(local=True) if args.local else R.load([f"origin/{q}" for q in queue])
             got = R.pick(reqs, jobs, machines, me, caps)

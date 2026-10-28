@@ -570,6 +570,22 @@ table td, table th { border-color: var(--line) !important; }
 
 /* round 2: fewer things at once */
 #nav-term { display: none; }
+/* kinds of work: one small outline tag each */
+.kind { display: inline-block; font: 600 9.5px/1 var(--ui); letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 8px 3px; border-radius: 999px;
+  border: 1px solid currentColor; white-space: nowrap; vertical-align: 1px; }
+.kind.k-model { color: var(--jade); } .kind.k-unity { color: var(--ruby-l); } .kind.k-player { color: var(--gold); } .kind.k-train { color: rgba(255,255,255,0.6); }
+.kinds { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 12.5px; color: rgba(255,255,255,0.5); }
+.frow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); }
+.frow:first-of-type { border-top: 0; }
+.pill { background: transparent !important; border: 1px solid var(--line-hi); color: rgba(255,255,255,0.7) !important; font-weight: 600; }
+.pill.converged, .pill.ready { border-color: rgba(255,193,77,0.6); color: var(--gold-l) !important; }
+.pill.searching, .pill.learned { border-color: rgba(0,229,255,0.5); color: var(--jade-l) !important; }
+.run .top, .mrun .top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+details.other { margin-top: 6px; } details.other > summary { cursor: pointer; font-size: 12.5px; color: rgba(255,255,255,0.5); }
+.note.foot { text-align: center; opacity: 0.6; }
+details.group.fold { display: grid; gap: 10px; } details.group.fold > summary { cursor: pointer; list-style: none; }
+details.group.fold > summary h3 { display: inline; } details.group.fold > summary::after { content: " +"; color: rgba(255,255,255,0.4); }
+details.group.fold[open] > summary::after { content: " −"; }
 .chead { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .chead .fleet { flex: 1; margin: 0; }
 @media (max-width: 860px) { .chead { justify-content: space-between; } .chead .fleet { flex-basis: 100%; order: 3; } }
@@ -638,7 +654,7 @@ table td, table th { border-color: var(--line) !important; }
 (function () {
   "use strict";
   var DATA = null, VIEW = "home", OPEN = null;
-  var CAP = { db: null, user: null, me: null, sample: null, mcp: null, approvals: {}, processed: {}, canApprove: null, ready: false };
+  var CAP = { db: null, user: null, me: null, sample: null, mcp: null, approvals: {}, processed: {}, outbox: {}, sent: {}, canApprove: null, ready: false };
   var CCR = "Claude Code Remote";
   var VIEWS = ["home", "runs", "searches", "machines", "recordings", "ai"];
 
@@ -677,6 +693,18 @@ table td, table th { border-color: var(--line) !important; }
     return [j.status, j.status === "blocked" ? "waiting" : j.status];
   }
   function jobById(id) { return DATA && DATA.jobs.filter(function (j) { return j.id === id; })[0]; }
+  // Three kinds of work show up here: a PC searching the offline race model, a PC playing the real game in Unity with
+  // no window (AI against AI), and a person playing in the Unity editor (a recording).
+  var KIND = { model: "Offline model", unity: "Unity · AI vs AI", train: "Training", player: "Played by" };
+  function runKind(job) { var base = String(job || "").split("~")[0], j = jobById(base) || {}; return base === "unity-train" ? "unity" : (j.kind === "command" ? "train" : "model"); }
+  function kindTag(k, who) { return h("span", { class: "kind k-" + k, title: k === "unity" ? "a computer playing the real game in Unity, no window, AI against AI" : k === "model" ? "a computer searching the offline race model (Python, no Unity)" : k === "player" ? "a person playing in the Unity editor; the race is recorded and the AI learns from it" : "a long training on a computer", text: k === "player" ? "Played by " + (who || "someone") : KIND[k] }); }
+  function niceName(list, key, token) { var t = String(token || "").toLowerCase(), hit = (list || []).filter(function (x) { return String(x[key] || "").toLowerCase() === t; })[0]; return hit ? (hit.name || hit[key]) : (t.charAt(0).toUpperCase() + t.slice(1)); }
+  function runName(r) {
+    if (r && r.unit) { var p = String(r.unit).split("-"), lvl = /^i\d$/.test(p[p.length - 1]) ? p.pop() : "", v = p.pop();
+      return niceName(catalog().hulls, "hull", v) + " in " + niceName(catalog().modes, "mode", p.join("-")) + (lvl ? " · " + lvl.toUpperCase() : ""); }
+    var base = String((r && r.job) || "").split("~")[0], t = (r && r.title) || (jobById(base) || {}).title || base;
+    return String(t).replace(/^Manual run: /, "").replace(/ \(\d+ vessel x mode pairs\)$/, "");
+  }
   function title(t, sub) {
     var words = String(t).split(" "), last = words.pop();       // one gradient word, as on froglet.games
     return h("div", { class: "ptitle" }, [h("h2", null, [words.length ? words.join(" ") + " " : "", h("span", { class: "grad", text: last })]), sub ? h("span", { class: "sub", text: sub }) : null]);
@@ -735,7 +763,7 @@ table td, table th { border-color: var(--line) !important; }
     var sentence = [d.machines.length + (d.machines.length === 1 ? " computer has" : " computers have") + " spent ", h("em", { text: hours.toFixed(1) + " hours" }), " searching for better AI and creatures. ",
       act.length ? h("em", { text: act.length + (act.length === 1 ? " run is going now." : " runs are going now.") }) : "Nothing is running right now: computers start once their person has been away 10 minutes."];
     root.appendChild(h("div", { class: "hero sliver", id: "home-hero" }, [h("p", { class: "big" }, sentence),
-      h("div", { class: "row" }, [h("button", { class: "btn cta", type: "button", onclick: function () { openNewRun(); }, text: "Start a run" }), h("button", { class: "btn", type: "button", onclick: openInstall, text: "Add a computer" }), h("button", { class: "btn small", type: "button", onclick: function () { startTour(0); }, text: "Show me around" })])]));
+      h("div", { class: "row" }, [h("button", { class: "btn cta", type: "button", onclick: function () { openNewRun(); }, text: "Start a run" })])]));
     // the fleet: every computer, as it is now
     if (d.machines.length) root.appendChild(h("div", { class: "card sliver", id: "home-fleet" }, [h("div", { class: "chead" }, [h("h3", { text: "Computers" }), fleetLine(),
       h("button", { class: "tbtn", type: "button", onclick: function () { location.hash = "machines"; }, text: "Open" })]),
@@ -750,23 +778,12 @@ table td, table th { border-color: var(--line) !important; }
     var needCard = h("div", { class: "card sliver", id: "home-needs" }, [h("h3", { text: "Needs you" })]);
     if (!needs.length) needCard.appendChild(h("div", { class: "item ok" }, [h("span", { class: "strip" }), h("div", null, [h("b", { text: "Nothing needs you right now" }), h("p", { text: "Searches are still going. You will see a result here when one finishes." })])]));
     needs.forEach(function (n) { needCard.appendChild(h("div", { class: "item " + n[0] }, [h("span", { class: "strip" }), h("div", null, [h("b", { text: n[1] }), h("p", { text: n[2] })]), h("button", { class: "tbtn", type: "button", onclick: n[4], text: n[3] })])); });
-    // running now
-    var runCard = h("div", { class: "card sliver", id: "home-running" }, [h("h3", { text: "Running now" })]);
-    if (act.length) act.slice(0, 3).forEach(function (r) { runCard.appendChild(runBox(r, true)); });
-    else runCard.appendChild(h("p", { class: "note", text: recent.length ? "Last run finished " + ago(recent[0].end) + " on " + recent[0].machine + "." : "No run yet." }));
-    runCard.appendChild(h("button", { class: "tbtn", type: "button", onclick: function () { location.hash = "runs"; }, text: "All runs" }));
-    root.appendChild(h("div", { class: "cols" }, [needCard, runCard]));
+    root.appendChild(needCard);
     // best finds
     var finds = d.jobs.filter(function (j) { var dl = delta(j); return dl && dl.better; }).sort(function (a, b) { return delta(b).pct - delta(a).pct; });
     if (finds.length) root.appendChild(h("div", { class: "card sliver", id: "home-finds" }, [h("h3", { text: "Best finds so far" }),
-      h("p", { class: "note", text: "How much better the best settings found are than what the game ships today, in the offline model. The game decides if it is real." }),
       h("div", { class: "tiles" }, finds.slice(0, 4).map(function (j) { var dl = delta(j);
         return h("button", { class: "tile sliver", type: "button", style: "text-align:left;border:0;color:inherit;cursor:pointer", onclick: function () { openJob(j.id); } }, [h("b", { class: "delta good", text: Math.abs(dl.pct).toFixed(0) + "%" }), h("span", { text: j.title })]); }))]));
-    root.appendChild(h("div", { class: "steps3", id: "home-how" }, [
-      h("div", null, [h("b", { text: "Install" }), h("span", { text: "One line in your terminal, from your Cosmic-Shore folder." })]),
-      h("div", null, [h("b", { text: "Walk away" }), h("span", { text: "After 10 idle minutes your computer searches; it stops the moment you come back." })]),
-      h("div", null, [h("b", { text: "Watch it here" }), h("span", { text: "Runs show progress; Searches show what was found." })]),
-      h("div", null, [h("b", { text: "Say yes" }), h("span", { text: "One of the core four approves a result, and a session puts it in the game." })])]));
   }
 
   // ── runs ──
@@ -775,12 +792,13 @@ table td, table th { border-color: var(--line) !important; }
     var frac = r.max_evals && r.evals != null ? Math.min(1, r.evals / r.max_evals) : Math.min(1, elapsed / budget);
     var better = r.best != null && r.best_start != null && r.best < r.best_start;
     return h("div", { class: "run sliver" }, [
-      h("div", { class: "top" }, [h("span", { class: "led" + (live ? " on" : "") }), h("b", { text: r.title || r.job }), h("span", { class: "note", text: "on " + r.machine })]),
+      h("div", { class: "top" }, [kindTag(runKind(r.job)), h("b", { text: runName(r) }), h("span", { class: "note", text: "on " + String(r.machine || "").split("/").pop() }),
+        live && r.request ? h("button", { class: "btn small", type: "button", style: "margin-left:auto", onclick: function (e) { stopRun(r.request, e.target.parentElement.parentElement, r.machine, runName(r)); }, text: "Stop" }) : null]),
       h("div", { class: "prog" + (live ? " live" : "") }, [h("i", { style: "width:" + Math.max(3, Math.round(frac * 100)) + "%" })]),
-      h("div", { class: "facts" }, [h("span", null, [h("b", { text: (r.evals || 0).toLocaleString() }), " tries"]), h("span", null, ["running ", h("b", { text: dur(elapsed) })]),
-        r.max_evals ? h("span", null, ["budget ", h("b", { text: r.max_evals + " tries" })]) : h("span", null, ["session ", h("b", { text: (r.minutes || 60) + " min" })]),
-        r.best != null ? h("span", null, ["best ", h("b", { text: fmt(r.best) }), better ? h("span", { class: "delta good", text: " (improved this run)" }) : ""]) : null,
-        h("span", null, ["last heard ", h("b", { text: ago(r.updated) })])])]);
+      h("div", { class: "facts" }, [h("span", null, [h("b", { text: (r.evals || 0).toLocaleString() + (r.max_evals ? " / " + r.max_evals : "") }), runKind(r.job) === "unity" ? " matches" : " tries"]),
+        h("span", null, [h("b", { text: dur(elapsed) })]),
+        r.best != null ? h("span", null, ["best ", h("b", { text: fmt(r.best) }), better ? h("span", { class: "delta good", text: " ↓" }) : ""]) : null,
+        h("span", { class: "note", text: "heard " + ago(r.updated) })])]);
   }
   function manualBox(m) {
     var better = m.best != null && m.today != null && m.best < m.today, frac = m.budget ? Math.min(1, (m.tries || 0) / m.budget) : 0;
@@ -789,8 +807,8 @@ table td, table th { border-color: var(--line) !important; }
     Object.keys(m.ranges).forEach(function (k) { chips.push(k + " in " + m.ranges[k][0] + "–" + m.ranges[k][1]); });
     Object.keys(m.args).forEach(function (k) { chips.push(k + ": " + JSON.stringify(m.args[k])); });
     return h("div", { class: "mrun sliver" }, [
-      h("div", { class: "top" }, [h("span", { class: "pill " + ({ done: "learned", running: "ready", open: "waiting", cancelled: "idle" })[m.state], text: m.state === "open" ? "waiting for a computer" : m.state }),
-        h("b", { text: m.title }), h("span", { class: "note", text: "by " + (m.by || "?") + " · " + ago(m.created) + (m.machine !== "any" ? " · only " + m.machine : "") +
+      h("div", { class: "top" }, [h("span", { class: "pill " + ({ done: "learned", running: "ready", open: "waiting", cancelled: "idle" })[m.state], text: m.state === "open" ? "waiting" : m.state }),
+        kindTag(runKind(m.job)), h("b", { text: runName(m) }), h("span", { class: "note", text: "by " + (m.by || "?") + " · " + ago(m.created) + (m.machine !== "any" ? " · only " + m.machine : "") +
           (m.state === "open" ? (m.not_before && m.not_before * 1000 > Date.now() ? " · starts " + new Date(m.not_before * 1000).toLocaleString() : m.start === "now" ? " · starts at once" : " · starts when a computer is free") : "") })]),
       m.note ? h("q", { text: m.note }) : null,
       chips.length ? h("div", { class: "chips" }, chips.map(function (c) { return h("span", { class: "chip", text: c }); })) : null,
@@ -799,29 +817,32 @@ table td, table th { border-color: var(--line) !important; }
         m.best != null ? h("span", null, ["best ", h("b", { text: fmt(m.best) }), m.today != null ? " vs today's " + fmt(m.today) + " under these settings" : "", better ? h("span", { class: "delta good", text: " (" + ((m.today - m.best) / Math.abs(m.today) * 100).toFixed(1) + "% better)" }) : ""]) : null,
         m.running_on ? h("span", null, ["on ", h("b", { text: m.running_on })]) : (m.machines.length ? h("span", { text: "on " + m.machines.join(", ") }) : null),
         m.problems.length ? h("span", { class: "delta worse", text: "cannot run: " + m.problems.join("; ") }) : null])]),
-      h("div", { class: "row" }, [h("span", { class: "note mono", text: m.id }), (m.state === "open" || m.state === "running") ? h("button", { class: "btn", type: "button", onclick: function (e) { stopRun(m.id, e.target.parentElement); }, text: "Stop" }) : null])]);
+      (m.state === "open" || m.state === "running") ? h("div", { class: "row" }, [h("button", { class: "btn small", type: "button", onclick: function (e) { stopRun(m.id, e.target.parentElement, m.running_on, runName(m)); }, text: "Stop" })]) : null]);
   }
   function renderRuns(root) {
     var act = (DATA.runs || {}).active || [], recent = (DATA.runs || {}).recent || [];
     root.appendChild(title("Runs", "what each computer is doing"));
-    root.appendChild(h("p", { class: "lead", text: "A run is one session on one computer: it picks the search that most needs time, works on it for up to an hour (or until its person comes back), then reports. While it runs it reports progress every few minutes." }));
-    root.appendChild(h("button", { class: "btn cta", type: "button", style: "justify-self:start", onclick: function () { openNewRun(); }, text: "New run" }));
+    root.appendChild(kindLegend());
+    var box = outboxCard(); if (box) root.appendChild(box);
     root.appendChild(h("h3", { text: "Running now" }));
     if (act.length) act.forEach(function (r) { root.appendChild(runBox(r, true)); });
-    else root.appendChild(h("div", { class: "empty sliver" }, [h("b", { text: "Nothing is running right now" }), h("span", { text: "Computers start on their own once their person has been away 10 minutes." }), h("button", { class: "btn cta", type: "button", onclick: openInstall, text: "Install on this computer" })]));
-    var man = DATA.manual || [];
-    root.appendChild(h("h3", { text: "Manual runs" + (man.length ? " · " + man.length : "") }));
-    if (!man.length) root.appendChild(h("p", { class: "note", text: "None yet. New run makes one: your settings, your question." }));
-    man.forEach(function (m) { root.appendChild(manualBox(m)); });
-    root.appendChild(h("h3", { text: "Recent runs" }));
+    else root.appendChild(h("p", { class: "note", text: "Nothing is running." }));
+    var man = (DATA.manual || []).filter(function (m) { return m.state === "open" || m.state === "running"; });
+    if (man.length) { root.appendChild(h("h3", { text: "Sent runs · " + man.length })); man.forEach(function (m) { root.appendChild(manualBox(m)); }); }
+    var races = ((DATA.recordings || {}).flights || []).slice().sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); }).slice(0, 5);
+    if (races.length) root.appendChild(h("div", { class: "card sliver" }, [h("h3", { text: "Races people played" })].concat(races.map(function (f) {
+      return h("div", { class: "frow" }, [kindTag("player", f.user), h("b", { text: f.vessel + " in " + f.mode }), h("span", { class: "note", text: f.date + " " + f.time }),
+        h("span", { class: "note", style: "margin-left:auto", text: f.state === "learned" ? "AI learned from it" : f.state === "waiting" ? "waiting" : "not learned yet" })]); }))
+      .concat([h("button", { class: "tbtn", type: "button", style: "justify-self:start", onclick: function () { location.hash = "recordings"; }, text: "All races" })])));
+    root.appendChild(h("h3", { text: "Finished" }));
     if (!recent.length) { root.appendChild(h("p", { class: "note", text: "No finished run has been reported yet." })); return; }
-    root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["When", "Computer", "Search", "Took", "Tries", "Result", "Ended because"].map(function (t) { return h("th", { text: t }); }))]),
+    root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["When", "What", "Computer", "Took", "Result"].map(function (t) { return h("th", { text: t }); }))]),
       h("tbody", null, recent.map(function (r) {
         var imp = r.best_end != null && (r.best_start == null || r.best_end < r.best_start);
         var res = r.best_end == null ? "–" : (r.best_start == null ? "first result " + fmt(r.best_end) : (imp ? fmt(r.best_start) + " → " + fmt(r.best_end) : "no better than " + fmt(r.best_start)));
-        return h("tr", { style: "cursor:pointer", onclick: function () { if (jobById(r.job)) openJob(r.job); } }, [h("td", { text: ago(r.end) }), h("td", { class: "mono", text: r.machine }), h("td", { text: r.title || r.job }),
-          h("td", { class: "num", text: dur((r.end || 0) - (r.start || 0)) }), h("td", { class: "num", text: (r.evals || 0).toLocaleString() }),
-          h("td", { class: imp ? "delta good" : "", text: res }), h("td", { class: "note", text: stopped(r.stopped) })]);
+        return h("tr", { style: "cursor:pointer", onclick: function () { if (jobById(r.job)) openJob(r.job); } }, [h("td", { class: "note", text: ago(r.end) }), h("td", null, [kindTag(runKind(r.job)), " ", h("span", { text: runName(r) })]), h("td", { class: "note", text: String(r.machine || "").split("/").pop() }),
+          h("td", { class: "num note", text: dur((r.end || 0) - (r.start || 0)) }),
+          h("td", { class: imp ? "delta good" : "", title: stopped(r.stopped), text: res })]);
       }))])]));
   }
 
@@ -841,16 +862,17 @@ table td, table th { border-color: var(--line) !important; }
   function renderSearches(root) {
     var d = DATA;
     root.appendChild(title("Searches", "what the computers are looking for"));
-    root.appendChild(h("p", { class: "lead", text: "Each search tries thousands of settings (an AI's driving numbers, a creature's body) in an offline model of the game and keeps the best. The percentage compares the best found with what the game ships today; the line shows it improving as tries add up. Lower scores are better." }));
-    root.appendChild(vesselGrid());
+    root.appendChild(h("p", { class: "lead", text: "The percentage is how much better the best find is than today's game. Lower is better." }));
     [["Ready for a yes", function (j) { return j.converged && j.status !== "promoted"; }],
      ["Searching", function (j) { return !j.converged && runnable(j); }],
      ["Waiting for an earlier step", function (j) { return !j.converged && !runnable(j) && j.status !== "promoted" && j.status !== "retired"; }],
      ["In the game", function (j) { return j.status === "promoted" || j.status === "retired"; }]].forEach(function (g, gi) {
       var js = d.jobs.filter(g[1]); if (!js.length) return;
       js.sort(function (a, b) { return (b.evals || 0) - (a.evals || 0); });
+      if (gi >= 2) { root.appendChild(h("details", { class: "group fold" }, [h("summary", null, [h("h3", { text: g[0] + " · " + js.length })])].concat(js.map(jobRow)))); return; }
       root.appendChild(h("section", { class: "group", id: gi === 1 ? "searching-group" : null }, [h("h3", { text: g[0] + " · " + js.length })].concat(js.map(jobRow))));
     });
+    root.appendChild(vesselGrid());
   }
 
   // every vessel x every mode it is offered in: a blue cell runs now (opens New run on that pair), a gold one needs the game
@@ -864,7 +886,7 @@ table td, table th { border-color: var(--line) !important; }
         return h("td", { class: "cell" }, [h("button", { type: "button", class: x.status, title: hu + " in " + m.name + ": " + STATUS_WORDS[x.status], "aria-label": hu + " in " + m.name,
           onclick: function () { openNewRun(null, hu, m.mode); }, text: x.status === "game" ? "·" : "▶" })]); })));
     });
-    return h("details", { class: "card sliver", id: "vgrid", open: lsGet("fc-vgrid") === "0" ? null : true, ontoggle: function (e) { lsSet("fc-vgrid", e.target.open ? "1" : "0"); } }, [
+    return h("details", { class: "card sliver", id: "vgrid", open: lsGet("fc-vgrid") === "1" ? true : null, ontoggle: function (e) { lsSet("fc-vgrid", e.target.open ? "1" : "0"); } }, [
       h("summary", { text: "Every vessel in every mode · " + (now + inGame) + " of " + n + " pairs can run", style: "cursor:pointer;font-family:var(--head)" }),
       h("p", { class: "note", text: "Pick a pair to start a run on it. Blue (" + now + ") runs on the offline race models, on any computer, in minutes. Purple (" + inGame + ") plays real matches in the game: the Unity trainer, started with no window on a team PC that has Unity. Gold (" + (n - now - inGame) + ") has no trainer scenario yet." }),
       h("div", { class: "tablewrap" }, [h("table", { class: "matrix vm-grid" }, [h("thead", null, [h("tr", null, [h("th", { text: "Mode" })].concat(hulls.map(function (hu) { return h("th", { class: "mh", text: hu }); })))]), h("tbody", null, rows)])])]);
@@ -973,8 +995,8 @@ table td, table th { border-color: var(--line) !important; }
   }
   function machineCard(m) {
     var st = mstatus(m), sp = m.specs || {}, act = ((DATA.runs || {}).active || []).filter(function (a) { return a.machine === m.machine; })[0], l = m.last || {};
-    var doing = act ? [h("b", { text: act.title || act.job }), act.progress != null ? h("span", { text: " · " + Math.round(Math.min(1, act.progress) * 100) + "%" }) : (act.evals != null ? h("span", { text: " · " + act.evals + " tries" }) : null)]
-      : [h("span", { class: "note", text: l.job ? "last: " + (l.job || "") + (l.stopped ? " (" + l.stopped + ")" : "") : "no run yet" })];
+    var doing = act ? [kindTag(runKind(act.job)), " ", h("b", { text: runName(act) }), act.progress != null ? h("span", { text: " · " + Math.round(Math.min(1, act.progress) * 100) + "%" }) : (act.evals != null ? h("span", { text: " · " + act.evals + " tries" }) : null)]
+      : [h("span", { class: "note", text: l.job ? "Last: " + runName(l) : "No run yet" })];
     var specs = [sp.os_name || m.os, (sp.cores || m.cores) ? (sp.cores || m.cores) + " cores" : null, sp.ram_gb ? sp.ram_gb + " GB memory" : null,
       sp.disk_free_gb != null ? sp.disk_free_gb + " GB free disk" : null].filter(Boolean).join(" · ");
     var unity = sp.unity || (m.caps || []).indexOf("unity") >= 0;
@@ -984,16 +1006,16 @@ table td, table th { border-color: var(--line) !important; }
       act && act.progress != null ? h("div", { class: "prog live" }, [h("i", { style: "width:" + Math.max(2, Math.round(Math.min(1, act.progress) * 100)) + "%" })]) : null,
       h("div", { class: "note", text: specs || "no details yet (it reports them from its next start)" }),
       h("div", { class: "mflags" }, [h("span", { class: "flag " + (unity ? "on" : ""), text: unity ? "Unity: yes" + (sp.unity_open ? " (open)" : "") : "Unity: no" }),
-        h("span", { class: "flag " + (m.remote_start ? "on" : ""), title: m.remote_start ? "its owner lets a run sent from here start at once" : "a run sent here waits until it is free (its owner can turn this on: compute.py remote-start on)", text: m.remote_start ? "starts runs at once" : "runs wait until it is free" }),
+        m.remote_start ? h("span", { class: "flag on", title: "its owner lets a run sent from here start at once", text: "starts runs at once" }) : null,
         h("span", { class: "note", text: (m.live ? "live · " : "") + "heard " + ago(m.updated) })]),
       h("div", { class: "row" }, [h("button", { class: "btn small", type: "button", onclick: function () { openNewRun(null, null, null, m.machine); }, text: "Send a run" }),
-        act && act.request ? h("button", { class: "btn", type: "button", onclick: function (e) { stopRun(act.request, e.target.parentElement); }, text: "Stop" }) : null])]);
+        act && act.request ? h("button", { class: "btn small", type: "button", onclick: function (e) { stopRun(act.request, e.target.parentElement, m.machine, runName(act)); }, text: "Stop" }) : null])]);
     return card;
   }
   function renderMachines(root) {
     var ms = DATA.machines;
     root.appendChild(title("Computers", ms.length + " joined"));
-    root.appendChild(h("p", { class: "lead", text: "Every computer that has joined, as it is now. Send a run to one: it starts when the computer is free, at a time you pick, or at once on a computer whose owner allows it." + (LIVE ? " Live: updated every few seconds." : " Open the team's live console to see them change by the second.") }));
+    root.appendChild(h("p", { class: "lead", text: "A run you send starts when the computer is free, at your time, or at once if its owner allows it." }));
     root.appendChild(fleetLine());
     if (!ms.length) { root.appendChild(h("div", { class: "empty sliver" }, [h("b", { text: "No computer has joined yet" })])); return; }
     var order = { working: 0, free: 1, "in use": 2, "outside hours": 3, offline: 4 };
@@ -1006,7 +1028,7 @@ table td, table th { border-color: var(--line) !important; }
     var all = DATA.recordings.flights, n = { learned: 0, waiting: 0, new: 0 }, bytes = 0;
     all.forEach(function (f) { n[f.state] = (n[f.state] || 0) + 1; bytes += f.bytes || 0; });
     root.appendChild(title("Recordings", "races people played in the Unity editor"));
-    root.appendChild(h("p", { class: "lead", text: "Every race played in the editor is recorded and sent by itself. The hourly AI learning sweep learns from it. A race waits when its mode is on hold or no AI learns from that vessel yet." }));
+    root.appendChild(h("p", { class: "lead", text: "A person playing in the Unity editor. The AI learns from these every hour." }));
     root.appendChild(h("div", { class: "tiles" }, [[all.length, "races recorded"], [n.learned, "the AI learned from"], [n.waiting, "waiting (reason below)"], [n.new, "not seen yet"], [(bytes / 1048576).toFixed(0) + " MB", "from " + DATA.recordings.branches + " people"]]
       .map(function (t) { return h("div", { class: "tile sliver" }, [h("b", { text: String(t[0]) }), h("span", { text: t[1] })]); })));
     var modes = {}, vessels = {}, cell = {};
@@ -1035,7 +1057,7 @@ table td, table th { border-color: var(--line) !important; }
   function renderAi(root) {
     var a = DATA.ai || {};
     root.appendChild(title("AI branch", "where the AI's code lives"));
-    root.appendChild(h("p", { class: "lead", text: "The ai branch is bleeding-edge plus AI work, owned by no single person. Every AI search reads the game's code from it, and approved results are written there before they reach bleeding-edge." }));
+    root.appendChild(h("p", { class: "lead", text: "bleeding-edge plus AI work. Searches read the game from it." }));
     if (a.error) { root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "Could not read the ai branch" }), h("p", { class: "note", text: a.error })])); return; }
     root.appendChild(h("div", { class: "banner" + (a.needs_sync ? " gold" : "") }, [h("b", { text: a.needs_sync ? "Behind: " + (a.behind_base || 0) + " bleeding-edge commits and " + (a.waiting_ai_files || 0) + " AI files from Yash's branch are waiting" : "Up to date" }),
       a.needs_sync ? h("p", { class: "note", text: "Type sync in the Terminal to bring them in (it starts a cloud session)." }) : null]));
@@ -1307,18 +1329,28 @@ table td, table th { border-color: var(--line) !important; }
       return;
     }
     if (LIVE) { out.appendChild(h("p", { class: "note", id: "nr-live", text: "Sending…" })); return; }
-    out.appendChild(h("p", null, [h("b", { text: "Request " + req.id + ". Nobody types anything on the other computer. " }), "After its one-time setup, Froglet Compute runs there from login and checks the team's queue every few minutes; once this request is on the queue, the computer you picked starts it (when it is free, at your time, or at once if its owner allows that). Open this console from the team's live address (the VM) to put it on the queue in one tap, from a phone too."]));
+    out.appendChild(h("p", { class: "note", text: "Nobody types anything on the other computer: its Froglet Compute picks this up from the team queue." }));
+    if (canSend()) {
+      var sentMsg = h("p", { class: "note" });
+      out.appendChild(h("button", { class: "btn cta", type: "button", onclick: function (e) { e.target.disabled = true; sentMsg.textContent = "Sending…";
+        sendOutbox({ kind: "run", token: tok, title: (NR.vessel || "") + (NR.mode ? " in " + niceName(catalog().modes, "mode", NR.mode) : "") + (NR.unity ? " · I" + NR.intensity + " · Unity" : "") || req.job }).then(function () {
+          sentMsg.textContent = "Sent. The next sync (within the hour) puts it on the team queue; Runs shows it waiting until then."; },
+          function (er) { sentMsg.textContent = saveError(er); e.target.disabled = false; }); }, text: "Send" }));
+      out.appendChild(sentMsg);
+    }
+    var other = h("details", { class: "other" }, [h("summary", { text: "Other ways to send it now" })]);
+    out.appendChild(other); out = other;
     if (CAP.mcp) {
       var msg = h("p", { class: "note" });
       out.appendChild(h("button", { class: "btn cta", type: "button", onclick: function (e) { e.target.disabled = true; msg.textContent = "Starting a Claude Code session to file it…";
-        createSession("File a Froglet Compute manual run. In froglet-studio/Cosmic-Shore (branch " + (DATA.branch || "the compute branch") + "), run `python3 Tools/Compute/compute.py request new --token " + tok + " --push` and report the request id and what it printed. Change nothing else.", "Compute console: file " + req.id)
+        createSession("File a Froglet Compute manual run. In froglet-studio/Cosmic-Shore (branch " + (DATA.branch || "the compute branch") + "), run `python3 Tools/Compute/compute.py request new --token " + tok + " --push --local` and report the request id and what it printed. Change nothing else.", "Compute console: file " + req.id)
           .then(function (lk) { msg.textContent = "Filing it: "; if (lk) msg.appendChild(lk); }, function (er) { msg.textContent = er; e.target.disabled = false; }); }, text: "File it now (starts a cloud session)" }));
       out.appendChild(msg);
     }
-    out.appendChild(h("p", { class: "note", text: "Or put it on the queue from your own computer (any one with Froglet Compute installed), not the one that will run it:" }));
+    out.appendChild(h("p", { class: "note", text: "From your own terminal (any computer with Froglet Compute), instantly:" }));
     out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("request new --token " + tok + " --push") })]), copyBtn(function () { return appCmd("request new --token " + tok + " --push"); })]));
   }
-  function stopRun(id, place) {
+  function stopRun(id, place, machine, name) {
     var line = h("p", { class: "note" }); if (place) place.appendChild(line);
     if (LIVE) {
       if (!KEY) return askKey(function () { stopRun(id, place); });
@@ -1329,8 +1361,39 @@ table td, table th { border-color: var(--line) !important; }
           function () { line.textContent = "Could not reach the hub."; });
       return;
     }
-    line.textContent = "To stop it, run this in a terminal (or open the team's live console to stop it in one tap):";
+    var here = "On " + (machine ? String(machine).split("/").pop() : "that computer") + " itself, Ctrl+C in its window stops it at once.";
+    if (canSend()) {
+      line.textContent = "Stopping…";
+      sendOutbox({ kind: "stop", id: id, title: "Stop: " + (name || id) }).then(function () { line.textContent = "Stop sent: it reaches the computer at the next sync (within the hour), then it stops within 30 s. " + here; },
+        function (e) { line.textContent = saveError(e); });
+      return;
+    }
+    line.textContent = "To stop it from anywhere, run this in a terminal. " + here;
     if (place) place.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("request cancel " + id) })]), copyBtn(function () { return appCmd("request cancel " + id); })]));
+  }
+  // ── the outbox: what people send from this page when it has no hub (README section 17). Each person appends to
+  // outbox/<their id>; the hourly sync session files every item on the team queue and records it in sent/<item id>. ──
+  function canSend() { return !!(CAP.db && CAP.me && CAP.me.id); }
+  function sendOutbox(item) {
+    var k = "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), ref = CAP.db.doc("outbox/" + CAP.me.id), patch = { items: {} };
+    patch.items[k] = Object.assign({ at: Math.floor(Date.now() / 1000) }, item);
+    return ref.get().then(function (snap) { return snap.exists ? ref.update(patch) : ref.set(patch); });
+  }
+  function outboxItems() {
+    var out = []; Object.keys(CAP.outbox || {}).forEach(function (who) { var items = (CAP.outbox[who] || {}).items || {};
+      Object.keys(items).forEach(function (k) { out.push({ key: k, who: who, item: items[k], sent: (CAP.sent || {})[k] }); }); });
+    return out.sort(function (a, b) { return (b.item.at || 0) - (a.item.at || 0); });
+  }
+  function outboxCard() {
+    var day = Date.now() / 1000 - 86400, rows = outboxItems().filter(function (o) { return !o.sent || (!o.sent.ok && (o.sent.at || 0) > day); });
+    if (!rows.length) return null;
+    return h("div", { class: "card sliver", id: "outbox" }, [h("h3", { text: "Sent from this page · waiting for the next sync" })].concat(rows.map(function (o) {
+      return h("div", { class: "frow" }, [h("span", { class: "pill " + (o.sent ? "idle" : "waiting"), text: o.sent ? "not filed" : "waiting" }), h("b", { text: o.item.title || o.item.kind }),
+        h("span", { class: "note", text: o.sent ? o.sent.note || "" : "sent " + ago(o.item.at) })]); })));
+  }
+  function kindLegend() {
+    return h("div", { class: "kinds" }, [h("span", null, [kindTag("model"), " a computer searches the race model (no Unity)"]),
+      h("span", null, [kindTag("unity"), " a computer plays the real game, no window"]), h("span", null, [kindTag("player", "a person"), " someone playing in the Unity editor"])]);
   }
   function peopleRaces(vessel, mode) {
     var r = { n: 0, learned: 0, waiting: 0, newer: 0 };
@@ -1639,6 +1702,8 @@ table td, table th { border-color: var(--line) !important; }
       });
       if (!CAP.db) return;
       CAP.db.collection("approvals").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = ((d.data() || {}).decisions) || {}; }); CAP.approvals = a; if (DATA && TI < 0) render(); if (OPEN) renderDrawer(); }, function () {});
+      CAP.db.collection("outbox").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = d.data() || {}; }); CAP.outbox = a; if (DATA && TI < 0 && VIEW === "runs" && document.getElementById("sheet").hidden) render(); }, function () {});
+      CAP.db.collection("sent").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = d.data() || {}; }); CAP.sent = a; if (DATA && TI < 0 && VIEW === "runs" && document.getElementById("sheet").hidden) render(); }, function () {});
       CAP.db.collection("processed").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = d.data() || {}; }); CAP.processed = a; if (OPEN) renderDrawer(); }, function () {});
     });
   }
@@ -1648,7 +1713,7 @@ table td, table th { border-color: var(--line) !important; }
     var root = document.getElementById("main"); root.textContent = "";
     renderChrome();
     ({ home: renderHome, runs: renderRuns, searches: renderSearches, machines: renderMachines, recordings: renderRecordings, ai: renderAi })[VIEW](root);
-    root.appendChild(h("p", { class: "note", text: "A snapshot from " + new Date(DATA.generated * 1000).toLocaleString() + ". To update it, type refresh in the Terminal." }));
+    if (!LIVE) root.appendChild(h("p", { class: "note foot", text: "Snapshot of " + new Date(DATA.generated * 1000).toLocaleString() + (DATA.sync_every ? " · updates every " + DATA.sync_every : "") }));
   }
   function route() {
     var v = (location.hash || "").replace("#", "");

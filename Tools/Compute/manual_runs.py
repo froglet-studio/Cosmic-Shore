@@ -42,6 +42,7 @@ DIR = "Docs/Compute/requests"
 BRANCH = "compute-queue"
 MAX_TRIES = 200000
 ID = re.compile(r"r\d{8}-\d{4,6}-[0-9a-f]{4}")
+ID_ITEM = re.compile(r"[A-Za-z0-9_-]{6,64}")
 MACHINE = re.compile(r"any|[a-z0-9-]+/[a-z0-9-]+")
 
 
@@ -294,6 +295,8 @@ def pick(requests, jobs, machines, me, caps):
         st = progress(req, machines)
         if st["state"] != "open" or req.get("machine", "any") not in ("any", me):
             continue
+        if req.get("here"):                                     # started by hand on its computer: that session runs it
+            continue
         if int(req.get("not_before") or 0) > L.now():          # scheduled for later
             continue
         job = jobs.get(req.get("job"))
@@ -319,6 +322,58 @@ def cancel(req_id, refs=None, push=True, cwd=None, quiet=False):
     r = {k: v for k, v in r.items() if not k.startswith("_")}
     r["cancelled"], r["cancelled_at"] = True, L.now()
     return r if file(r, push=push, cwd=cwd, quiet=quiet) else None
+
+
+def outbox_items(export):
+    """The page's outbox (README section 17) as [(item id, viewer id, item)]: an ArtifactData export of the `outbox`
+    collection, as a list of {id, data} rows or a {doc id: data} map, each doc {items: {item id: item}}."""
+    rows = export.get("docs") or export.get("documents") or export.get("rows") or export if isinstance(export, dict) else export
+    if isinstance(rows, dict):
+        rows = [{"id": k, "data": v} for k, v in rows.items()]
+    out = []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        doc = row.get("data") if isinstance(row.get("data"), dict) else row
+        for k, item in sorted(((doc.get("items") or {}).items()), key=lambda kv: (kv[1] or {}).get("at", 0)):
+            if isinstance(item, dict):
+                out.append((k, row.get("id"), item))
+    return out
+
+
+def apply_outbox(export, sent, jobs, refs=None, push=True, cwd=None, names=None):
+    """File what people sent from the claude.ai console while it has no hub: a run (`kind: run`, the console's token)
+    goes on compute-queue, a stop (`kind: stop`, a request id) cancels it. Items already in `sent` (the page's
+    `sent` collection, {item id: result}) are skipped. Returns {item id: {ok, note, request, at}}, to be written to
+    `sent/<item id>`."""
+    done = {}
+    for k, viewer, item in outbox_items(export):
+        if k in (sent or {}) or not ID_ITEM.fullmatch(k):
+            continue
+        res = {"ok": False, "at": L.now(), "kind": item.get("kind")}
+        try:
+            if item.get("kind") == "run":
+                req = from_token(str(item.get("token") or ""))
+                req["by"] = (names or {}).get(viewer) or req.get("by") or "console"
+                bad = problems(req, jobs.get(req.get("job")))
+                if bad or L.untrusted(jobs.get(req.get("job"))):
+                    res["note"] = "; ".join(bad) or "the search is not on a trusted branch"
+                elif req["id"] in load(refs, cwd=cwd):
+                    res.update(ok=True, request=req["id"], note="already on the queue")
+                elif file(req, push=push, cwd=cwd, quiet=True):
+                    res.update(ok=True, request=req["id"], note="on the queue")
+                else:
+                    res["note"] = "could not push to " + BRANCH
+            elif item.get("kind") == "stop":
+                rid = str(item.get("id") or "")
+                r = cancel(rid, refs, push=push, cwd=cwd, quiet=True) if ID.fullmatch(rid) else None
+                res.update(ok=bool(r), request=rid, note="stopped: its computer stops within 30 s" if r else "no such run on the queue")
+            else:
+                res["note"] = "unknown kind"
+        except Exception as e:
+            res["note"] = f"not readable ({type(e).__name__})"
+        done[k] = res
+    return done
 
 
 def parse_value(text):

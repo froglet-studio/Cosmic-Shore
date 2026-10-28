@@ -467,6 +467,28 @@ The agent looks for such runs every minute through the hub (every 3 minutes thro
 live console, `compute.py request cancel <id>` otherwise); the computer working on it checks every 30 s and stops as it
 does for a returning person (`agent.StopWhenCancelled`), keeping what it found.
 
+**Stop reaches every run.** A run started on its own computer from a token (`run --request <token>`, the New run
+"This computer" line) is filed on compute-queue as it starts, aimed at that computer and marked `here` (no agent and no
+other computer picks it up), so Stop and `request cancel` find it like any sent run. Ctrl+C in its window still stops
+it at once. Before 2026-10-29 such a run was never on the queue and Stop could not reach it.
+
+**Without the hub: the page's outbox and the hourly sync.** The claude.ai console cannot push to git itself, and
+starting a cloud session from it can be blocked for a viewer. So when there is no hub, **Send** (New run) and **Stop**
+write to the page's own store: `outbox/<viewer id>` holds `{items: {<item id>: {kind: run|stop, token|id, title, at}}}`
+(each viewer appends to their own; Contributors and up). Once an hour a scheduled Claude Code session (Shombith's
+account) exports `outbox` and `sent` with ArtifactData, runs `compute.py request outbox <outbox> --sent <sent> --out
+<done> --push --local` (a run goes on compute-queue after the same checks as `request new`; a stop cancels; anything else is
+refused and says why), writes each result to `sent/<item id>` (owner-written), rebuilds the page with
+`compute.py console --sync-every hour` and republishes it. Runs shows what waits for that sync. The live console (the
+VM) needs none of this: there Send and Stop act in seconds.
+
+**Three kinds of work, tagged everywhere** (Runs, Home, the computer cards):
+| Tag | What it is |
+|---|---|
+| Offline model | a computer searching the offline race model (Python, no Unity) |
+| Unity · AI vs AI | a computer playing the real game in Unity with no window (the AI trainer, `unity-train`) |
+| Played by <person> | a person playing in the Unity editor: the race is recorded and the hourly AI learning sweep learns from it |
+
 **The hub** gained `GET /api/requests` (the open runs, whole, for the agents), `GET /api/requests/<id>` and
 `POST /api/cancel`, all behind the team key. Without the hub everything above works through git, minutes slower.
 
