@@ -487,8 +487,6 @@ namespace CosmicShore.Gameplay
             _entryIds = null;
         }
 
-        /// <summary>Each segment carries its share of the live body volume (the body less its unpaid wounds), so the
-        /// cell's sums see exactly the mass the creature has. An empty segment leaves every query.</summary>
         /// <summary>Sheds segment <paramref name="g"/>'s shield if it is up (true: the blow was spent on it). The index sees
         /// the segment bare at once.</summary>
         bool ShedShield(int g)
@@ -514,6 +512,8 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>Each segment carries its share of the live body volume (the body less its unpaid wounds), so the
+        /// cell's sums see exactly the mass the creature has. An empty segment leaves every query.</summary>
         void UpdateEntryShapes()
         {
             if (_entryIds == null || _index == null || !_index.IsAvailable) return;
