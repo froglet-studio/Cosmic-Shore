@@ -1,0 +1,431 @@
+{
+ "baseline": {
+  "error": null,
+  "loss": 0.12447,
+  "metrics": {
+   "appendage_share": 0.072,
+   "census": [
+    6,
+    77,
+    0,
+    0
+   ],
+   "elongation": 2.421,
+   "integrity": 0.933,
+   "island": 3.499,
+   "lively": 0.942,
+   "major": 1,
+   "max_step": 2.497,
+   "n": 83
+  },
+  "params": {
+   "arch": 0.04999999999999999,
+   "arm_flare": 0.6,
+   "arm_len": 6.0,
+   "arms": 0,
+   "body_elem": 1,
+   "crest": 0.0,
+   "head_elem": 1,
+   "length": 40.0,
+   "limb_angle": 80.0,
+   "limb_elem": 0,
+   "limb_lag": 0.3,
+   "limb_len": 8.0,
+   "limb_pairs": 1,
+   "limb_spread": 0.0,
+   "limb_start": 0.3,
+   "limb_sweep": 25.0,
+   "radius": 5.0,
+   "ring_units": 7,
+   "swim": "vertical",
+   "taper": 0.6,
+   "wave_amp": 0.08,
+   "wave_count": 1
+  }
+ },
+ "errors": {},
+ "evals": 1512,
+ "history": [
+  [
+   24,
+   -2.82219,
+   1793187450,
+   "shombith/cloud-session"
+  ],
+  [
+   48,
+   -5.20629,
+   1793187451,
+   "shombith/cloud-session"
+  ],
+  [
+   72,
+   -8.67551,
+   1793187452,
+   "shombith/cloud-session"
+  ],
+  [
+   96,
+   -9.66972,
+   1793187453,
+   "shombith/cloud-session"
+  ],
+  [
+   120,
+   -12.41954,
+   1793187454,
+   "shombith/cloud-session"
+  ],
+  [
+   144,
+   -14.58882,
+   1793187455,
+   "shombith/cloud-session"
+  ],
+  [
+   168,
+   -16.92827,
+   1793187456,
+   "shombith/cloud-session"
+  ],
+  [
+   192,
+   -19.87479,
+   1793187457,
+   "shombith/cloud-session"
+  ],
+  [
+   216,
+   -23.23329,
+   1793187458,
+   "shombith/cloud-session"
+  ],
+  [
+   240,
+   -24.19314,
+   1793187459,
+   "shombith/cloud-session"
+  ],
+  [
+   264,
+   -25.70263,
+   1793187460,
+   "shombith/cloud-session"
+  ],
+  [
+   288,
+   -25.98992,
+   1793187461,
+   "shombith/cloud-session"
+  ],
+  [
+   312,
+   -27.62266,
+   1793187462,
+   "shombith/cloud-session"
+  ],
+  [
+   336,
+   -28.85204,
+   1793187463,
+   "shombith/cloud-session"
+  ],
+  [
+   360,
+   -30.23657,
+   1793187464,
+   "shombith/cloud-session"
+  ],
+  [
+   384,
+   -31.60002,
+   1793187465,
+   "shombith/cloud-session"
+  ],
+  [
+   408,
+   -32.818780000000004,
+   1793187466,
+   "shombith/cloud-session"
+  ],
+  [
+   432,
+   -33.85305,
+   1793187467,
+   "shombith/cloud-session"
+  ],
+  [
+   456,
+   -35.31216,
+   1793187468,
+   "shombith/cloud-session"
+  ],
+  [
+   480,
+   -37.05001,
+   1793187469,
+   "shombith/cloud-session"
+  ],
+  [
+   504,
+   -37.77029,
+   1793187470,
+   "shombith/cloud-session"
+  ],
+  [
+   528,
+   -38.83323,
+   1793187471,
+   "shombith/cloud-session"
+  ],
+  [
+   552,
+   -39.99511,
+   1793187472,
+   "shombith/cloud-session"
+  ],
+  [
+   576,
+   -40.09049,
+   1793187473,
+   "shombith/cloud-session"
+  ],
+  [
+   600,
+   -42.08001,
+   1793187473,
+   "shombith/cloud-session"
+  ],
+  [
+   624,
+   -42.38199,
+   1793187474,
+   "shombith/cloud-session"
+  ],
+  [
+   648,
+   -43.32623,
+   1793187475,
+   "shombith/cloud-session"
+  ],
+  [
+   672,
+   -43.55583,
+   1793187476,
+   "shombith/cloud-session"
+  ],
+  [
+   696,
+   -44.09429,
+   1793187476,
+   "shombith/cloud-session"
+  ],
+  [
+   720,
+   -44.93433,
+   1793187477,
+   "shombith/cloud-session"
+  ],
+  [
+   744,
+   -45.27839,
+   1793187478,
+   "shombith/cloud-session"
+  ],
+  [
+   768,
+   -45.63724,
+   1793187478,
+   "shombith/cloud-session"
+  ],
+  [
+   792,
+   -46.80992,
+   1793187479,
+   "shombith/cloud-session"
+  ],
+  [
+   816,
+   -47.96901,
+   1793187480,
+   "shombith/cloud-session"
+  ],
+  [
+   840,
+   -48.48007,
+   1793187481,
+   "shombith/cloud-session"
+  ],
+  [
+   864,
+   -49.36972,
+   1793187481,
+   "shombith/cloud-session"
+  ],
+  [
+   888,
+   -49.9504,
+   1793187482,
+   "shombith/cloud-session"
+  ],
+  [
+   912,
+   -50.63098,
+   1793187483,
+   "shombith/cloud-session"
+  ],
+  [
+   936,
+   -51.54877,
+   1793187483,
+   "shombith/cloud-session"
+  ],
+  [
+   960,
+   -52.19392,
+   1793187484,
+   "shombith/cloud-session"
+  ],
+  [
+   984,
+   -52.30273,
+   1793187485,
+   "shombith/cloud-session"
+  ],
+  [
+   1008,
+   -52.77,
+   1793187486,
+   "shombith/cloud-session"
+  ],
+  [
+   1032,
+   -53.71187,
+   1793187486,
+   "shombith/cloud-session"
+  ],
+  [
+   1056,
+   -54.09474,
+   1793187487,
+   "shombith/cloud-session"
+  ],
+  [
+   1080,
+   -55.44744,
+   1793187487,
+   "shombith/cloud-session"
+  ],
+  [
+   1104,
+   -56.47595,
+   1793187488,
+   "shombith/cloud-session"
+  ],
+  [
+   1128,
+   -57.32023,
+   1793187489,
+   "shombith/cloud-session"
+  ],
+  [
+   1152,
+   -58.571130000000004,
+   1793187489,
+   "shombith/cloud-session"
+  ],
+  [
+   1176,
+   -58.7527,
+   1793187490,
+   "shombith/cloud-session"
+  ],
+  [
+   1200,
+   -59.4448,
+   1793187490,
+   "shombith/cloud-session"
+  ],
+  [
+   1224,
+   -59.79887,
+   1793187491,
+   "shombith/cloud-session"
+  ],
+  [
+   1248,
+   -61.490050000000004,
+   1793187491,
+   "shombith/cloud-session"
+  ],
+  [
+   1272,
+   -61.5143,
+   1793187492,
+   "shombith/cloud-session"
+  ],
+  [
+   1296,
+   -62.56243,
+   1793187493,
+   "shombith/cloud-session"
+  ],
+  [
+   1320,
+   -62.86023,
+   1793187493,
+   "shombith/cloud-session"
+  ],
+  [
+   1344,
+   -63.14932,
+   1793187494,
+   "shombith/cloud-session"
+  ],
+  [
+   1368,
+   -65.26145,
+   1793187495,
+   "shombith/cloud-session"
+  ],
+  [
+   1392,
+   -65.97201,
+   1793187495,
+   "shombith/cloud-session"
+  ],
+  [
+   1416,
+   -66.34007,
+   1793187496,
+   "shombith/cloud-session"
+  ],
+  [
+   1440,
+   -67.39541,
+   1793187497,
+   "shombith/cloud-session"
+  ],
+  [
+   1464,
+   -67.91439,
+   1793187497,
+   "shombith/cloud-session"
+  ],
+  [
+   1488,
+   -68.10273,
+   1793187498,
+   "shombith/cloud-session"
+  ],
+  [
+   1512,
+   -68.30407,
+   1793187498,
+   "shombith/cloud-session"
+  ]
+ ],
+ "seconds": 49.2,
+ "sha": "d75dd594226f37f3fed90a4af61337b69b962257",
+ "updated": 1793187498
+}

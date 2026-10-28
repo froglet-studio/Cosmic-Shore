@@ -12,12 +12,18 @@
   "torch": false
  },
  "cores": 3,
- "current": {
-  "job": "bioform-forge",
-  "since": 1793187446
- },
+ "current": {},
  "host": "cloud-session",
- "updated": 1793187446,
+ "last": {
+  "epoch": "82b7ac4e3ba1",
+  "evals": 1512,
+  "job": "bioform-forge",
+  "stopped": "max evals"
+ },
+ "totals": {
+  "sessions": 1
+ },
+ "updated": 1793187498,
  "user": "shombith",
  "version": "1"
 }
