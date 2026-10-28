@@ -4,6 +4,39 @@
 Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Test hook `window.__meerkatStudio` (and `__lab`).
 **Owner:** Yash (the Vessel Studio). **Status:** in the game since 2026-10-27 (see "In the game" below).
 
+## Where it stands now (2026-10-28, Ys-bleeding-edge; the artifact at version 89+)
+
+The round notes below are newest first. In one place, what the Meerkat is today, in the artifact and in Unity:
+- **A wormhole** (RT): its centreline is one oval arc that bends round its middle, more oval as it gets longer (round
+  22).
+  - Its width is Garrett's surface area, set by the Space level: a longer wormhole is thinner (round 23).
+  - Yash's Unity tuning is the shipped shape: bend radius 10, throat 20, mouth 40 (round 26).
+- **Slid, not carried** (round 24): inside any wormhole you cruise at `rootCruise`, RT pushes you faster up to
+  `rootMaxSpeed`, the left stick moves you round the tube and its wall bounces you. You come out at `rideExitMultiplier`
+  × your speed before it. The old automatic ride's `rideEntryMultiplier` and `rideMidMultiplier` are retired.
+- **The network** (the omnicrystal; round 26): a network of wormholes flown the same way.
+  - Its size is set by Mass, from half the cell at Mass 0 to the whole cell at Mass 10.
+  - It looks like the wormhole: no tree, roots or soil (they ship off).
+  - Any omni crystal the Meerkat collects grows it, the game's own included (round 25, Unity).
+- **Another dimension** (round 25): a hull inside a tube is phased. Nothing outside touches it, it collects nothing,
+  and it is solid again when it comes out.
+- **The swallow** (rounds 23 and 25):
+  - prisms and crystals within `suckRadius` of a standing wormhole's way in are pulled in;
+  - they are carried through stretched and twisted, at the slide's top speed, first in first out behind any rider;
+  - they are fired out of the far mouth as moving prisms (`Docs/PRISM_MOTION.md`).
+- **Garrett's kit, the four abilities** (approved by Yash 2026-10-28; Unity `R_VesselActions/MEERKAT.md` §10):
+  - Space: the Soliton (RT);
+  - Time: Faster Ride (passive);
+  - Charge: Sentinel Mode (Y);
+  - Mass: Exit Portal (passive).
+- **Open:**
+  - none of the Unity work is editor-verified yet (the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`);
+  - the slide is slower than round 23's automatic ride (Garrett's kit, Hard, Warpline I1-I4: about 78 / 78 / 99 / 78 s
+    against 68 / 67 / 88 / 69 s); the lever is `rootMaxSpeed`;
+  - the Mix's Space L5 Burial no longer lands, because a rider is phased;
+  - a real Meerkat hull and its four icons are still to be made.
+- **Report:** `Docs/Reports/MEERKAT.md`.
+
 ## Where it came from
 
 Yash, 2026-10-27: *"a big change is this new wormhole ability with all these stored features ... This will be Meerkat,
@@ -28,6 +61,9 @@ The same request changed three things on the way over:
   the grid sheets and the grid-on-ride switch are gone.
 
 ## How it flies
+
+(The base, rounds 1-7. Since then the shape, the size and the ride have changed: § "Where it stands now" above, and
+the rounds below.)
 
 One thumb flies, as the game's one-thumb hulls do (`SingleStickVesselTransformer`):
 - The left stick gives yaw and pitch through Ease(2 x stick), at full throttle, banking `bankShare` x the roll rate

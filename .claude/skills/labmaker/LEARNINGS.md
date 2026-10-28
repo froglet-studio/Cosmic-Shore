@@ -1068,6 +1068,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: CrewOfFourLab.html `STYLES`, `styleBoostStep`, `dockStep`, `seekLock`; .claude/skills/vessel-studio/copy_orca.py; CREW_OF_FOUR_LAB.md round 9.
 - Promoted: no
 
+### L-STU-155 — A lab that reads part of a shipped look shows a HALF-updated object when the look changes, and its --check stays green
+- Lab: Omni Shepard Lab (`Docs/Studios/OmniShepardLab.html`) · Branch: `cece/serene-cannon-93olp5` · By: the 2026-10-28 omni-shades session · Date: 2026-10-28
+- What happened: the omni crystal moved from one lime to four per-element shades (`Docs/PALETTE.md` §2.12). The lab's baker reads `OmniDepthPrisms._BrightColor` and the body's `_BrightColor`, so the re-bake moved the triangle prisms to the Mass shade while the body, whose new colours ride a per-vertex element channel and four new properties the baker never reads, stayed one lime. `omni_shepard_lab_assets.py --check` and `verify_lab.cjs` both passed: the page truthfully shows what it reads and nothing says what it does not.
+- Do instead: when a shipped look gains a dimension (a per-vertex channel, a new property family), re-bake, then LOOK at the lab's screenshot for an object that is now half old and half new, and write the gap into the lab's "not modelled" list and the owning doc in the same branch. A green baker `--check` proves the fields it reads, never that it reads all of them.
+- Evidence: the `depth.omni.bright` diff in the lab's `ASSETS` block (lime → `0.3639, 0.7673, 0`); the `verify_lab.cjs` desktop screenshot (Mass-shade prisms on a one-lime body); `Docs/PALETTE.md` §2.12 "Not modelled".
+- Promoted: no
+
 ## ECO — ecology bestiary and flight labs (Tools/Ecology)
 
 ### L-ECO-1 — A viewer "too austere to judge" stalls a lab; a shared viewer standard fixed it

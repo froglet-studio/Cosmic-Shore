@@ -4,10 +4,16 @@ Cloned from the Vessel Studio (2026-10-27, `/artifact-to-unity`): the Meerkat pa
 (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa, source `Docs/Studios/VesselStudio/meerkat.html`, design
 `Docs/Studios/MEERKAT.md`). The artifact is the source of truth: tune there, then clone (`studio_to_unity.py`).
 
+**Where it stands (2026-10-28, Ys-bleeding-edge):** rounds 1-26 of the artifact are cloned. Every wormhole is slid with the
+left stick like the network (§1, round 24); inside any tube the hull is phased (§9, round 25); Space's surface area sizes
+a wormhole (§8, round 23) and Mass sizes the network (§7a, round 26); Garrett's four abilities are in (§10). Nothing here
+is editor-verified yet: the open hand tests are the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the
+report is `Docs/Reports/MEERKAT.md`.
+
 Yash, 2026-10-27: *"This will be Meerkat, a new vessel ... with all its things similar to the Stoat. Just rename to
 Meerkat and keep only one ability of the wormhole."* It is the Stoat studio's Gate mode, made its own vessel.
 
-**Its four abilities are Garrett's kit** (§9, with §8's surface area and swallow, 2026-10-28; Garrett's design, approved by Yash 2026-10-28: *"Garrett has
+**Its four abilities are Garrett's kit** (§10, with §8's surface area and swallow, 2026-10-28; Garrett's design, approved by Yash 2026-10-28: *"Garrett has
 already defined all the elemental abilities, so we're gonna implement those, and it also has the Space ability, which
 pulls prisms inside the tube"*): Space **Soliton** (the wormhole, RT), Time **Faster Ride** (passive), Mass **Exit
 Portal** (passive), Charge **Sentinel Mode** (Y).
@@ -181,7 +187,7 @@ line for line:
   time): Charge, the sentinels standing out of the pool; Mass, the last exit portal's prisms still standing (of six);
   Space, the reticle growing back (full once RT would form); Time, the ride's progress through any soliton (in the ready
   colour while riding). The Stoat's view has no ready colour on its Charge and Space gauges.
-- **The element map** (`ElementalAbilityMaps/Meerkat.asset`): Garrett's four rows (§9; Space's area and swallow are §8), written by
+- **The element map** (`ElementalAbilityMaps/Meerkat.asset`): Garrett's four rows (§10; Space's area and swallow are §8), written by
   `author_meerkat_assets.py`. `element_ability_table.py Meerkat`: 4/4 abilities, scaling 4/4, L5 gates 4/4.
 - **The ability icons** are the Stoat's placeholders (`StoatHUDVariant`); the Meerkat's own four are `/ability-icon` work.
 - **No `[CliCommand]`, no Unity tuning window:** tune in the artifact and clone. In play mode the
@@ -205,9 +211,11 @@ line for line:
 | The roots (§7) | `MeerkatRootMath.cs`, `MeerkatRootNetwork.cs`, `MeerkatOmnicrystalField.cs`, `Tests/Editor/MeerkatRootMathTests.cs` |
 | The tree and the roots' look (§7) | `MeerkatTreeMesh.cs`, `MeerkatTreeView.cs`, `_Graphics/Materials/Graphs/MeerkatTree.shader`, `MeerkatRootInside.shader`, `Resources/MeerkatTree.mat`, `Resources/MeerkatRootInside.mat` |
 | The network's tube look (§7a) | `MeerkatTubeWallView.cs`, `MeerkatTreeMesh.BuildTubeWall`, `_Graphics/Materials/Graphs/MeerkatTubeWall.shader`, `Resources/MeerkatTubeWall.mat`; the channels in `MeerkatWormholeView.Tube` and `MeerkatWormholeLensPass` (`MWChannel`) |
-| The swallow (§8) | `Executors/MeerkatSwallow.cs` (run by the executor; its arithmetic is `MeerkatWormholeMath.PullVelocity` / `CarryDistortion` / `SurfaceAreaThroat`) |
-| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (110 keys, `--check` 0 drift) |
-| Garrett's kit (§9) | `Executors/MeerkatSolitonKit.cs` (the kit, its four L5 gates, the zap), `MeerkatSentinels.cs`, `MeerkatExitPortal.cs`, `MeerkatSolitonMath.cs` + `Tests/Editor/MeerkatSolitonMathTests.cs` (run outside Unity: `Tools/Build/meerkat_kit_harness/run.sh --self-test`), `Data Containers/MeerkatSentinelModeActionSO.cs`, `_SO_Assets/VesselActions/Meerkat/MeerkatSentinelModeAction.asset`; Space L5 Steal hooks `MeerkatSwallow` |
+| The swallow (§8) | `Executors/MeerkatSwallow.cs` (run by the executor; its arithmetic is `MeerkatWormholeMath.PullVelocity` / `CarryDistortion` / `SurfaceAreaThroat` / `TubeAdvance`) |
+| The slide (§1, round 24) | `MeerkatRootMath.ITubePath` / `Single` / `Step` (one flight for a wormhole and the network), `MeerkatWormholeMath.NearestAlong`, `MeerkatWormholeExecutor.StepRide` / `SlideAutopilot` |
+| Phased inside a tube (§9, round 25) | `MeerkatVesselTransformer.Phased` (the hull's `IHullContactGate`), `SkimmerImpactor.HullTakesPrisms`; the game's omni crystal arms the network through `OmniCrystalImpactor.CollectedByVessel` |
+| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (108 keys, `--check` 0 drift) |
+| Garrett's kit (§10) | `Executors/MeerkatSolitonKit.cs` (the kit, its four L5 gates, the zap), `MeerkatSentinels.cs`, `MeerkatExitPortal.cs`, `MeerkatSolitonMath.cs` + `Tests/Editor/MeerkatSolitonMathTests.cs` (run outside Unity: `Tools/Build/meerkat_kit_harness/run.sh --self-test`), `Data Containers/MeerkatSentinelModeActionSO.cs`, `_SO_Assets/VesselActions/Meerkat/MeerkatSentinelModeAction.asset`; Space L5 Steal hooks `MeerkatSwallow` |
 
 ## 7. The tree and the roots (cloned 2026-10-28 from the artifact's rounds 13-21)
 

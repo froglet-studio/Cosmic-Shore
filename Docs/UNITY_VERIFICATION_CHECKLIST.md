@@ -102,6 +102,8 @@ abstract-member gates pass. `/verify-unity` was not available (no editor in the 
 **First-pass tuning** (the artifact's numbers): `networkReachAtZero` 0.5, `networkReachAtFull` 1, `labyrinthRadiusMin` 240,
 `labyrinthRadiusMax` 1080, forks 6 → 22, openings 12 → 56 (40 to 78 wormholes).
 
+---
+
 ### 🔴 The Meerkat: phased inside a tube, first in first out, the omni crystal grows the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** `MEERKAT.md` §9.
@@ -127,33 +129,56 @@ abstract-member gates pass. `/verify-unity` was not available (no editor in the 
 
 ---
 
-### 🔴 The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+### 🔴 The omni crystal aboard regrows the Ark's hull at a fixed rate; hangar, lance and collar hooked up; the emblem is the model (`cece/upbeat-johnson-j7izg7`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed:** the automatic ride is gone. The main tunnel is now a network of one channel flown by the roots' own
-flight (`MeerkatRootMath.Step` through `ITubePath`, `MeerkatWormholeExecutor.StepRide`):
-- you cruise along it at `rootCruise`;
-- RT pushes you faster up to `rootMaxSpeed`;
-- the left stick moves you round the tube, and the wall bounces you;
-- you leave out of the far mouth (or back out of the way in) at `rideExitMultiplier` × your speed before the tunnel.
+**What landed** (Garrett: "the omnicrystal on board the ark powers the prism creation. arks are the only vessel that
+can contain and harvest the power of an omnicrystal instead of morphing it into something else, so please add the
+regeneration. please fix the stuff not hooked up yet.", then "the omnicrystal is always just one size they should
+never change size. regeneration should just be fixed rate."):
+- `ArkReactor.asset` (on `Wander_WithArk.asset`) regrows every emptied hull socket, grazed or taken for a payload.
+  It runs at a fixed rate, one prism every 2 s, nearest the reactor well first.
+- The omni crystal is always one size. Nothing resizes it, and the Ark model's Charge shape now lengthens only the
+  lance (`ArkReverse.fbx` rebuilt in place; concept A, `Ark.fbx`, has since been retired).
+- The crystal's collar turns, faster while the hull regrows.
+- The hangar opens while a squadmate is within payload grab reach.
+- The lance slides out when a payload is granted.
+- The Wander emblem is built from the model's sockets.
 
-The AI holds RT and keeps to the middle. `rideEntryMultiplier` and `rideMidMultiplier` are retired. `MEERKAT.md` §1.
-
-**Verified without the editor:**
-- 58/58 dotnet tests, including a full slide out of the far mouth on its last heading and inside its wall.
-- Reference compile clean, player and editor.
-- `studio_to_unity --check`: 102 mapped, 0 drift.
-- The artifact's headless races all finish.
+The fence on the locked mass rule is the fourth sign-off in `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`. The C#
+compiled clean headless (`unity_refcompile`, player and `--config editor`: 0 errors in project code). `ArkModelTests`
+compiled but did not run. No Unity Editor was open, so `/verify-unity` did not run.
 
 **Verify in editor:**
-1. Toybox, Meerkat: release LT and RT a short, fat tunnel. Inside, push the left stick: the hull moves round the tube
-   and bounces off its wall. Hold RT: it speeds up (to 90 u/s). Let go: it eases to 45 u/s.
-2. Ride out of the far mouth: it leaves on the tunnel's last heading, a little boosted, and the reticle comes back.
-3. A long tunnel is thin (Garrett's area), so the stick has little room there: check it still feels fine.
-4. Burrow Run: the AI forms tunnels, slides them with RT held and threads its rings.
+1. Run `ArkModelTests` (13 tests): all pass.
+2. Fly Wander → **With Ark**:
+   - at the dock beside the Ark, the hangar's clam-jaw doors (the prow, between the jaws) swing open;
+   - fly beyond 160 and they close.
+3. With RB beside the Ark, take a payload:
+   - the lance slides aft out of its cradles and back over about 1.5 s;
+   - the six plates the parcel took leave their sockets;
+   - they grow back one every 2 s, in the Ark's colour, the ones nearest the reactor well first.
+4. Let fauna graze the hull: emptied sockets regrow at the same steady rate, never in a burst.
+5. Watch the omni crystal in the well. It never changes size. Its collar turns slowly, and faster while the hull
+   regrows.
+6. Let the hull fall: nothing regrows after the fall.
+7. The Wander toy's With Ark station shows a miniature of the model's hull (108 prisms) in your domain colour, not the
+   spindle.
+8. Console: no new warning.
+
+**First-pass tuning:**
+- On `ArkReactor.asset`: one regrown prism every 2 s.
+- On `ArkReverseModel.asset`:
+  - lance out 1.2 s;
+  - hangar reach = the payload grab reach (160);
+  - actions ease over 0.3 s;
+  - collar 12°/s idle and 90°/s while regrowing.
+- The regrowth sound ships empty.
+
+---
 
 ### 🔴 Meerkat: Garrett's kit - the soliton, the faster ride, sentinels, the exit portal (`worktree-agent-a0cdd70864b1be2cf`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed** (Garrett's design, approved by Yash 2026-10-28; `R_VesselActions/MEERKAT.md` §9): `MeerkatSolitonKit` on the
+**What landed** (Garrett's design, approved by Yash 2026-10-28; `R_VesselActions/MEERKAT.md` §10): `MeerkatSolitonKit` on the
 Meerkat (with `MeerkatSentinels`, `MeerkatExitPortal`, `MeerkatSolitonMath`; the L5 Steal hooked on round 23's
 `MeerkatSwallow`), Y →
 `MeerkatSentinelModeAction`, the config's "Garrett's kit" sections, the element map's four rows, protocol version 23
@@ -207,6 +232,32 @@ soliton; sentinels zapping sentinels; the Meerkat's own icons; the sound (five e
 
 ---
 
+### 🔴 The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** the automatic ride is gone. The main tunnel is now a network of one channel flown by the roots' own
+flight (`MeerkatRootMath.Step` through `ITubePath`, `MeerkatWormholeExecutor.StepRide`):
+- you cruise along it at `rootCruise`;
+- RT pushes you faster up to `rootMaxSpeed`;
+- the left stick moves you round the tube, and the wall bounces you;
+- you leave out of the far mouth (or back out of the way in) at `rideExitMultiplier` × your speed before the tunnel.
+
+The AI holds RT and keeps to the middle. `rideEntryMultiplier` and `rideMidMultiplier` are retired. `MEERKAT.md` §1.
+
+**Verified without the editor:**
+- 58/58 dotnet tests, including a full slide out of the far mouth on its last heading and inside its wall.
+- Reference compile clean, player and editor.
+- `studio_to_unity --check`: 102 mapped, 0 drift.
+- The artifact's headless races all finish.
+
+**Verify in editor:**
+1. Toybox, Meerkat: release LT and RT a short, fat tunnel. Inside, push the left stick: the hull moves round the tube
+   and bounces off its wall. Hold RT: it speeds up (to 90 u/s). Let go: it eases to 45 u/s.
+2. Ride out of the far mouth: it leaves on the tunnel's last heading, a little boosted, and the reticle comes back.
+3. A long tunnel is thin (Garrett's area), so the stick has little room there: check it still feels fine.
+4. Burrow Run: the AI forms tunnels, slides them with RT held and threads its rings.
+
+---
+
 ### 🔴 The Meerkat's soliton: Garrett's surface area, and prisms sucked through it (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** the tunnel's throat follows Garrett's surface area, set by the hull's Space level, so a longer tunnel is
@@ -234,6 +285,56 @@ moving prisms (`Docs/PRISM_MOTION.md`). `MEERKAT.md` §8.
 5. Plants near the mouth lose prisms to it (plucked, not destroyed); creatures' bodies are left alone.
 6. Watch the profiler with a tunnel in a dense field: `MeerkatSwallow` stays under 256 prisms (`swallowPrismCap`).
 7. Multiplayer: both players see the same tunnel size.
+
+---
+
+### 🔴 The Arkway's Ark is the ArkReverse model: hull prisms in its sockets, domain trim, jets and wings fly the turn (`cece/upbeat-johnson-j7izg7`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "use this, but animate it so it moves its jets and wings appropriately when turning. use
+it in arkway. use this in all voyages. be sure to get the prisms hooked up to the right domain etc."): every Ark
+given an `ArkModelDefinitionSO` is drawn as `ArkReverse.fbx`. `Wander_WithArk.asset` (the only Arkway voyage
+settings) names `ArkReverseModel.asset`. `ArkModel` reads the model's rig table (`ArkReverse.rig.json`):
+- the hull is laid as 108 prisms, one per socket: kind (plain, danger, shielded, super-shielded), pose and size from
+  the socket, in the Ark's domain;
+- the Domain slot (`GreenAccentVesselMaterial`) takes the domain's `ShipMaterial`;
+- the model's takes play from the Ark's own turn rate and acceleration, each bone held to one full take's worth
+  (`ArkRigTable.Budget`).
+
+An empty `arkModel` keeps the spindle hull. The C# compiled clean headless (`unity_refcompile`, player and
+`--config editor`: 0 errors in project code; `ArkModelTests` compiled but did not run). No Unity Editor was
+open, so `/verify-unity` did not run.
+
+**Verify in editor:**
+1. Let `ArkReverse.fbx`, `ArkReverse.rig.json` and `ArkReverseModel.asset` import. Run the edit-mode tests
+   `ArkModelTests` (13 tests, shared with the entry above): all pass.
+2. Fly the Wander toy → **With Ark**. When the veil lifts, the Ark is the scallop-backed mothership (the valve
+   opening aft, eight jets in the stern gape), not the spindle of plates. It sits level, nose forward along its
+   course, at about 196 u from nose to jets.
+3. Its trim (the Domain slot) wears YOUR domain's colour. Switch domain at home and start another voyage: the trim
+   follows.
+4. The hull prisms sit IN the model's sockets and fill in as they lay:
+   - stellations on the X-cradles where the grooves cross the seams;
+   - octahedra in the cavity under the plates;
+   - gills raked in the grooves;
+   - danger blades edge-out along the leading edges, the jaws and the stern grille.
+
+   None floats off the hull. Each shows its tier: shielded as octahedra, super-shielded as stellations, danger with the danger look.
+5. Watch the Ark turn toward the next cell:
+   - the gimbal rings swing;
+   - the jets bank, the two sides tilting opposite ways;
+   - the jaws tilt as canards;
+   - the outer plate on the inside of the turn lifts.
+
+   Leaving a cell (it speeds up) the jets draw in; entering one they fan out. At a steady course everything eases
+   back to rest within about a second. Nothing clips through a ring or a plate.
+6. Let a herbivore swarm graze the hull: prisms vanish from their sockets and the hull integrity drops (the Ark is
+   lost when its last socket prism goes, as with the spindle). The jaws' blades are grazed where they are, not where they
+   were laid. Emptied sockets regrow at the reactor's fixed rate (the entry above).
+7. Console: no "[Ark] The Ark model's frame does not match its rig table" warning (that would mean the FBX import
+   frame drifted from the table), and no "has no bone" warning.
+
+**First-pass tuning** (on `ArkReverseModel.asset`): yaw and pitch rate for a full take 40°/s, bank from yaw 0.8,
+acceleration for a full speed take 20 u/s², response 0.35 s, amplitude 1 (capped at 1).
 
 ---
 
@@ -617,6 +718,40 @@ compiled clean headless (`unity_refcompile --config editor`: 0 errors in project
    git) but still bakes a painting's and a hull's variant icons.
 3. Run Scan & Merge once: no Tool page loses its Image (the field is fill-when-empty).
 
+### 🔴 The omni crystal wears all four elemental shades; the converter keeps each crystal's shade (`cece/serene-cannon-93olp5`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "when the elemental crystals combine have them retain their separate colors. change the
+omnicrystal to retain all four elemental colors of lime in all instances"): the free omni body paints each plate
+family in its element's shade (pentagons Charge, squares Space, rhombi Time; its triangle prisms `OmniDepthPrisms`
+Mass; the flux arcs' lit pentagons Charge). New `CrystalElementPlates` names each plate's element per vertex
+(TEXCOORD4); `OmniCrystalFresnelShader` reads it under `_ElementShades`; the skin, cut, Space-squares and vessel
+morph meshes keep it; `ThemeManager` turns the shades off on team clones; the Elemental Converter no longer eases
+each crystal to the omni's lime, and its config's `palette` field is gone. Why: `Docs/PALETTE.md` §2.12.
+
+**Verified without the editor:** reference compile player OK and editor OK (0 errors in project code; the new
+`CrystalElementPlatesTests` and the changed `OmniCombineTests` compile); the plate rule run in Python on the shipped
+`OmniCrystalExport1_8-21-25.fbx` gives 12 Charge / 20 Mass / 60 Space / 30 Time plates, none left over; the shader's
+`ElementBright` compiled with clang from the shipped file (off, element 0 and out of range are `_BrightColor` bit for bit);
+`author_omni_crystal_triangles.py`, `author_mass_crystal_look.py`, `author_elemental_crystal_colors.py` (and
+`--self-test`), `author_elemental_converter.py`, `omni_shepard_lab_assets.py` and `check_console_logging.py` all OK.
+NOT run: any edit-mode test, any shader compile in Unity.
+
+**Verify in editor:**
+1. Let the shader and materials import (no shader error on `Custom/OmniCrystalFresnelShader`). Run
+   `CrystalElementPlatesTests`, `OmniCombineTests`, `CrystalFlipWaveTests`, `CrystalSpaceSquaresTests`,
+   `CrystalMorphMeshBuilderTests` and `CrystalMorphPanelCensusTests` (EditMode): all pass.
+2. Play any mode with a free omni crystal: its pentagons, squares, rhombi and triangle prisms are four distinct
+   limes (Charge yellow-green, Space cooler, Time warmest, Mass darkest), from the first frame it shows, and they
+   stay so while the rhombi flip, the squares turn and the triangles ride their columns. The Charge arcs light the
+   pentagons in the pentagons' own shade.
+3. An embedded omni (a lifeform heart) is still blue-white; a team omni (Skim Race track crystal, the Dolphin's
+   TeamCrystal) is still wholly its domain colour.
+4. Collect a free omni with the Scarab and the Squirrel: the crystal folds starting in its four shades (no snap to
+   one lime at the start) and lands in the ball's / ring's colours as before.
+5. The Elemental Converter (Ark screen, CONVERT): each crystal waits, flies and lands in its own shade (no easing to
+   one lime) and the omni dithers in over plates of the same four shades with no colour jump.
+6. The Console shows nothing new.
+
 ### 🔴 Each free elemental crystal wears its own shade of lime (`cece/charming-bell-m70ac8`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed:** the Mass and omni crystals wore one identical lime. Now each free elemental wears the Wrasse's lasso
@@ -638,6 +773,7 @@ New palette field `EnvironmentColors.ElementalCrystalColors` (written by `kite_m
 4. Embedded hearts are still blue-white, and team crystals still wear their domain colour.
 5. The Elemental Converter (Ark screen, CONVERT): each of the four crystals waits and flies in its own shade, eases
    to the omni's lime as its plates turn into the omni's, and the omni dithers in with no colour jump.
+   *(Superseded 2026-10-28, the entry above: each crystal now keeps its shade and the omni wears all four.)*
 6. The Console shows nothing new.
 
 ### 🔴 The AI Stoat retrained for Warpline (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
@@ -17940,3 +18076,113 @@ nothing here was compiled.
 6. If the fill line sits off the rocket's tail or nose, change `bayRocketTail01` / `bayRocketNose01` on the HUD
    prefab's `SparrowHUDView`.
 
+
+## Rhino Charge card: the katana that follows the sword (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `RhinoVesselHUDView.cs` (generates `KatanaPivot`/`Katana` under the Charge card's icon from
+`Rhino_KatanaCurved` and `Rhino_KatanaChop`; `SetKatanaPose`, `SetKatanaLit`, the pure `KatanaPose`),
+`RhinoHUDController.cs` (pushes `ShieldSwipeActionExecutor.CurrentPose`, normalised by its config, every frame; the lit
+state), `ShieldSwipeActionExecutor.cs` (a read-only `Config` getter), `RhinoHUDVariant.prefab` (the Charge icon is a
+transparent container; the two sprite fields). Sheet: `Docs/Icons/sheets/rhino_energize.png`. No .NET and no Unity CLI
+in the session: nothing here was compiled.
+
+1. Run `RhinoKatanaPoseTests`. **Pass:** green.
+2. Fly the Rhino and look at the Charge card at rest. **Pass:** a white curved katana standing on its hilt, its tsuba
+   and grip low on the card; the plate under it empty.
+3. Pull the right trigger slowly. **Pass:** the katana turns clockwise about its hilt with your finger, up to 45 deg,
+   and flips at once so its curved (convex) edge leads to the right. Release: it returns upright and does not flip back.
+4. Pull the left trigger. **Pass:** it turns counterclockwise with the edge leading left.
+5. Pull both triggers fully. **Pass:** the blade goes straight (no curve) and a little shorter: the sword from behind.
+6. Hold until it energizes. **Pass:** the katana turns the danger orange while lit and white again when it goes dark.
+7. If the katana does not turn about where the blade meets the tsuba, change `katanaHilt` on the HUD prefab's
+   `RhinoVesselHUDView`; if it turns the wrong way for a trigger, report it (the sign comes from the config's yaw).
+
+## Rhino Mass card: the afterimage trail (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `RhinoVesselHUDView.cs` (`SetAfterimage`: the two prism copies on only while laying, in the domain colour at
+`afterimageNearAlpha` / `afterimageFarAlpha`; the sword part white), `RhinoHUDController.cs` (injects `GameDataSO` for the
+domain colour, pushes it with the laying state), `RhinoHUDVariant.prefab` (the Mass icon is a transparent container over
+`AfterimageFar`, `AfterimageNear`, `AfterimageBlade`). Sheet: `Docs/Icons/sheets/rhino_afterimage.png`. No .NET and no
+Unity CLI in the session: nothing here was compiled.
+
+1. Fly the Rhino. **Pass:** the Mass card shows one white katana tilted right, its edge on the right; no copies.
+2. Energize the blade and let it go dark. **Pass:** while the afterimages are laid, two prism copies of the katana appear
+   behind it to the left in your domain colour, the nearer one brighter, curving the same way as the sword; they vanish
+   when the laying window ends.
+3. Change domain mid-match if the mode allows it. **Pass:** the copies take the new colour.
+
+## Rhino Time card: Ramp Spool / Momentum, the Rhino and its ward (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `RhinoVesselHUDView.cs` (four `spool*Icon` parts; `SetMomentum`, `MomentumPartsFor`, `SetMomentumMark`
+generating `MomentumGap` / `MomentumTickL` / `MomentumTickR` under the Time gauge), `RhinoHUDController.cs` (pushes the
+ward's hold and the domain colour, and the mark with the speed), `VesselElementalImmunity.cs` (`TopSpeedFraction`
+getter), `RhinoHUDVariant.prefab` (the Time icon is a transparent container over SpoolPrism, SpoolGlance, SpoolWard,
+SpoolHull). Sheet: `Docs/Icons/sheets/rhino_rampspool.png`. No .NET and no Unity CLI in the session: nothing here was
+compiled.
+
+1. Run `RhinoMomentumCardTests`. **Pass:** green.
+2. Fly the Rhino below Time 5. **Pass:** the Time card shows the Rhino from above, nose right, in your colour, an orange
+   danger prism standing ahead of its nose, and short dim ticks at 70% height on both slanted edges of the plate.
+3. Ramp up (full throttle, straight). **Pass:** the speed fill climbs; past 70% the ticks become a gap through the fill;
+   the picture does not change (no ward below Time 5).
+4. Reach Time 5 and ramp past 70%. **Pass:** the card flashes once, a white chevron ward appears ahead of the nose and
+   the prism shows glanced away down-right; dropping below 70% puts the prism back ahead and the ward away.
+5. If the ticks sit off the slanted edge, tune `momentumTickSlantInset` (the Sparrow's `gunHeatTickSlantInset` is 9).
+
+## Rhino Space card: Blade Reach, the katana and the super-shielded prism (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `RhinoVesselHUDView.cs` (`BuildReach` generates `BladeReach` > `Prism`, `HiltPivot` > `Hilt` + `BladeScale` >
+`Blade`, `Posts` under the Space card's icon; `SetBladeReach`, `ReachPrismCentre`), `RhinoHUDController.cs` (pushes
+`Skimmer.ElementalScale01`, `SuperShieldUpgradeActive`, the lit state and the shielded colour every frame),
+`RhinoHUDVariant.prefab` (the Space icon is a transparent container; five sprite fields). Sheet:
+`Docs/Icons/sheets/rhino_bladereach.png`. No .NET and no Unity CLI in the session: nothing here was compiled.
+
+1. Run `RhinoBladeReachLayoutTests`. **Pass:** green.
+2. Fly the Rhino at Space 0. **Pass:** the Space card shows a white katana leaning up to the right, its grip at the lower
+   left, its tip just inside a flat six-pointed star (the super-shielded prism) in your shielded colour, two grey posts
+   above the blade; nothing overlaps the sword or the posts.
+3. Gain Space levels. **Pass:** the blade grows toward the second post and the star moves with its tip.
+4. Reach Space 5. **Pass:** the star is drawn broken, its triangles flown apart.
+5. Energize. **Pass:** the katana turns danger orange while lit.
+6. If the star sits off the tip, tune `reachPrismAlong` / `reachPrismSidePerLength`; if the blade grows from the wrong
+   point, check `reachPartHilt` against the sprite (64, 100).
+
+## 🔴 2026-10-28 — The voyage slice: squad, job board, legs, vaults, wrecks, cores, the chart, docking home (unverified: no Unity editor in the session)
+
+**Plan:** `Docs/Voyages/SLICE.md`. **Files:** `Data/Voyages/*` (the rules, tested headless), `Controller/Voyages/*`
+(`VoyageRun`, `VoyageToy`, `VoyageJobBeacon`, `VoyageVault`, `VoyageChart`), `System/Voyages/VoyageStore.cs`,
+`System/Squads/SquadDeployment.cs`, `VesselPilotLoadout.cs` (a seated vessel flies its slot), `PilotSightProviders.cs`
+(11 more sights), `Payload/Transforms/{Hydra,Aftershock}TransformSO.cs`, the Arkway route hooks (`ArkwayRun`:
+`SetRoute`, `ContinueRoute`, `RouteEnded`, `Underway`, `ArkFallen`; `CellConveyor`: `SetRoute`, `TraversalWorlds`),
+`MenuServerPlayerVesselInitializer` (`RequestSpawnAiCompanion`'s spawn callback, `DespawnAiCompanion`). Assets from
+`author_voyage_assets.py` (`Toy_Voyage.asset`, one line in `Resources/Toybox.asset`) and `author_pilot_assets.py`.
+Affects: Garrett's Arkway and squad layer, Shombith's pilots and artifacts, the menu AI companions. The reference
+compile has no errors in the changed files (player and editor).
+
+1. Run `VoyageRulesTests`, `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`. **Pass:** green.
+2. Ark > SQUADS: a squad of three different vessels, three elements, three pilots of different faction types (CITADEL a
+   hunter, VOLT a merchant, BANDIT a pirate), Javelin on one card (Hydra and Aftershock show
+   locked in the Hangar until found). Freestyle, fly the **Voyage** toy (at 90 degrees round
+   the membrane). **Pass:** you are swapped to your seat's vessel; two AI wingmates appear on your flanks in the other two
+   hulls; each vessel's element bar starts at level 5 in its slot's element; LB shows each seat's own pilot sight; up
+   to three job beacons stand around you with a title and "brought by <name>" over each, plus a chart of the map.
+3. Fly a hunt beacon (Lantern Reach or the Hollow). **Pass:** the veil, then the Ark beside you under way, "BOUND FOR
+   ..."; the wingmates are docked with it; the Ark sails 2-4 cells and holds in the last one; "ARRIVED AT ...".
+4. At the vault field. **Pass:** vault shells stand round the Ark (super-shielded; CITADEL's sight finds them); RB at
+   the Ark loads a payload; released on a shell it cracks it; at half cracked an artifact floats out; RB grabs it, and
+   bringing it to the Ark stows it ("STOWED ABOARD", then "JOB DONE" and the job's story line). The next board stands
+   round the Ark, the way home on it.
+5. Fly a courier or defence job to a port or core. **Pass:** a courier is done on arrival; a core counts down while you
+   stay with the Ark ("HOLDING ...: N") and is done at 0.
+6. Take the way home. **Pass:** the Ark sails to your harbour's world and the voyage ends at the dock: "DOCKED AT ...: N
+   FOUND ARTIFACTS ARE YOURS"; the wingmates are gone; crystals owed are paid; the found Hydra or Aftershock is
+   now held in the Hangar and can go on a squad card.
+7. Voyage again. **Pass:** the board reflects last voyage's news (a delivered dispatch opens new work at that port).
+8. Let fauna eat the Ark with a find aboard. **Pass:** "THE ARK IS LOST"; home with nothing; next voyage, the nearest port's
+   board offers a salvage job to the wreck, and the wreck's artifacts float where it fell.
+9. Mid-voyage, fly the Voyage toy again (or the harbour station). **Pass:** home, "JOB LEFT UNDONE", nothing kept.
+10. The plain Wander toy's Arkway. **Pass:** unchanged: it sails the shuffle-bag forever and never holds.
+11. Two machines in one freestyle party (a joined squad on the friend's side). The host flies the Voyage toy. **Pass:**
+    the friend is swapped to their seat's hull and sees "SAILING WITH YOUR HOST"; when the host takes a job the friend's
+    own Ark sails the same worlds to the same stop; the friend can crack a vault and stow a find; when the host takes the
+    way home both dock, and the friend keeps what the friend stowed. The host giving up ends the friend's voyage too.

@@ -16,7 +16,8 @@ namespace CosmicShore.Gameplay
     /// (<see cref="PilotLoadoutStore"/>) and publishes it on <see cref="R_VesselActionHandler.NetPilot"/> /
     /// <see cref="R_VesselActionHandler.NetArtifacts"/>; every other peer reads those. Other players see your pilot
     /// (its callsign plate, CALLSIGNS.md §4.2), so the seat is shared even though the sight is local. An AI flies with
-    /// no pilot and no artifact. A human's vessel always has a pilot (an unset seat flies the hull's first offered pilot);
+    /// no pilot and no artifact, unless it is seated in a deployed squad (<see cref="SquadDeployment"/>): then it flies
+    /// its slot's pilot and artifact, as every seated vessel does. A human's vessel always has a pilot (an unset seat flies the hull's first offered pilot);
     /// an arena match loads no artifact (<see cref="ArtifactsAllowedHere"/>). Off the network (a menu vessel, an un-spawned test) the local choice is used directly.</para>
     ///
     /// <para><b>2026-10-27 (Garrett):</b> built on Shombith's loadout; the ability rewrites (<c>Is</c>, <c>Tuning</c>)
@@ -36,6 +37,7 @@ namespace CosmicShore.Gameplay
 
         ushort _localPilotCode;
         ulong _localArtifactCode;
+        int _deploymentVersion = -1;
         ushort _pilotCode;
         ulong _artifactCode;
         PilotSO _pilot;
@@ -70,9 +72,23 @@ namespace CosmicShore.Gameplay
         void ResolveLocalChoice()
         {
             _class = _status.VesselType;
+            _deploymentVersion = SquadDeployment.Version;
             _localPilotCode = 0;
             _localArtifactCode = 0;
-            if (!_catalog || _status.Player == null || !_status.Player.IsLocalPilot || _status.IsInitializedAsAI) return;
+            if (!_catalog || _status.Player == null) return;
+
+            // A deployed squad's seat flies its SLOT's cards, the AI wingmates' included (Docs/Voyages/SLICE.md §2):
+            // every vessel needs a pilot, and each brings its own artifact.
+            if (SquadDeployment.TryGetSeat(_status, out var slot, out _))
+            {
+                if (!_catalog.TryGetPilot(slot.PilotId, out var seated)) seated = _catalog.FirstPilotFor(_class, null);
+                if (seated) _localPilotCode = (ushort)(IndexOf(_catalog.Pilots, seated) + 1);
+                if (_catalog.TryGetArtifact(slot.ArtifactId, out var carried) && PilotLoadoutStore.Holds(carried.Id))
+                    _localArtifactCode = (ulong)(IndexOf(_catalog.Artifacts, carried) + 1);
+                return;
+            }
+
+            if (!_status.Player.IsLocalPilot || _status.IsInitializedAsAI) return;
             if (!VesselRequirement.IsConcrete(_class)) return;
 
             // Every vessel needs a pilot (Garrett, 2026-10-27): an unset or retired Hangar seat flies the first pilot
@@ -103,7 +119,8 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (!_initialized || _status == null) return;
-            if (_status.VesselType != _class) ResolveLocalChoice();   // the Vessel Changer swapped the hull
+            if (_status.VesselType != _class || _deploymentVersion != SquadDeployment.Version)
+                ResolveLocalChoice();   // the Vessel Changer swapped the hull, or a squad was deployed or recalled
             if (_net && _net.IsSpawned && _net.IsOwner)
             {
                 if (_net.NetPilot.Value != _localPilotCode) _net.NetPilot.Value = _localPilotCode;

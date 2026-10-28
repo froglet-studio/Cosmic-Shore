@@ -94,6 +94,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The artifacts aboard, by id.</summary>
         public IReadOnlyList<string> Artifacts => _artifacts;
 
+        /// <summary>Raised when this hold hands a payload to a carrier (the Ark's model slides its lance out).</summary>
+        public event Action<PayloadCarrier> ParcelGranted;
+
         internal void Bind(Ark ark)
         {
             if (_ark) _ark.HullDestroyed -= OnHullDestroyed;
@@ -186,6 +189,7 @@ namespace CosmicShore.Gameplay
             if (taken <= 0) return GrabResult.HoldEmpty;
 
             _carriers.Add(carrier);
+            ParcelGranted?.Invoke(carrier);
             return GrabResult.Granted;
         }
 
@@ -232,6 +236,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The holds standing now (diagnostics).</summary>
         public static int Count => s_holds.Count;
+
+        /// <summary>Every hold standing now (GALLEON reads them; nothing may change one through this list).</summary>
+        public static IReadOnlyList<ArkHold> All => s_holds;
 
         /// <summary>Raised on this machine whenever a local pilot's payload changes, for a HUD.</summary>
         public static event Action<PayloadNotice> LocalNotice;

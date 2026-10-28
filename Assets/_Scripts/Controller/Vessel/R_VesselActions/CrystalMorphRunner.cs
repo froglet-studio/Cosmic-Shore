@@ -50,6 +50,7 @@ namespace CosmicShore.Gameplay
     {
         static readonly int MorphId = Shader.PropertyToID("_CrystalMorph");
         static readonly int OpacityId = Shader.PropertyToID("_Opacity");
+        static readonly int ElementShadesId = Shader.PropertyToID("_ElementShades");   // OmniCrystalFresnelShader
         /// <summary>The colour pair, under the SAME names on the omni body
         /// (OmniCrystalFresnelShader) and on BlockGraph, which draws both targets.</summary>
         protected static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
@@ -165,6 +166,10 @@ namespace CosmicShore.Gameplay
                 var model = models[i]?.model;
                 if (model == null) continue;
                 if (!TryGetDrawn(model, out var mesh, out var source)) continue;
+                // The omni body wears each plate in its element's shade, which its mesh names per vertex: the copy and
+                // every morph mesh built from it keep them (Docs/PALETTE.md §2.12).
+                if (source.sharedMaterial && source.sharedMaterial.HasProperty(ElementShadesId))
+                    mesh = CrystalElementPlates.WithElements(mesh);
 
                 cage ??= mesh;
                 bool isBody = mesh == cage;
