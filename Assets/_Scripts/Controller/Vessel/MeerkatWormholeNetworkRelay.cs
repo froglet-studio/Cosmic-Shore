@@ -18,6 +18,11 @@ namespace CosmicShore.Gameplay
     /// took (<see cref="PublishRoots"/>) - and its rider's way out (<see cref="PublishRootsOut"/>). Every peer grows the same
     /// roots from those (<see cref="MeerkatRootMath"/> is double precision for exactly this).</para>
     ///
+    /// <para><b>Garrett's kit</b> (<c>MEERKAT.md</c> §9, protocol version 23): each tunnel also carries what its owner
+    /// decided for it (<see cref="TunnelState.Kit"/>: a sentinel or not, the Charge / Mass / Space L5 bits, and
+    /// <see cref="TunnelState.PortalSize"/>), so every peer stands the same sentinel, lays the same exit portal and
+    /// steals the same prisms (<see cref="MeerkatSolitonKit"/>).</para>
+    ///
     /// <para>Off the network (a menu vessel, an un-spawned editor test) nothing is sent: the executor is its own
     /// authority.</para>
     /// </summary>
@@ -30,6 +35,8 @@ namespace CosmicShore.Gameplay
             public Vector3 A, T0, Side;
             public float L, S, R, B, M, Theta, FormT;
             public bool Out;
+            public byte Kit;           // Garrett's kit: MeerkatSolitonKit.Kit* bits (protocol 23)
+            public float PortalSize;   // ...its exit portal's size (Mass)
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
@@ -45,10 +52,13 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref Theta);
                 serializer.SerializeValue(ref FormT);
                 serializer.SerializeValue(ref Out);
+                serializer.SerializeValue(ref Kit);
+                serializer.SerializeValue(ref PortalSize);
             }
 
             public bool Equals(TunnelState o) => Seq == o.Seq && Out == o.Out && A == o.A && T0 == o.T0 && Side == o.Side &&
-                                                  L == o.L && S == o.S && R == o.R && B == o.B && M == o.M && Theta == o.Theta && FormT == o.FormT;
+                                                  L == o.L && S == o.S && R == o.R && B == o.B && M == o.M && Theta == o.Theta && FormT == o.FormT &&
+                                                  Kit == o.Kit && PortalSize == o.PortalSize;
         }
 
         /// <summary>One network of roots: its sequence number, seed and size, the frame it grew in, the omnicrystal taken,
@@ -132,6 +142,7 @@ namespace CosmicShore.Gameplay
             n_tunnel.Value = new TunnelState
             {
                 Seq = t.Seq, A = t.A, T0 = t.T0, Side = t.Side, L = t.L, S = t.S, R = t.R, B = t.B, M = t.M, Theta = t.Theta, FormT = t.FormT,
+                Kit = t.Kit, PortalSize = t.PortalSize,
             };
         }
 
@@ -149,7 +160,8 @@ namespace CosmicShore.Gameplay
         {
             if (IsOwner || !_executor) return;
             if (now.Seq != before.Seq)
-                _executor.FormRemote(now.Seq, now.A, now.T0, now.Side, now.L, now.S, now.R, now.B, now.M, now.Theta, now.FormT);
+                _executor.FormRemote(now.Seq, now.A, now.T0, now.Side, now.L, now.S, now.R, now.B, now.M, now.Theta, now.FormT,
+                    now.Kit, now.PortalSize);
             if (now.Out && (!before.Out || now.Seq != before.Seq)) _executor.RiderOutRemote(now.Seq);
         }
     }

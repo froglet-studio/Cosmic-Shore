@@ -129,6 +129,73 @@ MonoBehaviour:
   aiBentMinDistance: 120
   aiShapeSeconds: 0.3
   aiNoise: 0
+  boostOut: 1.5
+  sentinelPool: 3
+  sentinelPoolL5: 6
+  guardShare: 1.5
+  aiZapRate: 5
+  portalShare: 1.5
+  zapCooldownSeconds: 0
+  rush:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.4
+    element: 4
+    UseFloor: 1
+    Floor: 0.05
+  zapPetals:
+    Enabled: 1
+    Value: 0.1
+    Min: 0.1
+    Max: 0.25
+    element: 1
+    UseFloor: 1
+    Floor: 0
+  portalSize:
+    Enabled: 1
+    Value: 0.4
+    Min: 0.4
+    Max: 0.9
+    element: 2
+    UseFloor: 1
+    Floor: 0.05
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  zapEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sentinelPlacedEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sentinelLostEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  portalEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  prismFiredEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   formEvent:
     Guid:
       Data1: 0

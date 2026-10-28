@@ -75,6 +75,7 @@ day after the channel it referred to had been deleted.
 | **Goby** | 4/4 *(its own, 2026-10-22)* | 4/4 | 3/4 *(Charge has no upgrade yet: open)* | *Garrett, 2026-10-22 (the Goby & Pistol's own kit, no longer the Squirrel's): Charge **Vortex Sting** (ring petals 1 -> 3), Mass **Dens** (x1 -> x2.5; L5 **Fortress**: danger and super-shielded den prisms), Space **Undertow** (pull reach 40 -> 200 u; L5 **Deep Undertow**: shielded too), Time **Quick Jump** (jump 9 s -> 3 s; L5 **Phase Dart**: darts pass through prisms). Written by `author_goby_assets.py` (GOBY_KIT).* |
 | **Brittle Star** | **4/4** | **4/4** | **0/4** | *(added 2026-10-14 from the Notion class document — Charge = Ring Detonation, Mass = Creation Mode (a trail per ring corner), Space = Destruction Mode (the five arms) + Fire, Time = Speed Mode (×6); the document names no level 5, so all four are OPEN, proposals below; `R_VesselActions/BRITTLE_STAR.md`)* |
 | **Wrasse** | 4/4 | 4/4 | 4/4 | *(added 2026-10-17 as the Kite, renamed the Wrasse, card "Wrasse and Grouper", 2026-10-18 — `ElementalAbilityMaps/Wrasse.asset`, the Sparrow's map unchanged: the Wrasse is the Sparrow hull with the navigator seat, `Controller/Vessel/Crew/KITE_NAVIGATOR.md`; the navigator's own elements are its motes, not this map)* |
+| **Meerkat** | **4/4** | **4/4** | **4/4** | *(approved + shipped 2026-10-28: Garrett's design, approved by Yash 2026-10-28 - Space = **Soliton** on RT (the wormhole: its surface area by Space; it swallows prisms at its way in and fires them out as moving prisms; L5 **Steal**), Time = **Faster Ride** passive (every soliton's rush; L5 **Boost Out**), Mass = **Exit Portal** passive (six prisms on a hexagon; L5 **Danger Portal**), Charge = **Sentinel Mode** on Y (sentinels that zap rivals and shield their own prisms; L5 **Six Sentinels**). `R_VesselActions/MEERKAT.md` §8)* |
 
 Everything the tool still flags (`--gaps`, 2026-10-16) is on **one vessel, the Grizzly** — all four
 of its rows: every one still carries the RETIRED generic map multiplier (`ELEMENT_SCALING_UNIFICATION.md`),
@@ -650,8 +651,9 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 
 Garrett, 2026-10-28: *"lock in the elemental definition so yash builds upon them."* The element → ability → level →
 L5 rows below are decided (`Docs/Studios/MEERKAT.md` § Garrett's direction). How each is built, tuned and drawn, every
-number, and the seat machinery stay Yash's. Not implemented yet: the map (`ElementalAbilityMaps/Meerkat.asset`) has
-four open slots; the surface area and the swallow are in Unity (Yash's round 23).
+number, and the seat machinery stay Yash's. **Shipped 2026-10-28** (below, "approved + shipped"): the map
+(`ElementalAbilityMaps/Meerkat.asset`) carries the four rows; the surface area and the swallow are Yash's round 23; the
+seats, the hop and the element-holder rule are not built yet.
 - **Space · Soliton**: the wormhole makes a soliton; the level sets its surface area. It swallows prisms, shielded ones
   included, and fires them out. L5 **Steal**: what passes through is stolen, the steal starting as each prism starts
   its run.
@@ -674,6 +676,23 @@ four open slots; the surface area and the swallow are in Unity (Yash's round 23)
 
 Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are archived in the same doc, and the round-18
 Mix's L5 swaps (Chain Dig on Time, Cave-in on Space) give way to these rows.
+
+#### Meerkat — APPROVED + SHIPPED (Garrett's design, Yash 2026-10-28)
+
+Yash, 2026-10-28: *"Garrett has already defined all the elemental abilities, so we're gonna implement those, and it also
+has the Space ability, which pulls prisms inside the tube."* Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's
+direction, on `cece/lucid-brown-ykcmhu`), ported from the artifact's Kit "Garrett's kit" (`R_VesselActions/MEERKAT.md` §8-§9):
+
+| Element | Ability (input) | What the level scales | L5 (gate) |
+|---|---|---|---|
+| **Space** | **Soliton** (RT): the wormhole is a standing tunnel any Meerkat may ride; it swallows prisms (and crystals) at its way in and fires them out of its way out as moving prisms (`MeerkatSwallow`, round 23) | `areaL0` / `areaL10` 6,000 → 18,000 u²: throat b = A / (2π L g(k)), floor 0.25 u (`MeerkatWormholeMath.SurfaceAreaThroat`, round 23) | **Steal**: what it swallows is stolen into the Meerkat's domain as its run starts (`MeerkatSolitonKit.StealUnlocked`, stolen in `MeerkatSwallow.Swallow`) |
+| **Time** | **Faster Ride** (passive): the ride through every soliton, its own or anyone's | `rush` 1 → 1.4 × the throat's multiplier | **Boost Out**: every soliton is left at `boostOut` 1.5 × the exit (`BoostOutUnlocked`) |
+| **Mass** | **Exit Portal** (passive): six prisms on a hexagon at 1.5 × the exit radius, once per soliton (`MeerkatExitPortal`) | `portalSize` 0.4 → 0.9 × the hull's trail prism | **Danger Portal**: danger prisms (`DangerPortalUnlocked`) |
+| **Charge** | **Sentinel Mode** (Y, `Button4Action`): each new soliton leaves a sentinel that holds it, zaps rivals in its guard (1.5 × the opening) at 5 a second and shields its own prisms there (`MeerkatSentinels`); pool 3 | `zapPetals` 0.1 → 0.25 of a petal a zap, each element, ejected, a scored hit that silences | **Six Sentinels**: the pool is 6 (`SixSentinelsUnlocked`) |
+
+Not built: the sentinel seats and the hop (they need dynamic crew seats), a sentinel zapping another's sentinel, and a
+non-Meerkat hull riding a soliton. Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) and the Mix
+stay in the artifact only.
 
 ## 3. Implementation notes for approved rows
 

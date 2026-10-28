@@ -7,6 +7,11 @@ Cloned from the Vessel Studio (2026-10-27, `/artifact-to-unity`): the Meerkat pa
 Yash, 2026-10-27: *"This will be Meerkat, a new vessel ... with all its things similar to the Stoat. Just rename to
 Meerkat and keep only one ability of the wormhole."* It is the Stoat studio's Gate mode, made its own vessel.
 
+**Its four abilities are Garrett's kit** (§9, with §8's surface area and swallow, 2026-10-28; Garrett's design, approved by Yash 2026-10-28: *"Garrett has
+already defined all the elemental abilities, so we're gonna implement those, and it also has the Space ability, which
+pulls prisms inside the tube"*): Space **Soliton** (the wormhole, RT), Time **Faster Ride** (passive), Mass **Exit
+Portal** (passive), Charge **Sentinel Mode** (Y).
+
 ## 1. How it flies
 
 **One thumb** (`MeerkatVesselTransformer : SingleStickVesselTransformer`). The left stick's Ease(2 × stick) yaws and
@@ -172,11 +177,13 @@ line for line:
 ## 5. Stand-ins and open slots
 
 - **Hull:** the Stoat's model and lope, as in the studio. A real Meerkat hull is `/vessel-model` work.
-- **HUD:** the Stoat's `StoatHUDVariant` with `MeerkatHUDController`: the Time card fills as the reticle grows back
-  (ready once RT would form) and empties along the ride.
-- **The element map** (`ElementalAbilityMaps/Meerkat.asset`): four OPEN design slots. The tunnel's size already reads
-  the hull's Space level (§8, Garrett's surface area), but no map row declares it. Which element the wormhole is,
-  the other three abilities and the level-5 upgrades are not designed (`/vessel` §3: never invented).
+- **HUD:** the Stoat's `StoatHUDVariant` with `MeerkatHUDController` (the LOCKED four-icon row, charge → mass → space →
+  time): Charge, the sentinels standing out of the pool; Mass, the last exit portal's prisms still standing (of six);
+  Space, the reticle growing back (full once RT would form); Time, the ride's progress through any soliton (in the ready
+  colour while riding). The Stoat's view has no ready colour on its Charge and Space gauges.
+- **The element map** (`ElementalAbilityMaps/Meerkat.asset`): Garrett's four rows (§9; Space's area and swallow are §8), written by
+  `author_meerkat_assets.py`. `element_ability_table.py Meerkat`: 4/4 abilities, scaling 4/4, L5 gates 4/4.
+- **The ability icons** are the Stoat's placeholders (`StoatHUDVariant`); the Meerkat's own four are `/ability-icon` work.
 - **No `[CliCommand]`, no Unity tuning window:** tune in the artifact and clone. In play mode the
   `MeerkatWormholeConfig` asset's inspector changes are read live, for a quick look.
 - **Touch:** no per-hull phone profile yet (`TouchInputStrategy` raises RT/LT the fleet's way; the right stick on a phone
@@ -198,7 +205,8 @@ line for line:
 | The roots (§7) | `MeerkatRootMath.cs`, `MeerkatRootNetwork.cs`, `MeerkatOmnicrystalField.cs`, `Tests/Editor/MeerkatRootMathTests.cs` |
 | The tree and the roots' look (§7) | `MeerkatTreeMesh.cs`, `MeerkatTreeView.cs`, `_Graphics/Materials/Graphs/MeerkatTree.shader`, `MeerkatRootInside.shader`, `Resources/MeerkatTree.mat`, `Resources/MeerkatRootInside.mat` |
 | The swallow (§8) | `Executors/MeerkatSwallow.cs` (run by the executor; its arithmetic is `MeerkatWormholeMath.PullVelocity` / `CarryDistortion` / `SurfaceAreaThroat`) |
-| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (104 keys, `--check` 0 drift) |
+| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (110 keys, `--check` 0 drift) |
+| Garrett's kit (§9) | `Executors/MeerkatSolitonKit.cs` (the kit, its four L5 gates, the zap), `MeerkatSentinels.cs`, `MeerkatExitPortal.cs`, `MeerkatSolitonMath.cs` + `Tests/Editor/MeerkatSolitonMathTests.cs` (run outside Unity: `Tools/Build/meerkat_kit_harness/run.sh --self-test`), `Data Containers/MeerkatSentinelModeActionSO.cs`, `_SO_Assets/VesselActions/Meerkat/MeerkatSentinelModeAction.asset`; Space L5 Steal hooks `MeerkatSwallow` |
 
 ## 7. The tree and the roots (cloned 2026-10-28 from the artifact's rounds 13-21)
 
@@ -316,3 +324,125 @@ Mass sizing was never ported here, so in the game "revert" is only the area.
 - **Not modelled:** the Meerkat's own omnicrystals (`MeerkatOmnicrystalField`) are not swallowed; a carried prism is not
   hit by a rider in the same tube.
 
+## 9. Garrett's kit: the four abilities (2026-10-28)
+
+**Garrett's design, approved by Yash 2026-10-28.** The design is Garrett's (`Docs/Studios/MEERKAT.md` § "Garrett's
+direction: the Meerkats and the soliton", on `cece/lucid-brown-ykcmhu`); the artifact models it under the Kit dropdown's
+"Garrett's kit" (`Docs/Studios/VesselStudio/meerkat.html`, round 18), and this is a port of the page's kit functions and
+numbers (`kitOverrides`, `kitAddSentinel`, `kitZaps`, `kitPortal`, `kitTryRide`; `kitThroat` and the swallow are §8's
+round-23 port). The arithmetic is `MeerkatSolitonMath` (6 tests on the page's own numbers); the kit is
+`MeerkatSolitonKit`, a component beside the wormhole executor, which (with `MeerkatSwallow`) carries only small hooks
+marked `[Garrett's kit hook]`.
+
+| Element | Ability | Input | Scales with the level | L5 |
+|---|---|---|---|---|
+| Space | Soliton | RT (`RightStickAction`) | the surface area `areaL0` / `areaL10` 6,000 → 18,000 u² (§8) | Steal |
+| Time | Faster Ride | passive | the rush `rush` 1 → 1.4 | Boost Out |
+| Mass | Exit Portal | passive | the portal's size `portalSize` 0.4 → 0.9 | Danger Portal |
+| Charge | Sentinel Mode | Y (`Button4Action`, F on a keyboard) | the petals a zap takes `zapPetals` 0.1 → 0.25 | Six Sentinels |
+
+Every number is the page's shipped value, by the page's own key (`MeerkatWormholeConfig`, its "Garrett's kit" headers):
+the plain keys are mapped in `studio_to_unity/meerkat.json`; each ElementalFloat is the page's L0 / L10 pair.
+
+### 9.1 Space: the Soliton (RT)
+
+- **The wormhole IS the soliton**: a standing tunnel in space that anyone may ride.
+- **Its surface area (the Space level) and its swallow and fire are §8** (round 23: `MeerkatWormholeMath.SurfaceAreaThroat`,
+  `MeerkatSwallow`). This kit's own surface-area function and swallow (`MeerkatSolitonPrisms`) were removed in the merge
+  with round 23, which is the one port: the numbers were the same (6,000 → 18,000 u², the 0.25 u floor, at least 10 u), and
+  round 23 reads the integer Space level (0-10) where the kit read an ElementalFloat.
+- **L5 Steal** (`MeerkatSolitonKit.Stamp` sets the tunnel's steal bit, published with it; `MeerkatSwallow.Swallow` steals):
+  each prism the soliton swallows is stolen into the Meerkat's domain (`Prism.Steal`) the moment its run through the tube
+  starts, so it leaves the way out already theirs. Super-shielded mass is never moved, so it is never stolen.
+- **Shielded prisms bounce** (`PrismBounce`, rule 1a): on Ys-bleeding-edge since commit e6b5c988ec (2026-10-27).
+- **Anyone rides it** (the page's `kitTryRide`, `MeerkatWormholeExecutor.TryRideAnySoliton`): a Meerkat, its maker or any
+  other, that flies into a standing soliton's way in (1 u before the mouth to 10 u past it, inside the mouth, the nose
+  within 72° of the tunnel) is carried through it at the speed it went in with, out on its last heading. A rider leaves
+  another's soliton untouched (only the maker's ride starts its stay). Not re-entered within 1.5 s. **Only Meerkat hulls
+  can ride**: the ride is flown by `MeerkatVesselTransformer`, and giving every other hull a ride needs a hook in the
+  fleet's `VesselTransformer`, which is not contained (a follow-up for the transformer's owners).
+- A fired prism plays `prismFiredEvent` (§9.6), hooked on `MeerkatSwallow`'s fire.
+
+### 9.2 Time: Faster Ride (passive)
+
+- **The ride through every soliton** (its own or anyone's) rushes faster: the throat's multiplier `rideMidMultiplier`
+  (2.5) × `rush` (1 at Time 0, 1.2 at 5, 1.4 at 10), the page's `kitOverrides`.
+- **L5 Boost Out**: every soliton is left at `boostOut` (1.5) × the exit multiplier (1.2 → 1.8 × the speed before the
+  tunnel), and the hull eases back to cruise from there.
+
+### 9.3 Charge: Sentinel Mode (Y)
+
+- **Y toggles it** (`MeerkatSentinelModeActionSO`, a press-and-forget toggle: release does nothing, vessel rule 37).
+  Off, no new sentinels; the standing ones stay.
+- **While on, each new soliton leaves a sentinel** just back from its way in: an AFTERIMAGE of the hull, standing up (its
+  nose to the sky, its back to the way in), baked once from the hull's own renderers and drawn with its materials, with no
+  collider (a simple visual, as asked).
+- **The pool is `sentinelPool` (3)**; with it used up the oldest sentinel retires, and its soliton with it.
+- **A soliton with a sentinel lasts as long as the sentinel**: it is HELD (its stay never runs out, and a new tunnel or a
+  root network does not collapse it).
+- **The guard is a sphere of `guardShare` (1.5) × the opening radius** round the way in.
+- **It zaps** at `aiZapRate` (5 a second; every sentinel is AI-guarded, seats are not built): the nearest RIVAL hull in
+  the guard, or failing that the nearest of its own domain's unshielded prisms there, which it SHIELDS (so the soliton
+  fires them out as bouncing ammunition). Nothing in the guard, it looks again in 0.2 s.
+- **A zap on a rival hull** is a scored hit inside PvP-is-petals-only (`MeerkatSolitonKit.ZapVessel`): decided on the
+  Meerkat's owner (`ElementalTransfer.IsDecidedHere`), admitted through `CombatHitDrain.TryAdmit` as a Bullet
+  (`zapCooldownSeconds` 0, so every zap is admitted; a warded victim is neither scored on nor robbed; a silenced Meerkat's
+  zaps are refused; the admitted hit SILENCES the victim, `SILENCE.md`), then `zapPetals` (0.1 at Charge 0 → 0.25 at 10)
+  of a petal on each element through the economy's accrual (`ElementalTransfer.ApplyAllAuthoritative`, Eject:
+  `ResourceSystem.AccrueElementalLoss` settles only whole petals), EJECTED as free crystals, and the hit on
+  `Event_CombatHitStats`. The Sparrow's bullets take the same path at 0.1 of a petal. The zap is priced as a Bullet
+  (1 point), so its score and its silence are a bullet's while its take grows with Charge.
+- **L5 Six Sentinels**: the pool is `sentinelPoolL5` (6).
+- **The AI** presses Y once (through the replicated press path, as a person would) to turn Sentinel mode on, and leaves
+  it on.
+- **Not built, and why:** the sentinel SEATS (taking a sentinel with the D-pad, the perched 2.5D view, tap to shield or
+  zap) and the HOP (the sentinel and the flyer change places) need dynamic crew seats, which the crew system does not have
+  yet (`Docs/CREW_STATIONS.md`); "one meerkat holds the elements, any other dies of an element hit" rides on those seats
+  too. A sentinel zapping another Meerkat's sentinel (the page's "sentinels zap sentinels") and danger prisms killing
+  sentinels are not ported either: sentinels end only by retiring or with their soliton.
+
+### 9.4 Mass: Exit Portal (passive)
+
+- **Once per soliton, when it forms**, it sets down six prisms on a regular hexagon square to the exit heading, its
+  corners `portalShare` (1.5) × the exit radius out, each at its edge's midpoint and laid along the edge, so the six close
+  into one outline (the page's `kitPortal`, `perpBasis`).
+- **Their size** is the hull's own trail prism (x halved, as the fleet's single trail lays it) × `portalSize` (0.4 at
+  Mass 0 → 0.9 at 10, read at the replicated level). They are the Meerkat's domain and its pilot's.
+- **L5 Danger Portal**: they are danger prisms (a silenced Meerkat's come out plain). A rival touching one takes what the
+  platform's danger-prism effects take (the page's `dangerPetals` is lab-only).
+- Mass is conserved: a portal is never taken back.
+
+### 9.5 The network
+
+- The owner decides each soliton's kit when it forms it (`MeerkatSolitonKit.Stamp`: a sentinel or not, the Charge / Mass /
+  Space L5 bits, the portal's size) and publishes it with the tunnel: `MeerkatWormholeNetworkRelay.TunnelState.Kit` and
+  `PortalSize` (**protocol version 23**). The throat and mouth were already published.
+- Every peer then lays the same portal, stands the same sentinels (and holds the same solitons) and steals the same
+  swallowed prisms from the same tunnels, on its own prisms: prisms are per-peer, as every mover of the prism-motion fundamental is
+  (`Docs/PRISM_MOTION.md` §4), so two peers can disagree on a collision at the edge of a contact.
+- A zap's petals are decided on the Meerkat's owner and settled on the victim's owner (`ElementalTransfer`'s relay); a
+  peer's own copy of a sentinel only plays the zap's sound and shields its own prisms.
+- The ride (anyone's) and Time's two numbers run on the rider's simulating machine; the hull's pose replicates as every
+  vessel's does.
+
+### 9.6 Sound
+
+Five empty `EventReference` slots on `MeerkatWormholeConfig` (the FMOD rule: shipped EMPTY until sound design wires
+them): `zapEvent` (a zap on a rival, about five a second at most), `sentinelPlacedEvent`, `sentinelLostEvent` (lost or
+retired), `portalEvent` (at the way out) and `prismFiredEvent` (one per tube fired at once). The artifact's synthesized
+sounds are their brief.
+
+### 9.7 Testing
+
+- `Tests/Editor/MeerkatSolitonMathTests.cs` (6 tests): the ride's rush and Boost Out, the way in, the sentinel pool retiring the oldest, the zap's petals per Charge and its clock, the hexagon (three
+  page goldens, the edges closing). The surface area's goldens are §8's (`MeerkatWormholeMathTests`). `Tools/Build/meerkat_kit_harness/run.sh --self-test` runs them under
+  dotnet and proves three wrong ports fail.
+- Hand tests: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Meerkat: Garrett's kit".
+
+### 9.8 Follow-ups
+
+- The sentinel seats and the hop (dynamic crew seats), and the element-holder rule that rides on them.
+- A non-Meerkat hull riding a soliton (a ride hook in `VesselTransformer`).
+- The Meerkat's own HUD view and four icons (`/ability-icon`); a ready colour on the Charge and Space cards.
+- A zap's look in the world (today its cues are the victim's ejected crystals and the empty `zapEvent`).
+- The AI does not yet seek a soliton to ride (the page's `kitAiSoliton`); it only rides one it flies into.

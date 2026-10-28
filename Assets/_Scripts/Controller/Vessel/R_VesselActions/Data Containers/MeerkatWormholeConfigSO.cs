@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using FMODUnity;
 using UnityEngine;
@@ -297,6 +298,52 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("AI sloppiness (0 = perfect, 1 = rookie)")]
         [SerializeField, Range(0f, 1f)] float aiNoise;
 
+        // ---- Garrett's kit (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 9): the
+        // artifact's Play Style Config > Kit, "Garrett's kit", by the page's own keys. Plain numbers are written by
+        // studio_to_unity.py (Tools/Build/studio_to_unity/meerkat.json); each ElementalFloat is the page's L0 -> L10 pair
+        // (rushL0/rushL10, zapPetalsL0/zapPetalsL10, portalSizeL0/portalSizeL10), authored once by author_meerkat_assets.py.
+        // Read through MeerkatSolitonKit. Space (the surface area, the swallow and fire) is round 23's section above
+        // (areaL0 / areaL10, suck*, swallowShare, carrySpeed, fireSpeed, fireGlideSeconds; MeerkatSwallow).
+        [Header("Garrett's kit · Time, the ride (the artifact's Kit > Time)")]
+        [Tooltip("The rush: the throat's speed ×, Time L0 -> ...at Time L10 (every soliton's ride, its own or anyone's)")]
+        [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 1.4f, Element.Time, 0.05f);
+        [Tooltip("Garrett's L5 Boost out: out of every soliton at (× the exit)")]
+        [SerializeField, Range(1f, 3f)] float boostOut = 1.5f;
+
+        [Header("Garrett's kit · Charge, Sentinel mode (the artifact's Kit > Sentinel)")]
+        [Tooltip("Sentinels at once")]
+        [SerializeField, Range(1, 6)] int sentinelPool = 3;
+        [Tooltip("...at Charge L5")]
+        [SerializeField, Range(1, 12)] int sentinelPoolL5 = 6;
+        [Tooltip("Guard (× the opening radius)")]
+        [SerializeField, Range(0.5f, 4f)] float guardShare = 1.5f;
+        [Tooltip("An empty sentinel's AI zaps (a second)")]
+        [SerializeField, Range(0f, 12f)] float aiZapRate = 5f;
+        [Tooltip("A zap knocks out, Charge L0 (petal) -> ...at Charge L10 (petal), on each element, a sub-petal tick through the economy's accrual")]
+        [SerializeField] ElementalFloat zapPetals = ElementalFloat.Multiplier(0.1f, 0.25f, Element.Charge, 0f);
+        [Tooltip("Unity only: the seconds before a sentinel's zap can score on the same rival again (VesselCombatHitLatch; 0 = every zap is a scored hit)")]
+        [SerializeField, Min(0f)] float zapCooldownSeconds;
+        [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager scores combat hits on. Fail-loud.")]
+        [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
+
+        [Header("Garrett's kit · Mass, the exit portal (the artifact's Kit > Portal)")]
+        [Tooltip("Exit portal: the hexagon out at (× the exit radius)")]
+        [SerializeField, Range(1f, 4f)] float portalShare = 1.5f;
+        [Tooltip("Its prisms' size, Mass L0 (× a prism) -> ...at Mass L10 (× the hull's trail prism)")]
+        [SerializeField] ElementalFloat portalSize = ElementalFloat.Multiplier(0.4f, 0.9f, Element.Mass, 0.05f);
+
+        [Header("Garrett's kit · Audio (FMOD; shipped empty until sound design wires them)")]
+        [Tooltip("A sentinel zaps a rival (at the rival).")]
+        [SerializeField] EventReference zapEvent;
+        [Tooltip("A sentinel stands up at a new soliton's way in.")]
+        [SerializeField] EventReference sentinelPlacedEvent;
+        [Tooltip("A sentinel is lost or retires, and its soliton with it.")]
+        [SerializeField] EventReference sentinelLostEvent;
+        [Tooltip("A new soliton sets down its exit portal (at the way out).")]
+        [SerializeField] EventReference portalEvent;
+        [Tooltip("A soliton fires a prism out of its way out.")]
+        [SerializeField] EventReference prismFiredEvent;
+
         [Header("Audio (FMOD; shipped empty until sound design wires them)")]
         [Tooltip("RT formed a tunnel (at the hull).")]
         [SerializeField] EventReference formEvent;
@@ -304,6 +351,24 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] EventReference collapseEvent;
         [Tooltip("An omnicrystal was taken and the roots grew (at the hull).")]
         [SerializeField] EventReference rootsEvent;
+
+        // Garrett's kit (MeerkatSolitonKit reads these)
+        public ElementalFloat Rush => rush;
+        public float BoostOut => boostOut;
+        public int SentinelPool => sentinelPool;
+        public int SentinelPoolL5 => sentinelPoolL5;
+        public float GuardShare => guardShare;
+        public float AiZapRate => aiZapRate;
+        public ElementalFloat ZapPetals => zapPetals;
+        public float ZapCooldownSeconds => zapCooldownSeconds;
+        public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
+        public float PortalShare => portalShare;
+        public ElementalFloat PortalSize => portalSize;
+        public EventReference ZapEvent => zapEvent;
+        public EventReference SentinelPlacedEvent => sentinelPlacedEvent;
+        public EventReference SentinelLostEvent => sentinelLostEvent;
+        public EventReference PortalEvent => portalEvent;
+        public EventReference PrismFiredEvent => prismFiredEvent;
 
         public float ReticleAhead => reticleAhead;
         public float KeyRampSeconds => keyRampSeconds;

@@ -1162,6 +1162,10 @@ mode, the swap seats you in a sentinel and Y there hops you out; in the Mix the 
 - **The kit** (round 18): Garrett's kit and the Mix are prototypes in the studio (§ Two kits). Since 2026-10-28 the
   element definition is Garrett's (locked); the choices that are not element definitions (D2 seats, D5 clamp, the
   roots' rule) are still Yash's to judge.
+- **Garrett's kit is in Unity** (Yash, 2026-10-28: "Garrett has already defined all the elemental abilities, so we're
+  gonna implement those"; `R_VesselActions/MEERKAT.md` §8-§9): the soliton's surface area and swallow-and-fire (round 23)
+  with its L5 Steal, the faster ride and Boost out, Sentinel mode on Y with its pool, guard and zap, the exit portal and
+  its danger prisms. Not in Unity: the sentinel seats and the hop (dynamic crew seats), and everything of the Mix.
 - **The play styles.** The Meerkat has none yet.
 - **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
 
