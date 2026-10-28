@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// graded to zero at its edge). Inside the shell the ray is turned by a field whose lines on the wall are the tube's own
     /// contours (<c>fieldPitch</c> 0° along it, 90° round its rings), then it carries on; where it lands on screen is what
     /// that pixel shows. The four tubes nearest the camera take part (<see cref="MaxTubes"/>).
-    /// <b>Round 25</b> (Yash, 2026-10-28: "the network of wormholes ... like our tube, same visuals"): a channel of an
+    /// <b>Round 26</b> (Yash, 2026-10-28: "the network of wormholes ... like our tube, same visuals"): a channel of an
     /// omnicrystal's network is a tube too. It joins the same bank as a 3D polyline (<see cref="PathPoints"/> points at even
     /// steps of s, each its radius, and the channel's carried normal), flagged by <c>Shape.y</c> 1, so the water pipe bends
     /// space round the network exactly as round a tunnel; the nearest tubes are taken, tunnels and channels alike.
@@ -76,7 +76,7 @@ namespace CosmicShore.Gameplay
         static readonly Vector4[] s_c = new Vector4[MaxWells];
         static readonly Vector4[] s_p = new Vector4[MaxWells];
         static readonly ContourTubes s_tubes = new();
-        /// <summary>One tube the contour field may take: a tunnel, or (round 25) a channel of a network.</summary>
+        /// <summary>One tube the contour field may take: a tunnel, or (round 26) a channel of a network.</summary>
         struct Near
         {
             public MeerkatWormholeExecutor.Tunnel Tunnel;
@@ -92,9 +92,9 @@ namespace CosmicShore.Gameplay
         public sealed class ContourTubes
         {
             public readonly Matrix4x4[] W2L = new Matrix4x4[MaxTubes];
-            public readonly Vector4[] Shape = new Vector4[MaxTubes];   // L, 0 a tunnel / 1 a channel (round 25), theta, throat (round 22)
+            public readonly Vector4[] Shape = new Vector4[MaxTubes];   // L, 0 a tunnel / 1 a channel (round 26), theta, throat (round 22)
             public readonly Vector4[] Path = new Vector4[MaxTubes * PathPoints];   // per point: across, ahead (its own frame), s, turned; a channel: x, y, z, radius
-            public readonly Vector4[] Norm = new Vector4[MaxTubes * PathPoints];   // a channel's carried normal per point (round 25)
+            public readonly Vector4[] Norm = new Vector4[MaxTubes * PathPoints];   // a channel's carried normal per point (round 26)
             public readonly Vector4[] Win = new Vector4[MaxTubes];     // s0, s1, fade, mouth
             public readonly Vector4[] Bound = new Vector4[MaxTubes];   // world centre, radius
             public Vector4 F0, F1, F2, F3, CamPos, CamR, CamU, CamF;
@@ -140,7 +140,7 @@ namespace CosmicShore.Gameplay
         }
 
         static bool AnythingLive => MeerkatWormholeExecutor.Live.Count > 0 || MeerkatWormholeExecutor.Ripples.Count > 0 ||
-                                    MeerkatRootNetwork.Live.Count > 0;   // round 25: a network bends space as a tunnel does
+                                    MeerkatRootNetwork.Live.Count > 0;   // round 26: a network bends space as a tunnel does
 
         static void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {
@@ -324,7 +324,7 @@ namespace CosmicShore.Gameplay
                 if (!cfg || !cfg.ContourFieldOn || t.W.S1 - t.W.S0 < 1f || t.Fade <= 0.004f) continue;
                 Offer(new Near { Tunnel = t, D = Vector3.Distance(eye, t.At(0.5f * (t.W.S0 + t.W.S1), out _)) });
             }
-            // round 25: every channel of a network is a wormhole tube; its distance is to the nearest point of its dug window
+            // round 26: every channel of a network is a wormhole tube; its distance is to the nearest point of its dug window
             var nets = MeerkatRootNetwork.Live;
             var eyeD = MeerkatRootNetwork.D(eye);
             for (int n = 0; n < nets.Count; n++)
@@ -398,7 +398,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Round 25: a channel of a network in the bank. Its frame is the world's, moved to its source (so the numbers stay
+        /// Round 26: a channel of a network in the bank. Its frame is the world's, moved to its source (so the numbers stay
         /// small); its path is <see cref="PathPoints"/> points at even steps of s, each (x, y, z, its radius), with the
         /// channel's carried normal beside each; its window is its dug window and fade.
         /// </summary>

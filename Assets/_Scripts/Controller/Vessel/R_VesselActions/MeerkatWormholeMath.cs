@@ -147,6 +147,22 @@ namespace CosmicShore.Gameplay
             return d * sp + swirl * (sp * 0.33f * Clamp01(dist / Mathf.Max(1f, suckRadius)));
         }
 
+        /// <summary>The page's <c>TUBE_GAP</c>: how far behind a rider a thing carried after it is held (u).</summary>
+        public const float TubeGap = 6f;
+
+        /// <summary>
+        /// The page's <c>tubeAdvance</c> (round 25: "anything that enters the wormhole at first will get out of the wormhole
+        /// also without clashing"): a thing carried at <paramref name="s"/> moves on at the slide's top speed
+        /// <paramref name="slideTop"/>; with a rider in the same tube ahead of it (<paramref name="riderS"/> &gt; s) it never
+        /// comes nearer than <see cref="TubeGap"/> behind, and never goes backwards.
+        /// </summary>
+        public static float TubeAdvance(float s, float slideTop, float dt, bool riderInTube, float riderS)
+        {
+            float to = s + Mathf.Max(5f, slideTop) * dt;
+            if (riderInTube && riderS > s) to = Mathf.Min(to, Mathf.Max(s, riderS - TubeGap));
+            return to;
+        }
+
         /// <summary>
         /// The page's <c>carryPose</c> (round 23, Yash: "the prisms will be distorted while traveling through this wormhole"):
         /// at <paramref name="s"/> along a tunnel <paramref name="L"/> long a carried thing is stretched along the tube's

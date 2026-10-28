@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
         public readonly System.Func<int, bool> AliveFn;
         /// <summary>The root skins, built and destroyed by <see cref="MeerkatTreeView"/>.</summary>
         internal Mesh[] Skins;
-        /// <summary>Round 25: each channel's calm inner wall, built and destroyed by <see cref="MeerkatTubeWallView"/>.</summary>
+        /// <summary>Round 26: each channel's calm inner wall, built and destroyed by <see cref="MeerkatTubeWallView"/>.</summary>
         internal Mesh[] Walls;
 
         MeerkatRootNetwork(List<MeerkatRootMath.Channel> channels, MeerkatRootMath.D3 up, MeerkatWormholeExecutor maker, int seq,
@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The page's <c>rootsHere</c> + <c>labCommit</c>, round 25 (Yash, 2026-10-28: "it will always be large, despite the
+        /// The page's <c>rootsHere</c> + <c>labCommit</c>, round 26 (Yash, 2026-10-28: "it will always be large, despite the
         /// last wormhole's length ... if it has full mass, then it will be the largest, covering the entire cell"): the network
         /// grown from <paramref name="seed"/>, its reach <paramref name="share"/> × its cell's radius (the maker's Mass,
         /// <c>MeerkatWormholeConfigSO.NetworkShare</c>, read by the owner and published, so every peer grows the same one),
@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Round 25: the cell a network fills - the nearest active <see cref="Cell"/>'s centre (the world's origin without one)
+        /// Round 26: the cell a network fills - the nearest active <see cref="Cell"/>'s centre (the world's origin without one)
         /// and the larger of its own radius (<see cref="Cell.SenseRadius"/>) and, in a race, the race shell
         /// (<see cref="RaceCourseSource.DefaultOuterRadius"/>, 1080 u) and the farthest ring + 60 u; with neither, the race
         /// shell. The page reads the same: Warpline's outer shell, or its farthest ring + 60 u.

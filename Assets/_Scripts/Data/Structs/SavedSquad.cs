@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CosmicShore.Data
 {
@@ -67,6 +68,63 @@ namespace CosmicShore.Data
                     throw new ArgumentOutOfRangeException(nameof(index), index, "A squad has three slots: 0, 1 and 2.");
             }
         }
+
+        /// <summary>
+        /// Each vessel has its own pilot and its own artifact (Garrett, 2026-10-27). The pilot and artifact now on
+        /// <paramref name="seat"/> leave any other slot that carries the same one: a vessel always has a pilot, so the
+        /// other slot takes <paramref name="previousPilotId"/> (the pilot <paramref name="seat"/> had); an artifact slot
+        /// may be empty, so the other slot's artifact is cleared. True when another slot changed.
+        /// </summary>
+        public bool KeepCardsOwn(int seat, string previousPilotId)
+        {
+            var mine = GetSlot(seat);
+            bool changed = false;
+            for (int i = 0; i < SlotCount; i++)
+            {
+                if (i == seat) continue;
+                var other = GetSlot(i);
+                bool clash = false;
+                if (!string.IsNullOrEmpty(mine.PilotId) && other.PilotId == mine.PilotId)
+                {
+                    other.PilotId = previousPilotId == mine.PilotId ? null : previousPilotId;
+                    clash = true;
+                }
+                if (!string.IsNullOrEmpty(mine.ArtifactId) && other.ArtifactId == mine.ArtifactId) { other.ArtifactId = null; clash = true; }
+                if (!clash) continue;
+                SetSlot(i, other);
+                changed = true;
+            }
+            return changed;
+        }
+
+        /// <summary>
+        /// Every vessel needs a pilot (Garrett, 2026-10-27): each slot with no pilot, or with one another slot already
+        /// flies, takes the first of <paramref name="pilotIds"/> no slot flies yet. True when a slot changed.
+        /// </summary>
+        public bool FillPilots(IReadOnlyList<string> pilotIds)
+        {
+            if (pilotIds == null) return false;
+            bool changed = false;
+            for (int i = 0; i < SlotCount; i++)
+            {
+                var slot = GetSlot(i);
+                bool taken = false;
+                for (int j = 0; j < i; j++) taken |= GetSlot(j).PilotId == slot.PilotId;
+                if (!string.IsNullOrEmpty(slot.PilotId) && !taken) continue;
+                foreach (var id in pilotIds)
+                {
+                    if (string.IsNullOrEmpty(id) || Flies(id)) continue;
+                    slot.PilotId = id;
+                    SetSlot(i, slot);
+                    changed = true;
+                    break;
+                }
+            }
+            return changed;
+        }
+
+        bool Flies(string pilotId) =>
+            Leader.PilotId == pilotId || RogueOne.PilotId == pilotId || RogueTwo.PilotId == pilotId;
 
         /// <summary>True when a friend made this squad and the player joined it.</summary>
         public bool IsJoined() => !string.IsNullOrEmpty(OwnerId);

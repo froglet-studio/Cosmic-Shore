@@ -67,7 +67,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ### 🔴 The Meerkat's network of wormholes: no tree, no roots, sized by Mass up to the whole cell (`worktree-agent-ae182c824c56a2bb9`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed** (the artifact's round 25, cloned; `R_VesselActions/MEERKAT.md` §7a):
+**What landed** (the artifact's round 26, cloned; `R_VesselActions/MEERKAT.md` §7a):
 - The tree, the network's bark and its old inside wall ship off (`trunkVisibility`, `rootBarkVisibility`, `rootOpacity` 0).
 - Every channel of the omnicrystal's network draws as a wormhole does: the contour field's water pipe (`MWChannel` in
   `MeerkatWormholeLens.shader`), the bridge in YASH'S LOOK, the warp tube, and the calm inner wall every tube now has
@@ -77,8 +77,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 **Verified without the editor:** reference compile, player-dev and editor: 0 errors in project code. Both changed shaders
 compile (glslang, HLSL front end, vertex and fragment, URP mock; a planted typo fails). `MeerkatRootMathTests` 12/12 under
-dotnet (4 new, from the page's own `labLayout` / `netPlace`). `studio_to_unity --check`: the new keys match; 3 drifts
-(`bendRadius`, `throatDiameter`, `mouthDiameter`) are Yash's own Unity edits (ce548fc092), left as he set them.
+dotnet (4 new, from the page's own `labLayout` / `netPlace`). `studio_to_unity --check`: 0 Meerkat drift (Yash's own Unity edits, ce548fc092: `bendRadius` 10, `throatDiameter`
+20, `mouthDiameter` 40, are now the artifact's shipped values).
 `author_meerkat_assets --check` / `--self-test` pass. The console-logging, conditional-compilation, using-directive and
 abstract-member gates pass. `/verify-unity` was not available (no editor in the session).
 
@@ -101,6 +101,29 @@ abstract-member gates pass. `/verify-unity` was not available (no editor in the 
 
 **First-pass tuning** (the artifact's numbers): `networkReachAtZero` 0.5, `networkReachAtFull` 1, `labyrinthRadiusMin` 240,
 `labyrinthRadiusMax` 1080, forks 6 → 22, openings 12 → 56 (40 to 78 wormholes).
+
+### 🔴 The Meerkat: phased inside a tube, first in first out, the omni crystal grows the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `MEERKAT.md` §9.
+- Inside a tunnel or the roots, the Meerkat touches no prism and no crystal, and nothing touches it. This uses
+  `IHullContactGate` on `MeerkatVesselTransformer`, and the skimmer's prism skim now honours the gate too.
+- Carried prisms and crystals move at the slide's top speed and stay 6 u behind the rider ahead of them. `carrySpeed`
+  is retired.
+- Any omni crystal the hull collects grows its roots (`OmniCrystalImpactor.CollectedByVessel`), for the player and the AI.
+
+**Verified without the editor:**
+- 59/59 dotnet tests (new: `TubeAdvance`, no one passes anyone).
+- Reference compile clean.
+- The artifact's kit races finish.
+
+**Verify in editor:**
+1. Lava Lamp, the Meerkat: fly into the cell's omni crystal. Its roots grow round you at once and you are inside them.
+   Watch an AI Meerkat take one: its roots grow too.
+2. Form a tunnel whose mouth is next to prisms and ride it. The prisms pulled in behind you never catch you, and your
+   hull loses no petal and breaks nothing inside the tunnel.
+3. Form a tunnel straight through a wall of prisms: you pass through it untouched, and the wall stays standing.
+4. Out of the far mouth you are solid again: hit a prism and it breaks as usual.
+5. Burrow Run: a ring threaded while inside a tunnel still counts.
 
 ---
 
@@ -127,6 +150,60 @@ The AI holds RT and keeps to the middle. `rideEntryMultiplier` and `rideMidMulti
 2. Ride out of the far mouth: it leaves on the tunnel's last heading, a little boosted, and the reticle comes back.
 3. A long tunnel is thin (Garrett's area), so the stick has little room there: check it still feels fine.
 4. Burrow Run: the AI forms tunnels, slides them with RT held and threads its rings.
+
+### 🔴 Meerkat: Garrett's kit - the soliton, the faster ride, sentinels, the exit portal (`worktree-agent-a0cdd70864b1be2cf`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett's design, approved by Yash 2026-10-28; `R_VesselActions/MEERKAT.md` §9): `MeerkatSolitonKit` on the
+Meerkat (with `MeerkatSentinels`, `MeerkatExitPortal`, `MeerkatSolitonMath`; the L5 Steal hooked on round 23's
+`MeerkatSwallow`), Y →
+`MeerkatSentinelModeAction`, the config's "Garrett's kit" sections, the element map's four rows, protocol version 23
+(`TunnelState.Kit`, `PortalSize`). `/verify-unity` was not available in this session (no Editor): nothing here has been
+compiled or run by Unity itself.
+
+**Verified without the editor:** 6/6 `MeerkatSolitonMathTests` (after the merge with round 23; its area goldens are in `MeerkatWormholeMathTests`) on the page's own numbers (dotnet, Unity stubs;
+`Tools/Build/meerkat_kit_harness/run.sh --self-test`, 3 negative controls fire). Reference compile player-dev and editor:
+0 errors in project code. `element_ability_table.py Meerkat`: 4/4 · 4/4 · 4/4. `author_meerkat_assets.py --check` /
+`--self-test`, `studio_to_unity.py --check` (Meerkat 0 drift), console-logging, conditional-compilation, using-directive,
+elemental-float, network-prefab-hash and abstract-member gates green.
+
+**Verify in editor** (the Toybox's Vessel Changer → Meerkat, unless said; HUD console `elements` or crystals to raise a level):
+1. **Compile and load.** No console error on entering play mode or on swapping to the Meerkat. The ShipActions object
+   carries `MeerkatSolitonKit` with `MeerkatWormholeConfig` and Runtime GameData wired.
+2. **Space, the soliton's size and swallow** are round 23's: run the next entry ("The Meerkat's soliton: Garrett's surface
+   area, and prisms sucked through it"). Since the merge with round 23 the kit adds only the L5 Steal and the fired sound
+   to them.
+3. **Space L5, Steal.** At Space 5+, swallowed rival / neutral prisms turn your colour as they enter the tube.
+4. **Anyone rides.** With two Meerkats (a second player, or an AI Meerkat in an arena/race), fly into the other's
+   standing soliton's way in: you are carried through and out on its last heading; its own life is unchanged by you.
+   A non-Meerkat hull is NOT carried (not built).
+5. **Time.** Time 0 vs Time 10: the ride's peak is faster at 10 (×1.4 at the throat). At Time 5+ (Boost Out) you leave
+   every soliton visibly faster (1.8 × your speed before it), then ease back to cruise.
+6. **Charge, Sentinel mode.** Press Y (F on keyboard): nothing visible until the next RT. Form a tunnel: a still copy of
+   the hull stands up at its way in, nose to the sky. That tunnel no longer collapses after 10 s, and forming the next one
+   does not collapse it. Form four: the first sentinel and its tunnel go (pool 3). At Charge 5+: six stand. Press Y again:
+   new tunnels leave no sentinel; the standing ones stay.
+7. **Charge, the zap.** Let a rival (an AI on another domain) fly within 1.5 × a sentinel's mouth: crystals are knocked
+   out of it about five times a second's worth (0.1 → 0.25 of a petal a zap on each element; whole petals leave), its
+   abilities are silenced for what each hit is worth, and the shooter's score counts the hits. Your own domain's prisms in
+   the guard turn shielded.
+8. **Mass, the exit portal.** Every new tunnel sets six small prisms of your colour in a hexagon round its way out, square
+   to its heading, at 1.5 × the exit radius. Mass 10 makes them about twice the size of Mass 0's. At Mass 5+ they are
+   danger prisms (a rival hitting one takes the danger hit).
+9. **AI.** Seat an AI Meerkat in Warpline (and Burrow Run): it turns Sentinel mode on once, forms tunnels as before and
+    still finishes the race. Its sentinels and portals appear like a person's.
+10. **HUD.** The four-icon row: Charge fills with sentinels / pool, Mass with the last portal's standing prisms / 6, Space
+    with the reticle's growth, Time drains along a ride. Icons are the Stoat's placeholders.
+11. **MPPM, two clients.** Host + client, one Meerkat each. A tunnel formed with Sentinel mode on shows the same sentinel,
+    the same portal (size, danger) and holds on both screens; a zap on the other client takes petals once (on the victim's
+    machine) and both see the crystals. Protocol 23: an older build is refused at connect.
+
+**First-pass tuning (the artifact's shipped numbers; tune there and clone):** the area and swallow keys are round 23's
+(next entry); `rushL0/L10` 1 / 1.4, `boostOut` 1.5, `sentinelPool` 3 / 6,
+`guardShare` 1.5, `aiZapRate` 5, `zapPetalsL0/L10` 0.1 / 0.25, `portalShare` 1.5, `portalSizeL0/L10` 0.4 / 0.9. Unity only:
+`zapCooldownSeconds` 0.
+
+**Not built:** the sentinel seats, the hop and the element-holder rule (dynamic crew seats); a non-Meerkat hull riding a
+soliton; sentinels zapping sentinels; the Meerkat's own icons; the sound (five empty FMOD slots).
 
 ---
 
@@ -539,6 +616,29 @@ compiled clean headless (`unity_refcompile --config editor`: 0 errors in project
    page with the tooltip naming the script; **Bake all** skips the Tool portraits (the PNGs stay unchanged in
    git) but still bakes a painting's and a hull's variant icons.
 3. Run Scan & Merge once: no Tool page loses its Image (the field is fill-when-empty).
+
+### 🔴 Each free elemental crystal wears its own shade of lime (`cece/charming-bell-m70ac8`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed:** the Mass and omni crystals wore one identical lime. Now each free elemental wears the Wrasse's lasso
+shade for its element (Charge `#a0ff00`, Mass `#5ec600`, Space `#40ff00`, Time `#9bcf00`); the omni keeps `#7cfc00`.
+New palette field `EnvironmentColors.ElementalCrystalColors` (written by `kite_mote_colors.py`), the runtime tint
+(`Crystal.TryResolveTintColors`, Charge), `MassDepthPrisms.mat`, and new `Space`/`TimeCrystalFresnelMaterial` on
+`CrystalSpace` / `CrystalTime`. Why: `Docs/PALETTE.md` §2.11.
+
+**Verified without the editor:** reference compile player OK and editor OK (the new test file gated);
+`kite_mote_colors.py --check` and `--self-test`, `author_elemental_crystal_colors.py --check` and `--self-test`,
+`author_mass_crystal_look.py --check`, `author_omni_crystal_triangles.py --check` all OK. NOT run:
+`ElementalCrystalShadeTests`.
+
+**Verify in editor:**
+1. Run `ElementalCrystalShadeTests` and `OmniCombineTests` (EditMode): all pass.
+2. Open `OriginalColorSetSO`: Environment Colors shows four Elemental Crystal Colors.
+3. Play any mode with free crystals (or kill a lifeform of each element): a free Mass crystal is a visibly darker,
+   deeper green than the omni; Space reads cooler and Time warmer; Charge reads yellow-green. All still read as lime.
+4. Embedded hearts are still blue-white, and team crystals still wear their domain colour.
+5. The Elemental Converter (Ark screen, CONVERT): each of the four crystals waits and flies in its own shade, eases
+   to the omni's lime as its plates turn into the omni's, and the omni dithers in with no colour jump.
+6. The Console shows nothing new.
 
 ### 🔴 The AI Stoat retrained for Warpline (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
@@ -6978,6 +7078,9 @@ pick knob for knob and pixel for pixel (`omni_shepard_lab_parity.cjs`).
 ---
 
 ### 🔴 Pilots & artifacts 2b: the 40-pilot roster, 45 artifacts and the Hangar's PILOTS / ARTIFACTS tabs (`claude/pensive-dijkstra-qxoxo0`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+> **Superseded 2026-10-27** by "The callsign pilots, Javelin and Aegis" (end of this file): the roster, ranks, default
+> pilots and Tomahawk below were removed. Skip these steps.
 
 **Landed** (`Docs/Pilots/PILOTS_AND_ARTIFACTS.md` § Implementation; built on the two sections below):
 `author_pilot_assets.py` now also writes 40 roster pilots, 45 artifacts, `ArtifactStat.cs` and the catalog from
@@ -17404,6 +17507,149 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
    number).
 6. Phone: each of the three still reaches the ability through its card, as before.
 
+## 🔴 2026-10-27 — The plain payload on RB (unverified: no Unity editor in the session)
+
+**Files:** `ArkHold.cs`, `PayloadCarrier.cs`, `PayloadRelease.cs` (`Assets/_Scripts/Controller/Payload/`),
+`PayloadConfigSO.cs`, `PayloadPrismEffectSO.cs`, `PayloadCrackPrismEffectSO.cs`, `SuperShieldCrack.cs` (the crack
+the sniper now shares), `Ark.cs` (`Domain`, `Hold`, `TakeHullPrisms`, the retire strikes parcels), `Prism.cs`
+(`SetCarried`), `VesselController.Initialize` (ensures the carrier), `InputEvents.PayloadAction = 15` raised by RB / E
+in the pad, keyboard and mouse strategies, `InputHintBindingMap`, `ArkwayRun` (banners), assets from
+`Tools/Build/author_payload_assets.py` (`--check`, `--self-test`), `PayloadTests.cs`. Design:
+`Docs/Pilots/ARTIFACTS.md` §2. The reference compile is clean on the player and editor configs.
+
+1. Run `PayloadTests`, `ControlChipBindingTests`, `EnumIntegrityExtendedTests`. **Pass:** green.
+2. Freestyle, Wander toy, **With Ark**. Fly alongside the Ark and press RB (keyboard E). **Pass:** six plates leave
+   the nearest flank and fly to a small bundle riding above and behind your hull; the banner reads PAYLOAD ABOARD;
+   the Ark's hull visibly has a gap there.
+3. Fly with the parcel through turns and boosts. **Pass:** it stays seated, your hull never strikes it, and nothing
+   about flight changes.
+4. Find a rival domain's super-shielded or shielded mass (a crystal cage, a shielded flora), fly into it and press RB.
+   **Pass:** every rival shield within about 60 units cracks (super shields drop to a one-hit shield), your own
+   domain's shields are untouched, and the parcel bursts as debris.
+5. Press RB far from the Ark. **Pass:** the banner says to bring it alongside; nothing else happens.
+6. Take payloads until the hull is down to its last dozen plates. **Pass:** the next press says the Ark has no hull
+   to spare; the Ark never falls to its own crew.
+7. Get silenced (take a scored hit in a mode with a rival), then release a payload on rival shields. **Pass:** the
+   shields wobble (deflect) and stay up.
+8. End the voyage (disembark) while carrying. **Pass:** the parcel withers away with the Ark; no prisms are left
+   floating and the console shows no pool errors.
+9. Any arcade mode with no Ark: press RB. **Pass:** nothing happens, no banner, no error.
+10. Grizzly, Shrike, Brittle Star: Y still runs their moved ability; RB only touches the payload.
+
+## 🔴 2026-10-27 — Pilot vision on LB: ENSIGN, CITADEL, VOLT, BANDIT (unverified: no Unity editor in the session)
+
+**Files:** `PilotVision.cs` (enum, None = 0 … Galleon = 17), `CallsignSetSO.cs`, `Assets/_Scripts/Controller/PilotSight/`
+(`PilotSight`, `PilotSightProviders`, `PilotSightMarks`, `PilotSightSuppression`), `PilotSightGesture.cs` (LB / V),
+`PilotSightMark.shader`, `PrismDestructionSight.hlsl` (new globals `_PilotVision*`, applied after the existing sight
+composition), `VesselController.Initialize` (ensures the sight), assets from `Tools/Build/author_callsign_assets.py`
+(`--check`, `--self-test`), `PilotSightTests.cs`. Design: `Docs/Pilots/CALLSIGNS.md` §3, §6. The reference compile
+is clean on the player and editor configs and `verify_prism_sight_composition.py` holds; **the URP shader compile, the
+look and the cost were not seen** (no editor).
+
+Until pilots carry a sight (Shombith's pilot types), a tester picks one on `Resources/Pilots/CallsignSet` ▸
+**Unassigned Sight**. It ships as None, so LB does nothing until you set it.
+
+1. Run `PilotSightTests`, `PayloadTests`. **Pass:** green. Check the Console for shader errors on `PilotSightMark`
+   and the Block / Exploding Block graphs. **Pass:** none.
+2. Set Unassigned Sight to **ENSIGN**. Freestyle, any vessel; hold LB (keyboard V). **Pass:** over about a quarter
+   second the world greys and dims, and your domain's prisms stay lit and slightly brighter; release and it eases back
+   over about a third of a second. Nothing pops.
+3. **CITADEL**: hold LB near super-shielded mass. **Pass:** only super-shielded prisms stay lit, of every domain.
+4. **VOLT**: hold LB in a mode with crystals. **Pass:** every Charge crystal (field, ejected, carried by a lifeform)
+   wears a white halo through mass; no other element's crystal does; far halos stay readable.
+5. **BANDIT**: a mode with rival vessels. **Pass:** each rival hull wears a halo in its own domain colour, through
+   mass; your own hull and teammates do not.
+6. While holding LB: fly, boost, fire, take hits. **Pass:** nothing about flight, scoring or damage changes.
+7. An AI or a remote player holding nothing: **Pass:** only the local pilot's screen changes.
+8. Cost: Profiler with 1000+ marks (VOLT in a crystal-dense mode) and a full prism field under ENSIGN. Note the frame
+   cost against LB released; record it in `Docs/Pilots/CALLSIGNS.md` §6 before choosing instanced or shader-side marks
+   for the other target sights.
+
+## 🔴 2026-10-27 — The Ark's fall: the hold to the raiders, or spilled for anyone (unverified: no Unity editor in the session)
+
+**Files:** `ArkFall.cs`, `ArtifactPickup.cs` (`Assets/_Scripts/Controller/Payload/`), `ArkHold.cs` (artifacts aboard
+by id, `Stow`, `FindHome`, settles once on the fall), `PayloadCarrier.cs` (RB takes a loose artifact, stows it beside
+your Ark, lets it go elsewhere), `Ark.cs` (`LastFallenHullPrism`), `Prism.cs` (`DestroyerName`, `DestroyedAt`,
+`DestroyedByCreature`), `PayloadConfigSO.cs` + `ArtifactPickup.mat` from `author_payload_assets.py`, `ArkwayRun`
+(three banners), `ArkFallTests.cs`. Design: `Docs/Pilots/ARTIFACTS.md` §5, §8.4. The reference compile is clean on
+the player and editor configs.
+
+Artifacts are ids until squad slots load them (phase 3). To test, put ids aboard every Ark through
+`Resources/PayloadConfig` ▸ **Test Cargo** (for example `artifact.javelin`, `artifact.aegis`). Ship it empty again; the generator's
+`--check` fails while it is not.
+
+1. Run `ArkFallTests`, `PayloadTests`. **Pass:** green.
+2. Test Cargo = two ids. Wander toy, **With Ark**; let fauna eat the whole hull (or wait for the food web). **Pass:**
+   when the voyage ends on THE ARK HAS FALLEN, two pearl-white faceted bodies hang about 40 units from where the Ark
+   was, slowly turning, lit like the world.
+3. Fly to one and press RB (E). **Pass:** the banner reads ARTIFACT ABOARD; the body rides above and behind your hull.
+4. Press RB away from any Ark. **Pass:** ARTIFACT LET GO; it stays where you let it go and RB beside it takes it again.
+5. Start a new voyage while carrying one, fly alongside the new Ark and press RB. **Pass:** ARTIFACT STOWED IN THE
+   HOLD; the body is gone.
+6. Leave one uncollected and leave freestyle (or reload the scene). **Pass:** it is gone, with no console errors.
+7. Carry one while carrying nothing else and get destroyed. **Pass:** it floats where you died, takeable.
+8. (Needs two squads with Arks, phase 6.) A rival destroys your Ark's last hull prism. **Pass:** every artifact
+   aboard appears in the rival Ark's hold, none spill.
+
+## 🔴 2026-10-27 — The callsign pilots, Javelin and Aegis (unverified: no Unity editor in the session)
+
+**Files:** `PayloadTransformSO.cs`, `JavelinTransformSO.cs` (`JavelinFlight`), `AegisTransformSO.cs` (`AegisWard`)
+in `Assets/_Scripts/Controller/Payload/Transforms/`; `ArtifactSO.cs` (`ArtifactTrack`, `ArtifactLevels`), `PilotSO.cs`
+(`vision`), `PilotArtifactCatalogSO.cs`, `PilotLoadoutStore.cs` (seat, one slot, track levels, crystals),
+`VesselPilotLoadout.cs`, `PilotSight.cs` (the seated pilot's sight), `PayloadCarrier.cs` (loads the slotted artifact,
+releases through it), `PayloadRelease.cs` (`SpendParcel`), `Ark.cs` (`GetLiveHullPrisms`), `ArkHold.cs` (`LocalLine`),
+`ArkwayRun.cs`, `HangarPilotsPage.cs`, `HangarArtifactsPage.cs`; assets from `author_pilot_assets.py`
+(`Docs/Pilots/pilots_and_artifacts.json`) and `HangarView.prefab` from `author_menu_hangar.py`. Tests:
+`PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests`. Design: `Docs/Pilots/CALLSIGNS.md`,
+`Docs/Pilots/ARTIFACTS.md` §3, §4. The reference compile has no errors in the changed files (player and editor).
+
+1. Run `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests`, `PilotSightTests`,
+   `ArkFallTests`. **Pass:** green.
+2. Select `Assets/Resources/Pilots/PilotArtifactCatalog.asset`. **Pass:** 17 pilots (ENSIGN first, GALLEON last), 2
+   artifacts (Javelin, Aegis), none Missing; Slots Per Vessel 1. Each artifact shows a Payload Transform and four tracks.
+3. Menu_Main > Hangar > any vessel > PILOTS. **Pass:** a scrolling column of 17 cards, each a callsign and its line;
+   press VOLT and it reads IN THE SEAT, the header reads "PILOT · <VESSEL> / VOLT / Hold LB: ..."; press it again and
+   the seat empties. The pad scrolls the column to the focused card.
+4. ARTIFACTS on the same vessel. **Pass:** one slot, two rows (Javelin, Aegis) reading HELD and M0 S0 T0 C0; press
+   Javelin to slot it, press Aegis and it replaces Javelin; press the slotted one to empty the slot.
+5. Seat VOLT, slot Javelin, fly the Wander toy **With Ark**. Hold LB. **Pass:** VOLT's sight, no Unassigned Sight needed.
+6. Grab a payload beside your Ark (RB). **Pass:** the load sound (empty) is not an error; RB away from the Ark throws
+   it down your heading: it flies about 150 units, cracking the first rival super-shield it meets (a Grizzly-sniped
+   look), and bursts where it stops. The six parcel prisms are spent (the hull is thinner by six), and no prism is left
+   floating or orphaned under a destroyed root (Hierarchy check).
+7. Slot Aegis, grab, fly 300 units away and press RB. **Pass:** AEGIS - RELEASE IT BESIDE YOUR ARK, and the parcel stays
+   on your hull. Fly back beside the Ark and press RB. **Pass:** about a third of the hull nearest you super-shields
+   for 8 s, then lowers; plates that were already super-shielded stay so.
+8. Twists: with a script or the inspector, set PlayerPrefs `artifacts.track.artifact.javelin.3` (Space) to 5 and
+   repeat step 6. **Pass:** the Javelin no longer stops at its first crack (it pierces). Delete the key after.
+9. Ark > SQUADS > make a squad, pick the leader card. **Pass:** the Pilot row reads No pilot, then four callsign pilots
+   between < and >; > pages through all eighteen (FLUME last) and wraps; each chip's second line is its sight. Pick
+   one, save, reopen: the same page shows it picked. The Artifact row lists Javelin and Aegis.
+10. FLUME: seat FLUME, fly a Meerkat, open two tunnels and hold LB. **Pass:** white marks trace each tunnel mouth to
+   mouth and fade with it; with no tunnel, LB shows nothing new.
+
+## Sparrow Space card: the live spray cone over a segmented heat gauge (2026-10-27) - NOT EDITOR-VERIFIED
+
+**Files:** `SparrowHUDView.cs` (generates ten round Images under the Space card's icon and lays them out on their
+rays by the live angle, `SprayCardAngle`; heat phase joins drawn as gaps through the fill once passed and dim edge
+ticks while ahead; Space 5 shows a danger prism the rounds pierce), `SparrowHUDController.cs` (pushes
+`GunSprayAccuracy.HalfAngleDegrees` and the profile's caps every frame, the domain colour with the other cards),
+`SparrowHUDVariant.prefab` (the Space icon is a transparent container; three new sprite fields), the round sprites
+under `Assets/_Graphics/Icons/AbilityIcons/Sparrow/Parts/`. Sheet: `Docs/Icons/sheets/sparrow_cannons.png`. No .NET
+and no Unity CLI in the session: nothing here was compiled.
+
+1. Run `SparrowGunSprayCardAngleTests`. **Pass:** green.
+2. Fly the Sparrow and look at the Space card cold. **Pass:** five rounds in one straight line from the card's left
+   edge, in your domain colour; the plate shows no fill and five dim ticks at the slanted edges.
+3. Hold fire for 30 s, then let go. **Pass:** the rounds fan out as heat climbs - a little at 1.5°, clearly at
+   7.5°, the card's full height in the collapse - and close back to one line as the gun cools; each phase passed cuts
+   one more gap through the fill and its edge ticks disappear. No round sits stacked in the card's centre on the
+   first frame (the layout re-runs once the card has a size).
+4. Take the turret stance. **Pass:** every round becomes a prism, upright, on the same rays.
+5. Reach Space 5. **Pass:** a dim danger-red prism sits on the centre line under the rounds.
+6. If the cone reads too wide or too narrow at a level, change `gunSprayCardAngles` on the HUD prefab's
+   `SparrowHUDView` (and `SPRAY_CAPS_CARD` in `Tools/Build/icon_kit/specs/sparrow.py`, then `author.py sparrow`).
+
 ## 🔴 2026-10-27 — Each AI seat its own difficulty (every Arena and Arcade card) (unverified: no Unity editor in the session)
 
 **Files:** `ArcadeGameConfigSO.AIDifficulties`, `ArcadeGameConfigureModal(.ConfigChangeHandlers/.SeatLineup)`,
@@ -17632,3 +17878,65 @@ above.
 3. **Hangar.** Step through every vessel. **Pass:**
    - each looks like the ship in play (its own dark body, windows and engines);
    - only its team-colour plates are silver.
+
+## 🔴 2026-10-27 — The Ark's ARTIFACTS tab: crystals raise an artifact's tracks (unverified: no Unity editor in the session)
+
+**Files:** `ArkArtifactsPage.cs` (`Assets/_Scripts/UI/Elements/Ark/`), `ArkTabsView.cs` (a fourth tab),
+`PilotLoadoutStore.cs` (crystals read and spent on the profile through `PlayerDataService`; `ResetTracks`),
+`PilotDevTools.cs` (Grant 20 Crystals, Reset Every Artifact Track), `ArkView.prefab` from `author_menu_ark.py`.
+Design: `Docs/Pilots/ARTIFACTS.md` §4. The reference compile has no errors in the changed files.
+
+1. Run `PilotsAndArtifactsTests` (`TryRaise_WithNoProfileLoaded_RefusesAndLeavesTheLevel`). **Pass:** green.
+2. Play Menu_Main, open the Ark. **Pass:** the tab row reads CONVERTER, SQUADS, ARTIFACTS, DECOR; DECOR still refuses.
+3. ARTIFACTS. **Pass:** the sea behind it; Javelin and Aegis on the left reading "Mass 0  Space 0  Time 0  Charge 0";
+   Javelin's four tracks on the right (line width 4 -> 5.2, range 150 -> 185, linger seconds 0 -> 0.4, cracks before
+   it stops 1 -> 1.5), each twist dim and reading "At 5: ...", RAISE reading "Raise - 2 Mass" and so on.
+4. With no crystals, press RAISE on Mass. **Pass:** "Not enough Mass crystals."; nothing changes.
+5. FrogletTools > Pilots > Grant 20 Crystals Of Every Element. **Pass:** the five balances top right read 20 at once.
+6. RAISE Space five times (2+3+4+5+6 = 20 Space). **Pass:** each press says "Javelin: Space is now N."; the fifth says
+   "Javelin twists: It pierces..." and the twist line lights; the Space balance reads 0; the Hangar's crystal counts
+   agree. Press OMNI on Space. **Pass:** it costs 7 Omni, not Space.
+7. Quit and re-enter Play. **Pass:** the levels are kept (device) and the crystals are what the profile saved.
+8. Reset Every Artifact Track. **Pass:** every level reads 0 again.
+
+
+## 🔴 2026-10-27 — Each vessel its own pilot and artifact; no artifacts in arena (unverified: no Unity editor in the session)
+
+**Files:** `SavedSquad.cs` (`KeepCardsOwn`, `FillPilots`), `SquadsPage.cs` (no empty pilot chip; a picked pilot swaps,
+a picked artifact moves; launching copies the card's artifact to that vessel's slot), `PilotLoadoutStore.cs`
+(`SetSlottedArtifact`), `PilotArtifactCatalogSO.cs` (`FirstPilotFor`; `ResolvePilot` never leaves a seat empty),
+`VesselPilotLoadout.cs` (a human always has a pilot; no artifact under `IsArenaMatch`), `HangarPilotsPage.cs` (pressing
+the seated pilot keeps it), `ArkView.prefab` from `author_menu_ark.py`. Design: `Docs/Pilots/ARTIFACTS.md` §7 rules 10-11.
+Affects: Shombith's pilots. The reference compile has no errors in the changed files (player and editor).
+
+1. Run `SquadBookTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests`. **Pass:** green.
+2. Ark > SQUADS > make a squad. **Pass:** all three cards show a pilot, three different ones; the pilot row has five
+   pilot chips between < and > and no "No pilot" chip.
+3. On the leader pick the pilot Rogue One flies. **Pass:** Rogue One now flies the leader's old pilot.
+4. Grant the artifacts (dev), give the leader Javelin, then give Rogue Two Javelin. **Pass:** the leader's artifact
+   reads "No artifact"; empty artifacts are allowed on any card.
+5. Hangar > Pilots, press the seated pilot. **Pass:** it stays seated.
+6. Launch the squad into a non-arena mode with Javelin on your card, press RB at the Ark. **Pass:** a Javelin payload.
+7. Launch an arena game (one with `ArenaRules` on its card) with Javelin slotted. **Pass:** the payload is plain; every
+   peer agrees.
+
+## Sparrow Charge card: the bay of real rockets, each filling on its own (2026-10-27) - NOT EDITOR-VERIFIED
+
+**Files:** `SparrowHUDView.cs` (generates four rockets under the Charge card's icon from `Sparrow_BayRocket`, each a
+ghost with a vertical fill over it; held rockets full, the next one filled by `ChargeToNextShot01`, `BayRocketFill`),
+`SparrowHUDController.cs` (seeds the bay from the live tank, pushes the domain colour with the other cards),
+`SparrowHUDVariant.prefab` (the Charge icon is a transparent container; `bayRocketSprite`; the `MissileCharge` gauge is
+unbound and switched off). Sheet: `Docs/Icons/sheets/sparrow_skyburst.png`. No .NET and no Unity CLI in the session:
+nothing here was compiled.
+
+1. Run `SparrowBayRocketFillTests`. **Pass:** green.
+2. Fly the Sparrow with an empty bay. **Pass:** four upright rockets in your domain colour, dim, side by side and not
+   touching; the plate under them shows no fill.
+3. Destroy prisms. **Pass:** the first rocket fills from its tail toward its nose a step per prism; when it is full it
+   stays solid and the second starts filling. No rocket fills backwards.
+4. Fire a rocket. **Pass:** the last solid rocket goes dim at once; a heavy shot from the turret stance dims two.
+5. Look at the card on its first frame. **Pass:** the rockets are spread across the card, not stacked in its centre
+   (the layout re-runs once the card has a size).
+6. If the fill line sits off the rocket's tail or nose, change `bayRocketTail01` / `bayRocketNose01` on the HUD
+   prefab's `SparrowHUDView`.
+

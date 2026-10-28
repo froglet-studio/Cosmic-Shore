@@ -106,10 +106,15 @@ Four asks in one pass:
 
 ### The heat is on the guns card
 
-The Space card (Pulsefire Cannons) carries the heat as the fleet's linear gauge, with a mark across
-it at **every phase transition** — 6, 8, 14, 18 and 24 s of heat, i.e. 21% / 29% / 50% / 64% /
-86% of the gauge. Marks the heat has passed are bright; marks ahead are dim, so the card says which
-stage the gun is in and how close the next one is. Nothing is authored for it:
+The Space card (Pulsefire Cannons) carries the heat as the fleet's linear gauge, marked at **every
+phase transition** (since Round 8 the even sixths, 17 / 33 / 50 / 67 / 83%). Since 2026-10-27 a join
+the heat has passed is a GAP cut through the fill, so the fill reads as one bar per level reached,
+and a join still ahead is a short dim tick in from each slanted edge - the card says which stage the
+gun is in and how close the next one is without a ruler across the whole card. The ICON over it is
+the live cone: ten rounds on their rays inside the gun's real half-angle (mapped per level onto a
+readable card angle, `SparrowHUDView.SprayCardAngle`; pushed each frame from
+`GunSprayAccuracy.HalfAngleDegrees`) - one stream when cold, the card's full height in the collapse.
+The icon is drawn by `/ability-icon` (`Tools/Build/icon_kit/specs/sparrow.py`). Nothing is authored for it:
 `SparrowHUDView.EnsureGeneratedAbilityIcons` generates the gauge Image and binds it into the Space
 entry, and the lockup re-homes and masks it exactly like an authored meter (an authored gauge would
 win). The marks are children of the gauge, so they ride inside the same stencil. The joins come from

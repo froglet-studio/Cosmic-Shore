@@ -29,6 +29,19 @@ namespace CosmicShore.Gameplay
 
         [Header("Refs")] [SerializeField] private Skimmer skimmer;
         public Skimmer Skimmer => skimmer;
+
+        VesselImpactor _hull;
+        Transform _hullOf;
+
+        /// <summary>Whether this skimmer's hull meets prisms now (<see cref="VesselImpactor.TakesPrismsByContact"/>; true
+        /// without a hull). The hull is looked up once per vessel, not per contact.</summary>
+        bool HullTakesPrisms()
+        {
+            var t = skimmer ? skimmer.VesselStatus?.Transform : null;
+            if (!t) return true;
+            if (t != _hullOf) { _hullOf = t; t.TryGetComponent(out _hull); }
+            return !_hull || _hull.TakesPrismsByContact;
+        }
         public override Domains OwnDomain => Skimmer.Domain;
         // Null-safe: the shell-contact tier polls this every frame for registered
         // probes (not just inside trigger callbacks), so an unwired skimmer ref
@@ -285,6 +298,9 @@ namespace CosmicShore.Gameplay
                     break;
 
                 case PrismImpactor prismImpactor:
+                    // a hull whose touch leaves prisms alone (IHullContactGate: the Jacks netting, the Meerkat inside a
+                    // tunnel) does not skim them either
+                    if (!IsSweepDispatch && !HullTakesPrisms()) return;
                     var prism = prismImpactor.Prism;
                     // A pilot does not skim the ribbon still coming out of their own ship.
                     // OWNER-scoped and time-boxed, never domain-scoped: a teammate's trail and

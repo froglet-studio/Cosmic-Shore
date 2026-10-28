@@ -138,6 +138,14 @@ def run(hull, check=False, preview=False):
     for c in getattr(spec, "CARDS", []):
         p = states_mod.sheet(spec, c, os.path.join(SHEETS, f"{spec.HULL.lower()}_{c['name']}.png"))
         print(f"  states: {os.path.relpath(p, ROOT)}")
+    # an OPTIONS sheet per `group` of CARDS: every candidate in the hull's full lockup, beside the BEFORE (states.py)
+    groups = {}
+    for c in getattr(spec, "CARDS", []):
+        if c.get("group"):
+            groups.setdefault(c["group"], []).append(c)
+    for g, entries in groups.items():
+        p = states_mod.options_sheet(spec, g, entries, os.path.join(SHEETS, f"{spec.HULL.lower()}_{g}_options.png"))
+        print(f"  options: {os.path.relpath(p, ROOT)}")
     if check:
         if getattr(spec, "REBIND", None) and not drift:
             metas = {i["name"]: os.path.join(out_dir, i.get("subdir", ""), i["name"] + ".png.meta") for i in spec.ICONS}

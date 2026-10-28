@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     /// </list>
     /// Garrett's after (2026-10-27, the Tube Lens Lab): with <c>formedLook</c> ContourField a formed tunnel draws nothing
     /// here and is only the lens pass's bent space.
-    /// <para><b>Round 25</b> (Yash, 2026-10-28: "We can't make it a root, we need to make it smoother, like our tube, same
+    /// <para><b>Round 26</b> (Yash, 2026-10-28: "We can't make it a root, we need to make it smoother, like our tube, same
     /// visuals ... just anomaly: tubes of wormholes, and the network of wormholes"): every channel of an omnicrystal's
     /// network is a wormhole tube too, drawn by the same code as a formed tunnel (<see cref="Tube"/>): its bridge in the
     /// Bridge look, its warp tube, its contour field (<see cref="MeerkatWormholeLensPass"/>) and its calm inner wall
@@ -62,7 +62,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// One wormhole tube's centreline, radius and live window [S0, S1]: a tunnel's (or a reticle's) conic arc
-        /// (<see cref="MeerkatWormholeMath"/>), or, round 25, a channel of an omnicrystal's network
+        /// (<see cref="MeerkatWormholeMath"/>), or, round 26, a channel of an omnicrystal's network
         /// (<see cref="MeerkatRootMath"/>, the page's <c>wh.poly</c>). The page's <c>whSurf</c> / <c>whRadius</c> dispatch the
         /// same way, so the bridge, its glass and the warp tube are one code for both.
         /// </summary>
@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
             public static Tube Conic(Vector3 a0, Vector3 t0, Vector3 side, MeerkatWormholeMath.Conic path, float b0, float m0,
                 float s0, float s1) => new(a0, t0, side, path, b0, m0, null, 0, path != null ? path.L : 0f, s0, s1);
 
-            /// <summary>A channel of a network over its dug window [s0, s1] (round 25).</summary>
+            /// <summary>A channel of a network over its dug window [s0, s1] (round 26).</summary>
             public static Tube Channel(MeerkatRootMath.Channel c, float s0, float s1, double rootTip) =>
                 new(default, default, default, null, 0f, 0f, c, rootTip, c != null ? (float)c.L : 0f, s0, s1);
 
@@ -116,10 +116,10 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Round 25: a tunnel in its tree is wrapped in the old look (that look is its wall; no bridge).</summary>
+        /// <summary>Round 26: a tunnel in its tree is wrapped in the old look (that look is its wall; no bridge).</summary>
         public static bool TunnelWrapped(ScriptableObjects.MeerkatWormholeConfigSO cfg) => cfg.TrunkVisibility > 0.004f;
 
-        /// <summary>Round 25: a channel in its bark is wrapped in the old look (rounds 17-21); without it, it is a wormhole tube.</summary>
+        /// <summary>Round 26: a channel in its bark is wrapped in the old look (rounds 17-21); without it, it is a wormhole tube.</summary>
         public static bool ChannelWrapped(ScriptableObjects.MeerkatWormholeConfigSO cfg) => cfg.RootBarkVisibility > 0.004f;
 
         /// <summary>A channel's fade as it goes (the page's pair <c>dieT</c> fade).</summary>
@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
                 AddWarpTube(tube, t.Fade, cfg);
             }
 
-            // round 25: the network's channels are wormhole tubes, drawn exactly as a formed tunnel
+            // round 26: the network's channels are wormhole tubes, drawn exactly as a formed tunnel
             var nets = MeerkatRootNetwork.Live;
             var inside = MeerkatWormholeExecutor.LocalRootNetwork;
             for (int n = 0; n < nets.Count; n++)
@@ -192,7 +192,7 @@ namespace CosmicShore.Gameplay
             WarpMesh = s_wi.Count > 0 ? s_warp : null;
 
             MeerkatTreeView.Draw();       // the tree round a tunnel and the roots' bark, while switched on (MEERKAT.md §7)
-            MeerkatTubeWallView.Draw();   // round 25: every tube's calm inner wall
+            MeerkatTubeWallView.Draw();   // round 26: every tube's calm inner wall
 
             var additive = new RenderParams(s_additive) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
             var glassParams = new RenderParams(s_glassMat) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };

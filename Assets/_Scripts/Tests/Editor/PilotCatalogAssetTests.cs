@@ -8,10 +8,9 @@ using UnityEditor;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The SHIPPED pilot assets (Docs/PILOTS_AND_ARTIFACTS.md §10, slice 2), as authored by
-    /// Tools/Build/author_pilot_assets.py: the catalog validates clean, and every milestone vessel
-    /// declares its keywords and resolves to its own default pilot, which its picker lists first.
-    /// A vessel with no default pilot would be offered nothing and resolve to null at match start.
+    /// The SHIPPED pilot assets, as Tools/Build/author_pilot_assets.py authors them: the catalog validates clean, every
+    /// milestone vessel declares its keywords, and every one of them seats every callsign pilot (Garrett, 2026-10-27,
+    /// Docs/Pilots/CALLSIGNS.md: one pilot per callsign, any vessel). An unset seat flies the first pilot (every vessel needs a pilot).
     /// </summary>
     [TestFixture]
     public class PilotCatalogAssetTests
@@ -56,23 +55,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void EveryMilestoneVessel_ResolvesToItsOwnDefaultPilot_ListedFirst()
+        public void EveryMilestoneVessel_SeatsEveryCallsignPilot_AndAnUnsetSeatFliesNone()
         {
             var catalog = LoadCatalog();
             var offered = new List<PilotSO>();
+            var artifacts = new List<ArtifactSO>();
 
             foreach (var name in MilestoneVessels)
             {
                 var vessel = LoadVessel(name);
-                Assert.IsTrue(catalog.TryGetDefaultPilot(vessel.Class, out var pilot), $"{name} has no default pilot");
-                Assert.AreEqual($"pilot.{name.ToLowerInvariant()}.default", pilot.Id);
-
-                var unset = new SquadSlot(vessel.Class, Element.Mass);
-                Assert.AreSame(pilot, catalog.ResolvePilot(unset, vessel.Keywords), $"{name}: an unset slot must fly the default");
-
                 catalog.GetPilotsFor(vessel, offered);
-                Assert.IsNotEmpty(offered, $"{name} is offered no pilot");
-                Assert.AreSame(pilot, offered[0], $"{name}: the default pilot must be listed first");
+                CollectionAssert.AreEqual(catalog.Pilots, offered, $"{name} is not offered every pilot, in authored order");
+                catalog.GetArtifactsFor(vessel, artifacts);
+                CollectionAssert.AreEqual(catalog.Artifacts, artifacts, $"{name} is not offered every artifact");
+                Assert.AreSame(catalog.Pilots[0], catalog.ResolvePilot(new SquadSlot(vessel.Class, Element.Mass), vessel.Keywords),
+                    $"{name}: an unset seat flies the first pilot");
             }
         }
     }

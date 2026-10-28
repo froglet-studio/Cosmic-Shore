@@ -119,7 +119,7 @@ namespace CosmicShore.Gameplay
             Lay(p, seed, Clamp01(size), atOnce, false, 0, D3.Zero);
 
         /// <summary>
-        /// Round 25, the page's <c>labLayout</c> with <c>net</c> (<c>networkSize</c>): the NETWORK in the hull's frame, its
+        /// Round 26, the page's <c>labLayout</c> with <c>net</c> (<c>networkSize</c>): the NETWORK in the hull's frame, its
         /// reach <paramref name="rad"/> (u), its centre <paramref name="centre"/> (the hull's frame, from the source), its
         /// forks and openings at <paramref name="counts"/> of the way from the Min to the Max numbers, its forks placed for
         /// transport (<see cref="NetPlace"/>).
@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The page's round-25 <c>netPlace</c> (after Garrett's Omnicrystal Network Lab: every path near the straight line,
+        /// The page's round-26 <c>netPlace</c> (after Garrett's Omnicrystal Network Lab: every path near the straight line,
         /// the forks early): every opening on the network's sphere, every fork on the line from the fork before it (the
         /// source, for the first) toward the middle of its openings, a short step while they spread wide, a long one once they
         /// lie together. No randomness, so every peer lays the same forks.

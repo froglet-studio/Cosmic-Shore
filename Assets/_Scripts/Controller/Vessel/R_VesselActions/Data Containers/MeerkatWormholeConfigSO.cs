@@ -117,7 +117,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float bridgeWhite = 0.45f;
 
         [Header("Tree (the artifact's Play Style Config > Wormhole · trunk: the tunnel's outer layer, round 14)")]
-        [Tooltip("The old outer layer round a wormhole (rounds 13-21), for everyone (0 = hidden; off since round 25)")]
+        [Tooltip("The old outer layer round a wormhole (rounds 13-21), for everyone (0 = hidden; off since round 26)")]
         [SerializeField, Range(0f, 1f)] float trunkVisibility = 0f;
         [Tooltip("...its size at the way in (× the mouth's radius)")]
         [SerializeField, Range(1f, 3f)] float trunkTop = 1.5f;
@@ -158,10 +158,10 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("...each grows over (s), once the tunnel reaches it")]
         [SerializeField, Range(0.1f, 4f)] float branchGrowSeconds = 0.5f;
 
-        [Header("Omnicrystal · the network (the artifact's Play Style Config > Omnicrystal, rounds 16-25)")]
+        [Header("Omnicrystal · the network (the artifact's Play Style Config > Omnicrystal, rounds 16-26)")]
         [Tooltip("The Omnicrystal ability: an omnicrystal opens the wormhole network (0 = off)")]
         [SerializeField] bool omniOn = true;
-        [Tooltip("Round 25 (Yash, 2026-10-28: \"it will always be large ... if it has full mass, then it will be the largest, " +
+        [Tooltip("Round 26 (Yash, 2026-10-28: \"it will always be large ... if it has full mass, then it will be the largest, " +
                  "covering the entire cell\"): the network's reach as a share of its cell's radius (MeerkatNetworkCell), on Mass - " +
                  "Min the page's networkReachAtZero (0.5, at Mass 0), Max its networkReachAtFull (1, the whole cell, at Mass 10). " +
                  "Read when the omnicrystal is taken (EvaluateLive). An ElementalFloat block, so studio_to_unity.py cannot write it: " +
@@ -193,7 +193,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.1f, 1f)] float rootTip = 0.6f;
         [Tooltip("...how much each wormhole wanders")]
         [SerializeField, Range(0f, 1f)] float rootGnarl = 0.3f;
-        [Tooltip("The network's old outer skin, for everyone (0 = hidden: every tube is a wormhole; off since round 25)")]
+        [Tooltip("The network's old outer skin, for everyone (0 = hidden: every tube is a wormhole; off since round 26)")]
         [SerializeField, Range(0f, 1f)] float rootBarkVisibility = 0f;
         [Tooltip("...that skin face-on")]
         [SerializeField, Range(0f, 0.3f)] float rootGlass = 0.015f;
@@ -217,7 +217,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float rootBounce = 0.45f;
         [Tooltip("...drawn to the tube's floor by (u/s², 0 = you float)")]
         [SerializeField, Range(0f, 120f)] float rootGravity = 0f;
-        [Tooltip("From inside: the network's old inner wall (0 = off, the tube's calm wall instead; off since round 25)")]
+        [Tooltip("From inside: the network's old inner wall (0 = off, the tube's calm wall instead; off since round 26)")]
         [SerializeField, Range(0f, 1f)] float rootOpacity = 0f;
         [Tooltip("Every tube's calm inner wall (a wormhole's and each of the network's): a smooth sheen")]
         [SerializeField, Range(0f, 0.6f)] float tubeInner = 0.1f;
@@ -241,8 +241,6 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 300f)] float suckSpeed = 30f;
         [Tooltip("Swallows prisms within (× the opening radius)")]
         [SerializeField, Range(0f, 4f)] float swallowShare = 1.5f;
-        [Tooltip("Carries them through at (u/s)")]
-        [SerializeField, Range(20f, 600f)] float carrySpeed = 150f;
         [Tooltip("Inside, stretched along the tube by (+ × its length, at the middle)")]
         [SerializeField, Range(0f, 6f)] float carryStretch = 2f;
         [Tooltip("...and twisted (turns, mouth to mouth)")]
@@ -306,6 +304,52 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("AI sloppiness (0 = perfect, 1 = rookie)")]
         [SerializeField, Range(0f, 1f)] float aiNoise;
 
+        // ---- Garrett's kit (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 10): the
+        // artifact's Play Style Config > Kit, "Garrett's kit", by the page's own keys. Plain numbers are written by
+        // studio_to_unity.py (Tools/Build/studio_to_unity/meerkat.json); each ElementalFloat is the page's L0 -> L10 pair
+        // (rushL0/rushL10, zapPetalsL0/zapPetalsL10, portalSizeL0/portalSizeL10), authored once by author_meerkat_assets.py.
+        // Read through MeerkatSolitonKit. Space (the surface area, the swallow and fire) is round 23's section above
+        // (areaL0 / areaL10, suck*, swallowShare, carrySpeed, fireSpeed, fireGlideSeconds; MeerkatSwallow).
+        [Header("Garrett's kit · Time, the ride (the artifact's Kit > Time)")]
+        [Tooltip("The rush: the throat's speed ×, Time L0 -> ...at Time L10 (every soliton's ride, its own or anyone's)")]
+        [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 1.4f, Element.Time, 0.05f);
+        [Tooltip("Garrett's L5 Boost out: out of every soliton at (× the exit)")]
+        [SerializeField, Range(1f, 3f)] float boostOut = 1.5f;
+
+        [Header("Garrett's kit · Charge, Sentinel mode (the artifact's Kit > Sentinel)")]
+        [Tooltip("Sentinels at once")]
+        [SerializeField, Range(1, 6)] int sentinelPool = 3;
+        [Tooltip("...at Charge L5")]
+        [SerializeField, Range(1, 12)] int sentinelPoolL5 = 6;
+        [Tooltip("Guard (× the opening radius)")]
+        [SerializeField, Range(0.5f, 4f)] float guardShare = 1.5f;
+        [Tooltip("An empty sentinel's AI zaps (a second)")]
+        [SerializeField, Range(0f, 12f)] float aiZapRate = 5f;
+        [Tooltip("A zap knocks out, Charge L0 (petal) -> ...at Charge L10 (petal), on each element, a sub-petal tick through the economy's accrual")]
+        [SerializeField] ElementalFloat zapPetals = ElementalFloat.Multiplier(0.1f, 0.25f, Element.Charge, 0f);
+        [Tooltip("Unity only: the seconds before a sentinel's zap can score on the same rival again (VesselCombatHitLatch; 0 = every zap is a scored hit)")]
+        [SerializeField, Min(0f)] float zapCooldownSeconds;
+        [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager scores combat hits on. Fail-loud.")]
+        [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
+
+        [Header("Garrett's kit · Mass, the exit portal (the artifact's Kit > Portal)")]
+        [Tooltip("Exit portal: the hexagon out at (× the exit radius)")]
+        [SerializeField, Range(1f, 4f)] float portalShare = 1.5f;
+        [Tooltip("Its prisms' size, Mass L0 (× a prism) -> ...at Mass L10 (× the hull's trail prism)")]
+        [SerializeField] ElementalFloat portalSize = ElementalFloat.Multiplier(0.4f, 0.9f, Element.Mass, 0.05f);
+
+        [Header("Garrett's kit · Audio (FMOD; shipped empty until sound design wires them)")]
+        [Tooltip("A sentinel zaps a rival (at the rival).")]
+        [SerializeField] EventReference zapEvent;
+        [Tooltip("A sentinel stands up at a new soliton's way in.")]
+        [SerializeField] EventReference sentinelPlacedEvent;
+        [Tooltip("A sentinel is lost or retires, and its soliton with it.")]
+        [SerializeField] EventReference sentinelLostEvent;
+        [Tooltip("A new soliton sets down its exit portal (at the way out).")]
+        [SerializeField] EventReference portalEvent;
+        [Tooltip("A soliton fires a prism out of its way out.")]
+        [SerializeField] EventReference prismFiredEvent;
+
         [Header("Audio (FMOD; shipped empty until sound design wires them)")]
         [Tooltip("RT formed a tunnel (at the hull).")]
         [SerializeField] EventReference formEvent;
@@ -313,6 +357,24 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] EventReference collapseEvent;
         [Tooltip("An omnicrystal was taken and the roots grew (at the hull).")]
         [SerializeField] EventReference rootsEvent;
+
+        // Garrett's kit (MeerkatSolitonKit reads these)
+        public ElementalFloat Rush => rush;
+        public float BoostOut => boostOut;
+        public int SentinelPool => sentinelPool;
+        public int SentinelPoolL5 => sentinelPoolL5;
+        public float GuardShare => guardShare;
+        public float AiZapRate => aiZapRate;
+        public ElementalFloat ZapPetals => zapPetals;
+        public float ZapCooldownSeconds => zapCooldownSeconds;
+        public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
+        public float PortalShare => portalShare;
+        public ElementalFloat PortalSize => portalSize;
+        public EventReference ZapEvent => zapEvent;
+        public EventReference SentinelPlacedEvent => sentinelPlacedEvent;
+        public EventReference SentinelLostEvent => sentinelLostEvent;
+        public EventReference PortalEvent => portalEvent;
+        public EventReference PrismFiredEvent => prismFiredEvent;
 
         public float ReticleAhead => reticleAhead;
         public float KeyRampSeconds => keyRampSeconds;
@@ -333,7 +395,6 @@ namespace CosmicShore.ScriptableObjects
         public float SuckRadius => suckRadius;
         public float SuckSpeed => suckSpeed;
         public float SwallowShare => swallowShare;
-        public float CarrySpeed => carrySpeed;
         public float CarryStretch => carryStretch;
         public float CarryTwist => carryTwist;
         public float FireSpeed => fireSpeed;
@@ -408,7 +469,7 @@ namespace CosmicShore.ScriptableObjects
         public int LabyrinthOpeningsMax => labyrinthOpeningsMax;
         public float LabyrinthRadiusMin => labyrinthRadiusMin;
         public float LabyrinthRadiusMax => labyrinthRadiusMax;
-        /// <summary>Round 25: the network's reach as a share of its cell's radius, on this hull's live Mass (at least 0.05).</summary>
+        /// <summary>Round 26: the network's reach as a share of its cell's radius, on this hull's live Mass (at least 0.05).</summary>
         public float NetworkShare(IVesselStatus status) => Mathf.Max(0.05f, networkReach.EvaluateLive(status));
         public float LabyrinthSpread => labyrinthSpread;
         public float LabyrinthRandomness => labyrinthRandomness;
@@ -428,7 +489,7 @@ namespace CosmicShore.ScriptableObjects
         public float RootBounce => rootBounce;
         public float RootGravity => rootGravity;
         public float RootOpacity => rootOpacity;
-        /// <summary>Round 25: the roots' bark round each channel (0, shipped: every channel is a wormhole tube).</summary>
+        /// <summary>Round 26: the roots' bark round each channel (0, shipped: every channel is a wormhole tube).</summary>
         public float RootBarkVisibility => rootBarkVisibility;
         public float TubeInner => tubeInner;
         public float RootLamp => rootLamp;

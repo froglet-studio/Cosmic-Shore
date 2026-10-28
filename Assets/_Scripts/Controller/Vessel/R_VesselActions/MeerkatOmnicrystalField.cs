@@ -52,10 +52,10 @@ namespace CosmicShore.Gameplay
             return f;
         }
 
-        /// <summary>Round 25: the field was laid on a race course (Burrow Run), so its network fills the race shell.</summary>
+        /// <summary>Round 26: the field was laid on a race course (Burrow Run), so its network fills the race shell.</summary>
         public bool HasCourse => !_freestyle && _legs.Count > 0;
 
-        /// <summary>Round 25: the farthest of the course's rings from <paramref name="centre"/> (0 with no course).</summary>
+        /// <summary>Round 26: the farthest of the course's rings from <paramref name="centre"/> (0 with no course).</summary>
         public float FarthestRingFrom(Vector3 centre)
         {
             float far = 0f;

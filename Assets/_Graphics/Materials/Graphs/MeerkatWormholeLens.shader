@@ -65,7 +65,7 @@ Shader "CosmicShore/MeerkatWormholeLens"
             float4 _MWTubeWin[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubeBound[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubePath[MEERKAT_LENS_MAX_TUBES * MEERKAT_LENS_PATH];
-            float4 _MWTubeNorm[MEERKAT_LENS_MAX_TUBES * MEERKAT_LENS_PATH];   // round 25: a channel's carried normal per point
+            float4 _MWTubeNorm[MEERKAT_LENS_MAX_TUBES * MEERKAT_LENS_PATH];   // round 26: a channel's carried normal per point
             float4 _MWField0;   // strength (rad per wall crossing), pitch (rad), drag, twist
             float4 _MWField1;   // glass, glass index, grazing, flow (0 even, 1 in then out, 2 throat)
             float4 _MWField2;   // inner, outer (x local radius), profile (0 smooth, 1 smoother, 2 linear, 3 bell), ribs
@@ -86,7 +86,7 @@ Shader "CosmicShore/MeerkatWormholeLens"
 
             // The wall of tube i near world point pw: signed distance (- inside, + outside; past a live mouth, the distance to
             // its lip), the way along its live window u, the angle round it, its radius and slope, and its frame (local).
-            // Round 25: a channel of an omnicrystal's network (Shape.y 1) - a 3D polyline at even steps of s, each point
+            // Round 26: a channel of an omnicrystal's network (Shape.y 1) - a 3D polyline at even steps of s, each point
             // (x, y, z, radius) in its own frame (the world's, moved to its source), its carried normal in _MWTubeNorm.
             MWTQ MWChannel(int i, float3 p, float L, float s0, float s1)
             {

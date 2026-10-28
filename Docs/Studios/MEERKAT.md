@@ -133,7 +133,7 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
-**Round 25 (Yash, 2026-10-28: "When we collect the omnicrystal ... we create this omnicrystal network, burrow network. We
+**Round 26 (Yash, 2026-10-28: "When we collect the omnicrystal ... we create this omnicrystal network, burrow network. We
 can't make it a root, we need to make it smoother, like our tube, same visuals. And ... we have to turn off the tree
 visibility also ... It needs to be just anomaly: tubes of wormholes, and the network of wormholes (navigable using the left
 joystick)"; then: "We will use two terminology. One is wormhole, another is network ... it will always be large, despite the
@@ -182,18 +182,39 @@ other"). Artifact and Unity.**
   across a whole cell would read as a few long tubes, against "it's still pretty large", and the full builder is a page of
   its own to port with its goldens. Its layout rule is used; its 20% bound holds for the median, not for every opening (the
   openings lie all round, some behind the source).
+- **Yash's Unity tuning wins** (2026-10-28, ce548fc092, the config edited in the Editor): `bendRadius` 10, `throatDiameter` 20
+  and `mouthDiameter` 40 are now the page's shipped values (were 60, 8 and 26), so `studio_to_unity.py --check` is back to
+  0 Meerkat drift without writing the old numbers over his.
 - **Kept:** left-stick flight in the network, the forks, the openings, how it opens at once from the omnicrystal and how it
   collapses. A wormhole's calm wall is capped at 64 rings (a ring every 4 u): at most 1,625 vertices and 3,072 triangles a
   wormhole, about 127,000 vertices for the largest network.
-- **Measured** (the lab batch, seed 11, against `origin/Ys-bleeding-edge` round 24): every level finishes every ladder. I1,
-  I2 and I4 Hard are unchanged (78.5 / 77.1 / 77.9 s). Warpline I3 Hard went from 93.1 to 127.2 s, and I4 Medium from 97.5
-  to 127.1 s: an AI that takes an omnicrystal flies a whole-cell network, which costs it time. On I3 Hard is now the slowest
-  level. A finding for Yash, not tuned away.
+- **Measured** (the lab batch, seed 11, after merging rounds 24-25 and Yash's Unity tuning): every level finishes every
+  ladder. Hard 77.6 / 78.1 / 99.1 / 77.5 s, Medium 84.8 / 78.5 / 84.5 / 103.0 s, Easy 90.3 / 81.5 / 94.8 / 81.6 s (I1-I4).
+  Before the merge, against round 24 alone, the network's own cost showed on two ladders: Warpline I3 Hard 93.1 → 127.2 s
+  and I4 Medium 97.5 → 127.1 s, the others unchanged. An AI that takes an omnicrystal flies a large network and loses time
+  in it; on I3 Hard is the slowest level and on I4 Medium is. A finding for Yash, not tuned away.
 - **Unity** (`R_VesselActions/MEERKAT.md` §7a): the tree, bark and old inside wall off; every channel drawn by the
   wormhole's own code (`MeerkatWormholeView.Tube`, the contour field's `MWChannel`, `MeerkatTubeWallView`); the network
   sized by `MeerkatWormholeConfig.networkReach` (an `ElementalFloat` on Mass, read with `EvaluateLive` when the omnicrystal
   is taken) and the cell (`MeerkatRootNetwork.ResolveCell`); `MeerkatRootMath.BuildNetwork` / `NetworkSize`, held to the
   page by 4 golden tests.
+
+**Round 25 (Yash, 2026-10-28: "anything that passes through the tunnel doesn't interact with the outer world ... like going
+through another dimension"; "the prisms that get sucked in ... hits my vessel inside the hole ... Make sure the prisms and
+the vessels both travel in the same speed variations"). Artifact and Unity.**
+- **Phased.** A pilot inside any tube (a tunnel or the roots) is out of reach:
+  - no danger prism, sentinel zap or Cave-in burial reaches it;
+  - it collects no crystal, omnicrystal or ejected crystal until it is out;
+  - a crystal or prism carried in a tube cannot be taken from outside.
+  The Mix's Space L5 Burial (a rival riding your soliton when you cave it in) no longer lands, since a rider is
+  phased; it is left in place for Yash to judge.
+- **First in, first out.** A carried prism or crystal moves at the slide's top speed (`rootMaxSpeed` × the Time rush) and
+  never nearer than 6 u behind a rider ahead of it (`tubeAdvance`). `carrySpeed` is retired.
+- **Measured** (seed 11, Hard I1-I4; all four kits finish, mass conserved): Garrett's kit 79.6 / 77.3 / 90.7 / 78.1 s,
+  about 3,970 prisms swallowed a field race; the Mix 85.8 / 83.2 / 92.4 / 89.8 s.
+- **In Unity:** the hull's `IHullContactGate` (`MeerkatVesselTransformer.Phased`), which the skimmer's prism skim now
+  honours too; `MeerkatWormholeMath.TubeAdvance`; and any omni crystal the Meerkat collects grows its roots
+  (`OmniCrystalImpactor.CollectedByVessel`). `MEERKAT.md` §9.
 
 **Round 24 (Yash, 2026-10-28: "make the main tube as same as the roots ... we can slide through the main tube rather than
 making it an automated special move ... once we create the tube, main tube, we can also slide through it using our left
@@ -728,12 +749,12 @@ just spindles. Tiny thinning spindles"):**
 | shape | `bendMaxDegrees` | 150° | The sharpest bend (right stick fully over) |
 | shape | `shaftMin` | 60 u | The straight shaft before the bend, LT released |
 | shape | `shaftMax` | 600 u | The shaft with LT fully squeezed |
-| shape | `bendRadius` | 60 u | The bend's radius (fixed): a tunnel is shaft + `bendRadius` × its angle long |
-| shape | `throatDiameter` | 8 u | The throat's diameter (fixed, set at edit time; round 10) |
-| shape | `mouthDiameter` | 26 u | The entry and exit diameter at the shortest tunnel (round 10: was 20; round 12: the shortest's) |
+| shape | `bendRadius` | 10 u (round 26: Yash's Unity tuning; was 60) | The bend's radius (fixed): a tunnel is shaft + `bendRadius` × its angle long |
+| shape | `throatDiameter` | 20 u (round 26: Yash's Unity tuning; was 8) | The throat's diameter (fixed, set at edit time; round 10) |
+| shape | `mouthDiameter` | 40 u (round 26: Yash's Unity tuning; was 26) | The entry and exit diameter at the shortest tunnel (round 10: was 20; round 12: the shortest's) |
 | shape | `throatDiameterMax` | 18 u | The throat at the longest tunnel (round 12, artifact only so far) |
 | shape | `mouthDiameterMax` | 56 u | The entry and exit at the longest tunnel (round 12, artifact only so far) |
-| tree | `trunkVisibility` … `branchGrowSeconds` | see the page | The tunnel's outer layer, a dead tree in the wall's glass and bent space, formed with the tunnel (rounds 13-14, artifact only so far; replaced round 12's plate tree). Off since round 25 (`trunkVisibility` 0) |
+| tree | `trunkVisibility` … `branchGrowSeconds` | see the page | The tunnel's outer layer, a dead tree in the wall's glass and bent space, formed with the tunnel (rounds 13-14, artifact only so far; replaced round 12's plate tree). Off since round 26 (`trunkVisibility` 0) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
@@ -1224,6 +1245,10 @@ mode, the swap seats you in a sentinel and Y there hops you out; in the Mix the 
 - **The kit** (round 18): Garrett's kit and the Mix are prototypes in the studio (§ Two kits). Since 2026-10-28 the
   element definition is Garrett's (locked); the choices that are not element definitions (D2 seats, D5 clamp, the
   roots' rule) are still Yash's to judge.
+- **Garrett's kit is in Unity** (Yash, 2026-10-28: "Garrett has already defined all the elemental abilities, so we're
+  gonna implement those"; `R_VesselActions/MEERKAT.md` §8-§9): the soliton's surface area and swallow-and-fire (round 23)
+  with its L5 Steal, the faster ride and Boost out, Sentinel mode on Y with its pool, guard and zap, the exit portal and
+  its danger prisms. Not in Unity: the sentinel seats and the hop (dynamic crew seats), and everything of the Mix.
 - **The play styles.** The Meerkat has none yet.
 - **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
 
