@@ -18186,3 +18186,31 @@ compile has no errors in the changed files (player and editor).
     the friend is swapped to their seat's hull and sees "SAILING WITH YOUR HOST"; when the host takes a job the friend's
     own Ark sails the same worlds to the same stop; the friend can crack a vault and stow a find; when the host takes the
     way home both dock, and the friend keeps what the friend stowed. The host giving up ends the friend's voyage too.
+
+## Lavalamp wormhole lab: original lens + wall vs the new mobile water pipe, side by side (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` + `LavalampWormholeLab.cs` (the lab, runtime
+bootstrap, IMGUI, not in the build settings), `MeerkatTubeLook.cs` (the static look switch, default **Original**),
+`MeerkatWaterTubeView.cs` + `Assets/_Graphics/Materials/Graphs/MeerkatWaterTube.shader` +
+`Assets/Resources/MeerkatWaterTube.mat` (the new pipe: alpha, near-white, fresnel rim, flow bands, caustic shimmer,
+twist, near-camera and live-window fades, no grab pass), `MeerkatWormholeExecutor.Lab.cs` (hull-less lab hooks on a
+partial executor), one-line gates in `MeerkatWormholeLensPass.AnythingLive`, `MeerkatTubeWallView.Draw` and
+`MeerkatWormholeView.DrawOncePerFrame`. No Unity in the session: the C# was only syntax-checked (Roslyn, C# 9, no Unity
+references); the shader was never compiled.
+
+1. Open the project. **Pass:** no compile errors; `MeerkatWaterTube.shader` imports with no errors or warnings.
+2. Fly the Meerkat in a normal game and make a tunnel and a network. **Pass:** exactly the look from before this change
+   (lens + wall); no water pipe drawn (the switch defaults to Original and nothing in the game changes it).
+3. Open `LavalampWormholeLab.unity`, Play. **Pass:** three tunnels form in front of the camera and an omnicrystal network
+   further on (+z 500); the panel shows LOOK, fps, avg/min/max ms over 2 s.
+4. Click each look: Original, New water pipe, Lens only, Wall only, None, Water + lens. **Pass:** the tubes change
+   at once; None shows only the cubes; New water pipe is a near-white, clear, glassy tube with a soft rim, slow bands
+   and a faint shimmer, never blue-tinted, never a full-screen effect.
+5. With the water pipe, Tune > Cull Off/Front/Back. **Pass:** one of Front/Back shows only the inside faces from inside
+   the tube; record which (the wall's winding is unknown, the default is Off) and set `_Cull` on the material.
+6. Ride tunnel and Ride network. **Pass:** the camera follows the centrelines; the pipe fades near the camera and
+   does not flash the screen.
+7. Bench every look (6 x 4 s). **Pass:** a table of avg ms/fps per look; New water pipe and None should be clearly
+   cheaper than Original on a phone (build the scene into a dev build by hand to measure on device).
+8. Stop Play, then play a normal scene. **Pass:** the look is back to Original (the lab resets it on destroy and on
+   domain/subsystem reload).

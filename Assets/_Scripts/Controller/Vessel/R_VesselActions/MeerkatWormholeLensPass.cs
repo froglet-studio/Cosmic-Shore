@@ -139,8 +139,9 @@ namespace CosmicShore.Gameplay
             profilingSampler = new ProfilingSampler("MeerkatWormholeLens");
         }
 
-        static bool AnythingLive => MeerkatWormholeExecutor.Live.Count > 0 || MeerkatWormholeExecutor.Ripples.Count > 0 ||
-                                    MeerkatRootNetwork.Live.Count > 0;   // round 26: a network bends space as a tunnel does
+        static bool AnythingLive => MeerkatTubeLook.LensOn &&   // the Lavalamp lab's side-by-side switch (Original by default: on)
+                                    (MeerkatWormholeExecutor.Live.Count > 0 || MeerkatWormholeExecutor.Ripples.Count > 0 ||
+                                     MeerkatRootNetwork.Live.Count > 0);   // round 26: a network bends space as a tunnel does
 
         static void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {

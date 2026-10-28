@@ -18,6 +18,7 @@ for line to URP HLSL.
 | `MeerkatWormholeGlass.shader` | The bridge's glass (with `formedLook` Bridge) | Fresnel only: `0.05 + 0.55 * rim^3` | Additive |
 | `MeerkatTree.shader` | **The tree** round every tunnel, and the **roots'** bark | Fresnel glass + bark fissures (fading within 15-90 u of the camera) + tree rings on the cut faces + a slow flow; the bore (the tube you ride) a smooth sheen with no lines; shows only the tunnel's live window; branches grow out of their roots in the vertex shader | Additive |
 | `MeerkatRootInside.shader` | The roots **from inside** | A soft, smooth inner tube: one slow warm tone, a little dense, denser at its silhouette, lit by the rider's lamp, fading to CLEAR with distance (never to black); its ends stay open | Alpha |
+| `MeerkatWaterTube.shader` (+ `MeerkatWaterTubeView.cs`) | **The cheap mobile water pipe**, A/B candidate (2026-10-28), drawn only when `MeerkatTubeLook.Mode` is WaterOnly or WaterAndLens | Near-white, mostly clear: fresnel rim `abs(n.v)`, slow flow bands along the tube, two crossed sines of caustic shimmer, optional twist; fades near the camera (`_NearFade`) and outside the live window. No grab pass, no screen copy, one draw per tube. Compare against the lens in `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` | Alpha, ZWrite Off, `Cull [_Cull]` (default Off) |
 
 `rim` is always `1 - abs(dot(normal, viewDir))`: 0 where you look straight at the surface, 1 at its outline. `abs` makes
 it the same from inside and outside, so one material serves both.
@@ -72,6 +73,8 @@ inside is one smooth sheen.
 
 - The Meerkat: `Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md` §2 (the water pipe) and §7 (the tree and
   the roots).
+- The A/B lab for the original lens + wall against the cheap water pipe, with a frame-time readout:
+  `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` (Play; IMGUI buttons).
 - The lab where the water pipe was tuned: `Docs/Studios/StoatTubeLensLab.html`
   (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF).
 - The studio page that holds the tree and the roots' GLSL: `Docs/Studios/VesselStudio/meerkat.html` (`treeMaterials`,

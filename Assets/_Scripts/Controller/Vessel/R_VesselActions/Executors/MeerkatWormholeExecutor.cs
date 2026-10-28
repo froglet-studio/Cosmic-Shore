@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
     /// one it forms, and its rider's way out, through <see cref="MeerkatWormholeNetworkRelay"/>; every peer runs the
     /// same life from there. The hull's pose replicates as every vessel's does.</para>
     /// </summary>
-    public sealed class MeerkatWormholeExecutor : ShipActionExecutorBase
+    public sealed partial class MeerkatWormholeExecutor : ShipActionExecutorBase
     {
         [Header("Config")]
         [Tooltip("Every number of the wormhole (the Vessel Studio's Meerkat keys, by the same names).")]

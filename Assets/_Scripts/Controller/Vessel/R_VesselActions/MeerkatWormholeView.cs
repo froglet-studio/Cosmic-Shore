@@ -193,6 +193,7 @@ namespace CosmicShore.Gameplay
 
             MeerkatTreeView.Draw();       // the tree round a tunnel and the roots' bark, while switched on (MEERKAT.md §7)
             MeerkatTubeWallView.Draw();   // round 26: every tube's calm inner wall
+            MeerkatWaterTubeView.Draw();  // the cheap water pipe, only while the Lavalamp lab picks it (MeerkatTubeLook)
 
             var additive = new RenderParams(s_additive) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
             var glassParams = new RenderParams(s_glassMat) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };

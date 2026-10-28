@@ -44,6 +44,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Draws every tube's wall; called once a frame by <see cref="MeerkatWormholeView"/>.</summary>
         public static void Draw()
         {
+            if (!MeerkatTubeLook.OldWallOn) return;   // the Lavalamp lab's side-by-side switch (Original by default: draws)
             using var _ = s_marker.Auto();
             if (!Resolve()) return;
             s_used = 0;
