@@ -1,0 +1,30 @@
+{
+ "caps": {
+  "bash": true,
+  "cores": 12,
+  "cuda": false,
+  "dotnet8": true,
+  "node": false,
+  "numpy": true,
+  "os": "windows",
+  "python": "3.11.9",
+  "python3": true,
+  "torch": false
+ },
+ "cores": 11,
+ "current": {
+  "job": "drive-manta-redline",
+  "max_evals": 60,
+  "minutes": 3.0,
+  "request": null,
+  "since": 1793192952
+ },
+ "host": "dragonsweapon",
+ "runs": [],
+ "totals": {
+  "sessions": 0
+ },
+ "updated": 1793192952,
+ "user": "shombithofficial",
+ "version": "1"
+}
