@@ -10,11 +10,11 @@
     "mv vessel Manta",
     "mv spawn flora Nested Gyroid 3",
     "mv spawn flora Gyroid 3",
-    "mv in {3s} teleport local name:GyroidFlora -170 6 0",
+    "mv in {3s} teleport local name:GyroidFlora -140 6 0",
     "mv in {3.2s} aim local name:GyroidFlora"
    ],
    "camera": [
-    "mv orbit name:GyroidFlora 95 26 3"
+    "mv mount local 24 8 6 18 1.6"
    ],
    "settle_seconds": 4,
    "events": [
@@ -35,7 +35,8 @@
    "learned": [
     "probe 1 (2026-10-28): the flora were planted at the cell's own sites hundreds of units from the pilot; 5 s of flying toward them showed empty membrane. The pilot is now teleported 160 u before the nearest flora (SetPose) once the plants are in.",
     "probe 2: `flora` resolved the nearest flora, a quasicrystal, and the mount on the hull showed membrane. The gyroid is now named (name:GyroidFlora), the camera orbits the plant slowly and the hull flies through it.",
-    "probe 3: the gyroid is in frame at last (the braided limbs render since the port) but an orbit at 55 u sat inside the plant's own prisms; 95 u shows the whole lattice with the Manta flying through."
+    "probe 3: the gyroid is in frame at last (the braided limbs render since the port) but an orbit at 55 u sat inside the plant's own prisms; 95 u shows the whole lattice with the Manta flying through.",
+    "probe 4: the 95 u orbit showed the plant (a braided arch over a floor of slab prisms) but the Manta was lost in it; the clip is the hull flying THROUGH the arch, so the camera rides the hull at back 24 from 140 u out."
    ]
   },
   "serpent-wall": {
@@ -114,7 +115,8 @@
    "learned": [
     "probe 1: the Dolphin was a speck at back 40 and the rival trails were far off its path; nothing of the cone or the blast read. The fleet now circles the pilot (trails wrap its path), the mount sits at back 24, the crystal is placed 100 u ahead at the first frame.",
     "probe 2: at back 24 the Dolphin was still a speck - the hull is a few units long; back 14.",
-    "probe 3: the echo cone reads - cyan beams fanning from the hull over the mass ahead; the hull is visible at back 14."
+    "probe 3: the echo cone reads - cyan beams fanning from the hull over the mass ahead; the hull is visible at back 14.",
+    "probe 4: setup and payoff read - the Dolphin runs at the ringed omni crystal and the blast bursts the mass beyond it in purple shards."
    ]
   },
   "thresher-slice": {
@@ -156,7 +158,8 @@
    "learned": [
     "probe 1: the ball went red and the chain whipped - the clip's subject works - but the hull was small and the rival trails were elsewhere. The fleet now circles the Thresher so the chain crosses their trails; the mount is a tighter three-quarter view.",
     "probe 2: the fleet's trails now wrap the Thresher (a pink wall in the last frames, the ball red through it) but the hull was tiny at back 26; back 16.",
-    "probe 3: at back 16 the hull filled the frame and the ball on its 25 u chain was out of it; a 40 u orbit holds hull, chain and ball with the trails around."
+    "probe 3: at back 16 the hull filled the frame and the ball on its 25 u chain was out of it; a 40 u orbit holds hull, chain and ball with the trails around.",
+    "probe 4: the 40 u orbit keeps hull, chain and the red ball in frame; the slicing of the rivals' trails is still not evident in the stills."
    ]
   }
  }
