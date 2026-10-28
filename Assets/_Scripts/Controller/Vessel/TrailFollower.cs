@@ -4,6 +4,7 @@ using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
 using System.Linq;
+using System.Collections.Generic;
 namespace CosmicShore.Gameplay
 {
     // TODO: move to enum folder
@@ -130,10 +131,15 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+            if (attachedTrail != null)
+            {
+                attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+                attachedTrail.OnMembersRemoved -= HandleMembersRemoved;
+            }
             attachedTrail = prism.Trail;
             attachedBlockIndex = index;
             attachedTrail.OnOldestRemoved += HandleOldestRemoved;
+            attachedTrail.OnMembersRemoved += HandleMembersRemoved;
 
             // Seed the initial direction from the vessel's own motion - the ride's first frames
             // continue the way you were flying. (Per frame thereafter the transformer resolves
@@ -189,7 +195,11 @@ namespace CosmicShore.Gameplay
 
         public void Detach()
         {
-            if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+            if (attachedTrail != null)
+            {
+                attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+                attachedTrail.OnMembersRemoved -= HandleMembersRemoved;
+            }
             attachedTrail = null;
             _rideSpeed = 0f;
             ReachedEnd = false;
@@ -210,9 +220,41 @@ namespace CosmicShore.Gameplay
             if (--attachedBlockIndex < 0) Detach();
         }
 
+        /// <summary>
+        /// <see cref="PrismRecycler"/> compacted dead prisms out of the trail (<see cref="Trail.RemoveMembers"/>).
+        /// Same rule as <see cref="HandleOldestRemoved"/>: follow the mass - step back one slot per removed index
+        /// below ours. If the ridden prism itself left, stay on the survivor that slid into its slot with no lerp
+        /// carried over; an emptied trail lets go. (Defensive: the recycler holds vessel-trail recycling while any
+        /// Urchin - the only rider - exists, so in play this should not fire under a live ride.)
+        /// </summary>
+        void HandleMembersRemoved(IReadOnlyList<int> removedAscending)
+        {
+            if (attachedTrail == null) return;
+            int below = 0;
+            bool riddenLeft = false;
+            for (int i = 0; i < removedAscending.Count; i++)
+            {
+                int r = removedAscending[i];
+                if (r < attachedBlockIndex) { below++; continue; }
+                riddenLeft = r == attachedBlockIndex;
+                break;
+            }
+            attachedBlockIndex -= below;
+
+            int last = attachedTrail.TrailList.Count - 1;
+            if (last < 0) { Detach(); return; }
+            if (riddenLeft) percentTowardNextBlock = 0f;
+            if (attachedBlockIndex > last) { attachedBlockIndex = last; percentTowardNextBlock = 0f; }
+            if (attachedBlockIndex < 0) { attachedBlockIndex = 0; percentTowardNextBlock = 0f; }
+        }
+
         void OnDestroy()
         {
-            if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+            if (attachedTrail != null)
+            {
+                attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+                attachedTrail.OnMembersRemoved -= HandleMembersRemoved;
+            }
         }
 
         /// <summary>

@@ -58,8 +58,8 @@
       "id": "stoat",
       "name": "Stoat",
       "file": "stoat.html",
-      "kind": "design studio - round 28",
-      "chip": "design studio · round 28",
+      "kind": "design studio - round 30",
+      "chip": "design studio · round 30",
       "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and two modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it) and Time (the catch sling, timed at 90°). Its wormhole mode became the Meerkat (2026-10-27). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
       "spec": [
         {
@@ -709,6 +709,6 @@
     "studio-kinds.js",
     "studio-vessel.js",
     "omega-studio.js",
-    "siphonophore-studio.js"
+    "siphonophore-studio.js", "studio-audio.js"
   ]
 }

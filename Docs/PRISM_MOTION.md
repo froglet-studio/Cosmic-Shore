@@ -40,7 +40,8 @@ displaced, so they do not run the rule. They are valid TARGETS of it.
    closing velocity (restitution 1/3, ceiling 200 u/s — the ram's numbers, so a prism thrown into a
    prism comes apart like one a hull hit at that speed), and both deaths go through the ordinary
    destruction path (stats, cell sums, the index).
-1a. **Shielded prisms bounce** (Garrett, 2026-10-27; `PrismBounce`, `PrismMotion.Bounces`). A collision a
+1a. **Shielded prisms bounce** (Garrett, 2026-10-27; **LOCKED** 2026-10-28, the rule every mover builds on, the Meerkat's
+   soliton first; `PrismBounce`, `PrismMotion.Bounces`). A collision a
    SHIELDED prism is part of, as the mover or as the prism it runs into, destroys neither: the movers rebound
    off the contact, keeping `shieldBounceRestitution` (0.6, `Resources/PrismMotionConfig`) of the closing speed.
    A shielded mover bounces off super-shielded mass too; an unshielded one still goes against it (4).

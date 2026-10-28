@@ -33,6 +33,18 @@ WHAT IT MAKES (R_VesselActions/MEERKAT.md)
     the other three abilities, are not designed - /vessel section 3); four CrystalHullFusionConfig entries (the Stoat's:
     the Meerkat draws the Stoat's mesh).
 
+GARRETT'S KIT (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 10), retrofitted onto the
+committed prefab and assets, idempotently:
+    - MeerkatSolitonKit beside the wormhole executor (listed by the ActionExecutorRegistry, wired to the config and the
+      Runtime GameData), and the HUD's `kit` reference to it
+    - Y (InputEvents 14, Button4Action) -> MeerkatSentinelModeAction (Charge, Sentinel mode), a new action asset
+    - the config's kit section: the page's plain kit keys at their SHIPPED values (then studio_to_unity.py's), four
+      ElementalFloat blocks from the page's L0/L10 pairs (rush Time, zapPetals Charge, portalSize Mass; Space's area is
+      round 23's areaL0 / areaL10),
+      the combat-hit channel and five empty FMOD slots
+    - the element map's four designed rows (Space Soliton on RT, Time passive, Mass passive, Charge Sentinel mode on Y),
+      replacing the open slots
+
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md): it runs only while Meerkat.prefab is absent, and
 `--check` validates the SHIPPED prefab's invariants rather than diffing it against a fresh clone of a donor that will move
 on. To re-author from scratch, delete Meerkat.prefab and its .meta and run again.
@@ -64,6 +76,7 @@ ACTIONS = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "Meerkat")
 CONFIG = os.path.join(ACTIONS, "MeerkatWormholeConfig.asset")
 FORM = os.path.join(ACTIONS, "MeerkatWormholeFormAction.asset")
 SHORTEN = os.path.join(ACTIONS, "MeerkatWormholeShortenAction.asset")
+SENTINEL = os.path.join(ACTIONS, "MeerkatSentinelModeAction.asset")
 STUDIO = os.path.join(ROOT, "Docs", "Studios", "VesselStudio", "meerkat.html")
 CAMERAS = os.path.join(ROOT, "Assets", "_SO_Assets", "Camera")
 DONOR_CAMERA = os.path.join(CAMERAS, "StoatCameraSettingsSO.asset")
@@ -80,6 +93,8 @@ ACTIONS_DIR_GUID = "6c1d9e2f3a4b4c5d8e7f6a5b4c3d2e1f"
 CONFIG_GUID = "9a8b7c6d5e4f4a3b2c1d0e9f8a7b6c5d"
 FORM_GUID = "1f2e3d4c5b6a4978a8b7c6d5e4f3a2b1"
 SHORTEN_GUID = "3c4d5e6f7a8b4c9d8e0f1a2b3c4d5e6f"
+SENTINEL_GUID = "7d2c9a4e1b3f4e8a9c6d5b4a3f2e1d0c"   # MeerkatSentinelModeAction (Y: Garrett's kit, Charge)
+COMBAT_HIT_GUID = "45fb43a0cddb5cc3cc4dc448df994152"  # Event_CombatHitStats (the channel StatsManager scores hits on)
 STOAT_HOLD_GUID = "9b50ea11259b4b1aa750eea7f1d7f781"   # StoatHoldAction (X: the stance)
 GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"    # Runtime GameData (the domain palette)
 STOAT_CAMERA_GUID = "2fb2a0bb0eaf4bd1863fdf55490fa869"  # StoatCameraSettingsSO (the clone's, until round 10)
@@ -96,8 +111,10 @@ HUD_ID = "5649393235309590662"               # StoatHUDController -> MeerkatHUDC
 HUD_VIEW_ID = "5137264980012345622"          # StoatHUDView in the nested StoatHUDVariant
 TRANSFORMER_ID = "7686683633640807837"
 RELAY_ID = "2828000000000000001"             # MeerkatWormholeNetworkRelay on the root
+ACTIONS_GO = "7850473780452578400"           # ShipActions: the registry and the executors
+KIT_ID = "2828000000000000002"               # MeerkatSolitonKit (Garrett's kit), beside the wormhole executor
 
-RIGHT_STICK_ACTION, LEFT_STICK_ACTION, BUTTON1_ACTION = 1, 2, 6
+RIGHT_STICK_ACTION, LEFT_STICK_ACTION, BUTTON1_ACTION, BUTTON4_ACTION = 1, 2, 6, 14
 TURN = {"PitchScaler": "120", "YawScaler": "120", "RollScaler": "15.6"}   # the studio's pitchYaw, bankShare x roll
 STOAT_TURN = {"PitchScaler": "48", "YawScaler": "48", "RollScaler": "52"}
 
@@ -108,6 +125,8 @@ SCRIPTS = {   # script name -> its .cs.meta (the guids every prefab and asset he
     "MeerkatVesselTransformer": "Assets/_Scripts/Controller/Vessel/MeerkatVesselTransformer.cs.meta",
     "MeerkatWormholeNetworkRelay": "Assets/_Scripts/Controller/Vessel/MeerkatWormholeNetworkRelay.cs.meta",
     "MeerkatHUDController": "Assets/_Scripts/UI/Controller/MeerkatHUDController.cs.meta",
+    "MeerkatSolitonKit": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonKit.cs.meta",
+    "MeerkatSentinelModeActionSO": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSentinelModeActionSO.cs.meta",
 }
 
 
@@ -116,12 +135,83 @@ def script_guid(name: str) -> str:
 
 
 # ----------------------------------------------------------------------------- the studio's shipped numbers
-CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "throatDiameter", "mouthDiameter",
-               "keyRampSeconds", "rideEntryMultiplier", "rideMidMultiplier", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
+CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "ovalShortest", "ovalLongest", "ovalMaxSharpness", "throatDiameter", "mouthDiameter",
+               "keyRampSeconds", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
                "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "reticleNearLight", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
                "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "bridgeWhite", "aiWormhole", "aiStraightMinDistance",
-               "aiBentMinDistance", "aiShapeSeconds", "aiNoise"]
+               "aiBentMinDistance", "aiShapeSeconds", "aiNoise",
+               # the tree and the roots (MEERKAT.md section 7, the artifact's rounds 13-21)
+               "trunkVisibility", "trunkTop", "trunkBase", "trunkBark", "trunkRidges", "trunkGnarl", "trunkGlass", "trunkRim",
+               "trunkFresnel", "trunkRings", "trunkGrain", "trunkGrainLines", "branchCount", "branchLength", "branchThickness",
+               "branchUp", "branchZone", "branchSymmetry", "branchForks", "branchGrowSeconds",
+               "omniOn", "omniCount", "labyrinthBranchPointsMin", "labyrinthBranchPointsMax", "labyrinthOpeningsMin",
+               "labyrinthOpeningsMax", "labyrinthRadiusMin", "labyrinthRadiusMax", "labyrinthSpread", "labyrinthRandomness",
+               "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl", "rootBarkVisibility", "rootGlass", "rootRim", "rootGrain",
+               "labyrinthFormSeconds", "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootMaxSpeed", "rootBounce",
+               "rootGravity", "rootOpacity", "tubeInner", "rootLamp", "rootFog",
+               # Garrett's soliton (round 23): the surface area, the pull, the carry, the fire
+               "areaL0", "areaL10", "suckRadius", "suckSpeed", "swallowShare", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
+
+
+# Garrett's kit (MEERKAT.md section 9): the page's plain kit keys, by the same names (studio_to_unity.py writes them once
+# they exist); Unity-only budget fields; the four ElementalFloats as (field, L0 key, L10 key, element, floor).
+# Space (areaL0/L10, suck*, swallowShare, carrySpeed, carryStretch/Twist, fireSpeed, fireGlideSeconds) is round 23's, in
+# CONFIG_KEYS: its swallow is MeerkatSwallow.
+KIT_KEYS = ["boostOut", "sentinelPool", "sentinelPoolL5", "guardShare", "aiZapRate", "portalShare"]
+KIT_UNITY = {"zapCooldownSeconds": "0"}
+KIT_FLOATS = [("rush", "rushL0", "rushL10", 4, "0.05"),
+              ("zapPetals", "zapPetalsL0", "zapPetalsL10", 1, "0"), ("portalSize", "portalSizeL0", "portalSizeL10", 2, "0.05")]
+KIT_EVENTS = ["zapEvent", "sentinelPlacedEvent", "sentinelLostEvent", "portalEvent", "prismFiredEvent"]
+
+
+def elemental_block(field: str, lo: str, hi: str, element: int, floor: str) -> str:
+    return (f"  {field}:\n    Enabled: 1\n    Value: {lo}\n    Min: {lo}\n    Max: {hi}\n    element: {element}\n"
+            f"    UseFloor: 1\n    Floor: {floor}\n")
+
+
+def kit_retrofit(cfg: str, values: dict) -> str:
+    """Garrett's kit joins the config once, before the audio slots: a key already there is never touched (its number is
+    studio_to_unity.py's, or the ElementalFloat's authored block). Idempotent."""
+    add = ""
+    for k in KIT_KEYS:
+        if not re.search(r"^  %s: " % k, cfg, re.M):
+            add += f"  {k}: {num(values[k])}\n"
+    for k, v in KIT_UNITY.items():
+        if not re.search(r"^  %s: " % k, cfg, re.M):
+            add += f"  {k}: {v}\n"
+    for field, lo, hi, element, floor in KIT_FLOATS:
+        if not re.search(r"^  %s:\n" % field, cfg, re.M):
+            add += elemental_block(field, num(values[lo]), num(values[hi]), element, floor)
+    if not re.search(r"^  onCombatHitLanded: ", cfg, re.M):
+        add += f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_GUID}, type: 2}}\n"
+    for e in KIT_EVENTS:
+        if not re.search(r"^  %s:\n" % e, cfg, re.M):
+            add += empty_event(e)
+    if not add:
+        return cfg
+    at = cfg.index("  formEvent:\n")
+    return cfg[:at] + add + cfg[at:]
+
+
+def check_kit_config(cfg: str, values: dict):
+    errs = []
+    for k in KIT_KEYS + list(KIT_UNITY):
+        if not re.search(r"^  %s: -?[\d.]+\n" % k, cfg, re.M):
+            errs.append(f"MeerkatWormholeConfig.asset: no Garrett's kit `{k}`")
+    for field, lo, hi, element, floor in KIT_FLOATS:
+        m = re.search(r"^  %s:\n    Enabled: (\d)\n    Value: [-\d.]+\n    Min: ([-\d.]+)\n    Max: ([-\d.]+)\n    element: (\d+)\n" % field, cfg, re.M)
+        if not m:
+            errs.append(f"MeerkatWormholeConfig.asset: no ElementalFloat block `{field}`")
+        elif m.group(1) != "1" or int(m.group(4)) != element:
+            errs.append(f"MeerkatWormholeConfig.asset: `{field}` is not enabled on element {element}")
+    if f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_GUID}, type: 2}}" not in cfg:
+        errs.append("MeerkatWormholeConfig.asset: onCombatHitLanded is not Event_CombatHitStats (a zap would score nowhere)")
+    for e in KIT_EVENTS:
+        m = re.search(r"^  %s:\n    Guid:\n      Data1: (-?\d+)\n" % e, cfg, re.M)
+        if not m:
+            errs.append(f"MeerkatWormholeConfig.asset: no FMOD slot `{e}`")
+    return errs
 
 
 def shipped(page: str) -> dict:
@@ -151,7 +241,7 @@ def config_asset(values: dict) -> str:
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
             f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatWormholeConfigSO')}, type: 3}}\n"
             "  m_Name: MeerkatWormholeConfig\n  m_EditorClassIdentifier: \n" + body +
-            empty_event("formEvent") + empty_event("collapseEvent"))
+            empty_event("formEvent") + empty_event("collapseEvent") + empty_event("rootsEvent"))
 
 
 # Studio keys renamed after the config was first written: old -> new (round 6: the ride's three multipliers).
@@ -182,7 +272,17 @@ def config_retrofit(cfg: str, values: dict) -> str:
         prev = next((m for m in (re.search(r"^  %s: .*\n" % q, cfg, re.M) for q in reversed(CONFIG_KEYS[:i])) if m), None)
         at = prev.end() if prev else cfg.index("  formEvent:\n")
         cfg = cfg[:at] + f"  {k}: {num(values[k])}\n" + cfg[at:]
+    if not re.search(r"^  rootsEvent:\n", cfg, re.M):   # the roots' sound (MEERKAT.md section 7), shipped empty
+        cfg = cfg.rstrip("\n") + "\n" + empty_event("rootsEvent")
     return cfg
+
+
+def sentinel_action_asset() -> str:
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatSentinelModeActionSO')}, type: 3}}\n"
+            "  m_Name: MeerkatSentinelModeAction\n  m_EditorClassIdentifier: \n")
 
 
 def action_asset(name: str, trigger: int) -> str:
@@ -233,7 +333,8 @@ def binding(ie: int, guid: str) -> str:
 
 
 MEERKAT_BINDINGS = ("  _inputEventShipActions:\n" + binding(RIGHT_STICK_ACTION, FORM_GUID) +
-                    binding(LEFT_STICK_ACTION, SHORTEN_GUID) + binding(BUTTON1_ACTION, STOAT_HOLD_GUID))
+                    binding(LEFT_STICK_ACTION, SHORTEN_GUID) + binding(BUTTON1_ACTION, STOAT_HOLD_GUID) +
+                    binding(BUTTON4_ACTION, SENTINEL_GUID))
 ANY_LIST = r"  {key}:(?: \[\])?\n(?:  [- ] .*\n)*"
 
 
@@ -247,6 +348,33 @@ def relay_block() -> str:
             f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
             f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatWormholeNetworkRelay')}, type: 3}}\n"
             "  m_Name: \n  m_EditorClassIdentifier: \n  ShowTopMostFoldoutHeaderGroup: 1\n")
+
+
+def kit_block() -> str:
+    return (f"--- !u!114 &{KIT_ID}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {ACTIONS_GO}}}\n"
+            f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatSolitonKit')}, type: 3}}\n"
+            "  m_Name: \n  m_EditorClassIdentifier: \n"
+            f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}\n"
+            f"  gameData: {{fileID: 11400000, guid: {GAME_DATA_GUID}, type: 2}}\n")
+
+
+def kit_retrofit_prefab(text: str) -> str:
+    """Garrett's kit on the hull: the component beside the wormhole, the registry's list, the HUD's reference. Idempotent."""
+    if f"--- !u!114 &{KIT_ID}\n" not in text:
+        m = re.search(r"--- !u!114 &%s\n" % WORMHOLE_ID, text)
+        text = text[:m.start()] + kit_block() + text[m.start():]
+    m = re.search(r"(--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n(?:  - component: \{fileID: -?\d+\}\n)+)" % ACTIONS_GO, text)
+    if m and f"  - component: {{fileID: {KIT_ID}}}\n" not in m.group(1):
+        text = text[:m.end(1)] + f"  - component: {{fileID: {KIT_ID}}}\n" + text[m.end(1):]
+    m = re.search(r"(--- !u!114 &%s\n(?:.*\n)*?  _executors:\n(?:  - \{fileID: -?\d+\}\n)+)" % REGISTRY_ID, text)
+    if m and f"  - {{fileID: {KIT_ID}}}\n" not in m.group(1):
+        text = text[:m.end(1)] + f"  - {{fileID: {KIT_ID}}}\n" + text[m.end(1):]
+    m = re.search(r"(--- !u!114 &%s\n(?:.*\n)*?  wormhole: \{fileID: %s\}\n)" % (HUD_ID, WORMHOLE_ID), text)
+    if m and not re.search(r"--- !u!114 &%s\n(?:.*\n)*?  kit: \{fileID: %s\}\n" % (HUD_ID, KIT_ID), text):
+        text = text[:m.end(1)] + f"  kit: {{fileID: {KIT_ID}}}\n" + text[m.end(1):]
+    return text
 
 
 def retrofit(text: str) -> str:
@@ -289,7 +417,7 @@ def retrofit(text: str) -> str:
     m = re.search(r"(--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n(?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
     if m and f"  - component: {{fileID: {RELAY_ID}}}\n" not in m.group(1):
         text = text[:m.end(1)] + f"  - component: {{fileID: {RELAY_ID}}}\n" + text[m.end(1):]
-    return text
+    return kit_retrofit_prefab(text)
 
 
 def build_clone(donor: str) -> str:
@@ -360,6 +488,47 @@ OPEN_SLOT = ("(open design slot) The wormhole is the Meerkat's one ability so fa
 OPEN_SLOT_YAML = OPEN_SLOT.replace("'", "''")   # inside a single-quoted YAML scalar an apostrophe is doubled
 
 
+# Garrett's design, approved by Yash 2026-10-28 (Docs/Studios/MEERKAT.md, Garrett's direction; R_VesselActions/MEERKAT.md
+# section 9): element, ability, description, input, L5 label, L5 description. Order: Space, Time, Mass, Charge (the slots').
+DESIGNED = [
+    (3, "Soliton", "RT forms the wormhole the reticle shows, and it is a soliton: a standing tunnel anyone may ride. Its "
+     "surface area is your Space level, so a long one is thin and a short one fat. It swallows prisms at its way in "
+     "(shielded ones too, never super-shielded) and fires them out of its way out as moving prisms: one that hits a plain "
+     "prism destroys both, scored to you; a shielded one bounces. Garrett's design, approved by Yash 2026-10-28.",
+     RIGHT_STICK_ACTION, "Steal", "Every prism your soliton swallows is stolen into your domain as its run starts, so it "
+     "leaves the way out already yours."),
+    (4, "Faster Ride", "Passive: you ride every soliton faster, your own or anyone's (the throat's rush grows with Time). "
+     "Garrett's design, approved by Yash 2026-10-28.",
+     0, "Boost Out", "You leave every soliton with a boost (1.5 x the exit speed)."),
+    (2, "Exit Portal", "Passive: when your soliton forms it sets down six small prisms of your domain on a hexagon round its "
+     "way out, at 1.5 x the exit's radius. Mass sets their size. Garrett's design, approved by Yash 2026-10-28.",
+     0, "Danger Portal", "The exit portal's prisms are danger prisms."),
+    (1, "Sentinel Mode", "Y toggles it. While it is on, each new soliton leaves a sentinel at its way in, an afterimage of "
+     "the hull that guards it: it zaps rivals in its guard (Charge sets the petals a zap knocks out, and the hit silences "
+     "them) and shields your own prisms there. A soliton with a sentinel stands as long as its sentinel; with the pool of 3 "
+     "used up, the oldest retires with its soliton. Garrett's design, approved by Yash 2026-10-28.",
+     BUTTON4_ACTION, "Six Sentinels", "The pool is 6 sentinels."),
+]
+
+
+def yaml_quote(text: str) -> str:
+    return "'" + text.replace("'", "''") + "'"
+
+
+def designed_entries() -> str:
+    return "  entries:\n" + "".join(
+        f"  - Element: {e}\n    AbilityLabel: {yaml_quote(a)}\n    AbilityDescription: {yaml_quote(d)}\n"
+        f"    Input: {i}\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
+        f"    UpgradeLabel: {yaml_quote(u)}\n    UpgradeDescription: {yaml_quote(ud)}\n" for e, a, d, i, u, ud in DESIGNED)
+
+
+def map_designed(text: str) -> str:
+    """The map's open slots become Garrett's four rows (once: a row already designed is never rewritten). Idempotent."""
+    if "(open design slot)" not in text:
+        return text
+    return text[:text.index("  entries:\n")] + designed_entries()
+
+
 def map_asset(donor_map: str) -> str:
     text = replace_once(donor_map, "  m_Name: Stoat\n", "  m_Name: Meerkat\n", "map name")
     text = replace_once(text, f"  vesselClass: {STOAT_CLASS_ID}\n", f"  vesselClass: {MEERKAT_CLASS_ID}\n", "map vesselClass")
@@ -367,7 +536,7 @@ def map_asset(donor_map: str) -> str:
         f"  - Element: {e}\n    AbilityLabel: '(open design slot)'\n    AbilityDescription: '{OPEN_SLOT_YAML}'\n"
         "    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
         "    UpgradeLabel: \n    UpgradeDescription: \n" for e in (3, 4, 2, 1))
-    return text[:text.index("  entries:\n")] + entries
+    return map_designed(text[:text.index("  entries:\n")] + entries)
 
 
 def fusion_entries(text: str, vessel: int):
@@ -424,7 +593,8 @@ def check_prefab(text: str):
          "Meerkat.prefab: the HUD is not MeerkatHUDController wired to the wormhole")
     m = re.search(r"  _inputEventShipActions:\n(?:  [- ] .*\n)*", text)
     want(m and m.group(0) == MEERKAT_BINDINGS,
-         "Meerkat.prefab: the bindings are not RT -> MeerkatWormholeFormAction, LT -> MeerkatWormholeShortenAction, X -> StoatHoldAction")
+         "Meerkat.prefab: the bindings are not RT -> MeerkatWormholeFormAction, LT -> MeerkatWormholeShortenAction, X -> StoatHoldAction, "
+         "Y -> MeerkatSentinelModeAction")
     want("  _touchActionOverrides: []\n" in text and "  _gamepadActionOverrides: []\n" in text,
          "Meerkat.prefab: a per-device override still binds the Stoat's actions")
     root = re.search(r"--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n((?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
@@ -433,6 +603,14 @@ def check_prefab(text: str):
          "Meerkat.prefab: MeerkatWormholeNetworkRelay is not on the root (other players would not see the tunnels)")
     want(f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}" in text and STOAT_CAMERA_GUID not in text,
          "Meerkat.prefab: the camera is not MeerkatCameraSettingsSO (the Stoat's camera sits above and behind the hull)")
+    kit = doc_of(text, KIT_ID)
+    want(f"guid: {script_guid('MeerkatSolitonKit')}, type: 3" in kit and f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}" in kit
+         and f"  m_GameObject: {{fileID: {ACTIONS_GO}}}" in kit,
+         "Meerkat.prefab: MeerkatSolitonKit is missing, off the ShipActions object, or not wired to MeerkatWormholeConfig (Garrett's kit does nothing)")
+    want(f"  - {{fileID: {KIT_ID}}}\n" in reg, "Meerkat.prefab: the ActionExecutorRegistry does not list MeerkatSolitonKit (Y would find no kit)")
+    want(f"  kit: {{fileID: {KIT_ID}}}\n" in hud, "Meerkat.prefab: the HUD's kit reference is not the hull's MeerkatSolitonKit")
+    go = re.search(r"--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n((?:  - component: \{fileID: -?\d+\}\n)+)" % ACTIONS_GO, text)
+    want(go and f"{{fileID: {KIT_ID}}}" in go.group(1), "Meerkat.prefab: the ShipActions object does not list MeerkatSolitonKit")
     want("  - component: {fileID: 0}\n" not in text, "Meerkat.prefab: a GameObject lists a null component")
     dangling = dangling_local_refs(text)
     want(not dangling, f"Meerkat.prefab: dangling local fileID reference(s) {dangling[:5]}")
@@ -465,10 +643,11 @@ def check_registrations(container, network, lists, cls, kmap, fusion):
         want(text.count(CLASS_GUID) == 1, f"{name}: SO_Class_Meerkat listed {text.count(CLASS_GUID)} times, not once")
     want(f"  Class: {MEERKAT_CLASS_ID}\n" in cls and "  ownedFromStart: 1\n" in cls and "  isLocked: 0\n" in cls,
          "SO_Class_Meerkat: wrong class, locked, or not owned from the start")
-    want(f"  vesselClass: {MEERKAT_CLASS_ID}\n" in kmap and kmap.count("(open design slot)") >= 4 and "Field Dipole" not in kmap,
-         "ElementalAbilityMaps/Meerkat: not the Meerkat's four open design slots")
-    want(OPEN_SLOT_YAML in kmap and f"'{OPEN_SLOT}'" not in kmap,
-         "ElementalAbilityMaps/Meerkat: an apostrophe in a quoted description is not doubled, so the asset does not parse")
+    want(f"  vesselClass: {MEERKAT_CLASS_ID}\n" in kmap and "Field Dipole" not in kmap and "(open design slot)" not in kmap,
+         "ElementalAbilityMaps/Meerkat: not the Meerkat's own map, or a slot is still open (Garrett's kit designs all four)")
+    want(kmap.endswith(designed_entries()),
+         "ElementalAbilityMaps/Meerkat: the four rows are not Garrett's design (Space Soliton on RT, Time Faster Ride, Mass Exit "
+         "Portal, Charge Sentinel Mode on Y, their L5s)")
     want(len(fusion_entries(fusion, MEERKAT_CLASS_ID)) == 4, "CrystalHullFusionConfig: not 4 Meerkat entries")
     return errs
 
@@ -486,6 +665,10 @@ def check_all():
         if guid_of(path + ".meta") != guid:
             errs.append(f"{os.path.relpath(path, ROOT)}.meta: not the guid the prefab binds")
     errs += check_config(read(CONFIG), shipped(read(STUDIO)))
+    errs += check_kit_config(read(CONFIG), shipped(read(STUDIO)))
+    if not os.path.exists(SENTINEL) or not os.path.exists(SENTINEL + ".meta") or guid_of(SENTINEL + ".meta") != SENTINEL_GUID \
+            or read(SENTINEL) != sentinel_action_asset():
+        errs.append("MeerkatSentinelModeAction.asset: missing, or not the MeerkatSentinelModeActionSO the Y binding names")
     errs += check_camera(read(CAMERA))
     if read(FORM) != action_asset("MeerkatWormholeFormAction", 0) or read(SHORTEN) != action_asset("MeerkatWormholeShortenAction", 1):
         errs.append("MeerkatWormholeFormAction / ShortenAction: not the RT Form (0) and LT Shorten (1) triggers")
@@ -502,12 +685,14 @@ def author():
     if not os.path.exists(CONFIG):   # a one-shot: after it exists only studio_to_unity.py writes its numbers
         write(CONFIG, config_asset(values)); write(CONFIG + ".meta", native_meta(CONFIG_GUID))
     else:
-        old = read(CONFIG); new = config_retrofit(old, values)
+        old = read(CONFIG); new = kit_retrofit(config_retrofit(old, values), values)
         if new != old:
             write(CONFIG, new)
     for path, guid, name, k in ((FORM, FORM_GUID, "MeerkatWormholeFormAction", 0), (SHORTEN, SHORTEN_GUID, "MeerkatWormholeShortenAction", 1)):
         if not os.path.exists(path) or read(path) != action_asset(name, k):
             write(path, action_asset(name, k)); write(path + ".meta", native_meta(guid))
+    if not os.path.exists(SENTINEL) or read(SENTINEL) != sentinel_action_asset():
+        write(SENTINEL, sentinel_action_asset()); write(SENTINEL + ".meta", native_meta(SENTINEL_GUID))
     if not os.path.exists(CAMERA):   # a one-shot, like the config
         write(CAMERA, camera_asset(read(DONOR_CAMERA))); write(CAMERA + ".meta", native_meta(CAMERA_GUID))
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
@@ -521,6 +706,10 @@ def author():
         write(CLASS_ASSET, class_asset(read(DONOR_CLASS))); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
     if not os.path.exists(MAP):
         write(MAP, map_asset(read(DONOR_MAP))); write(MAP + ".meta", native_meta(MAP_GUID))
+    else:
+        old = read(MAP); new = map_designed(old)
+        if new != old:
+            write(MAP, new)
     for path, fn in [(CONTAINER, register_container), (NETWORK_PREFABS, register_network), (FUSION, register_fusion)] + \
                     [(p, register_class_list) for p in CLASS_LISTS]:
         old = read(path); new = fn(old)
@@ -546,6 +735,9 @@ def self_test():
     expect(check_prefab(good.replace(f"  - component: {{fileID: {STANCE_ID}}}\n", "  - component: {fileID: 0}\n")), 1, "a null component")
     expect(check_prefab(read(DONOR).replace("  m_Name: Stoat\n", "  m_Name: Meerkat\n")), 4, "the Stoat untouched")
     expect(check_prefab(good.replace(CAMERA_GUID, STOAT_CAMERA_GUID)), 1, "the Stoat's camera")
+    expect(check_prefab(good.replace(f"  - {{fileID: {KIT_ID}}}\n", "")), 1, "the kit off the registry")
+    expect(check_prefab(good.replace(binding(BUTTON4_ACTION, SENTINEL_GUID), "")), 1, "Y unbound")
+    expect(check_prefab(good.replace(f"  kit: {{fileID: {KIT_ID}}}\n", "")), 1, "the HUD without the kit")
     cam = camera_asset(read(DONOR_CAMERA))
     expect(check_camera(cam), 0, "a fresh camera is centred")
     expect(check_camera(cam.replace("  followOffset: {x: 0, y: 0, z: -21}", "  followOffset: {x: 0, y: 6.5, z: -21}")), 1, "a height offset")
@@ -567,15 +759,32 @@ def self_test():
         fails.append("the config retrofit does not add a key the studio added later")
     if config_retrofit(cfg, values) != cfg:
         fails.append("the config retrofit is not idempotent")
-    renamed = cfg.replace("  rideMidMultiplier: ", "  throatSpeed: ")
-    if "  rideMidMultiplier: 2.5\n" not in config_retrofit(renamed, values) or "  throatSpeed:" in config_retrofit(renamed, values):
-        fails.append("the config retrofit does not carry a renamed key's number to its new name")
+    # a planted rename onto a live key (round 24 retired rideMidMultiplier, the one real rename's target, so the control
+    # plants its own pair rather than testing a key the config no longer has)
+    RENAMED["selfTestOldName"] = "reticleAhead"
+    try:
+        renamed = cfg.replace("  reticleAhead: ", "  selfTestOldName: ")
+        carried = config_retrofit(renamed, values)
+        if "  reticleAhead: %s\n" % num(values["reticleAhead"]) not in carried or "  selfTestOldName:" in carried:
+            fails.append("the config retrofit does not carry a renamed key's number to its new name")
+    finally:
+        del RENAMED["selfTestOldName"]
     retired = cfg.replace("  shaftMin: 60\n", "  lengthStraight: 600\n  shaftMin: 60\n")
     if check_config(retired, values) == [] or "lengthStraight" in config_retrofit(retired, values):
         fails.append("a retired key is neither flagged nor removed by the retrofit")
     pre7 = re.sub(r"  (shaftMin|shaftMax|bendRadius|throatDiameter|mouthDiameter): .*\n", "", cfg)
     if config_retrofit(pre7, values) != cfg:
         fails.append("the config retrofit does not bring a round-6 asset to the round-7 one, in the page's order")
+    kcfg = kit_retrofit(cfg, values)
+    expect(check_kit_config(kcfg, values), 0, "a kit config passes")
+    expect(check_kit_config(cfg, values), 5, "a config without the kit")
+    expect(check_kit_config(kcfg.replace("    element: 1\n    UseFloor: 1\n    Floor: 0\n", "    element: 4\n    UseFloor: 1\n    Floor: 0\n"), values),
+           1, "zapPetals on the wrong element")
+    if kit_retrofit(kcfg, values) != kcfg:
+        fails.append("the kit retrofit is not idempotent")
+    tuned_kit = kcfg.replace("  aiZapRate: 5\n", "  aiZapRate: 7\n")
+    if kit_retrofit(tuned_kit, values) != tuned_kit:
+        fails.append("the kit retrofit overwrote a value tuned after it")
     if "  shaftMax: 600\n" not in cfg or "  bridgeSpindleThickness: 0.25\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
         fails.append(f"the config is not the studio's SHIPPED values")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
@@ -586,6 +795,13 @@ def self_test():
     expect(check_registrations(container, read(NETWORK_PREFABS).replace(PREFAB_GUID, "x"), lists, cls, kmap, fusion), 1, "no network entry")
     expect(check_registrations(container, network, [(n, t.replace(CLASS_GUID, "x")) for n, t in lists], cls, kmap, fusion), 1, "no class list entry")
     expect(check_registrations(container, network, lists, cls, read(DONOR_MAP), fusion), 1, "the Stoat's own map")
+    open_map = kmap[:kmap.index("  entries:\n")] + "  entries:\n" + "".join(
+        f"  - Element: {e}\n    AbilityLabel: '(open design slot)'\n    AbilityDescription: '{OPEN_SLOT_YAML}'\n"
+        "    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
+        "    UpgradeLabel: \n    UpgradeDescription: \n" for e in (3, 4, 2, 1))
+    expect(check_registrations(container, network, lists, cls, open_map, fusion), 1, "the open slots")
+    if map_designed(open_map) != kmap or map_designed(kmap) != kmap:
+        fails.append("the map retrofit does not turn the open slots into Garrett's rows, idempotently")
     if register_container(container) != container or register_fusion(fusion) != fusion or register_network(network) != network:
         fails.append("registration is not idempotent")
     for f in fails:

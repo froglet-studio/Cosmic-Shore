@@ -980,6 +980,9 @@ MonoBehaviour:
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}
+  - InputEvent: 14
+    ShipActions:
+    - {fileID: 11400000, guid: 7d2c9a4e1b3f4e8a9c6d5b4a3f2e1d0c, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []
@@ -1087,6 +1090,7 @@ MonoBehaviour:
   _iconSetSwitcher: {fileID: 0}
   view: {fileID: 5137264980012345622}
   wormhole: {fileID: 5137264980012345601}
+  kit: {fileID: 2828000000000000002}
 --- !u!114 &8755860699239805343
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1207,6 +1211,7 @@ GameObject:
   - component: {fileID: 9105512684531825410}
   - component: {fileID: 5137264980012345601}
   - component: {fileID: 5137264980012345602}
+  - component: {fileID: 2828000000000000002}
   m_Layer: 0
   m_Name: ShipActions
   m_TagString: Untagged
@@ -1244,6 +1249,21 @@ MonoBehaviour:
   _executors:
   - {fileID: 5137264980012345601}
   - {fileID: 5137264980012345602}
+  - {fileID: 2828000000000000002}
+--- !u!114 &2828000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7850473780452578400}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d2007a76a174c0f94b147119b384dba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: 9a8b7c6d5e4f4a3b2c1d0e9f8a7b6c5d, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!114 &5137264980012345601
 MonoBehaviour:
   m_ObjectHideFlags: 0
