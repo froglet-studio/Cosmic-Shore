@@ -33,10 +33,21 @@ namespace CosmicShore.Gameplay
         /// body that has a thick part at all, 1 for one already thinner than the law's reference everywhere).</summary>
         public float Thickest { get; }
 
+        /// <summary>How elongated a body must be to have a SPINE: the spread along its second principal axis over the
+        /// spread along its first (standard deviations). A fish's body measures ~0.5; a brittlestar's disc ~0.85 - a
+        /// disc or a star has no axis to erode along, and cutting it into slices along an arbitrary in-plane one squashes
+        /// it into an ellipse and drags its limbs inward on one side only.</summary>
+        public const float SpineElongationLimit = 0.75f;
+
+        /// <summary>False for a body with no clear spine (<see cref="SpineElongationLimit"/>): it is left whole (every
+        /// girth 1, <see cref="Map"/> the identity), and its limbs - each a spindle of its own - are still eroded.</summary>
+        public bool HasSpine { get; }
+
         SpindleErosion(IReadOnlyList<Vector3> vertices, Vector3 anchor)
         {
             _anchor = anchor;
-            PrincipalAxes(vertices, out _spine, out var width);
+            PrincipalAxes(vertices, out _spine, out var width, out float elongation);
+            HasSpine = elongation <= SpineElongationLimit;
 
             float lo = float.MaxValue, hi = float.MinValue;
             for (int i = 0; i < vertices.Count; i++)
@@ -58,6 +69,13 @@ namespace CosmicShore.Gameplay
             }
             var smooth = (float[])half.Clone();
             for (int k = 1; k < Sections - 1; k++) smooth[k] = (half[k - 1] + 2f * half[k] + half[k + 1]) * 0.25f;
+
+            if (!HasSpine)
+            {
+                for (int k = 0; k < Sections; k++) _girth[k] = 1f;
+                Thickest = 1f;
+                return;
+            }
 
             float thickest = 0f;
             for (int k = 0; k < Sections; k++) thickest = Mathf.Max(thickest, smooth[k]);
@@ -157,8 +175,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The longest and the shortest principal axis of a vertex cloud (a 3x3 covariance, Jacobi-rotated to
-        /// its eigenvectors). A curved fin's long axis is oblique to its bounds, so the bounds cannot stand in.</summary>
-        static void PrincipalAxes(IReadOnlyList<Vector3> vertices, out Vector3 longest, out Vector3 shortest)
+        /// its eigenvectors), and its <paramref name="elongation"/>: the second axis's spread over the first's. A curved
+        /// fin's long axis is oblique to its bounds, so the bounds cannot stand in.</summary>
+        static void PrincipalAxes(IReadOnlyList<Vector3> vertices, out Vector3 longest, out Vector3 shortest, out float elongation)
         {
             var c = Centroid(vertices);
             var a = new float[3, 3];
@@ -205,6 +224,9 @@ namespace CosmicShore.Gameplay
             }
             longest = new Vector3(v[0, hi], v[1, hi], v[2, hi]).normalized;
             shortest = new Vector3(v[0, lo], v[1, lo], v[2, lo]).normalized;
+            int mid = 3 - hi - lo;
+            if (hi == lo) mid = (hi + 1) % 3;
+            elongation = a[hi, hi] > 1e-12f ? Mathf.Sqrt(Mathf.Max(0f, a[mid, mid]) / a[hi, hi]) : 1f;
         }
     }
 }

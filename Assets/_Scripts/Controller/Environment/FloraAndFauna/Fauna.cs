@@ -467,9 +467,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The element this individual rolled (None before <see cref="AssignLineage"/>).</summary>
         protected Element RolledElement { get; private set; } = Element.None;
 
-        // What an eroded Space spindle changed (the skins' prefab meshes and the body prisms' prefab seats), so a pooled
-        // body that comes back as another element gets the prefab's body back. Null until a body is first eroded.
-        Dictionary<SkinnedMeshRenderer, Mesh> _authoredSpindleMeshes;
+        // What an eroded Space spindle changed (the spindles' prefab meshes - a SkinnedMeshRenderer's or a static
+        // MeshFilter's - and the body prisms' prefab seats), so a pooled body that comes back as another element gets the
+        // prefab's body back. Null until a body is first eroded.
+        Dictionary<Component, Mesh> _authoredSpindleMeshes;
         Dictionary<HealthPrism, Vector3> _authoredPrismSeats;
 
         /// <summary>How thick this body's thickest section is against its root scale: 1, or the Space spindle's eroded
@@ -1004,13 +1005,12 @@ namespace CosmicShore.Gameplay
         {
             RestoreSpindle();   // a pooled body is measured from the prefab's seats, never its last life's
 
-            SkinnedMeshRenderer body = null;
-            var skins = GetComponentsInChildren<SkinnedMeshRenderer>(true);
-            _authoredSpindleMeshes ??= new Dictionary<SkinnedMeshRenderer, Mesh>();
+            Component body = null;
+            var skins = SpindleMeshes();
+            _authoredSpindleMeshes ??= new Dictionary<Component, Mesh>();
             foreach (var skin in skins)
             {
-                if (!skin || !skin.sharedMesh || !IsSpindlePart(skin)) continue;
-                if (!_authoredSpindleMeshes.ContainsKey(skin)) _authoredSpindleMeshes[skin] = skin.sharedMesh;
+                if (!_authoredSpindleMeshes.ContainsKey(skin)) _authoredSpindleMeshes[skin] = MeshOf(skin);
                 if (!body || _authoredSpindleMeshes[skin].vertexCount > _authoredSpindleMeshes[body].vertexCount) body = skin;
             }
             if (!body) return;
@@ -1022,7 +1022,7 @@ namespace CosmicShore.Gameplay
             var bodySpindle = Eroded(bodyMesh, () => SpindleErosion.Measure(bodyMesh.vertices, worldToBody.MultiplyPoint3x4(heart)), null);
             if (bodySpindle == null) return;
 
-            var hosts = new List<(SkinnedMeshRenderer skin, ErodedSpindle spindle, Matrix4x4 toWorld)>();
+            var hosts = new List<(Component skin, ErodedSpindle spindle, Matrix4x4 toWorld)>();
             foreach (var skin in skins)
             {
                 if (!skin || !_authoredSpindleMeshes.TryGetValue(skin, out var mesh)) continue;
@@ -1046,7 +1046,7 @@ namespace CosmicShore.Gameplay
                     return meshToBody.inverse.MultiplyVector(bodySpindle.Map.Map(root) - root);
                 });
                 if (spindle == null) continue;
-                skin.sharedMesh = spindle.Mesh;
+                SetMesh(skin, spindle.Mesh);
                 hosts.Add((skin, spindle, toWorld));
             }
             BodyGirthFactor = bodySpindle.Map.Thickest;
@@ -1137,14 +1137,42 @@ namespace CosmicShore.Gameplay
             return spindle;
         }
 
-        /// <summary>A skin's mesh-to-world matrix in the bind pose: through its first bone (the bone's world matrix
-        /// times its bind pose is the same for every bone at rest), or the renderer's own transform without bones.</summary>
-        static Matrix4x4 RestMeshToWorld(SkinnedMeshRenderer skin, Mesh mesh)
+        /// <summary>A spindle mesh's mesh-to-world matrix in the bind pose: a skin's through its first bone (the bone's
+        /// world matrix times its bind pose is the same for every bone at rest), anything else through its own transform.</summary>
+        static Matrix4x4 RestMeshToWorld(Component part, Mesh mesh)
         {
-            var bones = skin.bones;
-            if (bones is { Length: > 0 } && bones[0] && mesh.bindposeCount > 0)
-                return bones[0].localToWorldMatrix * mesh.bindposes[0];
-            return skin.transform.localToWorldMatrix;
+            if (part is SkinnedMeshRenderer skin)
+            {
+                var bones = skin.bones;
+                if (bones is { Length: > 0 } && bones[0] && mesh.bindposeCount > 0)
+                    return bones[0].localToWorldMatrix * mesh.bindposes[0];
+            }
+            return part.transform.localToWorldMatrix;
+        }
+
+        /// <summary>
+        /// The meshes the body is drawn with: every skin of the body, and every static mesh a <see cref="Spindle"/> draws
+        /// (the QuadFish, Clawfish and tadpole bodies are MeshFilters, not skins). Never the heart's (<see cref="IsSpindlePart"/>)
+        /// and never a prism's (its box and its shields are the prism's own geometry).
+        /// </summary>
+        List<Component> SpindleMeshes()
+        {
+            var parts = new List<Component>();
+            foreach (var skin in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (skin && skin.sharedMesh && IsSpindlePart(skin)) parts.Add(skin);
+            foreach (var filter in GetComponentsInChildren<MeshFilter>(true))
+                if (filter && filter.sharedMesh && IsSpindlePart(filter) && !filter.GetComponentInParent<Prism>(true)
+                    && filter.GetComponentInParent<Spindle>(true))
+                    parts.Add(filter);
+            return parts;
+        }
+
+        static Mesh MeshOf(Component part) => part is SkinnedMeshRenderer skin ? skin.sharedMesh : ((MeshFilter)part).sharedMesh;
+
+        static void SetMesh(Component part, Mesh mesh)
+        {
+            if (part is SkinnedMeshRenderer skin) skin.sharedMesh = mesh;
+            else ((MeshFilter)part).sharedMesh = mesh;
         }
 
         /// <summary>Puts back what <see cref="ErodeSpindle"/> changed: the prefab skins and the prisms' prefab seats.</summary>
@@ -1153,7 +1181,7 @@ namespace CosmicShore.Gameplay
             BodyGirthFactor = 1f;
             if (_authoredSpindleMeshes != null)
                 foreach (var kv in _authoredSpindleMeshes)
-                    if (kv.Key) kv.Key.sharedMesh = kv.Value;
+                    if (kv.Key) SetMesh(kv.Key, kv.Value);
             if (_authoredPrismSeats != null)
                 foreach (var kv in _authoredPrismSeats)
                     if (kv.Key) kv.Key.transform.localPosition = kv.Value;
