@@ -1078,7 +1078,7 @@ namespace CosmicShore.Gameplay
                 var local = worldToMesh.MultiplyPoint3x4(centre);
                 hp.transform.position = meshToWorld.MultiplyPoint3x4(seat.Map.Map(local) + seat.Shift);
 
-                if (hp.prismProperties is { IsDangerous: true }) continue;   // a tooth keeps its size, at its new seat
+                if (IsAuthoredDanger(hp)) continue;   // a tooth keeps its size, at its new seat (never a Charge body's armed prism)
 
                 var authored = hp.AuthoredScale;
                 var parent = hp.transform.parent.localToWorldMatrix;
@@ -1180,6 +1180,106 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The cached body prisms (see <see cref="CacheBodyPrisms"/>). May contain destroyed entries.</summary>
         protected HealthPrism[] BodyPrisms => _bodyPrisms;
+
+        // The body prisms its PREFAB made dangerous (a shark's teeth, a worm's fangs), captured the first time the body is
+        // armoured and before anything arms it - so a Charge body's elemental danger never reads as teeth. And the prisms
+        // the ELEMENT changed, so a pooled body that comes back as another element sheds exactly that and nothing its
+        // prefab authored (the worm head's shielded plate cage keeps its shield).
+        HashSet<HealthPrism> _authoredDanger;
+        readonly HashSet<HealthPrism> _elementArmed = new();
+        Coroutine _bodyShieldRegen;
+        WaitForSeconds _bodyShieldWait;
+
+        /// <summary>True for a body prism its prefab authored dangerous (teeth, fangs, a stinger) - never one the
+        /// element armed (<see cref="ArmourBody"/>). Mouths and jaws read this, not <c>IsDangerous</c>: on a Charge
+        /// creature every body prism is dangerous, and a mouth at the centroid of the whole body is no mouth.</summary>
+        protected bool IsAuthoredDanger(HealthPrism hp) =>
+            hp && (_authoredDanger != null ? _authoredDanger.Contains(hp) : hp.prismProperties is { IsDangerous: true });
+
+        /// <summary>
+        /// THE ELEMENTAL ARMOUR on a creature's body (<see cref="ElementalArmour"/>, Docs/ECOSYSTEM.md §65; Garrett,
+        /// 2026-10-28: "yes keep consistency" for fauna) - the same law a plant's leaves obey:
+        /// <list type="bullet">
+        /// <item><b>MASS is armoured.</b> Every plain body prism is shielded now and re-armoured one every
+        /// <see cref="ElementalArmour.ShieldPeriod"/> seconds while the creature lives, so a Mass creature takes two
+        /// passes. Its authored danger prisms stay danger (a shield clears danger - the two are exclusive by locked
+        /// design).</item>
+        /// <item><b>CHARGE is dangerous.</b> Every body prism is a danger prism, not only the teeth.</item>
+        /// <item>Every other element wears its prefab's own body.</item>
+        /// </list>
+        /// Call after the body prisms are initialised and the heart carrying the element is in place. A previous life's
+        /// elemental armour is taken off first, so a pooled body never keeps it; what the prefab authored is never touched.
+        /// </summary>
+        protected void ArmourBody()
+        {
+            var body = _bodyPrisms;
+            if (body == null) return;
+            if (_authoredDanger == null)
+            {
+                _authoredDanger = new HashSet<HealthPrism>();
+                for (int i = 0; i < body.Length; i++)
+                    if (body[i] && body[i].prismProperties is { IsDangerous: true }) _authoredDanger.Add(body[i]);
+            }
+
+            foreach (var hp in _elementArmed)
+            {
+                if (!hp || hp.destroyed || hp.prismProperties == null || _authoredDanger.Contains(hp)) continue;
+                hp.prismProperties.IsDangerous = false;
+                hp.DeactivateShields();
+            }
+            _elementArmed.Clear();
+            if (_bodyShieldRegen != null)
+            {
+                StopCoroutine(_bodyShieldRegen);
+                _bodyShieldRegen = null;
+            }
+
+            Element element = Element != Element.None ? Element : RolledElement;
+            bool dangerous = ElementalArmour.ArmsEveryPrism(element);
+            bool armoured = ElementalArmour.Shields(element);
+            if (!dangerous && !armoured) return;
+            for (int i = 0; i < body.Length; i++)
+            {
+                var hp = body[i];
+                if (!hp || hp.destroyed || hp.prismProperties is not { IsDangerous: false } props) continue;
+                if (dangerous)
+                {
+                    props.IsDangerous = true;
+                    hp.MakeDangerous();
+                    _elementArmed.Add(hp);
+                }
+                else if (!props.IsShielded && !props.IsSuperShielded)
+                {
+                    hp.ActivateShield();
+                    _elementArmed.Add(hp);
+                }
+            }
+            if (armoured) _bodyShieldRegen = StartCoroutine(RearmourBody());
+        }
+
+        /// <summary>Mass's re-armour: one plain body prism that has shed its shield takes it back every
+        /// <see cref="ElementalArmour.ShieldPeriod"/> seconds - a plant's regen (<c>LifeForm.ShieldRegenCoroutine</c>)
+        /// on a creature's body, which that coroutine never sees (a body prism is not the cell's grazeable mass).</summary>
+        IEnumerator RearmourBody()
+        {
+            _bodyShieldWait ??= new WaitForSeconds(ElementalArmour.ShieldPeriod);
+            int next = 0;
+            while (true)
+            {
+                yield return _bodyShieldWait;
+                var body = _bodyPrisms;
+                if (body == null || body.Length == 0) continue;
+                for (int tried = 0; tried < body.Length; tried++)
+                {
+                    var hp = body[next];
+                    next = (next + 1) % body.Length;
+                    if (!hp || hp.destroyed || hp.prismProperties is not { IsDangerous: false, IsShielded: false, IsSuperShielded: false })
+                        continue;
+                    hp.ActivateShield();
+                    break;
+                }
+            }
+        }
 
         /// <summary>True while any body prism is alive — the creature's health read.</summary>
         public bool HasLiveBodyPrisms

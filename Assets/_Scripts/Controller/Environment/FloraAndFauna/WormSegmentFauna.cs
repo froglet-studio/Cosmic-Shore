@@ -127,6 +127,8 @@ namespace CosmicShore.Gameplay
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, heartElement);
             if (crystal) crystal.SetEmbeddedIn(this);
             PlaceHeart();
+            // The element's armour on the body (Docs/ECOSYSTEM.md §65): Mass shielded, Charge all danger.
+            ArmourBody();
         }
 
         /// <summary>
@@ -153,8 +155,8 @@ namespace CosmicShore.Gameplay
         public void SyncBodyPrismsToIndex() => NotifyBodyPrismsMoved();
 
         /// <summary>
-        /// The jaws: centroid of this segment's live DANGER prisms (the head's fangs /
-        /// the tail's stinger) — the suction sink a devoured creature implodes toward,
+        /// The jaws: centroid of this segment's live AUTHORED danger prisms (the head's fangs /
+        /// the tail's stinger - never a Charge body's elemental danger, <see cref="Fauna.IsAuthoredDanger"/>) — the suction sink a devoured creature implodes toward,
         /// same construction as the shark's mouth. Falls back to just ahead of the
         /// segment centre when the danger prisms are shot off.
         /// </summary>
@@ -170,7 +172,7 @@ namespace CosmicShore.Gameplay
                     for (int i = 0; i < prisms.Length; i++)
                     {
                         var hp = prisms[i];
-                        if (!hp || hp.destroyed || hp.prismProperties is not { IsDangerous: true }) continue;
+                        if (!hp || hp.destroyed || !IsAuthoredDanger(hp)) continue;
                         sum += hp.transform.position;
                         count++;
                     }
@@ -226,6 +228,8 @@ namespace CosmicShore.Gameplay
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
             if (crystal) crystal.SetEmbeddedIn(this);
             PlaceHeart();
+            // The colony's element reaches the body too, not only the heart (Docs/ECOSYSTEM.md §65).
+            ArmourBody();
         }
 
         protected override void OnDeath(string killerName = "")

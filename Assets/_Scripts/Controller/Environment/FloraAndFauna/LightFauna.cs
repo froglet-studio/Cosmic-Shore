@@ -168,6 +168,8 @@ namespace CosmicShore.Gameplay
             // (Squirrel Space-5 withers via Predated) but never skim-collectable until
             // death drops it. Cleared by ActivateCrystal in the sealed Die path.
             if (crystal) crystal.SetEmbeddedIn(this);
+            // The element's armour on the body (Docs/ECOSYSTEM.md §65): Mass shielded, Charge all danger.
+            ArmourBody();
 
             if (diet == FaunaDiet.Predator)
             {
@@ -453,7 +455,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Creates the mouth — a lightweight transform at the danger-prism centroid.
+        /// Creates the mouth — a lightweight transform at the centroid of the AUTHORED danger prisms (the teeth;
+        /// a Charge body is dangerous all over, which is no mouth - <see cref="Fauna.IsAuthoredDanger"/>).
         /// The mouth is deliberately NOT a danger prism's own transform: the suction
         /// sink must keep tracking the swimming predator even if players destroy the
         /// mouth prisms mid-devour (danger prisms stay fully vulnerable to normal
@@ -470,7 +473,7 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < body.Length; i++)
                 {
                     var hp = body[i];
-                    if (!hp || hp.prismProperties == null || !hp.prismProperties.IsDangerous) continue;
+                    if (!IsAuthoredDanger(hp)) continue;
                     centroid += hp.transform.position;
                     dangerCount++;
                 }

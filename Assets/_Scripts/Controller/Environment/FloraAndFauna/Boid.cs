@@ -196,6 +196,8 @@ namespace CosmicShore.Gameplay
             // (Squirrel Space-5 withers via Predated) but never skim-collectable until
             // death drops it. Cleared by ActivateCrystal in the sealed Die path.
             if (crystal) crystal.SetEmbeddedIn(this);
+            // The element's armour on the body (Docs/ECOSYSTEM.md §65): Mass shielded, Charge all danger.
+            ArmourBody();
 
             currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
             float initialDelay = normalizedIndex * behaviorUpdateRate;
