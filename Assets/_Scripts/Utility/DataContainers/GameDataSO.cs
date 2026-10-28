@@ -74,6 +74,19 @@ namespace CosmicShore.Utility
         public IntVariable VesselClassSelectedIndex;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
+
+        /// <summary>
+        /// Switchback only: the fun type the launch panel picked (<see cref="CosmicShore.Data.SwitchbackFunType"/>),
+        /// written by <c>ArcadeGameConfigureModal.SyncGameDataConfig</c>. Read by the server when it builds the
+        /// course; clients take it from the course broadcast. Baseline everywhere else.
+        /// </summary>
+        [NonSerialized] public SwitchbackFunType SwitchbackFunType = SwitchbackFunType.Baseline;
+
+        /// <summary>
+        /// Switchback testing: fly each world's fixed seed (<see cref="SwitchbackFunTypes.WorldSeed"/>) instead of a
+        /// random course, so runs can be compared. Set by the launch panel's SEED: RANDOM / FIXED button (ArcadeGameConfigureModal.SwitchbackFunTypePicker.cs).
+        /// </summary>
+        [NonSerialized] public bool SwitchbackFixedSeed;
         public ResourceCollection ResourceCollection;
         public ThemeManagerDataContainerSO ThemeManagerData;
         
@@ -1045,6 +1058,8 @@ namespace CosmicShore.Utility
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
+            SwitchbackFunType = SwitchbackFunType.Baseline;
+            SwitchbackFixedSeed = false;
             RequestedAIBackfillCount = 0;
             RequestedAIDomains.Clear();
             RequestedAIDifficulty = AIDifficultyRules.Default;
