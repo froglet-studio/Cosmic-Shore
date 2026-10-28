@@ -87,6 +87,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds before the same vessel can bite again.")]
         public float VesselBiteCooldown = 0.8f;
 
+        [Tooltip("The danger contact a vessel passing through a CHARGE creature takes (the element law: every Charge prism " +
+                 "is a danger prism - Docs/ECOSYSTEM.md §65.7). The body has no collider, so this is the burn its danger " +
+                 "prisms would land, applied at the pass. Unread on every other element.")]
+        public CosmicShore.Gameplay.VesselElementalDebuffByDangerPrismEffectSO ContactEffect;
+
         [Header("Wounds")]
         [Tooltip("Radius of the hole one hit cuts, voxels.")]
         public float BiteRadiusVoxels = 3.5f;

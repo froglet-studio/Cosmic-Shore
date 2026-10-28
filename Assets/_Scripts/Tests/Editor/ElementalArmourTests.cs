@@ -68,5 +68,48 @@ namespace CosmicShore.Tests
                 Assert.That(ElementalArmour.HeartClearance(e), Is.EqualTo(ElementalArmour.HeartSeatClearance), $"{e}");
             Assert.That(ElementalArmour.HeartSwingClearance, Is.GreaterThan(ElementalArmour.HeartSeatClearance));
         }
+
+        /// <summary>A population drawn as data (swarm, builder colony, substrate) takes the same law through
+        /// SwarmInstance.ElementLaw (Docs/ECOSYSTEM.md §65.7): shielded exactly where ElementalArmour shields, danger
+        /// exactly where it arms every prism, and a Mass member that strikes shows danger and keeps its shield.</summary>
+        [Test]
+        public void PopulationsDrawnAsData_TakeTheSameLaw()
+        {
+            for (int index = 0; index < 4; index++)
+            {
+                var e = Gameplay.SwarmFaunaConfigSO.ToElement(index);
+                int tier = 0; bool shielded = false;
+                Gameplay.SwarmInstance.ElementLaw(index, ref tier, ref shielded);
+                Assert.That(shielded, Is.EqualTo(ElementalArmour.Shields(e)), $"{e} shielded");
+                Assert.That(tier == 1, Is.EqualTo(ElementalArmour.ArmsEveryPrism(e)), $"{e} danger");
+                int striking = 1; bool kept = false;
+                Gameplay.SwarmInstance.ElementLaw(index, ref striking, ref kept);
+                Assert.That(striking, Is.EqualTo(1), $"{e}: a strike still shows danger");
+            }
+        }
+
+        /// <summary>The hearts of those populations are drawn instanced with each elemental crystal's own model
+        /// materials (CrystalHeartDraw); a material without GPU instancing is refused at bind and that element's hearts
+        /// go missing, and the asset flag is also what keeps the instancing variant in a build.</summary>
+        [Test]
+        public void EveryHeartModelMaterial_IsInstanced()
+        {
+            var set = ScriptableObjects.ElementalCrystalSetSO.Load();
+            Assert.That(set, Is.Not.Null, "Resources/ElementalCrystalSet");
+            foreach (var e in Four)
+            {
+                var crystal = set.GetPrefab(e);
+                Assert.That(crystal, Is.Not.Null, $"{e} crystal");
+                int models = 0;
+                foreach (var model in crystal.CrystalModels)
+                {
+                    if (model?.model == null || !model.model.TryGetComponent<UnityEngine.Renderer>(out var r)) continue;
+                    models++;
+                    foreach (var m in r.sharedMaterials)
+                        Assert.That(m && m.enableInstancing, Is.True, $"{e}: '{(m ? m.name : "null")}' on {r.name} has GPU instancing off");
+                }
+                Assert.That(models, Is.GreaterThan(0), $"{e} has a crystal model to draw");
+            }
+        }
     }
 }

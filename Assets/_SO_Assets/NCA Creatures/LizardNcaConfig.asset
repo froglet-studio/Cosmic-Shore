@@ -33,6 +33,7 @@ MonoBehaviour:
   BoltSeconds: 3
   VesselBiteReachVoxels: 1.5
   VesselBiteCooldown: 0.8
+  ContactEffect: {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
   BiteRadiusVoxels: 3.5
   HitPrismSeconds: 2
   HitPrismPrefab: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195, type: 3}

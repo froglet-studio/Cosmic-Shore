@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
         public int Index { get; private set; } = -1;
 
         HealthPrism _body;
-        bool _dead, _danger, _ready, _hideLive = true;
+        bool _dead, _danger, _shield, _ready, _hideLive = true;
         Vector3 _shape;
 
         public bool IsDead => _dead;
@@ -159,18 +159,30 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// DANGER while the agent strikes: the body prism is a hostile danger prism in its domain (the existing danger
-        /// tier), so contact burns an opposing pilot's petals. Calm, resting or winded, it is a plain prism again.
+        /// The body prism's tier, from the published frame: DANGER while the agent strikes (and always on a Charge
+        /// population, the element law - Docs/ECOSYSTEM.md §65.7), a hostile danger prism in its domain, so contact burns
+        /// an opposing pilot's petals; SHIELDED always on a Mass population (armoured); a plain prism otherwise. A
+        /// shielded agent that strikes shows danger and keeps its shield, as a swarm member does
+        /// (<see cref="SwarmTadpoleFauna.SetTier"/>).
         /// </summary>
-        public void SetDanger(bool danger, float weight = 1f)
+        public void SetTier(bool danger, bool shield, float weight = 1f)
         {
             if (_dead || !_body || _body.destroyed || !_body.IsCreationComplete) return;
             // round 11-11: the species' contact weight (burn rules: a mobber's peck is a 0.25 drain); a plate that never
             // burns (a leech, weight 0) is never made dangerous at all
             if (!(weight > 0f)) danger = false;
             _body.prismProperties.DangerWeight = weight > 0f ? weight : 1f;
-            if (danger == _danger) return;
-            if (danger) _body.MakeDangerous();
+            if (danger == _danger && shield == _shield) return;
+            if (danger)
+            {
+                _body.MakeDangerous();
+                if (shield) _body.prismProperties.IsShielded = true;   // MakeDangerous clears it
+            }
+            else if (shield)
+            {
+                if (_danger) _body.prismProperties.IsDangerous = false;
+                _body.ActivateShield();
+            }
             else
             {
                 // MakeDangerous only flips one way; the reverse is the same two writes (SwarmTadpoleFauna.SetTier)
@@ -178,6 +190,7 @@ namespace CosmicShore.Gameplay
                 _body.DeactivateShields();
             }
             _danger = danger;
+            _shield = shield;
         }
 
         /// <summary>Keep the spatial index honest after the population moved this proxy (movers contract).</summary>

@@ -12648,3 +12648,52 @@ the 409 s ceiling) is unchanged. The harness's "it rose where it stood" bound no
 check above it already allows.
 
 Before / after, the growth-rule families: `Docs/Ecology/Armour/growth_flora_before_after.png`.
+
+### 65.7 Populations drawn as data: their hearts and their elements (Garrett, 2026-10-28)
+
+Garrett, after flying the Swarm cell in freestyle: *"a bunch of the swarm fauna are still using outdated versions of the
+inactive crystals, etc. lets finish this job. make the elements complete and consistent and polished for all life
+forms"*. Two existing errors, both on the lifeforms that are DATA rather than GameObjects (a swarm, a builder colony, a
+substrate), which every earlier pass of this law missed because they have no prisms of their own to arm.
+
+**The hearts (`CrystalHeartDraw`).** A swarm, builder or substrate member's heart was drawn by the MEMBER shader
+(`SwarmMemberInstanced`) with a look of its own: every renderer mesh of the elemental crystal - the Charge crystal's arc
+overlay drawn as solid geometry, the skinned crystals in their bind pose - under one rim-lit pair (pow 4) in the neutral
+domain colours. A living heart on every other lifeform is the crystal itself, on its INACTIVE materials: the Mass depth
+prisms on `MassDepthPrismsInactive`, Space and Time on `BlueCrystalFresnelMateriall` (a half-lit Fresnel with its facets
+spread apart), the Charge shell on `ChargeCrystalMaterial` tinted the neutral pair. Those hearts now are that crystal:
+`CrystalHeartDraw` draws each element's crystal MODELS (`Crystal.CrystalModels`, the renderers the Crystal tints - not an
+overlay its own driver rebuilds each frame) with the materials the prefab authors on them, painted with the living pair
+exactly where `Crystal.FindColorPropertyNames` paints it, the Charge shell's crawl held silent as its seam walk holds it
+(`CrystalChargeArcs.SilenceCrawl`). One `RenderMeshInstanced` per model submesh; the poses come from a Burst job
+(`SwarmHeartPoseJob`) over `SwarmHeartPose`, the proxy chain term for term (root at the interpolated member, turned
+`LookRotation(face, up)`, the one crystal size x the molt's shrink x the newborn's bloom). The member shader draws the
+BODY only. What is not drawn is each crystal's per-crystal motion (the Mass depth ratchet, the Space spin, the Time
+flip, the Charge seam walk): those are drivers on one crystal each, and every crystal shader is written to read at rest
+without its driver. `OmniDepthPrismShader` and `SpreadFresnelShader` gained GPU instancing for this (`#pragma
+multi_compile_instancing`), and their two heart materials switched it on (the flag also keeps the variant in a build;
+`ElementalArmourTests.EveryHeartModelMaterial_IsInstanced`). In Amoebius the hearts of these populations are now drawn
+at all (it has no backend for the bodies' procedural draw).
+
+**Their elements (`SwarmInstance.ElementLaw`).** The swarm still ran the OLD law: a census plan's Charge members wore the
+SHIELD and its Mass members were bare; builder colonies and substrates ignored the element altogether. Now every one of
+them takes the law: a Charge member's prisms are all danger (tier 1, never shielded) and a Mass member is armoured
+(shielded, the shield look while it shows no danger). A strike still shows danger on any element, and a striking Mass
+member keeps its shield - the swarm's round 11d-2 rule. The frame carries it, so the look, the spatial index's shield bit
+(every weapon) and a proxy's real body prism (every contact, `SwarmTadpoleFauna.SetTier`, the substrate's new
+`SubstrateAgentFauna.SetTier`, the builder's `Tier`) all agree. A Charge substrate burns at a danger prism's full
+weight even where the species' strike is lighter or never burns (the leech). Proven by the swarm harness (R11c-2: the
+rule over every element x look x strike, and live: 1,600 Mass member-ticks all shielded, 18,880 Charge member-ticks all
+danger; R65a-c: the heart pose is the proxy chain, a molt swaps the crystal at its midpoint with no pop, every heart is
+drawn exactly once across the four element lists, and a pose that ignores the molt draws every molting heart twice).
+
+**Not changed: a director's scripted forms.** Tandava's plans author their own tiers (Shombith's designed body: its
+Mass armoured but bare while it eats; 167 of its Charge members still wear the old Charge shield, against 681 danger).
+`SwarmTickJob.MemberTier` leaves a scripted plan to its author; whether Tandava's Charge members drop the shield is
+Shombith's call.
+
+**The NCA creature.** A creature whose body is a network rather than prisms (the Swarm cell's lizard, Time - which the
+law leaves as it was) now takes the law when it is Mass or Charge: its body is drawn in the shielded or danger block
+material, its segments' index entries are shielded, its hit prism is shielded or danger, a vessel's pass through a Mass
+body sheds that segment's shield before it can bite (one shed segment re-armed every `ElementalArmour.ShieldPeriod`),
+and a pass through a Charge body lands the danger contact (`NcaCreatureConfigSO.ContactEffect`).

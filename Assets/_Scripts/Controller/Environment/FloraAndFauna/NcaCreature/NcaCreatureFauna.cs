@@ -98,6 +98,11 @@ namespace CosmicShore.Gameplay
         float _nextSenseAt;
         float _nextFeedAt;
         readonly Dictionary<int, float> _vesselBiteAt = new();
+        // the element law on a body with no prisms of its own (Docs/ECOSYSTEM.md §65.7): an armoured (Mass) creature's
+        // segments are shielded; a pass or a hit sheds a segment's shield instead of biting, and the creature re-arms one
+        // shed segment every ElementalArmour.ShieldPeriod, as a Mass body's prisms are re-armoured
+        bool[] _shieldDown;
+        float _nextRearmAt;
         Predicate<Flora> _rejectFlora;
         Vector3 _heartSeat;         // body space, voxels
         bool _heartSeated;
@@ -206,6 +211,7 @@ namespace CosmicShore.Gameplay
                 {
                     Steer(Time.deltaTime);
                     if (Time.time >= _nextSenseAt) SenseVessels();
+                    Rearm();
                     if (Time.time >= _nextFeedAt) Feed();
                 }
                 UpkeepHitPrism();
@@ -358,6 +364,7 @@ namespace CosmicShore.Gameplay
                 if (vessel.Domain == domain || cur.Alive == 0) continue;
                 int key = col.attachedRigidbody ? col.attachedRigidbody.GetInstanceID() : col.GetInstanceID();
                 if (_vesselBiteAt.TryGetValue(key, out float last) && Time.time - last < config.VesselBiteCooldown) continue;
+                var law = LawElement;
 
                 Vector3 p = transform.InverseTransformPoint(vp) / vs;
                 for (int g = 0; g < cur.Segments; g++)
@@ -368,6 +375,10 @@ namespace CosmicShore.Gameplay
                     float r = cur.SegRadius[g];
                     if (off.magnitude > r + config.VesselBiteReachVoxels) continue;
                     _vesselBiteAt[key] = Time.time;
+                    // Charge: the pass touched danger prisms. Mass: the pass sheds this segment's shield; the next one bites.
+                    if (ElementalArmour.ArmsEveryPrism(law) && config.ContactEffect)
+                        config.ContactEffect.ApplyContact(vessel, domain, 1f);
+                    if (ElementalArmour.Shields(law) && ShedShield(g)) break;
                     Bite(centre + Vector3.ClampMagnitude(off, r), config.BiteRadiusVoxels, vessel.PlayerName);
                     break;
                 }
@@ -452,13 +463,15 @@ namespace CosmicShore.Gameplay
             int s = config.Segments;
             _entryIds = new int[s];
             _entryEmpty = new bool[s];
+            _shieldDown = new bool[s];
             for (int g = 0; g < s; g++) _entryIds[g] = -1;
             if (_index == null || !_index.IsAvailable) return;
             var host = HostCell;
             for (int g = 0; g < s; g++)
             {
                 Vector3 at = SegmentWorld(g);
-                int id = _index.RegisterVirtual(this, g, new float3(at.x, at.y, at.z), (int)domain, 1f);
+                int id = _index.RegisterVirtual(this, g, new float3(at.x, at.y, at.z), (int)domain, 1f,
+                                                ElementalArmour.Shields(LawElement));
                 _entryIds[g] = id;
                 if (id >= 0 && host) host.BindVirtualMass(id, domain);   // the body is the cell's mass, volume-only
             }
@@ -476,6 +489,31 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Each segment carries its share of the live body volume (the body less its unpaid wounds), so the
         /// cell's sums see exactly the mass the creature has. An empty segment leaves every query.</summary>
+        /// <summary>Sheds segment <paramref name="g"/>'s shield if it is up (true: the blow was spent on it). The index sees
+        /// the segment bare at once.</summary>
+        bool ShedShield(int g)
+        {
+            if (_shieldDown == null || g < 0 || g >= _shieldDown.Length || _shieldDown[g]) return false;
+            _shieldDown[g] = true;
+            if (_entryIds[g] >= 0 && _index != null) _index.UpdateShieldState(_entryIds[g], false, false);
+            if (_nextRearmAt <= Time.time) _nextRearmAt = Time.time + ElementalArmour.ShieldPeriod;
+            return true;
+        }
+
+        /// <summary>One shed segment re-armed every <see cref="ElementalArmour.ShieldPeriod"/> - the platform's Mass regen.</summary>
+        void Rearm()
+        {
+            if (_shieldDown == null || Time.time < _nextRearmAt) return;
+            for (int g = 0; g < _shieldDown.Length; g++)
+            {
+                if (!_shieldDown[g]) continue;
+                _shieldDown[g] = false;
+                if (_entryIds[g] >= 0 && _index != null) _index.UpdateShieldState(_entryIds[g], true, false);
+                _nextRearmAt = Time.time + ElementalArmour.ShieldPeriod;
+                return;
+            }
+        }
+
         void UpdateEntryShapes()
         {
             if (_entryIds == null || _index == null || !_index.IsAvailable) return;
@@ -543,6 +581,10 @@ namespace CosmicShore.Gameplay
             hp.CompleteCreationImmediately();
             hp.CompleteGrowthImmediately();
             hp.SetOwnerHidden(true);   // the body is drawn by the creature; this is only its collider and its mass
+            // the element law: a Mass segment sheds a shield first, a Charge segment is a danger prism
+            var law = LawElement;
+            if (ElementalArmour.Shields(law)) { if (!_shieldDown[slot]) hp.ActivateShield(); }
+            else if (ElementalArmour.ArmsEveryPrism(law)) hp.MakeDangerous();
             _hitPrism = hp;
             _hitSlot = slot;
             _hitAt = Time.time;
@@ -592,6 +634,8 @@ namespace CosmicShore.Gameplay
             var hp = _hitPrism;
             _hitPrism = null;
             _hitSlot = -1;
+            // a weapon that only shed the hit prism's shield shed the segment's (the element law, §65.7)
+            if (hp && ElementalArmour.Shields(LawElement) && hp.prismProperties is { IsShielded: false }) ShedShield(slot);
             if (hp) Destroy(hp.gameObject);
             if (slot >= 0) ResumeEntry(slot);
         }
@@ -640,13 +684,22 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>The element the law reads: the config's, or the one this creature rolled.</summary>
+        Element LawElement => Element != Element.None ? Element : RolledElement;
+
+        /// <summary>The body's look in its domain, by the element law (Docs/ECOSYSTEM.md §65.7): an armoured (Mass)
+        /// body wears the shielded block, a Charge body the danger block, every other the plain block.</summary>
         Material DomainMaterial()
         {
             var theme = config.Theme;
             if (!theme) return null;
             var sets = theme.TeamMaterialSets;
             var set = sets != null && sets.TryGetValue(domain, out var painted) && painted ? painted : theme.BaseMaterialSet;
-            return set ? set.BlockMaterial : null;
+            if (!set) return null;
+            var law = LawElement;
+            if (ElementalArmour.Shields(law) && set.ShieldedBlockMaterial) return set.ShieldedBlockMaterial;
+            if (ElementalArmour.ArmsEveryPrism(law) && set.DangerousBlockMaterial) return set.DangerousBlockMaterial;
+            return set.BlockMaterial;
         }
 
         void BindBody()

@@ -252,7 +252,9 @@ It now draws through the swarm's SM 3.5 instanced path, `SwarmMemberFallbackDraw
 - **Different carrier:** five `float4` rows per instance in the instancing constant buffer, `RenderMeshInstanced` in
   batches of 128.
 - **Per tick,** `Upload` packs this population's slice of the cell's frame. The living agents are compacted, and the
-  hearts come from `HeartIdx[start ..]`: one element, local slot indices, exactly the list the GPU path uploads.
+  hearts come from `HeartIdx[start ..]`: one element, local slot indices, exactly the list the GPU path uploads. (Since 2026-10-28 the hearts are drawn by
+  `CrystalHeartDraw` from that list on both paths, as the elemental crystal they are, and an agent's tier follows the
+  element law - a Charge population is all danger, a Mass one armoured; Docs/ECOSYSTEM.md §65.7.)
 - **Between ticks,** `HideSlot` zeroes the slot's rows at once.
 
 The choice is the renderer's and keys off the GPU (`SwarmMemberRenderer.Supported`), not off the toybox flag.

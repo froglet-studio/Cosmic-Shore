@@ -229,7 +229,12 @@ so body prisms take `Fauna.SeatAuthoredSize` after Initialize.
 **A creature wears its element's ARMOUR on its body (Docs/ECOSYSTEM.md §65).** Mass is shielded (every plain body
 prism, re-armoured one a second), Charge is dangerous (every body prism), via `Fauna.ArmourBody` - call it from a new
 species' `Initialize` once its body prisms are initialised and its heart is in place, as `LightFauna`, `Boid` and
-`WormSegmentFauna` do. Two consequences to carry:
+`WormSegmentFauna` do. A population drawn as DATA (a swarm, a builder colony, a substrate) has no body prisms of its
+own: its frame carries the law through `SwarmInstance.ElementLaw` (the swarm's `SwarmTickJob.MemberTier`, a scripted
+plan excepted), its proxies take the published tier and shield, and its hearts are drawn by `CrystalHeartDraw` with the
+elemental crystal's own models and materials - never by a member shader's look of its own, which is how the Swarm cell's
+hearts went stale (§65.7). An NCA creature applies the law to its look, its index entries, its hit prism and a vessel's
+pass. Two consequences to carry:
 - **"Danger" no longer means "teeth".** On a Charge creature every prism is dangerous, so anything that finds the
   MOUTH, the jaws or a tooth reads `Fauna.IsAuthoredDanger`, never `IsDangerous` - a mouth at the centroid of the
   whole body is no mouth. The authored set is captured before anything arms the body, and only what the element

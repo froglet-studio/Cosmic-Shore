@@ -150,6 +150,9 @@ def committed_weights_ok(path):
 # The platform's assets this script references (one owner each - checked by `check_refs`).
 RUNTIME_CELL_DATA = "8d4e8398eedc76c4dadb8604f89b9e1b"           # _SO_Assets/Cell Data/Runtime Cell Data.asset
 THEME = "d45a23e6bd2da304988606fba6c97628"                       # _SO_Assets/ThemeManagerDataContainer.asset
+# the hostile danger contact (VesselElementalDebuffByDangerPrismEffectSO) the substrate's species carry: a Charge creature's
+# body is all danger by the element law (Docs/ECOSYSTEM.md §65.7), and with no collider its pass is applied with this
+DANGER_CONTACT = "c7ccaca885824b24b716b12148d77ce1"
 HEALTH_BLOCK = "1488a2ac58b2b4c43b14f84206bd9195"                # _Prefabs/Trails/HealthBlock.prefab
 HEALTH_BLOCK_PRISM_FID = "6313579230210663873"                   # its HealthPrism component
 FAUNA_CONFIG_SCRIPT = "c778cfbe4dfc4c5c8401e40c17802311"         # FaunaConfigurationSO.cs
@@ -260,6 +263,7 @@ def config_asset(sp):
         "  StrokeThrust: 0.4\n  FullStrokeBendRate: 0.35\n"
         "  VesselSenseRadius: 120\n  BoltClosingSpeed: 25\n  BoltSeconds: 3\n  VesselBiteReachVoxels: 1.5\n"
         "  VesselBiteCooldown: 0.8\n"
+        f"  ContactEffect: {{fileID: 11400000, guid: {DANGER_CONTACT}, type: 2}}\n"
         "  BiteRadiusVoxels: 3.5\n  HitPrismSeconds: 2\n"
         f"  HitPrismPrefab: {{fileID: {HEALTH_BLOCK_PRISM_FID}, guid: {HEALTH_BLOCK}, type: 3}}\n"
         f"  HitPrismScale: {v3(4.913, 4.913, 4.913)}\n"

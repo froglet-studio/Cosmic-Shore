@@ -934,7 +934,10 @@ namespace CosmicShore.Gameplay
             ApplyColorSetTint();
         }
 
-        private static (string bright, string dull) FindColorPropertyNames(Material mat)
+        /// <summary>The (bright, dull) colour pair a crystal material is tinted through, or (null, null) for a material
+        /// that keeps its own colours. Shared with <see cref="CrystalHeartDraw"/>, which paints a population's hearts by
+        /// exactly this rule.</summary>
+        internal static (string bright, string dull) FindColorPropertyNames(Material mat)
         {
             if (mat.HasProperty("_BrightCrystalColor") && mat.HasProperty("_DullCrystalColor"))
                 return ("_BrightCrystalColor", "_DullCrystalColor");

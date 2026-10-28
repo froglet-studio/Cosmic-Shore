@@ -17531,6 +17531,41 @@ Amoebius), `fit_shield_clearance.py --check`, `fit_quasicrystal_strut_sizes.py -
 8. The Spawn Matrix lists no Wall flora; a Serpent's wall still builds as before.
 9. Tandava: the reef plants are about 1.4x wider than before and the serpent still changes form within its first
    minute and completes its cycle in about 3-4 minutes if nobody stops it.
+
+## 🔴 2026-10-28 — Swarm, builder and substrate hearts are the current crystal; their elements follow the law (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). `unity_refcompile` is clean in the player-dev and
+editor configs (the new tests included); `CosmicShore.Live` builds (0 errors); the swarm harness (`run.sh` all cores,
+`tickjob` with the new R11c-2 law proofs and R65a-c heart-pose proofs, `lod`), the substrate harness, `verify_swarm_member_pose.py`
+(the body-only shader, its negative controls firing), `omni_depth_prism_shader_parity.py` and `author_nca_creatures.py
+--check` pass. The builders harness's two timing gates (`alarm + gap knits a wound shut fast`, `defence competes with
+repair`) fail in its builder cores, which this change does not touch. The crystal shaders' new instancing variants were
+not compiled by a Unity shader compiler here. `Docs/ECOSYSTEM.md` §65.7.
+
+1. Let Unity compile and import. **Pass:** no errors from `CrystalHeartDraw.cs`, `SwarmPoseJob.cs` (the Burst job
+   `SwarmHeartPoseJob` compiles under Burst - no "managed fallback" warning for it), `SwarmMemberRenderer.cs`,
+   `SubstrateMemberRenderer.cs`, `SwarmMemberFallbackDraw.cs`, `SwarmTickJob.cs`, `BuilderColonyFauna.cs`,
+   `SubstrateFauna.cs`, `SubstrateAgentFauna.cs`, `NcaCreatureFauna.cs`; `SwarmMemberInstanced.shader`,
+   `SwarmMemberInstancedFallback.shader`, `OmniDepthPrismShader.shader` and `SpreadFresnelShader.shader` compile;
+   `ElementalArmourTests` passes (including `EveryHeartModelMaterial_IsInstanced` and
+   `PopulationsDrawnAsData_TakeTheSameLaw`).
+2. Freestyle, the Swarm cell. Fly up to a Mass, a Charge and a Space swarm. **Pass:** every member's heart looks like
+   the heart of a released shark or tadpole of the same element - the Mass heart is the ring of blue depth prisms, the
+   Space and Time hearts the pale blue spread-facet crystal, the Charge heart the blue-white faceted shell - not a dark
+   rim-lit solid; no bolt or arc geometry hangs off a Charge heart. Hearts follow their members smoothly, a newborn's
+   heart grows in, and a molting member's crystal shrinks away and re-forms as the new element (no pop).
+3. Same cell. **Pass:** every Mass swarm member's body is shielded (shield look) and survives one hit (the shield
+   sheds), dying to the second; every Charge member's body is a danger prism all the time, and touching one with a
+   vessel of another domain burns petals. A Mass lurker that bristles shows danger and still takes two hits.
+4. The Fortress, Thief Nest and Wearer builder colonies in the Swarm cell. **Pass:** their hearts are the current
+   crystals, as in 2; a Mass colony's members are shielded, a Charge colony's members are danger.
+5. A substrate cell (Harrier, Leech, Lurker...). **Pass:** hearts as in 2; a Charge population's agents are danger all
+   the time (a Charge leech burns too); a Mass population's agents are shielded.
+6. WebGL or a device without compute (or the `memberdraw` console command to force the SM 3.5 path). **Pass:** the
+   bodies draw as before and the hearts are still the current crystals.
+7. The profiler on the Swarm cell. **Pass:** `CrystalHeartDraw` adds a few draws per swarm per element model and its
+   Burst pose (`SwarmHeartPoseJob`) costs well under 0.1 ms a frame for the whole cell.
+
 ## 🔴 2026-10-26 — Per-mode intro cameras, shuffled within families (unverified: no Unity editor in the session)
 
 **Files:** `PreGameCinematicController.cs` (new `Play(center, pilot, mode, vessels, accent)`), `IntroCamera*.cs`

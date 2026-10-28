@@ -1216,7 +1216,7 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
             else if (e.Kind == SubstrateEventKind.Bite && e.Other >= 0 && e.Other < c.Pilots.Count)
             {
                 // a contact with the danger plate at the species' weight (round 11-11: a mobber's peck is a 0.25 drain;
-                // a weight-0 plate - the leech - is never dangerous, SubstrateAgentFauna.SetDanger)
+                // a weight-0 plate - the leech - is never dangerous, SubstrateAgentFauna.SetTier)
                 float w = Core.Pops[PopOf(e.Index).Index].P.ContactWeight;
                 // rated on the agent that BIT (the event's first biter), not on whichever of its class is nearest the pilot:
                 // a herd member grazing beside you is not the bull that charged you

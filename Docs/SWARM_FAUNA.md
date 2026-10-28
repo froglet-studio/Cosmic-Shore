@@ -1352,6 +1352,12 @@ frame (11% self) and the CPU line still climbed over a few minutes toward 15-30 
 cheaper and fewer flora; back to THREE swarms, each substantially filled; not every member updated every
 frame; entity/GPU drawing; "ideally the cpu cost goes to zero".
 
+**Since 2026-10-28 the HEARTS are not the member shader's** (Docs/ECOSYSTEM.md §65.7): the shader draws the body
+prism only, and `CrystalHeartDraw` draws each listed heart with the elemental crystal's own models and inactive
+materials, posed per frame in Burst by `SwarmHeartPose` (harness R65a-c). The member's tier follows the element law
+(`SwarmTickJob.MemberTier`: Mass armoured, Charge all danger; a scripted plan keeps its own). Where this section says the
+shader re-forms a molting heart or draws one crystal model per element, read the heart draw.
+
 **What this round SUPERSEDES.** §4's 24-swarm, four-model cell and §4.1's 5,008-collider budget; §3's
 "every member is a GameObject, hatching is budgeted"; §13's per-member posing (`PoseEveryFrameWithin`,
 `FarPoseInterval` are deleted - nothing is posed per member any more). The field, grid and evofate cores
@@ -1554,7 +1560,8 @@ The fetch is the only difference:
 - **Per tick**, each living member's 80-byte `SwarmInstance` is packed into five `float4` rows
   (`SwarmMemberFallbackDraw.Pack`; Flags travel as a float VALUE, exact below 2^10, never as raw bits a GPU could
   flush as a denormal). Bodies are compacted to the living slots in slot order. Hearts are gathered per element from
-  the tick's own heart lists, so a molting heart sits in two lists exactly as on the GPU path.
+  the tick's own heart lists, so a molting heart sits in two lists exactly as on the GPU path. (Superseded 2026-10-28: the fallback draws
+  bodies only; the hearts are `CrystalHeartDraw` on every device, Docs/ECOSYSTEM.md §65.7.)
 - **Per frame**, each list draws with `Graphics.RenderMeshInstanced` in batches of **128**. The rows travel as
   MaterialPropertyBlock arrays in the instancing constant buffer, and the shader rebuilds the instance with
   `SwarmInstanceFromRows`. 128 x 80 B = 10 KB fits the 16 KB minimum uniform block of WebGL2 / GLES 3.0, so each

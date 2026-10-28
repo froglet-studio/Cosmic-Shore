@@ -67,6 +67,13 @@ what the carve-out silently broke — see the traps below.
 
 ## 2.6 Prism / trail traps (each of these cost real time)
 
+- **A population drawn as DATA misses every law written on GameObjects.** A swarm, a builder colony and a substrate
+  have no body prisms of their own and draw their hearts themselves, so an element law applied in `Fauna.ArmourBody`,
+  or a crystal re-look applied to the crystal prefabs' materials, never reaches them - the Swarm cell kept the old
+  Charge shield and a stale heart look until Garrett flew it (Docs/ECOSYSTEM.md §65.7). Put the law in the FRAME
+  (`SwarmInstance.ElementLaw`) so the look, the index and the proxies agree, and draw a heart with the crystal's OWN
+  materials (`CrystalHeartDraw`), never with a shader's copy of its look. When you change any lifeform law, grep the
+  three producers (`SwarmTickJob`, `BuilderColonyFauna.BuildFrame`, `SubstrateTickJob`) and the NCA creature.
 - **A SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY.** Both shield
   meshes are built from the box HALF-extents x `CIRCUMSCRIBING_SCALE` (3), so a prism of full
   size `S` gets a semi-axis of `1.5 S` — **3x the box's own extent**. The octahedron's vertices
