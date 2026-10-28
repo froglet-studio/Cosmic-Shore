@@ -688,3 +688,11 @@ TollShedSpeed`), `WormholeView.cs` (seal removed), `TeleportContinuity.cs` + `Ve
   it plays as a de-facto lock, drop `rivalTollPetalsPerElement` to a few petals and the pair becomes
   a priced shortcut instead.
 - **An AI does not steer round a rival pair**, so bots on a course through one will pay every time.
+
+## Being tested: the tiger moth drop (2026-10-28)
+
+A blind A/B page puts this Fold beside a **drop**: on the press the hull falls along its own down (the way its dust
+rains) without rotating, and the camera swings up over it so down reads as forward, levelling out after the landing.
+If the drop wins, the Butterfly is renamed the Tiger Moth (Garrett). Page, numbers and what it does not model:
+`Docs/Studios/ABTests/README.md` "Butterfly fold or drop v1", https://claude.ai/artifact/7V29goD7bYi3uM23PFrMMJ.
+Nothing in the game has changed for it.
