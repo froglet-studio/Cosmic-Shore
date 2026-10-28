@@ -38,6 +38,33 @@ def _cmd(minutes, between=None, always=False, home=None, repo=None, queue=None):
     return cmd
 
 
+def windowless(exe):
+    """Windows: pythonw.exe beside python.exe, so the worker never opens a console window (python.exe would, every
+    time the task starts). Falls back to `exe` when there is no pythonw beside it."""
+    w = os.path.join(os.path.dirname(exe), "pythonw.exe")
+    return w if os.path.exists(w) else exe
+
+
+def windows_task(cmd, home_dir, pythonw):
+    """(launcher path, launcher text, the task's /TR line). Task Scheduler limits /TR to 261 characters, and a
+    Microsoft Store Python path alone is over 100, so the worker's full command lives in a small launcher file and the
+    task runs only `"<pythonw>" "<launcher>"`. The launcher also sends the worker's output to worker.log, since a
+    windowless Python has nowhere to print."""
+    launcher = os.path.join(home_dir, "worker.pyw")
+    log = os.path.join(home_dir, "worker.log")
+    argv = [a for a in cmd[1:] if a != "--quiet"]          # the log is the only place a windowless worker can speak
+    text = ("# Froglet Compute: what the FrogletCompute task in Task Scheduler runs. Written by `compute.py install`;\n"
+            "# `compute.py uninstall` removes it. The task line is limited to 261 characters, so the command is here.\n"
+            "import os, runpy, sys\n"
+            f"LOG = {log!r}\n"
+            "if os.path.exists(LOG) and os.path.getsize(LOG) > 5000000:\n"
+            "    os.replace(LOG, LOG + '.old')\n"
+            "sys.stdout = sys.stderr = open(LOG, 'a', buffering=1, encoding='utf-8', errors='replace')\n"
+            f"sys.argv = {argv!r}\n"
+            "runpy.run_path(sys.argv[0], run_name='__main__')\n")
+    return launcher, text, f'"{pythonw}" "{launcher}"'
+
+
 def install(minutes=10, dry=False, between=None, always=False, home=None, repo=None, queue=None):
     system = platform.system()
     if between:
@@ -52,9 +79,19 @@ def install(minutes=10, dry=False, between=None, always=False, home=None, repo=N
     log = os.path.join(os.path.expanduser("~"), ".froglet-compute", "worker.log")
     os.makedirs(os.path.dirname(log), exist_ok=True)
     if system == "Windows":
-        tr = " ".join(f'"{c}"' for c in cmd)
-        args = ["schtasks", "/Create", "/F", "/TN", "FrogletCompute", "/SC", "ONIDLE", "/I", str(minutes), "/TR", tr]
-        return _do(args, dry, f"Task Scheduler: FrogletCompute (on idle {minutes} min)")
+        launcher, text, tr = windows_task(cmd, os.path.dirname(log), windowless(sys.executable))
+        if len(tr) > 261:
+            print(f"failed: the task line is {len(tr)} characters and Task Scheduler takes at most 261:\n{tr}\n"
+                  "Install Python from python.org into a shorter path, or move your user folder's .froglet-compute.")
+            return 2
+        idle = str(max(1, int(round(minutes))))             # /I takes whole minutes, 1-999
+        args = ["schtasks", "/Create", "/F", "/TN", "FrogletCompute", "/SC", "ONIDLE", "/I", idle, "/TR", tr]
+        if dry:
+            print(f"{launcher}:\n{text}")
+            return _do(args, True, "")
+        with open(launcher, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        return _do(args, False, f"Task Scheduler: FrogletCompute (on idle {idle} min); its log: {log}")
     if system == "Darwin":
         plist = os.path.join(os.path.expanduser("~"), "Library", "LaunchAgents", LABEL + ".plist")
         body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -103,7 +140,11 @@ def install(minutes=10, dry=False, between=None, always=False, home=None, repo=N
 def uninstall():
     system = platform.system()
     if system == "Windows":
-        return _do(["schtasks", "/Delete", "/F", "/TN", "FrogletCompute"], False, "removed FrogletCompute")
+        rc = _do(["schtasks", "/Delete", "/F", "/TN", "FrogletCompute"], False, "removed FrogletCompute", verb="removed")
+        launcher = os.path.join(os.path.expanduser("~"), ".froglet-compute", "worker.pyw")
+        if os.path.exists(launcher):
+            os.remove(launcher)
+        return rc
     if system == "Darwin":
         plist = os.path.join(os.path.expanduser("~"), "Library", "LaunchAgents", LABEL + ".plist")
         subprocess.run(["launchctl", "unload", plist], capture_output=True)
@@ -124,13 +165,13 @@ def uninstall():
     return 0
 
 
-def _do(args, dry, what):
+def _do(args, dry, what, verb="installed"):
     if dry:
         print(" ".join(args))
         return 0
     p = subprocess.run(args, capture_output=True, text=True)
     if p.returncode != 0:
         print(f"failed: {' '.join(args)}\n{p.stderr or p.stdout}")
-        return p.returncode
-    print("installed: " + what)
+        return 1
+    print(f"{verb}: " + what if verb == "installed" else what)
     return 0

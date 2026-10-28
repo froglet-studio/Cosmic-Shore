@@ -377,7 +377,7 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
     L.log(f"{job['id']}/{unit['id']}: {' '.join(argv)}", quiet)
     kw = {}
     if os.name == "nt":
-        kw["creationflags"] = 0x00000200 | 0x00000040     # new process group, idle priority
+        kw["creationflags"] = 0x00000200 | 0x00000040 | 0x08000000     # new process group, idle priority, no window
     else:
         kw["preexec_fn"] = lambda: os.nice(19)
     t0 = time.time()
@@ -440,7 +440,7 @@ def _pull_unit_files(job, epoch, unit_id, theirs, run_dir, machines):
         if f"{m['user']}/{m['host']}" == who:
             for name in theirs.get("files", []):
                 data = subprocess.run(["git", "show", f"{m['ref']}:jobs/{job['id']}/{epoch}/files/{unit_id}/{name}"],
-                                      cwd=L.REPO, capture_output=True)
+                                      cwd=L.REPO, **L.NO_WINDOW, capture_output=True)
                 if data.returncode == 0:
                     with open(os.path.join(run_dir, name), "wb") as fh:
                         fh.write(data.stdout)

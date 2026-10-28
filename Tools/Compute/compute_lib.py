@@ -23,9 +23,24 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-# The person's repository. A worker updated from bleeding-edge runs from an export of Tools/Compute that is not a git
-# checkout, so the supervisor hands the repository down in FROGLET_COMPUTE_REPO.
-REPO = os.environ.get("FROGLET_COMPUTE_REPO") or os.path.dirname(os.path.dirname(HERE))
+def _repo():
+    """The person's repository. A worker updated from bleeding-edge runs from an export of Tools/Compute that is not a
+    git checkout: the supervisor hands the repository down in FROGLET_COMPUTE_REPO, and the one-line setup records it
+    in ~/.froglet-compute/config.json for commands typed by hand."""
+    if os.environ.get("FROGLET_COMPUTE_REPO"):
+        return os.environ["FROGLET_COMPUTE_REPO"]
+    here = os.path.dirname(os.path.dirname(HERE))
+    if os.path.exists(os.path.join(here, ".git")):
+        return here
+    home = os.environ.get("FROGLET_COMPUTE_HOME") or os.path.join(os.path.expanduser("~"), ".froglet-compute")
+    try:
+        with open(os.path.join(home, "config.json"), encoding="utf-8") as fh:
+            return json.load(fh).get("repo") or here
+    except Exception:
+        return here
+
+
+REPO = _repo()
 JOBS_DIR = "Docs/Compute/jobs"
 RESULTS_PREFIX = "compute"              # refs/heads/compute/<user>/<host>
 # The AI's own branch: bleeding-edge plus AI work, owned by no person (Tools/Compute/ai_branch.py keeps it current).
@@ -67,9 +82,24 @@ def log(msg, quiet=False):
 
 # ── git ──────────────────────────────────────────────────────────────────────
 
+# Windows: a console program started by the windowless worker (pythonw) opens a window of its own unless told not to.
+# Every subprocess the worker starts passes this.
+NO_WINDOW = {"creationflags": 0x08000000} if os.name == "nt" else {}     # CREATE_NO_WINDOW
+
+
+def console_python():
+    """python.exe for a probe that must print (pythonw.exe has no stdout); sys.executable elsewhere."""
+    exe = sys.executable
+    if os.name == "nt" and os.path.basename(exe).lower().startswith("pythonw"):
+        p = os.path.join(os.path.dirname(exe), "python.exe")
+        if os.path.exists(p):
+            return p
+    return exe
+
+
 def git(*args, cwd=None, env=None, check=True, input=None, timeout=600):
     p = subprocess.run(["git", *args], cwd=cwd or REPO, env=env, input=input, capture_output=True, text=True,
-                       timeout=timeout)
+                       timeout=timeout, **NO_WINDOW)
     if check and p.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)}: {p.stderr.strip() or p.stdout.strip()}")
     return p.stdout
@@ -173,7 +203,7 @@ def export_tree(sha, paths, parent, name, cwd=None, keep=3):
         os.makedirs(tmp)
         if present:
             p = subprocess.Popen(["git", "archive", "--format=tar", sha, "--", *[x.rstrip("/") for x in present]],
-                                 cwd=cwd or REPO, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                 cwd=cwd or REPO, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **NO_WINDOW)
             with tarfile.open(fileobj=p.stdout, mode="r|") as tar:
                 if hasattr(tarfile, "data_filter"):
                     tar.extractall(tmp, filter="data")
@@ -356,8 +386,8 @@ def capabilities(refresh=False):
     torch_ok = False
     cuda = False
     try:
-        out = subprocess.run([sys.executable, "-c", "import torch,sys;sys.stdout.write(str(torch.cuda.is_available()))"],
-                             capture_output=True, text=True, timeout=120)
+        out = subprocess.run([console_python(), "-c", "import torch,sys;sys.stdout.write(str(torch.cuda.is_available()))"],
+                             capture_output=True, text=True, timeout=120, **NO_WINDOW)
         torch_ok = out.returncode == 0
         cuda = torch_ok and out.stdout.strip() == "True"
     except Exception:

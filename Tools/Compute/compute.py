@@ -121,8 +121,14 @@ def cmd_run(args):
             L.fetch([args.home.replace("origin/", "")], results=False, quiet=True)
         home = _home_worktree(args.home)
         script = os.path.join(home, "Tools", "Compute", "compute.py") if home else os.path.abspath(__file__)
+        out = {}
+        try:                      # the Windows launcher sends output to worker.log: the session writes there too
+            sys.stdout.flush()
+            out = {"stdout": sys.stdout.fileno(), "stderr": sys.stderr.fileno()}
+        except Exception:
+            pass
         rc = subprocess.call([sys.executable, script, "run", *passthrough, "--in-home"], cwd=L.REPO,
-                             env=dict(os.environ, FROGLET_COMPUTE_REPO=L.REPO))
+                             env=dict(os.environ, FROGLET_COMPUTE_REPO=L.REPO), **out, **L.NO_WINDOW)
         if args.once:
             return rc
         if rc not in (0, 1):

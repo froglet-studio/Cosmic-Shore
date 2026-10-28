@@ -142,6 +142,30 @@ def schedule_window():
     return bad
 
 
+def windows_task():
+    """The Task Scheduler line fits in 261 characters with a Microsoft Store Python and a long user name, and the
+    launcher is valid Python that runs the worker without --quiet (its log is the only output)."""
+    import install
+    bad = []
+    py = "C:\\Users\\Alexandra.Konstantinopoulou\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\\pythonw.exe"
+    home = "C:\\Users\\Alexandra.Konstantinopoulou\\.froglet-compute"
+    cmd = install._cmd(10.0, "22:00-07:00", False, "origin/claude/eager-franklin-e6g77h", "C:\\Users\\Alexandra.Konstantinopoulou\\Documents\\GitHub\\Cosmic-Shore",
+                       ["bleeding-edge", "ai", "compute-queue", "claude/eager-franklin-e6g77h"])
+    launcher, text, tr = install.windows_task(cmd, home, py)
+    old = " ".join(f'"{c}"' for c in cmd)
+    if len(tr) > 261:
+        bad.append(f"windows: the task line is {len(tr)} characters (Task Scheduler takes 261)")
+    if len(old) <= 261:
+        bad.append("windows: the negative control (the full command on the task line) should be over 261")
+    try:
+        compile(text, launcher, "exec")
+    except SyntaxError as e:
+        bad.append(f"windows: the launcher is not valid Python: {e}")
+    if "--quiet" in text or "--between" not in text:
+        bad.append("windows: the launcher's argv is wrong")
+    return bad
+
+
 def trust_rules():
     """What a queue ref may make a worker execute. Each case is (job, why it must or must not run)."""
     bad = []
@@ -191,6 +215,9 @@ def run(quick=False):
         if p:
             failures.append(f"job {jid}: " + "; ".join(p))
     print(f"jobs: {len(jobs)} " + ("ok" if not any(f.startswith("job ") for f in failures) else "FAILED"))
+    win = windows_task()
+    print("windows task line: " + ("ok" if not win else "FAILED"))
+    failures += win
     trust = trust_rules()
     print("trust rules: " + ("ok" if not trust else "FAILED"))
     failures += trust

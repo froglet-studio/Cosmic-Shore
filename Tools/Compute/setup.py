@@ -24,6 +24,7 @@ What it does, in order, and nothing else:
 
 It reads its whole script from stdin, so it asks nothing: every choice is an option above.
 """
+import json
 import os
 import shutil
 import subprocess
@@ -108,6 +109,9 @@ def main(argv):
     if "--always" in opts:
         args += ["--always"]
     say("3. registering the worker: " + " ".join(args[2:]))
+    if not dry:                     # so commands typed by hand (compute.py run --request ...) find this checkout
+        with open(os.path.join(os.path.dirname(APP), "config.json"), "w", encoding="utf-8") as fh:
+            json.dump({"repo": repo, "ref": ref, "queue": queue}, fh, indent=1)
     if dry:
         args.append("--dry-run")
     rc = subprocess.call(args, cwd=repo)
