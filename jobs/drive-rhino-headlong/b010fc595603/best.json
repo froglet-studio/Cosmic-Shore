@@ -1,0 +1,35 @@
+{
+ "descriptors": null,
+ "evals_at": 154,
+ "loss": 4.279668468582069,
+ "metrics": {
+  "dnf": 3,
+  "limits": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
+  "model": "rhino_drive",
+  "races": 12,
+  "seconds_by_intensity": {
+   "1": 31.93,
+   "2": 33.9,
+   "3": 40.23,
+   "4": 630.0
+  }
+ },
+ "params": {
+  "alignDegrees": 14.39322533918559,
+  "brakeLeadSeconds": 0.3575728683047391,
+  "brakeMarginUnits": 76.42702919741386,
+  "brakeSteerFloor": 0.18159332466897327,
+  "cornerReleaseDegrees": 31.680017890578615,
+  "cornerSpeed": 845.4441354091679,
+  "engageRunwaySeconds": 0.7272136325023031,
+  "minCornerSpeed": 171.1973671399273,
+  "minSpeedGain": 93.1197700450895,
+  "releaseAlignDegrees": 30.549676820293534,
+  "releaseRunwaySeconds": 1.8925733954059916,
+  "releaseStickBand": 0.8307133692772792,
+  "stickBand": 0.6538820106222001,
+  "throttleSlewPerSecond": 2.983550114869951
+ },
+ "sha": "168c3e3d3240ae0ea2ce1f5516a4ba5387d3b0ba",
+ "time": 1793187407
+}

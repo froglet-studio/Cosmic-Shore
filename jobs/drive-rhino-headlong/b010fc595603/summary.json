@@ -1,0 +1,78 @@
+{
+ "baseline": {
+  "error": null,
+  "loss": 4.617154322825912,
+  "metrics": {
+   "dnf": 3,
+   "limits": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
+   "model": "rhino_drive",
+   "races": 12,
+   "seconds_by_intensity": {
+    "1": 51.3,
+    "2": 49.47,
+    "3": 66.2,
+    "4": 630.0
+   }
+  },
+  "params": {
+   "alignDegrees": 12.0,
+   "brakeLeadSeconds": 0.25,
+   "brakeMarginUnits": 120.0,
+   "brakeSteerFloor": 0.3,
+   "cornerReleaseDegrees": 30.0,
+   "cornerSpeed": 600.0,
+   "engageRunwaySeconds": 1.5,
+   "minCornerSpeed": 160.0,
+   "minSpeedGain": 50.0,
+   "releaseAlignDegrees": 25.0,
+   "releaseRunwaySeconds": 0.5,
+   "releaseStickBand": 0.6,
+   "stickBand": 0.35,
+   "throttleSlewPerSecond": 4.0
+  }
+ },
+ "errors": {},
+ "evals": 154,
+ "history": [
+  [
+   11,
+   4.494803350687417,
+   1793187246,
+   "shombith/cloud-session"
+  ],
+  [
+   22,
+   4.348790805352987,
+   1793187263,
+   "shombith/cloud-session"
+  ],
+  [
+   33,
+   4.324551535313016,
+   1793187275,
+   "shombith/cloud-session"
+  ],
+  [
+   88,
+   4.297503595351889,
+   1793187335,
+   "shombith/cloud-session"
+  ],
+  [
+   143,
+   4.287286036404837,
+   1793187393,
+   "shombith/cloud-session"
+  ],
+  [
+   154,
+   4.279668468582069,
+   1793187407,
+   "shombith/cloud-session"
+  ]
+ ],
+ "restarts": 0,
+ "seconds": 177.4,
+ "sha": "168c3e3d3240ae0ea2ce1f5516a4ba5387d3b0ba",
+ "updated": 1793187407
+}

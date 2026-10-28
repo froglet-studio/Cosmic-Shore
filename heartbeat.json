@@ -12,12 +12,18 @@
   "torch": false
  },
  "cores": 3,
- "current": {
-  "job": "drive-rhino-headlong",
-  "since": 1793187226
- },
+ "current": {},
  "host": "cloud-session",
- "updated": 1793187226,
+ "last": {
+  "epoch": "b010fc595603",
+  "evals": 154,
+  "job": "drive-rhino-headlong",
+  "stopped": "max evals"
+ },
+ "totals": {
+  "sessions": 1
+ },
+ "updated": 1793187407,
  "user": "shombith",
  "version": "1"
 }
