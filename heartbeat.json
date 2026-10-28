@@ -12,18 +12,18 @@
   "torch": false
  },
  "cores": 3,
- "current": {},
- "host": "cloud-session",
- "last": {
-  "epoch": "52c7cb0e7a63",
-  "evals": 88,
-  "job": "drive-rhino-regatta",
-  "stopped": "max evals"
+ "current": {
+  "job": "drive-rhino-headlong",
+  "max_evals": 150,
+  "minutes": 10.0,
+  "since": 1793188615
  },
+ "host": "cloud-session",
+ "runs": [],
  "totals": {
   "sessions": 1
  },
- "updated": 1793187517,
+ "updated": 1793188615,
  "user": "shombith",
  "version": "1"
 }
