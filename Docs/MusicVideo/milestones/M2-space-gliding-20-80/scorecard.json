@@ -1,0 +1,85 @@
+{
+ "plan": "/home/user/Cosmic-Shore/Tools/Build/music_video/out/SPACE-GLIDING_20-80/plan.json",
+ "criteria": {
+  "motion_vs_energy": -0.0683,
+  "motion_vs_onsets": 0.0465,
+  "cut_alignment": 0.0006,
+  "luminance_vs_brightness": 0.5,
+  "dead_frames": 0.0,
+  "stuck_frames": 0.0086,
+  "diversity": 1.0,
+  "shot_seconds": 12.0
+ },
+ "penalties": {
+  "motion_vs_energy": 1.4734,
+  "motion_vs_onsets": 0.2484,
+  "cut_alignment": -0.0149,
+  "luminance_vs_brightness": -0.02,
+  "dead_frames": -0.004,
+  "stuck_frames": -0.0073,
+  "diversity": -0.008,
+  "shot_seconds": -0.04
+ },
+ "loss": 1.6276,
+ "below_floor": [
+  "motion_vs_energy",
+  "motion_vs_onsets"
+ ],
+ "shots": [
+  {
+   "name": "01-yggdra-shoal",
+   "frames": 588,
+   "mean_luminance": 0.2152,
+   "mean_detail": 0.1646,
+   "mean_motion": 0.0397,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.203,
+   "energy": 0.29
+  },
+  {
+   "name": "02-hesperides-loop",
+   "frames": 571,
+   "mean_luminance": 0.3283,
+   "mean_detail": 0.1689,
+   "mean_motion": 0.0853,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.269,
+   "energy": 0.103
+  },
+  {
+   "name": "03-tandava-joust",
+   "frames": 673,
+   "mean_luminance": 0.273,
+   "mean_detail": 0.2192,
+   "mean_motion": 0.0659,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.155,
+   "energy": 0.34
+  },
+  {
+   "name": "04-boneyard-stampede",
+   "frames": 942,
+   "mean_luminance": 0.2737,
+   "mean_detail": 0.2048,
+   "mean_motion": 0.0557,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.043,
+   "brightness": 0.136,
+   "energy": 0.619
+  },
+  {
+   "name": "05-wormhole-run",
+   "frames": 827,
+   "mean_luminance": 0.2744,
+   "mean_detail": 0.1947,
+   "mean_motion": 0.0667,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.278,
+   "energy": 0.568
+  }
+ ]
+}
