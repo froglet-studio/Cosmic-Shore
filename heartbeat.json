@@ -12,16 +12,13 @@
   "torch": false
  },
  "cores": 3,
- "current": {},
- "host": "cloud-session",
- "last": {
-  "best_start": 3.4612172126313037,
-  "epoch": "79c5de33fcb1",
-  "evals": 150,
-  "job": "drive-manta-redline",
-  "session_evals": 30,
-  "stopped": "max evals"
+ "current": {
+  "job": "drive-manta-regatta",
+  "max_evals": 120,
+  "minutes": 10.0,
+  "since": 1793188635
  },
+ "host": "cloud-session",
  "runs": [
   {
    "best_end": 4.279668468582069,
@@ -49,7 +46,7 @@
  "totals": {
   "sessions": 3
  },
- "updated": 1793188630,
+ "updated": 1793188635,
  "user": "shombith",
  "version": "1"
 }
