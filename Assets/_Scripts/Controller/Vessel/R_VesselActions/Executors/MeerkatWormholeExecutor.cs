@@ -71,6 +71,11 @@ namespace CosmicShore.Gameplay
             public MeerkatWormholeExecutor Maker;
             public int Seq;
             public float Born;   // when it formed here (its tree's branches grow from then, MeerkatTreeView)
+            // [Garrett's kit hook] the kit its owner stamped on it (MeerkatSolitonKit.Kit* bits) and its exit portal's size,
+            // replicated with it; Held while a sentinel guards it (it stands as long as its sentinel)
+            public byte Kit;
+            public float PortalSize;
+            public bool Held;
 
             public Vector3 At(float s, out Vector3 tangent) => MeerkatWormholeMath.At(A, T0, Side, Path, s, out tangent);
             public void Frame(float s, out Vector3 normal, out Vector3 binormal) =>
@@ -120,6 +125,9 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         MeerkatWormholeNetworkRelay _relay;
         ToggleTranslationModeActionExecutor _stance;
+        MeerkatSolitonKit _kit;   // [Garrett's kit hook] the soliton kit beside this executor (R_VesselActions/MEERKAT.md section 8)
+        Tunnel _lastRide;         // [Garrett's kit hook] the soliton last ridden, and when (not re-entered for RideAgainSeconds)
+        float _lastRideAt = -10f;
 
         // the reticle (the simulating machine)
         bool _retLive;
@@ -194,6 +202,8 @@ namespace CosmicShore.Gameplay
             _status = shipStatus;
             _relay = GetComponentInParent<MeerkatWormholeNetworkRelay>();
             _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
+            _kit = GetComponent<MeerkatSolitonKit>();   // [Garrett's kit hook]
+            _lastRide = null;
             if (_relay) _relay.Bind(this);
             _retLive = false;
             _retAge = 0f;
@@ -279,6 +289,7 @@ namespace CosmicShore.Gameplay
             if (_status.AutoPilotEnabled) Autopilot(dt);
             else _aiShaping = false;
             StepOmni();
+            if (_kit) TryRideAnySoliton();   // [Garrett's kit hook] anyone rides any soliton
             StepReticle(dt);
         }
 
@@ -308,6 +319,7 @@ namespace CosmicShore.Gameplay
             _eased += (_stick - _eased) * ke;
             _easedLq += (LtLive() - _easedLq) * ke;
             var sh = MeerkatWormholeMath.ShapeFor(config.Shape(), _easedLq, _eased.x, _eased.y);
+            if (_kit) sh = _kit.ApplyArea(sh);   // [Garrett's kit hook] Space: the soliton's surface area sets its throat
             Vector3 c = sh.Stick >= 0.05f ? right * sh.Dx + up * sh.Dy : _retSide;
             c -= fwd * Vector3.Dot(c, fwd);
             _retSide = c.sqrMagnitude > 1e-8f ? c.normalized : right;
@@ -322,7 +334,7 @@ namespace CosmicShore.Gameplay
         void Commit()
         {
             var hull = _status.Transform;
-            if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);   // the last one goes back to its centre now
+            CollapseLast();   // the last one goes back to its centre now (unless a sentinel holds it)
             float vIn = Mathf.Max(1f, _status.Speed), dive = Vector3.Distance(hull.position, _retA) / vIn;
             // round 17: the trunk's size (its shaft against the longest LT digs) sizes the roots of the next omnicrystal
             var shape = config.Shape();
@@ -341,7 +353,9 @@ namespace CosmicShore.Gameplay
             _retLive = false;
             _retAge = 0f;
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();   // the page's `if (stance) stance = false`
+            if (_kit) _kit.Stamp(t);   // [Garrett's kit hook] the owner decides the soliton's kit, published with it
             if (_relay) _relay.PublishFormed(t);
+            if (_kit) _kit.OnFormed(t);   // [Garrett's kit hook] the exit portal, and a sentinel in Sentinel mode
             PlayOneShot(config.FormEvent, hull.position);
             CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Meerkat] tunnel {t.Seq}: {t.L:F0} u, bent {t.Theta * Mathf.Rad2Deg:F0} deg");
         }
@@ -361,13 +375,52 @@ namespace CosmicShore.Gameplay
 
         /// <summary>A remote peer's copy of a tunnel its owner formed (<see cref="MeerkatWormholeNetworkRelay"/>).</summary>
         internal void FormRemote(int seq, Vector3 a, Vector3 t0, Vector3 side, float L, float shaft, float bendRadius, float b,
-            float m, float theta, float formT)
+            float m, float theta, float formT, byte kit, float portalSize)
         {
             if (!config || IsAuthority) return;
-            if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);
-            AddTunnel(a, t0, side, new MeerkatWormholeMath.Shape { L = L, S = shaft, R = bendRadius, B = b, M = m, Theta = theta,
+            CollapseLast();
+            var t = AddTunnel(a, t0, side, new MeerkatWormholeMath.Shape { L = L, S = shaft, R = bendRadius, B = b, M = m, Theta = theta,
                     Oval = MeerkatWormholeMath.OvalOf(config.Shape(), L, theta) },   // the same config, so the same arc as its owner's
                 formT, seq);
+            t.Kit = kit;   // [Garrett's kit hook] what its owner stamped on it
+            t.PortalSize = portalSize;
+            if (_kit) _kit.OnFormed(t);
+        }
+
+        /// <summary>A new tunnel (or roots) collapses the last one at once, unless a sentinel holds it ([Garrett's kit hook]:
+        /// a soliton with a sentinel stands as long as its sentinel).</summary>
+        void CollapseLast()
+        {
+            if (_mine != null && !_mine.Dying && !_mine.Held) MeerkatWormholeMath.CollapseNow(ref _mine.W);
+        }
+
+        /// <summary>
+        /// [Garrett's kit hook] The page's <c>kitTryRide</c>: anyone rides any soliton, its maker or anyone else. A Meerkat
+        /// that flies into a standing soliton's way in (any Meerkat's) is carried through it at the speed it went in with
+        /// (and its own Time's rush), out on its last heading. The soliton is untouched by riders.
+        /// </summary>
+        void TryRideAnySoliton()
+        {
+            var hull = _status.Transform;
+            if (_ride != null || _flight != null || !hull || _status.IsStationary) return;
+            for (int i = 0; i < s_tunnels.Count; i++)
+            {
+                var t = s_tunnels[i];
+                if (!MeerkatSolitonKit.IsStanding(t)) continue;
+                if (t == _lastRide && Time.time - _lastRideAt < MeerkatSolitonMath.RideAgainSeconds) continue;
+                if (!MeerkatSolitonMath.CanEnter(hull.position, hull.forward, t.A, t.T0, t.M, out float along)) continue;
+                _ride = t;
+                _rideS = Mathf.Max(0f, along);
+                _rideSIn = 0f;
+                _vIn = Mathf.Max(1f, _status.Speed);
+                _q0 = Quaternion.FromToRotation(hull.forward, t.T0) * hull.rotation;
+                _retLive = false;
+                _retAge = 0f;
+                _aiPlanned = false;
+                _lastRide = t;
+                _lastRideAt = Time.time;
+                return;
+            }
         }
 
         /// <summary>A remote peer hears that its owner's rider came out of tunnel <paramref name="seq"/>.</summary>
@@ -397,8 +450,7 @@ namespace CosmicShore.Gameplay
                 _ride = null;   // the tunnel went from under the hull (a despawn): fly on
                 return false;
             }
-            float v = MeerkatWormholeMath.RideSpeed(_vIn, config.RideEntryMultiplier, config.RideMidMultiplier,
-                config.RideExitMultiplier, _rideS, t.L);
+            float v = MeerkatWormholeMath.RideSpeed(_vIn, config.RideEntryMultiplier, RideMid, RideExit, _rideS, t.L);
             _rideS = Mathf.Min(t.L, _rideS + v * dt);
             if (_rideS < 0f)
             {
@@ -417,13 +469,22 @@ namespace CosmicShore.Gameplay
                 // the page's gateOut: out at rideExitMultiplier x the speed before the tunnel (a little boost, which the
                 // transformer eases back to cruise)
                 cameOut = true;
-                speed = _vIn * Mathf.Max(0.05f, config.RideExitMultiplier);
+                speed = _vIn * Mathf.Max(0.05f, RideExit);
                 _ride = null;
-                MeerkatWormholeMath.RiderOut(ref t.W);
-                if (_relay) _relay.PublishRiderOut(t.Seq);
+                _lastRide = t;
+                _lastRideAt = Time.time;
+                if (t.Maker == this)   // [Garrett's kit hook] a rider of someone else's soliton leaves it untouched
+                {
+                    MeerkatWormholeMath.RiderOut(ref t.W);
+                    if (_relay) _relay.PublishRiderOut(t.Seq);
+                }
             }
             return true;
         }
+
+        // [Garrett's kit hook] Time: the ride's throat with the rush, and its exit with the L5 Boost out (every soliton)
+        float RideMid => _kit ? _kit.RideMid(config.RideMidMultiplier) : config.RideMidMultiplier;
+        float RideExit => _kit ? _kit.RideExit(config.RideExitMultiplier) : config.RideExitMultiplier;
 
         void StepTunnels(float dt)
         {
@@ -437,7 +498,9 @@ namespace CosmicShore.Gameplay
                     if (t.DieT >= MeerkatWormholeMath.FadeSeconds) s_tunnels.RemoveAt(i);
                     continue;
                 }
-                if (!MeerkatWormholeMath.Step(ref t.W, t.L, t.FormT, config.StaySeconds, config.CollapseSeconds, dt)) continue;
+                // [Garrett's kit hook] a soliton a sentinel holds never runs out its stay
+                float stay = t.Held ? float.PositiveInfinity : config.StaySeconds;
+                if (!MeerkatWormholeMath.Step(ref t.W, t.L, t.FormT, stay, config.CollapseSeconds, dt)) continue;
                 t.Dying = true;
                 t.DieT = 0f;
                 var centre = t.At(t.W.S0, out _);
@@ -685,7 +748,7 @@ namespace CosmicShore.Gameplay
         {
             _omniArmed = false;
             var hull = _status.Transform;
-            if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);
+            CollapseLast();
             if (_roots != null) _roots.CollapseNow();
             _roots = MeerkatRootNetwork.Grow(config, this, ++_rootSeq, _omniSeed, _lastTrunk, hull.position, hull.forward, hull.right, hull.up);
             _flight = MeerkatRootMath.Enter(_roots.Channels, 0, MeerkatRootNetwork.D(hull.position), Mathf.Max(1f, _status.Speed), _roots.Up);
@@ -701,7 +764,7 @@ namespace CosmicShore.Gameplay
         internal void GrowRootsRemote(int seq, uint seed, float size, Vector3 a, Vector3 t0, Vector3 right, Vector3 up, int crystal)
         {
             if (!config || IsAuthority) return;
-            if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);
+            CollapseLast();
             if (_roots != null) _roots.CollapseNow();
             _roots = MeerkatRootNetwork.Grow(config, this, seq, seed, size, a, t0, right, up);
             var field = MeerkatOmnicrystalField.Instance;
@@ -936,6 +999,7 @@ namespace CosmicShore.Gameplay
             _camTunnel = null;
             _ride = null;
             _mine = null;
+            _lastRide = null;
             _retLive = false;
             _ltHeld = false;
             _formInput = null;
