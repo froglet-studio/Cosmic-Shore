@@ -4735,3 +4735,24 @@ element's SHAPE (pentagon, triangle, kite, diamond from `Assets/_Graphics/Elemen
 rows use (section 89). It stays white, 24 px, centred in its 34 px slot. `GameCard.GenreShapes` holds the four (Charge to
 Time; an empty slot falls back to the petal), `author_menu_arcade.py` writes them, and the validation fails when they are
 not the four shapes ("the genre icon back to the petal" plant).
+
+### 100.2 Connection lost, in style B (2026-10-28)
+
+Shombith: "complete the leftover popups like connection lost". `DisconnectNotice`, the notice that appears in every scene
+when the device goes offline, was the last popup still built in code in the old flat look. It now instantiates
+`Assets/_Prefabs/UI Elements/Popups/DisconnectNoticeView.prefab` (written by `Tools/Build/author_disconnect_notice.py`,
+`--check` / `--self-test`):
+- The window looks like the boot Retry window: a slivered window with corner brackets, the "Connection" eyebrow, the
+  title and the line, over a 0.82 dim.
+- RECONNECT is the lime Play button with an A keycap. It is selected when the notice opens, so A arrives as a submit.
+- CONTINUE OFFLINE is grey with a B keycap. It answers the pad's B, but only while the window's group is live.
+- Every word still comes from `DisconnectNoticeConfig.asset`, which now names the prefab in `WindowPrefab`. If that field
+  is empty, the notice falls back to the old code-built panel.
+- Known limit: while freestyle hands the pad to the vessel (`sendNavigationEvents` off), the pad cannot press either
+  button. Mouse and touch still can.
+
+Other leftover popups:
+- The boot Retry window was already in style B.
+- `PopupPanel.prefab` and `ReconnectButton.cs` are unused.
+- The freestyle `Pause_Menu_Panel` and the quest `DialogueSetUI` are still the legacy look. The dialogue panel waits on the
+  Rev 34 pick (the captain's line is its replacement).

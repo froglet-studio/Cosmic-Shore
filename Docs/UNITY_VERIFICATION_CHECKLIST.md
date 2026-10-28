@@ -65,6 +65,15 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Connection-lost popup in style B + arcade card element shapes (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (`unity_refcompile`, player and editor); `gates.sh` all OK. Not opened in the editor.
+- [ ] Menu_Main, Arcade: each card's genre icon is the element SHAPE (pentagon / triangle / kite / diamond), white, centred, not the lone petal; Brood Rush shows two.
+- [ ] Turn the network off in the menu: the Connection Lost window appears (slivered, brackets, lime RECONNECT selected). A reconnects; B and CONTINUE OFFLINE dismiss.
+- [ ] The same in a game scene (in a mode, not freestyle flight): the window draws above the HUD.
+- [ ] Network back on: "Back Online" shows with no buttons and hides after 2.5 s.
+- [ ] `DisconnectNoticeTests` pass (TheConfig_NamesTheStyleBWindow is new).
+
 ### 🔴 Rev 33 A: the Cell gate loading screen, the hex countdown, the intro's new layout and the mode-entry lag fixes (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed** (Docs/MENU_REDESIGN_B.md section 99.4):
