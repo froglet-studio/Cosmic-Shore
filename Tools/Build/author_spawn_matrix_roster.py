@@ -221,8 +221,6 @@ DESCRIPTIONS = {
                 "of pipes. Space tiles are five times wider.",
     "Quasicrystal": "A colony of 110-strut stars of a lattice that never repeats, budding outward. Space "
                     "struts run long, Mass beams short.",
-    "Wall": "A flat strip of square plates laid side by side out of its crystal: a living barrier. All "
-            "four elements share one form.",
     "Branching": "A tree that grows toward the cell's crystal, forking two or three ways at up to 60 "
                  "degrees, with up to 5,000 leaves.",
     "Cacti": "An upright trunk throwing five to nine right-angle arms per node, slowly crusted with "

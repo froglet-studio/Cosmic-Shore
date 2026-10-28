@@ -12479,7 +12479,7 @@ them: `ElementalArmour.HeartSwingClearance` = 11.85 u (the Mass crystal's depth 
 | Phyllotactic (8) | the Time plant grown whole (x1.2786); shields fuse at the stalk's joints and in its whorls exactly where its boxes meet by design, as Charge's did | the Time plant | `measure_flora_heart_clearance.py --check` |
 | Branching (4) | the Time plant grown whole; a leaf that curls into the heart's clearance is not laid | the Time plant | `measure_flora_heart_clearance.py --check` |
 | Mandelbulb (4) | see 65.5 | | `measure_mandelbulb_flora.py` |
-| Wall | **open**: one 4 x 4 x 1 plate for all four elements (no element expression at all), Mass shields fuse (s* 0.50), the heart sits inside the seed plate on every element. `LatticeScale` never reaches `WallAssembler`, so a fit needs assembler work. Toy-only (Spawn Matrix). | | none |
+| Wall | **retired** (Garrett, 2026-10-28: "the wall flora can retire so the serpent wall feels less synthetic"): its leaf WAS the Serpent's own `WallBlock Variant`, so the vessel's wall read as a plant. Prefab, four configs, the Spawn Matrix row, the Codex entry and `AssembledFlora.PreviewWall` deleted; `WallAssembler` stays (the Serpent's). | | |
 
 **Families with a fit move it from Charge to Mass; families that shipped the armour unfitted stay unfitted.** The
 lattice, Borromean and Mandelbulb species fitted Charge for its shield, and those fits now belong to Mass. The

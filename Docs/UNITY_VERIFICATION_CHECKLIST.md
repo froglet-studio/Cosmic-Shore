@@ -16688,5 +16688,6 @@ Amoebius), `fit_shield_clearance.py --check`, `fit_quasicrystal_strut_sizes.py -
    is shielded again. Kill a Charge shark and let a Time one spawn from the pool: **Pass:** only its teeth are danger.
 6. A worm colony of Mass and of Charge. **Pass:** the head's plate cage is shielded on every element; Charge segments
    are danger all over and the colony still feeds from the head's fangs.
-7. **Open, not a pass/fail:** the Mass tadpole's heart sits inside its body prism's octahedron (§65.4), and the Wall
-   flora is unfitted (§65.2).
+7. A Mass tadpole school. **Pass:** each tadpole is about 3.7x the Time tadpole with one wide, short shielded prism
+   trailing its crystal, the crystal's swing clear of that shield; the school keeps its spacing (no bodies overlapping).
+8. The Spawn Matrix lists no Wall flora; a Serpent's wall still builds as before.

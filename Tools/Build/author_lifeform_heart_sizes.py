@@ -186,7 +186,6 @@ FLORA_PREFABS = {
     "SchwarzP":     "Assets/_Prefabs/FloraAndFauna/SchwarzPFlora.prefab",
     "Spire":        "Assets/_Prefabs/FloraAndFauna/SpireFlora.prefab",
     "Tendril":      "Assets/_Prefabs/FloraAndFauna/TendrilFlora.prefab",
-    "Wall":         "Assets/_Prefabs/FloraAndFauna/WallFlora.prefab",
     "Watershed":    "Assets/_Prefabs/FloraAndFauna/WatershedFlora.prefab",
 }
 
@@ -883,7 +882,7 @@ def report(variants, k, deployments=()):
 # spread. This gate uses the SHIPPED fitter's convention, because that is the number the
 # repo's own CI is calibrated against and a second convention here would just be a third
 # opinion. Whichever is right, the band this script authors is well under both.
-LATTICE_SPECIES = ("Gyroid", "SchwarzP", "Quasicrystal", "Wall")
+LATTICE_SPECIES = ("Gyroid", "SchwarzP", "Quasicrystal")   # the Wall flora retired 2026-10-28
 LATTICE_SEAT_APPARENT_RADIUS_PER_UNIT = 0.6   # fit_quasicrystal_strut_sizes.py's convention
 LATTICE_SEAT_CLEARANCE = 2.55                 # its CRYSTAL_NEED, in world units
 
