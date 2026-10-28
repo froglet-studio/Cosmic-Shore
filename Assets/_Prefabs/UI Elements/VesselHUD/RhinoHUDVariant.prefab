@@ -53,6 +53,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   highlights: []
+  reachPostsSprite: {fileID: 21300000, guid: 03f71179fc632dce2427606cd8eb88e1, type: 3}
+  reachPrismBrokenSprite: {fileID: 21300000, guid: 5a7e53ca676bb7697e2c73feecb19f06, type: 3}
+  reachPrismSprite: {fileID: 21300000, guid: 87cb4586ada853fa9db097b3459a8897, type: 3}
+  reachBladeSprite: {fileID: 21300000, guid: 55adb63ca66873ba1c514cc6b02b4604, type: 3}
+  reachHiltSprite: {fileID: 21300000, guid: fa7884b960983d3e8a9e32776ddffffd, type: 3}
   afterimageBladeIcon: {fileID: 310458705237194923}
   afterimageNearIcon: {fileID: 775261322253057851}
   afterimageFarIcon: {fileID: 750176292608618629}
@@ -507,14 +512,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 98c5118c6b0a75ac5d509be6612b8112, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1

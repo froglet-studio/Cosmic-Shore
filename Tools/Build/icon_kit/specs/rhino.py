@@ -265,3 +265,285 @@ REBIND += [
                                            ("AfterimageNear", "Rhino_AfterimageNear", "afterimageNearIcon"),
                                            ("AfterimageBlade", "Rhino_AfterimageBlade", "afterimageBladeIcon")])),
 ]
+
+
+# ---- Space: Blade Reach (2026-10-28) -------------------------------------------------------------------------------
+# Space alone sets the blade's length: 24 at rest -> 40 at Space 10 (ShieldSkimmerScaleDriver.UpdateLength, the
+# Skimmer's live Space scale). Space 5 is SHIELD BREAKER: below it the blade BINDS on a super-shielded prism (it sticks,
+# the turn drops to a third, the prism survives), energized or not; from Space 5 an energized blade pops it.
+# Round 1 (N / O / P): Garrett asked what N's plate fill showed - the Space level, which the length already shows, and
+# every vessel has an L5, so a mark for it was inconsistent - then "show it hitting a supershielded prism and it breaking
+# above 5". So: the katana laid FLAT (apart from the upright Charge card) at the live length, its tip in a super-shielded
+# prism that stays whole below Space 5 and is shattered from Space 5. No plate meter.
+REACH_HILT = (20.0, 112.0)
+REACH_ANGLE = 52.0                # the blade's lean, clockwise from upright: it reaches across the card's diagonal
+REACH_MAX = 68.0                  # the blade at Space 10 (40 u)
+REACH_REST = REACH_MAX * 24 / 40  # at rest (24 u)
+PRISM_BITE = 2.0                  # how far the tip sits inside the prism's near point
+
+
+def reach_len(space01):
+    return REACH_REST + (REACH_MAX - REACH_REST) * space01
+
+
+def flat_katana(length, w=15.0):
+    return katana(REACH_ANGLE, hilt=REACH_HILT, length=length, w=w, sori=KATANA_SORI * length / KATANA_LEN, mirror=True)
+
+
+# The super-shielded prism, as the game builds it (StellatedOctahedronMeshGenerator): the stella octangula, two
+# tetrahedra through each other - eight spikes, tips at the cube corners, each spike three faces on a face of the
+# inscribed octahedron. Garrett 2026-10-28: "that does not look like a stelated octahedron". Drawn from the real
+# geometry (regular: a = b = c), seen straight down a body diagonal - the flat six-pointed star with its facets cut by
+# seams, ONE colour ("we need a flatter design in order to play well with the others"; a shaded three-quarter view was
+# round 3). Shattered: the eight spikes flung out along their own corners, as the game's
+# 24-face shatter + explode-out.
+STELLA_YAW, STELLA_PITCH = 45.0, -35.26   # down a body diagonal: the flat six-point star, the row's flat language
+STELLA_LIGHT = (-0.55, 0.65, -0.5)       # toward the upper left, toward the viewer (view space, y up)
+STELLA_SEAM = 1.5                        # px the facets are pulled in from their edges (a seam of ~3 px)
+
+
+def _stella_faces(explode=0.0):
+    """The 24 outer triangles in model space, (tip, base0, base1) per face, each spike pushed out by `explode`."""
+    faces = []
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                tip = np.array([sx, sy, sz], float)
+                base = [np.array([sx, 0, 0], float), np.array([0, sy, 0], float), np.array([0, 0, sz], float)]
+                push = tip / np.linalg.norm(tip) * explode
+                for i in range(3):
+                    faces.append([tip + push, base[i] + push, base[(i + 1) % 3] + push])
+    return faces
+
+
+def _view(p):
+    y, x = math.radians(STELLA_YAW), math.radians(STELLA_PITCH)
+    cy, sy, cx, sx = math.cos(y), math.sin(y), math.cos(x), math.sin(x)
+    X, Y, Z = p
+    X, Z = X * cy + Z * sy, -X * sy + Z * cy           # yaw about up
+    Y, Z = Y * cx - Z * sx, Y * sx + Z * cx            # pitch about right
+    return np.array([X, Y, Z])
+
+
+def stella_tones(cx, cy, r, explode=0.0):
+    """Three masks (light, mid, dark): the visible faces of the stella octangula centred (cx, cy), tips r px out."""
+    light = np.array(STELLA_LIGHT) / np.linalg.norm(STELLA_LIGHT)
+    k = r / math.sqrt(3)
+    tris = []
+    for f in _stella_faces(explode):
+        v = [_view(p) for p in f]
+        n = np.cross(v[1] - v[0], v[2] - v[0])
+        n /= np.linalg.norm(n)
+        centre = sum(v) / 3
+        if np.dot(n, centre) < 0:                        # orient outward
+            n = -n
+        if n[2] >= 0:                                    # facing away (the viewer looks down +z)
+            continue
+        lit = float(np.dot(n, light))
+        pts = [(cx + p[0] * k, cy - p[1] * k) for p in v]
+        tris.append((centre[2], lit, pts))
+    tris.sort(key=lambda t: -t[0])                       # far first
+    ranked = sorted(t[1] for t in tris)                   # the tones split the visible faces in thirds by light
+    cut_dark, cut_mid = ranked[len(ranked) // 3], ranked[2 * len(ranked) // 3]
+    tones = [empty(), empty(), empty()]
+    for _, lit, pts in tris:
+        mx = sum(x for x, _ in pts) / 3
+        my = sum(y for _, y in pts) / 3
+        inset = []
+        for x, y in pts:
+            d = math.hypot(x - mx, y - my) or 1.0
+            inset.append((x - (x - mx) / d * STELLA_SEAM, y - (y - my) / d * STELLA_SEAM))
+        full = fill(pts)
+        for t in tones:
+            t &= ~full                                    # a nearer face covers what is behind it
+        tone = 0 if lit >= cut_mid else 1 if lit >= cut_dark else 2
+        tones[tone] |= fill(inset)
+    return tones
+
+
+PRISM_R = 36.0
+
+
+def _reach_at(d_along, d_side=0.0):
+    """A point d_along the blade's line from the hilt, d_side toward its upper-left side."""
+    hx, hy = REACH_HILT
+    a = math.radians(REACH_ANGLE)
+    return (hx + math.sin(a) * d_along - math.cos(a) * d_side, hy - math.cos(a) * d_along - math.sin(a) * d_side)
+
+
+def prism_centre(length):
+    return _reach_at(length - PRISM_BITE + PRISM_R * 0.42, -KATANA_SORI * length / KATANA_LEN * 0.6)
+
+
+def stella_facets(cx, cy, r):
+    """The flat star's facets: (mask, centroid) per visible face, each already cut back by the faces in front of it
+    and inset by the seam - the separation the game's shatter breaks along."""
+    k = r / math.sqrt(3)
+    tris = []
+    for f in _stella_faces():
+        v = [_view(p) for p in f]
+        n = np.cross(v[1] - v[0], v[2] - v[0])
+        centre = sum(v) / 3
+        if np.dot(n, centre) < 0:
+            n = -n
+        if n[2] >= 0:
+            continue
+        tris.append((centre[2], [(cx + p[0] * k, cy - p[1] * k) for p in v]))
+    tris.sort(key=lambda t: -t[0])
+    facets = []
+    for _, pts in tris:
+        full = fill(pts)
+        facets = [(m & ~full, c) for m, c in facets]
+        mx = sum(x for x, _ in pts) / 3
+        my = sum(y for _, y in pts) / 3
+        inset = []
+        for x, y in pts:
+            d = math.hypot(x - mx, y - my) or 1.0
+            inset.append((x - (x - mx) / d * STELLA_SEAM, y - (y - my) / d * STELLA_SEAM))
+        facets.append((fill(inset), (mx, my)))
+    return [(m, c) for m, c in facets if m.any()]
+
+
+def _shift(mask, dx, dy):
+    """A mask moved by (dx, dy) icon px, edges filled empty."""
+    sx, sy = int(round(dx * N / 128)), int(round(dy * N / 128))
+    out = np.zeros_like(mask)
+    h, w = mask.shape
+    out[max(0, sy):min(h, h + sy), max(0, sx):min(w, w + sx)] = mask[max(0, -sy):min(h, h - sy), max(0, -sx):min(w, w - sx)]
+    return out
+
+
+STELLA_BURST = 0.7   # how far each facet flies, as a fraction of its distance from the centre
+
+
+def stella(cx, cy, r, broken=False):
+    """The flat super-shield. Broken: every facet flies straight out from the centre along its own centroid, so the
+    star comes apart along its real faces (the game's 24-face shatter + explode-out), each piece whole."""
+    m = empty()
+    for f, (mx, my) in stella_facets(cx, cy, r):
+        m |= _shift(f, (mx - cx) * STELLA_BURST, (my - cy) * STELLA_BURST) if broken else f
+    return m
+
+
+KNOCKOUT = 2.5        # px the prism stands clear of the sword and the posts
+
+
+def _clear(mask, length):
+    from toy_portraits import grown
+    return mask & ~grown(flat_katana(length) | reach_posts(), KNOCKOUT)
+
+
+def shielded_prism(length):
+    cx, cy = prism_centre(length)
+    return _clear(stella(cx, cy, PRISM_R), length)
+
+
+def shattered_prism(length):
+    cx, cy = prism_centre(length)
+    return _clear(stella(cx, cy, PRISM_R * 0.74, broken=True), length)
+
+
+def reach_posts():
+    """O (Garrett's pick of N / O / P): two posts over the blade's line, at its rest length and its full reach, so the
+    live tip reads against how far it can grow."""
+    m = empty()
+    for L in (REACH_REST, REACH_MAX):
+        x, y = _reach_at(L, 30.0)
+        m |= fill(rotate([(x - 2.4, y - 8), (x + 2.4, y - 8), (x + 2.4, y + 8), (x - 2.4, y + 8)], REACH_ANGLE - 90, x, y))
+    return m
+
+
+# (name, Space 0..1, broken, lit)
+REACH_STATES = [("Space 0: short, bound in the shield", 0.0, False, False),
+                ("Space 4: longer, still bound", 0.4, False, False),
+                ("Space 4, energized: still bound", 0.4, False, True),
+                ("Space 5+: Shield Breaker - it pops", 0.5, True, False),
+                ("Space 10, energized", 1.0, True, True)]
+
+
+def reach_card():
+    parts, states = {}, []
+    for k, (n, s01, broken, lit) in enumerate(REACH_STATES):
+        L = reach_len(s01)
+        parts[f"b{k}"] = (lambda L=L: flat_katana(L))
+        parts[f"p{k}"] = (lambda L=L, broken=broken: shattered_prism(L) if broken else shielded_prism(L))
+        parts["posts"] = reach_posts
+        states.append((n, [(f"p{k}", "shielded")] + [(f"b{k}", "danger" if lit else "white"), ("posts", "white", 0.6)]))
+    return dict(name="bladereach", element="Space",
+                before=ICON_DIR + "Rhino_BladeReach-PLACEHOLDER.png", before_rev="3367d4308",
+                title="Blade Reach: the katana at its live length between posts at its rest and full reach (O), its tip in a super-shielded prism - bound below Space 5, shattered from Space 5; no plate meter",
+                parts=parts, states=states)
+
+
+# ---- the Space card's PARTS (Garrett 2026-10-28, round 5: "excellent"). The view lays them out live:
+# a pivot at the hilt turned REACH_ANGLE holds the hilt part and the blade, the blade SCALED along itself to the live
+# length (Skimmer.ElementalScale01: 24 at rest -> 40 at Space 10); the prism is placed at the live tip, whole or broken
+# (Shield Breaker active); the posts are fixed. The upright parts stand on PART_HILT so the long grip fits in the sprite.
+PART_HILT = (64.0, 100.0)
+PRISM_ALONG = PRISM_R * 0.42 - PRISM_BITE              # the prism's centre past the tip, along the blade (px)
+PRISM_SIDE_PER_LENGTH = -KATANA_SORI * 0.6 / KATANA_LEN  # and to its side, per px of blade (the curve's lean)
+
+
+def reach_part_hilt():
+    full = katana(0.0, hilt=PART_HILT, length=REACH_MAX, w=15.0, sori=KATANA_SORI * REACH_MAX / KATANA_LEN, mirror=True)
+    return full & ~reach_part_blade()
+
+
+def reach_part_blade():
+    return katana(0.0, hilt=PART_HILT, length=REACH_MAX, w=15.0, sori=KATANA_SORI * REACH_MAX / KATANA_LEN,
+                  tsuba=False, tsuka=False, mirror=True)
+
+
+def _prism_part(broken):
+    """The prism centred on the sprite, cut clear of the blade as it enters (baked at Space 5's length: the blade
+    always meets the prism the same way, only the distance changes)."""
+    L0 = reach_len(0.5)
+    cx, cy = prism_centre(L0)
+    m = shattered_prism(L0) if broken else shielded_prism(L0)
+    return _shift(m, 64.0 - cx, 64.0 - cy)
+
+
+def reach_part_prism():
+    return _prism_part(False)
+
+
+def reach_part_prism_broken():
+    return _prism_part(True)
+
+
+def blade_reach():
+    """The composite at Space 4 (bound): the card's fallback and the fleet sheet's tile."""
+    L = reach_len(0.4)
+    return flat_katana(L) | shielded_prism(L) | reach_posts()
+
+
+REACH_PART_EXEMPT = dict(PART_EXEMPT, components="a part of several pieces", specks="the facet seams", gap="the facet seams")
+ICONS += [
+    dict(name="Rhino_BladeReach", element="Space", act="Blade Reach: the katana at its live length, its tip in a super-shielded prism (composite; the HUD lays the parts out)",
+         draw=blade_reach, exempt={"components": "the sword, the prism's facets and the posts", "specks": "the facet seams",
+                                   "gap": "the facet seams", "thin": "the katana is slim", "in_box": "the sword runs corner to corner"}),
+    dict(name="Rhino_ReachHilt", element="Space", act="Blade Reach: the tsuba and grip, upright on the part hilt", draw=reach_part_hilt,
+         subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+    dict(name="Rhino_ReachBlade", element="Space", act="Blade Reach: the blade at full reach, upright; the view scales it to the live length",
+         draw=reach_part_blade, subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+    dict(name="Rhino_ReachPrism", element="Space", act="Blade Reach: the super-shielded prism (flat stella octangula), centred", draw=reach_part_prism,
+         subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+    dict(name="Rhino_ReachPrismBroken", element="Space", act="Blade Reach: the prism shattered along its facets (Shield Breaker), centred",
+         draw=reach_part_prism_broken, subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+    dict(name="Rhino_ReachPosts", element="Space", act="Blade Reach: the posts at the rest length and the full reach, in card space",
+         draw=reach_posts, subdir="Parts", family=False, exempt=REACH_PART_EXEMPT),
+]
+LOCKUP["Space"] = dict(parts=dict(p=lambda: shielded_prism(reach_len(0.4)), b=lambda: flat_katana(reach_len(0.4)), t=reach_posts),
+                       state=[("p", "shielded"), ("b", "white"), ("t", "white", 0.6)])
+
+CARDS += [reach_card()]
+REBIND += [
+    # The Space card: the icon Image becomes a transparent container; the view generates the layout under it from
+    # the five parts (no prefab children: the layout is the view's serialized numbers).
+    dict(file=VARIANT, pair=dict(container="7720000000000003035", view=VIEW, after="highlights", children=[],
+                                 fields={"reachHiltSprite": ("icon", "Rhino_ReachHilt"),
+                                         "reachBladeSprite": ("icon", "Rhino_ReachBlade"),
+                                         "reachPrismSprite": ("icon", "Rhino_ReachPrism"),
+                                         "reachPrismBrokenSprite": ("icon", "Rhino_ReachPrismBroken"),
+                                         "reachPostsSprite": ("icon", "Rhino_ReachPosts")})),
+]

@@ -17812,3 +17812,21 @@ Unity CLI in the session: nothing here was compiled.
    behind it to the left in your domain colour, the nearer one brighter, curving the same way as the sword; they vanish
    when the laying window ends.
 3. Change domain mid-match if the mode allows it. **Pass:** the copies take the new colour.
+
+## Rhino Space card: Blade Reach, the katana and the super-shielded prism (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `RhinoVesselHUDView.cs` (`BuildReach` generates `BladeReach` > `Prism`, `HiltPivot` > `Hilt` + `BladeScale` >
+`Blade`, `Posts` under the Space card's icon; `SetBladeReach`, `ReachPrismCentre`), `RhinoHUDController.cs` (pushes
+`Skimmer.ElementalScale01`, `SuperShieldUpgradeActive`, the lit state and the shielded colour every frame),
+`RhinoHUDVariant.prefab` (the Space icon is a transparent container; five sprite fields). Sheet:
+`Docs/Icons/sheets/rhino_bladereach.png`. No .NET and no Unity CLI in the session: nothing here was compiled.
+
+1. Run `RhinoBladeReachLayoutTests`. **Pass:** green.
+2. Fly the Rhino at Space 0. **Pass:** the Space card shows a white katana leaning up to the right, its grip at the lower
+   left, its tip just inside a flat six-pointed star (the super-shielded prism) in your shielded colour, two grey posts
+   above the blade; nothing overlaps the sword or the posts.
+3. Gain Space levels. **Pass:** the blade grows toward the second post and the star moves with its tip.
+4. Reach Space 5. **Pass:** the star is drawn broken, its triangles flown apart.
+5. Energize. **Pass:** the katana turns danger orange while lit.
+6. If the star sits off the tip, tune `reachPrismAlong` / `reachPrismSidePerLength`; if the blade grows from the wrong
+   point, check `reachPartHilt` against the sprite (64, 100).
