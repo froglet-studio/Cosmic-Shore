@@ -133,6 +133,46 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 20 (Yash, 2026-10-28: "remove the rings of spindle. From the trunk as well as the roots, so there should not be
+any distinction between the wormhole and the trunk ... for the roots, we won't be traveling forward randomly. Rather, we
+will also control going forward using our trigger inside the root ... use the left thumbstick to go forward, backward,
+left, right, and on hitting the surfaces, we will bounce off a little bit ... the root need to be wide enough so our camera
+view always stays inside the root ... In the root, it will be pretty more opaque ... It will be an underground world in
+3D"). ARTIFACT ONLY.**
+- **The trunk is the wormhole.** A formed tunnel draws no bridge (no spindle rings or ribs, no glass tube of its own)
+  while its trunk shows. The trunk got a bore: the tunnel's wall is the trunk's inside, in the same wood. So it is one log
+  you fly through. The bridge comes back only if the trunk is hidden (`trunkVisibility` 0). The reticle keeps its frame.
+  - Unity still draws the bridge (its `bridge*` values are unchanged, 0 drift). Porting this is a later clone.
+- **The roots draw no spindle frame** once dug (`labyrinthFrame`, `labyrinthRideFrame` and round 19's inner glow,
+  `rootInside`, are gone).
+- **Inside the roots you fly yourself** (`labTransit`; round 19's wall slide is gone, with `rootSlideSpeed`, `rootThrow`,
+  `rootFriction`, `rootSteer`, `rootWallRide`, `forkBoost`, `forkLean`):
+  - RT pushes you on along the root (`rootThrust` 90 u/s²).
+  - The left stick pushes you on and back (up / down) and left and right; the right stick up and down (`rootMove` 55).
+    Keys: W S A D, the arrows up and down.
+  - Nothing held, you coast (`rootDrag` 0.45 /s), never faster than `rootMaxSpeed` 90 u/s. You carry your speed in, up to
+    that.
+  - A wall bounces you off with `rootBounce` (0.45) of your speed into it; the speed along the wall is kept.
+  - `rootGravity` (0 = off) can draw you to the root's floor, square to the root so it never pulls you back down a climb.
+  - Your nose follows the root you are in, the way you face along it; up is the network's up.
+  - Past a fork you are in whichever root you steered into; back past a root's start you are in its parent again. Out of
+    a tip you fly on along it; back out of the source you leave the way you came.
+  - The AI holds RT and steers across the root (a spring on the sticks) for the root that leads nearest its ring.
+- **The camera stays inside:** in the roots it sits 12 u back along the root's centreline (into the root behind you when
+  that is behind), half your way out to the wall. The roots are wider: `labyrinthDiameter` 24 → 40 u, mouths 30 → 46 u,
+  `rootTip` 0.5 → 0.6.
+- **From inside, the roots are an underground world.** While you are in a network, its roots also draw their inside as
+  an earthen wall (fibres along the root, knots, grit), drawn over everything outside:
+  - `rootOpacity` 0.94 of the world outside is hidden;
+  - your lamp lights the walls near you (`rootLamp`), and walls `rootFog` (160 u) off fade into the dark;
+  - each root's ends stay open: an opening (a tip, the source) fully, a fork only a little, so you see the light at a tip.
+  - From inside, the roots' space-time warp is off: they are earth, not bent space. From outside nothing changed.
+- **Measured** (headless, seed 7, full Mass): coasting in, your speed dies from 64 to 28 u/s in 2 s; holding RT you reach
+  90 u/s and go through two forks; holding the stick back slows you; you bump the walls in the bends; the camera sat 7 u
+  off the centreline of a root 18.6 u in radius, inside it.
+- **The scorecard (seed 11, I1-I4):** every level finishes every ladder. Hard 77.8 / 78.9 / 81.2 / 80.8 s (round 19's
+  slide: 85.9 / 86.9 / 94.6 / 79.1 s); Easy 80.2 / 78.8 / 81.7 / 84.3 s; Medium 78.7 / 80.4 / 81.7 / 82.0 s.
+
 **Round 19 (Yash, 2026-10-28: "it's non-navigable. What I want is to navigate the routes. So the speed of the vessel
 inside the roots need to be little less. So that I can at least slide ... it will follow the inner wall of the root like a
 ball flowing through the root canal. And it's friction will be very less ... with my thumbstick I can just make it a
