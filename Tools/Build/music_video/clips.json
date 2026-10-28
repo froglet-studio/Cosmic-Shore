@@ -10,24 +10,27 @@
     "mv vessel Manta",
     "mv spawn flora Nested Gyroid 3",
     "mv spawn flora Gyroid 3",
-    "mv aim local flora"
+    "mv in {2s} teleport local flora -160 10 0",
+    "mv in {2.2s} aim local flora"
    ],
    "camera": [
-    "mv mount local 40 13 12 28 1.6"
+    "mv mount local 30 10 10 24 1.6"
    ],
-   "settle_seconds": 6,
+   "settle_seconds": 5,
    "events": [
     {
      "at": 0.0,
      "cmd": "aim local flora"
     },
     {
-     "at": 2.5,
-     "cmd": "action local FullSpeedStraightAction 120"
+     "at": 2.0,
+     "cmd": "action local FullSpeedStraightAction 150"
     }
    ],
    "stills": [],
-   "learned": []
+   "learned": [
+    "probe 1 (2026-10-28): the flora were planted at the cell's own sites hundreds of units from the pilot; 5 s of flying toward them showed empty membrane. The pilot is now teleported 160 u before the nearest flora (SetPose) once the plants are in."
+   ]
   },
   "serpent-wall": {
    "vessel": "Serpent",
@@ -38,25 +41,28 @@
     "mv vessel Serpent",
     "mv spawn vessel Manta,Dolphin,Rhino,Sparrow 8 Ruby 30",
     "mv aim all local",
-    "mv herd off"
+    "mv herd off",
+    "mv in {2.5s} action local Button2Action 10",
+    "mv in {2.5s} aim all local"
    ],
    "camera": [
-    "mv orbit local 36 14 3"
+    "mv orbit local 30 10 3"
    ],
-   "settle_seconds": 8,
+   "settle_seconds": 10,
    "events": [
     {
      "at": 0.0,
-     "cmd": "action local Button2Action 10",
-     "why": "the stance: the seed is laid"
+     "cmd": "aim all local"
     },
     {
-     "at": 0.0,
+     "at": 2.5,
      "cmd": "aim all local"
     }
    ],
    "stills": [],
-   "learned": []
+   "learned": [
+    "probe 1: the stance worked (the Serpent stopped, the rival fleet circled it laying trails) but 5 s from the toggle showed no wall yet, and the hull drew as a solid white blob: the stance's cloak ghost (CosmicShore/CloakGhost, a hand-written additive shader) had no translation in the engine. The stance now happens 7.5 s before the recording so the wall is growing on frame one."
+   ]
   },
   "dolphin-echo": {
    "vessel": "Dolphin",
@@ -65,30 +71,41 @@
    "stage": [
     "mv cell Arboretum",
     "mv vessel Dolphin",
-    "mv spawn vessel Rhino,Manta,Serpent,Sparrow 8 Ruby 30",
-    "mv aim all local"
+    "mv spawn vessel Rhino,Manta,Serpent,Sparrow 6 Ruby 40",
+    "mv in {1s} circle ai0 45 5 local",
+    "mv in {1s} circle ai1 55 6 local",
+    "mv in {1s} circle ai2 40 4 local",
+    "mv in {1s} circle ai3 60 7 local",
+    "mv in {1s} circle ai4 50 5 local",
+    "mv in {1s} circle ai5 35 4 local"
    ],
    "camera": [
-    "mv mount local 40 13 12 28 1.6"
+    "mv mount local 24 8 7 20 1.6"
    ],
    "settle_seconds": 8,
    "events": [
     {
      "at": 0.0,
-     "cmd": "place crystal local 90 0 0"
+     "cmd": "place crystal local 100 0 0"
     },
     {
      "at": 0.0,
      "cmd": "aim local crystal"
     },
     {
-     "at": 0.2,
+     "at": 0.1,
      "cmd": "action local RightStickAction 300",
      "why": "echo sight held"
+    },
+    {
+     "at": 2.6,
+     "cmd": "aim local fleet"
     }
    ],
    "stills": [],
-   "learned": []
+   "learned": [
+    "probe 1: the Dolphin was a speck at back 40 and the rival trails were far off its path; nothing of the cone or the blast read. The fleet now circles the pilot (trails wrap its path), the mount sits at back 24, the crystal is placed 100 u ahead at the first frame."
+   ]
   },
   "thresher-slice": {
    "vessel": "Thresher",
@@ -97,11 +114,16 @@
    "stage": [
     "mv cell Tandava",
     "mv vessel Thresher",
-    "mv spawn vessel Manta,Dolphin,Rhino,Squirrel 10 Ruby 30",
-    "mv aim all local"
+    "mv spawn vessel Manta,Dolphin,Rhino,Squirrel 8 Ruby 35",
+    "mv in {1s} circle ai0 40 5 local",
+    "mv in {1s} circle ai1 50 6 local",
+    "mv in {1s} circle ai2 35 4 local",
+    "mv in {1s} circle ai3 55 7 local",
+    "mv in {1s} circle ai4 45 5 local",
+    "mv in {1s} circle ai5 60 6 local"
    ],
    "camera": [
-    "mv mount local 34 16 34 20 1.6"
+    "mv mount local 26 12 22 16 1.6"
    ],
    "settle_seconds": 8,
    "events": [
@@ -117,11 +139,13 @@
     },
     {
      "at": 0.2,
-     "cmd": "circle local 28 3.0"
+     "cmd": "circle local 26 3.0"
     }
    ],
    "stills": [],
-   "learned": []
+   "learned": [
+    "probe 1: the ball went red and the chain whipped - the clip's subject works - but the hull was small and the rival trails were elsewhere. The fleet now circles the Thresher so the chain crosses their trails; the mount is a tighter three-quarter view."
+   ]
   }
  }
 }

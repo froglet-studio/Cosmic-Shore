@@ -52,15 +52,18 @@ def main(argv=None):
         c = lib["clips"][name]
         seconds = float(c.get("seconds", a.seconds))
         frames = int(round(seconds * step_hz))
+        # `{3s}` in a command = 3 seconds in sim frames at the plan's step rate (`mv in {3s} ...` in a stage list)
+        import re
+        frames_of = lambda txt: re.sub(r"\{([0-9.]+)s\}", lambda m: str(int(round(float(m.group(1)) * step_hz))), txt)
         events = []
         for e in c.get("events", []):
             # events are authored in seconds from the clip's start; `all` of a repeated command spreads at its interval
-            events.append({"t": round(t + float(e["at"]), 3), "cmd": e["cmd"], "why": e.get("why", "clip")})
+            events.append({"t": round(t + float(e["at"]), 3), "cmd": frames_of(e["cmd"]), "why": e.get("why", "clip")})
         shots.append({
             "name": f"{i + 1:02d}-{name}", "t0": round(t, 3), "t1": round(t + seconds, 3), "frames": frames, "every": every, "accum": accum,
             "mode": "Menu_Main", "players": 0, "intensity": 1, "stage": "menu", "cell": c.get("cell"),
             "settle_frames": int(float(c.get("settle_seconds", 6)) * step_hz),
-            "setup": ["mv hud off", "mv autopilot on"] + c["stage"],
+            "setup": ["mv hud off", "mv autopilot on"] + [frames_of(x) for x in c["stage"]],
             "camera": ["mv camera main"] + c["camera"],
             "events": events, "features": {"energy": 0.5, "brightness": 0.5, "onset_density": 0.5},
             "archetype": name, "what": c["what"], "why": "clip library", "vessel": c["vessel"],

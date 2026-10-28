@@ -165,6 +165,7 @@ namespace CosmicShore.Player
                 case "domain": Inspector.Domain(string.Join(' ', w.Skip(1))); return;   // the Domain Changer toy's call, so a cue can shift the pilot's domain (cut 5's cues said "unknown command")
                 case "vessel": SwapVessel(w[1]); return;
                 case "place": Place(w[1], w[2], F(w[3]), w.Length > 4 ? F(w[4]) : 0f, w.Length > 5 ? F(w[5]) : 0f); return;
+                case "teleport": Teleport(w[1], w[2], F(w[3]), w.Length > 4 ? F(w[4]) : 0f, w.Length > 5 ? F(w[5]) : 0f); return;
                 case "giants": _giantThreshold = w.Length > 1 ? F(w[1]) : 60f; Console.WriteLine($"[mv] giants {(_giantThreshold > 0 ? "on, extents over " + _giantThreshold : "off")}"); return;
                 case "release": Release(); return;
                 case "status":
@@ -247,6 +248,24 @@ namespace CosmicShore.Player
             var right = Vector3.Cross(s.up, s.forward).normalized;
             t.position = s.position + s.forward * dist + s.up * up + right * side;
             Console.WriteLine($"[mv] placed {t.name} {dist} ahead of {s.name} at {t.position}");
+        }
+
+        /// <summary>
+        /// `teleport local flora -140 [UP] [SIDE]`: the vessel is set down DIST along the target's forward (negative =
+        /// before it), facing the target, through the vessel's own SetPose (the game's teleport: the trail is cut,
+        /// every peer agrees) - so a clip starts with the hull where the action is instead of flying there.
+        /// </summary>
+        static void Teleport(string subject, string target, float dist, float up, float side)
+        {
+            var t = Resolve(subject); var at = Resolve(target);
+            var vc = t != null ? t.GetComponent<CosmicShore.Gameplay.VesselController>() : null;
+            if (vc == null || at == null) { Console.WriteLine($"[mv] teleport: no '{(vc == null ? subject : target)}'"); return; }
+            var right = Vector3.Cross(Vector3.up, at.forward).normalized;
+            var pos = at.position + at.forward * dist + Vector3.up * up + right * side;
+            var look = at.position - pos; if (look.sqrMagnitude < 1e-4f) look = at.forward;
+            vc.SetPose(new Pose(pos, Quaternion.LookRotation(look.normalized, Vector3.up)));
+            _haveSmoothed = false;
+            Console.WriteLine($"[mv] teleported {t.name} to {pos} facing {at.name}");
         }
 
         /// <summary>The Vessel Changer's own call: the local pilot swaps to another hull class (Menu_Main only).</summary>
