@@ -4417,6 +4417,16 @@ guid → that `.cs`'s field set) is a cheap standing audit that finds rot no dif
 show you. Cosmic Shore's `QuadFish.prefab` carried EIGHT dead keys and lacked its data SO
 for long enough to ship inert into three game modes.
 
+### Trap: a hand-written shader's on/off float wants `[ToggleUI]`, not `[Toggle]`
+
+`[Toggle] _Foo ("Foo", Float) = 0` in a `.shader`'s Properties block is not just a checkbox: Unity also
+enables a shader KEYWORD `_FOO_ON` when it is ticked. A shader that branches on the float itself (`_Foo > 0.5`)
+and declares no `#pragma shader_feature _FOO_ON` then gets that keyword written into every material's
+`m_InvalidKeywords` the first time someone ticks the box in the inspector - a diff on a material a generator owns,
+so its `--check` goes red for a change nobody made on purpose. Use `[ToggleUI]` (a checkbox, no keyword) for a
+uniform branch, and keep `[Toggle]` for a real keyword variant. Seen 2026-10-28 on `OmniCrystalFresnelShader`'s
+`_ElementShades` (`cece/serene-cannon-93olp5`), caught before it shipped.
+
 ## 6. When the editor genuinely IS required
 
 Device soak tests, profiling, visual judgment, play-mode-state measurements,

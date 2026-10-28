@@ -396,6 +396,9 @@ namespace CosmicShore.Utility
             public int[] Tris;
             public Vector4[] Uv2;
             public Vector4[] Uv3;
+            /// <summary>Each corner's plate element (<see cref="CrystalElementPlates.Channel"/>), or null when the source
+            /// names none: the omni body's per-element shades ride the morph (Docs/PALETTE.md §2.12).</summary>
+            public Vector4[] Uv4;
         }
 
         static readonly Dictionary<int, EmitCache> s_emitCache = new();
@@ -901,6 +904,7 @@ namespace CosmicShore.Utility
             mesh.SetUVs(0, uv0);
             mesh.SetUVs(TargetUVChannel, uv2);
             mesh.SetUVs(TargetNormalUVChannel, uv3);
+            if (cache.Uv4 != null) mesh.SetUVs(CrystalElementPlates.Channel, cache.Uv4);
             mesh.SetTriangles(tris, 0, false);
 
             // The morph DISPLACES vertices in the vertex stage, so the culling envelope has to
@@ -931,6 +935,13 @@ namespace CosmicShore.Utility
             bool hasNormals = srcNormals != null && srcNormals.Length == srcVerts.Length;
             bool hasTangents = srcTangents != null && srcTangents.Length == srcVerts.Length;
             bool hasUv0 = srcUv0 != null && srcUv0.Length == srcVerts.Length;
+            List<Vector4> srcElements = null;
+            if (CrystalElementPlates.Carries(source))
+            {
+                srcElements = new List<Vector4>(srcVerts.Length);
+                source.GetUVs(CrystalElementPlates.Channel, srcElements);
+                if (srcElements.Count != srcVerts.Length) srcElements = null;
+            }
 
             var cache = new EmitCache
             {
@@ -941,6 +952,7 @@ namespace CosmicShore.Utility
                 Tris = new int[n],
                 Uv2 = new Vector4[n],
                 Uv3 = new Vector4[n],
+                Uv4 = srcElements != null ? new Vector4[n] : null,
             };
             for (int k = 0; k < n; k++)
             {
@@ -949,6 +961,7 @@ namespace CosmicShore.Utility
                 cache.Normals[k] = hasNormals ? srcNormals[si] : Vector3.up;
                 cache.Tangents[k] = hasTangents ? srcTangents[si] : new Vector4(1f, 0f, 0f, 1f);
                 cache.Uv0[k] = hasUv0 ? srcUv0[si] : Vector2.zero;
+                if (srcElements != null) cache.Uv4[k] = srcElements[si];
                 cache.Tris[k] = k;
             }
             s_emitCache[key] = cache;

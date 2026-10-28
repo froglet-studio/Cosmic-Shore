@@ -48,8 +48,10 @@ It writes KiteNavigatorConfig.asset's `elementColors` (sRGB, Charge, Mass, Space
 Wrasse Lasso Lab's LIME_E line, and the palette's `EnvironmentColors.ElementalCrystalColors` (OriginalColorSetSO.asset):
 the four elemental CRYSTALS wear the same four shades (Garrett, 2026-10-27: "the mass crystals and omnicrystals are the
 hardest to distinguish. shift the colors on each element to match the color shifts we used for the wrasse's 2d
-elements"). The omni keeps the palette's lime; the Mass shade is the darkest corner, so the two now differ in value as
-well as hue. Tools/Build/author_elemental_crystal_colors.py carries them onto the crystals' own materials. The tail,
+elements"). The Mass shade is the darkest corner, so Mass and the omni's lime differ in value as well as hue; since
+2026-10-28 the omni itself wears all four shades, each on its element's shapes (Docs/PALETTE.md §2.12,
+author_omni_crystal_triangles.py). Tools/Build/author_elemental_crystal_colors.py carries them onto the crystals' own
+materials. The tail,
 the saved-boost dots and every other CTA lime stay the palette's lime.
 """
 import math
