@@ -12,18 +12,12 @@
   "torch": false
  },
  "cores": 3,
- "current": {},
+ "current": {
+  "job": "drive-manta-redline",
+  "since": 1793187412
+ },
  "host": "cloud-session",
- "last": {
-  "epoch": "b010fc595603",
-  "evals": 154,
-  "job": "drive-rhino-headlong",
-  "stopped": "max evals"
- },
- "totals": {
-  "sessions": 1
- },
- "updated": 1793187407,
+ "updated": 1793187412,
  "user": "shombith",
  "version": "1"
 }
