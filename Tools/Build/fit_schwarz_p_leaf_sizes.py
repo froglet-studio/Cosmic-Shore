@@ -541,12 +541,17 @@ def main():
         # The two CELL-level configs are producers too, and a fit applied to four of six
         # is a fit that shows up wrong in two cells. The Hesperides topiary is Element 2
         # (Mass) and carries its own budget/planting decisions, so only its LeafSize row
-        # moves. The Blob cell config is NOT written: it has no Variant of its own (it
+        # moves. It takes the flush REFERENCE plate, not a Mass one: it spreads its element
+        # with no palette, so the ONE leaf it authors is worn by every element it rolls, on
+        # the BASE lattice (it authors no LatticeScale) - and the reference plate is the only
+        # leaf that is legal there. The chunky slab it used to take is retired
+        # (Docs/ECOSYSTEM.md 65); a Mass topiary is armoured on the base lattice, as a Charge
+        # one was before. The Blob cell config is NOT written: it has no Variant of its own (it
         # delegates to the element palette above), and the level fields this fitter used to
         # pin there no longer exist - lifeform levels are retired (Docs/ECOSYSTEM.md 40.2).
         hesperides = (ROOT / "Assets/_SO_Assets/Cell Configs/Hesperides Cell"
                              "/Hesperides SchwarzP Topiary Config Data.asset")
-        set_leaf_size_only(hesperides, chunky)
+        set_leaf_size_only(hesperides, pleasant)
         print(f"  wrote {hesperides.relative_to(ROOT)}")
 
 

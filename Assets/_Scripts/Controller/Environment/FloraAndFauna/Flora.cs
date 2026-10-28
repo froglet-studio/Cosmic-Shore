@@ -524,6 +524,73 @@ namespace CosmicShore.Gameplay
             healthPrism.MakeDangerous();
         }
 
+        /// <summary>
+        /// THE HEART'S CLEARANCE (Docs/ECOSYSTEM.md §65): true when a prism of this plant's element, at
+        /// <paramref name="position"/> / <paramref name="rotation"/> with full size <paramref name="size"/> (all in the
+        /// same space as <paramref name="heart"/>), would come nearer its heart than <see cref="ElementalArmour.HeartClearance"/>
+        /// - the Mass crystal's full swing to an armoured plant's octahedra, the crystal's seat to anyone else's box.
+        /// Measured to the box of <see cref="ElementalArmour.PrismReach"/> half-extents, which CONTAINS the shield, so a
+        /// prism this passes is clear. A growth-rule family asks it where it decides a prism (a heart seat is a
+        /// property of where the body starts, not of a prism the body happens to lay - but a frontier that curls back
+        /// can still reach it).
+        /// </summary>
+        protected bool IntrudesOnHeart(Vector3 heart, Vector3 position, Quaternion rotation, Vector3 size)
+        {
+            Vector3 local = Quaternion.Inverse(rotation) * (heart - position);
+            float reach = ElementalArmour.PrismReach(Element);
+            var outside = new Vector3(
+                Mathf.Max(0f, Mathf.Abs(local.x) - Mathf.Abs(size.x) * reach),
+                Mathf.Max(0f, Mathf.Abs(local.y) - Mathf.Abs(size.y) * reach),
+                Mathf.Max(0f, Mathf.Abs(local.z) - Mathf.Abs(size.z) * reach));
+            return outside.sqrMagnitude < ElementalArmour.HeartClearance(Element) * ElementalArmour.HeartClearance(Element);
+        }
+
+        /// <summary>
+        /// How far along its own long axis a BASE prism of full size <paramref name="size"/> (long axis local +z) must be
+        /// centred from the heart so the heart's clearance holds: the clearance plus the prism's reach along that axis.
+        /// Everything of the prism - box or shield - then lies beyond the plane at the clearance, whatever its offset
+        /// across the axis, which is what lets a clump of several roots share one seat.
+        /// </summary>
+        protected float HeartSeatDistance(Vector3 size) =>
+            ElementalArmour.HeartClearance(Element) + Mathf.Abs(size.z) * ElementalArmour.PrismReach(Element);
+
+        /// <summary>
+        /// Stretches a FRESHLY instantiated limb's branch geometry along its local +z to span <paramref name="bond"/>
+        /// (the `/flora` limb contract, rule 3): the spindle's CHILDREN are scaled and never its root, so anything the
+        /// limb later carries keeps its own size. Measured off the instance's mesh bounds, so no reach is authored. A
+        /// limb whose branch does not run along +z is left unstretched - visible, never inverted.
+        /// </summary>
+        protected static void StretchFreshLimb(Spindle limb, float bond)
+        {
+            if (!limb || bond <= 0f) return;
+            Transform root = limb.transform;
+            float reach = 0f;
+            foreach (var filter in limb.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!filter || !filter.sharedMesh || filter.transform == root) continue;
+                Bounds b = filter.sharedMesh.bounds;
+                Matrix4x4 m = root.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                for (int c = 0; c < 8; c++)
+                {
+                    Vector3 corner = m.MultiplyPoint3x4(new Vector3(
+                        (c & 1) == 0 ? b.min.x : b.max.x,
+                        (c & 2) == 0 ? b.min.y : b.max.y,
+                        (c & 4) == 0 ? b.min.z : b.max.z));
+                    if (corner.z > reach) reach = corner.z;
+                }
+            }
+            if (reach <= 0f) return;
+            float f = bond / reach;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child.GetComponent<Prism>() || child.GetComponent<Spindle>()) continue;
+                Vector3 s = child.localScale;
+                s.z *= f;
+                child.localScale = s;
+            }
+        }
+
         public override void Initialize(Cell cell)
         {
             ApplyCellPrismScale(cell);

@@ -33,6 +33,33 @@ namespace CosmicShore.Utility
         /// <summary>True for the element whose every prism is a danger prism.</summary>
         public static bool ArmsEveryPrism(Element element) => element == Element.Charge;
 
+        /// <summary>A shield's semi-axis as a multiple of its prism's FULL size along each local axis: the
+        /// octahedron circumscribing the box is built from the HALF-extents x
+        /// <see cref="OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE"/>, so 1.5.</summary>
+        public const float ShieldReach = OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE * 0.5f;
+
+        /// <summary>The clear radius an ARMOURED (Mass) heart needs around it: the Mass crystal's depth prisms at
+        /// full reach, 11.85 u at the one crystal size (Docs/ECOSYSTEM.md §64.8), x the 5% margin the Mass fauna were
+        /// shipped with. Measured offline off the mesh; <c>Tools/Build/mass_armour_lib.py</c> asserts the material and
+        /// the crystal size it was measured at, so a retune of either fails every fit instead of quietly invalidating
+        /// this.</summary>
+        public const float HeartSwingClearance = 11.85f * 1.05f;
+
+        /// <summary>The clear radius any other heart needs from a prism: the crystal's own seat, the figure the
+        /// quasicrystal's heart seat is proven against (<c>Tools/Build/fit_quasicrystal_strut_sizes.py</c> CRYSTAL_NEED:
+        /// above 0.6 x the one crystal size, the crystal's apparent radius).</summary>
+        public const float HeartSeatClearance = 2.55f;
+
+        /// <summary>How far a prism of <paramref name="element"/> must keep from its heart: the swing on an armoured
+        /// lifeform (measured to its OCTAHEDRA), the crystal's seat on every other (measured to its box).</summary>
+        public static float HeartClearance(Element element) => Shields(element) ? HeartSwingClearance : HeartSeatClearance;
+
+        /// <summary>How far a prism of <paramref name="element"/> reaches from its centre along each local axis, per
+        /// unit of its full size: its shield on an armoured lifeform (<see cref="ShieldReach"/>), its box (0.5) on every
+        /// other. The box with these half-extents CONTAINS the shield, so a clearance proven against it is
+        /// conservative.</summary>
+        public static float PrismReach(Element element) => Shields(element) ? ShieldReach : 0.5f;
+
         /// <summary>The shield cadence a lifeform of <paramref name="element"/> runs, given what its config resolved to.
         /// Mass is floored at <see cref="ShieldPeriod"/> (an authored cadence still wins: faster or slower, never off);
         /// Charge is 0 whatever is authored (its prisms are danger, and a shield would clear it); every other element

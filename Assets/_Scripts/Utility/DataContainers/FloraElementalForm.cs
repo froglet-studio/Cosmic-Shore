@@ -127,12 +127,18 @@ namespace CosmicShore.Utility
         /// How far this element's plant REACHES, relative to the species' authored extent -
         /// the half of the law that lands on the assembly rather than on one prism.
         ///
-        /// <para>It is <c>LeafVolumeScale^(-1/3)</c> and therefore introduces NO new constant:
-        /// a plant spends a fixed amount of material, so thinning the leaf buys extent and
-        /// thickening it costs extent. That is exactly "Space's long axis reduces cumulative
-        /// prism volume and increases the bounding volume of the assembly" - Space reaches
-        /// x1.35 while Mass draws in to x0.82 - and it means the two dials cannot drift apart,
-        /// because there is only one.</para>
+        /// <para>SPACE and the two neutral elements spend a fixed amount of material: their reach is
+        /// <c>LeafVolumeScale^(-1/3)</c>, so thinning the leaf buys extent - "Space's long axis reduces
+        /// cumulative prism volume and increases the bounding volume of the assembly" (Space x1.35, Charge and
+        /// Time x1.04).</para>
+        ///
+        /// <para><b>MASS HAS SIZE</b> (Docs/ECOSYSTEM.md §65, Garrett 2026-10-28: "mass has size, it needs to add
+        /// volume and it needs the crystal clearance. lets keep it consistent"). A Mass plant is the NEUTRAL plant
+        /// grown WHOLE by its leaf's axis scale, <c>(MassLeafVolume / NeutralLeafVolume)^(1/3)</c> = x1.2786:
+        /// every position and every prism of the Time plant x1.2786, the species' shape kept. Until then Mass drew
+        /// IN (x0.82), paying for its heavy leaf with a compact block - the "chunky" half that lived on the
+        /// assembly, retired with the chunky plate. It is the same similarity the Mass fauna are grown by and the
+        /// lattice species' Mass plate states (<c>mass_armour_lib.mass_axis</c>); it adds no constant.</para>
         ///
         /// <para>A family honours this on whatever field carries its extent
         /// (<c>PhyllotacticFlora.segmentLength</c>, <c>BranchingFlora.branchingScaleFactor</c>).
@@ -141,9 +147,17 @@ namespace CosmicShore.Utility
         /// </summary>
         public static float ReachScale(Element element)
         {
+            if (element == Element.Mass)
+                return Mathf.Pow(NeutralLeafVolume, -1f / 3f) * MassAxisScale;
             float volume = LeafVolumeScale(element);
             return volume <= 0f ? 1f : Mathf.Pow(volume, -1f / 3f);
         }
+
+        /// <summary>How much bigger a Mass plant is than the neutral (Time) one on every axis:
+        /// <c>(MassLeafVolume / NeutralLeafVolume)^(1/3)</c> = 1.2786. A Mass leaf is the Time leaf times this
+        /// (<see cref="MassLeafAnisotropy"/> is 1), and a Mass plant reaches this much further
+        /// (<see cref="ReachScale"/>), so a Mass plant is the Time plant grown whole.</summary>
+        public static float MassAxisScale => Mathf.Pow(MassLeafVolume / NeutralLeafVolume, 1f / 3f);
 
         /// <summary>
         /// The element's leaf: the species' authored <paramref name="authored"/> size

@@ -48,5 +48,25 @@ namespace CosmicShore.Tests
             foreach (var authored in new[] { 0f, 3f })
                 Assert.That(ElementalArmour.ResolveShieldPeriod(e, authored), Is.EqualTo(authored), $"{e} {authored}");
         }
+
+        [Test]
+        public void TheShieldReachesHalfTheCircumscribingScale()
+        {
+            // The octahedron is built from the box's HALF-extents x CIRCUMSCRIBING_SCALE: 1.5 x the full size.
+            Assert.That(ElementalArmour.ShieldReach, Is.EqualTo(OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE / 2f));
+            Assert.That(ElementalArmour.PrismReach(Element.Mass), Is.EqualTo(ElementalArmour.ShieldReach));
+            foreach (var e in new[] { Element.Charge, Element.Space, Element.Time })
+                Assert.That(ElementalArmour.PrismReach(e), Is.EqualTo(0.5f), $"{e} is measured to its box");
+        }
+
+        [Test]
+        public void AnArmouredHeartKeepsItsSwingClear_EveryOtherItsSeat()
+        {
+            // Docs/ECOSYSTEM.md §64.8: the Mass crystal's depth prisms reach 11.85 u, shipped with a 5% margin.
+            Assert.That(ElementalArmour.HeartClearance(Element.Mass), Is.EqualTo(11.85f * 1.05f).Within(1e-5f));
+            foreach (var e in new[] { Element.Charge, Element.Space, Element.Time })
+                Assert.That(ElementalArmour.HeartClearance(e), Is.EqualTo(ElementalArmour.HeartSeatClearance), $"{e}");
+            Assert.That(ElementalArmour.HeartSwingClearance, Is.GreaterThan(ElementalArmour.HeartSeatClearance));
+        }
     }
 }

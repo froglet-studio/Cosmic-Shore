@@ -29,7 +29,7 @@ MonoBehaviour:
   Variant:
     Enabled: 1
     HeartWorldScale: 2.932
-    LeafSize: {x: 3.825, y: 3.825, z: 1.2}
+    LeafSize: {x: 4.5, y: 4.5, z: 1.2}
     GrowPeriod: 1.2
     ShieldPeriod: 0
     MaxTotalSpawnedObjects: 221

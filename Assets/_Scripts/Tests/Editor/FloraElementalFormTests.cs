@@ -128,17 +128,33 @@ namespace CosmicShore.Tests
         // ── reach: the assembly half, which introduces no constant of its own ───────────
 
         [Test]
-        public void Reach_IsTheInverseCubeRootOfVolume_SoTheTwoDialsCannotDrift()
+        public void Reach_SpaceAndTheNeutralsSpendAFixedMaterial()
         {
-            foreach (var e in Four)
+            foreach (var e in new[] { Element.Charge, Element.Space, Element.Time })
             {
                 float v = FloraElementalForm.LeafVolumeScale(e);
                 Assert.That(FloraElementalForm.ReachScale(e),
                     Is.EqualTo(Mathf.Pow(v, -1f / 3f)).Within(1e-5f), $"{e}");
             }
             Assert.That(FloraElementalForm.ReachScale(Element.Space),
-                Is.GreaterThan(FloraElementalForm.ReachScale(Element.Mass)),
-                "SPACE reaches further than MASS - that is what its lost volume buys.");
+                Is.GreaterThan(FloraElementalForm.ReachScale(Element.Time)),
+                "SPACE reaches further than the neutral plant - that is what its lost volume buys.");
+        }
+
+        [Test]
+        public void Reach_MassIsTheNeutralPlantGrownWhole()
+        {
+            // Mass has SIZE (Docs/ECOSYSTEM.md §65): every position AND every prism of the Time plant x the same
+            // axis scale, so the Mass plant is a similarity of the Time plant - never the old compact block.
+            float axis = FloraElementalForm.MassAxisScale;
+            Assert.That(axis, Is.EqualTo(Mathf.Pow(FloraElementalForm.MassLeafVolume / FloraElementalForm.NeutralLeafVolume, 1f / 3f)).Within(1e-6f));
+            Assert.That(FloraElementalForm.ReachScale(Element.Mass) / FloraElementalForm.ReachScale(Element.Time),
+                Is.EqualTo(axis).Within(1e-5f), "the Mass plant reaches the Time plant's extent x the axis scale");
+            var leaf = new Vector3(9f, 3.4f, 1.5f);
+            Vector3 mass = FloraElementalForm.ShapeLeaf(leaf, Element.Mass), time = FloraElementalForm.ShapeLeaf(leaf, Element.Time);
+            for (int i = 0; i < 3; i++)
+                Assert.That(mass[i] / time[i], Is.EqualTo(axis).Within(1e-4f), $"axis {i}: the leaf grows by the same scale");
+            Assert.That(FloraElementalForm.ReachScale(Element.Mass), Is.GreaterThan(1f), "Mass never draws in");
         }
 
         // ── the sentinels and the elements that are not one of the four ────────────────
