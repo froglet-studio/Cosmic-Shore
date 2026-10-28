@@ -306,8 +306,47 @@ def cmd_validate(args):
     return 1 if bad else 0
 
 
+def _newest_copy(argv):
+    """A command typed by hand into ~/.froglet-compute/app - a line pasted from the console - runs the install ref's
+    newest Froglet Compute: the console moves on with every push, the app copy only when the setup is run again, and
+    a run the console made for a newer job ("no search named unity-train") is the gap. Fetches the install ref
+    (config.json "ref"); when its Tools/Compute differs from this copy's, exports it under ~/.froglet-compute/fresh and
+    runs the same command there. The app folder itself is never replaced (the scheduled worker may be running from
+    it). Returns the exit code, or None to go on here."""
+    if os.environ.get("FROGLET_COMPUTE_NO_REFRESH") or not argv:
+        return None
+    if not (argv[0] in ("unity", "request", "doctor") or (argv[0] == "run" and "--request" in argv)):
+        return None
+    app = os.path.join(L.cache_dir(), "app", "Tools", "Compute")
+    if os.path.normcase(os.path.realpath(HERE)) != os.path.normcase(os.path.realpath(app)):
+        return None
+    ref = (L.read_json(os.path.join(L.cache_dir(), "config.json"), {}) or {}).get("ref")
+    if not ref:
+        return None
+    ref = ref.replace("origin/", "")
+    L.git_ok("fetch", "--quiet", "--no-tags", "origin", f"+refs/heads/{ref}:refs/remotes/origin/{ref}")
+    sha = L.rev(f"origin/{ref}")
+    tree = (L.git_ok("rev-parse", f"origin/{ref}:Tools/Compute") or "").strip()
+    stamp = os.path.join(L.cache_dir(), "app", ".tree")
+    mine = (open(stamp).read().strip() if os.path.exists(stamp) else "")
+    if not sha or not tree or tree == mine:
+        return None
+    try:
+        root = L.export_tree(sha, ["Tools/Compute/"], os.path.join(L.cache_dir(), "fresh"), "compute", keep=2)
+    except Exception as e:
+        L.log(f"could not refresh Froglet Compute from origin/{ref} ({e}); running this copy", False)
+        return None
+    L.log(f"this computer's Froglet Compute is older than origin/{ref}: running its newest ({sha[:9]}). "
+          "Run the Install line again to update the installed copy too.", False)
+    env = dict(os.environ, FROGLET_COMPUTE_NO_REFRESH="1", FROGLET_COMPUTE_REPO=L.REPO)
+    return subprocess.run([sys.executable, os.path.join(root, "Tools", "Compute", "compute.py"), *argv], env=env).returncode
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
+    rc = _newest_copy(argv)
+    if rc is not None:
+        return rc
     if argv[:1] == ["unity"]:                       # its own flags, passed through untouched (unity_run.py)
         import unity_run
         return unity_run.main(argv[1:])

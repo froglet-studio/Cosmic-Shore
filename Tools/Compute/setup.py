@@ -73,6 +73,11 @@ def copy_app(ref):
         raise SystemExit("\nstopped: git archive failed")
     shutil.rmtree(APP, ignore_errors=True)
     os.replace(tmp, APP)
+    # Which Tools/Compute this copy is: compute.py runs a newer one for a pasted command when the ref moves on.
+    tree = git("rev-parse", f"origin/{ref}:Tools/Compute", check=False).strip()
+    if tree:
+        with open(os.path.join(APP, ".tree"), "w", encoding="utf-8") as fh:
+            fh.write(tree + "\n")
 
 
 def main(argv):

@@ -467,13 +467,18 @@ def _has_module(name):
         return False
 
 
+CAPS_VERSION = 2          # raise it when capabilities() learns a new one, so a day-old cache is asked again
+
+
 def capabilities(refresh=False):
     """What this machine can run. Cached for a day; `doctor` refreshes it."""
     path = os.path.join(cache_dir(), "capabilities.json")
     if not refresh and os.path.exists(path) and time.time() - os.path.getmtime(path) < 86400:
         with open(path, encoding="utf-8") as fh:
-            return json.load(fh)
-    caps = {"python3": True, "os": platform.system().lower(), "cores": os.cpu_count() or 1,
+            cached = json.load(fh)
+        if cached.get("caps_version") == CAPS_VERSION:      # a newer Froglet Compute asks about more (unity)
+            return cached
+    caps = {"caps_version": CAPS_VERSION, "python3": True, "os": platform.system().lower(), "cores": os.cpu_count() or 1,
             "python": platform.python_version()}
     caps["numpy"] = _has_module("numpy")
     torch_ok = False

@@ -423,7 +423,8 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
     done = rc == 0 and (progress is None or float(progress) >= 1.0)
     _save_unit(job, folder, unit, run_dir, c, sha, done=done)
     if rc not in (0, None) and stopped == "budget":
-        stopped = f"failed (exit {rc}; see {log_path})"
+        why = (L.read_json(os.path.join(run_dir, "result.json"), {}) or {}).get("reason")
+        stopped = f"failed (exit {rc}): {why}" if why else f"failed (exit {rc}; see {log_path})"
     count = _read_metric(c.get("count"), run_dir)
     score = _read_metric(c.get("score"), run_dir)
     return {"job": job["id"], "epoch": epoch, "unit": unit["id"], "stopped": "finished" if done else stopped, "rc": rc,
@@ -558,6 +559,9 @@ def run(args):
                                                                           ([L.untrusted(base)] if L.untrusted(base) else []))
             if why:
                 L.log("this request cannot run: " + "; ".join(why), False)
+                if req is not None and base is None:
+                    L.log(f"(read the jobs on {', '.join(queue)}; a run made by a newer console needs this computer's "
+                          "Froglet Compute updated: run the Install line again)", False)
                 return 2
             job = R.derive(base, req)
         elif not args.job and not getattr(args, "no_requests", False):

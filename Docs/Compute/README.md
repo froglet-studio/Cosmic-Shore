@@ -400,6 +400,11 @@ matches, a population of AIs, the best kept. Froglet Compute now starts it with 
 - **A manual run** for a purple pair names the pair, the intensity and the number of matches
   (`args: {mode, vessel, intensity}`, `budget.tries` = matches); `manual_runs.problems()` refuses anything else.
   The console's New run gives the line for PowerShell or Terminal, or sends it to the team's computers with Unity.
+- **A pasted line always runs the newest code**: commands typed into `~/.froglet-compute/app` (`run --request`,
+  `unity`, `request`, `doctor`) fetch the install ref first and, when its Tools/Compute is newer than the installed
+  copy (`app/.tree`, written by the setup), run that newer copy from `~/.froglet-compute/fresh`. A run made by a newer
+  console no longer fails with "no search named unity-train" on an older install (Shombith hit it 2026-10-28). The
+  capability cache is asked again when Froglet Compute learns a new capability (`CAPS_VERSION`).
 - **Before the merge**: the project copy is built from `origin/ai`, which has the trainer's 22 new modes only once
   this branch is merged. Until then the job lays the trainer's folders (`Assets/_Scripts/Utility/AITraining/`,
   `Assets/_SO_Assets/AI Training/`) from this computer's install ref over that copy, and only while `ai` has not
