@@ -74,6 +74,12 @@ what the carve-out silently broke — see the traps below.
   (`SwarmInstance.ElementLaw`) so the look, the index and the proxies agree, and draw a heart with the crystal's OWN
   materials (`CrystalHeartDraw`), never with a shader's copy of its look. When you change any lifeform law, grep the
   three producers (`SwarmTickJob`, `BuilderColonyFauna.BuildFrame`, `SubstrateTickJob`) and the NCA creature.
+- **Moving ARMOUR between elements moves the DIET with it.** An armoured plant is no food outside a Frenzy
+  (`Fauna.IsInedibleShield`), so the element that wears the shield is the element no grazer eats. When the law moved
+  the armour from Charge to Mass, the Swarm cell's Inner whale, penned to a band that grew only Mass Borromean, lost
+  all its food, and no gate said so. The swarm generator's check that the band could pay its egg bill was simply never
+  run (Docs/ECOSYSTEM.md §65.7). After any change to which element is armoured, list every PENNED grazer
+  (a swarm band, a substrate pen, a mode's sector) and the element of the only flora it can reach.
 - **A SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY.** Both shield
   meshes are built from the box HALF-extents x `CIRCUMSCRIBING_SCALE` (3), so a prism of full
   size `S` gets a semi-axis of `1.5 S` — **3x the box's own extent**. The octahedron's vertices
