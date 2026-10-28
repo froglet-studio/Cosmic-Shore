@@ -20,8 +20,8 @@ MonoBehaviour:
   ovalShortest: 0.2
   ovalLongest: 1.1
   ovalMaxSharpness: 8
-  throatDiameter: 20
-  mouthDiameter: 40
+  throatDiameter: 7.1
+  mouthDiameter: 35.6
   keyRampSeconds: 0.5
   rideExitMultiplier: 1.2
   rideSpeedTunnelScale: 5
@@ -61,11 +61,11 @@ MonoBehaviour:
   trunkGrainLines: 22
   branchCount: 6
   branchLength: 2.4
-  branchThickness: 0.28
+  branchThickness: 0.139
   branchUp: 28
   branchZone: 0.85
   branchSymmetry: 0.45
-  branchForks: 2
+  branchForks: 3
   branchGrowSeconds: 0.5
   omniOn: 1
   networkReach:
@@ -76,17 +76,17 @@ MonoBehaviour:
     element: 2
     UseFloor: 1
     Floor: 0.05
-  omniCount: 3
-  labyrinthBranchPointsMin: 3
+  omniCount: 7
+  labyrinthBranchPointsMin: 16
   labyrinthBranchPointsMax: 12
-  labyrinthOpeningsMin: 5
-  labyrinthOpeningsMax: 30
-  labyrinthRadiusMin: 53
-  labyrinthRadiusMax: 289
-  labyrinthSpread: 360
+  labyrinthOpeningsMin: 16
+  labyrinthOpeningsMax: 50
+  labyrinthRadiusMin: 100
+  labyrinthRadiusMax: 531
+  labyrinthSpread: 273
   labyrinthRandomness: 0.45
-  labyrinthDiameter: 24.4
-  labyrinthMouthDiameter: 18.5
+  labyrinthDiameter: 10.5
+  labyrinthMouthDiameter: 13.9
   rootTip: 0.309
   rootGnarl: 0.779
   rootBarkVisibility: 0.645
