@@ -44,6 +44,8 @@ on `claude/awesome-dirac-hssan7` with no wire change of its own, as the build th
 artifacts) and 17-18 (the Meerkat); keeping 18 would have let an 18 build, which has no `NetPilot`, join one that does.
 **20** (2026-10-27, the Ys-bleeding-edge promote) - no wire change of its own: the build that carries both 19s, so a
 bleeding-edge 19 build (no `AiD`) cannot join a Ys-bleeding-edge 19 build (with it).
+**21** (2026-10-27, `cece/lucid-brown-ykcmhu`) - `R_VesselActionHandler.NetElementBase` and `NetElementBasePublished`:
+a hull's base element levels, so they travel with it when it changes machines (`ElementHandover`).
 **22** (2026-10-28, `claude/adoring-cerf-m94x1o`; 21 is taken on `cece/lucid-brown-ykcmhu`) - `MeerkatWormholeNetworkRelay`'s
 `n_roots`: each network of roots a Meerkat grows from an omnicrystal (seed, trunk size, frame, the omnicrystal taken) and
 its rider's way out (`R_VesselActions/MEERKAT.md` §7).
