@@ -517,7 +517,7 @@ namespace CosmicShore.Gameplay
             // A hull prism is a mover's: it must not queue behind a growing corridor for its creation completion.
             prism.CompletesAsLiveRibbon = true;
 
-            int at = target.Prism ? _prisms.IndexOf(target.Prism) : -1;
+            int at = IndexOfHullPrism(target.Prism);
             if (at >= 0)
             {
                 _prisms[at] = prism;
@@ -534,6 +534,19 @@ namespace CosmicShore.Gameplay
             FMODOneShotVolumeHelper.PlaySFXOneShot(_reactorDefinition.RegrowSound, prism.transform.position, 1f);
             HullPrismRegrown?.Invoke(prism);
             return true;
+        }
+
+        /// <summary>
+        /// Where <paramref name="prism"/> sits in the hull list, by REFERENCE, or -1 when it left the hull (the hold took
+        /// it) or was never laid. Never by Unity equality: a destroyed prism compares equal to null and to every other
+        /// destroyed one, so a lost slot would read as "taken" and its regrowth would count the plating twice.
+        /// </summary>
+        int IndexOfHullPrism(Prism prism)
+        {
+            if (ReferenceEquals(prism, null)) return -1;
+            for (int i = 0; i < _prisms.Count; i++)
+                if (ReferenceEquals(_prisms[i], prism)) return i;
+            return -1;
         }
 
         // ── Wake ─────────────────────────────────────────────────────────────

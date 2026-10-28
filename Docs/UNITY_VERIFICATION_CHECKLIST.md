@@ -128,7 +128,7 @@ open, so `/verify-unity` did not run.
 
 **Verify in editor:**
 1. Let `ArkReverse.fbx`, `ArkReverse.rig.json` and `ArkReverseModel.asset` import. Run the edit-mode tests
-   `ArkModelTests` (8 tests): all pass.
+   `ArkModelTests` (13 tests, shared with the entry above): all pass.
 2. Fly the Wander toy → **With Ark**. When the veil lifts, the Ark is the scallop-backed mothership (the valve
    opening aft, eight jets in the stern gape), not the spindle of plates. It sits level, nose forward along its
    course, at about 196 u from nose to jets.
@@ -150,7 +150,8 @@ open, so `/verify-unity` did not run.
    Leaving a cell (it speeds up) the jets draw in; entering one they fan out. At a steady course everything eases
    back to rest within about a second. Nothing clips through a ring or a plate.
 6. Let a herbivore swarm graze the hull: prisms vanish from their sockets and the hull integrity drops (the Ark is
-   lost when its last socket prism goes, as with the spindle). The jaws' blades are grazed where they are, not where they were laid.
+   lost when its last socket prism goes, as with the spindle). The jaws' blades are grazed where they are, not where they
+   were laid. Emptied sockets regrow at the reactor's fixed rate (the entry above).
 7. Console: no "[Ark] The Ark model's frame does not match its rig table" warning (that would mean the FBX import
    frame drifted from the table), and no "has no bone" warning.
 
