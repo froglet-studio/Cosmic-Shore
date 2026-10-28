@@ -756,11 +756,10 @@ trio, and the traps).
   ANCHOR**, which is what
   makes "what does this element do to the plant" one comparison rather than four independent
   fits: **TIME** is that anchor (9.11 volume per plate, 1 : 0.59 : 0.15),
-  **MASS** is more VOLUME, ARMOURED, with SIZE (§65): the anchor's plate at the law's Mass volume
-  (2.09×, every axis ×1.2786, `5.97 × 3.53 × 0.90`, the anchor's 1 : 0.59 : 0.15 kept - it was the
-  CHUNKIEST plate, 8.00× at 1 : 0.83 : 0.50, until the chunky plate was retired), on a membrane GROWN
-  ×3.836 so its octahedra are inscribed in the anchor's flush tiling (radius 213 against 56; heart
-  clear of its octahedra 24.8 u against the 12.44 u swing),
+  **MASS** is ARMOURED and its shield carries its volume (§65): the anchor's plate at x0.64
+  (`3.00 × 1.77 × 0.45`, the anchor's 1 : 0.59 : 0.15 kept; it was the CHUNKIEST plate, 8.00× at
+  1 : 0.83 : 0.50, until the chunky plate was retired), on a membrane spread x1.925 so its octahedra
+  and its heart's swing clear - radius 107, inside Space's 111 (shielded 1.19x the anchor's volume),
   **SPACE** is more ROOM — its MEMBRANE is **2×** the anchor's, so its plant spans **222 against
   111** and its plate is `12.98 × 1.53 × 0.46` at 8.50:1 and the *same* volume (a `k×` membrane
   fits a `k×` footprint, so holding the volume drives the thickness down by `k²`: same plant
@@ -771,7 +770,7 @@ trio, and the traps).
   Mass. *A check that has to be scoped is usually telling you something true about the thing you
   scoped out*: the chunkiness rule was scoped off Charge because Charge's body was the octahedron,
   and now nothing is chunky at all. The element spread across one species
-  is **2.61×** in plant volume (Space 2,623 → Mass 6,853), so a cell that rolls all
+  is **3.8×** in plant volume (Mass 867 → Time 3,279; Mass shows 3,900 shielded), so a cell that rolls all
   four is pricing an AVERAGE rather than a plant; and Space's 0.46 thickness is under
   `PrismScaleAnimator`'s serialized `minScale` 0.5, surviving only because `Flora.AddHealthBlock`
   calls `Prism.AdmitTargetScale` first — the same rope the thin Space struts hang from. Authored by
@@ -913,11 +912,14 @@ trio, and the traps).
   passes, and armoured mass leaves the cell's targeting grids. The **second** half is geometry: a shield is the
   CIRCUMSCRIBING octahedron (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3` on the box HALF-extents, reaching
   **1.5 x leafSize**, 4.5x the volume), so **an armoured species must be fitted for a body 3x its prism's reach** - and
-  **MASS HAS SIZE** ("mass has size, it needs to add volume and it needs the crystal clearance. lets keep it
-  consistent"): a Mass plant takes the anchor's (Time's) plate at the law's Mass volume - every axis x1.2786, the shape
-  kept, the "chunky" plate retired - and is GROWN until its octahedra clear (the lattice and the Borromean membrane
-  scale; a growth-rule plant is the Time plant grown whole), then grown or SEATED again until its heart's full swing
-  (`ElementalArmour.HeartSwingClearance`, 12.44 u) clears them. **Every heart is seated clear** of its own body: the
+  **the shield IS Mass's volume, and SPACE ALWAYS OUT-SPANS MASS** ("space should always have greater span but
+  significantly less volume, more spindly, and thinner where it is thickest. the shielding should increase the volume of
+  mass"; then "fit Mass under Space"): a Mass plate is the anchor's (Time's) shape at **x0.64 on every axis** - the
+  largest whose shields clear on a flush tiling spread under Space's narrowest span (2x), 2 / (3 x 1.03) - so it shows
+  **1.18x** the anchor's volume shielded while its box is 0.26x; the plant spreads only until its shields and then its
+  heart's full swing (`ElementalArmour.HeartSwingClearance`, 12.44 u) clear, never as far as Space, or its heart is
+  SEATED. The "chunky" plate is retired, and Mass leaves the volume average (Charge, Time and Space keep theirs), so a
+  Mass plant is light food and a cell's prism-volume ladder reads less of it. **Every heart is seated clear** of its own body: the
   swing to an armoured plant's octahedra, the crystal's seat (2.55 u) to anyone else's boxes - which also fixed the
   phyllotactic collars that sat ON their crystals (clear radius 0 on all 32 configs). Fitters: `fit_shield_clearance.py`
   (gyroid, Schwarz P), `fit_quasicrystal_strut_sizes.py`, `measure_borromean_minimal_surface.py`, and the gates
@@ -1091,9 +1093,9 @@ trio, and the traps).
   species up for COMPARISON, this is a WORLD you meet them in. **The Borromean four earn their
   place by saying that sentence a different way**: theirs are the fleet's only elements each
   FITTED rather than typed (Time the anchor, Mass the chunkiest plate, Space the same volume at
-  8.5:1 on twice the membrane, Mass the anchor's plate grown x1.28 on a membrane grown until its shields
-  clear, Charge the anchor's plate all danger - §65), a
-  **2.6x** volume spread and a **3.8x** span spread across ONE species, said by a COMPACT surface
+  8.5:1 on twice the membrane, Mass the anchor's plate x0.64 on a membrane spread until its shields
+  clear, inside Space's, Charge the anchor's plate all danger - §65), a
+  **3.8x** volume spread and a **2x** span spread across ONE species, said by a COMPACT surface
   that is FINISHED when it closes rather than by a fractal cage that traces until its budget
   runs out. They are also the one part of this cell it does NOT author:
   `author_borromean_flora_assets.py` owns that species' configs in every cell that grows it, so
@@ -1136,9 +1138,9 @@ trio, and the traps).
   `Docs/ECOSYSTEM.md §57`.
 - **THE FOUR ELEMENTAL IDENTITIES OF A PLANT — one rule, and a species does not get to invent
   them.** **CHARGE makes every prism danger** (a state, §65; it was Charge's armour until 2026-10-28);
-  **MASS is the most cumulative prism volume, ARMOURED, with SIZE** - the species' own leaf SHAPE at
-  the heaviest volume, the plant grown whole (it was the most CUBIC leaf, the "chunky" plate, until
-  §65 retired it); **SPACE is the highest ASPECT RATIO** —
+  **MASS is ARMOURED and its shield carries its volume** - the species' own leaf SHAPE at x0.64, its
+  shield 4.5x the box, the plant always spanning less than Space (it was the most CUBIC leaf, the
+  "chunky" plate, until §65 retired it); **SPACE is the highest ASPECT RATIO** —
   its long axis trades that cumulative volume for the **bounding volume of the assembly**; **TIME
   is the fastest clock**, growing *and* reproducing fastest (§38). Two are about SHAPE and two are
   not, which is the design rather than an accident of what was easy: Charge's identity is a state
@@ -1152,8 +1154,8 @@ trio, and the traps).
   Rampage's play-tested ladder, on Hesperides and on the Lattice cell. The assembly half falls out
   of the same sentence with **no new constant**: `ReachScale = volume^(-1/3)` for Space and the
   neutrals, i.e. a plant spending a fixed amount of material, so Space reaches **1.35x**; and since
-  §65 **Mass grows WHOLE** (`ReachScale(Mass)` = the neutral reach x the Mass axis scale 1.2786 - it
-  drew in to 0.82x, the chunky plate's assembly half), so a Mass plant is the Time plant scaled. Like its two predecessors it **cannot
+  §65 a growth-rule **Mass plant is the Time plant scaled x0.64** (`ReachScale(Mass)`), so Space
+  always out-spans it. Like its two predecessors it **cannot
   be authored** — the leaf is authored per CONFIG while the element is ROLLED per plant — so it is
   resolved at `LifeForm.Initialize` and scoped to `Flora`; it needed one new seam,
   **`LifeForm.OnElementResolved()`**, because `ResolveShieldPeriod` runs AFTER `BindEmbeddedParts`

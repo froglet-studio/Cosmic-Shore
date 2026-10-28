@@ -7222,12 +7222,12 @@ scale twice, which made the Shark read 195.1 across when it is 133.8:
 | Clawfish | fauna | 2.16 | 2.16 | 2.16 | 2.16 |
 | Coral | flora | 2.09 | 2.87 | 1.52 | 2.36 |
 | Frond | flora | 2.09 | 2.87 | 1.52 | 2.36 |
-| Gyroid | flora | 1.48 | 2.16 | 2.29 | 2.14 |
+| Gyroid | 5.759 x 2.175 x 0.959 on a x2.099 lattice (plate x0.64; lattice x1.343 clears its shields by 10%, spread to x2.099 for the swing; Space x3.19) | the Time plate | `fit_shield_clearance.py --check` |
 | Lantern | flora | 2.00 | 2.73 | 1.46 | 2.25 |
 | Nerve | flora | **4.60** | **4.60** | **4.60** | **4.60** |
 | Pine | flora | 3.48 | 3.48 | 3.48 | 3.48 |
 | QuadFish | fauna | 1.75 | 1.75 | 1.75 | 1.75 |
-| Quasicrystal | flora | 2.05 | 3.26 | 2.97 | 2.73 |
+| Quasicrystal | 14.08 x 0.64 x 0.64 strut on a x1.936 lattice (Space x2); heart SEATED 22 u in (`FloraVariantTuning.HeartSeatInset`, `QuasicrystalAssembler.ConfigureHeartSeat`), swing clear 13.7 u | 22 x 1 x 1 | `fit_quasicrystal_strut_sizes.py --check` |
 | Reed | flora | 1.73 | 2.37 | 1.26 | 1.95 |
 | Rosette | flora | 2.50 | 3.45 | 1.83 | 2.83 |
 | SchwarzP | flora | **1.16** | 1.80 | 1.87 | 1.83 |
@@ -11767,7 +11767,7 @@ cells. In the order a player would meet them:
 | Helicoid | Scurry | 57,840 | 9,427 | 0 | 0 |
 | Wildlife cage 1–4 | Wildlife Liberation | 9,206–13,956 | 2,598–7,788 | 104–884 | 0 |
 | Zephyr | freestyle cell | 52,917 | 6,611 | 2,294 | 0 |
-| Gyroid | Joust I4, Crystal Capture | 40,851 | 6,487 | 1,771 | 2 |
+| Gyroid | 5.759 x 2.175 x 0.959 on a x2.099 lattice (plate x0.64; lattice x1.343 clears its shields by 10%, spread to x2.099 for the swing; Space x3.19) | the Time plate | `fit_shield_clearance.py --check` |
 | Breakwater | Breakwater | 4,575 | 6,015 | 15 | 0 |
 | Hesperides | freestyle garden cell | 12,060 | 5,744 | 2,879 | 101 |
 | TorusKnot | Joust | 1,500 | **6,020** | 1,497 | 0 |
@@ -12438,7 +12438,7 @@ keep its last size, skin or needles). `LightFauna`'s body ratio is taken by GIRT
 
 ---
 
-## 65. MASS is armoured and has size; CHARGE makes every prism danger (Garrett, 2026-10-28)
+## 65. MASS is armoured and its shield carries its volume; CHARGE makes every prism danger; SPACE always out-spans Mass (Garrett, 2026-10-28)
 
 *"We are going to loose the 'chunky' prisms now that we have these scaled up versions of mass. Lets also shift the
 shielding affect from charge to mass so the prisms will need further adjustment to account for the mass prisms being
@@ -12446,13 +12446,17 @@ shielded. Then the new charge affect will be to make all of its prisms danger pr
 elements have."* Then: *"go with option B, mass has size, it needs to add volume and it needs the crystal clearance.
 lets keep it consistent"* - and the four calls: the quasicrystal's heart is SEATED (not the whole plant grown), the
 gyroid's octagon ring stays danger on a Mass plant, the fauna follow the same law, and every lifeform is updated and
-inspected for existing errors on the way.
+inspected for existing errors on the way. Then, seeing Mass grown to out-span Space (the Borromean's Mass membrane 427 u
+across against Space's 222): *"no space should always have greater span but significantly less volume, more spindly,
+and thinner where it is thickest. the shielding should increase the volume of mass"* - and, asked whether Mass keeps
+the law's x2.09 by widening Space or fits under Space's spans, *"fit Mass under Space"*. Option B's growth is therefore
+bounded: a Mass plant spreads until its shields and its heart's swing clear, and never as far as Space.
 
 ### 65.1 The law (`ElementalArmour`, `FloraElementalForm`)
 
 | element | its prisms | its form |
 |---|---|---|
-| **Mass** | **shielded**, re-armoured one per `ElementalArmour.ShieldPeriod` (1 s) for life | the anchor's (Time's) shape at the law's Mass volume - every axis x1.2786 (`MassAxisScale`), `MassLeafAnisotropy` 1 (was 0.45, the "chunky" plate) - and the plant is GROWN: `ReachScale(Mass)` = the neutral reach x1.2786 (it drew IN to x0.82) |
+| **Mass** | **shielded**, re-armoured one per `ElementalArmour.ShieldPeriod` (1 s) for life; the shield, 4.5x the box, **is its volume** | the anchor's (Time's) shape at **x0.64 on every axis** (`MassAxisScale`, `MassLeafVolume` 0.2301 - box 0.26x, shielded **1.18x** the neutral), `MassLeafAnisotropy` 1 (was 0.45, the "chunky" plate); a growth-rule Mass plant is the Time plant x0.64 (`ReachScale`), a fitted one spreads only until its shields and its heart clear, inside Space's span |
 | **Charge** | **every prism danger**, never shielded (a shield clears danger, `PrismStateManager.ApplyShieldState`) | the species' own form |
 | Space, Time | as authored | Space's aspect and reach (§51), Time's clock |
 
@@ -12460,24 +12464,34 @@ Every element keeps its AUTHORED danger prisms (a gyroid's octagon ring, a shark
 danger: `LifeForm.ShieldRegenCoroutine` skips them now. It used to shield every prism, so it stripped a Charge gyroid's
 ring within its first cycle - an existing error, fixed here.
 
-**Mass has SIZE, so an armoured body is fitted for its octahedra.** A shield is the octahedron circumscribing the box
-(semi-axis 1.5 x the prism, 4.5x its volume, `ElementalArmour.ShieldReach`). A Mass plant takes the anchor's plate at
-the law's volume and is grown until its octahedra clear, then grown or SEATED again until its heart's full swing clears
-them: `ElementalArmour.HeartSwingClearance` = 11.85 u (the Mass crystal's depth prisms at the top of their columns,
-§64.8) x1.05 = **12.44 u**. Every other heart keeps the crystal's seat, **2.55 u**, clear of its prisms' boxes
-(`HeartSeatClearance`, the figure the quasicrystal seat is proven against).
+**An armoured body is fitted for its octahedra, inside Space's span.** A shield is the octahedron circumscribing the box
+(semi-axis 1.5 x the prism, 4.5x its volume, `ElementalArmour.ShieldReach`), so on a flush tiling a plate k x the
+anchor's needs the plant spread 3k for its shields to clear, and shows 4.5k^3 the anchor's volume. Space's narrowest
+span is 2x the anchor's (the Borromean membrane, the quasicrystal lattice), so the largest plate whose shields clear
+inside it, with the 3% margin, is k = 2 / (3 x 1.03) = 0.647 - taken to **0.64** so the spread stays strictly inside.
+That one number is the Mass law: plate x0.64, shielded x1.18, the plant spread only as far as its shields and then its
+heart's full swing need - `ElementalArmour.HeartSwingClearance` = 11.85 u (the Mass crystal's depth prisms at the top of
+their columns, §64.8) x1.05 = **12.44 u** - or the heart SEATED where spreading cannot reach it (the quasicrystal).
+Every other heart keeps the crystal's seat, **2.55 u**, clear of its prisms' boxes (`HeartSeatClearance`, the figure the
+quasicrystal seat is proven against).
+
+**What fitting Mass under Space costs, stated.** Charge, Time and Space keep their volumes exactly (§51's normalisation,
+with §51's Mass in it, so nothing else re-sizes). MASS leaves that average: its box is 0.26x the neutral one, so a Mass
+plant is LIGHT food (a second pass eats only the box) and a cell's prism-volume ladder reads less of it than it did -
+cells growing Mass flora reach their thresholds later. For a few hours of 2026-10-28 Mass was the Time plate x1.2786
+grown x3.2-4.3 for its shields ("mass has size"); that is what this replaced.
 
 ### 65.2 Where each family stands
 
 | family | Mass | Charge | gate |
 |---|---|---|---|
-| Gyroid | 13.578 x 5.129 x 2.263 on a x3.166 lattice (plate x1.2786, lattice grown to 10% octahedra clearance, then whole x1.18 for the swing) | the Time plate | `fit_shield_clearance.py --check` |
-| Schwarz P | 6.034 x 3.733 x 1.278 on x3.199 | the Time plate 4.72 x 2.92 x 1 (flush) | `fit_shield_clearance.py`, `fit_schwarz_p_leaf_sizes.py` |
-| Quasicrystal | 28.128 x 1.278 x 1.278 strut on a x3.868 lattice; heart SEATED 36.5 u in (`FloraVariantTuning.HeartSeatInset`, `QuasicrystalAssembler.ConfigureHeartSeat`) | 22 x 1 x 1 | `fit_quasicrystal_strut_sizes.py --check` |
-| Borromean | 5.969 x 3.532 x 0.903 plates on a membrane grown x3.836 (radius 213 vs 56); heart clear 24.8 u | the anchor | `verify_borromean_surface_tables.py` |
-| Nested gyroid | quotes the gyroid's Mass; heart clear 23.3 u. 4 of 71 plates' shields fuse between nested sheets (~7%), the same 4 the old Charge armour shipped with | quotes the gyroid's | `author_nested_gyroid_flora_assets.py --check` |
-| Phyllotactic (8) | the Time plant grown whole (x1.2786); shields fuse at the stalk's joints and in its whorls exactly where its boxes meet by design, as Charge's did | the Time plant | `measure_flora_heart_clearance.py --check` |
-| Branching (4) | the Time plant grown whole; a leaf that curls into the heart's clearance is not laid | the Time plant | `measure_flora_heart_clearance.py --check` |
+| Gyroid | 5.759 x 2.175 x 0.959 on a x2.099 lattice (plate x0.64; lattice x1.343 clears its shields by 10%, spread to x2.099 for the swing; Space x3.19) | the Time plate | `fit_shield_clearance.py --check` |
+| Schwarz P | 3.02 x 1.868 x 0.639 on x2.702 (shields clear at x1.601, the swing at x2.702; Space x5) | the Time plate 4.72 x 2.92 x 1 (flush) | `fit_shield_clearance.py`, `fit_schwarz_p_leaf_sizes.py` |
+| Quasicrystal | 14.08 x 0.64 x 0.64 strut on a x1.936 lattice (Space x2); heart SEATED 22 u in (`FloraVariantTuning.HeartSeatInset`, `QuasicrystalAssembler.ConfigureHeartSeat`), swing clear 13.7 u | 22 x 1 x 1 | `fit_quasicrystal_strut_sizes.py --check` |
+| Borromean | 2.996 x 1.773 x 0.453 plates on a membrane x1.925 (radius 107 against Space's 111 and Time's 56); heart clear 12.45 u | the anchor | `verify_borromean_surface_tables.py` |
+| Nested gyroid | quotes the gyroid's Mass: radius 135 against Space's 205, heart clear 24.8 u; its only touching shields are 5 pairs of the authored octagon ring, which never shields (the 4 sheet-to-sheet fusions the old Charge armour had are gone) | quotes the gyroid's | `author_nested_gyroid_flora_assets.py --check` |
+| Phyllotactic (8) | the Time plant scaled x0.64 (Space reaches x1.29 the Time plant's); shields fuse at the stalk's joints and in its whorls exactly where its boxes meet by design, as Charge's did | the Time plant | `measure_flora_heart_clearance.py --check` |
+| Branching (4) | the Time plant scaled x0.64; a leaf that curls into the heart's clearance is not laid | the Time plant | `measure_flora_heart_clearance.py --check` |
 | Mandelbulb (4) | see 65.5 | | `measure_mandelbulb_flora.py` |
 | Wall | **retired** (Garrett, 2026-10-28: "the wall flora can retire so the serpent wall feels less synthetic"): its leaf WAS the Serpent's own `WallBlock Variant`, so the vessel's wall read as a plant. Prefab, four configs, the Spawn Matrix row, the Codex entry and `AssembledFlora.PreviewWall` deleted; `WallAssembler` stays (the Serpent's). | | |
 
@@ -12501,8 +12515,9 @@ collar also lay sideways (identity rotation while the plant grows up its axis); 
 
 Measured by `Tools/Build/measure_flora_heart_clearance.py` (the shipped `TryPreviewGrowth` run in Amoebius's content
 runtime on each canonical config, `Tools/Build/flora_heart_harness`): **52/52 hearts clear** - Mass 12.44-44.6 u to its
-octahedra, every other element 2.55-57.3 u to its boxes. It costs prisms where a plant curls into its own heart: the
-Mass Cacti 103 against Time's 136, the Mass Pine 313 against 374.
+octahedra, every other element 2.55-57.3 u to its boxes. It costs prisms where a plant curls into its own heart, and a x0.64
+Mass plant curls into it most: the Mass Cacti grows 55 leaves against Time's 136, the Mass Pine 201 against 374, the
+Mass Rosette 54 against 73.
 
 **Also found while measuring, and NOT fixed** (both are the family's own growth rule, not the armour):
 - **Pine and Cacti leaves interpenetrate one another heavily** (Pine: 685 interpenetrating pairs among 374 leaves, the worst
@@ -12565,6 +12580,11 @@ Mass, re-derived for a law-size prism on a shell grown until the chain clears, 3
 3,295,000 → 2,720,000).
 A rough offline estimate (cap x plant budget x the configs' raw leaf, averaged over each palette - the runtime law
 is not applied, so treat it as a direction): Blob's mature flora +23%, Wildlife Blitz cell 4's +44%, Tollway's -15%.
-The Tandava reef was re-balanced in its generator (the Borromean lays 230 prisms to keep its plant's food; §64.5).
+**Tandava** (Garrett: "meals shrink to the reef", then, shown the pacing cost, "grow the reef, keep meals"): a meal
+was 4,000 x the eggs' mass ratio (25,521), which only the chunky Mass Borromean could hold. It is now stated in the
+reef's own terms - 90% of its biggest plant - and the reef is grown a further x1.4 whole (`REEF_GROWTH`, PLANT_SCALE
+1.855 -> 2.597) so that plant holds a meal of 26,483 again: the serpent's tested pacing (free runs 191-234 s against
+the 409 s ceiling) is unchanged. The harness's "it rose where it stood" bound now allows the coils' roam that the cell
+check above it already allows.
 
 Before / after, the growth-rule families: `Docs/Ecology/Armour/growth_flora_before_after.png`.

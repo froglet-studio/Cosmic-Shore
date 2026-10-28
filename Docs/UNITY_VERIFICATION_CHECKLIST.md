@@ -16671,17 +16671,17 @@ Amoebius), `fit_shield_clearance.py --check`, `fit_quasicrystal_strut_sizes.py -
    `PhyllotacticFlora.cs`, `BranchingFlora.cs`, `AssembledFlora.cs`, `QuasicrystalAssembler.cs`, `Fauna.cs`,
    `LightFauna.cs`, `Boid.cs`, `WormSegmentFauna.cs`; the Test Runner's three suites above pass.
 2. Spawn Matrix, one plant per element of the Gyroid, Schwarz P, Quasicrystal and Borromean. **Pass:** every Mass plant
-   is shielded (octahedra) and visibly BIGGER than its Time sibling with plates of the same shape (no chunky slabs), and
-   its octahedra do not overlap one another; its crystal's depth segments swing without touching any octahedron (the
+   is shielded (octahedra) on plates SMALLER than its Time sibling's (x0.64, the same shape, no chunky slabs), spread
+   a little wider than Time but never as wide as its Space sibling, and its octahedra do not overlap one another; its crystal's depth segments swing without touching any octahedron (the
    quasicrystal's heart sits in a clear pocket). Every Charge plant is unshielded and every one of its prisms is a
    danger prism (danger material), with Time-sized plates. A Mass gyroid's octagon ring stays danger for as long as you
    watch (it used to turn shielded within a second).
 3. Hesperides, or the Spawn Matrix phyllotactics (Arbor, Spire, Rosette, Lantern). **Pass:** every plant's crystal sits
-   just below its root collar on a short limb, not buried inside it; the Mass plant is the Time plant's shape about 1.28x
-   bigger, shielded, with no cube-ward stems; its crystal's swing clears every octahedron. The Rosette's lowest whorl no
+   just below its root collar on a short limb, not buried inside it; the Mass plant is the Time plant's shape at about
+   0.64x, shielded (its octahedra make it read bigger), with no cube-ward stems, and smaller than the Space plant; its crystal's swing clears every octahedron. The Rosette's lowest whorl no
    longer cups over its crystal.
 4. A branching species (Cacti, Pine). **Pass:** no leaf sits on or around the crystal; the Mass plant is the Time plant
-   about 1.28x bigger, shielded.
+   at about 0.64x, shielded.
 5. Release a Charge and a Mass shark, tadpole and QuadFish. **Pass:** every Charge body prism is a danger prism; a
    Charge shark still devours from its JAWS (the mouth did not move to its belly). Every Mass body prism (not the teeth)
    is shielded; a hit sheds the shield and a second hit destroys the prism, and within a few seconds a shed prism
@@ -16691,3 +16691,5 @@ Amoebius), `fit_shield_clearance.py --check`, `fit_quasicrystal_strut_sizes.py -
 7. A Mass tadpole school. **Pass:** each tadpole is about 3.7x the Time tadpole with one wide, short shielded prism
    trailing its crystal, the crystal's swing clear of that shield; the school keeps its spacing (no bodies overlapping).
 8. The Spawn Matrix lists no Wall flora; a Serpent's wall still builds as before.
+9. Tandava: the reef plants are about 1.4x wider than before and the serpent still changes form within its first
+   minute and completes its cycle in about 3-4 minutes if nobody stops it.
