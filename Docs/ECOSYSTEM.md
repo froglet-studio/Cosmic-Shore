@@ -12579,8 +12579,28 @@ in its crystal, as §64.8 records. Measured through the game's own `AssignLineag
 
 ### 65.5 The Mandelbulb family
 
-*(In progress on this branch: its Charge armour fit - `CHARGE_SHIELD_SHRINK`, `CHARGE_DASH`, the armoured ladder - moves to
-Mass, re-derived for a law-size prism on a shell grown until the chain clears, 3 x LengthFactor < 1 at 0.30.)*
+Its Charge armour fit (a 0.60 cross-section shrink and a 0.45 dash) moved to Mass, re-derived for the law
+(`mandelbulb_flora_model.py`, `measure_mandelbulb_flora.py`, `author_mandelbulb_flora_assets.py`). A Mass prism is the
+Time prism x0.64 on every axis, and the Mass shell is spread only as far as Space's span allows. The cap is 0.97x Space,
+measured at 0.92-0.93 on all four species. It is a per-element `MandelbulbFlora.ElementalForm.ShellScale` (1.954 on
+Mass, 1 on every other element), the one C# addition. The dash follows from that cap: `LengthFactor` 0.512, or 0.58 on
+the Watershed, which strides at its own walk step.
+
+Clearing a ribbon's own chain would need 3 x LengthFactor < 1, a shell of 2.13x, which is past Space's 1.29. So **Mass
+shields touch along each ribbon's chain by design**, as the growth-rule families' do; the tool reports this and does not
+gate it. Shielded, Mass is 1.18-1.19x Time's volume. The Mass heart's Fall stop is derived rather than authored: the
+12.44 u swing plus the species' neutral stop x0.64. Heart to nearest shield: 13.33 / 13.68 / 14.66 / 13.63 u
+(FractalFoliage / CoralBloom / Watershed / Apollonia). CoralBloom/Mass lays 7 dives, not 8: an eighth left a 20.7 u
+hole in its Fall.
+
+Gates: `author_mandelbulb_flora_assets.py --check` and `verify_mandelbulb_flora_tables.py` pass (the latter needs
+`DOTNET_ROOT=/opt/dotnet8`). `measure_mandelbulb_flora.py --check` fails 4 bounds, all CoralBloom Space/Time Fall bounds
+that already failed on bleeding-edge. The Apollonia/Mass ladder, red before, now passes.
+
+**Downstream:** the Arboretum cell regenerated. Tollway's intensity ladder needs its anchor plants to grow with the
+court, and the Borromean's lighter Mass element took its mean plant (2,512) under the Cacti's (3,000), so intensities 3
+and 4 swap: intensity 3 is now the Borromean, intensity 4 the Cacti. Intensity 2, which the card art renders, is
+unchanged.
 
 ### 65.6 Assets and generators changed
 
