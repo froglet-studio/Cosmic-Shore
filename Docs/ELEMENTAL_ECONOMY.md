@@ -71,6 +71,22 @@ did not exist. The base band **[0, 10] is the pot**, and every transfer is a mov
 A consequence worth stating: the deficit band **[−5, 0) is now reachable by transients only** —
 the exact mirror of the overcharge rule (only transients reach 10–15), and for the same reason. A
 permanent loss bottoms out at empty.
+## 2.0 A hull's petals travel with it (2026-10-27)
+
+Element levels are simulated on the machine that OWNS a hull. Any hand-over moves the hull to another machine: the arena
+pilot swap (`PilotSwap`), a crew seat change, the Cellular Duel swap. Until 2026-10-27 the new owner simply kept whatever
+its own replica held, so crystals the old owner had collected did not come along. Garrett: *"that issue is true for any
+vessel swapping situation ... it should be resolved."* It is resolved by `ElementHandover`:
+- The owner publishes the hull's **base** levels (`R_VesselActionHandler.NetElementBase`, owner-write, to a hundredth of a
+  petal).
+- The machine that takes the hull over adopts them, and the latched level-5 unlocks, on gaining ownership, before it
+  simulates or publishes anything (`R_VesselElementalAbilityHandler.AdoptHandover`).
+- Only the base is petals, so only the base travels, and **the hand-over neither mints nor loses a petal**:
+  - a temporary buff ends (a buff is never a transfer);
+  - the comeback bonus is recomputed by the new owner;
+  - an unsettled fraction of a petal is forgotten, as a re-seed already forgets it (§2), since it was never taken.
+- Limit: a crystal collected in the network tick just before the hand-over can miss it.
+
 ## 2.1 Where the material comes from — and why a fight can produce none
 
 **The pot starts EMPTY, in every mode.** This is the design, confirmed on the playtest report
