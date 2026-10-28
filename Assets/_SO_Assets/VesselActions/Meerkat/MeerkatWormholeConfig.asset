@@ -16,12 +16,12 @@ MonoBehaviour:
   bendMaxDegrees: 150
   shaftMin: 60
   shaftMax: 600
-  bendRadius: 60
+  bendRadius: 10
   ovalShortest: 0.2
   ovalLongest: 1.1
   ovalMaxSharpness: 8
-  throatDiameter: 8
-  mouthDiameter: 26
+  throatDiameter: 20
+  mouthDiameter: 40
   keyRampSeconds: 0.5
   rideEntryMultiplier: 1
   rideMidMultiplier: 2.5
@@ -49,29 +49,7 @@ MonoBehaviour:
   bridgeSpindleThickness: 0.25
   bridgeShimmer: 0.5
   bridgeWhite: 0.45
-  formedLook: 1
-  fieldStrength: 6
-  fieldPitch: 0
-  fieldDrag: 0.5
-  fieldTwist: 0
-  fieldGlass: 1
-  fieldGlassIndex: 0.05
-  fieldGrazing: 0.9
-  fieldFlow: 0
-  fieldInner: 0.1
-  fieldOuter: 0.15
-  fieldProfile: 1
-  fieldRibs: 0.25
-  fieldRibSharpness: 3
-  fieldRibTravel: 1.2
-  fieldRibRings: 16
-  fieldRibLines: 12
-  aiWormhole: 1
-  aiStraightMinDistance: 300
-  aiBentMinDistance: 120
-  aiShapeSeconds: 0.3
-  aiNoise: 0
-  trunkVisibility: 1
+  trunkVisibility: 0
   trunkTop: 1.5
   trunkBase: 1.9
   trunkBark: 0.22
@@ -130,6 +108,29 @@ MonoBehaviour:
   carryTwist: 0.5
   fireSpeed: 120
   fireGlideSeconds: 3
+  swallowPrismCap: 256
+  formedLook: 1
+  fieldStrength: 6
+  fieldPitch: 0
+  fieldDrag: 0.5
+  fieldTwist: 0
+  fieldGlass: 1
+  fieldGlassIndex: 0.05
+  fieldGrazing: 0.9
+  fieldFlow: 0
+  fieldInner: 0.1
+  fieldOuter: 0.15
+  fieldProfile: 1
+  fieldRibs: 0.25
+  fieldRibSharpness: 3
+  fieldRibTravel: 1.2
+  fieldRibRings: 16
+  fieldRibLines: 12
+  aiWormhole: 1
+  aiStraightMinDistance: 300
+  aiBentMinDistance: 120
+  aiShapeSeconds: 0.3
+  aiNoise: 0
   formEvent:
     Guid:
       Data1: 0
