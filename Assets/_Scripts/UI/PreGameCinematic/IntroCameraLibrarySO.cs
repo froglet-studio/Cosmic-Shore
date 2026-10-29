@@ -35,9 +35,12 @@ namespace CosmicShore.UI
 
         [Header("Look")]
         [Tooltip("Height of each letterbox bar as a fraction of the screen.")]
-        [SerializeField, Range(0f, 0.2f)] float letterbox = 0.085f;
-        [Tooltip("Caption font. Empty uses TextMesh Pro's default.")]
+        [SerializeField, Range(0f, 0.2f)] float letterbox = 0.1222f;
+        [Tooltip("Caption font: the title and the lower third's name. Empty uses TextMesh Pro's default.")]
         [SerializeField] TMP_FontAsset captionFont;
+        [Tooltip("The smaller lines' font: the tagline, the objective and the lower third's line. Empty uses the " +
+                 "caption font.")]
+        [SerializeField] TMP_FontAsset detailFont;
         [SerializeField] float titleFontSize = 110f;
         [SerializeField] float taglineFontSize = 32f;
         [SerializeField] float objectiveFontSize = 24f;
@@ -50,6 +53,7 @@ namespace CosmicShore.UI
         public float ScaleMultiplier => scaleMultiplier;
         public float Letterbox => letterbox;
         public TMP_FontAsset CaptionFont => captionFont;
+        public TMP_FontAsset DetailFont => detailFont;
         public float TitleFontSize => titleFontSize;
         public float TaglineFontSize => taglineFontSize;
         public float ObjectiveFontSize => objectiveFontSize;

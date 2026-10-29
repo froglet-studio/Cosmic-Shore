@@ -356,32 +356,48 @@ static class TickJobHarness
             Check(bad2 > 0 && over > 0, "negative control fires: without the proxy suspension the index and the real bodies double-count");
         }
 
-        Console.WriteLine("\nR11c-2. a puffed shield member stays shielded in the index (round 11d-2): the look shows danger, the mass keeps its shield");
+        Console.WriteLine("\nR11c-2. the element law on the members (Docs/ECOSYSTEM.md §65.7): Mass is armoured, Charge is all danger; a striking shield member stays shielded in the index (round 11d-2)");
         {
-            var core = SortHarness.GameSwarm(plans, 2, 11, true, SortHarness.Game(plans));   // the Space body: its Charge members wear the shield
-            var j = new SwarmTickJob(core, Settings(), 10f) { SwimTarget = core.SwimTarget };
+            // the rule, exhaustively: every element x look tier x strike state, census and scripted
+            int lawWrong = 0, scriptedWrong = 0;
+            for (int eff = 0; eff < 4; eff++)
+            for (int look = 0; look < 3; look++)
+            for (byte strike = 0; strike < 6; strike++)
+            {
+                int tier = SwarmTickJob.MemberTier(eff, look, false, strike, out bool sh);
+                bool strikes = strike == 2;
+                bool ok = eff switch
+                {
+                    0 => tier == 1 && !sh,                                  // Charge: every prism danger, never shielded
+                    1 => sh && tier == (strikes ? 1 : 2),                   // Mass: armoured; a strike shows danger and keeps it
+                    _ => !sh && tier == (strikes ? 1 : 0),                  // Space, Time: the behaviour's tier
+                };
+                if (!ok) lawWrong++;
+                // a scripted plan (Tandava) keeps its designed body: round 11d's rule, untouched by the law
+                int old = eff == 0 ? (look == 2 ? 2 : look == 1 ? 1 : 0) : (look == 2 ? 2 : 0);
+                int st = SwarmTickJob.MemberTier(eff, look, true, strike, out bool ssh);
+                if (st != (strikes ? 1 : old) || ssh != (old == 2)) scriptedWrong++;
+            }
+            Check(lawWrong == 0, "every census member: Charge shows danger and never shields, Mass is shielded (danger shown while it strikes), Space and Time are their behaviour");
+            Check(scriptedWrong == 0, "a scripted plan's designed tiers (Tandava's armour and protectors) are untouched by the law");
+
+            // live: a mixed-element body, a vessel hounding its Mass members; the index files exactly the member's shield
+            var core = SortHarness.GameSwarm(plans, 2, 11, true, SortHarness.Game(plans));
+            var set = Settings(); set.Bestiary = true;
+            var j = new SwarmTickJob(core, set, 10f) { SwimTarget = core.SwimTarget };
             j.Prime();
             for (int t = 0; t < 300; t++) Tick(j, inline: true);
             int cap = j.Instances.Length;
             var idx = new FakeVirtualIndex(); var led = new SwarmEntryLedger(cap);
             float R = core.Plan.Radius;
-            // aim the charge at the shield members' own centroid (the Space body's Charge members sit on its flank)
-            var c0 = Vector3.Zero; int ns = 0;
-            for (int i = 0; i < cap; i++) if (j.Instances[i].Alive && j.Instances[i].Shielded) { c0 += core.Pos[i]; ns++; }
-            c0 = ns > 0 ? c0 / ns : core.Anchor;
-            float maxSt = 0f;
-            int puffedShield = 0, shieldTicks = 0, ledgerWrong = 0, oldRuleWrong = 0, flips = 0, violations = 0;
+            int massTicks = 0, massBare = 0, chargeTicks = 0, chargeWrong = 0, ledgerWrong = 0, flips = 0, violations = 0;
             var lastShield = new bool[cap]; var lastBirth = new float[cap];
             for (int t = 0; t < 160; t++)
             {
-                // a vessel charges through the body (ticks 20-59) and leaves: members puff above DangerEnter, then calm
-                // ticks 20-59 a vessel hounds the shield members; then it leaves
                 bool rush = t >= 20 && t < 60;
+                var c0 = core.Anchor;
                 if (rush)
-                {
-                    // it noses at one shield member at a time (the first living one), so the case exists at any density
-                    for (int i = 0; i < cap; i++) if (j.Instances[i].Alive && j.Instances[i].Shielded) { c0 = core.Pos[i] - new Vector3(1f, 0, 0); break; }
-                }
+                    for (int i = 0; i < cap; i++) if (j.Instances[i].Alive && core.EffectiveElement(i) == 1) { c0 = core.Pos[i] - new Vector3(1f + 0.2f * (60 - t), 0, 0); break; }
                 Vector3 pc = rush ? c0 : c0 + new Vector3(100f * R, 0, 0);
                 j.Preds[0] = new SwarmPredator { C = pc, V = rush ? new Vector3(1f, 0, 0) : Vector3.Zero, R = 4.5f };
                 j.PredCount = 1;
@@ -393,22 +409,20 @@ static class TickJobHarness
                 {
                     var s = j.Instances[i];
                     if (!s.Alive) { lastShield[i] = false; continue; }
-                    if (s.Shielded) maxSt = Math.Max(maxSt, core.Startle[i]);
+                    int eff = core.EffectiveElement(i);
+                    if (s.CurMolt <= 0f && eff == 1) { massTicks++; if (!s.Shielded) massBare++; }
+                    if (s.CurMolt <= 0f && eff == 0) { chargeTicks++; if (s.Tier != 1 || s.Shielded) chargeWrong++; }
                     if (t == 0) { lastShield[i] = s.Shielded; lastBirth[i] = s.BirthTick; }
-                    if (s.Shielded) shieldTicks++;
-                    if (s.Shielded && s.Tier == 1) puffedShield++;
                     if (led.Ids[i] < 0 || idx.E[led.Ids[i]].shield != s.Shielded) ledgerWrong++;
-                    if (s.Shielded && s.Tier != 2) oldRuleWrong++;   // what round 11a's `shield = Tier == 2` would have filed
                     if (s.BirthTick == lastBirth[i] && s.Shielded != lastShield[i] && s.CurMolt <= 0f) flips++;
                     lastShield[i] = s.Shielded; lastBirth[i] = s.BirthTick;
                 }
             }
-            Console.WriteLine($"  {shieldTicks} shielded member-ticks, {puffedShield} of them puffed (showing danger); index entries filed wrong {ledgerWrong}; " +
-                              $"round 11a's rule would have filed {oldRuleWrong} unshielded; shield changes outside a molt {flips}; peak startle on a shield member {maxSt:F2}");
-            Check(puffedShield > 0, "the charge puffs shield members (tier 1 shown) - the case exists");
-            Check(ledgerWrong == 0 && violations == 0, "every index entry's shield bit is the member's mass shield, puffed or not; every member counted once");
-            Check(oldRuleWrong == puffedShield && oldRuleWrong > 0, "negative control: the old Tier == 2 rule files every puffed shield member unshielded");
-            Check(flips == 0, "a member's shield does not blink with its puff");
+            Console.WriteLine($"  {massTicks} Mass member-ticks ({massBare} bare), {chargeTicks} Charge member-ticks ({chargeWrong} not danger or shielded); " +
+                              $"index entries filed wrong {ledgerWrong}; shield changes outside a molt {flips}");
+            Check(massTicks > 0 && massBare == 0 && chargeTicks > 0 && chargeWrong == 0, "live: every Mass member is shielded and every Charge member shows danger, unshielded");
+            Check(ledgerWrong == 0 && violations == 0, "every index entry's shield bit is the member's mass shield, striking or not; every member counted once");
+            Check(flips == 0, "a member's shield does not blink with a strike");
             var x = new SwarmInstance { Flags = SwarmInstance.Pack(true, 1, 3, 2, 2, true) };
             var y = new SwarmInstance { Flags = SwarmInstance.Pack(true, 2, 3, 2, 2) };
             Check(x.Flags == (y.Flags & ~(3u << 1) | (1u << 1) | (1u << 9)) && x.Shielded && !y.Shielded
@@ -513,6 +527,103 @@ static class TickJobHarness
             }
             double pms = sw.Elapsed.TotalMilliseconds / F;
             Console.WriteLine($"  the job's shape on the .NET pool ({Environment.ProcessorCount} cores, batches of 128, no Burst): {pms:F3} ms wall per frame");
+        }
+
+        Console.WriteLine("\nR65. the heart is drawn as the crystal it is: SwarmHeartPose is the proxy chain (Docs/ECOSYSTEM.md §65.7)");
+        {
+            var j = Make(plans, 1, 5);
+            for (int t = 0; t < 120; t++) Tick(j, inline: true);
+            const float hs = 3.55f;
+            var rng = new Random(65);
+            double worstPos = 0, worstBasis = 0; int n = 0, leaks = 0;
+            for (int i = 0; i < j.Instances.Length; i++)
+            {
+                var s = j.Instances[i];
+                if (!s.Alive) continue;
+                float alpha = (float)rng.NextDouble();
+                var up = (i & 7) == 0 ? Vector3.Normalize(s.CurFace) : j.BY;   // the upAlt branch too
+                int shown = SwarmHeartPose.DisplayedElement(s, alpha, out float factor);
+                SwarmHeartPose.PoseMatrix(s, shown, alpha, s.BirthTick + 1000f, 5f, up, j.BZ, hs, out var m);
+                // the proxy chain, independently: root at lerp(Prev, Cur), LookRotation(face, up), scale = the crystal size
+                var p = Vector3.Lerp(s.PrevPos, s.CurPos, alpha);
+                var z = SwarmBodyPose.Face(s, alpha);
+                var u = MathF.Abs(Vector3.Dot(z, Vector3.Normalize(up))) > 0.98f ? j.BZ : up;
+                var x = Vector3.Normalize(Vector3.Cross(u, z));
+                var y = Vector3.Cross(z, x);
+                float k = hs * MathF.Max(factor, 0.001f);
+                worstPos = Math.Max(worstPos, Vector3.Distance(new Vector3(m.C3X, m.C3Y, m.C3Z), p));
+                worstBasis = Math.Max(worstBasis, Vector3.Distance(new Vector3(m.C0X, m.C0Y, m.C0Z), x * k)
+                                                  + Vector3.Distance(new Vector3(m.C1X, m.C1Y, m.C1Z), y * k)
+                                                  + Vector3.Distance(new Vector3(m.C2X, m.C2Y, m.C2Z), z * k));
+                for (int e = 0; e < 4; e++)
+                {
+                    if (e == shown) continue;
+                    SwarmHeartPose.PoseMatrix(s, e, alpha, s.BirthTick + 1000f, 5f, up, j.BZ, hs, out var other);
+                    if (other.C3W != 0f) leaks++;
+                }
+                n++;
+            }
+            Console.WriteLine($"  {n} members: |root - lerp(Prev, Cur)| max {worstPos:E2} u, basis vs LookRotation(face, up) x {hs} max {worstBasis:E2}");
+            Check(n > 0 && worstPos < 1e-3 && worstBasis < 1e-3, "R65a the crystal root stands where the proxy's crystal does, turned LookRotation(face, up), at the one crystal size");
+            Check(leaks == 0, "R65a a heart is drawn only in the list of the element it shows (the other three draw the zero matrix)");
+
+            // R65b the molt: Mass -> Time, swept; the element switches at the midpoint where the crystal has shrunk to ~0
+            var molt = j.Instances.First(q => q.Alive);
+            molt.Flags = SwarmInstance.Pack(true, 0, 1, 3, 0);
+            bool switchOk = true; float atMid = 0f, atEnd = 0f;
+            for (int q = 0; q <= 20; q++)
+            {
+                float mt = q / 20f;
+                molt.PrevMolt = molt.CurMolt = mt;
+                int shownE = SwarmHeartPose.DisplayedElement(molt, 0.5f, out _);
+                SwarmHeartPose.PoseMatrix(molt, shownE, 0.5f, molt.BirthTick + 1000f, 5f, j.BY, j.BZ, hs, out var mm);
+                float size = new Vector3(mm.C0X, mm.C0Y, mm.C0Z).Length() / hs;
+                if (shownE != (mt < 0.5f ? 1 : 3)) switchOk = false;
+                if (MathF.Abs(mt - 0.5f) < 0.051f) atMid = MathF.Max(atMid, size);
+                if (q == 20) atEnd = size;
+            }
+            Console.WriteLine($"  molt Mass -> Time: switches at the midpoint {switchOk}, size there {atMid:F3}, after {atEnd:F3}");
+            Check(switchOk && atMid < 0.11f && MathF.Abs(atEnd - 1f) < 1e-3f, "R65b a molt shrinks the old crystal away and re-forms the new one from the midpoint (no pop)");
+
+            // R65c every living member's heart is drawn EXACTLY ONCE across the four published lists, molting ones included
+            int twice = 0, never = 0, molting = 0;
+            var all = j.Instances.ToArray();
+            for (int q = 0; q < all.Length; q += 3)
+                if (all[q].Alive) { all[q].Flags = SwarmInstance.Pack(true, 0, 1, 2, 0); all[q].PrevMolt = 0.3f; all[q].CurMolt = 0.7f; molting++; }
+            var lists = new System.Collections.Generic.List<int>[4];
+            for (int e = 0; e < 4; e++) lists[e] = new System.Collections.Generic.List<int>();
+            for (int q = 0; q < all.Length; q++)
+            {
+                if (!all[q].Alive) continue;
+                lists[all[q].HeartFrom].Add(q);
+                if (all[q].HeartTo != all[q].HeartFrom) lists[all[q].HeartTo].Add(q);   // the tick job's rule: listed under both
+            }
+            int Drawn(int q, bool ignoreMolt)
+            {
+                int c = 0;
+                for (int e = 0; e < 4; e++)
+                    foreach (int slot in lists[e])
+                    {
+                        if (slot != q) continue;
+                        var sq = all[q];
+                        if (ignoreMolt) { sq.Flags = SwarmInstance.Pack(true, 0, e, e, 0); }
+                        SwarmHeartPose.PoseMatrix(sq, e, 0.5f, sq.BirthTick + 1000f, 5f, j.BY, j.BZ, hs, out var dm);
+                        if (dm.C3W != 0f) c++;
+                    }
+                return c;
+            }
+            int twiceNeg = 0;
+            for (int q = 0; q < all.Length; q++)
+            {
+                if (!all[q].Alive) continue;
+                int c = Drawn(q, false);
+                if (c > 1) twice++;
+                if (c == 0) never++;
+                if (Drawn(q, true) > 1) twiceNeg++;
+            }
+            Console.WriteLine($"  {molting} molting of {all.Count(q => q.Alive)}: drawn twice {twice}, never {never}; ignoring the molt draws {twiceNeg} twice");
+            Check(molting > 0 && twice == 0 && never == 0, "R65c every living heart is drawn exactly once across the four element lists");
+            Check(twiceNeg == molting, "R65c negative control: a pose that ignores the molt draws every molting heart twice");
         }
 
         Console.WriteLine("\nR11e. the entity ledger: one entity per slot, shown exactly while the member lives (§19.2)");

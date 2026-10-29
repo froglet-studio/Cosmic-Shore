@@ -366,3 +366,37 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     The plate fills bottom to top, so anything the icon moves or strikes reads as part of the meter when it runs
     vertically; run it ACROSS (a hull flies left to right, as the Sparrow's does) and send anything it throws off
     sideways or down, clear of the marks. Check where every plate mark lands on the card before placing the act.
+
+## 2026-10-28 - the Scarab's Charge card: scale, then flat, then the house style
+
+56. **When an ability has a size, draw it to scale and say so.** The first Scarab options drew the punch's plate as a
+    bar a little taller than the hull. Garrett: "lets show the relative size of the volume affected relative to the
+    scarab". Measure it from the prefabs (the hull collider radius, the multipliers on the ability and its projectile
+    prefab, any mirroring) and lay the card out in one px-per-metre scale; write the measurement into the spec's
+    comment. If the true scale makes the hull a speck, show that honestly first (Garrett kept the true-size ~9 px hull
+    over a 2x one) and offer the exaggeration only as a labelled option.
+
+57. **What an ability destroys is negative space; what it spares is drawn whole outside its reach.** "put whole prisms
+    outside and shattered prisms that convey the destructive direction inside", then "have a negative space prisms
+    inside". A broken thing that shows DIRECTION is slivers pointing the way it was flung (a forward chevron), not
+    quarters burst out from the centre - that reads as an explosion in place.
+
+58. **A region is a filled flat shape, never an outline box.** An outlined rectangle round the volume read as a frame
+    or a screen ("lets not have a box. lets go more flat"); a grey fill read as disabled. The polished cards (sheets
+    `sparrow.png`, `rhino.png`) are one bold WHITE mass, parts split by knock-out gaps, grey only for "not ready". Before
+    sending options, set the candidate beside those sheets and match that weight ("more cohesive with the rest of our
+    polished icons"); give a region a shape with character (A3's bubble: square against the plate, rounded behind).
+
+59. **Hold the main shape at one bold size; show a size LEVEL by what it is measured against.** The Switch's ring grows
+    2.5x with Mass; drawing it at the live size left a speck of a card at Mass 1 (the card is sized for Mass 10). The
+    ring stays big and the BALL shrinks inside it by the same ratio - still to scale, and the card is always one bold
+    mass. The HUD scales that one part about its own centre (rebind.py's point-anchored child). Garrett took it in one
+    round.
+
+60. **Draw a game object from its own mesh, never from a generic idea of it.** The Ball Forge options drew the omni
+    crystal as a gem (a hexagonal bipyramid), and Garrett's answer was "that is not the omni crystal". The omni crystal
+    is an exploded rhombicosidodecahedron (`Assets/_Models/OmniCrystalExport1_8-21-25.fbx`, 122 plates). Project its
+    outer plate faces down a pentagon's axis, keep the pentagon, its five squares and the five triangles, and shrink
+    each plate about its own centre so the gaps read at icon size. That matches `ElementIcons/OmniCrystal_Active.png`
+    (`specs/scarab.py` `omni_crystal`). Before drawing any crystal, prism, ball or creature, find its FBX or its
+    shipped mark first.

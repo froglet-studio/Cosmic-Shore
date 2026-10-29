@@ -127,7 +127,9 @@ namespace CosmicShore.Engine.Rendering
     /// <summary>A post-process volume in the scene (global or bounded by colliders).</summary>
     public class Volume : MonoBehaviour
     {
-        [SerializeField] VolumeProfile sharedProfile;
+        /// <summary>The profile asset, shared by every volume that names it (original contract: a public field; setting it
+        /// is how PilotSightSuppression hands its runtime profile to its volume).</summary>
+        [SerializeField] public VolumeProfile sharedProfile;
         VolumeProfile _instance;
         public bool isGlobal = true;
         public float priority;

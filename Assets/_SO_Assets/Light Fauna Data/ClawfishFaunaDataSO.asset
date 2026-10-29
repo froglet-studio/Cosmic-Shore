@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34ff5921d2e247ff9716e66242269962, type: 3}
   m_Name: ClawfishFaunaDataSO
   m_EditorClassIdentifier: 
-  detectionRadius: 60
-  separationRadius: 24
-  consumeRadius: 36
+  detectionRadius: 60.08
+  separationRadius: 39.39
+  consumeRadius: 59.08
   behaviorUpdateRate: 2
   separationWeight: 8
   goalWeight: 1.6
   minSpeed: 18
   maxSpeed: 32
   rotationLerpSpeed: 7
+  feedingClusterRadius: 19.69
+  attackRange: 24.62

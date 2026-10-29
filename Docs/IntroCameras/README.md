@@ -7,16 +7,21 @@ approved all 35 intros on 2026-10-26 and asked for them to be shuffled within fa
 
 ## What happens before a match
 
-`MiniGameHUD` calls `PreGameCinematicController.Play(center, pilot, mode, vessels, accent)` when the
-connecting screen closes, as before. The controller:
+`MiniGameHUD` calls `PreGameCinematicController.Prepare(...)` while the connecting screen still covers the arena
+(the first frame its arena-ready poll passes), then `Play(center, pilot, mode, vessels, accent)` when the screen
+opens. Steps 1-3 run in `Prepare`, so the reveal frame only starts the camera (Docs/MENU_REDESIGN_B.md section 99.4;
+`Play` prepares itself when nothing was prepared for its mode). The controller:
 
 1. finds the mode's **family** in `Resources/IntroCameraLibrary.asset` (`IntroCameraLibrarySO`);
 2. picks one of the family's intros at random, never the one that family played last;
 3. gathers the arena once (`IntroCameraScene.Gather`): the nearest cell's centre and membrane radius, every
-   vessel and its domain, every `Crystal`, every `RaceGateRing` in course order, and the eight biggest
-   mesh renderers (wrecks, cacti, posts; vessels, the membrane and anything tiny are skipped);
-4. flies the intro's shots (`IntroCameraMath.Evaluate`) under letterbox bars, with the MODE's title,
-   tagline, objective and lower third (`IntroModeWords`), whichever family intro is playing;
+   vessel and its domain, every live `Crystal` (`Crystal.Active`), every `RaceGateRing` in course order, and -
+   only when the picked intro frames a `Landmark` - the eight biggest mesh renderers (wrecks, cacti, posts;
+   vessels, the membrane and anything tiny are skipped). The caption overlay is built once and reused;
+4. flies the intro's shots (`IntroCameraMath.Evaluate`) under letterbox bars (132 units, easing in over
+   `barsInSeconds`), with the MODE's title, tagline, objective and lower third (`IntroModeWords`), whichever
+   family intro is playing, laid out as Rev 33 board A draws them. The clock steps at most `maxClockStep`
+   (1/30 s) a frame, so a hitch slows the camera instead of jumping it;
 5. hands off to the pilot exactly as before: 1.5 s, 0.3 s on Skip, the gamepad South button skips.
 
 A mode in no family (Tandava, anything new) plays the old orbit unchanged.

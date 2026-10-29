@@ -5,7 +5,8 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The four elemental crystal prefabs (Charge / Mass / Space / Time). Every lifeform is
+    /// The four elemental crystal prefabs (Charge / Mass / Space / Time), and the one size every
+    /// elemental crystal is (<see cref="CrystalWorldScale"/>). Every lifeform is
     /// guaranteed to drop an elemental-crystal powerup on death; the authored per-prefab crystal
     /// is the normal source, and this set is the fallback the runtime guard
     /// (<see cref="CosmicShore.Gameplay.LifeFormCrystal"/>) provisions from when a lifeform is
@@ -29,40 +30,30 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Default skim-collection effects for runtime-provisioned crystals.</summary>
         public SkimmerCrystalEffectSO[] CollectionEffects => collectionEffects;
 
-        [Header("Heart sizing — the DEFAULT only; a species authors its own")]
-        [Tooltip("World scale a lifeform heart renders at when its species has authored no size " +
-                 "of its own. Every shipped lifeform DOES author one, per element, in its " +
-                 "variant tuning (FaunaVariantTuning/FloraVariantTuning.HeartWorldScale) and " +
-                 "sized to that lifeform's body — so this is the floor under a config nobody " +
-                 "has sized yet, and under the runtime-provisioned misconfiguration path. " +
-                 "3 is the historical flora value, which sits mid-band.")]
-        [Min(0.01f)] [SerializeField] float defaultHeartWorldScale = 3f;
-
         /// <summary>
-        /// The world scale a heart renders at when its species authors none. There is no level
-        /// curve: a lifeform's heart size is a property of the lifeform (Docs/ECOSYSTEM.md §40.2).
-        /// </summary>
-        public float DefaultHeartWorldScale => defaultHeartWorldScale;
-
-        /// <summary>
-        /// The largest heart world scale that still pays its full collect reward.
+        /// ONE SIZE FOR EVERY ELEMENTAL CRYSTAL: the world scale of a Charge, Mass, Space or Time
+        /// crystal wherever it appears - a lifeform's heart, a petal knocked out of a hull, a
+        /// mode's arena scatter, a toy's pickup. Every one of them is worth exactly one petal
+        /// (<see cref="CosmicShore.Gameplay.SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal"/>),
+        /// so there is nothing for a size to say, and every crystal says the same thing.
         ///
-        /// <para>The reward is <c>min(worldScale × levelPerUnitScale, maxLevelGainPerCrystal)</c>
-        /// (<see cref="CosmicShore.Gameplay.SkimmerAdjustElementLevelByCrystalEffectSO"/>), so at
-        /// the shipped 0.1 / 0.5 it saturates at exactly 5.0 world scale. Heart size is now
-        /// AUTHORED PER LIFEFORM and the reward follows it — a bigger creature's heart is worth
-        /// more — which only works while the whole authored band stays under this ceiling: past
-        /// it, two visibly different hearts pay the same, i.e. a size the player can see and a
-        /// reward they cannot.</para>
+        /// <para><b>Taken from the Elemental Converter</b> (the omni combine on the Ark screen,
+        /// <see cref="CosmicShore.Gameplay.OmniCombinePlayer"/>), whose crystals are the right
+        /// size for an elemental crystal (Garrett, 2026-10-26). There each crystal is a share of
+        /// the omni, and the Charge crystal - the reference the game's four models are equalized
+        /// to - is 0.503 of the omni's half-extent (<c>OmniCombineData.json</c>: 0.808 against
+        /// 1.606). The omni's size is fixed: <c>Crystal.prefab</c> at root 10, the omni 37 of
+        /// the 39 crystal managers spawn, whose body is 0.72 u of half-extent per unit of root
+        /// scale against the Charge body's 1.02. So 0.503 x 10 x 0.72 / 1.02 = 3.55.
+        /// <c>ElementalCrystalSizeTests</c> measures all three meshes and holds this to the
+        /// converter's ratio.</para>
         ///
-        /// <para>The 4% margin is deliberate headroom, not slack:
-        /// <c>Tools/Build/author_lifeform_heart_sizes.py</c> fails the build if any authored
-        /// heart exceeds it. Do NOT answer an overshoot by retuning
-        /// <c>levelPerUnitScale</c> — that constant is shared with every non-lifeform elemental
-        /// crystal (the Wanderway conveyor, Dog Fight's arena scatter). Compress the size
-        /// mapping instead.</para>
+        /// <para>This is the ROOT's world scale. The four prefabs' model children still carry
+        /// their per-element corrections (Mass 1.38, Space 1.34, Time 1.42), so one root scale
+        /// renders one apparent size for every element. The prefabs' own root scale is this
+        /// value, so a crystal instantiated and left alone is already the right size.</para>
         /// </summary>
-        public const float MaxSafeHeartWorldScale = 4.8f;
+        public const float CrystalWorldScale = 3.55f;
 
         // The four droppable elements - Element also has None and Omni, which are NOT valid
         // lifeform powerup elements.

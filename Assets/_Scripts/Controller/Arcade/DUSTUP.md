@@ -1,5 +1,9 @@
 # Dustup (`GameModes.Dustup = 59`)
 
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`): the
+> same airframe, dust and modes. "Butterfly" below
+> means that airframe.
+
 The Butterfly's **CHARGE** game — a dust duel. The Butterfly carries no gun; its one weapon is the
 **Scale Dust**, a capsule that hangs **below** the hull while it is in Dust mode. So a rival is hit
 by flying **over** them. Every opposing pilot the dust passes through takes the Charge-scaled
@@ -31,8 +35,9 @@ It is one of the Butterfly's four element games, one per element and one per gen
    first and gets on top — the Boneyard's wrecks are somewhere to lose a pursuer and somewhere to
    wait above a canyon.
 3. **Pass through them.** One pass is one dusting. The dust drains their elements (−0.33 per element
-   at rest, scaled by your **Charge** from 0.5× to 2×, doubled again at Charge 5 *Monarch*), so a
-   dusted rival also flies worse for four seconds.
+   at rest, scaled by your **Charge** from 0.5× to 2×; Charge 5 is now *Toll Gate*, the wormhole's toll,
+   not a deeper bite), so a dusted rival also flies worse for four seconds. An ALLY the dust passes
+   through is cleansed instead (silence and temporary debuffs lifted).
 4. **Break off and come round again.** A skimmer runs its vessel effects on **entry**, so hovering
    over a rival scores the pass that caught them and nothing after it.
 

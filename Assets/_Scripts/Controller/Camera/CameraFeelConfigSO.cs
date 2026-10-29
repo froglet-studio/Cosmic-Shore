@@ -322,7 +322,7 @@ namespace CosmicShore.Gameplay
             new() { vessel = VesselClassType.Grizzly, gForce = 0.85f, weight = 1.25f },
             new() { vessel = VesselClassType.Serpent, gForce = 0.9f, weight = 1.1f },
             new() { vessel = VesselClassType.Orca, gForce = 0.9f, weight = 1.3f },
-            new() { vessel = VesselClassType.Butterfly, gForce = 0.9f, weight = 0.9f },
+            new() { vessel = VesselClassType.TigerMoth, gForce = 0.9f, weight = 0.9f },
             new() { vessel = VesselClassType.Starling, gForce = 0.4f, weight = 0.5f },
         };
 

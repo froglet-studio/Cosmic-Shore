@@ -1396,9 +1396,15 @@ def surface_for(element, w0=0.0, w1=0.0, w2=0.0, width=192, tables=None, degree=
 
 # The fleet law, as ratios against TIME (the neutral form - Time's identity is the clock,
 # not a shape). Read straight off FloraElementalForm's shipped constants:
-#   Mass  1.8347 / 0.8778 = 2.0901      Space 0.4097 / 0.8778 = 0.4667
-ELEMENT_VOLUME = {"Charge": 1.0, "Mass": 2.0901, "Space": 0.4667, "Time": 1.0}
-ELEMENT_ANISOTROPY = {"Charge": 1.0, "Mass": 0.45, "Space": 2.11, "Time": 1.0}
+#   Mass  0.2301 / 0.8778 = 0.2621 (0.64^3)      Space 0.4097 / 0.8778 = 0.4667
+# MASS's volume is its SHIELD's since Docs/ECOSYSTEM.md §65 (Garrett, 2026-10-28: "the shielding should increase the
+# volume of mass"; "fit Mass under Space"): its box is the neutral prism x0.64 on every axis, its octahedron 4.5x that.
+# Read through mass_armour_lib so this table cannot drift from the C#.
+import mass_armour_lib  # noqa: E402
+ELEMENT_VOLUME = {"Charge": 1.0, "Mass": mass_armour_lib.mass_axis() ** 3, "Space": 0.4667, "Time": 1.0}
+# MASS keeps the species' own SHAPE (anisotropy 1) since 2026-10-28: the "chunky" 0.45 is retired with Mass taking
+# the shield and SIZE (FloraElementalForm.MassLeafAnisotropy, Docs/ECOSYSTEM.md §65).
+ELEMENT_ANISOTROPY = {"Charge": 1.0, "Mass": 1.0, "Space": 2.11, "Time": 1.0}
 
 # THE REACH - the assembly half of the same law (FloraElementalForm.ReachScale), and the one
 # clause this family did not spend until Docs/ECOSYSTEM.md §56. `ReachScale = volume^(-1/3)`,
@@ -1422,16 +1428,49 @@ ELEMENT_ANISOTROPY = {"Charge": 1.0, "Mass": 0.45, "Space": 2.11, "Time": 1.0}
 # shorter and thicker). The walk is untouched in normalised space, so the plant is the SAME
 # prism list scaled by k - which also means the claim, being a similarity in both its radius
 # and its positions, refuses exactly the prisms it refused before.
-ELEMENT_REACH = {e: v ** (-1.0 / 3.0) for e, v in ELEMENT_VOLUME.items()}
+#
+# MASS IS THE EXCEPTION (Docs/ECOSYSTEM.md §65, FloraElementalForm.ReachScale): it is the neutral plant SCALED by its
+# leaf's axis scale, V^(+1/3) = x0.64, the same number its world prism scales by - a similarity, not paid for on the
+# cross-section, because Mass's volume is carried by its shield rather than redistributed. The ARMOUR then spreads the
+# Mass shell further (armour_growth below), but never to Space's.
+ELEMENT_REACH = {e: (v ** (1.0 / 3.0) if e == "Mass" else v ** (-1.0 / 3.0)) for e, v in ELEMENT_VOLUME.items()}
 
-# CHARGE is fitted against its ARMOUR, not its box: a Charge plant's leaves are shielded by
-# law and a shield engages the octahedron CIRCUMSCRIBING the prism, reaching 1.5 x leafSize
-# (Docs/ECOSYSTEM.md §35). Two dials, both fitted by measure_mandelbulb_flora.py --shields:
-# a UNIFORM cross-section shrink (uniform so the species' own leaf ASPECT survives, which is
-# what §51 requires of Charge), and a DASH - the prism laid shorter than the step that spaces
-# it, which is the only lever that reaches fusion along a ribbon's OWN chain.
-CHARGE_SHIELD_SHRINK = 0.60
-CHARGE_DASH = 0.45
+# MASS IS ARMOURED (Docs/ECOSYSTEM.md §65; until 2026-10-28 this was Charge's, at a 0.60 cross-section shrink and a
+# 0.45 dash). A Mass plant's prisms are shielded and a shield engages the octahedron CIRCUMSCRIBING the prism,
+# reaching 1.5 x its size on every axis, so two consecutive prisms of one curve first touch at the closed form
+# s* = 1 / (3 x LengthFactor) (measure_mandelbulb_flora.chain_touching_scale). Mass's prism is at LAW size (the neutral
+# prism x0.64 on every axis, in WORLD units, its shape kept), so the fit is not a shrink: the PLANT is spread so its
+# armour clears as far as it may - a chain clears at a DASH of MASS_ARMOUR_DASH (10% under the 1/3 cliff), which needs
+# the shell grown 1 / 0.30 = x3.33 past its reach. But SPACE ALWAYS OUT-SPANS MASS (Garrett, 2026-10-28: "space should
+# always have greater span"; "fit Mass under Space"), and x0.64 x 3.33 = 2.13 is past Space's x1.288 - so the spread is
+# CAPPED at MASS_SPAN_UNDER_SPACE of Space's shell and the dash follows from it (1/g, ~0.51 on a walking species): a
+# ribbon's shields TOUCH along its own chain, as a growth-rule plant's do at its joints by design. CHARGE is never
+# shielded (every prism a danger prism) and takes the neutral form.
+ARMOURED = ("Mass",)
+MASS_ARMOUR_DASH = 0.30
+MASS_SPAN_UNDER_SPACE = 0.97    # Mass's shell at most this x Space's: strictly inside it, the lattice fits' 3%
+
+
+def _authored_extra(species, element, key, default=0.0):
+    """One species column as authored (`extra["*"]` overridden by `extra[element]`)."""
+    extra = dict(SPECIES[species].get("extra", {}).get("*", {}))
+    extra.update(SPECIES[species].get("extra", {}).get(element, {}))
+    return extra.get(key, default)
+
+
+def armour_growth(species, element):
+    """How much further an ARMOURED element's shell is spread than its reach alone: what would dash its chain at
+    MASS_ARMOUR_DASH (a walking species strides at the law's step, so 1 / MASS_ARMOUR_DASH; a SKELETON species strides
+    at its own authored walk step, so its prism fills `step / walk` of a stride first) - CAPPED so the shell stays at
+    MASS_SPAN_UNDER_SPACE of Space's (Docs/ECOSYSTEM.md §65). The world prism stays law-sized either way (the dash is
+    1 / g of the law's prism per stride, elemental_prism). 1 for every unarmoured element."""
+    if element not in ARMOURED:
+        return 1.0
+    step = SPECIES[species]["neutral_step"]
+    walk = _authored_extra(species, element, "walk_step")
+    clears = (step / walk if walk > 0 else 1.0) / MASS_ARMOUR_DASH
+    cap = MASS_SPAN_UNDER_SPACE * ELEMENT_REACH["Space"] / ELEMENT_REACH[element]
+    return min(clears, cap)
 
 # GIRTH COMPENSATION - the one number here that is FITTED rather than derived, and the
 # reason it has to exist is worth stating: the law sets the AUTHORED prism, but what a
@@ -1457,8 +1496,8 @@ CHARGE_DASH = 0.45
 # lot in HOW they grow will need this fit; one whose concept is the same growth everywhere
 # very nearly does not.
 VOLUME_GAIN = {
-    "FractalFoliage": {"Charge": 0.7521, "Mass": 1.015,  "Space": 0.5995, "Time": 1.0},
-    "CoralBloom":     {"Charge": 0.9369, "Mass": 0.7338, "Space": 0.8659, "Time": 1.0},
+    "FractalFoliage": {"Charge": 0.7202, "Mass": 0.9009, "Space": 0.5995, "Time": 1.0},
+    "CoralBloom":     {"Charge": 0.9382, "Mass": 0.8062, "Space": 0.8659, "Time": 1.0},
 }
 
 # Fields:      field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
@@ -1495,25 +1534,14 @@ SPECIES = {
         weight_spread=1.0,
         # THE FALL (Docs/ECOSYSTEM.md §53): its dives corkscrew, doubling down on the helicoid.
         #
-        # CHARGE authors a WALK STEP, and it is an ARMOUR fit rather than a curve-family
-        # choice. A Charge prism is laid at CHARGE_DASH x the chord that spaces it and its
-        # shield reaches 1.5 x leafSize, so an armoured chain clears along its own axis only
-        # while `3 x LengthFactor < 1` - and `rules_for` sets `LengthFactor = CHARGE_DASH x
-        # step/walk_step`, which at walk_step 0 (= the law's step) is 0.45 and fuses. The
-        # Fall is where that bites, because inside 0.15 R a dive is ALONE: measured, 59 of
-        # the 60 interpenetrating armoured pairs in the core are one dive's own consecutive
-        # prisms, so the core reads as a rod. 0.045 puts the ratio at 0.30, a clean 10%
-        # under the 1/3 cliff (measured: 0.040 -> 38.7%, 0.042 -> 1.6%), and takes the core
-        # from 45.8% to 4.2%. It is NOT reachable from the dive's own dials - the overlap
-        # condition is `3 x LengthFactor` whatever the stride, which is why DiveStopRadius,
-        # DiveGirthFloor and DiveCount all measured inert or worse (the girth floor thins
-        # the cross-section, and an octahedron pair separated along its own axis does not
-        # care about the cross-section: the count stayed at 59 while the denominator fell).
-        # The plant reads as a BIGGER-dashed bead-work cage and the octahedra still close
-        # 90% of the gap they are left.
+        # Charge authored a WALK STEP here (0.045) until 2026-10-28, and it was an ARMOUR fit, not a curve-family
+        # choice: a shielded chain clears along its own axis only while `3 x LengthFactor < 1`, the dive core reads
+        # as a rod otherwise (59 of 60 fused core pairs were one dive's own chain), and the ratio is unreachable from
+        # the dive's dials. The armour moved to MASS (Docs/ECOSYSTEM.md §65), which states the same 0.30 once for
+        # every species (MASS_ARMOUR_DASH, armour_growth) - so Charge walks the law's step like Time.
         extra={
             "*": FALL_SHARED | {"dive_swirl": 8.0, "dive_axis_align": 1.0},
-            "Charge": {"dive_count": 8, "dive_angle": 52, "walk_step": 0.045},
+            "Charge": {"dive_count": 8, "dive_angle": 52},
             "Mass":   {"dive_count": 8, "dive_angle": 58},
             "Space":  {"dive_count": 8, "dive_angle": 50},
             # SEVEN dives, not eight: at eight the dive share is 24.9% against a 25% ceiling,
@@ -1570,7 +1598,9 @@ SPECIES = {
         extra={
             "*": FALL_SHARED | {"dive_swirl": 0.0, "dive_axis_align": 1.0},
             "Charge": {"dive_count": 8, "dive_angle": 56},
-            "Mass":   {"dive_count": 8, "dive_angle": 60},
+            # 7 Mass dives, not 8 (Docs/ECOSYSTEM.md §65): on the Mass shell spread only to 0.97x Space's, the eighth
+            # dive's claim left a 20.7 u hole (bound 12.7, three strides); at 7 the worst is 6.9 u, share 6.3%.
+            "Mass":   {"dive_count": 7, "dive_angle": 60},
             "Space":  {"dive_count": 8, "dive_angle": 56},
             "Time":   {"dive_count": 8, "dive_angle": 64},
         },
@@ -1610,7 +1640,8 @@ SPECIES = {
 # Under `skeleton_seeds` the curve row's field / swirl / mix / momentum / hop / seed columns
 # are UNREAD (asserted by the measure); what is authored per element is the WALK STEP (the
 # skeleton's cost is fixed by the surface: Time's 149 saddles need a coarser walk than Mass's
-# 32), the girth reference (a separatrix is short by construction, so MaxSteps/2 is a ceiling
+# 32; Charge's 0.065 was its ARMOUR dash until 2026-10-28 and it now walks Time's and Space's 0.050, a whole
+# prism per stride, Docs/ECOSYSTEM.md §65 - Mass's armour is armour_growth's), the girth reference (a separatrix is short by construction, so MaxSteps/2 is a ceiling
 # nothing reaches) and the Fall's per-element count, angle and descent gate.
 SPECIES["Watershed"] = dict(
     prefab="WatershedFlora",
@@ -1624,7 +1655,7 @@ SPECIES["Watershed"] = dict(
     extra={
         "*": FALL_SHARED | {"skeleton_seeds": 1, "dive_swirl": 0.0, "dive_axis_align": 1.0,
                             "dive_stop": 0.060, "dive_stride_ceiling": 0.70},
-        "Charge": {"walk_step": 0.065, "girth_reference": 10, "dive_count": 14, "dive_angle": 56, "dive_descent": 0.10},
+        "Charge": {"walk_step": 0.050, "girth_reference": 10, "dive_count": 14, "dive_angle": 56, "dive_descent": 0.10},
         "Mass":   {"walk_step": 0.040, "girth_reference": 27, "dive_count": 12, "dive_angle": 60, "dive_descent": 0.10},
         "Space":  {"walk_step": 0.050, "girth_reference": 22, "dive_count": 12, "dive_angle": 56, "dive_descent": 0.06},
         "Time":   {"walk_step": 0.050, "girth_reference": 14, "dive_count": 7, "dive_angle": 62, "dive_descent": 0.05,
@@ -1640,7 +1671,7 @@ SPECIES["Watershed"] = dict(
         "Time":   (2,  0, 1.00, 0.00, 0.050, 120,  4, 0.00, 0.0, 0.00,  0,  0, 60, 0.3, 2.0,  3, 1.0, 0.40, 0),
     },
 )
-VOLUME_GAIN["Watershed"] = {"Charge": 1.0369, "Mass": 1.0819, "Space": 1.3362, "Time": 1.0}   # fitted: --fit-volume
+VOLUME_GAIN["Watershed"] = {"Charge": 0.8989, "Mass": 1.0608, "Space": 1.3362, "Time": 1.0}   # fitted: --fit-volume
 
 # ── APOLLONIA — the self-similar species (Docs/ECOSYSTEM.md §54) ───────────────────────────
 #
@@ -1656,10 +1687,10 @@ VOLUME_GAIN["Watershed"] = {"Charge": 1.0369, "Mass": 1.0819, "Space": 1.3362, "
 # Nothing here walks: field / swirl / mix / momentum / hop / seed / turn / radius / run are
 # all UNREAD under gasket_levels (asserted by the measure). The neutral STEP is the reference
 # ring's chord at N_ref = 50, so LengthFactor 1 means "the ring tiles exactly"; walk_step is
-# 0 so the factor stays the Charge dash alone (a ring's prism length is set by its own
+# 0 so the factor stays the element's dash alone - Mass's armour dash, 1 elsewhere, §65 (a ring's prism length is set by its own
 # geometry and must not also take a factor that assumes a walk step). RingSamples is
 # DERIVED from the element's step, so the element's long axis is spent as ring COARSENESS:
-# Space draws a coarse polygon of blades, Mass a fine one of bricks.
+# Space draws a coarse polygon of blades (Mass drew a fine one of bricks until its shape became Time's, §65).
 SPECIES["Apollonia"] = dict(
     prefab="ApolloniaFlora",
     display="Apollonia Flora",
@@ -1714,7 +1745,7 @@ SPECIES["Apollonia"] = dict(
         # integrity 0.96 -> 0.88, which the 0.80 gate passes and the eye does not).
         "Charge": {"disc_min_radius": 0.068, "ring_flatten": 0.70, "dive_count": 3,
                    "dive_angle": 56, "ring_shrink": 0.97, "dive_stride_ceiling": 0.50},
-        "Mass":   {"disc_min_radius": 0.115, "ring_flatten": 0.70, "dive_count": 5,
+        "Mass":   {"disc_min_radius": 0.115, "ring_flatten": 0.70, "dive_count": 6,
                    "dive_angle": 60, "ring_shrink": 1.00, "dive_stride_ceiling": 0.45},
         "Space":  {"disc_min_radius": 0.044, "ring_flatten": 0.80, "dive_count": 8,
                    "dive_angle": 56, "ring_shrink": 0.92, "dive_stride_ceiling": 0.50},
@@ -1728,7 +1759,9 @@ SPECIES["Apollonia"] = dict(
         # laid last - so topping the fit up with discs puts the prisms back where they
         # failed, while topping it up with dives leaves octave 2 exactly where it was
         # (measured: 8 dives at 0.70 and 5 at 0.45 both land fit 0.91-0.93 with octave 2
-        # unmoved at 2.12 px; 5 is authored because the render reads the ARMS).
+        # unmoved at 2.12 px; 5 was authored because the render reads the ARMS). SIX since the Mass armour moved the
+        # plant (Docs/ECOSYSTEM.md §65): at 5 its 4 laid dives left the surface in 3 of 8 theta bands (the spread gate);
+        # at 6 they cover 4, at 2847 of the 2900 budget.
     },
     curves={
         # Every walk column is inert under gasket_levels and authored 0 to say so.
@@ -1739,17 +1772,18 @@ SPECIES["Apollonia"] = dict(
         "Time":   (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
     },
 )
-VOLUME_GAIN["Apollonia"] = {"Charge": 1.0841, "Mass": 1.0128, "Space": 1.3532, "Time": 1.0}   # fitted: --fit-volume
+VOLUME_GAIN["Apollonia"] = {"Charge": 1.093, "Mass": 0.9618, "Space": 1.3532, "Time": 1.0}   # fitted: --fit-volume
 
 SHELL_RADIUS = 75.0     # world radius of the surface's unit sphere
 
 
-def shell_for(element, base=SHELL_RADIUS):
-    """This element's shell - the species' authored radius times the §51 REACH. The one place
-    a plant's EXTENT differs by element on this family; everything normalised (the walk, the
-    lanes, the hops, the dive) is byte-identical across the four, so the plant is the same
-    prism list at a different size (Docs/ECOSYSTEM.md §56)."""
-    return base * ELEMENT_REACH.get(element, 1.0)
+def shell_for(element, base=SHELL_RADIUS, species="FractalFoliage"):
+    """This element's shell - the species' authored radius times the §51 REACH, and on an ARMOURED element times its
+    armour growth (Docs/ECOSYSTEM.md §65; MandelbulbFlora.ElementalForm.ShellScale carries that factor in the game).
+    The one place a plant's EXTENT differs by element on this family; everything normalised (the walk, the lanes, the
+    hops, the dive) is the curve family's own, so the plant is its prism list at a different size (Docs/ECOSYSTEM.md
+    §56)."""
+    return base * ELEMENT_REACH.get(element, 1.0) * armour_growth(species, element)
 FIELD_WIDTH = 192       # runtime reconstruction lattice
 # Live prisms per plant. Raised from 2,800 when these species started growing OUT of their
 # crystal (Docs/ECOSYSTEM.md §50.6): a plant now carries its own LIMBS — a trunk spiralling
@@ -1823,17 +1857,22 @@ def elemental_prism(species, element):
     # a redistribution" means when it is spent on a species rather than authored per element.
     # It also costs the least on screen: a prism's footprint is its length times its THICKEST
     # cross axis, and this is the pay that leaves that axis alone.
+    #
+    # MASS pays nothing (Docs/ECOSYSTEM.md §65): it is the neutral prism scaled whole, so (x2, y2, z2) is already its
+    # WORLD prism in neutral-shell units, and its shell is reach x armour growth g = k. The ribbon's cross-section in
+    # SURFACE units is therefore x2 / k by y2 / k, the walk strides where its curve family strides, and the prism fills
+    # step / (stride x g) of each stride - which on the shell of k is exactly z2 long again. Returned as 1 / g because
+    # rules_for multiplies the factor by step / walk on a skeleton species.
+    if element in ARMOURED:
+        g = armour_growth(species, element)
+        k = ELEMENT_REACH[element] * g
+        return x2 / k, y2 / k, spec["neutral_step"], 1.0 / g
+
     reach_pay = volume
     if y2 <= x2:
         y2 *= reach_pay
     else:
         x2 *= reach_pay
-
-    if element == "Charge":
-        # Uniform, so the species' own aspect survives the armour fit.
-        x2 *= CHARGE_SHIELD_SHRINK
-        y2 *= CHARGE_SHIELD_SHRINK
-        return x2, y2, z2, CHARGE_DASH
     return x2, y2, z2, 1.0
 
 
@@ -1857,6 +1896,16 @@ def rules_for(element, species="FractalFoliage"):
     # §53); every other species walks at the law's step and the factor is the dash alone.
     walk = values[fields.index("walk_step")]
     values[fields.index("length_factor")] = length_factor * (step / walk if walk > 0 else 1.0)
+    # THE ARMOURED HEART SEAT (Docs/ECOSYSTEM.md §65). The Fall - and the trunk, its run backwards - stops at
+    # DiveStopRadius, and on an armoured element every prism there wears a shield reaching 1.5x it, which a stop sphere
+    # sized for a bare tip against the crystal (3.4 u at shell 75) puts in the Mass heart's swing. So the stop is
+    # RESTATED in world units: the swing every armoured fit clears (ElementalArmour.HeartSwingClearance, read through
+    # mass_armour_lib) plus the species' own neutral stop sphere grown by Mass's axis scale - the same tip margin, at
+    # Mass's size. Derived, never authored per element, so it moves with the armour growth that sets the shell.
+    if element in ARMOURED:
+        neutral_stop_world = values[fields.index("dive_stop")] * SHELL_RADIUS
+        seat = mass_armour_lib.swing_need() + neutral_stop_world * ELEMENT_REACH[element]
+        values[fields.index("dive_stop")] = seat / shell_for(element, species=species)
     values[fields.index("twist")] = spec["twist"]
     # The girth taper is the SPECIES' texture - how much finer a scrap run is than a
     # structural one - so it is uniform across the four. Left per element it multiplies the

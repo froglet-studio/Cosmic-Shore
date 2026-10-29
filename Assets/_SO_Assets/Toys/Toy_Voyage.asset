@@ -20,12 +20,6 @@ MonoBehaviour:
   accentColor: {r: 0.95, g: 0.75, b: 0.25, a: 1}
   withArk: {fileID: 11400000, guid: d85a7bce8eb442abbd2d17a05397bd33, type: 2}
   content: {fileID: 11400000, guid: 0ee29e191d6a021c61b4de3cc7fb324c, type: 2}
-  boardDistance: 260
-  beaconSpacing: 110
-  beaconBodyRadius: 9
-  beaconTriggerRadius: 26
-  jobColor: {r: 0.7, g: 1, b: 0.35, a: 1}
-  homeColor: {r: 1, g: 0.78, b: 0.25, a: 1}
   seedElementLevel: 0.5
   wingmateLeash: 1600
   findDistance: 520
@@ -34,8 +28,8 @@ MonoBehaviour:
   vaultPrismScale: {x: 5, y: 5, z: 8}
   vaultOpenShare: 0.5
   holdRadius: 700
-  chartSize: 90
-  chartOffset: {x: -160, y: 70, z: 0}
+  routeColor: {r: 0.7, g: 1, b: 0.35, a: 1}
+  hereColor: {r: 1, g: 0.78, b: 0.25, a: 1}
   portColor: {r: 0.96, g: 0.94, b: 0.86, a: 1}
   vaultColor: {r: 0.55, g: 0.75, b: 1, a: 1}
   coreColor: {r: 1, g: 0.45, b: 0.35, a: 1}

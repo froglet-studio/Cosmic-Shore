@@ -31,11 +31,11 @@ ELEMENTS = {1: "Charge", 2: "Mass", 3: "Space", 4: "Time"}
 SPOT = {
     ("Sparrow", "Pulsefire Cannons"): "Shot", ("Sparrow", "Afterburner"): "Boost", ("Sparrow", "Turret Stance"): "Stance",
     ("Sparrow", "Skyburst Rockets"): "Shot", ("Serpent", "Scope"): "Sense", ("Serpent", "Seed Wall"): "Build",
-    ("Serpent", "Sniper Shot"): "Shot", ("Butterfly", "Fold"): "Phase", ("Grizzly", "Dig In"): "Stance",
+    ("Serpent", "Sniper Shot"): "Shot", ("TigerMoth", "Drop"): "Phase", ("Grizzly", "Dig In"): "Stance",
     ("Grizzly", "Rush"): "Boost", ("Stoat", "Field Dipole"): "Pull", ("Thresher", "Wrecking Ball"): "Strike",
     ("Thresher", "Mass Mode"): "Stance", ("Manta", "Kabloom"): "Burst", ("Urchin", "Slip"): "Phase",
     ("Urchin", "Track Projector"): "Build", ("Dolphin", "Echo Sight"): "Sense", ("Squirrel", "Boost Ring"): "Build",
-    ("Butterfly", "Mass / Dust Mode"): "Stance", ("Stoat", "Mass / Time Mode"): "Stance",
+    ("TigerMoth", "Mass / Dust Mode"): "Stance", ("Stoat", "Mass / Time Mode"): "Stance",
     ("BrittleStar", "Charge Mode"): "Strike", ("BrittleStar", "Space Mode"): "Shot", ("BrittleStar", "Speed Mode"): "Boost",
 }
 

@@ -219,8 +219,7 @@ def main():
     guid_of = lambda p: re.search(r'guid: ([0-9a-f]{32})', open(p + '.meta').read()).group(1)
     paired_guid, single_guid = guid_of(PAIRED), guid_of(SINGLE)
     expect = {'GyroidFlora.prefab': paired_guid,
-              'SchwarzPFlora.prefab': single_guid,
-              'WallFlora.prefab': single_guid}
+              'SchwarzPFlora.prefab': single_guid}
     for name, want in expect.items():
         p = os.path.join(FLORA, name)
         got = re.search(r'spindle: \{fileID: \d+, guid: ([0-9a-f]{32})', open(p).read())

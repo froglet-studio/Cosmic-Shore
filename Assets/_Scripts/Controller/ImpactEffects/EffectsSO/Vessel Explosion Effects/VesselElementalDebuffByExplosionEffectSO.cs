@@ -69,6 +69,13 @@ namespace CosmicShore.Gameplay
                  "Charge stays the victim's own weapon economy.")]
         [SerializeField] private Element[] elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
+        [Tooltip("How hard the FIRING pilot's Charge level makes this bite: the magnitude is multiplied " +
+                 "by 1 at Charge 0 rising to this at Charge 10 (read off the attacker's replicated level, " +
+                 "so every peer agrees). 1 = Charge does nothing, the default for every blast but the " +
+                 "Scarab's shove, whose Charge row IS this number (SCARAB.md section 7). An anonymous " +
+                 "blast has no pilot and bites at x1.")]
+        [SerializeField, Min(0f)] private float magnitudeAtFullCharge = 1f;
+
         [Header("Anti-Spam")]
         [Tooltip("Minimum seconds between explosion debuffs on the same vessel. Blasts grow " +
                  "through a victim over several frames, so without this one detonation would " +
@@ -82,6 +89,12 @@ namespace CosmicShore.Gameplay
         // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics() => _lastEffectTime.Clear();
+
+        /// <summary>The bite's multiplier for a firing pilot at <paramref name="chargeLevel"/>: x1 at
+        /// Charge 0, <paramref name="atFullCharge"/> at Charge 10, held there past it (overcharge
+        /// does not keep paying).</summary>
+        public static float ChargeScale(float atFullCharge, int chargeLevel)
+            => Mathf.Lerp(1f, atFullCharge, Mathf.Clamp01(chargeLevel / 10f));
 
         public override void Execute(VesselImpactor impactor, ExplosionImpactor impactee)
         {
@@ -122,8 +135,12 @@ namespace CosmicShore.Gameplay
             // anonymous blast has no pilot and settles where it ran, as before. The authored list
             // becomes a mask, so a duplicated entry can no longer take one element twice.
             var attacker = impactee ? impactee.SourceVessel?.VesselStatus : null;
+            int attackerCharge = attacker?.ElementalAbilityHandler != null
+                ? attacker.ElementalAbilityHandler.ReplicatedLevel(Element.Charge)
+                : 0;
+            float amount = -debuffMagnitude * ChargeScale(magnitudeAtFullCharge, attackerCharge);
             ElementalTransfer.ApplyAuthoritative(ElementalTransferForm.Eject, victim, attacker,
-                                                 ElementalTransfer.MaskOf(elements), -debuffMagnitude,
+                                                 ElementalTransfer.MaskOf(elements), amount,
                                                  blastVelocity, ElementalDebuffSources.Explosion);
         }
     }

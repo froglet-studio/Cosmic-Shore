@@ -16,9 +16,45 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-28 from canvas version `1793183789-3522`: Rev 3 to Rev 33, 293 boards on 34 pages. The canvas's launch page is `rev33`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-10-29 from canvas version `1793256082-4802`: Rev 3 to Rev 37, 317 boards on 38 pages. The canvas's launch page is `rev37`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
+
+### Rev 37 - Connection: lost, reconnecting, back online, rejoin  (page `rev37`)
+
+- [`R37Flow.dc.html`](R37Flow.dc.html) - Rev 37 Flow - every state in one board: pick a state to play it (interactive) - interactive
+- [`R37Lost.dc.html`](R37Lost.dc.html) - Rev 37 Lost - menu: Connection Lost, RECONNECT or CONTINUE OFFLINE
+- [`R37Reconnecting.dc.html`](R37Reconnecting.dc.html) - Rev 37 Reconnecting - reconnecting: the line runs, the buttons wait
+- [`R37Online.dc.html`](R37Online.dc.html) - Rev 37 Online - back online: the window closes itself
+- [`R37Match.dc.html`](R37Match.dc.html) - Rev 37 Match - lost in a match: over the HUD, your seat is held for a while
+- [`R37HostLeft.dc.html`](R37HostLeft.dc.html) - Rev 37 HostLeft - the host left: the match is over, back to Home
+- [`R37Rejoin.dc.html`](R37Rejoin.dc.html) - Rev 37 Rejoin - boot while your match still runs: REJOIN or NOT NOW
+- [`R37Notes.dc.html`](R37Notes.dc.html) - Rev 37 - notes: every state, its words, the rejoin rules and the build
+
+### Rev 36 - FTUE, redrawn: the captain arrives  (page `rev36`)
+
+- [`R36Compare.dc.html`](R36Compare.dc.html) - Rev 36 - the three entrances side by side on the Home step, frame by frame
+- [`R36A.dc.html`](R36A.dc.html) - Rev 36 A - Wingman: her Squirrel streaks in on a skim trail that ends at the control, and her comm opens off the hull (recommended) - interactive
+- [`R36B.dc.html`](R36B.dc.html) - Rev 36 B - Comms: a tall portrait window docks on the far edge with her voice line and the prompt - interactive
+- [`R36C.dc.html`](R36C.dc.html) - Rev 36 C - Cinematic: she leans in large from the edge, name and line set big beside her - interactive
+- [`R36Notes.dc.html`](R36Notes.dc.html) - Rev 36 - notes: what was wrong with Rev 34, the entrance timing, the words, the build
+
+### Rev 35 - Hover: how the menu answers the pointer  (page `rev35`)
+
+- [`R35Compare.dc.html`](R35Compare.dc.html) - Rev 35 - the same five controls (button, card, nav tab, hub tile, list row) at rest, hovered and focused, for all four looks
+- [`R35A.dc.html`](R35A.dc.html) - Rev 35 A - Lift: the control rises 3 px, its border turns white and a white rule grows under it (recommended) - interactive
+- [`R35B.dc.html`](R35B.dc.html) - Rev 35 B - Trace: one white light runs once around the cut border - interactive
+- [`R35C.dc.html`](R35C.dc.html) - Rev 35 C - Sheen: one soft band sweeps across the fill, nothing moves - interactive
+- [`R35D.dc.html`](R35D.dc.html) - Rev 35 D - Brackets: the corner brackets close in from outside, nothing moves - interactive
+- [`R35Notes.dc.html`](R35Notes.dc.html) - Rev 35 - notes: what hover means, how it differs from focus, timings and the build
+
+### Rev 34 - FTUE: the captain guides from the side  (page `rev34`)
+
+- [`R34Compare.dc.html`](R34Compare.dc.html) - Rev 34 - the three captains at the same step, and which side they enter from
+- [`R34A.dc.html`](R34A.dc.html) - Rev 34 A - Wingmate: the captain full-length at the screen edge, a speech plate pointing at the one control (recommended) - interactive
+- [`R34B.dc.html`](R34B.dc.html) - Rev 34 B - Comm link: a compact incoming-transmission card that docks on the far side - interactive
+- [`R34C.dc.html`](R34C.dc.html) - Rev 34 C - Briefing: a lower-third bust and a wide line, letterbox-style - interactive
+- [`R34Notes.dc.html`](R34Notes.dc.html) - Rev 34 - notes: the old FTUE (Rev 21), what the captain changes, who speaks, the side rule
 
 ### Rev 33 - Into a game mode (loading, intro, countdown) and why it lags  (page `rev33`)
 

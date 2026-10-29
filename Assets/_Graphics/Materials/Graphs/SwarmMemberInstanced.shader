@@ -3,17 +3,16 @@
 // A swarm of ~1,000 tadpoles is data in a simulation that runs off the main thread. Once per simulation
 // TICK the swarm uploads one SwarmInstance per member slot (SwarmTickJob.cs, 80 bytes: previous and
 // current pose, prism shape, heart molt, tier, birth tick); every FRAME it sets a handful of per-swarm
-// values (the display alpha between the two poses, the clock) and issues ~5 draws. So the CPU cost per
-// member per frame is ZERO: the vertex shader interpolates the pose, builds the basis, blooms a newborn
-// and re-forms a molting heart from the per-instance data alone - the clock-material law's spirit
-// (Docs/PRISM_ANIMATION.md): initial conditions in, the GPU runs the course.
+// values (the display alpha between the two poses, the clock) and issues one body draw. So the CPU cost per
+// member per frame is ZERO: the vertex shader interpolates the pose, builds the basis and blooms a newborn
+// from the per-instance data alone - the clock-material law's spirit (Docs/PRISM_ANIMATION.md): initial
+// conditions in, the GPU runs the course.
 //
-// Two PARTS, one shader (_SwarmPart): the BODY prism (one mesh, every live instance) and the HEART
-// (one draw per crystal model per element over that element's index list, _SwarmHeartIdx; a molting
-// heart is listed under both elements and shown by the one the molt has reached).
+// The BODY prism only (one mesh, every live instance). The member's HEART is the elemental crystal's own
+// models and materials, drawn as a living lifeform's heart is (CrystalHeartDraw.cs, Docs/ECOSYSTEM.md §65.7).
 //
-// It honours the prism occlusion corridor (a PLATFORM LAW, Docs/PRISM_ANIMATION.md §4.7): the body and
-// the heart go see-through between the camera and the local ship exactly like prism mass does, through
+// It honours the prism occlusion corridor (a PLATFORM LAW, Docs/PRISM_ANIMATION.md §4.7): the body goes
+// see-through between the camera and the local ship exactly like prism mass does, through
 // the same PrismOcclusionFade_float the prism graphs call. A dead slot is collapsed to a point (no
 // fragments). Opaque, depth-writing, no shadows.
 Shader "CosmicShore/SwarmMemberInstanced"

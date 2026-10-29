@@ -31,6 +31,16 @@ namespace CosmicShore.Gameplay
         protected override RaceCourseSource CreateCourseSource() =>
             new BurrowRunCourseSource { Laps = laps };
 
+        /// <summary>The Meerkat's omnicrystals (<c>R_VesselActions/MEERKAT.md</c> §7), half way between the rings of one lap:
+        /// fly through one and the roots grow.</summary>
+        protected override void OnCourseRaised()
+        {
+            var rings = new System.Collections.Generic.List<Vector3>();
+            int n = Mathf.Min(GateCount, _course.Count);
+            for (int i = 0; i < n; i++) rings.Add(_course[i].Position);
+            MeerkatOmnicrystalField.ForCourse(transform, rings);
+        }
+
         /// <summary>Regatta's gate steering, as Warpline flies it: commit from the approach point, aim through the ring's
         /// centre, re-attack a missed mouth.</summary>
         protected override bool AICommitFromApproachPoint => true;

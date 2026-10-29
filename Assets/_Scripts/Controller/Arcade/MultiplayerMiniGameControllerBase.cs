@@ -169,6 +169,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         async UniTaskVoid InitializeAfterDelay()
         {
+            // The arena build is ANNOUNCED from here until InitializeGame has started it: the connecting
+            // panel can come up inside the InitDelayMs wait, and without this bracket its arena-ready gate
+            // sees nothing pending and can release on an empty arena. Its 4 s minimum used to hide that
+            // window; the bracket lets the minimum shrink (Docs/MENU_REDESIGN_B.md section 99.3).
+            PrismTrailBuilder.BeginArenaBuild();
+            bool buildAnnounced = true;
             try
             {
                 // On replay scene reload, fade in once the player vessel is ready.
@@ -207,6 +213,8 @@ namespace CosmicShore.Gameplay
                 {
                     gameData.InitializeGame();
                 }
+                buildAnnounced = false;
+                PrismTrailBuilder.EndArenaBuild();
 
                 // The replay fade-in, if OnClientReady already arrived during the wait.
                 _replayGameInitialized = true;
@@ -236,6 +244,11 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay CANCELLED");
                 // Task was cancelled, ignore
+            }
+            finally
+            {
+                // A wait cancelled (or a throw) before InitializeGame must not wedge the next gate.
+                if (buildAnnounced) PrismTrailBuilder.EndArenaBuild();
             }
         }
         
@@ -397,6 +410,7 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void SyncGameEnd_ClientRpc()
         {
+            MatchRejoin.Forget();   // the match is over: nothing to rejoin (section 103)
             if (!ShowEndGameSequence) return;
 
             gameData.SortRoundStats(UseGolfRules);
@@ -968,6 +982,10 @@ namespace CosmicShore.Gameplay
             gameData.MatchId = matchId;
             gameData.PartyId = partyId;
             gameData.InviteTriggered = inviteTriggered;
+
+            // A guest remembers the match it is in, so a drop or a restart can offer to rejoin it (section 103).
+            if (isMultiplayer && !SpectatorSession.IsLocalSpectator)
+                MatchRejoin.Remember(partyId, (GameModes)gameMode);
 
             gameData.SceneName = sceneName;
             gameData.GameMode = (GameModes)gameMode;
