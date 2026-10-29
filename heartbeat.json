@@ -14,15 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {
+ "current": {},
+ "host": "dragonsweapon",
+ "last": {
+  "count": 12,
+  "epoch": "8ca46ea69479",
   "job": "unity-train~r20261030-024007-46ba",
-  "max_evals": 10,
-  "minutes": 60.0,
-  "request": "r20261030-024007-46ba",
-  "since": 1793308223,
+  "rc": 0,
+  "stopped": "finished",
   "unit": "dogfight-sparrow-i4"
  },
- "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -167,12 +168,24 @@
    "start": 1793307425,
    "stopped": "finished",
    "unit": "dustup-butterfly-i3"
+  },
+  {
+   "best_end": 108.209716796875,
+   "best_start": null,
+   "end": 1793308795,
+   "epoch": "8ca46ea69479",
+   "evals": 12,
+   "job": "unity-train~r20261030-024007-46ba",
+   "request": "r20261030-024007-46ba",
+   "start": 1793308223,
+   "stopped": "finished",
+   "unit": "dogfight-sparrow-i4"
   }
  ],
  "totals": {
-  "sessions": 12
+  "sessions": 13
  },
- "updated": 1793308223,
+ "updated": 1793308795,
  "user": "shombithofficial",
  "version": "1"
 }

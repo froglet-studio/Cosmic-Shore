@@ -1,0 +1,103 @@
+{"schema": "froglet-compute/unity-recordings/1", "replays_setup": "on", "replays_folder": "C:\\Users\\Shombith\\.froglet-compute\\runs\\unity-train~r20261030-024007-46ba\\dogfight-sparrow-i4\\replays", "replays": [{"file": "DogFight_2026-10-30_02-45.cstheater", "kept": "last", "bytes": 9303224, "match": {"episodes_total": 8, "best_fitness": -108.41333770751953, "best_rose": false, "seen": 1793308640.733}, "summary": {
+    "Schema": "cosmic-shore.replay-summary/1",
+    "RecordingFile": "DogFight_2026-10-30_02-45.cstheater",
+    "GameMode": 41,
+    "GameModeName": "DogFight",
+    "SceneName": "MinigameDogFight",
+    "Intensity": 4,
+    "ArenaOrigin": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "RecordedAtUtcTicks": 639289053096233271,
+    "DurationSeconds": 117.86857604980469,
+    "EndedBecause": "",
+    "HasResults": false,
+    "WinnerName": "",
+    "WinnerDomain": 0,
+    "Pilots": [
+        {
+            "Name": "Shomboss",
+            "Domain": 2,
+            "VesselType": 11,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "WillOfFire",
+            "Domain": 4,
+            "VesselType": 11,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Bob",
+            "Domain": 2,
+            "VesselType": 11,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Dragon",
+            "Domain": 1,
+            "VesselType": 11,
+            "IsAI": false,
+            "IsLocal": true
+        }
+    ],
+    "Results": [],
+    "Gates": [],
+    "CourseSeed": 0
+}}, {"file": "DogFight_2026-10-30_02-47.cstheater", "kept": "last", "bytes": 9215968, "match": {"episodes_total": 12, "best_fitness": -108.209716796875, "best_rose": false, "seen": 1793308775.256}, "summary": {
+    "Schema": "cosmic-shore.replay-summary/1",
+    "RecordingFile": "DogFight_2026-10-30_02-47.cstheater",
+    "GameMode": 41,
+    "GameModeName": "DogFight",
+    "SceneName": "MinigameDogFight",
+    "Intensity": 4,
+    "ArenaOrigin": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "RecordedAtUtcTicks": 639289054394165171,
+    "DurationSeconds": 104.18838500976563,
+    "EndedBecause": "",
+    "HasResults": false,
+    "WinnerName": "",
+    "WinnerDomain": 0,
+    "Pilots": [
+        {
+            "Name": "TheRealCaleb",
+            "Domain": 2,
+            "VesselType": 11,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Barrett",
+            "Domain": 4,
+            "VesselType": 11,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Iggy",
+            "Domain": 2,
+            "VesselType": 11,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Dragon",
+            "Domain": 1,
+            "VesselType": 11,
+            "IsAI": false,
+            "IsLocal": true
+        }
+    ],
+    "Results": [],
+    "Gates": [],
+    "CourseSeed": 0
+}}], "flights_folder": "C:\\Users\\Shombith\\.froglet-compute\\runs\\unity-train~r20261030-024007-46ba\\dogfight-sparrow-i4\\ai-flights", "flights": [{"file": "aiflight_DogFight_Sparrow_20261030_024456.json", "bytes": 338842, "pilot": "trainer", "note": "flown by the trainer's AI, saved by a version of the game whose recorder took the trainer's seat for a person's (newer versions store none): never learn from it"}, {"file": "aiflight_DogFight_Sparrow_20261030_024706.json", "bytes": 322383, "pilot": "trainer", "note": "flown by the trainer's AI, saved by a version of the game whose recorder took the trainer's seat for a person's (newer versions store none): never learn from it"}, {"file": "aiflight_DogFight_Sparrow_20261030_024931.json", "bytes": 268063, "pilot": "trainer", "note": "flown by the trainer's AI, saved by a version of the game whose recorder took the trainer's seat for a person's (newer versions store none): never learn from it"}], "third_eye": "open: the first pilot, Chase; ] or Tab picks the next, C the camera", "stills": [], "stills_note": "this version's Third Eye cannot save its view", "updated": 1793308775.265}

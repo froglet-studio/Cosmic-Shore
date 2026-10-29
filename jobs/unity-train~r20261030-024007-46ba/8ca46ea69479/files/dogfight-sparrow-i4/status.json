@@ -1,0 +1,11 @@
+{
+ "best_fitness": -108.209716796875,
+ "episodes": 12,
+ "episodes_total": 12,
+ "generation": 0,
+ "loss": 108.209716796875,
+ "phase": "done",
+ "scenario": "Sparrow_DogFight_I4",
+ "unit_episodes": 10,
+ "updated": 1793308783.5617433
+}
