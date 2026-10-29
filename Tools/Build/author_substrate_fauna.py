@@ -200,9 +200,16 @@ def yaml_obj(d, ind):
     return out
 
 
+def body_scale(s):
+    """The species' body at 3.55 / its element's retired heart (Docs/ECOSYSTEM.md 64.4): SubstrateSpeciesSO.bodyScale,
+    which SubstrateSpeciesParams.WithBodyScale applies (stocks by its cube, contact radii by it)."""
+    return round(swarm.BODY_K[s["element"]], 4)
+
+
 def species_asset(s, params):
     p = dict(params[s["key"]], **DEMO_OVERRIDES.get(s["key"], {}))
     h = swarm.HEARTS
+    k = body_scale(s)
     ax, half = s.get("sector", ((1, 0, 0), 0))
     return swarm.SO_HEADER % (script_guid("SubstrateSpeciesSO"), f"Substrate {s['title']} Species") + (
         "  species:\n" + yaml_obj(p, "    ") +
@@ -213,8 +220,9 @@ def species_asset(s, params):
         f"  agentPrefab: {{fileID: {AGENT_MB_FID}, guid: {guid(rel(AGENT_PREFAB))}, type: 3}}\n"
         f"  memberShader: {{fileID: 4800000, guid: {swarm.guid(rel(swarm.MEMBER_SHADER))}, type: 3}}\n"
         f"  theme: {{fileID: 11400000, guid: {swarm.THEME}, type: 2}}\n"
+        f"  bodyScale: {k:g}\n"
         f"  heartWorldScale: {{x: {h['Charge']}, y: {h['Mass']}, z: {h['Space']}, w: {h['Time']}}}\n"
-        "  heartPrismGap: 0.6\n  bodyThin: 0.6\n"
+        f"  heartPrismGap: {round(0.6 * k, 4):g}\n  bodyThin: 0.6\n"
         f"  engageRadius: {s['engage']}\n  maxProxies: {s['proxies']}\n  proxyLingerSeconds: 2\n"
         f"  maxSpawnsPerFrame: {s['spawns']}\n  vesselRadius: 6\n"
         f"  biteRadius: 24\n  maxBitesPerTick: {s['bites']}\n"
@@ -249,7 +257,7 @@ def body_volume():
     pool, each body halfway between its seed stock and the stock it splits at (mass is conserved: a split halves)."""
     params = json.load(open(GAME_PARAMS))
     return sum(params[s["key"]]["Capacity"] * 0.5 * (params[s["key"]]["Stock0"] + params[s["key"]]["BirthStock"])
-               for s in SPECIES)
+               * body_scale(s) ** 3 for s in SPECIES)
 
 
 def proxy_colliders():

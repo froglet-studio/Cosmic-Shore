@@ -33,10 +33,10 @@ namespace CosmicShore.Gameplay
     /// (<see cref="TransferOwnershipServer"/>) and broadcasts; every peer runs
     /// <see cref="ApplyLocal"/>.</para>
     ///
-    /// <para><b>Stated limit:</b> element levels are simulated on the machine that OWNS a hull and
-    /// never replicate, so a hull that changes machines keeps the levels its NEW owner's replica
-    /// held (its starting elements, plus anything that replica saw) - crystal-earned levels the
-    /// previous owner simulated do not travel with it.</para>
+    /// <para><b>Element levels travel with the hull</b> (2026-10-27, <see cref="ElementHandover"/>): they are simulated on
+    /// the machine that OWNS a hull, so the owner publishes the hull's base levels and the machine that takes it over
+    /// adopts them, with the latched level-5 unlocks, before it simulates anything. What is not petals stays behind: a
+    /// temporary buff ends, the comeback bonus is recomputed, and an unsettled fraction of a petal is forgotten.</para>
     /// </summary>
     public static class PilotSwap
     {

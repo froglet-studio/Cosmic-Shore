@@ -375,7 +375,6 @@ MonoBehaviour:
   cellPool: []
   lines:
     VoyageName: VOYAGE
-    BoardOpen: FLY THROUGH A JOB TO TAKE IT
     Depart: 'BOUND FOR {to}'
     Arrived: 'ARRIVED AT {to}'
     Vaults: 'VAULTS AHEAD: CRACK ONE, GRAB ITS ARTIFACT, STOW IT AT THE ARK'
@@ -387,6 +386,9 @@ MonoBehaviour:
     Stowed: STOWED ABOARD
     Extracted: 'DOCKED AT {to}: {count} FOUND ARTIFACTS ARE YOURS'
     ArkLost: THE ARK IS LOST
-    BroughtBy: 'brought by {pilot}'
     NoWork: No pilot has work here. Seat other pilots, or sail on.
     Following: 'SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB'
+    ChooseNext: LEAVE FREESTYLE TO CHOOSE YOUR NEXT VOYAGE
+    CardRoute: '{from} TO {to} - {pilot}'
+    CardHomeRoute: '{from} TO {to}'
+    CardUnderway: 'UNDER WAY TO {to}'

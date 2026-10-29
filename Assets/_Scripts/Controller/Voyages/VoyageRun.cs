@@ -10,22 +10,24 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One voyage, played (Docs/Voyages/SLICE.md §1): the squad deployed, the job board, the legs the Ark sails, what
-    /// stands at each stop, and how the voyage ends. The rules are <see cref="VoyageRules"/> (pure, tested headless);
+    /// One voyage, played (Docs/Voyages/SLICE.md §1): the squad deployed, the leg the Ark sails to the job the player
+    /// picked in the Voyage window, what stands at the stop, and how the voyage ends. The rules are <see cref="VoyageRules"/> (pure, tested headless);
     /// the sea is the Arkway's (<see cref="ArkwayRun"/> with a route); this class joins the two and owns nothing else.
     ///
     /// <list type="number">
     /// <item><b>Embark.</b> The active squad deploys (<see cref="SquadDeployment"/>): the pilot flies their seat's vessel,
     /// the host releases an AI wingmate for every other seat, and every seat starts levelled in its slot's element.</item>
-    /// <item><b>The board.</b> One job from each seated pilot (<see cref="VoyageRules.Board"/>), each a beacon on the
-    /// bearing of its destination. Flying one takes it; a job left undone at a stop fails when the next is taken.</item>
+    /// <item><b>The job.</b> Chosen in the app shell, never in the world: the Voyage window draws one card per job on
+    /// offer (<see cref="VoyageRules.Board"/>, one from each seated pilot, and the way home) over the galaxy map, and its
+    /// Set sail is <see cref="SetSail"/> (Garrett, 2026-10-28: "the jobs should be the different voyages").</item>
     /// <item><b>The leg.</b> The Ark sails the lane's cells and holds at the destination's own world.</item>
     /// <item><b>The stop.</b> A vault field stands its vaults, a wreck spills what it holds, a core must be held, a port
-    /// takes the dispatch. What the squad stows is the job's work; the outcome writes the news the next board is
-    /// made of. The next board stands at once, the way home always on it.</item>
-    /// <item><b>The end.</b> Docking at home extracts: every find is the player's, every crystal owed is paid. A fallen
-    /// Ark loses everything aboard (to the raiders, or into a wreck that is news at the nearest port). Giving the
-    /// voyage up away from home loses what was found.</item>
+    /// takes the dispatch. What the squad stows is the job's work; the outcome writes the news the next jobs are made
+    /// of, and the banner sends the player back to the Voyage window to choose one.</item>
+    /// <item><b>The end.</b> Leaving freestyle at the stop anchors the squad there, finds still aboard and at stake
+    /// (<see cref="VoyageRules.Anchor"/>); the next voyage sets out from it. Docking at home extracts: every find is the
+    /// player's, every crystal owed is paid. A fallen Ark loses everything aboard (to the raiders, or into a wreck that
+    /// is news at the nearest port). Leaving freestyle mid-leg gives the voyage up and loses what was found.</item>
     /// </list>
     ///
     /// <para>Friends: each machine runs its own voyage today; the host's course reaching the party is SLICE.md §4
@@ -50,13 +52,10 @@ namespace CosmicShore.Gameplay
 
         VoyageState _state;
         SavedSquad _squad;
-        readonly List<string> _seatedPilots = new();
-        readonly List<VoyageJobBeacon> _beacons = new();
         readonly List<VoyageVault> _vaults = new();
         readonly List<IVessel> _wingmates = new();
         readonly HashSet<IVesselStatus> _seeded = new();
         readonly List<string> _holdMirror = new();
-        VoyageChart _chart;
 
         VoyageRules.Arrival _arrival;
         int _holdKnown;
@@ -71,6 +70,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True from embarking until the voyage ends (docked, fallen or given up).</summary>
         public bool IsActive => _active;
+
+        /// <summary>The job this voyage sails, or null before one is taken.</summary>
+        public VoyageJob CurrentJob => _state?.Current;
 
         public void Configure(VoyageToyDefinitionSO definition, ToyContext context, Transform toyboxRoot,
             System.Action onEnded)
@@ -87,7 +89,14 @@ namespace CosmicShore.Gameplay
 
         // ── Embark ───────────────────────────────────────────────────────────
 
-        public void Embark(IVesselStatus local) => Embark(local, following: false);
+        /// <summary>Deploy the squad and sail for <paramref name="job"/> (picked in the Voyage window from
+        /// <see cref="VoyageHarbour.Board"/>).</summary>
+        public void SetSail(IVesselStatus local, VoyageJob job)
+        {
+            if (job == null || _active && _following) return;
+            if (!_active) Embark(local, following: false);
+            if (_active) TakeJob(job);
+        }
 
         void Embark(IVesselStatus local, bool following)
         {
@@ -98,11 +107,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var domain = LiveDomain();
-            _squad = ActiveSquad(local);
-            _state = VoyageStore.Load();
-            if (_state == null) _state = VoyageRules.NewGalaxy(Content, domain);
-            else VoyageRules.Embark(_state, Content, domain);
+            var domain = LiveDomain(_context);
+            _squad = ActiveSquad(_context);
+            _state = LoadOrBegin(Content, domain);
             _following = following;
             _pendingLeg = null;
             SaveState();
@@ -116,10 +123,6 @@ namespace CosmicShore.Gameplay
             _worlds = CountWorlds(local.Transform.position);
 
             Deploy(local, domain);
-            _chart = VoyageChart.Create(_root, Content, _def, _context);
-            _chart.transform.position = local.Transform.position + local.Transform.rotation * _def.ChartOffset;
-            _chart.transform.rotation = Quaternion.LookRotation(local.Transform.forward, Vector3.up);
-            _chart.Show(_state.At, null);
 
             ArkFall.Settled -= OnFallSettled;
             ArkFall.Settled += OnFallSettled;
@@ -129,8 +132,6 @@ namespace CosmicShore.Gameplay
                 Banner(Lines.Following);
                 return;
             }
-            OpenBoard(local.Transform.position, local.Transform.forward);
-            Banner(Lines.BoardOpen);
             VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.Embark });
         }
 
@@ -178,9 +179,7 @@ namespace CosmicShore.Gameplay
             _state.Aboard = aboard ?? new List<string>();
             _state.Owed = owed ?? new List<int>();
 
-            ClearBoard();
             ClearStop();
-            _chart.Show(_state.At, course.Job.To);
             if (_sea.IsRunning) _sea.ContinueRoute(course.Route);
             else
             {
@@ -198,13 +197,37 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The squad that sails: the one a party launch named, else the player's active squad, else the hull
         /// they are flying in every seat (a player who has never built a squad can still voyage).</summary>
-        SavedSquad ActiveSquad(IVesselStatus local)
+        public static SavedSquad ActiveSquad(ToyContext context)
         {
             var squad = SquadLaunchIntent.Squad ?? UGSDataService.Instance?.SquadRepo?.Data?.Book?.GetActive();
             if (squad != null) return squad;
-            var hull = local.VesselType;
+            var hull = Alive(context?.GameData?.LocalPlayer?.Vessel)?.VesselType ?? default;
             return new SavedSquad(string.Empty, new SquadSlot(hull, Element.None), new SquadSlot(hull, Element.None),
                 new SquadSlot(hull, Element.None));
+        }
+
+        /// <summary>The pilots seated in <paramref name="squad"/>, in seat order: they decide which jobs are offered.</summary>
+        public static List<string> SeatedPilots(SavedSquad squad)
+        {
+            var pilots = new List<string>();
+            if (squad == null) return pilots;
+            var catalog = PilotArtifactCatalogSO.Load();
+            for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
+            {
+                var pilot = catalog ? catalog.ResolvePilot(squad.GetSlot(seat), null) : null;
+                if (pilot) pilots.Add(pilot.Id);
+            }
+            return pilots;
+        }
+
+        /// <summary>The saved galaxy, ready to set out from where the last voyage left the Ark; a new galaxy before the
+        /// first voyage (not saved until one sets out).</summary>
+        public static VoyageState LoadOrBegin(VoyageContent content, Domains home)
+        {
+            var state = VoyageStore.Load();
+            if (state == null) return VoyageRules.NewGalaxy(content, home);
+            VoyageRules.Resume(state, content, home);
+            return state;
         }
 
         void Deploy(IVesselStatus local, Domains domain)
@@ -212,14 +235,6 @@ namespace CosmicShore.Gameplay
             int mySeat = Mathf.Clamp(_squad.MySeat, 0, SavedSquad.SlotCount - 1);
             SquadDeployment.Deploy(_squad, mySeat);
 
-            var catalog = PilotArtifactCatalogSO.Load();
-            _seatedPilots.Clear();
-            for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
-            {
-                var slot = _squad.GetSlot(seat);
-                var pilot = catalog ? catalog.ResolvePilot(slot, null) : null;
-                if (pilot) _seatedPilots.Add(pilot.Id);
-            }
 
             // The pilot flies their seat's vessel (the swap lands a moment later; the new hull reads its slot then).
             var mine = _squad.GetSlot(mySeat);
@@ -247,74 +262,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── The board ────────────────────────────────────────────────────────
-
-        void OpenBoard(Vector3 anchor, Vector3 forward)
-        {
-            ClearBoard();
-            var jobs = VoyageRules.Board(_state, Content, _seatedPilots);
-            if (jobs.Count == 0)
-            {
-                Banner(Lines.NoWork);
-                return;
-            }
-            var here = Content.Location(_state.At);
-            var placed = new List<Vector3>();
-            for (int i = 0; i < jobs.Count; i++)
-            {
-                var job = jobs[i];
-                var to = Content.Location(job.To);
-                var bearing = Bearing(here, to, forward, i, jobs.Count);
-                var at = Clear(anchor, bearing, placed);
-                placed.Add(at);
-                var placement = new ToyPlacement(at, anchor, _def.BeaconBodyRadius, _def.BeaconTriggerRadius);
-                var person = Content.Person(job.PilotId);
-                string label = job.IsReturn
-                    ? job.Title
-                    : job.Title + "\n" + VoyageRules.Fill(Lines.BroughtBy, here, to, to, person);
-                var taken = job;
-                _beacons.Add(VoyageJobBeacon.Create(_root, placement, job.IsReturn ? _def.HomeColor : _def.JobColor,
-                    label, _context, () => TakeJob(taken)));
-            }
-        }
-
-        /// <summary>The chart bearing from <paramref name="here"/> to <paramref name="to"/>, in the world; a job with no
-        /// bearing (the chart puts both in one place) fans out ahead.</summary>
-        static Vector3 Bearing(VoyageLocation here, VoyageLocation to, Vector3 forward, int i, int count)
-        {
-            if (here != null && to != null)
-            {
-                var d = new Vector3(to.ChartX - here.ChartX, to.ChartY - here.ChartY, to.ChartZ - here.ChartZ);
-                if (d.sqrMagnitude > 1e-4f) return d.normalized;
-            }
-            float t = count > 1 ? i / (float)(count - 1) - 0.5f : 0f;
-            return Quaternion.AngleAxis(t * 90f, Vector3.up) * forward.normalized;
-        }
-
-        /// <summary>A spot <see cref="VoyageToyDefinitionSO.BoardDistance"/> out on <paramref name="bearing"/>, turned
-        /// aside until it clears every beacon already placed.</summary>
-        Vector3 Clear(Vector3 anchor, Vector3 bearing, List<Vector3> placed)
-        {
-            var dir = bearing;
-            for (int step = 0; step < 12; step++)
-            {
-                var at = anchor + dir * _def.BoardDistance;
-                bool clear = true;
-                foreach (var p in placed)
-                    if ((p - at).sqrMagnitude < _def.BeaconSpacing * _def.BeaconSpacing) { clear = false; break; }
-                if (clear) return at;
-                dir = Quaternion.AngleAxis(30f, Vector3.up) * dir;
-            }
-            return anchor + dir * _def.BoardDistance;
-        }
-
-        void ClearBoard()
-        {
-            foreach (var b in _beacons)
-                if (b) Destroy(b.gameObject);
-            _beacons.Clear();
-        }
-
         // ── Taking a job: the leg ────────────────────────────────────────────
 
         void TakeJob(VoyageJob job)
@@ -337,10 +284,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            ClearBoard();
             ClearStop();
             SaveState();
-            _chart.Show(_state.At, job.To);
             VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.Leg, State = _state, Job = job, Route = route });
 
             if (_sea.IsRunning)
@@ -354,6 +299,7 @@ namespace CosmicShore.Gameplay
                 _sea.Begin(local);
             }
             Banner(Line(Lines.Depart, job.To));
+            VoyageHarbour.RaiseChanged();
         }
 
         // ── The sea's events ─────────────────────────────────────────────────
@@ -362,7 +308,6 @@ namespace CosmicShore.Gameplay
         {
             var ark = _sea.Ark;
             if (!ark) return;
-            _chart.Follow(ark.transform);
 
             // Each seat's artifact rides in the Ark: it is what that vessel's payloads become, and it is at stake.
             var hold = ark.Hold;
@@ -384,7 +329,6 @@ namespace CosmicShore.Gameplay
             _arrival = VoyageRules.Arrive(_state, Content);
             if (_arrival == null || job == null) return;
             var ark = _sea.Ark;
-            _chart.Show(_state.At, null);
             Banner(Line(Lines.Arrived, _state.At));
 
             if (_arrival.Extracts)
@@ -398,11 +342,8 @@ namespace CosmicShore.Gameplay
             StandStop(ark ? ark.Position : transform.position);
             if (VoyageRules.DoneOnArrival(job)) Resolve(JobOutcome.Succeeded);
             SaveState();
-            if (!_following)
-            {
-                if (ark) OpenBoard(ark.Position, ark.Forward);
-                return;
-            }
+            VoyageHarbour.RaiseChanged();
+            if (!_following) return;
             Banner(Lines.Following);
             if (_pendingLeg == null) return;
             var leg = _pendingLeg;
@@ -430,12 +371,7 @@ namespace CosmicShore.Gameplay
         void OnSeaEnded()
         {
             if (!_active) return;
-            if (!_fallen && !_docked)
-            {
-                VoyageRules.Abandon(_state, Content);
-                SaveState();
-                Banner(Lines.Failed);
-            }
+            if (!_fallen && !_docked) EndAtStop();
             Finish();
         }
 
@@ -492,7 +428,7 @@ namespace CosmicShore.Gameplay
             if (!_active) return;
             if (!_sea.IsRunning)
             {
-                // Still at the harbour board: leaving freestyle there gives the voyage up.
+                // Not sailing yet (the leg is being laid): leaving freestyle ends the voyage.
                 if (_context?.IsFreestyleActive != null && !_context.IsFreestyleActive()) GiveUp("left freestyle");
                 SeedSeats();
                 return;
@@ -579,8 +515,24 @@ namespace CosmicShore.Gameplay
         {
             var r = VoyageRules.Resolve(_state, Content, outcome);
             string head = outcome == JobOutcome.Succeeded ? Lines.Done : Lines.Failed;
-            Banner(string.IsNullOrEmpty(r.StoryLine) ? head : head + "\n" + r.StoryLine);
+            string line = string.IsNullOrEmpty(r.StoryLine) ? head : head + "\n" + r.StoryLine;
+            // The next job is chosen in the Voyage window, where the news this outcome wrote has made it.
+            if (!_following && !string.IsNullOrEmpty(Lines.ChooseNext)) line += "\n" + Lines.ChooseNext;
+            Banner(line);
             SaveState();
+            VoyageHarbour.RaiseChanged();
+        }
+
+        /// <summary>
+        /// The voyage ends short of home: at the stop the squad anchors there (a job still open is done if its work is,
+        /// left undone if not), and mid-leg the voyage is given up and what was found is lost.
+        /// </summary>
+        void EndAtStop()
+        {
+            bool atSea = _state.AtSea;
+            VoyageRules.Anchor(_state, Content, VoyageRules.WorkDone(_state.Current, _stowedHere, _held));
+            SaveState();
+            if (atSea) Banner(Lines.Failed);
         }
 
         /// <summary>Home: everything aboard and every crystal owed is the player's now, and the voyage ends at the dock.</summary>
@@ -599,18 +551,17 @@ namespace CosmicShore.Gameplay
             _sea.End(returnToCell: true, "the voyage docked at home");
         }
 
-        /// <summary>Give the voyage up (the toy flown again, freestyle left at the board).</summary>
+        /// <summary>End the voyage here (freestyle left, the host's voyage ended): anchored at a stop, given up at sea.</summary>
         public void GiveUp(string reason)
         {
             if (!_active) return;
-            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[Voyage] Given up: {reason}.");
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[Voyage] Ended: {reason}.");
             if (_sea && _sea.IsRunning)
             {
-                _sea.End(returnToCell: true, reason); // OnSeaEnded abandons and finishes
+                _sea.End(returnToCell: true, reason); // OnSeaEnded anchors or gives up, and finishes
                 return;
             }
-            VoyageRules.Abandon(_state, Content);
-            SaveState();
+            EndAtStop();
             Finish();
         }
 
@@ -622,10 +573,7 @@ namespace CosmicShore.Gameplay
             _pendingLeg = null;
             _underway = false;
             ArkFall.Settled -= OnFallSettled;
-            ClearBoard();
             ClearStop();
-            if (_chart) Destroy(_chart.gameObject);
-            _chart = null;
             SquadDeployment.Recall();
             var swapper = _context?.VesselInitializer;
             foreach (var w in _wingmates)
@@ -685,9 +633,9 @@ namespace CosmicShore.Gameplay
             return worlds.Count;
         }
 
-        Domains LiveDomain()
+        public static Domains LiveDomain(ToyContext context)
         {
-            var domain = _context?.GameData?.LocalPlayer?.Domain ?? Domains.Jade;
+            var domain = context?.GameData?.LocalPlayer?.Domain ?? Domains.Jade;
             return domain == Domains.Blue ? Domains.Jade : domain;
         }
 

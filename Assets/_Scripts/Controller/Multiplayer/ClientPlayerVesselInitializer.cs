@@ -258,6 +258,62 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------
+        // REJOIN (section 103): the host handed this client its old seat back
+        // ---------------------------------------------------------
+
+        /// <summary>
+        /// Sent to a client that REJOINED a running match when the host has handed it back the Player the AI was flying
+        /// (<see cref="ServerPlayerVesselInitializer"/>.TryReclaimSeat). The pair may already have been initialised here
+        /// as somebody else's, so it is re-initialised as this machine's own once the ownership and the human flag land.
+        /// </summary>
+        [ClientRpc]
+        internal void SeatReclaimed_ClientRpc(ulong playerNetId, ClientRpcParams rpcParams = default)
+        {
+            if (IsServer) return;
+            ClaimReclaimedSeatAsync(playerNetId, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        async UniTaskVoid ClaimReclaimedSeatAsync(ulong playerNetId, CancellationToken ct)
+        {
+            // Ownership, NetIsAI and the vessel id replicate on their own messages; wait for all three (bounded).
+            Player player = null;
+            float until = Time.unscaledTime + 10f;
+            while (Time.unscaledTime < until)
+            {
+                if (gameData.TryGetPlayerByNetworkObjectId(playerNetId, out var ip) && ip is Player p
+                    && p.IsOwner && !p.NetIsAI.Value && p.Vessel != null)
+                {
+                    player = p;
+                    break;
+                }
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            MatchRejoin.ClearApprovalPayload();
+            if (player == null)
+            {
+                CSDebug.LogWarning("[ClientPlayerVesselInitializer] Rejoined, but the reclaimed seat never became ours - the join watchdog will bounce.");
+                return;
+            }
+
+            gameData.ClaimLocalPlayer(player);
+            ReInitializePair(player, player.Vessel);
+
+            // A match already under way: the countdown that frees input has been and gone.
+            if (gameData.IsTurnRunning && player.InputController != null)
+            {
+                player.InputController.SetPause(false);
+                player.InputController.SetIdle(false);
+                player.Vessel.VesselStatus.IsStationary = false;
+            }
+
+            MatchRejoin.Remember(gameData.PartyId, gameData.GameMode);
+            _signalClientReadyWhenDone = false;
+            _localPairResolved = true;
+            _rosterRetryCts?.Cancel();
+            gameData.InvokeClientReady();
+        }
+
+        // ---------------------------------------------------------
         // CLIENT-PULL ROSTER BOOTSTRAP (client-side)
         // ---------------------------------------------------------
 

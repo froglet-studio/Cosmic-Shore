@@ -194,6 +194,13 @@ namespace CosmicShore.Gameplay
     [Serializable]
     public sealed class TandavaDirectorSettings
     {
+        // The creature's members grew to the one heart size (Docs/ECOSYSTEM.md 64.6): its body, its arena and every
+        // distance measured from either are x 2.044 the research numbers, and so is a TRAVEL time (it covers twice the
+        // distance at the same world speed - LungeSeconds and the breath after one (LungeCooldownSeconds: its way to the
+        // food between charges is twice as long), FleeMinSeconds, FeedSettleSeconds, RiseSeconds, the strike's
+        // SnapLeadSeconds and SnapHoldSeconds (its weapon swings twice as far), and the pilots' DrumSeconds between rings
+        // twice as far apart). The strike's SnapReach is the weapon's own reach, so it grows too. MinFood is a VOLUME
+        // (x 6.38, the egg ratio). Vessel speeds, the threat's reaction times and fractions are unchanged.
         // ── the arena
         /// <summary>The cell's centre (world) - set at runtime from the cell, never authored.</summary>
         [NonSerialized] public Vector3 Centre;
@@ -202,7 +209,7 @@ namespace CosmicShore.Gameplay
 
         // ── threat
         /// <summary>A pilot is felt within this of the swarm's centre (world).</summary>
-        public float SenseRadius = 450f;
+        public float SenseRadius = 919.8f;
         /// <summary>A pilot closing at this speed (world units/s) reads as a full charge.</summary>
         public float ApproachSpeed = 80f;
         /// <summary>Losing this share of its full body per second reads as full threat.</summary>
@@ -212,27 +219,27 @@ namespace CosmicShore.Gameplay
         /// <summary>Mood thresholds on the threat, with hysteresis (enter above, leave below).</summary>
         public float WaryEnter = 0.3f, WaryExit = 0.2f, FleeEnter = 0.65f, FleeExit = 0.4f;
         /// <summary>Once it bolts it runs at least this long.</summary>
-        public float FleeMinSeconds = 4f;
+        public float FleeMinSeconds = 8.176f;
         /// <summary>How far ahead it aims when it bolts (world).</summary>
-        public float FleeReach = 500f;
+        public float FleeReach = 1022f;
 
         // ── aggression: a healthy creature turns on a pilot that comes close; a hurt one runs
         /// <summary>A pilot within this of its centre can be lunged at (world).</summary>
-        public float LungeRadius = 380f;
+        public float LungeRadius = 776.7f;
         /// <summary>It lunges while its body is at least this share of its form; below it, it is HURT and flees instead.</summary>
         public float LungeBodyMin = 0.7f;
         /// <summary>The threat at which a healthy creature lunges - well before a hurt one would bolt.</summary>
         public float LungeEnter = 0.25f;
         /// <summary>The longest one lunge lasts, and the breath it takes before the next.</summary>
-        public float LungeSeconds = 2.5f, LungeCooldownSeconds = 6f;
+        public float LungeSeconds = 5.11f, LungeCooldownSeconds = 12.26f;
         /// <summary>How far ahead of a pilot it aims: seconds of the pilot's own velocity.</summary>
         public float LungeLead = 0.35f;
         /// <summary>Its mouth this close to the pilot (world): it has struck, and the lunge ends.</summary>
-        public float LungeReach = 40f;
+        public float LungeReach = 81.76f;
         /// <summary>A form with a strike pose of its own (<see cref="TandavaForm.SnapPlanIndex"/>: the heads thrown, the jaws
         /// snapped) commits it when its weapon comes this close to the pilot (world) - a beat before it reaches - or this
         /// long before a lunge runs out, and holds it this long: a strike reads whether it lands or not.</summary>
-        public float SnapReach = 150f, SnapLeadSeconds = 0.5f, SnapHoldSeconds = 1.3f;
+        public float SnapReach = 306.6f, SnapLeadSeconds = 1.022f, SnapHoldSeconds = 2.657f;
         /// <summary>Its turn while its jaws snap shut, x the config's TurnPerStep: barely, it is committed to the bite.</summary>
         public float TurnSnap = 0.3f;
 
@@ -242,30 +249,31 @@ namespace CosmicShore.Gameplay
 
         // ── where to eat
         /// <summary>A pilot within about this of a plant makes it unsafe (world).</summary>
-        public float SafeRadius = 350f;
+        public float SafeRadius = 715.4f;
         /// <summary>How much a nearby pilot spoils a plant, calm and wary (0 = not at all, 1 = completely).</summary>
         public float FearCalm = 0.5f, FearWary = 0.9f;
         /// <summary>Added to a plant's distance before dividing, so the nearest plant is not chosen at any cost.</summary>
-        public float DistanceBias = 300f;
+        public float DistanceBias = 613.2f;
         /// <summary>The plant it is already heading for scores this many times higher: it commits.</summary>
         public float StickBonus = 1.3f;
         /// <summary>A plant with less than this to eat is not worth the trip.</summary>
-        public float MinFood = 200f;
+        public float MinFood = 1276f;
         /// <summary>A plant it left is not revisited for this long (it has to grow back).</summary>
         public float RestSeconds = 25f;
         /// <summary>With nothing to eat it wanders to a point at least this far away (world).</summary>
-        public float WanderReach = 350f;
+        public float WanderReach = 715.4f;
 
         // ── feeding
         /// <summary>It starts eating when its mouth is within this of the plant (world).</summary>
-        public float ArriveMargin = 70f;
+        public float ArriveMargin = 143.1f;
         /// <summary>Losing this share of its full body during one meal breaks the meal: it bolts.</summary>
         public float MealBreakFraction = 0.2f;
-        /// <summary>A plant it has had no bite from for this long is bare...</summary>
+        /// <summary>A plant it has had no bite from for this long is bare (and one it has sat parked short of, unable to get
+        /// its mouth to, for this long is out of its reach)...</summary>
         public float GiveUpSeconds = 6f;
         /// <summary>...counted only after this long at the plant: the body needs a few seconds to settle into its feed pose
         /// (the heads to reach the food) before a quiet mouth means anything.</summary>
-        public float FeedSettleSeconds = 4f;
+        public float FeedSettleSeconds = 8.176f;
         /// <summary>The longest one meal may take.</summary>
         public float MaxFeedSeconds = 30f;
         /// <summary>It stops eating once its stomach is this full (0..1).</summary>
@@ -279,13 +287,13 @@ namespace CosmicShore.Gameplay
 
         // ── the ascension
         /// <summary>Seconds the Lord of the Dance takes to assemble before the halo lights.</summary>
-        public float RiseSeconds = 5f;
+        public float RiseSeconds = 10.22f;
         /// <summary>How long the drum runs: the pilots' window to break the halo.</summary>
-        public float DrumSeconds = 30f;
+        public float DrumSeconds = 61.32f;
         public int HaloCount = 12, HaloToBreak = 9;
         /// <summary>The dance's reach from its centre (the halo and the guard posts, world): the dance ground is kept this
         /// far inside the roam radius.</summary>
-        public float DanceReach = 250f;
+        public float DanceReach = 511f;
 
         // ── the match
         /// <summary>The cycle must complete within this many seconds of the go, or the pilots have held it off. 0 = no clock -
@@ -374,7 +382,8 @@ namespace CosmicShore.Gameplay
         readonly Random _rng;
         readonly Dictionary<int, float> _restUntil = new();
         float _feedSince, _eatenAtMeal, _phaseSince, _fleeUntil = -1f, _lossRate, _lungeUntil = -1f, _lungeReadyAt, _snapUntil = -1f;
-        int _lostAtMeal, _lostPrev = -1, _coilFor = -1, _coilForm = -1;
+        int _lostAtMeal, _lostPrev = -1, _coilFor = -1, _coilForm = -1, _parkedFor = -1;
+        float _parkedSince;
         bool _armed, _haveWander;
         Vector3 _wander;
 
@@ -678,7 +687,12 @@ namespace CosmicShore.Gameplay
             var reach = Coil >= 0 ? Form.CoilMouths[Coil] : Form.Mouth;
             Goal = ClampInside(plant.Position - InBody(s, reach), MealRoamRadius);
             var mouth = s.Anchor + InBody(s, reach);
-            if (Form.FeedPlanIndex >= 0 && Vector3.Distance(mouth, plant.Position) <= S.ArriveMargin) BeginFeed(s, plant);
+            if (Form.FeedPlanIndex >= 0 && Vector3.Distance(mouth, plant.Position) <= S.ArriveMargin) { BeginFeed(s, plant); return; }
+            // PARKED short of it: the plant lies past the roam, so the goal was clamped, and the body sits on that goal with
+            // its mouth off the plant - a body at rest does not turn, so it would wait there for ever (the Antlion did, and
+            // starved). After GiveUpSeconds parked it rests the plant and chooses again
+            if (plant.Id != _parkedFor || Vector3.Distance(s.Anchor, Goal) > S.ArriveMargin) { _parkedFor = plant.Id; _parkedSince = Clock; }
+            else if (Clock - _parkedSince > S.GiveUpSeconds) { _restUntil[plant.Id] = Clock + S.RestSeconds; _parkedFor = -1; }
         }
 
         /// <summary>The best plant to go to now (an index into <paramref name="food"/>), or -1.</summary>

@@ -23,6 +23,6 @@ MonoBehaviour:
     element: 1
     UseFloor: 1
     Floor: 0.25
-  upgradeElement: 1
+  upgradeElement: 0
   upgradeBiteMultiplier: 2
   cooldown: 1

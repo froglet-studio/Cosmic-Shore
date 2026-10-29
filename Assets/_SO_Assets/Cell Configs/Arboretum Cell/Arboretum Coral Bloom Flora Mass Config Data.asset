@@ -30,5 +30,6 @@ MonoBehaviour:
     HeartWorldScale: 1.433
     GrowPeriod: 0.5
     MaxTotalSpawnedObjects: 4150
+    ShieldPeriod: 1
     PlantRadiusCellFraction: 0.92
     PlantRadiusCellFractionMin: 0.42

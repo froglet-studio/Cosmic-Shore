@@ -11,10 +11,11 @@ The generator is the source and the assets are the build (Docs/TOOLING.md). Docs
 WHAT THE FOUR ELEMENTS ARE: the GYROID FLORA's four. The base sheet is that plant's own tiling
 (NestedGyroidTemplate), and each element's prism is that plant's prism for the element - Variant.LeafSize and
 Variant.LatticeScale QUOTED out of `Gyroid Flora <Element>.asset` (Time 9 x 3.4 x 1.5; Mass 7 x 4.5 x 3.5;
-Space 40 x 1 x 1 on a 3.19x lattice; Charge 4.28 x 1.62 x 0.71, the plate the gyroid fitted to its shields),
-scaled with NestedGyroidConfigSO.CellSize / 120. On top, the platform's element laws: Time grows fastest
-(Flora.ResolveGrowPeriod), Charge is armoured (ShieldPeriod 1, which author_charge_flora_shields.py gates),
-each drops its own element's heart. Re-run this after any edit to a Gyroid Flora element.
+Space 40 x 1 x 1 on a 3.19x lattice; Mass the Time plate x1.28 on a lattice grown until its shields clear,
+Charge the Time plate), scaled with NestedGyroidConfigSO.CellSize / 120. On top, the platform's element laws
+(Docs/ECOSYSTEM.md 65): Time grows fastest (Flora.ResolveGrowPeriod), Mass is armoured (ShieldPeriod 1, which
+author_flora_armour.py gates), Charge never shields because every prism it lays is danger, and each drops its
+own element's heart. Re-run this after any edit to a Gyroid Flora element.
 
 THE HEART IS PINNED, NOT SIZED - and that is a decision, stated so nobody mistakes it for an omission.
 Tools/Build/author_lifeform_heart_sizes.py owns HeartWorldScale fleet-wide and solves K so the LARGEST
@@ -121,7 +122,7 @@ def gyroid_element(element):
 def build_config(element, value, prefab_guid, heart, budget):
     leaf, lattice = gyroid_element(element)
     quota = 0                         # the colony clock births, never a per-plant quota (see the docstring)
-    shield = 1 if element == 'Charge' else -1
+    shield = {'Mass': 1, 'Charge': 0}.get(element, -1)   # ElementalArmour: Mass armoured, Charge never
     return (
         '%YAML 1.1\n'
         '%TAG !u! tag:unity3d.com,2011:\n'
@@ -227,7 +228,7 @@ def main():
     files, guids, info = plan()
     print(f'NestedGyroidFlora: 4 element configs on one lattice (budget {info["budget"]}), '
           f'heart pinned at HEART_MAX {info["heart"]}, seed {SEED_FLOOR} / floor {POPULATION} / cap {CAP} per element '
-          f'({4 * CAP} heart colliders across the four), Charge armoured')
+          f'({4 * CAP} heart colliders across the four), Mass armoured')
 
     for g in guids:
         dup = owners_elsewhere(g, set(files))

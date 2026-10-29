@@ -30,11 +30,11 @@ MonoBehaviour:
   SpawnRingRadiusFloor: 0
   SpawnFormation: 0
   SpawnPoints:
-  - position: {x: 600, y: 0, z: -90}
+  - position: {x: 1226.4, y: 0, z: -90}
     rotation: {x: 0, y: -0.7071, z: 0, w: 0.7071}
-  - position: {x: 600, y: 0, z: -30}
+  - position: {x: 1226.4, y: 0, z: -30}
     rotation: {x: 0, y: -0.7071, z: 0, w: 0.7071}
-  - position: {x: 600, y: 0, z: 30}
+  - position: {x: 1226.4, y: 0, z: 30}
     rotation: {x: 0, y: -0.7071, z: 0, w: 0.7071}
-  - position: {x: 600, y: 0, z: 90}
+  - position: {x: 1226.4, y: 0, z: 90}
     rotation: {x: 0, y: -0.7071, z: 0, w: 0.7071}

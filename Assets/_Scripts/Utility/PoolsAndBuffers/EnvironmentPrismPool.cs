@@ -23,7 +23,12 @@ namespace CosmicShore.Gameplay
     /// Never Release a live environment prism during gameplay. Live mass stays
     /// until an active sink (fauna, vessel ability, or cell-swap drain of the
     /// authored environment gathered under the retiring root). Consumed/exploded
-    /// prisms Destroy and ForgetDestroyed drops them; they do not return.
+    /// prisms mostly stay destroyed in place until that drain (Destroy, and
+    /// ForgetDestroyed drops them). The one exception is DEAD free mass whose
+    /// owner opted in: a natural-death skeleton (Prism.RecyclesWhenDestroyed)
+    /// that is later destroyed comes back here through PrismRecycler once its
+    /// death effect has played (Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-29).
+    /// Live mass is still never released.
     ///
     /// PrepareForLay snaps Domains.Blue materials even on first mint so
     /// ChangeTeam(final domain) is a real Blue → domain clock lerp. A raw

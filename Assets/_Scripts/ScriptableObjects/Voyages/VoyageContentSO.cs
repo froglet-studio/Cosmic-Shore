@@ -49,8 +49,6 @@ namespace CosmicShore.ScriptableObjects
     {
         [Tooltip("The harbour toy's label and the build veil's.")]
         public string VoyageName = "VOYAGE";
-        [Tooltip("Banner when the job board opens.")]
-        public string BoardOpen = "FLY THROUGH A JOB TO TAKE IT";
         [Tooltip("Banner when the Ark sets sail.")]
         public string Depart = "BOUND FOR {to}";
         [Tooltip("Banner on arrival.")]
@@ -73,11 +71,17 @@ namespace CosmicShore.ScriptableObjects
         public string Extracted = "DOCKED AT {to}: {count} FOUND ARTIFACTS ARE YOURS";
         [Tooltip("Banner when the Ark falls.")]
         public string ArkLost = "THE ARK IS LOST";
-        [Tooltip("A station's second line: who brought the job.")]
-        public string BroughtBy = "brought by {pilot}";
-        [Tooltip("Shown where a station would be when no seated pilot has work here.")]
+        [Tooltip("The Voyage window's card when no seated pilot has work here.")]
         public string NoWork = "No pilot has work here. Seat other pilots, or sail on.";
         [Tooltip("A friend's banner while the host's board decides the next job.")]
         public string Following = "SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB";
+        [Tooltip("Banner after a job's work is done or left undone: where the next voyage is chosen.")]
+        public string ChooseNext = "LEAVE FREESTYLE TO CHOOSE YOUR NEXT VOYAGE";
+        [Tooltip("A voyage card's eyebrow in the Voyage window: the course, and the pilot who brought the job.")]
+        public string CardRoute = "{from} TO {to} - {pilot}";
+        [Tooltip("The way home's card eyebrow in the Voyage window.")]
+        public string CardHomeRoute = "{from} TO {to}";
+        [Tooltip("The Voyage window's card for the job under way.")]
+        public string CardUnderway = "UNDER WAY TO {to}";
     }
 }
