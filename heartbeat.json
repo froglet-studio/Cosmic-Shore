@@ -15,6 +15,10 @@
  },
  "cores": 11,
  "current": {
+  "best": 9e-05,
+  "best_start": null,
+  "epoch": "46859a87c158",
+  "evals": 17328,
   "job": "bioform-forge",
   "max_evals": null,
   "minutes": 60.0,
@@ -147,7 +151,7 @@
  "totals": {
   "sessions": 10
  },
- "updated": 1793268315,
+ "updated": 1793268682,
  "user": "shombithofficial",
  "version": "1"
 }

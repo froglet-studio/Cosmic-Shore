@@ -1,0 +1,51 @@
+{
+ "descriptors": {
+  "appendages": 0.125,
+  "elongation": 1.715996984112497,
+  "major": 0
+ },
+ "evals_at": 9696,
+ "loss": 9e-05,
+ "metrics": {
+  "appendage_share": 0.125,
+  "census": [
+   84,
+   0,
+   0,
+   76
+  ],
+  "elongation": 1.716,
+  "integrity": 1.0,
+  "island": 6.224,
+  "lively": 1.201,
+  "major": 0,
+  "max_step": 2.357,
+  "n": 160
+ },
+ "params": {
+  "arch": -0.1367987385491718,
+  "arm_flare": 0.38476488706384365,
+  "arm_len": 8.677954987824123,
+  "arms": 0,
+  "body_elem": 0,
+  "crest": 11.720714043236436,
+  "head_elem": 0,
+  "length": 74.59130999536531,
+  "limb_angle": 28.413222123977047,
+  "limb_elem": 3,
+  "limb_lag": 0.4346087834337077,
+  "limb_len": 28.478820516341024,
+  "limb_pairs": 1,
+  "limb_spread": 0.1521554186478844,
+  "limb_start": 0.13494537726668848,
+  "limb_sweep": 0.3037020786314241,
+  "radius": 8.875218044210612,
+  "ring_units": 3,
+  "swim": "pulse",
+  "taper": 0.10989801386798816,
+  "wave_amp": 0.24894384069689568,
+  "wave_count": 3
+ },
+ "sha": "f06108b5190ff5bb6237257424f7eb1a9abf08aa",
+ "time": 1793268529
+}
