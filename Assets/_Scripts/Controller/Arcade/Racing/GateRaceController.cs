@@ -415,6 +415,9 @@ namespace CosmicShore.Gameplay
         /// <paramref name="ringNo"/>. Zero by default: every AI aims at the same centre-line points, so in a mode whose
         /// hulls lay trails each AI flies straight down the trail the one ahead just laid (Switchback, Yash 2026-10-29).
         /// </summary>
+        /// <summary>The per-frame imminent-impact hook installed on every armed AI (<see cref="AIPilot.SetEmergencySteerProvider"/>), or null.</summary>
+        protected virtual AIPilot.EmergencySteer AIEmergencySteerFor(IPlayer pilot) => null;
+
         protected virtual Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) => Vector3.zero;
 
         /// <summary>
@@ -1334,6 +1337,7 @@ namespace CosmicShore.Gameplay
                 return throughPoint;
             });
             pilot.SetNextLegProvider(() => after);
+            pilot.SetEmergencySteerProvider(AIEmergencySteerFor(captured));
 
             // A race flies flat out, and a drifting hull (the Dolphin's charge) points its nose where it is
             // going rather than at the cell centre, so a discharge fires down the line to the ring

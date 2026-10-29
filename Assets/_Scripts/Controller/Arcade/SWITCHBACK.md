@@ -882,3 +882,26 @@ level; a weaving trail 8 -> 0. Real hull/turn dynamics are not modelled - verify
   keys, inherited from a mode whose vessel lays a different trail. A Dolphin trail here has not
   been measured against that ladder; if fauna never hunt, or the cell pins at Frenzy, that is
   where to look.
+
+### AI: the emergency sweep (2026-10-29, "dolphins eat prisms stupidly")
+
+Playtest of 9ff5d38b5: the sense ran but the hulls still flew into prisms. Root causes:
+
+1. **A drift locks the course.** `AIPilot.Update` keeps a commit drift while `Dot(desired, VesselStatus.Course) >= .9`
+   (any dodge under ~26° changes nothing - the hull keeps travelling the locked course while only the nose turns), and
+   during that drift `desiredDirection` is replaced by the drift LOOK. The Dolphin drifts most of the race.
+2. **The sense looked down the line to the goal, not the velocity**, on a 0.10-0.45 s tick with a fixed 70-200 u range
+   (under a second of warning at boost speed).
+3. **No sense at all on a course without a blocked gate**: `_blastAI` was only built when `layout.Stations.Count > 0`.
+4. **The strike ignored everything** ("on the strike the obstacle ahead IS the point") - rival trails included.
+5. The boost driver's `HoldsLine` (`CentreStick`) and `RotationLimit` could flatten a dodge; the orbit break replaced
+   the target.
+
+Fix: `AIPilot.SetEmergencySteerProvider` - asked every frame with the real velocity; a hit lets the drift go, beats the
+orbit break, and stands the boost driver's line-hold down. `SwitchbackBlastAI.Emergency` sweeps
+`SphereCastNonAlloc` at hull radius (3 u + 0.3 x clearance) down the velocity, reach = speed x 0.35/0.5/0.7/0.9 s
+(Easy..Legendary, min 25 u), plus the nose while turning; every other frame (staggered) when cold, every frame for 0.6 s
+after a hit; the dodge is held 0.18 s. On a strike only hits before the crystal count. The sense range is now
+max(SenseRange, speed x (1.2 + reaction)). The sense runs on every course. Controller `aiSenseDebug` draws it
+(sense tube green/yellow, sweep cyan/red, hit magenta, dodge white, avoid orange) and logs dodges at Info level.
+Startup: `[Switchback AI] sense active mask=2048 layer=11 stations=N`.

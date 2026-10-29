@@ -291,6 +291,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetExternalTargetProvider(Func<Vector3> provider) => _externalTargetProvider = provider;
 
+        /// <summary>
+        /// The last-ditch avoidance hook: asked every frame with the hull's position, its real velocity (course x speed)
+        /// and its nose. True (with a point to steer at) means impact is imminent: the steering flies that point instead
+        /// of the objective (and the orbit break), a drift is let go (a drift locks the course, so no steering could
+        /// change where the hull is going), and the boost driver's line-hold and rotation limit stand down for the frame.
+        /// </summary>
+        public delegate bool EmergencySteer(Vector3 position, Vector3 velocity, Vector3 forward, out Vector3 steerTo);
+        EmergencySteer _emergencySteer;
+        public void SetEmergencySteerProvider(EmergencySteer provider) => _emergencySteer = provider;
+        /// <summary>The emergency hook overrode this frame's steering.</summary>
+        public bool EmergencyActive { get; private set; }
+
         // Set by the external target provider, for the frame it is sampled in: see MarkAimAsPathLead.
         bool _aimIsPathLead;
 
@@ -452,6 +464,7 @@ namespace CosmicShore.Gameplay
         {
             if (!source || source == this) return;
             _externalTargetProvider = source._externalTargetProvider;
+            _emergencySteer = source._emergencySteer;
             _driftLookTargetProvider = source._driftLookTargetProvider;
             _belief = source._belief;
             _throttleFloor = source._throttleFloor;
@@ -966,6 +979,23 @@ namespace CosmicShore.Gameplay
                       toObjective, HeadingDirection(), orbitBreakAwayBias) * EscapeLegLength()
                 : _targetPosition;
 
+            // Imminent impact beats everything above, including a committed drift (whose locked course would carry the
+            // hull straight on into the obstacle whatever the nose did) - Switchback 2026-10-29, "dolphins eat prisms".
+            Vector3 dodge = default;
+            EmergencyActive = _emergencySteer != null &&
+                              _emergencySteer(transform.position, HeadingDirection() * VesselStatus.Speed, transform.forward,
+                                              out dodge);
+            if (EmergencyActive)
+            {
+                steerTarget = dodge;
+                if (VesselStatus.IsDrifting || _commitDriftHeld)
+                {
+                    vessel.StopShipControllerActions(CommitControl);
+                    SetCommitDriftHeld(false);
+                }
+                ReleaseAimTelegraph();
+            }
+
             _distance = steerTarget - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 
@@ -978,7 +1008,7 @@ namespace CosmicShore.Gameplay
             // telegraph: the vessel is repositioning, and announcing an aim at the escape point
             // would be announcing an aim at nothing. The branches below read this, and the
             // drift-ended branch is what releases a telegraph already lit.
-            LookingAtCrystal = !_extending &&
+            LookingAtCrystal = !_extending && !EmergencyActive &&
                                Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
             if (commitHeldOff)
             {
@@ -1084,9 +1114,9 @@ namespace CosmicShore.Gameplay
                 _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : SteeringThrottle;
             }
 
-            if (_boostActive && _boostDriver.HoldsLine)
+            if (_boostActive && _boostDriver.HoldsLine && !EmergencyActive)
                 CentreStick();
-            if (_boostActive && !VesselStatus.IsSingleStickControls)
+            if (_boostActive && !EmergencyActive && !VesselStatus.IsSingleStickControls)
             {
                 if (_boostDriver.HoldsFullThrottle) _inputStatus.XDiff = 1f;
                 float driverThrottle = _boostDriver.Throttle;

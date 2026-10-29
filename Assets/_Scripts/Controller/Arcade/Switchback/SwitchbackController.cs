@@ -49,6 +49,10 @@ namespace CosmicShore.Gameplay
         };
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
+        [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
+                 "view with Gizmos on) and logs each emergency dodge at Info level. Also on while a script sets " +
+                 "SwitchbackBlastAI.DebugSense.")]
+        [SerializeField] bool aiSenseDebug;
 
         /// <summary>u a course feature keeps outside the nucleus.</summary>
         const float NucleusMargin = 30f;
@@ -86,6 +90,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Each AI's own lane through an open ring, so no two AIs fly one line (and its fresh trail).</summary>
+        protected override AIPilot.EmergencySteer AIEmergencySteerFor(IPlayer pilot) =>
+            (Vector3 position, Vector3 velocity, Vector3 forward, out Vector3 steerTo) =>
+            {
+                steerTo = default;
+                if (aiSenseDebug) SwitchbackBlastAI.DebugSense = true;
+                return IsServer && _blastAI != null && _blastAI.Emergency(pilot, position, velocity, forward, out steerTo);
+            };
+
         protected override Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) =>
             IsServer && _blastAI != null ? _blastAI.LaneOffset(pilot, ringNo, gate) : Vector3.zero;
 
@@ -101,6 +113,11 @@ namespace CosmicShore.Gameplay
         void OnDrawGizmosSelected()
         {
             if (aiPlanGizmos && _blastAI != null) _blastAI.DrawGizmos();
+        }
+
+        void OnDrawGizmos()
+        {
+            if (aiSenseDebug && _blastAI != null) _blastAI.DrawSenseGizmos();
         }
 
         protected override RaceCourseSource CreateCourseSource() =>
@@ -161,12 +178,16 @@ namespace CosmicShore.Gameplay
 
             _runtime = new GameObject("SwitchbackBlastRun").AddComponent<SwitchbackBlastRunRuntime>();
             _runtime.transform.SetParent(transform, false);
-            bool planAI = IsServer && aiBlastPlanner && layout.Stations.Count > 0;
+            // The prism sense (dodge any prism, trails included) runs on every course, blocked gates or none; only the
+            // blast planning needs stations. (Before 2026-10-29 a course with no blocked gate had no sense at all.)
+            if (aiSenseDebug) SwitchbackBlastAI.DebugSense = true;
+            bool planAI = IsServer && aiBlastPlanner;
             _runtime.Init(gameData, intensity, IsServer ? CourseSeedUsed : 0, _course.Count, () => RaceLength, layout, container,
-                          trackAllPrisms: planAI);
+                          trackAllPrisms: planAI && layout.Stations.Count > 0);
             _blastAI = planAI
                 ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
-                                        RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor)
+                                        RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
+                                        p => (int)gameData.AIDifficultyFor(p))
                 : null;
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
