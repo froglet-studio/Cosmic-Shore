@@ -45,6 +45,8 @@ namespace CosmicShore.Gameplay
             public Vector3 O, T, R, Up, M;
             public float L, Cos, Sin;
             public HillTrack Track;
+            /// <summary>Which of the island's ground blocks still stand (null: all of them, the frame the Pistol waits in).</summary>
+            public PistolGround Ground;
             public int Dir;
             public PlaneSegment Seg;
 
@@ -259,14 +261,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The frame for riding <paramref name="seg"/> forward (<paramref name="dir"/> +1, from A to B) or back
-        /// (-1, from B to A), leaning the travel <paramref name="slopeDegrees"/> downhill.</summary>
-        public static Frame For(in PlaneSegment seg, int dir, float slopeDegrees, HillTrack track)
+        /// (-1, from B to A), leaning the travel <paramref name="slopeDegrees"/> downhill. <paramref name="ground"/>: which of
+        /// its blocks still stand (null: all).</summary>
+        public static Frame For(in PlaneSegment seg, int dir, float slopeDegrees, HillTrack track, PistolGround ground = null)
         {
             float a = Mathf.Clamp(slopeDegrees, 0f, 75f) * Mathf.Deg2Rad, c = Mathf.Cos(a), sn = Mathf.Sin(a);
             Vector3 t = dir >= 0 ? seg.S : -seg.S;
             var f = new Frame
             {
-                Dir = dir >= 0 ? 1 : -1, Seg = seg, L = seg.L, Cos = c, Sin = sn, Track = track ?? HillTrack.Flat(seg.L),
+                Dir = dir >= 0 ? 1 : -1, Seg = seg, L = seg.L, Cos = c, Sin = sn, Track = track ?? HillTrack.Flat(seg.L), Ground = ground,
                 O = dir >= 0 ? seg.A : seg.B, T = t,
                 R = (t * c + seg.N * sn).normalized,
                 Up = (-t * sn + seg.N * c).normalized,
@@ -279,6 +282,18 @@ namespace CosmicShore.Gameplay
         /// along the slope (the Pistol arrives at a perch there).</summary>
         public static float Ground(in Frame f, float x, out float slope)
         {
+            float u = TravelAt(f, x);
+            float h = HillAt(f, u), dh = HillSlopeAt(f, u);
+            float dx = f.Cos + dh * f.Sin, dy = -f.Sin + dh * f.Cos;
+            slope = dy / (Mathf.Abs(dx) < 1e-4f ? 1e-4f : dx);
+            return -u * f.Sin + h * f.Cos;
+        }
+
+        public static float Ground(in Frame f, float x) => Ground(f, x, out _);
+
+        /// <summary>The travel u from the frame's start of the ground under frame-x <paramref name="x"/>.</summary>
+        static float TravelAt(in Frame f, float x)
+        {
             // x = u cos + h(u) sin: solve for u by Newton's method. Its derivative cos + h'(u) sin stays positive while the
             // hills are under MaxHillSlope and the lean under 33 deg (cot > 1.5), so x never folds and the root is unique;
             // the fixed-point guess starts it close. Level (the shipped lean is 0, Tiny Wings') it is exact at once.
@@ -288,13 +303,18 @@ namespace CosmicShore.Gameplay
                 float d = cs + HillSlopeAt(f, u) * f.Sin;
                 u -= (u * cs + HillAt(f, u) * f.Sin - x) / (d > 0.05f ? d : 0.05f);
             }
-            float h = HillAt(f, u), dh = HillSlopeAt(f, u);
-            float dx = f.Cos + dh * f.Sin, dy = -f.Sin + dh * f.Cos;
-            slope = dy / (Mathf.Abs(dx) < 1e-4f ? 1e-4f : dx);
-            return -u * f.Sin + h * f.Cos;
+            return u;
         }
 
-        public static float Ground(in Frame f, float x) => Ground(f, x, out _);
+        /// <summary>Is there ground under frame-x <paramref name="x"/>? Not where the island's block there was destroyed
+        /// (<see cref="PistolGround"/>): the Pistol must clear that hole, and falls through it if it does not. The perches
+        /// at either end (and past them) always stand.</summary>
+        public static bool SolidAt(in Frame f, float x)
+        {
+            if (f.Ground == null || !f.Ground.AnyGone) return true;
+            float u = TravelAt(f, x);
+            return u <= 0f || u >= f.L || f.Ground.SolidAt(LineS(f, u));
+        }
 
         /// <summary>The ground's point <paramref name="u"/> along the travel, in the frame (x, y).</summary>
         public static Vector2 GroundPoint(in Frame f, float u)
@@ -317,6 +337,51 @@ namespace CosmicShore.Gameplay
             if (u <= 0f || u >= f.L) return 0f;
             return f.Track.Slope(LineS(f, u)) * f.Dir;
         }
+    }
+
+    /// <summary>
+    /// Which of an island's ground blocks still stand (Garrett, 2026-10-28: "when the goby's trail is destroyed the shrimp
+    /// should have to clear the destroyed section. if they fall they should not hit phantom prisms"). The Goby lays a block
+    /// every <see cref="Gap"/> along its dart (<c>trailBlockGap</c>); slot i covers [i Gap, (i + 1) Gap) along the line from
+    /// A and is ground until its block is destroyed (the seat marks it, frame by frame, from the blocks themselves). The
+    /// ride's hills are the same either way: a destroyed block is a HOLE in them, never ground that is no longer there.
+    /// Pure, so the tests read it.
+    /// </summary>
+    public sealed class PistolGround
+    {
+        public readonly float Length, Gap;
+        readonly bool[] _gone;
+        int _goneCount;
+
+        public PistolGround(float length, float gap)
+        {
+            Length = Mathf.Max(1f, length); Gap = Mathf.Max(1f, gap);
+            _gone = new bool[Mathf.Max(1, Mathf.CeilToInt(Length / Gap))];
+        }
+
+        public int Count => _gone.Length;
+
+        /// <summary>True while any block of the island is gone.</summary>
+        public bool AnyGone => _goneCount > 0;
+
+        /// <summary>The slot <paramref name="s"/> along the line lies in.</summary>
+        public int SlotAt(float s) => Mathf.Clamp(Mathf.FloorToInt(s / Gap), 0, _gone.Length - 1);
+
+        /// <summary>The slot's block's place along the line (where the Goby laid it).</summary>
+        public float BlockS(int slot) => Gap * (slot + 0.5f);
+
+        public bool Gone(int slot) => slot >= 0 && slot < _gone.Length && _gone[slot];
+
+        /// <summary>Marks slot <paramref name="slot"/>'s block destroyed, or standing again (a restored block is ground again).</summary>
+        public void SetGone(int slot, bool gone)
+        {
+            if (slot < 0 || slot >= _gone.Length || _gone[slot] == gone) return;
+            _gone[slot] = gone;
+            _goneCount += gone ? 1 : -1;
+        }
+
+        /// <summary>Ground at <paramref name="s"/> along the line: everywhere but a destroyed block's slot.</summary>
+        public bool SolidAt(float s) => s <= 0f || s >= Length || !_gone[SlotAt(s)];
     }
 
     /// <summary>

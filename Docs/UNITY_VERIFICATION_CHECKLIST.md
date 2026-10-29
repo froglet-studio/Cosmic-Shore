@@ -65,6 +65,54 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Goby & Pistol: a destroyed trail is a hole the Pistol must clear; a fall rides a vortex ring home (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett, 2026-10-28: "when the goby's trail is destroyed the shrimp should have to clear the destroyed
+section. if they fall they should not hit phantom prisms. they should fall into a fun animation that brings them back to
+a den, but without the mass creation."):
+- `PistolGround` (pure, `PistolPlane.cs`): one slot per ground block of an island; `PistolPlane.SolidAt` answers "is
+  there ground here" in the ride's frame. The seat keeps every block it lays in its slot and marks it gone each frame
+  while it is destroyed or moved off its spot (a stolen block still stands; a restored one is ground again). Before, the
+  ride's ground was the hill curve alone, so it held the Pistol up where every block was gone (the phantom).
+- `PistolBodyMath`: a grounded Pistol rolls off a hole's edge with its speed; it lands only on ground; once it sinks
+  `pEdgeGrace` (1.2 u) under the line over a hole it has fallen in and lands on nothing after (it passes under the far
+  lip); `pFallDepth` (14 u) under, `Events.Fell`.
+- `GobyPistolDuo`: on a fall a vortex ring (the toroidal lens, `fallRingRadius` 2.4 u) catches the tumbling Pistol and
+  carries it along an arc in its plane back to the den it set off from (`fallReturnSpeed` 260 u/s within 1.4-3 s,
+  `fallReturnArc` 0.08 + `fallReturnLift` 12 u, `fallSpinDegrees` 540), righting it over the last quarter. It rests and
+  picks its next path there; the den grows nothing (the lost ride's distance is dropped). While falling and riding home
+  it hits no prism and pulls none. The AI floats or dives to land on ground, and after a fall leaves that island for
+  another until it rides one through.
+- A rider's machine (the Pistol of a Goby another machine flies) finds the blocks by the spatial index as it nears them;
+  a block it never finds is ground.
+
+**Verified without the editor:** `Tools/Build/goby_pistol_harness/run.sh --self-test` compiles the shipped
+`PistolPlane`, `PistolBodyMath`, `PistolPaths`, `PistolAI` and the new `GobyPistolTrailHoleTests` with Roslyn and RUNS
+them: 5 / 5 pass, and both planted defects (ground under a grounded Pistol over a hole; a fallen Pistol landing again)
+fail them. Syntax-only compile of `GobyPistolDuo.cs` / `GobyPistolConfigSO.cs`: 0 syntax errors (a planted one fires).
+`author_goby_assets --check`, console logging, conditional compilation, crew vessels. `/verify-unity` was not available
+(no editor in the session). **Compile first**, then run `GobyPistolTests` (the existing ride tests must be unchanged:
+an island with no hole rides exactly as before) and `GobyPistolTrailHoleTests`.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. With a rival (or the Sparrow's guns from another seat), shoot a run of the Goby's ground blocks ahead of the Pistol.
+   Riding at speed off a crest, it flies over the gap and lands beyond. Slow, or diving into it, it drops through: no
+   landing on the empty stretch, nothing broken on the way down.
+2. The fall: the Pistol tumbles out of the bottom of the view, a small vortex ring swells round it and carries it,
+   still spinning, in a low arc back to the den it set off from, righting itself as it lands. The den's prism count
+   does not change. The path map opens there as after any rest.
+3. Fly the Goby with a broken island: the AI Pistol falls at most once on it, then rides another island (or teleports
+   to another den) until it has ridden one through.
+4. A single destroyed block on an upslope at speed is skimmed (within the 1.2 u grace); three in a row on an upslope
+   are not.
+5. Swap seats mid-fall and mid-ride home: the fall carries on under the other pilot; nothing resets.
+
+**First-pass tuning:** `pEdgeGrace` 1.2 u, `pFallDepth` 14 u, `fallReturnSpeed` 260 u/s, `fallReturnMinSeconds` 1.4,
+`fallReturnMaxSeconds` 3, `fallReturnArc` 0.08, `fallReturnLift` 12 u, `fallSpinDegrees` 540, `fallRingRadius` 2.4 u.
+**Open for Garrett:** the den it returns to is the one it set off from (a retry); the nearer den would skip the hole.
+
+---
+
 ### 🔴 Destroyed prisms are recycled after their death effect; trail hygiene (`perf/lavalamp-prism-recycle`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PERFORMANCE_OPTIMIZATION.md` §2, row 10-29; Yash approved recycling DEAD prisms):

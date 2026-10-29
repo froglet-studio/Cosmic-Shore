@@ -29,12 +29,19 @@ namespace CosmicShore.Gameplay
             public float pMaxSpeed;
             public float pLaunchRange, pLaunchSpeed, pLaunchCharges, pLaunchCd;
             public float pGhostTime, pGhostCd, pVortexCd;
+            /// <summary>A broken trail (<see cref="PistolGround"/>): a body this far under the ground's line over a hole has
+            /// fallen in for good, and lands on nothing after (less: it still catches the far lip).</summary>
+            public float pEdgeGrace;
+            /// <summary>How far under the ground's line a fallen body drops before it is lost (<see cref="Events.Fell"/>).</summary>
+            public float pFallDepth;
         }
 
         /// <summary>The Pistol's state in the frame it rides.</summary>
         public sealed class State
         {
             public float x, y, vx, vy, v, airT; public bool grounded = true;
+            /// <summary>Fell into a hole in the trail: it lands on nothing until the caller brings it home.</summary>
+            public bool falling;
             public int launch; public float launchT, lastLaunchAt = -9f;
             public float ghostAt, ghostUntil = -1f, vortexAt; public bool prevGhost, prevVortex;
             public Vector3 wpos;
@@ -48,12 +55,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>What the step did that the caller must act on.</summary>
-        public struct Events { public bool Landed, SmoothLanding, Launched, FireSnap; public Vector2 SnapAim; public bool GhostStarted; public float Travelled; }
+        public struct Events { public bool Landed, SmoothLanding, Launched, FireSnap, Fell; public Vector2 SnapAim; public bool GhostStarted; public float Travelled; }
 
         /// <summary>A Pistol standing at the start of <paramref name="f"/> with speed <paramref name="v"/>.</summary>
         public static void PlaceAtStart(State p, in PistolPlane.Frame f, float v)
         {
-            p.x = 0f; p.y = PistolPlane.Ground(f, 0f); p.v = v; p.vx = p.vy = 0f; p.grounded = true;
+            p.x = 0f; p.y = PistolPlane.Ground(f, 0f); p.v = v; p.vx = p.vy = 0f; p.grounded = true; p.falling = false;
             p.wpos = f.ToWorld(p.x, p.y);
         }
 
@@ -70,7 +77,7 @@ namespace CosmicShore.Gameplay
             float g = s.pGravity * (1f + (s.pDiveMul - 1f) * dive), gAir = AirGravity(s, dive);
             int n = Mathf.Max(1, Mathf.CeilToInt(dt / Substep));
             float h = dt / n;
-            for (int i = 0; i < n; i++) Ride(p, f, h, g, gAir, s, ref ev);
+            for (int i = 0; i < n && !ev.Fell; i++) Ride(p, f, h, g, gAir, s, ref ev);
             // the jump: one charge on Time's cooldown
             if (p.launch < s.pLaunchCharges) { p.launchT += dt; if (p.launchT >= s.pLaunchCd) { p.launch++; p.launchT = 0f; } } else p.launchT = 0f;
             if (inp.HasLaunch && p.launch > 0)
@@ -100,6 +107,10 @@ namespace CosmicShore.Gameplay
         /// lets go); a landing keeps its speed along the slope and loses the part into it (the game's frictionless ground):
         /// within <c>pGoodLand</c> of the slope it is a perfect slide, steeper it keeps <c>pHardKeep</c> of what is left, and
         /// a hop shorter than <c>pMinAir</c> is neither. Never faster than <c>pMaxSpeed</c>.
+        /// <para>A HOLE where a trail block was destroyed (<see cref="PistolPlane.SolidAt"/>) holds nothing up: the Pistol
+        /// rolls off its edge with the speed it had, flies over it if it is high and fast enough, and lands on the far side;
+        /// once it sinks <c>pEdgeGrace</c> under the ground's line over a hole it has fallen in, lands on nothing after (no
+        /// phantom ground), and is lost <c>pFallDepth</c> under it (<see cref="Events.Fell"/>).</para>
         /// </summary>
         static void Ride(State p, in PistolPlane.Frame f, float h, float g, float gAir, in Settings s, ref Events ev)
         {
@@ -109,7 +120,14 @@ namespace CosmicShore.Gameplay
                 float k = PistolPlane.Curvature(f, p.x, out float m), c = 1f / Mathf.Sqrt(1f + m * m), sn = m * c;
                 p.v = Mathf.Clamp(p.v + (-g * sn - s.pDrag * p.v) * h, s.pMinSpeed, vMax);
                 if (-k * p.v * p.v > gAir * c) { p.grounded = false; p.vx = p.v * c; p.vy = p.v * sn; p.airT = 0f; }
-                else { p.x += p.v * c * h; p.y = PistolPlane.Ground(f, p.x); return; }
+                else
+                {
+                    p.x += p.v * c * h;
+                    if (PistolPlane.SolidAt(f, p.x)) { p.y = PistolPlane.Ground(f, p.x); return; }
+                    // the block under it is gone: off the edge, with the speed it had along the slope
+                    p.grounded = false; p.vx = p.v * c; p.vy = p.v * sn; p.airT = 0f;
+                    return;
+                }
             }
             p.vy -= gAir * h;
             float drag = 1f - s.pDrag * h; p.vx *= drag; p.vy *= drag;
@@ -119,6 +137,13 @@ namespace CosmicShore.Gameplay
             if (p.x < 0f) { p.x = 0f; if (p.vx < 0f) p.vx = 0f; }   // the perch it left is behind it: never off the start
             float yg = PistolPlane.Ground(f, p.x, out float slope);
             if (p.y > yg) return;
+            if (p.falling || !PistolPlane.SolidAt(f, p.x))
+            {
+                // over a hole, or under the line after falling into one: nothing to land on
+                if (yg - p.y > s.pEdgeGrace) p.falling = true;
+                if (p.falling && yg - p.y >= Mathf.Max(s.pEdgeGrace, s.pFallDepth)) ev.Fell = true;
+                return;
+            }
             float cl = 1f / Mathf.Sqrt(1f + slope * slope), sl = slope * cl, sp = Mathf.Sqrt(p.vx * p.vx + p.vy * p.vy), vt = p.vx * cl + p.vy * sl;
             p.grounded = true; p.y = yg;
             if (p.airT < s.pMinAir) { p.v = Mathf.Clamp(vt, s.pMinSpeed, vMax); return; }   // a skip

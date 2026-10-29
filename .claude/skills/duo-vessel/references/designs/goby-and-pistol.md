@@ -46,6 +46,16 @@
 >   **[stated]** (jump 9 s -> 3 s).
 >   **[open] since 2026-10-22:** the aimed jump is off ("launching intentionally was wierd"), so Time's base card has
 >   nothing to drive until Garrett names what Time does on the Pistol (or turns `aimedJump` back on).
+> - "when the goby's trail is destroyed the shrimp should have to clear the destroyed section. if they fall they should
+>   not hit phantom prisms. they should fall into a fun animation that brings them back to a den, but without the mass
+>   creation." **[stated]** (2026-10-28). **[read]:** a destroyed ground block is a HOLE in the Pistol's ground
+>   (`PistolGround`; a stolen block still stands, a restored one is ground again): the ride rolls off its edge, flies
+>   over it if high and fast enough, and lands only on ground; sunk `pEdgeGrace` 1.2 u under the line it has fallen in and
+>   lands on nothing after, and at `pFallDepth` 14 u a vortex ring (the toroidal lens, 2.4 u) catches it, tumbling, and
+>   carries it in a low arc back to the den it SET OFF FROM, where it rests and picks a path; that den grows nothing and
+>   the lost ride's distance is dropped. Falling and riding home it hits and pulls no prism. The AI lands on ground when
+>   it can and, after a fall, rides another island until it rides one through. **[open]:** the den it set off from (a
+>   retry) or the nearer one (which would skip the hole).
 > - The primer, heat and flares are RETIRED (they were the Goby's old kit). Charge has no level-5 upgrade yet **[open]**.
 > - Controls: Goby Dart = pad RT / X, key Q, phone Dart button (hold, let go); Lock = pad LT / Y, key F, phone Lock.
 >   Pistol (since 2026-10-24, on the fleet's four labelled face buttons so each card's chip names its control from the
