@@ -65,6 +65,14 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 FTUE Rev 36 B: the captain's comms window (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player). Not opened in the editor. Needs the developer unlock OFF (Froglet Toolbox) and a fresh FTUE (Quest Debug: reset).
+- [ ] Home: Trace's window slides in from the edge away from ARCADE, her line types, the bars move, then "A ARCADE" fades in; a lime line runs to the lit ARCADE.
+- [ ] Arcade: a new line plays (the entrance replays) and the window docks on the side away from the card; it never covers it.
+- [ ] Preview step: the "Fly" prompt; Settings and Skip tutorial still work on every step; the dim still refuses presses elsewhere.
+- [ ] 21:9 and 4:3: the window scales with the screen height and stays on screen.
+
 ### 🔴 Hover C: the kit's sheen (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor). Not opened in the editor.

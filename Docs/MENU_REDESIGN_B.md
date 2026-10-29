@@ -4860,6 +4860,27 @@ the control without an arrow. B suits in-match lines, since it covers least. C h
 - The entrance, the trail and the spotlight hole are new view work on `MainMenuDialogueView`.
 - Open (Shombith, Caleb): her voice, and her name.
 
+### 102.1 Rev 36 B (Comms), built (2026-10-29, awaiting in-editor approval)
+
+The captain's comms window rides on the existing guided path (`MenuGuide` + `MenuSpotlight`, the LOCKED rule: one lit
+control, everything else dimmed and dead except Settings and Skip).
+- **`GuideSpeakerSO`** (new, `Assets/_Scripts/UI/Guide/`) holds who speaks: name, title, eyebrow, portrait, the comms
+  prefab, 45 characters a second, a 0.5 s dock. `GuideSpeaker_Trace.asset` is Trace with her roster portrait.
+- **`GuideCommsView`** (new) behaves like the board:
+  - it docks on the screen edge away from the lit control, and moves to the top when it would cover it;
+  - the line types once the window has landed, the 18 voice bars move while it types, then the prompt (keycap and
+    action) fades in;
+  - a lime line runs from the window to the control.
+
+  A new line replays the entrance. Every graphic is raycast-off, so the dim still decides what a press reaches.
+- **`MenuSpotlight.Show`** gains a speaker overload. With a speaker, the comms window replaces the caption pill.
+- **`QuestGuideToMicrogameNode`** gains `speaker`, one prompt per step (Arcade / Open / Fly) and `actionKeycap`.
+  `MainQuest_Phase0_FirstLogin.asset` now speaks in Trace's voice.
+- **Written by `Tools/Build/author_guide_comms.py`** (`--check`, `--self-test` with 5 plants): the prefab
+  (`Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab`), the speaker asset and the phase-asset fields.
+- **Not covered yet:** the in-race and finish steps (4-5 on the board). The first-login guide stops at the Lesson; those
+  steps need their own nodes.
+
 ## 103. Rev 37: connection states and rejoin (2026-10-29, awaiting board approval)
 
 **Asked (Shombith, 2026-10-29):** "where are the others like the connections lost and reconnect ones?" and "If some one
