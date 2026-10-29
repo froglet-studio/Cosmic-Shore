@@ -71,6 +71,23 @@ namespace CosmicShore.Core
         [Tooltip("Shown beside the preview window.")]
         [TextArea(1, 3)] public string previewCaption = "Tap the window to fly.";
 
+        [Header("Speaker (Rev 36 B)")]
+        [Tooltip("Who says the captions: her comms window docks on the side away from the lit control and the caption is her " +
+                 "line (Docs/MENU_REDESIGN_B.md section 102.1). Empty = the plain caption pill.")]
+        public GuideSpeakerSO speaker;
+
+        [Tooltip("The prompt under her line on the home step (beside the keycap).")]
+        public string arcadeAction = "Arcade";
+
+        [Tooltip("The prompt under her line on the card step.")]
+        public string cardAction = "Open";
+
+        [Tooltip("The prompt under her line on the preview step.")]
+        public string previewAction = "Fly";
+
+        [Tooltip("The pad button named on the prompt's keycap (hidden on a device with no pad). Empty = no keycap.")]
+        public string actionKeycap = "A";
+
         [Header("Skip")]
         [Tooltip("The Skip button's words, shown on every step of the guide. Pressing it ends the whole " +
                  "tutorial (the quest is marked done). Empty = no Skip button.")]
@@ -125,9 +142,9 @@ namespace CosmicShore.Core
                         lostFor = 0f;
                         break;
 
-                    case Step.Arcade:  spot.Show(rect, arcadeCaption, cta, dimAlpha, skipLabel, skipKeycap);  lostFor = 0f; break;
-                    case Step.Card:    spot.Show(rect, cardCaption, cta, dimAlpha, skipLabel, skipKeycap);    lostFor = 0f; break;
-                    case Step.Preview: spot.Show(rect, previewCaption, cta, dimAlpha, skipLabel, skipKeycap); lostFor = 0f; break;
+                    case Step.Arcade:  spot.Show(rect, arcadeCaption, cta, dimAlpha, skipLabel, skipKeycap, speaker, arcadeAction, actionKeycap);  lostFor = 0f; break;
+                    case Step.Card:    spot.Show(rect, cardCaption, cta, dimAlpha, skipLabel, skipKeycap, speaker, cardAction, actionKeycap);    lostFor = 0f; break;
+                    case Step.Preview: spot.Show(rect, previewCaption, cta, dimAlpha, skipLabel, skipKeycap, speaker, previewAction, actionKeycap); lostFor = 0f; break;
 
                     default:
                         lostFor += Time.unscaledDeltaTime;

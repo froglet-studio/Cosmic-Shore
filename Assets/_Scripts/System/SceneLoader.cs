@@ -335,6 +335,10 @@ namespace CosmicShore.Core
             // frame, so no un-paused gameplay is ever visible.
             PauseSystem.TogglePauseGame(false);
 
+            // A deliberate return (the pause menu, the match's end, the host ending the session): nothing to rejoin.
+            // A dropped link never comes through here - it bounces (PartyInviteController.HandleHostLossAsync).
+            MatchRejoin.Forget();
+
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
 
             // Clear stale return-to-screen/modal state so Menu_Main starts clean
