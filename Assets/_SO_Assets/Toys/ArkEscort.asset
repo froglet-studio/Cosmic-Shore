@@ -104,8 +104,8 @@ MonoBehaviour:
     BreachHull: 0.72
   maxPopulation: 2
   voyageName: ARK ESCORT
-  cardTitle: Escort the Ark - difficulty {difficulty}
-  cardLine: Take any three vessels and see the Ark through {legs} worlds of the HyperSea.
+  cardTitle: Escort the Ark
+  cardLine: Difficulty {difficulty}, {legs} worlds
   departLine: ESCORT THE ARK THROUGH {legs} WORLDS
   survivedLine: THE ARK MADE IT THROUGH
   fallenLine: THE ARK FELL IN {name}
