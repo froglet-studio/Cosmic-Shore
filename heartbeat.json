@@ -15,10 +15,10 @@
  },
  "cores": 11,
  "current": {
-  "best": 3.3355175172460405,
+  "best": 3.331236150386243,
   "best_start": null,
   "epoch": "837e0889a5e5",
-  "evals": 10494,
+  "evals": 21374,
   "job": "drive-manta-regatta",
   "max_evals": null,
   "minutes": 60.0,
@@ -127,7 +127,7 @@
  "totals": {
   "sessions": 8
  },
- "updated": 1793263475,
+ "updated": 1793263848,
  "user": "shombithofficial",
  "version": "1"
 }
