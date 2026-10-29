@@ -38,3 +38,26 @@ No code changes are needed for any of these.
   (`Assets/_Graphics/Materials/PrismBurn/`, config `Assets/Resources/PrismBurnFxConfig.asset`): NEAR curl /
   MID dissolve / FAR nothing, dithered bands, silent burnouts (`Prism.BurnOut`). Delete the config asset to
   return to the old danger-state + explosion look.
+
+## Network (multiplayer)
+
+The **server** is the only peer that counts charge, decides a strike, strikes crystals and ignites prisms
+(`FulmenByCrystalEffectSO`); clients ignore the broadcast crystal dispatch and replay the server
+(`FulmenNetSync`). The messages ride the collector's `NetworkVesselImpactor` (already on every vessel
+prefab; see `NetworkVesselImpactor.Fulmen.cs`), all reliable on one ordered channel:
+
+| Message | Size | When |
+|---|---|---|
+| Strike: id, config hash, seed, centre, range, excluded crystal, server time | 40 B | once per strike |
+| Child: strike id, crystal id, child seed, generation, origin, range | 28 B | per chained bolt (≤ MaxChildren) |
+| Burn batch: strike id, server time, count + 8 B per prism (offset from centre in 1/8 unit, noise seed, tenths of a second) | 11 B + 8 B·n, ≤ 150 a message | once per frame while the strike lights prisms (its spreads too) |
+
+Charge is a server-written `NetworkVariable<byte>` (`NetworkVesselImpactor.FulmenCharge`), so late joiners and
+client HUDs read the true count. A solo host / offline session allocates no net id and sends nothing.
+
+**Prism identity.** Trail and environment prisms have no network id (`SpatialIndexId` is per-peer registration
+order), so a burn names its prism by position; the client burns the nearest live prism within 0.75 units.
+**Destruction.** There is no authoritative destroy sync for trail mass - every peer simulates it. A client's
+replicated burn (`PrismBurnManager.IgniteRemote`) never spreads (the server sends its spreads), runs on the
+server's timeline (lit `ago` = server-time delta) with the same noise seed, and ends in the quiet
+`Prism.BurnOut` - the one destroy on that peer, so no second explosion.
