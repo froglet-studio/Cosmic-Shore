@@ -42,6 +42,7 @@ namespace CosmicShore.Editor.Parity
         public const string GoldensRoot = "Port/parity/goldens/render";
         const string KeyActive = "CosmicShore.RenderParity.Active";
         const string KeyTake = "CosmicShore.RenderParity.Take";
+        const string KeyBatch = "CosmicShore.RenderParity.Batch";
 
         [MenuItem("FrogletTools/Amoebius/Render Parity: Record Control Take", false, 320)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 4,
@@ -55,6 +56,28 @@ namespace CosmicShore.Editor.Parity
             SessionState.EraseString(KeyTake);
             if (EditorApplication.isPlaying) EditorApplication.ExitPlaymode();
             Debug.Log("[RenderParity] cancelled");
+        }
+
+        /// <summary>
+        /// The dispatch entry point: <c>Unity -batchmode -projectPath . -executeMethod
+        /// CosmicShore.Editor.Parity.RenderParityRecorder.RecordBatch -parityTake control</c>
+        /// (no <c>-nographics</c>: the Recorder needs the GPU; no <c>-quit</c>: the editor exits itself
+        /// when the take is written, 0 on success, 1 on failure). <c>Tools/Build/render_parity_golden.py</c>
+        /// finds the editor from ProjectSettings/ProjectVersion.txt and runs this.
+        /// </summary>
+        public static void RecordBatch()
+        {
+            string take = "control";
+            var args = Environment.GetCommandLineArgs();
+            for (int i = 0; i + 1 < args.Length; i++)
+                if (args[i] == "-parityTake") take = args[i + 1];
+            SessionState.SetBool(KeyBatch, true);
+            Record(take);
+            if (!SessionState.GetBool(KeyActive, false))
+            {
+                Debug.LogError("[RenderParity] batch record did not start (see the errors above)");
+                EditorApplication.Exit(1);
+            }
         }
 
         /// <summary>Record the control scene's take under GoldensRoot/TAKE. Public for a CLI wrapper.</summary>
@@ -101,6 +124,7 @@ namespace CosmicShore.Editor.Parity
                 {
                     Debug.LogError("[RenderParity] the scene has no RenderParityTake; cancelling");
                     Cancel();
+                    if (SessionState.GetBool(KeyBatch, false)) EditorApplication.Exit(1);
                     return;
                 }
                 string take = SessionState.GetString(KeyTake, "control");
@@ -159,6 +183,15 @@ namespace CosmicShore.Editor.Parity
                 Debug.Log($"[RenderParity] recorded in {(DateTime.UtcNow - s_started).TotalSeconds:F0} s -> {s_dir}");
                 SessionState.EraseBool(KeyActive);
                 SessionState.EraseString(KeyTake);
+                bool batch = SessionState.GetBool(KeyBatch, false);
+                SessionState.EraseBool(KeyBatch);
+                if (batch)
+                {
+                    bool ok = File.Exists(Path.Combine(s_dir, "take.mp4")) && File.Exists(Path.Combine(s_dir, "take.json"));
+                    if (!ok) Debug.LogError($"[RenderParity] take.mp4 or take.json missing in {s_dir}");
+                    EditorApplication.Exit(ok ? 0 : 1);
+                    return;
+                }
                 EditorApplication.ExitPlaymode();
             }
 

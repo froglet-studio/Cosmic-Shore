@@ -417,7 +417,9 @@ tool: a bracketed object name must be quoted in the YAML or the object loads nam
 `[StandaloneScene]` marker or AppManager's boot chain records the sign-in screen; the camera's warm-up pose
 must differ from take frame 0 (it now faces the other way) for the cut to align on. Already visible before
 any golden: the Ruby blast's shell draws nothing from 400 units away. The Unity golden is the one step that
-needs the editor: `FrogletTools > Amoebius > Render Parity: Record Control Take`, then `compare`.
+needs the editor, one command on that machine: `python3 Tools/Build/render_parity_golden.py --push` (batch-mode
+Unity on `RenderParityRecorder.RecordBatch`), or the menu item `FrogletTools > Amoebius > Render Parity: Record
+Control Take`; then `compare` anywhere.
 
 ## Log
 
