@@ -23,3 +23,18 @@ Assets: `_SO_Assets/Environment/FulmenConfig.asset`, `_SO_Assets/Effects/Vessel 
   config, and reference the copy from that vessel's container.
 
 No code changes are needed for any of these.
+
+## Activation, flash and burn (round 2)
+
+- **Activation:** `FulmenConfigSO.crystalsToFire` (default 3). Counted per collector (`VesselImpactor`) in
+  `FulmenByCrystalEffectSO`, reset when it fires and on scene unload.
+- **Flash timing:** `growSeconds` (0.12) → `holdSeconds` (0.08) → `fadeSeconds` (0.3) with a seeded stepped
+  flicker (`flickerRate`, `flickerDepth`). Prisms on the path ignite as the front passes and burn for `burnSeconds` (1.4).
+- **Stats:** the config inspector (`FulmenConfigSOEditor`) shows *Prisms Burnt / Crystals Struck / Bolts* for the
+  last strike in play mode; the Environmental Fundamentals window shows a `BURNT` pill.
+- **Bolt look:** `Assets/_Graphics/Materials/Fulmen/FulmenBolt.mat` (`CosmicShore/FulmenBolt`): thin cool core,
+  faint halo, crawling noise pinch, faint flicker, additive. Tune `_Intensity`, `_CoreWidth`, `_HaloGain`, `_Pinch`.
+- **Prism burn:** every `PrismBurnManager` burn is drawn by `PrismBurnView` as instanced paper-burn proxies
+  (`Assets/_Graphics/Materials/PrismBurn/`, config `Assets/Resources/PrismBurnFxConfig.asset`): NEAR curl /
+  MID dissolve / FAR nothing, dithered bands, silent burnouts (`Prism.BurnOut`). Delete the config asset to
+  return to the old danger-state + explosion look.
