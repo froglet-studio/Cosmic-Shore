@@ -3209,6 +3209,14 @@ voyages", then "Rev17 J implement".
   byte-identical), refcompile player config, the gates. The look and the tracker's behaviour are owed in the editor
   (checklist entry "Rev 17 J").
 
+- **Later (2026-10-29, Shombith: "remove both the tandava parts and as a game mode add this there and voyage 3 can remain
+  the same").** The voyages column now holds two cards: **Shiva's Cell** first, its eyebrow "Game mode" (Tandava
+  redesigned, `TANDAVA.md` §0, three forms), then **Voyage 3**, Garrett's job cards (#1622 / #1627: `VoyageJobCard`
+  copied once per job by `VoyageJobsView`). Both Tandava voyages are gone (the old Voyage 1 and Tandava: Severing). Voyage 3
+  had been edited straight into `MissionView.prefab`, which left `author_menu_mission.py --check` red; the generator now
+  lays it, identical to #1627's card document for document, and asserts the job-card wiring and that neither Tandava
+  card is back. No locked voyage tiles remain.
+
 ## 72. Rev 18 A: the game and toy cards (2026-10-25, awaiting in-editor approval)
 
 Shombith, 2026-10-25: "Change the card background a little better make it have some animation this is for all of the

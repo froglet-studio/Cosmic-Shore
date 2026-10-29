@@ -11,7 +11,12 @@
 > to be there but rather than the creature trying to escape its us trying to destroy a creature in a barren cell,
 > shiva s cell." (with a reference image of a cosmic Shiva)
 
-**`GameModes.Tandava` (69) now plays Shiva's Cell**: Voyage 1's card (`Games/_Archive/ArcadeGameTandavaShiva.asset`,
+**The Voyage window (2026-10-29, Shombith: "remove both the tandava parts and as a game mode add this there and voyage 3
+can remain the same"):** its first card is Shiva's Cell, labelled a GAME MODE (not a voyage); both Tandava voyages (the old
+Voyage 1 and Garrett's Tandava: Severing, Voyage 2) left the window; Voyage 3, Garrett's job cards, is unchanged and is now
+authored by `author_menu_mission.py` too, so the window's `--check` holds it.
+
+**`GameModes.Tandava` (69) now plays Shiva's Cell**: the card (`Games/_Archive/ArcadeGameTandavaShiva.asset`,
 scene `MinigameTandavaShiva`, `ShivaController`), authored by `Tools/Build/author_shiva_assets.py` (`--check`). The
 escaping-creature design below (§1-§8) is **superseded but kept**: its card, scene, settings, swarm config, toasts and
 preview are the donor files `author_tandava_severing_assets.py` (Garrett's Voyage 2, `GameModes.TandavaSevering`)

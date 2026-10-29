@@ -14671,9 +14671,10 @@ compile (0 project errors), the swarm harness's Shiva mode (S1-S9, parity with `
 
 - **QA-SHIVA-1** Open `MinigameTandavaShiva.unity`. **Pass:** no `Missing (Mono Script)`; the controller is
   `ShivaController` with `settings = ShivaSettings`, `rule = ShivaScoringRule`; the Cell lists `Shiva Cell Config`.
-- **QA-SHIVA-2** Menu_Main > the Voyage window. **Pass:** Voyage 1 reads Tandava with three forms (The Still Shiva,
-  Nataraja, The Devouring Mouth); Set sail opens the launch panel with the hull carousel; Voyage 2 (Severing) is
-  unchanged.
+- **QA-SHIVA-2** Menu_Main > the Voyage window. **Pass:** the first card reads "Game mode" over Tandava with three
+  forms (The Still Shiva, Nataraja, The Devouring Mouth); Set sail opens the launch panel with the hull carousel. No
+  Tandava: Severing card and no old Tandava card. Voyage 3 (the job cards) looks and works exactly as before:
+  `VoyageToyMenuTests` green, one card per job, Set sail enters freestyle.
 - **QA-SHIVA-3** Launch solo, any hull. **Pass:** the squad spawns facing along the circuit with the first lit ring
   ~400 u ahead; Shiva stands in the middle (crown, three eyes, four arms, moon) turning to face you; seven planets ring
   the cell; three shells of danger prisms surround him; the goals (top left) read Form 1 of 3 / Rings 0/10 / Drum /

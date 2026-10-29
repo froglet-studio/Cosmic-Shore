@@ -64,7 +64,8 @@ PREFABS = ("MissionCard", "MissionView", "VoyageQuestCard")
 RETIRED = tuple(f"{OUT_DIR}/QuestRow.prefab{x}" for x in ("", ".meta"))
 S = dict(card=C.script("KitMissionCard"), view=C.script("MissionExploreView"), avail=C.script("MenuAvailabilityView"),
          arcade_view=A.S["view"], screen=C.script("ArcadeScreen"), gate=A.S["gate"], tile=A.S["tile"], kt=A.S["kt"],
-         cover=A.S["cover"], close=A.S["close"], voyage=C.script("VoyageView"))
+         cover=A.S["cover"], close=A.S["close"], voyage=C.script("VoyageView"), job=C.script("VoyageJobCard"),
+         jobs=C.script("VoyageJobsView"))
 MISSION_GAMES = "7f11dbcad659c684e96f9673bc3f367e"       # MissionGames.asset (SO_MissionList)
 GRID_LAYOUT = "8a8695521f0d02e499659fee002a26c2"         # UnityEngine.UI.GridLayoutGroup
 LOCKED_MESSAGE = "Missions open with the full release."
@@ -144,16 +145,18 @@ def build_card():
 # --------------------------------------------------------------------------------------------
 
 QUEST_LIST = "5eee61facaac4bb46b9e9892512f74cb"          # GameModeQuestList.asset (SO_UnlockList), the Profile's before
-# Voyage 1 is Tandava redesigned as SHIVA'S CELL (Shombith, 2026-10-28): Games/_Archive/ArcadeGameTandavaShiva.asset
-# (author_shiva_assets.py). The escaping creature's card, ArcadeGameTandava.asset, stays as Voyage 2's donor only.
-TANDAVA_CARD = "8f9f1dcfa3595ece0adfc072980160a1"
-# Voyage 2 (Garrett, 2026-10-26: the severing work "contained on a second voyage card in the voyages"): Tandava's fork,
-# GameModes.TandavaSevering - Games/_Archive/ArcadeGameTandavaSevering.asset (author_tandava_severing_assets.py)
-SEVERING_CARD = "b6df7010e0f34e18798473f6c68f26a4"
+# The first card is a GAME MODE, not a voyage (Shombith, 2026-10-29: "remove both the tandava parts and as a game mode add
+# this there and voyage 3 can remain the same"): Shiva's Cell, GameModes.Tandava redesigned -
+# Games/_Archive/ArcadeGameTandavaShiva.asset (author_shiva_assets.py). Both Tandava voyages left the window: the escaping
+# creature (Voyage 1 until 2026-10-28) and Garrett's Tandava: Severing (Voyage 2, GameModes.TandavaSevering, whose mode,
+# scene and card stay; it is on no screen now). Voyage 3 is Garrett's job cards, kept exactly as #1627 left them.
+SHIVA_CARD = "8f9f1dcfa3595ece0adfc072980160a1"
 SLIDER = P.SLIDER
 COLUMN_GAP, HEAD_H = 40, 30
-VOYAGES_W, FEATURE_H, LOCKED_H, VOYAGE_GAP, LOCKED_VOYAGES, FORM_ROW = 480, 556, 104, 16, 1, 24
-OPEN_VOYAGES = 2   # Voyage 1 (Tandava) and Voyage 2 (Tandava: Severing); the locked ones are numbered after them
+VOYAGES_W, FEATURE_H, LOCKED_H, VOYAGE_GAP, LOCKED_VOYAGES, FORM_ROW = 480, 556, 104, 16, 0, 24
+OPEN_VOYAGES = 3   # the numbering the locked ones continue from: Voyage 3 (the job cards) is the last open one
+# Voyage 3's title sits where Voyage 2's five form rows put it (#1622 built the card from Voyage 2's): kept as it stands
+JOB_TITLE_ROWS = 5
 EPISODES_W = 1760 - VOYAGES_W - COLUMN_GAP
 TRACK_TOP, QUEST_GAP, QUEST_H, QUEST_ART_H = 78, 16, 500, 140
 QUEST_W = (EPISODES_W - 56 - 4 * QUEST_GAP) // 5
@@ -161,10 +164,6 @@ EPISODE_H, EPISODE_GAP, LOCKED_EP_H = TRACK_TOP + QUEST_H + 22, 16, 64
 # Shiva's three forms (ShivaSettings.asset Forms[].DisplayName): thread each form's ring circuit before its drum runs out
 FORMS = (("The Still Shiva", "thread his ring circuit through the serpents"), ("Nataraja", "the rings dance as you thread them"),
          ("The Devouring Mouth", "a black hole drags at every ring"))
-# Voyage 2's creature climbs the escaping creature's ladder, and on its way up to the dance it tears between a whale and a jelly
-ESCAPE_FORMS = (("Great Serpent", "eats coiled, wrapped or in a figure-eight"), ("Many-Headed Serpent", "every head rears, then strikes"),
-                ("Lord of the Dance", "rises in a halo of 12 rings to a drum"), ("Antlion", "lunges with its jaws wide"))
-SEVERING_FORMS = (ESCAPE_FORMS[0], ESCAPE_FORMS[1], ("Whale-Jelly Chimera", "torn between two shapes"), ESCAPE_FORMS[2], ESCAPE_FORMS[3])
 
 
 def panel_frame(node, key, accent="SurfaceDark"):
@@ -173,9 +172,11 @@ def panel_frame(node, key, accent="SurfaceDark"):
     M.bracket_nodes(node, f"{key}/Bracket")
 
 
-def open_voyage(content, key, eyebrow, card, forms, button_key):
-    """An open voyage: the card's art full bleed, a fade at the foot, OPEN, its eyebrow, its forms, its name (VoyageView
-    draws it from the card) and SET SAIL. Voyage 1's keys are "Featured/..." (unchanged since Rev 13)."""
+def open_voyage(content, key, eyebrow, card, forms, button_key, title_rows=None):
+    """An open card: the art full bleed, a fade at the foot, OPEN, its eyebrow, its forms, its name and SET SAIL. With a
+    <card> it is a VoyageView that draws and launches that SO_ArcadeGame (the game-mode card, keys "Featured/...",
+    unchanged since Rev 13); without one it is a VoyageJobCard, the template VoyageJobsView copies once per job
+    (Voyage 3). <title_rows> places the title as if that many form rows stood under it."""
     feat = content.child(N(key, key, R((0, 1), None, (0, 0), (VOYAGES_W, FEATURE_H), (0, 1))))
     feat.add("le", 114, le(ph=FEATURE_H))
     clip = feat.child(N(f"{key}/Clip", "Clip", STRETCH))
@@ -202,9 +203,17 @@ def open_voyage(content, key, eyebrow, card, forms, button_key):
                    K.kit_sprite("kit_hex_fill"))
         label(f.child(N(f"{k}/Name", "Name", R((0, 0), (1, 1), (12, 0), (-24, 0)))), name, "BodySmall",
               "TextLight" if first else "NeutralLightest")
-    t = feat.child(N(f"{key}/Title", "Title", R((0, 0), (1, 0), (0, forms_y + len(forms) * FORM_ROW + 12 + 31), (-48, 62), (0.5, 0.5))))
+    rows = len(forms) if title_rows is None else title_rows
+    t = feat.child(N(f"{key}/Title", "Title", R((0, 0), (1, 0), (0, forms_y + rows * FORM_ROW + 12 + 31), (-48, 62), (0.5, 0.5))))
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Voyage", "Display", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("Display", "TextLight", driven=True))
+    if card is None:
+        feat.add("card", 114, lambda ctx, go: mono(go, S["job"],
+                 f"  art: {ref(ctx.c(f'{key}/Clip/Art', 'img'))}\n"
+                 f"  eyebrowText: {ref(ctx.c(f'{key}/Eyebrow', 'tmp'))}\n"
+                 f"  titleText: {ref(ctx.c(f'{key}/Title', 'tmp'))}\n"
+                 f"  setSailButton: {ref(ctx.iref(button_key, 'root#button'))}\n"))
+        return
     feat.add("voyage", 114, lambda ctx, go: mono(go, S["voyage"],
              f"  voyage: {K.ref(11400000, card, 2)}\n  configureModal: {{fileID: 0}}\n"
              f"  art: {ref(ctx.c(f'{key}/Clip/Art', 'img'))}\n"
@@ -234,6 +243,8 @@ def build_view():
     # Right column (first in hierarchy, drawn on the right: the row is reversed): the voyages, a list that grows.
     right = body.child(N("Voyages", "Voyages", R((0, 1), None, (0, 0), (VOYAGES_W, 844), (0, 1))))
     right.add("le", 114, le(pw=VOYAGES_W, mw=VOYAGES_W))
+    # Voyage 3's job cards: one per job the squad's pilots bring, copied from the Voyage3 card (Garrett, #1627)
+    right.add("jobs", 114, lambda ctx, go: mono(go, S["jobs"], f"  template: {ref(ctx.c('Voyage3', 'card'))}\n"))
     label(right.child(N("Voyages/Head", "Head", R((0, 1), (1, 1), (0, 0), (0, 18), (0.5, 1)))), "Voyages", "Label", "TextLight")
     sc = right.child(N("Voyages/Scroll", "Scroll", R((0, 0), (1, 1), (0, -HEAD_H / 2), (0, -HEAD_H))))
     sc.add("scroll", 114, A.scroll_rect("Voyages/Scroll/Viewport/Content", "Voyages/Scroll/Viewport", 20))
@@ -243,9 +254,10 @@ def build_view():
     content = vp.child(N("Voyages/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), VOYAGE_GAP, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
 
-    # Tandava: the art full bleed, a fade at the foot, OPEN, its name, its four forms, SET SAIL. Voyage 2 is the same card.
-    open_voyage(content, "Featured", "Voyage 1", TANDAVA_CARD, FORMS, "SetSail")
-    open_voyage(content, "Voyage2", "Voyage 2", SEVERING_CARD, SEVERING_FORMS, "SetSail2")
+    # Shiva's Cell, a game mode: the art full bleed, a fade at the foot, OPEN, its name, its three forms, SET SAIL.
+    open_voyage(content, "Featured", "Game mode", SHIVA_CARD, FORMS, "SetSail")
+    # Voyage 3: the job cards' template (no card of its own: VoyageJobCard draws each job's route and map)
+    open_voyage(content, "Voyage3", "Voyage 3", None, (), "SetSail3", title_rows=JOB_TITLE_ROWS)
 
     # The voyages still to come: locked, no art, no name yet - the number and a lock.
     for n in range(1 + OPEN_VOYAGES, 1 + OPEN_VOYAGES + LOCKED_VOYAGES):
@@ -437,7 +449,17 @@ def validate(files):
     # Rev 13 (§69): the Voyage window - the featured voyage is Tandava and Set sail launches it; the quest track lives here.
     _, vy = A.doc_of(view, V("Featured#voyage"))
     assert vy and S["voyage"] in vy, "the Voyage window has no VoyageView on its featured voyage"
-    assert f"  voyage: {{fileID: 11400000, guid: {TANDAVA_CARD}, type: 2}}\n" in vy, "the featured voyage is not Tandava's card"
+    assert f"  voyage: {{fileID: 11400000, guid: {SHIVA_CARD}, type: 2}}\n" in vy, "the first card is not Shiva's Cell"
+    for gone, what in (("b6df7010e0f34e18798473f6c68f26a4", "Tandava: Severing"), ("a7460784ce7229f7440d35280ae4b04f", "the old Tandava")):
+        assert gone not in view, f"the Voyage window still offers {what} (both Tandava voyages left it, 2026-10-29)"
+    _, job = A.doc_of(view, V("Voyage3#card"))
+    assert job and S["job"] in job, "Voyage 3 is not a VoyageJobCard (the job cards' template)"
+    for field, want in (("art", IMG), ("eyebrowText", TMP), ("titleText", TMP)):
+        C.wired(view, job, field, want, "VoyageJobCard")
+    C.wired(view, job, "setSailButton", A.S["button"], "VoyageJobCard")
+    _, jobs = A.doc_of(view, V("Voyages#jobs"))
+    assert jobs and S["jobs"] in jobs and f"  template: {{fileID: {V('Voyage3#card')}}}\n" in jobs, \
+        "VoyageJobsView does not copy the Voyage3 card"
     for field, want in (("art", IMG), ("titleText", TMP)):
         C.wired(view, vy, field, want, "VoyageView")
     C.wired(view, vy, "setSailButton", A.S["button"], "VoyageView")
@@ -448,7 +470,8 @@ def validate(files):
     for field, want in (("questItemContainer", 224), ("progressBarSlider", SLIDER), ("summaryText", TMP)):
         C.wired(view, tr, field, want, "QuestTrackView")
     # §71: Episode 2 is an episode (its own locked bar under Episode 1), not a voyage; the voyages after Tandava are numbered.
-    assert "m_text: Episode 2\n" in view and "m_text: Voyage 2\n" in view, "Episode 2 and Voyage 2 must both be there, apart"
+    assert "m_text: Episode 2\n" in view and "m_text: Voyage 3\n" in view, "Episode 2 and Voyage 3 must both be there, apart"
+    assert "m_Name: Voyage3\n" in view, "Voyage 3 must keep its name (VoyageToyMenuTests reads it)"
     for filler in ("Where your story goes next", "The next voyage arrives", "Learn the sea", "Co-op hunt"):
         assert filler not in view, f"the Voyage window carries filler text again: {filler!r} (Shombith: no useless text)"
     _, sr = A.doc_of(view, V("Voyages/Scroll#scroll"))
@@ -503,7 +526,9 @@ def self_test(files):
             f[prefab_path("MissionView")], K.FileIds("MissionView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20"))),
         ("mission cards shipped Available", lambda f: f.__setitem__(card, f[card].replace("  availability: 1\n", "  availability: 0\n"))),
         ("a card with no threat count", lambda f: f.__setitem__(card, re.sub(r"(  threatsText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
-        ("the featured voyage not Tandava", lambda f: f.__setitem__(view, f[view].replace(TANDAVA_CARD, "3" * 32))),
+        ("the first card not Shiva's Cell", lambda f: f.__setitem__(view, f[view].replace(SHIVA_CARD, "3" * 32))),
+        ("Tandava: Severing back in the window", lambda f: f.__setitem__(view, f[view] + "# guid: b6df7010e0f34e18798473f6c68f26a4\n")),
+        ("the job cards' template unwired", lambda f: f.__setitem__(view, re.sub(r"(  template: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),
         ("the quest track left out", lambda f: f.__setitem__(view, f[view].replace(f"guid: {P.S['track']}", "guid: " + "4" * 32))),
         ("a quest card that cannot claim", lambda f: f.__setitem__(prefab_path("VoyageQuestCard"), re.sub(
             r"(  claimButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("VoyageQuestCard")]))),

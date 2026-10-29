@@ -16,7 +16,7 @@ development. So the fork shares no file it would have to edit with Tandava:
 | Code | `Controller/Arcade/Tandava/`, `TandavaScoringRuleSO`, `TandavaTurnMonitor` | `Controller/Arcade/TandavaSevering/`, every type prefixed `TandavaSevering` (a copy of #1046's code, renamed) |
 | Assets | `author_tandava_assets.py` | `author_tandava_severing_assets.py`: every asset DERIVED from Tandava's committed one (guids swapped, the fork's additions appended) |
 | Plans | Tandava's 51 (`tandava_plans.py`) | the same 51 by guid, plus four (`tandava_severing_plans.py`: `severed`, `severed_feed`, `chimera_whale`, `chimera_jelly`, indices 51-54) |
-| Menu | Voyage 1 on the Voyage window | Voyage 2 on the Voyage window (`author_menu_mission.py`) |
+| Menu | Voyage 1 on the Voyage window | **on no screen since 2026-10-29** (Shombith: "remove both the tandava parts"): the mode, scene and card stay, and `author_menu_mission.py` no longer lays the Voyage 2 card. To bring it back, restore `open_voyage(..., SEVERING_CARD, ...)` there (git history of 2026-10-28) |
 | Harness | `run.sh <plans> tandava <dir>` | `run.sh <plans> tandava-severing <tandava dir> <fork dir>` (T1-T32 against the fork's director) |
 
 What the fork shares, and so follows: Tandava's halo ring and gold burst (`TandavaHaloRing`, `TandavaGoldBurst`), its
