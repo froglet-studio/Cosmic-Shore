@@ -4817,7 +4817,7 @@ player least.
   with invariants (clear at both sides, solid on the centre line, leans the right way).
 - The existing hover tints stay: KitButton's fill lift and KitHoverTint's word lift.
 
-## 102. Rev 36 mockups: FTUE, redrawn - the captain arrives (2026-10-28, awaiting a pick)
+## 102. Rev 36 mockups: FTUE, redrawn - the captain arrives (2026-10-28; Shombith picked B)
 
 **Asked (Shombith, 2026-10-28):** "for the ftue I do not like them once bit. Up your game bhai", then "Leave that ref,
 just make it good".
@@ -4850,10 +4850,49 @@ entrance per step.
 - **R36Compare:** the three options at rest on Home, Configure and the first race. **R36Notes:** the critique of
   Rev 34, the timings, the build.
 
-**Why A:** her vessel does the game's own move (a skim trail), and the trail is the pointer, so the eye follows it to
+**Picked (Shombith, 2026-10-29):** "Lets go with B" (Comms).
+
+**Why A was recommended:** her vessel does the game's own move (a skim trail), and the trail is the pointer, so the eye follows it to
 the control without an arrow. B suits in-match lines, since it covers least. C has the most character.
 
 **Differs from the build:**
 - The words go in the guide asset (MainQuest), one line per step, with the speaker from the pilot roster.
 - The entrance, the trail and the spotlight hole are new view work on `MainMenuDialogueView`.
 - Open (Shombith, Caleb): her voice, and her name.
+
+## 103. Rev 37: connection states and rejoin (2026-10-29, awaiting board approval)
+
+**Asked (Shombith, 2026-10-29):** "where are the others like the connections lost and reconnect ones?" and "If some one
+leaves a game and then they boot up while the game is running the game should ask the user if they want to rejoin that
+game".
+
+**On the canvas:** page "Rev 37 - Connection: lost, reconnecting, back online, rejoin"; the copies are
+`Docs/MenuRedesignB/board/R37*.dc.html`. This is a states round for the window built in section 100.2
+(`DisconnectNoticeView`), which until now had no board.
+- **R37Flow (interactive):** every state, picked from a strip.
+- **R37Lost, R37Reconnecting, R37Online:** the three states that are already built. Words come from
+  `DisconnectNoticeConfig`; Back Online closes itself after 2.5 s.
+- **R37Match, "You dropped out" (new):** a guest whose link breaks is sent back to their own Home
+  (`PartyInviteController.HandleHostLossAsync`) while the host hands their vessel to an AI pilot
+  (`ServerPlayerVesselInitializer.ConvertPlayerToAI`). The game already does both; nothing tells the player. Offers
+  REJOIN (lime, A) and NOT NOW (B).
+- **R37HostLeft (new):** the host is a player, so the match ends with them. One line and BACK TO HOME; no rejoin.
+- **R37Rejoin (new):** after sign-in, if the match you left is still running, Home opens with the mode's card, who
+  is in it, "AI flying it now" on your seat, REJOIN and NOT NOW.
+- **R37Notes:** the rules (lime only on the action that puts you back, nothing red) and the build.
+
+**What the game does today** (read 2026-10-29; Block 6 "reconnection grace" in
+`Docs/prompts/MULTIPLAYER_HARDENING_PROMPT.md`, not started):
+- The party session is the match session: a UGS Multiplayer session with Relay, hosted by the party host.
+- Nothing persists which match a player was in.
+- Connection approval approves everyone and creates a new Player. A returning player would get a second vessel while
+  the old one stays AI-flown, because `ConvertPlayerToAI` is one-way.
+- `ReconnectService` takes an offline session back online by re-running the boot chain. It is not a match rejoin.
+
+**What the rejoin build needs:**
+1. Remember `{session id, mode}` locally while in a match as a guest; clear it on a normal end or leave.
+2. On Home, ask presence whether a party mate still advertises that session in a match, and show R37Rejoin.
+3. REJOIN joins by session id through the existing client-join path, with a rejoin token (the player's UGS id) in the
+   approval payload, as spectators already do.
+4. The host hands the AI-flown Player and vessel back to the returning client: ownership, `NetIsAI = false`, AI pilot
+   off, client pairing re-run. It must not spawn a second one.

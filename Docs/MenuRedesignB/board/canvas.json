@@ -2463,6 +2463,71 @@
       "h": 900,
       "page": "rev36",
       "title": "Rev 36 - notes: what was wrong with Rev 34, the entrance timing, the words, the build"
+    },
+    "R37Flow.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev37",
+      "title": "Rev 37 Flow - every state in one board: pick a state to play it (interactive) - interactive",
+      "is_interactive": true
+    },
+    "R37Lost.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev37",
+      "title": "Rev 37 Lost - menu: Connection Lost, RECONNECT or CONTINUE OFFLINE"
+    },
+    "R37Reconnecting.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev37",
+      "title": "Rev 37 Reconnecting - reconnecting: the line runs, the buttons wait"
+    },
+    "R37Online.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev37",
+      "title": "Rev 37 Online - back online: the window closes itself"
+    },
+    "R37Match.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev37",
+      "title": "Rev 37 Match - lost in a match: over the HUD, your seat is held for a while"
+    },
+    "R37HostLeft.dc.html": {
+      "x": 4200,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev37",
+      "title": "Rev 37 HostLeft - the host left: the match is over, back to Home"
+    },
+    "R37Rejoin.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev37",
+      "title": "Rev 37 Rejoin - boot while your match still runs: REJOIN or NOT NOW"
+    },
+    "R37Notes.dc.html": {
+      "x": 0,
+      "y": 3780,
+      "w": 1920,
+      "h": 900,
+      "page": "rev37",
+      "title": "Rev 37 - notes: every state, its words, the rejoin rules and the build"
     }
   },
   "createdOnFiles": {
@@ -2472,7 +2537,7 @@
   "designSystems": [],
   "launch": {
     "view": "canvas",
-    "page": "rev36"
+    "page": "rev37"
   },
   "notes": {
     "hud_end": {
@@ -2909,7 +2974,15 @@
     "R36A.dc.html",
     "R36B.dc.html",
     "R36C.dc.html",
-    "R36Notes.dc.html"
+    "R36Notes.dc.html",
+    "R37Flow.dc.html",
+    "R37Lost.dc.html",
+    "R37Reconnecting.dc.html",
+    "R37Online.dc.html",
+    "R37Match.dc.html",
+    "R37HostLeft.dc.html",
+    "R37Rejoin.dc.html",
+    "R37Notes.dc.html"
   ],
   "pages": [
     {
@@ -3059,6 +3132,10 @@
     {
       "id": "rev36",
       "name": "Rev 36 - FTUE, redrawn: the captain arrives"
+    },
+    {
+      "id": "rev37",
+      "name": "Rev 37 - Connection: lost, reconnecting, back online, rejoin"
     }
   ],
   "title": "Menu Redesign B"
