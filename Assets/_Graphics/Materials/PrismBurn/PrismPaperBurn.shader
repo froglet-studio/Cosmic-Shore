@@ -109,9 +109,10 @@ Shader "CosmicShore/PrismPaperBurn"
         // How far the front is PAST this point: > 0 burned through, 0 the rim, < 0 still ahead of it.
         float BurnFront(float3 posOS, float4 burn)
         {
-            float progress = burn.x;
-            if (fmod(burn.w, 4.0) >= 2.0) progress = min(progress, 0.3);       // NO HOLES: chars, never burns through
-            return progress * _Span - BurnField(posOS, burn.y);
+            // NO HOLES (a convert burn): chars about half way and glows just short of the rim, never burns through
+            bool noHoles = fmod(burn.w, 4.0) >= 2.0;
+            float front = (noHoles ? min(burn.x, 0.55) : burn.x) * _Span - BurnField(posOS, burn.y);
+            return noHoles ? min(front, -_EmberWidth * 0.4) : front;
         }
 
         // 4x4 ordered dither, 0..1
