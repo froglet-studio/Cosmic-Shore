@@ -399,6 +399,31 @@ def on_current_course(flights):
     return [fs for fs in flights if mouth is None or mouth_of(fs[0]) in (None, mouth)]
 
 
+# A mode whose course FAMILY changed learns its drives from the shipped family only. Switchback flew five "fun types"
+# side by side (Yash 2026-10-28); since 2026-10-29 ("Keep Blast Run, remove all other intensity types") it is Blast Run
+# only, and Blast Run's block fields make a race about twice as long as a Classic one, so a Classic race teaches the
+# wrong drive. A flight names its family in "funType" (HumanFlightRecorder, 2026-10-29; Switchback now always records
+# "BlastRun"); one without it flew the old Classic ladder ("Baseline"), except the flights below, flown after the
+# families landed and before the recorder named them, that the sweep judged were Blast Run
+# (Docs/Reports/AI_LEARNING.md, 2026-10-29 03:30 UTC).
+SHIPPED_FAMILY = {"Switchback": "BlastRun"}
+UNTAGGED_FAMILY = "Baseline"
+JUDGED_FAMILY = {
+    # Yash, I2, on Ys-bleeding-edge 2d1e8726c6 (the Blast Run's block fields, 6b1bd2f5d1): 288 s where his I2 races take
+    # 120-144 s, and the AIs threaded 1.6 rings a minute where they thread 7-9.
+    "flight_Switchback_Dolphin_20261029_081918.json": "BlastRun",
+}
+
+
+def on_shipped_family(f):
+    """True when the flight raced its mode's shipped course family (or the mode has no families)."""
+    shipped = SHIPPED_FAMILY.get(f.get("mode"))
+    if not shipped:
+        return True
+    family = f.get("funType") or JUDGED_FAMILY.get(os.path.basename(f.get("name") or ""), UNTAGGED_FAMILY)
+    return family == shipped
+
+
 def is_race(f):
     """A race: its flight carries the course's rings (or is Regatta, whose old flights have the course generator)."""
     return bool(f.get("ringList")) or f.get("mode") == "Regatta"
@@ -972,6 +997,9 @@ def report(results, wrote):
         if R.get("retired"):
             lines.append(f"{R['retired']} more race(s) here were flown on a retired course (another mouth radius) and are "
                          "left out; the variant already written stays until this course has its own.\n")
+        if R.get("other_family"):
+            lines.append(f"{R['other_family']} more race(s) here were flown on another course family (one other than "
+                         f"{SHIPPED_FAMILY.get(MODE)}) and are left out: every family is its own world.\n")
         if R.get("intensities"):
             lines.append("By intensity (flights / finished): " + ", ".join(
                 f"I{i} {n} / {d}" for i, (n, d) in sorted(R["intensities"].items())) + "\n")
@@ -1072,6 +1100,7 @@ def run(sources, write):
     from learn_from_flights import parse
     HULLS.update({h: v for h, v in all_hulls().items() if h not in HULLS})
     by_hull = {h: [] for h in HULLS}
+    other_family = {}
     parsed = []
     for name, text in sources:
         f, err = parse(name, text)
@@ -1081,6 +1110,9 @@ def run(sources, write):
         if f.get("hull") not in HULLS:
             continue
         S = samples_of(f)
+        if not on_shipped_family(f):
+            other_family[f["hull"]] = other_family.get(f["hull"], 0) + 1
+            continue
         if S:
             by_hull[f["hull"]].append((f, S))
     if MODE == "Regatta":
@@ -1096,6 +1128,7 @@ def run(sources, write):
         if not fl and (MODE != "Regatta" or "signal" in HULLS[h] or HULLS[h].get("why")):
             continue   # a hull with no flights here: no section
         R = learn_hull(h, fl)
+        R["other_family"] = other_family.get(h, 0)
         R["intensities"] = {}
         for f, _ in fl:
             n, d = R["intensities"].get(int(f.get("intensity") or 0), (0, 0))
@@ -1108,6 +1141,7 @@ def run(sources, write):
             if "policy" in HULLS[R["hull"]] and by_hull.get(R["hull"]):
                 spread = learn_hull(R["hull"], by_hull[R["hull"]], each_intensity=True)
                 spread["intensities"] = R["intensities"]
+                spread["other_family"] = R["other_family"]
                 results[k] = spread
     wrote = [p for R in results if write and R["learned"] for p in write_variant(R["hull"], R["learned"])]
     if MODE in PER_INTENSITY_MODES:
@@ -1157,6 +1191,13 @@ def self_test_rocket_and_rings():
         "the mode's variant learns from the fastest race of each intensity, not three I1 races"
     assert on_current_course(old + [({"date": "2026-10-27", "name": "bare"}, None)]) == old + [({"date": "2026-10-27", "name": "bare"}, None)], \
         "a flight with no ringList never decides the course"
+    assert not on_shipped_family({"mode": "Switchback", "name": "a.json"}), "no funType: the retired Classic ladder"
+    assert not on_shipped_family({"mode": "Switchback", "name": "a.json", "funType": "Baseline"}), "a retired family"
+    assert on_shipped_family({"mode": "Switchback", "name": "a.json", "funType": "BlastRun"}), "the shipped family"
+    assert on_shipped_family({"mode": "Switchback", "name": "x/flight_Switchback_Dolphin_20261029_081918.json"}), \
+        "a judged Blast Run race without the field"
+    assert on_shipped_family({"mode": "Regatta", "name": "a.json", "funType": "BlastRun"}), \
+        "negative control: a mode without families keeps every race"
     assert [ring_index(k, 20, 20) for k in (0, 19)] == [0, 19], "Switchback: open, in order"
     S = [{"t": i * 0.1, "held": False, "dist": 100.0 + 10 * i, "nose": float(i % 10)} for i in range(100)]
     events = [[i * 0.1, 2, 1] for i in range(0, 100, 10)] + [[i * 0.1 + 0.05, 2, 0] for i in range(0, 100, 10)]
