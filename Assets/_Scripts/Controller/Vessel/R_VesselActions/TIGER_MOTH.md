@@ -20,8 +20,46 @@ and took the Butterfly's place the next (§3).
 | **Let go** | The landing: over 0.25 s the hull pitches 90 degrees nose-down INTO the frame the camera is already in, while its speed along the drop line eases back to its cruise. It then flies straight on along the line it fell. The camera never levels back: the hull turned to meet it. |
 | **No limit** | It falls for as long as the trigger is held. |
 | **The recharge is paid by distance** | 20 s × (distance ÷ 900 u), capped at 20 s: a 90 u hop waits 2 s, a 450 u drop 10 s, a medium 900 u drop the full 20 s, and anything further is free (Garrett: "a little hop has a small cooldown. a medium distance should be the full 20. anything after medium distance is free"). Time's dial multiplies it (×0.5 at Time 10, never worse than ×2). The card's veil sweeps the wait this drop paid. |
-| **The wormhole** | Only a drop that pays the FULL recharge leaves a pair of wormhole mouths (the Fold's, rim in the domain's hue, rivals pay a petal toll): one where the drop started, one where it landed. The pair stands until the next full drop replaces it or the hull is destroyed. A shorter drop leaves the standing pair alone. |
-| **Time 5, Far Drop** | The medium distance doubles to 1800 u: every drop costs half, and the wormhole needs twice the fall. |
+| **The wormhole** | Only a drop that pays the FULL recharge leaves a pair of wormhole mouths: one where the drop started, one where it landed. By default it is NEUTRAL: the material's own rim, everyone rides free (§1.1). The pair stands until the next full drop replaces it or the hull is destroyed. A shorter drop leaves the standing pair alone. |
+| **Dust mode cleanses you** | A drop pressed while the dust is raining falls through it: your silence lifts and your temporary debuffs end (§1.2). |
+| **Charge 5, Toll Gate** | The wormhole strips the elements of opposing pilots who thread it (15 petals of each element, left on the mouth as crystals) and wears your domain's hue. A standing pair switches live when the upgrade unlocks or relocks (§1.1). |
+| **Time 5, Afterburn** | For 3 s after the landing the hull stays incorporeal (its dust still rains) and flies a throttle boost that eases from ×2 back to cruise. |
+
+### 1.1 The level-5 upgrades, re-scoped (2026-10-29)
+
+Garrett: "change L5 charge so the portal strips the elements of opposing players (this should have been the case by
+default before so we will need to change the portal from the neutral to domain hue once this unlocks). change Time L5
+is to keep your invulnerability and a speed boost for 3 seconds after the drop ends."
+
+| | Was | Now | Where |
+|---|---|---|---|
+| Charge 5 | **Monarch**: the dust bites twice as deep | **Toll Gate**: the wormhole tolls rivals and wears the domain hue; without it the mouths are neutral and nobody pays | `TigerMothDropActionSO.TollsRivals` (the replicated unlock bit, every peer); `TigerMothDropExecutor.FollowTollUpgrade` switches a standing pair; `WormholeMouth.SetDomainTolled` |
+| Time 5 | **Far Drop**: the medium distance doubles | **Afterburn**: 3 s incorporeal and a speed boost after the landing | `TigerMothDropActionSO.HasAfterburn`; `TigerMothDropExecutor.End(landed, afterburn)` keeps the colliders off (the dust's back on) and calls `VesselTransformer.ModifyThrottle(2, 3)` on the owner |
+
+The old gates are switched OFF (vessel rule 26): Monarch's `upgradeElement` on
+`ButterflyScaleDustDebuffBySkimmerEffect.asset` is None, and Far Drop's `upgradeDistanceMultiplier` is gone from the SO
+and the asset. `author_tigermoth_assets.py --check` holds both off and both new cards on (with negative controls).
+
+An owned mouth now wears its owner's hue only while it tolls (`WormholeMouth.ApplySurface`): the colour is the toll's
+sign. The only other mouths, the crystal wormhole's, have no owner and were already neutral.
+
+### 1.2 The dust cleanses allies (2026-10-29)
+
+Garrett: "have the dust clear silence and debuffs of allies. this applies to the omnicrystal dust and if you dust
+yourself by using drop in dust mode (the omnicrystal also dusts yourself)." One verb, `ElementalCleanse.Cleanse`: the
+silence window lifts (`VesselSilence.Lift`) and every TEMPORARY negative elemental effect ends
+(`ResourceSystem.ClearElementalDebuffs`). A petal a rival took is a transfer, not a debuff, and is not handed back
+(that would mint it; lifeforms are the only source). Three paths reach it:
+
+| Path | How |
+|---|---|
+| The Dust-mode capsule sweeping an ally | `VesselCleanseAllyBySkimmerEffectSO` on the dust's skimmer container (`TigerMothDustCleanseAllyBySkimmerEffect.asset`); rivals are the bite's |
+| The omni-crystal bloom | `ButterflyBloomDust` cleanses, once each, its pilot and every ally its wavefront reaches, by position against the roster (the blast's own vessel effects bite, and its `affectSelf` gate keeps its side out of them) |
+| A drop pressed in Dust mode | `TigerMothDropExecutor.Engage` cleanses the pilot |
+
+Every peer cleanses its own copy (silence is kept per peer; the contacts are simulated on every peer). A silence
+extension still on the wire when the dust lands re-silences the pilot on the peer it reaches late: lifts are not
+relayed (SILENCE.md relays extensions only).
 
 **Why the turn is exactly 90 degrees.** The hull falls along its down and flies on along that same line, so its forward
 has to land on its old down: a 90-degree pitch and nothing else (`TigerMothDropMath.TurnDegrees`, a constant).
@@ -72,6 +110,12 @@ while the drop is ready and the next ring is at least `aiFoldMinDistance` (420 u
    and the landing included, exact to a unit), so it lands short of the ring's plane by `aiFoldLandShort` plus twice
    the miss its aim carries and flies the rest. The drop is travel, so a ring it crosses on the way is threaded.
 
+**A ring abeam is lined up by ROLL** (since the exit gates face square to the next cluster, WAYSTATION.md "The square
+exit gate"): between 75 and `aiBellyRollMaxDegrees` (125) off the nose, the autopilot steers the heading square to the
+ring and `AIPilot.MarkBellyTarget` replaces the roll stick with one that turns the belly onto it (offline: 200 of 200
+starts lined up within 2.61 s; the yaw-coupled bank managed 33). Affects: Yash's AI (`AIPilot`), an opt-in per-frame
+hook that no other provider calls.
+
 It gives up after `aiBellyAimMaxSeconds` (6) and flies on; the steering point is marked a LEAD
 (`GateRaceController.OverrideAimIsLead` -> `AIPilot.MarkAimAsPathLead`) so the orbit break-off leaves it alone.
 Waystation's step guard (`maxPlausibleSpeed`) is 1000 u/s now: the drop's 900 u/s is 15 u a frame at 60 fps against the
@@ -83,7 +127,8 @@ old 400's 18 u, so a hitch could have declined a ring the drop really crossed. T
 | File | What |
 |---|---|
 | `R_VesselActions/TigerMothDropMath.cs` | Pure: the drop frame, the fall speed, the camera weight, the landing, the distance-priced recharge. Tested by `Tests/Editor/TigerMothDropMathTests.cs` |
-| `Data Containers/TigerMothDropActionSO.cs` | The numbers (one shared asset, `VesselActions/TigerMoth/TigerMothDropAction.asset`): recharge, Far Drop, the wormhole and its toll |
+| `Data Containers/TigerMothDropActionSO.cs` | The numbers (one shared asset, `VesselActions/TigerMoth/TigerMothDropAction.asset`): recharge, Afterburn, the wormhole and its toll, and the two level-5 gates |
+| `ImpactEffects/EffectsSO/Helpers/ElementalCleanse.cs` | The cleanse (§1.2); `Vessel Skimmer Effects/VesselCleanseAllyBySkimmerEffectSO.cs` is the dust's ally branch |
 | `Executors/TigerMothDropExecutor.cs` | The drop, the wormhole, incorporeality, the cut ribbons, and the hand-back on every teardown path |
 | `Controller/Vessel/VesselIncorporeal.cs` | The vessels passing through everything right now; read by `WormholeMouth` |
 | `VesselTransformer.SetRotationImmediate` | Turns nose and command together; not a teleport |
@@ -97,7 +142,7 @@ old 400's 18 u, so a hitch could have declined a ring the drop really crossed. T
 |---|---|
 | `fullCooldownSeconds` | 20 (Garrett) |
 | `fullCooldownDistance` | 900 u (one held second): the "medium" drop. Not specified by Garrett: a starting number |
-| `upgradeDistanceMultiplier` (Far Drop) | ×2 |
+| `afterburnSeconds` / `afterburnThrottle` (Time 5) | 3 s (Garrett) / ×2 easing to ×1 (a starting number) |
 | `cooldownMultiplierAtFullTime` / `maxCooldownMultiplier` | 0.5 / 2 |
 | `dropSpeed` / `dropEaseSeconds` | 900 u/s / 0.12 s |
 | `landSeconds` / `cameraEnterSeconds` | 0.25 / 0.35 |
@@ -115,15 +160,22 @@ configs) compiles it clean against real Unity references; that is a compile, not
 4. Let go: the hull pitches nose-down over a quarter second and flies on; the camera neither moves nor swings back.
 5. A short hop (~0.1 s): the Time card's veil sweeps about 2 s. A 1 s drop: 20 s, and a pair of wormhole mouths stands at
    the start and end. A 3 s drop: still 20 s. A short hop after it: the pair is still standing.
-6. Fly a rival hull through the pair: it pays the toll. Drop THROUGH a mouth: it is not carried.
-7. Dustup, Tapestry, Sirocco and Waystation each start with Tiger Moths. In Waystation, before a long gap an AI turns
-   its nose onto the next ring, pitches straight up (belly onto the ring), drops, and flies the rest into the mouth.
+6. Below Charge 5 the pair's rim is the material's pale neutral and a rival rides it free. Reach Charge 5 (the toybox
+   element dial): the standing pair turns your domain's hue and the next rival through it pays the toll. Drop
+   THROUGH a mouth: it is not carried.
+6a. Time 5: after a landing the hull passes through prisms for 3 s, visibly faster at first, and its dust still works.
+6b. Get silenced (or take a danger-prism sting), then have an ally Tiger Moth dust you in Dust mode: the silence
+   indicator clears. Fire an omni-crystal: you and allies inside the bloom clear too. Drop in Dust mode while
+   silenced: it clears.
+7. Dustup, Tapestry, Sirocco and Waystation each start with Tiger Moths. In Waystation each cluster's last ring faces
+   across the line to the next cluster: thread it, roll, drop, and you land flying into the next coil. An AI does the
+   same (it rolls its belly onto the next ring after the exit gate, then drops).
 8. MPPM, two clients: the second client sees the fall, the landing turn and the same wormhole pair.
 
 ## 7. Follow-ups
 
-- **Decision needed (Garrett):** the medium distance (900 u) is a starting number; and Far Drop's new meaning (it used to
-  double the reach, which no longer exists).
+- **Decision needed (Garrett):** the medium distance (900 u) and the afterburn's ×2 throttle are starting numbers.
+- The afterburn keeps the whole hull incorporeal, so crystals pass through it for those 3 s too (the dust stays on).
 - **The Time card's icon is still the Fold's.** A drop glyph is `/ability-icon` work.
 - **The Waystation AI's belly aim is unplayed**: the offline model is a stand-in for AIPilot's steering, so how often it
   lines up in a real race, and whether 3 / 10 degrees are the right gates, is for the editor (and the learning sweep).

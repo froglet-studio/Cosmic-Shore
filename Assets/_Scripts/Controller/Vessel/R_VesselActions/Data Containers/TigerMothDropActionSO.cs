@@ -17,8 +17,14 @@ namespace CosmicShore.Gameplay
     /// wormhole pair standing (the Fold's mouths, with the Fold's rival toll).</para>
     ///
     /// <para><b>Time's dials.</b> The continuous dial is the recharge multiplier (×0.5 at Time 10, never worse than
-    /// ×2, the Fold's). Time 5 — "Far Drop" — doubles the medium distance: the full recharge (and the wormhole)
-    /// only comes at twice the distance, so every drop is half the price.</para>
+    /// ×2, the Fold's). Time 5 — "Afterburn" (Garrett, 2026-10-29: "keep your invulnerability and a speed boost for 3
+    /// seconds after the drop ends") — the hull stays incorporeal for <see cref="AfterburnSeconds"/> after it lands,
+    /// and flies them on a throttle boost that eases from <see cref="AfterburnThrottle"/> back to cruise.</para>
+    ///
+    /// <para><b>Charge 5 — "Toll Gate"</b> (Garrett, 2026-10-29: "the portal strips the elements of opposing
+    /// players"). The wormhole is NEUTRAL by default: the material's own rim, everyone rides free. With the upgrade it
+    /// wears the pilot's domain hue and strips rivals who thread it (<see cref="RivalTollPetalsPerElement"/>). A
+    /// standing pair switches the moment the upgrade unlocks or relocks (<see cref="TollsRivals"/>).</para>
     ///
     /// <para>The asset is SHARED by every Tiger Moth in a match and holds no per-vessel state; the executor owns
     /// the drop.</para>
@@ -36,10 +42,6 @@ namespace CosmicShore.Gameplay
                  "wormhole; a shorter one pays its share (half the distance, half the wait). Past it a drop is free. " +
                  "900 is one held second at the drop speed.")]
         [SerializeField, Min(1f)] float fullCooldownDistance = 900f;
-
-        [Tooltip("TIME level-5 'Far Drop': multiplies the medium distance, so the same recharge buys this much more " +
-                 "drop (and the wormhole needs this much more).")]
-        [SerializeField, Min(1f)] float upgradeDistanceMultiplier = 2f;
 
         [Tooltip("TIME -> recharge: the cooldown MULTIPLIER at Time level 10. 0.5 halves the wait.")]
         [SerializeField] float cooldownMultiplierAtFullTime = 0.5f;
@@ -61,6 +63,15 @@ namespace CosmicShore.Gameplay
                  "line it fell on, and its speed along that line eases from the fall speed back to the cruise it " +
                  "had before the press.")]
         [SerializeField, Min(0.01f)] float landSeconds = 0.25f;
+
+        [Header("Afterburn (TIME level 5)")]
+        [Tooltip("TIME level-5 'Afterburn': seconds the hull stays incorporeal after the landing (passes through " +
+                 "prisms, crystals, hulls and mouths; its dust still works). Garrett, 2026-10-29: 3.")]
+        [SerializeField, Min(0f)] float afterburnSeconds = 3f;
+
+        [Tooltip("TIME level-5 'Afterburn': the throttle multiplier at the landing, easing back to 1 over the " +
+                 "afterburn. 2 = twice the cruise at the landing. A starting number, not Garrett's.")]
+        [SerializeField, Min(1f)] float afterburnThrottle = 2f;
 
         [Header("Camera")]
         [Tooltip("Seconds for the chase camera to swing up over the hull after the press, so down reads as forward. " +
@@ -95,10 +106,11 @@ namespace CosmicShore.Gameplay
                  "never waits (its pose is local); a peer still late at the deadline lays none.")]
         [SerializeField, Min(0f)] float gateSettleSeconds = 1f;
 
-        [Header("Toll (pilots of other domains)")]
-        [Tooltip("Whole petals stripped from EACH of a rival's four elements every time they thread this Tiger Moth's " +
-                 "wormhole, left on the mouth they went in by as crystals. 0 = everyone rides free. Its own domain " +
-                 "never pays.")]
+        [Header("Toll (CHARGE level 5: pilots of other domains)")]
+        [Tooltip("CHARGE level-5 'Toll Gate': whole petals stripped from EACH of a rival's four elements every time " +
+                 "they thread this Tiger Moth's wormhole while its Charge upgrade is active, left on the mouth they " +
+                 "went in by as crystals. Without the upgrade the mouths are neutral and everyone rides free. 0 = " +
+                 "free even with it. Its own domain never pays.")]
         [SerializeField, Range(0, 15)] int rivalTollPetalsPerElement = 15;
 
         [Tooltip("World units/second the stripped crystals are thrown off the mouth's surface.")]
@@ -129,15 +141,26 @@ namespace CosmicShore.Gameplay
         public CombatHitClass TollHitClass => tollHitClass;
         public ScriptableEventCombatHitStats OnTollHitLanded => onTollHitLanded;
 
-        /// <summary>The medium distance for THIS pilot, including "Far Drop". Gated on the REPLICATED unlock bit: every
-        /// peer decides from it whether a landing lays the wormhole.</summary>
-        public float ResolveFullDistance(IVesselStatus status)
+        /// <summary>The medium drop: the full recharge, and the wormhole, at this distance.</summary>
+        public float FullCooldownDistance => Mathf.Max(1f, fullCooldownDistance);
+
+        public float AfterburnSeconds => Mathf.Max(0f, afterburnSeconds);
+        public float AfterburnThrottle => Mathf.Max(1f, afterburnThrottle);
+
+        /// <summary>TIME level 5, "Afterburn". Gated on the REPLICATED unlock bit, so every peer keeps the landed hull
+        /// incorporeal for the same window.</summary>
+        public static bool HasAfterburn(IVesselStatus status)
         {
-            float distance = Mathf.Max(1f, fullCooldownDistance);
             var abilities = status?.ElementalAbilityHandler;
-            if (abilities != null && abilities.IsUpgradeActive(Element.Time))
-                distance *= Mathf.Max(1f, upgradeDistanceMultiplier);
-            return distance;
+            return abilities != null && abilities.IsUpgradeActive(Element.Time);
+        }
+
+        /// <summary>CHARGE level 5, "Toll Gate": does this pilot's wormhole strip rivals (and wear the domain hue)?
+        /// Gated on the REPLICATED unlock bit, so every peer charges the same transits.</summary>
+        public static bool TollsRivals(IVesselStatus status)
+        {
+            var abilities = status?.ElementalAbilityHandler;
+            return abilities != null && abilities.IsUpgradeActive(Element.Charge);
         }
 
         /// <summary>The recharge a drop of <paramref name="distance"/> pays, at the live TIME level (read at use time).</summary>
@@ -145,7 +168,7 @@ namespace CosmicShore.Gameplay
         {
             float multiplier = ElementalScaling.Multiplier(
                 status, Element.Time, cooldownMultiplierAtFullTime, cooldownMultiplierAtFullTime);
-            return TigerMothDropMath.Cooldown(distance, ResolveFullDistance(status), FullCooldownSeconds)
+            return TigerMothDropMath.Cooldown(distance, FullCooldownDistance, FullCooldownSeconds)
                    * Mathf.Min(multiplier, maxCooldownMultiplier);
         }
 

@@ -14,12 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.TigerMothDropActionSO
   fullCooldownSeconds: 20
   fullCooldownDistance: 900
-  upgradeDistanceMultiplier: 2
   cooldownMultiplierAtFullTime: 0.5
   maxCooldownMultiplier: 2
   dropSpeed: 900
   dropEaseSeconds: 0.12
   landSeconds: 0.25
+  afterburnSeconds: 3
+  afterburnThrottle: 2
   cameraEnterSeconds: 0.35
   gateRadius: 33
   portalWindowRange: 2500

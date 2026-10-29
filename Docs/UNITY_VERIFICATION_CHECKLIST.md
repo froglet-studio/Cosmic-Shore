@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Tiger Moth's re-scoped level 5s (Toll Gate, Afterburn), the dust's ally cleanse, Waystation's square exit gates (`cece/keen-lovelace-cyci91`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor configs, 0 project errors); `waystation_course.py`
+`--check`, `--self-test` and `--compile` (the shipped course C# run gate for gate) pass. No editor in the session, so
+`/verify-unity` did not run. Steps: `TIGER_MOTH.md` §6 (6, 6a, 6b, 7) and `WAYSTATION.md` "The square exit gate".
+- [ ] Below Charge 5 a full drop's wormhole has the neutral (pale) rim and a rival rides it free; at Charge 5 the standing pair turns the domain's hue and the next rival through pays the toll; dropping back below Charge 4 turns it neutral again.
+- [ ] Time 5: for 3 s after the landing the hull passes through prisms and is faster at first; its dust still works; a new drop during it behaves normally.
+- [ ] A silenced ally swept by a Dust-mode Tiger Moth is no longer silenced (the silence screen feedback clears); an omni-crystal bloom clears its pilot and allies inside it; a drop in Dust mode clears the pilot. A rival swept is still bitten, never cleansed.
+- [ ] Waystation: every cluster's last ring stands across the line to the next cluster; threading it, rolling and dropping lands you flying into the next coil. AIs roll their belly onto the next ring after the exit gate and drop (none sits rolling for more than ~6 s).
+
+First-pass numbers: afterburn 3 s (Garrett), throttle ×2 easing to ×1 (a starting number); exit twist 10 / 20 / 30 / 40°; centre sphere 0.66 of the shell; AI roll entry 75-125° off the nose.
+
+---
+
 ### 🔴 The Butterfly retired; the Tiger Moth's distance-priced drop, its wormhole, incorporeal fall; louder cooldowns; the lit dust (`cece/keen-lovelace-cyci91`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor configs, 0 project errors). No editor in the session,
@@ -78,7 +92,7 @@ so `/verify-unity` did not run. Steps: `Assets/_Scripts/Controller/Vessel/R_Vess
 - [ ] MPPM: the second client sees the same fall, landing and wormhole pair.
 - [ ] Waystation (2026-10-29): before each long gap an AI noses onto the next ring, pitches straight up, drops, and threads the ring; it never sits pitching in place for more than ~6 s.
 
-First-pass numbers: full recharge 20 s at 900 u (Far Drop: 1800 u); wash alpha 0.55; ready flash alpha 0.75; dust light strength 0.6.
+First-pass numbers: full recharge 20 s at 900 u (Far Drop retired the same day); wash alpha 0.55; ready flash alpha 0.75; dust light strength 0.6.
 
 ### 🔴 The Tiger Moth: the Butterfly's airframe with the Drop as its Time ability (`cece/keen-lovelace-cyci91`, 2026-10-28) — NOT EDITOR-VERIFIED
 

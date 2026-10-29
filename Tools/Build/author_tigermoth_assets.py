@@ -81,6 +81,11 @@ ACTION_GUID = "a541c39b6f7a46c5be04c2b39275a4c0"
 ACTION_DIR_GUID = "4e6fc1ed76ee44ef972d0ae7686e1861"
 CLASS_GUID = "d46d96ae184a444faf9a09a2b793a07d"
 MAP_GUID = "329c7f0245114c0b8299547ba2e30a3d"
+SCALE_DUST_DEBUFF = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Vessel Skimmer Effects",
+                                 "ButterflyScaleDustDebuffBySkimmerEffect.asset")
+DUST_CONTAINER = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Effect Containers", "SkimmerContainers",
+                              "ButterflyDustSkimmerImpactorDataContainer.asset")
+CLEANSE_EFFECT_GUID = "81e2380687e6475898addbcf94c03b71"   # TigerMothDustCleanseAllyBySkimmerEffect.asset
 
 ROOT_GO = "116782616907870029"           # the Butterfly's root GameObject
 ROOT_TRANSFORM_ID = "9012526572693406291"
@@ -168,9 +173,9 @@ def action_asset() -> str:
             f"  m_Script: {{fileID: 11500000, guid: {guid_of(ACTION_SO_META)}, type: 3}}\n"
             "  m_Name: TigerMothDropAction\n"
             "  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.TigerMothDropActionSO\n"
-            "  fullCooldownSeconds: 20\n  fullCooldownDistance: 900\n  upgradeDistanceMultiplier: 2\n"
+            "  fullCooldownSeconds: 20\n  fullCooldownDistance: 900\n"
             "  cooldownMultiplierAtFullTime: 0.5\n  maxCooldownMultiplier: 2\n  dropSpeed: 900\n  dropEaseSeconds: 0.12\n"
-            "  landSeconds: 0.25\n  cameraEnterSeconds: 0.35\n  gateRadius: 33\n  portalWindowRange: 2500\n"
+            "  landSeconds: 0.25\n  afterburnSeconds: 3\n  afterburnThrottle: 2\n  cameraEnterSeconds: 0.35\n  gateRadius: 33\n  portalWindowRange: 2500\n"
             "  portalWindowFadeBand: 600\n  portalWindowRenderScale: 0.75\n  panoramaFaceSize: 256\n"
             f"  wormholeMaterial: {{fileID: 2100000, guid: {WORMHOLE_MATERIAL_GUID}, type: 2}}\n"
             "  gateBloomSeconds: 0.45\n  gateSettleSeconds: 1\n  rivalTollPetalsPerElement: 15\n  rivalTollShedSpeed: 25\n"
@@ -184,8 +189,8 @@ DROP_ENTRY = """  - Element: 4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Far Drop
-    UpgradeDescription: 'The drop falls twice as far.'
+    UpgradeLabel: Afterburn
+    UpgradeDescription: 'For 3 s after the drop you stay incorporeal and fly a speed boost.'
 """
 
 
@@ -307,6 +312,15 @@ def errors() -> list:
              f"{os.path.basename(path)} still registers the retired Butterfly")
     need(not os.path.exists(DONOR), "Butterfly.prefab is back: the Butterfly is retired (TIGER_MOTH.md)")
     need(f"wormholeMaterial: {{fileID: 2100000, guid: {WORMHOLE_MATERIAL_GUID}" in act, "the drop's wormhole has no material")
+    # the level-5 upgrades, re-scoped 2026-10-29 (Garrett): Charge 5 is the wormhole's toll, Time 5 the afterburn; the
+    # retired Monarch (a deeper bite) and Far Drop (a longer medium drop) must stay switched OFF (vessel rule 26)
+    need("UpgradeLabel: Toll Gate" in mp and "UpgradeLabel: Afterburn" in mp,
+         "the map's Charge / Time level-5 cards are not Toll Gate / Afterburn")
+    need("UpgradeLabel: Monarch" not in mp and "UpgradeLabel: Far Drop" not in mp, "a retired level-5 card is back on the map")
+    need("upgradeDistanceMultiplier:" not in act, "Far Drop's distance multiplier is back on the drop")
+    need(re.search(r"^  afterburnSeconds: [1-9]", act, re.M) is not None, "the Time-5 afterburn has no length")
+    need("  upgradeElement: 0\n" in read(SCALE_DUST_DEBUFF), "Monarch's bite gate is on again (upgradeElement must be None)")
+    need(f"guid: {CLEANSE_EFFECT_GUID}" in read(DUST_CONTAINER), "the dust does not cleanse allies (cleanse effect not on the dust)")
     return out
 
 
@@ -331,6 +345,25 @@ def self_test() -> int:
                 print(f"  caught: {name}")
     finally:
         write_quiet(PREFAB, good)
+    # the level-5 re-scope (2026-10-29): each retired gate coming back, and the cleanse leaving the dust, is caught
+    others = [
+        ("monarch back", SCALE_DUST_DEBUFF, "  upgradeElement: 0\n", "  upgradeElement: 1\n"),
+        ("far drop back", ACTION, "  fullCooldownDistance: 900\n", "  fullCooldownDistance: 900\n  upgradeDistanceMultiplier: 2\n"),
+        ("old charge card", MAP, "UpgradeLabel: Toll Gate", "UpgradeLabel: Monarch"),
+        ("cleanse off the dust", DUST_CONTAINER, f"  - {{fileID: 11400000, guid: {CLEANSE_EFFECT_GUID}, type: 2}}\n", ""),
+    ]
+    for name, path, old, new in others:
+        text = read(path)
+        if old not in text:
+            print(f"  SELF-TEST FAILED: '{name}' could not be planted"); failed += 1; continue
+        try:
+            write_quiet(path, text.replace(old, new, 1))
+            if not errors():
+                print(f"  SELF-TEST FAILED: '{name}' was not caught"); failed += 1
+            else:
+                print(f"  caught: {name}")
+        finally:
+            write_quiet(path, text)
     return failed
 
 

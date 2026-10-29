@@ -110,7 +110,7 @@ namespace CosmicShore.Tests
             Assert.IsFalse(TigerMothDropMath.PaysFullCooldown(899f, 900f));
             Assert.IsTrue(TigerMothDropMath.PaysFullCooldown(900f, 900f));
             Assert.IsTrue(TigerMothDropMath.PaysFullCooldown(4000f, 900f));
-            // Far Drop doubles the medium distance: the same 900 u drop then pays half and leaves no pair
+            // a longer medium distance prices the same drop lower and leaves no pair
             Assert.IsFalse(TigerMothDropMath.PaysFullCooldown(900f, 1800f));
             Assert.AreEqual(10f, TigerMothDropMath.Cooldown(900f, 1800f, 20f), Tol);
         }

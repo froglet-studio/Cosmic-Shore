@@ -18,9 +18,11 @@ namespace CosmicShore.Gameplay
     /// <para><b>The Tiger Moth flies it now (2026-10-29).</b> The Butterfly and its Fold were retired; the Tiger Moth's
     /// Drop is the jump (<c>R_VesselActions/TIGER_MOTH.md</c>). It still has ONE degree of freedom - the line it falls
     /// along is the hull's DOWN at the press - so the course's logic stands with "the heading you leave on" read as "the
-    /// belly you leave on": to jump the gap to the next cluster a pilot pitches up until the cluster is below, drops,
-    /// and lands flying toward it. The drop is TRAVEL, not a teleport, so a ring it passes through is threaded. The
-    /// paragraphs below describe the Fold-era design and keep its record; the autopilot drive aims the belly.</para>
+    /// belly you leave on": to jump the gap to the next cluster a pilot puts the cluster under the belly, drops, and lands
+    /// flying toward it. The drop is TRAVEL, not a teleport, so a ring it passes through is threaded. Each cluster's exit
+    /// gate FACES SQUARE to the next cluster (<see cref="WaystationCourseSettings.ExitTwistDegrees"/>, Garrett 2026-10-29:
+    /// "keep your flow by dropping to the next cluster"): thread it, roll the cluster under you, drop. The paragraphs
+    /// below describe the Fold-era design and keep its record; the autopilot drive aims the belly.</para>
     ///
     /// <para><b>The mode is the Fold's one degree of freedom.</b> Since the Fold collapsed to a
     /// single reach along the heading, it cannot be aimed once it has begun — the destination is
@@ -107,6 +109,12 @@ namespace CosmicShore.Gameplay
                  "drop is travel, so it lands short of the ring (by twice the miss it carries) and flies the rest.")]
         [SerializeField, Range(1f, 30f)] float aiDropAimDegrees = 10f;
 
+        [Tooltip("A ring further round than the pitch entry but within this many degrees of the nose is ABEAM - where " +
+                 "every exit gate leaves the next cluster, since the gate faces square to it. There the autopilot holds " +
+                 "the heading square to the ring and ROLLS its belly onto it (AIPilot.MarkBellyTarget), then drops. " +
+                 "Further round still, it flies nose-first until the ring comes back into one of the two arcs.")]
+        [SerializeField, Range(60f, 170f)] float aiBellyRollMaxDegrees = 125f;
+
         [Tooltip("Longest an autopilot spends lining up and pitching before it gives up and flies on (the retry wait then " +
                  "applies). A 90 degree pitch at the hull's 45 deg/s takes 2 s plus the settle.")]
         [SerializeField, Min(0.5f)] float aiBellyAimMaxSeconds = 6f;
@@ -117,6 +125,7 @@ namespace CosmicShore.Gameplay
 
         readonly Dictionary<IPlayer, float> _bellyAimSince = new();
         readonly Dictionary<IPlayer, Vector3> _bellyPitchNose = new();   // the held pitch-up point, once the nose was on
+        readonly HashSet<IPlayer> _bellyRolls = new();                    // lining up by ROLL (the ring is abeam)
         readonly Dictionary<Transform, TigerMothDropExecutor> _dropExecutors = new();
 
         /// <summary>When each folding bot should let go, and when each waiting bot may try again.</summary>
@@ -155,11 +164,15 @@ namespace CosmicShore.Gameplay
             _aiFoldRetryAt.Clear();
             _bellyAimSince.Clear();
             _bellyPitchNose.Clear();
+            _bellyRolls.Clear();
             _dropExecutors.Clear();
         }
 
         /// <summary>
-        /// The autopilot's belly aim, in two phases, before a gap worth a drop. First the NOSE goes onto the next ring (the
+        /// The autopilot's belly aim before a gap worth a drop, one of two ways. A ring ABEAM (between the pitch entry and
+        /// <see cref="aiBellyRollMaxDegrees"/>, where every exit gate leaves the next cluster) is lined up by ROLL: steer
+        /// the heading square to the ring, and roll the belly onto it (<see cref="OverrideBellyTarget"/>). A ring nearer the
+        /// nose is lined up by PITCH, in two phases. First the NOSE goes onto the next ring (the
         /// ring itself is the steering point); then, once it is within <see cref="aiBellyNoseDegrees"/>, the hull pitches
         /// straight up to a point captured at that moment (<see cref="TigerMothDropMath.BellyAimNose"/>), which carries the
         /// belly onto the ring, and <see cref="TickAutopilotFolds"/> drops. Inputs only, as every AI here: both phases are
@@ -172,10 +185,18 @@ namespace CosmicShore.Gameplay
             var status = pilot?.Vessel?.VesselStatus;
             if (status == null || !BellyAimWanted(pilot, status, out var toGate))
             {
-                if (pilot != null) { _bellyAimSince.Remove(pilot); _bellyPitchNose.Remove(pilot); }
+                if (pilot != null) ForgetBellyAim(pilot);
                 return false;
             }
             Transform hull = status.Transform;
+            if (_bellyRolls.Contains(pilot))
+            {
+                // Hold the heading square to the ring (re-derived: the roll stick is the mode's, so the yaw that keeps the
+                // nose square no longer drags the bank) while the roll brings the belly round.
+                Vector3 square = Vector3.ProjectOnPlane(hull.forward, toGate);
+                target = hull.position + (square.sqrMagnitude > 1e-6f ? square.normalized : hull.forward) * BellyAimLead;
+                return true;
+            }
             if (!_bellyPitchNose.TryGetValue(pilot, out var nose))
             {
                 if (Vector3.Angle(hull.forward, toGate) > aiBellyNoseDegrees)
@@ -191,6 +212,23 @@ namespace CosmicShore.Gameplay
         }
 
         protected override bool OverrideAimIsLead(IPlayer pilot) => true;
+
+        protected override bool OverrideBellyTarget(IPlayer pilot, out Vector3 worldDirection)
+        {
+            worldDirection = default;
+            var status = pilot?.Vessel?.VesselStatus;
+            if (status == null || !_bellyRolls.Contains(pilot) || !TryGetNextGate(pilot, out var gate) || gate == null)
+                return false;
+            worldDirection = gate.position - status.Transform.position;
+            return true;
+        }
+
+        void ForgetBellyAim(IPlayer pilot)
+        {
+            _bellyAimSince.Remove(pilot);
+            _bellyPitchNose.Remove(pilot);
+            _bellyRolls.Remove(pilot);
+        }
 
         bool BellyAimWanted(IPlayer pilot, IVesselStatus status, out Vector3 toGate)
         {
@@ -210,12 +248,13 @@ namespace CosmicShore.Gameplay
             if (_bellyAimSince.TryGetValue(pilot, out float since))
             {
                 if (now - since <= aiBellyAimMaxSeconds) return true;
-                _bellyAimSince.Remove(pilot);
-                _bellyPitchNose.Remove(pilot);
+                ForgetBellyAim(pilot);
                 _aiFoldRetryAt[pilot] = now + aiFoldRetrySeconds;   // could not line up: fly on, try again later
                 return false;
             }
-            if (Vector3.Angle(status.Transform.forward, toGate) > aiBellyAimEnterDegrees) return false;
+            float off = Vector3.Angle(status.Transform.forward, toGate);
+            if (off > aiBellyRollMaxDegrees) return false;
+            if (off > aiBellyAimEnterDegrees) _bellyRolls.Add(pilot);   // abeam: line up by roll
             _bellyAimSince[pilot] = now;
             return true;
         }
@@ -280,8 +319,7 @@ namespace CosmicShore.Gameplay
                 _aiFoldReleaseAt[pilot] = now + TigerMothDropMath.HoldSecondsFor(Mathf.Max(0f, along), drop.DropSpeed,
                     drop.DropEaseSeconds, drop.LandSeconds, status.Speed);
                 _aiFoldRetryAt[pilot] = now + aiFoldRetrySeconds;
-                _bellyAimSince.Remove(pilot);
-                _bellyPitchNose.Remove(pilot);
+                ForgetBellyAim(pilot);
                 handler.PerformShipControllerActionsReplicated(input);
             }
         }

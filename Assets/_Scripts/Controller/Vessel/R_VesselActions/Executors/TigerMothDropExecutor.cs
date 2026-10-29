@@ -26,6 +26,14 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>No trail</b>: the wake's pen is up and every ribbon on the hull (its tail and jets) is cut at the press
     /// and restarted at the landing, so nothing streaks the line it fell along.</para>
+    ///
+    /// <para><b>Dust mode cleanses the pilot</b>: a drop made with the dust raining falls through it, so the press lifts
+    /// the pilot's own silence and temporary debuffs (<see cref="ElementalCleanse"/>, every peer).</para>
+    ///
+    /// <para><b>Time 5, Afterburn</b>: the landed hull stays incorporeal for a few seconds and flies them on an easing
+    /// throttle boost. <b>Charge 5, Toll Gate</b>: the wormhole strips rivals and wears the domain hue; without it the
+    /// mouths are neutral. A standing pair follows the upgrade live (<see cref="TigerMothDropActionSO.TollsRivals"/>,
+    /// polled from the replicated unlock bit on every peer).</para>
     /// </summary>
     public sealed class TigerMothDropExecutor : ShipActionExecutorBase
     {
@@ -81,8 +89,12 @@ namespace CosmicShore.Gameplay
         readonly List<Collider> _colliderScratch = new();
         readonly List<TrailRenderer> _ribbonScratch = new();
 
-        // The wormhole: the pair standing now, and a peer's wait for the replicated landing.
+        // Time 5: the landed hull stays incorporeal until this time.
+        float _afterburnUntil = float.NegativeInfinity;
+
+        // The wormhole: the pair standing now, whether it tolls, and a peer's wait for the replicated landing.
         WormholeMouth _gateA, _gateB;
+        bool _gatesTolled;
         bool _awaitingGates;
         float _gateDeadline;
         Quaternion _landedFrame;
@@ -141,6 +153,10 @@ namespace CosmicShore.Gameplay
             if (_status == null || _phase != Phase.Idle || !IsReady) return;   // refused: the card's veil shows the wait
 
             _activeSo = so;
+            // A new drop ends an afterburn (its own landing may start one). Become solid first, so the switch-off below
+            // takes the dust capsule the afterburn left raining.
+            if (_afterburnUntil > float.NegativeInfinity) SetIncorporeal(false);
+            _afterburnUntil = float.NegativeInfinity;
             _phase = Phase.Dropping;
             _held = true;
             _phaseSeconds = 0f;
@@ -156,6 +172,8 @@ namespace CosmicShore.Gameplay
             SetIncorporeal(true);
             CutRibbons();
             if (_animation) _animation.SetFolded(true);
+            // A drop in Dust mode falls through its own dust (Garrett, 2026-10-29). Every peer, on its own copy.
+            if (_dustField && _dustField.IsActive) ElementalCleanse.Cleanse(_status);
             PlayCue(dropEngageEvent, _pressPosition);
             PushCamera();
         }
@@ -165,6 +183,12 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (_awaitingGates) TickGatePlacement();
+            if (_gateA) FollowTollUpgrade();
+            if (_phase == Phase.Idle && _afterburnUntil > float.NegativeInfinity && Time.time >= _afterburnUntil)
+            {
+                _afterburnUntil = float.NegativeInfinity;
+                SetIncorporeal(false);
+            }
             if (_phase == Phase.Idle || _status == null) return;
             var so = Config;
             if (!so) { End(landed: false); return; }
@@ -204,7 +228,7 @@ namespace CosmicShore.Gameplay
                 if (turn01 >= 1f)
                 {
                     PlayCue(dropLandEvent, root.position);
-                    End(landed: true);
+                    End(landed: true, afterburn: TigerMothDropActionSO.HasAfterburn(_status) && so.AfterburnSeconds > 0f);
                     ArmGates(so);
                     return;
                 }
@@ -223,15 +247,29 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Hand everything back. Idempotent and unconditional where it can be: a vessel despawned or
         /// re-initialised mid-drop must not keep its stance, its frozen turn, its pen, its ghostliness or the player's
-        /// camera. A drop cut short (<paramref name="landed"/> false) leaves the hull where it is, still upright.</summary>
-        void End(bool landed)
+        /// camera. A drop cut short (<paramref name="landed"/> false) leaves the hull where it is, still upright.
+        /// <paramref name="afterburn"/> (Time 5, a landing only) keeps the hull incorporeal for the afterburn, with its
+        /// dust working, and gives the owner the throttle boost; <see cref="Update"/> ends it.</summary>
+        void End(bool landed, bool afterburn = false)
         {
             _phase = Phase.Idle;
             _held = false;
             SetStopped(false);
             HoldTurn(false);
             SetPen(false);
-            SetIncorporeal(false);
+            var so = Config;
+            if (landed && afterburn && so)
+            {
+                _afterburnUntil = Time.time + so.AfterburnSeconds;
+                if (_dustField) _dustField.ReassertColliders();   // invulnerable, not harmless: the dust still rains
+                if (_status != null && _status.IsNetworkOwner)
+                    _status.VesselTransformer?.ModifyThrottle(so.AfterburnThrottle, so.AfterburnSeconds);
+            }
+            else
+            {
+                _afterburnUntil = float.NegativeInfinity;
+                SetIncorporeal(false);
+            }
             RestartRibbons();
             if (_animation) _animation.SetFolded(false);
             // On a landing the hull now IS the camera's frame, so releasing the frame moves nothing.
@@ -268,7 +306,7 @@ namespace CosmicShore.Gameplay
             // Only a drop that paid the FULL recharge leaves a pair (Garrett, 2026-10-29), measured on poses every peer
             // agrees on, so every peer makes the same call. A shorter drop leaves the standing pair as it was.
             Vector3 landedAt = _status.Transform.position;
-            if (!TigerMothDropMath.PaysFullCooldown(Vector3.Distance(_pressPosition, landedAt), so.ResolveFullDistance(_status)))
+            if (!TigerMothDropMath.PaysFullCooldown(Vector3.Distance(_pressPosition, landedAt), so.FullCooldownDistance))
                 return;
             PlaceGates(so, _pressPosition, landedAt);
         }
@@ -290,6 +328,7 @@ namespace CosmicShore.Gameplay
             // Retired BEFORE the new pair is built, so a pilot never sees four mouths. Only a new full drop, or the hull
             // being destroyed, closes a pair: there is no lifespan.
             RetireGates();
+            _gatesTolled = TigerMothDropActionSO.TollsRivals(_status);
             _gateA = BuildGate(so, $"DropWormhole::{_status.PlayerName}::A", from);
             _gateB = BuildGate(so, $"DropWormhole::{_status.PlayerName}::B", to);
             WormholeMouth.Pair(_gateA, _gateB);
@@ -313,9 +352,10 @@ namespace CosmicShore.Gameplay
                 ExactRenderScale = so.PortalWindowRenderScale,
                 PanoramaFaceSize = so.PanoramaFaceSize,
                 TransitEvent = gateThreadEvent,
-                // The rim wears the placer's domain: the colour says who rides it free.
-                RimTint = ToyFactory.DomainAccentColor(_gameData.ThemeManagerData, domain),
-                DomainTolled = true,
+                // A tolling pair wears the placer's domain (the colour says who rides it free); a neutral one keeps
+                // the material's own rim (Charge 5, Toll Gate).
+                RimTint = _gatesTolled ? ToyFactory.DomainAccentColor(_gameData.ThemeManagerData, domain) : default,
+                DomainTolled = _gatesTolled,
                 TollPetalsPerElement = so.RivalTollPetalsPerElement,
                 TollShedSpeed = so.RivalTollShedSpeed,
                 TollHitClass = so.TollHitClass,
@@ -325,6 +365,18 @@ namespace CosmicShore.Gameplay
                 Theme = _gameData.ThemeManagerData,
             }, _gameData.Players, so.GateRadius);
             return mouth;
+        }
+
+        /// <summary>Charge 5 unlocked or relocked under a standing pair: switch its toll and its rim. Polled (one bit
+        /// read a frame while a pair stands) rather than subscribed, so no subscription can outlive the handler.</summary>
+        void FollowTollUpgrade()
+        {
+            if (_status == null) return;
+            bool tolled = TigerMothDropActionSO.TollsRivals(_status);
+            if (tolled == _gatesTolled) return;
+            _gatesTolled = tolled;
+            _gateA.SetDomainTolled(tolled);
+            if (_gateB) _gateB.SetDomainTolled(tolled);
         }
 
         void RetireGates()
