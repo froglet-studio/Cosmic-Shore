@@ -1,4 +1,4 @@
--- Replay retention by play type (PostHog HogQL). Five queries, run each on its own:
+-- Replay retention by play type (PostHog HogQL). Six queries, run each on its own:
 --   in PostHog's SQL editor, or through the PostHog MCP (`call execute-sql {"query": "..."}`).
 --
 -- WHAT "PLAY TYPE" MEANS TODAY. Read off game_started, one row per (player, match):
@@ -31,7 +31,8 @@
 --   Query 3: RETURN, did the player come back on a later day.
 -- A fourth, separate question: Query 4, completion rate by game mode, with historical mode names
 -- merged into the current ones. And Query 5, the player funnel from first event to a completed game
--- and a return visit.
+-- and a return visit. And Query 6, match health: completion, length and win rate by platform (6a)
+-- and by play type and intensity (6b).
 --
 -- PARAMETERS (edit the literals): window `INTERVAL 90 DAY` (appears in every subquery of a
 -- query), rematch gap `600` seconds (query 2), D7 maturity `today() - 7` (query 3).
@@ -287,3 +288,97 @@ SELECT
     countIf(toDate(t_first) <= today() - 7
             AND arrayExists(d -> dateDiff('day', toDate(t_first), d) BETWEEN 1 AND 7, days)) AS returned_within_7d
 FROM p;
+
+
+-- ============================================================================
+-- Query 6a. Match health by platform. Run 6a and 6b each on its own.
+-- Per match (deduped by player and match_id): did it complete, how long did the completed ones
+-- run, how long was the player actually at the stick, and did they win.
+--   median_dur_s      wall clock, pause included (game_completed.duration_seconds)
+--   median_flight_s   time at the stick, pause and background excluded (flight_time_seconds).
+--                     The two being close means players are not pausing or going AFK mid-match.
+--   under_60s         completed matches shorter than a minute
+--   wins / decided    player_won is only sent when the local result can be resolved, so `decided`
+--                     is the number of completed matches that carried it
+-- Both toggles are on. 2026-10-29: Android 30 matches / 16 completed / 102 s; iPhone 28 / 12 / 94 s;
+-- Windows 19 / 12 / 190 s; 29 wins of 39 decided. Small samples: read as pointers.
+-- ============================================================================
+WITH s AS (
+    SELECT distinct_id, properties.match_id AS match_id, any(properties.platform) AS platform
+    FROM events
+    WHERE event = 'game_started'
+      AND timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
+      AND properties.app_version NOT LIKE '%-port'   -- PORT TOGGLE
+    GROUP BY distinct_id, match_id
+),
+d AS (
+    SELECT distinct_id, properties.match_id AS match_id, min(timestamp) AS done_ts,
+           any(toFloat(properties.duration_seconds)) AS dur,
+           any(toFloat(properties.flight_time_seconds)) AS flight,
+           any(properties.player_won) AS won
+    FROM events
+    WHERE event = 'game_completed'
+      AND timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
+      AND properties.app_version NOT LIKE '%-port'   -- PORT TOGGLE
+    GROUP BY distinct_id, match_id
+)
+SELECT
+    s.platform AS platform,
+    count() AS matches,
+    countIf(d.done_ts > toDateTime('2001-01-01')) AS completed,
+    round(100.0 * countIf(d.done_ts > toDateTime('2001-01-01')) / count(), 0) AS completed_pct,
+    round(medianIf(d.dur, d.done_ts > toDateTime('2001-01-01')), 0) AS median_dur_s,
+    round(medianIf(d.flight, d.done_ts > toDateTime('2001-01-01')), 0) AS median_flight_s,
+    countIf(d.done_ts > toDateTime('2001-01-01') AND d.dur < 60) AS under_60s,
+    countIf(d.won = 'true' OR d.won = '1') AS wins,
+    countIf(d.done_ts > toDateTime('2001-01-01') AND d.won IN ('true', 'false', '1', '0')) AS decided
+FROM s
+LEFT JOIN d ON s.distinct_id = d.distinct_id AND s.match_id = d.match_id
+GROUP BY platform
+ORDER BY matches DESC;
+
+
+-- ============================================================================
+-- Query 6b. Match health by play type and intensity.
+-- Play type is the same three-way split as the other queries (swap in the commented expression
+-- from the header when the team-composition fields ship). Most play is intensity 1 against an AI,
+-- so intensities 2 to 4 are a handful of matches each.
+-- 2026-10-29: solo_vs_ai I1 32 matches / 15 completed / 90 s; solo_alone I1 23 / 9 / 137 s;
+-- solo_vs_ai I2 13 / 8 / 106 s; the rest have 7 matches between them.
+-- ============================================================================
+WITH s AS (
+    SELECT
+        distinct_id,
+        properties.match_id AS match_id,
+        max(toFloat(properties.player_count_human)) AS humans,
+        max(toFloat(properties.player_count_ai)) AS ais,
+        max(toFloat(properties.intensity)) AS intensity
+    FROM events
+    WHERE event = 'game_started'
+      AND timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
+      AND properties.app_version NOT LIKE '%-port'   -- PORT TOGGLE
+    GROUP BY distinct_id, match_id
+),
+d AS (
+    SELECT distinct_id, properties.match_id AS match_id, min(timestamp) AS done_ts,
+           any(toFloat(properties.duration_seconds)) AS dur
+    FROM events
+    WHERE event = 'game_completed'
+      AND timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
+      AND properties.app_version NOT LIKE '%-port'   -- PORT TOGGLE
+    GROUP BY distinct_id, match_id
+)
+SELECT
+    if(s.humans >= 2, 'multi_human', if(s.ais >= 1, 'solo_vs_ai', 'solo_alone')) AS play_type,
+    concat('I', toString(s.intensity)) AS intensity,
+    count() AS matches,
+    countIf(d.done_ts > toDateTime('2001-01-01')) AS completed,
+    round(medianIf(d.dur, d.done_ts > toDateTime('2001-01-01')), 0) AS median_dur_s
+FROM s
+LEFT JOIN d ON s.distinct_id = d.distinct_id AND s.match_id = d.match_id
+GROUP BY play_type, intensity
+ORDER BY matches DESC;
