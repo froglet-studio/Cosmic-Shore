@@ -475,7 +475,8 @@ SCARAB_SWAPS = {
     "3855639277037614910": None,
     # Mass: None - the icon kit's Switch card (specs/scarab.py, 2026-10-28), a container over its parts.
     "6611959372928416812": None,
-    "4990196459091587280": ("6da9cfe8d216bd84695e3b4c71bfa533", "Scarab_BallForge-PLACEHOLDER.png"),        # Space (was bullet icon)
+    # Space: None - the icon kit's Nucleus Seeding card (specs/scarab.py, 2026-10-29), a container over its parts.
+    "4990196459091587280": None,
     "3258612490553136050": ("f0197e0a2ce38654ea3d882fff64967a", "Scarab_Throttle-PLACEHOLDER.png"),         # Time (was boost icon)
 }
 

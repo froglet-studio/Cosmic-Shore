@@ -97,7 +97,13 @@ DRAINS = [
     # (asset path, verb, magnitude field, optional mirrored buff field, duration field, note)
     ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabCavitationDebuffByExplosionEffect.asset",
      "debuff", "debuffMagnitude", None, "debuffDuration",
-     "Dolphin crystal cone + Scarab cavitation plate (shared asset - The Bends / Undertow)"),
+     "Dolphin crystal cone (The Bends). The Scarab's shove left this shared asset on 2026-10-29 for "
+     "its own, below, because its bite is Charge-scaled and the cone's is not"),
+    ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabShoveDebuffByExplosionEffect.asset",
+     "debuff", "debuffMagnitude", None, "debuffDuration",
+     "Scarab shove plate (Undertow). Its bite is additionally scaled by the shover's CHARGE "
+     "(magnitudeAtFullCharge, x1 at rest -> x2.5 at L10, the joust's steal shape); this row prices "
+     "the x1 base."),
     ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset",
      "debuff", "debuffMagnitude", None, "debuffDuration",
      "Manta Kabloom bloom (Mass + Space only)"),
