@@ -521,3 +521,127 @@ REBIND += [
     dict(file=VARIANT, core=dict(view=VIEW, donor="2527741218184756275", name="Drift", ability=1, input=2,
                                  icon="Scarab_Drift", omni="Scarab_BallForge")),
 ]
+
+
+# ---- Time: Throttle options (2026-10-29) ---------------------------------------------------------------------------
+# The act: RT is analog THRUST along the nose (ScarabVesselTransformer: depth = how hard you push, 90 u/s^2 at full
+# pull; release IS the brake, 120 u/s^2 to a genuine stop); Time raises the ceiling 216 -> 324 u/s. Time 5 is SNAP DASH:
+# double-tap RT for a 500 u/s lunge along the nose, 0.4 s, then 5 s before the next. The vessel changes (faster), so
+# the vessel is on the card (LESSONS 52), flying nose RIGHT across the card (55), in its domain colour. The plate is the
+# SPEED meter (speed / live top speed, so a Time level never pins it full). Snap Dash is a STATE (44a): its mark is lit
+# white while ready, grey while it waits its 5 s, absent below Time 5. Before: the placeholder.
+# Three candidates; what tells them from the Drift card (a hull turned off its course over straight streaks) is that
+# here the hull points the way it goes.
+TH_CY = 64.0
+TH_HULL_BOX = 66.0
+TH_GREY = (120, 120, 140, 255)
+
+
+def th_hull(nose_x):
+    return mesh_silhouette.silhouette(FBX, box=TH_HULL_BOX, cx=nose_x - TH_HULL_BOX / 2, cy=TH_CY, **VIEW_PLAN)
+
+
+def _chev(x, cy, half_h, depth, t):
+    sh = t / math.cos(math.atan2(depth, half_h))
+    return fill([(x, cy - half_h), (x + depth, cy), (x, cy + half_h),
+                 (x - t, cy + half_h), (x + depth - sh, cy), (x - t, cy - half_h)])
+
+
+# A: WAKE. Three streaks run back from the hull; their length is how hard the trigger is pulled. Snap Dash: a chevron
+# ahead of the nose.
+A_NOSE = 100.0
+
+
+def a_hull():
+    return th_hull(A_NOSE)
+
+
+def wake(depth01):
+    tail = A_NOSE - TH_HULL_BOX
+    out = empty()
+    for dy, k in ((0.0, 1.0), (-14.0, 0.7), (14.0, 0.7)):
+        L = (tail - 8) * depth01 * k
+        if L > 4:
+            out |= stroke([(tail + 4 - L, TH_CY + dy), (tail + 4, TH_CY + dy)], w=6.0)
+    return _clear_of(out, a_hull(), px=3.0)
+
+
+def a_dash():
+    return _clear_of(_chev(108.0, TH_CY, 22.0, 12.0, 7.0), a_hull(), px=3.0)
+
+
+# B: AFTERIMAGE. A copy of the hull trails it, further back the faster you go (the eye reads distance per frame).
+# Snap Dash: a copy flung AHEAD of the nose - where the lunge will put you.
+B_NOSE = 92.0
+
+
+def b_hull():
+    return th_hull(B_NOSE)
+
+
+def b_copies(speed01):
+    if speed01 < 0.3:
+        return empty()
+    box = TH_HULL_BOX * 0.5
+    cx = B_NOSE - TH_HULL_BOX - 4.0 - box / 2 + 10.0 * (1.0 - speed01)
+    return _clear_of(mesh_silhouette.silhouette(FBX, box=box, cx=cx, cy=TH_CY, **VIEW_PLAN), b_hull(), px=3.0)
+
+
+def b_dash():
+    box = TH_HULL_BOX * 0.42
+    return _clear_of(mesh_silhouette.silhouette(FBX, box=box, cx=B_NOSE + 6.0 + box / 2, cy=TH_CY, **VIEW_PLAN),
+                     b_hull(), px=3.0)
+
+
+# C: THRUST CHEVRONS. Three chevrons behind the hull light one by one with the trigger's depth (a third, two thirds,
+# full - the analog pull in segments); unlit ones stay grey. Snap Dash: a lance ahead of the nose.
+C_NOSE = 104.0
+
+
+def c_hull():
+    return th_hull(C_NOSE)
+
+
+def c_chev(i):
+    return _clear_of(_chev(7.0 + i * 10.0, TH_CY, 15.0, 8.0, 5.5), c_hull(), px=3.0)
+
+
+def c_dash():
+    return _clear_of(fill([(109.0, TH_CY - 4), (118.0, TH_CY - 4), (125.0, TH_CY), (118.0, TH_CY + 4), (109.0, TH_CY + 4)]),
+                     c_hull(), px=3.0)
+
+
+# (name, trigger depth, speed / top, dash: None below Time 5 / "ready" / "waiting")
+TH_STATES = [("released: coasting to a stop", 0.0, 0.15, None),
+             ("half pull", 0.5, 0.5, None),
+             ("full pull, Time 5: Snap Dash ready", 1.0, 1.0, "ready"),
+             ("dashed: Snap Dash waits 5 s", 1.0, 1.0, "waiting")]
+
+
+def _th_card(key, title, hull, trail, dash, chevrons=False):
+    parts = dict(hull=hull, dash=dash)
+    states, gauge = [], {}
+    for n, depth, speed, d in TH_STATES:
+        if chevrons:
+            for i in range(3):
+                parts[f"c{i}"] = (lambda i=i: c_chev(i))
+            L = [(f"c{i}", "white" if depth >= (i + 1) / 3 - 1e-3 else TH_GREY) for i in range(3)]
+        else:
+            parts[f"t_{n}"] = (lambda depth=depth, speed=speed: trail(depth, speed))
+            L = [(f"t_{n}", "white")]
+        if d:
+            L.append(("dash", "white" if d == "ready" else TH_GREY))
+        states.append((n, L + [("hull", "domain")]))
+        gauge[n] = (speed, None)
+    return dict(name=f"throttle_{key}", group="throttle", lockup_state=2, element="Time",
+                before=ICON_DIR + "Scarab_Throttle-PLACEHOLDER.png", title=title, parts=parts, states=states, gauge=gauge)
+
+
+CARDS += [
+    _th_card("a", "A  Wake: the Scarab flying right, streaks behind as long as the pull is deep; Snap Dash a chevron ahead "
+                  "(white ready, grey waiting); plate = speed", a_hull, lambda d, s: wake(d), a_dash),
+    _th_card("b", "B  Afterimage: a copy of the Scarab trails it, further back the faster you go; Snap Dash a copy flung ahead",
+             b_hull, lambda d, s: b_copies(s), b_dash),
+    _th_card("c", "C  Thrust chevrons: three chevrons behind light one by one with the pull; Snap Dash a lance ahead",
+             c_hull, None, c_dash, chevrons=True),
+]
