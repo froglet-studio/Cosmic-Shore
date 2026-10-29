@@ -304,6 +304,27 @@ static class ClipAudit
         foreach (var f in node.GetProperty("fields").EnumerateObject())
             setField.Invoke(null, new object[] { gen, f.Name, f.Value });
         int intensity = course.GetProperty("intensity").GetInt32(), seed = course.GetProperty("seed").GetInt32();
+        if (course.TryGetProperty("switchback", out var sb))
+        {
+            // SpawnableSwitchbackFeatures: SwitchbackController generates the Switchback course and hands the
+            // generator the fun type's closed-form layout (SetLayout). Posed on the shipped shell the EditMode
+            // tests use, at the picker's fixed world seed.
+            var funType = (SwitchbackFunType)sb.GetProperty("funType").GetInt32();
+            var cs = SwitchbackCourseSettings.ForIntensity(intensity, funType);
+            cs.GateCount = sb.GetProperty("gates").GetInt32();
+            cs.InnerRadius = (float)sb.GetProperty("inner").GetDouble();
+            cs.OuterRadius = (float)sb.GetProperty("outer").GetDouble();
+            cs.FirstGateDirection = Vector3.up;
+            cs.FirstGateDistance = (float)sb.GetProperty("firstGateDistance").GetDouble();
+            float clear = (float)sb.GetProperty("clearRadius").GetDouble();
+            var gates = SwitchbackCourse.Generate(seed, cs);
+            var layout = SwitchbackBlastRun.Layout(gates, intensity, Vector3.zero, clear);
+            type.GetMethod("SetLayout").Invoke(gen, new object[] { gates, intensity, funType, layout, Vector3.zero, clear });
+            gen.GenerateForHarness();
+            foreach (var lay in ((CellEnvironmentSpawnableBase)gen).CachedLays)
+                sink.Add((new SpawnPoint(lay.Point.Position, lay.Point.Rotation, Clamp(lay.Point.Scale)), lay.Domain, lay.Kind));
+            return;
+        }
         object settings = BreakwaterCourseSettings.ForIntensity(intensity);
         if (course.TryGetProperty("settings", out var over))
             foreach (var f in over.EnumerateObject())

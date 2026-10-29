@@ -51,19 +51,28 @@ namespace CosmicShore.Gameplay
         public readonly Vector3 Side;
         public readonly float Amplitude;
         public readonly float Phase;      // radians
+        /// <summary>rad/s; 0 means <see cref="SwitchbackLiveFeatures.MovingOmega"/> (Plan 2's 4 s sweep).</summary>
+        public readonly float Omega;
 
         public SwitchbackMovingCluster(int firstPrism, int count, Vector3 side, float amplitude, float phase)
+            : this(firstPrism, count, side, amplitude, phase, 0f) { }
+
+        /// <summary>A cluster on its own clock: Blast Run's snap-trap jaws (<see cref="SwitchbackBlastRun.JawOmega"/>).</summary>
+        public SwitchbackMovingCluster(int firstPrism, int count, Vector3 side, float amplitude, float phase, float omega)
         {
             FirstPrism = firstPrism;
             Count = count;
             Side = side;
             Amplitude = amplitude;
             Phase = phase;
+            Omega = omega;
         }
+
+        public float AngularSpeed => Omega > 0f ? Omega : SwitchbackLiveFeatures.MovingOmega;
 
         /// <summary>The offset from the laid pose at <paramref name="seconds"/> on the shared clock.</summary>
         public Vector3 DisplacementAt(float seconds) =>
-            Side * (Amplitude * (Mathf.Sin(SwitchbackLiveFeatures.MovingOmega * seconds + Phase) - Mathf.Sin(Phase)));
+            Side * (Amplitude * (Mathf.Sin(AngularSpeed * seconds + Phase) - Mathf.Sin(Phase)));
     }
 
     /// <summary>Everything Plan 2 hangs on one course.</summary>
@@ -73,6 +82,10 @@ namespace CosmicShore.Gameplay
         public readonly List<SwitchbackRibbon> Ribbons = new(16);
         public readonly List<SwitchbackShortcut> Shortcuts = new(16);
         public readonly List<SwitchbackMovingCluster> MovingClusters = new(32);
+        /// <summary>Blast Run only (<see cref="SwitchbackBlastRun"/>): the blocked gates, in course order.</summary>
+        public readonly List<BlastRunStation> Stations = new();
+        /// <summary>Blast Run only: the hunter packs (I4).</summary>
+        public readonly List<BlastRunPack> Packs = new();
     }
 
     /// <summary>

@@ -14,7 +14,7 @@ namespace CosmicShore.UI
     /// control, so it lives here rather than in the launch-panel prefabs. Two buttons in a strip that floats just
     /// ABOVE the intensity row (a <see cref="LayoutElement"/> with <c>ignoreLayout</c>, so the row's own layout is
     /// untouched): <c>FUN: &lt;type&gt; &gt;</c> cycles Classic, Level Shapes, Par &amp; Medals, Live Features,
-    /// Combined; <c>SEED: RANDOM / FIXED</c> toggles one known course per world
+    /// Combined, Blast Run; <c>SEED: RANDOM / FIXED</c> toggles one known course per world
     /// (<see cref="SwitchbackFunTypes.WorldSeed"/>). Both are remembered on this machine (PlayerPrefs
     /// <c>Switchback.FunType</c>, <c>Switchback.FixedSeed</c>).</para>
     ///

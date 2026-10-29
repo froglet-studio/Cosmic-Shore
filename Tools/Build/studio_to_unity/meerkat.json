@@ -1,5 +1,5 @@
 {
-  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. Lab-only (never in the game): aiTau (the sim's steering response - the game's AI flies with AIPilot), the stand-in hull's lope*. cruise / pitchYaw / roll / bankShare are the prefab's MeerkatVesselTransformer (bankShare x roll = RollScaler, set by author_meerkat_assets.py), not plain fields. Rounds 13-21 (the tree round the wormhole and the Omnicrystal's roots, MEERKAT.md section 7) map to the same config by the same names; trunkWarp, omniAtOnce, soil*, labyrinthRing*, labyrinthRibs, labyrinthRoughness and forkHintSeconds are not ported yet. Edit this file, never the assets by hand. Round 23 (Garrett's soliton): areaL0 / areaL10 (the surface area by the hull's Space level, read at use time from its ResourceSystem, so kSpaceLevel is lab-only), suckRadius, suckSpeed, swallowShare, carrySpeed, carryStretch, carryTwist, fireSpeed, fireGlideSeconds (MeerkatSwallow); bounceRestitution is the shared PrismMotionConfig's shieldBounceRestitution (0.6), not a Meerkat field. Round 24: the tunnel is slid as the roots are, so rideEntryMultiplier and rideMidMultiplier are retired (the root* keys fly both). Round 26: carrySpeed retired - a carried prism or crystal moves at rootMaxSpeed, the slide's top speed, held behind its tunnel's rider. Garrett's kit (approved by Yash 2026-10-28, R_VesselActions/MEERKAT.md section 10): its plain keys boostOut, sentinelPool, sentinelPoolL5, guardShare, aiZapRate and portalShare map here by the same names; its L0/L10 pairs rushL0/L10, zapPetalsL0/L10 and portalSizeL0/L10 are the ElementalFloat blocks rush, zapPetals and portalSize. Round 26 (Yash, 2026-10-28: tubes of wormholes, no tree, no roots): trunkVisibility, rootOpacity and the new rootBarkVisibility ship at 0; the page's formedLook is not mapped, because the game keeps that switch in the config's Inspector (YASH'S LOOK / GARRETT'S LOOK).",
+  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. Lab-only (never in the game): aiTau (the sim's steering response - the game's AI flies with AIPilot), the stand-in hull's lope*. cruise / pitchYaw / roll / bankShare are the prefab's MeerkatVesselTransformer (bankShare x roll = RollScaler, set by author_meerkat_assets.py), not plain fields. Rounds 13-21 (the tree round the wormhole and the Omnicrystal's roots, MEERKAT.md section 7) map to the same config by the same names; trunkWarp, omniAtOnce, soil*, labyrinthRing*, labyrinthRibs, labyrinthRoughness and forkHintSeconds are not ported yet. Edit this file, never the assets by hand. Round 23 (Garrett's soliton): areaL0 / areaL10 (the surface area by the hull's Space level, read at use time from its ResourceSystem, so kSpaceLevel is lab-only), suckRadius, suckSpeed, swallowShare, carrySpeed, carryStretch, carryTwist, fireSpeed, fireGlideSeconds (MeerkatSwallow); bounceRestitution is the shared PrismMotionConfig's shieldBounceRestitution (0.6), not a Meerkat field. Round 24: the tunnel is slid as the roots are, so rideEntryMultiplier and rideMidMultiplier are retired (the root* keys fly both). Round 26: carrySpeed retired - a carried prism or crystal moves at rootMaxSpeed, the slide's top speed, held behind its tunnel's rider. Garrett's kit (approved by Yash 2026-10-28, R_VesselActions/MEERKAT.md section 10): its plain keys boostOut, sentinelPool, sentinelPoolL5, guardShare, aiZapRate and portalShare map here by the same names; its L0/L10 pairs rushL0/L10, zapPetalsL0/L10 and portalSizeL0/L10 are the ElementalFloat blocks rush, zapPetals and portalSize. 2026-10-29 (Yash: one clear jelly look, the trunk and the root alike, no water): the page's look keys are not mapped and their fields are gone - warpStrength, dentStrength, ripple*, bridgeVisibility, bridgeGlass, bridgeWhite, trunk*, branch*, rootBarkVisibility, rootGlass, rootRim, rootGrain, rootOpacity, tubeInner, rootLamp, rootFog and formedLook; the look is Unity-side (the config's Comfort / Trunk Look / Root Look / Trunk Ride / Root Ride, Docs/Shaders/WORMHOLE_SHADERS.md section 14).",
   "vessel": "Meerkat",
   "page": "Docs/Studios/VesselStudio/meerkat.html",
   "rows": [
@@ -69,31 +69,6 @@
       "field": "collapseSeconds"
     },
     {
-      "key": "warpStrength",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "warpStrength"
-    },
-    {
-      "key": "dentStrength",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "dentStrength"
-    },
-    {
-      "key": "rippleStrength",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rippleStrength"
-    },
-    {
-      "key": "rippleEdge",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rippleEdge"
-    },
-    {
-      "key": "rippleSeconds",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rippleSeconds"
-    },
-    {
       "key": "reticleIdleAlpha",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "reticleIdleAlpha"
@@ -107,16 +82,6 @@
       "key": "reticleNearLight",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "reticleNearLight"
-    },
-    {
-      "key": "bridgeVisibility",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "bridgeVisibility"
-    },
-    {
-      "key": "bridgeGlass",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "bridgeGlass"
     },
     {
       "key": "bridgeRings",
@@ -142,11 +107,6 @@
       "key": "bridgeShimmer",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "bridgeShimmer"
-    },
-    {
-      "key": "bridgeWhite",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "bridgeWhite"
     },
     {
       "key": "aiWormhole",
@@ -202,106 +162,6 @@
       "key": "rideExitMultiplier",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "rideExitMultiplier"
-    },
-    {
-      "key": "trunkVisibility",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkVisibility"
-    },
-    {
-      "key": "trunkTop",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkTop"
-    },
-    {
-      "key": "trunkBase",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkBase"
-    },
-    {
-      "key": "trunkBark",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkBark"
-    },
-    {
-      "key": "trunkRidges",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkRidges"
-    },
-    {
-      "key": "trunkGnarl",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkGnarl"
-    },
-    {
-      "key": "trunkGlass",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkGlass"
-    },
-    {
-      "key": "trunkRim",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkRim"
-    },
-    {
-      "key": "trunkFresnel",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkFresnel"
-    },
-    {
-      "key": "trunkRings",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkRings"
-    },
-    {
-      "key": "trunkGrain",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkGrain"
-    },
-    {
-      "key": "trunkGrainLines",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "trunkGrainLines"
-    },
-    {
-      "key": "branchCount",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "branchCount"
-    },
-    {
-      "key": "branchLength",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "branchLength"
-    },
-    {
-      "key": "branchThickness",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "branchThickness"
-    },
-    {
-      "key": "branchUp",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "branchUp"
-    },
-    {
-      "key": "branchZone",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "branchZone"
-    },
-    {
-      "key": "branchSymmetry",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "branchSymmetry"
-    },
-    {
-      "key": "branchForks",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "branchForks"
-    },
-    {
-      "key": "branchGrowSeconds",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "branchGrowSeconds"
     },
     {
       "key": "omniOn",
@@ -374,21 +234,6 @@
       "field": "rootGnarl"
     },
     {
-      "key": "rootGlass",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rootGlass"
-    },
-    {
-      "key": "rootRim",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rootRim"
-    },
-    {
-      "key": "rootGrain",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rootGrain"
-    },
-    {
       "key": "labyrinthFormSeconds",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "labyrinthFormSeconds"
@@ -427,31 +272,6 @@
       "key": "rootGravity",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "rootGravity"
-    },
-    {
-      "key": "rootOpacity",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rootOpacity"
-    },
-    {
-      "key": "rootBarkVisibility",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rootBarkVisibility"
-    },
-    {
-      "key": "rootLamp",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rootLamp"
-    },
-    {
-      "key": "rootFog",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rootFog"
-    },
-    {
-      "key": "tubeInner",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "tubeInner"
     },
     {
       "key": "ovalShortest",

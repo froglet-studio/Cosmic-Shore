@@ -10,6 +10,15 @@ a wormhole (§8, round 23) and Mass sizes the network (§7a, round 26); Garrett'
 is editor-verified yet: the open hand tests are the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the
 report is `Docs/Reports/MEERKAT.md`.
 
+**Wormhole look, 2026-10-29 (`feat/wormhole-pc-unified`, PR #1624, the calm-jelly round):** ONE look ships, the same
+for the trunk (a formed tunnel) and the root (an omnicrystal network's channel), each with its own numbers. It is a clear,
+calm, slightly jelly-like hollow in space: bent space, a slow breath and a faint white rim, with no water and no tint.
+Comfort settings keep the ride calm. The config's look groups are Comfort, Trunk Look / Shape / Ride, Root Look / Shape /
+Ride, Kit, and Miscellaneous (`MeerkatWormholeLook.cs`, `MeerkatWormholeLens.shader`). The contour-field knobs, YASH'S /
+GARRETT'S presets (`MeerkatWormholeHQ`), and the earlier bridge, warp, calm wall, water pipe, tree and root inside are all
+gone. Sections below that mention them are history. Every field, default and comfort tip:
+`Docs/Shaders/WORMHOLE_SHADERS.md` §14. Restore steps: §13 (from `0c8c5218c`) and §12.
+
 Yash, 2026-10-27: *"This will be Meerkat, a new vessel ... with all its things similar to the Stoat. Just rename to
 Meerkat and keep only one ability of the wormhole."* It is the Stoat studio's Gate mode, made its own vessel.
 

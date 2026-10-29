@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
     public sealed class MeerkatSolitonKit : ShipActionExecutorBase
     {
         [Header("Config")]
-        [Tooltip("The Meerkat's config (the same asset as the wormhole's): the kit's numbers are its Garrett's kit sections.")]
+        [Tooltip("The Meerkat's config (the same asset as the wormhole's): the kit's numbers are its Kit sections.")]
         [SerializeField] MeerkatWormholeConfigSO config;
 
         [Tooltip("The game data the players (the rivals a sentinel zaps) are read from.")]

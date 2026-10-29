@@ -46,8 +46,8 @@ namespace CosmicShore.Core
         [SerializeField] protected Transform[] _playerOrigins;
 
         [Header("Menu Autopilot Configuration")]
-        [SerializeField, Tooltip("Vessel class displayed as the autopilot in the menu background (the lava lamp), and the hull you fly when you take control (freestyle). Meerkat since 2026-10-28 (Yash).")]
-        VesselClassType menuVesselClass = VesselClassType.Meerkat;
+        [SerializeField, Tooltip("Vessel class displayed as the autopilot in the menu background (the lava lamp), and the hull you fly when you take control (freestyle). Squirrel again since 2026-10-29 (Yash); it was the Meerkat 2026-10-28.")]
+        VesselClassType menuVesselClass = VesselClassType.Squirrel;
 
         // No menuPlayerCount knob: the menu autopilot spawns exactly one Player via the Netcode
         // pipeline, so GameDataSO.SelectedPlayerCount is deliberately left alone here (see

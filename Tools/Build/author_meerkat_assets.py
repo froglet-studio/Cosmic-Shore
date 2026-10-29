@@ -137,19 +137,15 @@ def script_guid(name: str) -> str:
 # ----------------------------------------------------------------------------- the studio's shipped numbers
 CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "ovalShortest", "ovalLongest", "ovalMaxSharpness", "throatDiameter", "mouthDiameter",
                "keyRampSeconds", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
-               "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
-               "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "reticleNearLight", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
-               "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "bridgeWhite", "aiWormhole", "aiStraightMinDistance",
+               "collapseSeconds", "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "reticleNearLight", "bridgeRings", "bridgeSpindlesPerRing",
+               "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "aiWormhole", "aiStraightMinDistance",
                "aiBentMinDistance", "aiShapeSeconds", "aiNoise",
-               # the tree and the roots (MEERKAT.md section 7, the artifact's rounds 13-21)
-               "trunkVisibility", "trunkTop", "trunkBase", "trunkBark", "trunkRidges", "trunkGnarl", "trunkGlass", "trunkRim",
-               "trunkFresnel", "trunkRings", "trunkGrain", "trunkGrainLines", "branchCount", "branchLength", "branchThickness",
-               "branchUp", "branchZone", "branchSymmetry", "branchForks", "branchGrowSeconds",
+               # the roots (MEERKAT.md section 7, the artifact's rounds 13-21): an omnicrystal's network
                "omniOn", "omniCount", "labyrinthBranchPointsMin", "labyrinthBranchPointsMax", "labyrinthOpeningsMin",
                "labyrinthOpeningsMax", "labyrinthRadiusMin", "labyrinthRadiusMax", "labyrinthSpread", "labyrinthRandomness",
-               "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl", "rootBarkVisibility", "rootGlass", "rootRim", "rootGrain",
+               "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl",
                "labyrinthFormSeconds", "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootMaxSpeed", "rootBounce",
-               "rootGravity", "rootOpacity", "tubeInner", "rootLamp", "rootFog",
+               "rootGravity",
                # Garrett's soliton (round 23): the surface area, the pull, the carry, the fire
                "areaL0", "areaL10", "suckRadius", "suckSpeed", "swallowShare", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
 
@@ -246,7 +242,7 @@ def config_asset(values: dict) -> str:
 
 # Studio keys renamed after the config was first written: old -> new (round 6: the ride's three multipliers).
 RENAMED = {"throatSpeed": "rideMidMultiplier"}
-# Studio keys the page retired (round 7, the umbrella handle: a fixed narrow throat and mouth, LT sets the shaft before a
+# Studio keys retired (from round 7, the umbrella handle: a fixed narrow throat and mouth, LT sets the shaft before a
 # bend of fixed radius). Their lines leave the asset; the field is gone from MeerkatWormholeConfigSO.
 RETIRED = ["lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare",
            # round 9 (Yash, 2026-10-28: "the reticle is the silhouette of the geometry"): the reticle is the bridge's wireframe,
@@ -255,7 +251,18 @@ RETIRED = ["lengthStraight", "lengthBent", "throatStraight", "throatBent", "mout
            "reticleLook",
            # round 10 (Yash, 2026-10-28): diameters ("the diameter of the entry exit pair ... and the inner diameter"), and the
            # ride camera is the follow camera's own distance with no blend (the hull always at the centre of the screen)
-           "throatRadius", "mouthRadius", "rideCameraBack", "rideCameraLookAhead", "rideCameraBlendSeconds"]
+           "throatRadius", "mouthRadius", "rideCameraBack", "rideCameraLookAhead", "rideCameraBlendSeconds",
+           # 2026-10-29 (Yash: "I dont want any water shader ... remove ... other etc parameters that are not necessary"): the
+           # look's studio keys; the look is now Unity-side (Comfort, Trunk / Root Look and Ride; WORMHOLE_SHADERS.md section 14)
+           "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds", "bridgeVisibility", "bridgeGlass",
+           "bridgeWhite", "trunkVisibility", "trunkTop", "trunkBase", "trunkBark", "trunkRidges", "trunkGnarl", "trunkGlass",
+           "trunkRim", "trunkFresnel", "trunkRings", "trunkGrain", "trunkGrainLines", "branchCount", "branchLength",
+           "branchThickness", "branchUp", "branchZone", "branchSymmetry", "branchForks", "branchGrowSeconds",
+           "rootBarkVisibility", "rootGlass", "rootRim", "rootGrain", "rootOpacity", "tubeInner", "rootLamp", "rootFog",
+           # and the Tube Lens Lab's contour field, Unity-only, folded into MeerkatWormholeLook
+           "fieldStrength", "fieldPitch", "fieldDrag", "fieldTwist", "fieldGlass", "fieldGlassIndex", "fieldGrazing",
+           "fieldFlow", "fieldInner", "fieldOuter", "fieldProfile", "fieldRibs", "fieldRibSharpness", "fieldRibTravel",
+           "fieldRibRings", "fieldRibLines"]
 
 
 def config_retrofit(cfg: str, values: dict) -> str:
@@ -624,7 +631,7 @@ def check_config(cfg: str, values: dict):
             errs.append(f"MeerkatWormholeConfig.asset: no `{k}` (every studio key is a field, by the same name)")
     for k in RETIRED:
         if re.search(r"^  %s: " % k, cfg, re.M):
-            errs.append(f"MeerkatWormholeConfig.asset: `{k}` is retired (round 7) and still in the asset")
+            errs.append(f"MeerkatWormholeConfig.asset: `{k}` is retired and still in the asset")
     if f"guid: {script_guid('MeerkatWormholeConfigSO')}, type: 3" not in cfg:
         errs.append("MeerkatWormholeConfig.asset: does not name MeerkatWormholeConfigSO")
     return errs
