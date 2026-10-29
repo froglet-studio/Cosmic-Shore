@@ -32,7 +32,7 @@
   }
  },
  "errors": {},
- "evals": 4048,
+ "evals": 4796,
  "history": [
   [
    11,
@@ -81,10 +81,16 @@
    3.952481273527995,
    1793258413,
    "shombithofficial/dragonsweapon"
+  ],
+  [
+   4136,
+   3.772028993482017,
+   1793260086,
+   "shombithofficial/dragonsweapon"
   ]
  ],
  "restarts": 2,
- "seconds": 2253.7,
+ "seconds": 2632.1,
  "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
- "updated": 1793260034
+ "updated": 1793260412
 }
