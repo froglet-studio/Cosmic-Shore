@@ -9,6 +9,8 @@
   Mass    Switch            a ring the balls thread; Mass grows its radius
   Space   Ball Forge        fly through an omni crystal to mint a ball; Space grows it (x1 -> x4)
   Time    Throttle          analog right-trigger thrust along the nose; Time raises its top speed; Time 5 Snap Dash
+                            (500 u/s lunge, 5 s cooldown). Card A (2026-10-29): the Scarab flying right, its wake as long
+                            as the pull, the Snap Dash chevron ahead; the plate is speed / live top speed
 
 Before: four PLACEHOLDER sprites (author_hull_icon_placeholders.py), three of them tinted as gauges by ScarabHUDView
 (the blast ready / spent in two colours, the switch by charge count, the forge filling / ready). One card at a time
@@ -530,7 +532,7 @@ REBIND += [
 # the vessel is on the card (LESSONS 52), flying nose RIGHT across the card (55), in its domain colour. The plate is the
 # SPEED meter (speed / live top speed, so a Time level never pins it full). Snap Dash is a STATE (44a): its mark is lit
 # white while ready, grey while it waits its 5 s, absent below Time 5. Before: the placeholder.
-# Three candidates; what tells them from the Drift card (a hull turned off its course over straight streaks) is that
+# Three candidates (A Wake, B Afterimage, C Thrust chevrons); what tells them from the Drift card (a hull turned off its course over straight streaks) is that
 # here the hull points the way it goes.
 TH_CY = 64.0
 TH_HULL_BOX = 66.0
@@ -560,8 +562,8 @@ def wake(depth01):
     tail = A_NOSE - TH_HULL_BOX
     out = empty()
     for dy, k in ((0.0, 1.0), (-14.0, 0.7), (14.0, 0.7)):
-        L = (tail - 8) * depth01 * k
-        if L > 4:
+        L = (10.0 + (tail - 16.0) * depth01) * k     # a short wake still reads at 40 px
+        if depth01 > 0:
             out |= stroke([(tail + 4 - L, TH_CY + dy), (tail + 4, TH_CY + dy)], w=6.0)
     return _clear_of(out, a_hull(), px=3.0)
 
@@ -570,78 +572,72 @@ def a_dash():
     return _clear_of(_chev(108.0, TH_CY, 22.0, 12.0, 7.0), a_hull(), px=3.0)
 
 
-# B: AFTERIMAGE. A copy of the hull trails it, further back the faster you go (the eye reads distance per frame).
-# Snap Dash: a copy flung AHEAD of the nose - where the lunge will put you.
-B_NOSE = 92.0
+# Garrett picked A (2026-10-29, "a is fine. lets move on"). The HUD draws the wake in three lengths (one shown, by the
+# trigger's depth - ScarabHUDView.WakeStepFor), the chevron (white ready, grey waiting, hidden below Time 5) and the hull
+# (domain); the plate is the speed meter, speed / live top speed.
+WAKE_STEPS = (1 / 3, 2 / 3, 1.0)
 
 
-def b_hull():
-    return th_hull(B_NOSE)
+def th_wake(k):
+    return lambda: wake(WAKE_STEPS[k])
 
 
-def b_copies(speed01):
-    if speed01 < 0.3:
-        return empty()
-    box = TH_HULL_BOX * 0.5
-    cx = B_NOSE - TH_HULL_BOX - 4.0 - box / 2 + 10.0 * (1.0 - speed01)
-    return _clear_of(mesh_silhouette.silhouette(FBX, box=box, cx=cx, cy=TH_CY, **VIEW_PLAN), b_hull(), px=3.0)
+def throttle():
+    """The composite at full pull with Snap Dash ready: the card's fallback and the fleet sheet's tile."""
+    return a_hull() | wake(1.0) | a_dash()
 
 
-def b_dash():
-    box = TH_HULL_BOX * 0.42
-    return _clear_of(mesh_silhouette.silhouette(FBX, box=box, cx=B_NOSE + 6.0 + box / 2, cy=TH_CY, **VIEW_PLAN),
-                     b_hull(), px=3.0)
+TH_EXEMPT = dict(BLAST_EXEMPT)
+ICONS += [
+    dict(name="Scarab_Throttle", element="Time", act="Throttle / Snap Dash: the Scarab flying right, its wake behind and the dash chevron ahead (composite; the HUD draws the parts)",
+         draw=throttle, exempt={"components": "the hull, three streaks and the chevron", "gap": "the real mesh", "specks": "the mandibles",
+                                "in_box": "the wake and the chevron run the card's width", "coverage": "the top-view hull is slim"}),
+    dict(name="Scarab_ThrottleHull", element="Time", act="Throttle: the Scarab from above, flying right (domain colour)", draw=a_hull,
+         subdir="Parts", family=False, exempt=TH_EXEMPT),
+    dict(name="Scarab_ThrottleWakeShort", element="Time", act="Throttle: the wake at a third of the pull (white)", draw=th_wake(0),
+         subdir="Parts", family=False, exempt=TH_EXEMPT),
+    dict(name="Scarab_ThrottleWakeMid", element="Time", act="Throttle: the wake at two thirds of the pull (white)", draw=th_wake(1),
+         subdir="Parts", family=False, exempt=TH_EXEMPT),
+    dict(name="Scarab_ThrottleWakeLong", element="Time", act="Throttle: the wake at full pull (white)", draw=th_wake(2),
+         subdir="Parts", family=False, exempt=TH_EXEMPT),
+    dict(name="Scarab_SnapDash", element="Time", act="Snap Dash (Time 5): the chevron ahead of the nose (white ready, grey while it waits)",
+         draw=a_dash, subdir="Parts", family=False, exempt=TH_EXEMPT),
+]
+LOCKUP["Time"] = dict(parts=dict(w=th_wake(1), h=a_hull), state=[("w", "white"), ("h", "domain")], gauge=0.6)
+
+# (name, wake step or None, speed / top, dash: None below Time 5 / "ready" / "waiting")
+TH_STATES = [("released: coasting to a stop", None, 0.15, None),
+             ("a third of the pull", 0, 0.35, None),
+             ("two thirds", 1, 0.65, None),
+             ("full pull, Time 5: Snap Dash ready", 2, 1.0, "ready"),
+             ("dashed: Snap Dash waits 5 s", 2, 1.0, "waiting")]
 
 
-# C: THRUST CHEVRONS. Three chevrons behind the hull light one by one with the trigger's depth (a third, two thirds,
-# full - the analog pull in segments); unlit ones stay grey. Snap Dash: a lance ahead of the nose.
-C_NOSE = 104.0
-
-
-def c_hull():
-    return th_hull(C_NOSE)
-
-
-def c_chev(i):
-    return _clear_of(_chev(7.0 + i * 10.0, TH_CY, 15.0, 8.0, 5.5), c_hull(), px=3.0)
-
-
-def c_dash():
-    return _clear_of(fill([(109.0, TH_CY - 4), (118.0, TH_CY - 4), (125.0, TH_CY), (118.0, TH_CY + 4), (109.0, TH_CY + 4)]),
-                     c_hull(), px=3.0)
-
-
-# (name, trigger depth, speed / top, dash: None below Time 5 / "ready" / "waiting")
-TH_STATES = [("released: coasting to a stop", 0.0, 0.15, None),
-             ("half pull", 0.5, 0.5, None),
-             ("full pull, Time 5: Snap Dash ready", 1.0, 1.0, "ready"),
-             ("dashed: Snap Dash waits 5 s", 1.0, 1.0, "waiting")]
-
-
-def _th_card(key, title, hull, trail, dash, chevrons=False):
-    parts = dict(hull=hull, dash=dash)
+def _th_card():
+    parts = dict(hull=a_hull, dash=a_dash, w0=th_wake(0), w1=th_wake(1), w2=th_wake(2))
     states, gauge = [], {}
-    for n, depth, speed, d in TH_STATES:
-        if chevrons:
-            for i in range(3):
-                parts[f"c{i}"] = (lambda i=i: c_chev(i))
-            L = [(f"c{i}", "white" if depth >= (i + 1) / 3 - 1e-3 else TH_GREY) for i in range(3)]
-        else:
-            parts[f"t_{n}"] = (lambda depth=depth, speed=speed: trail(depth, speed))
-            L = [(f"t_{n}", "white")]
+    for n, w, speed, d in TH_STATES:
+        L = [] if w is None else [(f"w{w}", "white")]
         if d:
             L.append(("dash", "white" if d == "ready" else TH_GREY))
         states.append((n, L + [("hull", "domain")]))
         gauge[n] = (speed, None)
-    return dict(name=f"throttle_{key}", group="throttle", lockup_state=2, element="Time",
-                before=ICON_DIR + "Scarab_Throttle-PLACEHOLDER.png", title=title, parts=parts, states=states, gauge=gauge)
+    return dict(name="throttle", element="Time", before=ICON_DIR + "Scarab_Throttle-PLACEHOLDER.png", before_rev="f06108b51",
+                title="Throttle / Snap Dash: the Scarab flying right over the speed meter, its wake as long as the pull is deep; "
+                      "at Time 5 the Snap Dash chevron ahead (white ready, grey for its 5 s)",
+                parts=parts, states=states, gauge=gauge)
 
 
-CARDS += [
-    _th_card("a", "A  Wake: the Scarab flying right, streaks behind as long as the pull is deep; Snap Dash a chevron ahead "
-                  "(white ready, grey waiting); plate = speed", a_hull, lambda d, s: wake(d), a_dash),
-    _th_card("b", "B  Afterimage: a copy of the Scarab trails it, further back the faster you go; Snap Dash a copy flung ahead",
-             b_hull, lambda d, s: b_copies(s), b_dash),
-    _th_card("c", "C  Thrust chevrons: three chevrons behind light one by one with the pull; Snap Dash a lance ahead",
-             c_hull, None, c_dash, chevrons=True),
+CARDS += [_th_card()]
+REBIND += [
+    # The Time card: the placeholder icon Image becomes a transparent container over the plate gauge (speed) and the
+    # parts, in draw order - the three wakes and the chevron (white / grey), the hull (domain).
+    dict(file=VARIANT, pair=dict(container="3258612490553136050", view=VIEW, after="seedIcon",
+                                 children=[("ThrottleGauge", None, None),
+                                           ("ThrottleWakeShort", "Scarab_ThrottleWakeShort", "wakeShortIcon"),
+                                           ("ThrottleWakeMid", "Scarab_ThrottleWakeMid", "wakeMidIcon"),
+                                           ("ThrottleWakeLong", "Scarab_ThrottleWakeLong", "wakeLongIcon"),
+                                           ("SnapDash", "Scarab_SnapDash", "snapDashIcon"),
+                                           ("ThrottleHull", "Scarab_ThrottleHull", "throttleHullIcon")],
+                                 binding=dict(element=4, gauge="ThrottleGauge"))),
 ]

@@ -2532,7 +2532,10 @@ populated, ≥2 material slots per hull MeshRenderer.
 - **Four-icon row** (LOCKED order charge → mass → space → time): **Shove · Switch · Nucleus
   Seeding · Throttle** (recut 2026-10-29), authored at the shared row geometry by
   `Tools/Build/icon_kit/author.py scarab`. The Shove card shows its pull half only while Backdraft is
-  up; the Seeding card's ball grows with Space. **Drift** is a core card beside the row
+  up; the Seeding card's ball grows with Space. The **Throttle** card (2026-10-29, option A) is the Scarab flying right
+  in domain colour with a white wake in three lengths by trigger depth, the plate filled with speed / live top speed,
+  and from Time 5 the Snap Dash chevron ahead of the nose (white ready, grey for its 5 s cooldown); it is the one
+  polled readout (`ScarabHUDController.Update`). **Drift** is a core card beside the row
   (`coreAbilities`, input 2, the Squirrel's pattern) and the **omni card** shows the Ball Forge
   (`omniAbilitySprite = Scarab_BallForge`, drawn from the omni crystal's mesh). The energy meter
   below is retired from the HUD with the old Space card. Standard three-layer upgrade signal; any icon
