@@ -270,8 +270,13 @@ prisms inside are cut out of the volume as forward-pointing slivers; recharging 
 drew an edge-on plate throwing prisms ("show the relative size of the volume affected relative to the scarab"), round 2
 an outlined box ("whole prisms outside and shattered prisms that convey the destructive direction inside", then "lets
 not have a box. lets go more flat and have a negative space prisms inside"), round 3 a grey slab ("more cohesive with
-the rest of our polished icons"). `ScarabHUDView.SetBlastReady` / `BlastPartsFor` / `SetBlastHullColor`. Next: the
-Scarab's Mass (Switch).
+the rest of our polished icons"). `ScarabHUDView.SetBlastReady` / `BlastPartsFor` / `SetBlastHullColor`. **The Scarab's Mass card** (2026-10-28, one
+round; Garrett picked S1, "go with S1 and move on"): the Switch drawn as a white ball threading your faceted ring
+(domain colour) left to right, its wake coming in behind the ring's near arc. The ring is held at one bold size and
+Mass shows as the ball SHRINKING inside it, to scale (ring 24 -> 60 with switchScale, match ball 7):
+`ScarabHUDView.SetSwitchScale` scales the point-anchored ball part by 1 / switchScale on each Mass level change. With no
+switch banked the card dims under the fleet's cooldown veil (`SetSwitchCharges`); the charge-count colour ramp is
+retired. Next: the Scarab's Space (Ball Forge).
 
 | Round | What | Why first |
 |---|---|---|

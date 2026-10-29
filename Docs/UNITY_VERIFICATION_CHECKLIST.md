@@ -18441,6 +18441,25 @@ compiled.
    the prism shows glanced away down-right; dropping below 70% puts the prism back ahead and the ward away.
 5. If the ticks sit off the slanted edge, tune `momentumTickSlantInset` (the Sparrow's `gunHeatTickSlantInset` is 9).
 
+## Scarab Mass card: Switch, a ball threading your ring (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `ScarabHUDView.cs` (four `switch*Icon` parts replace the charge-count colour ramp on the Mass icon;
+`SetSwitchCharges` dims the card with none banked, `SetSwitchRingColor`, `SetSwitchScale`, `SwitchBallScale`,
+`SwitchCardAlpha`), `ScarabHUDController.cs` (new `placeSwitch` field, wired on `Scarab.prefab` to
+`PlaceSwitchAction.asset`; listens to `OnElementLevelChange` and pushes `switchScale` live), `ScarabHUDVariant.prefab`
+(the Mass icon is a transparent container over SwitchFar, SwitchWake, SwitchBall - point-anchored at its own centre -
+and SwitchNear), `ScarabSwitchCardTests.cs`. Sheet: `Docs/Icons/sheets/scarab_switch.png`. No .NET and no Unity CLI in
+the session: nothing here was compiled.
+
+1. Run `ScarabSwitchCardTests`. **Pass:** green.
+2. Fly the Scarab (Toybox Vessel Changer). **Pass:** the Mass card shows a tall faceted ring in your colour with a
+   white ball in its mouth and three short white streaks coming from the left, passing BEHIND the ring's left arc.
+3. Place a switch (A). **Pass:** the card dims and the fleet's cooldown veil sweeps; when the charge is back it is full
+   again.
+4. Raise Mass (collect Mass crystals, or the dev element panel) to 10. **Pass:** the ball shrinks to about 40% of its
+   size, staying centred in the ring; the ring itself does not change size.
+5. If the ball sits off the ring's centre, the point-anchor offset is `SwitchBall`'s m_AnchoredPosition (6.25).
+
 ## Scarab Charge card: Cavitation Blast to scale (2026-10-28) - NOT EDITOR-VERIFIED
 
 **Files:** `ScarabHUDView.cs` (five `blast*Icon` parts replace the ready / spent tint on the Charge icon;

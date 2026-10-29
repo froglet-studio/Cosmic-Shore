@@ -18,7 +18,7 @@ The hull is the Scarab's own mesh from straight above, nose RIGHT (pitch 0, yaw 
 grid on 2026-10-28), flying across the card (LESSONS 55: the act runs across, clear of the plate's marks).
 """
 import mesh_silhouette
-from canvas import N, chamfered_rect, disc, empty, fill, rotate
+from canvas import N, chamfered_rect, disc, empty, fill, rotate, stroke
 from motifs import prism
 
 import numpy as np
@@ -56,7 +56,7 @@ def _clear_of(mask, *others, px=2.5):
 ICONS = []
 LOCKUP = dict(
     Charge=dict(parts=dict(i=placeholder("CavitationBlast")), state=[("i", "white")]),
-    Mass=dict(parts=dict(i=placeholder("Switch")), state=[("i", "white")]),
+    Mass=None,     # the Switch card, below
     Space=dict(parts=dict(i=placeholder("BallForge")), state=[("i", "white")]),
     Time=dict(parts=dict(i=placeholder("Throttle")), state=[("i", "white")]),
 )
@@ -200,4 +200,136 @@ REBIND += [
                                            ("BlastPlate", "Scarab_BlastPlate", "blastPlateIcon"),
                                            ("BlastHull", "Scarab_BlastHull", "blastHullIcon")],
                                  fields={"blastReadyColor": None, "blastSpentColor": None})),
+]
+
+
+# ---- Mass: Switch (2026-10-28, S1 "thread") -------------------------------------------------------------------------
+# The switch (SCARAB.md section 5, ScarabSwitch.cs): a bare low-poly RING in the pilot's domain prism material, planted
+# 150 ahead along the course; ANY ball that threads its mouth pays the placer (a charge back, and a scarab-wing dais
+# rises round the spent ring). Mass grows the ring: ringRadius 24 x switchScale 1 -> 2.5 (PlaceSwitchAction.asset).
+# One round (S1 thread / S2 face-on / S3 pays); Garrett: "go with S1 and move on".
+#
+# The ring is seen at an angle (its plane across the path), a white ball through its mouth with its wake coming in
+# from the left BEHIND the ring's near arc - the ball came through (left to right, LESSONS 55). Faceted like the toy
+# rings (ToyFactory.AddSwitchRing). To scale (LESSONS 56), with the RING held at one bold size (LESSONS 58): Mass shows
+# as the ball SHRINKING inside it - the mouth growing against the match ball it swallows (ball radius 7,
+# AstroLeagueBall.prefab, scale 14 x 0.5). The HUD scales the ball part by 1 / switchScale about its own centre.
+RING_R = 24.0
+RING_MAX = 2.5
+BALL_R = 7.0
+RING_PX = 50.0            # the ring's radius on the card, FIXED
+RING_SIDES = 12
+RING_W = 10.0
+RING_CX, RING_CY, RING_SQ = 70.0, 64.0, 0.5
+BALL_CX = RING_CX + 4.0
+CONTAINER_UNITS = 80.0    # the Mass icon's RectTransform (80 x 80) over the 128 px card
+
+
+def ball_px(scale):
+    return RING_PX * BALL_R / (RING_R * scale)       # Mass 1: 14.6 px; Mass 10 (x2.5): 5.8 px
+
+
+def _ring_pts(cx, cy, r_px, squash, sides=RING_SIDES):
+    return [(cx + r_px * squash * math.sin(2 * math.pi * (k + 0.5) / sides), cy - r_px * math.cos(2 * math.pi * (k + 0.5) / sides))
+            for k in range(sides)]
+
+
+import functools   # noqa: E402  (each part is built once: the knock-outs cost seconds)
+import math   # noqa: E402  (the Mass section's trig)
+
+
+def toy_grown(m, px):
+    import toy_portraits
+    return toy_portraits.grown(m, px)
+
+
+@functools.lru_cache(None)
+def _ring():
+    """(near, far): the faceted ring split down its vertical axis - the left arc is the near side."""
+    m = stroke(_ring_pts(RING_CX, RING_CY, RING_PX, RING_SQ), w=RING_W, closed=True)
+    xs = (np.arange(N) / (N / 128.0))[None, :]
+    near = m & (xs < RING_CX)
+    return near, m & ~near
+
+
+def switch_near():
+    return _ring()[0]
+
+
+@functools.lru_cache(None)
+def _ball_at(cx, scale):
+    return disc(cx, RING_CY, ball_px(scale))
+
+
+def switch_ball(scale=1.0):
+    """The ball where it sits on the card, the near arc knocked out of it."""
+    return _ball_at(BALL_CX, scale) & ~toy_grown(switch_near(), 2.5)
+
+
+def switch_ball_part():
+    """The ball part as the HUD holds it: CENTRED on the card, so the view scales it about its own centre (the child
+    is point-anchored at the ball's offset; REBIND below)."""
+    return _ball_at(64.0, 1.0)
+
+
+def switch_far():
+    return _clear_of(_ring()[1], _ball_at(BALL_CX, 1.0))
+
+
+@functools.lru_cache(None)
+def switch_wake():
+    """Three streaks from the left, behind the near arc, ending short of the SMALLEST ball (Mass 10) so the ball
+    covers their ends at every size."""
+    end = BALL_CX - ball_px(RING_MAX) - 3.0
+    wake = empty()
+    for dy, x0 in ((-7.0, 16.0), (0.0, 7.0), (7.0, 16.0)):     # inside the 116 px optical box
+        y = RING_CY + dy
+        wake |= fill([(x0, y - 2.5), (end, y - 2.5), (end, y + 2.5), (x0, y + 2.5)])
+    return wake & ~toy_grown(switch_near(), 2.5)
+
+
+def switch_thread():
+    """The composite at Mass 1: the card's fallback and the fleet sheet's tile."""
+    return switch_far() | switch_wake() | switch_ball() | switch_near()
+
+
+SWITCH_EXEMPT = BLAST_EXEMPT
+ICONS += [
+    dict(name="Scarab_Switch", element="Mass",
+         act="Switch: a white ball threading your ring left to right, its wake behind the near arc (composite; the HUD draws the parts)",
+         draw=switch_thread, exempt={"components": "the ring's two arcs, the wake and the ball",
+                                     "gap": "the knock-outs that put the near arc in front"}),
+    dict(name="Scarab_SwitchNear", element="Mass", act="Switch: the ring's near arc (domain colour)", draw=switch_near,
+         subdir="Parts", family=False, exempt=SWITCH_EXEMPT),
+    dict(name="Scarab_SwitchFar", element="Mass", act="Switch: the ring's far arc (domain colour)", draw=switch_far,
+         subdir="Parts", family=False, exempt=SWITCH_EXEMPT),
+    dict(name="Scarab_SwitchWake", element="Mass", act="Switch: the ball's wake (white)", draw=switch_wake,
+         subdir="Parts", family=False, exempt=SWITCH_EXEMPT),
+    dict(name="Scarab_SwitchBall", element="Mass", act="Switch: the ball at Mass 1, centred (white; the HUD scales it by 1 / switchScale)",
+         draw=switch_ball_part, subdir="Parts", family=False, exempt=SWITCH_EXEMPT),
+]
+
+SWITCH_LIT = [("far", "domain"), ("wake", "white"), ("ball", "white"), ("near", "domain")]
+LOCKUP["Mass"] = dict(parts=dict(far=switch_far, wake=switch_wake, ball=switch_ball, near=switch_near), state=SWITCH_LIT)
+CARDS += [dict(name="switch", element="Mass", before=ICON_DIR + "Scarab_Switch-PLACEHOLDER.png", before_rev="6127b5d6c",
+               title="Switch: a white ball threading your ring; Mass grows the ring, so the ball shrinks inside it (to scale: "
+                     "ring 24 -> 60, ball 7); no switch banked: dim, under the fleet's cooldown veil",
+               parts=dict(far=switch_far, wake=switch_wake, near=switch_near, ball=switch_ball,
+                          ball10=lambda: switch_ball(RING_MAX)),
+               states=[("Mass 1: a switch banked", SWITCH_LIT),
+                       ("Mass 10: the ring 2.5x", [("far", "domain"), ("wake", "white"), ("ball10", "white"), ("near", "domain")]),
+                       ("no switch banked (recharging)", [(k, c, 0.3) for k, c in SWITCH_LIT])])]
+
+_U = CONTAINER_UNITS / 128.0
+REBIND += [
+    # The Mass card: the icon Image becomes a transparent container over four parts, in draw order - the far arc
+    # (domain), the wake (white), the ball (white; point-anchored at its own centre so the view scales it), the near
+    # arc (domain). The charge-count colour ramp on the icon itself is retired with it.
+    dict(file=VARIANT, pair=dict(container="6611959372928416812", view=VIEW, after="switchIcon",
+                                 children=[("SwitchFar", "Scarab_SwitchFar", "switchFarIcon"),
+                                           ("SwitchWake", "Scarab_SwitchWake", "switchWakeIcon"),
+                                           ("SwitchBall", "Scarab_SwitchBall", "switchBallIcon",
+                                            (round((BALL_CX - 64.0) * _U, 3), 0, CONTAINER_UNITS, CONTAINER_UNITS)),
+                                           ("SwitchNear", "Scarab_SwitchNear", "switchNearIcon")],
+                                 fields={"switchChargeColors": "[]"})),
 ]
