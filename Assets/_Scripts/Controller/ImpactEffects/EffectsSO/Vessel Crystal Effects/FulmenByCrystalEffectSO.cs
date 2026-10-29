@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Gameplay
 {
@@ -10,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// <c>vesselCrystalEffects</c>; take it away by removing it.
     ///
     /// <para>The omni dispatch (<see cref="VesselImpactor.ExecuteOmniCrystalImpact"/>) runs on every peer, so every peer
-    /// strikes with the same seed (from the collected crystal's id and pose) and grows the same root bolt; only the server
+    /// counts the same collections toward <see cref="FulmenConfigSO.CrystalsToFire"/>, strikes with the same seed (from the collected crystal's id and pose) and grows the same root bolt; only the server
     /// (or an offline session) ignites prisms.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "FulmenByCrystalEffect",
@@ -22,6 +24,37 @@ namespace CosmicShore.Gameplay
 
         public FulmenConfigSO Config => config;
 
+        // Crystals each collector has gathered toward the next bolt (VesselImpactor instance id -> count). Runtime only. The
+        // dispatch runs on every peer, so every peer counts the same collections and fires on the same one.
+        readonly Dictionary<int, int> _charge = new();
+
+        /// <summary>Crystals <paramref name="vesselImpactor"/> has toward its next bolt (0 after it fires).</summary>
+        public int ChargeOf(VesselImpactor vesselImpactor) =>
+            vesselImpactor && _charge.TryGetValue(vesselImpactor.GetInstanceID(), out int n) ? n : 0;
+
+        void OnEnable()
+        {
+            _charge.Clear();
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
+        }
+
+        void OnDisable() => SceneManager.sceneUnloaded -= OnSceneUnloaded;
+
+        void OnSceneUnloaded(Scene _) => _charge.Clear();
+
+        /// <summary>Counts this crystal; true (and the count resets) when it is the one that fires.</summary>
+        bool Charge(VesselImpactor vesselImpactor)
+        {
+            int need = config.CrystalsToFire;
+            if (need <= 1) return true;
+            int id = vesselImpactor.GetInstanceID();
+            _charge.TryGetValue(id, out int n);
+            if (++n < need) { _charge[id] = n; return false; }
+            _charge.Remove(id);
+            return true;
+        }
+
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
             if (!vesselImpactor) return;
@@ -30,6 +63,8 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[Fulmen] '{name}' has no FulmenConfigSO.", this);
                 return;
             }
+            if (!Charge(vesselImpactor)) return;
+
             var status = vesselImpactor.Vessel?.VesselStatus;
             var near = data.Origin.Valid ? data.Origin.Position : vesselImpactor.transform.position;
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -12,8 +13,9 @@ namespace CosmicShore.Gameplay
     /// burnout are either DESTROYED or — when ignited by a Mass-5 plasma claw —
     /// STOLEN for the igniter's team (fire → theft → volume conversion).
     ///
-    /// v1 visual = the Danger prism state (MakeDangerous); a dedicated Burning
-    /// material state needs ThemeManager assets and is deferred.
+    /// Visual: the Danger prism state (MakeDangerous), and - when Resources/PrismBurnFxConfig is present - the
+    /// paper-burn proxies of <see cref="PrismBurnView"/> (near curl / mid dissolve / far nothing), with SILENT
+    /// burnouts (<see cref="Prism.BurnOut"/>): the prism already burned away on screen, so no debris.
     ///
     /// Perf contract: burning set is capped, ticks run at ~4 Hz staggered across
     /// frames, and burnouts are budgeted per tick (each Steal/Damage triggers
@@ -33,7 +35,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Budgets")]
         [SerializeField] int maxConcurrentBurning = 192;
-        [SerializeField] int maxBurnoutsPerTick = 8;
+        [SerializeField] int maxBurnoutsPerTick = 24;   // was 8: Fulmen lights dozens at once, and a silent burnout is cheap (no debris)
         [SerializeField, Tooltip("Main tick frequency (Hz).")]
         float tickHz = 4f;
 
@@ -51,6 +53,20 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _toResolve = new();
         readonly List<Prism> _tickOrder = new();   // snapshot; see Tick()
         float _nextTick;
+        PrismBurnView _view;
+
+        public PrismBurnView View => _view;
+
+        public override void Awake()
+        {
+            base.Awake();
+            _view = new PrismBurnView(PrismBurnFxConfigSO.Instance);
+        }
+
+        void OnDestroy()
+        {
+            _view?.Dispose();
+        }
 
         public static PrismBurnManager EnsureInstance()
         {
@@ -64,12 +80,14 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Ignites a prism. Super-shielded prisms cannot burn; already-burning prisms
         /// refresh their timer (and can upgrade to convert-on-burnout).
+        /// <paramref name="seconds"/> &gt; 0 overrides <see cref="burnSeconds"/> for this burn (Fulmen's quick burns).
+        /// True when this call lit a NEW burn.
         /// </summary>
-        public void Ignite(Prism prism, string igniter, Domains igniterDomain, bool convertOnBurnout)
+        public bool Ignite(Prism prism, string igniter, Domains igniterDomain, bool convertOnBurnout, float seconds = -1f)
         {
-            if (prism == null || prism.destroyed) return;
-            if (prism.prismProperties != null && prism.prismProperties.IsSuperShielded) return;
-            if (prism.Domain == igniterDomain) return;   // never burn your own volume
+            if (prism == null || prism.destroyed) return false;
+            if (prism.prismProperties != null && prism.prismProperties.IsSuperShielded) return false;
+            if (prism.Domain == igniterDomain) return false;   // never burn your own volume
 
             if (_burning.TryGetValue(prism, out var state))
             {
@@ -80,25 +98,29 @@ namespace CosmicShore.Gameplay
                 // prisms) but nothing the player actually aimed at ever burned out.
                 // Only the STEAL upgrade may still be applied to a live burn.
                 state.ConvertOnBurnout |= convertOnBurnout;
-                return;
+                if (convertOnBurnout) _view?.SetNoHoles(prism);
+                return false;
             }
 
-            if (_burning.Count >= maxConcurrentBurning) return;
+            if (_burning.Count >= maxConcurrentBurning) return false;
 
             _burning[prism] = new BurnState
             {
                 Igniter = igniter,
                 IgniterDomain = igniterDomain,
-                ExtinguishAt = Time.time + burnSeconds,
+                ExtinguishAt = Time.time + (seconds > 0f ? seconds : burnSeconds),
                 NextSpreadAt = Time.time + spreadInterval,
                 ConvertOnBurnout = convertOnBurnout,
             };
 
-            prism.MakeDangerous();   // v1 burning visual: the danger state
+            prism.MakeDangerous();   // the prism's own burning look (what FAR tier and the crossfades show)
+            _view?.Begin(prism, Time.time, _burning[prism].ExtinguishAt, convertOnBurnout);
+            return true;
         }
 
         void Update()
         {
+            _view?.Draw(Time.time);
             if (_burning.Count == 0) return;
             if (Time.time < _nextTick) return;
             _nextTick = Time.time + (tickHz > 0f ? 1f / tickHz : 0.25f);
@@ -153,7 +175,10 @@ namespace CosmicShore.Gameplay
             }
 
             foreach (var p in _toResolve)
+            {
                 _burning.Remove(p);
+                _view?.End(p);
+            }
             _toResolve.Clear();
         }
 
@@ -194,7 +219,10 @@ namespace CosmicShore.Gameplay
                 // parked at the world origin - so every burnout pushed radially away from
                 // (0,0,0), which is a direction that means nothing to a burning prism.
                 var impact = Random.onUnitSphere * 0.5f;
-                prism.Damage(impact, state.IgniterDomain, state.Igniter);
+                if (_view != null && _view.SilentBurnout)
+                    prism.BurnOut(impact, state.IgniterDomain, state.Igniter);
+                else
+                    prism.Damage(impact, state.IgniterDomain, state.Igniter);
             }
         }
 
@@ -202,6 +230,7 @@ namespace CosmicShore.Gameplay
         public void ResetAll()
         {
             _burning.Clear();
+            _view?.Clear();
             _scratch.Clear();
             _toResolve.Clear();
         }

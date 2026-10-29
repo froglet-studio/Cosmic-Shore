@@ -72,7 +72,7 @@ DUST_PREFAB = f"{A}/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab
 CRYSTAL_PREFAB = f"{A}/_Prefabs/Spacevessels/Components/ButterflyCrystalSkimmer.prefab"
 WARHEAD = f"{A}/_Prefabs/Projectile/AOEMissileWarhead.prefab"
 BLOOM_PREFAB = f"{A}/_Prefabs/Projectile/AOEButterflyBloom.prefab"
-BUTTERFLY = f"{A}/_Prefabs/Spacevessels/Butterfly.prefab"
+BUTTERFLY = f"{A}/_Prefabs/Spacevessels/TigerMoth.prefab"   # the Butterfly was retired 2026-10-29; the Tiger Moth carries its dust
 FX = f"{A}/_SO_Assets/Effects"
 SKIM_CONT = f"{FX}/Effect Containers/SkimmerContainers"
 OLD_NEAR = f"{SKIM_CONT}/ButterflyNearWingSkimmerImpactorDataContainer.asset"
@@ -88,6 +88,7 @@ DUST_NOURISH = f"{FX}/Skimmer Crystal Effects/ButterflyDustNourishLifeformEffect
 DUST_WITHER = f"{FX}/Skimmer Crystal Effects/ButterflyScaleDustWitherLifeformEffect.asset"
 DUST_DEBUFF = f"{FX}/Vessel Skimmer Effects/ButterflyScaleDustDebuffBySkimmerEffect.asset"
 DUST_COMBAT = f"{FX}/Vessel Skimmer Effects/ButterflyCombatHitBySkimmerEffect.asset"
+DUST_CLEANSE = f"{FX}/Vessel Skimmer Effects/TigerMothDustCleanseAllyBySkimmerEffect.asset"
 BLOOM_WITHER = f"{FX}/Explosion Crystal Effects/ButterflyBloomWitherLifeformEffect.asset"
 BLOOM_CONT = f"{FX}/Effect Containers/Explosion Containers/ButterflyBloomExplosionImpactorDataContainer.asset"
 # Retired 2026-10-08 (loaded as null in the editor; the bloom's prism dust now lives on
@@ -268,8 +269,11 @@ debuff = debuff.replace("  upgradeElement:",
     + "  upgradeElement:", 1)
 out[DUST_DEBUFF] = debuff
 
+# The ally half of a vessel contact (2026-10-29, Garrett: "have the dust clear silence and debuffs of allies"):
+# TigerMothDustCleanseAllyBySkimmerEffect.asset, authored by hand and held by author_tigermoth_assets.py --check.
+cleanse_g = meta_guid(DUST_CLEANSE)
 out[DUST_CONT] = so(sg["SkimmerImpactorDataContainerSO"], "ButterflyDustSkimmerImpactorDataContainer",
-    f"  vesselSkimmerEffectsSO:\n  - {ref(debuff_g)}\n  - {ref(combat_g)}\n"
+    f"  vesselSkimmerEffectsSO:\n  - {ref(debuff_g)}\n  - {ref(combat_g)}\n  - {ref(cleanse_g)}\n"
     f"  skimmerPrismEffectsSO:\n  - {ref(dust_prism_g)}\n"
     f"  skimmerCrystalEffectsSO: []\n"
     f"  skimmerLifeformCrystalEffectsSO:\n  - {ref(wither_g)}\n  - {ref(nourish_g)}\n")

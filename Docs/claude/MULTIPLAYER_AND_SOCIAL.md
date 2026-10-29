@@ -53,6 +53,9 @@ its rider's way out (`R_VesselActions/MEERKAT.md` §7).
 that day) - `MeerkatSolitonNetworkRelay.TunnelState` carries `Kit` (a byte: the soliton's sentinel and its Charge / Mass /
 Space L5 bits) and `PortalSize` (its exit portal's size): Garrett's kit, decided by the owner and published with each
 tunnel (`R_VesselActions/MEERKAT.md` §9.5).
+**24** (2026-10-28, `cece/keen-lovelace-cyci91`; 21-23 are taken on in-flight branches) - the Tiger Moth: a new network
+prefab (`TigerMoth.prefab`, `R_VesselActions/TIGER_MOTH.md`); on 2026-10-29, same build, `Butterfly.prefab` left the
+network prefab list (the Butterfly retired).
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

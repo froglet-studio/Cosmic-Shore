@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   Mode: 60
   Notes: 'The bare Barren cell the mode runs in, and nothing else - the arena IS what you paint
-    into it. What the preview teaches is Mass mode''s wide wake. Vessel pinned to Butterfly(13).'
+    into it. What the preview teaches is Mass mode''s wide wake. Vessel pinned to TigerMoth(29).'
   PreviewCell: {fileID: 11400000, guid: 8f83a19d70465a747861017897c08403, type: 2}
   PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
-  Vessel: 13
+  Vessel: 29
   ObjectiveText: Paint the sky in Mass mode
   ObjectiveMetric: 12
   ObjectiveTarget: 0

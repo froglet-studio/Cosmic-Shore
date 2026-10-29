@@ -1,5 +1,15 @@
 # Waystation (`GameModes.Waystation = 58`)
 
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`): the
+> same airframe, dust and modes, with the Drop in place of the Fold (the AI drops when a ring lies under its belly). "Butterfly" below
+> means that airframe.
+>
+> **The exit gate faces SQUARE to the next cluster since 2026-10-29** (Garrett: "redesign waystation so the last ring
+> in a cluster is oriented so you can keep your flow by dropping to the next cluster"). The Fold jumped along the
+> nose, so the gate pointed at the jump; the Drop falls along the belly, so the gate now stands ACROSS it: thread it,
+> roll the next cluster under you, drop, and the landing turn leaves you flying into the next coil. See
+> "The square exit gate" below; the Fold-era text is kept as the record.
+
 The **Butterfly-only migration race**. The rings come in **clusters** — coils you weave — laid a
 **FOLD** apart. Inside a cluster you fly; between clusters you teleport. Every pilot flies the
 same course in ORDER, and the first **DOMAIN** whose **LEAD RUNNER** threads the last ring wins.
@@ -46,6 +56,29 @@ contains one. It is a **counter** rather than a distance because the step guard 
 fails the other way round — `maxPlausibleSpeed` rejects a LONG jump by accident and credits a
 SHORT one, so a distance test can never be the answer.
 
+## The square exit gate (2026-10-29)
+
+1. **Weave the coil**, as before.
+2. **Thread the exit gate.** It sits one bounded turn (at most 45°) off the coil's last leg, toward the heading square
+   to the next cluster, and it FACES square to the line from itself to the next cluster's centre: of all the square
+   facings, the one nearest the line you arrive on, twisted about the drop line by up to the intensity's **twist**
+   (10° / 20° / 30° / 40°). The twist turns the ring off your approach without ever costing the drop its aim.
+3. **Roll and drop.** Through the gate the next cluster is abeam. Roll it under your belly and hold LT: the Drop falls
+   straight at it, and when you let go the hull pitches 90° nose-down into the line it fell, so you arrive flying
+   into the next coil. No turn is spent on the gap: the flow is kept.
+
+`WaystationCourseSettings.ExitTwistDegrees` replaced `ExitConeDegrees` (40 / 55 / 72 / 90, a cone round the direction
+TO the next cluster). The centre sphere came in from 0.68 to 0.66 of the shell, because the gate now moves up to 120 u
+sideways and one i2 mouth reached 1063.7 against the shell's 1060. The checks `square` and `twist` replaced `cone`
+(below), and a fourth negative control plants the Fold-era gate and fires `square`.
+
+**The AI rolls** (`WaystationController.TryOverrideAim` + `OverrideBellyTarget` -> `AIPilot.MarkBellyTarget`): a ring
+between 75° and 125° off the nose is abeam, so the autopilot holds the heading square to it and replaces the roll stick
+(otherwise the bank the yaw drags) with a roll that brings its belly round, then drops at 10° as before. In an offline
+model of the two-stick steering (pitch and yaw 45°/s, roll 70°/s, the ring abeam ±15° at 500-1300 u, 200 starts at
+random roll) every start lined up, in at most 2.61 s (mean 1.3 s) against the 6 s budget; with the coupled bank in place
+of the roll, 33 of 200 did. A ring within 75° of the nose is still lined up by the pitch (TIGER_MOTH.md §3.1).
+
 ## What the mode does NOT add
 
 No metric, no turn monitor, no scoring class, no cell, no weapon, no vessel change. Two C# files
@@ -66,7 +99,9 @@ tables were *derived* there, not chosen.
 | `fold` | every fold gap is inside the fold's **RESTING** reach | up to **1332** of 1800 |
 | `worth` | every fold gap is LONGER than the cluster it leaves | 424 vs 316 … 626 vs 383 |
 | `gap` | no two consecutive clusters interpenetrate | 415–526 u vs two mouths |
-| `cone` | the exit gate's facing is within the authored cone **exactly** | 40.0 / 55.0 / 72.0 / 90.0 |
+| `square` | the exit gate faces square to the next cluster (since 2026-10-29) | **0.00°** off at every rung |
+| `twist` | its facing is within the authored twist of the square heading nearest its approach | 10.0 / 20.0 / 30.0 / 40.0 |
+| ~~`cone`~~ | (Fold era) the exit gate's facing is within the authored cone **exactly** | 40.0 / 55.0 / 72.0 / 90.0 |
 
 The hull's numbers are **read off `Butterfly.prefab`** (`DefaultMinimumSpeed` 12 +
 `DefaultThrottleScaler` 55 = 67 u/s; `Pitch`/`YawScaler` 45; `RotationThrottleScaler` 0 → a
@@ -93,7 +128,8 @@ exit line is.**
 | coil pitch | 70 | 70 | 60 | 55 |
 | ring mouth radius | 56 | 50 | 44 | 40 |
 | hop (cluster to cluster) | 700–950 | 760–1000 | 820–1080 | 880–1150 |
-| exit cone (deg) | 40 | 55 | 72 | 90 |
+| exit twist (deg), since 2026-10-29 | 10 | 20 | 30 | 40 |
+| ~~exit cone (deg)~~, Fold era | 40 | 55 | 72 | 90 |
 | clusters at target 24 | 8 | 6 | 5 | 4 |
 | rings laid | 24 | 24 | 25 | 24 |
 
@@ -153,8 +189,9 @@ measures.
 
 ```
 a positional clamp instead of a geodesic hop        -> gap, mouth, worth
-a positional clamp on the exit gate (tight shell)   -> corner, mouth
-a coil ring as the aiming device                    -> cone
+a positional clamp on the exit gate (tight shell)   -> corner, twist      (shell 650-880 since 2026-10-29)
+a coil ring as the aiming device                    -> square, twist
+the Fold-era exit gate (facing the next cluster)    -> square, twist
 ```
 
 The exit-gate control runs in a **deliberately tightened shell**, because on the shipped course

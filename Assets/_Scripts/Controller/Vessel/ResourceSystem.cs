@@ -390,6 +390,25 @@ namespace CosmicShore.Gameplay
             AdjustLevel(element, petals * PetalNormalized);
         }
 
+        /// <summary>
+        /// The cleanse (the Tiger Moth's dust on an ally, <see cref="ElementalCleanse"/>): every
+        /// TEMPORARY negative elemental effect ends now. Buffs and the base levels are left alone: a
+        /// petal a rival TOOK is a transfer, not a debuff, and handing it back would mint it out of
+        /// nothing (lifeforms are the only source). Returns true when anything changed.
+        /// </summary>
+        public bool ClearElementalDebuffs()
+        {
+            bool changed = false;
+            for (int i = _activeEffects.Count - 1; i >= 0; i--)
+            {
+                if (_activeEffects[i].Magnitude >= 0f) continue;
+                _activeEffects.RemoveAt(i);
+                changed = true;
+            }
+            if (changed) RecomputeModifiers();
+            return changed;
+        }
+
         /// <summary>Drops every un-settled fractional loss (turn reset / scene change), so a new
         /// match cannot settle a petal accrued in the previous one.</summary>
         public void ClearPendingElementalLoss() => _pendingLoss.Clear();

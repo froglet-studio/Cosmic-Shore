@@ -42,6 +42,7 @@ namespace CosmicShore.Gameplay
             public bool Active, Authority;
             public string Igniter;
             public Domains Domain;
+            public FulmenConfigSO Stats;   // the root config: this chain's counts land on it (last execution)
             public int Children, LiveBolts, Pending;
             public readonly HashSet<int> Struck = new();
             public readonly HashSet<Prism> Burned = new();
@@ -62,10 +63,21 @@ namespace CosmicShore.Gameplay
             public readonly Crystal[] Candidates = new Crystal[MaxCandidates];
             public int CandidateCount;
 
-            /// <summary>1 while growing and holding, falling to 0 over the fade.</summary>
-            public float Alpha(float now) => DoneAt < 0f || Config == null
-                ? 1f
-                : 1f - Mathf.Clamp01((now - DoneAt - Config.HoldSeconds) / Config.FadeSeconds);
+            /// <summary>1 while growing and holding, then flickering out over the fade - stepped re-strokes, seeded per bolt
+            /// so every peer flickers alike.</summary>
+            public float Alpha(float now)
+            {
+                if (DoneAt < 0f || Config == null) return 1f;
+                float t = (now - DoneAt - Config.HoldSeconds) / Config.FadeSeconds;
+                if (t <= 0f) return 1f;
+                if (t >= 1f) return 0f;
+                float fade = (1f - t) * (1f - t);
+                int step = (int)((now - DoneAt) * Config.FlickerRate);
+                uint h = (uint)(Seed * 747796405 + step * 2891336453);
+                h ^= h >> 16; h *= 0x7feb352d; h ^= h >> 15;
+                float flick = (h & 0xffff) / 65535f;
+                return fade * Mathf.Lerp(1f, flick, Config.FlickerDepth);
+            }
         }
 
         struct PendingChild
@@ -118,6 +130,8 @@ namespace CosmicShore.Gameplay
             chain.Authority = authority;
             chain.Igniter = igniter;
             chain.Domain = domain;
+            chain.Stats = config;
+            config.BeginStrikeStats(Time.time);
             chain.Children = chain.LiveBolts = chain.Pending = 0;
             chain.Struck.Clear();
             chain.Burned.Clear();
@@ -215,6 +229,7 @@ namespace CosmicShore.Gameplay
             }
 
             chain.LiveBolts++;
+            if (chain.Stats) chain.Stats.LastBolts++;
             LiveBolts++;
             return true;
         }
@@ -271,7 +286,8 @@ namespace CosmicShore.Gameplay
                 var b = _bolts[bi];
                 if (!b.Active) continue;
                 var cfg = b.Config;
-                b.Front += cfg.GrowthSpeed * dt;
+                float full = b.Keys[b.Count - 1];   // the longest stream's length (Count > 0 for any live bolt)
+                b.Front += full / cfg.GrowSeconds * dt;
 
                 while (b.Next < b.Count && b.Keys[b.Next] <= b.Front && queries < cfg.SegmentQueriesPerFrame)
                 {
@@ -287,8 +303,10 @@ namespace CosmicShore.Gameplay
                     if (b.CandidateCount > 0) StrikeCrystals(b, seg);
                 }
 
-                if (b.Next >= b.Count && b.DoneAt < 0f) b.DoneAt = now;
-                if (b.DoneAt >= 0f && now >= b.DoneAt + cfg.HoldSeconds + cfg.FadeSeconds) Release(b);
+                // the flash clock starts when the bolt is fully drawn; it is released only once every segment has also
+                // been queried (the burn may trail the light by a frame or two under the budget)
+                if (b.DoneAt < 0f && b.Front >= full) b.DoneAt = now;
+                if (b.DoneAt >= 0f && b.Next >= b.Count && now >= b.DoneAt + cfg.HoldSeconds + cfg.FadeSeconds) Release(b);
             }
         }
 
@@ -303,7 +321,8 @@ namespace CosmicShore.Gameplay
                 var prism = _hits[i];
                 if (prism == null || prism.destroyed || prism.Domain == chain.Domain) continue;
                 if (!chain.Burned.Add(prism)) continue;
-                burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout);
+                if (burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout, cfg.BurnSeconds))
+                    if (chain.Stats) chain.Stats.LastPrismsBurnt++;
                 lit++;
             }
             _hits.Clear();
@@ -324,6 +343,7 @@ namespace CosmicShore.Gameplay
                 if (DistanceToSegmentSq(at, seg.Start, seg.End) > rSq) continue;
                 b.Candidates[i] = null;
                 if (!chain.Struck.Add(c.Id)) continue;   // struck once per chain; never consumed
+                if (chain.Stats) chain.Stats.LastCrystalsStruck++;
                 if (b.Generation >= cfg.MaxChainDepth || chain.Children >= cfg.MaxChildren) continue;
                 if (_pendingCount >= MaxPending) continue;
                 chain.Children++;
