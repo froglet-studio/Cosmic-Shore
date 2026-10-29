@@ -6058,7 +6058,7 @@ MonoBehaviour:
   - {fileID: 673228694}
   - {fileID: 1419570605}
   - {fileID: 1867942830}
-  menuVesselClass: 28
+  menuVesselClass: 6
   menuIntensity: 1
 --- !u!114 &1486013852
 MonoBehaviour:

@@ -18654,3 +18654,16 @@ Branch `switchback-fun-types`. See `Assets/_Scripts/Controller/Arcade/SWITCHBACK
 8. Two machines, host on LIVE FEATURES I4 or LEVEL SHAPES I4, guest on CLASSIC. **Pass:** the guest flies the host's
    course (same needles, same moving prisms in sync), and the guest's RUN line says the host's fun type.
 
+## Lava lamp (Menu_Main) spawns the Squirrel by default again (2026-10-29) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scenes/Menu_Main.unity` (`MainMenuController.menuVesselClass` 28 Meerkat -> 6 Squirrel) and
+`MainMenuController.cs` (the code default and tooltip). Yash: "change the lavalamp default vessel from meerkat to
+squirrel". This undoes 622e271ca's swap; the 2026-10-28 Meerkat entry above is superseded. No Unity in the session.
+
+1. Open Menu_Main, select the MainMenuController object. **Pass:** Menu Vessel Class reads Squirrel.
+2. Boot from the Bootstrap/Auth scene into the menu. **Pass:** the lava-lamp autopilot is a Squirrel, flying on its AI.
+3. Click into freestyle. **Pass:** you fly the Squirrel with its HUD and camera; no Meerkat errors in the console.
+4. Play an arcade game with another hull and return to the menu. **Pass:** the lava lamp is a Squirrel again.
+5. Vessel Changer toy -> Meerkat, then back to Squirrel. **Pass:** both swaps work; the Meerkat still forms tunnels.
+6. `LavalampWormholeLab.unity` still flies the Meerkat.
+

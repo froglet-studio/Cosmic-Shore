@@ -225,13 +225,16 @@ Per-vessel HUD controllers (`IVesselHUDController` implementors):
 
 HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant.prefab`, `DolphinHUDVariant.prefab`).
 
-#### The lava lamp's default hull: Meerkat (2026-10-28)
+#### The lava lamp's default hull: Squirrel (2026-10-29)
 
 The hull the lava lamp spawns (the autopilot behind the menu, and the one you fly in freestyle) is
-`MainMenuController.menuVesselClass` on Menu_Main: **Meerkat** (28) since 2026-10-28 (Yash: "Make Meerkat the default
-character spawn of lavalamp"; it was Squirrel). `ConfigureMenuGameData` writes it to `gameData.selectedVesselClass`
-and onto the host's `NetDefaultVesselType`; `MenuServerPlayerVesselInitializer` spawns that. The Vessel Changer toy
-swaps it at runtime.
+`MainMenuController.menuVesselClass` on Menu_Main: **Squirrel** (6). It was the Meerkat (28) for one day, 2026-10-28
+(622e271ca), and went back to Squirrel on 2026-10-29 (Yash: "change the lavalamp default vessel from meerkat to
+squirrel"). `ConfigureMenuGameData` writes it to `gameData.selectedVesselClass` and onto the host's
+`NetDefaultVesselType`; `MenuServerPlayerVesselInitializer` spawns that. The Vessel Changer toy swaps it at runtime (the
+Meerkat is still on its roster). The Meerkat-only menu code (the executor's MenuLive perf guards, the autopilot's
+omnicrystal and camera rules) simply does not run for a Squirrel. The Lavalamp wormhole lab
+(`Game_TestDesign/LavalampWormholeLab.unity`) is its own scene and still flies the Meerkat.
 
 #### Vessel selection — RETIRED (2026-09-23)
 
