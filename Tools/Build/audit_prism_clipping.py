@@ -57,12 +57,11 @@ BAKE_FORMAT = "Assets/_Scripts/Controller/Environment/Spawning/PrismLayoutBakeFo
 # no-params-array three-value Min), and until it was listed here the harness failed to compile, so this
 # audit and bake_prism_layouts.py --check both stopped running (CS0103 'MathfNoAlloc').
 # SpawnableSwitchbackFeatures (and SwitchbackCourse, which rcb.SOURCES carries for SpawnableBreakwater)
-# name the fun-type enum and the closed-form feature layout; without them the harness stopped
-# compiling (CS0246 'SwitchbackFunType', 2026-10-28) and this audit stopped running.
+# name the closed-form Blast Run layout; without its helpers the harness stopped compiling
+# (CS0246, 2026-10-28) and this audit stopped running.
 SB = "Assets/_Scripts/Controller/Arcade/Switchback"
 HELPERS = ["Assets/_Scripts/Utility/MathfNoAlloc.cs",
-           "Assets/_Scripts/Data/Enums/SwitchbackFunType.cs",
-           f"{SB}/SwitchbackFeatures.cs", f"{SB}/SwitchbackLiveFeatures.cs", f"{SB}/SwitchbackBlastRun.cs",
+           f"{SB}/SwitchbackFeatures.cs", f"{SB}/SwitchbackBlastRun.cs",
            "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterStationBuilder.cs"]
 GYROID_TABLES = ["Assets/_Scripts/Controller/Assemblers/CornerSiteType.cs",
                  "Assets/_Scripts/Controller/Assemblers/GyroidBondMateData.cs",
@@ -74,10 +73,10 @@ ABSTRACT = {"SpawnableShapeBase"}
 # Generators that lay nothing until their controller hands them a course (SetCourse), with the
 # base seed the audit poses them on.
 POSED = {"SpawnableBreakwater": 9000,
-         # Posed as BLAST RUN (the only fun type whose layout is all prisms the player must blast through) at the
-         # picker's fixed world seeds 45_501-45_504 (SwitchbackFunTypes.WorldSeed), on the EditMode tests' shell.
+         # Posed as Blast Run (Switchback's only course family since 2026-10-29) at the launch panel's FIXED
+         # seeds 45_501-45_504 (SwitchbackBlastRun.FixedSeed), on the EditMode tests' shell.
          "SpawnableSwitchbackFeatures": 45_500}
-SWITCHBACK_POSE = {"funType": 5, "gates": 20, "inner": 480.0, "outer": 1080.0, "firstGateDistance": 620.0,
+SWITCHBACK_POSE = {"gates": 20, "inner": 480.0, "outer": 1080.0, "firstGateDistance": 620.0,
                    "clearRadius": 480.0 / 1.22 + 30.0}
 NOT_AUDITED = {
     "SpawnableCrystal": "instantiates a crystal, lays no prisms",

@@ -276,32 +276,10 @@ namespace CosmicShore.Gameplay
         {
             var request = new RaceCourseRequest(seed, Intensity, gateCount, inner, outer,
                                                 ResolveCourseConfig());
-            PrepareCourseSource(CourseSource);
             var course = CourseSource.Build(request, out string failure);
             if (course == null) CourseFailureDetail = failure;
             return course;
         }
-
-        /// <summary>
-        /// The config a course that is a property of its ARENA reads (Skein's cable, Regatta's
-        /// rails): the cell's EXPECTED config, never <c>Config</c>, which latches a second after
-        /// the first build attempt. A mode whose course is pure geometry ignores it.
-        /// </summary>
-        /// <summary>
-        /// Last word on the course source before each build, on the SERVER: a mode with a per-match knob the
-        /// source reads (Switchback's fun type) sets it here. Default: nothing.
-        /// </summary>
-        protected virtual void PrepareCourseSource(RaceCourseSource source) { }
-
-        /// <summary>
-        /// A small per-match integer the server broadcasts WITH the course, so every peer lays the same mode
-        /// geometry for it (Switchback: its <c>SwitchbackFunType</c>). The server answers from its own config; a
-        /// client reads <see cref="ReceivedCourseVariant"/>, set before <see cref="OnCourseRaised"/>. Default 0.
-        /// </summary>
-        protected virtual int CourseVariant => 0;
-
-        /// <summary>The variant the server sent with the course; -1 until a course arrives (and on the server).</summary>
-        protected int ReceivedCourseVariant { get; private set; } = -1;
 
         /// <summary>The seed this match's course is generated from, drawn ONCE per match on the server. Default:
         /// the authored seed, else <see cref="CourseSeedOverride.Forced"/>, else a fresh draw.</summary>
@@ -311,12 +289,10 @@ namespace CosmicShore.Gameplay
         protected int CourseSeedUsed => _pendingCourseSeed;
 
         /// <summary>
-        /// A mode's OTHER way to thread the gate at <paramref name="raceIndex"/> (ring <paramref name="ringIndex"/>),
-        /// tested on the same owner-simulated hull segment as the ring itself: Switchback's shortcut rings. True
-        /// credits the gate exactly as threading it would. Default: none.
+        /// The config a course that is a property of its ARENA reads (Skein's cable, Regatta's
+        /// rails): the cell's EXPECTED config, never <c>Config</c>, which latches a second after
+        /// the first build attempt. A mode whose course is pure geometry ignores it.
         /// </summary>
-        protected virtual bool ThreadsAlternate(int raceIndex, int ringIndex, Vector3 prev, Vector3 cur) => false;
-
         protected virtual CellConfigDataSO ResolveCourseConfig()
         {
             var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
@@ -738,13 +714,13 @@ namespace CosmicShore.Gameplay
                 packed[o + 5] = course[i].Axis.z;
                 packed[o + 6] = course[i].Radius;
             }
-            SyncCourse_ClientRpc(packed, CourseVariant, target);
+            SyncCourse_ClientRpc(packed, target);
         }
 
         const int FloatsPerGate = 7;
 
         [ClientRpc]
-        void SyncCourse_ClientRpc(float[] packed, int variant, ClientRpcParams rpcParams = default)
+        void SyncCourse_ClientRpc(float[] packed, ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;   // the server laid its own copy before broadcasting
 
@@ -755,7 +731,6 @@ namespace CosmicShore.Gameplay
                     new Vector3(packed[o + 3], packed[o + 4], packed[o + 5]),
                     packed[o + 6]));
 
-            ReceivedCourseVariant = variant;
             ApplyCourse(course);
         }
 
@@ -1049,8 +1024,7 @@ namespace CosmicShore.Gameplay
                 var ring = _rings[RingIndexFor(index)];
                 if (!ring) continue;
                 bool hullThreads = HullThreadsWhileProbeLive || !run.Probe.Live;
-                if (!(hullThreads && ring.CrossedMouth(prev, cur)) && !(probeFlew && ring.CrossedMouth(probePrev, probeCur))
-                    && !(hullThreads && ThreadsAlternate(index, RingIndexFor(index), prev, cur))) continue;
+                if (!(hullThreads && ring.CrossedMouth(prev, cur)) && !(probeFlew && ring.CrossedMouth(probePrev, probeCur))) continue;
 
                 run.Optimistic = index + 1;
                 run.LastReportTime = Time.time;

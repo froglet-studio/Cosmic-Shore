@@ -23,7 +23,7 @@ namespace CosmicShore.Tests
 
         static List<RaceGate> Course(int intensity, int seed)
         {
-            var s = SwitchbackCourseSettings.ForIntensity(intensity, SwitchbackFunType.BlastRun);
+            var s = SwitchbackCourseSettings.ForIntensity(intensity);
             s.GateCount = Gates;
             s.InnerRadius = Inner;
             s.OuterRadius = Outer;
@@ -38,33 +38,27 @@ namespace CosmicShore.Tests
         static IEnumerable<int> SeedsFor(int intensity)
         {
             for (int s = 1; s <= Seeds; s++) yield return s;
-            yield return SwitchbackFunTypes.WorldSeed(SwitchbackFunType.BlastRun, intensity);   // the picker's world
+            yield return SwitchbackBlastRun.FixedSeed(intensity);   // the launch panel's FIXED seed
         }
 
         static IEnumerable<int> WorldSeeds()
         {
-            for (int i = 1; i <= 4; i++) yield return SwitchbackFunTypes.WorldSeed(SwitchbackFunType.BlastRun, i);
+            for (int i = 1; i <= 4; i++) yield return SwitchbackBlastRun.FixedSeed(i);
         }
 
         [Test]
-        public void TheCourseIsClassics([Values(1, 2, 3, 4)] int intensity)
+        public void FixedSeedsAreTheKnownCourses()
         {
-            var a = SwitchbackCourseSettings.ForIntensity(intensity, SwitchbackFunType.BlastRun);
-            var b = SwitchbackCourseSettings.ForIntensity(intensity, SwitchbackFunType.Baseline);
-            Assert.AreEqual(b.RingRadius, a.RingRadius);
-            var ca = Course(intensity, 7);
-            var s = SwitchbackCourseSettings.ForIntensity(intensity);
-            s.GateCount = Gates; s.InnerRadius = Inner; s.OuterRadius = Outer;
-            s.FirstGateDirection = Vector3.up; s.FirstGateDistance = 620f;
-            var cb = SwitchbackCourse.Generate(7, s);
-            Assert.AreEqual(cb.Count, ca.Count);
-            for (int g = 0; g < ca.Count; g++) Assert.AreEqual(cb[g].Position, ca[g].Position, $"gate {g}");
+            // The launch panel's SEED: FIXED courses kept their numbers when the fun types went (2026-10-29).
+            for (int i = 1; i <= 4; i++) Assert.AreEqual(45_500 + i, SwitchbackBlastRun.FixedSeed(i));
+            Assert.AreEqual(45_501, SwitchbackBlastRun.FixedSeed(0), "clamped low");
+            Assert.AreEqual(45_504, SwitchbackBlastRun.FixedSeed(9), "clamped high");
         }
 
         [Test]
         public void TheLayoutIsDeterministic([Values(1, 2, 3, 4)] int intensity)
         {
-            foreach (int seed in new[] { 11, SwitchbackFunTypes.WorldSeed(SwitchbackFunType.BlastRun, intensity) })
+            foreach (int seed in new[] { 11, SwitchbackBlastRun.FixedSeed(intensity) })
             {
                 var c = Course(intensity, seed);
                 var a = Layout(c, intensity);
@@ -83,7 +77,6 @@ namespace CosmicShore.Tests
                     Assert.AreEqual(a.Movers[i].Phase, b.Movers[i].Phase);
                     Assert.AreEqual(a.Movers[i].Omega, b.Movers[i].Omega);
                 }
-                Assert.AreEqual(0, a.MovingClusters.Count, "Blast Run has no Plan 2 sweep clusters");
             }
         }
 
@@ -266,7 +259,7 @@ namespace CosmicShore.Tests
         public void MoversArePureFunctionsOfTime([Values(2, 3, 4)] int intensity)
         {
             int seen = 0;
-            foreach (int seed in new[] { 3, 7, SwitchbackFunTypes.WorldSeed(SwitchbackFunType.BlastRun, intensity) })
+            foreach (int seed in new[] { 3, 7, SwitchbackBlastRun.FixedSeed(intensity) })
             {
                 var L = Layout(Course(intensity, seed), intensity);
                 foreach (var m in L.Movers)
@@ -327,7 +320,7 @@ namespace CosmicShore.Tests
         [Test]
         public void MoversNeverClip([Values(2, 3, 4)] int intensity)
         {
-            foreach (int seed in new[] { 1, 2, 5, SwitchbackFunTypes.WorldSeed(SwitchbackFunType.BlastRun, intensity) })
+            foreach (int seed in new[] { 1, 2, 5, SwitchbackBlastRun.FixedSeed(intensity) })
             {
                 var L = Layout(Course(intensity, seed), intensity);
                 if (L.Movers.Count == 0) continue;

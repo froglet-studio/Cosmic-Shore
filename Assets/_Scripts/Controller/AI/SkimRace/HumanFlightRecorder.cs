@@ -164,8 +164,9 @@ namespace CosmicShore.Gameplay
         Quaternion _prevRot;
         bool _havePrevRot;
         int _frames, _startRings, _ownRail = -1, _courseSeed, _courseIntensity;
-        // The course family the launch panel picked (Switchback's fun types): each one is its own world, so the learners
-        // keep them apart (learn_drives_from_flights.py SHIPPED_FAMILY). Empty in a mode without families.
+        // The course family the race flew: Switchback is Blast Run only since 2026-10-29, and older flights (no field) flew
+        // the retired Classic ladder, so the learners keep them apart (learn_drives_from_flights.py SHIPPED_FAMILY).
+        // Empty in a mode without families. The JSON key stays "funType" so old and new flights read the same.
         string _funType = "";
         bool _recording, _turnWasRunning;
         // A match that ended by its own rules is stored once its RESULT is in (GameDataSO.Results, which the mode fills at
@@ -300,7 +301,7 @@ namespace CosmicShore.Gameplay
             _modeName = _gameData.GameMode.ToString();
             if (_gameData.SwitchTargetCount > 0) _target = _gameData.SwitchTargetCount;
             if (_gameData.SelectedIntensity != null && _gameData.SelectedIntensity.Value > 0) _intensity = _gameData.SelectedIntensity.Value;
-            _funType = _gameData.GameMode == GameModes.Switchback ? _gameData.SwitchbackFunType.ToString() : "";
+            _funType = _gameData.GameMode == GameModes.Switchback ? "BlastRun" : "";
         }
 
         void ListenToButtons()

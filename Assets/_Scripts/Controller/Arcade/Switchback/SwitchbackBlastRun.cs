@@ -109,10 +109,10 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// BLAST RUN (<see cref="SwitchbackFunType.BlastRun"/>, SWITCHBACK.md "Blast Run"; Yash 2026-10-28: "Dolphins need
+    /// BLAST RUN (Switchback's only game at I1-I4 since 2026-10-29; SWITCHBACK.md "Blast Run"; Yash 2026-10-28: "Dolphins need
     /// to use their shooting abilities to clear paths for their rings"; 2026-10-29: "3D grids of prisms with movable
     /// area that are challenging, cubes, cuboids, spheres, big and small objects ... easy to sync in multiplayer ...
-    /// we target 100fps"). A pure function of the course, like <see cref="SwitchbackLiveFeatures"/>, so every peer lays
+    /// we target 100fps"). A pure function of the course, so every peer lays
     /// the same prisms and the EditMode tests (<c>SwitchbackBlastRunTests</c>) and
     /// <c>Tools/Build/audit_prism_clipping.py</c> hold it without a scene.
     ///
@@ -211,6 +211,13 @@ namespace CosmicShore.Gameplay
         public static int MovingGroupCap(int intensity) => new[] { 0, 10, 20, 28 }[I(intensity)];
         /// <summary>SpawnableSwitchbackFeatures' lay pool: over every TotalCap.</summary>
         public const int LayCapacity = 4096;
+
+        /// <summary>
+        /// The launch panel's FIXED SEED for an intensity: 45_501-45_504, the same numbers the retired fun-type
+        /// picker gave Blast Run (45_000 + 5 x 100 + intensity), so the fixed courses testers know are unchanged.
+        /// Never 0 (0 means "random" to the course seed pickers).
+        /// </summary>
+        public static int FixedSeed(int intensity) => 45_500 + Mathf.Clamp(intensity, 1, 4);
 
         public static BlastRunWorld WorldFor(int intensity) => (BlastRunWorld)(I(intensity) + 1);
 

@@ -84,6 +84,34 @@ camera while the AI keeps flying the vessel; F2 again glides back. Controls in D
 - [ ] F2 in freestyle or mid-blend does nothing.
 - [ ] Untick `godModeEnabled`: F2 does nothing.
 
+### 🔴 Switchback is Blast Run only: the other fun types and the FUN picker removed (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** Yash: "Keep Blast Run, remove all other intensity types." Every Switchback match at I1-I4 (Arcade,
+weekly challenge, tutorial quest funnel, guests, replays) flies Blast Run. Removed: CLASSIC / LEVEL SHAPES / LIVE
+FEATURES / PAR & MEDALS / COMBINED and their code (`SwitchbackFunType`, `SwitchbackLiveFeatures`, `SwitchbackPar`,
+Plan 1 course fields, the I3 skim walls / I4 danger prisms, `SwitchbackFunTypeTests`, `SwitchbackFeaturesTests`), the
+`FUN:` button, and `GateRaceController`'s `PrepareCourseSource` / `CourseVariant` / `ThreadsAlternate` hooks
+(`SyncCourse_ClientRpc` no longer carries a variant). Kept: the Classic course ladder (bit-identical, Blast Run sits on
+it), `SEED: RANDOM / FIXED` (`ArcadeGameConfigureModal.SwitchbackSeedPicker.cs`; fixed seeds still 45_501-45_504),
+the course sync, key crystals and clock-driven movers. Stale PlayerPrefs `Switchback.FunType` and
+`Switchback.PB.<type>.I<n>` are deleted when the panel loads. Switchback AIs now always detour for crystals.
+Flights record `"funType":"BlastRun"`; `learn_drives_from_flights.py` learns Switchback from Blast Run flights only.
+
+**Verify in editor:**
+1. EditMode: `SwitchbackBlastRunTests`, `SwitchbackCourseTests`, `RaceAIWaypointsOnlyTests`,
+   `SwitchbackAISteeringTests` all pass; no compile errors about `SwitchbackFunType`.
+2. Arcade -> Switchback card (host): above the intensity row only `SEED: RANDOM` (no `FUN:` button). Toggle to FIXED,
+   close and reopen: kept. Launch I1-I4: 6 / 9 / 17 / 12 blocked gates, 1173 / 1998 / 2988 / 3349 prisms
+   (verbose: `[Switchback] BLAST RUN intensity N: ...`).
+3. Finish: `[Switchback] RUN blastRun intensity=.. seed=.. time=.. gates=.. prismsDestroyed=.. stations=.. keys=.. movers=..`;
+   no PAR / medal / NEW BEST toasts.
+4. Weekly challenge Switchback and the tutorial quest's Switchback step: no seed button, and the match is Blast Run
+   (doors, key crystals) on a random seed.
+5. 2 peers: the guest flies the host's course with the same doors/fields; movers in phase.
+6. A machine that had picked LEVEL SHAPES etc. before: launches Blast Run, no errors; `Switchback.FunType` is gone
+   from PlayerPrefs.
+7. Prefab: `SwitchbackController.featuresPrefab` still assigned (no `[Switchback] No features prefab assigned` error).
+
 ### 🔴 Switchback BLAST RUN: blocked gates behind 3D block fields with clock-driven sliders/rotors, key-crystal blasts (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** a sixth Switchback fun type, `BlastRun` (picker label BLAST RUN). Classic course; blocked gates get a
@@ -98,10 +126,10 @@ refcompiles, `audit_prism_clipping.py` (Blast Run posed at 45_501-45_504: flush)
 NOT measured.
 
 **Verify in editor:**
-1. Run `SwitchbackBlastRunTests` and `SwitchbackFunTypeTests` (EditMode): all pass. Also `RaceAIWaypointsOnlyTests`
-   (a Classic Switchback still never detours for crystals).
-2. Arcade -> Switchback -> card: `FUN: BLAST RUN`, `SEED: FIXED`, I1, launch. Console (verbose ArcadeMatch):
-   `[Switchback] Fun type BlastRun intensity 1: ... BLAST RUN 6 blocked gates, 0 movers, 1173 prisms.`
+(2026-10-29 later: Switchback is now Blast Run only - see the entry above; there is no FUN button and no Classic.)
+1. Run `SwitchbackBlastRunTests` (EditMode): all pass. Also `RaceAIWaypointsOnlyTests`.
+2. Arcade -> Switchback -> card: `SEED: FIXED`, I1, launch. Console (verbose ArcadeMatch):
+   `[Switchback] BLAST RUN intensity 1: 20 gates, 6 blocked gates, 0 movers, 1173 prisms.`
    Expect 6 / 9 / 17 / 12 blocked gates, 0 / 10 / 20 / 28 movers and 1173 / 1998 / 2988 / 3349 prisms at I1-I4
    (seeds 45_501-45_504) on the shipped shell; a different shell changes the counts but not the pass/fail below.
 3. Each blocked gate: a field of mixed blocks on the leg in, with a clear tube down the leg line to the door's eye.
@@ -113,8 +141,8 @@ NOT measured.
    surviving prisms keep moving, the blasted ones are gone, nothing errors.
 6. 2-peer session: the host's and the client's movers are in the same pose at the same moment (compare a rotor's arm
    angle in screenshots); a late joiner sees them in phase at once.
-7. Finish: the RUN line ends ` blastRun stations=.. keys=.. movers=..`.
-8. AI Dolphins in Blast Run take the keys (crystal detour on); in Classic they still ignore crystals.
+7. Finish: the RUN line ends ` stations=.. keys=.. movers=..`.
+8. AI Dolphins take the keys (crystal detour on).
 9. **Performance (target 100 fps):** Profiler at I4 seed 45_504 (most prisms, 3349; 400 colliders in the densest
    200 u; 124 moving prisms) - frame time <= 10 ms on the target machine, `TickMovers` well under 0.5 ms. If not,
    lower `TotalCap` / `ColliderCap` / `MovingPrismCap` in `SwitchbackBlastRun` (tests follow the constants).
@@ -18654,7 +18682,10 @@ the menu still uses the hull picked for it. No Unity in the session.
 5. Vessel Changer toy -> Squirrel, then back to Meerkat. **Pass:** both swaps work.
 6. A party guest joining the host's menu. **Pass:** the guest's own hull is unchanged (the field drives the host only).
 
-## Switchback fun types: CLASSIC / LEVEL SHAPES / PAR & MEDALS / LIVE FEATURES / COMBINED (2026-10-28) - NOT EDITOR-VERIFIED
+## Switchback fun types: CLASSIC / LEVEL SHAPES / PAR & MEDALS / LIVE FEATURES / COMBINED (2026-10-28) - SUPERSEDED
+
+**Superseded 2026-10-29:** these fun types and the FUN picker were removed; Switchback is Blast Run only (see the
+"Switchback is Blast Run only" entry at the top). Skip the steps below.
 
 Branch `switchback-fun-types`. See `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`, "Fun types". Watch the console for
 `[Switchback] RUN ...` after every finish.
@@ -18781,6 +18812,9 @@ compile (player and editor) and the gates pass; the Amoebius edit-mode suite has
 
 
 ## Flight recordings name the Switchback fun type (2026-10-29) - NOT EDITOR-VERIFIED
+
+**Updated 2026-10-29:** Switchback is Blast Run only, so every Switchback flight records `"funType":"BlastRun"`, and the
+learner now ships Blast Run (an untagged flight is the retired Classic ladder). Steps 1-2 below: expect `"BlastRun"`.
 
 **Files:** `Assets/_Scripts/Controller/AI/SkimRace/HumanFlightRecorder.cs` (`_funType`, the `"funType"` field),
 `Tools/Build/learn_drives_from_flights.py` (`SHIPPED_FAMILY`, `on_shipped_family`). The AI learning sweep learns the

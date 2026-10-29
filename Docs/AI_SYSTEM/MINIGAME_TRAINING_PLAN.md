@@ -136,6 +136,8 @@ drift, the AI nose lag, the charge economy), two defects showed, and the Regatta
 **What changed:**
 - `SwitchbackController.AICommitFromApproachPoint` = true: the Regatta steering, which now carries the approach-point
   cap.
+- **2026-10-29:** Switchback is now Blast Run only; the Switchback boost policies below were learned on the Classic
+  ladder and stay until Blast Run races are recorded and the learner (which now ships `BlastRun` only) is re-run.
 - `DolphinAIBoostPolicy_Switchback` written from Yash's races (`LEARNED_DRIVES_Switchback.md`): discharge lined up
   within 27.4 deg (was 12), with 0.87 s of runway (2.5), at 0.82 charge (0.95).
 - Tests: `SwitchbackAISteeringTests`. Other gate races keep their scene switch (Headlong is the negative control).
