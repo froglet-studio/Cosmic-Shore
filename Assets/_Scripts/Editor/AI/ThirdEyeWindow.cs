@@ -135,7 +135,9 @@ namespace CosmicShore.Editor.AI
 
         string Capture(string pngPath)
         {
-            if (!EditorApplication.isPlaying || !_cam || !_rt) return "nothing on view yet (no match, or the window is hidden)";
+            if (!EditorApplication.isPlaying || !_cam || !_rt) return "nothing on view yet (no match)";
+            // Hidden behind a docked tab, its camera stops rendering: the texture holds an old frame under a live overlay.
+            if (!_visible) return "the Third Eye is hidden behind another tab";
             int w = _rt.width, h = _rt.height;
             var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
             var previous = RenderTexture.active;

@@ -15,8 +15,34 @@ namespace CosmicShore.Editor.AI
         {
             if (px == null || px.Length < w * h || w <= 0 || h <= 0) return;
             int r = Mathf.Max(0, Mathf.RoundToInt(width * 0.5f - 0.5f));
+            // Cut to the image first: a line whose far end projects thousands of pixels away (a near-plane clip) would
+            // otherwise spend its steps off the image and come out dotted.
+            if (!Clip(ref a, ref b, -r - 1f, -r - 1f, w + r, h + r)) return;
             int steps = Mathf.Clamp(Mathf.CeilToInt(Vector2.Distance(a, b)), 1, 8192);
             for (int i = 0; i <= steps; i++) Dot(px, w, h, Vector2.Lerp(a, b, i / (float)steps), r, color);
+        }
+
+        /// <summary>Liang-Barsky: the part of a..b inside the box, false when none of it is.</summary>
+        public static bool Clip(ref Vector2 a, ref Vector2 b, float xMin, float yMin, float xMax, float yMax)
+        {
+            float t0 = 0f, t1 = 1f, dx = b.x - a.x, dy = b.y - a.y;
+            float[] p = { -dx, dx, -dy, dy };
+            float[] q = { a.x - xMin, xMax - a.x, a.y - yMin, yMax - a.y };
+            for (int i = 0; i < 4; i++)
+            {
+                if (Mathf.Approximately(p[i], 0f))
+                {
+                    if (q[i] < 0f) return false;
+                    continue;
+                }
+                float t = q[i] / p[i];
+                if (p[i] < 0f) { if (t > t1) return false; if (t > t0) t0 = t; }
+                else { if (t < t0) return false; if (t < t1) t1 = t; }
+            }
+            Vector2 from = a + (b - a) * t0, to = a + (b - a) * t1;
+            a = from;
+            b = to;
+            return true;
         }
 
         /// <summary>A circle of <paramref name="radius"/> pixels round <paramref name="center"/>.</summary>

@@ -63,10 +63,13 @@ namespace CosmicShore.Utility.AITraining.Editor
         const string KeyStillAt = "FrogletCompute.StillAt";
         const string KeyStillBest = "FrogletCompute.StillBest";
         const string KeyStillNote = "FrogletCompute.StillNote";
+        const string KeyStillKeptAt = "FrogletCompute.StillKeptAt";
         const int KeepReplays = 2;
         const int KeepFlights = 20;
         const int KeepStills = 20;
+        const int KeepBestStills = 10;
         const double StillEverySeconds = 60;
+        const double RecentEverySeconds = 10;
         const double StartGraceSeconds = 900;
 
         static double _nextTick;
@@ -369,26 +372,52 @@ namespace CosmicShore.Utility.AITraining.Editor
         }
 
         /// <summary>
-        /// A watched run's Third Eye view saved as a still (ThirdEyeWindow.SaveView: the view with the trails and aim
-        /// lines drawn in) every minute and when the best fitness rises, into &lt;out&gt;/stills, the newest 20 kept.
+        /// A watched run's Third Eye view (ThirdEyeWindow.SaveView: the view with the trails and aim lines drawn in) into
+        /// &lt;out&gt;/stills. The view is saved to recent.png every 10 s; a copy is kept every minute (still_*, the newest 20),
+        /// and when the best fitness rises the frame taken before it - during the match that raised it, since a match is
+        /// scored at its end - is kept as best_* (the newest 10). A failed save (the window hidden, still opening)
+        /// is tried again 2 s later and loses nothing.
         /// </summary>
         static void TakeStill(string outDir, TrainingSessionStateSO state)
         {
-            if (string.IsNullOrEmpty(outDir) || !SessionState.GetString(KeyThirdEye, "").StartsWith("open")) return;
-            bool rose = SessionState.GetBool(KeyStillBest, false);
-            double now = EditorApplication.timeSinceStartup;
-            if (!rose && now < SessionState.GetFloat(KeyStillAt, 0f)) return;
-            SessionState.SetFloat(KeyStillAt, (float)(now + StillEverySeconds));
-            SessionState.SetBool(KeyStillBest, false);
-            var save = FindType("CosmicShore.Editor.AI.ThirdEyeWindow")?.GetMethod("SaveView", BindingFlags.Public | BindingFlags.Static);
-            if (save == null) { SessionState.SetString(KeyStillNote, "this version's Third Eye cannot save its view"); return; }
-            string dir = Path.Combine(outDir, "stills");
-            int episodes = state != null ? state.EpisodesCompleted : 0;
-            string file = Path.Combine(dir, $"{(rose ? "best" : "still")}_{episodes:D5}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.png");
-            string why = save.Invoke(null, new object[] { file }) as string;
-            SessionState.SetString(KeyStillNote, why ?? "");
-            if (why != null || !Directory.Exists(dir)) return;
-            foreach (var old in Directory.GetFiles(dir, "*.png").OrderByDescending(File.GetLastWriteTimeUtc).Skip(KeepStills))
+            try
+            {
+                if (string.IsNullOrEmpty(outDir) || !SessionState.GetString(KeyThirdEye, "").StartsWith("open:")) return;
+                string dir = Path.Combine(outDir, "stills"), recent = Path.Combine(dir, "recent.png");
+                int episodes = state != null ? state.EpisodesCompleted : 0;
+                string stamp = $"{episodes:D5}_{DateTime.UtcNow:yyyyMMdd_HHmmss}";
+                if (SessionState.GetBool(KeyStillBest, false) && File.Exists(recent))
+                {
+                    File.Copy(recent, Path.Combine(dir, $"best_{stamp}.png"), true);
+                    SessionState.SetBool(KeyStillBest, false);
+                    Prune(dir, "best_*.png", KeepBestStills);
+                }
+                double now = EditorApplication.timeSinceStartup;
+                if (now < SessionState.GetFloat(KeyStillAt, 0f)) return;
+                var save = FindType("CosmicShore.Editor.AI.ThirdEyeWindow")?.GetMethod("SaveView", BindingFlags.Public | BindingFlags.Static,
+                    null, new[] { typeof(string) }, null);
+                if (save == null) { SessionState.SetString(KeyStillNote, "this version's Third Eye cannot save its view"); return; }
+                Directory.CreateDirectory(dir);
+                string why = save.Invoke(null, new object[] { recent }) as string;
+                SessionState.SetString(KeyStillNote, why ?? "");
+                if (why != null) return;
+                SessionState.SetFloat(KeyStillAt, (float)(now + RecentEverySeconds));
+                if (now >= SessionState.GetFloat(KeyStillKeptAt, 0f))
+                {
+                    File.Copy(recent, Path.Combine(dir, $"still_{stamp}.png"), true);
+                    SessionState.SetFloat(KeyStillKeptAt, (float)(now + StillEverySeconds));
+                    Prune(dir, "still_*.png", KeepStills);
+                }
+            }
+            catch (Exception e)
+            {
+                SessionState.SetString(KeyStillNote, $"{e.GetType().Name}: {e.Message}");
+            }
+        }
+
+        static void Prune(string dir, string pattern, int keep)
+        {
+            foreach (var old in Directory.GetFiles(dir, pattern).OrderByDescending(File.GetLastWriteTimeUtc).Skip(keep))
                 File.Delete(old);
         }
 
@@ -467,7 +496,8 @@ namespace CosmicShore.Utility.AITraining.Editor
         {
             string dir = Path.Combine(outDir, "stills");
             if (!Directory.Exists(dir)) yield break;
-            foreach (var f in Directory.GetFiles(dir, "*.png").OrderBy(File.GetLastWriteTimeUtc))
+            foreach (var f in Directory.GetFiles(dir, "*.png").Where(f => Path.GetFileName(f) != "recent.png")
+                         .OrderBy(File.GetLastWriteTimeUtc))
                 yield return new Json().Str("file", Path.GetFileName(f)).Num("bytes", new FileInfo(f).Length)
                     .Bool("best", Path.GetFileName(f).StartsWith("best_")).Body();
         }

@@ -53,6 +53,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ALineReachingFarOffTheImage_IsCutFirst_AndStaysWhole()
+        {
+            // An aim line clipped at the near plane can end a hundred thousand pixels away: without the cut, 8192 steps
+            // spread over that length leave the visible part dotted or empty.
+            var px = Black(8, 8);
+            ThirdEyeStill.Line(px, 8, 8, new Vector2(-100000, 4), new Vector2(100000, 4), Color.white, 1f);
+            for (int x = 0; x < 8; x++) Assert.IsTrue(Lit(px, 8, x, 4), $"pixel {x} of the row is drawn");
+            var a = new Vector2(-10, -10);
+            var b = new Vector2(-5, -20);
+            Assert.IsFalse(ThirdEyeStill.Clip(ref a, ref b, 0, 0, 8, 8), "a line wholly outside is dropped");
+        }
+
+        [Test]
         public void Blend_TintsByAlpha_AndKeepsTheStillOpaque()
         {
             var c = ThirdEyeStill.Blend(new Color32(100, 100, 100, 255), new Color(1f, 0f, 0f, 0.5f));

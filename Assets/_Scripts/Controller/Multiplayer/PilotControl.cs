@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
             human && human.Vessel is Component hull && hull &&
             hull.TryGetComponent(out TrainingPilot trainer) && trainer.isActiveAndEnabled && trainer.EpisodeActive;
 
-        const string TrainerRefusal = "the AI trainer is flying this hull (an AI Training run): stop the run first";
+        const string TrainerRefusal = "a trained AI pilot (TrainingPilot) is flying this hull: its sticks would fight yours";
 
         /// <summary>
         /// Let the AI fly <paramref name="human"/>'s hull (<paramref name="aiFlies"/> true), or give it back to them.

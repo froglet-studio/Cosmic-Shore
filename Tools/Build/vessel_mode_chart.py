@@ -27,6 +27,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
+from learn_from_flights import not_a_person  # noqa: E402  - the one rule for whose flight it is
 OUT_MD = os.path.join(REPO, "Docs", "AI_SYSTEM", "VESSEL_MODE_CHART.md")
 OUT_JSON = os.path.join(REPO, "Docs", "AI_SYSTEM", "vessel_mode_chart.json")
 
@@ -159,6 +160,8 @@ def flights(fetch):
             try:
                 f = json.loads(raw)
             except ValueError:
+                continue
+            if not_a_person(path, raw):   # the AI trainer flew it (learn_from_flights.not_a_person): nobody's race
                 continue
             rv, n = f.get("rivals") or [], len(f.get("rivalHulls") or [])
             last = rv[-1] if rv else []

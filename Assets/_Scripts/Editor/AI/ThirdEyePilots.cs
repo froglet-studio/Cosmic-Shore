@@ -259,7 +259,9 @@ namespace CosmicShore.Editor.AI
             }
 
             var trainer = pilot.Trainer;
-            if (trainer && trainer.isActiveAndEnabled && trainer.GetCurrentContextOrNull() is { } ctx)
+            // A context exists from BeginEpisode, but the trainer fills it only once the hull moves (its Update stands
+            // down while the hull is stationary: the ready screen, the countdown): until then it says nothing.
+            if (trainer && trainer.isActiveAndEnabled && trainer.GetCurrentContextOrNull() is { Vessel: not null } ctx)
             {
                 // The trainer steers for its sensor's target (TargetSensor): the aim line ends there, or ahead of the
                 // hull when it has none. Its policies' blend is not a point, so the line shows what it is after.
@@ -267,7 +269,7 @@ namespace CosmicShore.Editor.AI
                 t.Pilot = "AI trainer";
                 t.HasTarget = ctx.HasTarget;
                 t.Target = ctx.TargetPosition;
-                t.Aim = ctx.HasTarget ? ctx.TargetPosition : ctx.Position + ctx.Forward * 100f;
+                t.Aim = ctx.HasTarget ? ctx.TargetPosition : pilot.Hull.position + pilot.Hull.forward * 100f;
                 t.State = ctx.HasTarget ? $"Seeking {ctx.TargetKind}" : "No target";
                 t.Color = ctx.HasTarget ? FrogletEditorPalette.Lime : FrogletEditorPalette.Gold;
                 string target = ctx.HasTarget ? $"{ctx.TargetRange:F0} u to it, " : "";

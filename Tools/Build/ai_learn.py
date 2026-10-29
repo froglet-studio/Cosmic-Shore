@@ -161,7 +161,7 @@ def plan(flights, seen, waiting=None):
 
 def pace(flights, mode):
     """The person's finished races and the AI rivals' (regatta_rival_report) in this mode, as report lines."""
-    mine = [f for f in flights if f["mode"] == mode]
+    mine = [f for f in flights if f["mode"] == mode and not f.get("not_a_person")]   # the person's races only
     by = collections.defaultdict(list)
     for f in mine:
         by[(f["hull"], f["intensity"])].append(f)
@@ -256,7 +256,9 @@ def main():
     flights = load_flights()
     seen, waiting = load_seen()
     new, modes = plan(flights, seen, waiting)
-    print(f"ai_learn: {len(flights)} flight(s) on the branches, {len(new)} new.")
+    people = sum(1 for f in flights if not f.get("not_a_person"))
+    print(f"ai_learn: {people} flight(s) people flew on the branches"
+          + (f" (and {len(flights) - people} no person flew)" if people < len(flights) else "") + f", {len(new)} new.")
     for mode in sorted(modes):
         m = modes[mode]
         print(f"  {mode}: " + ", ".join(f"{h} {n}" for h, n in sorted(m["hulls"].items()))

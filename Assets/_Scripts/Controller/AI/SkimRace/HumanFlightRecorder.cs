@@ -742,6 +742,21 @@ namespace CosmicShore.Gameplay
         {
             _recording = false;
             _awaitingResult = false;
+            // Once the AI trainer flew part of a match, the whole match is its: the turn runs on through the replay's fade
+            // after an episode ends (half a second of real time, seconds of game time at a run's time scale), with the
+            // trainer released and nobody else at the sticks. Those samples are marked held, never hand-flown.
+            int first = -1, last = -1;
+            for (int i = 0; i < _samples.Count; i++)
+                if (_samples[i].Trainer) { if (first < 0) first = i; last = i; }
+            if (first >= 0)
+                for (int i = 0; i < _samples.Count; i++)
+                {
+                    if (i >= first && i <= last) continue;
+                    var m = _samples[i];
+                    m.Held = true;
+                    m.Trainer = true;
+                    _samples[i] = m;
+                }
             int byHand = 0, byTrainer = 0;
             for (int i = 0; i < _samples.Count; i++)
             {
