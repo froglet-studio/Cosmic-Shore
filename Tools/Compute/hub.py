@@ -54,10 +54,11 @@ class Hub:
         self.data, self.jobs, self.live, self.filed = None, {}, {}, []
         self.requests = {}                  # every request, whole, by id (git plus what this hub filed since)
         self.prs, self.prs_at = [], 0
+        self.error, self.started = None, time.time()      # the last build's failure, shown by the page
         self.posts = {}
 
     # ── the snapshot ──
-    def build_once(self):
+    def build_once(self, fetch=True):
         prs_file = None
         if self.github_token and time.time() - self.prs_at > 300:
             self.prs = self._pull_requests()
@@ -65,7 +66,7 @@ class Hub:
         if self.prs:
             prs_file = os.path.join(L.cache_dir(), "hub-prs.json")
             L.write_json(prs_file, self.prs)
-        data = C.build(fetch=True, prs=prs_file, url=self.url, queue=self.queue)
+        data = C.build(fetch=fetch, prs=prs_file, url=self.url, queue=self.queue)
         data["hub"] = True
         refs = [q if q.startswith("origin/") else "origin/" + q for q in (self.queue or L.QUEUE_REFS)]
         try:
@@ -81,11 +82,19 @@ class Hub:
             self.filed = [f for f in self.filed if f["id"] not in {m["id"] for m in data.get("manual") or []}]
 
     def loop(self):
+        # The app's first build reads the branches already on this computer (seconds, no network) so the page opens at
+        # once; the full fetch of every team branch follows straight after (a minute or more the first time).
+        quick = bool(self.app)
         while True:
             try:
-                self.build_once()
+                self.build_once(fetch=not quick)
+                self.error = None
             except Exception as e:
+                self.error = f"{type(e).__name__}: {e}"
                 L.log(f"hub: rebuild failed: {e}", self.quiet)
+            if quick:
+                quick = False
+                continue
             time.sleep(self.rebuild)
 
     def _pull_requests(self):
@@ -246,7 +255,9 @@ def handler(hub, page):
                 return self._send(200, page(), "text/html; charset=utf-8")
             if path == "/console.json":
                 d = hub.snapshot()
-                return self._send(200, d) if d else self._send(503, {"error": "the first build is still running"})
+                return self._send(200, d) if d else self._send(503, {
+                    "error": hub.error or "the first build is still running", "failed": bool(hub.error),
+                    "seconds": int(time.time() - hub.started)})
             if path in ("/api/requests",) or path.startswith("/api/requests/"):
                 if not hub.allowed(self.headers.get("X-Compute-Key")):
                     return self._send(401, {"error": "the team key is missing or wrong"})
@@ -256,7 +267,7 @@ def handler(hub, page):
                 return self._send(200, r) if r else self._send(404, {"error": "no such run"})
             if path == "/api/status":
                 d = hub.snapshot() or {}
-                return self._send(200, {"hub": True, "app": bool(hub.app), "built": d.get("generated"),
+                return self._send(200, {"hub": True, "app": bool(hub.app), "built": d.get("generated"), "error": hub.error,
                                         "live": (d.get("live") or {}).get("machines", []),
                                         "here": hub.here_runs() if hub.app else []})
             return self._send(404, {"error": "not found"})

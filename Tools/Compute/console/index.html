@@ -1668,13 +1668,28 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   window.addEventListener("resize", function () { if (TI >= 0) showStep(); });
   buildTerm();
   route();
-  fetch("console.json", { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then(function (d) {
-    DATA = d; render(); connect(); goLive();
-    if (!lsGet("fc-tour")) setTimeout(function () { startTour(0); }, 400);
-  }).catch(function (e) {
-    var root = document.getElementById("main"); root.textContent = "";
-    root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "The data did not load" }), h("p", { class: "note", text: "This page reads console.json from its own folder (" + e.message + "). Build it with python3 Tools/Compute/compute.py console and publish both files together." })]));
-    document.getElementById("fresh").textContent = "no data";
-  });
+  // The app and the hub answer 503 until their first build from git is done (a minute or more the first time, when
+  // they fetch every team branch): wait and say so, and show the build's own error if it failed.
+  function load(tries) {
+    fetch("console.json", { cache: "no-store" }).then(function (r) {
+      if (r.status === 503) return r.json().catch(function () { return {}; }).then(function (j) { throw { waiting: true, info: j }; });
+      if (!r.ok) throw new Error("HTTP " + r.status); return r.json();
+    }).then(function (d) {
+      DATA = d; render(); connect(); goLive();
+      if (!lsGet("fc-tour")) setTimeout(function () { startTour(0); }, 400);
+    }).catch(function (e) {
+      var root = document.getElementById("main"); root.textContent = "";
+      if (e && e.waiting && !(e.info && e.info.failed)) {
+        root.appendChild(h("div", { class: "empty" }, [h("b", { text: "Starting up" }), h("span", { text: "Reading the team's results from git" + (e.info && e.info.seconds ? " (" + e.info.seconds + " s so far)" : "") + ". The first time takes a minute or two; this page opens by itself." })]));
+        document.getElementById("fresh").textContent = "starting";
+        return setTimeout(function () { load((tries || 0) + 1); }, 3000);
+      }
+      var msg = e && e.waiting ? "Its last build failed: " + e.info.error + ". It tries again every minute; the app's window shows more." : "This page reads console.json from its own folder (" + e.message + "). Build it with python3 Tools/Compute/compute.py console and publish both files together.";
+      root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "The data did not load" }), h("p", { class: "note", text: msg })]));
+      document.getElementById("fresh").textContent = "no data";
+      if (e && e.waiting) setTimeout(function () { load((tries || 0) + 1); }, 15000);
+    });
+  }
+  load(0);
 })();
 </script>
