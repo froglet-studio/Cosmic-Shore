@@ -62,8 +62,10 @@ namespace CosmicShore.Gameplay
             _midMesh = BuildCube(1, "PrismBurnProxyMid");
         }
 
-        /// <summary>A new burn was lit on <paramref name="prism"/>, ending at <paramref name="endAt"/>.</summary>
-        public void Begin(Prism prism, float now, float endAt, bool noHoles)
+        /// <summary>A new burn was lit on <paramref name="prism"/> at <paramref name="now"/> (may be in the past, for a
+        /// burn replicated late), ending at <paramref name="endAt"/>. <paramref name="seed"/> in [1, 62) fixes the noise
+        /// pattern (a networked burn sends it so every peer burns the same holes); &lt;= 0 derives one locally.</summary>
+        public void Begin(Prism prism, float now, float endAt, bool noHoles, float seed = -1f)
         {
             if (!Active || prism == null || _entries.ContainsKey(prism)) return;
             if (_list.Count >= _nearM.Length) return;   // over budget: this burn keeps the ordinary look
@@ -76,7 +78,7 @@ namespace CosmicShore.Gameplay
             e.Hidden = false;
             // A prism another owner already hides (a swarm body, a crystal morph) is drawn elsewhere: leave it alone.
             e.Skip = prism.OwnerHidden;
-            e.Seed = (Mathf.Abs(prism.GetInstanceID() * 0.6180339f) % 61f) + 1f;
+            e.Seed = seed > 0f ? seed : (Mathf.Abs(prism.GetInstanceID() * 0.6180339f) % 61f) + 1f;
 
             var mf = prism.GetComponent<MeshFilter>();
             var b = mf != null && mf.sharedMesh != null ? mf.sharedMesh.bounds : new Bounds(Vector3.zero, Vector3.one);
