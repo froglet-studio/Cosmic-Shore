@@ -18779,3 +18779,17 @@ compile (player and editor) and the gates pass; the Amoebius edit-mode suite has
    errors, and no prism from the old world is left floating where it was.
 3. Swap to the same cell twice in a row (the reset). **Pass:** both complete; the second swap is not refused.
 
+
+## Flight recordings name the Switchback fun type (2026-10-29) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scripts/Controller/AI/SkimRace/HumanFlightRecorder.cs` (`_funType`, the `"funType"` field),
+`Tools/Build/learn_drives_from_flights.py` (`SHIPPED_FAMILY`, `on_shipped_family`). The AI learning sweep learns the
+Dolphin's Switchback drive from Baseline races only, because every fun type is its own world. A Blast Run race (block
+fields) had been learned into the I2 drive because the flight did not say which fun type it was. `/verify-unity` did
+not run: no editor in the session. The reference compile passes, and so does `learn_drives_from_flights.py
+--self-test`, with a negative control.
+
+1. Fly Switchback at any intensity with the fun type on Baseline, and finish or stop the race. **Pass:** the new
+   `flight_Switchback_*.json` has `"funType":"Baseline"` after `courseIntensity`, and the console shows no error.
+2. Pick Blast Run on the launch panel and fly again. **Pass:** that flight has `"funType":"BlastRun"`.
+3. Fly any other mode (Regatta, Skim Race). **Pass:** its flight has no `funType` field, and everything else is as before.
