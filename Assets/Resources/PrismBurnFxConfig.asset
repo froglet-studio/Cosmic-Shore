@@ -26,5 +26,5 @@ MonoBehaviour:
   appearSeconds: 0.1
   inflate: 1.015
   nearSubdivisions: 8
-  silentBurnout: 1
+  silentBurnout: 0
   maxDrawn: 256
