@@ -264,6 +264,9 @@ namespace CosmicShore.Gameplay
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); _grounds.Clear(); _groundBlocks.Clear(); _rings.Clear(); _held.Clear();
             StopPops(); _bindAt = 0f; _flightRewards.Clear(); _dueRewards.Clear();
+            // a dead ground block goes back to its pool after its death effect (PrismRecycler): a gap is re-laid with new
+            // blocks (RestoreBlock), never brought back from the dead
+            _trail.RecycleDestroyedMembers = true;
             _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0f; _choosing = false; _mapYaw = 0f; _mapPitch = Config.MapStartTilt; _mapPointer = default;
             _energy = 0f; _flightBlocks = 0; _crystalTakenAt.Clear();
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
@@ -606,7 +609,7 @@ namespace CosmicShore.Gameplay
         /// Which blocks of the island the Pistol rides still stand (Garrett, 2026-10-28: "when the goby's trail is destroyed
         /// the shrimp should have to clear the destroyed section. if they fall they should not hit phantom prisms"). A block is
         /// ground while it stands where the Goby laid it (a rival's steal leaves it standing, so it stays ground); a destroyed
-        /// (or carried off) block is a hole, and a restored one ground again. A block this machine never laid or found is
+        /// (or carried off, or recycled) block is a hole until a new one is laid in its slot. A block this machine never laid or found is
         /// ground: on a rider's machine the blocks are found as the Pistol nears them.
         /// </summary>
         void RefreshGround()
@@ -620,16 +623,13 @@ namespace CosmicShore.Gameplay
             {
                 float s = ground.BlockS(i);
                 if (s >= seg.L) break;
-                Vector3 at = seg.Ground(s, track);
                 if (ReferenceEquals(blocks[i], null))
                 {
                     if (!bind || Mathf.Abs(s - near) > GroundBindWindow) continue;
-                    blocks[i] = FindGroundBlock(at, tol);
+                    blocks[i] = FindGroundBlock(seg.Ground(s, track), tol);
                     if (ReferenceEquals(blocks[i], null)) continue;
                 }
-                var prism = blocks[i];
-                bool stands = prism && !prism.destroyed && (prism.transform.position - at).sqrMagnitude <= tol * tol;
-                ground.SetGone(i, !stands);
+                ground.SetGone(i, !Stands(blocks[i], _seg, i));
             }
         }
 
@@ -710,11 +710,8 @@ namespace CosmicShore.Gameplay
         {
             if (island < 0 || island >= _groundBlocks.Count || slot < 0 || slot >= _groundBlocks[island].Length) return;
             var prism = _groundBlocks[island][slot];
-            if (!prism) { RestoreBlock(island, slot); return; }   // its object is gone: a new block in its slot
-            var ground = _grounds[island];
-            Vector3 at = _segments[island].Ground(ground.BlockS(slot), _tracks[island]);
-            float tol = 0.5f * ground.Gap;
-            if (prism.destroyed || (prism.transform.position - at).sqrMagnitude > tol * tol) { RestoreBlock(island, slot); return; }
+            if (ReferenceEquals(prism, null)) return;   // never laid or found here
+            if (!Stands(prism, island, slot)) { RestoreBlock(island, slot); return; }   // gone: a new block in its slot
             var target = prism.TargetScale;
             float max = Mathf.Max(Config.TrailBlockScale.x, Config.SkipGrowMax);
             if (target.x < max - 1e-3f)
@@ -761,35 +758,39 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Brings island <paramref name="island"/>'s block <paramref name="slot"/> back when it is gone: <c>Restore</c> where
-        /// the destroyed block still lies where the Goby laid it; a NEW block laid in its slot where it cannot be (Garrett,
-        /// 2026-10-29: "I did not see any restores": a prism destroyed by a devastating hit - collisions of moved prisms,
-        /// the Rhino, the Thresher, the Shrike's lance, a black hole - refuses <c>Restore</c> for good, so the gap stayed).
-        /// False when the block stands, or this machine has no block for that slot (a rider's machine that never found it).
+        /// Brings island <paramref name="island"/>'s block <paramref name="slot"/> back when it is gone, as a NEW block laid in
+        /// its slot (<see cref="LayBlock"/>). Never <c>Prism.Restore</c> (Garrett, 2026-10-29: "I did not see any restores"):
+        /// it refuses a DEVASTATED prism for good (collisions of moved prisms, the Rhino, the Thresher, the Shrike's lance and
+        /// black holes devastate), so such a gap never came back; and a prism it does bring back keeps its scale animator off
+        /// (Prism.Initialize's note), so it could never grow or shield again. The dead block is the recycler's: the trail opts
+        /// in (<see cref="Trail.RecycleDestroyedMembers"/>), and this seat checks a block's trail and spot, not its identity.
+        /// False when the block stands, or on a rider's machine (the hull's machine owns the pair's trail).
         /// </summary>
         bool RestoreBlock(int island, int slot)
         {
-            if (island < 0 || island >= _groundBlocks.Count || slot < 0 || slot >= _groundBlocks[island].Length) return false;
+            if (_rider || island < 0 || island >= _groundBlocks.Count || slot < 0 || slot >= _groundBlocks[island].Length) return false;
             var blocks = _groundBlocks[island];
-            var prism = blocks[slot];
-            if (ReferenceEquals(prism, null)) return false;
+            if (ReferenceEquals(blocks[slot], null)) return false;   // never laid here
             var ground = _grounds[island];
-            float s = ground.BlockS(slot);
-            Vector3 at = _segments[island].Ground(s, _tracks[island]);
-            float tol = 0.5f * ground.Gap;
-            bool inPlace = prism && (prism.transform.position - at).sqrMagnitude <= tol * tol;
-            if (inPlace && !prism.destroyed) return false;   // it stands
-            if (inPlace) prism.Restore();
-            if (!inPlace || prism.destroyed)
-            {
-                if (_rider) return false;   // the hull's machine owns its trail: a rider never lays the pair's blocks
-                var fresh = LayBlock(_segments[island], _tracks[island], s);
-                if (!fresh) return false;
-                blocks[slot] = prism = fresh;
-            }
+            if (Stands(blocks[slot], island, slot)) return false;
+            var fresh = LayBlock(_segments[island], _tracks[island], ground.BlockS(slot));
+            if (!fresh) return false;
+            blocks[slot] = fresh;
             ground.SetGone(slot, false);
-            AddJuice(prism, Juice.Restore, prism.TargetScale);
+            AddJuice(fresh, Juice.Restore, Config.TrailBlockScale);
             return true;
+        }
+
+        /// <summary>Is <paramref name="prism"/> still island <paramref name="island"/>'s block <paramref name="slot"/>: alive,
+        /// in this trail (a recycled prism laid again by anyone is in another), where the Goby laid it? A rival's steal leaves
+        /// it standing. A rider's machine found its blocks in the world and checks only life and spot.</summary>
+        bool Stands(Prism prism, int island, int slot)
+        {
+            if (!prism || prism.destroyed || (!_rider && prism.Trail != _trail)) return false;
+            var ground = _grounds[island];
+            Vector3 at = _segments[island].Ground(ground.BlockS(slot), _tracks[island]);
+            float tol = 0.5f * ground.Gap;
+            return (prism.transform.position - at).sqrMagnitude <= tol * tol;
         }
 
         // ================================ the Goby: lock ================================

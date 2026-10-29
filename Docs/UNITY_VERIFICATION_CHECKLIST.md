@@ -72,8 +72,11 @@ grow and restore. I did not see any restores. it seemed like that did not work. 
 as its happening"):
 - Restores: `Prism.Restore()` refuses a DEVASTATED prism for good (prism collisions, the Rhino, the Thresher, the
   Shrike's lance, black holes devastate), so a gap blasted that way never came back and its juice never played.
-  `RestoreBlock` now restores where it can and otherwise LAYS A NEW BLOCK in the slot (`LayBlock`, the trail's own lay);
-  a block carried off its spot is replaced the same way. A rider's machine never lays the pair's blocks.
+  And a prism `Restore()` does bring back keeps its scale animator off (`Prism.Initialize`'s note), so it could never grow
+  or shield again. `RestoreBlock` therefore always LAYS A NEW BLOCK in the slot (`LayBlock`, the trail's own lay); the
+  Goby's trail opts into `PrismRecycler` so its dead blocks go back to their pool, and the seat checks a block's trail
+  and spot (`Stands`), not its identity. A block carried off is replaced the same way. A rider's machine never lays the
+  pair's blocks.
 - Juice on landing: a flight's skipped blocks are rewarded (grown, shielded, restored) when it comes down - a landing,
   a fall into a gap, or the perch - as a ripple running back from there at `juiceRippleSpeed` 160 u/s; energy still
   fills as it flies.
