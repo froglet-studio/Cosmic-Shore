@@ -11,9 +11,11 @@ namespace CosmicShore.Gameplay
     /// <see cref="config"/>. No vessel-specific code: give a vessel Fulmen by adding this asset to its container's
     /// <c>vesselCrystalEffects</c>; take it away by removing it.
     ///
-    /// <para>The omni dispatch (<see cref="VesselImpactor.ExecuteOmniCrystalImpact"/>) runs on every peer, so every peer
-    /// counts the same collections toward <see cref="FulmenConfigSO.CrystalsToFire"/>, strikes with the same seed (from the collected crystal's id and pose) and grows the same root bolt; only the server
-    /// (or an offline session) ignites prisms.</para>
+    /// <para><b>Network.</b> The omni dispatch (<see cref="VesselImpactor.ExecuteOmniCrystalImpact"/>) reaches every peer,
+    /// but only the SERVER acts on it: it counts the charge toward <see cref="FulmenConfigSO.CrystalsToFire"/> (replicated
+    /// on <see cref="NetworkVesselImpactor.FulmenCharge"/>, so a late joiner and a client HUD read the true count), decides
+    /// the strike and sends it (<see cref="FulmenNetSync"/>). Clients ignore the dispatch and replay the server's strike,
+    /// children and burns. Offline (a solo host) nothing is sent.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "FulmenByCrystalEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/FulmenByCrystalEffectSO")]
@@ -24,13 +26,21 @@ namespace CosmicShore.Gameplay
 
         public FulmenConfigSO Config => config;
 
-        // Crystals each collector has gathered toward the next bolt (VesselImpactor instance id -> count). Runtime only. The
-        // dispatch runs on every peer, so every peer counts the same collections and fires on the same one.
+        // Crystals each collector has gathered toward the next bolt (VesselImpactor instance id -> count). Runtime only,
+        // SERVER only in a session (mirrored to the vessel's NetworkVesselImpactor.FulmenCharge).
         readonly Dictionary<int, int> _charge = new();
 
         /// <summary>Crystals <paramref name="vesselImpactor"/> has toward its next bolt (0 after it fires).</summary>
-        public int ChargeOf(VesselImpactor vesselImpactor) =>
-            vesselImpactor && _charge.TryGetValue(vesselImpactor.GetInstanceID(), out int n) ? n : 0;
+        public int ChargeOf(VesselImpactor vesselImpactor)
+        {
+            if (!vesselImpactor) return 0;
+            if (FulmenNetSync.IsRemoteClient)
+            {
+                var relay = vesselImpactor.GetComponent<NetworkVesselImpactor>();
+                return relay ? relay.FulmenCharge : 0;
+            }
+            return _charge.TryGetValue(vesselImpactor.GetInstanceID(), out int n) ? n : 0;
+        }
 
         void OnEnable()
         {
@@ -63,7 +73,13 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[Fulmen] '{name}' has no FulmenConfigSO.", this);
                 return;
             }
-            if (!Charge(vesselImpactor)) return;
+            // a client: the server counts and decides; its strike arrives by RPC (FulmenNetSync.ApplyStrike)
+            if (FulmenNetSync.IsRemoteClient) return;
+
+            var relay = vesselImpactor.GetComponent<NetworkVesselImpactor>();
+            bool fire = Charge(vesselImpactor);
+            if (relay) relay.SetFulmenCharge(ChargeOf(vesselImpactor));
+            if (!fire) return;
 
             var status = vesselImpactor.Vessel?.VesselStatus;
             var near = data.Origin.Valid ? data.Origin.Position : vesselImpactor.transform.position;
@@ -72,11 +88,17 @@ namespace CosmicShore.Gameplay
             float range = config.RootRange(cellRadius);
             int crystalId = data.Origin.Valid ? data.Origin.CrystalId : int.MinValue;
 
-            FulmenSystem.EnsureInstance().Strike(config, centre, range, Seed(data), IsAuthority(),
-                status?.PlayerName, status != null ? status.Domain : default, crystalId);
+            string igniter = status?.PlayerName;
+            var domain = status != null ? status.Domain : default;
+            int seed = Seed(data);
+
+            ushort netId = FulmenNetSync.ServerAllocate(relay, config, centre, igniter, domain);   // 0: no remote client
+            if (FulmenSystem.EnsureInstance().Strike(config, centre, range, seed, true, igniter, domain, crystalId, netId)
+                && netId != 0)
+                FulmenNetSync.ServerSendStrike(netId, seed, range, crystalId);
         }
 
-        /// <summary>The same on every peer: the collected crystal's id mixed with its quantised pose.</summary>
+        /// <summary>The collected crystal's id mixed with its quantised pose (sent to clients in the strike).</summary>
         static int Seed(in CrystalImpactData data)
         {
             if (!data.Origin.Valid) return 0x5EED;
@@ -84,13 +106,6 @@ namespace CosmicShore.Gameplay
             int h = FulmenSystem.ChildSeed(data.Origin.CrystalId, Mathf.RoundToInt(p.x));
             h = FulmenSystem.ChildSeed(h, Mathf.RoundToInt(p.y));
             return FulmenSystem.ChildSeed(h, Mathf.RoundToInt(p.z));
-        }
-
-        /// <summary>The burn is the server's (or this machine's, with no session running).</summary>
-        static bool IsAuthority()
-        {
-            var nm = Unity.Netcode.NetworkManager.Singleton;
-            return nm == null || !nm.IsListening || nm.IsServer;
         }
     }
 }
