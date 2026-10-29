@@ -924,6 +924,31 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     fu.addEventListener("change", function () { REC.user = fu.value; fill(); }); fs.addEventListener("change", function () { REC.state = fs.value; fill(); }); fill();
     root.appendChild(h("div", { class: "filters" }, [h("h3", { text: "Latest races" }), fu, fs]));
     root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["When", "Who", "Vessel", "Mode", "State", "Why it waits"].map(function (t) { return h("th", { text: t }); }))]), list])]));
+    renderUnityRecordings(root);
+  }
+
+  // The Unity trainer's own matches, kept with the game's recorders (README section 16): never learned from.
+  function renderUnityRecordings(root) {
+    var runs = DATA.recordings.unity || [], flights = 0, rows = [];
+    root.appendChild(h("div", { class: "filters" }, [h("h3", { text: "AI matches recorded in Unity" })]));
+    runs.forEach(function (r) {
+      flights += r.flights || 0;
+      r.replays.forEach(function (p) {
+        rows.push(h("tr", null, [h("td", null, [kindTag("unity"), " ", h("b", { text: r.unit })]),
+          h("td", { text: p.kept === "best" ? "Where it improved" : "Latest" }),
+          h("td", { class: "num", text: p.episodes != null ? String(p.episodes) : "–" }),
+          h("td", { class: "num", text: p.fitness != null ? Number(p.fitness).toFixed(3) : "–" }),
+          h("td", { class: "num hide-narrow", style: "white-space:nowrap", text: (p.bytes / 1048576).toFixed(1) + " MB" }),
+          h("td", { text: r.machine }),
+          h("td", { class: "note mono hide-narrow", text: r.replays_folder || "" })]));
+      });
+    });
+    if (!rows.length) {
+      root.appendChild(h("p", { class: "note", text: "None yet. Each Unity trainer run keeps its last two matches and the one where the AI improved, on the computer that played them." }));
+      return;
+    }
+    root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["Run", "Which", "Episodes", "Fitness", "Size", "Computer", "Folder there"].map(function (t, i) { return h("th", { class: i === 4 || i === 6 ? "hide-narrow" : null, text: t }); }))]), h("tbody", null, rows)])]));
+    root.appendChild(h("p", { class: "note", text: "To watch one: on that computer, copy its .cstheater and .replay.json into the Cosmic-Shore folder's Recordings, then Profile > MY REPLAYS > WATCH (Y or Tab for the free camera). The trainer's own flights (" + flights + " so far) are kept apart from people's races, so the AI never learns from itself. Show the game on a run opens the Third Eye on it." }));
   }
 
   // ── ai branch ──
@@ -1141,7 +1166,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "4  How many matches" }), h("div", { class: "srow" }, [slider("nr-matches", 10, 500, 10, Math.min(500, Math.max(10, NR.matches)), function (v) { NR.matches = v; mv.textContent = String(v); }, "matches"), mv]),
       h("p", { class: "note", text: "Each match tests a few of the trainer's AIs at once, one per seat, played at up to four times game speed; a generation is several matches. The trainer keeps its population between runs, so more matches keep improving it." })]));
     if (NR.where === "here") sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "   Watch it" }), h("div", { class: "picks" }, [
-      chip("Show the game", NR.watch, "where", function () { NR.watch = true; NR.made = null; drawNewRun(); }, "Unity opens with its window, game speed"),
+      chip("Show the game", NR.watch, "where", function () { NR.watch = true; NR.made = null; drawNewRun(); }, "Unity opens with its window at game speed, and the Third Eye on the match"),
       chip("No window", !NR.watch, "where", function () { NR.watch = false; NR.made = null; drawNewRun(); }, "faster: up to 4x, nothing to see")])]));
   }
   function drawSearchSteps(sheet) {

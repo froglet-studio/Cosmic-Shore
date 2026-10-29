@@ -278,6 +278,39 @@ def recordings(cwd=None):
     return {"flights": flights, "seen_ref": seen.get("_ref"), "branches": len(refs)}
 
 
+def unity_recordings(machines, cwd=None, show=None):
+    """What each Unity trainer run kept with the game's own recorders (FrogletComputeTraining.cs writes
+    recordings.json; README section 16): its replays (the last two, and the match where the best fitness rose) and the
+    trainer's flights moved out of the human folder. The files stay on the computer that played; this lists them."""
+    show = show or (lambda ref, path: L.git_ok("show", f"{ref}:{path}", cwd=cwd))
+    runs = []
+    for m in machines:
+        for epoch, units in ((m.get("jobs") or {}).get("unity-train") or {}).items():
+            for what, unit in units.items():
+                if not what.startswith("unit-") or "recordings.json" not in ((unit or {}).get("files") or []):
+                    continue
+                uid = what[len("unit-"):]
+                try:
+                    rec = json.loads(show(m["ref"], f"jobs/unity-train/{epoch}/files/{uid}/recordings.json") or "")
+                except Exception:
+                    continue
+                replays = []
+                for r in rec.get("replays") or []:
+                    summary, match = r.get("summary") or {}, r.get("match") or {}
+                    replays.append({"file": r.get("file"), "kept": r.get("kept"), "bytes": r.get("bytes") or 0,
+                                    "mode": summary.get("GameModeName"), "seconds": summary.get("DurationSeconds"),
+                                    "episodes": match.get("episodes_total"), "fitness": match.get("best_fitness"),
+                                    "best_rose": bool(match.get("best_rose"))})
+                replays.sort(key=lambda r: (r["kept"] != "best", -(r["episodes"] or 0)))
+                runs.append({"machine": f"{m.get('user')}/{m.get('host')}", "unit": uid, "epoch": epoch,
+                             "updated": rec.get("updated"), "replays": replays,
+                             "flights": len(rec.get("flights") or []), "replays_setup": rec.get("replays_setup"),
+                             "replays_folder": rec.get("replays_folder"), "flights_folder": rec.get("flights_folder"),
+                             "third_eye": rec.get("third_eye")})
+    runs.sort(key=lambda r: r.get("updated") or 0, reverse=True)
+    return runs
+
+
 def ai_branch_status(cwd=None):
     try:
         import ai_branch
@@ -341,7 +374,7 @@ def build(local=False, fetch=True, cwd=None, prs=None, url=None, queue=None):
             "queue": "working tree (--local)" if local else refs,
             "jobs": out_jobs, "machines": out_machines, "runs": run_data, "install": install_info(cwd),
             "manual": manual(jobs, machines, cwd, None if local else refs), "forms": run_forms(jobs), "catalog": catalog(jobs, cwd),
-            "recordings": recordings(cwd), "ai": ai_branch_status(cwd),
+            "recordings": dict(recordings(cwd), unity=unity_recordings(machines, cwd)), "ai": ai_branch_status(cwd),
             "git": git_snapshot(cwd), "pull_requests": pull_requests(prs), "repo": "froglet-studio/Cosmic-Shore",
             "branch": (L.git_ok("rev-parse", "--abbrev-ref", "HEAD", cwd=cwd) or "").strip(), "url": url}
 
@@ -461,6 +494,25 @@ def self_test():
             bad.append(f"console approvals: {uid} should be {'valid' if ok else 'refused'} ({got.get(uid)})")
     if not os.path.isfile(PAGE):
         bad.append("console: the page Tools/Compute/console/index.html is missing")
+    # a Unity trainer run's recordings.json is listed; a unit that kept none is not (negative control)
+    rec = {"replays": [{"file": "a.cstheater", "kept": "best", "bytes": 3000, "match": {"episodes_total": 12,
+                                                                                        "best_fitness": 0.8, "best_rose": True},
+                        "summary": {"GameModeName": "HexRace", "DurationSeconds": 95.5}},
+                       {"file": "b.cstheater", "kept": "last", "bytes": 2000, "match": {"episodes_total": 20},
+                        "summary": None}],
+           "flights": [{"file": "aiflight_x.json"}], "third_eye": "open", "updated": 5}
+    files = {("origin/compute/u/h", "jobs/unity-train/e1/files/hexrace-squirrel-i4/recordings.json"): json.dumps(rec)}
+    machines = [{"ref": "origin/compute/u/h", "user": "u", "host": "h", "jobs": {"unity-train": {"e1": {
+        "unit-hexrace-squirrel-i4": {"files": ["status.json", "recordings.json"]},
+        "unit-dogfight-sparrow-i4": {"files": ["status.json"]}}}}}]
+    got = unity_recordings(machines, show=lambda ref, path: files.get((ref, path)))
+    if [r["unit"] for r in got] != ["hexrace-squirrel-i4"]:
+        bad.append(f"console unity recordings: wrong units listed: {[r['unit'] for r in got]}")
+    elif [(r["file"], r["kept"], r["mode"]) for r in got[0]["replays"]] != [("a.cstheater", "best", "HexRace"),
+                                                                             ("b.cstheater", "last", None)]:
+        bad.append(f"console unity recordings: replays read wrong: {got[0]['replays']}")
+    elif got[0]["flights"] != 1 or got[0]["third_eye"] != "open":
+        bad.append(f"console unity recordings: flights / third eye read wrong: {got[0]}")
     return bad
 
 

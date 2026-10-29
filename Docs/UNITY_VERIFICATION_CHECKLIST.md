@@ -119,6 +119,19 @@ fails it.
 If Play never reaches a match (sign-in, the menu), the run stops after 15 minutes with exit 3 and the reason in
 `result.json`: send `unity.log`.
 
+**Added 2026-10-29: the game's own recorders and the Third Eye** (`Docs/Compute/README.md` section 16). Compiled with
+`unity_refcompile --config editor` (0 errors; a planted error in the file failed the same run). Not run in the editor.
+- [ ] After a run: `<out>/replays` holds at most two replay pairs (`.cstheater` + `.replay.json`, each with a
+      `.compute.json`), `replays/best` holds the match where the best fitness rose, and `recordings.json` lists them
+      with `replays_setup: "on"`.
+- [ ] `Documents/CosmicShore Diagnostics/Flights` gains no new `flight_*.json` during the run (list it before and
+      after); `<out>/ai-flights` holds `aiflight_*.json` instead.
+- [ ] MY REPLAYS on another device does not list the training matches (the run's ReplayConfig lists none in Cloud Save).
+- [ ] Show the game: the Third Eye opens on the match once Play reaches it; `recordings.json` says `third_eye: "open..."`.
+- [ ] Copy a `replays/best` pair into the project's `Recordings` folder: MY REPLAYS > WATCH plays it, Y or Tab gives
+      the free camera.
+- [ ] Next run: the copy's `TheaterConfig.asset` is back to its tracked value and the untracked `ReplayConfig.asset` is gone.
+
 ### 🔴 Rejoin a running match (Rev 37, section 103.1) (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor). Not opened in the editor. Needs two clients (MPPM: a host and one guest in a party), a mode with a turn (Skim Race).

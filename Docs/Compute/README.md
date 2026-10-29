@@ -417,6 +417,24 @@ matches, a population of AIs, the best kept. Froglet Compute now starts it with 
 - **Watching it**: `compute.py run --request <token> --watch` (the console's "Show the game", on by default for this
   computer) opens Unity with its window instead of `-batchmode`, camera and sound on, at game speed: the AIs play in
   the Game view. Without it the run has no window and plays at up to 4x.
+- **What a run records, with the game's own tools (Shombith, 2026-10-29)**: every match the trainer plays already
+  records a replay (the Theater, `Docs/REPLAYS.md`). `FrogletComputeTraining.cs` points it at `<out>/replays` and
+  gives the copy a ReplayConfig of its own (keep 2, Cloud Save list 0, so training never fills a person's MY REPLAYS
+  on other devices); the replay of the match where the best fitness rose is copied to `replays/best`. Yash's flight
+  recorder (`HumanFlightRecorder`) takes the trainer's seat for a human one (the trainer turns the hull's AIPilot off,
+  so `held` reads 0): each flight it saves is moved at once into `<out>/ai-flights` (renamed `aiflight_*`, out of the
+  folder and the pattern people's races are sent from) so the learning sweep never learns the AI from the AI. When a
+  person watches (Show the game), the Third Eye opens on the match (`FrogletTools/AI/Third Eye`; `]` / Tab picks the
+  next pilot, C the camera). `<out>/recordings.json` lists it all, is published with the unit, and the console's
+  Recordings page lists every run's replays (the files stay on the computer that played; how to watch one is on the
+  page). Every game type is reached by name: a version of the game without one still trains and says what it
+  skipped in `recordings.json`. Measured so far: the file compiles in the reference compile (editor config, a planted
+  error caught as a negative control); it has not run in the Unity editor yet.
+  Asked of Yash (his files are not changed): the recorder should mark a hull with a TrainingPilot as AI-flown (and
+  `ai_learn.py` skip flights not marked human); the Third Eye's AI-thinking readout knows SkimRacePilot and AIPilot,
+  not the trainer's TrainingPilot, so the aim line is empty on a trainer run (trails, labels and cameras work); a
+  public "watch this pilot" and a capture of the view would let a run save stills; and its You / AI toggle should
+  refuse a trainer-held hull (pressing it mid-run re-enables the AIPilot against the trainer).
 - **First real run (Shombith's PC, 2026-10-28)**: Dolphin in Switchback at I2, 32 matches, the import included, in 27
   minutes, result published. Every AI scored 0 gates: the trainer built each new pilot's target sensor before the
   scenario's target mode was set, so every pilot sought crystals (`TrainingPilot.BeginEpisode` now applies it). That

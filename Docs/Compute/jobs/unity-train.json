@@ -36,7 +36,8 @@
    "result.json",
    "genome.json",
    "SessionState.asset",
-   "unity-tail.log"
+   "unity-tail.log",
+   "recordings.json"
   ],
   "lease_hours": 3,
   "max_mb": 8,

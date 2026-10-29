@@ -1,7 +1,10 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using CosmicShore.Data;
 using UnityEditor;
@@ -29,6 +32,15 @@ namespace CosmicShore.Utility.AITraining.Editor
     /// Writes into the out dir: status.json (every 2 s), result.json and genome.json (at the end). Quits when the
     /// runner stops on its target, at the deadline, or when the wrapper drops a file named "stop" there.
     /// Exit codes: 0 finished or stopped cleanly, 2 bad arguments, 3 the match never started.
+    ///
+    /// <para><b>What it records, with the game's own tools</b> (Docs/Compute/README.md section 16): every match already
+    /// records a replay (the Theater, Docs/REPLAYS.md); here the replays go to &lt;out&gt;/replays (the last two, and the
+    /// match where the best fitness rose in replays/best), never to the person's Cloud Save list. The AI-learning
+    /// recorder (HumanFlightRecorder) takes the trainer's seat for a human one, so each flight it saves is moved out of
+    /// the folder people's races are sent from into &lt;out&gt;/ai-flights and marked AI-flown: the learning sweep must
+    /// never learn the AI from the AI. When a person watches (-trainWatch, Unity with its window), the Third Eye opens
+    /// on the match. &lt;out&gt;/recordings.json lists it all. Every game type is reached by name, so a version of the
+    /// game without one of them still trains, and says what it skipped.</para>
     /// </summary>
     [InitializeOnLoad]
     static class FrogletComputeTraining
@@ -40,6 +52,16 @@ namespace CosmicShore.Utility.AITraining.Editor
         const string KeyExitCode = "FrogletCompute.ExitCode";
         const string KeyBaseEpisodes = "FrogletCompute.BaseEpisodes";
         const string KeyStartTime = "FrogletCompute.StartTime";
+        const string KeyThirdEye = "FrogletCompute.ThirdEye";
+        const string KeyReplays = "FrogletCompute.Replays";
+        const string KeyBest = "FrogletCompute.Best";
+        const string KeyBestRose = "FrogletCompute.BestRose";
+        const string KeyLastFlight = "FrogletCompute.LastFlight";
+        const string TheaterConfigPath = "Assets/Resources/TheaterConfig.asset";
+        const string ReplayConfigPath = "Assets/Resources/ReplayConfig.asset";
+        const string ThirdEyeMenu = "FrogletTools/AI/Third Eye";
+        const int KeepReplays = 2;
+        const int KeepFlights = 20;
         const double StartGraceSeconds = 900;
 
         static double _nextTick;
@@ -119,6 +141,11 @@ namespace CosmicShore.Utility.AITraining.Editor
             control.DisableCameraRendering = !watch;
             control.AutoStartOnPlay = true;
             if (control.Telemetry != null) control.Telemetry.IsRunning = false;   // a crashed run can leave it on
+            SessionState.SetString(KeyReplays, PrepareReplays(outDir));
+            SessionState.SetFloat(KeyBest, state.HallOfFameBestFitness);
+            SessionState.SetBool(KeyBestRose, false);
+            SessionState.SetString(KeyLastFlight, FlightRecorderLastFile() ?? "");
+            SessionState.SetString(KeyThirdEye, watch ? "waiting for the match" : "not watched (Unity has no window)");
             EditorUtility.SetDirty(scenario);
             EditorUtility.SetDirty(control);
             AssetDatabase.SaveAssets();
@@ -158,6 +185,8 @@ namespace CosmicShore.Utility.AITraining.Editor
             var telemetry = control != null ? control.Telemetry : null;
             bool running = EditorApplication.isPlaying && telemetry != null && telemetry.IsRunning;
             if (running) _sawRunning = true;
+            if (running) OpenThirdEyeOnce();
+            SweepRecordings(outDir, state);
             WriteStatus(outDir, running ? "training" : (EditorApplication.isPlaying ? "loading the match" : "starting"),
                 state, scenario, target);
 
@@ -179,7 +208,12 @@ namespace CosmicShore.Utility.AITraining.Editor
         static void OnPlayMode(PlayModeStateChange change)
         {
             if (change == PlayModeStateChange.EnteredEditMode && SessionState.GetBool(KeyFinishing, false))
+            {
+                // Leaving Play saved the open replay ("app closed") and the recorder's last flight: take them too.
+                var control = Load<TrainingControlSO>("TrainingControl");
+                SweepRecordings(Arg("-frogletTrain"), control != null ? control.State : null);
                 EditorApplication.Exit(SessionState.GetInt(KeyExitCode, 0));
+            }
         }
 
         static void Finish(string outDir, int code, string reason)
@@ -211,6 +245,199 @@ namespace CosmicShore.Utility.AITraining.Editor
                 WriteResult(outDir, code, reason, null);
             }
             EditorApplication.Exit(code);
+        }
+
+        // ── what it records ──
+
+        /// <summary>
+        /// Points the game's replay recorder at &lt;out&gt;/replays for this run: the Theater's output folder (a tracked
+        /// asset of Compute's own copy, reset by the next run's checkout) and a ReplayConfig of its own (untracked,
+        /// removed by the next run's clean) that keeps two and lists none in Cloud Save. Returns what it did.
+        /// </summary>
+        static string PrepareReplays(string outDir)
+        {
+            string folder = Path.Combine(outDir, "replays");
+            Directory.CreateDirectory(Path.Combine(folder, "best"));
+            var theater = AssetDatabase.LoadMainAssetAtPath(TheaterConfigPath);
+            var theaterSo = theater != null ? new SerializedObject(theater) : null;
+            var output = theaterSo?.FindProperty("outputFolder");
+            if (output == null) return "off: this version has no Theater output folder to point at <out>/replays";
+
+            var replay = AssetDatabase.LoadMainAssetAtPath(ReplayConfigPath);
+            if (replay == null)
+            {
+                var type = FindType("CosmicShore.ScriptableObjects.ReplayConfigSO");
+                if (type == null) return SwitchReplaysOff(theaterSo, "off: this version has no ReplayConfigSO");
+                replay = ScriptableObject.CreateInstance(type);
+                AssetDatabase.CreateAsset(replay, ReplayConfigPath);
+            }
+            var replaySo = new SerializedObject(replay);
+            var cloud = replaySo.FindProperty("cloudIndexSize");
+            var keep = replaySo.FindProperty("keepNewest");
+            if (cloud == null || keep == null)
+                return SwitchReplaysOff(theaterSo, "off: ReplayConfigSO has no cloudIndexSize or keepNewest, so training " +
+                                                   "matches would fill the person's replay list");
+            cloud.intValue = 0;
+            keep.intValue = KeepReplays;
+            replaySo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(replay);
+            output.stringValue = folder;
+            theaterSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(theater);
+            return "on";
+        }
+
+        static string SwitchReplaysOff(SerializedObject theaterSo, string why)
+        {
+            var record = theaterSo.FindProperty("recordVessels");
+            if (record == null) return why + " (and the recorder could not be switched off: replays stay in the copy)";
+            record.boolValue = false;
+            theaterSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(theaterSo.targetObject);
+            return why;
+        }
+
+        /// <summary>The Third Eye on the match, once, when a person watches (Unity has its window).</summary>
+        static void OpenThirdEyeOnce()
+        {
+            if (!HasArg("-trainWatch") || Application.isBatchMode) return;
+            if (SessionState.GetString(KeyThirdEye, "") != "waiting for the match") return;
+            SessionState.SetString(KeyThirdEye, "opening");
+            EditorApplication.delayCall += () =>
+                SessionState.SetString(KeyThirdEye, EditorApplication.ExecuteMenuItem(ThirdEyeMenu)
+                    ? "open: the first pilot, Chase; ] or Tab picks the next, C the camera"
+                    : "not in this version of the game");
+        }
+
+        /// <summary>
+        /// Every 2 s: marks a rise of the best fitness, gives each new replay a sidecar (the match it belongs to, found
+        /// by time: a replay is saved at the next match's start or 20 s after its end), copies the replay of a match
+        /// where the best rose into replays/best, moves the recorder's newest flight out of the human folder, and
+        /// rewrites recordings.json.
+        /// </summary>
+        static void SweepRecordings(string outDir, TrainingSessionStateSO state)
+        {
+            if (string.IsNullOrEmpty(outDir)) return;
+            try
+            {
+                float best = state != null ? state.HallOfFameBestFitness : float.NegativeInfinity;
+                if (IsFinite(best) && (!IsFinite(SessionState.GetFloat(KeyBest, float.NaN)) || best > SessionState.GetFloat(KeyBest, best)))
+                {
+                    SessionState.SetFloat(KeyBest, best);
+                    SessionState.SetBool(KeyBestRose, true);
+                }
+                string folder = Path.Combine(outDir, "replays");
+                if (Directory.Exists(folder))
+                    foreach (var side in Directory.GetFiles(folder, "*.compute.json"))   // the game pruned its replay
+                        if (!File.Exists(side.Substring(0, side.Length - ".compute.json".Length) + ".cstheater"))
+                            File.Delete(side);
+                if (Directory.Exists(folder))
+                    foreach (var summary in Directory.GetFiles(folder, "*.replay.json"))
+                    {
+                        string stem = summary.Substring(0, summary.Length - ".replay.json".Length);
+                        if (File.Exists(stem + ".compute.json")) continue;
+                        bool rose = SessionState.GetBool(KeyBestRose, false);
+                        WriteAtomic(stem + ".compute.json", new Json()
+                            .Num("episodes_total", state != null ? state.EpisodesCompleted : 0)
+                            .Num("best_fitness", best)
+                            .Bool("best_rose", rose)
+                            .Num("seen", Now())
+                            .End());
+                        if (rose && File.Exists(stem + ".cstheater"))
+                        {
+                            string bestDir = Path.Combine(folder, "best");
+                            foreach (var old in Directory.GetFiles(bestDir)) File.Delete(old);
+                            foreach (var ext in new[] { ".cstheater", ".replay.json", ".compute.json" })
+                                File.Copy(stem + ext, Path.Combine(bestDir, Path.GetFileName(stem) + ext), true);
+                            SessionState.SetBool(KeyBestRose, false);
+                        }
+                    }
+                MoveNewestFlight(outDir);
+                WriteRecordings(outDir);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[FrogletCompute] recordings: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// The recorder's newest flight, if this process wrote it since the last look, moved to &lt;out&gt;/ai-flights.
+        /// Only its LastFile: a folder scan could take a race the person flew in their own Unity at the same time.
+        /// </summary>
+        static void MoveNewestFlight(string outDir)
+        {
+            string last = FlightRecorderLastFile();
+            if (string.IsNullOrEmpty(last) || last == SessionState.GetString(KeyLastFlight, "")) return;
+            SessionState.SetString(KeyLastFlight, last);
+            if (!File.Exists(last)) return;
+            string dir = Path.Combine(outDir, "ai-flights");
+            Directory.CreateDirectory(dir);
+            string dest = Path.Combine(dir, "ai" + Path.GetFileName(last));
+            if (File.Exists(dest)) File.Delete(dest);
+            File.Move(last, dest);
+            foreach (var old in Directory.GetFiles(dir, "*.json").OrderByDescending(File.GetLastWriteTimeUtc).Skip(KeepFlights))
+                File.Delete(old);
+        }
+
+        static string FlightRecorderLastFile()
+        {
+            var type = FindType("CosmicShore.Gameplay.HumanFlightRecorder");
+            var prop = type?.GetProperty("LastFile", BindingFlags.Public | BindingFlags.Static);
+            return prop?.GetValue(null) as string;
+        }
+
+        static void WriteRecordings(string outDir)
+        {
+            var replays = new List<string>();
+            string folder = Path.Combine(outDir, "replays");
+            foreach (var (dir, kept) in new[] { (folder, "last"), (Path.Combine(folder, "best"), "best") })
+            {
+                if (!Directory.Exists(dir)) continue;
+                foreach (var side in Directory.GetFiles(dir, "*.compute.json"))
+                {
+                    string stem = side.Substring(0, side.Length - ".compute.json".Length);
+                    if (!File.Exists(stem + ".cstheater")) continue;
+                    replays.Add(new Json()
+                        .Str("file", Path.GetFileName(stem) + ".cstheater")
+                        .Str("kept", kept)
+                        .Num("bytes", new FileInfo(stem + ".cstheater").Length)
+                        .Raw("match", File.ReadAllText(side).Trim())
+                        .Raw("summary", File.Exists(stem + ".replay.json") ? File.ReadAllText(stem + ".replay.json").Trim() : "null")
+                        .Body());
+                }
+            }
+            var flights = new List<string>();
+            string flightDir = Path.Combine(outDir, "ai-flights");
+            if (Directory.Exists(flightDir))
+                foreach (var f in Directory.GetFiles(flightDir, "*.json").OrderBy(File.GetLastWriteTimeUtc))
+                    flights.Add(new Json()
+                        .Str("file", Path.GetFileName(f))
+                        .Num("bytes", new FileInfo(f).Length)
+                        .Str("pilot", "trainer")
+                        .Str("note", "flown by the trainer's AI; its 'held' column says 0 (the recorder does not know the " +
+                                     "trainer's seat yet), so never learn from it as a person's flight")
+                        .Body());
+            WriteAtomic(Path.Combine(outDir, "recordings.json"), new Json()
+                .Str("schema", "froglet-compute/unity-recordings/1")
+                .Str("replays_setup", SessionState.GetString(KeyReplays, ""))
+                .Str("replays_folder", folder)
+                .Raw("replays", "[" + string.Join(", ", replays) + "]")
+                .Str("flights_folder", flightDir)
+                .Raw("flights", "[" + string.Join(", ", flights) + "]")
+                .Str("third_eye", SessionState.GetString(KeyThirdEye, ""))
+                .Num("updated", Now())
+                .End());
+        }
+
+        static Type FindType(string fullName)
+        {
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var t = asm.GetType(fullName, false);
+                if (t != null) return t;
+            }
+            return null;
         }
 
         // ── what it writes ──
@@ -362,7 +589,18 @@ namespace CosmicShore.Utility.AITraining.Editor
                 return this;
             }
 
+            /// <summary>A value that is already JSON (an object, an array, null), written as it is.</summary>
+            public Json Raw(string k, string json)
+            {
+                Key(k);
+                _sb.Append(string.IsNullOrWhiteSpace(json) ? "null" : json);
+                return this;
+            }
+
             public string End() => _sb.Append("}\n").ToString();
+
+            /// <summary>The object without the trailing newline, to put inside an array.</summary>
+            public string Body() => _sb.Append('}').ToString();
         }
     }
 }
