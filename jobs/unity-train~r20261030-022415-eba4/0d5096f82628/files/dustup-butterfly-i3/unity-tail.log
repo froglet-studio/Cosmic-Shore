@@ -1,0 +1,80 @@
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 11984 (child process of PID 38176) has been terminated.
+SUCCESS: The process with PID 38176 (child process of PID 26256) has been terminated.
+Killing ADB server in 0.0673356 seconds.
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedPlayerCount.asset using Guid(15256dcf0be30b4489190913d1f305db) (NativeFormatImporter) -> (artifact id: '0a06f472a8a92a02e09c75f594e15deb') in 0.0055559 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedAIIntensity.asset using Guid(490485287c38a2f4e9178566394efd69) (NativeFormatImporter) -> (artifact id: 'cf4f9e2229881d2c4812210b39ee5abb') in 0.0029987 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) (NativeFormatImporter) -> (artifact id: '8f3fd7b2fad3fa2eadcdd59f5aad6498') in 0.0035184 seconds
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 44.54 ms, found 15 plugins.
+Preloading 2 native plugins for Editor in 0.23 ms.
+Asset Pipeline Refresh (id=a5725b07cc67d684ab5b3917d1da4080): Total: 1.323 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+	Summary:
+		Imports: total=3 (actual=3, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=115 ms
+		Asset DB Callback time: managed=1086 ms, native=121 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4659, non-scripts=12371
+		Asset File Changes: new=0, changed=3, moved=0, deleted=0
+		Scan Filter Count: 6
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 0.001ms
+	ApplyChangesToAssetFolders: 0.318ms
+	Scan: 16.284ms
+	OnSourceAssetsModified: 0.085ms
+	CategorizeAssetsWithTransientArtifact: 0.034ms
+	ProcessAssetsWithTransientArtifactChanges: 0.317ms
+	CategorizeAssets: 59.295ms
+	ImportOutOfDateAssets: 25.279ms (1.155ms without children)
+		ImportManagerImport: 17.618ms (1.168ms without children)
+			ImportInProcess: 16.412ms
+			UpdateCategorizedAssets: 0.039ms
+		ReloadNativeAssets: 1.808ms
+		UnloadImportedAssets: 0.302ms
+		ReloadImportedAssets: 0.000ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.506ms
+		InitializingProgressBar: 0.013ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.002ms
+		OnDemandSchedulerStart: 1.876ms
+	PostProcessAllAssets: 1160.661ms
+	Hotreload: 47.233ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.826ms
+	UnloadStreamsBegin: 0.004ms
+	PersistCurrentRevisions: 0.712ms
+	UnloadStreamsEnd: 0.002ms
+	Untracked: 12.422ms
+
+Unloading 171 unused Assets / (13.7 KB). Loaded Objects now: 38112.
+Memory consumption went from 0.70 GB to 0.70 GB.
+Total: 116.658600 ms (FindLiveObjects: 2.993400 ms CreateObjectMapping: 2.449600 ms MarkObjects: 110.973900 ms  DeleteObjects: 0.240400 ms)
+
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-Shombith-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-Shombith channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+02:37:46.617 |V| RiderPlugin                    | :1                             | AppDomain.CurrentDomain.DomainUnload lifetimeDefinition.Terminate
+abort_threads: Failed aborting id: 0000000000001DF8, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000000804, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000004C28, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000001DF8, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000000804, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000004C28, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4284
+[usbmuxd] Stop listen thread
+[usbmuxd] Error: 
+[usbmuxd] Listen thread exiting
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1793308067572,"processId":26256,"allocatedMemory":33449370,"memoryLabels":[{"Default":29313},{"Permanent":15236},{"NewDelete":71747},{"Thread":4238120},{"Manager":3109133},{"VertexData":8},{"Geometry":816},{"Texture":296},{"Shader":81125},{"Material":24},{"GfxDevice":57912},{"Animation":392},{"Audio":3040},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":7952},{"Input":14984},{"JobScheduler":33024},{"TextLib":216},{"Mono":32},{"MonoCode":64},{"ScriptingNativeRuntime":155060},{"BaseObject":1631920},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":53690},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":13918},{"DynamicArray":754907},{"HashMap":146103},{"Utility":2660278},{"Curl":2559},{"PoolAlloc":10696},{"AI":80},{"TypeTree":18389},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":6624},{"WebRequest":51382},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"Camera":17},{"Secure":3521},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":384},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":96},{"EditorUtility":261365},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19490206},{"EditorGi":328},{"UnityConnect":29232},{"Upm":1896},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":214},{"ProfilerEditor":9778},{"CoreBusinessMetrics":2879},{"TLS":13788},{"Licensing":664},{"AssetReference":32},{"IPCStream":32}]}

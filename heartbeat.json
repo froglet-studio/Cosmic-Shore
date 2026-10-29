@@ -14,20 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {
-  "best": 120.00638580322266,
+ "current": {},
+ "host": "dragonsweapon",
+ "last": {
+  "count": 12,
   "epoch": "0d5096f82628",
-  "evals": 9,
   "job": "unity-train~r20261030-022415-eba4",
-  "max_evals": 10,
-  "minutes": 60.0,
-  "phase": "training",
-  "progress": 0.9,
-  "request": "r20261030-022415-eba4",
-  "since": 1793307425,
+  "rc": 0,
+  "stopped": "finished",
   "unit": "dustup-butterfly-i3"
  },
- "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -160,12 +156,24 @@
    "start": 1793268315,
    "stopped": "budget",
    "unit": null
+  },
+  {
+   "best_end": 120.00638580322266,
+   "best_start": null,
+   "end": 1793308069,
+   "epoch": "0d5096f82628",
+   "evals": 12,
+   "job": "unity-train~r20261030-022415-eba4",
+   "request": "r20261030-022415-eba4",
+   "start": 1793307425,
+   "stopped": "finished",
+   "unit": "dustup-butterfly-i3"
   }
  ],
  "totals": {
-  "sessions": 11
+  "sessions": 12
  },
- "updated": 1793308045,
+ "updated": 1793308069,
  "user": "shombithofficial",
  "version": "1"
 }

@@ -1,11 +1,15 @@
 {
- "done": false,
+ "done": true,
  "files": [
   "status.json",
+  "result.json",
+  "genome.json",
+  "SessionState.asset",
+  "unity-tail.log",
   "recordings.json"
  ],
- "progress": 0.9,
+ "progress": 1.2,
  "score": 120.00638580322266,
  "sha": "37c27c5f3fbc31d8d67932b824d4253eceedd189",
- "updated": 1793308045
+ "updated": 1793308069
 }

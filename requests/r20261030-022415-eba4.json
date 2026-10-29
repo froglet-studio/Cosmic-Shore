@@ -1,0 +1,10 @@
+{
+ "best": 120.00638580322266,
+ "derived": "unity-train~r20261030-022415-eba4",
+ "epoch": "0d5096f82628",
+ "id": "r20261030-022415-eba4",
+ "job": "unity-train",
+ "stopped": "finished",
+ "tries": 12,
+ "updated": 1793308069
+}
