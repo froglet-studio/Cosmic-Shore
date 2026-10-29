@@ -164,6 +164,10 @@ namespace CosmicShore.Gameplay
         Quaternion _prevRot;
         bool _havePrevRot;
         int _frames, _startRings, _ownRail = -1, _courseSeed, _courseIntensity;
+        // The course family the race flew: Switchback is Blast Run only since 2026-10-29, and older flights (no field) flew
+        // the retired Classic ladder, so the learners keep them apart (learn_drives_from_flights.py SHIPPED_FAMILY).
+        // Empty in a mode without families. The JSON key stays "funType" so old and new flights read the same.
+        string _funType = "";
         bool _recording, _turnWasRunning;
         // A match that ended by its own rules is stored once its RESULT is in (GameDataSO.Results, which the mode fills at
         // game end, a frame or a ClientRpc after the turn stops), or after ResultWaitSeconds without one.
@@ -297,6 +301,7 @@ namespace CosmicShore.Gameplay
             _modeName = _gameData.GameMode.ToString();
             if (_gameData.SwitchTargetCount > 0) _target = _gameData.SwitchTargetCount;
             if (_gameData.SelectedIntensity != null && _gameData.SelectedIntensity.Value > 0) _intensity = _gameData.SelectedIntensity.Value;
+            _funType = _gameData.GameMode == GameModes.Switchback ? "BlastRun" : "";
         }
 
         void ListenToButtons()
@@ -622,6 +627,7 @@ namespace CosmicShore.Gameplay
             _ringData.Clear();
             _ownRail = -1;
             _courseSeed = _courseIntensity = 0;
+            _funType = "";
             _railWhy = "";
             _havePrevRot = false;
             _prevSampleT = 0f;
@@ -788,6 +794,7 @@ namespace CosmicShore.Gameplay
             AppendRivalDifficulties(sb);
             sb.Append("\"build\":\"").Append(Esc(Application.version)).Append("\",\"unity\":\"").Append(Esc(Application.unityVersion)).Append("\",");
             sb.Append("\"courseSeed\":").Append(_courseSeed).Append(",\"courseIntensity\":").Append(_courseIntensity).Append(',');
+            if (_funType.Length > 0) sb.Append("\"funType\":\"").Append(_funType).Append("\",");
             sb.Append("\"date\":\"").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", c)).Append("\",");
             sb.Append("\"ended\":\"").Append(why).Append("\",");
             sb.Append("\"raceTarget\":").Append(target).Append(",\"rings\":").Append(rings).Append(',');
