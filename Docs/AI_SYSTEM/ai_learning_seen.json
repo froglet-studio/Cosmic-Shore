@@ -1,6 +1,6 @@
 {
  "note": "Every flight ai_learn.py has learned from (paths on origin/bugledger/*), and the learners it used: when a learner changes, every flight is learned from again. Delete a line to relearn it. 'waiting' holds the flights no learner read yet (mode on hold, hull with no learner) and why: each is learned from once its reason goes away. A flight whose learner failed is in neither, so the next sweep tries it again.",
- "learners": "95f1a149094b5356",
+ "learners": "87090218a53a1112",
  "flights": [
   "BugLedger/shared/reports/belac/flights/flight_SkimRace_Squirrel_20261019_102720.json",
   "BugLedger/shared/reports/belac/flights/flight_Switchback_Dolphin_20261019_102537.json",
@@ -128,6 +128,7 @@
   "BugLedger/shared/reports/belac/flights/flight_Regatta_Urchin_20261016_135105.json": "hold: the AIs train in their own minigames; Regatta is rebuilt from those skills later (Yash, 2026-10-27)",
   "BugLedger/shared/reports/belac/flights/flight_Waystation_Butterfly_20261020_164612.json": "report: its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller (ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet",
   "BugLedger/shared/reports/belac/flights/flight_Waystation_Butterfly_20261021_153254.json": "report: its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller (ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet",
+  "BugLedger/shared/reports/gradi/flights/flight_Bends_Dolphin_20261028_235721.json": "report: DolphinAIBoostPolicy is switched off in Bends (disabledInModes)",
   "BugLedger/shared/reports/gradi/flights/flight_DogFight_Sparrow_20261020_133819.json": "report: SparrowAIBoostPolicy is switched off in DogFight (disabledInModes)",
   "BugLedger/shared/reports/gradi/flights/flight_DogFight_Sparrow_20261020_202541.json": "report: SparrowAIBoostPolicy is switched off in DogFight (disabledInModes)",
   "BugLedger/shared/reports/gradi/flights/flight_DogFight_Sparrow_20261020_223108.json": "report: SparrowAIBoostPolicy is switched off in DogFight (disabledInModes)",
