@@ -159,7 +159,7 @@
 >   Squirrel effects are stripped through the Goby's own containers; it still collects crystals), and an AI-flown Goby
 >   that the seat does not run on (backfill, other machines) flies the platform AIPilot without the kit. Team tasks.
 
-## The ability matrix: both seats, every platform (2026-10-25)
+## The ability matrix: both seats, every platform (2026-10-25; brought up to date 2026-10-29)
 
 Garrett, 2026-10-25: "ability matrix should now include controls like that. table with all three platforms. please give
 me an ability matrix for both seats." Columns run in the 2D characters' control priority: **mobile, gamepad,
@@ -182,16 +182,17 @@ table in step with `GobyPistolDuo` (`HumanPistol`, `Choose`), the hull's binding
 | Card | Ability | What it does, and how its element scales it | Level 5 | Mobile | Gamepad | Mouse / keyboard |
 |---|---|---|---|---|---|---|
 | Charge | **Snap** -> **Vortex Sting** | Fires a vortex ring (the toroidal lens) that gathers prisms round its core; with the Goby's lock on screen it homes, and a rival hull it passes through loses petals from each element (1 -> 3 with Charge). The veil is its cooldown. | none yet **[open]** | Snap button | X | Q (or E) |
-| Mass | **Dens**, and **Back** | At each perch it rests and builds a den from its ENERGY (2026-10-29): one prism per 8 energy, x1 -> x2.5 with Mass, at most 80; what the den cannot take is kept. Energy comes from the blocks it flies over instead of riding (the nth block of a flight gives 1 + 0.2 n, so big jumps pay); a fall through a hole loses it all. Teleporting grows none. The card counts the den prisms and its gauge is the energy; Back, pressed while riding, turns the next perch's pick round. | **Fortress**: danger and super-shielded prisms too | Back button | Y (or LB) | F (or the B key) |
+| Mass | **Dens** (from **energy**), and **Back** | At each perch it rests and builds a den from its ENERGY: one prism per 8 energy, x1 -> x2.5 with Mass, at most 80; what the den cannot take is kept. Energy comes from the trail blocks it flies over instead of riding (the nth block of a flight gives 1 + 0.2 n, so big jumps pay); a fall into a gap loses it all; teleporting keeps it and grows nothing. The card counts the den prisms and its gauge is the energy; Back, pressed while riding, turns the next perch's pick round. | **Fortress**: danger and super-shielded prisms too | Back button | Y (or LB) | F (or the B key) |
 | Space | **Ghost** (and the Undertow, passive) | Ghost: a moment of passing through prisms, then a cooldown (the veil). The Undertow pulls mass beside the plane into it, either side, 40 -> 200 u with Space, and crystals too, which the Pistol collects on touch; the card's gauge is that reach. (Only the path map's score is by side.) | **Deep Undertow**: shielded prisms pulled too | Ghost button | B | T (or G) |
 | Time | **the dive** (and the aimed jump, off) | Hold to press into the hill; let go on an upslope and it throws the Pistol. The gauge is its speed. With `aimedJump` on, a dragged jump whose cooldown Time shortens (9 -> 3 s); off since 2026-10-22, so Time's card on the Pistol is **[open]**. | (Phase Dart is the Goby's) | finger held on the view (aimed jump: drag) | A or LT (aimed jump: RT + right stick) | Space, S, down, or mouse held (aimed jump: J) |
+| (the ride) | **Jumps reward the trail**; **gaps** | Passive, no card of its own (it feeds Mass's energy). Every block a flight passes over is rewarded when the flight comes down, as a ripple back from the landing (160 u/s): grown across the trail (out of the plane, 0.8 u a jump to 8 u), shielded once full, or restored if destroyed (re-laid if it was devastated); each with juice for the Pistol's camera, a lit flash and shards, the pair's domain colour for grow and restore (restore's fly in), lime for shield, and its own (empty) FMOD slot. A destroyed block is a gap: sink 1.2 u into one and the blocks you touched come back, your energy is gone, and you come out of a vortex-ring portal on the trail beyond it, at your speed. Trail blocks are spaced 3x their length so a shielded trail is a chain of diamonds. | | (the dive) | (the dive) | (the dive) |
 
 **The path map** (the Pistol seat, at a perch after its rest; picking another den teleports there):
 
 | Move | Mobile | Gamepad | Mouse / keyboard |
 |---|---|---|---|
 | Spin the map | drag | right stick | drag, or Q / E |
-| Pick a path (from the den at the nearer end) | tap its glowing bar | left stick (the next path that way on screen) | click its bar, or A / D |
+| Pick a path: an island ridden one way plays one side of the trail (one half plane), the other way the other side; each half's terraced wing is sized and coloured by the UNSHIELDED rival mass on its side (what a vortex ring can destroy) | tap the half's wing (or the trail, from the den at the nearer end) | left stick (the next path that way on screen) | click its wing, or A / D |
 | Ride it (or teleport, then ride) | tap the picked path again | A or LT | Space (or S, down), or click the picked path |
 | Turn it round at its den | tap the den's other path (or the Back button) | Y | F |
 | Ride on without stopping | keep the finger down, still | keep A or LT held | keep Space held |

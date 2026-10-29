@@ -167,7 +167,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("A block grows across the trail to this width, u; one this wide is shielded when flown over again.")]
         [SerializeField, Min(0.5f)] float skipGrowMax = 8f;
         [Header("Pistol: the juice of a skipped block (Garrett, 2026-10-29: \"there should be some good juice associated with " +
-                "growing, restoring, and shielding prisms\")")]
+                "growing, restoring, and shielding prisms\" ... \"lets get the juice on landing\")")]
         [Tooltip("A rewarded block throws this many lit, faceted shards in the Pistol's plane (a restored one draws them in).")]
         [SerializeField, Range(0, 16)] int juiceShards = 6;
         [Tooltip("Seconds a block's juice lasts.")]
@@ -178,12 +178,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.05f)] float juiceShardSize = 0.55f;
         [Tooltip("The block's flash: a lit shell this much bigger than the block, shrinking onto it.")]
         [SerializeField, Range(1f, 3f)] float juicePulseScale = 1.7f;
-        [Tooltip("Grown (wider across the trail): the shards' colour.")]
-        [SerializeField] Color juiceGrowColor = new(157f / 255f, 1f, 46f / 255f, 1f);
-        [Tooltip("Shielded: the shards' colour.")]
-        [SerializeField] Color juiceShieldColor = new(159f / 255f, 232f / 255f, 1f, 1f);
-        [Tooltip("Restored (a destroyed block back): the shards' colour.")]
-        [SerializeField] Color juiceRestoreColor = new(1f, 1f, 1f, 1f);
+        [Tooltip("Shielded: the shards' colour, the palette's call-to-action lime (never a domain's: cyan reads as Jade). Grown " +
+                 "and restored shards wear the pair's own domain colour, lit.")]
+        [SerializeField] Color juiceShieldColor = new(157f / 255f, 1f, 46f / 255f, 1f);
+        [Tooltip("The juice comes when a flight lands (or falls in, or reaches the perch), running back over the jump's blocks " +
+                 "from where it came down at this speed, u/s.")]
+        [SerializeField, Min(1f)] float juiceRippleSpeed = 160f;
         [Tooltip("FMOD: a block grown by a jump. Leave empty for silence. Played at most once per juiceSoundSpacing.")]
         [SerializeField] EventReference growEvent;
         [Tooltip("FMOD: a block shielded by a jump. Leave empty for silence.")]
@@ -442,9 +442,8 @@ namespace CosmicShore.ScriptableObjects
         public float JuiceReach => juiceReach;
         public float JuiceShardSize => juiceShardSize;
         public float JuicePulseScale => juicePulseScale;
-        public Color JuiceGrowColor => juiceGrowColor;
         public Color JuiceShieldColor => juiceShieldColor;
-        public Color JuiceRestoreColor => juiceRestoreColor;
+        public float JuiceRippleSpeed => juiceRippleSpeed;
         public EventReference GrowEvent => growEvent;
         public EventReference ShieldEvent => shieldEvent;
         public EventReference RestoreEvent => restoreEvent;

@@ -113,7 +113,12 @@ namespace CosmicShore.Gameplay
         Material[] _juiceMats;
         readonly float[] _juiceSoundAt = new float[3];
         uint _burstSeed;
+        Domains _juiceDomain;
         const int MaxBursts = 128;
+        // the blocks flown over this flight, rewarded when it lands (Garrett, 2026-10-29: "lets get the juice on landing
+        // instead of as its happening"): released as a ripple running back from where it came down, juiceRippleSpeed u/s
+        struct Reward { public int Island, Slot; public float S, Due; }
+        readonly List<Reward> _flightRewards = new(), _dueRewards = new();
         // the choice at a perch (PistolPaths, Garrett 2026-10-25): every island's opposing prisms, kept one island at a time;
         // the map the person picks a den and a direction on; the cursor and how the dive confirms it
         readonly List<PathChoice> _options = new();
@@ -258,7 +263,7 @@ namespace CosmicShore.Gameplay
             _body = Config.Body; _vs = Config.Vortex;
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); _grounds.Clear(); _groundBlocks.Clear(); _rings.Clear(); _held.Clear();
-            StopPops(); _bindAt = 0f;
+            StopPops(); _bindAt = 0f; _flightRewards.Clear(); _dueRewards.Clear();
             _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0f; _choosing = false; _mapYaw = 0f; _mapPitch = Config.MapStartTilt; _mapPointer = default;
             _energy = 0f; _flightBlocks = 0; _crystalTakenAt.Clear();
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
@@ -307,7 +312,7 @@ namespace CosmicShore.Gameplay
             foreach (var o in new Object[] { _torus, _lockMat, _bodyMat, _cube, _pickMat }) if (o) Destroy(o);
             if (_heatMats != null) foreach (var m in _heatMats) if (m) Destroy(m);
             if (_juiceMats != null) foreach (var m in _juiceMats) if (m) Destroy(m);
-            _juiceMats = null; _bursts.Clear();
+            _juiceMats = null; _bursts.Clear(); _flightRewards.Clear(); _dueRewards.Clear();
             _heatMats = null; _choosing = false; _pathScore.Clear();
             _claw = _tail = null; _bodyIsModel = false; _bodyDomain = null;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); _grounds.Clear(); _groundBlocks.Clear(); ClearLock();
@@ -560,33 +565,41 @@ namespace CosmicShore.Gameplay
         /// a hole.</summary>
         void LayGround(in PlaneSegment seg, PistolPlane.HillTrack track, int island)
         {
-            var prisms = _status.VesselPrismController;
-            var channel = prisms ? prisms.PrismSpawnChannel : null;
-            if (!channel || seg.L < 1f) return;
+            if (seg.L < 1f) return;
             float gap = Mathf.Max(2f, Config.TrailBlockGap);
-            Vector3 scale = Config.TrailBlockScale;
             var ground = GroundOf(island); var blocks = island >= 0 && island < _groundBlocks.Count ? _groundBlocks[island] : null;
             for (float s = gap * 0.5f; s < seg.L; s += gap)
             {
-                Vector3 pos = seg.Ground(s, track);
-                Vector3 along = seg.S + seg.N * track.Slope(s);
-                if (!SafeLookRotation.TryGet(along, seg.N, out var rot, this, logError: false)) continue;
-                var ret = channel.RaiseEvent(new PrismEventData
-                {
-                    ownDomain = _status.Domain, Rotation = rot, SpawnPosition = pos, Scale = scale, PrismType = prisms.SpawnPrismType,
-                });
-                if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism)) continue;
-                prism.TargetScale = scale;
-                prism.ownerID = _status.PlayerName;
-                prism.ChangeTeam(_status.Domain);
-                _trail.Add(prism);
-                prism.prismProperties.Index = (ushort)Mathf.Min(_trail.TrailList.Count - 1, ushort.MaxValue);
-                prism.Initialize(_status.PlayerName);
-                prism.AdmitTargetScale(scale);
-                prism.TargetScale = scale;
-                prism.AssignTrail(_trail);   // AFTER Initialize: pool reuse clears trail membership
-                if (ground != null && blocks != null) blocks[ground.SlotAt(s)] = prism;
+                var prism = LayBlock(seg, track, s);
+                if (prism && ground != null && blocks != null) blocks[ground.SlotAt(s)] = prism;
             }
+        }
+
+        /// <summary>One ground block at <paramref name="s"/> along the island's line, on its hills, the pair's own.</summary>
+        Prism LayBlock(in PlaneSegment seg, PistolPlane.HillTrack track, float s)
+        {
+            var prisms = _status.VesselPrismController;
+            var channel = prisms ? prisms.PrismSpawnChannel : null;
+            if (!channel) return null;
+            Vector3 scale = Config.TrailBlockScale;
+            Vector3 pos = seg.Ground(s, track);
+            Vector3 along = seg.S + seg.N * track.Slope(s);
+            if (!SafeLookRotation.TryGet(along, seg.N, out var rot, this, logError: false)) return null;
+            var ret = channel.RaiseEvent(new PrismEventData
+            {
+                ownDomain = _status.Domain, Rotation = rot, SpawnPosition = pos, Scale = scale, PrismType = prisms.SpawnPrismType,
+            });
+            if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism)) return null;
+            prism.TargetScale = scale;
+            prism.ownerID = _status.PlayerName;
+            prism.ChangeTeam(_status.Domain);
+            _trail.Add(prism);
+            prism.prismProperties.Index = (ushort)Mathf.Min(_trail.TrailList.Count - 1, ushort.MaxValue);
+            prism.Initialize(_status.PlayerName);
+            prism.AdmitTargetScale(scale);
+            prism.TargetScale = scale;
+            prism.AssignTrail(_trail);   // AFTER Initialize: pool reuse clears trail membership
+            return prism;
         }
 
         /// <summary>
@@ -645,7 +658,8 @@ namespace CosmicShore.Gameplay
         /// riding them (Garrett, 2026-10-29: "every time prisms are not ridden because the pistol is off trail then grow those
         /// prisms. if they are max size ... then shield them. if they are destroyed, restore them. this reward the player for
         /// making big jumps. the more prisms are skipped the more energy the pistol should collect"): each gives energy, the
-        /// nth of the flight more than the last (<see cref="GobyDen.EnergyFor"/>), and is rewarded (<see cref="RewardBlock"/>).
+        /// nth of the flight more than the last (<see cref="GobyDen.EnergyFor"/>) at once, and is rewarded
+        /// (<see cref="RewardBlock"/>) when the flight comes down (<see cref="ReleaseFlightRewards"/>).
         /// </summary>
         void SkipOver(float fromX, float toX)
         {
@@ -656,9 +670,37 @@ namespace CosmicShore.Gameplay
             foreach (int slot in _skipped)
             {
                 _energy = Mathf.Min(Config.EnergyMax, _energy + GobyDen.EnergyFor(_flightBlocks++, Config.EnergyPerSkippedBlock, Config.EnergyFlightBonus));
-                RewardBlock(_seg, slot);
+                _flightRewards.Add(new Reward { Island = _seg, Slot = slot, S = ground.BlockS(slot) });
             }
             _skipped.Clear();
+        }
+
+        /// <summary>
+        /// The flight's rewards fall due as it comes down at <paramref name="atS"/> along the island's line (a landing, a fall
+        /// into a gap, a perch): a ripple running back from there toward the takeoff at <c>juiceRippleSpeed</c>, so the jump's
+        /// blocks grow, shield and come back one after another with their juice (Garrett, 2026-10-29: "lets get the juice on
+        /// landing instead of as its happening").
+        /// </summary>
+        void ReleaseFlightRewards(float atS)
+        {
+            float speed = Mathf.Max(1f, Config.JuiceRippleSpeed);
+            foreach (var r in _flightRewards)
+            {
+                var due = r;
+                due.Due = _t + Mathf.Abs(r.S - atS) / speed;
+                _dueRewards.Add(due);
+            }
+            _flightRewards.Clear();
+        }
+
+        void ApplyDueRewards()
+        {
+            for (int i = 0; i < _dueRewards.Count; i++)
+            {
+                if (_dueRewards[i].Due > _t) continue;
+                RewardBlock(_dueRewards[i].Island, _dueRewards[i].Slot);
+                _dueRewards.RemoveAt(i--);
+            }
         }
 
         /// <summary>A block the Pistol flew over: a destroyed one is restored (its hole is ground again); a standing one grows
@@ -666,14 +708,13 @@ namespace CosmicShore.Gameplay
         /// already that wide is shielded. A block carried off its spot is not the island's any more and is left alone.</summary>
         void RewardBlock(int island, int slot)
         {
-            if (island < 0 || island >= _groundBlocks.Count) return;
+            if (island < 0 || island >= _groundBlocks.Count || slot < 0 || slot >= _groundBlocks[island].Length) return;
             var prism = _groundBlocks[island][slot];
-            if (!prism) return;   // never laid or found here, or gone for good
+            if (!prism) { RestoreBlock(island, slot); return; }   // its object is gone: a new block in its slot
             var ground = _grounds[island];
             Vector3 at = _segments[island].Ground(ground.BlockS(slot), _tracks[island]);
             float tol = 0.5f * ground.Gap;
-            if ((prism.transform.position - at).sqrMagnitude > tol * tol) return;
-            if (prism.destroyed) { RestoreBlock(island, slot); return; }
+            if (prism.destroyed || (prism.transform.position - at).sqrMagnitude > tol * tol) { RestoreBlock(island, slot); return; }
             var target = prism.TargetScale;
             float max = Mathf.Max(Config.TrailBlockScale.x, Config.SkipGrowMax);
             if (target.x < max - 1e-3f)
@@ -719,20 +760,33 @@ namespace CosmicShore.Gameplay
             if (audio) audio.PlaySFXEvent(sound, at);
         }
 
-        /// <summary>Restores island <paramref name="island"/>'s destroyed block <paramref name="slot"/> where the Goby laid it:
-        /// its hole is ground again. False when there is none to restore there (never laid or found here, carried off, or
-        /// devastated).</summary>
+        /// <summary>
+        /// Brings island <paramref name="island"/>'s block <paramref name="slot"/> back when it is gone: <c>Restore</c> where
+        /// the destroyed block still lies where the Goby laid it; a NEW block laid in its slot where it cannot be (Garrett,
+        /// 2026-10-29: "I did not see any restores": a prism destroyed by a devastating hit - collisions of moved prisms,
+        /// the Rhino, the Thresher, the Shrike's lance, a black hole - refuses <c>Restore</c> for good, so the gap stayed).
+        /// False when the block stands, or this machine has no block for that slot (a rider's machine that never found it).
+        /// </summary>
         bool RestoreBlock(int island, int slot)
         {
             if (island < 0 || island >= _groundBlocks.Count || slot < 0 || slot >= _groundBlocks[island].Length) return false;
-            var prism = _groundBlocks[island][slot];
-            if (!prism || !prism.destroyed) return false;
+            var blocks = _groundBlocks[island];
+            var prism = blocks[slot];
+            if (ReferenceEquals(prism, null)) return false;
             var ground = _grounds[island];
-            Vector3 at = _segments[island].Ground(ground.BlockS(slot), _tracks[island]);
+            float s = ground.BlockS(slot);
+            Vector3 at = _segments[island].Ground(s, _tracks[island]);
             float tol = 0.5f * ground.Gap;
-            if ((prism.transform.position - at).sqrMagnitude > tol * tol) return false;
-            prism.Restore();
-            if (prism.destroyed) return false;
+            bool inPlace = prism && (prism.transform.position - at).sqrMagnitude <= tol * tol;
+            if (inPlace && !prism.destroyed) return false;   // it stands
+            if (inPlace) prism.Restore();
+            if (!inPlace || prism.destroyed)
+            {
+                if (_rider) return false;   // the hull's machine owns its trail: a rider never lays the pair's blocks
+                var fresh = LayBlock(_segments[island], _tracks[island], s);
+                if (!fresh) return false;
+                blocks[slot] = prism = fresh;
+            }
             ground.SetGone(slot, false);
             AddJuice(prism, Juice.Restore, prism.TargetScale);
             return true;
@@ -918,12 +972,14 @@ namespace CosmicShore.Gameplay
         {
             ScorePaths();
             if (_popOut != null) { _popT += dt; if (_popT >= Config.FallPopSeconds) StopPops(); }
+            ApplyDueRewards();
             if (_resting) { Rest(dt); return; }
             RefreshGround();
             var inp = _human == Half.Pistol ? HumanPistol() : AIPistol();
             _dive = inp.Dive;
             var ev = PistolBodyMath.Step(_p, _f, _t, dt, inp, _body);
             if (ev.Flew && !_p.falling) SkipOver(ev.FlewFrom, ev.FlewTo);
+            if (ev.Landed || ev.FellIn) ReleaseFlightRewards(PistolPlane.LineAt(_f, _p.x));
             if (_p.grounded) _flightBlocks = 0;
             if (ev.FireSnap) { FireRing(ev.SnapAim); _snapAt = _t; }
             if (ev.FellIn) FallThrough();
@@ -976,6 +1032,7 @@ namespace CosmicShore.Gameplay
         {
             _resting = true; _at = Mathf.Clamp(perch, 0, _perches.Count - 1); _restT = 0f; _waitT = 0f; _restSpawned = 0;
             var den = _perches[_at];
+            if (_flightRewards.Count > 0) ReleaseFlightRewards(PistolPlane.LineAt(_f, _p.x));   // came down on the perch
             float mass = Config.DenMassScale.EvaluateReplicated(_status);
             _restQueue = GobyDen.PrismsFor(_energy, Config.EnergyPerDenPrism, mass, den.Placed, Config.DenMax);
             _energy = Mathf.Max(0f, _energy - GobyDen.EnergySpent(_restQueue, Config.EnergyPerDenPrism, mass));
@@ -2140,7 +2197,9 @@ namespace CosmicShore.Gameplay
         /// The bursts of rewarded blocks, for the Pistol's camera: each block flashes (a lit shell
         /// <c>juicePulseScale</c> its size shrinking onto it over the first 40 %) and throws <c>juiceShards</c> lit, faceted
         /// shards in the Pistol's plane, spinning and shrinking as they fly <c>juiceReach</c> out; a restored block's shards
-        /// fly IN and land on it. Grow lime, shield cyan, restore white (the config's colours), emissive so they bloom.
+        /// fly IN and land on it. Grown and restored in the pair's domain colour, lit; shielded in the call-to-action lime
+        /// (Garrett, 2026-10-29: "cyan = jade which is a domain color. use Lime for shield. a lit domain color for grow and
+        /// restore"); emissive so they bloom. The flight's blocks are rewarded when it lands, as a ripple back over the jump.
         /// </summary>
         void DrawJuice()
         {
@@ -2182,10 +2241,28 @@ namespace CosmicShore.Gameplay
         void EnsureJuiceAssets()
         {
             if (!_cube) _cube = CubeMesh();
-            if (_juiceMats != null) return;
-            _juiceMats = new Material[3];
-            Color[] colors = { Config.JuiceGrowColor, Config.JuiceShieldColor, Config.JuiceRestoreColor };
-            for (int i = 0; i < 3; i++) _juiceMats[i] = Lit(colors[i], colors[i] * 1.6f, 0.7f);
+            if (_juiceMats == null)
+            {
+                _juiceMats = new Material[3];
+                for (int i = 0; i < 3; i++) _juiceMats[i] = Lit(Color.white, Color.white, 0.7f);
+                PaintJuice(_juiceMats[(int)Juice.Shield], Config.JuiceShieldColor);
+                _juiceDomain = (Domains)(-1);
+            }
+            // grown and restored mass is the PAIR's: lit in its domain's colour (the palette's one accessor for a light that
+            // wears its owner's domain), repainted when the pair changes domain; shielding is the call-to-action lime
+            var domain = _status != null ? _status.Domain : Domains.Blue;
+            if (domain == _juiceDomain) return;
+            _juiceDomain = domain;
+            var tint = PrismLit.DomainTint(domain);
+            PaintJuice(_juiceMats[(int)Juice.Grow], tint);
+            PaintJuice(_juiceMats[(int)Juice.Restore], tint);
+        }
+
+        static void PaintJuice(Material m, Color c)
+        {
+            m.color = c;
+            if (m.HasProperty(s_baseColor)) m.SetColor(s_baseColor, c);
+            if (m.HasProperty(s_emission)) m.SetColor(s_emission, c * 1.6f);
         }
 
         static float Hash01(uint seed, int i)

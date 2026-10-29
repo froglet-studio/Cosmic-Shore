@@ -65,6 +65,34 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Goby & Pistol: rewards and juice on landing; restores that always work; lime shield, domain-lit grow and restore (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett, 2026-10-29: "cyan = jade which is a domain color. use Lime for shield. a lit domain color for
+grow and restore. I did not see any restores. it seemed like that did not work. lets get the juice on landing instead of
+as its happening"):
+- Restores: `Prism.Restore()` refuses a DEVASTATED prism for good (prism collisions, the Rhino, the Thresher, the
+  Shrike's lance, black holes devastate), so a gap blasted that way never came back and its juice never played.
+  `RestoreBlock` now restores where it can and otherwise LAYS A NEW BLOCK in the slot (`LayBlock`, the trail's own lay);
+  a block carried off its spot is replaced the same way. A rider's machine never lays the pair's blocks.
+- Juice on landing: a flight's skipped blocks are rewarded (grown, shielded, restored) when it comes down - a landing,
+  a fall into a gap, or the perch - as a ripple running back from there at `juiceRippleSpeed` 160 u/s; energy still
+  fills as it flies.
+- Colours: shield shards the call-to-action lime (`juiceShieldColor`); grow and restore shards the pair's domain colour,
+  lit (`PrismLit.DomainTint`), repainted if the pair changes domain. `juiceGrowColor` / `juiceRestoreColor` are retired.
+
+**Verified without the editor:** `unity_refcompile` player and editor 0 errors in project code; harness 14 / 14 (pure
+code unchanged this round); author_goby_assets / author_goby_hud --check, logging, conditional compilation, crew vessels.
+The restore fallback and the ripple are in the MonoBehaviour and have no headless test. `/verify-unity` did not run.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Blast a gap (try a Rhino or Thresher too, which devastate) and jump it: on landing a ripple runs back over the jump
+   and the gap's blocks come back with domain-coloured shards flying in.
+2. Jump plain trail: nothing on the way up; on landing the jump's blocks flash in the domain colour, one after another
+   back toward the takeoff; full-width ones shield with lime shards.
+3. Fall into a gap: the touched blocks come back (domain colour) as you come out of the portal.
+
+---
+
 ### 🔴 Goby & Pistol: juice for grow / shield / restore, a shield-ready trail, the path score as destroyable mass (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett, 2026-10-29: "i don't see prisms growing as I jump them ..."):
