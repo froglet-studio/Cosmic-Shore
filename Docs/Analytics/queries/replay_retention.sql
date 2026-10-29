@@ -21,6 +21,13 @@
 -- PARAMETERS (edit the literals): window `INTERVAL 90 DAY` (appears in every subquery of a
 -- query), rematch gap `600` seconds (query 2), D7 maturity `today() - 7` (query 3).
 --
+-- EDITOR TOGGLE. Queries 2 and 3 exclude Unity-editor traffic (platform ends in 'Editor', for
+-- example WindowsEditor) with the line marked `-- EDITOR TOGGLE`. It appears in each subquery
+-- that reads game_started or game_completed. Delete those lines to include editor playtests.
+-- Query 1 keeps editor traffic on purpose: duplicates are a facade bug, wherever it runs.
+-- On 2026-10-29 editor traffic was 1,284 of about 1,400 matches (19 players); real builds were
+-- about 25 players and 117 matches, so the toggle changes the answer a lot.
+--
 -- READ THE NUMBERS WITH CARE. As of 2026-10-29 there are about 62 players in 90 days, mostly the
 -- team playtesting. Rematch rates are inflated by testers replaying quickly and by tournament
 -- rounds that chain automatically. Query 3 only counts players old enough to be measured, and
@@ -61,6 +68,7 @@ WITH plays AS (
     FROM events
     WHERE event = 'game_started'
       AND timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
     GROUP BY distinct_id, match_id
 ),
 dones AS (
@@ -68,6 +76,7 @@ dones AS (
     FROM events
     WHERE event = 'game_completed'
       AND timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
     GROUP BY distinct_id, match_id
 ),
 joined AS (
@@ -126,6 +135,7 @@ WITH plays AS (
     FROM events
     WHERE event = 'game_started'
       AND timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
     GROUP BY distinct_id, match_id
 ),
 firsts AS (
