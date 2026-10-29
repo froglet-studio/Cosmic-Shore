@@ -85,9 +85,12 @@ renders every member at `lerp(prev, current, alpha)` for position and facing. Be
 therefore frame-rate independent; a hitch drops time after `MaxStepsPerFrame` rather than
 cascading.
 
-**Units.** The core runs in the research's units ("voxels", per step). `UnitScale` (2) converts
-to world units at the boundary, so the whale is ~130 world units long and adjacent tadpoles sit
-~5 units apart — a body made of individually shootable pieces.
+**Units.** The core runs in the research's units ("voxels", per step). `UnitScale` converts
+to world units at the boundary: 2 in the research, so the whale was ~130 world units long and adjacent tadpoles sat
+~5 units apart — a body made of individually shootable pieces. **Since 2026-10-26 the Swarm cell's configs ship
+`UnitScale` 4.088** (x 2.044, the members' bodies grown to the one 3.55 heart size, with `ElementBodyScale` scaling
+Charge/Space back to their x 1.545 and `Cruise` / `SortVMaxScale` holding world speeds): the whale is ~265 u long and
+tadpoles ~9 u apart. Tandava inherits it and grows its world round it. `Docs/ECOSYSTEM.md` §64.4-64.5.
 
 ### 1.1 What the core does each step (in order)
 
@@ -1349,6 +1352,12 @@ frame (11% self) and the CPU line still climbed over a few minutes toward 15-30 
 cheaper and fewer flora; back to THREE swarms, each substantially filled; not every member updated every
 frame; entity/GPU drawing; "ideally the cpu cost goes to zero".
 
+**Since 2026-10-28 the HEARTS are not the member shader's** (Docs/ECOSYSTEM.md §65.7): the shader draws the body
+prism only, and `CrystalHeartDraw` draws each listed heart with the elemental crystal's own models and inactive
+materials, posed per frame in Burst by `SwarmHeartPose` (harness R65a-c). The member's tier follows the element law
+(`SwarmTickJob.MemberTier`: Mass armoured, Charge all danger; a scripted plan keeps its own). Where this section says the
+shader re-forms a molting heart or draws one crystal model per element, read the heart draw.
+
 **What this round SUPERSEDES.** §4's 24-swarm, four-model cell and §4.1's 5,008-collider budget; §3's
 "every member is a GameObject, hatching is budgeted"; §13's per-member posing (`PoseEveryFrameWithin`,
 `FarPoseInterval` are deleted - nothing is posed per member any more). The field, grid and evofate cores
@@ -1425,6 +1434,14 @@ The egg bill is the full body's element mix at `EggVolume` (eaten volume convert
 own element at its price and the rest at `CrossElementCost` 2. The author script FAILS if any band's forest
 at cap cannot pay its body once (a grazed plant regrows, so this is a floor on the economy). Charge is
 never food (armoured leaves), so the pufferfish's Charge majority is always paid at the cross price.
+
+**Since 2026-10-28 the armoured element is MASS** (Docs/ECOSYSTEM.md §65.7), and an armoured plant is no food outside a
+Frenzy, so the table's inner row is history: the whale's band grazes **Borromean Time** (Garrett: "graze Time, stay
+small"). At the scaled body (§64.4) its 3 plants hold 76,705 against a full whale's 451,260 at the cross price, about a
+sixth, so the Inner whale stays small. More plants would break the collider ceiling, and the plants needed would be
+about 440 u across in a 100 u planting band. `author_swarm_fauna.py` REPORTS that band (`underfed`) instead of failing;
+every other band still fails if its forest cannot pay. The table's numbers are round 7's; `--check` prints the current
+ones. Charge plants are food now (danger, not armoured); the pufferfish band still grazes Time, unchanged.
 
 **Volume ladder - MODELLED, re-derive in the editor.** A GPU-drawn member is not a registered prism, so
 the cell's LiveVolume holds the flora, skeletons, trails and the proxies - not the bodies. The ladder is
@@ -1551,7 +1568,8 @@ The fetch is the only difference:
 - **Per tick**, each living member's 80-byte `SwarmInstance` is packed into five `float4` rows
   (`SwarmMemberFallbackDraw.Pack`; Flags travel as a float VALUE, exact below 2^10, never as raw bits a GPU could
   flush as a denormal). Bodies are compacted to the living slots in slot order. Hearts are gathered per element from
-  the tick's own heart lists, so a molting heart sits in two lists exactly as on the GPU path.
+  the tick's own heart lists, so a molting heart sits in two lists exactly as on the GPU path. (Superseded 2026-10-28: the fallback draws
+  bodies only; the hearts are `CrystalHeartDraw` on every device, Docs/ECOSYSTEM.md §65.7.)
 - **Per frame**, each list draws with `Graphics.RenderMeshInstanced` in batches of **128**. The rows travel as
   MaterialPropertyBlock arrays in the instancing constant buffer, and the shader rebuilds the instance with
   `SwarmInstanceFromRows`. 128 x 80 B = 10 KB fits the 16 KB minimum uniform block of WebGL2 / GLES 3.0, so each

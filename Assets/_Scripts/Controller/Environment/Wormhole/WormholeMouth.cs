@@ -207,6 +207,22 @@ namespace CosmicShore.Gameplay
         /// <summary>Does this mouth charge pilots of other domains a petal toll?</summary>
         public bool DomainTolled => _settings.DomainTolled;
 
+        /// <summary>
+        /// Switch a standing mouth's toll on or off. An OWNED mouth wears its owner's domain hue only
+        /// while it tolls and the material's neutral rim otherwise, so the colour always says whether
+        /// a rival pays (the Tiger Moth's Charge 5 turns its pair's toll on and off live). Every peer
+        /// calls this from replicated state, and the toll is read at levy time, so the next transit
+        /// is charged by the new rule.
+        /// </summary>
+        public void SetDomainTolled(bool tolled)
+        {
+            if (_settings.DomainTolled == tolled) return;
+            _settings.DomainTolled = tolled;
+            if (_settings.Owner == null) return;
+            _settings.RimTint = default;
+            _tintPainted = false;
+        }
+
         /// <summary>Whom this mouth carries — and draws carried through in a view of it.</summary>
         public IReadOnlyList<IPlayer> Players => _players;
 
@@ -472,6 +488,9 @@ namespace CosmicShore.Gameplay
                 bool first = !_lastPos.TryGetValue(vessel, out var prev);
                 _lastPos[vessel] = cur;
                 if (first) continue;    // two samples are needed to test an entry
+                // An incorporeal hull (the Tiger Moth mid-drop) passes through a mouth like everything else. Its sample
+                // is still taken above, so the frame it becomes solid again is not read as one long step into a ball.
+                if (VesselIncorporeal.Is(vessel.Transform)) continue;
 
                 // Entering = starting outside and reaching the ball. A vessel that starts INSIDE
                 // (one just carried into this mouth from the other) is never taken back until it
@@ -815,9 +834,10 @@ namespace CosmicShore.Gameplay
             // SetColor, not SetVector: the theme authors sRGB, and SetColor converts to the
             // project's linear space. Alpha 1 says "a tint is set"; 0 keeps the material's rim.
             var domain = Domain;
-            if (_settings.Owner != null && (!_tintPainted || domain != _tintDomain))
+            if (_settings.Owner != null && _settings.DomainTolled && (!_tintPainted || domain != _tintDomain))
             {
-                // The owner's domain is live, so its hue is too.
+                // The owner's domain is live, so its hue is too. An untolled owned mouth keeps the
+                // material's neutral rim: the hue is the toll's sign.
                 _settings.RimTint = ToyFactory.DomainAccentColor(_settings.Theme, domain);
                 _tintDomain = domain;
                 _tintPainted = true;

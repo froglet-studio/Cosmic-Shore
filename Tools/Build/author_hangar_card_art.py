@@ -46,7 +46,7 @@ DONOR_CS_META = "Assets/_Scripts/UI/Elements/Hangar/HangarVesselTile.cs.meta"
 SHEET = {
     "Sparrow": "sparrow_after.jpg", "Manta": "manta_after.jpg", "Serpent": "serpent_after.jpg",
     "Rhino": "rhino_rig_after.jpg", "Squirrel": "squirrel_after.jpg", "Dolphin": "dolphin_after.jpg",
-    "Urchin": "urchin_rig_after.jpg", "Butterfly": "butterfly_after.jpg", "Thresher": "thresher_after.jpg",
+    "Urchin": "urchin_rig_after.jpg", "TigerMoth": "butterfly_after.jpg", "Thresher": "thresher_after.jpg",
     "Scarab": "scarab_after.jpg", "Stoat": "stoat_after.jpg", "Goby": "goby_after.jpg",
     "BrittleStar": "brittlestar_after.jpg", "Shrike": "shrike_after.jpg", "Angler": "angler_after.jpg",
     "Wrasse": "wrassekite_after.jpg", "Orca": "orca_after.jpg", "Starling": "starling_after.jpg",

@@ -31,6 +31,12 @@ runner rule, the AI approach and the Regatta steering), `RaceGateTurnMonitor`, `
 in `MiniGameHUD`), `GateRaceScoringRuleSO` (one more asset), the barren race cell, the equatorial spawn ring, the shared
 race toasts, the comeback.
 
+## 2.1 Omnicrystals (2026-10-28)
+
+The Meerkat's Omnicrystal ability (`R_VesselActions/MEERKAT.md` §7): `omniCount` gold omnicrystals lie half way between
+the rings of a lap (`BurrowRunController.OnCourseRaised` → `MeerkatOmnicrystalField.ForCourse`). Fly through one and the
+roots grow at once from you, sized by your last tunnel; you fly them on the left stick and come out of a tip.
+
 ## 3. AI
 
 The platform's `AIPilot` flies the line (the gate approach, `AICommitFromApproachPoint`); the Meerkat's wormhole

@@ -209,7 +209,7 @@ static partial class TandavaSeveringHarness
             foreach (var key in Keys)
             {
                 var c = MakeCore(b, b.Ix[key], Vector3.Zero, 3, fed: true);
-                Step(c, 60);
+                Step(c, (int)(60 * TandavaSeveringArena.K));   // 6 s at the research body: a pose takes K x longer to settle at world speed
                 var row = new List<string>();
                 foreach (float link in new[] { 3.5f, 4.5f, 5.5f, 6.5f, 8f })
                 {
@@ -233,7 +233,7 @@ static partial class TandavaSeveringHarness
                 if (key.StartsWith("dancer")) continue;   // the dance never severs (its attendant packs stand apart by design)
                 if (new[] { "_rear", "_strike", "_gape", "_snap" }.Any(key.EndsWith)) continue;   // nor a lunge (MaySever)
                 var c = MakeCore(b, b.Ix[key], Vector3.Zero, 3, fed: true);
-                Step(c, 60);
+                Step(c, (int)(60 * TandavaSeveringArena.K));   // 6 s at the research body: a pose takes K x longer to settle at world speed
                 var (_, _, second) = Pieces(c);
                 var d = new TandavaSeveringDirectorCore(new[] { new TandavaSeveringForm { PlanCount = b.Plans[b.Ix[key]].N } }, DirectorSettings(), 1);
                 if (second >= d.SeverMinMembers) { falseParts++; }
@@ -244,7 +244,7 @@ static partial class TandavaSeveringHarness
             foreach (var key in new[] { "great_serpent_1", "many_headed_7", "antlion_2" })
             {
                 var c = MakeCore(b, b.Ix[key], Vector3.Zero, 5, fed: true);
-                Step(c, 60);
+                Step(c, (int)(60 * TandavaSeveringArena.K));   // 6 s at the research body: a pose takes K x longer to settle at world speed
                 int before = Active(c);
                 int killed = Slice(c, 0.3f, SliceWidth);
                 var (_, big, second) = Pieces(c);
@@ -342,9 +342,9 @@ static partial class TandavaSeveringHarness
                   $"the body is gone and the creature lives on in its piece, as the {s.D.Form.Name} ({s.D.Outcome})");
             int heir = Active(s.C);
             Console.WriteLine($"    the heir: {heir} members, stomach {StomachTotal(s.C):F0}, phase {s.D.Phase} mood {s.D.Mood}, laying held {s.C.LayingHeld}");
-            RunFor(s, 30f);
+            RunFor(s, 30f * TandavaSeveringArena.K);   // 30 s at the research body: its way to food is K x longer
             Check(s.C.PlanIx == s.D.Form.PlanIndex || s.C.PlanIx == s.D.WantPlan, $"the heir wears the form's own body ({Keys[s.C.PlanIx]})");
-            Check(Active(s.C) > heir, $"and eats its way back into it: {heir} -> {Active(s.C)} in 30 s");
+            Check(Active(s.C) > heir, $"and eats its way back into it: {heir} -> {Active(s.C)} in {30f * TandavaSeveringArena.K:F0} s");
         }
 
         // ── T25: the shatter counts the whole animal

@@ -67,7 +67,7 @@ Neither number was ever authored as a design. **Both still need a playtest** —
 
 ---
 
-## 2. Level-5 slots deliberately left unfilled (3 rows)
+## 2. Level-5 slots deliberately left unfilled (1 row)
 
 These vessels' abilities are complete; the qualitative UPGRADE is the open slot. Each says so
 in its own map asset, and the table prints `L5 -` with no disagreement flag.
@@ -75,10 +75,12 @@ in its own map asset, and the table prints `L5 -` with no disagreement flag.
 | Vessel | Element | Ability | Why there is no upgrade |
 |---|---|---|---|
 | **Manta** | Time | Soar | "Wake Highway" was built and **cut** in 2026-09 after its first playtest — a boost ring read as an unexplained launcher. Nothing replaced it. |
-| **Scarab** | Space | Ball Forge | Deliberate: the design notes give Space the ball's SIZE and name no qualitative upgrade (`SCARAB.md §7`). |
-| **Scarab** | Mass | Switch | **"Armored Switch" was retired on 2026-08-24** with the switch's prism fill (`ScarabSwitch.cs`, `SCARAB.md §5.1` "Superseded"). Nothing replaced it. |
 
-The Scarab's Mass row is the one worth reading twice. The map went on **declaring** Armored
+Both Scarab rows that sat here were FILLED on 2026-10-29 (Garrett's recut, `SCARAB.md §7`): Mass 5 is **Sun Cores** (a
+scored switch's dais rises with its super-shielded suns) and Space, now Nucleus Seeding, is **Core Breaker** (your balls
+destroy super-shielded prisms).
+
+The Scarab's Mass row, while it was open, was the one worth reading twice. The map went on **declaring** Armored
 Switch for three weeks after the code retired it, and the entry's `AbilityDescription` still
 described the prism fill as a thing Mass grows. Every surface that asks the map — the HUD
 lockup, the launch panel's controls block, this documentation set — reported a wired upgrade.

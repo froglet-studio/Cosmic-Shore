@@ -15,38 +15,38 @@ MonoBehaviour:
   vesselClass: 28
   entries:
   - Element: 3
-    AbilityLabel: '(open design slot)'
-    AbilityDescription: '(open design slot) The wormhole is the Meerkat''s one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
-    Input: 0
+    AbilityLabel: 'Soliton'
+    AbilityDescription: 'RT forms the wormhole the reticle shows, and it is a soliton: a standing tunnel anyone may ride. Its surface area is your Space level, so a long one is thin and a short one fat. It swallows prisms at its way in (shielded ones too, never super-shielded) and fires them out of its way out as moving prisms: one that hits a plain prism destroys both, scored to you; a shielded one bounces. Garrett''s design, approved by Yash 2026-10-28.'
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Steal'
+    UpgradeDescription: 'Every prism your soliton swallows is stolen into your domain as its run starts, so it leaves the way out already yours.'
   - Element: 4
-    AbilityLabel: '(open design slot)'
-    AbilityDescription: '(open design slot) The wormhole is the Meerkat''s one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
+    AbilityLabel: 'Faster Ride'
+    AbilityDescription: 'Passive: you ride every soliton faster, your own or anyone''s (the throat''s rush grows with Time). Garrett''s design, approved by Yash 2026-10-28.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Boost Out'
+    UpgradeDescription: 'You leave every soliton with a boost (1.5 x the exit speed).'
   - Element: 2
-    AbilityLabel: '(open design slot)'
-    AbilityDescription: '(open design slot) The wormhole is the Meerkat''s one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
+    AbilityLabel: 'Exit Portal'
+    AbilityDescription: 'Passive: when your soliton forms it sets down six small prisms of your domain on a hexagon round its way out, at 1.5 x the exit''s radius. Mass sets their size. Garrett''s design, approved by Yash 2026-10-28.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Danger Portal'
+    UpgradeDescription: 'The exit portal''s prisms are danger prisms.'
   - Element: 1
-    AbilityLabel: '(open design slot)'
-    AbilityDescription: '(open design slot) The wormhole is the Meerkat''s one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
-    Input: 0
+    AbilityLabel: 'Sentinel Mode'
+    AbilityDescription: 'Y toggles it. While it is on, each new soliton leaves a sentinel at its way in, an afterimage of the hull that guards it: it zaps rivals in its guard (Charge sets the petals a zap knocks out, and the hit silences them) and shields your own prisms there. A soliton with a sentinel stands as long as its sentinel; with the pool of 3 used up, the oldest retires with its soliton. Garrett''s design, approved by Yash 2026-10-28.'
+    Input: 14
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Six Sentinels'
+    UpgradeDescription: 'The pool is 6 sentinels.'

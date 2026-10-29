@@ -184,6 +184,61 @@ namespace CosmicShore.Gameplay
         private Vector3[] _cachedAnchors;
         private List<Vector3> _cachedAnchorSource;
         
+        // ------------------------------------------------------------
+        // Course keys (Switchback Blast Run)
+        // ------------------------------------------------------------
+
+        // Positions a mode placed on its course, one crystal per entry (crystal id = index + 1). While set they
+        // REPLACE the authored count and placement: every crystal is laid at its key and respawns in place there.
+        private readonly List<Vector3> _courseKeys = new();
+        private readonly Dictionary<int, int> _courseKeyRespawns = new();
+
+        /// <summary>u a respawned key crystal is nudged off its key, alternating sides, so a respawn in place is
+        /// still a CHANGE of slot value (a NetworkList write of an equal value replicates nothing).</summary>
+        public const float CourseKeyRespawnNudge = 1.5f;
+
+        /// <summary>True while a mode's course keys own this manager's placement.</summary>
+        protected bool UsesCourseKeys => _courseKeys.Count > 0;
+
+        /// <summary>The course keys in force (empty when none).</summary>
+        public IReadOnlyList<Vector3> CourseKeys => _courseKeys;
+
+        /// <summary>
+        /// Hand this manager a mode's course keys (Switchback Blast Run's key crystals, SWITCHBACK.md "Blast Run").
+        /// The crystal count becomes <c>keys.Count</c>, crystal <c>id</c> is laid at <c>keys[id - 1]</c>, and a
+        /// collected one respawns at its own key. Call it on the server; clients follow the slot list. Survives
+        /// <see cref="ResetSpawnState"/> (a replay keeps its course); <see cref="ClearCourseKeys"/> ends it.
+        /// </summary>
+        public void SetCourseKeys(IReadOnlyList<Vector3> keys)
+        {
+            _courseKeys.Clear();
+            _courseKeyRespawns.Clear();
+            if (keys != null)
+                for (int i = 0; i < keys.Count; i++) _courseKeys.Add(keys[i]);
+            OnCourseKeysChanged();
+        }
+
+        /// <summary>Give placement back to the authored count and anchors.</summary>
+        public void ClearCourseKeys()
+        {
+            if (_courseKeys.Count == 0) return;
+            _courseKeys.Clear();
+            _courseKeyRespawns.Clear();
+            OnCourseKeysChanged();
+        }
+
+        /// <summary>A subclass whose crystals are already out re-lays them here (the keys arrived late).</summary>
+        protected virtual void OnCourseKeysChanged() { }
+
+        /// <summary>The key a course-key crystal lives at, or false.</summary>
+        protected bool TryCourseKey(int crystalId, out Vector3 key)
+        {
+            int i = crystalId - 1;
+            if (i >= 0 && i < _courseKeys.Count) { key = _courseKeys[i]; return true; }
+            key = default;
+            return false;
+        }
+
         protected virtual void Awake()
         {
             // Ensure runtime lists exist
@@ -363,6 +418,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Vector3 CalculateNewSpawnPos(int crystalId)
         {
+            // Course keys: a collected key reloads AT ITS KEY (nudged alternately either side of it, see
+            // CourseKeyRespawnNudge), so the next pilot through finds it where the course put it.
+            if (TryCourseKey(crystalId, out var keyPos))
+            {
+                int n = _courseKeyRespawns.TryGetValue(crystalId, out var c) ? c + 1 : 1;
+                _courseKeyRespawns[crystalId] = n;
+                Vector3 nudged = keyPos + Vector3.up * ((n % 2 == 1 ? 1f : -1f) * CourseKeyRespawnNudge);
+                lastSpawnPosById[crystalId] = nudged;
+                return nudged;
+            }
+
             // Lane mode: a collected crystal RELOADS AT ITS OWN SLOT. Deliberately bypasses the
             // move-away-from-last rule below - here "it came back where it was" is the point, and
             // that rule exists to stop an anchored crystal respawning on top of the pilot who just
@@ -500,6 +566,8 @@ namespace CosmicShore.Gameplay
 
         protected int GetCrystalCountToSpawn()
         {
+            if (UsesCourseKeys) return _courseKeys.Count;
+
             int authored = ResolveAuthoredCrystalCount();
 
             // In lane mode the authored count is the number of crystals in ONE lane, and the
@@ -580,6 +648,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Vector3 InitialSpawnPointFor(int crystalId, Vector3 batchAnchor, bool hasAnchors)
         {
+            if (TryCourseKey(crystalId, out var key)) return key;
             if (UsesApproachLanes) return LaneSlotPosition(crystalId);
             return hasAnchors ? GetSpawnPointAroundAnchor(batchAnchor) : GetAnchorlessSpawnPoint();
         }
@@ -762,6 +831,8 @@ namespace CosmicShore.Gameplay
             lastAnchorIndexByCrystalId.Clear();
             batchAnchorIndex = 0;
             itemsAdded = 0;
+            // The course keys are NOT cleared: a replay flies the same course.
+            _courseKeyRespawns.Clear();
         }
 
         // ------------------------------------------------------------

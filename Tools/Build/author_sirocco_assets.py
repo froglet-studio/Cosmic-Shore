@@ -46,7 +46,7 @@ G_ASSET = {
 EXISTING = dict(lib.SCRIPT_GUIDS)
 EXISTING.update(lib.CARD_ART)
 EXISTING.update(common.DONOR)
-EXISTING["Vessel_Butterfly"] = lib.VESSELS["Butterfly"]
+EXISTING["Vessel_Butterfly"] = lib.VESSELS["TigerMoth"]
 RAMPAGE_DIR = "Assets/_SO_Assets/Cell Configs/Rampage Cell"
 RAMPAGE = [lib.existing_guid(f"{RAMPAGE_DIR}/Rampage Cell Config {i}.asset") for i in range(1, 5)]
 for i, gd in enumerate(RAMPAGE, 1):
@@ -129,7 +129,7 @@ g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Sirocco.asset", G_ASSE
              lib.header_for(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Sirocco") + f"""  Mode: {MODE_ID}
   Notes: 'Reuses Rampage''s cactus forest outright - referenced, not forked, exactly as the mode
     does; intensity is the forest''s density. What the preview teaches is Dust mode over the
-    forest. Vessel pinned to Butterfly(13).'
+    forest. Vessel pinned to TigerMoth(29).'
   PreviewCell: {{fileID: 11400000, guid: {RAMPAGE[0]}, type: 2}}
   PreviewCellsByIntensity:
 {common.cell_list(RAMPAGE)}  StructurePrefab: {{fileID: 0}}

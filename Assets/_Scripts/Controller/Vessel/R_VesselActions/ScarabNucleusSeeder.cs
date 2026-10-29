@@ -9,7 +9,11 @@ namespace CosmicShore.Gameplay
     /// anyone to knock them loose — outward into the cytoplasm to bounce around for fun, or inward
     /// into the nucleus, which in Scarab Scramble is the court.
     ///
-    /// PASSIVE by design, the Dolphin crystal-seeding shape: no input binding, no meter, no HUD slot.
+    /// It is the Scarab's SPACE ability (2026-10-29): Space sizes the balls it seeds
+    /// (<see cref="ScarabBallForge.SizeScaleFor"/>, ×1 → ×4) and Space 5, "Core Breaker", lets them
+    /// destroy super-shielded prisms. The Space card on the HUD is this ability.
+    ///
+    /// PASSIVE by design, the Dolphin crystal-seeding shape: no input binding and no meter.
     /// That is what lets it be a property of the VESSEL rather than of a mode — it needs nothing wired
     /// per scene, so it works in freestyle and the menu exactly as it does in a match. It is also why
     /// there is no ability SO here: a passive ability is bound to no input event, so
@@ -62,7 +66,8 @@ namespace CosmicShore.Gameplay
             if (cell == null) return;
 
             var field = ScarabNucleusField.ForCell(cell, config);
-            field?.TrySeed(_status.Domain, ScarabBallForge.SizeScaleFor(_status));
+            var ball = field?.TrySeed(_status.Domain, ScarabBallForge.SizeScaleFor(_status));
+            if (ball != null) ball.SetBreaksSuperShieldedServer(ScarabBallForge.BreaksSuperShieldedFor(_status));
         }
 
         /// <summary>
