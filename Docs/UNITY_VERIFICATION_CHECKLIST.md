@@ -18577,3 +18577,23 @@ Branch `switchback-fun-types`. See `Assets/_Scripts/Controller/Arcade/SWITCHBACK
 8. Two machines, host on LIVE FEATURES I4 or LEVEL SHAPES I4, guest on CLASSIC. **Pass:** the guest flies the host's
    course (same needles, same moving prisms in sync), and the guest's RUN line says the host's fun type.
 
+## Meerkat wormhole: one look, the other wormhole shaders removed (2026-10-29) - NOT EDITOR-VERIFIED
+
+Branch `feat/wormhole-pc-unified`, PR #1624. See `Docs/Shaders/WORMHOLE_SHADERS.md` §0, §11 and §12. The contour-field
+lens, its outer layer and the networked holes ship as the only look (GARRETT'S preset baked as
+`MeerkatWormholeHQ.Shipped`). Deleted: `MeerkatWormholeGlass`, `MeerkatWormholeWarp`, `MeerkatTubeWall`,
+`MeerkatWaterTube`, `MeerkatTree` and `MeerkatRootInside` (each shader + material), `MeerkatTubeWallView`,
+`MeerkatWaterTubeView`, `MeerkatTreeView`, `MeerkatTreeMesh`, `MeerkatTubeLook`, `MeerkatWormholeConfigSOEditor`. The
+offline C# reference compile and glslang pass; no Unity in the session.
+
+1. Open the project. **Pass:** no compile errors, no missing-script or missing-shader warnings, and
+   `MeerkatWormholeLens.shader` imports cleanly.
+2. Open `LavalampWormholeLab.unity` and press Play. **Pass:** the tunnels and the network show the same look as before
+   (bent space, a faint outer layer and rim; the network channels have faint iridescence and pulses); no look buttons;
+   "Measure" gives one line; "Tune the look" moves the layer live.
+3. Ride a tunnel and the network. **Pass:** the bend and the layer are as before; a vessel in front of a tube is not bent.
+4. Play the Meerkat in freestyle: form tunnels, grow an omnicrystal network, ride both. **Pass:** the reticle spindles
+   still draw; no errors in the console.
+5. Select `MeerkatWormholeConfig.asset`. **Pass:** the Inspector shows the plain default inspector (no YASH'S / GARRETT'S
+   buttons, no Formed Look field).
+

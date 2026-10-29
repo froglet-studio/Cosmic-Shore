@@ -10,6 +10,12 @@ a wormhole (§8, round 23) and Mass sizes the network (§7a, round 26); Garrett'
 is editor-verified yet: the open hand tests are the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the
 report is `Docs/Reports/MEERKAT.md`.
 
+**Wormhole look, 2026-10-29 (`feat/wormhole-pc-unified`, PR #1624):** ONE look ships, the contour-field lens with its
+outer layer and the networked-hole upgrade (`MeerkatWormholeLens.shader`, `MeerkatWormholeHQ.Shipped`, GARRETT'S
+preset). YASH'S bridge, the warp/dents/ripple, the calm wall, the water pipe, the tree and the root inside were deleted
+with their shaders, materials and views, and so were `formedLook`, `MeerkatTubeLook` and the Inspector look buttons.
+Sections below that mention them are history. To bring any of them back, see `Docs/Shaders/WORMHOLE_SHADERS.md` §12.
+
 Yash, 2026-10-27: *"This will be Meerkat, a new vessel ... with all its things similar to the Stoat. Just rename to
 Meerkat and keep only one ability of the wormhole."* It is the Stoat studio's Gate mode, made its own vessel.
 

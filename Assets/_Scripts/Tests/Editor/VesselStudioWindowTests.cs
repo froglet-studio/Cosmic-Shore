@@ -134,13 +134,6 @@ namespace CosmicShore.Tests
             Assert.IsFalse(VesselConfigsWindow.IsVesselsOwn("Assets/_SO_Assets/VesselActions/Common Vessel Action/Boost.asset", "meerkat"));
             Assert.IsFalse(VesselConfigsWindow.IsVesselsOwn("Assets/_SO_Assets/VesselActions/Squirrel/Drift.asset", ""));
         }
-
-        [Test]
-        public void MeerkatLook_NamesYashsAndGarrettsLooks()
-        {
-            Assert.AreEqual("Yash's look", MeerkatWormholeConfigSOEditor.LookName(CosmicShore.ScriptableObjects.MeerkatFormedLook.Bridge));
-            Assert.AreEqual("Garrett's look", MeerkatWormholeConfigSOEditor.LookName(CosmicShore.ScriptableObjects.MeerkatFormedLook.ContourField));
-        }
     }
 }
 #endif

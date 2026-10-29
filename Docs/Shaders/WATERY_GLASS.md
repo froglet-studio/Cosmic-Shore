@@ -20,6 +20,9 @@ for line to URP HLSL.
 | `MeerkatRootInside.shader` | The roots **from inside** | A soft, smooth inner tube: one slow warm tone, a little dense, denser at its silhouette, lit by the rider's lamp, fading to CLEAR with distance (never to black); its ends stay open | Alpha |
 | `MeerkatWaterTube.shader` (+ `MeerkatWaterTubeView.cs`) | **The cheap mobile water pipe**, A/B candidate (2026-10-28), drawn only when `MeerkatTubeLook.Mode` is WaterOnly or WaterAndLens | Near-white, mostly clear: fresnel rim `abs(n.v)`, slow flow bands along the tube, two crossed sines of caustic shimmer, optional twist; fades near the camera (`_NearFade`) and outside the live window. No grab pass, no screen copy, one draw per tube. Compare against the lens in `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` | Alpha, ZWrite Off, `Cull [_Cull]` (default Off) |
 
+**2026-10-29:** only `MeerkatWormholeLens.shader` is left of the Meerkat rows above (one look, its layer always on).
+The others were deleted; `WORMHOLE_SHADERS.md` §12 has each one's restore commit and steps.
+
 `rim` is always `1 - abs(dot(normal, viewDir))`: 0 where you look straight at the surface, 1 at its outline. `abs` makes
 it the same from inside and outside, so one material serves both.
 

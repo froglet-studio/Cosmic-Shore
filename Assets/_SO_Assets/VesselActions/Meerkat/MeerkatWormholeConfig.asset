@@ -116,7 +116,6 @@ MonoBehaviour:
   fireSpeed: 120
   fireGlideSeconds: 3
   swallowPrismCap: 48
-  formedLook: 1
   fieldStrength: 6
   fieldPitch: 0
   fieldDrag: 0.5

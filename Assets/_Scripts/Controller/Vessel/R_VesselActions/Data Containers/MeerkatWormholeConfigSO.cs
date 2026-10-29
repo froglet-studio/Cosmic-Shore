@@ -5,9 +5,6 @@ using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
-    /// <summary>How a formed Meerkat tunnel shows after RT.</summary>
-    public enum MeerkatFormedLook { Bridge = 0, ContourField = 1 }
-
     /// <summary>The contour field's strength along the tube (the Tube Lens Lab's flow buttons).</summary>
     public enum MeerkatFieldFlow { Even = 0, InThenOut = 1, Throat = 2 }
 
@@ -22,7 +19,8 @@ namespace CosmicShore.ScriptableObjects
     /// source of truth, so tune it there and clone (<c>/artifact-to-unity</c>), never by hand in this asset.
     ///
     /// <para><b>The tree and the roots</b> (the artifact's rounds 13-21; <c>MEERKAT.md</c> §7): the <c>trunk*</c> and
-    /// <c>branch*</c> keys draw the dead tree round every tunnel (<see cref="MeerkatTreeMesh"/>); the <c>omni*</c>,
+    /// <c>branch*</c> keys drew the dead tree round every tunnel (removed 2026-10-29 with its view and mesh builder; the keys stay
+    /// mapped to the artifact, unused; <c>Docs/Shaders/WORMHOLE_SHADERS.md</c> §12); the <c>omni*</c>,
     /// <c>labyrinth*</c> and <c>root*</c> keys are the Omnicrystal ability, the roots and the flight inside them
     /// (<see cref="MeerkatRootMath"/>). Not ported yet: <c>trunkWarp</c> (the tree bending space needs the lens pass),
     /// <c>omniAtOnce</c> 0 (an omnicrystal arming the next RT; the game always grows the roots at once), the soil
@@ -116,7 +114,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("...its spindles' colour: the domain colour toward white")]
         [SerializeField, Range(0f, 1f)] float bridgeWhite = 0.45f;
 
-        [Header("Tree (the artifact's Play Style Config > Wormhole · trunk: the tunnel's outer layer, round 14)")]
+        [Header("Tree (round 14; UNUSED since 2026-10-29: the tree was removed, WORMHOLE_SHADERS.md §12)")]
         [Tooltip("The old outer layer round a wormhole (rounds 13-21), for everyone (0 = hidden; off since round 26)")]
         [SerializeField, Range(0f, 1f)] float trunkVisibility = 0f;
         [Tooltip("...its size at the way in (× the mouth's radius)")]
@@ -256,12 +254,6 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("At most this many prisms in one Meerkat's pull, tube and glide at once (a performance cap, not in the " +
                  "artifact: the prism-motion ladder, Docs/PRISM_MOTION.md §3, drops to spheres past 256 movers)")]
         [SerializeField, Range(16, 1024)] int swallowPrismCap = 256;
-
-        [Header("After RT (Garrett, 2026-10-27: the Tube Lens Lab)")]
-        [Tooltip("After RT, a formed tunnel shows as: ContourField = nothing drawn, only space bent in a thin shell on its " +
-                 "wall (Garrett: \"lets the lensing alone sell the effect\"); Bridge = round 3's spindle bridge and glass. " +
-                 "In the PC look (MeerkatTubeLook HighQuality) both bend space; Bridge adds a visible outer layer and the bridge.")]
-        [SerializeField] MeerkatFormedLook formedLook = MeerkatFormedLook.ContourField;
 
         [Header("Contour field (the Tube Lens Lab's gateField* keys, Docs/Studios/StoatTubeLensLab.html)")]
         // Defaults = the water pipe chosen in the Tube Lens Lab artifact (round 11, 53b34e076) with Yash's Unity glass 0.139
@@ -419,7 +411,6 @@ namespace CosmicShore.ScriptableObjects
         public float BridgeSpindleThickness => bridgeSpindleThickness;
         public float BridgeShimmer => bridgeShimmer;
         public float BridgeWhite => bridgeWhite;
-        public MeerkatFormedLook FormedLook => formedLook;
         public float FieldStrength => fieldStrength;
         public float FieldPitch => fieldPitch;
         public float FieldDrag => fieldDrag;
@@ -436,9 +427,7 @@ namespace CosmicShore.ScriptableObjects
         public float FieldRibTravel => fieldRibTravel;
         public int FieldRibRings => fieldRibRings;
         public int FieldRibLines => fieldRibLines;
-        /// <summary>A formed tunnel bends space through the contour field (the look is on and some coupling bends).</summary>
-        public bool ContourFieldOn => formedLook == MeerkatFormedLook.ContourField && ContourFieldBends;
-        /// <summary>The contour field's numbers bend at all (some coupling is on), whatever the look.</summary>
+        /// <summary>The contour field's numbers bend at all (some coupling is on): a formed tunnel or channel is drawn.</summary>
         public bool ContourFieldBends => fieldStrength > 0f && (fieldDrag > 0f || fieldTwist > 0f) ||
                                          fieldGlass > 0f && fieldGlassIndex > 0f;
         public bool AiWormhole => aiWormhole;
@@ -523,14 +512,6 @@ namespace CosmicShore.ScriptableObjects
         {
             Cruise = rootCruise, Thrust = rootThrust, Move = rootMove, Drag = rootDrag, MaxSpeed = rootMaxSpeed, Bounce = rootBounce,
             Gravity = rootGravity, Tip = rootTip, ExitMultiplier = rideExitMultiplier,
-        };
-
-        /// <summary>The tree's keys (<see cref="MeerkatTreeMesh.BuildTree"/>).</summary>
-        public MeerkatTreeMesh.TreeSettings Tree() => new()
-        {
-            Top = trunkTop, Base = trunkBase, Bark = trunkBark, Ridges = trunkRidges, Gnarl = trunkGnarl, BranchCount = branchCount,
-            BranchLength = branchLength, BranchThickness = branchThickness, BranchUp = branchUp, BranchZone = branchZone,
-            BranchSymmetry = branchSymmetry, BranchForks = branchForks,
         };
 
         /// <summary>The shape rows. <paramref name="spaceLevel"/> (0-10, the hull's Space level) sets the soliton's surface

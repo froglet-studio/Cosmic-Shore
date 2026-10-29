@@ -322,7 +322,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 9a8b7c6d5e4f4a3b2c1d0e9f8a7b6c5d, type: 2}
-  startMode: 6
   tubeCount: 3
   network: 1
   networkShare: 0.25

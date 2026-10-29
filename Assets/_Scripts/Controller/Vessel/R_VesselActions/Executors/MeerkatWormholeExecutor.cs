@@ -73,7 +73,7 @@ namespace CosmicShore.Gameplay
             public Color Colour;
             public MeerkatWormholeExecutor Maker;
             public int Seq;
-            public float Born;   // when it formed here (its tree's branches grow from then, MeerkatTreeView)
+            public float Born;   // when it formed here (the tree that grew from then was removed 2026-10-29)
             public float SwallowLook;   // its swallow's next look round its way in (MeerkatSwallow, round 23)
             // [Garrett's kit hook] the kit its owner stamped on it (MeerkatSolitonKit.Kit* bits) and its exit portal's size,
             // replicated with it; Held while a sentinel guards it (it stands as long as its sentinel)
@@ -231,7 +231,7 @@ namespace CosmicShore.Gameplay
         public int Formed => _seq;
         /// <summary>True while this hull flies inside its roots (from the omnicrystal to its way out).</summary>
         public bool IsInRoots => _flight != null;
-        /// <summary>The roots the local pilot is inside, or null (<see cref="MeerkatTreeView"/> draws their inside).</summary>
+        /// <summary>The roots the local pilot is inside, or null (the flight and the camera read it).</summary>
         public static MeerkatRootNetwork LocalRootNetwork => s_localRoots;
         /// <summary>The local pilot's hull (the lamp that lights the roots' walls).</summary>
         public static Vector3 LocalHullPosition => s_localHull;
@@ -989,17 +989,13 @@ namespace CosmicShore.Gameplay
             {
                 var net = live[i];
                 if (net.Maker != this) continue;
-                if (net.Step(config.StaySeconds, config.CollapseSeconds, dt))
-                {
-                    MeerkatTreeView.PrepareSkins(net, config);   // no-op once built, or while the skins are off
-                    continue;
-                }
+                if (net.Step(config.StaySeconds, config.CollapseSeconds, dt)) continue;
                 if (_roots == net) { _roots = null; _flight = null; }
                 net.Remove();
             }
         }
 
-        /// <summary>The local pilot's roots and lamp, for <see cref="MeerkatTreeView"/>.</summary>
+        /// <summary>The local pilot's roots (<see cref="LocalRootNetwork"/>).</summary>
         void TrackLocalPilot()
         {
             if (_status.Player == null || !_status.IsLocalUser || _status.IsInitializedAsAI) return;

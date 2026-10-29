@@ -9,49 +9,38 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The bent space everyone sees round a Meerkat's tunnels (<c>R_VesselActions/MEERKAT.md</c>): the Vessel Studio's
-    /// <c>updateTubeWarp</c> + <c>lensMat</c> + <c>setLensUniforms</c> + <c>rippleUniform</c>
-    /// (<c>Docs/Studios/VesselStudio/meerkat.html</c>), the sibling of <see cref="BlackHoleLensPass"/> and
-    /// <see cref="VortexRingLensPass"/> with the same plumbing: after URP has drawn the TRANSPARENTS,
-    /// <list type="number">
-    /// <item>every live tube's wall (<see cref="MeerkatWormholeView.WarpMesh"/>) is drawn into a half-resolution
-    /// half-float target as a screen-space offset: the wall's view normal, strongest at the silhouette, bending in toward
-    /// the way in and out toward the way out (<c>MeerkatWormholeWarp.shader</c>);</item>
-    /// <item>the camera's colour is copied and drawn back through one full-screen triangle
-    /// (<c>MeerkatWormholeLens.shader</c>) displaced by that offset, by each mouth's dent (as wide as the mouth, fading as
-    /// the camera nears it) and by the collapse's ripple, a ring at the screen's EDGES only (nothing inside
-    /// <c>rippleEdge</c> moves).</item>
+    /// THE wormhole look (Yash, 2026-10-29: "just keep one high quality look, the one there is now"): the bent space everyone
+    /// sees round a Meerkat's tunnels and an omnicrystal's network (<c>R_VesselActions/MEERKAT.md</c>,
+    /// <c>Docs/Shaders/WORMHOLE_SHADERS.md</c> §11), the sibling of <see cref="BlackHoleLensPass"/> and
+    /// <see cref="VortexRingLensPass"/> with the same plumbing. After URP has drawn the TRANSPARENTS the camera's colour is
+    /// copied and drawn back through one full-screen triangle (<c>MeerkatWormholeLens.shader</c>):
+    /// <list type="bullet">
+    /// <item><b>The contour field</b> (Garrett, 2026-10-27, the Tube Lens Lab, <c>Docs/Studios/StoatTubeLensLab.html</c>): a
+    /// formed tunnel draws nothing and is ONLY bent space. Each pixel's ray is marched through a thin shell on the tunnel's
+    /// wall (<c>fieldInner</c> × r inside to <c>fieldOuter</c> × r outside, graded to zero at its edge) and turned there by a
+    /// field whose lines on the wall are the tube's own contours (<c>fieldPitch</c> 0° along it, 90° round its rings); where
+    /// it lands on screen is what that pixel shows. The four tubes nearest the camera take part (<see cref="MaxTubes"/>).</item>
+    /// <item><b>The outer layer</b> (<see cref="MeerkatWormholeHQ"/>): a faint water-glass tint and glow by the shell's optical
+    /// depth, a Fresnel rim, a glint of the main light and chromatic dispersion; a network channel adds an iridescent film
+    /// and pulses of light running along it.</item>
+    /// <item><b>Round 26</b> (Yash, 2026-10-28: "the network of wormholes ... like our tube, same visuals"): a channel of an
+    /// omnicrystal's network joins the same bank as a 3D polyline (<see cref="PathPoints"/> points at even steps of s, each
+    /// its radius, and the channel's carried normal), flagged by <c>Shape.y</c> 1.</item>
     /// </list>
-    /// <b>The contour field</b> (Garrett, 2026-10-27, from the Tube Lens Lab, <c>Docs/Studios/StoatTubeLensLab.html</c>): with
-    /// <c>formedLook</c> ContourField a formed tunnel draws nothing and is ONLY bent space. The same lens draw ray-marches each
-    /// pixel's ray through a thin shell on the tunnel's wall (<c>fieldInner</c> × r inside to <c>fieldOuter</c> × r outside,
-    /// graded to zero at its edge). Inside the shell the ray is turned by a field whose lines on the wall are the tube's own
-    /// contours (<c>fieldPitch</c> 0° along it, 90° round its rings), then it carries on; where it lands on screen is what
-    /// that pixel shows. The four tubes nearest the camera take part (<see cref="MaxTubes"/>).
-    /// <b>Round 26</b> (Yash, 2026-10-28: "the network of wormholes ... like our tube, same visuals"): a channel of an
-    /// omnicrystal's network is a tube too. It joins the same bank as a 3D polyline (<see cref="PathPoints"/> points at even
-    /// steps of s, each its radius, and the channel's carried normal), flagged by <c>Shape.y</c> 1, so the water pipe bends
-    /// space round the network exactly as round a tunnel; the nearest tubes are taken, tunnels and channels alike.
-    /// Injected from script on every base game camera while a tunnel or a ripple is live (URP's "inject a pass via
-    /// scripting" route); a scene with none pays nothing. The camera depth texture (a vessel in front of a mouth is not
-    /// bent) is held on through <see cref="BlackHoleLens.CameraSupport"/> while anything is live.
+    /// Injected from script on every base game camera while a tunnel or a network is live (URP's "inject a pass via
+    /// scripting" route); a scene with none pays nothing. The camera depth texture (a vessel in front of a tube is not bent)
+    /// is held on through <see cref="BlackHoleLens.CameraSupport"/> while anything is live. The warp tubes, the mouth dents and
+    /// the collapse ripple this pass also drew were removed on 2026-10-29 (the doc's §12 restores them).
     /// </summary>
     public sealed class MeerkatWormholeLensPass : ScriptableRenderPass
     {
         public const string LensMaterialPath = "MeerkatWormholeLens";
-        public const string WarpMaterialPath = "MeerkatWormholeWarp";
-        /// <summary>The most mouths one pass dents (two per tunnel).</summary>
-        public const int MaxWells = 8;
         /// <summary>The most tunnels one pass marches the contour field through (the nearest to the camera).</summary>
         public const int MaxTubes = 4;
         /// <summary>Points along each tube's centreline the shader measures it by (round 22: the arc, at even steps of s).</summary>
         public const int PathPoints = 25;
 
         static readonly int SceneColorId = Shader.PropertyToID("_MeerkatSceneColor");
-        static readonly int WarpTexId = Shader.PropertyToID("_MeerkatWarpTex");
-        static readonly int WellCId = Shader.PropertyToID("_MWWellC");
-        static readonly int WellPId = Shader.PropertyToID("_MWWellP");
-        static readonly int RippleId = Shader.PropertyToID("_MWRipple");
         static readonly int ViewId = Shader.PropertyToID("_MWView");
         static readonly int TubeW2LId = Shader.PropertyToID("_MWTubeW2L");
         static readonly int TubeShapeId = Shader.PropertyToID("_MWTubeShape");
@@ -72,17 +61,12 @@ namespace CosmicShore.Gameplay
         static readonly int HQ2Id = Shader.PropertyToID("_MWHQ2");
         static readonly int HQ3Id = Shader.PropertyToID("_MWHQ3");
         static readonly int LightDirId = Shader.PropertyToID("_MWLightDir");
-        /// <summary>The lens shader's high-quality PC variant (<see cref="MeerkatTubeLookMode.HighQuality"/>).</summary>
-        public const string HighQualityKeyword = "_MW_HQ";
 
         static MeerkatWormholeLensPass s_pass;
-        static Material s_lens, s_lensHQ, s_warp;
-        static ScriptableObjects.MeerkatFormedLook s_nearLook;
+        static Material s_lens;
         static bool s_resolved, s_holdingCameras;
         static readonly ProfilerMarker s_marker = new("MeerkatWormholeLens.Maintain");
 
-        static readonly Vector4[] s_c = new Vector4[MaxWells];
-        static readonly Vector4[] s_p = new Vector4[MaxWells];
         static readonly ContourTubes s_tubes = new();
         /// <summary>One tube the contour field may take: a tunnel, or (round 26) a channel of a network.</summary>
         struct Near
@@ -124,19 +108,11 @@ namespace CosmicShore.Gameplay
 
         class CopyData { public TextureHandle source; }
 
-        class WarpData
-        {
-            public Material material;
-            public Mesh mesh;
-        }
-
         class LensData
         {
             public Material material;
             public readonly MaterialPropertyBlock block = new();
-            public readonly Vector4[] c = new Vector4[MaxWells];
-            public readonly Vector4[] p = new Vector4[MaxWells];
-            public Vector4 ripple, view;
+            public Vector4 view;
             public Vector4 hq0, hq1, hq2, hq3, light;
             public readonly ContourTubes tubes = new();
         }
@@ -148,9 +124,8 @@ namespace CosmicShore.Gameplay
             profilingSampler = new ProfilingSampler("MeerkatWormholeLens");
         }
 
-        static bool AnythingLive => MeerkatTubeLook.LensOn &&   // the Lavalamp lab's side-by-side switch (Original by default: on)
-                                    (MeerkatWormholeExecutor.Live.Count > 0 || MeerkatWormholeExecutor.Ripples.Count > 0 ||
-                                     MeerkatRootNetwork.Live.Count > 0);   // round 26: a network bends space as a tunnel does
+        static bool AnythingLive => MeerkatWormholeExecutor.Live.Count > 0 ||
+                                    MeerkatRootNetwork.Live.Count > 0;   // round 26: a network bends space as a tunnel does
 
         static void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {
@@ -178,12 +153,8 @@ namespace CosmicShore.Gameplay
             if (resources.isActiveTargetBackBuffer) return;
             var cam = frameData.Get<UniversalCameraData>().camera;
             if (cam == null || cam.orthographic || !Resolve()) return;
-            int wells = ScreenWells(cam, s_c, s_p);
-            var ripple = RippleFor(cam);
-            var warpMesh = MeerkatWormholeView.WarpMesh;
-            bool warp = warpMesh != null && warpMesh.vertexCount > 0;
             int tubes = ContourTubesFor(cam, s_tubes);
-            if (wells == 0 && ripple.x <= 0f && !warp && tubes == 0) return;
+            if (tubes == 0) return;
             TextureHandle colour = resources.activeColorTexture;
 
             var desc = renderGraph.GetTextureDesc(colour);
@@ -195,36 +166,7 @@ namespace CosmicShore.Gameplay
             desc.wrapMode = TextureWrapMode.Clamp;
             TextureHandle copy = renderGraph.CreateTexture(desc);
 
-            // 1. The tubes' warp, half resolution (the page's rtWarp).
-            var warpDesc = renderGraph.GetTextureDesc(colour);
-            warpDesc.name = "_MeerkatWarpTex";
-            warpDesc.width = Mathf.Max(2, warpDesc.width / 2);
-            warpDesc.height = Mathf.Max(2, warpDesc.height / 2);
-            warpDesc.colorFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_SFloat;
-            warpDesc.depthBufferBits = DepthBits.None;
-            warpDesc.msaaSamples = MSAASamples.None;
-            warpDesc.bindTextureMS = false;
-            warpDesc.clearBuffer = true;
-            warpDesc.clearColor = Color.clear;
-            warpDesc.filterMode = FilterMode.Bilinear;
-            warpDesc.wrapMode = TextureWrapMode.Clamp;
-            TextureHandle warpTex = renderGraph.CreateTexture(warpDesc);
-
-            using (var builder = renderGraph.AddRasterRenderPass<WarpData>("Meerkat tube warp", out var data, profilingSampler))
-            {
-                data.material = s_warp;
-                data.mesh = warp ? warpMesh : null;
-                builder.SetRenderAttachment(warpTex, 0, AccessFlags.Write);
-                builder.SetGlobalTextureAfterPass(warpTex, WarpTexId);
-                builder.AllowPassCulling(false);
-                builder.AllowGlobalStateModification(true);
-                builder.SetRenderFunc((WarpData d, RasterGraphContext ctx) =>
-                {
-                    if (d.mesh != null) ctx.cmd.DrawMesh(d.mesh, Matrix4x4.identity, d.material, 0, 0);
-                });
-            }
-
-            // 2. The scene as drawn so far, resolved, single-sample.
+            // 1. The scene as drawn so far, resolved, single-sample.
             using (var builder = renderGraph.AddRasterRenderPass<CopyData>("Meerkat scene copy", out var data, profilingSampler))
             {
                 data.source = colour;
@@ -236,24 +178,15 @@ namespace CosmicShore.Gameplay
                     Blitter.BlitTexture(ctx.cmd, d.source, new Vector4(1f, 1f, 0f, 0f), 0f, false));
             }
 
-            // 3. Everything at once, bending that copy onto the camera colour.
+            // 2. The one look, bending that copy onto the camera colour.
             using (var builder = renderGraph.AddRasterRenderPass<LensData>("Meerkat wormhole lens", out var data, profilingSampler))
             {
-                bool hq = MeerkatTubeLook.HighQuality && s_lensHQ;
-                data.material = hq ? s_lensHQ : s_lens;
-                if (hq)
-                {
-                    MeerkatWormholeHQ.For(s_nearLook).Pack(out data.hq0, out data.hq1, out data.hq2, out data.hq3);
-                    data.light = MeerkatWormholeHQ.LightDir();
-                }
-                else data.hq0 = data.hq1 = data.hq2 = data.hq3 = data.light = Vector4.zero;
-                System.Array.Copy(s_c, data.c, MaxWells);
-                System.Array.Copy(s_p, data.p, MaxWells);
-                data.ripple = ripple;
-                data.view = new Vector4(cam.aspect, warp ? 1f : 0f, wells, tubes);
+                data.material = s_lens;
+                MeerkatWormholeHQ.Current.Pack(out data.hq0, out data.hq1, out data.hq2, out data.hq3);
+                data.light = MeerkatWormholeHQ.LightDir();
+                data.view = new Vector4(cam.aspect, 0f, 0f, tubes);
                 s_tubes.CopyTo(data.tubes);
                 builder.UseTexture(copy, AccessFlags.Read);
-                builder.UseTexture(warpTex, AccessFlags.Read);
                 if (resources.cameraDepthTexture.IsValid())
                     builder.UseTexture(resources.cameraDepthTexture, AccessFlags.Read);
                 builder.UseAllGlobalTextures(true);
@@ -262,9 +195,6 @@ namespace CosmicShore.Gameplay
                 builder.SetRenderFunc((LensData d, RasterGraphContext ctx) =>
                 {
                     d.block.Clear();
-                    d.block.SetVectorArray(WellCId, d.c);
-                    d.block.SetVectorArray(WellPId, d.p);
-                    d.block.SetVector(RippleId, d.ripple);
                     d.block.SetVector(ViewId, d.view);
                     var t = d.tubes;
                     d.block.SetMatrixArray(TubeW2LId, t.W2L);
@@ -292,45 +222,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The page's <c>setLensUniforms</c>: each tunnel's two mouths as this camera sees them. c: xy the centre on screen
-        /// (screen heights from the centre, y up), z its depth, w 1. p: x 3 for the way in (space bent in) or 4 for the way
-        /// out, y the mouth's angular radius, z the dent's strength (dentStrength × the tunnel's fade × the camera's
-        /// nearness), w the foreground margin (the mouth's radius).
-        /// </summary>
-        public static int ScreenWells(Camera cam, Vector4[] c, Vector4[] p)
-        {
-            int n = 0;
-            var worldToCamera = cam.worldToCameraMatrix;
-            var eye = cam.transform.position;
-            float f = 0.5f / Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * 0.5f);
-            var live = MeerkatWormholeExecutor.Live;
-            for (int i = 0; i < live.Count; i++)
-            {
-                var t = live[i];
-                var cfg = t.Config;
-                if (!cfg || cfg.DentStrength <= 0f) continue;   // no dent: the pass skips the mouth (lensing off ships at 0)
-                for (int end = 0; end < 2 && n < MaxWells; end++)
-                {
-                    float s = end == 0 ? t.W.S0 : t.W.S1;
-                    var at = t.At(s, out _);
-                    var view = worldToCamera.MultiplyPoint3x4(at);
-                    float depth = -view.z;
-                    if (depth <= cam.nearClipPlane + 1f) continue;
-                    float rM = t.Radius(s), D = Vector3.Distance(eye, at);
-                    float nearA = MeerkatWormholeMath.Smooth(rM * 0.6f, rM * MeerkatWormholeMath.DentNear, D);
-                    c[n] = new Vector4(f * view.x / depth, f * view.y / depth, depth, 1f);
-                    p[n] = new Vector4(end == 0 ? 3f : 4f, BlackHoleLens.Angular(f, rM, D),
-                        Mathf.Min(0.95f, Mathf.Max(0f, cfg.DentStrength)) * t.Fade * nearA, rM);
-                    n++;
-                }
-            }
-            for (int i = n; i < MaxWells; i++) c[i] = p[i] = Vector4.zero;
-            return n;
-        }
-
-        /// <summary>
-        /// The contour field's bank for this camera: the <see cref="MaxTubes"/> formed tunnels nearest it whose config shows
-        /// the contour field, each as its world-to-own-frame matrix (<see cref="MeerkatWormholeMath.TubeWorldToLocal"/>), its
+        /// The contour field's bank for this camera: the <see cref="MaxTubes"/> formed tunnels and network channels nearest it
+        /// whose config's field bends at all, each as its world-to-own-frame matrix (<see cref="MeerkatWormholeMath.TubeWorldToLocal"/>), its
         /// shape, its live window (so the field forms out of the centre and collapses with the tunnel) and fade, and a bounding
         /// sphere the shader's rays skip to. The field's numbers come from the nearest tunnel's config. Returns how many.
         /// </summary>
@@ -343,7 +236,7 @@ namespace CosmicShore.Gameplay
             {
                 var t = live[i];
                 var cfg = t.Config;
-                if (!cfg || !MeerkatTubeLook.FieldOn(cfg) || t.W.S1 - t.W.S0 < 1f || t.Fade <= 0.004f) continue;
+                if (!cfg || !cfg.ContourFieldBends || t.W.S1 - t.W.S0 < 1f || t.Fade <= 0.004f) continue;
                 Offer(new Near { Tunnel = t, D = Vector3.Distance(eye, t.At(0.5f * (t.W.S0 + t.W.S1), out _)) });
             }
             // round 26: every channel of a network is a wormhole tube; its distance is to the nearest point of its dug window
@@ -353,7 +246,7 @@ namespace CosmicShore.Gameplay
             {
                 var net = nets[n];
                 var cfg = net.Maker ? net.Maker.Config : null;
-                if (!cfg || !MeerkatTubeLook.FieldOn(cfg) || MeerkatWormholeView.ChannelWrapped(cfg)) continue;
+                if (!cfg || !cfg.ContourFieldBends) continue;
                 for (int i = 0; i < net.Channels.Count; i++)
                 {
                     ref var w = ref net.Life[i];
@@ -367,7 +260,6 @@ namespace CosmicShore.Gameplay
             }
             int count = s_nearN;
             bank.Count = count;
-            if (count > 0) s_nearLook = MeerkatTubeLook.Formed(s_near[0].Config);   // the PC look's preset: the nearest tube's
             for (int i = 0; i < MaxTubes; i++)
             {
                 for (int j = 0; j < PathPoints; j++) bank.Norm[i * PathPoints + j] = Vector4.zero;
@@ -453,45 +345,17 @@ namespace CosmicShore.Gameplay
             bank.Bound[i] = new Vector4(mid.x, mid.y, mid.z, 0.5f * (hi - lo).magnitude + rMax * (1f + outer) + 4f);
         }
 
-        /// <summary>The page's <c>rippleUniform</c>: the strongest live ripple as this camera sees it (x strength, y its
-        /// front, z where it starts).</summary>
-        public static Vector4 RippleFor(Camera cam)
-        {
-            float best = 0f, front = 0f, edge = 0f;
-            var ripples = MeerkatWormholeExecutor.Ripples;
-            for (int i = 0; i < ripples.Count; i++)
-            {
-                var r = ripples[i];
-                if (!r.Config) continue;
-                float u = (Time.time - r.Start) / Mathf.Max(0.2f, r.Config.RippleSeconds);
-                float a = MeerkatWormholeMath.RippleAmplitude(r.Config.RippleStrength, u,
-                    Vector3.Distance(cam.transform.position, r.Centre));
-                if (a <= best) continue;
-                best = a;
-                edge = MeerkatWormholeMath.Clamp01(r.Config.RippleEdge);
-                front = MeerkatWormholeMath.RippleFront(edge, u);
-            }
-            return new Vector4(best, front, edge, 0f);
-        }
-
         static bool Resolve()
         {
-            if (s_resolved) return s_lens && s_warp;
+            if (s_resolved) return s_lens;
             s_resolved = true;
             s_lens = Resources.Load<Material>(LensMaterialPath);
-            s_warp = Resources.Load<Material>(WarpMaterialPath);
-            if (!BlackHoleLens.IsDrawable(s_lens, out string reason) || !BlackHoleLens.IsDrawable(s_warp, out reason))
+            if (!BlackHoleLens.IsDrawable(s_lens, out string reason))
             {
-                CSDebug.LogWarning($"[Meerkat] The wormhole lens cannot draw: {reason}. Tunnels show their bridge, not bent space.");
-                s_lens = s_warp = null;
+                CSDebug.LogWarning($"[Meerkat] The wormhole lens cannot draw: {reason}. Tunnels are not shown.");
+                s_lens = null;
             }
-            else
-            {
-                // the PC look: the same shader and material with _MW_HQ on (one shader; the keyword off is the shipped lens)
-                s_lensHQ = new Material(s_lens) { name = "MeerkatWormholeLens (HQ)", hideFlags = HideFlags.HideAndDontSave };
-                s_lensHQ.EnableKeyword(HighQualityKeyword);
-            }
-            return s_lens && s_warp;
+            return s_lens;
         }
 
         /// <summary>Once a frame before any camera renders: hold every game camera's depth on while anything is live.</summary>
@@ -516,9 +380,7 @@ namespace CosmicShore.Gameplay
         static void ResetOnLoad()
         {
             s_resolved = false;
-            s_lens = s_warp = null;
-            if (s_lensHQ) UnityEngine.Object.Destroy(s_lensHQ);
-            s_lensHQ = null;
+            s_lens = null;
             s_holdingCameras = false;
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
