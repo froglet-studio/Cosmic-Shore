@@ -14,18 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {
-  "best": 4.143021784222951,
+ "current": {},
+ "host": "dragonsweapon",
+ "last": {
   "best_start": null,
   "epoch": "ee78e83fdb59",
-  "evals": 41057,
+  "evals": 43617,
   "job": "drive-dolphin-regatta",
-  "max_evals": null,
-  "minutes": 60.0,
-  "request": null,
-  "since": 1793264649
+  "session_evals": 43617,
+  "stopped": "budget"
  },
- "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -134,12 +132,24 @@
    "start": 1793263097,
    "stopped": "the person came back",
    "unit": null
+  },
+  {
+   "best_end": 4.143021784222951,
+   "best_start": null,
+   "end": 1793268288,
+   "epoch": "ee78e83fdb59",
+   "evals": 43617,
+   "job": "drive-dolphin-regatta",
+   "request": null,
+   "start": 1793264649,
+   "stopped": "budget",
+   "unit": null
   }
  ],
  "totals": {
-  "sessions": 9
+  "sessions": 10
  },
- "updated": 1793268071,
+ "updated": 1793268288,
  "user": "shombithofficial",
  "version": "1"
 }
