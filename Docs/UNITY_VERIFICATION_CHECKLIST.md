@@ -92,6 +92,63 @@ Compiled against the Unity reference assemblies (player and editor configs, 0 pr
 - [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
 
 First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+### 🔴 God mode in the lava lamp: a free inspection camera on F2 / L3 (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** `MenuGodModeCamera` on Menu_Main's Game object. F2 (or L3) swaps the lava-lamp camera for a free-fly
+camera while the AI keeps flying the vessel; F2 again glides back. Controls in Docs/claude/MENU_AND_LAVA_LAMP.md
+("God mode"). **First-pass tuning:** cruise 60 u/s, Shift ×4, Alt ×0.25, acceleration 6/s, damping 4/s, mouse
+0.12°/px, look smoothing 14/s.
+
+- [ ] Menu_Main opens with no missing-script warning on the Game object; the new component shows `Menu Camera` wired.
+- [ ] In the lava lamp, F2: the view starts exactly where the menu camera was, a hint line appears top left, the vessel
+  keeps flying under the AI.
+- [ ] WASD, E/Space, Q/Ctrl fly smoothly (eases in, glides to a stop); right mouse looks; Shift / Alt / the wheel change
+  speed. The menu's UI selection does not move while you press WASD or Space.
+- [ ] F2 again: the menu framing glides back from where you were (no cut, no snap), menu keys navigate again.
+- [ ] Gamepad: L3 toggles, sticks fly and look, RT/LT up/down, RB fast. R3 still takes a screenshot.
+- [ ] In god mode, double-tap to take control: god mode ends and the freestyle blend starts from the god camera's
+  view; flying works normally; returning to the menu works; F2 works again.
+- [ ] F2 in freestyle or mid-blend does nothing.
+- [ ] Untick `godModeEnabled`: F2 does nothing.
+
+### 🔴 Switchback BLAST RUN: blocked gates in closed-form worlds, key-crystal blasts, sweepers, snap jaws, hunter packs (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** a sixth Switchback fun type, `BlastRun` (picker label BLAST RUN). Classic course; blocked gates get a
+key crystal on the leg in, a Breakwater door round an 18 u eye and a closed-form world (I1 Garden, I2 Maze, I3
+Membrane, I4 Menger cage). Invaders: I2 sweepers, I3 + snap-trap jaws, I4 + double door and server-driven hunter packs
+(`NetworkList<BlastRunPackState>`). Key crystals blast 1.25 x (code hook in `VesselExplosionByCrystalEffectSO`; the
+shared Dolphin explosion asset is untouched). Details: `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`, "Blast Run".
+Classic and the other fun types are unchanged. Headless: `SwitchbackBlastRunTests`, the harness, both refcompiles,
+`audit_prism_clipping.py` (Blast Run posed at 45_501-45_504: flush).
+
+**Verify in editor:**
+1. Run `SwitchbackBlastRunTests` and `SwitchbackFunTypeTests` (EditMode): all pass. Also `RaceAIWaypointsOnlyTests`
+   (a Classic Switchback still never detours for crystals).
+2. Arcade -> Switchback -> card: `FUN: BLAST RUN`, `SEED: FIXED`, I1, launch. Console (verbose ArcadeMatch):
+   `[Switchback] Fun type BlastRun intensity 1: ... BLAST RUN 6 blocked gates, 0 hunter packs, 2072 prisms.`
+   Expect 6 / 9 / 16 / 12 blocked gates and 2072 / 2235 / 2669 / 1464 prisms at I1-I4 (seeds 45_501-45_504) on the
+   shipped shell; a different shell changes the counts but not the pass/fail of the steps below.
+3. Each blocked gate: a crystal on the line before it; take it - the blast clears a path through the world AND the door
+   (a hole at least the eye's width), and the ring is reachable. If the blast stops short of the door, raise
+   `KeyCoreMultiplier` (1.25) or lower `KeyLeadMax` (400 u).
+4. No error `[Switchback] BLAST RUN: no CrystalManager in the scene` - if it appears, no keys were laid.
+5. I2: sweepers cross the line before each key. I3: the jaws snap shut (4 u gap) and open every 2.4 s; timing a pass
+   through is possible. Blast a jaw: its prisms stop moving and nothing errors.
+6. I4: up to 3 dens; a pack moves toward the leading Dolphin when it is within 400 u of its den, never further than
+   260 u from it, and goes home. Blast a member: `HUNTER DOWN (n/total)` toast and
+   `[Switchback] BLAST RUN hunter down: pack p member m.`; the same on a client in a 2-peer session (positions
+   replicate, client prisms follow smoothly).
+7. Finish: the RUN line ends ` blastRun stations=.. keys=.. huntersDown=x/y`.
+8. AI Dolphins in Blast Run take the keys (crystal detour on); in Classic they still ignore crystals.
+9. Performance at I3 (the most prisms, ~2.7k + the cell): frame time comparable to Breakwater I3.
+
+**First-pass tuning (expect a pass):** `StationSpacing` 280 u; `WorldCap` {280, 180, 100, 60}; `TotalCap`
+{4600, 4000, 3500, 3000}; key lead 0.62 x leg in 230-400 u; key core 1.25 x; jaws 26 -> 4 u, 2.4 s; hunters 45 u/s,
+leash 260 u, sense 400 u, 3 x 7-prism members, down at <= 2 prisms left. I4 worlds are thin (0-40 prisms a station).
+
+**Known minimal:** hunter kills are not scored (log + toast only); hunters pass through static prisms; reverse-threading
+a blocked ring at I1-I3 is not prevented; the AI does not aim blasts at doors.
+
 ### 🔴 Destroyed prisms are recycled after their death effect; trail hygiene (`perf/lavalamp-prism-recycle`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PERFORMANCE_OPTIMIZATION.md` §2, row 10-29; Yash approved recycling DEAD prisms):
@@ -18642,4 +18699,64 @@ Branch `switchback-fun-types`. See `Assets/_Scripts/Controller/Arcade/SWITCHBACK
 7. COMBINED, I3. **Pass:** Plan 1's course with Plan 2's features and Plan 3's toasts.
 8. Two machines, host on LIVE FEATURES I4 or LEVEL SHAPES I4, guest on CLASSIC. **Pass:** the guest flies the host's
    course (same needles, same moving prisms in sync), and the guest's RUN line says the host's fun type.
+
+## Meerkat wormhole: one look, the other wormhole shaders removed (2026-10-29) - NOT EDITOR-VERIFIED
+
+Branch `feat/wormhole-pc-unified`, PR #1624. See `Docs/Shaders/WORMHOLE_SHADERS.md` §0, §11 and §12. The contour-field
+lens, its outer layer and the networked holes ship as the only look (GARRETT'S preset baked as
+`MeerkatWormholeHQ.Shipped`). Deleted: `MeerkatWormholeGlass`, `MeerkatWormholeWarp`, `MeerkatTubeWall`,
+`MeerkatWaterTube`, `MeerkatTree` and `MeerkatRootInside` (each shader + material), `MeerkatTubeWallView`,
+`MeerkatWaterTubeView`, `MeerkatTreeView`, `MeerkatTreeMesh`, `MeerkatTubeLook`, `MeerkatWormholeConfigSOEditor`. The
+offline C# reference compile and glslang pass; no Unity in the session.
+
+1. Open the project. **Pass:** no compile errors, no missing-script or missing-shader warnings, and
+   `MeerkatWormholeLens.shader` imports cleanly.
+2. Open `LavalampWormholeLab.unity` and press Play. **Pass:** the tunnels and the network show the same look as before
+   (bent space, a faint outer layer and rim; the network channels have faint iridescence and pulses); no look buttons;
+   "Measure" gives one line; "Tune the look" moves the layer live.
+3. Ride a tunnel and the network. **Pass:** the bend and the layer are as before; a vessel in front of a tube is not bent.
+4. Play the Meerkat in freestyle: form tunnels, grow an omnicrystal network, ride both. **Pass:** the reticle spindles
+   still draw; no errors in the console.
+5. Select `MeerkatWormholeConfig.asset`. **Pass:** the Inspector shows the plain default inspector (no YASH'S / GARRETT'S
+   buttons, no Formed Look field).
+
+## Meerkat wormhole: the calm jelly look, trunk and root, comfort settings (2026-10-29) - NOT EDITOR-VERIFIED
+
+Branch `feat/wormhole-pc-unified`, PR #1624. See `Docs/Shaders/WORMHOLE_SHADERS.md` §13 and §14. There is no water, tint
+or dispersion. The trunk (tunnel) and root (network channel) share `MeerkatWormholeLook`, each with its own numbers.
+`MeerkatWormholeHQ.cs` was renamed `MeerkatWormholeLook.cs` (same `.meta` GUID). The contour-field fields and the dead
+studio keys were removed from the config. glslang (vert + frag) and the offline C# reference compile (player + editor)
+pass; no Unity in the session.
+
+1. Open the project. **Pass:** no compile errors, `MeerkatWormholeLens.shader` imports cleanly, and there are no
+   missing-script warnings.
+2. Select `MeerkatWormholeConfig.asset`. **Pass:** the headers read Comfort, Trunk Look, Trunk Shape, Trunk Ride, Root
+   Look, Root Shape, Root Ride, Kit, then Miscellaneous. Trunk Look shows Bend 3, Lens 0.139, Wobble 0.2. Root Look has
+   Shimmer 0.5 and Pulse 0.12. Comfort is 1 / 0.25 / 1. There are no `field*` fields and no unknown-field warnings.
+3. Open `LavalampWormholeLab.unity` and press Play, then watch a tunnel from outside. **Pass:** the world behind bends
+   gently along the tube and slowly breathes; there is a faint white rim, and no blue or green tint. A vessel in front of
+   the tube is not bent.
+4. Ride the tunnel. **Pass:** the edges of the view bend round you more softly than from outside, the middle of the
+   screen (where you head) stays still, and nothing flickers or swims fast.
+5. Ride the network (RideNetwork). **Pass:** the same feel, plus a faint shimmer and slow pulses along the channels.
+6. In "Tune the look", drag Comfort > Distortion intensity to 0. **Pass:** every tube goes perfectly clear and still
+   (only the rim and glint stay). Back at 1, the look returns. Raise a Wobble speed above 0.25. **Pass:** the breath
+   does not get faster (the comfort cap).
+7. Switch the Trunk / Root toolbar and move Bend. **Pass:** only that kind changes. "Log numbers" prints the JSON, and
+   "Reset to config" restores it. The panel scrolls.
+8. Profile (Frame Debugger or "Measure"). **Pass:** the lens is one full-screen draw, and it costs less than before
+   (one scene read and no gradient taps).
+
+## Lava lamp (Menu_Main) spawns the Squirrel by default again (2026-10-29) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scenes/Menu_Main.unity` (`MainMenuController.menuVesselClass` 28 Meerkat -> 6 Squirrel) and
+`MainMenuController.cs` (the code default and tooltip). Yash: "change the lavalamp default vessel from meerkat to
+squirrel". This undoes 622e271ca's swap; the 2026-10-28 Meerkat entry above is superseded. No Unity in the session.
+
+1. Open Menu_Main, select the MainMenuController object. **Pass:** Menu Vessel Class reads Squirrel.
+2. Boot from the Bootstrap/Auth scene into the menu. **Pass:** the lava-lamp autopilot is a Squirrel, flying on its AI.
+3. Click into freestyle. **Pass:** you fly the Squirrel with its HUD and camera; no Meerkat errors in the console.
+4. Play an arcade game with another hull and return to the menu. **Pass:** the lava lamp is a Squirrel again.
+5. Vessel Changer toy -> Meerkat, then back to Squirrel. **Pass:** both swaps work; the Meerkat still forms tunnels.
+6. `LavalampWormholeLab.unity` still flies the Meerkat.
 
