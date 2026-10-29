@@ -350,23 +350,36 @@ notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refre
 2. Networking > Virtual cloud networks > the instance's VCN > its subnet's security list > Add ingress rules: source
    `0.0.0.0/0`, TCP, destination ports **80** and **443**.
 3. A GitHub fine-grained token: Settings > Developer settings > Fine-grained tokens, resource owner
-   `froglet-studio`, only `Cosmic-Shore`, **Contents: read and write**, **Pull requests: read**. The organisation may
-   have to approve it.
-4. `ssh -i <key> ubuntu@<public ip>` (Windows has `ssh` built in), then:
+   `froglet-studio`, only `Cosmic-Shore`, **Contents: read and write**. Pick an expiry you will remember: when it
+   lapses the VM stops publishing (put a new one in by running the script again). An organisation owner may have to
+   approve it; the script checks that it can push and stops with a message when it cannot.
+4. `ssh -i <key> ubuntu@<public ip>` (Windows has `ssh` built in; on macOS/Linux `chmod 600 <key>` first, or ssh
+   refuses a downloaded key), then:
    ```
-   export GITHUB_TOKEN=github_pat_...
-   curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
-     https://raw.githubusercontent.com/froglet-studio/Cosmic-Shore/claude/eager-franklin-e6g77h/Tools/Compute/vm/setup-vm.sh | bash
+   read -rs GITHUB_TOKEN && export GITHUB_TOKEN
+   curl -fsSL -o setup-vm.sh \
+     https://raw.githubusercontent.com/froglet-studio/Cosmic-Shore/claude/eager-franklin-e6g77h/Tools/Compute/vm/setup-vm.sh
+   bash setup-vm.sh
    ```
-   `Tools/Compute/vm/setup-vm.sh` installs git, Python, numpy and Caddy; opens 80/443 in the image's firewall; makes a
-   `froglet` service user with a partial, sparse clone (only Tools/Compute, Tools/Build, Docs/Compute, Docs/AI_SYSTEM,
-   Docs/TEAM.json; files over 1 MB stay on GitHub); writes the team key; runs the hub and a worker that works all the
-   time as systemd services (`froglet-hub`, `froglet-compute`, user `vm`, computer `oracle`); and puts the hub behind
-   HTTPS at `https://<ip-with-dashes>.sslip.io` (or `COMPUTE_DOMAIN`). It prints the address, the team key and the
-   line that puts a team computer on the live console. Running it again updates everything and keeps the key.
+   (paste the token after the first line and press Enter: it is not shown and stays out of the shell's history).
+   `Tools/Compute/vm/setup-vm.sh` waits for the new instance's own updates, installs git, Python, numpy and Caddy;
+   opens 80/443 in the image's firewall (iptables; it does not touch ufw, which Oracle's images leave off); makes a
+   `froglet` service user with a partial, sparse clone of the one branch (only Tools/Compute, Tools/Build,
+   Docs/Compute, Docs/AI_SYSTEM, Docs/TEAM.json; files over 1 MB stay on GitHub); writes the team key; runs the hub
+   and a worker that works all the time as systemd services (`froglet-hub`, `froglet-compute`, user `vm`, computer
+   `oracle`); and puts the hub behind HTTPS at `https://<ip-with-dashes>.sslip.io` (or `COMPUTE_DOMAIN`). It checks
+   that the token can push, then prints the address, the team key and the line that puts a team computer on the live
+   console. If a step fails it says which; running it again is safe, updates everything and keeps the key
+   (`sudo cat /srv/froglet/.froglet-compute/hub.json` shows it later).
+   On the VM a run sent from the console starts within 15 minutes, when the current job re-ranks (`--session 15`),
+   and "Now" is allowed there (the computer is the team's; `COMPUTE_REMOTE_START=0` turns that off). The hub
+   restarts every 6 hours to pick up new code.
 5. On each team computer, from its Cosmic-Shore folder, the printed line (`setup.py ... --hub <address> --hub-key
-   <key>`): the computer's progress then shows on the live console within seconds. The Install sheet on the live
-   console adds these flags itself once the team key is entered.
+   <key>`), with the same `--nights` or `--always` it was installed with: the computer's progress then shows on the
+   live console within seconds. The Install sheet on the live console adds these flags itself once the team key is
+   entered.
+6. The live console is the printed address, not the claude.ai page: the claude.ai snapshot cannot reach the hub and
+   stays a snapshot (its outbox and the hourly sync keep working). Share the address and the key with the team only.
 
 What it is not: the VM is ARM Linux with no GPU, so it runs the offline searches, not the Unity game. The purple pairs
 (the game itself, section 16) run on team PCs with Unity. sslip.io certificates come from Let's Encrypt

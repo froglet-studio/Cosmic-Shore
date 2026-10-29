@@ -1,20 +1,26 @@
 #!/usr/bin/env bash
-# Froglet Compute on an always-on Ubuntu VM (made for Oracle Cloud's Always Free Ampere A1; any Ubuntu 22.04/24.04
-# works): the worker running all the time, and the live Compute Console (the hub) behind HTTPS.
+# Froglet Compute on an always-on Ubuntu VM (made for Oracle Cloud's Always Free Ampere A1; Ubuntu 24.04: 22.04 has
+# no caddy package): the worker running all the time, and the live Compute Console (the hub) behind HTTPS.
 # Docs/Compute/README.md section 15 has the Oracle steps before this one.
 #
 # On the VM, over SSH, as the default user (ubuntu):
-#   export GITHUB_TOKEN=github_pat_...          a fine-grained token for froglet-studio/Cosmic-Shore
-#                                               (Contents: read and write; Pull requests: read)
-#   curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
-#     https://raw.githubusercontent.com/froglet-studio/Cosmic-Shore/claude/eager-franklin-e6g77h/Tools/Compute/vm/setup-vm.sh | bash
+#   read -rs GITHUB_TOKEN && export GITHUB_TOKEN     paste a fine-grained token for froglet-studio/Cosmic-Shore
+#                                                    (Contents: read and write), then Enter; it is not shown or kept
+#                                                    in the shell's history
+#   curl -fsSL -o setup-vm.sh \
+#     https://raw.githubusercontent.com/froglet-studio/Cosmic-Shore/claude/eager-franklin-e6g77h/Tools/Compute/vm/setup-vm.sh
+#   bash setup-vm.sh
 #
 # Optional, before running it:
 #   export COMPUTE_DOMAIN=compute.example.com   your own domain (its A record pointing at this VM); default:
 #                                               <public-ip>.sslip.io, which needs nothing
 #   export COMPUTE_BRANCH=bleeding-edge         once Froglet Compute is merged there
+#   export COMPUTE_REMOTE_START=0               runs sent from the console wait for the current job instead of
+#                                               starting at once (default 1: this computer is the team's)
 # Running it again updates everything and keeps the team key.
 set -euo pipefail
+STEP="starting"
+trap 'printf "\n\033[1;31mstopped during %s (line %s). Fix what the lines above say, then run bash setup-vm.sh again: it is safe to re-run.\033[0m\n" "$STEP" "$LINENO" >&2' ERR
 
 BRANCH="${COMPUTE_BRANCH:-claude/eager-franklin-e6g77h}"
 SVC=froglet
@@ -23,17 +29,19 @@ REPO="$BASE/Cosmic-Shore"
 STATE="$BASE/.froglet-compute"
 PORT=8080
 
-say() { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
+say() { STEP="$*"; printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 die() { printf '\n\033[1;31mstopped: %s\033[0m\n' "$*" >&2; exit 1; }
 
 [ -n "${GITHUB_TOKEN:-}" ] || die "export GITHUB_TOKEN first (see the top of this script)"
 command -v sudo >/dev/null || die "sudo is needed"
 
 say "1/7 packages: git, python3, numpy, caddy"
-export DEBIAN_FRONTEND=noninteractive
+# a new instance updates itself in its first minutes: wait for that, or apt stops on "Could not get lock"
+sudo cloud-init status --wait >/dev/null 2>&1 || true
+APT="sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get -o DPkg::Lock::Timeout=600"
 sudo add-apt-repository -y universe >/dev/null 2>&1 || true
-sudo apt-get update -qq
-sudo apt-get install -y -qq git python3 python3-numpy caddy curl ca-certificates >/dev/null
+$APT update -qq
+$APT install -y -qq git python3 python3-numpy caddy curl ca-certificates >/dev/null
 
 say "2/7 firewall: ports 80 and 443 (Oracle's Ubuntu images reject them by default)"
 for p in 80 443; do
@@ -42,13 +50,13 @@ for p in 80 443; do
 done
 if command -v netfilter-persistent >/dev/null; then sudo netfilter-persistent save >/dev/null 2>&1 || true; fi
 
-say "3/7 a service user and the repository (only what compute needs; files over 1 MB stay on GitHub)"
+say "3/7 a service user and the repository (one branch, only what compute needs; files over 1 MB stay on GitHub)"
 id "$SVC" >/dev/null 2>&1 || sudo useradd --system --create-home --home-dir "$BASE" --shell /usr/sbin/nologin "$SVC"
 sudo mkdir -p "$STATE" && sudo chown -R "$SVC:$SVC" "$BASE" && sudo chmod 700 "$BASE"
 AUTH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/froglet-studio/Cosmic-Shore.git"
 as() { sudo -u "$SVC" -H "$@"; }
 if [ ! -d "$REPO/.git" ]; then
-  as git clone --quiet --filter=blob:limit=1m --no-checkout --branch "$BRANCH" "$AUTH_URL" "$REPO"
+  as git clone --quiet --single-branch --filter=blob:limit=1m --no-checkout --branch "$BRANCH" "$AUTH_URL" "$REPO"
   as git -C "$REPO" sparse-checkout set --no-cone /Tools/Compute/ /Tools/Build/ /Docs/Compute/ /Docs/AI_SYSTEM/ /Docs/TEAM.json
   as git -C "$REPO" checkout --quiet "$BRANCH"
 else
@@ -76,11 +84,12 @@ os.chmod(p, 0o600)
 print(cfg["key"])
 PY
 )"
-as python3 - "$STATE/config.json" "$REPO" "$KEY" "$PORT" "$BRANCH" <<'PY'
+as python3 - "$STATE/config.json" "$REPO" "$KEY" "$PORT" "$BRANCH" "${COMPUTE_REMOTE_START:-1}" <<'PY'
 import json, sys
-p, repo, key, port, branch = sys.argv[1:6]
+p, repo, key, port, branch, remote = sys.argv[1:7]
 json.dump({"repo": repo, "hub": f"http://127.0.0.1:{port}", "hub_key": key, "ref": branch,
-           "queue": ["bleeding-edge", "ai", "compute-queue", branch]}, open(p, "w"), indent=1)
+           "queue": ["bleeding-edge", "ai", "compute-queue", branch], "remote_start": remote == "1"},
+          open(p, "w"), indent=1)
 PY
 
 say "5/7 services: the hub (the live console) and the worker (all the time)"
@@ -99,9 +108,11 @@ User=$SVC
 WorkingDirectory=$REPO
 $ENVS
 ExecStartPre=-/usr/bin/git -C $REPO pull --ff-only --quiet
-ExecStart=/usr/bin/python3 $REPO/Tools/Compute/compute.py hub --port $PORT --url https://$DOMAIN --queue $QUEUE --github-token-file $STATE/github-token --quiet
+ExecStart=/usr/bin/python3 $REPO/Tools/Compute/compute.py hub --port $PORT --url https://$DOMAIN --queue $QUEUE --github-token-file $STATE/github-token
 Restart=always
 RestartSec=10
+# restart every 6 hours, so the pull above brings the hub's newest code
+RuntimeMaxSec=6h
 
 [Install]
 WantedBy=multi-user.target
@@ -116,7 +127,8 @@ Wants=network-online.target
 User=$SVC
 WorkingDirectory=$REPO
 $ENVS
-ExecStart=/usr/bin/python3 $REPO/Tools/Compute/compute.py run --always --quiet --repo $REPO --home origin/$BRANCH --progress-minutes 2 --queue $QUEUE
+# --session 15: a run someone sends from the console starts within 15 minutes, when the current job re-ranks
+ExecStart=/usr/bin/python3 $REPO/Tools/Compute/compute.py run --always --session 15 --repo $REPO --home origin/$BRANCH --progress-minutes 2 --queue $QUEUE
 Nice=5
 Restart=always
 RestartSec=30
@@ -139,7 +151,11 @@ sudo systemctl enable --now caddy >/dev/null
 sudo systemctl reload caddy || sudo systemctl restart caddy
 
 say "7/7 checking"
-for i in $(seq 1 60); do
+# the token must be able to write (results to compute/vm/oracle, runs to compute-queue): a token still waiting for
+# the organisation's approval reads fine and fails only when it pushes
+as git -C "$REPO" push --dry-run --quiet origin "HEAD:refs/heads/compute/vm/token-check" \
+  || die "the token cannot push to froglet-studio/Cosmic-Shore: give it Contents: read and write, have an organisation owner approve it, then run bash setup-vm.sh again"
+for _ in $(seq 1 60); do
   if curl -fsS "http://127.0.0.1:$PORT/api/status" | grep -q '"built": [0-9]'; then break; fi
   sleep 5
 done
@@ -159,6 +175,7 @@ Froglet Compute is running on this VM.
     git fetch origin $BRANCH && git show origin/$BRANCH:Tools/Compute/setup.py | python3 - --hub https://$DOMAIN --hub-key $KEY
   (Windows PowerShell: ; instead of &&, and python instead of python3)
 
-  Logs:     journalctl -u froglet-hub -u froglet-compute -f
-  Update:   run this script again (it keeps the key)
+  Logs:      journalctl -u froglet-hub -u froglet-compute -f
+  Update:    bash setup-vm.sh again (it keeps the key; a new token goes in the same way)
+  The key:   sudo cat $STATE/hub.json
 DONE
