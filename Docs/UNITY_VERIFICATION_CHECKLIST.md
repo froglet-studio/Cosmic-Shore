@@ -83,6 +83,20 @@ Compiled against the Unity reference assemblies (player). Not opened in the edit
 - [ ] Arcade: a new line plays (the entrance replays) and the window docks on the side away from the card; it never covers it.
 - [ ] Preview step: the "Fly" prompt; Settings and Skip tutorial still work on every step; the dim still refuses presses elsewhere.
 - [ ] 21:9 and 4:3: the window scales with the screen height and stays on screen.
+
+### 🔴 The Scarab's Throttle card: wake by trigger depth, speed meter, Snap Dash chevron (`claude/scarab-throttle-icon`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** the Time card's placeholder is replaced by the icon kit's parts (`specs/scarab.py`): ThrottleGauge
+(the plate's speed meter), three wakes, the Snap Dash chevron and the hull, under the old icon Image. `ScarabHUDController.Update`
+drives them from `ScarabVesselTransformer.Throttle01`, `SnapDashReady`, `CurrentTopSpeed` and the Time 5 upgrade. No Unity in
+the session: nothing compiled.
+
+- [ ] Compiles; `ScarabKitTests` green.
+- [ ] Fly the Scarab (Toybox Vessel Changer): the Time card shows the Scarab in your colour; no gauge-dial sprite left.
+- [ ] Squeeze RT slowly: a short, then a longer, then the longest wake appear; release: no wake. The plate fills with speed
+  and drops as you coast; at Time 10 the plate still fills fully only at the higher top speed.
+- [ ] Below Time 5 no chevron. At Time 5 a white chevron ahead of the nose; double-tap RT: it greys for 5 s, then turns white.
+
 ### 🔴 The Scarab's recut kit: Shove / Backdraft, Sun Cores, Nucleus Seeding / Core Breaker, Snap Dash, drift and omni cards (`claude/scarab-ballforge-icon`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** Garrett's recut (R_VesselActions/SCARAB.md §7 RECUT). Charge scales the shove's debuff ×1 → ×2.5

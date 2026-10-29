@@ -477,7 +477,8 @@ SCARAB_SWAPS = {
     "6611959372928416812": None,
     # Space: None - the icon kit's Nucleus Seeding card (specs/scarab.py, 2026-10-29), a container over its parts.
     "4990196459091587280": None,
-    "3258612490553136050": ("f0197e0a2ce38654ea3d882fff64967a", "Scarab_Throttle-PLACEHOLDER.png"),         # Time (was boost icon)
+    # Time: None - the icon kit's Throttle card (specs/scarab.py, 2026-10-29), a container over its parts and the speed gauge.
+    "3258612490553136050": None,
 }
 
 
