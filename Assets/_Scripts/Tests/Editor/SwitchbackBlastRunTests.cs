@@ -230,6 +230,51 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, BlastRunKeyCrystals.CoreMultiplierFor(new Vector3(10, 0, 0)));
         }
 
+        [Test]
+        public void HuntersHoldTheirDenUntilTheLeaderComesNear()
+        {
+            Vector3 den = new(100, 0, 0);
+            // No leader, or a leader beyond sense: home (and already there, so no motion).
+            Assert.AreEqual(den, BlastRunHunters.Step(den, den, false, default, 0.1f));
+            Vector3 far = den + Vector3.forward * (SwitchbackBlastRun.PackSense + 50f);
+            Assert.AreEqual(den, BlastRunHunters.Step(den, den, true, far, 0.1f));
+            // A leader in sense: toward it, at PackSpeed.
+            Vector3 near = den + Vector3.forward * 200f;
+            Vector3 next = BlastRunHunters.Step(den, den, true, near, 0.1f);
+            Assert.AreEqual(SwitchbackBlastRun.PackSpeed * 0.1f, Vector3.Distance(den, next), 1e-3f);
+            Assert.Greater(Vector3.Dot(next - den, Vector3.forward), 0f);
+            // Displaced and the leader gone: back toward the den.
+            Vector3 away = den + Vector3.up * 100f;
+            Assert.Less(Vector3.Distance(BlastRunHunters.Step(away, den, false, default, 0.5f), den), 100f);
+        }
+
+        [Test]
+        public void HuntersNeverRoamPastTheirLeash()
+        {
+            Vector3 den = Vector3.zero;
+            Vector3 leader = Vector3.right * (SwitchbackBlastRun.PackSense - 1f);   // in sense, past the leash
+            Vector3 pos = den;
+            for (int i = 0; i < 2000; i++) pos = BlastRunHunters.Step(pos, den, true, leader, 0.1f);
+            Assert.AreEqual(SwitchbackBlastRun.PackLeash, Vector3.Distance(pos, den), 1e-2f);
+            Assert.Less(SwitchbackBlastRun.PackLeash, SwitchbackBlastRun.PackSense);
+        }
+
+        [Test]
+        public void AHunterIsDownWhenTheBlastLeavesTwoPrisms()
+        {
+            Assert.IsFalse(BlastRunHunters.IsDown(SwitchbackBlastRun.PackBodyPrisms));
+            Assert.IsFalse(BlastRunHunters.IsDown(3));
+            Assert.IsTrue(BlastRunHunters.IsDown(2));
+            Assert.IsTrue(BlastRunHunters.IsDown(0));
+            Assert.IsFalse(BlastRunHunters.AllDown(0b011, 3));
+            Assert.IsTrue(BlastRunHunters.AllDown(0b111, 3));
+            Assert.IsFalse(BlastRunHunters.AllDown(0, 0));
+            // The drawn pack closes on the replicated one without overshooting.
+            Vector3 shown = BlastRunHunters.Follow(Vector3.zero, Vector3.right * 10f, 0.1f);
+            Assert.Greater(shown.x, 0f);
+            Assert.Less(shown.x, 10f);
+        }
+
         // ── helpers ──────────────────────────────────────────────────────
 
         static int DoorCount(int intensity)
