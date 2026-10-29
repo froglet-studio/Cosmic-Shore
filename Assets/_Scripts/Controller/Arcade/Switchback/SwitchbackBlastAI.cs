@@ -31,7 +31,22 @@ namespace CosmicShore.Gameplay
             public int StandingAtPlan;
             public uint Seed;
             public int Plans;
+            // Any-prism sense (SWITCHBACK.md "AI: any prism in the way").
+            public float NextSense;
+            public SwitchbackAvoidAction Avoid;
+            public Vector3 AvoidAim, BlastCrystal, BlastLook;
+            public int Avoids, Blasts;
         }
+
+        /// <summary>The TrailBlocks layer: every prism - course blocks, rival trails, own trail.</summary>
+        static int s_prismMask = -1;
+        const int SenseCap = 128;
+        static readonly Collider[] s_hits = new Collider[SenseCap];
+        static readonly Vector3[] s_pts = new Vector3[SenseCap];
+        static readonly float[] s_radii = new float[SenseCap];
+        static readonly Vector3[] s_crystals = new Vector3[32];
+        /// <summary>u ahead of the hull the sense tube starts (its own fresh trail is behind it).</summary>
+        const float SenseStart = 6f;
 
         /// <summary>A key crystal counts as present when a managed crystal is this close to its laid point.</summary>
         const float KeyMatchDistance = 4f;
@@ -46,6 +61,7 @@ namespace CosmicShore.Gameplay
         readonly SwitchbackBlastPlanner _planner;
         readonly ISwitchbackAIWorld _prisms;
         readonly Func<IPlayer, SwitchbackAISkill> _skillFor;
+        readonly Func<IPlayer, SwitchbackAvoidSkill> _avoidFor;
         readonly Func<int, int> _ringIndexFor;
         readonly Func<int> _raceLength;
         readonly IReadOnlyList<RaceGate> _course;
@@ -55,8 +71,10 @@ namespace CosmicShore.Gameplay
         float _nextKeyScan;
 
         public SwitchbackBlastAI(SwitchbackBlastPlanner planner, ISwitchbackAIWorld prisms, IReadOnlyList<RaceGate> course,
-                                 Func<int, int> ringIndexFor, Func<int> raceLength, Func<IPlayer, SwitchbackAISkill> skillFor, int seed)
+                                 Func<int, int> ringIndexFor, Func<int> raceLength, Func<IPlayer, SwitchbackAISkill> skillFor, int seed,
+                                 Func<IPlayer, SwitchbackAvoidSkill> avoidFor = null)
         {
+            _avoidFor = avoidFor ?? (_ => SwitchbackAvoidSkill.ForLevel(2));
             _planner = planner;
             _prisms = prisms;
             _course = course;
@@ -136,8 +154,21 @@ namespace CosmicShore.Gameplay
                 else if (keyGone || (skill.ReplanSeconds > 0f && Time.time >= st.NextPlan && st.Phase != Phase.Done && st.Phase != Phase.Strike)) Plan(p, st, self, in skill);
             }
 
-            if (st.D.Plan != SwitchbackAIPlan.Blast || st.Phase == Phase.Done) return false;
+            bool gateAim = GateBlastAim(st, self, out aim);
+            // On the strike the obstacle ahead IS the point: no dodging it.
+            if (gateAim && st.Phase == Phase.Strike) { st.Avoid = SwitchbackAvoidAction.Clear; return true; }
 
+            int ring = _ringIndexFor(threaded);
+            Vector3 goal = gateAim ? aim
+                : ring >= 0 && ring < _course.Count ? _course[ring].Position + LaneOffset(p, ring, _course[ring]) : self + tf.forward * 100f;
+            if (Sense(p, st, tf, self, goal, ring, out Vector3 avoidAim)) { aim = avoidAim; return true; }
+            return gateAim;
+        }
+
+        bool GateBlastAim(Pilot st, Vector3 self, out Vector3 aim)
+        {
+            aim = default;
+            if (st.D.Plan != SwitchbackAIPlan.Blast || st.Phase == Phase.Done) return false;
             Vector3 key = st.D.Key, fire = st.D.FireForward;
             Vector3 toKey = key - self;
             float dist = toKey.magnitude;
@@ -156,11 +187,130 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// This pilot's own lane through ring <paramref name="ring"/> (<see cref="SwitchbackPrismAvoidance.LaneOffset"/>).
+        /// Zero at a blocked gate: there the line is the door's eye or the blast lane, which the planner chose.
+        /// </summary>
+        public Vector3 LaneOffset(IPlayer p, int ring, in RaceGate gate)
+        {
+            if (p == null || _planner.StationFor(ring) >= 0) return Vector3.zero;
+            var st = StateFor(p);
+            return SwitchbackPrismAvoidance.LaneOffset(st.Seed ^ (uint)(ring * 7919), gate.Axis, gate.Radius, _avoidFor(p).LaneShare);
+        }
+
+        /// <summary>
+        /// SERVER ONLY. The any-prism sense: every <see cref="SwitchbackAvoidSkill.ReactionSeconds"/> (staggered per
+        /// pilot) one non-alloc capsule overlap down the line to <paramref name="goal"/> on the TrailBlocks layer - course
+        /// blocks, rival trails, own trail alike. Blocked: blast it from a crystal ahead when the slot would clear it and
+        /// dodging is poor, else steer down the clearest corridor. The answer is held until the next look.
+        /// </summary>
+        bool Sense(IPlayer p, Pilot st, Transform tf, Vector3 self, Vector3 goal, int ring, out Vector3 aim)
+        {
+            aim = default;
+            var skill = _avoidFor(p);
+            if (st.Avoid == SwitchbackAvoidAction.Blast)
+            {
+                // Held until the crystal is taken or passed.
+                Vector3 toC = st.BlastCrystal - self;
+                bool passed = Vector3.Dot(toC, st.BlastLook - st.BlastCrystal) < -5f;
+                if (!passed && CrystalAt(st.BlastCrystal)) { aim = st.BlastCrystal + (st.BlastLook - st.BlastCrystal).normalized * StrikeThrough; return true; }
+                Log(p, st, ring, SwitchbackAvoidAction.Clear, passed ? "blast-done" : "blast-key-gone", 0f, 0);
+                st.Avoid = SwitchbackAvoidAction.Clear;
+            }
+            if (Time.time < st.NextSense)
+            {
+                if (st.Avoid != SwitchbackAvoidAction.Avoid) return false;
+                aim = self + st.AvoidAim; return true;
+            }
+            st.NextSense = Time.time + skill.ReactionSeconds * (0.85f + 0.3f * ((st.Seed >> 8 & 0xFF) / 255f));
+
+            Vector3 to = goal - self;
+            float dist = to.magnitude;
+            if (dist < 1f) return false;
+            Vector3 dir = to / dist;
+            float range = Mathf.Min(skill.SenseRange, dist + 10f);
+            if (s_prismMask < 0) s_prismMask = LayerMask.GetMask("TrailBlocks");
+            float probe = skill.Clearance * 2.5f;
+            int n = Physics.OverlapCapsuleNonAlloc(self + dir * SenseStart, self + dir * range, probe, s_hits, s_prismMask,
+                                                   QueryTriggerInteraction.Collide);
+            for (int i = 0; i < n; i++)
+            {
+                var b = s_hits[i].bounds;
+                s_pts[i] = b.center;
+                s_radii[i] = Mathf.Min(b.extents.magnitude, 12f);
+            }
+            var prev = st.Avoid;
+            if (n == 0 || !SwitchbackPrismAvoidance.Blocked(self, dir, range, skill.Clearance, s_pts, n, out float along, s_radii))
+            {
+                if (prev != SwitchbackAvoidAction.Clear) Log(p, st, ring, SwitchbackAvoidAction.Clear, "clear", 0f, n);
+                st.Avoid = SwitchbackAvoidAction.Clear;
+                return false;
+            }
+
+            Vector3 corridor = SwitchbackPrismAvoidance.ChooseCorridor(self, dir, range, s_pts, n, in skill, out float clear, s_radii);
+            float turn = Vector3.Angle(corridor, dir);
+            Vector3 heading = tf.forward;
+            Vector3 blocker = SwitchbackPrismAvoidance.BlockerCentroid(self, dir, range, skill.Clearance * 2f, s_pts, n, out int blocking);
+            int nc = ManagedCrystals();
+            if ((clear < skill.Clearance || turn > 25f) &&
+                SwitchbackPrismAvoidance.TryBlast(self, heading, blocker, skill.Clearance * 2f, s_pts, n, s_crystals, nc,
+                                                  _planner.Slot, in skill, out Vector3 crystal, out _, out _, out float cov))
+            {
+                st.Avoid = SwitchbackAvoidAction.Blast;
+                st.BlastCrystal = crystal; st.BlastLook = blocker; st.Blasts++;
+                Log(p, st, ring, SwitchbackAvoidAction.Blast, $"crystal={Vector3.Distance(self, crystal):F0}u cover={cov:P0}", along, blocking);
+                aim = crystal + (blocker - crystal).normalized * StrikeThrough;
+                return true;
+            }
+            st.Avoid = SwitchbackAvoidAction.Avoid;
+            st.AvoidAim = corridor * range;
+            if (prev != SwitchbackAvoidAction.Avoid) { st.Avoids++; Log(p, st, ring, SwitchbackAvoidAction.Avoid, $"turn={turn:F0} clear={clear:F0}u", along, blocking); }
+            aim = self + st.AvoidAim;
+            return true;
+        }
+
+        static int ManagedCrystals()
+        {
+            var crystals = Crystal.Active;
+            int nc = 0;
+            for (int i = 0, n = crystals.Count; i < n && nc < s_crystals.Length; i++)
+            {
+                var c = crystals[i];
+                if (c == null || c.CrystalManager == null) continue;
+                s_crystals[nc++] = c.transform.position;
+            }
+            return nc;
+        }
+
+        static bool CrystalAt(Vector3 at)
+        {
+            var crystals = Crystal.Active;
+            float sq = KeyMatchDistance * KeyMatchDistance;
+            for (int i = 0, n = crystals.Count; i < n; i++)
+            {
+                var c = crystals[i];
+                if (c != null && c.CrystalManager != null && (c.transform.position - at).sqrMagnitude <= sq) return true;
+            }
+            return false;
+        }
+
+        static void Log(IPlayer p, Pilot st, int ring, SwitchbackAvoidAction action, string detail, float along, int blocking) =>
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[Switchback AI] prism gate={ring} action={action} ahead={(float.IsInfinity(along) ? 0f : along):F0}u " +
+                $"blocking={blocking} {detail} avoids={st.Avoids} blasts={st.Blasts} pilot={p.PlayerNetId}");
+
         /// <summary>The drift-look override: on the strike, the nose (and so the blast cone) on the obstacle.</summary>
         public bool TryDriftLook(IPlayer p, out Vector3 look)
         {
             look = default;
             if (p == null || !_pilots.TryGetValue(p, out var st)) return false;
+            if (st.Avoid == SwitchbackAvoidAction.Blast)
+            {
+                var t = p.Vessel?.Transform;
+                if (t == null || Vector3.Distance(t.position, st.BlastCrystal) > LookRange) return false;
+                look = st.BlastLook;
+                return true;
+            }
             if (st.D.Plan != SwitchbackAIPlan.Blast || st.Phase != Phase.Strike) return false;
             var tf = p.Vessel?.Transform;
             if (tf == null || Vector3.Distance(tf.position, st.D.Key) > LookRange) return false;

@@ -85,6 +85,12 @@ namespace CosmicShore.Gameplay
             return IsServer && _blastAI != null && _blastAI.TryDriftLook(pilot, out look);
         }
 
+        /// <summary>Each AI's own lane through an open ring, so no two AIs fly one line (and its fresh trail).</summary>
+        protected override Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) =>
+            IsServer && _blastAI != null ? _blastAI.LaneOffset(pilot, ringNo, gate) : Vector3.zero;
+
+        SwitchbackAvoidSkill AvoidSkillFor(IPlayer pilot) => SwitchbackAvoidSkill.ForLevel((int)gameData.AIDifficultyFor(pilot));
+
         SwitchbackAISkill SkillFor(IPlayer pilot)
         {
             int level = (int)gameData.AIDifficultyFor(pilot);
@@ -160,7 +166,7 @@ namespace CosmicShore.Gameplay
                           trackAllPrisms: planAI);
             _blastAI = planAI
                 ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
-                                        RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed)
+                                        RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor)
                 : null;
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,

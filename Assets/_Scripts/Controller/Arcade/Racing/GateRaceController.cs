@@ -411,6 +411,13 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// A per-pilot offset (in the ring's plane, inside its mouth) added to where an AI aims through ring
+        /// <paramref name="ringNo"/>. Zero by default: every AI aims at the same centre-line points, so in a mode whose
+        /// hulls lay trails each AI flies straight down the trail the one ahead just laid (Switchback, Yash 2026-10-29).
+        /// </summary>
+        protected virtual Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) => Vector3.zero;
+
+        /// <summary>
         /// Where a DRIFTING pilot points its nose instead of its steering target (the default drift look), or false for
         /// the default. Switchback's blast AI holds the nose - and so the Dolphin's blast cone - on the obstacle while it
         /// takes its key (<see cref="SwitchbackBlastAI"/>). Server only, like the steering it sits beside.
@@ -1235,6 +1242,8 @@ namespace CosmicShore.Gameplay
                     ringAt = belief.Point;
                 }
                 bool misjudged = ringAt != gate.Position;
+                // The pilot's own lane through the mouth (zero unless the mode spreads its AIs: AILaneOffset).
+                ringAt += AILaneOffset(captured, ringNo, gate);
 
                 // Crossed this ring's plane OUTSIDE the mouth: a miss. The side latched for this ring is now
                 // the wrong one and the far-side point is behind the pilot and close, so it would circle that

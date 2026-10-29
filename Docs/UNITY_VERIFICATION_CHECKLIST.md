@@ -84,6 +84,14 @@ camera while the AI keeps flying the vessel; F2 again glides back. Controls in D
 - [ ] F2 in freestyle or mid-blend does nothing.
 - [ ] Untick `godModeEnabled`: F2 does nothing.
 
+### 🔴 Switchback AI: sees ANY prism (rival/own trails, blocks), dodges or blasts it; per-AI lanes (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+- [ ] Switchback Blast Run, 3+ AI Dolphins: AIs no longer fly single-file down one line; filter log `[Switchback AI] prism`.
+- [ ] Each AI's rings are threaded off-centre but inside the mouth (open gates only); blocked gates still thread the eye / blast.
+- [ ] Following a rival: `action=Avoid` lines appear and the AI swerves off the trail; trail hits clearly fewer than before.
+- [ ] Hard/Legendary: occasionally `action=Blast` - flies into a crystal ahead with the nose on the trail mass, which is cleared.
+- [ ] Easy: never `action=Blast`; reacts later (shorter sense range).
+- [ ] Profiler at 100 fps target with 6 AIs at I4: `OverlapCapsuleNonAlloc` cost negligible, no GC alloc per frame from SwitchbackBlastAI.
+
 ### 🔴 Switchback is Blast Run only: the other fun types and the FUN picker removed (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** Yash: "Keep Blast Run, remove all other intensity types." Every Switchback match at I1-I4 (Arcade,

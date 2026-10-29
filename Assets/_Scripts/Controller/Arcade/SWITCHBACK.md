@@ -665,6 +665,40 @@ allocation.
 - the difficulty ladder (more blasts, less regret, better aim at each step; Easy rarely blasts; Legendary is never suboptimal);
 - determinism; movers posed at the pilot's time; unset difficulty → Medium.
 
+## AI: any prism in the way (2026-10-29) - NOT editor-verified
+
+Yash's report: AI Dolphins kept flying into RIVAL trails at the same spots, as if following the exact path the rival flew.
+
+**Root cause.** Every AI aimed at the same points. `GateRaceController.ArmRacer` hands each AI the ring centre
+(`ringAt = gate.Position`), then the approach point `ringAt + gate.Axis * side * approachLead` and, inside commit range,
+`throughPoint = ringAt + (ringAt - self).normalized * aiThroughDistance`. No per-pilot term, so every Dolphin converges
+on one line per leg, and the Dolphin ahead has just laid its trail down that line. Nothing saw it: `AIPilot`'s
+`CornerBehaviors` raycast avoidance is declared and built but never read (dead code), and the blast planner only knows
+the course's own layout prisms (`ISwitchbackAIWorld.PrismStanding`), never trails.
+
+**Fix (server only, `SwitchbackBlastAI.Sense` + pure `SwitchbackPrismAvoidance`).**
+- *Lanes:* new `GateRaceController.AILaneOffset` hook (zero by default). Switchback gives each AI a fixed, seeded point
+  inside the mouth of every OPEN ring (`LaneShare` of the radius; zero at blocked gates, where the eye/blast lane rules).
+- *Sense:* every `ReactionSeconds` (jittered per pilot) one `Physics.OverlapCapsuleNonAlloc` down the line to the goal
+  on the `TrailBlocks` layer (every prism: course blocks, rival trails, own trail), into static 128-slot buffers. Bounds
+  centre + extent (capped 12 u) per hit. No allocation per look; strings only on a decision.
+- *Decide:* line clear -> nothing. Blocked -> `ChooseCorridor` (rings x 8 directions round the goal, max air for least
+  turn). If that dodge is poor (air < Clearance or turn > 25 deg) and a managed crystal ahead and nearer than the blocker
+  has a slot (fired at the blocker, gape along its widest spread) covering >= `BlastMinCoverage` of it -> **Blast**: fly
+  through the crystal with the drift-look on the blocker (same execution as the gate blast). Else **Avoid**.
+- Not used while a gate blast is on its strike (the obstacle is the point).
+
+| Level | SenseRange | Reaction | Clearance | Rings | BlastMinCoverage | Crystal range | LaneShare |
+|---|---|---|---|---|---|---|---|
+| Easy | 70 | 0.45 s | 5 | 1 | never | - | 0.35 |
+| Medium | 110 | 0.30 s | 7 | 2 | 0.70 | 110 | 0.40 |
+| Hard | 150 | 0.18 s | 9 | 3 | 0.55 | 160 | 0.45 |
+| Legendary | 200 | 0.10 s | 10 | 4 | 0.45 | 220 | 0.50 |
+
+Log: `[Switchback AI] prism gate=.. action=Avoid|Blast|Clear ahead=..u blocking=.. ... avoids=.. blasts=.. pilot=..`.
+Headless (point mass, 100 u/s, 110 deg/s): straight down a rival trail 90/90 prisms hit without the sense, 0 at every
+level; a weaving trail 8 -> 0. Real hull/turn dynamics are not modelled - verify in editor.
+
 ## Known limitations / follow-ups
 
 - **The arcade grid had to grow to show this card, and growing it takes TWO changes.**
