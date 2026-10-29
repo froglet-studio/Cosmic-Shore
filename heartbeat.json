@@ -1,5 +1,4 @@
 {
- "agent": true,
  "caps": {
   "bash": true,
   "caps_version": 2,
@@ -15,18 +14,14 @@
   "unity": true
  },
  "cores": 11,
- "current": {},
- "host": "dragonsweapon",
- "idle_seconds": 619.282,
- "last": {
-  "best_start": null,
-  "epoch": "837e0889a5e5",
-  "evals": 23934,
-  "job": "drive-manta-regatta",
-  "session_evals": 23934,
-  "stopped": "the person came back"
+ "current": {
+  "job": "drive-dolphin-regatta",
+  "max_evals": null,
+  "minutes": 60.0,
+  "request": null,
+  "since": 1793264649
  },
- "remote_start": true,
+ "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -137,22 +132,10 @@
    "unit": null
   }
  ],
- "specs": {
-  "cores": 12,
-  "disk_free_gb": 29.1,
-  "os": "windows",
-  "os_name": "Windows 10",
-  "python": "3.11.9",
-  "ram_free_gb": 13.6,
-  "ram_gb": 31.9,
-  "unity": true,
-  "unity_open": true
- },
- "status": "working",
  "totals": {
   "sessions": 9
  },
- "updated": 1793264632,
+ "updated": 1793264649,
  "user": "shombithofficial",
  "version": "1"
 }
