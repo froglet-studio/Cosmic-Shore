@@ -761,8 +761,9 @@ namespace CosmicShore.Gameplay
         /// Brings island <paramref name="island"/>'s block <paramref name="slot"/> back when it is gone, as a NEW block laid in
         /// its slot (<see cref="LayBlock"/>). Never <c>Prism.Restore</c> (Garrett, 2026-10-29: "I did not see any restores"):
         /// it refuses a DEVASTATED prism for good (collisions of moved prisms, the Rhino, the Thresher, the Shrike's lance and
-        /// black holes devastate), so such a gap never came back; and a prism it does bring back keeps its scale animator off
-        /// (Prism.Initialize's note), so it could never grow or shield again. The dead block is the recycler's: the trail opts
+        /// black holes devastate), so such a gap never came back; and the dead block may already be back in its pool. (Until
+        /// 2026-10-29 a restored prism also could never grow again; <c>PrismScaleAnimator.RearmAfterRestore</c> fixed that
+        /// for every caller.) The dead block is the recycler's: the trail opts
         /// in (<see cref="Trail.RecycleDestroyedMembers"/>), and this seat checks a block's trail and spot, not its identity.
         /// False when the block stands, or on a rider's machine (the hull's machine owns the pair's trail).
         /// </summary>

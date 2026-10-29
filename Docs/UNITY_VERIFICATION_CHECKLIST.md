@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 A restored prism grows again, and blooms back in (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Affects: the prism core, Garrett's and Yash's; `Docs/PRISM_ANIMATION.md` §3.3): `SetupDestruction` turns a
+prism's `PrismScaleAnimator` off and `Prism.Restore` never turned it back on, so every grow on a restored prism was a
+silent no-op. The Urchin's ride payoff (`GunVesselTransformer.ApplyPrismscapePayoff`: restore, then grow your own, shield
+at Mass 5) never grew a restored prism. `Restore` now calls `PrismScaleAnimator.RearmAfterRestore`: the animator is
+re-armed, its clock reset, and ONE grow stamp blooms the prism from zero to the size it died at (the bloom §3.3
+planned; gameplay final at once). A prism killed inside its spawn window gets no stamp (unchanged). A restored prism
+at its largest is shielded again by the same completion step every grow runs.
+
+**Verified without the editor:** `unity_refcompile` player and editor 0 errors in project code (the new
+`PrismRestoreTests` is in the editor gate). The tests themselves need Unity: a dead animator does not grow (the
+control), a re-armed one keeps its size and grows, and `Restore` calls the re-arm. `/verify-unity` did not run.
+
+**Verify in editor:**
+1. Run `PrismRestoreTests` (3 tests).
+2. Fly the Urchin over its own trail with gaps shot in it: the restored prisms bloom back in from nothing (no pop) and
+   then grow like the live ones; at Mass 5 they shield.
+3. Anything else that restores (search `.Restore()`): the restored prism reappears with a short bloom; nothing jumps in
+   size.
+
+---
+
 ### 🔴 Goby & Pistol: rewards and juice on landing; restores that always work; lime shield, domain-lit grow and restore (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett, 2026-10-29: "cyan = jade which is a domain color. use Lime for shield. a lit domain color for
