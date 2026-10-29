@@ -10,6 +10,10 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "FulmenConfig", menuName = "ScriptableObjects/Environment/Fulmen Config")]
     public sealed class FulmenConfigSO : ScriptableObject
     {
+        [Header("Activation")]
+        [Tooltip("Omni crystals one collector must gather before the bolt fires (counted per vessel, reset when it fires). 1 = every crystal.")]
+        [SerializeField, Range(1, 12)] int crystalsToFire = 3;
+
         [Header("Reach")]
         [Tooltip("Root bolt range as a share of its cell's radius (SolitonNetwork.ResolveCell).")]
         [SerializeField, Range(0.05f, 1f)] float rootRangeShare = 0.6f;
@@ -69,6 +73,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional additive material (vertex colour). Empty: Sprites/Default.")]
         [SerializeField] Material material;
 
+        public int CrystalsToFire => crystalsToFire;
         public float RootRangeShare => rootRangeShare;
         public float MinRootRange => minRootRange;
         public float ChildRangeScale => childRangeScale;
