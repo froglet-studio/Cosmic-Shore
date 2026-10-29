@@ -38,7 +38,8 @@ No code changes are needed for any of these.
 - **Activation:** `FulmenConfigSO.crystalsToFire` (default 3). Counted per collector (`VesselImpactor`) in
   `FulmenByCrystalEffectSO`, reset when it fires and on scene unload.
 - **Flash timing:** `growSeconds` (0.12) → `holdSeconds` (0.08) → `fadeSeconds` (0.3) with a seeded stepped
-  flicker (`flickerRate`, `flickerDepth`). Prisms on the path ignite as the front passes and burn for `burnSeconds` (1.4).
+  flicker (`flickerRate`, `flickerDepth`). Prisms on the path ignite as the front passes and burn for `burnSeconds` (5) within `burnRadius` (10 u) and spread to neighbours by the bounded,
+  decaying `burnSpread` rule (≤ 12 extra prisms per struck prism).
 - **Stats:** the config inspector (`FulmenConfigSOEditor`) shows *Prisms Burnt / Crystals Struck / Bolts* for the
   last strike in play mode; the Environmental Fundamentals window shows a `BURNT` pill.
 - **Bolt look:** `Assets/_Graphics/Materials/Fulmen/FulmenBolt.mat` (`CosmicShore/FulmenBolt`): thin cool core,
@@ -46,7 +47,9 @@ No code changes are needed for any of these.
 - **Prism burn:** every `PrismBurnManager` burn is drawn by `PrismBurnView` as instanced paper-burn proxies
   (`Assets/_Graphics/Materials/PrismBurn/`, config `Assets/Resources/PrismBurnFxConfig.asset`): NEAR curl /
   MID dissolve / FAR nothing, dithered bands, silent burnouts (`Prism.BurnOut`). Delete the config asset to
-  return to the old danger-state + explosion look.
+  return to the old danger-state + explosion look. Fulmen burns use the **Laser** style (`PrismLaserBurn.mat`): the
+  skin peels behind a red-hot line into domain-coloured ash flakes, no flame or light, drawn out to `laserDistance`
+  (600 u). Tuning map: [`Docs/Shaders/PRISM_EFFECTS.md`](../../../../../Docs/Shaders/PRISM_EFFECTS.md).
 
 ## Network (multiplayer)
 

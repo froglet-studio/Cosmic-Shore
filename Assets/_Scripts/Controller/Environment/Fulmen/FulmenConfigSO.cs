@@ -53,12 +53,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(1, 512)] int ignitesPerFrame = 96;
 
         [Header("Burn (server only, PrismBurnManager)")]
-        [Tooltip("Radius round each segment that catches fire (units).")]
-        [SerializeField, Min(0.1f)] float burnRadius = 6f;
-        [Tooltip("Seconds a struck prism burns before it is consumed (PrismBurnManager; its spread uses the manager's own).")]
-        [SerializeField, Range(0.2f, 6f)] float burnSeconds = 1.4f;
+        [Tooltip("Radius round each segment that catches fire (units). Was 6.")]
+        [SerializeField, Min(0.1f)] float burnRadius = 10f;
+        [Tooltip("Seconds a struck prism burns (the laser burn's skin -> red-hot line -> ash -> gone) before it is consumed. Was 1.4, mostly hidden under the bolt flash.")]
+        [SerializeField, Range(0.2f, 12f)] float burnSeconds = 5f;
         [Tooltip("Burnout converts the prism to the igniter's team instead of destroying it.")]
         [SerializeField] bool convertOnBurnout;
+        [Tooltip("The 'forest fire': how a struck prism's burn spreads to neighbours and dies down (generations, radius, chance x decay^gen, children per burn, child duration scale). MaxGenerations 0 = no spread.")]
+        [SerializeField] PrismBurnSpread burnSpread = PrismBurnSpread.FulmenDefault;
 
         [Header("Shape (FulmenMath)")]
         [SerializeField, Range(1, 16)] int roots = 5;
@@ -98,6 +100,7 @@ namespace CosmicShore.Gameplay
         public int IgnitesPerFrame => ignitesPerFrame;
         public float BurnRadius => burnRadius;
         public bool ConvertOnBurnout => convertOnBurnout;
+        public PrismBurnSpread BurnSpread => burnSpread;
         public int MaxSegments => maxSegments;
         public Color Tint => tint;
         public float Width => width;

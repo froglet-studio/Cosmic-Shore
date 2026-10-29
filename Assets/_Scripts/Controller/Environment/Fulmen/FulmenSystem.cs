@@ -360,7 +360,8 @@ namespace CosmicShore.Gameplay
                 var prism = _hits[i];
                 if (prism == null || prism.destroyed || prism.Domain == chain.Domain) continue;
                 if (!chain.Burned.Add(prism)) continue;
-                if (burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout, cfg.BurnSeconds, chain.NetId))
+                if (burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout, cfg.BurnSeconds, chain.NetId,
+                        cfg.BurnSpread, PrismBurnStyle.Laser, 0))
                     if (chain.Stats) chain.Stats.LastPrismsBurnt++;
                 lit++;
             }

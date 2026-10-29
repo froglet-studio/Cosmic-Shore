@@ -13,9 +13,14 @@ namespace CosmicShore.ScriptableObjects
     /// <item><b>FAR</b>: nothing is drawn; the prism keeps its ordinary look and, when it burns out, simply goes back to
     /// the pool (no debris).</item>
     /// </list>
+    /// The LASER style (Fulmen's flameless burn, <c>PrismLaserBurn.shader</c>) is a fourth, separate list: one
+    /// <see cref="LaserMaterial"/> on a plain cube, drawn out to <see cref="LaserDistance"/> (bolts land far away),
+    /// tinted per burn with the domain colour (<see cref="AshColor"/>). Docs/Shaders/PRISM_EFFECTS.md.
     /// Place the asset at <c>Resources/PrismBurnFxConfig</c>. With no asset (or no materials) burns keep the old look:
     /// the danger state and an ordinary explosion at burnout.
     /// </summary>
+    public enum AshColorSource : byte { Prism = 0, Igniter = 1 }
+
     [CreateAssetMenu(fileName = "PrismBurnFxConfig", menuName = "ScriptableObjects/Rendering/Prism Burn FX Config")]
     public class PrismBurnFxConfigSO : ScriptableObject
     {
@@ -24,6 +29,16 @@ namespace CosmicShore.ScriptableObjects
         [Header("Materials (PrismPaperBurn.shader, GPU instancing ON)")]
         [SerializeField, Tooltip("PrismPaperBurnNear.mat - _BURN_CURL on.")] Material nearMaterial;
         [SerializeField, Tooltip("PrismPaperBurnMid.mat - _BURN_CURL off.")] Material midMaterial;
+
+        [Header("Laser burn (Fulmen) - PrismLaserBurn.shader, GPU instancing ON")]
+        [SerializeField, Tooltip("PrismLaserBurn.mat. Empty: laser burns fall back to the paper look.")] Material laserMaterial;
+        [SerializeField, Min(0f), Tooltip("Laser burns are drawn out to this distance from the camera (Fulmen strikes far away).")]
+        float laserDistance = 600f;
+        [SerializeField, Min(0.01f), Tooltip("Width of the laser burn's dithered far fade.")] float laserFarBand = 120f;
+        [SerializeField, Tooltip("Whose domain colour the skin and ash take: the burning PRISM's (it ashes in its own colour) or the IGNITER's.")]
+        AshColorSource ashColorSource = AshColorSource.Prism;
+        [SerializeField, Tooltip("Ash colour when the domain has no colour set entry (or none).")]
+        Color fallbackAshColor = new(0.2f, 0.45f, 1f, 1f);
 
         [Header("Distance tiers (world units from the main camera)")]
         [SerializeField, Min(0f), Tooltip("NEAR -> MID crossfade centre.")] float nearDistance = 70f;
@@ -58,6 +73,11 @@ namespace CosmicShore.ScriptableObjects
         public int NearSubdivisions => nearSubdivisions;
         public bool SilentBurnout => silentBurnout;
         public int MaxDrawn => maxDrawn;
+        public Material LaserMaterial => laserMaterial;
+        public float LaserDistance => laserDistance;
+        public float LaserFarBand => laserFarBand;
+        public AshColorSource AshSource => ashColorSource;
+        public Color FallbackAshColor => fallbackAshColor;
         public bool IsUsable => nearMaterial != null && midMaterial != null;
 
         static PrismBurnFxConfigSO s_instance;

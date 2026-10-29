@@ -13,6 +13,7 @@
 //
 // Tiers: the NEAR material enables _BURN_CURL (vertex curl + flutter, 2-octave noise, on a subdivided cube); the MID
 // material leaves it off (no displacement, 1 octave, 24-vertex cube). FAR draws nothing.
+// Shared helpers: PrismEffectCommon.hlsl (Docs/Shaders/PRISM_EFFECTS.md).
 // Conventions follow PrismSlice.shader: opaque alpha-clip in the AlphaTest queue, never transparent; Cull Off (paper has
 // an inside); a DepthOnly pass with the same clip and displacement. Lit by the main light only, with a cheap wrap term.
 Shader "CosmicShore/PrismPaperBurn"
@@ -57,6 +58,7 @@ Shader "CosmicShore/PrismPaperBurn"
         #pragma multi_compile_instancing
         #pragma shader_feature_local _BURN_CURL
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        #include "PrismEffectCommon.hlsl"   // Hash33 / Hash31 / ValueNoise / PrismIgnitionPoint / Bayer4 / PrismDitherClip
 
         CBUFFER_START(UnityPerMaterial)
             half4 _PaperColor, _PaperInside, _ScorchColor, _CharColor, _EmberColor, _EmberHot;
@@ -68,35 +70,11 @@ Shader "CosmicShore/PrismPaperBurn"
             UNITY_DEFINE_INSTANCED_PROP(float4, _Burn)
         UNITY_INSTANCING_BUFFER_END(PaperBurnProps)
 
-        float3 Hash33(float3 p)
-        {
-            p = frac(p * float3(0.1031, 0.1030, 0.0973));
-            p += dot(p, p.yxz + 33.33);
-            return frac((p.xxy + p.yxx) * p.zyx);
-        }
-
-        float Hash31(float3 p)
-        {
-            p = frac(p * 0.1031);
-            p += dot(p, p.zyx + 31.32);
-            return frac((p.x + p.y) * p.z);
-        }
-
-        float ValueNoise(float3 p)
-        {
-            float3 i = floor(p), f = frac(p);
-            float3 u = f * f * (3.0 - 2.0 * f);
-            float a = Hash31(i), b = Hash31(i + float3(1, 0, 0)), c = Hash31(i + float3(0, 1, 0)), d = Hash31(i + float3(1, 1, 0));
-            float e = Hash31(i + float3(0, 0, 1)), g = Hash31(i + float3(1, 0, 1)), h = Hash31(i + float3(0, 1, 1)), k = Hash31(i + 1.0);
-            return lerp(lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y), lerp(lerp(e, g, u.x), lerp(h, k, u.x), u.y), u.z);
-        }
-
         // The burn FIELD at an object-space point: 0 at the ignition point, ~1 at the far corner, roughened by noise.
         // The front is where progress*_Span crosses it.
         float BurnField(float3 posOS, float seed)
         {
-            float3 origin = (Hash33(seed.xxx * 17.13 + 3.7) - 0.5);          // a seeded point inside the unit cube...
-            origin = origin / max(max(abs(origin.x), abs(origin.y)), max(abs(origin.z), 1e-3)) * 0.5;   // ...pushed to its surface
+            float3 origin = PrismIgnitionPoint(seed);                           // a seeded point on the cube's surface
             float d = length(posOS - origin) * 0.5774;                          // / sqrt(3): 0..~1
             float3 q = posOS * _NoiseFreq + seed * 7.31;
             float n = ValueNoise(q);
@@ -115,20 +93,9 @@ Shader "CosmicShore/PrismPaperBurn"
             return noHoles ? min(front, -_EmberWidth * 0.4) : front;
         }
 
-        // 4x4 ordered dither, 0..1
-        static const float kBayer4[16] = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
-        float Bayer4(float2 pixel)
-        {
-            uint2 p = (uint2)pixel & 3u;
-            return (kBayer4[p.x + p.y * 4u] + 0.5) / 16.0;
-        }
-
         void DitherClip(float2 pixel, float4 burn)
         {
-            float d = Bayer4(pixel);
-            bool invert = fmod(burn.w, 2.0) >= 1.0;
-            float keep = invert ? (d - (1.0 - burn.z)) : (burn.z - d);
-            clip(keep);
+            PrismDitherClip(pixel, burn.z, fmod(burn.w, 2.0) >= 1.0);   // flags +1: MID draws NEAR's complement
         }
 
         // Burnt edges roll OUTWARD and pull in, the way a sheet curls away from its own flame; a faint heat flutter rides on top.
