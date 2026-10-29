@@ -54,7 +54,9 @@ namespace CosmicShore.Tests
         public void Switchback_IsBlastRun_SoItsAIsTakeTheKeyCrystals()
         {
             // Switchback is Blast Run only since 2026-10-29: a blocked gate opens only to a key crystal's blast, so
-            // its AI Dolphins detour for the keys (they sit on the leg line) within the scene's slack.
+            // its AI Dolphins detour for the keys (they sit on the leg line) within the scene's slack. In a live race the
+            // blast planner (SwitchbackBlastAI, on by default) takes over and the slack drops to 0 - it decides per gate
+            // which key to take, and when to thread instead; with no course raised (here) the fallback detour is what is read.
             Assert.AreEqual(220f, SlackOf<SwitchbackController>(220f));
         }
 

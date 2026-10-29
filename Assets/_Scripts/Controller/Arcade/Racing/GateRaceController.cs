@@ -411,6 +411,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Where a DRIFTING pilot points its nose instead of its steering target (the default drift look), or false for
+        /// the default. Switchback's blast AI holds the nose - and so the Dolphin's blast cone - on the obstacle while it
+        /// takes its key (<see cref="SwitchbackBlastAI"/>). Server only, like the steering it sits beside.
+        /// </summary>
+        protected virtual bool TryOverrideDriftLook(IPlayer pilot, out Vector3 look)
+        {
+            look = default;
+            return false;
+        }
+
+        /// <summary>
         /// The hull's own RACE LINE: where <paramref name="pilot"/> steers instead of the gate's approach / mouth points,
         /// and the point after it (the boost driver's corner). Asked after the difficulty belief and the missed-mouth test,
         /// so an Easy pilot's mistakes and a missed ring are still flown the gate way. False (the default) = the gate way.
@@ -1320,7 +1331,9 @@ namespace CosmicShore.Gameplay
             // (2026-10-14 Regatta audit: it fired wide of the ring).
             pilot.SetThrottleFloor(AIThrottleFloor);
             var aiPilot = pilot;
-            pilot.SetDriftLookTargetProvider(() => aiPilot && aiPilot.Objective.Has ? aiPilot.TargetPosition : (Vector3?)null);
+            pilot.SetDriftLookTargetProvider(() =>
+                TryOverrideDriftLook(captured, out Vector3 look) ? look
+                : aiPilot && aiPilot.Objective.Has ? aiPilot.TargetPosition : (Vector3?)null);
         }
 
         /// <summary>

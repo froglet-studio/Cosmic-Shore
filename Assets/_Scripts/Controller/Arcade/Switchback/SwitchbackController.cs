@@ -36,6 +36,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Lays Blast Run's doors and block fields along the course (SwitchbackBlastRun) on every peer.")]
         [SerializeField] SpawnableSwitchbackFeatures featuresPrefab;
 
+        [Header("Blast Run AI")]
+        [Tooltip("The AI's blast planner (SWITCHBACK.md \"AI: the blast planner\"): at each blocked gate an AI chooses to thread " +
+                 "the eye or take the key crystal and blast the door, by its difficulty. Off = the old crystal detour.")]
+        [SerializeField] bool aiBlastPlanner = true;
+        [Tooltip("Use the four skills below (Easy, Medium, Hard, Legendary) instead of the built-in table " +
+                 "(SwitchbackAISkill.ForLevel).")]
+        [SerializeField] bool aiSkillOverride;
+        [SerializeField] SwitchbackAISkill[] aiSkills =
+        {
+            SwitchbackAISkill.ForLevel(1), SwitchbackAISkill.ForLevel(2), SwitchbackAISkill.ForLevel(3), SwitchbackAISkill.ForLevel(4),
+        };
+        [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
+        [SerializeField] bool aiPlanGizmos = true;
+
         /// <summary>u a course feature keeps outside the nucleus.</summary>
         const float NucleusMargin = 30f;
 
@@ -56,6 +70,33 @@ namespace CosmicShore.Gameplay
         /// detour costs nothing) and its blast opens the door.</summary>
         protected override bool AIDetoursForCrystals => true;
 
+        /// <summary>With the blast planner on, the planner decides which key an AI takes (and when not to): no blind detour.</summary>
+        protected override float AICrystalDetourSlack => aiBlastPlanner && _blastAI != null ? 0f : base.AICrystalDetourSlack;
+
+        protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
+        {
+            target = default;
+            return IsServer && _blastAI != null && _blastAI.TryAim(pilot, out target);
+        }
+
+        protected override bool TryOverrideDriftLook(IPlayer pilot, out Vector3 look)
+        {
+            look = default;
+            return IsServer && _blastAI != null && _blastAI.TryDriftLook(pilot, out look);
+        }
+
+        SwitchbackAISkill SkillFor(IPlayer pilot)
+        {
+            int level = (int)gameData.AIDifficultyFor(pilot);
+            if (aiSkillOverride && aiSkills != null && aiSkills.Length >= 4 && level >= 1 && level <= 4) return aiSkills[level - 1];
+            return SwitchbackAISkill.ForLevel(level);
+        }
+
+        void OnDrawGizmosSelected()
+        {
+            if (aiPlanGizmos && _blastAI != null) _blastAI.DrawGizmos();
+        }
+
         protected override RaceCourseSource CreateCourseSource() =>
             new SwitchbackCourseSource { FirstGateDistance = firstGateDistance };
 
@@ -74,6 +115,7 @@ namespace CosmicShore.Gameplay
         SwitchbackBlastRunRuntime _runtime;
         SwitchbackFeatureLayout _blastLayout;
         CrystalManager _keyManager;
+        SwitchbackBlastAI _blastAI;
 
         /// <summary>
         /// Blast Run, hung on the course on every peer from the course every peer received (Breakwater's stations are
@@ -113,7 +155,13 @@ namespace CosmicShore.Gameplay
 
             _runtime = new GameObject("SwitchbackBlastRun").AddComponent<SwitchbackBlastRunRuntime>();
             _runtime.transform.SetParent(transform, false);
-            _runtime.Init(gameData, intensity, IsServer ? CourseSeedUsed : 0, _course.Count, () => RaceLength, layout, container);
+            bool planAI = IsServer && aiBlastPlanner && layout.Stations.Count > 0;
+            _runtime.Init(gameData, intensity, IsServer ? CourseSeedUsed : 0, _course.Count, () => RaceLength, layout, container,
+                          trackAllPrisms: planAI);
+            _blastAI = planAI
+                ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
+                                        RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed)
+                : null;
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Switchback] BLAST RUN intensity {intensity}: {_course.Count} gates, {layout.Stations.Count} blocked gates, " +
@@ -149,6 +197,7 @@ namespace CosmicShore.Gameplay
                 if (IsServer && _keyManager) _keyManager.ClearCourseKeys();
                 _keyManager = null;
                 _blastLayout = null;
+                _blastAI = null;
             }
             base.OnNetworkDespawn();
         }

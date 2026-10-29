@@ -11,13 +11,15 @@ namespace CosmicShore.Gameplay
     /// <list type="bullet">
     /// <item>The block fields' movers (sliders and rotors, <see cref="BlastRunMover"/>) are posed every frame off the
     /// shared server clock - a closed-form function of time, so nothing about them is replicated.</item>
+    /// <item>Server: which laid prisms still stand (<see cref="PrismStanding"/>), for the AI's blast planner
+    /// (<see cref="SwitchbackBlastAI"/>) - every layout prism is matched to its spawned prism by laid position.</item>
     /// <item>One <c>[Switchback] RUN</c> log line at the finish (intensity, seed, time, gates, prisms destroyed,
     /// stations, keys, movers), so a test session can be read back from the log.</item>
     /// </list>
     /// The finish watches the LOCAL pilot only; the scoring is still the gate race's own
     /// (<see cref="GateRaceController"/>).
     /// </summary>
-    public sealed class SwitchbackBlastRunRuntime : MonoBehaviour
+    public sealed class SwitchbackBlastRunRuntime : MonoBehaviour, ISwitchbackAIWorld
     {
         /// <summary>A prism laid at most this far from where the layout put it is that prism.</summary>
         const float PrismMatchDistance = 0.75f;
@@ -39,12 +41,20 @@ namespace CosmicShore.Gameplay
         readonly List<(int first, int count)> _tracked = new();   // the movers' prism ranges
         float _nextScan, _scanDeadline;
 
+        // Server, for the AI: EVERY layout prism matched to its spawned prism (the movers through _moving), found through
+        // a hash of laid positions so a scan is one lookup per spawned prism.
+        bool _trackAll;
+        Prism[] _static;            // per layout prism index; null until matched (and for moving ones)
+        int _allExpected, _allMatched;
+        Dictionary<Vector3Int, int> _laidCell;   // cell of a laid position -> first layout index in it
+        int[] _laidNext;                         // chain within a cell (-1 = end)
+
         bool _finished;
         int _blocksAtStart = -1;
 
         /// <summary>Hand over the match: the Blast Run layout and the container its prisms were laid into.</summary>
         public void Init(GameDataSO gameData, int intensity, int seed, int courseCount, System.Func<int> raceLength,
-                         SwitchbackFeatureLayout layout, Transform prismContainer)
+                         SwitchbackFeatureLayout layout, Transform prismContainer, bool trackAllPrisms = false)
         {
             _gameData = gameData;
             _intensity = intensity;
@@ -61,6 +71,7 @@ namespace CosmicShore.Gameplay
                 foreach (var m in _layout.Movers) _tracked.Add((m.FirstPrism, m.Count));
                 foreach (var r in _tracked) _movingExpected += r.count;
                 _scanDeadline = Time.time + PrismScanTimeout;
+                if (trackAllPrisms) BuildLaidIndex();
             }
         }
 
@@ -79,6 +90,86 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        bool IsMoving(int k)
+        {
+            foreach (var r in _tracked) if (k >= r.first && k < r.first + r.count) return true;
+            return false;
+        }
+
+        static Vector3Int CellOf(Vector3 p) => new(Mathf.FloorToInt(p.x / PrismMatchDistance),
+                                                   Mathf.FloorToInt(p.y / PrismMatchDistance),
+                                                   Mathf.FloorToInt(p.z / PrismMatchDistance));
+
+        void BuildLaidIndex()
+        {
+            int n = _layout.Prisms.Count;
+            _trackAll = true;
+            _static = new Prism[n];
+            _laidNext = new int[n];
+            _laidCell = new Dictionary<Vector3Int, int>(n);
+            for (int k = n - 1; k >= 0; k--)
+            {
+                _laidNext[k] = -1;
+                if (IsMoving(k)) continue;
+                _allExpected++;
+                var c = CellOf(_layout.Prisms[k].Position);
+                if (_laidCell.TryGetValue(c, out int head)) _laidNext[k] = head;
+                _laidCell[c] = k;
+            }
+        }
+
+        /// <summary>The still-static prisms the scan has not matched yet: look each spawned prism up by its position.</summary>
+        void MatchStatic(Prism[] found)
+        {
+            float sq = PrismMatchDistance * PrismMatchDistance;
+            for (int f = 0; f < found.Length; f++)
+            {
+                var prism = found[f];
+                if (!prism) continue;
+                Vector3 at = prism.transform.position;
+                var c = CellOf(at);
+                for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++)
+                for (int dz = -1; dz <= 1; dz++)
+                {
+                    if (!_laidCell.TryGetValue(new Vector3Int(c.x + dx, c.y + dy, c.z + dz), out int k)) continue;
+                    for (; k >= 0; k = _laidNext[k])
+                    {
+                        if (_static[k] || _lost[k] || (_layout.Prisms[k].Position - at).sqrMagnitude > sq) continue;
+                        _static[k] = prism;
+                        _allMatched++;
+                        goto next;
+                    }
+                }
+                next: ;
+            }
+        }
+
+        /// <summary>
+        /// Server, for the AI planner: does layout prism <paramref name="k"/> still stand? Not yet matched (still being
+        /// laid, or the scan timed out) reads as standing - the planner then over-counts an obstacle, never under-counts it.
+        /// Destroyed, pooled or re-parented reads as gone for good.
+        /// </summary>
+        public bool PrismStanding(int k)
+        {
+            if (_layout == null || k < 0 || k >= _lost.Length) return true;
+            if (_lost[k]) return false;
+            if (_moving[k] != null) return Live(k);
+            if (!_trackAll) return true;
+            var prism = _static[k];
+            if (prism == null) return true;
+            if (!prism || prism.destroyed || !_prismContainer || !prism.transform.IsChildOf(_prismContainer))
+            {
+                _static[k] = null;
+                _lost[k] = true;
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>The runtime does not watch the key crystals: <see cref="SwitchbackBlastAI"/> does.</summary>
+        public bool KeyAvailable(int station) => true;
+
         void Update()
         {
             if (_gameData == null || _courseCount == 0) return;
@@ -93,8 +184,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The movers, off the server clock so every peer's prisms stand in the same place.</summary>
         void TickMoving()
         {
-            if (_layout == null || _tracked.Count == 0) return;
-            if (_movingMatched < _movingExpected && Time.time >= _nextScan && Time.time < _scanDeadline) ScanForMovingPrisms();
+            if (_layout == null || (_tracked.Count == 0 && !_trackAll)) return;
+            if ((_movingMatched < _movingExpected || (_trackAll && _allMatched < _allExpected))
+                && Time.time >= _nextScan && Time.time < _scanDeadline) ScanForMovingPrisms();
 
             var nm = NetworkManager.Singleton;
             float t = nm != null && nm.IsListening ? nm.ServerTime.TimeAsFloat : Time.time;
@@ -108,6 +200,7 @@ namespace CosmicShore.Gameplay
             _nextScan = Time.time + PrismScanInterval;
             if (!_prismContainer) return;
             var found = _prismContainer.GetComponentsInChildren<Prism>(true);
+            if (_trackAll && _allMatched < _allExpected) MatchStatic(found);
             float sq = PrismMatchDistance * PrismMatchDistance;
             foreach (var range in _tracked)
                 for (int j = 0; j < range.count; j++)
@@ -123,9 +216,11 @@ namespace CosmicShore.Gameplay
                         break;
                     }
                 }
-            if (_movingMatched >= _movingExpected || Time.time + PrismScanInterval >= _scanDeadline)
+            if ((_movingMatched >= _movingExpected && (!_trackAll || _allMatched >= _allExpected))
+                || Time.time + PrismScanInterval >= _scanDeadline)
                 CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
-                    $"[Switchback] Blast Run movers: {_movingMatched}/{_movingExpected} prisms found.");
+                    $"[Switchback] Blast Run movers: {_movingMatched}/{_movingExpected} prisms found" +
+                    (_trackAll ? $"; AI liveness: {_allMatched}/{_allExpected} static prisms." : "."));
         }
 
         // ── Blast Run movers ──────────────────────────────────────────

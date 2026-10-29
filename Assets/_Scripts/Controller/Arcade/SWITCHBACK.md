@@ -576,6 +576,95 @@ not aim its blast at doors (it takes the key and the blast fires down its headin
 crystal field for the match; the movers use `ServerTime.TimeAsFloat` (float precision is fine for hours, not days);
 nothing about frame time was measured in Unity.
 
+## AI: the blast planner (2026-10-29) - NOT editor-verified
+
+An AI Dolphin plays a blocked gate the way a good player does. Each gate has three points: the **key crystal** (on the
+leg line, 230-400 u before the ring), the **obstacle** (the door and its block field), and the **ring**. At every
+blocked gate the AI picks one of three plans:
+
+| Plan | When | What it flies |
+|---|---|---|
+| **Direct** | the gate has no obstacle, or 95%+ of it (all but 2 prisms) is already blasted | the gate race's ring steering |
+| **Thread** | threading the eye is cheaper, or the key is gone (a rival took it), behind, too far, or something stands in the way to it | the ring steering through the centre: the bore, which the layout never fills |
+| **Blast** | taking the key and blasting is cheaper | approach the key on the fire line, with the nose (drift look) on the obstacle at contact, then fly the lane it cleared |
+
+**Code.** `Switchback/SwitchbackBlastPlanner.cs` is pure C#: the plan, the costs and the aim, all headless-tested.
+`Switchback/SwitchbackBlastAI.cs` is the server-only executor. `SwitchbackController` wires it into the gate race's
+hooks: `TryOverrideAim` for the approach to the key, and the new `GateRaceController.TryOverrideDriftLook` for the nose
+at contact. With the planner on, `AICrystalDetourSlack` is 0, so the planner decides which key to take. The planner is
+on by default; untick **`aiBlastPlanner`** on the controller to fall back to the blind crystal detour.
+
+**Costs, in seconds.**
+- **Thread** = ETA × (1 + the eye's slow-down: 0.35 at an 18 u eye, scaled by 18/eye, plus 0.15 for a double door)
+  \+ 0.6 s for each standing prism within 8 u of the line (1.5 s for a Danger prism). Movers are posed with the
+  closed-form `BlastRunMover.PoseAt` at the shared clock, at ETA ± the skill's timing error.
+- **Blast** = (ETA + the detour to the key + drift alignment (turn beyond 15° at 110°/s, + 0.6 s if over 45°) + 0.2 s
+  of contact + 0.6 s for each lane prism within 20 u that the planned slot does **not** cover) × the skill's blast bias.
+
+**The aim.** The Dolphin's blast is a cone along the nose, stretched along the vessel's up axis into a slot.
+- The nose points from the key to the door.
+- The gape (up) lies along the standing obstacle's principal axis across the leg, so a slab, beam or slider track is
+  cut along its length.
+- The planner's slot model (`SwitchbackBlastSlot.Default`: reach 400 u, core tan 0.12, gape tan 0.22) is deliberately
+  narrower than the asset's cone, so a planned blast under-promises.
+
+**Replanning.** The AI plans when it starts a gate and every `ReplanSeconds` (not once its strike has begun). It replans
+at once when its key vanishes; if that happens within 30 u of the key, it took the key itself. It reads the key from
+`Crystal.Active` (managed crystals within 4 u of the key) at 10 Hz. It reads whether a prism still stands from
+`SwitchbackBlastRunRuntime.PrismStanding`: on the server, every layout prism is matched to its spawned prism by laid
+position through a position hash. An unmatched prism reads as standing, so the planner can over-count an obstacle but
+never under-count it.
+
+**Difficulty** (`SwitchbackAISkill.ForLevel`, by the lobby's `AIDifficulty` per pilot; override per level on the
+controller with `aiSkillOverride` / `aiSkills`):
+
+| Lobby level | Plays as | Decision quality | Blast bias | Aim error | Roll error | Timing error | Replan | Key search radius |
+|---|---|---|---|---|---|---|---|---|
+| Easy | rarely blasts | 0.30 | 1.60 | 14° | 70° | 0.60 s | 3 s | 170 u |
+| Medium (default) | blasts when it is convenient | 0.60 | 1.15 | 8° | 35° | 0.35 s | 1.5 s | 360 u |
+| Hard ("medium-hard") | good cost choices | 0.85 | 1.05 | 4° | 15° | 0.15 s | 0.75 s | 520 u |
+| Legendary ("hard") | near-perfect | 1.00 | 1.00 | 0.75° | 3° | 0.03 s | 0.25 s | 700 u |
+
+What the columns mean:
+- **Decision quality** is the chance the AI takes the cheapest plan; otherwise it falls back on its habit, threading.
+- **Blast bias** multiplies the blast's cost: above 1, the pilot undervalues the blast.
+- **Aim and roll error** are seeded per pilot, gate and plan, so they are deterministic.
+
+Headless, on the four fixed-seed courses (12-17 stations each, pilots at 60-400 u before each key, 8 seats), the AI
+chooses to blast on 1% / 12% / 38% / 73% of these decisions. When it blasts, its slot covers 94% / 88% / 94% / 97% of
+the lane. Easy's figure is high because it only blasts the easiest, best-covered shots. Legendary never picks a costlier
+plan.
+
+**Known limits.**
+- **Roll is planned, not flown.** `AIPilot` has no roll hook. The gape axis is logged and drawn, but the blast fires
+  along the hull's actual up axis. The nose is flown, through drift look.
+- The slot model is an approximation of `AOEConicExplosion`.
+- Movers are only sampled at the ETA, so a fast rotor can still clip a threading pilot.
+
+**Debug.**
+- With the controller selected, gizmos show each AI's plan: magenta to its key, a yellow fire line to the aim point, a
+  cyan gape axis; orange means Thread and green means Direct.
+- Verbose ArcadeMatch log lines are written when a plan is made or changes, and when the pilot leaves the gate:
+  `[Switchback AI] gate=7 plan=Blast crystal=212u aimErr=3.9 roll=-11 cover=94% cost thread=5.41 blast=4.37 why=cheapest result=planned pilot=3`
+  then `[Switchback AI] gate=7 plan=Blast crystal=taken aimErr=3.9 result=blasted standing 170->41 pilot=3`
+  (other results: `missed-key`, `threaded`, `rival-took-key threaded`).
+
+**Network and performance.** It runs on the server only and adds no networked data: the pilots it steers are server
+AIs, and the movers and keys are read off the shared clock and the crystal manager. It plans per gate, on a replan, or
+when a key changes. A decision scans that station's obstacle (about 150-300 prisms) and a box-culled pass over the
+layout for the way to the key. Per frame it does only a dictionary lookup and a few vector operations, with no
+allocation.
+
+**Tests.** `Tests/Editor/SwitchbackBlastPlannerTests.cs` (24 cases, headless) covers:
+- open gate → Direct;
+- key close → Blast, or an honest refusal, on at least half the stations;
+- key far → Thread; way to the key blocked → Thread;
+- already blasted → Direct; rival took the key → Thread;
+- Legendary's erred slot covers the door, and the lane as well as a perfect aim does;
+- the roll solve lies along a slab's long axis;
+- the difficulty ladder (more blasts, less regret, better aim at each step; Easy rarely blasts; Legendary is never suboptimal);
+- determinism; movers posed at the pilot's time; unset difficulty → Medium.
+
 ## Known limitations / follow-ups
 
 - **The arcade grid had to grow to show this card, and growing it takes TWO changes.**

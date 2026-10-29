@@ -18827,3 +18827,37 @@ not run: no editor in the session. The reference compile passes, and so does `le
    `flight_Switchback_*.json` has `"funType":"Baseline"` after `courseIntensity`, and the console shows no error.
 2. Pick Blast Run on the launch panel and fly again. **Pass:** that flight has `"funType":"BlastRun"`.
 3. Fly any other mode (Regatta, Skim Race). **Pass:** its flight has no `funType` field, and everything else is as before.
+
+## Switchback Blast Run: the AI blasts like a player, by difficulty (2026-10-29) - NOT EDITOR-VERIFIED
+
+**What changed.** At each blocked gate, an AI Dolphin now chooses Direct, Thread (the eye) or Blast (take the key, nose
+on the door, fly the cleared lane). Its difficulty sets how well it chooses and aims (SWITCHBACK.md "AI: the blast
+planner"). It is server-only. The **`aiBlastPlanner`** toggle on SwitchbackController (on by default) falls back to the
+old crystal detour.
+
+**Setup.** Turn on verbose ArcadeMatch logging and filter the console on `[Switchback AI]`. Select the
+SwitchbackController in the hierarchy to see the gizmos.
+
+1. Fly Switchback at intensity 3 with 2-3 AI opponents at **Easy**.
+   - **Pass:** almost every blocked gate logs `plan=Thread`, and the AIs thread the eyes. If an Easy AI ever blasts, it
+     is rare.
+2. Repeat at **Medium**.
+   - **Pass:** some gates log `plan=Blast ... result=planned`, mostly when the AI is already near the key. They are
+     followed by `result=blasted standing A->B` with B well below A, and the AI flies through the hole.
+3. Repeat at **Hard**.
+   - **Pass:** blasts are frequent.
+   - **Pass:** where a key is off the AI's line, the log shows `why=key-far` or `why=key-blocked` and it threads.
+4. Repeat at **Legendary**.
+   - **Pass:** most blocked gates are blasted, with `aimErr` under 1.2.
+   - **Pass:** the gizmo's yellow fire line runs through the door, and the cleared hole is lined up with the ring.
+   - Note: the cyan gape axis is planned only; roll is not flown.
+5. Race a human against a Hard AI, and take the AI's key just before it does.
+   - **Pass:** the log shows `why=key-gone` / `result=rival-took-key threaded`, and the AI threads instead of
+     circling the empty key.
+6. Fly intensity 4, which has sliders and rotors.
+   - **Pass:** AIs do not stall at gates.
+   - **Pass:** the frame rate holds at 100 fps with 4 AIs. In the profiler, `SwitchbackController` and
+     `SwitchbackBlastRunRuntime` show no GC allocation per frame; a scan every 0.5 s during the first 30 s is expected.
+7. Untick `aiBlastPlanner` and fly once more.
+   - **Pass:** there are no `[Switchback AI]` lines, and the AIs detour for keys as before.
+
