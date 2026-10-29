@@ -1,35 +1,35 @@
 {
  "descriptors": null,
- "evals_at": 1474,
- "loss": 4.019286072472712,
+ "evals_at": 2002,
+ "loss": 3.963087687074331,
  "metrics": {
   "dnf": 2,
   "limits": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
   "model": "rhino_drive",
   "races": 12,
   "seconds_by_intensity": {
-   "1": 30.03,
-   "2": 33.1,
-   "3": 37.23,
-   "4": 444.37
+   "1": 28.9,
+   "2": 30.0,
+   "3": 35.87,
+   "4": 404.9
   }
  },
  "params": {
-  "alignDegrees": 15.355162538957451,
-  "brakeLeadSeconds": 0.6919570726953129,
-  "brakeMarginUnits": 1.5564209210350732,
-  "brakeSteerFloor": 0.06695530902835255,
-  "cornerReleaseDegrees": 32.90491713032507,
-  "cornerSpeed": 1484.0818441826116,
-  "engageRunwaySeconds": 0.7236344225319464,
-  "minCornerSpeed": 289.0692222124744,
-  "minSpeedGain": 35.223940902737375,
-  "releaseAlignDegrees": 22.348643377612124,
-  "releaseRunwaySeconds": 0.5219791037317839,
-  "releaseStickBand": 0.9073554489786457,
-  "stickBand": 0.8794648764193693,
-  "throttleSlewPerSecond": 1.2661608303034217
+  "alignDegrees": 16.489540424095225,
+  "brakeLeadSeconds": 0.6317178905055378,
+  "brakeMarginUnits": 7.826537254845908,
+  "brakeSteerFloor": 0.1061810860344124,
+  "cornerReleaseDegrees": 29.670363885821157,
+  "cornerSpeed": 1491.3453123974216,
+  "engageRunwaySeconds": 0.6439966751132744,
+  "minCornerSpeed": 292.0342681475789,
+  "minSpeedGain": 46.59035699507009,
+  "releaseAlignDegrees": 18.78011317508915,
+  "releaseRunwaySeconds": 0.4080543068648286,
+  "releaseStickBand": 0.7789816547925301,
+  "stickBand": 0.879857417696847,
+  "throttleSlewPerSecond": 1.7448523884825806
  },
  "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
- "time": 1793194713
+ "time": 1793258221
 }

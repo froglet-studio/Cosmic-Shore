@@ -32,7 +32,7 @@
   }
  },
  "errors": {},
- "evals": 1496,
+ "evals": 2178,
  "history": [
   [
    11,
@@ -57,10 +57,28 @@
    4.019286072472712,
    1793194713,
    "shombithofficial/dragonsweapon"
+  ],
+  [
+   1694,
+   3.9768139250542096,
+   1793258042,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   1738,
+   3.9744976098120586,
+   1793258068,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   2002,
+   3.963087687074331,
+   1793258221,
+   "shombithofficial/dragonsweapon"
   ]
  ],
  "restarts": 1,
- "seconds": 833.8,
+ "seconds": 1220.4,
  "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
- "updated": 1793194732
+ "updated": 1793258316
 }
