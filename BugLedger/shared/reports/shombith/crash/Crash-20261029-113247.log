@@ -1,0 +1,621 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-29 11:32:47 (next editor launch after the abnormal exit)
+session:        20261028-161833276  (pid 8448, Unity 6000.3.17f1)
+started:        2026-10-28T16:18:33.290Z UTC
+last heartbeat: 2026-10-28T20:19:53.368Z UTC
+last state:     PlayMode
+main thread:    unresponsive for ~57s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261028-161833276.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261028-161833276
+started: 2026-10-28T16:18:33.290Z UTC
+unity:   6000.3.17f1
+pid:     8448
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[21:49:19.807] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261028-161833276.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[21:49:41.433] ---- main thread stalled ~68s and RECOVERED — slow, not hung ----
+[21:53:05.643] [EditMode] Assert: Failed to ad separator
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8f05439 (Unity) AssertImplementation
+        0x00007ffec9db360f (Unity) AppendSeparator
+        0x00007ffec9db34d1 (Unity) AddSubMenuItems
+        0x00007ffec9db353a (Unity) AddSubMenuItems
+        ...
+[21:53:05.694] ---- domain reload begins (script compilation / play-mode transition) ----
+[21:53:18.897] ---- domain reload complete — session re-adopted ----
+[21:54:19.072] ---- entering play mode ----
+[21:54:26.228] ---- play mode running ----
+[22:01:55.614] [PlayMode] Error: [Vivox]: <BeginChatHistoryQuery>b__1: vx_req_session_chat_history_query_t failed: Unity.Services.Vivox.VivoxApiException: Target Object Does Not Exist (1001) [RequestId: 29]
+  at Unity.Services.Vivox.VxClient.EndIssueRequest (System.IAsyncResult result) [0x0004c] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\VxClient.cs:317 
+  at Unity.Services.Vivox.ChannelSession+<>c__DisplayClass110_0.<BeginChatHistoryQuery>b__1 (System.IAsyncResult result) [0x00002] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1321 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d3a2588e4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d3a2588c53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d3a258890b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:01:55.642] [PlayMode] Error: [Vivox]: <GetChannelTextMessageHistoryPageAsync>b__1: AsyncResult`1 failed: Unity.Services.Vivox.VivoxApiException: Target Object Does Not Exist (1001) [RequestId: 29]
+  at Unity.Services.Vivox.AsyncResult`1[T].get_Result () [0x0000e] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\AsyncResult.cs:92 
+  at Unity.Services.Vivox.ChannelSession+<>c__DisplayClass112_0.<GetChannelTextMessageHistoryPageAsync>b__1 (System.IAsyncResult ar) [0x00009] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1354 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d3a2588e4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d3a2588c53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d3a258890b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:01:55.671] [PlayMode] Error: [Vivox]: MoveNext: ChannelSession failed: Unity.Services.Vivox.VivoxApiException: Target Object Does Not Exist (1001) [RequestId: 29]
+  at Unity.Services.Vivox.AsyncResult`1[T].get_Result () [0x0000e] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\AsyncResult.cs:92 
+  at Unity.Services.Vivox.ChannelSession+<>c__DisplayClass112_0.<GetChannelTextMessageHistoryPageAsync>b__1 (System.IAsyncResult ar) [0x0004f] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1361 
+  at System.Threading.Tasks.TaskFactory`1[TResult].FromAsyncCoreLogic (System.IAsyncResult iar, System.Func`2[T,TResult] endFunction, System.Action`1[T] endAction, System.Threading.Tasks.Task`1[TResult] promise, System.Boolean requiresSynchronization) [0x0000f] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+--- End of stack trace from previous location where exception was thrown ---
+
+  at Unity.Services.Vivox.ChannelSession.GetChannelTextMessageHistoryPageAsync (System.Int32 pageSize, Unity.Services.Vivox.ChatHistoryQueryOptions chatHistoryQueryOptions, System.AsyncCallback callback) [0x0008a] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1348 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d3a2588e4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d3a2588c53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d3a258890b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:01:55.677] [PlayMode] Error: [Vivox]: MoveNext: ChannelSession failed: Unity.Services.Vivox.VivoxApiException: Target Object Does Not Exist (1001) [RequestId: 29]
+  at Unity.Services.Vivox.AsyncResult`1[T].get_Result () [0x0000e] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\AsyncResult.cs:92 
+  at Unity.Services.Vivox.ChannelSession+<>c__DisplayClass112_0.<GetChannelTextMessageHistoryPageAsync>b__1 (System.IAsyncResult ar) [0x0004f] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1361 
+  at System.Threading.Tasks.TaskFactory`1[TResult].FromAsyncCoreLogic (System.IAsyncResult iar, System.Func`2[T,TResult] endFunction, System.Action`1[T] endAction, System.Threading.Tasks.Task`1[TResult] promise, System.Boolean requiresSynchronization) [0x0000f] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+--- End of stack trace from previous location where exception was thrown ---
+
+  at Unity.Services.Vivox.ChannelSession.GetChannelTextMessageHistoryPageAsync (System.Int32 pageSize, Unity.Services.Vivox.ChatHistoryQueryOptions chatHistoryQueryOptions, System.AsyncCallback callback) [0x001df] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1373 
+  at Unity.Services.Vivox.ChannelSession.GetChannelTextMessageHistoryAsync (System.Int32 requestSize, Unity.Services.Vivox.ChatHistoryQueryOptions chatHistoryQueryOptions, System.AsyncCallback callback) [0x0014f] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1407 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d3a2588e4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d3a2588c53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d3a258890b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:01:56.802] [PlayMode] Error: [Vivox]: <BeginChatHistoryQuery>b__1: vx_req_session_chat_history_query_t failed: Unity.Services.Vivox.VivoxApiException: Request Canceled (5031) [RequestId: 32]
+  at Unity.Services.Vivox.VxClient.EndIssueRequest (System.IAsyncResult result) [0x0004c] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\VxClient.cs:317 
+  at Unity.Services.Vivox.ChannelSession+<>c__DisplayClass110_0.<BeginChatHistoryQuery>b__1 (System.IAsyncResult result) [0x00002] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1321 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d3a2588e4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d3a2588c53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d3a258890b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:01:56.806] [PlayMode] Error: [Vivox]: <GetChannelTextMessageHistoryPageAsync>b__1: AsyncResult`1 failed: Unity.Services.Vivox.VivoxApiException: Request Canceled (5031) [RequestId: 32]
+  at Unity.Services.Vivox.AsyncResult`1[T].get_Result () [0x0000e] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\AsyncResult.cs:92 
+  at Unity.Services.Vivox.ChannelSession+<>c__DisplayClass112_0.<GetChannelTextMessageHistoryPageAsync>b__1 (System.IAsyncResult ar) [0x00009] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1354 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d3a2588e4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d3a2588c53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d3a258890b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:01:56.838] [PlayMode] Error: [Vivox]: MoveNext: ChannelSession failed: Unity.Services.Vivox.VivoxApiException: Request Canceled (5031) [RequestId: 32]
+  at Unity.Services.Vivox.AsyncResult`1[T].get_Result () [0x0000e] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\AsyncResult.cs:92 
+  at Unity.Services.Vivox.ChannelSession+<>c__DisplayClass112_0.<GetChannelTextMessageHistoryPageAsync>b__1 (System.IAsyncResult ar) [0x0004f] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1361 
+  at System.Threading.Tasks.TaskFactory`1[TResult].FromAsyncCoreLogic (System.IAsyncResult iar, System.Func`2[T,TResult] endFunction, System.Action`1[T] endAction, System.Threading.Tasks.Task`1[TResult] promise, System.Boolean requiresSynchronization) [0x0000f] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+--- End of stack trace from previous location where exception was thrown ---
+
+  at Unity.Services.Vivox.ChannelSession.GetChannelTextMessageHistoryPageAsync (System.Int32 pageSize, Unity.Services.Vivox.ChatHistoryQueryOptions chatHistoryQueryOptions, System.AsyncCallback callback) [0x0008a] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1348 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d3a2588e4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d3a2588c53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d3a258890b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:01:56.843] [PlayMode] Error: [Vivox]: MoveNext: ChannelSession failed: Unity.Services.Vivox.VivoxApiException: Request Canceled (5031) [RequestId: 32]
+  at Unity.Services.Vivox.AsyncResult`1[T].get_Result () [0x0000e] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\AsyncResult.cs:92 
+  at Unity.Services.Vivox.ChannelSession+<>c__DisplayClass112_0.<GetChannelTextMessageHistoryPageAsync>b__1 (System.IAsyncResult ar) [0x0004f] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1361 
+  at System.Threading.Tasks.TaskFactory`1[TResult].FromAsyncCoreLogic (System.IAsyncResult iar, System.Func`2[T,TResult] endFunction, System.Action`1[T] endAction, System.Threading.Tasks.Task`1[TResult] promise, System.Boolean requiresSynchronization) [0x0000f] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+--- End of stack trace from previous location where exception was thrown ---
+
+  at Unity.Services.Vivox.ChannelSession.GetChannelTextMessageHistoryPageAsync (System.Int32 pageSize, Unity.Services.Vivox.ChatHistoryQueryOptions chatHistoryQueryOptions, System.AsyncCallback callback) [0x001df] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1373 
+  at Unity.Services.Vivox.ChannelSession.GetChannelTextMessageHistoryAsync (System.Int32 requestSize, Unity.Services.Vivox.ChatHistoryQueryOptions chatHistoryQueryOptions, System.AsyncCallback callback) [0x0014f] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1407 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d3a2588e4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d3a2588c53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d3a258890b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:03:12.536] [PlayMode] Exception: MissingReferenceException: The object of type 'CosmicShore.UI.ToastNotificationItem' has been destroyed but you are still trying to access it.
+Your script should either check if it is null or you should not destroy the object.
+        UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.Component.get_transform () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        CosmicShore.UI.ToastNotificationManager.GetOrCreateItem () (at Assets/_Scripts/UI/ToastNotification/ToastNotificationManager.cs:133)
+        CosmicShore.UI.ToastNotificationManager.SpawnToast (System.String message, CosmicShore.UI.ToastKind kind) (at Assets/_Scripts/UI/ToastNotification/ToastNotificationManager.cs:115)
+        CosmicShore.UI.ToastNotificationManager.Show (System.String message, CosmicShore.UI.ToastKind kind) (at Assets/_Scripts/UI/ToastNotification/ToastNotificationManager.cs:110)
+        CosmicShore.UI.ToastNotificationAPI.Show (System.String message, CosmicShore.UI.ToastKind kind) (at Assets/_Scripts/UI/ToastNotification/ToastNotificationAPI.cs:40)
+        CosmicShore.UI.MenuAvailabilityView.TryPress () (at Assets/_Scripts/UI/Elements/MenuAvailabilityView.cs:128)
+        ...
+[22:09:17.909] [PlayMode] Error: Destroying components immediately is not permitted during physics trigger/contact, animation event callbacks, rendering callbacks or OnValidate. You must use Destroy instead.
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec9611e17 (Unity) CanDestroyObject
+        0x00007ffec9615d75 (Unity) DestroyObjectHighLevel
+        0x00007ffec8dbacb8 (Unity) Object_CUSTOM_DestroyImmediate
+        0x000002d1e4738fd8 (Mono JIT Code) (wrapper managed-to-native) UnityEngine.Object:DestroyImmediate_Injected (intptr,bool)
+        ...
+[22:09:17.912] [PlayMode] Error: Destroying components immediately is not permitted during physics trigger/contact, animation event callbacks, rendering callbacks or OnValidate. You must use Destroy instead.
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec9611e17 (Unity) CanDestroyObject
+        0x00007ffec9615d75 (Unity) DestroyObjectHighLevel
+        0x00007ffec8dbacb8 (Unity) Object_CUSTOM_DestroyImmediate
+        0x000002d1e4738fd8 (Mono JIT Code) (wrapper managed-to-native) UnityEngine.Object:DestroyImmediate_Injected (intptr,bool)
+        ...
+[22:09:17.915] [PlayMode] Error: Destroying components immediately is not permitted during physics trigger/contact, animation event callbacks, rendering callbacks or OnValidate. You must use Destroy instead.
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec9611e17 (Unity) CanDestroyObject
+        0x00007ffec9615d75 (Unity) DestroyObjectHighLevel
+        0x00007ffec8dbacb8 (Unity) Object_CUSTOM_DestroyImmediate
+        0x000002d1e4738fd8 (Mono JIT Code) (wrapper managed-to-native) UnityEngine.Object:DestroyImmediate_Injected (intptr,bool)
+        ...
+[22:38:32.784] ---- leaving play mode ----
+[22:38:55.136] ---- edit mode restored ----
+[01:34:30.028] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261028-161833276.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:35:23.986] ---- domain reload begins (script compilation / play-mode transition) ----
+[01:36:11.974] ---- domain reload complete — session re-adopted ----
+[01:36:59.003] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261028-161833276.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:39:05.741] ---- domain reload begins (script compilation / play-mode transition) ----
+[01:39:20.986] ---- domain reload complete — session re-adopted ----
+[01:43:16.394] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261028-161833276.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:43:19.110] ---- domain reload begins (script compilation / play-mode transition) ----
+[01:43:34.333] ---- domain reload complete — session re-adopted ----
+[01:46:48.997] ---- entering play mode ----
+[01:46:54.852] ---- play mode running ----
+[01:48:39.483] [PlayMode] Error: [Vivox]: MoveNext: ChannelSession failed: System.Threading.Tasks.TaskCanceledException: A task was canceled.
+  at Unity.Services.Vivox.ChannelSession.GetChannelTextMessageHistoryPageAsync (System.Int32 pageSize, Unity.Services.Vivox.ChatHistoryQueryOptions chatHistoryQueryOptions, System.AsyncCallback callback) [0x0013d] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1367 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d20e19ed4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d20e19eb53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d20e19e80b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:48:39.489] [PlayMode] Error: [Vivox]: MoveNext: ChannelSession failed: System.Threading.Tasks.TaskCanceledException: A task was canceled.
+  at Unity.Services.Vivox.ChannelSession.GetChannelTextMessageHistoryPageAsync (System.Int32 pageSize, Unity.Services.Vivox.ChatHistoryQueryOptions chatHistoryQueryOptions, System.AsyncCallback callback) [0x001df] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1373 
+  at Unity.Services.Vivox.ChannelSession.GetChannelTextMessageHistoryAsync (System.Int32 requestSize, Unity.Services.Vivox.ChatHistoryQueryOptions chatHistoryQueryOptions, System.AsyncCallback callback) [0x0014f] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxUnity\Private\ChannelSession.cs:1407 
+        0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec8f0587f (Unity) DebugStringToFile
+        0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002d20e19ed4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002d20e19eb53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002d20e19e80b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:48:51.857] ---- leaving play mode ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Analytics Dispatcher is already flushing.
+0x00007ffec8f54e2e (Unity) StackWalker::ShowCallstack
+0x00007ffeca78f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffeca78fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffec8f0587f (Unity) DebugStringToFile
+0x00007ffec8dc1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002d20e19ed4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000002d20e19eb53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002d20e19e80b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000002d392abbcfe (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000002d20e19dc8e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000002d20e19d9ed (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002d41d2eb753 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000002d41d2eb4e6 (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x000002d501408e0b (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:321)
+0x000002d501408b93 (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:109)
+0x000002d29bd04ac7 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000002d5014057cb (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000002d392f14445 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffeec736c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffeec678984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffeec678a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffec978fdd4 (Unity) scripting_method_invoke
+0x00007ffec9796c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffec9792235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffec8c6ab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffec965f689 (Unity) NotifyPlayerQuit
+0x00007ffec9fcb7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffec9fcd4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffec9fc896c (Unity) Application::TickTimer
+0x00007ffec9da9f7c (Unity) MainMessageLoop
+0x00007ffec9db1a12 (Unity) UnityMain
+0x00007ff747fc2f2a (Unity) __scrt_common_main_seh
+0x00007fffbe1fdda7 (KERNEL32) BaseThreadInitThunk
+0x00007fffbe93ee4c (ntdll) RtlUserThreadStart
+
+[Wire - ws#]: [29-10-2026 01:48:56] FATAL <>c__DisplayClass169_0.<startReceiving>b__2:2577 The header part of a frame could not be read.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (string,object)
+UnityWebSocketSharp.Logger:defaultOutput (UnityWebSocketSharp.LogData,string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:231)
+UnityWebSocketSharp.Logger:output (string,UnityWebSocketSharp.LogLevel) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:249)
+UnityWebSocketSharp.Logger:Fatal (string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:316)
+UnityWebSocketSharp.WebSocket/<>c__DisplayClass169_0:<startReceiving>b__2 (System.Exception) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/WebSocket.cs:2577)
+UnityWebSocketSharp.Ext/<>c__DisplayClass51_0:<ReadBytesAsync>b__0 (System.IAsyncResult) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Ext.cs:812)
+System.Threading.Tasks.TaskToApm/<>c__DisplayClass3_0:<InvokeCallbackWhenTaskCompletes>b__0 ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetResult (int)
+Mono.Net.Security.MobileAuthenticatedStream/<StartOperation>d__57:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<Mono.Net.Security.AsyncProtocolResult>:TrySetResult (Mono.Net.Security.AsyncProtocolResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Mono.Net.Security.AsyncProtocolResult>:SetResult (Mono.Net.Security.AsyncProtocolResult)
+Mono.Net.Security.AsyncProtocolRequest/<StartOperation>d__23:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<System.Threading.Tasks.VoidTaskResult>:TrySetResult (System.Threading.Tasks.VoidTaskResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetResult (System.Threading.Tasks.VoidTaskResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetResult (System.Threading.Tasks.Task`1<System.Threading.Tasks.VoidTaskResult>)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetResult ()
+Mono.Net.Security.AsyncProtocolRequest/<ProcessOperation>d__24:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<System.Nullable`1<int>>:TrySetResult (System.Nullable`1<int>)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Nullable`1<int>>:SetResult (System.Nullable`1<int>)
+Mono.Net.Security.AsyncProtocolRequest/<InnerRead>d__25:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetResult (int)
+Mono.Net.Security.MobileAuthenticatedStream/<InnerRead>d__66:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Threading.Tasks.ValueTask`1/ValueTaskSourceAsTask/<>c<int>:<.cctor>b__4_0 (object)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:InvokeContinuation (System.Action`1<object>,object,bool)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:OnCompleted (System.Net.Sockets.SocketAsyncEventArgs)
+System.Net.Sockets.SocketAsyncEventArgs:Complete_internal ()
+System.Net.Sockets.Socket/<>c:<.cctor>b__367_10 (System.IAsyncResult)
+System.Net.Sockets.SocketAsyncResult/<>c:<Complete>b__27_0 (object)
+System.Threading.QueueUserWorkItemCallback:System.Threading.IThreadPoolWorkItem.ExecuteWorkItem ()
+System.Threading.ThreadPoolWorkQueue:Dispatch ()
+System.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()
+
+(Filename: ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs Line: 231)
+
+Crash!!!
+SymInit: Symbol-SearchPath: '.;C:\Users\Shombith\Documents\GitHub\Cosmic-Shore;C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT;C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor;C:\WINDOWS;C:\WINDOWS\system32;', symOptions: 534, UserName: 'Shombith'
+OS-Version: 10.0.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity.exe:Unity.exe (00007FF747FC0000), size: 290816 (result: 0), SymType: 'PDB', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity_exe_x64.pdb', fileVersion: 6000.3.17.850
+C:\WINDOWS\SYSTEM32\ntdll.dll:ntdll.dll (00007FFFBE8C0000), size: 2523136 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\ntdll.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\KERNEL32.DLL:KERNEL32.DLL (00007FFFBE1D0000), size: 831488 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\KERNEL32.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\KERNELBASE.dll:KERNELBASE.dll (00007FFFBBAB0000), size: 4198400 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\KERNELBASE.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\USER32.dll:USER32.dll (00007FFFBE330000), size: 1929216 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\USER32.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\win32u.dll:win32u.dll (00007FFFBC020000), size: 159744 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\win32u.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\GDI32.dll:GDI32.dll (00007FFFBD090000), size: 176128 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\GDI32.dll', fileVersion: 10.0.26100.8328
+C:\WINDOWS\System32\gdi32full.dll:gdi32full.dll (00007FFFBC4A0000), size: 1220608 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\gdi32full.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\msvcp_win.dll:msvcp_win.dll (00007FFFBC110000), size: 667648 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\msvcp_win.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\ucrtbase.dll:ucrtbase.dll (00007FFFBBEC0000), size: 1359872 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\ucrtbase.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\IMM32.DLL:IMM32.DLL (00007FFFBD0C0000), size: 200704 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\IMM32.DLL', fileVersion: 10.0.26100.9278
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity.dll:Unity.dll (00007FFEC87A0000), size: 92164096 (result: 0), SymType: 'PDB', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity_x64.pdb', fileVersion: 6000.3.17.850
+C:\WINDOWS\System32\CRYPT32.dll:CRYPT32.dll (00007FFFBC310000), size: 1568768 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\CRYPT32.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\ADVAPI32.dll:ADVAPI32.dll (00007FFFBD4E0000), size: 770048 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\ADVAPI32.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\libfbxsdk.dll:libfbxsdk.dll (00007FFEF3E10000), size: 8019968 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\libfbxsdk.dll', fileVersion: 2020.3.7.0
+C:\WINDOWS\System32\msvcrt.dll:msvcrt.dll (00007FFFBD2E0000), size: 692224 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\msvcrt.dll', fileVersion: 7.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\s3tcompress.dll:s3tcompress.dll (00007FFFA0230000), size: 180224 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\s3tcompress.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\etccompress.dll:etccompress.dll (00007FFEF25C0000), size: 5070848 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\etccompress.dll'
+C:\WINDOWS\System32\sechost.dll:sechost.dll (00007FFFBDFE0000), size: 688128 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\sechost.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\compress_bc7e.dll:compress_bc7e.dll (00007FFF232C0000), size: 1433600 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\compress_bc7e.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\ispc_texcomp.dll:ispc_texcomp.dll (00007FFEF84B0000), size: 1826816 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\ispc_texcomp.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\FreeImage.dll:FreeImage.dll (0000000180000000), size: 5332992 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\FreeImage.dll', fileVersion: 3.18.0.0
+C:\WINDOWS\System32\WS2_32.dll:WS2_32.dll (00007FFFBE2A0000), size: 528384 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\WS2_32.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\WinPixEventRuntime.dll:WinPixEventRuntime.dll (00007FFFB8960000), size: 57344 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\WinPixEventRuntime.dll', fileVersion: 1.0.2403.8001
+C:\WINDOWS\System32\RPCRT4.dll:RPCRT4.dll (00007FFFBE0B0000), size: 1146880 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\RPCRT4.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\umbraoptimizer64.dll:umbraoptimizer64.dll (00007FFEF8380000), size: 1187840 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\umbraoptimizer64.dll'
+C:\WINDOWS\System32\ole32.dll:ole32.dll (00007FFFBD690000), size: 1679360 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\ole32.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\MSVCP140.dll:MSVCP140.dll (00007FFFA1930000), size: 643072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSVCP140.dll', fileVersion: 14.51.36247.0
+C:\WINDOWS\SYSTEM32\VCRUNTIME140.dll:VCRUNTIME140.dll (00007FFFA1380000), size: 180224 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\VCRUNTIME140.dll', fileVersion: 14.51.36247.0
+C:\WINDOWS\System32\combase.dll:combase.dll (00007FFFBCD00000), size: 3715072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\combase.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\VCRUNTIME140_1.dll:VCRUNTIME140_1.dll (00007FFFA82B0000), size: 49152 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\VCRUNTIME140_1.dll', fileVersion: 14.51.36247.0
+C:\WINDOWS\System32\SETUPAPI.dll:SETUPAPI.dll (00007FFFBC600000), size: 4747264 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SETUPAPI.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\bcrypt.dll:bcrypt.dll (00007FFFBB990000), size: 172032 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\bcrypt.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.9711_none_3e07b8b0e334e825\COMCTL32.dll:COMCTL32.dll (00007FFFA0450000), size: 2691072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.9711_none_3e07b8b0e334e825\COMCTL32.dll', fileVersion: 6.10.26100.9711
+C:\WINDOWS\System32\SHELL32.dll:SHELL32.dll (00007FFFBD830000), size: 7979008 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SHELL32.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\d3d11.dll:d3d11.dll (00007FFFB7690000), size: 2486272 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\d3d11.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\SHLWAPI.dll:SHLWAPI.dll (00007FFFBCB20000), size: 417792 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SHLWAPI.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\d3d12.dll:d3d12.dll (00007FFF72380000), size: 143360 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\d3d12.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\dwmapi.dll:dwmapi.dll (00007FFFB8E50000), size: 188416 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dwmapi.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\dxgi.dll:dxgi.dll (00007FFFB8CF0000), size: 1290240 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dxgi.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\OLEAUT32.dll:OLEAUT32.dll (00007FFFBD200000), size: 888832 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\OLEAUT32.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\IPHLPAPI.DLL:IPHLPAPI.DLL (00007FFFBA120000), size: 208896 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\IPHLPAPI.DLL', fileVersion: 10.0.26100.9278
+C:\WINDOWS\SYSTEM32\HID.DLL:HID.DLL (00007FFFB9DF0000), size: 61440 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\HID.DLL', fileVersion: 10.0.26100.1150
+C:\WINDOWS\System32\WINTRUST.dll:WINTRUST.dll (00007FFFBC280000), size: 532480 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\WINTRUST.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\OPENGL32.dll:OPENGL32.dll (00007FFEFC670000), size: 1097728 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\OPENGL32.dll', fileVersion: 10.0.26100.9278
+C:\WINDOWS\SYSTEM32\WINHTTP.dll:WINHTTP.dll (00007FFFB44D0000), size: 1220608 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WINHTTP.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\WINMM.dll:WINMM.dll (00007FFFAA290000), size: 225280 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WINMM.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\GLU32.dll:GLU32.dll (00007FFF992F0000), size: 233472 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\GLU32.dll', fileVersion: 10.0.26100.9549
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpAPI.dll:SketchUpAPI.dll (00007FFEF1D20000), size: 8990720 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpAPI.dll', fileVersion: 23.0.0.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NativeProxyHelper.dll:NativeProxyHelper.dll (00007FFEF3C50000), size: 1789952 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NativeProxyHelper.dll'
+C:\WINDOWS\SYSTEM32\powrprof.dll:powrprof.dll (00007FFFBB900000), size: 385024 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\powrprof.dll', fileVersion: 10.0.26100.3912
+C:\WINDOWS\SYSTEM32\VERSION.dll:VERSION.dll (00007FFFB5480000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\VERSION.dll', fileVersion: 10.0.26100.1150
+C:\WINDOWS\SYSTEM32\WSOCK32.dll:WSOCK32.dll (00007FFF9CCF0000), size: 40960 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WSOCK32.dll', fileVersion: 10.0.26100.1
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpCommonPreferences.dll:SketchUpCommonPreferences.dll (00007FFF7BE10000), size: 499712 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpCommonPreferences.dll', fileVersion: 23.0.0.0
+C:\WINDOWS\SYSTEM32\dxcore.dll:dxcore.dll (00007FFFB8CA0000), size: 278528 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dxcore.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\Secur32.dll:Secur32.dll (00007FFFB8B40000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Secur32.dll', fileVersion: 10.0.26100.7705
+C:\WINDOWS\SYSTEM32\SSPICLI.DLL:SSPICLI.DLL (00007FFFBAA10000), size: 303104 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\SSPICLI.DLL', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL.dll:OpenRL.dll (000002CF11870000), size: 12779520 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL.dll', fileVersion: 1.5.0.2907
+C:\WINDOWS\SYSTEM32\MSVCP100.dll:MSVCP100.dll (000000005F9C0000), size: 622592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSVCP100.dll', fileVersion: 10.0.40219.325
+C:\WINDOWS\SYSTEM32\MSVCR100.dll:MSVCR100.dll (000000005F8E0000), size: 860160 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSVCR100.dll', fileVersion: 10.0.40219.325
+C:\WINDOWS\SYSTEM32\cfgmgr32.DLL:cfgmgr32.DLL (00007FFFBB630000), size: 335872 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\cfgmgr32.DLL', fileVersion: 10.0.26100.9549
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\embree.dll:embree.dll (00007FFEF0D30000), size: 16711680 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\embree.dll', fileVersion: 2.14.0.0
+C:\WINDOWS\SYSTEM32\MSWSOCK.DLL:MSWSOCK.DLL (00007FFFBAD10000), size: 442368 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSWSOCK.DLL', fileVersion: 10.0.26100.9549
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\tbb.dll:tbb.dll (00007FFF84830000), size: 303104 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\tbb.dll', fileVersion: 2020.3.2022.1111
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL_pthread.dll:OpenRL_pthread.dll (000002CF124C0000), size: 61440 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL_pthread.dll', fileVersion: 2.9.0.0
+C:\WINDOWS\SYSTEM32\UMPDC.dll:UMPDC.dll (00007FFFBB8E0000), size: 86016 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\UMPDC.dll', fileVersion: 10.0.26100.8972
+C:\WINDOWS\SYSTEM32\MSASN1.dll:MSASN1.dll (00007FFFBB170000), size: 77824 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSASN1.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\bcryptprimitives.dll:bcryptprimitives.dll (00007FFFBC050000), size: 704512 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\bcryptprimitives.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\kernel.appcore.dll:kernel.appcore.dll (00007FFFBA750000), size: 110592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\kernel.appcore.dll', fileVersion: 10.0.26100.9278
+C:\WINDOWS\system32\uxtheme.dll:uxtheme.dll (00007FFFB8BC0000), size: 684032 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\uxtheme.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\windows.storage.dll:windows.storage.dll (00007FFFB9530000), size: 9101312 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\windows.storage.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\SHCORE.dll:SHCORE.dll (00007FFFBE6F0000), size: 1019904 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SHCORE.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\profapi.dll:profapi.dll (00007FFFBB9C0000), size: 167936 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\SYSTEM32\profapi.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\clbcatq.dll:clbcatq.dll (00007FFFBD3B0000), size: 716800 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\clbcatq.dll', fileVersion: 2001.12.10941.16384
+C:\WINDOWS\system32\wbem\wbemprox.dll:wbemprox.dll (00007FFFA08F0000), size: 73728 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wbem\wbemprox.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\wbemcomn.dll:wbemcomn.dll (00007FFFA0CD0000), size: 548864 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\wbemcomn.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\wbem\wbemsvc.dll:wbemsvc.dll (00007FFF9CD90000), size: 86016 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wbem\wbemsvc.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\wbem\fastprox.dll:fastprox.dll (00007FFF9DCF0000), size: 1007616 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wbem\fastprox.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\amsi.dll:amsi.dll (00007FFFAD0F0000), size: 118784 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\amsi.dll', fileVersion: 10.0.26100.7309
+C:\WINDOWS\SYSTEM32\USERENV.dll:USERENV.dll (00007FFFBADC0000), size: 212992 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\USERENV.dll', fileVersion: 10.0.26100.9549
+C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26100.4-0\MpOav.dll:MpOav.dll (00007FFF328B0000), size: 675840 (result: 0), SymType: '-exported-', PDB: 'C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26100.4-0\MpOav.dll', fileVersion: 4.18.26100.4
+C:\WINDOWS\SYSTEM32\CRYPTSP.dll:CRYPTSP.dll (00007FFFBB000000), size: 110592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CRYPTSP.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\rsaenh.dll:rsaenh.dll (00007FFFBA6B0000), size: 233472 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\rsaenh.dll', fileVersion: 10.0.26100.7705
+C:\WINDOWS\system32\IconCodecService.dll:IconCodecService.dll (00007FFF7EFC0000), size: 45056 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\system32\IconCodecService.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\SYSTEM32\CRYPTBASE.dll:CRYPTBASE.dll (00007FFFBB020000), size: 49152 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CRYPTBASE.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\WindowsCodecs.dll:WindowsCodecs.dll (00007FFFB71E0000), size: 2326528 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WindowsCodecs.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\imagehlp.dll:imagehlp.dll (00007FFFBC5D0000), size: 131072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\imagehlp.dll', fileVersion: 10.0.26100.4202
+C:\WINDOWS\System32\netprofm.dll:netprofm.dll (00007FFFB6360000), size: 450560 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\netprofm.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\npmproxy.dll:npmproxy.dll (00007FFFB37C0000), size: 102400 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\npmproxy.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\gpapi.dll:gpapi.dll (00007FFFBAD90000), size: 151552 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\gpapi.dll', fileVersion: 10.0.26100.9549
+C:\Windows\System32\cryptnet.dll:cryptnet.dll (00007FFFB3FD0000), size: 241664 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\cryptnet.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\WINNSI.DLL:WINNSI.DLL (00007FFFB6B10000), size: 57344 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WINNSI.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\NSI.dll:NSI.dll (00007FFFBD470000), size: 40960 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\NSI.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\dhcpcsvc6.DLL:dhcpcsvc6.DLL (00007FFFB4010000), size: 122880 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dhcpcsvc6.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\dhcpcsvc.DLL:dhcpcsvc.DLL (00007FFFB3FA0000), size: 151552 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dhcpcsvc.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\DNSAPI.dll:DNSAPI.dll (00007FFFBA1B0000), size: 1409024 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DNSAPI.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\DSPARSE.dll:DSPARSE.dll (00007FFFBAAF0000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DSPARSE.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\system32\napinsp.dll:napinsp.dll (00007FFF8F9B0000), size: 98304 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\napinsp.dll', fileVersion: 10.0.26100.1150
+C:\WINDOWS\System32\winrnr.dll:winrnr.dll (00007FFF8F930000), size: 77824 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\winrnr.dll', fileVersion: 10.0.26100.9278
+C:\WINDOWS\system32\nlansp_c.dll:nlansp_c.dll (00007FFF8F900000), size: 159744 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\nlansp_c.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\system32\wshbth.dll:wshbth.dll (00007FFF90B80000), size: 90112 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wshbth.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\fwpuclnt.dll:fwpuclnt.dll (00007FFFB3B30000), size: 548864 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\fwpuclnt.dll', fileVersion: 10.0.26100.9711
+C:\Windows\System32\rasadhlp.dll:rasadhlp.dll (00007FFFB35D0000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\rasadhlp.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\AMDUnityPlugin.DLL:AMDUnityPlugin.DLL (00007FFEF04C0000), size: 8843264 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\AMDUnityPlugin.DLL'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NVUnityPlugin.DLL:NVUnityPlugin.DLL (00007FFEF0320000), size: 1646592 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NVUnityPlugin.DLL'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\Tools\astcenc-avx2.dll:astcenc-avx2.dll (00007FFF7B160000), size: 352256 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\Tools\astcenc-avx2.dll'
+C:\WINDOWS\System32\MSCTF.dll:MSCTF.dll (00007FFFBCB90000), size: 1425408 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\MSCTF.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\TextShaping.dll:TextShaping.dll (00007FFF8DC30000), size: 1040384 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\TextShaping.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\textinputframework.dll:textinputframework.dll (00007FFF95350000), size: 1335296 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\textinputframework.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\CoreMessaging.dll:CoreMessaging.dll (00007FFFB8680000), size: 1220608 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CoreMessaging.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\CoreUIComponents.dll:CoreUIComponents.dll (00007FFFB5DD0000), size: 3035136 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CoreUIComponents.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\wintypes.dll:wintypes.dll (00007FFFB59C0000), size: 1482752 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\wintypes.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\Oleacc.dll:Oleacc.dll (00007FFFB4F70000), size: 479232 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\Oleacc.dll', fileVersion: 7.2.26100.9549
+C:\WINDOWS\system32\explorerframe.dll:explorerframe.dll (00007FFF7F5D0000), size: 3289088 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\explorerframe.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\mfplat.dll:mfplat.dll (00007FFF96AC0000), size: 2256896 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\mfplat.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\RTWorkQ.DLL:RTWorkQ.DLL (00007FFFB4A00000), size: 241664 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\RTWorkQ.DLL', fileVersion: 10.0.26100.8972
+C:\WINDOWS\SYSTEM32\mfreadwrite.dll:mfreadwrite.dll (00007FFF74350000), size: 872448 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\mfreadwrite.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\Mf.dll:Mf.dll (00007FFFB4700000), size: 622592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Mf.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\MFCORE.DLL:MFCORE.DLL (00007FFF07C50000), size: 4304896 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MFCORE.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\CompPkgSup.DLL:CompPkgSup.DLL (00007FFFAB070000), size: 204800 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CompPkgSup.DLL', fileVersion: 10.0.26100.8521
+C:\Windows\System32\Windows.Media.dll:Windows.Media.dll (00007FFF7C810000), size: 6922240 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.Media.dll', fileVersion: 10.0.26100.9549
+C:\Windows\System32\Windows.ApplicationModel.dll:Windows.ApplicationModel.dll (00007FFF8DA50000), size: 880640 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.ApplicationModel.dll', fileVersion: 10.0.26100.9549
+C:\Windows\System32\Windows.StateRepositoryPS.dll:Windows.StateRepositoryPS.dll (00007FFF8F1C0000), size: 802816 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.StateRepositoryPS.dll', fileVersion: 10.0.26100.9711
+C:\Windows\System32\AppXDeploymentClient.dll:AppXDeploymentClient.dll (00007FFFB4A40000), size: 1515520 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\AppXDeploymentClient.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\MMDevApi.dll:MMDevApi.dll (00007FFFAD430000), size: 679936 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\MMDevApi.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\DEVOBJ.dll:DEVOBJ.dll (00007FFFBB6B0000), size: 192512 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DEVOBJ.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\AUDIOSES.DLL:AUDIOSES.DLL (00007FFFABA90000), size: 1810432 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\AUDIOSES.DLL', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\resourcepolicyclient.dll:resourcepolicyclient.dll (00007FFFB91A0000), size: 81920 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\resourcepolicyclient.dll', fileVersion: 10.0.26100.8115
+C:\WINDOWS\SYSTEM32\directxdatabasehelper.dll:directxdatabasehelper.dll (00007FFFB6620000), size: 389120 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\SYSTEM32\directxdatabasehelper.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\D3D12\D3D12Core.dll:D3D12Core.dll (00007FFEEF860000), size: 4780032 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\D3D12\D3D12Core.dll', fileVersion: 1.618.1.0
+C:\WINDOWS\SYSTEM32\wldp.dll:wldp.dll (00007FFFBB0E0000), size: 528384 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\wldp.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\drvstore.dll:drvstore.dll (00007FFFB3E20000), size: 1548288 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\drvstore.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\system32\nvspcap64.dll:nvspcap64.dll (00007FFF69E80000), size: 1458176 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\nvspcap64.dll', fileVersion: 11.0.8.299
+C:\WINDOWS\SYSTEM32\ntmarta.dll:ntmarta.dll (00007FFFBA880000), size: 221184 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\ntmarta.dll', fileVersion: 10.0.26100.7019
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\nvppex.dll:nvppex.dll (00007FFF7A520000), size: 7499776 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\nvppex.dll', fileVersion: 32.0.16.1088
+C:\WINDOWS\SYSTEM32\D3DSCache.dll:D3DSCache.dll (00007FFF6F8D0000), size: 913408 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\D3DSCache.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\nvldumdx.dll:nvldumdx.dll (00007FFFB4930000), size: 827392 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\nvldumdx.dll', fileVersion: 32.0.16.1088
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\nvgpucomp64.dll:nvgpucomp64.dll (00007FFFAD710000), size: 98623488 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\nvgpucomp64.dll', fileVersion: 32.0.16.1088
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\Display.NvContainer\NvMessageBus.dll:NvMessageBus.dll (00007FFF9BFC0000), size: 3555328 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\Display.NvContainer\NvMessageBus.dll', fileVersion: 3.22.3719.8856
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\NvMemMapStoragex.dll:NvMemMapStoragex.dll (00007FFFA8C30000), size: 1290240 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\NvMemMapStoragex.dll'
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\nvwgf2umx.dll:nvwgf2umx.dll (00007FFFA2A50000), size: 89804800 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_0373d825005116d0\nvwgf2umx.dll', fileVersion: 32.0.16.1088
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\DirectML.dll:DirectML.dll (00007FFEECF00000), size: 14061568 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\DirectML.dll', fileVersion: 1.13.1.0
+C:\WINDOWS\SYSTEM32\DXGIDebug.dll:DXGIDebug.dll (00007FFF7FD30000), size: 151552 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DXGIDebug.dll', fileVersion: 10.0.26100.1882
+C:\WINDOWS\SYSTEM32\d3d11on12.dll:d3d11on12.dll (00007FFF33550000), size: 692224 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\d3d11on12.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\opencl.dll:opencl.dll (00007FFF85B10000), size: 540672 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\opencl.dll', fileVersion: 3.0.6.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\radeonrays.dll:radeonrays.dll (00007FFF9FC30000), size: 344064 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\radeonrays.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\MonoBleedingEdge\EmbedRuntime\mono-2.0-bdwgc.dll:mono-2.0-bdwgc.dll (00007FFEEC4B0000), size: 10756096 (result: 0), SymType: 'PDB', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\mono-2.0-bdwgc.pdb'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\PlaybackEngines\iOSSupport\x64\UnityEditor.iOS.Native.dll:UnityEditor.iOS.Native.dll (00007FFF697E0000), size: 303104 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\PlaybackEngines\iOSSupport\x64\UnityEditor.iOS.Native.dll'
+C:\WINDOWS\SYSTEM32\dbghelp.dll:dbghelp.dll (00007FFFA8630000), size: 2408448 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dbghelp.dll', fileVersion: 10.0.26100.9549
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\MonoDebuggerHandling.dll:MonoDebuggerHandling.dll (00007FFF2D000000), size: 368640 (result: 0), SymType: '-exported-', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\MonoDebuggerHandling.dll'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.dt.app-ui@8ac7e730dd5d\Runtime\Core\Platform\Windows\Plugins\x64\AppUINativePlugin.dll:AppUINativePlugin.dll (00007FFF85AA0000), size: 61440 (result: 0), SymType: '-exported-', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.dt.app-ui@8ac7e730dd5d\Runtime\Core\Platform\Windows\Plugins\x64\AppUINativePlugin.dll'
+C:\Windows\System32\Windows.UI.dll:Windows.UI.dll (00007FFF9CF70000), size: 1421312 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.UI.dll', fileVersion: 10.0.26100.9549
+C:\Windows\System32\Windows.UI.Immersive.dll:Windows.UI.Immersive.dll (00007FFF85DB0000), size: 1384448 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.UI.Immersive.dll', fileVersion: 10.0.26100.9711
+C:\Windows\System32\twinapi.appcore.dll:twinapi.appcore.dll (00007FFFAC140000), size: 2428928 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\twinapi.appcore.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\apphelp.dll:apphelp.dll (00007FFFB8A90000), size: 651264 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\apphelp.dll', fileVersion: 10.0.26100.9711
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\VivoxNative.dll:VivoxNative.dll (00007FFF23080000), size: 757760 (result: 0), SymType: '-exported-', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\VivoxNative.dll'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\vivoxsdk.dll:vivoxsdk.dll (00007FFECE660000), size: 16936960 (result: 0), SymType: '-exported-', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\vivoxsdk.dll', fileVersion: 5.28.0.34030
+C:\WINDOWS\SYSTEM32\SensApi.dll:SensApi.dll (00007FFFB6B80000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\SensApi.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\SYSTEM32\dbgcore.DLL:dbgcore.DLL (00007FFFB8A50000), size: 241664 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dbgcore.DLL', fileVersion: 10.0.26100.9549
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\burst-llvm-19.dll:burst-llvm-19.dll (00007FFEB7FA0000), size: 59863040 (result: 0), SymType: '-exported-', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\burst-llvm-19.dll'
+C:\WINDOWS\system32\dataexchange.dll:dataexchange.dll (00007FFF8A0F0000), size: 376832 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\dataexchange.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\dcomp.dll:dcomp.dll (00007FFFB7F40000), size: 2260992 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dcomp.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\Microsoft.Internal.WarpPal.dll:Microsoft.Internal.WarpPal.dll (00007FFFB6D30000), size: 106496 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Microsoft.Internal.WarpPal.dll'
+C:\Windows\System32\Windows.Gaming.Input.dll:Windows.Gaming.Input.dll (00007FFFB36E0000), size: 888832 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.Gaming.Input.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\inputhost.dll:inputhost.dll (00007FFF81960000), size: 1990656 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\inputhost.dll', fileVersion: 10.0.26100.9711
+C:\Windows\System32\Windows.System.UserDeviceAssociation.dll:Windows.System.UserDeviceAssociation.dll (00007FFFA9710000), size: 114688 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.System.UserDeviceAssociation.dll', fileVersion: 10.0.26100.8115
+C:\Windows\System32\usermgrproxy.dll:usermgrproxy.dll (00007FFFB3810000), size: 450560 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\usermgrproxy.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\PROPSYS.dll:PROPSYS.dll (00007FFFB69C0000), size: 1003520 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\PROPSYS.dll', fileVersion: 7.0.26100.9549
+C:\Windows\System32\urlmon.dll:urlmon.dll (00007FFF9F150000), size: 1957888 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\urlmon.dll', fileVersion: 11.0.26100.9711
+C:\Windows\System32\iertutil.dll:iertutil.dll (00007FFF9EC00000), size: 2899968 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\iertutil.dll', fileVersion: 11.0.26100.9549
+C:\Windows\System32\srvcli.dll:srvcli.dll (00007FFF9D770000), size: 167936 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\srvcli.dll', fileVersion: 10.0.26100.1150
+C:\Windows\System32\netutils.dll:netutils.dll (00007FFFBA100000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\netutils.dll', fileVersion: 10.0.26100.1882
+C:\WINDOWS\SYSTEM32\virtdisk.dll:virtdisk.dll (00007FFF88BB0000), size: 94208 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\virtdisk.dll', fileVersion: 10.0.26100.9278
+C:\WINDOWS\SYSTEM32\edputil.dll:edputil.dll (00007FFF95B80000), size: 167936 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\edputil.dll', fileVersion: 10.0.26100.9278
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Assets\Plugins\FMOD\platforms\win\lib\x86_64\fmodstudioL.dll:fmodstudioL.dll (00007FFEFD1E0000), size: 4661248 (result: 0), SymType: '-exported-', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Assets\Plugins\FMOD\platforms\win\lib\x86_64\fmodstudioL.dll', fileVersion: 0.2.3.13
+C:\WINDOWS\SYSTEM32\webio.dll:webio.dll (00007FFF9BEE0000), size: 876544 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\SYSTEM32\webio.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\system32\schannel.DLL:schannel.DLL (00007FFFBA580000), size: 819200 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\schannel.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\ncrypt.dll:ncrypt.dll (00007FFFBB260000), size: 196608 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\ncrypt.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\NTASN1.dll:NTASN1.dll (00007FFFBB210000), size: 258048 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\SYSTEM32\NTASN1.dll', fileVersion: 10.0.26100.1882
+C:\WINDOWS\system32\ncryptsslp.dll:ncryptsslp.dll (00007FFF93650000), size: 294912 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\ncryptsslp.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\DPAPI.DLL:DPAPI.DLL (00007FFFBB6F0000), size: 40960 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DPAPI.DLL', fileVersion: 10.0.26100.8521
+C:\WINDOWS\SYSTEM32\dxilconv.dll:dxilconv.dll (00007FFF1D8C0000), size: 1458176 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dxilconv.dll', fileVersion: 101.9.2602.1360
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\3bc62de9435596cebf19cf01f0a84e10.dll:3bc62de9435596cebf19cf01f0a84e10.dll (00007FFF9FBC0000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\3bc62de9435596cebf19cf01f0a84e10.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\0bb65dd73c1f082e40042fa44a4b8904.dll:0bb65dd73c1f082e40042fa44a4b8904.dll (00007FFF9FBA0000), size: 24576 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\0bb65dd73c1f082e40042fa44a4b8904.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\4965b0e7b4adadbd646a28ac18cd5889.dll:4965b0e7b4adadbd646a28ac18cd5889.dll (00007FFF9FB70000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\4965b0e7b4adadbd646a28ac18cd5889.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\1a9b42d2e3fc0c22ee92ad3438a59da9.dll:1a9b42d2e3fc0c22ee92ad3438a59da9.dll (00007FFF9BC10000), size: 69632 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\1a9b42d2e3fc0c22ee92ad3438a59da9.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\085b6eee099583e64dd92d5ae064c4a3.dll:085b6eee099583e64dd92d5ae064c4a3.dll (00007FFF9FB60000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\085b6eee099583e64dd92d5ae064c4a3.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\5c9461001c5c7c7d007e86602d4c0219.dll:5c9461001c5c7c7d007e86602d4c0219.dll (00007FFF9BBF0000), size: 106496 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\5c9461001c5c7c7d007e86602d4c0219.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\f1a31a4693d2b2a18f85f0733d4634cf.dll:f1a31a4693d2b2a18f85f0733d4634cf.dll (00007FFF99330000), size: 86016 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\f1a31a4693d2b2a18f85f0733d4634cf.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\a359848e4eefbb14a3420ede6731cbee.dll:a359848e4eefbb14a3420ede6731cbee.dll (00007FFF94740000), size: 139264 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\a359848e4eefbb14a3420ede6731cbee.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\18b2f3c6a27ae6cfde833acbed675e09.dll:18b2f3c6a27ae6cfde833acbed675e09.dll (00007FFF3B550000), size: 110592 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\18b2f3c6a27ae6cfde833acbed675e09.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\8e0fb772b225c2e205189fa0e59f2173.dll:8e0fb772b225c2e205189fa0e59f2173.dll (00007FFF32B80000), size: 299008 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\8e0fb772b225c2e205189fa0e59f2173.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\0890eabb59975ab5982a4ec96e99879d.dll:0890eabb59975ab5982a4ec96e99879d.dll (00007FFF8E1A0000), size: 114688 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\0890eabb59975ab5982a4ec96e99879d.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\f058d3078de1827d84c379cb5e41a42d.dll:f058d3078de1827d84c379cb5e41a42d.dll (00007FFF7DDC0000), size: 569344 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\f058d3078de1827d84c379cb5e41a42d.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\0c09b3d6b074abc33e268b3a598f7ffa.dll:0c09b3d6b074abc33e268b3a598f7ffa.dll (00007FFF330F0000), size: 434176 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\0c09b3d6b074abc33e268b3a598f7ffa.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\b5543bc0bb18585cd3f7de9f397b60e8.dll:b5543bc0bb18585cd3f7de9f397b60e8.dll (00007FFF8E170000), size: 167936 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\b5543bc0bb18585cd3f7de9f397b60e8.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\9c2e4c3ca13f1d653b7985fbb76cc0ac.dll:9c2e4c3ca13f1d653b7985fbb76cc0ac.dll (00007FFF81C80000), size: 376832 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\9c2e4c3ca13f1d653b7985fbb76cc0ac.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\1e9781a8855d4d767cbea2f6843be7ac.dll:1e9781a8855d4d767cbea2f6843be7ac.dll (00007FFF9FB30000), size: 24576 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\1e9781a8855d4d767cbea2f6843be7ac.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\552d65ca600762d5edf37e067154b192.dll:552d65ca600762d5edf37e067154b192.dll (00007FFF85AE0000), size: 192512 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\552d65ca600762d5edf37e067154b192.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\28dfe3746bedfbf56cd70146b3a4b7d5.dll:28dfe3746bedfbf56cd70146b3a4b7d5.dll (00007FFF94730000), size: 40960 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\a32b6bc20e0f87f06556eadfc54d45a1.dll:a32b6bc20e0f87f06556eadfc54d45a1.dll (00007FFF85AD0000), size: 45056 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\c208fbe40e78befa993047c92788c753.dll:c208fbe40e78befa993047c92788c753.dll (00007FFF2EE70000), size: 491520 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\4a4ff58c2ce9ecc2ca9b5239b151682c.dll:4a4ff58c2ce9ecc2ca9b5239b151682c.dll (00007FFF2E560000), size: 569344 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\bb789bb005f4c9a026bfff7464a28f35.dll:bb789bb005f4c9a026bfff7464a28f35.dll (00007FFF32B40000), size: 249856 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\2ab69bbbdcd8d793d831bd2fb0e4d5e4.dll:2ab69bbbdcd8d793d831bd2fb0e4d5e4.dll (00007FFF2E450000), size: 1097728 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\ce481d27c799e1cde5ea567761a80218.dll:ce481d27c799e1cde5ea567761a80218.dll (00007FFFB5C00000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\ce481d27c799e1cde5ea567761a80218.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\2b1c0659e7643c107a5bd1ed799a5caf.dll:2b1c0659e7643c107a5bd1ed799a5caf.dll (00007FFFB5BF0000), size: 24576 (result: 0), SymType: 'PDB', PDB: 'C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\2b1c0659e7643c107a5bd1ed799a5caf.pdb'
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\5268816534bb1e541e59f0101fdb7646.dll:5268816534bb1e541e59f0101fdb7646.dll (00007FFF94290000), size: 69632 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\25063b0d57684216ed7c5a0701ba23fd.dll:25063b0d57684216ed7c5a0701ba23fd.dll (00007FFF94280000), size: 20480 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\18fa355447adf6c53c2399c17dc595ef.dll:18fa355447adf6c53c2399c17dc595ef.dll (00007FFF94270000), size: 20480 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\a8dec4d69ac8cc75832b0abb0f73f66b.dll:a8dec4d69ac8cc75832b0abb0f73f66b.dll (00007FFF7DD80000), size: 106496 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\48f2eac3a4dbc0d44cab6b0e90a5036d.dll:48f2eac3a4dbc0d44cab6b0e90a5036d.dll (00007FFF6FF60000), size: 86016 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\d2d01f5fc45932cde8ea8b1a1370ef3d.dll:d2d01f5fc45932cde8ea8b1a1370ef3d.dll (00007FFF6FF30000), size: 139264 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\ebd5a8f8d7abd41f6797e6d50d5157dc.dll:ebd5a8f8d7abd41f6797e6d50d5157dc.dll (00007FFF6FF10000), size: 110592 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\9c4ac25fe87451d2b5b675ef491ffbd6.dll:9c4ac25fe87451d2b5b675ef491ffbd6.dll (00007FFF35E80000), size: 299008 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\86f9379f5f0a6c06c09b79fedaf88050.dll:86f9379f5f0a6c06c09b79fedaf88050.dll (00007FFF6FEF0000), size: 114688 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\7d8330169eafd082298e6f12de3a74fe.dll:7d8330169eafd082298e6f12de3a74fe.dll (00007FFF6FFC0000), size: 167936 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\26012eac5d0967c41c3e97e2df5cc95f.dll:26012eac5d0967c41c3e97e2df5cc95f.dll (00007FFF6FAB0000), size: 569344 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\2f6e566812a8ddd70083204a55a5004d.dll:2f6e566812a8ddd70083204a55a5004d.dll (00007FFF6FA40000), size: 434176 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\92acb480ef33207b9a48c7ae7631bdf6.dll:92acb480ef33207b9a48c7ae7631bdf6.dll (00007FFF85AC0000), size: 24576 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\3b83f7938af77b5bc35c8ad1c914de5f.dll:3b83f7938af77b5bc35c8ad1c914de5f.dll (00007FFF85A10000), size: 40960 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\090e1099af5f5004bb1fb93606cc3ef6.dll:090e1099af5f5004bb1fb93606cc3ef6.dll (00007FFF6F9C0000), size: 491520 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\6745c5c7425becc1c62e6fa19c7016da.dll:6745c5c7425becc1c62e6fa19c7016da.dll (00007FFF35DF0000), size: 569344 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\2bec84e8a385ceb6ca2319becb7238c6.dll:2bec84e8a385ceb6ca2319becb7238c6.dll (00007FFF81FC0000), size: 45056 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\97a0dfef11d77778c98e080b21d0a1dd.dll:97a0dfef11d77778c98e080b21d0a1dd.dll (00007FFF33E00000), size: 192512 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\75c6d290df2f8a488fc9318984b40243.dll:75c6d290df2f8a488fc9318984b40243.dll (00007FFF35D90000), size: 376832 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\03cf1f6b1309f05a6607973ae26a7487.dll:03cf1f6b1309f05a6607973ae26a7487.dll (00007FFF6FF80000), size: 249856 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\447c421769273a8ec209f8a9d96762aa.dll:447c421769273a8ec209f8a9d96762aa.dll (00007FFF35C80000), size: 1097728 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\caeb738c05adf2fd6253f9b919d44fa0.dll:caeb738c05adf2fd6253f9b919d44fa0.dll (00007FFF2E2B0000), size: 1671168 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\1cea1840d1999b906699f82a5394cab3.dll:1cea1840d1999b906699f82a5394cab3.dll (00007FFF200C0000), size: 1765376 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\a542fde49df3b1ed4a5beac1e7a0b196.dll:a542fde49df3b1ed4a5beac1e7a0b196.dll (00007FFF2D340000), size: 1187840 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\140546a9d99e04c74104e699c9802d96.dll:140546a9d99e04c74104e699c9802d96.dll (00007FFF1E160000), size: 2498560 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\2844eb1ec1a28e465c4d43ea54b0f821.dll:2844eb1ec1a28e465c4d43ea54b0f821.dll (00007FFF22840000), size: 1417216 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\9782eac3639bb70c0e1358c8ada649ba.dll:9782eac3639bb70c0e1358c8ada649ba.dll (00007FFF20320000), size: 1572864 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\01fa1f04f73c1406bba1f95e54aae042.dll:01fa1f04f73c1406bba1f95e54aae042.dll (00007FFF17B60000), size: 4317184 (result: 0), SymType: '-deferred-', PDB: ''
+C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Library\BurstCache\JIT\1c9c1d9d3f7603d6efe88c5e9479447b.dll:1c9c1d9d3f7603d6efe88c5e9479447b.dll (00007FFF18800000), size: 4284416 (result: 0), SymType: '-deferred-', PDB: ''
+
+========== OUTPUTTING STACK TRACE ==================
+
+0x00007FFECE6F369B (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE720BA1 (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE7311BE (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE6F36D3 (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE720BA1 (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE7302CA (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE89FE13 (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE8A0EA4 (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE8A0AAB (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE89B190 (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE896CF3 (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE8A72A8 (vivoxsdk) vxunity_unregister_tap
+0x00007FFECE894DD8 (vivoxsdk) vxunity_unregister_tap
+0x00007FFFBE1FDDA7 (KERNEL32) BaseThreadInitThunk
+0x00007FFFBE93EE4C (ntdll) RtlUserThreadStart
+
+========== END OF STACKTRACE ===========
+
+A crash has been intercepted by the crash handler. For call stack and other details, see the latest crash report generated in:
+ * C:/Users/Shombith/AppData/Local/Temp/Unity/Editor/Crashes
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+[INFO ] [relay] log Auto-shutdown timer fired after 180s inactivity, shutting down: Dedicated client disconnected
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+
