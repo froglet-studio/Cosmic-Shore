@@ -73,10 +73,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.05f, 1f)] float forkShrink = 0.7f;
 
         [Header("Look")]
-        [SerializeField, ColorUsage(true, true)] Color tint = new(0.55f, 0.75f, 1f, 1f);
+        [SerializeField, ColorUsage(true, true)] Color tint = new(0.42f, 0.58f, 0.95f, 1f);
         [Tooltip("Ribbon width at the root (units; thin reads eerier); forks thin by forkShrink per depth, children by childRangeScale.")]
-        [SerializeField, Min(0.05f)] float width = 3f;
-        [Tooltip("Optional additive material (vertex colour). Empty: Sprites/Default.")]
+        [SerializeField, Min(0.05f)] float width = 1.6f;
+        [Tooltip("Additive material reading vertex colour + uv (FulmenBolt.mat). Empty: Sprites/Default.")]
         [SerializeField] Material material;
 
         public int CrystalsToFire => crystalsToFire;

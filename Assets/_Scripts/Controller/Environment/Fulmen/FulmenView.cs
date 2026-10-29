@@ -24,6 +24,7 @@ namespace CosmicShore.Gameplay
         Material _fallback;
         Vector3[] _verts;
         Color32[] _colours;
+        Vector2[] _uvs;   // x: across the strip 0..1, y: distance along the stream (world units) - FulmenBolt.shader's noise
         int[] _indices;
         int _lastQuads;
 
@@ -32,6 +33,7 @@ namespace CosmicShore.Gameplay
             _system = GetComponent<FulmenSystem>();
             _verts = new Vector3[MaxDrawSegments * 8];
             _colours = new Color32[MaxDrawSegments * 8];
+            _uvs = new Vector2[MaxDrawSegments * 8];
             _indices = new int[MaxDrawSegments * 12];
             for (int q = 0; q < MaxDrawSegments * 2; q++)
             {
@@ -89,7 +91,8 @@ namespace CosmicShore.Gameplay
                     // the tip of a stream flickers brightest: fade toward the root a little
                     float a = alpha * Mathf.Lerp(0.55f, 1f, Mathf.Clamp01(s.EndDistance / Mathf.Max(1f, b.Front)));
                     var c = new Color(tint.r, tint.g, tint.b, Mathf.Clamp01(tint.a * a));
-                    WriteSegment(seg++, s.Start, end, w, c);
+                    float endDistance = Mathf.Min(s.EndDistance, b.Front);
+                    WriteSegment(seg++, s.Start, end, w, c, s.StartDistance + b.Seed % 997, endDistance + b.Seed % 997);
                 }
             }
 
@@ -104,6 +107,7 @@ namespace CosmicShore.Gameplay
             _mesh.Clear();
             _mesh.SetVertices(_verts, 0, quads * 4);
             _mesh.SetColors(_colours, 0, quads * 4);
+            _mesh.SetUVs(0, _uvs, 0, quads * 4);
             _mesh.SetIndices(_indices, 0, quads * 6, MeshTopology.Triangles, 0, false);
             _mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 1e6f);
             _lastQuads = quads;
@@ -112,7 +116,7 @@ namespace CosmicShore.Gameplay
             _renderer.enabled = true;
         }
 
-        void WriteSegment(int index, Vector3 a, Vector3 b, float halfWidth, Color colour)
+        void WriteSegment(int index, Vector3 a, Vector3 b, float halfWidth, Color colour, float va, float vb)
         {
             var dir = b - a;
             if (dir.sqrMagnitude < 1e-8f) dir = Vector3.forward;
@@ -124,6 +128,11 @@ namespace CosmicShore.Gameplay
             _verts[v + 4] = a - n2; _verts[v + 5] = a + n2; _verts[v + 6] = b + n2; _verts[v + 7] = b - n2;
             Color32 c = colour;
             for (int k = 0; k < 8; k++) _colours[v + k] = c;
+            for (int k = 0; k < 8; k += 4)
+            {
+                _uvs[v + k] = new Vector2(0f, va); _uvs[v + k + 1] = new Vector2(1f, va);
+                _uvs[v + k + 2] = new Vector2(1f, vb); _uvs[v + k + 3] = new Vector2(0f, vb);
+            }
         }
 
         Material Fallback()
