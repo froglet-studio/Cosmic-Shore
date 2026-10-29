@@ -1,5 +1,9 @@
 # Tapestry (`GameModes.Tapestry = 60`)
 
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`): the
+> same airframe, dust and modes. "Butterfly" below
+> means that airframe.
+
 The Butterfly's **MASS** game — a **timed** painting war. The Butterfly is the hull that makes the
 2D prismscape, and on it **Mass is the width of the wake**: Mass mode lays keys 5× the narrow line
 at Mass 0 and 20× at Mass 15. The score is the prism **volume a domain has standing when the clock

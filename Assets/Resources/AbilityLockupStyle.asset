@@ -57,7 +57,8 @@ MonoBehaviour:
   lockedMarkColor: {r: 0.361, g: 0.373, b: 0.439, a: 0.55}
   lockedMarkThickness: 2
   cooldownVeilColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.72}
-  cooldownReadyFlashColor: {r: 0.96, g: 0.96, b: 1, a: 0.5}
+  cooldownWashColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.55}
+  cooldownReadyFlashColor: {r: 0.96, g: 0.96, b: 1, a: 0.75}
   cooldownReadyFlashDuration: 0.32
   pressFlashColor: {r: 0.96, g: 0.96, b: 1, a: 0.22}
   pressFlashDuration: 0.18
