@@ -4,8 +4,8 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Lab-only hooks for the Lavalamp side-by-side look test (<c>Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity</c>,
-    /// <see cref="MeerkatTubeLook"/>): an executor with NO hull (never <see cref="Initialize"/>d, so its own Update does
+    /// Lab-only hooks for the Lavalamp wormhole lab (<c>Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity</c>,
+    /// <c>LavalampWormholeLab</c>): an executor with NO hull (never <see cref="Initialize"/>d, so its own Update does
     /// nothing and it is not in <see cref="Executors"/>) that forms real tunnels and grows real omnicrystal networks through
     /// the game's own code, and holds them open, so every view and the lens draw them exactly as in a match. Nothing in the
     /// game calls these.

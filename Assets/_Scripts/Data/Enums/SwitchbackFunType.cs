@@ -11,6 +11,8 @@ namespace CosmicShore.Data
     /// <item><see cref="Plan3_ParMedals"/>: the shipped course, with a par time, split toasts, a medal and a
     /// personal best.</item>
     /// <item><see cref="Combined"/>: Plan 1's course, Plan 2's features and Plan 3's medals together.</item>
+    /// <item><see cref="BlastRun"/>: blocked gates in closed-form worlds, cleared by key-crystal blasts, with
+    /// invaders (Yash, 2026-10-29).</item>
     /// </list>
     /// See <c>Assets/_Scripts/Controller/Arcade/Switchback/SWITCHBACK.md</c>, "Fun types".
     /// </summary>
@@ -22,12 +24,19 @@ namespace CosmicShore.Data
         Plan2_LiveFeatures = 2,
         Plan3_ParMedals = 3,
         Combined = 4,
+        /// <summary>
+        /// BLAST RUN (SWITCHBACK.md, "Blast Run"): the Classic course, every blocked gate walled off by a Breakwater-style
+        /// door (danger rakes round an always-open 18 u eye) inside a closed-form world (garden, lattice maze, minimal
+        /// surface, Menger cage), with a KEY CRYSTAL on the leg line before it. Take the key and the Dolphin's blast fires
+        /// down the leg and clears the way. Invaders by intensity: none, sweepers, + snap jaws, + hunter packs.
+        /// </summary>
+        BlastRun = 5,
     }
 
     /// <summary>What each <see cref="SwitchbackFunType"/> switches on, and its launch-panel label.</summary>
     public static class SwitchbackFunTypes
     {
-        /// <summary>The order the launch panel cycles through (Baseline first, then plans 1, 3, 2, then Combined).</summary>
+        /// <summary>The order the launch panel cycles through (Baseline first, then plans 1, 3, 2, then Combined, then Blast Run).</summary>
         public static readonly SwitchbackFunType[] PickerOrder =
         {
             SwitchbackFunType.Baseline,
@@ -35,10 +44,11 @@ namespace CosmicShore.Data
             SwitchbackFunType.Plan3_ParMedals,
             SwitchbackFunType.Plan2_LiveFeatures,
             SwitchbackFunType.Combined,
+            SwitchbackFunType.BlastRun,
         };
 
         public static SwitchbackFunType Sanitize(int value) =>
-            value >= 0 && value <= (int)SwitchbackFunType.Combined ? (SwitchbackFunType)value : SwitchbackFunType.Baseline;
+            value >= 0 && value <= (int)SwitchbackFunType.BlastRun ? (SwitchbackFunType)value : SwitchbackFunType.Baseline;
 
         /// <summary>Plan 1's course generator: hairpin ladder, corner patterns, needle rings.</summary>
         public static bool HasLevelShapes(SwitchbackFunType t) =>
@@ -52,12 +62,17 @@ namespace CosmicShore.Data
         public static bool HasParMedals(SwitchbackFunType t) =>
             t == SwitchbackFunType.Plan3_ParMedals || t == SwitchbackFunType.Combined;
 
+        /// <summary>Blast Run's blocked gates, key crystals and invaders (<see cref="SwitchbackFunType.BlastRun"/>). It is
+        /// no other plan: the course is the Classic ladder, and it carries no par or medals.</summary>
+        public static bool HasBlastRun(SwitchbackFunType t) => t == SwitchbackFunType.BlastRun;
+
         public static string Label(SwitchbackFunType t) => t switch
         {
             SwitchbackFunType.Plan1_LevelShapes => "LEVEL SHAPES",
             SwitchbackFunType.Plan2_LiveFeatures => "LIVE FEATURES",
             SwitchbackFunType.Plan3_ParMedals => "PAR & MEDALS",
             SwitchbackFunType.Combined => "COMBINED",
+            SwitchbackFunType.BlastRun => "BLAST RUN",
             _ => "CLASSIC",
         };
 

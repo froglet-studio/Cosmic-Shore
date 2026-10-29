@@ -20,8 +20,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Never baked: the layout comes from a course generated per match.</summary>
         protected override bool BakesLayout => false;
 
-        /// <summary>Intensity 3 lays about 200 wall prisms, intensity 4 about 60 danger prisms.</summary>
-        protected override int LayCapacity => 512;
+        /// <summary>The list's starting size: intensity 3 lays about 200 wall prisms, intensity 4 about 60 danger prisms,
+        /// and Blast Run up to ~3000 (<see cref="SwitchbackBlastRun.LayCapacity"/>).</summary>
+        protected override int LayCapacity => SwitchbackBlastRun.LayCapacity;
 
         readonly List<RaceGate> _course = new(32);
         int _layoutIntensity = 1;
@@ -73,7 +74,7 @@ namespace CosmicShore.Gameplay
         protected override int BuildParameterHash()
         {
             int hash = System.HashCode.Combine(nameof(SpawnableSwitchbackFeatures),
-                /* layout revision - bump to invalidate caches after a code-level change */ 2,
+                /* layout revision - bump to invalidate caches after a code-level change */ 3,
                 _course.Count, _layoutIntensity, _centre, _clearRadius, (int)_funType, _liveLayout != null);
             for (int i = 0; i < _course.Count; i++)
                 hash = System.HashCode.Combine(hash, _course[i].Position, _course[i].Axis, _course[i].Radius);
