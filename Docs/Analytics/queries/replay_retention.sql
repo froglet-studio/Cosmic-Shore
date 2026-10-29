@@ -1,4 +1,4 @@
--- Replay retention by play type (PostHog HogQL). Four queries, run each on its own:
+-- Replay retention by play type (PostHog HogQL). Five queries, run each on its own:
 --   in PostHog's SQL editor, or through the PostHog MCP (`call execute-sql {"query": "..."}`).
 --
 -- WHAT "PLAY TYPE" MEANS TODAY. Read off game_started, one row per (player, match):
@@ -30,7 +30,8 @@
 --   Query 2: REMATCH, did the player start another match within 10 minutes of finishing one.
 --   Query 3: RETURN, did the player come back on a later day.
 -- A fourth, separate question: Query 4, completion rate by game mode, with historical mode names
--- merged into the current ones.
+-- merged into the current ones. And Query 5, the player funnel from first event to a completed game
+-- and a return visit.
 --
 -- PARAMETERS (edit the literals): window `INTERVAL 90 DAY` (appears in every subquery of a
 -- query), rematch gap `600` seconds (query 2), D7 maturity `today() - 7` (query 3).
@@ -240,3 +241,49 @@ FROM plays AS p
 LEFT JOIN dones AS d ON p.distinct_id = d.distinct_id AND p.match_id = d.match_id
 GROUP BY game_mode
 ORDER BY matches DESC;
+
+
+-- ============================================================================
+-- Query 5. Player funnel, one row: how many real players reached each stage.
+-- Stages are counted, not ordered: a player counts at a stage if they ever reached it. The cohort
+-- is every player with any of the four events in the window, and "first event" is their earliest
+-- one of those, so a player who predates menu_ready is still counted. game_first_launched is not
+-- used (it covers only some players), and neither is ftue_step_completed (on 2026-10-29 it had
+-- fired for exactly one real player, so an FTUE step funnel is not possible yet).
+--   started_within_30min   first game_started within 30 minutes of the first event
+--   played_on_2plus_days   played on at least two calendar days (UTC)
+--   matured_7d / returned_within_7d   only players whose first day is at least 7 days ago, and
+--                          how many of them played on any of the 7 days after it
+-- Both toggles are on: the port build records starts but almost no completions.
+-- 2026-10-29: 25 players, 23 menu, 21 freestyle, 19 started, 12 completed, 17 started within 30
+-- min, 10 on 2+ days, 23 matured, 9 returned within 7 days.
+-- ============================================================================
+WITH p AS (
+    SELECT
+        distinct_id,
+        minIf(timestamp, event = 'menu_ready') AS t_menu,
+        minIf(timestamp, event = 'freestyle_entered') AS t_free,
+        minIf(timestamp, event = 'game_started') AS t_start,
+        minIf(timestamp, event = 'game_completed') AS t_done,
+        min(timestamp) AS t_first,
+        groupUniqArray(toDate(timestamp)) AS days
+    FROM events
+    WHERE timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
+      AND properties.app_version NOT LIKE '%-port'   -- PORT TOGGLE
+      AND event IN ('menu_ready', 'freestyle_entered', 'game_started', 'game_completed')
+    GROUP BY distinct_id
+)
+-- ClickHouse fills a missing DateTime with 1970, not NULL, hence the > 2001 tests.
+SELECT
+    count() AS players,
+    countIf(t_menu > toDateTime('2001-01-01')) AS reached_menu,
+    countIf(t_free > toDateTime('2001-01-01')) AS entered_freestyle,
+    countIf(t_start > toDateTime('2001-01-01')) AS started_game,
+    countIf(t_done > toDateTime('2001-01-01')) AS completed_game,
+    countIf(t_start > toDateTime('2001-01-01') AND dateDiff('minute', t_first, t_start) <= 30) AS started_within_30min,
+    countIf(length(days) >= 2) AS played_on_2plus_days,
+    countIf(toDate(t_first) <= today() - 7) AS matured_7d,
+    countIf(toDate(t_first) <= today() - 7
+            AND arrayExists(d -> dateDiff('day', toDate(t_first), d) BETWEEN 1 AND 7, days)) AS returned_within_7d
+FROM p;
