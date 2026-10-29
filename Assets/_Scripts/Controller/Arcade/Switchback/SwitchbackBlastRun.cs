@@ -63,7 +63,8 @@ namespace CosmicShore.Gameplay
     /// BLAST RUN (<see cref="SwitchbackFunType.BlastRun"/>, SWITCHBACK.md "Blast Run"; Yash 2026-10-28: "Dolphins need
     /// to use their shooting abilities to clear paths for their rings ... like sparrow's time game, just in dolphin
     /// way"). A pure function of the course, like <see cref="SwitchbackLiveFeatures"/>, so every peer lays the same
-    /// prisms and the tests and <c>Tools/Build/blast_run_layout.py</c> hold it without a scene.
+    /// prisms and the EditMode tests (<c>SwitchbackBlastRunTests</c>) and <c>Tools/Build/audit_prism_clipping.py</c> hold
+    /// it without a scene.
     ///
     /// <para><b>The loop.</b> Some gates are BLOCKED (<see cref="IsBlocked"/>): a Breakwater door hangs
     /// <see cref="DoorSetback"/> in front of the ring and seals all of it but the 18 u eye, and the leg in is full of

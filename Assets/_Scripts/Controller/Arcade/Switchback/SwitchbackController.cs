@@ -95,12 +95,6 @@ namespace CosmicShore.Gameplay
         protected override bool ThreadsAlternate(int raceIndex, int ringIndex, Vector3 prev, Vector3 cur) =>
             _runtime && _runtime.ThreadsShortcut(raceIndex, prev, cur);
 
-        /// <summary>
-        /// The course features, hung on the course on every peer from the course every peer received (Breakwater's
-        /// stations are the same shape): Baseline, Plan 1 and Plan 3 lay the shipped I3 skim walls and I4 danger
-        /// prisms; Plan 2 and Combined lay <see cref="SwitchbackLiveFeatures"/> - ribbons, moving danger and
-        /// shortcuts. Then the fun-type runtime (splits, medals, the run log line) starts for every fun type.
-        /// </summary>
         // ── Blast Run (SWITCHBACK.md "Blast Run") ──────────────────────
 
         /// <summary>The hunter packs, one entry per pack - written by the server, read by every peer's runtime.</summary>
@@ -115,6 +109,12 @@ namespace CosmicShore.Gameplay
             _packs = new NetworkList<BlastRunPackState>();
         }
 
+        /// <summary>
+        /// The course features, hung on the course on every peer from the course every peer received (Breakwater's
+        /// stations are the same shape): Baseline, Plan 1 and Plan 3 lay the shipped I3 skim walls and I4 danger
+        /// prisms; Plan 2 and Combined lay <see cref="SwitchbackLiveFeatures"/> - ribbons, moving danger and
+        /// shortcuts. Then the fun-type runtime (splits, medals, the run log line) starts for every fun type.
+        /// </summary>
         protected override void OnCourseRaised()
         {
             int intensity = Intensity;
