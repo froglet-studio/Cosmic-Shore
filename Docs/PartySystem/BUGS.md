@@ -43,7 +43,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
 | B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
-| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile | 🟠 |
+| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile. Measured since: the boot's menu load (10-20 s frames on three machines; boot-order fix waits on the boot owner) and a menu Cell swap (24.2 s returning 76,115 trail prisms; fixed 2026-10-29) | 🟠 |
 | B37 | "Could not create presence lobby: Object reference not set..." then "[INVITE-SEND] ABORT - presence lobby is null" (Bug Ledger E-6b79cd07f1, E-ca3bc5cbe1; Gradi and Shombith, 2-11 Sep) | Fixed 2026-10-25 (cause likely, not proven: the log kept only the message): the join waits for Unity Services and a sign-in; a create failure the rejoin recovers from is a warning, anything else is logged with its stack; an invite with no presence lobby tells the player. The lobby-less session itself was fixed 2026-10-08 (the boot-time rejoin) | 🟡 |
 | B38 | "[PartyInviteController] Recovery failed" after Play stops: "This can only be used during play mode" or "Value cannot be null. Parameter name: asyncOperation" (Bug Ledger E-41b7610878, belac 19 Oct; E-0de9ec6c70, Gradi, Sep) | Root-caused & fixed 2026-10-25: the recovery and the leave-lobby flow awaited the party leave and the Netcode shutdown, and loaded Menu_Main after Play had stopped. Each step after an await now stops once Play has ended or the controller is gone | 🟡 |
 
@@ -2393,6 +2393,27 @@ warnings: first-run compilation and asset loading), not every boot. A player bui
 there it is likely far shorter, but no build has been measured yet. The real fix is a boot-order decision for whoever owns
 the boot: start the Relay host after the menu is up, so no long load runs with a live Relay. Until then a cold first
 Play in the Editor costs a bounce and a re-host (about 17 s).
+
+**Not only the cold first Play, and a second freeze found (2026-10-29 sweep, `gradi-20261029_015022`, on
+`cece/eloquent-franklin-2b67vp` `855e4b3867`, which carries all of Block 5).** Garrett's boot dropped the Relay the same
+way: hosting at 16.9 s, `InParty` at 23.3 s, the menu load began, one frame of **10.1 s** ended at 34.3 s, no BIND
+answer, the host shut down, bounced and re-hosted by 47.3 s. This boot shows none of the cold-Play warnings (no Burst
+"Synchronous compilation", no "assembly reload locked"), so the 28 Oct reading above is too narrow. Garrett's 19 boot
+reports since 26 Oct put the menu load's worst frame at 1.8-3.3 s in 13 boots, 4.5-5.6 s in 5, and 10.1 s in this one:
+the boot routinely spends half of Relay's ~10 s margin in one frame, and an unlucky boot goes past it. The boot-order
+change (host after the menu is up) stays the real fix and stays the boot owner's call.
+
+The same reports name a second, larger freeze on the menu, where the player is also hosting over Relay: a **Cell swap**
+(the Cell Selector toy) to Barren on `bleeding-edge` (29 Oct 00:26) froze one frame for **24.2 s** while
+**76,115 pooled trail prisms** went back to their pool, and the frame before it for 14.1 s while the world was
+gathered to suction away. Garrett's other ten swaps returned 464-16,619 prisms in 15-956 ms, and the cost per prism
+climbs with the count (0.03 ms at a few hundred, 0.06 ms at 16,619, 0.17 ms at 76,115): the loop detached the prisms
+from the FRONT of the retiring root, and each detach shifts every later sibling. **Fixed on `Ys-bleeding-edge`:**
+`Cell.ReturnRetiredTrailToPool` returns them newest first (each detach from the back is constant) in 12 ms slices, the
+same slice `ReleaseRetiredWorld` uses since `911c8c2b78`, and `RetireWorldIntoSuctionRoot` gathers them newest first
+so their trail containers are also emptied from the back. The 14 s gathering frame is one move by design and is not
+sliced; the next long swap's report (under "Loads" in `net_logs.py show`, or `bugledger/<user>/load/`) says how much
+of it the order change took off.
 
 ## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
 

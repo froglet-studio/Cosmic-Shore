@@ -18737,3 +18737,18 @@ squirrel". This undoes 622e271ca's swap; the 2026-10-28 Meerkat entry above is s
 5. Vessel Changer toy -> Meerkat, then back to Squirrel. **Pass:** both swaps work; the Meerkat still forms tunnels.
 6. `LavalampWormholeLab.unity` still flies the Meerkat.
 
+## Cell swap: the retired trail goes back to its pool newest first, in 12 ms slices (B36, 2026-10-29) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scripts/Controller/Environment/Cell.cs` (`ReturnRetiredTrailToPool`, `RetireWorldIntoSuctionRoot`).
+Garrett's 29 Oct swap to Barren froze one frame for 24.2 s returning 76,115 pooled trail prisms, while hosting over
+Relay (`Docs/PartySystem/BUGS.md` B36, 2026-10-29). `/verify-unity` did not run: no editor in the session. Reference
+compile (player and editor) and the gates pass; the Amoebius edit-mode suite has no new failure from this change.
+
+1. Menu_Main, freestyle: fly a long trail (or several vessels' worth; the more prisms the better, 20,000+ shows it),
+   then use the Cell Selector toy to swap to any cell. **Pass:** the world suctions away and the new one streams in
+   with no long freeze; the swap's Load Time Insights report shows the "pooled trail prisms return to their pool"
+   span spread over several frames, with no frame over about 0.5 s inside it.
+2. Fly again after the swap. **Pass:** new trail lays normally (the prisms came back to the pool and are reused), no
+   errors, and no prism from the old world is left floating where it was.
+3. Swap to the same cell twice in a row (the reset). **Pass:** both complete; the second swap is not refused.
+
