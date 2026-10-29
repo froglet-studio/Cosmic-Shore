@@ -1,5 +1,14 @@
 # The Meerkat: the wormhole vessel (design studio, round 8, 2026-10-27)
 
+**Wormhole look, 2026-10-29 (`feat/wormhole-pc-unified`, PR #1624, the calm-jelly round):** ONE look ships, the same
+for the trunk (a formed tunnel) and the root (an omnicrystal network's channel), each with its own numbers. It is a clear,
+calm, slightly jelly-like hollow in space: bent space, a slow breath and a faint white rim, with no water and no tint.
+Comfort settings keep the ride calm. The config's look groups are Comfort, Trunk Look / Shape / Ride, Root Look / Shape /
+Ride, Kit, and Miscellaneous (`MeerkatWormholeLook.cs`, `MeerkatWormholeLens.shader`). The contour-field knobs, YASH'S /
+GARRETT'S presets (`MeerkatWormholeHQ`), and the earlier bridge, warp, calm wall, water pipe, tree and root inside are all
+gone. Sections below that mention them are history. Every field, default and comfort tip:
+`Docs/Shaders/WORMHOLE_SHADERS.md` §14. Restore steps: §13 (from `0c8c5218c`) and §12.
+
 **Studio:** `Docs/Studios/VesselStudio/meerkat.html` (its own source of truth; no copy script), a page of the one Vessel
 Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Test hook `window.__meerkatStudio` (and `__lab`).
 **Owner:** Yash (the Vessel Studio). **Status:** in the game since 2026-10-27 (see "In the game" below).
