@@ -71,6 +71,21 @@ namespace CosmicShore.Core
         readonly AuthenticationDataVariable _authenticationDataVariable;
         readonly bool _allowLog;
 
+        /// <summary>
+        /// The instance currently wired to <c>AuthenticationService.Instance</c>'s own events
+        /// (SignedIn/SignInFailed/SignedOut/Expired). <c>_eventsWired</c> below only stops THIS
+        /// instance re-wiring itself; it does nothing for a second instance, and with Domain
+        /// Reload + Scene Reload both off a Bootstrap re-entry constructs exactly that - a
+        /// fresh facade whose own <c>_eventsWired</c> starts false, wiring 4 more handlers onto
+        /// the SAME SDK-owned event the previous instance is still subscribed to. This is the
+        /// same defect class the constructor comment on <see cref="ResetRuntimeState"/> already
+        /// fixes for the SOAP mirror, and the one confirmed via production PostHog data on
+        /// AnalyticsServiceFacade. A double sign-in event would double-trigger everything
+        /// downstream of OnSignedIn (HostConnectionService, UGSDataService, PlayerDataService,
+        /// MultiplayerSetup).
+        /// </summary>
+        static AuthenticationServiceFacade _liveInstance;
+
         AuthenticationData authenticationData => _authenticationDataVariable.Value;
 
         bool _startupAttempted;
@@ -94,6 +109,10 @@ namespace CosmicShore.Core
         {
             _authenticationDataVariable = authenticationDataVariable;
             _allowLog = allowLog;
+
+            // Must run before anything wires an event - see _liveInstance.
+            _liveInstance?.Unsubscribe();
+            _liveInstance = this;
 
             // State / IsSignedIn / PlayerId are plain auto-properties on a class held by a
             // ScriptableObject, so Unity does not serialize them and SOAP never resets them.
@@ -450,21 +469,45 @@ namespace CosmicShore.Core
 
             _eventsWired = true;
 
+            // Named handlers rather than inline lambdas: Unsubscribe() below needs the exact
+            // same delegate it subscribed with, which a freshly-written lambda expression at
+            // the unsubscribe site is not guaranteed to match.
+            //
             // Every one of these handlers writes the SOAP mirror and raises a SOAP event, which
             // runs its listeners INLINE. The SDK raises them on whatever thread finished the
             // request, so they are marshalled first. Docs/THREADING.md.
-            svc.SignedIn += () => OnMainThread(OnSignInSuccess);
+            svc.SignedIn += HandleSdkSignedIn;
+            svc.SignInFailed += HandleSdkSignInFailed;
+            svc.SignedOut += HandleSdkSignedOut;
+            svc.Expired += HandleSdkExpired;
+        }
 
-            svc.SignInFailed += (RequestFailedException ex) =>
-            {
-                if (_steamAttemptInFlight)
-                    return; // the anonymous fallback follows; SteamSignIn logs the refusal
-                OnMainThread(() => OnSignInFailed(ex));
-            };
+        void HandleSdkSignedIn() => OnMainThread(OnSignInSuccess);
 
-            svc.SignedOut += () => OnMainThread(() => OnSignedOut("Auth event: SignedOut"));
+        void HandleSdkSignInFailed(RequestFailedException ex)
+        {
+            if (_steamAttemptInFlight)
+                return; // the anonymous fallback follows; SteamSignIn logs the refusal
+            OnMainThread(() => OnSignInFailed(ex));
+        }
 
-            svc.Expired += () => OnMainThread(() => OnSignedOut("Auth event: Session Expired"));
+        void HandleSdkSignedOut() => OnMainThread(() => OnSignedOut("Auth event: SignedOut"));
+
+        void HandleSdkExpired() => OnMainThread(() => OnSignedOut("Auth event: Session Expired"));
+
+        /// <summary>Mirror image of <see cref="WireAuthEventsOnce"/>. See <see cref="_liveInstance"/>.</summary>
+        void Unsubscribe()
+        {
+            if (!_eventsWired)
+                return;
+
+            if (!TryGetAuthService(out var svc))
+                return;
+
+            svc.SignedIn -= HandleSdkSignedIn;
+            svc.SignInFailed -= HandleSdkSignInFailed;
+            svc.SignedOut -= HandleSdkSignedOut;
+            svc.Expired -= HandleSdkExpired;
         }
 
         /// <summary>

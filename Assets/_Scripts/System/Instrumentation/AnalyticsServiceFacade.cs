@@ -74,6 +74,23 @@ namespace CosmicShore.Core
 
         readonly PostHogAnalyticsSink _postHogSink;
 
+        /// <summary>
+        /// The one instance currently subscribed to every persistent SOAP/static event below.
+        /// This is a Resolution.Lazy Reflex singleton, but Reflex has no disposal hook that runs
+        /// when a container is rebuilt - and with this project's Enter Play Mode settings
+        /// (Domain Reload + Scene Reload both off, see ProjectSettings/EditorSettings.asset),
+        /// re-entering Bootstrap constructs a SECOND facade without ever tearing down the first
+        /// one's subscriptions (same class of risk ReconnectService's own doc comment calls out:
+        /// "re-loading that scene would spawn a duplicate of every other [persistent root]").
+        /// Confirmed in production PostHog data: every subscribed handler below fired at ~2x the
+        /// rate of every directly-called Record* method, with distinct event uuids and identical
+        /// match_id/distinct_id pairs a few milliseconds apart.
+        ///
+        /// Tearing down whatever instance came before guarantees exactly one live subscriber
+        /// regardless of how many times this gets constructed in one process.
+        /// </summary>
+        static AnalyticsServiceFacade _liveInstance;
+
         bool _collecting;
         bool _isConnected = true;
         bool _signedIn;
@@ -131,6 +148,10 @@ namespace CosmicShore.Core
             _hostConnectionData = hostConnectionData;
             _allowLog = allowLog;
 
+            // Must run before a single subscription is wired - see _liveInstance.
+            _liveInstance?.Unsubscribe();
+            _liveInstance = this;
+
             _sinks.Add(new UgsAnalyticsSink(Log));
 
             var postHogConfig = Resources.Load<PostHogConfigSO>("PostHogConfig");
@@ -164,15 +185,19 @@ namespace CosmicShore.Core
             _hostConnectionData.OnPartyJoinCompleted.OnRaised += HandlePartyJoined;
 
             // ── Phase 2: static C# events (exist regardless of scene) ──
-            GameSetting.OnChangeMusicEnabledStatus      += v => HandleSettingChanged("music_enabled", v);
-            GameSetting.OnChangeSFXEnabledStatus        += v => HandleSettingChanged("sfx_enabled", v);
-            GameSetting.OnChangeHapticsEnabledStatus    += v => HandleSettingChanged("haptics_enabled", v);
-            GameSetting.OnChangeInvertYEnabledStatus    += v => HandleSettingChanged("invert_y", v);
-            GameSetting.OnChangeInvertThrottleEnabledStatus += v => HandleSettingChanged("invert_throttle", v);
-            GameSetting.OnChangeJoystickVisualsStatus   += v => HandleSettingChanged("joystick_visuals", v);
-            GameSetting.OnChangeMusicLevel              += v => HandleSettingChanged("music_level", v);
-            GameSetting.OnChangeSFXLevel                += v => HandleSettingChanged("sfx_level", v);
-            GameSetting.OnChangeHapticsLevel            += v => HandleSettingChanged("haptics_level", v);
+            // Named handlers rather than inline lambdas: Unsubscribe() below needs the exact
+            // same delegate it subscribed with, and a freshly-written lambda expression at the
+            // unsubscribe site is not guaranteed to compare equal to the one used at subscribe
+            // time (relying on compiler delegate-caching for correctness is fragile).
+            GameSetting.OnChangeMusicEnabledStatus      += HandleMusicEnabledChanged;
+            GameSetting.OnChangeSFXEnabledStatus        += HandleSfxEnabledChanged;
+            GameSetting.OnChangeHapticsEnabledStatus    += HandleHapticsEnabledChanged;
+            GameSetting.OnChangeInvertYEnabledStatus    += HandleInvertYChanged;
+            GameSetting.OnChangeInvertThrottleEnabledStatus += HandleInvertThrottleChanged;
+            GameSetting.OnChangeJoystickVisualsStatus   += HandleJoystickVisualsChanged;
+            GameSetting.OnChangeMusicLevel              += HandleMusicLevelChanged;
+            GameSetting.OnChangeSFXLevel                += HandleSfxLevelChanged;
+            GameSetting.OnChangeHapticsLevel            += HandleHapticsLevelChanged;
             FavoriteSystem.OnFavoriteChanged            += HandleFavoriteChanged;
             UGSCloudSaveProvider.OnSaveFailed           += HandleCloudSaveFailed;
             FTUEEventManager.OnQuestNodeCompleted       += HandleFtueStepCompleted;
@@ -194,6 +219,74 @@ namespace CosmicShore.Core
             // the handlers only set a flag and re-run the guarded StartCollectionIfReady, so a
             // genuine event arriving afterwards is a no-op.
             ReconcileWithAlreadyAnnouncedState();
+        }
+
+        /// <summary>
+        /// Mirror image of the constructor's subscription block - every <c>+=</c> above has its
+        /// matching <c>-=</c> here. Called on the OUTGOING instance by the next constructor,
+        /// never by this one; see <see cref="_liveInstance"/>.
+        /// </summary>
+        void Unsubscribe()
+        {
+            var auth = AuthData;
+            if (auth != null) auth.OnSignedIn.OnRaised -= HandleSignedIn;
+
+            var network = NetworkData;
+            if (network != null)
+            {
+                network.OnNetworkFound.OnRaised -= HandleNetworkFound;
+                network.OnNetworkLost.OnRaised -= HandleNetworkLost;
+            }
+
+            if (_gameData != null)
+            {
+                _gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
+                _gameData.OnMiniGameEnd.OnRaised -= HandleMiniGameEnd;
+            }
+
+            if (_lifecycleEvents != null)
+            {
+                _lifecycleEvents.OnAppPaused.OnRaised -= HandleAppPaused;
+                _lifecycleEvents.OnAppQuitting.OnRaised -= HandleAppQuitting;
+            }
+
+            if (_menuFreestyleEvents != null)
+                _menuFreestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleFreestyleEntered;
+
+            if (_friendsData != null)
+            {
+                _friendsData.OnFriendRequestSent.OnRaised -= HandleFriendRequestSent;
+                _friendsData.OnFriendRequestReceived.OnRaised -= HandleFriendRequestReceived;
+                _friendsData.OnFriendAdded.OnRaised -= HandleFriendAdded;
+            }
+
+            if (_hostConnectionData != null)
+            {
+                _hostConnectionData.OnInviteSent.OnRaised -= HandlePartyInviteSent;
+                _hostConnectionData.OnInviteReceived.OnRaised -= HandlePartyInviteReceived;
+                _hostConnectionData.OnPartyJoinCompleted.OnRaised -= HandlePartyJoined;
+            }
+
+            GameSetting.OnChangeMusicEnabledStatus      -= HandleMusicEnabledChanged;
+            GameSetting.OnChangeSFXEnabledStatus        -= HandleSfxEnabledChanged;
+            GameSetting.OnChangeHapticsEnabledStatus    -= HandleHapticsEnabledChanged;
+            GameSetting.OnChangeInvertYEnabledStatus    -= HandleInvertYChanged;
+            GameSetting.OnChangeInvertThrottleEnabledStatus -= HandleInvertThrottleChanged;
+            GameSetting.OnChangeJoystickVisualsStatus   -= HandleJoystickVisualsChanged;
+            GameSetting.OnChangeMusicLevel               -= HandleMusicLevelChanged;
+            GameSetting.OnChangeSFXLevel                 -= HandleSfxLevelChanged;
+            GameSetting.OnChangeHapticsLevel             -= HandleHapticsLevelChanged;
+            FavoriteSystem.OnFavoriteChanged            -= HandleFavoriteChanged;
+            UGSCloudSaveProvider.OnSaveFailed           -= HandleCloudSaveFailed;
+            FTUEEventManager.OnQuestNodeCompleted       -= HandleFtueStepCompleted;
+            FTUEEventManager.OnQuestPhaseCompleted      -= HandleFtuePhaseCompleted;
+            FTUEEventManager.OnQuestCompleted           -= HandleFtueCompleted;
+
+            if (_uiActionsWired && UserActionSystem.Instance != null)
+                UserActionSystem.Instance.OnUserActionCompleted -= HandleUserAction;
+
+            if (_profileRefreshWired && PlayerDataService.Instance != null)
+                PlayerDataService.Instance.OnProfileChanged -= HandleProfileChanged;
         }
 
         /// <summary>
@@ -981,6 +1074,17 @@ namespace CosmicShore.Core
                 { "value", value?.ToString() ?? string.Empty },
                 { "seconds_since_launch", SecondsSinceLaunch }
             });
+
+        // One named handler per GameSetting static event - see the subscription comment above.
+        void HandleMusicEnabledChanged(bool v) => HandleSettingChanged("music_enabled", v);
+        void HandleSfxEnabledChanged(bool v) => HandleSettingChanged("sfx_enabled", v);
+        void HandleHapticsEnabledChanged(bool v) => HandleSettingChanged("haptics_enabled", v);
+        void HandleInvertYChanged(bool v) => HandleSettingChanged("invert_y", v);
+        void HandleInvertThrottleChanged(bool v) => HandleSettingChanged("invert_throttle", v);
+        void HandleJoystickVisualsChanged(bool v) => HandleSettingChanged("joystick_visuals", v);
+        void HandleMusicLevelChanged(float v) => HandleSettingChanged("music_level", v);
+        void HandleSfxLevelChanged(float v) => HandleSettingChanged("sfx_level", v);
+        void HandleHapticsLevelChanged(float v) => HandleSettingChanged("haptics_level", v);
 
         void HandleFriendRequestSent(FriendData f) =>
             RecordEvent(UGSKeys.EventFriendRequestSent, new Dictionary<string, object>
