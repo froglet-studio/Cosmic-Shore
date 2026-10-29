@@ -10,6 +10,18 @@
 -- expression, in each query below. When game_started carries the player's domain and a team
 -- composition field, split `multi_human` into coop and adversarial there and nowhere else.
 --
+-- WHEN THE TEAM-COMPOSITION FIELDS SHIP (Docs/Analytics/proposals/team_composition_fields.patch),
+-- replace the `play_type` expression in each `plays` subquery with the one below. It splits
+-- multi_human into coop / adversarial / mixed, and labels rows recorded before the fields
+-- existed 'multi_human_unknown' (tested against live data: all 309 older multi-human plays came
+-- back unknown, none guessed). count(x) counts only rows that carry the property.
+--
+--   if(max(toFloat(properties.player_count_human)) >= 2,
+--      if(count(properties.humans_on_other_domains) = 0, 'multi_human_unknown',
+--         if(max(toFloat(properties.humans_on_other_domains)) = 0, 'coop',
+--            if(max(toFloat(properties.humans_on_my_domain)) >= 2, 'mixed', 'adversarial'))),
+--      if(max(toFloat(properties.player_count_ai)) >= 1, 'solo_vs_ai', 'solo_alone'))
+--
 -- DEDUPLICATION. Until PR #1639 is verified every game event is recorded twice, so everything
 -- groups by (distinct_id, match_id) and counts matches, never raw rows. Query 1 shows when the
 -- duplicates stop.
