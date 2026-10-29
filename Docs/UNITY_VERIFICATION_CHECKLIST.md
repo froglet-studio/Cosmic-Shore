@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rejoin a running match (Rev 37, section 103.1) (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor). Not opened in the editor. Needs two clients (MPPM: a host and one guest in a party), a mode with a turn (Skim Race).
+- [ ] Guest drop: start Skim Race; on the guest kill the network for ~10 s (or stop the guest's player and start it again). The host shows "pilot handed to AI"; the guest lands on Home with "You dropped out" and REJOIN selected.
+- [ ] REJOIN: the guest loads into the running match, flies ITS old vessel (same domain, same score, no second ship), input works, the scoreboard has one row for it, and the host's AI stops flying it.
+- [ ] Restart: quit the guest mid-match and start it again: after sign-in Home asks "Rejoin Skim Race?". NOT NOW forgets it (no prompt on the next boot).
+- [ ] The match ends while the guest is out: no prompt (or the window gives up quietly).
+- [ ] Host leaves mid-match: the guest gets "The host left" with BACK TO HOME after about 20 s on Home; no rejoin.
+- [ ] Leaving deliberately (pause → Main menu) never prompts a rejoin.
+- [ ] `MatchRejoinTests` and `DisconnectNoticeTests` pass.
+
+### 🔴 FTUE Rev 36 B: the captain's comms window (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player). Not opened in the editor. Needs the developer unlock OFF (Froglet Toolbox) and a fresh FTUE (Quest Debug: reset).
+- [ ] Home: Trace's window slides in from the edge away from ARCADE, her line types, the bars move, then "A ARCADE" fades in; a lime line runs to the lit ARCADE.
+- [ ] Arcade: a new line plays (the entrance replays) and the window docks on the side away from the card; it never covers it.
+- [ ] Preview step: the "Fly" prompt; Settings and Skip tutorial still work on every step; the dim still refuses presses elsewhere.
+- [ ] 21:9 and 4:3: the window scales with the screen height and stays on screen.
+
 ### 🔴 The Scarab's Throttle card: wake by trigger depth, speed meter, Snap Dash chevron (`claude/scarab-throttle-icon`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** the Time card's placeholder is replaced by the icon kit's parts (`specs/scarab.py`): ThrottleGauge

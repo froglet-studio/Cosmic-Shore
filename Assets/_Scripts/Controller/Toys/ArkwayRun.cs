@@ -45,6 +45,10 @@ namespace CosmicShore.Gameplay
 
         public IReadOnlyList<CellConfigDataSO> Cells;
 
+        /// <summary>A route indexes <see cref="Cells"/> exactly as listed, without the traversal filter (environment-free
+        /// and wormhole worlds are kept). The Ark escort names its worlds; the Arkway and voyages leave this off.</summary>
+        public bool RouteWorldsAsAuthored;
+
         /// <summary>Crystal seated at each traversal cell's core. Null falls back to the omni
         /// crystal on <c>Resources/ModePreviewLibrary</c>.</summary>
         public Crystal CrystalPrefab;
@@ -430,6 +434,14 @@ namespace CosmicShore.Gameplay
                 }
 
                 _stage = "opening the voyage";
+                // The hull the voyage began with can have been swapped during the build (a squad deploying puts the
+                // pilot in their seat's vessel): open the voyage with the hull the pilot flies now.
+                if (vessel is Object begun && !begun) vessel = LocalVessel();
+                if (vessel == null)
+                {
+                    End(returnToCell: false, "no live vessel when the veil came down");
+                    return;
+                }
                 // The wake is armed only now - never inside the bracket and never under the
                 // veil. Belt and braces with LayOne's watchForReveal: false - one keeps the
                 // wake out of the reveal watch, this keeps it out of the build entirely.
