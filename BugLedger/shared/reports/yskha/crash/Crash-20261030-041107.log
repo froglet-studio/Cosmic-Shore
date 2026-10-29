@@ -1,0 +1,878 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-30 04:11:07 (next editor launch after the abnormal exit)
+session:        20261029-121530543  (pid 14064, Unity 6000.3.17f1)
+started:        2026-10-29T12:15:30.553Z UTC
+last heartbeat: 2026-10-29T22:26:51.183Z UTC
+last state:     PlayMode
+main thread:    unresponsive for ~29s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261029-121530543
+started: 2026-10-29T12:15:30.553Z UTC
+unity:   6000.3.17f1
+pid:     14064
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[17:46:16.498] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[17:47:09.814] ---- main thread stalled ~99s and RECOVERED — slow, not hung ----
+[18:09:22.177] ---- domain reload begins (script compilation / play-mode transition) ----
+[18:09:30.188] ---- domain reload complete — session re-adopted ----
+[18:10:17.524] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[18:11:53.018] ---- domain reload begins (script compilation / play-mode transition) ----
+[18:12:02.752] ---- domain reload complete — session re-adopted ----
+[18:12:48.553] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[18:13:11.534] ---- main thread stalled ~68s and RECOVERED — slow, not hung ----
+[18:15:19.088] ---- domain reload begins (script compilation / play-mode transition) ----
+[18:15:28.506] ---- domain reload complete — session re-adopted ----
+[18:16:14.345] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[18:16:28.648] ---- main thread stalled ~60s and RECOVERED — slow, not hung ----
+[18:17:18.769] ---- entering play mode ----
+[18:17:23.273] ---- play mode running ----
+[18:49:20.635] ---- leaving play mode ----
+[18:49:34.901] ---- edit mode restored ----
+[18:49:35.412] ---- entering play mode ----
+[18:49:40.391] ---- play mode running ----
+[18:52:49.937] ---- leaving play mode ----
+[18:52:55.704] ---- edit mode restored ----
+[18:53:47.561] ---- domain reload begins (script compilation / play-mode transition) ----
+[18:54:18.980] ---- domain reload complete — session re-adopted ----
+[18:55:04.797] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[18:55:25.704] ---- main thread stalled ~67s and RECOVERED — slow, not hung ----
+[19:00:36.536] ---- entering play mode ----
+[19:01:01.648] ---- play mode running ----
+[19:30:13.873] ---- leaving play mode ----
+[19:30:27.289] ---- edit mode restored ----
+[20:01:05.007] ---- entering play mode ----
+[20:01:09.024] ---- play mode running ----
+[20:07:10.330] ---- leaving play mode ----
+[20:07:14.096] ---- edit mode restored ----
+[20:09:58.937] ---- entering play mode ----
+[20:10:02.802] ---- play mode running ----
+[20:17:31.903] ---- leaving play mode ----
+[20:17:34.902] ---- edit mode restored ----
+[22:01:49.669] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:02:22.733] ---- domain reload complete — session re-adopted ----
+[22:03:11.141] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[22:04:38.173] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:04:51.696] ---- domain reload complete — session re-adopted ----
+[22:05:37.656] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[22:05:40.694] ---- main thread stalled ~49s and RECOVERED — slow, not hung ----
+[22:07:50.122] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:08:03.975] ---- domain reload complete — session re-adopted ----
+[22:13:52.406] ---- entering play mode ----
+[22:13:55.076] ---- play mode running ----
+[22:27:56.759] ---- leaving play mode ----
+[22:27:59.791] ---- edit mode restored ----
+[22:42:49.364] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:43:04.267] ---- domain reload complete — session re-adopted ----
+[22:43:50.480] ---- main thread unresponsive ~46s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[22:43:55.568] ---- main thread stalled ~51s and RECOVERED — slow, not hung ----
+[22:44:41.450] ---- entering play mode ----
+[22:44:46.131] ---- play mode running ----
+[22:46:43.723] ---- leaving play mode ----
+[22:46:46.833] ---- edit mode restored ----
+[22:47:46.365] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:48:14.987] ---- domain reload complete — session re-adopted ----
+[22:57:00.543] ---- entering play mode ----
+[22:57:46.226] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[22:59:08.476] ---- play mode running ----
+[22:59:09.485] ---- main thread stalled ~129s and RECOVERED — slow, not hung ----
+[23:21:16.708] [PlayMode] Exception: [ServicesCore]: Unity.Services.Wire.Internal.WebSocketInvalidStateException: WebSocket is already closed.
+  at Unity.Services.Wire.Internal.WebSocket.Close (Unity.Services.Wire.Internal.WebSocketCloseCode code, System.String reason) [0x00050] in .\Library\PackageCache\com.unity.services.wire@af86088a4eac\Runtime\WebSocket.cs:577 
+  at Unity.Services.Wire.Internal.Client.PingDeadline () [0x00012] in .\Library\PackageCache\com.unity.services.wire@af86088a4eac\Runtime\Centrifuge\Client.cs:410 
+  at Unity.Services.Core.Scheduler.Internal.ActionScheduler.ExecuteExpiredActions () [0x000cc] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Runtime\Scheduler\ActionScheduler.cs:116 
+        0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec667587f (Unity) DebugStringToFile
+        0x00007ffec6531b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000020b76d4d39d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000020b76d4d223 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000020b76d4ce3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:21:17.043] [PlayMode] Error: DTLS handshake failed at step 12 (SERVER_CHANGE_CIPHER_SPEC). Closing connection.
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec687a7fa (Unity) DefaultBurstRuntimeLogCallback
+        0x00007ffec64d971a (Unity) BurstCompilerService_CUSTOM_RuntimeLog
+        0x00007fff38366994 (6680e1dee7403c5865ce032e8611083) Unity.Networking.Transport.DTLSLayer.ReceiveJob.CheckForFailedClient (at B:/FrogletGames/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@98ef8bfec34d/Runtime/Layers/DTLSLayer.cs:355)
+        0x00007fff38367d44 (6680e1dee7403c5865ce032e8611083) Unity.Networking.Transport.DTLSLayer.ReceiveJob.ProcessConnectionList (at B:/FrogletGames/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@98ef8bfec34d/Runtime/Layers/DTLSLayer.cs:298)
+        0x00007fff38363a9d (6680e1dee7403c5865ce032e8611083) a9d0a42f2dfcb16378e06497479fa08c
+        0x00007ffec6d533a6 (Unity) ExecuteJob
+        0x00007ffec6d5445d (Unity) ForwardJobToManaged
+        ...
+[23:21:17.044] ---- main thread stalled ~73s and RECOVERED — slow, not hung ----
+[23:21:17.044] [PlayMode] Error: Failed to establish connection with the Relay server.
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec687a7fa (Unity) DefaultBurstRuntimeLogCallback
+        0x00007ffec64d971a (Unity) BurstCompilerService_CUSTOM_RuntimeLog
+        0x00007fff38397bc8 (6680e1dee7403c5865ce032e8611083) Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>.ProcessRelayServerConnection (at B:/FrogletGames/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@98ef8bfec34d/Runtime/Layers/RelayLayer.cs:455)
+        0x00007fff38393f1b (6680e1dee7403c5865ce032e8611083) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>>.Execute(ref Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList> data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at B:/FrogletGames/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007fff38393d6d (6680e1dee7403c5865ce032e8611083) 8de023688c1b71ddd3534988b741c831
+        0x00007ffec6d533a6 (Unity) ExecuteJob
+        0x00007ffec6d5445d (Unity) ForwardJobToManaged
+        ...
+[23:21:17.098] [PlayMode] Error: Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.OnTransportFailure to be notified of such events programmatically.
+        0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec667587f (Unity) DebugStringToFile
+        0x00007ffec6531b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000020b76d4d39d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000020b76d4d223 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000020b76d4ce3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:21:17.101] [PlayMode] Error: [Netcode] Host is shutting down due to network transport failure of UnityTransport!
+        0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec667587f (Unity) DebugStringToFile
+        0x00007ffec6531b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000020b76d4d39d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000020b76d4d223 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000020b76d4ce3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:30:46.889] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:31:03.160] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:31:10.856] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:31:16.100] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:31:23.473] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:31:31.153] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:31:38.432] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:31:47.006] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:31:56.557] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:32:05.996] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[23:32:10.474] ---- leaving play mode ----
+[23:32:17.249] ---- edit mode restored ----
+[23:57:00.149] ---- domain reload begins (script compilation / play-mode transition) ----
+[23:57:10.559] ---- domain reload complete — session re-adopted ----
+[00:21:35.287] ---- entering play mode ----
+[00:21:38.083] ---- play mode running ----
+[00:30:22.522] ---- leaving play mode ----
+[00:30:27.900] ---- edit mode restored ----
+[01:13:51.677] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:13:55.230] ---- domain reload begins (script compilation / play-mode transition) ----
+[01:14:04.091] ---- domain reload complete — session re-adopted ----
+[01:16:35.403] ---- entering play mode ----
+[01:16:39.460] ---- play mode running ----
+[01:33:34.906] ---- leaving play mode ----
+[01:33:42.044] ---- edit mode restored ----
+[01:52:43.576] ---- entering play mode ----
+[01:52:45.883] ---- play mode running ----
+[02:04:28.143] ---- leaving play mode ----
+[02:04:34.143] ---- edit mode restored ----
+[02:11:00.178] ---- entering play mode ----
+[02:11:02.492] ---- play mode running ----
+[02:12:04.219] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[02:12:11.170] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[02:12:18.056] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[02:12:27.737] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[02:12:37.392] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[02:12:42.844] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[02:12:49.881] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[02:12:58.388] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[02:13:06.096] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, System.Single cellR, UnityEngine.Vector3 cellCentre, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:74)
+        CosmicShore.Gameplay.SolitonNetwork.Grow (CosmicShore.Gameplay.SolitonTunnelConfigSO cfg, CosmicShore.Gameplay.ISolitonTunnelMaker maker, System.Int32 seq, System.UInt32 seed, System.Single share, UnityEngine.Vector3 a, UnityEngine.Vector3 t0, UnityEngine.Vector3 right, UnityEngine.Vector3 up) (at Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs:64)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.GrowNetworkHere () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:775)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.StepOmni () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:753)
+        CosmicShore.Gameplay.MeerkatSolitonExecutor.Update () (at Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs:284)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[02:13:38.494] ---- leaving play mode ----
+[02:13:43.098] ---- edit mode restored ----
+[02:14:24.859] ---- entering play mode ----
+[02:14:27.084] ---- play mode running ----
+[02:31:03.318] ---- leaving play mode ----
+[02:31:10.375] ---- edit mode restored ----
+[02:31:11.643] [EditMode] Assert: Assertion failed on expression: 'res'
+        0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec667587f (Unity) DebugStringToFile
+        0x00007ffec66753be (Unity)
+        0x00007ffec6f8768a (Unity)
+        0x00007ffec6f89cc7 (Unity)
+        0x00007ffec6f6fd2b (Unity)
+        ...
+[02:31:11.674] [EditMode] Error: Unknown error occurred while loading 'Library/PackageCache/com.unity.render-pipelines.universal@56fb5facb13e/Editor/SceneTemplates/Materials/Black.mat'.
+        0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec667587f (Unity) DebugStringToFile
+        0x00007ffec70bc52f (Unity)
+        0x00007ffec6f7659b (Unity)
+        0x00007ffec6f6fe22 (Unity)
+        0x00007ffec6f6a72f (Unity)
+        ...
+[02:31:11.682] [EditMode] Assert: Assertion failed on expression: 'res'
+        0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec667587f (Unity) DebugStringToFile
+        0x00007ffec66753be (Unity)
+        0x00007ffec6f8768a (Unity)
+        0x00007ffec6f89cc7 (Unity)
+        0x00007ffec6f6fd2b (Unity)
+        ...
+[02:31:11.712] [EditMode] Error: Unknown error occurred while loading 'Library/PackageCache/com.unity.render-pipelines.universal@56fb5facb13e/Editor/SceneTemplates/Indoors/GlobalVolumeProfile.asset'.
+        0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec667587f (Unity) DebugStringToFile
+        0x00007ffec70bc52f (Unity)
+        0x00007ffec6f7659b (Unity)
+        0x00007ffec6f6fe22 (Unity)
+        0x00007ffec6f6a72f (Unity)
+        ...
+[02:31:58.525] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261029-121530543.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:44:26.261] ---- main thread stalled ~794s and RECOVERED — slow, not hung ----
+[03:51:42.825] ---- entering play mode ----
+[03:51:45.515] ---- play mode running ----
+[03:56:22.003] [PlayMode] Error: Could not allocate memory: System out of memory!
+Trying to allocate: 36700160B with 16 alignment. MemoryLabel: ProfilerEditor
+Allocation happened at: Line:156 in C:\build\output\unity\unity\Modules\NativeKernel\Include\NativeKernel\Core\Containers\Allocators.h
+Memory overview
+
+[ ALLOC_MEMORYPROFILER ] used: 42228080B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_TLS ] used: 4096B &s| reserved: 896577492752B 
+[ ALLOC_DEFAULT ] used: 962304688B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_1_FRAME ] used: 0B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_2_FRAMES ] used: 0B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_4_FRAMES (JobTemp) ] used: 6853B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_ASYNC (Background) ] used: 1123B &s| reserved: 896577492752B 
+[ ALLOC_GFX ] used: 366372128B &s| reserved: 896577492752B 
+[ ALLOC_CACHEOBJECTS ] used: 178754540B &s| reserved: 896577492752B 
+[ ALLOC_TYPETREE ] used: 7986024B &s| reserved: 896577492752B 
+[ ALLOC_PROFILER ] used: 169515632B &s| reserved: 896577492752B 
+[ ALLOC_PROFILER_EDITOR ] used: 3695708072B &s| reserved: 896577492752B 
+
+        0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffec667587f (Unity) DebugStringToFile
+        0x00007ffec7ee3c49 (Unity) MemoryManager::OutOfMemoryError
+        0x00007ffec7edc6f8 (Unity) MemoryManager::Allocate
+        0x00007ffec7ee8e5e (Unity) malloc_internal
+        0x00007ffec9035264 (Unity) dynamic_block_array<profiling::HierarchyFrameDataViewItem,131072,core::allocator>::grow
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x0000020ddedf8c63 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:904)
+0x0000020ddedf792b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1157)
+0x0000020d18af2758 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffebfb46c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffebfa88984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffebfa88a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffec6effdd4 (Unity) scripting_method_invoke
+0x00007ffec6f06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffec6e11aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffec6e11bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffec69b308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffec69b9f1a (Unity) BehaviourManager::Update
+0x00007ffec6dcc7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffec6daabef (Unity) ExecutePlayerLoop
+0x00007ffec6daad65 (Unity) ExecutePlayerLoop
+0x00007ffec6dafc0f (Unity) PlayerLoop
+0x00007ffec77256da (Unity) EditorPlayerLoop::Execute
+0x00007ffec773c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffec773e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffec773866d (Unity) Application::TickTimer
+0x00007ffec7519f7c (Unity) MainMessageLoop
+0x00007ffec7521a12 (Unity) UnityMain
+0x00007ff705892f2a (Unity) __scrt_common_main_seh
+0x00007fff96b9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff97bbee4c (ntdll) RtlUserThreadStart
+
+[DiagnosticsHUD] Diagnostic saved: C:\Users\yskha\OneDrive\Documents\CosmicShore Diagnostics\diag_Menu_Main_S2-4min_20261030_035617.json
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD:FinishDiagnostic () (at Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs:1227)
+CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD:SampleRecording (single) (at Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs:1216)
+CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD:Update () (at Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs:808)
+
+(Filename: Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs Line: 1227)
+
+Could not allocate memory: System out of memory!
+Trying to allocate: 36700160B with 16 alignment. MemoryLabel: ProfilerEditor
+Allocation happened at: Line:156 in C:\build\output\unity\unity\Modules\NativeKernel\Include\NativeKernel\Core\Containers\Allocators.h
+Memory overview
+
+[ ALLOC_MEMORYPROFILER ] used: 42228080B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_TLS ] used: 4096B &s| reserved: 896577492752B 
+[ ALLOC_DEFAULT ] used: 962304688B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_1_FRAME ] used: 0B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_2_FRAMES ] used: 0B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_4_FRAMES (JobTemp) ] used: 6853B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_ASYNC (Background) ] used: 1123B &s| reserved: 896577492752B 
+[ ALLOC_GFX ] used: 366372128B &s| reserved: 896577492752B 
+[ ALLOC_CACHEOBJECTS ] used: 178754540B &s| reserved: 896577492752B 
+[ ALLOC_TYPETREE ] used: 7986024B &s| reserved: 896577492752B 
+[ ALLOC_PROFILER ] used: 169515632B &s| reserved: 896577492752B 
+[ ALLOC_PROFILER_EDITOR ] used: 3695708072B &s| reserved: 896577492752B 
+Could not allocate memory: System out of memory!
+Trying to allocate: 36700160B with 16 alignment. MemoryLabel: ProfilerEditor
+Allocation happened at: Line:156 in C:\build\output\unity\unity\Modules\NativeKernel\Include\NativeKernel\Core\Containers\Allocators.h
+Memory overview
+
+[ ALLOC_MEMORYPROFILER ] used: 42228080B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_TLS ] used: 4096B &s| reserved: 896577492752B 
+[ ALLOC_DEFAULT ] used: 962304688B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_1_FRAME ] used: 0B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_2_FRAMES ] used: 0B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_4_FRAMES (JobTemp) ] used: 6853B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_ASYNC (Background) ] used: 1123B &s| reserved: 896577492752B 
+[ ALLOC_GFX ] used: 366372128B &s| reserved: 896577492752B 
+[ ALLOC_CACHEOBJECTS ] used: 178754540B &s| reserved: 896577492752B 
+[ ALLOC_TYPETREE ] used: 7986024B &s| reserved: 896577492752B 
+[ ALLOC_PROFILER ] used: 169515632B &s| reserved: 896577492752B 
+[ ALLOC_PROFILER_EDITOR ] used: 3695708072B &s| reserved: 896577492752B 
+0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+0x00007ffec667587f (Unity) DebugStringToFile
+0x00007ffec7ee3c49 (Unity) MemoryManager::OutOfMemoryError
+0x00007ffec7edc6f8 (Unity) MemoryManager::Allocate
+0x00007ffec7ee8e5e (Unity) malloc_internal
+0x00007ffec9035264 (Unity) dynamic_block_array<profiling::HierarchyFrameDataViewItem,131072,core::allocator>::grow
+0x00007ffec901b691 (Unity) dynamic_block_array<profiling::HierarchyFrameDataViewItem,131072,core::allocator>::emplace_back<MemLabelId const & __ptr64,unsigned __int64>
+0x00007ffec902fbf4 (Unity) profiling::HierarchyFrameDataView::Internal_Create
+0x00007ffec71dead2 (Unity) HierarchyFrameDataView_CUSTOM_Internal_Create
+0x0000020e29b89fba (Mono JIT Code) (wrapper managed-to-native) UnityEditor.Profiling.HierarchyFrameDataView:Internal_Create (int,int,UnityEditor.Profiling.HierarchyFrameDataView/ViewModes,int,bool)
+0x0000020e29b89ee3 (Mono JIT Code) UnityEditor.Profiling.HierarchyFrameDataView:.ctor (int,int,UnityEditor.Profiling.HierarchyFrameDataView/ViewModes,int,bool)
+0x0000020e29b89e4b (Mono JIT Code) UnityEditorInternal.ProfilerDriver:GetHierarchyFrameDataView (int,int,UnityEditor.Profiling.HierarchyFrameDataView/ViewModes,int,bool)
+0x0000020e29b89d9b (Mono JIT Code) CosmicShore.Utility.PerformanceBenchmark.ProfilerFrameReader:Open (int,int) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PerformanceBenchmark/ProfilerFrameReader.cs:53)
+0x0000020e29b89a8b (Mono JIT Code) CosmicShore.Utility.PerformanceBenchmark.ProfilerFrameReader:ReadMainThread (int,CosmicShore.Utility.PerformanceBenchmark.ProfilerCapture/Accumulator) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PerformanceBenchmark/ProfilerFrameReader.cs:65)
+0x0000020e29b5c623 (Mono JIT Code) CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD/<RunProf>d__139:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs:667)
+0x0000020bc429eb60 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x0000020bc429ec8f (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007ffebfb46c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffebfa88984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffebfa88a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffec6effdd4 (Unity) scripting_method_invoke
+0x00007ffec6f06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffec6df483b (Unity) Coroutine::Run
+0x00007ffec6df26a2 (Unity) Coroutine::ContinueCoroutine
+0x00007ffec69ba0f8 (Unity) DelayedCallManager::Update
+0x00007ffec6dcc86b (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007ffec6daabef (Unity) ExecutePlayerLoop
+0x00007ffec6daad65 (Unity) ExecutePlayerLoop
+0x00007ffec6dafc0f (Unity) PlayerLoop
+0x00007ffec77256da (Unity) EditorPlayerLoop::Execute
+0x00007ffec773c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffec773e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffec773866d (Unity) Application::TickTimer
+0x00007ffec7519f7c (Unity) MainMessageLoop
+0x00007ffec7521a12 (Unity) UnityMain
+0x00007ff705892f2a (Unity) __scrt_common_main_seh
+0x00007fff96b9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff97bbee4c (ntdll) RtlUserThreadStart
+
+
+# Fatal Error!
+
+Could not allocate memory: System out of memory!
+Trying to allocate: 36700160B with 16 alignment. MemoryLabel: ProfilerEditor
+Allocation happened at: Line:156 in C:\build\output\unity\unity\Modules\NativeKernel\Include\NativeKernel\Core\Containers\Allocators.h
+Memory overview
+
+[ ALLOC_MEMORYPROFILER ] used: 42228080B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_TLS ] used: 4096B &s| reserved: 896577492752B 
+[ ALLOC_DEFAULT ] used: 962304688B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_1_FRAME ] used: 0B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_2_FRAMES ] used: 0B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_4_FRAMES (JobTemp) ] used: 6853B &s| reserved: 896577492752B 
+[ ALLOC_TEMP_JOB_ASYNC (Background) ] used: 1123B &s| reserved: 896577492752B 
+[ ALLOC_GFX ] used: 366372128B &s| reserved: 896577492752B 
+[ ALLOC_CACHEOBJECTS ] used: 178754540B &s| reserved: 896577492752B 
+[ ALLOC_TYPETREE ] used: 7986024B &s| reserved: 896577492752B 
+[ ALLOC_PROFILER ] used: 169515632B &s| reserved: 896577492752B 
+[ ALLOC_PROFILER_EDITOR ] used: 3695708072B &s| reserved: 896577492752B 
+
+0x00007ffec66c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffec7eff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffec7effbee (Unity) Stacktrace::GetStacktrace
+0x00007ffec667587f (Unity) DebugStringToFile
+0x00007ffec7ee3c49 (Unity) MemoryManager::OutOfMemoryError
+0x00007ffec7edc6f8 (Unity) MemoryManager::Allocate
+0x00007ffec7ee8e5e (Unity) malloc_internal
+0x00007ffec9035264 (Unity) dynamic_block_array<profiling::HierarchyFrameDataViewItem,131072,core::allocator>::grow
+0x00007ffec901b691 (Unity) dynamic_block_array<profiling::HierarchyFrameDataViewItem,131072,core::allocator>::emplace_back<MemLabelId const & __ptr64,unsigned __int64>
+0x00007ffec902fbf4 (Unity) profiling::HierarchyFrameDataView::Internal_Create
+0x00007ffec71dead2 (Unity) HierarchyFrameDataView_CUSTOM_Internal_Create
+0x0000020e29b89fba (Mono JIT Code) (wrapper managed-to-native) UnityEditor.Profiling.HierarchyFrameDataView:Internal_Create (int,int,UnityEditor.Profiling.HierarchyFrameDataView/ViewModes,int,bool)
+0x0000020e29b89ee3 (Mono JIT Code) UnityEditor.Profiling.HierarchyFrameDataView:.ctor (int,int,UnityEditor.Profiling.HierarchyFrameDataView/ViewModes,int,bool)
+0x0000020e29b89e4b (Mono JIT Code) UnityEditorInternal.ProfilerDriver:GetHierarchyFrameDataView (int,int,UnityEditor.Profiling.HierarchyFrameDataView/ViewModes,int,bool)
+0x0000020e29b89d9b (Mono JIT Code) CosmicShore.Utility.PerformanceBenchmark.ProfilerFrameReader:Open (int,int) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PerformanceBenchmark/ProfilerFrameReader.cs:53)
+0x0000020e29b89a8b (Mono JIT Code) CosmicShore.Utility.PerformanceBenchmark.ProfilerFrameReader:ReadMainThread (int,CosmicShore.Utility.PerformanceBenchmark.ProfilerCapture/Accumulator) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PerformanceBenchmark/ProfilerFrameReader.cs:65)
+0x0000020e29b5c623 (Mono JIT Code) CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD/<RunProf>d__139:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs:667)
+0x0000020bc429eb60 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x0000020bc429ec8f (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007ffebfb46c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffebfa88984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffebfa88a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffec6effdd4 (Unity) scripting_method_invoke
+0x00007ffec6f06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffec6df483b (Unity) Coroutine::Run
+0x00007ffec6df26a2 (Unity) Coroutine::ContinueCoroutine
+0x00007ffec69ba0f8 (Unity) DelayedCallManager::Update
+0x00007ffec6dcc86b (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007ffec6daabef (Unity) ExecutePlayerLoop
+0x00007ffec6daad65 (Unity) ExecutePlayerLoop
+0x00007ffec6dafc0f (Unity) PlayerLoop
+0x00007ffec77256da (Unity) EditorPlayerLoop::Execute
+0x00007ffec773c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffec773e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffec773866d (Unity) Application::TickTimer
+0x00007ffec7519f7c (Unity) MainMessageLoop
+0x00007ffec7521a12 (Unity) UnityMain
+0x00007ff705892f2a (Unity) __scrt_common_main_seh
+0x00007fff96b9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff97bbee4c (ntdll) RtlUserThreadStart
+
+
+| Quit |
+
+Crash!!!
+SymInit: Symbol-SearchPath: '.;B:\FrogletGames\Cosmic-Shore;B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT;C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor;C:\WINDOWS;C:\WINDOWS\system32;', symOptions: 534, UserName: 'yskha'
+OS-Version: 10.0.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity.exe:Unity.exe (00007FF705890000), size: 290816 (result: 0), SymType: 'PDB', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity_exe_x64.pdb', fileVersion: 6000.3.17.850
+C:\WINDOWS\SYSTEM32\ntdll.dll:ntdll.dll (00007FFF97B40000), size: 2523136 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\ntdll.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\KERNEL32.DLL:KERNEL32.DLL (00007FFF96B70000), size: 831488 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\KERNEL32.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\KERNELBASE.dll:KERNELBASE.dll (00007FFF95030000), size: 4198400 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\KERNELBASE.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\USER32.dll:USER32.dll (00007FFF97600000), size: 1929216 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\USER32.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\win32u.dll:win32u.dll (00007FFF95000000), size: 159744 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\win32u.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\GDI32.dll:GDI32.dll (00007FFF96490000), size: 176128 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\GDI32.dll', fileVersion: 10.0.26100.8328
+C:\WINDOWS\System32\gdi32full.dll:gdi32full.dll (00007FFF95720000), size: 1220608 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\gdi32full.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\msvcp_win.dll:msvcp_win.dll (00007FFF94D30000), size: 667648 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\msvcp_win.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\ucrtbase.dll:ucrtbase.dll (00007FFF955C0000), size: 1359872 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\ucrtbase.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\IMM32.DLL:IMM32.DLL (00007FFF963A0000), size: 200704 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\IMM32.DLL', fileVersion: 10.0.26100.9278
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity.dll:Unity.dll (00007FFEC5F10000), size: 92164096 (result: 0), SymType: 'PDB', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity_x64.pdb', fileVersion: 6000.3.17.850
+C:\WINDOWS\System32\CRYPT32.dll:CRYPT32.dll (00007FFF94DE0000), size: 1568768 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\CRYPT32.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\ADVAPI32.dll:ADVAPI32.dll (00007FFF97910000), size: 770048 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\ADVAPI32.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\msvcrt.dll:msvcrt.dll (00007FFF96CD0000), size: 692224 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\msvcrt.dll', fileVersion: 7.0.26100.9711
+C:\WINDOWS\System32\sechost.dll:sechost.dll (00007FFF963E0000), size: 688128 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\sechost.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\etccompress.dll:etccompress.dll (00007FFF03FF0000), size: 5070848 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\etccompress.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\s3tcompress.dll:s3tcompress.dll (00007FFF90C40000), size: 180224 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\s3tcompress.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\libfbxsdk.dll:libfbxsdk.dll (00007FFF044D0000), size: 8019968 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\libfbxsdk.dll', fileVersion: 2020.3.7.0
+C:\WINDOWS\System32\RPCRT4.dll:RPCRT4.dll (00007FFF979E0000), size: 1146880 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\RPCRT4.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\ispc_texcomp.dll:ispc_texcomp.dll (00007FFF03E30000), size: 1826816 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\ispc_texcomp.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\FreeImage.dll:FreeImage.dll (0000000180000000), size: 5332992 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\FreeImage.dll', fileVersion: 3.18.0.0
+C:\WINDOWS\System32\ole32.dll:ole32.dll (00007FFF969D0000), size: 1679360 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\ole32.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\WS2_32.dll:WS2_32.dll (00007FFF974D0000), size: 528384 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\WS2_32.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\combase.dll:combase.dll (00007FFF96010000), size: 3715072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\combase.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\WinPixEventRuntime.dll:WinPixEventRuntime.dll (00007FFF6AF40000), size: 57344 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\WinPixEventRuntime.dll', fileVersion: 1.0.2403.8001
+C:\WINDOWS\System32\SETUPAPI.dll:SETUPAPI.dll (00007FFF96FF0000), size: 4747264 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SETUPAPI.dll', fileVersion: 10.0.26100.9549
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\compress_bc7e.dll:compress_bc7e.dll (00007FFF03CD0000), size: 1433600 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\compress_bc7e.dll'
+C:\WINDOWS\System32\SHELL32.dll:SHELL32.dll (00007FFF95860000), size: 7979008 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SHELL32.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\umbraoptimizer64.dll:umbraoptimizer64.dll (00007FFF03BA0000), size: 1187840 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\umbraoptimizer64.dll'
+C:\WINDOWS\System32\SHLWAPI.dll:SHLWAPI.dll (00007FFF96E60000), size: 417792 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SHLWAPI.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\OLEAUT32.dll:OLEAUT32.dll (00007FFF968F0000), size: 888832 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\OLEAUT32.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\MSVCP140.dll:MSVCP140.dll (00007FFF78F80000), size: 643072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSVCP140.dll', fileVersion: 14.51.36247.0
+C:\WINDOWS\System32\WINTRUST.dll:WINTRUST.dll (00007FFF94F70000), size: 532480 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\WINTRUST.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\VCRUNTIME140.dll:VCRUNTIME140.dll (00007FFF78F50000), size: 180224 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\VCRUNTIME140.dll', fileVersion: 14.51.36247.0
+C:\WINDOWS\SYSTEM32\VCRUNTIME140_1.dll:VCRUNTIME140_1.dll (00007FFF78F40000), size: 49152 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\VCRUNTIME140_1.dll', fileVersion: 14.51.36247.0
+C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.9711_none_3e07b8b0e334e825\COMCTL32.dll:COMCTL32.dll (00007FFF75700000), size: 2691072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.9711_none_3e07b8b0e334e825\COMCTL32.dll', fileVersion: 6.10.26100.9711
+C:\WINDOWS\SYSTEM32\bcrypt.dll:bcrypt.dll (00007FFF94C10000), size: 172032 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\bcrypt.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\d3d12.dll:d3d12.dll (00007FFF0B840000), size: 143360 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\d3d12.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\d3d11.dll:d3d11.dll (00007FFF92360000), size: 2486272 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\d3d11.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\dwmapi.dll:dwmapi.dll (00007FFF90FB0000), size: 188416 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dwmapi.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\dxgi.dll:dxgi.dll (00007FFF925D0000), size: 1290240 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dxgi.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\HID.DLL:HID.DLL (00007FFF93010000), size: 61440 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\HID.DLL', fileVersion: 10.0.26100.1150
+C:\WINDOWS\SYSTEM32\IPHLPAPI.DLL:IPHLPAPI.DLL (00007FFF93340000), size: 208896 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\IPHLPAPI.DLL', fileVersion: 10.0.26100.9278
+C:\WINDOWS\SYSTEM32\WINHTTP.dll:WINHTTP.dll (00007FFF8D470000), size: 1220608 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WINHTTP.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\WINMM.dll:WINMM.dll (00007FFF844A0000), size: 225280 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WINMM.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\OPENGL32.dll:OPENGL32.dll (00007FFF03A80000), size: 1097728 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\OPENGL32.dll', fileVersion: 10.0.26100.9278
+C:\WINDOWS\SYSTEM32\GLU32.dll:GLU32.dll (00007FFF0B710000), size: 233472 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\GLU32.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\VERSION.dll:VERSION.dll (00007FFF8DD70000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\VERSION.dll', fileVersion: 10.0.26100.1150
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NativeProxyHelper.dll:NativeProxyHelper.dll (00007FFF03020000), size: 1789952 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NativeProxyHelper.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpAPI.dll:SketchUpAPI.dll (00007FFF031E0000), size: 8990720 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpAPI.dll', fileVersion: 23.0.0.0
+C:\WINDOWS\SYSTEM32\WSOCK32.dll:WSOCK32.dll (00007FFF78F00000), size: 40960 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WSOCK32.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\SYSTEM32\powrprof.dll:powrprof.dll (00007FFF949C0000), size: 385024 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\powrprof.dll', fileVersion: 10.0.26100.3912
+C:\WINDOWS\SYSTEM32\dxcore.dll:dxcore.dll (00007FFF91510000), size: 278528 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dxcore.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\Secur32.dll:Secur32.dll (00007FFF90E30000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Secur32.dll', fileVersion: 10.0.26100.7705
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpCommonPreferences.dll:SketchUpCommonPreferences.dll (00007FFF02FA0000), size: 499712 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpCommonPreferences.dll', fileVersion: 23.0.0.0
+C:\WINDOWS\SYSTEM32\SSPICLI.DLL:SSPICLI.DLL (00007FFF93C50000), size: 303104 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\SSPICLI.DLL', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL.dll:OpenRL.dll (00000208AAC60000), size: 12779520 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL.dll', fileVersion: 1.5.0.2907
+C:\WINDOWS\SYSTEM32\cfgmgr32.DLL:cfgmgr32.DLL (00007FFF94930000), size: 335872 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\cfgmgr32.DLL', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\MSVCR100.dll:MSVCR100.dll (00000000712F0000), size: 860160 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSVCR100.dll', fileVersion: 10.0.40219.325
+C:\WINDOWS\SYSTEM32\MSVCP100.dll:MSVCP100.dll (0000000071250000), size: 622592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSVCP100.dll', fileVersion: 10.0.40219.325
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\embree.dll:embree.dll (00007FFF01EE0000), size: 16711680 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\embree.dll', fileVersion: 2.14.0.0
+C:\WINDOWS\SYSTEM32\MSWSOCK.DLL:MSWSOCK.DLL (00007FFF93F30000), size: 442368 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSWSOCK.DLL', fileVersion: 10.0.26100.9549
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\tbb.dll:tbb.dll (00007FFF02F50000), size: 303104 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\tbb.dll', fileVersion: 2020.3.2022.1111
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL_pthread.dll:OpenRL_pthread.dll (00000208A9670000), size: 61440 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL_pthread.dll', fileVersion: 2.9.0.0
+C:\WINDOWS\SYSTEM32\UMPDC.dll:UMPDC.dll (00007FFF948D0000), size: 86016 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\UMPDC.dll', fileVersion: 10.0.26100.8972
+C:\WINDOWS\SYSTEM32\MSASN1.dll:MSASN1.dll (00007FFF943E0000), size: 77824 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSASN1.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\bcryptprimitives.dll:bcryptprimitives.dll (00007FFF95500000), size: 704512 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\bcryptprimitives.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\kernel.appcore.dll:kernel.appcore.dll (00007FFF93990000), size: 110592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\kernel.appcore.dll', fileVersion: 10.0.26100.9278
+C:\WINDOWS\system32\uxtheme.dll:uxtheme.dll (00007FFF90EB0000), size: 684032 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\uxtheme.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\windows.storage.dll:windows.storage.dll (00007FFF92750000), size: 9101312 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\windows.storage.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\SHCORE.dll:SHCORE.dll (00007FFF96EF0000), size: 1019904 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SHCORE.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\profapi.dll:profapi.dll (00007FFF94C40000), size: 167936 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\SYSTEM32\profapi.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\clbcatq.dll:clbcatq.dll (00007FFF96D90000), size: 716800 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\clbcatq.dll', fileVersion: 2001.12.10941.16384
+C:\WINDOWS\system32\wbem\wbemprox.dll:wbemprox.dll (00007FFF78B80000), size: 73728 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wbem\wbemprox.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\wbemcomn.dll:wbemcomn.dll (00007FFF78AF0000), size: 548864 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\wbemcomn.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\CRYPTSP.dll:CRYPTSP.dll (00007FFF94370000), size: 110592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CRYPTSP.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\IconCodecService.dll:IconCodecService.dll (00007FFF83730000), size: 45056 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\system32\IconCodecService.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\system32\rsaenh.dll:rsaenh.dll (00007FFF938F0000), size: 233472 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\rsaenh.dll', fileVersion: 10.0.26100.7705
+C:\WINDOWS\SYSTEM32\WindowsCodecs.dll:WindowsCodecs.dll (00007FFF8FB40000), size: 2326528 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WindowsCodecs.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\CRYPTBASE.dll:CRYPTBASE.dll (00007FFF94190000), size: 49152 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CRYPTBASE.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\imagehlp.dll:imagehlp.dll (00007FFF977E0000), size: 131072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\imagehlp.dll', fileVersion: 10.0.26100.4202
+C:\WINDOWS\System32\netprofm.dll:netprofm.dll (00007FFF8F3E0000), size: 450560 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\netprofm.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\wbem\wbemsvc.dll:wbemsvc.dll (00007FFF76230000), size: 86016 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wbem\wbemsvc.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\npmproxy.dll:npmproxy.dll (00007FFF8BD70000), size: 102400 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\npmproxy.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\wbem\fastprox.dll:fastprox.dll (00007FFF762C0000), size: 1007616 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wbem\fastprox.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\amsi.dll:amsi.dll (00007FFF794E0000), size: 118784 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\amsi.dll', fileVersion: 10.0.26100.7309
+C:\WINDOWS\SYSTEM32\USERENV.dll:USERENV.dll (00007FFF93FE0000), size: 212992 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\USERENV.dll', fileVersion: 10.0.26100.9549
+C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26100.4-0\MpOav.dll:MpOav.dll (00007FFF79430000), size: 675840 (result: 0), SymType: '-exported-', PDB: 'C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26100.4-0\MpOav.dll', fileVersion: 4.18.26100.4
+C:\WINDOWS\SYSTEM32\gpapi.dll:gpapi.dll (00007FFF93FB0000), size: 151552 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\gpapi.dll', fileVersion: 10.0.26100.9549
+C:\Windows\System32\cryptnet.dll:cryptnet.dll (00007FFF8D7E0000), size: 241664 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\cryptnet.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\WINNSI.DLL:WINNSI.DLL (00007FFF8F800000), size: 57344 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WINNSI.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\NSI.dll:NSI.dll (00007FFF96E50000), size: 40960 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\NSI.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\dhcpcsvc6.DLL:dhcpcsvc6.DLL (00007FFF8D440000), size: 122880 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dhcpcsvc6.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\dhcpcsvc.DLL:dhcpcsvc.DLL (00007FFF8D410000), size: 151552 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dhcpcsvc.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\DNSAPI.dll:DNSAPI.dll (00007FFF93430000), size: 1409024 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DNSAPI.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\DSPARSE.dll:DSPARSE.dll (00007FFF93D30000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DSPARSE.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\system32\napinsp.dll:napinsp.dll (00007FFF51E90000), size: 98304 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\napinsp.dll', fileVersion: 10.0.26100.1150
+C:\WINDOWS\System32\winrnr.dll:winrnr.dll (00007FFF51E70000), size: 77824 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\winrnr.dll', fileVersion: 10.0.26100.9278
+C:\WINDOWS\system32\nlansp_c.dll:nlansp_c.dll (00007FFF51E40000), size: 159744 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\nlansp_c.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\system32\wshbth.dll:wshbth.dll (00007FFF6E960000), size: 90112 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wshbth.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\fwpuclnt.dll:fwpuclnt.dll (00007FFF8C950000), size: 548864 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\fwpuclnt.dll', fileVersion: 10.0.26100.9711
+C:\Windows\System32\rasadhlp.dll:rasadhlp.dll (00007FFF7D210000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\rasadhlp.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\AMDUnityPlugin.DLL:AMDUnityPlugin.DLL (00007FFF01670000), size: 8843264 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\AMDUnityPlugin.DLL'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NVUnityPlugin.DLL:NVUnityPlugin.DLL (00007FFF014D0000), size: 1646592 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NVUnityPlugin.DLL'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\Tools\astcenc-avx2.dll:astcenc-avx2.dll (00007FFF02EF0000), size: 352256 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\Tools\astcenc-avx2.dll'
+C:\WINDOWS\System32\MSCTF.dll:MSCTF.dll (00007FFF964C0000), size: 1425408 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\MSCTF.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\TextShaping.dll:TextShaping.dll (00007FFF53EA0000), size: 1040384 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\TextShaping.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\textinputframework.dll:textinputframework.dll (00007FFF41660000), size: 1335296 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\textinputframework.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\CoreMessaging.dll:CoreMessaging.dll (00007FFF90970000), size: 1220608 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CoreMessaging.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\CoreUIComponents.dll:CoreUIComponents.dll (00007FFF8ECA0000), size: 3035136 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CoreUIComponents.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\wintypes.dll:wintypes.dll (00007FFF8EB30000), size: 1482752 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\wintypes.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\Oleacc.dll:Oleacc.dll (00007FFF6E670000), size: 479232 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\Oleacc.dll', fileVersion: 7.2.26100.9549
+C:\WINDOWS\system32\explorerframe.dll:explorerframe.dll (00007FFF34280000), size: 3289088 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\explorerframe.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\mfplat.dll:mfplat.dll (00007FFF8DAD0000), size: 2256896 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\mfplat.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\RTWorkQ.DLL:RTWorkQ.DLL (00007FFF8DA70000), size: 241664 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\RTWorkQ.DLL', fileVersion: 10.0.26100.8972
+C:\WINDOWS\SYSTEM32\mfreadwrite.dll:mfreadwrite.dll (00007FFEEF490000), size: 872448 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\mfreadwrite.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\Mf.dll:Mf.dll (00007FFF8E7A0000), size: 622592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Mf.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\MFCORE.DLL:MFCORE.DLL (00007FFF8E2E0000), size: 4304896 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MFCORE.DLL', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\CompPkgSup.DLL:CompPkgSup.DLL (00007FFF7DBC0000), size: 204800 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CompPkgSup.DLL', fileVersion: 10.0.26100.8521
+C:\Windows\System32\Windows.Media.dll:Windows.Media.dll (00007FFF3F3E0000), size: 6922240 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.Media.dll', fileVersion: 10.0.26100.9549
+C:\Windows\System32\Windows.ApplicationModel.dll:Windows.ApplicationModel.dll (00007FFF6BBB0000), size: 880640 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.ApplicationModel.dll', fileVersion: 10.0.26100.9549
+C:\Windows\System32\Windows.StateRepositoryPS.dll:Windows.StateRepositoryPS.dll (00007FFF6F4A0000), size: 802816 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.StateRepositoryPS.dll', fileVersion: 10.0.26100.9711
+C:\Windows\System32\AppXDeploymentClient.dll:AppXDeploymentClient.dll (00007FFF8D270000), size: 1515520 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\AppXDeploymentClient.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\windows.staterepositoryclient.dll:windows.staterepositoryclient.dll (00007FFF6FF70000), size: 286720 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\windows.staterepositoryclient.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\SYSTEM32\windows.staterepositorycore.dll:windows.staterepositorycore.dll (00007FFF72A10000), size: 122880 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\windows.staterepositorycore.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\MMDevApi.dll:MMDevApi.dll (00007FFF84880000), size: 679936 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\MMDevApi.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\DEVOBJ.dll:DEVOBJ.dll (00007FFF948F0000), size: 192512 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DEVOBJ.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\AUDIOSES.DLL:AUDIOSES.DLL (00007FFF83870000), size: 1810432 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\AUDIOSES.DLL', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\resourcepolicyclient.dll:resourcepolicyclient.dll (00007FFF91340000), size: 81920 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\resourcepolicyclient.dll', fileVersion: 10.0.26100.8115
+C:\WINDOWS\SYSTEM32\directxdatabasehelper.dll:directxdatabasehelper.dll (00007FFF8F460000), size: 389120 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\SYSTEM32\directxdatabasehelper.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\D3D12\D3D12Core.dll:D3D12Core.dll (00007FFECDCE0000), size: 4780032 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\D3D12\D3D12Core.dll', fileVersion: 1.618.1.0
+C:\WINDOWS\SYSTEM32\wldp.dll:wldp.dll (00007FFF94250000), size: 528384 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\wldp.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\drvstore.dll:drvstore.dll (00007FFF8D5A0000), size: 1548288 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\drvstore.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\system32\nvspcap64.dll:nvspcap64.dll (00007FFF3F1E0000), size: 1495040 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\nvspcap64.dll', fileVersion: 11.0.9.251
+C:\WINDOWS\SYSTEM32\ntmarta.dll:ntmarta.dll (00007FFF93AC0000), size: 221184 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\ntmarta.dll', fileVersion: 10.0.26100.7019
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\nvppex.dll:nvppex.dll (00007FFF5EAF0000), size: 7499776 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\nvppex.dll', fileVersion: 32.0.16.1742
+C:\WINDOWS\SYSTEM32\D3DSCache.dll:D3DSCache.dll (00007FFECDA80000), size: 913408 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\D3DSCache.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\nvldumdx.dll:nvldumdx.dll (00007FFF8DD80000), size: 843776 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\nvldumdx.dll', fileVersion: 32.0.16.1742
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\nvgpucomp64.dll:nvgpucomp64.dll (00007FFF850E0000), size: 110788608 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\nvgpucomp64.dll', fileVersion: 32.0.16.1742
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\Display.NvContainer\NvMessageBus.dll:NvMessageBus.dll (00007FFF79BF0000), size: 3555328 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\Display.NvContainer\NvMessageBus.dll', fileVersion: 3.22.3719.8856
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\NvMemMapStoragex.dll:NvMemMapStoragex.dll (00007FFF83D60000), size: 1421312 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\NvMemMapStoragex.dll'
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\nvwgf2umx.dll:nvwgf2umx.dll (00007FFF7DD00000), size: 90284032 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_feedb8c0271ca811\nvwgf2umx.dll', fileVersion: 32.0.16.1742
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\DirectML.dll:DirectML.dll (00007FFEC1BE0000), size: 14061568 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\DirectML.dll', fileVersion: 1.13.1.0
+C:\WINDOWS\SYSTEM32\DXGIDebug.dll:DXGIDebug.dll (00007FFECDCB0000), size: 151552 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DXGIDebug.dll', fileVersion: 10.0.26100.1882
+C:\WINDOWS\SYSTEM32\d3d11on12.dll:d3d11on12.dll (00007FFECDC00000), size: 692224 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\d3d11on12.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\opencl.dll:opencl.dll (00007FFECDB70000), size: 540672 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\opencl.dll', fileVersion: 3.0.6.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\radeonrays.dll:radeonrays.dll (00007FFECDA20000), size: 344064 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\radeonrays.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\MonoBleedingEdge\EmbedRuntime\mono-2.0-bdwgc.dll:mono-2.0-bdwgc.dll (00007FFEBF8C0000), size: 10756096 (result: 0), SymType: 'PDB', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\mono-2.0-bdwgc.pdb'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\PlaybackEngines\iOSSupport\x64\UnityEditor.iOS.Native.dll:UnityEditor.iOS.Native.dll (00007FFEBC1D0000), size: 303104 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\PlaybackEngines\iOSSupport\x64\UnityEditor.iOS.Native.dll'
+B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\MonoDebuggerHandling.dll:MonoDebuggerHandling.dll (00007FFF6FE90000), size: 368640 (result: 0), SymType: '-exported-', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\MonoDebuggerHandling.dll'
+B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.dt.app-ui@8ac7e730dd5d\Runtime\Core\Platform\Windows\Plugins\x64\AppUINativePlugin.dll:AppUINativePlugin.dll (00007FFF8F650000), size: 61440 (result: 0), SymType: '-exported-', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.dt.app-ui@8ac7e730dd5d\Runtime\Core\Platform\Windows\Plugins\x64\AppUINativePlugin.dll'
+C:\Windows\System32\Windows.UI.dll:Windows.UI.dll (00007FFF6FB90000), size: 1421312 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.UI.dll', fileVersion: 10.0.26100.9549
+C:\Windows\System32\Windows.UI.Immersive.dll:Windows.UI.Immersive.dll (00007FFF52B10000), size: 1384448 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.UI.Immersive.dll', fileVersion: 10.0.26100.9711
+C:\Windows\System32\twinapi.appcore.dll:twinapi.appcore.dll (00007FFF8C590000), size: 2428928 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\twinapi.appcore.dll', fileVersion: 10.0.26100.9711
+B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\burst-llvm-19.dll:burst-llvm-19.dll (00007FFEB0370000), size: 59863040 (result: 0), SymType: '-exported-', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\burst-llvm-19.dll'
+C:\WINDOWS\SYSTEM32\DbgHelp.dll:DbgHelp.dll (00007FFF91F70000), size: 2408448 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DbgHelp.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\dbgcore.DLL:dbgcore.DLL (00007FFF6F220000), size: 241664 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dbgcore.DLL', fileVersion: 10.0.26100.9549
+C:\WINDOWS\system32\apphelp.dll:apphelp.dll (00007FFF90D80000), size: 651264 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\apphelp.dll', fileVersion: 10.0.26100.9711
+B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\VivoxNative.dll:VivoxNative.dll (00007FFEBE070000), size: 757760 (result: 0), SymType: '-exported-', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\VivoxNative.dll'
+B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\vivoxsdk.dll:vivoxsdk.dll (00007FFEAE150000), size: 16936960 (result: 0), SymType: '-exported-', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\vivoxsdk.dll', fileVersion: 5.28.0.34030
+C:\WINDOWS\SYSTEM32\SensApi.dll:SensApi.dll (00007FFF6FCF0000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\SensApi.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\system32\dataexchange.dll:dataexchange.dll (00007FFF42EB0000), size: 376832 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\dataexchange.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\dcomp.dll:dcomp.dll (00007FFF90230000), size: 2260992 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dcomp.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\Microsoft.Internal.WarpPal.dll:Microsoft.Internal.WarpPal.dll (00007FFF8FD80000), size: 106496 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Microsoft.Internal.WarpPal.dll'
+C:\Windows\System32\Windows.Gaming.Input.dll:Windows.Gaming.Input.dll (00007FFF8C7F0000), size: 888832 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.Gaming.Input.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\inputhost.dll:inputhost.dll (00007FFF6F260000), size: 1990656 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\inputhost.dll', fileVersion: 10.0.26100.9711
+C:\Windows\System32\Windows.System.UserDeviceAssociation.dll:Windows.System.UserDeviceAssociation.dll (00007FFF8BAD0000), size: 114688 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.System.UserDeviceAssociation.dll', fileVersion: 10.0.26100.8115
+C:\Windows\System32\usermgrproxy.dll:usermgrproxy.dll (00007FFF8C8D0000), size: 450560 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\usermgrproxy.dll', fileVersion: 10.0.26100.9549
+C:\WINDOWS\SYSTEM32\PROPSYS.dll:PROPSYS.dll (00007FFF8F870000), size: 1003520 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\PROPSYS.dll', fileVersion: 7.0.26100.9549
+C:\Windows\System32\Windows.FileExplorer.Common.dll:Windows.FileExplorer.Common.dll (00007FFF6AD00000), size: 794624 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.FileExplorer.Common.dll', fileVersion: 10.0.26100.9549
+C:\Windows\System32\urlmon.dll:urlmon.dll (00007FFF779E0000), size: 1957888 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\urlmon.dll', fileVersion: 11.0.26100.9711
+C:\Windows\System32\iertutil.dll:iertutil.dll (00007FFF775E0000), size: 2899968 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\iertutil.dll', fileVersion: 11.0.26100.9549
+C:\Windows\System32\netutils.dll:netutils.dll (00007FFF932E0000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\netutils.dll', fileVersion: 10.0.26100.1882
+C:\Windows\System32\srvcli.dll:srvcli.dll (00007FFF775B0000), size: 167936 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\srvcli.dll', fileVersion: 10.0.26100.1150
+C:\WINDOWS\SYSTEM32\virtdisk.dll:virtdisk.dll (00007FFF73A00000), size: 94208 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\virtdisk.dll', fileVersion: 10.0.26100.9278
+C:\WINDOWS\SYSTEM32\edputil.dll:edputil.dll (00007FFF6E930000), size: 167936 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\edputil.dll', fileVersion: 10.0.26100.9278
+C:\Windows\System32\cldapi.dll:cldapi.dll (00007FFF522B0000), size: 196608 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\cldapi.dll', fileVersion: 10.0.26100.9278
+B:\FrogletGames\Cosmic-Shore\Assets\Plugins\FMOD\platforms\win\lib\x86_64\fmodstudioL.dll:fmodstudioL.dll (00007FFEB54D0000), size: 4661248 (result: 0), SymType: '-exported-', PDB: 'B:\FrogletGames\Cosmic-Shore\Assets\Plugins\FMOD\platforms\win\lib\x86_64\fmodstudioL.dll', fileVersion: 0.2.3.13
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\d67babe68fda1403d99aa7ca6f1842dc.dll:d67babe68fda1403d99aa7ca6f1842dc.dll (00007FFF76E20000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\d67babe68fda1403d99aa7ca6f1842dc.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\949f39b73a9738f224b36f61947cee75.dll:949f39b73a9738f224b36f61947cee75.dll (00007FFF76E10000), size: 24576 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\949f39b73a9738f224b36f61947cee75.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\184f693bc71c9890084dcdd7000fc089.dll:184f693bc71c9890084dcdd7000fc089.dll (00007FFF72FD0000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\184f693bc71c9890084dcdd7000fc089.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\88dfbceb81fbc3882c076017ad1d7efc.dll:88dfbceb81fbc3882c076017ad1d7efc.dll (00007FFF72FC0000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\88dfbceb81fbc3882c076017ad1d7efc.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\3a3a849432c39ec6907a81b5f575aa8c.dll:3a3a849432c39ec6907a81b5f575aa8c.dll (00007FFF72FB0000), size: 49152 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\3a3a849432c39ec6907a81b5f575aa8c.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\febebcd614fee6f5c8090d579b49e786.dll:febebcd614fee6f5c8090d579b49e786.dll (00007FFF72FA0000), size: 53248 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\febebcd614fee6f5c8090d579b49e786.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\2d6c31ff9df234bb4f6703dbf5dd4789.dll:2d6c31ff9df234bb4f6703dbf5dd4789.dll (00007FFF72F60000), size: 40960 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\2d6c31ff9df234bb4f6703dbf5dd4789.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\5d956f080f6e2af9a6bdd22c335a6d00.dll:5d956f080f6e2af9a6bdd22c335a6d00.dll (00007FFF37E40000), size: 69632 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\5d956f080f6e2af9a6bdd22c335a6d00.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\f73602cd296b5a8457a623a008dedf3b.dll:f73602cd296b5a8457a623a008dedf3b.dll (00007FFF6FDE0000), size: 49152 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\3b83f7938af77b5bc35c8ad1c914de5f.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\ce9c7c4caddedd27a45405e3d53f3473.dll:ce9c7c4caddedd27a45405e3d53f3473.dll (00007FFF6FD00000), size: 53248 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\2bec84e8a385ceb6ca2319becb7238c6.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\9e43a42af7bc75c1b21751bd6039c913.dll:9e43a42af7bc75c1b21751bd6039c913.dll (00007FFF372E0000), size: 159744 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\9e43a42af7bc75c1b21751bd6039c913.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\7d710b64020db1e1865eb93aecbe2e0a.dll:7d710b64020db1e1865eb93aecbe2e0a.dll (00007FFF6A660000), size: 57344 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\085b6eee099583e64dd92d5ae064c4a3.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\33563a6015049839666886e5270ae448.dll:33563a6015049839666886e5270ae448.dll (00007FFF372B0000), size: 147456 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\33563a6015049839666886e5270ae448.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\d5147197ef821f5fe3a6184baeac56f8.dll:d5147197ef821f5fe3a6184baeac56f8.dll (00007FFF63E30000), size: 32768 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\28dfe3746bedfbf56cd70146b3a4b7d5.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\3bb37fe989e6fa2151def555d142acff.dll:3bb37fe989e6fa2151def555d142acff.dll (00007FFF522F0000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\1e9781a8855d4d767cbea2f6843be7ac.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\9cfcb883b87cc5b4a74f006711b30f50.dll:9cfcb883b87cc5b4a74f006711b30f50.dll (00007FFF078B0000), size: 172032 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\9cfcb883b87cc5b4a74f006711b30f50.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\f0ba727d1e1a798b4ab53497f40b14f1.dll:f0ba727d1e1a798b4ab53497f40b14f1.dll (00007FFF43500000), size: 32768 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\a32b6bc20e0f87f06556eadfc54d45a1.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\b119fd9ec67357740380656f09b49696.dll:b119fd9ec67357740380656f09b49696.dll (00007FFF2F570000), size: 110592 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\b119fd9ec67357740380656f09b49696.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\fc2808dd5f0674d399279e32b8b2b62a.dll:fc2808dd5f0674d399279e32b8b2b62a.dll (00007FFF3D640000), size: 53248 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\fc2808dd5f0674d399279e32b8b2b62a.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\9f4c160f556073d08741ea719c569ae0.dll:9f4c160f556073d08741ea719c569ae0.dll (00007FFEEC1C0000), size: 249856 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\9f4c160f556073d08741ea719c569ae0.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\e9477c92849fcf70ad8567aeaad9a8a7.dll:e9477c92849fcf70ad8567aeaad9a8a7.dll (00007FFF3EF20000), size: 139264 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\e9477c92849fcf70ad8567aeaad9a8a7.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\c486bba8a2c32a4fc16144b8c34bf2bf.dll:c486bba8a2c32a4fc16144b8c34bf2bf.dll (00007FFF3C3B0000), size: 212992 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\c486bba8a2c32a4fc16144b8c34bf2bf.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\6680e1dee7403c5865ce032e86110837.dll:6680e1dee7403c5865ce032e86110837.dll (00007FFF38340000), size: 438272 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\6680e1dee7403c5865ce032e86110837.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\b44fefc2ea65e65944c17f86cb266040.dll:b44fefc2ea65e65944c17f86cb266040.dll (00007FFF306D0000), size: 409600 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\b44fefc2ea65e65944c17f86cb266040.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\df5361d90515dbbd0f8d095ab87a4cbd.dll:df5361d90515dbbd0f8d095ab87a4cbd.dll (00007FFF37250000), size: 376832 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\df5361d90515dbbd0f8d095ab87a4cbd.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\7fb05bb52e3b6d80512956f337cbbbe4.dll:7fb05bb52e3b6d80512956f337cbbbe4.dll (00007FFF30650000), size: 503808 (result: 126), SymType: '-nosymbols-', PDB: ''
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\47e70a209ad7856203ea7c8c5044663c.dll:47e70a209ad7856203ea7c8c5044663c.dll (00007FFF305D0000), size: 503808 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\47e70a209ad7856203ea7c8c5044663c.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\6ac89300ca27641efd8b0b65c86a94a2.dll:6ac89300ca27641efd8b0b65c86a94a2.dll (00007FFF29680000), size: 602112 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\6ac89300ca27641efd8b0b65c86a94a2.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\1249e5de6d916014862b123b418ecd37.dll:1249e5de6d916014862b123b418ecd37.dll (00007FFF29630000), size: 270336 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\1249e5de6d916014862b123b418ecd37.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\4eafa3aff8d52675ef1f3e36b3ef31ef.dll:4eafa3aff8d52675ef1f3e36b3ef31ef.dll (00007FFEDCA60000), size: 774144 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\4eafa3aff8d52675ef1f3e36b3ef31ef.pdb'
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\f5b412454368571d63df91f990bfc4da.dll:f5b412454368571d63df91f990bfc4da.dll (00007FFF79300000), size: 188416 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\92acb480ef33207b9a48c7ae7631bdf6.pdb'
+C:\WINDOWS\SYSTEM32\dxilconv.dll:dxilconv.dll (00007FFF68030000), size: 1458176 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dxilconv.dll', fileVersion: 101.9.2602.1360
+B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\5148dbd55e587889dd9982bf9f5e0d68.dll:5148dbd55e587889dd9982bf9f5e0d68.dll (00007FFF850B0000), size: 188416 (result: 0), SymType: 'PDB', PDB: 'B:\FrogletGames\Cosmic-Shore\Library\BurstCache\JIT\0bb65dd73c1f082e40042fa44a4b8904.pdb'
+
+========== OUTPUTTING STACK TRACE ==================
+
+0x00007FFF950F408A (KERNELBASE) RaiseException
+0x00007FFEC754BAA6 (Unity) LaunchBugReporter
+0x00007FFEC76B809F (Unity) EditorMonoConsole::LogToConsoleImplementation
+0x00007FFEC76B8BC0 (Unity) EditorMonoConsole::LogToConsoleImplementation
+0x00007FFEC6676A3D (Unity) DebugStringToFilePostprocessedStacktrace
+0x00007FFEC6675DB9 (Unity) DebugStringToFile
+0x00007FFEC7EE3C49 (Unity) MemoryManager::OutOfMemoryError
+0x00007FFEC7EDC6F8 (Unity) MemoryManager::Allocate
+0x00007FFEC7EE8E5E (Unity) malloc_internal
+0x00007FFEC9035264 (Unity) dynamic_block_array<profiling::HierarchyFrameDataViewItem,131072,core::allocator>::grow
+0x00007FFEC901B691 (Unity) dynamic_block_array<profiling::HierarchyFrameDataViewItem,131072,core::allocator>::emplace_back<MemLabelId const & __ptr64,unsigned __int64>
+0x00007FFEC902FBF4 (Unity) profiling::HierarchyFrameDataView::Internal_Create
+0x00007FFEC71DEAD2 (Unity) HierarchyFrameDataView_CUSTOM_Internal_Create
+0x0000020E29B89FBA (Mono JIT Code) (wrapper managed-to-native) UnityEditor.Profiling.HierarchyFrameDataView:Internal_Create (int,int,UnityEditor.Profiling.HierarchyFrameDataView/ViewModes,int,bool)
+0x0000020E29B89EE3 (Mono JIT Code) UnityEditor.Profiling.HierarchyFrameDataView:.ctor (int,int,UnityEditor.Profiling.HierarchyFrameDataView/ViewModes,int,bool)
+0x0000020E29B89E4B (Mono JIT Code) UnityEditorInternal.ProfilerDriver:GetHierarchyFrameDataView (int,int,UnityEditor.Profiling.HierarchyFrameDataView/ViewModes,int,bool)
+0x0000020E29B89D9B (Mono JIT Code) [B:\FrogletGames\Cosmic-Shore\Assets\_Scripts\Utility\PerformanceBenchmark\ProfilerFrameReader.cs:53] CosmicShore.Utility.PerformanceBenchmark.ProfilerFrameReader:Open (int,int) 
+0x0000020E29B89A8B (Mono JIT Code) [B:\FrogletGames\Cosmic-Shore\Assets\_Scripts\Utility\PerformanceBenchmark\ProfilerFrameReader.cs:65] CosmicShore.Utility.PerformanceBenchmark.ProfilerFrameReader:ReadMainThread (int,CosmicShore.Utility.PerformanceBenchmark.ProfilerCapture/Accumulator) 
+0x0000020E29B5C623 (Mono JIT Code) [B:\FrogletGames\Cosmic-Shore\Assets\_Scripts\Utility\PerformanceBenchmark\DiagnosticsHUD.cs:667] CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD/<RunProf>d__139:MoveNext () 
+0x0000020BC429EB60 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x0000020BC429EC8F (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007FFEBFB46C0E (mono-2.0-bdwgc) [C:\build\output\Unity-Technologies\mono\mono\mini\mini-runtime.c:3445] mono_jit_runtime_invoke 
+0x00007FFEBFA88984 (mono-2.0-bdwgc) [C:\build\output\Unity-Technologies\mono\mono\metadata\object.c:3068] do_runtime_invoke 
+0x00007FFEBFA88A70 (mono-2.0-bdwgc) [C:\build\output\Unity-Technologies\mono\mono\metadata\object.c:3115] mono_runtime_invoke 
+0x00007FFEC6EFFDD4 (Unity) scripting_method_invoke
+0x00007FFEC6F06C93 (Unity) ScriptingInvocation::Invoke
+0x00007FFEC6DF483B (Unity) Coroutine::Run
+0x00007FFEC6DF26A2 (Unity) Coroutine::ContinueCoroutine
+0x00007FFEC69BA0F8 (Unity) DelayedCallManager::Update
+0x00007FFEC6DCC86B (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007FFEC6DAABEF (Unity) ExecutePlayerLoop
+0x00007FFEC6DAAD65 (Unity) ExecutePlayerLoop
+0x00007FFEC6DAFC0F (Unity) PlayerLoop
+0x00007FFEC77256DA (Unity) EditorPlayerLoop::Execute
+0x00007FFEC773C7CF (Unity) PlayerLoopController::InternalUpdateScene
+0x00007FFEC773E78F (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007FFEC773866D (Unity) Application::TickTimer
+0x00007FFEC7519F7C (Unity) MainMessageLoop
+0x00007FFEC7521A12 (Unity) UnityMain
+0x00007FF705892F2A (Unity) __scrt_common_main_seh
+0x00007FFF96B9DDA7 (KERNEL32) BaseThreadInitThunk
+0x00007FFF97BBEE4C (ntdll) RtlUserThreadStart
+
+========== END OF STACKTRACE ===========
+
+A crash has been intercepted by the crash handler. For call stack and other details, see the latest crash report generated in:
+ * C:/Users/yskha/AppData/Local/Temp/Unity/Editor/Crashes
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+Shut down.
+
