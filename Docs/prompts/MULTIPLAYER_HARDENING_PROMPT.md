@@ -183,6 +183,17 @@ Make the AI takeover **reversible** within the grace window.
 never sees a menu. 60 s → AI becomes permanent and the roster is correct. Pre-match 20 s → the slot
 is kept.
 
+**Partly built (2026-10-29, `claude/new-session-76hnyc`, Docs/MENU_REDESIGN_B.md section 103.1):** the AI takeover is now
+REVERSIBLE through a rejoin, not yet through a silent grace reconnect.
+- The guest remembers the match (`MatchRejoin`).
+- After a drop or a restart, Home offers REJOIN.
+- The rejoin announces itself in the approval payload (`cosmicshore.rejoin.v1:<ugs id>`).
+- The host hands the AI-flown Player and vessel back (`ServerPlayerVesselInitializer.TryReclaimSeat`) instead of making a
+  second one.
+
+Still open for this block: the no-menu path (`PartyState.Reconnecting`, `ISession.ReconnectAsync`) and the
+pre-match slot.
+
 ---
 
 ## Running alongside blocks 3–5 — decompose the god object

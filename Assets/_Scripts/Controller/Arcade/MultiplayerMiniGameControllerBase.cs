@@ -410,6 +410,7 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void SyncGameEnd_ClientRpc()
         {
+            MatchRejoin.Forget();   // the match is over: nothing to rejoin (section 103)
             if (!ShowEndGameSequence) return;
 
             gameData.SortRoundStats(UseGolfRules);
@@ -981,6 +982,10 @@ namespace CosmicShore.Gameplay
             gameData.MatchId = matchId;
             gameData.PartyId = partyId;
             gameData.InviteTriggered = inviteTriggered;
+
+            // A guest remembers the match it is in, so a drop or a restart can offer to rejoin it (section 103).
+            if (isMultiplayer && !SpectatorSession.IsLocalSpectator)
+                MatchRejoin.Remember(partyId, (GameModes)gameMode);
 
             gameData.SceneName = sceneName;
             gameData.GameMode = (GameModes)gameMode;
