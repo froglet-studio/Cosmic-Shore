@@ -18862,3 +18862,5 @@ Not compiled and not run: no Unity editor or CLI was reachable. Checked by readi
    no longer risks counting twice).
 8. Known gap: `StatsManager` uses a normal deferred `Destroy()`, so a stale copy lives to the end of the frame it is
    replaced in. If step 7 ever shows a double count, switch to `DestroyImmediate`.
+
+**Addendum (2026-10-29) — Scoreboard crystal latch is now static.** Play one `game_placement` match in the editor, then Stop/Play and play another. PostHog should show one `crystals_earned` row per match, and the wallet should rise once per match (no pairs 2-27 ms apart with balances 200 apart). Also confirm the latch still clears: a second match in the same session must pay out again.
