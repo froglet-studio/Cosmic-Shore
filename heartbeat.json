@@ -1,5 +1,4 @@
 {
- "agent": true,
  "caps": {
   "bash": true,
   "caps_version": 2,
@@ -15,18 +14,14 @@
   "unity": true
  },
  "cores": 11,
- "current": {},
- "host": "dragonsweapon",
- "idle_seconds": 4281.297,
- "last": {
-  "best_start": null,
-  "epoch": "ee78e83fdb59",
-  "evals": 43617,
-  "job": "drive-dolphin-regatta",
-  "session_evals": 43617,
-  "stopped": "budget"
+ "current": {
+  "job": "bioform-forge",
+  "max_evals": null,
+  "minutes": 60.0,
+  "request": null,
+  "since": 1793268315
  },
- "remote_start": true,
+ "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -149,22 +144,10 @@
    "unit": null
   }
  ],
- "specs": {
-  "cores": 12,
-  "disk_free_gb": 29.1,
-  "os": "windows",
-  "os_name": "Windows 10",
-  "python": "3.11.9",
-  "ram_free_gb": 16.2,
-  "ram_gb": 31.9,
-  "unity": true,
-  "unity_open": true
- },
- "status": "working",
  "totals": {
   "sessions": 10
  },
- "updated": 1793268299,
+ "updated": 1793268315,
  "user": "shombithofficial",
  "version": "1"
 }
