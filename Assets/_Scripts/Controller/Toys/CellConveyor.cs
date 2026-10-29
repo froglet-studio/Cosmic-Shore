@@ -124,6 +124,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public event System.Action CellRetired;
 
+        /// <summary>
+        /// Called for each traversal cell just before it initializes (its spawners start inside that), with the cell and
+        /// its position on the route (-1 off a route): where a route tunes its own worlds, such as an Ark escort raising a
+        /// cell's population past the corridor's cap or starting it hostile. Unset, every cell is the corridor's own.
+        /// </summary>
+        public System.Action<Cell, int> PrepareCell;
+
         /// <summary>True while the corridor sails an ordered ROUTE (a voyage leg) instead of the shuffle-bag.</summary>
         public bool HasRoute => _route.Count > 0;
 
@@ -350,6 +357,10 @@ namespace CosmicShore.Gameplay
             // ground the Ark has to cross. Collapsing the control zone (which this used to do)
             // made the whole cell legacy opposing-domain territory, which is what left the Ark
             // untouchable by any swarm wearing its own colour.
+
+            // A route's own tuning for this world (an Ark escort's per-cell threat), after the voyage's and before the
+            // spawner starts. -1 when the corridor sails the shuffle-bag.
+            PrepareCell?.Invoke(cell, _route.Count > 0 ? _routeNext - 1 : -1);
 
             if (!cell.InitializeSatellite(config))
             {

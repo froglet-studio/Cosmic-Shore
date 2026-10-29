@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7692b0515e64f44aec072ab96ece51f, type: 3}
+  m_Name: ArkEscort
+  m_EditorClassIdentifier:
+  legs:
+  - Name: Garland Shallows
+    World: {fileID: 11400000, guid: 3e8a0d5c71b24f96b8e3a4d70c519f2a, type: 2}
+    Threat: 0.7
+    Hostile: 1
+    Arrival: "WORLD {leg} OF {legs}: {name}"
+  - Name: Scarab Reef
+    World: {fileID: 11400000, guid: 4c79db5a1791ff3060644ec7d2aee0db, type: 2}
+    Threat: 0.9
+    Hostile: 1
+    Arrival: "WORLD {leg} OF {legs}: {name}"
+  - Name: The Boneyard
+    World: {fileID: 11400000, guid: 7dc0173b8f31a743221e8f0bd3ec2d40, type: 2}
+    Threat: 1
+    Hostile: 1
+    Arrival: "WORLD {leg} OF {legs}: {name}"
+  - Name: The Maw
+    World: {fileID: 11400000, guid: 9957d4442d4e51a04d915351be20b5c0, type: 2}
+    Threat: 1.6
+    Hostile: 1
+    Arrival: "WORLD {leg} OF {legs}: {name}. EVERYTHING HERE IS HUNGRY. HOLD THE ARK."
+  - Name: Liberation Deep
+    World: {fileID: 11400000, guid: e8501f315bd5e4617ef6c948e107488e, type: 2}
+    Threat: 1.1
+    Hostile: 1
+    Arrival: "WORLD {leg} OF {legs}: {name}. THE LAST CROSSING."
+  tiers:
+  - Population: 0.25
+    RegrowSeconds: 0.8
+    HostileShare: 0.4
+    ArkSpeed: 1.3
+  - Population: 0.4
+    RegrowSeconds: 1
+    HostileShare: 0.6
+    ArkSpeed: 1.2
+  - Population: 0.55
+    RegrowSeconds: 1.3
+    HostileShare: 0.8
+    ArkSpeed: 1.1
+  - Population: 0.7
+    RegrowSeconds: 1.6
+    HostileShare: 1
+    ArkSpeed: 1
+  - Population: 0.9
+    RegrowSeconds: 2
+    HostileShare: 1
+    ArkSpeed: 1
+  - Population: 1.1
+    RegrowSeconds: 2.6
+    HostileShare: 1
+    ArkSpeed: 0.95
+  - Population: 1.35
+    RegrowSeconds: 3.4
+    HostileShare: 1
+    ArkSpeed: 0.9
+  - Population: 1.7
+    RegrowSeconds: 4.5
+    HostileShare: 1
+    ArkSpeed: 0.85
+  - Population: 2.2
+    RegrowSeconds: 6
+    HostileShare: 1
+    ArkSpeed: 0.8
+  maxPopulation: 4
+  voyageName: ARK ESCORT
+  cardTitle: Escort the Ark - difficulty {difficulty}
+  cardLine: Take any three vessels and see the Ark through {legs} worlds of the HyperSea.
+  departLine: ESCORT THE ARK THROUGH {legs} WORLDS
+  survivedLine: THE ARK MADE IT THROUGH
+  fallenLine: THE ARK FELL IN {name}
