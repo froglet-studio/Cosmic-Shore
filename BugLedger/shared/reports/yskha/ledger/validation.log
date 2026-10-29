@@ -460,3 +460,5 @@
 2026-10-29T17:12:49.362Z EditMode session ended (40min editor span, script reload): 0 fix(es) waiting; counted: none
 2026-10-29T17:13:04.208Z editor load: play=False capture=True minPlay=15s issues=25
 2026-10-29T17:16:43.722Z PlayMode session ended (117s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-10-29T17:18:14.959Z editor load: play=False capture=True minPlay=15s issues=25
+2026-10-29T18:02:10.474Z PlayMode session ended (1981s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-fdf6dcdfc7 E-afa8c57ab8 E-fda866d511 E-e5ff2abb8c E-e6054bc064 E-93bb3fc04a
