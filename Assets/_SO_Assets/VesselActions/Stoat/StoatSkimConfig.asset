@@ -51,12 +51,19 @@ MonoBehaviour:
   driftSpeed: 40
   skipWindow: 1.2
   perfectWindow: 0.4
+  perfectBonus: 0.1
   skipDecay: 0.8
   maxSkips: 5
+  chainBreakCarry: 0.7
+  predictSteps: 16
   grazeAngle: 20
   grazeRestitution: 0.9
   grazeGain: 0.08
   rivalRiding: 0
+  skipRippleSeconds: 0.6
+  skipRippleGrowth: 120
+  skipCounterSeconds: 1.5
+  skipHaptic: 0.6
   ringDotSpacing: 5
   ringDotSize: 0.9
   tidepoolAlpha: 0.3
@@ -83,6 +90,27 @@ MonoBehaviour:
       Data4: 0
     Path: 
   sweetSpotEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  skipEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  grazeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  chainBreakEvent:
     Guid:
       Data1: 0
       Data2: 0

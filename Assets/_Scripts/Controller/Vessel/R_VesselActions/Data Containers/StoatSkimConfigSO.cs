@@ -121,11 +121,15 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 200f)] float driftSpeed = 40f;
 
         [Header("Skips (chaining)")]
-        [Tooltip("A capture within this many seconds of the last launch is the next SKIP of a run.")]
+        [Tooltip("A press within this many seconds of the last launch CHAINS: the next pair is laid on the predicted launch " +
+                 "line, and its capture is the next SKIP of the run. A press after it starts a fresh run.")]
         [SerializeField, Range(0f, 5f)] float skipWindow = 1.2f;
 
-        [Tooltip("(next) A press within this many seconds of the launch is a PERFECT skip.")]
+        [Tooltip("A chained press within this many seconds of the launch is a PERFECT skip (pays perfectBonus more gain).")]
         [SerializeField, Range(0f, 2f)] float perfectWindow = 0.4f;
+
+        [Tooltip("A perfect skip's extra share of its gain (0.1 = +10%).")]
+        [SerializeField, Range(0f, 1f)] float perfectBonus = 0.1f;
 
         [Tooltip("Each skip of a run pays decay^skip of the gain.")]
         [SerializeField, Range(0f, 1f)] float skipDecay = 0.8f;
@@ -133,20 +137,40 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The longest run, skips.")]
         [SerializeField, Range(0, 20)] int maxSkips = 5;
 
-        [Tooltip("(next) An entry this flat or flatter, degrees, may GRAZE (bounce off without capture). Also the flatness a " +
+        [Tooltip("A chained skip entered this badly (carry below this) PLUNKS: the run breaks and the next press starts afresh.")]
+        [SerializeField, Range(0f, 1f)] float chainBreakCarry = 0.7f;
+
+        [Tooltip("How many steps the launch line is predicted in (the spin hook integrated along it).")]
+        [SerializeField, Range(1, 64)] int predictSteps = 16;
+
+        [Tooltip("With no trigger held, crossing your own live Skimshell this flat or flatter, degrees, GRAZES: a free skip " +
+                 "bounce. Steeper passes through. Also the flatness a " +
                  "rival needs to opt in to riding (ELEMENTAL_ECONOMY §9b).")]
         [SerializeField, Range(0f, 90f)] float grazeAngle = 20f;
 
-        [Tooltip("(next) The speed a graze keeps.")]
+        [Tooltip("A graze's restitution: the share of the normal speed it reflects.")]
         [SerializeField, Range(0f, 1f)] float grazeRestitution = 0.9f;
 
-        [Tooltip("(next) The gain a graze adds.")]
+        [Tooltip("The gain a graze adds, a share of the speed (still under the cap).")]
         [SerializeField, Range(0f, 1f)] float grazeGain = 0.08f;
 
         [Header("Rivals (ELEMENTAL_ECONOMY §9b - flagged for Garrett)")]
         [Tooltip("(next) Rivals may opt in to riding this Skimshell (flat entry + holding their own input). Off: no rival is " +
                  "ever touched. Never on: nothing moves a rival against its will.")]
         [SerializeField] bool rivalRiding = false;
+
+        [Header("Skip juice (cheap, mobile-friendly)")]
+        [Tooltip("A skip's world ripple ring lives this long, seconds.")]
+        [SerializeField, Range(0.1f, 3f)] float skipRippleSeconds = 0.6f;
+
+        [Tooltip("How fast the skip ripple ring grows, u/s.")]
+        [SerializeField, Range(0f, 600f)] float skipRippleGrowth = 120f;
+
+        [Tooltip("The SKIP xN counter shows this long after a skip, seconds.")]
+        [SerializeField, Range(0.2f, 5f)] float skipCounterSeconds = 1.5f;
+
+        [Tooltip("The skip haptic tick's strength (the shared Skim reward pulse), 0..1. Local human pilot only.")]
+        [SerializeField, Range(0f, 1f)] float skipHaptic = 0.6f;
 
         [Header("World dots (no screen-space warp)")]
         [Tooltip("Dots of each ring are laid this many world units apart.")]
@@ -166,6 +190,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] EventReference plunkEvent;
         [SerializeField] EventReference launchEvent;
         [SerializeField] EventReference sweetSpotEvent;
+        [SerializeField] EventReference skipEvent;
+        [SerializeField] EventReference grazeEvent;
+        [SerializeField] EventReference chainBreakEvent;
 
         public float LayAhead => Mathf.Clamp(layAhead, 20f, 400f);
         public float LaySide => Mathf.Clamp(laySide, 0f, 200f);
@@ -201,6 +228,13 @@ namespace CosmicShore.ScriptableObjects
         public float PerfectWindow => Mathf.Clamp(perfectWindow, 0f, 2f);
         public float SkipDecay => Mathf.Clamp01(skipDecay);
         public int MaxSkips => Mathf.Clamp(maxSkips, 0, 20);
+        public float PerfectBonus => Mathf.Clamp01(perfectBonus);
+        public float ChainBreakCarry => Mathf.Clamp01(chainBreakCarry);
+        public int PredictSteps => Mathf.Clamp(predictSteps, 1, 64);
+        public float SkipRippleSeconds => Mathf.Clamp(skipRippleSeconds, 0.1f, 3f);
+        public float SkipRippleGrowth => Mathf.Clamp(skipRippleGrowth, 0f, 600f);
+        public float SkipCounterSeconds => Mathf.Clamp(skipCounterSeconds, 0.2f, 5f);
+        public float SkipHaptic => Mathf.Clamp01(skipHaptic);
         public float GrazeAngle => Mathf.Clamp(grazeAngle, 0f, 90f);
         public float GrazeRestitution => Mathf.Clamp01(grazeRestitution);
         public float GrazeGain => Mathf.Clamp01(grazeGain);
@@ -213,6 +247,9 @@ namespace CosmicShore.ScriptableObjects
         public EventReference PlunkEvent => plunkEvent;
         public EventReference LaunchEvent => launchEvent;
         public EventReference SweetSpotEvent => sweetSpotEvent;
+        public EventReference SkipEvent => skipEvent;
+        public EventReference GrazeEvent => grazeEvent;
+        public EventReference ChainBreakEvent => chainBreakEvent;
 
         /// <summary>How well a release after <paramref name="riddenDegrees"/> is timed, 0..1 (the Time catch's window).</summary>
         public float SweetSpot(float riddenDegrees) =>

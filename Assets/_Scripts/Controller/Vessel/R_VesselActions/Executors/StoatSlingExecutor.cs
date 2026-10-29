@@ -134,6 +134,23 @@ namespace CosmicShore.Gameplay
         Vector3 _hookAxis;
         float _lastLaunchAt = float.NegativeInfinity;
         int _skipIndex;
+        // The chain (STOAT_DIPOLE.md §1q): a press inside the skip window lays the next skip on the launch line; its
+        // capture takes the pending index. A pair let go uncaught stays up as a GRAZE shell (no trigger held: a flat pass
+        // bounces off it as a free skip).
+        int _pendingSkip;
+        bool _pendingPerfect;
+        bool _perfect;
+        bool _grazeOnly;
+        float _grazePrevDistance = float.PositiveInfinity;
+        bool _grazeApproached;
+        // Skip juice: the last skip's moment, place and plane (the pathfinder's ripple ring, the HUD's SKIP ×N).
+        float _skipFxAt = float.NegativeInfinity;
+        Vector3 _skipFxCentre;
+        Vector3 _skipFxAxis = Vector3.up;
+        float _skipFxRadius;
+        int _skipFxCount;
+        bool _skipFxPerfect;
+        bool _skipFxGraze;
 
         /// <summary>The Time-mode pair this hull laid last, alive or not; null before the first one.</summary>
         public BlackHoleRegistry.Pair LastPair => _pair;
@@ -178,6 +195,23 @@ namespace CosmicShore.Gameplay
         public float LastCarry => _carry;
         /// <summary>This ride's place in a skip run: 0 = the first, 1 = the first skip, ...</summary>
         public int SkipIndex => _skipIndex;
+        /// <summary>True while the laid Skimshell was let go of uncaught and stands as a graze shell (no capture; a flat pass
+        /// with no trigger held bounces off it).</summary>
+        public bool IsGrazeShell => _laid && _grazeOnly;
+        /// <summary>True while a press now would CHAIN (inside the skip window after a launch, skips left).</summary>
+        public bool ChainOpen => UsesSkim && StoatSkimMath.Chains(Time.time - _lastLaunchAt, config.Skim.SkipWindow, _skipIndex, config.Skim.MaxSkips);
+        /// <summary>The run's skips so far as the HUD counts them: the ride's index, or the last launch's inside its window.</summary>
+        public int SkipCount => !UsesSkim ? 0 : IsOrbiting ? _skipIndex : Time.time - _lastLaunchAt <= config.Skim.SkipWindow ? _skipIndex : 0;
+        /// <summary>Seconds since the last skip (a chained capture or a graze); +∞ before the first.</summary>
+        public float SkipFxAge => Time.time - _skipFxAt;
+        /// <summary>The last skip's count (SKIP ×N), whether it was perfect, and whether it was a graze.</summary>
+        public int SkipFxCount => _skipFxCount;
+        public bool SkipFxPerfect => _skipFxPerfect;
+        public bool SkipFxGraze => _skipFxGraze;
+        /// <summary>The last skip's ripple: centre, plane normal and starting radius (world).</summary>
+        public Vector3 SkipFxCentre => _skipFxCentre;
+        public Vector3 SkipFxAxis => _skipFxAxis;
+        public float SkipFxRadius => _skipFxRadius;
         /// <summary>The ride's speed (u/s) while skimming.</summary>
         public float RideSpeed => IsOrbiting ? _rideSpeed : 0f;
         /// <summary>The last slingshot's timing, 0..1, or −1 before the first.</summary>
@@ -205,6 +239,10 @@ namespace CosmicShore.Gameplay
             _hookRate = 0f;
             _skipIndex = 0;
             _lastLaunchAt = float.NegativeInfinity;
+            _pendingSkip = 0;
+            _pendingPerfect = _perfect = _grazeOnly = false;
+            _skipFxAt = float.NegativeInfinity;
+            _skipFxCount = 0;
             _resolvedSiblings = false;
             _lastTiming = -1f;
             _gate = null;
@@ -249,7 +287,11 @@ namespace CosmicShore.Gameplay
             if (_mode && _mode.IsGateMode) { if (!IsHoldingAny) LetGoGate(); return; }
             if (_laid)
             {
-                if (_orbitSide == side) Slingshot(boost: true);
+                if (_orbitSide != side) return;
+                // The Skim Sling: a pair let go of before it caught you stays up as a GRAZE shell (fly flat across it with no
+                // trigger held and it bounces you on - a free skip); it is let go once passed, or at its lifetime.
+                if (UsesSkim && !_caught && !_grazeOnly) { BecomeGrazeShell(); return; }
+                Slingshot(boost: true);
                 return;
             }
             if (BlackHoleRegistry.Config.CrystalPairs) SlingCrystal(side, _holds[i].Peak);
@@ -369,6 +411,7 @@ namespace CosmicShore.Gameplay
             _orbitRadius = Mathf.Lerp(_orbitRadius, RadiusFor(_holds[(int)_orbitSide].Live), 1f - Mathf.Exp(-follow * dt));
             var centre = _pair.Black.transform.position;
 
+            if (_grazeOnly) { StepGrazeShell(hull, transformer, centre, radius); return; }
             if (!_caught)
             {
                 if (_status.IsTranslationRestricted) return;
@@ -425,6 +468,7 @@ namespace CosmicShore.Gameplay
             bool caught = _caught;
             _laid = false;
             _caught = false;
+            _grazeOnly = false;
             BlackHoleRegistry.LetGo(_pair);
             var transformer = _status.VesselTransformer;
             var hull = _status.Transform;
@@ -510,7 +554,23 @@ namespace CosmicShore.Gameplay
             }
             bool left = side == Side.Left;
             float radius = SkimRadiusFor(skim);
-            var centre = StoatSkimMath.Midpoint(hull.position, hull.forward, hull.right, left, skim.LayAhead, skim.LaySide);
+            // The chain: inside the skip window after a launch (and skips left) the next pair is laid on the PREDICTED
+            // launch line - the hook still turning it - LayAhead along it, R to the pressed side, so the line passes the
+            // shell tangent: a flat pass, caught with its whole speed. Outside it, a fresh run, laid as the first throw.
+            // (The launch and its hook are the simulating machine's: a peer's copy of a chained pair is laid off the
+            // straight line - it only draws there.)
+            float since = Time.time - _lastLaunchAt;
+            bool chain = StoatSkimMath.Chains(since, skim.SkipWindow, _skipIndex, skim.MaxSkips);
+            Vector3 centre;
+            if (chain)
+            {
+                var point = StoatSkimMath.PredictLine(hull.position, hull.forward, _hookAxis, _hookRate, skim.CurveSeconds,
+                    Time.time - _hookStart, OrbitSpeed(), skim.LayAhead, skim.PredictSteps, out var headingAt);
+                centre = StoatSkimMath.ChainCentre(point, headingAt, hull.up, left, radius);
+            }
+            else centre = StoatSkimMath.Midpoint(hull.position, hull.forward, hull.right, left, skim.LayAhead, skim.LaySide);
+            _pendingSkip = chain ? _skipIndex + 1 : 0;
+            _pendingPerfect = chain && StoatSkimMath.Perfect(since, skim.PerfectWindow);
             var spin = StoatSkimMath.SpinAxis(left, hull.up);
             float strength = skim.PoleGM / Mathf.Max(1e-3f, bh.GmPerStrength);
             _pair = BlackHoleRegistry.SpawnPair(centre, hull.up, strength, skim.PoleHorizon,
@@ -527,9 +587,11 @@ namespace CosmicShore.Gameplay
             _skimAxis = spin;
             _spinRide = 0f;
             _carry = 1f;
+            _grazeOnly = false;
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[Stoat] {side} Skimshell laid {skim.LayAhead:F0} u ahead, R {radius:F0} u, Tidepool {radius * skim.TidepoolScale:F0} u");
+                $"[Stoat] {side} Skimshell laid {skim.LayAhead:F0} u ahead, R {radius:F0} u, Tidepool {radius * skim.TidepoolScale:F0} u" +
+                (chain ? $", CHAINED (skip {_pendingSkip}{(_pendingPerfect ? ", perfect" : "")}, {since:F2}s after the launch)" : ""));
         }
 
         /// <summary>
@@ -557,11 +619,18 @@ namespace CosmicShore.Gameplay
                 _caught = true;
                 _orbitAngle = 0f;
                 _lastRadial = hull.position - centre;
-                float incidence = StoatSkimMath.IncidenceDegrees(hull.forward, _lastRadial);
+                // The entry's flatness: the line's (a tangent pass is flat) or the capture point's, whichever is flatter.
+                float incidence = Mathf.Min(StoatSkimMath.IncidenceDegrees(hull.forward, _lastRadial),
+                    StoatSkimMath.EntryIncidenceDegrees(hull.position, hull.forward, centre, radius));
                 _carry = StoatSkimMath.EntryCarry(incidence, skim.PlunkCarry);
-                _skipIndex = StoatSkimMath.SkipIndex(_skipIndex, Time.time - _lastLaunchAt, skim.SkipWindow, skim.MaxSkips);
+                // The skip's place in the run was set at the press; a plunked skip breaks the run (this ride a fresh throw).
+                _skipIndex = _pendingSkip;
+                _perfect = _pendingPerfect;
+                bool broken = _skipIndex > 0 && _carry < skim.ChainBreakCarry;
+                if (broken) { _skipIndex = 0; _perfect = false; PlayOneShot(skim.ChainBreakEvent); }
                 _spinRide = 0f;
                 PlayOneShot(_carry < skim.PlunkCallout ? skim.PlunkEvent : skim.CaptureEvent);
+                if (_skipIndex > 0) Skipped(centre, _skimAxis, radius, _perfect, graze: false);
                 CSDebug.LogVerbose(CSLogChannel.BlackHole,
                     $"[Stoat] Tidepool capture at {_lastRadial.magnitude:F0} u, incidence {incidence:F0}°, carry {_carry:F2}, skip {_skipIndex}");
             }
@@ -609,7 +678,8 @@ namespace CosmicShore.Gameplay
             float engine = EngineSpeed();
             float ride = _rideSpeed > 0f ? _rideSpeed : engine;
             float cap = skim.CapCruises * Mathf.Max(engine, transformer.CruiseSpeed);
-            float launch = StoatSkimMath.LaunchSpeed(ride, gain, timing, skim.MissShare, rate, cap, skim.SkipDecay, _skipIndex);
+            float launch = StoatSkimMath.LaunchSpeed(ride, gain, timing, skim.MissShare, rate, cap, skim.SkipDecay, _skipIndex,
+                _perfect ? skim.PerfectBonus : 0f);
             float kick = StoatSkimMath.Kick(launch, engine);
             _lastTiming = timing;
             _lastLaunchAt = Time.time;
@@ -622,7 +692,79 @@ namespace CosmicShore.Gameplay
             PlayOneShot(skim.LaunchEvent);
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
                 $"[Stoat] Skip launch: ride {ride:F0} → {launch:F0} u/s (kick {kick:F0}, timing {timing:F2}, gain {gain:F2}, " +
-                $"skip {_skipIndex}, hook {StoatSkimMath.HookTotalDegrees(_hookRate, skim.CurveSeconds):F0}°)");
+                $"skip {_skipIndex}{(_perfect ? " perfect" : "")}, hook {StoatSkimMath.HookTotalDegrees(_hookRate, skim.CurveSeconds):F0}°)");
+        }
+
+        /// <summary>An uncaught Skimshell let go of by its trigger: it stands (held, still, no capture) as a graze shell.</summary>
+        void BecomeGrazeShell()
+        {
+            _grazeOnly = true;
+            _grazeApproached = false;
+            var hull = _status.Transform;
+            _grazePrevDistance = hull ? Vector3.Distance(hull.position, _skimCentre) : float.PositiveInfinity;
+            CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] {_orbitSide} Skimshell let go uncaught: a graze shell");
+        }
+
+        /// <summary>
+        /// The simulating machine's frame with a graze shell up: with no trigger held, crossing it inward flatter than
+        /// grazeAngle BOUNCES the hull - the normal speed reflected at the restitution, the tangent kept, grazeGain added
+        /// (under the cap) - and counts as the run's next skip (it reopens the skip window). A steep crossing passes
+        /// through untouched. Passed (out of the Tidepool and moving away) the shell is let go.
+        /// </summary>
+        void StepGrazeShell(Transform hull, VesselTransformer transformer, Vector3 centre, float radius)
+        {
+            var skim = config.Skim;
+            var radial = hull.position - centre;
+            float d = radial.magnitude;
+            float tide = StoatSkimMath.TidepoolRadius(radius, skim.TidepoolScale);
+            if (d <= tide) _grazeApproached = true;
+            bool grazes = !_status.IsTranslationRestricted &&
+                          StoatSkimMath.Grazes(IsHoldingAny, _grazePrevDistance, d, radius, hull.forward, radial, skim.GrazeAngle);
+            _grazePrevDistance = d;
+            if (grazes)
+            {
+                float speed = OrbitSpeed();
+                var bounced = StoatSkimMath.GrazeReflect(hull.forward * speed, radial, skim.GrazeRestitution);
+                var heading = bounced.sqrMagnitude > 1e-6f ? bounced.normalized : hull.forward;
+                Quaternion.FromToRotation(hull.forward, heading).ToAngleAxis(out float degrees, out var axis);
+                if (degrees > 1e-4f && axis.sqrMagnitude > 1e-8f) transformer.ApplyRotation(degrees, axis);
+                transformer.SetCourseVelocity(heading);
+                if (d > 1e-3f) transformer.TranslateShip(radial / d * (radius - d));   // back onto the surface
+                float engine = EngineSpeed();
+                float cap = skim.CapCruises * Mathf.Max(engine, transformer.CruiseSpeed);
+                float kick = StoatSkimMath.GrazeKick(speed, skim.GrazeGain, cap);
+                if (kick > 0f) transformer.ModifyVelocity(heading * (kick / 1.5f), skim.KickSeconds, false, kick * 1.05f);
+                bool chained = StoatSkimMath.Chains(Time.time - _lastLaunchAt, skim.SkipWindow, _skipIndex, skim.MaxSkips);
+                _skipIndex = chained ? _skipIndex + 1 : Mathf.Min(1, skim.MaxSkips);
+                _perfect = false;
+                _lastLaunchAt = Time.time;   // a free skip: the window opens again
+                _hookRate = 0f;
+                PlayOneShot(skim.GrazeEvent);
+                Skipped(centre, _skimAxis, radius, perfect: false, graze: true);
+                CSDebug.LogVerbose(CSLogChannel.BlackHole,
+                    $"[Stoat] GRAZE off the Skimshell at {StoatSkimMath.IncidenceDegrees(hull.forward, radial):F0}°: kick {kick:F0}, skip {_skipIndex}");
+                Slingshot(boost: false);
+                return;
+            }
+            // Passed: out past the Tidepool after coming near, and moving away.
+            if (_grazeApproached && d > tide && Vector3.Dot(hull.forward, radial) > 0f) Slingshot(boost: false);
+        }
+
+        /// <summary>A skip landed (a chained capture or a graze): the ripple ring, the SKIP ×N counter, the skip sound and -
+        /// the local human pilot only - the haptic tick (the shared Skim reward pulse).</summary>
+        void Skipped(Vector3 centre, Vector3 axis, float radius, bool perfect, bool graze)
+        {
+            var skim = config.Skim;
+            _skipFxAt = Time.time;
+            _skipFxCentre = centre;
+            _skipFxAxis = axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.up;
+            _skipFxRadius = radius;
+            _skipFxCount = _skipIndex;
+            _skipFxPerfect = perfect;
+            _skipFxGraze = graze;
+            PlayOneShot(skim.SkipEvent);
+            if (_status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI && !_status.AutoPilotEnabled)
+                HapticController.PlaySkim(Mathf.Clamp01(skim.SkipHaptic * (1f + 0.1f * (_skipIndex - 1)) + (perfect ? 0.15f : 0f)));
         }
 
         /// <summary>The launch's hook, frame by frame: the nose and course turned about the spin axis, fading to nothing.</summary>
@@ -632,7 +774,8 @@ namespace CosmicShore.Gameplay
             var hull = _status.Transform;
             var transformer = _status.VesselTransformer;
             float share = skim ? StoatSkimMath.HookDecay(Time.time - _hookStart, skim.CurveSeconds) : 0f;
-            if (share <= 0f || !hull || !transformer || _laid) { _hookRate = 0f; return; }
+            // A chained pair laid ahead does not stop the hook (it was placed on the hooked line); a capture does.
+            if (share <= 0f || !hull || !transformer || _caught) { _hookRate = 0f; return; }
             float degrees = _hookRate * share * dt * Mathf.Rad2Deg;
             if (degrees <= 1e-5f) return;
             transformer.ApplyRotation(degrees, _hookAxis);
@@ -683,7 +826,7 @@ namespace CosmicShore.Gameplay
             if (_laid)
             {
                 // The pair ended under us (annihilated, or held past its lifetime and let go on its own).
-                if (_pair == null || !_pair.IsAlive) _laid = _caught = false;
+                if (_pair == null || !_pair.IsAlive) _laid = _caught = _grazeOnly = false;
                 else if (!_pair.Held) Slingshot(boost: true);
                 else if (MantaStingActionExecutor.IsSimAuthority(_status)) StepOrbit(Time.deltaTime);
             }
@@ -829,7 +972,8 @@ namespace CosmicShore.Gameplay
             var ai = _status.AIPilot;
             var hull = _status.Transform;
             if (!handler || !ai || !hull) return;
-            if (_laid)
+            // A graze shell (its trigger already let go) is no hold to manage: the AI flies on and may press again.
+            if (_laid && !_grazeOnly)
             {
                 bool letGo;
                 if (!_caught) letGo = Time.time - _laidAt >= AIConfig.AiCatchGiveUpSeconds;
@@ -843,7 +987,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
             if (AIConfig.AiSlingMinTurnDegrees <= 0f) return;
-            if (Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
+            // The Skim Sling's chain: inside the skip window after a launch the AI may press at once (no interval) - it
+            // still presses only toward a turn it wants, so a run zig-zags along its line rather than circling.
+            bool chain = UsesSkim && ChainOpen;
+            if (!chain && Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
             // Bearing from the steering point, range from the objective: on a race line the steering point sits one
             // look-ahead away, inside AiSlingMinDistance at cruise (StoatDipoleMath.AutopilotGauge).
             var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),

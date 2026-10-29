@@ -197,6 +197,159 @@ namespace CosmicShore.Tests
             Assert.That(Vector3.Dot(points[0] - centre - first, StoatSkimMath.SpinFlow(Vector3.up, first)), Is.GreaterThan(0f));
         }
 
+        // ------------------------------------------------------------------ the chain (skips)
+
+        [Test]
+        public void Chain_OpensOnlyInsideTheSkipWindow_WithSkipsLeft()
+        {
+            Assert.IsTrue(StoatSkimMath.Chains(0.5f, 1.2f, 0, 5));
+            Assert.IsTrue(StoatSkimMath.Chains(1.2f, 1.2f, 4, 5), "the window's last instant still chains");
+            Assert.IsFalse(StoatSkimMath.Chains(1.21f, 1.2f, 0, 5), "a late press starts a fresh run");
+            Assert.IsFalse(StoatSkimMath.Chains(float.PositiveInfinity, 1.2f, 0, 5), "no launch yet");
+            Assert.IsFalse(StoatSkimMath.Chains(-0.1f, 1.2f, 0, 5));
+            Assert.IsFalse(StoatSkimMath.Chains(0.5f, 1.2f, 5, 5), "five skips is the longest run");
+        }
+
+        [Test]
+        public void Perfect_IsTheWindowsFirstStretch()
+        {
+            Assert.IsTrue(StoatSkimMath.Perfect(0f, 0.4f));
+            Assert.IsTrue(StoatSkimMath.Perfect(0.4f, 0.4f));
+            Assert.IsFalse(StoatSkimMath.Perfect(0.41f, 0.4f));
+        }
+
+        [Test]
+        public void SkipGain_DecaysByTheSkip_APerfectSkipPaysItsBonus_TheCapHolds()
+        {
+            for (int n = 0; n <= 5; n++)
+                Assert.That(StoatSkimMath.SkipScale(0.8f, n), Is.EqualTo(Mathf.Pow(0.8f, n)).Within(1e-5f));
+            // 100 × (1 + 0.9 × 0.8 × 1.1) = 179.2 for a perfect first skip.
+            Assert.That(StoatSkimMath.LaunchSpeed(100f, 0.9f, 1f, 0.3f, 1f, 0f, 0.8f, 1, 0.1f), Is.EqualTo(179.2f).Within(1e-3f));
+            Assert.That(StoatSkimMath.LaunchSpeed(100f, 0.9f, 1f, 0.3f, 1f, 0f, 0.8f, 1), Is.EqualTo(172f).Within(1e-3f));
+            // Every skip of a run, however perfect, under the cap (3 × a 50 u/s cruise).
+            float v = 50f;
+            for (int n = 0; n <= 5; n++)
+            {
+                v = StoatSkimMath.LaunchSpeed(v, 3f, 1f, 0.3f, 3f, 150f, 0.8f, n, 0.1f);
+                Assert.That(v, Is.LessThanOrEqualTo(150f + 1e-3f));
+            }
+        }
+
+        [Test]
+        public void PredictedLine_WithNoHook_IsStraight()
+        {
+            var p = StoatSkimMath.PredictLine(Vector3.zero, Vector3.forward, Vector3.up, 0f, 0.8f, 0f, 100f, 160f, 16, out var h);
+            Assert.That((p - new Vector3(0f, 0f, 160f)).magnitude, Is.LessThan(1e-3f));
+            Assert.That(Vector3.Angle(h, Vector3.forward), Is.LessThan(1e-3f));
+        }
+
+        [Test]
+        public void PredictedLine_FollowsTheHook_AllOfItsTurnAndNoMore()
+        {
+            // A left hook (axis down) at 1 rad/s fading over 0.8 s: 0.4 rad ≈ 22.9° in all; 160 u at 100 u/s outlasts it.
+            float total = StoatSkimMath.HookTotalDegrees(1f, 0.8f);
+            var p = StoatSkimMath.PredictLine(Vector3.zero, Vector3.forward, Vector3.down, 1f, 0.8f, 0f, 100f, 160f, 32, out var h);
+            Assert.That(Vector3.Angle(h, Vector3.forward), Is.EqualTo(total).Within(0.2f));
+            Assert.That(h.x, Is.LessThan(0f), "the left hook turns the line left");
+            Assert.That(p.x, Is.LessThan(-5f));
+            Assert.That(p.magnitude, Is.LessThan(160f), "a bent path ends nearer than its length");
+            // Pressed after the hook has run out, the line is straight again.
+            StoatSkimMath.PredictLine(Vector3.zero, Vector3.forward, Vector3.down, 1f, 0.8f, 0.9f, 100f, 160f, 32, out h);
+            Assert.That(Vector3.Angle(h, Vector3.forward), Is.LessThan(1e-3f));
+        }
+
+        [Test]
+        public void ChainedShell_SitsTangentToTheLine_SoAFlatPassIsCaughtWhole()
+        {
+            var centre = StoatSkimMath.ChainCentre(new Vector3(0f, 0f, 160f), Vector3.forward, Vector3.up, left: true, R);
+            Assert.That((centre - new Vector3(-R, 0f, 160f)).magnitude, Is.LessThan(1e-3f));
+            Assert.That(StoatSkimMath.EntryIncidenceDegrees(Vector3.zero, Vector3.forward, centre, R), Is.EqualTo(0f).Within(1e-3f));
+            // Fly the straight line: the Tidepool catches it as it passes, the entry flat, the speed all kept.
+            bool caught = false;
+            for (float z = 0f; z < 320f && !caught; z += 1f)
+                caught = StoatSkimMath.Captures(new Vector3(0f, 0f, z), Vector3.forward, centre, R, StoatSkimMath.TidepoolRadius(R, 1.6f), 60f);
+            Assert.IsTrue(caught);
+            Assert.That(StoatSkimMath.EntryCarry(StoatSkimMath.EntryIncidenceDegrees(Vector3.zero, Vector3.forward, centre, R), 0.6f),
+                Is.EqualTo(1f).Within(1e-4f));
+        }
+
+        [Test]
+        public void ChainedShell_OnTheHookedLine_IsPassedTangent_WhereAStraightGuessIsNot()
+        {
+            const float speed = 100f, rate = 1f, secs = 0.8f, ahead = 160f;
+            var axis = Vector3.down;   // a left ride's hook
+            var point = StoatSkimMath.PredictLine(Vector3.zero, Vector3.forward, axis, rate, secs, 0f, speed, ahead, 32, out var h);
+            var centre = StoatSkimMath.ChainCentre(point, h, Vector3.up, left: true, R);
+            var straight = StoatSkimMath.ChainCentre(new Vector3(0f, 0f, ahead), Vector3.forward, Vector3.up, left: true, R);
+            // Fly it with the hook the executor flies (StepHook), finely.
+            var p = Vector3.zero;
+            var f = Vector3.forward;
+            float closest = float.PositiveInfinity, closestStraight = float.PositiveInfinity;
+            const float dt = 0.002f;
+            for (float t = 0f; t < 3f; t += dt)
+            {
+                float deg = rate * StoatSkimMath.HookDecay(t, secs) * dt * Mathf.Rad2Deg;
+                f = Quaternion.AngleAxis(deg, axis) * f;
+                p += f * speed * dt;
+                closest = Mathf.Min(closest, (p - centre).magnitude);
+                closestStraight = Mathf.Min(closestStraight, (p - straight).magnitude);
+            }
+            Assert.That(closest, Is.EqualTo(R).Within(1.5f), "the hooked line passes the chained shell tangent");
+            Assert.That(Mathf.Abs(closestStraight - R), Is.GreaterThan(10f), "ignoring the hook misses the tangent badly");
+        }
+
+        [Test]
+        public void EntryIncidence_IsTheLinesAngle_TangentFlat_ThroughTheCentreStraightIn()
+        {
+            var centre = new Vector3(0f, 0f, 200f);
+            Assert.That(StoatSkimMath.EntryIncidenceDegrees(Vector3.zero, Vector3.forward, centre, R), Is.EqualTo(90f).Within(1e-3f));
+            Assert.That(StoatSkimMath.EntryIncidenceDegrees(new Vector3(R * 0.5f, 0f, 0f), Vector3.forward, centre, R),
+                Is.EqualTo(60f).Within(1e-2f));
+            Assert.That(StoatSkimMath.EntryIncidenceDegrees(new Vector3(R * 2f, 0f, 0f), Vector3.forward, centre, R), Is.EqualTo(0f));
+        }
+
+        // ------------------------------------------------------------------ graze skips
+
+        static Vector3 Heading(float degreesInward) =>
+            // Flying +z along the shell's +x side; tilted inward (−x) by the given angle.
+            new Vector3(-Mathf.Sin(degreesInward * Mathf.Deg2Rad), 0f, Mathf.Cos(degreesInward * Mathf.Deg2Rad));
+
+        [Test]
+        public void Graze_IsAFlatInwardCrossing_WithNoTriggerHeld()
+        {
+            var radial = Vector3.right;   // the hull at the shell's +x edge
+            Assert.IsTrue(StoatSkimMath.Grazes(false, R + 1f, R - 0.5f, R, Heading(10f), radial, 20f));
+            Assert.IsFalse(StoatSkimMath.Grazes(true, R + 1f, R - 0.5f, R, Heading(10f), radial, 20f), "a held trigger rides, it does not graze");
+            Assert.IsFalse(StoatSkimMath.Grazes(false, R + 1f, R - 0.5f, R, Heading(40f), radial, 20f), "steep passes through");
+            Assert.IsFalse(StoatSkimMath.Grazes(false, R - 2f, R - 3f, R, Heading(10f), radial, 20f), "already inside: no crossing");
+            Assert.IsFalse(StoatSkimMath.Grazes(false, R + 3f, R + 1f, R, Heading(10f), radial, 20f), "not yet reached");
+            Assert.IsFalse(StoatSkimMath.Grazes(false, R + 1f, R - 0.5f, R, Heading(-10f), radial, 20f), "moving out is no graze");
+        }
+
+        [Test]
+        public void Graze_ReflectsTheNormalSpeedAtTheRestitution_KeepsTheTangent_KickUnderTheCap()
+        {
+            var v = Heading(10f) * 100f;
+            var n = Vector3.right;
+            var b = StoatSkimMath.GrazeReflect(v, n, 0.9f);
+            Assert.That(Vector3.Dot(b, n), Is.EqualTo(-0.9f * Vector3.Dot(v, n)).Within(1e-3f));
+            Assert.That(b.z, Is.EqualTo(v.z).Within(1e-3f));
+            Assert.That(b.magnitude, Is.LessThanOrEqualTo(v.magnitude + 1e-3f));
+            Assert.That(StoatSkimMath.GrazeKick(100f, 0.08f, 0f), Is.EqualTo(8f).Within(1e-4f));
+            Assert.That(StoatSkimMath.GrazeKick(146f, 0.08f, 150f), Is.EqualTo(4f).Within(1e-4f));
+            Assert.That(StoatSkimMath.GrazeKick(160f, 0.08f, 150f), Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void SkipRipple_GrowsFromTheShell_AndFades()
+        {
+            Assert.That(StoatSkimMath.RippleRadius(R, 120f, 0f), Is.EqualTo(R));
+            Assert.That(StoatSkimMath.RippleRadius(R, 120f, 0.5f), Is.EqualTo(R + 60f).Within(1e-3f));
+            Assert.That(StoatSkimMath.RippleAlpha(0f, 0.6f), Is.EqualTo(1f));
+            Assert.That(StoatSkimMath.RippleAlpha(0.3f, 0.6f), Is.EqualTo(0.5f).Within(1e-4f));
+            Assert.That(StoatSkimMath.RippleAlpha(0.9f, 0.6f), Is.EqualTo(0f));
+        }
+
         // ------------------------------------------------------------------ the shipped config
 
         [Test]
@@ -210,6 +363,13 @@ namespace CosmicShore.Tests
             Assert.That(skim.LaunchGainMax, Is.GreaterThanOrEqualTo(skim.LaunchGainMin));
             Assert.That(skim.CapCruises, Is.GreaterThan(1f));
             Assert.IsFalse(skim.RivalRiding, "rival riding ships off until Garrett signs off (ELEMENTAL_ECONOMY §9b)");
+            Assert.That(skim.MaxSkips, Is.EqualTo(5));
+            Assert.That(skim.SkipDecay, Is.EqualTo(0.8f).Within(1e-4f));
+            Assert.That(skim.SkipWindow, Is.EqualTo(1.2f).Within(1e-4f));
+            Assert.That(skim.PerfectWindow, Is.LessThan(skim.SkipWindow));
+            Assert.That(skim.PerfectBonus, Is.GreaterThan(0f));
+            Assert.That(skim.GrazeAngle, Is.GreaterThan(0f).And.LessThan(45f));
+            Assert.That(skim.ChainBreakCarry, Is.GreaterThan(skim.PlunkCarry), "a straight-in plunk breaks the run");
         }
     }
 }

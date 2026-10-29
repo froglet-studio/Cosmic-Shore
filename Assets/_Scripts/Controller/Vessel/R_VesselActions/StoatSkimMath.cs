@@ -64,6 +64,19 @@ namespace CosmicShore.Gameplay
             return Mathf.Asin(Mathf.Clamp01(s)) * Mathf.Rad2Deg;
         }
 
+        /// <summary>
+        /// The entry's angle against the Skimshell's surface, degrees, read from the LINE the hull is on rather than the
+        /// point it was caught at: a line passing the centre at <c>b</c> crosses the sphere of radius R at acos(b / R) from
+        /// the surface. A line that only grazes it (b ≥ R) is flat, 0°; one through the centre is straight in, 90°. The
+        /// Tidepool catches you before you reach the surface, so the point's own angle overstates a tangent pass.
+        /// </summary>
+        public static float EntryIncidenceDegrees(Vector3 hull, Vector3 heading, Vector3 centre, float radius)
+        {
+            if (heading.sqrMagnitude < 1e-8f || radius <= 0f) return 0f;
+            float b = Vector3.Cross(heading.normalized, centre - hull).magnitude;
+            return Mathf.Acos(Mathf.Clamp01(b / radius)) * Mathf.Rad2Deg;
+        }
+
         /// <summary>The share of speed an entry keeps: lerp(<paramref name="plunkCarry"/>, 1, cos²θ). Flat keeps it all,
         /// straight in keeps the plunk carry.</summary>
         public static float EntryCarry(float incidenceDegrees, float plunkCarry)
@@ -123,10 +136,10 @@ namespace CosmicShore.Gameplay
         /// timing) - the whole gain for a release in the sweet spot, the miss share outside it.
         /// </summary>
         public static float LaunchSpeed(float rideSpeed, float gain, float timing01, float missShare, float rate,
-            float cap, float skipDecay = 1f, int skipIndex = 0)
+            float cap, float skipDecay = 1f, int skipIndex = 0, float bonus = 0f)
         {
             float q = Mathf.Lerp(Mathf.Clamp01(missShare), 1f, Mathf.Clamp01(timing01));
-            float decay = Mathf.Pow(Mathf.Clamp01(skipDecay), Mathf.Max(0, skipIndex));
+            float decay = SkipScale(skipDecay, skipIndex) * (1f + Mathf.Max(0f, bonus));
             float v = Mathf.Max(0f, rideSpeed) * (1f + Mathf.Max(0f, gain) * q * Mathf.Max(1f, rate) * decay);
             return cap > 0f ? Mathf.Min(cap, v) : v;
         }
@@ -151,6 +164,107 @@ namespace CosmicShore.Gameplay
         /// last launch (capped), else 0 (a fresh run).</summary>
         public static int SkipIndex(int previous, float sinceLaunch, float window, int maxSkips) =>
             sinceLaunch >= 0f && sinceLaunch <= Mathf.Max(0f, window) ? Mathf.Min(Mathf.Max(0, previous) + 1, Mathf.Max(0, maxSkips)) : 0;
+
+        /// <summary>The share of the gain skip <paramref name="skipIndex"/> pays: decay^n (the first throw, n = 0, pays it all).</summary>
+        public static float SkipScale(float skipDecay, int skipIndex) => Mathf.Pow(Mathf.Clamp01(skipDecay), Mathf.Max(0, skipIndex));
+
+        // ------------------------------------------------------------------ the chain (skips)
+
+        /// <summary>
+        /// A press <paramref name="sinceLaunch"/> seconds after the last launch CHAINS (lays the next skip on the launch
+        /// line) when it is inside the skip window and the run has skips left.
+        /// </summary>
+        public static bool Chains(float sinceLaunch, float window, int skipIndex, int maxSkips) =>
+            sinceLaunch >= 0f && sinceLaunch <= Mathf.Max(0f, window) && Mathf.Max(0, skipIndex) < Mathf.Max(0, maxSkips);
+
+        /// <summary>A chained press inside the first <paramref name="perfectWindow"/> seconds of the window is PERFECT.</summary>
+        public static bool Perfect(float sinceLaunch, float perfectWindow) =>
+            sinceLaunch >= 0f && sinceLaunch <= Mathf.Max(0f, perfectWindow);
+
+        /// <summary>
+        /// Where a launched hull will be after flying <paramref name="distance"/> more along its HOOKED line: the heading
+        /// keeps turning about <paramref name="hookAxis"/> at <paramref name="hookRate"/> (rad/s) × the hook's remaining share
+        /// (<see cref="HookDecay"/>, from <paramref name="sinceLaunch"/>), at <paramref name="speed"/>. Integrated in
+        /// <paramref name="steps"/> equal steps; <paramref name="headingAt"/> is the heading there.
+        /// </summary>
+        public static Vector3 PredictLine(Vector3 position, Vector3 heading, Vector3 hookAxis, float hookRate, float hookSeconds,
+            float sinceLaunch, float speed, float distance, int steps, out Vector3 headingAt)
+        {
+            var h = heading.sqrMagnitude > 1e-8f ? heading.normalized : Vector3.forward;
+            var p = position;
+            int n = Mathf.Max(1, steps);
+            float ds = Mathf.Max(0f, distance) / n;
+            float dt = ds / Mathf.Max(1f, speed);
+            float t = Mathf.Max(0f, sinceLaunch);
+            bool hooks = hookRate > 0f && hookAxis.sqrMagnitude > 1e-8f;
+            for (int i = 0; i < n; i++)
+            {
+                if (hooks)
+                {
+                    // Midpoint rule: the turn over this step at the share halfway through it.
+                    float deg = hookRate * HookDecay(t + 0.5f * dt, hookSeconds) * dt * Mathf.Rad2Deg;
+                    var half = Quaternion.AngleAxis(0.5f * deg, hookAxis);
+                    p += half * h * ds;
+                    h = (Quaternion.AngleAxis(deg, hookAxis) * h).normalized;
+                }
+                else p += h * ds;
+                t += dt;
+            }
+            headingAt = h;
+            return p;
+        }
+
+        /// <summary>
+        /// The next skip's Skimshell centre: R to the pressed side of the predicted point, square to the predicted heading
+        /// (in the plane of <paramref name="up"/>), so the line passes the shell TANGENT - a flat pass, caught as it goes by
+        /// with the whole speed kept (<see cref="EntryIncidenceDegrees"/> = 0).
+        /// </summary>
+        public static Vector3 ChainCentre(Vector3 point, Vector3 headingAt, Vector3 up, bool left, float radius)
+        {
+            var h = headingAt.sqrMagnitude > 1e-8f ? headingAt.normalized : Vector3.forward;
+            var right = Vector3.Cross(up, h);
+            if (right.sqrMagnitude < 1e-6f) right = Vector3.Cross(Vector3.up, h);
+            if (right.sqrMagnitude < 1e-6f) right = Vector3.right;
+            right.Normalize();
+            return point + (left ? -right : right) * Mathf.Max(0f, radius);
+        }
+
+        // ------------------------------------------------------------------ graze skips
+
+        /// <summary>
+        /// A GRAZE: with no trigger held, the hull crosses its own live Skimshell INWARD this frame (from outside R to
+        /// inside it) at a shallow angle, under <paramref name="grazeAngle"/> from the surface. A steep crossing passes
+        /// through untouched.
+        /// </summary>
+        public static bool Grazes(bool triggerHeld, float previousDistance, float distance, float radius, Vector3 heading,
+            Vector3 radial, float grazeAngle)
+        {
+            if (triggerHeld || radius <= 0f) return false;
+            if (!(previousDistance > radius && distance <= radius)) return false;
+            if (heading.sqrMagnitude < 1e-8f || radial.sqrMagnitude < 1e-8f) return false;
+            if (Vector3.Dot(heading, radial) >= 0f) return false;   // moving out, not in
+            return IncidenceDegrees(heading, radial) < Mathf.Clamp(grazeAngle, 0f, 90f);
+        }
+
+        /// <summary>The bounce: the velocity's normal part reflected at <paramref name="restitution"/>, the tangent kept -
+        /// v - (1 + e)(v·n)n.</summary>
+        public static Vector3 GrazeReflect(Vector3 velocity, Vector3 normal, float restitution)
+        {
+            if (normal.sqrMagnitude < 1e-8f) return velocity;
+            var n = normal.normalized;
+            return velocity - (1f + Mathf.Clamp01(restitution)) * Vector3.Dot(velocity, n) * n;
+        }
+
+        /// <summary>A graze's kick: <paramref name="gain"/> × the speed, never past the cap (cap ≤ 0 = none).</summary>
+        public static float GrazeKick(float speed, float gain, float cap)
+        {
+            float k = Mathf.Max(0f, speed) * Mathf.Max(0f, gain);
+            return cap > 0f ? Mathf.Clamp(k, 0f, Mathf.Max(0f, cap - Mathf.Max(0f, speed))) : k;
+        }
+
+        /// <summary>A skip ripple's radius and fade <paramref name="age"/> seconds in: R + growth × age, alpha 1 → 0.</summary>
+        public static float RippleRadius(float radius, float growth, float age) => Mathf.Max(0f, radius) + Mathf.Max(0f, growth) * Mathf.Max(0f, age);
+        public static float RippleAlpha(float age, float seconds) => seconds <= 0f ? 0f : 1f - Mathf.Clamp01(age / seconds);
 
         // ------------------------------------------------------------------ rivals (ELEMENTAL_ECONOMY §9b)
 
