@@ -14675,6 +14675,9 @@ compile (0 project errors), the swarm harness's Shiva mode (S1-S9, parity with `
   forms (The Still Shiva, Nataraja, The Devouring Mouth); Set sail opens the launch panel with the hull carousel. No
   Tandava: Severing card and no old Tandava card. Voyage 3 (the job cards) looks and works exactly as before:
   `VoyageToyMenuTests` green, one card per job, Set sail enters freestyle.
+  **And the launch window is live** (2026-10-29 fix: Set sail had opened the card on the Arena window's host copy
+  of `ArcadeGameConfigureModal`, which has no launch panels): the pilot shows your name, the seat line reads
+  "1 of 3", the objective reads "Thread his rings and break his shield", CLAIM locks a hull, and START launches.
 - **QA-SHIVA-3** Launch solo, any hull. **Pass:** the squad spawns facing along the circuit with the first lit ring
   ~400 u ahead; Shiva stands in the middle (crown, three eyes, four arms, moon) turning to face you; seven planets ring
   the cell; three shells of danger prisms surround him; the goals (top left) read Form 1 of 3 / Rings 0/10 / Drum /

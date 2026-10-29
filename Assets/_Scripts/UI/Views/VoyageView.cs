@@ -60,9 +60,23 @@ namespace CosmicShore.UI
         public void SetSail()
         {
             if (!voyage) return;
-            if (!configureModal) configureModal = FindAnyObjectByType<ArcadeGameConfigureModal>(FindObjectsInactive.Include);
+            if (!configureModal || !configureModal.CanOpen(voyage)) configureModal = FindLauncher(voyage);
             if (configureModal) configureModal.OpenFor(voyage);
-            else CSDebug.LogWarning("[VoyageView] Set sail found no ArcadeGameConfigureModal in the scene; the voyage cannot launch.");
+            else CSDebug.LogWarning($"[VoyageView] Set sail found no ArcadeGameConfigureModal that launches '{voyage.DisplayName}'; " +
+                                    "the card cannot launch.");
+        }
+
+        /// <summary>
+        /// The configure modal that can launch <paramref name="card"/>. Not just any copy: Menu_Main has three, and the
+        /// Arena and Maelstrom windows' copies are hosts with no launch panels. Opening the card on one of those
+        /// drew its title and description and bound nothing else, so the pilots, vessel strip and Start were dead
+        /// (2026-10-29, which copy FindAnyObjectByType returned had changed).
+        /// </summary>
+        static ArcadeGameConfigureModal FindLauncher(SO_ArcadeGame card)
+        {
+            foreach (var modal in FindObjectsByType<ArcadeGameConfigureModal>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (modal && modal.CanOpen(card)) return modal;
+            return null;
         }
     }
 }

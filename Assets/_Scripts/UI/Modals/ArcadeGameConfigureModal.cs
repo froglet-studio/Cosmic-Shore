@@ -664,6 +664,14 @@ namespace CosmicShore.UI
             return null;
         }
 
+        /// <summary>
+        /// Whether this copy can launch <paramref name="game"/>: it drives a launch panel that takes the card. Menu_Main
+        /// carries three copies of this component and only one authors panels - the Arena window's and the Maelstrom
+        /// window's are their panels' host modals (<see cref="ArcadeLaunchPanel.HostModal"/>) - so a caller that finds
+        /// "a" modal in the scene must ask this, or it can open the card on a shell that binds nothing.
+        /// </summary>
+        public bool CanOpen(SO_ArcadeGame game) => game && ResolvePanelFor(game) != null;
+
         void SelectLaunchPanel(SO_ArcadeGame game)
         {
             if (!UsesLaunchPanels) return;
