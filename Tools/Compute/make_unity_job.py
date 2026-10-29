@@ -13,6 +13,8 @@ import json
 import os
 import sys
 
+import compute_lib as L
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, "Tools", "Build"))
@@ -27,7 +29,10 @@ def build(job, root=ROOT):
     with open(os.path.join(root, "Docs", "AI_SYSTEM", "vessel_mode_chart.json"), encoding="utf-8") as fh:
         cards = {c["mode"]: c for c in json.load(fh).get("cards") or []}
     pairs, units = {}, []
+    skip = (L.read_json(os.path.join(root, "Docs", "Compute", "skip_modes.json"), {}) or {}).get("modes") or {}
     for row in m["rows"]:
+        if row["mode"] in skip:                        # Docs/Compute/skip_modes.json: the game keeps it, Compute skips it
+            continue
         card = cards.get(row["mode"]) or {}
         hulls = [row["vessel"]] if row["locked"] else list(card.get("hulls") or [row["vessel"]])
         if row["vessel"] not in hulls:

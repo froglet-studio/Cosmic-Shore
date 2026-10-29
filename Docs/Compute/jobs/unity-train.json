@@ -41,16 +41,6 @@
   "lease_hours": 3,
   "max_mb": 8,
   "pairs": {
-   "AstroLeague": {
-    "locked": false,
-    "name": "Astro League",
-    "token": "AstroLeague",
-    "vessels": [
-     "Rhino",
-     "Scarab",
-     "Squirrel"
-    ]
-   },
    "Bends": {
     "locked": true,
     "name": "The Bends",
@@ -528,33 +518,6 @@
     "args": {
      "episodes": 200,
      "intensity": 4,
-     "mode": "AstroLeague",
-     "vessel": "Rhino"
-    },
-    "id": "astroleague-rhino-i4"
-   },
-   {
-    "args": {
-     "episodes": 200,
-     "intensity": 4,
-     "mode": "AstroLeague",
-     "vessel": "Scarab"
-    },
-    "id": "astroleague-scarab-i4"
-   },
-   {
-    "args": {
-     "episodes": 200,
-     "intensity": 4,
-     "mode": "AstroLeague",
-     "vessel": "Squirrel"
-    },
-    "id": "astroleague-squirrel-i4"
-   },
-   {
-    "args": {
-     "episodes": 200,
-     "intensity": 4,
      "mode": "Regatta",
      "vessel": "Manta"
     },
@@ -889,7 +852,7 @@
  ],
  "schema": "froglet-compute/job/1",
  "status": "proposed",
- "title": "Train each vessel's AI in the real game: the Unity trainer, run headless (57 vessel x mode pairs)",
+ "title": "Train each vessel's AI in the real game: the Unity trainer, run headless (54 vessel x mode pairs)",
  "updated": "2026-10-28",
  "value": 7
 }

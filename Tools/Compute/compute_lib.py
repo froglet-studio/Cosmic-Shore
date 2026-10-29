@@ -470,6 +470,11 @@ def _has_module(name):
         return False
 
 
+def skip_modes(root=None):
+    """The game modes Compute leaves out everywhere (Docs/Compute/skip_modes.json): {mode: why}."""
+    return (read_json(os.path.join(root or REPO, "Docs", "Compute", "skip_modes.json"), {}) or {}).get("modes") or {}
+
+
 CAPS_VERSION = 2          # raise it when capabilities() learns a new one, so a day-old cache is asked again
 
 

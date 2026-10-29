@@ -209,8 +209,10 @@ def catalog(jobs, cwd=None):
     unity = next((j for j in sorted(jobs.values(), key=lambda j: j["id"])
                   if j.get("kind") == "command" and (j.get("command") or {}).get("pairs") and "~" not in j["id"]), None)
     upairs = (unity or {}).get("command", {}).get("pairs") or {}
-    modes = []
+    modes, skip = [], L.skip_modes()
     for c in chart.get("cards") or []:
+        if c.get("mode") in skip:
+            continue
         cells = []
         for hull in c.get("hulls") or []:
             t = templates.get(hull)

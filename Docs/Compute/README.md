@@ -375,6 +375,10 @@ that. Logs: `journalctl -u froglet-hub -u froglet-compute -f`.
 
 ## 16. Runs in the real game: the Unity trainer, headless (Shombith, 2026-10-28)
 
+**Modes Compute skips:** `Docs/Compute/skip_modes.json` names game modes Compute leaves out of every job, the
+console's vessel x mode grid and the scout (Astro League since 2026-10-29: "not needed anymore", Shombith). The game
+keeps them. `make_unity_job.py` and the scout read the file, so a mode returns by deleting its line.
+
 The offline models are fast (hundreds of races a minute, any computer) but each one is a hand-made copy of one vessel
 on one course, so only 5 of the 61 vessel x mode pairs have one. Everything else has to be played in the game. The
 game already has an AI trainer (`Assets/_Scripts/Utility/AITraining`, studyholic, Garrett and Shombith): all-AI

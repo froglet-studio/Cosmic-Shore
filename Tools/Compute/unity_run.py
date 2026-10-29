@@ -318,7 +318,7 @@ def main(argv=None):
     ap.add_argument("--find", action="store_true", help="say which Unity this computer would use, and stop")
     ap.add_argument("--sha", help="the commit to train on (the job's ref)")
     ap.add_argument("--out", help="the unit's folder (status, result, genome, the saved session)")
-    ap.add_argument("--mode", help="the trainer's scenario token (HexRace, Joust, AstroLeague, ...)")
+    ap.add_argument("--mode", help="the trainer's scenario token (HexRace, Joust, Switchback, ...)")
     ap.add_argument("--vessel", default="", help="the hull, for modes that let it change")
     ap.add_argument("--intensity", type=int, default=4)
     ap.add_argument("--episodes", type=int, default=200, help="the unit's total episodes (matches)")

@@ -112,10 +112,18 @@ def _queued(jobs, **match):
     return None
 
 
+def _chart():
+    """The AI system's vessel-mode chart without the modes Compute skips (Docs/Compute/skip_modes.json)."""
+    chart = json.loads(_read("Docs/AI_SYSTEM/vessel_mode_chart.json") or "{}")
+    skip = json.loads(_read("Docs/Compute/skip_modes.json") or "{}").get("modes") or {}
+    chart["cards"] = [c for c in chart.get("cards", []) if c.get("mode") not in skip]
+    return chart
+
+
 # ── lenses ───────────────────────────────────────────────────────────────────
 
 def lens_coverage(jobs):
-    chart = json.loads(_read("Docs/AI_SYSTEM/vessel_mode_chart.json") or "{}")
+    chart = _chart()
     games = time_games()
     hulls = {h["hull"]: h for h in chart.get("hulls", [])}
     variants = _learned_variants()
@@ -171,7 +179,7 @@ def lens_regatta(jobs, board):
         opps.append({"lens": "regatta", "kind": "build", "value": 9, "id": "regatta-stage1-jobs",
                      "title": "Queue stage 1 of the Regatta plan", "why": "no stage-1 drive jobs exist"})
     live = next((s for s in (1, 2, 3) if stage[s] and len(state[s]["done"]) < len(stage[s])), None)
-    chart = json.loads(_read("Docs/AI_SYSTEM/vessel_mode_chart.json") or "{}")
+    chart = _chart()
     games = time_games()
     own = {}
     for card in chart.get("cards", []):
@@ -301,7 +309,7 @@ KNOWN_PLANS = {
 def lens_plans(jobs):
     """Every arena card is a mixed fleet that has to be balanced; the plan shape is the same for each genre."""
     opps = []
-    chart = json.loads(_read("Docs/AI_SYSTEM/vessel_mode_chart.json") or "{}")
+    chart = _chart()
     queued_plans = {j.get("plan") for j in jobs.values()}
     for card in chart.get("cards", []):
         if "ArenaGames" not in card.get("lists", []):
