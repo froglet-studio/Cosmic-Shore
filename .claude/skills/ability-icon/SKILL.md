@@ -82,7 +82,7 @@ every gate and named nothing.
 | The PLATE GAUGE | the act has a how-much | `pair=` child with icon None + `binding=`; `card.py gauge=` on sheets | `AbilityIconBinding.gauge`; the view writes `fillAmount` only |
 | A generated readout | the shape IS data (the Dolphin's blast profile) | nothing to draw; measure and leave | `EnsureGeneratedAbilityIcons` |
 
-Worked examples, in order: the Squirrel's Crystal Joust (pair), Skimming (trio), Drift (live parts), the Dolphin's
+Worked examples, in order: the Squirrel's Crystal Joust (pair), Skimming (trio), Drift (live parts), the Sparrow's Space card (N generated parts on a live layout over a segmented gauge), the Dolphin's
 Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
 
 ## 3. The round
@@ -91,14 +91,34 @@ Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
    move on"). Measure the HUD first: what the card is today (a sprite, a pair, a readout, a ladder) and what the
    view writes on it per frame. The BEFORE sheet is the card as the HUD draws it, every state, never the raw PNG
    ("your before pictures are not accurate or exhaustive").
-1. **Brief, one line per icon**: the act, and the ONE object that names it. Write it in the spec's
-   docstring, with what the old icon was.
-2. **Options with the OLD first** ("show the old when comparing"): three or four candidates on the real card, each
-   in its states (rest, mid, landed) at 60 and 40 and 128, gate verdicts under each, the recommendation named.
+1. **Brief, one line per icon**: the MECHANIC first (measured in code: what moves, which number, which threshold -
+   the source of every part and every plate mark), then WHO gains WHAT, against WHAT (the payoff the pilot plays for,
+   the level-5 state included), and the ONE object that names it. When the act changes the vessel itself
+   (protected, faster), the vessel is on the card (LESSONS 52). Find the real geometry of every object on the card
+   first - the hull's mesh or the game's own silhouettes (`Assets/_Graphics/Silhouettes/`), a prism's generator
+   (LESSONS 48, 54). Write the brief in the spec's docstring, with what the old icon was.
+2. **Options with the OLD first, in the hull's whole LOCKUP** ("show the old when comparing"; "going forward when showing
+   vessel icons lets show the before and the other icons of the vessel so we can consider how they distinguish
+   themselves too", Garrett 2026-10-27): three or four candidates on the real card, each in its states (rest, mid,
+   landed) at 60 and 40 and 128, gate verdicts under each, the recommendation named. Give the candidates' `CARDS`
+   entries one `group=` and the spec a `LOCKUP` (the hull's other cards as the HUD draws them today): `author.py`
+   then writes `<hull>_<group>_options.png` - the BEFORE row and one row per candidate, each the full four-card row
+   with the candidate in its slot. That is the sheet the owner gets; a candidate is never shown alone.
    When a hull is in the picture, send the mesh grid first (`mesh_silhouette.py <fbx> --out ...`, `--mirror` when
    the file frame's nose is -Y) and let the owner pick the view. Then draw, preview, look at 40 px first. Say
    what fails the language in words before touching numbers (round 1 of the Manta: "the lobes read as ears - a
    fox, not a ray").
+2.5 **Review the sheet against the round-costing mistakes before sending** (LESSONS 44-59; each one cost Garrett a
+   round): (a) every part and the plate answer "what is this showing?" with something nothing else on the card
+   shows, and no level-5 mark - the upgrade is a state; (b) a moving part and every copy of it face the way they move
+   (mirror, curve); (c) flat: one colour per part, seams not shading; (d) no part covers the focal object or a
+   reference mark at 40 px; (e) a broken state is real pieces apart; (f) plate marks are "segments", never lines
+   across; (g) objects are drawn from their real mesh or generator; (h) the act runs ACROSS the card, clear of the
+   plate's fill line and marks (LESSONS 55); (i) anything with a size is to scale, measured from the prefabs
+   (LESSONS 56); (j) what the ability destroys is negative space, what it spares is whole outside (57); (k) a region
+   is a filled white shape, not an outline or a grey fill, and the card sits beside `sparrow.png` / `rhino.png` at the
+   same weight (58); (l) a level that changes a size keeps the main shape bold and scales what it is measured against
+   (59). Fix a failure before the owner sees it.
 3. **Gates green** (`verify.py`: white 128, coverage 0.10-0.45, long axis ≥ 80 % of the 116 px
    optical box and inside it, thin share ≤ 0.35, tight-gap boundary ≤ 0.25, ≤ 4 components, no
    specks, ≥ 85 % mass at 40 px, the hull's four tell apart at 24 px). A gate that is wrong is

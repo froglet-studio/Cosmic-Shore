@@ -54,6 +54,7 @@
           new("Unity.Services.Leaderboards", "CosmicShore.Engine.Services.Leaderboards"),
           new("Unity.Services.CloudCode", "CosmicShore.Engine.Services.CloudCode"),
           new("Unity.Services.Moderation", "CosmicShore.Engine.Services.Moderation"),
+          new("Unity.Services.Vivox", "CosmicShore.Engine.Services.Vivox"),
           new("Unity.Services.CloudSave", "CosmicShore.Engine.Services"),
           new("Unity.Services.Analytics", "CosmicShore.Engine.Services.Analytics"),
           new("Unity.Services.Authentication", "CosmicShore.Engine.Services"),

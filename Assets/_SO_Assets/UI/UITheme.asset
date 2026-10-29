@@ -32,6 +32,10 @@ MonoBehaviour:
   selection: {r: 0.2392157, g: 0.6980392, b: 1, a: 1}
   selectionMaterial: {fileID: 2100000, guid: 0defcded7bc8cac24aa943184e47ffed, type: 2}
   selectionBarMaterial: {fileID: 2100000, guid: 63699a177466fecef5da1f6829147be5, type: 2}
+  hoverSheenSprite: {fileID: 21300000, guid: d0e7bd0bbafbaffb3f2c73a43ff6b7fc, type: 3}
+  hoverSheenSeconds: 0.52
+  hoverSheenAlpha: 0.16
+  hoverSheenWidth: 0.45
   spacing:
   - 4
   - 8

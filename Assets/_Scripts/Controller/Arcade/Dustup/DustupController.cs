@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// any card. The Butterfly carries no gun. Its one weapon is the Scale Dust - a capsule that
     /// hangs BELOW the hull while it is in Dust mode (right trigger) - and CHARGE is the dust's
     /// BITE (<c>VesselElementalDebuffBySkimmerEffectSO.biteScale</c>, 0.5x at rest to 2x at level
-    /// 10, doubled again at Charge 5 "Monarch"). So a rival is hit by flying OVER them: every
+    /// 10; Charge 5 is the wormhole's toll since 2026-10-29, not a deeper bite). So a rival is hit by flying OVER them: every
     /// opposing pilot the dust passes through takes the all-element bite and pays one DUSTING.
     /// First DOMAIN to the point target wins. Fought in Dog Fight's Boneyard - a wreck-field of
     /// cover and canyons, which is exactly what a duel between two hulls that cannot turn needs:

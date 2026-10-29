@@ -317,9 +317,16 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] Color cooldownVeilColor = new(0.024f, 0.031f, 0.063f, 0.72f);
         public Color CooldownVeilColor => cooldownVeilColor;
 
+        [Tooltip("A flat wash over the WHOLE card, icon included, for as long as the ability recharges, under the " +
+                 "sweep. The sweep alone is a dark wedge on a dark plate and read as nothing until a press was " +
+                 "refused (Garrett, 2026-10-29: \"cooldowns in general are signaled too faintly unless you try to use " +
+                 "the ability\"); the wash says UNAVAILABLE at a glance and the sweep says for how long. Alpha 0 = off.")]
+        [SerializeField] Color cooldownWashColor = new(0.024f, 0.031f, 0.063f, 0.55f);
+        public Color CooldownWashColor => cooldownWashColor;
+
         [Tooltip("One-shot flash the moment an ability comes back. This is the beat the player is " +
                  "actually waiting for, so it is the loudest thing the card ever does.")]
-        [SerializeField] Color cooldownReadyFlashColor = new(0.96f, 0.96f, 1f, 0.5f);
+        [SerializeField] Color cooldownReadyFlashColor = new(0.96f, 0.96f, 1f, 0.75f);
         public Color CooldownReadyFlashColor => cooldownReadyFlashColor;
         [SerializeField, Min(0.01f)] float cooldownReadyFlashDuration = 0.32f;
         public float CooldownReadyFlashDuration => cooldownReadyFlashDuration;

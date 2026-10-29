@@ -124,6 +124,12 @@ namespace CosmicShore.Gameplay
         /// spawned, so a caller can describe the volume it is about to sweep.</summary>
         public bool MirrorsAboutStartPlane => mirrorAboutStartPlane;
 
+        /// <summary>Overrides the authored <see cref="MirrorsAboutStartPlane"/> on THIS instance.
+        /// Call it on the spawned blast before <see cref="Initialize"/>, which is where the volume
+        /// is measured: the Scarab's punch is push-only at rest and claims its mirror image (the
+        /// pull) at Charge 5, so the shape is a per-fire decision rather than a prefab fact.</summary>
+        public void SetMirrorAboutStartPlane(bool on) => mirrorAboutStartPlane = on;
+
         /// <summary>The authored length:radius ratio, readable off the PREFAB before anything is
         /// spawned. A caller that needs to know how far this plate will sweep in order to place
         /// it — the Scarab's reversed punch starts at the far end of the cylinder and walks back —

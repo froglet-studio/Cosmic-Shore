@@ -10,7 +10,7 @@ using CosmicShore.UI;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Codex's chapters (<see cref="CodexCatalog"/>, Docs/MENU_REDESIGN_B.md section 88), built from hand-made
+    /// The Codex's chapters (<see cref="CodexCatalog"/>, Docs/MENU_REDESIGN_B.md sections 88 and 97), built from hand-made
     /// assets so the rules are pinned without a scene: which entries a stop lists, in what order, and what each page says.
     /// </summary>
     [TestFixture]
@@ -19,7 +19,6 @@ namespace CosmicShore.Tests
         readonly List<Object> _made = new();
         CodexSO _codex;
         SO_VesselList _vessels;
-        SO_CaptainList _captains;
         Dictionary<VesselClassType, ElementalAbilityMapSO> _maps;
 
         T Make<T>() where T : ScriptableObject
@@ -35,17 +34,6 @@ namespace CosmicShore.Tests
             v.Class = cls;
             v.Name = name;
             return v;
-        }
-
-        SO_Captain Pilot(string name, SO_Vessel vessel, Element element, string flavor = "")
-        {
-            var c = Make<SO_Captain>();
-            c.Name = name;
-            c.Vessel = vessel;
-            c.PrimaryElement = element;
-            c.Flavor = flavor;
-            c.Description = name + " signature";
-            return c;
         }
 
         ElementalAbilityMapSO Map(params (Element el, string ability, string upgrade)[] rows)
@@ -79,25 +67,10 @@ namespace CosmicShore.Tests
             _codex.Ecology.Add(arbor);
             _codex.Ecology.Add(Entry("fauna.shark", CodexKingdom.Fauna, "Shark", ("Speed", "25-35 units/s")));
 
-            var tool = Entry("tool.painting", CodexKingdom.Tool, "Connect the Dots");
-            tool.Group = "3 · Creation";
-            var saturn = new CodexVariant { Label = "Saturn" };
-            saturn.Stats.Add(new CodexStat("What it does", "A planet and its rings"));
-            tool.Variants.Add(saturn);
-            _codex.Tools.Add(tool);
-
             var sparrow = Vessel(VesselClassType.Sparrow, "Sparrow");
             var squirrel = Vessel(VesselClassType.Squirrel, "Squirrel");
             _vessels = Make<SO_VesselList>();
             _vessels.VesselList = new List<SO_Vessel> { squirrel, sparrow };
-
-            var grizzly = Vessel(VesselClassType.Grizzly, "Grizzly");    // not on the vessel list
-            _captains = Make<SO_CaptainList>();
-            _captains.CaptainList = new List<SO_Captain>
-            {
-                Pilot("Longshift", sparrow, Element.Space), Pilot("Shrapnel", sparrow, Element.Mass, "“Bigger bangs!”"),
-                Pilot("Trace", squirrel, Element.Time), Pilot("Ghost", grizzly, Element.Charge),
-            };
 
             _maps = new Dictionary<VesselClassType, ElementalAbilityMapSO>
             {
@@ -112,20 +85,106 @@ namespace CosmicShore.Tests
             _made.Clear();
         }
 
-        List<CodexItem> Build(CodexChapter chapter) =>
-            CodexCatalog.Build(chapter, _codex, _captains, _vessels, new Sprite[4], new CodexWords(),
-                               c => _maps.TryGetValue(c, out var m) ? m : null);
+        SpawnMatrixToyDefinitionSO Roster(string[] fauna, string[] flora, params (string species, string line)[] descriptions)
+        {
+            var roster = Make<SpawnMatrixToyDefinitionSO>();
+            var t = typeof(SpawnMatrixToyDefinitionSO);
+            const BindingFlags F = BindingFlags.NonPublic | BindingFlags.Instance;
+            t.GetField("faunaSpecies", F).SetValue(roster, System.Array.ConvertAll(fauna, n => new SpawnMatrixToyDefinitionSO.FaunaSpecies { Name = n }));
+            t.GetField("floraSpecies", F).SetValue(roster, System.Array.ConvertAll(flora, n => new SpawnMatrixToyDefinitionSO.FloraSpecies { Name = n }));
+            t.GetField("speciesDescriptions", F).SetValue(roster, System.Array.ConvertAll(descriptions,
+                d => new SpawnMatrixToyDefinitionSO.SpeciesDescription { Species = d.species, Description = d.line }));
+            return roster;
+        }
+
+        CodexWords Words()
+        {
+            var w = new CodexWords();
+            w.elementCards.Add(new CodexCard { title = "Omni", gameplay = "Fly into it." });
+            w.elementCards.Add(new CodexCard { title = "Prisms" });
+            w.lexicon.Add(new CodexCard { title = "Vessels", gameplay = "Eight hulls." });
+            w.lexicon.Add(new CodexCard { title = "" });     // a blank card is not listed
+            w.lexicon.Add(new CodexCard { title = "Toys", lore = "Old stations." });
+            return w;
+        }
+
+        List<CodexItem> Build(CodexChapter chapter, SpawnMatrixToyDefinitionSO roster = null) =>
+            CodexCatalog.Build(chapter, _codex, _vessels, new Sprite[4], Words(),
+                               c => _maps.TryGetValue(c, out var m) ? m : null, roster);
 
         [Test]
-        public void Ethirions_ListEveryCrystal_InAssetOrder()
+        public void Elements_AreTheFourElements_ThenTheAuthoredCards()
         {
-            var items = Build(CodexChapter.Ethirions);
-            Assert.AreEqual(new[] { "Charge", "Mass", "Space", "Time", "Omni" }, items.ConvertAll(i => i.Name).ToArray());
-            Assert.AreEqual("Kind", items[0].Page.Facts[0].Label);
+            var items = Build(CodexChapter.Elements);
+            Assert.AreEqual(new[] { "Charge", "Mass", "Space", "Time", "Omni", "Prisms" }, items.ConvertAll(i => i.Name).ToArray());
+            Assert.AreEqual(new[] { Element.Charge, Element.Mass, Element.Space, Element.Time, Element.None, Element.None },
+                            items.ConvertAll(i => i.Element).ToArray());
+            Assert.AreEqual("Fly into it.", items[4].Page.Gameplay);
         }
 
         [Test]
-        public void Flora_And_Fauna_SplitTheSharedEcologyList()
+        public void Element_ShowsItsEtherion_ButNoneOfTheCrystalsBuildNotes()
+        {
+            var mass = Build(CodexChapter.Elements)[1].Page;
+            Assert.IsEmpty(mass.Facts);                                          // "Kind", triangle counts: gone (section 97)
+            StringAssert.Contains("Etherions", mass.Gameplay);
+            StringAssert.Contains("Mass", mass.Gameplay);
+        }
+
+        [Test]
+        public void Element_CarriesItsCrystalFlipbook()
+        {
+            var tex = new Texture2D(4, 4);
+            _made.Add(tex);
+            var items = CodexCatalog.Build(CodexChapter.Elements, _codex, _vessels, new Sprite[4], Words(), c => null, null,
+                                           new[] { null, tex, null, null });
+            Assert.AreSame(tex, items[1].Flipbook);
+            Assert.AreSame(tex, items[1].Page.Flipbook);
+            Assert.IsNull(items[0].Flipbook);
+        }
+
+        [Test]
+        public void Elements_ListEveryVessel_WithAnOpenSlotWhereNoAbilityIsDesigned()
+        {
+            var items = Build(CodexChapter.Elements);
+            var mass = items[1].Page;
+            Assert.AreEqual(2, mass.Rows.Count);
+            Assert.AreEqual("Open slot", mass.Rows[0].Line);                     // the Squirrel has no map here
+            Assert.AreEqual("Turret Stance - level 5: Shielded Prisms", mass.Rows[1].Line);
+            Assert.AreEqual("Pulsefire Cannons", items[2].Page.Rows[1].Line);   // an ability with no upgrade
+        }
+
+        [Test]
+        public void Fauna_FollowsTheToyBox_AndFillsInFromTheCodex()
+        {
+            var roster = Roster(new[] { "Swarm", "Shark", "Leviathan" }, new string[0], ("Swarm", "A colony that hunts as one."));
+            var items = Build(CodexChapter.Fauna, roster);
+            Assert.AreEqual(new[] { "Swarm", "Shark", "Leviathan" }, items.ConvertAll(i => i.Name).ToArray());
+            Assert.AreEqual("A colony that hunts as one.", items[0].Page.Gameplay);
+            Assert.AreEqual("Speed", items[1].Page.Facts[0].Label);             // the Codex's entry fills in the Shark
+            Assert.IsEmpty(items[2].Page.Facts);                                // a Toy Box species the Codex has no entry for
+        }
+
+        [Test]
+        public void Lifeforms_TheCodexKnows_AndTheToyBoxDoesNot_FollowTheToyBoxList()
+        {
+            var roster = Roster(new[] { "Swarm" }, new[] { "Gyroid" });
+            Assert.AreEqual(new[] { "Swarm", "Shark" }, Build(CodexChapter.Fauna, roster).ConvertAll(i => i.Name).ToArray());
+            Assert.AreEqual(new[] { "Gyroid", "Arbor" }, Build(CodexChapter.Flora, roster).ConvertAll(i => i.Name).ToArray());
+        }
+
+        [Test]
+        public void Lifeforms_MatchTheirCodexEntry_WhateverTheSpacing()
+        {
+            _codex.Ecology.Add(Entry("fauna.worm-colony", CodexKingdom.Fauna, "Worm Colony", ("Diet", "Trail")));
+            var roster = Roster(new[] { "WormColony" }, new string[0]);
+            var items = Build(CodexChapter.Fauna, roster);
+            Assert.AreEqual(2, items.Count);                                    // WormColony is the Worm Colony, then the Shark
+            Assert.AreEqual("Diet", items[0].Page.Facts[0].Label);
+        }
+
+        [Test]
+        public void Flora_And_Fauna_SplitTheSharedEcologyList_WithoutAToyBox()
         {
             Assert.AreEqual("Arbor", Build(CodexChapter.Flora)[0].Name);
             Assert.AreEqual(1, Build(CodexChapter.Flora).Count);
@@ -144,95 +203,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Tools_DropTheGroupsOrderingPrefix_AndListTheirChoices()
+        public void Lexicon_IsTheAuthoredCards_SkippingBlankOnes()
         {
-            var item = Build(CodexChapter.Toys)[0];
-            Assert.AreEqual("Creation", item.Sub);
-            Assert.AreEqual("Saturn", item.Page.Rows[0].Title);
-            Assert.AreEqual("A planet and its rings", item.Page.Rows[0].Line);
-        }
-
-        [Test]
-        public void Pilots_FollowTheVesselList_ThenCharge_ToTime_AndSkipHullsOffTheList()
-        {
-            var names = Build(CodexChapter.Pilots).ConvertAll(i => i.Name);
-            Assert.AreEqual(new[] { "Trace", "Shrapnel", "Longshift" }, names.ToArray());
-        }
-
-        [Test]
-        public void Pilot_Page_QuotesTheFlavour_AndNamesTheElementsAbility()
-        {
-            var page = Build(CodexChapter.Pilots).Find(i => i.Name == "Shrapnel").Page;
-            Assert.AreEqual("“Bigger bangs!”", page.Body);
-            Assert.IsTrue(page.Facts.Exists(f => f.Value == "Mass - Turret Stance"));
-            Assert.IsTrue(page.Facts.Exists(f => f.Value == "Shielded Prisms"));
-        }
-
-        [Test]
-        public void Elements_ListEveryVessel_WithAnOpenSlotWhereNoAbilityIsDesigned()
-        {
-            var items = Build(CodexChapter.Elements);
-            Assert.AreEqual(4, items.Count);
-            var mass = items[1].Page;
-            Assert.AreEqual(2, mass.Rows.Count);
-            Assert.AreEqual("Open slot", mass.Rows[0].Line);                     // the Squirrel has no map here
-            Assert.AreEqual("Turret Stance - level 5: Shielded Prisms", mass.Rows[1].Line);
-            Assert.AreEqual("Pulsefire Cannons", items[2].Page.Rows[1].Line);   // an ability with no upgrade
-        }
-
-        [Test]
-        public void Vessel_Page_HasFourAbilities_AndItsPilots()
-        {
-            var sparrow = Build(CodexChapter.Vessels).Find(i => i.Name == "Sparrow").Page;
-            Assert.AreEqual(4, sparrow.Rows.Count);
-            Assert.AreEqual("Turret Stance", sparrow.Rows[1].Title);
-            Assert.AreEqual("Level 5: Shielded Prisms", sparrow.Rows[1].Line);
-            Assert.AreEqual(2, sparrow.Cells.Count);
-        }
-
-        [Test]
-        public void Elements_CarryTheirElement_ForTheFlower()
-        {
-            var items = Build(CodexChapter.Elements);
-            Assert.AreEqual(new[] { Element.Charge, Element.Mass, Element.Space, Element.Time }, items.ConvertAll(i => i.Element).ToArray());
-            Assert.AreEqual(Element.Mass, items[1].Page.Element);
+            var items = Build(CodexChapter.Lexicon);
+            Assert.AreEqual(new[] { "Vessels", "Toys" }, items.ConvertAll(i => i.Name).ToArray());
+            Assert.AreEqual("Eight hulls.", items[0].Page.Gameplay);
+            Assert.AreEqual("Old stations.", items[1].Page.Body);
         }
 
         [Test]
         public void OnlyLifeforms_DriftThroughThePalette()
         {
             var palette = new[] { Color.green, Color.red, Color.yellow };
-            List<CodexItem> With(CodexChapter c) => CodexCatalog.Build(c, _codex, _captains, _vessels, new Sprite[4], new CodexWords(),
-                                                                      cls => null, null, palette);
+            List<CodexItem> With(CodexChapter c) => CodexCatalog.Build(c, _codex, _vessels, new Sprite[4], Words(),
+                                                                      cls => null, null, null, palette);
             Assert.AreSame(palette, With(CodexChapter.Flora)[0].Palette);
             Assert.AreSame(palette, With(CodexChapter.Fauna)[0].Page.Palette);
-            Assert.IsNull(With(CodexChapter.Ethirions)[0].Palette);
-            Assert.IsNull(With(CodexChapter.Vessels)[0].Palette);
-        }
-
-        [Test]
-        public void Vessels_ShowTheirColourfulCardArt_ElseTheirIcon()
-        {
-            var sparrow = _vessels.VesselList[1];
-            var tex = new Texture2D(4, 4);
-            _made.Add(tex);
-            var art = Sprite.Create(tex, new Rect(0, 0, 4, 4), Vector2.zero);
-            _made.Add(art);
-            var cards = Make<HangarCardArtSO>();
-            var entry = new HangarCardArtSO.Entry { vessel = sparrow, art = art };
-            typeof(HangarCardArtSO).GetField("entries", BindingFlags.NonPublic | BindingFlags.Instance)
-                .SetValue(cards, new List<HangarCardArtSO.Entry> { entry });
-            var items = CodexCatalog.Build(CodexChapter.Vessels, _codex, _captains, _vessels, new Sprite[4], new CodexWords(),
-                                           cls => null, cards);
-            Assert.AreSame(art, items.Find(i => i.Name == "Sparrow").Image);
-            Assert.AreSame(art, items.Find(i => i.Name == "Sparrow").Page.Image);
-            Assert.IsNull(items.Find(i => i.Name == "Squirrel").Image);         // no card art, no icon authored here
-        }
-
-        [Test]
-        public void Artifacts_AreEmpty_UntilTheGameHasArtifactData()
-        {
-            Assert.IsEmpty(Build(CodexChapter.Artifacts));
+            Assert.IsNull(With(CodexChapter.Elements)[0].Palette);
+            Assert.IsNull(With(CodexChapter.Lexicon)[0].Palette);
         }
     }
 }

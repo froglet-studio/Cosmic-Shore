@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
         // strategy runs: a button held as the player switched devices, or released while the
         // window was unfocused (InputController skips unfocused frames), never sent its release,
         // so the ability (the Sparrow's boost on B / R, any held face-button ability) stayed on.
-        private bool prevButton1, prevButton2, prevButton3, prevButton4, prevFlip;
+        private bool prevButton1, prevButton2, prevButton3, prevButton4, prevPayload;
 
         private void EdgeFire(bool isPressed, ref bool prev, InputEvents evt)
         {
@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
             EdgeFire(false, ref prevButton4, InputEvents.Button4Action);
-            EdgeFire(false, ref prevFlip, InputEvents.FlipAction);
+            EdgeFire(false, ref prevPayload, InputEvents.PayloadAction);
         }
 
         public override void Initialize(IInputStatus inputStatus)
@@ -134,7 +134,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(Gamepad.current.buttonEast.isPressed, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(Gamepad.current.buttonWest.isPressed, ref prevButton3, InputEvents.Button3Action);
             EdgeFire(Gamepad.current.buttonNorth.isPressed, ref prevButton4, InputEvents.Button4Action);
-            EdgeFire(Gamepad.current.rightShoulder.isPressed, ref prevFlip, InputEvents.FlipAction);
+            EdgeFire(Gamepad.current.rightShoulder.isPressed, ref prevPayload, InputEvents.PayloadAction);
 
             // Triggers - read analog values and use custom deadzone for edge detection.
             // This gives full analog range (0-1) for drift scaling while keeping

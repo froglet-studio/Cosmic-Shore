@@ -56,7 +56,13 @@ namespace CosmicShore.ScriptableObjects
                  "'tap retry'); a second surface over it would say the same thing twice.")]
         public bool SuppressDuringLaunch = true;
 
-        [Header("Palette")]
+        [Header("Look (style B)")]
+        [Tooltip("The style-B window (Docs/MENU_REDESIGN_B.md section 100.2, written by " +
+                 "Tools/Build/author_disconnect_notice.py). When set, the notice draws it and the palette and " +
+                 "layout below are unused; when empty, the notice builds the legacy panel from them.")]
+        public CosmicShore.UI.DisconnectNoticeView WindowPrefab;
+
+        [Header("Palette (legacy panel)")]
         [Tooltip("Full-screen scrim behind the panel.")]
         public Color ScrimColor = new(0f, 0f, 0f, 0.72f);
 
@@ -75,7 +81,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The secondary control (Continue Offline).")]
         public Color SecondaryButtonColor = new(0.22f, 0.22f, 0.28f, 1f);
 
-        [Header("Layout")]
+        [Header("Layout (legacy panel)")]
         [Tooltip("Panel size in reference pixels (the canvas matches the project's 1920x1080).")]
         public Vector2 PanelSize = new(760f, 340f);
 

@@ -234,3 +234,169 @@ vessel silhouette."
     portrait is exempted from `components`/`gap` BY NAME with the reason, never by loosening `verify.py`. The
     generator that made the old art (`ToolPortraitBuilder`) was retired and the baker stands down on Tool pages, so
     a re-bake cannot put the spheres back.
+
+41. **When the act is hard to SEE on the mesh, change the pose in the model, not the drawing (2026-10-27, the
+    Grizzly).** Dig In wanted the anchor sunk into the ground, but in the model's first `dig` take the anchor only
+    raked, and its tines reached 3-6 px below the engine pods in the side view. A ground plate low enough to catch
+    them also caught the pods, and one high enough to clear the pods caught nothing. Extending the tines in the icon
+    would have been a drawing of the hull. The fix went in the model's spec (`vessel_model/specs/grizzly.py`): the
+    `dig` take now PLUNGES the anchor 1.3 units as it rakes, and the tines reach 20 px below the pods. The icon renders
+    that take (`mesh_silhouette(..., take="rig|dig")`), the plate sits 7 px under the pods, and the plate is cut 6 px
+    round the tines so they read as sunk into it. Two more:
+    - **A rolled hull's rear edge is not its engines' rows.** Rolled nose-down, the side view's leftmost column caught
+      only the upper engine row. Measure the rows on the UNROLLED silhouette, then turn the bars with the hull about
+      the same centre: `canvas.rotate` and the silhouette's `roll` share one convention.
+    - **A hull with an embedded HUD rebinds in the vessel prefab.** The Grizzly has no `<Hull>HUDVariant`: its
+      GrizzlyHUD lives in `Grizzly.prefab`, so `REBIND` names that file. A placeholder another screen also shows
+      (`CannonIcon-PLACEHOLDER.png` in `ModeControlsLibrary.asset`) is left to that screen's owner.
+
+## 2026-10-27 - the Sparrow's Space card: options are judged in the LOCKUP
+
+Garrett: "going forward when showing vessel icons lets show the before and the other icons of the vessel so we can
+consider how they distinguish themselves too."
+
+42. **A candidate is judged beside its siblings, never alone.** The first Space options sheet showed each candidate on
+    its own card; one of them (the Sparrow firing from both pods) only looks wrong next to the Mass and Time cards,
+    where it is the third spiky hull in a row of four. The options sheet is now the hull's whole lockup per
+    candidate, with the BEFORE row first: `CARDS` entries share a `group=`, the spec declares `LOCKUP` (its other
+    cards as the HUD draws them today, parts and colours), and `author.py` writes `<hull>_<group>_options.png`
+    (`states.options_sheet`). The family gate (IoU at 24 px) measures the same thing; the sheet lets the owner see it.
+
+43. **A live QUALITY is drawn as the thing doing it; its LEVELS are segments in the plate.** The Sparrow's Space card
+    (2026-10-27). Garrett: "the icon we had before the current had a way to show that there were different heat
+    buckets that had different spread. if you could convey the realtime spread value and which level they are on
+    that would be best." Then: "i like what option E is trying to do, but the clarity of F is good. lets try to get E
+    using more shots and the whole space to define the angle"; "i like the ease of reading the lines as the
+    boundaries between levels but i don't like how it visually dominates the whole space"; "option E2 looks great".
+    What landed: the icon is ten rounds on their rays inside the gun's live cone (one stream cold, the card's full
+    height in the collapse; every rank puts one round on a cone EDGE so the angle is drawn, not guessed); the heat
+    gauge's phase joins are a GAP through the fill once passed and a short dim edge tick while ahead
+    (`card.py gauge_marks_style="segments"`, `SparrowHUDView.PaintGunHeatMarks`). Three things it taught:
+    (a) **measure the mechanic before drawing the ability text** - the description said Space extends the guns'
+    range, but Round 7 of SPARROW_SPRAY_ACCURACY.md fixed the range; the first options round drew "reach" and was
+    wrong for that reason. (b) **A real value too small to see gets a readable value per level**, interpolated
+    between knots (`SprayCardAngle`), never a fake constant: the card still moves every frame. (c) **When a part
+    repeats N times along a live layout, generate the N Images in the view from ONE part sprite** and serialize the
+    layout (the kit's SPRAY_RANKS = the view's `gunSprayRounds`); the prefab gets only the sprites and the
+    container step - ten prefab children would be ten things to keep in step.
+
+## 2026-10-28 - the Rhino's Charge card: a part that FOLLOWS the real thing
+
+44. **When the card follows a live object, follow its SHAPE and its FACING, not only its angle.** Three rounds: a
+    domain-coloured lozenge ("make it look more sword like and not team colored... the idea is to follow the actual
+    sword"), a straight sword ("more like a katana."), then the katana turned with the swipe - and Garrett's two notes
+    on it were both about facing: "flip the sword as well as rotate it so it is swiping with the sharp part" and "the
+    both triggers chop should remove the curve so it looks like it is from behind". An asymmetric part (one edge, a
+    curve) that only ROTATES shows its spine leading half the time. Draw it once with the edge on a known side, let the
+    view MIRROR it about the pivot so the edge leads the motion (and keep the last side at rest, so letting go does not
+    flip it), and give each view the object really has (from the side, from behind) its own sprite, switched at a
+    threshold the game already uses (here the energize stance's summed pull) rather than cross-faded: a cross-fade of
+    two silhouettes reads as a double image. Pin the facing in a pure function with a test, since a sign slip draws a
+    plausible wrong card. A tool that is the Vessel's own (a sword, a weapon) wears white / danger, not the domain.
+
+## 2026-10-28 - the Rhino's Mass, Space and Time cards: the mistakes that cost a round each
+
+Garrett, after the Rhino's third card: "look over the iterative mistakes made and be sure to update the icon creation
+skills with your learning so you get progressively better at developing icons for vessels." Every lesson below cost at
+least one options round; together they are the pre-send review in SKILL.md §3 step 2.5.
+
+45. **A copy of a moving part is mirrored WITH it.** The Mass card (Afterimage) drew the sword's prism copies at the
+    right angles, but "the after image is flipped the wrong way": the copies are the sword where it WAS in the same
+    swing, so they take the sword's facing as well as its angle. Lesson 44 applied to every ghost, trail and echo of a
+    part: whatever transform the live part gets (mirror, foreshortening, the curve's side), its copies get too. Check
+    a ghost against the part it echoes before sending, not against the brief.
+
+46. **Every mark on the card must answer "what is this showing?" with something nothing else on the card shows.** The
+    Space card's first round put a plate fill under a blade whose LENGTH already was the Space level. Garrett: "what is
+    the fill showing?" - and on the Space 5 tick: "yeah everything has an L5 upgrade so that is inconsistent". Two
+    rules: (a) one quantity, one place - if the icon draws a how-much (a length, a count), the plate does not repeat
+    it, and vice versa; (b) the level-5 upgrade is never marked as a level (every ability has one), it is drawn as the
+    ACT it unlocks. Before sending, name in one line what each part and the plate tell; a part with no line goes.
+
+47. **Draw the upgrade as the act on its real target.** "show it hitting a supershielded prism and it breaking above
+    5": Shield Breaker became the blade's tip in a super-shielded prism, whole below Space 5 and shattered from it. The
+    level-5 state is a STATE of the card (a swap the HUD makes off the real upgrade flag), not a badge.
+
+48. **A game object is drawn from its real geometry, not from memory.** "that does not look like a stelated
+    octahedron, you need a better supershielded prisms icon": the hand-drawn star was a guess. The fix read the game's
+    generator (`StellatedOctahedronMeshGenerator`), built the solid (the two tetrahedra, every face), and projected
+    it. Lesson 24 ("fidelity means the hull's real geometry") holds for every object on the card - prisms, crystals,
+    projectiles - and the source is the mesh or the generator, found before the first sketch.
+
+49. **Flat, one colour, in its most iconic projection.** The first true stella octangula was a shaded three-quarter
+    view; Garrett: "we need a flatter design in order to play well with the others". The row is flat: one colour per
+    part, facets told by SEAMS (a few px of knock-out), never by shade. Choose the projection where the solid reads as
+    its own glyph (a stella octangula down a body diagonal is the six-point star) - pick it by measuring several
+    views, not by default.
+
+50. **A secondary object knocks out around the primary; it never covers it.** "it should not occlude the sword or the
+    max length ticks". Cut every secondary part clear of the parts above it in meaning with a grown mask (`toy_portraits
+    .grown(mask, px)`, ~2.5 px) - the same knock-out the seams use - so the focal object and every reference mark stay
+    whole at 40 px. Check overlaps part by part, at 40 px, before sending.
+
+51. **A destroyed state is the object's real pieces separated along its real seams.** "it should have a better flat
+    destroyed state than the flat state with some erased. it should remake with the correct separation of faces." A
+    broken thing is not the whole thing with holes: split it into the pieces the game breaks it into (here each spike's
+    facets), push each out along its own direction (a fraction of its distance from the centre), keep each piece whole.
+
+52. **Draw the mechanic, AND what it means for the vessel.** The Time card (Ramp Spool) went out as three ways to draw
+    "speed": streaks, chevrons, a slope. Garrett: "i think this ability is about the rhino and its invulnerability to
+    danger prisms so it should have a rhino silhouette and a tick on the meter ... that shows the barrier come up to
+    protect against the danger prism." Then: "also using the mechanic to produce icons still seems very sensible to
+    not discard." So the mechanic stays the source (the speed is the plate, its 70% threshold the tick, the ward and the
+    danger prism the real objects the code names) - what the first round missed is the PAYOFF the pilot plays for (the
+    level-5 ward, untouchable above 70%) and WHO gains it (the hull). Brief every card from the mechanic first, then ask
+    "who gains what, against what"; when the act changes the vessel itself (protected, faster, heavier), the vessel is
+    on the card.
+
+53. **A threshold on the plate is the Sparrow's segment mark, never a line across.** The 70% Momentum mark went out as a
+    full-width line; "not the bar across. updated sparrow has a better solution": `gauge_marks_style="segments"` - a
+    short dim tick at each slanted edge while it is ahead, a gap through the fill once passed
+    (`SparrowHUDView.PaintGunHeatMarks`). Lesson 43 already said it for levels; it holds for a single threshold too.
+    Default every plate mark to "segments"; "lines" is the rejected style.
+
+54. **Reuse the game's own 2D art before drawing a hull.** The Rhino's FBX cannot be posed without Blender here, but
+    the game ships a top-view HUD silhouette in parts (`Assets/_Graphics/Silhouettes/Rhino/RhinoBody.png` + two
+    `RhinoWing.png`), laid out at the dossier's measured pod offsets. Search `Assets/_Graphics/Silhouettes/` (and the
+    sparse checkout's excluded paths: `git ls-files | grep -i <hull>`) before concluding a hull cannot be drawn.
+
+55. **Keep the act's motion away from the plate's marks.** The Time card's round 3 flew the Rhino nose UP, so the ward
+    and the danger prism sat at the top of the card, right under the fill line and the 70% ticks. Garrett: "lets have
+    the rhino travel left to right so it doesn't cause visual confusion between the impact event and the threshold".
+    The plate fills bottom to top, so anything the icon moves or strikes reads as part of the meter when it runs
+    vertically; run it ACROSS (a hull flies left to right, as the Sparrow's does) and send anything it throws off
+    sideways or down, clear of the marks. Check where every plate mark lands on the card before placing the act.
+
+## 2026-10-28 - the Scarab's Charge card: scale, then flat, then the house style
+
+56. **When an ability has a size, draw it to scale and say so.** The first Scarab options drew the punch's plate as a
+    bar a little taller than the hull. Garrett: "lets show the relative size of the volume affected relative to the
+    scarab". Measure it from the prefabs (the hull collider radius, the multipliers on the ability and its projectile
+    prefab, any mirroring) and lay the card out in one px-per-metre scale; write the measurement into the spec's
+    comment. If the true scale makes the hull a speck, show that honestly first (Garrett kept the true-size ~9 px hull
+    over a 2x one) and offer the exaggeration only as a labelled option.
+
+57. **What an ability destroys is negative space; what it spares is drawn whole outside its reach.** "put whole prisms
+    outside and shattered prisms that convey the destructive direction inside", then "have a negative space prisms
+    inside". A broken thing that shows DIRECTION is slivers pointing the way it was flung (a forward chevron), not
+    quarters burst out from the centre - that reads as an explosion in place.
+
+58. **A region is a filled flat shape, never an outline box.** An outlined rectangle round the volume read as a frame
+    or a screen ("lets not have a box. lets go more flat"); a grey fill read as disabled. The polished cards (sheets
+    `sparrow.png`, `rhino.png`) are one bold WHITE mass, parts split by knock-out gaps, grey only for "not ready". Before
+    sending options, set the candidate beside those sheets and match that weight ("more cohesive with the rest of our
+    polished icons"); give a region a shape with character (A3's bubble: square against the plate, rounded behind).
+
+59. **Hold the main shape at one bold size; show a size LEVEL by what it is measured against.** The Switch's ring grows
+    2.5x with Mass; drawing it at the live size left a speck of a card at Mass 1 (the card is sized for Mass 10). The
+    ring stays big and the BALL shrinks inside it by the same ratio - still to scale, and the card is always one bold
+    mass. The HUD scales that one part about its own centre (rebind.py's point-anchored child). Garrett took it in one
+    round.
+
+60. **Draw a game object from its own mesh, never from a generic idea of it.** The Ball Forge options drew the omni
+    crystal as a gem (a hexagonal bipyramid), and Garrett's answer was "that is not the omni crystal". The omni crystal
+    is an exploded rhombicosidodecahedron (`Assets/_Models/OmniCrystalExport1_8-21-25.fbx`, 122 plates). Project its
+    outer plate faces down a pentagon's axis, keep the pentagon, its five squares and the five triangles, and shrink
+    each plate about its own centre so the gaps read at icon size. That matches `ElementIcons/OmniCrystal_Active.png`
+    (`specs/scarab.py` `omni_crystal`). Before drawing any crystal, prism, ball or creature, find its FBX or its
+    shipped mark first.

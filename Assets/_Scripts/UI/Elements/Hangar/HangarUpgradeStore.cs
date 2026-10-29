@@ -17,7 +17,9 @@ namespace CosmicShore.UI
     /// </summary>
     public static class HangarUpgradeStore
     {
-        public const int MaxLevel = 10;
+        /// <summary>Section 90 (Shombith 2026-10-27: "Max level 5"): an element tops out at 5, its five white petals. A
+        /// level saved above it (bought before) reads as 5; nothing has to be migrated.</summary>
+        public const int MaxLevel = 5;
         public const int StartLevel = 1;
 
         /// <summary>A level was bought: the vessel, the element and the new level. The arcade cards redraw their flowers.</summary>

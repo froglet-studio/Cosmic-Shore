@@ -1,0 +1,569 @@
+{
+  "about": "The voyage slice's content: the ONE spec (Docs/Voyages/SLICE.md section 3). Tools/Build/author_voyage_assets.py writes Assets/Resources/Voyages/VoyageContent.asset from it (--check is the drift gate). Rules: Assets/_Scripts/Data/Voyages/VoyageRules.cs. Ids are saved in voyage records: never rename one. Text is printable ASCII (the UI font has no other glyphs). Tokens in titles and lines: {from} {to} {about} {pilot}. Cell is an index into the content asset's cell pool (empty pool: the host cell's own worlds, the ones the Arkway flies).",
+  "locations": [
+    {
+      "id": "loc.harbour.jade",
+      "name": "Celadon Harbour",
+      "experience": "Harbour",
+      "home": "Jade",
+      "chart": [
+        -6,
+        0,
+        -4
+      ],
+      "cell": 0,
+      "blurb": "Home water for the Jade. Dock here and whatever is aboard is yours."
+    },
+    {
+      "id": "loc.harbour.ruby",
+      "name": "Carmine Harbour",
+      "experience": "Harbour",
+      "home": "Ruby",
+      "chart": [
+        6,
+        1,
+        -4
+      ],
+      "cell": 1,
+      "blurb": "Home water for the Ruby. Dock here and whatever is aboard is yours."
+    },
+    {
+      "id": "loc.harbour.gold",
+      "name": "Aurum Harbour",
+      "experience": "Harbour",
+      "home": "Gold",
+      "chart": [
+        0,
+        -1,
+        7
+      ],
+      "cell": 2,
+      "blurb": "Home water for the Gold. Dock here and whatever is aboard is yours."
+    },
+    {
+      "id": "loc.tollmoor",
+      "name": "Tollmoor",
+      "experience": "Port",
+      "chart": [
+        0,
+        0,
+        0
+      ],
+      "cell": 3,
+      "blurb": "A neutral port where every lane crosses. News arrives here first and leaves here fastest."
+    },
+    {
+      "id": "loc.lantern",
+      "name": "Lantern Reach",
+      "experience": "VaultField",
+      "chart": [
+        -5,
+        2,
+        3
+      ],
+      "cell": 4,
+      "vaults": 3,
+      "finds": [
+        "artifact.hydra",
+        "artifact.aftershock"
+      ],
+      "blurb": "Vault shells drift here, lit from inside. Something sealed them, and something wants them back."
+    },
+    {
+      "id": "loc.hollow",
+      "name": "The Hollow",
+      "experience": "VaultField",
+      "chart": [
+        4,
+        -2,
+        5
+      ],
+      "cell": 5,
+      "vaults": 2,
+      "finds": [
+        "artifact.aftershock",
+        "artifact.hydra"
+      ],
+      "blurb": "A quiet cell with deep vaults. Quiet cells are quiet for a reason."
+    },
+    {
+      "id": "loc.verdigris",
+      "name": "Verdigris",
+      "experience": "Core",
+      "chart": [
+        -1,
+        3,
+        -7
+      ],
+      "cell": 6,
+      "hold": 60,
+      "blurb": "A contested core. Whoever holds its nucleus decides whose colour the waves fight for."
+    },
+    {
+      "id": "loc.saltmarch",
+      "name": "Saltmarch",
+      "experience": "Core",
+      "chart": [
+        5,
+        1,
+        1
+      ],
+      "cell": 7,
+      "hold": 75,
+      "blurb": "A core on the trade lane, ringed with old wreckage."
+    }
+  ],
+  "lanes": [
+    {
+      "from": "loc.harbour.jade",
+      "to": "loc.lantern",
+      "cells": 1
+    },
+    {
+      "from": "loc.harbour.jade",
+      "to": "loc.tollmoor",
+      "cells": 2
+    },
+    {
+      "from": "loc.harbour.ruby",
+      "to": "loc.verdigris",
+      "cells": 1
+    },
+    {
+      "from": "loc.harbour.ruby",
+      "to": "loc.tollmoor",
+      "cells": 2
+    },
+    {
+      "from": "loc.harbour.gold",
+      "to": "loc.hollow",
+      "cells": 1
+    },
+    {
+      "from": "loc.harbour.gold",
+      "to": "loc.tollmoor",
+      "cells": 2
+    },
+    {
+      "from": "loc.lantern",
+      "to": "loc.tollmoor",
+      "cells": 1
+    },
+    {
+      "from": "loc.lantern",
+      "to": "loc.verdigris",
+      "cells": 2
+    },
+    {
+      "from": "loc.tollmoor",
+      "to": "loc.saltmarch",
+      "cells": 1
+    },
+    {
+      "from": "loc.hollow",
+      "to": "loc.saltmarch",
+      "cells": 2
+    },
+    {
+      "from": "loc.verdigris",
+      "to": "loc.saltmarch",
+      "cells": 2
+    }
+  ],
+  "crew": [
+    {
+      "pilot": "pilot.callsign.citadel",
+      "name": "Oriel Vance",
+      "faction": "Hunter",
+      "story": "Reads a vault's shell like a face. Has opened more than she has kept."
+    },
+    {
+      "pilot": "pilot.callsign.talon",
+      "name": "Brisk Amadou",
+      "faction": "Hunter",
+      "story": "Tracks predators for a living, and sells what they guard."
+    },
+    {
+      "pilot": "pilot.callsign.doe",
+      "name": "Ilse Marren",
+      "faction": "Hunter",
+      "story": "Follows the grazers. Where they gather, something sealed lies near."
+    },
+    {
+      "pilot": "pilot.callsign.anvil",
+      "name": "Teodor Haskel",
+      "faction": "Hunter",
+      "story": "Weighs every find before he touches it. Usually right."
+    },
+    {
+      "pilot": "pilot.callsign.needle",
+      "name": "Pell",
+      "faction": "Hunter",
+      "story": "Finds the switch nobody else saw. Talks to it, too."
+    },
+    {
+      "pilot": "pilot.callsign.galleon",
+      "name": "Cass Morrow",
+      "faction": "Pirate",
+      "story": "Knows every Ark by its silhouette, and every wreck by its smell."
+    },
+    {
+      "pilot": "pilot.callsign.bandit",
+      "name": "Juno Rask",
+      "faction": "Pirate",
+      "story": "Calls the rival out before the rival knows they are a rival."
+    },
+    {
+      "pilot": "pilot.callsign.hornet",
+      "name": "Sable Okoye",
+      "faction": "Pirate",
+      "story": "Flies the burning edge of a wreck field for fun."
+    },
+    {
+      "pilot": "pilot.callsign.flume",
+      "name": "Aster Quill",
+      "faction": "Pirate",
+      "story": "Rides the tunnels others fear. Arrives early, leaves rich."
+    },
+    {
+      "pilot": "pilot.callsign.volt",
+      "name": "Merrin Tal",
+      "faction": "Merchant",
+      "story": "Prices news by its voltage. Fresh news sparks."
+    },
+    {
+      "pilot": "pilot.callsign.zodiac",
+      "name": "Dov Ferrante",
+      "faction": "Merchant",
+      "story": "Charts the fastest lane between any two ports, then charges for it."
+    },
+    {
+      "pilot": "pilot.callsign.sundial",
+      "name": "Noor Achebe",
+      "faction": "Merchant",
+      "story": "Never late. Has never once been late."
+    },
+    {
+      "pilot": "pilot.callsign.opal",
+      "name": "Wren Holloway",
+      "faction": "Merchant",
+      "story": "Carries sealed dispatches for three ports and reads none of them. Probably."
+    },
+    {
+      "pilot": "pilot.callsign.manger",
+      "name": "Rook Sandoval",
+      "faction": "Merchant",
+      "story": "Knows where the herds will feed tomorrow, and who will pay to know it."
+    },
+    {
+      "pilot": "pilot.callsign.ensign",
+      "name": "Lady Corvina Ash",
+      "faction": "Aristocrat",
+      "story": "Holds what is hers. Considers most things hers."
+    },
+    {
+      "pilot": "pilot.callsign.rampart",
+      "name": "Marshal Edda Kroll",
+      "faction": "Aristocrat",
+      "story": "Has held Verdigris twice and lost it once. Remembers the once."
+    },
+    {
+      "pilot": "pilot.callsign.wingman",
+      "name": "Captain Theo Lark",
+      "faction": "Aristocrat",
+      "story": "Never leaves a wing behind. Never lets you forget it."
+    },
+    {
+      "pilot": "pilot.callsign.ivy",
+      "name": "Warden Sorrel",
+      "faction": "Aristocrat",
+      "story": "Tends the gardens of the cores, and the guns that guard them."
+    }
+  ],
+  "jobs": [
+    {
+      "id": "job.return",
+      "kind": "Courier",
+      "faction": "Merchant",
+      "needs": "None",
+      "goes": "Harbour",
+      "title": "Sail home to {to}",
+      "summary": "Dock at {to}. Everything aboard becomes yours.",
+      "success": "",
+      "fail": "",
+      "reward": 0,
+      "element": "Omni",
+      "onSuccess": "",
+      "onFail": ""
+    },
+    {
+      "id": "job.courier.dispatch",
+      "kind": "Courier",
+      "faction": "Merchant",
+      "needs": "None",
+      "goes": "Port",
+      "title": "{pilot}: carry a sealed dispatch to {to}",
+      "summary": "Reach {to} with the Ark standing. The news aboard will change what {to} knows.",
+      "success": "{pilot}'s dispatch reached {to}. The dock crews were talking about it before the hull cooled.",
+      "fail": "The dispatch for {to} never arrived.",
+      "reward": 6,
+      "element": "Time",
+      "onSuccess": "ev.courier.delivered",
+      "onFail": ""
+    },
+    {
+      "id": "job.hunt.sighting",
+      "kind": "Hunt",
+      "faction": "Hunter",
+      "needs": "Sighting",
+      "goes": "VaultField",
+      "title": "{pilot}: open the vaults at {to}",
+      "summary": "Vaults are lit at {to}. Crack one with a payload, carry its artifact back to the Ark and stow it.",
+      "success": "{pilot}'s crew opened a vault at {to}. Its chart pointed somewhere new.",
+      "fail": "The vaults at {to} kept their secrets.",
+      "reward": 8,
+      "element": "Space",
+      "onSuccess": "ev.hunt.opened",
+      "onFail": "ev.hunt.missed"
+    },
+    {
+      "id": "job.hunt.rumour",
+      "kind": "Hunt",
+      "faction": "Hunter",
+      "needs": "None",
+      "goes": "VaultField",
+      "title": "{pilot}: chase a rumour of vaults at {to}",
+      "summary": "Nobody has seen them lit, but {pilot} swears there are vaults at {to}. Crack one and stow what is inside.",
+      "success": "{pilot}'s rumour was true. A vault at {to} gave up its artifact.",
+      "fail": "{to} was empty water, or looked like it.",
+      "reward": 4,
+      "element": "Space",
+      "onSuccess": "ev.hunt.opened",
+      "onFail": ""
+    },
+    {
+      "id": "job.salvage.wreck",
+      "kind": "Salvage",
+      "faction": "Pirate",
+      "needs": "Wreck",
+      "goes": "Core",
+      "title": "{pilot}: strip the wreck at {to}",
+      "summary": "An Ark went down at {to} and its hold spilled. Grab what floats there with RB and stow it in your Ark before anyone else does.",
+      "success": "{pilot} picked the wreck at {to} clean.",
+      "fail": "Someone else got to the wreck at {to} first, or nobody did.",
+      "reward": 5,
+      "element": "Mass",
+      "onSuccess": "ev.salvage.stripped",
+      "onFail": ""
+    },
+    {
+      "id": "job.defence.aid",
+      "kind": "Defence",
+      "faction": "Aristocrat",
+      "needs": "Aid",
+      "goes": "Core",
+      "title": "{pilot}: answer the call to hold {to}",
+      "summary": "{to} is under pressure. Keep the Ark under its core until the hold is done.",
+      "success": "{pilot}'s squad held {to}. The wardens there owe a favour, and paid it in news.",
+      "fail": "{to} fell to the waves while the squad was away.",
+      "reward": 8,
+      "element": "Charge",
+      "onSuccess": "ev.defence.held",
+      "onFail": "ev.defence.lost"
+    },
+    {
+      "id": "job.defence.patrol",
+      "kind": "Defence",
+      "faction": "Aristocrat",
+      "needs": "None",
+      "goes": "Core",
+      "title": "{pilot}: patrol {to}",
+      "summary": "Fly the flag at {to}. Keep the Ark under its core until the patrol is done.",
+      "success": "{pilot} flew the flag at {to}.",
+      "fail": "The patrol at {to} was cut short.",
+      "reward": 4,
+      "element": "Charge",
+      "onSuccess": "ev.defence.held",
+      "onFail": ""
+    }
+  ],
+  "events": [
+    {
+      "id": "ev.courier.delivered",
+      "spendsNews": false,
+      "writes": [
+        {
+          "tag": "Aid",
+          "at": "Destination",
+          "about": "AnotherCore",
+          "line": "Dock crews at {to} say {about} is asking for a squad to hold it."
+        }
+      ]
+    },
+    {
+      "id": "ev.hunt.opened",
+      "spendsNews": true,
+      "writes": [
+        {
+          "tag": "Sighting",
+          "at": "Destination",
+          "about": "AnotherVaultField",
+          "line": "A vault chart from {to} shows lit shells at {about}."
+        }
+      ]
+    },
+    {
+      "id": "ev.hunt.missed",
+      "spendsNews": false,
+      "writes": []
+    },
+    {
+      "id": "ev.salvage.stripped",
+      "spendsNews": true,
+      "writes": [
+        {
+          "tag": "Aid",
+          "at": "Destination",
+          "about": "Destination",
+          "line": "With the wreck gone, the waves at {about} turned on the core. It asks for help."
+        }
+      ]
+    },
+    {
+      "id": "ev.defence.held",
+      "spendsNews": true,
+      "writes": [
+        {
+          "tag": "Sighting",
+          "at": "Destination",
+          "about": "AnotherVaultField",
+          "line": "The wardens of {to} share a chart: vaults are lit at {about}."
+        }
+      ]
+    },
+    {
+      "id": "ev.defence.lost",
+      "spendsNews": false,
+      "writes": []
+    }
+  ],
+  "seeds": [
+    {
+      "port": "loc.harbour.jade",
+      "tag": "Sighting",
+      "about": "loc.lantern",
+      "line": "A trader swears the shells at Lantern Reach are lit again."
+    },
+    {
+      "port": "loc.harbour.ruby",
+      "tag": "Aid",
+      "about": "loc.verdigris",
+      "line": "Verdigris is losing its core to the waves and asks for a squad."
+    },
+    {
+      "port": "loc.harbour.gold",
+      "tag": "Sighting",
+      "about": "loc.hollow",
+      "line": "Something is glowing at the bottom of the Hollow."
+    },
+    {
+      "port": "loc.tollmoor",
+      "tag": "Wreck",
+      "about": "loc.saltmarch",
+      "line": "An Ark went down at Saltmarch. Its hold spilled, and nobody has claimed it yet."
+    }
+  ],
+  "seedWrecks": [
+    {
+      "at": "loc.saltmarch",
+      "artifacts": [
+        "artifact.hydra"
+      ],
+      "line": "A broken Ark at Saltmarch, its hold open to the sea."
+    }
+  ],
+  "lines": {
+    "wreck": "An Ark fell at {about}. What it carried lies there now.",
+    "wreckNews": "An Ark went down at {about} and its hold spilled. Nobody has claimed it yet."
+  },
+  "hud": {
+    "VoyageName": "VOYAGE",
+    "Depart": "BOUND FOR {to}",
+    "Arrived": "ARRIVED AT {to}",
+    "Vaults": "VAULTS AHEAD: CRACK ONE, GRAB ITS ARTIFACT, STOW IT AT THE ARK",
+    "Wreck": "A WRECK: GRAB WHAT FLOATS WITH RB AND STOW IT AT THE ARK",
+    "Hold": "HOLD {to}: STAY WITH THE ARK",
+    "HoldProgress": "HOLDING {to}: {seconds}",
+    "Done": "JOB DONE",
+    "Failed": "JOB LEFT UNDONE",
+    "Stowed": "STOWED ABOARD",
+    "Extracted": "DOCKED AT {to}: {count} FOUND ARTIFACTS ARE YOURS",
+    "ArkLost": "THE ARK IS LOST",
+    "NoWork": "No pilot has work here. Seat other pilots, or sail on.",
+    "Following": "SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB",
+    "ChooseNext": "LEAVE FREESTYLE TO CHOOSE YOUR NEXT VOYAGE",
+    "CardRoute": "{from} TO {to} - {pilot}",
+    "CardHomeRoute": "{from} TO {to}",
+    "CardUnderway": "UNDER WAY TO {to}"
+  },
+  "toy": {
+    "id": "voyage",
+    "displayName": "Voyage",
+    "description": "Deploy your squad and sail the HyperSea from job to job. Dock at home to keep what you find.",
+    "placementAngleDegrees": 90,
+    "accent": [
+      0.95,
+      0.75,
+      0.25,
+      1
+    ],
+    "routeColor": [
+      0.7,
+      1,
+      0.35,
+      1
+    ],
+    "hereColor": [
+      1,
+      0.78,
+      0.25,
+      1
+    ],
+    "seedElementLevel": 0.5,
+    "wingmateLeash": 1600,
+    "findDistance": 520,
+    "vaultRadius": 26,
+    "vaultPrisms": 40,
+    "vaultPrismScale": [
+      5,
+      5,
+      8
+    ],
+    "vaultOpenShare": 0.5,
+    "holdRadius": 700,
+    "portColor": [
+      0.96,
+      0.94,
+      0.86,
+      1
+    ],
+    "vaultColor": [
+      0.55,
+      0.75,
+      1,
+      1
+    ],
+    "coreColor": [
+      1,
+      0.45,
+      0.35,
+      1
+    ],
+    "laneColor": [
+      1,
+      1,
+      1,
+      0.35
+    ]
+  }
+}

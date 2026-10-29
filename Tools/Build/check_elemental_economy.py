@@ -14,11 +14,12 @@ recovers at a different speed from the other half.
      anybody - which is how the Serpent shipped for the fleet's whole life with 0 of 4 abilities
      able to touch a pilot, and how the Rhino's sword reported a Strike that drained nothing.
 
-  2. A CRYSTAL IS WORTH EXACTLY ONE PETAL. Conservation is the whole design, and it rests on an
-     arithmetic coincidence between three numbers in three different files: the ejector mints at
-     world scale 1, the collect reward is scale x levelPerUnitScale, and a petal is 0.1. Retune
-     levelPerUnitScale on the pickup asset - a perfectly reasonable thing to want to do - and
-     every ejected petal silently starts paying more or less than it cost.
+  2. A CRYSTAL IS WORTH EXACTLY ONE PETAL. Conservation is the whole design. Since 2026-10-26
+     every elemental crystal is one size and one petal (Garrett): the collect reward is the flat
+     SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal = ResourceSystem.PetalNormalized,
+     read off nothing about the crystal, and the ejector mints at ElementalCrystalSetSO.CrystalWorldScale.
+     What can still break it silently: the reward reading the crystal's size again, a retired
+     size-to-reward key coming back on the pickup asset, or the ejector minting at a size of its own.
 
   3. THE SINK IS UNIQUE. A closed economy needs exactly one hole in it. A second caller of
      ElementalTransfer.Burn would drain the match with nothing to say so.
@@ -141,45 +142,43 @@ def check_every_hull_can_debuff(index, hull_containers=None, serpent_src=None):
             fail(f"{hull}: NO anti-vessel elemental transfer - this hull cannot affect a pilot")
 
 
-def check_crystal_is_one_petal(rs_src=None, ej_src=None, pickup=None, pickup_cs=None):
-    print("\n2. an ejected crystal is worth exactly one petal")
+SET_CS = "Assets/_Scripts/ScriptableObjects/ElementalCrystalSetSO.cs"
+
+
+def check_crystal_is_one_petal(rs_src=None, ej_src=None, pickup=None, pickup_cs=None, set_cs=None):
+    print("\n2. every elemental crystal is worth exactly one petal")
     rs_src   = rs_src   if rs_src   is not None else read(RESOURCE_SYSTEM)
     ej_src   = ej_src   if ej_src   is not None else read(EJECTOR)
     pickup   = pickup   if pickup   is not None else (read(PICKUP_ASSET) if os.path.exists(os.path.join(ROOT, PICKUP_ASSET)) else "")
     pickup_cs= pickup_cs if pickup_cs is not None else read(PICKUP_CS)
+    set_cs   = set_cs   if set_cs   is not None else read(SET_CS)
+    before = len(_fails)
 
-    m = re.search(r"public const float PetalNormalized = 1f / LevelScale;", rs_src)
-    scale_m = re.search(r"const int\s+LevelScale = (\d+);", rs_src)
-    if not m or not scale_m:
+    if not re.search(r"public const float PetalNormalized = 1f / LevelScale;", rs_src):
         fail("ResourceSystem: PetalNormalized is no longer '1f / LevelScale' - the petal unit moved")
-        return
-    petal = 1.0 / int(scale_m.group(1))
 
-    em = re.search(r"PetalCrystalWorldScale = ([0-9.]+)f", ej_src)
-    if not em:
-        fail("ElementalCrystalEjector: PetalCrystalWorldScale not found")
-        return
-    mint_scale = float(em.group(1))
+    if not re.search(r"public const float LevelGainPerCrystal = ResourceSystem\.PetalNormalized;", pickup_cs):
+        fail("SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal is no longer "
+             "ResourceSystem.PetalNormalized - a crystal no longer pays exactly one petal")
+    if not re.search(r"AdjustLevel\([^;]*LevelGainPerCrystal\)", pickup_cs):
+        fail("the pickup no longer grants LevelGainPerCrystal - the reward is computed some other way")
+    code = "\n".join(l for l in pickup_cs.splitlines() if not l.lstrip().startswith("//"))
+    if re.search(r"lossyScale", code):
+        fail("the pickup reads the crystal's lossyScale again - the reward must not depend on its size")
 
-    # The live reward per unit of scale: the ASSET if it authors one, else the C# initializer
-    # (a silent asset is not an unset one).
-    pm = re.search(r"^\s*levelPerUnitScale: ([0-9.]+)\s*$", pickup, re.M)
-    if pm:
-        per_unit, src = float(pm.group(1)), "asset"
-    else:
-        dm = re.search(r"levelPerUnitScale = ([0-9.]+)f", pickup_cs)
-        if not dm:
-            fail("levelPerUnitScale found in neither the pickup asset nor its C# initializer")
-            return
-        per_unit, src = float(dm.group(1)), "C# initializer"
+    for key in ("levelPerUnitScale", "maxLevelGainPerCrystal"):
+        if re.search(rf"^\s*{key}:", pickup, re.M):
+            fail(f"{PICKUP_ASSET} carries the retired '{key}' - nothing reads it; delete the key")
 
-    payout = mint_scale * per_unit
-    if abs(payout - petal) > 1e-6:
-        fail(f"a minted crystal pays {payout:.4f} but a petal costs {petal:.4f} "
-             f"(mint scale {mint_scale} x levelPerUnitScale {per_unit} from the {src}) - "
-             f"ejection is no longer conserving")
-    else:
-        print(f"   ok   mint scale {mint_scale} x {per_unit} ({src}) = {payout:.3f} = one petal")
+    sm = re.search(r"public const float CrystalWorldScale = ([0-9.]+)f;", set_cs)
+    if not sm:
+        fail("ElementalCrystalSetSO.CrystalWorldScale not found - the one elemental crystal size moved")
+    if not re.search(r"localScale = Vector3\.one \* ElementalCrystalSetSO\.CrystalWorldScale;", ej_src):
+        fail("ElementalCrystalEjector no longer mints at ElementalCrystalSetSO.CrystalWorldScale")
+
+    if len(_fails) == before:
+        print(f"   ok   one crystal = LevelGainPerCrystal = PetalNormalized, minted at "
+              f"{sm.group(1)} (the one size)")
 
 
 def check_single_sink(tree=None):
@@ -333,8 +332,19 @@ def self_test():
                 lambda: check_every_hull_can_debuff(idx, dict(HULL_CONTAINERS, Dolphin=[]), serpent_src=""))
     expect_fail("the Serpent losing its code-side strip",
                 lambda: check_every_hull_can_debuff(idx, HULL_CONTAINERS, serpent_src="// nothing here"))
-    expect_fail("a retuned levelPerUnitScale breaking conservation",
+    expect_fail("a retired levelPerUnitScale coming back on the pickup asset",
                 lambda: check_crystal_is_one_petal(pickup="  levelPerUnitScale: 0.25\n"))
+    expect_fail("the reward reading the crystal's size again",
+                lambda: check_crystal_is_one_petal(pickup_cs=read(PICKUP_CS).replace(
+                    "AdjustLevel(crystal.crystalProperties.Element, LevelGainPerCrystal)",
+                    "AdjustLevel(crystal.crystalProperties.Element, crystal.transform.lossyScale.x * 0.1f)")))
+    expect_fail("a crystal paying two petals",
+                lambda: check_crystal_is_one_petal(pickup_cs=read(PICKUP_CS).replace(
+                    "LevelGainPerCrystal = ResourceSystem.PetalNormalized;",
+                    "LevelGainPerCrystal = 2f * ResourceSystem.PetalNormalized;")))
+    expect_fail("the ejector minting at a size of its own",
+                lambda: check_crystal_is_one_petal(ej_src=read(EJECTOR).replace(
+                    "Vector3.one * ElementalCrystalSetSO.CrystalWorldScale;", "Vector3.one * 1f;")))
     expect_fail("a second sink",
                 lambda: check_single_sink([("A/DangerPrism.cs", "ElementalTransfer.Burn(x);"),
                                            ("B/Rogue.cs", "ElementalTransfer.Burn(y);")]))

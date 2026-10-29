@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(25, values.Length,
+            Assert.AreEqual(27, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -62,6 +62,8 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Starling, 21)]
         [TestCase(VesselClassType.Jacks, 22)]
         [TestCase(VesselClassType.Honeyguide, 23)]
+        [TestCase(VesselClassType.Meerkat, 28)]
+        [TestCase(VesselClassType.TigerMoth, 29)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -177,10 +179,11 @@ namespace CosmicShore.Tests
             // the merge (the seventh collision).
             // 64 -> 65 on 2026-10-26: TandavaSevering (70), Voyage 2 - Tandava's fork with the severing work. When
             // SerpentCharge (67) lands this becomes 66.
+            // 65 -> 66 on 2026-10-27: BurrowRun (71), the Meerkat's time race (67 is still SerpentCharge's, in flight).
             // 65 -> 68 on 2026-10-27: ScarabRally (72), SerpentTime (73), BrittleStarTime (74) - Time races for
-            // three hulls that had none (71 is BurrowRun's on Ys-bleeding-edge; merging it makes this 69).
+            // three hulls that had none - 66 -> 69 with BurrowRun (71) merged in.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(68, values.Length,
+            Assert.AreEqual(69, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -222,6 +225,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Warpline, 65)]
         [TestCase(GameModes.ThresherTime, 66)]
         [TestCase(GameModes.WrasseRun, 68)]
+        [TestCase(GameModes.BurrowRun, 71)]
         [TestCase(GameModes.ScarabRally, 72)]
         [TestCase(GameModes.SerpentTime, 73)]
         [TestCase(GameModes.BrittleStarTime, 74)]

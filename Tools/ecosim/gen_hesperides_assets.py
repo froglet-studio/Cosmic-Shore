@@ -295,9 +295,15 @@ def site_mask(spec):
 # clearly in-world - a Space garden is wiry and fine, a Mass garden is thick and heavy - and it
 # stacks with the tempo and budget differences below. The assembled species (gyroid, Schwarz P)
 # keep using LeafSize.z as their thin axis, unchanged.
+#
+# MASS and CHARGE take the species' OWN leaf (leaf_mul 1) since 2026-10-28 (Docs/ECOSYSTEM.md 65). Mass was x1.35
+# and Charge x0.85 here, ON TOP OF the fleet law Flora.OnElementResolved applies to every non-lattice plant - so a
+# Mass Hesperides plant was enlarged twice. Mass now has SIZE through the law alone (FloraElementalForm.ShapeLeaf
+# and ReachScale grow the Time plant whole by x1.2786), is armoured (shield 1, ElementalArmour) and Charge never
+# shields because every prism it lays is danger. Space keeps its rung: it is not part of that change.
 ELEMENT_TUNING = {
-    "Charge": dict(leaf_mul=(0.85, 0.85, 1.0), grow_mul=1.0, shield=1.0, budget_mul=0.85),
-    "Mass":   dict(leaf_mul=(1.35, 1.35, 1.0), grow_mul=1.3, shield=0.0, budget_mul=1.2),
+    "Charge": dict(leaf_mul=(1.00, 1.00, 1.0), grow_mul=1.0, shield=0.0, budget_mul=0.85),
+    "Mass":   dict(leaf_mul=(1.00, 1.00, 1.0), grow_mul=1.3, shield=1.0, budget_mul=1.2),
     "Space":  dict(leaf_mul=(0.50, 0.50, 1.0), grow_mul=1.8, shield=0.0, budget_mul=0.7),
     "Time":   dict(leaf_mul=(1.00, 1.00, 1.0), grow_mul=0.5, shield=0.0, budget_mul=1.0),
 }

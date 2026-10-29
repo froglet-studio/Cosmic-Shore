@@ -128,6 +128,9 @@ namespace CosmicShore.Gameplay
                 VesselStatus.CameraFollowTarget = transform;
 
             VesselStatus.ActionHandler.Initialize(VesselStatus);
+            // The pilot in the seat and the slotted artifacts (Docs/Pilots/PILOTS_AND_ARTIFACTS.md): started here so
+            // the owner publishes them before anything asks, and every peer reads the same loadout.
+            VesselStatus.PilotLoadout.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.Initialize(this);
             VesselStatus.AIPilot.Initialize(this);
 
@@ -176,6 +179,15 @@ namespace CosmicShore.Gameplay
                 VesselRearView.SetTarget(transform);
                 VesselPlacementView.SetTarget(transform);
             }
+
+            // THE PAYLOAD (Docs/Pilots/ARTIFACTS.md §2) is a platform law too: any vessel takes a
+            // parcel of its squad's Ark hull with RB and releases it with RB, so every hull carries
+            // the carrier and none can fail to author it. It listens only for the local human pilot.
+            PayloadCarrier.EnsureOn(this);
+
+            // THE PILOT'S SIGHT on LB (Docs/Pilots/CALLSIGNS.md) is the same kind of law: any hull,
+            // live only while it is the local pilot's. Photons only.
+            PilotSight.EnsureOn(this, gameData);
 
             // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
             // omission. The family (.claude/skills/prism-morph, Docs/PRISM_ANIMATION.md §4.7.2)

@@ -23,6 +23,8 @@ Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_
                                              three corners flip it by scale
     kit_spark / kit_spark_v                  the travelling highlight (KitSpark): a 48 x 2 streak (and its
                                              2 x 48 vertical twin) clear at both ends, solid in the middle
+    kit_sheen                                the hover sheen (Rev 35 C, KitHoverSheen): a 64 x 32 soft band
+                                             leaning 15 degrees, clear at both sides and solid along its middle
     kit_oct_line2                            the octagon's 2-unit outline, 48 x 48: an open seat's ring
                                              (section 74, the configure pedestals)
     kit_pool / kit_pool_rim                  the pool of light a configure pedestal's pilot stands on, 120 x 30:
@@ -92,8 +94,13 @@ OCT_CUT = 0.29               # corner cut as a fraction of the side - the mockup
 GRID = 24                    # blueprint grid pitch, canvas units (§5 spacing scale)
 BRACKET = 22                 # corner bracket arm, canvas units
 SPARK_W, SPARK_H = 48, 2     # spark streak, canvas units
+SHEEN_W, SHEEN_H = 64, 32    # hover sheen band, canvas units (stretched over the control's height)
+SHEEN_LEAN = 0.27            # how far the band leans across its height, in widths (about 15 degrees on a 2:1 tile)
 POOL_W, POOL_H = 120, 30     # a pedestal's pool of light, canvas units (drawn simple)
 POOL_RIM = 1.5               # the pool's rim, canvas units
+# The Codex's orbit (Docs/MENU_REDESIGN_B.md section 98): a thin circle stretched into each ring's ellipse, and a soft
+# disc for the core and the picked node's halo. Canvas units.
+RING_D, RING_LINE = 256, 1.5
 CRADLE_W, CRADLE_H = 710, 1026  # the Rev 24 Hangar dossier, canvas units (author_menu_hangar.DOSSIER_W / _H)
 CRADLE_LEAN = 56             # how far in the right side's foot sits (Bracket_Large measured: 48 of 740 at its scale)
 CRADLE_KNEE = 0.46           # where the right side starts leaning, as a fraction of the height down
@@ -314,6 +321,28 @@ def build_pool_rim():
     return downsample(band, w, h), 0
 
 
+def build_ring_line():
+    t = RING_D * TEXELS_PER_UNIT
+    xs, ys = grid(t, t)
+    band = (ellipse_r(xs, ys, RING_D, RING_D) <= 1.0) & (ellipse_r(xs, ys, RING_D, RING_D, RING_LINE) > 1.0)
+    return downsample(band, t, t), 0
+
+
+def build_ring_fill():
+    """A solid disc filling its box: a node's backing in the orbit."""
+    t = RING_D * TEXELS_PER_UNIT // 2
+    xs, ys = grid(t, t)
+    return downsample(ellipse_r(xs, ys, RING_D // 2, RING_D // 2) <= 1.0, t, t), 0
+
+
+def build_ring_glow():
+    """A soft disc: bright at its centre, falling smoothly to clear at its edge."""
+    t = RING_D * TEXELS_PER_UNIT // 2
+    c = (np.arange(t) + 0.5) / t * 2.0 - 1.0
+    r = np.sqrt(c[None, :] ** 2 + c[:, None] ** 2)
+    return np.clip(1.0 - r, 0.0, 1.0) ** 2, 0
+
+
 def build_grid():
     """A 1-unit line along the top and the left edge of one 24-unit tile; tiled, they make the grid."""
     t = GRID * TEXELS_PER_UNIT
@@ -338,6 +367,15 @@ def build_spark():
     x = (np.arange(w) + 0.5) / w
     bump = 0.5 - 0.5 * np.cos(2 * np.pi * x)
     return np.repeat(bump[None, :], h, axis=0), 0
+
+
+def build_sheen():
+    """A raised-cosine band along x that leans with y: clear at both sides, solid on its centre line."""
+    w, h = SHEEN_W * TEXELS_PER_UNIT, SHEEN_H * TEXELS_PER_UNIT
+    x = (np.arange(w)[None, :] + 0.5) / w
+    y = (np.arange(h)[:, None] + 0.5) / h
+    u = (x - 0.5) / (1 - SHEEN_LEAN) + (y - 0.5) * SHEEN_LEAN / (1 - SHEEN_LEAN)
+    return np.clip(0.5 + 0.5 * np.cos(np.pi * np.clip(u * 2, -1, 1)), 0, 1), 0
 
 
 HANGAR_CRADLE = (CRADLE_W, CRADLE_H, CRADLE_LEAN, CRADLE_KNEE, CRADLE_RAMP)
@@ -432,6 +470,12 @@ def sprite_set():
     out.append(("kit_pool", a, (0, 0, 0, 0), dict(pool=True)))
     a, _ = build_pool_rim()
     out.append(("kit_pool_rim", a, (0, 0, 0, 0), dict(pool_rim=True)))
+    a, _ = build_ring_line()
+    out.append(("kit_ring_line", a, (0, 0, 0, 0), dict(ring_line=True)))
+    a, _ = build_ring_fill()
+    out.append(("kit_ring_fill", a, (0, 0, 0, 0), dict(ring_fill=True)))
+    a, _ = build_ring_glow()
+    out.append(("kit_ring_glow", a, (0, 0, 0, 0), dict(ring_glow=True)))
     a, _ = build_grid()
     out.append(("kit_grid", a, (0, 0, 0, 0), dict(grid=True)))
     a, _ = build_bracket()
@@ -439,6 +483,8 @@ def sprite_set():
     a, _ = build_spark()
     out.append(("kit_spark", a, (0, 0, 0, 0), dict(spark=True)))
     out.append(("kit_spark_v", a.T.copy(), (0, 0, 0, 0), dict(spark_v=True)))
+    a, _ = build_sheen()
+    out.append(("kit_sheen", a, (0, 0, 0, 0), dict(sheen=True)))
     a, _ = build_cradle_fill()
     out.append(("kit_cradle_fill", a, (0, 0, 0, 0), dict(cradle=HANGAR_CRADLE)))
     a, _ = build_cradle_fill(CARD_CRADLE)
@@ -559,6 +605,13 @@ def check_sprite(name, alpha, border, meta):
         assert np.allclose(row, row[::-1], atol=1e-6), f"{name}: the streak must be symmetric"
         assert row[0] < 0.05 and row[-1] < 0.05, f"{name}: the streak must be clear at both ends"
         assert row[len(row) // 2] > 0.95, f"{name}: the streak must be solid in the middle"
+    elif meta.get("sheen"):
+        assert alpha.shape == (SHEEN_H * TEXELS_PER_UNIT, SHEEN_W * TEXELS_PER_UNIT), f"{name}: wrong size"
+        assert alpha[:, 0].max() < 0.02 and alpha[:, -1].max() < 0.02, f"{name}: the band must be clear at both sides"
+        mid = alpha.shape[0] // 2
+        assert alpha[mid].max() > 0.98, f"{name}: the band must be solid on its centre line"
+        top, bottom = int(np.argmax(alpha[0])), int(np.argmax(alpha[-1]))
+        assert bottom < top, f"{name}: the band must lean (its peak sits further left at the bottom)"
     elif meta.get("spark_v"):
         check_sprite(name, alpha.T, border, dict(spark=True))
     elif meta.get("open_tile"):
@@ -585,6 +638,14 @@ def check_sprite(name, alpha, border, meta):
     elif meta.get("corner_tri"):
         assert alpha[-1, 0] == 1.0 and alpha[0, -1] == 0.0, f"{name}: solid in the bottom-left, clear in the top-right"
         assert abs(alpha.mean() - 0.5) < 0.02, f"{name}: a right triangle covers half its square"
+    elif meta.get("ring_line"):
+        assert alpha[h // 2, w // 2] == 0.0 and alpha[0, 0] == 0.0, f"{name}: the ring is open inside and out"
+        assert alpha[h // 2, 1] > 0.5 and alpha[1, w // 2] > 0.5, f"{name}: the ring touches its box at the sides"
+    elif meta.get("ring_fill"):
+        assert alpha[h // 2, w // 2] == 1.0 and alpha[0, 0] == 0.0, f"{name}: the disc is solid inside, clear in the corners"
+        assert abs(alpha.mean() - np.pi / 4) < 0.03, f"{name}: a disc covers a quarter-pi of its square"
+    elif meta.get("ring_glow"):
+        assert alpha[h // 2, w // 2] > 0.9 and alpha[0, 0] == 0.0, f"{name}: the glow is bright at its centre, clear outside"
     elif meta.get("banner") == "body":
         b = border[0]
         mid = alpha[:, b:w - b]

@@ -286,6 +286,7 @@ namespace CosmicShore.Gameplay
         {
             var request = new RaceCourseRequest(seed, Intensity, gateCount, inner, outer,
                                                 ResolveCourseConfig());
+            PrepareCourseSource(CourseSource);
             var course = CourseSource.Build(request, out string failure);
             if (course == null) CourseFailureDetail = failure;
             return course;
@@ -296,6 +297,36 @@ namespace CosmicShore.Gameplay
         /// rails): the cell's EXPECTED config, never <c>Config</c>, which latches a second after
         /// the first build attempt. A mode whose course is pure geometry ignores it.
         /// </summary>
+        /// <summary>
+        /// Last word on the course source before each build, on the SERVER: a mode with a per-match knob the
+        /// source reads (Switchback's fun type) sets it here. Default: nothing.
+        /// </summary>
+        protected virtual void PrepareCourseSource(RaceCourseSource source) { }
+
+        /// <summary>
+        /// A small per-match integer the server broadcasts WITH the course, so every peer lays the same mode
+        /// geometry for it (Switchback: its <c>SwitchbackFunType</c>). The server answers from its own config; a
+        /// client reads <see cref="ReceivedCourseVariant"/>, set before <see cref="OnCourseRaised"/>. Default 0.
+        /// </summary>
+        protected virtual int CourseVariant => 0;
+
+        /// <summary>The variant the server sent with the course; -1 until a course arrives (and on the server).</summary>
+        protected int ReceivedCourseVariant { get; private set; } = -1;
+
+        /// <summary>The seed this match's course is generated from, drawn ONCE per match on the server. Default:
+        /// the authored seed, else <see cref="CourseSeedOverride.Forced"/>, else a fresh draw.</summary>
+        protected virtual int PickCourseSeed() => CourseSeedOverride.Pick(courseSeed);
+
+        /// <summary>The seed the current course was generated from (server), or 0.</summary>
+        protected int CourseSeedUsed => _pendingCourseSeed;
+
+        /// <summary>
+        /// A mode's OTHER way to thread the gate at <paramref name="raceIndex"/> (ring <paramref name="ringIndex"/>),
+        /// tested on the same owner-simulated hull segment as the ring itself: Switchback's shortcut rings. True
+        /// credits the gate exactly as threading it would. Default: none.
+        /// </summary>
+        protected virtual bool ThreadsAlternate(int raceIndex, int ringIndex, Vector3 prev, Vector3 cur) => false;
+
         protected virtual CellConfigDataSO ResolveCourseConfig()
         {
             var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
@@ -414,6 +445,25 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// True when the point <see cref="TryOverrideAim"/> just returned is a LEAD POINT the pilot steers by rather than a
+        /// place to reach (<see cref="AIPilot.MarkAimAsPathLead"/>), so the orbit break-off leaves it alone. Asked only when
+        /// the override answered. Waystation's belly aim is one: a point off the nose that turns the hull, never reached.
+        /// </summary>
+        protected virtual bool OverrideAimIsLead(IPlayer pilot) => false;
+
+        /// <summary>
+        /// A direction the pilot should ROLL its belly onto while it steers at the point <see cref="TryOverrideAim"/> just
+        /// returned (<see cref="AIPilot.MarkBellyTarget"/>), or false to keep the bank the stick couples to the yaw. Asked
+        /// only when the override answered. Waystation's drop aim: hold the heading square to the next cluster and roll
+        /// the belly onto it.
+        /// </summary>
+        protected virtual bool OverrideBellyTarget(IPlayer pilot, out Vector3 worldDirection)
+        {
+            worldDirection = default;
+            return false;
+        }
+
+        /// <summary>
         /// The hull's own RACE LINE: where <paramref name="pilot"/> steers instead of the gate's approach / mouth points,
         /// and the point after it (the boost driver's corner). Asked after the difficulty belief and the missed-mouth test,
         /// so an Easy pilot's mistakes and a missed ring are still flown the gate way. False (the default) = the gate way.
@@ -445,6 +495,9 @@ namespace CosmicShore.Gameplay
         // Course-build retry, server only. The seed is captured ONCE so a course is never a
         // function of how many frames the scene took to become answerable.
         int _pendingCourseSeed;
+
+        /// <summary>The seed this match's course was built from (0 until it is drawn), for the match replay.</summary>
+        public int CourseSeed => _pendingCourseSeed;
         bool _awaitingCourse;
         float _courseRetryDeadline;
         bool _finalResultsSent;
@@ -586,7 +639,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void BeginCourseGeneration()
         {
-            _pendingCourseSeed = courseSeed != 0 ? courseSeed : Random.Range(int.MinValue, int.MaxValue);
+            _pendingCourseSeed = PickCourseSeed();
             _courseRetryDeadline = Time.time + CourseBuildTimeout;
             _awaitingCourse = true;
             TickCourseGeneration();
@@ -700,34 +753,39 @@ namespace CosmicShore.Gameplay
 
         void BroadcastCourse(IReadOnlyList<RaceGate> course, ClientRpcParams target)
         {
-            // Six floats per gate, interleaved into one array: the same primitive-array shape the
-            // final-score snapshots use, which is the serialization this project has proven.
-            var packed = new float[course.Count * 6];
+            // Seven floats per gate, interleaved into one array: the same primitive-array shape the
+            // final-score snapshots use, which is the serialization this project has proven. The seventh is the
+            // gate's OWN radius - Switchback's needle rings are smaller than the rest.
+            var packed = new float[course.Count * FloatsPerGate];
             for (int i = 0; i < course.Count; i++)
             {
-                int o = i * 6;
+                int o = i * FloatsPerGate;
                 packed[o + 0] = course[i].Position.x;
                 packed[o + 1] = course[i].Position.y;
                 packed[o + 2] = course[i].Position.z;
                 packed[o + 3] = course[i].Axis.x;
                 packed[o + 4] = course[i].Axis.y;
                 packed[o + 5] = course[i].Axis.z;
+                packed[o + 6] = course[i].Radius;
             }
-            SyncCourse_ClientRpc(packed, course[0].Radius, target);
+            SyncCourse_ClientRpc(packed, CourseVariant, target);
         }
 
+        const int FloatsPerGate = 7;
+
         [ClientRpc]
-        void SyncCourse_ClientRpc(float[] packed, float ringRadius, ClientRpcParams rpcParams = default)
+        void SyncCourse_ClientRpc(float[] packed, int variant, ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;   // the server laid its own copy before broadcasting
 
-            var course = new List<RaceGate>(packed.Length / 6);
-            for (int o = 0; o + 5 < packed.Length; o += 6)
+            var course = new List<RaceGate>(packed.Length / FloatsPerGate);
+            for (int o = 0; o + FloatsPerGate - 1 < packed.Length; o += FloatsPerGate)
                 course.Add(new RaceGate(
                     new Vector3(packed[o], packed[o + 1], packed[o + 2]),
                     new Vector3(packed[o + 3], packed[o + 4], packed[o + 5]),
-                    ringRadius));
+                    packed[o + 6]));
 
+            ReceivedCourseVariant = variant;
             ApplyCourse(course);
         }
 
@@ -1038,7 +1096,8 @@ namespace CosmicShore.Gameplay
                 var ring = _rings[RingIndexFor(index)];
                 if (!ring) continue;
                 bool hullThreads = HullThreadsWhileProbeLive || !run.Probe.Live;
-                if (!(hullThreads && ring.CrossedMouth(prev, cur)) && !(probeFlew && ring.CrossedMouth(probePrev, probeCur))) continue;
+                if (!(hullThreads && ring.CrossedMouth(prev, cur)) && !(probeFlew && ring.CrossedMouth(probePrev, probeCur))
+                    && !(hullThreads && ThreadsAlternate(index, RingIndexFor(index), prev, cur))) continue;
 
                 run.Optimistic = index + 1;
                 run.LastReportTime = Time.time;
@@ -1127,14 +1186,13 @@ namespace CosmicShore.Gameplay
         void ArmRacers()
         {
             Vector3 centre = ResolveCellCentre();
-            var handicapLevel = RaceHandicapLevel();
 
             // Every AI seat, plus a human's hull the AI is holding when the race starts (PilotControl, the
             // Third Eye's "AI flies" toggle): that hull races on the same steering as a seat.
             foreach (var p in gameData.Players)
             {
                 if (p == null || (!p.IsInitializedAsAI && !HeldByAutopilot(p))) continue;
-                ArmRacer(p, centre, handicapLevel);
+                ArmRacer(p, centre, RaceHandicapLevel(p));
             }
         }
 
@@ -1145,15 +1203,16 @@ namespace CosmicShore.Gameplay
         public bool ArmAIPilot(IPlayer player)
         {
             if (!IsServer || player == null) return false;
-            ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel());
+            ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel(player));
             return true;
         }
 
         // The lobby's AI difficulty (every mode offers it, AIDifficultyRules.IsOfferedFor):
         // Easy, Medium and Hard race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
-        // Legendary on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
-        SkimRaceHandicapLevel RaceHandicapLevel() => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
-            ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
+        // Legendary on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO). Per PILOT: each AI races
+        // at its own seat's level (picked with its pedestal selected), else the match's.
+        SkimRaceHandicapLevel RaceHandicapLevel(IPlayer pilot) => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
+            ? SkimRaceDifficultySO.Load().For(gameData.AIDifficultyFor(pilot))
             : default;
 
         // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a human's hull.
@@ -1204,6 +1263,8 @@ namespace CosmicShore.Gameplay
                 // pilot latches on or launches off.
                 if (TryOverrideAim(captured, out Vector3 overridden))
                 {
+                    if (OverrideAimIsLead(captured)) pilot.MarkAimAsPathLead();
+                    if (OverrideBellyTarget(captured, out Vector3 belly)) pilot.MarkBellyTarget(belly);
                     pilot.ReportObjective(AIPilot.ObjectivePhase.Override, overridden);
                     return overridden;
                 }

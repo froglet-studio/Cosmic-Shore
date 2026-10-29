@@ -181,6 +181,10 @@ namespace CosmicShore.Editor
                 "threads it, and the controller lays target/laps rings, so this is also the size of " +
                 "the circuit. Default " +
                 EndConditionOverridesSO.DefaultWrasseRunGateTarget + ".\n" +
+                "  • Burrow Run: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
+                "finish the Meerkat wormhole circuit; the controller lays target/laps rings, so " +
+                "this is also the size of the circuit. Default " +
+                EndConditionOverridesSO.DefaultBurrowRunGateTarget + ".\n" +
                 "  • Scarab Rally: gate THREADINGS (rings, an open chain) a DOMAIN's lead runner needs to " +
                 "finish the Scarab's ring race; the controller lays this many rings. Default " +
                 EndConditionOverridesSO.DefaultScarabRallyGateTarget + ".\n" +
@@ -254,6 +258,7 @@ namespace CosmicShore.Editor
             int wpl = Mathf.Max(0, EditorGUILayout.IntField("Warpline - Gate Target (laps x rings)", _config.warplineGateTarget));
             int tht = Mathf.Max(0, EditorGUILayout.IntField("Thresher Time - Gate Target (laps x rings)", _config.thresherTimeGateTarget));
             int wrr = Mathf.Max(0, EditorGUILayout.IntField("Wrasse Run - Gate Target (laps x rings)", _config.wrasseRunGateTarget));
+            int brr = Mathf.Max(0, EditorGUILayout.IntField("Burrow Run - Gate Target (laps x rings)", _config.burrowRunGateTarget));
             int srl = Mathf.Max(0, EditorGUILayout.IntField("Scarab Rally - Gate Target (rings, an open chain)", _config.scarabRallyGateTarget));
             int spt = Mathf.Max(0, EditorGUILayout.IntField("Serpent Time - Gate Target (laps x rings)", _config.serpentTimeGateTarget));
             int bst = Mathf.Max(0, EditorGUILayout.IntField("Brittle Star Time - Gate Target (laps x rings)", _config.brittleStarTimeGateTarget));
@@ -299,6 +304,7 @@ namespace CosmicShore.Editor
                     _config.warplineGateTarget = wpl;
                     _config.thresherTimeGateTarget = tht;
                     _config.wrasseRunGateTarget = wrr;
+                    _config.burrowRunGateTarget = brr;
                     _config.scarabRallyGateTarget = srl;
                     _config.serpentTimeGateTarget = spt;
                     _config.brittleStarTimeGateTarget = bst;
@@ -351,6 +357,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Warpline", wpl > 0 ? wpl.ToString() : EndConditionOverridesSO.DefaultWarplineGateTarget + " (default)");
             EditorGUILayout.LabelField("Thresher Time", tht > 0 ? tht.ToString() : EndConditionOverridesSO.DefaultThresherTimeGateTarget + " (default)");
             EditorGUILayout.LabelField("Wrasse Run", wrr > 0 ? wrr.ToString() : EndConditionOverridesSO.DefaultWrasseRunGateTarget + " (default)");
+            EditorGUILayout.LabelField("Burrow Run", brr > 0 ? brr.ToString() : EndConditionOverridesSO.DefaultBurrowRunGateTarget + " (default)");
             EditorGUILayout.LabelField("Scarab Rally", srl > 0 ? srl.ToString() : EndConditionOverridesSO.DefaultScarabRallyGateTarget + " (default)");
             EditorGUILayout.LabelField("Serpent Time", spt > 0 ? spt.ToString() : EndConditionOverridesSO.DefaultSerpentTimeGateTarget + " (default)");
             EditorGUILayout.LabelField("Brittle Star Time", bst > 0 ? bst.ToString() : EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget + " (default)");
@@ -421,6 +428,7 @@ namespace CosmicShore.Editor
                    "Warpline: " + Fmt(_config.warplineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultWarplineGateTarget) + "\n" +
                    "Thresher Time: " + Fmt(_config.thresherTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultThresherTimeGateTarget) + "\n" +
                    "Wrasse Run: " + Fmt(_config.wrasseRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultWrasseRunGateTarget) + "\n" +
+                   "Burrow Run: " + Fmt(_config.burrowRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultBurrowRunGateTarget) + "\n" +
                    "Scarab Rally: " + Fmt(_config.scarabRallyGateTargetBuild, "default " + EndConditionOverridesSO.DefaultScarabRallyGateTarget) + "\n" +
                    "Serpent Time: " + Fmt(_config.serpentTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentTimeGateTarget) + "\n" +
                    "Brittle Star Time: " + Fmt(_config.brittleStarTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget) + "\n" +

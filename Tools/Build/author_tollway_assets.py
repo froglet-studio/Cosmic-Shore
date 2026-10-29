@@ -218,7 +218,10 @@ ANCHOR_OUTER = round(ANCHOR_COURT_OUTER * COURT_RADII[0] / MEMBRANE_RADIUS, 4)  
 # General rule worth carrying: **before gating a design on a clearance, find out what actually
 # has to pass through the gap** - the thing that threads a Tollway ring is the one object in the
 # game with no prism collision at all.
-ANCHOR_SPECIES = ["Spire", "Gyroid", "Cacti", "Borromean"]
+# Cacti and Borromean swapped on 2026-10-28: the Borromean's Mass element is fitted under Space now (its shield carries its
+# volume, its box is light - Docs/ECOSYSTEM.md 65), so its mean standing plant (2,512) fell under the Cacti's (3,000) and
+# the court's marker would have shrunk at intensity 4. The order is the volume ladder's, as it always was.
+ANCHOR_SPECIES = ["Spire", "Gyroid", "Borromean", "Cacti"]
 
 # One cell config, one spawn profile and one anchor-flora config per intensity. Named the way
 # every other IntensityWise mode names them (`<Mode> Cell Config 1..4`), so the folder reads the

@@ -57,6 +57,7 @@ MonoBehaviour:
   warplineGateTarget: 10
   thresherTimeGateTarget: 16
   wrasseRunGateTarget: 16
+  burrowRunGateTarget: 16
   scarabRallyGateTarget: 24
   serpentTimeGateTarget: 16
   brittleStarTimeGateTarget: 16
@@ -107,6 +108,7 @@ MonoBehaviour:
   warplineGateTargetBuild: 10
   thresherTimeGateTargetBuild: 16
   wrasseRunGateTargetBuild: 16
+  burrowRunGateTargetBuild: 16
   scarabRallyGateTargetBuild: 24
   serpentTimeGateTargetBuild: 16
   brittleStarTimeGateTargetBuild: 16

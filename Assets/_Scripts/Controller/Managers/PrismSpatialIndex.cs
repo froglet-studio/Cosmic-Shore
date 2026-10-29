@@ -1874,13 +1874,17 @@ namespace CosmicShore.Gameplay
             if (observer == null || !_spatial.IsCreated) return;
             for (int i = 0; i < _highWaterMark; i++)
             {
-                var prism = _prisms[i];
-                if (prism == null) continue;
                 var flags = _spatial[i].Flags;
                 if ((flags & PrismFlags.IsActive) == 0 || (flags & PrismFlags.Destroyed) != 0) continue;
-                observer.OnPrismBorn(i, prism);
+                var prism = _prisms[i];
+                if (prism != null) observer.OnPrismBorn(i, prism);
+                else if (_virtualOwners[i] != null) VisitVirtual(observer, i);
             }
         }
+
+        void VisitVirtual(IPrismLifeObserver observer, int index) =>
+            observer.OnVirtualBorn(index, _spatial[index].Position, (Domains)_damage[index].Domain, _virtualRadius[index],
+                                   (_spatial[index].Flags & (PrismFlags.IsShielded | PrismFlags.IsSuperShielded)) != 0);
 
         /// <summary>
         /// Registers a prism for batch AOE processing, growth occupancy, and the
@@ -2040,7 +2044,8 @@ namespace CosmicShore.Gameplay
             // Shell view: a restored prism that is still shielded re-captures its
             // shell at the restored pose (stale data from before destruction).
             RefreshShellData(index);
-            if (prism) LifeObserver?.OnPrismRestored(index, prism);
+            // A virtual entry has no Prism: the observer brings back the pose it last recorded.
+            LifeObserver?.OnPrismRestored(index, prism ? prism : null);
         }
 
         /// <summary>
@@ -2383,6 +2388,7 @@ namespace CosmicShore.Gameplay
 
             AddToBucket(index, position);
             LiveCount++;
+            if (LifeObserver != null) VisitVirtual(LifeObserver, index);
             return index;
         }
 

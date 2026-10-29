@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: MassSharkFaunaDataSO
   m_EditorClassIdentifier: 
   detectionRadius: 100
-  separationRadius: 100
-  consumeRadius: 40
+  separationRadius: 83.85
+  consumeRadius: 33.54
   behaviorUpdateRate: 2
   separationWeight: 20
   goalWeight: 1.5
   minSpeed: 25
   maxSpeed: 35
   rotationLerpSpeed: 5
+  feedingClusterRadius: 10.06
+  attackRange: 12.58

@@ -28,7 +28,7 @@ namespace CosmicShore.UI
             PORT   = 3,
             HANGAR = 4,
             PROFILE = 5,
-            // The Codex: ethirions, elements, ecology, pilots, vessels, artifacts and tools (Docs/CODEX.md's data). Its tab
+            // The Codex: elements and their Etherions, ecology, and the lexicon (Docs/CODEX.md's data). Its tab
             // is first (Docs/MENU_REDESIGN_B.md section 84); its screen is CodexView (CodexScreen, section 88).
             CODEX = 6,
         }
@@ -147,7 +147,6 @@ namespace CosmicShore.UI
         [Header("Scene References")]
         [SerializeField] private Transform NavBar;
         [SerializeField] private HangarScreen HangarMenu;
-        [SerializeField] private LeaderboardsMenu LeaderboardMenu;
 
         [Tooltip("CanvasGroup on the Screens root. Disabled during freestyle to hide all screens without SetActive.")]
         [SerializeField] private CanvasGroup screensCanvasGroup;
@@ -168,7 +167,7 @@ namespace CosmicShore.UI
                  "It is not the only source: a COMMERCE screen (the Store) is closed by " +
                  "Resources/CommerceAvailability instead, so the paid-EA conversion is one asset edit and " +
                  "carries its own reading (Unavailable rather than Locked). Do not author one in both.")]
-        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT };
+        [SerializeField] private List<MenuScreens> disabledScreens = new();
 
         [Header("Screens Off the Tab Bar")]
         [Tooltip("Screens with no tab of their own (Rev 13, Shombith 2026-10-25: the top bar is Hangar, Ark, Home and " +
@@ -1566,10 +1565,6 @@ namespace CosmicShore.UI
                     UserActionSystem.Instance.CompleteAction(UserActionType.ViewHangarMenu);
                     if (HangarMenu)
                         HangarMenu.LoadView();
-                    break;
-                case MenuScreens.PORT:
-                    if (LeaderboardMenu)
-                        LeaderboardMenu.LoadView();
                     break;
                 case MenuScreens.PROFILE:
                     UserActionSystem.Instance.CompleteAction(UserActionType.ViewProfileMenu);

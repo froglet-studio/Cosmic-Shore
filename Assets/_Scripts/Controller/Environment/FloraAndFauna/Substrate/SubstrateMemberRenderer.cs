@@ -11,8 +11,10 @@ namespace CosmicShore.Gameplay
     /// Draws every LIVING agent of one substrate population from one GPU buffer (Docs/SUBSTRATE_FAUNA.md §5), through
     /// the swarm's member shader (SwarmMemberInstanced, Docs/SWARM_FAUNA.md §14): the tick job publishes the same
     /// 80-byte <see cref="SwarmInstance"/> per agent, so the shader interpolates the pose, blooms newborns and shows the
-    /// DANGER tier exactly as it does a tadpole. Per tick: two <c>GraphicsBuffer.SetData</c> of this population's slice
-    /// of the cell's frame. Per frame: one body draw and one draw per crystal part of the population's element.
+    /// DANGER tier exactly as it does a tadpole. Per tick: one <c>GraphicsBuffer.SetData</c> of this population's slice
+    /// of the cell's frame, and one copy for the hearts. Per frame: one body draw, then the hearts - drawn as the
+    /// crystal they are, with the elemental crystal's own models and materials (<see cref="CrystalHeartDraw"/>,
+    /// Docs/ECOSYSTEM.md §65.7), as the swarm's are.
     ///
     /// The shared prism path (round 11a, Docs/SWARM_FAUNA.md §19.2): when PrismRenderService is on, every agent's BODY
     /// is an ordinary prism entity (SubstrateFauna.SyncEntities / PoseBodies, the swarm's code over this population's
@@ -28,20 +30,14 @@ namespace CosmicShore.Gameplay
         struct Part { public Mesh Mesh; public int Submesh; public Matrix4x4 Local; }
 
         static readonly int InstancesId = Shader.PropertyToID("_SwarmInstances");
-        static readonly int HeartIdxId = Shader.PropertyToID("_SwarmHeartIdx");
-        static readonly int PartId = Shader.PropertyToID("_SwarmPart");
-        static readonly int BaseId = Shader.PropertyToID("_SwarmBase");
-        static readonly int HeartElementId = Shader.PropertyToID("_SwarmHeartElement");
         static readonly int MeshLocalId = Shader.PropertyToID("_SwarmMeshLocal");
         static readonly int AlphaId = Shader.PropertyToID("_SwarmAlpha");
         static readonly int ClockId = Shader.PropertyToID("_SwarmClock");
         static readonly int BloomId = Shader.PropertyToID("_SwarmBloomTicks");
         static readonly int UpId = Shader.PropertyToID("_SwarmUp");
         static readonly int UpAltId = Shader.PropertyToID("_SwarmUpAlt");
-        static readonly int HeartScaleId = Shader.PropertyToID("_SwarmHeartScale");
         static readonly int RimPowerId = Shader.PropertyToID("_SwarmRimPower");
         static readonly int TierDarkId = Shader.PropertyToID("_SwarmTierDark"), TierBrightId = Shader.PropertyToID("_SwarmTierBright");
-        static readonly int HeartDullId = Shader.PropertyToID("_SwarmHeartDull"), HeartBrightId = Shader.PropertyToID("_SwarmHeartBright");
         static readonly int SpreadPlainId = Shader.PropertyToID("_SwarmSpreadPlain");
         static readonly int SpreadDangerId = Shader.PropertyToID("_SwarmSpreadDanger");
         static readonly int SpreadShieldId = Shader.PropertyToID("_SwarmSpreadShield");
@@ -49,12 +45,12 @@ namespace CosmicShore.Gameplay
         static readonly int SqrDistancePropId = Shader.PropertyToID("_SqrDistance");
 
         readonly Material _mat;
-        readonly GraphicsBuffer _inst, _heart;
+        readonly GraphicsBuffer _inst;
         readonly Part _body;
-        readonly List<Part> _hearts = new();
         readonly List<MaterialPropertyBlock> _mpbs = new();
         readonly int _cap, _layer, _element;
-        int _heartCount;
+        // the hearts, as the crystals they are (Docs/ECOSYSTEM.md §65.7)
+        readonly CrystalHeartDraw _hearts;
         // non-null on a device without vertex-stage structured buffers: the SM 3.5 instanced draw (§5.1)
         readonly SwarmMemberFallbackDraw _fallback;
         static bool s_warned;
@@ -97,31 +93,12 @@ namespace CosmicShore.Gameplay
             var bodyFilter = bodyPrism ? bodyPrism.GetComponent<MeshFilter>() : null;
             if (!bodyFilter || !bodyFilter.sharedMesh) { Warn("the agent prefab's body prism has no mesh"); return; }
             _body = new Part { Mesh = bodyFilter.sharedMesh, Submesh = 0, Local = Matrix4x4.identity };
-
-            var set = ElementalCrystalSetSO.Load();
-            var crystal = set ? set.GetPrefab(SubstrateSpeciesSO.ToElement(_element)) : null;
-            if (crystal)
-            {
-                var root = crystal.transform;
-                var rootBasis = Matrix4x4.Rotate(root.localRotation);
-                var toRoot = root.worldToLocalMatrix;
-                foreach (var r in crystal.GetComponentsInChildren<Renderer>(true))
-                {
-                    Mesh mesh = r is SkinnedMeshRenderer smr ? smr.sharedMesh
-                              : r.TryGetComponent<MeshFilter>(out var mf) ? mf.sharedMesh : null;
-                    if (!mesh) continue;
-                    var local = rootBasis * (toRoot * r.transform.localToWorldMatrix);
-                    for (int sm = 0; sm < mesh.subMeshCount; sm++)
-                        _hearts.Add(new Part { Mesh = mesh, Submesh = sm, Local = local });
-                }
-            }
-            if (_hearts.Count == 0) Warn("no elemental crystal model was found - hearts will not be drawn");
+            _hearts = new CrystalHeartDraw(_cap, layer, 1 << _element);
 
             if (fallbackMaterial)
             {
                 _fallback = new SwarmMemberFallbackDraw(fallbackMaterial, _cap);
                 _fallback.AddBody(_body.Mesh, _body.Submesh, _body.Local);
-                foreach (var part in _hearts) _fallback.AddHeart(part.Mesh, part.Submesh, part.Local, _element);
                 _mpbs.AddRange(_fallback.Blocks);   // SetPalette writes every block
                 SwarmMemberFallbackDraw.Announce("Substrate", forced: Supported);
                 Valid = true;
@@ -130,16 +107,9 @@ namespace CosmicShore.Gameplay
 
             _mat = new Material(shader) { name = "SwarmMemberInstanced (substrate, runtime)", hideFlags = HideFlags.DontSave };
             var bodyBlock = new MaterialPropertyBlock();
-            bodyBlock.SetFloat(PartId, 0f); bodyBlock.SetFloat(BaseId, 0f); bodyBlock.SetMatrix(MeshLocalId, _body.Local);
+            bodyBlock.SetMatrix(MeshLocalId, _body.Local);
             _mpbs.Add(bodyBlock);
-            foreach (var part in _hearts)
-            {
-                var b = new MaterialPropertyBlock();
-                b.SetFloat(PartId, 1f); b.SetFloat(BaseId, 0f); b.SetFloat(HeartElementId, _element); b.SetMatrix(MeshLocalId, part.Local);
-                _mpbs.Add(b);
-            }
             _inst = new GraphicsBuffer(GraphicsBuffer.Target.Structured, _cap, SwarmInstance.Stride);
-            _heart = new GraphicsBuffer(GraphicsBuffer.Target.Structured, _cap, sizeof(uint));
             Valid = true;
         }
 
@@ -152,7 +122,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Palette, read once at bind: the body's base face and rim per tier for the population's domain
-        /// (all three domain slots the same - one population is one colour) and the neutral living-heart pair.</summary>
+        /// (all three domain slots the same - one population is one colour) and the living-heart pair the crystals' own
+        /// tint rule takes (<see cref="CrystalHeartDraw.SetLivingTint"/>).</summary>
         public void SetPalette(ThemeManagerDataContainerSO theme, Domains domain, Vector4 heartScale)
         {
             if (!Valid) return;
@@ -183,13 +154,12 @@ namespace CosmicShore.Gameplay
             foreach (var b in _mpbs)
             {
                 b.SetVectorArray(TierDarkId, dark); b.SetVectorArray(TierBrightId, bright);
-                b.SetColor(HeartDullId, hd); b.SetColor(HeartBrightId, hb);
-                b.SetVector(HeartScaleId, heartScale);
                 b.SetFloat(RimPowerId, 2f);
                 b.SetVector(SpreadPlainId, spreadPlain);
                 b.SetVector(SpreadDangerId, spreadDanger);
                 b.SetVector(SpreadShieldId, spreadShield);
             }
+            _hearts.SetLivingTint(hd, hb, heartScale);
         }
 
         static Vector4 TierSpread(Material m)
@@ -204,16 +174,9 @@ namespace CosmicShore.Gameplay
         public void Upload(SubstrateTickJob job, int start, int pop)
         {
             if (!Valid) return;
-            _heartCount = Mathf.Min(job.HeartCount(pop), _cap);
-            if (_fallback != null)
-            {
-                _fallback.UploadBodies(job.Instances, start);
-                _fallback.BeginHearts();
-                _fallback.UploadHearts(_element, job.Instances, start, job.HeartIdx, start, _heartCount);
-                return;
-            }
-            _inst.SetData(job.Instances, start, 0, _cap);
-            if (_heartCount > 0) _heart.SetData(job.HeartIdx, start, 0, _heartCount);
+            _hearts.Upload(job.Instances, start, _element, job.HeartIdx, start, Mathf.Min(job.HeartCount(pop), _cap));
+            if (_fallback != null) _fallback.UploadBodies(job.Instances, start);
+            else _inst.SetData(job.Instances, start, 0, _cap);
         }
 
         /// <summary>An agent died between uploads: hide its slot NOW (one 80-byte write). <paramref name="local"/> is the
@@ -222,6 +185,7 @@ namespace CosmicShore.Gameplay
         {
             if (!Valid || local < 0 || local >= _cap) return;
             job.Instances[start + local].Flags = 0u;
+            _hearts.Hide(local);
             if (_fallback != null) _fallback.Hide(local);
             else _inst.SetData(job.Instances, start + local, local, 1);
         }
@@ -230,16 +194,17 @@ namespace CosmicShore.Gameplay
         public void Draw(Bounds bounds, float alpha, float clock, float bloomTicks)
         {
             if (!Valid) return;
+            _hearts.Draw(bounds, alpha, clock, bloomTicks, Vector3.up, Vector3.forward);
+            if (!DrawBodies) return;
             if (_fallback != null)
             {
-                _fallback.Draw(bounds, _layer, DrawBodies, _cap, alpha, clock, bloomTicks, Vector3.up, Vector3.forward);
+                _fallback.Draw(bounds, _layer, _cap, alpha, clock, bloomTicks, Vector3.up, Vector3.forward);
                 return;
             }
             for (int q = 0; q < _mpbs.Count; q++)
             {
                 var b = _mpbs[q];
                 b.SetBuffer(InstancesId, _inst);
-                b.SetBuffer(HeartIdxId, _heart);
                 b.SetFloat(AlphaId, alpha);
                 b.SetFloat(ClockId, clock);
                 b.SetFloat(BloomId, bloomTicks);
@@ -254,20 +219,13 @@ namespace CosmicShore.Gameplay
                 receiveShadows = false,
                 layer = _layer,
             };
-            if (DrawBodies) Graphics.RenderMeshPrimitives(rp, _body.Mesh, _body.Submesh, _cap);
-            if (_heartCount <= 0) return;
-            for (int q = 0; q < _hearts.Count; q++)
-            {
-                var part = _hearts[q];
-                rp.matProps = _mpbs[q + 1];
-                Graphics.RenderMeshPrimitives(rp, part.Mesh, part.Submesh, _heartCount);
-            }
+            Graphics.RenderMeshPrimitives(rp, _body.Mesh, _body.Submesh, _cap);
         }
 
         public void Dispose()
         {
             _inst?.Release();
-            _heart?.Release();
+            _hearts?.Dispose();
             if (_mat) Object.Destroy(_mat);
         }
     }

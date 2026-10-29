@@ -89,7 +89,7 @@ namespace CosmicShore.UI
         [Tooltip("The popup's confirm button; {cost} is filled in.")]
         [SerializeField] private string confirmTemplate = "CONFIRM - {cost}";
         [Tooltip("The shortfall line; {amount} is filled in.")]
-        [SerializeField] private string shortfallTemplate = "You need {amount} more crystals.";
+        [SerializeField] private string shortfallTemplate = "You need {amount} more OmniCrystals.";
 
         SO_Vessel _currentShip;
 

@@ -28,25 +28,31 @@ Element Charger - and both are fenced to Menu_Main; see §2.1.)
 
 ## 1. The unit: one petal
 
-**One petal = one integer element level = 0.1 normalized = one ejected crystal at world scale 1.**
+**One petal = one integer element level = 0.1 normalized = one elemental crystal, of any kind.**
 
-That is not a coincidence to be admired, it is an arithmetic identity three files have to keep:
+Since 2026-10-26 every elemental crystal is ONE size and worth exactly ONE petal (Garrett;
+`Docs/ECOSYSTEM.md` §64), so conservation no longer rests on three numbers agreeing:
 
 - `ResourceSystem.PetalNormalized` is `1f / LevelScale` — the step the HUD flower takes, and the
   step `IncrementLevel` already used.
-- `ElementalCrystalEjector.PetalCrystalWorldScale` mints at world scale **1**.
-- `SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain` pays
-  `lossyScale.x × levelPerUnitScale`, and the shipped `levelPerUnitScale` is **0.1**.
+- `SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal` is `PetalNormalized`, and the
+  pickup grants exactly that, reading nothing about the crystal.
+- `ElementalCrystalEjector` mints at `ElementalCrystalSetSO.CrystalWorldScale` (3.55), the size of
+  every elemental crystal - a heart, an arena scatter, a toy's pickup.
 
-`1 × 0.1 = 0.1` = one petal. Retune `levelPerUnitScale` — a perfectly reasonable thing to want to
-do — and every ejected petal silently starts paying more or less than it cost to knock loose.
-`Tools/Build/check_elemental_economy.py` asserts the product, and its self-test fires on exactly
-that edit.
+`Tools/Build/check_elemental_economy.py` §2 asserts the flat petal, that the pickup reads no
+`lossyScale`, that the retired `levelPerUnitScale` / `maxLevelGainPerCrystal` keys stay off the
+pickup asset, and that the ejector mints at the one size; its self-test fires on each.
 
-**Why the amount is not encoded in the crystal's SIZE.** It could have been: mint one crystal
-scaled to whatever was taken. It breaks at five petals, where `maxLevelGainPerCrystal` (0.5)
-clips — and a clipped crystal is a quantity the player can see and a reward they cannot. Fixed
-scale, variable count.
+(Until 2026-10-26 the reward was `lossyScale.x × levelPerUnitScale` (0.1), capped at
+`maxLevelGainPerCrystal` (0.5), and the ejector minted at world scale 1 so that `1 × 0.1` was one
+petal. Lifeform hearts paid 0.10-0.46 of a level by their authored size, and arena scatters
+0.075-0.18.)
+
+**Why the amount is not encoded in the crystal's SIZE.** It never could be now - a crystal is one
+petal whatever it looks like. It was always the rule for the ejector: one crystal scaled to what
+was taken would have clipped the old 0.5 cap at five petals, a quantity the player can see and a
+reward they cannot. Fixed size, variable count.
 
 ## 2. The two rules that make it conserve
 
@@ -71,6 +77,22 @@ did not exist. The base band **[0, 10] is the pot**, and every transfer is a mov
 A consequence worth stating: the deficit band **[−5, 0) is now reachable by transients only** —
 the exact mirror of the overcharge rule (only transients reach 10–15), and for the same reason. A
 permanent loss bottoms out at empty.
+## 2.0 A hull's petals travel with it (2026-10-27)
+
+Element levels are simulated on the machine that OWNS a hull. Any hand-over moves the hull to another machine: the arena
+pilot swap (`PilotSwap`), a crew seat change, the Cellular Duel swap. Until 2026-10-27 the new owner simply kept whatever
+its own replica held, so crystals the old owner had collected did not come along. Garrett: *"that issue is true for any
+vessel swapping situation ... it should be resolved."* It is resolved by `ElementHandover`:
+- The owner publishes the hull's **base** levels (`R_VesselActionHandler.NetElementBase`, owner-write, to a hundredth of a
+  petal).
+- The machine that takes the hull over adopts them, and the latched level-5 unlocks, on gaining ownership, before it
+  simulates or publishes anything (`R_VesselElementalAbilityHandler.AdoptHandover`).
+- Only the base is petals, so only the base travels, and **the hand-over neither mints nor loses a petal**:
+  - a temporary buff ends (a buff is never a transfer);
+  - the comeback bonus is recomputed by the new owner;
+  - an unsettled fraction of a petal is forgotten, as a re-seed already forgets it (§2), since it was never taken.
+- Limit: a crystal collected in the network tick just before the hand-over can miss it.
+
 ## 2.1 Where the material comes from — and why a fight can produce none
 
 **The pot starts EMPTY, in every mode.** This is the design, confirmed on the playtest report

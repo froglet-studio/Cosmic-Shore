@@ -185,6 +185,19 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        VesselPilotLoadout _pilotLoadout;
+        /// <summary>The pilot in the seat and the slotted artifacts; created and initialized on first use.</summary>
+        public VesselPilotLoadout PilotLoadout
+        {
+            get
+            {
+                _pilotLoadout = _pilotLoadout != null ? _pilotLoadout : gameObject.GetOrAdd<VesselPilotLoadout>();
+                if (!_pilotLoadout.IsInitialized)
+                    _pilotLoadout.Initialize(this);
+                return _pilotLoadout;
+            }
+        }
+
         R_VesselElementalAbilityHandler _elementalAbilityHandler;
         public R_VesselElementalAbilityHandler ElementalAbilityHandler
         {

@@ -3,7 +3,8 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Slingshot - the Stoat-only circuit race (<c>Arcade/SLINGSHOT.md</c>). A closed loop of
+    /// Slingshot - the Stoat's TIME race (<c>Arcade/SLINGSHOT.md</c>; Yash, 2026-10-27: "Stoat will use Slingshot and
+    /// Meerkat will use Warpline"; Warpline was the Stoat's until then). A closed loop of
     /// switch rings is cut through the cell and every pilot flies LAPS of it in order; the first
     /// domain whose lead runner threads the last gate of the last lap wins, scored on finish TIME
     /// (golf).
@@ -34,5 +35,14 @@ namespace CosmicShore.Gameplay
 
         protected override RaceCourseSource CreateCourseSource() =>
             new SlingshotCourseSource { Laps = laps };
+
+        /// <summary>
+        /// Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>), as Warpline flew it for the
+        /// Stoat: the scene's 180 u approach point lay outside its 160 u commit radius, Warpline's measured defect (no AI
+        /// Stoat finished any of Yash's 11 Warpline races on the scene steering). The Stoat's Warpline-learned pair and sling
+        /// numbers start its Slingshot variants (<c>Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot</c>,
+        /// <c>StoatSlingConfig_Slingshot</c>, the warp let go 250 u out) until its own Slingshot races replace them.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
     }
 }

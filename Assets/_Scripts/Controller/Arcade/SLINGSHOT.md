@@ -1,5 +1,13 @@
 # Slingshot (`GameModes.Slingshot = 64`)
 
+> **The Stoat's TIME race since 2026-10-27** (Yash: "Stoat will use Slingshot and Meerkat will use Warpline"). Warpline,
+> its time race until then, now flies the Meerkat (`WARPLINE.md`). The AI Stoats train here (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`):
+> `SlingshotController.AICommitFromApproachPoint` is on (the scene's 180 u approach point sat outside its 160 u commit,
+> Warpline's measured defect), and `Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot` / `StoatSlingConfig_Slingshot`
+> start as copies of the Warpline variants learned from Yash's 15 races (the warp let go 250 u out) until the learning
+> sweep relearns them from Slingshot races. The course and its four intensities can be prototyped and saved in
+> **FrogletTools > Game Modes > Time Race Prototyper** (`Docs/TIME_RACE_PROTOTYPER.md`).
+
 > **Flown on the field dipole since 2026-10-09.** The Stoat's triggers now hold its round-15
 > sink–source pair (`R_VesselActions/STOAT_DIPOLE.md`), not the orbit sling §1 and §4 describe; its AI
 > is `StoatDipoleExecutor.Autopilot`. The target and the rule are unchanged; the course was re-cut on

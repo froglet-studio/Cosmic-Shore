@@ -31,6 +31,17 @@ ASSET_GUID = '0b7e3c5a9d2f4e61a8c47f19d6e2b305'
 GAME_LISTS = ['Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset',
               'Assets/_SO_Assets/Games/GameLists/ArenaGames.asset']
 
+# The caption look (IntroCameraLibrarySO's Look header).
+LETTERBOX = 0.1222                 # 132 units of a 1080 frame: a 2.39:1 picture
+ALDRICH = 'Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/ALDRICH-REGULAR SDF.asset'
+CHAKRA = 'Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset'
+
+
+def font_guid(path):
+    with open(os.path.join(ROOT, path + '.meta')) as fh:
+        return re.search(r'^guid: (\w+)', fh.read(), re.M).group(1)
+
+
 ANCHOR = {'Center': 0, 'Player': 1, 'Rival': 2, 'Teammate': 3, 'Pilots': 4, 'Crystal': 5, 'Gate': 6, 'Landmark': 7}
 SPACE = {'arena': 0, 'units': 1, 'local': 2, 'localunits': 3}
 KIND = {'move': 0, 'orbit': 1, 'path': 2, 'vertigo': 3, 'cuts': 4, 'hold': 5}
@@ -352,7 +363,7 @@ COURTS = [
 FAMILIES = [
     ('Crystal fields', ['SkimRace', 'Joust', 'Scurry', 'Maelstrom'], CRYSTAL_FIELDS),
     ('Gate races', ['Headlong', 'Redline', 'Switchback', 'Breakwater', 'Skein', 'Waystation', 'GrizzlyTime',
-                    'Slingshot', 'Warpline', 'ThresherTime', 'WrasseRun', 'ScarabRally', 'SerpentTime',
+                    'Slingshot', 'Warpline', 'BurrowRun', 'ThresherTime', 'WrasseRun', 'ScarabRally', 'SerpentTime',
                     'BrittleStarTime', 'Regatta'], GATE_RACES),
     ('Boneyard', ['DogFight', 'Salvo', 'Dustup', 'Broadside'], BONEYARD),
     ('Forests and demolition', ['Rampage', 'Bends', 'Sirocco', 'WreckingBall', 'GrizzlyCharge', 'Cleave'], FORESTS),
@@ -372,10 +383,11 @@ WORDS = [
     ('Switchback', 'Switchback', 'Every gate in order. Every gate twisted.', 'Lead runner home wins', 'Dolphin'),
     ('Breakwater', 'Breakwater', 'Shoot a door. Saw it open. Or thread the eye.', 'Fourteen stations, two laps', 'Sparrow'),
     ('Skein', 'Skein', 'Change strands. The fast line runs inside.', 'Thread the last ring', 'Urchin'),
-    ('Waystation', 'Waystation', 'Thread the last ring on the line you want to leave on.', 'Lead runner home wins', 'Butterfly'),
+    ('Waystation', 'Waystation', 'Thread the last ring on the line you want to leave on.', 'Lead runner home wins', 'Tiger Moth'),
     ('GrizzlyTime', 'Grizzly Time', 'Your speed is your bombs.', 'Against the clock', 'Grizzly'),
     ('Slingshot', 'Slingshot', 'You cruise slow and turn wide. Your poles do the steering.', 'Lead runner home wins', 'Stoat'),
-    ('Warpline', 'Warpline', 'Lay the poles. Warp the line. Fly it faster.', 'Time is everything', 'Stoat'),
+    ('Warpline', 'Warpline', 'Bend the tunnel. Dig the line. Ride it out.', 'Time is everything', 'Meerkat'),
+    ('BurrowRun', 'Burrow Run', 'Eight rings. Dig to every one.', 'Lead runner home wins', 'Meerkat'),
     ('ThresherTime', 'Thresher Time', 'Plant the ball. Orbit it. Let go.', 'Against the clock', 'Thresher'),
     ('WrasseRun', 'Wrasse Run', 'The Grouper flies the plane. The Wrasse takes the ring.', 'Only the Wrasse counts', 'Wrasse and Grouper'),
     ('ScarabRally', 'Scarab Rally', 'Hold the throttle. Drift the hairpin. Juke in.', 'No ball, just rings', 'Scarab'),
@@ -384,11 +396,11 @@ WORDS = [
     ('Regatta', 'Regatta', 'Every hull. One circuit. Three laps.', 'Lead runner home wins', 'Every hull'),
     ('DogFight', 'Dog Fight', 'Guns score 1. Missiles score 50.', 'First domain to the target', 'Sparrow'),
     ('Salvo', 'Salvo', 'This time the Boneyard is the target.', 'First domain to the prism target', 'Sparrow'),
-    ('Dustup', 'Dustup', 'No guns. Fly over them.', 'First domain to the target', 'Butterfly'),
+    ('Dustup', 'Dustup', 'No guns. Fly over them.', 'First domain to the target', 'Tiger Moth'),
     ('Broadside', 'Broadside', 'Every hull that can fight, each with its own weapon.', 'Every hit priced by the weapon that landed it', 'Every fighting hull'),
     ('Rampage', 'Rampage', 'One crystal. A whole forest in the way.', 'First domain to the target', 'Dolphin'),
     ('Bends', 'The Bends', 'No guns. Only the blast.', 'First domain to the bend target', 'Dolphin'),
-    ('Sirocco', 'Sirocco', 'Your dust is your blade.', 'First domain to the prism target', 'Butterfly'),
+    ('Sirocco', 'Sirocco', 'Your dust is your blade.', 'First domain to the prism target', 'Tiger Moth'),
     ('WreckingBall', 'Wrecking Ball', 'Every bright crystal is a ball. Plow the forest.', 'First domain to the target', 'Scarab'),
     ('GrizzlyCharge', 'Grizzly Charge', 'A cell full of prisms. Nuke them.', 'Most prisms destroyed', 'Grizzly'),
     ('Cleave', 'Cleave', 'Four arenas. One blade. The arena is the score.', 'Cut the prism target first', 'Rhino'),
@@ -398,7 +410,7 @@ WORDS = [
     ('Tollway', 'Tollway', 'Plant a ring. Every ball through it pays you.', 'First domain to the toll target', 'Scarab'),
     ('Hijack', 'Hijack', 'Grind your colour. Steal theirs.', 'Steal the prism target', 'Urchin'),
     ('Bloomrush', 'Bloomrush', 'Skim to arm. Tag to plant. Beat the fuse.', '120 seconds: biggest bloom wins', 'Manta'),
-    ('Tapestry', 'Tapestry', 'Paint the sky. Raid what they paint.', 'Most mass standing wins', 'Butterfly'),
+    ('Tapestry', 'Tapestry', 'Paint the sky. Raid what they paint.', 'Most mass standing wins', 'Tiger Moth'),
     ('AstroLeague', 'Astro League', 'Hypersea soccer. Played with a sword.', 'Kickoff', 'Rhino'),
     ('BroodRush', 'Brood Rush', 'Hold the nucleus. Every brood born in your colour scores.', 'A brood every 30 seconds', 'Every domain'),
 ]
@@ -559,9 +571,13 @@ def build():
         L.append(f'    tagline: {text(tagline)}')
         L.append(f'    objective: {text(objective)}')
         L.append(f'    pilots: {text(pilots)}')
-    L += ['  referenceRadius: 240', '  scaleMultiplier: 1', '  letterbox: 0.085', '  captionFont: {fileID: 0}',
-          '  titleFontSize: 110', '  taglineFontSize: 32', '  objectiveFontSize: 24', '  lowerTitleFontSize: 44',
-          '  lowerLineFontSize: 18']
+    # The look is the Rev 33 cell-gate board's (Docs/MENU_REDESIGN_B.md section 99, board A): 132 px bars at 1080,
+    # the title and the lower third's name in Aldrich, the smaller lines in Chakra Petch SemiBold (the kit's faces).
+    L += ['  referenceRadius: 240', '  scaleMultiplier: 1', f'  letterbox: {LETTERBOX}',
+          f'  captionFont: {{fileID: 11400000, guid: {font_guid(ALDRICH)}, type: 2}}',
+          f'  detailFont: {{fileID: 11400000, guid: {font_guid(CHAKRA)}, type: 2}}',
+          '  titleFontSize: 118', '  taglineFontSize: 26', '  objectiveFontSize: 15', '  lowerTitleFontSize: 34',
+          '  lowerLineFontSize: 13']
     return '\n'.join(L) + '\n'
 
 

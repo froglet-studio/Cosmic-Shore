@@ -1026,6 +1026,55 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ---
 
+### L-STU-149 — An AI that holds a tap button down after a miss never presses again
+- Lab: Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Bract's net casts on a fresh RT press. Its AI held RT while "want" stayed true, so after one cast that caught nothing (a misjudged crystal) it never cast again: a run stalled at 6 of 24 crystals for 450 s, the Bract circling its freed crystal 10 u away with RT held.
+- Do instead: for any edge-triggered ability, the AI's "want" includes the cooldown (or releases for a frame after each press), so a miss is followed by a new press. Look for "rt held, cool 0, never fires" when a run stalls.
+- Evidence: siphonophore-studio.js zooidAI ("a cast is a tap"); the stall probe in the round 2 commit 1039d5ecdc.
+- Promoted: no
+
+### L-STU-150 — Count how often the AI USES an ability, not only the finish time; a rule from another ability can starve it
+- Lab: Siphonophore Studio · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Pulse Jet changed nothing in the scorecard. Its use count showed why: the AI Bell jetted 8 times a run, because Slipstream (built one step earlier) blocked the pulse while leading and the Bell led most of its travel. Allowing the jet while leading took it to ~115 jets a run and I1 Hard from 343 to 332 s. The Ram Spool's count (about one ram a run, no red ram) showed the Lance makes the ram redundant.
+- Do instead: every ability added to a lab reports its own use count (and hits, chains, steals) in the headless result next to the finish time; a flat finish time with a near-zero count is an unused ability, not a neutral one.
+- Evidence: runHeadless extra { jets, onBeat, chainTop, lashes, hits, stolen, rams, redRams }; CONCEPT_FLEET.md 11.5 steps 3 and 4.
+- Promoted: no
+
+### L-STU-151 — A crew loop is chaotic: two or three seeds mislead; use eight and quote mean and spread
+- Lab: Siphonophore Studio · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: with three seeds, Mass level 5 plus the lash read 60 s faster than Mass 5 alone (392/356/354 against 433/421/415); with eight seeds and the coiled-steering fix the two were 344 and 350, inside one standard deviation. Three AIs, a fuse policy and a wall rhythm make tiny changes move whole runs by 30-60 s.
+- Do instead: compare variants in the same build behind a run option, on eight seeds, and quote mean and standard deviation; a difference smaller than the spread is a plateau. Remove the option once decided.
+- Evidence: scratch siph_mean.cjs; CONCEPT_FLEET.md 11.5 step 2.
+- Promoted: no
+
+### L-STU-152 — A "clean run" measured in seconds punishes the fast player; measure it in distance
+- Lab: Sea Turtle (seaturtle.html, kind `tide`) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Rapids burst needed 0.8 s through the Rapids without touching a rock. The AI flying the mechanic (tucked, fast) earned 0 bursts a run; the control without the mechanic (slower) earned 6.5. A tucked turtle crossed the Rapids in about 0.5 s.
+- Do instead: a reward for getting THROUGH something is measured in distance (here 30 u), never in time, or the better pilot is the one it stops paying.
+- Evidence: studio-kinds.js K.tide (`rapidsLen`); CONCEPT_FLEET.md 12.2.
+- Promoted: no
+
+### L-STU-153 — When a side mechanic loses to doing nothing, tie its reward to its story before tuning its numbers
+- Lab: Seahorse (seahorse.html, kind `tend`) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: holding a plant to call the crystal in was slower than swimming (282 s against 179); doubling and nearly tripling the call speed barely moved it, because the cost was the 111 s spent flying to plants beside the course. Making a crystal a plant calls in count two (it grew in the garden, which is the vessel's story) took it to 155 s against 179.
+- Do instead: split the mechanic's time (the probe: holding / going to it / everything else) before touching its numbers; if the cost is the detour, no speed number fixes it, and the reward has to be worth the detour.
+- Evidence: studio-kinds.js K.tend (`gardenWorth`); CONCEPT_FLEET.md 12.2.
+- Promoted: no
+
+### L-STU-154 — Adding choices to someone else's lab: every default theirs, the baseline proven identical, and a copier for the hub
+- Lab: Crew of Four Lab round 9 (CrewOfFourLab.html, the Orca, Garrett's) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: play-style options went into a lab another collaborator owns and ported to C#. Each option is a dropdown whose first entry is the shipped behaviour (`styleBoost: 0`, `styleShield: 0`, `styleMissile: 0`), and every new branch in the step is gated on a non-zero value, so the shipped preset's 4-game batch was re-run after each change and stayed byte-identical. A self-contained lab also failed the hub's page rules (no `studio-theme.js`, no Sync tag, the header naming the host shell), so the hub page is a COPY made by `copy_orca.py` (the `copy_stoat.py` pattern) with `--check`, never a hand edit of the owner's page.
+- Do instead: for options in a collaborator's lab, gate on an opt-in key, prove the baseline unchanged, and read rows where the AI never uses the option (the breath where the helm AI never boosts) as "no data", not "no difference". To list such a lab in the hub, copy it with a checked copier.
+- Evidence: CrewOfFourLab.html `STYLES`, `styleBoostStep`, `dockStep`, `seekLock`; .claude/skills/vessel-studio/copy_orca.py; CREW_OF_FOUR_LAB.md round 9.
+- Promoted: no
+
+### L-STU-155 — A lab that reads part of a shipped look shows a HALF-updated object when the look changes, and its --check stays green
+- Lab: Omni Shepard Lab (`Docs/Studios/OmniShepardLab.html`) · Branch: `cece/serene-cannon-93olp5` · By: the 2026-10-28 omni-shades session · Date: 2026-10-28
+- What happened: the omni crystal moved from one lime to four per-element shades (`Docs/PALETTE.md` §2.12). The lab's baker reads `OmniDepthPrisms._BrightColor` and the body's `_BrightColor`, so the re-bake moved the triangle prisms to the Mass shade while the body, whose new colours ride a per-vertex element channel and four new properties the baker never reads, stayed one lime. `omni_shepard_lab_assets.py --check` and `verify_lab.cjs` both passed: the page truthfully shows what it reads and nothing says what it does not.
+- Do instead: when a shipped look gains a dimension (a per-vertex channel, a new property family), re-bake, then LOOK at the lab's screenshot for an object that is now half old and half new, and write the gap into the lab's "not modelled" list and the owning doc in the same branch. A green baker `--check` proves the fields it reads, never that it reads all of them.
+- Evidence: the `depth.omni.bright` diff in the lab's `ASSETS` block (lime → `0.3639, 0.7673, 0`); the `verify_lab.cjs` desktop screenshot (Mass-shade prisms on a one-lime body); `Docs/PALETTE.md` §2.12 "Not modelled".
+- Promoted: no
+
 ## ECO — ecology bestiary and flight labs (Tools/Ecology)
 
 ### L-ECO-1 — A viewer "too austere to judge" stalls a lab; a shared viewer standard fixed it
@@ -1109,7 +1158,35 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: Tools/ecosim/README.md.
 - Promoted: §0
 
+### L-SIM-2 — Model URP's bloom from its source, not from a doc's table: the threshold is gamma, the clamp per channel
+- Lab: crystal bloom preview (`Tools/Build/crystal_bloom_preview.py`) · Branch: `cece/charming-bell-m70ac8` · Date: 2026-10-27
+- What happened: the question was whether the free crystals still read as distinct limes after the gameplay bloom. URP 17's `PostProcessPassRenderGraph` passes `Mathf.GammaToLinearSpace(threshold)` (0.2 → 0.033 linear), hard-codes the knee at half that, and `Bloom.shader` clamps each channel to `clamp` (0.5) BEFORE the threshold. The per-channel clamp is what pushes a yellow-green toward yellow in its glow; a luminance clamp would not. The URP source was already on disk in the reference-compile cache (`/tmp/unity_refcompile_cache/graphics/Packages/com.unity.render-pipelines.universal`).
+- Do instead: port the effect's passes from the package source (prefilter, the mip chain with its sizes from the FRAME, the scatter lerp, the composite), read the profile's overridden values from its asset, and convert material and property-block colours gamma → linear as Unity does in a Linear project.
+- Evidence: `crystal_bloom_preview.py` `bloom()`; `Docs/PALETTE.md` §2.11.
+- Promoted: no
+
+### L-SIM-3 — Judge a glow's colour from the light it ADDS, and take its hue in sRGB
+- Lab: crystal bloom preview · Branch: `cece/charming-bell-m70ac8` · Date: 2026-10-27
+- What happened: two wrong measurements, each of which flipped the verdict. Classifying the composite pixels called every crystal's far halo green, because a dim glow over the navy sky borrows its blue. Taking HSV on LINEAR values called the omni 100% green (`#7cfc00` is 90° in sRGB HSV and 108° in linear). The lime window (75-105°) is defined on sRGB colours.
+- Do instead: subtract the backdrop, weight by the added luminance, normalise each pixel's added light to its peak, encode to sRGB, then take the hue. Sanity-check the classifier on a colour whose answer you know before trusting a table of them.
+- Evidence: `crystal_bloom_preview.py` `classify()`.
+- Promoted: no
+
+### L-SIM-4 — A render that is linear in its colours is three renders; search over the table, cached
+- Lab: crystal bloom preview · Branch: `cece/charming-bell-m70ac8` · Date: 2026-10-27
+- What happened: the shade search needed each crystal at hundreds of candidate colours. The shading is linear in the bright and dark colours and the supersample is a mean, so `img = B + Ab·bright + Ad·dark` from three renders gives every candidate before the (non-linear) bloom. The first full search still took about 20 minutes, and each change to the search's RULES (characters, distinctness) re-ran it, until the per-candidate measurements were cached keyed on the candidates, the bloom settings and the looks; after that a rule change runs in seconds.
+- Do instead: separate the expensive per-candidate measurement from the cheap combination search, cache the first, and expect the rules to change more often than the renders.
+- Evidence: `crystal_bloom_preview.py` `_components()`, `proposal_cache.json`.
+- Promoted: no
+
 ---
+
+### L-SIM-5 — A model's asset generator that tunes an element ON TOP of a fleet law applies the element twice
+- Lab: ecosim's Hesperides generator (`Tools/ecosim/gen_hesperides_assets.py`) · Branch: `cece/keen-feynman-unrdda` · Date: 2026-10-28
+- What happened: the model's intensity ladder authored Mass x1.35 and Charge x0.85 leaf cross-sections. Those rungs predated the fleet-wide element law (Docs/ECOSYSTEM.md §65), which already sizes every element's leaf. Once the law landed, a Mass Hesperides plant was enlarged twice: by the law and by the rung. Nothing failed. The generator's own output matched its recipe, and the game's law tests do not read a lab's assets.
+- Do instead: when a platform law takes over a dimension, every lab that tuned that dimension per element sets its rungs to 1 (the species' own leaf), edits only the lines it owns, and says in its docstring which law now owns the number. Grep the labs' generators for the law's element keys whenever a law lands.
+- Evidence: `gen_hesperides_assets.py` (ladder Mass/Charge rungs -> 1, shield Mass 1 / Charge 0); Docs/ECOSYSTEM.md §65.6.
+- Promoted: no
 
 ## EDT — in-editor lab windows
 

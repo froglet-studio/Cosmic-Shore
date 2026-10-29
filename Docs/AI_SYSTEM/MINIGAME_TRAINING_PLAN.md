@@ -1,6 +1,6 @@
 # Training the AIs through each vessel's own minigames
 
-**Decided by Yash, 2026-10-26, restated 2026-10-27.** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`).
+**Decided by Yash, 2026-10-26, restated 2026-10-27.** **Focus since 2026-10-27: the Stoat (Slingshot) and the Meerkat (Warpline), §8.** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`).
 
 **The plan in one paragraph (2026-10-27).** The AIs are not trained in Regatta. Each vessel is trained in its OWN
 minigames: first its **Time minigame** (the card whose genre petal is Time, usually its race: the Stoat's is Warpline),
@@ -58,7 +58,8 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 |---|---|---|---|
 | **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
-| **Stoat** | **Warpline** (also Slingshot) | gate race, field pairs | **Second (Yash, 2026-10-26/27).** 15 hand-flown races, all finished (I1-I4); the AI Stoats finished none of 30. Retrained: the Regatta steering, the pair and sling numbers learned from Yash (`WARPLINE.md` §3.1), and the warp let go 250 u out (§7, `WARPLINE.md` §3.2) |
+| **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, field pairs and the catch sling | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
+| **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatWormholeExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
 | Rhino | Headlong | lapped gate race | none yet |
 | Manta | Redline | gate race | none yet |
 | Urchin | Skein | gate race on rails | none yet |
@@ -68,6 +69,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
 | Thresher | Thresher Time | gate race, the sling | 3 races; the sling drive is in (2026-10-26) |
 | Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
+| Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
 | Serpent | **Serpent Time** (new 2026-10-27) | circuit race on the fuel pellets | none yet |
 | Brittle Star | **Brittle Star Time** (new 2026-10-27) | circuit race on Speed Mode | none yet |
 
@@ -353,3 +355,25 @@ into the ring, which the AI's steering does not use. So the let-go is NOT learne
 
 Tests: `SwitchbackAISteeringTests.Warpline_*`. Not run in Unity (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). Slingshot,
 the Stoat's other race, keeps its scene steering until its own races show the same thing.
+
+## 8. Yash's two: the Stoat in Slingshot, the Meerkat in Warpline (2026-10-27)
+
+> "Stoat and Meerkat are the two vessels that I really wanna complete myself ... I want to build the entire kit of these
+> two vessels ... Stoat will use Slingshot and Meerkat will use Warpline. These will be two time game modes of these two
+> vessels." (Yash, 2026-10-27)
+
+- **The cards.** `ArcadeGameWarpline` seats the Meerkat (`author_warpline_assets.py`); Slingshot stays the Stoat's.
+- **The Stoat's AI in Slingshot.** `SlingshotController.AICommitFromApproachPoint` is on: its scene carried Warpline's
+  180 u lead against a 160 u commit, the defect that stopped every AI Stoat in Warpline (§7). Its pair and sling variants
+  start as copies of the Warpline ones learned from Yash (the same hull, the same warp, the let-go at 250 u); the sweep
+  relearns them from Slingshot races (`learn_drives_from_flights.py` reads any mode, and copies an existing variant first,
+  so the hand-set let-go is kept).
+- **The Meerkat's AI in Warpline.** Its autopilot is the one Burrow Run flies; no learner covers the Meerkat yet, so its
+  races are recorded and wait (`ai_learning_seen.json` "waiting", hull with no learner). A Meerkat learner (the tunnel's
+  bend, length and when to press RT, measured from Yash's flights) is the next learner to join `ai_learn.py`.
+- **The courses.** Both races cut Slingshot's circuit. `FrogletTools > Game Modes > Time Race Prototyper`
+  (`Docs/TIME_RACE_PROTOTYPER.md`) shows each intensity's course, lets the person change it, save it as a named preset
+  and play it. A saved course is a different race: the learner tells courses apart (by ring radius, `on_current_course`)
+  only in its `PER_INTENSITY_MODES` (Switchback, §3.7), and Slingshot and Warpline are not in it yet.
+- **Their four abilities** are prototyped in the Vessel Studio first (the Stoat studio round 28, the Meerkat studio round
+  6) and reach Unity only on Yash's say-so (`/vessel` §3).
