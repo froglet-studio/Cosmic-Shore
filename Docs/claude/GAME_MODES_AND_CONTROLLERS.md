@@ -951,6 +951,27 @@ slings** (AIPilot writes no trigger) and races at cruise — an autopilot sling 
 Grizzly Time's scene). See `_Scripts/Controller/Arcade/THRESHERTIME.md`. Authored headless — not yet
 run in the editor.
 
+`ScarabRally(72)`, `SerpentTime(73)` and `BrittleStarTime(74)` are **Time races for three hulls that had none**
+(Garrett, 2026-10-27: "make every vessel's time game very fun"). Each one is a `GateRaceController` race with a
+`RaceGateTurnMonitor`, and all three are authored by one shared helper, `Tools/Build/hull_time_race.py`, with one
+spec file each (`author_scarab_rally_assets.py`, `author_serpent_time_assets.py`, `author_brittle_star_time_assets.py`).
+- **Scarab Rally** is `SwitchbackController`'s open walk (24 rings, with I3 walls and I4 danger prisms), cut by
+  `ScarabRallyCourse` for the Scarab's throttle, drift and juke. It has no ball; the ball game, Scarab Scramble, is
+  now the Scarab's Mass card (`ModeGenre`).
+- **Serpent Time** and **Brittle Star Time** use Thresher Time's shape (8 rings x 2 laps on the shared
+  `HeadlongCircuit`), cut against a full pellet stack's ~100 u circle and Speed Mode's ~145 u circle.
+- See `SCARABRALLY.md`, `SERPENTTIME.md` and `BRITTLESTARTIME.md`. All three were authored headless and have not
+  been run in the editor.
+
+`LanternRun(75)` is the **Angler's Time race**, the Angler's leapfrog on a lapped circuit (8 rings x 2 laps, the shared
+`HeadlongCircuit`). A lantern of neutral prisms hangs past the rings: paint it through the ring, throw a group of the
+school at it, and dash after them through the mouth. The lanterns sit at every ring at I1, off the line at I2, at every
+2nd ring at I3 and every 3rd at I4. Two shared fixes came with it:
+- `Fauna.LeashOwnsSpeed`: a thrown creature is no longer clamped to its wild speed.
+- `AnglerLeapfrogAIPolicySO`: the Angler's first AI.
+
+Authored headless. A client pilot still cannot dash (ANGLER.md follow-up 7). See `LANTERNRUN.md`.
+
 `WrasseRun(68)` is the **Wrasse and Grouper's circuit race** — Thresher Time's shape (`GateRaceController`,
 `RaceGateTurnMonitor`, the shared `HeadlongCircuit`: 8 rings x 2 laps = 16) where **a ring counts only when
 the WRASSE threads it**: the navigator's kite is the hull's `IRingThreadProbe`, and the controller answers
@@ -1362,6 +1383,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         │
         └── GateRaceController (abstract)         — the shared gate-race platform: course broadcast, rings, crossing detection, the owner-detects/server-records round trip, AI steering, final scores. A subclass supplies its NAME, its COURSE, whether that course WRAPS, and how many rings at the front are a LEAD-IN the laps skip (`LeadInGates`, default 0 — a closed circuit cannot start fairly on its own). It also offers **`OnServerTick`** — a named hook rather than a `virtual Update`, because `Update` is a Unity MESSAGE and a subclass declaring its own would HIDE the base's and take crossing detection down with it, silently (Waystation's autopilot fold is its one caller)
             ├── SwitchbackController              — Dolphin-only gate race; an OPEN chain flown once
+            │   └── ScarabRallyController         — Scarab-only ring race (the Scarab's Time card, no ball); Switchback's walk cut for throttle, drift and juke
             ├── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
             ├── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
             ├── SkeinController                   — Urchin-only cable race; the rings sit ON the arena's own rails, so the course is a thing you RIDE rather than fly between
@@ -1371,6 +1393,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             ├── WarplineController                — the Stoat's time race; Slingshot's cut in 5 long legs x 2 laps, won on the pathfinder's warp boost (field dipole)
             ├── ThresherTimeController            — Thresher-only circuit race; Grizzly Time's octagon cut to the Thresher's 229u full-sling circle (plant, wind in, let go), 8 gates x 3 laps; AI races at cruise (never slings)
             ├── WrasseRunController               — the Wrasse and Grouper's circuit race; a ring counts only when the kite (the hull's IRingThreadProbe) threads it, 8 gates x 2 laps; Time loops fuel the Grouper's boosts
+            ├── SerpentTimeController             — Serpent-only circuit race; 8 gates x 2 laps cut against a full pellet stack's ~100 u circle; the fuel tank is the race
+            ├── BrittleStarTimeController         — Brittle Star-only circuit race; 8 gates x 2 laps cut against Speed Mode's ~145 u circle (0/1/2/3 corners it cannot hold)
+            ├── LanternRunController              — Angler-only circuit race; 8 gates x 2 laps with LANTERNS past the rings to paint, throw the school at and dash after
             ├── RegattaController                 — the ARENA race: every playable hull, three domain-coloured super-shielded rails braided along a lapped circuit, a start line behind gate 0 (`IPlayerSpawnLine`); the grid balanced by the card's `StartingElements`
             └── WaystationController              — Butterfly-only migration race; an OPEN chain dealt into CLUSTERS (coils you weave) laid a FOLD apart, so the course is half flown and half teleported. A teleport threads NOTHING (`VesselTransformer.TeleportCount`), and an autopilot folds through the base's new `OnServerTick` seam
         └── BroadsideController                 — the ARENA brawl: seven hulls in the Boneyard, each fighting with the weapon it has; a hit priced by its VERB (round 1 / strike 8 / debuff 12 / rocket 10-30), never by its hull

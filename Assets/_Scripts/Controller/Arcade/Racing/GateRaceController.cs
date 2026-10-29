@@ -79,6 +79,16 @@ namespace CosmicShore.Gameplay
                  "reported course is reproduced.")]
         [SerializeField] protected int courseSeed;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event played for the LOCAL pilot each time they thread a gate. Shipped empty " +
+                 "(FMOD convention): leave empty for silence until a sound is authored. Every gate " +
+                 "race inherits this slot, so wire it per mode scene.")]
+        [SerializeField] FMODUnity.EventReference gateThreadedEvent;
+
+        [Tooltip("FMOD event played for the LOCAL pilot when they thread the LAST gate of the course " +
+                 "(replaces the gate sound on that crossing). Shipped empty; leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference courseFinishedEvent;
+
         [Tooltip("How long the server keeps re-trying a course build that could not run yet. " +
                  "A course built from PURE GEOMETRY (Switchback, Headlong) either works on the " +
                  "first frame or never, and spends this on nothing; a course built from SCENE " +
@@ -494,6 +504,7 @@ namespace CosmicShore.Gameplay
         bool _arenaBuildAnnounced;
         bool _warnedCourseMissing;
         int _litGate = -1;
+        int _litProgress = -1;
 
         // The race beats as toasts (halfway, lead change, home stretch, final lap). A local
         // poll over the replicated gate counts, run on every peer - see DomainRaceToasts.
@@ -857,6 +868,7 @@ namespace CosmicShore.Gameplay
             _runs.Clear();
             _courseBuilt = false;
             _litGate = -1;
+            _litProgress = -1;
         }
 
         /// <summary>
@@ -901,6 +913,7 @@ namespace CosmicShore.Gameplay
             int next = gameData.LocalPlayer?.RoundStats != null
                 ? gameData.LocalPlayer.RoundStats.SwitchesThreaded
                 : -1;
+            PlayLocalThreadSound(next);
             if (next >= RaceLength) next = -1;   // finished: nothing to light
             if (next >= 0) next = RingIndexFor(next);
             if (next == _litGate) return;
@@ -912,6 +925,21 @@ namespace CosmicShore.Gameplay
                 _rings[next].SetIsNextForLocalPilot(true);
 
             _litGate = next;
+        }
+
+        /// <summary>
+        /// The local pilot's per-gate reward sound. Driven from the same live progress as the lit
+        /// ring, so it plays once per forward step and stays quiet on a rollback (progress going
+        /// DOWN) and on the first read after a course build (<c>_litProgress</c> = -1).
+        /// </summary>
+        void PlayLocalThreadSound(int progress)
+        {
+            int previous = _litProgress;
+            _litProgress = progress;
+            if (previous < 0 || progress <= previous) return;
+
+            var sound = progress >= RaceLength && !courseFinishedEvent.IsNull ? courseFinishedEvent : gateThreadedEvent;
+            if (!sound.IsNull) CosmicShore.Core.AudioSystem.Instance.PlaySFXEvent(sound);
         }
 
         /// <summary>

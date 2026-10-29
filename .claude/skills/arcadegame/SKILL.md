@@ -146,6 +146,12 @@ ladder means pruning that list by hand - Unity keeps an unresolvable reference s
 list is one of the few places a retired intensity can still be pointed at. When a ladder's length
 changes, diff the list's entry count against the mode's intensity count.
 
+**A hull's Time race on the gate-race platform is a SPEC, not a generator** (2026-10-27): `Tools/Build/hull_time_race.py`
+authors the rule, card, cloned scene, preview, toasts and registrations, and validates them. `author_scarab_rally_assets.py`,
+`author_serpent_time_assets.py`, `author_brittle_star_time_assets.py` and `author_lantern_run_assets.py` are one spec each
+(`extra_files` carries a mode-owned prefab). Measure the course ladder by compiling the shipped course `.cs` with the card
+harness's `UnityShim.cs` and a small driver, and run the NUnit tests the same way against a ten-line `Assert` shim.
+
 ### 3a. Designing a race COURSE offline (waypoint tracks)
 
 Worked example: Skim Race I4 "Relativity", `Tools/Build/author_skimrace_relativity_track.py`

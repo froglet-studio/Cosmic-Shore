@@ -95,6 +95,9 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
   `bleeding-edge` into this skill's own branch staled Headlong's card because a parallel branch had
   retuned `HeadlongCircuit.cs`. Run `--check` after every merge (not only after your own edits),
   re-render just the named card, and LOOK at it before committing - a re-render is a new picture.
+- **A course file's new enum breaks the WHOLE harness, not one card.** `SwitchbackCourse.cs` started naming
+  `SwitchbackFunType` (2026-10-28) and every render failed to compile until `Data/Enums/SwitchbackFunType.cs` joined
+  `SOURCES`. When a compile error names a type, add its file to `SOURCES`; never shim a real enum.
 - **Seeds are int32.** Mask derived seeds to non-negative 31 bits on both sides of the boundary.
 
 ## 4. What this is NOT

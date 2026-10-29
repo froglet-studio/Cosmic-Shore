@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameLanternRun
+  m_EditorClassIdentifier:
+  Mode: 75
+  IsMultiplayer: 1
+  DisplayName: Lantern Run
+  Description: Anglers only, and you travel by your school. Hold RT to paint the
+    lantern past the next ring and let go to throw your fish at it, then dash after
+    them straight through the ring. Throw the other half, dash again. Omni crystals
+    grow the school; LT sends one to bite a rival. Two laps. Fastest domain home wins.
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: a94f72ae484740ac88d9a9753e859bc2, type: 3}
+  GolfScoring: 1
+  SceneName: MinigameLanternRun
+  Vessels:
+  - {fileID: 11400000, guid: ea422bbe0d1aef61993692999cee50ea, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  ViewUserAction: 0
+  PlayUserAction: 0
+  ComebackRatePerScoreDeficit: 0.45

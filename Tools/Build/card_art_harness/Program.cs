@@ -111,6 +111,10 @@ static class Program
             case "slingshot":
             case "threshertime":
             case "wrasserun":
+            case "scarabrally":
+            case "serpenttime":
+            case "brittlestartime":
+            case "lanternrun":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -124,6 +128,10 @@ static class Program
                     "slingshot" => HeadlongCircuit.Generate(seed, Apply(SlingshotCourse.ForIntensity(intensity), layer)),
                     "threshertime" => HeadlongCircuit.Generate(seed, Apply(ThresherTimeCourse.ForIntensity(intensity), layer)),
                     "wrasserun" => HeadlongCircuit.Generate(seed, Apply(WrasseRunCourse.ForIntensity(intensity), layer)),
+                    "scarabrally" => SwitchbackCourse.Generate(seed, Apply(ScarabRallyCourse.ForIntensity(intensity), layer)),
+                    "serpenttime" => HeadlongCircuit.Generate(seed, Apply(SerpentTimeCourse.ForIntensity(intensity), layer)),
+                    "brittlestartime" => HeadlongCircuit.Generate(seed, Apply(BrittleStarTimeCourse.ForIntensity(intensity), layer)),
+                    "lanternrun" => HeadlongCircuit.Generate(seed, Apply(LanternRunCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -132,9 +140,10 @@ static class Program
                 foreach (var g in gates)
                     scene.Ring(ToV(g.Position), ToV(g.Axis), g.Radius, g.Radius * tube, gm, 56, 8);
                 if (layer.TryGetProperty("path", out var pe) && pe.GetBoolean())
-                    DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback", pal, layer);
+                    DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback" && kind != "scarabrally", pal, layer);
                 if (kind == "threshertime") StageSling(scene, gates);
                 if (kind == "wrasserun") StageKite(scene, gates);
+                if (kind == "lanternrun") StageLanterns(scene, gates, intensity);
                 return 0;
             }
             case "breakwater":
@@ -301,6 +310,25 @@ static class Program
     /// from ball to ship - the sling that corner asks for. Sizes are card-scale, not the game's
     /// (the real ball is ~3 u across, invisible at 313x208); the corner is the shipped course's own.
     /// </summary>
+    /// <summary>Lantern Run's signature: the lanterns themselves, glowing balls past their rings, at the SHIPPED layout
+    /// (LanternRunCourse.LanternCentre), with a dotted throw line through the first one's ring.</summary>
+    static void StageLanterns(Scene scene, List<RaceGate> gates, int intensity)
+    {
+        var glow = new Material { Base = new V3(0.25, 0.22, 0.05), Rim = new V3(1.8, 1.5, 0.4), Emissive = new V3(1.4, 1.1, 0.3), EdgeGlow = 0.35, RimPower = 1.4 };
+        var dot = new Material { Base = new V3(0.1, 0.2, 0.25), Rim = new V3(0.4, 1.4, 1.8), Emissive = new V3(0.25, 0.8, 1.0), EdgeGlow = 0.2 };
+        int n = gates.Count;
+        for (int i = 0; i < n; i++)
+        {
+            if (!LanternRunCourse.HasLantern(i, intensity)) continue;
+            V3 at = ToV(LanternRunCourse.LanternCentre(gates, i, intensity));
+            scene.Sphere(at, LanternRunCourse.LanternRadius * 1.6, glow, 20, 40, false);
+            if (i != 0) continue;
+            V3 from = ToV(gates[n - 1].Position), ring = ToV(gates[0].Position);
+            V3 start = ring + (from - ring).Norm * 260;
+            for (int j = 0; j < 22; j++) scene.Sphere(start + (at - start) * (j / 21.0), 3.0, dot, 8, 16, false);
+        }
+    }
+
     static void StageSling(Scene scene, List<RaceGate> gates)
     {
         int n = gates.Count, k = 0;

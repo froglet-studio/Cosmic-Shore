@@ -58,6 +58,10 @@ MonoBehaviour:
   thresherTimeGateTarget: 16
   wrasseRunGateTarget: 16
   burrowRunGateTarget: 16
+  scarabRallyGateTarget: 24
+  serpentTimeGateTarget: 16
+  brittleStarTimeGateTarget: 16
+  lanternRunGateTarget: 16
   regattaGateTarget: 24
   hijackStealTarget: 500
   hexRaceCrystalCountBuild: 0
@@ -106,6 +110,10 @@ MonoBehaviour:
   thresherTimeGateTargetBuild: 16
   wrasseRunGateTargetBuild: 16
   burrowRunGateTargetBuild: 16
+  scarabRallyGateTargetBuild: 24
+  serpentTimeGateTargetBuild: 16
+  brittleStarTimeGateTargetBuild: 16
+  lanternRunGateTargetBuild: 16
   regattaGateTargetBuild: 24
   hijackStealTargetBuild: 500
   autoRestoreBuildValuesBeforeBuild: 1

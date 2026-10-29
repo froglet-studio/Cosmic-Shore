@@ -18835,3 +18835,48 @@ squirrel". This undoes 622e271ca's swap; the 2026-10-28 Meerkat entry above is s
 5. Vessel Changer toy -> Meerkat, then back to Squirrel. **Pass:** both swaps work; the Meerkat still forms tunnels.
 6. `LavalampWormholeLab.unity` still flies the Meerkat.
 
+## 🔴 Gate races: per-gate and finish sound slots — NOT EDITOR-VERIFIED (`cece/confident-goodall-6cpxan`, 2026-10-27)
+
+`GateRaceController` gained `gateThreadedEvent` and `courseFinishedEvent`. Both are FMOD slots, shipped empty. They play
+for the local pilot only and come from `LightLocalNextGate`'s progress. No Unity CLI was available in the session, so
+this has not been compiled in the Editor.
+
+1. Open any gate-race scene (Switchback, for example). The controller's inspector should show an **Audio** header with
+   two empty slots.
+2. Assign any event to the gate slot and race. It should play once per ring threaded, and never on the first frame of
+   the race.
+3. Assign an event to the finish slot. It should play on the last ring instead of the gate sound.
+
+## 🔴 Scarab Rally, Serpent Time, Brittle Star Time + the Scarab switch on elemental crystals — NOT EDITOR-VERIFIED (`cece/confident-goodall-6cpxan`, 2026-10-27)
+
+Authored headless. The C# was compiled against real Unity references (`unity_refcompile`), and the course tests
+were compiled and run offline over 400 seeds. Nothing has been opened in Unity.
+
+1. Open `MinigameScarabRally`, `MinigameSerpentTime` and `MinigameBrittleStarTime` once each and save them, so the
+   Editor mints their own ids. Then run each `Tools/Build/author_*_assets.py --check`.
+2. Arcade grid → each card → race at I1 and I4 with AI rivals. Pass if:
+   - every ring is reachable;
+   - the AI threads rings and finishes;
+   - the arrow names your next ring.
+3. Scarab Rally I2: the hairpins need a drift to keep speed. Scarab Rally I3/I4: walls and danger prisms appear.
+4. Scarab, any mode (Freestyle, Tollway, Scramble):
+   - Press Switch with no elemental crystal ahead: refused, and no charge spent.
+   - Fly at a free elemental crystal, a flora heart, or a fauna carrying its heart: the ring forms around it.
+   - Fly at an omni crystal: refused.
+5. Run the edit-mode tests `ScarabRallyCourseTests`, `SerpentTimeCourseTests`, `BrittleStarTimeCourseTests`,
+   `ModeGenreTests` and `EnumIntegrityTests`.
+
+## 🔴 Lantern Run (the Angler's Time race), the thrown-speed fix, the Angler AI — NOT EDITOR-VERIFIED (`cece/confident-goodall-6cpxan`, 2026-10-29)
+
+1. Open `MinigameLanternRun` once and save it. Then run `python3 Tools/Build/author_lantern_run_assets.py --check`.
+2. Arcade → Lantern Run, I1, solo against AI Anglers. Check:
+   - **Lanterns:** a lantern glows 140 u past every ring.
+   - **Paint:** hold RT with the nose through the ring. The lantern lights.
+   - **Throw:** let go. The group flies at the lantern at about 150 u/s, not 30. This is the thrown-speed fix (ANGLER.md
+     follow-up 11).
+   - **Dash:** press B. The hull covers 3/4 of the way to the group, through the mouth, and the ring counts.
+3. Watch an AI Angler. Pass if it throws and dashes, and doesn't just cruise at 40 u/s. It should finish the race.
+4. Repeat at I2 (lanterns off the line), I3 (every second ring) and I4 (every third, tight mouths).
+5. **Regression:** in Freestyle, check a tamed Angler school still follows, gathers and eats normally (only a throw,
+   a hunt and the lure's orbit now skip the behaviour tick's speed clamp).
+6. Run `LanternRunCourseTests` and `EnumIntegrityTests`.

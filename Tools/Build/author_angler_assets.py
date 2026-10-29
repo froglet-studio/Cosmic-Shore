@@ -149,6 +149,7 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs",
     "Controller/Environment/FloraAndFauna/PaintedPrey.cs",
     "Controller/Animation/AnglerAnimation.cs",
+    "Controller/AI/Boost/AnglerLeapfrogAIPolicySO.cs",
 ))
 SCRIPT = {os.path.basename(rel)[:-3]: guid for rel, guid in NEW_SCRIPTS}
 
@@ -184,7 +185,11 @@ EXECUTOR_ID = "4417001122334455001"
 
 # ---- fleet guids ---------------------------------------------------------------------------------------------------
 TURN_END_CHANNEL = "498a06d44bde9184f985c938c803b2a1"
-SKIM_RING_POLICY = "c691910cb0114ea7aeb572bc51b71a6a"         # StoatAIBoostPolicy.asset (SkimRingAIPolicySO)
+SKIM_RING_POLICY = "c691910cb0114ea7aeb572bc51b71a6a"         # StoatAIBoostPolicy.asset (SkimRingAIPolicySO), the donor's
+# The Angler's own autopilot drive (2026-10-29, Lantern Run): paint, throw, dash after the school. Replaces the donor's
+# skim-ring policy, which binds nothing on an Angler (ANGLER.md follow-up 2).
+LEAPFROG_POLICY = A("_SO_Assets", "AI Boost Policies", "AnglerAIBoostPolicy.asset")
+LEAPFROG_POLICY_GUID = guid_for("AnglerAIBoostPolicy.asset")
 SO_VESSEL_SCRIPT = "0309a5343d820c14abd73b35f6fa50f1"
 CAMERA_SCRIPT = "fd4e6f3597f7439ba7333b35a3a9e164"
 # The Stoat's four icon sprites (charge, mass, space, time) and the Angler's that replace them in the HUD variant.
@@ -371,6 +376,8 @@ def patch_prefab(text: str) -> str:
                         f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {IMPACT_CONTAINER_GUID}, type: 2}}")
     text = re.sub(r"  _inputEventShipActions:(?:.*\n)*?(?=  _onButtonPressed:)", lambda _: bindings(), text, count=1)
     text = re.sub(r"  squadLabelTemplate: .*\n", "", text)   # the retired squad label (2026-10-21)
+    text = text.replace(f"boostPolicy: {{fileID: 11400000, guid: {SKIM_RING_POLICY}, type: 2}}",
+                        f"boostPolicy: {{fileID: 11400000, guid: {LEAPFROG_POLICY_GUID}, type: 2}}")
     head, docs = S.split_docs(text)
     if any(fid == EXECUTOR_ID for fid, _ in docs):
         S.set_doc(docs, EXECUTOR_ID, executor_block())
@@ -581,6 +588,17 @@ def prefab_meta(guid: str) -> str:
     return S.prefab_meta().replace(S.PREFAB_GUID, guid)
 
 
+def leapfrog_policy_asset() -> str:
+    """The Angler's autopilot drive (AnglerLeapfrogAIPolicySO). The base straight/runway fields are unused by this
+    policy and stay at their defaults; requireAIPlayer keeps it off the menu's lava-lamp autopilot (a throw leaves
+    creatures in the world)."""
+    return (S.so_header(SCRIPT["AnglerLeapfrogAIPolicySO"], "AnglerAIBoostPolicy") +
+            "  alignDegrees: 12\n  releaseAlignDegrees: 25\n  stickBand: 0.35\n  releaseStickBand: 0.6\n"
+            "  engageRunwaySeconds: 1.5\n  releaseRunwaySeconds: 0.5\n  disabledInModes: []\n  requireAIPlayer: 1\n"
+            "  throwAlignDegrees: 4\n  minThrowDistance: 120\n  holdSeconds: 0.45\n  throwIntervalSeconds: 0.6\n"
+            "  minDashDistance: 40\n  dashAheadDegrees: 50\n")
+
+
 def owned_files() -> "dict[str, str]":
     out = {
         CLASS_ASSET: class_asset(), CLASS_ASSET + ".meta": S.asset_meta(CLASS_GUID),
@@ -593,6 +611,7 @@ def owned_files() -> "dict[str, str]":
         OMNI_EFFECT: omni_effect_asset(), OMNI_EFFECT + ".meta": S.asset_meta(OMNI_EFFECT_GUID),
         IMPACT_CONTAINER + ".meta": S.asset_meta(IMPACT_CONTAINER_GUID),
         MAP: map_asset(), MAP + ".meta": S.asset_meta(MAP_GUID),
+        LEAPFROG_POLICY: leapfrog_policy_asset(), LEAPFROG_POLICY + ".meta": S.asset_meta(LEAPFROG_POLICY_GUID),
     }
     for name, value, _ in CONTROLS + TOUCH_CONTROLS:
         path = os.path.join(ACTIONS_DIR, name + ".asset")
@@ -699,8 +718,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(omni and f"guid: {OMNI_EFFECT_GUID}" in omni.group(1) and STOAT_OVERCLOCK not in container,
          "AnglerImpactorDataContainer's omni list does not run the Angler's mass tame (or still runs the Stoat's Overclock)")
     need("  abilities: []\n" in d.get(AI_PILOT_ID, ""), "the AIPilot runs a blind ability cycle (the Angler has no autopilot yet)")
-    need(f"boostPolicy: {{fileID: 11400000, guid: {SKIM_RING_POLICY}, type: 2}}" in d.get(AI_PILOT_ID, ""),
-         "the AIPilot's boost policy is not the donor's SkimRingAIPolicy (inert without a Squirrel tube; the shared-channel gate wants it wired)")
+    need(f"boostPolicy: {{fileID: 11400000, guid: {LEAPFROG_POLICY_GUID}, type: 2}}" in d.get(AI_PILOT_ID, ""),
+         "the AIPilot's boost policy is not AnglerAIBoostPolicy (AnglerLeapfrogAIPolicySO: paint, throw, dash)")
     handler = d.get(HANDLER_ID, "")
     for name, _, event in CONTROLS:
         need(re.search(r"  - InputEvent: %d\n    ShipActions:\n    - \{fileID: 11400000, guid: %s, type: 2\}" % (event, CONTROL_GUID[name]), handler),

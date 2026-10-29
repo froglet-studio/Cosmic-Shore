@@ -65,12 +65,14 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | Urchin | Skein | gate race on rails | none yet |
 | Sparrow | Breakwater | gate race through breakwaters | 7 hand-flown (I1, I4). The steering fix and the rocket that clears the way are in, the rocket's range and aim learned from Yash's shots (§6) |
 | Butterfly | Waystation | fold race | 2 (Caleb, I1). The AI threaded 0 rings (before the fold fix) |
-| Scarab | Scarab Scramble / Tollway | goal race / toll race | none yet |
+| Scarab | **Scarab Rally** (new 2026-10-27; Scarab Scramble is now its Mass card) | ring race: throttle, drift, juke | none yet |
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
 | Thresher | Thresher Time | gate race, the sling | 3 races; the sling drive is in (2026-10-26) |
 | Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
 | Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
-| Serpent | **none** | - | no Time minigame of its own yet: one has to be made or chosen |
+| Serpent | **Serpent Time** (new 2026-10-27) | circuit race on the fuel pellets | none yet |
+| Brittle Star | **Brittle Star Time** (new 2026-10-27) | circuit race on Speed Mode | none yet |
+| Angler | **Lantern Run** (new 2026-10-29) | circuit race: paint, throw, dash after the school | none yet; its first AI (`AnglerLeapfrogAIPolicySO`) is untested |
 
 ## 3. Switchback first (Dolphin)
 
