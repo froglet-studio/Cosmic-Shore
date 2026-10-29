@@ -9,7 +9,9 @@ game actually runs rather than against a transcription of it.
 `Unity.cs` is a shim — just enough of `Vector3` and `Mathf` for two PURE files to compile. It is
 not a reimplementation of anything: `WaystationCourse.cs` and `RaceCourseGeometry.cs` are
 `<Compile Include="../../../Assets/...">`d verbatim, which is the whole point. Add a file to the
-csproj only if it is also pulled straight out of `Assets/`.
+csproj only if it is also pulled straight out of `Assets/`. The csproj itself is not committed (the repo ignores
+`*.csproj`): `--compile` writes it from `HARNESS_CSPROJ` in `waystation_course.py` when it is missing, so add a file
+there.
 
 Measured agreement over 4 intensities × 40 seeds (3,880 gates): **0.0059 u** of position and
 **0.0005°** of axis — float32 against float64 on a course spanning a thousand units.

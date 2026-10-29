@@ -31,7 +31,7 @@ GameObject:
   - component: {fileID: 1910145565130234907}
   - component: {fileID: 8900000000000004005}
   m_Layer: 0
-  m_Name: Butterfly
+  m_Name: TigerMoth
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -69,7 +69,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2928199215
+  GlobalObjectIdHash: 1945657574
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -423,7 +423,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: bae72b89360ec98408e562747f9a9549, type: 2}
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: f367e6037b96cf54e82543964072bfd3, type: 2}
+    - {fileID: 11400000, guid: a541c39b6f7a46c5be04c2b39275a4c0, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []
@@ -477,8 +477,8 @@ MonoBehaviour:
   vesselHUDController: {fileID: 8298610961815995264}
   boostMultiplier: 4
   inertia: 1
-  _name: Butterfly
-  vesselType: 13
+  _name: TigerMoth
+  vesselType: 29
   _nearFieldSkimmer: {fileID: 281340694002912670}
   _farFieldSkimmer: {fileID: 92358954707176188}
   orientationHandle: {fileID: 0}
@@ -540,7 +540,7 @@ MonoBehaviour:
   baseView: {fileID: 6949257768267019707}
   _iconSetSwitcher: {fileID: 0}
   view: {fileID: 6949257768267019707}
-  foldExecutor: {fileID: 2588221200834226537}
+  dropExecutor: {fileID: 2588221200834226537}
   spreadExecutor: {fileID: 2591329563551618180}
 --- !u!114 &1910145565130234907
 MonoBehaviour:
@@ -831,7 +831,7 @@ GameObject:
   - component: {fileID: 6939522449411244076}
   - component: {fileID: 2588221200834226537}
   m_Layer: 0
-  m_Name: Fold
+  m_Name: Drop
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -861,13 +861,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 5551892933991280828}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 235fa4dc588e4721a2a26a1ed8d3c413, type: 3}
+  m_Script: {fileID: 11500000, guid: 7c42e6152d424e1896772b16b6dc533e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.FoldActionExecutor
-  config: {fileID: 11400000, guid: f367e6037b96cf54e82543964072bfd3, type: 2}
-  hullVisual: {fileID: 4785963160405140657}
-  ghostMaterial: {fileID: 0}
-  ghostBloomSeconds: 0.18
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.TigerMothDropExecutor
+  config: {fileID: 11400000, guid: a541c39b6f7a46c5be04c2b39275a4c0, type: 2}
 --- !u!114 &8900000000000004005
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -39,7 +39,7 @@ DONOR_SPAWN = "  arrangeSpawnPointsAroundCell: 1\n  spawnDistanceOutsideNucleus:
 DONOR_NO_NUCLEUS = "  noNucleusSpawnRadius: 480\n"
 DONOR_MONITOR_TAIL = "  _updateInterval: 1\n  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}\n"
 
-BUTTERFLY_ID = lib.VESSEL_CLASS_ID["Butterfly"]
+BUTTERFLY_ID = lib.VESSEL_CLASS_ID["TigerMoth"]
 
 
 def cell_list(guids) -> str:

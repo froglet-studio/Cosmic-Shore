@@ -50,7 +50,7 @@ G_ASSET = {
 EXISTING = dict(lib.SCRIPT_GUIDS)
 EXISTING.update(lib.CARD_ART)
 EXISTING.update(common.DONOR)
-EXISTING["Vessel_Butterfly"] = lib.VESSELS["Butterfly"]
+EXISTING["Vessel_Butterfly"] = lib.VESSELS["TigerMoth"]
 EXISTING["BarrenCellConfig"] = lib.existing_guid("Assets/_SO_Assets/Cell Configs/Barren Cell/Barren Cell Config.asset") \
     if os.path.exists(os.path.join(lib.ROOT, "Assets/_SO_Assets/Cell Configs/Barren Cell/Barren Cell Config.asset.meta")) \
     else "52de45c2fab54ea0a35bc37a311d80e6"
@@ -61,7 +61,7 @@ CRYSTALS_BY_INTENSITY = [24, 16, 10, 6]
 SPAWN = common.spawn_block(150, 0, 0)   # Barren HAS a nucleus: 150 outside it, symmetric
 
 # ── The wake model: what one painting pilot adds per second, read off the shipped hull ────────
-PREFAB = g.read("Assets/_Prefabs/Spacevessels/Butterfly.prefab")
+PREFAB = g.read("Assets/_Prefabs/Spacevessels/TigerMoth.prefab")
 WINGS = g.read("Assets/_SO_Assets/VesselActions/Butterfly/ButterflySpreadWingsAction.asset")
 
 
@@ -72,7 +72,7 @@ def one(src, pattern, what):
 
 
 BASE = re.search(r"^  BaseScale: \{x: ([0-9.]+), y: ([0-9.]+), z: ([0-9.]+)\}", PREFAB, re.M)
-assert BASE, "Butterfly.prefab BaseScale not found"
+assert BASE, "TigerMoth.prefab BaseScale not found"
 base_x, base_y, base_z = (float(v) for v in BASE.groups())
 x_scaler = one(PREFAB, r"^  XScaler: ([0-9.]+)$", "XScaler")
 wavelength = one(PREFAB, r"^  initialWavelength: ([0-9.]+)$", "initialWavelength")
@@ -168,7 +168,7 @@ g.register_toast_config(G_ASSET["GameToastConfigTapestry"])
 g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Tapestry.asset", G_ASSET["ModePreviewTapestry"],
              lib.header_for(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Tapestry") + f"""  Mode: {MODE_ID}
   Notes: 'The bare Barren cell the mode runs in, and nothing else - the arena IS what you paint
-    into it. What the preview teaches is Mass mode''s wide wake. Vessel pinned to Butterfly(13).'
+    into it. What the preview teaches is Mass mode''s wide wake. Vessel pinned to TigerMoth(29).'
   PreviewCell: {{fileID: 11400000, guid: {EXISTING['BarrenCellConfig']}, type: 2}}
   PreviewCellsByIntensity: []
   StructurePrefab: {{fileID: 0}}
