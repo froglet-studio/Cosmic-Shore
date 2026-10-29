@@ -347,6 +347,42 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// REJOIN a running match this player dropped out of (Docs/MENU_REDESIGN_B.md section 103): join the session
+        /// <paramref name="member"/> is still playing, announcing the rejoin in the approval payload so the host hands
+        /// back the seat the AI has been flying (<see cref="MatchRejoin"/>). The same shutdown → join → connect → ready
+        /// → bounce sequence as Join; "ready" is the reclaimed pair resolving as this machine's own. A refusal (the seat
+        /// is gone) lands back on Home like any failed join, and the remembered match is forgotten either way.
+        /// </summary>
+        public async UniTask RejoinMatchAsync(PartyPlayerData member, string ugsPlayerId)
+        {
+            if (!PreflightOrToast(member.PlayerId, member.PartySessionId, asSpectator: false))
+            {
+                MatchRejoin.Forget();
+                return;
+            }
+            long startedTicks = DateTime.UtcNow.Ticks;
+            try
+            {
+                await RunClientJoinAsync(
+                    $"rejoin -> {member.DisplayName}",
+                    expectLocalVessel: true,
+                    joinSession: () =>
+                    {
+                        MatchRejoin.ArmApprovalPayload(ugsPlayerId);
+                        return HostConnectionService.Instance.JoinPartyDirectAsync(member);
+                    },
+                    afterConnected: null);
+            }
+            finally
+            {
+                MatchRejoin.ClearApprovalPayload();
+                // A seat handed back re-remembers the match (ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync); a
+                // record still older than this attempt means the rejoin did not land, so it is not offered again.
+                if (!MatchRejoin.TryLoad(out var after) || after.savedAtUtcTicks < startedTicks) MatchRejoin.Forget();
+            }
+        }
+
+        /// <summary>
         /// The zero-request pre-flight shared by Accept, Join and Spectate
         /// (<see cref="HostConnectionService.TryValidateJoinTarget"/>). A refusal shows the reason
         /// on the live menu's toast and returns false with NOTHING torn down. No service is
@@ -514,6 +550,7 @@ namespace CosmicShore.Gameplay
                 // A spectator leaves through this very path (its overlay's close button, the
                 // watched match ending). Disarm before the solo session below starts a host.
                 SpectatorSession.EndLocal();
+                MatchRejoin.Forget();   // leaving the party on purpose: nothing to rejoin
 
                 // Mirror cold-boot exactly: tear down vessel/Player/SOAP refs →
                 // leave UGS session → shut down NM → load Menu_Main locally (NM is
@@ -657,6 +694,10 @@ namespace CosmicShore.Gameplay
                 // the recovery teardown, and B8 fix 1 already makes a stale value inert, so
                 // recovery must not block on the write. See Docs/PartySystem/BUGS.md B10.
                 HostConnectionService.Instance?.ClearJoinedPartyAsync().Forget();
+
+                // A guest whose link broke mid-match keeps the match it was in, so Home can offer to rejoin it
+                // (section 103). A no-op when no match was remembered.
+                MatchRejoin.MarkDropped();
 
                 await BounceToSoloMenuAsync(reason);
             }

@@ -65,6 +65,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rejoin a running match (Rev 37, section 103.1) (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor). Not opened in the editor. Needs two clients (MPPM: a host and one guest in a party), a mode with a turn (Skim Race).
+- [ ] Guest drop: start Skim Race; on the guest kill the network for ~10 s (or stop the guest's player and start it again). The host shows "pilot handed to AI"; the guest lands on Home with "You dropped out" and REJOIN selected.
+- [ ] REJOIN: the guest loads into the running match, flies ITS old vessel (same domain, same score, no second ship), input works, the scoreboard has one row for it, and the host's AI stops flying it.
+- [ ] Restart: quit the guest mid-match and start it again: after sign-in Home asks "Rejoin Skim Race?". NOT NOW forgets it (no prompt on the next boot).
+- [ ] The match ends while the guest is out: no prompt (or the window gives up quietly).
+- [ ] Host leaves mid-match: the guest gets "The host left" with BACK TO HOME after about 20 s on Home; no rejoin.
+- [ ] Leaving deliberately (pause → Main menu) never prompts a rejoin.
+- [ ] `MatchRejoinTests` and `DisconnectNoticeTests` pass.
+
 ### 🔴 FTUE Rev 36 B: the captain's comms window (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player). Not opened in the editor. Needs the developer unlock OFF (Froglet Toolbox) and a fresh FTUE (Quest Debug: reset).

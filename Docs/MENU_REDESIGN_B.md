@@ -4881,7 +4881,7 @@ control, everything else dimmed and dead except Settings and Skip).
 - **Not covered yet:** the in-race and finish steps (4-5 on the board). The first-login guide stops at the Lesson; those
   steps need their own nodes.
 
-## 103. Rev 37: connection states and rejoin (2026-10-29, awaiting board approval)
+## 103. Rev 37: connection states and rejoin (2026-10-29; approved by Shombith, built in 103.1)
 
 **Asked (Shombith, 2026-10-29):** "where are the others like the connections lost and reconnect ones?" and "If some one
 leaves a game and then they boot up while the game is running the game should ask the user if they want to rejoin that
@@ -4917,3 +4917,41 @@ game".
    approval payload, as spectators already do.
 4. The host hands the AI-flown Player and vessel back to the returning client: ownership, `NetIsAI = false`, AI pilot
    off, client pairing re-run. It must not spawn a second one.
+
+**Approved (Shombith, 2026-10-29):** "Go ahead with rev 37 I approve".
+
+### 103.1 Rejoin, built (2026-10-29, awaiting a two-client test)
+
+- **`MatchRejoin`** (new, `Assets/_Scripts/Controller/Multiplayer/`) is the shared piece:
+  - the remembered match (PlayerPrefs `{session id, mode, saved, dropped}`, given up after 30 minutes);
+  - the approval token `cosmicshore.rejoin.v1:<ugs id>`;
+  - the host's pending rejoins;
+  - `FindReclaimableSeat`: a spawned, AI-flown Player with the returning player's UGS id.
+- **When the record is kept and dropped:**
+  - Kept: a guest remembers the match when the host's config arrives in the game scene
+    (`SyncGameConfigToClients_ClientRpc`). A drop (`HandleHostLossAsync`) marks it dropped and keeps it.
+  - Forgotten: the match's end (`SyncGameEnd_ClientRpc`), a deliberate return (`SceneLoader.ReturnToMainMenu`),
+    leaving the party, and NOT NOW / BACK TO HOME.
+- **The window** is `DisconnectNotice`, the same style-B prefab. On Home it looks every 2 s for a party mate still
+  advertising the remembered session in a match:
+  - one found: it shows "You dropped out" (a drop under 3 minutes old) or "Rejoin {mode}?", with REJOIN and NOT NOW;
+  - nobody for 20 s after a drop: "The host left", with BACK TO HOME;
+  - nobody after a restart: the record is quietly forgotten.
+
+  All the words are in `DisconnectNoticeConfig` (written by `author_disconnect_notice.py`).
+- **REJOIN** calls `PartyInviteController.RejoinMatchAsync`: the same join as JOIN, with the rejoin token armed.
+- **The host:** approval makes no Player for a rejoin with a seat to give back, and refuses one without. On connect, or
+  on the client's roster request if that comes first, `TryReclaimSeat`:
+  - returns ownership of the Player and vessel;
+  - sets `NetIsAI` false and switches the AI pilot off;
+  - tells that client (`SeatReclaimed_ClientRpc`), and sends the roster.
+- **The client:** once ownership and the human flag land, it claims the Player as its own (`GameDataSO.ClaimLocalPlayer`,
+  with no reset), re-initialises the pair (camera and input), frees input if the turn is running, and raises client
+  ready.
+- **Tests:** `MatchRejoinTests` (payload, record, expiry).
+- **Not built, and the risks** (named for the two-client test):
+  - no silent no-menu reconnect;
+  - a crashed client may still hold its UGS membership, so the join fails "already a member";
+  - re-initialising a vessel that is already initialised is new;
+  - the game-scene guards for a client that joins from the menu mid-match are untested;
+  - a host can never rejoin.
