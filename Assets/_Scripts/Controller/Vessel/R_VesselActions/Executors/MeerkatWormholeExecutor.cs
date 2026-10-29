@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
     /// <c>rootMaxSpeed</c>, the left stick moves it round the tube, the wall bounces it; it comes out of the far mouth (or back
     /// out of the way in) at <c>rideExitMultiplier</c> × its speed before the tunnel, and eases back to cruise.</item>
     /// <item><b>Its life</b>: it stays <c>staySeconds</c> once its rider is out, collapses to its centre over
-    /// <c>collapseSeconds</c>, ripples the screen's edges there (<see cref="Ripples"/>) and fades over
+    /// <c>collapseSeconds</c> and fades over
     /// <see cref="MeerkatWormholeMath.FadeSeconds"/>. Everyone sees it (<see cref="Live"/>: the bridge, the bent
     /// space).</item>
     /// <item><b>The AI</b> (input only, /vessel-ai): once its reticle is back and its ring is far enough, it plans a
@@ -107,16 +107,7 @@ namespace CosmicShore.Gameplay
             public bool Ghost;
         }
 
-        /// <summary>A collapse's screen-edge ripple: where, and when it started.</summary>
-        public struct Ripple
-        {
-            public Vector3 Centre;
-            public float Start;
-            public MeerkatWormholeConfigSO Config;
-        }
-
         static readonly List<Tunnel> s_tunnels = new();
-        static readonly List<Ripple> s_ripples = new();
         static readonly List<MeerkatWormholeExecutor> s_executors = new();
 
         // Per-step markers (perf, 2026-10-29: the Lavalamp captures showed 3-8 ms of Update self time with no breakdown).
@@ -124,7 +115,6 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker s_mTunnels = new("Meerkat.Executor.StepTunnels");
         static readonly ProfilerMarker s_mSwallow = new("Meerkat.Swallow.Step");
         static readonly ProfilerMarker s_mRoots = new("Meerkat.Executor.StepRootNetworks");
-        static readonly ProfilerMarker s_mRipples = new("Meerkat.Executor.StepRipples");
         static readonly ProfilerMarker s_mCamera = new("Meerkat.Executor.StepCamera");
         static readonly ProfilerMarker s_mAutopilot = new("Meerkat.Executor.Autopilot");
         static readonly ProfilerMarker s_mOmni = new("Meerkat.Executor.StepOmni");
@@ -134,8 +124,6 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Every tunnel alive now, everyone's.</summary>
         public static IReadOnlyList<Tunnel> Live => s_tunnels;
-        /// <summary>Every collapse ripple still running.</summary>
-        public static IReadOnlyList<Ripple> Ripples => s_ripples;
         /// <summary>Every enabled Meerkat (the view draws its pilot's reticle).</summary>
         public static IReadOnlyList<MeerkatWormholeExecutor> Executors => s_executors;
 
@@ -319,7 +307,6 @@ namespace CosmicShore.Gameplay
             using (s_mTunnels.Auto()) StepTunnels(dt);
             using (s_mSwallow.Auto()) _swallow.Step(this, dt);
             using (s_mRoots.Auto()) StepRootNetworks(dt);
-            using (s_mRipples.Auto()) StepRipples();
             TrackLocalPilot();
             if (_ghostAlpha > 0f) _ghostAlpha -= dt / Mathf.Max(0.05f, _ghostFormT);
             if (!IsAuthority) return;
@@ -602,19 +589,7 @@ namespace CosmicShore.Gameplay
                 if (!MeerkatWormholeMath.Step(ref t.W, t.L, t.FormT, stay, config.CollapseSeconds, dt)) continue;
                 t.Dying = true;
                 t.DieT = 0f;
-                var centre = t.At(t.W.S0, out _);
-                if (config.RippleStrength > 0f)
-                    s_ripples.Add(new Ripple { Centre = centre, Start = Time.time, Config = config });
-                PlayOneShot(config.CollapseEvent, centre);
-            }
-        }
-
-        static void StepRipples()
-        {
-            for (int i = s_ripples.Count - 1; i >= 0; i--)
-            {
-                var r = s_ripples[i];
-                if (!r.Config || Time.time - r.Start >= Mathf.Max(0.2f, r.Config.RippleSeconds)) s_ripples.RemoveAt(i);
+                PlayOneShot(config.CollapseEvent, t.At(t.W.S0, out _));
             }
         }
 
@@ -1183,7 +1158,6 @@ namespace CosmicShore.Gameplay
         static void ResetOnLoad()
         {
             s_tunnels.Clear();
-            s_ripples.Clear();
             s_executors.Clear();
             s_localRoots = null;
         }

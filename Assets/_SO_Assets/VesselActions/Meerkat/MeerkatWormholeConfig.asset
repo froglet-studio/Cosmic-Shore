@@ -12,6 +12,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79e5a66832b4490dada0056a58c42303, type: 3}
   m_Name: MeerkatWormholeConfig
   m_EditorClassIdentifier: 
+  comfort:
+    DistortionIntensity: 1
+    MaxWobbleSpeed: 0.25
+    MaxPulseSpeed: 1
+  trunkLook:
+    Bend: 3
+    Lens: 0.139
+    WallInside: 0.1
+    WallOutside: 0.15
+    Wobble: 0.2
+    WobbleWaves: 1.5
+    WobbleSpeed: 0.12
+    Rim: 0.05
+    RimTightness: 4
+    Glint: 0.25
+    Glow: 0.02
+    Shimmer: 0
+    Pulse: 0
+    PulseCount: 3
+    PulseSpeed: 0.6
+  trunkRide:
+    InsideBend: 0.5
+    InsideWobble: 0.5
+    SteadyCentre: 0.2
+  rootLook:
+    Bend: 3
+    Lens: 0.139
+    WallInside: 0.1
+    WallOutside: 0.15
+    Wobble: 0.2
+    WobbleWaves: 1.5
+    WobbleSpeed: 0.12
+    Rim: 0.05
+    RimTightness: 4
+    Glint: 0.25
+    Glow: 0.04
+    Shimmer: 0.5
+    Pulse: 0.12
+    PulseCount: 3
+    PulseSpeed: 0.6
+  rootRide:
+    InsideBend: 0.5
+    InsideWobble: 0.5
+    SteadyCentre: 0.2
   reticleAhead: 30
   bendMaxDegrees: 150
   shaftMin: 60
@@ -34,39 +78,11 @@ MonoBehaviour:
   reticleIdleAlpha: 0.053
   reticleWhite: 0.45
   reticleNearLight: 0.25
-  warpStrength: 0
-  dentStrength: 0
-  rippleStrength: 0
-  rippleEdge: 0.154
-  rippleSeconds: 1.2
-  bridgeVisibility: 0.163
-  bridgeGlass: 0
   bridgeRings: 36
   bridgeSpindlesPerRing: 21
   bridgeRibs: 5
   bridgeSpindleThickness: 0.25
   bridgeShimmer: 0.5
-  bridgeWhite: 0.45
-  trunkVisibility: 0
-  trunkTop: 1.5
-  trunkBase: 1.9
-  trunkBark: 0.22
-  trunkRidges: 16
-  trunkGnarl: 0.14
-  trunkGlass: 0.012
-  trunkRim: 0.28
-  trunkFresnel: 3
-  trunkRings: 7
-  trunkGrain: 0.22
-  trunkGrainLines: 22
-  branchCount: 6
-  branchLength: 2.4
-  branchThickness: 0.139
-  branchUp: 28
-  branchZone: 0.85
-  branchSymmetry: 0.45
-  branchForks: 3
-  branchGrowSeconds: 0.5
   omniOn: 1
   menuAutopilotRoots: 0
   networkReach:
@@ -90,10 +106,6 @@ MonoBehaviour:
   labyrinthMouthDiameter: 13.9
   rootTip: 0.309
   rootGnarl: 0.779
-  rootBarkVisibility: 0
-  rootGlass: 0.0232
-  rootRim: 1.573
-  rootGrain: 1.172
   labyrinthFormSeconds: 0.8
   rootCruise: 45
   rootThrust: 90
@@ -102,10 +114,6 @@ MonoBehaviour:
   rootMaxSpeed: 119
   rootBounce: 0.45
   rootGravity: 0
-  rootOpacity: 0
-  tubeInner: 0
-  rootLamp: 0.352
-  rootFog: 240
   areaL0: 6000
   areaL10: 18000
   suckRadius: 40
@@ -116,22 +124,6 @@ MonoBehaviour:
   fireSpeed: 120
   fireGlideSeconds: 3
   swallowPrismCap: 48
-  fieldStrength: 6
-  fieldPitch: 0
-  fieldDrag: 0.5
-  fieldTwist: 0
-  fieldGlass: 0.139
-  fieldGlassIndex: 0.05
-  fieldGrazing: 0.9
-  fieldFlow: 0
-  fieldInner: 0.1
-  fieldOuter: 0.15
-  fieldProfile: 1
-  fieldRibs: 0.25
-  fieldRibSharpness: 3
-  fieldRibTravel: 1.2
-  fieldRibRings: 16
-  fieldRibLines: 12
   aiWormhole: 1
   aiStraightMinDistance: 300
   aiBentMinDistance: 120

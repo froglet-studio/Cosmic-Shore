@@ -9,11 +9,11 @@ using UnityEditor;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Lavalamp wormhole lab (<c>LavalampWormholeLab.unity</c>): THE wormhole look (the full-screen contour-field lens
-    /// with its outer layer, <see cref="MeerkatWormholeLensPass"/>, <see cref="MeerkatWormholeHQ"/>) on real tunnels and a real
-    /// omnicrystal network, with a frame-time readout, a 4 s measurement with the camera held, rides through a tunnel and the
-    /// network, and live sliders for the look (Yash, 2026-10-28: "make a test scene of lavalamp ... to judge the frame gain";
-    /// 2026-10-29: one look only, the other looks' switch was removed with them).
+    /// The Lavalamp wormhole lab (<c>LavalampWormholeLab.unity</c>): THE wormhole look (the full-screen clear jelly lens,
+    /// <see cref="MeerkatWormholeLensPass"/>) on real tunnels (the trunk) and a real omnicrystal network (the root), with a
+    /// frame-time readout, a 4 s measurement with the camera held, rides through a tunnel and the network, and live sliders
+    /// for Comfort, Trunk Look / Ride and Root Look / Ride (<see cref="MeerkatWormholeLookTuning"/>; Yash, 2026-10-28: "make a
+    /// test scene of lavalamp ... to judge the frame gain"; 2026-10-29: the trunk and root share one look's parameters).
     /// Everything is built at runtime from the game's own code: one hull-less <see cref="MeerkatWormholeExecutor"/> (its lab
     /// hooks) forms real tunnels and grows a real omnicrystal network from the shipped <see cref="MeerkatWormholeConfigSO"/>,
     /// and holds them open; the shipped views and lens pass draw them.
@@ -119,7 +119,7 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_exec) _exec.LabClear();
-            MeerkatWormholeHQ.Tuning.Active = false;
+            MeerkatWormholeLookTuning.Active = false;
             QualitySettings.vSyncCount = _oldVSync;
             Application.targetFrameRate = _oldTarget;
         }
@@ -318,8 +318,8 @@ namespace CosmicShore.Gameplay
 
         // ---------------------------------------------------------------- scenery
 
-        /// <summary>One mesh (one draw) of reference cubes round the tubes, so the lens has something to bend and the water
-        /// something to be seen against. The same in every look, so it never skews the comparison.</summary>
+        /// <summary>One mesh (one draw) of reference cubes round the tubes, so the lens has something to bend. The same
+        /// whatever the look, so it never skews a comparison.</summary>
         void BuildScenery()
         {
             var probe = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -356,13 +356,14 @@ namespace CosmicShore.Gameplay
             float w = 380f;
             _panel = new Rect(10f, 10f, w, _panelOpen ? Screen.height / k - 20f : 120f);
             GUILayout.BeginArea(_panel, GUI.skin.box);
+            _scroll = GUILayout.BeginScrollView(_scroll);
 
             // always visible: the look and its frame time
             GUILayout.Label("<b>THE WORMHOLE LOOK</b>", Rich(16));
             GUILayout.Label($"{_fps:0} fps   avg {_avg:0.00} ms   min {_min:0.00}   max {_max:0.00}   ({Window:0} s)", Rich(13));
             GUILayout.Label(_gpuAvg > 0f ? $"GPU {_gpuAvg:0.00} ms (FrameTimingManager)" : "GPU time n/a (enable Frame Timing Stats)", Rich(11));
             if (GUILayout.Button(_panelOpen ? "Hide controls" : "Show controls")) _panelOpen = !_panelOpen;
-            if (!_panelOpen) { GUILayout.EndArea(); return; }
+            if (!_panelOpen) { GUILayout.EndScrollView(); GUILayout.EndArea(); return; }
 
             if (_error != null) GUILayout.Label($"<color=#ff7070>{_error}</color>", Rich(12));
 
@@ -404,29 +405,53 @@ namespace CosmicShore.Gameplay
             if (cap != uncapFrameRate) { uncapFrameRate = cap; ApplyCap(); }
 
             GUILayout.Space(6f);
-            GUILayout.Label("The look (live; not saved: copy numbers into MeerkatWormholeHQ.Shipped)", Rich(13));
-            bool hqTune = GUILayout.Toggle(MeerkatWormholeHQ.Tuning.Active, " Tune the look (live)");
-            if (hqTune && !MeerkatWormholeHQ.Tuning.Active)   // start from the shipped look
-                MeerkatWormholeHQ.Tuning.Live = MeerkatWormholeHQ.Shipped;
-            MeerkatWormholeHQ.Tuning.Active = hqTune;
-            if (hqTune)
+            GUILayout.Label("The look (live; not saved: Log numbers, then copy them into the config)", Rich(13));
+            bool tune = GUILayout.Toggle(MeerkatWormholeLookTuning.Active, " Tune the look (live)");
+            if (tune && !MeerkatWormholeLookTuning.Active) MeerkatWormholeLookTuning.Begin(config);   // start from the config
+            MeerkatWormholeLookTuning.Active = tune;
+            if (tune)
             {
-                ref var L = ref MeerkatWormholeHQ.Tuning.Live;
-                Slider("Layer", ref L.Outer, 0f, 0.5f);
-                Slider("Rim", ref L.Rim, 0f, 1f);
-                Slider("Rim power", ref L.RimPower, 0.5f, 8f);
-                Slider("Absorb", ref L.Absorb, 0f, 1f);
-                Slider("Glint", ref L.Glint, 0f, 2f);
-                Slider("Dispersion", ref L.Dispersion, 0f, 0.2f);
-                Slider("Net dispersion", ref L.NetDispersion, 0f, 0.3f);
-                Slider("Net iridescence", ref L.NetIridescence, 0f, 1f);
-                Slider("Net pulses", ref L.NetPulse, 0f, 1f);
-                Slider("Net glow", ref L.NetGlow, 0f, 4f);
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Log numbers")) Debug.Log("[LavalampWormholeLab] the look:\n" + MeerkatWormholeLookTuning.Dump());
+                if (GUILayout.Button("Reset to config")) MeerkatWormholeLookTuning.Begin(config);
+                GUILayout.EndHorizontal();
+                ref var C = ref MeerkatWormholeLookTuning.Comfort;
+                GUILayout.Label("Comfort", Rich(12));
+                Slider("Distortion", ref C.DistortionIntensity, 0f, 1f);
+                Slider("Max wobble/s", ref C.MaxWobbleSpeed, 0f, 0.5f);
+                Slider("Max pulse/s", ref C.MaxPulseSpeed, 0f, 2f);
+                _tuneRoot = GUILayout.Toolbar(_tuneRoot ? 1 : 0, new[] { "Trunk (tunnel)", "Root (network)" }) == 1;
+                ref var L = ref _tuneRoot ? ref MeerkatWormholeLookTuning.Root : ref MeerkatWormholeLookTuning.Trunk;
+                ref var R = ref _tuneRoot ? ref MeerkatWormholeLookTuning.RootRide : ref MeerkatWormholeLookTuning.TrunkRide;
+                GUILayout.Label(_tuneRoot ? "Root Look" : "Trunk Look", Rich(12));
+                Slider("Bend", ref L.Bend, 0f, 12f);
+                Slider("Lens", ref L.Lens, 0f, 1f);
+                Slider("Wall inside", ref L.WallInside, 0.02f, 0.5f);
+                Slider("Wall outside", ref L.WallOutside, 0.02f, 0.6f);
+                Slider("Wobble", ref L.Wobble, 0f, 1f);
+                Slider("Wobble waves", ref L.WobbleWaves, 0.5f, 6f);
+                Slider("Wobble speed", ref L.WobbleSpeed, 0f, 1f);
+                Slider("Rim", ref L.Rim, 0f, 0.5f);
+                Slider("Rim tightness", ref L.RimTightness, 1f, 8f);
+                Slider("Glint", ref L.Glint, 0f, 1f);
+                Slider("Glow", ref L.Glow, 0f, 0.2f);
+                Slider("Shimmer", ref L.Shimmer, 0f, 1f);
+                Slider("Pulse", ref L.Pulse, 0f, 0.5f);
+                Slider("Pulse count", ref L.PulseCount, 1f, 8f);
+                Slider("Pulse speed", ref L.PulseSpeed, 0f, 2f);
+                GUILayout.Label(_tuneRoot ? "Root Ride (inside)" : "Trunk Ride (inside)", Rich(12));
+                Slider("Inside bend", ref R.InsideBend, 0f, 1f);
+                Slider("Inside wobble", ref R.InsideWobble, 0f, 1f);
+                Slider("Steady centre", ref R.SteadyCentre, 0f, 0.5f);
             }
 
             GUILayout.Label("WASD/QE move, right-drag look, Shift fast, wheel speed", Rich(10));
+            GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+
+        Vector2 _scroll;
+        bool _tuneRoot;
 
         void Slider(string label, ref float v, float lo, float hi)
         {

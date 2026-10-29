@@ -18597,3 +18597,30 @@ offline C# reference compile and glslang pass; no Unity in the session.
 5. Select `MeerkatWormholeConfig.asset`. **Pass:** the Inspector shows the plain default inspector (no YASH'S / GARRETT'S
    buttons, no Formed Look field).
 
+## Meerkat wormhole: the calm jelly look, trunk and root, comfort settings (2026-10-29) - NOT EDITOR-VERIFIED
+
+Branch `feat/wormhole-pc-unified`, PR #1624. See `Docs/Shaders/WORMHOLE_SHADERS.md` §13 and §14. There is no water, tint
+or dispersion. The trunk (tunnel) and root (network channel) share `MeerkatWormholeLook`, each with its own numbers.
+`MeerkatWormholeHQ.cs` was renamed `MeerkatWormholeLook.cs` (same `.meta` GUID). The contour-field fields and the dead
+studio keys were removed from the config. glslang (vert + frag) and the offline C# reference compile (player + editor)
+pass; no Unity in the session.
+
+1. Open the project. **Pass:** no compile errors, `MeerkatWormholeLens.shader` imports cleanly, and there are no
+   missing-script warnings.
+2. Select `MeerkatWormholeConfig.asset`. **Pass:** the headers read Comfort, Trunk Look, Trunk Shape, Trunk Ride, Root
+   Look, Root Shape, Root Ride, Kit, then Miscellaneous. Trunk Look shows Bend 3, Lens 0.139, Wobble 0.2. Root Look has
+   Shimmer 0.5 and Pulse 0.12. Comfort is 1 / 0.25 / 1. There are no `field*` fields and no unknown-field warnings.
+3. Open `LavalampWormholeLab.unity` and press Play, then watch a tunnel from outside. **Pass:** the world behind bends
+   gently along the tube and slowly breathes; there is a faint white rim, and no blue or green tint. A vessel in front of
+   the tube is not bent.
+4. Ride the tunnel. **Pass:** the edges of the view bend round you more softly than from outside, the middle of the
+   screen (where you head) stays still, and nothing flickers or swims fast.
+5. Ride the network (RideNetwork). **Pass:** the same feel, plus a faint shimmer and slow pulses along the channels.
+6. In "Tune the look", drag Comfort > Distortion intensity to 0. **Pass:** every tube goes perfectly clear and still
+   (only the rim and glint stay). Back at 1, the look returns. Raise a Wobble speed above 0.25. **Pass:** the breath
+   does not get faster (the comfort cap).
+7. Switch the Trunk / Root toolbar and move Bend. **Pass:** only that kind changes. "Log numbers" prints the JSON, and
+   "Reset to config" restores it. The panel scrolls.
+8. Profile (Frame Debugger or "Measure"). **Pass:** the lens is one full-screen draw, and it costs less than before
+   (one scene read and no gradient taps).
+

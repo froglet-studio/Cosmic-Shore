@@ -1,20 +1,21 @@
-// MeerkatWormholeLens.shader - THE wormhole look (2026-10-29, Yash: "just keep one high quality look"), drawn in ONE
+// MeerkatWormholeLens.shader - THE wormhole look (2026-10-29, Yash: "I want to feel I'm inside the wormhole ... pleasant
+// calm distortion, little jelly like clear liquidy hollow from inside tree trunk, same will be for the root"), drawn in ONE
 // full-screen pass by MeerkatWormholeLensPass.cs after the transparents, from its copy of the camera colour
-// (_MeerkatSceneColor). Every formed tunnel and every channel of an omnicrystal's network is only bent space:
-//   - the contour field (Garrett, 2026-10-27, the Tube Lens Lab, Docs/Studios/StoatTubeLensLab.html, with the water-pipe
-//     numbers chosen in the artifact): each pixel's ray is marched through a thin shell on every nearby tube's wall, graded
-//     to zero at the shell's edge, and turned there by a field whose lines on the wall are the tube's own contours (along
-//     it at pitch 0, round its rings at 90); the pixel shows where the turned ray lands. The tube is measured over its LIVE
-//     window [s0, s1] (MeerkatWormholeMath.Radius) so the field forms and collapses with it;
-//   - the OUTER LAYER: the shell's optical depth along the bent ray (graded by the profile, faintly by the ribs) tints the
-//     world behind it a watery white and glows faintly, so the wall reads as a thin layer of water-glass (_MWHQ0.x/.w);
-//   - a Fresnel RIM where the ray grazes the shell, and a GLINT of the main light off it (_MWHQ0.yz, _MWHQ1.w);
-//   - DISPERSION: red, green and blue land at slightly different places, as through real glass (_MWHQ2.x);
-//   - a NETWORK channel (_MWTubeShape.y 1) adds a thin-film iridescence round it, pulses of light running along it and a
-//     stronger dispersion and glow (_MWHQ2.yzw, _MWHQ3).
-// A ray bent off the screen shows the screen mirrored at its edge. A vessel in front of a tube is neither bent nor tinted.
-// Every other wormhole shader (the warp tube, the mouth dents, the collapse ripple, the calm wall, the water tubes, the
-// tree, the roots, the bridge's glass) was removed on 2026-10-29: Docs/Shaders/WORMHOLE_SHADERS.md §12 restores any of them.
+// (_MeerkatSceneColor). Every formed tunnel (the TRUNK, _MWTubeShape.y 0) and every channel of an omnicrystal's network
+// (the ROOT, _MWTubeShape.y 1) is only bent, clear space:
+//   - BEND: each pixel's ray is marched through a thin shell on every nearby tube's wall, graded to zero at the shell's
+//     edges (quintic), and pulled along the tube there; the pixel shows where the bent ray lands. The tube is measured over
+//     its LIVE window [s0, s1] (MeerkatWormholeMath.Radius) so it forms and collapses with it;
+//   - LENS: the shell's own gradient refracts the ray a little at the wall (the jelly edge; analytic, no extra samples);
+//   - WOBBLE: the bend swells and eases slowly along the tube (the jelly breathing), speed capped by the comfort settings;
+//   - a clear RIM where the view grazes the wall, a GLINT of the main light, a faint white GLOW, and (the root's numbers by
+//     default) a thin-film SHIMMER and soft PULSES running along it. Nothing tints the world: no water, no fog.
+// Each kind has its own numbers (_MWLook, MeerkatWormholeLook + MeerkatWormholeRideView): while the camera is inside a
+// tube (_MWTubeShape.z), that tube bends and breathes by its ride's Inside share, and the middle of the screen is held still
+// (_MWView.yz) so where you are heading stays steady. Comfort's Distortion intensity is folded in on the C# side.
+// A ray bent off the screen shows the screen mirrored at its edge. A vessel in front of a tube is neither bent nor lit.
+// Removed 2026-10-29 (Docs/Shaders/WORMHOLE_SHADERS.md §14, restore 0c8c5218c): pitch, twist, flow, the profile choice,
+// the ribs, the glass's 4-sample gradient, dispersion, the water tint / absorption. Earlier shaders: §12.
 Shader "CosmicShore/MeerkatWormholeLens"
 {
     Properties { }
@@ -44,36 +45,34 @@ Shader "CosmicShore/MeerkatWormholeLens"
             #define MEERKAT_LENS_PATH 25
             #define MEERKAT_FIELD_STEPS 256
             #define MW_PI 3.14159265
+            #define MW_GRAZE 0.9      // a grazing crossing bends nearly as much as a square one (the Tube Lens Lab's 0.9)
 
-            // x the camera's aspect, w contour tubes in the bank (y, z unused)
+            // x the camera's aspect, y how far the eye is inside a tube (0..1), z that tube's steady centre (screen heights),
+            // w tubes in the bank
             float4 _MWView;
 
-            // The contour field (MeerkatWormholeLensPass.ContourTubesFor): per tube, world to its own frame (the way in at the
-            // origin, its first heading +z, its bend toward +x), its shape (L, -, theta, throat), its live window (s0, s1,
-            // fade, mouth), a bounding sphere (world centre, radius), and (round 22: one conic arc bending round its middle,
-            // MeerkatWormholeMath.Conic) its centreline as MEERKAT_LENS_PATH points at even steps of s: (x across, z ahead,
-            // s, how far it has turned). Measured against the exact arc (a brute-force search over 400 random tubes and
-            // points): within 0.07 u.
+            // Per tube (MeerkatWormholeLensPass.ContourTubesFor): world to its own frame (the way in at the origin, its first
+            // heading +z, its bend toward +x), its shape (L, kind: 0 trunk / 1 root, eye inside 0..1, throat), its live window
+            // (s0, s1, fade, mouth), a bounding sphere (world centre, radius), and its centreline as MEERKAT_LENS_PATH points
+            // at even steps of s: a trunk's (x across, z ahead, s, how far it has turned), a root's (x, y, z, radius) with its
+            // carried normal in _MWTubeNorm.
             float4x4 _MWTubeW2L[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubeShape[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubeWin[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubeBound[MEERKAT_LENS_MAX_TUBES];
             float4 _MWTubePath[MEERKAT_LENS_MAX_TUBES * MEERKAT_LENS_PATH];
-            float4 _MWTubeNorm[MEERKAT_LENS_MAX_TUBES * MEERKAT_LENS_PATH];   // round 26: a channel's carried normal per point
-            float4 _MWField0;   // strength (rad per wall crossing), pitch (rad), drag, twist
-            float4 _MWField1;   // glass, glass index, grazing, flow (0 even, 1 in then out, 2 throat)
-            float4 _MWField2;   // inner, outer (x local radius), profile (0 smooth, 1 smoother, 2 linear, 3 bell), ribs
-            float4 _MWField3;   // rib sharpness, rib phase, rib rings, rib lines
+            float4 _MWTubeNorm[MEERKAT_LENS_MAX_TUBES * MEERKAT_LENS_PATH];
+            // The look per kind (trunk 0..4, root 5..9; MeerkatWormholeLensPass.PackLook):
+            //   +0 bend (rad per crossing), lens, wall inside, wall outside (x local radius)
+            //   +1 wobble, wobble waves, wobble phase, shimmer
+            //   +2 rim, rim tightness, glint, glow
+            //   +3 pulse, pulse count, pulse phase, shimmer phase
+            //   +4 inside bend, inside wobble, steady centre, -
+            float4 _MWLook[10];
             float4 _MWCamPos;   // xyz the eye, w tan(fov / 2)
             float4 _MWCamR;
             float4 _MWCamU;
             float4 _MWCamF;
-            // The look (MeerkatWormholeHQ.Look): 0 outer layer, rim, rim power, absorb; 1 tint rgb, glint; 2 dispersion, network
-            // dispersion, iridescence, pulses; 3 iridescence scale, pulses along a channel, pulse speed, network glow
-            float4 _MWHQ0;
-            float4 _MWHQ1;
-            float4 _MWHQ2;
-            float4 _MWHQ3;
             float4 _MWLightDir;   // xyz toward the main light, w its strength (0: no glint)
 
             TEXTURE2D(_MeerkatSceneColor);
@@ -81,13 +80,12 @@ Shader "CosmicShore/MeerkatWormholeLens"
             struct Attributes { uint vertexID : SV_VertexID; };
             struct Varyings { float4 positionCS : SV_POSITION; };
 
-            // ---- the contour field ----
+            // ---- the tube's wall ----
             struct MWTQ { float d; float u; float phi; float r; float drds; float scale; float3 n; float3 T; };
 
             // The wall of tube i near world point pw: signed distance (- inside, + outside; past a live mouth, the distance to
             // its lip), the way along its live window u, the angle round it, its radius and slope, and its frame (local).
-            // Round 26: a channel of an omnicrystal's network (Shape.y 1) - a 3D polyline at even steps of s, each point
-            // (x, y, z, radius) in its own frame (the world's, moved to its source), its carried normal in _MWTubeNorm.
+            // A root (Shape.y 1): a 3D polyline at even steps of s, each point (x, y, z, radius) in its own frame.
             MWTQ MWChannel(int i, float3 p, float L, float s0, float s1)
             {
                 MWTQ q;
@@ -136,7 +134,7 @@ Shader "CosmicShore/MeerkatWormholeLens"
             {
                 MWTQ q;
                 float3 p = mul(_MWTubeW2L[i], float4(pw, 1.0)).xyz;
-                float L = max(_MWTubeShape[i].x, 1e-3), theta = _MWTubeShape[i].z;
+                float L = max(_MWTubeShape[i].x, 1e-3);
                 float b0 = _MWTubeShape[i].w, m0 = _MWTubeWin[i].w;
                 float s0 = _MWTubeWin[i].x, s1 = _MWTubeWin[i].y;
                 if (_MWTubeShape[i].y > 0.5) return MWChannel(i, p, L, s0, s1);
@@ -186,40 +184,24 @@ Shader "CosmicShore/MeerkatWormholeLens"
                 q.scale = 1.0 - q.r * cn * invR;   // the inside of a bend is shorter than the outside
                 return q;
             }
-            float3 MWToWorld(int i, float3 v) { return mul(v, (float3x3)_MWTubeW2L[i]); }
-            float MWShellTh(MWTQ q) { return (q.d > 0.0 ? _MWField2.y : _MWField2.x) * q.r; }
-            float MWProf(float t)
-            {
-                t = saturate(t);
-                if (_MWField2.z < 0.5) return t * t * (3.0 - 2.0 * t);
-                if (_MWField2.z < 1.5) return t * t * t * (t * (6.0 * t - 15.0) + 10.0);
-                if (_MWField2.z < 2.5) return t;
-                float e = exp(-9.0);
-                return (exp(-9.0 * (1.0 - t) * (1.0 - t)) - e) / (1.0 - e);
-            }
-            float MWShellW(MWTQ q) { float th = MWShellTh(q); return th <= 1e-4 ? 0.0 : MWProf(1.0 - abs(q.d) / th); }
-            float MWFlow(float u) { return _MWField1.w < 0.5 ? 1.0 : (_MWField1.w < 1.5 ? cos(MW_PI * u) : sin(MW_PI * u)); }
-            float MWLineP(float x) { return pow(0.5 + 0.5 * cos(2.0 * MW_PI * x), _MWField3.x); }
-            float MWRib(MWTQ q)
-            {
-                if (_MWField2.w <= 0.0) return 1.0;
-                float a = MWLineP(q.u * (_MWField3.z - 1.0) - _MWField3.y), b = MWLineP(q.phi / (2.0 * MW_PI) * _MWField3.w);
-                return lerp(1.0, max(a, b), _MWField2.w);
-            }
-            float MWN(int i, float3 pw) { MWTQ q = MWTube(i, pw); return MWShellW(q) * MWRib(q) * MWFlow(q.u) * _MWTubeWin[i].z; }
-            // The field on the wall (local): T the long grid line's own tangent (tilted by the flare and the bend), Phi the ring's.
-            float3 MWFieldDir(MWTQ q)
-            {
-                float3 ts = normalize(q.T * q.scale + q.drds * q.n);
-                float3 ph = normalize(cross(ts, q.n));
-                return cos(_MWField0.y) * ts + sin(_MWField0.y) * ph;
-            }
 
-            // The screen offset the contour field gives this pixel (p: screen heights from the centre, y up), zero when its ray
-            // meets no shell or an opaque thing stands in front of the first shell it meets.
-            // The layer: what the bent ray met on its way through the shells: x optical depth (shell thicknesses crossed, graded),
-            // y the rim (the same, weighted by how much it grazed), z the glint, w how much of it was a network channel;
-            // u the channel's way along (weighted), phi its angle round.
+            float3 MWToWorld(int i, float3 v) { return mul(v, (float3x3)_MWTubeW2L[i]); }
+            int MWKind(int i) { return _MWTubeShape[i].y > 0.5 ? 5 : 0; }
+            // the shell's fall-off, quintic (1 at the wall, 0 at its edges), and its slope
+            float MWProf(float t) { t = saturate(t); return t * t * t * (t * (6.0 * t - 15.0) + 10.0); }
+            float MWProfD(float t) { t = saturate(t); float a = t * (1.0 - t); return 30.0 * a * a; }
+            // the jelly breathing: slow swells running along the tube, a little uneven round it (never below 0)
+            float MWWobble(MWTQ q, float4 l1, float amount)
+            {
+                return 1.0 + amount * sin(2.0 * MW_PI * (q.u * l1.y - l1.z) + 0.6 * sin(2.0 * q.phi));
+            }
+            // the field on the wall (local): along the tube, tilted by the flare and the bend
+            float3 MWFieldDir(MWTQ q) { return normalize(q.T * q.scale + q.drds * q.n); }
+
+            // The screen offset the tubes give this pixel (p: screen heights from the centre, y up), zero when its ray meets no
+            // shell or an opaque thing stands in front of the first shell it meets.
+            // The layer: what the bent ray met on its way through the shells: x how much shell (graded), y the rim (the same,
+            // weighted by how much it grazed), z the glint, w how much of it was a root; u its way along (weighted), phi round.
             struct MWLayer { float4 a; float u; float phi; };
             static MWLayer g_mwLayer;
 
@@ -242,7 +224,6 @@ Shader "CosmicShore/MeerkatWormholeLens"
                 if (tStart > 1e19) return float2(0.0, 0.0);
                 float3 pos = ro + rd * tStart, dir = rd;
                 float travel = tStart, entry = -1.0;
-                float inner = _MWField2.x, outer = _MWField2.y, graze = _MWField1.z;
                 [loop]
                 for (int it = 0; it < MEERKAT_FIELD_STEPS; it++)
                 {
@@ -254,38 +235,37 @@ Shader "CosmicShore/MeerkatWormholeLens"
                     {
                         if (j >= n) break;
                         MWTQ q = MWTube(j, pos);
-                        float th = MWShellTh(q), ad = abs(q.d), hmin = max(max(0.02, 0.008 * q.r), 0.2 * th);
+                        int k = MWKind(j);
+                        float4 l0 = _MWLook[k], l1 = _MWLook[k + 1], l4 = _MWLook[k + 4];
+                        float th = (q.d > 0.0 ? l0.w : l0.z) * q.r, ad = abs(q.d), hmin = max(max(0.02, 0.008 * q.r), 0.2 * th);
                         if (ad < th)
                         {
                             inShell = true;
+                            float eye = _MWTubeShape[j].z;   // riding this tube: its calmer inside numbers
+                            float bendK = lerp(1.0, l4.x, eye), wob = l1.x * lerp(1.0, l4.y, eye);
                             float3 nW = MWToWorld(j, q.n);
                             float across = max(abs(dot(dir, nW)), 0.12);   // grazing: the field barely changes along the wall
                             float sj = clamp(th / (7.0 * across), 0.02, max(th * 1.2, 0.02));
-                            if (_MWField2.w > 0.0)
-                                sj = min(sj, (_MWTubeWin[j].y - _MWTubeWin[j].x) / (_MWField3.z - 1.0) / (2.0 * _MWField3.x + 4.0));
+                            if (wob > 0.0) sj = min(sj, (_MWTubeWin[j].y - _MWTubeWin[j].x) / max(l1.y, 0.5) / 16.0);
                             stp = min(stp, sj);
-                            float wgt = MWShellW(q) * MWRib(q) * MWFlow(q.u) * _MWTubeWin[j].z;
+                            float t = 1.0 - ad / th;
+                            float shape = MWWobble(q, l1, wob) * _MWTubeWin[j].z;
+                            float wgt = MWProf(t) * shape;
+                            float graze = lerp(1.0, across, MW_GRAZE) * bendK;
+                            // bend: pull the ray along the tube
                             float3 F = MWToWorld(j, MWFieldDir(q));
-                            float kk = _MWField0.x / max(0.5 * (inner + outer) * q.r, 1e-3) * lerp(1.0, across, graze);
-                            dd += (_MWField0.z * (F - dot(F, dir) * dir) + _MWField0.w * cross(dir, F)) * kk * wgt;
-                            if (_MWField1.x > 0.0 && _MWField1.y > 0.0)
-                            {
-                                float e = max(0.15 * th, 0.02);
-                                float2 kv = float2(1.0, -1.0);
-                                float3 g = kv.xyy * MWN(j, pos + kv.xyy * e) + kv.yyx * MWN(j, pos + kv.yyx * e) +
-                                           kv.yxy * MWN(j, pos + kv.yxy * e) + kv.xxx * MWN(j, pos + kv.xxx * e);
-                                g /= 4.0 * e;
-                                dd += _MWField1.x * _MWField1.y * lerp(1.0, across, graze) * (g - dot(g, dir) * dir);
-                            }
-                            {
-                                // the layer: graded like the field, the ribs only faintly (the water, not the grid)
-                                float lw = MWShellW(q) * (0.6 + 0.4 * MWRib(q)) * _MWTubeWin[j].z / max(th, 1e-3);
-                                float gr = 1.0 - abs(dot(dir, nW));
-                                float3 hv = normalize(_MWLightDir.xyz - dir);
-                                float ch = _MWTubeShape[j].y > 0.5 ? 1.0 : 0.0;
-                                la += lw * float4(1.0, pow(max(gr, 0.0), _MWHQ0.z), pow(saturate(abs(dot(nW, hv))), 48.0), ch);
-                                lu += lw * ch * q.u; lphi += lw * ch * q.phi;
-                            }
+                            dd += (F - dot(F, dir) * dir) * (l0.x / max(0.5 * (l0.z + l0.w) * q.r, 1e-3) * graze * wgt);
+                            // lens: the shell's own gradient (its slope across the wall, along the normal)
+                            float3 g = nW * (-MWProfD(t) * sign(q.d) / th * shape);
+                            dd += l0.y * graze * (g - dot(g, dir) * dir);
+                            // the layer
+                            float lw = wgt / max(th, 1e-3);
+                            float gr = 1.0 - abs(dot(dir, nW));
+                            float3 hv = normalize(_MWLightDir.xyz - dir);
+                            float root = k > 0 ? 1.0 : 0.0;
+                            float4 l2 = _MWLook[k + 2];
+                            la += lw * float4(1.0, pow(max(gr, 0.0), l2.y), pow(saturate(abs(dot(nW, hv))), 48.0), root);
+                            lu += lw * q.u; lphi += lw * q.phi;
                         }
                         else stp = min(stp, max((ad - th) * 0.85, hmin));
                     }
@@ -327,39 +307,33 @@ Shader "CosmicShore/MeerkatWormholeLens"
                 return SAMPLE_TEXTURE2D_LOD(_MeerkatSceneColor, sampler_LinearClamp, suv, 0).rgb;
             }
 
-            // The bent scene through glass that disperses, the outer layer's faint water tint and glow, its rim and glint,
-            // and a network channel's iridescence and running light.
-            half4 MWHighQuality(float2 p, float2 disp, float aspect)
+            // The bent scene (one sample, untinted), then the wall's clear light: rim, glint, glow, shimmer and pulses.
+            half4 MWShade(float2 p, float2 disp, float aspect)
             {
                 float4 L = g_mwLayer.a;
                 float od = L.x;
                 if (dot(disp, disp) < 1e-12 && od < 1e-4) discard;
-                float layer = 1.0 - exp(-od);                    // 0 clear .. 1 a thick crossing
-                float net = od > 1e-4 ? saturate(L.w / od) : 0.0;  // the share of it that was a network channel
+                // riding a tube: the middle of the screen stays still (comfort)
+                if (_MWView.y > 0.0 && _MWView.z > 0.0)
+                    disp *= lerp(1.0, smoothstep(0.4 * _MWView.z, _MWView.z, length(p)), _MWView.y);
+                float3 col = MWScene(p + disp, aspect);
+                if (od < 1e-4) return half4(col, 1.0);
+                float layer = 1.0 - exp(-od);
+                float net = saturate(L.w / od);              // the share of it that was a root
                 float rim = 1.0 - exp(-L.y), glint = 1.0 - exp(-L.z);
-                float k = lerp(_MWHQ2.x, _MWHQ2.y, net);
-                float3 col;
-                if (k > 1e-4)
+                float4 t2 = _MWLook[2], r2 = _MWLook[7], t3 = _MWLook[3], r3 = _MWLook[8];
+                float4 l2 = lerp(t2, r2, net), l3 = net > 0.5 ? r3 : t3;
+                float shimmer = lerp(_MWLook[1].w, _MWLook[6].w, net), pulseAmt = lerp(t3.x, r3.x, net);
+                float u = g_mwLayer.u / od, phi = g_mwLayer.phi / od;
+                float3 film = float3(1.0, 1.0, 1.0);
+                if (shimmer > 0.0)
                 {
-                    col.r = MWScene(p + disp * (1.0 + k), aspect).r;
-                    col.g = MWScene(p + disp, aspect).g;
-                    col.b = MWScene(p + disp * (1.0 - k), aspect).b;
+                    float x = phi / (2.0 * MW_PI) * 1.5 + u + l3.w;
+                    film = lerp(film, 0.6 + 0.4 * cos(2.0 * MW_PI * (x + float3(0.0, 0.33, 0.67))), shimmer);
                 }
-                else col = MWScene(p + disp, aspect);
-                float3 tint = _MWHQ1.rgb;
-                float glow = _MWHQ0.x;
-                if (net > 0.0)
-                {
-                    float u = L.w > 1e-5 ? g_mwLayer.u / L.w : 0.0, phi = L.w > 1e-5 ? g_mwLayer.phi / L.w : 0.0;
-                    float x = phi / (2.0 * MW_PI) * _MWHQ3.x + u + 0.05 * _Time.y;
-                    float3 iri = 0.6 + 0.4 * cos(2.0 * MW_PI * (x + float3(0.0, 0.33, 0.67)));
-                    tint = lerp(tint, iri, _MWHQ2.z * net);
-                    float pulse = pow(saturate(0.5 + 0.5 * cos(2.0 * MW_PI * (u * _MWHQ3.y - _Time.y * _MWHQ3.z))), 12.0);
-                    glow = lerp(glow, glow * _MWHQ3.w, net) + _MWHQ2.w * pulse * net;
-                }
-                col = lerp(col, col * tint, saturate(layer * _MWHQ0.w));             // the water's faint absorption
-                col += tint * (glow * layer + _MWHQ0.y * rim);                        // the layer and its rim
-                col += _MWLightDir.w * _MWHQ1.w * glint * float3(1.0, 0.98, 0.95);    // the light off the glass
+                float pulse = pulseAmt > 0.0 ? pulseAmt * pow(saturate(0.5 + 0.5 * cos(2.0 * MW_PI * (u * l3.y - l3.z))), 12.0) : 0.0;
+                col += film * ((l2.w + pulse) * layer + l2.x * rim);                    // the wall's glow, pulses and rim
+                col += _MWLightDir.w * l2.z * glint * float3(1.0, 0.98, 0.95);          // the light off the jelly
                 return half4(col, 1.0);
             }
 
@@ -372,13 +346,13 @@ Shader "CosmicShore/MeerkatWormholeLens"
 
             half4 MeerkatLensFrag(Varyings input) : SV_Target
             {
+                if (_MWView.w < 0.5) discard;   // no tube in the bank: the pixel keeps what the camera drew
                 float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
                 float aspect = _MWView.x;
                 float2 p = (uv - 0.5) * float2(aspect, 1.0);
                 float sceneZ = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
-                if (_MWView.w < 0.5) discard;   // no tube in the bank: the pixel keeps what the camera drew
                 float2 disp = MWContour(p, sceneZ);
-                return MWHighQuality(p, disp, aspect);
+                return MWShade(p, disp, aspect);
             }
             ENDHLSL
         }
