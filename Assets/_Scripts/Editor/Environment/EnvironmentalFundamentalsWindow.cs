@@ -30,6 +30,9 @@ namespace CosmicShore.Editor
         readonly List<SolitonTunnelConfigSO> _configs = new();
         readonly Dictionary<SolitonTunnelConfigSO, UnityEditor.Editor> _editors = new();
         readonly HashSet<SolitonTunnelConfigSO> _open = new();
+        readonly List<FulmenConfigSO> _fulmen = new();
+        readonly Dictionary<FulmenConfigSO, UnityEditor.Editor> _fulmenEditors = new();
+        readonly HashSet<FulmenConfigSO> _fulmenOpen = new();
         Vector2 _scroll;
         string _filter = "";
 
@@ -67,6 +70,8 @@ namespace CosmicShore.Editor
         {
             foreach (var e in _editors.Values) if (e) DestroyImmediate(e);
             _editors.Clear();
+            foreach (var e in _fulmenEditors.Values) if (e) DestroyImmediate(e);
+            _fulmenEditors.Clear();
         }
 
         /// <summary>One asset scan per explicit refresh (or project change), never per repaint.</summary>
@@ -79,8 +84,15 @@ namespace CosmicShore.Editor
                 if (c) _configs.Add(c);
             }
             _configs.Sort((a, b) => string.CompareOrdinal(AssetDatabase.GetAssetPath(a), AssetDatabase.GetAssetPath(b)));
+            _fulmen.Clear();
+            foreach (var guid in AssetDatabase.FindAssets("t:" + nameof(FulmenConfigSO)))
+            {
+                var c = AssetDatabase.LoadAssetAtPath<FulmenConfigSO>(AssetDatabase.GUIDToAssetPath(guid));
+                if (c) _fulmen.Add(c);
+            }
             ClearEditors();
             _open.RemoveWhere(c => !c);
+            _fulmenOpen.RemoveWhere(c => !c);
         }
 
         void OnGUI()
@@ -131,6 +143,21 @@ namespace CosmicShore.Editor
                 if (!string.IsNullOrEmpty(_filter) && path.IndexOf(_filter, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
                 DrawConfig(cfg, path, accent, placers);
             }
+
+            GUILayout.Space(8);
+            GUILayout.Label("Fulmen", FrogletEditorPalette.SectionHeader);
+            GUILayout.Label("The Charge fundamental: a branching thunderbolt from a cell's centre that burns prisms in its path; a "
+                + "branch that strikes an omni crystal chains a smaller bolt there. Triggered by FulmenByCrystalEffectSO.",
+                FrogletEditorPalette.CardBodyWrapped);
+            if (_fulmen.Count == 0)
+                EditorGUILayout.HelpBox("No FulmenConfigSO in the project.", MessageType.Info);
+            foreach (var f in _fulmen)
+            {
+                if (!f) continue;
+                string path = AssetDatabase.GetAssetPath(f);
+                if (!string.IsNullOrEmpty(_filter) && path.IndexOf(_filter, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                DrawFulmen(f, path, accent);
+            }
             EditorGUILayout.EndScrollView();
         }
 
@@ -168,6 +195,42 @@ namespace CosmicShore.Editor
                 }
                 EditorGUI.indentLevel++;
                 ed.OnInspectorGUI();   // the config's own inspector: every field, its tooltip and range; undo and dirty for free
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndVertical();
+            GUILayout.Space(4);
+        }
+
+        void DrawFulmen(FulmenConfigSO cfg, string path, Color accent)
+        {
+            var row = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            if (Event.current.type == EventType.Repaint) FrogletEditorPalette.DrawAccentStripe(row, accent);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                bool open = _fulmenOpen.Contains(cfg);
+                bool now = EditorGUILayout.Foldout(open, cfg.name, true, EditorStyles.foldoutHeader);
+                if (now != open) { if (now) _fulmenOpen.Add(cfg); else _fulmenOpen.Remove(cfg); }
+                GUILayout.FlexibleSpace();
+                if (Application.isPlaying && FulmenSystem.Instance)
+                {
+                    var r = GUILayoutUtility.GetRect(110, 18, GUILayout.Width(110));
+                    int live = FulmenSystem.Instance.LiveBolts;
+                    FrogletEditorPalette.StatusPill(r, $"{live} BOLTS", live > 0 ? FrogletEditorPalette.Ok : FrogletEditorPalette.Muted);
+                }
+                if (FrogletEditorPalette.ColorButton("Ping", accent, 46, 18, path, outline: true))
+                    EditorGUIUtility.PingObject(cfg);
+            }
+            GUILayout.Label(path, FrogletEditorPalette.CardBody);
+            if (_fulmenOpen.Contains(cfg))
+            {
+                if (!_fulmenEditors.TryGetValue(cfg, out var ed) || !ed)
+                {
+                    ed = null;
+                    UnityEditor.Editor.CreateCachedEditor(cfg, null, ref ed);
+                    _fulmenEditors[cfg] = ed;
+                }
+                EditorGUI.indentLevel++;
+                ed.OnInspectorGUI();
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndVertical();
