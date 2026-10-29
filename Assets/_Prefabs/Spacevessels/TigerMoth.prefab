@@ -540,7 +540,6 @@ MonoBehaviour:
   baseView: {fileID: 6949257768267019707}
   _iconSetSwitcher: {fileID: 0}
   view: {fileID: 6949257768267019707}
-  foldExecutor: {fileID: 0}
   dropExecutor: {fileID: 2588221200834226537}
   spreadExecutor: {fileID: 2591329563551618180}
 --- !u!114 &1910145565130234907

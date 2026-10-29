@@ -16,8 +16,8 @@ namespace CosmicShore.UI
     /// <list type="bullet">
     /// <item><b>Mode</b> (the Mass card) — <see cref="SpreadWingsActionExecutor.MassMode01"/>. It is
     /// an EASED value with no event behind it, so polling is the honest drive.</item>
-    /// <item><b>Fold recharge</b> (the Time card) — a cooldown is a CLOCK and there is no event to
-    /// ride. It is the only feedback a refused Fold press gets.</item>
+    /// <item><b>Drop recharge</b> (the Time card) — a cooldown is a CLOCK and there is no event to
+    /// ride. It is the feedback a refused Drop press gets.</item>
     /// </list>
     ///
     /// <para>The wing-energy meter this used to bind is gone — the right trigger is a mode switch
@@ -30,13 +30,8 @@ namespace CosmicShore.UI
         [Header("Butterfly")]
         [SerializeField] ButterflyHUDView view;
 
-        [Tooltip("This vessel's Fold executor. Serialized rather than type-searched so an " +
-                 "unwired HUD is visible in the inspector.")]
-        [SerializeField] FoldActionExecutor foldExecutor;
-
-        [Tooltip("The Tiger Moth's Drop executor, on the Tiger Moth (the Butterfly's airframe with the Drop as its Time " +
-                 "ability, R_VesselActions/TIGER_MOTH.md). A hull wires one of the two; the Time card's veil reads " +
-                 "whichever it has.")]
+        [Tooltip("This vessel's Drop executor (the Tiger Moth's Time ability, R_VesselActions/TIGER_MOTH.md). " +
+                 "Serialized rather than type-searched so an unwired HUD is visible in the inspector.")]
         [SerializeField] TigerMothDropExecutor dropExecutor;
 
         [Tooltip("This vessel's mode executor (Mass mode / Dust mode on the right trigger).")]
@@ -67,9 +62,7 @@ namespace CosmicShore.UI
             // The fleet's clockwise depleting veil on the Time plate. A LOCKED card still draws
             // it — the veil sizes itself on the ability PLATE, not the icon — which is what lets
             // a vessel with no authored icon art still report its recharge.
-            if (foldExecutor)
-                View?.SetAbilityCooldown(Element.Time, foldExecutor.CooldownRemaining01);
-            else if (dropExecutor)
+            if (dropExecutor)
                 View?.SetAbilityCooldown(Element.Time, dropExecutor.CooldownRemaining01);
         }
     }

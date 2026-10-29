@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -6,18 +7,18 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Tiger Moth's <b>Drop</b> — TIME. A tiger moth escapes a bat by shutting its wings and dropping. Hold the
     /// trigger and the hull shuts its wings and falls belly-first along its own down (the way its dust rains),
-    /// without turning; the chase camera swings up over it so the fall reads as flying forward. Let go and it
-    /// lands: the hull pitches 90 degrees nose-down into the frame the camera is already in and flies straight on
-    /// along the line it fell. Design record: <c>R_VesselActions/TIGER_MOTH.md</c>.
+    /// without turning, passing through everything; the chase camera swings up over it so the fall reads as flying
+    /// forward. Let go and it lands: the hull pitches 90 degrees nose-down into the frame the camera is already in
+    /// and flies straight on along the line it fell. Design record: <c>R_VesselActions/TIGER_MOTH.md</c>.
     ///
-    /// <para>Chosen over the Butterfly's Fold by a blind A/B (Garrett, 2026-10-28,
-    /// <c>Docs/Studios/ABTests/README.md</c> "Butterfly fold or drop v1"), with one change from the tested page: the
-    /// camera does not level back out after the landing, because the hull turns to meet it instead.</para>
+    /// <para><b>The recharge is paid by the distance</b> (Garrett, 2026-10-29): a little hop costs a little, a
+    /// medium drop (<see cref="FullCooldownDistance"/>) costs the full 20 s, and anything past that is free — it
+    /// extends the recharge no further and the drop has no limit. Only a drop that pays the FULL recharge leaves a
+    /// wormhole pair standing (the Fold's mouths, with the Fold's rival toll).</para>
     ///
-    /// <para><b>Time's dials are the Fold's</b>, carried over unchanged: the continuous dial is the RECHARGE
-    /// (30 s at rest, ×0.5 at Time 10, never worse than ×2), and Time 5 — "Far Drop" — doubles the longest drop,
-    /// as Far Fold doubled the reach. Speed and reach default to the Fold's (900 u/s, 1800 u), which is what the
-    /// A/B measured: a held second takes you as far either way.</para>
+    /// <para><b>Time's dials.</b> The continuous dial is the recharge multiplier (×0.5 at Time 10, never worse than
+    /// ×2, the Fold's). Time 5 — "Far Drop" — doubles the medium distance: the full recharge (and the wormhole)
+    /// only comes at twice the distance, so every drop is half the price.</para>
     ///
     /// <para>The asset is SHARED by every Tiger Moth in a match and holds no per-vessel state; the executor owns
     /// the drop.</para>
@@ -26,10 +27,19 @@ namespace CosmicShore.Gameplay
         menuName = "ScriptableObjects/Vessel Actions/Tiger Moth Drop")]
     public class TigerMothDropActionSO : ShipActionSO
     {
-        [Header("Recharge")]
-        [Tooltip("Seconds before the Drop can be used again, at the resting Time level. The Fold's 30 s, carried " +
-                 "over: the drop crosses a cell, so it is a decision rather than a movement option.")]
-        [SerializeField, Min(0f)] float cooldownSeconds = 30f;
+        [Header("Recharge (paid by distance)")]
+        [Tooltip("The FULL recharge, seconds at the resting Time level: what a medium drop costs, and the most any drop " +
+                 "costs. Garrett, 2026-10-29: 20.")]
+        [SerializeField, Min(0f)] float fullCooldownSeconds = 20f;
+
+        [Tooltip("The 'medium' drop, world units: a drop this long or longer pays the full recharge and leaves a " +
+                 "wormhole; a shorter one pays its share (half the distance, half the wait). Past it a drop is free. " +
+                 "900 is one held second at the drop speed.")]
+        [SerializeField, Min(1f)] float fullCooldownDistance = 900f;
+
+        [Tooltip("TIME level-5 'Far Drop': multiplies the medium distance, so the same recharge buys this much more " +
+                 "drop (and the wormhole needs this much more).")]
+        [SerializeField, Min(1f)] float upgradeDistanceMultiplier = 2f;
 
         [Tooltip("TIME -> recharge: the cooldown MULTIPLIER at Time level 10. 0.5 halves the wait.")]
         [SerializeField] float cooldownMultiplierAtFullTime = 0.5f;
@@ -39,16 +49,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float maxCooldownMultiplier = 2f;
 
         [Header("Drop")]
-        [Tooltip("How fast the hull falls belly-first while the trigger is held, world units per second. 900 is the " +
-                 "Fold's reach speed, so a held second covers the same ground as a fold did.")]
+        [Tooltip("How fast the hull falls belly-first while the trigger is held, world units per second. It falls as " +
+                 "long as the trigger is held: there is no longest drop.")]
         [SerializeField, Min(1f)] float dropSpeed = 900f;
-
-        [Tooltip("Longest drop at the resting Time level, world units: the hull lands on its own here even if the " +
-                 "trigger is still held. 1800 is the Fold's reach.")]
-        [SerializeField, Min(1f)] float dropRange = 1800f;
-
-        [Tooltip("TIME level-5 'Far Drop': multiplies the longest drop.")]
-        [SerializeField, Min(1f)] float upgradeRangeMultiplier = 2f;
 
         [Tooltip("Seconds from the press to full drop speed.")]
         [SerializeField, Min(0f)] float dropEaseSeconds = 0.12f;
@@ -64,39 +67,87 @@ namespace CosmicShore.Gameplay
                  "There is no swing back: the landing turns the hull into this frame instead.")]
         [SerializeField, Min(0f)] float cameraEnterSeconds = 0.35f;
 
-        [Header("Wake")]
-        [Tooltip("Lay the wake through the drop (a vertical curtain). Off: the pen is up for the drop, as the Fold's " +
-                 "was for its hold; the wake comes back on at the landing.")]
-        [SerializeField] bool layWakeWhileDropping;
+        [Header("Wormhole (only a drop that pays the full recharge)")]
+        [Tooltip("Radius of each mouth, world units: how big it looks AND how precisely you fly into it.")]
+        [SerializeField, Min(1f)] float gateRadius = 33f;
 
-        public float CooldownSeconds => Mathf.Max(0f, cooldownSeconds);
+        [Tooltip("Furthest the camera may be from a mouth to show the EXACT view through it (a second render of the " +
+                 "world); beyond it plus the fade band, the mouth shows its partner's panorama.")]
+        [SerializeField, Min(0f)] float portalWindowRange = 2500f;
+
+        [Tooltip("Distance past the exact range over which the exact view crossfades into the panorama.")]
+        [SerializeField, Min(1f)] float portalWindowFadeBand = 600f;
+
+        [Tooltip("Resolution of the exact view as a fraction of the gameplay camera's.")]
+        [SerializeField, Range(0.25f, 1f)] float portalWindowRenderScale = 0.75f;
+
+        [Tooltip("Texels per side of each of the six panorama faces a mouth's camera captures.")]
+        [SerializeField, Range(64, 1024)] int panoramaFaceSize = 256;
+
+        [Tooltip("Surface material for the mouths (CosmicShore/Wormhole). The rim is tinted to the placer's DOMAIN. " +
+                 "Empty = the mouths carry pilots but draw nothing.")]
+        [SerializeField] Material wormholeMaterial;
+
+        [Tooltip("Seconds a mouth takes to bloom in, and to wither when the next full drop replaces it.")]
+        [SerializeField, Min(0.01f)] float gateBloomSeconds = 0.45f;
+
+        [Tooltip("Longest a PEER waits for the replicated landing before it gives up on laying the pair. The owner " +
+                 "never waits (its pose is local); a peer still late at the deadline lays none.")]
+        [SerializeField, Min(0f)] float gateSettleSeconds = 1f;
+
+        [Header("Toll (pilots of other domains)")]
+        [Tooltip("Whole petals stripped from EACH of a rival's four elements every time they thread this Tiger Moth's " +
+                 "wormhole, left on the mouth they went in by as crystals. 0 = everyone rides free. Its own domain " +
+                 "never pays.")]
+        [SerializeField, Range(0, 15)] int rivalTollPetalsPerElement = 15;
+
+        [Tooltip("World units/second the stripped crystals are thrown off the mouth's surface.")]
+        [SerializeField, Min(0f)] float rivalTollShedSpeed = 25f;
+
+        [Tooltip("The combat-hit class a toll scores as against the rival who paid it (PvP is petals only).")]
+        [SerializeField] CombatHitClass tollHitClass = CombatHitClass.Debuff;
+
+        [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager listens on. Fail-loud.")]
+        [SerializeField] ScriptableEventCombatHitStats onTollHitLanded;
+
+        public float FullCooldownSeconds => Mathf.Max(0f, fullCooldownSeconds);
         public float DropSpeed => dropSpeed;
-        public float DropRange => dropRange;
         public float DropEaseSeconds => dropEaseSeconds;
         public float LandSeconds => landSeconds;
         public float CameraEnterSeconds => cameraEnterSeconds;
 
-        /// <summary>The recharge at the live TIME level, read at use time (a crystal collected mid-cooldown should
-        /// shorten the wait being served).</summary>
-        public float ResolveCooldown(IVesselStatus status)
+        public float GateRadius => gateRadius;
+        public float PortalWindowRange => portalWindowRange;
+        public float PortalWindowFadeBand => portalWindowFadeBand;
+        public float PortalWindowRenderScale => portalWindowRenderScale;
+        public int PanoramaFaceSize => panoramaFaceSize;
+        public Material WormholeMaterial => wormholeMaterial;
+        public float GateBloomSeconds => gateBloomSeconds;
+        public float GateSettleSeconds => gateSettleSeconds;
+        public int RivalTollPetalsPerElement => Mathf.Max(0, rivalTollPetalsPerElement);
+        public float RivalTollShedSpeed => rivalTollShedSpeed;
+        public CombatHitClass TollHitClass => tollHitClass;
+        public ScriptableEventCombatHitStats OnTollHitLanded => onTollHitLanded;
+
+        /// <summary>The medium distance for THIS pilot, including "Far Drop". Gated on the REPLICATED unlock bit: every
+        /// peer decides from it whether a landing lays the wormhole.</summary>
+        public float ResolveFullDistance(IVesselStatus status)
+        {
+            float distance = Mathf.Max(1f, fullCooldownDistance);
+            var abilities = status?.ElementalAbilityHandler;
+            if (abilities != null && abilities.IsUpgradeActive(Element.Time))
+                distance *= Mathf.Max(1f, upgradeDistanceMultiplier);
+            return distance;
+        }
+
+        /// <summary>The recharge a drop of <paramref name="distance"/> pays, at the live TIME level (read at use time).</summary>
+        public float ResolveCooldown(IVesselStatus status, float distance)
         {
             float multiplier = ElementalScaling.Multiplier(
                 status, Element.Time, cooldownMultiplierAtFullTime, cooldownMultiplierAtFullTime);
-            return CooldownSeconds * Mathf.Min(multiplier, maxCooldownMultiplier);
+            return TigerMothDropMath.Cooldown(distance, ResolveFullDistance(status), FullCooldownSeconds)
+                   * Mathf.Min(multiplier, maxCooldownMultiplier);
         }
-
-        /// <summary>The longest drop for THIS press, including "Far Drop". Gated on the REPLICATED unlock bit: the
-        /// drop moves a pose every peer adopts.</summary>
-        public float ResolveRange(IVesselStatus status)
-        {
-            float range = DropRange;
-            var abilities = status?.ElementalAbilityHandler;
-            if (abilities != null && abilities.IsUpgradeActive(Element.Time))
-                range *= Mathf.Max(1f, upgradeRangeMultiplier);
-            return range;
-        }
-
-        public bool LayWakeWhileDropping => layWakeWhileDropping;
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<TigerMothDropExecutor>()?.Engage(this, vesselStatus);

@@ -1,5 +1,9 @@
 # Dustup (`GameModes.Dustup = 59`)
 
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`): the
+> same airframe, dust and modes. "Butterfly" below
+> means that airframe.
+
 The Butterfly's **CHARGE** game — a dust duel. The Butterfly carries no gun; its one weapon is the
 **Scale Dust**, a capsule that hangs **below** the hull while it is in Dust mode. So a rival is hit
 by flying **over** them. Every opposing pilot the dust passes through takes the Charge-scaled

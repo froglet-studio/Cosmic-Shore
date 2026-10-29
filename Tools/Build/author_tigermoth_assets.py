@@ -30,6 +30,12 @@ WHAT IT MAKES
 
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md): it runs only while TigerMoth.prefab is absent,
 and `--check` validates the SHIPPED prefab's invariants rather than diffing it against a donor that will move on.
+
+THE BUTTERFLY IS RETIRED (Garrett, 2026-10-29: "retire the butterfly, the tiger moth replaces it"): its prefab, class
+asset, element map, the Fold (FoldActionSO, FoldActionExecutor, ButterflyFoldAction.asset) and its registrations are
+deleted, and its four modes fly the Tiger Moth. The donor files are gone, so the clone stands down for good (it could
+only ever run with the donor present); `--check` also holds the retirement: no Butterfly in any registration, and no
+Fold anywhere on the hull.
 """
 import os
 import re
@@ -57,12 +63,18 @@ ACTION = os.path.join(ACTION_DIR, "TigerMothDropAction.asset")
 SCRIPTS = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "R_VesselActions")
 EXECUTOR_META = os.path.join(SCRIPTS, "Executors", "TigerMothDropExecutor.cs.meta")
 ACTION_SO_META = os.path.join(SCRIPTS, "Data Containers", "TigerMothDropActionSO.cs.meta")
-FOLD_EXECUTOR_META = os.path.join(SCRIPTS, "Executors", "FoldActionExecutor.cs.meta")
-FOLD_ACTION_META = os.path.join(ACTIONS, "Butterfly", "ButterflyFoldAction.asset.meta")
+# The retired Fold's guids (FoldActionExecutor.cs, ButterflyFoldAction.asset) and the retired Butterfly's (Butterfly.prefab,
+# SO_Class_Butterfly.asset): kept so --check can prove none of them is referenced any more.
+FOLD_EXECUTOR_GUID = "235fa4dc588e4721a2a26a1ed8d3c413"
+FOLD_ACTION_GUID = "f367e6037b96cf54e82543964072bfd3"
+BUTTERFLY_PREFAB_GUID = "aa59576a85f7b4746a63849ba535c74d"
+BUTTERFLY_CLASS_GUID = "fe4abf38579d7f84baf16a532ed4a015"
 
 # 24-27 are claimed on in-flight branches (Flea, Warden, Bulwark, Tempest) and 28 is the Meerkat; 29 was free on every
 # origin branch on 2026-10-28.
 CLASS_ID = 29
+WORMHOLE_MATERIAL_GUID = "97a0b9d33f4289abcfc3b058a3ffb2d3"   # the Fold's mouths' CosmicShore/Wormhole material
+TOLL_EVENT_GUID = "45fb43a0cddb5cc3cc4dc448df994152"         # Event_CombatHitStats
 DONOR_CLASS_ID = 13
 PREFAB_GUID = "bc7a968aa0d04c48b77ada29fb301291"
 ACTION_GUID = "a541c39b6f7a46c5be04c2b39275a4c0"
@@ -122,8 +134,8 @@ def block(text: str, file_id: str) -> str:
 
 # ----------------------------------------------------------------------------- the prefab
 def clone_prefab(donor: str) -> str:
-    exec_guid, fold_exec_guid = guid_of(EXECUTOR_META), guid_of(FOLD_EXECUTOR_META)
-    fold_action = guid_of(FOLD_ACTION_META)
+    exec_guid, fold_exec_guid = guid_of(EXECUTOR_META), FOLD_EXECUTOR_GUID
+    fold_action = FOLD_ACTION_GUID
     t = donor
     t = replace_once(t, "  m_Name: Butterfly\n  m_TagString", "  m_Name: TigerMoth\n  m_TagString", "root name")
     t = replace_once(t, "  _name: Butterfly\n  vesselType: 13\n", f"  _name: TigerMoth\n  vesselType: {CLASS_ID}\n", "VesselStatus")
@@ -144,7 +156,7 @@ def clone_prefab(donor: str) -> str:
     exec_go = block(t, EXECUTOR_GO)
     t = t.replace(exec_go, replace_once(exec_go, "  m_Name: Fold\n", "  m_Name: Drop\n", "the Fold GameObject"), 1)
     t = replace_once(t, f"  foldExecutor: {{fileID: {EXECUTOR_ID}}}\n",
-                     f"  foldExecutor: {{fileID: 0}}\n  dropExecutor: {{fileID: {EXECUTOR_ID}}}\n", "the HUD's Time veil")
+                     f"  dropExecutor: {{fileID: {EXECUTOR_ID}}}\n", "the HUD's Time veil")
     return t
 
 
@@ -156,9 +168,13 @@ def action_asset() -> str:
             f"  m_Script: {{fileID: 11500000, guid: {guid_of(ACTION_SO_META)}, type: 3}}\n"
             "  m_Name: TigerMothDropAction\n"
             "  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.TigerMothDropActionSO\n"
-            "  cooldownSeconds: 30\n  cooldownMultiplierAtFullTime: 0.5\n  maxCooldownMultiplier: 2\n"
-            "  dropSpeed: 900\n  dropRange: 1800\n  upgradeRangeMultiplier: 2\n  dropEaseSeconds: 0.12\n"
-            "  landSeconds: 0.25\n  cameraEnterSeconds: 0.35\n  layWakeWhileDropping: 0\n")
+            "  fullCooldownSeconds: 20\n  fullCooldownDistance: 900\n  upgradeDistanceMultiplier: 2\n"
+            "  cooldownMultiplierAtFullTime: 0.5\n  maxCooldownMultiplier: 2\n  dropSpeed: 900\n  dropEaseSeconds: 0.12\n"
+            "  landSeconds: 0.25\n  cameraEnterSeconds: 0.35\n  gateRadius: 33\n  portalWindowRange: 2500\n"
+            "  portalWindowFadeBand: 600\n  portalWindowRenderScale: 0.75\n  panoramaFaceSize: 256\n"
+            f"  wormholeMaterial: {{fileID: 2100000, guid: {WORMHOLE_MATERIAL_GUID}, type: 2}}\n"
+            "  gateBloomSeconds: 0.45\n  gateSettleSeconds: 1\n  rivalTollPetalsPerElement: 15\n  rivalTollShedSpeed: 25\n"
+            f"  tollHitClass: 2\n  onTollHitLanded: {{fileID: 11400000, guid: {TOLL_EVENT_GUID}, type: 2}}\n")
 
 
 DROP_ENTRY = """  - Element: 4
@@ -217,7 +233,7 @@ def list_key_of(text: str, sample_guid_fragment: str = "type: 3}") -> str:
 
 # ----------------------------------------------------------------------------- author + check
 def author() -> None:
-    if not os.path.exists(PREFAB):
+    if not os.path.exists(PREFAB) and os.path.exists(DONOR):
         write(PREFAB, clone_prefab(read(DONOR)))
         write(PREFAB + ".meta", prefab_meta(PREFAB_GUID))
     if not os.path.exists(ACTION_DIR + ".meta"):
@@ -225,10 +241,10 @@ def author() -> None:
     if not os.path.exists(ACTION):
         write(ACTION, action_asset())
         write(ACTION + ".meta", asset_meta(ACTION_GUID))
-    if not os.path.exists(MAP):
+    if not os.path.exists(MAP) and os.path.exists(DONOR_MAP):
         write(MAP, map_asset(read(DONOR_MAP)))
         write(MAP + ".meta", asset_meta(MAP_GUID))
-    if not os.path.exists(CLASS_ASSET):
+    if not os.path.exists(CLASS_ASSET) and os.path.exists(DONOR_CLASS):
         write(CLASS_ASSET, class_asset(read(DONOR_CLASS)))
         write(CLASS_ASSET + ".meta", asset_meta(CLASS_GUID))
     for path in CLASS_LISTS:
@@ -259,8 +275,9 @@ def errors() -> list:
     need(f"  _name: TigerMoth\n  vesselType: {CLASS_ID}\n" in pf, "VesselStatus is not the Tiger Moth (29)")
     need(f"  GlobalObjectIdHash: {global_object_id_hash(PREFAB_GUID, NETWORK_OBJECT_ID)}\n" in pf,
          "GlobalObjectIdHash is not this prefab's (a donor hash keys two prefabs on one Netcode entry)")
-    need(f"guid: {guid_of(FOLD_ACTION_META)}" not in pf, "the Fold's action is still bound")
-    need(f"guid: {guid_of(FOLD_EXECUTOR_META)}" not in pf, "a FoldActionExecutor is still on the hull")
+    need(f"guid: {FOLD_ACTION_GUID}" not in pf, "the retired Fold's action is still bound")
+    need(f"guid: {FOLD_EXECUTOR_GUID}" not in pf, "a retired FoldActionExecutor is still on the hull")
+    need("  foldExecutor:" not in pf, "the HUD still carries the retired foldExecutor key")
     need(f"  - InputEvent: {TIME_INPUT_EVENT}\n    ShipActions:\n    - {{fileID: 11400000, guid: {ACTION_GUID}, type: 2}}\n" in pf,
          "LT is not bound to TigerMothDropAction")
     exec_block = block(pf, EXECUTOR_ID)
@@ -283,6 +300,13 @@ def errors() -> list:
          "the Vessel Prefab Container does not list the Tiger Moth's root transform")
     need(f"Prefab: {{fileID: {ROOT_GO}, guid: {PREFAB_GUID}, type: 3}}" in read(NETWORK_PREFABS),
          "DefaultNetworkPrefabs does not list the Tiger Moth's root GameObject")
+    # the retirement: nothing registers the Butterfly any more
+    for path in [CONTAINER, NETWORK_PREFABS] + CLASS_LISTS:
+        t = read(path)
+        need(BUTTERFLY_PREFAB_GUID not in t and BUTTERFLY_CLASS_GUID not in t,
+             f"{os.path.basename(path)} still registers the retired Butterfly")
+    need(not os.path.exists(DONOR), "Butterfly.prefab is back: the Butterfly is retired (TIGER_MOTH.md)")
+    need(f"wormholeMaterial: {{fileID: 2100000, guid: {WORMHOLE_MATERIAL_GUID}" in act, "the drop's wormhole has no material")
     return out
 
 
@@ -293,7 +317,7 @@ def self_test() -> int:
     cases = {
         "donor hash": good.replace(f"GlobalObjectIdHash: {global_object_id_hash(PREFAB_GUID, NETWORK_OBJECT_ID)}",
                                    "GlobalObjectIdHash: 2928199215"),
-        "fold bound": good.replace(f"    - {{fileID: 11400000, {bound}", f"    - {{fileID: 11400000, guid: {guid_of(FOLD_ACTION_META)}, type: 2}}\n", 1),
+        "fold bound": good.replace(f"    - {{fileID: 11400000, {bound}", f"    - {{fileID: 11400000, guid: {FOLD_ACTION_GUID}, type: 2}}\n", 1),
         "class id": good.replace(f"vesselType: {CLASS_ID}\n", "vesselType: 13\n"),
         "dangling": good.replace(f"  dropExecutor: {{fileID: {EXECUTOR_ID}}}", "  dropExecutor: {fileID: 123}"),
     }

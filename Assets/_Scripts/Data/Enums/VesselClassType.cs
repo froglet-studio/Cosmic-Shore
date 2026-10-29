@@ -22,7 +22,7 @@ namespace CosmicShore.Data
         Shrike = 10,
         Sparrow = 11,
         Scarab = 12,
-        Butterfly = 13,
+        Butterfly = 13,   // RETIRED 2026-10-29: the Tiger Moth (29) replaces it; the value stays so old data still reads. Controller/Vessel/R_VesselActions/TIGER_MOTH.md
         Thresher = 14,
         Stoat = 15,
         BrittleStar = 16,

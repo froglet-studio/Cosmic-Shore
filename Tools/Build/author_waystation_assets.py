@@ -37,7 +37,7 @@ EXISTING = {
     "SwitchbackController":   "232714002ed12bc27251e8ac09358ff0",
     "SwitchbackScoringRule":  "b67719b27d5ca31d65b90aec65674945",
     "SkimRaceCellConfig":     "52de45c2fab54ea0a35bc37a311d80e6",
-    "Butterfly":              lib.VESSELS["Butterfly"],
+    "Butterfly":              lib.VESSELS["TigerMoth"],
 }
 
 SCRIPTS = {
@@ -170,7 +170,7 @@ g.emit_asset(
       "  TrackSpawnablesByIntensity: []\n"
       "  PreviewFauna: {fileID: 0}\n"
       "  PreviewFaunaCount: 4\n"
-      f"  Vessel: {lib.VESSEL_CLASS_ID['Butterfly']}\n"
+      f"  Vessel: {lib.VESSEL_CLASS_ID['TigerMoth']}\n"
       "  ObjectiveText: Weave the cluster, then fold\n"
       "  ObjectiveMetric: 9\n"
       "  ObjectiveTarget: 0\n"
@@ -202,7 +202,7 @@ scene = re.sub(r"^  featuresPrefab: \{[^\n]*\}\n", "", scene, count=1, flags=re.
 # The four AI seats fly the Butterfly.
 old_ai = "".join(f"  - vesselClass: 2\n    PlayerName: AI {i}\n    AvatarId: {i}\n"
                  "    IsAI: 1\n    AllowSpawning: 1\n" for i in range(4))
-new_ai = "".join(f"  - vesselClass: {lib.VESSEL_CLASS_ID['Butterfly']}\n    PlayerName: AI {i}\n"
+new_ai = "".join(f"  - vesselClass: {lib.VESSEL_CLASS_ID['TigerMoth']}\n    PlayerName: AI {i}\n"
                  f"    AvatarId: {i}\n    IsAI: 1\n    AllowSpawning: 1\n" for i in range(4))
 scene = lib.replace_block(scene, old_ai, new_ai, "the four AI seats")
 

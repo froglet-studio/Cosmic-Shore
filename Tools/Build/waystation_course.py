@@ -45,8 +45,10 @@ ROOT = Path(__file__).resolve().parents[2]
 assert (ROOT / "Assets").is_dir(), f"ROOT is wrong: {ROOT}"
 
 CS_COURSE = ROOT / "Assets/_Scripts/Controller/Arcade/Waystation/WaystationCourse.cs"
-BUTTERFLY = ROOT / "Assets/_Prefabs/Spacevessels/Butterfly.prefab"
-FOLD_ASSET = ROOT / "Assets/_SO_Assets/VesselActions/Butterfly/ButterflyFoldAction.asset"
+# The Tiger Moth flies Waystation since the Butterfly was retired (2026-10-29, TIGER_MOTH.md): the same airframe and
+# turn rates, so the corner verdict reads the same numbers; its Drop has no longest fall, so the reach verdict is moot.
+BUTTERFLY = ROOT / "Assets/_Prefabs/Spacevessels/TigerMoth.prefab"
+DROP_ASSET = ROOT / "Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset"
 
 
 # ---------------------------------------------------------------- vector helpers
@@ -157,10 +159,12 @@ def read_vessel():
 
 
 def read_fold_reach():
-    src = FOLD_ASSET.read_text(encoding="utf-8")
-    m = re.search(r"^\s*reachRange:\s*([0-9.]+)\s*$", src, re.M)
-    assert m, "reachRange not found in ButterflyFoldAction.asset"
-    return float(m.group(1))
+    """The jump's resting reach. The Fold reached 1800 u; the Tiger Moth's Drop falls for as long as the trigger is
+    held, so no gap can be out of reach. Asserted off the asset (no longest-drop key) so a reach coming back is seen."""
+    src = DROP_ASSET.read_text(encoding="utf-8")
+    assert "dropSpeed:" in src, "TigerMothDropAction.asset is not the drop"
+    assert not re.search(r"^\s*dropRange:", src, re.M), "the drop has a longest fall again - give the fold verdict its number"
+    return math.inf
 
 
 # the cell shell the gate-race platform lays a course inside (GateRaceController's own defaults:
@@ -327,9 +331,9 @@ def run(seeds, target, quiet=False, **kw):
     top, omega, hull_r = read_vessel()
     fold_reach = read_fold_reach()
     if not quiet:
-        print(f"Butterfly  top {top:.0f} u/s, turn {omega:.0f} deg/s "
-              f"-> minimum circle {hull_r:.1f} u   (read off Butterfly.prefab)")
-        print(f"Fold       resting reach {fold_reach:.0f} u   (ButterflyFoldAction.reachRange)")
+        print(f"Tiger Moth top {top:.0f} u/s, turn {omega:.0f} deg/s "
+              f"-> minimum circle {hull_r:.1f} u   (read off TigerMoth.prefab)")
+        print("Drop       no longest fall (TigerMothDropAction): every gap is in reach")
         print(f"Cell       course shell [{INNER:.0f}, {COURSE_OUTER:.0f}], nucleus {NUCLEUS:.0f}\n")
     ok = True
     for i in (1, 2, 3, 4):

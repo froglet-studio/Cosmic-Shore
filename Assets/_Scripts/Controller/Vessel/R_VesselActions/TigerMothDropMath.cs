@@ -58,6 +58,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The recharge a drop of <paramref name="distance"/> pays, before Time's multiplier: in proportion up to the
+        /// medium distance, the full recharge there, and no more however far past it (Garrett, 2026-10-29: "anything
+        /// after medium distance is free").
+        /// </summary>
+        public static float Cooldown(float distance, float fullDistance, float fullSeconds) =>
+            fullSeconds * (fullDistance > 0f ? Mathf.Clamp01(Mathf.Max(0f, distance) / fullDistance) : 1f);
+
+        /// <summary>True when a drop paid the FULL recharge: the one case that leaves a wormhole pair.</summary>
+        public static bool PaysFullCooldown(float distance, float fullDistance) => distance >= fullDistance;
+
+        /// <summary>
         /// The camera's follow frame: the hull's live rotation slerped toward the drop frame by
         /// <paramref name="weight01"/>. While the hull holds still that is the hull pitched by the weight; while it
         /// turns into the drop frame at the landing, the result stays ON the drop frame at full weight, which is

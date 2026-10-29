@@ -472,6 +472,9 @@ namespace CosmicShore.Gameplay
                 bool first = !_lastPos.TryGetValue(vessel, out var prev);
                 _lastPos[vessel] = cur;
                 if (first) continue;    // two samples are needed to test an entry
+                // An incorporeal hull (the Tiger Moth mid-drop) passes through a mouth like everything else. Its sample
+                // is still taken above, so the frame it becomes solid again is not read as one long step into a ball.
+                if (VesselIncorporeal.Is(vessel.Transform)) continue;
 
                 // Entering = starting outside and reaching the ball. A vessel that starts INSIDE
                 // (one just carried into this mouth from the other) is never taken back until it

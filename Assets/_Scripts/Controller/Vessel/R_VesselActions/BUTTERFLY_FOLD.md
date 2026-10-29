@@ -1,5 +1,10 @@
 # The Fold — the Butterfly's TIME ability
 
+> **RETIRED 2026-10-29** with the Butterfly: `FoldActionSO`, `FoldActionExecutor` and `ButterflyFoldAction.asset` are
+> deleted. The Tiger Moth's Drop replaced it (`TIGER_MOTH.md`), and its WORMHOLE survives there: a drop that pays the
+> full recharge leaves the same pair of mouths, with the same toll. This file is the record of why the Fold, its gates and
+> its wormholes were built the way they were.
+
 Hold the left trigger. The vessel stops, a ghost of it appears on the hull, and the two sticks place
 that ghost anywhere inside the cell. Let go and you are there.
 

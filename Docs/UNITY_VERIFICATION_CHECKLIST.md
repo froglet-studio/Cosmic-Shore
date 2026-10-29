@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Butterfly retired; the Tiger Moth's distance-priced drop, its wormhole, incorporeal fall; louder cooldowns; the lit dust (`cece/keen-lovelace-cyci91`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor configs, 0 project errors). No editor in the session,
+so `/verify-unity` did not run. Steps: `Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md` §6.
+- [ ] Vessel Changer offers the Tiger Moth and no Butterfly; Dustup, Tapestry, Sirocco and Waystation start with Tiger Moths (AI included).
+- [ ] A drop through prisms and crystals touches nothing; no ribbon or wake along the fall; the tail restarts at the landing.
+- [ ] Hop ~0.1 s: veil ~2 s. Drop 1 s: veil 20 s and a wormhole pair at both ends. Drop 3 s: still 20 s. A hop leaves the pair standing.
+- [ ] Dropping through a standing mouth does not carry the hull; a rival flying through pays the toll.
+- [ ] Every vessel's recharging card: the whole card (icon included) is visibly dimmed for the whole recharge, the sweep shows the rest, and a bright flash plays OVER the icon when it is back.
+- [ ] Dust mode: every prism in the capsule lights (own super-shielded and shielded, rival, plain), Mass mode lights nothing, and the light is off during a drop.
+- [ ] MPPM: the second client sees the same fall, landing and wormhole pair.
+
+First-pass numbers: full recharge 20 s at 900 u (Far Drop: 1800 u); wash alpha 0.55; ready flash alpha 0.75; dust light strength 0.6.
+
 ### 🔴 The Tiger Moth: the Butterfly's airframe with the Drop as its Time ability (`cece/keen-lovelace-cyci91`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor configs, 0 project errors). No editor in the session, so

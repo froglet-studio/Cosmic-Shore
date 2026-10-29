@@ -1,5 +1,9 @@
 # Waystation (`GameModes.Waystation = 58`)
 
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`): the
+> same airframe, dust and modes, with the Drop in place of the Fold (the AI drops when a ring lies under its belly). "Butterfly" below
+> means that airframe.
+
 The **Butterfly-only migration race**. The rings come in **clusters** — coils you weave — laid a
 **FOLD** apart. Inside a cluster you fly; between clusters you teleport. Every pilot flies the
 same course in ORDER, and the first **DOMAIN** whose **LEAD RUNNER** threads the last ring wins.

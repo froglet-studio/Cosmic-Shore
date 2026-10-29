@@ -92,6 +92,30 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheRecharge_IsPaidByDistance_UpToTheMediumDrop_AndNoMore()
+        {
+            // Garrett, 2026-10-29: "a little hop has a small cooldown. a medium distance should be the full 20. anything
+            // after medium distance is free"
+            Assert.AreEqual(0f, TigerMothDropMath.Cooldown(0f, 900f, 20f), Tol, "no drop, no wait");
+            Assert.AreEqual(2f, TigerMothDropMath.Cooldown(90f, 900f, 20f), Tol, "a hop pays its share");
+            Assert.AreEqual(10f, TigerMothDropMath.Cooldown(450f, 900f, 20f), Tol, "half the distance, half the wait");
+            Assert.AreEqual(20f, TigerMothDropMath.Cooldown(900f, 900f, 20f), Tol, "the medium drop pays the full 20");
+            Assert.AreEqual(20f, TigerMothDropMath.Cooldown(5000f, 900f, 20f), Tol, "past it the drop is free");
+            Assert.AreEqual(0f, TigerMothDropMath.Cooldown(-5f, 900f, 20f), Tol);
+        }
+
+        [Test]
+        public void OnlyAFullRechargeDrop_LeavesTheWormhole()
+        {
+            Assert.IsFalse(TigerMothDropMath.PaysFullCooldown(899f, 900f));
+            Assert.IsTrue(TigerMothDropMath.PaysFullCooldown(900f, 900f));
+            Assert.IsTrue(TigerMothDropMath.PaysFullCooldown(4000f, 900f));
+            // Far Drop doubles the medium distance: the same 900 u drop then pays half and leaves no pair
+            Assert.IsFalse(TigerMothDropMath.PaysFullCooldown(900f, 1800f));
+            Assert.AreEqual(10f, TigerMothDropMath.Cooldown(900f, 1800f, 20f), Tol);
+        }
+
+        [Test]
         public void NegativeControl_ARollInsteadOfAPitch_WouldLandOffTheLine()
         {
             // proves the landed-forward test can fail: turning about forward (a roll) leaves the nose where it was

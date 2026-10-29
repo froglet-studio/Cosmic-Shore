@@ -43,10 +43,10 @@ MonoBehaviour:
     UpgradeDescription: 'Dust on your own PLAIN mass occasionally raises a SUPER-SHIELD.'
   - Element: 4
     AbilityLabel: Drop
-    AbilityDescription: 'HOLD. The wings shut and the hull falls belly-first along its own down - the way its dust rains - without turning, at 900 u/s, while the camera swings up over it so the fall reads as flying forward. LET GO and it lands: the hull pitches 90 degrees nose-down into the line it fell on and flies straight on, so a drop is a turn as well as a jump. Longest drop 1800 u. Time''s dial is the RECHARGE (30 s at rest, half at Time 10).'
+    AbilityDescription: 'HOLD. The wings shut and the hull falls belly-first along its own down - the way its dust rains - without turning, at 900 u/s, passing through everything (incorporeal: no prism, crystal, hull or wormhole touches it) and leaving no trail, while the camera swings up over it so the fall reads as flying forward. LET GO and it lands: the hull pitches 90 degrees nose-down into the line it fell on and flies straight on. No longest drop. The RECHARGE is paid by distance: a hop costs a little, a medium drop (900 u) the full 20 s, and anything past that is free. Only a full-recharge drop leaves a wormhole pair (rivals pay a toll). Time''s dial is the recharge (half at Time 10).'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Far Drop
-    UpgradeDescription: 'The drop falls twice as far.'
+    UpgradeDescription: 'The full recharge (and the wormhole) comes at twice the distance: every drop costs half.'

@@ -15,6 +15,13 @@ namespace CosmicShore.Gameplay
     /// Breakwater, Skein and Redline. This class is what makes it WAYSTATION: an open chain
     /// dealt into clusters, and a course that cannot fail (<see cref="WaystationCourse"/>).</para>
     ///
+    /// <para><b>The Tiger Moth flies it now (2026-10-29).</b> The Butterfly and its Fold were retired; the Tiger Moth's
+    /// Drop is the jump (<c>R_VesselActions/TIGER_MOTH.md</c>). It still has ONE degree of freedom - the line it falls
+    /// along is the hull's DOWN at the press - so the course's logic stands with "the heading you leave on" read as "the
+    /// belly you leave on": to jump the gap to the next cluster a pilot pitches up until the cluster is below, drops,
+    /// and lands flying toward it. The drop is TRAVEL, not a teleport, so a ring it passes through is threaded. The
+    /// paragraphs below describe the Fold-era design and keep its record; the autopilot drive aims the belly.</para>
+    ///
     /// <para><b>The mode is the Fold's one degree of freedom.</b> Since the Fold collapsed to a
     /// single reach along the heading, it cannot be aimed once it has begun — the destination is
     /// the line the pilot was already flying. So the last ring of every cluster is also the
@@ -162,7 +169,9 @@ namespace CosmicShore.Gameplay
                 }
 
                 if (_aiFoldRetryAt.TryGetValue(pilot, out float retryAt) && now < retryAt) continue;
-                if (!handler.TryGetBoundAction<FoldActionSO>(out var fold, out var input)) continue;
+                // The Tiger Moth's Drop (the Butterfly and its Fold retired 2026-10-29, TIGER_MOTH.md): it falls along the
+                // hull's DOWN, so the bot presses when its belly - not its nose - is on the next ring.
+                if (!handler.TryGetBoundAction<TigerMothDropActionSO>(out var drop, out var input)) continue;
                 if (!TryGetNextGate(pilot, out var gate) || gate == null) continue;
 
                 Vector3 hull = status.Transform.position;
@@ -170,14 +179,13 @@ namespace CosmicShore.Gameplay
                 float distance = toGate.magnitude;
 
                 if (distance < aiFoldMinDistance) continue;
-                if (distance > fold.ResolveRange(status)) continue;
-                float aim = Vector3.Angle(status.Transform.forward, toGate);
+                float aim = Vector3.Angle(-status.Transform.up, toGate);
                 if (aim > FoldAimLimitDegrees(distance, RingRadiusFor(pilot), aiFoldMouthShare, aiFoldAimDegrees)) continue;
 
-                // The hold IS the distance: the executor reaches hold x ReachSpeed along the
-                // heading. Let go short of the ring's plane (FoldHoldSeconds), so the hull then
-                // flies through the mouth. ReachSpeed is read off the ability's own asset.
-                _aiFoldReleaseAt[pilot] = now + FoldHoldSeconds(distance, aim, aiFoldLandShort, fold.ReachSpeed);
+                // The hold IS the distance: the drop falls hold x DropSpeed along the belly. Let go short of the
+                // ring's plane (FoldHoldSeconds), so the landing carries the hull through the mouth. DropSpeed is read
+                // off the ability's own asset.
+                _aiFoldReleaseAt[pilot] = now + FoldHoldSeconds(distance, aim, aiFoldLandShort, drop.DropSpeed);
                 _aiFoldRetryAt[pilot] = now + aiFoldRetrySeconds;
                 handler.PerformShipControllerActionsReplicated(input);
             }
@@ -230,7 +238,7 @@ namespace CosmicShore.Gameplay
             _aiFoldReleaseAt.Remove(pilot);
             var handler = pilot?.Vessel?.VesselStatus?.ActionHandler;
             if (handler == null) return;
-            if (handler.TryGetBoundAction<FoldActionSO>(out _, out var input))
+            if (handler.TryGetBoundAction<TigerMothDropActionSO>(out _, out var input))
                 handler.StopShipControllerActionsReplicated(input);
         }
     }
