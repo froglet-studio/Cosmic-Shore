@@ -345,29 +345,60 @@ FORGE_MAX = 4.0
 BALL_PX = 30.0
 
 
-def omni_crystal(cx, cy, h):
-    """The omni crystal as a gem: a tall, narrow hexagonal bipyramid seen side on - long points, short shoulders -
-    its centre seam and upper facet seams cut through it (a squat one reads as a cube)."""
-    w = h * 0.3
-    sh = h * 0.08
-    body = fill([(cx, cy - h / 2), (cx + w, cy - sh), (cx + w, cy + sh), (cx, cy + h / 2),
-                 (cx - w, cy + sh), (cx - w, cy - sh)])
-    seam = max(1.6, h * 0.04)
-    seams = (stroke([(cx, cy - h / 2 + seam * 2), (cx, cy + h / 2 - seam * 2)], w=seam)
-             | stroke([(cx - w, cy - sh), (cx, cy + sh * 0.5), (cx + w, cy - sh)], w=seam))
-    return body & ~seams
+OMNI_FBX = "Assets/_Models/OmniCrystalExport1_8-21-25.fbx"
+OMNI_RING = 0.78        # face normals within this cosine of the view axis: the pentagon, its 5 squares, its 5 triangles
+OMNI_GAP = 0.78         # each plate drawn at this fraction of itself about its own centre - the explosion, made legible
+
+
+@functools.lru_cache(None)
+def _omni_faces(ring=OMNI_RING):
+    """The omni crystal's outer plate faces as seen down a pentagon's axis, in mesh units: the exploded
+    rhombicosidodecahedron (author_omni_crystal_triangles.py - 12 pentagons, 30 squares, 20 triangles), its
+    pentagon facing the viewer, as OmniCrystal_Active.png draws it."""
+    polys = [np.asarray(q, dtype=float) for q in mesh_silhouette._polys(OMNI_FBX)]
+
+    def normal(q):
+        n = np.cross(q[1] - q[0], q[2] - q[0])
+        n /= np.linalg.norm(n)
+        return n if n @ q.mean(0) > 0 else -n
+
+    outer = [q for q in polys if abs(normal(q) @ (q.mean(0) / np.linalg.norm(q.mean(0)))) > 0.97]
+    axis = next(q.mean(0) for q in outer if len(q) == 5)
+    axis = axis / np.linalg.norm(axis)
+    u = np.cross([0.0, 0.0, 1.0] if abs(axis[2]) < 0.9 else [1.0, 0.0, 0.0], axis)
+    u /= np.linalg.norm(u)
+    v = np.cross(axis, u)
+    faces = []
+    for q in outer:
+        if normal(q) @ axis < ring:
+            continue
+        c = q.mean(0)
+        q = c + (q - c) * OMNI_GAP
+        faces.append(np.stack([q @ u, q @ v], axis=1))
+    span = max(np.abs(f).max() for f in faces)
+    return [f / span for f in faces]          # unit radius
+
+
+def omni_crystal(cx, cy, h, ring=OMNI_RING):
+    """The OMNI crystal from its own mesh: the plates around one pentagon (the pentagon, its five squares and the five
+    triangles between them), each plate separated from the next - the crystal's explosion is its identity. h is the
+    mark's diameter; a lower `ring` takes more of the front hemisphere (0.0: all of it)."""
+    out = empty()
+    for f in _omni_faces(ring):
+        out |= fill([(cx + x * h / 2, cy - y * h / 2) for x, y in f])
+    return out
 
 
 def _crystal_h(scale):
-    return 2 * BALL_PX / scale          # Space 1: as tall as the ball is wide; Space 10 (x4): a quarter
+    return 2 * BALL_PX / scale          # the crystal's diameter: Space 1, the ball's; Space 10 (x4), a quarter
 
 
 @functools.lru_cache(None)
 def f1(scale):
     """F1 BECOMES: the crystal at the left, a chevron, the ball it becomes at the right (left to right)."""
-    crystal = omni_crystal(26.0, 64.0, _crystal_h(scale))
-    chev = stroke([(46, 52), (56, 64), (46, 76)], w=6.0)
-    ball = disc(88.0, 64.0, BALL_PX)
+    crystal = omni_crystal(32.0, 64.0, _crystal_h(scale) * 0.95)
+    chev = stroke([(64, 53), (72, 64), (64, 75)], w=6.0)
+    ball = disc(97.0, 64.0, BALL_PX * 0.8)
     return dict(crystal=crystal, chev=chev, ball=ball)
 
 
@@ -375,8 +406,8 @@ def f1(scale):
 def f2(scale):
     """F2 IN PLACE: the ball with the crystal it was standing in front of it, knocked out of it - the crystal becomes
     the ball where it stood."""
-    ball = disc(64.0, 64.0, BALL_PX * 1.5)
-    crystal = omni_crystal(64.0, 64.0, _crystal_h(scale) * 1.3)
+    ball = disc(64.0, 64.0, BALL_PX * 1.75)
+    crystal = omni_crystal(64.0, 64.0, _crystal_h(scale) * 1.35)
     return dict(ball=_clear_of(ball, crystal, px=3.0), crystal=crystal)
 
 
@@ -385,15 +416,11 @@ def f3(scale):
     """F3 THE HULL IT WEARS: the ball (domain) wearing the crystal's facets - seams cut across it in the crystal's
     pattern (SCARAB_CRYSTAL_MORPH: the crystal's body carried onto the ball's hull), and a white crystal beside it at
     the live Space size."""
-    r = BALL_PX * 1.4
-    cx = 74.0
-    ball = disc(cx, 64.0, r)
-    seam = 3.0
-    facets = (stroke([(cx - r, 64 - r * 0.25), (cx, 64 - r * 0.05), (cx + r, 64 - r * 0.25)], w=seam)
-              | stroke([(cx, 64 - r * 0.05), (cx, 64 + r)], w=seam)
-              | stroke([(cx - r * 0.7, 64 - r * 0.7), (cx, 64 - r * 0.05), (cx + r * 0.7, 64 - r * 0.7)], w=seam))
-    crystal = omni_crystal(18.0, 64.0, _crystal_h(scale) * 0.7)
-    return dict(ball=ball & ~facets, crystal=crystal)
+    r = BALL_PX * 1.35
+    cx = 80.0
+    ball = disc(cx, 64.0, r) & omni_crystal(cx, 64.0, 2 * r * 1.12, ring=0.0)
+    crystal = omni_crystal(21.0, 64.0, _crystal_h(scale) * 0.55)
+    return dict(ball=ball, crystal=crystal)
 
 
 def _forge_card(name, title, fn, layers, lit):
