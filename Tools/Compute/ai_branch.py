@@ -117,6 +117,44 @@ def _ai_view(base, source, cwd=None):
     return _commit(tree, [base], "ai view of " + source[:12], cwd=cwd)
 
 
+def _blob(commit, path, cwd=None):
+    out = L.git_ok("rev-parse", "--verify", "--quiet", f"{commit}:{path}", cwd=cwd)
+    return out.strip() if out else None
+
+
+def _promoted(path, ai, be, ys, last, cwd=None):
+    """True when a conflict merging bleeding-edge into ai is only Ys meeting itself: ai holds the copy the last sync
+    took from Ys (nobody edited it on ai), and bleeding-edge holds a later Ys state of it, merged there by Ys's owner.
+    Then bleeding-edge's copy is the newer Ys and the Ys step after the merge brings whatever Ys changed since."""
+    met = _git("merge-base", be, ys, cwd=cwd, check=False).strip()
+    if not met or met == last or subprocess.run(["git", "merge-base", "--is-ancestor", last, met],
+                                                cwd=cwd or L.REPO).returncode != 0:
+        return False
+    mine, theirs = _blob(ai, path, cwd), _blob(be, path, cwd)
+    return mine == _blob(last, path, cwd) and theirs == _blob(met, path, cwd)
+
+
+def _with_paths(tree, source, paths, cwd=None):
+    """`tree` with `paths` set to what `source` holds (removed where `source` has none)."""
+    lines = []
+    for path in dict.fromkeys(paths):
+        entry = _git("ls-tree", "-z", source, "--", path, cwd=cwd).rstrip("\0")
+        if entry:
+            meta, name = entry.split("\t", 1)
+            mode, _, sha = meta.split(" ")
+            lines.append(f"{mode} {sha}\t{name}")
+        else:
+            lines.append(f"0 {'0' * 40}\t{path}")
+    index = os.path.join(tempfile.mkdtemp(prefix="ai-branch-"), "index")
+    try:
+        env = {"GIT_INDEX_FILE": index}
+        _git("read-tree", tree, cwd=cwd, env=env)
+        _git("update-index", "-z", "--index-info", cwd=cwd, env=env, input="\0".join(lines) + "\0")
+        return _git("write-tree", cwd=cwd, env=env).strip()
+    finally:
+        shutil.rmtree(os.path.dirname(index), ignore_errors=True)
+
+
 def _last_synced(ai, cwd=None):
     out = _git("log", "-1", "--first-parent", "--format=%(trailers:key=AI-Sync-Ys,valueonly)", f"--grep=^{TRAILER}",
                ai, cwd=cwd)
@@ -145,11 +183,20 @@ def plan(cwd=None, remote="origin"):
         head = ai
         if subprocess.run(["git", "merge-base", "--is-ancestor", be, ai], cwd=cwd or L.REPO).returncode != 0:
             tree, conflicts = _merge(ai, be, cwd=cwd)
+            if conflicts and all(_promoted(p, ai, be, ys, last, cwd) for p in conflicts):
+                tree = _with_paths(tree, be, conflicts, cwd)
+                conflicts = []
             if conflicts:
                 raise RuntimeError(f"merging {BASE} into {AI_BRANCH} conflicts in: {', '.join(conflicts)} - "
                                    f"resolve it by hand on a branch and open a pull request into {AI_BRANCH}")
             head = _commit(tree, [ai, be], f"merge {BASE} into {AI_BRANCH}\n\n{TRAILER} {last}", cwd=cwd)
             steps.append({"sha": head, "what": f"merge {BASE} @ {be[:9]}"})
+        # Ys history that reached ai by another road (Yash merged Ys into bleeding-edge, which ai just took) is synced
+        # already: replay only what Ys changed after it, or its own earlier edits read as a conflict with themselves.
+        met = _git("merge-base", head, ys, cwd=cwd, check=False).strip()
+        if met and met != last and subprocess.run(["git", "merge-base", "--is-ancestor", last, met],
+                                                  cwd=cwd or L.REPO).returncode == 0:
+            last = met
     files = _changed_ai(last, ys, cwd) if last != ys else []
     if files:
         view = _ai_view(last, ys, cwd)
@@ -259,6 +306,25 @@ def self_test():
             bad.append("ai branch: bleeding-edge was not merged in")
         if subprocess.run(["git", "merge-base", "--is-ancestor", first, f"origin/{AI_BRANCH}"], cwd=work).returncode:
             bad.append("ai branch: the sync rewrote ai's history")
+        # Ys is merged into bleeding-edge (its owner promotes it) and then keeps learning on the same AI file: ai
+        # takes both, Ys's newer version, without reading Ys's own earlier edit as a conflict (2026-10-29)
+        g("checkout", "-q", SOURCE, cwd=work)
+        write(work, "Assets/_Scripts/Controller/AI/Pilot.cs", "pilot v2.1 (promoted)\n")
+        g("commit", "-qam", "ys learns", cwd=work); g("push", "-q", "origin", SOURCE, cwd=work)
+        g("checkout", "-q", BASE, cwd=work)
+        g("merge", "-q", "--no-edit", SOURCE, cwd=work); g("push", "-q", "origin", BASE, cwd=work)
+        g("checkout", "-q", SOURCE, cwd=work)
+        write(work, "Assets/_Scripts/Controller/AI/Pilot.cs", "pilot v2.2 (after the promotion)\n")
+        g("commit", "-qam", "ys learns again", cwd=work); g("push", "-q", "origin", SOURCE, cwd=work)
+        g("fetch", "-q", "origin", cwd=work)
+        try:
+            run_sync(); g("fetch", "-q", "origin", cwd=work)
+            if show("Assets/_Scripts/Controller/AI/Pilot.cs") != "pilot v2.2 (after the promotion)\n":
+                bad.append("ai branch: after Ys was promoted, its newer AI change did not come over")
+            if show("Assets/_Scripts/Controller/Vessel/Hull.cs") != "hull v2 (Ys only, not AI)\n":
+                bad.append("ai branch: bleeding-edge's copy of Ys's non-AI file did not arrive through the merge")
+        except RuntimeError as e:
+            bad.append(f"ai branch: Ys promoted into bleeding-edge then edited again was refused: {e}")
         # an AI file edited differently on ai and on Ys must stop the sync
         g("checkout", "-qb", "fix", f"origin/{AI_BRANCH}", cwd=work)
         write(work, "Assets/_Scripts/Controller/AI/Pilot.cs", "pilot v3 (fixed on ai)\n")
