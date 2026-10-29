@@ -25,30 +25,32 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 fast path that can silently drop a tool's output is the exact failure this protocol
 exists to prevent.
 
-## 0.05 There is no compiler and no CI here — do not spend the branch's time on them
+## 0.05 The verify rule — what gates a C# commit (and what not to spend the branch's time on)
 
-**This environment has no Unity Editor, no `unity` CLI, no `dotnet`, and no CI to watch.**
-That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep`,
-`/ship-tools`) and it is not a degraded state to work around:
+**The verify rule (Shombith's decision, 2026-10-29): every C# commit passes `Tools/Build/unity_refcompile` (`bash Tools/Build/unity_refcompile/run.sh`) plus whatever `/ship` already gates on (`bash .claude/skills/ship/gates.sh`). When a Unity editor is open, also run the `unity` CLI. If neither ran, say so in the commit/PR and add an entry to `Docs/UNITY_VERIFICATION_CHECKLIST.md`.** Never claim a verification that didn't run. `/verify-unity` is not required until that skill merges.
 
-- **Do not run `/verify-unity`, and do not try to stand a compiler up.** Installing an SDK
-  to Roslyn-parse the diff buys a SYNTAX check and nothing more — every `MonoBehaviour` and
-  `ScriptableObject` base type lives in the `Assembly-CSharp` monolith, so class bodies never
-  bind and the whole class of errors that actually bites (a member that does not exist, a
-  drifted override signature, an argument mismatch, overload resolution) is invisible to it.
-  A gate that cannot resolve a type cannot see errors ABOUT that type.
-- **Do not treat any build gate as a ship requirement.** `check_conditional_compilation.py`,
-  `check_enum_member_references.py`, `check_switch_label_collisions.py`,
-  `check_using_directives.py`, a generator's `--check`, "CI is green" — none of them gate a
-  GO here. Run one only when it is the cheapest way to answer a question you actually have
-  about your own change; never as a checklist item, never as evidence, and never as a reason
-  to sit on finished work.
-- **Do not wait on, poll, or report CI.** Do not subscribe to a PR to watch checks. If a
-  human wants CI watched, they will ask. The one CI action a ship command takes is to FIRE
-  it, once, at the end (§5.5) — `claude/**` branches trigger nothing on their own.
-- **Say so plainly instead.** The verification line in the PR body and the ship report reads
-  "not compiled — no editor or compiler in this environment", followed by what a human must
-  do at the editor. An honest "unverified" is the deliverable; a manufactured green is not.
+This is the same rule, in the same words, as `CLAUDE.md` § "Unity CLI verification"; if the two
+ever differ, fix both. It holds in every mode (`/ship`, `/ship-quick`, `/ship-deep`, `/ship-tools`).
+What it means in practice:
+
+- **`gates.sh` runs `unity_refcompile` for you when `~/.dotnet/dotnet` exists, and prints `SKIP`
+  when it does not.** A `SKIP` means refcompile did NOT run — it is not a pass. First run needs
+  network and about ten minutes; how to run it and its false positives: `/asset-surgery` §4.
+- **Most sessions here have no Unity Editor**, so the `unity` CLI step usually does not apply. When
+  neither refcompile nor the CLI ran, the verification line in the PR body and ship report reads
+  "not compiled — <why>", followed by what a human must do at the editor, and the change gets a
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` entry. An honest "unverified" beats a manufactured green.
+- **Do not stand up a syntax-only compiler instead.** Installing an SDK to Roslyn-parse the diff
+  buys a SYNTAX check and nothing more — every `MonoBehaviour` and `ScriptableObject` base type
+  lives in the `Assembly-CSharp` monolith, so class bodies never bind and the errors that actually
+  bite (a missing member, a drifted override signature, an argument mismatch, overload resolution)
+  are invisible to it. `unity_refcompile` is the tool that binds them.
+- **The individual `check_*.py` scripts are not extra gates beyond `gates.sh`.** Run one by hand
+  only when it is the cheapest way to answer a question about your own change.
+- **Do not wait on, poll, or report CI.** `unity-ci.yml` has had no Unity runner since
+  2026-10-13 (its `unity` job is skipped), so a green check there is not a compile. Do not subscribe
+  to a PR to watch checks. The one CI action a ship command takes is to FIRE it, once, at the end
+  (§5.5) — `claude/**` branches trigger nothing on their own.
 - **These gates do not share a command line, and a wrong flag exits 2 — which reads as a
   FAILURE.** `check_enum_member_references.py`, `check_switch_label_collisions.py`,
   `check_using_directives.py` and `check_elemental_floats.py` take `--check`;
@@ -70,14 +72,13 @@ negative control too: a `--check` you have only ever watched SUCCEED is a `--che
 not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
 restore and confirm the tree is clean (`git status --short` on the asset path).
 
-**One tool changes the premise above, though not the policy: `Tools/Build/unity_refcompile`
-(2026-10).** It binds the whole of `Assembly-CSharp`, method bodies included, against real Unity 6
-reference assemblies and every package at its locked source — not the syntax-only Roslyn pass this
-section warns about — and `check_generated_assets.py` then audits changed YAML assets against the
-schema it wrote. It is still not a ship gate and still optional; but when a session has network and
-ten minutes, a green run of it (negative-controlled) IS evidence, and the verification line may say
-"compiled against Unity reference assemblies (`unity_refcompile`), not opened in the editor" instead
-of "not compiled". How to run it, and its false positives: `/asset-surgery` §4.
+**What `Tools/Build/unity_refcompile` buys (2026-10).** It binds the whole of `Assembly-CSharp`,
+method bodies included, against real Unity 6 reference assemblies and every package at its locked
+source — not the syntax-only Roslyn pass warned about above — and `check_generated_assets.py` then
+audits changed YAML assets against the schema it wrote. A green run of it (negative-controlled) IS
+evidence: the verification line may say "compiled against Unity reference assemblies
+(`unity_refcompile`), not opened in the editor" instead of "not compiled". How to run it, and its
+false positives: `/asset-surgery` §4.
 
 **A green `unity_refcompile` does not cover Amoebius.** Amoebius compiles the same `Assets/_Scripts` against its own
 `UnityEngine` shim, as a development build with no platform symbol, so a Unity API the shim lacks breaks the engine
