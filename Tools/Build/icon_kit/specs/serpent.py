@@ -18,7 +18,7 @@ yaw 0: the round head at +x, the arms trailing - the grid on 2026-10-29).
 import math
 
 import mesh_silhouette
-from canvas import N, disc, empty, fill, ring, stroke
+from canvas import N, chamfered_rect, disc, empty, fill, ring, stroke
 from specs.rhino import stella
 
 import numpy as np
@@ -266,6 +266,100 @@ CARDS += [
                 [("trigger off (flight view, 60 deg)", [("hull", "domain"), ("flight", "white")]),
                  ("full zoom at rest (22 deg)", [("hull", "domain"), ("rest", "white")]),
                  ("Space 5 Deep Focus (13.8 deg)", [("hull", "domain"), ("deep", "white")])]),
+]
+
+
+# ---- Time: Solid Fuel Pellets options (2026-10-29) ----------------------------------------------------------------
+# WHO gains WHAT: the Serpent spends its tank in four fixed pellets (a quarter each), and burns that overlap stack -
+# one is 3x cruise, four at once 9x. Time sets how long a pellet BURNS (x1 at rest to x1.6 at Time 10), never how fast.
+# No Time 5 upgrade is authored. The card is also the tank's gauge: the HUD fills four pip Images (boostPip1-4,
+# SerpentVesselHUDView.PaintPips), so every option is four pellets that fill one by one.
+# A is the shipped art as it stands (PelletSlots + Line_1..4, the BEFORE row); B and C redraw it.
+PELLET_YS = (28.0, 52.0, 76.0, 100.0)
+TIME_BURN = (1.0, 1.6)
+
+
+# B: THE PELLETS. Four solid-fuel grains stacked, nose right; a burning grain trails its plume, whose length is its
+# burn time (x1 at rest, x1.6 at Time 10). Several burning at once = the overlap.
+def pellet(i):
+    y = PELLET_YS[i]
+    return chamfered_rect(70.0, y - 8.0, 120.0, y + 8.0, 4.0)
+
+
+def pellets(which):
+    out = empty()
+    for i in which:
+        out |= pellet(i)
+    return out
+
+
+def plume(i, burn=1.0):
+    y = PELLET_YS[i]
+    x1 = 64.0
+    x0 = x1 - 34.0 * burn
+    out = empty()
+    for dy, k in ((0.0, 1.0), (-5.0, 0.7), (5.0, 0.55)):
+        out |= stroke([(x1 - (x1 - x0) * k, y + dy), (x1, y + dy)], w=3.5)
+    return out
+
+
+def plumes(which, burn=1.0):
+    out = empty()
+    for i in which:
+        out |= plume(i, burn)
+    return out
+
+
+# C: THE OVERLAP. The Serpent nose right; behind it one exhaust streak per burning pellet, the streaks stacked - one
+# pellet, then four overlapping. The pellets in hand are four ticks under the hull.
+C2_HULL = dict(box=56.0, cx=84.0, cy=56.0)
+
+
+def c2_hull():
+    return serpent(**C2_HULL)
+
+
+def c2_streaks(n, burn=1.0):
+    x1 = C2_HULL["cx"] - C2_HULL["box"] / 2 + 4
+    out = empty()
+    for i in range(n):
+        dy = (i - (n - 1) / 2) * 9.0
+        out |= stroke([(x1 - 46.0 * burn, 56.0 + dy), (x1, 56.0 + dy)], w=5.0)
+    return _clear_of(out, c2_hull(), px=2.0)
+
+
+def c2_ticks(n):
+    out = empty()
+    for i in range(n):
+        x = 34.0 + i * 20.0
+        out |= chamfered_rect(x, 104.0, x + 15.0, 114.0, 3.0)
+    return out
+
+
+def _fuel_card(key, title, parts, states):
+    return dict(name=f"pellets_{key}", group="pellets", lockup_state=1, element="Time",
+                before="Assets/_Graphics/Design Assests/HUD UI/Serpent Fuel/PelletSlots.png", title=title,
+                parts=parts, states=states)
+
+
+CARDS += [
+    _fuel_card("b", "B  The pellets: four solid-fuel grains, each burning one trailing its plume; plume length is the "
+                    "burn time (x1.6 at Time 10)",
+               dict(all4=lambda: pellets(range(4)), left2=lambda: pellets((2, 3)), b01=lambda: plumes((0, 1)),
+                    b01t=lambda: plumes((0, 1), TIME_BURN[1]), b0123=lambda: plumes(range(4)),
+                    empty01=lambda: pellets((0, 1)), empty0123=lambda: pellets(range(4))),
+               [("four in hand", [("all4", "white")]),
+                ("two burning, overlapped", [("empty01", "white", 0.25), ("b01", "white"), ("left2", "white")]),
+                ("Time 10: burns 1.6x longer", [("empty01", "white", 0.25), ("b01t", "white"), ("left2", "white")]),
+                ("all four at once (9x)", [("empty0123", "white", 0.25), ("b0123", "white")])]),
+    _fuel_card("c", "C  The overlap: the Serpent with one exhaust streak per burning pellet, the pellets in hand as "
+                    "four ticks below",
+               dict(hull=c2_hull, t4=lambda: c2_ticks(4), t3=lambda: c2_ticks(3), t0=lambda: c2_ticks(4),
+                    s1=lambda: c2_streaks(1), s1t=lambda: c2_streaks(1, TIME_BURN[1]), s4=lambda: c2_streaks(4)),
+               [("four in hand", [("hull", "domain"), ("t4", "white")]),
+                ("one burning (3x)", [("hull", "domain"), ("s1", "white"), ("t3", "white")]),
+                ("Time 10: burns 1.6x longer", [("hull", "domain"), ("s1t", "white"), ("t3", "white")]),
+                ("all four at once (9x)", [("hull", "domain"), ("s4", "white"), ("t0", "white", 0.25)])]),
 ]
 
 
