@@ -14,18 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {
-  "best": 3.331236150386243,
+ "current": {},
+ "host": "dragonsweapon",
+ "last": {
   "best_start": null,
   "epoch": "837e0889a5e5",
-  "evals": 21374,
+  "evals": 23934,
   "job": "drive-manta-regatta",
-  "max_evals": null,
-  "minutes": 60.0,
-  "request": null,
-  "since": 1793263097
+  "session_evals": 23934,
+  "stopped": "the person came back"
  },
- "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -122,12 +120,24 @@
    "start": 1793261671,
    "stopped": "the person came back",
    "unit": null
+  },
+  {
+   "best_end": 3.331236150386243,
+   "best_start": null,
+   "end": 1793263942,
+   "epoch": "837e0889a5e5",
+   "evals": 23934,
+   "job": "drive-manta-regatta",
+   "request": null,
+   "start": 1793263097,
+   "stopped": "the person came back",
+   "unit": null
   }
  ],
  "totals": {
-  "sessions": 8
+  "sessions": 9
  },
- "updated": 1793263848,
+ "updated": 1793263942,
  "user": "shombithofficial",
  "version": "1"
 }
