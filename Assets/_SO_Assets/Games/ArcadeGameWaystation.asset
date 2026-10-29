@@ -26,7 +26,7 @@ MonoBehaviour:
   GolfScoring: 1
   SceneName: MinigameWaystation
   Vessels:
-  - {fileID: 11400000, guid: fe4abf38579d7f84baf16a532ed4a015, type: 2}
+  - {fileID: 11400000, guid: d46d96ae184a444faf9a09a2b793a07d, type: 2}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 4
   MinDomainsAllowed: 2

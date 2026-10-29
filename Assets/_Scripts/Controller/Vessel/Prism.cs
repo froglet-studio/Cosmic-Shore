@@ -1001,6 +1001,8 @@ namespace CosmicShore.Gameplay
             CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
             DestroyerName = null;         // pool reuse: the next life has no destroyer yet
+            DestroyedAt = 0f;             // pool reuse: recycled corpses come back (PrismRecycler); no stale death time
+            RecyclesWhenDestroyed = false; // pool reuse: each life opts in to recycling itself
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
             // Pool reuse: a prism whose scale window was widened for an AUTHORED size
             // (AdmitTargetScale) must not carry that ceiling into its next life.
@@ -1337,6 +1339,22 @@ namespace CosmicShore.Gameplay
         // Bumped by every Initialize, so a queue entry left by an earlier life of a pooled prism is dropped.
         int _creationLife;
         bool _creationQueued;
+
+        /// <summary>
+        /// Bumped by every <see cref="SetupDestruction"/>. <see cref="PrismRecycler"/> stamps it on its queue entry
+        /// and acts only while it still matches, so a Restore followed by a second death never lets the FIRST
+        /// death's entry recycle the prism early (and a pool reuse is caught by <c>destroyed</c> going false).
+        /// </summary>
+        internal int DestroyEpoch { get; private set; }
+
+        /// <summary>
+        /// Opt-in for <see cref="PrismRecycler"/>'s environment route: this prism is free mass whose death nobody
+        /// else owns (a natural-death skeleton, <see cref="HealthPrism.LeaveAsSkeleton"/>), so once destroyed and
+        /// its death effect has played it goes back to <see cref="EnvironmentPrismPool"/>. Vessel-trail prisms do
+        /// not need it (their trail opts in, <see cref="Trail.RecycleDestroyedMembers"/>). Cleared on every
+        /// Initialize: each life states it again.
+        /// </summary>
+        public bool RecyclesWhenDestroyed { get; set; }
 
         /// <summary>
         /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
@@ -1705,6 +1723,12 @@ namespace CosmicShore.Gameplay
             }
 
             _lastDestructionScale = destructionScale;
+
+            // Dead mass goes back to its pool once the death effect has played out, instead of living on
+            // forever as a hidden, active GameObject in its trail (the idle-Lavalamp leak). The recycler decides
+            // whether an owner keeps this corpse; see PrismRecycler for who is and is not recycled.
+            DestroyEpoch++;
+            PrismRecycler.Enqueue(this);
             return null;
         }
 

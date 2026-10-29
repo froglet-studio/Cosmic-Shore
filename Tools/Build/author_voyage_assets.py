@@ -7,8 +7,8 @@ nothing, --self-test proves the checks fire. It owns:
   * Assets/Resources/Voyages/                       folder (VoyageContentSO.ResourcePath: the voyage loads it at runtime)
   * Assets/Resources/Voyages/VoyageContent.asset    the map, crew, jobs, events, seed news and lines, from
                                                     Docs/Voyages/voyage_slice.json
-  * Assets/_SO_Assets/Toys/Toy_Voyage.asset         the Voyage toy (the spec's "toy" block)
-  * Assets/Resources/Toybox.asset                   one line: the Voyage toy on the toybox's list (nothing else touched)
+  * Assets/_SO_Assets/Toys/Toy_Voyage.asset         the voyage harbour (the spec's "toy" block; no station, not in the Toy Box)
+  * Assets/Resources/Toybox.asset                   one line: the harbour on the toybox's list, so freestyle stands it (nothing else touched)
 
 The asset's `cellPool` (which worlds the locations and lanes are) is the one hand-authored field: the generator
 keeps whatever the asset already holds there, so a designer can drag worlds in without the next run undoing it.
@@ -43,8 +43,9 @@ ARKWAY_SETTINGS_META = "Assets/_SO_Assets/Toys/Wander_WithArk.asset.meta"
 ENUMS_CS = "Assets/_Scripts/Data/Voyages/VoyageEnums.cs"
 DOMAINS_CS = "Assets/_Scripts/Data/Enums/Domains.cs"
 ELEMENT_CS = "Assets/_Scripts/Data/Enums/Element.cs"
-LINES_FIELDS = ["VoyageName", "BoardOpen", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "HoldProgress", "Done",
-                "Failed", "Stowed", "Extracted", "ArkLost", "BroughtBy", "NoWork", "Following"]
+LINES_FIELDS = ["VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "HoldProgress", "Done",
+                "Failed", "Stowed", "Extracted", "ArkLost", "NoWork", "Following",
+                "ChooseNext", "CardRoute", "CardHomeRoute", "CardUnderway"]
 
 
 def guid_for(name):
@@ -292,20 +293,12 @@ def emit_toy(spec):
             f"  accentColor: {color(t['accent'])}\n"
             f"  withArk: {{fileID: 11400000, guid: {meta_guid(ARKWAY_SETTINGS_META)}, type: 2}}\n"
             f"  content: {{fileID: 11400000, guid: {guid_for('VoyageContent.asset')}, type: 2}}\n")
-    for k in ("boardDistance", "beaconSpacing", "beaconBodyRadius", "beaconTriggerRadius"):
-        out += f"  {k}: {fnum(t[k])}\n"
-    out += f"  jobColor: {color(t['jobColor'])}\n  homeColor: {color(t['homeColor'])}\n"
     out += f"  seedElementLevel: {fnum(t['seedElementLevel'])}\n  wingmateLeash: {fnum(t['wingmateLeash'])}\n"
     out += f"  findDistance: {fnum(t['findDistance'])}\n  vaultRadius: {fnum(t['vaultRadius'])}\n"
     out += f"  vaultPrisms: {int(t['vaultPrisms'])}\n  vaultPrismScale: {vec3(t['vaultPrismScale'])}\n"
     out += f"  vaultOpenShare: {fnum(t['vaultOpenShare'])}\n  holdRadius: {fnum(t['holdRadius'])}\n"
-    out += f"  chartSize: {fnum(t['chartSize'])}\n  chartOffset: {vec3(t['chartOffset'])}\n"
-    for k in ("portColor", "vaultColor", "coreColor", "laneColor"):
+    for k in ("routeColor", "hereColor", "portColor", "vaultColor", "coreColor", "laneColor"):
         out += f"  {k}: {color(t[k])}\n"
-    out += "  cardArt: {fileID: 0}\n"
-    for k in ("shellLabel", "shellDetail", "shellSetSailVerb", "shellUnderwayLabel", "shellUnderwayDetail",
-              "shellGiveUpVerb"):
-        out += f"  {k}: {yaml_any(t['menu'][k])}\n"
     return out
 
 

@@ -64,6 +64,8 @@ namespace CosmicShore.UI
             public TrapezoidGraphic Flash;
             public RectTransform CooldownClip;
             public Image CooldownSweep;
+            public Image CooldownWash;          // dims the whole card for the whole recharge
+            public TrapezoidGraphic ReadyFlash; // the "it's back" flash, drawn OVER the icon
             public bool OnCooldown;
             public RectTransform FlowerSocket;
             public RectTransform ChipSocket;
@@ -1335,6 +1337,16 @@ namespace CosmicShore.UI
             clip.localRotation = Quaternion.identity;
             clip.SetAsLastSibling();        // over the icon - the point of living out here
 
+            // The wash first, so the sweep draws over it: the whole card dims for the whole recharge (unavailable at a
+            // glance) and the sweep's darker wedge says how much is left.
+            var wash = ResolveChildImage(clip, "Wash", PlainSprite);
+            float span = Mathf.Sqrt(style.PlateWidth * style.PlateWidth +
+                                    style.AbilityCellHeight * style.AbilityCellHeight);
+            SetCellRect(wash.rectTransform, 0f, span, span);
+            wash.type = Image.Type.Simple;
+            wash.color = style.CooldownWashColor;
+            wash.transform.SetAsFirstSibling();
+
             var sweep = ResolveChildImage(clip, "Sweep", PlainSprite);
             // The sweep has to cover the trapezoid's corners at every angle, so it is squared off to
             // the plate's diagonal rather than its width - a disc inscribed in the rect would leave
@@ -1358,19 +1370,45 @@ namespace CosmicShore.UI
 
             slot.CooldownClip = clip;
             slot.CooldownSweep = sweep;
+            slot.CooldownWash = wash;
+
+            // The ready flash lives out here too, OVER the icon: the card's own press flash sits under the icon, so the
+            // beat the player waits for was hidden behind the very thing it is about.
+            const string flashName = "AbilityReadyFlash";
+            var flashRect = host.Find(flashName) as RectTransform;
+            if (!flashRect)
+            {
+                var go = new GameObject(flashName, typeof(RectTransform), typeof(CanvasRenderer), typeof(TrapezoidGraphic));
+                flashRect = (RectTransform)go.transform;
+                flashRect.SetParent(host, false);
+            }
+            var flash = flashRect.GetComponent<TrapezoidGraphic>();
+            flash.SetEdges(1f, style.NarrowEdgeFraction);
+            flash.raycastTarget = false;
+            var clear = style.CooldownReadyFlashColor; clear.a = 0f;
+            flash.color = clear;
+            flashRect.anchorMin = flashRect.anchorMax = flashRect.pivot = new Vector2(0.5f, 0.5f);
+            flashRect.sizeDelta = new Vector2(style.PlateWidth, style.AbilityCellHeight);
+            flashRect.anchoredPosition = Vector2.zero;
+            flashRect.localScale = Vector3.one;
+            flashRect.localRotation = Quaternion.identity;
+            flashRect.SetAsLastSibling();
+            slot.ReadyFlash = flash;
         }
 
         void PlayReadyFlash(Slot slot)
         {
-            if (!slot.Flash) return;
+            var flash = slot.ReadyFlash ? slot.ReadyFlash : slot.Flash;
+            if (!flash) return;
 
             slot.FlashTween?.Kill();
-            slot.Flash.color = style.CooldownReadyFlashColor;
-            slot.FlashTween = slot.Flash
+            flash.color = style.CooldownReadyFlashColor;
+            if (slot.ReadyFlash) slot.ReadyFlash.transform.SetAsLastSibling();   // over anything added since
+            slot.FlashTween = flash
                 .DOFade(0f, style.CooldownReadyFlashDuration)
                 .SetEase(Ease.OutQuad)
                 .SetUpdate(true)
-                .SetLink(slot.Flash.gameObject);
+                .SetLink(flash.gameObject);
         }
 
         /// <summary>

@@ -470,16 +470,23 @@ def serpent_vessel(src, variant_icon_ids):
 SCARAB_PREFAB = f"{HUD_DIR}/ScarabHUDVariant.prefab"
 # icon Image fileID -> (the Sparrow sprite it shipped with, the Scarab placeholder)
 SCARAB_SWAPS = {
-    "3855639277037614910": ("7aededbf59d8deb4fb340521261c6efa", "Scarab_CavitationBlast-PLACEHOLDER.png"),  # Charge (was missiles icon)
-    "6611959372928416812": ("4a5259289f0bdff46a3c22300b3933d7", "Scarab_Switch-PLACEHOLDER.png"),           # Mass (was swap weapon icon)
-    "4990196459091587280": ("6da9cfe8d216bd84695e3b4c71bfa533", "Scarab_BallForge-PLACEHOLDER.png"),        # Space (was bullet icon)
+    # Charge: None - the icon kit owns that card (Tools/Build/icon_kit/specs/scarab.py, Cavitation Blast 2026-10-28): its
+    # icon Image is a transparent, sprite-less container over the kit's parts (rebind.py `pair`).
+    "3855639277037614910": None,
+    # Mass: None - the icon kit's Switch card (specs/scarab.py, 2026-10-28), a container over its parts.
+    "6611959372928416812": None,
+    # Space: None - the icon kit's Nucleus Seeding card (specs/scarab.py, 2026-10-29), a container over its parts.
+    "4990196459091587280": None,
     "3258612490553136050": ("f0197e0a2ce38654ea3d882fff64967a", "Scarab_Throttle-PLACEHOLDER.png"),         # Time (was boost icon)
 }
 
 
 def scarab(src):
     out = src
-    for fid, (old, png) in SCARAB_SWAPS.items():
+    for fid, swap in SCARAB_SWAPS.items():
+        if swap is None:
+            continue
+        old, png = swap
         s, e = component_block(out, fid)
         blk = out[s:e]
         new = sprite_guid("Scarab", png)
@@ -584,7 +591,10 @@ def main() -> int:
     # Scarab
     have = read(SCARAB_PREFAB)
     want = have
-    for fid, (old, png) in SCARAB_SWAPS.items():
+    for fid, swap in SCARAB_SWAPS.items():
+        if swap is None:
+            continue
+        old, png = swap
         blk = have[slice(*component_block(have, fid))]
         new = sprite_guid("Scarab", png)
         if f"guid: {new}," in blk:

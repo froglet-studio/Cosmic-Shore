@@ -160,6 +160,7 @@ namespace CosmicShore.Gameplay
         float _switchGlide;      // 1 → 0 after a config switch; scales the smoothing boost
         float _switchTimer;
         bool _holdingSpeedTunnel; // true only while THIS controller holds the speed-tunnel law
+        bool _inspecting;         // god mode (MenuGodModeCamera) has the scene camera; the rig stands still
 
         // Freestyle transition state.
         float _blendElapsed;
@@ -202,6 +203,48 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // ── God mode (inspection camera) ───────────────────────────────
+
+        /// <summary>The Menu_Main scene camera this rig drives (null until found).</summary>
+        public Camera SceneCamera => _cam;
+
+        /// <summary>Whether god mode (<see cref="MenuGodModeCamera"/>) holds the scene camera now.</summary>
+        public bool IsInspecting => _inspecting;
+
+        /// <summary>
+        /// Whether god mode may start: only in the lava lamp's settled menu state, where the AI is flying the
+        /// vessel and the player's input is paused. Never during freestyle or a menu/freestyle blend.
+        /// </summary>
+        public bool CanBeginInspection => _state == MenuCameraState.Menu && _cam;
+
+        /// <summary>Raised when god mode ends for any reason (the toggle, or a freestyle entry ending it).</summary>
+        public event System.Action InspectionEnded;
+
+        /// <summary>
+        /// Lends the scene camera to god mode (Yash, 2026-10-29: "a new camera for inspection, a button
+        /// shortcut to swap cameras in lavalamp"). The rig stops posing the camera; the caller flies it from
+        /// its current pose. Returns false when the menu is not in a state that can lend it.
+        /// </summary>
+        public bool BeginInspection()
+        {
+            if (!CanBeginInspection) return false;
+            _inspecting = true;
+            return true;
+        }
+
+        /// <summary>
+        /// Takes the scene camera back from god mode. The rig is re-seeded at the god camera's pose with the
+        /// config-switch glide raised, so the lava lamp's framing glides back from wherever you left it rather
+        /// than cutting. Safe to call when god mode is not running.
+        /// </summary>
+        public void EndInspection()
+        {
+            if (!_inspecting) return;
+            _inspecting = false;
+            if (_cam) SeedRigFromCamera();
+            InspectionEnded?.Invoke();
+        }
+
         // ── Unity Lifecycle ─────────────────────────────────────────────
 
         void Start()
@@ -242,6 +285,9 @@ namespace CosmicShore.Gameplay
             // here. Evaluating it after would latch the hold on the moment freestyle begins.
             UpdateSpeedTunnelHold();
 
+            // Any way out of the settled menu (freestyle, a game launch, the scene closing) ends god mode.
+            if (_inspecting && _state != MenuCameraState.Menu) EndInspection();
+
             if (_state is MenuCameraState.Idle or MenuCameraState.Freestyle) return;
             if (!_cam) return;
 
@@ -255,6 +301,7 @@ namespace CosmicShore.Gameplay
             switch (_state)
             {
                 case MenuCameraState.Menu:
+                    if (_inspecting) break;   // god mode poses the camera itself
                     UpdateMenuState(target, dt);
                     break;
                 case MenuCameraState.EnteringFreestyle:
@@ -469,6 +516,10 @@ namespace CosmicShore.Gameplay
 
         void HandleEnterFreestyle()
         {
+            // Taking control (click to control, the pad's Select) ends god mode first: the enter blend then
+            // starts from the god camera's pose, so the hand-over to the vessel camera stays one smooth move.
+            EndInspection();
+
             var target = ResolveTarget();
 
             if (!_cam || !target)
@@ -731,7 +782,8 @@ namespace CosmicShore.Gameplay
                                           or MenuCameraState.EnteringFreestyle
                                           or MenuCameraState.ExitingFreestyle;
 
-            SetSpeedTunnelHold(menuOwnsTheView && !ActiveConfigRequiresVessel);
+            // God mode is a free vantage too, not riding the vessel: hold the law while it flies, whatever the config.
+            SetSpeedTunnelHold(menuOwnsTheView && (!ActiveConfigRequiresVessel || _inspecting));
         }
 
         /// <summary>

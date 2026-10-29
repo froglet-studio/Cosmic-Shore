@@ -203,6 +203,12 @@ namespace CosmicShore.Gameplay
         {
             this.vesselStatus = vesselStatus;
 
+            // The vessel's own wake is the one trail whose dead prisms go back to the pool after their death
+            // effect (PrismRecycler; Trail.RecycleDestroyedMembers says why nothing else opts in). Set here, not
+            // in the field initializer: `Trail` is a serialized field, so Unity replaces that instance on load.
+            Trail.RecycleDestroyedMembers = true;
+            Trail2.RecycleDestroyedMembers = true;
+
             waitTime = defaultWaitTime;
             wavelength = initialWavelength;
             XScaler = minBlockScale;
@@ -544,7 +550,7 @@ namespace CosmicShore.Gameplay
 
             // Add to trail & initialize
             trail.Add(prism);
-            prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
+            prism.prismProperties.Index = (ushort)trail.GetBlockIndex(prism);   // O(1) map read; was an O(n) IndexOf per lay
             prism.Initialize(vesselStatus.PlayerName);
 
             // A WIDENED prism is a stated size, not a grown one: admit it past the pool's scale

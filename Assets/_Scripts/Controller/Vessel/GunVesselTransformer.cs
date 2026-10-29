@@ -247,6 +247,14 @@ namespace CosmicShore.Gameplay
             if (surfaceFollower) surfaceFollower.OnPrismCrossed -= ApplyPrismscapePayoff;
         }
 
+        // The prismscape payoff RESTORES destroyed prisms it rides over (ApplyPrismscapePayoff), so while an Urchin
+        // exists PrismRecycler must not hand a dead vessel-trail prism back to the pool (the restore would revive a
+        // prism already re-issued elsewhere, and the ride would lose the restorable skeleton it bridges over).
+        // Awake/OnDestroy, not OnEnable/OnDisable: a remote replica's transformer is inactive but the replicated
+        // ride can still restore, and the hold must be the same on every peer.
+        void Awake() => PrismRecycler.AddTrailRestorer();
+        void OnDestroy() => PrismRecycler.RemoveTrailRestorer();
+
         /// <summary>
         /// A respawn / turn reset must not inherit the previous life's launch. `speed` is zeroed
         /// by the base, and a carry left standing would immediately floor the throttle target

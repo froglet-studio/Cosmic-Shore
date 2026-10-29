@@ -422,6 +422,7 @@ GameObject:
   m_Component:
   - component: {fileID: 910671954835986914}
   - component: {fileID: 855281803827859630}
+  - component: {fileID: 5730281946102738251}
   m_Layer: 5
   m_Name: Voyages
   m_TagString: Untagged
@@ -429,6 +430,19 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &5730281946102738251
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 364618043788316659}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 491d05bb0d3cf0dd744a4afd47ed8bb9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  template: {fileID: 5936424660689771298}
 --- !u!224 &910671954835986914
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5976,14 +5990,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 3354388668588275947}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9384e11faa9c2260703f316012c059ce, type: 3}
+  m_Script: {fileID: 11500000, guid: 7b7dee05939d0ddb43842871b116daf1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  voyageToy: {fileID: 11400000, guid: 19208fbdcc84b68caece1bf64b83d183, type: 2}
-  configureModal: {fileID: 0}
   art: {fileID: 519031539003241033}
+  eyebrowText: {fileID: 869687348148127489}
   titleText: {fileID: 2927100110568456551}
-  descriptionText: {fileID: 0}
   setSailButton: {fileID: 166645652906076248}
 --- !u!1 &112153300806634853
 GameObject:
