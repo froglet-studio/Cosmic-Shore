@@ -600,7 +600,7 @@ in git: §12.
 
 ---
 
-## 12. Removed in <REMOVAL_COMMIT> (2026-10-29): what was deleted and how to bring each one back
+## 12. Removed in 2ad588211 (2026-10-29): what was deleted and how to bring each one back
 
 Yash, 2026-10-29: *"just keep one high quality look, the one there is now, then document other shaders, so we can
 recreate later if needed, delete the shaders."*
