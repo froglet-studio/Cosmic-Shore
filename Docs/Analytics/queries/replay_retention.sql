@@ -40,6 +40,13 @@
 -- On 2026-10-29 editor traffic was 1,284 of about 1,400 matches (19 players); real builds were
 -- about 25 players and 117 matches, so the toggle changes the answer a lot.
 --
+-- PORT TOGGLE (query 2 only). Query 2 also excludes the engine-port Windows build (app_version
+-- ends in '-port') with the line marked `-- PORT TOGGLE`. That build records game_started but
+-- almost never game_completed: on 2026-10-29 it had 1 completion in 43 plays (2%), against 63%
+-- for the regular Windows build, so its matches would read as abandoned and drag the rematch
+-- rate down. Query 3 reads only game_started, which the port does record, so it keeps the port.
+-- Delete the lines (and re-check the port's completions) once the port reports game_completed.
+--
 -- READ THE NUMBERS WITH CARE. As of 2026-10-29 there are about 62 players in 90 days, mostly the
 -- team playtesting. Rematch rates are inflated by testers replaying quickly and by tournament
 -- rounds that chain automatically. Query 3 only counts players old enough to be measured, and
@@ -81,6 +88,7 @@ WITH plays AS (
     WHERE event = 'game_started'
       AND timestamp > now() - INTERVAL 90 DAY
       AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
+      AND properties.app_version NOT LIKE '%-port'   -- PORT TOGGLE
     GROUP BY distinct_id, match_id
 ),
 dones AS (
@@ -89,6 +97,7 @@ dones AS (
     WHERE event = 'game_completed'
       AND timestamp > now() - INTERVAL 90 DAY
       AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
+      AND properties.app_version NOT LIKE '%-port'   -- PORT TOGGLE
     GROUP BY distinct_id, match_id
 ),
 joined AS (
