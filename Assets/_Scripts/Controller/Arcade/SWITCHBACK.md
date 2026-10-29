@@ -453,7 +453,7 @@ its own world (6 x 4 = 24 with BLAST RUN). Enum: `SwitchbackFunType` (`Assets/_S
 | `Plan3_ParMedals` (PAR & MEDALS) | shipped | shipped | a PAR toast at the start, a split vs par every 5th gate, a GOLD (<= par) / SILVER (<= 1.2 x) / BRONZE (<= 1.5 x) toast at the finish, a personal best per world |
 | `Plan2_LiveFeatures` (LIVE FEATURES) | shipped | charge ribbons I1-I3 (skim one end to end within 14 u for a 1.4 x throttle burst, 1.5 s); shortcut rings I2-I4 (a needle ring on the chord of each hairpin - threading it while the hairpin is next credits the hairpin); moving danger clusters at I4 (22 u sweeps, 4 s period) | log + PB |
 | `Combined` (COMBINED) | Plan 1 | Plan 2 | Plan 3 |
-| `BlastRun` (BLAST RUN) | shipped (Classic) | blocked gates behind doors in closed-form worlds, cleared by key-crystal blasts; invaders by intensity (see "Blast Run" below) | log + PB |
+| `BlastRun` (BLAST RUN) | shipped (Classic) | blocked gates behind 3D block fields (cubes, cuboids, spheres; clock-driven sliders/rotors from I2), cleared by key-crystal blasts (see "Blast Run" below) | log + PB |
 
 Code: `SwitchbackCourseSettings.ForIntensity(intensity, funType)` (Plan 1), `SwitchbackPar` (Plan 3's par model:
 an average 235 u/s from the Dolphin's measured cruise/boost, plus a turn cost for each hairpin), `SwitchbackLiveFeatures`
@@ -486,10 +486,14 @@ see the "Switchback fun types" entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. 
 
 ## Blast Run (2026-10-29, `SwitchbackFunType.BlastRun` = 5) - NOT editor-verified
 
-Yash, 2026-10-29: obstacles and invaders that disturb the race and hurt the Dolphin, and environmental mass the Dolphin
-has to BLAST through to reach its rings - "like the Sparrow's time game, just in the Dolphin way". The course is the
-Classic ladder unchanged (`SwitchbackCourseSettings.ForIntensity(i, BlastRun)` returns the shipped settings); what
-changes is what sits on it.
+Yash, 2026-10-29: obstacles that disturb the race and hurt the Dolphin, and environmental mass the Dolphin has to BLAST
+through to reach its rings - "like the Sparrow's time game, just in the Dolphin way". Revised the same day: "3D grids
+of prisms with movable area that are challenging, cubes, cuboids, spheres, big and small objects, remove flora and
+faunas for now ... keep the things that are easy to sync in multiplayer ... target 100fps". So the Garden / Maze /
+Membrane / Menger worlds, the sweepers, the snap-trap jaws and the hunter packs (`BlastRunHunters`, its
+`NetworkList`, toasts and tests) are GONE; what remains is block fields whose only motion is a pure function of the
+shared clock. The course is the Classic ladder unchanged (`SwitchbackCourseSettings.ForIntensity(i, BlastRun)` returns
+the shipped settings); what changes is what sits on it.
 
 **A blocked station** (`SwitchbackBlastRun.IsBlocked`, `Layout`): on the leg INTO a blocked gate -
 
@@ -502,61 +506,87 @@ changes is what sits on it.
    `DolphinVesselExplosionByCrystalEffect` asset is untouched, so every other crystal is unchanged).
 2. a **door**: `BreakwaterStationBuilder.BuildDoor` - danger rakes round an always-open 18 u eye (`PortFor(i)`),
    8 u upstream of the ring plane; I4 adds a second door 8 u downstream.
-3. a **world** between the mouth and the key (`WorldFor(i)`): I1 Garden (stalks with hollow blooms), I2 Maze (one-hole
-   baffles whose hole walks round the leg), I3 Membrane (a voxel gyroid sheet), I4 Menger cage (level-1 sponges with a
-   tunnel each way). Capped per station by `WorldCap` {280, 180, 100, 60} and overall by `TotalCap`
-   {4600, 4000, 3500, 3000}; world prisms keep 40 u off every other leg's line and 30 u off every key.
+3. a **block field** (`BlastRunWorld.Blocks` family, `EmitField`) between the door's keepout and 40 u short of the key:
+   a 3D grid of 24 u cells in the leg's frame (`Frame`: s1, s2 across, z upstream), `CellsHalf` cells each side
+   across and up to `CellsDeep` cells deep (a field under 2 cells deep is skipped). Every cell is filled with
+   probability `Fill(i)` (hash of the gate's rounded position and the station) by a weighted shape:
+   small cubes (8-14 u, jittered), 22 u blocks, 6 x 6 x 22 pillars, 22 x 22 x 4 slabs, small voxel spheres (19 x 6.2 u),
+   46 u big cubes (2x2x2 cells), big voxel spheres (26 x 8.4 u, I2+), 46 x 46 x 4 panels, 70 u long pillars along the
+   leg, and 70/94 u beams across it (I3+). A **bore** of `BoreRadius(i)` round the leg's line is never entered by any
+   field prism laid or moving, so the eye is always reachable straight down the leg (the AI's lane); the challenge is
+   that the bore narrows and the field round it thickens. Field prisms keep off every other leg's line, the keys, the
+   doors and other stations' fields (sampled spheres), and a spatial-hash counter (`Density`) refuses anything that
+   would push the 200 u neighbourhood over `ColliderCap`. `DangerShare(i)` of the small/thin shapes are danger.
 
-Stations closer than `StationSpacing` = 280 u door to door are skipped (hairpins fold the course back on itself), so a
-blast never has to clear two stations' mass at once and the 200 u density stays under Breakwater's.
+**Movers** (`BlastRunMover`, laid FIRST in each field so they get the cleanest cells; posed every frame on every peer
+by `SwitchbackFunTypeRuntime.TickMovers` from `NetworkManager.ServerTime` - the same clock as Plan 2's moving danger):
 
-**Invaders** (`SwitchbackLiveFeatures.MovingCluster`s driven by `SwitchbackFunTypeRuntime`):
+- **Slider** (I2+): 4 x 10 u cubes in a 2 x 2 block, sliding +-24 u along a 3-cell track across the leg
+  (`SlidePeriod` 4 / 3.2 / 2.6 s). The whole track box is reserved, so nothing static sits in its way.
+- **Opposed slider pair** (I4): two adjacent tracks half a cycle apart - a closing gate.
+- **Rotor** (I3+): a 6 u hub and four 16 x 4 x 4 danger arms (5-21 u out) spinning about the leg's direction in a
+  2 x 2-cell disc (90 / 135 deg/s, either sense, hashed phase); swept radius 21.1 u, reserved.
 
-| Intensity | World | Invaders |
-|---|---|---|
-| I1 | Garden | none |
-| I2 | Maze | sweepers: 3 danger prisms 70 u before the key, sweeping across the line (the shipped I4 danger-cluster sweep, 4 s) |
-| I3 | Membrane | + snap-trap jaws: two 5-prism jaws 36 u before the ring, 26 u open -> 4 u shut, 2.4 s period |
-| I4 | Menger cage | + double door, jaws at 52 u, **hunter packs** |
+`PoseAt(t)` is closed form (slide `A (sin(wt + phi) - sin phi)`, spin `AngleAxis(repeat(wt, 2 pi))`), so t = 0 is the
+laid pose and any peer, late joiner or replay gets the same pose from the clock alone. There is NO per-prism network
+state, no physics and nothing reacts to players; a blasted mover prism simply stops being posed.
 
-**Hunter packs** (`BlastRunHunters`, I4): a den on every 4th blocked station from the 3rd (`PackEvery`/`PackOffset`,
-3 at most), 110 u off the leg midpoint on whichever flank is clear (60 u from every other leg). A pack is 3 members
-abreast, each a 7-prism danger jack. The SERVER moves packs at 10 Hz (`SwitchbackController.OnServerTick`): toward
-the LEAD RUNNER (most gates threaded, live vessel) when it is within 400 u of the den, never more than 260 u from it,
-at 45 u/s (under the Dolphin's cruise: a pack intercepts, it cannot chase), home again otherwise. Positions and a
-per-member down mask replicate in a `NetworkList<BlastRunPackState>`; every peer lerps the drawn pack toward it
-(`Follow`) and moves the standing members' prisms. A member is DOWN when its blast leaves <= 2 of its 7 prisms
-(`IsDown`, judged once all its prisms were found or the scan deadline passed); the server marks it, every peer
-toasts `HUNTER DOWN (n/total)`.
+| Intensity | Bore | Cells (across x deep) | Fill | Shapes added | Movers |
+|---|---|---|---|---|---|
+| I1 | 30 u | 7 x 7 x 5 | 30 % | cubes, blocks, pillars, slabs, small spheres, big cubes, long pillars | none (static) |
+| I2 | 26 u | 7 x 7 x 6 | 40 % | + big spheres, panels | sliders (<= 10 groups / 40 prisms) |
+| I3 | 22 u | 9 x 9 x 7 | 50 % | + beams | + rotors (<= 20 / 100) |
+| I4 | 18 u | 9 x 9 x 8 | 60 % | (more beams and panels) | + opposed slider pairs (<= 28 / 140), double door |
+
+Stations closer than `StationSpacing` = 280 u door to door are skipped (hairpins fold the course back on itself).
+
+**100 fps budgets** (10 ms a frame; CHOSEN from code reasoning and Breakwater's headless counts - NOTHING was measured
+in Unity; `BudgetsHold` asserts them on 60 seeds + the four picker seeds per intensity):
+
+| | I1 | I2 | I3 | I4 | why |
+|---|---|---|---|---|---|
+| `ColliderCap` (prisms within 200 u of any prism) | 300 | 340 | 370 | 400 | the physics/trail-collision cost near a Dolphin; all under Breakwater I1's shipped worst 568 (Breakwater 568 / 464 / 322 / 276) |
+| `TotalCap` (prisms laid) | 1800 | 2400 | 3000 | 3400 | instanced draw + spatial index memory; below the old Blast Run caps (4600-3000) and `LayCapacity` 4096 |
+| `StationCap` (field prisms a gate) | 150 | 170 | 190 | 210 | one blast clears one station's mass |
+| `MovingPrismCap` / `MovingGroupCap` | 0 / 0 | 40 / 10 | 100 / 20 | 140 / 28 | per-frame CPU: one closed-form pose per group, then a transform write + `NotifyPositionChanged` (spatial index, shell, render matrix) per prism - ~140 cheap writes at most, no physics bodies, no allocation |
+
+Network cost per frame: zero for the fields (static prisms are deterministic from the course seed; movers from the
+clock). Only the key crystals (existing `CrystalManager` path) and prism destruction (existing path) replicate.
 
 **The AI** detours for crystals in Blast Run only (`AIDetoursForCrystals => HasBlastRun(FunType)`, the scene's
 220 u slack), so an AI Dolphin takes the keys; every other fun type keeps the waypoints-only rule.
 
-**Fixed seeds** (`SEED: FIXED`): 45_501-45_504. On the shipped shell (20 gates, 480-1080 u) those lay:
+**Fixed seeds** (`SEED: FIXED`): 45_501-45_504. On the shipped shell (20 gates, 480-1080 u) those lay (sb_harness,
+headless):
 
-| Seed | Stations (keys) | Prisms | World | Moving | Packs |
-|---|---|---|---|---|---|
-| 45_501 (I1) | 6 | 2072 | 1496 | 0 | 0 |
-| 45_502 (I2) | 9 | 2235 | 1620 | 21 | 0 |
-| 45_503 (I3) | 16 | 2669 | 1600 | 205 | 0 |
-| 45_504 (I4) | 12 | 1464 | 240 | 153 | 3 |
+| Seed | Stations (keys) | Prisms | Field | Danger in field | Colliders / 200 u | Movers (slide / spin) | Moving prisms |
+|---|---|---|---|---|---|---|---|
+| 45_501 (I1) | 6 | 1173 | 597 | 9 | 250 | 0 | 0 |
+| 45_502 (I2) | 9 | 1998 | 1404 | 21 | 339 | 10 (10 / 0) | 40 |
+| 45_503 (I3) | 17 | 2988 | 2070 | 76 | 325 | 20 (12 / 8) | 88 |
+| 45_504 (I4) | 12 | 3349 | 2341 | 140 | 400 | 28 (16 / 12) | 124 |
 
-**Logs:** `[Switchback] Fun type BlastRun intensity N: G gates, ..., BLAST RUN S blocked gates, P hunter packs,
-X prisms.` (verbose, ArcadeMatch), `[Switchback] BLAST RUN hunter down: pack p member m.`, and the RUN line gains
-` blastRun stations=.. keys=.. huntersDown=x/y`. A scene with no CrystalManager logs
-`[Switchback] BLAST RUN: no CrystalManager in the scene ...` as an error and lays no keys.
+Averages over seeds 1-60 + 45_501-45_504: stations 5.8 / 8.2 / 17.0 / 13.1, prisms 1226 / 1757 / 2990 / 3239,
+moving groups 0 / 9.9 / 20 / 27.9. I3 and I4 are `TotalCap`-bound; I4 trades a few gates (station spacing, double
+doors) for thicker fields.
 
-**Held headless:** `SwitchbackBlastRunTests` (EditMode; 60 seeds + the picker seed per intensity: Classic course,
-determinism, the ladder, keys inside the blast, density under Breakwater x 1.05, nothing in a mouth or the nucleus,
-jaws shut / open clear of the eye, dens, no prism clips another by SAT, the key multiplier, the hunter step/leash/down
-rules). `audit_prism_clipping.py` now POSES `SpawnableSwitchbackFeatures` as Blast Run at 45_501-45_504 (flush,
-0 clipping).
+**Logs:** `[Switchback] Fun type BlastRun intensity N: G gates, ..., BLAST RUN S blocked gates, M movers, X prisms.`
+(verbose, ArcadeMatch), and the RUN line gains ` blastRun stations=.. keys=.. movers=..`. A scene with no
+CrystalManager logs `[Switchback] BLAST RUN: no CrystalManager in the scene ...` as an error and lays no keys.
+`SpawnableSwitchbackFeatures`' layout revision is 4 (caches from the old worlds are invalid).
 
-**Minimal / not done:** hunter kills are not credited to the gate-race score (RUN log + toast; their prisms count in
-`prismsDestroyed`); hunters pass through static prisms; a pack prism laid after its pack starts moving is not matched;
-at I1-I3 nothing stops a pilot threading a blocked ring from the downstream side; the AI does not aim its blast at
-doors (it takes the key and the blast fires down its heading); I4 worlds are thin (Menger cages 0-40 prisms a station
-after the caps); key crystals replace the passive crystal field for the match.
+**Held headless:** `SwitchbackBlastRunTests` (EditMode; 60 seeds + the picker seed per intensity, plus all four picker
+seeds for budgets/clipping): Classic course, determinism (positions, scales, kinds, movers), the ladder (per station
+and `EveryStepUpTheLadderIsHarder`), keys inside the blast, budgets (total, colliders/200 u, moving groups and prisms,
+danger <= 15 % of the field), nothing in a mouth or the nucleus, the bore clear at 8 clock samples, movers as pure
+functions of time (t = 0 laid, periodic, on track / constant radius), no prism clips another by SAT laid AND at 16
+times through the movers' cycle, the shape mix, the key multiplier. `audit_prism_clipping.py` POSES
+`SpawnableSwitchbackFeatures` as Blast Run at 45_501-45_504 (laid pose; flush, 0 clipping).
+
+**Minimal / not done:** at I1-I3 nothing stops a pilot threading a blocked ring from the downstream side; the AI does
+not aim its blast at doors (it takes the key and the blast fires down its heading); key crystals replace the passive
+crystal field for the match; the movers use `ServerTime.TimeAsFloat` (float precision is fine for hours, not days);
+nothing about frame time was measured in Unity.
 
 ## Known limitations / follow-ups
 

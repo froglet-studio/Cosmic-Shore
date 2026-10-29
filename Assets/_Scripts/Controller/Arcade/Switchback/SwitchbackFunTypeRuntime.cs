@@ -15,9 +15,9 @@ namespace CosmicShore.Gameplay
     /// <see cref="SwitchbackController"/>'s <c>ThreadsAlternate</c>).</item>
     /// <item><b>Plan 3</b> (Par &amp; Medals, and Combined): the par toast at the start, a split toast every
     /// <see cref="SplitEvery"/> gates, the medal and personal best at the finish.</item>
-    /// <item><b>Blast Run</b> (<see cref="SwitchbackBlastRun"/>): the snap-trap jaws and sweepers ride the same moving-danger
-    /// sweep on their own clocks; the I4 hunter packs' prisms follow the pack state the server replicates
-    /// (<see cref="BlastRunPackState"/>), and a downed hunter is toasted and counted.</item>
+    /// <item><b>Blast Run</b> (<see cref="SwitchbackBlastRun"/>): the block fields' movers (sliders and rotors,
+    /// <see cref="BlastRunMover"/>) are posed every frame off the same shared clock as the danger sweep - a closed-form
+    /// function of time, so nothing about them is replicated.</item>
     /// <item><b>Every fun type</b>: one <c>[Switchback] RUN</c> log line at the finish - fun type, intensity, seed,
     /// time, gates, skims, prisms destroyed, medal - so a test session can be read back from the log.</item>
     /// </list>
@@ -51,13 +51,7 @@ namespace CosmicShore.Gameplay
         Prism[] _moving;            // per layout prism index; null until matched (and for non-moving ones)
         bool[] _lost;               // per layout prism index: matched once, since destroyed, pooled or re-parented
         int _movingExpected, _movingMatched;
-        readonly List<(int first, int count)> _tracked = new();   // the moving clusters' and the packs' prism ranges
-
-        // Blast Run hunters: the server's replicated state, and where this peer draws each pack.
-        NetworkList<BlastRunPackState> _packState;
-        Vector3[] _packShown;
-        int[] _packDownSeen;
-        int _huntersDown;
+        readonly List<(int first, int count)> _tracked = new();   // the moving clusters' and the movers' prism ranges
         float _nextScan, _scanDeadline;
 
         readonly List<RaceGateRing> _shortcutRings = new();
@@ -91,39 +85,11 @@ namespace CosmicShore.Gameplay
                 _moving = new Prism[_layout.Prisms.Count];
                 _lost = new bool[_layout.Prisms.Count];
                 foreach (var c in _layout.MovingClusters) _tracked.Add((c.FirstPrism, c.Count));
-                foreach (var pk in _layout.Packs) _tracked.Add((pk.FirstPrism, pk.Members * pk.PerMember));
+                foreach (var m in _layout.Movers) _tracked.Add((m.FirstPrism, m.Count));
                 foreach (var r in _tracked) _movingExpected += r.count;
-                _packShown = new Vector3[_layout.Packs.Count];
-                _packDownSeen = new int[_layout.Packs.Count];
-                for (int i = 0; i < _layout.Packs.Count; i++) _packShown[i] = _layout.Packs[i].Den;
                 _scanDeadline = Time.time + PrismScanTimeout;
                 BuildShortcutRings();
             }
-        }
-
-        /// <summary>Blast Run I4: the server's pack state, which this peer's pack prisms follow.</summary>
-        public void AttachPacks(NetworkList<BlastRunPackState> packState) => _packState = packState;
-
-        /// <summary>
-        /// How many of hunter <paramref name="member"/> of pack <paramref name="pack"/>'s prisms still stand here.
-        /// <paramref name="judged"/> is false until every one of them has been found once (or the scan gave up), so a
-        /// hunter whose prisms are still being laid is never called down.
-        /// </summary>
-        public int AlivePackPrisms(int pack, int member, out bool judged)
-        {
-            judged = false;
-            if (_layout == null || pack < 0 || pack >= _layout.Packs.Count) return 0;
-            var pk = _layout.Packs[pack];
-            int first = pk.FirstPrism + member * pk.PerMember, alive = 0;
-            bool all = true;
-            for (int j = 0; j < pk.PerMember; j++)
-            {
-                int k = first + j;
-                if (Live(k)) alive++;
-                else if (!_lost[k]) all = false;   // never found yet
-            }
-            judged = all || Time.time >= _scanDeadline;
-            return alive;
         }
 
         /// <summary>The tracked prism at <paramref name="k"/> is still the one laid there: not destroyed (gone, or flagged
@@ -174,7 +140,6 @@ namespace CosmicShore.Gameplay
         {
             if (_gameData == null || _course.Count == 0) return;
             TickMovingDanger();
-            TickPacks();
 
             var player = _gameData.LocalPlayer;
             var stats = player?.RoundStats;
@@ -227,6 +192,7 @@ namespace CosmicShore.Gameplay
 
             var nm = NetworkManager.Singleton;
             float t = nm != null && nm.IsListening ? nm.ServerTime.TimeAsFloat : Time.time;
+            TickMovers(t);
             foreach (var cluster in _layout.MovingClusters)
             {
                 Vector3 d = cluster.DisplacementAt(t);
@@ -268,57 +234,31 @@ namespace CosmicShore.Gameplay
                     $"[Switchback] Moving danger: {_movingMatched}/{_movingExpected} prisms found.");
         }
 
-        // ── Blast Run hunters ─────────────────────────────────────────
+        // ── Blast Run movers ──────────────────────────────────────────
 
-        /// <summary>Every peer: draw each pack where the server says it is (lerped between the server's 10 Hz writes),
-        /// carrying every standing member's prisms by the pack's offset from its den; a down member stays where it
-        /// died. A newly downed member is toasted once.</summary>
-        void TickPacks()
+        /// <summary>Every peer: pose each Blast Run mover at shared time <paramref name="t"/> - the pose is computed once
+        /// per group, then written to each of its standing prisms (no allocation). A blasted prism is simply skipped.
+        /// The prisms stay children of the lay container (a per-group parent transform would save only the per-prism
+        /// pose maths: <see cref="Prism.NotifyPositionChanged"/> must still run per prism for the spatial index, the
+        /// shield shell and the render matrix).</summary>
+        void TickMovers(float t)
         {
-            if (_layout == null || _layout.Packs.Count == 0 || _packState == null) return;
-            int n = Mathf.Min(_layout.Packs.Count, _packState.Count);
-            for (int p = 0; p < n; p++)
+            var movers = _layout.Movers;
+            for (int i = 0; i < movers.Count; i++)
             {
-                var pk = _layout.Packs[p];
-                var state = _packState[p];
-                int newlyDown = state.DownMask & ~_packDownSeen[p];
-                if (newlyDown != 0)
+                var mover = movers[i];
+                mover.PoseAt(t, out Quaternion spin, out Vector3 offset);
+                for (int j = 0; j < mover.Count; j++)
                 {
-                    for (int m = 0; m < pk.Members; m++)
-                        if ((newlyDown & (1 << m)) != 0)
-                        {
-                            _huntersDown++;
-                            ToastNotificationAPI.Show($"HUNTER DOWN ({_huntersDown}/{HunterCount})", ToastKind.Success);
-                            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Switchback] BLAST RUN hunter down: pack {p} member {m}.");
-                        }
-                    _packDownSeen[p] |= newlyDown;
+                    int k = mover.FirstPrism + j;
+                    if (!Live(k)) continue;
+                    var laid = _layout.Prisms[k];
+                    mover.Apply(spin, offset, laid.Position, laid.Rotation, out Vector3 position, out Quaternion rotation);
+                    var prism = _moving[k];
+                    if (mover.Motion == BlastRunMotion.Spin) prism.transform.SetPositionAndRotation(position, rotation);
+                    else prism.transform.position = position;
+                    prism.NotifyPositionChanged();
                 }
-
-                _packShown[p] = BlastRunHunters.Follow(_packShown[p], state.Position, Time.deltaTime);
-                Vector3 offset = _packShown[p] - pk.Den;
-                for (int m = 0; m < pk.Members; m++)
-                {
-                    if ((state.DownMask & (1 << m)) != 0) continue;
-                    int first = pk.FirstPrism + m * pk.PerMember;
-                    for (int j = 0; j < pk.PerMember; j++)
-                    {
-                        int k = first + j;
-                        if (!Live(k)) continue;
-                        var prism = _moving[k];
-                        prism.transform.position = _layout.Prisms[k].Position + offset;
-                        prism.NotifyPositionChanged();
-                    }
-                }
-            }
-        }
-
-        int HunterCount
-        {
-            get
-            {
-                int c = 0;
-                if (_layout != null) foreach (var pk in _layout.Packs) c += pk.Members;
-                return c;
             }
         }
 
@@ -376,7 +316,7 @@ namespace CosmicShore.Gameplay
                         $"time={time:F2}s par={_par:F2}s gates={threaded}/{length} skims={_skimsDone}/{(_skims?.Length ?? 0)} " +
                         $"prismsDestroyed={hits} medal={medal} pb={(best ? time : previous):F2}s{(best ? " (new)" : "")}" +
                         (SwitchbackFunTypes.HasBlastRun(_funType) && _layout != null
-                            ? $" blastRun stations={_layout.Stations.Count} keys={BlastRunKeyCrystals.Count} huntersDown={_huntersDown}/{HunterCount}"
+                            ? $" blastRun stations={_layout.Stations.Count} keys={BlastRunKeyCrystals.Count} movers={_layout.Movers.Count}"
                             : ""));
         }
 
