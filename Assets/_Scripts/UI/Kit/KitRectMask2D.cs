@@ -142,8 +142,14 @@ namespace CosmicShore.UI
                     // whose Canvas is disabled, out of the queue (its OnEnable / OnCanvasHierarchyChanged
                     // re-register it when that changes).
                     var canvas = text.canvas;
+                    // UnRegisterTextObjectForUpdate is internal to the TMP package, so use the public
+                    // UnRegisterTextElementForRebuild (which also drops the text from the update queue).
+                    // It drops pending layout / graphic rebuilds too, so re-dirty an active text to keep them.
                     if (!text.isActiveAndEnabled || !canvas || !canvas.enabled)
-                        TMP_UpdateManager.UnRegisterTextObjectForUpdate(text);
+                    {
+                        TMP_UpdateManager.UnRegisterTextElementForRebuild(text);
+                        if (text.isActiveAndEnabled) text.SetAllDirty();
+                    }
                 }
                 _parked.Clear();
 
