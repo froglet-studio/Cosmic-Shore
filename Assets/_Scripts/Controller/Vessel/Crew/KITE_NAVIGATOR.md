@@ -656,6 +656,9 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
 
 ## Follow-ups
 
+- **A whole arc for the seat (proposal, 2026-10-29):** `Docs/Studios/ONE_THUMB_SEAT_ARCS.md` §2. Loops cinch into a
+  haul the kite throws, shoals that move like their element, and a dock at the Grouper that rests the thumb and
+  cleans silence. Not decided; its §6 lists the decisions.
 - **The Sling is not in the Crew Vessel Lab** (it came from the Wrasse Lasso Lab, which models the board alone). The
   thumb-travel and loop numbers there are the lab's AI; a phone playtest decides the feel (`T-20261020-bbc3` closed
   with the pick, playtest task on the board).

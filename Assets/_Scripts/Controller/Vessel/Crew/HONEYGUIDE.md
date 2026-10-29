@@ -157,6 +157,12 @@ Mass, Space, Time) are driven by the hull's `VesselAnimation`. The class card, i
 hangar preview are renders of the model (`render_cards.py Honeyguide`). The crystal fusion's four entries are bake-free
 until the editor's baker is run.
 
+## Proposed: a whole arc for the Ratel (2026-10-29)
+
+`Docs/Studios/ONE_THUMB_SEAT_ARCS.md` §3: AP that banks across spins and a pick of three abilities (two config
+changes), then a **raid**: the Honeyguide finds a hostile hive, and the Ratel breaks its real prisms by chaining
+them on the board. Not decided; its §6 lists the decisions.
+
 ## Not verified in the Editor
 
 This port was compiled against Unity's reference assemblies (player and editor configs) but not opened in the Editor.
