@@ -64,12 +64,14 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Ignites a prism. Super-shielded prisms cannot burn; already-burning prisms
         /// refresh their timer (and can upgrade to convert-on-burnout).
+        /// <paramref name="seconds"/> &gt; 0 overrides <see cref="burnSeconds"/> for this burn (Fulmen's quick burns).
+        /// True when this call lit a NEW burn.
         /// </summary>
-        public void Ignite(Prism prism, string igniter, Domains igniterDomain, bool convertOnBurnout)
+        public bool Ignite(Prism prism, string igniter, Domains igniterDomain, bool convertOnBurnout, float seconds = -1f)
         {
-            if (prism == null || prism.destroyed) return;
-            if (prism.prismProperties != null && prism.prismProperties.IsSuperShielded) return;
-            if (prism.Domain == igniterDomain) return;   // never burn your own volume
+            if (prism == null || prism.destroyed) return false;
+            if (prism.prismProperties != null && prism.prismProperties.IsSuperShielded) return false;
+            if (prism.Domain == igniterDomain) return false;   // never burn your own volume
 
             if (_burning.TryGetValue(prism, out var state))
             {
@@ -80,21 +82,22 @@ namespace CosmicShore.Gameplay
                 // prisms) but nothing the player actually aimed at ever burned out.
                 // Only the STEAL upgrade may still be applied to a live burn.
                 state.ConvertOnBurnout |= convertOnBurnout;
-                return;
+                return false;
             }
 
-            if (_burning.Count >= maxConcurrentBurning) return;
+            if (_burning.Count >= maxConcurrentBurning) return false;
 
             _burning[prism] = new BurnState
             {
                 Igniter = igniter,
                 IgniterDomain = igniterDomain,
-                ExtinguishAt = Time.time + burnSeconds,
+                ExtinguishAt = Time.time + (seconds > 0f ? seconds : burnSeconds),
                 NextSpreadAt = Time.time + spreadInterval,
                 ConvertOnBurnout = convertOnBurnout,
             };
 
             prism.MakeDangerous();   // v1 burning visual: the danger state
+            return true;
         }
 
         void Update()
