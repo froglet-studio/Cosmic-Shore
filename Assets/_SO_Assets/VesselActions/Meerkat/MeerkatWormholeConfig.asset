@@ -84,7 +84,7 @@ MonoBehaviour:
   bridgeSpindleThickness: 0.25
   bridgeShimmer: 0.5
   omniOn: 1
-  menuAutopilotRoots: 0
+  menuAutopilotRoots: 1
   networkReach:
     Enabled: 1
     Value: 0.5

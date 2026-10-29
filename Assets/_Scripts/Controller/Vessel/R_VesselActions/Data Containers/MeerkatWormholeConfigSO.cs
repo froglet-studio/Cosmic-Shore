@@ -175,7 +175,7 @@ namespace CosmicShore.ScriptableObjects
         [Header("Kit · Time, the ride (the artifact's Kit > Time)")]
         [Tooltip("The rush: the throat's speed ×, Time L0 -> ...at Time L10 (every soliton's ride, its own or anyone's)")]
         [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 1.4f, Element.Time, 0.05f);
-        [Tooltip("Garrett's L5 Boost out: out of every soliton at (× the exit)")]
+        [Tooltip("Kit L5 Boost out: out of every soliton at (× the exit)")]
         [SerializeField, Range(1f, 3f)] float boostOut = 1.5f;
 
         [Header("Kit · Charge, Sentinel mode (the artifact's Kit > Sentinel)")]

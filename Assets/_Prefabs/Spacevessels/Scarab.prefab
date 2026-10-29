@@ -706,6 +706,7 @@ MonoBehaviour:
   energyResourceIndex: 0
   switchResourceIndex: 1
   switchChargesPerFullMeter: 1
+  placeSwitch: {fileID: 11400000, guid: 8761b36b8aad336452f5c21344c57c1c, type: 2}
 
 --- !u!114 &2035987173373189047
 MonoBehaviour:
