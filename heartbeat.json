@@ -14,18 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {
-  "best": 0.0,
+ "current": {},
+ "host": "dragonsweapon",
+ "last": {
   "best_start": null,
   "epoch": "46859a87c158",
-  "evals": 154392,
+  "evals": 171144,
   "job": "bioform-forge",
-  "max_evals": null,
-  "minutes": 60.0,
-  "request": null,
-  "since": 1793268315
+  "session_evals": 171144,
+  "stopped": "budget"
  },
- "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -146,12 +144,24 @@
    "start": 1793264649,
    "stopped": "budget",
    "unit": null
+  },
+  {
+   "best_end": 0.0,
+   "best_start": null,
+   "end": 1793271922,
+   "epoch": "46859a87c158",
+   "evals": 171144,
+   "job": "bioform-forge",
+   "request": null,
+   "start": 1793268315,
+   "stopped": "budget",
+   "unit": null
   }
  ],
  "totals": {
-  "sessions": 10
+  "sessions": 11
  },
- "updated": 1793271569,
+ "updated": 1793271922,
  "user": "shombithofficial",
  "version": "1"
 }
