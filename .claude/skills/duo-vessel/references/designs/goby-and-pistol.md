@@ -52,10 +52,34 @@
 >   (`PistolGround`; a stolen block still stands, a restored one is ground again): the ride rolls off its edge, flies
 >   over it if high and fast enough, and lands only on ground; sunk `pEdgeGrace` 1.2 u under the line it has fallen in and
 >   lands on nothing after, and at `pFallDepth` 14 u a vortex ring (the toroidal lens, 2.4 u) catches it, tumbling, and
->   carries it in a low arc back to the den it SET OFF FROM, where it rests and picks a path; that den grows nothing and
->   the lost ride's distance is dropped. Falling and riding home it hits and pulls no prism. The AI lands on ground when
+>   carries it in a low arc back to the den it SET OFF FROM, where it rests and picks a path; that den grows nothing (since
+>   2026-10-29 because the fall took its energy). Falling and riding home it hits and pulls no prism. The AI lands on ground when
 >   it can and, after a fall, rides another island until it rides one through. **[open]:** the den it set off from (a
 >   retry) or the nearer one (which would skip the hole).
+> - "every time prisms are not ridden because the pistol is off trail then grow those prisms. if they are max size (which
+>   should only grow out of plane.) then shield them. if they are destroyed, restore them. this reward the player for
+>   making big jumps. the more prisms are skipped the more energy the pistol should collect. the amount the pistol builds
+>   when reaching the den is based on energy collected. energy is lost when falling through a hole. that is why it doesn't
+>   build, because it has no energy. the energy should be shown on its mass icon. crystals are also attracted to the plane
+>   so pistol can collect them. when choosing paths in the den, the pistol should see the plane it should show one side of
+>   the trail when traveling one way and pass on the other side when traveling the other direction. the two different
+>   half planes available should signal their mass separately in a more 3d effect that obeys the no flat hypersea rule."
+>   **[stated]** (2026-10-29). **[read]:** a block is SKIPPED when the Pistol flies over it (in the air at least `pMinAir`,
+>   above the ground's line, not fallen in: `Events.Flew`). Each skipped block grows ACROSS the trail only (its x, out of
+>   the plane; `skipGrowStep` 0.8 u to `skipGrowMax` 8 u); one already that wide is shielded; a destroyed one is restored
+>   (so a jump over a hole heals it). Energy: the nth block of a flight gives 1 + 0.2 n (`energyFlightBonus`), up to
+>   `energyMax` 640; a den takes one prism per 8 energy (`energyPerDenPrism`, x Mass) and keeps the rest; a fall zeroes it;
+>   a teleport keeps it. Measured headless on the shipped ride: the Tiny Wings rider (the AI) flies over ~65 % of an
+>   island's blocks and builds ~23 prisms on 900 u and ~48 on 1800 u (the old distance rule's 22 / 45), a sloppy rider 4-7,
+>   one that never flies none. The Mass card's new gauge is the energy (Pistol seat; empty flying the Goby). Crystals beside
+>   the plane drift in within the undertow's reach (`crystalPullSpeed` 30) and the Pistol takes one it touches, as the
+>   Jacks' net does, on the hull's machine only. The HALF PLANE: riding an island ahead the Pistol plays the side its frame
+>   calls +z (the far side from its camera), riding it back the other side; the undertow pulls mass only from that half,
+>   and the path map scores and draws each half on its own: a lit, terraced wing of faceted blocks standing out of the
+>   trail on its side, wider and in more tiers (1-4) and bluer -> limer as it holds more opposing prisms; the picked half
+>   white; the map opens tilted `mapStartTilt` 35 deg so the two halves part on screen; a tap on a wing picks that half.
+>   **[open]:** whether the crystals should also come from that half only; whether a block at full width that is already
+>   shielded should go further (super-shield).
 > - The primer, heat and flares are RETIRED (they were the Goby's old kit). Charge has no level-5 upgrade yet **[open]**.
 > - Controls: Goby Dart = pad RT / X, key Q, phone Dart button (hold, let go); Lock = pad LT / Y, key F, phone Lock.
 >   Pistol (since 2026-10-24, on the fleet's four labelled face buttons so each card's chip names its control from the
@@ -133,8 +157,8 @@ table in step with `GobyPistolDuo` (`HumanPistol`, `Choose`), the hull's binding
 | Card | Ability | What it does, and how its element scales it | Level 5 | Mobile | Gamepad | Mouse / keyboard |
 |---|---|---|---|---|---|---|
 | Charge | **Snap** -> **Vortex Sting** | Fires a vortex ring (the toroidal lens) that gathers prisms round its core; with the Goby's lock on screen it homes, and a rival hull it passes through loses petals from each element (1 -> 3 with Charge). The veil is its cooldown. | none yet **[open]** | Snap button | X | Q (or E) |
-| Mass | **Dens**, and **Back** | At each perch it rests and builds a den: one prism per 40 u ridden since the last den, x1 -> x2.5 with Mass, at most 80. Teleporting grows none. The card counts the den prisms; Back, pressed while riding, turns the next perch's pick round. | **Fortress**: danger and super-shielded prisms too | Back button | Y (or LB) | F (or the B key) |
-| Space | **Ghost** (and the Undertow, passive) | Ghost: a moment of passing through prisms, then a cooldown (the veil). The Undertow pulls mass beside the plane into it, 40 -> 200 u with Space; the card's gauge is that reach. | **Deep Undertow**: shielded prisms pulled too | Ghost button | B | T (or G) |
+| Mass | **Dens**, and **Back** | At each perch it rests and builds a den from its ENERGY (2026-10-29): one prism per 8 energy, x1 -> x2.5 with Mass, at most 80; what the den cannot take is kept. Energy comes from the blocks it flies over instead of riding (the nth block of a flight gives 1 + 0.2 n, so big jumps pay); a fall through a hole loses it all. Teleporting grows none. The card counts the den prisms and its gauge is the energy; Back, pressed while riding, turns the next perch's pick round. | **Fortress**: danger and super-shielded prisms too | Back button | Y (or LB) | F (or the B key) |
+| Space | **Ghost** (and the Undertow, passive) | Ghost: a moment of passing through prisms, then a cooldown (the veil). The Undertow pulls mass into the plane from the HALF it plays this way (one side of the trail riding ahead, the other riding back), 40 -> 200 u with Space, and crystals from either side, which the Pistol collects on touch; the card's gauge is that reach. | **Deep Undertow**: shielded prisms pulled too | Ghost button | B | T (or G) |
 | Time | **the dive** (and the aimed jump, off) | Hold to press into the hill; let go on an upslope and it throws the Pistol. The gauge is its speed. With `aimedJump` on, a dragged jump whose cooldown Time shortens (9 -> 3 s); off since 2026-10-22, so Time's card on the Pistol is **[open]**. | (Phase Dart is the Goby's) | finger held on the view (aimed jump: drag) | A or LT (aimed jump: RT + right stick) | Space, S, down, or mouse held (aimed jump: J) |
 
 **The path map** (the Pistol seat, at a perch after its rest; picking another den teleports there):

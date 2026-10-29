@@ -306,6 +306,9 @@ namespace CosmicShore.Gameplay
             return u;
         }
 
+        /// <summary>Distance along the line (from A) of the ground under frame-x <paramref name="x"/>.</summary>
+        public static float LineAt(in Frame f, float x) => LineS(f, TravelAt(f, x));
+
         /// <summary>Is there ground under frame-x <paramref name="x"/>? Not where the island's block there was destroyed
         /// (<see cref="PistolGround"/>): the Pistol must clear that hole, and falls through it if it does not. The perches
         /// at either end (and past them) always stand.</summary>
@@ -382,6 +385,25 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Ground at <paramref name="s"/> along the line: everywhere but a destroyed block's slot.</summary>
         public bool SolidAt(float s) => s <= 0f || s >= Length || !_gone[SlotAt(s)];
+
+        /// <summary>The slots whose block lies on the stretch from <paramref name="s0"/> to <paramref name="s1"/> along the
+        /// line (either way; a block exactly at the start was counted by the stretch before), added to <paramref name="into"/>
+        /// in the order the stretch passes them.</summary>
+        public void BlocksBetween(float s0, float s1, System.Collections.Generic.List<int> into)
+        {
+            bool up = s1 >= s0;
+            float lo = up ? s0 : s1, hi = up ? s1 : s0;
+            int first = Mathf.Max(0, Mathf.CeilToInt(lo / Gap - 0.5f)), last = Mathf.Min(_gone.Length - 1, Mathf.FloorToInt(hi / Gap - 0.5f));
+            if (up) { for (int i = first; i <= last; i++) if (BlockAt(i, lo, hi, true)) into.Add(i); }
+            else { for (int i = last; i >= first; i--) if (BlockAt(i, lo, hi, false)) into.Add(i); }
+        }
+
+        bool BlockAt(int i, float lo, float hi, bool up)
+        {
+            float b = BlockS(i);
+            if (b >= Length) return false;
+            return up ? b > lo && b <= hi : b >= lo && b < hi;
+        }
     }
 
     /// <summary>

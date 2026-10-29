@@ -55,7 +55,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>What the step did that the caller must act on.</summary>
-        public struct Events { public bool Landed, SmoothLanding, Launched, FireSnap, Fell; public Vector2 SnapAim; public bool GhostStarted; public float Travelled; }
+        public struct Events
+        {
+            public bool Landed, SmoothLanding, Launched, FireSnap, Fell; public Vector2 SnapAim; public bool GhostStarted; public float Travelled;
+            /// <summary>The step flew over its ground (in the air at least <c>pMinAir</c>, not fallen in) from frame-x
+            /// <see cref="FlewFrom"/> to <see cref="FlewTo"/>: the blocks under that stretch were skipped, not ridden
+            /// (Garrett, 2026-10-29: "every time prisms are not ridden because the pistol is off trail then grow those prisms").</summary>
+            public bool Flew; public float FlewFrom, FlewTo;
+        }
 
         /// <summary>A Pistol standing at the start of <paramref name="f"/> with speed <paramref name="v"/>.</summary>
         public static void PlaceAtStart(State p, in PistolPlane.Frame f, float v)
@@ -130,17 +137,28 @@ namespace CosmicShore.Gameplay
                 }
             }
             p.vy -= gAir * h;
+            float xFrom = p.x;
             float drag = 1f - s.pDrag * h; p.vx *= drag; p.vy *= drag;
             float sp2 = p.vx * p.vx + p.vy * p.vy;
             if (sp2 > vMax * vMax) { float k2 = vMax / Mathf.Sqrt(sp2); p.vx *= k2; p.vy *= k2; }
             p.x += p.vx * h; p.y += p.vy * h; p.airT += h;
             if (p.x < 0f) { p.x = 0f; if (p.vx < 0f) p.vx = 0f; }   // the perch it left is behind it: never off the start
             float yg = PistolPlane.Ground(f, p.x, out float slope);
-            if (p.y > yg) return;
+            if (p.y > yg)
+            {
+                // over the ground's line: what lies under this stretch is flown over, not ridden (never while it sinks into a
+                // hole: those blocks are the hole, not a jump's reward)
+                if (!p.falling && p.airT >= s.pMinAir)
+                {
+                    if (!ev.Flew) { ev.Flew = true; ev.FlewFrom = xFrom; }
+                    ev.FlewTo = p.x;
+                }
+                return;
+            }
             if (p.falling || !PistolPlane.SolidAt(f, p.x))
             {
                 // over a hole, or under the line after falling into one: nothing to land on
-                if (yg - p.y > s.pEdgeGrace) p.falling = true;
+                if (yg - p.y > s.pEdgeGrace) { p.falling = true; ev.Flew = false; }
                 if (p.falling && yg - p.y >= Mathf.Max(s.pEdgeGrace, s.pFallDepth)) ev.Fell = true;
                 return;
             }

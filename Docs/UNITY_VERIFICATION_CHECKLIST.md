@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Goby & Pistol: skipped blocks grow, shield and restore and give energy; dens from energy; crystals; half-plane path map (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett, 2026-10-29; the brief's top section quotes it whole):
+- `PistolBodyMath.Events.Flew`: the stretch the Pistol flew over its ground (in the air >= `pMinAir`, above the line,
+  not fallen in). `PistolGround.BlocksBetween` names its blocks once each. `GobyPistolDuo.SkipOver` gives energy for each
+  (`GobyDen.EnergyFor`: the nth of a flight gives 1 + 0.2 n) and rewards it (`RewardBlock`): grown across the trail only
+  (x, `skipGrowStep` 0.8 u to `skipGrowMax` 8 u), shielded once that wide, restored if destroyed.
+- Dens are built from energy (`energyPerDenPrism` 8, x Mass; the den keeps what it cannot take), not distance; a fall
+  through a hole zeroes it; a teleport keeps it. `denUnitsPerPrism` is retired (asset key replaced).
+- The Mass card's new gauge (`GobyHUDVariant`'s `PistolEnergyGauge`, written by `author_goby_hud.py`) is the energy in
+  the Pistol's seat, empty in the Goby's.
+- `PullCrystals`: crystals within the undertow's reach either side drift into the plane (`crystalPullSpeed` 30) and one
+  the Pistol touches is collected through the hull (the Jacks' net's path; hull machine only).
+- Half planes: the undertow pulls only the half the Pistol plays this way (+z of its frame); `_pathScore` is per half
+  (`PistolPaths.Half`, `InHalf`; the AI picks the richest half); the path map draws each half as a lit terraced wing of
+  faceted blocks on its side (1-4 tiers, width and colour by its count; picked white), opens tilted 35 deg
+  (`mapStartTilt`), and a tap on a wing picks that half.
+
+**Verified without the editor:** `Tools/Build/unity_refcompile/run.sh` player and editor configs: 0 errors in project
+code (the three Goby test files are in the editor gate). `goby_pistol_harness/run.sh --self-test`: 11 / 11 pass, and all
+four planted defects fail them (it also caught a real one, fixed: a Pistol sinking into a hole reported the hole's blocks
+as flown over, so it would have restored the hole under itself). `author_goby_hud --check` / `--self-test` (two new
+gauge controls), `author_goby_assets --check`, console logging, conditional compilation, crew vessels, orthographic
+views, hud on-screen, validate_project. `/verify-unity` did not run (no editor in the session).
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Jump off crests: the blocks under each flight widen across the trail (only across), flown over again once full they
+   shield; shoot a gap and jump it: the gap's blocks come back.
+2. The Mass card's gauge fills as you fly over blocks, faster on long flights; at the next perch the den grows by it
+   and the gauge drops. Ride without jumping: the gauge stays empty and the den does not grow. Fall through a hole: the
+   gauge empties and the den you return to grows nothing.
+3. Crystals near the trail drift into the Pistol's plane and are collected on touch (the hull's crystal effects run).
+4. Ride an island one way, then back: the undertow pulls from the far side of the trail each way (the other side each
+   time). On the path map each island shows two wings, one per side, each sized by its side's rival mass; tap a wing to
+   pick that half; spin and tilt read as volumes, nothing flat.
+
+**First-pass tuning:** `energyPerSkippedBlock` 1, `energyFlightBonus` 0.2, `energyMax` 640, `energyPerDenPrism` 8,
+`skipGrowStep` 0.8, `skipGrowMax` 8, `crystalPullSpeed` 30, `crystalTouchPad` 1.5, `mapStartTilt` 35, `mapWingReach`
+0.05. **Open for Garrett:** crystals from both sides or the played half only; what a full, shielded block gets next.
+
+---
+
 ### 🔴 Goby & Pistol: a destroyed trail is a hole the Pistol must clear; a fall rides a vortex ring home (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett, 2026-10-28: "when the goby's trail is destroyed the shrimp should have to clear the destroyed
@@ -80,7 +122,7 @@ a den, but without the mass creation."):
 - `GobyPistolDuo`: on a fall a vortex ring (the toroidal lens, `fallRingRadius` 2.4 u) catches the tumbling Pistol and
   carries it along an arc in its plane back to the den it set off from (`fallReturnSpeed` 260 u/s within 1.4-3 s,
   `fallReturnArc` 0.08 + `fallReturnLift` 12 u, `fallSpinDegrees` 540), righting it over the last quarter. It rests and
-  picks its next path there; the den grows nothing (the lost ride's distance is dropped). While falling and riding home
+  picks its next path there; the den grows nothing (since 2026-10-29: the fall took its energy). While falling and riding home
   it hits no prism and pulls none. The AI floats or dives to land on ground, and after a fall leaves that island for
   another until it rides one through.
 - A rider's machine (the Pistol of a Goby another machine flies) finds the blocks by the spatial index as it nears them;

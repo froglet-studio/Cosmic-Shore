@@ -458,10 +458,13 @@ namespace CosmicShore.Tests
         {
             var o = new List<PathChoice>();
             PistolPaths.Options(4, 3, o);
-            int best = PistolPaths.Best(o, new[] { 2, 9, 4 }, 3, 3);
+            // one score per half plane (Garrett, 2026-10-29): island k ahead at 2 k, back at 2 k + 1
+            int best = PistolPaths.Best(o, new[] { 2, 2, 9, 9, 4, 4 }, 3, 3);
             Assert.That(o[best].Segment, Is.EqualTo(1), "island 1 holds the most");
             Assert.That(o[best].Perch, Is.EqualTo(2), "of its two ends, the one nearest the perch it is at");
-            Assert.That(PistolPaths.Best(o, new[] { 0, 0, 0 }, 3, 3), Is.EqualTo(-1), "the control: every island empty, it keeps its own way");
+            best = PistolPaths.Best(o, new[] { 2, 2, 9, 1, 4, 4 }, 3, 3);
+            Assert.That(o[best].Segment == 1 && o[best].Dir == 1, Is.True, "the half that holds them: island 1 ahead, from perch 1, though perch 2 is nearer");
+            Assert.That(PistolPaths.Best(o, new[] { 0, 0, 0, 0, 0, 0 }, 3, 3), Is.EqualTo(-1), "the control: every half empty, it keeps its own way");
             Assert.That(PistolPaths.InBand(new Vector3(50f, 10f, 30f), 100f, 0f, 40f, 60f), Is.True);
             Assert.That(PistolPaths.InBand(new Vector3(50f, 10f, 50f), 100f, 0f, 40f, 60f), Is.False, "beyond the undertow's reach");
             Assert.That(PistolPaths.InBand(new Vector3(120f, 10f, 0f), 100f, 0f, 40f, 60f), Is.False, "past the island's end");

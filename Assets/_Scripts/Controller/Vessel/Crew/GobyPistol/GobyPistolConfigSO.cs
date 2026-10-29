@@ -156,13 +156,31 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The radius of the vortex ring that carries it home, u (the Pistol is 2.7 u long).")]
         [SerializeField, Min(0.5f)] float fallRingRadius = 2.4f;
 
+        [Header("Pistol: energy from skipped blocks (Garrett, 2026-10-29: \"this reward the player for making big jumps\")")]
+        [Tooltip("The energy one block flown over (not ridden) gives, the first of a flight.")]
+        [SerializeField, Min(0f)] float energyPerSkippedBlock = 1f;
+        [Tooltip("Each further block of the same flight gives this much more (x the first's): the nth gives 1 + bonus n, so a " +
+                 "flight over 10 blocks earns 19, over 20 earns 58.")]
+        [SerializeField, Range(0f, 1f)] float energyFlightBonus = 0.2f;
+        [Tooltip("The most energy the Pistol holds (its Mass card's gauge is full here): a full den's worth at Mass's rest.")]
+        [SerializeField, Min(1f)] float energyMax = 640f;
+        [Tooltip("A block flown over grows this much OUT OF THE PLANE (across the trail, its x), u a skip.")]
+        [SerializeField, Min(0f)] float skipGrowStep = 0.8f;
+        [Tooltip("A block grows across the trail to this width, u; one this wide is shielded when flown over again.")]
+        [SerializeField, Min(0.5f)] float skipGrowMax = 8f;
+        [Tooltip("How fast a crystal beside the plane drifts into it, u/s (within the undertow's reach).")]
+        [SerializeField, Min(0f)] float crystalPullSpeed = 30f;
+        [Tooltip("A crystal this much past the Pistol's body (and its own half size) is taken, u.")]
+        [SerializeField, Min(0f)] float crystalTouchPad = 1.5f;
+
         [Header("Pistol: perches and dens")]
         [Tooltip("The Pistol arrives at a perch within this many u of it.")]
         [SerializeField, Min(1f)] float arriveDistance = 2f;
         [Tooltip("Seconds the Pistol rests at a perch, building its den.")]
         [SerializeField, Min(0.1f)] float restSeconds = 1.2f;
-        [Tooltip("One den prism per this many u travelled since the last den (before Mass).")]
-        [SerializeField, Min(1f)] float denUnitsPerPrism = 40f;
+        [Tooltip("One den prism per this much of the Pistol's energy (before Mass). The shipped Tiny Wings rider (the AI) gathers " +
+                 "about 185 over a 900 u island and 385 over 1800 u, a sloppy one 20-70, one that never flies none.")]
+        [SerializeField, Min(0.1f)] float energyPerDenPrism = 8f;
         [Tooltip("Mass: den prisms are scaled by this (x1 at rest -> x2.5 at level 10).")]
         [SerializeField] ElementalFloat denMassScale = ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.25f);
         [Tooltip("The most prisms one den holds.")]
@@ -181,8 +199,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(1f)] float denClearance = 1.1f;
 
         [Header("Pistol: the undertow (mass pulled into the plane)")]
-        [Tooltip("Space: how far either side of the plane mass is pulled in, u (40 at rest -> 200 at level 10). Danger, " +
-                 "super-shielded and the pair's own prisms never move; shielded ones only with the Space upgrade.")]
+        [Tooltip("Space: how far out of the plane mass is pulled in, u (40 at rest -> 200 at level 10), from the half the " +
+                 "Pistol plays this way (one side of the trail riding ahead, the other riding back); crystals from either side. " +
+                 "Danger, super-shielded and the pair's own prisms never move; shielded ones only with the Space upgrade.")]
         [SerializeField] ElementalFloat pullReach = ElementalFloat.Multiplier(40f, 200f, Element.Space, 10f);
         [Tooltip("How fast pulled mass moves toward the plane, u/s.")]
         [SerializeField, Min(1f)] float pullSpeed = 60f;
@@ -254,13 +273,20 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Holding the dive this long once the map opens sets off on the highlighted path (so holding the dive through a " +
                  "perch rides on); a fresh press sets off at once.")]
         [SerializeField, Min(0f)] float chooseHoldSeconds = 0.5f;
+        [Tooltip("The map's tilt when it first opens, degrees, so an island's two half planes (one side ridden ahead, the other " +
+                 "ridden back) part on the screen; the person's spin is kept from there.")]
+        [SerializeField, Range(-80f, 80f)] float mapStartTilt = 35f;
+        [Tooltip("A half plane's wing reaches this far out of the trail at its fullest (the half with the most opposing prisms), " +
+                 "as a share of the map's radius.")]
+        [SerializeField, Range(0.005f, 0.2f)] float mapWingReach = 0.05f;
         [Tooltip("The map camera's field of view, degrees.")]
         [SerializeField, Range(20f, 90f)] float mapFov = 50f;
         [Tooltip("Room round the perches on the map: 1 frames them edge to edge.")]
         [SerializeField, Range(1f, 2f)] float mapMargin = 1.2f;
-        [Tooltip("A path's glow, thickest (the island with the most opposing prisms), as a share of the map's radius.")]
+        [Tooltip("The map's scale for its marks, as a share of the map's radius: the pointer and the den mark are a few of " +
+                 "these; the trail's own bar is mapPathThinShare of it.")]
         [SerializeField, Range(0.001f, 0.05f)] float mapPathThickness = 0.014f;
-        [Tooltip("An empty path's glow, as a share of the thickest.")]
+        [Tooltip("The trail's bar on the map, as a share of mapPathThickness (each half plane's wing stands out of it).")]
         [SerializeField, Range(0.05f, 1f)] float mapPathThinShare = 0.25f;
         [Tooltip("A tap or click this close to a path's glowing bar, pixels at 160 dpi (scaled up on denser screens), picks " +
                  "it; a tap on the picked path rides it.")]
@@ -378,7 +404,16 @@ namespace CosmicShore.ScriptableObjects
         public float FallSpinDegrees => fallSpinDegrees;
         public float FallRingRadius => fallRingRadius;
         public float RestSeconds => restSeconds;
-        public float DenUnitsPerPrism => denUnitsPerPrism;
+        public float EnergyPerDenPrism => energyPerDenPrism;
+        public float EnergyPerSkippedBlock => energyPerSkippedBlock;
+        public float EnergyFlightBonus => energyFlightBonus;
+        public float EnergyMax => energyMax;
+        public float SkipGrowStep => skipGrowStep;
+        public float SkipGrowMax => skipGrowMax;
+        public float CrystalPullSpeed => crystalPullSpeed;
+        public float CrystalTouchPad => crystalTouchPad;
+        public float MapStartTilt => mapStartTilt;
+        public float MapWingReach => mapWingReach;
         public ElementalFloat DenMassScale => denMassScale;
         public int DenMax => denMax;
         public float DenShieldedShare => denShieldedShare;

@@ -67,7 +67,7 @@ MonoBehaviour:
   pSlingPull: 0.22
   arriveDistance: 2
   restSeconds: 1.2
-  denUnitsPerPrism: 40
+  energyPerDenPrism: 8
   denMassScale:
     Enabled: 1
     Value: 1
