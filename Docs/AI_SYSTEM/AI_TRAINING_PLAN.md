@@ -166,8 +166,8 @@ Easy and Medium stay the same pilot with belief handicaps (`GateRaceHandicap`), 
 | **T4** | The consent popup, the upload and the server-side store | Unity and UGS (Shombith) | T3; the team's privacy call |
 | **T5** | Behaviour cloning with Sentis | Offline training, Unity inference | T4's data |
 
-Everything lands on `Ys-bleeding-edge` for testing; nothing goes to `bleeding-edge` until Yash has tested it
-(`BRANCH_WORKFLOW.md`).
+Everything lands on `ai`, the one AI branch, and reaches `bleeding-edge` by PR (`BRANCH_WORKFLOW.md`; before 2026-10-28
+it landed on `Ys-bleeding-edge`).
 
 ## 5. Decisions for the team
 

@@ -22,7 +22,7 @@ or leaves it to the sweep below.
 | New flights are found and learned from | the **AI learning sweep** (§2), a Claude scheduled task, every hour | `Tools/Build/ai_learn.py --run` |
 | The AI's numbers change for that mode only | the learners (`<asset>_<Mode>` variants) | `Assets/Resources/AIBoostPolicies/`, `Assets/Resources/RaceLines/`, `SkimRaceAIConfig_Regatta` |
 | What changed, and whether the AI now races like the person | the sweep | `Docs/Reports/AI_LEARNING.md` |
-| It reaches the person's editor | `Ys-bleeding-edge` is merged into `bleeding-edge` (a pull request), and the person pulls it. Yash's editor ran `bleeding-edge` on 2026-10-26 (his load reports' `gitBranch`), so a sweep change reaches his races only after that merge | - |
+| It reaches the person's editor | `ai` is merged into `bleeding-edge` (a pull request), and the person pulls it. Yash's editor ran `bleeding-edge` on 2026-10-26 (his load reports' `gitBranch`), so a sweep change reaches his races only after that merge | - |
 
 `ai_learn.py` remembers what it has learned from (`Docs/AI_SYSTEM/ai_learning_seen.json`), so an hour with no new
 race writes nothing. Only a race a learner actually read is remembered as learned: one in a mode on hold or of a hull
@@ -37,7 +37,8 @@ Yash's request) wakes the session "AI learning sweep (hourly)" (`session_01WGSY8
 sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARNING.md".
 
 
-1. `git fetch origin`, check out `Ys-bleeding-edge`, merge `origin/Ys-bleeding-edge` (merge, never rebase).
+1. `git fetch origin`, check out `ai` (the one AI branch since 2026-10-28; the sweep pushed to `Ys-bleeding-edge`
+   before that), merge `origin/ai` (merge, never rebase).
 2. `python3 Tools/Build/ai_learn.py`. **0 new flights: stop.** No commit, no message.
 3. `python3 Tools/Build/ai_learn.py --run`, then read `Docs/Reports/AI_LEARNING.md`.
 4. For each mode with new flights, judge whether the AI races well enough to win against the person. **A race counts
@@ -51,15 +52,15 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
    - It finishes, its rings per minute are near the person's, and it barely circles or stalls: the learned numbers
      are the whole job.
    - It circles, stalls, threads few rings or is far slower: numbers alone will not fix that. Diagnose it with the
-     `/vessel-ai` skill (`DIAGNOSIS_PLAYBOOK.md`) and fix it in the AI layer on `Ys-bleeding-edge`, following CLAUDE.md:
+     `/vessel-ai` skill (`DIAGNOSIS_PLAYBOOK.md`) and fix it in the AI layer on `ai`, following CLAUDE.md:
      `who_works_where.py query` first; an "Affects:" line; never re-tune another collaborator's work (write it in the
      report under "Waiting on" instead); the reference compile and the offline harnesses before committing; never
      claim a Unity run, add a `Docs/UNITY_VERIFICATION_CHECKLIST.md` entry.
    - A vessel or mode under "No learner reads these yet": note it in the report under "To build". A learner for a new
      hull is built in a normal session (§3), not by the sweep.
 5. Commit the learned files, `Docs/Reports/AI_LEARNING.md` and `Docs/AI_SYSTEM/ai_learning_seen.json` to
-   `Ys-bleeding-edge` (`chore(ai-learn): <modes> from <n> new races`), and push (fetch, merge, push; retry on a race).
-   Never push to `bleeding-edge`, never open a pull request.
+   `ai` (`chore(ai-learn): <modes> from <n> new races`), and push (fetch, merge, push; retry on a race).
+   Never push to `bleeding-edge`, never open a pull request: `ai` reaches `bleeding-edge` by a PR a person's session opens.
 
 ## 3. What a session owes the loop
 

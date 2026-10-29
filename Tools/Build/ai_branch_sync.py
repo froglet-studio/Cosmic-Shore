@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ai_branch_sync.py - what is waiting to come into Ys-bleeding-edge (the AI home), and which of it is AI work.
+"""ai_branch_sync.py - what is waiting to come into `ai` (the one AI branch), and which of it is AI work.
 
 A READER (report only): it fetches and reads git, it never merges, commits or writes a file.
 Workflow it serves: Docs/AI_SYSTEM/BRANCH_WORKFLOW.md (sections 2-4).
@@ -10,8 +10,9 @@ For each source branch (bleeding-edge, perf/performance-optimization) it prints
     removes a line naming an AI hook (AI_CODE_PATTERN, which catches AI living in mode controllers and
     ability executors, e.g. the Scarab jukes and the Grizzly bombs), or its subject says AI/autopilot;
   - the AI files those commits touch that Docs/AI_SYSTEM/ARCHITECTURE.md does not mention yet (intake).
-It also prints what HEAD has that perf lacks (when to merge Ys-bleeding-edge into perf for testing).
-The ai-system branch was retired 2026-10-09; its work lives on Ys-bleeding-edge (BRANCH_WORKFLOW.md).
+It also prints what HEAD has that perf lacks (when to merge ai into perf for testing).
+`ai` is the one AI branch since 2026-10-28 (Shombith); it replaced Ys-bleeding-edge, which had replaced the ai-system
+branch on 2026-10-09 (BRANCH_WORKFLOW.md).
 
 Usage:
   python3 Tools/Build/ai_branch_sync.py              # fetch the sources, then report
@@ -26,7 +27,7 @@ import sys
 import time
 
 REMOTE = "origin"
-HOME = "Ys-bleeding-edge"
+HOME = "ai"
 SOURCES = ["bleeding-edge", "perf/performance-optimization"]
 PERF = "perf/performance-optimization"
 ROSTER = "Docs/AI_SYSTEM/ARCHITECTURE.md"
@@ -159,7 +160,7 @@ def report_outgoing(roster_text):
     n = int(git("rev-list", "--count", f"{ref}..HEAD").strip())
     found = ai_commits(f"{ref}..HEAD") if n else {}
     print(f"\n== HEAD -> {PERF}: {n} commits perf lacks, {len(found)} of them AI work"
-          + ("  (merge Ys-bleeding-edge into perf when these need perf testing)" if found else ""))
+          + ("  (merge ai into perf when these need perf testing)" if found else ""))
 
 
 def self_test():

@@ -351,7 +351,7 @@ C, or the gamepad, cycles the cameras. Hide the viewed hull's own skimmer sphere
      (`grep -l <class guid> Assets/_SO_Assets/Games/*.asset`). Squirrel: SkimRace, Regatta, AstroLeague,
      Broadside, BroodRush, Joust, Maelstrom, Scurry. Stoat: Slingshot, Warpline;
    - its AI: platform `AIPilot` or a replacement pilot (`Docs/AI_SYSTEM/ARCHITECTURE.md`, branch
-     `Ys-bleeding-edge`) and where its difficulty lives (Skim Race: `SkimRaceDifficultySO` = Hard +
+     `ai`) and where its difficulty lives (Skim Race: `SkimRaceDifficultySO` = Hard +
      `SkimRaceHandicap`'s late notice and misjudged crystal);
    - ships or design (D2).
 2. **`python3 Tools/Build/element_ability_table.py <Vessel>`** (the `/vessel` skill), so numbers start
@@ -493,7 +493,7 @@ racePanel.set('camera', 'Free', true);   // code-side changes (a C key, a hook) 
    `engineMode` (a `GameModes` name with an arcade card) and `engineNote` once the game has the mode.
    `web` is the one artifact (§0). `mirror` is its **live mirror**
    (https://yskhan61.github.io/vessel-studio/, repo `YsKhan61/vessel-studio`, GitHub Pages): the same
-   `build_artifact.py --ref origin/Ys-bleeding-edge` output pushed as plain files, so the hub and every page open by
+   `build_artifact.py --ref origin/bleeding-edge` output pushed as plain files, so the hub and every page open by
    link in any browser and update in place when it is republished. Amoebius's VESSEL STUDIO page opens it with
    the **live mirror** link (and OPEN IN BROWSER when it has no checkout); OPEN IN AMOEBIUS / OPEN IN BROWSER serve the
    checkout's own build (D34). The page shows the hub's cards (D35): one card per studio with the same buttons in the same order. It is a mirror, never a second source or a
@@ -522,7 +522,7 @@ racePanel.set('camera', 'Free', true);   // code-side changes (a C key, a hook) 
 
 ```sh
 python3 .claude/skills/vessel-studio/build_artifact.py --self-test
-python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/Ys-bleeding-edge --out <scratchpad>/vs \
+python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/bleeding-edge --out <scratchpad>/vs \
         --session <your session id>          # --artifact defaults to the one artifact
 ```
 
@@ -598,13 +598,13 @@ A session started by the + panel opens with "Vessel Studio: NEW STUDIO request" 
 `spec`) is the record. Then:
 
 1. `ArtifactData get` the request; set `status: "in progress"` and `reply` = your branch (pin `if_version`).
-2. Work on a new branch off Ys-bleeding-edge. Do §2 (intake first: answer every intake line for the vessel and the
+2. Work on a new short-lived branch off bleeding-edge (no personal integration branch, 2026-10-28). Do §2 (intake first: answer every intake line for the vessel and the
    mini-game before building) with the skills the prompt names (`/vessel` for a new or changed hull, `/vessel-ai`
    for its AI, `/arcadegame` or `/arenagame` for a new mini-game).
 3. The studio comes first (D33: the artifact is the source of truth). A NEW vessel gets a design studio (D2) before
    any Unity asset; its numbers are the studio's until the requester decides, then `/artifact-to-unity` clones them.
-4. Publish from your branch (§4) so the requester can fly it, and tell them the Sync panel merges it into
-   Ys-bleeding-edge when they are happy.
+4. Publish from your branch (§4) so the requester can fly it, and tell them it reaches bleeding-edge by a PR
+   from that branch when they are happy.
 5. Set the request `status: "done"` with a `reply` saying what to test and where.
 
 ### Handling a job ("Vessel Studio Sync job <id> ...")
