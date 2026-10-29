@@ -134,32 +134,17 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The ready option whose half plane holds the most opposing prisms (<paramref name="scores"/>, one per half plane,
         /// <see cref="Half(PathChoice)"/>); on a tie the one setting off nearest <paramref name="fromPerch"/>. -1 when every
-        /// half is empty, so the caller keeps its own way. <paramref name="avoidSegment"/> (the island the AI just fell through a hole in) is never picked.
+        /// half is empty, so the caller keeps its own way.
         /// </summary>
-        public static int Best(List<PathChoice> options, IReadOnlyList<int> scores, int segments, int fromPerch, int avoidSegment = -1)
+        public static int Best(List<PathChoice> options, IReadOnlyList<int> scores, int segments, int fromPerch)
         {
             int best = -1, bestScore = 0, bestD = int.MaxValue;
             for (int i = 0; i < options.Count; i++)
             {
                 var c = options[i];
-                if (!Ready(c, segments) || Half(c) >= scores.Count || c.Segment == avoidSegment) continue;
+                if (!Ready(c, segments) || Half(c) >= scores.Count) continue;
                 int s = scores[Half(c)], d = Mathf.Abs(c.Perch - fromPerch);
                 if (s > bestScore || (s == bestScore && s > 0 && d < bestD)) { best = i; bestScore = s; bestD = d; }
-            }
-            return best;
-        }
-
-        /// <summary>After a fall (Garrett, 2026-10-28): any ready option that does not ride <paramref name="avoidSegment"/>,
-        /// the one nearest the head perch (on toward the Goby); -1 when the island it fell on is the only way.</summary>
-        public static int AnyBut(List<PathChoice> options, int segments, int avoidSegment, int headPerch)
-        {
-            int best = -1, bestD = int.MaxValue;
-            for (int i = 0; i < options.Count; i++)
-            {
-                var c = options[i];
-                if (!Ready(c, segments) || c.Segment == avoidSegment) continue;
-                int d = Mathf.Abs(headPerch - (c.Dir > 0 ? c.Perch + 1 : c.Perch - 1));
-                if (d < bestD) { best = i; bestD = d; }
             }
             return best;
         }

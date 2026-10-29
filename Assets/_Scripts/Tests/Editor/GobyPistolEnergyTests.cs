@@ -25,7 +25,7 @@ namespace CosmicShore.Tests
         {
             pGravity = 19f, pDiveMul = 7.5f, pMinSpeed = 6f, pDrag = 0.05f, pGoodLand = 30f, pMinAir = 0.15f, pAirGravity = 1f,
             pSmoothBoost = 1.05f, pHardKeep = 1f, pMaxSpeed = 90f, pLaunchRange = 35f, pLaunchSpeed = 30f, pLaunchCharges = 1f,
-            pLaunchCd = 9f, pGhostTime = 2.5f, pGhostCd = 8f, pVortexCd = 4f, pEdgeGrace = 1.2f, pFallDepth = 14f,
+            pLaunchCd = 9f, pGhostTime = 2.5f, pGhostCd = 8f, pVortexCd = 4f, pEdgeGrace = 1.2f,
         };
 
         const float Gap = 6f, PerBlock = 1f, FlightBonus = 0.2f, PerDenPrism = 8f;
@@ -146,11 +146,12 @@ namespace CosmicShore.Tests
             var p = new PistolBodyMath.State();
             PistolBodyMath.PlaceAtStart(p, f, s.pMinSpeed);
             bool fell = false, flewFallen = false;
-            for (float t = 0f; t < 30f && !fell; t += 1f / 60f)
+            for (float t = 0f, after = 0f; t < 30f && after < 2f; t += 1f / 60f)
             {
                 var ev = PistolBodyMath.Step(p, f, t, 1f / 60f, new PistolBodyMath.Input(), s);
-                if (p.falling && ev.Flew) flewFallen = true;
-                fell = ev.Fell;
+                if ((p.falling || ev.FellIn) && ev.Flew) flewFallen = true;
+                fell |= ev.FellIn;
+                if (fell) after += 1f / 60f;   // and on down for two seconds
             }
             Assert.IsTrue(fell, "it falls in");
             Assert.IsFalse(flewFallen, "and flies over nothing on the way down");

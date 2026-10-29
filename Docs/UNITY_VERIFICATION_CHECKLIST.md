@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Goby & Pistol: a fall restores what it touched and drops the Pistol beyond the gap (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett, 2026-10-29: "there is an unfun state where the best paths are no longer crossable ..."):
+the vortex-ring ride back to the den is gone. When the Pistol sinks into a gap (`PistolBodyMath.Events.FellIn`, 1.2 u
+under the line), `GobyPistolDuo.FallThrough` restores the gap's blocks it touched, from the gap's start through the one it
+fell into (`PistolGround.AfterGap`), zeroes its energy, and sets it down a quarter block into the next standing ground
+beyond the gap (`PistolBodyMath.PlaceOnGround`) at the speed it had, between two vortex-ring portals (`fallPopSeconds`
+0.5, `fallRingRadius` 2.4, a `fallSpinDegrees` 540 spin out of the second). A gap to the perch sets it at the perch (it
+arrives with no energy: no den). The AI's avoid-the-island rule and `pFallDepth` / the `fallReturn*` numbers are retired.
+
+**Verified without the editor:** `unity_refcompile` player and editor configs 0 errors in project code;
+`goby_pistol_harness/run.sh --self-test` 12 / 12 with all four negative controls firing (new:
+`Ground_AFallRestoresWhatItGotPast_AndLandsBeyondTheGap`, `Ride_EveryPassShrinksTheGap_TillItIsCrossed`). Measured: the
+AI clears 300 u gaps in 3-9 passes and 500 u in 5-9; a sloppy rider gaps up to 150 u in 3-20; no pass is wasted.
+`/verify-unity` did not run.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Shoot a long gap in an island. Ride into it: the moment you sink, a portal opens where you fell and another beyond the
+   gap; you spin out of the second and ride on at your speed; the Mass card's energy gauge is empty.
+2. Ride the island again: the gap now starts where you fell last time (the blocks you reached are back). Each pass gets
+   further until you clear it.
+3. A gap running to the perch: you come out at the perch and the den does not grow.
+4. Swap seats around a fall: nothing resets.
+
+---
+
 ### 🔴 Goby & Pistol: skipped blocks grow, shield and restore and give energy; dens from energy; crystals; half-plane path map (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett, 2026-10-29; the brief's top section quotes it whole):
@@ -108,6 +134,9 @@ views, hud on-screen, validate_project. `/verify-unity` did not run (no editor i
 ---
 
 ### 🔴 Goby & Pistol: a destroyed trail is a hole the Pistol must clear; a fall rides a vortex ring home (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+> **Superseded in part, 2026-10-29:** the ride home (step 2), the AI's island avoidance (step 3) and the fall numbers
+> below are replaced by the restore-and-drop-beyond-the-gap entry above; the holes themselves (steps 1, 4, 5) stand.
 
 **What landed** (Garrett, 2026-10-28: "when the goby's trail is destroyed the shrimp should have to clear the destroyed
 section. if they fall they should not hit phantom prisms. they should fall into a fun animation that brings them back to

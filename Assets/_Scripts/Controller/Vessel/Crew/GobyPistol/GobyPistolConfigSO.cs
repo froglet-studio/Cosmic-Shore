@@ -135,25 +135,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("A slingshot pull this long (a share of the screen's short side) is a full jump.")]
         [SerializeField, Range(0.05f, 0.6f)] float pSlingPull = 0.22f;
 
-        [Header("Pistol: a broken trail and the fall home (Garrett, 2026-10-28: \"when the goby's trail is destroyed the shrimp " +
-                "should have to clear the destroyed section\")")]
+        [Header("Pistol: a broken trail (Garrett, 2026-10-28: \"the shrimp should have to clear the destroyed section\"; " +
+                "2026-10-29: a fall restores what it got past and drops it beyond the gap)")]
         [Tooltip("Where a trail block was destroyed the ground is a hole. A Pistol this far under the ground's line over a hole has " +
-                 "fallen in and lands on nothing after; less, it still catches the far lip, u.")]
+                 "fallen in: the gap's blocks it got past are restored, it loses all its energy, and it reappears on the next " +
+                 "standing ground beyond the gap with its speed. Less, it still catches the far lip, u.")]
         [SerializeField, Min(0f)] float pEdgeGrace = 1.2f;
-        [Tooltip("How far under the ground's line a fallen Pistol drops, tumbling, before a vortex ring catches it and carries it " +
-                 "home, u.")]
-        [SerializeField, Min(1f)] float pFallDepth = 14f;
-        [Tooltip("The vortex ring carries the fallen Pistol back to the den it set off from at this speed, u/s, within the two " +
-                 "times below. It lands there to rest and pick its next path, and builds nothing: the ride it lost grows no den.")]
-        [SerializeField, Min(10f)] float fallReturnSpeed = 260f;
-        [SerializeField, Min(0.2f)] float fallReturnMinSeconds = 1.4f;
-        [SerializeField, Min(0.2f)] float fallReturnMaxSeconds = 3f;
-        [Tooltip("How high the ride home arcs over the straight line, as a share of the distance, plus fallReturnLift u.")]
-        [SerializeField, Range(0f, 1f)] float fallReturnArc = 0.08f;
-        [SerializeField, Min(0f)] float fallReturnLift = 12f;
-        [Tooltip("How fast the Pistol tumbles end over end while it falls and rides home, degrees a second.")]
+        [Tooltip("Seconds the vortex-ring portals last where the Pistol fell in and where it reappears.")]
+        [SerializeField, Min(0.05f)] float fallPopSeconds = 0.5f;
+        [Tooltip("How far the Pistol spins end over end as it comes out of the portal, degrees (it ends upright).")]
         [SerializeField, Min(0f)] float fallSpinDegrees = 540f;
-        [Tooltip("The radius of the vortex ring that carries it home, u (the Pistol is 2.7 u long).")]
+        [Tooltip("The portals' radius, u (the Pistol is 2.7 u long).")]
         [SerializeField, Min(0.5f)] float fallRingRadius = 2.4f;
 
         [Header("Pistol: energy from skipped blocks (Garrett, 2026-10-29: \"this reward the player for making big jumps\")")]
@@ -396,11 +388,7 @@ namespace CosmicShore.ScriptableObjects
         public bool AimedJump => aimedJump;
         public ElementalFloat JumpCooldown => jumpCooldown;
         public float ArriveDistance => arriveDistance;
-        public float FallReturnSpeed => fallReturnSpeed;
-        public float FallReturnMinSeconds => fallReturnMinSeconds;
-        public float FallReturnMaxSeconds => Mathf.Max(fallReturnMinSeconds, fallReturnMaxSeconds);
-        public float FallReturnArc => fallReturnArc;
-        public float FallReturnLift => fallReturnLift;
+        public float FallPopSeconds => fallPopSeconds;
         public float FallSpinDegrees => fallSpinDegrees;
         public float FallRingRadius => fallRingRadius;
         public float RestSeconds => restSeconds;
@@ -470,7 +458,7 @@ namespace CosmicShore.ScriptableObjects
             pGravity = pGravity, pDiveMul = pDiveMul, pMinSpeed = pMinSpeed, pDrag = pDrag, pGoodLand = pGoodLand, pMinAir = pMinAir,
             pAirGravity = pAirGravity, pSmoothBoost = pSmoothBoost, pHardKeep = pHardKeep, pMaxSpeed = pMaxSpeed,
             pLaunchRange = pLaunchRange, pLaunchSpeed = pLaunchSpeed, pLaunchCharges = pLaunchCharges, pLaunchCd = jumpCooldown.Value,
-            pGhostTime = pGhostTime, pGhostCd = pGhostCd, pVortexCd = pVortexCd, pEdgeGrace = pEdgeGrace, pFallDepth = pFallDepth,
+            pGhostTime = pGhostTime, pGhostCd = pGhostCd, pVortexCd = pVortexCd, pEdgeGrace = pEdgeGrace,
         };
 
         public VortexRing.Settings Vortex => new()

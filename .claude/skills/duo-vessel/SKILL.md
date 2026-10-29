@@ -339,6 +339,11 @@ enum before taking a value.
   so destroying them changed nothing: it rode on over air. When a seat's world is drawn from one thing and simulated
   from another, tie the simulation to the thing (`PistolGround`: each block in its slot, read every frame) and
   negative-control it with the defect planted (`goby_pistol_harness/run.sh --self-test`).
+- **A failure that leaves the world as it was can be repeated forever** (the Pistol, 2026-10-29: "there is an unfun state
+  where the best paths are no longer crossable"). Sending the Pistol back to its den after a fall left the gap exactly as
+  wide, so the richest paths became walls. Let each failure change the world toward success (the fall restores what it
+  touched, at least one block) and carry the player past it, and measure it headless with a rider that plays badly: a
+  deterministic sloppy rider stalled on the first version until every fall restored one block at least.
 - **A pilotless half.** Any path that takes a human off a half (swap, disconnect, pause, death of
   the partner) must hand the half to its AI in the same frame.
 - **Counting the seat twice.** Team size, backfill and scoreboards that count `IVessel`s, rather

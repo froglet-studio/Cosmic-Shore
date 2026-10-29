@@ -51,11 +51,21 @@
 >   creation." **[stated]** (2026-10-28). **[read]:** a destroyed ground block is a HOLE in the Pistol's ground
 >   (`PistolGround`; a stolen block still stands, a restored one is ground again): the ride rolls off its edge, flies
 >   over it if high and fast enough, and lands only on ground; sunk `pEdgeGrace` 1.2 u under the line it has fallen in and
->   lands on nothing after, and at `pFallDepth` 14 u a vortex ring (the toroidal lens, 2.4 u) catches it, tumbling, and
->   carries it in a low arc back to the den it SET OFF FROM, where it rests and picks a path; that den grows nothing (since
->   2026-10-29 because the fall took its energy). Falling and riding home it hits and pulls no prism. The AI lands on ground when
->   it can and, after a fall, rides another island until it rides one through. **[open]:** the den it set off from (a
->   retry) or the nearer one (which would skip the hole).
+>   lands on nothing after (no phantom ground). The AI floats or dives to land on ground when it can. (The fall's first
+>   answer, a vortex ring carrying it back to the den it set off from, was replaced the next day: below.)
+> - "there is an unfun state where the best paths are no longer crossable. so lets have falling still restore the path up
+>   to what wasn't touched if the trail was still there, but once crossing where the trail should be they teleport to the
+>   next section of undestroyed trail, leaving the rest of the gap and loosing all energy. this way they can keep going and
+>   they restore some trail to try again on the next pass. this also still rewards them for how far they make it before
+>   failing without taking the thrill out of succeeding." **[stated]** (2026-10-29). **[read]:** the moment it falls in
+>   (`Events.FellIn`), the gap's blocks it touched, from the gap's start through the one it fell into, are restored
+>   (`PistolGround.AfterGap`; at least one a fall, so no pass is wasted), its energy is lost, and it comes out of a
+>   vortex-ring portal (`fallPopSeconds` 0.5, spinning upright) a quarter block into the next standing ground beyond the
+>   gap, riding on at the speed it had; a gap that runs to the perch sets it at the perch, where it arrives with no energy
+>   and builds nothing. A jump over gap blocks also restores them as it passes (the skip reward). Measured headless on the
+>   shipped ride: the AI clears a 300 u gap in 3-9 passes and a 500 u gap in 5-9; a rider sloppy 30 % of the time, every
+>   gap up to 150 u in 3-20 passes, and every pass shrinks it. The AI's "leave the island it fell on" is retired: it
+>   keeps going.
 > - "every time prisms are not ridden because the pistol is off trail then grow those prisms. if they are max size (which
 >   should only grow out of plane.) then shield them. if they are destroyed, restore them. this reward the player for
 >   making big jumps. the more prisms are skipped the more energy the pistol should collect. the amount the pistol builds

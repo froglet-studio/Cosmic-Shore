@@ -398,6 +398,30 @@ namespace CosmicShore.Gameplay
             else { for (int i = last; i >= first; i--) if (BlockAt(i, lo, hi, false)) into.Add(i); }
         }
 
+        /// <summary>
+        /// A Pistol riding <paramref name="dir"/> (+1 toward B) fell into this island's ground at <paramref name="s"/> along
+        /// the line (Garrett, 2026-10-29: "falling still restore[s] the path up to what wasn't touched if the trail was still
+        /// there, but once crossing where the trail should be they teleport to the next section of undestroyed trail, leaving
+        /// the rest of the gap"). Adds to <paramref name="passed"/> the destroyed slots of the gap it touched before it fell,
+        /// from the gap's start through the one it fell into (so every fall shrinks the gap by one block at least, and a pass
+        /// that got further restores more); returns where along the line
+        /// the next standing ground beyond the gap begins (a quarter block into it), or the perch at that end when the gap
+        /// runs to it.
+        /// </summary>
+        public float AfterGap(float s, int dir, System.Collections.Generic.List<int> passed)
+        {
+            int step = dir >= 0 ? 1 : -1, k = SlotAt(s), first = k;
+            while (first - step >= 0 && first - step < _gone.Length && _gone[first - step]) first -= step;
+            for (int i = first; i != k + step; i += step)
+                if (_gone[i]) passed.Add(i);
+            int j = k;
+            while (j >= 0 && j < _gone.Length && _gone[j]) j += step;
+            if (j < 0) return 0f;
+            if (j >= _gone.Length) return Length;
+            float land = step > 0 ? (j + 0.25f) * Gap : (j + 0.75f) * Gap;
+            return Mathf.Clamp(land, 0f, Length);
+        }
+
         bool BlockAt(int i, float lo, float hi, bool up)
         {
             float b = BlockS(i);

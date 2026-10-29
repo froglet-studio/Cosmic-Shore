@@ -26,8 +26,9 @@ namespace CosmicShore.Gameplay
     /// riding ahead, the other riding back) is pulled into it, and crystals either side too, which it collects (Space;
     /// Space 5: shielded too). Its Snap fires a vortex ring; with the Goby locked on a rival that is on the Pistol's screen,
     /// the ring homes on it and takes petals (Charge). Time is its jump's cooldown. Where a block of its ground was
-    /// destroyed the ground is a hole it must clear (<see cref="PistolGround"/>); one that falls in loses its energy,
-    /// tumbles down, and a vortex ring carries it home to the den it set off from, which so grows nothing (2026-10-28).</item>
+    /// destroyed the ground is a hole it must clear (<see cref="PistolGround"/>); one that falls in restores the gap's blocks
+    /// it got past, loses its energy, and comes out of a vortex-ring portal on the standing ground beyond the gap
+    /// (2026-10-29), so a gap shrinks with every pass.</item>
     /// </list>
     ///
     /// <para>One human flies one half and the seat's AI the other; the swap is the arena's gesture (D-pad left / right,
@@ -99,11 +100,10 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Crystal, float> _crystalTakenAt = new();
         bool _touchGhost, _touchSnap, _backPressed;
         float _dive;
-        // a fall through a hole in the trail (Garrett, 2026-10-28): a vortex ring carries the Pistol, tumbling, along an arc
-        // in its plane back to the den it set off from; the AI then leaves that island alone until it rides one through
-        bool _returning; float _returnT, _returnSeconds, _tumble; int _returnPerch, _avoidSeg = -1;
-        Vector2 _retFrom, _retCtrl, _retTo;
-        VortexRing _carry;
+        // a fall into a gap in the trail (Garrett, 2026-10-29): two vortex-ring portals, where it fell in and where it comes
+        // out beyond the gap, for fallPopSeconds; the Pistol spins out of the second
+        float _popT = -1f; Vector3 _popOutAt, _popInAt;
+        VortexRing _popOut, _popIn;
         // the choice at a perch (PistolPaths, Garrett 2026-10-25): every island's opposing prisms, kept one island at a time;
         // the map the person picks a den and a direction on; the cursor and how the dive confirms it
         readonly List<PathChoice> _options = new();
@@ -173,8 +173,10 @@ namespace CosmicShore.Gameplay
         public int PerchCount => _perches.Count;
         public int DenPrisms { get { int n = 0; foreach (var d in _perches) n += d.Placed; return n; } }
         public bool PistolResting => _resting;
-        /// <summary>True while the Pistol falls through a hole in its trail, or rides the vortex ring home from one.</summary>
-        public bool FallingHome => _returning || (_p != null && _p.falling);
+        /// <summary>True for the moment the Pistol sinks into a gap in its trail, before it is set down beyond it.</summary>
+        public bool Falling => _p != null && _p.falling;
+        /// <summary>True while it comes out of the portal beyond a gap it fell into.</summary>
+        bool Popping => _popT >= 0f && _popT < Config.FallPopSeconds;
         public bool HasLock => _lockTarget;
         public bool DartReady => !_darting && _t >= _dartReadyAt;
         public bool HeadingBack => _travelDir < 0;
@@ -245,7 +247,7 @@ namespace CosmicShore.Gameplay
             _body = Config.Body; _vs = Config.Vortex;
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); _grounds.Clear(); _groundBlocks.Clear(); _rings.Clear(); _held.Clear();
-            _returning = false; _avoidSeg = -1; _tumble = 0f; _bindAt = 0f;
+            StopPops(); _bindAt = 0f;
             _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0; _choosing = false; _mapYaw = 0f; _mapPitch = Config.MapStartTilt; _mapPointer = default;
             _energy = 0f; _flightBlocks = 0; _crystalTakenAt.Clear();
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
@@ -285,7 +287,7 @@ namespace CosmicShore.Gameplay
             _stoppedAutopilot = false;
             _buttons.Dispose();
             ReleaseAllRings();
-            StopCarry(); _returning = false;
+            StopPops();
             Pin(false); HoldPen(false);
             _render?.Dispose(); _render = null; _pip.Dispose();
             TwoDCameraSky.Unregister(_cam);
@@ -658,12 +660,7 @@ namespace CosmicShore.Gameplay
             Vector3 at = _segments[island].Ground(ground.BlockS(slot), _tracks[island]);
             float tol = 0.5f * ground.Gap;
             if ((prism.transform.position - at).sqrMagnitude > tol * tol) return;
-            if (prism.destroyed)
-            {
-                prism.Restore();
-                if (!prism.destroyed) ground.SetGone(slot, false);
-                return;
-            }
+            if (prism.destroyed) { RestoreBlock(island, slot); return; }
             var target = prism.TargetScale;
             float max = Mathf.Max(Config.TrailBlockScale.x, Config.SkipGrowMax);
             if (target.x < max - 1e-3f)
@@ -674,6 +671,24 @@ namespace CosmicShore.Gameplay
                 return;
             }
             if (!prism.prismProperties.IsShielded) prism.ActivateShield();
+        }
+
+        /// <summary>Restores island <paramref name="island"/>'s destroyed block <paramref name="slot"/> where the Goby laid it:
+        /// its hole is ground again. False when there is none to restore there (never laid or found here, carried off, or
+        /// devastated).</summary>
+        bool RestoreBlock(int island, int slot)
+        {
+            if (island < 0 || island >= _groundBlocks.Count || slot < 0 || slot >= _groundBlocks[island].Length) return false;
+            var prism = _groundBlocks[island][slot];
+            if (!prism || !prism.destroyed) return false;
+            var ground = _grounds[island];
+            Vector3 at = _segments[island].Ground(ground.BlockS(slot), _tracks[island]);
+            float tol = 0.5f * ground.Gap;
+            if ((prism.transform.position - at).sqrMagnitude > tol * tol) return false;
+            prism.Restore();
+            if (prism.destroyed) return false;
+            ground.SetGone(slot, false);
+            return true;
         }
 
         // ================================ the Goby: lock ================================
@@ -855,7 +870,7 @@ namespace CosmicShore.Gameplay
         void StepPistol(float dt)
         {
             ScorePaths();
-            if (_returning) { StepReturn(dt); return; }
+            if (_popOut != null) { _popT += dt; if (_popT >= Config.FallPopSeconds) StopPops(); }
             if (_resting) { Rest(dt); return; }
             RefreshGround();
             var inp = _human == Half.Pistol ? HumanPistol() : AIPistol();
@@ -864,67 +879,47 @@ namespace CosmicShore.Gameplay
             if (ev.Flew && !_p.falling) SkipOver(ev.FlewFrom, ev.FlewTo);
             if (_p.grounded) _flightBlocks = 0;
             if (ev.FireSnap) { FireRing(ev.SnapAim); _snapAt = _t; }
-            if (ev.Fell || (_p.falling && _p.airT > FallBackstopSeconds)) { StartReturn(); return; }
+            if (ev.FellIn) FallThrough();
             if (!_p.falling && _p.x >= _f.EndX - Config.ArriveDistance) Arrive(_dir > 0 ? _seg + 1 : _seg);
         }
 
-        // a fall that somehow never drops pFallDepth is caught home after this long anyway, s
-        const float FallBackstopSeconds = 4f;
-
         /// <summary>
-        /// The Pistol fell through a hole in its trail (Garrett, 2026-10-28: "they should fall into a fun animation that
-        /// brings them back to a den, but without the mass creation"). It has tumbled <c>pFallDepth</c> under the ground's
-        /// line; now a vortex ring (its own Snap's, the toroidal lens) catches it and carries it, still tumbling, along an arc
-        /// in its plane back to the den it set off from (frame x 0), at <c>fallReturnSpeed</c> within
-        /// <c>fallReturnMinSeconds</c>..<c>fallReturnMaxSeconds</c>. It lands there to rest and pick its next path, and the
-        /// ride it lost grows no den.
+        /// The Pistol sank into a gap in its trail (Garrett, 2026-10-29: "there is an unfun state where the best paths are no
+        /// longer crossable. so lets have falling still restore the path up to what wasn't touched if the trail was still
+        /// there, but once crossing where the trail should be they teleport to the next section of undestroyed trail, leaving
+        /// the rest of the gap and loosing all energy. this way they can keep going and they restore some trail to try again on
+        /// the next pass. this also still rewards them for how far they make it before failing without taking the thrill out
+        /// of succeeding."): the gap's blocks it got past are restored (<see cref="PistolGround.AfterGap"/>), its energy is
+        /// gone, and it comes out of a vortex-ring portal on the next standing ground beyond the gap, riding on at the speed it
+        /// had; the rest of the gap stays for the next pass. A gap that runs to the perch sets it at the perch, where it
+        /// arrives with no energy, so the den grows nothing.
         /// </summary>
-        void StartReturn()
+        void FallThrough()
         {
-            _returning = true; _returnT = 0f;
-            _returnPerch = Mathf.Clamp(_dir > 0 ? _seg : _seg + 1, 0, _perches.Count - 1);
-            _avoidSeg = _seg;
-            _energy = 0f; _flightBlocks = 0;   // the fall costs everything the jumps gave: it has nothing to build with
-            _retFrom = new Vector2(_p.x, _p.y);
-            _retTo = new Vector2(0f, PistolPlane.Ground(_f, 0f));
-            float dist = Vector2.Distance(_retFrom, _retTo);
-            float top = Mathf.Max(_retFrom.y, _retTo.y) + Config.FallReturnArc * dist + Config.FallReturnLift;
-            // a quadratic Bezier peaks at a quarter of each end and half its control: the control that peaks at top
-            _retCtrl = new Vector2(0.5f * (_retFrom.x + _retTo.x), 2f * top - 0.5f * (_retFrom.y + _retTo.y));
-            _returnSeconds = Mathf.Clamp(dist / Mathf.Max(1f, Config.FallReturnSpeed), Config.FallReturnMinSeconds, Config.FallReturnMaxSeconds);
-            _p.grounded = false;
-            StopCarry();
-            _carry = new VortexRing(_p.wpos, _f.R, _returnSeconds);
+            var ground = GroundOf(_seg);
+            float s = PistolPlane.LineAt(_f, _p.x), land = s;
+            _skipped.Clear();
+            if (ground != null) land = ground.AfterGap(s, _dir, _skipped);
+            foreach (int slot in _skipped) RestoreBlock(_seg, slot);
+            _skipped.Clear();
+            _energy = 0f; _flightBlocks = 0;
+            float u = Mathf.Clamp(_dir > 0 ? land : _f.L - land, 0f, _f.L);
+            float speed = Mathf.Max(_body.pMinSpeed, Mathf.Abs(_p.vx));
+            if (_body.pMaxSpeed > 0f) speed = Mathf.Min(speed, _body.pMaxSpeed);
+            _popOutAt = _p.wpos;
+            PistolBodyMath.PlaceOnGround(_p, _f, PistolPlane.GroundPoint(_f, u).x, speed);
+            _popInAt = _p.wpos;
+            StopPops();
+            _popOut = new VortexRing(_popOutAt, _f.M, Config.FallPopSeconds);
+            _popIn = new VortexRing(_popInAt, _f.M, Config.FallPopSeconds);
+            _popT = 0f;
         }
 
-        /// <summary>0..1 along the ride home.</summary>
-        float ReturnProgress01 => _returnSeconds > 0f ? Mathf.Clamp01(_returnT / _returnSeconds) : 1f;
-
-        void StepReturn(float dt)
+        void StopPops()
         {
-            _returnT += dt;
-            float k = ReturnProgress01, e = k * k * (3f - 2f * k), o = 1f - e;
-            Vector2 at = o * o * _retFrom + 2f * o * e * _retCtrl + e * e * _retTo;
-            _p.vx = (at.x - _p.x) / dt; _p.vy = (at.y - _p.y) / dt;
-            _p.x = at.x; _p.y = at.y;
-            _p.wpos = _f.ToWorld(_p.x, _p.y);
-            if (k >= 1f) LandHome();
-        }
-
-        /// <summary>The ride home ends at the den the Pistol set off from: it rests there and picks its next path, building
-        /// nothing (the fall took its energy).</summary>
-        void LandHome()
-        {
-            _returning = false; StopCarry();
-            _resting = true; _at = _returnPerch; _restT = 0f; _waitT = 0f; _restSpawned = 0; _restQueue = 0;
-            _p.falling = false; _p.grounded = true; _p.v = _p.vx = _p.vy = 0f;
-            _p.x = 0f; _p.y = PistolPlane.Ground(_f, 0f); _p.wpos = _perches[_at].Pos;
-        }
-
-        void StopCarry()
-        {
-            if (_carry != null) VortexRingLens.Remove(_carry);
-            _carry = null;
+            if (_popOut != null) VortexRingLens.Remove(_popOut);
+            if (_popIn != null) VortexRingLens.Remove(_popIn);
+            _popOut = _popIn = null; _popT = -1f;
         }
 
         /// <summary>The Pistol reaches perch <paramref name="perch"/>: it rests there and builds its den, as many prisms as
@@ -933,7 +928,6 @@ namespace CosmicShore.Gameplay
         {
             _resting = true; _at = Mathf.Clamp(perch, 0, _perches.Count - 1); _restT = 0f; _waitT = 0f; _restSpawned = 0;
             var den = _perches[_at];
-            _avoidSeg = -1;   // it rode an island through: the one it fell on is worth another try
             float mass = Config.DenMassScale.EvaluateReplicated(_status);
             _restQueue = GobyDen.PrismsFor(_energy, Config.EnergyPerDenPrism, mass, den.Placed, Config.DenMax);
             _energy = Mathf.Max(0f, _energy - GobyDen.EnergySpent(_restQueue, Config.EnergyPerDenPrism, mass));
@@ -955,8 +949,7 @@ namespace CosmicShore.Gameplay
             // back toward the older dens after waiting at the head)
             PistolPaths.Options(_perches.Count, _segments.Count, _options);
             if (_human == Half.Pistol) { Choose(dt); return; }
-            int best = PistolPaths.Best(_options, _pathScore, _segments.Count, _at, _avoidSeg);
-            if (best < 0 && _avoidSeg >= 0) best = PistolPaths.AnyBut(_options, _segments.Count, _avoidSeg, _perches.Count - 1);
+            int best = PistolPaths.Best(_options, _pathScore, _segments.Count, _at);
             if (best >= 0) { SetOff(_options[best]); return; }
             if (_at == _perches.Count - 1 && _at > 0) { _waitT += dt; if (_waitT > Config.AiBackAfter) { _travelDir = -1; _waitT = 0f; } }
             else if (_travelDir < 0 && _restT > Config.RestSeconds) _travelDir = 1;   // the AI turns for the head at the den it went back to
@@ -1427,7 +1420,7 @@ namespace CosmicShore.Gameplay
         /// drawn in from either side (<see cref="PullCrystals"/>).</summary>
         void Undertow(float dt)
         {
-            if (FallingHome) return;   // nothing is pulled into a plane the Pistol has fallen out of
+            if (Falling) return;   // nothing is pulled into a plane the Pistol has fallen out of
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
             float reach = Mathf.Max(0f, Config.PullReach.EvaluateReplicated(_status)), window = Config.PullWindow;
@@ -1514,8 +1507,8 @@ namespace CosmicShore.Gameplay
 
         void BodyHits()
         {
-            // falling through a hole and riding home it touches nothing: no phantom hits on the way down or back
-            if (_resting || _t < _p.ghostUntil || FallingHome) return;
+            // sinking into a gap it touches nothing: no phantom hits
+            if (_resting || _t < _p.ghostUntil || Falling) return;
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
             index.QuerySphere(_p.wpos, Config.BodyR + Config.BodyHalfDepth + 6f, _q);
@@ -1793,18 +1786,12 @@ namespace CosmicShore.Gameplay
             float speed = _p.grounded ? _p.v : Mathf.Sqrt(_p.vx * _p.vx + _p.vy * _p.vy);
             Vector2 centre = PistolPlane.TinyWingsView(_f, _p.x, _p.y, speed, Config.ViewWidth, Config.ViewMaxWidth, Config.ViewSpeedWiden,
                 Config.ViewPistolAt, Config.ViewGroundedAt, Config.ViewHeadroom, aspect, out float wantW);
-            if (FallingHome)
-            {
-                // the fall and the ride home: the view follows the Pistol down off the ground it frames
-                float low = centre.y - 0.3f * wantW / aspect;
-                if (_p.y < low) centre.y += _p.y - low;
-            }
             _camWidth = !_camLive ? wantW : Mathf.Lerp(_camWidth, wantW, Mathf.Clamp01(Time.deltaTime * (wantW > _camWidth ? 3f : 0.8f)));
             float W = _camWidth, H = W / aspect, D = Mathf.Max(20f, Config.ViewDistance) * W / Mathf.Max(1f, Config.ViewWidth);
             Vector3 wantPos = _f.ToWorld(_p.x, centre.y) - _f.M * D, wantWindow = _f.ToWorld(centre.x, centre.y);
             var wantRot = Quaternion.LookRotation(_f.M, _f.Up);
             float k = Mathf.Clamp01(Time.deltaTime * 4f), kp = Mathf.Clamp01(Time.deltaTime * 6f);
-            if (_returning) kp = Mathf.Lerp(kp, 1f, Mathf.Clamp01(_returnT / 0.3f));   // the ride home is fast: the view keeps up with it
+            if (Popping) kp = Mathf.Clamp01(Time.deltaTime * 12f);   // out of the portal beyond the gap: the view catches up quickly
             _camRot = _camLive ? Quaternion.Slerp(_camRot, wantRot, k) : wantRot;
             _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, kp) : wantPos;
             _camWindow = _camLive ? Vector3.Lerp(_camWindow, wantWindow, kp) : wantWindow;
@@ -1880,15 +1867,14 @@ namespace CosmicShore.Gameplay
         {
             if (!_bodyGo) return;
             float ghost = _t < _p.ghostUntil ? 0.6f : 1f;
-            // falling through a hole and riding the ring home it tumbles end over end, righting itself as it nears the den
-            bool tumbling = FallingHome;
-            _tumble = tumbling ? Mathf.Repeat(_tumble + Time.deltaTime * Config.FallSpinDegrees, 360f) : 0f;
-            float upright = _returning ? Mathf.SmoothStep(0f, 1f, (ReturnProgress01 - 0.75f) / 0.25f) : 0f;
+            // out of the portal beyond a gap it spins end over end, slowing to upright
+            bool tumbling = Popping;
+            float spin = tumbling ? Config.FallSpinDegrees * (1f - Mathf.SmoothStep(0f, 1f, _popT / Config.FallPopSeconds)) : 0f;
             if (!_bodyIsModel)
             {
                 float r = Config.BodyR;   // the capsule: its long axis on the frame's x
                 var capsule = Quaternion.LookRotation(_f.M, _f.R);
-                if (tumbling) capsule = Quaternion.Slerp(Quaternion.AngleAxis(_tumble, _f.M) * capsule, capsule, upright);
+                if (tumbling) capsule = Quaternion.AngleAxis(spin, _f.M) * capsule;
                 _bodyGo.transform.SetPositionAndRotation(_p.wpos, capsule);
                 _bodyGo.transform.localScale = new Vector3(r * 2f, r * 1.6f, r * 2f) * ghost;
                 return;
@@ -1902,7 +1888,7 @@ namespace CosmicShore.Gameplay
             Vector3 fwd = (_f.R * d.x + _f.Up * d.y).normalized;
             var root = _bodyGo.transform;
             var pose = Quaternion.LookRotation(fwd, _f.Up);
-            if (tumbling) pose = Quaternion.Slerp(Quaternion.AngleAxis(_tumble, _f.M) * pose, pose, upright);
+            if (tumbling) pose = Quaternion.AngleAxis(spin, _f.M) * pose;
             root.SetPositionAndRotation(_p.wpos, pose);
             root.localScale = Vector3.one * (_bodyScale * ghost);
 
@@ -2105,14 +2091,12 @@ namespace CosmicShore.Gameplay
             foreach (var run in _rings)
                 VortexRingLens.Set(run.Ring, run.Ring.C, run.Ring.N, _vs.pVortexR, _vs.pVortexR * VortexRing.Tube,
                     VortexRingLens.LifeFade(run.Ring.Age, run.Ring.Life), VortexRingLens.DefaultTint, _vs.pVortexSpin);
-            // the ring carrying a fallen Pistol home: round it, its axis along the way it goes
-            if (_carry != null)
+            // the portals of a fall through a gap: where it went in and where it came out, facing the side view
+            if (_popOut != null)
             {
-                Vector3 go = _f.R * _p.vx + _f.Up * _p.vy;
-                Vector3 axis = go.sqrMagnitude > 1e-4f ? go.normalized : _f.R;
-                float r = Config.FallRingRadius;
-                VortexRingLens.Set(_carry, _p.wpos, axis, r, r * VortexRing.Tube * 2f,
-                    VortexRingLens.LifeFade(_returnT, _returnSeconds - _returnT), VortexRingLens.DefaultTint, _vs.pVortexSpin);
+                float life = Config.FallPopSeconds, r = Config.FallRingRadius, fade = VortexRingLens.LifeFade(_popT, life - _popT, 0.08f, 0.3f);
+                VortexRingLens.Set(_popOut, _popOutAt, _f.M, r, r * VortexRing.Tube * 2f, fade, VortexRingLens.DefaultTint, _vs.pVortexSpin);
+                VortexRingLens.Set(_popIn, _popInAt, _f.M, r, r * VortexRing.Tube * 2f, fade, VortexRingLens.DefaultTint, -_vs.pVortexSpin);
             }
             // the lock is a fact in the world, so it is drawn there: a lit ring round the locked target, facing the Goby
             if (_lockTarget)
