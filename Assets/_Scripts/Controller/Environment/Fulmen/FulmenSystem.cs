@@ -21,9 +21,10 @@ namespace CosmicShore.Gameplay
     /// ignites and <see cref="FulmenConfigSO.MaxChildSpawnsPerFrame"/> child bolts; past a budget the work waits a frame.
     /// A chain ignites a prism at most once and strikes a crystal at most once; crystals are never consumed.</para>
     ///
-    /// <para><b>Network.</b> Every peer calls <see cref="Strike"/> with the same seed (the crystal effect is broadcast),
-    /// so every peer grows the same root bolt. Only a chain struck with <c>authority</c> ignites prisms; the burn
-    /// manager's damage replicates as any burn does.</para>
+    /// <para><b>Network</b> (<see cref="FulmenNetSync"/>). The server decides and strikes with <c>authority</c>: it alone
+    /// ignites prisms and strikes crystals. A networked strike (<c>netId</c> != 0) reports its children
+    /// (<see cref="ChildQueued"/>) and its burns, and clients replay them: a client's chain is <c>remote</c> - it grows the
+    /// same bolts from the same seeds, but never derives a child or a burn itself (no float drift between peers).</para>
     /// </summary>
     public sealed class FulmenSystem : Singleton<FulmenSystem>
     {
@@ -40,8 +41,12 @@ namespace CosmicShore.Gameplay
         public sealed class Chain
         {
             public bool Active, Authority;
+            public bool Remote;          // a client's replay of a server strike: children and burns arrive by RPC
+            public ushort NetId;         // != 0: a networked strike
+            public float RootRange, RootWidth;
             public string Igniter;
             public Domains Domain;
+            public FulmenConfigSO Stats;   // the root config: this chain's counts land on it (last execution)
             public int Children, LiveBolts, Pending;
             public readonly HashSet<int> Struck = new();
             public readonly HashSet<Prism> Burned = new();
@@ -62,10 +67,21 @@ namespace CosmicShore.Gameplay
             public readonly Crystal[] Candidates = new Crystal[MaxCandidates];
             public int CandidateCount;
 
-            /// <summary>1 while growing and holding, falling to 0 over the fade.</summary>
-            public float Alpha(float now) => DoneAt < 0f || Config == null
-                ? 1f
-                : 1f - Mathf.Clamp01((now - DoneAt - Config.HoldSeconds) / Config.FadeSeconds);
+            /// <summary>1 while growing and holding, then flickering out over the fade - stepped re-strokes, seeded per bolt
+            /// so every peer flickers alike.</summary>
+            public float Alpha(float now)
+            {
+                if (DoneAt < 0f || Config == null) return 1f;
+                float t = (now - DoneAt - Config.HoldSeconds) / Config.FadeSeconds;
+                if (t <= 0f) return 1f;
+                if (t >= 1f) return 0f;
+                float fade = (1f - t) * (1f - t);
+                int step = (int)((now - DoneAt) * Config.FlickerRate);
+                uint h = (uint)(Seed * 747796405 + step * 2891336453);
+                h ^= h >> 16; h *= 0x7feb352d; h ^= h >> 15;
+                float flick = (h & 0xffff) / 65535f;
+                return fade * Mathf.Lerp(1f, flick, Config.FlickerDepth);
+            }
         }
 
         struct PendingChild
@@ -82,6 +98,10 @@ namespace CosmicShore.Gameplay
         readonly PendingChild[] _pending = new PendingChild[MaxPending];
         int _pendingHead, _pendingCount;
         readonly List<Prism> _hits = new();
+
+        /// <summary>SERVER: an authority chain with a <see cref="Chain.NetId"/> queued a child (chain, crystal id, child
+        /// seed, generation, origin, range). Set by <see cref="FulmenNetSync"/>.</summary>
+        public static Action<Chain, int, int, int, Vector3, float> ChildQueued;
 
         /// <summary>The bolt pool; check <see cref="Bolt.Active"/>.</summary>
         public Bolt[] Bolts => _bolts;
@@ -107,17 +127,24 @@ namespace CosmicShore.Gameplay
         /// <paramref name="seed"/>. <paramref name="authority"/>: this machine ignites prisms (the server, or offline).
         /// <paramref name="excludeCrystalId"/> (the crystal just collected) never chains. False when the pools are full.
         /// </summary>
+        /// <paramref name="netId"/> != 0 marks a networked strike; <paramref name="remote"/>: this is a client replaying it.
         public bool Strike(FulmenConfigSO config, Vector3 centre, float range, int seed, bool authority,
-            string igniter, Domains domain, int excludeCrystalId = int.MinValue)
+            string igniter, Domains domain, int excludeCrystalId = int.MinValue, ushort netId = 0, bool remote = false)
         {
             if (config == null || range <= 0f) return false;
             using var _ = s_mStrike.Auto();
             var chain = FreeChain();
             if (chain == null) return false;
             chain.Active = true;
-            chain.Authority = authority;
+            chain.Authority = authority && !remote;
+            chain.Remote = remote;
+            chain.NetId = netId;
+            chain.RootRange = range;
+            chain.RootWidth = config.Width;
             chain.Igniter = igniter;
             chain.Domain = domain;
+            chain.Stats = config;
+            config.BeginStrikeStats(Time.time);
             chain.Children = chain.LiveBolts = chain.Pending = 0;
             chain.Struck.Clear();
             chain.Burned.Clear();
@@ -127,6 +154,29 @@ namespace CosmicShore.Gameplay
                 chain.Active = false;
                 return false;
             }
+            return true;
+        }
+
+        /// <summary>
+        /// CLIENT: the server's chain <paramref name="netId"/> struck crystal <paramref name="crystalId"/>; queue the child it
+        /// spawned, exactly as sent. False when the chain is gone (it ended, or this peer missed the strike).
+        /// </summary>
+        public bool QueueRemoteChild(ushort netId, int crystalId, int seed, int generation, Vector3 at, float range)
+        {
+            if (netId == 0 || _pendingCount >= MaxPending) return false;
+            Chain chain = null;
+            foreach (var c in _chains) if (c.Active && c.Remote && c.NetId == netId) { chain = c; break; }
+            if (chain == null || chain.Stats == null) return false;
+            if (!chain.Struck.Add(crystalId)) return false;
+            chain.Stats.LastCrystalsStruck++;
+            chain.Children++;
+            chain.Pending++;
+            float width = chain.RootRange > 0f ? chain.RootWidth * (range / chain.RootRange) : chain.RootWidth;
+            _pending[(_pendingHead + _pendingCount) % MaxPending] = new PendingChild
+            {
+                Chain = chain, Config = chain.Stats, At = at, Range = range, Width = width, Seed = seed, Generation = generation,
+            };
+            _pendingCount++;
             return true;
         }
 
@@ -198,7 +248,7 @@ namespace CosmicShore.Gameplay
 
             // crystals this bolt can reach at all, gathered once (the per-segment test walks only these)
             b.CandidateCount = 0;
-            if (generation < cfg.MaxChainDepth && chain.Children < cfg.MaxChildren)
+            if (!chain.Remote && generation < cfg.MaxChainDepth && chain.Children < cfg.MaxChildren)
             {
                 float reach = range + cfg.CrystalStrikeRadius;
                 float reachSq = reach * reach;
@@ -215,6 +265,7 @@ namespace CosmicShore.Gameplay
             }
 
             chain.LiveBolts++;
+            if (chain.Stats) chain.Stats.LastBolts++;
             LiveBolts++;
             return true;
         }
@@ -239,6 +290,9 @@ namespace CosmicShore.Gameplay
             b.Config = null;
             LiveBolts--;
         }
+
+        // after every Update (the bolts' and the burn manager's spreads): one batch per frame to clients
+        void LateUpdate() => FulmenNetSync.Flush();
 
         void Update()
         {
@@ -271,7 +325,8 @@ namespace CosmicShore.Gameplay
                 var b = _bolts[bi];
                 if (!b.Active) continue;
                 var cfg = b.Config;
-                b.Front += cfg.GrowthSpeed * dt;
+                float full = b.Keys[b.Count - 1];   // the longest stream's length (Count > 0 for any live bolt)
+                b.Front += full / cfg.GrowSeconds * dt;
 
                 while (b.Next < b.Count && b.Keys[b.Next] <= b.Front && queries < cfg.SegmentQueriesPerFrame)
                 {
@@ -287,8 +342,10 @@ namespace CosmicShore.Gameplay
                     if (b.CandidateCount > 0) StrikeCrystals(b, seg);
                 }
 
-                if (b.Next >= b.Count && b.DoneAt < 0f) b.DoneAt = now;
-                if (b.DoneAt >= 0f && now >= b.DoneAt + cfg.HoldSeconds + cfg.FadeSeconds) Release(b);
+                // the flash clock starts when the bolt is fully drawn; it is released only once every segment has also
+                // been queried (the burn may trail the light by a frame or two under the budget)
+                if (b.DoneAt < 0f && b.Front >= full) b.DoneAt = now;
+                if (b.DoneAt >= 0f && b.Next >= b.Count && now >= b.DoneAt + cfg.HoldSeconds + cfg.FadeSeconds) Release(b);
             }
         }
 
@@ -303,7 +360,8 @@ namespace CosmicShore.Gameplay
                 var prism = _hits[i];
                 if (prism == null || prism.destroyed || prism.Domain == chain.Domain) continue;
                 if (!chain.Burned.Add(prism)) continue;
-                burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout);
+                if (burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout, cfg.BurnSeconds, chain.NetId))
+                    if (chain.Stats) chain.Stats.LastPrismsBurnt++;
                 lit++;
             }
             _hits.Clear();
@@ -324,16 +382,20 @@ namespace CosmicShore.Gameplay
                 if (DistanceToSegmentSq(at, seg.Start, seg.End) > rSq) continue;
                 b.Candidates[i] = null;
                 if (!chain.Struck.Add(c.Id)) continue;   // struck once per chain; never consumed
+                if (chain.Stats) chain.Stats.LastCrystalsStruck++;
                 if (b.Generation >= cfg.MaxChainDepth || chain.Children >= cfg.MaxChildren) continue;
                 if (_pendingCount >= MaxPending) continue;
                 chain.Children++;
                 chain.Pending++;
+                int childSeed = ChildSeed(b.Seed, c.Id);
+                float childRange = b.Range * cfg.ChildRangeScale;
                 _pending[(_pendingHead + _pendingCount) % MaxPending] = new PendingChild
                 {
-                    Chain = chain, Config = cfg, At = at, Range = b.Range * cfg.ChildRangeScale,
-                    Width = b.Width * cfg.ChildRangeScale, Seed = ChildSeed(b.Seed, c.Id), Generation = b.Generation + 1,
+                    Chain = chain, Config = cfg, At = at, Range = childRange,
+                    Width = b.Width * cfg.ChildRangeScale, Seed = childSeed, Generation = b.Generation + 1,
                 };
                 _pendingCount++;
+                if (chain.NetId != 0) ChildQueued?.Invoke(chain, c.Id, childSeed, b.Generation + 1, at, childRange);
             }
         }
 

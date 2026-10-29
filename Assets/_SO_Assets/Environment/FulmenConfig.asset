@@ -12,3 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2611b6fc3ce9461cbf3403d21e8ac29c, type: 3}
   m_Name: FulmenConfig
   m_EditorClassIdentifier: 
+  tint: {r: 0.42, g: 0.58, b: 0.95, a: 1}
+  width: 1.6
+  material: {fileID: 2100000, guid: d3d0e5f69ca24c7ba12af80330674a2f, type: 2}

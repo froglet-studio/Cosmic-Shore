@@ -91,12 +91,39 @@ def build_view():
     return root
 
 
+# Section 103 (Rev 37, approved): the rejoin, dropped-out and host-left words. Written once when absent, so a later edit
+# in the inspector is kept (the generator owns the keys being THERE, not their wording).
+REJOIN_WORDS = [
+    ("TitleDroppedOut", "You dropped out"),
+    ("BodyDroppedOut", "Your connection to {mode} broke. An AI pilot took your vessel so your team keeps its seat."),
+    ("TitleRejoin", "Rejoin {mode}?"),
+    ("BodyRejoin", "You left a match that is still going. An AI pilot has your vessel; rejoin and it is yours again."),
+    ("RejoinLabel", "Rejoin"),
+    ("NotNowLabel", "Not now"),
+    ("TitleHostLeft", "The host left"),
+    ("BodyHostLeft", "The match ended when its host disconnected. Nothing you earned in it is lost."),
+    ("BackHomeLabel", "Back to Home"),
+    ("RejoinCheckSeconds", "2"),
+    ("RejoinGiveUpSeconds", "20"),
+    ("DroppedOutRecentSeconds", "180"),
+]
+
+
+def yq(v):
+    return '"' + v.replace('"', '\\"') + '"' if re.search(r"[:{}?;'#]", v) else v
+
+
 def config_text():
     text = open(os.path.join(REPO, CONFIG), encoding="utf-8").read()
     line = f"  WindowPrefab: {K.ref(F('root#view'), asset_guid(VIEW), 3)}\n"
     if "  WindowPrefab:" in text:
-        return re.sub(r"^  WindowPrefab: .*\n", line, text, flags=re.M)
-    return text.replace("  ScrimColor:", line + "  ScrimColor:", 1)
+        text = re.sub(r"^  WindowPrefab: .*\n", line, text, flags=re.M)
+    else:
+        text = text.replace("  ScrimColor:", line + "  ScrimColor:", 1)
+    missing = "".join(f"  {k}: {yq(v)}\n" for k, v in REJOIN_WORDS if not re.search(rf"^  {k}: ", text, re.M))
+    if missing:
+        text = text.replace("  RestoredDwellSeconds:", missing + "  RestoredDwellSeconds:", 1)
+    return text
 
 
 def outputs():
@@ -133,7 +160,8 @@ def validate(files):
     cfg = files[CONFIG]
     assert f"  WindowPrefab: {{fileID: {F('root#view')}, guid: {asset_guid(VIEW)}, type: 3}}\n" in cfg, \
         "DisconnectNoticeConfig.WindowPrefab must name the view"
-    for field in ("TitleConnectionLost", "BodyConnectionLost", "ReconnectLabel", "DismissLabel", "TitleConnectionRestored"):
+    for field in ("TitleConnectionLost", "BodyConnectionLost", "ReconnectLabel", "DismissLabel", "TitleConnectionRestored",
+                  "TitleDroppedOut", "TitleRejoin", "RejoinLabel", "NotNowLabel", "TitleHostLeft", "BackHomeLabel"):
         assert re.search(r"^  %s: \S" % field, cfg, re.M), f"DisconnectNoticeConfig.{field} is blank"
 
 
@@ -160,6 +188,7 @@ def self_test(files):
         ("B answering the wrong button", view, lambda t: t.replace(f"  activationButton: {PAD_EAST}\n", "  activationButton: 6\n", 1)),
         ("RECONNECT in the cancel grey", view, lambda t: t.replace("  variant: %d\n" % K.VARIANTS["Play"],
                                                                    "  variant: %d\n" % K.VARIANTS["Cancel"], 1)),
+        ("the rejoin words missing", CONFIG, lambda t: re.sub(r"^  TitleRejoin: .*\n", "", t, flags=re.M)),
         ("a blank title in the config", CONFIG, lambda t: re.sub(r"^  TitleConnectionLost: .*\n", "  TitleConnectionLost: \n", t, flags=re.M)),
     ]
     ok = all(expect(*c) for c in cases)

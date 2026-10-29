@@ -276,7 +276,16 @@ round; Garrett picked S1, "go with S1 and move on"): the Switch drawn as a white
 Mass shows as the ball SHRINKING inside it, to scale (ring 24 -> 60 with switchScale, match ball 7):
 `ScarabHUDView.SetSwitchScale` scales the point-anchored ball part by 1 / switchScale on each Mass level change. With no
 switch banked the card dims under the fleet's cooldown veil (`SetSwitchCharges`); the charge-count colour ramp is
-retired. Next: the Scarab's Space (Ball Forge).
+retired. Next: the Scarab's Space (Ball Forge). **The Scarab recut** (2026-10-29, Garrett): the Ball Forge options drew a generic gem ("that is not the
+omnicrystal"), so the omni crystal is now projected from `OmniCrystalExport1_8-21-25.fbx` (LESSONS 60). Then the kit
+was recut: the Charge card is the **Shove**, the bubble split at the hull into a push half and a pull half
+(`Scarab_BlastFieldBack`, shown only while Charge 5 Backdraft is up); the Space card is **Nucleus Seeding**, a ball in a
+membrane that grows ×1 → ×4 with Space (`Scarab_SeedBall` / `Scarab_SeedMembrane`, `SetSeedScale`); the Ball Forge
+moved to the omni card (`omniAbilitySprite`) and Drift became a core card beside the row (the new `core` rebind step,
+the Squirrel's pattern). The Ball Forge placeholder is retired. **The Scarab's Time card** (2026-10-29, Garrett picked A of three: wake,
+afterimage, thrust chevrons): the Scarab flying right in domain colour, a white wake in three lengths by trigger depth
+(`ScarabHUDView.WakeStepFor`), the plate as the speed meter, and the Time 5 Snap Dash chevron ahead (white ready, grey
+waiting). The Throttle placeholder is retired and the Scarab is done. Next: the Serpent.
 
 | Round | What | Why first |
 |---|---|---|

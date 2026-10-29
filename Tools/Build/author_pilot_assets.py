@@ -74,7 +74,7 @@ KEYWORDS = [
     ("Serpent",   ["BasePrismProduction", "Projectile"]),
     ("Sparrow",   ["BasePrismProduction", "Boost", "Projectile"]),
     ("Urchin",    ["BasePrismProduction", "Boost", "Attach"]),
-    ("Butterfly", ["BasePrismProduction"]),
+    ("TigerMoth", ["BasePrismProduction"]),
     ("Thresher",  ["BasePrismProduction", "Blade", "Tether"]),
 ]
 

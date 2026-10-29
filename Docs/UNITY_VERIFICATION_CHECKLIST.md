@@ -65,6 +65,108 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rejoin a running match (Rev 37, section 103.1) (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor). Not opened in the editor. Needs two clients (MPPM: a host and one guest in a party), a mode with a turn (Skim Race).
+- [ ] Guest drop: start Skim Race; on the guest kill the network for ~10 s (or stop the guest's player and start it again). The host shows "pilot handed to AI"; the guest lands on Home with "You dropped out" and REJOIN selected.
+- [ ] REJOIN: the guest loads into the running match, flies ITS old vessel (same domain, same score, no second ship), input works, the scoreboard has one row for it, and the host's AI stops flying it.
+- [ ] Restart: quit the guest mid-match and start it again: after sign-in Home asks "Rejoin Skim Race?". NOT NOW forgets it (no prompt on the next boot).
+- [ ] The match ends while the guest is out: no prompt (or the window gives up quietly).
+- [ ] Host leaves mid-match: the guest gets "The host left" with BACK TO HOME after about 20 s on Home; no rejoin.
+- [ ] Leaving deliberately (pause → Main menu) never prompts a rejoin.
+- [ ] `MatchRejoinTests` and `DisconnectNoticeTests` pass.
+
+### 🔴 FTUE Rev 36 B: the captain's comms window (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player). Not opened in the editor. Needs the developer unlock OFF (Froglet Toolbox) and a fresh FTUE (Quest Debug: reset).
+- [ ] Home: Trace's window slides in from the edge away from ARCADE, her line types, the bars move, then "A ARCADE" fades in; a lime line runs to the lit ARCADE.
+- [ ] Arcade: a new line plays (the entrance replays) and the window docks on the side away from the card; it never covers it.
+- [ ] Preview step: the "Fly" prompt; Settings and Skip tutorial still work on every step; the dim still refuses presses elsewhere.
+- [ ] 21:9 and 4:3: the window scales with the screen height and stays on screen.
+
+### 🔴 The Scarab's Throttle card: wake by trigger depth, speed meter, Snap Dash chevron (`claude/scarab-throttle-icon`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** the Time card's placeholder is replaced by the icon kit's parts (`specs/scarab.py`): ThrottleGauge
+(the plate's speed meter), three wakes, the Snap Dash chevron and the hull, under the old icon Image. `ScarabHUDController.Update`
+drives them from `ScarabVesselTransformer.Throttle01`, `SnapDashReady`, `CurrentTopSpeed` and the Time 5 upgrade. No Unity in
+the session: nothing compiled.
+
+- [ ] Compiles; `ScarabKitTests` green.
+- [ ] Fly the Scarab (Toybox Vessel Changer): the Time card shows the Scarab in your colour; no gauge-dial sprite left.
+- [ ] Squeeze RT slowly: a short, then a longer, then the longest wake appear; release: no wake. The plate fills with speed
+  and drops as you coast; at Time 10 the plate still fills fully only at the higher top speed.
+- [ ] Below Time 5 no chevron. At Time 5 a white chevron ahead of the nose; double-tap RT: it greys for 5 s, then turns white.
+
+### 🔴 The Scarab's recut kit: Shove / Backdraft, Sun Cores, Nucleus Seeding / Core Breaker, Snap Dash, drift and omni cards (`claude/scarab-ballforge-icon`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett's recut (R_VesselActions/SCARAB.md §7 RECUT). Charge scales the shove's debuff ×1 → ×2.5
+(`ScarabShoveDebuffByExplosionEffect.asset`, Scarab-only) and its cooldown is a flat 2.5 s; Charge 5 Backdraft mirrors
+the plate (push and pull), which is off at rest. Mass 5 Sun Cores raises the dais's super-shielded suns. Space is
+Nucleus Seeding (seeded balls ×1 → ×4); Space 5 Core Breaker lets a ball shatter super-shielded prisms. Scarab balls
+are no longer slowed by eaten mass. Snap Dash 500 u/s on a 5 s cooldown. HUD: Shove / Switch / Nucleus Seeding /
+Throttle, a Drift core card, the Ball Forge on the omni card. No Unity editor in the session: nothing here was compiled.
+**First-pass tuning:** debuff ×2.5 at Charge 10, dash 500 u/s, cooldown 5 s.
+
+- [ ] Compiles; run `ScarabKitTests` and `ScarabBlastCardTests`. **Pass:** green.
+- [ ] Fly the Scarab from the Toybox Vessel Changer. The row reads Shove, Switch, Nucleus Seeding (a ball in a
+  membrane, your colour), Throttle; a Drift card sits beside it and pressing LT presses it; the omni card shows the
+  Ball Forge (the omni crystal on a disc). No missing sprite, no stray energy ring.
+- [ ] Juke at Charge 0: the plate pushes forward only. Raise Charge to 5: the card shows its pull half and the blast
+  now also reaches behind you.
+- [ ] Hit an enemy vessel with the shove at Charge 0 and at Charge 10: the debuff is about 2.5 times larger at 10.
+  A Dolphin cone's debuff is unchanged.
+- [ ] Score a switch below Mass 5: the dais raises only the wings. At Mass 5: the super-shielded suns rise too.
+- [ ] Space 1 → 10: seeded balls grow ×1 → ×4 and the Space card's ball grows with them. Forged balls (crystal at full
+  energy) stay ×1.
+- [ ] Below Space 5 a ball bounces off a super-shielded prism; at Space 5 a newly seeded or forged ball shatters it.
+- [ ] A Scarab ball eating a wall of prisms keeps its speed. The Astro League scene's ball still slows.
+- [ ] Time 5: double-tap RT gives a far bigger lunge than before (not clipped at 100 u/s); a second double-tap within
+  5 s does nothing.
+- [ ] Undertow and Wrecking Ball (Yash): play one round each; the AI was tuned against the always-mirrored plate, so
+  note whether it misses blasts behind it now.
+
+### 🔴 The Tiger Moth's re-scoped level 5s (Toll Gate, Afterburn), the dust's ally cleanse, Waystation's square exit gates (`cece/keen-lovelace-cyci91`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor configs, 0 project errors); `waystation_course.py`
+`--check`, `--self-test` and `--compile` (the shipped course C# run gate for gate) pass. No editor in the session, so
+`/verify-unity` did not run. Steps: `TIGER_MOTH.md` §6 (6, 6a, 6b, 7) and `WAYSTATION.md` "The square exit gate".
+- [ ] Below Charge 5 a full drop's wormhole has the neutral (pale) rim and a rival rides it free; at Charge 5 the standing pair turns the domain's hue and the next rival through pays the toll; dropping back below Charge 4 turns it neutral again.
+- [ ] Time 5: for 3 s after the landing the hull passes through prisms and is faster at first; its dust still works; a new drop during it behaves normally.
+- [ ] A silenced ally swept by a Dust-mode Tiger Moth is no longer silenced (the silence screen feedback clears); an omni-crystal bloom clears its pilot and allies inside it; a drop in Dust mode clears the pilot. A rival swept is still bitten, never cleansed.
+- [ ] Waystation: every cluster's last ring stands across the line to the next cluster; threading it, rolling and dropping lands you flying into the next coil. AIs roll their belly onto the next ring after the exit gate and drop (none sits rolling for more than ~6 s).
+
+First-pass numbers: afterburn 3 s (Garrett), throttle ×2 easing to ×1 (a starting number); exit twist 10 / 20 / 30 / 40°; centre sphere 0.66 of the shell; AI roll entry 75-125° off the nose.
+
+---
+
+### 🔴 The Butterfly retired; the Tiger Moth's distance-priced drop, its wormhole, incorporeal fall; louder cooldowns; the lit dust (`cece/keen-lovelace-cyci91`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor configs, 0 project errors). No editor in the session,
+so `/verify-unity` did not run. Steps: `Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md` §6.
+- [ ] Vessel Changer offers the Tiger Moth and no Butterfly; Dustup, Tapestry, Sirocco and Waystation start with Tiger Moths (AI included).
+- [ ] A drop through prisms and crystals touches nothing; no ribbon or wake along the fall; the tail restarts at the landing.
+- [ ] Hop ~0.1 s: veil ~2 s. Drop 1 s: veil 20 s and a wormhole pair at both ends. Drop 3 s: still 20 s. A hop leaves the pair standing.
+- [ ] Dropping through a standing mouth does not carry the hull; a rival flying through pays the toll.
+- [ ] Every vessel's recharging card: the whole card (icon included) is visibly dimmed for the whole recharge, the sweep shows the rest, and a bright flash plays OVER the icon when it is back.
+- [ ] Dust mode: every prism in the capsule lights (own super-shielded and shielded, rival, plain), Mass mode lights nothing, and the light is off during a drop.
+- [ ] MPPM: the second client sees the same fall, landing and wormhole pair.
+- [ ] Waystation (2026-10-29): before each long gap an AI noses onto the next ring, pitches straight up, drops, and threads the ring; it never sits pitching in place for more than ~6 s.
+
+First-pass numbers: full recharge 20 s at 900 u (Far Drop retired the same day); wash alpha 0.55; ready flash alpha 0.75; dust light strength 0.6.
+
+### 🔴 The Tiger Moth: the Butterfly's airframe with the Drop as its Time ability (`cece/keen-lovelace-cyci91`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor configs, 0 project errors). No editor in the session, so
+`/verify-unity` did not run. Design and steps: `Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md` §5.
+- [ ] Toybox freestyle, Vessel Changer: **Tiger Moth** is offered and flies like the Butterfly.
+- [ ] Hold LT: wings shut, the hull falls along its own down without turning; within ~0.35 s the camera is above it looking down the fall, nose at the top of the screen.
+- [ ] Let go: over 0.25 s the hull pitches nose-down into the fall line and flies on; the camera does not move and never swings back.
+- [ ] Hold past 2 s: lands on its own at 1800 u. Press again at once: refused, the Time card's veil sweeps 30 s.
+- [ ] Esc to the menu mid-drop and back: the camera follows the hull normally.
+- [ ] Phone: lift the right thumb to drop, put it back to land. MPPM: the second client sees the fall and the landing turn; its camera is untouched.
+- [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
+
+First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
 ### 🔴 God mode in the lava lamp: a free inspection camera on F2 / L3 (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** `MenuGodModeCamera` on Menu_Main's Game object. F2 (or L3) swaps the lava-lamp camera for a free-fly

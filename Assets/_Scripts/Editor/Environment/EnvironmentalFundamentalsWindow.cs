@@ -217,6 +217,11 @@ namespace CosmicShore.Editor
                     int live = FulmenSystem.Instance.LiveBolts;
                     FrogletEditorPalette.StatusPill(r, $"{live} BOLTS", live > 0 ? FrogletEditorPalette.Ok : FrogletEditorPalette.Muted);
                 }
+                if (Application.isPlaying && cfg.LastStrikeTime >= 0f)
+                {
+                    var r = GUILayoutUtility.GetRect(110, 18, GUILayout.Width(110));
+                    FrogletEditorPalette.StatusPill(r, $"{cfg.LastPrismsBurnt} BURNT", FrogletEditorPalette.Muted);
+                }
                 if (FrogletEditorPalette.ColorButton("Ping", accent, 46, 18, path, outline: true))
                     EditorGUIUtility.PingObject(cfg);
             }

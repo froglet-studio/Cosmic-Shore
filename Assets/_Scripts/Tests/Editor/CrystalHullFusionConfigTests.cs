@@ -80,8 +80,9 @@ namespace CosmicShore.Tests
                     bool listed = config.TryGet(vessel, element, out var entry);
                     // The Butterfly's hull mesh is generated at runtime: there is no asset to solve
                     // against, so it keeps the generic capture (CRYSTAL_HULL_FUSION.md §12).
-                    if (vessel == VesselClassType.Butterfly)
-                        Assert.IsFalse(listed, "the Butterfly has no hull asset to fuse onto");
+                    // The Tiger Moth flies the Butterfly's hull (R_VesselActions/TIGER_MOTH.md), so it shares the rule.
+                    if (vessel is VesselClassType.Butterfly or VesselClassType.TigerMoth)
+                        Assert.IsFalse(listed, $"the {vessel} has no hull asset to fuse onto");
                     else
                     {
                         Assert.IsTrue(listed, $"{vessel} x {element} has no fusion");

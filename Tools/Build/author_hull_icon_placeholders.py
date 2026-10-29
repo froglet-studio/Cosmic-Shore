@@ -28,8 +28,8 @@ Each icon names the ACT, read from the hull's ElementalAbilityMapSO entry:
            Space  Scope              a reticle: ring, split crosshair, centre dot
   Scarab   Charge Cavitation Blast   (retired 2026-10-28: the icon kit's card, specs/scarab.py)
            Mass   Switch             (retired 2026-10-28: the icon kit's card, specs/scarab.py)
-           Space  Ball Forge         a ball with crystals converging on it
-           Time   Throttle           a speed dial with its needle
+           Space  Ball Forge         (retired 2026-10-29: the Space slot is the kit's Nucleus Seeding card)
+           Time   Throttle           (retired 2026-10-29: the icon kit's card, specs/scarab.py)
 
 OPEN DESIGN SLOTS GET NO ICON (none today - the Rhino's Charge and Space were the last two and
 were designed 2026-10-16; its Trail Slabs icon was retired with that ability). An open slot's
@@ -182,36 +182,6 @@ def serpent_seed_wall(px, py):
     return ring(px, py, 64, 64, 22, 2.5)
 
 
-# -- Scarab --------------------------------------------------------------------
-
-def scarab_ball_forge(px, py):
-    """A ball with four crystals converging on it - the skimmer forges crystals into balls."""
-    if circle(px, py, 64, 54, 30) and not circle(px, py, 52, 66, 9):   # ball + highlight
-        return True
-    for ang in (35.0, 75.0, 105.0, 145.0):
-        a = math.radians(ang)
-        dx, dy = 64 + 50 * math.cos(a), 54 + 50 * math.sin(a)
-        if abs(px - dx) + abs(py - dy) <= 8.5:                   # a crystal (diamond)
-            return True
-    return False
-
-
-def scarab_throttle(px, py):
-    """A speed dial with its needle - Time raises the throttle ramp's top speed."""
-    cx, cy = 64, 46
-    if arc(px, py, cx, cy, 46, 6.5, -20.0, 200.0):
-        return True
-    for ang in (-20.0, 35.0, 90.0, 145.0, 200.0):                # ticks
-        a = math.radians(ang)
-        if capsule(px, py, cx + 30 * math.cos(a), cy + 30 * math.sin(a),
-                   cx + 36 * math.cos(a), cy + 36 * math.sin(a), 2.5):
-            return True
-    if capsule(px, py, cx, cy, cx + 38 * math.cos(math.radians(30)),
-               cy + 38 * math.sin(math.radians(30)), 4.5):       # the needle, near the top
-        return True
-    return circle(px, py, cx, cy, 9)
-
-
 # hull -> {file name: coverage function}
 HULLS = {
     "Rhino": {
@@ -228,8 +198,8 @@ HULLS = {
     "Scarab": {
         # Scarab_CavitationBlast retired 2026-10-28: the icon kit's punch volume to scale (specs/scarab.py).
         # Scarab_Switch retired 2026-10-28: the icon kit's ball threading the ring (specs/scarab.py).
-        "Scarab_BallForge-PLACEHOLDER.png": scarab_ball_forge,
-        "Scarab_Throttle-PLACEHOLDER.png": scarab_throttle,
+        # Scarab_BallForge retired 2026-10-29: Space is the kit's Nucleus Seeding card; the forge is the omni card.
+        # Scarab_Throttle retired 2026-10-29: the icon kit's Scarab, wake and Snap Dash chevron (specs/scarab.py).
     },
 }
 

@@ -10,6 +10,10 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "FulmenConfig", menuName = "ScriptableObjects/Environment/Fulmen Config")]
     public sealed class FulmenConfigSO : ScriptableObject
     {
+        [Header("Activation")]
+        [Tooltip("Omni crystals one collector must gather before the bolt fires (counted per vessel, reset when it fires). 1 = every crystal.")]
+        [SerializeField, Range(1, 12)] int crystalsToFire = 3;
+
         [Header("Reach")]
         [Tooltip("Root bolt range as a share of its cell's radius (SolitonNetwork.ResolveCell).")]
         [SerializeField, Range(0.05f, 1f)] float rootRangeShare = 0.6f;
@@ -30,23 +34,29 @@ namespace CosmicShore.Gameplay
         [Tooltip("Only omni crystals chain (off: any live crystal).")]
         [SerializeField] bool omniCrystalsOnly = true;
 
-        [Header("Growth & life")]
-        [Tooltip("Bolt front speed, units per second along each stream.")]
-        [SerializeField, Min(1f)] float growthSpeed = 600f;
-        [Tooltip("Seconds a fully grown bolt holds before fading.")]
-        [SerializeField, Min(0f)] float holdSeconds = 0.25f;
-        [Tooltip("Seconds it fades.")]
-        [SerializeField, Min(0.01f)] float fadeSeconds = 0.4f;
+        [Header("Flash (a real lightning strike: ~0.5s all told)")]
+        [Tooltip("Seconds a bolt takes to reach its full range - near-instant, like a real leader.")]
+        [SerializeField, Range(0.02f, 1f)] float growSeconds = 0.12f;
+        [Tooltip("Seconds the fully grown bolt holds bright.")]
+        [SerializeField, Range(0f, 1f)] float holdSeconds = 0.08f;
+        [Tooltip("Seconds it flickers out.")]
+        [SerializeField, Range(0.02f, 2f)] float fadeSeconds = 0.3f;
+        [Tooltip("Flicker steps per second (the re-strokes of a real flash).")]
+        [SerializeField, Range(1f, 60f)] float flickerRate = 24f;
+        [Tooltip("How deep the flicker dips (0 = a smooth fade).")]
+        [SerializeField, Range(0f, 1f)] float flickerDepth = 0.7f;
 
         [Header("Budgets (per frame, all bolts)")]
         [Tooltip("Most segment queries against the prism index per frame.")]
-        [SerializeField, Range(1, 256)] int segmentQueriesPerFrame = 48;
+        [SerializeField, Range(1, 512)] int segmentQueriesPerFrame = 128;
         [Tooltip("Most prisms ignited per frame.")]
-        [SerializeField, Range(1, 512)] int ignitesPerFrame = 64;
+        [SerializeField, Range(1, 512)] int ignitesPerFrame = 96;
 
         [Header("Burn (server only, PrismBurnManager)")]
         [Tooltip("Radius round each segment that catches fire (units).")]
         [SerializeField, Min(0.1f)] float burnRadius = 6f;
+        [Tooltip("Seconds a struck prism burns before it is consumed (PrismBurnManager; its spread uses the manager's own).")]
+        [SerializeField, Range(0.2f, 6f)] float burnSeconds = 1.4f;
         [Tooltip("Burnout converts the prism to the igniter's team instead of destroying it.")]
         [SerializeField] bool convertOnBurnout;
 
@@ -63,12 +73,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.05f, 1f)] float forkShrink = 0.7f;
 
         [Header("Look")]
-        [SerializeField, ColorUsage(true, true)] Color tint = new(0.55f, 0.75f, 1f, 1f);
-        [Tooltip("Ribbon width at the root (units); forks thin by forkShrink per depth, children by childRangeScale.")]
-        [SerializeField, Min(0.05f)] float width = 3f;
-        [Tooltip("Optional additive material (vertex colour). Empty: Sprites/Default.")]
+        [SerializeField, ColorUsage(true, true)] Color tint = new(0.42f, 0.58f, 0.95f, 1f);
+        [Tooltip("Ribbon width at the root (units; thin reads eerier); forks thin by forkShrink per depth, children by childRangeScale.")]
+        [SerializeField, Min(0.05f)] float width = 1.6f;
+        [Tooltip("Additive material reading vertex colour + uv (FulmenBolt.mat). Empty: Sprites/Default.")]
         [SerializeField] Material material;
 
+        public int CrystalsToFire => crystalsToFire;
         public float RootRangeShare => rootRangeShare;
         public float MinRootRange => minRootRange;
         public float ChildRangeScale => childRangeScale;
@@ -77,7 +88,10 @@ namespace CosmicShore.Gameplay
         public int MaxChildSpawnsPerFrame => maxChildSpawnsPerFrame;
         public float CrystalStrikeRadius => crystalStrikeRadius;
         public bool OmniCrystalsOnly => omniCrystalsOnly;
-        public float GrowthSpeed => growthSpeed;
+        public float GrowSeconds => growSeconds;
+        public float FlickerRate => flickerRate;
+        public float FlickerDepth => flickerDepth;
+        public float BurnSeconds => burnSeconds;
         public float HoldSeconds => holdSeconds;
         public float FadeSeconds => fadeSeconds;
         public int SegmentQueriesPerFrame => segmentQueriesPerFrame;
@@ -88,6 +102,59 @@ namespace CosmicShore.Gameplay
         public Color Tint => tint;
         public float Width => width;
         public Material Material => material;
+
+        // --- runtime stats (play mode only, never serialized; FulmenConfigSOEditor shows them) ---
+        /// <summary>Prisms set alight by the most recent strike with this config (its whole chain). Counted where the burn runs:
+        /// the server, or offline; 0 on a client.</summary>
+        [System.NonSerialized] public int LastPrismsBurnt;
+        /// <summary>Crystals the most recent strike's chain struck.</summary>
+        [System.NonSerialized] public int LastCrystalsStruck;
+        /// <summary>Bolts (root + children) the most recent strike drew.</summary>
+        [System.NonSerialized] public int LastBolts;
+        /// <summary>Time.time of the most recent strike; -1 before the first.</summary>
+        [System.NonSerialized] public float LastStrikeTime = -1f;
+        /// <summary>Strikes with this config since play mode began.</summary>
+        [System.NonSerialized] public int Strikes;
+
+        internal void BeginStrikeStats(float now)
+        {
+            LastPrismsBurnt = LastCrystalsStruck = LastBolts = 0;
+            LastStrikeTime = now;
+            Strikes++;
+        }
+
+        void OnEnable()
+        {
+            LastPrismsBurnt = LastCrystalsStruck = LastBolts = Strikes = 0;
+            LastStrikeTime = -1f;
+            NetId = StableHash(name);
+            s_byNetId[NetId] = this;
+        }
+
+        void OnDisable()
+        {
+            if (s_byNetId.TryGetValue(NetId, out var c) && c == this) s_byNetId.Remove(NetId);
+        }
+
+        // ---- network identity: a strike message names its config by a hash of the asset name (the same build on
+        // every peer, so the same name), resolved against the configs this peer has loaded.
+        static readonly System.Collections.Generic.Dictionary<int, FulmenConfigSO> s_byNetId = new();
+
+        /// <summary>This config's id on the wire (FNV-1a of its asset name).</summary>
+        [System.NonSerialized] public int NetId;
+
+        /// <summary>The loaded config with <paramref name="netId"/>, or null.</summary>
+        public static FulmenConfigSO ByNetId(int netId) => s_byNetId.TryGetValue(netId, out var c) ? c : null;
+
+        static int StableHash(string s)
+        {
+            unchecked
+            {
+                uint h = 2166136261u;
+                if (s != null) for (int i = 0; i < s.Length; i++) { h ^= s[i]; h *= 16777619u; }
+                return (int)h;
+            }
+        }
 
         /// <summary>The root range in a cell of <paramref name="cellRadius"/>.</summary>
         public float RootRange(float cellRadius) => Mathf.Max(minRootRange, cellRadius * rootRangeShare);
