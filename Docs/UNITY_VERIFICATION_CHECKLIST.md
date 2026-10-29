@@ -18846,3 +18846,18 @@ were compiled and run offline over 400 seeds. Nothing has been opened in Unity.
    - Fly at an omni crystal: refused.
 5. Run the edit-mode tests `ScarabRallyCourseTests`, `SerpentTimeCourseTests`, `BrittleStarTimeCourseTests`,
    `ModeGenreTests` and `EnumIntegrityTests`.
+
+## 🔴 Lantern Run (the Angler's Time race), the thrown-speed fix, the Angler AI — NOT EDITOR-VERIFIED (`cece/confident-goodall-6cpxan`, 2026-10-29)
+
+1. Open `MinigameLanternRun` once and save it. Then run `python3 Tools/Build/author_lantern_run_assets.py --check`.
+2. Arcade → Lantern Run, I1, solo against AI Anglers. Check:
+   - **Lanterns:** a lantern glows 140 u past every ring.
+   - **Paint:** hold RT with the nose through the ring. The lantern lights.
+   - **Throw:** let go. The group flies at the lantern at about 150 u/s, not 30. This is the thrown-speed fix (ANGLER.md
+     follow-up 11).
+   - **Dash:** press B. The hull covers 3/4 of the way to the group, through the mouth, and the ring counts.
+3. Watch an AI Angler. Pass if it throws and dashes, and doesn't just cruise at 40 u/s. It should finish the race.
+4. Repeat at I2 (lanterns off the line), I3 (every second ring) and I4 (every third, tight mouths).
+5. **Regression:** in Freestyle, check a tamed Angler school still follows, gathers and eats normally (only a throw,
+   a hunt and the lure's orbit now skip the behaviour tick's speed clamp).
+6. Run `LanternRunCourseTests` and `EnumIntegrityTests`.

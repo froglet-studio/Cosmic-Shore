@@ -85,7 +85,7 @@ note on what blocks each one.
 | Shrike | Its Time verb is a tether that anchors on blocks, so a course needs block pillars to anchor on; its autopilot is untested there | Warpline-style circuit plus pillars |
 | Honeyguide (+ Ratel) | The second seat needs an AI or an empty-seat rule | Breakwater clone (it flies the Sparrow airframe) |
 | Orca | It is not confirmed that the helm (not only the gunners) has an autopilot | Redline clone |
-| Angler | Its speed comes from the school it tames, so a course needs fauna on it; it has no AI | Needs a design decision |
+| Angler | **Built 2026-10-29: Lantern Run** (`LANTERNRUN.md`). Lanterns past the rings give the school something to be thrown at, and the Angler got its first AI | - |
 | Goby (+ Pistol) | The Time verb belongs to the Pistol seat, but the Goby flies the race | Needs a design decision: which seat races |
 | Jacks | Racing gates conflicts with herding | Needs a decision: hull flight or herding |
 | Starling | The pilot does not steer (a passive swarm), so a gate race contradicts the vessel | Needs a different kind of Time goal |

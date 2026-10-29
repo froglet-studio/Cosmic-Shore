@@ -87,6 +87,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity
     guid: ed9e66d500917029c0735507ee9425fd
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameLanternRun.unity
+    guid: 5e16a160d1561b34a716f590891fda67
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHeadlong.unity
     guid: 86b74c70edc9c109ab3cf4263a96ee7f
   - enabled: 1

@@ -982,6 +982,7 @@ MonoBehaviour:
     - 72
     - 73
     - 74
+    - 75
     - 56
     sequences:
     - name: Flat out
@@ -4096,6 +4097,227 @@ MonoBehaviour:
         height1: 120
         angle0: 300
         angle1: 350
+        path: 0
+        pathStart: 0
+        pathEnd: 0
+        pathOffset: {x: 0, y: 0, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 58
+        fov1: 58
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 2
+          at: 0.2
+          duration: 1.6
+        flashes: []
+    - name: Lantern throw
+      designedFor: 75
+      shots:
+      - name: Paint the lantern
+        kind: 2
+        duration: 2.4
+        ease: 4
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 0
+        radius1: 0
+        height0: 0
+        height1: 0
+        angle0: 0
+        angle1: 0
+        path: 0
+        pathStart: 0
+        pathEnd: 0.22
+        pathOffset: {x: 0, y: 3, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0.6
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 60
+        fov1: 72
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 0
+          at: 0.3
+          duration: 1.8
+        flashes: []
+      - name: Dash through
+        kind: 2
+        duration: 1.6
+        ease: 5
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 0
+        radius1: 0
+        height0: 0
+        height1: 0
+        angle0: 0
+        angle1: 0
+        path: 0
+        pathStart: 0.22
+        pathEnd: 0.32
+        pathOffset: {x: 0, y: 3, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 96
+        fov1: 72
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 1
+          at: 0.2
+          duration: 1.4
+        flashes:
+        - at: 0
+          duration: 0.3
+      - name: The circuit
+        kind: 1
+        duration: 1.8
+        ease: 2
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 220
+        radius1: 220
+        height0: 120
+        height1: 120
+        angle0: 150
+        angle1: 200
         path: 0
         pathStart: 0
         pathEnd: 0
@@ -8796,6 +9018,11 @@ MonoBehaviour:
     tagline: Speed Mode lights all five arms.
     objective: Against the clock
     pilots: Brittle Star
+  - mode: 75
+    title: Lantern Run
+    tagline: Paint the lantern. Throw the school. Dash through.
+    objective: You travel by your school
+    pilots: Angler
   - mode: 56
     title: Regatta
     tagline: Every hull. One circuit. Three laps.

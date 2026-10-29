@@ -194,6 +194,9 @@ namespace CosmicShore.Editor
                 "  • Brittle Star Time: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the Brittle Star's Speed Mode circuit; the controller lays target/laps rings. Default " +
                 EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget + ".\n" +
+                "  • Lantern Run: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
+                "finish the Angler's leapfrog circuit; the controller lays target/laps rings. Default " +
+                EndConditionOverridesSO.DefaultLanternRunGateTarget + ".\n" +
                 "  • Regatta: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the mixed-fleet rail circuit. The arena lays eight rings a lap with the " +
                 "rails threaded through them, so this must be a multiple of eight. Default " +
@@ -262,6 +265,7 @@ namespace CosmicShore.Editor
             int srl = Mathf.Max(0, EditorGUILayout.IntField("Scarab Rally - Gate Target (rings, an open chain)", _config.scarabRallyGateTarget));
             int spt = Mathf.Max(0, EditorGUILayout.IntField("Serpent Time - Gate Target (laps x rings)", _config.serpentTimeGateTarget));
             int bst = Mathf.Max(0, EditorGUILayout.IntField("Brittle Star Time - Gate Target (laps x rings)", _config.brittleStarTimeGateTarget));
+            int lnr = Mathf.Max(0, EditorGUILayout.IntField("Lantern Run - Gate Target (laps x rings)", _config.lanternRunGateTarget));
             int rg  = Mathf.Max(0, EditorGUILayout.IntField("Regatta - Gate Target (laps x 8 rings)", _config.regattaGateTarget));
             int wb  = Mathf.Max(0, EditorGUILayout.IntField("Wrecking Ball - Prism Target", _config.wreckingBallPrismTarget));
             int ut  = Mathf.Max(0, EditorGUILayout.IntField("Undertow - Point Target", _config.undertowPointTarget));
@@ -308,6 +312,7 @@ namespace CosmicShore.Editor
                     _config.scarabRallyGateTarget = srl;
                     _config.serpentTimeGateTarget = spt;
                     _config.brittleStarTimeGateTarget = bst;
+                    _config.lanternRunGateTarget = lnr;
                     _config.regattaGateTarget = rg;
                     _config.wreckingBallPrismTarget = wb;
                     _config.undertowPointTarget = ut;
@@ -361,6 +366,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Scarab Rally", srl > 0 ? srl.ToString() : EndConditionOverridesSO.DefaultScarabRallyGateTarget + " (default)");
             EditorGUILayout.LabelField("Serpent Time", spt > 0 ? spt.ToString() : EndConditionOverridesSO.DefaultSerpentTimeGateTarget + " (default)");
             EditorGUILayout.LabelField("Brittle Star Time", bst > 0 ? bst.ToString() : EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget + " (default)");
+            EditorGUILayout.LabelField("Lantern Run", lnr > 0 ? lnr.ToString() : EndConditionOverridesSO.DefaultLanternRunGateTarget + " (default)");
             EditorGUILayout.LabelField("Regatta", rg > 0 ? rg.ToString() : EndConditionOverridesSO.DefaultRegattaGateTarget + " (default)");
             EditorGUILayout.LabelField("Wrecking Ball", wb > 0 ? wb.ToString() : EndConditionOverridesSO.DefaultWreckingBallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Undertow", ut > 0 ? ut.ToString() : EndConditionOverridesSO.DefaultUndertowPointTarget + " (default)");
@@ -432,6 +438,7 @@ namespace CosmicShore.Editor
                    "Scarab Rally: " + Fmt(_config.scarabRallyGateTargetBuild, "default " + EndConditionOverridesSO.DefaultScarabRallyGateTarget) + "\n" +
                    "Serpent Time: " + Fmt(_config.serpentTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentTimeGateTarget) + "\n" +
                    "Brittle Star Time: " + Fmt(_config.brittleStarTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget) + "\n" +
+                   "Lantern Run: " + Fmt(_config.lanternRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultLanternRunGateTarget) + "\n" +
                    "Regatta: " + Fmt(_config.regattaGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRegattaGateTarget) + "\n" +
                    "Wrecking Ball: " + Fmt(_config.wreckingBallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultWreckingBallPrismTarget) + "\n" +
                    "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget) + "\n" +

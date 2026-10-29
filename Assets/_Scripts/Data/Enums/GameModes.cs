@@ -364,8 +364,13 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/BRITTLESTARTIME.md.
         BrittleStarTime = 74,
 
+        // LanternRun (75): the Angler's TIME race - a lapped circuit on the shared HeadlongCircuit solver where the
+        // Angler travels by its school: paint the lantern hung past the next ring, throw a group at it, dash after them
+        // through the mouth (ANGLER.md's leapfrog). See _Scripts/Controller/Arcade/LANTERNRUN.md.
+        LanternRun = 75,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 69) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 70) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

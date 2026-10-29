@@ -805,6 +805,12 @@ namespace CosmicShore.Gameplay
             float minSpeed = Mathf.Max(0f, data.minSpeed) * speedMult;
             float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed * speedMult);
 
+            // A THROW: the leash asks for more than this creature's own top speed (the Angler's 150 u/s sling), so the
+            // leash owns the motion until the throw ends. Clamping it to the wild maxSpeed here cut every throw to
+            // ~30 u/s each tick (ANGLER.md follow-up 11). Ordinary leash orders (follow, gather, eat, hunt) ask for no
+            // more than the creature's own top speed and keep the flock's steering as before.
+            if (LeashOwnsSpeed(maxSpeed)) return;
+
             currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
 
             if (currentVelocity != Vector3.zero && SafeLookRotation.TryGet(currentVelocity, out var rotation, this))

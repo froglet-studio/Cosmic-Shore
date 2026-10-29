@@ -176,6 +176,10 @@ def author(spec: dict):
                  lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9))
     g.register_toast_config(g_toasts)
 
+    # 5c. anything else the mode owns (a features prefab, ...): {path: content}, metas included.
+    for rel, content in spec.get("extra_files", {}).items():
+        g.emit(rel, content)
+
     # 6. registries
     g.register_arcade_card(g_card)
     g.register_always_unlocked()
@@ -229,7 +233,7 @@ def author(spec: dict):
             errors.append(f"script {p} does not exist")
     errors += spec.get("extra_errors", [])
 
-    minted = list(g_script.values()) + [g_card, g_rule, g_preview, g_scene, g_toasts,
+    minted = list(g_script.values()) + list(spec.get("extra_minted", [])) + [g_card, g_rule, g_preview, g_scene, g_toasts,
                                         guid(f"folder/{mode_dir}"), guid(f"text/{spec['doc']}")]
     g.finish(errors, referenced={"Vessel": vessel_guid, "BarrenRaceCell": BARREN_RACE_CELL,
                                  "PreviewCell": PREVIEW_CELL, "GateRaceScoringRuleSO": GATE_RACE_SCORING_RULE_SO},

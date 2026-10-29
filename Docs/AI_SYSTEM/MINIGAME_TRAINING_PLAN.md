@@ -72,6 +72,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
 | Serpent | **Serpent Time** (new 2026-10-27) | circuit race on the fuel pellets | none yet |
 | Brittle Star | **Brittle Star Time** (new 2026-10-27) | circuit race on Speed Mode | none yet |
+| Angler | **Lantern Run** (new 2026-10-29) | circuit race: paint, throw, dash after the school | none yet; its first AI (`AnglerLeapfrogAIPolicySO`) is untested |
 
 ## 3. Switchback first (Dolphin)
 

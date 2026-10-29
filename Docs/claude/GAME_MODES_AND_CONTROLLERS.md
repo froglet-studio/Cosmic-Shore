@@ -963,6 +963,15 @@ spec file each (`author_scarab_rally_assets.py`, `author_serpent_time_assets.py`
 - See `SCARABRALLY.md`, `SERPENTTIME.md` and `BRITTLESTARTIME.md`. All three were authored headless and have not
   been run in the editor.
 
+`LanternRun(75)` is the **Angler's Time race**, the Angler's leapfrog on a lapped circuit (8 rings x 2 laps, the shared
+`HeadlongCircuit`). A lantern of neutral prisms hangs past the rings: paint it through the ring, throw a group of the
+school at it, and dash after them through the mouth. The lanterns sit at every ring at I1, off the line at I2, at every
+2nd ring at I3 and every 3rd at I4. Two shared fixes came with it:
+- `Fauna.LeashOwnsSpeed`: a thrown creature is no longer clamped to its wild speed.
+- `AnglerLeapfrogAIPolicySO`: the Angler's first AI.
+
+Authored headless. A client pilot still cannot dash (ANGLER.md follow-up 7). See `LANTERNRUN.md`.
+
 `WrasseRun(68)` is the **Wrasse and Grouper's circuit race** — Thresher Time's shape (`GateRaceController`,
 `RaceGateTurnMonitor`, the shared `HeadlongCircuit`: 8 rings x 2 laps = 16) where **a ring counts only when
 the WRASSE threads it**: the navigator's kite is the hull's `IRingThreadProbe`, and the controller answers
@@ -1386,6 +1395,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             ├── WrasseRunController               — the Wrasse and Grouper's circuit race; a ring counts only when the kite (the hull's IRingThreadProbe) threads it, 8 gates x 2 laps; Time loops fuel the Grouper's boosts
             ├── SerpentTimeController             — Serpent-only circuit race; 8 gates x 2 laps cut against a full pellet stack's ~100 u circle; the fuel tank is the race
             ├── BrittleStarTimeController         — Brittle Star-only circuit race; 8 gates x 2 laps cut against Speed Mode's ~145 u circle (0/1/2/3 corners it cannot hold)
+            ├── LanternRunController              — Angler-only circuit race; 8 gates x 2 laps with LANTERNS past the rings to paint, throw the school at and dash after
             ├── RegattaController                 — the ARENA race: every playable hull, three domain-coloured super-shielded rails braided along a lapped circuit, a start line behind gate 0 (`IPlayerSpawnLine`); the grid balanced by the card's `StartingElements`
             └── WaystationController              — Butterfly-only migration race; an OPEN chain dealt into CLUSTERS (coils you weave) laid a FOLD apart, so the course is half flown and half teleported. A teleport threads NOTHING (`VesselTransformer.TeleportCount`), and an autopilot folds through the base's new `OnServerTick` seam
         └── BroadsideController                 — the ARENA brawl: seven hulls in the Boneyard, each fighting with the weapon it has; a hit priced by its VERB (round 1 / strike 8 / debuff 12 / rocket 10-30), never by its hull
