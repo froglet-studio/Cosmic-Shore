@@ -133,14 +133,33 @@ def shards(cx, cy, s=12.0):
     return m
 
 
+def _half(front):
+    """One half of the bubble, split at the START PLANE through the hull (a GROOVE-wide knock-out), the hull knocked
+    out. The front half is the PUSH every shove claims; the back half is the PULL Charge 5 (Backdraft) adds - the
+    plate's mirror image, dragging what is behind forward through the ship (2026-10-29)."""
+    g = GROOVE / 2
+    cut = bar(OX + g, 128, 0, 128) if front else bar(0, OX - g, 0, 128)
+    return _clear_of(_bubble() & cut, blast_hull(), px=2.5)
+
+
 def blast_field():
-    """The volume at rest / recharging: the bubble, the hull knocked out of it."""
-    return _clear_of(_bubble(), blast_hull(), px=2.5)
+    """The push at rest / recharging: the front half of the volume, from the hull to the plate."""
+    return _half(True)
+
+
+def blast_field_back():
+    """Backdraft (Charge 5): the pull - the volume's back half, behind the hull. Shown only while upgraded."""
+    return _half(False)
 
 
 def blast_field_shattered():
-    """The volume as the punch lands: the claimed prisms cut out of it as forward-flung slivers."""
-    return blast_field() & ~(shards(72, 42) | shards(72, 86))
+    """The push as it lands: the claimed prisms cut out of it as forward-flung slivers."""
+    return blast_field() & ~(shards(84, 42) | shards(84, 86))
+
+
+def blast_field_back_shattered():
+    """The pull as it lands: the prisms behind cut out as slivers pointing FORWARD - dragged through the ship."""
+    return blast_field_back() & ~(shards(38, 42) | shards(38, 86))
 
 
 def blast_prisms():
@@ -149,7 +168,7 @@ def blast_prisms():
 
 
 def cavitation_blast():
-    """The composite at rest: the card's fallback and the fleet sheet's tile."""
+    """The composite at rest (push only): the card's fallback and the fleet sheet's tile."""
     return blast_prisms() | blast_field() | blast_plate() | blast_hull()
 
 
@@ -164,8 +183,12 @@ ICONS += [
                                         "in_box": "the volume runs the card's width, to scale"}),
     dict(name="Scarab_BlastField", element="Charge", act="Cavitation Blast: the volume, the hull knocked out (white; grey while recharging)",
          draw=blast_field, subdir="Parts", family=False, exempt=BLAST_EXEMPT),
-    dict(name="Scarab_BlastFieldShattered", element="Charge", act="Cavitation Blast: the volume with the claimed prisms cut out as forward-flung slivers (white, as the punch lands)",
+    dict(name="Scarab_BlastFieldShattered", element="Charge", act="Shove: the push with the claimed prisms cut out as forward-flung slivers (white, as the punch lands)",
          draw=blast_field_shattered, subdir="Parts", family=False, exempt=BLAST_EXEMPT),
+    dict(name="Scarab_BlastFieldBack", element="Charge", act="Shove, Charge 5 Backdraft: the pull, the volume's back half (white; grey while recharging)",
+         draw=blast_field_back, subdir="Parts", family=False, exempt=BLAST_EXEMPT),
+    dict(name="Scarab_BlastFieldBackShattered", element="Charge", act="Shove, Charge 5 Backdraft: the pull with the prisms behind cut out as slivers pointing forward",
+         draw=blast_field_back_shattered, subdir="Parts", family=False, exempt=BLAST_EXEMPT),
     dict(name="Scarab_BlastPlate", element="Charge", act="Cavitation Blast: the plate, the volume's front edge (white; grey while recharging)",
          draw=blast_plate, subdir="Parts", family=False, exempt=BLAST_EXEMPT),
     dict(name="Scarab_BlastHull", element="Charge", act="Cavitation Blast: the Scarab at true scale (domain colour)",
@@ -177,14 +200,15 @@ ICONS += [
 BLAST_TOP = [("prisms", "blue"), ("hull", "domain"), ("plate", "white")]
 LOCKUP["Charge"] = dict(parts=dict(field=blast_field, prisms=blast_prisms, hull=blast_hull, plate=blast_plate),
                         state=[("field", "white")] + BLAST_TOP)
-_BLAST_PARTS = dict(field=blast_field, shattered=blast_field_shattered, plate=blast_plate, hull=blast_hull,
-                    prisms=blast_prisms)
-CARDS += [dict(name="cavitation", element="Charge", before=ICON_DIR + "Scarab_CavitationBlast-PLACEHOLDER.png", before_rev="1ed330395",
-               title="Cavitation Blast: the punch's volume to scale around the Scarab; as it lands the prisms inside shatter forward, "
-                     "then it greys while recharging (Charge 5 Cavitation Shear shatters shielded prisms the same way)",
+_BLAST_PARTS = dict(field=blast_field, shattered=blast_field_shattered, back=blast_field_back,
+                    backshattered=blast_field_back_shattered, plate=blast_plate, hull=blast_hull, prisms=blast_prisms)
+CARDS += [dict(name="cavitation", element="Charge", before=ICON_DIR + "Scarab_CavitationBlast.png", before_rev="927dd7ab2",
+               title="Shove (2026-10-29): the push to scale in front of the Scarab; Charge 5 Backdraft adds the pull behind it "
+                     "(the mirrored half); as it lands the prisms inside shatter forward, then it greys while recharging",
                parts=_BLAST_PARTS,
-               states=[("ready", [("field", "white")] + BLAST_TOP),
-                       ("punching (lit): what it holds shatters", [("shattered", "white")] + BLAST_TOP),
+               states=[("ready (push)", [("field", "white")] + BLAST_TOP),
+                       ("ready, Charge 5 Backdraft (push + pull)", [("back", "white"), ("field", "white")] + BLAST_TOP),
+                       ("Backdraft landing (lit)", [("backshattered", "white"), ("shattered", "white")] + BLAST_TOP),
                        ("recharging", [("field", "white", 0.3), ("prisms", "blue"), ("hull", "domain"), ("plate", "white", 0.3)])])]
 
 VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab"
@@ -198,7 +222,10 @@ REBIND += [
                                            ("BlastField", "Scarab_BlastField", "blastFieldIcon"),
                                            ("BlastFieldShattered", "Scarab_BlastFieldShattered", "blastShatteredIcon"),
                                            ("BlastPlate", "Scarab_BlastPlate", "blastPlateIcon"),
-                                           ("BlastHull", "Scarab_BlastHull", "blastHullIcon")],
+                                           ("BlastHull", "Scarab_BlastHull", "blastHullIcon"),
+                                           ("BlastFieldBack", "Scarab_BlastFieldBack", "blastFieldBackIcon"),
+                                           ("BlastFieldBackShattered", "Scarab_BlastFieldBackShattered",
+                                            "blastShatteredBackIcon")],
                                  fields={"blastReadyColor": None, "blastSpentColor": None})),
 ]
 
@@ -332,4 +359,165 @@ REBIND += [
                                             (round((BALL_CX - 64.0) * _U, 3), 0, CONTAINER_UNITS, CONTAINER_UNITS)),
                                            ("SwitchNear", "Scarab_SwitchNear", "switchNearIcon")],
                                  fields={"switchChargeColors": "[]"})),
+]
+
+
+# ---- The kit change of 2026-10-29 (Garrett) --------------------------------------------------------------------------
+# "The space ability should be the balls that are produced on the membrane. ball forge should be the omnicrystal ability
+# and the drift ability should be displayed alongside the core 5 just like the squirrel does." So the Space card is
+# NUCLEUS SEEDING (ScarabNucleusSeeder: balls of your domain studding the nucleus membrane, Space sizing them x1 -> x4),
+# the Ball Forge is the OMNI crystal card's art (VesselHUDView.omniAbilitySprite; the card's upper plate already wears the
+# crystal's emblem, so the lower plate is what the crystal BECOMES), and the Drift (LT, ScarabDriftAction) gets a core
+# card. The F1/F2/F3 Ball Forge options of 2026-10-28 are retired with the Space slot they were drawn for.
+OMNI_FBX = "Assets/_Models/OmniCrystalExport1_8-21-25.fbx"
+OMNI_RING = 0.78        # face normals within this cosine of the view axis: the pentagon, its 5 squares, its 5 triangles
+OMNI_GAP = 0.78         # each plate drawn at this fraction of itself about its own centre - the explosion, made legible
+
+
+@functools.lru_cache(None)
+def _omni_faces(ring=OMNI_RING):
+    """The omni crystal's outer plate faces as seen down a pentagon's axis, in mesh units: the exploded
+    rhombicosidodecahedron (author_omni_crystal_triangles.py - 12 pentagons, 30 squares, 20 triangles), its
+    pentagon facing the viewer, as OmniCrystal_Active.png draws it."""
+    polys = [np.asarray(q, dtype=float) for q in mesh_silhouette._polys(OMNI_FBX)]
+
+    def normal(q):
+        n = np.cross(q[1] - q[0], q[2] - q[0])
+        n /= np.linalg.norm(n)
+        return n if n @ q.mean(0) > 0 else -n
+
+    outer = [q for q in polys if abs(normal(q) @ (q.mean(0) / np.linalg.norm(q.mean(0)))) > 0.97]
+    axis = next(q.mean(0) for q in outer if len(q) == 5)
+    axis = axis / np.linalg.norm(axis)
+    u = np.cross([0.0, 0.0, 1.0] if abs(axis[2]) < 0.9 else [1.0, 0.0, 0.0], axis)
+    u /= np.linalg.norm(u)
+    v = np.cross(axis, u)
+    faces = []
+    for q in outer:
+        if normal(q) @ axis < ring:
+            continue
+        c = q.mean(0)
+        q = c + (q - c) * OMNI_GAP
+        faces.append(np.stack([q @ u, q @ v], axis=1))
+    span = max(np.abs(f).max() for f in faces)
+    return [f / span for f in faces]          # unit radius
+
+
+def omni_crystal(cx, cy, h, ring=OMNI_RING):
+    """The OMNI crystal from its own mesh: the plates around one pentagon (the pentagon, its five squares and the five
+    triangles between them), each plate separated from the next - the crystal's explosion is its identity. h is the
+    mark's diameter; a lower `ring` takes more of the front hemisphere (0.0: all of it)."""
+    out = empty()
+    for f in _omni_faces(ring):
+        out |= fill([(cx + x * h / 2, cy - y * h / 2) for x, y in f])
+    return out
+
+
+
+# Space: Nucleus Seeding. The nucleus membrane is a wide white cap across the card; a ball of the pilot's domain sits
+# EMBEDDED in it (the seeder sinks it 40% of its radius, ScarabNucleusFieldConfig.embedSinkFraction) - the cap is drawn
+# OVER the ball, so however big the ball the membrane hides what is sunk. Space grows the seeded ball x1 -> x4
+# (ScarabBallForge.SizeScaleFor): the ball part is drawn at its x4 size and the HUD scales it by size / 4 about its own
+# centre, which sits on the membrane, so the ball always reads as half-swallowed.
+SEED_MAX = 4.0
+SEED_R_MAX = 40.0                      # the ball's radius at Space 10 (x4); Space 1 is 10 px
+SEED_SURFACE = 70.0                    # the membrane's top at the card's centre line
+SEED_NUCLEUS_R = 120.0                 # the nucleus's radius on the card: a gentle arc
+SEED_BALL_CY = SEED_SURFACE + 2.0      # the ball's centre: just under the surface
+SEED_CONTAINER_UNITS = 80.0
+
+
+def seed_membrane():
+    """The nucleus: a disc so large only its top arc crosses the card - the membrane the balls are seeded in."""
+    return disc(64.0, SEED_SURFACE + SEED_NUCLEUS_R, SEED_NUCLEUS_R) & bar(6, 122, 6, 122)
+
+
+def seed_ball():
+    """The seeded ball at Space 10 (x4), centred on the card (the HUD places and scales it)."""
+    return disc(64.0, 64.0, SEED_R_MAX)
+
+
+def _seed_ball_at(scale):
+    r = SEED_R_MAX * scale / SEED_MAX
+    return disc(64.0, SEED_BALL_CY, r)
+
+
+def nucleus_seeding(scale=1.0):
+    """The composite: the ball at the live Space size, its sunk half under the membrane (a knock-out between)."""
+    ball = _seed_ball_at(scale)
+    return _clear_of(ball, seed_membrane(), px=3.0) | seed_membrane()
+
+
+SEED_EXEMPT = dict(BLAST_EXEMPT)
+ICONS += [
+    dict(name="Scarab_NucleusSeeding", element="Space",
+         act="Nucleus Seeding: a ball of your domain embedded in the nucleus membrane (composite at Space 5; the HUD draws the parts)",
+         draw=lambda: nucleus_seeding(2.5), exempt={"components": "the membrane and the ball", "gap": "the knock-out along the membrane"}),
+    dict(name="Scarab_SeedMembrane", element="Space", act="Nucleus Seeding: the membrane (white)",
+         draw=seed_membrane, subdir="Parts", family=False, exempt=SEED_EXEMPT),
+    dict(name="Scarab_SeedBall", element="Space", act="Nucleus Seeding: the seeded ball at Space 10 (domain colour; the HUD scales it by size / 4)",
+         draw=seed_ball, subdir="Parts", family=False, exempt=SEED_EXEMPT),
+]
+LOCKUP["Space"] = dict(parts=dict(ball=lambda: _seed_ball_at(1.0), membrane=seed_membrane),
+                       state=[("ball", "domain"), ("membrane", "white")])
+CARDS += [dict(name="seeding", element="Space", before=ICON_DIR + "Scarab_BallForge-PLACEHOLDER.png", before_rev="927dd7ab2",
+               title="Nucleus Seeding (Space, 2026-10-29): a ball of your domain embedded in the nucleus membrane; Space grows "
+                     "the balls you seed x1 -> x4 (Space 5 Core Breaker: they destroy super-shielded prisms)",
+               parts=dict(ball1=lambda: _seed_ball_at(1.0), ball5=lambda: _seed_ball_at(2.5),
+                          ball10=lambda: _seed_ball_at(SEED_MAX), membrane=seed_membrane),
+               states=[("Space 1", [("ball1", "domain"), ("membrane", "white")]),
+                       ("Space 5", [("ball5", "domain"), ("membrane", "white")]),
+                       ("Space 10 (x4)", [("ball10", "domain"), ("membrane", "white")])])]
+REBIND += [
+    # The Space card: the old Ball Forge icon Image becomes the container over the ball (point-anchored at its centre on
+    # the membrane, so the HUD can scale it) and the membrane drawn over it. The forge's energy ring and its tint retire
+    # with the Space slot (the energy economy is off; a crystal always forges).
+    dict(file=VARIANT, pair=dict(container="4990196459091587280", view=VIEW, after="energyRing",
+                                 children=[("SeedBall", "Scarab_SeedBall", "seedBallIcon",
+                                            (0, round((64.0 - SEED_BALL_CY) * SEED_CONTAINER_UNITS / 128.0, 3),
+                                             SEED_CONTAINER_UNITS, SEED_CONTAINER_UNITS)),
+                                           ("SeedMembrane", "Scarab_SeedMembrane", "seedMembraneIcon")],
+                                 binding=dict(element=3, gauge=None),
+                                 fields={"seedIcon": "{fileID: 4990196459091587280}", "energyRing": None, "ballIcon": None,
+                                         "energyFillingColor": None, "energyReadyColor": None,
+                                         "energyTweenDuration": None, "energyReadyPunchScale": None})),
+    dict(file=VARIANT, deactivate="6877628874251343197"),
+]
+
+
+# The OMNI crystal card: Ball Forge. Its upper plate is the crystal's own emblem (the lockup draws it on every hull), so
+# the lower plate is what the crystal BECOMES - the ball, wearing the crystal's plates (SCARAB_CRYSTAL_MORPH: the
+# crystal's body carried onto the ball's hull). One white sprite; a forged ball is the omni ability and no element sizes
+# it.
+def ball_forge():
+    r = 50.0
+    return disc(64.0, 64.0, r) & omni_crystal(64.0, 64.0, 2 * r * 1.12, ring=0.0)
+
+
+# The Drift core card (LT, ScarabDriftAction): the Scarab turned off its course with the course line streaking behind -
+# a drift is the heading leaving the course (SCARAB.md 3.3). One white sprite; the base view presses it with LT.
+DRIFT_ANGLE = 35.0
+
+
+def scarab_drift():
+    hull = mesh_silhouette.silhouette(FBX, box=82, cx=78.0, cy=64.0, roll=-DRIFT_ANGLE, **VIEW_PLAN)
+    wake = empty()
+    for x0, x1, dy in ((8, 46, 0.0), (14, 42, -14.0), (14, 42, 14.0)):
+        wake |= stroke([(x0, 64 + dy), (x1, 64 + dy)], w=6.0)
+    return _clear_of(wake, hull, px=3.0) | hull
+
+
+ICONS += [
+    dict(name="Scarab_BallForge", element="Space", act="Ball Forge (the OMNI crystal card): the ball the crystal becomes, wearing its plates",
+         draw=ball_forge, subdir="Core", family=False,
+         exempt={"components": "the crystal's plates", "gap": "the gaps between the plates", "specks": "the rim plates",
+                 "thin": "the rim plates"}),
+    dict(name="Scarab_Drift", element="Core", act="Drift: the Scarab turned off its course, the course streaking behind it",
+         draw=scarab_drift, subdir="Core", family=False,
+         exempt={"components": "the hull and three streaks", "gap": "the real mesh", "specks": "the mandibles"}),
+]
+REBIND += [
+    # The Drift core card, cloned from the Time card's button (OverheatButton), and the omni card's Ball Forge art.
+    dict(file=VARIANT, core=dict(view=VIEW, donor="2527741218184756275", name="Drift", ability=1, input=2,
+                                 icon="Scarab_Drift", omni="Scarab_BallForge")),
 ]

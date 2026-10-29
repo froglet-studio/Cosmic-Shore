@@ -65,6 +65,34 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Scarab's recut kit: Shove / Backdraft, Sun Cores, Nucleus Seeding / Core Breaker, Snap Dash, drift and omni cards (`claude/scarab-ballforge-icon`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett's recut (R_VesselActions/SCARAB.md §7 RECUT). Charge scales the shove's debuff ×1 → ×2.5
+(`ScarabShoveDebuffByExplosionEffect.asset`, Scarab-only) and its cooldown is a flat 2.5 s; Charge 5 Backdraft mirrors
+the plate (push and pull), which is off at rest. Mass 5 Sun Cores raises the dais's super-shielded suns. Space is
+Nucleus Seeding (seeded balls ×1 → ×4); Space 5 Core Breaker lets a ball shatter super-shielded prisms. Scarab balls
+are no longer slowed by eaten mass. Snap Dash 500 u/s on a 5 s cooldown. HUD: Shove / Switch / Nucleus Seeding /
+Throttle, a Drift core card, the Ball Forge on the omni card. No Unity editor in the session: nothing here was compiled.
+**First-pass tuning:** debuff ×2.5 at Charge 10, dash 500 u/s, cooldown 5 s.
+
+- [ ] Compiles; run `ScarabKitTests` and `ScarabBlastCardTests`. **Pass:** green.
+- [ ] Fly the Scarab from the Toybox Vessel Changer. The row reads Shove, Switch, Nucleus Seeding (a ball in a
+  membrane, your colour), Throttle; a Drift card sits beside it and pressing LT presses it; the omni card shows the
+  Ball Forge (the omni crystal on a disc). No missing sprite, no stray energy ring.
+- [ ] Juke at Charge 0: the plate pushes forward only. Raise Charge to 5: the card shows its pull half and the blast
+  now also reaches behind you.
+- [ ] Hit an enemy vessel with the shove at Charge 0 and at Charge 10: the debuff is about 2.5 times larger at 10.
+  A Dolphin cone's debuff is unchanged.
+- [ ] Score a switch below Mass 5: the dais raises only the wings. At Mass 5: the super-shielded suns rise too.
+- [ ] Space 1 → 10: seeded balls grow ×1 → ×4 and the Space card's ball grows with them. Forged balls (crystal at full
+  energy) stay ×1.
+- [ ] Below Space 5 a ball bounces off a super-shielded prism; at Space 5 a newly seeded or forged ball shatters it.
+- [ ] A Scarab ball eating a wall of prisms keeps its speed. The Astro League scene's ball still slows.
+- [ ] Time 5: double-tap RT gives a far bigger lunge than before (not clipped at 100 u/s); a second double-tap within
+  5 s does nothing.
+- [ ] Undertow and Wrecking Ball (Yash): play one round each; the AI was tuned against the always-mirrored plate, so
+  note whether it misses blasts behind it now.
+
 ### 🔴 The Tiger Moth's re-scoped level 5s (Toll Gate, Afterburn), the dust's ally cleanse, Waystation's square exit gates (`cece/keen-lovelace-cyci91`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor configs, 0 project errors); `waystation_course.py`

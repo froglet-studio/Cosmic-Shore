@@ -11,14 +11,16 @@ namespace CosmicShore.UI
     /// R_VesselActions/SCARAB.md §12).
     ///
     /// Two signals, both event-driven — no per-frame polling in this class:
-    /// - <c>ResourceSystem.OnResourceChanged</c> → ball energy (index 0, the SPACE row's Ball
-    ///   Forge), switch charges (index 1, the MASS row) and that row's COOLDOWN VEIL.
+    /// - <c>ResourceSystem.OnResourceChanged</c> → switch charges (index 1, the MASS row) and that
+    ///   row's COOLDOWN VEIL. <c>OnElementLevelChange</c> → the Switch ball's scale (Mass) and the
+    ///   seeded ball's size on the SPACE row's Nucleus Seeding card (Space). The ball-energy meter
+    ///   (index 0) has no readout since the Space slot became Nucleus Seeding (2026-10-29).
     ///   Subscribed on the vessel's OWN
     ///   ResourceSystem, never reached for by type through the hierarchy — a HUD controller that
     ///   hunts another vessel's component compiles, returns null on every vessel that isn't
     ///   carrying it, and leaves a dead gauge with no error (the Squirrel polled a Sparrow-only
     ///   executor for its heat gauge for the component's entire life that way).
-    /// - <c>ScarabCavitationBlast.OnBlastReadyChanged</c> → the CHARGE row's ready/recharging
+    /// - <c>ScarabCavitationBlast.OnBlastReadyChanged</c> → the CHARGE row's (the Shove's) ready/recharging
     ///   readout, from a serialized reference on this vessel's prefab so a missing wire is
     ///   visible in the inspector. The edge carries the live cooldown length, so the optional
     ///   sweep ring is one tween per use. Each edge (and the seed) also repaints the card's hull in the
@@ -55,8 +57,6 @@ namespace CosmicShore.UI
         [SerializeField] ScarabCavitationBlast cavitationBlast;
 
         [Header("Resource indices")]
-        [Tooltip("Meter that fills toward a ball (the Scarab authors index 0, 'Ball Energy').")]
-        [SerializeField] int energyResourceIndex = 0;
         [Tooltip("Meter that holds switch charges (index 1, 'Switch Charges').")]
         [SerializeField] int switchResourceIndex = 1;
         [Tooltip("Charges per full switch meter — must match PlaceSwitchActionSO." +
@@ -105,10 +105,12 @@ namespace CosmicShore.UI
             if (_resources)
             {
                 view?.SetSwitchRingColor(ResolveDomainSignalColor());
+                view?.SetSeedColor(ResolveDomainSignalColor());
                 _resources.OnResourceChanged += HandleResourceChanged;
                 _resources.OnElementLevelChange += HandleElementLevelChange;
                 SeedFromResources();
                 PushSwitchScale();
+                PushSeedScale();
             }
 
             if (_boundBlast)
@@ -123,9 +125,6 @@ namespace CosmicShore.UI
         {
             if (_resources == null) return;
             var list = _resources.Resources;
-            if (IsValid(energyResourceIndex))
-                HandleResourceChanged(energyResourceIndex, list[energyResourceIndex].CurrentAmount,
-                                      list[energyResourceIndex].MaxAmount);
             if (IsValid(switchResourceIndex))
                 HandleResourceChanged(switchResourceIndex, list[switchResourceIndex].CurrentAmount,
                                       list[switchResourceIndex].MaxAmount);
@@ -139,15 +138,7 @@ namespace CosmicShore.UI
         {
             if (!view || max <= 0f) return;
 
-            if (index == energyResourceIndex)
-            {
-                float normalized = Mathf.Clamp01(current / max);
-                // FULL is the beat that matters: at or above it the next crystal forges a ball
-                // instead of topping up. Compared with a small epsilon because the meter lands on
-                // its ceiling through repeated float adds.
-                view.SetBallEnergy(normalized, normalized >= 1f - 0.0001f);
-            }
-            else if (index == switchResourceIndex)
+            if (index == switchResourceIndex)
             {
                 // Floor, not round: the count must never claim a charge the spend gate would
                 // refuse (PlaceSwitchActionExecutor tests against the cost with an epsilon).
@@ -172,6 +163,15 @@ namespace CosmicShore.UI
         void HandleElementLevelChange(Element element, int level)
         {
             if (element == Element.Mass) PushSwitchScale();
+            else if (element == Element.Space) PushSeedScale();
+        }
+
+        /// <summary>The Nucleus Seeding card's ball grows with Space - the size the seeder mints at
+        /// (ScarabBallForge.SizeScaleFor, read live at the level change).</summary>
+        void PushSeedScale()
+        {
+            if (!view || _status == null) return;
+            view.SetSeedScale(ScarabBallForge.SizeScaleFor(_status));
         }
 
         /// <summary>The Switch card's ball shrinks as Mass grows the ring (switchScale, read live at the

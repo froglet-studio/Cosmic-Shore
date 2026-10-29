@@ -1872,7 +1872,6 @@ MonoBehaviour:
   radiusPerVesselRadius: 10
   fallbackVesselRadius: 4.5
   cooldownSeconds: 2.5
-  cooldownMultiplierAtFullCharge: 0.5
 --- !u!1 &6013774229915510331
 GameObject:
   m_ObjectHideFlags: 0

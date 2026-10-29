@@ -28,7 +28,7 @@ Each icon names the ACT, read from the hull's ElementalAbilityMapSO entry:
            Space  Scope              a reticle: ring, split crosshair, centre dot
   Scarab   Charge Cavitation Blast   (retired 2026-10-28: the icon kit's card, specs/scarab.py)
            Mass   Switch             (retired 2026-10-28: the icon kit's card, specs/scarab.py)
-           Space  Ball Forge         a ball with crystals converging on it
+           Space  Ball Forge         (retired 2026-10-29: the Space slot is the kit's Nucleus Seeding card)
            Time   Throttle           a speed dial with its needle
 
 OPEN DESIGN SLOTS GET NO ICON (none today - the Rhino's Charge and Space were the last two and
@@ -184,18 +184,6 @@ def serpent_seed_wall(px, py):
 
 # -- Scarab --------------------------------------------------------------------
 
-def scarab_ball_forge(px, py):
-    """A ball with four crystals converging on it - the skimmer forges crystals into balls."""
-    if circle(px, py, 64, 54, 30) and not circle(px, py, 52, 66, 9):   # ball + highlight
-        return True
-    for ang in (35.0, 75.0, 105.0, 145.0):
-        a = math.radians(ang)
-        dx, dy = 64 + 50 * math.cos(a), 54 + 50 * math.sin(a)
-        if abs(px - dx) + abs(py - dy) <= 8.5:                   # a crystal (diamond)
-            return True
-    return False
-
-
 def scarab_throttle(px, py):
     """A speed dial with its needle - Time raises the throttle ramp's top speed."""
     cx, cy = 64, 46
@@ -228,7 +216,7 @@ HULLS = {
     "Scarab": {
         # Scarab_CavitationBlast retired 2026-10-28: the icon kit's punch volume to scale (specs/scarab.py).
         # Scarab_Switch retired 2026-10-28: the icon kit's ball threading the ring (specs/scarab.py).
-        "Scarab_BallForge-PLACEHOLDER.png": scarab_ball_forge,
+        # Scarab_BallForge retired 2026-10-29: Space is the kit's Nucleus Seeding card; the forge is the omni card.
         "Scarab_Throttle-PLACEHOLDER.png": scarab_throttle,
     },
 }
