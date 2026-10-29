@@ -50,11 +50,10 @@ MonoBehaviour:
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Lockdown
-    UpgradeDescription: 'A crystal collected while Lockdown is active locks up every live wall
-      you own: every square hole is sealed with a flat DANGER panel, a thin crack short of the
-      shields around it, and so is each hole the wall completes as it keeps growing. Later
-      crystals re-shield the wall and replace any panel that was shot out. Read from the
-      replicated unlock bit when the crystal lands.'
+    UpgradeDescription: 'Every square hole in your walls whose four surrounding bricks have
+      all closed is sealed with a flat DANGER panel, a thin crack short of the shields around it,
+      the moment its fourth brick lands. Crystals still only shield the wall. Read from the
+      replicated unlock bit.'
   - Element: 3
     AbilityLabel: Scope
     AbilityDescription: 'Hold the left trigger and a magnified view down your own nose opens in

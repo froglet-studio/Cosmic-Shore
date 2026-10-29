@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 namespace CosmicShore.UI
 {
@@ -26,12 +27,29 @@ namespace CosmicShore.UI
                  "A burn drops the pips at once - spending is never eased.")]
         [SerializeField, Min(0.01f)] private float pipFillRate = 1.5f;
 
+        [Header("Seed Wall card (MASS)")]
+        [Tooltip("The wall's base bricks at their real size and spacing (Serpent_SeedWallBricks), in the pilot's " +
+                 "domain colour (SetSeedWallColor).")]
+        [SerializeField] private Image seedWallBricksIcon;
+        [Tooltip("The seed, the wall's centre brick (Serpent_SeedWallSeed), white.")]
+        [SerializeField] private Image seedWallSeedIcon;
+        [Tooltip("Lockdown (Mass 5): the danger panels in the closed holes (Serpent_SeedWallPanels), shown only " +
+                 "while the upgrade is active.")]
+        [SerializeField] private Image seedWallPanelsIcon;
+        [Tooltip("The panels' colour: the danger tint (ElementalBarsConfigSO.FireColor).")]
+        [SerializeField] private Color seedWallPanelColor = new Color(1f, 0.3294f, 0.102f, 1f);
+
         Image[] _boostPips;
         float _pelletsShown = -1f;
         float _pelletsTarget;
 
         public override void Initialize()
         {
+            if (seedWallPanelsIcon)
+            {
+                seedWallPanelsIcon.color = seedWallPanelColor;
+                seedWallPanelsIcon.enabled = IsAbilityUpgraded(Element.Mass);
+            }
             BuildBoostPipCache();
             InitializeShieldHUD();
             InitializeBoostPips();
@@ -45,6 +63,19 @@ namespace CosmicShore.UI
         }
 
         // ---------- Public API for controller ----------
+
+        /// <summary>The Seed Wall card's bricks, in the pilot's <paramref name="domain"/> colour.</summary>
+        public void SetSeedWallColor(Color domain)
+        {
+            if (seedWallBricksIcon) seedWallBricksIcon.color = domain;
+        }
+
+        /// <summary>Lockdown (Mass 5) seals the card's closed holes with their danger panels.</summary>
+        public override void SetAbilityUpgraded(Element element, bool upgraded)
+        {
+            base.SetAbilityUpgraded(element, upgraded);
+            if (element == Element.Mass && seedWallPanelsIcon) seedWallPanelsIcon.enabled = upgraded;
+        }
 
         public void InitializeHUD()
         {

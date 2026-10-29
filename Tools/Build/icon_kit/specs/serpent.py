@@ -15,6 +15,8 @@ at a time with Garrett, options in the hull's whole lockup.
 The hull is the Serpent's own mesh (SerpentExport.fbx, Serpent.prefab) from straight above, nose RIGHT (pitch 0,
 yaw 0: the round head at +x, the arms trailing - the grid on 2026-10-29).
 """
+import math
+
 import mesh_silhouette
 from canvas import N, empty, fill, stroke
 from specs.rhino import stella
@@ -172,126 +174,153 @@ CARDS += [
 ]
 
 
-# ---- Mass: Seed Wall options (2026-10-29) --------------------------------------------------------------------------
-# Stopping or cloaking leaves a SEED prism; loose prisms are pulled in at the wall's EDGE into a symmetric herringbone
-# of 2:1 bricks with a square hole at every cell (SeedWallActionSO): four bricks wind round each hole - the pinwheel.
-# Mass sizes the bricks; Mass 5 LOCKDOWN seals every hole with a flat DANGER panel when a crystal lands. The wall is
-# the pilot's (domain); the seed is the ability's object (white); stolen prisms arrive in the HUD's blue.
-def _rect(x0, y0, x1, y1, inset):
-    return fill([(x0 + inset, y0 + inset), (x1 - inset, y0 + inset), (x1 - inset, y1 - inset), (x0 + inset, y1 - inset)])
+# ---- Mass: Seed Wall, and the OMNI crystal card (2026-10-29) -------------------------------------------------------
+# Garrett, 2026-10-29: "use the actual dimensions of the wall. only show the shielded prisms in the omnicrystal icon.
+# use the base prisms and danger prisms to denote the upgrade with their actual positioning and scales." Every number
+# is SerpentWallLattice's at rest (SeedWallAction.asset): short side 3, bricks 3 x 6 (aspect 2) on a square lattice at
+# pitch 5 x short = 15, long axis UP where i + j is even and RIGHT where it is odd; a shielded brick is the rhombus with
+# semi-axes 3 x its half-extents (9 along the long axis, 4.5 across); a Lockdown panel is the tilted square in the cell
+# between four bricks (CellPanel: side 10.6 = 2 x (apothem 6.04 - clearance 0.75), turned atan(1/2) = 26.6 degrees in
+# an even cell, the mirror in an odd one). Mass scales all of it together, so the card's proportions hold at any level.
+# The Mass card shows the wall as it is BUILT (base bricks, the pilot's domain) and Lockdown as the danger panels in
+# every closed hole; the omni card shows what a crystal does to it - every brick shielded, nothing else.
+WALL_SHORT = 3.0
+WALL_ASPECT = 2.0
+WALL_REACH = 3.0                       # OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE
+WALL_PITCH = (WALL_REACH * (WALL_ASPECT + 1) * 0.5 + 0.5) * WALL_SHORT      # 15
+LOCK_CLEARANCE = 0.25 * WALL_SHORT
+WALL_SITES = [(i, j) for j in (1, 0, -1) for i in (-1, 0, 1)]
+WALL_CELLS = [(i, j) for j in (0, -1) for i in (-1, 0)]
 
 
-def pinwheel(cx, cy, u, cells=2, gap=2.2, diamonds=False):
-    """`cells` x `cells` herringbone cells of size 3u centred on (cx, cy): bricks, and the holes' centres."""
-    x0, y0 = cx - cells * 1.5 * u, cy - cells * 1.5 * u
-    bricks, holes = [], []
-    for i in range(cells):
-        for j in range(cells):
-            ox, oy = x0 + i * 3 * u, y0 + j * 3 * u
-            for a, b, c, d in ((0, 0, 2, 1), (2, 0, 3, 2), (1, 2, 3, 3), (0, 1, 1, 3)):
-                bricks.append((ox + a * u, oy + b * u, ox + c * u, oy + d * u))
-            holes.append((ox + 1.5 * u, oy + 1.5 * u))
+def _wall_px(k):
+    return lambda x, y: (64.0 + x * k, 64.0 - y * k)
+
+
+def _up(i, j):
+    return (i + j) % 2 == 0
+
+
+def _brick(i, j, k):
+    P = _wall_px(k)
+    cx, cy = i * WALL_PITCH, j * WALL_PITCH
+    hx, hy = (WALL_SHORT / 2, WALL_SHORT) if _up(i, j) else (WALL_SHORT, WALL_SHORT / 2)
+    return fill([P(cx - hx, cy - hy), P(cx + hx, cy - hy), P(cx + hx, cy + hy), P(cx - hx, cy + hy)])
+
+
+def _rhombus(i, j, k):
+    P = _wall_px(k)
+    cx, cy = i * WALL_PITCH, j * WALL_PITCH
+    hl, hs = WALL_REACH * WALL_SHORT * WALL_ASPECT / 2, WALL_REACH * WALL_SHORT / 2
+    a, b = ((0, hl), (hs, 0)) if _up(i, j) else ((hl, 0), (0, hs))
+    return fill([P(cx + a[0], cy + a[1]), P(cx + b[0], cy + b[1]), P(cx - a[0], cy - a[1]), P(cx - b[0], cy - b[1])])
+
+
+def _panel(i, j, k):
+    P = _wall_px(k)
+    pitch = WALL_PITCH
+    apothem = ((WALL_ASPECT + 1) * pitch - WALL_REACH * WALL_ASPECT * WALL_SHORT) / (2 * math.sqrt(WALL_ASPECT ** 2 + 1))
+    side = 2 * (apothem - LOCK_CLEARANCE)
+    tilt = math.degrees(math.atan2(1, WALL_ASPECT))
+    ang = math.radians(tilt if (i + j) % 2 == 0 else 90 - tilt)
+    cx, cy = (i + 0.5) * pitch, (j + 0.5) * pitch
+    pts = []
+    for dx, dy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+        x, y = dx * side / 2, dy * side / 2
+        pts.append(P(cx + x * math.cos(ang) - y * math.sin(ang), cy + x * math.sin(ang) + y * math.cos(ang)))
+    return fill(pts)
+
+
+# The Mass card: nine sites (the seed at the centre), 3.2 px a unit, so the wall's 36 units fill the card edge to edge.
+MASS_K = 3.5
+
+
+def mass_bricks():
     m = empty()
-    for x0_, y0_, x1_, y1_ in bricks:
-        if diamonds:
-            mx, my = (x0_ + x1_) / 2, (y0_ + y1_) / 2
-            hx, hy = (x1_ - x0_) / 2 - gap / 2, (y1_ - y0_) / 2 - gap / 2
-            m |= fill([(mx - hx, my), (mx, my - hy), (mx + hx, my), (mx, my + hy)])
-        else:
-            m |= _rect(x0_, y0_, x1_, y1_, gap / 2)
-    return m, holes
+    for i, j in WALL_SITES:
+        if (i, j) != (0, 0):
+            m |= _brick(i, j, MASS_K)
+    return m
 
 
-def _hole_panels(holes, u, gap=2.2):
+def mass_seed():
+    return _brick(0, 0, MASS_K)
+
+
+def mass_panels():
     m = empty()
-    for hx, hy in holes:
-        m |= _rect(hx - u / 2, hy - u / 2, hx + u / 2, hy + u / 2, gap * 0.75)
+    for i, j in WALL_CELLS:
+        m |= _panel(i, j, MASS_K)
     return m
 
 
-def _seed(cx, cy, r):
-    return fill([(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)])
+def seed_wall():
+    """The composite at Mass 5: the base wall and every closed hole sealed."""
+    return mass_bricks() | mass_seed() | mass_panels()
 
 
-# A: THE WEAVE. Two by two herringbone cells, the seed in the centre hole; Lockdown fills the other holes with danger.
-SW_U = 16.0
+# The omni card: the same nine sites, every one SHIELDED (the rhombi nearly touch, half a short side of air between
+# them); 2.4 px a unit so the 48 units the shields span fill the box.
+OMNI_K = 2.4
 
 
-def sw_a_wall():
-    m, _ = pinwheel(64.0, 64.0, SW_U)
+def wall_shielded():
+    m = empty()
+    for i, j in WALL_SITES:
+        m |= _rhombus(i, j, OMNI_K)
     return m
 
 
-def sw_a_seed():
-    return _seed(64.0, 64.0, SW_U * 0.62)
-
-
-def sw_a_panels():
-    _, holes = pinwheel(64.0, 64.0, SW_U)
-    return _hole_panels(holes, SW_U)
-
-
-# Note the 2x2 patch's holes sit at the four cell centres; the seed takes the patch's centre where four cells meet,
-# which in the herringbone is a brick seam, so A seats the seed on a hole instead: the top-left cell's.
-def sw_a_seed_on_hole():
-    _, holes = pinwheel(64.0, 64.0, SW_U)
-    hx, hy = holes[0]
-    return _seed(hx, hy, SW_U * 0.55)
-
-
-# B: STEALING. One cell grown round the seed, the wall's edge open, and a loose prism (blue) pulled in toward the open
-# site with a pull stroke - the wall eats toward the mass around it.
-def sw_b_wall():
-    m, _ = pinwheel(48.0, 64.0, 22.0, cells=1)
-    return m
-
-
-def sw_b_seed():
-    return _seed(48.0, 64.0, 22.0 * 0.5)
-
-
-def sw_b_loose():
-    return _clear_of(fill([(104.0, 52.0), (122.0, 52.0), (122.0, 76.0), (104.0, 76.0)]), sw_b_wall())
-
-
-def sw_b_pull():
-    return stroke([(100.0, 64.0), (86.0, 64.0)], w=5.0) | fill([(80.0, 64.0), (88.0, 57.0), (88.0, 71.0)])
-
-
-def sw_b_panel():
-    return _hole_panels([(48.0, 64.0)], 22.0)
-
-
-# C: THE DIAMONDS. The bricks as the octahedra the game builds (shielded, each a long diamond, long vertex at short
-# vertex), the seed in a hole; Lockdown panels in the holes.
-def sw_c_wall():
-    m, _ = pinwheel(64.0, 64.0, SW_U, diamonds=True)
-    return m
-
-
-def sw_c_panels():
-    _, holes = pinwheel(64.0, 64.0, SW_U)
-    return _hole_panels(holes[1:], SW_U)
-
-
-def _sw_card(key, title, parts, states):
-    return dict(name=f"seedwall_{key}", group="seedwall", lockup_state=0, element="Mass",
-                before=ICON_DIR + "Serpent_SeedWall-PLACEHOLDER.png", title=title, parts=parts, states=states)
-
-
+WALL_EXEMPT = {"at40": "a part: the HUD draws the wall whole; the bricks are their real size", "components": "the wall's bricks", "gap": "the lattice's real spacing", "coverage": "the base wall is sparse",
+               "box_fill": "a part", "in_box": "a part", "thin": "a part", "specks": "a part"}
+ICONS += [
+    dict(name="Serpent_SeedWall", element="Mass",
+         act="Seed Wall / Lockdown: the wall's base bricks round the seed at their real size and spacing, every closed hole "
+             "sealed with its danger panel (composite; the HUD shows the panels only at Mass 5)",
+         draw=seed_wall, exempt={"components": "the wall's bricks and panels", "gap": "the lattice's real spacing",
+                                 "in_box": "the wall runs to the card's edge at its real spacing",
+                                 "coverage": "the panels are their real size: the sealed wall is dense"}),
+    dict(name="Serpent_SeedWallBricks", element="Mass", act="Seed Wall: the base bricks (domain colour)", draw=mass_bricks,
+         subdir="Parts", family=False, exempt=WALL_EXEMPT),
+    dict(name="Serpent_SeedWallSeed", element="Mass", act="Seed Wall: the seed, the centre brick (white)", draw=mass_seed,
+         subdir="Parts", family=False, exempt=WALL_EXEMPT),
+    dict(name="Serpent_SeedWallPanels", element="Mass", act="Lockdown: the danger panels in the four closed holes (danger)",
+         draw=mass_panels, subdir="Parts", family=False, exempt=WALL_EXEMPT),
+    dict(name="Serpent_WallShield", element="Mass", act="The OMNI crystal card: the wall with every brick shielded",
+         draw=wall_shielded, subdir="Core", family=False,
+         exempt={"components": "the wall's shielded bricks", "gap": "the half short side of air between shields"}),
+]
+LOCKUP["Mass"] = dict(parts=dict(b=mass_bricks, s=mass_seed), state=[("b", "domain"), ("s", "white")])
 CARDS += [
-    _sw_card("a", "A  The weave: two by two herringbone cells in your colour, the seed white in a hole; Mass 5 Lockdown: "
-                  "the other holes sealed in danger",
-             dict(wall=sw_a_wall, seed=sw_a_seed_on_hole,
-                  panels=sw_c_panels),
-             [("growing", [("wall", "domain"), ("seed", "white")]),
-              ("Mass 5 Lockdown, after a crystal", [("wall", "domain"), ("panels", "danger"), ("seed", "white")])]),
-    _sw_card("b", "B  Stealing: one cell round the seed and a loose prism pulled in at the open edge; Lockdown: the hole sealed",
-             dict(wall=sw_b_wall, seed=sw_b_seed, loose=sw_b_loose, pull=sw_b_pull, panel=sw_b_panel),
-             [("growing: stealing a prism", [("wall", "domain"), ("seed", "white"), ("pull", "white"), ("loose", "blue")]),
-              ("Mass 5 Lockdown", [("wall", "domain"), ("panel", "danger"), ("pull", "white"), ("loose", "blue")])]),
-    _sw_card("c", "C  The diamonds: the wall as the octahedral bricks the game builds, the seed in a hole; Lockdown panels",
-             dict(wall=sw_c_wall, seed=sw_a_seed_on_hole, panels=sw_c_panels),
-             [("growing", [("wall", "domain"), ("seed", "white")]),
-              ("Mass 5 Lockdown", [("wall", "domain"), ("panels", "danger"), ("seed", "white")])]),
+    dict(name="seedwall", element="Mass", before=ICON_DIR + "Serpent_SeedWall-PLACEHOLDER.png",
+         title="Seed Wall (Mass): the wall's base bricks round the seed at real size and spacing; Mass 5 Lockdown seals a "
+               "hole with its danger panel as its fourth brick closes",
+         parts=dict(bricks=mass_bricks, seed=mass_seed, panels=mass_panels),
+         states=[("Mass 1-4: the wall as built", [("bricks", "domain"), ("seed", "white")]),
+                 ("Mass 5 Lockdown: closed holes sealed", [("panels", "danger"), ("bricks", "domain"), ("seed", "white")])]),
+    dict(name="omni", element="Omni", before=ICON_DIR + "Serpent_SeedWall-PLACEHOLDER.png",
+         title="The OMNI crystal card: a crystal beams to the wall and shields every brick - the shielded wall, nothing else",
+         parts=dict(wall=wall_shielded), states=[("a crystal collected", [("wall", "white")])]),
+]
+
+# The Serpent's view lives on the VESSEL (Serpent.prefab) and reaches the HUD variant's Images through stripped proxies
+# (author_hull_ability_rows.py): the parts go into the variant under the Mass icon (a `pair` with no view), then a
+# `proxy` step points the view's fields at them and sets the omni card's art.
+VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/SerpentHUDVariant.prefab"
+VARIANT_GUID = "af7b78e6bb3a8394f88f24bb0e31667a"
+VESSEL = "Assets/_Prefabs/Spacevessels/Serpent.prefab"
+VESSEL_HUD_INSTANCE = 4033090122440962496
+VIEW = "5470374086122723936"           # SerpentVesselHUDView on Serpent.prefab
+MASS_ICON = "7710000000000002025"      # the Mass slot's icon Image in the variant (author_hull_ability_rows.slot_ids)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=MASS_ICON,
+                                 children=[("SeedWallPanels", "Serpent_SeedWallPanels", None),
+                                           ("SeedWallBricks", "Serpent_SeedWallBricks", None),
+                                           ("SeedWallSeed", "Serpent_SeedWallSeed", None)])),
+    dict(file=VESSEL, proxy=dict(view=VIEW, instance=VESSEL_HUD_INSTANCE, source_file=VARIANT, source_guid=VARIANT_GUID,
+                                 after="pipEmptyColor",
+                                 refs=[("seedWallPanelsIcon", MASS_ICON, "SeedWallPanels"),
+                                       ("seedWallBricksIcon", MASS_ICON, "SeedWallBricks"),
+                                       ("seedWallSeedIcon", MASS_ICON, "SeedWallSeed")],
+                                 fields={"omniAbilitySprite": ("icon", "Serpent_WallShield")})),
 ]

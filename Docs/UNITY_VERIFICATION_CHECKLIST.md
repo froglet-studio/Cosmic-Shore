@@ -65,6 +65,22 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Lockdown seals closed holes (not on crystals); Seed Wall and omni cards from the wall's real geometry (`claude/serpent-icons`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** `SerpentWallAssembler`: Lockdown (Mass 5) now lays the same danger panels in the same places, but as
+each hole's fourth brick lands (and, when the upgrade comes on, for the holes already closed at the next steal sweep);
+a crystal only shields. HUD: the Mass card is three parts under the Mass icon in `SerpentHUDVariant.prefab` (bricks in
+domain colour, the white seed, the Lockdown panels shown only at Mass 5), bound on `Serpent.prefab`'s view through
+stripped proxies; the omni card's art is the shielded wall (`omniAbilitySprite`). No Unity in the session.
+
+- [ ] Compiles. Serpent.prefab opens with no missing-reference warnings; the view's three Seed Wall fields are wired.
+- [ ] Fly the Serpent (Toybox Vessel Changer): the Mass card shows nine small bricks in your colour round a white one;
+  the omni card shows the diamond wall; no placeholder art on either.
+- [ ] Below Mass 5 no panels on the card. At Mass 5 four danger squares appear in the holes.
+- [ ] Mass 5, stop to seed a wall, collect NO crystal: each hole gets its danger panel as its fourth brick lands.
+- [ ] Collect a crystal: the wall shields (beam and ripple) and no panels appear from the crystal itself.
+- [ ] Reach Mass 5 with a wall already grown: its closed holes seal within a fraction of a second.
+
 ### 🔴 Rejoin a running match (Rev 37, section 103.1) (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor). Not opened in the editor. Needs two clients (MPPM: a host and one guest in a party), a mode with a turn (Skim Race).

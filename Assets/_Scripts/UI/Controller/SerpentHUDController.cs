@@ -1,7 +1,9 @@
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 namespace CosmicShore.UI
 {
     public class SerpentHUDController : VesselHUDController
@@ -21,6 +23,8 @@ namespace CosmicShore.UI
         [Tooltip("Drives the CHARGE card's cooldown veil. Resolved from the registry when left " +
                  "empty; a Serpent without the ability simply shows no veil.")]
         [SerializeField] private SniperShotActionExecutor sniperShotExecutor;
+
+        [Inject] GameDataSO _gameData;
 
         IVesselStatus  _status;
         ResourceSystem _rs;
@@ -63,6 +67,8 @@ namespace CosmicShore.UI
                 }
             }
 
+            view.SetSeedWallColor(ResolveDomainSignalColor());
+
             _rs = _status?.ResourceSystem;
             if (_rs != null)
             {
@@ -71,6 +77,15 @@ namespace CosmicShore.UI
             }
 
             PushPelletFuel();
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Scarab's and
+        /// the Rhino's cards read it.</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return Color.white;
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
 
         void OnDisable()
