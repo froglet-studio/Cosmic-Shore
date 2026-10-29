@@ -1,0 +1,167 @@
+{
+ "baseline": {
+  "error": null,
+  "loss": 4.180346244060349,
+  "metrics": {
+   "dnf": 0,
+   "limits": "point mass; no break-off; the scalar charge economy (DOLPHIN_ENERGY_ECONOMY.md 2)",
+   "model": "dolphin_drive",
+   "races": 4,
+   "seconds_by_intensity": {
+    "1": 54.0,
+    "2": 64.5,
+    "3": 73.0,
+    "4": 71.9
+   }
+  },
+  "params": {
+   "alignDegrees": 12.0,
+   "engageRunwaySeconds": 2.5,
+   "maxHoldOffSeconds": 4.0,
+   "minDischargeSeconds": 0.2,
+   "minPulseGainUnits": 30.0,
+   "peakMarginUnits": 3.0,
+   "spendAtCharge01": 0.95
+  }
+ },
+ "errors": {},
+ "evals": 4113,
+ "history": [
+  [
+   9,
+   4.1685444134859955,
+   1793264658,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   18,
+   4.167106579300545,
+   1793264659,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   81,
+   4.165628761960257,
+   1793264665,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   90,
+   4.164653365725641,
+   1793264666,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   180,
+   4.1626954591666765,
+   1793264674,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   207,
+   4.162381898284737,
+   1793264677,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   216,
+   4.1620280411839055,
+   1793264678,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   270,
+   4.161165517215823,
+   1793264683,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   279,
+   4.158216552331879,
+   1793264683,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   306,
+   4.1547420535348545,
+   1793264686,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   315,
+   4.149709340026848,
+   1793264687,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   324,
+   4.14816507817834,
+   1793264688,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   333,
+   4.146811423336544,
+   1793264688,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   486,
+   4.146094575862159,
+   1793264702,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   531,
+   4.14573717765976,
+   1793264706,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   585,
+   4.1449789474501575,
+   1793264711,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   603,
+   4.144619496711028,
+   1793264712,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   630,
+   4.144182520652595,
+   1793264715,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   657,
+   4.14378220031085,
+   1793264717,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   666,
+   4.143381237915357,
+   1793264718,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   891,
+   4.14337969409081,
+   1793264738,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   900,
+   4.143021784222951,
+   1793264738,
+   "shombithofficial/dragonsweapon"
+  ]
+ ],
+ "restarts": 3,
+ "seconds": 366.9,
+ "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
+ "updated": 1793265022
+}
