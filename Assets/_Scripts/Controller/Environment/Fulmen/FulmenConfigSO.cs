@@ -127,6 +127,33 @@ namespace CosmicShore.Gameplay
         {
             LastPrismsBurnt = LastCrystalsStruck = LastBolts = Strikes = 0;
             LastStrikeTime = -1f;
+            NetId = StableHash(name);
+            s_byNetId[NetId] = this;
+        }
+
+        void OnDisable()
+        {
+            if (s_byNetId.TryGetValue(NetId, out var c) && c == this) s_byNetId.Remove(NetId);
+        }
+
+        // ---- network identity: a strike message names its config by a hash of the asset name (the same build on
+        // every peer, so the same name), resolved against the configs this peer has loaded.
+        static readonly System.Collections.Generic.Dictionary<int, FulmenConfigSO> s_byNetId = new();
+
+        /// <summary>This config's id on the wire (FNV-1a of its asset name).</summary>
+        [System.NonSerialized] public int NetId;
+
+        /// <summary>The loaded config with <paramref name="netId"/>, or null.</summary>
+        public static FulmenConfigSO ByNetId(int netId) => s_byNetId.TryGetValue(netId, out var c) ? c : null;
+
+        static int StableHash(string s)
+        {
+            unchecked
+            {
+                uint h = 2166136261u;
+                if (s != null) for (int i = 0; i < s.Length; i++) { h ^= s[i]; h *= 16777619u; }
+                return (int)h;
+            }
         }
 
         /// <summary>The root range in a cell of <paramref name="cellRadius"/>.</summary>
