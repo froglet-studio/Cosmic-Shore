@@ -176,7 +176,6 @@ namespace CosmicShore.Gameplay
         private Vector3 _followAngularVelocity;          // degrees/s, axis x rate (angular-acceleration mode)
         private Quaternion _lastFollowTargetRotation;
 
-        /// <summary>This frame's follow frame (see <see cref="MaxFollowTurnRate"/>).</summary>
         /// <summary>The frame the camera follows in before any turn cap: the hull's rotation, moved onto
         /// <see cref="FollowFrameOverride"/> by its weight.</summary>
         private Quaternion FollowFrameTarget()
@@ -187,6 +186,7 @@ namespace CosmicShore.Gameplay
                 : hull;
         }
 
+        /// <summary>This frame's follow frame (see <see cref="MaxFollowTurnRate"/>).</summary>
         private Quaternion StepFollowFrame(float dt)
         {
             Quaternion target = FollowFrameTarget();

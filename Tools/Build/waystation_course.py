@@ -437,6 +437,23 @@ COMPILE_POS_TOLERANCE = 0.05     # units; measured worst 0.0059
 COMPILE_AXIS_TOLERANCE = 0.05    # degrees; measured worst 0.0005
 
 
+HARNESS_CSPROJ = """<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Unity.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Waystation/WaystationCourse.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs" />
+  </ItemGroup>
+</Project>
+"""
+
+
 def compile_and_compare(seeds, target):
     """Build and run the SHIPPED C#, then compare it to this model gate for gate."""
     import shutil
@@ -447,6 +464,12 @@ def compile_and_compare(seeds, target):
         print("--compile needs a dotnet SDK; install one and re-run (see .claude/skills/"
               "asset-surgery). SKIPPED, not passed.")
         return False
+
+    # The repo ignores *.csproj (Unity regenerates its own), so the harness's project file is never
+    # committed: without this a fresh clone fails with MSB1003, reported below as "does not compile".
+    csproj = HARNESS / "waystation_harness.csproj"
+    if not csproj.exists():
+        csproj.write_text(HARNESS_CSPROJ, encoding="utf-8")
 
     build = subprocess.run([dotnet, "build", "-v", "q", "--nologo"], cwd=HARNESS,
                            capture_output=True, text=True)
