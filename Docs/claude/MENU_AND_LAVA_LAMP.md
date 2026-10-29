@@ -236,6 +236,40 @@ Meerkat is still on its roster). The Meerkat-only menu code (the executor's Menu
 omnicrystal and camera rules) simply does not run for a Squirrel. The Lavalamp wormhole lab
 (`Game_TestDesign/LavalampWormholeLab.unity`) is its own scene and still flies the Meerkat.
 
+#### God mode: the lava lamp's inspection camera (2026-10-29)
+
+Fly a free camera through the lava lamp while the AI keeps flying the vessel (Yash: "I dont need a lab to check out
+this vessel's ability, I just need a god mode, with which I can fly smoothly in the environment without the vessel, and
+have an eye on everything while the Vessel is flown by AI"). This replaces the wormhole lab as the way to watch a hull's
+ability; the lab scene was left in place, but nothing needs it any more.
+
+| Input | Keyboard / mouse | Gamepad |
+|---|---|---|
+| Toggle god mode | **F2** | **L3** (left-stick click) |
+| Move | W A S D | left stick |
+| Up / down | E or Space / Q or Ctrl | RT / LT |
+| Look | hold the right mouse button and move | right stick |
+| Faster / slower | hold Shift / hold Alt | hold RB |
+| Cruise speed | mouse wheel (×1.2 per notch, 2 to 2000 u/s) | - |
+
+- **Where it works:** only the settled lava lamp (`MainMenuCameraController` in its `Menu` state: AI flying, the
+  player's flight input paused). Not in freestyle or during a menu/freestyle blend; the shortcut does nothing there.
+- **How it hooks the camera:** `MenuGodModeCamera` (`_Scripts/Controller/Camera/`, on Menu_Main's **Game** object next
+  to the camera rig) borrows the scene's MainCamera with `MainMenuCameraController.BeginInspection()`, starting at the
+  camera's current pose (any roll levels out over a moment). While it flies, the rig stops posing the camera. Exit
+  calls `EndInspection()`, which re-seeds the rig at the god camera's pose with the config-switch glide raised, so the
+  lava-lamp framing glides back instead of cutting. CM PlayerCam and `CameraManager` are untouched; the lava lamp never
+  uses them.
+- **Click to control still works:** taking the vessel (double tap, the pad's Select) ends god mode first, and the
+  enter-freestyle blend starts from the god camera's pose. Leaving the lava lamp any other way (a game launch, the scene
+  closing) ends it too.
+- **Input:** the vessel gets nothing from god mode; its flight input is already paused in the lava lamp and the AI
+  keeps the stick. UI keyboard/pad navigation is switched off while flying (WASD and Space would otherwise move and
+  press the menu's selection) and restored on exit. Mouse clicks still reach the UI.
+- **Dev switches** (Inspector on the component): `godModeEnabled`, `toggleKey`, `gamepadToggle`, speeds, acceleration
+  and damping (the glide), look sensitivity and smoothing, and `showHint` (a one-line controls reminder at the top left
+  while flying). Movement runs on unscaled time, so it still flies while the menu is paused.
+
 #### Vessel selection — RETIRED (2026-09-23)
 
 **Changing your hull in freestyle is the Vessel Changer TOY and nothing else.** The scene-authored
@@ -313,6 +347,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 |---|---|---|
 | Menu MiniGameHUD (freestyle HUD + vessel change trigger) | `MenuMiniGameHUD.cs` | `_Scripts/UI/` |
 | Freestyle toggle (autopilot↔control) | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
+| God mode (free inspection camera, F2 / L3) | `MenuGodModeCamera.cs` | `_Scripts/Controller/Camera/` |
 | Menu state machine | `MainMenuController.cs` | `_Scripts/System/` |
 | Menu vessel spawner (base) | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
 | Vessel selection (the ONLY one) | `VesselChangerToy.cs` + `ToyVesselRoster.cs` | `_Scripts/Controller/Toys/` |

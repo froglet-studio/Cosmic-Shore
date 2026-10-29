@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 God mode in the lava lamp: a free inspection camera on F2 / L3 (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** `MenuGodModeCamera` on Menu_Main's Game object. F2 (or L3) swaps the lava-lamp camera for a free-fly
+camera while the AI keeps flying the vessel; F2 again glides back. Controls in Docs/claude/MENU_AND_LAVA_LAMP.md
+("God mode"). **First-pass tuning:** cruise 60 u/s, Shift ×4, Alt ×0.25, acceleration 6/s, damping 4/s, mouse
+0.12°/px, look smoothing 14/s.
+
+- [ ] Menu_Main opens with no missing-script warning on the Game object; the new component shows `Menu Camera` wired.
+- [ ] In the lava lamp, F2: the view starts exactly where the menu camera was, a hint line appears top left, the vessel
+  keeps flying under the AI.
+- [ ] WASD, E/Space, Q/Ctrl fly smoothly (eases in, glides to a stop); right mouse looks; Shift / Alt / the wheel change
+  speed. The menu's UI selection does not move while you press WASD or Space.
+- [ ] F2 again: the menu framing glides back from where you were (no cut, no snap), menu keys navigate again.
+- [ ] Gamepad: L3 toggles, sticks fly and look, RT/LT up/down, RB fast. R3 still takes a screenshot.
+- [ ] In god mode, double-tap to take control: god mode ends and the freestyle blend starts from the god camera's
+  view; flying works normally; returning to the menu works; F2 works again.
+- [ ] F2 in freestyle or mid-blend does nothing.
+- [ ] Untick `godModeEnabled`: F2 does nothing.
+
 ### 🔴 Switchback BLAST RUN: blocked gates in closed-form worlds, key-crystal blasts, sweepers, snap jaws, hunter packs (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** a sixth Switchback fun type, `BlastRun` (picker label BLAST RUN). Classic course; blocked gates get a
