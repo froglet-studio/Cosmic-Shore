@@ -14,14 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {
-  "job": "drive-rhino-headlong",
-  "max_evals": null,
-  "minutes": 60.0,
-  "request": null,
-  "since": 1793261671
- },
+ "current": {},
  "host": "dragonsweapon",
+ "last": {
+  "best_start": 3.753765447130627,
+  "epoch": "8b234fce62c5",
+  "evals": 6908,
+  "job": "drive-rhino-headlong",
+  "session_evals": 704,
+  "stopped": "the person came back"
+ },
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -106,12 +108,24 @@
    "start": 1793259244,
    "stopped": "the person came back",
    "unit": null
+  },
+  {
+   "best_end": 3.752319993690058,
+   "best_start": 3.753765447130627,
+   "end": 1793261933,
+   "epoch": "8b234fce62c5",
+   "evals": 704,
+   "job": "drive-rhino-headlong",
+   "request": null,
+   "start": 1793261671,
+   "stopped": "the person came back",
+   "unit": null
   }
  ],
  "totals": {
-  "sessions": 7
+  "sessions": 8
  },
- "updated": 1793261671,
+ "updated": 1793261933,
  "user": "shombithofficial",
  "version": "1"
 }
