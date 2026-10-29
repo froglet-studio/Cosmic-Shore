@@ -14,18 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {
-  "best": 3.963087687074331,
+ "current": {},
+ "host": "dragonsweapon",
+ "last": {
   "best_start": 4.019286072472712,
   "epoch": "8b234fce62c5",
-  "evals": 682,
+  "evals": 2684,
   "job": "drive-rhino-headlong",
-  "max_evals": null,
-  "minutes": 60.0,
-  "request": null,
-  "since": 1793257923
+  "session_evals": 1188,
+  "stopped": "the person came back"
  },
- "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -86,12 +84,24 @@
    "start": 1793217751,
    "stopped": "finished",
    "unit": "dustup-butterfly-i2"
+  },
+  {
+   "best_end": 3.952481273527995,
+   "best_start": 4.019286072472712,
+   "end": 1793258567,
+   "epoch": "8b234fce62c5",
+   "evals": 1188,
+   "job": "drive-rhino-headlong",
+   "request": null,
+   "start": 1793257923,
+   "stopped": "the person came back",
+   "unit": null
   }
  ],
  "totals": {
-  "sessions": 5
+  "sessions": 6
  },
- "updated": 1793258316,
+ "updated": 1793258567,
  "user": "shombithofficial",
  "version": "1"
 }
