@@ -17,9 +17,10 @@ the Decisions tab. The Unity port (phase 2) starts only after that.
 - **Live page:** https://claude.ai/artifact/4B7oZwb5aYxFJR7XKyWx7v (private to the owner until shared; decisions recorded
   there land in the shared log Claude reads at the start of each round).
 - **Round 1** (the brief's rules) is kept as `Docs/Studios/HoneyguideLab.round1.html`.
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 6).
-- **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` holds `DynamoCore.cs` to the **round 4** core, the Engineer AI
-  included (PASS 2026-10-21: 16,824 steps over 24 rule sets, 1,501 AI moves chosen alike, 48 port sets, 400 slips).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 7).
+- **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` holds `DynamoCore.cs` to the lab's core, the Engineer AI
+  included (PASS 2026-10-29, round 7: 16,824 steps over 24 rule sets, 1,649 AI moves chosen alike, 72 ability offers,
+  48 port sets, 400 slips).
 - **In Unity (phase 2, started 2026-10-21 on Garrett's "lets play it in unity"):** `VesselClassType.Honeyguide = 23` (21 until the bleeding-edge merge gave it to the Starling),
   offered by the Toybox's Vessel Changer. See `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md`.
 
@@ -47,6 +48,62 @@ mate, decision log, platform detection) is the Crew Vessel Lab's, rebuilt around
   would land.
 - **Rules tab:** Garrett's round 2 rules, each a box you can turn off (a control). **Patterns tab:** all 39 patterns and
   the passive each gives.
+
+## Round 7 (2026-10-29): the bank holds 6, and the Ratel picks one of three abilities
+
+Garrett, 2026-10-29, on the proposal `Docs/Studios/ONE_THUMB_SEAT_ARCS.md` §3: "lets have the ap cap go to 6. lets do the 3
+ability pick as well. those will go in for sure, but show me the raid in an artifact." The raid is its own lab
+(`Docs/Studios/HONEYGUIDE_RAID_LAB.md`); this round is the two numbers that go in.
+
+### What changed
+
+- **`apBank` 3 → 6.** A spin still gives 3 AP; what is not spent is kept, up to 6. Past 6 a spin's AP are wasted, as before.
+- **A pick of three** (`abilityChoices` 3, `pickSeconds` 10). Every 4 patterns the draw OFFERS three abilities: distinct,
+  never the one held, never a retired one (Printer). The board dims and shows them as three cards; tap one. The spin clock
+  stays stopped while the Ratel picks; after `pickSeconds` the first offer is taken (0 waits for the pick). Then the new port
+  pattern is shown for `revealPorts` and the clock restarts. The new input is `pick` (slot = the offer); the new event is
+  `offer`; the `shuffle` event now follows the pick, so the toast still names the ability taken. `abilityChoices` 1 is the
+  old random draw.
+- **The AI Ratel picks** the first offer in `AI_PICK_ORDER` (Overclock, Refund, Free Fire, Long Reach, Capacitor, Wild Core,
+  Swap, Mirror, Printer): AP first. A proposal; the order is a constant in the core, held to the C# by the parity gate.
+- Three scorecard variants: **Round 6: bank 3, random ability**, **Bank 6, random ability** and **Bank 3, pick of three**.
+
+### Scorecard (12 seeds × 180 s, `window.__lab.runBatch`, hard pilot)
+
+| Variant | Patterns / min | Charges / min | New abilities / min | Pilot waiting % | Lift |
+|---|---|---|---|---|---|
+| **Round 7 (bank 6, pick of three), hard Ratel** | **5.11** | 5.42 | 1.11 | 20.6 | +15.0% |
+| Round 6: bank 3, random ability | 4.53 | 5.25 | 0.97 | 25.2 | +15.7% |
+| Bank 6, random ability | 4.53 | 5.25 | 0.97 | 25.2 | +15.7% |
+| Bank 3, pick of three | 5.11 | 5.42 | 1.11 | 20.6 | +15.0% |
+| Round 7, easy Ratel | 3.17 | 3.25 | 0.72 | 42.9 | +13.0% |
+| Round 7, idle Ratel (control) | 0 | 0 | 0 | 100 | 0 |
+
+SE of the lift about ±0.16 legs a minute, so the lift columns are the same within noise.
+
+### Found (round 7)
+
+- **The bank of 6 changes nothing for the AI Ratel**: the bank-3 and bank-6 rows are identical. The AI spends every AP the
+  moment it has one, so it never banks. The bank is for a person: room to skip a spin and think, or to save for a big
+  turn. Only a person can measure that. A planner that saves AP for a later spin would be a new AI, not a tuning.
+- **The pick of three makes the AI Ratel about 13% faster** (4.53 → 5.11 patterns a minute) because it takes Overclock or
+  Refund when offered. The race lift does not move (the pilot is the limit there).
+
+### Checked
+
+- `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html`: PASS (desktop and iPhone 13).
+- `node Tools/Build/dynamo_lab/parity.cjs`: PASS, 16,824 steps over 24 rule sets (the pick of 1 to 4, a 10 s, 1.2 s and no
+  time limit), 72 offers, 60 AI picks, every step's digest and events alike; 13 planted controls caught, three of them new
+  (a timed-out pick takes the last offer; the AI's order reversed; offers may repeat the held ability).
+- The new edit-mode tests' bodies were run against the shipped `DynamoCore.cs` with .NET 8 (outside Unity, settings built
+  from the lab's tables): the pick, the timeout, the AI pick, the bank of 6 and the board copied mid-pick all pass.
+- `python3 Tools/Build/author_honeyguide_assets.py --check` and `--self-test`: ok.
+- `Tools/Build/unity_refcompile/run.sh`, player and editor configs: 0 errors in project code. Not opened in the Editor
+  (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
+### Decisions needed (Garrett)
+
+- The AI's pick order, and whether 10 s is the right time to pick (0 = no limit).
 
 ## 2026-10-22: Printer retired from the draw; the Ratel's board in portrait on a phone
 

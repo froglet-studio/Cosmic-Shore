@@ -396,6 +396,10 @@ namespace CosmicShore.Gameplay
                     var ab = _cfg.AbilityText(e.Ability);   // both seats read what the Ratel's new ability does
                     if (ab != null) Toast(TemplateText.Fill(_cfg.AbilityToastTemplate, "name", ab.name, "text", ab.text));
                     break;
+                case DynamoEventKind.Offer:   // round 7: the abilities on offer; the Shuffle that follows the pick toasts the one taken
+                    AbilityAt = Time.time;
+                    Play(_cfg.RevealSfx);
+                    break;
                 case DynamoEventKind.Ports:
                     PortsAt = Time.time;
                     break;

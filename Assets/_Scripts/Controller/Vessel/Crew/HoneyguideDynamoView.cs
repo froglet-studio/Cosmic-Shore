@@ -53,6 +53,12 @@ namespace CosmicShore.Gameplay
         readonly HoneyguideBoardGraphic _graphic;
         readonly TMP_Text _seat, _abilityName, _abilityText, _free, _revealTitle, _revealText, _detail, _chip, _fly;
         readonly TMP_Text[] _slotNames = new TMP_Text[3], _slotTaps = new TMP_Text[3];
+        // round 7: the abilities offered to pick from, as cards over the board (laid out with the labels, drawn by the mesh,
+        // tapped by Down)
+        const int MaxOffers = 4;
+        readonly TMP_Text[] _offerNames = new TMP_Text[MaxOffers], _offerTexts = new TMP_Text[MaxOffers];
+        readonly Rect[] _offerRects = new Rect[MaxOffers];
+        int _offerCount;
 
         // this frame's layout, in canvas pixels (y up)
         Rect _rect, _apRect, _chipRect, _flyRect, _lineRect;
@@ -118,6 +124,11 @@ namespace CosmicShore.Gameplay
             {
                 _slotNames[k] = MakeText("Slot" + k, new Color(0.91f, 0.93f, 0.95f, 1f), FontStyles.Bold, TextAlignmentOptions.TopLeft);
                 _slotTaps[k] = MakeText("Tap" + k, Color.white, FontStyles.Bold, TextAlignmentOptions.BottomLeft);
+            }
+            for (int k = 0; k < MaxOffers; k++)
+            {
+                _offerNames[k] = MakeText("OfferName" + k, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+                _offerTexts[k] = MakeText("OfferText" + k, Cream, FontStyles.Normal, TextAlignmentOptions.Center);
             }
         }
 
@@ -344,10 +355,14 @@ namespace CosmicShore.Gameplay
             }
 
             var rv = core.RevealState;
+            var offers = rv != null && rv.Stage == 1 ? rv.Offers : null;
             string title = "", body = "";
-            if (rv != null && rv.Stage == 1 && ab != null) { title = TemplateText.Fill(cfg.RevealAbilityTemplate, "name", ab.name); body = _small ? "" : ab.text; }
+            if (offers != null) title = cfg.PickAbilityTitle;
+            else if (rv != null && rv.Stage == 1 && ab != null) { title = TemplateText.Fill(cfg.RevealAbilityTemplate, "name", ab.name); body = _small ? "" : ab.text; }
             else if (rv != null && rv.Stage == 2) title = cfg.RevealPortsLine;
-            Place(_revealTitle, new Rect(_rect.x + 10f * ui, _cy + _size * 0.6f, _rect.width - 20f * ui, 30f * ui), (_small ? 0.75f : 1.25f) * fs, title);
+            var titleRect = new Rect(_rect.x + 10f * ui, _cy + _size * 0.6f, _rect.width - 20f * ui, 30f * ui);
+            LayOffers(cfg, offers, ui, fs, ref titleRect);
+            Place(_revealTitle, titleRect, (_small ? 0.75f : 1.25f) * fs, title);
             Place(_revealText, new Rect(_rect.x + 18f * ui, _cy - _size * 2.2f, _rect.width - 36f * ui, _size * 2.6f), fs, body);
 
             // a right-clicked card's details, over the board
@@ -405,6 +420,8 @@ namespace CosmicShore.Gameplay
             Place(_free, default, fs, ""); Place(_revealTitle, default, fs, ""); Place(_revealText, default, fs, "");
             Place(_detail, default, fs, ""); Place(_chip, default, fs, "");
             for (int k = 0; k < 3; k++) { Place(_slotNames[k], default, fs, ""); Place(_slotTaps[k], default, fs, ""); }
+            for (int k = 0; k < MaxOffers; k++) { Place(_offerNames[k], default, fs, ""); Place(_offerTexts[k], default, fs, ""); }
+            _offerCount = 0;
             Place(_fly, _flyRect, fs * 1.1f, cfg.RatelLabel);
             ChipShown = ChipUpgraded = false;
             _detailSlot = -1;
@@ -421,6 +438,27 @@ namespace CosmicShore.Gameplay
         internal bool ChipUpgraded { get; private set; }
 
         Rect DetailRect(float ui) => new(_rect.x + _rect.width * 0.1f, _cy - _size * 3.5f, _rect.width * 0.8f, _size * 7f);
+
+        // Round 7: the offered abilities as a column of cards between the cards' row and the spin bar, a heading on top (the
+        // lab's drawReveal). The small board shows the names only.
+        void LayOffers(HoneyguideConfigSO cfg, DynamoAbility[] offers, float ui, float fs, ref Rect titleRect)
+        {
+            _offerCount = offers == null ? 0 : Mathf.Min(offers.Length, MaxOffers);
+            float top = _rect.yMax - (_small ? 3f : 5f) * ui, bottom = _slots[0].yMax, head = (_small ? 1.2f : 2f) * fs, gap = (_small ? 3f : 8f) * ui;
+            float w = Mathf.Min(_rect.width - 20f * ui, 30f * fs), x = _rect.center.x - w / 2f;
+            float ch = _offerCount > 0 ? Mathf.Min((_small ? 1.6f : 5.5f) * fs, (top - bottom - head - gap * (_offerCount + 1)) / _offerCount) : 0f;
+            if (_offerCount > 0) titleRect = new Rect(x, top - head, w, head);
+            for (int k = 0; k < MaxOffers; k++)
+            {
+                if (k >= _offerCount) { _offerRects[k] = default; Place(_offerNames[k], default, fs, ""); Place(_offerTexts[k], default, fs, ""); continue; }
+                var r = _offerRects[k] = new Rect(x, top - head - gap - (k + 1) * ch - k * gap, w, ch);
+                var text = cfg.AbilityText(offers[k]);
+                float nameH = _small ? ch : 1.5f * fs;
+                Place(_offerNames[k], new Rect(r.x + 6f * ui, r.yMax - nameH, r.width - 12f * ui, nameH), (_small ? 0.8f : 1.1f) * fs, text == null ? "" : text.name);
+                Place(_offerTexts[k], new Rect(r.x + 8f * ui, r.y + 4f * ui, r.width - 16f * ui, Mathf.Max(0f, r.height - nameH - 6f * ui)), 0.9f * fs,
+                      _small || text == null ? "" : text.text);
+            }
+        }
 
         // ------------------------------------------------------------------ the pointer
 
@@ -527,6 +565,11 @@ namespace CosmicShore.Gameplay
 
         void Down(DynamoCore core, Vector2 at)
         {
+            if (core.RevealState?.Offers != null)   // round 7: tap an offered ability to pick it; nothing else answers meanwhile
+            {
+                for (int k = 0; k < _offerCount; k++) if (_offerRects[k].Contains(at)) { _crew.EngineerInput(DynamoInput.Pick(k)); return; }
+                return;
+            }
             for (int k = 0; k < 3; k++) if (_slots[k].Contains(at)) { _crew.EngineerInput(DynamoInput.Activate(k)); return; }
             int c = PxCell(at);
             if (c < 0 || core.RevealState != null) return;
@@ -686,9 +729,23 @@ namespace CosmicShore.Gameplay
             // the reveal: the board dims; the labels name the new ability, then the new ports
             if (rv != null)
             {
-                float total = rv.Stage == 1 ? (float)s.RevealAbility : (float)s.RevealPorts, prog = total > 0f ? Mathf.Clamp01((float)rv.T / total) : 0f;
-                if (rv.Stage == 1) HoneyguideMesh.Quad(vh, new Rect(_rect.x, _slots[0].yMax, _rect.width, _rect.height - _slots[0].height - barH), new Color(0f, 0f, 0f, 0.6f));
-                HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * 0.4f * prog, _cy - _size * 2.6f, _rect.width * 0.8f * prog, 2f * ui), Ability);
+                bool picking = rv.Stage == 1 && rv.Offers != null;
+                float total = rv.Stage == 1 ? (float)(picking ? s.PickSeconds : s.RevealAbility) : (float)s.RevealPorts, prog = total > 0f ? Mathf.Clamp01((float)rv.T / total) : 0f;
+                if (rv.Stage == 1) HoneyguideMesh.Quad(vh, new Rect(_rect.x, _slots[0].yMax, _rect.width, _rect.height - _slots[0].height - barH), new Color(0f, 0f, 0f, picking ? 0.75f : 0.6f));
+                if (picking)   // round 7: the offered abilities' cards, and under them the time left to pick
+                {
+                    for (int k = 0; k < _offerCount; k++)
+                    {
+                        HoneyguideMesh.Quad(vh, _offerRects[k], Card);
+                        HoneyguideMesh.Outline(vh, _offerRects[k], 2f * ui, Ability);
+                    }
+                    if (_offerCount > 0 && total > 0f)
+                    {
+                        var last = _offerRects[_offerCount - 1];
+                        HoneyguideMesh.Quad(vh, new Rect(last.x, last.y - 6f * ui, last.width * prog, 2f * ui), Ability);
+                    }
+                }
+                else HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * 0.4f * prog, _cy - _size * 2.6f, _rect.width * 0.8f * prog, 2f * ui), Ability);
             }
 
             // over the reveal's dimming: a fourth pattern made starts the reveal, and its juice still plays

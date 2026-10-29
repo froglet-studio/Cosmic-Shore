@@ -1,6 +1,8 @@
 # The Ratel and the Wrasse: a whole arc for the one-thumb seats
 
-**Proposal, 2026-10-29. Nothing here is decided or built.** Both seats are Garrett's: `who_works_where.py` shows no
+**Proposal, 2026-10-29.** Garrett decided on 2026-10-29: the Ratel's AP cap goes to **6** and the **pick of three** goes in
+(built: `HONEYGUIDE_LAB.md` round 7); the raid is shown in the Ratel Raid Lab (`HONEYGUIDE_RAID_LAB.md`) and the Wrasse's
+concept in the A/B Wrasse Haul Lab (`WRASSE_HAUL_LAB.md`). Everything else is undecided. Both seats are Garrett's: `who_works_where.py` shows no
 other work in flight on `DynamoCore.cs` or `KiteNavigatorCore.cs`. The records these build on are
 `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` (the Ratel) and
 `Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` (the Wrasse).
@@ -131,7 +133,7 @@ is out in the world.
      └───────────────────────────────────────────────────────────────────────┘
 ```
 
-### Breath: two numbers first
+### Breath: two numbers first (DECIDED 2026-10-29: in, with the cap at 6)
 
 - **`apBank` 3 → 9.** A spin still gives 3 AP, but what is not spent is kept. Planning three moves every 15 seconds
   stops being a must: the Ratel may skip a spin to think, or save for one big turn. The risk is already in the game:
@@ -220,7 +222,8 @@ thumb speed). Today it is a flat line; the proposal should show peaks and valley
 2. **Wrasse cleaning:** is clearing silence (the Grouper's, and allies') the role you want? It shifts the balance in
    `SILENCE.md`: a squad with a Wrasse recovers faster. Cleaning allies, and Time thrown to allies, need the ally's
    owner to apply it (an RPC); the first cut could be the Grouper only.
-3. **Ratel:** `apBank` 3 → 9 (or another number), and a pick of three instead of the random draw?
+3. ~~**Ratel:** `apBank` 3 → 9 (or another number), and a pick of three instead of the random draw?~~ Decided 2026-10-29:
+   6, and the pick of three (built).
 4. **Ratel raid:** is a hive a hostile surface or volume, as proposed, or something else (a rival's ark, flora)? Flora
    would be very on theme (honey), but breaking it kills lifeforms, which is ecology's to decide
    (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`). This proposal keeps the hive to hostile mass.

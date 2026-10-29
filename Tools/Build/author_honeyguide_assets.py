@@ -845,7 +845,7 @@ def self_test():
     expect(check_config(cfg.replace("name: 'Overclock'", "name: 'Overclocked'"), lab, cs, cg), 1, "an ability renamed")
     expect(check_config(cfg.replace(GAME_DATA_GUID, "0" * 32), lab, cs, cg), 1, "gameData unwired")
     expect(check_config(cfg.replace("  retiredAbilities:\n  - 2\n", "  retiredAbilities: \n", 1), lab, cs, cg), 1, "Printer drawn again")
-    for key in ("tickSeconds: 15\n", "usesPerPattern: 3\n", "patternsPerShuffle: 4\n", "aimCone: 45\n", "revealAbility: 3.5\n",
+    for key in ("tickSeconds: 15\n", "apBank: 6\n", "abilityChoices: 3\n", "pickSeconds: 10\n", "usesPerPattern: 3\n", "patternsPerShuffle: 4\n", "aimCone: 45\n", "revealAbility: 3.5\n",
                 "peckRange: 45\n", "flitDistance: 18\n", "flitCooldown: 2\n", "activeSeconds: 20\n", "activeLevelGain: 0.25\n"):
         if f"  {key}" not in cfg:
             fails.append(f"the fresh config does not carry the lab's {key.strip()}")

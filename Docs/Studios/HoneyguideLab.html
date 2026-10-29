@@ -120,7 +120,10 @@
  * six rotations; a pattern made for the third time is replaced by a random one; every 4 patterns the Ratel draws a new
  * random ability and a new port pattern.
  * Round 3: a made pattern sends a random one of its real prisms to the battery (no pick); the new ability and the new
- * port pattern are revealed one after the other while the spin clock stands still (st.reveal), then the clock restarts. */
+ * port pattern are revealed one after the other while the spin clock stands still (st.reveal), then the clock restarts.
+ * Round 7 (Garrett, 2026-10-29: "lets have the ap cap go to 6. lets do the 3 ability pick as well"): with S.abilityChoices > 1 the
+ * draw OFFERS that many abilities (st.reveal.offers) and the Ratel picks one (input 'pick', slot = the offer); the clock stays
+ * stopped while it chooses. After S.pickSeconds (> 0) the first offer is taken. The AI picks by AI_PICK_ORDER. */
 (function (root) {
   'use strict';
   const RADIUS = 3;
@@ -160,6 +163,23 @@
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   }
   function pickOther(st, n, not) { if (n <= 1) return 0; let k = Math.floor(rng(st) * (n - 1)); if (k >= not) k++; return k; }
+  // Round 7: up to n distinct abilities from the pool, never the one held (unless it is all the pool has), in draw order.
+  function drawOffers(st, pool, n) {
+    const cand = pool.filter((a) => a !== st.ability), from = cand.length ? cand : pool.slice(), out = [];
+    while (out.length < n && from.length) out.push(from.splice(Math.floor(rng(st) * from.length), 1)[0]);
+    return out;
+  }
+  // The AI's pick (proposal): the first of these an offer holds. Overclock and Refund add AP, Free Fire saves it; Mirror and
+  // Swap made no measurable difference in round 2; Printer is retired from the shipped draw.
+  const AI_PICK_ORDER = ['overclock', 'refund', 'freeFire', 'longReach', 'capacitor', 'wildCore', 'swap', 'mirror', 'printer'];
+  function aiPick(offers) { let best = 0; for (let k = 1; k < offers.length; k++) if (AI_PICK_ORDER.indexOf(offers[k]) < AI_PICK_ORDER.indexOf(offers[best])) best = k; return best; }
+  // Take offer k: the new ability (and its Printer prism), announced as the old draw was; the reveal goes on to the ports.
+  function takeOffer(st, k) {
+    const rv = st.reveal;
+    st.ability = rv.offers[k]; rv.offers = null;
+    if (st.ability === 'printer' && st.free.length < 1) grantFree(st, 1);
+    st.events.push({ k: 'shuffle', ability: st.ability, portSet: rv.portSet });
+  }
 
   function drawPattern(st, S) {   // a random pattern not already in a slot
     const cand = [];
@@ -249,6 +269,11 @@
 
   // One seat input. Returns true when it was legal and applied; an illegal input changes nothing.
   function apply(st, S, inp) {
+    if (inp.k === 'pick') {   // round 7: the Ratel picks one of the offered abilities; then the new ports are shown
+      if (!st.reveal || !st.reveal.offers || !(inp.slot >= 0 && inp.slot < st.reveal.offers.length)) return false;
+      takeOffer(st, inp.slot); revealStep(st, S);
+      return true;
+    }
     if (st.reveal) return false;   // the clock is stopped while the new ability and ports are shown
     switch (inp.k) {
       case 'tinker': {
@@ -297,12 +322,20 @@
           st.events.push({ k: 'retire', slot: inp.slot, old, pid: st.slots[inp.slot] });
         }
         if (S.patternsPerShuffle > 0 && st.made % S.patternsPerShuffle === 0) {   // a new ability, then a new port pattern
-          if (!S.fixedAbility) { const pool = abilityPool(S); st.ability = pool[pickOther(st, pool.length, pool.indexOf(st.ability))]; }
-          if (st.ability === 'printer' && st.free.length < 1) grantFree(st, 1);
+          const pick = !S.fixedAbility && S.abilityChoices > 1;
+          let offers = null;
+          if (pick) offers = drawOffers(st, abilityPool(S), S.abilityChoices);
+          else if (!S.fixedAbility) { const pool = abilityPool(S); st.ability = pool[pickOther(st, pool.length, pool.indexOf(st.ability))]; }
+          if (!pick && st.ability === 'printer' && st.free.length < 1) grantFree(st, 1);
           const next = S.portSets.length > 1 ? pickOther(st, S.portSets.length, st.portSet) : st.portSet;
-          st.events.push({ k: 'shuffle', ability: st.ability, portSet: next });
-          st.reveal = { stage: 1, t: S.revealAbility, portSet: next };
-          if (!(S.revealAbility > 0)) revealStep(st, S);
+          if (pick) {   // round 7: the clock stays stopped until the Ratel picks (or pickSeconds runs out)
+            st.events.push({ k: 'offer', offers: offers.slice(), portSet: next });
+            st.reveal = { stage: 1, t: S.pickSeconds, portSet: next, offers };
+          } else {
+            st.events.push({ k: 'shuffle', ability: st.ability, portSet: next });
+            st.reveal = { stage: 1, t: S.revealAbility, portSet: next };
+            if (!(S.revealAbility > 0)) revealStep(st, S);
+          }
         }
         return true;
       }
@@ -357,6 +390,7 @@
   function revealStep(st, S) {
     const rv = st.reveal;
     if (rv.stage === 1) {
+      if (rv.offers) takeOffer(st, 0);   // round 7: the pick ran out of time
       setPorts(st, S, rv.portSet);
       st.events.push({ k: 'ports', portSet: rv.portSet });
       rv.stage = 2; rv.t = S.revealPorts;
@@ -369,6 +403,7 @@
   // The clock: seconds of match time. It stands still during a reveal.
   function advance(st, S, dt) {
     if (st.reveal) {
+      if (st.reveal.offers && !(S.pickSeconds > 0)) return;   // round 7: no time limit on the pick
       st.reveal.t -= dt;
       while (st.reveal && st.reveal.t <= 0) revealStep(st, S);
       return;
@@ -381,7 +416,7 @@
   function built(st, S) { return st.slots.map((pid) => (pid >= 0 ? match(st, S, pid) : null)); }
   function digest(st) {
     return st.cells.join('') + '|' + st.ports.map((p) => p[0] + ':' + p[1]).join(',') + '|' + st.ap + '+' + st.bonusAp + '|' + st.battery.join('') +
-      '|' + st.slots.join(',') + '/' + st.uses.join(',') + '|' + (st.reveal ? st.reveal.stage + ':' + st.reveal.portSet : '-') + '|' + st.free.join('') + '|' + st.ability +
+      '|' + st.slots.join(',') + '/' + st.uses.join(',') + '|' + (st.reveal ? st.reveal.stage + ':' + st.reveal.portSet + (st.reveal.offers ? ':' + st.reveal.offers.join(',') : '') : '-') + '|' + st.free.join('') + '|' + st.ability +
       '|' + st.ticks + '|' + st.made + '|' + st.wasted + '|' + (st.rng >>> 0);
   }
 
@@ -478,7 +513,7 @@
   // random legal move, noise = how blurred its read of colourScore is. `memo` (optional, the caller's) keeps the
   // placement it is building, so it does not swap plans (and move the same prism back and forth) over a small saving.
   function aiPlan(st, S, prm, colourScore, rnd, memo) {
-    if (st.reveal) return null;
+    if (st.reveal) return st.reveal.offers ? { k: 'pick', slot: aiPick(st.reveal.offers) } : null;
     const free = st.ability === 'freeFire';
     if (st.ap + st.bonusAp < 1 && st.free.length < 1 && !free) return null;
     if (free || st.ap + st.bonusAp >= 1) for (let s = 0; s < st.slots.length; s++) if (st.slots[s] >= 0 && match(st, S, st.slots[s])) return { k: 'activate', slot: s };
@@ -519,7 +554,7 @@
   }
 
   root.DynamoCore = { N, Q, R, CENTRE, NEIGH, DIRS, ABILITIES, idx, ringOf, rot60, isNeighbour, shapes, create, apply, advance, tick, match, built, shows,
-    spend, nextPorts, digest, portAt, batteryCap, boardEffect, reach, slipDestination, aiPlan, bestPlacements, legalInputs };
+    spend, nextPorts, digest, portAt, batteryCap, boardEffect, reach, slipDestination, aiPlan, bestPlacements, legalInputs, aiPick, AI_PICK_ORDER };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
@@ -554,7 +589,9 @@
     // The Dynamo (round 2 rules)
     tickSeconds: 15,       // Garrett 2026-10-21: seconds per spin (the port pattern turns 60 degrees; AP refill)
     apPerTick: 3,          // proposal: action points each spin
-    apBank: 3,             // proposal: most AP held
+    apBank: 6,             // Garrett 2026-10-29: most AP held (round 7; was 3): what a spin does not use is kept
+    abilityChoices: 3,     // Garrett 2026-10-29: abilities offered every patternsPerShuffle patterns; the Ratel picks one (1 = the old random draw)
+    pickSeconds: 10,       // proposal: seconds the Ratel has to pick before the first offer is taken (0 = no limit)
     bonusApCap: 2,         // proposal: banked extra AP (the Refund ability)
     batteryCap: 3,         // proposal: battery charges held
     revealAbility: 3.5,    // proposal: seconds the spin clock stops to show the Ratel's new ability (Garrett: time to read it)
@@ -602,6 +639,8 @@
     ['Dynamo', 'tickSeconds', 3, 30, 0.5, 'Spin every (s)', 'Every spin the port pattern turns 60 degrees clockwise and the AP refill. Time scales it in the game.'],
     ['Dynamo', 'apPerTick', 1, 6, 1, 'AP per spin', 'Action points the Ratel gets each spin (move, inject and make cost 1).'],
     ['Dynamo', 'apBank', 1, 9, 1, 'AP bank', 'Most AP held. Above this a spin\'s AP are wasted (the idle column counts them).'],
+    ['Dynamo', 'abilityChoices', 1, 4, 1, 'Abilities offered', 'Every few patterns the Ratel is offered this many abilities and picks one (1 = the old random draw).'],
+    ['Dynamo', 'pickSeconds', 0, 30, 1, 'Pick time (s)', 'The clock stays stopped while the Ratel picks; after this long the first offer is taken (0 = no limit).'],
     ['Dynamo', 'batteryCap', 1, 12, 1, 'Battery', 'Slip charges held. A new charge replaces the oldest when full. Mass scales it in the game.'],
     ['Dynamo', 'revealAbility', 0, 8, 0.5, 'New ability shown (s)', 'When the ability and ports change, the spin clock stops and the new ability is shown this long.'],
     ['Dynamo', 'revealPorts', 0, 6, 0.5, 'New ports shown (s)', 'Then the new port pattern is shown this long before the spin clock starts again.'],
@@ -891,7 +930,7 @@
     const o = cfg.opts, Pw = cfg.P;
     return {
       tickSeconds: Pw.tickSeconds, apPerTick: Pw.apPerTick, apBank: Pw.apBank, bonusApCap: Pw.bonusApCap, batteryCap: Pw.batteryCap,
-      revealAbility: Pw.revealAbility, revealPorts: Pw.revealPorts, allowRotatedMatches: !!o.rotatable, portsCount: !!o.portsCount, slotCount: 3, startFilled: true,
+      revealAbility: Pw.revealAbility, revealPorts: Pw.revealPorts, abilityChoices: Pw.abilityChoices, pickSeconds: Pw.pickSeconds, allowRotatedMatches: !!o.rotatable, portsCount: !!o.portsCount, slotCount: 3, startFilled: true,
       usesPerPattern: o.replace ? Pw.usesPerPattern : 0, patternsPerShuffle: o.shuffle ? Pw.patternsPerShuffle : 0,
       fixedAbility: o.ability === 'random' ? '' : o.ability, abilities: D.ABILITIES.filter((a) => RETIRED_ABILITIES.indexOf(a) < 0),
       portSets: PORT_SETS, patterns: PATTERNS,
@@ -1241,6 +1280,7 @@
     } else if (e.k === 'charge') w.m.charges++;
     else if (e.k === 'tick') { w.m.apGiven += e.ap; w.spinAt = w.t; }
     else if (e.k === 'shuffle') { w.m.shuffles++; w.abilityAt = w.t; }
+    else if (e.k === 'offer') w.offerAt = w.t;
     else if (e.k === 'ports') w.shuffleAt = w.t;
     else if (e.k === 'retire') { w.m.retired++; w.lastRetired = e.old; w.effects.push({ k: 'retire', slot: e.slot, t: 1.0 }); }
   }
@@ -1696,6 +1736,9 @@
     { name: 'Arming cone 30°', opts: {}, P: { aimCone: 30 } },
     { name: 'Spin every 8 s (round 2)', opts: {}, P: { tickSeconds: 8 } },
     { name: 'Spin 15 s, 6 AP (round 2\'s AP rate)', opts: {}, P: { apPerTick: 6, apBank: 6 } },
+    { name: 'Round 6: bank 3, random ability', opts: {}, P: { apBank: 3, abilityChoices: 1 } },
+    { name: 'Bank 6, random ability', opts: {}, P: { abilityChoices: 1 } },
+    { name: 'Bank 3, pick of three', opts: {}, P: { apBank: 3 } },
     { name: 'No reveal pause', opts: {}, P: { revealAbility: 0, revealPorts: 0 } },
   ];
   const COLS = [
@@ -1939,9 +1982,30 @@
   // The reveal, step 1: the board dims and a card names the new ability and what it does, with a line that runs down while
   // there is time to read it. Step 2: the card goes, the new ports grow in, and a label names them.
   function drawReveal(w, st, rv, G, L, small) {
-    const tot = rv.stage === 1 ? w.P.revealAbility : w.P.revealPorts, prog = tot > 0 ? clamp(rv.t / tot, 0, 1) : 0;
+    const tot = rv.stage === 1 ? (rv.offers ? w.P.pickSeconds : w.P.revealAbility) : w.P.revealPorts, prog = tot > 0 ? clamp(rv.t / tot, 0, 1) : 0;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    if (rv.stage === 1) {
+    ui.offerRects = [];
+    if (rv.stage === 1 && rv.offers) {   // round 7: three cards; tap one (the clock stays stopped)
+      const top = L.y + 48, h = G.slots.y - L.y - 52;
+      ctx.fillStyle = 'rgba(6,9,14,.78)'; ctx.fillRect(L.x, top, L.w, h);
+      const n = rv.offers.length, cw = Math.min(L.w - 24, 360), head = small ? 14 : 26, gap = small ? 4 : 8;
+      const ch = Math.min(small ? 26 : 96, (h - head - 10 - gap * (n - 1)) / n), big = small ? 10 : Math.max(14, Math.min(20, cw / 18)), body = Math.max(11, big * 0.66);
+      ctx.fillStyle = '#9fe6ff'; ctx.font = '700 ' + (small ? 9 : 12) + 'px system-ui, sans-serif'; ctx.fillText('PICK THE RATEL\'S NEXT ABILITY', G.cx, top + head / 2 + 2);
+      for (let k = 0; k < n; k++) {
+        const ab = ABILITY_TEXT[rv.offers[k]] || [rv.offers[k], ''], x = G.cx - cw / 2, y = top + head + 6 + k * (ch + gap);
+        const hot = st.ability === rv.offers[k];
+        ctx.fillStyle = '#0e1620'; ctx.fillRect(x, y, cw, ch);
+        ctx.strokeStyle = hot ? '#ffffff' : '#9fe6ff'; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, cw - 2, ch - 2);
+        ctx.fillStyle = '#ffffff'; ctx.font = '700 ' + big + 'px system-ui, sans-serif';
+        ctx.fillText(fitText(ab[0], cw - 16), G.cx, y + (small ? ch / 2 : big * 0.9 + 6));
+        if (!small) {
+          ctx.fillStyle = '#c8d4e2'; ctx.font = body + 'px system-ui, sans-serif';
+          wrapText(ab[1], cw - 24).slice(0, Math.max(0, Math.floor((ch - big - 14) / (body + 4)))).forEach((ln, j) => ctx.fillText(ln, G.cx, y + big + 16 + body / 2 + j * (body + 4)));
+        }
+        ui.offerRects.push({ x, y, w: cw, h: ch });
+      }
+      if (tot > 0) { ctx.fillStyle = '#9fe6ff'; ctx.fillRect(G.cx - cw / 2, top + head + 6 + n * (ch + gap), cw * prog, 2); }
+    } else if (rv.stage === 1) {
       ctx.fillStyle = 'rgba(6,9,14,.72)'; ctx.fillRect(L.x, L.y + 48, L.w, G.slots.y - L.y - 52);
       const ab = ABILITY_TEXT[st.ability] || ['', ''], cw = Math.min(L.w - 24, 340), big = small ? 13 : Math.max(18, Math.min(26, L.w / 16)), body = small ? 0 : Math.max(12, big * 0.6);
       ctx.font = body + 'px system-ui, sans-serif';
@@ -2150,6 +2214,7 @@
   }
   function engDown(x, y) {
     const st = world.dyn, G = ui.dynG;
+    if (st.reveal && st.reveal.offers) { for (let k = 0; k < (ui.offerRects || []).length; k++) if (inRect(ui.offerRects[k], x, y)) { engInput({ k: 'pick', slot: k }); return; } return; }
     for (let k = 0; k < (ui.slotRects || []).length; k++) if (inRect(ui.slotRects[k], x, y)) { engInput({ k: 'activate', slot: k }); return; }
     const c = pxCell(G, x, y);
     if (c < 0) return;
@@ -2192,7 +2257,7 @@
     $('diff').textContent = n ? n + ' setting' + (n > 1 ? 's differ' : ' differs') + ' from the candidate' : 'candidate settings';
     for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o || !o.out.isConnected) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key]; }
   }
-  const RESTART_KEYS = ['others', 'arenaRadius', 'tickSeconds', 'apPerTick', 'apBank', 'batteryCap', 'revealAbility', 'revealPorts', 'bonusApCap', 'usesPerPattern', 'patternsPerShuffle', 'patchCount', 'patchSize'];
+  const RESTART_KEYS = ['others', 'arenaRadius', 'tickSeconds', 'apPerTick', 'apBank', 'abilityChoices', 'pickSeconds', 'batteryCap', 'revealAbility', 'revealPorts', 'bonusApCap', 'usesPerPattern', 'patternsPerShuffle', 'patchCount', 'patchSize'];
   function setParam(key, v) { P[key] = v; lsSet('P', diffOnly()); if (RESTART_KEYS.includes(key)) reset(); else if (world) world.P[key] = v; refreshDiff(); }
   function setOpt(key, v) { OPT[key] = v; lsSet('opt', OPT); reset(); refreshDiff(); }
   function makeTabs(barId, bodyId, tabs, storeKey) {
@@ -2273,7 +2338,7 @@
       case 'Slip arming': return OPT_LABELS.arming[o.arming] + ', cone ' + P.aimCone + ' deg';
       case 'The spin': return 'The port pattern turns 60 degrees every ' + P.tickSeconds + ' s, animated over ' + P.spinAnim + ' s';
       case 'Ports count as prisms': return o.portsCount ? 'An empty port counts as a prism; a real prism must still be in the pattern' : 'Ports do not count';
-      case 'Ratel abilities': return o.ability === 'random' ? 'Random (never ' + RETIRED_ABILITIES.map((a) => ABILITY_TEXT[a][0]).join(', ') + '), redrawn with the ports every ' + P.patternsPerShuffle + ' patterns; the clock stops ' + P.revealAbility + ' s to show the ability, then ' + P.revealPorts + ' s for the ports' : 'Always ' + ABILITY_TEXT[o.ability][0];
+      case 'Ratel abilities': return o.ability === 'random' ? (P.abilityChoices > 1 ? 'Pick one of ' + P.abilityChoices + ' (never ' + RETIRED_ABILITIES.map((a) => ABILITY_TEXT[a][0]).join(', ') + ') every ' + P.patternsPerShuffle + ' patterns, the clock stopped' + (P.pickSeconds > 0 ? ' up to ' + P.pickSeconds + ' s' : '') + '; then ' + P.revealPorts + ' s for the new ports' : 'Random (never ' + RETIRED_ABILITIES.map((a) => ABILITY_TEXT[a][0]).join(', ') + '), redrawn with the ports every ' + P.patternsPerShuffle + ' patterns; the clock stops ' + P.revealAbility + ' s to show the ability, then ' + P.revealPorts + ' s for the ports') : 'Always ' + ABILITY_TEXT[o.ability][0];
       case 'Pattern replacement': return o.replace ? 'Replaced after ' + P.usesPerPattern + ' makes' : 'Never replaced';
       case 'Pattern effects': return 'Each pattern fires its own effect, converted from its tabletop card; timed ones last ' + P.passiveSeconds + ' s and stack to level ' + P.passiveMaxLevel + '; the thirteen upgrade cards take over RT or LT for ' + P.activeSeconds + ' s';
       case 'The triggers': return (o.base ? 'RT Peck (' + P.peckRate + '/s, ' + P.peckRange + ' u), LT Flit (' + P.flitDistance + ' u every ' + P.flitCooldown + ' s). ' : 'No base powers. ') + (o.actives ? OPT_LABELS.deal[o.deal] + '; an upgrade holds its trigger ' + P.activeSeconds + ' s' : o.guns ? 'Round 4: the guns' : 'No upgrades');

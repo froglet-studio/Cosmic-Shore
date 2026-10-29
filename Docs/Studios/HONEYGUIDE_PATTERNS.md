@@ -8,8 +8,8 @@ Lab round 6, 2026-10-21. Source of truth: `Docs/Studios/HoneyguideLab.html` on `
 - A shape matches in any of its six rotations. With the Mirror ability, mirror images match too.
 - An empty injection port counts as a prism of its colour, but every match needs at least one real prism.
 - Making a pattern costs 1 AP. One of its real prisms, drawn at random, goes to the battery as a slip charge of its domain, and the pattern fires its own effect.
-- A pattern made for the third time is replaced by a random one. Every 4 patterns the Ratel gets a new random ability and a new port pattern. The spin clock stops for that: 3.5 s to read the ability, then 2 s to see the new ports, then the clock restarts.
-- The port pattern turns 60° clockwise every 15 s, shown as a shrinking bar across the top. Each spin gives 3 AP (bank 3). The battery holds 3.
+- A pattern made for the third time is replaced by a random one. Every 4 patterns the Ratel is offered three abilities and picks one (round 7, Garrett 2026-10-29), then gets a new port pattern. The spin clock stops for that: up to 10 s to pick (then the first offer is taken), then 2 s to see the new ports, then the clock restarts.
+- The port pattern turns 60° clockwise every 15 s, shown as a shrinking bar across the top. Each spin gives 3 AP; unspent AP are kept up to 6 (round 7; was 3). The battery holds 3.
 
 **Colours:** R = Ruby, J = Jade, G = Gold. The tabletop print's M, C and S map to R, J and G. **Cells** are axial hex coordinates (q, r), the same as `DynamoCore`: E is (+1, 0) and SE is (0, +1). Shapes are listed as printed; their position on the board does not matter.
 

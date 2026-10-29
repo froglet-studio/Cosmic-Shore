@@ -170,6 +170,110 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Config_CarriesRound7_ApBankSix_AndAPickOfThree()
+        {
+            // Garrett 2026-10-29: "lets have the ap cap go to 6. lets do the 3 ability pick as well"
+            var s = Load().ToSettings();
+            Assert.AreEqual(6, s.ApBank, "what a spin does not use is kept, up to 6");
+            Assert.AreEqual(3, s.ApPerTick, "a spin still gives 3");
+            Assert.AreEqual(3, s.AbilityChoices, "three abilities are offered and the Ratel picks one");
+            Assert.IsFalse(string.IsNullOrEmpty(Load().PickAbilityTitle), "the pick's heading is authored");
+        }
+
+        // Plays the AI until the draw offers abilities; the AI's own pick is not applied.
+        static DynamoCore UntilOffered(DynamoSettings s, int seed)
+        {
+            var core = new DynamoCore(s, seed);
+            var memo = new DynamoCore.AIMemo();
+            for (int k = 0; k < 4000 && core.RevealState?.Offers == null; k++)
+            {
+                if (k % 2 == 0) { core.Advance(s, 1.0); continue; }
+                var inp = core.AIPlan(s, new DynamoAISkill { Top = 1, Blunder = 0 }, DynamoCore.Mulberry32(seed * 7 + k), memo);
+                if (inp != null && inp.Value.Kind == DynamoInputKind.Activate) memo.Key = "";
+                if (inp != null && inp.Value.Kind != DynamoInputKind.Pick) core.Apply(s, inp.Value);
+            }
+            return core;
+        }
+
+        [Test]
+        public void Ratel_IsOfferedThreeAbilities_TheClockWaitsForItsPick_AndItGetsTheOneItPicked()
+        {
+            var s = Load().ToSettings();
+            s.PatternsPerShuffle = 1;
+            s.PickSeconds = 0;   // no time limit: only the pick moves on
+            for (int seed = 1; seed <= 20; seed++)
+            {
+                var core = UntilOffered(s, seed);
+                var offers = core.RevealState?.Offers;
+                Assert.IsNotNull(offers, $"seed {seed}: the draw never offered abilities");
+                Assert.AreEqual(3, offers.Length, $"seed {seed}: three offered");
+                Assert.AreEqual(3, offers.Distinct().Count(), $"seed {seed}: the offers repeat");
+                CollectionAssert.DoesNotContain(offers, core.Ability, $"seed {seed}: the held ability was offered again");
+                CollectionAssert.DoesNotContain(offers, DynamoAbility.Printer, $"seed {seed}: the retired Printer was offered");
+                Assert.IsTrue(core.Events.Any(e => e.Kind == DynamoEventKind.Offer), $"seed {seed}: no Offer event");
+                core.Events.Clear();
+
+                int ticks = core.Ticks;
+                double clock = core.Clock;
+                core.Advance(s, 120.0);
+                Assert.AreEqual(ticks, core.Ticks, $"seed {seed}: the ports spun while the Ratel was picking");
+                Assert.AreEqual(clock, core.Clock, $"seed {seed}: the spin clock ran while the Ratel was picking");
+                Assert.IsFalse(core.Apply(s, DynamoInput.Activate(0)), $"seed {seed}: a card was made mid-pick");
+                Assert.IsFalse(core.Apply(s, DynamoInput.Pick(3)), $"seed {seed}: a fourth offer was taken");
+
+                var want = offers[seed % 3];
+                Assert.IsTrue(core.Apply(s, DynamoInput.Pick(seed % 3)), $"seed {seed}: the pick was refused");
+                Assert.AreEqual(want, core.Ability, $"seed {seed}: the Ratel did not get the ability it picked");
+                Assert.IsTrue(core.Events.Any(e => e.Kind == DynamoEventKind.Shuffle && e.Ability == want), $"seed {seed}: the pick was not announced");
+                Assert.IsTrue(core.RevealState == null || (core.RevealState.Stage == 2 && core.RevealState.Offers == null),
+                              $"seed {seed}: after the pick the new ports are shown");
+                Assert.IsFalse(core.Apply(s, DynamoInput.Pick(0)), $"seed {seed}: a second pick was taken");
+            }
+        }
+
+        [Test]
+        public void Ratel_WhoDoesNotPickInTime_GetsTheFirstOffer()
+        {
+            var s = Load().ToSettings();
+            s.PatternsPerShuffle = 1;
+            s.PickSeconds = 2;
+            var core = UntilOffered(s, 5);
+            var offers = core.RevealState.Offers;
+            core.Advance(s, 1.9);
+            Assert.IsNotNull(core.RevealState?.Offers, "the pick was taken before its time ran out");
+            core.Advance(s, 0.2);
+            Assert.AreEqual(offers[0], core.Ability, "a pick that runs out of time takes the first offer");
+        }
+
+        [Test]
+        public void TheAIRatel_PicksByItsOrder()
+        {
+            Assert.AreEqual(1, DynamoCore.AIPick(new[] { DynamoAbility.Mirror, DynamoAbility.Overclock, DynamoAbility.Swap }));
+            Assert.AreEqual(2, DynamoCore.AIPick(new[] { DynamoAbility.Mirror, DynamoAbility.Swap, DynamoAbility.LongReach }));
+            var s = Load().ToSettings();
+            s.PatternsPerShuffle = 1;
+            var core = UntilOffered(s, 9);
+            var inp = core.AIPlan(s, new DynamoAISkill { Top = 1, Blunder = 0 }, DynamoCore.Mulberry32(1), new DynamoCore.AIMemo());
+            Assert.IsNotNull(inp, "the AI does not answer an offer");
+            Assert.AreEqual(DynamoInputKind.Pick, inp.Value.Kind);
+            Assert.AreEqual(DynamoCore.AIPick(core.RevealState.Offers), inp.Value.Slot);
+        }
+
+        [Test]
+        public void TheBank_KeepsUnspentAP_UpToSix()
+        {
+            var s = Load().ToSettings();
+            var core = new DynamoCore(s, 11);
+            Assert.AreEqual(3, core.Ap, "a fresh board starts with one spin's AP");
+            core.Advance(s, s.TickSeconds + 0.01);
+            Assert.AreEqual(6, core.Ap, "an unspent spin is kept");
+            Assert.AreEqual(0, core.Wasted);
+            core.Advance(s, s.TickSeconds);
+            Assert.AreEqual(6, core.Ap, "the bank holds 6");
+            Assert.AreEqual(3, core.Wasted, "past 6 a spin's AP are wasted");
+        }
+
+        [Test]
         public void Ratel_NeverDrawsPrinter_WhileItIsRetired()
         {
             // Garrett 2026-10-22: "remove the engineer ability that gives players a free prism at the start of the spin, the

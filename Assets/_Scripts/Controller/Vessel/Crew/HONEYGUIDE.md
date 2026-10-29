@@ -13,12 +13,16 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
   satisfying zip over"). That end is clipped to `slipReach`, and the hull leaves `exitOffset` past it, aligned with the
   trail. The slip spends that domain's charge.
 - **The Ratel** plays the **Dynamo**, a hex puzzle (`DynamoCore`):
-  - Every 15 s (a shrinking bar across the top) the injection ports turn 60° and the AP refill.
+  - Every 15 s (a shrinking bar across the top) the injection ports turn 60° and the spin gives 3 AP. What is not spent is
+    kept, up to 6 (round 7, Garrett 2026-10-29; it was 3, so every spin was use-it-or-lose-it).
   - The Ratel moves prisms, injects at ports and makes patterns. Each costs 1 AP.
   - A made pattern sends one of its prisms, drawn at random, to the battery, where its domain is a slip charge. It also
     fires that card's own effect.
   - A pattern made three times is replaced.
-  - Every 4 patterns the Ratel draws a new ability and a new port pattern. The clock stops while they are shown.
+  - Every 4 patterns the Ratel is **offered three abilities and picks one** (round 7, Garrett 2026-10-29), then sees the
+    new port pattern. The clock stays stopped while it picks; after `pickSeconds` (10 s) the first offer is taken. The AI
+    Ratel picks by `DynamoCore.AIPickOrder` (Overclock, Refund, Free Fire, Long Reach, Capacitor, Wild Core, Swap, Mirror:
+    a proposal). `abilityChoices` 1 brings back the random draw.
   - **Printer is retired from the draw, for now** (Garrett 2026-10-22: its free prism at the start of every spin "is too
     confusing to players on mobile"). The config's `retiredAbilities` lists it, and the lab's `RETIRED_ABILITIES` holds the
     same list (`author_honeyguide_assets.py --check` fails if they differ). To bring it back, empty both lists. The cards
@@ -41,6 +45,7 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
    - Drag a prism along empty cells to move it (1 AP a step).
    - Tap a port to inject its colour (1 AP).
    - Tap a lit card to make its pattern (1 AP).
+   - When three abilities are offered, tap one to take it (the clock waits).
    - Right-click a prism to delete it (1 AP); on a phone, hold the prism still (`longPressSeconds`, 0.45 s). Right-click a card to
      read its details; any click closes them (a phone cannot open card details yet).
    - Free prisms (Printer, Translator, 5D Printer) each come in a random domain and ride the cursor until placed: click an
@@ -159,8 +164,8 @@ until the editor's baker is run.
 
 ## Proposed: a whole arc for the Ratel (2026-10-29)
 
-`Docs/Studios/ONE_THUMB_SEAT_ARCS.md` §3: AP that banks across spins and a pick of three abilities (two config
-changes), then a **raid**: the Honeyguide finds a hostile hive, and the Ratel breaks its real prisms by chaining
+`Docs/Studios/ONE_THUMB_SEAT_ARCS.md` §3. Its first step is in (round 7, above: the bank of 6 and the pick of three).
+The rest is a proposal, shown in the Ratel Raid Lab (`Docs/Studios/HONEYGUIDE_RAID_LAB.md`): a **raid**: the Honeyguide finds a hostile hive, and the Ratel breaks its real prisms by chaining
 them on the board. Not decided; its §6 lists the decisions.
 
 ## Not verified in the Editor

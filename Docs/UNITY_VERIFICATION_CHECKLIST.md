@@ -65,6 +65,31 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Honeyguide and Ratel round 7: AP bank 6, the Ratel picks one of three abilities (`cece/jolly-lovelace-t8y3a1`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Garrett: "lets have the ap cap go to 6. lets do the 3 ability pick as well." `DynamoCore` (the pick input, the Offer event,
+`AIPickOrder`, the reveal's offers in `WriteState` / `ReadState` and the digest), `HoneyguideConfigSO` (`apBank` 6,
+`abilityChoices` 3, `pickSeconds` 10, `pickAbilityTitle`), `HoneyguideDynamoView` (three tappable cards over the dimmed
+board, the time left under them), `HoneyguideCrew` (the Offer event). `/verify-unity` was unavailable (no Editor, no
+`unity` binary). Green: the headless reference compile, player and editor configs (0 errors in project code); `Tools/Build/dynamo_lab/parity.cjs` PASS (lab = C#, 13 planted controls caught);
+`author_honeyguide_assets.py --check` and `--self-test`; the new `HoneyguideTests` bodies run against the core with .NET 8
+(the tests themselves, which load the asset, need the Editor).
+
+1. Run the edit-mode tests: `HoneyguideTests.Config_CarriesRound7_ApBankSix_AndAPickOfThree`,
+   `Ratel_IsOfferedThreeAbilities_TheClockWaitsForItsPick_AndItGetsTheOneItPicked`, `Ratel_WhoDoesNotPickInTime_GetsTheFirstOffer`,
+   `TheAIRatel_PicksByItsOrder`, `TheBank_KeepsUnspentAP_UpToSix`, and the existing `RatelBoard_CopiedToAnotherMachine_...`.
+2. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. Let a spin pass without moving: the AP row shows 6
+   pips lit. Let another pass: still 6.
+3. Make a fourth pattern: the board dims, a heading reads "Pick the Ratel's next ability" and three cards name an ability
+   and what it does; a line under them runs down over 10 s. The spin bar does not move. Tap one: the toast names it, it
+   is the ability under the AP row, and the new ports are shown.
+4. Make a fourth pattern again and do not tap: after 10 s the top card's ability is taken.
+5. On a phone held portrait: the three cards fit inside the board and each is big enough for a thumb.
+6. Fly the Honeyguide (the AI plays the Ratel): every fourth pattern, the small board shows the three names briefly and
+   the AI takes one within about half a second.
+7. Two machines (a rider on the Ratel): the rider sees the offers, its tap reaches the hull's machine, and both boards
+   show the ability taken.
+
 ### 🔴 God mode in the lava lamp: a free inspection camera on F2 / L3 (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** `MenuGodModeCamera` on Menu_Main's Game object. F2 (or L3) swaps the lava-lamp camera for a free-fly

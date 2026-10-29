@@ -155,8 +155,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float tickSeconds = 15f;
         [Tooltip("lab apPerTick: action points each spin (move, inject and make cost 1).")]
         [SerializeField, Min(1)] int apPerTick = 3;
-        [Tooltip("lab apBank: most AP held; above it a spin's AP are wasted.")]
-        [SerializeField, Min(1)] int apBank = 3;
+        [Tooltip("lab apBank: most AP held; above it a spin's AP are wasted. Garrett 2026-10-29: 6 (was 3), so what a spin does " +
+                 "not use is kept.")]
+        [SerializeField, Min(1)] int apBank = 6;
+        [Tooltip("lab abilityChoices: abilities offered every patternsPerShuffle patterns; the Ratel picks one while the clock is " +
+                 "stopped (Garrett 2026-10-29: 3). 1 = the old random draw.")]
+        [SerializeField, Range(1, 4)] int abilityChoices = 3;
+        [Tooltip("lab pickSeconds: seconds the Ratel has to pick before the first offer is taken; 0 waits for the pick.")]
+        [SerializeField, Min(0f)] float pickSeconds = 10f;
         [Tooltip("lab bonusApCap: banked extra AP (the Refund ability).")]
         [SerializeField, Min(0)] int bonusApCap = 2;
         [Tooltip("lab batteryCap: slip charges held; a new one replaces the oldest when full.")]
@@ -392,6 +398,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] string revealAbilityTemplate = "New ability: {name}";
         [Tooltip("The reveal's second step.")]
         [SerializeField] string revealPortsLine = "New injection ports";
+        [Tooltip("The heading over the abilities offered to pick from (round 7). Empty = no heading.")]
+        [SerializeField] string pickAbilityTitle = "Pick the Ratel's next ability";
         [Tooltip("The toast when a pattern is made (the game's toast, top right under Settings). Tokens: {name}, {level} (empty for " +
                  "a one-off), {text} (the card's effect).")]
         [SerializeField] string madeToastTemplate = "{name} {level}: {text}";
@@ -520,6 +528,7 @@ namespace CosmicShore.Gameplay
         public string FreePrismTemplate => freePrismTemplate;
         public string RevealAbilityTemplate => revealAbilityTemplate;
         public string RevealPortsLine => revealPortsLine;
+        public string PickAbilityTitle => pickAbilityTitle;
         public string MadeToastTemplate => madeToastTemplate;
         public string MadeLineTemplate => madeLineTemplate;
         public Color DynamoLineColour => dynamoLineColour;
@@ -619,6 +628,7 @@ namespace CosmicShore.Gameplay
             {
                 TickSeconds = tickSeconds, ApPerTick = apPerTick, ApBank = apBank, BonusApCap = bonusApCap, BatteryCap = batteryCap,
                 RevealAbility = revealAbility, RevealPorts = revealPorts, AllowRotatedMatches = rotatable, PortsCount = portsCount,
+                AbilityChoices = abilityChoices, PickSeconds = pickSeconds,
                 SlotCount = 3, StartFilled = true, UsesPerPattern = usesPerPattern, PatternsPerShuffle = patternsPerShuffle,
                 Abilities = AbilityPool(),
             };

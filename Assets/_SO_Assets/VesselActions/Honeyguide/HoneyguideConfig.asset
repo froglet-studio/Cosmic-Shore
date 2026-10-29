@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tickSeconds: 15
   apPerTick: 3
-  apBank: 3
+  apBank: 6
+  abilityChoices: 3
+  pickSeconds: 10
   bonusApCap: 2
   batteryCap: 3
   revealAbility: 3.5
@@ -307,6 +309,7 @@ MonoBehaviour:
   dynamoLineColour: {r: 0.66, g: 1, b: 0.18, a: 1}
   revealAbilityTemplate: 'New ability: {name}'
   revealPortsLine: 'New injection ports'
+  pickAbilityTitle: 'Pick the Ratel''s next ability'
   madeToastTemplate: '{name} {level}: {text}'
   abilityToastTemplate: 'The Ratel''s new ability, {name}: {text}'
   cardDetailTemplate: "{name}\n{text}\nMade {uses} of {max}\n\nClick anywhere to close"
