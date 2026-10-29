@@ -88,7 +88,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] float bleedPerSecond = 300f;
 
         [Header("Feel")]
-        [Tooltip("SFX played once when the ramp engages.")]
+        [Tooltip("SFX held while the ramp is engaged, stopped when it ends (Boost Activate is a " +
+                 "looping bed). A non-looping category simply plays once on engage.")]
         [SerializeField] GameplaySFXCategory engageSFX = GameplaySFXCategory.BoostActivate;
 
         public float MaxBoostMultiplier => maxBoostMultiplier;
