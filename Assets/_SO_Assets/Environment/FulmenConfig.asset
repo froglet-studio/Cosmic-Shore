@@ -12,16 +12,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2611b6fc3ce9461cbf3403d21e8ac29c, type: 3}
   m_Name: FulmenConfig
   m_EditorClassIdentifier: 
-  tint: {r: 0.42, g: 0.58, b: 0.95, a: 1}
-  width: 1.6
-  material: {fileID: 2100000, guid: d3d0e5f69ca24c7ba12af80330674a2f, type: 2}
-  burnRadius: 10
-  burnSeconds: 5
+  crystalsToFire: 1
+  rootRangeShare: 0.6
+  minRootRange: 200
+  childRangeScale: 0.4
+  maxChainDepth: 2
+  maxChildren: 6
+  maxChildSpawnsPerFrame: 1
+  crystalStrikeRadius: 12
+  omniCrystalsOnly: 1
+  growSeconds: 0.12
+  holdSeconds: 0.08
+  fadeSeconds: 0.3
+  flickerRate: 24
+  flickerDepth: 0.7
+  segmentQueriesPerFrame: 128
+  ignitesPerFrame: 96
+  burnRadius: 200
+  burnSeconds: 12
+  convertOnBurnout: 0
   burnSpread:
-    MaxGenerations: 2
-    Radius: 7
-    Chance: 0.45
+    MaxGenerations: 4
+    Radius: 50
+    Chance: 0.73
     Decay: 0.5
     Interval: 0.8
-    MaxPerBurn: 3
+    MaxPerBurn: 20
     SecondsScale: 0.8
+  roots: 5
+  maxSegments: 160
+  maxBranches: 24
+  maxBranchDepth: 2
+  segmentMin: 0.06
+  segmentMax: 0.14
+  jitter: 0.55
+  outward: 0.35
+  forkChance: 0.18
+  forkShrink: 0.7
+  tint: {r: 0.42, g: 0.58, b: 0.95, a: 1}
+  width: 10
+  material: {fileID: 2100000, guid: d3d0e5f69ca24c7ba12af80330674a2f, type: 2}
