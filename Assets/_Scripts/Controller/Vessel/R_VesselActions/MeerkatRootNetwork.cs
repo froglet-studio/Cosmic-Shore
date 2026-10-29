@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// One network of ROOTS a Meerkat grew from an omnicrystal (<c>R_VesselActions/MEERKAT.md</c> §7): its channels
     /// (<see cref="MeerkatRootMath.Build"/>), each one's dug window and life (<see cref="MeerkatRootMath.Life"/>), the
     /// network's up, and who grew it. Every peer builds the same one from the published seed and frame
-    /// (<see cref="MeerkatWormholeNetworkRelay"/>); <see cref="MeerkatTreeView"/> draws it and owns its meshes.
+    /// (<see cref="MeerkatWormholeNetworkRelay"/>); <see cref="MeerkatWormholeLensPass"/> bends space round its channels.
     /// </summary>
     public sealed class MeerkatRootNetwork
     {
@@ -25,10 +25,6 @@ namespace CosmicShore.Gameplay
         public readonly int Seq;
         /// <summary><see cref="Alive"/> as a delegate, made once (the flight asks it every frame).</summary>
         public readonly System.Func<int, bool> AliveFn;
-        /// <summary>The root skins, built and destroyed by <see cref="MeerkatTreeView"/>.</summary>
-        internal Mesh[] Skins;
-        /// <summary>Round 26: each channel's calm inner wall, built and destroyed by <see cref="MeerkatTubeWallView"/>.</summary>
-        internal Mesh[] Walls;
 
         MeerkatRootNetwork(List<MeerkatRootMath.Channel> channels, MeerkatRootMath.D3 up, MeerkatWormholeExecutor maker, int seq,
             double formSeconds)
@@ -63,7 +59,6 @@ namespace CosmicShore.Gameplay
             var channels = MeerkatRootMath.Build(lay, cfg.RootChannel(), D(a), D(t0), D(right), D(up));
             var net = new MeerkatRootNetwork(channels, D(up), maker, seq, cfg.LabyrinthFormSeconds);
             s_live.Add(net);
-            MeerkatTreeView.PrepareSkins(net, cfg);   // built once here, never inside a draw
             return net;
         }
 
@@ -109,13 +104,8 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < Life.Length; i++) MeerkatRootMath.CollapseNow(ref Life[i]);
         }
 
-        /// <summary>Off the list, its meshes destroyed.</summary>
-        public void Remove()
-        {
-            s_live.Remove(this);
-            MeerkatTreeView.Release(this);
-            MeerkatTubeWallView.Release(this);
-        }
+        /// <summary>Off the list.</summary>
+        public void Remove() => s_live.Remove(this);
 
         public static MeerkatRootMath.D3 D(Vector3 v) => new(v.x, v.y, v.z);
         public static Vector3 V(MeerkatRootMath.D3 v) => new((float)v.X, (float)v.Y, (float)v.Z);

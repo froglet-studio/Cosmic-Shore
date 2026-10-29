@@ -4817,7 +4817,7 @@ player least.
   with invariants (clear at both sides, solid on the centre line, leans the right way).
 - The existing hover tints stay: KitButton's fill lift and KitHoverTint's word lift.
 
-## 102. Rev 36 mockups: FTUE, redrawn - the captain arrives (2026-10-28, awaiting a pick)
+## 102. Rev 36 mockups: FTUE, redrawn - the captain arrives (2026-10-28; Shombith picked B)
 
 **Asked (Shombith, 2026-10-28):** "for the ftue I do not like them once bit. Up your game bhai", then "Leave that ref,
 just make it good".
@@ -4850,10 +4850,108 @@ entrance per step.
 - **R36Compare:** the three options at rest on Home, Configure and the first race. **R36Notes:** the critique of
   Rev 34, the timings, the build.
 
-**Why A:** her vessel does the game's own move (a skim trail), and the trail is the pointer, so the eye follows it to
+**Picked (Shombith, 2026-10-29):** "Lets go with B" (Comms).
+
+**Why A was recommended:** her vessel does the game's own move (a skim trail), and the trail is the pointer, so the eye follows it to
 the control without an arrow. B suits in-match lines, since it covers least. C has the most character.
 
 **Differs from the build:**
 - The words go in the guide asset (MainQuest), one line per step, with the speaker from the pilot roster.
 - The entrance, the trail and the spotlight hole are new view work on `MainMenuDialogueView`.
 - Open (Shombith, Caleb): her voice, and her name.
+
+### 102.1 Rev 36 B (Comms), built (2026-10-29, awaiting in-editor approval)
+
+The captain's comms window rides on the existing guided path (`MenuGuide` + `MenuSpotlight`, the LOCKED rule: one lit
+control, everything else dimmed and dead except Settings and Skip).
+- **`GuideSpeakerSO`** (new, `Assets/_Scripts/UI/Guide/`) holds who speaks: name, title, eyebrow, portrait, the comms
+  prefab, 45 characters a second, a 0.5 s dock. `GuideSpeaker_Trace.asset` is Trace with her roster portrait.
+- **`GuideCommsView`** (new) behaves like the board:
+  - it docks on the screen edge away from the lit control, and moves to the top when it would cover it;
+  - the line types once the window has landed, the 18 voice bars move while it types, then the prompt (keycap and
+    action) fades in;
+  - a lime line runs from the window to the control.
+
+  A new line replays the entrance. Every graphic is raycast-off, so the dim still decides what a press reaches.
+- **`MenuSpotlight.Show`** gains a speaker overload. With a speaker, the comms window replaces the caption pill.
+- **`QuestGuideToMicrogameNode`** gains `speaker`, one prompt per step (Arcade / Open / Fly) and `actionKeycap`.
+  `MainQuest_Phase0_FirstLogin.asset` now speaks in Trace's voice.
+- **Written by `Tools/Build/author_guide_comms.py`** (`--check`, `--self-test` with 5 plants): the prefab
+  (`Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab`), the speaker asset and the phase-asset fields.
+- **Not covered yet:** the in-race and finish steps (4-5 on the board). The first-login guide stops at the Lesson; those
+  steps need their own nodes.
+
+## 103. Rev 37: connection states and rejoin (2026-10-29; approved by Shombith, built in 103.1)
+
+**Asked (Shombith, 2026-10-29):** "where are the others like the connections lost and reconnect ones?" and "If some one
+leaves a game and then they boot up while the game is running the game should ask the user if they want to rejoin that
+game".
+
+**On the canvas:** page "Rev 37 - Connection: lost, reconnecting, back online, rejoin"; the copies are
+`Docs/MenuRedesignB/board/R37*.dc.html`. This is a states round for the window built in section 100.2
+(`DisconnectNoticeView`), which until now had no board.
+- **R37Flow (interactive):** every state, picked from a strip.
+- **R37Lost, R37Reconnecting, R37Online:** the three states that are already built. Words come from
+  `DisconnectNoticeConfig`; Back Online closes itself after 2.5 s.
+- **R37Match, "You dropped out" (new):** a guest whose link breaks is sent back to their own Home
+  (`PartyInviteController.HandleHostLossAsync`) while the host hands their vessel to an AI pilot
+  (`ServerPlayerVesselInitializer.ConvertPlayerToAI`). The game already does both; nothing tells the player. Offers
+  REJOIN (lime, A) and NOT NOW (B).
+- **R37HostLeft (new):** the host is a player, so the match ends with them. One line and BACK TO HOME; no rejoin.
+- **R37Rejoin (new):** after sign-in, if the match you left is still running, Home opens with the mode's card, who
+  is in it, "AI flying it now" on your seat, REJOIN and NOT NOW.
+- **R37Notes:** the rules (lime only on the action that puts you back, nothing red) and the build.
+
+**What the game does today** (read 2026-10-29; Block 6 "reconnection grace" in
+`Docs/prompts/MULTIPLAYER_HARDENING_PROMPT.md`, not started):
+- The party session is the match session: a UGS Multiplayer session with Relay, hosted by the party host.
+- Nothing persists which match a player was in.
+- Connection approval approves everyone and creates a new Player. A returning player would get a second vessel while
+  the old one stays AI-flown, because `ConvertPlayerToAI` is one-way.
+- `ReconnectService` takes an offline session back online by re-running the boot chain. It is not a match rejoin.
+
+**What the rejoin build needs:**
+1. Remember `{session id, mode}` locally while in a match as a guest; clear it on a normal end or leave.
+2. On Home, ask presence whether a party mate still advertises that session in a match, and show R37Rejoin.
+3. REJOIN joins by session id through the existing client-join path, with a rejoin token (the player's UGS id) in the
+   approval payload, as spectators already do.
+4. The host hands the AI-flown Player and vessel back to the returning client: ownership, `NetIsAI = false`, AI pilot
+   off, client pairing re-run. It must not spawn a second one.
+
+**Approved (Shombith, 2026-10-29):** "Go ahead with rev 37 I approve".
+
+### 103.1 Rejoin, built (2026-10-29, awaiting a two-client test)
+
+- **`MatchRejoin`** (new, `Assets/_Scripts/Controller/Multiplayer/`) is the shared piece:
+  - the remembered match (PlayerPrefs `{session id, mode, saved, dropped}`, given up after 30 minutes);
+  - the approval token `cosmicshore.rejoin.v1:<ugs id>`;
+  - the host's pending rejoins;
+  - `FindReclaimableSeat`: a spawned, AI-flown Player with the returning player's UGS id.
+- **When the record is kept and dropped:**
+  - Kept: a guest remembers the match when the host's config arrives in the game scene
+    (`SyncGameConfigToClients_ClientRpc`). A drop (`HandleHostLossAsync`) marks it dropped and keeps it.
+  - Forgotten: the match's end (`SyncGameEnd_ClientRpc`), a deliberate return (`SceneLoader.ReturnToMainMenu`),
+    leaving the party, and NOT NOW / BACK TO HOME.
+- **The window** is `DisconnectNotice`, the same style-B prefab. On Home it looks every 2 s for a party mate still
+  advertising the remembered session in a match:
+  - one found: it shows "You dropped out" (a drop under 3 minutes old) or "Rejoin {mode}?", with REJOIN and NOT NOW;
+  - nobody for 20 s after a drop: "The host left", with BACK TO HOME;
+  - nobody after a restart: the record is quietly forgotten.
+
+  All the words are in `DisconnectNoticeConfig` (written by `author_disconnect_notice.py`).
+- **REJOIN** calls `PartyInviteController.RejoinMatchAsync`: the same join as JOIN, with the rejoin token armed.
+- **The host:** approval makes no Player for a rejoin with a seat to give back, and refuses one without. On connect, or
+  on the client's roster request if that comes first, `TryReclaimSeat`:
+  - returns ownership of the Player and vessel;
+  - sets `NetIsAI` false and switches the AI pilot off;
+  - tells that client (`SeatReclaimed_ClientRpc`), and sends the roster.
+- **The client:** once ownership and the human flag land, it claims the Player as its own (`GameDataSO.ClaimLocalPlayer`,
+  with no reset), re-initialises the pair (camera and input), frees input if the turn is running, and raises client
+  ready.
+- **Tests:** `MatchRejoinTests` (payload, record, expiry).
+- **Not built, and the risks** (named for the two-client test):
+  - no silent no-menu reconnect;
+  - a crashed client may still hold its UGS membership, so the join fails "already a member";
+  - re-initialising a vessel that is already initialised is new;
+  - the game-scene guards for a client that joins from the menu mid-match are untested;
+  - a host can never rejoin.

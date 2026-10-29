@@ -706,6 +706,7 @@ MonoBehaviour:
   energyResourceIndex: 0
   switchResourceIndex: 1
   switchChargesPerFullMeter: 1
+  placeSwitch: {fileID: 11400000, guid: 8761b36b8aad336452f5c21344c57c1c, type: 2}
 
 --- !u!114 &2035987173373189047
 MonoBehaviour:
@@ -1871,7 +1872,6 @@ MonoBehaviour:
   radiusPerVesselRadius: 10
   fallbackVesselRadius: 4.5
   cooldownSeconds: 2.5
-  cooldownMultiplierAtFullCharge: 0.5
 --- !u!1 &6013774229915510331
 GameObject:
   m_ObjectHideFlags: 0

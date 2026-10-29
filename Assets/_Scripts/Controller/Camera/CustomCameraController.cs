@@ -76,6 +76,28 @@ namespace CosmicShore.Gameplay
         public Vector3? PlacementAnchor { get; set; }
 
         /// <summary>
+        /// A world rotation the FOLLOW FRAME is slerped toward by <see cref="FollowFrameOverride01"/>: the offset, the
+        /// look point and the camera's up all come from the result, so the whole rig re-orients round the hull while
+        /// the hull itself does not turn. Driven only by the Tiger Moth's Drop through
+        /// <see cref="VesselPlacementView.Frame"/> (<c>R_VesselActions/TIGER_MOTH.md</c>): the hull falls along its own
+        /// down, and the rig rides the frame pitched 90 degrees nose-down so the fall reads as forward; at the landing
+        /// the hull turns INTO this frame, so releasing it moves nothing.
+        ///
+        /// <para>Applied at the point of use (<see cref="StepFollowFrame"/>), never by writing the follow target or
+        /// <see cref="_followOffset"/>, for the reason <see cref="RearView"/> records. Null or a weight of 0 (the
+        /// default, and every other vessel) changes no line of the follow path. Reset with the follow target.</para>
+        /// </summary>
+        public Quaternion? FollowFrameOverride { get; set; }
+
+        /// <summary>How far the follow frame has moved onto <see cref="FollowFrameOverride"/>, 0..1.</summary>
+        public float FollowFrameOverride01
+        {
+            get => _followFrameOverride01;
+            set => _followFrameOverride01 = Mathf.Clamp01(value);
+        }
+        private float _followFrameOverride01;
+
+        /// <summary>
         /// A still vantage the camera eases INTO and holds instead of chasing the vessel: a world
         /// position, the point it looks at, and its up. Driven only by the Thresher
         /// (<c>ThresherExecutor</c>, <c>R_VesselActions/THRESHER.md</c>) — when its planted orbit
@@ -154,10 +176,20 @@ namespace CosmicShore.Gameplay
         private Vector3 _followAngularVelocity;          // degrees/s, axis x rate (angular-acceleration mode)
         private Quaternion _lastFollowTargetRotation;
 
+        /// <summary>The frame the camera follows in before any turn cap: the hull's rotation, moved onto
+        /// <see cref="FollowFrameOverride"/> by its weight.</summary>
+        private Quaternion FollowFrameTarget()
+        {
+            Quaternion hull = _followTarget.rotation;
+            return FollowFrameOverride.HasValue && _followFrameOverride01 > 0f
+                ? Quaternion.Slerp(hull, FollowFrameOverride.Value, _followFrameOverride01)
+                : hull;
+        }
+
         /// <summary>This frame's follow frame (see <see cref="MaxFollowTurnRate"/>).</summary>
         private Quaternion StepFollowFrame(float dt)
         {
-            Quaternion target = _followTarget.rotation;
+            Quaternion target = FollowFrameTarget();
             if (MaxFollowTurnRate <= 0f || !_followFrameValid)
             {
                 _followFrame = target;
@@ -953,6 +985,8 @@ namespace CosmicShore.Gameplay
                 _surroundFraming01 = 0f;
                 _surroundDistanceScale = 1f;
                 _vesselDistanceScale = 1f;
+                FollowFrameOverride = null;
+                _followFrameOverride01 = 0f;
                 _spectate = null;
                 _spectateBlend = 0f;
                 MaxFollowTurnRate = 0f;
@@ -1044,11 +1078,12 @@ namespace CosmicShore.Gameplay
 
             Vector3 followPoint = FollowPoint;
             _followFrameValid = false;
-            transform.position = followPoint + _followTarget.rotation * EffectiveOffset;
+            Quaternion rotation = FollowFrameTarget();
+            transform.position = followPoint + rotation * EffectiveOffset;
 
-            _easedLook = LookPoint(followPoint, 1f, _followTarget.rotation);
+            _easedLook = LookPoint(followPoint, 1f, rotation);
             _easedLookValid = true;
-            if (SafeLookRotation.TryGet(_easedLook - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (SafeLookRotation.TryGet(_easedLook - transform.position, rotation * Vector3.up, out var targetRot, this, logError: false))
                 transform.rotation = targetRot;
 
             _lastTargetPos = followPoint;

@@ -727,6 +727,20 @@ public class VesselTransformer : MonoBehaviour
         public void SetInitialSpeed(float initialSpeed) => speed = initialSpeed;
 
         /// <summary>
+        /// Turn the hull to <paramref name="rotation"/> NOW: the nose and the command both, so the follow step has no
+        /// gap left to close. Not a teleport (<see cref="TeleportCount"/> does not move, nothing is carried): an
+        /// ability that turns the hull continuously on its own clock calls it every frame. Its one caller is the Tiger
+        /// Moth's landing, which pitches the hull into its drop line (<c>TigerMothDropExecutor</c>,
+        /// <c>R_VesselActions/TIGER_MOTH.md</c>). Momentum follows the new facing, as <see cref="SetPose"/>'s does.
+        /// </summary>
+        public void SetRotationImmediate(Quaternion rotation)
+        {
+            transform.rotation = rotation;
+            accumulatedRotation = rotation;
+            if (_vectorSeeded) SetCourseVelocity(rotation * Vector3.forward);
+        }
+
+        /// <summary>
         /// Take over a hull that is ALREADY IN FLIGHT from wherever it is right now.
         ///
         /// <para>A transformer only simulates on the machine that flies its hull; everywhere else

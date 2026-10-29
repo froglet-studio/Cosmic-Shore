@@ -6,26 +6,31 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Scarab's HUD readouts (design: R_VesselActions/SCARAB.md §12). Three live gauges on
-    /// top of the shared four-icon ability row — and the row order is the element map, so the
-    /// gauges are named by the ELEMENT they sit under, never by "the third icon":
-    /// <b>Cavitation Blast (charge) · Switch (mass) · Ball Forge (space) · Throttle (time)</b>.
+    /// The Scarab's HUD readouts (design: R_VesselActions/SCARAB.md §12). Live gauges on top of
+    /// the shared four-icon ability row — and the row order is the element map, so the gauges are
+    /// named by the ELEMENT they sit under, never by "the third icon":
+    /// <b>Shove (charge) · Switch (mass) · Nucleus Seeding (space) · Throttle (time)</b>, with the
+    /// Ball Forge on the omni crystal card and the Drift on a core card of its own (2026-10-29).
     ///
-    /// 1. <b>Cavitation blast</b> (charge) — the card is the punch's volume drawn TO SCALE around the
-    ///    Scarab (Garrett 2026-10-28, Docs/Icons/ABILITY_ICON_SKILL_PLAN.md §8): parts under the icon
-    ///    (the kit's <c>specs/scarab.py</c> writes them, a rebind wires them): whole prisms outside
-    ///    (blue), the volume (white), the volume with the claimed prisms cut out as forward-flung
-    ///    slivers (white, shown for a beat as the punch lands), the plate (white) and the hull (the
-    ///    pilot's domain colour). Ready is white; recharging greys the volume and the plate. Still
-    ///    binary on the card, plus the optional radial ring that sweeps 0→1 over the live cooldown
-    ///    — the cooldown length is handed in with the edge, so the sweep is ONE tween per use.
-    /// 2. <b>Switch charges</b> (mass) — a discrete count (0..3) shown by tinting the Switch icon
-    ///    through an authored colour ramp, so "can I place one?" is answerable at a glance.
-    /// 3. <b>Ball energy</b> (space) — a radial fill on a ring sibling of the row, mirrored as a
-    ///    ready tint on the Ball Forge icon. Crossing FULL is the beat that matters: it changes
-    ///    what touching a crystal DOES, so the threshold is a hard colour flip plus a one-shot
-    ///    punch rather than a bar that quietly tops out. Without that a player cannot tell a
-    ///    working forge from a broken one — which is exactly how the first playtest went.
+    /// 1. <b>Shove</b> (charge) — the card is the punch's volume drawn TO SCALE around the Scarab
+    ///    (Docs/Icons/ABILITY_ICON_SKILL_PLAN.md §8): parts under the icon (the kit's
+    ///    <c>specs/scarab.py</c> writes them, a rebind wires them): whole prisms outside (blue), the
+    ///    PUSH (the volume ahead of the hull, white), the PULL behind it (shown only at Charge 5,
+    ///    Backdraft — the mirrored half), each with a shattered twin shown for a beat as the punch
+    ///    lands, the plate (white) and the hull (the pilot's domain colour). Ready is white;
+    ///    recharging greys the volume and the plate. Still binary on the card, plus the optional
+    ///    radial ring that sweeps 0→1 over the cooldown — the length is handed in with the edge,
+    ///    so the sweep is ONE tween per use.
+    /// 2. <b>Switch</b> (mass) — a white ball threading the pilot's ring (Garrett 2026-10-28,
+    ///    Docs/Icons/ABILITY_ICON_SKILL_PLAN.md §8), drawn as parts the kit's <c>specs/scarab.py</c>
+    ///    writes: the ring's far and near arcs (domain colour), the wake and the ball (white). Mass
+    ///    grows the ring, so the ball shrinks inside it by 1 / switchScale (to scale); with no switch
+    ///    banked the card dims under the fleet's cooldown veil.
+    /// 3. <b>Nucleus Seeding</b> (space) — a ball of the pilot's domain embedded in the nucleus
+    ///    membrane: the ball part is drawn at its Space-10 size and scaled by the live seeded-ball
+    ///    size / 4 (<c>ScarabBallForge.SizeScaleFor</c>) about its own centre, which sits on the
+    ///    membrane, so it always reads as half-swallowed. (The ball-energy ring that sat here for
+    ///    the Ball Forge retired with the slot: the energy economy is off.)
     ///
     /// Because three of these paint ability ICONS, colour here is a GAUGE channel and can carry no
     /// second meaning. That is settled platform-wide now: the ability lockup's card carries the
@@ -35,32 +40,47 @@ namespace CosmicShore.UI
     /// </summary>
     public class ScarabHUDView : VesselHUDView
     {
-        [Header("Ball energy (Space row — the Ball Forge)")]
-        [Tooltip("Radial-fill Image driven 0..1 by the ball-energy meter.")]
-        [SerializeField] Image energyRing;
-        [Tooltip("The Ball Forge ability icon, tinted filling / READY alongside the ring.")]
-        [SerializeField] Image ballIcon;
-        [Tooltip("Ring colour while the meter is still filling.")]
-        [SerializeField] Color energyFillingColor = new(0.35f, 0.55f, 0.75f, 0.85f);
-        [Tooltip("Ring colour once the meter is FULL — the next crystal forges a ball.")]
-        [SerializeField] Color energyReadyColor = new(1f, 0.75f, 0.2f, 1f);
-        [SerializeField, Min(0.01f)] float energyTweenDuration = 0.2f;
-        [Tooltip("One-shot punch when the meter crosses into READY, so the state change is felt " +
-                 "and not just displayed.")]
-        [SerializeField, Min(0f)] float energyReadyPunchScale = 0.35f;
+        [Header("Nucleus Seeding (Space row)")]
+        [Tooltip("The Nucleus Seeding card's container (the ability icon Image, transparent).")]
+        [SerializeField] Image seedIcon;
+        [Tooltip("The seeded ball (Scarab_SeedBall), drawn at its Space-10 size, point-anchored at its centre on the " +
+                 "membrane and scaled by the live seeded-ball size / seedMaxScale (SetSeedScale). Domain colour.")]
+        [SerializeField] Image seedBallIcon;
+        [Tooltip("The nucleus membrane (Scarab_SeedMembrane), white, drawn over the ball's sunk half.")]
+        [SerializeField] Image seedMembraneIcon;
+        [Tooltip("The seeded-ball size the ball part is drawn at: ScarabBallForge's x4 at Space 10.")]
+        [SerializeField, Min(1f)] float seedMaxScale = 4f;
 
-        [Header("Switch charges (Mass row)")]
-        [Tooltip("The Switch ability icon, tinted by how many charges are banked.")]
+        [Header("Throttle (Time row)")]
+        [Tooltip("The Scarab flying right (Scarab_ThrottleHull), in the pilot's domain colour.")]
+        [SerializeField] Image throttleHullIcon;
+        [Tooltip("The wake at a third of the pull (Scarab_ThrottleWakeShort). One wake shows at a time (WakeStepFor).")]
+        [SerializeField] Image wakeShortIcon;
+        [Tooltip("The wake at two thirds of the pull (Scarab_ThrottleWakeMid).")]
+        [SerializeField] Image wakeMidIcon;
+        [Tooltip("The wake at full pull (Scarab_ThrottleWakeLong).")]
+        [SerializeField] Image wakeLongIcon;
+        [Tooltip("Time 5, Snap Dash: the chevron ahead of the nose (Scarab_SnapDash). Hidden below Time 5, " +
+                 "snapDashReadyColor ready, snapDashSpentColor while it waits its cooldown.")]
+        [SerializeField] Image snapDashIcon;
+        [SerializeField] Color snapDashReadyColor = Color.white;
+        [SerializeField] Color snapDashSpentColor = new(1f, 1f, 1f, 0.3f);
+
+        [Header("Switch (Mass row)")]
+        [Tooltip("The Switch card's container (the ability icon Image, transparent).")]
         [SerializeField] Image switchIcon;
-        [Tooltip("Tint per charge count. Element 0 = empty, last element = full. The array's " +
-                 "length defines the displayed maximum.")]
-        [SerializeField] Color[] switchChargeColors =
-        {
-            new(0.35f, 0.4f, 0.45f, 0.5f),
-            new(0.6f, 0.75f, 0.85f, 0.85f),
-            new(0.8f, 0.9f, 1f, 0.95f),
-            new(1f, 1f, 1f, 1f),
-        };
+        [Tooltip("The ring's far arc (Scarab_SwitchFar), in the pilot's domain colour (SetSwitchRingColor).")]
+        [SerializeField] Image switchFarIcon;
+        [Tooltip("The ball's wake (Scarab_SwitchWake), white.")]
+        [SerializeField] Image switchWakeIcon;
+        [Tooltip("The ball (Scarab_SwitchBall), white, point-anchored at its own centre: scaled by 1 / switchScale so " +
+                 "the ring's growth with Mass reads as the ball shrinking inside it (SetSwitchScale).")]
+        [SerializeField] Image switchBallIcon;
+        [Tooltip("The ring's near arc (Scarab_SwitchNear), in the pilot's domain colour, drawn over the ball.")]
+        [SerializeField] Image switchNearIcon;
+        [SerializeField] Color switchBallColor = Color.white;
+        [Tooltip("The card's opacity while no switch is banked (the fleet's cooldown veil sweeps over it).")]
+        [SerializeField, Range(0f, 1f)] float switchSpentAlpha = 0.3f;
 
         [Header("Cavitation blast (Charge row)")]
         [Tooltip("The Cavitation Blast card's container (the ability icon Image, transparent): punched as one on a spend.")]
@@ -72,6 +92,11 @@ namespace CosmicShore.UI
         [Tooltip("The volume with the claimed prisms cut out as forward-flung slivers (Scarab_BlastFieldShattered), " +
                  "shown for blastShatterSeconds as the punch lands, in place of the volume.")]
         [SerializeField] Image blastShatteredIcon;
+        [Tooltip("Charge 5, Backdraft: the PULL - the volume's back half (Scarab_BlastFieldBack), shown and tinted like " +
+                 "the front only while the upgrade is active.")]
+        [SerializeField] Image blastFieldBackIcon;
+        [Tooltip("The pull as the punch lands (Scarab_BlastFieldBackShattered), the back half's shattered twin.")]
+        [SerializeField] Image blastShatteredBackIcon;
         [Tooltip("The plate, the volume's front edge (Scarab_BlastPlate): white ready, blastSpentColor recharging.")]
         [SerializeField] Image blastPlateIcon;
         [Tooltip("The Scarab at true scale (Scarab_BlastHull), in the pilot's domain colour (SetBlastHullColor).")]
@@ -89,71 +114,114 @@ namespace CosmicShore.UI
         [SerializeField, Min(0.01f)] float blastTweenDuration = 0.15f;
         [SerializeField, Min(0f)] float blastSpendPunchScale = 0.3f;
 
-        bool _energyReady;
+        Color _switchRingColor = Color.white;
+        float _switchAlpha = 1f;
+        bool _backdraft;
+        BlastParts _blastParts;
         bool _seeded;
+        int _wakeStep = int.MinValue;
+        int _snapDashState = int.MinValue;
 
         public override void Initialize()
         {
             // Idempotent: Initialize re-runs on a vessel swap.
             _seeded = false;
-            _energyReady = false;
-            if (energyRing)
-            {
-                energyRing.fillAmount = 0f;
-                energyRing.color = energyFillingColor;
-            }
+            SetSeedScale(1f);
             SetSwitchCharges(0);
+            SetSwitchScale(1f);
             SetBlastReady(true, 0f);
+            _wakeStep = _snapDashState = int.MinValue;
+            SetThrottle(0f);
+            SetSnapDash(false, true);
             _seeded = true;
         }
 
-        /// <summary>Ball energy, normalized 0..1. Crossing <paramref name="isFull"/> is the beat
-        /// that matters — that is when the next crystal makes a ball instead of topping up.</summary>
-        public void SetBallEnergy(float normalized, bool isFull)
+        /// <summary>Which wake the Throttle card shows for a trigger depth: -1 none (released), else 0 / 1 / 2 for the
+        /// pull's first, second and last third.</summary>
+        public static int WakeStepFor(float depth01)
+            => depth01 <= 0.05f ? -1 : Mathf.Clamp(Mathf.CeilToInt(depth01 * 3f - 1e-4f) - 1, 0, 2);
+
+        /// <summary>The live trigger depth: the wake as long as the pull is deep. Writes only on a step change.</summary>
+        public void SetThrottle(float depth01)
         {
-            float target = Mathf.Clamp01(normalized);
-            if (energyRing)
-            {
-                energyRing.DOKill();
-                energyRing.DOFillAmount(target, energyTweenDuration).SetLink(energyRing.gameObject);
-            }
-
-            var readyColor = isFull ? energyReadyColor : energyFillingColor;
-
-            if (isFull != _energyReady)
-            {
-                _energyReady = isFull;
-                if (energyRing)
-                    energyRing.DOColor(readyColor, energyTweenDuration).SetLink(energyRing.gameObject);
-                if (ballIcon)
-                {
-                    ballIcon.DOKill();
-                    ballIcon.DOColor(readyColor, energyTweenDuration).SetLink(ballIcon.gameObject);
-                }
-
-                if (isFull && _seeded && energyReadyPunchScale > 0f)
-                {
-                    var punchTarget = energyRing ? energyRing.transform : (ballIcon ? ballIcon.transform : null);
-                    if (punchTarget)
-                        punchTarget.DOPunchScale(Vector3.one * energyReadyPunchScale,
-                                                 energyTweenDuration * 2f, 1, 0.5f)
-                                   .SetLink(punchTarget.gameObject);
-                }
-            }
-            else
-            {
-                if (energyRing) energyRing.color = readyColor;
-                if (ballIcon) ballIcon.color = readyColor;
-            }
+            int step = WakeStepFor(depth01);
+            if (step == _wakeStep) return;
+            _wakeStep = step;
+            if (wakeShortIcon) wakeShortIcon.enabled = step == 0;
+            if (wakeMidIcon) wakeMidIcon.enabled = step == 1;
+            if (wakeLongIcon) wakeLongIcon.enabled = step == 2;
         }
 
-        /// <summary>Banked switch charges as a discrete count.</summary>
+        /// <summary>The Throttle card's Scarab, in the pilot's <paramref name="domain"/> colour.</summary>
+        public void SetThrottleHullColor(Color domain)
+        {
+            if (throttleHullIcon) throttleHullIcon.color = domain;
+        }
+
+        /// <summary>The Snap Dash chevron: hidden below Time 5, lit while ready, grey while it waits.</summary>
+        public void SetSnapDash(bool unlocked, bool ready)
+        {
+            int state = !unlocked ? 0 : ready ? 1 : 2;
+            if (state == _snapDashState || !snapDashIcon) return;
+            _snapDashState = state;
+            snapDashIcon.enabled = unlocked;
+            snapDashIcon.color = ready ? snapDashReadyColor : snapDashSpentColor;
+        }
+
+        /// <summary>The Nucleus Seeding card's ball, in the pilot's <paramref name="domain"/> colour.</summary>
+        public void SetSeedColor(Color domain)
+        {
+            if (seedBallIcon) seedBallIcon.color = domain;
+        }
+
+        /// <summary>The live seeded-ball size (x1 at rest, x4 at Space 10): the ball part grows on the membrane.</summary>
+        public void SetSeedScale(float sizeScale)
+        {
+            if (seedBallIcon)
+                seedBallIcon.rectTransform.localScale = Vector3.one * SeedBallScale(sizeScale, seedMaxScale);
+        }
+
+        /// <summary>The ball part's scale for a seeded-ball size: it is drawn at <paramref name="maxScale"/>, so
+        /// size / max, clamped to (0, 1].</summary>
+        public static float SeedBallScale(float sizeScale, float maxScale)
+            => Mathf.Clamp(sizeScale / Mathf.Max(1f, maxScale), 0.05f, 1f);
+
+        /// <summary>Banked switch charges as a discrete count: any banked is the full card, none is dim.</summary>
         public void SetSwitchCharges(int charges)
         {
-            if (!switchIcon || switchChargeColors == null || switchChargeColors.Length == 0) return;
-            int index = Mathf.Clamp(charges, 0, switchChargeColors.Length - 1);
-            switchIcon.DOKill();
-            switchIcon.DOColor(switchChargeColors[index], blastTweenDuration).SetLink(switchIcon.gameObject);
+            float alpha = SwitchCardAlpha(charges, switchSpentAlpha);
+            PaintSwitch(switchWakeIcon, switchBallColor, alpha);
+            PaintSwitch(switchBallIcon, switchBallColor, alpha);
+            _switchAlpha = alpha;
+            PaintSwitch(switchFarIcon, _switchRingColor, alpha);
+            PaintSwitch(switchNearIcon, _switchRingColor, alpha);
+        }
+
+        /// <summary>The Switch card's opacity: full with a switch banked, <paramref name="spentAlpha"/> with none.</summary>
+        public static float SwitchCardAlpha(int charges, float spentAlpha) => charges >= 1 ? 1f : spentAlpha;
+
+        /// <summary>The ball's scale for the live ring scale (switchScale, 1 at rest): the ring grows, the ball shrinks.</summary>
+        public static float SwitchBallScale(float ringScale) => 1f / Mathf.Max(1f, ringScale);
+
+        /// <summary>The ring's arcs in the pilot's <paramref name="domain"/> colour.</summary>
+        public void SetSwitchRingColor(Color domain)
+        {
+            _switchRingColor = domain;
+            PaintSwitch(switchFarIcon, domain, _switchAlpha);
+            PaintSwitch(switchNearIcon, domain, _switchAlpha);
+        }
+
+        /// <summary>The live Mass ring scale (switchScale): the ball part shrinks inside the ring.</summary>
+        public void SetSwitchScale(float ringScale)
+        {
+            if (switchBallIcon) switchBallIcon.rectTransform.localScale = Vector3.one * SwitchBallScale(ringScale);
+        }
+
+        static void PaintSwitch(Image part, Color color, float alpha)
+        {
+            if (!part) return;
+            color.a *= alpha;
+            part.color = color;
         }
 
         /// <summary>Which of the Cavitation Blast card's parts show, and how: the pure rule the view paints.</summary>
@@ -176,7 +244,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Cavitation blast availability — deliberately binary on the card. A spend shows the shattered volume for
+        /// Shove availability — deliberately binary on the card. A spend shows the shattered volume for
         /// <see cref="blastShatterSeconds"/>, then greys the volume and the plate for the recharge. When the optional
         /// ring is wired, <paramref name="cooldownSeconds"/> drives ONE sweep tween for the whole recharge, so the
         /// analog readout costs nothing per frame.
@@ -220,15 +288,28 @@ namespace CosmicShore.UI
 
         void PaintBlast(BlastParts parts)
         {
+            _blastParts = parts;
+            var fieldColor = parts.Spent ? blastSpentColor : blastPartColor;
             if (blastFieldIcon)
             {
                 blastFieldIcon.enabled = parts.Field;
-                blastFieldIcon.color = parts.Spent ? blastSpentColor : blastPartColor;
+                blastFieldIcon.color = fieldColor;
             }
             if (blastShatteredIcon)
             {
                 blastShatteredIcon.enabled = parts.Shattered;
                 blastShatteredIcon.color = blastPartColor;
+            }
+            // The PULL half (Charge 5, Backdraft) mirrors the push, and only exists while upgraded.
+            if (blastFieldBackIcon)
+            {
+                blastFieldBackIcon.enabled = _backdraft && parts.Field;
+                blastFieldBackIcon.color = fieldColor;
+            }
+            if (blastShatteredBackIcon)
+            {
+                blastShatteredBackIcon.enabled = _backdraft && parts.Shattered;
+                blastShatteredBackIcon.color = blastPartColor;
             }
             if (blastPlateIcon) blastPlateIcon.color = parts.Spent ? blastSpentColor : blastPartColor;
         }
@@ -243,11 +324,18 @@ namespace CosmicShore.UI
         {
             base.SetAbilityUpgraded(element, upgraded);
 
+            // Charge 5, Backdraft: the shove now pulls too, so the card grows its back half.
+            if (element == Element.Charge && _backdraft != upgraded)
+            {
+                _backdraft = upgraded;
+                PaintBlast(_blastParts);
+            }
+
             var icon = element switch
             {
                 Element.Charge => blastIcon,
                 Element.Mass   => switchIcon,
-                Element.Space  => ballIcon,
+                Element.Space  => seedIcon,
                 _ => null
             };
             if (icon) icon.transform.localScale = AbilityIconRestScale(element);
@@ -256,13 +344,9 @@ namespace CosmicShore.UI
         void OnDisable()
         {
             // Pooled / swapped HUDs must not resume mid-tween.
-            // energyRing is this view's OWN gauge image, not a bound ability icon, so it rests at
-            // one. ballIcon / blastIcon ARE ability icons (Space / Charge): resting them at one
-            // would wipe the lockup's kerning and the upgrade bump on the first hide, and nothing
-            // re-applies either until the next Initialize. Rest them where the row says.
-            if (energyRing) { energyRing.DOKill(); energyRing.transform.localScale = Vector3.one; }
-            if (ballIcon) { ballIcon.DOKill(); ballIcon.transform.localScale = AbilityIconRestScale(Element.Space); }
-            if (switchIcon) switchIcon.DOKill();
+            // blastIcon is an ability icon (Charge): resting it at one would wipe the lockup's
+            // kerning and the upgrade bump on the first hide, and nothing re-applies either until
+            // the next Initialize. Rest it where the row says.
             if (blastIcon) { blastIcon.transform.DOKill(); blastIcon.transform.localScale = AbilityIconRestScale(Element.Charge); }
             if (blastShatteredIcon)
             {

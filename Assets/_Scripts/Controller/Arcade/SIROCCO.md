@@ -1,5 +1,9 @@
 # Sirocco (`GameModes.Sirocco = 61`)
 
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`): the
+> same airframe, dust and modes. "Butterfly" below
+> means that airframe.
+
 The Butterfly's **SPACE** game — an erosion race through Rampage's cactus forest. On the Butterfly
 **Space is the reach of the Scale Dust**: the capsule hanging below the hull in Dust mode is 60
 units long at rest and 150 at Space 10. On opposing mass the dust destroys one prism in three it

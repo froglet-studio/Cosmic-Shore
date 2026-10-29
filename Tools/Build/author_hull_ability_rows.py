@@ -473,9 +473,12 @@ SCARAB_SWAPS = {
     # Charge: None - the icon kit owns that card (Tools/Build/icon_kit/specs/scarab.py, Cavitation Blast 2026-10-28): its
     # icon Image is a transparent, sprite-less container over the kit's parts (rebind.py `pair`).
     "3855639277037614910": None,
-    "6611959372928416812": ("4a5259289f0bdff46a3c22300b3933d7", "Scarab_Switch-PLACEHOLDER.png"),           # Mass (was swap weapon icon)
-    "4990196459091587280": ("6da9cfe8d216bd84695e3b4c71bfa533", "Scarab_BallForge-PLACEHOLDER.png"),        # Space (was bullet icon)
-    "3258612490553136050": ("f0197e0a2ce38654ea3d882fff64967a", "Scarab_Throttle-PLACEHOLDER.png"),         # Time (was boost icon)
+    # Mass: None - the icon kit's Switch card (specs/scarab.py, 2026-10-28), a container over its parts.
+    "6611959372928416812": None,
+    # Space: None - the icon kit's Nucleus Seeding card (specs/scarab.py, 2026-10-29), a container over its parts.
+    "4990196459091587280": None,
+    # Time: None - the icon kit's Throttle card (specs/scarab.py, 2026-10-29), a container over its parts and the speed gauge.
+    "3258612490553136050": None,
 }
 
 

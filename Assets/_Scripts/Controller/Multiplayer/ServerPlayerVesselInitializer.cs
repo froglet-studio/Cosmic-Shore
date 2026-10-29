@@ -192,7 +192,11 @@ namespace CosmicShore.Gameplay
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerNetworkSpawned;
 
             if (ConvertDepartedPlayersToAI && NetworkManager.Singleton != null)
+            {
                 NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnectedForAITakeover;
+                // The other direction (section 103): a pilot who left and came back takes their seat from the AI.
+                NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnectedForRejoin;
+            }
 
             // Client-pull: answer roster requests from freshly-joined clients.
             clientPlayerVesselInitializer.OnRosterRequested = HandleRosterRequest;
@@ -244,7 +248,10 @@ namespace CosmicShore.Gameplay
         {
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerNetworkSpawned;
             if (NetworkManager.Singleton != null)
+            {
                 NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnectedForAITakeover;
+                NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnectedForRejoin;
+            }
             if (clientPlayerVesselInitializer != null)
                 clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
@@ -684,6 +691,9 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer) return;
 
+            // A returning pilot's roster request can beat the connect callback; seat them first either way.
+            TryReclaimSeat(requesterClientId);
+
             var requester = FindPlayerByOwnerClientId(requesterClientId);
             if (requester != null
                 && requester.VesselNetId == 0
@@ -898,6 +908,57 @@ namespace CosmicShore.Gameplay
             // differently reads as a cheat or a bug. Fired on the server; the toast feed is
             // per-peer, so this announces on the host and the ClientRpc below covers the rest.
             AnnouncePilotHandedToAI(player.NetName.Value.ToString(), player.Domain);
+        }
+
+        void HandleClientConnectedForRejoin(ulong clientId)
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer || clientId == nm.LocalClientId) return;
+            TryReclaimSeat(clientId);
+        }
+
+        /// <summary>
+        /// The reverse of <see cref="ConvertPlayerToAI"/> (Docs/MENU_REDESIGN_B.md section 103): a pilot who dropped and
+        /// rejoined (approved with a <see cref="MatchRejoin"/> payload, so no new Player was made) takes back the Player
+        /// the AI has been flying - its score, its domain, its vessel - instead of entering the match as a second pilot.
+        /// Idempotent: the pending rejoin is taken once.
+        /// </summary>
+        void TryReclaimSeat(ulong clientId)
+        {
+            if (!MatchRejoin.ServerTake(clientId, out var ugsPlayerId)) return;
+
+            var player = MatchRejoin.FindReclaimableSeat(gameData.Players, ugsPlayerId);
+            if (player == null)
+            {
+                // The seat went between approval and connect (the match ended). Nothing to hand back: let the
+                // client's own join watchdog bounce it.
+                CSDebug.LogWarning($"[ServerVesselInit] Client {clientId} rejoined but its seat is gone.");
+                return;
+            }
+
+            NetSessionRecorder.Mark("seatReclaimed", player.NetName.Value.ToString());
+
+            player.NetworkObject.ChangeOwnership(clientId);
+            player.NetworkObject.DontDestroyWithOwner = true;
+            player.NetIsAI.Value = false;
+            _humanPlayersByOwner[clientId] = player;
+
+            var vessel = player.Vessel;
+            if (vessel != null)
+            {
+                vessel.ToggleAIPilot(false);
+                if (vessel is VesselController vc && vc.IsSpawned)
+                    vc.NetworkObject.ChangeOwnership(clientId);
+            }
+
+            // Tell the returning client which pair is now its own (it may have paired it as someone else's), then
+            // send the roster so every other pair resolves too.
+            if (clientPlayerVesselInitializer != null && clientPlayerVesselInitializer.IsSpawned)
+                clientPlayerVesselInitializer.SeatReclaimed_ClientRpc(player.NetworkObjectId, new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
+                });
+            SendFullRosterToClient(clientId);
         }
 
         void AnnouncePilotHandedToAI(string playerName, Domains domain)

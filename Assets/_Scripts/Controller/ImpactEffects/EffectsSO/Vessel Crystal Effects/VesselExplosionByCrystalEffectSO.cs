@@ -220,7 +220,10 @@ namespace CosmicShore.Gameplay
                 sizeMultiplier,
                 affectSelfOverride,
                 _coreExplosionScale,
-                ResolveCoreMultiplier(status));
+                // Switchback Blast Run: a KEY crystal's blast is wider (BlastRunKeyCrystals; a runtime multiplier,
+                // exactly 1 for every other crystal and whenever no Blast Run is live - the asset is untouched).
+                ResolveCoreMultiplier(status) *
+                (data.Origin.Valid ? BlastRunKeyCrystals.CoreMultiplierFor(data.Origin.Position) : 1f));
 
             switch (vesselImpactor.Vessel.VesselStatus.VesselType)
             {

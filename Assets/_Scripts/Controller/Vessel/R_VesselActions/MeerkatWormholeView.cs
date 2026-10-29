@@ -7,39 +7,24 @@ using UnityEngine.Rendering;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// What a Meerkat's wormhole LOOKS like (<c>R_VesselActions/MEERKAT.md</c>), the Vessel Studio's <c>whDraw</c> /
-    /// <c>whFill</c> / <c>drawBridge</c> / <c>updateTubeWarp</c> (<c>Docs/Studios/VesselStudio/meerkat.html</c>) ported:
+    /// What a Meerkat's wormhole LOOKS like (<c>R_VesselActions/MEERKAT.md</c>) outside the lens:
     /// <list type="bullet">
     /// <item><b>Your reticle</b> (its pilot only; round 9, Yash: "the reticle is the silhouette of the geometry"): the
-    /// wormhole's own wireframe - the bridge's rings, spindles, ribs and thickness, in the same places, condensing the same
-    /// way - with no glass, at its own brightness, in its pilot's domain colour toward white by <c>reticleWhite</c>. A formed
-    /// tunnel has no reticle.</item>
-    /// <item><b>The bridge</b> (everyone, every tunnel): rings of spindles round the throat and ribs of spindles along it
-    /// over a glass surface (<c>bridgeGlass</c>), the spindles its maker's domain colour toward white by <c>bridgeWhite</c>, condensing in from the centre as it forms
-    /// and evaporating as it collapses, a shimmer running way in to way out; spindles near the camera fade.
-    /// <c>bridgeVisibility</c> 0 hides it.</item>
-    /// <item><b>The bent space</b> round each tube is <see cref="MeerkatWormholeLensPass"/>'s, from the warp tubes built
-    /// here (<see cref="WarpMesh"/>) and the contour field.</item>
+    /// wormhole's own wireframe - rings, spindles, ribs and thickness, condensing the way the tunnel will - with no glass, at
+    /// its own brightness, in its pilot's domain colour toward white by <c>reticleWhite</c>. A formed tunnel has no reticle.</item>
+    /// <item><b>A formed tunnel and every channel of an omnicrystal's network</b> draw nothing here: they are only the bent
+    /// space of <see cref="MeerkatWormholeLensPass"/> (the one look, 2026-10-29).</item>
     /// </list>
-    /// Garrett's after (2026-10-27, the Tube Lens Lab): with <c>formedLook</c> ContourField a formed tunnel draws nothing
-    /// here and is only the lens pass's bent space.
-    /// <para><b>Round 26</b> (Yash, 2026-10-28: "We can't make it a root, we need to make it smoother, like our tube, same
-    /// visuals ... just anomaly: tubes of wormholes, and the network of wormholes"): every channel of an omnicrystal's
-    /// network is a wormhole tube too, drawn by the same code as a formed tunnel (<see cref="Tube"/>): its bridge in the
-    /// Bridge look, its warp tube, its contour field (<see cref="MeerkatWormholeLensPass"/>) and its calm inner wall
-    /// (<see cref="MeerkatTubeWallView"/>). A tube still wrapped in the old look (a tunnel in its tree,
-    /// <c>trunkVisibility</c>; a channel in its bark, <c>rootBarkVisibility</c>) draws no bridge, as the page's rounds 20-22.</para>
-    /// Everything is three dynamic meshes rebuilt once a frame and drawn as one identity instance each (the
-    /// <c>StoatPathfinderWorldDots</c> pattern), with the materials shipped in <c>Resources/</c>. A spindle is a six-sided
-    /// bipyramid (the page's tapered lathe), drawn additively.
+    /// The round-3 spindle bridge and its glass, the warp tubes, the calm inner wall, the water tubes, the tree and the roots'
+    /// bark were removed on 2026-10-29 (Yash: "just keep one high quality look"); <c>Docs/Shaders/WORMHOLE_SHADERS.md</c> §12
+    /// restores any of them. The reticle is one dynamic mesh rebuilt once a frame and drawn as one identity instance (the
+    /// <c>StoatPathfinderWorldDots</c> pattern), additively, through <c>Resources/MeerkatWormholeAdditive.mat</c>. A spindle is
+    /// a six-sided bipyramid (the page's tapered lathe).
     /// </summary>
     public static class MeerkatWormholeView
     {
         public const string AdditiveMaterialPath = "MeerkatWormholeAdditive";
-        public const string GlassMaterialPath = "MeerkatWormholeGlass";
 
-        // the page's WH_RINGS / WH_SEG (the glass and the warp tube)
-        const int Rings = 22, Seg = 24;
         const float SpindleNear = 4f, SpindleFull = 30f;   // BR_CAM_NEAR / BR_CAM_FULL
         const float ReticleNear = 1f, ReticleFull = 8f;    // RET_NEAR / RET_FULL: a reticle spindle fades only right at the camera
         const int SpindleSides = 6;
@@ -47,24 +32,19 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker s_marker = new("MeerkatWormholeView.Draw");
 
         static int s_frame = -1;
-        static Mesh s_tris, s_glass, s_warp;
-        static Material s_additive, s_glassMat;
+        static Mesh s_tris;
+        static Material s_additive;
         static bool s_resolved;
 
-        static readonly List<Vector3> s_tv = new(), s_gv = new(), s_gn = new(), s_wv = new(), s_wn = new();
-        static readonly List<Color> s_tc = new(), s_gc = new();
-        static readonly List<Vector2> s_wuv = new();
-        static readonly List<int> s_ti = new(), s_gi = new(), s_wi = new();
-
-        /// <summary>The warp tubes this frame (every live tunnel's wall, its outward normal, uv.x the in/out sign × fade),
-        /// for <see cref="MeerkatWormholeLensPass"/>; null when there is none.</summary>
-        public static Mesh WarpMesh { get; private set; }
+        static readonly List<Vector3> s_tv = new();
+        static readonly List<Color> s_tc = new();
+        static readonly List<int> s_ti = new();
 
         /// <summary>
         /// One wormhole tube's centreline, radius and live window [S0, S1]: a tunnel's (or a reticle's) conic arc
         /// (<see cref="MeerkatWormholeMath"/>), or, round 26, a channel of an omnicrystal's network
         /// (<see cref="MeerkatRootMath"/>, the page's <c>wh.poly</c>). The page's <c>whSurf</c> / <c>whRadius</c> dispatch the
-        /// same way, so the bridge, its glass and the warp tube are one code for both.
+        /// same way, so the reticle's frame is one code for both.
         /// </summary>
         public readonly struct Tube
         {
@@ -116,12 +96,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Round 26: a tunnel in its tree is wrapped in the old look (that look is its wall; no bridge).</summary>
-        public static bool TunnelWrapped(ScriptableObjects.MeerkatWormholeConfigSO cfg) => cfg.TrunkVisibility > 0.004f;
-
-        /// <summary>Round 26: a channel in its bark is wrapped in the old look (rounds 17-21); without it, it is a wormhole tube.</summary>
-        public static bool ChannelWrapped(ScriptableObjects.MeerkatWormholeConfigSO cfg) => cfg.RootBarkVisibility > 0.004f;
-
         /// <summary>A channel's fade as it goes (the page's pair <c>dieT</c> fade).</summary>
         public static float ChannelFade(in MeerkatRootMath.Life w) =>
             w.Dying ? Mathf.Max(0f, 1f - (float)(w.DieT / MeerkatRootMath.FadeSeconds)) : 1f;
@@ -137,9 +111,6 @@ namespace CosmicShore.Gameplay
             Vector3 eye = cam ? cam.transform.position : Vector3.zero;
 
             s_tv.Clear(); s_tc.Clear(); s_ti.Clear();
-            s_gv.Clear(); s_gn.Clear(); s_gc.Clear(); s_gi.Clear();
-            s_wv.Clear(); s_wn.Clear(); s_wuv.Clear(); s_wi.Clear();
-
             foreach (var e in MeerkatWormholeExecutor.Executors)
             {
                 if (!e || !e.TryGetReticle(out var ret, out var ghost, out bool hasGhost)) continue;
@@ -149,67 +120,12 @@ namespace CosmicShore.Gameplay
                 if (hasGhost) DrawReticle(ghost, e.Config, eye, colour);
             }
 
-            var live = MeerkatWormholeExecutor.Live;
-            for (int i = 0; i < live.Count; i++)
-            {
-                var t = live[i];
-                var cfg = t.Config;
-                if (!cfg) continue;
-                var tube = Tube.Conic(t.A, t.T0, t.Side, t.Path, t.B, t.M, t.W.S0, t.W.S1);
-                if (cfg.FormedLook == ScriptableObjects.MeerkatFormedLook.Bridge && !TunnelWrapped(cfg))
-                    DrawBridge(tube, cfg, t.Fade, t.Colour, eye);
-                AddWarpTube(tube, t.Fade, cfg);
-            }
-
-            // round 26: the network's channels are wormhole tubes, drawn exactly as a formed tunnel
-            var nets = MeerkatRootNetwork.Live;
-            var inside = MeerkatWormholeExecutor.LocalRootNetwork;
-            for (int n = 0; n < nets.Count; n++)
-            {
-                var net = nets[n];
-                var cfg = net.Maker ? net.Maker.Config : null;
-                if (!cfg) continue;
-                bool wrapped = ChannelWrapped(cfg);
-                bool bridge = cfg.FormedLook == ScriptableObjects.MeerkatFormedLook.Bridge && !wrapped;
-                bool warp = cfg.WarpStrength > 0f && !(wrapped && inside == net);   // the page: roots in bark are earth from inside
-                if (!bridge && !warp) continue;
-                var colour = net.Maker.Colour;
-                for (int i = 0; i < net.Channels.Count; i++)
-                {
-                    ref var w = ref net.Life[i];
-                    if (w.Phase == MeerkatRootMath.Phase.Gone) continue;
-                    float fade = ChannelFade(w);
-                    if (fade <= 0.004f) continue;
-                    var tube = Tube.Channel(net.Channels[i], (float)w.S0, (float)w.S1, cfg.RootTip);
-                    if (bridge) DrawBridge(tube, cfg, fade, colour, eye);
-                    if (warp) AddWarpTube(tube, fade, cfg);
-                }
-            }
-
-            Upload(ref s_tris, "MeerkatWormholeSpindles", s_tv, s_tc, null, null, s_ti, MeshTopology.Triangles);
-            Upload(ref s_glass, "MeerkatWormholeGlass", s_gv, s_gc, s_gn, null, s_gi, MeshTopology.Triangles);
-            Upload(ref s_warp, "MeerkatWormholeWarp", s_wv, null, s_wn, s_wuv, s_wi, MeshTopology.Triangles);
-            WarpMesh = s_wi.Count > 0 ? s_warp : null;
-
-            MeerkatTreeView.Draw();       // the tree round a tunnel and the roots' bark, while switched on (MEERKAT.md §7)
-            MeerkatTubeWallView.Draw();   // round 26: every tube's calm inner wall
-            MeerkatWaterTubeView.Draw();  // the cheap water pipe, only while the Lavalamp lab picks it (MeerkatTubeLook)
-
+            Upload(ref s_tris, "MeerkatWormholeSpindles", s_tv, s_tc, s_ti);
             var additive = new RenderParams(s_additive) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
-            var glassParams = new RenderParams(s_glassMat) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
             if (s_ti.Count > 0) Graphics.RenderMesh(additive, s_tris, 0, Matrix4x4.identity);
-            if (s_gi.Count > 0) Graphics.RenderMesh(glassParams, s_glass, 0, Matrix4x4.identity);
         }
 
-        // ------------------------------------------------------------------ the bridge (drawBridge)
-
-        static void DrawBridge(in Tube tube, ScriptableObjects.MeerkatWormholeConfigSO cfg, float fade, Color colour, Vector3 eye)
-        {
-            float vis = MeerkatWormholeMath.Clamp01(cfg.BridgeVisibility);
-            if (vis <= 0.004f) return;
-            if (tube.S1 - tube.S0 < 1f) return;
-            BridgeFrame(tube, vis * fade, colour, cfg.BridgeWhite, cfg, eye, SpindleNear, SpindleFull);
-        }
+        // ------------------------------------------------------------------ the reticle (drawReticle)
 
         /// <summary>
         /// Your reticle, the page's round-9 <c>drawReticle</c>: the wormhole's wireframe (<see cref="BridgeFrame"/>, the bridge's
@@ -223,15 +139,15 @@ namespace CosmicShore.Gameplay
             if (r.S1 - r.S0 < 0.5f || r.Alpha <= 0.01f) return;
             var sh = r.Shape;
             BridgeFrame(Tube.Conic(r.A, r.T0, r.Side, r.Path, sh.B, sh.M, r.S0, r.S1), r.Alpha, colour, cfg.ReticleWhite,
-                        cfg, eye, ReticleNear, ReticleFull, glass: false, nearLight: cfg.ReticleNearLight);
+                        cfg, eye, ReticleNear, ReticleFull, cfg.ReticleNearLight);
         }
 
         /// <summary>
-        /// The wormhole's one geometry, the page's <c>drawFrame</c> (plus the bridge's glass), over a tube's window at
+        /// The wormhole's one geometry, the page's <c>drawFrame</c>, over a tube's window at
         /// brightness A: its spindles are <paramref name="baseCol"/> toward white by <paramref name="whiten"/>.
         /// </summary>
         static void BridgeFrame(in Tube tube, float A, Color baseCol, float whiten, ScriptableObjects.MeerkatWormholeConfigSO cfg,
-            Vector3 eye, float nearFrom, float nearFull, bool glass = true, float nearLight = 1f)
+            Vector3 eye, float nearFrom, float nearFull, float nearLight)
         {
             if (A <= 0.004f || !tube.Valid) return;
             float L = tube.L, s0 = tube.S0, s1 = tube.S1;
@@ -239,8 +155,6 @@ namespace CosmicShore.Gameplay
             float near = MeerkatWormholeMath.Clamp01(nearLight);
             var white = Color.white;
             var col = Color.Lerp(baseCol, white, MeerkatWormholeMath.Clamp01(whiten));
-            if (glass)
-                Fill(tube, A * Mathf.Max(0f, cfg.BridgeGlass), baseCol, Color.Lerp(white, baseCol, 0.4f));
             int nR = Mathf.Max(2, cfg.BridgeRings), nS = Mathf.Max(3, cfg.BridgeSpindlesPerRing), nRib = Mathf.Max(0, cfg.BridgeRibs);
             float th = Mathf.Max(0.05f, cfg.BridgeSpindleThickness), sh = cfg.BridgeShimmer, now = Time.time;
             for (int i = 0; i < nR; i++)
@@ -315,61 +229,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ------------------------------------------------------------------ the glass (whFill) and the warp (updateTubeWarp)
-
-        static void Fill(in Tube tube, float alpha, Color cIn, Color cOut)
-        {
-            float span = tube.S1 - tube.S0;
-            if (span < 0.5f || alpha <= 0.01f) return;
-            int start = s_gv.Count;
-            for (int r = 0; r < Rings; r++)
-            {
-                float u = r / (float)(Rings - 1), s = tube.S0 + span * u, rad = tube.Radius(s);
-                var c = Color.Lerp(cIn, cOut, u);
-                c.a = alpha;
-                for (int j = 0; j <= Seg; j++)
-                {
-                    s_gv.Add(tube.Surf(s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
-                    s_gn.Add(n);
-                    s_gc.Add(c);
-                }
-            }
-            Grid(s_gi, start);
-        }
-
-        static void AddWarpTube(in Tube tube, float fade, ScriptableObjects.MeerkatWormholeConfigSO cfg)
-        {
-            float span = tube.S1 - tube.S0;
-            if (span < 1f || !cfg || cfg.WarpStrength <= 0f || !tube.Valid) return;
-            int start = s_wv.Count;
-            for (int r = 0; r < Rings; r++)
-            {
-                float u = r / (float)(Rings - 1), s = tube.S0 + span * u, rad = tube.Radius(s), sign = Mathf.Cos(Mathf.PI * u) * fade;
-                for (int j = 0; j <= Seg; j++)
-                {
-                    s_wv.Add(tube.Surf(s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
-                    s_wn.Add(n);
-                    s_wuv.Add(new Vector2(sign, 0.05f * Mathf.Max(0f, cfg.WarpStrength)));
-                }
-            }
-            Grid(s_wi, start);
-        }
-
-        static void Grid(List<int> idx, int start)
-        {
-            for (int r = 0; r < Rings - 1; r++)
-            for (int j = 0; j < Seg; j++)
-            {
-                int a = start + r * (Seg + 1) + j, b = a + Seg + 1;
-                idx.Add(a); idx.Add(b); idx.Add(a + 1);
-                idx.Add(a + 1); idx.Add(b); idx.Add(b + 1);
-            }
-        }
-
         // ------------------------------------------------------------------ helpers
 
-        static void Upload(ref Mesh mesh, string name, List<Vector3> v, List<Color> c, List<Vector3> n, List<Vector2> uv,
-            List<int> idx, MeshTopology topology)
+        static void Upload(ref Mesh mesh, string name, List<Vector3> v, List<Color> c, List<int> idx)
         {
             if (!mesh)
             {
@@ -379,23 +241,19 @@ namespace CosmicShore.Gameplay
             mesh.Clear();
             if (idx.Count == 0) return;
             mesh.SetVertices(v);
-            if (c != null) mesh.SetColors(c);
-            if (n != null) mesh.SetNormals(n);
-            if (uv != null) mesh.SetUVs(0, uv);
-            mesh.SetIndices(idx, topology, 0, false);
+            mesh.SetColors(c);
+            mesh.SetIndices(idx, MeshTopology.Triangles, 0, false);
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 1e6f);
         }
 
         static bool Resolve()
         {
-            if (s_resolved) return s_additive && s_glassMat;
+            if (s_resolved) return s_additive;
             s_resolved = true;
             s_additive = Resources.Load<Material>(AdditiveMaterialPath);
-            s_glassMat = Resources.Load<Material>(GlassMaterialPath);
-            if (!s_additive || !s_glassMat)
-                CSDebug.LogWarning($"[Meerkat] Resources/{AdditiveMaterialPath}.mat or {GlassMaterialPath}.mat is missing: " +
-                                   "the wormhole's reticle and bridge are not drawn.");
-            return s_additive && s_glassMat;
+            if (!s_additive)
+                CSDebug.LogWarning($"[Meerkat] Resources/{AdditiveMaterialPath}.mat is missing: the wormhole's reticle is not drawn.");
+            return s_additive;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -403,8 +261,7 @@ namespace CosmicShore.Gameplay
         {
             s_frame = -1;
             s_resolved = false;
-            s_additive = s_glassMat = null;
-            WarpMesh = null;
+            s_additive = null;
         }
     }
 }

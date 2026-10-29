@@ -387,3 +387,16 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     sending options, set the candidate beside those sheets and match that weight ("more cohesive with the rest of our
     polished icons"); give a region a shape with character (A3's bubble: square against the plate, rounded behind).
 
+59. **Hold the main shape at one bold size; show a size LEVEL by what it is measured against.** The Switch's ring grows
+    2.5x with Mass; drawing it at the live size left a speck of a card at Mass 1 (the card is sized for Mass 10). The
+    ring stays big and the BALL shrinks inside it by the same ratio - still to scale, and the card is always one bold
+    mass. The HUD scales that one part about its own centre (rebind.py's point-anchored child). Garrett took it in one
+    round.
+
+60. **Draw a game object from its own mesh, never from a generic idea of it.** The Ball Forge options drew the omni
+    crystal as a gem (a hexagonal bipyramid), and Garrett's answer was "that is not the omni crystal". The omni crystal
+    is an exploded rhombicosidodecahedron (`Assets/_Models/OmniCrystalExport1_8-21-25.fbx`, 122 plates). Project its
+    outer plate faces down a pentagon's axis, keep the pentagon, its five squares and the five triangles, and shrink
+    each plate about its own centre so the gaps read at icon size. That matches `ElementIcons/OmniCrystal_Active.png`
+    (`specs/scarab.py` `omni_crystal`). Before drawing any crystal, prism, ball or creature, find its FBX or its
+    shipped mark first.
