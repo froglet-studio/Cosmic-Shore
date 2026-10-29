@@ -429,6 +429,11 @@ wormholes getting created"*.
   server for the AI. Before this, only the Meerkat's own gold omnicrystals did it, and those are laid for the local human
   pilot only, so in Lava Lamp nothing grew.
 
+- **Its own impactor container (2026-10-29).** The Meerkat shared `StoatImpactorDataContainer` from b8d6ef57a, so once Fulmen
+  went on the Stoat, a Meerkat's omni crystal also fired Fulmen and Overclock. It now has `MeerkatImpactorDataContainer`
+  (the same prism effects; crystals: haptics only), so the Soliton Network is its one omni-crystal ability (Yash: "I want
+  Soliton Network as Omni-crystal ability of Meerkat").
+
 ## 10. Garrett's kit: the four abilities (2026-10-28)
 
 **Garrett's design, approved by Yash 2026-10-28.** The design is Garrett's (`Docs/Studios/MEERKAT.md` § "Garrett's

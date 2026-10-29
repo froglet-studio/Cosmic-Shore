@@ -18,7 +18,16 @@ Assets: `_SO_Assets/Environment/FulmenConfig.asset`, `_SO_Assets/Effects/Vessel 
 
 * **Give Fulmen to another vessel (e.g. Gareet):** open its `…ImpactorDataContainer` asset
   (`_SO_Assets/Effects/Effect Containers/VesselContainers/`) and add `FulmenByCrystalEffect` to **Vessel Crystal Effects**.
-* **Take it off the Stoat:** remove that entry from `StoatImpactorDataContainer` (Overclock stays).
+* **Take it off the Stoat:** remove that entry from `StoatImpactorDataContainer`.
+
+**Fulmen is the Stoat's omni-crystal ability (Yash, 2026-10-29: "Fulmen Network as Omni-crystal ability of Stout").**
+It replaced the Stoat's Overclock: `StoatOverclockByCrystalEffect` is no longer in the container (the asset and its
+code are kept, so it can be added back). The container now holds the haptics and Fulmen only.
+
+The Meerkat had shared `StoatImpactorDataContainer` since it was first built (b8d6ef57a), so it would have fired Fulmen
+and Overclock too. It now has its own `MeerkatImpactorDataContainer`: the same prism effects, haptics only for crystals.
+Its omni-crystal ability is the Soliton Network, which `MeerkatSolitonExecutor` grows from
+`OmniCrystalImpactor.CollectedByVessel` (MEERKAT.md section 9), not a container entry.
 * **Different tuning per vessel:** duplicate `FulmenConfig` + `FulmenByCrystalEffect`, point the copy's *Config* at the new
   config, and reference the copy from that vessel's container.
 

@@ -65,6 +65,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni-crystal abilities: the Soliton Network on the Meerkat, Fulmen on the Stoat (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** the Meerkat has its own `MeerkatImpactorDataContainer`; it no longer shares the Stoat's, so it stops
+firing Fulmen and Overclock. Its omni crystal grows the Soliton Network, as before. The Stoat's container no longer
+has Overclock, so Fulmen is its omni-crystal ability.
+
+- [ ] The Meerkat prefab's VesselImpactor shows `MeerkatImpactorDataContainer`; the Stoat's still shows `StoatImpactorDataContainer`.
+- [ ] Lava lamp, Meerkat (Vessel Changer): collect an omni crystal. A Soliton Network grows. No lightning bolt, no Overclock.
+- [ ] Lava lamp, Stoat: collect an omni crystal. A Fulmen bolt fires from the cell centre, burns prisms and chains through nearby omni crystals. No Overclock.
+- [ ] The Meerkat's Switch and Navigate toys still work, and its prism behaviour (skimming, trail hits) is unchanged.
+
 ### 🔴 God mode in the lava lamp: a free inspection camera on F2 / L3 (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** `MenuGodModeCamera` on Menu_Main's Game object. F2 (or L3) swaps the lava-lamp camera for a free-fly
