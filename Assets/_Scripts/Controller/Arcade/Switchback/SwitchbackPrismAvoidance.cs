@@ -33,6 +33,13 @@ namespace CosmicShore.Gameplay
             BlastMinCoverage = blastMinCoverage; BlastCrystalRange = blastCrystalRange; LaneShare = laneShare;
         }
 
+        /// <summary>
+        /// The emergency sweep's look-ahead in seconds of real flight (reach = speed x this, at least
+        /// <see cref="SwitchbackPrismAvoidance.EmergencyMinReach"/>): Easy sees an impact 0.35 s out, Legendary 0.9 s.
+        /// Present at every level - only how early it sees changes.
+        /// </summary>
+        public static float EmergencySeconds(int level) => level switch { 1 => 0.35f, 3 => 0.7f, 4 => 0.9f, _ => 0.5f };
+
         public static SwitchbackAvoidSkill ForLevel(int level) => level switch
         {
             1 => new SwitchbackAvoidSkill(70f, 0.45f, 5f, 1, 2f, 0f, 0.35f),
@@ -190,6 +197,29 @@ namespace CosmicShore.Gameplay
             float az = (h & 0xFFFF) / 65536f * 2f * Mathf.PI;
             float rr = Mathf.Sqrt(0.25f + 0.75f * ((h >> 16) / 65536f));   // never the dead centre
             return (right * Mathf.Cos(az) + up * Mathf.Sin(az)) * (rr * share * radius);
+        }
+    
+        /// <summary>The emergency sweep never looks shorter than this, u (slow hulls still need room to turn).</summary>
+        public const float EmergencyMinReach = 25f;
+        /// <summary>The sweep's sphere: the hull's half-width, u, plus a share of the level's clearance.</summary>
+        public const float ShipRadius = 3f;
+
+        /// <summary>How far ahead the emergency sweep looks at <paramref name="speed"/> u/s.</summary>
+        public static float EmergencyReach(float speed, float seconds) => Mathf.Max(EmergencyMinReach, speed * seconds);
+
+        /// <summary>
+        /// The dodge for an imminent hit: off the travel line <paramref name="dir"/>, away from the obstacle's centre
+        /// (<paramref name="away"/> = self - obstacle), falling back to the hit normal, then to <paramref name="up"/>.
+        /// The nearer the hit (<paramref name="urgency"/> 0 far .. 1 touching) the harder the break. Unit length.
+        /// </summary>
+        public static Vector3 EscapeDirection(Vector3 dir, Vector3 away, Vector3 normal, Vector3 up, float urgency)
+        {
+            Vector3 lat = Vector3.ProjectOnPlane(away, dir);
+            if (lat.sqrMagnitude < 0.01f) lat = Vector3.ProjectOnPlane(normal, dir);
+            if (lat.sqrMagnitude < 0.01f) lat = Vector3.ProjectOnPlane(up, dir);
+            if (lat.sqrMagnitude < 0.01f) lat = Vector3.Cross(dir, Vector3.right);
+            float k = Mathf.Lerp(0.6f, 0.95f, Mathf.Clamp01(urgency));
+            return (dir * (1f - k) + lat.normalized * k).normalized;
         }
     }
 }

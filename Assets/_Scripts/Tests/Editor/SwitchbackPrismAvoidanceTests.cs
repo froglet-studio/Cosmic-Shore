@@ -152,5 +152,27 @@ namespace CosmicShore.Tests
             int c = 0; foreach (var h in hit) if (h) c++;
             return c;
         }
+    
+        [Test]
+        public void Emergency_ReachScalesWithSpeedAndLevel_PresentAtEveryLevel()
+        {
+            for (int l = 1; l <= 4; l++) Assert.Greater(SwitchbackAvoidSkill.EmergencySeconds(l), 0.3f);
+            Assert.Less(SwitchbackAvoidSkill.EmergencySeconds(1), SwitchbackAvoidSkill.EmergencySeconds(4));
+            Assert.AreEqual(SwitchbackPrismAvoidance.EmergencyMinReach, SwitchbackPrismAvoidance.EmergencyReach(10f, 0.35f), 1e-4f);
+            Assert.AreEqual(180f, SwitchbackPrismAvoidance.EmergencyReach(200f, 0.9f), 1e-3f);
+        }
+
+        [Test]
+        public void Emergency_EscapeLeavesTheLineAwayFromTheObstacle()
+        {
+            Vector3 dir = Vector3.forward;
+            // Obstacle ahead and slightly right: break left, mostly sideways when close.
+            Vector3 e = SwitchbackPrismAvoidance.EscapeDirection(dir, new Vector3(-2f, 0f, -20f), Vector3.back, Vector3.up, 1f);
+            Assert.Less(e.x, -0.8f);
+            Assert.AreEqual(1f, e.magnitude, 1e-4f);
+            // Dead centre and head-on normal: still leaves the line (falls back to up).
+            Vector3 c = SwitchbackPrismAvoidance.EscapeDirection(dir, new Vector3(0f, 0f, -20f), Vector3.back, Vector3.up, 0f);
+            Assert.Greater(c.y, 0.5f);
+        }
     }
 }

@@ -36,7 +36,25 @@ namespace CosmicShore.Gameplay
             public SwitchbackAvoidAction Avoid;
             public Vector3 AvoidAim, BlastCrystal, BlastLook;
             public int Avoids, Blasts;
+            // Emergency sweep (SWITCHBACK.md "AI: the emergency sweep").
+            public bool EmergOn;
+            public float EmergHoldUntil, HotUntil;
+            public Vector3 EmergSteer;
+            public int Emergencies;
+            // Debug view: the last sense tube and the last sweep.
+            public Vector3 SenseFrom, SenseTo, SweepFrom, SweepTo, SweepHit;
+            public float SenseRadius, SweepRadius;
+            public bool SenseBlocked, SweepHitAny;
         }
+
+        /// <summary>Debug view on (the controller's aiSenseDebug): lines for every sense and sweep, Info-level dodge logs.</summary>
+        public static bool DebugSense;
+        static readonly RaycastHit[] s_rayHits = new RaycastHit[32];
+        /// <summary>After a sweep hit the pilot re-sweeps every frame for this long (else every other frame, staggered).</summary>
+        const float HotSeconds = 0.6f;
+        /// <summary>An emergency dodge is held at least this long, so the hull actually turns before the next look.</summary>
+        const float EmergHoldSeconds = 0.18f;
+        const float EmergSteerDistance = 60f;
 
         /// <summary>The TrailBlocks layer: every prism - course blocks, rival trails, own trail.</summary>
         static int s_prismMask = -1;
@@ -62,6 +80,7 @@ namespace CosmicShore.Gameplay
         readonly ISwitchbackAIWorld _prisms;
         readonly Func<IPlayer, SwitchbackAISkill> _skillFor;
         readonly Func<IPlayer, SwitchbackAvoidSkill> _avoidFor;
+        readonly Func<IPlayer, int> _levelFor;
         readonly Func<int, int> _ringIndexFor;
         readonly Func<int> _raceLength;
         readonly IReadOnlyList<RaceGate> _course;
@@ -72,8 +91,13 @@ namespace CosmicShore.Gameplay
 
         public SwitchbackBlastAI(SwitchbackBlastPlanner planner, ISwitchbackAIWorld prisms, IReadOnlyList<RaceGate> course,
                                  Func<int, int> ringIndexFor, Func<int> raceLength, Func<IPlayer, SwitchbackAISkill> skillFor, int seed,
-                                 Func<IPlayer, SwitchbackAvoidSkill> avoidFor = null)
+                                 Func<IPlayer, SwitchbackAvoidSkill> avoidFor = null, Func<IPlayer, int> levelFor = null)
         {
+            _levelFor = levelFor ?? (_ => 2);
+            if (s_prismMask < 0) s_prismMask = LayerMask.GetMask("TrailBlocks");
+            // One line per course: if mask is 0 or layer is -1 the TrailBlocks layer is gone and no AI can see a prism.
+            Debug.Log($"[Switchback AI] sense active mask={s_prismMask} layer={LayerMask.NameToLayer("TrailBlocks")} " +
+                      $"stations={planner.Layout.Stations.Count} debug={DebugSense}");
             _avoidFor = avoidFor ?? (_ => SwitchbackAvoidSkill.ForLevel(2));
             _planner = planner;
             _prisms = prisms;
@@ -228,7 +252,9 @@ namespace CosmicShore.Gameplay
             float dist = to.magnitude;
             if (dist < 1f) return false;
             Vector3 dir = to / dist;
-            float range = Mathf.Min(skill.SenseRange, dist + 10f);
+            // Range by time to impact: at boost (well past 100 u/s) a fixed 70-110 u is under a second of warning.
+            float speed = p.Vessel?.VesselStatus?.Speed ?? 0f;
+            float range = Mathf.Min(Mathf.Max(skill.SenseRange, speed * (1.2f + skill.ReactionSeconds)), dist + 10f);
             if (s_prismMask < 0) s_prismMask = LayerMask.GetMask("TrailBlocks");
             float probe = skill.Clearance * 2.5f;
             int n = Physics.OverlapCapsuleNonAlloc(self + dir * SenseStart, self + dir * range, probe, s_hits, s_prismMask,
@@ -240,6 +266,9 @@ namespace CosmicShore.Gameplay
                 s_radii[i] = Mathf.Min(b.extents.magnitude, 12f);
             }
             var prev = st.Avoid;
+            st.SenseFrom = self + dir * SenseStart; st.SenseTo = self + dir * range; st.SenseRadius = probe;
+            st.SenseBlocked = n > 0;
+            if (DebugSense) Debug.DrawLine(st.SenseFrom, st.SenseTo, n > 0 ? Color.yellow : Color.green, skill.ReactionSeconds);
             if (n == 0 || !SwitchbackPrismAvoidance.Blocked(self, dir, range, skill.Clearance, s_pts, n, out float along, s_radii))
             {
                 if (prev != SwitchbackAvoidAction.Clear) Log(p, st, ring, SwitchbackAvoidAction.Clear, "clear", 0f, n);
@@ -267,6 +296,91 @@ namespace CosmicShore.Gameplay
             if (prev != SwitchbackAvoidAction.Avoid) { st.Avoids++; Log(p, st, ring, SwitchbackAvoidAction.Avoid, $"turn={turn:F0} clear={clear:F0}u", along, blocking); }
             aim = self + st.AvoidAim;
             return true;
+        }
+
+        /// <summary>
+        /// SERVER ONLY, every frame (AIPilot's emergency hook): one SphereCastNonAlloc at hull radius down the REAL velocity
+        /// (course x speed, which a drift locks away from the nose), reach = speed x the level's
+        /// <see cref="SwitchbackAvoidSkill.EmergencySeconds"/>, plus a second down the nose while turning (the side the
+        /// hull swings into). A hit means impact inside that time: steer hard off the line - AIPilot lets a drift go and
+        /// the boost driver's line-hold stand down. On a strike (the gate blast or a crystal blast) only hits nearer than
+        /// the crystal count: the crystal's blast clears what is behind it. Every other frame when cold, every frame for
+        /// <see cref="HotSeconds"/> after a hit. No allocation.
+        /// </summary>
+        public bool Emergency(IPlayer p, Vector3 pos, Vector3 vel, Vector3 fwd, out Vector3 steer)
+        {
+            steer = default;
+            if (p == null) return false;
+            var st = StateFor(p);
+            float now = Time.time;
+            if (st.EmergOn && now < st.EmergHoldUntil) { steer = pos + st.EmergSteer * EmergSteerDistance; return true; }
+            bool hot = now < st.HotUntil;
+            if (!hot && ((Time.frameCount + (int)(st.Seed & 1u)) & 1) != 0) { st.EmergOn = false; return false; }
+
+            float speed = vel.magnitude;
+            if (speed < 1f) { st.EmergOn = false; return false; }
+            Vector3 dir = vel / speed;
+            int level = _levelFor(p);
+            var skill = _avoidFor(p);
+            float reach = SwitchbackPrismAvoidance.EmergencyReach(speed, SwitchbackAvoidSkill.EmergencySeconds(level));
+            float radius = SwitchbackPrismAvoidance.ShipRadius + skill.Clearance * 0.3f;
+            if (s_prismMask < 0) s_prismMask = LayerMask.GetMask("TrailBlocks");
+
+            // On a strike the crystal is the point: only what is in front of it is in the way.
+            float limit = reach;
+            bool striking = st.Avoid == SwitchbackAvoidAction.Blast || (st.D.Plan == SwitchbackAIPlan.Blast && st.Phase == Phase.Strike);
+            if (striking)
+            {
+                Vector3 c = st.Avoid == SwitchbackAvoidAction.Blast ? st.BlastCrystal : st.D.Key;
+                float along = Vector3.Dot(c - pos, dir);
+                if (along > 0f) limit = Mathf.Min(limit, along - 2f);
+            }
+
+            bool hit = Sweep(pos, dir, radius, limit, out float hitDist, out Vector3 hitAt, out Vector3 normal);
+            if (!hit && Vector3.Angle(dir, fwd) > 8f)
+                hit = Sweep(pos, fwd, radius, limit * 0.6f, out hitDist, out hitAt, out normal);
+
+            st.SweepFrom = pos; st.SweepTo = pos + dir * Mathf.Max(limit, 0f); st.SweepRadius = radius;
+            st.SweepHitAny = hit; st.SweepHit = hitAt;
+            if (DebugSense)
+            {
+                Debug.DrawLine(pos, st.SweepTo, hit ? Color.red : Color.cyan);
+                if (hit) Debug.DrawLine(pos, hitAt, Color.magenta, 0.3f);
+            }
+            if (!hit) { st.EmergOn = false; return false; }
+
+            float urgency = 1f - hitDist / Mathf.Max(limit, 1f);
+            Vector3 up = Vector3.Cross(dir, Vector3.Cross(fwd, dir)).sqrMagnitude > 0.01f ? fwd : Vector3.up;
+            st.EmergSteer = SwitchbackPrismAvoidance.EscapeDirection(dir, pos - hitAt, normal, up, urgency);
+            st.HotUntil = now + HotSeconds;
+            st.EmergHoldUntil = now + EmergHoldSeconds;
+            if (!st.EmergOn)
+            {
+                st.Emergencies++;
+                string line = $"[Switchback AI] emergency pilot={p.PlayerNetId} impactIn={hitDist / speed:F2}s dist={hitDist:F0}u " +
+                              $"speed={speed:F0} reach={reach:F0}u level={level} drifting={p.Vessel?.VesselStatus?.IsDrifting} " +
+                              $"striking={striking} emergencies={st.Emergencies}";
+                if (DebugSense) Debug.Log(line); else CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, line);
+            }
+            st.EmergOn = true;
+            steer = pos + st.EmergSteer * EmergSteerDistance;
+            return true;
+        }
+
+        /// <summary>The nearest TrailBlocks hit down <paramref name="dir"/> (start-overlaps skipped: the hull's own fresh trail).</summary>
+        static bool Sweep(Vector3 pos, Vector3 dir, float radius, float dist, out float hitDist, out Vector3 centre, out Vector3 normal)
+        {
+            hitDist = float.MaxValue; centre = default; normal = default;
+            if (dist <= 0.5f) return false;
+            int n = Physics.SphereCastNonAlloc(pos, radius, dir, s_rayHits, dist, s_prismMask, QueryTriggerInteraction.Collide);
+            bool any = false;
+            for (int i = 0; i < n; i++)
+            {
+                ref RaycastHit h = ref s_rayHits[i];
+                if (h.distance <= 0f || h.distance >= hitDist || h.collider == null) continue;
+                hitDist = h.distance; centre = h.collider.bounds.center; normal = h.normal; any = true;
+            }
+            return any;
         }
 
         static int ManagedCrystals()
@@ -350,6 +464,25 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Switchback AI] gate={st.D.Gate} plan={st.D.Plan} crystal={(st.KeyTaken ? "taken" : "none")}" +
                 $" aimErr={st.D.AimErrorDegrees:F1} result={result} pilot={p.PlayerNetId}");
+        }
+
+        /// <summary>The sense view (the controller's OnDrawGizmos while aiSenseDebug): per pilot the sense tube (green
+        /// clear / yellow blocked), the emergency sweep (cyan clear / red hit, magenta to the hit) and the dodge (white).</summary>
+        public void DrawSenseGizmos()
+        {
+            foreach (var kv in _pilots)
+            {
+                var st = kv.Value;
+                Gizmos.color = st.SenseBlocked ? Color.yellow : Color.green;
+                Gizmos.DrawLine(st.SenseFrom, st.SenseTo);
+                Gizmos.DrawWireSphere(st.SenseTo, st.SenseRadius);
+                Gizmos.color = st.SweepHitAny ? Color.red : Color.cyan;
+                Gizmos.DrawLine(st.SweepFrom, st.SweepTo);
+                Gizmos.DrawWireSphere(st.SweepTo, st.SweepRadius);
+                if (st.SweepHitAny) { Gizmos.color = Color.magenta; Gizmos.DrawWireSphere(st.SweepHit, 3f); }
+                if (st.EmergOn) { Gizmos.color = Color.white; Gizmos.DrawLine(st.SweepFrom, st.SweepFrom + st.EmergSteer * EmergSteerDistance); }
+                if (st.Avoid == SwitchbackAvoidAction.Avoid) { Gizmos.color = new Color(1f, 0.6f, 0f); Gizmos.DrawLine(st.SweepFrom, st.SweepFrom + st.AvoidAim); }
+            }
         }
 
         static string Fmt(float s) => float.IsInfinity(s) ? "-" : s.ToString("F2");
