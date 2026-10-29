@@ -1,4 +1,5 @@
 {
+ "agent": true,
  "caps": {
   "bash": true,
   "caps_version": 2,
@@ -16,6 +17,7 @@
  "cores": 11,
  "current": {},
  "host": "dragonsweapon",
+ "idle_seconds": 4281.297,
  "last": {
   "best_start": null,
   "epoch": "ee78e83fdb59",
@@ -24,6 +26,7 @@
   "session_evals": 43617,
   "stopped": "budget"
  },
+ "remote_start": true,
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -146,10 +149,22 @@
    "unit": null
   }
  ],
+ "specs": {
+  "cores": 12,
+  "disk_free_gb": 29.1,
+  "os": "windows",
+  "os_name": "Windows 10",
+  "python": "3.11.9",
+  "ram_free_gb": 16.2,
+  "ram_gb": 31.9,
+  "unity": true,
+  "unity_open": true
+ },
+ "status": "working",
  "totals": {
   "sessions": 10
  },
- "updated": 1793268288,
+ "updated": 1793268299,
  "user": "shombithofficial",
  "version": "1"
 }
