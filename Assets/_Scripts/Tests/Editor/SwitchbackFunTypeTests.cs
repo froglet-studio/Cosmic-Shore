@@ -334,7 +334,10 @@ namespace CosmicShore.Tests
                     Assert.IsTrue(seeds.Add(seed), $"{t} I{i} shares a seed.");
                     Assert.IsTrue(keys.Add(SwitchbackFunTypes.PersonalBestKey(t, i)), $"{t} I{i} shares a PB key.");
                 }
-            Assert.AreEqual(5, SwitchbackFunTypes.PickerOrder.Length);
+            Assert.AreEqual(6, SwitchbackFunTypes.PickerOrder.Length);
+            Assert.AreEqual(SwitchbackFunType.BlastRun, SwitchbackFunTypes.PickerOrder[5], "Blast Run is appended; the first five keep their order.");
+            Assert.AreEqual(SwitchbackFunType.BlastRun, SwitchbackFunTypes.Sanitize(5));
+            Assert.AreEqual(SwitchbackFunType.Baseline, SwitchbackFunTypes.Sanitize(6));
             Assert.AreEqual(SwitchbackFunType.Baseline, SwitchbackFunTypes.Sanitize(99));
         }
 
