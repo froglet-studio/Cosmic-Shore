@@ -102,6 +102,25 @@ and each difficulty ends the voyage a world earlier, until 9 is over in the seco
 The Swarm cell is authored hostile, so it is hostile at every difficulty; below 4 its creatures are too few to reach
 the Ark. The Boneyard's and The Maw's rungs: 1-3 the biome's config 1, 4-5 config 2, 6-7 config 3, 8-9 config 4.
 
+### Confirmation (after pass 9, no tuning changes)
+
+Eight escorts on the shipped tiers, mixing squads to see whether the lines hold beyond the squad they were tuned on.
+
+| d | Squad | Result | Lowest hull | Where it was decided |
+|---|---|---|---|---|
+| 2 | Manta+Dolphin+Rhino | Survived | 56% | The Maw ends at 64% |
+| 3 | Manta+Dolphin+Rhino | Survived | 57% | The Maw ends at 63% |
+| 3 | Sparrow+Rhino+Manta | Survived | 32% | The Maw ends at 38% |
+| 4 | Squirrel+Dolphin+Serpent | Survived | 31% | The Maw, one point above the 30% line |
+| 4 | Sparrow+Rhino+Manta | Overrun | 29% | The Maw, one point below the line |
+| 5 | Manta+Dolphin+Rhino | Overrun | 37% | The Maw, against 38% |
+| 6 | Squirrel+Dolphin+Serpent | Overrun | 44% | The Boneyard, against 45% |
+| 7 | Sparrow+Rhino+Manta | Overrun | 36% | Garland cost 31%, then The Boneyard took it under 50% |
+
+The lines hold: 2 and 3 are won with room to spare, 4 is a coin toss decided by a point or two, and 5 and up are lost
+by a few points, so a better escort turns them. One sweep stopped itself mid-run in the editor (a lobby error) and
+its last three escorts were rerun.
+
 ### Known gaps
 
 - The sim's runs are single samples and noisy (the same squad at the same difficulty has differed by 20 points of
