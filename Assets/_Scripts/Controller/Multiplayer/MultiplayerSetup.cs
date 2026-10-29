@@ -519,9 +519,28 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Approved client {request.ClientNetworkId} as a SPECTATOR (no player object).");
             }
 
-            NetSessionRecorder.Mark("clientApproved", spectator ? $"{request.ClientNetworkId} spectator" : request.ClientNetworkId.ToString());
+            // A REJOIN (section 103, MatchRejoin) announces the player's UGS id: when the host still holds their seat
+            // (their Player, handed to the AI when they dropped), no new Player is made - the seat is handed back on
+            // connect (ServerPlayerVesselInitializer.TryReclaimSeat). A rejoin with no seat left is refused here, so
+            // the client fails fast and lands back on its menu instead of joining a match it has no ship in.
+            bool rejoin = false;
+            if (!isLocalHost && !spectator && MatchRejoin.TryParsePayload(request.Payload, out var rejoinUgsId))
+            {
+                if (MatchRejoin.FindReclaimableSeat(gameData != null ? gameData.Players : null, rejoinUgsId) == null)
+                {
+                    NetSessionRecorder.Mark("rejoinRefused", request.ClientNetworkId.ToString());
+                    response.Approved = false;
+                    response.Reason   = "rejoin: the match has no seat to give back";
+                    return;
+                }
+                rejoin = true;
+                MatchRejoin.ServerRegister(request.ClientNetworkId, rejoinUgsId);
+            }
+
+            NetSessionRecorder.Mark("clientApproved",
+                spectator ? $"{request.ClientNetworkId} spectator" : rejoin ? $"{request.ClientNetworkId} rejoin" : request.ClientNetworkId.ToString());
             response.Approved           = true;
-            response.CreatePlayerObject = !spectator;
+            response.CreatePlayerObject = !spectator && !rejoin;
             response.Position           = Vector3.zero;
             response.Rotation           = Quaternion.identity;
             response.PlayerPrefabHash   = null;
@@ -538,6 +557,7 @@ namespace CosmicShore.Gameplay
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Client {clientId} disconnected from host.");
                     NetSessionRecorder.Mark("clientLeft", clientId.ToString());
                     SpectatorSession.ServerUnregister(clientId);
+                    MatchRejoin.ServerUnregister(clientId);
                     // Netcode backstop for hard drops (client crash) that may beat the
                     // graceful UGS ISession.PlayerLeaving. Only the Netcode clientId is
                     // available here (no UGS PlayerId), so this reconciles the roster;

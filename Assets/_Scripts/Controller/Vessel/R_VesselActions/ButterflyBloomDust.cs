@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Reflex.Attributes;
@@ -37,6 +38,13 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>The motes are cosmetic and per machine; their scatter uses a private hash rather than
     /// <c>UnityEngine.Random</c> (vessel contract rule 18).</para>
+    ///
+    /// <para><b>It cleanses its own side.</b> As the wavefront passes the pilot who set it off and
+    /// every ally (<see cref="ElementalCleanse.IsAlly"/>), each is cleansed once: silence lifted,
+    /// temporary debuffs ended (Garrett, 2026-10-29: "this applies to the omnicrystal dust ... the
+    /// omnicrystal also dusts yourself"). Tested by position against the roster rather than through
+    /// the blast's vessel effects, because the bloom's <c>affectSelf</c> gate keeps its own side out of
+    /// those (they bite). Every peer runs the bloom, so every peer cleanses its own copies.</para>
     ///
     /// <para><b>Telemetry.</b> On retirement it reports, on <see cref="CSLogChannel.ButterflyBloom"/>,
     /// how many prisms the sweep reached and what the dust did to them, by outcome.</para>
@@ -105,6 +113,7 @@ namespace CosmicShore.Gameplay
         float _lastRadius;
         uint _rng;
         readonly int[] _tally = new int[10];
+        readonly HashSet<IVesselStatus> _cleansed = new();
         static bool s_warnedNoMaterial;
         static bool s_warnedNoDust;
 
@@ -152,6 +161,24 @@ namespace CosmicShore.Gameplay
                 _particles.Emit(emit, 1);
             }
             _lastRadius = radius;
+            CleanseOwnSide(centre, radius);
+        }
+
+        /// <summary>Cleanse, once each, the bloom's pilot and every ally the wavefront has reached.</summary>
+        void CleanseOwnSide(Vector3 centre, float radius)
+        {
+            var pilot = _impactor ? _impactor.SourceVessel?.VesselStatus : null;
+            if (pilot == null || _gameData == null || _gameData.Players == null) return;
+            float reach = radius * radius;
+            var players = _gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var status = players[i]?.Vessel?.VesselStatus;
+                if (status == null || _cleansed.Contains(status) || !ElementalCleanse.IsAlly(pilot, status)) continue;
+                if ((status.Transform.position - centre).sqrMagnitude > reach) continue;
+                _cleansed.Add(status);
+                ElementalCleanse.Cleanse(status);
+            }
         }
 
         /// <summary>

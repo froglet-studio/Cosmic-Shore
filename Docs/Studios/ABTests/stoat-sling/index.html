@@ -1,0 +1,746 @@
+<title>Stoat Sling A/B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Chakra+Petch:wght@500;700&display=swap">
+<style>
+/* Layout: the 3D stage fills the screen; a single card floats over it for the menu, the vote and the reveal.
+   One look on purpose (the game is night space), so the palette is dark-only and set explicitly.
+   Type and colours are the Vessel Studio's (studio-theme.js, D29): Chakra Petch + Atkinson Hyperlegible, Stoat amber. */
+:root {
+  color-scheme: dark;
+  --night: #060918;
+  --panel: rgba(10, 14, 34, 0.9);
+  --panel-2: rgba(22, 29, 66, 0.92);
+  --line: #2b356b;
+  --fg: #e8ecff;
+  --dim: #9aa6d6;
+  --accent: #ffb347;      /* Stoat amber: chrome only */
+  --a: #13fff2;           /* letter A: Jade signal colour (studio-domains.js) */
+  --b: #ffa700;           /* letter B: Gold signal colour */
+  --good: #7dff9a;
+  --warn: #ff6b8a;
+  --display: "Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+html, body { height: 100%; }
+body { background: var(--night); color: var(--fg); font: 15px/1.45 var(--body); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+button { font: 700 0.9rem var(--display); letter-spacing: 0.04em; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: var(--accent); color: #1a1000; border-color: var(--accent); }
+
+/* ---- the HUD over the stage ---- */
+.hud { position: fixed; z-index: 3; pointer-events: none; font-family: var(--display); text-shadow: 0 1px 3px #000; }
+#hudTop { top: calc(env(safe-area-inset-top, 0px) + 10px); left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+#hudTop .left, #hudTop .right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#hudTop .right { justify-content: flex-end; text-align: right; }
+.letter { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; font: 700 1.25rem var(--display); color: #00110f; }
+.letter.A { background: var(--a); } .letter.B { background: var(--b); color: #1a1000; }
+.stat { font-size: 0.95rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.stat b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+#hudBtns { pointer-events: auto; display: flex; gap: 6px; }
+#hudBtns button { padding: 6px 10px; font-size: 0.8rem; background: var(--panel); }
+#help { left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); width: min(640px, calc(100% - 32px)); text-align: center; font: 400 0.95rem/1.35 var(--body); color: var(--fg); background: rgba(6, 9, 24, 0.66); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+#flash { left: 50%; top: 30%; transform: translate(-50%, -50%); font: 700 1.35rem var(--display); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0; transition: opacity 0.25s; white-space: nowrap; }
+#gauge { left: 50%; top: calc(env(safe-area-inset-top, 0px) + 58px); transform: translateX(-50%); width: 168px; text-align: center; display: none; }
+#gauge svg { width: 168px; height: 92px; display: block; }
+#gauge .cap { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+#squeeze { left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 70px); transform: translateX(-50%); width: 180px; display: none; text-align: center; font-size: 0.75rem; letter-spacing: 0.08em; color: var(--dim); }
+#squeeze .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; margin-top: 4px; }
+#squeeze .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+#countdown { left: 50%; top: 42%; transform: translate(-50%, -50%); font: 700 4.5rem var(--display); opacity: 0; transition: opacity 0.2s; }
+
+/* ---- the card (menu, vote, thanks) ---- */
+#overlay { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; overflow-y: auto; padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 16px); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: radial-gradient(ellipse at center, rgba(6, 9, 24, 0.35), rgba(6, 9, 24, 0.82)); }
+.card { width: min(560px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 20px 18px; display: grid; gap: 14px; box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55); }
+.eyebrow { font: 700 0.78rem var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 2.6rem/1 var(--display); margin: 0; letter-spacing: 0.02em; text-wrap: balance; }
+h1 .A { color: var(--a); } h1 .B { color: var(--b); }
+h2 { font: 700 1.35rem/1.15 var(--display); margin: 0; text-wrap: balance; }
+.card p { margin: 0; color: var(--fg); max-width: 62ch; }
+.card p.dim, .dim { color: var(--dim); font-size: 0.9rem; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { display: grid; gap: 6px; justify-items: start; text-align: left; padding: 14px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); min-width: 0; }
+.tile .row { display: flex; align-items: center; gap: 10px; }
+.tile .name { font: 700 1.2rem var(--display); }
+.tile .meta { font-size: 0.82rem; color: var(--dim); font-family: var(--body); letter-spacing: 0; font-weight: 400; }
+.tile.A:hover:not(:disabled), .tile.A[aria-pressed="true"] { border-color: var(--a); }
+.tile.B:hover:not(:disabled), .tile.B[aria-pressed="true"] { border-color: var(--b); }
+.tile[aria-pressed="true"] { box-shadow: 0 0 0 2px currentColor inset; }
+.tile.A[aria-pressed="true"] { color: var(--a); } .tile.B[aria-pressed="true"] { color: var(--b); }
+.tile.A[aria-pressed="true"] .meta, .tile.B[aria-pressed="true"] .meta { color: var(--fg); }
+.controls { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 0.9rem; color: var(--dim); }
+.controls kbd { font: 700 0.8rem var(--display); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+.actions .note { margin-right: auto; font-size: 0.85rem; color: var(--dim); }
+textarea { width: 100%; box-sizing: border-box; min-height: 84px; resize: vertical; font: 0.95rem/1.4 var(--body); color: var(--fg); background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; }
+label.q { font: 700 0.95rem var(--display); letter-spacing: 0.02em; }
+.reveal { display: grid; gap: 10px; }
+.reveal .item { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+.reveal .item p { font-size: 0.92rem; }
+.tally { display: grid; gap: 6px; }
+.tally .bar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); font: 700 0.8rem var(--display); }
+.tally .bar span { display: grid; place-items: center; color: #10131f; white-space: nowrap; overflow: hidden; min-width: 0; }
+.status { font-size: 0.88rem; }
+.status.bad { color: var(--warn); } .status.ok { color: var(--good); }
+
+/* ---- touch controls (phones only) ---- */
+.touch { display: none; }
+body.phone.playing .touch { display: block; }
+#steerZone { position: fixed; z-index: 2; left: 0; bottom: 0; width: 50%; height: 62%; }
+#steerKnob { position: fixed; z-index: 3; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.08); pointer-events: none; display: none; }
+#steerHint { position: fixed; z-index: 2; left: max(14px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); font: 700 0.75rem var(--display); letter-spacing: 0.1em; color: var(--dim); pointer-events: none; }
+#slingBtns { position: fixed; z-index: 3; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); display: flex; gap: 12px; }
+#slingBtns button { width: 82px; height: 82px; border-radius: 50%; padding: 0; font-size: 0.78rem; line-height: 1.15; background: rgba(10, 14, 34, 0.7); border: 2px solid var(--accent); touch-action: none; user-select: none; -webkit-user-select: none; }
+#slingBtns button.on { background: var(--accent); color: #1a1000; }
+body.phone #help { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 100px); font-size: 0.85rem; transition: opacity 0.6s; }
+body.phone #help.faded { opacity: 0; }
+body.phone #squeeze { bottom: calc(env(safe-area-inset-bottom, 0px) + 112px); }
+body.phone #gauge { top: calc(env(safe-area-inset-top, 0px) + 100px); }
+body.phone #flash { top: 44%; font-size: 1.1rem; }
+@media (max-width: 460px) { h1 { font-size: 2.1rem; } .pair { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { #flash, #countdown { transition: none; } }
+</style>
+
+<div id="stage"></div>
+
+<div class="hud" id="hudTop" hidden>
+  <div class="left"><span class="letter A" id="hudLetter">A</span><span class="stat" id="hudGate">Gate <b>1/7</b></span></div>
+  <div class="right"><span class="stat" id="hudTime"><b>0:00.0</b></span><span class="stat" id="hudSpeed"><b>0</b> u/s</span>
+    <span id="hudBtns"><button id="btnRestart" type="button" title="Restart the lap (R)">Restart</button><button id="btnMenu" type="button" title="Back to the menu (Esc)">Menu</button></span></div>
+</div>
+<div class="hud" id="help" hidden></div>
+<div class="hud" id="flash"></div>
+<div class="hud" id="countdown"></div>
+<div class="hud" id="gauge"><svg viewBox="0 0 168 92" aria-hidden="true"><path id="gArcBg" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="10" stroke-linecap="round"/><path id="gArcWin" fill="none" stroke="#7dff9a" stroke-width="10"/><line id="gNeedle" x1="84" y1="84" x2="84" y2="14" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/></svg><div class="cap" id="gCap">Let go in the green</div></div>
+<div class="hud" id="squeeze"><span id="sqLabel">Squeeze</span><div class="bar"><i id="sqBar"></i></div></div>
+
+<div class="touch"><div id="steerZone"></div><div id="steerKnob"></div><div id="steerHint">DRAG HERE TO STEER</div>
+  <div id="slingBtns"><button id="tL" type="button">HOLD<br>LEFT<br>HOLE</button><button id="tR" type="button">HOLD<br>RIGHT<br>HOLE</button></div></div>
+
+<div id="overlay">
+  <!-- menu -->
+  <section class="card" id="cardMenu">
+    <div class="eyebrow">Cosmic Shore · Stoat sling test</div>
+    <h1><span class="A">A</span> or <span class="B">B</span>?</h1>
+    <p>The Stoat drops black holes in space and flings itself round them. We built two ways to do it. Fly both, then tell us which one you'd rather play.</p>
+    <div class="pair">
+      <button class="tile A" id="flyA" type="button"><span class="row"><span class="letter A">A</span><span class="name">Fly A</span></span><span class="meta" id="metaA">Not flown yet</span></button>
+      <button class="tile B" id="flyB" type="button"><span class="row"><span class="letter B">B</span><span class="name">Fly B</span></span><span class="meta" id="metaB">Not flown yet</span></button>
+    </div>
+    <div class="controls" id="controlsList"></div>
+    <div class="actions"><span class="note" id="voteNote">Fly both for a few seconds to unlock the vote.</span><button class="primary" id="toVote" type="button" disabled>Pick your favourite</button></div>
+  </section>
+
+  <!-- vote -->
+  <section class="card" id="cardVote" hidden>
+    <div class="eyebrow">Your call</div>
+    <h2>Which did you like better?</h2>
+    <div class="pair">
+      <button class="tile A" id="pickA" type="button" aria-pressed="false"><span class="row"><span class="letter A">A</span><span class="name">I liked A</span></span><span class="meta" id="vmetaA"></span></button>
+      <button class="tile B" id="pickB" type="button" aria-pressed="false"><span class="row"><span class="letter B">B</span><span class="name">I liked B</span></span><span class="meta" id="vmetaB"></span></button>
+    </div>
+    <label class="q" for="why">Why? One line is plenty.</label>
+    <textarea id="why" maxlength="600" placeholder="What felt better, or what bugged you about the other one?"></textarea>
+    <div class="actions"><span class="note status" id="voteStatus"></span><button id="voteBack" type="button">Fly more</button><button class="primary" id="voteSend" type="button" disabled>Send</button></div>
+  </section>
+
+  <!-- thanks + reveal -->
+  <section class="card" id="cardThanks" hidden>
+    <div class="eyebrow">Thanks</div>
+    <h2 id="thanksHead">Here's what you were flying</h2>
+    <div class="reveal" id="reveal"></div>
+    <div class="tally" id="tally" hidden></div>
+    <p class="status" id="saveStatus"></p>
+    <div class="actions"><button id="copyAnswer" type="button">Copy my answer</button><button id="changeVote" type="button">Change my vote</button><button class="primary" id="flyAgain" type="button">Fly again</button></div>
+    <textarea id="copyBox" readonly hidden></textarea>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="studio-look.js" onerror="(function(){var s=document.createElement('script');s.src='../../VesselStudio/studio-look.js';document.head.appendChild(s);})()"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const clamp01 = (x) => clamp(x, 0, 1);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const fmt = (s) => { if (s == null) return '-'; const m = Math.floor(s / 60); return m + ':' + (s - m * 60).toFixed(1).padStart(4, '0'); };
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } } };
+
+  // =====================================================================================================
+  // The shipped numbers. Every value names its asset; nothing here is tuned for the test.
+  // =====================================================================================================
+  const SHIP = {
+    cruise: 60,   // Stoat.prefab VesselTransformer.DefaultThrottleScaler (u/s at full throttle)
+    yaw: 48,      // Stoat.prefab VesselTransformer.YawScaler (deg/s at full stick)
+    spool: 2.2,   // how fast speed follows the throttle (the Vessel Studio's Stoat page)
+  };
+  const SL = {    // Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset
+    holdExponent: 1.5, holdRamp: 3,                      // squeeze curve; keyboard/touch ramp to a full squeeze in 3 s
+    ahead: 150, side: 45,                                 // catchAhead, catchSide (A lays the pair here)
+    reach: 1.5, catchDeg: 50,                             // catchReach (x orbit radius), catchDegrees
+    settle: 3, maxOrbit: 360,                             // settleRate, maxOrbitDegrees
+    wide: 150, tight: 40, follow: 3, radial: 5,           // orbitRadiusWide / Tight, radiusFollowRate, radialCorrectionRate
+    boostMin: 0.25, boostMax: 0.9, boostSec: 1.5,         // slingBoostMin / Max (x speed), slingBoostSeconds
+    sweet: 90, half: 15, fall: 30, miss: 0.2,             // sweetSpotDegrees, sweetSpotHalfWidth, sweetSpotFalloff, missKickShare
+    drift: 40, life: 12,                                  // driftSpeed (holes close at), lifetime (s held)
+  };
+  // The two variants. Both use the numbers above; they differ only in WHERE the hole goes and WHEN it grabs you.
+  const MECH = {
+    catch: {
+      name: 'The catch sling', short: 'catch sling',
+      origin: 'The one in the game today (the Stoat\'s Time mode, shipped 2026-10-14).',
+      how: 'The hole drops ahead of you on that side. Fly past it and it grabs you. Let go a quarter-turn round for the full boost.',
+      reveal: 'You drop the hole ahead, it catches you as you pass, and letting go a quarter-turn round pays the whole boost. Outside that window you get a fifth of it.',
+    },
+    orbit: {
+      name: 'The orbit sling', short: 'orbit sling',
+      origin: 'An earlier version (round 4) we set aside on 2026-10-13, because players could not see the hole they were circling.',
+      how: 'You swing round a hole beside you straight away. Hold longer to swing tighter. Let go to fling out.',
+      reveal: 'The hole appears beside you and you swing round it at once. A longer hold tightens the swing and adds to the boost. Let go whenever you like. This test draws the hole and its ring and lifts the camera, which was the fix proposed when it was set aside.',
+    },
+  };
+
+  // =====================================================================================================
+  // Blind assignment: which mechanic is A is random per viewer, kept across visits.
+  // =====================================================================================================
+  const TEST_ID = 'stoat-sling-catch-vs-orbit-v1';
+  let assign = store.get('ab.assign', null);
+  if (!assign || assign.test !== TEST_ID) { assign = Math.random() < 0.5 ? { test: TEST_ID, A: 'catch', B: 'orbit' } : { test: TEST_ID, A: 'orbit', B: 'catch' }; store.set('ab.assign', assign); }
+  const mechOf = (L) => assign[L];
+  const STATS0 = () => ({ secs: 0, laps: 0, best: null, slings: 0, catches: 0, sweet: 0, starts: 0 });
+  let stats = store.get('ab.stats', null);
+  if (!stats || stats.test !== TEST_ID) stats = { test: TEST_ID, A: STATS0(), B: STATS0() };
+  const saveStats = () => store.set('ab.stats', stats);
+
+  const PHONE = (matchMedia('(pointer: coarse)').matches && !matchMedia('(hover: hover)').matches) || /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent);
+  document.body.classList.toggle('phone', PHONE);
+
+  // =====================================================================================================
+  // The course: one flat lap of seven gates (six hoops, then the first again). Flat on purpose: the test is
+  // about the sling, and a flat course reads the same on a phone. The game flies in 3D.
+  // =====================================================================================================
+  const GATE_R = 26;
+  const GP = [[0, 160], [0, 400], [200, 470], [230, 260], [330, 70], [120, -40]];
+  const GATES = GP.map(([x, z], i) => {
+    const pr = GP[(i + GP.length - 1) % GP.length], nx = GP[(i + 1) % GP.length];
+    let dx = nx[0] - pr[0], dz = nx[1] - pr[1]; if (i === 0) { dx = 0; dz = 1; }
+    const l = Math.hypot(dx, dz) || 1; return { x, z, nx: dx / l, nz: dz / l };
+  });
+  const ORDER = [0, 1, 2, 3, 4, 5, 0];
+  const START = { x: 0, z: -90, h: 0 };
+
+  // =====================================================================================================
+  // The pure step. Flat world: position (x,z), heading h, forward = (sin h, cos h), right = (-cos h, sin h).
+  // =====================================================================================================
+  const fwdOf = (h) => ({ x: Math.sin(h), z: Math.cos(h) });
+  const rightOf = (h) => ({ x: -Math.cos(h), z: Math.sin(h) });
+  const squeezeT = (q) => Math.pow(clamp01(q), SL.holdExponent);
+  const orbitRadius = (q) => lerp(SL.wide, SL.tight, squeezeT(q));              // StoatSlingMath.OrbitRadius
+  function sweetSpot(deg) {                                                      // StoatSlingMath.SweetSpot
+    const off = Math.abs(Math.abs(deg) - SL.sweet); if (off <= SL.half) return 1;
+    const t = clamp01((off - SL.half) / SL.fall); return 1 - t * t * (3 - 2 * t);
+  }
+  const angleBetween = (ax, az, bx, bz) => { const la = Math.hypot(ax, az), lb = Math.hypot(bx, bz); if (la < 1e-6 || lb < 1e-6) return 0; return Math.acos(clamp((ax * bx + az * bz) / (la * lb), -1, 1)); };
+
+  function newWorld(mech) {
+    return {
+      mech, t: 0, race: 'countdown', count: 3, raceT: 0, gate: 0,
+      x: START.x, z: START.z, h: START.h, v: 0, boosts: [],
+      holds: { L: { on: false, t: 0, live: 0, peak: 0, analog: false }, R: { on: false, t: 0, live: 0, peak: 0, analog: false } },
+      pair: null, closing: [], events: [], trail: [], slings: 0, catches: 0, sweet: 0,
+    };
+  }
+  const speedOf = (w) => { const f = fwdOf(w.h); let vx = f.x * w.v, vz = f.z * w.v; for (const b of w.boosts) { const s = boostShape(b); vx += b.dx * s; vz += b.dz * s; } return Math.hypot(vx, vz); };
+  // VesselTransformer.ModifyVelocity's shape: 1.5x the amount at first, fading over the duration
+  const boostShape = (b) => (b.amp / 1.5) * (Math.cos(Math.PI * b.t / b.dur) / 2 + 1);
+
+  function layPair(w, side) {
+    if (w.pair) release(w, w.pair.side, true);                          // one pair: a press while holding slings out first
+    w.closing.length = 0;                                                // EndLastPair
+    const f = fwdOf(w.h), r = rightOf(w.h), s = side === 'L' ? -1 : 1, sx = r.x * s, sz = r.z * s;
+    const q = w.holds[side].live, rad = orbitRadius(q);
+    let ax, az, bx, bz;
+    if (w.mech === 'catch') {                                            // StoatSlingMath.CatchPair: ahead, to the pressed side
+      ax = w.x + f.x * SL.ahead + sx * SL.side; az = w.z + f.z * SL.ahead + sz * SL.side;
+      bx = w.x + f.x * SL.ahead - sx * SL.side; bz = w.z + f.z * SL.ahead - sz * SL.side;
+    } else {                                                             // round 4: beside the hull at the orbit radius
+      ax = w.x + sx * rad; az = w.z + sz * rad; bx = w.x - sx * rad; bz = w.z - sz * rad;
+    }
+    w.pair = { side, ax, az, bx, bz, r: rad, caught: w.mech === 'orbit', swept: 0, lrx: w.x - ax, lrz: w.z - az, t: 0 };
+    w.slings++;
+    if (w.mech === 'orbit') w.events.push({ k: 'swing' });
+  }
+  function release(w, side, boost) {
+    const p = w.pair; if (!p || p.side !== side) return;
+    w.pair = null;
+    w.closing.push({ ax: p.ax, az: p.az, bx: p.bx, bz: p.bz, t: 0 });
+    if (!boost) return;
+    const peak = w.holds[side].peak, spd = speedOf(w);
+    const squeeze = spd * lerp(SL.boostMin, SL.boostMax, clamp01(peak));                 // StoatSlingMath.SlingBoost
+    let kick;
+    if (w.mech === 'catch') {
+      if (!p.caught) { w.events.push({ k: 'nocatch' }); return; }                        // no kick before a catch
+      const deg = p.swept * 180 / Math.PI, timing = sweetSpot(deg);
+      kick = squeeze * lerp(SL.miss, 1, timing);                                        // StoatSlingMath.TimedKick (rate 1)
+      if (timing >= 0.999) w.sweet++;
+      w.events.push({ k: timing >= 0.999 ? 'sweet' : deg < SL.sweet ? 'early' : 'late', kick, deg });
+    } else {
+      kick = squeeze;
+      w.events.push({ k: 'fling', kick });
+    }
+    const f = fwdOf(w.h);
+    if (kick > 0) w.boosts.push({ dx: f.x, dz: f.z, amp: kick, t: 0, dur: SL.boostSec });
+  }
+  function holdInput(w, side, down, analogValue, dt) {
+    const h = w.holds[side];
+    if (down && !h.on) { h.on = true; h.t = 0; h.peak = 0; h.analog = analogValue != null; h.live = h.analog ? clamp01(analogValue) : 0; if (w.race === 'running') layPair(w, side); }
+    else if (down) { h.t += dt; h.live = analogValue != null ? clamp01(analogValue) : clamp01(h.t / SL.holdRamp); }
+    else if (!down && h.on) { h.on = false; if (w.pair && w.pair.side === side) release(w, side, true); }
+    if (h.on) h.peak = Math.max(h.peak, h.live);                         // StoatSlingMath.Peak: the deepest sample
+  }
+  function stepOrbit(w, dt) {
+    const p = w.pair, h = w.holds[p.side];
+    p.t += dt;
+    p.r += (orbitRadius(h.live) - p.r) * (1 - Math.exp(-SL.follow * dt));
+    if (!p.caught) {                                                     // StoatSlingMath.Catches
+      const tx = p.ax - w.x, tz = p.az - w.z, d = Math.hypot(tx, tz), f = fwdOf(w.h);
+      const off = angleBetween(f.x, f.z, tx, tz) * 180 / Math.PI;
+      if (d <= p.r || (d <= p.r * SL.reach && off >= SL.catchDeg)) { p.caught = true; p.swept = 0; p.lrx = w.x - p.ax; p.lrz = w.z - p.az; w.catches++; w.events.push({ k: 'caught' }); }
+      else return false;
+    }
+    // onto the radius...
+    let ux = p.ax - w.x, uz = p.az - w.z; const d = Math.hypot(ux, uz);
+    if (d > 1e-3) { const c = (d - p.r) * (1 - Math.exp(-SL.radial * dt)); w.x += ux / d * c; w.z += uz / d * c; }
+    // ...and round it: the nose eases onto the tangent and turns at w = v / r (OrbitHeading + SettleHeading)
+    ux = p.ax - w.x; uz = p.az - w.z; const du = Math.hypot(ux, uz) || 1; ux /= du; uz /= du;
+    const f = fwdOf(w.h), step = speedOf(w) / Math.max(1, p.r) * dt;
+    let tx = f.x - (f.x * ux + f.z * uz) * ux, tz = f.z - (f.x * ux + f.z * uz) * uz; const tl = Math.hypot(tx, tz);
+    if (tl > 1e-6) {
+      tx /= tl; tz /= tl;
+      const gx = tx * Math.cos(step) + ux * Math.sin(step), gz = tz * Math.cos(step) + uz * Math.sin(step);
+      const miss = angleBetween(f.x, f.z, gx, gz), turn = Math.min(miss, Math.max(step, miss * (1 - Math.exp(-SL.settle * dt))));
+      const sign = Math.sign(f.x * gz - f.z * gx) || 1;           // +1: the goal is to the right (heading falls)
+      w.h -= sign * turn;
+      const nf = fwdOf(w.h); for (const b of w.boosts) { b.dx = nf.x; b.dz = nf.z; }   // SetCourseVelocity
+    }
+    const rx = w.x - p.ax, rz = w.z - p.az;
+    p.swept += angleBetween(p.lrx, p.lrz, rx, rz); p.lrx = rx; p.lrz = rz;
+    if (p.swept * 180 / Math.PI >= SL.maxOrbit) release(w, p.side, true);
+    return true;
+  }
+  // inp: { steer -1..1, L: bool, R: bool, Lv: analog|null, Rv: analog|null }
+  function step(w, dt, inp) {
+    w.t += dt;
+    if (w.race === 'countdown') { w.count -= dt; if (w.count <= 0) { w.race = 'running'; w.raceT = 0; } }
+    else if (w.race === 'running') w.raceT += dt;
+    const moving = w.race !== 'countdown';
+    holdInput(w, 'L', moving && inp.L, inp.Lv, dt);
+    holdInput(w, 'R', moving && inp.R, inp.Rv, dt);
+    w.v += ((moving ? SHIP.cruise : 0) - w.v) * (1 - Math.exp(-SHIP.spool * dt));
+    let orbiting = false;
+    if (w.pair) { if (w.pair.t >= SL.life) release(w, w.pair.side, true); }
+    if (w.pair) orbiting = stepOrbit(w, dt);
+    if (!orbiting && moving) w.h -= clamp(inp.steer, -1, 1) * SHIP.yaw * Math.PI / 180 * dt;
+    // move: the engine along the nose, each boost along the line it was released on
+    const f = fwdOf(w.h), px = w.x, pz = w.z;
+    let vx = f.x * w.v, vz = f.z * w.v;
+    for (let i = w.boosts.length - 1; i >= 0; i--) { const b = w.boosts[i]; b.t += dt; if (b.t >= b.dur) { w.boosts.splice(i, 1); continue; } const s = boostShape(b); vx += b.dx * s; vz += b.dz * s; }
+    w.x += vx * dt; w.z += vz * dt;
+    // released pairs close on each other and annihilate
+    for (let i = w.closing.length - 1; i >= 0; i--) {
+      const c = w.closing[i], mx = (c.ax + c.bx) / 2, mz = (c.az + c.bz) / 2, half = Math.hypot(c.ax - mx, c.az - mz), mv = SL.drift / 2 * dt;
+      c.t += dt;
+      if (half <= mv + 2) { w.closing.splice(i, 1); w.events.push({ k: 'pop', x: mx, z: mz }); continue; }
+      const k = (half - mv) / half; c.ax = mx + (c.ax - mx) * k; c.az = mz + (c.az - mz) * k; c.bx = mx + (c.bx - mx) * k; c.bz = mz + (c.bz - mz) * k;
+    }
+    // gates
+    if (w.race === 'running') {
+      const g = GATES[ORDER[w.gate]];
+      const s0 = (px - g.x) * g.nx + (pz - g.z) * g.nz, s1 = (w.x - g.x) * g.nx + (w.z - g.z) * g.nz;
+      const lat = Math.abs((w.x - g.x) * -g.nz + (w.z - g.z) * g.nx);
+      if (s0 < 0 && s1 >= 0 && lat <= GATE_R) {
+        w.gate++; w.events.push({ k: 'gate' });
+        if (w.gate >= ORDER.length) { w.race = 'finished'; w.events.push({ k: 'finish', time: w.raceT }); }
+      }
+    }
+    if ((w.tick = (w.tick || 0) + 1) % 4 === 0) { w.trail.push(w.x, w.z); if (w.trail.length > 2 * 240) w.trail.splice(0, 2); }
+  }
+  // a plain pilot for the menu's attract mode (and the test hook): steer at the next gate, no slings
+  function botInput(w) {
+    const g = GATES[ORDER[Math.min(w.gate, ORDER.length - 1)]];
+    const d = Math.hypot(g.x - w.x, g.z - w.z), lead = clamp(d * 0.35, 0, 60);
+    const tx = g.x - g.nx * lead - w.x, tz = g.z - g.nz * lead - w.z;
+    const want = Math.atan2(tx, tz); let diff = want - w.h; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+    return { steer: clamp(-diff * 2.5, -1, 1), L: false, R: false, Lv: null, Rv: null };
+  }
+
+  // =====================================================================================================
+  // Rendering (three.js r128 + the Vessel Studio look)
+  // =====================================================================================================
+  const T = window.THREE, V3 = T && T.Vector3;
+  let renderer = null, scene, camera, look = null, hullG, trailLine, gateMeshes = [], holeA, holeW, orbitRing, reachRing, closingMeshes = [], pops = [];
+  const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.3, 'rgba(255,255,255,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return T ? new T.CanvasTexture(c) : null; })();
+  function sprite(color, size, opacity) { const s = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: opacity == null ? 0.9 : opacity, depthWrite: false, blending: T.AdditiveBlending })); s.scale.setScalar(size); return s; }
+  function makeHole(white) {                      // drawn far larger than its 1.6 u horizon, so it can be seen from the cockpit
+    const g = new T.Group();
+    if (white) { g.add(new T.Mesh(new T.SphereGeometry(4, 20, 14), new T.MeshBasicMaterial({ color: 0xffffff }))); g.add(sprite(0xd8fff6, 40, 0.9)); }
+    else {
+      g.add(new T.Mesh(new T.SphereGeometry(5, 24, 16), new T.MeshBasicMaterial({ color: 0x000000 })));
+      const disk = new T.Mesh(new T.TorusGeometry(9, 1.6, 8, 48), new T.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.95, blending: T.AdditiveBlending, depthWrite: false }));
+      disk.rotation.x = Math.PI / 2; g.add(disk); g.userData.disk = disk;
+      g.add(sprite(0xb9a4ff, 46, 0.55));
+      const beam = new T.Mesh(new T.CylinderGeometry(0.6, 2.4, 260, 8, 1, true), new T.MeshBasicMaterial({ color: 0xb9a4ff, transparent: true, opacity: 0.16, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide }));
+      beam.position.y = 130; g.add(beam);
+    }
+    g.visible = false; scene.add(g); return g;
+  }
+  function makeRing(color, opacity, width) {      // a flat band on the course plane, width as a share of the radius
+    const m = new T.Mesh(new T.RingGeometry(1 - width, 1, 128), new T.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: T.DoubleSide, blending: T.AdditiveBlending }));
+    m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); return m;
+  }
+  function initRender() {
+    if (!T) return false;
+    try { renderer = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: false }); } catch (e) { renderer = null; return false; }
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    $('stage').appendChild(renderer.domElement);
+    scene = new T.Scene();
+    camera = new T.PerspectiveCamera(70, 1, 0.5, 6000);
+    if (window.VesselStudioLook) { look = window.VesselStudioLook.install(scene, { field: 1600, prismScale: 3, fieldRadius: 520 }); look.placeField(new V3(150, 0, 220), 560, 160); }
+    else { scene.background = new T.Color(0x060918); scene.add(new T.HemisphereLight(0x9fbaff, 0x1a1230, 0.9)); }
+    // a faint floor grid so a flat course reads as flat
+    const grid = new T.GridHelper(2400, 60, 0x2b356b, 0x18204a); grid.position.set(150, -40, 220); grid.material.transparent = true; grid.material.opacity = 0.35; scene.add(grid);
+    // the hull: a slim dart in Jade
+    hullG = new T.Group();
+    const bodyM = new T.MeshStandardMaterial({ color: 0x13fff2, emissive: 0x0a5f5a, roughness: 0.35, metalness: 0.2, flatShading: true });
+    const body = new T.Mesh(new T.ConeGeometry(2.2, 11, 6), bodyM); body.rotation.x = Math.PI / 2; hullG.add(body);
+    const wing = new T.Mesh(new T.BoxGeometry(11, 0.5, 3.2), bodyM); wing.position.z = -2.5; hullG.add(wing);
+    const tail = new T.Mesh(new T.BoxGeometry(0.5, 3, 2.4), bodyM); tail.position.set(0, 1.4, -4.2); hullG.add(tail);
+    const eng = sprite(0x13fff2, 9, 0.9); eng.position.z = -6; hullG.add(eng); hullG.userData.eng = eng;
+    scene.add(hullG);
+    // the trail
+    const tg = new T.BufferGeometry(); tg.setAttribute('position', new T.BufferAttribute(new Float32Array(240 * 3), 3)); tg.setDrawRange(0, 0);
+    trailLine = new T.Line(tg, new T.LineBasicMaterial({ color: 0x13fff2, transparent: true, opacity: 0.55 })); trailLine.frustumCulled = false; scene.add(trailLine);
+    // gates
+    GATES.forEach((g, i) => {
+      const grp = new T.Group();
+      const ring = new T.Mesh(new T.TorusGeometry(GATE_R, 1.4, 10, 56), new T.MeshBasicMaterial({ color: 0x6680ff, transparent: true, opacity: 0.9 }));
+      grp.add(ring); grp.add(sprite(0x6680ff, 30, 0.25));
+      grp.position.set(g.x, 0, g.z); grp.lookAt(g.x + g.nx, 0, g.z + g.nz); scene.add(grp); gateMeshes.push({ grp, ring });
+    });
+    holeA = makeHole(false); holeW = makeHole(true);
+    orbitRing = makeRing(0xb9a4ff, 0.9, 0.025); reachRing = makeRing(0xb9a4ff, 0.3, 0.012);
+    for (let i = 0; i < 2; i++) closingMeshes.push({ a: makeHole(false), b: makeHole(true) });
+    onResize(); window.addEventListener('resize', onResize);
+    return true;
+  }
+  function onResize() {
+    if (!renderer) return;
+    const W = window.innerWidth, H = window.innerHeight; renderer.setSize(W, H, false);
+    camera.aspect = W / H;
+    // keep at least ~84 deg across, so a phone held upright still sees beside the hull
+    const hf = 84 * Math.PI / 180, vf = 2 * Math.atan(Math.tan(hf / 2) / camera.aspect) * 180 / Math.PI;
+    camera.userData.baseFov = clamp(vf, 62, 100); camera.fov = camera.userData.baseFov; camera.updateProjectionMatrix();
+  }
+  const camPos = T ? new V3(0, 20, -140) : null, camLook = T ? new V3(0, 0, 0) : null, camT = { lift: 0 };
+  function render(w, dt) {
+    if (!renderer) return;
+    const f = fwdOf(w.h), r = rightOf(w.h);
+    // hull, with a bank into the turn
+    hullG.position.set(w.x, 0, w.z); hullG.rotation.set(0, w.h, 0);
+    const bankWant = (w._steer || 0) * 0.5 + (w.pair && w.pair.caught ? (w.pair.side === 'L' ? -0.6 : 0.6) : 0);
+    hullG.userData.bank = lerp(hullG.userData.bank || 0, bankWant, 1 - Math.exp(-6 * dt)); hullG.rotateZ(hullG.userData.bank);
+    const boostNow = speedOf(w) - w.v; hullG.userData.eng.scale.setScalar(9 + clamp(boostNow, 0, 60) * 0.35);
+    // trail
+    const tp = trailLine.geometry.attributes.position, n = w.trail.length / 2;
+    for (let i = 0; i < n; i++) { tp.array[i * 3] = w.trail[i * 2]; tp.array[i * 3 + 1] = 0; tp.array[i * 3 + 2] = w.trail[i * 2 + 1]; }
+    tp.needsUpdate = true; trailLine.geometry.setDrawRange(0, n);
+    // gates: the next one lit amber, passed ones dim
+    const next = w.race === 'finished' ? -1 : ORDER[w.gate];
+    gateMeshes.forEach((m, i) => { m.ring.material.color.setHex(i === next ? 0xffb347 : 0x6680ff); m.ring.material.opacity = i === next ? 1 : 0.45; m.grp.scale.setScalar(i === next ? 1 + 0.04 * Math.sin(w.t * 5) : 1); });
+    // the held pair, its orbit ring and (A) the reach ring it can catch you from
+    const p = w.pair;
+    holeA.visible = holeW.visible = orbitRing.visible = !!p; reachRing.visible = !!p && !p.caught;
+    if (p) {
+      holeA.position.set(p.ax, 0, p.az); holeW.position.set(p.bx, 0, p.bz);
+      holeA.userData.disk.rotation.z = w.t * 2;
+      orbitRing.position.set(p.ax, 0.2, p.az); orbitRing.scale.setScalar(p.r); orbitRing.material.opacity = p.caught ? 0.95 : 0.6;
+      reachRing.position.set(p.ax, 0.2, p.az); reachRing.scale.setScalar(p.r * SL.reach);
+    }
+    closingMeshes.forEach((m, i) => { const c = w.closing[i]; m.a.visible = m.b.visible = !!c; if (c) { m.a.position.set(c.ax, 0, c.az); m.b.position.set(c.bx, 0, c.bz); m.a.userData.disk.rotation.z = w.t * 3; } });
+    for (let i = pops.length - 1; i >= 0; i--) { const s = pops[i]; s.userData.t += dt; const k = s.userData.t / 0.6; if (k >= 1) { scene.remove(s); pops.splice(i, 1); continue; } s.scale.setScalar(20 + 120 * k); s.material.opacity = 0.9 * (1 - k); }
+    // camera: close behind; while you circle a hole it lifts and widens to keep the hole in frame (same for A and B)
+    const circling = !!(p && p.caught);
+    camT.lift = lerp(camT.lift, circling ? 1 : 0, 1 - Math.exp(-2.5 * dt));
+    const back = lerp(26, 50, camT.lift), up = lerp(8, 42, camT.lift);
+    const want = new V3(w.x - f.x * back, up, w.z - f.z * back);
+    camPos.lerp(want, 1 - Math.exp(-8 * dt));
+    const lookAt = new V3(w.x + f.x * 40, 0, w.z + f.z * 40);
+    if (p) { const mid = new V3((w.x + p.ax) / 2, 0, (w.z + p.az) / 2); lookAt.lerp(mid, 0.75 * camT.lift); }
+    camLook.lerp(lookAt, 1 - Math.exp(-8 * dt));
+    camera.position.copy(camPos); camera.lookAt(camLook);
+    camera.fov = camera.userData.baseFov + clamp(boostNow, 0, 50) * 0.18 + 6 * camT.lift; camera.updateProjectionMatrix();
+    if (look) look.update(dt);
+    renderer.render(scene, camera);
+  }
+  function popAt(x, z) { if (!renderer) return; const s = sprite(0xffffff, 20, 0.9); s.position.set(x, 0, z); s.userData.t = 0; scene.add(s); pops.push(s); }
+  let marker = null;
+
+  // =====================================================================================================
+  // Input: keyboard, gamepad, touch - all into one input object
+  // =====================================================================================================
+  const keys = new Set();
+  window.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) return;
+    keys.add(e.code);
+    if (mode === 'play') {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) e.preventDefault();
+      if (e.code === 'KeyR') restart();
+      if (e.code === 'Escape') toMenu();
+    }
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.code));
+  window.addEventListener('blur', () => keys.clear());
+  const touch = { steer: 0, L: false, R: false, id: null, x0: 0 };
+  function bindTouch() {
+    const zone = $('steerZone'), knob = $('steerKnob');
+    zone.addEventListener('pointerdown', (e) => { touch.id = e.pointerId; touch.x0 = e.clientX; try { zone.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ } knob.style.display = 'block'; knob.style.left = e.clientX + 'px'; knob.style.top = e.clientY + 'px'; e.preventDefault(); });
+    zone.addEventListener('pointermove', (e) => { if (e.pointerId !== touch.id) return; touch.steer = clamp((e.clientX - touch.x0) / 60, -1, 1); knob.style.left = (touch.x0 + touch.steer * 60) + 'px'; });
+    const up = (e) => { if (e.pointerId !== touch.id) return; touch.id = null; touch.steer = 0; knob.style.display = 'none'; };
+    zone.addEventListener('pointerup', up); zone.addEventListener('pointercancel', up);
+    for (const [id, side] of [['tL', 'L'], ['tR', 'R']]) {
+      const b = $(id);
+      b.addEventListener('pointerdown', (e) => { touch[side] = true; b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ } e.preventDefault(); });
+      const off = () => { touch[side] = false; b.classList.remove('on'); };
+      b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+      b.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+  }
+  function readInput() {
+    let steer = 0, L = false, R = false, Lv = null, Rv = null;
+    if (keys.has('ArrowLeft') || keys.has('KeyA')) steer -= 1;
+    if (keys.has('ArrowRight') || keys.has('KeyD')) steer += 1;
+    if (keys.has('KeyQ') || keys.has('KeyJ')) L = true;
+    if (keys.has('KeyE') || keys.has('KeyL')) R = true;
+    try {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (const gp of pads) {
+        if (!gp) continue;
+        const ax = gp.axes[0] || 0; if (Math.abs(ax) > 0.15) steer += ax;
+        const lt = gp.buttons[6] ? gp.buttons[6].value : 0, rt = gp.buttons[7] ? gp.buttons[7].value : 0;
+        if (lt > 0.08) { L = true; Lv = lt; } if (rt > 0.08) { R = true; Rv = rt; }
+        if (gp.buttons[14] && gp.buttons[14].pressed) steer -= 1; if (gp.buttons[15] && gp.buttons[15].pressed) steer += 1;
+        break;
+      }
+    } catch (e) { /* gamepads not allowed in this frame */ }
+    steer += touch.steer; L = L || touch.L; R = R || touch.R;
+    return { steer: clamp(steer, -1, 1), L, R, Lv, Rv };
+  }
+
+  // =====================================================================================================
+  // Screens and flow
+  // =====================================================================================================
+  let mode = 'menu', letter = 'A', world = newWorld(mechOf('A')), attract = newWorld('catch'), base = { slings: 0, catches: 0, sweet: 0 };
+  attract.race = 'running'; attract.v = SHIP.cruise;
+  function controlsHtml() {
+    return PHONE
+      ? '<span><kbd>Left thumb</kbd></span><span>Drag to steer</span><span><kbd>Right thumb</kbd></span><span>Hold a hole button to drop a black hole on that side</span><span><kbd>Tip</kbd></span><span>Turn your phone sideways for a wider view</span>'
+      : '<span><kbd>A</kbd> <kbd>D</kbd> or <kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>Steer</span><span><kbd>Q</kbd> / <kbd>E</kbd> hold</span><span>Black hole on your left / right (gamepad: LT / RT)</span><span><kbd>R</kbd> <kbd>Esc</kbd></span><span>Restart the lap / back to this menu</span>';
+  }
+  function tileMeta(L) {
+    const s = stats[L]; if (!s.starts) return 'Not flown yet';
+    return 'Flown ' + fmt(s.secs) + (s.best != null ? ' · best lap ' + s.best.toFixed(1) + ' s' : ' · no lap yet');
+  }
+  const flownEnough = () => stats.A.secs >= 10 && stats.B.secs >= 10;
+  function showCard(id) { for (const c of ['cardMenu', 'cardVote', 'cardThanks']) $(c).hidden = c !== id; $('overlay').hidden = !id; }
+  function refreshMenu() {
+    $('metaA').textContent = tileMeta('A'); $('metaB').textContent = tileMeta('B');
+    $('controlsList').innerHTML = controlsHtml();
+    const ok = flownEnough(); $('toVote').disabled = !ok;
+    const myVote = store.get('ab.vote', null);
+    $('voteNote').textContent = ok ? (myVote && myVote.test === TEST_ID ? 'You picked ' + myVote.pick + '. You can change it.' : 'Ready when you are.') : 'Fly both for 10 seconds or more to unlock the vote.';
+  }
+  function toMenu() {
+    mode = 'menu'; document.body.classList.remove('playing');
+    $('hudTop').hidden = $('help').hidden = true; $('gauge').style.display = 'none'; $('squeeze').style.display = 'none'; $('countdown').style.opacity = 0;
+    if (marker) marker.hide();
+    refreshMenu(); showCard('cardMenu'); $(letter === 'A' ? 'flyA' : 'flyB').focus({ preventScroll: true });
+  }
+  function fly(L) {
+    letter = L; world = newWorld(mechOf(L)); mode = 'play'; stats[L].starts++; saveStats();
+    base = { slings: stats[L].slings, catches: stats[L].catches, sweet: stats[L].sweet };
+    document.body.classList.add('playing'); showCard(null);
+    $('hudTop').hidden = false; $('help').hidden = false;
+    const lt = $('hudLetter'); lt.textContent = L; lt.className = 'letter ' + L;
+    $('help').innerHTML = '<b>' + L + ':</b> ' + MECH[mechOf(L)].how.replace('on that side', PHONE ? 'on that side' : 'on that side (Q left, E right)');
+    camT.lift = 0; camPos && camPos.set(START.x, 20, START.z - 60);
+    $('help').classList.remove('faded'); clearTimeout(helpFade); if (PHONE) helpFade = setTimeout(() => $('help').classList.add('faded'), 8000);
+  }
+  let helpFade = 0;
+  function restart() { if (mode === 'play') fly(letter); }
+  $('flyA').addEventListener('click', () => fly('A'));
+  $('flyB').addEventListener('click', () => fly('B'));
+  $('btnRestart').addEventListener('click', restart);
+  $('btnMenu').addEventListener('click', toMenu);
+
+  // ---- flash text and the HUD ----
+  let flashT = 0;
+  function flash(text, color) { const el = $('flash'); el.textContent = text; el.style.color = color || '#e8ecff'; el.style.opacity = 1; flashT = 1.4; }
+  function handleEvents(w, live) {
+    for (const e of w.events) {
+      if (!live) continue;
+      if (e.k === 'pop') popAt(e.x, e.z);
+      else if (e.k === 'caught') flash('Caught', '#b9a4ff');
+      else if (e.k === 'sweet') flash('Sweet spot  +' + Math.round(e.kick) + ' u/s', '#7dff9a');
+      else if (e.k === 'early') flash('Early  +' + Math.round(e.kick) + ' u/s', '#ffd27a');
+      else if (e.k === 'late') flash('Late  +' + Math.round(e.kick) + ' u/s', '#ffd27a');
+      else if (e.k === 'nocatch') flash('It never caught you', '#ff6b8a');
+      else if (e.k === 'fling') flash('Flung  +' + Math.round(e.kick) + ' u/s', '#7dff9a');
+      else if (e.k === 'finish') {
+        const s = stats[letter]; s.laps++; if (s.best == null || e.time < s.best) s.best = e.time; saveStats();
+        flash('Lap ' + e.time.toFixed(1) + ' s' + (s.best === e.time ? '  best' : ''), '#ffb347');
+        setTimeout(() => { if (mode === 'play' && world.race === 'finished') { $('help').classList.remove('faded'); $('help').innerHTML = 'Lap done in <b>' + e.time.toFixed(1) + ' s</b>. Press <b>' + (PHONE ? 'Restart' : 'R') + '</b> to go again, or <b>Menu</b> to try the other one and vote.'; } }, 1200);
+      }
+    }
+    w.events.length = 0;
+  }
+  const gArc = (a0, a1) => { const P = (a) => { const t = Math.PI - a; return (84 + 70 * Math.cos(t)).toFixed(1) + ' ' + (84 - 70 * Math.sin(t)).toFixed(1); }; return 'M ' + P(a0) + ' A 70 70 0 0 1 ' + P(a1); };
+  $('gArcBg').setAttribute('d', gArc(0, Math.PI));
+  $('gArcWin').setAttribute('d', gArc((SL.sweet - SL.half) * Math.PI / 180, (SL.sweet + SL.half) * Math.PI / 180));
+  function updateHud(w) {
+    $('hudGate').innerHTML = w.race === 'finished' ? 'Lap <b>done</b>' : 'Gate <b>' + Math.min(w.gate + 1, ORDER.length) + '/' + ORDER.length + '</b>';
+    $('hudTime').innerHTML = '<b>' + fmt(w.race === 'countdown' ? 0 : w.raceT) + '</b>';
+    $('hudSpeed').innerHTML = '<b>' + Math.round(speedOf(w)) + '</b> u/s';
+    const cd = $('countdown'); if (w.race === 'countdown') { cd.textContent = Math.ceil(w.count); cd.style.opacity = 1; } else if (w.raceT < 0.6 && w.race === 'running') { cd.textContent = 'GO'; cd.style.opacity = 1; } else cd.style.opacity = 0;
+    // A's timing gauge while circling: degrees swept round the hole, the green window is the full boost
+    const p = w.pair, g = $('gauge');
+    if (p && p.caught && w.mech === 'catch') {
+      g.style.display = 'block'; const deg = clamp(p.swept * 180 / Math.PI, 0, 180), a = Math.PI - deg * Math.PI / 180;
+      $('gNeedle').setAttribute('x2', (84 + 70 * Math.cos(a)).toFixed(1)); $('gNeedle').setAttribute('y2', (84 - 70 * Math.sin(a)).toFixed(1));
+      const inWin = sweetSpot(p.swept * 180 / Math.PI) >= 0.999; $('gNeedle').setAttribute('stroke', inWin ? '#7dff9a' : '#ffffff');
+      $('gCap').textContent = inWin ? 'Let go now' : deg < SL.sweet ? 'Let go in the green' : 'Past the green';
+    } else g.style.display = 'none';
+    // the squeeze meter while a hole is held
+    const sq = $('squeeze'), hd = p ? w.holds[p.side] : null;
+    if (hd && hd.on) { sq.style.display = 'block'; $('sqBar').style.width = Math.round(hd.live * 100) + '%'; $('sqLabel').textContent = (w.mech === 'catch' && !p.caught ? 'Hole set, fly past it · ' : '') + 'squeeze ' + Math.round(hd.live * 100) + '%' + (hd.analog ? '' : ' (hold longer)'); }
+    else sq.style.display = 'none';
+    if (marker && renderer) {
+      if (w.race !== 'finished') { const gi = ORDER[w.gate], gg = GATES[gi]; marker.set(camera, new V3(gg.x, 0, gg.z), 'Gate ' + (w.gate + 1) + ' · ' + Math.round(Math.hypot(gg.x - w.x, gg.z - w.z)) + ' u', '#ffb347', window.innerWidth, window.innerHeight); }
+      else marker.hide();
+    }
+  }
+
+  // ---- the frame loop (fixed 120 Hz physics step) ----
+  let last = performance.now(), acc = 0;
+  const DT = 1 / 120;
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (mode === 'play') {
+      acc += dt; const inp = readInput(); world._steer = inp.steer;
+      while (acc >= DT) { step(world, DT, inp); acc -= DT; }
+      if (world.race === 'running') { stats[letter].secs += dt; }
+      const s = stats[letter]; s.slings = base.slings + world.slings; s.catches = base.catches + world.catches; s.sweet = base.sweet + world.sweet;
+      handleEvents(world, true); updateHud(world); render(world, dt);
+    } else {
+      acc += dt; const inp = botInput(attract); attract._steer = inp.steer;
+      while (acc >= DT) { step(attract, DT, inp); acc -= DT; }
+      if (attract.race === 'finished') { attract.race = 'running'; attract.gate = 0; }
+      attract.events.length = 0; render(attract, dt);
+    }
+    if (flashT > 0) { flashT -= dt; if (flashT <= 0) $('flash').style.opacity = 0; }
+    requestAnimationFrame(frame);
+  }
+
+  // =====================================================================================================
+  // The vote: saved to the artifact's shared store (one document per viewer), with a copy-paste fallback
+  // =====================================================================================================
+  let db = null, uid = null, pick = null, tallyOff = null;
+  const capsReady = (async () => {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      const [d, u] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      db = d; if (u) { try { uid = await u.id(); } catch (e) { uid = null; } }
+    } catch (e) { db = null; }
+  })();
+  function setPick(L) { pick = L; $('pickA').setAttribute('aria-pressed', L === 'A'); $('pickB').setAttribute('aria-pressed', L === 'B'); $('voteSend').disabled = !L; }
+  $('toVote').addEventListener('click', () => {
+    const prev = store.get('ab.vote', null);
+    $('vmetaA').textContent = tileMeta('A'); $('vmetaB').textContent = tileMeta('B');
+    if (prev && prev.test === TEST_ID) { setPick(prev.pick); $('why').value = prev.why || ''; } else setPick(null);
+    $('voteStatus').textContent = ''; showCard('cardVote'); $('pickA').focus({ preventScroll: true });
+  });
+  $('pickA').addEventListener('click', () => setPick('A'));
+  $('pickB').addEventListener('click', () => setPick('B'));
+  $('voteBack').addEventListener('click', toMenu);
+  $('changeVote').addEventListener('click', () => $('toVote').click());
+  $('flyAgain').addEventListener('click', toMenu);
+  function answerText(v) {
+    const m = MECH[v.mech];
+    return 'Stoat sling A/B: I liked ' + v.pick + ' (' + m.short + ').' + (v.why ? ' Why: ' + v.why : '') +
+      ' Best laps: A ' + (stats.A.best != null ? stats.A.best.toFixed(1) + ' s' : '-') + ', B ' + (stats.B.best != null ? stats.B.best.toFixed(1) + ' s' : '-') + '.';
+  }
+  $('voteSend').addEventListener('click', async () => {
+    if (!pick) return;
+    const v = {
+      test: TEST_ID, pick, mech: mechOf(pick), why: $('why').value.trim().slice(0, 600),
+      assign: { A: assign.A, B: assign.B },
+      flew: { catch: statFor('catch'), orbit: statFor('orbit') },
+      device: PHONE ? 'phone' : 'pc', at: Date.now(),
+    };
+    store.set('ab.vote', v);
+    $('voteSend').disabled = true; $('voteStatus').textContent = 'Saving...'; $('voteStatus').className = 'note status';
+    await capsReady;
+    let saved = false, why = '';
+    if (db && uid) {
+      try { await db.doc('votes/' + uid).set(v); saved = true; }
+      catch (e) { why = e && e.code === 'invalid_argument' ? 'This link lets you look but not save.' : 'The save did not go through.'; }
+    } else why = 'Votes save when you open this page signed in to claude.ai with the team\'s link.';
+    showThanks(v, saved, why);
+  });
+  function statFor(mech) { const L = assign.A === mech ? 'A' : 'B', s = stats[L]; return { letter: L, secs: Math.round(s.secs), laps: s.laps, best: s.best != null ? +s.best.toFixed(2) : null, slings: s.slings, catches: s.catches, sweet: s.sweet }; }
+  function showThanks(v, saved, why) {
+    $('thanksHead').textContent = 'You liked ' + v.pick + '. Here\'s what you were flying';
+    $('reveal').innerHTML = ['A', 'B'].map((L) => { const m = MECH[mechOf(L)]; return '<div class="item"><span class="letter ' + L + '">' + L + '</span><div><b>' + m.name + '.</b> <span class="dim">' + m.origin + '</span><p>' + m.reveal + '</p></div></div>'; }).join('');
+    const st = $('saveStatus');
+    if (saved) { st.textContent = 'Saved. Thanks for flying.'; st.className = 'status ok'; }
+    else { st.textContent = why + ' Use "Copy my answer" and send it to whoever shared this link.'; st.className = 'status bad'; }
+    $('copyBox').value = answerText(v); $('copyBox').hidden = true;
+    showCard('cardThanks');
+    watchTally();
+  }
+  $('copyAnswer').addEventListener('click', () => {
+    const t = $('copyBox').value, box = $('copyBox');
+    const done = () => { $('copyAnswer').textContent = 'Copied'; setTimeout(() => { $('copyAnswer').textContent = 'Copy my answer'; }, 1600); };
+    try { navigator.clipboard.writeText(t).then(done, () => { box.hidden = false; box.select(); }); } catch (e) { box.hidden = false; box.select(); }
+  });
+  function watchTally() {
+    if (!db || tallyOff) return;
+    try {
+      tallyOff = db.collection('votes').onSnapshot((snap) => {
+        let c = 0, o = 0; for (const d of snap.docs) { const x = d.data(); if (!x || x.test !== TEST_ID) continue; if (x.mech === 'catch') c++; else if (x.mech === 'orbit') o++; }
+        const n = c + o, el = $('tally'); if (!n) { el.hidden = true; return; }
+        const pc = Math.round(c / n * 100), po = 100 - pc;
+        el.innerHTML = '<span class="dim">Everyone so far (' + n + ' vote' + (n === 1 ? '' : 's') + ')</span><div class="bar">' +
+          (c ? '<span style="width:' + pc + '%;background:#b9a4ff">Catch ' + pc + '%</span>' : '') + (o ? '<span style="width:' + po + '%;background:#ffd27a">Orbit ' + po + '%</span>' : '') + '</div>';
+        el.hidden = false;
+      }, () => { $('tally').hidden = true; });
+    } catch (e) { /* no tally */ }
+  }
+
+  // ---- boot ----
+  const ok = initRender();
+  if (!ok) { $('stage').innerHTML = '<p style="padding:24px;font-family:var(--display)">This needs WebGL to draw the course. Try a recent Chrome, Edge, Safari or Firefox.</p>'; }
+  if (ok && window.VesselStudioLook) marker = window.VesselStudioLook.marker(document.body);
+  else if (ok) { const tryLater = setInterval(() => { if (window.VesselStudioLook) { marker = window.VesselStudioLook.marker(document.body); clearInterval(tryLater); } }, 300); setTimeout(() => clearInterval(tryLater), 5000); }
+  if (PHONE) bindTouch();
+  refreshMenu();
+  requestAnimationFrame((t) => { last = t; requestAnimationFrame(frame); });
+
+  // the test hook (headless checks drive the same step the page flies)
+  window.__abTest = { SHIP, SL, GATES, ORDER, MECH, newWorld, step, botInput, speedOf, sweetSpot, orbitRadius, get assign() { return assign; }, get world() { return world; }, get stats() { return stats; }, fly, toMenu };
+})();
+</script>

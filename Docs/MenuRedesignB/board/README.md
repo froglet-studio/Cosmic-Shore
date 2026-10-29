@@ -16,9 +16,20 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-28 from canvas version `1793216666-7774`: Rev 3 to Rev 36, 309 boards on 37 pages. The canvas's launch page is `rev36`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-10-29 from canvas version `1793256082-4802`: Rev 3 to Rev 37, 317 boards on 38 pages. The canvas's launch page is `rev37`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
+
+### Rev 37 - Connection: lost, reconnecting, back online, rejoin  (page `rev37`)
+
+- [`R37Flow.dc.html`](R37Flow.dc.html) - Rev 37 Flow - every state in one board: pick a state to play it (interactive) - interactive
+- [`R37Lost.dc.html`](R37Lost.dc.html) - Rev 37 Lost - menu: Connection Lost, RECONNECT or CONTINUE OFFLINE
+- [`R37Reconnecting.dc.html`](R37Reconnecting.dc.html) - Rev 37 Reconnecting - reconnecting: the line runs, the buttons wait
+- [`R37Online.dc.html`](R37Online.dc.html) - Rev 37 Online - back online: the window closes itself
+- [`R37Match.dc.html`](R37Match.dc.html) - Rev 37 Match - lost in a match: over the HUD, your seat is held for a while
+- [`R37HostLeft.dc.html`](R37HostLeft.dc.html) - Rev 37 HostLeft - the host left: the match is over, back to Home
+- [`R37Rejoin.dc.html`](R37Rejoin.dc.html) - Rev 37 Rejoin - boot while your match still runs: REJOIN or NOT NOW
+- [`R37Notes.dc.html`](R37Notes.dc.html) - Rev 37 - notes: every state, its words, the rejoin rules and the build
 
 ### Rev 36 - FTUE, redrawn: the captain arrives  (page `rev36`)
 

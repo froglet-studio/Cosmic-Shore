@@ -86,7 +86,8 @@ VESSELS = {
     "Serpent":  "8a288448ab55edc46ac841a5f2e53d83",
     "Sparrow":  "7b7053dd065edb54baa3b831b90f4985",
     "Scarab":   "b136d82d275e0f8ea1feef29f0d416a4",
-    "Butterfly": "fe4abf38579d7f84baf16a532ed4a015",
+    # The Tiger Moth replaced the Butterfly on 2026-10-29 (R_VesselActions/TIGER_MOTH.md): the Butterfly's four modes fly it.
+    "TigerMoth": "d46d96ae184a444faf9a09a2b793a07d",
     "Grizzly":  "312ea06c4539cdc46b027615a590c94b",
     "Stoat":    "cc163188820f4e7a985561bc609da2e0",
     "Thresher": "8e4f2a9c1b3d4e6f7a8b9c0d1e2f3a4b",
@@ -102,7 +103,7 @@ VESSELS = {
 VESSEL_CLASS_ID = {
     "Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
     "Serpent": 7, "Termite": 8, "Falcon": 9, "Shrike": 10, "Sparrow": 11, "Scarab": 12,
-    "Butterfly": 13, "Thresher": 14, "Stoat": 15, "Wrasse": 19, "Meerkat": 28,
+    "Thresher": 14, "Stoat": 15, "Wrasse": 19, "Meerkat": 28, "TigerMoth": 29,
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──
