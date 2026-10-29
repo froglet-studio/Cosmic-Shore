@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -29,6 +30,17 @@ namespace CosmicShore.Gameplay
         public int HairpinEvery;             // every Nth corner is a hairpin (0 = none) - see IsHairpinCorner
         public float HairpinMinDegrees;      // a hairpin turns at least this much...
         public float HairpinMaxDegrees;      // ...and at most this much
+
+        // ── Plan 1 (SwitchbackFunType.Plan1_LevelShapes / Combined) ─────────
+        // Every one of these defaults to "off", and off is the shipped behaviour bit for bit: the Baseline ladder
+        // never sets them, and SwitchbackCourseTests.BaselineIsUnchanged pins that.
+        public int HairpinRun;               // hairpins in a row inside each HairpinEvery block (0 or 1 = one)
+        public SwitchbackCornerStyle CornerStyle; // how ordinary corners are drawn (None = the shipped random cone)
+        public int NeedleEvery;              // every Nth ordinary corner (counted) is a needle ring (0 = none)
+        public float NeedleScale;            // a needle's mouth, as a share of RingRadius (floored at NeedleMinRadius)
+
+        /// <summary>A needle ring never shrinks below five Dolphin hulls (14.3 u): tight, never a precision cliff.</summary>
+        public const float NeedleMinRadius = DolphinHullRadius * 5f;
 
         /// <summary>
         /// The shipped course shape per intensity: ONE NEW DEMAND PER LEVEL (Yash, 2026-10-26,
@@ -91,6 +103,66 @@ namespace CosmicShore.Gameplay
             };
             return s;
         }
+
+        /// <summary>
+        /// The course shape of a fun type's world. Anything but <see cref="SwitchbackFunTypes.HasLevelShapes"/> is the
+        /// shipped ladder (<see cref="ForIntensity(int)"/>) unchanged - Plan 2 and Plan 3 change what is ON the course
+        /// and how it is scored, not its shape.
+        ///
+        /// <para><b>Plan 1, level shapes</b> (SWITCHBACK.md, "Fun types"): each level is a SHAPE you learn.</para>
+        /// <list type="number">
+        /// <item><b>I1, arcs:</b> ordinary corners all bend the same way, so the course flows in long sweeping arcs.
+        /// No hairpins, no needles.</item>
+        /// <item><b>I2, S-bends:</b> corners alternate their bend, a hairpin every THIRD corner (90-130), a needle
+        /// ring every 4th ordinary corner.</item>
+        /// <item><b>I3, long straight into a hairpin:</b> the leg arriving at each hairpin is drawn long (spend a
+        /// charge down it, then drift), a hairpin every SECOND corner (100-140), a needle every 3rd ordinary corner.</item>
+        /// <item><b>I4, punchy:</b> short legs, corners pushed to the cap, BACK-TO-BACK hairpins (two of every three
+        /// corners, 110-150), a needle every 2nd ordinary corner.</item>
+        /// </list>
+        /// The hairpin share climbs 0, 1/3, 1/2, 2/3; mouths, turn cap and jitter keep the shipped monotonic ladder;
+        /// every leg stays over the 360 u AI approach floor.
+        /// </summary>
+        public static SwitchbackCourseSettings ForIntensity(int intensity, SwitchbackFunType funType)
+        {
+            if (!SwitchbackFunTypes.HasLevelShapes(funType)) return ForIntensity(intensity);
+
+            int i = Mathf.Clamp(intensity, 1, 4);
+            return new SwitchbackCourseSettings
+            {
+                MinStep = new[] { 420f, 400f, 380f, 360f }[i - 1],
+                MaxStep = new[] { 620f, 600f, 700f, 460f }[i - 1],
+                MaxTurnDegrees = new[] { 40f, 45f, 50f, 55f }[i - 1],
+                AxisJitterDegrees = new[] { 15f, 25f, 30f, 40f }[i - 1],
+                MaxPresentDegrees = new[] { 40f, 50f, 55f, 60f }[i - 1],
+                HairpinEvery = new[] { 0, 3, 2, 3 }[i - 1],
+                HairpinRun = new[] { 0, 1, 1, 2 }[i - 1],
+                HairpinMinDegrees = new[] { 0f, 90f, 100f, 110f }[i - 1],
+                HairpinMaxDegrees = new[] { 0f, 130f, 140f, 150f }[i - 1],
+                RingRadius = RingRadiusForIntensity(i),
+                MinSeparation = new[] { 260f, 220f, 200f, 170f }[i - 1],
+                CornerStyle = new[]
+                {
+                    SwitchbackCornerStyle.Arcs, SwitchbackCornerStyle.SBends,
+                    SwitchbackCornerStyle.LongIntoHairpin, SwitchbackCornerStyle.Punchy,
+                }[i - 1],
+                NeedleEvery = new[] { 0, 4, 3, 2 }[i - 1],
+                NeedleScale = 0.65f,
+            };
+        }
+
+        /// <summary>Of every <see cref="HairpinEvery"/> corners, how many are hairpins (0 when there are none).</summary>
+        public float HairpinShare => HairpinEvery > 0 ? Mathf.Min(Mathf.Max(1, HairpinRun), HairpinEvery) / (float)HairpinEvery : 0f;
+    }
+
+    /// <summary>How a course draws its ordinary (non-hairpin) corners: Plan 1's per-intensity corner pattern.</summary>
+    public enum SwitchbackCornerStyle
+    {
+        None = 0,            // the shipped random cone (Baseline)
+        Arcs = 1,            // every corner bends the same way: long flowing arcs
+        SBends = 2,          // the bend flips every corner
+        LongIntoHairpin = 3, // the leg arriving at a hairpin is long, the others shorter
+        Punchy = 4,          // corners pushed toward the turn cap
     }
 
     /// <summary>
@@ -184,8 +256,12 @@ namespace CosmicShore.Gameplay
                 bool hairpin = IsHairpinCorner(pts.Count - 1, s);
                 Vector3 h = hairpin
                     ? DeflectBetween(ref rng, prevHeading, s.HairpinMinDegrees, s.HairpinMaxDegrees)
-                    : RaceCourseGeometry.Deflect(ref rng, prevHeading, s.MaxTurnDegrees);
-                float step = rng.Range(s.MinStep, s.MaxStep);
+                    : s.CornerStyle == SwitchbackCornerStyle.None
+                        ? RaceCourseGeometry.Deflect(ref rng, prevHeading, s.MaxTurnDegrees)
+                        : StyledCorner(ref rng, headings, s);
+                float step = s.CornerStyle == SwitchbackCornerStyle.LongIntoHairpin
+                    ? LongIntoHairpinStep(ref rng, pts.Count, s)
+                    : rng.Range(s.MinStep, s.MaxStep);
                 Vector3 cand = p + h * step;
                 float r = cand.magnitude;
 
@@ -242,7 +318,8 @@ namespace CosmicShore.Gameplay
                 }
 
                 float jitter = Mathf.Max(0f, Mathf.Min(s.AxisJitterDegrees, s.MaxPresentDegrees - halfTurn));
-                gates.Add(new RaceGate(pts[i], RaceCourseGeometry.Deflect(ref rng, axis, jitter), s.RingRadius));
+                float radius = IsNeedleGate(i, s) ? NeedleRadius(s) : s.RingRadius;
+                gates.Add(new RaceGate(pts[i], RaceCourseGeometry.Deflect(ref rng, axis, jitter), radius));
             }
 
             return gates;
@@ -256,8 +333,85 @@ namespace CosmicShore.Gameplay
         /// <see cref="SwitchbackCourseSettings.HairpinEvery"/>th corner, never the first or last gate (neither is a
         /// corner). Public so the tests and the features layer agree on which corners are hairpins.
         /// </summary>
-        public static bool IsHairpinCorner(int gateIndex, in SwitchbackCourseSettings s) =>
-            s.HairpinEvery > 0 && gateIndex >= 1 && gateIndex < s.GateCount - 1 && gateIndex % s.HairpinEvery == 0;
+        /// <para>With <see cref="SwitchbackCourseSettings.HairpinRun"/> above one, the LAST <c>HairpinRun</c> corners
+        /// of each block of <c>HairpinEvery</c> are hairpins, back to back. A run of one is the shipped rule exactly
+        /// (<c>(i - 1) % n == n - 1</c> is <c>i % n == 0</c>).</para>
+        public static bool IsHairpinCorner(int gateIndex, in SwitchbackCourseSettings s)
+        {
+            if (s.HairpinEvery <= 0 || gateIndex < 1 || gateIndex >= s.GateCount - 1) return false;
+            int run = s.HairpinRun > 1 ? Mathf.Min(s.HairpinRun, s.HairpinEvery) : 1;
+            return run == 1
+                ? gateIndex % s.HairpinEvery == 0
+                : (gateIndex - 1) % s.HairpinEvery >= s.HairpinEvery - run;
+        }
+
+        /// <summary>
+        /// Whether gate <paramref name="gateIndex"/> is a needle ring (Plan 1): every
+        /// <see cref="SwitchbackCourseSettings.NeedleEvery"/>th ORDINARY corner, counted from the start - never the
+        /// first gate, the last, or a hairpin (a hairpin is hard enough).
+        /// </summary>
+        public static bool IsNeedleGate(int gateIndex, in SwitchbackCourseSettings s)
+        {
+            if (s.NeedleEvery <= 0 || gateIndex < 1 || gateIndex >= s.GateCount - 1 || IsHairpinCorner(gateIndex, s))
+                return false;
+            int ordinal = 0;
+            for (int k = 1; k <= gateIndex; k++)
+                if (!IsHairpinCorner(k, s)) ordinal++;
+            return ordinal % s.NeedleEvery == 0;
+        }
+
+        /// <summary>A needle ring's mouth: <c>NeedleScale</c> of the ring, never under <see cref="SwitchbackCourseSettings.NeedleMinRadius"/>
+        /// (and never wider than the ring itself).</summary>
+        public static float NeedleRadius(in SwitchbackCourseSettings s) =>
+            Mathf.Min(s.RingRadius, Mathf.Max(s.RingRadius * (s.NeedleScale > 0f ? s.NeedleScale : 0.65f),
+                                              SwitchbackCourseSettings.NeedleMinRadius));
+
+        /// <summary>
+        /// An ordinary corner drawn to Plan 1's pattern. The bend is a rotation of the heading about a SPIN axis
+        /// perpendicular to it, by an angle inside the turn cap - so the cap holds by construction, as for the
+        /// shipped cone. The previous corner's spin (from the two last headings) is what "the same way" and
+        /// "the other way" are measured against; a little wobble keeps an arc from closing into a circle.
+        /// </summary>
+        /// <summary>Share of Arcs / S-bend corners that break the pattern with a random bend.</summary>
+        public const float PatternBreakShare = 0.3f;
+
+        static Vector3 StyledCorner(ref RaceCourseGeometry.Rng rng, List<Vector3> headings, in SwitchbackCourseSettings s)
+        {
+            Vector3 prev = headings[headings.Count - 1];
+            float minShare = s.CornerStyle == SwitchbackCornerStyle.Punchy ? 0.7f : 0.45f;
+            float angle = rng.Range(minShare, 1f) * s.MaxTurnDegrees * Mathf.Deg2Rad;
+
+            Vector3 spin;
+            Vector3 lastSpin = headings.Count >= 2 ? Vector3.Cross(headings[headings.Count - 2], prev) : Vector3.zero;
+            // The pattern is a strong TENDENCY, not a rule: one corner in PatternBreakShare breaks it. A rule cannot
+            // be backtracked out of - 25 same-way arcs close into a loop that crosses itself in the shell.
+            bool patterned = (s.CornerStyle == SwitchbackCornerStyle.Arcs || s.CornerStyle == SwitchbackCornerStyle.SBends)
+                             && lastSpin.sqrMagnitude > 1e-6f
+                             && rng.Unit() >= PatternBreakShare;
+            if (patterned)
+            {
+                // Project the last spin off the new heading, then wobble it up to 30 degrees about the heading.
+                spin = RaceCourseGeometry.SafeNormalize(lastSpin - Vector3.Dot(lastSpin, prev) * prev, RaceCourseGeometry.Perpendicular(prev));
+                if (s.CornerStyle == SwitchbackCornerStyle.SBends) spin = -spin;
+                spin = RaceCourseGeometry.RotateAbout(spin, prev, rng.Range(-30f, 30f) * Mathf.Deg2Rad);
+            }
+            else
+            {
+                Vector3 u = RaceCourseGeometry.Perpendicular(prev);
+                Vector3 w = Vector3.Cross(prev, u);
+                float phi = rng.Range(0f, 2f * Mathf.PI);
+                spin = RaceCourseGeometry.SafeNormalize(u * Mathf.Cos(phi) + w * Mathf.Sin(phi), u);
+            }
+            return RaceCourseGeometry.SafeNormalize(RaceCourseGeometry.RotateAbout(prev, spin, angle), prev);
+        }
+
+        /// <summary>I3's leg lengths: the leg ARRIVING at a hairpin gate (index <paramref name="nextGate"/>) is drawn
+        /// from the top 40% of the range - the straight a charge is spent down - and every other leg from the rest.</summary>
+        static float LongIntoHairpinStep(ref RaceCourseGeometry.Rng rng, int nextGate, in SwitchbackCourseSettings s)
+        {
+            float split = Mathf.Lerp(s.MinStep, s.MaxStep, 0.6f);
+            return IsHairpinCorner(nextGate, s) ? rng.Range(split, s.MaxStep) : rng.Range(s.MinStep, split);
+        }
 
         /// <summary>Rotate <paramref name="v"/> by an angle between the two bounds about a random perpendicular
         /// axis: a hairpin's heading change.</summary>

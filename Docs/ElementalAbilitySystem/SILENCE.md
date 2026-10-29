@@ -122,6 +122,11 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
 - **Keyed by player name**, the identity every harm site already carries (`Prism.Damage` knows only
   the attacker's name and domain; scoring is keyed the same way).
 - **Wire change:** `NetworkConfig.ProtocolVersion` 9 → 10 (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
+- **An ally can lift it early (2026-10-29, Garrett: "have the dust clear silence and debuffs of allies").** The Tiger
+  Moth's dust CLEANSES an ally it touches, the omni-crystal bloom cleanses its pilot and allies, and a drop in Dust mode
+  cleanses the pilot (`ElementalCleanse`, `TIGER_MOTH.md` §1.2): `VesselSilence.Lift`, which now says whether there was
+  a window. No new wire: the dust's contacts are simulated on every peer, so every peer lifts its own copy. The one
+  race is an extension still in flight when the dust lands, which re-silences the pilot on the peer it reaches late.
 
 ## 5. What the player sees, and what is not covered yet
 

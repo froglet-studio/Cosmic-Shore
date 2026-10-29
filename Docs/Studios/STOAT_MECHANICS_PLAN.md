@@ -232,3 +232,59 @@ trail never touch the flight, and Collapse and the Whip move the Hard catch-slin
 modelled: prisms do not collide with hulls in this studio (so a Collapse clears no real obstacle and the accretion trail
 blocks nobody), element levels only gate the upgrade (no scaling), the petal ledger (3 of each to start) is the studio's,
 and silence is 1 s flat.
+
+## 9. Round 30, 2026-10-27: what fires the Ripple, Garrett's rule vs the Mix
+
+**The conflict.** Round 29 put the Charge ability, **Ripple**, on **LB**. Garrett's merged pilots change
+(`Docs/Pilots/CALLSIGNS.md` §5, PR #1589) makes LB the **pilot sight** on every vessel (hold LB to see what your pilot
+sees). Yash (2026-10-27): *for every decision where we conflict with Garrett, make two versions, Garrett's way and a mix
+with our recommendation, so he can judge.* The studio now has a **Ripple trigger** dropdown (Vessel Config ▸ Ability ·
+Charge · Ripple; `abCTrigger`, saved with the settings and in the section's profiles; lab-only):
+
+| Option | LB | What fires the Ripple | The AI |
+|---|---|---|---|
+| **Fleet rule** (Garrett's way) | the pilot sight | nothing: it pulses on its own every recharge (6 s) while a crystal it has not drawn, or a rival, is inside the reach (260 u) | presses nothing; the pulse is automatic |
+| **Mix** (our recommendation, **the default**) | the pilot sight | the moment you **let go** of a pair (Mass) or a sling (Time), the recharge kept; a pair spent by a Collapse does not fire it | presses nothing; it fires as the AI lets go, which it already does |
+| **Round 29** (archived) | the Ripple | LB, as round 29 | presses LB by round 29's rule; labelled as conflicting with the pilot sight |
+
+Under the first two, **hold LB** (keyboard F, the phone's **LB · Sight** button) for a stand-in pilot sight: every
+crystal and every rival is marked with a halo that reads through the prisms (Echo Sight's two-part mark: the crystal
+driven toward its saturated colour, plus an additive halo drawn without a depth test), fading in and out. It touches
+nothing but photons; no step, AI or scorecard reads it. It is a stand-in because each callsign sees one thing and the
+studio has no pilots, so it marks both. The ability row's Charge tile reads **AUTO**, **LET GO** or **LB**. The Unity
+Stoat's shipped Ripple (`StoatRippleExecutor`) is passive too, and it fires as a pair **annihilates**, which is close to
+the Mix: the Mix fires at the let-go, the shipped one when the poles meet a moment later.
+
+**Measured** (the level scorecard, Balanced, 2 laps, median of seeds 11/23/37, seconds; all four abilities on; every race
+finished). The race times are **identical for all three triggers** (the Ripple draws crystals and reveals rivals; it never
+touches the flight), and the same as round 29's on-table; with the abilities off all 72 races are byte-identical to round
+29, and the Round 29 option reproduces round 29's on-runs byte for byte.
+
+| Course | Mass (field) Easy / Medium / Hard | Time (catch) Easy / Medium / Hard |
+|---|---|---|
+| I1 | 80.3 · 79.6 · 54.0 | 66.6 · 72.5 · 59.2 |
+| I2 | 86.2 · 78.5 · 59.6 | 65.7 · 68.5 · 57.6 |
+| I3 | 80.7 · 69.2 · 51.5 | 60.0 · 68.4 · 77.2 |
+| I4 | 65.2 · 65.5 · 49.2 | 64.9 · 72.7 · 73.1 |
+
+| Over 36 races per mode | Fleet rule | Mix | Round 29 LB |
+|---|---|---|---|
+| Ripples per race, Mass / Time | 12.2 / 11.5 | 9.0 / 7.9 | 12.0 / 11.3 |
+| Crystals pulled per race, Mass / Time | 15.2 / 14.2 | 11.4 / 8.8 | 15.2 / 14.2 |
+| Four Hard Stoats racing (you AI + Comet, Needle, Anchor rivals), I1-I4, per pilot per race, Mass / Time: ripples | 9.1 / 11.3 | 7.1 / 8.0 | 9.0 / 11.0 |
+| the same: crystals pulled | 5.1 / 6.9 | 3.6 / 5.2 | 5.1 / 7.1 |
+| the same: Siphon hits scored | 7.4 / 7.3 | 7.7 / 6.8 | 7.2 / 7.6 |
+
+(The race times of the four-Stoat races are identical across the three triggers too.)
+
+**Why the Mix.** Garrett's fleet rule frees LB, but it makes the Ripple a timer: it fires at full rate whatever the pilot
+does (12 a race, as many as the round-29 AI pressing LB at the best moment) and pulls every crystal it can, so there is
+nothing to get better at. (Siphon scores about 7 hits per pilot per race under all three triggers: four Stoats racing fly
+in a pack, so almost any ripple passes a rival; the trigger changes the crystals, not the petals.) The Mix also
+frees LB and needs no button, but it ties the Ripple to the Stoat's own skill, the let-go: let go near crystals and rivals
+and it pays; let go in empty space and the recharge is spent. It costs a quarter to a third of the ripples (the AI lets go
+where the course tells it, not where the crystals are), which is the point: the pull is earned, not given. And it is the
+closest of the two to the shipped Unity Ripple, which already fires off the pair. **For Garrett and Yash to decide**: the
+fleet rule or the Mix (or the Mix with the shipped annihilation moment instead of the let-go). Not modelled: the pilot
+sight is a stand-in (no callsigns, no suppression volume, no per-pilot sight), and the AI does not yet choose its let-go
+for the Ripple (it lets go for the ring), so the Mix numbers are a floor for a pilot who plays it.

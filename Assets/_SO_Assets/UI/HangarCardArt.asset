@@ -27,8 +27,6 @@ MonoBehaviour:
     art: {fileID: 21300000, guid: 8d66282d97cfdea5101c4ec25ad913ff, type: 3}
   - vessel: {fileID: 11400000, guid: bde48fa4833b6364b93111a55ba90958, type: 2}
     art: {fileID: 21300000, guid: c819fba7db4cd08b526fa4ad775795f9, type: 3}
-  - vessel: {fileID: 11400000, guid: fe4abf38579d7f84baf16a532ed4a015, type: 2}
-    art: {fileID: 21300000, guid: d2d25a09f48946f99191156c4ef73ba0, type: 3}
   - vessel: {fileID: 11400000, guid: 8e4f2a9c1b3d4e6f7a8b9c0d1e2f3a4b, type: 2}
     art: {fileID: 21300000, guid: 0ec32c5a7cb131b33c5aee7071776886, type: 3}
   - vessel: {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
@@ -53,3 +51,7 @@ MonoBehaviour:
     art: {fileID: 21300000, guid: ea594727c45a3a601fe4bdc62df6b0ad, type: 3}
   - vessel: {fileID: 11400000, guid: 7fcf1c753fc8440198a6dc26e5d5d63a, type: 2}
     art: {fileID: 21300000, guid: 18afbcfc4b9ce711c9794c9dc647c4e8, type: 3}
+  - vessel: {fileID: 11400000, guid: 8d3f1a2b4c5e4d6f9a7b8c9d0e1f2a3b, type: 2}
+    art: {fileID: 21300000, guid: a99dae73638a94af830bfc59b252ba64, type: 3}
+  - vessel: {fileID: 11400000, guid: d46d96ae184a444faf9a09a2b793a07d, type: 2}
+    art: {fileID: 21300000, guid: aedca652a13e73fd6bed7f27a143086c, type: 3}

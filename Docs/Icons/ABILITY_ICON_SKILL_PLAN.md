@@ -262,6 +262,30 @@ chevrons, a slope: "this ability is about the rhino and its invulnerability to d
 threshold as a line across ("not the bar across. updated sparrow has a better solution"), round 3 had the Rhino
 flying up into the plate's ticks ("travel left to right so it doesn't cause visual confusion between the impact event
 and the threshold"). `RhinoVesselHUDView.SetMomentum` / `SetMomentumMark`. The Rhino is done; next: the Scarab.
+**The Scarab's Charge card** (2026-10-28, four rounds; Garrett picked A3, "looks good enough. lets ship it"): Cavitation
+Blast drawn TO SCALE - the punch's swept volume (54 ahead of the hull, mirrored 54 behind, 90 across, measured from
+`Scarab.prefab` and `AOEScarabCavitation.prefab`) as one white bubble, square against the plate and rounded behind, the
+true-size Scarab (~9 px) in domain colour in its own knock-out, whole prisms (blue) outside it. As the punch lands the
+prisms inside are cut out of the volume as forward-pointing slivers; recharging greys the volume and the plate. Round 1
+drew an edge-on plate throwing prisms ("show the relative size of the volume affected relative to the scarab"), round 2
+an outlined box ("whole prisms outside and shattered prisms that convey the destructive direction inside", then "lets
+not have a box. lets go more flat and have a negative space prisms inside"), round 3 a grey slab ("more cohesive with
+the rest of our polished icons"). `ScarabHUDView.SetBlastReady` / `BlastPartsFor` / `SetBlastHullColor`. **The Scarab's Mass card** (2026-10-28, one
+round; Garrett picked S1, "go with S1 and move on"): the Switch drawn as a white ball threading your faceted ring
+(domain colour) left to right, its wake coming in behind the ring's near arc. The ring is held at one bold size and
+Mass shows as the ball SHRINKING inside it, to scale (ring 24 -> 60 with switchScale, match ball 7):
+`ScarabHUDView.SetSwitchScale` scales the point-anchored ball part by 1 / switchScale on each Mass level change. With no
+switch banked the card dims under the fleet's cooldown veil (`SetSwitchCharges`); the charge-count colour ramp is
+retired. Next: the Scarab's Space (Ball Forge). **The Scarab recut** (2026-10-29, Garrett): the Ball Forge options drew a generic gem ("that is not the
+omnicrystal"), so the omni crystal is now projected from `OmniCrystalExport1_8-21-25.fbx` (LESSONS 60). Then the kit
+was recut: the Charge card is the **Shove**, the bubble split at the hull into a push half and a pull half
+(`Scarab_BlastFieldBack`, shown only while Charge 5 Backdraft is up); the Space card is **Nucleus Seeding**, a ball in a
+membrane that grows ×1 → ×4 with Space (`Scarab_SeedBall` / `Scarab_SeedMembrane`, `SetSeedScale`); the Ball Forge
+moved to the omni card (`omniAbilitySprite`) and Drift became a core card beside the row (the new `core` rebind step,
+the Squirrel's pattern). The Ball Forge placeholder is retired. **The Scarab's Time card** (2026-10-29, Garrett picked A of three: wake,
+afterimage, thrust chevrons): the Scarab flying right in domain colour, a white wake in three lengths by trigger depth
+(`ScarabHUDView.WakeStepFor`), the plate as the speed meter, and the Time 5 Snap Dash chevron ahead (white ready, grey
+waiting). The Throttle placeholder is retired and the Scarab is done. Next: the Serpent.
 
 | Round | What | Why first |
 |---|---|---|

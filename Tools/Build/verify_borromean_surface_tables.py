@@ -27,8 +27,10 @@ neighbours is bounded by how far apart the neighbours are: an element whose body
 takes MORE ROOM PER SITE rather than a shrunken plate.  Room is bought two ways - by cutting
 the membrane into fewer pieces, or by growing the MEMBRANE - and SPACE, whose identity is
 room, does the second.  Every check below therefore runs four times, and two more run ACROSS
-the four: the element contract (MASS the chunkiest plate, SPACE the furthest span at the
-anchor's volume, CHARGE fitted to its shield), and the ordering that makes the design a rule
+the four: the element contract (MASS armoured and with SIZE - the anchor's plate shape at the
+leaf law's volume on a membrane grown until its SHIELDS and its heart's swing clear; CHARGE the
+anchor's own plant; SPACE the aspect at the anchor's volume, spanning further than the anchor -
+Docs/ECOSYSTEM.md 65), and the ordering that makes the design a rule
 rather than four coincidences - the more room per site, the bigger the body it carries.
 
 WHAT IS PROVED, AND WHAT IS NOT
@@ -42,7 +44,7 @@ with the choice between the two of them COMBED so neighbouring plates agree abou
 grain; the surface through the sites is MINIMAL (mean curvature is a rounding error beside
 the curvature that is actually there); the heart seat is clear; NO TWO PRISMS OF AN ELEMENT
 INTERPENETRATE, each plate clears its neighbours by the authored margin and is the LARGEST
-of its shape that does (Charge measured against its 3x SHIELD, which is the body a Charge
+of its shape that does (Mass measured against its 3x SHIELD, which is the body a Mass
 plant actually shows); and each element's plate says what that element says.
 
 NOT proved here: that the surface is the minimal-AREA one, or that it has genus 1.  Both
@@ -57,6 +59,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import borromean_surface as B
+import mass_armour_lib as armour
 from scipy.spatial import cKDTree
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -85,10 +88,11 @@ MARGIN = 0.02
 TIGHT = 1.10
 
 # A shield swaps the plate for its CIRCUMSCRIBING octahedron, reaching 1.5 x leafSize from
-# the centre (Docs/ECOSYSTEM.md 35).  So on a CHARGE plant the body that has to clear is
-# three times the plate, and the plate itself clears by a mile - which is why the body each
-# element is measured through is a property of the element and not a constant.
-BODY = dict(Charge=1.5, Mass=0.5, Space=0.5, Time=0.5)
+# the centre (Docs/ECOSYSTEM.md 35).  So on a MASS plant (the armoured element since
+# 2026-10-28, Docs/ECOSYSTEM.md 65) the body that has to clear is three times the plate, and
+# the plate itself clears by a mile - which is why the body each element is measured through
+# is a property of the element and not a constant.
+BODY = dict(Charge=0.5, Mass=1.5, Space=0.5, Time=0.5)
 
 
 def read_table(path=TABLE):
@@ -300,9 +304,9 @@ def verify_element(d, t, G, c):
 
     print('[6] NO PRISM INTERPENETRATES ANOTHER - and the plate is the LARGEST that does not')
     # Measured through the body this element actually SHOWS: the plate for three of them,
-    # and the circumscribing octahedron for Charge, which is three times its plate and is
-    # what a Charge plant is wearing almost all the time (Flora.ResolveShieldPeriod floors
-    # its shield cadence at 1 s).
+    # and the circumscribing octahedron for Mass, which is three times its plate and is
+    # what a Mass plant is wearing almost all the time (ElementalArmour floors its shield
+    # cadence at 1 s).
     worn = 'plate' if body == 0.5 else 'SHIELD octahedron'
     n0, npairs = overlaps(P, X, Y, Z, leaf, body)
     c.ok(n0 == 0, f'{name}: no two {worn}s intersect', f'{n0} of {npairs} near pairs')
@@ -312,7 +316,7 @@ def verify_element(d, t, G, c):
     nt, _ = overlaps(P, X, Y, Z, leaf, body, TIGHT)
     c.ok(nt > 0, f'{name}: it is FITTED, not merely small - {int(100*(TIGHT-1))}% bigger collides',
          f'{nt} pairs')
-    if body != 0.5:      # a Charge PLATE is a third of the body above and must also clear
+    if body != 0.5:      # a Mass PLATE is a third of the body above and must also clear
         np_, _ = overlaps(P, X, Y, Z, leaf, 0.5)
         c.ok(np_ == 0, f'{name}: its bare plates clear too', f'{np_} pairs')
 
@@ -324,48 +328,45 @@ def verify_contract(d, c):
     vol = lambda n: float(np.prod(T[n]['leaf']))
     asp = lambda n: T[n]['leaf'][0] / T[n]['leaf'][1]
     print('\n[7] each element states its own plate')
-    c.ok(vol('Mass') > 2.0 * vol('Time'), 'MASS is more VOLUME than the Time anchor',
-         f'{vol("Mass")/vol("Time"):.2f}x')
+    # MASS's volume is its SHIELD's (Docs/ECOSYSTEM.md 65: "the shielding should increase the volume of mass"): the
+    # octahedron is 4.5x the box, so the armoured plate must out-weigh the anchor while the box is lighter.
+    c.ok(4.5 * vol('Mass') > vol('Time'), 'MASS, shielded, is more VOLUME than the Time anchor',
+         f'{4.5 * vol("Mass")/vol("Time"):.2f}x shielded ({vol("Mass")/vol("Time"):.2f}x its box)')
     c.ok(asp('Space') > 2.0 * asp('Time'), 'SPACE is more ASPECT than the Time anchor',
          f'{asp("Space"):.2f}:1 vs {asp("Time"):.2f}:1')
     c.ok(abs(vol('Space') / vol('Time') - 1.0) < 0.1,
          'and SPACE spends no extra volume doing it - the element reads as shape',
          f'{vol("Space")/vol("Time"):.3f}x')
-    c.ok(vol('Charge') < vol('Time'),
-         'CHARGE is the one element that shrinks, because its shield is 3x its plate')
-    c.ok(abs(T['Charge']['leaf'][0] - T['Charge']['leaf'][1]) < 1e-4,
-         'its footprint is SQUARE (length along the grain is paid for twice)',
-         f'{T["Charge"]["leaf"][0]:.3f} x {T["Charge"]["leaf"][1]:.3f}')
-    # MASS is the element that is CHUNKY, which is a claim about the plate's SHAPE and not
-    # about its volume - the thinnest axis as a fraction of the longest.  It has to be
-    # asserted separately from the volume above, because thickness is the free axis: a plate
-    # could be given Mass's volume and still be a flat lozenge.
-    #
-    # CHARGE is excluded, and the exclusion is the point rather than a convenience: its
-    # PLATE is a square slab only because the body it was fitted against is the
-    # octahedron three times it (asserted below), so "how cube-like is the plate" is not a
-    # statement about what a Charge plant looks like.  The comparison is between the three
-    # elements whose body IS their plate.
-    worn = tuple(n for n in ELEMENTS if BODY[n] == 0.5)
-    chunk = lambda n: float(min(T[n]['leaf']) / max(T[n]['leaf']))
-    c.ok(all(chunk('Mass') > chunk(n) for n in worn if n != 'Mass'),
-         'MASS is the CHUNKIEST of the plates worn AS plates - nearest a cube, never one',
-         '  '.join(f'{n} 1:{T[n]["leaf"][1]/T[n]["leaf"][0]:.2f}:{T[n]["leaf"][2]/T[n]["leaf"][0]:.2f}'
-                   for n in worn))
-    c.ok(chunk('Mass') < 0.9, 'and it stops short of one - a cube is not a plate',
-         f'thinnest axis {chunk("Mass"):.2f} of the longest')
-    # SPACE is the element that is ROOMY, and that is a claim about the PLANT rather than
-    # the plate: it grows the membrane itself, so its two furthest prisms are further apart
-    # than any other element's - while spending no extra volume doing it (checked above).
+    # MASS is ARMOURED (Docs/ECOSYSTEM.md 65): the anchor's plate SHAPE at the law's 0.64 (the "chunky" brick is
+    # retired), on a membrane grown until its octahedra - and its heart's full swing - clear, and SPACE out-spans it.
+    shape = lambda n: T[n]['leaf'] / T[n]['leaf'][0]
+    c.ok(np.allclose(shape('Mass'), shape('Time'), rtol=1e-3), "MASS keeps the anchor plate's SHAPE",
+         f'1:{shape("Mass")[1]:.3f}:{shape("Mass")[2]:.3f} vs 1:{shape("Time")[1]:.3f}:{shape("Time")[2]:.3f}')
+    c.ok(T['Time']['radius'] < T['Mass']['radius'] < T['Space']['radius'],
+         'MASS spreads past the anchor so its shields clear, and SPACE always out-spans it',
+         f'{2*T["Mass"]["radius"]:.0f} across vs Time {2*T["Time"]["radius"]:.0f}, Space {2*T["Space"]["radius"]:.0f}')
+    M = T['Mass']
+    MX, MY, MZ = frames(M['Q'])
+    clear = min(armour.octahedron_distance(np.zeros(3), M['P'][i], np.column_stack([MX[i], MY[i], MZ[i]]),
+                                           1.5 * M['leaf']) for i in range(len(M['P'])))
+    need = armour.swing_need()
+    c.ok(clear >= need - 1e-3, "MASS's heart swing clears every octahedron", f'{clear:.2f} u vs {need:.2f} u')
+    # CHARGE is DANGER, a state: it is the anchor's own plant, table for table.
+    c.ok(np.allclose(T['Charge']['leaf'], T['Time']['leaf']) and np.allclose(T['Charge']['P'], T['Time']['P']),
+         "CHARGE is the anchor's own plant - its plate and its tessellation")
+    # SPACE is the element that is ROOMY at the anchor's volume: it grows the membrane itself, so it spans further
+    # than the anchor (Charge, Time) while spending no extra volume (checked above). MASS now spans further still -
+    # it buys its room with VOLUME (the shields), which is the size the element has (Docs/ECOSYSTEM.md 65).
     span = lambda n: T[n]['radius']
-    c.ok(all(span('Space') > 1.5 * span(n) for n in ELEMENTS if n != 'Space'),
-         'SPACE spans the furthest - the element grows the MEMBRANE, not just the plate',
+    c.ok(all(span('Space') > 1.5 * span(n) for n in ('Charge', 'Time')),
+         'SPACE spans further than the anchor - the element grows the MEMBRANE, not just the plate',
          '  '.join(f'{n} {2*span(n):.0f}' for n in ELEMENTS))
 
     print('[8] every element tiles the surface at its OWN spacing, and the order is a rule')
     sp = {n: T[n]['spacing'] for n in ELEMENTS}
-    c.ok(len(set(round(v, 3) for v in sp.values())) == len(ELEMENTS),
-         'the four tessellations are genuinely different',
+    # Charge IS the anchor's tessellation now, so three are different and Charge equals Time.
+    c.ok(len(set(round(sp[n], 3) for n in ('Mass', 'Space', 'Time'))) == 3 and abs(sp['Charge'] - sp['Time']) < 1e-6,
+         'the three shaped tessellations are genuinely different, and Charge is the anchor\'s',
          '  '.join(f'{n} {sp[n]:.2f}' for n in ELEMENTS))
     # THE DESIGN RULE, asserted rather than described: an element takes as much room per
     # site as the body it puts there needs.  Both sides are measured off the shipped
@@ -375,9 +376,10 @@ def verify_contract(d, c):
     # element buys room two ways - by cutting the membrane into fewer pieces, or by growing
     # the membrane - and Space does the second, so it has a FINER cut than Mass or Charge
     # and still the most room of the four.
+    shaped = ('Mass', 'Space', 'Time')
     reach = {n: BODY[n] * float(np.linalg.norm(T[n]['leaf'])) for n in ELEMENTS}
-    by_reach = sorted(ELEMENTS, key=lambda n: reach[n])
-    by_space = sorted(ELEMENTS, key=lambda n: sp[n])
+    by_reach = sorted(shaped, key=lambda n: reach[n])
+    by_space = sorted(shaped, key=lambda n: sp[n])
     c.ok(by_reach == by_space,
          'the more room per site, the bigger the body it carries',
          ' < '.join(f'{n}({reach[n]:.2f}, room {sp[n]:.2f})' for n in by_reach))
@@ -498,8 +500,8 @@ def self_test():
             'clear by at least 2%')
     control('plates shrunk well inside what the tessellation allows',
             lambda e: T(e).__setitem__('leaf', T(e)['leaf'] * 0.6), 'it is FITTED')
-    control('CHARGE fitted to its PLATE instead of its SHIELD',
-            lambda e: T(e, 'Charge').__setitem__('leaf', T(e, 'Charge')['leaf'] * 2.5),
+    control('MASS fitted to its PLATE instead of its SHIELD',
+            lambda e: T(e, 'Mass').__setitem__('leaf', T(e, 'Mass')['leaf'] * 2.5),
             'no two SHIELD octahedrons intersect')
 
     # ---- the element contract, and the rule behind the four tessellations
@@ -510,9 +512,9 @@ def self_test():
     control('SPACE buying its aspect with extra volume',
             lambda e: T(e, 'Space').__setitem__('leaf', T(e, 'Space')['leaf'] * np.array([1, 1, 2.0])),
             'spends no extra volume')
-    control('CHARGE footprint left at the anchor\'s aspect',
-            lambda e: T(e, 'Charge').__setitem__('leaf',
-                T(e, 'Charge')['leaf'] * np.array([1.3, 1 / 1.3, 1.0])), 'footprint is SQUARE')
+    control('CHARGE given a plate of its own',
+            lambda e: T(e, 'Charge').__setitem__('leaf', T(e, 'Charge')['leaf'] * np.array([1.3, 1 / 1.3, 1.0])),
+            "the anchor's own plant")
 
     def one_tiling(e):
         # Every element on the ANCHOR's tessellation - the shape this pass replaced.  It is
@@ -524,27 +526,32 @@ def self_test():
                 v = T(e)[key]
                 T(e, n)[key] = v.copy() if isinstance(v, np.ndarray) else v
     control('every element on ONE shared tessellation', one_tiling,
-            'the four tessellations are genuinely different')
+            'the three shaped tessellations are genuinely different')
 
     def misordered(e):
         # Swap the two tessellations, bodies and all: each element still clears on the tiling
         # it is standing on, and the RULE - room per site tracks the body that goes there -
-        # is broken.  Charge's shield is the biggest body in the plant, so putting it on the
+        # is broken.  Mass's shield is the biggest body in the plant, so putting it on the
         # finest tiling is the mistake this check exists to catch.
-        a, b = T(e, 'Charge'), T(e, 'Time')
+        a, b = T(e, 'Mass'), T(e, 'Time')
         for key in ('P', 'Q', 'parents', 'spacing', 'radius', 'bond', 'seat'):
             a[key], b[key] = b[key], a[key]
     control('the biggest body put on the tightest tessellation', misordered,
             'the more room per site, the bigger the body')
 
     # ---- what THIS pass claims, each against the shape it replaced
-    control('MASS left as a flat lozenge at the same volume',
+    control('MASS left in the retired chunky shape',
             lambda e: T(e, 'Mass').__setitem__('leaf',
-                T(e, 'Mass')['leaf'] * np.array([2.5, 1.0, 1 / 2.5])), 'CHUNKIEST of the plates')
-    control('MASS taken all the way to a cube',
-            lambda e: T(e, 'Mass').__setitem__('leaf',
-                np.full(3, float(np.prod(T(e, 'Mass')['leaf'])) ** (1 / 3))),
-            'a cube is not a plate')
+                T(e, 'Mass')['leaf'] * np.array([0.8, 1.0, 1.25])), "keeps the anchor plate's SHAPE")
+    def mass_unsized(e):
+        # Mass shrunk back onto the anchor's membrane - a similarity, so it still clears its own shields - and
+        # what it loses is the SIZE (and its heart's swing room).
+        t, k = T(e, 'Mass'), T(e)['radius'] / T(e, 'Mass')['radius']
+        t['P'] = t['P'] * k
+        for key in ('radius', 'spacing', 'bond', 'seat'):
+            t[key] = t[key] * k
+        t['leaf'] = t['leaf'] * k
+    control('MASS shrunk back onto the anchor-sized membrane', mass_unsized, 'MASS has SIZE')
     def anchor_sized(e):
         # Space shrunk back onto the anchor's membrane - a full SIMILARITY, so it is still
         # symmetric, still connected, still clears and still spends no extra volume.  The
@@ -555,7 +562,7 @@ def self_test():
             t[key] = t[key] * k
         t['leaf'] = t['leaf'] * k
     control('SPACE shrunk back onto the anchor-sized membrane', anchor_sized,
-            'spans the furthest')
+            'spans further than the anchor')
 
     print(f'\n{"self-test PASSED" if bad == 0 else f"self-test FAILED: {bad} control(s) did not fire"}')
     return bad

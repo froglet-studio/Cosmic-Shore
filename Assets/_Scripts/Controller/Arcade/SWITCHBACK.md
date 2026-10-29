@@ -441,6 +441,123 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
     moves into last place must also open. The console must be silent: any
     `ArcadeExploreView - the … card sits N units past …` error means the fit did not settle.
 
+## Fun types (2026-10-28, test surface - NOT editor-verified)
+
+Five families of intensity, picked on the launch panel BEFORE the intensity, so every (fun type, intensity) pair is
+its own world (6 x 4 = 24 with BLAST RUN). Enum: `SwitchbackFunType` (`Assets/_Scripts/Data/Enums/SwitchbackFunType.cs`).
+
+| Fun type (panel label) | Course | Features | Clock |
+|---|---|---|---|
+| `Baseline` (CLASSIC) | the shipped ladder, **bit-identical** (pinned by `SwitchbackFunTypeTests.BaselineCoursesAreTheShippedCourses`) | shipped I3 skim walls / I4 danger prisms | the run log line + a personal best only |
+| `Plan1_LevelShapes` (LEVEL SHAPES) | hairpin ladder 0, 1/3, 1/2, 2/3; one corner pattern per intensity (I1 arcs, I2 S-bends, I3 long legs into hairpins, I4 punchy back-to-back hairpins); needle rings (a mouth 0.65 x, floored at 5 hull radii) every 4th/3rd/2nd ordinary corner at I2/I3/I4 | shipped | log + PB |
+| `Plan3_ParMedals` (PAR & MEDALS) | shipped | shipped | a PAR toast at the start, a split vs par every 5th gate, a GOLD (<= par) / SILVER (<= 1.2 x) / BRONZE (<= 1.5 x) toast at the finish, a personal best per world |
+| `Plan2_LiveFeatures` (LIVE FEATURES) | shipped | charge ribbons I1-I3 (skim one end to end within 14 u for a 1.4 x throttle burst, 1.5 s); shortcut rings I2-I4 (a needle ring on the chord of each hairpin - threading it while the hairpin is next credits the hairpin); moving danger clusters at I4 (22 u sweeps, 4 s period) | log + PB |
+| `Combined` (COMBINED) | Plan 1 | Plan 2 | Plan 3 |
+| `BlastRun` (BLAST RUN) | shipped (Classic) | blocked gates behind doors in closed-form worlds, cleared by key-crystal blasts; invaders by intensity (see "Blast Run" below) | log + PB |
+
+Code: `SwitchbackCourseSettings.ForIntensity(intensity, funType)` (Plan 1), `SwitchbackPar` (Plan 3's par model:
+an average 235 u/s from the Dolphin's measured cruise/boost, plus a turn cost for each hairpin), `SwitchbackLiveFeatures`
+(Plan 2's layout, a pure function like `SwitchbackFeatures`), `SwitchbackFunTypeRuntime` (the per-peer behaviour: the
+moving prisms, the skim burst, the shortcut highlight, the toasts, the PB and the log line).
+
+**How it travels.** The host's panel writes `GameDataSO.SwitchbackFunType` / `SwitchbackFixedSeed`. The server builds
+the course for it (`GateRaceController.PrepareCourseSource`) and `SyncCourse_ClientRpc` now carries the fun type
+(`CourseVariant`) and every gate's radius (needles), so a client flies the host's world whatever its own panel says.
+A weekly challenge, the quest funnel and every other mode always fly Classic.
+
+**The picker** (`ArcadeGameConfigureModal.SwitchbackFunTypePicker.cs`) is built in code - a test surface, not a
+designed control: a strip floating just above the intensity row with `FUN: <type> >` (tap to cycle) and
+`SEED: RANDOM / FIXED`. Host only; remembered in PlayerPrefs (`Switchback.FunType`, `Switchback.FixedSeed`).
+FIXED flies `SwitchbackFunTypes.WorldSeed` = 45000 + 100 x funType + intensity (an authored `courseSeed` or a forced
+seed still wins), so a world is the same course every run.
+
+**Every run logs one line** (all builds, `CSDebug.Log`), for comparing worlds:
+`[Switchback] RUN funType=... intensity=... seed=... time=... par=... gates=... skims=... prismsDestroyed=... medal=... pb=...`
+Personal bests: PlayerPrefs `Switchback.PB.<funType>.I<n>` (seconds).
+
+**Stubbed / not done:** the AI flies every fun type with the shipped policy - it does not skim ribbons, take shortcuts
+or plan for Plan 1's corner patterns (an I3 policy was asked for "if feasible"; it is not in this change). No ghost.
+`ReplayMatch` does not carry the fun type (a replay flies the host's CURRENT panel choice). A client's log line has
+`seed=0` (the seed is not broadcast; the course is). Ribbons and shortcuts are local-pilot only.
+
+**How to test each.** Arcade -> Switchback -> the card: set FUN, set SEED: FIXED, pick the intensity, launch. Then
+see the "Switchback fun types" entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Headless: `SwitchbackFunTypeTests`
+(EditMode).
+
+## Blast Run (2026-10-29, `SwitchbackFunType.BlastRun` = 5) - NOT editor-verified
+
+Yash, 2026-10-29: obstacles and invaders that disturb the race and hurt the Dolphin, and environmental mass the Dolphin
+has to BLAST through to reach its rings - "like the Sparrow's time game, just in the Dolphin way". The course is the
+Classic ladder unchanged (`SwitchbackCourseSettings.ForIntensity(i, BlastRun)` returns the shipped settings); what
+changes is what sits on it.
+
+**A blocked station** (`SwitchbackBlastRun.IsBlocked`, `Layout`): on the leg INTO a blocked gate -
+
+1. a **key crystal** on the leg line, `KeyLeadFor(leg)` = 0.62 x the leg clamped to 230-400 u upstream of the ring
+   (inside the explosion's 400 u minimum length, so a blast fired at the key reaches the door). Keys are ordinary
+   `Domains.Blue` crystals (any domain may take them) laid by the server's `CrystalManager.SetCourseKeys`; they
+   replace the passive crystal field for the match (`RetireCrystalsBeyondSlots`), and `ClearCourseKeys` runs at
+   despawn. A key's explosion core is 1.25 x (`BlastRunKeyCrystals.KeyCoreMultiplier`, matched within 4 u of the
+   explosion origin in `VesselExplosionByCrystalEffectSO` - CODE only; the shared
+   `DolphinVesselExplosionByCrystalEffect` asset is untouched, so every other crystal is unchanged).
+2. a **door**: `BreakwaterStationBuilder.BuildDoor` - danger rakes round an always-open 18 u eye (`PortFor(i)`),
+   8 u upstream of the ring plane; I4 adds a second door 8 u downstream.
+3. a **world** between the mouth and the key (`WorldFor(i)`): I1 Garden (stalks with hollow blooms), I2 Maze (one-hole
+   baffles whose hole walks round the leg), I3 Membrane (a voxel gyroid sheet), I4 Menger cage (level-1 sponges with a
+   tunnel each way). Capped per station by `WorldCap` {280, 180, 100, 60} and overall by `TotalCap`
+   {4600, 4000, 3500, 3000}; world prisms keep 40 u off every other leg's line and 30 u off every key.
+
+Stations closer than `StationSpacing` = 280 u door to door are skipped (hairpins fold the course back on itself), so a
+blast never has to clear two stations' mass at once and the 200 u density stays under Breakwater's.
+
+**Invaders** (`SwitchbackLiveFeatures.MovingCluster`s driven by `SwitchbackFunTypeRuntime`):
+
+| Intensity | World | Invaders |
+|---|---|---|
+| I1 | Garden | none |
+| I2 | Maze | sweepers: 3 danger prisms 70 u before the key, sweeping across the line (the shipped I4 danger-cluster sweep, 4 s) |
+| I3 | Membrane | + snap-trap jaws: two 5-prism jaws 36 u before the ring, 26 u open -> 4 u shut, 2.4 s period |
+| I4 | Menger cage | + double door, jaws at 52 u, **hunter packs** |
+
+**Hunter packs** (`BlastRunHunters`, I4): a den on every 4th blocked station from the 3rd (`PackEvery`/`PackOffset`,
+3 at most), 110 u off the leg midpoint on whichever flank is clear (60 u from every other leg). A pack is 3 members
+abreast, each a 7-prism danger jack. The SERVER moves packs at 10 Hz (`SwitchbackController.OnServerTick`): toward
+the LEAD RUNNER (most gates threaded, live vessel) when it is within 400 u of the den, never more than 260 u from it,
+at 45 u/s (under the Dolphin's cruise: a pack intercepts, it cannot chase), home again otherwise. Positions and a
+per-member down mask replicate in a `NetworkList<BlastRunPackState>`; every peer lerps the drawn pack toward it
+(`Follow`) and moves the standing members' prisms. A member is DOWN when its blast leaves <= 2 of its 7 prisms
+(`IsDown`, judged once all its prisms were found or the scan deadline passed); the server marks it, every peer
+toasts `HUNTER DOWN (n/total)`.
+
+**The AI** detours for crystals in Blast Run only (`AIDetoursForCrystals => HasBlastRun(FunType)`, the scene's
+220 u slack), so an AI Dolphin takes the keys; every other fun type keeps the waypoints-only rule.
+
+**Fixed seeds** (`SEED: FIXED`): 45_501-45_504. On the shipped shell (20 gates, 480-1080 u) those lay:
+
+| Seed | Stations (keys) | Prisms | World | Moving | Packs |
+|---|---|---|---|---|---|
+| 45_501 (I1) | 6 | 2072 | 1496 | 0 | 0 |
+| 45_502 (I2) | 9 | 2235 | 1620 | 21 | 0 |
+| 45_503 (I3) | 16 | 2669 | 1600 | 205 | 0 |
+| 45_504 (I4) | 12 | 1464 | 240 | 153 | 3 |
+
+**Logs:** `[Switchback] Fun type BlastRun intensity N: G gates, ..., BLAST RUN S blocked gates, P hunter packs,
+X prisms.` (verbose, ArcadeMatch), `[Switchback] BLAST RUN hunter down: pack p member m.`, and the RUN line gains
+` blastRun stations=.. keys=.. huntersDown=x/y`. A scene with no CrystalManager logs
+`[Switchback] BLAST RUN: no CrystalManager in the scene ...` as an error and lays no keys.
+
+**Held headless:** `SwitchbackBlastRunTests` (EditMode; 60 seeds + the picker seed per intensity: Classic course,
+determinism, the ladder, keys inside the blast, density under Breakwater x 1.05, nothing in a mouth or the nucleus,
+jaws shut / open clear of the eye, dens, no prism clips another by SAT, the key multiplier, the hunter step/leash/down
+rules). `audit_prism_clipping.py` now POSES `SpawnableSwitchbackFeatures` as Blast Run at 45_501-45_504 (flush,
+0 clipping).
+
+**Minimal / not done:** hunter kills are not credited to the gate-race score (RUN log + toast; their prisms count in
+`prismsDestroyed`); hunters pass through static prisms; a pack prism laid after its pack starts moving is not matched;
+at I1-I3 nothing stops a pilot threading a blocked ring from the downstream side; the AI does not aim its blast at
+doors (it takes the key and the blast fires down its heading); I4 worlds are thin (Menger cages 0-40 prisms a station
+after the caps); key crystals replace the passive crystal field for the match.
+
 ## Known limitations / follow-ups
 
 - **The arcade grid had to grow to show this card, and growing it takes TWO changes.**

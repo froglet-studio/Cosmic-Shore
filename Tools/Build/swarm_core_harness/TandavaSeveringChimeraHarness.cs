@@ -44,7 +44,9 @@ static partial class TandavaSeveringHarness
                   $"turning cost it no members ({s.ChimeraMinAlive} of {s.Forms[1].PlanCount}): a turn is a pose, not a molt");
             Check(Vector3.Distance(s.RiseAnchor, d.DancePoint) <= ds.DanceReach + 20f,
                   $"it rose where it drifted to ({Vector3.Distance(s.RiseAnchor, d.DancePoint):F0} u from the dance ground)");
-            Check(d.Outcome == TandavaSeveringOutcome.Completed && d.Clock < 200f, $"unopposed it still completes in under 200 s ({d.Clock:F0} s)");
+            // 200 s at the research body: its world is K x wider at the same world speed
+            Check(d.Outcome == TandavaSeveringOutcome.Completed && d.Clock < 200f * TandavaSeveringArena.K,
+                  $"unopposed it still completes in under {200f * TandavaSeveringArena.K:F0} s ({d.Clock:F0} s)");
         }
 
         // ── T31: cut while torn - the chimera can be severed like any body, and its piece is the Severed

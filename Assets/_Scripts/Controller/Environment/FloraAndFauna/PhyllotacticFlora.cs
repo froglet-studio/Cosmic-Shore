@@ -181,6 +181,13 @@ namespace CosmicShore.Gameplay
             base.ApplyVariantTuning(tuning);
             if (tuning == null) return;
             if (tuning.MaxTotalSpawnedObjects >= 0) maxTotalSpawnedObjects = tuning.MaxTotalSpawnedObjects;
+            // The whole plant, uniformly: the lengths here and the cross-section in Stem/LeafPrismScale.
+            if (tuning.PlantScale > 0f)
+            {
+                _plantScale = tuning.PlantScale;
+                segmentLength *= _plantScale;
+                whorlRadius *= _plantScale;
+            }
             // Cell density scalar, applied AFTER the absolute so it scales whatever budget won.
             // Round half UP explicitly: Mathf.RoundToInt is banker's rounding, which would turn
             // an authored 150 x 0.9 into 134 on one species and 135 on the next.
@@ -248,7 +255,12 @@ namespace CosmicShore.Gameplay
             heading.Normalize();
 
             Vector3 pos = tip.gameObject.transform.position + heading * len;
-            if (!Claim(pos, len))
+            // THE HEART'S CLEARANCE (Docs/ECOSYSTEM.md §65): a shoot that turns back onto its own crystal is
+            // refused like a taken site - nudged, kept, tried elsewhere next tick.
+            // The stem prism is sized ONCE (its jitter is a draw), so the prism tested is the prism laid.
+            Vector3 stem = StemPrismScale(tip.depth + 1, len, 1f);
+            if (IntrudesOnHeart(HeartTransform.position, pos, SpawnPoint.LookRotation(heading, _axis), stem) ||
+                !Claim(pos, len))
             {
                 // Site taken (a neighbour plant, or a sibling tip this same tick). Keep the tip
                 // alive with a nudged heading - next tick it tries elsewhere. Nothing is lost.
@@ -267,7 +279,7 @@ namespace CosmicShore.Gameplay
                 heading = heading,
                 // The stem prism runs ALONG the segment (long axis +z == heading), so successive
                 // segments overlap into one stalk instead of reading as beads.
-                scale = StemPrismScale(nodeDepth, len, 1f),
+                scale = stem,
                 becomesTip = true,
                 decidedAt = Time.time,
             });
@@ -320,6 +332,8 @@ namespace CosmicShore.Gameplay
                 // around one node - claiming a length-sized volume would have each leaf reject
                 // its own siblings and the head would come out with holes in it.
                 Vector3 pos = node + outward * (scale.z * 0.5f);
+                // A leaf cupped back onto the crystal is not grown (the heart's clearance, Docs/ECOSYSTEM.md §65).
+                if (IntrudesOnHeart(HeartTransform.position, pos, SpawnPoint.LookRotation(outward, heading), scale)) continue;
                 if (!Claim(pos, scale.x)) continue;
 
                 _pending.Enqueue(new SpawnOrder
@@ -335,6 +349,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>The root collar's prism from the base stem prism: half again as thick, its length kept.</summary>
+        static Vector3 CollarScale(Vector3 stem) => new(stem.x * 1.5f, stem.y * 1.5f, stem.z);
+
         /// <summary>
         /// The stem prism for a node: cross-section from the element's leaf identity
         /// (<c>FloraVariantTuning.LeafSize</c>, already level-scaled), long axis spanning
@@ -342,7 +359,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Vector3 StemPrismScale(int depth, float segment, float lengthMul)
         {
-            float taper = Mathf.Pow(depthTaper, depth);
+            float taper = Mathf.Pow(depthTaper, depth) * _plantScale;
             float j = Jitter();
             return Floor(new Vector3(
                 LeafSize.x * stemScale.x * taper * j,
@@ -356,7 +373,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Vector3 LeafPrismScale(int depth, float reach)
         {
-            float taper = Mathf.Pow(depthTaper, depth);
+            float taper = Mathf.Pow(depthTaper, depth) * _plantScale;
             float j = Jitter();
             return Floor(new Vector3(
                 LeafSize.x * leafScale.x * taper * j,
@@ -382,6 +399,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Non-null ONLY for the duration of <see cref="TryPreviewGrowth"/>.</summary>
         System.Random _previewRng;
+
+        /// <summary><see cref="FloraVariantTuning.PlantScale"/>: 1 = the plant as authored.</summary>
+        float _plantScale = 1f;
 
         /// <summary>Floored at the prism scale animator's 0.5 minimum so nothing silently clamps.</summary>
         static Vector3 Floor(Vector3 s) =>
@@ -417,13 +437,14 @@ namespace CosmicShore.Gameplay
         /// The ASSEMBLY half of the Mass/Space law (<c>Flora.ElementalReachScale</c>): this
         /// family's length lives in its own segment and whorl geometry, not in its leaf - it
         /// reads <c>LeafSize.x/y</c> as a CROSS-SECTION only - so the leaf transform alone
-        /// could never make a Space plant reach further or a Mass plant draw in. Scaling the
+        /// could never make a Space plant reach further or a Mass plant grow. Scaling the
         /// two extent fields is what lets "Space trades cumulative prism volume for the
-        /// bounding volume of the assembly" mean anything here.
+        /// bounding volume of the assembly" mean anything here - and, with the leaf's own x1.2786,
+        /// what makes a Mass plant the Time plant grown WHOLE (stems and leaves are as long as the
+        /// segment and reach they span, so they grow with it; Docs/ECOSYSTEM.md §65).
         ///
         /// <para>Applied ONCE, at the element hook, on top of whatever the species authored.
-        /// It introduces no constant of its own: the reach scale is the inverse cube root of
-        /// the leaf volume scale, i.e. a plant spending a fixed amount of material.</para>
+        /// It introduces no constant of its own (<see cref="FloraElementalForm.ReachScale"/>).</para>
         /// </summary>
         protected override void OnElementResolved()
         {
@@ -445,7 +466,13 @@ namespace CosmicShore.Gameplay
         {
             base.AddHealthBlock(healthPrism);
             if (healthPrism && _pendingPrismScale.HasValue)
+            {
+                // A plant grown by PlantScale is a size nobody has seen trimmed, and its longer stems would
+                // gap at the 10 u ceiling - so a scaled plant is ADMITTED. An unscaled one keeps the shipped
+                // trim below (Docs/ECOSYSTEM.md 34.9), so no existing garden changes look.
+                if (!Mathf.Approximately(_plantScale, 1f)) healthPrism.AdmitTargetScale(_pendingPrismScale.Value);
                 healthPrism.TargetScale = _pendingPrismScale.Value;
+            }
             _pendingPrismScale = null;
 
             // NOT calling AdmitTargetScale here, deliberately - see Docs/ECOSYSTEM.md §34.9.
@@ -533,23 +560,35 @@ namespace CosmicShore.Gameplay
                 Vector3 tilt = Quaternion.AngleAxis(roll * Mathf.Rad2Deg, _axis) * basis;
                 Vector3 heading = Quaternion.AngleAxis(spreadDegrees, tilt) * _axis;
 
+                // The root collar: shorter than a segment but half again as thick - a plant sits
+                // on a base, it does not sprout from a twig.
+                var collar = CollarScale(StemPrismScale(0, segmentLength * 0.55f, 1f));
+
                 // ...and stand each root apart on the ground. Seeding every root at the planting
                 // point stacked five reed stalks in exactly one spot; a clump wants a footprint.
-                Vector3 root0 = transform.position +
+                // THE HEART SEAT (Docs/ECOSYSTEM.md §65): the collar used to be centred ON the crystal,
+                // which every species' collar swallowed. It now stands up the axis by the heart's
+                // clearance (HeartSeatDistance), on a stalk limb grown from the heart, so the plant
+                // still grows outward from its crystal and every limb keeps its path to it.
+                Vector3 heart = HeartTransform.position;
+                Vector3 root0 = heart + _axis * HeartSeatDistance(collar) +
                                 (initialTips > 1 ? tilt * (segmentLength * 0.28f) : Vector3.zero);
+
+                var stalk = AddSpindle();
+                stalk.transform.position = heart;
+                SafeLookRotation.TrySet(stalk.transform, root0 - heart, stalk);
+                StretchFreshLimb(stalk, (root0 - heart).magnitude);
 
                 var root = AddSpindle();
                 root.transform.position = root0;
+                root.AttachToParent(stalk);
 
                 var leaf = EnvironmentPrismPool.Get(healthPrism, root0, transform.rotation);
                 leaf.transform.SetParent(root.transform, false);
                 leaf.transform.localPosition = Vector3.zero;
                 leaf.LifeForm = this;
                 leaf.ChangeTeam(domain);
-                // The root collar: shorter than a segment but half again as thick - a plant sits
-                // on a base, it does not sprout from a twig.
-                var collar = StemPrismScale(0, segmentLength * 0.55f, 1f);
-                _pendingPrismScale = new Vector3(collar.x * 1.5f, collar.y * 1.5f, collar.z);
+                _pendingPrismScale = collar;
                 AddHealthBlock(leaf);
                 leaf.Initialize("flora");
 
@@ -669,11 +708,14 @@ namespace CosmicShore.Gameplay
                 Vector3 tilt = Quaternion.AngleAxis(roll * Mathf.Rad2Deg, axis) * basis;
                 Vector3 heading = Quaternion.AngleAxis(spreadDegrees, tilt) * axis;
 
-                Vector3 root = initialTips > 1 ? tilt * (segmentLength * 0.28f) : Vector3.zero;
+                // The live seat (SeedTips): the heart is the plant's origin, the collar stands up the axis.
+                var collar = CollarScale(StemPrismScale(0, segmentLength * 0.55f, 1f));
+                Vector3 root = axis * HeartSeatDistance(collar) +
+                               (initialTips > 1 ? tilt * (segmentLength * 0.28f) : Vector3.zero);
 
-                var collar = StemPrismScale(0, segmentLength * 0.55f, 1f);
-                into.Add(new SpawnPoint(root, Quaternion.identity,
-                    new Vector3(collar.x * 1.5f, collar.y * 1.5f, collar.z)));
+                // The live collar wears the plant's rotation, whose forward IS the growth axis
+                // (Initialize looks the plant down _axis) - so here it is the axis, never identity.
+                into.Add(new SpawnPoint(root, Quaternion.LookRotation(axis, basis), collar));
                 ClaimPreview(claims, root, segmentLength);
 
                 if (tips.Count < maxTips)
@@ -699,7 +741,9 @@ namespace CosmicShore.Gameplay
             heading.Normalize();
 
             Vector3 pos = tip.Position + heading * len;
-            if (!ClaimPreview(claims, pos, len))
+            Vector3 stem = StemPrismScale(tip.Depth + 1, len, 1f);
+            if (IntrudesOnHeart(Vector3.zero, pos, SpawnPoint.LookRotation(heading, axis), stem) ||
+                !ClaimPreview(claims, pos, len))
             {
                 tip.Heading = (heading + PreviewOnUnitSphere() * 0.6f).normalized;
                 if (tips.Count < maxTips) tips.Add(tip);
@@ -707,8 +751,7 @@ namespace CosmicShore.Gameplay
             }
 
             int nodeDepth = tip.Depth + 1;
-            into.Add(new SpawnPoint(pos, SpawnPoint.LookRotation(heading, axis),
-                StemPrismScale(nodeDepth, len, 1f)));
+            into.Add(new SpawnPoint(pos, SpawnPoint.LookRotation(heading, axis), stem));
 
             bool atTip = nodeDepth >= maxDepth;
             if (whorlLeaves > 0 && nodeDepth >= whorlStartDepth &&
@@ -768,6 +811,7 @@ namespace CosmicShore.Gameplay
                 var scale = LeafPrismScale(depth, reach);
 
                 Vector3 pos = node + outward * (scale.z * 0.5f);
+                if (IntrudesOnHeart(Vector3.zero, pos, SpawnPoint.LookRotation(outward, heading), scale)) continue;
                 if (!ClaimPreview(claims, pos, scale.x)) continue;
 
                 into.Add(new SpawnPoint(pos, SpawnPoint.LookRotation(outward, heading), scale));

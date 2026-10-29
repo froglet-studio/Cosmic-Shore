@@ -156,6 +156,8 @@ namespace CosmicShore.Tests
                 "the ready flash is no louder than an ordinary press, but coming back off cooldown " +
                 "is the beat the player is actually waiting for");
             Assert.Greater(s.CooldownReadyFlashDuration, 0f, "the ready flash snaps off");
+            Assert.GreaterOrEqual(s.CooldownWashColor.a, 0.3f,
+                "the recharge wash is too faint to read at a glance (Garrett, 2026-10-29: cooldowns only showed when a press was refused)");
         }
 
         [Test]

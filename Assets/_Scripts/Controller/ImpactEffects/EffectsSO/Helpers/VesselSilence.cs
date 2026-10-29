@@ -290,11 +290,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Lifts <paramref name="playerName"/>'s silence - their vessel was reset for a new
-        /// turn, and a window opened in the last one does not carry into it.</summary>
-        public static void Lift(string playerName)
-        {
-            if (!string.IsNullOrEmpty(playerName)) s_byPlayer.Remove(playerName);
-        }
+        /// turn, and a window opened in the last one does not carry into it; or an ally's dust
+        /// cleansed them (<see cref="ElementalCleanse"/>). True when there was a window to lift.</summary>
+        public static bool Lift(string playerName) =>
+            !string.IsNullOrEmpty(playerName) && s_byPlayer.Remove(playerName);
 
         /// <summary>Lifts every silence and forgets the counts (the tests).</summary>
         public static void ClearAll()

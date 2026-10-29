@@ -286,6 +286,8 @@ namespace CosmicShore.Gameplay
             // that need it do not exist yet (they are created per prism), so every creation
             // site pushes it - see ApplyLatticeSpacing.
             if (tuning.LatticeScale > 0f) _latticeScaleOverride = tuning.LatticeScale;
+            // A quasicrystal element's heart seat (absolute units - crystals do not scale with the lattice).
+            if (tuning.HeartSeatInset > 0f) _heartSeatOverride = tuning.HeartSeatInset;
 
             // Pacing overrides - the prefab's throttles are shared by every biome's plants,
             // so a cell that wants a different pace authors it in config instead.
@@ -656,6 +658,7 @@ namespace CosmicShore.Gameplay
         int _idleGrowTicks;
 
         float _latticeScaleOverride = -1f;
+        float _heartSeatOverride = -1f;
         float? _latticeScaleCached;
 
         /// <summary>
@@ -768,6 +771,7 @@ namespace CosmicShore.Gameplay
             if (target is QuasicrystalAssembler quasi)
             {
                 if (_latticeScaleOverride > 0f) quasi.ApplyLatticeScale(_latticeScaleOverride);
+                if (_heartSeatOverride > 0f) quasi.ConfigureHeartSeat(_heartSeatOverride);
                 quasi.ConfigureStrutLength(LeafSize.x);
                 return;
             }
@@ -2153,8 +2157,6 @@ namespace CosmicShore.Gameplay
         ///   (<see cref="GyroidBondMateDataContainer"/>): each site's delta position/up/forward,
         ///   composed exactly as <c>CalculateGlobalBondSite</c> + <c>CalculateRotation</c> do, so the
         ///   preview IS a patch of the gyroid the species actually grows.
-        /// • <see cref="WallAssembler"/> - its four in-plane bond offsets
-        ///   (±up, ±right by half-extent + separation).
         /// • <see cref="SchwarzPAssembler"/> - its own <c>TryPreviewLattice</c>: the same
         ///   subdivision level, the same measured tile sites and the same integer tile
         ///   arithmetic (<see cref="SchwarzPTileData"/>) the live growth uses, with the
@@ -2179,8 +2181,6 @@ namespace CosmicShore.Gameplay
                 return schwarz.TryPreviewLattice(budget, scale, into, latticeScale);
             if (healthPrism.TryGetComponent(out QuasicrystalAssembler quasi))
                 return quasi.TryPreviewLattice(budget, scale, into, latticeScale);
-            if (healthPrism.TryGetComponent(out WallAssembler wall))
-                return PreviewWall(wall, scale, budget, into);
 
             return false;
         }
@@ -2227,23 +2227,6 @@ namespace CosmicShore.Gameplay
             }
 
             return into.Count > 1;
-        }
-
-        static bool PreviewWall(WallAssembler prototype, Vector3 scale, int budget, List<SpawnPoint> into)
-        {
-            float separation = prototype.SeparationDistance;
-            float stepX = scale.x + separation;
-            float stepY = scale.y + separation;
-
-            // The wall bonds ±up / ±right in its own plane: a square sheet, grown outward from the
-            // seed so a partial budget still reads as a wall rather than a stripe.
-            int side = Mathf.Max(1, Mathf.FloorToInt(Mathf.Sqrt(budget)));
-            int half = side / 2;
-            for (int y = -half; y <= half && into.Count < budget; y++)
-            for (int x = -half; x <= half && into.Count < budget; x++)
-                into.Add(new SpawnPoint(new Vector3(x * stepX, y * stepY, 0f), Quaternion.identity, scale));
-
-            return into.Count > 0;
         }
 
         /// <summary>Lattice-cell key, so a site already bonded is never filled twice.</summary>

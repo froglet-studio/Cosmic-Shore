@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: TigerMoth
+  m_EditorClassIdentifier:
+  vesselClass: 29
+  entries:
+  - Element: 1
+    AbilityLabel: Scale Dust
+    AbilityDescription: 'DUST MODE (RT). The dust is ONE capsule hanging below the hull, live and drawn as falling motes only while the right trigger has switched the Butterfly into Dust mode. An opposing pilot it touches takes an all-element decaying debuff whose BITE is Charge (VesselElementalDebuffBySkimmerEffect, biteScale 0.5x at rest -> 2x at level 10, classed VesselContact so an arena ward cannot cancel it). An ALLY pilot it touches is CLEANSED: their silence lifts and their temporary debuffs end (the omni-crystal bloom cleanses its pilot and every ally its wavefront reaches, and a Drop made in Dust mode cleanses the pilot). An opposing lifeform''s heart it reaches is killed (the wither); an ALLY lifeform is refreshed instead (Nourish - its starvation clock and breeding counter, never its size).'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Toll Gate
+    UpgradeDescription: 'Your wormhole strips the elements of opposing pilots who thread it, and wears your domain''s hue.'
+  - Element: 2
+    AbilityLabel: Mass / Dust Mode
+    AbilityDescription: 'RIGHT TRIGGER toggles the Butterfly between two modes. MASS mode (the default) lays a WIDE wake: the trail prism widens to 5x at Mass 0 rising to 20x at Mass 15 (SpreadWingsActionSO.massModeWidth, eased over ~1.5s so a stroke reads as a stroke), and the dust is off. DUST mode narrows the wake back to a line of keys and switches the dust capsule on. Mass is the WIDTH of what you paint; the old per-prism trailVolume scaling is off on this hull so the two are not one number counted twice.'
+    Input: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Gilded Wake
+    UpgradeDescription: 'Mass mode lays SHIELDED prisms.'
+  - Element: 3
+    AbilityLabel: Dust Reach
+    AbilityDescription: 'The dust capsule''s LENGTH is Space (the skimmer''s Space-scaled Scale, elongated along the capsule axis only). What the dust does to MASS: an OWN-domain prism grows along a random axis, or turns DANGEROUS, or turns SHIELDED; an OPPOSING prism is destroyed, shrunk, or stolen. Each prism''s outcome is a deterministic roll of that prism, so every peer agrees.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Diamond Dust
+    UpgradeDescription: 'Dust on your own PLAIN mass occasionally raises a SUPER-SHIELD.'
+  - Element: 4
+    AbilityLabel: Drop
+    AbilityDescription: 'HOLD. The wings shut and the hull falls belly-first along its own down - the way its dust rains - without turning, at 900 u/s, passing through everything (incorporeal: no prism, crystal, hull or wormhole touches it) and leaving no trail, while the camera swings up over it so the fall reads as flying forward. LET GO and it lands: the hull pitches 90 degrees nose-down into the line it fell on and flies straight on. No longest drop. The RECHARGE is paid by distance: a hop costs a little, a medium drop (900 u) the full 20 s, and anything past that is free. Only a full-recharge drop leaves a wormhole pair (neutral: everyone rides free until Charge 5). Time''s dial is the recharge (half at Time 10).'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Afterburn
+    UpgradeDescription: 'For 3 s after the drop you stay incorporeal and fly a speed boost.'

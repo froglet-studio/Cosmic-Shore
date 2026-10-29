@@ -9,6 +9,18 @@ player and editor), a Roslyn type-check of the swarm glue, and the generators. Q
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` (§ Tandava; `/verify-unity` could not run: no Unity editor or `unity` CLI in the
 authoring session). `QA-TANDAVA-1..8` describe the first design and are superseded.
 
+**Scaled to the one heart size (2026-10-27, Garrett: "go ahead and fix tandava etc."; `Docs/ECOSYSTEM.md` §64.5).**
+The creature's members grew x 2.044 round the one elemental crystal size, so the mode's world grew with them by one
+rule: **lengths x K = 2.044** (the membrane 800 → 1,635.2, the band 240-720 → 490.6-1,471.7, the hatch −430 → −878.9,
+the pilots' line 600 → 1,226.4, every creature-centred director dial), **travel and morph times x K** (lunge and its
+cooldown, flee, feed settle, rise, the drum 30 → 61.3 s, the strike's lead and hold, starvation 30 → 61.3 s), **volumes
+x 6.38** (the eggs' mass ratio: the meal 4,000 → 25,521, `MinFood` 200 → 1,276, and every reef plant grown whole by
+1.855 - `LatticeScale` / `PlantScale`, no new plant or collider), **speeds and vessel-facing sizes unchanged** (60 u/s
+calm, a ring's 24 u mouth). Tandava's own bite reach is 25.73 and both cells are on the Tuned petal burn. Numbers
+further down this doc that predate this are the research body's: multiply a length or a travel time by 2.044 and a
+volume by 6.38. **An unopposed hunt now runs 226-254 s (was 116-148)** - the mode owner's call whether to keep that pace.
+The harness's 108 checks pass, as before.
+
 **A voyage (Rev 13, 2026-10-25, Shombith: "add it as a unlocked voyage game"):** `VOYAGE = True` in the generator puts the card back on the master roster (`OrganicRematchGames`) while it stays in `_Archive` and off every grid; the Voyage window (`author_menu_mission.py`, `VoyageView`) is where players launch it. Set sail opens the arena launch panel and its hull picker: `ArenaLaunchPanel.Handles` takes any `ArenaRules` card as well as the Arena roster's (2026-10-26 - routed by the roster alone, the voyage fell to the arcade's one-hull panel and its pilots could not change vessel). The paragraph below describes the state before that.
 
 **Unlisted (2026-10-25): the mode is kept but shows up NOWHERE in the UI** - not on the Arena, Arcade, Mission or
@@ -41,7 +53,7 @@ reasons, each answered here:
 |---|---|
 | remove the timer: there should not be any timer | `TandavaDirectorSettings.MatchSeconds` is 0 - no clock, no "Time left" row; the hunt ends when the creature is broken or its cycle is complete (`HeldOff` stays in the enum, unreachable) |
 | make it more aggressive | a HEALTHY creature (body at 70%+ of its form) turns on a pilot within 380 u and LUNGES - its feed pose's guard plates out round its jaws, 144 u/s, turning 3x - for up to 2.5 s, resting 6 s between; only a HURT one flees (§3.3, harness T8, T17) |
-| make the cell smaller, it is too big | the membrane at 800 u (the standard is 1,200) with the Scurry cell's half-size core (196 u) |
+| make the cell smaller, it is too big | the membrane at 800 u (the standard is 1,200) with the Scurry cell's half-size core (196 u) - 1,635.2 u since the one heart size grew the creature x 2.044 (2026-10-27) |
 | more types of flora, cramped up | 27 plants of six species in the band 240-720 u: Borromean, Coral, Lantern, Reed and Frond (Mass) and Tendril and Coral (Space) |
 | an environment, from Scurry intensity 4 | Crystal Capture's intensity-4 world, `SpawnableAtlantis`, on the cell config - **removed again in the fourth pass** |
 | form changes should be faster | lower banks (0.15 / 0.28 / 0.4 of the stomach): unopposed it finished in about 170 s, its first change at 34-51 s; the rise 5 s; the re-sort itself 1.0 s instead of 3.5 s (`SortVMaxScale` 3, `SortWellClip` 1 - harness T16) |
@@ -169,7 +181,7 @@ from) and `LifeForm.HealthBlockCount` (a plant's live prisms: what is left to ea
 
 ### 3.2 The closed cell and its reef
 
-The wall is `TandavaMembrane` - a generated copy of `CapsuleMembrane` at radius 800 (the standard is 1,200; its baked
+The wall is `TandavaMembrane` - a generated copy of `CapsuleMembrane` at radius 1,635.2 (800 before the one heart size; its baked
 animation is keyed by radius, so this one animates live): the swarm's own member clamp holds every member inside 0.97 of
 it, and the director keeps the body's centre within 616 u of the cell's centre (the membrane less the longest body's
 half-length). The nucleus is the Scurry cell's `HalfNucleus` (radius 196): glass the creature swims through; fauna eat
@@ -369,7 +381,7 @@ first tick. Narration is an index into the settings' lines (`TandavaLine`), so e
 
 ## 4. What the harness proves (`bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>`)
 
-The shipped sort core (scripted, with the levers) and the shipped director in a closed 800 u cell of 27 dispersed,
+The shipped sort core (scripted, with the levers) and the shipped director in a closed 1,635.2 u cell of 27 dispersed,
 regrowing plants of six species (`TandavaHarness.cs`, header). The food model keeps the one thing `SwarmFauna.Feed` depends on - geometry:
 BitersPerStep members asked round-robin, each biting a prism (its species' leaf) within reach. Pilots are scripted
 policies.
@@ -428,11 +440,11 @@ long a broken meal keeps it hungry (QA-TANDAVA-16).
 
 | Number | Value | Lives in |
 |---|---|---|
-| speed, turn, the turn carry, the re-sort | Cruise 3 voxels/step (60 u/s), TurnPerStep 0.03, SortTurnCarry 1, SortVMaxScale 3, SortWellClip 1 | `TandavaSwarmFaunaConfig` |
+| speed, turn, the turn carry, the re-sort | Cruise 1.4677 voxels/step (x UnitScale 4.088 = 60 u/s), TurnPerStep 0.03, SortTurnCarry 1, SortVMaxScale 1.4677, SortWellClip 1, BiteRadius 25.73 | `TandavaSwarmFaunaConfig` |
 | regrowth | SortLayRate 0.084, SortLayMax 8 (x3), KillLayHoldSeconds 0, SortLayRampSeconds 1.5, BudAtWound | same |
 | the stomach and intake | StomachEggs 500 (35,903 volume), BitersPerStep 8, SeedMembers 180 (x3, capped at the plan: it hatches whole) | same |
 | every director dial (threat, moods, the lunge, levers, food, feeding, shatter, ascension, the clock - 0) | `TandavaDirectorSettings`' C# defaults | `TandavaSettings.Director` (authored from the C# defaults and asserted) |
-| the cell, the reef | membrane 800, nucleus 196, 27 plants of six species, no environment | `author_tandava_assets.py` (FLORA_TABLE), the harness's `TandavaArena` (read back) |
+| the cell, the reef | membrane 1,635.2, nucleus 196, 27 plants of six species grown whole x 1.855, no environment | `author_tandava_assets.py` (FLORA_TABLE), the harness's `TandavaArena` (read back) |
 | the meal coils | COIL_PITCH 6, COIL_INNER 10.5, COIL_BREATHE 0.025, COIL_FRAME_STEPS 12, EIGHT_MIN_R 9, the Many-Headed S-bend (7 down, radius 9); each variant's CoilRoamRadius from its coils' reach | `tandava_plans.py`; `TandavaSettings.Forms` (`CoilPlanIndices`, `CoilMouths`, `CoilRoamRadius`) |
 | the forms, variants, banks, meals, mouths, halo centres | §2, §3.5 | `TandavaSettings.Forms` |
 | the halo, the burst, the palette, the lines, the HUD words | §3.6-3.8 | `TandavaSettings` |
@@ -473,7 +485,7 @@ Prisms: the reef 2,682 + one body of up to 642.
 | `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T19 |
 | `Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity` | a one-shot clone of `MinigameBroodRush`: the controller, monitor, cell and four RANDOM-hull AI templates swapped, the pilots' line at x = 600 facing the hatch. When the donor moves on, the generator keeps the committed scene and still validates it |
 | `Assets/_SO_Assets/Cell Configs/Tandava Cell/` | the cell config, spawn profile, the swarm species and the seven dispersed flora forks |
-| `Assets/_Prefabs/Environment/TandavaMembrane.prefab` | a generated copy: the CapsuleMembrane at 800 u |
+| `Assets/_Prefabs/Environment/TandavaMembrane.prefab` | a generated copy: the CapsuleMembrane at 1,635.2 u |
 | `Assets/_SO_Assets/Games/_Archive/ArcadeGameTandava.asset` | the arena card: Rhino, Squirrel, Sparrow; 1-6 players seated as 3 (one per hull); one domain. PARKED in `_Archive` and on no roster while the mode is unlisted (`LISTED` in the generator) |
 | `Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png` | the card backdrop (`render_card_backgrounds.py`, MODEL tier): the reef as species glyphs, the Great Serpent FEEDING (its own wrap plan, rolled up round a plant, its danger plates circling it), pilots striking the body |
 

@@ -38,6 +38,7 @@ lands, which is a property of the producer, not of the state:
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
 | Bomb passage (Grizzly trigger bomb) | Cylinder wake / Sphere when frozen | **live** — a bomb is inside this mass and has not gone off | everything | `GrizzlyBombVisual.PublishLit` |
+| Dust (Tiger Moth, Dust mode) | Cylinder over the live capsule (mirrored about its centre) | **live** — this prism is in my dust, whatever the dust does or does not do to it (super-shielded, shielded, growing, plain) | everything | `ButterflyDustField.Update` |
 | Contact acknowledgement (Thresher cord and ball) | Cylinder over the step's touches / Sphere for one | **resolved** — the cord passed through own mass it had nothing left to do to (already shielded) | **own domain only** | `ThresherExecutor.PublishAcknowledged` |
 
 **DYNAMIC CONTACT NEVER DOES NOTHING** (Garrett, 2026-10-20: *"dynamic clipping should never do
@@ -64,8 +65,9 @@ prism and then silently skipped it):
 round with friendly fire off flies through (`Projectile.DisallowImpactOnPrism`: Urchin spikes,
 explodable and energised spikes), the Serpent sniper's own-domain and sub-Charge-5 super-shielded
 pass-through (its cone query reaches the full range, so the prisms the round actually passed
-need the stop point first), the Kite navigator's head through own mass, the Butterfly dust on own
-super-shielded mass, and every own-fresh-trail grace window. Lighting these risks always-on
+need the stop point first), the Kite navigator's head through own mass, and every own-fresh-trail grace window. (The Butterfly dust on own
+super-shielded mass was on this list; closed 2026-10-29 by the dust row above, Garrett: "the dust should be causing the
+lit state on any prism it does or doesn't affect". It is an always-on producer for as long as Dust mode is, by request.) Lighting these risks always-on
 producers (see below), which is why they are decisions rather than fixes.
 
 **A producer that wants to say TWO things about one force should look for a different CHANNEL, not a

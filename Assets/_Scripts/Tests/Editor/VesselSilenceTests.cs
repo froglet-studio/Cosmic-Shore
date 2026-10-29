@@ -78,6 +78,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ALiftSaysWhetherThereWasAWindowToLift()
+        {
+            // The Tiger Moth's dust cleanses an ally (ElementalCleanse): it reports whether it lifted anything.
+            VesselSilence.Record("silenced", Domains.Ruby, 60f);
+            Assert.IsTrue(VesselSilence.Lift("silenced"));
+            Assert.IsFalse(VesselSilence.Lift("silenced"), "nothing left to lift");
+            Assert.IsFalse(VesselSilence.Lift(null));
+        }
+
+        [Test]
         public void AZeroWindowRecordsNothing()
         {
             VesselSilence.Record("silenced", Domains.Ruby, 0f);
