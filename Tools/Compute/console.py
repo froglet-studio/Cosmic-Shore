@@ -354,13 +354,25 @@ def core_four():
     return list(team.get("core") or [])
 
 
+def default_queue(cwd=None):
+    """The queue a build reads when none is given: the team's refs, and - until Froglet Compute is on bleeding-edge - the
+    branch it lives on, where its jobs are (setup.APP_REF; a worker's config.json carries it the same way). Without it a
+    build in a fresh session (the hourly sync) found no job: no search, and "no trainer yet" on every vessel."""
+    import setup
+    refs = list(L.QUEUE_REFS)
+    merged = L.git_ok("cat-file", "-e", "origin/bleeding-edge:Docs/Compute/jobs/unity-train.json", cwd=cwd) is not None
+    if not merged:
+        refs.append("origin/" + setup.APP_REF)
+    return list(dict.fromkeys(refs))
+
+
 LAST_JOBS = {}          # the jobs the last build read: the hub overlays live heartbeats with them
 
 
 def build(local=False, fetch=True, cwd=None, prs=None, url=None, queue=None):
     """`queue`: the branches jobs and manual runs are read from (default compute_lib.QUEUE_REFS)."""
     global LAST_JOBS
-    refs = [q if q.startswith("origin/") else "origin/" + q for q in queue] if queue else list(L.QUEUE_REFS)
+    refs = [q if q.startswith("origin/") else "origin/" + q for q in queue] if queue else default_queue(cwd)
     if fetch:
         L.fetch([r.replace("origin/", "") for r in refs] + ["Ys-bleeding-edge"], results=True, cwd=cwd, quiet=True)
         L.git_ok("fetch", "--quiet", "--no-tags", "origin", "+refs/heads/bugledger/*:refs/remotes/origin/bugledger/*",
