@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// The OMNICRYSTALS, the Meerkat's Omnicrystal ability's pickups (<c>R_VesselActions/MEERKAT.md</c> §7), the Vessel
     /// Studio's <c>placeOmni</c> / <c>stepOmni</c> / <c>drawOmni</c> (<c>Docs/Studios/VesselStudio/meerkat.html</c>, round
     /// 16): <c>omniCount</c> of them, gold, on the course line half way between rings; a Meerkat flying within
-    /// <see cref="PickRadius"/> u of one takes it and its roots grow (<see cref="MeerkatWormholeExecutor"/>).
+    /// <see cref="PickRadius"/> u of one takes it and its roots grow (<see cref="MeerkatSolitonExecutor"/>).
     ///
     /// <para><b>Where they are.</b> In Burrow Run, half way along evenly spaced legs of the course
     /// (<see cref="ForCourse"/>, from <c>BurrowRunController.OnCourseRaised</c>). In a scene with no course (the Toybox's
@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
             if (!_placed)
             {
                 int count = -1;
-                foreach (var e in MeerkatWormholeExecutor.Executors)
+                foreach (var e in MeerkatSolitonExecutor.Executors)
                     if (e && e.Config) { count = e.Config.OmniCount; break; }
                 if (count >= 0) Place(count);
                 return;
@@ -169,7 +169,7 @@ namespace CosmicShore.Gameplay
         /// submeshes of one mesh drawn through the wormhole's additive material.</summary>
         static bool Resolve()
         {
-            if (!s_mat) s_mat = Resources.Load<Material>(MeerkatWormholeView.AdditiveMaterialPath);
+            if (!s_mat) s_mat = Resources.Load<Material>(SolitonTunnelView.AdditiveMaterialPath);
             if (!s_mat) return false;
             if (s_core) return true;
             float g = (1f + Mathf.Sqrt(5f)) / 2f;

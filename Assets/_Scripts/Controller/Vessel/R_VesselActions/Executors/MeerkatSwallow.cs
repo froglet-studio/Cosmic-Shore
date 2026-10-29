@@ -16,12 +16,12 @@ namespace CosmicShore.Gameplay
     ///
     /// <list type="bullet">
     /// <item><b>The pull.</b> Every prism (shielded too, never super-shielded) and every crystal within <c>suckRadius</c> of
-    /// a standing tunnel's way in is drawn to it (<see cref="MeerkatWormholeMath.PullVelocity"/>), four looks a second.
+    /// a standing tunnel's way in is drawn to it (<see cref="SolitonTunnelShapeMath.PullVelocity"/>), four looks a second.
     /// A plant's prism is plucked first (<see cref="HealthPrism.LeaveAsSkeleton"/>), as the Jacks' net does; a creature's
     /// body, a prism still growing in and the trail still coming out of our own hull are left alone.</item>
     /// <item><b>The tube.</b> Within <c>swallowShare</c> × the opening radius it is swallowed: carried at the slide's top
-    /// speed (<c>rootMaxSpeed</c>, round 25), never past the rider ahead of it, held to the wall's narrowing, stretched along the tube and twisted
-    /// (<see cref="MeerkatWormholeMath.CarryDistortion"/>), its authored scale put back at the way out.</item>
+    /// speed (the tunnel config's <c>maxSpeed</c>, round 25), never past the rider ahead of it, held to the wall's narrowing, stretched along the tube and twisted
+    /// (<see cref="SolitonTunnelShapeMath.CarryDistortion"/>), its authored scale put back at the way out.</item>
     /// <item><b>The fire.</b> Out of the way out along its last heading at <c>fireSpeed</c>, gliding to rest over
     /// <c>fireGlideSeconds</c>. A tunnel that collapses fires out all it holds at once.</item>
     /// </list>
@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
     /// does not. Mass is moved, never deleted.</para>
     ///
     /// <para><b>Where it runs.</b> Every peer runs every Meerkat's swallow on the tunnels it has (each owner publishes its
-    /// tunnels, <see cref="MeerkatWormholeNetworkRelay"/>), so each machine moves the prisms and loose crystals it simulates,
+    /// tunnels, <see cref="MeerkatSolitonNetworkRelay"/>), so each machine moves the prisms and loose crystals it simulates,
     /// as the Jacks' net does; the machine that decides the hull puts the cell's omni crystal where it comes to rest for
     /// everyone (<see cref="CrystalManager.RelocateCrystal"/>).</para>
     /// </summary>
@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
     {
         enum Stage { Pull, Tube, Glide }
 
-        // perf (2026-10-29): the swallow's share of MeerkatWormholeExecutor.Update, by step, for the profiler and prof_*.json
+        // perf (2026-10-29): the swallow's share of MeerkatSolitonExecutor.Update, by step, for the profiler and prof_*.json
         static readonly ProfilerMarker s_mCatch = new("Meerkat.Swallow.Catch");
         static readonly ProfilerMarker s_mMove = new("Meerkat.Swallow.Move");
         static readonly ProfilerMarker s_mCrystals = new("Meerkat.Swallow.Crystals");
@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay
         {
             public Prism Prism;
             public Stage Stage;
-            public MeerkatWormholeExecutor.Tunnel Tunnel;
+            public SolitonTunnel Tunnel;
             public float S, Age;
             public Vector3 Off;     // across the way in, as a share of the opening radius (the page's k.off / wh.M)
             public Vector3 V;
@@ -62,7 +62,7 @@ namespace CosmicShore.Gameplay
             public Crystal Crystal;
             public bool Omni;
             public Stage Stage;
-            public MeerkatWormholeExecutor.Tunnel Tunnel;
+            public SolitonTunnel Tunnel;
             public float S;
             public Vector3 Off, V, Placed, Scale;
             public int Seed;
@@ -91,29 +91,27 @@ namespace CosmicShore.Gameplay
         internal int CrystalCount => _crystals.Count;
 
         /// <summary>The page's <c>standing</c>: a formed tunnel, whole from mouth to mouth, not collapsing.</summary>
-        internal static bool Standing(MeerkatWormholeExecutor.Tunnel t) =>
-            t != null && !t.Dying && (t.W.Phase == MeerkatWormholeMath.Phase.Open || t.W.Phase == MeerkatWormholeMath.Phase.Stay)
-            && t.W.S0 <= 0.5f && t.W.S1 >= t.L - 0.5f;
+        internal static bool Standing(SolitonTunnel t) => t != null && t.Standing;
 
-        static bool Alive(MeerkatWormholeExecutor.Tunnel t, MeerkatWormholeExecutor maker)
+        static bool Alive(SolitonTunnel t, MeerkatSolitonExecutor maker)
         {
-            if (t == null || t.Dying || t.W.Phase == MeerkatWormholeMath.Phase.Collapse) return false;
-            var live = MeerkatWormholeExecutor.Live;
+            if (t == null || t.Dying || t.W.Phase == SolitonTunnelShapeMath.Phase.Collapse) return false;
+            var live = SolitonTunnel.Live;
             for (int i = 0; i < live.Count; i++)
-                if (live[i] == t) return t.Maker == maker;
+                if (live[i] == t) return ReferenceEquals(t.Maker, maker);
             return false;
         }
 
         /// <summary>One frame: look round each standing tunnel's way in, then move all it pulls, carries and fires.</summary>
-        internal void Step(MeerkatWormholeExecutor ex, float dt)
+        internal void Step(MeerkatSolitonExecutor ex, float dt)
         {
             var cfg = ex.Config;
             if (!cfg || dt <= 0f) return;
-            var live = MeerkatWormholeExecutor.Live;
+            var live = SolitonTunnel.Live;
             for (int i = 0; i < live.Count; i++)
             {
                 var t = live[i];
-                if (t.Maker != ex || !Standing(t) || Time.time < t.SwallowLook) continue;
+                if (!ReferenceEquals(t.Maker, ex) || !Standing(t) || Time.time < t.SwallowLook) continue;
                 t.SwallowLook = Time.time + LookSeconds;
                 using (s_mCatch.Auto())
                 {
@@ -127,7 +125,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The hull goes (a swap or despawn): what is in a tube is set down where it is with its own scale, what moves
         /// stops, and the cell's omni crystal is put where it is for everyone.</summary>
-        internal void Release(MeerkatWormholeExecutor ex)
+        internal void Release(MeerkatSolitonExecutor ex)
         {
             for (int i = 0; i < _bodies.Count; i++)
             {
@@ -153,7 +151,7 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ prisms
 
-        void CatchPrisms(MeerkatWormholeExecutor ex, MeerkatWormholeExecutor.Tunnel t)
+        void CatchPrisms(MeerkatSolitonExecutor ex, SolitonTunnel t)
         {
             var cfg = ex.Config;
             int cap = Mathf.Max(1, cfg.SwallowPrismCap);
@@ -186,7 +184,7 @@ namespace CosmicShore.Gameplay
             _found.Clear();
         }
 
-        void MovePrisms(MeerkatWormholeExecutor ex, float dt)
+        void MovePrisms(MeerkatSolitonExecutor ex, float dt)
         {
             for (int i = _bodies.Count - 1; i >= 0; i--)
             {
@@ -215,7 +213,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (!Standing(t)) b.Stage = Stage.Glide;   // it collapsed under it: it glides on, and rests where it stops
                     else if ((tr.position - t.A).sqrMagnitude <= Sq(Mathf.Max(0f, cfg.SwallowShare) * t.M)) Swallow(b, t, ex);
-                    else b.V = MeerkatWormholeMath.PullVelocity(t.A, t.T0, tr.position, cfg.SuckSpeed, cfg.SuckRadius, cfg.RootMaxSpeed);
+                    else b.V = SolitonTunnelShapeMath.PullVelocity(t.A, t.T0, tr.position, cfg.SuckSpeed, cfg.SuckRadius, t.Config ? t.Config.MaxSpeed : cfg.SlideMaxSpeed);
                 }
                 if (b.Stage == Stage.Tube)
                 {
@@ -287,7 +285,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The page's <c>take</c>: into the tube, its place across the way in kept as a share of the opening.</summary>
-        static void Swallow(Body b, MeerkatWormholeExecutor.Tunnel t, MeerkatWormholeExecutor ex)
+        static void Swallow(Body b, SolitonTunnel t, MeerkatSolitonExecutor ex)
         {
             b.Off = Across(b.Prism.transform.position, t);
             b.S = 0f;
@@ -301,7 +299,7 @@ namespace CosmicShore.Gameplay
                 b.Prism.Steal(maker.PlayerName, maker.Domain);
         }
 
-        static Vector3 Across(Vector3 p, MeerkatWormholeExecutor.Tunnel t)
+        static Vector3 Across(Vector3 p, SolitonTunnel t)
         {
             var off = p - t.A;
             off -= t.T0 * Vector3.Dot(off, t.T0);
@@ -311,11 +309,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Carried: on the centreline at s plus its share of the wall's radius there, stretched and twisted.</summary>
-        static void Pose(MeerkatWormholeConfigSO cfg, Body b, MeerkatWormholeExecutor.Tunnel t)
+        static void Pose(MeerkatSolitonConfigSO cfg, Body b, SolitonTunnel t)
         {
             var tr = b.Prism.transform;
             var at = t.At(b.S, out var tangent);
-            MeerkatWormholeMath.CarryDistortion(b.S, t.L, cfg.CarryStretch, cfg.CarryTwist, b.Seed, out float along,
+            SolitonTunnelShapeMath.CarryDistortion(b.S, t.L, cfg.CarryStretch, cfg.CarryTwist, b.Seed, out float along,
                 out float across, out float turn);
             tr.SetPositionAndRotation(at + b.Off * t.Radius(b.S),
                 Quaternion.LookRotation(tangent) * Quaternion.AngleAxis(turn * Mathf.Rad2Deg, Vector3.forward));
@@ -324,7 +322,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The page's <c>kitFire</c>: out of the way out along its last heading, a little apart from the line.</summary>
-        static void Fire(MeerkatWormholeConfigSO cfg, Body b, MeerkatWormholeExecutor ex)
+        static void Fire(MeerkatSolitonConfigSO cfg, Body b, MeerkatSolitonExecutor ex)
         {
             var t = b.Tunnel;
             var exit = t.At(t.L, out var heading);
@@ -342,7 +340,7 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ crystals
 
-        void CatchCrystals(MeerkatWormholeConfigSO cfg, MeerkatWormholeExecutor.Tunnel t)
+        void CatchCrystals(MeerkatSolitonConfigSO cfg, SolitonTunnel t)
         {
             float rs = Mathf.Max(Mathf.Max(0f, cfg.SwallowShare) * t.M, cfg.SuckRadius), rs2 = rs * rs;
             if (rs <= 0f) return;
@@ -365,7 +363,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void MoveCrystals(MeerkatWormholeExecutor ex, float dt)
+        void MoveCrystals(MeerkatSolitonExecutor ex, float dt)
         {
             var cfg = ex.Config;
             bool decides = ex.Status != null && ElementalTransfer.IsDecidedHere(ex.Status);
@@ -393,7 +391,7 @@ namespace CosmicShore.Gameplay
                         c.V = Vector3.zero;
                         c.Stage = Stage.Tube;
                     }
-                    else c.V = MeerkatWormholeMath.PullVelocity(t.A, t.T0, tr.position, cfg.SuckSpeed, cfg.SuckRadius, cfg.RootMaxSpeed);
+                    else c.V = SolitonTunnelShapeMath.PullVelocity(t.A, t.T0, tr.position, cfg.SuckSpeed, cfg.SuckRadius, t.Config ? t.Config.MaxSpeed : cfg.SlideMaxSpeed);
                 }
                 if (c.Stage == Stage.Tube)
                 {
@@ -410,7 +408,7 @@ namespace CosmicShore.Gameplay
                     else
                     {
                         var at = t.At(c.S, out var tangent);
-                        MeerkatWormholeMath.CarryDistortion(c.S, t.L, cfg.CarryStretch, cfg.CarryTwist, c.Seed, out float along,
+                        SolitonTunnelShapeMath.CarryDistortion(c.S, t.L, cfg.CarryStretch, cfg.CarryTwist, c.Seed, out float along,
                             out float across, out float turn);
                         tr.SetPositionAndRotation(at + c.Off * t.Radius(c.S),
                             Quaternion.LookRotation(tangent) * Quaternion.AngleAxis(turn * Mathf.Rad2Deg, Vector3.forward));
@@ -455,12 +453,12 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Round 25 (Yash: "make sure the prisms and the vessels both travel in the same speed variations. So that anything
         /// that enters the wormhole at first will get out of the wormhole also without clashing"; the page's
-        /// <c>tubeAdvance</c>): a carried thing moves at the slide's top speed (<c>rootMaxSpeed</c>, what a rider holding RT
-        /// reaches), never past this Meerkat's rider ahead of it - it keeps <see cref="MeerkatWormholeMath.TubeGap"/> behind -
+        /// <c>tubeAdvance</c>): a carried thing moves at the slide's top speed (the tunnel config's <c>maxSpeed</c>, what a rider holding RT
+        /// reaches), never past this Meerkat's rider ahead of it - it keeps <see cref="SolitonTunnelShapeMath.TubeGap"/> behind -
         /// so first in is first out.
         /// </summary>
-        static float TubeAdvance(MeerkatWormholeExecutor ex, MeerkatWormholeExecutor.Tunnel t, float s, float dt) =>
-            MeerkatWormholeMath.TubeAdvance(s, ex.Config.RootMaxSpeed, dt, ex.RidingTunnel == t, ex.RideAlong);
+        static float TubeAdvance(MeerkatSolitonExecutor ex, SolitonTunnel t, float s, float dt) =>
+            SolitonTunnelShapeMath.TubeAdvance(s, t.Config ? t.Config.MaxSpeed : ex.Config.SlideMaxSpeed, dt, ex.RidingTunnel == t, ex.RideAlong);
 
         void EnsureNative(int cap)
         {

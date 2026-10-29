@@ -59,7 +59,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
 | **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, field pairs and the catch sling | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
-| **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatWormholeExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
+| **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatSolitonExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
 | Rhino | Headlong | lapped gate race | none yet |
 | Manta | Redline | gate race | none yet |
 | Urchin | Skein | gate race on rails | none yet |

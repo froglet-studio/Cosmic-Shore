@@ -341,7 +341,7 @@ ones.
   other, and is seen only by the way it bends the world.* Added at the prompter's explicit request (Garrett,
   2026-10-27: "the meerkat should be producing a new fundamental (solitons)"). **Partly built**: the Meerkat's wormhole
   (`R_VesselActions/MEERKAT.md`) is the first maker, and its surface area and swallow are in Unity (Yash's round 23,
-  `MeerkatSwallow`, `MeerkatWormholeMath`); the rest is design, `Docs/Studios/MEERKAT.md` § Garrett's direction, whose
+  `MeerkatSwallow`, `SolitonTunnelShapeMath`); the rest is design, `Docs/Studios/MEERKAT.md` § Garrett's direction, whose
   element definition is LOCKED (Garrett, 2026-10-28). The curation checks:
   1. **Name.** *Soliton*: a solitary wave that holds its shape as it travels. No other system uses the word.
   2. **Reach.**
@@ -365,7 +365,7 @@ ones.
      points.
   5. **Weight.** Agreed by the prompter, who asked for it.
 
-  Its look is the contour-field lens (`MeerkatWormholeLensPass`): no grid, no surface, only bent space, and the
+  Its look is the contour-field lens (`SolitonTunnelLensPass`): no grid, no surface, only bent space, and the
   placement grid is its maker's alone. Its pilot sight is **FLUME** (`Docs/Pilots/CALLSIGNS.md`).
 
 ### Process for curating fundamentals

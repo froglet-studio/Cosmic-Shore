@@ -1,0 +1,141 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79e5a66832b4490dada0056a58c42303, type: 3}
+  m_Name: MeerkatSolitonConfig
+  m_EditorClassIdentifier: 
+  tunnelConfig: {fileID: 11400000, guid: 56ab244df5a04290bdece10a4cc41f35, type: 2}
+  networkConfig: {fileID: 11400000, guid: 987e30bc0fb54422a2aef022a04bd2b4, type: 2}
+  reticleAhead: 30
+  bendMaxDegrees: 150
+  shaftMin: 60
+  shaftMax: 600
+  keyRampSeconds: 0.5
+  reticleDelaySeconds: 0.5
+  reticleGrowSeconds: 0.8
+  reticleSmoothSeconds: 0.123
+  reticleIdleAlpha: 0.053
+  reticleWhite: 0.45
+  reticleNearLight: 0.25
+  omniOn: 1
+  menuAutopilotNetworks: 1
+  networkReach:
+    Enabled: 1
+    Value: 0.5
+    Min: 0.5
+    Max: 1
+    element: 2
+    UseFloor: 1
+    Floor: 0.05
+  omniCount: 3
+  areaL0: 6000
+  areaL10: 18000
+  suckRadius: 40
+  suckSpeed: 30
+  swallowShare: 1.5
+  carryStretch: 2
+  carryTwist: 0.5
+  fireSpeed: 120
+  fireGlideSeconds: 3
+  swallowPrismCap: 48
+  aiWormhole: 1
+  aiStraightMinDistance: 300
+  aiBentMinDistance: 120
+  aiShapeSeconds: 0.3
+  aiNoise: 0
+  rush:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.4
+    element: 4
+    UseFloor: 1
+    Floor: 0.05
+  boostOut: 1.5
+  sentinelPool: 3
+  sentinelPoolL5: 6
+  guardShare: 1.5
+  aiZapRate: 5
+  zapPetals:
+    Enabled: 1
+    Value: 0.1
+    Min: 0.1
+    Max: 0.25
+    element: 1
+    UseFloor: 1
+    Floor: 0
+  zapCooldownSeconds: 0
+  onCombatHitLanded: {fileID: 0}
+  portalShare: 1.5
+  portalSize:
+    Enabled: 1
+    Value: 0.4
+    Min: 0.4
+    Max: 0.9
+    element: 2
+    UseFloor: 1
+    Floor: 0.05
+  zapEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sentinelPlacedEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sentinelLostEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  portalEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  prismFiredEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  formEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  collapseEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  networkEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

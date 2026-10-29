@@ -1,0 +1,81 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0541531fe50e43019100afc7d1187dc8, type: 3}
+  m_Name: SolitonNetwork
+  m_EditorClassIdentifier: 
+  comfort:
+    DistortionIntensity: 1
+    MaxWobbleSpeed: 0.25
+    MaxPulseSpeed: 1
+  look:
+    Bend: 3
+    Lens: 0.139
+    WallInside: 0.1
+    WallOutside: 0.15
+    Wobble: 0.2
+    WobbleWaves: 1.5
+    WobbleSpeed: 0.12
+    Rim: 0.05
+    RimTightness: 4
+    Glint: 0.25
+    Glow: 0.04
+    Shimmer: 0.5
+    Pulse: 0.12
+    PulseCount: 3
+    PulseSpeed: 0.6
+  ride:
+    InsideBend: 0.5
+    InsideWobble: 0.5
+    SteadyCentre: 0.2
+  bridgeOn: 1
+  bridgeBrightness: 0.35
+  bridgeRings: 36
+  bridgeSpindlesPerRing: 21
+  bridgeRibs: 5
+  bridgeSpindleThickness: 0.25
+  bridgeShimmer: 0.5
+  bridgeWhite: 0.3
+  bridgeMaxChannels: 4
+  tintFromMaker: 1
+  overrideTint: {r: 0.31, g: 0.85, b: 1, a: 1}
+  tintStrength: 0.35
+  bendRadius: 10
+  ovalShortest: 0.2
+  ovalLongest: 1.1
+  ovalMaxSharpness: 8
+  throatDiameter: 7.1
+  mouthDiameter: 35.6
+  networkBranchPointsMin: 6
+  networkBranchPointsMax: 12
+  networkOpeningsMin: 16
+  networkOpeningsMax: 50
+  networkRadiusMin: 100
+  networkRadiusMax: 531
+  networkSpread: 273
+  networkRandomness: 0.45
+  networkDiameter: 10.5
+  networkMouthDiameter: 13.9
+  networkTip: 0.309
+  networkGnarl: 0.779
+  formSeconds: 0.4
+  staySeconds: 10
+  collapseSeconds: 0.8
+  networkFormSeconds: 0.8
+  wallGravity: 60
+  bounce: 0.45
+  wallFriction: 0.05
+  thrustOn: 1
+  thrust: 25
+  minSpeed: 30
+  maxSpeed: 119
+  exitMultiplier: 1.2
+  rideSpeedTunnelScale: 5

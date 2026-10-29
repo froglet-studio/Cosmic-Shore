@@ -170,13 +170,13 @@ no reference compile, no dotnet in the session. `/verify-unity` was not availabl
 **What landed** (the artifact's round 26, cloned; `R_VesselActions/MEERKAT.md` §7a):
 - The tree, the network's bark and its old inside wall ship off (`trunkVisibility`, `rootBarkVisibility`, `rootOpacity` 0).
 - Every channel of the omnicrystal's network draws as a wormhole does: the contour field's water pipe (`MWChannel` in
-  `MeerkatWormholeLens.shader`), the bridge in YASH'S LOOK, the warp tube, and the calm inner wall every tube now has
+  `SolitonTunnel.shader`), the bridge in YASH'S LOOK, the warp tube, and the calm inner wall every tube now has
   (`MeerkatTubeWallView`, `MeerkatTubeWall.shader`, `tubeInner`).
 - The network's size comes from Mass, not the last wormhole: `networkReach` (an `ElementalFloat` on Mass, 0.5 → 1 × the
-  cell's radius), centred toward the cell's centre, its forks laid for transport (`MeerkatRootMath.BuildNetwork`).
+  cell's radius), centred toward the cell's centre, its forks laid for transport (`SolitonTunnelMath.BuildNetwork`).
 
 **Verified without the editor:** reference compile, player-dev and editor: 0 errors in project code. Both changed shaders
-compile (glslang, HLSL front end, vertex and fragment, URP mock; a planted typo fails). `MeerkatRootMathTests` 12/12 under
+compile (glslang, HLSL front end, vertex and fragment, URP mock; a planted typo fails). `SolitonTunnelMathTests` 12/12 under
 dotnet (4 new, from the page's own `labLayout` / `netPlace`). `studio_to_unity --check`: 0 Meerkat drift (Yash's own Unity edits, ce548fc092: `bendRadius` 10, `throatDiameter`
 20, `mouthDiameter` 40, are now the artifact's shipped values).
 `author_meerkat_assets --check` / `--self-test` pass. The console-logging, conditional-compilation, using-directive and
@@ -194,7 +194,7 @@ abstract-member gates pass. `/verify-unity` was not available (no editor in the 
    debug) and take another omnicrystal: it fills the cell, its openings out at the race shell (Burrow Run: about 1,080 u from
    the cell's centre), and you can cross the cell through it.
 5. YASH'S LOOK on the config's Inspector: every tube of the network shows the spindle bridge too; GARRETT'S LOOK takes it away.
-6. Profile a race with a full-Mass network up (`prof`): "MeerkatTubeWallView.Draw", "MeerkatWormholeView.Draw" and the
+6. Profile a race with a full-Mass network up (`prof`): "MeerkatTubeWallView.Draw", "SolitonTunnelView.Draw" and the
    "Meerkat wormhole lens" pass (four nearest tubes, 256 march steps each).
 7. Two players on this build: one takes an omnicrystal; the other sees the same network (the relay's size float now carries
    the reach share; a peer on an older build would read it as a trunk size).
@@ -348,7 +348,7 @@ Meerkat (with `MeerkatSentinels`, `MeerkatExitPortal`, `MeerkatSolitonMath`; the
 (`TunnelState.Kit`, `PortalSize`). `/verify-unity` was not available in this session (no Editor): nothing here has been
 compiled or run by Unity itself.
 
-**Verified without the editor:** 6/6 `MeerkatSolitonMathTests` (after the merge with round 23; its area goldens are in `MeerkatWormholeMathTests`) on the page's own numbers (dotnet, Unity stubs;
+**Verified without the editor:** 6/6 `MeerkatSolitonMathTests` (after the merge with round 23; its area goldens are in `SolitonTunnelShapeMathTests`) on the page's own numbers (dotnet, Unity stubs;
 `Tools/Build/meerkat_kit_harness/run.sh --self-test`, 3 negative controls fire). Reference compile player-dev and editor:
 0 errors in project code. `element_ability_table.py Meerkat`: 4/4 · 4/4 · 4/4. `author_meerkat_assets.py --check` /
 `--self-test`, `studio_to_unity.py --check` (Meerkat 0 drift), console-logging, conditional-compilation, using-directive,
@@ -356,7 +356,7 @@ elemental-float, network-prefab-hash and abstract-member gates green.
 
 **Verify in editor** (the Toybox's Vessel Changer → Meerkat, unless said; HUD console `elements` or crystals to raise a level):
 1. **Compile and load.** No console error on entering play mode or on swapping to the Meerkat. The ShipActions object
-   carries `MeerkatSolitonKit` with `MeerkatWormholeConfig` and Runtime GameData wired.
+   carries `MeerkatSolitonKit` with `MeerkatSolitonConfig` and Runtime GameData wired.
 2. **Space, the soliton's size and swallow** are round 23's: run the next entry ("The Meerkat's soliton: Garrett's surface
    area, and prisms sucked through it"). Since the merge with round 23 the kit adds only the L5 Steal and the fired sound
    to them.
@@ -398,7 +398,7 @@ soliton; sentinels zapping sentinels; the Meerkat's own icons; the sound (five e
 ### 🔴 The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** the automatic ride is gone. The main tunnel is now a network of one channel flown by the roots' own
-flight (`MeerkatRootMath.Step` through `ITubePath`, `MeerkatWormholeExecutor.StepRide`):
+flight (`SolitonTunnelMath.Step` through `ITubePath`, `MeerkatSolitonExecutor.StepRide`):
 - you cruise along it at `rootCruise`;
 - RT pushes you faster up to `rootMaxSpeed`;
 - the left stick moves you round the tube, and the wall bounces you;
@@ -424,13 +424,13 @@ The AI holds RT and keeps to the middle. `rideEntryMultiplier` and `rideMidMulti
 ### 🔴 The Meerkat's soliton: Garrett's surface area, and prisms sucked through it (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** the tunnel's throat follows Garrett's surface area, set by the hull's Space level, so a longer tunnel is
-thinner (`MeerkatWormholeMath.SurfaceAreaThroat`). `MeerkatSwallow` (run by `MeerkatWormholeExecutor`) pulls the prisms and
+thinner (`SolitonTunnelShapeMath.SurfaceAreaThroat`). `MeerkatSwallow` (run by `MeerkatSolitonExecutor`) pulls the prisms and
 crystals within `suckRadius` 90 u of a standing tunnel's way in, carries them through stretched (up to 3 × at the middle)
 and twisted half a turn, and fires them out of the way out at `fireSpeed` 120, gliding to rest. Pulled and fired prisms are
 moving prisms (`Docs/PRISM_MOTION.md`). `MEERKAT.md` §8.
 
 **Verified without the editor:**
-- 58/58 `MeerkatWormholeMathTests` + `MeerkatRootMathTests` (dotnet, Unity stubs), with 11 new goldens from the page's own
+- 58/58 `SolitonTunnelShapeMathTests` + `SolitonTunnelMathTests` (dotnet, Unity stubs), with 11 new goldens from the page's own
   `kitThroat` and `pullVel`.
 - Reference compile clean, player and editor.
 - `studio_to_unity --check`: 104 mapped, 0 drift.
@@ -503,12 +503,12 @@ acceleration for a full speed take 20 u/s², response 0.35 s, amplitude 1 (cappe
 
 ### 🔴 The Meerkat's tunnel bends round its middle, as one oval arc (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed:** `MeerkatWormholeMath.Conic`: the centreline is one conic arc symmetric about its middle, more oval as it
+**What landed:** `SolitonTunnelShapeMath.Conic`: the centreline is one conic arc symmetric about its middle, more oval as it
 gets longer (`ovalShortest` 0.2 → `ovalLongest` 1.1, the middle at most `ovalMaxSharpness` 8 × as sharp as the ends). The
 reticle, bridge, tree, warp tube, ride, AI plan and the contour-field lens (`MWTube`: 25 points with circle arcs between
 them) all follow it.
 
-**Verified without the editor:** 48/48 `MeerkatWormholeMathTests` against the page's own numbers (dotnet, Unity stubs).
+**Verified without the editor:** 48/48 `SolitonTunnelShapeMathTests` against the page's own numbers (dotnet, Unity stubs).
 The lens shader compiles (glslang), and its nearest-point search is within 0.07 u of the exact arc (Python mirror against
 brute force, 400 random tubes). Reference compile clean.
 
@@ -528,14 +528,14 @@ brute force, 400 random tubes). Reference compile clean.
 - The tree round every formed tunnel: trunk, bore, cut faces and branches (`MeerkatTreeMesh`, `MeerkatTreeView`,
   `MeerkatTree.shader`). The contour-field water pipe is unchanged.
 - Omnicrystals (`MeerkatOmnicrystalField`) in Burrow Run between the rings, and in the Toybox ahead of your Meerkat.
-  Taking one grows the roots at once from the hull, sized by the last tunnel's shaft (`MeerkatRootMath`,
-  `MeerkatRootNetwork`).
+  Taking one grows the roots at once from the hull, sized by the last tunnel's shaft (`SolitonTunnelMath`,
+  `SolitonNetwork`).
 - Inside the roots: cruise on, the left stick moves you round the root, RT faster, the walls bounce you, the camera on
   the root's centreline, the inside a soft warm tube lit by your lamp (`MeerkatRootInside.shader`). The AI holds
-  RT and steers across. Roots replicate through `MeerkatWormholeNetworkRelay.n_roots` (protocol 22).
+  RT and steers across. Roots replicate through `MeerkatSolitonNetworkRelay.n_roots` (protocol 22).
 
 **Verified without the editor:**
-- `MeerkatRootMathTests` and `MeerkatWormholeMathTests`: 40/40 pass in dotnet with Unity stubs, against the page's own
+- `SolitonTunnelMathTests` and `SolitonTunnelShapeMathTests`: 40/40 pass in dotnet with Unity stubs, against the page's own
   numbers (rng, four layouts, the built roots, a 500-step flight with forks and bounces).
 - Reference compile, player and editor: 0 errors in project code. Both new shaders compile (glslang, HLSL front end,
   vertex and fragment). `studio_to_unity` 91 mapped, 0 drift; `author_meerkat_assets --check` and `--self-test` pass.
@@ -559,7 +559,7 @@ brute force, 400 random tubes). Reference compile clean.
 ### 🔴 The Meerkat's round 11: a water-pipe tunnel and a reticle lit from its far end (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:**
-- `MeerkatWormholeConfig`'s contour field retuned as a clear pipe: strength 6, pitch 0, drag 0.5, glass 1 at 0.05,
+- `MeerkatSolitonConfig`'s contour field retuned as a clear pipe: strength 6, pitch 0, drag 0.5, glass 1 at 0.05,
   grazing 0.9, flow Even, outer 0.15, ribs 0.25 at sharpness 3, travelling 1.2 rings/s, 16 × 12.
 - `reticleNearLight` 0.25 (artifact, then cloned): the reticle wireframe is dim at its way in and full at its far end.
 
@@ -601,14 +601,14 @@ brute force, 400 random tubes). Reference compile clean.
 2. Pull RT with the stick bent: no lurch at RT. Through the shaft and the bend the view stays inside the tube with the
    hull centred. Coming out, there is no sideways jump.
 3. The mouths are wider than the throat (26 u against 8 u). Change `mouthDiameter` or `throatDiameter` on
-   `MeerkatWormholeConfig`: the next reticle and tunnel take it.
+   `MeerkatSolitonConfig`: the next reticle and tunnel take it.
 4. The Stoat's camera is unchanged.
 
 ---
 
 ### 🔴 The Meerkat's round 9: one geometry, the reticle is its wireframe (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed:** the reticle draws through the bridge's own geometry (`MeerkatWormholeView.BridgeFrame`, the `bridge*`
+**What landed:** the reticle draws through the bridge's own geometry (`SolitonTunnelView.BridgeFrame`, the `bridge*`
 rings, spindles, ribs, thickness and shimmer), bare (no glass, no path), at `reticleIdleAlpha` and in the domain colour
 toward white by `reticleWhite`. The bridge's spindles take `bridgeWhite` (was a fixed 0.45). Retired keys (generator
 removes them from the asset): `reticleGlass`, `reticleRings`, `reticleSpindlesPerRing`, `reticleRibs`,
@@ -620,7 +620,7 @@ shaped reticle and the formed tunnel with the same 931 spindles. `studio_to_unit
 **Verify in editor:**
 1. Meerkat in the lava lamp: the reticle is a thin wireframe in your domain colour, with no glass and no lime line.
    Push the right stick: it brightens.
-2. In `MeerkatWormholeConfig`, change `bridgeRings` or `bridgeSpindleThickness` in Play mode: the reticle changes at
+2. In `MeerkatSolitonConfig`, change `bridgeRings` or `bridgeSpindleThickness` in Play mode: the reticle changes at
    once. With YASH'S LOOK, the formed bridge matches it ring for ring.
 3. `reticleWhite` 0 is your domain colour, 1 is white; `bridgeWhite` does the same for the formed bridge.
 
@@ -628,9 +628,9 @@ shaped reticle and the formed tunnel with the same 931 spindles. `studio_to_unit
 
 ### 🔴 The Meerkat's round 8: Yash's tuned look ships, and the ride camera stays inside the tunnel (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed:** Yash's `MeerkatWormholeConfig` values (d8e0aa006e) are the artifact's SHIPPED values now, so a clone
+**What landed:** Yash's `MeerkatSolitonConfig` values (d8e0aa006e) are the artifact's SHIPPED values now, so a clone
 keeps them (`studio_to_unity --check` 48 mapped, 0 drift). New `rideCameraBack` 18, `rideCameraLookAhead` 40 and
-`rideCameraBlendSeconds` 0.25 drive `MeerkatWormholeExecutor.StepRideCamera`: while riding, the local pilot's camera is a
+`rideCameraBlendSeconds` 0.25 drive `MeerkatSolitonExecutor.StepRideCamera`: while riding, the local pilot's camera is a
 `CustomCameraController.Spectate` vantage on the tube's centreline, with no height offset.
 
 **Verified without the editor:** reference compile, player and editor, 0 errors in project code. The page, headless:
@@ -651,27 +651,27 @@ once eased in, its camera stayed within 0.23 u of the centreline on every frame 
 **What landed** (Yash: "two options so that I can swap between my look versus his look"; "if I choose my vessel, I will
 get its configuration ... at least the inspector panel"):
 - Garrett's before/after (the entry below) merged in, and his contour-field lens ported to round 7's tunnel: a straight
-  shaft along +z, then one bend round (R, 0, S). `MeerkatWormholeLens.shader`'s `MWTube` takes the nearer of the shaft
+  shaft along +z, then one bend round (R, 0, S). `SolitonTunnel.shader`'s `MWTube` takes the nearer of the shaft
   and the bend; `_MWTubeShape` is now (shaft, bend radius, theta, throat) and `_MWTubeWin.w` the mouth.
-- `MeerkatWormholeConfigSOEditor`: **YASH'S LOOK** (spindle reticle, spindle bridge) and **GARRETT'S LOOK** (bridge
+- `MeerkatSolitonConfigSOEditor`: **YASH'S LOOK** (spindle reticle, spindle bridge) and **GARRETT'S LOOK** (bridge
   reticle, contour field) on top of the config's own Inspector. They set `reticleLook` and `formedLook` only.
 - `VesselConfigsWindow`: each card on the Vessel Studio home has **CONFIGS**, which lists that vessel's config assets
   (its studio map's assets, its prefab, its own action and config assets, its element map). **INSPECT** opens each in
   Unity's own Inspector. Not a tuner (/vessel-studio D41).
 
 **Verified without the editor:** reference compile, player and editor (the five changed editor files gated), 0 errors
-in project code. `MeerkatWormholeMathTests` 32/32 under dotnet, including the frame test now on the round-7 shape. The
+in project code. `SolitonTunnelShapeMathTests` 32/32 under dotnet, including the frame test now on the round-7 shape. The
 lens compiles in glslang HLSL mode against the black-hole lens's URP mock (a planted error fails it). The ported
 `MWTube` matches a brute-force distance to the shaft-and-bend centreline on 300 random points (error 0.0). `parity_gate.py` ok.
 
 **Verify in editor:**
-1. EditMode `VesselStudioWindowTests` (three new cases) and `MeerkatWormholeMathTests` pass. No shader errors on
-   `MeerkatWormholeLens`.
+1. EditMode `VesselStudioWindowTests` (three new cases) and `SolitonTunnelShapeMathTests` pass. No shader errors on
+   `SolitonTunnel`.
 2. FrogletTools ▸ Vessels ▸ Vessel Studio: each card has **CONFIGS** at the right of its chip row; clicking it does not
-   open the studio. On the Meerkat card it lists `MeerkatWormholeConfig` (45 artifact keys) first, then `Meerkat`
+   open the studio. On the Meerkat card it lists `MeerkatSolitonConfig` (45 artifact keys) first, then `Meerkat`
    (the prefab), the two Meerkat actions and the element map. **INSPECT** opens a floating Inspector; **INSPECT ALL**
    opens one per asset. A concept studio (Gibbon) says it has no vessel in Unity yet.
-3. Play the Meerkat in the lava lamp with `MeerkatWormholeConfig` open. **YASH'S LOOK**: a cyan spindle reticle with a
+3. Play the Meerkat in the lava lamp with `MeerkatSolitonConfig` open. **YASH'S LOOK**: a cyan spindle reticle with a
    lime path, and RT forms a spindle bridge. **GARRETT'S LOOK**: the reticle is a bridge in your domain colour, and RT
    forms bent space only. Each swap shows at once.
 4. Garrett's look on a sharp tunnel (LT squeezed, right stick fully over): the bent shell follows the straight shaft
@@ -743,13 +743,13 @@ one. Reference compile (player-dev and editor): see the commit.
 ### 🔴 The Meerkat's before and after: the bridge reticle and the contour-field tunnel (`cece/lucid-brown-ykcmhu`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett's pick from the Tube Lens Lab, `R_VesselActions/MEERKAT.md` §2.1):
-- `MeerkatWormholeConfig`: `reticleLook` (Bridge), `formedLook` (ContourField) and 16 `field*` numbers.
-- `MeerkatWormholeView`: the reticle drawn as the bridge; no bridge on a formed tunnel.
-- `MeerkatWormholeLensPass` and `MeerkatWormholeLens.shader`: the contour-field ray march, in the existing lens draw.
-- `MeerkatWormholeMath.TubeWorldToLocal`, with a new test.
+- `MeerkatSolitonConfig`: `reticleLook` (Bridge), `formedLook` (ContourField) and 16 `field*` numbers.
+- `SolitonTunnelView`: the reticle drawn as the bridge; no bridge on a formed tunnel.
+- `SolitonTunnelLensPass` and `SolitonTunnel.shader`: the contour-field ray march, in the existing lens draw.
+- `SolitonTunnelShapeMath.TubeWorldToLocal`, with a new test.
 
 **Verified without the editor:**
-- `MeerkatWormholeLens.shader`, both stages, compiled with glslang in HLSL mode against the black-hole lens's URP mock.
+- `SolitonTunnel.shader`, both stages, compiled with glslang in HLSL mode against the black-hole lens's URP mock.
   The unmodified shader is the control, and a planted error fails it.
 - The contour field's arithmetic is the lab's GLSL. The lab was rendered headless (SwiftShader) and reviewed by Garrett.
 - `author_meerkat_assets.py --check` OK.
@@ -757,7 +757,7 @@ one. Reference compile (player-dev and editor): see the commit.
 **NOT run:** the game in the Editor; the shader under Unity's own compiler; the new test in Unity's runner; frame cost.
 
 **Verify in editor:**
-1. EditMode `MeerkatWormholeMathTests` passes (28 + 3 cases). No shader errors on `MeerkatWormholeLens` in the Console.
+1. EditMode `SolitonTunnelShapeMathTests` passes (28 + 3 cases). No shader errors on `SolitonTunnel` in the Console.
 2. Lava lamp, pick the **Meerkat**: the reticle on the nose is a spindle bridge in your domain colour over faint glass,
    not cyan wire. The right stick bends it and LT shortens it, as before.
 3. Pull **RT**: no spindles or glass appear. The tunnel shows as bent space only: the world seen through its wall is
@@ -816,7 +816,7 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
 
 **Verified without the editor:**
 - Reference compile: player and editor configs, 0 errors in project code.
-- `MeerkatWormholeMathTests` (27 cases), run with dotnet against Unity-equivalent stubs: all pass. Their numbers come
+- `SolitonTunnelShapeMathTests` (27 cases), run with dotnet against Unity-equivalent stubs: all pass. Their numbers come
   from running the page's own functions in node.
 - Generators: `author_meerkat_assets.py --self-test` and `--check` OK; `author_burrowrun_assets.py --check` OK.
 - `studio_to_unity.py --vessel meerkat --check`: 36 mapped, 0 drift.
@@ -825,11 +825,11 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
 
 **NOT run:**
 - The game in the Editor.
-- `MeerkatWormholeMathTests` in Unity's runner.
+- `SolitonTunnelShapeMathTests` in Unity's runner.
 - `EnumIntegrityTests`, `ToyVesselRosterCoverageTests`, `CrystalHullFusionConfigTests`.
 
 **Verify in editor:**
-1. Run EditMode tests `MeerkatWormholeMathTests`, `EnumIntegrityTests`, `ToyVesselRosterCoverageTests` and
+1. Run EditMode tests `SolitonTunnelShapeMathTests`, `EnumIntegrityTests`, `ToyVesselRosterCoverageTests` and
    `CrystalHullFusionConfigTests`: all pass. Then open `Meerkat.prefab` and `MinigameBurrowRun.unity`: no missing
    scripts.
 2. **Lava lamp:**
@@ -848,7 +848,7 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
    - The tunnel stays 10 s and collapses to its centre (no screen ripple: lensing is off by default).
 4. Lensing ships OFF (round 4): no bent space, no mouth dents, no edge ripple. Raise `warpStrength` / `dentStrength` /
    `rippleStrength` on the config in play mode to see each; a vessel in front of a mouth is not bent.
-5. Open `Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset` in play mode. Moving `bridgeVisibility`
+5. Open `Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset` in play mode. Moving `bridgeVisibility`
    to 0 hides the bridge, and the other looks change live.
 6. **AI:** put the Meerkat on autopilot (or race Burrow Run against AI Meerkats). It forms tunnels toward its rings:
    it holds its line for 0.3 s, then dives.
@@ -18616,9 +18616,9 @@ compile has no errors in the changed files (player and editor).
 bootstrap, IMGUI, not in the build settings), `MeerkatTubeLook.cs` (the static look switch, default **Original**),
 `MeerkatWaterTubeView.cs` + `Assets/_Graphics/Materials/Graphs/MeerkatWaterTube.shader` +
 `Assets/Resources/MeerkatWaterTube.mat` (the new pipe: alpha, near-white, fresnel rim, flow bands, caustic shimmer,
-twist, near-camera and live-window fades, no grab pass), `MeerkatWormholeExecutor.Lab.cs` (hull-less lab hooks on a
-partial executor), one-line gates in `MeerkatWormholeLensPass.AnythingLive`, `MeerkatTubeWallView.Draw` and
-`MeerkatWormholeView.DrawOncePerFrame`. No Unity in the session: the C# was only syntax-checked (Roslyn, C# 9, no Unity
+twist, near-camera and live-window fades, no grab pass), `MeerkatSolitonExecutor.Lab.cs` (hull-less lab hooks on a
+partial executor), one-line gates in `SolitonTunnelLensPass.AnythingLive`, `MeerkatTubeWallView.Draw` and
+`SolitonTunnelView.DrawOncePerFrame`. No Unity in the session: the C# was only syntax-checked (Roslyn, C# 9, no Unity
 references); the shader was never compiled.
 
 1. Open the project. **Pass:** no compile errors; `MeerkatWaterTube.shader` imports with no errors or warnings.
@@ -18683,31 +18683,31 @@ Branch `feat/wormhole-pc-unified`, PR #1624. See `Docs/Shaders/WORMHOLE_SHADERS.
 lens, its outer layer and the networked holes ship as the only look (GARRETT'S preset baked as
 `MeerkatWormholeHQ.Shipped`). Deleted: `MeerkatWormholeGlass`, `MeerkatWormholeWarp`, `MeerkatTubeWall`,
 `MeerkatWaterTube`, `MeerkatTree` and `MeerkatRootInside` (each shader + material), `MeerkatTubeWallView`,
-`MeerkatWaterTubeView`, `MeerkatTreeView`, `MeerkatTreeMesh`, `MeerkatTubeLook`, `MeerkatWormholeConfigSOEditor`. The
+`MeerkatWaterTubeView`, `MeerkatTreeView`, `MeerkatTreeMesh`, `MeerkatTubeLook`, `MeerkatSolitonConfigSOEditor`. The
 offline C# reference compile and glslang pass; no Unity in the session.
 
 1. Open the project. **Pass:** no compile errors, no missing-script or missing-shader warnings, and
-   `MeerkatWormholeLens.shader` imports cleanly.
+   `SolitonTunnel.shader` imports cleanly.
 2. Open `LavalampWormholeLab.unity` and press Play. **Pass:** the tunnels and the network show the same look as before
    (bent space, a faint outer layer and rim; the network channels have faint iridescence and pulses); no look buttons;
    "Measure" gives one line; "Tune the look" moves the layer live.
 3. Ride a tunnel and the network. **Pass:** the bend and the layer are as before; a vessel in front of a tube is not bent.
 4. Play the Meerkat in freestyle: form tunnels, grow an omnicrystal network, ride both. **Pass:** the reticle spindles
    still draw; no errors in the console.
-5. Select `MeerkatWormholeConfig.asset`. **Pass:** the Inspector shows the plain default inspector (no YASH'S / GARRETT'S
+5. Select `MeerkatSolitonConfig.asset`. **Pass:** the Inspector shows the plain default inspector (no YASH'S / GARRETT'S
    buttons, no Formed Look field).
 
 ## Meerkat wormhole: the calm jelly look, trunk and root, comfort settings (2026-10-29) - NOT EDITOR-VERIFIED
 
 Branch `feat/wormhole-pc-unified`, PR #1624. See `Docs/Shaders/WORMHOLE_SHADERS.md` §13 and §14. There is no water, tint
-or dispersion. The trunk (tunnel) and root (network channel) share `MeerkatWormholeLook`, each with its own numbers.
-`MeerkatWormholeHQ.cs` was renamed `MeerkatWormholeLook.cs` (same `.meta` GUID). The contour-field fields and the dead
+or dispersion. The trunk (tunnel) and root (network channel) share `SolitonTunnelLook`, each with its own numbers.
+`MeerkatWormholeHQ.cs` was renamed `SolitonTunnelLook.cs` (same `.meta` GUID). The contour-field fields and the dead
 studio keys were removed from the config. glslang (vert + frag) and the offline C# reference compile (player + editor)
 pass; no Unity in the session.
 
-1. Open the project. **Pass:** no compile errors, `MeerkatWormholeLens.shader` imports cleanly, and there are no
+1. Open the project. **Pass:** no compile errors, `SolitonTunnel.shader` imports cleanly, and there are no
    missing-script warnings.
-2. Select `MeerkatWormholeConfig.asset`. **Pass:** the headers read Comfort, Trunk Look, Trunk Shape, Trunk Ride, Root
+2. Select `MeerkatSolitonConfig.asset`. **Pass:** the headers read Comfort, Trunk Look, Trunk Shape, Trunk Ride, Root
    Look, Root Shape, Root Ride, Kit, then Miscellaneous. Trunk Look shows Bend 3, Lens 0.139, Wobble 0.2. Root Look has
    Shimmer 0.5 and Pulse 0.12. Comfort is 1 / 0.25 / 1. There are no `field*` fields and no unknown-field warnings.
 3. Open `LavalampWormholeLab.unity` and press Play, then watch a tunnel from outside. **Pass:** the world behind bends
@@ -18736,4 +18736,31 @@ squirrel". This undoes 622e271ca's swap; the 2026-10-28 Meerkat entry above is s
 4. Play an arcade game with another hull and return to the menu. **Pass:** the lava lamp is a Squirrel again.
 5. Vessel Changer toy -> Meerkat, then back to Squirrel. **Pass:** both swaps work; the Meerkat still forms tunnels.
 6. `LavalampWormholeLab.unity` still flies the Meerkat.
+
+## Soliton Tunnels: the Meerkat's wormhole as an environmental fundamental, the slip-and-slide (2026-10-29) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scripts/Controller/Environment/SolitonTunnel/` (SolitonTunnelConfigSO, SolitonTunnel, SolitonNetwork,
+SolitonTunnelRider, SolitonTunnelPlacer, the lens pass / view / look / math), `Assets/_SO_Assets/Environment/SolitonTunnel/`
+(SolitonTunnel.asset, SolitonNetwork.asset), `MeerkatSolitonConfig.asset` (was MeerkatWormholeConfig, same guid),
+`Assets/_Scripts/Editor/Environment/EnvironmentalFundamentalsWindow.cs`, `SolitonTunnel.shader` (domain tint). Removed: the
+Lavalamp lab (restore: `Docs/Shaders/WORMHOLE_SHADERS.md` §15).
+
+1. Open the project. **Pass:** no compile errors; `SolitonTunnel.shader` and `SolitonTunnelAdditive.shader` import cleanly;
+   no missing-script or unknown-field warnings on Meerkat.prefab or MeerkatSolitonConfig.asset.
+2. Select `MeerkatSolitonConfig.asset`. **Pass:** Tunnel Config = SolitonTunnel, Network Config = SolitonNetwork; the kit
+   numbers and `menuAutopilotNetworks` / `networkEvent` kept their values (FormerlySerializedAs).
+3. FrogletTools > Environment > Environmental Fundamentals. **Pass:** both configs listed and editable inline, also in Play
+   mode (edits show live; `_SO_Assets` files are restored after Play by PlayModeSOProtector, so keep values by editing
+   out of Play).
+4. Toybox, Meerkat, press RT. **Pass:** one tunnel forms: jelly lens plus the spindle bridge, tinted by your domain
+   (Look: Domain Tint: off / override / strength all change it).
+5. Fly in. **Pass:** you are pulled onto the inner wall and slide along it, bouncing now and then; your nose is free; the
+   left stick does nothing to the slide; RT gives a small push (switch `thrustOn` off: none). You exit at the speed you
+   carried (fast in = fast out) - check the TrackedExitSpeed cap does not flatten it.
+6. Pick up an omnicrystal. **Pass:** a Soliton Network grows; ride it the same way; the AI rides by holding RT.
+7. Garrett's kit: Space swallow pulls and fires prisms, Time rush, Mass exit portal, Charge sentinels (Y). **Pass:** all as
+   before, in both a tunnel and a network.
+8. Drop a `SolitonTunnelPlacer` in an empty scene (config SolitonTunnel or SolitonNetwork, count 3). **Pass:** tunnels
+   appear without a maker, any vessel can ride them, and they respawn when not permanent.
+9. Butterfly / crystal wormholes (`Wormhole.shader`). **Pass:** unchanged.
 

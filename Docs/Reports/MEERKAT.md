@@ -56,9 +56,9 @@ The design is in `Docs/Studios/MEERKAT.md` (the rounds, newest first). The code 
 |---|---|---|
 | 1-12 | The vessel, the reticle, the ride, the look, the AI, Burrow Run | §1-§6 |
 | 13-21 | The tree and the roots (now shipped off) | §7 |
-| 22 | The oval arc | §1, `MeerkatWormholeMath.Conic` |
+| 22 | The oval arc | §1, `SolitonTunnelShapeMath.Conic` |
 | 23 | Garrett's surface area; the swallow | §8, `MeerkatSwallow` |
-| 24 | The slide: one flight for a wormhole and the network | §1, `MeerkatRootMath.Step` / `ITubePath` |
+| 24 | The slide: one flight for a wormhole and the network | §1, `SolitonTunnelMath.Step` / `ITubePath` |
 | 25 | Phased inside a tube; first in first out; the game's omni crystal grows the network | §9, `MeerkatVesselTransformer.Phased` |
 | 26 | The network of wormholes, sized by Mass; no tree, no roots | §7a |
 | Kit | Garrett's four abilities | §10, `MeerkatSolitonKit` |
@@ -110,7 +110,7 @@ _Generated 2026-10-28 from git (last 14 days), who_works_where.py and the team-t
 - 2026-10-28 `3c3fa3fbe` docs(meerkat): Garrett's kit references point at MEERKAT.md section 10 — on Ys-bleeding-edge
 - 2026-10-28 `1835aca94` docs(meerkat): round 25 - phased inside a tube, first in first out, measured — on Ys-bleeding-edge
 - 2026-10-28 `12e8363f2` feat(meerkat): inside a tube is another dimension; first in first out; the game's omni crystal grows the roots — on Ys-bleeding-edge
-- 2026-10-28 `ce548fc09` Update MeerkatWormholeConfig.asset — on Ys-bleeding-edge
+- 2026-10-28 `ce548fc09` Update MeerkatSolitonConfig.asset — on Ys-bleeding-edge
 - 2026-10-28 `d4afbae57` docs(meerkat): round 24, the slide - what changed, the two bugs, every kit's races — on Ys-bleeding-edge
 - 2026-10-28 `4c09676c3` fix(meerkat): the AI's Chain Dig plans before it lets go of RT (no accidental straight chains while sliding) — on Ys-bleeding-edge
 - 2026-10-28 `b3b81d05c` wip(meerkat-studio): the network sized by Mass (half the cell at Mass 0, the whole cell at 10); two words, wormhole and network — on Ys-bleeding-edge

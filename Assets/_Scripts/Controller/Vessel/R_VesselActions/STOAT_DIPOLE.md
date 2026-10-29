@@ -594,7 +594,7 @@ only one ability of the wormhole."* The studio's Gate mode (§1g-§1n) left the 
 
 | What | Where it is now |
 |---|---|
-| Gate mode: the reticle, the tunnel, its ride and life, the tube's warp, the mouths' dents, the gate AI | The Meerkat studio only, with its parameters renamed to their future `MeerkatWormholeConfig` fields |
+| Gate mode: the reticle, the tunnel, its ride and life, the tube's warp, the mouths' dents, the gate AI | The Meerkat studio only, with its parameters renamed to their future `MeerkatSolitonConfig` fields |
 | B / T on the Stoat | Mass -> Time -> Mass (round 18-27 stepped through Gate too) |
 | The Stoat's `gt*` / `gate*` keys, their sliders, tips and game names | Removed from the Stoat page |
 | `studio_to_unity/stoat.json`'s 14 round-18 gate rows (`StoatModeAction` gate* fields) | Removed: the page no longer has those keys. The game's Stoat still has round 18's straight warp gate on B, unlinked from the studio until `/artifact-to-unity` ports the Meerkat and takes the gate off the Stoat |
