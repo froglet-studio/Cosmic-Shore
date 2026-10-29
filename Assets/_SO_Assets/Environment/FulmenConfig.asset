@@ -15,3 +15,13 @@ MonoBehaviour:
   tint: {r: 0.42, g: 0.58, b: 0.95, a: 1}
   width: 1.6
   material: {fileID: 2100000, guid: d3d0e5f69ca24c7ba12af80330674a2f, type: 2}
+  burnRadius: 10
+  burnSeconds: 5
+  burnSpread:
+    MaxGenerations: 2
+    Radius: 7
+    Chance: 0.45
+    Decay: 0.5
+    Interval: 0.8
+    MaxPerBurn: 3
+    SecondsScale: 0.8

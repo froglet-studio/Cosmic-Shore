@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -20,12 +22,20 @@ namespace CosmicShore.Gameplay
     /// pixels with dither &lt; n*A, MID the complement (dither &gt;= 1-(1-n)*A), so across the band they never overlap or gap.
     /// The prism is hidden only at full coverage (hysteresis 0.99/0.999), so the far fade reveals it again smoothly.</para>
     ///
-    /// Cost: per burning prism per frame one distance, one matrix multiply and two array writes; two instanced draws.
+    /// <para><b>Styles</b> (<see cref="PrismBurnStyle"/>): PAPER (the claw) uses the near/mid tiers above; LASER (Fulmen)
+    /// is one more instanced list - PrismLaserBurn.shader on the plain cube, drawn out to
+    /// <see cref="PrismBurnFxConfigSO.LaserDistance"/>, with a per-instance <c>_Ash</c> domain colour next to <c>_Burn</c>.
+    /// No laser material: laser burns fall back to paper. Docs/Shaders/PRISM_EFFECTS.md.</para>
+    ///
+    /// Pooling: entries come from a free stack, the per-tier matrix/vector arrays and property blocks are allocated once,
+    /// and the per-domain colour lookup is cached - lighting a burn allocates nothing once warm.
+    /// Cost: per burning prism per frame one distance, one matrix multiply and two array writes; up to three instanced draws.
     /// </summary>
     public sealed class PrismBurnView
     {
         const int MaxCap = 1023;
         static readonly int BurnId = Shader.PropertyToID("_Burn");
+        static readonly int AshId = Shader.PropertyToID("_Ash");
 
         sealed class Entry
         {
@@ -33,15 +43,18 @@ namespace CosmicShore.Gameplay
             public Matrix4x4 Local;     // unit cube -> prism local (authored bounds, inflated)
             public float LitAt, EndAt, Seed;
             public bool NoHoles, Hidden, Skip;
+            public PrismBurnStyle Style;
+            public Vector4 Ash;         // LASER: the domain colour the skin and ash take
         }
 
         readonly Dictionary<Prism, Entry> _entries = new();
         readonly List<Entry> _list = new();
         readonly Stack<Entry> _free = new();
 
-        Matrix4x4[] _nearM, _midM;
-        Vector4[] _nearB, _midB;
-        MaterialPropertyBlock _nearProps, _midProps;
+        Matrix4x4[] _nearM, _midM, _laserM;
+        Vector4[] _nearB, _midB, _laserB, _laserA;
+        MaterialPropertyBlock _nearProps, _midProps, _laserProps;
+        readonly Dictionary<Domains, Vector4> _ashColors = new();
         Mesh _nearMesh, _midMesh;
         PrismBurnFxConfigSO _cfg;
 
@@ -60,12 +73,40 @@ namespace CosmicShore.Gameplay
             _nearProps = new MaterialPropertyBlock(); _midProps = new MaterialPropertyBlock();
             _nearMesh = BuildCube(cfg.NearSubdivisions, "PrismBurnProxyNear");
             _midMesh = BuildCube(1, "PrismBurnProxyMid");
+            if (cfg.LaserMaterial != null)
+            {
+                _laserM = new Matrix4x4[cap];
+                _laserB = new Vector4[cap];
+                _laserA = new Vector4[cap];
+                _laserProps = new MaterialPropertyBlock();
+            }
+        }
+
+        /// <summary>True when LASER burns have a material (else they draw as paper).</summary>
+        public bool LaserReady => Active && _laserM != null;
+
+        /// <summary>The domain colour a laser burn's skin and ash take: the project's ColorSet (PrismLit.ColorSet, the
+        /// same palette the prisms use), cached per domain; the config's fallback when the domain has no entry.</summary>
+        public Vector4 AshColor(Domains domain)
+        {
+            if (_ashColors.TryGetValue(domain, out var c)) return c;
+            var set = PrismLit.ColorSet;
+            if (set != null && set.TryGetPrismKindColors(domain, PrismKind.Plain, out var bright, out _))
+            {
+                c = (Vector4)bright;
+                _ashColors[domain] = c;   // cached only once the palette answered (it may load after the first burn)
+                return c;
+            }
+            return _cfg != null ? (Vector4)_cfg.FallbackAshColor : new Vector4(0.2f, 0.45f, 1f, 1f);
         }
 
         /// <summary>A new burn was lit on <paramref name="prism"/> at <paramref name="now"/> (may be in the past, for a
         /// burn replicated late), ending at <paramref name="endAt"/>. <paramref name="seed"/> in [1, 62) fixes the noise
-        /// pattern (a networked burn sends it so every peer burns the same holes); &lt;= 0 derives one locally.</summary>
-        public void Begin(Prism prism, float now, float endAt, bool noHoles, float seed = -1f)
+        /// pattern (a networked burn sends it so every peer burns the same holes); &lt;= 0 derives one locally.
+        /// <paramref name="style"/> picks the shader; <paramref name="igniterDomain"/> is used for a LASER burn's ash colour
+        /// when the config says <see cref="AshColorSource.Igniter"/> (else the prism's own domain).</summary>
+        public void Begin(Prism prism, float now, float endAt, bool noHoles, float seed = -1f,
+            PrismBurnStyle style = PrismBurnStyle.Paper, Domains igniterDomain = default)
         {
             if (!Active || prism == null || _entries.ContainsKey(prism)) return;
             if (_list.Count >= _nearM.Length) return;   // over budget: this burn keeps the ordinary look
@@ -78,6 +119,10 @@ namespace CosmicShore.Gameplay
             e.Hidden = false;
             // A prism another owner already hides (a swarm body, a crystal morph) is drawn elsewhere: leave it alone.
             e.Skip = prism.OwnerHidden;
+            e.Style = style == PrismBurnStyle.Laser && LaserReady ? PrismBurnStyle.Laser : PrismBurnStyle.Paper;
+            e.Ash = e.Style == PrismBurnStyle.Laser
+                ? AshColor(_cfg.AshSource == AshColorSource.Igniter ? igniterDomain : prism.Domain)
+                : Vector4.zero;
             e.Seed = seed > 0f ? seed : (Mathf.Abs(prism.GetInstanceID() * 0.6180339f) % 61f) + 1f;
 
             var mf = prism.GetComponent<MeshFilter>();
@@ -107,6 +152,7 @@ namespace CosmicShore.Gameplay
 
         public void Clear()
         {
+            _ashColors.Clear();   // the palette can change between scenes
             foreach (var e in _list) Release(e);
             _list.Clear();
             _entries.Clear();
@@ -131,8 +177,9 @@ namespace CosmicShore.Gameplay
 
             float n0 = _cfg.NearDistance - _cfg.NearBand * 0.5f, n1 = _cfg.NearDistance + _cfg.NearBand * 0.5f;
             float f0 = _cfg.MidDistance - _cfg.FarBand * 0.5f, f1 = _cfg.MidDistance + _cfg.FarBand * 0.5f;
+            float l0 = _cfg.LaserDistance - _cfg.LaserFarBand * 0.5f, l1 = _cfg.LaserDistance + _cfg.LaserFarBand * 0.5f;
             float appear = Mathf.Max(_cfg.AppearSeconds, 1e-4f);
-            int nearCount = 0, midCount = 0;
+            int nearCount = 0, midCount = 0, laserCount = 0;
             Vector3 lo = new(float.MaxValue, float.MaxValue, float.MaxValue), hi = -lo;
 
             for (int i = 0; i < _list.Count; i++)
@@ -144,7 +191,8 @@ namespace CosmicShore.Gameplay
                 var t = p.transform;
                 Vector3 pos = t.position;
                 float d = Vector3.Distance(eye, pos);
-                float vis = 1f - Smooth(f0, f1, d);
+                bool laser = e.Style == PrismBurnStyle.Laser;
+                float vis = laser ? 1f - Smooth(l0, l1, d) : 1f - Smooth(f0, f1, d);
                 float a = Mathf.Clamp01((now - e.LitAt) / appear) * vis;
                 // hide the prism only once the proxy fully covers it; show it again as the far fade opens gaps
                 if (!e.Hidden && a >= 0.999f) { p.SetOwnerHidden(true); e.Hidden = true; }
@@ -155,6 +203,19 @@ namespace CosmicShore.Gameplay
                 float progress = Mathf.Clamp01((now - e.LitAt) / (e.EndAt - e.LitAt));
                 float flags = e.NoHoles ? 2f : 0f;
                 var m = t.localToWorldMatrix * e.Local;
+
+                if (laser)
+                {
+                    // one tier: the laser burn is cheap enough (24 vertices, one noise octave) to draw at every distance
+                    if (laserCount < _laserM.Length)
+                    {
+                        _laserM[laserCount] = m;
+                        _laserA[laserCount] = e.Ash;
+                        _laserB[laserCount++] = new Vector4(progress, e.Seed, a, flags);
+                    }
+                    lo = Vector3.Min(lo, pos); hi = Vector3.Max(hi, pos);
+                    continue;
+                }
 
                 if (near * a > 0.001f && nearCount < _nearM.Length)
                 {
@@ -169,10 +230,15 @@ namespace CosmicShore.Gameplay
                 lo = Vector3.Min(lo, pos); hi = Vector3.Max(hi, pos);
             }
 
-            if (nearCount + midCount == 0) return;
+            if (nearCount + midCount + laserCount == 0) return;
             var bounds = new Bounds((lo + hi) * 0.5f, hi - lo + Vector3.one * 64f);
             if (nearCount > 0) Submit(_cfg.NearMaterial, _nearMesh, _nearProps, _nearM, _nearB, nearCount, bounds);
             if (midCount > 0) Submit(_cfg.MidMaterial, _midMesh, _midProps, _midM, _midB, midCount, bounds);
+            if (laserCount > 0)
+            {
+                _laserProps.SetVectorArray(AshId, _laserA);   // full fixed-size array, like _Burn
+                Submit(_cfg.LaserMaterial, _midMesh, _laserProps, _laserM, _laserB, laserCount, bounds);
+            }
         }
 
         static void Submit(Material mat, Mesh mesh, MaterialPropertyBlock props, Matrix4x4[] m, Vector4[] b, int count, Bounds bounds)

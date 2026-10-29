@@ -17,6 +17,11 @@ namespace CosmicShore.Gameplay
     /// paper-burn proxies of <see cref="PrismBurnView"/> (near curl / mid dissolve / far nothing), with SILENT
     /// burnouts (<see cref="Prism.BurnOut"/>): the prism already burned away on screen, so no debris.
     ///
+    /// Spread rule: every burn carries a <see cref="PrismBurnSpread"/> (generation cap, radius, chance x decay^gen,
+    /// per-burn child cap, child duration scale). The claw's legacy calls use <see cref="PrismBurnSpread.Unbounded"/>
+    /// of the fields below (its behaviour is unchanged); Fulmen passes its config's bounded, decaying "forest fire".
+    /// Burn states are pooled (no allocation per burn once warm). Docs/Shaders/PRISM_EFFECTS.md.
+    ///
     /// Perf contract: burning set is capped, ticks run at ~4 Hz staggered across
     /// frames, and burnouts are budgeted per tick (each Steal/Damage triggers
     /// material/animation work). Everything clears on turn end via ResetAll().
@@ -39,8 +44,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Main tick frequency (Hz).")]
         float tickHz = 4f;
 
-        class BurnState
+        sealed class BurnState
         {
+            public int Generation;           // 0 = lit directly (bolt / claw), n = n spreads from it
+            public int Children;             // spreads this burn has lit (capped by Spread.MaxPerBurn)
+            public float RootSeconds;        // the generation-0 burn's duration; children scale from it
+            public PrismBurnSpread Spread;
+            public PrismBurnStyle Style;
             public string Igniter;
             public Domains IgniterDomain;
             public float ExtinguishAt;
@@ -55,6 +65,7 @@ namespace CosmicShore.Gameplay
         public static System.Action<ushort, Prism, float, float> NetIgnited;
 
         readonly Dictionary<Prism, BurnState> _burning = new();
+        readonly Stack<BurnState> _statePool = new();
         readonly List<Prism> _scratch = new();
         readonly List<Prism> _toResolve = new();
         readonly List<Prism> _tickOrder = new();   // snapshot; see Tick()
@@ -93,6 +104,16 @@ namespace CosmicShore.Gameplay
         /// clients (<see cref="NetIgnited"/>) and so does every prism it spreads to.
         public bool Ignite(Prism prism, string igniter, Domains igniterDomain, bool convertOnBurnout, float seconds = -1f,
             ushort netStrike = 0)
+            => Ignite(prism, igniter, igniterDomain, convertOnBurnout, seconds, netStrike, LegacySpread, PrismBurnStyle.Paper, 0);
+
+        /// <summary>The claw's (and every legacy caller's) spread: this manager's radius / chance / interval, no
+        /// generation cap - exactly the rule before <see cref="PrismBurnSpread"/> existed.</summary>
+        public PrismBurnSpread LegacySpread => PrismBurnSpread.Unbounded(spreadRadius, spreadChance, spreadInterval);
+
+        /// <summary>Ignites with an explicit spread rule and look. <paramref name="generation"/> is 0 for a direct hit.
+        /// Fulmen: <c>Ignite(prism, .., cfg.BurnSeconds, netId, cfg.BurnSpread, PrismBurnStyle.Laser, 0)</c>.</summary>
+        public bool Ignite(Prism prism, string igniter, Domains igniterDomain, bool convertOnBurnout, float seconds,
+            ushort netStrike, in PrismBurnSpread spread, PrismBurnStyle style, int generation)
         {
             if (prism == null || prism.destroyed) return false;
             if (prism.prismProperties != null && prism.prismProperties.IsSuperShielded) return false;
@@ -114,20 +135,22 @@ namespace CosmicShore.Gameplay
             if (_burning.Count >= maxConcurrentBurning) return false;
 
             float dur = seconds > 0f ? seconds : burnSeconds;
-            var st = new BurnState
-            {
-                Igniter = igniter,
-                IgniterDomain = igniterDomain,
-                ExtinguishAt = Time.time + dur,
-                NextSpreadAt = Time.time + spreadInterval,
-                ConvertOnBurnout = convertOnBurnout,
-                NetStrike = netStrike,
-            };
+            var st = Rent();
+            st.Igniter = igniter;
+            st.IgniterDomain = igniterDomain;
+            st.ExtinguishAt = Time.time + dur;
+            st.NextSpreadAt = spread.CanSpread(generation) ? Time.time + Mathf.Max(spread.Interval, 0.05f) : float.PositiveInfinity;
+            st.ConvertOnBurnout = convertOnBurnout;
+            st.NetStrike = netStrike;
+            st.Generation = generation;
+            st.RootSeconds = generation == 0 ? dur : Mathf.Max(seconds, 0.05f);
+            st.Spread = spread;
+            st.Style = style;
             _burning[prism] = st;
 
             float seed = netStrike != 0 ? NoiseSeed(prism.transform.position) : -1f;
             prism.MakeDangerous();   // the prism's own burning look (what FAR tier and the crossfades show)
-            _view?.Begin(prism, Time.time, st.ExtinguishAt, convertOnBurnout, seed);
+            _view?.Begin(prism, Time.time, st.ExtinguishAt, convertOnBurnout, seed, style, igniterDomain);
             if (netStrike != 0) NetIgnited?.Invoke(netStrike, prism, dur, seed);
             return true;
         }
@@ -139,26 +162,42 @@ namespace CosmicShore.Gameplay
         /// - one disappearance, no debris, the same moment as on the server (a convert burn steals instead, as the
         /// server's does). True when it lit a new burn.
         /// </summary>
+        /// <paramref name="style"/>: every networked burn today is a Fulmen burn, so LASER.
         public bool IgniteRemote(Prism prism, string igniter, Domains igniterDomain, bool convertOnBurnout, float seconds,
-            float ago, float seed)
+            float ago, float seed, PrismBurnStyle style = PrismBurnStyle.Laser)
         {
             if (prism == null || prism.destroyed || _burning.ContainsKey(prism)) return false;
             if (_burning.Count >= maxConcurrentBurning) return false;
             float now = Time.time;
             ago = Mathf.Clamp(ago, 0f, seconds);
-            var st = new BurnState
-            {
-                Igniter = igniter,
-                IgniterDomain = igniterDomain,
-                ExtinguishAt = now + (seconds - ago),
-                NextSpreadAt = float.PositiveInfinity,
-                ConvertOnBurnout = convertOnBurnout,
-                Remote = true,
-            };
+            var st = Rent();
+            st.Igniter = igniter;
+            st.IgniterDomain = igniterDomain;
+            st.ExtinguishAt = now + (seconds - ago);
+            st.NextSpreadAt = float.PositiveInfinity;
+            st.ConvertOnBurnout = convertOnBurnout;
+            st.Remote = true;
+            st.Spread = PrismBurnSpread.None;
+            st.Style = style;
             _burning[prism] = st;
             prism.MakeDangerous();
-            _view?.Begin(prism, now - ago, st.ExtinguishAt, convertOnBurnout, seed);
+            _view?.Begin(prism, now - ago, st.ExtinguishAt, convertOnBurnout, seed, style, igniterDomain);
             return true;
+        }
+
+        BurnState Rent()
+        {
+            var st = _statePool.Count > 0 ? _statePool.Pop() : new BurnState();
+            st.Igniter = null; st.IgniterDomain = default; st.ExtinguishAt = st.NextSpreadAt = 0f;
+            st.ConvertOnBurnout = false; st.NetStrike = 0; st.Remote = false;
+            st.Generation = 0; st.Children = 0; st.RootSeconds = 0f; st.Spread = PrismBurnSpread.None; st.Style = PrismBurnStyle.Paper;
+            return st;
+        }
+
+        void Return(BurnState st)
+        {
+            st.Igniter = null;
+            _statePool.Push(st);
         }
 
         /// <summary>The burn's noise seed in [1, 62), from the prism's quantised position - the same on every peer.</summary>
@@ -220,7 +259,9 @@ namespace CosmicShore.Gameplay
                 // Spread roll (never on a client's replicated burn: the server sends its spreads)
                 if (!state.Remote && now >= state.NextSpreadAt)
                 {
-                    state.NextSpreadAt = now + spreadInterval;
+                    state.NextSpreadAt = state.Spread.CanSpread(state.Generation) && state.Children < state.Spread.MaxPerBurn
+                        ? now + Mathf.Max(state.Spread.Interval, 0.05f)
+                        : float.PositiveInfinity;   // out of generations / children: stop rolling
                     TrySpread(prism, state);
                 }
 
@@ -235,7 +276,7 @@ namespace CosmicShore.Gameplay
 
             foreach (var p in _toResolve)
             {
-                _burning.Remove(p);
+                if (_burning.Remove(p, out var done)) Return(done);
                 _view?.End(p);
             }
             _toResolve.Clear();
@@ -246,17 +287,30 @@ namespace CosmicShore.Gameplay
             var index = PrismSpatialIndex.Instance;
             if (index == null) return;
 
-            _scratch.Clear();
-            index.QuerySphere(source.transform.position, spreadRadius, _scratch);
+            var spread = state.Spread;
+            float chance = spread.ChanceAt(state.Generation);
+            if (chance <= 0f || state.Children >= spread.MaxPerBurn) return;
 
+            _scratch.Clear();
+            index.QuerySphere(source.transform.position, spread.Radius, _scratch);
+
+            // A legacy (unbounded) spread keeps the old "-1 = the manager's burn seconds"; a bounded one scales from
+            // the root burn so the fire visibly dies down generation by generation.
+            float childSeconds = spread.MaxGenerations == int.MaxValue ? -1f : spread.SecondsAt(state.RootSeconds, state.Generation + 1);
             foreach (var neighbor in _scratch)
             {
                 if (neighbor == null || neighbor == source || neighbor.destroyed) continue;
                 if (_burning.ContainsKey(neighbor)) continue;
                 if (_burning.Count >= maxConcurrentBurning) break;
-                if (Random.value > spreadChance) continue;
+                if (Random.value > chance) continue;
 
-                Ignite(neighbor, state.Igniter, state.IgniterDomain, state.ConvertOnBurnout, -1f, state.NetStrike);
+                if (Ignite(neighbor, state.Igniter, state.IgniterDomain, state.ConvertOnBurnout, childSeconds, state.NetStrike,
+                        spread, state.Style, state.Generation + 1))
+                {
+                    var child = _burning[neighbor];
+                    child.RootSeconds = state.RootSeconds;
+                    if (++state.Children >= spread.MaxPerBurn) break;
+                }
             }
         }
 
@@ -295,6 +349,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Clears all burn state (turn end / scene transitions).</summary>
         public void ResetAll()
         {
+            foreach (var st in _burning.Values) Return(st);
             _burning.Clear();
             _view?.Clear();
             _scratch.Clear();

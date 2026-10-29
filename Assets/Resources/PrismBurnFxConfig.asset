@@ -14,6 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismBurnFxConfigSO
   nearMaterial: {fileID: 2100000, guid: df9f75ff9b194700afbfbaa9cdaacda3, type: 2}
   midMaterial: {fileID: 2100000, guid: c6c2d09ad91446d1b1058df3514186c3, type: 2}
+  laserMaterial: {fileID: 2100000, guid: 48e5c73e6ea647d89678c2351e6888d1, type: 2}
+  laserDistance: 600
+  laserFarBand: 120
+  ashColorSource: 0
+  fallbackAshColor: {r: 0.2, g: 0.45, b: 1, a: 1}
   nearDistance: 70
   nearBand: 30
   midDistance: 260
