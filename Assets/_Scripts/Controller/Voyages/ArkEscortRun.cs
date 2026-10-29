@@ -29,6 +29,7 @@ namespace CosmicShore.Gameplay
         const float LeashCheckSeconds = 2f;
         const float WingmateAbeam = 140f;
         const float EndAfterSurvivedSeconds = 4f;
+        const float EscortLeashFactor = 1.4f;
 
         /// <summary>Raised once per escort as it ends, with what happened.</summary>
         public static event System.Action<ArkEscortReport> Finished;
@@ -121,7 +122,7 @@ namespace CosmicShore.Gameplay
 
             EnsureSea();
             _cfg = _def.WithArk ? _def.WithArk.BuildConfig(_escort.VoyageName) : new ArkwayConfig { DisplayName = _escort.VoyageName };
-            _cfg.Cells = _escort.Worlds();
+            _cfg.Cells = _escort.Worlds(_difficulty);
             _cfg.ArkSpeed *= tier.ArkSpeed;
             if (_reactor) Destroy(_reactor);
             _reactor = _cfg.ArkReactor ? _cfg.ArkReactor.WithRegrowSeconds(tier.RegrowSeconds) : null;
@@ -147,6 +148,7 @@ namespace CosmicShore.Gameplay
                     Leg = i,
                     Name = _escort.Legs[i].Name,
                     Population = _escort.PopulationFor(i, _difficulty),
+                    World = _escort.WorldFor(i, _difficulty) ? _escort.WorldFor(i, _difficulty).name : string.Empty,
                 });
 
             _active = true;
@@ -162,7 +164,7 @@ namespace CosmicShore.Gameplay
             var route = new List<int>();
             for (int i = 0; i < _escort.Legs.Count; i++)
             {
-                if (!_escort.Legs[i].World)
+                if (!_escort.WorldFor(i, _difficulty))
                 {
                     CSDebug.LogWarning($"[ArkEscort] Leg '{_escort.Legs[i].Name}' names no world - the escort refuses to sail.");
                     return new List<int>();
@@ -438,15 +440,19 @@ namespace CosmicShore.Gameplay
         {
             var ark = Ark;
             if (!ark) return;
-            float leashSqr = _def.WingmateLeash * _def.WingmateLeash;
-            for (int i = 0; i < _wingmates.Count; i++)
+            // An escort's leash is its guard: a wingmate that strays past it is no use to the Ark.
+            float leash = Mathf.Min(_def.WingmateLeash, ArkEscortPilot.GuardRadius * EscortLeashFactor);
+            float leashSqr = leash * leash;
+            int n = _wingmates.Count + (_aiLocal ? 1 : 0);
+            for (int i = 0; i < n; i++)
             {
-                var status = Alive(_wingmates[i]);
+                var vessel = i < _wingmates.Count ? _wingmates[i] : _context?.GameData?.LocalPlayer?.Vessel;
+                var status = Alive(vessel);
                 if (status == null || !status.Transform) continue;
                 if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= leashSqr) continue;
                 var side = i % 2 == 0 ? -1f : 1f;
                 var at = ark.Position + ark.transform.right * (side * WingmateAbeam * 2f) - ark.Forward * (WingmateAbeam * (1 + i));
-                _wingmates[i].SetPose(new Pose(at, Quaternion.LookRotation(ark.Forward, Vector3.up)));
+                vessel.SetPose(new Pose(at, Quaternion.LookRotation(ark.Forward, Vector3.up)));
             }
         }
 

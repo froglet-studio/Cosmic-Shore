@@ -23,6 +23,7 @@ namespace CosmicShore.Gameplay
         {
             public int Leg;
             public string Name;
+            public string World;
             public float Population;
             public bool Hostile;
             public bool Reached;

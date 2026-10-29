@@ -29,6 +29,11 @@ namespace CosmicShore.ScriptableObjects
                      "different config: the corridor stands each config once.")]
             public CellConfigDataSO World;
 
+            [Tooltip("Harder versions of this world, easiest first (a biome's own 1-4 configs): difficulty 1-9 is spread " +
+                     "evenly over them, so the world itself grows meaner as the difficulty rises. Empty = World at every " +
+                     "difficulty.")]
+            public List<CellConfigDataSO> Ladder = new();
+
             [Min(0f), Tooltip("This world's share of the tier's threat: its population is the tier's population times this.")]
             public float Threat = 1f;
 
@@ -133,11 +138,22 @@ namespace CosmicShore.ScriptableObjects
             return Mathf.Clamp(tier.Population * legs[leg].Threat, 0.05f, maxPopulation);
         }
 
-        /// <summary>The worlds in leg order (the corridor's route indexes into this list).</summary>
-        public List<CellConfigDataSO> Worlds()
+        /// <summary>Leg <paramref name="leg"/>'s world at <paramref name="difficulty"/>: its ladder rung, else its World.</summary>
+        public CellConfigDataSO WorldFor(int leg, int difficulty)
+        {
+            if (leg < 0 || leg >= legs.Count) return null;
+            var l = legs[leg];
+            if (l.Ladder is not { Count: > 0 }) return l.World;
+            int d = Mathf.Clamp(difficulty, MinDifficulty, MaxDifficulty) - 1;
+            int rung = Mathf.Min(l.Ladder.Count - 1, d * l.Ladder.Count / MaxDifficulty);
+            return l.Ladder[rung] ? l.Ladder[rung] : l.World;
+        }
+
+        /// <summary>The worlds in leg order at <paramref name="difficulty"/> (the corridor's route indexes into this list).</summary>
+        public List<CellConfigDataSO> Worlds(int difficulty)
         {
             var worlds = new List<CellConfigDataSO>(legs.Count);
-            foreach (var leg in legs) worlds.Add(leg.World);
+            for (int i = 0; i < legs.Count; i++) worlds.Add(WorldFor(i, difficulty));
             return worlds;
         }
     }
