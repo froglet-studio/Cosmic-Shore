@@ -73,6 +73,7 @@ namespace CosmicShore.Gameplay
         // Slice clears it again whether or not the hit destroyed the prism.
         Vector3 _sliceCutPoint;
         Vector3 _sliceCutNormal;
+        bool _burnedOut;   // transient, set only inside BurnOut: the death is drawn by PrismBurnView, so Explode raises no effect
         // Set transiently by DamageByCollision around its Damage call, the same way: this death is
         // prism movement's collision ABOVE level 1 of its ladder, so the factory draws the plain
         // explosion rather than a finer detail level (Docs/PRISM_ANIMATION.md §4.12).
@@ -1767,6 +1768,10 @@ namespace CosmicShore.Gameplay
             var kind = PrismKinds.Of(this);
 
             SetupDestruction(domain, playerName, devastate);
+            // A BURNOUT is already drawn - the prism burned away on screen (PrismBurnView) or, beyond the burn's
+            // draw distance, simply goes back to the pool - so no debris and no per-prism SFX (a Fulmen strike
+            // burns out dozens at once). Everything the death MEANS happened in SetupDestruction.
+            if (_burnedOut) return;
             PlayDestructionSFX();
 
             // A supplied debrisSpeedLimit marks impactVector as a TRUE velocity (see
@@ -1937,6 +1942,24 @@ namespace CosmicShore.Gameplay
             if (destroyed) return;
             if (DeflectsSilenced(playerName, 0f)) return;
             SetupDestruction(Domain, playerName, devastate: true);
+        }
+
+        /// <summary>
+        /// <see cref="Damage"/>, delivered by FIRE burning out (<see cref="PrismBurnManager"/>): same gates, same shield
+        /// semantics (a shielded prism sheds its shield and survives), same scoring - but if it dies, the death raises
+        /// no explosion and no sound, because <c>PrismBurnView</c> already drew it burning away.
+        /// </summary>
+        public void BurnOut(Vector3 impactVector, Domains domain, string playerName)
+        {
+            _burnedOut = true;
+            try
+            {
+                Damage(impactVector, domain, playerName);
+            }
+            finally
+            {
+                _burnedOut = false;
+            }
         }
 
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false, bool byCreature = false)
