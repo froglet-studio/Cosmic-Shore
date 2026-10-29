@@ -84,43 +84,47 @@ camera while the AI keeps flying the vessel; F2 again glides back. Controls in D
 - [ ] F2 in freestyle or mid-blend does nothing.
 - [ ] Untick `godModeEnabled`: F2 does nothing.
 
-### 🔴 Switchback BLAST RUN: blocked gates in closed-form worlds, key-crystal blasts, sweepers, snap jaws, hunter packs (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+### 🔴 Switchback BLAST RUN: blocked gates behind 3D block fields with clock-driven sliders/rotors, key-crystal blasts (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** a sixth Switchback fun type, `BlastRun` (picker label BLAST RUN). Classic course; blocked gates get a
-key crystal on the leg in, a Breakwater door round an 18 u eye and a closed-form world (I1 Garden, I2 Maze, I3
-Membrane, I4 Menger cage). Invaders: I2 sweepers, I3 + snap-trap jaws, I4 + double door and server-driven hunter packs
-(`NetworkList<BlastRunPackState>`). Key crystals blast 1.25 x (code hook in `VesselExplosionByCrystalEffectSO`; the
-shared Dolphin explosion asset is untouched). Details: `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`, "Blast Run".
-Classic and the other fun types are unchanged. Headless: `SwitchbackBlastRunTests`, the harness, both refcompiles,
-`audit_prism_clipping.py` (Blast Run posed at 45_501-45_504: flush).
+key crystal on the leg in, a Breakwater door round an 18 u eye and a 3D block field of cubes, cuboids (pillars, slabs,
+panels, beams) and voxel spheres, big and small, round a clear bore. Moving sections: I2 sliders, I3 + rotors, I4 +
+opposed slider pairs and a double door - all posed from `NetworkManager.ServerTime`, no per-prism network state. The
+earlier worlds (Garden/Maze/Membrane/Menger), sweepers, snap jaws and hunter packs were REMOVED (Yash: "remove flora and
+faunas for now", easy to sync, 100 fps). Key crystals blast 1.25 x (code hook in `VesselExplosionByCrystalEffectSO`;
+the shared Dolphin explosion asset is untouched). Details: `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`,
+"Blast Run". Classic and the other fun types are unchanged. Headless: `SwitchbackBlastRunTests`, the harness, both
+refcompiles, `audit_prism_clipping.py` (Blast Run posed at 45_501-45_504: flush). Performance budgets are reasoned,
+NOT measured.
 
 **Verify in editor:**
 1. Run `SwitchbackBlastRunTests` and `SwitchbackFunTypeTests` (EditMode): all pass. Also `RaceAIWaypointsOnlyTests`
    (a Classic Switchback still never detours for crystals).
 2. Arcade -> Switchback -> card: `FUN: BLAST RUN`, `SEED: FIXED`, I1, launch. Console (verbose ArcadeMatch):
-   `[Switchback] Fun type BlastRun intensity 1: ... BLAST RUN 6 blocked gates, 0 hunter packs, 2072 prisms.`
-   Expect 6 / 9 / 16 / 12 blocked gates and 2072 / 2235 / 2669 / 1464 prisms at I1-I4 (seeds 45_501-45_504) on the
-   shipped shell; a different shell changes the counts but not the pass/fail of the steps below.
-3. Each blocked gate: a crystal on the line before it; take it - the blast clears a path through the world AND the door
-   (a hole at least the eye's width), and the ring is reachable. If the blast stops short of the door, raise
-   `KeyCoreMultiplier` (1.25) or lower `KeyLeadMax` (400 u).
+   `[Switchback] Fun type BlastRun intensity 1: ... BLAST RUN 6 blocked gates, 0 movers, 1173 prisms.`
+   Expect 6 / 9 / 17 / 12 blocked gates, 0 / 10 / 20 / 28 movers and 1173 / 1998 / 2988 / 3349 prisms at I1-I4
+   (seeds 45_501-45_504) on the shipped shell; a different shell changes the counts but not the pass/fail below.
+3. Each blocked gate: a field of mixed blocks on the leg in, with a clear tube down the leg line to the door's eye.
+   Take the key - the blast clears a path through the field AND the door, and the ring is reachable. If the blast
+   stops short of the door, raise `KeyCoreMultiplier` (1.25) or lower `KeyLeadMax` (400 u).
 4. No error `[Switchback] BLAST RUN: no CrystalManager in the scene` - if it appears, no keys were laid.
-5. I2: sweepers cross the line before each key. I3: the jaws snap shut (4 u gap) and open every 2.4 s; timing a pass
-   through is possible. Blast a jaw: its prisms stop moving and nothing errors.
-6. I4: up to 3 dens; a pack moves toward the leading Dolphin when it is within 400 u of its den, never further than
-   260 u from it, and goes home. Blast a member: `HUNTER DOWN (n/total)` toast and
-   `[Switchback] BLAST RUN hunter down: pack p member m.`; the same on a client in a 2-peer session (positions
-   replicate, client prisms follow smoothly).
-7. Finish: the RUN line ends ` blastRun stations=.. keys=.. huntersDown=x/y`.
+5. I2: 2 x 2 cube sliders sweep across the leg smoothly (4 s period). I3: rotors (hub + 4 danger arms) spin about the
+   leg at 90 deg/s, never entering the clear tube. I4: opposed slider pairs close and open. Blast a mover: its
+   surviving prisms keep moving, the blasted ones are gone, nothing errors.
+6. 2-peer session: the host's and the client's movers are in the same pose at the same moment (compare a rotor's arm
+   angle in screenshots); a late joiner sees them in phase at once.
+7. Finish: the RUN line ends ` blastRun stations=.. keys=.. movers=..`.
 8. AI Dolphins in Blast Run take the keys (crystal detour on); in Classic they still ignore crystals.
-9. Performance at I3 (the most prisms, ~2.7k + the cell): frame time comparable to Breakwater I3.
+9. **Performance (target 100 fps):** Profiler at I4 seed 45_504 (most prisms, 3349; 400 colliders in the densest
+   200 u; 124 moving prisms) - frame time <= 10 ms on the target machine, `TickMovers` well under 0.5 ms. If not,
+   lower `TotalCap` / `ColliderCap` / `MovingPrismCap` in `SwitchbackBlastRun` (tests follow the constants).
 
-**First-pass tuning (expect a pass):** `StationSpacing` 280 u; `WorldCap` {280, 180, 100, 60}; `TotalCap`
-{4600, 4000, 3500, 3000}; key lead 0.62 x leg in 230-400 u; key core 1.25 x; jaws 26 -> 4 u, 2.4 s; hunters 45 u/s,
-leash 260 u, sense 400 u, 3 x 7-prism members, down at <= 2 prisms left. I4 worlds are thin (0-40 prisms a station).
+**First-pass tuning (expect a pass):** `BoreRadius` {30, 26, 22, 18}; `Fill` {0.30, 0.40, 0.50, 0.60}; `CellsHalf`
+{3, 3, 4, 4}; `CellsDeep` {5, 6, 7, 8}; `SlidePeriod` 4 / 3.2 / 2.6 s; `SpinDegreesPerSecond` 90 / 135; budgets as in
+SWITCHBACK.md; `StationSpacing` 280 u; key lead 0.62 x leg in 230-400 u; key core 1.25 x.
 
-**Known minimal:** hunter kills are not scored (log + toast only); hunters pass through static prisms; reverse-threading
-a blocked ring at I1-I3 is not prevented; the AI does not aim blasts at doors.
+**Known minimal:** reverse-threading a blocked ring at I1-I3 is not prevented; the AI does not aim blasts at doors;
+frame time not measured.
 
 ### 🔴 Destroyed prisms are recycled after their death effect; trail hygiene (`perf/lavalamp-prism-recycle`, 2026-10-29) — NOT EDITOR-VERIFIED
 

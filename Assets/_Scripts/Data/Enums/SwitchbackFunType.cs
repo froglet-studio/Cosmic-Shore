@@ -11,8 +11,8 @@ namespace CosmicShore.Data
     /// <item><see cref="Plan3_ParMedals"/>: the shipped course, with a par time, split toasts, a medal and a
     /// personal best.</item>
     /// <item><see cref="Combined"/>: Plan 1's course, Plan 2's features and Plan 3's medals together.</item>
-    /// <item><see cref="BlastRun"/>: blocked gates in closed-form worlds, cleared by key-crystal blasts, with
-    /// invaders (Yash, 2026-10-29).</item>
+    /// <item><see cref="BlastRun"/>: blocked gates behind 3D block fields with clock-driven moving sections, cleared
+    /// by key-crystal blasts (Yash, 2026-10-29).</item>
     /// </list>
     /// See <c>Assets/_Scripts/Controller/Arcade/Switchback/SWITCHBACK.md</c>, "Fun types".
     /// </summary>
@@ -26,9 +26,10 @@ namespace CosmicShore.Data
         Combined = 4,
         /// <summary>
         /// BLAST RUN (SWITCHBACK.md, "Blast Run"): the Classic course, every blocked gate walled off by a Breakwater-style
-        /// door (danger rakes round an always-open 18 u eye) inside a closed-form world (garden, lattice maze, minimal
-        /// surface, Menger cage), with a KEY CRYSTAL on the leg line before it. Take the key and the Dolphin's blast fires
-        /// down the leg and clears the way. Invaders by intensity: none, sweepers, + snap jaws, + hunter packs.
+        /// door (danger rakes round an always-open 18 u eye) behind a 3D grid of cubes, cuboids and voxel spheres, big
+        /// and small, with a KEY CRYSTAL on the leg line before it. Take the key and the Dolphin's blast fires down the
+        /// leg and clears the way. Moving sections by intensity: none, sliders, + rotors, + opposed slider pairs - all
+        /// driven by the shared clock, so nothing but the key crystals is replicated.
         /// </summary>
         BlastRun = 5,
     }
@@ -62,7 +63,7 @@ namespace CosmicShore.Data
         public static bool HasParMedals(SwitchbackFunType t) =>
             t == SwitchbackFunType.Plan3_ParMedals || t == SwitchbackFunType.Combined;
 
-        /// <summary>Blast Run's blocked gates, key crystals and invaders (<see cref="SwitchbackFunType.BlastRun"/>). It is
+        /// <summary>Blast Run's blocked gates, block fields and key crystals (<see cref="SwitchbackFunType.BlastRun"/>). It is
         /// no other plan: the course is the Classic ladder, and it carries no par or medals.</summary>
         public static bool HasBlastRun(SwitchbackFunType t) => t == SwitchbackFunType.BlastRun;
 

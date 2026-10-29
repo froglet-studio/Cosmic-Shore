@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -97,17 +96,8 @@ namespace CosmicShore.Gameplay
 
         // ── Blast Run (SWITCHBACK.md "Blast Run") ──────────────────────
 
-        /// <summary>The hunter packs, one entry per pack - written by the server, read by every peer's runtime.</summary>
-        NetworkList<BlastRunPackState> _packs;
         SwitchbackFeatureLayout _blastLayout;
         CrystalManager _keyManager;
-        float _nextPackTick, _lastPackTick;
-
-        void Awake()
-        {
-            // A NetworkList must exist before the object spawns (NGO collects its variables at spawn).
-            _packs = new NetworkList<BlastRunPackState>();
-        }
 
         /// <summary>
         /// The course features, hung on the course on every peer from the course every peer received (Breakwater's
@@ -167,20 +157,20 @@ namespace CosmicShore.Gameplay
             _runtime.transform.SetParent(transform, false);
             _runtime.Init(gameData, funType, intensity, IsServer ? CourseSeedUsed : 0, _course, centre,
                           () => RaceLength, layout, container);
-            if (blast) _runtime.AttachPacks(_packs);
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Switchback] Fun type {funType} intensity {intensity}: {_course.Count} gates" +
                 (layout != null ? $", {layout.Ribbons.Count} ribbons, {layout.Shortcuts.Count} shortcuts, " +
                                   $"{layout.MovingClusters.Count} moving clusters" : "") +
-                (blast ? $", BLAST RUN {layout.Stations.Count} blocked gates, {layout.Packs.Count} hunter packs, " +
+                (blast ? $", BLAST RUN {layout.Stations.Count} blocked gates, {layout.Movers.Count} movers, " +
                          $"{layout.Prisms.Count} prisms" : "") + ".");
         }
 
         /// <summary>
         /// Every peer: register the key crystals (the key blast's wider core reads them on whichever peer detonates).
         /// The server also hands them to the cell's crystal manager - which lays one crystal at each key and respawns it
-        /// there, replicated to clients through its slot list - and seeds the hunter packs at their dens.
+        /// there, replicated to clients through its slot list. Nothing else of Blast Run is replicated: the block
+        /// fields and their movers are a pure function of the course and the shared clock.
         /// </summary>
         void RaiseBlastRun(SwitchbackFeatureLayout layout)
         {
@@ -195,63 +185,6 @@ namespace CosmicShore.Gameplay
             else
                 CSDebug.LogError("[Switchback] BLAST RUN: no CrystalManager in the scene - the " + keys.Count +
                                  " key crystals are not laid, and the doors can only be blasted with other crystals.");
-
-            _packs.Clear();
-            foreach (var pk in layout.Packs) _packs.Add(new BlastRunPackState { Position = pk.Den, DownMask = 0 });
-            _nextPackTick = _lastPackTick = 0f;
-        }
-
-        /// <summary>
-        /// Server, 10 Hz while the turn runs: each pack flies at the race's LEAD runner (most gates threaded) if the leader
-        /// is within sense of its den, else home (<see cref="BlastRunHunters.Step"/>); a hunter blasted down to
-        /// <see cref="BlastRunHunters.AliveToStand"/> prisms is marked down, and a pack with no hunter left stops.
-        /// </summary>
-        protected override void OnServerTick()
-        {
-            base.OnServerTick();
-            if (_blastLayout == null || _blastLayout.Packs.Count == 0 || !_runtime || !IsSpawned) return;
-            if (gameData == null || !gameData.IsTurnRunning || Time.time < _nextPackTick) return;
-            float dt = _lastPackTick > 0f ? Time.time - _lastPackTick : 1f / BlastRunHunters.TickHz;
-            _lastPackTick = Time.time;
-            _nextPackTick = Time.time + 1f / BlastRunHunters.TickHz;
-
-            bool hasLeader = TryLeadRunner(out Vector3 leader);
-            int n = Mathf.Min(_blastLayout.Packs.Count, _packs.Count);
-            for (int p = 0; p < n; p++)
-            {
-                var pk = _blastLayout.Packs[p];
-                var state = _packs[p];
-                int down = state.DownMask;
-                for (int m = 0; m < pk.Members; m++)
-                {
-                    if ((down & (1 << m)) != 0) continue;
-                    int alive = _runtime.AlivePackPrisms(p, m, out bool judged);
-                    if (judged && BlastRunHunters.IsDown(alive)) down |= 1 << m;
-                }
-                Vector3 pos = BlastRunHunters.AllDown(down, pk.Members)
-                    ? state.Position
-                    : BlastRunHunters.Step(state.Position, pk.Den, hasLeader, leader, Mathf.Min(dt, 0.5f));
-                var next = new BlastRunPackState { Position = pos, DownMask = down };
-                if (!next.Equals(state)) _packs[p] = next;
-            }
-        }
-
-        /// <summary>The pilot with the most gates threaded who has a hull in play; ties go to the first in the roster.</summary>
-        bool TryLeadRunner(out Vector3 position)
-        {
-            position = default;
-            int best = -1;
-            foreach (var p in gameData.Players)
-            {
-                if (p == null || p.RoundStats == null) continue;
-                var vessel = p.Vessel;
-                if (vessel == null || (vessel is Object uo && !uo) || !vessel.Transform) continue;
-                int threaded = p.RoundStats.SwitchesThreaded;
-                if (threaded <= best) continue;
-                best = threaded;
-                position = vessel.Transform.position;
-            }
-            return best >= 0;
         }
 
         public override void OnNetworkDespawn()
