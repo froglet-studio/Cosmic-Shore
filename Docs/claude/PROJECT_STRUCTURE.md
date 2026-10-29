@@ -6,8 +6,8 @@
 
 ```
 Assets/
-├── _Scripts/                  # All first-party code (~1,100 C# files)
-│   ├── Controller/            # Gameplay systems (~536 files)
+├── _Scripts/                  # All first-party code (3,000 C# files, 2026-10-29)
+│   ├── Controller/            # Gameplay systems (1,335 files)
 │   │   ├── Vessel/            # Vessel core: VesselStatus, Prism, Trail, VesselPrismController, VesselActions/, R_VesselActions/
 │   │   ├── Environment/       # Cells, crystals, flora/fauna, flow fields, warp fields, spawning
 │   │   ├── ImpactEffects/     # Impactors (11 types) + Effect SOs (20+ types)
@@ -27,7 +27,7 @@ Assets/
 │   │   ├── ECS/               # DOTS entity components
 │   │   ├── XP/                # Experience point controllers
 │   │   └── Settings/          # Runtime settings
-│   ├── System/                # Application-level systems (~126 files)
+│   ├── System/                # Application-level systems (157 files)
 │   │   ├── Bootstrap/         # BootstrapConfigSO, SceneTransitionManager, ApplicationLifecycleManager
 │   │   ├── Economy/           # CatalogManager, CaptainManager, Inventory, StoreShelve, VirtualItem, ItemPrice
 │   │   ├── PlayerData/        # PlayerProfile, PlayerSession
@@ -44,7 +44,7 @@ Assets/
 │   │   ├── Favorites/         # Favorites system
 │   │   ├── Ads/               # Ad integration
 │   │   └── Architectures/     # Shared architectural base classes
-│   ├── UI/                    # Game & app UI (~188 files)
+│   ├── UI/                    # Game & app UI (461 files)
 │   │   ├── Controller/        # VesselHUD controllers (Manta, Rhino, Serpent, Sparrow)
 │   │   ├── View/              # VesselHUD views (all vessel types + Minigame, Multiplayer)
 │   │   ├── Interfaces/        # IVesselHUDController, IVesselHUDView, IMinigameHUDController, IScreen
@@ -57,10 +57,10 @@ Assets/
 │   │   ├── GameToastSystem/   # In-game toast feed (situation SOs, per-mode configs, idle hints)
 │   │   ├── FX/                # UI visual effects
 │   │   └── Animations/        # UI animations
-│   ├── Data/                  # Models & enums (~29 files)
+│   ├── Data/                  # Models & enums (79 files)
 │   │   ├── Enums/             # VesselClassType, Domains, ResourceType, ShipActions, InputEvents, etc.
 │   │   └── Structs/           # DailyChallenge, GameplayReward, TrainingGameProgress
-│   ├── ScriptableObjects/     # SO definitions & SOAP types (~70 files)
+│   ├── ScriptableObjects/     # SO definitions & SOAP types (170 files)
 │   │   ├── SOAP/              # Custom SOAP types (16 subdirectories)
 │   │   └── SO_*.cs            # Game data SOs (Captain, Vessel, Game, ArcadeGame, Element, etc.)
 │   ├── Utility/               # Effects, PoolsAndBuffers, DataContainers, DataPersistence, ClassExtensions

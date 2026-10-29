@@ -171,7 +171,7 @@ issues, milestones, branches and the week's merges back.
 - Never file or close tickets the person did not ask about, and never at the end of a session unasked.
 - Never edit the machine block (`<!-- team-task ... -->`) by hand, and never the markdown board
   (`Docs/TEAM_TASKS.md` is a stub; a task a branch still writes there in the old format is filed by the next sweep).
-- Never turn on `.claude/hooks/team_tasks_nudge.py` again (Shombith, 2026-10-23: the per-prompt hooks slowed every chat).
+- Never bring back a per-prompt tickets hook. The old one (`.claude/hooks/team_tasks_nudge.py`) was switched off (Shombith, 2026-10-23: the per-prompt hooks slowed every chat) and deleted on 2026-10-25; it no longer exists.
 
 ## /ship
 

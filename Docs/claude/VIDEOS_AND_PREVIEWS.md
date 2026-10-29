@@ -13,7 +13,7 @@ kept, a 60 s video), not estimated.
    menu flow). A clip is at most **60 s at 15 fps, 1280x720, H.264** (a few MB).
 2. **The person still judges in Unity whatever Unity alone can show** (section 4), and the session says so in the
    same message: "this video is Amoebius; the final look is the editor's". A session video never replaces the
-   `/verify-unity` gate or the hand test in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+   verify rule (`CLAUDE.md` § "Unity CLI verification") or the hand test in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 3. **The session looks at frames, not at the whole video.** It reads at most 3-4 frames (start, middle, end, plus one
    where the change should show) to check the clip shows what it claims, then sends the file with `SendUserFile`. It
    never streams every frame into its own context.
