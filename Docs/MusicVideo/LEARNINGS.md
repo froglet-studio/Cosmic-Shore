@@ -391,6 +391,34 @@ list; the general lessons:
   was ported as a family (round 3 shows the translucent rimmed hull). The echo sight's cyan beams and the
   Thresher's red ball and chain rendered right from the first round.
 
+### Garrett's verdict on the clips (2026-10-29) and the new approach: a pixel loss against Unity
+
+Garrett: *"these are all very very [wrong] in different ways that are too numerous to detail. if it was close
+i could nitpick we need a lot of work before this will work. i think you need to take a new approach. you
+need to make a tool in unity that will use the unity recorder in a constructed scene. it will save off some
+standardized control video. then you will create the exact same scene and video in amoebius. your loss
+function will be based sampling pixel discrepancies. this will allow you to iterate until you are able to
+close the gaps in your rendering artifacts and other issues."*
+
+So the rendering is measured, not judged by eye against memory: `Port/parity/README.md` § Render parity. One
+constructed scene both engines load (`Tools/Build/author_render_parity_scene.py`), one take script that makes
+every frame a function of the frame index (`RenderParityTake`), the Unity Recorder on the Unity side
+(`FrogletTools > Amoebius > Render Parity`), the player's recorder on the Amoebius side, and
+`Port/tools/render_parity.py compare` for the loss (rmse in linear light, luminance rmse, SSIM, a tile heat
+map, a side-by-side sheet). Until the control take's loss is small, no clip and no cut is worth composing:
+the music video waits on the renderer.
+
+Where it stands (2026-10-29): the Amoebius side runs end to end. `record` boots the control scene, the take
+counts from -30, the grid lays on the warm-up, the blast fires at take frame 150 and takes the grid down
+(405 prisms to 140 by frame 350), 310 frames land in `Port/parity/results/render/control/`. Two runs are
+bit-identical (`compare` over 301 pairs: loss 0.0000, ssim 1.000), so the loss floor is zero and every
+non-zero number against Unity is real. Three things the bring-up measured, each now in the generator or the
+tool: a bracketed object name must be quoted in the YAML or the object loads nameless; a tool scene needs the
+`[StandaloneScene]` marker or AppManager's boot chain records the sign-in screen; the camera's warm-up pose
+must differ from take frame 0 (it now faces the other way) for the cut to align on. Already visible before
+any golden: the Ruby blast's shell draws nothing from 400 units away. The Unity golden is the one step that
+needs the editor: `FrogletTools > Amoebius > Render Parity: Record Control Take`, then `compare`.
+
 ## Log
 
 | Date | Cut | Score said | Person said | Changed |

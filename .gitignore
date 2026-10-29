@@ -143,3 +143,7 @@ Tools/Build/vessel_model/.sheets/
 
 # Music video generator outputs (frames, analyses, cuts): Tools/Build/music_video/out/ is regenerated
 Tools/Build/music_video/out/
+
+# Render parity: the golden PNG sequences (300 MB a take) and every Amoebius result; take.mp4 and take.json are committed
+Port/parity/goldens/render/*/frames/
+Port/parity/results/render/

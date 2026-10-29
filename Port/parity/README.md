@@ -118,3 +118,34 @@ reseed, `ModePreviewPlantingModel` reseeds and restores); 6 unseeded `System.Ran
 identity only and must never reach a compared channel.
 
 Until it lands, Amoebius plays the `do` stream and every Unity channel is MISSING.
+
+## Render parity: the pixel loss (2026-10-29)
+
+Garrett: *"make a tool in unity that will use the unity recorder in a constructed scene. it will save off some
+standardized control video. then you will create the exact same scene and video in amoebius. your loss
+function will be based sampling pixel discrepancies. this will allow you to iterate until you are able to
+close the gaps in your rendering artifacts and other issues."*
+
+One scene, both engines, frame for frame, scored pixel by pixel:
+
+| Piece | Where | What |
+|---|---|---|
+| The control scene | `Assets/_Scenes/Game_TestDesign/RenderParity.unity`, written by `Tools/Build/author_render_parity_scene.py` (`--check` is the drift gate) | the HyperSea skybox and the game's fog, the game's PostProcessing volume and URP camera data, PrismManagers and the ThemeManager, the `[StandaloneScene]` marker (without it `AppManager`'s boot chain replaces any scene with Authentication after the splash, in Amoebius too), a 9x5x9 Jade prism grid laid by `PrismGridExplosionHarness` on a warm-up frame with the Dolphin's Ruby blast at take frame 150, twelve GyroidBranch spindles, the Manta hull at rest (mesh + its four materials, no vessel components), and the take |
+| The take | `Assets/_Scripts/Utility/Parity/RenderParityTake.cs` (runtime; both engines compile it) | everything is a function of the frame index: 30 warm-up frames, 300 take frames at 60 fps, 1280x720; the camera stands on the first keyframe facing the other way through the warm-up and cuts onto its path at take frame 0 (the cut is what the comparison aligns on, never a frame number), smoothsteps between keyframes, fires the events (`spawn`, `explode`); every Canvas is switched off (overlays are not in a camera capture). Unity: `Time.captureFramerate` = fps; Amoebius: `--step-hz` |
+| Unity records | `FrogletTools > Amoebius > Render Parity: Record Control Take` (`Assets/_Scripts/Editor/Parity/RenderParityRecorder.cs`, the Unity Recorder 5.1) | opens the scene, enters Play, records every frame from the first Play frame to the end of the take: `Port/parity/goldens/render/<take>/frames/f0000.png...` (camera input, the take's size), `take.mp4`, `take.json` (fps, warm-up, frames, size, the URP asset's MSAA, keyframes, Unity version, git head). Exits Play when done; `Cancel Recording` stops it |
+| Amoebius records | `python3 Port/tools/render_parity.py record` | boots the player on the scene at the take's size, fps and MSAA, waits for the take to count, records from 10 frames before take frame 0 to its end into `Port/parity/results/render/<take>/frames/` |
+| The loss | `python3 Port/tools/render_parity.py compare` | aligns the sequences on the jump, then per aligned pair: `rmse` of linear RGB, `luma_rmse`, `ssim` (luminance, gaussian window, half size), a 16x9 tile heat map; `report.json` (loss = mean rmse + 0.5 x (1 - mean ssim), the worst frames and tiles), `sheet.png` (unity \| amoebius \| 4x difference, every 30th frame), `heat.png` |
+| Determinism | `python3 Port/tools/render_parity.py self` | Amoebius against itself twice: the floor the loss can reach. Measured 2026-10-29: two runs are bit-identical over all 301 pairs (loss 0.0000, ssim 1.000), so every non-zero number in a Unity comparison is a real difference |
+
+The golden PNG frames are git-ignored (300 MB a take); `take.mp4` and `take.json` are committed, and `compare`
+decodes the movie when the PNGs are absent (a ~0.005 rmse floor from the encode). The loop: `compare` names
+the worst tile and frame, the sheet shows what is there, the engine is fixed (a family, a graph node, a
+state), `record` and `compare` again. Everything on both sides is the game's own code and assets; nothing in
+the scene is a mock.
+
+Measured while bringing the Amoebius side up (2026-10-29): the scene generator must write a bracketed object
+name quoted (`m_Name: '[RenderParityTake]'`; bare, a YAML reader takes `[...]` as a flow sequence and the
+object loads nameless), a tool scene needs the `[StandaloneScene]` marker or the sign-in screen is what gets
+recorded, and the blast at take frame 150 does destroy the grid in Amoebius (405 prisms down to 140 by frame
+350) while its shell draws nothing visible from 400 units away - the first candidate for the loss once the
+Unity golden exists. `run.json` records where the cut landed (`cut`) as well as the intended lead.

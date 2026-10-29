@@ -32,6 +32,16 @@ Read the sections and the candidate windows it prints. For a milestone segment p
 section boundary inside it (a build into a drop is the best 15 s a song has). For a whole song the
 segment is 0 to the end and `--beats` is about one per section (see §6).
 
+## 1.4 Before any clip: the render parity loss (Garrett 2026-10-29)
+
+The renderer is held to Unity by a pixel loss, not by eye: `Port/parity/README.md` § Render parity. Garrett
+records the control take in Unity (`FrogletTools > Amoebius > Render Parity: Record Control Take`, the Unity
+Recorder) into `Port/parity/goldens/render/control/`; a session renders the same scene in Amoebius
+(`python3 Port/tools/render_parity.py record`) and scores it (`... compare`): the report names the worst
+frames and tiles, the sheet shows unity | amoebius | difference. Fix the engine at the worst tile's cause,
+record and compare again. The scene itself is authored by `Tools/Build/author_render_parity_scene.py`
+(extend it there, `--check` is the gate). Clips and cuts resume once the loss is small.
+
 ## 1.5 Short clips first (the current milestone, Garrett 2026-10-28)
 
 Cuts 5-6 were rejected: a Squirrel wandering with a camera behind it is not gameplay, however populated the
