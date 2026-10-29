@@ -26,8 +26,8 @@ Each icon names the ACT, read from the hull's ElementalAbilityMapSO entry:
   Serpent  Charge Sniper Shot        one long round with its tracer streaks
            Mass   Seed Wall          a 3x3 patch of the wall's touching diamonds, seed ringed
            Space  Scope              a reticle: ring, split crosshair, centre dot
-  Scarab   Charge Cavitation Blast   a bubble throwing three shock arcs
-           Mass   Switch             a ball about to thread a ring
+  Scarab   Charge Cavitation Blast   (retired 2026-10-28: the icon kit's card, specs/scarab.py)
+           Mass   Switch             (retired 2026-10-28: the icon kit's card, specs/scarab.py)
            Space  Ball Forge         a ball with crystals converging on it
            Time   Throttle           a speed dial with its needle
 
@@ -184,29 +184,6 @@ def serpent_seed_wall(px, py):
 
 # -- Scarab --------------------------------------------------------------------
 
-def scarab_cavitation_blast(px, py):
-    """A collapsing bubble throwing three shock arcs - the mantis-shrimp punch."""
-    cx, cy = 34, 64
-    if ring(px, py, cx, cy, 14, 5):
-        return True
-    for r, t in ((32, 5.0), (50, 4.5), (68, 4.0)):
-        if arc(px, py, cx, cy, r, t, -48.0, 48.0):
-            return True
-    return False
-
-
-def scarab_switch(px, py):
-    """A ball about to thread a ring - the switch a ball has to pass through."""
-    if ellipse_ring(px, py, 86, 64, 18, 44, 6.5):
-        return True
-    if circle(px, py, 38, 64, 14):
-        return True
-    for y, x0 in ((64, 6), (50, 12), (78, 12)):                  # motion lines
-        if capsule(px, py, x0, y, 18, y, 3):
-            return True
-    return False
-
-
 def scarab_ball_forge(px, py):
     """A ball with four crystals converging on it - the skimmer forges crystals into balls."""
     if circle(px, py, 64, 54, 30) and not circle(px, py, 52, 66, 9):   # ball + highlight
@@ -249,8 +226,8 @@ HULLS = {
         "Serpent_SeedWall-PLACEHOLDER.png": serpent_seed_wall,
     },
     "Scarab": {
-        "Scarab_CavitationBlast-PLACEHOLDER.png": scarab_cavitation_blast,
-        "Scarab_Switch-PLACEHOLDER.png": scarab_switch,
+        # Scarab_CavitationBlast retired 2026-10-28: the icon kit's punch volume to scale (specs/scarab.py).
+        # Scarab_Switch retired 2026-10-28: the icon kit's ball threading the ring (specs/scarab.py).
         "Scarab_BallForge-PLACEHOLDER.png": scarab_ball_forge,
         "Scarab_Throttle-PLACEHOLDER.png": scarab_throttle,
     },

@@ -1,5 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -19,7 +21,8 @@ namespace CosmicShore.UI
     /// - <c>ScarabCavitationBlast.OnBlastReadyChanged</c> → the CHARGE row's ready/recharging
     ///   readout, from a serialized reference on this vessel's prefab so a missing wire is
     ///   visible in the inspector. The edge carries the live cooldown length, so the optional
-    ///   sweep ring is one tween per use.
+    ///   sweep ring is one tween per use. Each edge (and the seed) also repaints the card's hull in the
+    ///   pilot's domain colour, so the Charge card needs no per-frame poll either.
     ///
     /// The right-stick DASH has no readout because it has no cooldown — it is always available
     /// (SCARAB.md §3.4). Only the blast that rides it is paced, and that is what the Charge row
@@ -62,8 +65,15 @@ namespace CosmicShore.UI
                  "the depleting veil below carries the whole answer to \"can I plant one\".")]
         [SerializeField, Min(1)] int switchChargesPerFullMeter = 1;
 
+        [Tooltip("The Scarab's place-switch action (PlaceSwitchAction.asset): its switchScale is the live Mass " +
+                 "ring scale the Switch card's ball shrinks by. Unwired, the ball stays at its Mass 1 size.")]
+        [SerializeField] PlaceSwitchActionSO placeSwitch;
+
+        [Inject] GameDataSO _gameData;
+
         ResourceSystem _resources;
         ScarabCavitationBlast _boundBlast;
+        IVesselStatus _status;
 
         // The switch meter now RECHARGES continuously (PlaceSwitchActionExecutor), so
         // OnResourceChanged fires every frame it is filling. SetSwitchCharges starts a colour
@@ -84,6 +94,7 @@ namespace CosmicShore.UI
             if (vesselStatus == null) return;
             if (vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser) return;
 
+            _status = vesselStatus;
             _resources = vesselStatus.ResourceSystem;
             if (!cavitationBlast)
                 cavitationBlast = vesselStatus.ShipTransform
@@ -93,13 +104,17 @@ namespace CosmicShore.UI
 
             if (_resources)
             {
+                view?.SetSwitchRingColor(ResolveDomainSignalColor());
                 _resources.OnResourceChanged += HandleResourceChanged;
+                _resources.OnElementLevelChange += HandleElementLevelChange;
                 SeedFromResources();
+                PushSwitchScale();
             }
 
             if (_boundBlast)
             {
                 _boundBlast.OnBlastReadyChanged += HandleBlastReadyChanged;
+                view?.SetBlastHullColor(ResolveDomainSignalColor());
                 view?.SetBlastReady(_boundBlast.IsBlastReady, 0f);   // seed, don't wait for an edge
             }
         }
@@ -149,21 +164,53 @@ namespace CosmicShore.UI
 
                 if (charges == _lastSwitchCharges) return;
                 _lastSwitchCharges = charges;
+                view.SetSwitchRingColor(ResolveDomainSignalColor());
                 view.SetSwitchCharges(charges);
             }
         }
 
+        void HandleElementLevelChange(Element element, int level)
+        {
+            if (element == Element.Mass) PushSwitchScale();
+        }
+
+        /// <summary>The Switch card's ball shrinks as Mass grows the ring (switchScale, read live at the
+        /// level change - the same value the executor sizes the ring with).</summary>
+        void PushSwitchScale()
+        {
+            if (!view || !placeSwitch || _status == null) return;
+            view.SetSwitchScale(placeSwitch.SwitchScale.EvaluateLive(_status));
+        }
+
         void HandleBlastReadyChanged(bool ready, float cooldownSeconds)
-            => view?.SetBlastReady(ready, cooldownSeconds);
+        {
+            if (!view) return;
+            view.SetBlastHullColor(ResolveDomainSignalColor());
+            view.SetBlastReady(ready, cooldownSeconds);
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the
+        /// Rhino's and the Dolphin's hull cards read it.</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return Color.white;
+            return colorSet.GetDomainSignalColor(_status.Domain);
+        }
 
         void Unbind()
         {
             // A re-init must re-push the count, so forget what was last shown.
             _lastSwitchCharges = -1;
-            if (_resources) _resources.OnResourceChanged -= HandleResourceChanged;
+            if (_resources)
+            {
+                _resources.OnResourceChanged -= HandleResourceChanged;
+                _resources.OnElementLevelChange -= HandleElementLevelChange;
+            }
             if (_boundBlast) _boundBlast.OnBlastReadyChanged -= HandleBlastReadyChanged;
             _resources = null;
             _boundBlast = null;
+            _status = null;
         }
 
         void OnDisable() => Unbind();

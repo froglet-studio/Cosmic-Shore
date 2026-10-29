@@ -18479,6 +18479,45 @@ compiled.
    the prism shows glanced away down-right; dropping below 70% puts the prism back ahead and the ward away.
 5. If the ticks sit off the slanted edge, tune `momentumTickSlantInset` (the Sparrow's `gunHeatTickSlantInset` is 9).
 
+## Scarab Mass card: Switch, a ball threading your ring (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `ScarabHUDView.cs` (four `switch*Icon` parts replace the charge-count colour ramp on the Mass icon;
+`SetSwitchCharges` dims the card with none banked, `SetSwitchRingColor`, `SetSwitchScale`, `SwitchBallScale`,
+`SwitchCardAlpha`), `ScarabHUDController.cs` (new `placeSwitch` field, wired on `Scarab.prefab` to
+`PlaceSwitchAction.asset`; listens to `OnElementLevelChange` and pushes `switchScale` live), `ScarabHUDVariant.prefab`
+(the Mass icon is a transparent container over SwitchFar, SwitchWake, SwitchBall - point-anchored at its own centre -
+and SwitchNear), `ScarabSwitchCardTests.cs`. Sheet: `Docs/Icons/sheets/scarab_switch.png`. No .NET and no Unity CLI in
+the session: nothing here was compiled.
+
+1. Run `ScarabSwitchCardTests`. **Pass:** green.
+2. Fly the Scarab (Toybox Vessel Changer). **Pass:** the Mass card shows a tall faceted ring in your colour with a
+   white ball in its mouth and three short white streaks coming from the left, passing BEHIND the ring's left arc.
+3. Place a switch (A). **Pass:** the card dims and the fleet's cooldown veil sweeps; when the charge is back it is full
+   again.
+4. Raise Mass (collect Mass crystals, or the dev element panel) to 10. **Pass:** the ball shrinks to about 40% of its
+   size, staying centred in the ring; the ring itself does not change size.
+5. If the ball sits off the ring's centre, the point-anchor offset is `SwitchBall`'s m_AnchoredPosition (6.25).
+
+## Scarab Charge card: Cavitation Blast to scale (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `ScarabHUDView.cs` (five `blast*Icon` parts replace the ready / spent tint on the Charge icon;
+`SetBlastReady` shows the shattered volume for `blastShatterSeconds` then greys; `BlastPartsFor`, `SetBlastHullColor`;
+`blastReadyColor` retired, `blastSpentColor` now the grey of the volume and plate), `ScarabHUDController.cs` (injects
+`GameDataSO`, paints the hull in the domain signal colour on the seed and every blast edge), `ScarabHUDVariant.prefab`
+(the Charge icon is a transparent container over BlastPrisms, BlastField, BlastFieldShattered, BlastPlate, BlastHull),
+`ScarabBlastCardTests.cs`. Sheet: `Docs/Icons/sheets/scarab_cavitation.png`. No .NET and no Unity CLI in the session:
+nothing here was compiled.
+
+1. Run `ScarabBlastCardTests`. **Pass:** green.
+2. Fly the Scarab (Toybox Vessel Changer). **Pass:** the Charge card shows a white rounded volume with a white plate at
+   its right edge, a tiny Scarab in your colour in the middle, three small blue prisms outside it; no orange tint.
+3. Dash with the right stick to fire the blast. **Pass:** the card punches once; for about a third of a second the
+   volume shows two sets of forward-pointing slivers cut out of it; then the volume and the plate turn grey until the
+   blast is ready again, when they go back to white.
+4. Switch domain (lava lamp / a Gold match). **Pass:** the hull takes the new colour on the next blast.
+5. The disabled resource display on the variant (`fuelLevelImage`) still points at the Charge icon Image; it is off
+   (`m_Enabled: 0`). If anyone turns it on it would write sprites onto the transparent container - leave it off.
+
 ## Rhino Space card: Blade Reach, the katana and the super-shielded prism (2026-10-28) - NOT EDITOR-VERIFIED
 
 **Files:** `RhinoVesselHUDView.cs` (`BuildReach` generates `BladeReach` > `Prism`, `HiltPivot` > `Hilt` + `BladeScale` >
