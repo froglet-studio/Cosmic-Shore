@@ -116,6 +116,37 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheBellyAim_IsAPurePitch_ThatPutsTheBellyWhereTheNoseWas()
+        {
+            // Waystation's AI: nose on the ring, then pitch up to this point. A pure pitch of 90 degrees carries the old
+            // forward onto the new down, so the belly lands on the ring, off by exactly the nose's error at the start.
+            var hull = Tilted;
+            Vector3 toRing = hull * new Vector3(0.05f, 0.03f, 1f);    // the nose ~3.4 degrees off the ring
+            Vector3 nose = TigerMothDropMath.BellyAimNose(hull, toRing);
+            Assert.Less(Mathf.Abs(Vector3.Dot(nose, hull * Vector3.right)), 0.06f, "the point is (almost) in the pitch plane");
+            var pitched = hull * Quaternion.AngleAxis(-90f, Vector3.right);   // nose UP 90 degrees (Unity: -x pitches up)
+            AreClose(hull * Vector3.forward, pitched * Vector3.down, "a 90-degree pitch up puts the belly where the nose was");
+            Assert.AreEqual(Vector3.Angle(hull * Vector3.forward, toRing), TigerMothDropMath.BellyAimError(pitched, toRing), 0.01f,
+                "so the belly's miss is the nose's miss");
+        }
+
+        [Test]
+        public void TheHold_CoversTheDistance_LandingIncluded()
+        {
+            // Integrate the drop the executor flies (ease in, hold, landing) and land on the target within a unit.
+            const float speed = 900f, ease = 0.12f, land = 0.25f, cruise = 55f, dt = 1f / 600f;
+            foreach (float target in new[] { 400f, 650f, 1100f })
+            {
+                float hold = TigerMothDropMath.HoldSecondsFor(target, speed, ease, land, cruise), d = 0f, t = 0f;
+                for (; t < hold; t += dt) d += TigerMothDropMath.DropSpeed(t, speed, ease) * dt;
+                float release = TigerMothDropMath.DropSpeed(hold, speed, ease);
+                for (float l = 0f; l < land; l += dt) d += TigerMothDropMath.Landing(l, land, release, cruise).speed * dt;
+                Assert.AreEqual(target, d, 2f, $"a {target} u drop");
+            }
+            Assert.AreEqual(0f, TigerMothDropMath.HoldSecondsFor(10f, speed, ease, land, cruise), "never negative");
+        }
+
+        [Test]
         public void NegativeControl_ARollInsteadOfAPitch_WouldLandOffTheLine()
         {
             // proves the landed-forward test can fail: turning about forward (a roll) leaves the nose where it was

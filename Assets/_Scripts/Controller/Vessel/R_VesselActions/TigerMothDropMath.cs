@@ -69,6 +69,38 @@ namespace CosmicShore.Gameplay
         public static bool PaysFullCooldown(float distance, float fullDistance) => distance >= fullDistance;
 
         /// <summary>
+        /// Where to point the NOSE so a PURE PITCH UP brings the BELLY onto <paramref name="toTarget"/>: the hull's up, made
+        /// square to the target. A pitch of 90 degrees carries the old forward onto the new down, so a hull whose nose is
+        /// on the target and then pitches to this point has its belly on the target, off by exactly the nose's error at
+        /// the start. Captured ONCE at that start and held: a point re-derived every frame drifts out of the pitch plane,
+        /// the autopilot answers with yaw, and its yaw drags roll (AIPilot banks into a yaw), which leaves the belly tens
+        /// of degrees off (measured offline, 2026-10-29). Waystation's AI.
+        /// </summary>
+        public static Vector3 BellyAimNose(Quaternion hull, Vector3 toTarget)
+        {
+            Vector3 up = hull * Vector3.up;
+            if (toTarget.sqrMagnitude < 1e-6f) return up;
+            Vector3 d = toTarget.normalized;
+            Vector3 square = up - Vector3.Dot(up, d) * d;
+            return square.sqrMagnitude > 1e-6f ? square.normalized : hull * Vector3.forward;
+        }
+
+        /// <summary>
+        /// Seconds to hold the drop so it covers <paramref name="distance"/> along its line, landing included: the ease in
+        /// covers half its time at full speed, and the landing covers its time at the mean of the fall and the cruise
+        /// (both SmoothStep, whose mean is a half). Exact for a hold at least the ease long; never negative.
+        /// </summary>
+        public static float HoldSecondsFor(float distance, float dropSpeed, float easeSeconds, float landSeconds, float cruiseSpeed)
+        {
+            if (dropSpeed <= 0f) return 0f;
+            float landing = landSeconds * (dropSpeed + cruiseSpeed) * 0.5f;
+            return Mathf.Max(0f, (distance - landing) / dropSpeed + easeSeconds * 0.5f);
+        }
+
+        /// <summary>Degrees between the hull's belly and <paramref name="toTarget"/>: 0 = a drop would fall straight at it.</summary>
+        public static float BellyAimError(Quaternion hull, Vector3 toTarget) => Vector3.Angle(hull * Vector3.down, toTarget);
+
+        /// <summary>
         /// The camera's follow frame: the hull's live rotation slerped toward the drop frame by
         /// <paramref name="weight01"/>. While the hull holds still that is the hull pitched by the weight; while it
         /// turns into the drop frame at the landing, the result stays ON the drop frame at full weight, which is

@@ -82,17 +82,6 @@ namespace CosmicShore.Gameplay
                  "gap is slower than crossing it.")]
         [SerializeField, Min(0f)] float aiFoldMinDistance = 420f;
 
-        [Tooltip("How closely an autopilot must already be pointed at its next ring before it " +
-                 "commits. The Fold has ONE degree of freedom - the heading you leave on - and " +
-                 "pitch and yaw are dead for the duration, so a bot that presses off-line lands " +
-                 "off-line with no way to correct.")]
-        [SerializeField, Range(1f, 90f)] float aiFoldAimDegrees = 12f;
-
-        [Tooltip("The fold lands along the heading it leaves on, so an aim error of θ lands d·sin θ off the ring's centre. " +
-                 "The aim is also held under the angle that lands within this share of the ring's mouth (2026-10-17: at " +
-                 "the authored 12 degrees alone a 420 u fold landed 87 u off a 40-56 u mouth).")]
-        [SerializeField, Range(0.1f, 1f)] float aiFoldMouthShare = 0.5f;
-
         [Tooltip("Let go this many units SHORT of the ring's plane, so the hull flies through the mouth after the fold " +
                  "(a crossing inside the fold's own step is not counted - GateRaceController declines it).")]
         [SerializeField, Min(0f)] float aiFoldLandShort = 30f;
@@ -101,6 +90,34 @@ namespace CosmicShore.Gameplay
                  "ability refuses (still recharging) is harmless but costs an RPC, so it is not " +
                  "re-sent every frame.")]
         [SerializeField, Min(0.1f)] float aiFoldRetrySeconds = 1.5f;
+
+        [Header("Autopilot belly aim (the Tiger Moth's drop)")]
+        [Tooltip("The drop falls along the hull's BELLY, so before a long gap the autopilot turns its belly onto the next " +
+                 "ring (Garrett, 2026-10-29: \"make the waystation AI aim its belly at the rings\"). It starts only when the " +
+                 "ring is within this many degrees of the nose, where the turn is a pitch up of up to 90 degrees; a ring " +
+                 "further round is flown at nose-first until it is in front.")]
+        [SerializeField, Range(10f, 120f)] float aiBellyAimEnterDegrees = 75f;
+
+        [Tooltip("How closely the NOSE must be on the ring before the autopilot starts the pitch up. The pitch is pure, so " +
+                 "the belly ends exactly this far off the ring: the nose is lined up first (the autopilot's strength), then " +
+                 "the hull pitches 90 degrees up.")]
+        [SerializeField, Range(0.5f, 20f)] float aiBellyNoseDegrees = 3f;
+
+        [Tooltip("How closely the BELLY must be on the ring for the autopilot to drop. Wider than a fold's line-up: the " +
+                 "drop is travel, so it lands short of the ring (by twice the miss it carries) and flies the rest.")]
+        [SerializeField, Range(1f, 30f)] float aiDropAimDegrees = 10f;
+
+        [Tooltip("Longest an autopilot spends lining up and pitching before it gives up and flies on (the retry wait then " +
+                 "applies). A 90 degree pitch at the hull's 45 deg/s takes 2 s plus the settle.")]
+        [SerializeField, Min(0.5f)] float aiBellyAimMaxSeconds = 6f;
+
+        /// <summary>How far ahead of the hull the belly aim's steering point sits. Only its direction matters: it is a
+        /// lead the pilot steers by (OverrideAimIsLead), never a place it reaches.</summary>
+        const float BellyAimLead = 500f;
+
+        readonly Dictionary<IPlayer, float> _bellyAimSince = new();
+        readonly Dictionary<IPlayer, Vector3> _bellyPitchNose = new();   // the held pitch-up point, once the nose was on
+        readonly Dictionary<Transform, TigerMothDropExecutor> _dropExecutors = new();
 
         /// <summary>When each folding bot should let go, and when each waiting bot may try again.</summary>
         readonly Dictionary<IPlayer, float> _aiFoldReleaseAt = new();
@@ -136,6 +153,80 @@ namespace CosmicShore.Gameplay
                 ReleaseFold(pilot);
             _aiFoldReleaseAt.Clear();
             _aiFoldRetryAt.Clear();
+            _bellyAimSince.Clear();
+            _bellyPitchNose.Clear();
+            _dropExecutors.Clear();
+        }
+
+        /// <summary>
+        /// The autopilot's belly aim, in two phases, before a gap worth a drop. First the NOSE goes onto the next ring (the
+        /// ring itself is the steering point); then, once it is within <see cref="aiBellyNoseDegrees"/>, the hull pitches
+        /// straight up to a point captured at that moment (<see cref="TigerMothDropMath.BellyAimNose"/>), which carries the
+        /// belly onto the ring, and <see cref="TickAutopilotFolds"/> drops. Inputs only, as every AI here: both phases are
+        /// steering points AIPilot flies its sticks at. It answers only while the drop is ready and the gap is long, and
+        /// gives up after <see cref="aiBellyAimMaxSeconds"/>, so a bot that never lines up flies the course as before.
+        /// </summary>
+        protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
+        {
+            target = default;
+            var status = pilot?.Vessel?.VesselStatus;
+            if (status == null || !BellyAimWanted(pilot, status, out var toGate))
+            {
+                if (pilot != null) { _bellyAimSince.Remove(pilot); _bellyPitchNose.Remove(pilot); }
+                return false;
+            }
+            Transform hull = status.Transform;
+            if (!_bellyPitchNose.TryGetValue(pilot, out var nose))
+            {
+                if (Vector3.Angle(hull.forward, toGate) > aiBellyNoseDegrees)
+                {
+                    target = hull.position + toGate;   // phase 1: nose on the ring
+                    return true;
+                }
+                nose = TigerMothDropMath.BellyAimNose(hull.rotation, toGate);
+                _bellyPitchNose[pilot] = nose;
+            }
+            target = hull.position + nose * BellyAimLead;   // phase 2: pitch up, belly onto the ring
+            return true;
+        }
+
+        protected override bool OverrideAimIsLead(IPlayer pilot) => true;
+
+        bool BellyAimWanted(IPlayer pilot, IVesselStatus status, out Vector3 toGate)
+        {
+            toGate = default;
+            float now = Time.time;
+            var handler = status.ActionHandler;
+            if (handler == null || !handler.TryGetBoundAction<TigerMothDropActionSO>(out _, out _)) return false;
+            var drop = DropExecutorOf(status.Transform);
+            if (!drop || drop.IsDropping || !drop.IsReady) return false;
+            if (_aiFoldReleaseAt.ContainsKey(pilot)) return false;
+            if (_aiFoldRetryAt.TryGetValue(pilot, out float retryAt) && now < retryAt) return false;
+            if (!TryGetNextGate(pilot, out var gate) || gate == null) return false;
+
+            toGate = gate.position - status.Transform.position;
+            if (toGate.magnitude < aiFoldMinDistance) return false;
+
+            if (_bellyAimSince.TryGetValue(pilot, out float since))
+            {
+                if (now - since <= aiBellyAimMaxSeconds) return true;
+                _bellyAimSince.Remove(pilot);
+                _bellyPitchNose.Remove(pilot);
+                _aiFoldRetryAt[pilot] = now + aiFoldRetrySeconds;   // could not line up: fly on, try again later
+                return false;
+            }
+            if (Vector3.Angle(status.Transform.forward, toGate) > aiBellyAimEnterDegrees) return false;
+            _bellyAimSince[pilot] = now;
+            return true;
+        }
+
+        TigerMothDropExecutor DropExecutorOf(Transform hull)
+        {
+            if (!hull) return null;
+            if (_dropExecutors.TryGetValue(hull, out var cached) && cached) return cached;
+            var found = hull.GetComponentInChildren<TigerMothDropExecutor>(true);
+            _dropExecutors[hull] = found;
+            return found;
         }
 
         void TickAutopilotFolds()
@@ -179,43 +270,20 @@ namespace CosmicShore.Gameplay
                 float distance = toGate.magnitude;
 
                 if (distance < aiFoldMinDistance) continue;
-                float aim = Vector3.Angle(-status.Transform.up, toGate);
-                if (aim > FoldAimLimitDegrees(distance, RingRadiusFor(pilot), aiFoldMouthShare, aiFoldAimDegrees)) continue;
+                float aim = TigerMothDropMath.BellyAimError(status.Transform.rotation, toGate);
+                if (aim > aiDropAimDegrees) continue;
 
-                // The hold IS the distance: the drop falls hold x DropSpeed along the belly. Let go short of the
-                // ring's plane (FoldHoldSeconds), so the landing carries the hull through the mouth. DropSpeed is read
-                // off the ability's own asset.
-                _aiFoldReleaseAt[pilot] = now + FoldHoldSeconds(distance, aim, aiFoldLandShort, drop.DropSpeed);
+                // The hold IS the distance (the drop's numbers read off its own asset). Land short of the ring's plane by the authored margin plus twice the miss the aim carries, so the hull
+                // has room to turn into the mouth; the drop is travel, so a ring it crosses on the way is threaded anyway.
+                float along = distance * Mathf.Cos(aim * Mathf.Deg2Rad)
+                              - aiFoldLandShort - 2f * distance * Mathf.Sin(aim * Mathf.Deg2Rad);
+                _aiFoldReleaseAt[pilot] = now + TigerMothDropMath.HoldSecondsFor(Mathf.Max(0f, along), drop.DropSpeed,
+                    drop.DropEaseSeconds, drop.LandSeconds, status.Speed);
                 _aiFoldRetryAt[pilot] = now + aiFoldRetrySeconds;
+                _bellyAimSince.Remove(pilot);
+                _bellyPitchNose.Remove(pilot);
                 handler.PerformShipControllerActionsReplicated(input);
             }
-        }
-
-        /// <summary>
-        /// The largest aim error a fold over <paramref name="distance"/> may leave on and still land within
-        /// <paramref name="mouthShare"/> of a ring of <paramref name="ringRadius"/>: asin(share·R/d), never over the
-        /// authored <paramref name="maxDegrees"/>. The fold lands along its heading, so an error of θ lands d·sin θ off.
-        /// </summary>
-        public static float FoldAimLimitDegrees(float distance, float ringRadius, float mouthShare, float maxDegrees)
-        {
-            if (distance <= 1e-3f || ringRadius <= 0f) return maxDegrees;
-            float limit = Mathf.Asin(Mathf.Clamp01(mouthShare * ringRadius / distance)) * Mathf.Rad2Deg;
-            return Mathf.Min(maxDegrees, limit);
-        }
-
-        /// <summary>
-        /// Seconds to hold a fold aimed <paramref name="aimDegrees"/> off a ring <paramref name="distance"/> away so it
-        /// lands <paramref name="landShort"/> before the ring's plane: (d·cos θ - short) / ReachSpeed, never negative.
-        /// </summary>
-        public static float FoldHoldSeconds(float distance, float aimDegrees, float landShort, float reachSpeed) =>
-            Mathf.Max(0f, distance * Mathf.Cos(aimDegrees * Mathf.Deg2Rad) - landShort) / Mathf.Max(1f, reachSpeed);
-
-        /// <summary>The mouth radius of <paramref name="pilot"/>'s next ring, or 0 when the course has not landed.</summary>
-        float RingRadiusFor(IPlayer pilot)
-        {
-            int index = pilot?.RoundStats?.SwitchesThreaded ?? -1;
-            if (index < 0 || index >= RaceLength || _course.Count == 0) return 0f;
-            return _course[RingIndexFor(index)].Radius;
         }
 
         /// <summary>A race: the AI flies at full throttle, as a person does (WAYSTATION.md expects the bot at 67 u/s; at

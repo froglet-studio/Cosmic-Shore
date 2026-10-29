@@ -51,10 +51,32 @@ still reads) and is marked retired.
 
 Its four modes fly the Tiger Moth: **Waystation** (Time), **Dustup** (Charge), **Tapestry** (Mass), **Sirocco** (Space):
 their cards, previews and AI seats (`vesselClass: 29`), and their generators (`arcade_mode_lib.VESSELS["TigerMoth"]`).
-Waystation's autopilot drive now presses the drop when the next ring is under the hull's belly
-(`WaystationController.TickAutopilotFolds`). The Butterfly's own components keep their names (`ButterflyDustField`,
+Waystation's autopilot aims its BELLY at the next ring before a long gap and drops (§3.1). The Butterfly's own components keep their names (`ButterflyDustField`,
 `ButterflyAnimation`, `ButterflyHUDView`, `ButterflySpreadWingsAction`, the `Butterfly.fbx` model): the Tiger Moth is
 built from them, and renaming them is a separate refactor.
+
+### 3.1 Waystation's AI aims its belly (2026-10-29)
+
+Garrett: "make the waystation AI aim its belly at the rings". `WaystationController.TryOverrideAim`, two phases, only
+while the drop is ready and the next ring is at least `aiFoldMinDistance` (420 u) away and within 75 degrees of the nose:
+
+1. **Nose on the ring** (the ring is the steering point) until the nose is within `aiBellyNoseDegrees` (3).
+2. **Pitch straight up** to a point captured at that moment, the hull's up made square to the ring
+   (`TigerMothDropMath.BellyAimNose`). A 90-degree pitch carries the old forward onto the new down, so the belly lands on
+   the ring, off by exactly the nose's error. The point is HELD, not re-derived: re-deriving it every frame pulls it out
+   of the pitch plane, the autopilot answers with yaw, and its yaw drags roll (it banks into a yaw), which left the belly
+   18-75 degrees off in an offline model of the autopilot's steering (six ring directions, roll coupled to yaw as
+   AIPilot does it); the held pitch left it 0-2.8 degrees off in the same six (the hull's own travel during the pitch
+   is not in that model).
+3. **Drop** once the belly is within `aiDropAimDegrees` (10), holding for `TigerMothDropMath.HoldSecondsFor` (the ease in
+   and the landing included, exact to a unit), so it lands short of the ring's plane by `aiFoldLandShort` plus twice
+   the miss its aim carries and flies the rest. The drop is travel, so a ring it crosses on the way is threaded.
+
+It gives up after `aiBellyAimMaxSeconds` (6) and flies on; the steering point is marked a LEAD
+(`GateRaceController.OverrideAimIsLead` -> `AIPilot.MarkAimAsPathLead`) so the orbit break-off leaves it alone.
+Waystation's step guard (`maxPlausibleSpeed`) is 1000 u/s now: the drop's 900 u/s is 15 u a frame at 60 fps against the
+old 400's 18 u, so a hitch could have declined a ring the drop really crossed. The Fold-era helpers
+(`FoldAimLimitDegrees`, `FoldHoldSeconds`) and `WaystationFoldTests` are retired with the Fold.
 
 ## 4. Files
 
@@ -94,8 +116,8 @@ configs) compiles it clean against real Unity references; that is a compile, not
 5. A short hop (~0.1 s): the Time card's veil sweeps about 2 s. A 1 s drop: 20 s, and a pair of wormhole mouths stands at
    the start and end. A 3 s drop: still 20 s. A short hop after it: the pair is still standing.
 6. Fly a rival hull through the pair: it pays the toll. Drop THROUGH a mouth: it is not carried.
-7. Dustup, Tapestry, Sirocco and Waystation each start with Tiger Moths; in Waystation an AI uses the drop when a ring
-   lies below it.
+7. Dustup, Tapestry, Sirocco and Waystation each start with Tiger Moths. In Waystation, before a long gap an AI turns
+   its nose onto the next ring, pitches straight up (belly onto the ring), drops, and flies the rest into the mouth.
 8. MPPM, two clients: the second client sees the fall, the landing turn and the same wormhole pair.
 
 ## 7. Follow-ups
@@ -103,8 +125,8 @@ configs) compiles it clean against real Unity references; that is a compile, not
 - **Decision needed (Garrett):** the medium distance (900 u) is a starting number; and Far Drop's new meaning (it used to
   double the reach, which no longer exists).
 - **The Time card's icon is still the Fold's.** A drop glyph is `/ability-icon` work.
-- **The Waystation AI** steers its NOSE at rings and only drops when a ring happens to be under its belly; a belly-aiming
-  drive is a follow-up (the AI still finishes the course without the drop, measured offline before: 24 of 24 rings).
+- **The Waystation AI's belly aim is unplayed**: the offline model is a stand-in for AIPilot's steering, so how often it
+  lines up in a real race, and whether 3 / 10 degrees are the right gates, is for the editor (and the learning sweep).
 - **Sound:** `dropEngageEvent`, `dropLandEvent`, `gatesOpenEvent`, `gateThreadEvent` ship empty (the FMOD rule).
 - The dust's light takes one of PrismLit's 8 bank slots per Tiger Moth in Dust mode (Dustup seats four).
 - A remote copy shows the landing turn slightly later than the owner (transform interpolation), and its wormhole waits for

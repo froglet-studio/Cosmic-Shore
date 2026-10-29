@@ -220,6 +220,10 @@ for probe, why in (
     if not course.re.search(probe, scene, course.re.M):
         errors.append(f"the donor scene no longer provides: {why}")
 
+# The Tiger Moth's drop is TRAVEL at 900 u/s (R_VesselActions/TIGER_MOTH.md), 15 u a frame at 60 fps against the
+# donor's 400 u/s guard (18 u): a hitch would decline a ring the drop really crossed. 1000 keeps a respawn declined.
+scene = scene.replace("  maxPlausibleSpeed: 400\n", "  maxPlausibleSpeed: 1000\n", 1)
+
 # Switchback's feature-layer prefab: a donor-only asset, so a leak of its field fails here by name.
 SWITCHBACK_FEATURES_PREFAB = "29ec5eb8fa7cb3fd1d816c63b5b39687"
 for stale in (EXISTING["SwitchbackController"], EXISTING["SwitchbackScoringRule"], SWITCHBACK_FEATURES_PREFAB):

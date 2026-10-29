@@ -76,6 +76,7 @@ so `/verify-unity` did not run. Steps: `Assets/_Scripts/Controller/Vessel/R_Vess
 - [ ] Every vessel's recharging card: the whole card (icon included) is visibly dimmed for the whole recharge, the sweep shows the rest, and a bright flash plays OVER the icon when it is back.
 - [ ] Dust mode: every prism in the capsule lights (own super-shielded and shielded, rival, plain), Mass mode lights nothing, and the light is off during a drop.
 - [ ] MPPM: the second client sees the same fall, landing and wormhole pair.
+- [ ] Waystation (2026-10-29): before each long gap an AI noses onto the next ring, pitches straight up, drops, and threads the ring; it never sits pitching in place for more than ~6 s.
 
 First-pass numbers: full recharge 20 s at 900 u (Far Drop: 1800 u); wash alpha 0.55; ready flash alpha 0.75; dust light strength 0.6.
 

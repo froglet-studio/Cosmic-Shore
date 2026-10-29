@@ -435,6 +435,13 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// True when the point <see cref="TryOverrideAim"/> just returned is a LEAD POINT the pilot steers by rather than a
+        /// place to reach (<see cref="AIPilot.MarkAimAsPathLead"/>), so the orbit break-off leaves it alone. Asked only when
+        /// the override answered. Waystation's belly aim is one: a point off the nose that turns the hull, never reached.
+        /// </summary>
+        protected virtual bool OverrideAimIsLead(IPlayer pilot) => false;
+
+        /// <summary>
         /// The hull's own RACE LINE: where <paramref name="pilot"/> steers instead of the gate's approach / mouth points,
         /// and the point after it (the boost driver's corner). Asked after the difficulty belief and the missed-mouth test,
         /// so an Easy pilot's mistakes and a missed ring are still flown the gate way. False (the default) = the gate way.
@@ -1216,6 +1223,7 @@ namespace CosmicShore.Gameplay
                 // pilot latches on or launches off.
                 if (TryOverrideAim(captured, out Vector3 overridden))
                 {
+                    if (OverrideAimIsLead(captured)) pilot.MarkAimAsPathLead();
                     pilot.ReportObjective(AIPilot.ObjectivePhase.Override, overridden);
                     return overridden;
                 }
