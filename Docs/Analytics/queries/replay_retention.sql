@@ -1,4 +1,4 @@
--- Replay retention by play type (PostHog HogQL). Three queries, run each on its own:
+-- Replay retention by play type (PostHog HogQL). Four queries, run each on its own:
 --   in PostHog's SQL editor, or through the PostHog MCP (`call execute-sql {"query": "..."}`).
 --
 -- WHAT "PLAY TYPE" MEANS TODAY. Read off game_started, one row per (player, match):
@@ -29,6 +29,8 @@
 -- TWO DIFFERENT QUESTIONS, TWO QUERIES.
 --   Query 2: REMATCH, did the player start another match within 10 minutes of finishing one.
 --   Query 3: RETURN, did the player come back on a later day.
+-- A fourth, separate question: Query 4, completion rate by game mode, with historical mode names
+-- merged into the current ones.
 --
 -- PARAMETERS (edit the literals): window `INTERVAL 90 DAY` (appears in every subquery of a
 -- query), rematch gap `600` seconds (query 2), D7 maturity `today() - 7` (query 3).
@@ -188,3 +190,53 @@ SELECT
 FROM flagged
 GROUP BY first_type
 ORDER BY matured_players DESC;
+
+
+-- ============================================================================
+-- Query 4. Completion by game mode, historical names merged.
+-- Older builds recorded game_mode under names the game has since renamed. The map below is
+-- GameModeRenameMigration.Renames (Assets/_Scripts/System/CloudData/GameModeRenameMigration.cs);
+-- keep the two in step when a mode is renamed. Without it HexRace, MultiplayerCrystalCapture and
+-- PeelTheCage show up as separate modes with a few matches and no completions.
+-- Keeps both toggles: the port records starts but almost no completions.
+-- Read it with care: most modes have fewer than 10 matches, and a match counts as completed only
+-- if the same player sent game_completed for the same match_id.
+-- ============================================================================
+WITH plays AS (
+    SELECT
+        distinct_id,
+        properties.match_id AS match_id,
+        transform(any(properties.game_mode),
+            ['HexRace', 'MultiplayerCrystalCapture', 'Tournament', 'NucleusRush', 'Ribcage',
+             'PeelTheCage', 'MultiplayerJoust', 'CellularDuel', 'MultiplayerWildlifeBlitzGame',
+             'MazeRunner', 'Darts'],
+            ['SkimRace', 'Scurry', 'Maelstrom', 'BroodRush', 'Cleave',
+             'Cleave', 'Joust', 'DuelForTheCell', 'CoOpWildlifeBlitz',
+             'MazeRun', 'DolphinDarts'],
+            any(properties.game_mode)) AS game_mode
+    FROM events
+    WHERE event = 'game_started'
+      AND timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
+      AND properties.app_version NOT LIKE '%-port'   -- PORT TOGGLE
+    GROUP BY distinct_id, match_id
+),
+dones AS (
+    SELECT distinct_id, properties.match_id AS match_id, min(timestamp) AS done_ts
+    FROM events
+    WHERE event = 'game_completed'
+      AND timestamp > now() - INTERVAL 90 DAY
+      AND properties.platform NOT LIKE '%Editor'   -- EDITOR TOGGLE
+      AND properties.app_version NOT LIKE '%-port'   -- PORT TOGGLE
+    GROUP BY distinct_id, match_id
+)
+SELECT
+    p.game_mode AS game_mode,
+    count() AS matches,
+    countIf(d.done_ts > toDateTime('2001-01-01')) AS completed,
+    round(100.0 * countIf(d.done_ts > toDateTime('2001-01-01')) / count(), 0) AS completed_pct,
+    count(DISTINCT p.distinct_id) AS players
+FROM plays AS p
+LEFT JOIN dones AS d ON p.distinct_id = d.distinct_id AND p.match_id = d.match_id
+GROUP BY game_mode
+ORDER BY matches DESC;
