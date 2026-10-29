@@ -18,7 +18,7 @@ yaw 0: the round head at +x, the arms trailing - the grid on 2026-10-29).
 import math
 
 import mesh_silhouette
-from canvas import N, empty, fill, stroke
+from canvas import N, disc, empty, fill, ring, stroke
 from specs.rhino import stella
 
 import numpy as np
@@ -171,6 +171,101 @@ CARDS += [
           [("ready: the target whole", [("whole", "shielded")]),
            ("fired: holed clean through", [("holed", "shielded")]),
            ("Charge 5 Pierce: three in one shot", [("pierce", "shielded")])]),
+]
+
+
+# ---- Space: Scope options (2026-10-29) ----------------------------------------------------------------------------
+# WHO gains WHAT: the Serpent sees FARTHER - LT opens an eyepiece down its own nose, magnified by the trigger's depth.
+# Every number is the shipped instrument's (SniperScopeOverlay, SniperScopeActionSO): the eyepiece is the CHARGE
+# petal (ScopePetalGeometry.Outline, apex at the flower's centre, so pointing DOWN on screen), and the reticle ring is
+# the sniper cone (1.5 degree half-angle) at its true size inside it, tan(1.5) / tan(fov / 2) of the petal's half-side,
+# capped where the posts would leave the petal (0.51). Full zoom at rest is fov 22, Space 10 is 11, and Deep Focus
+# multiplies the zoom depth by 1.6: 13.8 at rest, 6.9 at Space 10. The unscoped end is the player's own fov (60 here).
+# The ring's RADIUS is the measurement; its stroke, the posts' gap and length and the dot are widened to read at 128.
+SCOPE_CONE = 1.5
+PETAL = [(0.5, 0.0), (1.0, 0.684356), (0.817204, 1.0), (0.182796, 1.0), (0.0, 0.684356)]
+PETAL_SIDE = 112.0
+FOV_FLIGHT, FOV_REST, FOV_DEEP, FOV_DEEP10 = 60.0, 22.0, 13.75, 6.875
+
+
+def scope_ring01(fov):
+    return min(0.512, math.tan(math.radians(SCOPE_CONE)) / math.tan(math.radians(fov / 2)))
+
+
+def petal_pts(side=PETAL_SIDE, cx=64.0, cy=64.0):
+    return [(cx + (u - 0.5) * side, cy + (0.5 - v) * side) for u, v in PETAL]
+
+
+def eyepiece_frame(w=7.0):
+    return stroke(petal_pts(), w=w, closed=True)
+
+
+def reticle(r, cx=64.0, cy=64.0, gap=4.0, arm=9.0, w=4.0):
+    out = ring(cx, cy, r, w=w) | disc(cx, cy, 2.6)
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        a, b = r + w / 2 + gap, r + w / 2 + gap + arm
+        out |= stroke([(cx + dx * a, cy + dy * a), (cx + dx * b, cy + dy * b)], w=w)
+    return out
+
+
+# A: THE EYEPIECE. The petal frame and the cone reticle at its true size for the zoom: the ring grows as you zoom.
+def a_scope(fov):
+    return reticle(max(3.5, scope_ring01(fov) * PETAL_SIDE / 2)) & fill(petal_pts())
+
+
+# B: THE VIEW. The same petal, and a super-shielded prism seen through it at the size the zoom makes it: apparent size
+# goes as 1 / tan(fov / 2), so Deep Focus draws it 1.6 times larger. Its size at rest is chosen; the ratios are not.
+def b_target(fov):
+    r = 20.0 * math.tan(math.radians(FOV_REST / 2)) / math.tan(math.radians(fov / 2))
+    return _clear_of(stella(64.0, 60.0, r), eyepiece_frame(), px=3.0)
+
+
+# C: THE REACH. The Serpent at the left, nose right, and its view wedge at the true field of view: the flight view's
+# 60 degrees, full zoom's 22, Deep Focus's 13.8. The narrower the wedge, the farther it sees.
+C_HULL = dict(box=44.0, cx=24.0, cy=64.0)
+
+
+def c_hull():
+    return serpent(**C_HULL)
+
+
+def c_wedge(fov):
+    x0 = C_HULL["cx"] + C_HULL["box"] / 2 - 2
+    out = empty()
+    for sgn in (1, -1):
+        t = math.tan(math.radians(fov / 2))
+        x1 = min(124.0, x0 + 60.0 / max(t, 1e-3))
+        out |= stroke([(x0, 64.0), (x1, 64.0 - sgn * (x1 - x0) * t)], w=5.0)
+    return _clear_of(out, c_hull(), px=2.0)
+
+
+def _scope_card(key, title, parts, states):
+    return dict(name=f"scope_{key}", group="scope", lockup_state=1, element="Space",
+                before=ICON_DIR + "Serpent_Scope-PLACEHOLDER.png", title=title, parts=parts, states=states)
+
+
+CARDS += [
+    _scope_card("a", "A  The eyepiece: the Charge-petal eyepiece and the cone reticle at its true size; the ring grows "
+                     "as the zoom deepens (rest 22 deg, Deep Focus 13.8, Space 10 + Deep Focus 6.9)",
+                dict(frame=eyepiece_frame, rest=lambda: a_scope(FOV_REST), deep=lambda: a_scope(FOV_DEEP),
+                     deep10=lambda: a_scope(FOV_DEEP10)),
+                [("full zoom at rest (22 deg)", [("frame", "white"), ("rest", "white")]),
+                 ("Space 5 Deep Focus (13.8 deg)", [("frame", "white"), ("deep", "white")]),
+                 ("Space 10 + Deep Focus (6.9 deg)", [("frame", "white"), ("deep10", "white")])]),
+    _scope_card("b", "B  The view: the eyepiece with a super-shielded prism at the size the zoom shows it; "
+                     "Deep Focus draws it 1.6x larger",
+                dict(frame=eyepiece_frame, flight=lambda: b_target(FOV_FLIGHT), rest=lambda: b_target(FOV_REST),
+                     deep=lambda: b_target(FOV_DEEP)),
+                [("trigger off (flight view, 60 deg)", [("frame", "white"), ("flight", "shielded")]),
+                 ("full zoom at rest (22 deg)", [("frame", "white"), ("rest", "shielded")]),
+                 ("Space 5 Deep Focus (13.8 deg)", [("frame", "white"), ("deep", "shielded")])]),
+    _scope_card("c", "C  The reach: the Serpent and its view wedge at the true field of view, narrowing from the "
+                     "flight view to full zoom to Deep Focus",
+                dict(hull=c_hull, flight=lambda: c_wedge(FOV_FLIGHT), rest=lambda: c_wedge(FOV_REST),
+                     deep=lambda: c_wedge(FOV_DEEP)),
+                [("trigger off (flight view, 60 deg)", [("hull", "domain"), ("flight", "white")]),
+                 ("full zoom at rest (22 deg)", [("hull", "domain"), ("rest", "white")]),
+                 ("Space 5 Deep Focus (13.8 deg)", [("hull", "domain"), ("deep", "white")])]),
 ]
 
 
