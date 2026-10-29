@@ -16,9 +16,18 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-29 from canvas version `1793256082-4802`: Rev 3 to Rev 37, 317 boards on 38 pages. The canvas's launch page is `rev37`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-10-29 from canvas version `1793289528-2f59`: Rev 3 to Rev 38, 323 boards on 39 pages. The canvas's launch page is `rev38`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
+
+### Rev 38 - Computer artifact  (page `rev38`)
+
+- [`R38Home.dc.html`](R38Home.dc.html) - Rev 38 Home - Home: what is running and what needs you
+- [`R38Computers.dc.html`](R38Computers.dc.html) - Rev 38 Computers - Computers: the machine list (Tailscale-style), filters and a row menu - interactive
+- [`R38Runs.dc.html`](R38Runs.dc.html) - Rev 38 Runs - Runs: running, sent, finished, each tagged by kind
+- [`R38Searches.dc.html`](R38Searches.dc.html) - Rev 38 Searches - Searches: list and an Optuna-style detail panel
+- [`R38NewRun.dc.html`](R38NewRun.dc.html) - Rev 38 NewRun - New run: vessel, mode, where, when
+- [`R38Notes.dc.html`](R38Notes.dc.html) - Rev 38 - Notes: what changes and why
 
 ### Rev 37 - Connection: lost, reconnecting, back online, rejoin  (page `rev37`)
 

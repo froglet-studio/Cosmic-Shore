@@ -2528,6 +2528,55 @@
       "h": 900,
       "page": "rev37",
       "title": "Rev 37 - notes: every state, its words, the rejoin rules and the build"
+    },
+    "R38Home.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev38",
+      "title": "Rev 38 Home - Home: what is running and what needs you"
+    },
+    "R38Computers.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev38",
+      "title": "Rev 38 Computers - Computers: the machine list (Tailscale-style), filters and a row menu - interactive",
+      "is_interactive": true
+    },
+    "R38Runs.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev38",
+      "title": "Rev 38 Runs - Runs: running, sent, finished, each tagged by kind"
+    },
+    "R38Searches.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev38",
+      "title": "Rev 38 Searches - Searches: list and an Optuna-style detail panel"
+    },
+    "R38NewRun.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "rev38",
+      "title": "Rev 38 NewRun - New run: vessel, mode, where, when"
+    },
+    "R38Notes.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 900,
+      "page": "rev38",
+      "title": "Rev 38 - Notes: what changes and why"
     }
   },
   "createdOnFiles": {
@@ -2537,7 +2586,7 @@
   "designSystems": [],
   "launch": {
     "view": "canvas",
-    "page": "rev37"
+    "page": "rev38"
   },
   "notes": {
     "hud_end": {
@@ -2982,7 +3031,13 @@
     "R37Match.dc.html",
     "R37HostLeft.dc.html",
     "R37Rejoin.dc.html",
-    "R37Notes.dc.html"
+    "R37Notes.dc.html",
+    "R38Home.dc.html",
+    "R38Computers.dc.html",
+    "R38Runs.dc.html",
+    "R38Searches.dc.html",
+    "R38NewRun.dc.html",
+    "R38Notes.dc.html"
   ],
   "pages": [
     {
@@ -3136,6 +3191,10 @@
     {
       "id": "rev37",
       "name": "Rev 37 - Connection: lost, reconnecting, back online, rejoin"
+    },
+    {
+      "id": "rev38",
+      "name": "Rev 38 - Computer artifact"
     }
   ],
   "title": "Menu Redesign B"

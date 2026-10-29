@@ -4955,3 +4955,44 @@ game".
   - re-initialising a vessel that is already initialised is new;
   - the game-scene guards for a client that joins from the menu mid-match are untested;
   - a host can never rejoin.
+
+## 104. Rev 38 mockups: Computer artifact, the Compute console as an application (2026-10-29, awaiting board approval)
+
+**Asked** (Shombith): "The artifact and the UI is noisy make it look like an application." The references he picked:
+"Go with Tailscale and Linear, plus Optuna for searches." He also asked to "Show me the mockup while you do it" and to
+"Create another page called computer artifact". This is not a game screen: it is the team's Froglet Compute console
+(`Tools/Compute/console/index.html`, `Docs/Compute/README.md`), published as its own artifact. It sits on this board
+because every UI is drawn and approved here first.
+
+**On the canvas:** page "Rev 38 - Computer artifact"; copies in `Docs/MenuRedesignB/board/R38*.dc.html`.
+- `R38Home`: four counts, Needs you, Recent activity with a kind tag on every row, and a small computers list.
+- `R38Computers` (interactive): the machine list in the shape of Tailscale's Machines page.
+  - Filter tabs with counts; one row per computer: status dot and how long since it was last heard from, OS,
+    hardware, Unity, remote start, last run.
+  - A row menu holds Send a run, Start now, Stop and Copy name.
+- `R38Runs`: a legend for the three kinds, Running, and a Finished table.
+- `R38Searches`: Optuna's study view.
+  - A list of searches on the left.
+  - The picked search on the right: its optimization history (best score after each try, today's AI as a dashed
+    line), the settings found against today's, and race time per intensity.
+  - Approve and Decline sit in the panel header.
+- `R38NewRun`: the New run dialog as a form (vessel, mode, plays in, intensity, matches, where, when) over the
+  Computers page.
+- `R38Notes`: the brief and the rules.
+
+**The kit:** an app kit, not the menu's.
+- Inter, a neutral dark ground, the game's Jade cyan as the only accent.
+- Status as a dot and a word.
+- No idle motion and no glow.
+- Every number is from the console snapshot of 2026-10-29.
+
+**Differs from the build:** the published console (Rev 38's predecessor) has:
+- a website-style top nav with gradient headings;
+- cards with a button on every card, and explanatory paragraphs.
+
+The build replaces those with a sidebar shell, tables and row menus, and the Optuna panel.
+
+Pain points read from BOINC Manager and Folding@home users carry into the build:
+- **Stopping:** keep "finish this run, then stop" apart from "stop now". Never stop work from a dismiss.
+- **Freshness:** every row says how fresh its data is, and "can't reach it" is kept apart from "not working".
+- **One list:** every computer sits in one dense list.
