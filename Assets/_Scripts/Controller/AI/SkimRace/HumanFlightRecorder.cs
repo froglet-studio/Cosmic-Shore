@@ -112,7 +112,8 @@ namespace CosmicShore.Gameplay
             public float LvC, LvM, LvS, LvT;     // element levels, 0..1 (charge, mass, space, time)
             public float M0, M1, M2, M3;         // the hull's first four resource meters (CurrentAmount), -1 if absent
             public int TimeMode;                 // the Stoat's mode: 2 Drive (warp pair), 1 Time (catch sling), 0 Mass (field dipole), -1 another hull
-            public bool Held;                    // the AI held the hull (the You / AI toggle)
+            public bool Held;                    // the AI held the hull (the You / AI toggle, or the AI trainer)
+            public bool Trainer;                 // the AI trainer flew it (an AI Training run; Held is set too)
             public Vector3 CamPos, CamFwd, CamUp;    // forward + up = the camera's full rotation
             public float Fov, Aspect;            // vertical field of view (degrees), width / height
             public int CamMode;                  // CameraSettingsSO.mode of the active player camera, -1 if none
@@ -407,6 +408,7 @@ namespace CosmicShore.Gameplay
                 // The AI holding this hull (the Third Eye's You / AI toggle) is not the human's flight: kept, marked,
                 // and skipped by every learner (situation_features.py, situation.js, learn_from_flights.py).
                 Held = PilotControl.IsHeldByAI(_player),
+                Trainer = PilotControl.IsHeldByTrainer(_player),
                 CamPos = camPos, CamFwd = camFwd, CamUp = camUp, Fov = fov, Aspect = aspect, CamMode = camMode, RearView = rearView,
                 CrystalStart = crystalStart, CrystalCount = (_crystals.Count - crystalStart) / 4,
             });
@@ -740,8 +742,20 @@ namespace CosmicShore.Gameplay
         {
             _recording = false;
             _awaitingResult = false;
-            int byHand = 0;
-            for (int i = 0; i < _samples.Count; i++) if (!_samples[i].Held) byHand++;
+            int byHand = 0, byTrainer = 0;
+            for (int i = 0; i < _samples.Count; i++)
+            {
+                if (!_samples[i].Held) byHand++;
+                if (_samples[i].Trainer) byTrainer++;
+            }
+            if (byHand < 2 * SampleHz && byTrainer > 0)
+            {
+                // An AI Training match (the AI Training window, Froglet Compute): the trainer flew it, nobody's flight.
+                CSDebug.LogVerbose(CSLogChannel.AITraining,
+                    $"[HumanFlightRecorder] not stored ({why}): the AI trainer flew it ({byTrainer} of {_samples.Count} samples).");
+                ClearRace();
+                return;
+            }
             if (byHand < 2 * SampleHz)
             {
                 Debug.LogWarning($"[HumanFlightRecorder] AI training record not stored ({why}): only {byHand} hand-flown samples.");
@@ -788,6 +802,11 @@ namespace CosmicShore.Gameplay
             sb.Append("\"mode\":\"").Append(_modeName).Append("\",\"hull\":\"").Append(hull).Append("\",");
             sb.Append("\"source\":\"unity\",\"hullKey\":\"").Append(hull.ToLowerInvariant()).Append("\",");
             sb.Append("\"training\":\"").Append(TrainingType).Append("\",");
+            // Who flew it, for every learner (learn_from_flights.not_a_person): "human", or "mixed" when the AI held the
+            // hull for part of it (those samples carry held = 1). A flight the AI flew alone is never stored (Finish).
+            bool anyHeld = false;
+            for (int i = 0; i < _samples.Count && !anyHeld; i++) anyHeld = _samples[i].Held;
+            sb.Append("\"pilot\":\"").Append(anyHeld ? "mixed" : "human").Append("\",");
             sb.Append("\"domain\":\"").Append(_domainName).Append("\",");
             sb.Append("\"intensity\":").Append(intensity).Append(',');
             sb.Append("\"rivalDifficulty\":\"").Append(_gameData ? _gameData.RequestedAIDifficulty.ToString() : "").Append("\",");

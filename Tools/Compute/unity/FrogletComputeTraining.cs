@@ -60,8 +60,13 @@ namespace CosmicShore.Utility.AITraining.Editor
         const string TheaterConfigPath = "Assets/Resources/TheaterConfig.asset";
         const string ReplayConfigPath = "Assets/Resources/ReplayConfig.asset";
         const string ThirdEyeMenu = "FrogletTools/AI/Third Eye";
+        const string KeyStillAt = "FrogletCompute.StillAt";
+        const string KeyStillBest = "FrogletCompute.StillBest";
+        const string KeyStillNote = "FrogletCompute.StillNote";
         const int KeepReplays = 2;
         const int KeepFlights = 20;
+        const int KeepStills = 20;
+        const double StillEverySeconds = 60;
         const double StartGraceSeconds = 900;
 
         static double _nextTick;
@@ -187,6 +192,7 @@ namespace CosmicShore.Utility.AITraining.Editor
             if (running) _sawRunning = true;
             if (running) OpenThirdEyeOnce();
             SweepRecordings(outDir, state);
+            if (running) TakeStill(outDir, state);
             WriteStatus(outDir, running ? "training" : (EditorApplication.isPlaying ? "loading the match" : "starting"),
                 state, scenario, target);
 
@@ -325,6 +331,7 @@ namespace CosmicShore.Utility.AITraining.Editor
                 {
                     SessionState.SetFloat(KeyBest, best);
                     SessionState.SetBool(KeyBestRose, true);
+                    SessionState.SetBool(KeyStillBest, true);
                 }
                 string folder = Path.Combine(outDir, "replays");
                 if (Directory.Exists(folder))
@@ -359,6 +366,30 @@ namespace CosmicShore.Utility.AITraining.Editor
             {
                 Debug.LogWarning($"[FrogletCompute] recordings: {e.Message}");
             }
+        }
+
+        /// <summary>
+        /// A watched run's Third Eye view saved as a still (ThirdEyeWindow.SaveView: the view with the trails and aim
+        /// lines drawn in) every minute and when the best fitness rises, into &lt;out&gt;/stills, the newest 20 kept.
+        /// </summary>
+        static void TakeStill(string outDir, TrainingSessionStateSO state)
+        {
+            if (string.IsNullOrEmpty(outDir) || !SessionState.GetString(KeyThirdEye, "").StartsWith("open")) return;
+            bool rose = SessionState.GetBool(KeyStillBest, false);
+            double now = EditorApplication.timeSinceStartup;
+            if (!rose && now < SessionState.GetFloat(KeyStillAt, 0f)) return;
+            SessionState.SetFloat(KeyStillAt, (float)(now + StillEverySeconds));
+            SessionState.SetBool(KeyStillBest, false);
+            var save = FindType("CosmicShore.Editor.AI.ThirdEyeWindow")?.GetMethod("SaveView", BindingFlags.Public | BindingFlags.Static);
+            if (save == null) { SessionState.SetString(KeyStillNote, "this version's Third Eye cannot save its view"); return; }
+            string dir = Path.Combine(outDir, "stills");
+            int episodes = state != null ? state.EpisodesCompleted : 0;
+            string file = Path.Combine(dir, $"{(rose ? "best" : "still")}_{episodes:D5}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.png");
+            string why = save.Invoke(null, new object[] { file }) as string;
+            SessionState.SetString(KeyStillNote, why ?? "");
+            if (why != null || !Directory.Exists(dir)) return;
+            foreach (var old in Directory.GetFiles(dir, "*.png").OrderByDescending(File.GetLastWriteTimeUtc).Skip(KeepStills))
+                File.Delete(old);
         }
 
         /// <summary>
@@ -415,8 +446,8 @@ namespace CosmicShore.Utility.AITraining.Editor
                         .Str("file", Path.GetFileName(f))
                         .Num("bytes", new FileInfo(f).Length)
                         .Str("pilot", "trainer")
-                        .Str("note", "flown by the trainer's AI; its 'held' column says 0 (the recorder does not know the " +
-                                     "trainer's seat yet), so never learn from it as a person's flight")
+                        .Str("note", "flown by the trainer's AI, saved by a version of the game whose recorder took the " +
+                                     "trainer's seat for a person's (newer versions store none): never learn from it")
                         .Body());
             WriteAtomic(Path.Combine(outDir, "recordings.json"), new Json()
                 .Str("schema", "froglet-compute/unity-recordings/1")
@@ -426,8 +457,19 @@ namespace CosmicShore.Utility.AITraining.Editor
                 .Str("flights_folder", flightDir)
                 .Raw("flights", "[" + string.Join(", ", flights) + "]")
                 .Str("third_eye", SessionState.GetString(KeyThirdEye, ""))
+                .Raw("stills", "[" + string.Join(", ", Stills(outDir)) + "]")
+                .Str("stills_note", SessionState.GetString(KeyStillNote, ""))
                 .Num("updated", Now())
                 .End());
+        }
+
+        static IEnumerable<string> Stills(string outDir)
+        {
+            string dir = Path.Combine(outDir, "stills");
+            if (!Directory.Exists(dir)) yield break;
+            foreach (var f in Directory.GetFiles(dir, "*.png").OrderBy(File.GetLastWriteTimeUtc))
+                yield return new Json().Str("file", Path.GetFileName(f)).Num("bytes", new FileInfo(f).Length)
+                    .Bool("best", Path.GetFileName(f).StartsWith("best_")).Body();
         }
 
         static Type FindType(string fullName)

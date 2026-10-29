@@ -138,3 +138,22 @@ In a `PER_INTENSITY_MODES` mode (Switchback) each intensity of a policy hull lea
 - **The mode-wide variant learns from every intensity**: the fastest race of each first (`fastest_each_intensity`),
   because it is what the intensities without their own fly, and the three fastest overall are always the easiest
   intensity's. Every other mode learns exactly as before.
+
+## 8. Every flight says who flew it; the AI never learns from the AI (Shombith, 2026-10-29)
+
+The AI trainer (an AI Training run, Froglet Compute's Unity runs) switches a hull's AIPilot off and writes the sticks
+itself, so the recorder took a trainer match for a person's: Compute's first Unity run (Switchback I2 on Shombith's PC,
+2026-10-28) stored seven of them as hand-flown and sent them. They changed no learned number (all unfinished, and the
+Switchback learner takes finished Blast Run races only), but they could have. Now:
+- `PilotControl.IsHeldByAI` counts the trainer (`IsHeldByTrainer`): its samples carry `held = 1`, and a match the
+  trainer flew alone is never stored (a verbose line on the AITraining channel, no warning).
+- Every record says who flew it: `"pilot": "human"`, or `"mixed"` when the AI held the hull for part of it.
+- `learn_from_flights.not_a_person` is the one gate every learner reads through (`flights_on_branches`,
+  `flights_in_dir`): a record whose `pilot` is anything else, and the seven named records from before the field, are
+  left out. `ai_learn.py` lists them as waiting, "not a person's flight", so the board says why.
+- The Third Eye refuses its You / AI toggle and a take-over on a trainer-held hull (the AIPilot would fight the
+  trainer every frame), reads the trainer's aim (`ThirdEyePilots.Read`: its target, range, threats, genome), and has
+  `ThirdEyeWindow.WatchPilot(match)` and `SaveView(path)` (the view with trails and aim lines drawn in) for tools;
+  Compute's watched runs save a still every minute and when the AI improves (`Docs/Compute/README.md` section 16).
+Changing the learners' code makes the next sweep learn every flight again (`learners_fingerprint`); that is by design.
+

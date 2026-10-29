@@ -131,6 +131,14 @@ If Play never reaches a match (sign-in, the menu), the run stops after 15 minute
 - [ ] Copy a `replays/best` pair into the project's `Recordings` folder: MY REPLAYS > WATCH plays it, Y or Tab gives
       the free camera.
 - [ ] Next run: the copy's `TheaterConfig.asset` is back to its tracked value and the untracked `ReplayConfig.asset` is gone.
+- [ ] (2026-10-29) An AI Training run (the window's Learn, or Compute): the Console shows no "AI training record not
+      stored" warning per match and Documents' Flights gains nothing; a race you fly yourself is still stored, with
+      `"pilot":"human"` in its header (`"mixed"` after a You / AI toggle).
+- [ ] Third Eye during an AI Training run: the trainer's hull draws a lime aim line to its target ("AI trainer:
+      Seeking Waypoint" in the readout), the You / AI toggle on it says "the AI trainer is flying this hull".
+- [ ] A watched Compute run writes `<out>/stills/still_*.png` about every minute and a `best_*.png` when the best
+      fitness rises: the picture is the Third Eye's view with the trails and aim lines drawn in, the right way up.
+- [ ] `ThirdEyeStillTests` pass (Test Runner, edit mode).
 
 ### 🔴 Rejoin a running match (Rev 37, section 103.1) (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
 

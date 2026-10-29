@@ -4,6 +4,7 @@ using CosmicShore.Editor.Froglet;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Utility.AITraining;
 using UnityEditor;
 using UnityEngine;
 
@@ -22,6 +23,8 @@ namespace CosmicShore.Editor.AI
         public bool IsAI;
         public SkimRacePilot SkimPilot;
         public AIPilot Autopilot;
+        /// <summary>The AI trainer flying this hull's episode (an AI Training run), or null.</summary>
+        public TrainingPilot Trainer;
         /// <summary>The pilot's Player, for the You / AI toggle (<see cref="PilotControl"/>). Null for a hull with no player.</summary>
         public Player Player;
 
@@ -148,6 +151,13 @@ namespace CosmicShore.Editor.AI
                     pilot.IsAI |= autopilot.AutoPilotEnabled;
                 }
 
+                // The AI trainer (an AI Training run, Froglet Compute) flies a seat with its AIPilot switched off.
+                if (hull.TryGetComponent(out TrainingPilot trainer) && trainer.isActiveAndEnabled && trainer.EpisodeActive)
+                {
+                    pilot.Trainer = trainer;
+                    pilot.IsAI = true;
+                }
+
                 if (hull.TryGetComponent(out SkimRacePilot skim) && skim.Vessel is Object sv && sv
                     && ReferenceEquals(skim.Vessel.VesselStatus, status))
                 {
@@ -245,6 +255,28 @@ namespace CosmicShore.Editor.AI
                            (d.CrystalPull ? ", crystal pull" : "") + (d.Unreachable ? ", UNREACHABLE" : "") +
                            $" | {level}";
                 t.Skim = SkimDetail(skim, o);
+                return t;
+            }
+
+            var trainer = pilot.Trainer;
+            if (trainer && trainer.isActiveAndEnabled && trainer.GetCurrentContextOrNull() is { } ctx)
+            {
+                // The trainer steers for its sensor's target (TargetSensor): the aim line ends there, or ahead of the
+                // hull when it has none. Its policies' blend is not a point, so the line shows what it is after.
+                t.Has = true;
+                t.Pilot = "AI trainer";
+                t.HasTarget = ctx.HasTarget;
+                t.Target = ctx.TargetPosition;
+                t.Aim = ctx.HasTarget ? ctx.TargetPosition : ctx.Position + ctx.Forward * 100f;
+                t.State = ctx.HasTarget ? $"Seeking {ctx.TargetKind}" : "No target";
+                t.Color = ctx.HasTarget ? FrogletEditorPalette.Lime : FrogletEditorPalette.Gold;
+                string target = ctx.HasTarget ? $"{ctx.TargetRange:F0} u to it, " : "";
+                t.Detail = $"seeks {trainer.ActiveTargetMode}, {target}speed {ctx.Speed:F0} u/s" +
+                           (ctx.IsBoosting ? ", boosting" : "") + (ctx.IsDrifting ? ", drifting" : "") +
+                           $", {ctx.Threats.Count} threats, {ctx.NearbyPrisms.Count} prisms near" +
+                           $" | intensity {trainer.Intensity}" +
+                           (trainer.PopulationIndex >= 0 ? $", genome #{trainer.PopulationIndex}" : "") +
+                           $", {ctx.EpisodeTime:F0} s into the episode";
                 return t;
             }
 

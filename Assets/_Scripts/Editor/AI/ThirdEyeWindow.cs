@@ -99,6 +99,113 @@ namespace CosmicShore.Editor.AI
 
         static ThirdEyeSettings Settings => ThirdEyeSettings.instance;
 
+        // ── For tools that drive it (Froglet Compute's watched runs) ────────────────
+
+        /// <summary>
+        /// Watch the first live pilot <paramref name="match"/> accepts, as if picked with ] or Tab. Opens the window if
+        /// it is closed. False while no live pilot matches (call again: a match's pilots appear once it starts).
+        /// </summary>
+        public static bool WatchPilot(System.Predicate<ThirdEyePilot> match)
+        {
+            if (match == null || !EditorApplication.isPlaying) return false;
+            if (!HasOpenInstances<ThirdEyeWindow>()) Open();
+            var window = GetWindow<ThirdEyeWindow>(false, Title, false);
+            ThirdEyePilots.Scan(window._pilots);
+            foreach (var p in window._pilots)
+            {
+                if (!p.Alive || !match(p)) continue;
+                window._watchedId = p.Id;
+                window._snap = true;
+                window.Repaint();
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Save what the window shows to <paramref name="pngPath"/>: its camera's last frame with the trails, aim lines
+        /// and target rings drawn in (<see cref="ThirdEyeStill"/>; the labels and hints are left out). Returns null when
+        /// saved, else why not.
+        /// </summary>
+        public static string SaveView(string pngPath)
+        {
+            if (!HasOpenInstances<ThirdEyeWindow>()) return "the Third Eye is not open";
+            return GetWindow<ThirdEyeWindow>(false, Title, false).Capture(pngPath);
+        }
+
+        string Capture(string pngPath)
+        {
+            if (!EditorApplication.isPlaying || !_cam || !_rt) return "nothing on view yet (no match, or the window is hidden)";
+            int w = _rt.width, h = _rt.height;
+            var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+            var previous = RenderTexture.active;
+            try
+            {
+                RenderTexture.active = _rt;
+                tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+                tex.Apply();
+                RenderTexture.active = previous;
+                var px = tex.GetPixels32();
+                DrawStillOverlay(px, w, h);
+                tex.SetPixels32(px);
+                string dir = System.IO.Path.GetDirectoryName(pngPath);
+                if (!string.IsNullOrEmpty(dir)) System.IO.Directory.CreateDirectory(dir);
+                System.IO.File.WriteAllBytes(pngPath, tex.EncodeToPNG());
+                return null;
+            }
+            catch (System.Exception e)
+            {
+                return $"{e.GetType().Name}: {e.Message}";
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                DestroyImmediate(tex);
+            }
+        }
+
+        /// <summary>The overlay of <see cref="DrawOverlay"/>, into pixels: trails faded by age, aim lines, target rings.</summary>
+        void DrawStillOverlay(Color32[] px, int w, int h)
+        {
+            var s = Settings;
+            float near = _cam.nearClipPlane + 0.01f, scale = Mathf.Max(1f, h / 360f);
+            foreach (var pilot in _pilots)
+            {
+                if (!pilot.Alive) continue;
+                if (s.ShowTrails && _trails.TryGetValue(pilot.Id, out var trail) && trail.Count >= 2)
+                {
+                    Color domain = ThirdEyePilots.DomainColor(pilot);
+                    float now = Time.time, keep = s.TrailSeconds;
+                    for (int i = 1; i < trail.Count; i++)
+                    {
+                        trail.Get(i - 1, out Vector3 pa, out _);
+                        trail.Get(i, out Vector3 pb, out float tb);
+                        float age = now - tb;
+                        if (age > keep) continue;
+                        if (!ThirdEyeRig.ClipToFront(pa, _cam.WorldToViewportPoint(pa).z, pb, _cam.WorldToViewportPoint(pb).z,
+                                near, out Vector3 wa, out Vector3 wb)) continue;
+                        ThirdEyeStill.Line(px, w, h, ThirdEyeStill.ToPixel(_cam.WorldToViewportPoint(wa), w, h),
+                            ThirdEyeStill.ToPixel(_cam.WorldToViewportPoint(wb), w, h),
+                            domain.WithAlpha(Mathf.Lerp(0.9f, 0.2f, age / keep)), 2f * scale);
+                    }
+                }
+                if (!s.ShowThinking) continue;
+                var t = ThirdEyePilots.Read(pilot);
+                if (!t.Has) continue;
+                if (t.HasTarget)
+                {
+                    Vector3 target = _cam.WorldToViewportPoint(t.Target);
+                    if (target.z > _cam.nearClipPlane)
+                        ThirdEyeStill.Ring(px, w, h, ThirdEyeStill.ToPixel(target, w, h), 10f * scale, FrogletEditorPalette.Cyan, 2f * scale);
+                }
+                Vector3 a = _cam.WorldToViewportPoint(pilot.Hull.position), b = _cam.WorldToViewportPoint(t.Aim);
+                if (!ThirdEyeRig.ClipToFront(pilot.Hull.position, a.z, t.Aim, b.z, near, out Vector3 wa2, out Vector3 wb2)) continue;
+                Vector2 pb2 = ThirdEyeStill.ToPixel(_cam.WorldToViewportPoint(wb2), w, h);
+                ThirdEyeStill.Line(px, w, h, ThirdEyeStill.ToPixel(_cam.WorldToViewportPoint(wa2), w, h), pb2, t.Color, 3f * scale);
+                if (b.z > _cam.nearClipPlane) ThirdEyeStill.Disc(px, w, h, pb2, 4f * scale, t.Color);
+            }
+        }
+
         // ── Lifecycle ────────────────────────────────────────────────────────────
 
         void OnEnable()

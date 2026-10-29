@@ -430,11 +430,11 @@ matches, a population of AIs, the best kept. Froglet Compute now starts it with 
   page). Every game type is reached by name: a version of the game without one still trains and says what it
   skipped in `recordings.json`. Measured so far: the file compiles in the reference compile (editor config, a planted
   error caught as a negative control); it has not run in the Unity editor yet.
-  Asked of Yash (his files are not changed): the recorder should mark a hull with a TrainingPilot as AI-flown (and
-  `ai_learn.py` skip flights not marked human); the Third Eye's AI-thinking readout knows SkimRacePilot and AIPilot,
-  not the trainer's TrainingPilot, so the aim line is empty on a trainer run (trails, labels and cameras work); a
-  public "watch this pilot" and a capture of the view would let a run save stills; and its You / AI toggle should
-  refuse a trainer-held hull (pressing it mid-run re-enables the AIPilot against the trainer).
+  Since 2026-10-29 the game marks the trainer's seat itself (`Docs/AI_SYSTEM/AUTO_LEARNING.md` section 8): the
+  recorder stores no trainer match, every learner skips a record not flown by a person, the Third Eye draws the
+  trainer's aim and refuses its You / AI toggle on a trainer seat, and a watched run saves a still of the Third Eye's
+  view every minute and when the best fitness rises (`<out>/stills`, the newest 20, listed in `recordings.json`).
+  The move of a flight into `ai-flights` stays for a game version from before.
 - **First real run (Shombith's PC, 2026-10-28)**: Dolphin in Switchback at I2, 32 matches, the import included, in 27
   minutes, result published. Every AI scored 0 gates: the trainer built each new pilot's target sensor before the
   scenario's target mode was set, so every pilot sought crystals (`TrainingPilot.BeginEpisode` now applies it). That
