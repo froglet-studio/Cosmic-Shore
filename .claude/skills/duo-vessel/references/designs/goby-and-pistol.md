@@ -84,12 +84,27 @@
 >   one that never flies none. The Mass card's new gauge is the energy (Pistol seat; empty flying the Goby). Crystals beside
 >   the plane drift in within the undertow's reach (`crystalPullSpeed` 30) and the Pistol takes one it touches, as the
 >   Jacks' net does, on the hull's machine only. The HALF PLANE: riding an island ahead the Pistol plays the side its frame
->   calls +z (the far side from its camera), riding it back the other side; the undertow pulls mass only from that half,
->   and the path map scores and draws each half on its own: a lit, terraced wing of faceted blocks standing out of the
->   trail on its side, wider and in more tiers (1-4) and bluer -> limer as it holds more opposing prisms; the picked half
->   white; the map opens tilted `mapStartTilt` 35 deg so the two halves part on screen; a tap on a wing picks that half.
->   **[open]:** whether the crystals should also come from that half only; whether a block at full width that is already
+>   calls +z (the far side from its camera), riding it back the other side, and the path map scores and draws each half on
+>   its own: a lit, terraced wing of faceted blocks standing out of the trail on its side, wider and in more tiers (1-4)
+>   and bluer -> limer as it holds more; the picked half white; the map opens tilted `mapStartTilt` 35 deg so the two
+>   halves part on screen; a tap on a wing picks that half. **[open]:** whether a block at full width that is already
 >   shielded should go further (super-shield).
+> - "i don't see prisms growing as I jump them. there should be some good juice associated with growing, restoring, and
+>   shielding prisms. the trail should also be designed to support shielding. when i rode a shielded trail it had awkward
+>   crossing spikes on my slopes. the mass calculation should be about how much unshielded mass of opposing domains is
+>   available to be destroyed by vortex rings. the vortex rings are free to affect whatever they will ... the otherside is
+>   just hard to reach so i figured that it shouldn't be included in the mass used to decide which trail to ride."
+>   **[stated]** (2026-10-29). **[read]:** the growth was happening but is out of the plane, square to the side camera, so
+>   it cannot be seen from the Pistol's seat: every reward now has JUICE for the Pistol's camera (a lit flash shrinking
+>   onto the block and `juiceShards` 6 lit faceted shards in the plane: grown lime, shielded cyan, restored white, the
+>   restored one's shards flying IN) and its own empty FMOD slot (`growEvent`, `shieldEvent`, `restoreEvent`, and
+>   `fallThroughEvent` for the portal), one of a kind per `juiceSoundSpacing` 0.07 s. The crossing spikes were the
+>   shields: a shield is the block's circumscribing octahedron at 3x its half-extents, so the 5.5 u blocks on a 6 u gap
+>   reached 8.25 u each way and crossed their neighbours; a block is now `trailBlockGap` / 3 x `trailShieldFill` 0.9 long
+>   (1.8 u; `trailBlockSection` 1.4 x 0.5), so a shielded trail is a chain of diamonds tip to tip (the unshielded trail
+>   reads as beads). The path score is the summed VOLUME of unshielded, non-super-shielded prisms of other domains on the
+>   half (the Goby AI routes by the same rule); the undertow is back to pulling from both sides (only the score is by
+>   side; the rings were never limited).
 > - The primer, heat and flares are RETIRED (they were the Goby's old kit). Charge has no level-5 upgrade yet **[open]**.
 > - Controls: Goby Dart = pad RT / X, key Q, phone Dart button (hold, let go); Lock = pad LT / Y, key F, phone Lock.
 >   Pistol (since 2026-10-24, on the fleet's four labelled face buttons so each card's chip names its control from the
@@ -168,7 +183,7 @@ table in step with `GobyPistolDuo` (`HumanPistol`, `Choose`), the hull's binding
 |---|---|---|---|---|---|---|
 | Charge | **Snap** -> **Vortex Sting** | Fires a vortex ring (the toroidal lens) that gathers prisms round its core; with the Goby's lock on screen it homes, and a rival hull it passes through loses petals from each element (1 -> 3 with Charge). The veil is its cooldown. | none yet **[open]** | Snap button | X | Q (or E) |
 | Mass | **Dens**, and **Back** | At each perch it rests and builds a den from its ENERGY (2026-10-29): one prism per 8 energy, x1 -> x2.5 with Mass, at most 80; what the den cannot take is kept. Energy comes from the blocks it flies over instead of riding (the nth block of a flight gives 1 + 0.2 n, so big jumps pay); a fall through a hole loses it all. Teleporting grows none. The card counts the den prisms and its gauge is the energy; Back, pressed while riding, turns the next perch's pick round. | **Fortress**: danger and super-shielded prisms too | Back button | Y (or LB) | F (or the B key) |
-| Space | **Ghost** (and the Undertow, passive) | Ghost: a moment of passing through prisms, then a cooldown (the veil). The Undertow pulls mass into the plane from the HALF it plays this way (one side of the trail riding ahead, the other riding back), 40 -> 200 u with Space, and crystals from either side, which the Pistol collects on touch; the card's gauge is that reach. | **Deep Undertow**: shielded prisms pulled too | Ghost button | B | T (or G) |
+| Space | **Ghost** (and the Undertow, passive) | Ghost: a moment of passing through prisms, then a cooldown (the veil). The Undertow pulls mass beside the plane into it, either side, 40 -> 200 u with Space, and crystals too, which the Pistol collects on touch; the card's gauge is that reach. (Only the path map's score is by side.) | **Deep Undertow**: shielded prisms pulled too | Ghost button | B | T (or G) |
 | Time | **the dive** (and the aimed jump, off) | Hold to press into the hill; let go on an upslope and it throws the Pistol. The gauge is its speed. With `aimedJump` on, a dragged jump whose cooldown Time shortens (9 -> 3 s); off since 2026-10-22, so Time's card on the Pistol is **[open]**. | (Phase Dart is the Goby's) | finger held on the view (aimed jump: drag) | A or LT (aimed jump: RT + right stick) | Space, S, down, or mouse held (aimed jump: J) |
 
 **The path map** (the Pistol seat, at a perch after its rest; picking another den teleports there):

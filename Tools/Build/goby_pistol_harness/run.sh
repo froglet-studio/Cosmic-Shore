@@ -2,9 +2,9 @@
 # Compile the SHIPPED pure Goby & Pistol code (PistolPlane, PistolBodyMath, PistolPaths, PistolAI, GobyDen) and its
 # SHIPPED pure tests (Assets/_Scripts/Tests/Editor/GobyPistolTrailHoleTests.cs, GobyPistolEnergyTests.cs) against a
 # UnityEngine math stub and an NUnit shim with Roslyn, and RUN every [Test]. Exit 0 = every test passed. `--self-test`
-# additionally plants four defects - a grounded Pistol that ignores holes (phantom ground under it), a fallen one that
-# lands again, a flight that pays no more for big jumps, and a stretch that counts a shared block twice - and proves the
-# tests catch each (negative controls). Needs a .NET SDK (8+), found through DOTNET_ROOT (default ~/.dotnet):
+# additionally plants five defects - a grounded Pistol that ignores holes (phantom ground under it), a fallen one that
+# lands again, a flight that pays no more for big jumps, a stretch that counts a shared block twice, and trail blocks whose
+# shields cross - and proves the tests catch each (negative controls). Needs a .NET SDK (8+), found through DOTNET_ROOT (default ~/.dotnet):
 #   bash <(curl -fsSL https://dot.net/v1/dotnet-install.sh) --channel 8.0 --install-dir $HOME/.dotnet --no-path
 # The Shrike harness's shape (Tools/Build/shrike_harness).
 set -euo pipefail
@@ -56,4 +56,8 @@ if [ "${1:-}" = "--self-test" ]; then
   sed 's/return up ? b > lo \&\& b <= hi : b >= lo \&\& b < hi;/return b >= lo \&\& b <= hi;/' "$DIR/PistolPlane.cs" > "$OUT/PlaneTwice.cs"
   grep -q 'return b >= lo && b <= hi;' "$OUT/PlaneTwice.cs"
   build_and_run "$BODY" fail "a shared block counted twice" "$OUT/PlaneTwice.cs"
+  # 5. Trail blocks as long as their spacing: their shields cross (the crossing spikes on the slopes).
+  sed 's|Mathf.Max(0.1f, gap) / Mathf.Max(1f, shieldScale) \* Mathf.Clamp(fill, 0.1f, 1f);|Mathf.Max(0.1f, gap) * Mathf.Clamp(fill, 0.1f, 1f);|' "$DIR/PistolPlane.cs" > "$OUT/PlaneLong.cs"
+  grep -q 'Mathf.Max(0.1f, gap) \* Mathf.Clamp(fill, 0.1f, 1f);' "$OUT/PlaneLong.cs"
+  build_and_run "$BODY" fail "shielded trail blocks cross" "$OUT/PlaneLong.cs"
 fi

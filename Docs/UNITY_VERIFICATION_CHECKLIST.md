@@ -65,6 +65,40 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Goby & Pistol: juice for grow / shield / restore, a shield-ready trail, the path score as destroyable mass (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett, 2026-10-29: "i don't see prisms growing as I jump them ..."):
+- Juice: `GobyPistolDuo.AddJuice` / `DrawJuice`. Each grown, shielded or restored block flashes (a lit shell 1.7x its
+  size shrinking onto it) and throws 6 lit faceted shards in the Pistol's plane (restored: they fly in), for the Pistol's
+  camera; lime / cyan / white. The growth itself is out of the plane, square to the side camera, so it was never
+  visible from that seat. Sounds: `growEvent`, `shieldEvent`, `restoreEvent`, `fallThroughEvent` on the config, shipped
+  EMPTY (FMOD convention), one of a kind per 0.07 s.
+- A shield-ready trail: blocks are `trailBlockGap` / 3 x 0.9 long (1.8 u, `trailBlockSection` 1.4 x 0.5; was 5.5 u), so
+  shielded neighbours' octahedra meet as a chain of diamonds instead of crossing (`PistolGround.ShieldFlushLength`;
+  `trailBlockScale` replaced in the asset).
+- The path map's score is the summed volume of UNSHIELDED prisms of other domains on each half (`Destroyable`); the Goby
+  AI routes by it too. The undertow pulls from both sides again (only the score is by side; the rings were never
+  limited).
+
+**Verified without the editor:** `unity_refcompile` player and editor 0 errors in project code; harness 14 / 14 with
+five negative controls (new: `Trail_ShieldedNeighboursMeetTipToTip`, whose control shows the 5.5 u blocks cross on most
+pairs); `author_goby_assets`, `author_goby_hud`, logging, conditional compilation, crew vessels. `/verify-unity` did
+not run.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Jump crests: each block you fly over flashes lime and throws shards; fly the same stretch until they are full width,
+   then they flash cyan as they shield; the shielded stretch is a chain of diamonds, no spikes crossing on the slopes.
+2. Shoot blocks and jump the gap: white shards fly in and the blocks are back. Fall into a gap: the touched blocks
+   restore with the same white burst.
+3. The trail unshielded reads as beads, not a line: judge whether that is right, or ask for a denser spacing.
+4. Path map: a half with many shielded rival prisms is no longer lit as rich; unshielded rival mass is. Mass on the near
+   side of the trail is still pulled into the plane.
+
+**First-pass tuning:** `juiceShards` 6, `juiceSeconds` 0.45, `juiceReach` 4, `juiceShardSize` 0.55, `juicePulseScale`
+1.7, `trailShieldFill` 0.9.
+
+---
+
 ### 🔴 Goby & Pistol: a fall restores what it touched and drops the Pistol beyond the gap (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett, 2026-10-29: "there is an unfun state where the best paths are no longer crossable ..."):
@@ -123,8 +157,8 @@ views, hud on-screen, validate_project. `/verify-unity` did not run (no editor i
    and the gauge drops. Ride without jumping: the gauge stays empty and the den does not grow. Fall through a hole: the
    gauge empties and the den you return to grows nothing.
 3. Crystals near the trail drift into the Pistol's plane and are collected on touch (the hull's crystal effects run).
-4. Ride an island one way, then back: the undertow pulls from the far side of the trail each way (the other side each
-   time). On the path map each island shows two wings, one per side, each sized by its side's rival mass; tap a wing to
+4. (Superseded 2026-10-29: the undertow pulls from both sides again; only the score is by side.) Ride an island one way,
+   then back. On the path map each island shows two wings, one per side, each sized by its side's rival mass; tap a wing to
    pick that half; spin and tilt read as volumes, nothing flat.
 
 **First-pass tuning:** `energyPerSkippedBlock` 1, `energyFlightBonus` 0.2, `energyMax` 640, `energyPerDenPrism` 8,

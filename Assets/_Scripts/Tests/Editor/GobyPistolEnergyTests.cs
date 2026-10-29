@@ -157,6 +157,65 @@ namespace CosmicShore.Tests
             Assert.IsFalse(flewFallen, "and flies over nothing on the way down");
         }
 
+        /// <summary>The side-view outline of a shielded ground block (the octahedron's silhouette across the plane: a rhombus,
+        /// tips <c>3 length / 2</c> along the block and <c>3 thickness / 2</c> across it), laid as the seat lays it.</summary>
+        static Vector2[] ShieldOutline(PistolPlane.HillTrack track, float s, float length, float thickness)
+        {
+            float m = track.Slope(s), c = 1f / Mathf.Sqrt(1f + m * m);
+            Vector2 centre = new(s, track.Height(s)), along = new(c, m * c), up = new(-m * c, c);
+            float a = 1.5f * length, b = 1.5f * thickness;
+            return new[] { centre + along * a, centre + up * b, centre - along * a, centre - up * b };
+        }
+
+        /// <summary>Do two convex outlines overlap (more than <paramref name="slack"/>)? The separating-axis test.</summary>
+        static bool Overlap(Vector2[] p, Vector2[] q, float slack)
+        {
+            foreach (var poly in new[] { p, q })
+                for (int i = 0; i < poly.Length; i++)
+                {
+                    Vector2 e = poly[(i + 1) % poly.Length] - poly[i], n = new(-e.y, e.x);
+                    float pMin = float.MaxValue, pMax = float.MinValue, qMin = float.MaxValue, qMax = float.MinValue;
+                    foreach (var v in p) { float d = Vector2.Dot(v, n); pMin = Mathf.Min(pMin, d); pMax = Mathf.Max(pMax, d); }
+                    foreach (var v in q) { float d = Vector2.Dot(v, n); qMin = Mathf.Min(qMin, d); qMax = Mathf.Max(qMax, d); }
+                    float len = n.magnitude;
+                    if (pMax < qMin + slack * len || qMax < pMin + slack * len) return false;
+                }
+            return true;
+        }
+
+        /// <summary>
+        /// A shielded trail is a chain, not a thicket (Garrett, 2026-10-29: "the trail should also be designed to support
+        /// shielding. when i rode a shielded trail it had awkward crossing spikes on my slopes"): on the shipped hills, the
+        /// tallest island's included, no two neighbouring blocks' shields overlap in the Pistol's side view at the shipped
+        /// block length. The control: the 5.5 u blocks before this cross on every pair.
+        /// </summary>
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Trail_ShieldedNeighboursMeetTipToTip(bool shipped)
+        {
+            float length = shipped ? PistolGround.ShieldFlushLength(Gap, 3f, ShieldFill) : 5.5f, thickness = 0.5f;
+            int crossings = 0, pairs = 0;
+            foreach (int island in new[] { 0, 12 })
+                for (uint seed = 1; seed <= 4; seed++)
+                {
+                    var track = PistolPlane.HillTrack.Build(1800f, seed, Hills, island);
+                    var g = new PistolGround(1800f, Gap);
+                    var last = ShieldOutline(track, g.BlockS(0), length, thickness);
+                    for (int i = 1; i < g.Count && g.BlockS(i) < 1800f; i++)
+                    {
+                        var next = ShieldOutline(track, g.BlockS(i), length, thickness);
+                        pairs++;
+                        if (Overlap(last, next, 0.01f)) crossings++;
+                        last = next;
+                    }
+                }
+            if (!shipped) { Assert.Greater(crossings, pairs / 2, "the control: 5.5 u blocks' shields cross"); return; }
+            Assert.AreEqual(0, crossings, $"no two shielded neighbours cross ({pairs} pairs, length {length:F2} u)");
+        }
+
+        /// <summary>The shipped share of the flush length (GobyPistolConfig.asset <c>trailShieldFill</c>).</summary>
+        const float ShieldFill = 0.9f;
+
         [Test]
         public void Paths_EachHalfIsScoredOnItsOwnSide()
         {

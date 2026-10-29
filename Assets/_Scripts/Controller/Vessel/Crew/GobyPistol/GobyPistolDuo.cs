@@ -22,9 +22,9 @@ namespace CosmicShore.Gameplay
     /// shielded prisms (Mass 5: danger and super-shielded too), as many as its ENERGY and Mass make; it may ride back to an
     /// old den to add to it. Energy comes from the blocks of its ground it flies over instead of riding, the nth block of a
     /// flight more than the last, and each block flown over grows across the trail, is shielded once full, or is restored
-    /// if it was destroyed (Garrett, 2026-10-29). Mass on the HALF of the plane it plays this way (one side of the trail
-    /// riding ahead, the other riding back) is pulled into it, and crystals either side too, which it collects (Space;
-    /// Space 5: shielded too). Its Snap fires a vortex ring; with the Goby locked on a rival that is on the Pistol's screen,
+    /// if it was destroyed (Garrett, 2026-10-29). Mass beside its plane is pulled into it, and crystals too, which it
+    /// collects (Space; Space 5: shielded too); the path map weighs each island's two sides (one ridden ahead, the other
+    /// back) by the unshielded opposing mass on it. Its Snap fires a vortex ring; with the Goby locked on a rival that is on the Pistol's screen,
     /// the ring homes on it and takes petals (Charge). Time is its jump's cooldown. Where a block of its ground was
     /// destroyed the ground is a hole it must clear (<see cref="PistolGround"/>); one that falls in restores the gap's blocks
     /// it got past, loses its energy, and comes out of a vortex-ring portal on the standing ground beyond the gap
@@ -104,12 +104,22 @@ namespace CosmicShore.Gameplay
         // out beyond the gap, for fallPopSeconds; the Pistol spins out of the second
         float _popT = -1f; Vector3 _popOutAt, _popInAt;
         VortexRing _popOut, _popIn;
+        // the juice of a rewarded block (Garrett, 2026-10-29: "there should be some good juice associated with growing,
+        // restoring, and shielding prisms"): lit faceted shards and a flash shrinking onto the block, for the Pistol's camera
+        enum Juice { Grow = 0, Shield = 1, Restore = 2 }
+        struct Burst { public Vector3 At, R, Up, M, Scale; public Quaternion Rot; public float Born; public Juice Kind; public uint Seed; }
+        readonly List<Burst> _bursts = new();
+        readonly List<Matrix4x4>[] _juicePieces = { new(), new(), new() };
+        Material[] _juiceMats;
+        readonly float[] _juiceSoundAt = new float[3];
+        uint _burstSeed;
+        const int MaxBursts = 128;
         // the choice at a perch (PistolPaths, Garrett 2026-10-25): every island's opposing prisms, kept one island at a time;
         // the map the person picks a den and a direction on; the cursor and how the dive confirms it
         readonly List<PathChoice> _options = new();
-        readonly List<int> _pathScore = new();
+        readonly List<float> _pathScore = new();
         readonly HashSet<Prism> _scoreSeen = new();
-        int _scoreCursor, _pathScoreMax; float _scoreAt;
+        int _scoreCursor; float _pathScoreMax, _scoreAt;
         bool _choosing, _diveWasDown; PathChoice _choice; float _chooseT; Vector2 _stickWas;
         MapPointer _mapPointer;
         float _mapRadius = 1f, _mapYaw, _mapPitch;   // the person's spin of the map, kept from perch to perch
@@ -183,13 +193,14 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the Pistol, at a perch, waits for its person to pick a den and a direction (the path map).</summary>
         public bool Choosing => _choosing;
         /// <summary>The opposing prisms the vortex ring could reach along island <paramref name="segment"/>, last counted.</summary>
-        public int PathScore(int segment) => PathScore(segment, 1) + PathScore(segment, -1);
-        /// <summary>The opposing prisms on one HALF of island <paramref name="segment"/>: the side the Pistol plays riding it
-        /// <paramref name="dir"/> (+1 ahead, -1 back; <see cref="PistolPaths.Half(int, int)"/>), last counted.</summary>
-        public int PathScore(int segment, int dir)
+        public float PathScore(int segment) => PathScore(segment, 1) + PathScore(segment, -1);
+        /// <summary>The opposing mass a vortex ring could destroy on one HALF of island <paramref name="segment"/> (the side
+        /// the Pistol plays riding it <paramref name="dir"/>, +1 ahead, -1 back; <see cref="PistolPaths.Half(int, int)"/>):
+        /// the summed volume of the unshielded prisms of other domains there, last counted.</summary>
+        public float PathScore(int segment, int dir)
         {
             int h = PistolPaths.Half(segment, dir);
-            return segment >= 0 && h < _pathScore.Count ? _pathScore[h] : 0;
+            return segment >= 0 && h < _pathScore.Count ? _pathScore[h] : 0f;
         }
         /// <summary>The Pistol's energy: what the blocks it flew over gave it, spent on its next den.</summary>
         public float Energy => _energy;
@@ -248,7 +259,7 @@ namespace CosmicShore.Gameplay
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); _grounds.Clear(); _groundBlocks.Clear(); _rings.Clear(); _held.Clear();
             StopPops(); _bindAt = 0f;
-            _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0; _choosing = false; _mapYaw = 0f; _mapPitch = Config.MapStartTilt; _mapPointer = default;
+            _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0f; _choosing = false; _mapYaw = 0f; _mapPitch = Config.MapStartTilt; _mapPointer = default;
             _energy = 0f; _flightBlocks = 0; _crystalTakenAt.Clear();
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
             _aiRng = new PistolAI.Mulberry32(20261022u); _ai = new PistolAI(31337u + 17u);
@@ -295,6 +306,8 @@ namespace CosmicShore.Gameplay
             if (_bodyGo) Destroy(_bodyGo);
             foreach (var o in new Object[] { _torus, _lockMat, _bodyMat, _cube, _pickMat }) if (o) Destroy(o);
             if (_heatMats != null) foreach (var m in _heatMats) if (m) Destroy(m);
+            if (_juiceMats != null) foreach (var m in _juiceMats) if (m) Destroy(m);
+            _juiceMats = null; _bursts.Clear();
             _heatMats = null; _choosing = false; _pathScore.Clear();
             _claw = _tail = null; _bodyIsModel = false; _bodyDomain = null;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); _grounds.Clear(); _groundBlocks.Clear(); ClearLock();
@@ -668,9 +681,42 @@ namespace CosmicShore.Gameplay
                 target.x = Mathf.Min(max, target.x + Config.SkipGrowStep);
                 prism.AdmitTargetScale(target);
                 prism.TargetScale = target;
+                AddJuice(prism, Juice.Grow, target);
                 return;
             }
-            if (!prism.prismProperties.IsShielded) prism.ActivateShield();
+            if (prism.prismProperties.IsShielded) return;
+            prism.ActivateShield();
+            AddJuice(prism, Juice.Shield, target);
+        }
+
+        /// <summary>
+        /// A rewarded block's juice: a burst for the Pistol's camera (<see cref="DrawJuice"/>) and its sound, the kind's own
+        /// FMOD field (empty: silent), at most one of a kind per <c>juiceSoundSpacing</c> (a long jump rewards a block every
+        /// few frames). Grown and shielded blocks throw their shards out; a restored one draws them in. Nothing for an AI
+        /// crew: no person here watches it.
+        /// </summary>
+        void AddJuice(Prism prism, Juice kind, Vector3 scale)
+        {
+            if (_aiCrew || !prism) return;
+            var tr = prism.transform;
+            if (_bursts.Count >= MaxBursts) _bursts.RemoveAt(0);
+            _bursts.Add(new Burst
+            {
+                At = tr.position, Rot = tr.rotation, Scale = scale, R = _f.R, Up = _f.Up, M = _f.M, Born = _t, Kind = kind,
+                Seed = unchecked(++_burstSeed * 2654435761u),
+            });
+            int k = (int)kind;
+            var sound = kind switch { Juice.Grow => Config.GrowEvent, Juice.Shield => Config.ShieldEvent, _ => Config.RestoreEvent };
+            if (_t < _juiceSoundAt[k]) return;
+            _juiceSoundAt[k] = _t + Config.JuiceSoundSpacing;
+            PlaySound(sound, tr.position);
+        }
+
+        static void PlaySound(FMODUnity.EventReference sound, Vector3 at)
+        {
+            if (sound.IsNull) return;
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (audio) audio.PlaySFXEvent(sound, at);
         }
 
         /// <summary>Restores island <paramref name="island"/>'s destroyed block <paramref name="slot"/> where the Goby laid it:
@@ -688,6 +734,7 @@ namespace CosmicShore.Gameplay
             prism.Restore();
             if (prism.destroyed) return false;
             ground.SetGone(slot, false);
+            AddJuice(prism, Juice.Restore, prism.TargetScale);
             return true;
         }
 
@@ -825,7 +872,7 @@ namespace CosmicShore.Gameplay
             index.QuerySphere(last, goal + radius, _q);
             _routePts.Clear();
             int stride = Mathf.Max(1, Mathf.CeilToInt(_q.Count / (float)RoutePointsMax));
-            for (int i = 0; i < _q.Count; i += stride) if (Opposing(_q[i])) _routePts.Add(_q[i].transform.position);
+            for (int i = 0; i < _q.Count; i += stride) if (Destroyable(_q[i])) _routePts.Add(_q[i].transform.position);
             _q.Clear();
             bool found = PistolPaths.BestHeading(last, goal, radius, _routePts, _home, Config.AiHomeRadius, _gt.forward,
                 lvl.Mis * 10f, _misjudgeSeed, out var heading, out _aiRouteCount);
@@ -913,6 +960,7 @@ namespace CosmicShore.Gameplay
             _popOut = new VortexRing(_popOutAt, _f.M, Config.FallPopSeconds);
             _popIn = new VortexRing(_popInAt, _f.M, Config.FallPopSeconds);
             _popT = 0f;
+            if (!_aiCrew) PlaySound(Config.FallThroughEvent, _popInAt);
         }
 
         void StopPops()
@@ -1178,8 +1226,8 @@ namespace CosmicShore.Gameplay
             return dir > 0 ? f.M : -f.M;
         }
 
-        /// <summary>A half plane's share of the most opposing prisms any half holds, 0..1.</summary>
-        float HalfHeat(int k, int dir) => _pathScoreMax > 0 ? Mathf.Clamp01((float)PathScore(k, dir) / _pathScoreMax) : 0f;
+        /// <summary>A half plane's share of the most destroyable opposing mass any half holds, 0..1.</summary>
+        float HalfHeat(int k, int dir) => _pathScoreMax > 0f ? Mathf.Clamp01(PathScore(k, dir) / _pathScoreMax) : 0f;
 
         /// <summary>How far a half's wing reaches out of the trail on the map, from a sliver (empty) to <c>mapWingReach</c>.</summary>
         float WingReach(float heat) => _mapRadius * Config.MapWingReach * Mathf.Lerp(0.2f, 1f, heat);
@@ -1197,16 +1245,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>One island's two scores at a time, one per HALF PLANE (Garrett, 2026-10-29: the side the Pistol plays
-        /// riding it ahead, and the other side riding it back, <see cref="PistolPaths.Half(int, int)"/>): the opposing prisms
-        /// (not the pair's domain, never super-shielded or still growing: what the vortex ring can catch) on that side, within
-        /// the undertow's reach of its plane and <c>pathScoreBand</c> of its ground (mass in the plane counts on both). Every
-        /// frame while the map is open, every <c>pathScoreInterval</c> otherwise.</summary>
+        /// riding it ahead, and the other side riding it back, <see cref="PistolPaths.Half(int, int)"/>): "how much unshielded
+        /// mass of opposing domains is available to be destroyed by vortex rings" on that side, the summed VOLUME of the
+        /// prisms <see cref="Destroyable"/> counts, within the undertow's reach of its plane and <c>pathScoreBand</c> of its
+        /// ground (mass in the plane counts on both). Only the score is by half: the other side is harder to reach, not out of
+        /// reach, and the rings and the undertow act on both. Every frame while the map is open, every
+        /// <c>pathScoreInterval</c> otherwise.</summary>
         void ScorePaths()
         {
             int halves = _segments.Count * 2;
-            while (_pathScore.Count < halves) _pathScore.Add(0);
+            while (_pathScore.Count < halves) _pathScore.Add(0f);
             if (_pathScore.Count > halves) _pathScore.RemoveRange(halves, _pathScore.Count - halves);
-            if (_segments.Count == 0) { _pathScoreMax = 0; return; }
+            if (_segments.Count == 0) { _pathScoreMax = 0f; return; }
             if (!_choosing && _t < _scoreAt) return;
             _scoreAt = _t + Config.PathScoreInterval;
             var index = PrismSpatialIndex.Instance;
@@ -1217,33 +1267,35 @@ namespace CosmicShore.Gameplay
             var f = PistolPlane.For(seg, 1, Config.SlopeDegrees, _tracks[k]);
             float reach = Mathf.Max(1f, Config.PullReach.EvaluateReplicated(_status)), band = Config.PathScoreBand;
             float step = Mathf.Max(reach, band) * 1.5f, r = Mathf.Sqrt(reach * reach + band * band + step * step * 0.25f);
-            int ahead = 0, back = 0;
+            float ahead = 0f, back = 0f;
             _scoreSeen.Clear();
             for (float s = 0f; s <= seg.L + step * 0.5f; s += step)
             {
                 index.QuerySphere(seg.Ground(Mathf.Min(s, seg.L), _tracks[k]), r, _q2);
                 foreach (var prism in _q2)
                 {
-                    if (!_scoreSeen.Add(prism) || !Opposing(prism)) continue;
+                    if (!_scoreSeen.Add(prism) || !Destroyable(prism)) continue;
                     Vector3 fr = f.ToFrame(prism.transform.position);
-                    float ground = PistolPlane.Ground(f, Mathf.Clamp(fr.x, 0f, f.EndX));
+                    float ground = PistolPlane.Ground(f, Mathf.Clamp(fr.x, 0f, f.EndX)), mass = Mathf.Max(1e-3f, prism.Volume);
                     // the back frame's +z is this frame's -z: the other side
-                    if (PistolPaths.InHalf(fr, f.EndX, ground, reach, band)) ahead++;
-                    if (PistolPaths.InHalf(new Vector3(fr.x, fr.y, -fr.z), f.EndX, ground, reach, band)) back++;
+                    if (PistolPaths.InHalf(fr, f.EndX, ground, reach, band)) ahead += mass;
+                    if (PistolPaths.InHalf(new Vector3(fr.x, fr.y, -fr.z), f.EndX, ground, reach, band)) back += mass;
                 }
                 _q2.Clear();
             }
             _scoreSeen.Clear();
             _pathScore[PistolPaths.Half(k, 1)] = ahead;
             _pathScore[PistolPaths.Half(k, -1)] = back;
-            _pathScoreMax = 0;
-            foreach (int n in _pathScore) _pathScoreMax = Mathf.Max(_pathScoreMax, n);
+            _pathScoreMax = 0f;
+            foreach (float n in _pathScore) _pathScoreMax = Mathf.Max(_pathScoreMax, n);
         }
 
-        /// <summary>A prism the vortex ring could take that is not the pair's: another domain, breakable, not super-shielded,
-        /// not still growing (the ring's own capture rule, StepRings).</summary>
-        bool Opposing(Prism prism) => Breakable(prism) && !prism.IsGrowing && !prism.prismProperties.IsSuperShielded
-                                      && prism.Domain != _status.Domain;
+        /// <summary>A prism a vortex ring can DESTROY that is not the pair's (Garrett, 2026-10-29: "unshielded mass of opposing
+        /// domains"): another domain, breakable, not shielded or super-shielded (a ring's collapse only knocks a shield off),
+        /// not still growing. What the path map weighs and the Goby AI routes through; the rings themselves take whatever
+        /// they catch (StepRings).</summary>
+        bool Destroyable(Prism prism) => Breakable(prism) && !prism.IsGrowing && !prism.prismProperties.IsShielded
+                                         && !prism.prismProperties.IsSuperShielded && prism.Domain != _status.Domain;
 
         void LayDenPrism(Den den)
         {
@@ -1414,10 +1466,10 @@ namespace CosmicShore.Gameplay
 
         // ================================ the undertow, the body, the rings ================================
 
-        /// <summary>Space: mass on the half of the Pistol's plane it plays this way (the side its frame calls +z: one side of
-        /// the trail riding ahead, the other riding back, Garrett 2026-10-29) is pulled into it - never danger,
-        /// super-shielded, a lifeform's body or the pair's own prisms; shielded ones only with the Space upgrade. Crystals are
-        /// drawn in from either side (<see cref="PullCrystals"/>).</summary>
+        /// <summary>Space: mass either side of the Pistol's plane is pulled into it - never danger, super-shielded, a
+        /// lifeform's body or the pair's own prisms; shielded ones only with the Space upgrade (Garrett, 2026-10-29: "the
+        /// vortex rings are free to affect whatever they will": the path map's score counts one side, nothing here does).
+        /// Crystals are drawn in too (<see cref="PullCrystals"/>).</summary>
         void Undertow(float dt)
         {
             if (Falling) return;   // nothing is pulled into a plane the Pistol has fallen out of
@@ -1434,8 +1486,7 @@ namespace CosmicShore.Gameplay
                 if (!Pullable(prism, shielded)) continue;
                 var tr = prism.transform;
                 Vector3 fr = _f.ToFrame(tr.position);
-                // only the half the Pistol plays this way (+z, the far side; the other way round, the other side)
-                if (Mathf.Abs(fr.x - _p.x) > window || fr.z > reach || fr.z < 0.5f) continue;
+                if (Mathf.Abs(fr.x - _p.x) > window || Mathf.Abs(fr.z) > reach || Mathf.Abs(fr.z) < 0.5f) continue;
                 float step = Mathf.Min(Mathf.Abs(fr.z), Config.PullSpeed * dt);
                 tr.position -= _f.M * (Mathf.Sign(fr.z) * step);
                 prism.NotifyPositionChanged();
@@ -2065,7 +2116,7 @@ namespace CosmicShore.Gameplay
         void EnsureMapAssets()
         {
             if (_heatMats != null) return;
-            _cube = CubeMesh();
+            if (!_cube) _cube = CubeMesh();
             _heatMats = new Material[_heatPieces.Length];
             for (int i = 0; i < _heatMats.Length; i++)
             {
@@ -2085,8 +2136,68 @@ namespace CosmicShore.Gameplay
             return mesh;
         }
 
+        /// <summary>
+        /// The bursts of rewarded blocks, for the Pistol's camera: each block flashes (a lit shell
+        /// <c>juicePulseScale</c> its size shrinking onto it over the first 40 %) and throws <c>juiceShards</c> lit, faceted
+        /// shards in the Pistol's plane, spinning and shrinking as they fly <c>juiceReach</c> out; a restored block's shards
+        /// fly IN and land on it. Grow lime, shield cyan, restore white (the config's colours), emissive so they bloom.
+        /// </summary>
+        void DrawJuice()
+        {
+            if (_bursts.Count == 0 || !_cam) return;
+            EnsureJuiceAssets();
+            foreach (var list in _juicePieces) list.Clear();
+            float life = Mathf.Max(0.05f, Config.JuiceSeconds), reach = Config.JuiceReach, size = Config.JuiceShardSize;
+            int shards = Config.JuiceShards;
+            for (int i = _bursts.Count - 1; i >= 0; i--)
+            {
+                var b = _bursts[i];
+                float age = _t - b.Born;
+                if (age >= life || age < 0f) { _bursts.RemoveAt(i); continue; }
+                float k = age / life, outE = 1f - (1f - k) * (1f - k);
+                var into = _juicePieces[(int)b.Kind];
+                if (k < 0.4f) into.Add(Matrix4x4.TRS(b.At, b.Rot, b.Scale * Mathf.Lerp(Config.JuicePulseScale, 1.02f, k / 0.4f)));
+                bool inward = b.Kind == Juice.Restore;
+                for (int j = 0; j < shards; j++)
+                {
+                    // spread over the upper half of the plane (the side the Pistol sees above its ground), a little jitter
+                    float a = Mathf.PI * ((j + 0.5f) / shards) + (Hash01(b.Seed, j) - 0.5f) * 0.6f;
+                    float far = reach * (0.6f + 0.4f * Hash01(b.Seed, j + 31));
+                    Vector3 dir = b.R * Mathf.Cos(a) + b.Up * Mathf.Sin(a);
+                    float d = inward ? far * (1f - outE) : far * outE;
+                    float sz = size * (inward ? Mathf.Lerp(0.5f, 1f, outE) * (k < 0.85f ? 1f : (1f - k) / 0.15f) : 1f - k);
+                    if (sz <= 1e-3f) continue;
+                    var rot = Quaternion.AngleAxis((inward ? -1f : 1f) * 720f * age + 57f * j, b.M) * Quaternion.LookRotation(dir, b.M);
+                    into.Add(Matrix4x4.TRS(b.At + dir * d, rot, Vector3.one * sz));
+                }
+            }
+            var rp = new RenderParams(_juiceMats[0]) { camera = _cam, shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows = false };
+            for (int i = 0; i < _juicePieces.Length; i++)
+            {
+                rp.material = _juiceMats[i];
+                DrawPieces(rp, _juicePieces[i]);
+            }
+        }
+
+        void EnsureJuiceAssets()
+        {
+            if (!_cube) _cube = CubeMesh();
+            if (_juiceMats != null) return;
+            _juiceMats = new Material[3];
+            Color[] colors = { Config.JuiceGrowColor, Config.JuiceShieldColor, Config.JuiceRestoreColor };
+            for (int i = 0; i < 3; i++) _juiceMats[i] = Lit(colors[i], colors[i] * 1.6f, 0.7f);
+        }
+
+        static float Hash01(uint seed, int i)
+        {
+            uint h = unchecked(seed ^ ((uint)i * 0x9E3779B1u));
+            h ^= h >> 15; h = unchecked(h * 0x2C1B3C6Du); h ^= h >> 12; h = unchecked(h * 0x297A2D39u); h ^= h >> 15;
+            return (h & 0xFFFFFF) / 16777216f;
+        }
+
         void Draw3D()
         {
+            DrawJuice();
             // each vortex ring bends the light behind it round its core: a subtle toroidal lens, the black holes' kin
             foreach (var run in _rings)
                 VortexRingLens.Set(run.Ring, run.Ring.C, run.Ring.N, _vs.pVortexR, _vs.pVortexR * VortexRing.Tube,

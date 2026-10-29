@@ -1,6 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using FMODUnity;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -89,8 +90,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(1f, 3f)] float hillGrowthMax = 1.5f;
         [Tooltip("A trail block every this many u along the dart.")]
         [SerializeField, Min(2f)] float trailBlockGap = 6f;
-        [Tooltip("A trail block's size (x across, y thick, z along the dart).")]
-        [SerializeField] Vector3 trailBlockScale = new(1.4f, 0.4f, 5.5f);
+        [Tooltip("A trail block's cross-section: x across the plane (it grows here when flown over), y its thickness in the plane. " +
+                 "Its length along the dart is not authored: it is the length whose SHIELD meets the next block's tip to tip " +
+                 "(trailBlockGap / 3 x trailShieldFill), so a shielded trail is a chain of diamonds, never crossing spikes.")]
+        [SerializeField] Vector2 trailBlockSection = new(1.4f, 0.5f);
+        [Tooltip("The share of the shield-flush length a trail block takes (1: shielded tips touch; less leaves a gap between " +
+                 "the diamonds). The shipped hills never cross at 1 (GobyPistolEnergyTests.Trail_ShieldedNeighboursMeetTipToTip).")]
+        [SerializeField, Range(0.5f, 1f)] float trailShieldFill = 0.9f;
 
         [Header("Pistol: the ride, Tiny Wings' physics (Docs/PISTOL_TINY_WINGS_STUDY.md): a frictionless body under gravity, a " +
                 "dive about seven times gravity, almost no drag, a landing that keeps its speed along the slope and loses only " +
@@ -160,6 +166,35 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0f)] float skipGrowStep = 0.8f;
         [Tooltip("A block grows across the trail to this width, u; one this wide is shielded when flown over again.")]
         [SerializeField, Min(0.5f)] float skipGrowMax = 8f;
+        [Header("Pistol: the juice of a skipped block (Garrett, 2026-10-29: \"there should be some good juice associated with " +
+                "growing, restoring, and shielding prisms\")")]
+        [Tooltip("A rewarded block throws this many lit, faceted shards in the Pistol's plane (a restored one draws them in).")]
+        [SerializeField, Range(0, 16)] int juiceShards = 6;
+        [Tooltip("Seconds a block's juice lasts.")]
+        [SerializeField, Min(0.05f)] float juiceSeconds = 0.45f;
+        [Tooltip("How far the shards fly, u.")]
+        [SerializeField, Min(0f)] float juiceReach = 4f;
+        [Tooltip("A shard's edge, u.")]
+        [SerializeField, Min(0.05f)] float juiceShardSize = 0.55f;
+        [Tooltip("The block's flash: a lit shell this much bigger than the block, shrinking onto it.")]
+        [SerializeField, Range(1f, 3f)] float juicePulseScale = 1.7f;
+        [Tooltip("Grown (wider across the trail): the shards' colour.")]
+        [SerializeField] Color juiceGrowColor = new(157f / 255f, 1f, 46f / 255f, 1f);
+        [Tooltip("Shielded: the shards' colour.")]
+        [SerializeField] Color juiceShieldColor = new(159f / 255f, 232f / 255f, 1f, 1f);
+        [Tooltip("Restored (a destroyed block back): the shards' colour.")]
+        [SerializeField] Color juiceRestoreColor = new(1f, 1f, 1f, 1f);
+        [Tooltip("FMOD: a block grown by a jump. Leave empty for silence. Played at most once per juiceSoundSpacing.")]
+        [SerializeField] EventReference growEvent;
+        [Tooltip("FMOD: a block shielded by a jump. Leave empty for silence.")]
+        [SerializeField] EventReference shieldEvent;
+        [Tooltip("FMOD: a destroyed block restored (by a jump over it, or a fall that got that far). Leave empty for silence.")]
+        [SerializeField] EventReference restoreEvent;
+        [Tooltip("FMOD: the Pistol falls through a gap and comes out of the portal beyond it. Leave empty for silence.")]
+        [SerializeField] EventReference fallThroughEvent;
+        [Tooltip("Seconds between two of one kind's sounds (a long jump rewards a block every few frames).")]
+        [SerializeField, Min(0f)] float juiceSoundSpacing = 0.07f;
+
         [Tooltip("How fast a crystal beside the plane drifts into it, u/s (within the undertow's reach).")]
         [SerializeField, Min(0f)] float crystalPullSpeed = 30f;
         [Tooltip("A crystal this much past the Pistol's body (and its own half size) is taken, u.")]
@@ -361,7 +396,10 @@ namespace CosmicShore.ScriptableObjects
         public float SlopeDegrees => slopeDegrees;
         public PistolPlane.HillSpec HillSpec => new(hillHalfLengthMin, hillHalfLengthMax, hillHalfHeightMin, hillHalfHeightMax, hillBand, hillGrowthPerIsland, hillGrowthMax);
         public float TrailBlockGap => trailBlockGap;
-        public Vector3 TrailBlockScale => trailBlockScale;
+        /// <summary>A trail block's size (x across, y thick, z along the dart), its length the one whose shield meets the next
+        /// block's (<see cref="PistolGround.ShieldFlushLength"/>).</summary>
+        public Vector3 TrailBlockScale => new(trailBlockSection.x, trailBlockSection.y,
+            PistolGround.ShieldFlushLength(Mathf.Max(2f, trailBlockGap), OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE, trailShieldFill));
         public float BodyR => pBodyR;
         public float PathScoreBand => pathScoreBand;
         public float PathScoreInterval => pathScoreInterval;
@@ -399,6 +437,19 @@ namespace CosmicShore.ScriptableObjects
         public float SkipGrowStep => skipGrowStep;
         public float SkipGrowMax => skipGrowMax;
         public float CrystalPullSpeed => crystalPullSpeed;
+        public int JuiceShards => juiceShards;
+        public float JuiceSeconds => juiceSeconds;
+        public float JuiceReach => juiceReach;
+        public float JuiceShardSize => juiceShardSize;
+        public float JuicePulseScale => juicePulseScale;
+        public Color JuiceGrowColor => juiceGrowColor;
+        public Color JuiceShieldColor => juiceShieldColor;
+        public Color JuiceRestoreColor => juiceRestoreColor;
+        public EventReference GrowEvent => growEvent;
+        public EventReference ShieldEvent => shieldEvent;
+        public EventReference RestoreEvent => restoreEvent;
+        public EventReference FallThroughEvent => fallThroughEvent;
+        public float JuiceSoundSpacing => juiceSoundSpacing;
         public float CrystalTouchPad => crystalTouchPad;
         public float MapStartTilt => mapStartTilt;
         public float MapWingReach => mapWingReach;

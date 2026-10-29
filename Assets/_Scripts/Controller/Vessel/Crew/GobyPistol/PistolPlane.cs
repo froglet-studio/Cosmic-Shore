@@ -364,6 +364,17 @@ namespace CosmicShore.Gameplay
 
         public int Count => _gone.Length;
 
+        /// <summary>
+        /// How long along the dart a ground block may be so that, SHIELDED, it meets its neighbours tip to tip instead of
+        /// crossing them (Garrett, 2026-10-29: "the trail should also be designed to support shielding. when i rode a shielded
+        /// trail it had awkward crossing spikes on my slopes"). A shield is the box's circumscribing octahedron,
+        /// <paramref name="shieldScale"/> (3, <c>OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE</c>) times its half-extents, so a
+        /// block <paramref name="gap"/> / shieldScale long puts the shielded tips exactly on the next block's; <paramref name="fill"/>
+        /// (just under 1) leaves the hills' bend its room. The 5.5 u blocks before this reached 8.25 u each way on a 6 u gap.
+        /// </summary>
+        public static float ShieldFlushLength(float gap, float shieldScale, float fill) =>
+            Mathf.Max(0.1f, gap) / Mathf.Max(1f, shieldScale) * Mathf.Clamp(fill, 0.1f, 1f);
+
         /// <summary>True while any block of the island is gone.</summary>
         public bool AnyGone => _goneCount > 0;
 

@@ -132,19 +132,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The ready option whose half plane holds the most opposing prisms (<paramref name="scores"/>, one per half plane,
+        /// The ready option whose half plane holds the most opposing mass (<paramref name="scores"/>, one per half plane,
         /// <see cref="Half(PathChoice)"/>); on a tie the one setting off nearest <paramref name="fromPerch"/>. -1 when every
         /// half is empty, so the caller keeps its own way.
         /// </summary>
-        public static int Best(List<PathChoice> options, IReadOnlyList<int> scores, int segments, int fromPerch)
+        public static int Best(List<PathChoice> options, IReadOnlyList<float> scores, int segments, int fromPerch)
         {
-            int best = -1, bestScore = 0, bestD = int.MaxValue;
+            int best = -1, bestD = int.MaxValue;
+            float bestScore = 0f;
             for (int i = 0; i < options.Count; i++)
             {
                 var c = options[i];
                 if (!Ready(c, segments) || Half(c) >= scores.Count) continue;
-                int s = scores[Half(c)], d = Mathf.Abs(c.Perch - fromPerch);
-                if (s > bestScore || (s == bestScore && s > 0 && d < bestD)) { best = i; bestScore = s; bestD = d; }
+                float s = scores[Half(c)]; int d = Mathf.Abs(c.Perch - fromPerch);
+                if (s > bestScore || (s == bestScore && s > 0f && d < bestD)) { best = i; bestScore = s; bestD = d; }
             }
             return best;
         }

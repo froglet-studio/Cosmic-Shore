@@ -5,6 +5,7 @@ namespace NUnit.Framework
 {
     [AttributeUsage(AttributeTargets.Class)] public class TestFixtureAttribute : Attribute { }
     [AttributeUsage(AttributeTargets.Method)] public class TestAttribute : Attribute { }
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)] public class TestCaseAttribute : Attribute { public object[] Args; public TestCaseAttribute(params object[] args) { Args = args; } }
 
     public class AssertionException : Exception { public AssertionException(string m) : base(m) { } }
 

@@ -344,6 +344,11 @@ enum before taking a value.
   wide, so the richest paths became walls. Let each failure change the world toward success (the fall restores what it
   touched, at least one block) and carry the player past it, and measure it headless with a rider that plays badly: a
   deterministic sloppy rider stalled on the first version until every fall restored one block at least.
+- **A reward the seat's camera cannot see** (the Pistol, 2026-10-29: "i don't see prisms growing as I jump them"). Skipped
+  blocks grew OUT of the plane, which is the side camera's depth axis, so the reward was real and invisible from the seat
+  that earned it. Check every effect against the seat's view; when the change itself is edge-on, give it juice in the
+  plane (`GobyPistolDuo.AddJuice`). And a shield is 3x a prism's half-extents: lay any chain that may be shielded at a
+  spacing of 3x its length or its shields cross (`PistolGround.ShieldFlushLength`).
 - **A pilotless half.** Any path that takes a human off a half (swap, disconnect, pause, death of
   the partner) must hand the half to its AI in the same frame.
 - **Counting the seat twice.** Team size, backfill and scoreboards that count `IVessel`s, rather
