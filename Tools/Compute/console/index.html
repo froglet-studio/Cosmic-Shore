@@ -1013,6 +1013,8 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
 
   // ── manual runs: the New run sheet (manual_runs.py is the backend; the hub takes runs live from any phone) ──
   var NR = null, LIVE = false, KEY = lsGet("fc-key") || "";
+  // Served by the app on this computer (compute.py app): its key comes with the page, and a run here starts at once.
+  var APP = window.FC_APP || null; if (APP && APP.key) KEY = APP.key;
   function b64url(s) { var bin = ""; new TextEncoder().encode(s).forEach(function (b) { bin += String.fromCharCode(b); }); return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
   function newReqId() { var d = new Date(), p = function (n) { return String(n).padStart(2, "0"); };
     return "r" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + "-" + Math.floor(Math.random() * 65536).toString(16).padStart(4, "0"); }
@@ -1150,7 +1152,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     var note = h("textarea", { class: "field", id: "nr-note", placeholder: "What do you want to learn? (optional; shown with the results)" }); note.value = NR.note; note.addEventListener("input", function () { NR.note = note.value; });
     sheet.appendChild(note);
     var out = h("div", { class: "approve", id: "nr-out" });
-    var go = NR.where === "here" ? "Run on this computer" : (LIVE ? "Send it" : "Make the run") + (NR.where === "here" ? "" : NR.useAt ? " · at a time" : NR.start === "now" ? " · now" : " · when free");
+    var go = NR.where === "here" ? (APP ? "Start it on this computer" : "Run on this computer") : (LIVE ? "Send it" : "Make the run") + (NR.where === "here" ? "" : NR.useAt ? " · at a time" : NR.start === "now" ? " · now" : " · when free");
     sheet.appendChild(h("button", { class: "btn cta big", type: "button", id: "nr-make", onclick: function () { makeRun(out); }, text: go + " · " + NR.vessel + " in " + modeName(NR.mode) }));
     sheet.appendChild(out);
     if (NR.made) showMade(out);
@@ -1210,6 +1212,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   function makeRun(out) {
     var r = nrRequest(); out.textContent = "";
     if (r.errs.length) { out.appendChild(h("div", { class: "banner bad" }, r.errs.map(function (e) { return h("p", { class: "note", text: e }); }))); return; }
+    if (APP && NR.where === "here") return runHere(r.req, out);
     NR.made = r.req; showMade(out);
     if (NR.where !== "here" && LIVE) sendLive(r.req, out);
     out.scrollIntoView({ block: "nearest" });
@@ -1224,6 +1227,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
       var runLine = appCmd("run --request " + tok + (NR.unity && NR.watch ? " --watch" : ""));
       out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: runLine })]), copyBtn(function () { return runLine; })]));
       out.appendChild(h("p", { class: "note", text: "Needs Froglet Compute installed on this computer once (the Install button)" + (NR.unity ? ", and Unity of the project's version from Unity Hub. Check with: " + appCmd("unity --find") : ".") }));
+      out.appendChild(h("p", { class: "note", text: "Simpler: open Froglet Compute from your desktop (the install puts it there; or " + appCmd("app") + "). It is this console on your computer, live, and Start it on this computer starts the run at once, with nothing to paste." }));
       return;
     }
     if (LIVE) { out.appendChild(h("p", { class: "note", id: "nr-live", text: "Sending…" })); return; }
@@ -1247,6 +1251,19 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     }
     out.appendChild(h("p", { class: "note", text: "From your own terminal (any computer with Froglet Compute), instantly:" }));
     out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("request new --token " + tok + " --push") })]), copyBtn(function () { return appCmd("request new --token " + tok + " --push"); })]));
+  }
+  function runHere(req, out) {
+    var line = h("p", { class: "note", text: "Starting…" }), btn = document.getElementById("nr-make");
+    out.appendChild(line); if (btn) btn.disabled = true;
+    fetch("api/run-here", { method: "POST", headers: { "Content-Type": "application/json", "X-Compute-Key": KEY }, body: JSON.stringify({ token: b64url(JSON.stringify(req)), watch: !!(NR.unity && NR.watch) }) })
+      .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
+      .then(function (a) {
+        if (a[0] === 201) {
+          line.textContent = (NR.unity ? (NR.watch ? "Started: Unity opens with the match and the Third Eye. " : "Started: Unity plays with no window. ") + "The first run on a computer imports the project once (an hour or more)."
+            : "Started on this computer.") + " Follow it under Runs; Stop is there too. Its log: " + a[1].log;
+          refreshLive();
+        } else { line.textContent = (a[1].error || "Not started") + (a[1].problems ? ": " + a[1].problems.join("; ") : ""); if (btn) btn.disabled = false; }
+      }, function () { line.textContent = "The app did not answer. Is its window still open?"; if (btn) btn.disabled = false; });
   }
   function stopRun(id, place, machine, name) {
     var line = h("p", { class: "note" }); if (place) place.appendChild(line);
@@ -1392,7 +1409,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
 
   // ── terminal ──
   var T = { out: null, input: null, hist: [], hi: 0, pending: null, env: null };
-  function who() { var n = CAP.me && CAP.me.name ? CAP.me.name.split(/\s+/)[0].toLowerCase() : "you"; return n.replace(/[^a-z0-9_-]/g, "") || "you"; }
+  function who() { var n = CAP.me && CAP.me.name ? CAP.me.name.split(/\s+/)[0].toLowerCase() : (APP && APP.machine ? String(APP.machine).split("/")[0] : "you"); return n.replace(/[^a-z0-9_-]/g, "") || "you"; }
   function prompt() { return h("span", { class: "p" }, [who() + "@froglet-compute ", h("span", { class: "path", text: "~" }), " %"]); }
   function out(parts, cls) {
     var line = h("div", { class: "line" + (cls ? " " + cls : "") });

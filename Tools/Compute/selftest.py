@@ -37,6 +37,85 @@ def _git(*a, cwd, env=None):
     return p.stdout
 
 
+def app_end_to_end(tmp, work, remote, script, env0):
+    """The app (compute.py app, README section 18): its page carries its key, it answers its own computer only, it
+    refuses a run without the key or outside its search, and a good run starts HERE at once, reports to it live and
+    finishes; the desktop launcher points at it."""
+    import socket
+    import time as _t
+    import urllib.error
+    import urllib.request
+    import manual_runs as R
+    bad = []
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+    home = os.path.join(tmp, "cache-app")
+    enva = dict(env0, FROGLET_COMPUTE_HOME=home, FROGLET_COMPUTE_USER="selftest", FROGLET_COMPUTE_HOST="app")
+    app = subprocess.Popen([sys.executable, script, "app", "--port", str(port), "--rebuild", "2", "--quiet", "--no-browser",
+                            "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=enva,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    base = f"http://127.0.0.1:{port}"
+
+    def call(path, body=None, key=None, host=None):
+        hd = {"Content-Type": "application/json", **({"X-Compute-Key": key} if key else {}), **({"Host": host} if host else {})}
+        r = urllib.request.Request(base + path, data=json.dumps(body).encode() if body is not None else None,
+                                   method="POST" if body is not None else "GET", headers=hd)
+        try:
+            with urllib.request.urlopen(r, timeout=30) as resp:
+                raw = resp.read().decode()
+                return resp.status, (json.loads(raw or "{}") if path != "/" else raw)
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read().decode() or "{}")
+    try:
+        for _ in range(120):
+            try:
+                if call("/api/status")[1].get("built"):
+                    break
+            except Exception:
+                pass
+            _t.sleep(0.5)
+        key = (L.read_json(os.path.join(home, "hub.json"), {}) or {}).get("key") or ""
+        st, page = call("/")
+        if st != 200 or "window.FC_APP" not in page or key not in page:
+            bad.append("app: its page does not carry its key")
+        if call("/api/status", host="evil.example:80")[0] != 403:
+            bad.append("app: a request addressed to another name was answered (DNS rebinding)")
+        good = R.build("toy-smoke", 12, note="started in the app")
+        if call("/api/run-here", {"token": R.token(good)})[0] != 401:
+            bad.append("app: a run without the key was started")
+        if call("/api/run-here", {"token": R.token(R.build("toy-smoke", 12, fix=["x0=99"]))}, key)[0] != 400:
+            bad.append("app: a run outside its search's bounds was started")
+        code, ans = call("/api/run-here", {"token": R.token(good)}, key)
+        if code != 201:
+            bad.append(f"app: a good run did not start here ({code} {ans})")
+        here = []
+        for _ in range(240):
+            here = (call("/api/status")[1] or {}).get("here") or []
+            if here and not here[0]["running"]:
+                break
+            _t.sleep(0.5)
+        if not here or here[0]["running"] or here[0]["exit"] != 0:
+            log = here[0]["log"] if here else ""
+            tail = open(log, encoding="utf-8", errors="replace").read()[-400:] if log and os.path.exists(log) else ""
+            bad.append(f"app: the run started here did not finish cleanly ({here}) {tail}")
+        d = call("/console.json")[1] or {}
+        if "selftest/app" not in (d.get("live") or {}).get("machines", []):
+            bad.append(f"app: the run started here did not report to the app live: {d.get('live')}")
+        desk = os.path.join(tmp, "desk-home")
+        out = subprocess.run([sys.executable, script, "app", "--shortcut", "--port", str(port)], cwd=work,
+                             env=dict(enva, HOME=desk, USERPROFILE=desk), capture_output=True, text=True)
+        made = [f for f in (os.listdir(os.path.join(desk, "Desktop")) if os.path.isdir(os.path.join(desk, "Desktop")) else [])]
+        body = open(os.path.join(desk, "Desktop", made[0]), encoding="utf-8").read() if made else ""
+        if out.returncode or f"app --port {port}" not in body:
+            bad.append(f"app: the desktop launcher was not made ({out.stdout} {out.stderr})")
+    finally:
+        app.terminate()
+        app.wait(timeout=10)
+    return bad
+
+
 def hub_end_to_end(tmp, work, remote, script, env0):
     """The hub: a wrong key is refused, a run outside its search is refused, a good one is filed on compute-queue, and
     a worker that reports to the hub shows up live in /console.json."""
@@ -300,6 +379,7 @@ def end_to_end():
         if "nothing new" not in p.stdout:
             bad.append(f"outbox: items already filed were filed again:\n{p.stdout[-400:]}")
         bad += hub_end_to_end(tmp, work, remote, script, env0)
+        bad += app_end_to_end(tmp, work, remote, script, env0)
         env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-board"))
         p = subprocess.run([sys.executable, script, "board", "--queue", "bleeding-edge"], cwd=work, env=env,
                            capture_output=True, text=True, timeout=300)
@@ -672,7 +752,7 @@ def run(quick=False):
         failures += ai
     if not quick:
         e2e = end_to_end()
-        print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched; the hub; an agent shows live, runs what the console starts, stops when stopped)" if not e2e else "FAILED"))
+        print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched; the hub; the app starts a run here; an agent shows live, runs what the console starts, stops when stopped)" if not e2e else "FAILED"))
         failures += e2e
         ue = unity_end_to_end()
         print("unity runs: " + ("ok (a fake Unity: queued unit done and published, resume, Ctrl-C, compile error, your Unity open, the trainer overlay, no Unity)"

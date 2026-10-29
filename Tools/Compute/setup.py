@@ -148,7 +148,11 @@ def main(argv):
         say("4. a short first session (about two minutes), so this computer shows on the console...")
         subprocess.call([sys.executable, compute, "run", "--repo", repo, "--no-update", "--always", "--once",
                          "--max-evals", "60", "--session", "3", "--progress-minutes", "1", "--queue", *queue], cwd=repo)
-    say("\ndone. It now works whenever you are away. See it on the Compute Console (Machines and Runs).")
+    if not dry:                     # the app: the console on this computer, a run started here at once (README section 18)
+        out = subprocess.run([sys.executable, compute, "app", "--shortcut"], cwd=repo, capture_output=True, text=True)
+        say("5. " + (out.stdout.strip() or "no desktop launcher: " + out.stderr.strip()[-200:]))
+    say("\ndone. It now works whenever you are away. Open Froglet Compute from the desktop (or: "
+        + os.path.basename(sys.executable) + " " + compute + " app) to start a run on this computer at once.")
     say("Stop it any time:  git show origin/" + ref + ":Tools/Compute/setup.py | python3 - --uninstall")
     return 0
 

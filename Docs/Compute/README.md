@@ -576,3 +576,24 @@ on a real VM yet.
 (`unity_refcompile --config editor`; a planted error in it failed the same run). The self-test's "unity runs" drives
 the whole path against a fake Unity that keeps the same contract. **Not run: a real Unity.** The first person with
 Unity 6000.3.17f1: the steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Froglet Compute runs the AI trainer").
+
+## 18. The app: Froglet Compute on your own computer (Shombith, 2026-10-29)
+
+"I am waiting to start it on my PC. I think it should be a PC application." The claude.ai console cannot reach a
+computer: a run sent from it waits for the hourly sync, then for the computer to be free, and "This computer" gave a
+line to paste. **The app** is the live console (the hub, section 15) on your own computer:
+
+- **Open it**: double-click **Froglet Compute** on the desktop (the one-line setup puts it there, step 5), or run
+  `python3 ~/.froglet-compute/app/Tools/Compute/compute.py app` (Windows: `python`). It opens the console in your
+  browser at `http://127.0.0.1:8721`; close its window to quit it. `compute.py app --shortcut` makes the launcher again.
+- **Start a run here**: New run, pick the vessel and mode, "This computer", **Start it on this computer**: it starts at
+  once (a Unity run with "Show the game" opens Unity and the Third Eye), reports to the app live, and Stop is under
+  Runs. Runs sent to other computers go straight onto the team queue (no hourly wait).
+- **Safe by design**: it listens on 127.0.0.1 only and answers only requests addressed to that name (a web page
+  elsewhere cannot reach it through a name that resolves here); the page it serves carries its key, so its buttons
+  need no prompt, and every change still needs that key. A run is checked against its search exactly as the hub does.
+- The claude.ai console stays the team's snapshot (and its outbox for a phone); the VM (section 15) stays the live
+  console for everyone once it exists. Self-test: `compute.py self-test` "end to end" starts the app, checks the
+  key in its page, a refused host name, a refused run without the key or outside its search, a run started here that
+  finishes and reports live, and the desktop launcher (a negative control: with the host check removed it fails).
+

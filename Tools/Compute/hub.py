@@ -15,6 +15,12 @@ manual runs from the page and files them on compute-queue, so a run can be start
                            minute to start a run sent to them at once
     GET  /api/requests/ID  one run, whole (X-Compute-Key): a computer working on it checks whether it was stopped
     POST /api/cancel       {"id": ...} (X-Compute-Key): stop a run; filed on compute-queue, the computer stops in ~30 s
+    POST /api/run-here     the app only (`compute.py app`): {"token", "watch"} (X-Compute-Key) starts the run on THIS
+                           computer at once, as the pasted `compute.py run --request` line did
+
+`compute.py app` is the same hub on a person's own computer, as their Froglet Compute application (2026-10-29: "it should
+be a PC application"): it listens on 127.0.0.1 only, answers only requests addressed to that name, opens the console in
+the browser with the key already in the page, and starts a run on this computer at once instead of a line to paste.
 
 Run it behind a TLS proxy (Caddy on the VM: Tools/Compute/vm/setup-vm.sh); it listens on 127.0.0.1 by default. The
 team key lives in ~/.froglet-compute/hub.json ({"key": ...}); the page asks for it once and keeps it in the browser.
@@ -23,6 +29,8 @@ Standard library only.
 import hmac
 import json
 import os
+import subprocess
+import sys
 import threading
 import time
 import urllib.request
@@ -33,11 +41,14 @@ import console as C
 import manual_runs as R
 
 MAX_BODY = 256 * 1024
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 class Hub:
-    def __init__(self, key, queue=None, rebuild=60, url=None, github_token=None, quiet=False):
+    def __init__(self, key, queue=None, rebuild=60, url=None, github_token=None, quiet=False, app=None):
         self.key, self.queue, self.rebuild, self.url, self.quiet = key, queue, rebuild, url, quiet
+        self.app = app                      # {"port"}: the person's own app (compute.py app); None on the VM
+        self.here = {}                      # runs this app started on this computer: id -> {"proc", "log", "started"}
         self.github_token = github_token
         self.lock = threading.Lock()
         self.data, self.jobs, self.live, self.filed = None, {}, {}, []
@@ -155,6 +166,44 @@ class Hub:
         L.log(f"hub: stopped {rid}", self.quiet)
         return 200, {"id": rid, "cancelled": True}
 
+    def run_here(self, body):
+        """The app only: start a run on this computer now, as `compute.py run --request <token>` (the line the page
+        used to give to paste). It reports to this app live (FROGLET_COMPUTE_HUB), so Runs shows it by the second."""
+        if not self.app:
+            return 404, {"error": "not found"}
+        req = R.from_token(body["token"]) if body.get("token") else body.get("request")
+        with self.lock:
+            job = self.jobs.get((req or {}).get("job"))
+        bad = R.problems(req, job) or ([L.untrusted(job)] if job and L.untrusted(job) else [])
+        if bad:
+            return 400, {"error": "this run cannot be made", "problems": bad}
+        with self.lock:
+            busy = [rid for rid, r in self.here.items() if r["proc"].poll() is None]
+        if busy:
+            return 409, {"error": f"a run started here is still going ({busy[0]}): stop it first"}
+        folder = os.path.join(L.cache_dir(), "app-runs")
+        os.makedirs(folder, exist_ok=True)
+        log = os.path.join(folder, f"{req['id']}.log")
+        argv = [sys.executable, os.path.join(HERE, "compute.py"), "run", "--request", R.token(req)]
+        if body.get("watch"):
+            argv.append("--watch")
+        env = dict(os.environ, FROGLET_COMPUTE_HUB=f"http://127.0.0.1:{self.app['port']}", FROGLET_COMPUTE_HUB_KEY=self.key)
+        extra = {"creationflags": L.NO_WINDOW.get("creationflags", 0) | 0x00000200} if os.name == "nt" \
+            else {"start_new_session": True}                                  # CREATE_NEW_PROCESS_GROUP
+        with open(log, "ab") as out:
+            proc = subprocess.Popen(argv, cwd=L.REPO, env=env, stdout=out, stderr=subprocess.STDOUT,
+                                    stdin=subprocess.DEVNULL, **extra)
+        with self.lock:
+            self.here[req["id"]] = {"proc": proc, "log": log, "started": L.now()}
+            self.requests[req["id"]] = {k: v for k, v in req.items() if not k.startswith("_")}
+        L.log(f"app: started {req['id']} ({req['job']}) on this computer, log {log}", self.quiet)
+        return 201, {"id": req["id"], "pid": proc.pid, "log": log}
+
+    def here_runs(self):
+        with self.lock:
+            return [{"id": rid, "running": r["proc"].poll() is None, "exit": r["proc"].poll(), "log": r["log"],
+                     "started": r["started"]} for rid, r in self.here.items()]
+
     def rate_ok(self, ip, limit=60):
         t = time.time()
         with self.lock:
@@ -181,8 +230,18 @@ def handler(hub, page):
             self.end_headers()
             self.wfile.write(raw)
 
+        def _local(self):
+            """The app answers only requests addressed to this computer by name: a web page elsewhere cannot reach it
+            through a name that resolves here (DNS rebinding), and it never listens beyond 127.0.0.1."""
+            if not hub.app:
+                return True
+            host = (self.headers.get("Host") or "").rsplit(":", 1)[0]
+            return host in ("127.0.0.1", "localhost")
+
         def do_GET(self):
             path = self.path.split("?", 1)[0]
+            if not self._local():
+                return self._send(403, {"error": "this app answers its own computer only"})
             if path in ("/", "/index.html"):
                 return self._send(200, page(), "text/html; charset=utf-8")
             if path == "/console.json":
@@ -197,11 +256,15 @@ def handler(hub, page):
                 return self._send(200, r) if r else self._send(404, {"error": "no such run"})
             if path == "/api/status":
                 d = hub.snapshot() or {}
-                return self._send(200, {"hub": True, "built": d.get("generated"), "live": (d.get("live") or {}).get("machines", [])})
+                return self._send(200, {"hub": True, "app": bool(hub.app), "built": d.get("generated"),
+                                        "live": (d.get("live") or {}).get("machines", []),
+                                        "here": hub.here_runs() if hub.app else []})
             return self._send(404, {"error": "not found"})
 
         def do_POST(self):
             path = self.path.split("?", 1)[0]
+            if not self._local():
+                return self._send(403, {"error": "this app answers its own computer only"})
             ip = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[0].strip()
             if not hub.allowed(self.headers.get("X-Compute-Key")):
                 return self._send(401, {"error": "the team key is missing or wrong"})
@@ -219,6 +282,11 @@ def handler(hub, page):
                     return self._send(*hub.cancel(body))
                 except Exception as e:
                     return self._send(400, {"error": f"not a stop: {e}"})
+            if path == "/api/run-here":
+                try:
+                    return self._send(*hub.run_here(body))
+                except Exception as e:
+                    return self._send(400, {"error": f"not a run: {e}"})
             if path == "/api/requests":
                 if not hub.rate_ok(ip):
                     return self._send(429, {"error": "too many runs from here this hour"})
@@ -241,22 +309,65 @@ def load_key(path=None):
     return cfg["key"]
 
 
-def run(args):
+def run(args, app=False):
     key = load_key(args.key_file)
     token = None
-    if args.github_token_file and os.path.exists(args.github_token_file):
+    if getattr(args, "github_token_file", None) and os.path.exists(args.github_token_file):
         with open(args.github_token_file, encoding="utf-8") as fh:
             token = fh.read().strip() or None
-    hub = Hub(key, queue=args.queue, rebuild=args.rebuild, url=args.url, github_token=token, quiet=args.quiet)
+    hub = Hub(key, queue=args.queue, rebuild=args.rebuild, url=getattr(args, "url", None), github_token=token,
+              quiet=args.quiet, app={"port": args.port} if app else None)
+    me = "/".join(L.identity())
+    # The app's page carries the key, so its buttons work with no prompt; the page is served to this computer only.
+    boot = (f'<script>window.FC_APP={json.dumps({"key": key, "machine": me})};</script>' if app else "")
 
     def page():
         with open(C.PAGE, encoding="utf-8") as fh:
-            return (C.SKELETON + fh.read() + "</body></html>\n").encode()
+            return (C.SKELETON + boot + fh.read() + "</body></html>\n").encode()
     threading.Thread(target=hub.loop, daemon=True).start()
-    srv = ThreadingHTTPServer((args.host, args.port), handler(hub, page))
-    L.log(f"hub on http://{args.host}:{args.port} (team key in {args.key_file or os.path.join(L.cache_dir(), 'hub.json')})", args.quiet)
+    host = "127.0.0.1" if app else args.host
+    try:
+        srv = ThreadingHTTPServer((host, args.port), handler(hub, page))
+    except OSError as e:
+        if app:
+            print(f"Froglet Compute is already open at http://127.0.0.1:{args.port} ({e.strerror})")
+            if not args.no_browser:
+                import webbrowser
+                webbrowser.open(f"http://127.0.0.1:{args.port}/")
+            return 0
+        raise
+    where = f"http://{host}:{args.port}"
+    if app:
+        print(f"Froglet Compute is open at {where} (close this window to quit it)")
+        if not args.no_browser:
+            import webbrowser
+            threading.Timer(1.0, lambda: webbrowser.open(where + "/")).start()
+    else:
+        L.log(f"hub on {where} (team key in {args.key_file or os.path.join(L.cache_dir(), 'hub.json')})", args.quiet)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
     return 0
+
+
+def shortcut(port=8721):
+    """A desktop launcher for the app: double-click to open Froglet Compute. Returns its path."""
+    desk = os.path.join(os.path.expanduser("~"), "Desktop")
+    os.makedirs(desk, exist_ok=True)
+    py, script = sys.executable, os.path.join(HERE, "compute.py")
+    if os.name == "nt":
+        path = os.path.join(desk, "Froglet Compute.cmd")
+        body = f'@echo off\r\ntitle Froglet Compute\r\ncd /d "{L.REPO}"\r\n"{py}" "{script}" app --port {port}\r\n'
+    elif sys.platform == "darwin":
+        path = os.path.join(desk, "Froglet Compute.command")
+        body = f'#!/bin/sh\ncd "{L.REPO}" && exec "{py}" "{script}" app --port {port}\n'
+    else:
+        path = os.path.join(desk, "froglet-compute.desktop")
+        body = (f"[Desktop Entry]\nType=Application\nName=Froglet Compute\nTerminal=true\nPath={L.REPO}\n"
+                f'Exec="{py}" "{script}" app --port {port}\n')
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(body)
+    if os.name != "nt":
+        os.chmod(path, 0o755)
+    return path

@@ -488,6 +488,15 @@ def main(argv=None):
     p.add_argument("--key-file", help="the team key file (default ~/.froglet-compute/hub.json)")
     p.add_argument("--github-token-file", help="a token file, to show open pull requests")
     p.add_argument("--quiet", action="store_true")
+    p = sub.add_parser("app", help="Froglet Compute as an application on this computer: the console, live, in your browser; "
+                                   "a run starts here at once (README section 18)")
+    p.add_argument("--port", type=int, default=8721)
+    p.add_argument("--rebuild", type=int, default=60, help="seconds between rebuilds from git (default 60)")
+    p.add_argument("--queue", nargs="*", help="queue refs (default: this computer's, from its setup)")
+    p.add_argument("--key-file", help="the key file (default ~/.froglet-compute/hub.json)")
+    p.add_argument("--no-browser", action="store_true", help="do not open the browser")
+    p.add_argument("--shortcut", action="store_true", help="put a Froglet Compute launcher on the desktop, then exit")
+    p.add_argument("--quiet", action="store_true")
     p = sub.add_parser("unity", help="the Unity trainer run: --find says which Unity this computer uses (README section 16)",
                        add_help=False)
     p.add_argument("rest", nargs=argparse.REMAINDER)
@@ -556,6 +565,12 @@ def main(argv=None):
     if args.cmd == "hub":
         import hub
         return hub.run(args)
+    if args.cmd == "app":
+        import hub
+        if args.shortcut:
+            print(f"Froglet Compute is on the desktop: {hub.shortcut(args.port)} (double-click it to open)")
+            return 0
+        return hub.run(args, app=True)
     if args.cmd == "remote-start":
         import agent as A
         if args.state != "show":
