@@ -99,6 +99,7 @@ namespace CosmicShore.Gameplay
             base.Awake();
             for (int i = 0; i < MaxBolts; i++) _bolts[i] = new Bolt();
             for (int i = 0; i < MaxChains; i++) _chains[i] = new Chain();
+            if (!GetComponent<FulmenView>()) gameObject.AddComponent<FulmenView>();   // RequireComponent adds its mesh parts
         }
 
         /// <summary>
