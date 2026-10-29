@@ -52,7 +52,13 @@ namespace CosmicShore.Gameplay
                 _run.CountThreats(ark.Position, GuardRadius, _threats);
                 _target = _threats.Count > 0 ? _threats[Mathf.Min(_seat, _threats.Count - 1)] : null;
             }
-            if (_target && _target.IsAlivePrey) return _target.transform.position;
+            // Fly at the creature's heart: a faster vessel through the heart jousts it (Fauna.Jousted), the one hit that
+            // kills a grazer outright whatever the hull's guns.
+            if (_target && _target.IsAlivePrey)
+            {
+                var heart = _target.LivingHeart;
+                return heart ? heart.transform.position : _target.transform.position;
+            }
 
             float angle = 120f * _seat + 30f;
             var side = Quaternion.AngleAxis(angle, ark.Forward) * ark.transform.up;

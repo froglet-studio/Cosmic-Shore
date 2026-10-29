@@ -49,6 +49,49 @@ namespace CosmicShore.UI
             if (map) map.Show(content, style, here, route);
         }
 
+        Button _lower, _raise;
+
+        /// <summary>
+        /// Two small buttons either side of Set sail that step a number down and up (the Ark escort's difficulty). They
+        /// are copies of Set sail, so they look like the card; their labels are the caller's authored words. Null actions
+        /// hide them.
+        /// </summary>
+        public void ShowStepper(string lowerLabel, string raiseLabel, Action lower, Action raise)
+        {
+            bool show = lower != null && raise != null && setSailButton;
+            if (show)
+            {
+                _lower = _lower ? _lower : Step(-1);
+                _raise = _raise ? _raise : Step(1);
+                Arm(_lower, lowerLabel, lower);
+                Arm(_raise, raiseLabel, raise);
+            }
+            if (_lower) _lower.gameObject.SetActive(show);
+            if (_raise) _raise.gameObject.SetActive(show);
+        }
+
+        Button Step(int side)
+        {
+            var copy = Instantiate(setSailButton, setSailButton.transform.parent);
+            copy.name = side < 0 ? "StepDown" : "StepUp";
+            copy.onClick.RemoveAllListeners();
+            var rt = (RectTransform)copy.transform;
+            var from = (RectTransform)setSailButton.transform;
+            float w = from.rect.width;
+            rt.sizeDelta = new Vector2(from.sizeDelta.x - w * 0.7f, from.sizeDelta.y);
+            rt.anchoredPosition = from.anchoredPosition + new Vector2(side * (w * 0.5f + w * 0.2f), 0f);
+            return copy;
+        }
+
+        static void Arm(Button button, string label, Action onClick)
+        {
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => onClick());
+            button.interactable = true;
+            var text = button.GetComponentInChildren<TMP_Text>(true);
+            if (text) text.text = label ?? string.Empty;
+        }
+
         VoyageMapGraphic Map()
         {
             if (_map) return _map;

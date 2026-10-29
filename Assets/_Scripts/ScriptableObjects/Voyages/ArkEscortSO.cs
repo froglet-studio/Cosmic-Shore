@@ -36,6 +36,10 @@ namespace CosmicShore.ScriptableObjects
                      "squad takes the world. Off: the world starts as the corridor leaves it (friendly in solo play).")]
             public bool Hostile = true;
 
+            [Range(1, 9), Tooltip("The lowest difficulty at which this world can start hostile (below it, it starts as the " +
+                                  "corridor leaves it).")]
+            public int HostileFrom = 1;
+
             [Tooltip("The banner line as the Ark crosses into this world (tokens {name}, {leg}, {legs}). Empty shows nothing.")]
             [TextArea] public string Arrival;
         }
@@ -54,6 +58,11 @@ namespace CosmicShore.ScriptableObjects
 
             [Min(0.25f), Tooltip("Multiplier on the Ark's speed: a slower Ark spends longer in each world.")]
             public float ArkSpeed = 1f;
+
+            [Range(0f, 0.95f), Tooltip("The Ark is overrun when its hull falls below this share: the escort is lost. The " +
+                                       "Ark's shielded plates are never grazed, so without a line it cannot fall to fauna; " +
+                                       "0 leaves only the true fall (the last plate).")]
+            public float BreachHull;
         }
 
         [Header("The run")]
@@ -77,6 +86,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("The card's line (tokens {legs}, {difficulty}).")]
         [TextArea] string cardLine = "Take any three vessels and see the Ark through {legs} worlds of the HyperSea.";
 
+        [SerializeField, Tooltip("The card's button that lowers the difficulty.")]
+        string lowerLabel = "<";
+
+        [SerializeField, Tooltip("The card's button that raises the difficulty.")]
+        string raiseLabel = ">";
+
         [SerializeField, Tooltip("When the Ark sets sail (tokens {legs}, {difficulty}).")]
         [TextArea] string departLine = "ESCORT THE ARK THROUGH {legs} WORLDS";
 
@@ -86,11 +101,18 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("When the Ark falls (tokens {name}, {leg}, {legs}).")]
         [TextArea] string fallenLine = "THE ARK FELL IN {name}";
 
+        [SerializeField, Tooltip("When the hull falls below the tier's breach line and the Ark is overrun (tokens {name}, " +
+                                 "{leg}, {legs}, {hull}).")]
+        [TextArea] string overrunLine = "THE ARK IS OVERRUN IN {name}";
+
         public IReadOnlyList<Leg> Legs => legs;
+        public string OverrunLine => overrunLine;
         public float MaxPopulation => maxPopulation;
         public string VoyageName => voyageName;
         public string CardTitle => cardTitle;
         public string CardLine => cardLine;
+        public string LowerLabel => lowerLabel;
+        public string RaiseLabel => raiseLabel;
         public string DepartLine => departLine;
         public string SurvivedLine => survivedLine;
         public string FallenLine => fallenLine;

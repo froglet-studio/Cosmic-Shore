@@ -57,6 +57,15 @@ namespace CosmicShore.Gameplay
         readonly List<ArkEscortPilot> _pilots = new();
         readonly Dictionary<Cell, int> _legOf = new();
         readonly List<Cell> _cells = new();
+        readonly List<CellRuntimeDataSO> _killFeeds = new();
+
+        /// <summary>A creature died to an active force in one of the escort's worlds (a squad kill, mostly).</summary>
+        void OnFaunaKilled(string killer)
+        {
+            if (!_active || _leg < 0) return;
+            _report.LegReports[_leg].Kills++;
+            _report.Kills++;
+        }
 
         ArkEscortReport _report;
         int _leg = -1;
@@ -118,7 +127,7 @@ namespace CosmicShore.Gameplay
             _reactor = _cfg.ArkReactor ? _cfg.ArkReactor.WithRegrowSeconds(tier.RegrowSeconds) : null;
             if (_reactor) _cfg.ArkReactor = _reactor;
 
-            var route = Route(local.Transform.position);
+            var route = Route();
             if (route.Count == 0) return false;
 
             _sea.Configure(_cfg, _context, _context?.Container, _corridor, OnSeaEnded);
@@ -146,24 +155,19 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        /// <summary>The route: each leg's world, as an index into the corridor's own list of worlds.</summary>
-        List<int> Route(Vector3 at)
+        /// <summary>The route: every leg's world in order (the corridor takes the escort's list as authored).</summary>
+        List<int> Route()
         {
-            var cell = Cell.FindCellContaining(at, sceneCellsOnly: true);
-            if (!cell) cell = Cell.FindNearestActiveCell(at, sceneCellsOnly: true);
-            var worlds = new List<CellConfigDataSO>();
-            CellConveyor.TraversalWorlds(_cfg.Cells, cell, worlds);
+            _cfg.RouteWorldsAsAuthored = true;
             var route = new List<int>();
-            foreach (var leg in _escort.Legs)
+            for (int i = 0; i < _escort.Legs.Count; i++)
             {
-                int index = leg.World ? worlds.IndexOf(leg.World) : -1;
-                if (index < 0)
+                if (!_escort.Legs[i].World)
                 {
-                    CSDebug.LogWarning($"[ArkEscort] World '{(leg.World ? leg.World.name : "none")}' of leg '{leg.Name}' " +
-                                       "cannot be sailed (no environment, or named twice) - the escort refuses to sail.");
+                    CSDebug.LogWarning($"[ArkEscort] Leg '{_escort.Legs[i].Name}' names no world - the escort refuses to sail.");
                     return new List<int>();
                 }
-                route.Add(index);
+                route.Add(i);
             }
             return route;
         }
@@ -175,11 +179,17 @@ namespace CosmicShore.Gameplay
             var leg = _escort.Legs[routePosition];
             var tier = _escort.TierFor(_difficulty);
             cell.RuntimePopulationScale = _escort.PopulationFor(routePosition, _difficulty);
-            bool hostile = leg.Hostile && _rng.NextDouble() < tier.HostileShare;
+            bool hostile = leg.Hostile && _difficulty >= leg.HostileFrom && _rng.NextDouble() < tier.HostileShare;
             if (hostile)
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(VoyageRun.LiveDomain(_context)));
             _legOf[cell] = routePosition;
             _cells.Add(cell);
+            if (cell.RuntimeData)
+            {
+                cell.RuntimeData.OnFaunaKilled.OnRaised -= OnFaunaKilled;
+                cell.RuntimeData.OnFaunaKilled.OnRaised += OnFaunaKilled;
+                _killFeeds.Add(cell.RuntimeData);
+            }
             _report.LegReports[routePosition].Hostile = hostile;
         }
 
@@ -232,6 +242,13 @@ namespace CosmicShore.Gameplay
             BringWingmates(force: true);
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
+            // The first world was entered behind the veil, before the hull was laid: its entry is the moment it opens.
+            if (_leg >= 0)
+            {
+                var r = _report.LegReports[_leg];
+                r.HullAtEntry = r.HullMin = Ark ? Ark.AliveCount : 0;
+                r.EnteredAt = Time.time;
+            }
         }
 
         void OnRouteEnded()
@@ -277,6 +294,8 @@ namespace CosmicShore.Gameplay
             }
 
             TrackLeg();
+            CheckBreach();
+            if (!_active || !_sea.IsRunning) return;
             if (Time.time >= _nextSample)
             {
                 _nextSample = Time.time + SampleSeconds;
@@ -305,6 +324,24 @@ namespace CosmicShore.Gameplay
                 "legs", _escort.Legs.Count.ToString()));
         }
 
+        /// <summary>Below the tier's breach line the Ark is overrun: the escort is lost, as if it had fallen.</summary>
+        void CheckBreach()
+        {
+            var ark = Ark;
+            if (!ark || _fallen || _survived || _leg < 0 || ark.TotalCount == 0) return;
+            float line = _escort.TierFor(_difficulty)?.BreachHull ?? 0f;
+            if (line <= 0f || ark.HealthFraction >= line) return;
+            _fallen = true;
+            _report.Overrun = true;
+            _report.HullMinFraction = Mathf.Min(_report.HullMinFraction, ark.HealthFraction);
+            CloseLeg(_leg);
+            _report.FallenLeg = _leg;
+            var authored = _escort.Legs[_leg];
+            Banner(TemplateText.Fill(_escort.OverrunLine, "name", authored.Name, "leg", (_leg + 1).ToString(),
+                "legs", _escort.Legs.Count.ToString(), "hull", Mathf.RoundToInt(ark.HealthFraction * 100f).ToString()));
+            _sea.End(returnToCell: true, "the Ark was overrun");
+        }
+
         void CloseLeg(int leg)
         {
             if (leg < 0 || leg >= _report.LegReports.Count) return;
@@ -324,6 +361,20 @@ namespace CosmicShore.Gameplay
             int near = CountThreats(ark.Position, ArkEscortPilot.GuardRadius, null);
             r.PeakThreats = Mathf.Max(r.PeakThreats, near);
             r.ThreatSeconds += near > 0 ? SampleSeconds : 0f;
+            // How many of the squad are actually with the Ark (the escort AI's leash and hunting, measured).
+            int with = 0;
+            float g2 = ArkEscortPilot.GuardRadius * ArkEscortPilot.GuardRadius;
+            var local = LocalVessel();
+            if (local?.Transform && (local.Transform.position - ark.Position).sqrMagnitude <= g2) with++;
+            foreach (var w in _wingmates)
+            {
+                var s = Alive(w);
+                if (s?.Transform && (s.Transform.position - ark.Position).sqrMagnitude <= g2) with++;
+            }
+            r.EscortSamples++;
+            r.EscortNear += with;
+            _report.Wingmates = Mathf.Max(_report.Wingmates, _wingmates.Count);
+            _report.Pilots = Mathf.Max(_report.Pilots, _pilots.Count);
             _report.HullMinFraction = Mathf.Min(_report.HullMinFraction, ark.HealthFraction);
             _report.Samples.Add(new ArkEscortReport.Sample
             {
@@ -424,6 +475,9 @@ namespace CosmicShore.Gameplay
                 if (r.Reached) _report.ReachedLegs++;
 
             if (_corridor) _corridor.PrepareCell = null;
+            foreach (var feed in _killFeeds)
+                if (feed) feed.OnFaunaKilled.OnRaised -= OnFaunaKilled;
+            _killFeeds.Clear();
             foreach (var p in _pilots)
                 if (p) p.Disarm();
             _pilots.Clear();

@@ -527,7 +527,13 @@ namespace CosmicShore.Gameplay
             {
                 // A voyage leg: the next world in order, and nothing once the route is spent.
                 if (_routeNext >= _route.Count) return null;
-                if (_worlds.Count == 0) TraversalWorlds(_cfg?.Cells, _template, _worlds);
+                if (_worlds.Count == 0)
+                {
+                    // An Ark escort names its worlds exactly, environment or not (a bare world's flora and fauna are
+                    // the whole of it); every other route keeps the traversal filter.
+                    if (_cfg is { RouteWorldsAsAuthored: true, Cells: { Count: > 0 } }) _worlds.AddRange(_cfg.Cells);
+                    else TraversalWorlds(_cfg?.Cells, _template, _worlds);
+                }
                 if (_worlds.Count == 0) return null;
                 int index = _route[_routeNext++] % _worlds.Count;
                 return _worlds[index < 0 ? index + _worlds.Count : index];

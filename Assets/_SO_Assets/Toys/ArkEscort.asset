@@ -15,66 +15,80 @@ MonoBehaviour:
   legs:
   - Name: Garland Shallows
     World: {fileID: 11400000, guid: 3e8a0d5c71b24f96b8e3a4d70c519f2a, type: 2}
-    Threat: 0.7
+    Threat: 0.6
     Hostile: 1
+    HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}"
   - Name: Scarab Reef
     World: {fileID: 11400000, guid: 4c79db5a1791ff3060644ec7d2aee0db, type: 2}
-    Threat: 0.9
+    Threat: 0.8
     Hostile: 1
+    HostileFrom: 2
     Arrival: "WORLD {leg} OF {legs}: {name}"
-  - Name: The Boneyard
-    World: {fileID: 11400000, guid: 7dc0173b8f31a743221e8f0bd3ec2d40, type: 2}
+  - Name: Liberation Deep
+    World: {fileID: 11400000, guid: e7542f2a8779d1328f8d3d88545eae03, type: 2}
     Threat: 1
     Hostile: 1
+    HostileFrom: 3
     Arrival: "WORLD {leg} OF {legs}: {name}"
-  - Name: The Maw
+  - Name: The Swarm
     World: {fileID: 11400000, guid: 9957d4442d4e51a04d915351be20b5c0, type: 2}
-    Threat: 1.6
-    Hostile: 1
-    Arrival: "WORLD {leg} OF {legs}: {name}. EVERYTHING HERE IS HUNGRY. HOLD THE ARK."
-  - Name: Liberation Deep
-    World: {fileID: 11400000, guid: e8501f315bd5e4617ef6c948e107488e, type: 2}
     Threat: 1.1
     Hostile: 1
-    Arrival: "WORLD {leg} OF {legs}: {name}. THE LAST CROSSING."
+    HostileFrom: 4
+    Arrival: "WORLD {leg} OF {legs}: {name}"
+  - Name: The Maw
+    World: {fileID: 11400000, guid: 5511269da8da60affaf693e51b8a60a1, type: 2}
+    Threat: 1.2
+    Hostile: 1
+    HostileFrom: 3
+    Arrival: "WORLD {leg} OF {legs}: {name}. EVERYTHING HERE IS HUNGRY. HOLD THE ARK."
   tiers:
-  - Population: 0.25
-    RegrowSeconds: 0.8
-    HostileShare: 0.4
+  - Population: 0.2
+    RegrowSeconds: 0.3
+    HostileShare: 1
     ArkSpeed: 1.3
-  - Population: 0.4
-    RegrowSeconds: 1
-    HostileShare: 0.6
+    BreachHull: 0
+  - Population: 0.3
+    RegrowSeconds: 0.4
+    HostileShare: 1
     ArkSpeed: 1.2
-  - Population: 0.55
-    RegrowSeconds: 1.3
-    HostileShare: 0.8
+    BreachHull: 0
+  - Population: 0.45
+    RegrowSeconds: 0.6
+    HostileShare: 1
     ArkSpeed: 1.1
-  - Population: 0.7
-    RegrowSeconds: 1.6
+    BreachHull: 0.22
+  - Population: 0.6
+    RegrowSeconds: 0.9
     HostileShare: 1
     ArkSpeed: 1
-  - Population: 0.9
-    RegrowSeconds: 2
-    HostileShare: 1
-    ArkSpeed: 1
-  - Population: 1.1
-    RegrowSeconds: 2.6
+    BreachHull: 0.3
+  - Population: 0.8
+    RegrowSeconds: 1.3
     HostileShare: 1
     ArkSpeed: 0.95
-  - Population: 1.35
-    RegrowSeconds: 3.4
-    HostileShare: 1
-    ArkSpeed: 0.9
-  - Population: 1.7
-    RegrowSeconds: 4.5
+    BreachHull: 0.35
+  - Population: 1.05
+    RegrowSeconds: 1.9
     HostileShare: 1
     ArkSpeed: 0.85
-  - Population: 2.2
+    BreachHull: 0.42
+  - Population: 1.4
+    RegrowSeconds: 2.8
+    HostileShare: 1
+    ArkSpeed: 0.75
+    BreachHull: 0.5
+  - Population: 1.9
+    RegrowSeconds: 4
+    HostileShare: 1
+    ArkSpeed: 0.65
+    BreachHull: 0.6
+  - Population: 2.6
     RegrowSeconds: 6
     HostileShare: 1
-    ArkSpeed: 0.8
+    ArkSpeed: 0.55
+    BreachHull: 0.75
   maxPopulation: 4
   voyageName: ARK ESCORT
   cardTitle: Escort the Ark - difficulty {difficulty}
@@ -82,3 +96,6 @@ MonoBehaviour:
   departLine: ESCORT THE ARK THROUGH {legs} WORLDS
   survivedLine: THE ARK MADE IT THROUGH
   fallenLine: THE ARK FELL IN {name}
+  overrunLine: THE ARK IS OVERRUN IN {name}
+  lowerLabel: '<'
+  raiseLabel: '>'
