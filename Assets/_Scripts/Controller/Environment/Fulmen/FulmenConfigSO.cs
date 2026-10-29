@@ -34,23 +34,29 @@ namespace CosmicShore.Gameplay
         [Tooltip("Only omni crystals chain (off: any live crystal).")]
         [SerializeField] bool omniCrystalsOnly = true;
 
-        [Header("Growth & life")]
-        [Tooltip("Bolt front speed, units per second along each stream.")]
-        [SerializeField, Min(1f)] float growthSpeed = 600f;
-        [Tooltip("Seconds a fully grown bolt holds before fading.")]
-        [SerializeField, Min(0f)] float holdSeconds = 0.25f;
-        [Tooltip("Seconds it fades.")]
-        [SerializeField, Min(0.01f)] float fadeSeconds = 0.4f;
+        [Header("Flash (a real lightning strike: ~0.5s all told)")]
+        [Tooltip("Seconds a bolt takes to reach its full range - near-instant, like a real leader.")]
+        [SerializeField, Range(0.02f, 1f)] float growSeconds = 0.12f;
+        [Tooltip("Seconds the fully grown bolt holds bright.")]
+        [SerializeField, Range(0f, 1f)] float holdSeconds = 0.08f;
+        [Tooltip("Seconds it flickers out.")]
+        [SerializeField, Range(0.02f, 2f)] float fadeSeconds = 0.3f;
+        [Tooltip("Flicker steps per second (the re-strokes of a real flash).")]
+        [SerializeField, Range(1f, 60f)] float flickerRate = 24f;
+        [Tooltip("How deep the flicker dips (0 = a smooth fade).")]
+        [SerializeField, Range(0f, 1f)] float flickerDepth = 0.7f;
 
         [Header("Budgets (per frame, all bolts)")]
         [Tooltip("Most segment queries against the prism index per frame.")]
-        [SerializeField, Range(1, 256)] int segmentQueriesPerFrame = 48;
+        [SerializeField, Range(1, 512)] int segmentQueriesPerFrame = 128;
         [Tooltip("Most prisms ignited per frame.")]
-        [SerializeField, Range(1, 512)] int ignitesPerFrame = 64;
+        [SerializeField, Range(1, 512)] int ignitesPerFrame = 96;
 
         [Header("Burn (server only, PrismBurnManager)")]
         [Tooltip("Radius round each segment that catches fire (units).")]
         [SerializeField, Min(0.1f)] float burnRadius = 6f;
+        [Tooltip("Seconds a struck prism burns before it is consumed (PrismBurnManager; its spread uses the manager's own).")]
+        [SerializeField, Range(0.2f, 6f)] float burnSeconds = 1.4f;
         [Tooltip("Burnout converts the prism to the igniter's team instead of destroying it.")]
         [SerializeField] bool convertOnBurnout;
 
@@ -68,7 +74,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Look")]
         [SerializeField, ColorUsage(true, true)] Color tint = new(0.55f, 0.75f, 1f, 1f);
-        [Tooltip("Ribbon width at the root (units); forks thin by forkShrink per depth, children by childRangeScale.")]
+        [Tooltip("Ribbon width at the root (units; thin reads eerier); forks thin by forkShrink per depth, children by childRangeScale.")]
         [SerializeField, Min(0.05f)] float width = 3f;
         [Tooltip("Optional additive material (vertex colour). Empty: Sprites/Default.")]
         [SerializeField] Material material;
@@ -82,7 +88,10 @@ namespace CosmicShore.Gameplay
         public int MaxChildSpawnsPerFrame => maxChildSpawnsPerFrame;
         public float CrystalStrikeRadius => crystalStrikeRadius;
         public bool OmniCrystalsOnly => omniCrystalsOnly;
-        public float GrowthSpeed => growthSpeed;
+        public float GrowSeconds => growSeconds;
+        public float FlickerRate => flickerRate;
+        public float FlickerDepth => flickerDepth;
+        public float BurnSeconds => burnSeconds;
         public float HoldSeconds => holdSeconds;
         public float FadeSeconds => fadeSeconds;
         public int SegmentQueriesPerFrame => segmentQueriesPerFrame;
