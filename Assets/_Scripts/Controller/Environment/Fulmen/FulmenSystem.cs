@@ -42,6 +42,7 @@ namespace CosmicShore.Gameplay
             public bool Active, Authority;
             public string Igniter;
             public Domains Domain;
+            public FulmenConfigSO Stats;   // the root config: this chain's counts land on it (last execution)
             public int Children, LiveBolts, Pending;
             public readonly HashSet<int> Struck = new();
             public readonly HashSet<Prism> Burned = new();
@@ -118,6 +119,8 @@ namespace CosmicShore.Gameplay
             chain.Authority = authority;
             chain.Igniter = igniter;
             chain.Domain = domain;
+            chain.Stats = config;
+            config.BeginStrikeStats(Time.time);
             chain.Children = chain.LiveBolts = chain.Pending = 0;
             chain.Struck.Clear();
             chain.Burned.Clear();
@@ -215,6 +218,7 @@ namespace CosmicShore.Gameplay
             }
 
             chain.LiveBolts++;
+            if (chain.Stats) chain.Stats.LastBolts++;
             LiveBolts++;
             return true;
         }
@@ -303,7 +307,8 @@ namespace CosmicShore.Gameplay
                 var prism = _hits[i];
                 if (prism == null || prism.destroyed || prism.Domain == chain.Domain) continue;
                 if (!chain.Burned.Add(prism)) continue;
-                burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout);
+                if (burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout))
+                    if (chain.Stats) chain.Stats.LastPrismsBurnt++;
                 lit++;
             }
             _hits.Clear();
@@ -324,6 +329,7 @@ namespace CosmicShore.Gameplay
                 if (DistanceToSegmentSq(at, seg.Start, seg.End) > rSq) continue;
                 b.Candidates[i] = null;
                 if (!chain.Struck.Add(c.Id)) continue;   // struck once per chain; never consumed
+                if (chain.Stats) chain.Stats.LastCrystalsStruck++;
                 if (b.Generation >= cfg.MaxChainDepth || chain.Children >= cfg.MaxChildren) continue;
                 if (_pendingCount >= MaxPending) continue;
                 chain.Children++;

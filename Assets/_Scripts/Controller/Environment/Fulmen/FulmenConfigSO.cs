@@ -89,6 +89,32 @@ namespace CosmicShore.Gameplay
         public float Width => width;
         public Material Material => material;
 
+        // --- runtime stats (play mode only, never serialized; FulmenConfigSOEditor shows them) ---
+        /// <summary>Prisms set alight by the most recent strike with this config (its whole chain). Counted where the burn runs:
+        /// the server, or offline; 0 on a client.</summary>
+        [System.NonSerialized] public int LastPrismsBurnt;
+        /// <summary>Crystals the most recent strike's chain struck.</summary>
+        [System.NonSerialized] public int LastCrystalsStruck;
+        /// <summary>Bolts (root + children) the most recent strike drew.</summary>
+        [System.NonSerialized] public int LastBolts;
+        /// <summary>Time.time of the most recent strike; -1 before the first.</summary>
+        [System.NonSerialized] public float LastStrikeTime = -1f;
+        /// <summary>Strikes with this config since play mode began.</summary>
+        [System.NonSerialized] public int Strikes;
+
+        internal void BeginStrikeStats(float now)
+        {
+            LastPrismsBurnt = LastCrystalsStruck = LastBolts = 0;
+            LastStrikeTime = now;
+            Strikes++;
+        }
+
+        void OnEnable()
+        {
+            LastPrismsBurnt = LastCrystalsStruck = LastBolts = Strikes = 0;
+            LastStrikeTime = -1f;
+        }
+
         /// <summary>The root range in a cell of <paramref name="cellRadius"/>.</summary>
         public float RootRange(float cellRadius) => Mathf.Max(minRootRange, cellRadius * rootRangeShare);
 
