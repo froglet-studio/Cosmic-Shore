@@ -48,6 +48,8 @@ namespace CosmicShore.UI
             public bool CanPickVessel;
             /// <summary>Whether the vessel strip picks this seat's hull now.</summary>
             public bool EditingVessel;
+            /// <summary>The AI's own difficulty (AI seats); 0 = none of its own, it flies the card's.</summary>
+            public AIDifficulty Difficulty;
         }
 
         [Header("Seats")]
@@ -102,9 +104,12 @@ namespace CosmicShore.UI
 
         bool _canAddAi;
         AIDifficulty? _difficulty;
+        // The AI seats' own levels as last shown, by pedestal, so a change to the card's level redraws each.
+        AIDifficulty[] _seatDifficulty = Array.Empty<AIDifficulty>();
 
         void Awake()
         {
+            _seatDifficulty = new AIDifficulty[pedestals.Length];
             if (addAiButton) addAiButton.onClick.AddListener(RequestAddAi);
             for (int i = 0; i < pedestals.Length; i++)
             {
@@ -139,8 +144,8 @@ namespace CosmicShore.UI
         public void SetDifficulty(AIDifficulty? difficulty)
         {
             _difficulty = difficulty;
-            foreach (var p in pedestals)
-                if (p && p.IsAi) p.SetStatus(AiStatus());
+            for (int i = 0; i < pedestals.Length; i++)
+                if (pedestals[i] && pedestals[i].IsAi) pedestals[i].SetStatus(AiStatus(SeatDifficulty(i)));
         }
 
         /// <summary>
@@ -165,8 +170,9 @@ namespace CosmicShore.UI
                 {
                     var s = seats[i];
                     bool ai = s.Kind == SeatKind.Ai;
+                    if (i < _seatDifficulty.Length) _seatDifficulty[i] = ai ? s.Difficulty : 0;
                     p.ShowPilot(ai ? aiName : s.Name, ai ? AiPortrait(s.AiOrdinal) : s.Avatar, s.Domain,
-                                TeamName(s.Domain), ai ? AiStatus() : HumanStatus(s), ai, s.IsLocal,
+                                TeamName(s.Domain), ai ? AiStatus(s.Difficulty) : HumanStatus(s), ai, s.IsLocal,
                                 s.CanChangeTeam && showTeams, s.CanKick, s.AiOrdinal);
                     p.SetTeamShown(showTeams);
                     p.SetVessel(s.Hull, s.CanPickVessel, s.EditingVessel);
@@ -180,9 +186,14 @@ namespace CosmicShore.UI
 
         string HumanStatus(Seat s) => s.IsHost ? hostLine : s.IsLocal ? youLine : pilotLine;
 
-        string AiStatus()
+        AIDifficulty SeatDifficulty(int pedestal) => pedestal >= 0 && pedestal < _seatDifficulty.Length ? _seatDifficulty[pedestal] : 0;
+
+        /// <summary>An AI's status: its own level where it has one, else the card's; just "AI" where the card offers
+        /// no difficulty.</summary>
+        string AiStatus(AIDifficulty seatDifficulty)
         {
-            if (_difficulty is not { } d) return aiLine;
+            if (_difficulty is not { } card) return aiLine;
+            var d = AIDifficultyRules.ForSeat(seatDifficulty, card);
             int i = (int)d - 1;
             string name = difficultyNames != null && i >= 0 && i < difficultyNames.Length ? difficultyNames[i] : string.Empty;
             return TemplateText.Fill(aiDifficultyLine, "difficulty", name);

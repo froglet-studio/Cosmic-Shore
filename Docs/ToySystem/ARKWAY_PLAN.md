@@ -175,7 +175,8 @@ until a voyage opens with the Ark in view every time.
     lays through it onto the hull container (`Ark.AdoptPrism`, honouring the §41.2 mover contract:
     the adopted prism keeps its `PrismSpatialIndex` registration and its `NotifyPositionChanged`).
     The hull is then exactly the plates that exist: mass conserved, no HP pool, no clock, no
-    regeneration. It composes Switch × Mass × Ark and adds no fundamental. *Note the collision to
+    regeneration. It composes Switch × Mass × Ark and adds no fundamental. (Not built. The repair
+    that WAS built is the omni crystal's fixed-rate regrowth, 2026-10-28: see Anti-patterns below.) *Note the collision to
     check first: `SelfTrailContactConfigSO` declines a pilot's own FRESH ribbon from the skimmer's
     prism branch, so adoption must not be built as a skimmer effect on newly-laid mass.*
   - **The corridor remembers, within a session.** When a traversal cell retires, snapshot
@@ -232,8 +233,12 @@ until a voyage opens with the Ark in view every time.
 
 - **A threat script.** No aggro table, no "fauna target the Ark", no wave that spawns because the
   Ark arrived. If the swarm does not come, the lever is the ecology's own targeting.
-- **A clock on the Ark.** No hull regeneration on a timer, no decay, no lifespan. Repair is paid
-  for (a crystal); loss is an active force (a bite).
+- **A clock on the Ark.** No decay, no lifespan; loss is an active force (a bite). *Hull regeneration is no longer
+  on this list* (Garrett, 2026-10-28: "the omnicrystal on board the ark powers the prism creation", and "regeneration
+  should just be fixed rate"): the omni crystal aboard regrows emptied hull slots at a fixed rate, one prism every 2 s
+  (`ArkReactorSO`, `Docs/VesselModels/ArkReverse.md` § In the game, the fourth sign-off in
+  `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`). This supersedes "no hull regeneration on a timer; repair is paid for
+  (a crystal)".
 - **A score or an end condition.** A voyage ends when the player ends it or the Ark falls. A
   "distance sailed" number on screen is a score wearing a costume.
 - **Waypoints everywhere.** One arrow, and only when the Ark is lost. The cells are their own

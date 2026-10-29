@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec69ea551184461c965b9ad5c413abae, type: 3}
+  m_Name: Artifact_Hydra
+  m_EditorClassIdentifier:
+  id: artifact.hydra
+  displayName: Hydra
+  description: Splits on release into heads that fan out across your heading, each carrying part of the payload, and each cracks where it lands.
+  lore: 
+  icon: {fileID: 0}
+  requirement:
+    Vessel: -1
+    Keywords: []
+  payloadTransform: {fileID: 11400000, guid: 71d87e22470baa066d0f2e70cedaf460, type: 2}
+  tracks:
+  - element: 2
+    label: burst radius
+    atZero: 14
+    atTen: 40
+    baseCost: 2
+    costStep: 1
+    twistLine: Each head cracks along its path as it flies.
+  - element: 3
+    label: range
+    atZero: 120
+    atTen: 360
+    baseCost: 2
+    costStep: 1
+    twistLine: Each head turns toward the nearest rival super-shield ahead of it.
+  - element: 4
+    label: linger seconds
+    atZero: 0
+    atTen: 3
+    baseCost: 2
+    costStep: 1
+    twistLine: The lingering bursts grow to twice their width.
+  - element: 1
+    label: heads
+    atZero: 3
+    atTen: 6
+    baseCost: 2
+    costStep: 1
+    twistLine: Each head splits again where it lands, into two more bursts beside it.
+  foundOnVoyages: 1
+  loadSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  releaseSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

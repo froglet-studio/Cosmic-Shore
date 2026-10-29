@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec69ea551184461c965b9ad5c413abae, type: 3}
+  m_Name: Artifact_Javelin
+  m_EditorClassIdentifier:
+  id: artifact.javelin
+  displayName: Javelin
+  description: Throws the payload down your heading. It cracks every rival super-shield along its line and bursts where it stops.
+  lore: 
+  icon: {fileID: 0}
+  requirement:
+    Vessel: -1
+    Keywords: []
+  payloadTransform: {fileID: 11400000, guid: 102ce98489ae4718adfae637e42ac4ff, type: 2}
+  tracks:
+  - element: 2
+    label: line width
+    atZero: 4
+    atTen: 16
+    baseCost: 2
+    costStep: 1
+    twistLine: Its final burst reaches twice as far.
+  - element: 3
+    label: range
+    atZero: 150
+    atTen: 500
+    baseCost: 2
+    costStep: 1
+    twistLine: 'It pierces: it never stops for what it cracks.'
+  - element: 4
+    label: linger seconds
+    atZero: 0
+    atTen: 4
+    baseCost: 2
+    costStep: 1
+    twistLine: The whole line lingers, cracking what is rebuilt along it.
+  - element: 1
+    label: cracks before it stops
+    atZero: 1
+    atTen: 6
+    baseCost: 2
+    costStep: 1
+    twistLine: It cracks ordinary shields too.
+  foundOnVoyages: 0
+  loadSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  releaseSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

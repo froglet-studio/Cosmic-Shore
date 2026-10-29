@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using TMPro;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,6 +27,17 @@ namespace CosmicShore.UI
     /// canvas: the clipping pass runs after layout, so it sees the new state before anything draws.
     /// The one thing a sleeping mask does not do is clip a graphic ADDED under it while it sleeps;
     /// that graphic is under an invisible group or an off-screen rect, and is clipped on wake.</para>
+    ///
+    /// <para><b>Asleep, it also parks the text under it</b> (#1485, the 10-29 row). Every enabled
+    /// TextMeshProUGUI whose <see cref="TMP_Text.isTextObjectScaleStatic"/> is false runs
+    /// <c>InternalUpdate</c> every frame inside <c>Canvas.SendWillRenderCanvases</c> (a lossy-scale read
+    /// and an env-map check), seen or not. TMP stops that itself when the text's Canvas is disabled; this
+    /// does the same for the menu's other two kinds of "hidden": the texts that were active and not
+    /// static when the mask fell asleep are made static, and exactly those are given back on wake (or
+    /// when the mask is disabled or destroyed). Nothing is drawn differently: a parked text is under an
+    /// invisible group or an off-screen rect, and on wake TMP's next InternalUpdate compares the
+    /// lossy scale against the value it held before parking, so a scale change made meanwhile is still
+    /// picked up. No project text is authored static, so giving back <c>false</c> is the authored value.</para>
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI Kit/Kit Rect Mask 2D")]
     public class KitRectMask2D : RectMask2D
@@ -44,6 +57,23 @@ namespace CosmicShore.UI
         // A full pass has run since it last fell asleep.
         bool _asleep;
 
+        // The texts this mask made static when it fell asleep - only these are given back.
+        readonly List<TMP_Text> _parked = new();
+        static readonly List<TMP_Text> TextScratch = new();
+        static readonly List<KitRectMask2D> MaskScratch = new();
+
+        // An awake mask's clipping pass: its call count under ClipperRegistry.Cull is the number of
+        // kit masks awake that frame, which is what to read when Cull is higher than expected.
+        static readonly ProfilerMarker ClipMarker = new("KitRectMask2D.Clip");
+        static readonly ProfilerMarker ParkMarker = new("KitRectMask2D.ParkText");
+        static readonly ProfilerMarker UnparkMarker = new("KitRectMask2D.UnparkText");
+
+        /// <summary>True while the mask is skipping its clipping pass (nothing under it can be seen).</summary>
+        public bool Asleep => _asleep;
+
+        /// <summary>How many texts this mask is holding static while it sleeps.</summary>
+        public int ParkedTextCount => _parked.Count;
+
         public override void PerformClipping()
         {
             if (CannotBeSeen())
@@ -51,32 +81,105 @@ namespace CosmicShore.UI
                 if (_asleep) return;
                 base.PerformClipping();
                 _asleep = true;
+                ParkTexts();
                 return;
             }
 
-            _asleep = false;
-            base.PerformClipping();
+            if (_asleep) Wake();
+            using (ClipMarker.Auto())
+                base.PerformClipping();
         }
 
         protected override void OnEnable()
         {
             base.OnEnable();
             _groupsDirty = true;
-            _asleep = false;
+            Wake();
+        }
+
+        protected override void OnDisable()
+        {
+            // A disabled mask no longer decides anything about the texts under it.
+            Wake();
+            base.OnDisable();
+        }
+
+        protected override void OnDestroy()
+        {
+            Wake();
+            base.OnDestroy();
         }
 
         protected override void OnTransformParentChanged()
         {
             base.OnTransformParentChanged();
             _groupsDirty = true;
-            _asleep = false;
+            Wake();
         }
 
         protected override void OnCanvasHierarchyChanged()
         {
             base.OnCanvasHierarchyChanged();
             _groupsDirty = true;
+            Wake();
+        }
+
+        // Awake again: give the parked texts back, then let any kit mask below that is still asleep
+        // (a screen still off the strip when the strip itself wakes) take its own texts back out.
+        void Wake()
+        {
             _asleep = false;
+            if (_parked.Count == 0) return;
+
+            using (UnparkMarker.Auto())
+            {
+                for (int i = 0; i < _parked.Count; i++)
+                {
+                    var text = _parked[i];
+                    if (!text) continue;
+                    text.isTextObjectScaleStatic = false;
+                    // The setter registers unconditionally; TMP itself keeps a disabled text, or one
+                    // whose Canvas is disabled, out of the queue (its OnEnable / OnCanvasHierarchyChanged
+                    // re-register it when that changes).
+                    var canvas = text.canvas;
+                    // UnRegisterTextObjectForUpdate is internal to the TMP package, so use the public
+                    // UnRegisterTextElementForRebuild (which also drops the text from the update queue).
+                    // It drops pending layout / graphic rebuilds too, so re-dirty an active text to keep them.
+                    if (!text.isActiveAndEnabled || !canvas || !canvas.enabled)
+                    {
+                        TMP_UpdateManager.UnRegisterTextElementForRebuild(text);
+                        if (text.isActiveAndEnabled) text.SetAllDirty();
+                    }
+                }
+                _parked.Clear();
+
+                MaskScratch.Clear();
+                GetComponentsInChildren(false, MaskScratch);
+                for (int i = 0; i < MaskScratch.Count; i++)
+                {
+                    var mask = MaskScratch[i];
+                    if (mask != this && mask._asleep) mask.ParkTexts();
+                }
+                MaskScratch.Clear();
+            }
+        }
+
+        void ParkTexts()
+        {
+            using (ParkMarker.Auto())
+            {
+                TextScratch.Clear();
+                GetComponentsInChildren(false, TextScratch);
+                for (int i = 0; i < TextScratch.Count; i++)
+                {
+                    var text = TextScratch[i];
+                    // Already static: authored so, or parked by a sleeping mask below this one.
+                    if (!text.isActiveAndEnabled || text.isTextObjectScaleStatic) continue;
+                    text.isTextObjectScaleStatic = true;
+                    _parked.Add(text);
+                }
+                TextScratch.Clear();
+            }
         }
 
         protected override void OnCanvasGroupChanged()

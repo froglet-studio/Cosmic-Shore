@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 30 notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.num{font-variant-numeric:tabular-nums}
+.key{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;border:1px solid #434C89;font-family:'Chakra Petch';font-weight:600;font-size:12px;color:#C9CDEA}
+.flip{background-size:400% 400%;background-repeat:no-repeat;animation:fx var(--q) steps(4) infinite,fy var(--t) steps(4) infinite}
+@keyframes fx{from{background-position-x:0%}to{background-position-x:133.333%}}
+@keyframes fy{from{background-position-y:0%}to{background-position-y:133.333%}}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes inCharge{0%{transform:scale(.8) translateX(0)}10%{transform:scale(1.06) translateX(-10px)}20%{transform:translateX(9px)}30%{transform:translateX(-7px)}40%{transform:translateX(5px)}55%{transform:scale(1.1)}100%{transform:none}}
+@keyframes inMass{0%{transform:translateY(-120px)}45%{transform:translateY(0) scale(1.12,.86)}62%{transform:translateY(-22px) scale(1)}78%{transform:translateY(0) scale(1.04,.96)}100%{transform:none}}
+@keyframes inSpace{0%{transform:rotate(140deg) scale(.4);opacity:0}70%{transform:rotate(-8deg) scale(1.06);opacity:1}100%{transform:none}}
+@keyframes inTime{0%{transform:rotate(-48deg)}24%{transform:rotate(-48deg)}25%{transform:rotate(-32deg) scale(1.04)}49%{transform:rotate(-32deg)}50%{transform:rotate(-16deg) scale(1.04)}74%{transform:rotate(-16deg)}75%{transform:rotate(0) scale(1.04)}100%{transform:none}}
+@keyframes inOmni{0%{transform:scale(.6);opacity:0;filter:brightness(2)}60%{transform:scale(1.12);opacity:1}100%{transform:none;filter:none}}
+@keyframes orbit{to{transform:rotateX(72deg) rotateZ(360deg)}}
+@keyframes orbit2{to{transform:rotateX(66deg) rotateY(18deg) rotateZ(-360deg)}}
+@keyframes scan{0%{top:-4%;opacity:0}10%{opacity:1}100%{top:104%;opacity:0}}
+@keyframes breath{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+</style>
+</helmet>
+<div style="width:1920px;height:1000px;box-sizing:border-box;padding:48px;background:#00041F;color:#E6E9FF;font-family:Aldrich,'Chakra Petch',sans-serif;display:flex;flex-direction:column;gap:28px"><div style="display:flex;flex-direction:column;gap:6px"><span class="lab">Rev 30</span><h1 style="margin:0;font-weight:400;font-size:40px">Codex, rethought: three layouts and a Lexicon that teaches how to play</h1></div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px"><div class="sl" style="background:#2B3266;padding:1px"><div class="sl" style="height:100%;box-sizing:border-box;background:rgba(8,12,40,.94);padding:26px 28px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">What you said (Shombith, 2026-10-27)</div><ul style="margin:0;padding-left:18px;font-size:17px;line-height:1.45;color:#C9CDEA"><li style="margin:0 0 10px">Can&#x27;t see anything: the grid showed one tile and a blue block.</li><li style="margin:0 0 10px">Hate the UI now: create new mockups.</li><li style="margin:0 0 10px">In Lexicon, teach about missions, arcades, voyages and quests too.</li></ul></div></div><div class="sl" style="background:#2B3266;padding:1px"><div class="sl" style="height:100%;box-sizing:border-box;background:rgba(8,12,40,.94);padding:26px 28px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">The three layouts</div><ul style="margin:0;padding-left:18px;font-size:17px;line-height:1.45;color:#C9CDEA"><li style="margin:0 0 10px">A Vault (interactive: press an entry): a list on the left, the crystal alive on a stage in the middle, a solid reading panel on the right. Gameplay types in first, every hull&#x27;s ability for the element, lore last.</li><li style="margin:0 0 10px">B Field Guide: a two-page plate. The crystal on the left page with labelled callouts; its page on the right; every entry along a strip under the book.</li><li style="margin:0 0 10px">C Orbit: the Omni crystal at the centre, the four elements orbiting it, ecology and lexicon on the outer ring. Picking a node slides its page in from the right.</li></ul></div></div><div class="sl" style="background:#2B3266;padding:1px"><div class="sl" style="height:100%;box-sizing:border-box;background:rgba(8,12,40,.94);padding:26px 28px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">Fixed already (the build, pushed)</div><ul style="margin:0;padding-left:18px;font-size:17px;line-height:1.45;color:#C9CDEA"><li style="margin:0 0 10px">Every tile shows again. A tile waiting to fade in could skip its last step on a long frame (the hitch as the screen opens) and stay invisible.</li><li style="margin:0 0 10px">Lexicon has Arcade, Quests, Voyages and Missions cards, then Vessels, Pilots, Artifacts, Toys.</li></ul></div></div><div class="sl" style="background:#2B3266;padding:1px"><div class="sl" style="height:100%;box-sizing:border-box;background:rgba(8,12,40,.94);padding:26px 28px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">Rules kept</div><ul style="margin:0;padding-left:18px;font-size:17px;line-height:1.45;color:#C9CDEA"><li style="margin:0 0 10px">Solid panels under all words: no sea behind text (that is what made the build hard to read).</li><li style="margin:0 0 10px">Elements carry no colour; the crystals are their real lime renders. Selection is the blue.</li><li style="margin:0 0 10px">Motion only on the pick: each element&#x27;s own entrance (Charge jolts, Mass drops, Space warps, Time ticks), the crystal&#x27;s real loop, words typing in. Pick one and it is built.</li></ul></div></div></div></div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

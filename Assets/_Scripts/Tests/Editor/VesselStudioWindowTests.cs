@@ -98,6 +98,42 @@ namespace CosmicShore.Tests
                 Assert.Greater(lit, 50, id);   // measured 1 790+ (squirrel), 1 218+ (stoat), 129+ (generic)
             }
         }
+
+        // ---- a card's CONFIGS: the vessel's config assets, found, never kept by hand (D41) ----
+
+        [Test]
+        public void Configs_MapAssetsFirst_ThenThePrefab_ThenTheVesselsOwn_ThenItsElementMap()
+        {
+            var map = new[] { "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+                              "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+                              "Assets/_Prefabs/Spacevessels/Meerkat.prefab" };
+            var deps = new[] { "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeFormAction.asset",
+                               "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+                               "Assets/_SO_Assets/VesselActions/Common Vessel Action/Boost.asset",   // shared: not the Meerkat's
+                               "Assets/_SO_Assets/VesselActions/Meerkat/Meerkat.mat",                // not an .asset
+                               "Assets/_SO_Assets/Events/MeerkatFormed.asset" };                      // named after it, not an SO here
+            var list = VesselConfigsWindow.Collect("Meerkat", map, deps, "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
+                "Assets/Resources/ElementalAbilityMaps/Meerkat.asset", p => !p.Contains("/Events/"));
+            var paths = list.ConvertAll(e => e.Path);
+            CollectionAssert.AreEqual(new[]
+            {
+                "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+                "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
+                "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeFormAction.asset",
+                "Assets/Resources/ElementalAbilityMaps/Meerkat.asset",
+            }, paths);
+            Assert.AreEqual(2, list[0].ArtifactKeys, "two map rows land in the config");
+            Assert.AreEqual(1, list[1].ArtifactKeys, "one map row lands in the prefab");
+        }
+
+        [Test]
+        public void Configs_AVesselsOwnAssets_FolderOrName()
+        {
+            Assert.IsTrue(VesselConfigsWindow.IsVesselsOwn("Assets/_SO_Assets/VesselActions/GobyPistol/X.asset", "goby"));
+            Assert.IsTrue(VesselConfigsWindow.IsVesselsOwn("Assets/Resources/BrittleStarConfig.asset", "brittlestar"));
+            Assert.IsFalse(VesselConfigsWindow.IsVesselsOwn("Assets/_SO_Assets/VesselActions/Common Vessel Action/Boost.asset", "meerkat"));
+            Assert.IsFalse(VesselConfigsWindow.IsVesselsOwn("Assets/_SO_Assets/VesselActions/Squirrel/Drift.asset", ""));
+        }
     }
 }
 #endif

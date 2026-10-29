@@ -308,7 +308,7 @@ namespace CosmicShore.Gameplay
                 _tierDark[3 + slot] = dd; _tierBright[3 + slot] = db;
                 _tierDark[6 + slot] = sd; _tierBright[6 + slot] = sb;
             }
-            _render.SetColours(_tierDark, _tierBright, hd, hb, config.HeartWorldScale, 2f);
+            _render.SetColours(_tierDark, _tierBright, hd, hb, Vector4.one * config.HeartScale(_element), 2f);
             var set = config.Theme ? config.Theme.BaseMaterialSet : null;
             _render.SetSpread(TierSpread(set ? set.BlockMaterial : null),
                               TierSpread(set ? set.DangerousBlockMaterial : null),
@@ -427,13 +427,13 @@ namespace CosmicShore.Gameplay
             {
                 ref var s = ref _inst[k];
                 if (!_alive[k]) { s.Flags = 0u; continue; }
-                int tier = Striking(k) ? 1 : 0;
+                Tier(k, out int tier, out bool shielded);
                 s.PrevPos = _prev[k]; s.CurPos = _pos[k];
                 s.PrevFace = _prevFace[k]; s.CurFace = _face[k];
                 s.PrevMolt = 0f; s.CurMolt = 0f;
                 s.Scale = scale; s.PrismZ = prismZ;
                 s.BirthTick = _birthTick[k];
-                s.Flags = SwarmInstance.Pack(true, tier, e, e, 0);
+                s.Flags = SwarmInstance.Pack(true, tier, e, e, 0, shielded);
                 _heartIdx[n++] = (uint)k;
                 min = SVector3.Min(min, SVector3.Min(_prev[k], _pos[k]));
                 max = SVector3.Max(max, SVector3.Max(_prev[k], _pos[k]));
@@ -589,7 +589,9 @@ namespace CosmicShore.Gameplay
             {
                 int k = _proxySlots[q];
                 var m = _proxy[k];
-                if (m && !m.IsDead) m.SetTier(Striking(k), false);
+                if (!m || m.IsDead) continue;
+                Tier(k, out int tier, out bool shielded);
+                m.SetTier(tier == 1, shielded);
             }
         }
 
@@ -604,7 +606,7 @@ namespace CosmicShore.Gameplay
             if (!host) return null;
             var member = Instantiate(config.MemberPrefab, U(_pos[k]), Face(_face[k]));
             float heart = config.HeartScale(_element);
-            member.Bind(host, null, k, _element, heart, config.BodyScale,
+            member.Bind(host, null, k, _element, config.BodyScale,
                         -(heart + config.HeartPrismGap + 0.5f * config.BodyScale.z), hideLive: _gpu,
                         memberDomain: domain,
                         memberAgeSeconds: Mathf.Max(0f, (_tick - _birthTick[k]) / config.TickHz));
@@ -882,7 +884,8 @@ namespace CosmicShore.Gameplay
             _wantedAt[slot] = Time.time;
             m.transform.SetPositionAndRotation(U(SVector3.Lerp(_prev[slot], _pos[slot], _alpha)),
                                                Face(SVector3.Lerp(_prevFace[slot], _face[slot], _alpha)));
-            m.SetTier(Striking(slot), false);
+            Tier(slot, out int tier, out bool shielded);
+            m.SetTier(tier == 1, shielded);
             m.SyncBodyToIndex();
             _realBody[slot] = true;
             _entries?.NoteSuspendedByIndex(slot);
@@ -927,6 +930,16 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Member k is striking (a fortress sting, a wearer's lunge): drawn in the danger tier.</summary>
         bool Striking(int k) => _fort != null ? _fort.Striking(k) : _wear != null && _wear.Striking(k);
+
+        /// <summary>Member <paramref name="k"/>'s body under the element law (<see cref="SwarmInstance.ElementLaw"/>,
+        /// Docs/ECOSYSTEM.md §65.7): a Mass colony is armoured, a Charge colony is all danger, and a strike shows danger
+        /// whatever the element.</summary>
+        void Tier(int k, out int tier, out bool shielded)
+        {
+            tier = 0; shielded = false;
+            SwarmInstance.ElementLaw(SwarmFaunaConfigSO.ToIndex(_element), ref tier, ref shielded);
+            if (Striking(k)) tier = 1;
+        }
 
         static Quaternion Face(SVector3 f)
         {

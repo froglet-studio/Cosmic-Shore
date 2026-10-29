@@ -85,6 +85,24 @@ namespace CosmicShore.Tests
                 "writing the hulls must not disturb the domains");
         }
 
+        /// <summary>Each AI's own difficulty rides beside its placement, entry i for bot i; a short list leaves
+        /// the rest at 0 (the card's difficulty), and a change to one seat's level is a roster change.</summary>
+        [Test]
+        public void PerSeatDifficultiesRideBesideThePlacements()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            lobby.SetPlacedAiDomains(new[] { 1, 2, 1 });
+            lobby.SetPlacedAiVessels(new[] { 6, 3, 0 });
+            lobby.SetPlacedAiDifficulties(new[] { 1, 3 });
+
+            CollectionAssert.AreEqual(new[] { 1, 3, 0 }, lobby.PlacedAiDifficulties());
+            CollectionAssert.AreEqual(new[] { 6, 3, 0 }, lobby.PlacedAiVessels(), "the levels must not disturb the hulls");
+
+            var other = lobby;
+            other.SetPlacedAiDifficulties(new[] { 1, 4 });
+            Assert.IsFalse(lobby.SameAi(other), "a seat's difficulty must take part in the roster's equality");
+        }
+
         /// <summary>Placements past the six replicated slots truncate rather than corrupt.</summary>
         [Test]
         public void PlacedAiTruncatesToTheReplicatedSlots()

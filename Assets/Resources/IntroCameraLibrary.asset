@@ -976,6 +976,7 @@ MonoBehaviour:
     - 63
     - 64
     - 65
+    - 71
     - 66
     - 68
     - 56
@@ -8087,7 +8088,7 @@ MonoBehaviour:
     title: Waystation
     tagline: Thread the last ring on the line you want to leave on.
     objective: Lead runner home wins
-    pilots: Butterfly
+    pilots: Tiger Moth
   - mode: 63
     title: Grizzly Time
     tagline: Your speed is your bombs.
@@ -8100,9 +8101,14 @@ MonoBehaviour:
     pilots: Stoat
   - mode: 65
     title: Warpline
-    tagline: Lay the poles. Warp the line. Fly it faster.
+    tagline: Bend the tunnel. Dig the line. Ride it out.
     objective: Time is everything
-    pilots: Stoat
+    pilots: Meerkat
+  - mode: 71
+    title: Burrow Run
+    tagline: Eight rings. Dig to every one.
+    objective: Lead runner home wins
+    pilots: Meerkat
   - mode: 66
     title: Thresher Time
     tagline: Plant the ball. Orbit it. Let go.
@@ -8132,7 +8138,7 @@ MonoBehaviour:
     title: Dustup
     tagline: No guns. Fly over them.
     objective: First domain to the target
-    pilots: Butterfly
+    pilots: Tiger Moth
   - mode: 57
     title: Broadside
     tagline: Every hull that can fight, each with its own weapon.
@@ -8152,7 +8158,7 @@ MonoBehaviour:
     title: Sirocco
     tagline: Your dust is your blade.
     objective: First domain to the prism target
-    pilots: Butterfly
+    pilots: Tiger Moth
   - mode: 54
     title: Wrecking Ball
     tagline: Every bright crystal is a ball. Plow the forest.
@@ -8202,7 +8208,7 @@ MonoBehaviour:
     title: Tapestry
     tagline: Paint the sky. Raid what they paint.
     objective: Most mass standing wins
-    pilots: Butterfly
+    pilots: Tiger Moth
   - mode: 37
     title: Astro League
     tagline: Hypersea soccer. Played with a sword.
@@ -8215,10 +8221,11 @@ MonoBehaviour:
     pilots: Every domain
   referenceRadius: 240
   scaleMultiplier: 1
-  letterbox: 0.085
-  captionFont: {fileID: 0}
-  titleFontSize: 110
-  taglineFontSize: 32
-  objectiveFontSize: 24
-  lowerTitleFontSize: 44
-  lowerLineFontSize: 18
+  letterbox: 0.1222
+  captionFont: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
+  detailFont: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
+  titleFontSize: 118
+  taglineFontSize: 26
+  objectiveFontSize: 15
+  lowerTitleFontSize: 34
+  lowerLineFontSize: 13

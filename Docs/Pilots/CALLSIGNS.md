@@ -1,16 +1,45 @@
 # Pilots: the pilot grants vision (callsigns, on the left bumper)
 
-**Status: THE PILOT CONCEPT** (Garrett, 2026-10-27: "take over this as the concept for pilots"). Design only: no
-vision code exists yet. The one piece of code it needed first has landed: the look-back camera moved off the shoulders
-to D-pad down (§5).
+**Status: THE PILOT CONCEPT** (Garrett, 2026-10-27: "take over this as the concept for pilots"). The look-back camera
+moved off the shoulders to D-pad down (§5).
+
+**Built so far (`claude/squad-payload-pilots-artifacts`, 2026-10-27, unverified in the editor):** the first four
+sights, ENSIGN, CITADEL, VOLT and BANDIT (§6 steps 1, 3, 4, 5). `PilotVision` (None = 0 … Galleon = 17) and
+`CallsignSetSO` at `Resources/Pilots/CallsignSet` (every row, written by
+`Tools/Build/author_callsign_assets.py`); `PilotSight`, ensured on every vessel by `VesselController.Initialize`, reads
+LB (keyboard V) for the local pilot only, fades the strength, weights a runtime Colour Adjustments volume by it, and
+publishes `_PilotVisionStrength / Sight / Domain / Volume`. The prism sights are answered in
+`PrismDestructionSight.hlsl` after the existing composition (no slot in Lit's peer bank, no graph edit); MANGER's
+volume is in the shader with no provider yet; RAMPART and HORNET need prism states the instance does not carry yet.
+Crystal and vessel marks are one instanced draw (`PilotSightMarks`, `PilotSightMark.shader`); the cost is not
+measured yet. Until §6 step 2 lands on Shombith's `PilotSO`, a tester picks the sight on the set's **Unassigned
+Sight**. The hull plate (the one shared bit) waits on where each hull's plate sits (/vessel-model). Hand tests:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Pilot vision on LB".
+
+**The pilots (§6 step 2), built 2026-10-27 (Garrett: "17 callsign pilots, any vessel").** Shombith's branch is merged;
+`PilotSO` carries one `vision`, and `author_pilot_assets.py` writes one pilot per callsign (eighteen with FLUME), each named for
+its callsign (`Pilot_<Word>`, id `pilot.callsign.<word>`) and seated by any vessel. The pilot in a vessel's seat
+(`PilotLoadoutStore`, read in a match through `VesselPilotLoadout`) is that vessel's sight; an empty seat has none, and
+the set's Unassigned Sight is now only a tester's override for an empty seat. The Hangar PILOTS tab lists them all
+in a scrolled column. FLUME (18) has its sight too: `FlumeSight` traces every live Meerkat tunnel mouth to mouth
+(`MeerkatWormholeExecutor.Live`, read only). Hand tests: "The callsign pilots" in the checklist.
+
+**Decided since (Garrett, 2026-10-28): a pilot is a person layered on a callsign.** The eighteen `PilotSO`s above are
+the **callsigns**: the ability and the sight, shared by every crew. A pilot in your Ark crew is a unique person (name,
+story, race, faction) who carries one callsign, so two crews can each have a VOLT who are different people. A crew
+holds **at most one pilot of each callsign**. Recruiting a pilot adds their faction's jobs to what your crew finds at
+port, seating them in a squad brings their sight, and promoting one to **captain** is how you join a faction. Full
+rules: [`Docs/Voyages/VOYAGES.md`](../Voyages/VOYAGES.md) §6.2.1. Not built yet: the person record, factions and
+captains. Today a squad seat still holds a callsign `PilotSO` directly.
 
 **What this replaces:**
 - `Docs/PILOTS_AND_ARTIFACTS.md` §2 (2026-10-12), where a pilot swaps part of a vessel's kit. That section now points
   here.
-- The ability-rewrite pilots on Shombith's in-flight branch `claude/pensive-dijkstra-qxoxo0` (2026-10-26: 40 pilots,
-  each rewriting one vessel ability, with Tomahawk built). **That branch is not touched.** What becomes of its roster,
-  its portraits, its Hangar tabs and the Tomahawk throw is for Garrett and Shombith to settle together (§7). Its
-  types (`PilotSO`, the catalog, the saved squads, `VesselPilotLoadout`) are what this is built on.
+- The ability-rewrite pilots on Shombith's branch `claude/pensive-dijkstra-qxoxo0` (2026-10-26: 40 pilots, each
+  rewriting one vessel ability, with Tomahawk built). Merged 2026-10-27 and then thrown out where it conflicted
+  (Garrett: "throw anything out that conflicts with what we have decided here"): the 40 pilots, the default pilots and
+  the Tomahawk throw are gone; its types (`PilotSO`, the catalog, the saved squads, `VesselPilotLoadout`) and Hangar
+  tabs carry the callsign pilots. The 40 portrait PNGs stay in `Assets/_Graphics/Pilots/`, unreferenced.
 
 **Read first:** `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` (the fundamentals list) and the Dolphin's Echo Sight
 (`EchoSightActionExecutor`, `EchoSightVesselHighlighter`): the game's existing "touches nothing but photons" ability,
@@ -34,11 +63,11 @@ which this reuses.
 
 - **Seeing one thing costs you everything else.** While LB is held you fly half-blind to the rest of the world. That
   is the price, and it is the only one.
-- **A squad is a set of eyes.** Its three pilot cards cover three of the seventeen sights. Building the deck means
+- **A squad is a set of eyes.** Its three pilot cards cover three of the eighteen sights. Building the deck means
   choosing what the squad can find and what it will never see coming. With the D-pad hull swap
   (`PilotSwap`), changing hulls also changes whose eyes you look through.
 
-## 2. The seventeen callsigns
+## 2. The eighteen callsigns
 
 Built from the fundamentals list, in that list's order. **Lit, Toys, Prism movement and Cells have no callsign**
 (Garrett, 2026-10-27). The splits:
@@ -49,7 +78,7 @@ Built from the fundamentals list, in that list's order. **Lit, Toys, Prism movem
 
 | # | Fundamental | Callsign | Holding LB lights | Where the game already knows it |
 |---|---|---|---|---|
-| 1 | Domain | **ENSIGN** | your domain's mass: what is yours to defend, and the gaps in it (§7: or the rivals' mass instead) | each prism material's `_PrismLitDomain` float (`Docs/LIT.md`) |
+| 1 | Domain | **ENSIGN** | your domain's mass: what is yours to defend, and the gaps in it (decided: your own, Garrett 2026-10-27) | each prism material's `_PrismLitDomain` float (`Docs/LIT.md`) |
 | 2 | Mass | **MANGER** | the mass cluster the fauna are heading for | `Cell.GetDensestRegionAnyDomain`, `BlockDensityGrid` (the herbivores' goal; shielded mass is never in it) |
 | 3 | Elementals: Mass crystal | **ANVIL** | every Mass crystal | `Element.Mass` (`Assets/_Scripts/Data/Enums/Element.cs`) |
 | 4 | Elementals: Charge crystal | **VOLT** | every Charge crystal | `Element.Charge` |
@@ -66,15 +95,19 @@ Built from the fundamentals list, in that list's order. **Lit, Toys, Prism movem
 | 15 | Vessels: opponents | **BANDIT** | every opposing vessel, through mass | the vessel list, by domain |
 | 16 | Switch | **NEEDLE** | every ring that activates something: gates, Scarab switches, goals | `ScarabSwitch`, `RingThreadProbe`, `AstroLeagueGoal` |
 | 17 | Ark | **GALLEON** | the Arks, and the payload aboard | `Ark` |
+| 18 | Soliton | **FLUME** | every soliton, whoever made it: where it is, where it leads and how long it is (otherwise only seen by its lensing) | `MeerkatWormholeExecutor.Live`: the Meerkat's tunnels are the first (Garrett, 2026-10-27; `Docs/Studios/MEERKAT.md`) |
 
 A crystal sight includes **every crystal of that element**: field crystals, ejected crystals (`EjectedCrystal`), and
 the hearts lifeforms carry (`LifeFormCrystal`). So VOLT also shows which creatures and plants are carrying Charge.
+
+**FLUME** (added 2026-10-27 with the Soliton fundamental): a flume is a channel of water you ride through, and
+neither "flume" nor "soliton" means anything else in the game.
 
 **How the words were picked.**
 - **Each one evokes what it sees.** A manger is where the animals go to eat, a citadel is the fortress that does not
   fall, a hornet stings whoever touches it, and bandit and wingman are what pilots call hostiles and friendlies on the
   radio.
-- **Seventeen different first letters** (A B C D E G H I M N O R S T V W Z), so a glyph or a call is never mistaken for
+- **Eighteen different first letters** (A B C D E F G H I M N O R S T V W Z), so a glyph or a call is never mistaken for
   another.
 - **No word that already means something in the game:** no element, vessel, pilot or mode name, and none of the
   ecology's own words. These were rejected for that reason:
@@ -136,7 +169,8 @@ never as 2D text or a ring on the screen.
      compete with the lights that carry information for everyone. The sight gets its own uniforms.
    - **Its names are new.** Any new global shader array gets a name Unity has never been asked to bind (`Docs/LIT.md`,
      the bank-rename lesson).
-3. **One callsign per pilot.** A pilot is one pair of eyes.
+3. **One callsign per pilot, one pilot per callsign in a crew.** A pilot is one pair of eyes, and a crew never holds
+   two pilots with the same callsign (Garrett, 2026-10-28).
 4. **AI.** An AI pilot does not need eyes, since it reads the world's data directly. Optionally, its doctrine leans on
    its sight: a TALON pilot's AI steers clear of predators, a MANGER pilot's AI goes where the fauna go. That gives the
    pilot an identity when you are not in the seat.
@@ -147,8 +181,8 @@ never as 2D text or a ring on the screen.
 
 | Pad | Does | Status |
 |---|---|---|
-| **LB** (hold) | the pilot's sight | proposed; LB is unbound on a vessel today |
-| **RB** | grab and activate the payload | proposed; RB is free on every vessel since 2026-10-27 |
+| **LB** (hold) | the pilot's sight | **built 2026-10-27** (`PilotSightGesture`, keyboard V) |
+| **RB** | grab and activate the payload | **built 2026-10-27** (`InputEvents.PayloadAction`, keyboard E) |
 | **D-pad down** | look-back camera | **moved here 2026-10-27** (`RearViewGesture`, was LB + RB together) |
 | D-pad left / right | swap hulls (`PilotSwap`) | shipped |
 | **Y** | the three abilities that were on RB | **moved here 2026-10-27** |
@@ -195,9 +229,7 @@ The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BU
 
 | Decision | Who decides |
 |---|---|
-| What becomes of the 40 ability-rewrite pilots, their portraits, the Hangar PILOTS / ARTIFACTS tabs and the Tomahawk throw on `claude/pensive-dijkstra-qxoxo0` | Garrett and Shombith, together |
-| Which pilot carries which of the seventeen sights | the pilot roster's author |
-| ENSIGN shows your own mass, or the rivals' | Garrett |
+| What becomes of the 40 unreferenced pilot portraits | Garrett and Shombith, together |
 | Whether artifacts get a sight once they are a fundamental | Garrett, through the fundamentals-curation process |
 | BANDIT on the Dolphin: its Charge level-5 upgrade already marks vessels inside the Echo Sight cone. BANDIT shows them all, everywhere, which may make that upgrade redundant on that hull | whoever owns the Dolphin's element map |
 | Where the plate sits on each hull | `/vessel-model` |

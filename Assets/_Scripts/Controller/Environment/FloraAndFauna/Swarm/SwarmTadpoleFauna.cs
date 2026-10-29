@@ -63,10 +63,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Bind to the swarm and bring the body up: recolour the body prism to the swarm's ONE
-        /// domain, start its grow-in, and provision the heart of <paramref name="element"/> at its
-        /// species size. Called once, right after Instantiate, by <see cref="SwarmFauna"/>.
+        /// domain, start its grow-in, and provision the heart of <paramref name="element"/> at the
+        /// one elemental crystal size. Called once, right after Instantiate, by <see cref="SwarmFauna"/>.
         /// </summary>
-        public void Bind(Cell cell, SwarmFauna swarm, int index, Element element, float heartWorldScale,
+        public void Bind(Cell cell, SwarmFauna swarm, int index, Element element,
                          Vector3 prismLocalScale, float prismLocalZ, bool hideLive = true,
                          Domains memberDomain = Domains.Blue, float memberAgeSeconds = 0f)
         {
@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
 
             // Every member carries its own heart (Docs/ECOSYSTEM.md §23.3): joustable while it lives,
             // dropped by the sealed Die on death.
-            ProvisionMemberHeart(element, heartWorldScale);
+            ProvisionMemberHeart(element);
 
             // The swarm draws the living member; this proxy only collides and conserves (§14). Without GPU
             // drawing (the fallback) the proxy IS the member's picture and stays visible.
@@ -179,16 +179,16 @@ namespace CosmicShore.Gameplay
             Destroy(gameObject);
         }
 
-        void ProvisionMemberHeart(Element element, float heartWorldScale)
+        void ProvisionMemberHeart(Element element)
         {
-            ApplyHeartSize(heartWorldScale);
+            ApplyHeartSize();
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
             if (crystal)
             {
                 crystal.transform.localPosition = Vector3.zero;   // the heart LEADS; the body trails along -z
                 crystal.SetEmbeddedIn(this);
             }
-            ApplyHeartSize(heartWorldScale);
+            ApplyHeartSize();
             _heartElement = element;
             if (crystal && !_dead && _hideLive)
             {
@@ -203,20 +203,20 @@ namespace CosmicShore.Gameplay
         /// Re-forms the heart as another element - the second half of a MOLT, after the swarm has
         /// shrunk the old heart away (Docs/SWARM_FAUNA.md "Molting"). Never called while dying.
         /// </summary>
-        public void ReformHeart(Element element, float heartWorldScale)
+        public void ReformHeart(Element element)
         {
             if (_dead || element == _heartElement) return;
-            ProvisionMemberHeart(element, heartWorldScale);
+            ProvisionMemberHeart(element);
         }
 
         /// <summary>
-        /// A crystal's world scale IS its collect reward (Docs/ECOSYSTEM.md §40.2), so every death path
-        /// asserts the true size BEFORE the sealed Die releases it. Since round 7 the proxy's heart is never
+        /// Every death path asserts the one elemental crystal size (Docs/ECOSYSTEM.md §40.2) BEFORE the
+        /// sealed Die releases the heart, so a dropped heart is never a shrunk one. Since round 7 the proxy's heart is never
         /// drawn shrunk (the molt is drawn by the swarm's shader), so this is a guard, not a repair.
         /// </summary>
         void RestoreHeartSize()
         {
-            if (crystal && crystal.IsEmbedded) ApplyHeartSize(HeartWorldScale);
+            if (crystal && crystal.IsEmbedded) ApplyHeartSize();
         }
 
         public override bool Predated(string predatorName, Transform devourTarget)

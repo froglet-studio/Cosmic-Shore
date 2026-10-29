@@ -117,6 +117,31 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
+    /// One action a recorded vessel ran (<c>VesselActionTape</c>): an input pressed or released, resolved against a
+    /// device, or an action an autopilot started or stopped by name. The match replay re-runs it on the real
+    /// vessel at <see cref="Time"/>.
+    /// </summary>
+    [Serializable]
+    public struct TheaterActionEvent
+    {
+        public const byte KindInput = 0;
+        public const byte KindDirect = 1;
+
+        public float Time;
+        /// <summary>Index into <see cref="TheaterRecording.Tracks"/>.</summary>
+        public int Track;
+        public byte Kind;
+        /// <summary>Pressed / started (true) or released / stopped (false).</summary>
+        public bool Down;
+        /// <summary><c>InputEvents</c> as an int, for <see cref="KindInput"/>.</summary>
+        public int Input;
+        /// <summary>The device the input was resolved against (<c>R_VesselActionHandler</c>'s carried byte).</summary>
+        public byte Device;
+        /// <summary>The action's asset name, for <see cref="KindDirect"/>.</summary>
+        public string Action;
+    }
+
+    /// <summary>
     /// A theater recording: the outcome log of one match, replayable without any determinism.
     ///
     /// <para><b>P0 records vessels; P1 adds the prism world</b> (<see cref="World"/>, stream 2).
@@ -152,6 +177,9 @@ namespace CosmicShore.Utility
         /// <summary>The prism world (<see cref="TheaterWorld"/>, Theater P1). Written only when it holds events.</summary>
         public const ushort StreamWorld = 2;
 
+        /// <summary>Every vessel's actions (<see cref="Actions"/>). Written only when there are any.</summary>
+        public const ushort StreamActions = 3;
+
         public string SceneName = string.Empty;
         public string CellConfigName = string.Empty;
         public int GameMode;
@@ -161,6 +189,9 @@ namespace CosmicShore.Utility
 
         /// <summary>The prisms the match was flown among, or null when the world was not recorded.</summary>
         public TheaterWorld World;
+
+        /// <summary>The actions the vessels ran, in time order. Empty for a recording made before 2026-10-27.</summary>
+        public readonly List<TheaterActionEvent> Actions = new();
 
         /// <summary>True when there is a recorded world to play.</summary>
         public bool HasWorld => World != null && World.Events.Count > 0;
@@ -218,7 +249,7 @@ namespace CosmicShore.Utility
 
             // One chunk per stream. Each is (id, byteLength, payload) so a reader from a future
             // phase — or a reader OLDER than the recording — can step over what it does not know.
-            writer.Write((ushort)(HasWorld ? 2 : 1)); // chunk count
+            writer.Write((ushort)(1 + (HasWorld ? 1 : 0) + (Actions.Count > 0 ? 1 : 0))); // chunk count
 
             writer.Write(StreamVessels);
             using (var payload = new MemoryStream())
@@ -229,14 +260,69 @@ namespace CosmicShore.Utility
                 writer.Write(bytes);
             }
 
-            if (!HasWorld) return;
-            writer.Write(StreamWorld);
-            using (var payload = new MemoryStream())
+            if (HasWorld)
             {
+                writer.Write(StreamWorld);
+                using var payload = new MemoryStream();
                 World.Write(payload);
                 var bytes = payload.ToArray();
                 writer.Write(bytes.Length);
                 writer.Write(bytes);
+            }
+
+            if (Actions.Count > 0)
+            {
+                writer.Write(StreamActions);
+                using var payload = new MemoryStream();
+                WriteActionStream(payload);
+                var bytes = payload.ToArray();
+                writer.Write(bytes.Length);
+                writer.Write(bytes);
+            }
+        }
+
+        void WriteActionStream(Stream stream)
+        {
+            using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+            writer.Write(Actions.Count);
+            for (int i = 0; i < Actions.Count; i++)
+            {
+                var a = Actions[i];
+                writer.Write(a.Time);
+                writer.Write(a.Track);
+                writer.Write(a.Kind);
+                writer.Write(a.Down);
+                if (a.Kind == TheaterActionEvent.KindInput)
+                {
+                    writer.Write(a.Input);
+                    writer.Write(a.Device);
+                }
+                else writer.Write(a.Action ?? string.Empty);
+            }
+        }
+
+        static void ReadActionStream(Stream stream, TheaterRecording into)
+        {
+            using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+            int count = reader.ReadInt32();
+            if (count < 0) throw new IOException("corrupt action stream");
+            if (count > 0) into.Actions.Capacity = count;
+            for (int i = 0; i < count; i++)
+            {
+                var a = new TheaterActionEvent
+                {
+                    Time = reader.ReadSingle(),
+                    Track = reader.ReadInt32(),
+                    Kind = reader.ReadByte(),
+                    Down = reader.ReadBoolean(),
+                };
+                if (a.Kind == TheaterActionEvent.KindInput)
+                {
+                    a.Input = reader.ReadInt32();
+                    a.Device = reader.ReadByte();
+                }
+                else a.Action = reader.ReadString();
+                into.Actions.Add(a);
             }
         }
 
@@ -316,6 +402,7 @@ namespace CosmicShore.Utility
                     using var payloadStream = new MemoryStream(payload, writable: false);
                     if (id == StreamVessels) ReadVesselStream(payloadStream, result);
                     else if (id == StreamWorld) result.World = TheaterWorld.Read(payloadStream);
+                    else if (id == StreamActions) ReadActionStream(payloadStream, result);
                     // Any other id is a stream this build does not know: already stepped over.
                 }
 

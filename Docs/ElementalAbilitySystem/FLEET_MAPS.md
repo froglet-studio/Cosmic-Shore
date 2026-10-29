@@ -66,7 +66,7 @@ day after the channel it referred to had been deleted.
 | Urchin | 4/4 | 4/4 | 4/4 |
 | Manta | 4/4 | 4/4 | 3/4 |
 | Serpent | 4/4 | 4/4 | 3/4 |  *(Mass filled 2026-10-09 — Seed Wall / Lockdown; Time L5 still open)*
-| Scarab | 4/4 | 4/4 | 2/4 |
+| Scarab | 4/4 | 4/4 | 4/4 |  *(recut 2026-10-29: Sun Cores and Core Breaker fill Mass and Space)*
 | Rhino | 4/4 | 4/4 | 4/4 | *(was 2/4 · 3/4 · 1/4 — Breaker landed 2026-10-13 on a row with no ability; the other three rows and both missing abilities were designed and shipped 2026-10-16, 0 disagreements)* |
 | Grizzly | 4/4 | 3/4 | 3/4 | *(the one vessel `--gaps` still lists — see below)* |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22; `Butterfly.prefab` shipped afterwards and its one-shot builder was retired 2026-10-14)* |
@@ -75,14 +75,15 @@ day after the channel it referred to had been deleted.
 | **Goby** | 4/4 *(its own, 2026-10-22)* | 4/4 | 3/4 *(Charge has no upgrade yet: open)* | *Garrett, 2026-10-22 (the Goby & Pistol's own kit, no longer the Squirrel's): Charge **Vortex Sting** (ring petals 1 -> 3), Mass **Dens** (x1 -> x2.5; L5 **Fortress**: danger and super-shielded den prisms), Space **Undertow** (pull reach 40 -> 200 u; L5 **Deep Undertow**: shielded too), Time **Quick Jump** (jump 9 s -> 3 s; L5 **Phase Dart**: darts pass through prisms). Written by `author_goby_assets.py` (GOBY_KIT).* |
 | **Brittle Star** | **4/4** | **4/4** | **0/4** | *(added 2026-10-14 from the Notion class document — Charge = Ring Detonation, Mass = Creation Mode (a trail per ring corner), Space = Destruction Mode (the five arms) + Fire, Time = Speed Mode (×6); the document names no level 5, so all four are OPEN, proposals below; `R_VesselActions/BRITTLE_STAR.md`)* |
 | **Wrasse** | 4/4 | 4/4 | 4/4 | *(added 2026-10-17 as the Kite, renamed the Wrasse, card "Wrasse and Grouper", 2026-10-18 — `ElementalAbilityMaps/Wrasse.asset`, the Sparrow's map unchanged: the Wrasse is the Sparrow hull with the navigator seat, `Controller/Vessel/Crew/KITE_NAVIGATOR.md`; the navigator's own elements are its motes, not this map)* |
+| **Meerkat** | **4/4** | **4/4** | **4/4** | *(approved + shipped 2026-10-28: Garrett's design, approved by Yash 2026-10-28 - Space = **Soliton** on RT (the wormhole: its surface area by Space; it swallows prisms at its way in and fires them out as moving prisms; L5 **Steal**), Time = **Faster Ride** passive (every soliton's rush; L5 **Boost Out**), Mass = **Exit Portal** passive (six prisms on a hexagon; L5 **Danger Portal**), Charge = **Sentinel Mode** on Y (sentinels that zap rivals and shield their own prisms; L5 **Six Sentinels**). `R_VesselActions/MEERKAT.md` §8)* |
 
 Everything the tool still flags (`--gaps`, 2026-10-16) is on **one vessel, the Grizzly** — all four
 of its rows: every one still carries the RETIRED generic map multiplier (`ELEMENT_SCALING_UNIFICATION.md`),
 its Mass (Weapon Systems) changes no number, and its Charge L5 (Battle Sight) is prose with no live
 `IsUpgradeActive` gate. The Rhino's Charge and Space rows and the Serpent's Mass, which this paragraph
 used to list as the open design gaps, are filled (Rhino 2026-10-16, Serpent 2026-10-09). The open
-slots the tool does NOT flag — an `L5 -` on the Serpent's and Manta's Time and the Scarab's Mass and
-Space — are declared-empty upgrades, not disagreements. The full list, with what each one would cost
+slots the tool does NOT flag — an `L5 -` on the Serpent's and Manta's Time (the Scarab's Mass and Space were
+filled 2026-10-29) — are declared-empty upgrades, not disagreements. The full list, with what each one would cost
 to fill, is **`FLEET_GAPS.md`**.
 
 **Re-run the tool rather than reading this table** — it is a transcription and it went stale
@@ -569,12 +570,16 @@ no serialized field, so its carrier is a `static readonly ElementalFloat` in C#
 (`BallSizeScale`, ×1 → ×4 floored ×0.5). It is the one row `element_ability_table.py` cannot see,
 because that tool reads assets.
 
-| Element | Quantitative | L5 upgrade |
-|---|---|---|
-| Charge | cavitation-blast **cooldown** (`ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at L10 — the authored-cooldown idiom) | **Cavitation Shear** — the blast destroys SHIELDED prisms outright instead of only shedding shields (`AOEExplosion.InitializeStruct.DevastatingOverride`, per-use snapshot) |
-| Mass | switch structure size — ring aperture + interior fill span (`switchScale` ElementalFloat 1→2.5) | **Armored Switch** — the switch is built from SHIELDED prisms, snapshotted at placement, so an opposing ball caroms off and sheds one shield per prism |
-| Space | forged **ball size**, ×1 → **×4 at L10** (`ScarabBallForge.BallSizeScale`, floored ×0.5; stamped once at forge time) | *(open — the notes name no Space upgrade; do not invent one)* |
-| Time | top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled). **Shipped band 216 → 324** (`ScarabVesselTransformer.baseTopSpeed` 216, raised 20% from 180 on 2026-09-09); note that base is authored in the C# INITIALIZER, because the prefab's transformer block predates the field and carries no override for it — `SCARAB.md §13` | **Snap Dash** — double-tap the THROTTLE (RT) for a burst gap closer (detected off the RT `RightStickAction` edges, no new input plumbing) |
+> **RECUT 2026-10-29 (Garrett).** The table below is the shipped map now; the 2026-08-15 rows it replaced
+> (Charge = blast cooldown + Cavitation Shear, Space = forged ball size, Mass 5 = Armored Switch) are in git history.
+> The Ball Forge is the OMNI crystal ability (no element sizes a forged ball) and the Drift has a core card.
+
+| Element | Ability | Quantitative | L5 upgrade |
+|---|---|---|---|
+| Charge | **Shove** (the dash's plate; the class is still `ScarabCavitationBlast`) | the shove's elemental **debuff**, ×1 → **×2.5 at L10** (`magnitudeAtFullCharge` on `ScarabShoveDebuffByExplosionEffect`, read off the shover's replicated Charge level). Cooldown is a flat 2.5 s | **Backdraft** — the plate claims its mirror image behind the hull: push AND pull, the cylinder doubled (`ScarabCavitationBlast.PlateMirrors`, per fire) |
+| Mass | **Switch** | ring aperture (`switchScale` ElementalFloat 1→2.5) | **Sun Cores** — a scored switch's dais rises WITH its super-shielded suns (`ScarabSwitch.LaysDaisElement`, snapshot at placement) |
+| Space | **Nucleus Seeding** (balls of your domain embedded in the nucleus membrane) | seeded **ball size**, ×1 → **×4 at L10** (`ScarabBallForge.SizeScaleFor`, a `static readonly ElementalFloat`) | **Core Breaker** — your balls destroy super-shielded prisms and fly on (`AstroLeagueBall` replicated stamp, set when the ball is seeded or forged) |
+| Time | **Throttle** | top speed of the throttle ramp (`ThrottleScalerMultiplier` 1→1.5; shipped band 216 → 324) | **Snap Dash** — double-tap the throttle: 500 u/s along the nose (5× the old 100), 5 s cooldown |
 
 **The right-stick dash is base kit and has no cooldown** — it is not a map row. Only the
 cavitation blast riding it is paced, which is the Charge row. Snap Dash is the *throttle's*
@@ -645,6 +650,53 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 | Mass L5 | **Shielded Corners** — the corner trails arrive shielded | **Webbing** — every fifth block bridges to the next corner |
 | Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
+
+### Meerkat ("Meerkats") — the soliton maker, a dynamic-seat crew vessel — element definition LOCKED (Garrett, 2026-10-28); building it is Yash's
+
+Garrett, 2026-10-28: *"lock in the elemental definition so yash builds upon them."* The element → ability → level →
+L5 rows below are decided (`Docs/Studios/MEERKAT.md` § Garrett's direction). How each is built, tuned and drawn, every
+number, and the seat machinery stay Yash's. **Shipped 2026-10-28** (below, "approved + shipped"): the map
+(`ElementalAbilityMaps/Meerkat.asset`) carries the four rows; the surface area and the swallow are Yash's round 23; the
+seats, the hop and the element-holder rule are not built yet.
+- **Space · Soliton**: the wormhole makes a soliton; the level sets its surface area. It swallows prisms, shielded ones
+  included, and fires them out. L5 **Steal**: what passes through is stolen, the steal starting as each prism starts
+  its run.
+- **Time · passive**: faster through every soliton. L5 **Boost out** of every soliton.
+- **Charge · Sentinel mode** (Y / F, an active toggle): new tunnels leave a sentinel at their entrance, from a pool of
+  3; with the pool used up, the oldest retires with its soliton.
+  - A sentinel guards 1.5 × the opening radius, zaps enemy vessels' elements (Charge sets the petals per zap) and
+    shields same-domain prisms.
+  - It is a seat any teammate can take: tap or click, with no cooldown, to shield any prism or attack. The empty seat's
+    AI zaps a little slower than an average person taps.
+  - The button hops: the sentinel rides through its soliton and takes the flyer, and the old flyer becomes a sentinel
+    at a new soliton where it was.
+  - A zap is a sub-petal tick (0.1 → 0.25 of a petal by Charge, through `AccrueElementalLoss`).
+  - One element meter, held by the person seated longest aboard the Meerkats. Only that person's meerkat takes element
+    damage; any other dies instead. A dead flyer is replaced by the next hop's hopper.
+  - A soliton lasts as long as its sentinel. The vessel enters with one seat and never adds players.
+  - L5 **Six sentinels**.
+- **Mass · passive**: a minimal exit portal, a few low-mass prisms in a hexagon round the outside of the exit, once
+  per soliton, sized by Mass. L5 **Danger prisms**.
+
+Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are archived in the same doc, and the round-18
+Mix's L5 swaps (Chain Dig on Time, Cave-in on Space) give way to these rows.
+
+#### Meerkat — APPROVED + SHIPPED (Garrett's design, Yash 2026-10-28)
+
+Yash, 2026-10-28: *"Garrett has already defined all the elemental abilities, so we're gonna implement those, and it also
+has the Space ability, which pulls prisms inside the tube."* Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's
+direction, on `cece/lucid-brown-ykcmhu`), ported from the artifact's Kit "Garrett's kit" (`R_VesselActions/MEERKAT.md` §8-§9):
+
+| Element | Ability (input) | What the level scales | L5 (gate) |
+|---|---|---|---|
+| **Space** | **Soliton** (RT): the wormhole is a standing tunnel any Meerkat may ride; it swallows prisms (and crystals) at its way in and fires them out of its way out as moving prisms (`MeerkatSwallow`, round 23) | `areaL0` / `areaL10` 6,000 → 18,000 u²: throat b = A / (2π L g(k)), floor 0.25 u (`MeerkatWormholeMath.SurfaceAreaThroat`, round 23) | **Steal**: what it swallows is stolen into the Meerkat's domain as its run starts (`MeerkatSolitonKit.StealUnlocked`, stolen in `MeerkatSwallow.Swallow`) |
+| **Time** | **Faster Ride** (passive): the ride through every soliton, its own or anyone's | `rush` 1 → 1.4 × the throat's multiplier | **Boost Out**: every soliton is left at `boostOut` 1.5 × the exit (`BoostOutUnlocked`) |
+| **Mass** | **Exit Portal** (passive): six prisms on a hexagon at 1.5 × the exit radius, once per soliton (`MeerkatExitPortal`) | `portalSize` 0.4 → 0.9 × the hull's trail prism | **Danger Portal**: danger prisms (`DangerPortalUnlocked`) |
+| **Charge** | **Sentinel Mode** (Y, `Button4Action`): each new soliton leaves a sentinel that holds it, zaps rivals in its guard (1.5 × the opening) at 5 a second and shields its own prisms there (`MeerkatSentinels`); pool 3 | `zapPetals` 0.1 → 0.25 of a petal a zap, each element, ejected, a scored hit that silences | **Six Sentinels**: the pool is 6 (`SixSentinelsUnlocked`) |
+
+Not built: the sentinel seats and the hop (they need dynamic crew seats), a sentinel zapping another's sentinel, and a
+non-Meerkat hull riding a soliton. Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) and the Mix
+stay in the artifact only.
 
 ## 3. Implementation notes for approved rows
 

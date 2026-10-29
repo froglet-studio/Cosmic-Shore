@@ -29,6 +29,9 @@ Shader "Custom/SpreadFresnelShader"
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 3.0
+            // instanced: a population drawn as data draws its hearts on this material (CrystalHeartDraw.cs,
+            // Docs/ECOSYSTEM.md §65.7); UNITY_SETUP_INSTANCE_ID makes unity_ObjectToWorld the instance's matrix
+            #pragma multi_compile_instancing
 
             #include "UnityCG.cginc"
 
@@ -36,6 +39,7 @@ Shader "Custom/SpreadFresnelShader"
             {
                 float4 vertex : POSITION;
                 float3 normal : NORMAL;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct v2f
@@ -52,6 +56,7 @@ Shader "Custom/SpreadFresnelShader"
             v2f vert (appdata v)
             {
                 v2f o;
+                UNITY_SETUP_INSTANCE_ID(v);
                 float3 objectScale = float3(length(unity_ObjectToWorld._m00_m01_m02), length(unity_ObjectToWorld._m10_m11_m12), length(unity_ObjectToWorld._m20_m21_m22));
                 // normalize: a blend-shape mesh hands the vertex stage a blended normal that is not unit
                 // length (spacecrystalanim.fbx's stacked keys reach ~2x), and the push must not scale with it.

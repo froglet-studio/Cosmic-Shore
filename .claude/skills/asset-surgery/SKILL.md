@@ -3254,6 +3254,12 @@ signature of one prefab instanced in all of them, and it is the evidence.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **The Write tool turns a `\u2028` / `\u2029` escape in the text you write into the RAW character.** A regex or a
+  string that names the Unicode line separators (`/[\u2028\u2029]/`, `'\u2028'`) lands on disk holding U+2028 itself,
+  which JavaScript and C# both read as a LINE BREAK: node fails with `Invalid regular expression: missing /`, Roslyn with
+  `CS1010: Newline in constant` (claude/affectionate-bardeen-pzh99d, 2026-10-27: `faction-chat.js`, `FactionChat.cs` and
+  its tests, all three). After writing any file that names them, re-escape on disk:
+  `t.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")` in Python, or write them as `(char)0x2028`.
 - **Unity wraps a long reference line AFTER the guid, so `"guid: X, type: 2"` is not how every reference looks.**
   `vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c…,\n    type: 2}` and the same in a nested-prefab
   `objectReference:` override. A guid swap or a presence check written as the one-line form silently matches nothing
@@ -4410,6 +4416,16 @@ required one is simply absent. A repo-wide sweep (every `!u!114` doc → its `m_
 guid → that `.cs`'s field set) is a cheap standing audit that finds rot no diff will ever
 show you. Cosmic Shore's `QuadFish.prefab` carried EIGHT dead keys and lacked its data SO
 for long enough to ship inert into three game modes.
+
+### Trap: a hand-written shader's on/off float wants `[ToggleUI]`, not `[Toggle]`
+
+`[Toggle] _Foo ("Foo", Float) = 0` in a `.shader`'s Properties block is not just a checkbox: Unity also
+enables a shader KEYWORD `_FOO_ON` when it is ticked. A shader that branches on the float itself (`_Foo > 0.5`)
+and declares no `#pragma shader_feature _FOO_ON` then gets that keyword written into every material's
+`m_InvalidKeywords` the first time someone ticks the box in the inspector - a diff on a material a generator owns,
+so its `--check` goes red for a change nobody made on purpose. Use `[ToggleUI]` (a checkbox, no keyword) for a
+uniform branch, and keep `[Toggle]` for a real keyword variant. Seen 2026-10-28 on `OmniCrystalFresnelShader`'s
+`_ElementShades` (`cece/serene-cannon-93olp5`), caught before it shipped.
 
 ## 6. When the editor genuinely IS required
 

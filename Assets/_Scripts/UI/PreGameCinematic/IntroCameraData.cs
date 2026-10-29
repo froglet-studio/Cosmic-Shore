@@ -317,6 +317,22 @@ namespace CosmicShore.UI
         public GameModes DesignedFor => designedFor;
         public IReadOnlyList<IntroShot> Shots => shots;
 
+        /// <summary>True when any shot frames, flies to, orbits, looks at or cuts between <paramref name="anchor"/>,
+        /// so the scene can skip gathering an anchor kind no shot uses (the landmark scan walks every renderer).</summary>
+        public bool UsesAnchor(IntroAnchor anchor)
+        {
+            for (int i = 0; i < shots.Count; i++)
+            {
+                var s = shots[i];
+                if (s == null) continue;
+                if (s.From.Anchor == anchor || s.To.Anchor == anchor || s.LookFrom.Anchor == anchor ||
+                    s.LookTo.Anchor == anchor || s.OrbitCenter.Anchor == anchor || s.VertigoTarget.Anchor == anchor ||
+                    s.CutAnchor == anchor)
+                    return true;
+            }
+            return false;
+        }
+
         public float Duration
         {
             get

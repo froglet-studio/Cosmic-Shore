@@ -115,7 +115,7 @@ namespace CosmicShore.Gameplay
                 Vector3 objective = _status.Transform.position + c.ToTarget;
                 if ((objective - _rocketObjective).sqrMagnitude < 1f) return;   // this station already has its hole
                 if (!_policy.RocketShot(c, Ammo(rocket.AmmoIndex), rocket.AmmoCost)) return;
-                rocket.StartAction(_executors, _status);
+                VesselActionTape.Start(rocket, _executors, _status);
                 _rocketAt = now;
                 _rocketObjective = objective;
             }
@@ -132,8 +132,8 @@ namespace CosmicShore.Gameplay
             {
                 _held = on;
                 _changedAt = now;
-                if (on) _action.StartAction(_executors, _status);
-                else _action.StopAction(_executors, _status);
+                if (on) VesselActionTape.Start(_action, _executors, _status);
+                else VesselActionTape.Stop(_action, _executors, _status);
             }
         }
     }

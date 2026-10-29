@@ -177,6 +177,22 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] List<AIAbility> abilities;
 
+        /// <summary>
+        /// This pilot's ability by the name the match replay recorded it under
+        /// (<see cref="R_VesselActionHandler.ReplayActionName"/>), so a replay can re-run it on this vessel.
+        /// </summary>
+        public bool TryFindAbility(string actionName, out ShipActionSO action)
+        {
+            action = null;
+            if (abilities == null) return false;
+            foreach (var a in abilities)
+            {
+                if (a?.Ability && R_VesselActionHandler.ReplayActionName(a.Ability) == actionName) { action = a.Ability; return true; }
+                if (a?.SourceAsset && R_VesselActionHandler.ReplayActionName(a.SourceAsset) == actionName) { action = a.Ability ? a.Ability : a.SourceAsset; return true; }
+            }
+            return false;
+        }
+
         [SerializeField]
         ScriptableEventNoParam OnCellItemsUpdated;
 
@@ -289,6 +305,28 @@ namespace CosmicShore.Gameplay
         /// Cleared before every sample, so a provider that does not call it keeps the break-off.
         /// </summary>
         public void MarkAimAsPathLead() => _aimIsPathLead = true;
+
+        // Set by the external target provider, for the frame it is sampled in: see MarkBellyTarget.
+        bool _hasBellyTarget;
+        Vector3 _bellyTarget;
+
+        /// <summary>
+        /// Called from inside the external target provider: this frame, ROLL so the hull's belly comes onto
+        /// <paramref name="worldDirection"/>, instead of the bank the stick couples to the yaw. The aim point still sets
+        /// pitch and yaw; only the roll axis (<c>YDiff</c>) is replaced, so a hull can hold a heading and turn its belly
+        /// onto something abeam of it - which the yaw-coupled bank cannot do. The Tiger Moth drops along its belly
+        /// (Waystation's exit rings face square to the next cluster, WAYSTATION.md). Cleared before every sample, so a
+        /// provider that does not call it keeps the coupled bank. Dual-stick only.
+        /// </summary>
+        public void MarkBellyTarget(Vector3 worldDirection)
+        {
+            _hasBellyTarget = worldDirection.sqrMagnitude > 1e-6f;
+            _bellyTarget = worldDirection;
+        }
+
+        /// <summary>Degrees of belly error that ask for full roll stick; less asks proportionally less, so the roll
+        /// settles on the target rather than overshooting it.</summary>
+        const float BellyRollFullStickDegrees = 30f;
 
         /// <summary>Restores default crystal/player target seeking.</summary>
         public void ClearExternalTargetProvider()
@@ -808,7 +846,7 @@ namespace CosmicShore.Gameplay
             // runs is started below and restarted below, so the sweep is exactly this method's own.
             StopAllCoroutines();
             foreach (var ability in _activeAbilities)
-                ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Stop(ability.Ability, actionExecutorRegistry, VesselStatus);
             _activeAbilities.Clear();
             _boostDriver?.Release();
 
@@ -872,7 +910,7 @@ namespace CosmicShore.Gameplay
             // ones that had started - StopAllCoroutines alone would strand those ON.
             StopAllCoroutines();
             foreach (var ability in _activeAbilities)
-                ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Stop(ability.Ability, actionExecutorRegistry, VesselStatus);
             _activeAbilities.Clear();
 
             if (_commitDriftHeld)
@@ -930,6 +968,7 @@ namespace CosmicShore.Gameplay
             // External steering hook (e.g. Astro League ball striking) overrides all other
             // targeting when set - checked last so it always wins.
             _aimIsPathLead = false;
+            _hasBellyTarget = false;
             if (_externalTargetProvider != null)
                 _targetPosition = _externalTargetProvider();
 
@@ -1064,7 +1103,9 @@ namespace CosmicShore.Gameplay
             {
                 _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
                 _inputStatus.YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                _inputStatus.YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                _inputStatus.YDiff = _hasBellyTarget
+                    ? BellyRoll()
+                    : Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
                 _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : SteeringThrottle;
             }
 
@@ -1291,6 +1332,19 @@ namespace CosmicShore.Gameplay
             UpdateCellContent();
         }
 
+        /// <summary>The roll stick that turns the belly onto <see cref="_bellyTarget"/> about the nose: the signed angle,
+        /// about forward, from the hull's down to the target's part square to the nose (VesselTransformer.Roll turns by
+        /// <c>YDiff</c> about forward, the same sense as <c>Vector3.SignedAngle</c>). Zero when the target is on the nose
+        /// line, where no roll helps.</summary>
+        float BellyRoll()
+        {
+            Vector3 forward = transform.forward;
+            Vector3 square = Vector3.ProjectOnPlane(_bellyTarget, forward);
+            if (square.sqrMagnitude < 1e-6f) return 0f;
+            float degrees = Vector3.SignedAngle(-transform.up, square, forward);
+            return Mathf.Clamp(degrees / BellyRollFullStickDegrees, -1f, 1f);
+        }
+
         /// <summary>
         /// Extend and re-attack NOW, without waiting for the turning-circle test or the orbit detector:
         /// for a caller that already knows the pursuit failed. A gate race calls it when its pilot crosses
@@ -1464,11 +1518,11 @@ namespace CosmicShore.Gameplay
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
             {
-                action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Start(action.Ability, actionExecutorRegistry, VesselStatus);
                 _activeAbilities.Add(action);
                 yield return CosmicShore.Utility.WaitCache.Seconds(action.Duration);
                 _activeAbilities.Remove(action);
-                action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Stop(action.Ability, actionExecutorRegistry, VesselStatus);
                 yield return CosmicShore.Utility.WaitCache.Seconds(action.Cooldown);
             }
         }
