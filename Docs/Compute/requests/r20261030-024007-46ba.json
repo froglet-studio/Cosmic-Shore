@@ -1,0 +1,18 @@
+{
+ "args": {
+  "intensity": 4,
+  "mode": "DogFight",
+  "vessel": "Sparrow"
+ },
+ "budget": {
+  "tries": 10
+ },
+ "by": "shombithofficial",
+ "created": 1793308207,
+ "here": true,
+ "id": "r20261030-024007-46ba",
+ "job": "unity-train",
+ "machine": "shombithofficial/dragonsweapon",
+ "note": "",
+ "schema": "froglet-compute/request/1"
+}
