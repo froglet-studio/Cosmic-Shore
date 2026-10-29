@@ -78,6 +78,108 @@ Compiled against the Unity reference assemblies (player and editor configs, 0 pr
 - [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
 
 First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+### 🔴 Destroyed prisms are recycled after their death effect; trail hygiene (`perf/lavalamp-prism-recycle`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PERFORMANCE_OPTIMIZATION.md` §2, row 10-29; Yash approved recycling DEAD prisms):
+- `PrismRecycler` (new, `Controller/Vessel/PrismRecycler.cs`): every `Prism.SetupDestruction` queues the prism; 7.5 s
+  later (`PrismExplosion.DefaultDuration`), at most 64 a frame, a still-destroyed, still-active prism on the same death
+  (`Prism.DestroyEpoch`) goes back to its pool: vessel-wake prisms (`Trail.RecycleDestroyedMembers`, set only by
+  `VesselPrismController.Initialize`) through `Trail.RemoveMembers` + `ReturnToPool`; natural-death skeletons
+  (`HealthPrism.LeaveAsSkeleton(..., recycleWhenDestroyed: true)` from `LifeForm` / `Fauna`) through
+  `EnvironmentPrismPool.TryRelease`.
+- Held entirely (entries wait) while any `GunVesselTransformer` (Urchin) exists, because it restores dead prisms it rides.
+- Not recycled: Ark hull/wake, Hijack yards, builder-laid environment trails, flora/fauna body prisms, prisms a
+  front-remover already took (Wanderway, Arkway, RaceTrailCap, Ark wake), ability-plucked skeletons (Meerkat swallow,
+  Jacks' net), every other trail.
+- `Trail.OnMembersRemoved` (TrailFollower re-indexes on it); `Trail.LookAheadShared` + a fill-your-list `LookAhead`
+  overload (Skimmer boosters, `SkimmerAlignPrismEffectSO`); `LookAhead` on an empty trail no longer throws; the vessel
+  lay uses `GetBlockIndex` instead of `TrailList.IndexOf`.
+
+**Verified without the editor:** a tree-sitter C# syntax parse of every changed file (0 errors). Nothing else: no Unity,
+no reference compile, no dotnet in the session. `/verify-unity` was not available. **Compile first.**
+
+**Verify in editor:**
+1. Menu_Main (lava lamp), leave it idle 30+ min with the F7 console / Profiler: GameObject count, `PrismSpatialIndex`
+   HighWaterMark, `EnvironmentPrismPool.IssuedCount` / `ParkedCount` and frame time plateau instead of climbing;
+   `PrismRecycler.RecycledCount` climbs, `PendingCount` stays bounded, `TrailRestorerCount` is 0 (if not, an Urchin is
+   alive and is holding vessel-trail recycling).
+2. Shoot a wake: the explosion plays in full, the hole stays ~7.5 s, then the prism is gone from the trail; the next
+   laid prisms come from the pool (no `PoolMiss` for that vessel's prism type).
+3. Skim along a wake with holes: boosters and the align effect behave as before; nudge-shard markers still clear.
+4. Urchin: ride a wake through destroyed prisms - they restore as before (nothing was recycled while it lived).
+5. Ark / Arkway: hull seats, regrowth and the wake unchanged; Wanderway and Skim Race / Joust on MobileLow
+   (RaceTrailCap) unchanged; Hijack yards unchanged.
+6. Flora/fauna dying of old age: skeletons stay ~7.5 s after they are destroyed, then return; ThreatGrove tubes,
+   Meerkat swallow and Jacks' net unaffected.
+7. `prof` a heavy fight: `PrismRecycler.Drain` stays well under 1 ms.
+
+**First-pass tuning:** `PrismRecycler.MaxPerFrame` 64, `DeathEffectSeconds` 7.5 s.
+
+---
+
+### 🔴 The Meerkat's network of wormholes: no tree, no roots, sized by Mass up to the whole cell (`worktree-agent-ae182c824c56a2bb9`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (the artifact's round 26, cloned; `R_VesselActions/MEERKAT.md` §7a):
+- The tree, the network's bark and its old inside wall ship off (`trunkVisibility`, `rootBarkVisibility`, `rootOpacity` 0).
+- Every channel of the omnicrystal's network draws as a wormhole does: the contour field's water pipe (`MWChannel` in
+  `MeerkatWormholeLens.shader`), the bridge in YASH'S LOOK, the warp tube, and the calm inner wall every tube now has
+  (`MeerkatTubeWallView`, `MeerkatTubeWall.shader`, `tubeInner`).
+- The network's size comes from Mass, not the last wormhole: `networkReach` (an `ElementalFloat` on Mass, 0.5 → 1 × the
+  cell's radius), centred toward the cell's centre, its forks laid for transport (`MeerkatRootMath.BuildNetwork`).
+
+**Verified without the editor:** reference compile, player-dev and editor: 0 errors in project code. Both changed shaders
+compile (glslang, HLSL front end, vertex and fragment, URP mock; a planted typo fails). `MeerkatRootMathTests` 12/12 under
+dotnet (4 new, from the page's own `labLayout` / `netPlace`). `studio_to_unity --check`: 0 Meerkat drift (Yash's own Unity edits, ce548fc092: `bendRadius` 10, `throatDiameter`
+20, `mouthDiameter` 40, are now the artifact's shipped values).
+`author_meerkat_assets --check` / `--self-test` pass. The console-logging, conditional-compilation, using-directive and
+abstract-member gates pass. `/verify-unity` was not available (no editor in the session).
+
+**Verify in editor:**
+1. Toybox, Vessel Changer → Meerkat. Form a wormhole with RT: no tree, no branches. The wormhole is the water pipe (bent
+   space) with a faint calm inner wall in your domain colour; riding it is calm.
+2. Fly through a gold omnicrystal: a big network opens at once from you, every way. Every one of its tubes looks like the
+   wormhole: no bark, no soil, no stones, no brown inner wall. From outside you see the network's tubes; from inside the
+   one you are in bends space the same way as a wormhole.
+3. Inside: you cruise on, the left stick moves you round the tube, RT faster, the walls bounce you, move into a wormhole at
+   a fork to take it. Out of an opening you fly on.
+4. Mass: with Mass 0 the network reaches about half the cell; raise the Meerkat's Mass to 10 (crystals, or the element
+   debug) and take another omnicrystal: it fills the cell, its openings out at the race shell (Burrow Run: about 1,080 u from
+   the cell's centre), and you can cross the cell through it.
+5. YASH'S LOOK on the config's Inspector: every tube of the network shows the spindle bridge too; GARRETT'S LOOK takes it away.
+6. Profile a race with a full-Mass network up (`prof`): "MeerkatTubeWallView.Draw", "MeerkatWormholeView.Draw" and the
+   "Meerkat wormhole lens" pass (four nearest tubes, 256 march steps each).
+7. Two players on this build: one takes an omnicrystal; the other sees the same network (the relay's size float now carries
+   the reach share; a peer on an older build would read it as a trunk size).
+
+**First-pass tuning** (the artifact's numbers): `networkReachAtZero` 0.5, `networkReachAtFull` 1, `labyrinthRadiusMin` 240,
+`labyrinthRadiusMax` 1080, forks 6 → 22, openings 12 → 56 (40 to 78 wormholes).
+
+---
+
+### 🔴 The Meerkat: phased inside a tube, first in first out, the omni crystal grows the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `MEERKAT.md` §9.
+- Inside a tunnel or the roots, the Meerkat touches no prism and no crystal, and nothing touches it. This uses
+  `IHullContactGate` on `MeerkatVesselTransformer`, and the skimmer's prism skim now honours the gate too.
+- Carried prisms and crystals move at the slide's top speed and stay 6 u behind the rider ahead of them. `carrySpeed`
+  is retired.
+- Any omni crystal the hull collects grows its roots (`OmniCrystalImpactor.CollectedByVessel`), for the player and the AI.
+
+**Verified without the editor:**
+- 59/59 dotnet tests (new: `TubeAdvance`, no one passes anyone).
+- Reference compile clean.
+- The artifact's kit races finish.
+
+**Verify in editor:**
+1. Lava Lamp, the Meerkat: fly into the cell's omni crystal. Its roots grow round you at once and you are inside them.
+   Watch an AI Meerkat take one: its roots grow too.
+2. Form a tunnel whose mouth is next to prisms and ride it. The prisms pulled in behind you never catch you, and your
+   hull loses no petal and breaks nothing inside the tunnel.
+3. Form a tunnel straight through a wall of prisms: you pass through it untouched, and the wall stays standing.
+4. Out of the far mouth you are solid again: hit a prism and it breaks as usual.
+5. Burrow Run: a ring threaded while inside a tunnel still counts.
+
+---
 
 ### 🔴 Hover C: the kit's sheen (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
 
@@ -187,6 +289,120 @@ compiled but did not run. No Unity Editor was open, so `/verify-unity` did not r
   - collar 12°/s idle and 90°/s while regrowing.
 - The regrowth sound ships empty.
 
+---
+
+### 🔴 Meerkat: Garrett's kit - the soliton, the faster ride, sentinels, the exit portal (`worktree-agent-a0cdd70864b1be2cf`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett's design, approved by Yash 2026-10-28; `R_VesselActions/MEERKAT.md` §10): `MeerkatSolitonKit` on the
+Meerkat (with `MeerkatSentinels`, `MeerkatExitPortal`, `MeerkatSolitonMath`; the L5 Steal hooked on round 23's
+`MeerkatSwallow`), Y →
+`MeerkatSentinelModeAction`, the config's "Garrett's kit" sections, the element map's four rows, protocol version 23
+(`TunnelState.Kit`, `PortalSize`). `/verify-unity` was not available in this session (no Editor): nothing here has been
+compiled or run by Unity itself.
+
+**Verified without the editor:** 6/6 `MeerkatSolitonMathTests` (after the merge with round 23; its area goldens are in `MeerkatWormholeMathTests`) on the page's own numbers (dotnet, Unity stubs;
+`Tools/Build/meerkat_kit_harness/run.sh --self-test`, 3 negative controls fire). Reference compile player-dev and editor:
+0 errors in project code. `element_ability_table.py Meerkat`: 4/4 · 4/4 · 4/4. `author_meerkat_assets.py --check` /
+`--self-test`, `studio_to_unity.py --check` (Meerkat 0 drift), console-logging, conditional-compilation, using-directive,
+elemental-float, network-prefab-hash and abstract-member gates green.
+
+**Verify in editor** (the Toybox's Vessel Changer → Meerkat, unless said; HUD console `elements` or crystals to raise a level):
+1. **Compile and load.** No console error on entering play mode or on swapping to the Meerkat. The ShipActions object
+   carries `MeerkatSolitonKit` with `MeerkatWormholeConfig` and Runtime GameData wired.
+2. **Space, the soliton's size and swallow** are round 23's: run the next entry ("The Meerkat's soliton: Garrett's surface
+   area, and prisms sucked through it"). Since the merge with round 23 the kit adds only the L5 Steal and the fired sound
+   to them.
+3. **Space L5, Steal.** At Space 5+, swallowed rival / neutral prisms turn your colour as they enter the tube.
+4. **Anyone rides.** With two Meerkats (a second player, or an AI Meerkat in an arena/race), fly into the other's
+   standing soliton's way in: you are carried through and out on its last heading; its own life is unchanged by you.
+   A non-Meerkat hull is NOT carried (not built).
+5. **Time.** Time 0 vs Time 10: the ride's peak is faster at 10 (×1.4 at the throat). At Time 5+ (Boost Out) you leave
+   every soliton visibly faster (1.8 × your speed before it), then ease back to cruise.
+6. **Charge, Sentinel mode.** Press Y (F on keyboard): nothing visible until the next RT. Form a tunnel: a still copy of
+   the hull stands up at its way in, nose to the sky. That tunnel no longer collapses after 10 s, and forming the next one
+   does not collapse it. Form four: the first sentinel and its tunnel go (pool 3). At Charge 5+: six stand. Press Y again:
+   new tunnels leave no sentinel; the standing ones stay.
+7. **Charge, the zap.** Let a rival (an AI on another domain) fly within 1.5 × a sentinel's mouth: crystals are knocked
+   out of it about five times a second's worth (0.1 → 0.25 of a petal a zap on each element; whole petals leave), its
+   abilities are silenced for what each hit is worth, and the shooter's score counts the hits. Your own domain's prisms in
+   the guard turn shielded.
+8. **Mass, the exit portal.** Every new tunnel sets six small prisms of your colour in a hexagon round its way out, square
+   to its heading, at 1.5 × the exit radius. Mass 10 makes them about twice the size of Mass 0's. At Mass 5+ they are
+   danger prisms (a rival hitting one takes the danger hit).
+9. **AI.** Seat an AI Meerkat in Warpline (and Burrow Run): it turns Sentinel mode on once, forms tunnels as before and
+    still finishes the race. Its sentinels and portals appear like a person's.
+10. **HUD.** The four-icon row: Charge fills with sentinels / pool, Mass with the last portal's standing prisms / 6, Space
+    with the reticle's growth, Time drains along a ride. Icons are the Stoat's placeholders.
+11. **MPPM, two clients.** Host + client, one Meerkat each. A tunnel formed with Sentinel mode on shows the same sentinel,
+    the same portal (size, danger) and holds on both screens; a zap on the other client takes petals once (on the victim's
+    machine) and both see the crystals. Protocol 23: an older build is refused at connect.
+
+**First-pass tuning (the artifact's shipped numbers; tune there and clone):** the area and swallow keys are round 23's
+(next entry); `rushL0/L10` 1 / 1.4, `boostOut` 1.5, `sentinelPool` 3 / 6,
+`guardShare` 1.5, `aiZapRate` 5, `zapPetalsL0/L10` 0.1 / 0.25, `portalShare` 1.5, `portalSizeL0/L10` 0.4 / 0.9. Unity only:
+`zapCooldownSeconds` 0.
+
+**Not built:** the sentinel seats, the hop and the element-holder rule (dynamic crew seats); a non-Meerkat hull riding a
+soliton; sentinels zapping sentinels; the Meerkat's own icons; the sound (five empty FMOD slots).
+
+---
+
+### 🔴 The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** the automatic ride is gone. The main tunnel is now a network of one channel flown by the roots' own
+flight (`MeerkatRootMath.Step` through `ITubePath`, `MeerkatWormholeExecutor.StepRide`):
+- you cruise along it at `rootCruise`;
+- RT pushes you faster up to `rootMaxSpeed`;
+- the left stick moves you round the tube, and the wall bounces you;
+- you leave out of the far mouth (or back out of the way in) at `rideExitMultiplier` × your speed before the tunnel.
+
+The AI holds RT and keeps to the middle. `rideEntryMultiplier` and `rideMidMultiplier` are retired. `MEERKAT.md` §1.
+
+**Verified without the editor:**
+- 58/58 dotnet tests, including a full slide out of the far mouth on its last heading and inside its wall.
+- Reference compile clean, player and editor.
+- `studio_to_unity --check`: 102 mapped, 0 drift.
+- The artifact's headless races all finish.
+
+**Verify in editor:**
+1. Toybox, Meerkat: release LT and RT a short, fat tunnel. Inside, push the left stick: the hull moves round the tube
+   and bounces off its wall. Hold RT: it speeds up (to 90 u/s). Let go: it eases to 45 u/s.
+2. Ride out of the far mouth: it leaves on the tunnel's last heading, a little boosted, and the reticle comes back.
+3. A long tunnel is thin (Garrett's area), so the stick has little room there: check it still feels fine.
+4. Burrow Run: the AI forms tunnels, slides them with RT held and threads its rings.
+
+---
+
+### 🔴 The Meerkat's soliton: Garrett's surface area, and prisms sucked through it (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** the tunnel's throat follows Garrett's surface area, set by the hull's Space level, so a longer tunnel is
+thinner (`MeerkatWormholeMath.SurfaceAreaThroat`). `MeerkatSwallow` (run by `MeerkatWormholeExecutor`) pulls the prisms and
+crystals within `suckRadius` 90 u of a standing tunnel's way in, carries them through stretched (up to 3 × at the middle)
+and twisted half a turn, and fires them out of the way out at `fireSpeed` 120, gliding to rest. Pulled and fired prisms are
+moving prisms (`Docs/PRISM_MOTION.md`). `MEERKAT.md` §8.
+
+**Verified without the editor:**
+- 58/58 `MeerkatWormholeMathTests` + `MeerkatRootMathTests` (dotnet, Unity stubs), with 11 new goldens from the page's own
+  `kitThroat` and `pullVel`.
+- Reference compile clean, player and editor.
+- `studio_to_unity --check`: 104 mapped, 0 drift.
+- The artifact's headless kit races: about 4,280 prisms swallowed a field race, mass conserved, no DNF.
+
+**Verify in editor:**
+1. Toybox, Meerkat, in the Garland (dense owner-less prisms): hold LT fully and RT. The tunnel is long and thin. Release LT
+   and RT a short one: it is fat (33 u throat at Space 5). Collect a few crystals and the next tunnels are fatter.
+2. Form a tunnel with its way in next to prisms. Prisms within about 90 u drift into the mouth, faster as they near,
+   swirling a little. Inside the tunnel they are stretched long and twisted. They shoot out of the far mouth along its
+   heading and slow to a stop.
+3. A fired plain prism that hits another plain prism destroys both; a shielded one bounces. The prisms pulled in together
+   do not destroy each other.
+4. Fly through a crystal near a mouth: it is pulled in, comes out the other side and can still be collected there.
+5. Plants near the mouth lose prisms to it (plucked, not destroyed); creatures' bodies are left alone.
+6. Watch the profiler with a tunnel in a dense field: `MeerkatSwallow` stays under 256 prisms (`swallowPrismCap`).
+7. Multiplayer: both players see the same tunnel size.
+
+---
+
 ### 🔴 The Arkway's Ark is the ArkReverse model: hull prisms in its sockets, domain trim, jets and wings fly the turn (`cece/upbeat-johnson-j7izg7`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett: "use this, but animate it so it moves its jets and wings appropriately when turning. use
@@ -234,6 +450,63 @@ open, so `/verify-unity` did not run.
 
 **First-pass tuning** (on `ArkReverseModel.asset`): yaw and pitch rate for a full take 40°/s, bank from yaw 0.8,
 acceleration for a full speed take 20 u/s², response 0.35 s, amplitude 1 (capped at 1).
+
+---
+
+### 🔴 The Meerkat's tunnel bends round its middle, as one oval arc (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `MeerkatWormholeMath.Conic`: the centreline is one conic arc symmetric about its middle, more oval as it
+gets longer (`ovalShortest` 0.2 → `ovalLongest` 1.1, the middle at most `ovalMaxSharpness` 8 × as sharp as the ends). The
+reticle, bridge, tree, warp tube, ride, AI plan and the contour-field lens (`MWTube`: 25 points with circle arcs between
+them) all follow it.
+
+**Verified without the editor:** 48/48 `MeerkatWormholeMathTests` against the page's own numbers (dotnet, Unity stubs).
+The lens shader compiles (glslang), and its nearest-point search is within 0.07 u of the exact arc (Python mirror against
+brute force, 400 random tubes). Reference compile clean.
+
+**Verify in editor:**
+1. Toybox, Meerkat: push the right stick fully. The reticle curves evenly from your nose and is sharpest half way, with
+   no straight run and then a hook at the end. Hold LT: the longer reticle is a stretched oval, still sharpest in the
+   middle.
+2. RT and ride: the hull turns smoothly through the middle and comes out on the reticle's last heading.
+3. The water pipe (GARRETT'S LOOK) bends space along the same curve: no seam, no kink where the old shaft met the bend.
+4. Burrow Run: the AI still forms tunnels and threads its rings.
+
+---
+
+### 🔴 The Meerkat's tree and the Omnicrystal's roots, flown on the left stick (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- The tree round every formed tunnel: trunk, bore, cut faces and branches (`MeerkatTreeMesh`, `MeerkatTreeView`,
+  `MeerkatTree.shader`). The contour-field water pipe is unchanged.
+- Omnicrystals (`MeerkatOmnicrystalField`) in Burrow Run between the rings, and in the Toybox ahead of your Meerkat.
+  Taking one grows the roots at once from the hull, sized by the last tunnel's shaft (`MeerkatRootMath`,
+  `MeerkatRootNetwork`).
+- Inside the roots: cruise on, the left stick moves you round the root, RT faster, the walls bounce you, the camera on
+  the root's centreline, the inside a soft warm tube lit by your lamp (`MeerkatRootInside.shader`). The AI holds
+  RT and steers across. Roots replicate through `MeerkatWormholeNetworkRelay.n_roots` (protocol 22).
+
+**Verified without the editor:**
+- `MeerkatRootMathTests` and `MeerkatWormholeMathTests`: 40/40 pass in dotnet with Unity stubs, against the page's own
+  numbers (rng, four layouts, the built roots, a 500-step flight with forks and bounces).
+- Reference compile, player and editor: 0 errors in project code. Both new shaders compile (glslang, HLSL front end,
+  vertex and fragment). `studio_to_unity` 91 mapped, 0 drift; `author_meerkat_assets --check` and `--self-test` pass.
+
+**Verify in editor:**
+1. Toybox (lava lamp), Vessel Changer → Meerkat. Form a tunnel with RT: a dead tree in watery glass forms with it,
+   rippling out of its centre, branches growing from its top half. Ride through: the water pipe is still there inside.
+2. Fly on: three gold omnicrystals lie ahead (300 u, then 200 u apart). Fly through one. Roots grow at once from you,
+   every way, and you are inside the first.
+3. Inside: you cruise on your own. The left stick moves you round the root (right goes right; up goes the way your nose
+   goes outside). Hold RT to go faster. Hitting a wall bounces you. Move into a root at a fork to take it. The camera
+   never leaves the root; the inside is a soft warm tube, never black, lit near you, fading to clear further off, the
+   outside world faintly showing through. Inside a tunnel the bore is a smooth sheen with no bark lines.
+4. Out of a tip you fly on. Dig a longer tunnel (hold LT) before the next omnicrystal: its roots are bigger.
+5. Burrow Run with AI: the omnicrystals lie between rings; an AI that takes one flies its roots and comes out.
+6. Two players (protocol 22 on both): one takes an omnicrystal; the other sees the same roots and the crystal gone.
+7. Profile a race with roots up (`prof`): "MeerkatTreeView.Draw".
+
+---
 
 ### 🔴 The Meerkat's round 11: a water-pipe tunnel and a reticle lit from its far end (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
@@ -357,6 +630,34 @@ lens compiles in glslang HLSL mode against the black-hole lens's URP mock (a pla
    and then the bend, with no seam where they meet and none at either mouth.
 5. Change any Meerkat look field in Play mode: it shows at once. After Play mode the asset keeps it, and
    `studio_to_unity.py --check` lists a mapped one as drift.
+
+---
+
+### 🔴 A hull's element levels travel with it when it changes machines (`cece/lucid-brown-ykcmhu`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "that issue is true for any vessel swapping situation ... it should be resolved";
+`Docs/ELEMENTAL_ECONOMY.md` §2.0):
+- `R_VesselActionHandler.NetElementBase` / `NetElementBasePublished`: the owner's base levels.
+- `OwnershipHandedOver`: raised on a gain of ownership after spawn.
+- `R_VesselElementalAbilityHandler.AdoptHandover`: the new owner adopts the base levels and the latched unlocks.
+- `ResourceSystem.BaseLevel`; `ElementHandover`.
+- **Protocol version 21.**
+
+**Verified without the editor:** `ElementHandoverTests` 6/6 under dotnet with Unity stubs, and adopting at spawn fails
+one. Reference compile: see the commit.
+
+**Verify in editor (MPPM, host + one client, an arena match with an AI teammate):**
+1. EditMode `ElementHandoverTests` passes.
+2. On the client, collect crystals until a flower shows, say, Space 6. Swap (D-pad right) into the AI teammate's hull,
+   then swap back.
+   - The hull you left is now flown by the server's AI. Look at it on the host's HUD or with the verbose Elemental log:
+     it still holds Space 6.
+   - Before this change it dropped back to its starting elements.
+3. Take a hull to level 5 in an element with a relock below 4. Let it drop to 4, then swap away and back: the level-5
+   upgrade is still on.
+4. A temporary buff (an overcharge above 10) does NOT survive the swap: it ends, and the base drains as before.
+5. The host's own swaps (both hulls already the server's) change nothing.
+6. A client on protocol 20 is refused by a host on 21 (`NetworkConfig mismatch` in the host's console).
 
 ---
 
@@ -18153,6 +18454,45 @@ compiled.
    the prism shows glanced away down-right; dropping below 70% puts the prism back ahead and the ward away.
 5. If the ticks sit off the slanted edge, tune `momentumTickSlantInset` (the Sparrow's `gunHeatTickSlantInset` is 9).
 
+## Scarab Mass card: Switch, a ball threading your ring (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `ScarabHUDView.cs` (four `switch*Icon` parts replace the charge-count colour ramp on the Mass icon;
+`SetSwitchCharges` dims the card with none banked, `SetSwitchRingColor`, `SetSwitchScale`, `SwitchBallScale`,
+`SwitchCardAlpha`), `ScarabHUDController.cs` (new `placeSwitch` field, wired on `Scarab.prefab` to
+`PlaceSwitchAction.asset`; listens to `OnElementLevelChange` and pushes `switchScale` live), `ScarabHUDVariant.prefab`
+(the Mass icon is a transparent container over SwitchFar, SwitchWake, SwitchBall - point-anchored at its own centre -
+and SwitchNear), `ScarabSwitchCardTests.cs`. Sheet: `Docs/Icons/sheets/scarab_switch.png`. No .NET and no Unity CLI in
+the session: nothing here was compiled.
+
+1. Run `ScarabSwitchCardTests`. **Pass:** green.
+2. Fly the Scarab (Toybox Vessel Changer). **Pass:** the Mass card shows a tall faceted ring in your colour with a
+   white ball in its mouth and three short white streaks coming from the left, passing BEHIND the ring's left arc.
+3. Place a switch (A). **Pass:** the card dims and the fleet's cooldown veil sweeps; when the charge is back it is full
+   again.
+4. Raise Mass (collect Mass crystals, or the dev element panel) to 10. **Pass:** the ball shrinks to about 40% of its
+   size, staying centred in the ring; the ring itself does not change size.
+5. If the ball sits off the ring's centre, the point-anchor offset is `SwitchBall`'s m_AnchoredPosition (6.25).
+
+## Scarab Charge card: Cavitation Blast to scale (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `ScarabHUDView.cs` (five `blast*Icon` parts replace the ready / spent tint on the Charge icon;
+`SetBlastReady` shows the shattered volume for `blastShatterSeconds` then greys; `BlastPartsFor`, `SetBlastHullColor`;
+`blastReadyColor` retired, `blastSpentColor` now the grey of the volume and plate), `ScarabHUDController.cs` (injects
+`GameDataSO`, paints the hull in the domain signal colour on the seed and every blast edge), `ScarabHUDVariant.prefab`
+(the Charge icon is a transparent container over BlastPrisms, BlastField, BlastFieldShattered, BlastPlate, BlastHull),
+`ScarabBlastCardTests.cs`. Sheet: `Docs/Icons/sheets/scarab_cavitation.png`. No .NET and no Unity CLI in the session:
+nothing here was compiled.
+
+1. Run `ScarabBlastCardTests`. **Pass:** green.
+2. Fly the Scarab (Toybox Vessel Changer). **Pass:** the Charge card shows a white rounded volume with a white plate at
+   its right edge, a tiny Scarab in your colour in the middle, three small blue prisms outside it; no orange tint.
+3. Dash with the right stick to fire the blast. **Pass:** the card punches once; for about a third of a second the
+   volume shows two sets of forward-pointing slivers cut out of it; then the volume and the plate turn grey until the
+   blast is ready again, when they go back to white.
+4. Switch domain (lava lamp / a Gold match). **Pass:** the hull takes the new colour on the next blast.
+5. The disabled resource display on the variant (`fuelLevelImage`) still points at the Charge icon Image; it is off
+   (`m_Enabled: 0`). If anyone turns it on it would write sprites onto the transparent container - leave it off.
+
 ## Rhino Space card: Blade Reach, the katana and the super-shielded prism (2026-10-28) - NOT EDITOR-VERIFIED
 
 **Files:** `RhinoVesselHUDView.cs` (`BuildReach` generates `BladeReach` > `Prism`, `HiltPivot` > `Hilt` + `BladeScale` >
@@ -18221,3 +18561,71 @@ compile has no errors in the changed files (player and editor).
 15. Do a job's work (crack a vault and stow its artifact). **Pass:** "JOB DONE ... LEAVE FREESTYLE TO CHOOSE YOUR NEXT
     VOYAGE". Leave freestyle and open the Voyage window: the cards now set out from the job's destination, the way home
     is one of them, and the news the job wrote shows as new work. Take the way home: docking keeps what was found.
+
+## Lavalamp wormhole lab: original lens + wall vs the new mobile water pipe, side by side (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` + `LavalampWormholeLab.cs` (the lab, runtime
+bootstrap, IMGUI, not in the build settings), `MeerkatTubeLook.cs` (the static look switch, default **Original**),
+`MeerkatWaterTubeView.cs` + `Assets/_Graphics/Materials/Graphs/MeerkatWaterTube.shader` +
+`Assets/Resources/MeerkatWaterTube.mat` (the new pipe: alpha, near-white, fresnel rim, flow bands, caustic shimmer,
+twist, near-camera and live-window fades, no grab pass), `MeerkatWormholeExecutor.Lab.cs` (hull-less lab hooks on a
+partial executor), one-line gates in `MeerkatWormholeLensPass.AnythingLive`, `MeerkatTubeWallView.Draw` and
+`MeerkatWormholeView.DrawOncePerFrame`. No Unity in the session: the C# was only syntax-checked (Roslyn, C# 9, no Unity
+references); the shader was never compiled.
+
+1. Open the project. **Pass:** no compile errors; `MeerkatWaterTube.shader` imports with no errors or warnings.
+2. Fly the Meerkat in a normal game and make a tunnel and a network. **Pass:** exactly the look from before this change
+   (lens + wall); no water pipe drawn (the switch defaults to Original and nothing in the game changes it).
+3. Open `LavalampWormholeLab.unity`, Play. **Pass:** three tunnels form in front of the camera and an omnicrystal network
+   further on (+z 500); the panel shows LOOK, fps, avg/min/max ms over 2 s.
+4. Click each look: Original, New water pipe, Lens only, Wall only, None, Water + lens. **Pass:** the tubes change
+   at once; None shows only the cubes; New water pipe is a near-white, clear, glassy tube with a soft rim, slow bands
+   and a faint shimmer, never blue-tinted, never a full-screen effect.
+5. With the water pipe, Tune > Cull Off/Front/Back. **Pass:** one of Front/Back shows only the inside faces from inside
+   the tube; record which (the wall's winding is unknown, the default is Off) and set `_Cull` on the material.
+6. Ride tunnel and Ride network. **Pass:** the camera follows the centrelines; the pipe fades near the camera and
+   does not flash the screen.
+7. Bench every look (6 x 4 s). **Pass:** a table of avg ms/fps per look; New water pipe and None should be clearly
+   cheaper than Original on a phone (build the scene into a dev build by hand to measure on device).
+8. Stop Play, then play a normal scene. **Pass:** the look is back to Original (the lab resets it on destroy and on
+   domain/subsystem reload).
+
+## Lava lamp (Menu_Main) spawns the Meerkat by default (2026-10-28) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scenes/Menu_Main.unity` (`MainMenuController.menuVesselClass` 6 Squirrel -> 28 Meerkat) and
+`MainMenuController.cs` (the field's code default and tooltip, Squirrel -> Meerkat). Yash: "Make Meerkat the default
+character spawn of lavalamp." Nothing else changed: the Vessel Changer toy still swaps hulls, and a game launched from
+the menu still uses the hull picked for it. No Unity in the session.
+
+1. Open Menu_Main, select the MainMenuController object. **Pass:** Menu Vessel Class reads Meerkat.
+2. Boot from the Bootstrap/Auth scene into the menu. **Pass:** the lava-lamp autopilot behind the menu is a Meerkat
+   (cyan for its domain) and its AI forms tunnels on its own.
+3. Click into freestyle. **Pass:** you fly the Meerkat; the right stick bends a tunnel, RT dives through it; collecting
+   omnicrystals grows the network; the HUD is the Meerkat's.
+4. Play any arcade game with another hull and return to the menu. **Pass:** the lava lamp is a Meerkat again.
+5. Vessel Changer toy -> Squirrel, then back to Meerkat. **Pass:** both swaps work.
+6. A party guest joining the host's menu. **Pass:** the guest's own hull is unchanged (the field drives the host only).
+
+## Switchback fun types: CLASSIC / LEVEL SHAPES / PAR & MEDALS / LIVE FEATURES / COMBINED (2026-10-28) - NOT EDITOR-VERIFIED
+
+Branch `switchback-fun-types`. See `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`, "Fun types". Watch the console for
+`[Switchback] RUN ...` after every finish.
+
+1. Test Runner, EditMode: `SwitchbackFunTypeTests`, `SwitchbackCourseTests`, `SwitchbackFeaturesTests`. **Pass:** all green.
+2. Arcade -> Switchback card. **Pass:** above the intensity row, `FUN: CLASSIC >` and `SEED: RANDOM`. Tap FUN five
+   times: LEVEL SHAPES, PAR & MEDALS, LIVE FEATURES, COMBINED, CLASSIC. Close and reopen the card: the choice is kept.
+   Another mode's card: no strip. A weekly-challenge Switchback: no strip (Classic).
+3. CLASSIC, I1-I4. **Pass:** exactly today's courses and features; one RUN line per finish with `funType=Baseline`.
+4. LEVEL SHAPES, SEED: FIXED, I1 then I4. **Pass:** I1 is sweeping same-way arcs with no hairpins; I4 is short legs
+   with back-to-back hairpins and visibly smaller needle rings every other ordinary corner; the same course twice
+   in a row (`seed=45101` / `seed=45104` in the log).
+5. PAR & MEDALS, any intensity. **Pass:** a `PAR m:ss.s` toast at the start; a `GATE 5 - +x.xs vs par` split every 5th gate;
+   a GOLD/SILVER/BRONZE (or no medal) toast at the finish; a `NEW BEST` toast the first time; the RUN line has `par=`
+   and `medal=`.
+6. LIVE FEATURES, I1. **Pass:** walls beside some long legs; skim one end to end -> `CLEAN SKIM - BURST!` and a
+   speed burst; brushing only part of it gives nothing. I2: a small ring beside each hairpin; thread it while the
+   hairpin is next -> the hairpin is credited and the next gate lights. I4: danger clusters sweeping across the line.
+7. COMBINED, I3. **Pass:** Plan 1's course with Plan 2's features and Plan 3's toasts.
+8. Two machines, host on LIVE FEATURES I4 or LEVEL SHAPES I4, guest on CLASSIC. **Pass:** the guest flies the host's
+   course (same needles, same moving prisms in sync), and the guest's RUN line says the host's fun type.
+

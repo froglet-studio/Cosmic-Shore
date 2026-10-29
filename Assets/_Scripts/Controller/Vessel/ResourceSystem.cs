@@ -263,6 +263,11 @@ namespace CosmicShore.Gameplay
         public float GetNormalizedLevel(Element element)
             => GetEffectiveLevel(element);
 
+        /// <summary>The BASE (persistent) level, normalized: the petals this vessel holds, without the temporary
+        /// effects or the comeback bonus. It is what travels with a hull that changes machines (<see cref="ElementHandover"/>).</summary>
+        public float BaseLevel(Element element)
+            => ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
+
         public void IncrementLevel(Element element) => AdjustLevel(element, .1f);
 
         /// <summary>Permanently adjusts the base level of an element. Returns true if the integer level rose.</summary>

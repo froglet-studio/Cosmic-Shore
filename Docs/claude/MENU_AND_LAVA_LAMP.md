@@ -225,6 +225,14 @@ Per-vessel HUD controllers (`IVesselHUDController` implementors):
 
 HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant.prefab`, `DolphinHUDVariant.prefab`).
 
+#### The lava lamp's default hull: Meerkat (2026-10-28)
+
+The hull the lava lamp spawns (the autopilot behind the menu, and the one you fly in freestyle) is
+`MainMenuController.menuVesselClass` on Menu_Main: **Meerkat** (28) since 2026-10-28 (Yash: "Make Meerkat the default
+character spawn of lavalamp"; it was Squirrel). `ConfigureMenuGameData` writes it to `gameData.selectedVesselClass`
+and onto the host's `NetDefaultVesselType`; `MenuServerPlayerVesselInitializer` spawns that. The Vessel Changer toy
+swaps it at runtime.
+
 #### Vessel selection — RETIRED (2026-09-23)
 
 **Changing your hull in freestyle is the Vessel Changer TOY and nothing else.** The scene-authored
@@ -320,6 +328,6 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **"Game UI" CanvasGroup controls all game panel visibility** — individual panels should not manage their own top-level visibility during freestyle toggles; the parent CanvasGroup handles fade in/out
 - **Vessel HUD reparenting is automatic** — do not manually instantiate or position vessel HUDs; the `onShipHUDInitialized` → `MiniGameHUD.OnShipHUDInitialized()` pipeline handles it
 - **Never author a panel of vessel/world/lifeform cards in a scene** — the roster goes stale the day a vessel ships and nothing says so. Hull selection is the Vessel Changer toy, reachable both by flying it and from the menu Toy Box; both read `ToyVesselRoster`
-- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner. That is exactly what MobileLow phones do: the lava lamp lays no trail and freestyle trail waits above 10,000 cell prisms, through a creation-side hold (`VesselPrismController.SetTierHold`, driven by `MenuCrystalClickHandler`; a mode preview and a Wanderway run are exempt) — nothing laid is removed (`Docs/PLATFORM_UNIFICATION.md` §3.6)
+- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner. That is exactly what MobileLow phones do: the lava lamp lays no trail and freestyle trail waits above 10,000 cell prisms, through a creation-side hold (`VesselPrismController.SetTierHold`, driven by `MenuCrystalClickHandler`; a mode preview and a Wanderway run are exempt) — nothing laid is removed (`Docs/PLATFORM_UNIFICATION.md` §3.6). **Dead mass is different (2026-10-29, Yash):** a prism that is already DESTROYED goes back to its pool once its death effect has played (`PrismRecycler`; vessel wakes and natural-death skeletons only, held while an Urchin exists - `Docs/PERFORMANCE_OPTIMIZATION.md` §2 row 10-29). That is what keeps an idle lava lamp's GameObject count and memory flat; it removes nothing alive, so it is not a cap or a TTL
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
 - **Phase 3 panels start inactive** — PlayerScoreCards are dynamically instantiated only when turns are active. The scored Phase 2 HUD (`EndShapeDetailHUD`) was deleted with C15.

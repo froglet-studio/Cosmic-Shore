@@ -23,6 +23,12 @@ namespace CosmicShore.Gameplay
     /// </list>
     /// Garrett's after (2026-10-27, the Tube Lens Lab): with <c>formedLook</c> ContourField a formed tunnel draws nothing
     /// here and is only the lens pass's bent space.
+    /// <para><b>Round 26</b> (Yash, 2026-10-28: "We can't make it a root, we need to make it smoother, like our tube, same
+    /// visuals ... just anomaly: tubes of wormholes, and the network of wormholes"): every channel of an omnicrystal's
+    /// network is a wormhole tube too, drawn by the same code as a formed tunnel (<see cref="Tube"/>): its bridge in the
+    /// Bridge look, its warp tube, its contour field (<see cref="MeerkatWormholeLensPass"/>) and its calm inner wall
+    /// (<see cref="MeerkatTubeWallView"/>). A tube still wrapped in the old look (a tunnel in its tree,
+    /// <c>trunkVisibility</c>; a channel in its bark, <c>rootBarkVisibility</c>) draws no bridge, as the page's rounds 20-22.</para>
     /// Everything is three dynamic meshes rebuilt once a frame and drawn as one identity instance each (the
     /// <c>StoatPathfinderWorldDots</c> pattern), with the materials shipped in <c>Resources/</c>. A spindle is a six-sided
     /// bipyramid (the page's tapered lathe), drawn additively.
@@ -54,6 +60,72 @@ namespace CosmicShore.Gameplay
         /// for <see cref="MeerkatWormholeLensPass"/>; null when there is none.</summary>
         public static Mesh WarpMesh { get; private set; }
 
+        /// <summary>
+        /// One wormhole tube's centreline, radius and live window [S0, S1]: a tunnel's (or a reticle's) conic arc
+        /// (<see cref="MeerkatWormholeMath"/>), or, round 26, a channel of an omnicrystal's network
+        /// (<see cref="MeerkatRootMath"/>, the page's <c>wh.poly</c>). The page's <c>whSurf</c> / <c>whRadius</c> dispatch the
+        /// same way, so the bridge, its glass and the warp tube are one code for both.
+        /// </summary>
+        public readonly struct Tube
+        {
+            readonly Vector3 _a0, _t0, _side;
+            readonly MeerkatWormholeMath.Conic _path;
+            readonly float _b0, _m0;
+            readonly MeerkatRootMath.Channel _chan;
+            readonly double _tip;
+            public readonly float L, S0, S1;
+
+            Tube(Vector3 a0, Vector3 t0, Vector3 side, MeerkatWormholeMath.Conic path, float b0, float m0,
+                MeerkatRootMath.Channel chan, double tip, float L, float s0, float s1)
+            {
+                _a0 = a0; _t0 = t0; _side = side; _path = path; _b0 = b0; _m0 = m0; _chan = chan; _tip = tip;
+                this.L = L; S0 = s0; S1 = s1;
+            }
+
+            /// <summary>A tunnel's (or a reticle's) tube over the window [s0, s1].</summary>
+            public static Tube Conic(Vector3 a0, Vector3 t0, Vector3 side, MeerkatWormholeMath.Conic path, float b0, float m0,
+                float s0, float s1) => new(a0, t0, side, path, b0, m0, null, 0, path != null ? path.L : 0f, s0, s1);
+
+            /// <summary>A channel of a network over its dug window [s0, s1] (round 26).</summary>
+            public static Tube Channel(MeerkatRootMath.Channel c, float s0, float s1, double rootTip) =>
+                new(default, default, default, null, 0f, 0f, c, rootTip, c != null ? (float)c.L : 0f, s0, s1);
+
+            public bool Valid => _chan != null || _path != null;
+
+            /// <summary>The page's <c>whRadius</c>: a tunnel's hyperboloid over its live window, a channel's <c>chanRadius</c>.</summary>
+            public float Radius(float s) => _chan != null
+                ? (float)MeerkatRootMath.Radius(_chan, s, _tip)
+                : MeerkatWormholeMath.Radius(_b0, _m0, L, S0, S1, s);
+
+            /// <summary>The page's <c>whSurf</c>: a point on the wall at angle phi, radius r; <paramref name="normal"/> is the wall's outward normal there.</summary>
+            public Vector3 Surf(float s, float phi, float r, out Vector3 normal)
+            {
+                float c = Mathf.Cos(phi), sn = Mathf.Sin(phi);
+                if (_chan != null)
+                {
+                    var pd = MeerkatRootMath.At(_chan.Path, s, out _);
+                    MeerkatRootMath.Frame(_chan.Path, s, out var nd, out var bd);
+                    Vector3 n = MeerkatRootNetwork.V(nd), bn = MeerkatRootNetwork.V(bd);
+                    normal = n * c + bn * sn;
+                    return MeerkatRootNetwork.V(pd) + n * (r * c) + bn * (r * sn);
+                }
+                var p = MeerkatWormholeMath.At(_a0, _t0, _side, _path, s, out _);
+                MeerkatWormholeMath.Frame(_t0, _side, _path, s, out var nc, out var bc);
+                normal = nc * c + bc * sn;
+                return p + nc * (r * c) + bc * (r * sn);
+            }
+        }
+
+        /// <summary>Round 26: a tunnel in its tree is wrapped in the old look (that look is its wall; no bridge).</summary>
+        public static bool TunnelWrapped(ScriptableObjects.MeerkatWormholeConfigSO cfg) => cfg.TrunkVisibility > 0.004f;
+
+        /// <summary>Round 26: a channel in its bark is wrapped in the old look (rounds 17-21); without it, it is a wormhole tube.</summary>
+        public static bool ChannelWrapped(ScriptableObjects.MeerkatWormholeConfigSO cfg) => cfg.RootBarkVisibility > 0.004f;
+
+        /// <summary>A channel's fade as it goes (the page's pair <c>dieT</c> fade).</summary>
+        public static float ChannelFade(in MeerkatRootMath.Life w) =>
+            w.Dying ? Mathf.Max(0f, 1f - (float)(w.DieT / MeerkatRootMath.FadeSeconds)) : 1f;
+
         /// <summary>Called by every Meerkat's LateUpdate; builds and draws once a frame.</summary>
         public static void DrawOncePerFrame()
         {
@@ -83,14 +155,45 @@ namespace CosmicShore.Gameplay
                 var t = live[i];
                 var cfg = t.Config;
                 if (!cfg) continue;
-                if (cfg.FormedLook == ScriptableObjects.MeerkatFormedLook.Bridge) DrawBridge(t, cfg, eye);
-                AddWarpTube(t);
+                var tube = Tube.Conic(t.A, t.T0, t.Side, t.Path, t.B, t.M, t.W.S0, t.W.S1);
+                if (cfg.FormedLook == ScriptableObjects.MeerkatFormedLook.Bridge && !TunnelWrapped(cfg))
+                    DrawBridge(tube, cfg, t.Fade, t.Colour, eye);
+                AddWarpTube(tube, t.Fade, cfg);
+            }
+
+            // round 26: the network's channels are wormhole tubes, drawn exactly as a formed tunnel
+            var nets = MeerkatRootNetwork.Live;
+            var inside = MeerkatWormholeExecutor.LocalRootNetwork;
+            for (int n = 0; n < nets.Count; n++)
+            {
+                var net = nets[n];
+                var cfg = net.Maker ? net.Maker.Config : null;
+                if (!cfg) continue;
+                bool wrapped = ChannelWrapped(cfg);
+                bool bridge = cfg.FormedLook == ScriptableObjects.MeerkatFormedLook.Bridge && !wrapped;
+                bool warp = cfg.WarpStrength > 0f && !(wrapped && inside == net);   // the page: roots in bark are earth from inside
+                if (!bridge && !warp) continue;
+                var colour = net.Maker.Colour;
+                for (int i = 0; i < net.Channels.Count; i++)
+                {
+                    ref var w = ref net.Life[i];
+                    if (w.Phase == MeerkatRootMath.Phase.Gone) continue;
+                    float fade = ChannelFade(w);
+                    if (fade <= 0.004f) continue;
+                    var tube = Tube.Channel(net.Channels[i], (float)w.S0, (float)w.S1, cfg.RootTip);
+                    if (bridge) DrawBridge(tube, cfg, fade, colour, eye);
+                    if (warp) AddWarpTube(tube, fade, cfg);
+                }
             }
 
             Upload(ref s_tris, "MeerkatWormholeSpindles", s_tv, s_tc, null, null, s_ti, MeshTopology.Triangles);
             Upload(ref s_glass, "MeerkatWormholeGlass", s_gv, s_gc, s_gn, null, s_gi, MeshTopology.Triangles);
             Upload(ref s_warp, "MeerkatWormholeWarp", s_wv, null, s_wn, s_wuv, s_wi, MeshTopology.Triangles);
             WarpMesh = s_wi.Count > 0 ? s_warp : null;
+
+            MeerkatTreeView.Draw();       // the tree round a tunnel and the roots' bark, while switched on (MEERKAT.md §7)
+            MeerkatTubeWallView.Draw();   // round 26: every tube's calm inner wall
+            MeerkatWaterTubeView.Draw();  // the cheap water pipe, only while the Lavalamp lab picks it (MeerkatTubeLook)
 
             var additive = new RenderParams(s_additive) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
             var glassParams = new RenderParams(s_glassMat) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
@@ -100,13 +203,12 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the bridge (drawBridge)
 
-        static void DrawBridge(MeerkatWormholeExecutor.Tunnel t, ScriptableObjects.MeerkatWormholeConfigSO cfg, Vector3 eye)
+        static void DrawBridge(in Tube tube, ScriptableObjects.MeerkatWormholeConfigSO cfg, float fade, Color colour, Vector3 eye)
         {
             float vis = MeerkatWormholeMath.Clamp01(cfg.BridgeVisibility);
             if (vis <= 0.004f) return;
-            if (t.W.S1 - t.W.S0 < 1f) return;
-            BridgeFrame(t.A, t.T0, t.Side, t.L, t.S, t.R, t.Theta, t.B, t.M, t.W.S0, t.W.S1, vis * t.Fade, t.Colour, cfg.BridgeWhite,
-                        cfg, eye, SpindleNear, SpindleFull);
+            if (tube.S1 - tube.S0 < 1f) return;
+            BridgeFrame(tube, vis * fade, colour, cfg.BridgeWhite, cfg, eye, SpindleNear, SpindleFull);
         }
 
         /// <summary>
@@ -120,36 +222,36 @@ namespace CosmicShore.Gameplay
         {
             if (r.S1 - r.S0 < 0.5f || r.Alpha <= 0.01f) return;
             var sh = r.Shape;
-            BridgeFrame(r.A, r.T0, r.Side, sh.L, sh.S, sh.R, sh.Theta, sh.B, sh.M, r.S0, r.S1, r.Alpha, colour, cfg.ReticleWhite,
+            BridgeFrame(Tube.Conic(r.A, r.T0, r.Side, r.Path, sh.B, sh.M, r.S0, r.S1), r.Alpha, colour, cfg.ReticleWhite,
                         cfg, eye, ReticleNear, ReticleFull, glass: false, nearLight: cfg.ReticleNearLight);
         }
 
         /// <summary>
-        /// The wormhole's one geometry, the page's <c>drawFrame</c> (plus the bridge's glass), over any window [s0, s1] of a
-        /// tunnel at brightness A: its spindles are <paramref name="baseCol"/> toward white by <paramref name="whiten"/>.
+        /// The wormhole's one geometry, the page's <c>drawFrame</c> (plus the bridge's glass), over a tube's window at
+        /// brightness A: its spindles are <paramref name="baseCol"/> toward white by <paramref name="whiten"/>.
         /// </summary>
-        static void BridgeFrame(Vector3 a0, Vector3 t0, Vector3 side, float L, float S, float R, float theta, float b0, float m0, float s0, float s1,
-            float A, Color baseCol, float whiten, ScriptableObjects.MeerkatWormholeConfigSO cfg, Vector3 eye, float nearFrom,
-            float nearFull, bool glass = true, float nearLight = 1f)
+        static void BridgeFrame(in Tube tube, float A, Color baseCol, float whiten, ScriptableObjects.MeerkatWormholeConfigSO cfg,
+            Vector3 eye, float nearFrom, float nearFull, bool glass = true, float nearLight = 1f)
         {
-            if (A <= 0.004f) return;
+            if (A <= 0.004f || !tube.Valid) return;
+            float L = tube.L, s0 = tube.S0, s1 = tube.S1;
             // round 11: brightness from nearLight x at the way in to full at the far end (1 = even; the reticle's reticleNearLight)
             float near = MeerkatWormholeMath.Clamp01(nearLight);
             var white = Color.white;
             var col = Color.Lerp(baseCol, white, MeerkatWormholeMath.Clamp01(whiten));
             if (glass)
-                Fill(a0, t0, side, L, S, R, theta, b0, m0, s0, s1, A * Mathf.Max(0f, cfg.BridgeGlass), baseCol, Color.Lerp(white, baseCol, 0.4f));
+                Fill(tube, A * Mathf.Max(0f, cfg.BridgeGlass), baseCol, Color.Lerp(white, baseCol, 0.4f));
             int nR = Mathf.Max(2, cfg.BridgeRings), nS = Mathf.Max(3, cfg.BridgeSpindlesPerRing), nRib = Mathf.Max(0, cfg.BridgeRibs);
             float th = Mathf.Max(0.05f, cfg.BridgeSpindleThickness), sh = cfg.BridgeShimmer, now = Time.time;
             for (int i = 0; i < nR; i++)
             {
                 float s = MeerkatWormholeMath.BridgeRingS(L, i, nR), g = MeerkatWormholeMath.BridgeGrow(L, s0, s1, s);
                 if (g <= 0f) continue;
-                float rad = MeerkatWormholeMath.Radius(b0, m0, L, s0, s1, s), br = A * (near + (1f - near) * s / L) * MeerkatWormholeMath.BridgeGlow(s / L, sh, now);
+                float rad = tube.Radius(s), br = A * (near + (1f - near) * s / L) * MeerkatWormholeMath.BridgeGlow(s / L, sh, now);
                 for (int j = 0; j < nS; j++)
                 {
-                    var a = Surf(a0, t0, side, S, R, theta, s, j / (float)nS * Mathf.PI * 2f, rad, out _);
-                    var b = Surf(a0, t0, side, S, R, theta, s, (j + 1) / (float)nS * Mathf.PI * 2f, rad, out _);
+                    var a = tube.Surf(s, j / (float)nS * Mathf.PI * 2f, rad, out _);
+                    var b = tube.Surf(s, (j + 1) / (float)nS * Mathf.PI * 2f, rad, out _);
                     Grow(ref a, ref b, g);
                     Spindle(a, b, th * g, br, col, eye, nearFrom, nearFull);
                 }
@@ -162,8 +264,8 @@ namespace CosmicShore.Gameplay
                     float s1r = MeerkatWormholeMath.BridgeRingS(L, i, nR), s2r = MeerkatWormholeMath.BridgeRingS(L, i + 1, nR);
                     float g = Mathf.Min(MeerkatWormholeMath.BridgeGrow(L, s0, s1, s1r), MeerkatWormholeMath.BridgeGrow(L, s0, s1, s2r));
                     if (g <= 0f) continue;
-                    var a = Surf(a0, t0, side, S, R, theta, s1r, phi, MeerkatWormholeMath.Radius(b0, m0, L, s0, s1, s1r), out _);
-                    var b = Surf(a0, t0, side, S, R, theta, s2r, phi, MeerkatWormholeMath.Radius(b0, m0, L, s0, s1, s2r), out _);
+                    var a = tube.Surf(s1r, phi, tube.Radius(s1r), out _);
+                    var b = tube.Surf(s2r, phi, tube.Radius(s2r), out _);
                     Grow(ref a, ref b, g);
                     float ur = (s1r + s2r) / (2f * L);
                     Spindle(a, b, th * 0.8f * g, A * 0.8f * (near + (1f - near) * ur) * MeerkatWormholeMath.BridgeGlow(ur, sh, now), col, eye,
@@ -215,20 +317,19 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the glass (whFill) and the warp (updateTubeWarp)
 
-        static void Fill(Vector3 a0, Vector3 t0, Vector3 side, float L, float S, float R, float theta, float b, float m, float s0, float s1,
-            float alpha, Color cIn, Color cOut)
+        static void Fill(in Tube tube, float alpha, Color cIn, Color cOut)
         {
-            float span = s1 - s0;
+            float span = tube.S1 - tube.S0;
             if (span < 0.5f || alpha <= 0.01f) return;
             int start = s_gv.Count;
             for (int r = 0; r < Rings; r++)
             {
-                float u = r / (float)(Rings - 1), s = s0 + span * u, rad = MeerkatWormholeMath.Radius(b, m, L, s0, s1, s);
+                float u = r / (float)(Rings - 1), s = tube.S0 + span * u, rad = tube.Radius(s);
                 var c = Color.Lerp(cIn, cOut, u);
                 c.a = alpha;
                 for (int j = 0; j <= Seg; j++)
                 {
-                    s_gv.Add(Surf(a0, t0, side, S, R, theta, s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
+                    s_gv.Add(tube.Surf(s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
                     s_gn.Add(n);
                     s_gc.Add(c);
                 }
@@ -236,20 +337,19 @@ namespace CosmicShore.Gameplay
             Grid(s_gi, start);
         }
 
-        static void AddWarpTube(MeerkatWormholeExecutor.Tunnel t)
+        static void AddWarpTube(in Tube tube, float fade, ScriptableObjects.MeerkatWormholeConfigSO cfg)
         {
-            float span = t.W.S1 - t.W.S0;
-            if (span < 1f || !t.Config || t.Config.WarpStrength <= 0f) return;
+            float span = tube.S1 - tube.S0;
+            if (span < 1f || !cfg || cfg.WarpStrength <= 0f || !tube.Valid) return;
             int start = s_wv.Count;
-            float fade = t.Fade;
             for (int r = 0; r < Rings; r++)
             {
-                float u = r / (float)(Rings - 1), s = t.W.S0 + span * u, rad = t.Radius(s), sign = Mathf.Cos(Mathf.PI * u) * fade;
+                float u = r / (float)(Rings - 1), s = tube.S0 + span * u, rad = tube.Radius(s), sign = Mathf.Cos(Mathf.PI * u) * fade;
                 for (int j = 0; j <= Seg; j++)
                 {
-                    s_wv.Add(Surf(t.A, t.T0, t.Side, t.S, t.R, t.Theta, s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
+                    s_wv.Add(tube.Surf(s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
                     s_wn.Add(n);
-                    s_wuv.Add(new Vector2(sign, 0.05f * Mathf.Max(0f, t.Config.WarpStrength)));
+                    s_wuv.Add(new Vector2(sign, 0.05f * Mathf.Max(0f, cfg.WarpStrength)));
                 }
             }
             Grid(s_wi, start);
@@ -267,16 +367,6 @@ namespace CosmicShore.Gameplay
         }
 
         // ------------------------------------------------------------------ helpers
-
-        /// <summary>The page's <c>whSurf</c>: a point on the wall at angle phi, radius r; <paramref name="normal"/> is the wall's outward normal there.</summary>
-        static Vector3 Surf(Vector3 a0, Vector3 t0, Vector3 side, float S, float R, float theta, float s, float phi, float r, out Vector3 normal)
-        {
-            var p = MeerkatWormholeMath.At(a0, t0, side, S, R, theta, s, out _);
-            MeerkatWormholeMath.Frame(t0, side, S, R, theta, s, out var n, out var bn);
-            float c = Mathf.Cos(phi), sn = Mathf.Sin(phi);
-            normal = n * c + bn * sn;
-            return p + n * (r * c) + bn * (r * sn);
-        }
 
         static void Upload(ref Mesh mesh, string name, List<Vector3> v, List<Color> c, List<Vector3> n, List<Vector2> uv,
             List<int> idx, MeshTopology topology)

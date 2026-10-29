@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -56,29 +57,96 @@ namespace CosmicShore.Gameplay
         protected override RaceCourseSource CreateCourseSource() =>
             new SwitchbackCourseSource { FirstGateDistance = firstGateDistance };
 
+        // ── fun types (SWITCHBACK.md "Fun types") ─────────────────────────
+
         /// <summary>
-        /// Intensity 3's skim walls and intensity 4's danger prisms, hung on the course on every peer from the course
-        /// every peer received (Breakwater's stations are the same shape). Nothing below intensity 3.
+        /// This match's fun type: the launch panel's choice on the server (<see cref="GameDataSO.SwitchbackFunType"/>),
+        /// and on a client the one the server sent with the course - a client never trusts its own panel for
+        /// geometry every peer must agree on.
+        /// </summary>
+        SwitchbackFunType FunType => ReceivedCourseVariant >= 0
+            ? SwitchbackFunTypes.Sanitize(ReceivedCourseVariant)
+            : gameData ? gameData.SwitchbackFunType : SwitchbackFunType.Baseline;
+
+        protected override int CourseVariant => (int)FunType;
+
+        protected override void PrepareCourseSource(RaceCourseSource source)
+        {
+            if (source is SwitchbackCourseSource switchback) switchback.FunType = FunType;
+        }
+
+        /// <summary>The launch panel's FIXED SEED: each (fun type, intensity) world flies one known course
+        /// (<see cref="SwitchbackFunTypes.WorldSeed"/>), so a tester can compare runs. An authored seed or a forced
+        /// one still wins.</summary>
+        protected override int PickCourseSeed()
+        {
+            if (gameData && gameData.SwitchbackFixedSeed && courseSeed == 0 && CourseSeedOverride.Forced == 0)
+                return SwitchbackFunTypes.WorldSeed(FunType, Intensity);
+            return base.PickCourseSeed();
+        }
+
+        SwitchbackFunTypeRuntime _runtime;
+
+        protected override bool ThreadsAlternate(int raceIndex, int ringIndex, Vector3 prev, Vector3 cur) =>
+            _runtime && _runtime.ThreadsShortcut(raceIndex, prev, cur);
+
+        /// <summary>
+        /// The course features, hung on the course on every peer from the course every peer received (Breakwater's
+        /// stations are the same shape): Baseline, Plan 1 and Plan 3 lay the shipped I3 skim walls and I4 danger
+        /// prisms; Plan 2 and Combined lay <see cref="SwitchbackLiveFeatures"/> - ribbons, moving danger and
+        /// shortcuts. Then the fun-type runtime (splits, medals, the run log line) starts for every fun type.
         /// </summary>
         protected override void OnCourseRaised()
         {
             int intensity = Intensity;
-            if (!SwitchbackFeatures.HasFeatures(intensity)) return;
-            if (!featuresPrefab)
+            var funType = FunType;
+            if (gameData && ReceivedCourseVariant >= 0) gameData.SwitchbackFunType = funType;   // a client's HUD and logs agree with the course
+
+            Vector3 centre = ResolveCellCentre();
+            ResolveShell(out float inner, out _);
+            // The nucleus sits inside the course's inner shell (inner = nucleus x innerRadiusNucleusFactor).
+            float clearRadius = inner / innerRadiusNucleusFactor + NucleusMargin;
+
+            bool live = SwitchbackFunTypes.HasLiveFeatures(funType);
+            SwitchbackFeatureLayout layout = null;
+            if (live)
             {
-                CSDebug.LogError("[Switchback] No features prefab assigned - intensity " + intensity + " is missing its " +
-                                 (intensity == 3 ? "skim walls" : "danger prisms") +
-                                 ". Assign SpawnableSwitchbackFeatures on the controller.");
-                return;
+                var settings = SwitchbackCourseSettings.ForIntensity(intensity, funType);
+                settings.GateCount = _course.Count;
+                layout = SwitchbackLiveFeatures.Layout(_course, settings, intensity, centre, clearRadius);
             }
 
-            var features = Instantiate(featuresPrefab, transform);
-            features.name = "SwitchbackFeatures";
-            // The nucleus sits inside the course's inner shell (inner = nucleus x innerRadiusNucleusFactor).
-            ResolveShell(out float inner, out _);
-            features.SetCourse(_course, intensity, ResolveCellCentre(), inner / innerRadiusNucleusFactor + NucleusMargin);
-            var container = features.Spawn(intensity);
-            if (container) container.name = "SwitchbackFeatures (prisms)";
+            Transform container = null;
+            bool layPrisms = live ? layout.Prisms.Count > 0 : SwitchbackFeatures.HasFeatures(intensity);
+            if (layPrisms)
+            {
+                if (!featuresPrefab)
+                    CSDebug.LogError("[Switchback] No features prefab assigned - intensity " + intensity + " (" + funType +
+                                     ") is missing its prisms. Assign SpawnableSwitchbackFeatures on the controller.");
+                else
+                {
+                    var features = Instantiate(featuresPrefab, transform);
+                    features.name = "SwitchbackFeatures";
+                    if (live) features.SetLayout(_course, intensity, funType, layout, centre, clearRadius);
+                    else features.SetCourse(_course, intensity, centre, clearRadius);
+                    var go = features.Spawn(intensity);
+                    if (go)
+                    {
+                        go.name = "SwitchbackFeatures (prisms)";
+                        container = go.transform;
+                    }
+                }
+            }
+
+            _runtime = new GameObject("SwitchbackFunType").AddComponent<SwitchbackFunTypeRuntime>();
+            _runtime.transform.SetParent(transform, false);
+            _runtime.Init(gameData, funType, intensity, IsServer ? CourseSeedUsed : 0, _course, centre,
+                          () => RaceLength, layout, container);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[Switchback] Fun type {funType} intensity {intensity}: {_course.Count} gates" +
+                (layout != null ? $", {layout.Ribbons.Count} ribbons, {layout.Shortcuts.Count} shortcuts, " +
+                                  $"{layout.MovingClusters.Count} moving clusters" : "") + ".");
         }
     }
 }
