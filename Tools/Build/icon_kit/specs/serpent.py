@@ -170,3 +170,128 @@ CARDS += [
            ("fired: holed clean through", [("holed", "shielded")]),
            ("Charge 5 Pierce: three in one shot", [("pierce", "shielded")])]),
 ]
+
+
+# ---- Mass: Seed Wall options (2026-10-29) --------------------------------------------------------------------------
+# Stopping or cloaking leaves a SEED prism; loose prisms are pulled in at the wall's EDGE into a symmetric herringbone
+# of 2:1 bricks with a square hole at every cell (SeedWallActionSO): four bricks wind round each hole - the pinwheel.
+# Mass sizes the bricks; Mass 5 LOCKDOWN seals every hole with a flat DANGER panel when a crystal lands. The wall is
+# the pilot's (domain); the seed is the ability's object (white); stolen prisms arrive in the HUD's blue.
+def _rect(x0, y0, x1, y1, inset):
+    return fill([(x0 + inset, y0 + inset), (x1 - inset, y0 + inset), (x1 - inset, y1 - inset), (x0 + inset, y1 - inset)])
+
+
+def pinwheel(cx, cy, u, cells=2, gap=2.2, diamonds=False):
+    """`cells` x `cells` herringbone cells of size 3u centred on (cx, cy): bricks, and the holes' centres."""
+    x0, y0 = cx - cells * 1.5 * u, cy - cells * 1.5 * u
+    bricks, holes = [], []
+    for i in range(cells):
+        for j in range(cells):
+            ox, oy = x0 + i * 3 * u, y0 + j * 3 * u
+            for a, b, c, d in ((0, 0, 2, 1), (2, 0, 3, 2), (1, 2, 3, 3), (0, 1, 1, 3)):
+                bricks.append((ox + a * u, oy + b * u, ox + c * u, oy + d * u))
+            holes.append((ox + 1.5 * u, oy + 1.5 * u))
+    m = empty()
+    for x0_, y0_, x1_, y1_ in bricks:
+        if diamonds:
+            mx, my = (x0_ + x1_) / 2, (y0_ + y1_) / 2
+            hx, hy = (x1_ - x0_) / 2 - gap / 2, (y1_ - y0_) / 2 - gap / 2
+            m |= fill([(mx - hx, my), (mx, my - hy), (mx + hx, my), (mx, my + hy)])
+        else:
+            m |= _rect(x0_, y0_, x1_, y1_, gap / 2)
+    return m, holes
+
+
+def _hole_panels(holes, u, gap=2.2):
+    m = empty()
+    for hx, hy in holes:
+        m |= _rect(hx - u / 2, hy - u / 2, hx + u / 2, hy + u / 2, gap * 0.75)
+    return m
+
+
+def _seed(cx, cy, r):
+    return fill([(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)])
+
+
+# A: THE WEAVE. Two by two herringbone cells, the seed in the centre hole; Lockdown fills the other holes with danger.
+SW_U = 16.0
+
+
+def sw_a_wall():
+    m, _ = pinwheel(64.0, 64.0, SW_U)
+    return m
+
+
+def sw_a_seed():
+    return _seed(64.0, 64.0, SW_U * 0.62)
+
+
+def sw_a_panels():
+    _, holes = pinwheel(64.0, 64.0, SW_U)
+    return _hole_panels(holes, SW_U)
+
+
+# Note the 2x2 patch's holes sit at the four cell centres; the seed takes the patch's centre where four cells meet,
+# which in the herringbone is a brick seam, so A seats the seed on a hole instead: the top-left cell's.
+def sw_a_seed_on_hole():
+    _, holes = pinwheel(64.0, 64.0, SW_U)
+    hx, hy = holes[0]
+    return _seed(hx, hy, SW_U * 0.55)
+
+
+# B: STEALING. One cell grown round the seed, the wall's edge open, and a loose prism (blue) pulled in toward the open
+# site with a pull stroke - the wall eats toward the mass around it.
+def sw_b_wall():
+    m, _ = pinwheel(48.0, 64.0, 22.0, cells=1)
+    return m
+
+
+def sw_b_seed():
+    return _seed(48.0, 64.0, 22.0 * 0.5)
+
+
+def sw_b_loose():
+    return _clear_of(fill([(104.0, 52.0), (122.0, 52.0), (122.0, 76.0), (104.0, 76.0)]), sw_b_wall())
+
+
+def sw_b_pull():
+    return stroke([(100.0, 64.0), (86.0, 64.0)], w=5.0) | fill([(80.0, 64.0), (88.0, 57.0), (88.0, 71.0)])
+
+
+def sw_b_panel():
+    return _hole_panels([(48.0, 64.0)], 22.0)
+
+
+# C: THE DIAMONDS. The bricks as the octahedra the game builds (shielded, each a long diamond, long vertex at short
+# vertex), the seed in a hole; Lockdown panels in the holes.
+def sw_c_wall():
+    m, _ = pinwheel(64.0, 64.0, SW_U, diamonds=True)
+    return m
+
+
+def sw_c_panels():
+    _, holes = pinwheel(64.0, 64.0, SW_U)
+    return _hole_panels(holes[1:], SW_U)
+
+
+def _sw_card(key, title, parts, states):
+    return dict(name=f"seedwall_{key}", group="seedwall", lockup_state=0, element="Mass",
+                before=ICON_DIR + "Serpent_SeedWall-PLACEHOLDER.png", title=title, parts=parts, states=states)
+
+
+CARDS += [
+    _sw_card("a", "A  The weave: two by two herringbone cells in your colour, the seed white in a hole; Mass 5 Lockdown: "
+                  "the other holes sealed in danger",
+             dict(wall=sw_a_wall, seed=sw_a_seed_on_hole,
+                  panels=sw_c_panels),
+             [("growing", [("wall", "domain"), ("seed", "white")]),
+              ("Mass 5 Lockdown, after a crystal", [("wall", "domain"), ("panels", "danger"), ("seed", "white")])]),
+    _sw_card("b", "B  Stealing: one cell round the seed and a loose prism pulled in at the open edge; Lockdown: the hole sealed",
+             dict(wall=sw_b_wall, seed=sw_b_seed, loose=sw_b_loose, pull=sw_b_pull, panel=sw_b_panel),
+             [("growing: stealing a prism", [("wall", "domain"), ("seed", "white"), ("pull", "white"), ("loose", "blue")]),
+              ("Mass 5 Lockdown", [("wall", "domain"), ("panel", "danger"), ("pull", "white"), ("loose", "blue")])]),
+    _sw_card("c", "C  The diamonds: the wall as the octahedral bricks the game builds, the seed in a hole; Lockdown panels",
+             dict(wall=sw_c_wall, seed=sw_a_seed_on_hole, panels=sw_c_panels),
+             [("growing", [("wall", "domain"), ("seed", "white")]),
+              ("Mass 5 Lockdown", [("wall", "domain"), ("panels", "danger"), ("seed", "white")])]),
+]
