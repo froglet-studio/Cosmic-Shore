@@ -1,0 +1,18 @@
+{
+ "args": {
+  "intensity": 3,
+  "mode": "Dustup",
+  "vessel": "Butterfly"
+ },
+ "budget": {
+  "tries": 10
+ },
+ "by": "shombithofficial",
+ "created": 1793307255,
+ "id": "r20261030-022415-eba4",
+ "job": "unity-train",
+ "machine": "shombithofficial/dragonsweapon",
+ "note": "",
+ "schema": "froglet-compute/request/1",
+ "start": "now"
+}
