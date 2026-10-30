@@ -1,0 +1,635 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-31 01:26:18 (next editor launch after the abnormal exit)
+session:        20261029-151646202  (pid 14216, Unity 6000.3.17f1)
+started:        2026-10-29T15:16:46.202Z UTC
+last heartbeat: 2026-10-29T23:13:58.847Z UTC
+last state:     EditMode
+main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261029-151646202
+started: 2026-10-29T15:16:46.202Z UTC
+unity:   6000.3.17f1
+pid:     14216
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+[Worker2]  -> (artifact id: '5171d9946caa630e05561d9801fc1154') in 0.1765315 seconds
+[Worker1]  -> (artifact id: 'f4058da3687cf5bff1c9d0041775a5fb') in 0.1749698 seconds
+[Worker0]  -> (artifact id: 'f5cc30a8d4b2d688ae74674b017f4c14') in 0.0284383 seconds
+[Worker1] Start importing Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab using Guid(4f3ce7d760a1e0c76f3bc8c6a6842a92) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/AI/AIPilot.cs using Guid(a58bf4fb65afa704194fe9e28e67d58d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Graphics/Materials/Graphs/MeerkatWormholeLens.shader using Guid(33370c7c15ca4b54b2d25421e8cd65f9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2]  -> (artifact id: 'd23a4fa11153c067119b8c03376e89ec') in 0.0157979 seconds
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '4ff5bf8681d27748f0ed307200176341') in 0.0218629 seconds
+[Worker2] Start importing Assets/_SO_Assets/Games/ArcadeGameWaystation.asset using Guid(3fb6ebbe9fa8770a2605b42d6b34572a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/SwitchbackBlastRunTests.cs using Guid(f28e7509fe524fd1913dc96beba4cf1b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '0dbc75c9bab4208ec31ffa6b06e5be8b') in 0.0146405 seconds
+[Worker2]  -> (artifact id: '8cc5ed63f4981377da0d88f56717eead') in 0.0655961 seconds
+[Worker1]  -> (artifact id: '578a8b5c365ce8c0df9ddbd8cedd84fc') in 0.2252957 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatRootNetwork.cs using Guid(7815893aa753404584a4be9e9c509956) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '35274a1f0a4f19b1b00b4417e3b79543') in 0.0177272 seconds
+[Worker2] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Scarab_Switch.png using Guid(596d4011c672b85029b3b6916e418fd3) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '0b694eac43030fa1776511d1a02be383') in 0.0397414 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md using Guid(76b3865d8323459d879ba08a1ce8038c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '1cd3c6d83f3142edd542838df8ecf71d') in 0.0248613 seconds
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/WaystationCourseTests.cs using Guid(3fec46a1ced04076aa5029cdccd40d08) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '030993a40e2603781fc44503fd670d5e') in 0.0165619 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/Waystation/WaystationCourse.cs using Guid(04dcb2a941e3ac1d0c6aeb65755ad443) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '0f041dfc7456151e90152185643a3294') in 0.0172891 seconds
+[Worker1] Start importing Assets/_Prefabs/CORE/NetworkManager.prefab using Guid(f934e20c0b36bc64e8710d3c2e570629) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/VoyageShellTests.cs using Guid(19269800efe5e8c3e6692ea78bd2ac31) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '21079453a3595834df2b101035ba83df') in 0.01813 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs using Guid(0af94eaf7fed4470981c1258a834c424) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '5bcd58995f251023d1c607b517ee04f9') in 0.0179344 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatOmnicrystalField.cs using Guid(0f12f749ee384843af12e38168cb68aa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'bd4a5db3fd4c4486355777c523ea5ec4') in 0.0155943 seconds
+[Worker2] Start importing Assets/_SO_Assets/Games/ArcadeGameDustup.asset using Guid(955223ded035b55bf794b4e227b68ee3) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '4b28cf685c9331958467503642e2b8c3') in 0.0305197 seconds
+[Worker0] Start importing Assets/_Scripts/Data/Enums/SwitchbackFunType.cs using Guid(1268dfb36a024b71920f4305a0a47846) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '5b2b090adbeb31df768afe09a1a88bd8') in 0.0182082 seconds
+[Worker2] Start importing Assets/_Scenes/Multiplayer Scenes/MinigameDustup.unity using Guid(e22eb90422d763de08d219612851e916) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '114f53f54a5e2f4132bc9cf98b094906') in 0.0387142 seconds
+[Worker0] Start importing Assets/_Scripts/UI/Views/VoyageMapGraphic.cs using Guid(f0c4547417f0bf1d6c39859ac7888a3b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '370d027f99f7c66a835d365d5f846b3f') in 0.0179035 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselCleanseAllyBySkimmerEffectSO.cs using Guid(aa3949a6dcb34ed88a5179accaa71b04) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '2ae1472896297ecfca86a830c7dc3d19') in 0.0159134 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/VesselIncorporeal.cs using Guid(d1c2a3bcefd94ff284544bb603bea08a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '528c62bef568838b7811e2abffe8ca39') in 0.0170017 seconds
+[Worker2] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Core using Guid(4ce59cf671747cc8d2cc9c721bc1e20e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '5959b114d4a2f06c3481a930508239b5') in 0.0159369 seconds
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/MeerkatWormholeMathTests.cs using Guid(b1ece170eb674313827edc132ebdfb4c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '85c659209ca22043015e69bb4547b9ea') in 0.0173408 seconds
+[Worker2] Start importing Assets/_Scripts/Data/Enums/VesselClassType.cs using Guid(158d9560ce71ac446b4a816a04234f20) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '6ffd35d44cbf08841033822373f9a90d') in 0.0174659 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Explosion Effects/VesselElementalDebuffByExplosionEffectSO.cs using Guid(c2e449f647cc48e9be66d67fbc166a33) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '065581056c59f06340e61b7a4dc9fae7') in 0.0182552 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/TAPESTRY.md using Guid(4b6804122f688b8c0e540830de367cf4) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/UI/View/ScarabHUDView.cs using Guid(58b589e54e9c40da85bab157baab35e6) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: '85022ea3e5ba5148b38638bbce6b1238') in 0.023143 seconds
+[Worker0]  -> (artifact id: 'cf529d9163de5886b39e6ad4a0abb5aa') in 0.0169653 seconds
+[Worker2] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_SwitchFar.png using Guid(27ec5c522f8f1d45d3ae4aae0570f7e8) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Graphics/Hangar/Cards/TigerMoth.png using Guid(aedca652a13e73fd6bed7f27a143086c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: '0916bbc1d48f1c024504934378bdfce2') in 0.0373163 seconds
+[Worker0]  -> (artifact id: 'a015ae3f21a1673d1dbaf6131df3a746') in 0.0338711 seconds
+[Worker2] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Scarab_CavitationBlast.png using Guid(008fc100ca227a7a963ebe3e56d2a651) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackLiveFeatures.cs using Guid(0afa83bb92424b46be63793dc0a94763) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'f42ba35b40cd3a8f90445e4eb26ee937') in 0.0209521 seconds
+[Worker2]  -> (artifact id: 'fe8fabc05ae1a1a0ea2ed2c191c09ca8') in 0.0573457 seconds
+[Worker1]  -> (artifact id: 'a394943bfb039345f15234642b8a9107') in 1.180248 seconds
+[Worker0] Start importing Assets/Resources/ElementalAbilityMaps/Meerkat.asset using Guid(2b7e4c9a1d3f4a5b8c6d7e8f9a0b1c2d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/Trail.cs using Guid(3c890608d27de86498f5c58fa01084ad) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '8e32cb4076d3ffd5cc5bc86889b4bf60') in 0.0290907 seconds
+[Worker2]  -> (artifact id: 'bfc4565109e526273b40daa95609d867') in 0.0181095 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatWormholeView.cs using Guid(e3c29ef6f5e74a729c36cc9fcf462a8a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackCourse.cs using Guid(2f9b4491c4cc3094d7d5e05fad8a3efa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSwallow.cs using Guid(f8fd767ea6e34704bf36aa25404ae128) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1]  -> (artifact id: '97422b0863f85295a9df22f9b58daa17') in 0.0194453 seconds
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'cced909a069b0c66de3447d7147fd075') in 0.0181897 seconds
+[Worker2]  -> (artifact id: 'c1b8d2bba0cc167b96c9e9a2fc47cb9f') in 0.0196463 seconds
+[Worker0] Start importing Assets/_Scripts/Utility/VesselPlacementView.cs using Guid(e24a4a0354c54d789b7ee01fc9cf3507) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/MeerkatRootMathTests.cs using Guid(1408c55d1efd41dbb4608e212d78a108) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Editor/CameraSettingsSOEditor.cs using Guid(1b41e5d637c18e24fb3b970f8940cb89) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'a274cf872dc2859cc446b59386690196') in 0.0169479 seconds
+[Worker1]  -> (artifact id: 'fd5e665dd89936c2d9786e178b2934d5') in 0.0170505 seconds
+[Worker2]  -> (artifact id: '50b006a12dea084570920de112e41a9c') in 0.0162556 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/VesselExplosionByCrystalEffectSO.cs using Guid(5a148940713548a4b5905021dc45785b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_SO_Assets/Mode Previews/ModePreview_Dustup.asset using Guid(c1eebc78c3e4e7629c6fd8b437140006) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_SwitchWake.png using Guid(1ce737e581923aa4a3a6b7408174e9e3) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'fb97bc7939b8a919cd1447da4fbcacd5') in 0.0176472 seconds
+[Worker2]  -> (artifact id: '055add0d32589969cd8d491e39579387') in 0.0369842 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs using Guid(bf220a815a4cdfd4c8f061f04213ca2f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'b3d2dd1a5c5de10028a3853b4b8c209c') in 0.0157499 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Environment/HealthPrism.cs using Guid(2f76793d2a031124f900d060d1bbb2bb) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'ae3c608a208791cd7de71e86a89881a4') in 0.0175161 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Multiplayer/PilotSwap.cs using Guid(29b8b2b7c382473c8256ee93aa7fe0c9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: '7687d233f6c508ba51a8cc12a7de5da4') in 0.2559444 seconds
+[Worker0]  -> (artifact id: '955841ba8599122cfc5fe46cfa78ad68') in 0.0180723 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/TrailFollower.cs using Guid(176c662296efcc847a97193a5e7ba824) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '9e33f6ebaa1e743c08001fa49839fc6f') in 0.0176881 seconds
+[Worker1] Start importing Assets/_Scripts/UI/Views/VoyageJobCard.cs using Guid(7b7dee05939d0ddb43842871b116daf1) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatRootMath.cs using Guid(d5929d48e90c439890c3cda64023d037) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: '73be79df6c7d0c00d50a5858eab7e167') in 0.0180141 seconds
+[Worker0]  -> (artifact id: '5ba08c62848642e1a2a577e9cabe8dec') in 0.0189026 seconds
+[Worker2] Start importing Assets/_Scripts/UI/Controller/ButterflyHUDController.cs using Guid(f9a83dffac054b05b9957faea68ac803) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '87f2493994a897c2d6d32935cab14dd8') in 0.0172656 seconds
+[Worker0] Start importing Assets/_Scripts/UI/Kit/KitRectMask2D.cs using Guid(738afc4a3b5a4555a9e4b8ae9c11cdaa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/MeerkatWormholeNetworkRelay.cs using Guid(da23a579ad3c407a92aa7e79db36fa73) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_BlastFieldBack.png using Guid(78101ea1eb8d648d2eb8e5b57286b17e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0]  -> (artifact id: '4b7c8d2d992af17618e73a6f1a742c97') in 0.0166765 seconds
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: '2abef330d671cd8e4674dad8eb53e7e5') in 0.0202195 seconds
+[Worker2]  -> (artifact id: '3c58d2644dd5954c2d67cae6e77175a2') in 0.039309 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Camera/CameraFeelConfigSO.cs using Guid(b5bf975b67ff4e66b39d7e1e854da264) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] Start importing Assets/_Graphics/Hangar/Cards/Meerkat.png using Guid(a99dae73638a94af830bfc59b252ba64) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: '29f98a76c74d091b9a1e17968a043779') in 0.0154139 seconds
+[Worker2] Start importing Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset using Guid(a541c39b6f7a46c5be04c2b39275a4c0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '26a10270a2d4eb65e91c7c5f63cff6c0') in 0.0361764 seconds
+[Worker2]  -> (artifact id: '5ba4997d541bb9781a27af283944347d') in 0.0345269 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/TANDAVA.md using Guid(dae0a2bb498e90fcf9edc1a5dd17fc6d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '5f3c1df7fbc1a32232c6869c303abbee') in 0.0307285 seconds
+[Worker0] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts using Guid(a30db593ba0b9e0faaabae6689590e95) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'c50c66f32725b1f94e4a9e94a5b6f203') in 0.0183776 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/Switchback/BlastRunHunters.cs using Guid(1dbbf2902c45430bae12fda01196a581) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '787438c10bb87e68311ebc165e3ec11d') in 0.0233866 seconds
+[Worker1] Start importing Assets/DefaultNetworkPrefabs.asset using Guid(0becb7bcd48c98c4797fa76cfd181437) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_SO_Assets/Mode Previews/ModePreview_Sirocco.asset using Guid(d680644a81feb92ce02df6eda0c5312a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Tests/Editor/ScarabSwitchCardTests.cs using Guid(66a13688f6974bfc994c41be73c854ea) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'd24135e5a0ab9536edb3dd61dedbde2c') in 0.0155422 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/SWITCHBACK.md using Guid(2def987f44521514ba3287d37246e93b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'e7b89eb9ae08f40d525c5569787c1353') in 0.0243224 seconds
+[Worker2] Start importing Assets/_Scripts/UI/Views/VoyageView.cs using Guid(e342e7be076713ca896cf8f292b45077) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '8087016f2bbe0f43afda53ab86976e90') in 0.0152364 seconds
+[Worker2] Start importing Assets/Resources/IntroCameraLibrary.asset using Guid(0b7e3c5a9d2f4e61a8c47f19d6e2b305) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'd6db708cbc8c1e08f6a2d1d8ce8c6972') in 0.1064761 seconds
+[Worker2] Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedPlayerCount.asset using Guid(15256dcf0be30b4489190913d1f305db) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '0f507c0196aff41c00500c15d1e0aafa') in 0.0231379 seconds
+[Worker2] Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedVesselClass.asset using Guid(669b1e817c2158c40940e62d07c68356) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '4aeba33ed476acd63ca023b41bed98d0') in 0.0179749 seconds
+[Worker1]  -> (artifact id: '14d1536061ae41e09689aa6bb9b1aace') in 0.7773969 seconds
+[Worker2] Start importing Assets/_Scripts/Tests/Editor/EnumIntegrityTests.cs using Guid(36c7e210a472e994caf90813e3642fb4) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'ccd9d0dfdd7d5e73243e61164a2e4715') in 0.0161089 seconds
+[Worker0]  -> (artifact id: '1f9fcd6a9737a5a451d0392c19d2257d') in 0.9045131 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackController.cs using Guid(232714002ed12bc27251e8ac09358ff0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/PrismRecycler.cs using Guid(cefce8270e2e421faf690ee2d6e070ef) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'e854ea89d6cfd01f3fab35efa43ddb23') in 0.0210165 seconds
+[Worker2]  -> (artifact id: '686ee2cd3e5e222c993848804fa6a508') in 0.0283816 seconds
+[Worker0] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_SwitchNear.png using Guid(a90e59b2384b939f3a929cd2966de83f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/ScarabKitTests.cs using Guid(733587997fe240a095d1cb87c4a7a04a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/TigerMothDropExecutor.cs using Guid(7c42e6152d424e1896772b16b6dc533e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'a963033f556f2e166eb0cdc47b3dc389') in 0.0331671 seconds
+[Worker1]  -> (artifact id: '4defb2f884360d60bfba7d415e5f6e73') in 0.0209175 seconds
+[Worker2]  -> (artifact id: 'beae7f4fcc1ad3789dec7c8799272817') in 0.0215458 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatExitPortal.cs using Guid(1bac2d9b191f41f7b4e767134e40eed7) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_BlastPlate.png using Guid(938d4937d00daf6bf16cd9f44d641c83) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/BURROWRUN.md using Guid(278f6c3bf51589f3225cb3cfafa3a425) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '9033d2563e9171b1f461ac84e4c3ed98') in 0.0174208 seconds
+[Worker2]  -> (artifact id: '8966646e9f540ce68bae7600c40fe32f') in 0.0302913 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/ScarabVesselTransformer.cs using Guid(58b85d836b9345b687ee471b063c025b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'd0b869a23a3548cb62e03454a7fa5a92') in 0.0170105 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/ScarabSwitch.cs using Guid(da75e1d294914794a20a7426c9cba690) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'e8f78afc1535616d1fcca42a0c454574') in 0.018524 seconds
+[Worker1]  -> (artifact id: '1dfacbd7660254bc949b144cd8447e4b') in 0.1560057 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyDustField.cs using Guid(2e669e8d4897fc831070dfe1ae8cfaf3) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/ScarabBallForge.cs using Guid(568dbeae728d49519769372c3041787d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0]  -> (artifact id: '949bc08fe2d321283aac4b0b86ae1c73') in 0.0211423 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/GunVesselTransformer.cs using Guid(ce7c4cb9488340a46830ac32fea26c30) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker2]  -> (artifact id: '383e05f255b0bf0f5646fb99243e69b6') in 0.0185838 seconds
+[Worker1]  -> (artifact id: 'f500ef838745bcb1da748d1e98f4ee83') in 0.018715 seconds
+[Worker0] Start importing Assets/_Prefabs/Spacevessels/Meerkat.prefab using Guid(4e2a8c1f7b9d4f3e8a6c5b2d1e0f9a87) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/Waystation/WaystationController.cs using Guid(df7c484cfd6591e30db5cd9647df57ef) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/BurrowRun/BurrowRunController.cs using Guid(5e988a9b86ee3e9b4aaa03b58edcfa42) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2]  -> (artifact id: '21e79a9651494884ab05ec8720875665') in 0.0193123 seconds
+[Worker1]  -> (artifact id: '88020ebacc4eb1585a85f1785e07e3a3') in 0.0195989 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/TigerMothDropActionSO.cs using Guid(cc5ed4d85d264f68b3a7a76351aca66d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/Dustup/DustupController.cs using Guid(69f937a657535aa9abc6c5d663d5cc6c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker2]  -> (artifact id: '8a840da09cb296968ae1390c14bd5b14') in 0.0190727 seconds
+[Worker1]  -> (artifact id: 'db2e75811a21176369df576acc9115d1') in 0.0216588 seconds
+[Worker2] Start importing Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset using Guid(9f6e2fcf98f99f3ed5ff96934bb43d6d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/VoyageRulesTests.cs using Guid(1cf02c46e90eed3b5ca2bafff93539eb) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '3986d291bc1c4ff89a95d7e017b02c9a') in 0.0172046 seconds
+[Worker1] Start importing Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity using Guid(ba96d490e94c4aed88dd7c9677601a5c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '7ed629093e71ae6de8822745ea52c019') in 0.0239218 seconds
+[Worker2]  -> (artifact id: '46980328461f49d58276e655dd9795a7') in 0.1508382 seconds
+[Worker0]  -> (artifact id: '11027c44c3083807da7cea9e28764cf6') in 0.4566308 seconds
+[Worker1] Start importing Assets/_Prefabs/Environment/AstroLeagueBall.prefab using Guid(1da0b7db01253067eaee1d6f9d1b2242) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs using Guid(ae0eeb4ef66ef44346092d21439f1c49) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '6df4e6205916dda52dc964bc190bf3be') in 0.0152444 seconds
+[Worker0] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_BlastFieldShattered.png using Guid(752451a29f9c16d2cbcbe681da7d8b83) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'e4366c2591fb63c23a2103eb857ab49b') in 0.0318611 seconds
+[Worker2] Start importing Assets/_Scripts/UI/Elements/Hangar/HangarAbilityKind.cs using Guid(23e8e14c416940588c3b9d1ebc552cdf) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '697750fb926fe2bb74c06f9f3209827b') in 0.0174744 seconds
+[Worker1]  -> (artifact id: 'a72433d10d8f9bff570e18109036d470') in 0.1464519 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md using Guid(22391df03c4b44a892ccd33d9750c04f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_SeedMembrane.png using Guid(88509b55822bba0e554c888b9b370800) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '1eaa9b06b589c891d8fc8f121b8c92ca') in 0.0228038 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/Prism.cs using Guid(f366d272ab4f79e419d678fc6ca23512) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '5e80028ea9f1200640df4af187c8ae75') in 0.0162591 seconds
+[Worker2]  -> (artifact id: '2187f6140f076f3f3eef096dc8d60c86') in 0.0375216 seconds
+[Worker0] Start importing Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs using Guid(700f55ec68c5d124ebb8eb6d14268efb) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '5aecce6e985fe6c03cc532c5c16e2f5a') in 0.0165718 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatWormholeExecutor.cs using Guid(89411298747349b88fb3f1edfb094dad) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] Start importing Assets/_SO_Assets/Classes/SO_Class_TigerMoth.asset using Guid(d46d96ae184a444faf9a09a2b793a07d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'c5e124d9c912b4674187a488d5096f2a') in 0.0202615 seconds
+[Worker2]  -> (artifact id: '5d2260ee67bf3166f43be0ae4d26f80c') in 0.0862344 seconds
+[Worker0] Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/ImpactEffects/Impactors/OmniCrystalImpactor.cs using Guid(f916858793fd493e8479ee9641bfef57) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0]  -> (artifact id: '59a813c24bbc443fadac58bbffe1a624') in 0.0262241 seconds
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '831ca7e2763cd0138ac58a83226f0d19') in 0.0205263 seconds
+[Worker2] Start importing Assets/_Graphics/Materials/GreenSpikeMaterial.mat using Guid(77e1afb46629cc7469cfccbdae90a628) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '5559f74bb97e4ca5e16fd932f4905286') in 0.0418252 seconds
+[Worker0] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_BlastFieldBackShattered.png using Guid(ddb552b0bb1c9ce4a6b1789a868b7245) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY_FOLD.md using Guid(64fd016514d4463abcd6a936f5de063d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: '3ef366ffd144448d40f0943dcfcb4c52') in 0.0356619 seconds
+[Worker1]  -> (artifact id: '83d2571c3d24383aace36106b82f4195') in 0.0247524 seconds
+[Worker2] Start importing Assets/Resources/CameraFeelConfig.asset using Guid(c40303bf6c50480ab16c093c53e1ad9b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs using Guid(b1a112282f4e42c39da2488602d72247) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'd7f79762f3c6b3e88ae5c30fd6bcb983') in 0.0389408 seconds
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/MeerkatSolitonMathTests.cs using Guid(34c1c3f30f4b49c0a5c0fb99931f8f7d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: '38d38a07d432e5747c0403570d24017b') in 0.0177213 seconds
+[Worker1]  -> (artifact id: 'be944c62f5df740f22d1dcc718602c55') in 0.0212211 seconds
+[Worker2] Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Mission/MissionView.prefab using Guid(0ee3bc98f53d171d37a7a89d814c62be) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Environment/FlowField/CrystalManager.cs using Guid(3c544786819e4cfc82c4931d974ffb1e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '501b791fa187fb07f8a3da7ec67acdc8') in 0.0157113 seconds
+[Worker1] Start importing Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity using Guid(f3efa5204ad2461ebf22bc57e2170a5a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'fb438605d55885fef8e78661524ef8df') in 0.0437238 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Camera/MainMenuCameraController.cs using Guid(32a7a343565d3e743af4c0d44b8701bc) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '84256f16de00aebf3fa8180018293a73') in 0.0185491 seconds
+[Worker1] Start importing Assets/_SO_Assets/Mode Previews/ModePreview_Tapestry.asset using Guid(5f1603cfd3b125f4efc72eca4c4e8371) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_BlastPrisms.png using Guid(62d21a6765f5f801452166be2d243dd8) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'f1d123b81ea1dac965ad113e937068f6') in 0.0303822 seconds
+[Worker1]  -> (artifact id: '8b072c7c69010f9db9a53053fea47553') in 0.1067204 seconds
+[Worker0] Start importing Assets/_Scripts/UI/Views/VoyageJobsView.cs using Guid(491d05bb0d3cf0dd744a4afd47ed8bb9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '1cc6580aa6312c6cff1871699c1bc3fd') in 0.0184648 seconds
+[Worker2]  -> (artifact id: 'da506c16ddcfbffdfce20400aeec2fe1') in 0.3884493 seconds
+[Worker1] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Parts/Scarab_BlastHull.png using Guid(0d967419bbc254b620c4f769357efdaa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '8f39632efc79b17fac0941449565b8d7') in 0.0327214 seconds
+[Worker0] Start importing Assets/Resources/ElementalAbilityMaps/Scarab.asset using Guid(ebc1ecdfcff1363eb9c021e4ede92afe) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_SO_Assets/Effects/Vessel Skimmer Effects/TigerMothDustCleanseAllyBySkimmerEffect.asset using Guid(81e2380687e6475898addbcf94c03b71) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '3969072e961b45d7e790e127c39d7ac4') in 0.0264666 seconds
+[Worker2]  -> (artifact id: '986c5b69a4e64b06a44c4eeda24aadcb') in 0.0199869 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackCourseSource.cs using Guid(5e65491f06ab4279b3e9a548a0642412) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'b16558986c62acc7ea732f3a29820817') in 0.0170361 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatWormholeLook.cs using Guid(e549c22534b14391b46d471f7a4e85b2) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.GameDataSync.cs using Guid(cc732c168e1667a9b1ce51555e289a96) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'fddff0d51d24d6b5163e7f8be9f437f0') in 0.0163468 seconds
+[Worker2]  -> (artifact id: '9152dd5654bf1cdb71ba158294df3287') in 0.0178625 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/ResourceSystem.cs using Guid(737294a573670f74389a7af68df314d5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'dad5744d21e0e9865511e9faddb8c6e8') in 0.0187531 seconds
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/PilotCatalogAssetTests.cs using Guid(5817e985e7de4b4c95f25597d2a626c1) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/ElementalCleanse.cs using Guid(8649f2b4a5214e20941232fea788bda9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'd13893868cc3a2d205713a1a621903e0') in 0.0141362 seconds
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/AbilityLockupStyleTests.cs using Guid(ece960bc158c495ca2a6d6f6116aaceb) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2]  -> (artifact id: 'e795820e29280203b90608ed3c4b4a41') in 0.0181702 seconds
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '1b40444217c5752773ff9256f4de21c6') in 0.018044 seconds
+[Worker0] Start importing Assets/_Prefabs/Spacevessels/Scarab.prefab using Guid(945f7384d7042607da0b61b8d18f3f9b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Environment/FloraAndFauna/LifeForm.cs using Guid(5e5a75ddb4e65014b8f5d29e0713a396) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/ElementPipsConfigSO.cs using Guid(72faa7e6fa544be6a63b80c311482dea) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2]  -> (artifact id: '05a115716483f00a8d97da7adbd4cb5c') in 0.0180204 seconds
+[Worker1]  -> (artifact id: 'a403fc4981c634f7cb23a3dec23f0454') in 0.0189585 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonKit.cs using Guid(4d2007a76a174c0f94b147119b384dba) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/ScarabBlastCardTests.cs using Guid(dd9e7babbaad4027913e35661715170d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2]  -> (artifact id: '7d20cfa78558b70061c8d6f10d9f0506') in 0.0178167 seconds
+[Worker1]  -> (artifact id: '6c8bf0873f98a3541ccaea72eb32f946') in 0.0172365 seconds
+[Worker2] Start importing Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/ScarabCavitationExplosionImpactorDataContainer.asset using Guid(33cd836ca9084ad3aa3a48e56cf705e7) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Utility/DataContainers/GameDataSO.cs using Guid(ccff787dc643e6d48a46c1b58af79d00) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'bd922e9cb2e1fc999d251185f7f11256') in 0.0167861 seconds
+[Worker2]  -> (artifact id: 'f5642cdc268b6d1497a57ca1be2e5779') in 0.0424532 seconds
+[Worker0]  -> (artifact id: '68e53c4be0fe3415e09ea73d18b5c927') in 0.3375922 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerAlignPrismEffectSO.cs using Guid(9fe38b6843b843c9b2503db9edfde502) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'f5acac85f857a65a8c4eeefa431dd74a') in 0.0158948 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/WAYSTATION.md using Guid(f9229600f4c89db439d73e3f90043bfe) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '59a6569ef415ecf5cc815ffea0a88b7b') in 0.0269739 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatWormholeExecutor.Lab.cs using Guid(c20cdd4a161243c49e8ef3a442ba299c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'ba84561347561073a92ee3e1cce3affa') in 0.0188948 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/ScarabNucleusSeeder.cs using Guid(dbfaadfbe145fe8600dd76597b09faf8) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'aa88d0612a4bc52299209f03b9257e46') in 0.0164933 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/VesselPrismController.cs using Guid(909fb5cbbca8c4549b5a9df56d837e55) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '4c228b58f2c0e2c1b4ce81ec122ace15') in 0.0189119 seconds
+[Worker0] Start importing Assets/_Prefabs/Projectile/AOEScarabCavitation.prefab using Guid(dd8d6149fdb64a5d869d0b0d041dd659) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md using Guid(3e41848af64641aeaaac8d82faaf1d17) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '9a45d5cc4fb28135f8b92cd24adda7fc') in 0.0280103 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatWormholeConfigSO.cs using Guid(79e5a66832b4490dada0056a58c42303) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'af303ea4d5cb7ba0b3ebab8e7ae0b949') in 0.0224519 seconds
+[Worker0]  -> (artifact id: '826cec945dcb4b88fef287c2b83ab528') in 0.1950771 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatWormholeActionSO.cs using Guid(2a32b1d99188444a8e2c5748be1f0822) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'f7bdebedd2a930bc8690f6dbaf45cb6b') in 0.0195264 seconds
+[Worker2] Start importing Assets/_SO_Assets/Games/ArcadeGameTapestry.asset using Guid(c3317b6efaa64dcaf2a105158e2ede14) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '339bbd3382b4780a5b0cfa6c709784aa') in 0.0370936 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Arcade/SIROCCO.md using Guid(9314bea7a37d1c79e1abe16da4068e84) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '1c796bfbecfd959084b049c83053aac4') in 0.0280521 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActionHandler.cs using Guid(ab3e795de1597af4f812bc7bbb73356d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '3010ffd0d6cda831007caa465db7d5e3') in 0.0196804 seconds
+[Worker2] Start importing Assets/_SO_Assets/Vessel Prefab Container.asset using Guid(05f8f1205bd90e14b8e59cf78da1a6f2) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Camera/CustomCameraController.cs using Guid(9da4dd020c6c449eb507dd45e223055a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_SO_Assets/VesselActions/TigerMoth using Guid(4e6fc1ed76ee44ef972d0ae7686e1861) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0]  -> (artifact id: 'd658843c932713c35926ea130aec96c5') in 0.0181082 seconds
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '37e2e364d445c17d6bccd0c90ebd9b05') in 0.0168669 seconds
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/ElementHandoverTests.cs using Guid(d75e92138de7465da8f2646750310aee) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatSolitonMath.cs using Guid(f913c464a3aa4352a1b5829e6d106d7b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'a1ff25390dbbf8c6960c89ee51e3cddd') in 0.0169544 seconds
+[Worker1]  -> (artifact id: '276747a4bd03015e3a03c316a3f1ec90') in 0.0162752 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselElementalAbilityHandler.cs using Guid(d2e5c2b8eb1e4e9db74b7f77460bca6e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSentinelModeActionSO.cs using Guid(b4fdad43841f41aea2f71dc9844c7f85) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: '3849aa461592f133d38d63607e570061') in 0.0182852 seconds
+[Worker1]  -> (artifact id: '3b11b9740e5b85dd2f8c6dd525e0094c') in 0.020693 seconds
+[Worker0] Start importing Assets/Resources/TouchControlProfiles.asset using Guid(a8f12c18f05f86c77afa921677e8f2ff) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Core/Scarab_BallForge.png using Guid(cd332a5e644eae15aefa58a714429637) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '6fe9ca2a0b0bd30d7252b6fcd1b60685') in 0.0374799 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/VesselSilence.cs using Guid(3cca47ada3d4466ba2b6bc4345e1dffc) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'd0526486b633ebb50e4136dd3d9eed73') in 0.0140137 seconds
+[Worker0]  -> (artifact id: '48692e3c2686b7699c853f6d4405ba9a') in 0.1871388 seconds
+[Worker1] Start importing Assets/_SO_Assets/Effects/Vessel Skimmer Effects/ButterflyScaleDustDebuffBySkimmerEffect.asset using Guid(d167f72433a730548bd503bafa845980) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'da8739eb2fe945ad6953eac44437f233') in 0.0198086 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyBloomDust.cs using Guid(351d0e02c9461619694212b4a2006244) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '97d677da8a32501ba999f10fc44a78db') in 0.0158877 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatWormholeLensPass.cs using Guid(32685b621ccb429e959e6fe52eac7b0b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'afad6d93b443aa1daa1d8ac9523a979d') in 0.0182475 seconds
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/SwitchbackFunTypeTests.cs using Guid(d2edb4c805e141ff9e0758bf597a8a58) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '391a6ececc411443ec3de1ff656213e6') in 0.0188037 seconds
+[Worker1] Start importing Assets/_Graphics/Icons/AbilityIcons/Scarab/Core/Scarab_Drift.png using Guid(20091d22a7dd3245ad72a25ecc72126d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '1703b409cdd714d108cda0e2962ef5c8') in 0.0373709 seconds
+[Worker2]  -> (artifact id: '08635fe985c138efbcc9f1ee2c61435a') in 0.9713077 seconds
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "-Kn_QhOb"... (expires: 2026-10-29T19:13:18Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Asset Pipeline Refresh (id=c1ce8cc8b0d3aaa48ba1fec2dfccce15): Total: 0.057 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "85y1hTru"... (expires: 2026-10-29T21:12:22Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 52.151ms
+Scanning for USB devices : 53.870ms
+Scanning for USB devices : 53.158ms
+Scanning for USB devices : 53.477ms
+Scanning for USB devices : 52.495ms
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "O3jth7tL"... (expires: 2026-10-29T23:12:01Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "4bPqi3OW"... (expires: 2026-10-30T01:11:11Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+IPCStream (Upm-14216): IPC stream failed to read (Not connected)
+Unexpected transport error from import worker 2 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker2.log
+0x00007fff152b4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff16aef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff16aefbee (Unity) Stacktrace::GetStacktrace
+0x00007fff1526587f (Unity) DebugStringToFile
+0x00007fff17b00ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007fff17b0da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007fff17ad0207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007fff17ad2aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007fff17ac90c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007fff17ad3f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007fff17ae0867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007fff17acca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007fff17acdcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007fff17add809 (Unity) IOService::Run
+0x00007fff17ade46b (Unity) IOService::Impl::ThreadFunction
+0x00007fff16ae2b80 (Unity) Thread::RunThreadWrapper
+0x00007fffbe1fdda7 (KERNEL32) BaseThreadInitThunk
+0x00007fffbe93ee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 2: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker2.log
+Unexpected transport error from import worker 1 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker1.log
+0x00007fff152b4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff16aef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff16aefbee (Unity) Stacktrace::GetStacktrace
+0x00007fff1526587f (Unity) DebugStringToFile
+0x00007fff17b00ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007fff17b0da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007fff17ad0207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007fff17ad2aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007fff17ac90c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007fff17ad3f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007fff17ae0867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007fff17acca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007fff17acdcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007fff17add809 (Unity) IOService::Run
+0x00007fff17ade46b (Unity) IOService::Impl::ThreadFunction
+0x00007fff16ae2b80 (Unity) Thread::RunThreadWrapper
+0x00007fffbe1fdda7 (KERNEL32) BaseThreadInitThunk
+0x00007fffbe93ee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 1: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker1.log
+[LAYOUT] About to save layout C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/Shombith/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+IPCStream (hubIPCService): IPC stream failed to read (Not connected)
+
