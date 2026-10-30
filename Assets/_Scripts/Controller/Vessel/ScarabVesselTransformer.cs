@@ -96,6 +96,9 @@ namespace CosmicShore.Gameplay
         /// risk reading a different frame's trigger between them.</summary>
         float _throttle01;
 
+        /// <summary>This frame's trigger depth, 0..1 (what the Throttle card's wake shows).</summary>
+        public float Throttle01 => _throttle01;
+
         public override void Initialize(IVessel vessel)
         {
             base.Initialize(vessel);

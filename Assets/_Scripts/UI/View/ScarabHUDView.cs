@@ -51,6 +51,21 @@ namespace CosmicShore.UI
         [Tooltip("The seeded-ball size the ball part is drawn at: ScarabBallForge's x4 at Space 10.")]
         [SerializeField, Min(1f)] float seedMaxScale = 4f;
 
+        [Header("Throttle (Time row)")]
+        [Tooltip("The Scarab flying right (Scarab_ThrottleHull), in the pilot's domain colour.")]
+        [SerializeField] Image throttleHullIcon;
+        [Tooltip("The wake at a third of the pull (Scarab_ThrottleWakeShort). One wake shows at a time (WakeStepFor).")]
+        [SerializeField] Image wakeShortIcon;
+        [Tooltip("The wake at two thirds of the pull (Scarab_ThrottleWakeMid).")]
+        [SerializeField] Image wakeMidIcon;
+        [Tooltip("The wake at full pull (Scarab_ThrottleWakeLong).")]
+        [SerializeField] Image wakeLongIcon;
+        [Tooltip("Time 5, Snap Dash: the chevron ahead of the nose (Scarab_SnapDash). Hidden below Time 5, " +
+                 "snapDashReadyColor ready, snapDashSpentColor while it waits its cooldown.")]
+        [SerializeField] Image snapDashIcon;
+        [SerializeField] Color snapDashReadyColor = Color.white;
+        [SerializeField] Color snapDashSpentColor = new(1f, 1f, 1f, 0.3f);
+
         [Header("Switch (Mass row)")]
         [Tooltip("The Switch card's container (the ability icon Image, transparent).")]
         [SerializeField] Image switchIcon;
@@ -104,6 +119,8 @@ namespace CosmicShore.UI
         bool _backdraft;
         BlastParts _blastParts;
         bool _seeded;
+        int _wakeStep = int.MinValue;
+        int _snapDashState = int.MinValue;
 
         public override void Initialize()
         {
@@ -113,7 +130,42 @@ namespace CosmicShore.UI
             SetSwitchCharges(0);
             SetSwitchScale(1f);
             SetBlastReady(true, 0f);
+            _wakeStep = _snapDashState = int.MinValue;
+            SetThrottle(0f);
+            SetSnapDash(false, true);
             _seeded = true;
+        }
+
+        /// <summary>Which wake the Throttle card shows for a trigger depth: -1 none (released), else 0 / 1 / 2 for the
+        /// pull's first, second and last third.</summary>
+        public static int WakeStepFor(float depth01)
+            => depth01 <= 0.05f ? -1 : Mathf.Clamp(Mathf.CeilToInt(depth01 * 3f - 1e-4f) - 1, 0, 2);
+
+        /// <summary>The live trigger depth: the wake as long as the pull is deep. Writes only on a step change.</summary>
+        public void SetThrottle(float depth01)
+        {
+            int step = WakeStepFor(depth01);
+            if (step == _wakeStep) return;
+            _wakeStep = step;
+            if (wakeShortIcon) wakeShortIcon.enabled = step == 0;
+            if (wakeMidIcon) wakeMidIcon.enabled = step == 1;
+            if (wakeLongIcon) wakeLongIcon.enabled = step == 2;
+        }
+
+        /// <summary>The Throttle card's Scarab, in the pilot's <paramref name="domain"/> colour.</summary>
+        public void SetThrottleHullColor(Color domain)
+        {
+            if (throttleHullIcon) throttleHullIcon.color = domain;
+        }
+
+        /// <summary>The Snap Dash chevron: hidden below Time 5, lit while ready, grey while it waits.</summary>
+        public void SetSnapDash(bool unlocked, bool ready)
+        {
+            int state = !unlocked ? 0 : ready ? 1 : 2;
+            if (state == _snapDashState || !snapDashIcon) return;
+            _snapDashState = state;
+            snapDashIcon.enabled = unlocked;
+            snapDashIcon.color = ready ? snapDashReadyColor : snapDashSpentColor;
         }
 
         /// <summary>The Nucleus Seeding card's ball, in the pilot's <paramref name="domain"/> colour.</summary>

@@ -1042,8 +1042,9 @@ namespace CosmicShore.Gameplay
             // SetupDestruction disables the scale animator (destroyed mass must stop scaling and
             // weighing). Re-arm it on pool-reuse creation so the re-minted prism grows in from
             // zero (continuity law) and GetCurrentVolume tracks again (volume is the spine).
-            // Gated on !enabled so fresh spawns and never-destroyed pooled reuse are untouched;
-            // Restore() never routes through here and keeps its bookkept-volume fallback.
+            // Gated on !enabled so fresh spawns and never-destroyed pooled reuse are untouched.
+            // Restore() never routes through here: it re-arms through RearmAfterRestore, keeping
+            // the size the prism died at and blooming it back in.
             if (scaleAnimator && !scaleAnimator.enabled)
             {
                 scaleAnimator.enabled = true;
@@ -2162,6 +2163,11 @@ namespace CosmicShore.Gameplay
                 blockCollider.enabled = true;
                 SetRenderVisible(true);
                 destroyed = false;
+
+                // SetupDestruction turned the scale animator off; a restored prism grows again
+                // like any live one (an Urchin's ride restores then grows) and blooms back in
+                // from zero on the clock at the size it died at (Docs/PRISM_ANIMATION.md §3.3).
+                if (scaleAnimator) scaleAnimator.RearmAfterRestore();
 
                 // Restored mass weighs again — re-seed the cache (destroyed=false now).
                 RefreshVolumeCache();

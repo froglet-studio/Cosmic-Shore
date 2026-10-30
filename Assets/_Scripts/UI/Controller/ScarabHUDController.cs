@@ -10,7 +10,10 @@ namespace CosmicShore.UI
     /// Binds the Scarab's live state to <see cref="ScarabHUDView"/> (design:
     /// R_VesselActions/SCARAB.md §12).
     ///
-    /// Two signals, both event-driven — no per-frame polling in this class:
+    /// The Throttle card (Time row) is the one polled readout: trigger depth, speed / live top speed on the plate,
+    /// and the Snap Dash chevron, read in <c>Update</c> and written only on a change.
+    ///
+    /// Two signals, both event-driven:
     /// - <c>ResourceSystem.OnResourceChanged</c> → switch charges (index 1, the MASS row) and that
     ///   row's COOLDOWN VEIL. <c>OnElementLevelChange</c> → the Switch ball's scale (Mass) and the
     ///   seeded ball's size on the SPACE row's Nucleus Seeding card (Space). The ball-energy meter
@@ -71,6 +74,9 @@ namespace CosmicShore.UI
 
         [Inject] GameDataSO _gameData;
 
+        ScarabVesselTransformer _transformer;
+        float _speedGauge = -1f;
+
         ResourceSystem _resources;
         ScarabCavitationBlast _boundBlast;
         IVesselStatus _status;
@@ -101,6 +107,8 @@ namespace CosmicShore.UI
                     ? vesselStatus.ShipTransform.GetComponent<ScarabCavitationBlast>()
                     : GetComponent<ScarabCavitationBlast>();
             _boundBlast = cavitationBlast;
+            _transformer = vesselStatus.VesselTransformer as ScarabVesselTransformer;
+            view?.SetThrottleHullColor(ResolveDomainSignalColor());
 
             if (_resources)
             {
@@ -182,6 +190,22 @@ namespace CosmicShore.UI
             view.SetSwitchScale(placeSwitch.SwitchScale.EvaluateLive(_status));
         }
 
+        /// <summary>The Throttle card follows continuous state (trigger depth, speed, the Snap Dash cooldown), so it is
+        /// polled, as the Rhino's speed card is; the view and the gauge write only on a change.</summary>
+        void Update()
+        {
+            if (!view || _transformer == null || _status == null) return;
+
+            view.SetThrottle(_transformer.Throttle01);
+            view.SetSnapDash(_status.ElementalAbilityHandler.IsUpgradeActive(Element.Time), _transformer.SnapDashReady);
+
+            float top = _transformer.CurrentTopSpeed;
+            float speed01 = top > 0f ? Mathf.Clamp01(_status.Speed / top) : 0f;
+            if (Mathf.Approximately(speed01, _speedGauge) || !view.TryGetAbilityGauge(Element.Time, out var gauge)) return;
+            _speedGauge = speed01;
+            gauge.fillAmount = speed01;
+        }
+
         void HandleBlastReadyChanged(bool ready, float cooldownSeconds)
         {
             if (!view) return;
@@ -210,6 +234,8 @@ namespace CosmicShore.UI
             if (_boundBlast) _boundBlast.OnBlastReadyChanged -= HandleBlastReadyChanged;
             _resources = null;
             _boundBlast = null;
+            _transformer = null;
+            _speedGauge = -1f;
             _status = null;
         }
 

@@ -1075,6 +1075,18 @@ namespace CosmicShore.Utility
             DestroyPlayerAndVessel();
         }
 
+        /// <summary>
+        /// Make <paramref name="p"/> this machine's player WITHOUT re-adding it: a pilot who rejoined a match takes back a
+        /// Player that is already in <see cref="Players"/> (it was being flown by the AI), so <see cref="AddPlayer"/>'s
+        /// reset and re-pose would undo the match it is rejoining (section 103).
+        /// </summary>
+        public void ClaimLocalPlayer(IPlayer p)
+        {
+            if (p == null) return;
+            LocalPlayer = p;
+            LocalRoundStats = p.RoundStats;
+        }
+
         public void AddPlayer(IPlayer p)
         {
             if (p == null)
