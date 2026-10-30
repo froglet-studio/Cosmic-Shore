@@ -474,3 +474,5 @@
 2026-10-29T22:41:08.048Z editor load: play=False capture=True minPlay=15s issues=32
 2026-10-29T22:44:51.272Z editor load: play=False capture=True minPlay=15s issues=32
 2026-10-29T23:33:38.515Z PlayMode session ended (2658s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-10-30T00:01:03.987Z PlayMode session ended (44s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-10-30T00:01:16.536Z EditMode session ended (80min editor span, script reload): 0 fix(es) waiting; counted: none
