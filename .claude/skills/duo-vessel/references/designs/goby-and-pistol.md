@@ -46,6 +46,65 @@
 >   **[stated]** (jump 9 s -> 3 s).
 >   **[open] since 2026-10-22:** the aimed jump is off ("launching intentionally was wierd"), so Time's base card has
 >   nothing to drive until Garrett names what Time does on the Pistol (or turns `aimedJump` back on).
+> - "when the goby's trail is destroyed the shrimp should have to clear the destroyed section. if they fall they should
+>   not hit phantom prisms. they should fall into a fun animation that brings them back to a den, but without the mass
+>   creation." **[stated]** (2026-10-28). **[read]:** a destroyed ground block is a HOLE in the Pistol's ground
+>   (`PistolGround`; a stolen block still stands, a restored one is ground again): the ride rolls off its edge, flies
+>   over it if high and fast enough, and lands only on ground; sunk `pEdgeGrace` 1.2 u under the line it has fallen in and
+>   lands on nothing after (no phantom ground). The AI floats or dives to land on ground when it can. (The fall's first
+>   answer, a vortex ring carrying it back to the den it set off from, was replaced the next day: below.)
+> - "there is an unfun state where the best paths are no longer crossable. so lets have falling still restore the path up
+>   to what wasn't touched if the trail was still there, but once crossing where the trail should be they teleport to the
+>   next section of undestroyed trail, leaving the rest of the gap and loosing all energy. this way they can keep going and
+>   they restore some trail to try again on the next pass. this also still rewards them for how far they make it before
+>   failing without taking the thrill out of succeeding." **[stated]** (2026-10-29). **[read]:** the moment it falls in
+>   (`Events.FellIn`), the gap's blocks it touched, from the gap's start through the one it fell into, are restored
+>   (`PistolGround.AfterGap`; at least one a fall, so no pass is wasted), its energy is lost, and it comes out of a
+>   vortex-ring portal (`fallPopSeconds` 0.5, spinning upright) a quarter block into the next standing ground beyond the
+>   gap, riding on at the speed it had; a gap that runs to the perch sets it at the perch, where it arrives with no energy
+>   and builds nothing. A jump over gap blocks also restores them as it passes (the skip reward). Measured headless on the
+>   shipped ride: the AI clears a 300 u gap in 3-9 passes and a 500 u gap in 5-9; a rider sloppy 30 % of the time, every
+>   gap up to 150 u in 3-20 passes, and every pass shrinks it. The AI's "leave the island it fell on" is retired: it
+>   keeps going.
+> - "every time prisms are not ridden because the pistol is off trail then grow those prisms. if they are max size (which
+>   should only grow out of plane.) then shield them. if they are destroyed, restore them. this reward the player for
+>   making big jumps. the more prisms are skipped the more energy the pistol should collect. the amount the pistol builds
+>   when reaching the den is based on energy collected. energy is lost when falling through a hole. that is why it doesn't
+>   build, because it has no energy. the energy should be shown on its mass icon. crystals are also attracted to the plane
+>   so pistol can collect them. when choosing paths in the den, the pistol should see the plane it should show one side of
+>   the trail when traveling one way and pass on the other side when traveling the other direction. the two different
+>   half planes available should signal their mass separately in a more 3d effect that obeys the no flat hypersea rule."
+>   **[stated]** (2026-10-29). **[read]:** a block is SKIPPED when the Pistol flies over it (in the air at least `pMinAir`,
+>   above the ground's line, not fallen in: `Events.Flew`). Each skipped block grows ACROSS the trail only (its x, out of
+>   the plane; `skipGrowStep` 0.8 u to `skipGrowMax` 8 u); one already that wide is shielded; a destroyed one is restored
+>   (so a jump over a hole heals it). Energy: the nth block of a flight gives 1 + 0.2 n (`energyFlightBonus`), up to
+>   `energyMax` 640; a den takes one prism per 8 energy (`energyPerDenPrism`, x Mass) and keeps the rest; a fall zeroes it;
+>   a teleport keeps it. Measured headless on the shipped ride: the Tiny Wings rider (the AI) flies over ~65 % of an
+>   island's blocks and builds ~23 prisms on 900 u and ~48 on 1800 u (the old distance rule's 22 / 45), a sloppy rider 4-7,
+>   one that never flies none. The Mass card's new gauge is the energy (Pistol seat; empty flying the Goby). Crystals beside
+>   the plane drift in within the undertow's reach (`crystalPullSpeed` 30) and the Pistol takes one it touches, as the
+>   Jacks' net does, on the hull's machine only. The HALF PLANE: riding an island ahead the Pistol plays the side its frame
+>   calls +z (the far side from its camera), riding it back the other side, and the path map scores and draws each half on
+>   its own: a lit, terraced wing of faceted blocks standing out of the trail on its side, wider and in more tiers (1-4)
+>   and bluer -> limer as it holds more; the picked half white; the map opens tilted `mapStartTilt` 35 deg so the two
+>   halves part on screen; a tap on a wing picks that half. **[open]:** whether a block at full width that is already
+>   shielded should go further (super-shield).
+> - "i don't see prisms growing as I jump them. there should be some good juice associated with growing, restoring, and
+>   shielding prisms. the trail should also be designed to support shielding. when i rode a shielded trail it had awkward
+>   crossing spikes on my slopes. the mass calculation should be about how much unshielded mass of opposing domains is
+>   available to be destroyed by vortex rings. the vortex rings are free to affect whatever they will ... the otherside is
+>   just hard to reach so i figured that it shouldn't be included in the mass used to decide which trail to ride."
+>   **[stated]** (2026-10-29). **[read]:** the growth was happening but is out of the plane, square to the side camera, so
+>   it cannot be seen from the Pistol's seat: every reward now has JUICE for the Pistol's camera (a lit flash shrinking
+>   onto the block and `juiceShards` 6 lit faceted shards in the plane: grown lime, shielded cyan, restored white, the
+>   restored one's shards flying IN) and its own empty FMOD slot (`growEvent`, `shieldEvent`, `restoreEvent`, and
+>   `fallThroughEvent` for the portal), one of a kind per `juiceSoundSpacing` 0.07 s. The crossing spikes were the
+>   shields: a shield is the block's circumscribing octahedron at 3x its half-extents, so the 5.5 u blocks on a 6 u gap
+>   reached 8.25 u each way and crossed their neighbours; a block is now `trailBlockGap` / 3 x `trailShieldFill` 0.9 long
+>   (1.8 u; `trailBlockSection` 1.4 x 0.5), so a shielded trail is a chain of diamonds tip to tip (the unshielded trail
+>   reads as beads). The path score is the summed VOLUME of unshielded, non-super-shielded prisms of other domains on the
+>   half (the Goby AI routes by the same rule); the undertow is back to pulling from both sides (only the score is by
+>   side; the rings were never limited).
 > - The primer, heat and flares are RETIRED (they were the Goby's old kit). Charge has no level-5 upgrade yet **[open]**.
 > - Controls: Goby Dart = pad RT / X, key Q, phone Dart button (hold, let go); Lock = pad LT / Y, key F, phone Lock.
 >   Pistol (since 2026-10-24, on the fleet's four labelled face buttons so each card's chip names its control from the
@@ -100,7 +159,7 @@
 >   Squirrel effects are stripped through the Goby's own containers; it still collects crystals), and an AI-flown Goby
 >   that the seat does not run on (backfill, other machines) flies the platform AIPilot without the kit. Team tasks.
 
-## The ability matrix: both seats, every platform (2026-10-25)
+## The ability matrix: both seats, every platform (2026-10-25; brought up to date 2026-10-29)
 
 Garrett, 2026-10-25: "ability matrix should now include controls like that. table with all three platforms. please give
 me an ability matrix for both seats." Columns run in the 2D characters' control priority: **mobile, gamepad,
@@ -123,16 +182,17 @@ table in step with `GobyPistolDuo` (`HumanPistol`, `Choose`), the hull's binding
 | Card | Ability | What it does, and how its element scales it | Level 5 | Mobile | Gamepad | Mouse / keyboard |
 |---|---|---|---|---|---|---|
 | Charge | **Snap** -> **Vortex Sting** | Fires a vortex ring (the toroidal lens) that gathers prisms round its core; with the Goby's lock on screen it homes, and a rival hull it passes through loses petals from each element (1 -> 3 with Charge). The veil is its cooldown. | none yet **[open]** | Snap button | X | Q (or E) |
-| Mass | **Dens**, and **Back** | At each perch it rests and builds a den: one prism per 40 u ridden since the last den, x1 -> x2.5 with Mass, at most 80. Teleporting grows none. The card counts the den prisms; Back, pressed while riding, turns the next perch's pick round. | **Fortress**: danger and super-shielded prisms too | Back button | Y (or LB) | F (or the B key) |
-| Space | **Ghost** (and the Undertow, passive) | Ghost: a moment of passing through prisms, then a cooldown (the veil). The Undertow pulls mass beside the plane into it, 40 -> 200 u with Space; the card's gauge is that reach. | **Deep Undertow**: shielded prisms pulled too | Ghost button | B | T (or G) |
+| Mass | **Dens** (from **energy**), and **Back** | At each perch it rests and builds a den from its ENERGY: one prism per 8 energy, x1 -> x2.5 with Mass, at most 80; what the den cannot take is kept. Energy comes from the trail blocks it flies over instead of riding (the nth block of a flight gives 1 + 0.2 n, so big jumps pay); a fall into a gap loses it all; teleporting keeps it and grows nothing. The card counts the den prisms and its gauge is the energy; Back, pressed while riding, turns the next perch's pick round. | **Fortress**: danger and super-shielded prisms too | Back button | Y (or LB) | F (or the B key) |
+| Space | **Ghost** (and the Undertow, passive) | Ghost: a moment of passing through prisms, then a cooldown (the veil). The Undertow pulls mass beside the plane into it, either side, 40 -> 200 u with Space, and crystals too, which the Pistol collects on touch; the card's gauge is that reach. (Only the path map's score is by side.) | **Deep Undertow**: shielded prisms pulled too | Ghost button | B | T (or G) |
 | Time | **the dive** (and the aimed jump, off) | Hold to press into the hill; let go on an upslope and it throws the Pistol. The gauge is its speed. With `aimedJump` on, a dragged jump whose cooldown Time shortens (9 -> 3 s); off since 2026-10-22, so Time's card on the Pistol is **[open]**. | (Phase Dart is the Goby's) | finger held on the view (aimed jump: drag) | A or LT (aimed jump: RT + right stick) | Space, S, down, or mouse held (aimed jump: J) |
+| (the ride) | **Jumps reward the trail**; **gaps** | Passive, no card of its own (it feeds Mass's energy). Every block a flight passes over is rewarded when the flight comes down, as a ripple back from the landing (160 u/s): grown across the trail (out of the plane, 0.8 u a jump to 8 u), shielded once full, or brought back if destroyed (a NEW block laid in its slot: `Prism.Restore` refuses devastated prisms and leaves the ones it restores unable to grow); each with juice for the Pistol's camera, a lit flash and shards, the pair's domain colour for grow and restore (restore's fly in), lime for shield, and its own (empty) FMOD slot. A destroyed block is a gap: sink 1.2 u into one and the blocks you touched come back, your energy is gone, and you come out of a vortex-ring portal on the trail beyond it, at your speed. Trail blocks are spaced 3x their length so a shielded trail is a chain of diamonds. | | (the dive) | (the dive) | (the dive) |
 
 **The path map** (the Pistol seat, at a perch after its rest; picking another den teleports there):
 
 | Move | Mobile | Gamepad | Mouse / keyboard |
 |---|---|---|---|
 | Spin the map | drag | right stick | drag, or Q / E |
-| Pick a path (from the den at the nearer end) | tap its glowing bar | left stick (the next path that way on screen) | click its bar, or A / D |
+| Pick a path: an island ridden one way plays one side of the trail (one half plane), the other way the other side; each half's terraced wing is sized and coloured by the UNSHIELDED rival mass on its side (what a vortex ring can destroy) | tap the half's wing (or the trail, from the den at the nearer end) | left stick (the next path that way on screen) | click its wing, or A / D |
 | Ride it (or teleport, then ride) | tap the picked path again | A or LT | Space (or S, down), or click the picked path |
 | Turn it round at its den | tap the den's other path (or the Back button) | Y | F |
 | Ride on without stopping | keep the finger down, still | keep A or LT held | keep Space held |

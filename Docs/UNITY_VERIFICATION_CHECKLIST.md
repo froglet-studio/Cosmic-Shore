@@ -65,6 +65,213 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 A restored prism grows again, and blooms back in (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Affects: the prism core, Garrett's and Yash's; `Docs/PRISM_ANIMATION.md` §3.3): `SetupDestruction` turns a
+prism's `PrismScaleAnimator` off and `Prism.Restore` never turned it back on, so every grow on a restored prism was a
+silent no-op. The Urchin's ride payoff (`GunVesselTransformer.ApplyPrismscapePayoff`: restore, then grow your own, shield
+at Mass 5) never grew a restored prism. `Restore` now calls `PrismScaleAnimator.RearmAfterRestore`: the animator is
+re-armed, its clock reset, and ONE grow stamp blooms the prism from zero to the size it died at (the bloom §3.3
+planned; gameplay final at once). A prism killed inside its spawn window gets no stamp (unchanged). A restored prism
+at its largest is shielded again by the same completion step every grow runs.
+
+**Verified without the editor:** `unity_refcompile` player and editor 0 errors in project code (the new
+`PrismRestoreTests` is in the editor gate). The tests themselves need Unity: a dead animator does not grow (the
+control), a re-armed one keeps its size and grows, and `Restore` calls the re-arm. `/verify-unity` did not run.
+
+**Verify in editor:**
+1. Run `PrismRestoreTests` (3 tests).
+2. Fly the Urchin over its own trail with gaps shot in it: the restored prisms bloom back in from nothing (no pop) and
+   then grow like the live ones; at Mass 5 they shield.
+3. Anything else that restores (search `.Restore()`): the restored prism reappears with a short bloom; nothing jumps in
+   size.
+
+---
+
+### 🔴 Goby & Pistol: rewards and juice on landing; restores that always work; lime shield, domain-lit grow and restore (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett, 2026-10-29: "cyan = jade which is a domain color. use Lime for shield. a lit domain color for
+grow and restore. I did not see any restores. it seemed like that did not work. lets get the juice on landing instead of
+as its happening"):
+- Restores: `Prism.Restore()` refuses a DEVASTATED prism for good (prism collisions, the Rhino, the Thresher, the
+  Shrike's lance, black holes devastate), so a gap blasted that way never came back and its juice never played.
+  And a prism `Restore()` does bring back keeps its scale animator off (`Prism.Initialize`'s note), so it could never grow
+  or shield again. `RestoreBlock` therefore always LAYS A NEW BLOCK in the slot (`LayBlock`, the trail's own lay); the
+  Goby's trail opts into `PrismRecycler` so its dead blocks go back to their pool, and the seat checks a block's trail
+  and spot (`Stands`), not its identity. A block carried off is replaced the same way. A rider's machine never lays the
+  pair's blocks.
+- Juice on landing: a flight's skipped blocks are rewarded (grown, shielded, restored) when it comes down - a landing,
+  a fall into a gap, or the perch - as a ripple running back from there at `juiceRippleSpeed` 160 u/s; energy still
+  fills as it flies.
+- Colours: shield shards the call-to-action lime (`juiceShieldColor`); grow and restore shards the pair's domain colour,
+  lit (`PrismLit.DomainTint`), repainted if the pair changes domain. `juiceGrowColor` / `juiceRestoreColor` are retired.
+
+**Verified without the editor:** `unity_refcompile` player and editor 0 errors in project code; harness 14 / 14 (pure
+code unchanged this round); author_goby_assets / author_goby_hud --check, logging, conditional compilation, crew vessels.
+The restore fallback and the ripple are in the MonoBehaviour and have no headless test. `/verify-unity` did not run.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Blast a gap (try a Rhino or Thresher too, which devastate) and jump it: on landing a ripple runs back over the jump
+   and the gap's blocks come back with domain-coloured shards flying in.
+2. Jump plain trail: nothing on the way up; on landing the jump's blocks flash in the domain colour, one after another
+   back toward the takeoff; full-width ones shield with lime shards.
+3. Fall into a gap: the touched blocks come back (domain colour) as you come out of the portal.
+
+---
+
+### 🔴 Goby & Pistol: juice for grow / shield / restore, a shield-ready trail, the path score as destroyable mass (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett, 2026-10-29: "i don't see prisms growing as I jump them ..."):
+- Juice: `GobyPistolDuo.AddJuice` / `DrawJuice`. Each grown, shielded or restored block flashes (a lit shell 1.7x its
+  size shrinking onto it) and throws 6 lit faceted shards in the Pistol's plane (restored: they fly in), for the Pistol's
+  camera; lime / cyan / white. The growth itself is out of the plane, square to the side camera, so it was never
+  visible from that seat. Sounds: `growEvent`, `shieldEvent`, `restoreEvent`, `fallThroughEvent` on the config, shipped
+  EMPTY (FMOD convention), one of a kind per 0.07 s.
+- A shield-ready trail: blocks are `trailBlockGap` / 3 x 0.9 long (1.8 u, `trailBlockSection` 1.4 x 0.5; was 5.5 u), so
+  shielded neighbours' octahedra meet as a chain of diamonds instead of crossing (`PistolGround.ShieldFlushLength`;
+  `trailBlockScale` replaced in the asset).
+- The path map's score is the summed volume of UNSHIELDED prisms of other domains on each half (`Destroyable`); the Goby
+  AI routes by it too. The undertow pulls from both sides again (only the score is by side; the rings were never
+  limited).
+
+**Verified without the editor:** `unity_refcompile` player and editor 0 errors in project code; harness 14 / 14 with
+five negative controls (new: `Trail_ShieldedNeighboursMeetTipToTip`, whose control shows the 5.5 u blocks cross on most
+pairs); `author_goby_assets`, `author_goby_hud`, logging, conditional compilation, crew vessels. `/verify-unity` did
+not run.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Jump crests: each block you fly over flashes lime and throws shards; fly the same stretch until they are full width,
+   then they flash cyan as they shield; the shielded stretch is a chain of diamonds, no spikes crossing on the slopes.
+2. Shoot blocks and jump the gap: white shards fly in and the blocks are back. Fall into a gap: the touched blocks
+   restore with the same white burst.
+3. The trail unshielded reads as beads, not a line: judge whether that is right, or ask for a denser spacing.
+4. Path map: a half with many shielded rival prisms is no longer lit as rich; unshielded rival mass is. Mass on the near
+   side of the trail is still pulled into the plane.
+
+**First-pass tuning:** `juiceShards` 6, `juiceSeconds` 0.45, `juiceReach` 4, `juiceShardSize` 0.55, `juicePulseScale`
+1.7, `trailShieldFill` 0.9.
+
+---
+
+### 🔴 Goby & Pistol: a fall restores what it touched and drops the Pistol beyond the gap (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett, 2026-10-29: "there is an unfun state where the best paths are no longer crossable ..."):
+the vortex-ring ride back to the den is gone. When the Pistol sinks into a gap (`PistolBodyMath.Events.FellIn`, 1.2 u
+under the line), `GobyPistolDuo.FallThrough` restores the gap's blocks it touched, from the gap's start through the one it
+fell into (`PistolGround.AfterGap`), zeroes its energy, and sets it down a quarter block into the next standing ground
+beyond the gap (`PistolBodyMath.PlaceOnGround`) at the speed it had, between two vortex-ring portals (`fallPopSeconds`
+0.5, `fallRingRadius` 2.4, a `fallSpinDegrees` 540 spin out of the second). A gap to the perch sets it at the perch (it
+arrives with no energy: no den). The AI's avoid-the-island rule and `pFallDepth` / the `fallReturn*` numbers are retired.
+
+**Verified without the editor:** `unity_refcompile` player and editor configs 0 errors in project code;
+`goby_pistol_harness/run.sh --self-test` 12 / 12 with all four negative controls firing (new:
+`Ground_AFallRestoresWhatItGotPast_AndLandsBeyondTheGap`, `Ride_EveryPassShrinksTheGap_TillItIsCrossed`). Measured: the
+AI clears 300 u gaps in 3-9 passes and 500 u in 5-9; a sloppy rider gaps up to 150 u in 3-20; no pass is wasted.
+`/verify-unity` did not run.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Shoot a long gap in an island. Ride into it: the moment you sink, a portal opens where you fell and another beyond the
+   gap; you spin out of the second and ride on at your speed; the Mass card's energy gauge is empty.
+2. Ride the island again: the gap now starts where you fell last time (the blocks you reached are back). Each pass gets
+   further until you clear it.
+3. A gap running to the perch: you come out at the perch and the den does not grow.
+4. Swap seats around a fall: nothing resets.
+
+---
+
+### 🔴 Goby & Pistol: skipped blocks grow, shield and restore and give energy; dens from energy; crystals; half-plane path map (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett, 2026-10-29; the brief's top section quotes it whole):
+- `PistolBodyMath.Events.Flew`: the stretch the Pistol flew over its ground (in the air >= `pMinAir`, above the line,
+  not fallen in). `PistolGround.BlocksBetween` names its blocks once each. `GobyPistolDuo.SkipOver` gives energy for each
+  (`GobyDen.EnergyFor`: the nth of a flight gives 1 + 0.2 n) and rewards it (`RewardBlock`): grown across the trail only
+  (x, `skipGrowStep` 0.8 u to `skipGrowMax` 8 u), shielded once that wide, restored if destroyed.
+- Dens are built from energy (`energyPerDenPrism` 8, x Mass; the den keeps what it cannot take), not distance; a fall
+  through a hole zeroes it; a teleport keeps it. `denUnitsPerPrism` is retired (asset key replaced).
+- The Mass card's new gauge (`GobyHUDVariant`'s `PistolEnergyGauge`, written by `author_goby_hud.py`) is the energy in
+  the Pistol's seat, empty in the Goby's.
+- `PullCrystals`: crystals within the undertow's reach either side drift into the plane (`crystalPullSpeed` 30) and one
+  the Pistol touches is collected through the hull (the Jacks' net's path; hull machine only).
+- Half planes: the undertow pulls only the half the Pistol plays this way (+z of its frame); `_pathScore` is per half
+  (`PistolPaths.Half`, `InHalf`; the AI picks the richest half); the path map draws each half as a lit terraced wing of
+  faceted blocks on its side (1-4 tiers, width and colour by its count; picked white), opens tilted 35 deg
+  (`mapStartTilt`), and a tap on a wing picks that half.
+
+**Verified without the editor:** `Tools/Build/unity_refcompile/run.sh` player and editor configs: 0 errors in project
+code (the three Goby test files are in the editor gate). `goby_pistol_harness/run.sh --self-test`: 11 / 11 pass, and all
+four planted defects fail them (it also caught a real one, fixed: a Pistol sinking into a hole reported the hole's blocks
+as flown over, so it would have restored the hole under itself). `author_goby_hud --check` / `--self-test` (two new
+gauge controls), `author_goby_assets --check`, console logging, conditional compilation, crew vessels, orthographic
+views, hud on-screen, validate_project. `/verify-unity` did not run (no editor in the session).
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Jump off crests: the blocks under each flight widen across the trail (only across), flown over again once full they
+   shield; shoot a gap and jump it: the gap's blocks come back.
+2. The Mass card's gauge fills as you fly over blocks, faster on long flights; at the next perch the den grows by it
+   and the gauge drops. Ride without jumping: the gauge stays empty and the den does not grow. Fall through a hole: the
+   gauge empties and the den you return to grows nothing.
+3. Crystals near the trail drift into the Pistol's plane and are collected on touch (the hull's crystal effects run).
+4. (Superseded 2026-10-29: the undertow pulls from both sides again; only the score is by side.) Ride an island one way,
+   then back. On the path map each island shows two wings, one per side, each sized by its side's rival mass; tap a wing to
+   pick that half; spin and tilt read as volumes, nothing flat.
+
+**First-pass tuning:** `energyPerSkippedBlock` 1, `energyFlightBonus` 0.2, `energyMax` 640, `energyPerDenPrism` 8,
+`skipGrowStep` 0.8, `skipGrowMax` 8, `crystalPullSpeed` 30, `crystalTouchPad` 1.5, `mapStartTilt` 35, `mapWingReach`
+0.05. **Open for Garrett:** crystals from both sides or the played half only; what a full, shielded block gets next.
+
+---
+
+### 🔴 Goby & Pistol: a destroyed trail is a hole the Pistol must clear; a fall rides a vortex ring home (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+> **Superseded in part, 2026-10-29:** the ride home (step 2), the AI's island avoidance (step 3) and the fall numbers
+> below are replaced by the restore-and-drop-beyond-the-gap entry above; the holes themselves (steps 1, 4, 5) stand.
+
+**What landed** (Garrett, 2026-10-28: "when the goby's trail is destroyed the shrimp should have to clear the destroyed
+section. if they fall they should not hit phantom prisms. they should fall into a fun animation that brings them back to
+a den, but without the mass creation."):
+- `PistolGround` (pure, `PistolPlane.cs`): one slot per ground block of an island; `PistolPlane.SolidAt` answers "is
+  there ground here" in the ride's frame. The seat keeps every block it lays in its slot and marks it gone each frame
+  while it is destroyed or moved off its spot (a stolen block still stands; a restored one is ground again). Before, the
+  ride's ground was the hill curve alone, so it held the Pistol up where every block was gone (the phantom).
+- `PistolBodyMath`: a grounded Pistol rolls off a hole's edge with its speed; it lands only on ground; once it sinks
+  `pEdgeGrace` (1.2 u) under the line over a hole it has fallen in and lands on nothing after (it passes under the far
+  lip); `pFallDepth` (14 u) under, `Events.Fell`.
+- `GobyPistolDuo`: on a fall a vortex ring (the toroidal lens, `fallRingRadius` 2.4 u) catches the tumbling Pistol and
+  carries it along an arc in its plane back to the den it set off from (`fallReturnSpeed` 260 u/s within 1.4-3 s,
+  `fallReturnArc` 0.08 + `fallReturnLift` 12 u, `fallSpinDegrees` 540), righting it over the last quarter. It rests and
+  picks its next path there; the den grows nothing (since 2026-10-29: the fall took its energy). While falling and riding home
+  it hits no prism and pulls none. The AI floats or dives to land on ground, and after a fall leaves that island for
+  another until it rides one through.
+- A rider's machine (the Pistol of a Goby another machine flies) finds the blocks by the spatial index as it nears them;
+  a block it never finds is ground.
+
+**Verified without the editor:** `Tools/Build/goby_pistol_harness/run.sh --self-test` compiles the shipped
+`PistolPlane`, `PistolBodyMath`, `PistolPaths`, `PistolAI` and the new `GobyPistolTrailHoleTests` with Roslyn and RUNS
+them: 5 / 5 pass, and both planted defects (ground under a grounded Pistol over a hole; a fallen Pistol landing again)
+fail them. Syntax-only compile of `GobyPistolDuo.cs` / `GobyPistolConfigSO.cs`: 0 syntax errors (a planted one fires).
+`author_goby_assets --check`, console logging, conditional compilation, crew vessels. `/verify-unity` was not available
+(no editor in the session). **Compile first**, then run `GobyPistolTests` (the existing ride tests must be unchanged:
+an island with no hole rides exactly as before) and `GobyPistolTrailHoleTests`.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. With a rival (or the Sparrow's guns from another seat), shoot a run of the Goby's ground blocks ahead of the Pistol.
+   Riding at speed off a crest, it flies over the gap and lands beyond. Slow, or diving into it, it drops through: no
+   landing on the empty stretch, nothing broken on the way down.
+2. The fall: the Pistol tumbles out of the bottom of the view, a small vortex ring swells round it and carries it,
+   still spinning, in a low arc back to the den it set off from, righting itself as it lands. The den's prism count
+   does not change. The path map opens there as after any rest.
+3. Fly the Goby with a broken island: the AI Pistol falls at most once on it, then rides another island (or teleports
+   to another den) until it has ridden one through.
+4. A single destroyed block on an upslope at speed is skimmed (within the 1.2 u grace); three in a row on an upslope
+   are not.
+5. Swap seats mid-fall and mid-ride home: the fall carries on under the other pilot; nothing resets.
+
+**First-pass tuning:** `pEdgeGrace` 1.2 u, `pFallDepth` 14 u, `fallReturnSpeed` 260 u/s, `fallReturnMinSeconds` 1.4,
+`fallReturnMaxSeconds` 3, `fallReturnArc` 0.08, `fallReturnLift` 12 u, `fallSpinDegrees` 540, `fallRingRadius` 2.4 u.
+**Open for Garrett:** the den it returns to is the one it set off from (a retry); the nearer den would skip the hole.
+
+---
+
 ### 🔴 Rejoin a running match (Rev 37, section 103.1) (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor). Not opened in the editor. Needs two clients (MPPM: a host and one guest in a party), a mode with a turn (Skim Race).
@@ -223,6 +430,8 @@ leash 260 u, sense 400 u, 3 x 7-prism members, down at <= 2 prisms left. I4 worl
 
 **Known minimal:** hunter kills are not scored (log + toast only); hunters pass through static prisms; reverse-threading
 a blocked ring at I1-I3 is not prevented; the AI does not aim blasts at doors.
+
+---
 
 ### 🔴 Destroyed prisms are recycled after their death effect; trail hygiene (`perf/lavalamp-prism-recycle`, 2026-10-29) — NOT EDITOR-VERIFIED
 
