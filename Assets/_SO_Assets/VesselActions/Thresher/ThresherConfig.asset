@@ -146,6 +146,10 @@ MonoBehaviour:
   releaseSpinDownMaxDegrees: 30
   spectateCarrySeconds: 0.35
   cameraMaxFollowAngularAcceleration: 1500
+  snapAimSeconds: 0.25
+  snapAimRestDepth: 0.1
+  snapAimHoldSeconds: 1.5
+  snapAimStickCentre: 0.25
   sightWideFieldOfView: 50
   sightZoomFieldOfView: 6
   sightZoomDeadzone: 0.25

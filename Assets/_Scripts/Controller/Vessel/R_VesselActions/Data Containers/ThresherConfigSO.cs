@@ -234,6 +234,24 @@ namespace CosmicShore.Gameplay
                  "in one frame. 0 = the rate cap alone.")]
         [SerializeField, Min(0f)] float cameraMaxFollowAngularAcceleration = 0f;
 
+        [Header("Snap aim - both triggers pulled FAST (analog triggers; local pilot only)")]
+        [Tooltip("LT leaving rest and BOTH triggers reaching fullPull within this long (seconds) is a snap: the launch " +
+                 "view aims along the hull's flight direction from the last frame LT was at rest (before the pull's " +
+                 "brake and anchor touched the ship), and the camera eases straight into the launch view along it " +
+                 "instead of riding the hook and spin. A slower pull plants exactly as before. The physics never " +
+                 "changes either way. 0 = off (the crosshair starts from the camera's facing at the plant).")]
+        [SerializeField, Range(0f, 1f)] float snapAimSeconds = 0.25f;
+        [Tooltip("LT below this depth counts as at rest: its brake and anchor are still negligible, so the hull's " +
+                 "flight direction there is the one a snap keeps.")]
+        [SerializeField, Range(0.01f, 0.5f)] float snapAimRestDepth = 0.1f;
+        [Tooltip("Longest a snap holds the camera on its heading before the launch view's own rules qualify " +
+                 "(seconds); then the camera goes back to the chase pose. The view normally qualifies in 0.35-0.6 s " +
+                 "(the chain's rigidity slew).")]
+        [SerializeField, Min(0f)] float snapAimHoldSeconds = 1.5f;
+        [Tooltip("After a snap the sticks do not aim until both have come back inside this deflection once, so a " +
+                 "stick still over from the turn the pilot snapped in does not swing the aim they just kept.")]
+        [SerializeField, Range(0f, 1f)] float snapAimStickCentre = 0.25f;
+
         [Header("Launch sight - the Time-petal zoom window (local pilot only)")]
         [Tooltip("The zoom window's vertical field of view with LT held lightly (degrees) - the wide end. A " +
                  "constant: the window is never narrowed by speed or by the gameplay camera.")]
@@ -354,6 +372,10 @@ namespace CosmicShore.Gameplay
         public float ReleaseSpinDownMaxDegrees => releaseSpinDownMaxDegrees;
         public float SpectateCarrySeconds => spectateCarrySeconds;
         public float CameraMaxFollowAngularAcceleration => cameraMaxFollowAngularAcceleration;
+        public float SnapAimSeconds => snapAimSeconds;
+        public float SnapAimRestDepth => snapAimRestDepth;
+        public float SnapAimHoldSeconds => snapAimHoldSeconds;
+        public float SnapAimStickCentre => snapAimStickCentre;
         public float SpectateEnterSeconds => spectateEnterSeconds;
         public float SpectateExitSeconds => spectateExitSeconds;
         public float AimYawRate => aimYawRate;

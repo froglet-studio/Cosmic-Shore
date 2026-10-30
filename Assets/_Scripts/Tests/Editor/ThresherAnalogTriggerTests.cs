@@ -499,6 +499,210 @@ namespace CosmicShore.Tests
             }
         }
 
+        // ---------------------------------------------------------------- snap aim (2026-10-30)
+        // Garrett: "when we pull both triggers fast we want to be able to aim and shoot ourselves like Thor" - the
+        // crosshair keeps the line the ship flew before the pull, though the pull's own brake and anchor bend the
+        // ship on its way to full (ThresherSnapAim). The solver is flown untouched: the snap only reads it.
+
+        /// <summary>The shipped snap dials (<c>ThresherConfig.asset</c>) and the launch view's drop grace.</summary>
+        const float SnapWindow = 0.25f, SnapRest = 0.1f, SnapHold = 1.5f, DropSeconds = 0.25f, StickCentre = 0.25f;
+
+        /// <summary>A pad pilot with the snap ticked once per frame after the move, as <c>ThresherExecutor.UpdateCamera</c>
+        /// ticks it, and the launch view simulated as <c>UpdateLaunchView</c> raises it (grip and spin for 0.1 s).</summary>
+        sealed class SnapRun
+        {
+            public readonly Flight F;
+            public ThresherSnapAim Snap;
+            public bool ViewUp;
+            /// <summary>The test's own record of the flight direction on the last frame LT was at rest.</summary>
+            public Vector3 RestHeading;
+            float _qualify;
+
+            public SnapRun(float yaw, float rt0)
+            {
+                F = new Flight(Analog()) { Grip = true };
+                for (int i = 0; i < 60; i++) Frame(0f, rt0, yaw);
+            }
+
+            public void Frame(float lt, float rt, float yaw, float window = SnapWindow)
+            {
+                F.Frame(lt, rt, yaw);
+                bool pivot = F.S.Mode == ThresherMode.Pivot;
+                bool grip = ThresherCameraFraming.LaunchViewGrip(true, F.S.IsBraking, lt, F.S.Rigidity, FullPull)
+                            && pivot && ThresherCameraFraming.SpinRate(F.S.LockSpeed, F.S.Extent) >= SpectateSpinRate;
+                _qualify = grip ? _qualify + Dt : 0f;
+                ViewUp = pivot && (ViewUp || _qualify >= 0.1f);
+                if (lt < SnapRest) RestHeading = F.Last.normalized;
+                Snap.Tick(lt, rt, F.Last, pivot, ViewUp, FullPull, LetGo, SnapRest, window, SnapHold, DropSeconds, Dt);
+            }
+
+            /// <summary>Both triggers from rest to full over <paramref name="seconds"/> (RT from <paramref name="rt0"/>).
+            /// Returns how far the ship's heading had turned from the rest heading on the frame the plant began.</summary>
+            public float Pull(float seconds, float rt0, float yaw, float window = SnapWindow)
+            {
+                int n = Mathf.Max(1, Mathf.RoundToInt(seconds / Dt));
+                float bent = -1f;
+                for (int i = 1; i <= n; i++)
+                {
+                    float u = (float)i / n;
+                    Frame(u, Mathf.Max(rt0, u), yaw, window);
+                    if (bent < 0f && F.S.Mode == ThresherMode.Pivot) bent = AngleDeg(F.Last, RestHeading);
+                }
+                return bent;
+            }
+        }
+
+        [Test]
+        public void Snap_BothTriggersFast_KeepsTheLineFromBeforeThePull()
+        {
+            // Mid-turn with a slack chain, both triggers pulled over 0.2 s: the pull's brake and anchor (and the turn
+            // still under way) carry the ship off its line before the plant begins.
+            var r = new SnapRun(60f, 0f);
+            float bent = r.Pull(0.2f, 0f, 60f);
+            Assert.IsTrue(r.Snap.Engaged, "LT from rest to full in 0.2 s is a snap");
+            Assert.Greater(bent, 5f, "the pull itself moved the heading, so keeping the rest heading is a real difference");
+            Assert.Less(AngleDeg(r.Snap.Heading, r.RestHeading), 0.01f, "the snap keeps the heading from before the pull");
+            Assert.IsTrue(r.Snap.Holding, "the camera stops riding the hook at once");
+        }
+
+        [TestCase(0.5f)]
+        [TestCase(0.35f)]
+        public void Snap_ASlowSqueeze_PlantsAsBefore_AndIsNoSnap(float seconds)
+        {
+            var r = new SnapRun(0f, 0f);
+            r.Pull(seconds, 0f, 0f);
+            Assert.AreEqual(ThresherMode.Pivot, r.F.S.Mode, "a slow full pull still plants");
+            Assert.IsFalse(r.Snap.Engaged);
+            Assert.IsFalse(r.Snap.Holding);
+        }
+
+        [Test]
+        public void Snap_AFeatheredBrakeThenAFullPull_IsNoSnap()
+        {
+            var r = new SnapRun(30f, 1f);
+            for (int i = 0; i < 60; i++) r.Frame(0.5f, 1f, 30f);
+            Assert.AreEqual(ThresherMode.Free, r.F.S.Mode, "a partial pull only brakes");
+            for (int i = 0; i < 3; i++) r.Frame(1f, 1f, 30f);
+            Assert.AreEqual(ThresherMode.Pivot, r.F.S.Mode);
+            Assert.IsFalse(r.Snap.Engaged, "the finesse player committing after a brake is not a snap");
+        }
+
+        [Test]
+        public void Snap_RtLaterThanTheWindow_IsNoSnap_RtWithinIt_Is()
+        {
+            var late = new SnapRun(0f, 0f);
+            for (int i = 0; i < 6; i++) late.Frame(1f, 0f, 0f);
+            for (int i = 0; i < 18; i++) late.Frame(1f, 0f, 0f);   // 0.4 s in
+            late.Frame(1f, 1f, 0f);
+            Assert.IsFalse(late.Snap.Engaged, "RT reaching full 0.4 s after LT left rest");
+
+            var soon = new SnapRun(0f, 0f);
+            for (int i = 0; i < 9; i++) soon.Frame(1f, 0f, 0f);    // 0.15 s
+            soon.Frame(1f, 1f, 0f);
+            Assert.IsTrue(soon.Snap.Engaged, "RT reaching full 0.17 s after LT left rest");
+        }
+
+        [Test]
+        public void Snap_WindowZero_IsOff()
+        {
+            var r = new SnapRun(0f, 0f);
+            r.Pull(0.06f, 0f, 0f, window: 0f);
+            Assert.IsFalse(r.Snap.Engaged);
+            Assert.IsFalse(r.Snap.Holding);
+        }
+
+        [Test]
+        public void Snap_HoldsUntilTheLaunchViewQualifies_AndNeverComesBack()
+        {
+            var r = new SnapRun(0f, 0f);
+            r.Pull(0.1f, 0f, 0f);
+            Assert.IsTrue(r.Snap.Holding);
+            int frames = 0;
+            while (!r.ViewUp && frames++ < 90)
+            {
+                Assert.IsTrue(r.Snap.Holding, $"frame {frames}: the hold lasts until the launch view's own rules qualify");
+                r.Frame(1f, 1f, 0f);
+            }
+            Assert.IsTrue(r.ViewUp, "a rigid planted spin qualifies within 1.5 s");
+            Assert.IsFalse(r.Snap.Holding, "the launch view took over");
+            Assert.IsTrue(r.Snap.Engaged, "the aim was seeded by the snap");
+            // The view dropping later (say the spin falls away) never brings the hold back.
+            r.Snap.Tick(1f, 1f, r.F.Last, true, false, FullPull, LetGo, SnapRest, SnapWindow, SnapHold, DropSeconds, Dt);
+            Assert.IsFalse(r.Snap.Holding);
+        }
+
+        [Test]
+        public void Snap_ASagIsRiddenOut_ALetGoEndsTheHold_AndAnEndedPlantEndsTheSnap()
+        {
+            var sag = new SnapRun(0f, 0f);
+            sag.Pull(0.1f, 0f, 0f);
+            for (int i = 0; i < 6; i++) sag.Frame(1f, 0.85f, 0f);   // 0.1 s under letGoBelow
+            Assert.IsTrue(sag.Snap.Holding, "a 0.1 s sag is ridden out");
+
+            var off = new SnapRun(0f, 0f);
+            off.Pull(0.1f, 0f, 0f);
+            for (int i = 0; i < 20; i++) off.Frame(1f, 0.5f, 0f);   // 0.33 s: RT let go
+            Assert.IsFalse(off.ViewUp);
+            Assert.IsFalse(off.Snap.Holding, "RT let go for longer than the drop grace ends the hold");
+
+            var gone = new SnapRun(0f, 0f);
+            gone.Pull(0.1f, 0f, 0f);
+            gone.Frame(0.5f, 1f, 0f);                               // LT under letGoBelow: the solver lets go
+            Assert.AreEqual(ThresherMode.Free, gone.F.S.Mode);
+            Assert.IsFalse(gone.Snap.Engaged);
+            Assert.IsFalse(gone.Snap.Holding);
+        }
+
+        [Test]
+        public void Snap_TheSticksAimOnlyOnceTheyHaveCentred()
+        {
+            var r = new SnapRun(60f, 1f);
+            r.Pull(0.1f, 1f, 60f);
+            float x = 1f, y = -0.6f;
+            r.Snap.AimSticks(ref x, ref y, StickCentre);
+            Assert.AreEqual(0f, x, 0f, "the stick still over from the turn does not swing the kept aim");
+            Assert.AreEqual(0f, y, 0f);
+            x = 0.1f; y = 0.05f;
+            r.Snap.AimSticks(ref x, ref y, StickCentre);
+            Assert.AreEqual(0.1f, x, 0f, "centred: the latch lets go");
+            x = 1f; y = 0f;
+            r.Snap.AimSticks(ref x, ref y, StickCentre);
+            Assert.AreEqual(1f, x, 0f, "and from then on the sticks aim");
+
+            var slow = new SnapRun(0f, 0f);
+            slow.Pull(0.5f, 0f, 0f);
+            x = 1f; y = 1f;
+            slow.Snap.AimSticks(ref x, ref y, StickCentre);
+            Assert.AreEqual(1f, x, 0f, "no snap, no latch: the slow path's sticks are untouched");
+        }
+
+        [Test]
+        public void PitchAim_IsTurnAimsPitch_AndLaysTheAimOntoAnOffPlaneLine()
+        {
+            // TurnAim's pitch is PitchAim (the refactor that exposed it changes nothing).
+            Vector3 a1 = Yaw(Vector3.forward, 30f), u1 = Vector3.up, a2 = a1, u2 = u1;
+            ThresherCameraFraming.TurnAim(ref a1, ref u1, 0f, 0.5f, 0f, 2f, Dt);
+            ThresherCameraFraming.PitchAim(ref a2, ref u2, 0.5f * 2f * Dt);
+            Assert.Less(AngleDeg(a1, a2), 1e-3f);
+            Assert.Less(AngleDeg(u1, u2), 1e-3f);
+
+            // The executor's owed pitch for a flight line 20 degrees above the orbit plane, paid at 120 deg/s.
+            float rise = 20f * Mathf.Deg2Rad;
+            Vector3 want = new Vector3(0f, Mathf.Sin(rise), Mathf.Cos(rise));
+            Vector3 aim = Vector3.ProjectOnPlane(want, Vector3.up).normalized, up = Vector3.up;
+            float owed = -Mathf.Atan2(Vector3.Dot(want, up), Vector3.Dot(want, aim));
+            int frames = 0;
+            while (owed != 0f && frames++ < 60)
+            {
+                float step = Mathf.Clamp(owed, -120f * Mathf.Deg2Rad * Dt, 120f * Mathf.Deg2Rad * Dt);
+                ThresherCameraFraming.PitchAim(ref aim, ref up, step);
+                owed -= step;
+            }
+            Assert.LessOrEqual(frames, 11, "20 degrees at 120 deg/s is ten frames");
+            Assert.Less(AngleDeg(aim, want), 0.01f, "the crosshair is the flight line itself");
+            Assert.AreEqual(0f, Vector3.Dot(up, want), 1e-4f, "and the orbit plane contains it");
+        }
+
         [Test]
         public void AnalogOff_TheTriggerEntryPointDoesNothing()
         {

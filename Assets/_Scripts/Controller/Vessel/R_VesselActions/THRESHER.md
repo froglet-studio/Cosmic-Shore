@@ -31,6 +31,7 @@ from the Thresher Plant Lab round 2, `Docs/Studios/THRESHER_PLANT_LAB.md`; physi
 | **LT eased below `letGoBelow`** (0.9) | Let go: fly off along the tangent, or (launch view up) arm the aimed launch — exactly the old LT-up. A ball let go while still stopping keeps its own speed. |
 | **RT depth** (Winch) | The chain's **rigidity**, flipped from the old winch: **released = slack** (a soft bungee the turns and the spin carry the ball, or a planted ship, out on), **pulled = rigid**. Tightening reels the ball in and spins it up by angular momentum — the old crack — at most `rigiditySlew` 2/s of the trigger's travel per second. There is no READY cue: when a tightening will crack past smash speed is left to feel (Garrett, 2026-10-20). |
 | **Both at a full pull, planted** | The camera switches to the launch view (§5a) — only then. Easing RT below `letGoBelow` for `spectateDropSeconds` 0.25 hands it back (a shorter sag is ridden out). |
+| **Both pulled FAST** (the snap, 2026-10-30) | LT from rest to both triggers full inside `snapAimSeconds` 0.25 s: the crosshair keeps the line you were **flying before the pull**, and the camera goes straight into the launch view along it instead of riding the hook and spin (§5a "Snap aim"). Every depth on the way still brakes, anchors and stiffens exactly as above. |
 
 A device with no analog trigger channel (touch, the one-thumb mouse) and every remote replica read a
 press as a FULL pull and a release as none (`ThresherExecutor.PollTriggers`). On a phone, both thumbs off a
@@ -501,6 +502,37 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   and every machine pauses the same trail; the owner's camera now switches on its edges, so crosshair
   on == trail off by construction. The trail comes back on the launch frame (the plant ends). Mass
   Mode's ball trail is untouched (it lays only off the plant anyway).
+- **Snap aim — both triggers pulled fast** (2026-10-30, Garrett: "when we pull both triggers fast we want to be
+  able to aim and shoot ourselves like Marvel's Thor … the transition to spinning and aiming is preceded by the ball
+  receiving friction and the cord receiving stiffness … a disorienting weakness"). A fast pull passes through every
+  partial depth on its way to full, and for those frames the brake and the sliding anchor do what they do for a
+  partial pull: the ship is bent off its line (measured on the shipped solver, chain harness pilot: 0-14° by the
+  frame the plant begins, most when the pull starts mid-turn). The plant's hook and spin then rode the chase camera
+  round for the 0.35-0.6 s the launch view takes to qualify (the chain's rigidity slew, the spin threshold, the
+  engage delay), and the view eased it back. `ThresherSnapAim` (pure, `Controller/Vessel/ThresherSnapAim.cs`):
+  - **The snap.** LT leaving rest (`snapAimRestDepth` 0.1) and LT and RT both reaching `fullPull` within
+    `snapAimSeconds` **0.25 s**. RT already held counts (the decision is the frame both are full). A slow squeeze, a
+    brake feathered and then committed, or RT arriving after the window is not a snap and plants exactly as before.
+    0 turns it off. A phone's both-thumbs-off (§1 "On a phone") reads as both full, so lifting both thumbs in quick
+    succession is a snap too.
+  - **The aim** is the hull's FLIGHT DIRECTION (its velocity) on the last frame LT was at rest — before the pull
+    touched the ship — and the orbit plane is TILTED onto it (`ThresherCameraFraming.PitchAim`, at `aimPitchRate`
+    120 °/s so the circling ship is never re-laid in one frame), so the crosshair is that line itself, pitch included,
+    not its shadow on the orbit. (The slow path keeps the camera's facing at the plant, laid into the orbit plane.)
+  - **The camera holds it.** From the snap, the camera stops riding the hull and eases into the launch camera along
+    that line at once (the same ease, `spectateEnterSeconds`); the world stays still while the ship hooks on and
+    spins up in front of it. The **crosshair and the aimed release still wait for `LaunchViewUp`**: a let-go before
+    the view qualifies is a plain release on the tangent, as before. The hold ends when the view takes over (it never
+    comes back after), when either trigger falls under `letGoBelow` for `spectateDropSeconds`, when the plant ends,
+    or after `snapAimHoldSeconds` 1.5 s; then the camera eases back to the chase pose.
+  - **The stick latch.** A pilot who snaps mid-turn still has the stick over, and the aim turns at 180 °/s, so after
+    a snap the sticks neither aim nor lean the orbit until both have come back inside `snapAimStickCentre` 0.25 once.
+  - **The physics is untouched**: the snap only READS the depths and the hull's velocity, so every partial pull flies
+    exactly as it did and every peer simulates the same chain. It changes only the local pilot's camera and the aim it
+    seeds (already local). The plant lab does not model it.
+  - Tests: `ThresherAnalogTriggerTests.Snap_*` and `PitchAim_*` fly it with the real solver (the chain harness runs
+    them offline); five mutations of the rule (no window, the heading read at the plant, no hand-over to the view, no
+    latch, no drop) each fail one. **Not yet flown in Unity.**
 - **Analog triggers** (shipped 2026-10-13): the camera switches only with the ball STOPPED and LT and the
   chain's rigidity both at `fullPull`; RT eased below `letGoBelow` hands it back unless a launch is armed.
   The entry keeps the camera's own turn and glides it to a stop over `spectateCarrySeconds` 0.35 (the old

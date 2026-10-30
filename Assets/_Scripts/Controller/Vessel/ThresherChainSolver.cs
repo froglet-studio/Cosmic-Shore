@@ -1590,10 +1590,20 @@ namespace CosmicShore.Gameplay
                 Vector3 right = Vector3.Cross(aimUp, aim);
                 aim = aim * Mathf.Cos(yaw) + right * Mathf.Sin(yaw);
             }
-            if (Mathf.Abs(pitch) > 0f)
+            PitchAim(ref aim, ref aimUp, pitch);
+        }
+
+        /// <summary>
+        /// Pitch aim and aimUp together by <paramref name="radians"/> (positive DOWN, <see cref="TurnAim"/>'s sign),
+        /// so the orbit plane tilts with the aim; both come back unit and perpendicular. The snap aim eases the plane
+        /// onto the pilot's flight line with it (<see cref="ThresherSnapAim"/>).
+        /// </summary>
+        public static void PitchAim(ref Vector3 aim, ref Vector3 aimUp, float radians)
+        {
+            if (Mathf.Abs(radians) > 0f)
             {
-                Vector3 a = aim * Mathf.Cos(pitch) - aimUp * Mathf.Sin(pitch);
-                aimUp = aimUp * Mathf.Cos(pitch) + aim * Mathf.Sin(pitch);
+                Vector3 a = aim * Mathf.Cos(radians) - aimUp * Mathf.Sin(radians);
+                aimUp = aimUp * Mathf.Cos(radians) + aim * Mathf.Sin(radians);
                 aim = a;
             }
 

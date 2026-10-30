@@ -19044,3 +19044,27 @@ squirrel". This undoes 622e271ca's swap; the 2026-10-28 Meerkat entry above is s
 5. Vessel Changer toy -> Meerkat, then back to Squirrel. **Pass:** both swaps work; the Meerkat still forms tunnels.
 6. `LavalampWormholeLab.unity` still flies the Meerkat.
 
+
+## Thresher snap aim: both triggers pulled fast keep the pre-pull heading (`cece/sweet-newton-78wr4o`, 2026-10-30) - NOT EDITOR-VERIFIED
+
+**Files:** `ThresherSnapAim.cs` (new, pure), `ThresherExecutor.cs` (camera, aim seed, `LetGo` arms only under the
+crosshair), `ThresherChainSolver.cs` (`ThresherCameraFraming.PitchAim`, extracted from `TurnAim`), `ThresherConfigSO.cs`
+and `ThresherConfig.asset` (four `snapAim*` dials), `ThresherAnalogTriggerTests.cs` (`Snap_*`, `PitchAim_*`). Garrett:
+a fast pull of both triggers should aim "like Thor" without first throwing the pilot off the line they were flying.
+THRESHER.md §5a "Snap aim". No Unity in the session: the chain harness ran the new tests (86 pass) and the reference
+compile checked the C#; nothing was flown.
+
+1. Run `ThresherAnalogTriggerTests` (EditMode). **Pass:** all green, the `Snap_*` and `PitchAim_*` tests included.
+2. Toybox, Thresher, pad. Fly straight at something, then pull both triggers hard and fast. **Pass:** the camera never
+   swings round with the spin; it settles behind the circle looking where you were flying, and the crosshair (when it
+   appears, about half a second in) sits on the thing you were flying at.
+3. The same while turning hard, and while climbing or diving. **Pass:** the crosshair is on the line you were flying
+   the moment before the pull, pitch included, not where the turn or the brake carried you.
+4. Snap while still holding the stick over from the turn. **Pass:** the crosshair stays put until you centre the
+   stick; after that the stick aims as usual.
+5. Release LT under the crosshair. **Pass:** the launch flies the crosshair line (unchanged).
+6. Feather LT (partial brakes, the sliding anchor) and RT (soft to rigid) for a while, then squeeze both to full
+   slowly. **Pass:** everything flies and frames exactly as before the change; the launch view comes up the old way.
+7. Snap, then let RT go before the crosshair appears. **Pass:** the camera eases back behind the hull; no crosshair.
+8. Phone: lift the right thumb, then the left within a quarter second. **Pass:** the same as step 2; tilt aims.
+9. If the snap catches pulls that were meant as plants, lower `snapAimSeconds` on `ThresherConfig.asset` (0 = off).

@@ -264,6 +264,7 @@ namespace CosmicShore.Gameplay
             _payOut = false;
             _plantHeld = false;
             _touchLaunch.Clear();
+            _snap.Clear();
             _massMode = true;   // the default (Garrett, 2026-10-21): A leaves it for the breaking ball
             _energy = 0f;
             _releaseDirection = null;
@@ -397,8 +398,10 @@ namespace CosmicShore.Gameplay
             // point whose tangent is the aim, centred on screen). Releasing ARMS the launch: the ship
             // keeps circling and leaves from exactly that point, along the aim — the pilot picks the
             // point, the solver does the timing. Unaimed (a slow orbit, a remote replica, the
-            // autopilot) it leaves on the orbit's tangent at once, as before.
-            if (wasPivot && _spectating && _aimDir.sqrMagnitude > 0.5f)
+            // autopilot) it leaves on the orbit's tangent at once, as before. Only under the crosshair:
+            // a snap's camera can be on its way into the launch view before the view's own rules have
+            // qualified, and a let-go then is still a plain release (ThresherSnapAim).
+            if (wasPivot && _spectating && LaunchViewUp && _aimDir.sqrMagnitude > 0.5f)
             {
                 // EVERY aimed launch leaves launchBoost x the orbit's speed, however long it waits for
                 // its point: the crosshair move is the reward, not the timing.
@@ -452,6 +455,7 @@ namespace CosmicShore.Gameplay
                 _solver.Release(_lastShipVelocity);
             _plantHeld = false;
             _touchLaunch.Clear();
+            _snap.Clear();
             _ltDepth = 0f; _rtDepth = 0f;
             _releaseDirection = null;
             _freezeUntilUnscaled = 0f;
@@ -1186,6 +1190,11 @@ namespace CosmicShore.Gameplay
         // so a view that drops and comes back resumes where the pilot had aimed it.
         Vector3 _pointedDir;
         bool _aimHeld;
+        // Both triggers pulled FAST (ThresherSnapAim): the aim starts from the flight direction before the pull, and
+        // the camera eases into the launch view along it at once. _aimPitchOwed is the tilt still to give the orbit
+        // plane so the crosshair is that line itself, not its shadow on the orbit (paid at aimPitchRate).
+        ThresherSnapAim _snap;
+        float _aimPitchOwed;
         // The camera's pose last frame (its turn rate at the spectate cut) and the carried turn rate (rad/s).
         Quaternion _lastCamRotation = Quaternion.identity;
         float _carryRate;
@@ -1261,12 +1270,21 @@ namespace CosmicShore.Gameplay
                 _aimHeld = false;
             }
 
-            // Spectate: on the launch view's own edges (LaunchViewUp, simulated in StepChain), so the
-            // crosshair comes on exactly when the trail goes off.
+            // Snap aim: both triggers pulled fast. Read from the depths the solver was handed this frame (a phone's
+            // both-thumbs-off reads as both full) and the flight direction the step left the hull on.
             bool analog = _settings.Analog;
-            if (!_spectating && LaunchViewUp)
+            Vector3 flight = _lastShipVelocity.sqrMagnitude > 1e-4f ? _lastShipVelocity : ship.forward;
+            _snap.Tick(_ltDepth, _rtDepth, flight, IsPivoting, LaunchViewUp, config.FullPull, config.LetGoBelow,
+                config.SnapAimRestDepth, analog ? config.SnapAimSeconds : 0f, config.SnapAimHoldSeconds,
+                config.SpectateDropSeconds, dt);
+
+            // Spectate: on the launch view's own edges (LaunchViewUp, simulated in StepChain), so the
+            // crosshair comes on exactly when the trail goes off - or, after a snap, at once (the crosshair still
+            // waits for LaunchViewUp; the camera just stops riding the hook and spin on the way there).
+            bool view = LaunchViewUp || _snap.Holding;
+            if (!_spectating && view)
                 BeginSpectate(ship.position, dt);
-            else if (_spectating && !LaunchViewUp)
+            else if (_spectating && !view)
                 EndSpectate(smooth: true);
 
             if (!_spectating)
@@ -1281,8 +1299,21 @@ namespace CosmicShore.Gameplay
             // (both thumbs off, ThresherTouchLaunch) the tilt virtual thumb writes these same XSum / YSum.
             var input = _status.InputStatus;
             if (input != null && !_solver.LaunchArmed)
-                ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, input.XSum, input.YSum,
+            {
+                float stickX = input.XSum, stickY = input.YSum;
+                _snap.AimSticks(ref stickX, ref stickY, config.SnapAimStickCentre);
+                ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, stickX, stickY,
                     config.AimYawRate * Mathf.Deg2Rad, config.AimPitchRate * Mathf.Deg2Rad, dt);
+            }
+            // A snap's flight line off the orbit's plane: tilt the plane onto it at the stick's own pitch rate (a
+            // jump would re-lay the circling ship by the whole angle in one frame).
+            if (_aimPitchOwed != 0f && !_solver.LaunchArmed)
+            {
+                float step = config.AimPitchRate * Mathf.Deg2Rad * dt;
+                step = Mathf.Clamp(_aimPitchOwed, -step, step);
+                ThresherCameraFraming.PitchAim(ref _aimDir, ref _aimUp, step);
+                _aimPitchOwed -= step;
+            }
             // The whole spin turns with the camera: the orbit is laid into the plane the aim lives in.
             _solver.SteerOrbitPlane(_aimUp);
 
@@ -1314,6 +1345,9 @@ namespace CosmicShore.Gameplay
             ShowVantage(_easeFromPos, fromRot, eye, look, _camEase);
             _lastCamRotation = _cam.transform.rotation;
 
+            // A snap's camera on its way in, before the view's own rules qualify: no crosshair yet.
+            if (!LaunchViewUp) { if (_sight) _sight.Hide(); return; }
+
             // The launch sight: the crosshair (one colour; the release timing is left to feel) and the Time-petal
             // zoom window down the same trajectory, zoomed by LT's depth alone. (Analog triggers: LT is at a
             // full pull whenever this view is up, so its depth cannot zoom; the window stays wide.)
@@ -1333,26 +1367,37 @@ namespace CosmicShore.Gameplay
         /// laid into the orbit plane either way. It used to start from wherever the spinning chase camera
         /// happened to face, carried further round by its turn, so every entry pointed somewhere new. The
         /// aim's "above" is the orbit's axis on the camera's own side, so the launch camera rises over the
-        /// orbit rather than dropping under it.</summary>
+        /// orbit rather than dropping under it.
+        /// After a SNAP (both triggers pulled fast, <see cref="ThresherSnapAim"/>, 2026-10-30) the aim is the hull's
+        /// flight direction from before the pull, and the orbit plane is tilted onto it (<c>_aimPitchOwed</c>) so the
+        /// crosshair is that line exactly. This runs on the plant's first frames then, before the hook has turned
+        /// the ship onto the orbit, so the plane is the solver's own (<see cref="ThresherChainSolver.OrbitNormal"/>):
+        /// a ship still flying straight away from the ball has a velocity along its radius, and their cross is noise.</summary>
         void BeginSpectate(Vector3 shipPosition, float dt)
         {
             Vector3 pivot = _solver.Pivot;
             Vector3 outward = shipPosition - pivot;
-            Vector3 normal = Vector3.Cross(outward, _lastShipVelocity);
+            bool snap = !_aimHeld && _snap.Engaged;
+            Vector3 normal = snap ? _solver.OrbitNormal(shipPosition) : Vector3.Cross(outward, _lastShipVelocity);
             if (normal.sqrMagnitude < 1e-6f || outward.sqrMagnitude < 1e-6f) return;
             normal.Normalize();
             if (Vector3.Dot(normal, _cam.transform.position - pivot) < 0f) normal = -normal;
 
             // (a pointed direction within ~13 degrees of the orbit's axis has no clear launch point: fall back)
-            Vector3 want = _aimHeld ? _aimDir : _pointedDir;
+            Vector3 want = _aimHeld ? _aimDir : snap ? _snap.Heading : _pointedDir;
             Vector3 aim = Vector3.ProjectOnPlane(want, normal);
-            if (aim.sqrMagnitude < 0.05f) aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
+            bool laid = aim.sqrMagnitude >= 0.05f;
+            if (!laid) aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
             if (aim.sqrMagnitude < 1e-6f) aim = _lastShipVelocity;
             if (aim.sqrMagnitude < 1e-6f) return;
 
             _aimDir = aim.normalized;
             _aimUp = normal;
             _aimHeld = true;
+            // The snap's line off the plane: the pitch (TurnAim's sign, positive down) that lays aim onto it.
+            _aimPitchOwed = snap && laid
+                ? -Mathf.Atan2(Vector3.Dot(want.normalized, normal), Vector3.Dot(want.normalized, _aimDir))
+                : 0f;
             // The carried turn: the camera's own turn rate about the orbit's axis, read off last frame's pose;
             // the ease's start pose keeps turning at it and glides to a stop over spectateCarrySeconds.
             _carryRate = 0f;
@@ -1378,6 +1423,7 @@ namespace CosmicShore.Gameplay
         void EndSpectate(bool smooth = false)
         {
             if (_spectating) _solver?.SteerOrbitPlane(Vector3.zero);   // the orbit's plane is the ship's again
+            _aimPitchOwed = 0f;
             if (_sight) _sight.Hide();
             bool was = _spectating;
             _spectating = false;
