@@ -101,6 +101,12 @@ namespace CosmicShore.Gameplay
                  "0.25 s timing window until 2026-10-13; tripled to x4.8 then.")]
         [FormerlySerializedAs("perfectBoost")]
         [SerializeField, Min(1f)] float launchBoost = 4.8f;
+        [Tooltip("The aimed launch's EXIT BUFF: for launchExitSeconds after it, the hull TRAVELS this many times what " +
+                 "the chain physics gives it, easing linearly back to 1x - to make up the time the swing spent in " +
+                 "place. The ball and chain are carried with it, so the physics itself is unchanged. A new plant ends it.")]
+        [SerializeField, Min(1f)] float launchExitSpeedMultiplier = 3f;
+        [Tooltip("Seconds the exit buff takes to ease from launchExitSpeedMultiplier back to 1x. 0 = no buff.")]
+        [SerializeField, Min(0f)] float launchExitSeconds = 3f;
 
         [Header("Chain cut")]
         [Tooltip("The chain's cutting half-width (world units). It cuts RIVAL prisms it touches while taut; " +
@@ -372,6 +378,8 @@ namespace CosmicShore.Gameplay
         public float ReleaseSpinDownMaxDegrees => releaseSpinDownMaxDegrees;
         public float SpectateCarrySeconds => spectateCarrySeconds;
         public float CameraMaxFollowAngularAcceleration => cameraMaxFollowAngularAcceleration;
+        public float LaunchExitSpeedMultiplier => launchExitSpeedMultiplier;
+        public float LaunchExitSeconds => launchExitSeconds;
         public float SnapAimSeconds => snapAimSeconds;
         public float SnapAimRestDepth => snapAimRestDepth;
         public float SnapAimHoldSeconds => snapAimHoldSeconds;

@@ -458,6 +458,25 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     yanked along the aim; the transformer faces the hull along it (`TryConsumeReleaseDirection`) and
     grip puts the momentum on the nose. Re-pressing LT while armed does not cancel it (re-releasing
     re-arms with the same aim).
+  - **The exit buff** (2026-10-30, Garrett: "come out of a dual trigger swing with a speed buff that makes the exit
+    speed 3x what it would be with the current physics, this can decay over 3 seconds. this will compensate for the
+    time lost staying still"). For `launchExitSeconds` **3** after an aimed launch the hull TRAVELS
+    `launchExitSpeedMultiplier` **×3** what the chain physics gives it, easing linearly back to ×1
+    (`ThresherChainSolver.LaunchExitMultiplier`, the fleet's `ModifyThrottle` shape). It rides the fleet's output-only
+    channel (`throttleMultiplier`, scaled in `ThresherVesselTransformer.ComputeExternalAcceleration` on the frame it
+    is rebuilt for), so the momentum, grip and throttle step are today's; the published `Speed` carries it (trail
+    spacing, the speed tunnel). **The rig is carried with it**: after each move the extra travel moves the ball, any
+    pivot and every chain link with the hull (`ThresherExecutor.CarryRig`, `ThresherChainSolver.Carry`,
+    `ThresherChainLinks.Carry`), and the ball's carried stretch is swept (prisms, Mass Mode's trail, enemy hulls).
+    Without that the chain saw only the hull run ahead and braked the physics to its 42 u/s floor within a quarter
+    second: measured over the 3 s, RT held 532 u today → 579 u buffed but uncarried → **1 272 u** carried; RT released
+    655 → 622 → **1 570 u**, with the physics speed frame for frame today's. Only an aimed launch (the crosshair)
+    gets it; a plain release, the autopilot and a remote replica's release do not. A new plant ends it (an orbit
+    cannot travel faster than its own chord). Tests: `ThresherAnalogTriggerTests.ExitBuff_*`,
+    `ChainLinks_CarriedWithTheHull_GainNoVelocity`; three mutations (no ball carry, no decay, links carried without
+    their previous positions) each fail one. **Multiplayer, not handled:** remote peers simulate their own copy of the
+    ball from the hull's replicated motion and do not know about the buff, so on their screens the ball can trail
+    further behind (and re-seed beside the hull past 3 chain lengths) during the 3 s. **Not yet flown in Unity.**
   - **The launch flies the crosshair's line** (2026-10-21, Garrett: "if I release the ball and keep the
     tension it doesn't always shoot me at the cross hair"). The ball is left at the old pivot (`yank` 0),
     so the chain used to swing the ship back round it: the launch fires as LT passes `letGoBelow`, with

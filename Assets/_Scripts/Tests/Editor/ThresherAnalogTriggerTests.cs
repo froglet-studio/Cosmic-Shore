@@ -499,6 +499,79 @@ namespace CosmicShore.Tests
             }
         }
 
+        // ---------------------------------------------------------------- exit buff (2026-10-30)
+        // Garrett: "come out of a dual trigger swing with a speed buff that makes the exit speed 3x what it would be with
+        // the current physics, this can decay over 3 seconds ... to compensate for the time lost staying still".
+
+        /// <summary>The shipped exit buff (<c>ThresherConfig.asset</c>).</summary>
+        const float ExitMultiplier = 3f, ExitSeconds = 3f;
+
+        [Test]
+        public void ExitBuff_IsThreeAtTheLaunch_EasingToOneOverThreeSeconds()
+        {
+            Assert.AreEqual(3f, ThresherChainSolver.LaunchExitMultiplier(0f, ExitMultiplier, ExitSeconds), 1e-5f);
+            Assert.AreEqual(2f, ThresherChainSolver.LaunchExitMultiplier(1.5f, ExitMultiplier, ExitSeconds), 1e-5f);
+            Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(3f, ExitMultiplier, ExitSeconds), 1e-5f);
+            Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(5f, ExitMultiplier, ExitSeconds), 1e-5f);
+            Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(0f, ExitMultiplier, 0f), 1e-5f, "0 s = no buff");
+            Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(-1f, ExitMultiplier, ExitSeconds), 1e-5f);
+        }
+
+        /// <summary>Fly <paramref name="seconds"/> after an aimed launch, the hull travelling the exit buff's multiple of
+        /// the physics as <c>ThresherVesselTransformer</c> moves it; <paramref name="carry"/> hands the extra to the ball
+        /// as <c>ThresherExecutor.CarryRig</c> does. Returns the distance flown; <paramref name="speeds"/> the physics.</summary>
+        static float FlyExit(float rt, bool buff, bool carry, float seconds, float[] speeds)
+        {
+            var f = AimedLaunch(0f, rt);
+            Vector3 p0 = f.P;
+            float t = Dt;   // the launch frame itself travelled at the full multiple; AimedLaunch moved it at 1x
+            if (buff) { Vector3 extra = f.Last * ((ExitMultiplier - 1f) * Dt); f.P += extra; if (carry) f.S.Carry(extra); }
+            int n = Mathf.RoundToInt(seconds / Dt);
+            for (int i = 0; i < n; i++)
+            {
+                f.Frame(0f, rt, 0f);
+                float k = buff ? ThresherChainSolver.LaunchExitMultiplier(t, ExitMultiplier, ExitSeconds) : 1f;
+                Vector3 extra = f.Last * ((k - 1f) * Dt);
+                f.P += extra;
+                if (carry) f.S.Carry(extra);
+                if (speeds != null) speeds[i] = f.Last.magnitude;
+                t += Dt;
+            }
+            return (f.P - p0).magnitude;
+        }
+
+        [Test]
+        public void ExitBuff_TriplesTheExitAndLeavesThePhysicsAlone_BecauseTheRigIsCarried()
+        {
+            foreach (float rt in new[] { 1f, 0f })
+            {
+                int n = Mathf.RoundToInt(ExitSeconds / Dt);
+                float[] plain = new float[n], buffed = new float[n], uncarried = new float[n];
+                float dPlain = FlyExit(rt, false, false, ExitSeconds, plain);
+                float dBuffed = FlyExit(rt, true, true, ExitSeconds, buffed);
+                float dUncarried = FlyExit(rt, true, false, ExitSeconds, uncarried);
+                for (int i = 0; i < n; i++)
+                    Assert.AreEqual(plain[i], buffed[i], plain[i] * 1e-3f + 1e-2f, $"RT {rt}, frame {i}: the chain physics is today's");
+                Assert.Greater(dBuffed, 2f * dPlain, $"RT {rt}: the buff more than doubles the ground covered in its 3 s");
+                // Why the rig is carried: a chain that sees only the hull run ahead brakes the physics (measured: to a
+                // third of today's speed one second in) and gives most of the buff back.
+                Assert.Less(uncarried[60], 0.5f * plain[60], $"RT {rt}: uncarried, the chain brakes the physics");
+                Assert.Less(dUncarried, 0.7f * dBuffed, $"RT {rt}: uncarried, most of the buff's ground is lost");
+            }
+        }
+
+        [Test]
+        public void ChainLinks_CarriedWithTheHull_GainNoVelocity()
+        {
+            var links = new ThresherChainLinks(8);
+            links.Reset(Vector3.zero, Vector3.back * 20f);
+            links.Step(Vector3.forward, Vector3.back * 19f, 20f);
+            float before = links.NodeVelocity(4, Dt).magnitude;
+            links.Carry(Vector3.right * 30f);
+            Assert.AreEqual(before, links.NodeVelocity(4, Dt).magnitude, 1e-3f);
+            Assert.AreEqual(30f, links.Points[4].x, 1e-3f);
+        }
+
         // ---------------------------------------------------------------- snap aim (2026-10-30)
         // Garrett: "when we pull both triggers fast we want to be able to aim and shoot ourselves like Thor" - the
         // crosshair keeps the line the ship flew before the pull, though the pull's own brake and anchor bend the

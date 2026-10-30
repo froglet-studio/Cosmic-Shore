@@ -522,6 +522,26 @@ namespace CosmicShore.Gameplay
             return result.ShipVelocity;
         }
 
+        /// <summary>
+        /// The aimed launch's exit buff carries the whole rig: the hull travelled <paramref name="delta"/> further than
+        /// the chain physics moved it (<see cref="ThresherVesselTransformer"/>), so the ball and every link go with it,
+        /// and the next step sees the ship exactly where its own physics put it relative to the ball - a chain that saw
+        /// only the hull run ahead braked the physics to its floor within a quarter of a second. The ball's carried
+        /// stretch is swept like any other (prisms, Mass Mode's trail, enemy hulls); ring threading reads its positions.
+        /// </summary>
+        public void CarryRig(Vector3 delta)
+        {
+            if (_solver == null || !_seeded || delta.sqrMagnitude < 1e-10f) return;
+            Vector3 from = _solver.BallPosition;
+            _solver.Carry(delta);
+            _links.Carry(delta);
+            _lastShipPosition += delta;
+            if (_solver.Mode == ThresherMode.Pivot) return;
+            SweepBall(from, _solver.BallPosition);
+            if (_massMode) LayBallTrail(from, _solver.BallPosition, _lastShipPosition);
+            HitVesselsAlong(from, _solver.BallPosition, _settings.BallRadius, _solver.BallVelocity);
+        }
+
         // ------------------------------------------------------------------ the launch view
 
         float _launchViewQualifyTime;   // how long the spin has qualified (the engage delay)

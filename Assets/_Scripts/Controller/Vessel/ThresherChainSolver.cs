@@ -519,6 +519,28 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The aimed launch's EXIT BUFF (Garrett, 2026-10-30: "come out of a dual trigger swing with a speed buff that
+        /// makes the exit speed 3x what it would be with the current physics, this can decay over 3 seconds ... to
+        /// compensate for the time lost staying still"): the multiplier on the hull's travel <paramref name="t"/>
+        /// seconds after the launch, <paramref name="multiplier"/> at the launch easing linearly to 1 at
+        /// <paramref name="seconds"/> (the fleet's own <c>ModifyThrottle</c> shape). 1 outside it.
+        /// </summary>
+        public static float LaunchExitMultiplier(float t, float multiplier, float seconds)
+            => seconds > 0f && t >= 0f && t < seconds ? Mathf.Lerp(Mathf.Max(1f, multiplier), 1f, t / seconds) : 1f;
+
+        /// <summary>
+        /// Carry the ball (and a pivot) by <paramref name="delta"/> with the hull: the share of the hull's travel the
+        /// physics did not make (<see cref="LaunchExitMultiplier"/>). The rig moves as one body, so the chain sees the
+        /// ship exactly where its own physics put it relative to the ball and nothing brakes the extra; velocities are
+        /// untouched.
+        /// </summary>
+        public void Carry(Vector3 delta)
+        {
+            BallPosition += delta;
+            if (Mode == ThresherMode.Pivot) Pivot += delta;
+        }
+
+        /// <summary>
         /// Seconds until the ship, circling at its current speed, reaches the launch point for
         /// <paramref name="aim"/> — the wait an LT release NOW would cost. Infinity when there is no
         /// launch point (not planted, or the aim is along the orbit's axis).
@@ -1349,6 +1371,13 @@ namespace CosmicShore.Gameplay
         /// <summary>Velocity of node <paramref name="i"/> over the last step.</summary>
         public Vector3 NodeVelocity(int i, float dt)
             => dt > 0f ? (Points[i] - _previous[i]) / dt : Vector3.zero;
+
+        /// <summary>Translate the whole chain with the hull (<see cref="ThresherChainSolver.Carry"/>): every link and its
+        /// previous position move together, so no link gains a velocity from it.</summary>
+        public void Carry(Vector3 delta)
+        {
+            for (int i = 0; i < Points.Length; i++) { Points[i] += delta; _previous[i] += delta; }
+        }
 
         public void Reset(Vector3 hull, Vector3 ball)
         {

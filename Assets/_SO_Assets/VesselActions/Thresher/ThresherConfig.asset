@@ -107,6 +107,8 @@ MonoBehaviour:
   magnetRange: 150
   magnetAcceleration: 220
   launchBoost: 4.8
+  launchExitSpeedMultiplier: 3
+  launchExitSeconds: 3
   chainCutRadius: 0.6
   chainDebrisRestitution: 0.5
   hitStopMinSeconds: 0.03
