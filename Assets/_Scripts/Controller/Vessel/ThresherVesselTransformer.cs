@@ -114,10 +114,18 @@ namespace CosmicShore.Gameplay
                     Vector3 aimed = Vector3.zero;
                     bool aimedRelease = thresher && thresher.TryConsumeReleaseDirection(out aimed);
                     var cfg = Config;
-                    if (cfg && cfg.ReleaseSpinDownSeconds > 0f && Mathf.Abs(_orbitRate) > 1e-4f)
+                    // An AIMED launch leaves from its launch point exactly along the crosshair and faces it at once
+                    // (2026-10-30, Garrett: "accurately and consistently shoot players at their target"). It used to
+                    // wind down like a plain release: it left early, along the orbit, and the hull kept turning up to
+                    // releaseSpinDownMaxDegrees onto the aim - 7-9 degrees of exit drift, and a chase pose still
+                    // swinging under the launch camera's exit. At the launch point the orbit's tangent IS the aim,
+                    // so the hull is already facing it: there is no spin left to wind down.
+                    if (aimedRelease)
+                        FaceAlong(aimed, 1f);
+                    else if (cfg && cfg.ReleaseSpinDownSeconds > 0f && Mathf.Abs(_orbitRate) > 1e-4f)
                     {
-                        // Wind the spin down instead of stopping it dead: the hull keeps turning about the
-                        // orbit's axis and eases to a stop (an aimed launch left early by the angle this adds).
+                        // A plain release: wind the spin down instead of stopping it dead - the hull keeps turning
+                        // about the orbit's axis and eases to a stop.
                         _spinAxis = _orbitAxis;
                         _spinRate0 = _orbitRate;
                         _spinT = 0f;
@@ -126,9 +134,6 @@ namespace CosmicShore.Gameplay
                     // The release edge: fly off along the orbit's TANGENT. Grip closes the whole angle
                     // between momentum and nose on the next move step, so a nose still lagging the
                     // tangent would bend the fling inward by exactly that lag.
-                    // An AIMED release (the spectate camera's aim) replaces the tangent outright.
-                    else if (aimedRelease)
-                        FaceAlong(aimed, 1f);
                     else if (_lastShipVelocity.sqrMagnitude > 1e-4f)
                         FaceAlong(_lastShipVelocity, 1f);
                     _wasPivoting = false;
@@ -190,20 +195,9 @@ namespace CosmicShore.Gameplay
         {
             if (!thresher) return Vector3.zero;
             var cfg = Config;
-            bool spinDown = cfg && cfg.ReleaseSpinDownSeconds > 0f;
             bool keepUp = cfg && cfg.HullFollowsPlantedVelocity;
 
-            // An ARMED launch with a wind-down leaves early by the angle the wind-down will still turn, less
-            // the hull's lag behind its velocity, so the ship lands on the aim instead of past it.
-            float lead = 0f;
-            if (spinDown && thresher.IsPivoting && thresher.LaunchArmed &&
-                thresher.TryGetOrbitSpin(transform.position, out _, out float rate))
-            {
-                float lag = Vector3.Angle(transform.forward, _lastShipVelocity) * Mathf.Deg2Rad;
-                lead = Mathf.Max(1e-4f, Mathf.Abs(rate) * SpinDownTime(cfg, rate) * 0.5f - lag);
-            }
-            thresher.SetLaunchLead(lead);
-
+            // (An armed launch leaves with no lead: exactly at its point, along the aim - see RotateShip.)
             Vector3 shaped = thresher.StepChain(transform.position, velocity, ComputeThrottleTarget(), dt, PivotSteer());
             _lastShipVelocity = shaped;
 
@@ -226,9 +220,9 @@ namespace CosmicShore.Gameplay
             // Towing: turn the hull with the tug (see the class docs) — the same minimal rotation
             // applied to the commanded rotation, so the pilot's next stick input starts from it.
             // hullFollowsPlantedVelocity: also while planted, so the hull keeps up with this frame's own turn
-            // rather than facing last frame's velocity. On a wind-down's launch frame the spin turns the hull,
-            // unless the hull keeps up, when this bend IS the frame's share of the orbit's turn.
-            bool turnHull = (!thresher.IsPivoting || keepUp) && !(thresher.LaunchedThisStep && spinDown && !keepUp);
+            // rather than facing last frame's velocity. On an aimed launch's frame this bend faces the hull along
+            // the aim (only plain releases wind down, and they are not launches).
+            bool turnHull = !thresher.IsPivoting || keepUp;
             if (turnHull && velocity.sqrMagnitude > 1e-4f && shaped.sqrMagnitude > 1e-4f)
             {
                 Quaternion bend = Quaternion.FromToRotation(velocity, shaped);

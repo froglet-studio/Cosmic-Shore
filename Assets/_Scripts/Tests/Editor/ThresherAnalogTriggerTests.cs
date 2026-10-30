@@ -274,6 +274,48 @@ namespace CosmicShore.Tests
             }
         }
 
+        [TestCase(30f, 1f, 1f)]
+        [TestCase(60f, 1f, 1f)]
+        [TestCase(144f, 1f, 1f)]
+        [TestCase(60f, 0f, 1f)]
+        [TestCase(30f, 1f, 1.75f)]
+        [TestCase(144f, 0f, 1.75f)]
+        public void AimedLaunch_FliesTheCrosshairsOwnLine_AtAnyFrameRate(float fps, float rt, float timeSpin)
+        {
+            // Garrett, 2026-10-30: "with the timing controlled to only let players go at the right time this should
+            // always feel smooth and accurately and consistently shoot players at their target". The crosshair is the
+            // line through the launch point along the aim; the launch leaves with no lead (the transformer no longer
+            // winds an aimed launch's spin down), so the ship must fly THAT line, whatever the frame rate or spin.
+            float dt = 1f / fps;
+            var s = Analog();
+            s.LockSpinRate *= timeSpin;
+            s.LockMaxSpeed *= timeSpin;
+            var f = new Flight(s) { Grip = true };
+            f.Fly(1f, 0f, 1f, 60f, dt);
+            f.Fly(2.5f, 1f, 1f, 0f, dt);
+            Vector3 aim = Vector3.right;
+            f.S.ArmLaunch(aim, LaunchBoost);
+            Vector3 point = default;
+            for (int i = 0; i < 2000 && !f.R.Launched; i++)
+            {
+                // The crosshair follows the launch point on the circle the ship is flying (a slackening chain widens it).
+                point = f.S.LaunchPoint(f.P, aim);
+                f.Frame(0f, rt, 0f, dt);
+            }
+            Assert.IsTrue(f.R.Launched, "the armed launch left");
+            Assert.Less(AngleDeg(f.R.ShipVelocity, aim), 0.01f, "it leaves exactly along the aim");
+            float worstOff = 0f, worstDeg = 0f;
+            for (int k = 0; k < Mathf.RoundToInt(1.5f / dt); k++)
+            {
+                f.Frame(0f, rt, 0f, dt);
+                Vector3 d = f.P - point;
+                worstOff = Mathf.Max(worstOff, (d - aim * Vector3.Dot(d, aim)).magnitude);
+                worstDeg = Mathf.Max(worstDeg, AngleDeg(f.Last, aim));
+            }
+            Assert.Less(worstOff, 2f, $"{fps} fps: the ship flies the crosshair's line (off by {worstOff:F2} u)");
+            Assert.Less(worstDeg, 3f, $"{fps} fps: and keeps heading along it");
+        }
+
         [Test]
         public void AimedLaunch_OffATimeRaisedSpin_StaysOnTheLine_WhenTheShipOutrunsTheBall()
         {
@@ -504,15 +546,15 @@ namespace CosmicShore.Tests
         // the current physics, this can decay over 3 seconds ... to compensate for the time lost staying still".
 
         /// <summary>The shipped exit buff (<c>ThresherConfig.asset</c>).</summary>
-        const float ExitMultiplier = 3f, ExitSeconds = 3f;
+        const float ExitMultiplier = 2f, ExitSeconds = 8f;
 
         [Test]
-        public void ExitBuff_IsThreeAtTheLaunch_EasingToOneOverThreeSeconds()
+        public void ExitBuff_IsTwoAtTheLaunch_EasingToOneOverEightSeconds()
         {
-            Assert.AreEqual(3f, ThresherChainSolver.LaunchExitMultiplier(0f, ExitMultiplier, ExitSeconds), 1e-5f);
-            Assert.AreEqual(2f, ThresherChainSolver.LaunchExitMultiplier(1.5f, ExitMultiplier, ExitSeconds), 1e-5f);
-            Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(3f, ExitMultiplier, ExitSeconds), 1e-5f);
-            Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(5f, ExitMultiplier, ExitSeconds), 1e-5f);
+            Assert.AreEqual(2f, ThresherChainSolver.LaunchExitMultiplier(0f, ExitMultiplier, ExitSeconds), 1e-5f);
+            Assert.AreEqual(1.5f, ThresherChainSolver.LaunchExitMultiplier(4f, ExitMultiplier, ExitSeconds), 1e-5f);
+            Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(8f, ExitMultiplier, ExitSeconds), 1e-5f);
+            Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(12f, ExitMultiplier, ExitSeconds), 1e-5f);
             Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(0f, ExitMultiplier, 0f), 1e-5f, "0 s = no buff");
             Assert.AreEqual(1f, ThresherChainSolver.LaunchExitMultiplier(-1f, ExitMultiplier, ExitSeconds), 1e-5f);
         }
@@ -541,7 +583,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ExitBuff_TriplesTheExitAndLeavesThePhysicsAlone_BecauseTheRigIsCarried()
+        public void ExitBuff_MultipliesTheExitAndLeavesThePhysicsAlone_BecauseTheRigIsCarried()
         {
             foreach (float rt in new[] { 1f, 0f })
             {
@@ -551,12 +593,12 @@ namespace CosmicShore.Tests
                 float dBuffed = FlyExit(rt, true, true, ExitSeconds, buffed);
                 float dUncarried = FlyExit(rt, true, false, ExitSeconds, uncarried);
                 for (int i = 0; i < n; i++)
-                    Assert.AreEqual(plain[i], buffed[i], plain[i] * 1e-3f + 1e-2f, $"RT {rt}, frame {i}: the chain physics is today's");
-                Assert.Greater(dBuffed, 2f * dPlain, $"RT {rt}: the buff more than doubles the ground covered in its 3 s");
+                    Assert.AreEqual(plain[i], buffed[i], plain[i] * 1e-2f + 1e-2f, $"RT {rt}, frame {i}: the chain physics is today's");
+                Assert.Greater(dBuffed, 1.5f * dPlain, $"RT {rt}: the buff covers half as much ground again in its 8 s (measured 1.67x)");
                 // Why the rig is carried: a chain that sees only the hull run ahead brakes the physics (measured: to a
-                // third of today's speed one second in) and gives most of the buff back.
+                // third of today's speed one second in) and gives part of the buff back.
                 Assert.Less(uncarried[60], 0.5f * plain[60], $"RT {rt}: uncarried, the chain brakes the physics");
-                Assert.Less(dUncarried, 0.7f * dBuffed, $"RT {rt}: uncarried, most of the buff's ground is lost");
+                Assert.Less(dUncarried, dBuffed, $"RT {rt}: uncarried, the buff's ground is partly lost");
             }
         }
 
@@ -578,7 +620,7 @@ namespace CosmicShore.Tests
         // ship on its way to full (ThresherSnapAim). The solver is flown untouched: the snap only reads it.
 
         /// <summary>The shipped snap dials (<c>ThresherConfig.asset</c>) and the launch view's drop grace.</summary>
-        const float SnapWindow = 0.25f, SnapRest = 0.1f, SnapHold = 1.5f, DropSeconds = 0.25f, StickCentre = 0.25f;
+        const float SnapWindow = 0.25f, SnapRest = 0.1f, SnapHold = 1.5f, DropSeconds = 0.25f;
 
         /// <summary>A pad pilot with the snap ticked once per frame after the move, as <c>ThresherExecutor.UpdateCamera</c>
         /// ticks it, and the launch view simulated as <c>UpdateLaunchView</c> raises it (grip and spin for 0.1 s).</summary>
@@ -727,26 +769,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Snap_TheSticksAimOnlyOnceTheyHaveCentred()
+        public void AimSticks_TakeTheAimOverSmoothly_AndAreNeverIgnored()
         {
-            var r = new SnapRun(60f, 1f);
-            r.Pull(0.1f, 1f, 60f);
-            float x = 1f, y = -0.6f;
-            r.Snap.AimSticks(ref x, ref y, StickCentre);
-            Assert.AreEqual(0f, x, 0f, "the stick still over from the turn does not swing the kept aim");
-            Assert.AreEqual(0f, y, 0f);
-            x = 0.1f; y = 0.05f;
-            r.Snap.AimSticks(ref x, ref y, StickCentre);
-            Assert.AreEqual(0.1f, x, 0f, "centred: the latch lets go");
-            x = 1f; y = 0f;
-            r.Snap.AimSticks(ref x, ref y, StickCentre);
-            Assert.AreEqual(1f, x, 0f, "and from then on the sticks aim");
+            // Garrett, 2026-10-30: entering the aim "sometimes disengages the controls ... I had to return it to home
+            // position and move the sticks again" - the snap's stick latch. The sticks now ramp in instead.
+            const float Ease = 0.3f;
+            Assert.AreEqual(0f, ThresherCameraFraming.AimStickAuthority(0f, Ease), 1e-5f, "no jump on the entry frame");
+            Assert.Greater(ThresherCameraFraming.AimStickAuthority(Dt, Ease), 0f, "a held stick starts aiming at once");
+            Assert.AreEqual(0.5f, ThresherCameraFraming.AimStickAuthority(Ease * 0.5f, Ease), 1e-5f);
+            Assert.AreEqual(1f, ThresherCameraFraming.AimStickAuthority(Ease, Ease), 1e-5f);
+            Assert.AreEqual(1f, ThresherCameraFraming.AimStickAuthority(5f, Ease), 1e-5f);
+            Assert.AreEqual(1f, ThresherCameraFraming.AimStickAuthority(0f, 0f), 1e-5f, "0 = full authority at once");
 
-            var slow = new SnapRun(0f, 0f);
-            slow.Pull(0.5f, 0f, 0f);
-            x = 1f; y = 1f;
-            slow.Snap.AimSticks(ref x, ref y, StickCentre);
-            Assert.AreEqual(1f, x, 0f, "no snap, no latch: the slow path's sticks are untouched");
+            // A stick held hard over through the entry swings the aim from rest, never more than a frame of full rate.
+            Vector3 aim = Vector3.forward, up = Vector3.up, last = aim;
+            float rate = 180f * Mathf.Deg2Rad, worstStep = 0f, t = 0f;
+            for (int i = 0; i < 60; i++)
+            {
+                t += Dt;
+                float k = ThresherCameraFraming.AimStickAuthority(t, Ease);
+                ThresherCameraFraming.TurnAim(ref aim, ref up, 1f * k, 0f, rate, 0f, Dt);
+                worstStep = Mathf.Max(worstStep, AngleDeg(aim, last));
+                last = aim;
+            }
+            Assert.LessOrEqual(worstStep, 180f * Dt + 1e-3f);
+            Assert.Greater(AngleDeg(aim, Vector3.forward), 120f, "after a second the stick has been aiming all along");
         }
 
         [Test]

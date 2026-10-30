@@ -19060,8 +19060,9 @@ compile checked the C#; nothing was flown.
    appears, about half a second in) sits on the thing you were flying at.
 3. The same while turning hard, and while climbing or diving. **Pass:** the crosshair is on the line you were flying
    the moment before the pull, pitch included, not where the turn or the brake carried you.
-4. Snap while still holding the stick over from the turn. **Pass:** the crosshair stays put until you centre the
-   stick; after that the stick aims as usual.
+4. Snap while still holding the stick over from the turn. **Pass:** the stick keeps working: the aim starts turning
+   at once and reaches its full rate within about 0.3 s. You never have to centre the stick to get control back
+   (the first cut's latch did that; replaced 2026-10-30).
 5. Release LT under the crosshair. **Pass:** the launch flies the crosshair line (unchanged).
 6. Feather LT (partial brakes, the sliding anchor) and RT (soft to rigid) for a while, then squeeze both to full
    slowly. **Pass:** everything flies and frames exactly as before the change; the launch view comes up the old way.
@@ -19069,15 +19070,20 @@ compile checked the C#; nothing was flown.
 8. Phone: lift the right thumb, then the left within a quarter second. **Pass:** the same as step 2; tilt aims.
 9. If the snap catches pulls that were meant as plants, lower `snapAimSeconds` on `ThresherConfig.asset` (0 = off).
 
-**Exit buff (same branch, 2026-10-30):** an aimed launch travels 3x the physics' speed, easing to 1x over 3 s, with the
+**Exit buff (same branch, 2026-10-30; retuned to 2x over 8 s the same day):** an aimed launch travels 2x the physics'
+speed, easing to 1x over 8 s, with the
 ball and chain carried along (THRESHER.md §5a "The exit buff"). `ThresherVesselTransformer` (`MoveShip` wraps the base
 move), `ThresherExecutor.CarryRig`, `ThresherChainSolver.Carry` / `LaunchExitMultiplier`, two dials on the config.
 
 10. Aimed launch with RT held, then again with RT released. **Pass:** you leave much faster than before and slow back
-    to the old feel over about 3 s; the ball and chain stay with you (no ball left far behind, no chain stretched
+    to the old feel over about 8 s; the ball and chain stay with you (no ball left far behind, no chain stretched
     across the screen), and the ball still smashes what it passes.
 11. A plain release (no crosshair) and an AI Thresher. **Pass:** no buff, exactly as before.
-12. Re-plant within the 3 s. **Pass:** the orbit is a normal orbit (no jitter, no overshoot); the buff is gone.
+12. Re-plant within the 8 s. **Pass:** the orbit is a normal orbit (no jitter, no overshoot); the buff is gone.
 13. Danger prism slow and a skim boost during the buff. **Pass:** both still act on top of it.
 14. Two-player session: watch the other pilot's aimed launch. **Note** whether their ball trails far behind or jumps
     back beside them (known: remote copies do not know about the buff).
+15. Exits (2026-10-30): ten aimed launches in a row, at different aims, RT held and RT released. **Pass:** every one
+    leaves exactly along the crosshair and keeps flying at what it showed: no curve onto the line, no swing of the hull
+    after leaving, and the camera stays behind you as you leave instead of watching you shoot off and then catching up.
+16. A plain release (no crosshair) still eases its spin to a stop (unchanged).

@@ -104,9 +104,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("The aimed launch's EXIT BUFF: for launchExitSeconds after it, the hull TRAVELS this many times what " +
                  "the chain physics gives it, easing linearly back to 1x - to make up the time the swing spent in " +
                  "place. The ball and chain are carried with it, so the physics itself is unchanged. A new plant ends it.")]
-        [SerializeField, Min(1f)] float launchExitSpeedMultiplier = 3f;
+        [SerializeField, Min(1f)] float launchExitSpeedMultiplier = 2f;
         [Tooltip("Seconds the exit buff takes to ease from launchExitSpeedMultiplier back to 1x. 0 = no buff.")]
-        [SerializeField, Min(0f)] float launchExitSeconds = 3f;
+        [SerializeField, Min(0f)] float launchExitSeconds = 8f;
 
         [Header("Chain cut")]
         [Tooltip("The chain's cutting half-width (world units). It cuts RIVAL prisms it touches while taut; " +
@@ -210,6 +210,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aimYawRate = 180f;
         [Tooltip("While spectating, full stick Y pitches the aim at this rate (degrees/s), the hull's own pitch sign.")]
         [SerializeField, Min(0f)] float aimPitchRate = 120f;
+        [Tooltip("When the aim begins, the sticks' authority over it eases in from 0 to full over this long (seconds, " +
+                 "SmoothStep), so a stick already over takes the aim over smoothly rather than swinging it at full rate " +
+                 "on the first frame. It is never ignored. 0 = full authority at once.")]
+        [SerializeField, Min(0f)] float aimStickEaseSeconds = 0.3f;
 
         [Header("Analog triggers (with dials.analogTriggers; Docs/Studios/THRESHER_PLANT_LAB.md round 2)")]
         [Tooltip("Trigger depth that counts as a FULL pull: LT stops the ball here, and the launch camera needs both " +
@@ -224,8 +228,8 @@ namespace CosmicShore.Gameplay
                  "PREVIOUS frame's velocity and does not turn at all on the frame a plant begins - a one-frame hitch.")]
         [SerializeField] bool hullFollowsPlantedVelocity = false;
         [Tooltip("On leaving a planted orbit, wind the spin's turn down over this long instead of stopping it in one " +
-                 "frame (seconds; an aimed launch leaves early by the angle it will still turn, so it lands on the aim). " +
-                 "0 = the old dead stop.")]
+                 "frame (seconds). PLAIN releases only: an aimed launch leaves exactly from its point along the aim and " +
+                 "faces it at once (2026-10-30). 0 = the old dead stop.")]
         [SerializeField, Min(0f)] float releaseSpinDownSeconds = 0f;
         [Tooltip("The wind-down is shortened so it never turns the ship more than this past its line (degrees): a " +
                  "fast spin then stops harder, a bigger cap is smoother but the exit drifts more.")]
@@ -254,9 +258,6 @@ namespace CosmicShore.Gameplay
                  "(seconds); then the camera goes back to the chase pose. The view normally qualifies in 0.35-0.6 s " +
                  "(the chain's rigidity slew).")]
         [SerializeField, Min(0f)] float snapAimHoldSeconds = 1.5f;
-        [Tooltip("After a snap the sticks do not aim until both have come back inside this deflection once, so a " +
-                 "stick still over from the turn the pilot snapped in does not swing the aim they just kept.")]
-        [SerializeField, Range(0f, 1f)] float snapAimStickCentre = 0.25f;
 
         [Header("Launch sight - the Time-petal zoom window (local pilot only)")]
         [Tooltip("The zoom window's vertical field of view with LT held lightly (degrees) - the wide end. A " +
@@ -383,11 +384,11 @@ namespace CosmicShore.Gameplay
         public float SnapAimSeconds => snapAimSeconds;
         public float SnapAimRestDepth => snapAimRestDepth;
         public float SnapAimHoldSeconds => snapAimHoldSeconds;
-        public float SnapAimStickCentre => snapAimStickCentre;
         public float SpectateEnterSeconds => spectateEnterSeconds;
         public float SpectateExitSeconds => spectateExitSeconds;
         public float AimYawRate => aimYawRate;
         public float AimPitchRate => aimPitchRate;
+        public float AimStickEaseSeconds => aimStickEaseSeconds;
         public float BallBodyCool => ballBodyCool;
         public float BallBodyNearSmash => ballBodyNearSmash;
         public float BallBodyHot => ballBodyHot;

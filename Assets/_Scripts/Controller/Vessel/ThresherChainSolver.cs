@@ -1600,6 +1600,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// How much of the stick the aim reads <paramref name="sinceAim"/> seconds after it started: a SmoothStep from
+        /// 0 to 1 over <paramref name="easeSeconds"/> (0 = all of it at once). A stick already over when the aim
+        /// begins takes the aim over smoothly instead of swinging it at the full rate on the first frame; it is never
+        /// ignored (2026-10-30: a latch that waited for the stick to centre "disengaged the controls").
+        /// </summary>
+        public static float AimStickAuthority(float sinceAim, float easeSeconds)
+            => easeSeconds > 0f ? Mathf.SmoothStep(0f, 1f, sinceAim / easeSeconds) : 1f;
+
+        /// <summary>
         /// Turn the aim with the stick, in SCREEN terms for the launch camera (looking along the aim,
         /// aimUp up, screen-right = aimUp × aim; the crosshair at screen centre is the aim): stick X swings the aim right/left about
         /// <paramref name="aimUp"/> at <paramref name="yawRate"/> (rad/s), stick Y pitches it at

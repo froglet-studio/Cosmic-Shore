@@ -172,9 +172,6 @@ namespace CosmicShore.Gameplay
             rate = _solver.LockSpeed / r;
             return true;
         }
-        /// <summary>How far an armed launch leaves before its point (radians); the transformer sets it each
-        /// frame so a spin wound down after the launch lands on the aim.</summary>
-        public void SetLaunchLead(float radians) { if (_solver != null) _solver.LaunchLeadRadians = Mathf.Max(0f, radians); }
         public ThresherMode Mode => _solver?.Mode ?? ThresherMode.Free;
         /// <summary>True while a MULTIPLAYER hit-stop is holding this hull and its ball still.</summary>
         public bool IsVesselFrozen => Time.unscaledTime < _freezeUntilUnscaled;
@@ -1215,6 +1212,11 @@ namespace CosmicShore.Gameplay
         // plane so the crosshair is that line itself, not its shadow on the orbit (paid at aimPitchRate).
         ThresherSnapAim _snap;
         float _aimPitchOwed;
+        // Seconds the sticks have been aiming (aimStickEaseSeconds ramps their authority in from 0).
+        float _aimAge;
+        // An exit after a LAUNCH eases from a start pose carried with the hull's travel since the launch.
+        Vector3 _exitShipStart;
+        bool _exitTracksShip;
         // The camera's pose last frame (its turn rate at the spectate cut) and the carried turn rate (rad/s).
         Quaternion _lastCamRotation = Quaternion.identity;
         float _carryRate;
@@ -1318,11 +1320,13 @@ namespace CosmicShore.Gameplay
             // pitch sign up/down) until a release ARMS it; then the point is chosen and held. On a phone
             // (both thumbs off, ThresherTouchLaunch) the tilt virtual thumb writes these same XSum / YSum.
             var input = _status.InputStatus;
+            // The sticks take the aim over smoothly: a stick already over (the turn the pilot planted in, or the
+            // orbit lean it was doing at pivotSteer) does not jump to the aim's full rate on the entry frame.
+            _aimAge += dt;
             if (input != null && !_solver.LaunchArmed)
             {
-                float stickX = input.XSum, stickY = input.YSum;
-                _snap.AimSticks(ref stickX, ref stickY, config.SnapAimStickCentre);
-                ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, stickX, stickY,
+                float authority = ThresherCameraFraming.AimStickAuthority(_aimAge, config.AimStickEaseSeconds);
+                ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, input.XSum * authority, input.YSum * authority,
                     config.AimYawRate * Mathf.Deg2Rad, config.AimPitchRate * Mathf.Deg2Rad, dt);
             }
             // A snap's flight line off the orbit's plane: tilt the plane onto it at the stick's own pitch rate (a
@@ -1414,6 +1418,7 @@ namespace CosmicShore.Gameplay
             _aimDir = aim.normalized;
             _aimUp = normal;
             _aimHeld = true;
+            _aimAge = 0f;
             // The snap's line off the plane: the pitch (TurnAim's sign, positive down) that lays aim onto it.
             _aimPitchOwed = snap && laid
                 ? -Mathf.Atan2(Vector3.Dot(want.normalized, normal), Vector3.Dot(want.normalized, _aimDir))
@@ -1450,6 +1455,13 @@ namespace CosmicShore.Gameplay
             if (smooth && was && _cam)
             {
                 CaptureEaseStart();
+                // After a LAUNCH the start pose travels with the hull (2026-10-30, "jerky exits"): held still, it
+                // watched the ship shoot off at the boosted, exit-buffed speed and then swooped after it. At the
+                // launch the vantage is already behind the ship on its line, so carried along it only has to settle
+                // into the chase pose.
+                Transform followed = _cam.FollowTarget;
+                _exitTracksShip = followed && !IsPivoting;
+                _exitShipStart = followed ? followed.position : default;
                 _exiting = true;
                 return;
             }
@@ -1476,7 +1488,8 @@ namespace CosmicShore.Gameplay
             if (!SafeLookRotation.TryGet(target.position - eye, target.up, out var look, this, logError: false))
                 look = target.rotation;
             _camEase = Mathf.Min(1f, _camEase + dt / Mathf.Max(0.01f, config.SpectateExitSeconds));
-            ShowVantage(_easeFromPos, _easeFromRot, eye, look, _camEase);
+            Vector3 from = _exitTracksShip ? _easeFromPos + (target.position - _exitShipStart) : _easeFromPos;
+            ShowVantage(from, _easeFromRot, eye, look, _camEase);
             if (_camEase < 1f) return;
             _cam.SnapToTarget();
             _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;

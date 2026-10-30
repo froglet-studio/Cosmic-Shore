@@ -18,10 +18,6 @@ namespace CosmicShore.Gameplay
     /// partial pull flies as it did and every peer simulates the same chain. Only the local pilot's camera and the
     /// aim it seeds change, and the aim was already local (<c>ThresherExecutor.LetGo</c>).</para>
     ///
-    /// <para><b>The stick latch.</b> A pilot who snaps mid-turn still has the stick over, and the launch view's
-    /// sticks swing the aim at 180 deg/s. So a snap ignores the sticks until they have come back to centre once
-    /// (<see cref="AimSticks"/>).</para>
-    ///
     /// Pure, so <c>ThresherAnalogTriggerTests</c> flies it with the real solver (and the chain harness runs them offline).
     /// </summary>
     public struct ThresherSnapAim
@@ -34,7 +30,6 @@ namespace CosmicShore.Gameplay
         bool _holding;
         float _holdAge;
         float _dropTime;
-        bool _stickLatched;
 
         /// <summary>This plant began as a snap: the launch view seeds its aim from <see cref="Heading"/>.</summary>
         public bool Engaged => _engaged;
@@ -65,7 +60,6 @@ namespace CosmicShore.Gameplay
                 _decided = false;
                 _engaged = false;
                 _holding = false;
-                _stickLatched = false;
                 return;
             }
             _sinceRest += dt;
@@ -76,7 +70,6 @@ namespace CosmicShore.Gameplay
                 _decided = true;
                 _engaged = window > 0f && planted && _hasRest && _sinceRest <= window;
                 _holding = _engaged;
-                _stickLatched = _engaged;
                 _holdAge = 0f;
                 _dropTime = 0f;
             }
@@ -90,17 +83,6 @@ namespace CosmicShore.Gameplay
             bool slackened = leftDepth < letGoBelow || rightDepth < letGoBelow;
             _dropTime = slackened ? _dropTime + dt : 0f;
             if (_dropTime >= dropSeconds) _holding = false;
-        }
-
-        /// <summary>The sticks the aim reads: zero after a snap until both have come back inside
-        /// <paramref name="centre"/> once, so a stick still over from the turn the pilot snapped in does not swing
-        /// the aim they just kept.</summary>
-        public void AimSticks(ref float x, ref float y, float centre)
-        {
-            if (!_stickLatched) return;
-            if (Mathf.Abs(x) < centre && Mathf.Abs(y) < centre) { _stickLatched = false; return; }
-            x = 0f;
-            y = 0f;
         }
     }
 }
