@@ -1,0 +1,245 @@
+{
+    "schemaVersion": 1,
+    "reportId": "b0cffd82892f",
+    "timestamp": "2026-10-30T22:58:43.6253778Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "X570S AORUS MASTER (Gigabyte Technology Co., Ltd.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "cece/sweet-newton-78wr4o",
+    "gitCommitHash": "7b809ed07d",
+    "trigger": "Cell swap -> Swarm",
+    "loadKind": "launch",
+    "completionReason": "Cell swap: nothing to build behind a veil",
+    "interrupted": false,
+    "sceneFrom": "Menu_Main",
+    "sceneTo": "Menu_Main",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 2,
+    "totalMs": 1151.530517578125,
+    "visualReadyMs": -1.0,
+    "waitMs": 1108.8848876953125,
+    "humanWaitMs": 0.0,
+    "workMs": 42.6456298828125,
+    "unattributedMs": 4.42665433883667,
+    "framesDuringLoad": 111,
+    "avgFpsDuringLoad": 96.39344787597656,
+    "worstFrameMs": 33.488502502441409,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 2.94350004196167,
+            "endMs": 1111.828369140625,
+            "durationMs": 1108.8848876953125,
+            "exclusiveMs": 1108.8848876953125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: 25 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1111.8331298828125,
+            "endMs": 1112.298095703125,
+            "durationMs": 0.4649658203125,
+            "exclusiveMs": 0.4649658203125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1112.2984619140625,
+            "endMs": 1148.377197265625,
+            "durationMs": 36.0787353515625,
+            "exclusiveMs": 33.1790771484375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (TadPoleFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1144.3404541015625,
+            "endMs": 1147.2401123046875,
+            "durationMs": 2.899658203125,
+            "exclusiveMs": 2.899658203125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1149.8509521484375,
+            "endMs": 1151.5262451171875,
+            "durationMs": 1.67529296875,
+            "exclusiveMs": 1.67529296875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 1108.8848876953125,
+            "percent": 96.29661560058594,
+            "spanCount": 1,
+            "waitMs": 1108.8848876953125
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 35.3193359375,
+            "percent": 3.067164659500122,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 4.42665433883667,
+            "percent": 0.3844148516654968,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 7,
+            "name": "Fauna",
+            "attributedMs": 2.899658203125,
+            "percent": 0.2518090605735779,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 1108.8848876953125,
+            "exclusiveMs": 1108.8848876953125,
+            "maxSingleMs": 1108.8848876953125,
+            "isWait": true
+        },
+        {
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 36.0787353515625,
+            "exclusiveMs": 33.1790771484375,
+            "maxSingleMs": 36.0787353515625,
+            "isWait": false
+        },
+        {
+            "label": "Fauna spawn (TadPoleFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "count": 1,
+            "totalMs": 2.899658203125,
+            "exclusiveMs": 2.899658203125,
+            "maxSingleMs": 2.899658203125,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1.67529296875,
+            "exclusiveMs": 1.67529296875,
+            "maxSingleMs": 1.67529296875,
+            "isWait": false
+        },
+        {
+            "label": "Cell swap: 25 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.4649658203125,
+            "exclusiveMs": 0.4649658203125,
+            "maxSingleMs": 0.4649658203125,
+            "isWait": false
+        }
+    ],
+    "stalls": [],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Cell swap -> Swarm"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Suction: prisms not created yet (invisible; creation cancelled)",
+            "value": 41
+        },
+        {
+            "name": "Fauna spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 2248
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 16,
+            "totalMs": 1.6123000383377076,
+            "maxSingleMs": 0.16210000216960908
+        }
+    ],
+    "errors": [],
+    "hints": [
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "1.1s (96%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        }
+    ]
+}

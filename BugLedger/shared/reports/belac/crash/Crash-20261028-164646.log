@@ -1,0 +1,684 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-28 16:46:46 (next editor launch after the abnormal exit)
+session:        20261027-184002537  (pid 23732, Unity 6000.3.17f1)
+started:        2026-10-27T18:40:02.537Z UTC
+last heartbeat: 2026-10-28T22:54:43.036Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~40s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261027-184002537.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261027-184002537
+started: 2026-10-27T18:40:02.537Z UTC
+unity:   6000.3.17f1
+pid:     23732
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[16:18:17.562] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261027-184002537.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[16:20:09.487] [EditMode] Error: GUID [a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6] for asset 'Packages/com.unity.services.vivox/Plugins/visionOS' conflicts with:
+  'Assets/_Scripts/Controller/Vessel/ElementPipsConfigSO.cs' (current owner)
+We can't assign a new GUID because the asset is in an immutable folder. The asset will be ignored.
+
+[16:21:01.211] [EditMode] Error: GUID [a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6] for asset 'Packages/com.unity.services.vivox/Plugins/visionOS' conflicts with:
+  'Assets/_Scripts/Controller/Vessel/ElementPipsConfigSO.cs' (current owner)
+We can't assign a new GUID because the asset is in an immutable folder. The asset will be ignored.
+
+[16:21:01.457] ---- domain reload begins (script compilation / play-mode transition) ----
+[16:21:29.742] ---- domain reload complete — session re-adopted ----
+[16:21:33.100] [EditMode] Error: GUID [a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6] for asset 'Packages/com.unity.services.vivox/Plugins/visionOS' conflicts with:
+  'Assets/_Scripts/Controller/Vessel/ElementPipsConfigSO.cs' (current owner)
+We can't assign a new GUID because the asset is in an immutable folder. The asset will be ignored.
+
+[16:21:33.569] [EditMode] Error: GUID [a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6] for asset 'Packages/com.unity.services.vivox/Plugins/visionOS' conflicts with:
+  'Assets/_Scripts/Controller/Vessel/ElementPipsConfigSO.cs' (current owner)
+We can't assign a new GUID because the asset is in an immutable folder. The asset will be ignored.
+
+[16:21:59.345] ---- entering play mode ----
+[16:22:04.104] ---- play mode running ----
+[16:22:17.196] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ffa8d084e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffa8e8bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffa8e8bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffa8d03587f (Unity) DebugStringToFile
+        0x00007ffa8cef1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001b7589a04dd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001b7589a03a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001b7588ffceb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[16:25:01.319] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.UI.HangarUpgradesPage.DrawFocused () (at Assets/_Scripts/UI/Elements/Hangar/HangarUpgradesPage.cs:304)
+        CosmicShore.UI.HangarUpgradesPage.Redraw () (at Assets/_Scripts/UI/Elements/Hangar/HangarUpgradesPage.cs:281)
+        CosmicShore.UI.HangarUpgradesPage.HandleBalance (System.Int32 balance) (at Assets/_Scripts/UI/Elements/Hangar/HangarUpgradesPage.cs:268)
+        CosmicShore.UI.PlayerDataService.AddCrystals (System.Int32 amount, System.String source) (at Assets/_Scripts/UI/Views/PlayerDataService.cs:665)
+        CosmicShore.UI.PlayerDataService.ClaimReward (System.String rewardId, System.Int32 crystals, System.String source) (at Assets/_Scripts/UI/Views/PlayerDataService.cs:725)
+        CosmicShore.Core.DailyToyActivity.TryClaim () (at Assets/_Scripts/System/Toys/DailyToyActivity.cs:291)
+        CosmicShore.Gameplay.ToyboxPoleSwitch.GoToDailyActivity () (at Assets/_Scripts/Controller/Toys/ToyboxPoleSwitch.cs:140)
+        CosmicShore.Gameplay.ToyboxPoleSwitch.OnActivated (CosmicShore.Gameplay.IVesselStatus localVessel) (at Assets/_Scripts/Controller/Toys/ToyboxPoleSwitch.cs:93)
+        ...
+[16:39:51.916] ---- leaving play mode ----
+[16:39:54.787] ---- edit mode restored ----
+[08:36:04.279] ---- main thread unresponsive ~30463s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261027-184002537.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[08:36:04.279] ---- main thread stalled ~30463s and RECOVERED — slow, not hung ----
+[08:36:07.647] [EditMode] Error: Token refresh failed or was not needed.
+        0x00007ffa8d084e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffa8e8bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffa8e8bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffa8d03587f (Unity) DebugStringToFile
+        0x00007ffa8cef1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001b7589a04dd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001b7589a03a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001b7588ffceb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[08:36:18.591] [EditMode] Error: System.Exception: Unable to complete SSL connection
+        0x00007ffa8d084e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffa8e8bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffa8e8bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffa8d03587f (Unity) DebugStringToFile
+        0x00007ffa8cef1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001b7589a04dd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001b7589a03a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001b7588ffceb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[08:36:19.366] [EditMode] Exception: RequestFailedException: Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.
+        Unity.Services.Core.Editor.TokenExchange.ExchangeServicesGatewayTokenAsync (System.String genesisToken) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Networking/TokenExchange.cs:102)
+        Unity.Services.Core.Editor.GatewayTokens.GetGatewayTokenAsync (System.String genesisToken) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Utils/GatewayTokens.cs:36)
+        Unity.Services.Core.Editor.AccessTokensSingleton.GetServicesGatewayTokenAsync () (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Utils/AccessTokensSingleton.cs:47)
+        Rethrow as AggregateException: One or more errors occurred. (Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.)
+        System.Threading.Tasks.Task.ThrowIfExceptional (System.Boolean includeTaskCanceledExceptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.Threading.Tasks.Task`1[TResult].GetResultCore (System.Boolean waitCompletionNotification) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.Threading.Tasks.Task`1[TResult].get_Result () (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        Unity.Services.Core.Editor.UserRoleRequest.OnTokenReceived (System.Threading.Tasks.Task`1[TResult] tokenOperation, Unity.Services.Core.Internal.AsyncOperation`1[T] resultAsyncOp) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/UserRoleManagement/UserRoleRequest.cs:40)
+        ...
+[08:36:19.370] [EditMode] Exception: RequestFailedException: Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.
+        Unity.Services.Core.Editor.TokenExchange.ExchangeServicesGatewayTokenAsync (System.String genesisToken) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Networking/TokenExchange.cs:102)
+        Unity.Services.Core.Editor.GatewayTokens.GetGatewayTokenAsync (System.String genesisToken) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Utils/GatewayTokens.cs:36)
+        Unity.Services.Core.Editor.AccessTokensSingleton.GetServicesGatewayTokenAsync () (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Utils/AccessTokensSingleton.cs:47)
+        Rethrow as AggregateException: One or more errors occurred. (Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.)
+        System.Threading.Tasks.Task.ThrowIfExceptional (System.Boolean includeTaskCanceledExceptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.Threading.Tasks.Task`1[TResult].GetResultCore (System.Boolean waitCompletionNotification) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.Threading.Tasks.Task`1[TResult].get_Result () (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        Unity.Services.Core.Editor.UserRoleRequest.OnTokenReceived (System.Threading.Tasks.Task`1[TResult] tokenOperation, Unity.Services.Core.Internal.AsyncOperation`1[T] resultAsyncOp) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/UserRoleManagement/UserRoleRequest.cs:40)
+        ...
+[15:54:32.317] [EditMode] Error: Force Quit pressed for Moving file failed: Moving C:/Users/belac/source/repos/Cosmic-Shore/Temp/UnityTempFile-1a2091375421daa439db8fcb21ec41d0 to C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold 
+SDF.asset: The system cannot find the path specified.
+
+        0x00007ffa8d084e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffa8e8bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffa8e8bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffa8d03587f (Unity) DebugStringToFile
+        0x00007ffa8da742c4 (Unity) RetriableOperation::RequestUserRetry<MoveReplaceFileOperation>
+        0x00007ffa8da736f9 (Unity) RetriableOperation::Perform<MoveReplaceFileOperation>
+        0x00007ffa8da787e7 (Unity) MoveReplaceFile
+        0x00007ffa8da788a4 (Unity) MoveReplaceFile
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureDomainColumn.prefab using Guid(a7ad5da54eaf4b1ca14e2b7b6367ebc3) (PrefabImporter) -> (artifact id: 'a3a2d7415e9eb6a3ccbe3d1c1561f4ac') in 0.0121488 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureSeatPedestal.prefab using Guid(28cf7d6d8ef647c56acc22ab68c4944d) (PrefabImporter) -> (artifact id: '5b662a41ec93ea23632a2cfe4713a76b') in 0.0197438 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab using Guid(2689c230efa4b23ef1439882fe2dbe4a) (PrefabImporter) -> (artifact id: '1a4d78b2bc0b92d6a7306329f60f7f2b') in 0.0944626 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/VesselInfoCard.prefab using Guid(36daf7e2b45699cc85b1db17bd9abf0f) (PrefabImporter) -> (artifact id: '6123e61628a1a9d4d860b41845a3ea2e') in 0.0165033 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureHullTile.prefab using Guid(46601a92ec42cd8e86ce50f19aa5bb73) (PrefabImporter) -> (artifact id: '3e5ed8a57cdadf7d76add686c5191915') in 0.0069867 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Toybox/ToyboxView.prefab using Guid(66f5ddc6f79659758939fc374feae21b) (PrefabImporter) -> (artifact id: '40a96e1f2686f6dde795611b792e28b8') in 0.0271828 seconds
+Start importing Assets/_Prefabs/UI Elements/HangarScreen/Hangar Screen 2.0 1.prefab using Guid(9690ccf0631b54d4aa0d7744cea60dae) (PrefabImporter) -> (artifact id: 'd3f8f80a3eab84de8117d35db678758d') in 0.0918337 seconds
+Start importing Assets/_Models/Fauna/MassSharkFauna.prefab using Guid(a67ba7ddaecf6624ab37cd9f5f2210a6) (PrefabImporter) -> (artifact id: '325f687dcc79a1d1d4a9d24a6173a241') in 0.0239502 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/DomainAvatarChip.prefab using Guid(d6c180e4a4b428149af2391c7969c365) (PrefabImporter) -> (artifact id: '271344f1f3b062910b6de1ac166cdd49') in 0.0121722 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Profile/QuestCard.prefab using Guid(d6c77ef3ae84f44f81cc1e8e02978957) (PrefabImporter) -> (artifact id: '01e8a75b7a3bb76e4bc009351880e74f') in 0.0189788 seconds
+Start importing Assets/_Prefabs/Spacevessels/Honeyguide.prefab using Guid(f6abe5afafae41909d25da175bc23493) (PrefabImporter) -> (artifact id: 'f6df27ca312e266c726075d0e9f80bad') in 0.0473501 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureSeatChip.prefab using Guid(77ead1ac6dbfed567f1f2ccaa25703b5) (PrefabImporter) -> (artifact id: 'fee1c2241d92ba97cf052f4b029d0aaf') in 0.0101856 seconds
+Start importing Assets/_Prefabs/FloraAndFauna/TadPoleFauna.prefab using Guid(c7fd418d426de8740ac888dcc23a5d24) (PrefabImporter) -> (artifact id: '1d902286516714a169fb8f5353869621') in 0.0129491 seconds
+Start importing Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab using Guid(38b791f47d5fe28562007c79421bfb37) (PrefabImporter) -> (artifact id: '5789fadc5677ca0d10a5161a5e35c275') in 0.0056375 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/Pause_Menu_Panel.prefab using Guid(58dbda2a7cc479e4091d2abacbfd4d94) (PrefabImporter) -> (artifact id: 'bcd194f53221609020de5c63a7ffb58f') in 0.0212546 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/GobyHUDVariant.prefab using Guid(6bdd09c80ab85367dd77f55a98e8cc3c) (PrefabImporter) -> (artifact id: 'cfd9bdb3ab2d5a4402d3e5174db09e53') in 0.0126328 seconds
+Start importing Assets/_Prefabs/Spacevessels/Goby.prefab using Guid(982ad3e4c35f4421ae0424bf7bb1ee47) (PrefabImporter) -> (artifact id: '767e65df037898090bc92fe2d1a2df92') in 0.0431392 seconds
+Start importing Assets/_Prefabs/Spacevessels/Rhino.prefab using Guid(b8c185f31f5b4add8202df2e3efeacce) (PrefabImporter) -> (artifact id: '53511b853c965a63810ee5519af1e4cf') in 0.0632964 seconds
+Start importing Assets/_Prefabs/Spacevessels/Wrasse.prefab using Guid(c81d6c43058343b796fee1128ce6ccda) (PrefabImporter) -> (artifact id: 'e2d7dc9a80dc346cc83cc57369172804') in 0.0544302 seconds
+Start importing Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab using Guid(e881a908f3acf27409422f3c9bb414eb) (PrefabImporter) -> (artifact id: '02e21888047ddcfa230b8689bd04679c') in 0.0222885 seconds
+Start importing Assets/_Prefabs/FloraAndFauna/QuadFish.prefab using Guid(19615ed0c903b1041973d70593d4b0a3) (PrefabImporter) -> (artifact id: '3791a9f92696460f39395bae064b78e5') in 0.0177352 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Arena/ArenaView.prefab using Guid(29d013f3caf34aa56ad804e98d2c55a9) (PrefabImporter) -> (artifact id: 'efa53e07b155b0e835c0a44eae146aaa') in 0.0168607 seconds
+Start importing Assets/_Prefabs/Spawnables/SpawnableSwitchbackFeatures.prefab using Guid(29ec5eb8fa7cb3fd1d816c63b5b39687) (PrefabImporter) -> (artifact id: 'e3b45f0a5eda1b032f695f61b6eedc70') in 0.0037383 seconds
+Start importing Assets/_Prefabs/Spacevessels/Thresher.prefab using Guid(291d45422a244f3ab14f4e592c941c8d) (PrefabImporter) -> (artifact id: '189f97b2079c6a76d9f797e485618bb7') in 0.0866346 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/GameOverPanel.prefab using Guid(494deef066b46a24a9b5226c4203833c) (PrefabImporter) -> (artifact id: '29ce7c24c1cf0abc7bc26411e2240b7f') in 0.0229678 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/MiniGameHUD.prefab using Guid(491eb8350c5c6ab45a8b291192f9891a) (PrefabImporter) -> (artifact id: 'fdf6aa21da1e38aaa4721752e9d50667') in 0.0286709 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/ArkView.prefab using Guid(5905a2422fa2f771c5f1066b12193446) (PrefabImporter) -> (artifact id: '3c180ec8e7097c0f58887628c1b03614') in 0.0262653 seconds
+Start importing Assets/_Prefabs/Spacevessels/Stoat.prefab using Guid(599b396ff054448db5bccc9307dfb4c9) (PrefabImporter) -> (artifact id: '97ce4a91041ce46f9c8fa1a326808ea4') in 0.0342886 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/Store_Menu_Panel.prefab using Guid(798a5a18ace283f49a20ccb235a04751) (PrefabImporter)Creating missing CanvasGroup component for SettingsModal in Store_Menu_Panel.
+0x00007ffa8ff04e2e (Unity) StackWalker::ShowCallstack
+0x00007ffa9173f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffa9173fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffa8feb587f (Unity) DebugStringToFile
+0x00007ffa905c0001 (Unity) AddComponentByPtr
+0x00007ffa905c104a (Unity) AddMissingRequiredComponentsDuringLoad
+0x00007ffa913f4a6e (Unity) CheckGameObjectsAndAddMissingRequiredComponents
+0x00007ffa90fa1d21 (Unity) PrefabImporter::GenerateAssetData
+0x00007ffa9265f88e (Unity) ImportToObjects
+0x00007ffa9265e712 (Unity) ImportAsset
+0x00007ffa926822d9 (Unity) AssetImportWorker::Import
+0x00007ffa926b4b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffa926b3701 (Unity) AssetImportManager::Import
+0x00007ffa926b55d2 (Unity) ImportOutOfDateAssets
+0x00007ffa926be3fa (Unity) RefreshInternalV2
+0x00007ffa926c6f17 (Unity) StopAssetImportingV2Internal
+0x00007ffa926bf51c (Unity) RefreshV2
+0x00007ffa92631073 (Unity) AssetDatabase::Refresh
+0x00007ffa90f62951 (Unity) Application::AutoRefresh
+0x00007ffa90d94674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffbb9b652e6 (USER32) CallWindowProcW
+0x00007ffbb9b64b6c (USER32) GetFocus
+0x00007ffbb9b8f593 (USER32) GetWindowDpiAwarenessContext
+0x00007ffbba205d94 (ntdll) KiUserCallbackDispatcher
+0x00007ffbb7cf1304 (win32u) NtUserPeekMessage
+0x00007ffbb9b619df (USER32) PeekMessageW
+0x00007ffbb9b61968 (USER32) PeekMessageW
+0x00007ffa90d59b24 (Unity) MainMessageLoop
+0x00007ffa90d61a12 (Unity) UnityMain
+0x00007ff62d682f2a (Unity) __scrt_common_main_seh
+0x00007ffbb8a2dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbba11ee4c (ntdll) RtlUserThreadStart
+
+ -> (artifact id: '5c6b4366afa60c7f54c329a019125e58') in 0.0104621 seconds
+Start importing Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)/ModalWindows.prefab using Guid(89507b9e210c9c84881e20e2c77b89fc) (PrefabImporter) -> (artifact id: '0d344b35cda7d3f8adc009e005a2b680') in 0.3833097 seconds
+Start importing Assets/_Prefabs/Spacevessels/BrittleStar.prefab using Guid(c905ec6b1a740194b8cf888ffee149f7) (PrefabImporter) -> (artifact id: 'a5b3539c6132792c168fdab5f7eaa34a') in 0.0786874 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Toybox/ToyConfigureView.prefab using Guid(c919d398ba8825d2511f4108cc3e11c0) (PrefabImporter) -> (artifact id: '6ec05b9a6eb656fd624f7c8bad8c8960') in 0.0260855 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Party/PartyPanel.prefab using Guid(d985cf9e953b8e3b828ad568a02a4091) (PrefabImporter) -> (artifact id: 'f4cb0d9e7a31873d46fced3f23029d70') in 0.0344104 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab using Guid(e9882dfc138de1fe50bf927a240fb983) (PrefabImporter) -> (artifact id: 'de47e4991870b850697de843ac22ed44') in 0.0171641 seconds
+Start importing Assets/_Prefabs/CORE/NetworkManager.prefab using Guid(f934e20c0b36bc64e8710d3c2e570629) (PrefabImporter) -> (artifact id: 'a58c30da516876ad64ae9c78de2775da') in 0.0108009 seconds
+Start importing Assets/_Prefabs/CORE/Player.prefab using Guid(0a8653be5d331c5449d3130cef596493) (PrefabImporter) -> (artifact id: '22699c09d54a7ba25d334ee996fb8564') in 0.0133753 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/DolphinHUDVariant.prefab using Guid(3a48a770e15885e4dbc159855aebb73e) (PrefabImporter) -> (artifact id: '9d4161908f60eab1d7a7d28dfddad145') in 0.0145618 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/ReplayBrowserModal.prefab using Guid(9a93436f5813768e95a5582fe3ab582f) (PrefabImporter) -> (artifact id: 'd674689d87a5898c943601dab61b14e3') in 0.0147974 seconds
+Start importing Assets/_Prefabs/Spacevessels/Butterfly.prefab using Guid(aa59576a85f7b4746a63849ba535c74d) (PrefabImporter) -> (artifact id: 'e41d3c7986a66ed55a4e368cddc5e14a') in 0.0965277 seconds
+Start importing Assets/_Prefabs/UI Elements/In Game/PlayerScoreCard.prefab using Guid(ba84a682b21a0a742974715e5d7432b5) (PrefabImporter) -> (artifact id: '1032b99f35356ba3697760a38cf7e21c') in 0.0131523 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Profile/ProfileView.prefab using Guid(1ba3a41253137adb94bcf5f9044e861c) (PrefabImporter) -> (artifact id: '3f9ae524db44f4f55fd81a9de99f5a77') in 0.1061421 seconds
+Start importing Assets/_Prefabs/UI Elements/In Game/ThreeButtonPanel.prefab using Guid(fe865d309fab2f44cb225e312d612ddb) (PrefabImporter) -> (artifact id: 'f8e26273b54f6c1e02aeaf37aba0847c') in 0.0126348 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/VesselHUD.prefab using Guid(2b17d7dc3a39d6e418f3546e2965d0ec) (PrefabImporter) -> (artifact id: 'ae236525ae89e1706ae1d8c3d6aaa4f7') in 0.037735 seconds
+Start importing Assets/_Prefabs/CORE/NetworkVesselSpawner.prefab using Guid(abd9b5fbe3d67f8419a6ce6e2791e571) (PrefabImporter) -> (artifact id: '7b825fa3a011ec4c3969172cf5b6e09b') in 0.0113977 seconds
+Start importing Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)/Screens.prefab using Guid(cbafedb0105d0ac4794dd2b1a7f0d879) (PrefabImporter) -> (artifact id: '0b01335cfca2ca55ad8e1a3d7e7cc99d') in 0.219545 seconds
+Start importing Assets/_Prefabs/Spacevessels/Orca.prefab using Guid(db757691ec7343cc9decf08f3fd8c8cc) (PrefabImporter) -> (artifact id: '2170637b5c3c96fda515c690da6347c3') in 0.0605944 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Party/PartyOnlineRow.prefab using Guid(dba77c5baf56af97aeaf8f06afad0dba) (PrefabImporter) -> (artifact id: '7bf7a821896009e652b72621f2e12fbe') in 0.0136041 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Mission/MissionCard.prefab using Guid(fbec6be5521a181b037a5402aac65272) (PrefabImporter) -> (artifact id: 'de006e3a395d987f804066d0aced30b7') in 0.008223 seconds
+Start importing Assets/_Prefabs/Spacevessels/Manta.prefab using Guid(0cf574eea9a5c404d93969f2befd9c73) (PrefabImporter) -> (artifact id: '203f638bdf7c859005f7ecaaabf7476e') in 0.0328682 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Profile/ProfileAvatarButton.prefab using Guid(1c012268c717a65d102834c90bc1be3f) (PrefabImporter) -> (artifact id: 'e48bdcc1d2c876c4ea71cad72a65e555') in 0.0047817 seconds
+Start importing Assets/_Prefabs/ArcadeGameConfigureModal.prefab using Guid(1cc3c5b34dfd8074b9e2f436955062b3) (PrefabImporter) -> (artifact id: 'd7e239bcf56b9a2e7863ae738f1462d9') in 0.104481 seconds
+Start importing Assets/_Prefabs/CORE/HUDContainer.prefab using Guid(2cc33d568cdf5f34f86740bf9701776c) (PrefabImporter) -> (artifact id: '06ac2ec64650a5ae1384dfbaa7f1cc8b') in 0.0189923 seconds
+Start importing Assets/_Prefabs/Spacevessels/Dolphin.prefab using Guid(3cc1c31e8138b6448ae4264dd90d24ac) (PrefabImporter) -> (artifact id: 'c2558d275244dca207129aee5683c3e0') in 0.0423775 seconds
+Start importing Assets/_Prefabs/Spacevessels/Angler.prefab using Guid(7c567527c09c5ea6e632b9186484fc68) (PrefabImporter) -> (artifact id: '2f925cd3171cf028a97fe25ad6acb089') in 0.0722726 seconds
+Start importing Assets/_Prefabs/Spacevessels/Urchin.prefab using Guid(cc90998ce81596a49be5dba224e2d7a6) (PrefabImporter) -> (artifact id: '58e80fc9fcdd744114cec9daf7cf44ad') in 0.062095 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/R_Options_Menu_Panel.prefab using Guid(0da56127fd6e3b5419eef8d2b3cad928) (PrefabImporter) -> (artifact id: '99bb445208664274390e46df877826bd') in 0.0386569 seconds
+Start importing Assets/_Prefabs/Environment/AstroLeagueBall.prefab using Guid(1da0b7db01253067eaee1d6f9d1b2242) (PrefabImporter) -> (artifact id: '313b4a660fb3f551bf1d1a538dadbc2f') in 0.0094953 seconds
+Start importing Assets/_Prefabs/Spacevessels/Termite.prefab using Guid(2d5833ab632135248959e37cc8aef2be) (PrefabImporter) -> (artifact id: '624ab7b46c454836810fcde1e2042ef9') in 0.0307262 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/OptionsMenuContent.prefab using Guid(2d8c7d12373dc3049ba919b74e17f4cb) (PrefabImporter) -> (artifact id: 'a6cecd87383cde760bf51684ae21e346') in 0.0828314 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Store Screen.prefab using Guid(4d964da34a0cb934c8efc736f2eae833) (PrefabImporter) -> (artifact id: '1c6cd491e45407166e5afd800fd3a1df') in 0.0171197 seconds
+Start importing Assets/_Prefabs/Spacevessels/Jacks.prefab using Guid(5d7f0a3c9e2b4f61a8c47e1b2d9f6a03) (PrefabImporter) -> (artifact id: '34007a34477041f3227cb0a14c765392') in 0.0506803 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab using Guid(6dce9d2b4c537f3cc986159e82e8ed41) (PrefabImporter) -> (artifact id: '35d171cea86ee126105507199fbfea7e') in 0.0672848 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureMaelstromView.prefab using Guid(ed93dc5ea823c1def2fdf7422454ed55) (PrefabImporter) -> (artifact id: '9c7da890ec0b954d89a0a3b5a909f8c4') in 0.0540158 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Mission/MissionView.prefab using Guid(0ee3bc98f53d171d37a7a89d814c62be) (PrefabImporter) -> (artifact id: 'ff70a5666027409e63464c69599a66d8') in 0.0374769 seconds
+Start importing Assets/_Prefabs/Spacevessels/Starling.prefab using Guid(1e5ceb8a48f583eabb3d3bfc5d277a15) (PrefabImporter) -> (artifact id: '825334ff095b089d1bae7c595348a7f8') in 0.0432487 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/ReplayPlaybackHud.prefab using Guid(1e8e724bae7367e9aea364f142c9e7a2) (PrefabImporter) -> (artifact id: 'd43807c5da939b713a05635af38c1737') in 0.0265183 seconds
+Start importing Assets/_Prefabs/UI Elements/HangarScreen/Hangar Screen 2.0.prefab using Guid(6e0c469042af8754898f7ea79fa2a32b) (PrefabImporter) -> (artifact id: '7a2bbea28317ac40820cfc5ce0d8c26e') in 0.039887 seconds
+Start importing Assets/_Prefabs/UI Elements/Kit/KitHexNavTile.prefab using Guid(6eeed989d8a0f56f4fe8da7ea1a2208c) (PrefabImporter) -> (artifact id: '69348ec3d76d2dbb1324f6ba5b1eb703') in 0.004289 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/ReplayRow.prefab using Guid(9e1458d9c316eb8c1096707b0a8786ac) (PrefabImporter) -> (artifact id: '6b7844b681bc22b76a5346d2741ef52f') in 0.0079941 seconds
+Start importing Assets/_Prefabs/Spacevessels/Shrike.prefab using Guid(ae83e6dd3b718654db0175585a46edb2) (PrefabImporter) -> (artifact id: 'a8776280de8e1737ff5901c6b734b343') in 0.0690961 seconds
+Start importing Assets/_Prefabs/Spacevessels/Warden.prefab using Guid(be26a6e66726badf349e9bc94784d1cc) (PrefabImporter) -> (artifact id: '8218881481844d5a7a5fe82c6e2985fd') in 0.027796 seconds
+Start importing Assets/_Prefabs/UI Elements/Panels/CreditsModal.prefab using Guid(ce6219de48f863e8e2b94baa9822dbe6) (PrefabImporter) -> (artifact id: 'ba7d4454b22528404d3a3d7f9c6e0537') in 0.014921 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/ArcadeView.prefab using Guid(ce3c0146ee849b647c01ba96f38a11ab) (PrefabImporter) -> (artifact id: '7e1babc235614968e2808292556cf75c') in 0.1124186 seconds
+Start importing Assets/_Prefabs/Spacevessels/Sparrow.prefab using Guid(ce4d2e03456b4b508af88b54f396d76e) (PrefabImporter) -> (artifact id: 'bfa12c88396a68912a9a1d98c44ac992') in 0.0313553 seconds
+Start importing Assets/_Prefabs/Environment/TandavaMembrane.prefab using Guid(eec690b31ed567a5f27ba0c911e59a51) (PrefabImporter) -> (artifact id: 'e7b3b2072558dff72d2a1e56788dd0cf') in 0.0040001 seconds
+Start importing Assets/_Prefabs/FloraAndFauna/TandavaSeveringSwarmFauna.prefab using Guid(1fd9ed2f5e969a43752e047439b4de2b) (PrefabImporter) -> (artifact id: '3de8dbccc6689146827a9d3d74ba4b1d') in 0.0033743 seconds
+Start importing Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)/ArcadeScreen.prefab using Guid(cfd7f1fbf6fa3af46817c4ff440ff929) (PrefabImporter)Creating missing CanvasGroup component for ArcadeScreen in ArcadeScreen.
+0x00007ffa8ff04e2e (Unity) StackWalker::ShowCallstack
+0x00007ffa9173f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffa9173fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffa8feb587f (Unity) DebugStringToFile
+0x00007ffa905c0001 (Unity) AddComponentByPtr
+0x00007ffa905c104a (Unity) AddMissingRequiredComponentsDuringLoad
+0x00007ffa913f4a6e (Unity) CheckGameObjectsAndAddMissingRequiredComponents
+0x00007ffa90fa1d21 (Unity) PrefabImporter::GenerateAssetData
+0x00007ffa9265f88e (Unity) ImportToObjects
+0x00007ffa9265e712 (Unity) ImportAsset
+0x00007ffa926822d9 (Unity) AssetImportWorker::Import
+0x00007ffa926b4b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffa926b36b3 (Unity) AssetImportManager::Import
+0x00007ffa926b55d2 (Unity) ImportOutOfDateAssets
+0x00007ffa926be3fa (Unity) RefreshInternalV2
+0x00007ffa926c6f17 (Unity) StopAssetImportingV2Internal
+0x00007ffa926bf51c (Unity) RefreshV2
+0x00007ffa92631073 (Unity) AssetDatabase::Refresh
+0x00007ffa90f62951 (Unity) Application::AutoRefresh
+0x00007ffa90d94674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffbb9b652e6 (USER32) CallWindowProcW
+0x00007ffbb9b64b6c (USER32) GetFocus
+0x00007ffbb9b8f593 (USER32) GetWindowDpiAwarenessContext
+0x00007ffbba205d94 (ntdll) KiUserCallbackDispatcher
+0x00007ffbb7cf1304 (win32u) NtUserPeekMessage
+0x00007ffbb9b619df (USER32) PeekMessageW
+0x00007ffbb9b61968 (USER32) PeekMessageW
+0x00007ffa90d59b24 (Unity) MainMessageLoop
+0x00007ffa90d61a12 (Unity) UnityMain
+0x00007ff62d682f2a (Unity) __scrt_common_main_seh
+0x00007ffbb8a2dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbba11ee4c (ntdll) RtlUserThreadStart
+
+ -> (artifact id: '36bcc30198d84bf9f8f57c53803d6c82') in 0.1091132 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Party/PartyRequestRow.prefab using Guid(ffb849287ae056dd1de32eb2077d6bbb) (PrefabImporter) -> (artifact id: '99edc1d5b82d869fc6903d2fed174053') in 0.0100454 seconds
+Start importing Packages/com.unity.services.cloudcode/Editor/Shared/UI/DeploymentConfigInspectorFooter/Assets/DeploymentConfigInspectorFooterDark.uss using Guid(32282382567f3b8438aaf1585e66b81c) (ScriptedImporter) -> (artifact id: '4af4f4fe3e741fda1c24146180072460') in 0.0332472 seconds
+Start importing Packages/com.unity.services.cloudcode/Editor/Authoring/Modules/UI/Assets/CloudCodeModuleReferenceUi.uss using Guid(b3b478719566fe14d90e9fc09e58be3f) (ScriptedImporter) -> (artifact id: 'a99399a74300b8c4b355911779aa0aee') in 0.0189997 seconds
+Start importing Packages/com.unity.inputsystem/InputSystem/Editor/UITKAssetEditor/PackageResources/InputAssetEditorDark.uss using Guid(cca9ce0c8554d5244930f14c21489ac1) (ScriptedImporter) -> (artifact id: 'a79f506b22a43e808ef2bf3b298d63f7') in 0.0083272 seconds
+Start importing Packages/com.rlabrecque.steamworks.net/Editor/Settings/EditorSteamworksNETSettingsStyleSheet.uss using Guid(fcba6a16ac8056e418e5f791a8bbb67c) (ScriptedImporter) -> (artifact id: 'b912470f3182f122190e53c317ba5513') in 0.0075835 seconds
+Start importing Packages/com.unity.inputsystem/InputSystem/Editor/UITKAssetEditor/PackageResources/InputActionsEditorStyles.uss using Guid(7dac9c49a90bca4499371d0adc9b617b) (ScriptedImporter) -> (artifact id: 'bd622fa5a8e3d1103c17fa8e7ad4c4df') in 0.0174612 seconds
+Start importing Packages/com.unity.services.cloudcode/Editor/Shared/UI/DeploymentConfigInspectorFooter/Assets/DeploymentConfigInspectorFooter.uss using Guid(4e717248128392948a7857a77849561d) (ScriptedImporter) -> (artifact id: '4d966edd395198435f9145e6b4ba1ee7') in 0.0062696 seconds
+Start importing Packages/com.unity.inputsystem/InputSystem/Editor/UITKAssetEditor/PackageResources/InputAssetEditorLight.uss using Guid(5e7024ed0fd03984289320d04507bc0c) (ScriptedImporter) -> (artifact id: '1c7cf91e025b94da0d536c96bbd12830') in 0.0054078 seconds
+Start importing Packages/com.unity.services.cloudcode/Editor/Shared/UI/DeploymentConfigInspectorFooter/Assets/DeploymentConfigInspectorFooterLight.uss using Guid(ae484554ecc25d643ae62c34a376869a) (ScriptedImporter) -> (artifact id: '0cb9c8309e57b57ddb74ced53de5d628') in 0.0058337 seconds
+Start importing Packages/com.unity.services.cloudcode/Editor/Authoring/Modules/UI/Assets/CloudCodeModuleReferenceGenerateBindingsProjectSettings.uss using Guid(fe008545bfc44f7a9c3f409885679871) (ScriptedImporter) -> (artifact id: '4a4af1da454e67953533be89dff41b43') in 0.0059246 seconds
+Start importing Packages/com.unity.services.cloudcode/Editor/Authoring/Scripts/UI/Assets/CloudCodeScriptInspector.uxml using Guid(c260062a535749838ee215c07c894ea0) (ScriptedImporter) -> (artifact id: '32c1375ca0e867c369adf5dccd553617') in 0.0316665 seconds
+Start importing Packages/com.unity.services.cloudcode/Editor/Authoring/Modules/UI/Assets/CloudCodeModuleReferenceUi.uxml using Guid(e372bdeac3427564db6b856b01869919) (ScriptedImporter) -> (artifact id: '3d5082f496ff6f99666dc166ca672b8d') in 0.0147015 seconds
+Start importing Packages/com.unity.inputsystem/InputSystem/Editor/UITKAssetEditor/PackageResources/BindingPanelRowTemplate.uxml using Guid(449c8e5ca27af8e4a9db710c8be5e4df) (ScriptedImporter) -> (artifact id: '8bfb3b7a0ba4ad70099570a6b2720710') in 0.025989 seconds
+Start importing Packages/com.unity.inputsystem/InputSystem/Editor/UITKAssetEditor/PackageResources/InputActionsTreeViewItem.uxml using Guid(452df07a8ad0c944c879a484d5890e61) (ScriptedImporter) -> (artifact id: '09e998a385759e2f652bbcec9b3bddaa') in 0.0171088 seconds
+Start importing Packages/com.unity.inputsystem/InputSystem/Editor/UITKAssetEditor/PackageResources/InputActionsProjectSettings.uxml using Guid(75a33987e21d5ac449deecea3dcd864f) (ScriptedImporter) -> (artifact id: '53b86f76886831405dbbfdb811bbe19d') in 0.0110746 seconds
+Start importing Packages/com.unity.inputsystem/InputSystem/Editor/UITKAssetEditor/PackageResources/InputActionsEditor.uxml using Guid(c662e0d3cc3c4f948808f9847f715ef2) (ScriptedImporter) -> (artifact id: 'cb70e7f8ee423c93322cc877ccc7302d') in 0.0160755 seconds
+Start importing Packages/com.unity.services.cloudcode/Editor/Shared/UI/DeploymentConfigInspectorFooter/Assets/DeploymentConfigInspectorFooter.uxml using Guid(a71f4e666bccbd94dbaf9e843c3d171e) (ScriptedImporter) -> (artifact id: '6ce5dc06d255abbe343eb9fbc9f9d8ff') in 0.0063113 seconds
+Start importing Packages/com.unity.inputsystem/InputSystem/Editor/UITKAssetEditor/PackageResources/NameAndParameterListViewItemTemplate.uxml using Guid(9cbd73d51dc491b4888055ae65cd9545) (ScriptedImporter) -> (artifact id: '537888fe235d7d648dd261ad5004e0c9') in 0.0061334 seconds
+Start importing Packages/com.unity.ai.navigation/Editor/ConversionSystem/converter_editor.uxml using Guid(cd1eb3c3c695c494d855ea678fe7395b) (ScriptedImporter) -> (artifact id: '2fa5bcf61edeea93611023416590657a') in 0.0098797 seconds
+Start importing Packages/com.unity.services.cloudcode/Editor/Authoring/Modules/UI/Assets/CloudCodeModuleReferenceGenerateBindingsProjectSettings.uxml using Guid(5ed79648e24b7dc49aba8dba237032fb) (ScriptedImporter) -> (artifact id: '9eb726d4f283421f4d23d0591780e422') in 0.0057812 seconds
+Start importing Packages/com.unity.inputsystem/InputSystem/Editor/UITKAssetEditor/PackageResources/InputActionMapsTreeViewItem.uxml using Guid(3fa44185ed614414ebab354dfe5a06b6) (ScriptedImporter) -> (artifact id: 'bc47d18968390dbbc10e6ae23265f2f1') in 0.0066334 seconds
+[C:\build\output\unity\unity\Modules\LocalizationEditor\LocalizationDatabase.cpp:807]Assets/Plugins/FMOD/src/Editor/zh_hans.po
+[C:\build\output\unity\unity\Modules\LocalizationEditor\LocalizationDatabase.cpp:807]Assets/Plugins/FMOD/addons/ResonanceAudio/Editor/zh_hans.po
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
+d3d12: upload buffer was too small for the requested resource! Size: 16777216. Requested: 33554432.
+Refreshing native plugins compatible for Editor in 33.83 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.14 ms.
+Asset Pipeline Refresh (id=b2ffb8e83766def4ea2b166a0f3380d4): Total: 252.919 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=5224 (actual=662, local cache=4562, cache server=0)
+		Asset DB Process Time: managed=322 ms, native=53523 ms
+		Asset DB Callback time: managed=11544 ms, native=25972 ms
+		Scripting: domain reloads=2, domain reload time=10488 ms, compile time=151068 ms, other=0 ms
+		Project Asset Count: scripts=4588, non-scripts=12116
+		Asset File Changes: new=3674, changed=6589, moved=129, deleted=3228
+		Scan Filter Count: 1
+	InvokeCustomDependenciesCallbacks: 0.004ms
+	InvokePackagesCallback: 23294.380ms
+	ApplyChangesToAssetFolders: 7.091ms
+	Scan: 8277.204ms
+	OnSourceAssetsModified: 78.759ms
+	CategorizeAssetsWithTransientArtifact: 74.567ms
+	ProcessAssetsWithTransientArtifactChanges: 565.596ms
+	UnregisterDeletedAssets: 28.434ms
+	CategorizeAssets: 385.932ms
+	ImportOutOfDateAssets: 42530.066ms (-125477.827ms without children)
+		ImportManagerImport: 15451.573ms (1406.748ms without children)
+			ImportInProcess: 14035.496ms
+			UpdateCategorizedAssets: 9.328ms
+		CompileScripts: 151068.093ms
+		CollectScriptTypesHashes: 14.418ms
+		ReloadNativeAssets: 142.152ms
+		UnloadImportedAssets: 65.265ms
+		ReloadImportedAssets: 1255.798ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 6.986ms
+		InitializingProgressBar: 0.002ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.093ms
+		OnDemandSchedulerStart: 3.514ms
+	PostProcessAllAssets: 14108.867ms
+	Hotreload: 66.661ms
+	GatherAllCurrentPrimaryArtifactRevisions: 8.176ms
+	UnloadStreamsBegin: 29.262ms
+	PersistCurrentRevisions: 10.391ms
+	UnloadStreamsEnd: 0.749ms
+	GenerateScriptTypeHashes: 27.897ms
+	Untracked: 163452.718ms
+
+[INFO ] [relay] log Auto-shutdown timer fired after 180s inactivity, shutting down: Dedicated client disconnected
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+Opening scene 'Assets/_Scenes/Bootstrap.unity'
+Unloading 4148 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 19742 unused Assets / (319.6 MB). Loaded Objects now: 80026.
+Memory consumption went from 1.20 GB to 0.89 GB.
+Total: 746.205000 ms (FindLiveObjects: 112.131400 ms CreateObjectMapping: 11.693400 ms MarkObjects: 510.459900 ms  DeleteObjects: 111.918900 ms)
+
+Unloading 1 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Assets/_Scenes/Bootstrap.unity'
+	Deserialize:            18.614 ms
+	Integration:            1731.579 ms
+	Integration of assets:  0.240 ms
+	Thread Wait Time:       17.795 ms
+	Total Operation Time:   1768.228 ms
+Unloading 12 unused Assets / (6.3 KB). Loaded Objects now: 80144.
+Memory consumption went from 0.81 GB to 0.81 GB.
+Total: 122.659000 ms (FindLiveObjects: 4.374100 ms CreateObjectMapping: 4.251300 ms MarkObjects: 113.763200 ms  DeleteObjects: 0.269500 ms)
+
+[MODES] ModeService[default].LoadModes
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Start importing Assets/Plugins/FMOD/Cache/Editor/FMODStudioCache.asset using Guid(1c6befb69166cdf4598a41ddd896ad13) (NativeFormatImporter) -> (artifact id: '9c86b66913a105281d02d461e8c956ba') in 0.0029225 seconds
+Refreshing native plugins compatible for Editor in 18.04 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.13 ms.
+Asset Pipeline Refresh (id=b71b32a98ad72eb418b9b3dd7fbf9ef8): Total: 0.228 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: '08a2184b7a615dae7c485d5effc16073') in 0.0025359 seconds
+Start importing Assets/Resources/KiteNavigatorUnlit.mat using Guid(323de18569534686969203279163666f) (NativeFormatImporter) -> (artifact id: '19e539ca6adab1f675ab8ae4dd722ceb') in 0.0015532 seconds
+Start importing Assets/_Graphics/RenderTextures/PipRenderTexture.renderTexture using Guid(b8866c52528ed6249b98cfb065a3ce13) (NativeFormatImporter) -> (artifact id: '5202d4e21548bbbd597d7e3441d8aa3a') in 0.0066468 seconds
+Start importing Assets/Resources/OrcaCrewLit.mat using Guid(ca4c63633add406ba5732231ca75f4e5) (NativeFormatImporter) -> (artifact id: '5c9b648ef09e7b4d821de64c9b3c9814') in 0.0013293 seconds
+Start importing Assets/_SO_Assets/NetworkMonitor Data/Network Monitor Data.asset using Guid(c656ab83067d26846b449b637e43320a) (NativeFormatImporter) -> (artifact id: '8a8284666ee8321dc5847bb03390a104') in 0.0055065 seconds
+Start importing Assets/_SO_Assets/Authentication Data/AuthenticationData.asset using Guid(875bcedfcf3335047b416297732cba15) (NativeFormatImporter) -> (artifact id: 'eb75e3607d0a06349de565c8887ea19b') in 0.005189 seconds
+Start importing Assets/_SO_Assets/Application State/ApplicationStateData.asset using Guid(18ceced7226bbe51dd9542bc4cad3203) (NativeFormatImporter) -> (artifact id: '40b01a0bd1e34b5c07791a2f58c32c43') in 0.0049506 seconds
+Start importing Assets/Plugins/FMOD/Cache/Editor/FMODStudioCache.asset using Guid(1c6befb69166cdf4598a41ddd896ad13) (NativeFormatImporter) -> (artifact id: 'a5767a044f190dcc11a1b8384b07df68') in 0.0017779 seconds
+Start importing Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset using Guid(9f6e2fcf98f99f3ed5ff96934bb43d6d) (NativeFormatImporter) -> (artifact id: '3ab2276a6084bda31fb8fe556cc6a608') in 0.0052309 seconds
+Refreshing native plugins compatible for Editor in 18.96 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=7dfb148e35b59e245964722660787399): Total: 0.173 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[BuildSceneListReconciler] the build-scene list this Editor session is holding was missing 1 scene(s) an arcade card names, so those cards could not be launched. Added:
+  Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity
+
+This happens because ProjectSettings/EditorBuildSettings.asset is not in the AssetDatabase: a headless generator's write to it is invisible to an Editor that is already open. Commit the change (FrogletTools > Build > Pending Tool Changes).
+0x00007ffa8ff04e2e (Unity) StackWalker::ShowCallstack
+0x00007ffa9173f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffa9173fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffa8feb587f (Unity) DebugStringToFile
+0x00007ffa8fd71b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001d0d130fdbd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001d0d130fc83 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001d0d130f8bb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001d0d130f640 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001d0d130f508 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001d211224743 (Mono JIT Code) CosmicShore.Editor.BuildSceneListReconciler:AutoRepair () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Editor/Build/BuildSceneListReconciler.cs:85)
+0x000001d2111dc348 (Mono JIT Code) UnityEditor.EditorApplication:Internal_CallDelayFunctions ()
+0x000001d15e9f5945 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffa86be6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffa86b28984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffa86b28a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffa9073fdd4 (Unity) scripting_method_invoke
+0x00007ffa90746c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffa90742235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffa90d2b10b (Unity) Scripting::UnityEditor::EditorApplicationProxy::Internal_CallDelayFunctions
+0x00007ffa90f7859a (Unity) Application::TickTimer
+0x00007ffa90d59f7c (Unity) MainMessageLoop
+0x00007ffa90d61a12 (Unity) UnityMain
+0x00007ff62d682f2a (Unity) __scrt_common_main_seh
+0x00007ffbb8a2dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbba11ee4c (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Successfully resolved entitlement details
+Start importing Assets/_Prefabs/ArcadeGameConfigureModal.prefab using Guid(1cc3c5b34dfd8074b9e2f436955062b3) (PrefabImporter) -> (artifact id: '3903c049c875c1fc37206f2a82b8c79d') in 0.0375183 seconds
+Refreshing native plugins compatible for Editor in 19.27 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=899bb623ea09f88488316da74ead22d7): Total: 0.185 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureMaelstromView.prefab using Guid(ed93dc5ea823c1def2fdf7422454ed55) (PrefabImporter)[BugLedger] Fix received from claude: "[VesselImpactor] 'WrasseImpactorDataContainer'.VesselPrismEffects[4] is empty — that slot dispatches nothing and the res" — it closes itself after 2 play test(s) without this error, and is sent back if it happens again.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugLedger:TryAdoptFixLocked (CosmicShore.Editor.BugLedgerIssue,CosmicShore.Editor.BugLedgerIssue,System.Func`2<string, bool>) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:930)
+CosmicShore.Editor.BugLedger:AdoptPublishedFix (CosmicShore.Editor.BugLedgerIssue,System.Func`2<string, bool>) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:878)
+CosmicShore.Editor.BugLedgerSender:AdoptFixes (CosmicShore.Editor.BugLedgerSender/RemoteBranch) (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:318)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass12_0:<SyncFixesInBackground>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:67)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass17_0:<Start>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:163)
+System.Threading.ThreadHelper:ThreadStart_Context (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object)
+System.Threading.ThreadHelper:ThreadStart ()
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugLedger.cs Line: 930)
+
+ -> (artifact id: 'd1eb080a4a5dae2f2ef2f83871096504') in 0.0314112 seconds
+[BugLedger] Fix received from Yash's session: "[PartyInviteController] Recovery failed (InvalidOperationException): System.InvalidOperationException: This can only be " — it closes itself after 2 play test(s) without this error, and is sent back if it happens again.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugLedger:TryAdoptFixLocked (CosmicShore.Editor.BugLedgerIssue,CosmicShore.Editor.BugLedgerIssue,System.Func`2<string, bool>) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:930)
+CosmicShore.Editor.BugLedger:AdoptPublishedFix (CosmicShore.Editor.BugLedgerIssue,System.Func`2<string, bool>) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:878)
+CosmicShore.Editor.BugLedgerSender:AdoptFixes (CosmicShore.Editor.BugLedgerSender/RemoteBranch) (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:318)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass12_0:<SyncFixesInBackground>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:67)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass17_0:<Start>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:163)
+System.Threading.ThreadHelper:ThreadStart_Context (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object)
+System.Threading.ThreadHelper:ThreadStart ()
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugLedger.cs Line: 930)
+
+Refreshing native plugins compatible for Editor in 19.23 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=a361be70f4a593a42afc3ca6845358a5): Total: 0.163 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[BugLedger] Fix received from claude: "[PartyInviteController] direct-join -> Kyoki failed (SessionException): SessionException: [Error: NetworkManagerStartFai" — it closes itself after 2 play test(s) without this error, and is sent back if it happens again.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugLedger:TryAdoptFixLocked (CosmicShore.Editor.BugLedgerIssue,CosmicShore.Editor.BugLedgerIssue,System.Func`2<string, bool>) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:930)
+CosmicShore.Editor.BugLedger:AdoptPublishedFix (CosmicShore.Editor.BugLedgerIssue,System.Func`2<string, bool>) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:878)
+CosmicShore.Editor.BugLedgerSender:AdoptFixes (CosmicShore.Editor.BugLedgerSender/RemoteBranch) (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:318)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass12_0:<SyncFixesInBackground>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:67)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass17_0:<Start>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:163)
+System.Threading.ThreadHelper:ThreadStart_Context (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object)
+System.Threading.ThreadHelper:ThreadStart ()
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugLedger.cs Line: 930)
+
+[BugLedger] Fix received from claude: "[HostConnectionService] JoinPartyDirect error (SessionException): SessionException: [Error: NetworkManagerStartFailed] [" — it closes itself after 2 play test(s) without this error, and is sent back if it happens again.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugLedger:TryAdoptFixLocked (CosmicShore.Editor.BugLedgerIssue,CosmicShore.Editor.BugLedgerIssue,System.Func`2<string, bool>) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:930)
+CosmicShore.Editor.BugLedger:AdoptPublishedFix (CosmicShore.Editor.BugLedgerIssue,System.Func`2<string, bool>) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:878)
+CosmicShore.Editor.BugLedgerSender:AdoptFixes (CosmicShore.Editor.BugLedgerSender/RemoteBranch) (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:318)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass12_0:<SyncFixesInBackground>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:67)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass17_0:<Start>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:163)
+System.Threading.ThreadHelper:ThreadStart_Context (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object)
+System.Threading.ThreadHelper:ThreadStart ()
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugLedger.cs Line: 930)
+
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab using Guid(6dce9d2b4c537f3cc986159e82e8ed41) (PrefabImporter) -> (artifact id: '64bdee522cccc1824fec4916b1fa3c14') in 0.0424707 seconds
+Refreshing native plugins compatible for Editor in 19.14 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=97526ac5bfbe9f243ad7aa148c0620c1): Total: 0.208 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab using Guid(2689c230efa4b23ef1439882fe2dbe4a) (PrefabImporter) -> (artifact id: 'af62f980bbb5b243e31c36a590a9ed64') in 0.042622 seconds
+Start importing Assets/_Prefabs/ArcadeGameConfigureModal.prefab using Guid(1cc3c5b34dfd8074b9e2f436955062b3) (PrefabImporter) -> (artifact id: '106d435dd171679003d5a8d27fddc192') in 0.0333639 seconds
+Refreshing native plugins compatible for Editor in 18.01 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=b66e27fa2b1742e459a3925ee946c341): Total: 0.259 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: '313352ccd44fbe7be39b2a2c4744c4e8') in 0.0021279 seconds
+Start importing Assets/Plugins/FMOD/Resources/FMODStudioSettings.asset using Guid(7bd3bdff5c7914790aec9bd181d7af32) (NativeFormatImporter) -> (artifact id: 'a169356b30540f848a9d0bd095dc72d0') in 0.0072425 seconds
+Start importing Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset using Guid(9f6e2fcf98f99f3ed5ff96934bb43d6d) (NativeFormatImporter) -> (artifact id: '88bfc4a7c15c2f199997e3d4dc2065ee') in 0.0082715 seconds
+Refreshing native plugins compatible for Editor in 18.70 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=3af81d664cd717c4f8431b24333db1e8): Total: 0.154 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Scanning for USB devices : 22.791ms
+Scanning for USB devices : 22.325ms
+Scanning for USB devices : 22.485ms
+Scanning for USB devices : 22.817ms
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "KhhNsQv_"... (expires: 2026-10-27T02:32:00Z)
+[Licensing::Client] Successfully resolved entitlement details
+[INFO ] [relay] relay.startup port=9001 mcpClientPort=9002 editorPid=70548
+[INFO ] [relay] log === RELAY SERVER STARTED === (unity-ai-relay v1.0.12-build.96)
+[INFO ] [relay] log Starting relay server...
+[INFO ] [relay] log Command line arguments: ["bun","B:/~BUN/root/relay_win.exe","--relay","--port","9001","--mcp-client-port","9002","--editor-pid","70548","--shutdown-delay","180","--log-dir","C:\\Users\\belac\\source\\repos\\Cosmic-Shore\\Logs"]
+[INFO ] [relay] log Parsed config: {"port":9001,"mcpClientPort":9002,"editorPid":"70548","shutdownDelaySeconds":180}
+[INFO ] [relay] log Initializing relay components...
+[INFO ] [relay] log Creating RelayEditor...
+[INFO ] [relay] log WebSocket server started
+[INFO ] [relay] log Relay server initialization completed
+[INFO ] [relay] log MCP Client initialized at port: 9002
+[WARN ] [relay] log [shell-env] Shell environment did not contain a PATH variable
+[Licensing::Client] Successfully resolved entitlement details
+[INFO ] [relay] log Unity MCP Relay server started | Port: 9002 | Endpoints: /mcp/start-server, /mcp/stop-server, /mcp/server-status, /mcp/call-tool
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "_IRRzpOZ"... (expires: 2026-10-27T02:32:01Z)
+Uploading Crash Report
+UnityConnectWebRequestException: Token Exchange failed due a failure with the web request.
+  at UnityEditor.Connect.TokenExchange.VerifyTokenExchangeResponse (UnityEngine.Networking.UnityWebRequest exchangeRequest) [0x00019] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+  at UnityEditor.Connect.TokenExchange.TokenExchangeRequestAsync (UnityEditor.Connect.TokenExchangeRequest tokenExchangeRequest, System.Threading.CancellationToken cancellationToken) [0x001da] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+  at UnityEditor.Connect.TokenExchange.GetServiceTokenAsync (System.String genesisToken, System.Threading.CancellationToken cancellationToken) [0x00089] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+  at UnityEditor.Connect.ServiceToken.GetServiceTokenAsync (System.String genesisToken, System.Threading.CancellationToken cancellationToken) [0x0014e] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+  at UnityEditor.Connect.UnityConnect.RequestNewServiceToken () [0x0009e] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+  at System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () [0x00002] in <f75b90f651a84d3889ac5b03cf1fde1a>:0 
+  at UnityEngine.UnitySynchronizationContext.Exec () [0x0005d] in <f75b90f651a84d3889ac5b03cf1fde1a>:0 
+  at UnityEngine.UnitySynchronizationContext.ExecuteTasks () [0x00014] in <f75b90f651a84d3889ac5b03cf1fde1a>:0 
+
+Uploading Crash Report
+RequestFailedException: Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.
+  at Unity.Services.Core.Editor.TokenExchange.ExchangeServicesGatewayTokenAsync (System.String genesisToken) [0x000c7] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Networking\TokenExchange.cs:102 
+  at Unity.Services.Core.Editor.GatewayTokens.GetGatewayTokenAsync (System.String genesisToken) [0x00080] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Utils\GatewayTokens.cs:36 
+  at Unity.Services.Core.Editor.AccessTokensSingleton.GetServicesGatewayTokenAsync () [0x0002c] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Utils\AccessTokensSingleton.cs:47 
+Rethrow as AggregateException: One or more errors occurred. (Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.)
+  at System.Threading.Tasks.Task.ThrowIfExceptional (System.Boolean includeTaskCanceledExceptions) [0x00011] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Threading.Tasks.Task`1[TResult].GetResultCore (System.Boolean waitCompletionNotification) [0x0002b] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Threading.Tasks.Task`1[TResult].get_Result () [0x0000f] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at Unity.Services.Core.Editor.UserRoleRequest.OnTokenReceived (System.Threading.Tasks.Task`1[TResult] tokenOperation, Unity.Services.Core.Internal.AsyncOperation`1[T] resultAsyncOp) [0x00000] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\UserRoleManagement\UserRoleRequest.cs:40 
+  at Unity.Services.Core.Editor.UserRoleRequest+<>c__DisplayClass4_1.<GetUserRole>b__1 () [0x00000] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\UserRoleManagement\UserRoleRequest.cs:32 
+  at Unity.Services.Core.Editor.ThreadingUtility+<>c__DisplayClass0_0.<RunNextUpdateOnMain>b__0 () [0x0001a] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Utils\ThreadingUtility.cs:25 
+Rethrow as Exception: Exception thrown from invocation made by '.\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\UserRoleManagement\UserRoleRequest.cs'(32) by GetUserRole
+  at Unity.Services.Core.Editor.ThreadingUtility+<>c__DisplayClass0_0.<RunNextUpdateOnMain>b__0 () [0x00056] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Utils\ThreadingUtility.cs:29 
+  at UnityEditor.EditorApplication.Internal_CallUpdateFunctions () [0x00032] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+
+(Filename: ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Networking/TokenExchange.cs Line: 102)
+
+RequestFailedException: Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.
+  at Unity.Services.Core.Editor.TokenExchange.ExchangeServicesGatewayTokenAsync (System.String genesisToken) [0x000c7] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Networking\TokenExchange.cs:102 
+  at Unity.Services.Core.Editor.GatewayTokens.GetGatewayTokenAsync (System.String genesisToken) [0x00080] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Utils\GatewayTokens.cs:36 
+  at Unity.Services.Core.Editor.AccessTokensSingleton.GetServicesGatewayTokenAsync () [0x0002c] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Utils\AccessTokensSingleton.cs:47 
+Rethrow as AggregateException: One or more errors occurred. (Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.)
+  at System.Threading.Tasks.Task.ThrowIfExceptional (System.Boolean includeTaskCanceledExceptions) [0x00011] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Threading.Tasks.Task`1[TResult].GetResultCore (System.Boolean waitCompletionNotification) [0x0002b] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Threading.Tasks.Task`1[TResult].get_Result () [0x0000f] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at Unity.Services.Core.Editor.UserRoleRequest.OnTokenReceived (System.Threading.Tasks.Task`1[TResult] tokenOperation, Unity.Services.Core.Internal.AsyncOperation`1[T] resultAsyncOp) [0x00000] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\UserRoleManagement\UserRoleRequest.cs:40 
+  at Unity.Services.Core.Editor.UserRoleRequest+<>c__DisplayClass4_1.<GetUserRole>b__1 () [0x00000] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\UserRoleManagement\UserRoleRequest.cs:32 
+  at Unity.Services.Core.Editor.ThreadingUtility+<>c__DisplayClass0_0.<RunNextUpdateOnMain>b__0 () [0x0001a] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Utils\ThreadingUtility.cs:25 
+Rethrow as Exception: Exception thrown from invocation made by '.\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\UserRoleManagement\UserRoleRequest.cs'(32) by GetUserRole
+  at Unity.Services.Core.Editor.ThreadingUtility+<>c__DisplayClass0_0.<RunNextUpdateOnMain>b__0 () [0x00056] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Editor\Core\Utils\ThreadingUtility.cs:29 
+  at UnityEditor.EditorApplication.Internal_CallUpdateFunctions () [0x00032] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+
+(Filename: ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Networking/TokenExchange.cs Line: 102)
+
+[INFO ] [relay] log Unity client connected with ID: editor-70548-wgzgfy (relay 1.0.12-build.96)
+[INFO ] [relay] connection.established clientId=editor-70548-wgzgfy port=9001
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.Token refresh failed or was not needed.
+0x00007ffa8ff04e2e (Unity) StackWalker::ShowCallstack
+0x00007ffa9173f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffa9173fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffa8feb587f (Unity) DebugStringToFile
+0x00007ffa8fd71b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001d0d130fdbd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001d0d130fc83 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001d0d130f8bb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001d0d130f640 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001d2119e9455 (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x000001d2119e58a3 (Mono JIT Code) Unity.AI.Toolkit.Accounts.Services.Core.Auth/<ForceRefreshTokenInternal>d__8:MoveNext () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Toolkit.Accounts/Services/Core/Auth.cs:68)
+0x000001d143d0b982 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000001d10130469e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000001d10130447b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000001d143d0b83b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000001d1e96a7b3a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000001d139c58535 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000001d139c58393 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000001d0ce9404f3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000001cfbc38f5c3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000001d1399df563 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000001d1399df6b3 (Mono JIT Code) System.Threading.Tasks.TaskFactory/CompleteOnInvokePromise:Invoke (System.Threading.Tasks.Task)
+0x000001d0ce94041c (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000001cfbc38f5c3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000001d1399de133 (Mono JIT Code) System.Threading.Tasks.Task`1<bool>:TrySetResult (bool)
+0x000001d1399ddd03 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<bool>:TrySetResult (bool)
+0x000001d2119e93e3 (Mono JIT Code) Unity.AI.Toolkit.Accounts.Services.Core.Auth/<>c__DisplayClass8_0:<ForceRefreshTokenInternal>b__0 (bool) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Toolkit.Accounts/Services/Core/Auth.cs:45)
+0x000001d15758d8a5 (Mono JIT Code) (wrapper delegate-invoke) System.Action`1<bool>:invoke_void_T (bool)
+0x000001d21162297d (Mono JIT Code) UnityEditor.Connect.UnityConnect:AccessTokenRefreshed (bool)
+0x000001d0d12c53fb (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_byte (object,intptr,intptr,intptr)
+0x00007ffa86be6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffa86b28984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffa86b28a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffa9073fdd4 (Unity) scripting_method_invoke
+0x00007ffa90746c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffa90742235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffa90d0d913 (Unity) Scripting::UnityEditor::Connect::UnityConnectProxy::AccessTokenRefreshed
+0x00007ffa913ee1e5 (Unity) core::function<void __cdecl(void *)>::DispatchT<<lambda_a6d52618d52cd1f8fa05c4b24e7bcd03> >::Dispatch
+0x00007ffa901d0924 (Unity) CallbackRegistry::Invoke
+0x00007ffa912b754f (Unity) HubClient::Tick
+0x00007ffa90f77de1 (Unity) Application::TickTimer
+0x00007ffa90d59f7c (Unity) MainMessageLoop
+0x00007ffa90d61a12 (Unity) UnityMain
+0x00007ff62d682f2a (Unity) __scrt_common_main_seh
+0x00007ffbb8a2dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbba11ee4c (ntdll) RtlUserThreadStart
+
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "_IRRzpOZ"... (expires: 2026-10-27T02:32:02Z)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "_IRRzpOZ"... (expires: 2026-10-27T02:32:03Z)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+Refreshing native plugins compatible for Editor in 24.38 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.09 ms.
+Asset Pipeline Refresh (id=81f1dd77c80ecc14399e47fa998c908a): Total: 0.156 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+Uploading Crash Report
+[LAYOUT] About to save layout C:\Users\belac\source\repos\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/belac/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+Pipeline Server stopped
+Unloading 14 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-70548-wgzgfy
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 47072 (child process of PID 33352) has been terminated.
+SUCCESS: The process with PID 33352 (child process of PID 70548) has been terminated.
+Killing ADB server in 0.041847 seconds.
+Unloading 40704 unused Assets / (12.4 MB). Loaded Objects now: 39841.
+Memory consumption went from 0.92 GB to 0.91 GB.
+Total: 87.012900 ms (FindLiveObjects: 4.066300 ms CreateObjectMapping: 4.932200 ms MarkObjects: 41.509200 ms  DeleteObjects: 36.504000 ms)
+
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread stopped.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Shut down.
+abort_threads: Failed aborting id: 0000000000006B4C, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000006B4C, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4988
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1793061138938,"processId":70548,"allocatedMemory":44645564,"memoryLabels":[{"Default":29317},{"Permanent":15236},{"NewDelete":80065},{"Thread":4254384},{"Manager":3118224},{"VertexData":8},{"Geometry":816},{"Texture":976},{"Shader":94773},{"Material":29548},{"GfxDevice":57912},{"GfxThread":49152},{"Audio":2664},{"Font":383451},{"FreeType":23892},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":363256},{"Input":14984},{"JobScheduler":33024},{"TextLib":38488},{"Mono":32},{"MonoCode":1408},{"ScriptingNativeRuntime":155060},{"BaseObject":1723888},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":1871867},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":200844},{"DynamicArray":692315},{"HashMap":767317},{"Utility":2662104},{"PoolAlloc":11608},{"AI":80},{"TypeTree":934921},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":107424},{"WebRequest":43464},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"NativeArray":5177744},{"Camera":17},{"Secure":1057},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":560},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":220},{"EditorUtility":1425929},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19760732},{"EditorGi":328},{"UnityConnect":29472},{"Upm":1972},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":211},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2867},{"TLS":10341},{"Licensing":792},{"AssetReference":32},{"IPCStream":32}]}
+Compressing using quality level 127
+
