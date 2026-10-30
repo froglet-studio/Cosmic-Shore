@@ -19044,3 +19044,32 @@ squirrel". This undoes 622e271ca's swap; the 2026-10-28 Meerkat entry above is s
 5. Vessel Changer toy -> Meerkat, then back to Squirrel. **Pass:** both swaps work; the Meerkat still forms tunnels.
 6. `LavalampWormholeLab.unity` still flies the Meerkat.
 
+
+## 🔴 2026-10-29 — Analytics events fired twice: stale subscriptions torn down on lazy-singleton re-construction (unverified: no Unity editor in the session)
+
+**PR:** #1639. **Files:** `System/Instrumentation/AnalyticsServiceFacade.cs`, `System/ApplicationStateMachine.cs`,
+`System/AuthenticationServiceFacade.cs`, `Controller/Managers/StatsManager.cs`. Each of the first three gets a static
+`_liveInstance` and an `Unsubscribe()`; the 9 `GameSetting` lambdas and the 4 UGS auth lambdas became named handlers;
+`StatsManager` gets an `Awake`/`OnDestroy` guard that destroys a stale copy.
+Affects: Shombith's UGS, backend and analytics layer; anyone tuning match scoring (`StatsManager`).
+Not compiled and not run: no Unity editor or CLI was reachable. Checked by reading the diff only.
+
+1. Open the project and let it compile. **Pass:** no errors in the four files above (player and editor).
+2. Press Play, Stop, Play again, Stop, Play again in ONE editor session (Enter Play Mode options keep domain reload
+   and scene reload off, which is what stacks the copies). Start one arcade match and finish it. **Pass:** the console
+   has no new errors or warnings from `AnalyticsServiceFacade`, `ApplicationStateMachine`, `AuthenticationServiceFacade`
+   or `StatsManager`.
+3. In PostHog, query that session's `game_started` and `game_completed` events. **Pass:** exactly one row of each per
+   match (before the fix there were two, a few milliseconds apart, with different event ids). A check: no two rows of
+   the same event for the same user within 50 ms.
+4. Change a setting in the menu (music level, invert Y). **Pass:** one `setting_changed` row per change.
+5. Background and quit the game once. **Pass:** one `session_ended` and one `crystal_balance_snapshot` for that
+   session.
+6. Sign in, then reconnect from the offline menu. **Pass:** the post-sign-in work (cloud load, party lobby, host
+   start) runs once, with no repeated sign-in logs.
+7. In a match, land one combat hit and kill one creature. **Pass:** the scoreboard counts each once (`StatsManager`
+   no longer risks counting twice).
+8. Known gap: `StatsManager` uses a normal deferred `Destroy()`, so a stale copy lives to the end of the frame it is
+   replaced in. If step 7 ever shows a double count, switch to `DestroyImmediate`.
+
+**Addendum (2026-10-29) — Scoreboard crystal latch is now static.** Play one `game_placement` match in the editor, then Stop/Play and play another. PostHog should show one `crystals_earned` row per match, and the wallet should rise once per match (no pairs 2-27 ms apart with balances 200 apart). Also confirm the latch still clears: a second match in the same session must pay out again.

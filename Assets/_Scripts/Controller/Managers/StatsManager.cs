@@ -30,6 +30,30 @@ namespace CosmicShore.Gameplay
 
         bool _allowRecord = true;
 
+        /// <summary>
+        /// The instance currently subscribed to OnFaunaKilled/OnCombatHitLanded/
+        /// OnNetworkSpawnHook. This lives only in Bootstrap.unity and AppManager's
+        /// RegisterManagerSingleton tags it DontDestroyOnLoad on first resolution - so with
+        /// Domain Reload + Scene Reload both off (this project's Enter Play Mode settings),
+        /// a Bootstrap re-entry can leave a stale instance alive alongside a fresh one, each
+        /// independently subscribed via OnEnable. OnEnable/OnDisable are already correctly
+        /// paired here, which is NOT the same guarantee as "the old instance's OnDisable ran" -
+        /// see ReconnectService's own comment on what re-entering Bootstrap does to every other
+        /// persistent root. Destroying the stale survivor (rather than this new one, the
+        /// convention PlayerDataService.Awake uses) forces its OnDisable to run before this
+        /// instance's own OnEnable wires its subscriptions, so a fauna kill or a combat hit is
+        /// never double-counted into match scoring.
+        /// </summary>
+        static StatsManager _liveInstance;
+
+        void Awake()
+        {
+            if (_liveInstance != null && _liveInstance != this)
+                Destroy(_liveInstance.gameObject);
+
+            _liveInstance = this;
+        }
+
         void OnEnable()
         {
             if (_netcodeHooks != null)
@@ -60,6 +84,12 @@ namespace CosmicShore.Gameplay
 
             if (gameData != null)
                 gameData.OnCombatHitLanded.OnRaised -= CombatHitLanded;
+        }
+
+        void OnDestroy()
+        {
+            if (_liveInstance == this)
+                _liveInstance = null;
         }
 
         void OnNetworkSpawn()

@@ -1,0 +1,136 @@
+Proposal: record team composition on game_started, so replay retention can be split into
+co-op and adversarial play. DRAFT for Shombith's review; not applied, not compiled, not run in
+the Unity editor (no editor was reachable). Apply with:  git apply Docs/Analytics/proposals/team_composition_fields.patch
+
+What it adds to game_started, from the LOCAL player's side:
+  domain                    the local player's domain (Domains enum name)
+  humans_on_my_domain       humans on that domain, the local player included
+  humans_on_other_domains   humans on any other domain (AI excluded)
+  co-op = no humans on other domains; adversarial = humans on other domains and none beside you;
+  mixed = both. Omitted when there is no local player (a count of "other" would read as all
+  opponents).
+
+PostHog only, on purpose. AnalyticsServiceFacade sends one identical payload to UGS and PostHog,
+and UGS needs every parameter declared by hand in the Event Manager (permanent rows, 1,500 cap).
+AnalyticsServiceFacade.PostHogOnlyParameters lists the three names and UgsAnalyticsSink skips them,
+so UGS is unchanged and nothing needs declaring there. If you would rather have them in UGS too,
+delete that set and the skip, and declare them in the dashboard (see ugs_step1_parameters.csv).
+
+game_completed is NOT changed: it joins to game_started on (distinct_id, match_id), and the
+replay queries read play type from game_started.
+
+Verify after applying: play a 2-human match on two domains and a 2-human match on one; the
+game_started rows should show humans_on_other_domains 1 and 0. Until then every multi-human
+play is "multi_human_unknown" in Docs/Analytics/queries/replay_retention.sql.
+
+diff --git a/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs b/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs
+index 737e489411..bd2a1e41b1 100644
+--- a/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs
++++ b/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs
+@@ -55,6 +55,19 @@ namespace CosmicShore.Core
+         /// </summary>
+         const int EventSchemaVersion = 1;
+ 
++        /// <summary>
++        /// Event parameters that go to PostHog and are NOT sent to UGS. UGS validates every
++        /// custom parameter against a schema declared by hand in the dashboard Event Manager,
++        /// where rows are permanent and capped at 1,500 per environment, so a field only
++        /// PostHog needs must not cost a row. <see cref="UgsAnalyticsSink"/> drops these.
++        /// </summary>
++        public static readonly HashSet<string> PostHogOnlyParameters = new()
++        {
++            "domain",
++            "humans_on_my_domain",
++            "humans_on_other_domains"
++        };
++
+         readonly AuthenticationDataVariable _authVariable;
+         readonly NetworkMonitorDataVariable _networkVariable;
+         readonly GameDataSO _gameData;
+@@ -823,6 +836,9 @@ namespace CosmicShore.Core
+ 
+             var humanIds = new List<string>();
+             int aiCount = 0;
++            int humansOnMyDomain = 0;
++            int humansOnOtherDomains = 0;
++            var local = _gameData.LocalPlayer;
+ 
+             var players = _gameData.Players;
+             if (players != null)
+@@ -839,13 +855,31 @@ namespace CosmicShore.Core
+                     }
+ 
+                     string id = player.UgsPlayerId;
+-                    if (!string.IsNullOrEmpty(id) && !humanIds.Contains(id))
+-                        humanIds.Add(id);
++                    if (string.IsNullOrEmpty(id) || humanIds.Contains(id))
++                        continue;
++
++                    humanIds.Add(id);
++                    if (local != null)
++                    {
++                        if (player.Domain == local.Domain) humansOnMyDomain++;
++                        else humansOnOtherDomains++;
++                    }
+                 }
+             }
+ 
+             humanIds.Sort(StringComparer.Ordinal);
+ 
++            // Team composition, from the LOCAL player's side: it is what tells a co-op match
++            // (every human on one domain) from an adversarial one (humans on different domains).
++            // Omitted when there is no local player, because counting everyone as "other" would
++            // read as an all-opponents match. PostHog only - see PostHogOnlyParameters.
++            if (local != null)
++            {
++                parameters["domain"] = local.Domain.ToString();
++                parameters["humans_on_my_domain"] = humansOnMyDomain;
++                parameters["humans_on_other_domains"] = humansOnOtherDomains;
++            }
++
+             // Comma-joined, not an array: UGS Analytics parameters accept only scalar values.
+             // The PostHog sink splits this back into a real array (commit 4).
+             parameters["player_ids"] = string.Join(",", humanIds);
+diff --git a/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs b/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs
+index ee6403901a..8ac2572767 100644
+--- a/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs
++++ b/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs
+@@ -94,7 +94,12 @@ namespace CosmicShore.Core
+                 var evt = new CustomEvent(eventName);
+                 if (parameters != null)
+                     foreach (var kvp in parameters)
++                    {
++                        if (AnalyticsServiceFacade.PostHogOnlyParameters.Contains(kvp.Key))
++                            continue;
++
+                         evt.Add(kvp.Key, kvp.Value);
++                    }
+ 
+                 AnalyticsService.Instance.RecordEvent(evt);
+             }
+diff --git a/Docs/Analytics/EVENT_SCHEMA.json b/Docs/Analytics/EVENT_SCHEMA.json
+index 8d007a1907..dac91cec7c 100644
+--- a/Docs/Analytics/EVENT_SCHEMA.json
++++ b/Docs/Analytics/EVENT_SCHEMA.json
+@@ -135,6 +135,21 @@
+           "authority": "server",
+           "description": "True when the party formed through a formal invite, false when players met through the presence lobby. Separates organic rematches from re-invited ones."
+         },
++        "domain": {
++          "type": "string",
++          "sinks": ["posthog"],
++          "description": "The LOCAL player's domain, as its Domains enum name. PostHog only: UGS would need a permanent Event Manager row. Omitted when there is no local player."
++        },
++        "humans_on_my_domain": {
++          "type": "int",
++          "sinks": ["posthog"],
++          "description": "Humans in the match on the local player's domain, the local player included. With humans_on_other_domains this separates co-op (all humans on one domain) from adversarial (humans on different domains). PostHog only."
++        },
++        "humans_on_other_domains": {
++          "type": "int",
++          "sinks": ["posthog"],
++          "description": "Humans in the match on a different domain from the local player. AI is excluded, as in player_count_human. PostHog only."
++        },
+         "player_count_human": {
+           "type": "int",
+           "description": "Number of human players in the match."
