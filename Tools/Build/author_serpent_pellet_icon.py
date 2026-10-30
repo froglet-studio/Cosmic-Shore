@@ -37,6 +37,14 @@ ART = os.path.join(ROOT, "Assets", "_Graphics", "Design Assests", "HUD UI", "Ser
 SOURCE = os.path.join(ART, "Base.png")
 OUTPUT = os.path.join(ART, "PelletSlots.png")
 OUTPUT_GUID = "7c3e91a5d24b4f6e9a0b8d15c6e2f4a8"
+OUTPUT_FIVE = os.path.join(ART, "PelletSlots5.png")
+OUTPUT_FIVE_GUID = "cd689aa1d761479587747ef8a2487423"
+# Time 5 (a fifth pellet, Garrett 2026-10-30): the four slot rows shrunk to FIVE_SCALE about the card's
+# centre and re-spaced FIVE_SPACING canvas units apart (150-unit card), the fifth a copy of the first.
+# SerpentVesselHUDView.fivePelletScale / fivePelletRowSpacing carry the same two numbers for the pips.
+FIVE_SCALE = 0.8
+FIVE_SPACING = 24.9
+CARD_UNITS = 150.0
 PLATE_ALPHA = 127
 PLATE_SHADE_MAX = 20          # the plate's own colour is (0, 2, 10); its shading stays this dark
 PELLET_OUTLINE_ALPHA = 200    # a pellet's black outline is opaque; plate shading never is
@@ -121,6 +129,59 @@ def key_out_plate(rows):
     return out
 
 
+def slot_bands(rows):
+    """The slot rows' vertical extents: runs of image rows holding any visible pixel, top to bottom."""
+    bands, start = [], None
+    for y, line in enumerate(rows):
+        lit = any(line[i] > 8 for i in range(3, len(line), 4))
+        if lit and start is None: start = y
+        if not lit and start is not None: bands.append((start, y)); start = None
+    if start is not None: bands.append((start, len(rows)))
+    return bands
+
+
+def five_rows(rows):
+    """The five-row layout: each target pixel samples its band bilinearly (alpha-weighted, so no
+    dark fringe) at (centre + offset / FIVE_SCALE). Row k sits FIVE_SPACING * (2 - k) above centre."""
+    size = len(rows)
+    bands = slot_bands(rows)
+    assert len(bands) == 4, f"expected the four slot rows, found {len(bands)}"
+    centre = size / 2.0
+    px = FIVE_SPACING * size / CARD_UNITS
+    out = [bytearray(size * 4) for _ in range(size)]
+
+    def at(x, y, lo, hi):
+        if x < 0 or y < lo or x >= size or y >= hi: return (0, 0, 0, 0)
+        i = x * 4
+        line = rows[y]
+        return line[i], line[i + 1], line[i + 2], line[i + 3]
+
+    for k in range(5):
+        lo, hi = bands[k % 4]
+        src_c = (lo + hi) / 2.0
+        dst_c = centre - (2 - k) * px
+        half = (hi - lo) / 2.0 * FIVE_SCALE + 2
+        for y in range(max(0, int(dst_c - half)), min(size, int(dst_c + half) + 1)):
+            sy = src_c + (y + 0.5 - dst_c) / FIVE_SCALE - 0.5
+            y0 = int(sy // 1); fy = sy - y0
+            for x in range(size):
+                sx = centre + (x + 0.5 - centre) / FIVE_SCALE - 0.5
+                x0 = int(sx // 1); fx = sx - x0
+                acc = [0.0, 0.0, 0.0, 0.0]
+                for dx, dy, w in ((0, 0, (1 - fx) * (1 - fy)), (1, 0, fx * (1 - fy)),
+                                  (0, 1, (1 - fx) * fy), (1, 1, fx * fy)):
+                    r, g, b, a = at(x0 + dx, y0 + dy, lo, hi)
+                    wa = w * a
+                    acc[0] += r * wa; acc[1] += g * wa; acc[2] += b * wa; acc[3] += wa
+                if acc[3] <= 0.5: continue
+                o = x * 4
+                out[y][o] = min(255, round(acc[0] / acc[3]))
+                out[y][o + 1] = min(255, round(acc[1] / acc[3]))
+                out[y][o + 2] = min(255, round(acc[2] / acc[3]))
+                out[y][o + 3] = min(255, round(acc[3]))
+    return out
+
+
 def meta_for(guid):
     """The source's own import settings, re-keyed - same sprite mode, PPU and filtering."""
     with open(SOURCE + ".meta", encoding="utf-8") as fh:
@@ -141,26 +202,28 @@ def main(argv):
             assert not (src[i] == 255 and dst[i] != 255), "opaque pellet pixel lost alpha"
 
     mirrored = [bytearray(b"".join(bytes(row[x * 4:x * 4 + 4]) for x in range(w - 1, -1, -1))) for row in keyed]
-    png = encode_png(w, h, mirrored)
-    meta = meta_for(OUTPUT_GUID)
-    have = open(OUTPUT, "rb").read() if os.path.exists(OUTPUT) else None
-    have_meta = open(OUTPUT + ".meta", encoding="utf-8").read() if os.path.exists(OUTPUT + ".meta") else None
-    stale = have != png or have_meta != meta
-
-    if check:
+    outputs = [(OUTPUT, encode_png(w, h, mirrored), meta_for(OUTPUT_GUID)),
+               (OUTPUT_FIVE, encode_png(w, h, five_rows(mirrored)), meta_for(OUTPUT_FIVE_GUID))]
+    failed = 0
+    for path, png, meta in outputs:
+        name = os.path.basename(path)
+        have = open(path, "rb").read() if os.path.exists(path) else None
+        have_meta = open(path + ".meta", encoding="utf-8").read() if os.path.exists(path + ".meta") else None
+        stale = have != png or have_meta != meta
+        if check:
+            if stale:
+                print(f"STALE: {name} - re-run Tools/Build/author_serpent_pellet_icon.py")
+                failed = 1
+            else:
+                print(f"OK: {name} matches Base.png with the decagon keyed out.")
+            continue
         if stale:
-            print("STALE: PelletSlots.png - re-run Tools/Build/author_serpent_pellet_icon.py")
-            return 1
-        print("OK: PelletSlots.png matches Base.png with the decagon keyed out.")
-        return 0
-
-    if stale:
-        with open(OUTPUT, "wb") as fh: fh.write(png)
-        with open(OUTPUT + ".meta", "w", encoding="utf-8", newline="\n") as fh: fh.write(meta)
-        print("wrote PelletSlots.png")
-    else:
-        print("up to date")
-    return 0
+            with open(path, "wb") as fh: fh.write(png)
+            with open(path + ".meta", "w", encoding="utf-8", newline="\n") as fh: fh.write(meta)
+            print(f"wrote {name}")
+        else:
+            print(f"{name} up to date")
+    return failed
 
 
 if __name__ == "__main__":

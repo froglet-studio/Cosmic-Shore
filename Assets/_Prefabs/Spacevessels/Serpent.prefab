@@ -3556,6 +3556,9 @@ MonoBehaviour:
   boostPip4: {fileID: 5254409461533313133}
   pipFullColor: {r: 1, g: 1, b: 1, a: 1}
   pipEmptyColor: {r: 1, g: 1, b: 1, a: 0.25}
+  pelletSlotsFive: {fileID: 21300000, guid: cd689aa1d761479587747ef8a2487423, type: 3}
+  fivePelletScale: 0.8
+  fivePelletRowSpacing: 24.9
   omniAbilitySprite: {fileID: 21300000, guid: 7c88a64ab6c19d1e94e308b19c376b0e, type: 3}
   seedWallSeedIcon: {fileID: 3887496805740267519}
   seedWallBricksIcon: {fileID: 3882635242388992553}

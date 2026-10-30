@@ -45,6 +45,11 @@ namespace CosmicShore.Gameplay
                  "the resource's maxAmount divided by this - 0.25 of a 1.0 tank is four pellets.")]
         [SerializeField] private float resourceCost = 0.25f;
 
+        [Tooltip("Time 5: the pellet's fuel cost once the upgrade is active (Garrett, 2026-10-30: " +
+                 "\"Time L5 lets give players a fifth pellet\"). 0.2 of a 1.0 tank is five pellets; " +
+                 "each still burns and boosts exactly as before. 0 = no upgrade (the base cost holds).")]
+        [SerializeField, Min(0f)] private float upgradeResourceCost = 0.2f;
+
         public float BoostMultiplier => boostMultiplier;
         public float BoostDuration => boostDuration;
 
@@ -53,6 +58,15 @@ namespace CosmicShore.Gameplay
             => timeDurationMultiplier.EvaluateLive(status);
         public int ResourceIndex => resourceIndex;
         public float ResourceCost => resourceCost;
+        public float UpgradeResourceCost => upgradeResourceCost;
+
+        /// <summary>The pellet's cost for this pilot right now: the upgrade's while Time 5 is active.</summary>
+        public float ResourceCostFor(IVesselStatus status)
+        {
+            if (upgradeResourceCost <= 0f) return resourceCost;
+            var elemental = status?.ElementalAbilityHandler;
+            return elemental != null && elemental.IsUpgradeActive(Element.Time) ? upgradeResourceCost : resourceCost;
+        }
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<ConsumeBoostActionExecutor>()?.Consume(this, vesselStatus);

@@ -18851,3 +18851,24 @@ squirrel". This undoes 622e271ca's swap; the 2026-10-28 Meerkat entry above is s
 5. Vessel Changer toy -> Meerkat, then back to Squirrel. **Pass:** both swaps work; the Meerkat still forms tunnels.
 6. `LavalampWormholeLab.unity` still flies the Meerkat.
 
+
+## Serpent recut: Scope on Charge, Cloak / Sniper on Space, Hunter's Sight, fifth pellet (2026-10-30) - NOT EDITOR-VERIFIED
+
+No Unity editor and no .NET SDK in the session, so nothing here was compiled. Branch `claude/serpent-icons`.
+Files: `SniperScopeActionSO/Executor.cs`, new `ScopeAfterimages.cs`, `SniperShotActionSO/Executor.cs`,
+`ConsumeBoostActionSO/Executor.cs`, `SerpentVesselHUDView.cs`, `SerpentHUDController.cs`, the Serpent map, its two
+action assets, `Serpent.prefab` (view fields) and `SerpentHUDVariant.prefab` (card sprites).
+
+1. Compile. **Pass:** no errors; the SniperScopeAction asset shows no missing-field warnings (three fields were removed).
+2. Hold LT (scope). **Pass:** the zoom settles at 12 degrees at every Charge and Space level; Space no longer changes it.
+3. Snipe a super-shielded prism at Charge 0. **Pass:** it is destroyed (it used to be skipped below Charge 5).
+4. Watch the SPACE card (RT) while pressing and releasing LT. **Pass:** the picture swaps cloak / sniper in place, the
+   trigger glyph does not move, and the card's cooldown veil follows the sniper's recovery. The CHARGE card shows the
+   scope and no longer carries the sniper veil.
+5. Raise Charge to 5 and scope near a rival. **Pass:** ghosts of the rival's hull appear about 4 a second, tinted in
+   the rival's domain colour, fading over 1 s. A round through a ghost strips the rival and shatters that ghost; a
+   ghost is never shown on the rival's screen or a spectator's.
+6. Raise Time to 5. **Pass:** the TIME card switches to five smaller pellet rows (PelletSlots5) with five pips that
+   line up on their slots; a full tank is 5 pellets (0.2 each); dropping below Time 5 restores the four-row layout.
+7. AI Serpent at Charge 5 on the server. **Pass:** no ghosts are drawn anywhere; its rounds can still strip through
+   recorded afterimages.

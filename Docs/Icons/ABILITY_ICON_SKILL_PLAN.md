@@ -292,6 +292,12 @@ Mass 5 the Lockdown danger panels in the four closed holes at their real size an
 wall with every brick shielded (what a crystal does to it). The Serpent's view lives on `Serpent.prefab`, so the kit
 grew a `proxy` rebind step (stripped proxies into the HUD variant). Lockdown itself was recut in the same change:
 panels when a hole's four bricks close, crystals only shield (LESSONS 61). The Sniper Shot options are out.
+**The Serpent recut** (2026-10-30, Garrett): the Time card is the shipped pellet art mirrored to fly right (five rows at
+Time 5, `author_serpent_pellet_icon.py`). The CHARGE card is now the Scope (one fixed 12 degree zoom; Charge sets the
+sniper's recovery; Charge 5 Hunter's Sight leaves rival afterimages the sniper can hit), and the SPACE card is Cloak /
+Sniper Shot: one RT card whose picture swaps while the scope is held so its glyph never moves
+(`SerpentVesselHUDView.SetScoped`, two sprites). Option sheets `serpent_scope_options.png` and
+`serpent_cloaksniper_options.png` are out; both cards ride placeholders until Garrett picks.
 
 | Round | What | Why first |
 |---|---|---|

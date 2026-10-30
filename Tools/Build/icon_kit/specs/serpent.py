@@ -1,12 +1,11 @@
 """The Serpent's ability-row icons (Resources/ElementalAbilityMaps/Serpent.asset).
 
-  Charge  Sniper Shot         scoped, RT fires one hitscan round (a 1.5 degree cone) that destroys every hostile prism
-                              in it but flies past SUPER-SHIELDED mass; Charge sets the recovery (12 s -> 5.4 s).
-                              Charge 5 PIERCE: super-shielded prisms become targets (the armour is stripped).
+  Charge  Scope               LT opens a magnified eyepiece down the nose, one fixed 12 degree zoom; Charge sets the
+                              SNIPER's recovery (12 s -> 5.4 s). Charge 5 HUNTER'S SIGHT: rivals leave afterimages.
   Mass    Seed Wall           stopping or cloaking leaves a seed that grows a herringbone wall from stolen prisms;
-                              Mass sizes the bricks; Mass 5 LOCKDOWN seals the holes with danger panels on a crystal
-  Space   Scope               LT opens a magnified eyepiece down the nose; Space sets the magnification; Space 5 DEEP
-                              FOCUS one more step (and the walls steal shielded prisms)
+                              Mass sizes the bricks; Mass 5 LOCKDOWN seals each hole as its four bricks close
+  Space   Cloak / Sniper      RT: cloak unscoped, the sniper shot scoped (one slot, two pictures); the round breaks
+                              super-shields from the start; Space sets the wall's steal reach; Space 5 SHIELD STEAL
   Time    Solid Fuel Pellets  each press burns a quarter-tank pellet; overlapping burns stack; Time sets the burn length.
                               KEPT as the shipped art, mirrored to fly right (Garrett, 2026-10-30): PelletSlots.png is
                               author_serpent_pellet_icon.py's, Line_1..4 are flipped, so the kit draws nothing for it.
@@ -57,9 +56,9 @@ def _clear_of(mask, *others, px=2.5):
 
 ICONS = []
 LOCKUP = dict(
-    Charge=dict(parts=dict(i=placeholder("SniperShot")), state=[("i", "white")]),
+    Charge=dict(parts=dict(i=placeholder("Scope")), state=[("i", "white")]),
     Mass=dict(parts=dict(i=placeholder("SeedWall")), state=[("i", "white")]),
-    Space=dict(parts=dict(i=placeholder("Scope")), state=[("i", "white")]),
+    Space=dict(parts=dict(i=placeholder("SniperShot")), state=[("i", "white")]),
     Time=dict(parts=dict(i=lambda: _png_mask("Assets/_Graphics/Design Assests/HUD UI/Serpent Fuel/PelletSlots.png")),
               state=[("i", "white")]),
 )
@@ -67,14 +66,15 @@ CARDS = []
 REBIND = []
 
 
-# ---- Charge: Sniper Shot options (round 2, 2026-10-30) -------------------------------------------------------------
-# WHAT THE CODE DOES (SniperShotActionExecutor, read 2026-10-30; round 1 drew the stale card text): the round is a
-# 1.5 degree hitscan cone that destroys EVERY hostile prism inside it (pierceCount 0 = unlimited, at every tier), skips
-# the pilot's own domain, and flies PAST super-shielded mass. Charge 5 PIERCE makes super-shielded prisms targets: the
-# armour is stripped and they die with the rest. So the base card is a line cleared through ordinary mass with the
-# armoured one left standing on it, and Pierce is that one shattered. The recovery (12 s -> 5.4 s) is the fleet's
-# cooldown veil, which the HUD already sweeps (SerpentHUDController). Plain prisms are 2:1 bricks drawn in "blue" (the
-# neutral, hostile to everyone); super-shielded is the stella in "shielded", as on the Rhino's cards.
+# ---- The recut (Garrett, 2026-10-30) ------------------------------------------------------------------------------
+# "Space should be the cloak and sniper shot abilities. the icon should change when the scope is held so the glyph can
+# stay in the same spot. charge is the scope. ... Charge L5 upgrade is instead of pierce it causes the scope to produce
+# short lived after images that the serpent can snipe instead. (much like hawkeye in marvel rivals)"
+#   CHARGE = the Scope (LT): one fixed 12 degree zoom; Charge sets the sniper's recovery. L5 Hunter's Sight: while
+#            scoped, rivals leave afterimages (ScopeAfterimages: one per 0.25 s, each standing 1 s) a round can strip.
+#   SPACE  = Cloak / Sniper Shot (RT): TWO pictures in one slot, swapped by SerpentVesselHUDView.SetScoped - the cloak
+#            unscoped, the sniper while the scope is held. The round takes every hostile prism in its cone, super-
+#            shielded included, from the start.
 CY = 64.0
 BEAM_W = 4.5
 
@@ -87,110 +87,19 @@ def brick(x, y, l=14.0, w=7.0):
     return fill([(x - l / 2, y - w / 2), (x + l / 2, y - w / 2), (x + l / 2, y + w / 2), (x - l / 2, y + w / 2)])
 
 
-def shards(x, y, s=1.0):
-    """A destroyed brick: three fragments flung along the round's line, the debris the game keeps (mass conserved)."""
-    out = empty()
-    for dx, dy, r in ((-4.0, -4.0, 2.6), (3.0, 3.5, 2.2), (8.0, -2.0, 1.8)):
-        cx, cy = x + dx * s, y + dy * s
-        out |= fill([(cx - r, cy), (cx, cy - r), (cx + r, cy), (cx, cy + r)])
-    return out
+def outline(mask, px=2.5):
+    """A solid's rim: the mask less itself eroded by px (the CloakGhost look - a Fresnel outline, no body)."""
+    import toy_portraits
+    return mask & toy_portraits.grown(~mask, px)
 
 
-# A: SHOOTER. The Serpent at the left, nose right; three bricks and a super-shielded prism on its line. Fired: the
-# bricks blown apart along the round, the stella standing (the round flies past it). Pierce: the stella too.
-A_HULL = dict(box=40.0, cx=22.0, cy=CY)
-A_BRICKS = (56.0, 74.0, 118.0)
-A_STELLA = (96.0, CY, 22.0)
-
-
-def a_hull():
-    return serpent(**A_HULL)
-
-
-def a_beam():
-    return _clear_of(beam(A_HULL["cx"] + A_HULL["box"] / 2 + 2, 126.0), a_hull(), a_stella(), px=2.0)
-
-
-def a_bricks(broken=False):
-    out = empty()
-    for x in A_BRICKS:
-        out |= shards(x, CY) if broken else brick(x, CY)
-    return out
-
-
-def a_stella(broken=False):
-    x, y, r = A_STELLA
-    return stella(x, y, r * (0.8 if broken else 1.0), broken=broken)
-
-
-# B: THE TUNNEL. A block of mass, no hull: the round's line cleared clean through it as negative space, the one
-# super-shielded prism left standing in the tunnel. Pierce: the tunnel runs clear through the stella too.
-B_COLS = (14.0, 34.0, 54.0, 74.0, 94.0, 114.0)
-B_ROWS = (28.0, 46.0, 64.0, 82.0, 100.0)
-B_STELLA = (64.0, CY, 20.0)
-
-
-def b_block(tunnel=False):
-    out = empty()
-    for j, y in enumerate(B_ROWS):
-        for i, x in enumerate(B_COLS):
-            if tunnel and y == CY:
-                continue
-            out |= brick(x + (10.0 if j % 2 else 0.0), y, l=16.0, w=8.0)
-    keep = fill([(4, 18), (124, 18), (124, 110), (4, 110)])
-    return _clear_of(out & keep, stella(*B_STELLA), px=3.0)
-
-
-def b_stella(broken=False):
-    x, y, r = B_STELLA
-    return stella(x, y, r * (0.8 if broken else 1.0), broken=broken)
-
-
-def b_line():
-    return _clear_of(beam(2.0, 126.0, w=3.0), b_stella(), px=3.0)
-
-
-def _card(key, title, parts, states):
-    return dict(name=f"snipershot_{key}", group="snipershot", lockup_state=1, element="Charge",
-                before=ICON_DIR + "Serpent_SniperShot-PLACEHOLDER.png", title=title, parts=parts, states=states)
-
-
-CARDS += [
-    _card("a", "A  Shooter: the Serpent's round blows apart every brick on its line and flies past the super-shielded "
-               "prism; Charge 5 Pierce shatters that too",
-          dict(hull=a_hull, beam=a_beam, bricks=a_bricks, shards=lambda: a_bricks(True),
-               whole=a_stella, broken=lambda: a_stella(True)),
-          [("ready", [("bricks", "blue"), ("whole", "shielded"), ("hull", "domain")]),
-           ("fired: bricks gone, armour stands", [("beam", "white"), ("shards", "blue"), ("whole", "shielded"),
-                                                  ("hull", "domain")]),
-           ("Charge 5 Pierce: armour too", [("beam", "white"), ("shards", "blue"), ("broken", "shielded"),
-                                            ("hull", "domain")])]),
-    _card("b", "B  The tunnel: a block of mass with the round's line cleared through it, the super-shielded prism "
-               "left standing in it; Charge 5 Pierce clears it too",
-          dict(block=b_block, tunnel=lambda: b_block(True), line=b_line, whole=b_stella,
-               broken=lambda: b_stella(True)),
-          [("ready", [("block", "blue"), ("whole", "shielded")]),
-           ("fired: the tunnel, armour stands", [("tunnel", "blue"), ("line", "white"), ("whole", "shielded")]),
-           ("Charge 5 Pierce: armour too", [("tunnel", "blue"), ("line", "white"), ("broken", "shielded")])]),
-]
-
-
-# ---- Space: Scope options (2026-10-29) ----------------------------------------------------------------------------
-# WHO gains WHAT: the Serpent sees FARTHER - LT opens an eyepiece down its own nose, magnified by the trigger's depth.
-# Every number is the shipped instrument's (SniperScopeOverlay, SniperScopeActionSO): the eyepiece is the CHARGE
-# petal (ScopePetalGeometry.Outline, apex at the flower's centre, so pointing DOWN on screen), and the reticle ring is
-# the sniper cone (1.5 degree half-angle) at its true size inside it, tan(1.5) / tan(fov / 2) of the petal's half-side,
-# capped where the posts would leave the petal (0.51). Full zoom at rest is fov 22, Space 10 is 11, and Deep Focus
-# multiplies the zoom depth by 1.6: 13.8 at rest, 6.9 at Space 10. The unscoped end is the player's own fov (60 here).
-# The ring's RADIUS is the measurement; its stroke, the posts' gap and length and the dot are widened to read at 128.
+# --- the eyepiece (SniperScopeOverlay: the CHARGE petal, ScopePetalGeometry.Outline, apex down) and its reticle: the
+# sniper cone (1.5 degree half-angle) at its true size for the fixed 12 degree zoom, tan(1.5) / tan(6) = 0.25 of the
+# petal's half-side. The ring's radius is the measurement; stroke, posts and dot are widened to read at 128.
 SCOPE_CONE = 1.5
+SCOPE_FOV = 12.0
 PETAL = [(0.5, 0.0), (1.0, 0.684356), (0.817204, 1.0), (0.182796, 1.0), (0.0, 0.684356)]
 PETAL_SIDE = 112.0
-FOV_FLIGHT, FOV_REST, FOV_DEEP, FOV_DEEP10 = 60.0, 22.0, 13.75, 6.875
-
-
-def scope_ring01(fov):
-    return min(0.512, math.tan(math.radians(SCOPE_CONE)) / math.tan(math.radians(fov / 2)))
 
 
 def petal_pts(side=PETAL_SIDE, cx=64.0, cy=64.0):
@@ -201,6 +110,10 @@ def eyepiece_frame(w=7.0):
     return stroke(petal_pts(), w=w, closed=True)
 
 
+def ring_r(fov=SCOPE_FOV):
+    return min(0.512, math.tan(math.radians(SCOPE_CONE)) / math.tan(math.radians(fov / 2))) * PETAL_SIDE / 2
+
+
 def reticle(r, cx=64.0, cy=64.0, gap=4.0, arm=9.0, w=4.0):
     out = ring(cx, cy, r, w=w) | disc(cx, cy, 2.6)
     for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
@@ -209,64 +122,179 @@ def reticle(r, cx=64.0, cy=64.0, gap=4.0, arm=9.0, w=4.0):
     return out
 
 
-# A: THE EYEPIECE. The petal frame and the cone reticle at its true size for the zoom: the ring grows as you zoom.
-def a_scope(fov):
-    return reticle(max(3.5, scope_ring01(fov) * PETAL_SIDE / 2)) & fill(petal_pts())
+# --- a rival and its afterimages: a plain dart (any hull), solid where it is, outlines where it was.
+def dart(x, y, s=1.0):
+    return fill([(x + 11 * s, y), (x - 8 * s, y - 8 * s), (x - 3 * s, y), (x - 8 * s, y + 8 * s)])
 
 
-# B: THE VIEW. The same petal, and a super-shielded prism seen through it at the size the zoom makes it: apparent size
-# goes as 1 / tan(fov / 2), so Deep Focus draws it 1.6 times larger. Its size at rest is chosen; the ratios are not.
-def b_target(fov):
-    r = 20.0 * math.tan(math.radians(FOV_REST / 2)) / math.tan(math.radians(fov / 2))
-    return _clear_of(stella(64.0, 60.0, r), eyepiece_frame(), px=3.0)
+AFTER_XS = (40.0, 58.0, 76.0)       # oldest -> newest afterimage; the rival itself flies on, out of the frame's middle
+RIVAL_X = 94.0
+AFTER_Y = 54.0
 
 
-# C: THE REACH. The Serpent at the left, nose right, and its view wedge at the true field of view: the flight view's
-# 60 degrees, full zoom's 22, Deep Focus's 13.8. The narrower the wedge, the farther it sees.
-C_HULL = dict(box=44.0, cx=24.0, cy=64.0)
+def rival():
+    return dart(RIVAL_X, AFTER_Y)
 
 
-def c_hull():
-    return serpent(**C_HULL)
+def afterimages():
+    out = empty()
+    for x in AFTER_XS:
+        out |= outline(dart(x, AFTER_Y), px=2.2)
+    return out
 
 
-def c_wedge(fov):
-    x0 = C_HULL["cx"] + C_HULL["box"] / 2 - 2
+# ---- Charge: the Scope, and Hunter's Sight (L5) ---------------------------------------------------------------------
+# A: THE EYEPIECE. The petal and the reticle at the 12 degree zoom's true size. Hunter's Sight: a rival flying through
+# the eyepiece trailing three afterimages, the reticle on the oldest - the one the Serpent shoots.
+def a_eyepiece_reticle():
+    return reticle(ring_r(), cy=72.0) & fill(petal_pts())
+
+
+def a_hunter_reticle():
+    return reticle(ring_r() * 0.75, cx=AFTER_XS[0], cy=AFTER_Y, gap=2.5, arm=5.0, w=3.0) & fill(petal_pts())
+
+
+def a_hunter_rival():
+    return _clear_of(rival() & fill(petal_pts()), eyepiece_frame(), px=2.0)
+
+
+def a_hunter_after():
+    return _clear_of(afterimages(), a_hunter_reticle(), px=1.5)
+
+
+# B: THE SIGHTLINE. The Serpent at the left and its 12 degree view. Hunter's Sight: the rival and its afterimages in it.
+B_HULL = dict(box=40.0, cx=22.0, cy=64.0)
+
+
+def b_hull():
+    return serpent(**B_HULL)
+
+
+def b_wedge(fov=SCOPE_FOV):
+    x0 = B_HULL["cx"] + B_HULL["box"] / 2 - 2
+    t = math.tan(math.radians(fov / 2))
     out = empty()
     for sgn in (1, -1):
-        t = math.tan(math.radians(fov / 2))
-        x1 = min(124.0, x0 + 60.0 / max(t, 1e-3))
-        out |= stroke([(x0, 64.0), (x1, 64.0 - sgn * (x1 - x0) * t)], w=5.0)
-    return _clear_of(out, c_hull(), px=2.0)
+        out |= stroke([(x0, 64.0), (124.0, 64.0 - sgn * (124.0 - x0) * t)], w=4.5)
+    return _clear_of(out, b_hull(), px=2.0)
+
+
+def _b_shift(mask):
+    from canvas import shift
+    return shift(mask, 4.0, 64.0 - AFTER_Y)
+
+
+def b_rival():
+    return _clear_of(_b_shift(rival()), b_wedge(), px=1.5)
+
+
+def b_after():
+    return _clear_of(_b_shift(afterimages()), b_wedge(), px=1.5)
 
 
 def _scope_card(key, title, parts, states):
-    return dict(name=f"scope_{key}", group="scope", lockup_state=1, element="Space",
+    return dict(name=f"scope_{key}", group="scope", lockup_state=1, element="Charge",
                 before=ICON_DIR + "Serpent_Scope-PLACEHOLDER.png", title=title, parts=parts, states=states)
 
 
 CARDS += [
-    _scope_card("a", "A  The eyepiece: the Charge-petal eyepiece and the cone reticle at its true size; the ring grows "
-                     "as the zoom deepens (rest 22 deg, Deep Focus 13.8, Space 10 + Deep Focus 6.9)",
-                dict(frame=eyepiece_frame, rest=lambda: a_scope(FOV_REST), deep=lambda: a_scope(FOV_DEEP),
-                     deep10=lambda: a_scope(FOV_DEEP10)),
-                [("full zoom at rest (22 deg)", [("frame", "white"), ("rest", "white")]),
-                 ("Space 5 Deep Focus (13.8 deg)", [("frame", "white"), ("deep", "white")]),
-                 ("Space 10 + Deep Focus (6.9 deg)", [("frame", "white"), ("deep10", "white")])]),
-    _scope_card("b", "B  The view: the eyepiece with a super-shielded prism at the size the zoom shows it; "
-                     "Deep Focus draws it 1.6x larger",
-                dict(frame=eyepiece_frame, flight=lambda: b_target(FOV_FLIGHT), rest=lambda: b_target(FOV_REST),
-                     deep=lambda: b_target(FOV_DEEP)),
-                [("trigger off (flight view, 60 deg)", [("frame", "white"), ("flight", "shielded")]),
-                 ("full zoom at rest (22 deg)", [("frame", "white"), ("rest", "shielded")]),
-                 ("Space 5 Deep Focus (13.8 deg)", [("frame", "white"), ("deep", "shielded")])]),
-    _scope_card("c", "C  The reach: the Serpent and its view wedge at the true field of view, narrowing from the "
-                     "flight view to full zoom to Deep Focus",
-                dict(hull=c_hull, flight=lambda: c_wedge(FOV_FLIGHT), rest=lambda: c_wedge(FOV_REST),
-                     deep=lambda: c_wedge(FOV_DEEP)),
-                [("trigger off (flight view, 60 deg)", [("hull", "domain"), ("flight", "white")]),
-                 ("full zoom at rest (22 deg)", [("hull", "domain"), ("rest", "white")]),
-                 ("Space 5 Deep Focus (13.8 deg)", [("hull", "domain"), ("deep", "white")])]),
+    _scope_card("a", "A  The eyepiece: the Charge-petal eyepiece and the reticle at the 12 deg zoom's true size; "
+                     "Hunter's Sight: a rival trailing afterimages, the reticle on one",
+                dict(frame=eyepiece_frame, ret=a_eyepiece_reticle, hret=a_hunter_reticle, rival=a_hunter_rival,
+                     after=a_hunter_after),
+                [("the scope", [("frame", "white"), ("ret", "white")]),
+                 ("Charge 5 Hunter's Sight", [("frame", "white"), ("after", "white", 0.6), ("rival", "white"),
+                                              ("hret", "danger")])]),
+    _scope_card("b", "B  The sightline: the Serpent and its 12 deg view; Hunter's Sight: a rival and its afterimages "
+                     "in it",
+                dict(hull=b_hull, wedge=b_wedge, rival=b_rival, after=b_after),
+                [("the scope", [("hull", "domain"), ("wedge", "white")]),
+                 ("Charge 5 Hunter's Sight", [("hull", "domain"), ("wedge", "white"), ("after", "white", 0.6),
+                                              ("rival", "white")])]),
+]
+
+
+# ---- Space: Cloak / Sniper Shot, one slot and two pictures ----------------------------------------------------------
+# Unscoped the right trigger cloaks: the Serpent leaves its super-shielded seed and flies on as an outline (what the
+# cloaked pilot sees, CloakGhost). Scoped it fires: the round's line clears every brick AND the super-shielded prism.
+# Both pictures keep the same footprint so the trigger glyph never moves.
+def cloak_hull():
+    return outline(serpent(box=58.0, cx=74.0, cy=64.0), px=3.0)
+
+
+def cloak_seed():
+    return stella(26.0, 64.0, 18.0)
+
+
+def cloak_trail():
+    out = empty()
+    for x in (44.0, 52.0):
+        out |= disc(x, 64.0, 2.4)
+    return out
+
+
+SN_COLS = (14.0, 34.0, 54.0, 74.0, 94.0, 114.0)
+SN_ROWS = (28.0, 46.0, 64.0, 82.0, 100.0)
+
+
+def sniper_block():
+    out = empty()
+    for j, y in enumerate(SN_ROWS):
+        if y == CY:
+            continue
+        for x in SN_COLS:
+            out |= brick(x + (10.0 if j % 2 else 0.0), y, l=16.0, w=8.0)
+    return out & fill([(4, 18), (124, 18), (124, 110), (4, 110)])
+
+
+def sniper_line():
+    return _clear_of(beam(2.0, 126.0, w=3.0), stella(64.0, CY, 16.0), px=3.0)
+
+
+def sniper_stella():
+    return stella(64.0, CY, 16.0, broken=True)
+
+
+def sniper_shooter_hull():
+    return serpent(box=40.0, cx=22.0, cy=CY)
+
+
+def sniper_shooter_beam():
+    return _clear_of(beam(44.0, 126.0), sniper_shooter_stella(), px=2.0)
+
+
+def sniper_shooter_stella():
+    return stella(96.0, CY, 18.0, broken=True)
+
+
+def sniper_shooter_shards():
+    out = empty()
+    for x in (60.0, 76.0, 116.0):
+        for dx, dy, r in ((-4.0, -5.0, 2.6), (3.0, 4.5, 2.2), (7.0, -2.5, 1.8)):
+            cx, cy = x + dx, CY + dy
+            out |= fill([(cx - r, cy), (cx, cy - r), (cx + r, cy), (cx, cy + r)])
+    return out
+
+
+def _space_card(key, title, parts, states):
+    return dict(name=f"cloaksniper_{key}", group="cloaksniper", lockup_state=1, element="Space",
+                before=ICON_DIR + "Serpent_SniperShot-PLACEHOLDER.png", title=title, parts=parts, states=states)
+
+
+CARDS += [
+    _space_card("a", "A  Cloak: the Serpent as its cloaked outline leaving its super-shielded seed / Sniper: the tunnel "
+                     "the round cuts through mass, the super-shielded prism shattered in it",
+                dict(hull=cloak_hull, seed=cloak_seed, trail=cloak_trail, block=sniper_block, line=sniper_line,
+                     star=sniper_stella),
+                [("unscoped: CLOAK", [("seed", "shielded"), ("trail", "domain", 0.5), ("hull", "domain")]),
+                 ("scope held: SNIPER", [("block", "blue"), ("line", "white"), ("star", "shielded")])]),
+    _space_card("b", "B  Cloak as A / Sniper: the Serpent's round clearing bricks and the super-shielded prism on its "
+                     "line",
+                dict(hull=cloak_hull, seed=cloak_seed, trail=cloak_trail, shull=sniper_shooter_hull,
+                     beam=sniper_shooter_beam, star=sniper_shooter_stella, shards=sniper_shooter_shards),
+                [("unscoped: CLOAK", [("seed", "shielded"), ("trail", "domain", 0.5), ("hull", "domain")]),
+                 ("scope held: SNIPER", [("beam", "white"), ("shards", "blue"), ("star", "shielded"),
+                                         ("shull", "domain")])]),
 ]
 
 

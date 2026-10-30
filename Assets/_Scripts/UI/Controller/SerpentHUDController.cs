@@ -20,9 +20,14 @@ namespace CosmicShore.UI
         [SerializeField] private int shieldResourceIndex;
 
         [Header("Sniper")]
-        [Tooltip("Drives the CHARGE card's cooldown veil. Resolved from the registry when left " +
-                 "empty; a Serpent without the ability simply shows no veil.")]
+        [Tooltip("Drives the SPACE card's cooldown veil (the sniper rides the cloak's trigger, scoped). " +
+                 "Resolved from the registry when left empty; a Serpent without the ability simply " +
+                 "shows no veil.")]
         [SerializeField] private SniperShotActionExecutor sniperShotExecutor;
+
+        [Tooltip("Whether the scope is held, which swaps the SPACE card between cloak and sniper. " +
+                 "Resolved from the registry when left empty.")]
+        [SerializeField] private SniperScopeActionExecutor sniperScopeExecutor;
 
         [Inject] GameDataSO _gameData;
 
@@ -52,7 +57,7 @@ namespace CosmicShore.UI
 
             if (_status.IsInitializedAsAI || !_status.IsLocalUser) return;
             
-            if (consumeBoostExecutor == null || sniperShotExecutor == null)
+            if (consumeBoostExecutor == null || sniperShotExecutor == null || sniperScopeExecutor == null)
             {
                 var registry = _status?.ShipTransform
                     ? _status.ShipTransform.GetComponentInChildren<ActionExecutorRegistry>(true)
@@ -64,6 +69,8 @@ namespace CosmicShore.UI
                         consumeBoostExecutor = registry.Get<ConsumeBoostActionExecutor>();
                     if (sniperShotExecutor == null)
                         sniperShotExecutor = registry.Get<SniperShotActionExecutor>();
+                    if (sniperScopeExecutor == null)
+                        sniperScopeExecutor = registry.Get<SniperScopeActionExecutor>();
                 }
             }
 
@@ -158,7 +165,7 @@ namespace CosmicShore.UI
         bool DrivesThisHud =>
             _status != null && !_status.IsInitializedAsAI && _status.IsLocalUser;
 
-        // ---------- Sniper cooldown ----------
+        // ---------- Sniper cooldown and the cloak / sniper swap (SPACE card) ----------
 
         /// <summary>
         /// Push the sniper's recovery onto the CHARGE card's veil.
@@ -174,10 +181,13 @@ namespace CosmicShore.UI
         /// </summary>
         void Update()
         {
-            if (!view || sniperShotExecutor == null || _status == null) return;
+            if (!view || _status == null) return;
             if (_status.IsInitializedAsAI || !_status.IsLocalUser) return;
 
-            view.SetAbilityCooldown(Element.Charge, sniperShotExecutor.CooldownRemaining01);
+            if (sniperShotExecutor != null)
+                view.SetAbilityCooldown(Element.Space, sniperShotExecutor.CooldownRemaining01);
+            if (sniperScopeExecutor != null)
+                view.SetScoped(sniperScopeExecutor.IsScoped);
         }
     }
 }
