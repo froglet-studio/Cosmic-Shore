@@ -17,19 +17,22 @@ MonoBehaviour:
   - Element: 1
     AbilityLabel: Sniper Shot
     AbilityDescription: 'Scoped, the right trigger fires a single hitscan round down the scope''s
-      own line that destroys what it hits - including SUPER-SHIELDED mass, which only the
-      Rhino''s energised blade could touch before. Charge sets the RECOVERY: the wait between
-      shots, 12s at rest down to 5.4s at Charge 10. The shot spends no resource and carries no
-      ammunition, so the cooldown IS its whole cost.'
+      own line, a 1.5 degree cone out to 3000 units, that destroys every hostile prism inside it
+      and knocks a petal of every element out of each opposing pilot it crosses. Your own
+      domain''s mass is left alone, and SUPER-SHIELDED mass is not a target until Pierce: the
+      round flies past it. Charge sets the RECOVERY: the wait between shots, 12s at rest down to
+      5.4s at Charge 10. The shot spends no resource and carries no ammunition, so the cooldown
+      IS its whole cost.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Pierce
-    UpgradeDescription: 'The round no longer stops at the first prism - it carries through up
-      to three, super-shielded or not, in one shot. Gated on the REPLICATED unlock bit rather
-      than a local level read, because it decides how much mass dies and every peer has to
-      agree.'
+    UpgradeDescription: 'The round pierces armour: SUPER-SHIELDED prisms in the cone become
+      targets, their shields are stripped and they are destroyed with the rest - the fleet''s
+      second force that can open super-shielded mass, after the Rhino''s energised blade. Gated
+      on the REPLICATED unlock bit rather than a local level read, because it decides how much
+      mass dies and every peer has to agree.'
   - Element: 2
     AbilityLabel: Seed Wall
     AbilityDescription: 'Stopping (the turret stance) or cloaking leaves a seed prism that pulls

@@ -34,7 +34,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 5.7717285, y: -43.486816}
+  m_AnchoredPosition: {x: -5.7717285, y: -43.486816}
   m_SizeDelta: {x: 90.4416, y: 27.3448}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8096232731187507729
@@ -72,7 +72,7 @@ MonoBehaviour:
   m_FillMethod: 0
   m_FillAmount: 1
   m_FillClockwise: 1
-  m_FillOrigin: 0
+  m_FillOrigin: 1
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 --- !u!1 &1190334749785048167
@@ -507,7 +507,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 15.04248, y: 12.131592}
+  m_AnchoredPosition: {x: -15.04248, y: 12.131592}
   m_SizeDelta: {x: 92.7417, y: 25.1815}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4255614443293342404
@@ -545,7 +545,7 @@ MonoBehaviour:
   m_FillMethod: 0
   m_FillAmount: 1
   m_FillClockwise: 1
-  m_FillOrigin: 0
+  m_FillOrigin: 1
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 --- !u!1 &4307188901509612615
@@ -619,7 +619,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -6.9785156, y: -15.917603}
+  m_AnchoredPosition: {x: 6.9785156, y: -15.917603}
   m_SizeDelta: {x: 94.7841, y: 25.1815}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7398991520272293629
@@ -657,7 +657,7 @@ MonoBehaviour:
   m_FillMethod: 0
   m_FillAmount: 1
   m_FillClockwise: 1
-  m_FillOrigin: 0
+  m_FillOrigin: 1
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 --- !u!1 &6116439071726984266
@@ -919,7 +919,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -4.61499, y: 39.80597}
+  m_AnchoredPosition: {x: 4.61499, y: 39.80597}
   m_SizeDelta: {x: 108.6819, y: 25.3931}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1778532647835046659
@@ -957,7 +957,7 @@ MonoBehaviour:
   m_FillMethod: 0
   m_FillAmount: 1
   m_FillClockwise: 1
-  m_FillOrigin: 0
+  m_FillOrigin: 1
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 --- !u!1001 &8476352183690256118

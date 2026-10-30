@@ -1,13 +1,15 @@
 """The Serpent's ability-row icons (Resources/ElementalAbilityMaps/Serpent.asset).
 
-  Charge  Sniper Shot         scoped, RT fires one hitscan round down the scope's line that destroys what it hits,
-                              SUPER-SHIELDED mass included; Charge sets the recovery (12 s at rest -> 5.4 s at Charge 10).
-                              Charge 5 PIERCE: the round carries through up to three prisms.
+  Charge  Sniper Shot         scoped, RT fires one hitscan round (a 1.5 degree cone) that destroys every hostile prism
+                              in it but flies past SUPER-SHIELDED mass; Charge sets the recovery (12 s -> 5.4 s).
+                              Charge 5 PIERCE: super-shielded prisms become targets (the armour is stripped).
   Mass    Seed Wall           stopping or cloaking leaves a seed that grows a herringbone wall from stolen prisms;
                               Mass sizes the bricks; Mass 5 LOCKDOWN seals the holes with danger panels on a crystal
   Space   Scope               LT opens a magnified eyepiece down the nose; Space sets the magnification; Space 5 DEEP
                               FOCUS one more step (and the walls steal shielded prisms)
-  Time    Solid Fuel Pellets  each press burns a quarter-tank pellet; overlapping burns stack; Time sets the burn length
+  Time    Solid Fuel Pellets  each press burns a quarter-tank pellet; overlapping burns stack; Time sets the burn length.
+                              KEPT as the shipped art, mirrored to fly right (Garrett, 2026-10-30): PelletSlots.png is
+                              author_serpent_pellet_icon.py's, Line_1..4 are flipped, so the kit draws nothing for it.
 
 Before: three PLACEHOLDER sprites (author_hull_icon_placeholders.py) and the shipped pellet-slot art on Time. One card
 at a time with Garrett, options in the hull's whole lockup.
@@ -18,7 +20,7 @@ yaw 0: the round head at +x, the arms trailing - the grid on 2026-10-29).
 import math
 
 import mesh_silhouette
-from canvas import N, chamfered_rect, disc, empty, fill, ring, stroke
+from canvas import N, disc, empty, fill, ring, stroke
 from specs.rhino import stella
 
 import numpy as np
@@ -65,13 +67,14 @@ CARDS = []
 REBIND = []
 
 
-# ---- Charge: Sniper Shot options (2026-10-29) ----------------------------------------------------------------------
-# WHO gains WHAT against WHAT: the Serpent, from range, deletes ONE thing nothing else but the Rhino's energised blade
-# can touch - a SUPER-SHIELDED prism (the game's stella octangula, StellatedOctahedronMeshGenerator, drawn by the
-# Rhino's spec). The round is hitscan: a straight white line, there and gone. Charge 5 PIERCE carries it through three.
-# The recovery (12 s -> 5.4 s) is the fleet's cooldown veil, which the HUD already sweeps (SerpentHUDController).
-# States: ready (the target whole, no round), fired (the round and the target shattered), recharging (the veil), and
-# Pierce fired (three shattered). Super-shielded is drawn in the "shielded" colour, as the Rhino's Space card does.
+# ---- Charge: Sniper Shot options (round 2, 2026-10-30) -------------------------------------------------------------
+# WHAT THE CODE DOES (SniperShotActionExecutor, read 2026-10-30; round 1 drew the stale card text): the round is a
+# 1.5 degree hitscan cone that destroys EVERY hostile prism inside it (pierceCount 0 = unlimited, at every tier), skips
+# the pilot's own domain, and flies PAST super-shielded mass. Charge 5 PIERCE makes super-shielded prisms targets: the
+# armour is stripped and they die with the rest. So the base card is a line cleared through ordinary mass with the
+# armoured one left standing on it, and Pierce is that one shattered. The recovery (12 s -> 5.4 s) is the fleet's
+# cooldown veil, which the HUD already sweeps (SerpentHUDController). Plain prisms are 2:1 bricks drawn in "blue" (the
+# neutral, hostile to everyone); super-shielded is the stella in "shielded", as on the Rhino's cards.
 CY = 64.0
 BEAM_W = 4.5
 
@@ -80,97 +83,95 @@ def beam(x0, x1, cy=CY, w=BEAM_W):
     return fill([(x0, cy - w / 2), (x1, cy - w / 2), (x1, cy + w / 2), (x0, cy + w / 2)])
 
 
-# A: SHOOTER. The Serpent small at the left, nose right; the round from its nose to the prism at the right.
-A_HULL = dict(box=50.0, cx=28.0, cy=CY)
-A_PRISM = (94.0, CY, 42.0)
+def brick(x, y, l=14.0, w=7.0):
+    return fill([(x - l / 2, y - w / 2), (x + l / 2, y - w / 2), (x + l / 2, y + w / 2), (x - l / 2, y + w / 2)])
+
+
+def shards(x, y, s=1.0):
+    """A destroyed brick: three fragments flung along the round's line, the debris the game keeps (mass conserved)."""
+    out = empty()
+    for dx, dy, r in ((-4.0, -4.0, 2.6), (3.0, 3.5, 2.2), (8.0, -2.0, 1.8)):
+        cx, cy = x + dx * s, y + dy * s
+        out |= fill([(cx - r, cy), (cx, cy - r), (cx + r, cy), (cx, cy + r)])
+    return out
+
+
+# A: SHOOTER. The Serpent at the left, nose right; three bricks and a super-shielded prism on its line. Fired: the
+# bricks blown apart along the round, the stella standing (the round flies past it). Pierce: the stella too.
+A_HULL = dict(box=40.0, cx=22.0, cy=CY)
+A_BRICKS = (56.0, 74.0, 118.0)
+A_STELLA = (96.0, CY, 22.0)
 
 
 def a_hull():
     return serpent(**A_HULL)
 
 
-def a_prism(broken=False):
-    x, y, r = A_PRISM
-    return _clear_of(stella(x, y, r * (0.78 if broken else 1.0), broken=broken), a_beam(), a_hull())
-
-
 def a_beam():
-    return _clear_of(beam(A_HULL["cx"] + A_HULL["box"] / 2 + 2, 124.0), a_hull(), px=2.0)
+    return _clear_of(beam(A_HULL["cx"] + A_HULL["box"] / 2 + 2, 126.0), a_hull(), a_stella(), px=2.0)
 
 
-def a_pierce():
+def a_bricks(broken=False):
     out = empty()
-    for x in (66.0, 88.0, 110.0):
-        out |= stella(x, CY, 22.0 * 0.78, broken=True)
-    return _clear_of(out, a_beam(), a_hull())
+    for x in A_BRICKS:
+        out |= shards(x, CY) if broken else brick(x, CY)
+    return out
 
 
-# B: THE ROUND. No hull: the round itself, a long slug with its tracer, punching the prism apart (the act, close up).
-def b_round():
-    slug = fill([(16.0, CY - 7), (44.0, CY - 7), (54.0, CY), (44.0, CY + 7), (16.0, CY + 7)])
-    tracer = empty()
-    for dy, x0 in ((-15.0, 6.0), (15.0, 6.0)):
-        tracer |= stroke([(x0, CY + dy), (32.0, CY + dy)], w=5.0)
-    return slug | tracer
+def a_stella(broken=False):
+    x, y, r = A_STELLA
+    return stella(x, y, r * (0.8 if broken else 1.0), broken=broken)
 
 
-def b_prism(broken=False):
-    return _clear_of(stella(92.0, CY, 50.0 * (0.8 if broken else 1.0), broken=broken), b_round(), px=3.0)
+# B: THE TUNNEL. A block of mass, no hull: the round's line cleared clean through it as negative space, the one
+# super-shielded prism left standing in the tunnel. Pierce: the tunnel runs clear through the stella too.
+B_COLS = (14.0, 34.0, 54.0, 74.0, 94.0, 114.0)
+B_ROWS = (28.0, 46.0, 64.0, 82.0, 100.0)
+B_STELLA = (64.0, CY, 20.0)
 
 
-def b_through():
-    return _clear_of(beam(52.0, 124.0, w=4.0), b_round(), px=2.0)
-
-
-def b_pierce():
+def b_block(tunnel=False):
     out = empty()
-    for x in (74.0, 96.0, 118.0):
-        out |= stella(x, CY, 22.0 * 0.8, broken=True)
-    return _clear_of(out, b_round(), b_through())
+    for j, y in enumerate(B_ROWS):
+        for i, x in enumerate(B_COLS):
+            if tunnel and y == CY:
+                continue
+            out |= brick(x + (10.0 if j % 2 else 0.0), y, l=16.0, w=8.0)
+    keep = fill([(4, 18), (124, 18), (124, 110), (4, 110)])
+    return _clear_of(out & keep, stella(*B_STELLA), px=3.0)
 
 
-# C: THE HOLE. The prism big in the centre, the round's line through it as negative space - a clean hole punched clean
-# through a shield nothing else can open. Pierce: three prisms in a row, the line through all three.
-def c_line():
-    return beam(4.0, 124.0, w=6.0)
+def b_stella(broken=False):
+    x, y, r = B_STELLA
+    return stella(x, y, r * (0.8 if broken else 1.0), broken=broken)
 
 
-def c_prism(holed=False):
-    s = stella(64.0, CY, 70.0)
-    return _clear_of(s, c_line(), px=3.0) if holed else s
+def b_line():
+    return _clear_of(beam(2.0, 126.0, w=3.0), b_stella(), px=3.0)
 
 
-def c_pierce():
-    out = empty()
-    for x in (24.0, 64.0, 104.0):
-        out |= stella(x, CY, 32.0)
-    return _clear_of(out, c_line(), px=3.0)
-
-
-# (state, which parts)
 def _card(key, title, parts, states):
     return dict(name=f"snipershot_{key}", group="snipershot", lockup_state=1, element="Charge",
                 before=ICON_DIR + "Serpent_SniperShot-PLACEHOLDER.png", title=title, parts=parts, states=states)
 
 
 CARDS += [
-    _card("a", "A  Shooter: the Serpent at the left, its hitscan round to a super-shielded prism that shatters; "
-               "Pierce: three shattered on the line",
-          dict(hull=a_hull, beam=a_beam, whole=lambda: a_prism(False), broken=lambda: a_prism(True), pierce=a_pierce),
-          [("ready: the target whole", [("whole", "shielded"), ("hull", "domain")]),
-           ("fired: the round, the sun shattered", [("beam", "white"), ("broken", "shielded"), ("hull", "domain")]),
-           ("Charge 5 Pierce: three in one shot", [("beam", "white"), ("pierce", "shielded"), ("hull", "domain")])]),
-    _card("b", "B  The round: the slug and its tracer punching a super-shielded prism apart, close up; Pierce: on through three",
-          dict(round=b_round, through=b_through, whole=lambda: b_prism(False), broken=lambda: b_prism(True), pierce=b_pierce),
-          [("ready: the target whole", [("round", "white"), ("whole", "shielded")]),
-           ("fired: the sun shattered", [("round", "white"), ("broken", "shielded")]),
-           ("Charge 5 Pierce: three in one shot", [("round", "white"), ("through", "white"), ("pierce", "shielded")])]),
-    _card("c", "C  The hole: a super-shielded prism with the round's line punched clean through it as negative space; "
-               "Pierce: through three",
-          dict(whole=lambda: c_prism(False), holed=lambda: c_prism(True), pierce=c_pierce),
-          [("ready: the target whole", [("whole", "shielded")]),
-           ("fired: holed clean through", [("holed", "shielded")]),
-           ("Charge 5 Pierce: three in one shot", [("pierce", "shielded")])]),
+    _card("a", "A  Shooter: the Serpent's round blows apart every brick on its line and flies past the super-shielded "
+               "prism; Charge 5 Pierce shatters that too",
+          dict(hull=a_hull, beam=a_beam, bricks=a_bricks, shards=lambda: a_bricks(True),
+               whole=a_stella, broken=lambda: a_stella(True)),
+          [("ready", [("bricks", "blue"), ("whole", "shielded"), ("hull", "domain")]),
+           ("fired: bricks gone, armour stands", [("beam", "white"), ("shards", "blue"), ("whole", "shielded"),
+                                                  ("hull", "domain")]),
+           ("Charge 5 Pierce: armour too", [("beam", "white"), ("shards", "blue"), ("broken", "shielded"),
+                                            ("hull", "domain")])]),
+    _card("b", "B  The tunnel: a block of mass with the round's line cleared through it, the super-shielded prism "
+               "left standing in it; Charge 5 Pierce clears it too",
+          dict(block=b_block, tunnel=lambda: b_block(True), line=b_line, whole=b_stella,
+               broken=lambda: b_stella(True)),
+          [("ready", [("block", "blue"), ("whole", "shielded")]),
+           ("fired: the tunnel, armour stands", [("tunnel", "blue"), ("line", "white"), ("whole", "shielded")]),
+           ("Charge 5 Pierce: armour too", [("tunnel", "blue"), ("line", "white"), ("broken", "shielded")])]),
 ]
 
 
@@ -266,100 +267,6 @@ CARDS += [
                 [("trigger off (flight view, 60 deg)", [("hull", "domain"), ("flight", "white")]),
                  ("full zoom at rest (22 deg)", [("hull", "domain"), ("rest", "white")]),
                  ("Space 5 Deep Focus (13.8 deg)", [("hull", "domain"), ("deep", "white")])]),
-]
-
-
-# ---- Time: Solid Fuel Pellets options (2026-10-29) ----------------------------------------------------------------
-# WHO gains WHAT: the Serpent spends its tank in four fixed pellets (a quarter each), and burns that overlap stack -
-# one is 3x cruise, four at once 9x. Time sets how long a pellet BURNS (x1 at rest to x1.6 at Time 10), never how fast.
-# No Time 5 upgrade is authored. The card is also the tank's gauge: the HUD fills four pip Images (boostPip1-4,
-# SerpentVesselHUDView.PaintPips), so every option is four pellets that fill one by one.
-# A is the shipped art as it stands (PelletSlots + Line_1..4, the BEFORE row); B and C redraw it.
-PELLET_YS = (28.0, 52.0, 76.0, 100.0)
-TIME_BURN = (1.0, 1.6)
-
-
-# B: THE PELLETS. Four solid-fuel grains stacked, nose right; a burning grain trails its plume, whose length is its
-# burn time (x1 at rest, x1.6 at Time 10). Several burning at once = the overlap.
-def pellet(i):
-    y = PELLET_YS[i]
-    return chamfered_rect(70.0, y - 8.0, 120.0, y + 8.0, 4.0)
-
-
-def pellets(which):
-    out = empty()
-    for i in which:
-        out |= pellet(i)
-    return out
-
-
-def plume(i, burn=1.0):
-    y = PELLET_YS[i]
-    x1 = 64.0
-    x0 = x1 - 34.0 * burn
-    out = empty()
-    for dy, k in ((0.0, 1.0), (-5.0, 0.7), (5.0, 0.55)):
-        out |= stroke([(x1 - (x1 - x0) * k, y + dy), (x1, y + dy)], w=3.5)
-    return out
-
-
-def plumes(which, burn=1.0):
-    out = empty()
-    for i in which:
-        out |= plume(i, burn)
-    return out
-
-
-# C: THE OVERLAP. The Serpent nose right; behind it one exhaust streak per burning pellet, the streaks stacked - one
-# pellet, then four overlapping. The pellets in hand are four ticks under the hull.
-C2_HULL = dict(box=56.0, cx=84.0, cy=56.0)
-
-
-def c2_hull():
-    return serpent(**C2_HULL)
-
-
-def c2_streaks(n, burn=1.0):
-    x1 = C2_HULL["cx"] - C2_HULL["box"] / 2 + 4
-    out = empty()
-    for i in range(n):
-        dy = (i - (n - 1) / 2) * 9.0
-        out |= stroke([(x1 - 46.0 * burn, 56.0 + dy), (x1, 56.0 + dy)], w=5.0)
-    return _clear_of(out, c2_hull(), px=2.0)
-
-
-def c2_ticks(n):
-    out = empty()
-    for i in range(n):
-        x = 34.0 + i * 20.0
-        out |= chamfered_rect(x, 104.0, x + 15.0, 114.0, 3.0)
-    return out
-
-
-def _fuel_card(key, title, parts, states):
-    return dict(name=f"pellets_{key}", group="pellets", lockup_state=1, element="Time",
-                before="Assets/_Graphics/Design Assests/HUD UI/Serpent Fuel/PelletSlots.png", title=title,
-                parts=parts, states=states)
-
-
-CARDS += [
-    _fuel_card("b", "B  The pellets: four solid-fuel grains, each burning one trailing its plume; plume length is the "
-                    "burn time (x1.6 at Time 10)",
-               dict(all4=lambda: pellets(range(4)), left2=lambda: pellets((2, 3)), b01=lambda: plumes((0, 1)),
-                    b01t=lambda: plumes((0, 1), TIME_BURN[1]), b0123=lambda: plumes(range(4)),
-                    empty01=lambda: pellets((0, 1)), empty0123=lambda: pellets(range(4))),
-               [("four in hand", [("all4", "white")]),
-                ("two burning, overlapped", [("empty01", "white", 0.25), ("b01", "white"), ("left2", "white")]),
-                ("Time 10: burns 1.6x longer", [("empty01", "white", 0.25), ("b01t", "white"), ("left2", "white")]),
-                ("all four at once (9x)", [("empty0123", "white", 0.25), ("b0123", "white")])]),
-    _fuel_card("c", "C  The overlap: the Serpent with one exhaust streak per burning pellet, the pellets in hand as "
-                    "four ticks below",
-               dict(hull=c2_hull, t4=lambda: c2_ticks(4), t3=lambda: c2_ticks(3), t0=lambda: c2_ticks(4),
-                    s1=lambda: c2_streaks(1), s1t=lambda: c2_streaks(1, TIME_BURN[1]), s4=lambda: c2_streaks(4)),
-               [("four in hand", [("hull", "domain"), ("t4", "white")]),
-                ("one burning (3x)", [("hull", "domain"), ("s1", "white"), ("t3", "white")]),
-                ("Time 10: burns 1.6x longer", [("hull", "domain"), ("s1t", "white"), ("t3", "white")]),
-                ("all four at once (9x)", [("hull", "domain"), ("s4", "white"), ("t0", "white", 0.25)])]),
 ]
 
 

@@ -16,6 +16,11 @@ leaves every pellet at exactly 255, and scales the antialiased pellet edges (whi
 over plate) proportionally. The canvas is kept at the source's 274 x 274 so the Line overlays
 authored against Base.png's frame still land on their slots.
 
+The output is MIRRORED left to right (Garrett, 2026-10-30: "point the BEFORE time icons ... to the
+right"): Base.png's pellets fly left, the card's fly right, nose first, like every hull on the row.
+Line_1..4 were flipped to match, their anchored x negated and their fill origin moved to the right
+(the pellet's round nose) in SerpentHUDVariant.prefab.
+
     python3 Tools/Build/author_serpent_pellet_icon.py           # (re)derive
     python3 Tools/Build/author_serpent_pellet_icon.py --check   # fail if it drifted
 
@@ -135,7 +140,8 @@ def main(argv):
             assert not (src[i] == PLATE_ALPHA and dst[i] != 0), "plate pixel survived"
             assert not (src[i] == 255 and dst[i] != 255), "opaque pellet pixel lost alpha"
 
-    png = encode_png(w, h, keyed)
+    mirrored = [bytearray(b"".join(bytes(row[x * 4:x * 4 + 4]) for x in range(w - 1, -1, -1))) for row in keyed]
+    png = encode_png(w, h, mirrored)
     meta = meta_for(OUTPUT_GUID)
     have = open(OUTPUT, "rb").read() if os.path.exists(OUTPUT) else None
     have_meta = open(OUTPUT + ".meta", encoding="utf-8").read() if os.path.exists(OUTPUT + ".meta") else None

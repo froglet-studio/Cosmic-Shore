@@ -37,6 +37,9 @@ partial fill at half brightness, and spending snaps the pips down at once while 
 (`pipFillRate`). The pips read the fuel resource itself, never a count of presses, so the readout
 and the gate that decides whether a press burns cannot disagree.
 
+- **Mirrored to fly right** (Garrett, 2026-10-30), nose first like every hull on the row: the
+  generator mirrors `PelletSlots.png`, `Line_1..4.png` are flipped, their anchored x negated and
+  their fill origin moved to the right (the pellet's round nose) on `SerpentHUDVariant.prefab`.
 - `PelletSlots.png` is **derived**, never hand-edited: `Tools/Build/author_serpent_pellet_icon.py`
   keys the translucent decagon plate and its rim stroke out of `Base.png` (the ability lockup
   retired the fleet's decagon backdrops — every card draws its own trapezoid plate). `--check`
