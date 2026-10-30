@@ -1019,6 +1019,29 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 
 ## Follow-ups
 
+### Refactor rows (2026-10-30 snap-aim + exit-buff ship pass, `cece/sweet-newton-78wr4o` — rows only)
+
+- **`ThresherChainSolver.LaunchLeadRadians` has no game caller now (debt CREATED).** Aimed launches leave with no
+  lead since 2026-10-30, and `ThresherExecutor.SetLaunchLead` was removed with its one caller, but the solver keeps
+  the lead (`TryLaunch`'s chord branch) because `ArmedLaunchWithALead_LeavesAlongTheOrbit_WithoutALead_AlongTheAim`
+  pins it and the plant lab still leads its launch. Retire it with the lab's next round, or keep it as the lab's.
+  Measure: `grep -rn "LaunchLeadRadians" Assets/_Scripts --include=*.cs | grep -v Tests/` → the solver alone.
+- **The plant lab flies a different aimed launch than the game (debt CREATED; incompleteness of a lab, a report).**
+  The lab still winds an aimed launch's spin down with a lead, has no snap aim, no stick ease and no exit buff.
+  `parity.cjs` passes because it covers the solver, not the transformer or the camera. Port the four when the lab
+  next runs a round. Measure: `grep -n "rlSpinDown\|armLaunch(" Docs/Studios/ThresherPlantLab.html`.
+- **Remote copies do not know the exit buff (debt CREATED).** A guest's machine steps the host's ball from the hull's
+  replicated motion (the `LateUpdate` fallback), which now includes the buff's extra travel, while its own chain
+  physics does not carry the rig: the guest's copy of the ball can trail far behind or re-seed beside the hull
+  (past 3 chain lengths) during the 8 s. Same shape as the "remote replica never arms" row below. Measure in MPPM:
+  host makes an aimed launch, guest watches the host's ball for 8 s.
+- **Three `author_*` generators are red on bleeding-edge itself (debt WALKED PAST, not this branch's).** `gates.sh`
+  on this branch and on a clean `origin/bleeding-edge` (45871264) worktree fail identically:
+  `author_meerkat_assets.py` (`MeerkatWormholeConfig.asset: onCombatHitLanded is not Event_CombatHitStats`),
+  `author_undertow_assets.py` (`ScarabCavitationExplosionImpactorDataContainer.asset` line 16 differs) and
+  `author_voyage_assets.py` (`Toy_Voyage.asset` drifted). Each needs its owner to say whether the asset or the
+  generator is right. Measure: `python3 Tools/Build/author_<name>_assets.py --check`.
+
 ### Refactor rows (2026-10-21 launch-view ship pass, `cece/youthful-johnson-hccyzf` — rows only)
 
 - **The launch line's three numbers are solver constants, not dials (debt CREATED).**
