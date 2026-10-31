@@ -15,12 +15,11 @@ MonoBehaviour:
   Mode: 73
   IsMultiplayer: 1
   DisplayName: Serpentine
-  Description: Serpents only, and it is a dirty race through a living cell. A living plant
-    guards every ring - plain at first, armoured and then dangerous as the intensity rises.
-    Slip round it, or hit its heart, with a round or your hull through its middle, and the
-    whole plant falls. Cloak just past a ring and a
-    Seed Wall grows in the way of whoever is behind you. Two laps. Fastest domain home
-    wins.
+  Description: Serpents only, and it is a dirty race through a living cell. A great shape
+    closes every ring - coiled at first, then fanged, then an iris - and its weave burns
+    a careless hull. Slip out through a gap, or shoot or ram its gold core and the whole
+    shape comes apart. Cloak just past a ring and a Seed Wall grows in the way of whoever
+    is behind you. Two laps. Fastest domain home wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 717a8f247ddd4f47b1c6205902959fab, type: 3}

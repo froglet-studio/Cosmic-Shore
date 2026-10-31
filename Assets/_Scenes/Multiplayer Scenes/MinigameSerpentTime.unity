@@ -833,11 +833,6 @@ MonoBehaviour:
   maxPlausibleSpeed: 1400
   reportResyncSeconds: 3
   debrisPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  guardFloraByElement:
-  - {fileID: 11400000, guid: 098b88aeed1303f1d57943281536cd5b, type: 2}
-  - {fileID: 11400000, guid: e06372730b42011cf38fa299e2dea49f, type: 2}
-  - {fileID: 11400000, guid: 8cca919ddda4e08b0a331d16d3fef647, type: 2}
-  - {fileID: 11400000, guid: 1b5b7c09e9e3db78d13b034d15d6286e, type: 2}
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

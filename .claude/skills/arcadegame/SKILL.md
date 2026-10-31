@@ -220,11 +220,14 @@ Serpentine (Serpent Time reshaped, 2026-10-31, same branch) taught four more:
 - **Show the course with the cell, not a drawn track**: `SnowChanger.SetFlow(IFlow)` points the cytoplasm's shards
   along whatever a mode answers per shard (Serpentine: the nearest leg of the lap, leaning toward the line), and
   null restores the crystal law. A cell with no crystal never built its shards; `SetFlow` builds them.
-- **An obstacle a hit can CLEAR is a plant felled through its heart, by the mode**: a joust leaves a plant's plates
-  standing as a skeleton (`LifeForm.WitherToSkeleton`), so it clears nothing; the ordinary flora death blows the rest
-  apart. The mode watches each guard's heart (a hull within reach, or a sniper round read off the shipped rifle:
-  its cooldown rising is the shot) and damages every plate through `Prism.Damage(devastate: true)`, nearest the heart
-  first, a capped number a frame; the plant then dies the ordinary death itself. No vessel or flora code changes.
+- **An obstacle a hit can CLEAR is a shape the MODE lays, with a core.** A plant felled through its heart worked (a
+  joust leaves a plant's plates standing, so the mode had to damage them itself) but read as "boring flora" and cost a
+  plant's spindles and growth; Serpentine replaced it the same day with `SerpentineGate`: closed-form prisms after
+  Breakwater's stations (plain shell, danger weave with exits carved for the hull, a plain core), laid on every peer from
+  the course. The mode watches the core's prisms (`Holds`: alive and still its owner id) and, when one goes, damages the
+  rest (devastating, core outward, a capped number a frame) and regrows it later. Exits carved by TRIMMING each bar at
+  the exit's edge, not dropping whole chords, keep the weave closed right up to the hole; a geometry test samples the
+  mouth for any hull-sized hole outside the exits.
 - **A colon in card copy breaks the WHOLE card, silently, and it happened twice to one mode.** The generator writes
   `Description:` as a plain YAML scalar, so `rises:` at a line end (or `fuel: tap`) starts a new key: Unity keeps the
   fields above it and drops everything after - the card shows its name with white art, no controls, and the mode does
