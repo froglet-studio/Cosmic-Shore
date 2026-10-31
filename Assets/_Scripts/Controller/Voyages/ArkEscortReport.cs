@@ -186,6 +186,11 @@ namespace CosmicShore.Gameplay
         public float PacifyMinVolume;
         public float PacifyNucleusSeconds;
         public int PacifiedLegs;
+        /// <summary>The escort's seed (the corridor and hostile rolls), whether this machine followed the host's course,
+        /// and how many seats humans held.</summary>
+        public int Seed;
+        public bool Following;
+        public int HumanSeats = 1;
         public List<SeatStats> RunSeats = new();
         public List<Param> Params = new();
         /// <summary>Every override key pattern this build accepts (<see cref="ArkEscortParams"/>).</summary>

@@ -130,21 +130,31 @@ namespace CosmicShore.Gameplay
         /// <paramref name="aiLocal"/> hands the local seat to the AI as well (the escort sim).
         /// </summary>
         public void SetSailEscort(int difficulty, MenuCrystalClickHandler freestyle, SavedSquad squad = null,
-            bool aiLocal = false)
+            bool aiLocal = false) => SetSailEscort(difficulty, freestyle, squad, aiLocal, null);
+
+        /// <summary>As above, following the host's <paramref name="course"/> when given (a friend's machine).</summary>
+        public void SetSailEscort(int difficulty, MenuCrystalClickHandler freestyle, SavedSquad squad, bool aiLocal,
+            VoyageCourse course)
         {
             if (IsUnderway || !_def || !_def.ArkEscort) return;
+            // A friend never starts an escort of its own while in a host's session: the host's course sails it.
+            if (course == null && !VoyageCourseLink.IsLeader)
+            {
+                CSDebug.LogWarning("[VoyageHarbour] Only the host sets sail on an Ark escort; friends follow its course.");
+                return;
+            }
             CancelHandoff();
             if (!freestyle || freestyle.IsInFreestyle)
             {
-                SailEscort(difficulty, squad, aiLocal);
+                SailEscort(difficulty, squad, aiLocal, course);
                 return;
             }
             _handoff = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             freestyle.ToggleTransition();
-            EscortOnceFlying(difficulty, squad, aiLocal, freestyle, _handoff.Token).Forget();
+            EscortOnceFlying(difficulty, squad, aiLocal, course, freestyle, _handoff.Token).Forget();
         }
 
-        async UniTaskVoid EscortOnceFlying(int difficulty, SavedSquad squad, bool aiLocal,
+        async UniTaskVoid EscortOnceFlying(int difficulty, SavedSquad squad, bool aiLocal, VoyageCourse course,
             MenuCrystalClickHandler freestyle, CancellationToken ct)
         {
             float deadline = Time.unscaledTime + FreestyleHandoffSeconds;
@@ -158,10 +168,10 @@ namespace CosmicShore.Gameplay
                 }
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
-            if (!ct.IsCancellationRequested) SailEscort(difficulty, squad, aiLocal);
+            if (!ct.IsCancellationRequested) SailEscort(difficulty, squad, aiLocal, course);
         }
 
-        void SailEscort(int difficulty, SavedSquad squad, bool aiLocal)
+        void SailEscort(int difficulty, SavedSquad squad, bool aiLocal, VoyageCourse course)
         {
             var vessel = Alive(_context?.GameData?.LocalPlayer?.Vessel);
             if (vessel?.Transform == null)
@@ -176,7 +186,7 @@ namespace CosmicShore.Gameplay
                 _escort = go.AddComponent<ArkEscortRun>();
                 _escort.Configure(_def, _def.ArkEscort, _context, transform.parent, RaiseChanged);
             }
-            _escort.SetSail(vessel, squad ?? VoyageRun.ActiveSquad(_context), difficulty, aiLocal);
+            _escort.SetSail(vessel, squad ?? VoyageRun.ActiveSquad(_context), difficulty, aiLocal, course);
             RaiseChanged();
         }
 
@@ -204,6 +214,18 @@ namespace CosmicShore.Gameplay
 
         void OnCourse(VoyageCourse course)
         {
+            switch (course.Kind)
+            {
+                case VoyageCourseKind.EscortSail:
+                    // The host set sail on an Ark escort: sail the same one in the seat it gave this machine.
+                    if (IsUnderway) return;
+                    SetSailEscort(course.Difficulty,
+                        FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include), null, false, course);
+                    return;
+                case VoyageCourseKind.EscortEnd:
+                    if (IsEscorting && _escort.IsFollowing) _escort.GiveUp("the host's escort ended");
+                    return;
+            }
             EnsureRun();
             _run.Follow(course);
         }

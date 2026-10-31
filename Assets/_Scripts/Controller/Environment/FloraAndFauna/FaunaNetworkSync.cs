@@ -175,6 +175,15 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // A satellite cell (a voyage corridor's world) is stood by every peer for itself, at that peer's own
+            // coordinates and with its own creatures: the host's copy must not be spawned onto the friends' machines.
+            var host = spawned.HostCell;
+            if (host && host.IsSatellite)
+            {
+                NetworkSceneObjectGuard.NeutralizeStray(spawned.gameObject, "fauna of a peer-local satellite cell");
+                return;
+            }
+
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsListening || !nm.IsServer)
             {

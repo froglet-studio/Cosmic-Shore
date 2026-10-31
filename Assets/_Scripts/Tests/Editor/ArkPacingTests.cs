@@ -171,6 +171,36 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EscortCourseRoundTripsThroughJson()
+        {
+            var course = new CosmicShore.Data.VoyageCourse
+            {
+                Kind = CosmicShore.Data.VoyageCourseKind.EscortSail,
+                Difficulty = 6, Seed = 123456789,
+                HomeX = 1.5f, HomeY = -2f, HomeZ = 300f, HomeQx = 0f, HomeQy = 0.7071068f, HomeQz = 0f, HomeQw = 0.7071068f,
+                SeatClients = new List<long> { 0, 3, -1 },
+            };
+            var back = JsonUtility.FromJson<CosmicShore.Data.VoyageCourse>(JsonUtility.ToJson(course));
+            Assert.AreEqual(CosmicShore.Data.VoyageCourseKind.EscortSail, back.Kind);
+            Assert.AreEqual(6, back.Difficulty);
+            Assert.AreEqual(123456789, back.Seed);
+            Assert.AreEqual(300f, back.HomeZ);
+            Assert.AreEqual(0.7071068f, back.HomeQw, 1e-6f);
+            CollectionAssert.AreEqual(new List<long> { 0, 3, -1 }, back.SeatClients);
+        }
+
+        [Test]
+        public void ArkPaceIsAPureFunctionOfPosition()
+        {
+            // Two peers with the same destination and departure read the same speed at the same place, whatever they
+            // did before (no acceleration state): the per-peer Arks agree but for when they started.
+            var a = P;
+            var b = ArkSpeedProfile.Default.Sanitized();
+            for (float d = -1500f; d <= 1500f; d += 37f)
+                Assert.AreEqual(a.SpeedAt(d, 200f - d), b.SpeedAt(d, 200f - d));
+        }
+
+        [Test]
         public void AiKeysGoToTheExternalSetter()
         {
             var before = ArkEscortParams.ExternalSetter;

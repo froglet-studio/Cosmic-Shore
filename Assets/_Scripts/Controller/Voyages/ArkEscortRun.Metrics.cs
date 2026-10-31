@@ -320,6 +320,7 @@ namespace CosmicShore.Gameplay
 
         void FinishMetrics()
         {
+            AnnounceEnd();
             _report.MeanArkSpeed = _speedSamples > 0 ? _speedSum / _speedSamples : 0f;
             foreach (var kv in _seatNames)
             {
@@ -371,8 +372,8 @@ namespace CosmicShore.Gameplay
         {
             float line = _escort ? _escort.PacifyShare : 0f;
             if (line <= 0f || _report == null) return;
-            var nm = Unity.Netcode.NetworkManager.Singleton;
-            if (nm != null && nm.IsListening && !nm.IsServer) return;
+            // Every peer: the escort's worlds are satellite cells each machine stands for itself (no network identity),
+            // so each pacifies its own copy from its own volumes; the pin does not (and need not) replicate.
             var squad = SquadDomain;
             float minVolume = _escort.PacifyMinVolume;
             float dwellNeed = _escort.PacifyNucleusSeconds;
@@ -466,6 +467,23 @@ namespace CosmicShore.Gameplay
                 if (s?.Transform == null || ReferenceEquals(s, local)) continue;
                 _seatScratch.Add((_seatOf.TryGetValue(s, out int seat) ? seat : -1, s));
             }
+            // The party's other humans (their own seats; seat -1 when the course gave them none).
+            var players = _context?.GameData?.Players;
+            if (players == null) return;
+            foreach (var p in players)
+            {
+                if (p == null || p.IsInitializedAsAI || p.IsLocalUser) continue;
+                var s = Alive(p.Vessel);
+                if (s?.Transform == null || ReferenceEquals(s, local) || ContainsSeat(s)) continue;
+                _seatScratch.Add((-1, s));
+            }
+        }
+
+        bool ContainsSeat(IVesselStatus s)
+        {
+            for (int i = 0; i < _seatScratch.Count; i++)
+                if (ReferenceEquals(_seatScratch[i].status, s)) return true;
+            return false;
         }
 
         static string NameOf(IVesselStatus status) => status?.Player != null ? status.Player.Name ?? string.Empty : string.Empty;

@@ -276,6 +276,11 @@ namespace CosmicShore.Gameplay
         /// Start a voyage from the local vessel's current pose. Idempotent: a second call while
         /// one is live is a no-op, so re-entering the toy cannot double-start.
         /// </summary>
+        /// <summary>The corridor's origin and heading for the next <see cref="Begin"/> instead of the local vessel's pose:
+        /// a party follows the host's (the Ark escort's course), so every peer stands its worlds in the same places.
+        /// Consumed by Begin.</summary>
+        public Pose? HomeOverride { get; set; }
+
         public void Begin(IVesselStatus localVessel)
         {
             if (IsRunning) return;
@@ -284,7 +289,8 @@ namespace CosmicShore.Gameplay
             _beginning = true;
             _warnedCreationBacklog = false;
             HoldCreationTier(true);
-            _home = new Pose(localVessel.Transform.position, localVessel.Transform.rotation);
+            _home = HomeOverride ?? new Pose(localVessel.Transform.position, localVessel.Transform.rotation);
+            HomeOverride = null;
             _hasHome = true;
 
             BeginVoyageAsync(localVessel, this.GetCancellationTokenOnDestroy()).Forget();

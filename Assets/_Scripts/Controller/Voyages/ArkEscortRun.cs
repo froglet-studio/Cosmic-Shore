@@ -120,9 +120,19 @@ namespace CosmicShore.Gameplay
         /// Deploy <paramref name="squad"/> and sail the escort at <paramref name="difficulty"/> (1-9).
         /// <paramref name="aiLocal"/> hands the local pilot's own seat to the AI too (the sim).
         /// </summary>
-        public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal)
+        public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal) =>
+            SetSail(local, squad, difficulty, aiLocal, null);
+
+        /// <summary>
+        /// Sail as the party's LEADER (<paramref name="course"/> null: this machine picks the seed and home and tells the
+        /// party) or as a FOLLOWER of the host's <see cref="VoyageCourseKind.EscortSail"/> course (the host's difficulty,
+        /// seed, home pose and this machine's seat). Each machine runs its own Ark and worlds (Docs/Voyages/SLICE.md §5);
+        /// the seed and home make them the same worlds in the same places.
+        /// </summary>
+        public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal, VoyageCourse course)
         {
             if (_active || local?.Transform == null || !_def || !_escort || squad == null) return false;
+            BeginCoop(local, ref squad, ref difficulty, course);
             UseRuntimeEscort(difficulty);
             var tier = _escort.TierFor(difficulty);
             if (tier == null || _escort.Legs.Count == 0)
@@ -134,7 +144,7 @@ namespace CosmicShore.Gameplay
             _squad = squad;
             _difficulty = Mathf.Clamp(difficulty, ArkEscortSO.MinDifficulty, ArkEscortSO.MaxDifficulty);
             _aiLocal = aiLocal;
-            _rng = new System.Random(_difficulty * 7919 + System.Environment.TickCount);
+            _rng = new System.Random(_difficulty * 7919 + _seed);   // the same hostile rolls on every peer
             _survived = _fallen = false;
             _endAt = -1f;
             _leg = -1;
@@ -145,6 +155,7 @@ namespace CosmicShore.Gameplay
             EnsureSea();
             _cfg = _def.WithArk ? _def.WithArk.BuildConfig(_escort.VoyageName) : new ArkwayConfig { DisplayName = _escort.VoyageName };
             _cfg.Cells = _escort.Worlds(_difficulty);
+            _cfg.Seed = _seed;   // the same corridor headings on every peer
             _cfg.ArkSpeed *= tier.ArkSpeed;
             ApplyPacing(tier);
             if (_reactor) Destroy(_reactor);
@@ -176,10 +187,12 @@ namespace CosmicShore.Gameplay
 
             BeginMetrics(tier);
             _active = true;
+            AnnounceSail();
             _context_?.Uninstall();
             _context_ = new ArkEscortContext(this);
             _context_.Install();
             Deploy(local, VoyageRun.LiveDomain(_context));
+            _sea.HomeOverride = _home;
             _sea.Begin(local);
             return true;
         }
@@ -239,6 +252,8 @@ namespace CosmicShore.Gameplay
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
             {
                 if (seat == mySeat) continue;
+                // A friend in the party flies this seat themselves (the course's seat list): AI only fills empty seats.
+                if (IsHumanSeat(seat)) continue;
                 var slot = _squad.GetSlot(seat);
                 if (!VesselRequirement.IsConcrete(slot.Vessel)) continue;
                 // A hull with no registered prefab (Falcon, Termite, Shrike) cannot be released: the seat sails empty,
