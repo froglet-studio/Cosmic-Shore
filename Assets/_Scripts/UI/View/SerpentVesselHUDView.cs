@@ -52,12 +52,39 @@ namespace CosmicShore.UI
         [Tooltip("The panels' colour: the danger tint (ElementalBarsConfigSO.FireColor).")]
         [SerializeField] private Color seedWallPanelColor = new Color(1f, 0.3294f, 0.102f, 1f);
 
+        [Header("Scope card (CHARGE)")]
+        [Tooltip("The centred reticle (Serpent_ScopeReticle), white. Hidden at Charge 5, where the reticle moves onto " +
+                 "an afterimage.")]
+        [SerializeField] private Image scopeReticleIcon;
+        [Tooltip("Hunter's Sight (Charge 5): the rival's afterimages (Serpent_ScopeAfterimages).")]
+        [SerializeField] private Image scopeAfterimagesIcon;
+        [Tooltip("Hunter's Sight (Charge 5): the rival (Serpent_ScopeRival), white.")]
+        [SerializeField] private Image scopeRivalIcon;
+        [Tooltip("Hunter's Sight (Charge 5): the reticle on the oldest afterimage (Serpent_ScopeHunterReticle).")]
+        [SerializeField] private Image scopeHunterReticleIcon;
+        [Tooltip("The afterimages' white, faded so the rival itself reads as the solid one.")]
+        [SerializeField] private Color scopeAfterimageColor = new Color(1f, 1f, 1f, 0.6f);
+        [Tooltip("The Hunter's Sight reticle: the danger tint (ElementalBarsConfigSO.FireColor).")]
+        [SerializeField] private Color scopeHunterReticleColor = new Color(1f, 0.3294f, 0.102f, 1f);
+
         [Header("Cloak / Sniper Shot card (SPACE)")]
-        [Tooltip("The SPACE card's picture while the scope is down: the cloak (unscoped RT).")]
-        [SerializeField] private Sprite spaceCloakSprite;
-        [Tooltip("The SPACE card's picture while the scope is held: the sniper shot (scoped RT). The " +
-                 "card swaps pictures in place so its trigger glyph stays where it is.")]
-        [SerializeField] private Sprite spaceSniperSprite;
+        [Tooltip("Unscoped (the right trigger cloaks): the Serpent's cloaked outline (Serpent_CloakHull), domain colour.")]
+        [SerializeField] private Image cloakHullIcon;
+        [Tooltip("Unscoped: the trail between the seed and the hull (Serpent_CloakTrail), domain colour at cloakTrailAlpha.")]
+        [SerializeField] private Image cloakTrailIcon;
+        [Tooltip("Unscoped: the super-shielded seed the cloak leaves (Serpent_CloakSeed), the domain's shielded colour.")]
+        [SerializeField] private Image cloakSeedIcon;
+        [Tooltip("Scope held (the right trigger fires): the Serpent (Serpent_SniperHull), domain colour.")]
+        [SerializeField] private Image sniperHullIcon;
+        [Tooltip("Scope held: the round's line (Serpent_SniperBeam), white.")]
+        [SerializeField] private Image sniperBeamIcon;
+        [Tooltip("Scope held: the bricks the round cleared (Serpent_SniperShards), sniperShardColor.")]
+        [SerializeField] private Image sniperShardsIcon;
+        [Tooltip("Scope held: the super-shielded prism the round breaks (Serpent_SniperStar), the domain's shielded colour.")]
+        [SerializeField] private Image sniperStarIcon;
+        [SerializeField, Range(0f, 1f)] private float cloakTrailAlpha = 0.5f;
+        [Tooltip("The cleared bricks: the HUD's blue (ElementalBarsConfigSO.BlueColor).")]
+        [SerializeField] private Color sniperShardColor = new Color(0.2196f, 0.5098f, 1f, 1f);
 
         bool _scopedShown;
         bool _scopedSeeded;
@@ -82,6 +109,12 @@ namespace CosmicShore.UI
             InitializeShieldHUD();
             InitializeBoostPips();
             SetFivePellets(IsAbilityUpgraded(Element.Time));
+            SetHuntersSight(IsAbilityUpgraded(Element.Charge));
+            if (scopeAfterimagesIcon) scopeAfterimagesIcon.color = scopeAfterimageColor;
+            if (scopeHunterReticleIcon) scopeHunterReticleIcon.color = scopeHunterReticleColor;
+            if (sniperShardsIcon) sniperShardsIcon.color = sniperShardColor;
+            _scopedSeeded = false;
+            SetScoped(false);
         }
 
         void BuildBoostPipCache()
@@ -100,18 +133,50 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// The right trigger cloaks unscoped and fires the sniper scoped, so the SPACE card shows
-        /// whichever the trigger will do now. Both sprites must be wired for it to swap; with either
-        /// missing the card keeps its authored picture.
+        /// The SPACE card's tints: the hulls and the trail in the pilot's <paramref name="domain"/> colour, the seed and
+        /// the prism in its <paramref name="shielded"/> colour. A shielded colour with alpha 0 (the palette has not
+        /// resolved) leaves those two parts as authored.
+        /// </summary>
+        public void SetCloakSniperColors(Color domain, Color shielded)
+        {
+            if (cloakHullIcon) cloakHullIcon.color = domain;
+            if (sniperHullIcon) sniperHullIcon.color = domain;
+            if (cloakTrailIcon) cloakTrailIcon.color = new Color(domain.r, domain.g, domain.b, domain.a * cloakTrailAlpha);
+            if (shielded.a <= 0f) return;
+            if (cloakSeedIcon) cloakSeedIcon.color = shielded;
+            if (sniperStarIcon) sniperStarIcon.color = shielded;
+        }
+
+        /// <summary>
+        /// The right trigger cloaks unscoped and fires the sniper scoped, so the SPACE card shows whichever the trigger
+        /// will do now: one set of parts or the other, in the same slot, so the trigger glyph never moves.
         /// </summary>
         public void SetScoped(bool scoped)
         {
             if (_scopedSeeded && scoped == _scopedShown) return;
             _scopedSeeded = true;
             _scopedShown = scoped;
-            if (!spaceCloakSprite || !spaceSniperSprite) return;
-            if (TryGetAbilityIcon(Element.Space, out var icon) && icon)
-                icon.sprite = scoped ? spaceSniperSprite : spaceCloakSprite;
+            Show(cloakHullIcon, !scoped);
+            Show(cloakTrailIcon, !scoped);
+            Show(cloakSeedIcon, !scoped);
+            Show(sniperHullIcon, scoped);
+            Show(sniperBeamIcon, scoped);
+            Show(sniperShardsIcon, scoped);
+            Show(sniperStarIcon, scoped);
+        }
+
+        /// <summary>Hunter's Sight (Charge 5): the reticle leaves the centre for the rival's oldest afterimage.</summary>
+        void SetHuntersSight(bool on)
+        {
+            Show(scopeReticleIcon, !on);
+            Show(scopeAfterimagesIcon, on);
+            Show(scopeRivalIcon, on);
+            Show(scopeHunterReticleIcon, on);
+        }
+
+        static void Show(Image part, bool on)
+        {
+            if (part) part.enabled = on;
         }
 
         /// <summary>Lockdown (Mass 5) seals the card's closed holes with their danger panels.</summary>
@@ -120,6 +185,7 @@ namespace CosmicShore.UI
             base.SetAbilityUpgraded(element, upgraded);
             if (element == Element.Mass && seedWallPanelsIcon) seedWallPanelsIcon.enabled = upgraded;
             if (element == Element.Time) SetFivePellets(upgraded);
+            if (element == Element.Charge) SetHuntersSight(upgraded);
         }
 
         /// <summary>

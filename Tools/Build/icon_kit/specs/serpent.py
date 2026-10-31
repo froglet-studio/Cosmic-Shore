@@ -192,25 +192,17 @@ def b_after():
     return _clear_of(_b_shift(afterimages()), b_wedge(), px=1.5)
 
 
-def _scope_card(key, title, parts, states):
-    return dict(name=f"scope_{key}", group="scope", lockup_state=1, element="Charge",
-                before=ICON_DIR + "Serpent_Scope-PLACEHOLDER.png", title=title, parts=parts, states=states)
-
-
+# Garrett picked A (2026-10-31). The card is parts so the HUD can show Hunter's Sight at Charge 5: below it the frame and
+# the centred reticle; at it the reticle moves onto the oldest afterimage (danger) with the rival and its afterimages.
 CARDS += [
-    _scope_card("a", "A  The eyepiece: the Charge-petal eyepiece and the reticle at the 12 deg zoom's true size; "
-                     "Hunter's Sight: a rival trailing afterimages, the reticle on one",
-                dict(frame=eyepiece_frame, ret=a_eyepiece_reticle, hret=a_hunter_reticle, rival=a_hunter_rival,
-                     after=a_hunter_after),
-                [("the scope", [("frame", "white"), ("ret", "white")]),
+    dict(name="scope", element="Charge", before=ICON_DIR + "Serpent_Scope-PLACEHOLDER.png",
+         title="Scope (Charge, picked A): the Charge-petal eyepiece and the reticle at the 12 deg zoom's true size; "
+               "Charge 5 Hunter's Sight: a rival trailing afterimages, the reticle on the oldest",
+         parts=dict(frame=eyepiece_frame, ret=a_eyepiece_reticle, hret=a_hunter_reticle, rival=a_hunter_rival,
+                    after=a_hunter_after),
+         states=[("Charge 1-4: the scope", [("frame", "white"), ("ret", "white")]),
                  ("Charge 5 Hunter's Sight", [("frame", "white"), ("after", "white", 0.6), ("rival", "white"),
                                               ("hret", "danger")])]),
-    _scope_card("b", "B  The sightline: the Serpent and its 12 deg view; Hunter's Sight: a rival and its afterimages "
-                     "in it",
-                dict(hull=b_hull, wedge=b_wedge, rival=b_rival, after=b_after),
-                [("the scope", [("hull", "domain"), ("wedge", "white")]),
-                 ("Charge 5 Hunter's Sight", [("hull", "domain"), ("wedge", "white"), ("after", "white", 0.6),
-                                              ("rival", "white")])]),
 ]
 
 
@@ -276,23 +268,14 @@ def sniper_shooter_shards():
     return out
 
 
-def _space_card(key, title, parts, states):
-    return dict(name=f"cloaksniper_{key}", group="cloaksniper", lockup_state=1, element="Space",
-                before=ICON_DIR + "Serpent_SniperShot-PLACEHOLDER.png", title=title, parts=parts, states=states)
-
-
+# Garrett picked B (2026-10-31). Both pictures are parts in the one slot; SerpentVesselHUDView.SetScoped shows one set.
 CARDS += [
-    _space_card("a", "A  Cloak: the Serpent as its cloaked outline leaving its super-shielded seed / Sniper: the tunnel "
-                     "the round cuts through mass, the super-shielded prism shattered in it",
-                dict(hull=cloak_hull, seed=cloak_seed, trail=cloak_trail, block=sniper_block, line=sniper_line,
-                     star=sniper_stella),
-                [("unscoped: CLOAK", [("seed", "shielded"), ("trail", "domain", 0.5), ("hull", "domain")]),
-                 ("scope held: SNIPER", [("block", "blue"), ("line", "white"), ("star", "shielded")])]),
-    _space_card("b", "B  Cloak as A / Sniper: the Serpent's round clearing bricks and the super-shielded prism on its "
-                     "line",
-                dict(hull=cloak_hull, seed=cloak_seed, trail=cloak_trail, shull=sniper_shooter_hull,
-                     beam=sniper_shooter_beam, star=sniper_shooter_stella, shards=sniper_shooter_shards),
-                [("unscoped: CLOAK", [("seed", "shielded"), ("trail", "domain", 0.5), ("hull", "domain")]),
+    dict(name="cloaksniper", element="Space", before=ICON_DIR + "Serpent_SniperShot-PLACEHOLDER.png",
+         title="Cloak / Sniper Shot (Space, picked B): unscoped, the Serpent's cloaked outline leaving its super-shielded "
+               "seed; scope held, its round clearing bricks and the super-shielded prism on its line",
+         parts=dict(hull=cloak_hull, seed=cloak_seed, trail=cloak_trail, shull=sniper_shooter_hull,
+                    beam=sniper_shooter_beam, star=sniper_shooter_stella, shards=sniper_shooter_shards),
+         states=[("unscoped: CLOAK", [("seed", "shielded"), ("trail", "domain", 0.5), ("hull", "domain")]),
                  ("scope held: SNIPER", [("beam", "white"), ("shards", "blue"), ("star", "shielded"),
                                          ("shull", "domain")])]),
 ]
@@ -447,4 +430,55 @@ REBIND += [
                                        ("seedWallBricksIcon", MASS_ICON, "SeedWallBricks"),
                                        ("seedWallSeedIcon", MASS_ICON, "SeedWallSeed")],
                                  fields={"omniAbilitySprite": ("icon", "Serpent_WallShield")})),
+]
+
+
+# ---- The Scope and Cloak / Sniper cards in the game (picked 2026-10-31) --------------------------------------------
+PART_EXEMPT = {"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+               "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part", "specks": "a part"}
+
+
+def _part(name, element, act, draw):
+    return dict(name=name, element=element, act=act, draw=draw, subdir="Parts", family=False, exempt=PART_EXEMPT)
+
+
+ICONS += [
+    _part("Serpent_ScopeFrame", "Charge", "Scope: the eyepiece (white)", eyepiece_frame),
+    _part("Serpent_ScopeReticle", "Charge", "Scope: the centred reticle (white; hidden at Charge 5)", a_eyepiece_reticle),
+    _part("Serpent_ScopeAfterimages", "Charge", "Hunter's Sight: the rival's afterimages (white, 60%)", a_hunter_after),
+    _part("Serpent_ScopeRival", "Charge", "Hunter's Sight: the rival (white)", a_hunter_rival),
+    _part("Serpent_ScopeHunterReticle", "Charge", "Hunter's Sight: the reticle on the oldest afterimage (danger)",
+          a_hunter_reticle),
+    _part("Serpent_CloakHull", "Space", "Cloak: the cloaked outline (domain)", cloak_hull),
+    _part("Serpent_CloakTrail", "Space", "Cloak: the trail (domain, 50%)", cloak_trail),
+    _part("Serpent_CloakSeed", "Space", "Cloak: the super-shielded seed (shielded)", cloak_seed),
+    _part("Serpent_SniperHull", "Space", "Sniper: the Serpent (domain)", sniper_shooter_hull),
+    _part("Serpent_SniperBeam", "Space", "Sniper: the round's line (white)", sniper_shooter_beam),
+    _part("Serpent_SniperShards", "Space", "Sniper: the cleared bricks (blue)", sniper_shooter_shards),
+    _part("Serpent_SniperStar", "Space", "Sniper: the super-shielded prism, broken (shielded)", sniper_shooter_stella),
+]
+LOCKUP["Charge"] = dict(parts=dict(f=eyepiece_frame, r=a_eyepiece_reticle), state=[("f", "white"), ("r", "white")])
+LOCKUP["Space"] = dict(parts=dict(h=cloak_hull, t=cloak_trail, s=cloak_seed),
+                       state=[("s", "shielded"), ("t", "domain", 0.5), ("h", "domain")])
+
+CHARGE_ICON = "7710000000000002015"    # the Charge slot's icon Image in the variant
+SPACE_ICON = "7710000000000002035"     # the Space slot's icon Image in the variant
+SCOPE_PARTS = [("ScopeFrame", "Serpent_ScopeFrame", None), ("ScopeReticle", "Serpent_ScopeReticle", "scopeReticleIcon"),
+               ("ScopeAfterimages", "Serpent_ScopeAfterimages", "scopeAfterimagesIcon"),
+               ("ScopeRival", "Serpent_ScopeRival", "scopeRivalIcon"),
+               ("ScopeHunterReticle", "Serpent_ScopeHunterReticle", "scopeHunterReticleIcon")]
+CLOAKSNIPER_PARTS = [("CloakTrail", "Serpent_CloakTrail", "cloakTrailIcon"),
+                     ("CloakSeed", "Serpent_CloakSeed", "cloakSeedIcon"),
+                     ("CloakHull", "Serpent_CloakHull", "cloakHullIcon"),
+                     ("SniperShards", "Serpent_SniperShards", "sniperShardsIcon"),
+                     ("SniperBeam", "Serpent_SniperBeam", "sniperBeamIcon"),
+                     ("SniperStar", "Serpent_SniperStar", "sniperStarIcon"),
+                     ("SniperHull", "Serpent_SniperHull", "sniperHullIcon")]
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=CHARGE_ICON, children=[(n, i, None) for n, i, _ in SCOPE_PARTS])),
+    dict(file=VARIANT, pair=dict(container=SPACE_ICON, children=[(n, i, None) for n, i, _ in CLOAKSNIPER_PARTS])),
+    dict(file=VESSEL, proxy=dict(view=VIEW, instance=VESSEL_HUD_INSTANCE, source_file=VARIANT, source_guid=VARIANT_GUID,
+                                 after="pipEmptyColor",
+                                 refs=[(f, CHARGE_ICON, n) for n, _, f in SCOPE_PARTS if f]
+                                      + [(f, SPACE_ICON, n) for n, _, f in CLOAKSNIPER_PARTS]))
 ]

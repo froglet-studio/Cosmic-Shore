@@ -373,7 +373,7 @@ SERPENT_ICONS = {CHARGE: "Serpent_Scope-PLACEHOLDER.png", MASS: "Serpent_SeedWal
 # Slots whose icon Image the icon kit has taken over (Tools/Build/icon_kit/specs/serpent.py): it becomes a transparent
 # container over the kit's parts, so its Image and RectTransform blocks are the kit's to check, not this script's.
 # The authoring pass still writes the placeholder; the kit's rebind then rewrites it.
-SERPENT_KIT_OWNED = (MASS,)
+SERPENT_KIT_OWNED = (CHARGE, MASS, SPACE)
 # Elements the FIRST authoring pass wrote. The Mass slot (Seed Wall, SERPENT_SEED_WALL.md) was
 # designed later and is added by serpent_add_slots onto a row that already carries these.
 SERPENT_FIRST_PASS = (CHARGE, SPACE)

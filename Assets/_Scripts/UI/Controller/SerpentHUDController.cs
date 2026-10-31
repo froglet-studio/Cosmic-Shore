@@ -75,6 +75,7 @@ namespace CosmicShore.UI
             }
 
             view.SetSeedWallColor(ResolveDomainSignalColor());
+            view.SetCloakSniperColors(ResolveDomainSignalColor(), ResolveShieldedColor());
 
             _rs = _status?.ResourceSystem;
             if (_rs != null)
@@ -93,6 +94,15 @@ namespace CosmicShore.UI
             var colorSet = _gameData?.ThemeManagerData?.ColorSet;
             if (colorSet == null || _status == null) return Color.white;
             return colorSet.GetDomainSignalColor(_status.Domain);
+        }
+
+        // The pilot's SHIELDED colour for the Space card's seed and prism; alpha 0 until the palette resolves (the view
+        // keeps the parts' authored colour), never a plausible stand-in - as the Rhino's Space card.
+        Color ResolveShieldedColor()
+        {
+            var theme = _gameData?.ThemeManagerData;
+            if (theme == null || _status == null || _status.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
+            return theme.GetShieldedSignalColor(_status.Domain);
         }
 
         void OnDisable()

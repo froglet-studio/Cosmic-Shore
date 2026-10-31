@@ -18870,5 +18870,9 @@ action assets, `Serpent.prefab` (view fields) and `SerpentHUDVariant.prefab` (ca
    ghost is never shown on the rival's screen or a spectator's.
 6. Raise Time to 5. **Pass:** the TIME card switches to five smaller pellet rows (PelletSlots5) with five pips that
    line up on their slots; a full tank is 5 pellets (0.2 each); dropping below Time 5 restores the four-row layout.
+8. The cards (picked 2026-10-31). **Pass:** CHARGE shows the eyepiece with a centred reticle, and at Charge 5 the
+   reticle (danger) sits on the oldest of three faded afterimages behind a white rival. SPACE shows the cloaked
+   outline in the domain colour with a shielded seed; while LT is held, the Serpent, the white round, blue shards and
+   a shielded broken prism.
 7. AI Serpent at Charge 5 on the server. **Pass:** no ghosts are drawn anywhere; its rounds can still strip through
    recorded afterimages.

@@ -296,8 +296,11 @@ panels when a hole's four bricks close, crystals only shield (LESSONS 61). The S
 Time 5, `author_serpent_pellet_icon.py`). The CHARGE card is now the Scope (one fixed 12 degree zoom; Charge sets the
 sniper's recovery; Charge 5 Hunter's Sight leaves rival afterimages the sniper can hit), and the SPACE card is Cloak /
 Sniper Shot: one RT card whose picture swaps while the scope is held so its glyph never moves
-(`SerpentVesselHUDView.SetScoped`, two sprites). Option sheets `serpent_scope_options.png` and
-`serpent_cloaksniper_options.png` are out; both cards ride placeholders until Garrett picks.
+(`SerpentVesselHUDView.SetScoped`, two sprites). Garrett picked Scope A (the Charge-petal
+eyepiece and the reticle at the zoom's true size; at Charge 5 the reticle moves onto a rival's oldest afterimage, in
+danger) and Cloak / Sniper B (the cloaked outline leaving its shielded seed; the Serpent's round clearing bricks and a
+super-shielded prism) on 2026-10-31. Both cards are kit parts in the variant's slot containers, reached through proxies
+on `Serpent.prefab`; `SetScoped` and `SetHuntersSight` toggle the part sets. The Serpent is done.
 
 | Round | What | Why first |
 |---|---|---|
