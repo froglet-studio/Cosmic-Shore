@@ -28,8 +28,14 @@ namespace CosmicShore.Gameplay
         int _sweepIndex;
         Vector3 _sweepPoint;
         bool _sweeping;
+        int _rockets, _rocketsHeldByLane;
+        float _gunSeconds, _targetSeconds, _sweepSeconds;
 
         public override string Name => "SparrowDestroyer";
+
+        public override string Notes() =>
+            $"{Who} Sparrow: rockets {_rockets} (held by the Ark lane {_rocketsHeldByLane}), guns {_gunSeconds:0}s, " +
+            $"{_targetSeconds:0}s on a target, {_sweepSeconds:0}s sweeping a nucleus, guns {(_guns ? "found" : "MISSING")}, rocket {(_rocket ? "found" : "MISSING")}";
 
         public override void Arm(ArkEscortPilot pilot)
         {
@@ -123,14 +129,19 @@ namespace CosmicShore.Gameplay
                            && angle <= EscortGeneRegistry.SparrowGunAimDeg
                            && ctx.LaneClear(pos, pos + nose * Mathf.Max(dist, EscortGeneRegistry.SparrowGunRange));
 
+                _targetSeconds += Time.deltaTime;
                 if (_rocket && Time.time >= _nextRocket
                     && dist >= EscortGeneRegistry.SparrowRocketMinRange && dist <= EscortGeneRegistry.SparrowRocketMaxRange
                     && angle <= EscortGeneRegistry.SparrowRocketAimDeg
-                    && Ammo(_rocket.AmmoIndex) >= _rocket.AmmoCost
-                    && ctx.LaneClear(pos, heart, EscortGeneRegistry.SparrowRocketBlastRadius))
+                    && Ammo(_rocket.AmmoIndex) >= _rocket.AmmoCost)
                 {
-                    Press(_rocket, true);
-                    _nextRocket = Time.time + EscortGeneRegistry.SparrowRocketCooldown;
+                    if (ctx.LaneClear(pos, heart, EscortGeneRegistry.SparrowRocketBlastRadius))
+                    {
+                        Press(_rocket, true);
+                        _rockets++;
+                        _nextRocket = Time.time + EscortGeneRegistry.SparrowRocketCooldown;
+                    }
+                    else _rocketsHeldByLane++;
                 }
             }
             else if (_sweeping && _guns)
@@ -140,6 +151,8 @@ namespace CosmicShore.Gameplay
                            && ctx.LaneClear(pos, pos + nose * EscortGeneRegistry.SparrowGunRange);
             }
 
+            if (fireGuns) _gunSeconds += Time.deltaTime;
+            if (_sweeping) _sweepSeconds += Time.deltaTime;
             if (fireGuns != _gunsHeld)
             {
                 Press(_guns, fireGuns);

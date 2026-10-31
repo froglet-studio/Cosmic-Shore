@@ -187,15 +187,15 @@ namespace CosmicShore.Gameplay
 
         // ── Dolphin (blaster) ────────────────────────────────────────────────────────────────────────────────────
 
-        public static readonly EscortGene DolphinReach = Define("ai.dolphin.reach", 800f, 200f, 2400f,
-            "the cone's reach assumed when choosing a crystal");
-        public static readonly EscortGene DolphinReachUse = Define("ai.dolphin.reachUse", 0.7f, 0.1f, 1f,
-            "a crystal counts only if the threats are within reach x this of it");
-        public static readonly EscortGene DolphinApproachAlignDeg = Define("ai.dolphin.approachAlignDeg", 35f, 5f, 60f,
-            "preferred: approach direction within this many degrees of crystal-to-threat");
+        public static readonly EscortGene DolphinReach = Define("ai.dolphin.reach", 1200f, 200f, 2400f,
+            "the cone's reach assumed when choosing a crystal (round 2: 800 -> 1200, the d3 Dolphin squad blasted too rarely)");
+        public static readonly EscortGene DolphinReachUse = Define("ai.dolphin.reachUse", 0.9f, 0.1f, 1f,
+            "a crystal counts only if the threats are within reach x this of it (round 2: 0.7 -> 0.9)");
+        public static readonly EscortGene DolphinApproachAlignDeg = Define("ai.dolphin.approachAlignDeg", 50f, 5f, 60f,
+            "preferred: approach direction within this many degrees of crystal-to-threat (round 2: 35 -> 50)");
         public static readonly EscortGene DolphinConeArkClearance = Define("ai.dolphin.coneArkClearance", 120f, 0f, 300f,
             "padding around the hull the cone's axis must clear");
-        public static readonly EscortGene DolphinCrystalSearchRadius = Define("ai.dolphin.crystalSearchRadius", 1200f, 300f, 2500f,
+        public static readonly EscortGene DolphinCrystalSearchRadius = Define("ai.dolphin.crystalSearchRadius", 1600f, 300f, 2500f,
             "crystals farther than this from the Ark are not candidates");
         public static readonly EscortGene DolphinWakeOffset = Define("ai.dolphin.wakeOffset", 60f, 20f, 200f,
             "with nothing to blast, skim the Ark's wake this far astern of the hull");

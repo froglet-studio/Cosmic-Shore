@@ -81,12 +81,27 @@ namespace CosmicShore.Gameplay
 
         readonly Dictionary<string, int> _friendlyFireBy = new();
 
-        void WriteFriendlyFireBy()
+        /// <summary>The friendly-fire tally as "Vessel(name):count" where the name is one of the squad's seats, and each
+        /// seat's role notes. Called before the pilots are disarmed.</summary>
+        void WriteSeatNotes()
         {
             _report.FriendlyFireBy.Clear();
-            foreach (var kv in _friendlyFireBy) _report.FriendlyFireBy.Add($"{kv.Key}:{kv.Value}");
+            foreach (var kv in _friendlyFireBy)
+            {
+                string who = kv.Key;
+                foreach (var p in _pilots)
+                    if (p && p.Status != null && p.Status.PlayerName == kv.Key) { who = $"{p.Status.VesselType}({kv.Key})"; break; }
+                _report.FriendlyFireBy.Add($"{who}:{kv.Value}");
+            }
             _report.FriendlyFireBy.Sort((a, b) => Count(b).CompareTo(Count(a)));
             static int Count(string s) => int.TryParse(s.Substring(s.LastIndexOf(':') + 1), out int c) ? c : 0;
+
+            _report.RoleNotes.Clear();
+            foreach (var p in _pilots)
+            {
+                string note = p && p.Role != null ? p.Role.Notes() : null;
+                if (!string.IsNullOrEmpty(note)) _report.RoleNotes.Add(note);
+            }
         }
 
         ArkEscortReport _report;
@@ -534,7 +549,7 @@ namespace CosmicShore.Gameplay
             _report.ReachedLegs = 0;
             foreach (var r in _report.LegReports)
                 if (r.Reached) _report.ReachedLegs++;
-            WriteFriendlyFireBy();
+            WriteSeatNotes();
 
             if (_corridor) _corridor.PrepareCell = null;
             foreach (var feed in _killFeeds)

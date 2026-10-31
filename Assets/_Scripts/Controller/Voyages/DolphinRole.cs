@@ -20,8 +20,15 @@ namespace CosmicShore.Gameplay
         Crystal _crystal;
         float _nextChoose;
         ArkEscortContext _ctx;
+        int _picks, _taken, _noCrystalChoices, _vetoedLooks, _candidates;
+        float _threatSeconds, _onCrystalSeconds;
 
         public override string Name => "DolphinBlaster";
+
+        public override string Notes() =>
+            $"{Who} Dolphin: crystals chosen {_picks}, reached {_taken}, choices with no usable crystal {_noCrystalChoices} " +
+            $"(candidates seen {_candidates}), looks vetoed by the hull {_vetoedLooks}, {_threatSeconds:0}s with threats, " +
+            $"{_onCrystalSeconds:0}s steering at a crystal";
 
         public override void Arm(ArkEscortPilot pilot)
         {
@@ -42,12 +49,21 @@ namespace CosmicShore.Gameplay
             var ark = ctx.Ark;
             if (ctx.HasThreats)
             {
+                _threatSeconds += Time.deltaTime;
                 if (Time.time >= _nextChoose || !Usable(_crystal))
                 {
                     _nextChoose = Time.time + RechooseSeconds;
-                    _crystal = Choose(ctx);
+                    if (_crystal && !Usable(_crystal)) _taken++;   // gone since we chose it: picked up (by us, most likely)
+                    var pick = Choose(ctx);
+                    if (pick && pick != _crystal) _picks++;
+                    if (!pick) _noCrystalChoices++;
+                    _crystal = pick;
                 }
-                if (_crystal) return _crystal.transform.position;
+                if (_crystal)
+                {
+                    _onCrystalSeconds += Time.deltaTime;
+                    return _crystal.transform.position;
+                }
             }
             else _crystal = null;
 
@@ -75,6 +91,7 @@ namespace CosmicShore.Gameplay
                 if (item is not Crystal c || !Usable(c)) continue;
                 if (item.ItemType != ItemType.Buff) continue;
                 if (item.ownDomain != Domains.Blue && item.ownDomain != ctx.Domain) continue;
+                _candidates++;
                 Vector3 at = c.transform.position;
                 if ((at - ark.Position).magnitude > search) continue;
                 if ((threats - at).magnitude > reach) continue;
@@ -103,6 +120,7 @@ namespace CosmicShore.Gameplay
             if (dir.sqrMagnitude < 1e-3f) return null;
             bool clear = ArkEscortContext.SegmentClearsSphere(Position, Position + dir.normalized * EscortGeneRegistry.DolphinReach,
                 ark.Position, ctx.HullRadius + EscortGeneRegistry.DolphinConeArkClearance);
+            if (!clear) _vetoedLooks++;
             return clear ? ctx.ThreatCentroid : null;
         }
     }
