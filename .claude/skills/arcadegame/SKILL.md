@@ -225,6 +225,11 @@ Serpentine (Serpent Time reshaped, 2026-10-31, same branch) taught four more:
   apart. The mode watches each guard's heart (a hull within reach, or a sniper round read off the shipped rifle:
   its cooldown rising is the shot) and damages every plate through `Prism.Damage(devastate: true)`, nearest the heart
   first, a capped number a frame; the plant then dies the ordinary death itself. No vessel or flora code changes.
+- **A colon in card copy breaks the WHOLE card, silently, and it happened twice to one mode.** The generator writes
+  `Description:` as a plain YAML scalar, so `rises:` at a line end (or `fuel: tap`) starts a new key: Unity keeps the
+  fields above it and drops everything after - the card shows its name with white art, no controls, and the mode does
+  not load (its `SceneName` is gone). `hull_time_race.plain_scalar_errors` and `yaml_parse_errors` now fail `--check` on
+  it; write ' - ' instead of a colon. Any other generator writing free text into YAML has the same exposure.
 - **A mode that wants fewer creatures gets its OWN copy of the cell**, generated from the shared one each run
   (`hull_time_race.author(extra_assets=...)`, Serpentine's `_own_cell_assets`): a cell config and spawn profile are
   shared by ~10 modes, so editing them in place re-tunes every one.

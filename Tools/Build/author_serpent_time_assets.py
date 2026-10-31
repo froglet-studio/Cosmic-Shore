@@ -113,8 +113,8 @@ htr.author(dict(
     # same 16-gate race. The Serpent's Time lengthens a pellet's burn (3 s -> 4.8 s).
     comeback=0.45,
     description="""Serpents only, and it is a dirty race through a living cell. A living plant
-    guards every ring - plain at first, armoured and then dangerous as the intensity rises:
-    slip round it, or hit its heart, with a round or your hull through its middle, and the
+    guards every ring - plain at first, armoured and then dangerous as the intensity rises.
+    Slip round it, or hit its heart, with a round or your hull through its middle, and the
     whole plant falls. Cloak just past a ring and a
     Seed Wall grows in the way of whoever is behind you. Two laps. Fastest domain home
     wins.""",
