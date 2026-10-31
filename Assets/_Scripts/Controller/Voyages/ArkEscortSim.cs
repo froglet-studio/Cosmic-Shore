@@ -29,7 +29,11 @@ namespace CosmicShore.Gameplay
     /// own draw (<see cref="ArkEscortRun.SeedOverride"/>) and <see cref="UnityEngine.Random"/>.</item>
     /// <item><c>-arkEscortFixedDt 0.0333</c>: every frame advances exactly that much game time
     /// (<see cref="Time.captureDeltaTime"/>), with no vsync and no frame cap, so a player runs the escort as fast as the CPU
-    /// allows while each frame moves vessels as far as a 30 fps session does. Time scale stays 1 unless asked.</item>
+    /// allows while each frame moves vessels as far as a 30 fps session does. Time scale stays 1 unless asked.
+    /// EXPERIMENTAL: in the farm player (2026-10-31) the escort ran BELOW real time this way (x0.6, then single frames of
+    /// 25-200 s); something still paces itself by real time and falls behind. The farm uses real time and a time scale.</item>
+    /// <item><c>-arkEscortFps 60</c>: cap the frame rate (no vsync) in real-time mode, so a headless player does not
+    /// spin; with a time scale, each frame then advances timeScale/fps game seconds.</item>
     /// <item><c>-arkEscortDrain 2</c>: real seconds between runs (8 by default, 2 with a fixed step).</item>
     /// <item><c>-arkEscortQuit</c>: when the plan is done, write <c>{"done":true,...}</c> as the last line and, in a
     /// player, quit (the editor launcher exits the editor on <see cref="AllDone"/>).</item>
@@ -46,6 +50,7 @@ namespace CosmicShore.Gameplay
         const string FixedDtArg = "-arkEscortFixedDt";
         const string DrainArg = "-arkEscortDrain";
         const string QuitArg = "-arkEscortQuit";
+        const string FpsArg = "-arkEscortFps";
         const float ReadyTimeoutSeconds = 600f;
         const float RunTimeoutSeconds = 1800f;
         const float HeartbeatSeconds = 30f;
@@ -61,6 +66,7 @@ namespace CosmicShore.Gameplay
         float _scale = 1f;
         float _fixedDt;
         float _drain = 8f;
+        int _fps;
         bool _quit;
         string _jobId = "";
         int? _seed;
@@ -102,6 +108,8 @@ namespace CosmicShore.Gameplay
                 sim._drain = 2f;
             }
             if (TryFloat(Arg(args, DrainArg), out float drain)) sim._drain = Mathf.Clamp(drain, 0f, 60f);
+            if (int.TryParse(Arg(args, FpsArg), NumberStyles.Integer, CultureInfo.InvariantCulture, out int fps))
+                sim._fps = Mathf.Clamp(fps, 10, 240);
             if (int.TryParse(Arg(args, SeedArg), NumberStyles.Integer, CultureInfo.InvariantCulture, out int seed))
                 sim._seed = seed;
             sim._quit = Array.Exists(args, a => string.Equals(a, QuitArg, StringComparison.OrdinalIgnoreCase));
@@ -183,6 +191,11 @@ namespace CosmicShore.Gameplay
                 QualitySettings.vSyncCount = 0;
                 Application.targetFrameRate = -1;
             }
+            else if (_fps > 0)
+            {
+                QualitySettings.vSyncCount = 0;
+                Application.targetFrameRate = _fps;
+            }
             Time.timeScale = _scale;
         }
 
@@ -195,7 +208,7 @@ namespace CosmicShore.Gameplay
                 Log($"plan: {_plan.Count} runs, time scale {_scale}, fixed dt {_fixedDt}, job '{_jobId}', " +
                     $"seed {(_seed.HasValue ? _seed.Value.ToString() : "clock")}, out {_out}");
                 if (_plan.Count == 0) { Log("nothing to run"); return; }
-                if (_fixedDt > 0f) ApplyClock();
+                if (_fixedDt > 0f || _fps > 0) ApplyClock();
                 var harbour = await ReadyAsync(ct);
                 if (!harbour) { Log("never ready - giving up"); return; }
 
