@@ -46,6 +46,13 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile. Measured since: the boot's menu load (10-20 s frames on three machines; boot-order fix waits on the boot owner) and a menu Cell swap (24.2 s returning 76,115 trail prisms; fixed 2026-10-29) | 🟠 |
 | B37 | "Could not create presence lobby: Object reference not set..." then "[INVITE-SEND] ABORT - presence lobby is null" (Bug Ledger E-6b79cd07f1, E-ca3bc5cbe1; Gradi and Shombith, 2-11 Sep) | Fixed 2026-10-25 (cause likely, not proven: the log kept only the message): the join waits for Unity Services and a sign-in; a create failure the rejoin recovers from is a warning, anything else is logged with its stack; an invite with no presence lobby tells the player. The lobby-less session itself was fixed 2026-10-08 (the boot-time rejoin) | 🟡 |
 | B38 | "[PartyInviteController] Recovery failed" after Play stops: "This can only be used during play mode" or "Value cannot be null. Parameter name: asyncOperation" (Bug Ledger E-41b7610878, belac 19 Oct; E-0de9ec6c70, Gradi, Sep) | Root-caused & fixed 2026-10-25: the recovery and the leave-lobby flow awaited the party leave and the Netcode shutdown, and loaded Menu_Main after Play had stopped. Each step after an await now stops once Play has ended or the controller is gone | 🟡 |
+| B39 | The ONLINE list shows a player who has only pressed Play: they sit in the presence lobby 7-24 s before their menu is up (the four-player test of 2026-10-30), and an invite or join sent then goes nowhere | Fixed 2026-10-31: a player publishes `ready` the first time their lava lamp is shown (`LavaLampPresence`), and only players with it are listed. Needs a two-machine retest | 🟡 |
+| B40 | A failed join leaves the joiner LISTED in the lobby: a Relay step that fails ("join code not found") skips the SDK's own leave, and a Play stopped without a leave keeps the old membership; every later join answers "player is already a member of the lobby" (Caleb's three joins; his presence converge failed every ~22 s for nine minutes) | Fixed 2026-10-31: `StaleLobbyMembership` removes us after a failed party join and, on "already a member", removes the stale membership and joins once more (party and presence joins). Needs a two-machine retest | 🟡 |
+| B41 | Every machine keeps offering JOIN / SPECTATE / REJOIN into a host that froze past Relay's limit: five joins into Garrett's dead session over 4.5 min each tore down the joiner's party and bounced | Fixed 2026-10-31: "join code not found" / "allocation ID not found" classify as Gone ("That party has ended."), and a session a join found Gone is offered to nobody on that machine for 5 min (`DeadPartySessions`), the Rejoin offer included | 🟡 |
+| B42 | Pressing REJOIN right after a bounce does nothing ("Already transitioning - ignoring rejoin"), and a host loss reported during a recovery is dropped, leaving the player in a dead party that reads `InParty` (Garrett's re-host died "server didn't answer any BIND message" inside his bounce) | Fixed 2026-10-31: the Rejoin offer waits for the bounce to end, a join pressed during a transition waits for it (20 s), and a host loss during a transition is acted on when it ends if the link is still down (at most 3 recoveries in 90 s) | 🟡 |
+| B43 | A HOST with others in its party who presses Join or Spectate ends the party for all of them without a word (Caleb's spectate bounced Shombith; his join bounced Yash and Shombith) | Fixed 2026-10-31: refused before teardown with an authored toast (`PartyInviteController.leavePartyFirstToast`); accepting an invite is unchanged | 🟡 |
+| B44 | `NullReferenceException` in `PartyMemberService.SyncFromSession` 0.1 s after a join starts (belac x2, 2026-10-30) | Fixed 2026-10-31: the refresh reads the session after its await and stops when a transition has let it go | 🟡 |
+| B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein, one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine; the other three did the same swap in 1.2-2.4 s) | Investigated 2026-10-31 (section below): not the prism lay's own work and not its clone watchdog; the frames are spent outside anything the game measures. Each stall now records focus, memory against RAM and async clones in flight (`stallContext`), so the next one names its cause. Open | 🔴 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2473,4 +2480,60 @@ button and has no report; it is unchanged.
 joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery failed` error in the console after
 Play stops.
 Ticket: T-20261025-6541 (#1527).
+
+## B39-B45 - the four-player session of 2026-10-30 (Yash, Caleb, Shombith, Garrett)
+
+**Seen in.** `net_logs.py show` of `yskha+belac+shombith+gradi-20261030_234256` (8 logs; gradi's first Play has load
+reports only). Kyoki = Garrett, RedshirtBrownpants = Caleb, Dragon = Shombith, ys1 = Yash.
+
+**What happened.**
+- ThresherTime (host Garrett) ended cleanly; everyone came back to the menu as a client.
+- Maelstrom (host Garrett, four humans): after round 1 the cell swap to Skein froze Garrett's machine for one 82.6 s
+  frame (B45). Relay dropped him; Caleb and Shombith bounced "Host disconnected" about 13 s in and were offered REJOIN.
+  Shombith's press was ignored because his bounce was still running (B42); Caleb's failed "join code not found" because
+  the host's allocation was gone but every online row still advertised it (B41). Garrett's own host died with a
+  transport failure and Skein ran with one human and three AI, so the shuffle was lost for everyone.
+- 00:00-00:04: joins into Kyoki kept failing (B41), each one also leaving the joiner listed in the dead lobby so the
+  next join said "already a member" (B40); Caleb, hosting, pressed Spectate and Join and ended his own party twice
+  (B43), with a NullReferenceException each time (B44).
+- Regatta (host Caleb, four humans) ended cleanly. Back on the menu Garrett froze 39.6 s (B45), Relay dropped him,
+  his re-host froze 14.6 s and died, and the drop was ignored inside his own bounce (B42), so he sat in a dead party
+  and the replay never formed.
+- Throughout: each player showed as online 7-24 s before their menu was up (B39).
+
+**What was fixed (2026-10-31, `claude/intelligent-turing-aw29so`).** The rows above. None of these is proven on two
+machines yet; `Docs/UNITY_VERIFICATION_CHECKLIST.md` holds the steps.
+
+**What was not.** The freezes (B45). Every drop in this session followed one on Garrett's machine, so B39-B44 make the
+game recover from a drop; they do not stop it. The boot-order decision (start the Relay host after the menu is up, B36)
+also stays open.
+
+### B45 investigated (2026-10-31): what the freezes are not, and what the next one will say
+
+Read from Garrett's load reports (`origin/bugledger/gradi:BugLedger/shared/reports/gradi/load/`) and the merged console.
+
+- **82.6 s, Maelstrom cell swap to Skein** (`load_Maelstrom_20261031_000016`). Rails RAIL000-RAIL014 laid in 23-161 ms
+  each. RAIL015 (464 prisms, one async clone batch) began at 1.22 s; the frame that froze began at 1.59 s and ended at
+  84.18 s. The pool's clone watchdog forces completion only after 4 s of waiting, so it could not have fired 0.4 s in:
+  the batch's forced completion did not cause this frame, and neither did the lay's per-prism work (5,104 prisms cost
+  0.4 s in total across the whole load). Load Insights pins a frame to whatever span is open, so "Streamed prism lay"
+  is where the frame was, not proof of what it spent.
+- **6.0 s, Regatta to menu** (`load_Menu_Main_20261031_000906`). The frame came FIRST and the watchdog's "not
+  integrated after 4s - forcing WaitForCompletion" warning AFTER it: the long frame used up the watchdog's 4 s. The
+  warning is a symptom of a freeze, not its cause. (A 4.3 s frame in the client scene load came 7 s earlier.)
+- **39.6 s on the menu, 14.6 s during the re-host.** No load ran. The console is silent from a crystal collect at
+  1610 s to the stall at 1652 s; nothing recorded what ran.
+- **Ruled out:** the "Unity Remote requirements check failed" (adb) errors on that machine come only at Play start
+  (1267 s, 1876 s), never beside a freeze.
+- **Not ruled out, and now recorded:** the Editor losing focus or being minimised (all four played in the Editor while
+  on a call), memory pressure paging the machine (one host holding the server, a 5,000-prism arena and the Editor), and
+  Editor-side work in the frame (asset import, shader or Burst compilation). Every stall is now followed by a
+  `stallContext` mark: `focused yes/no; Unity reserved N MB, managed N MB, of N MB RAM; async prism clones waiting N`
+  (`FrameStallWatch.DescribeContext`; the pool counts its batches). `net_logs.py show` prints it beside the stall.
+
+**Next:** the next multiplayer test sends the context by itself. If it says `focused no`, the fix is the Editor's
+run-in-background behaviour (or testing in a player build); if reserved memory is near the RAM, it is memory; if
+clones are waiting and neither of those, a Profiler capture of that swap on that machine (Garrett, Editor, Deep Profile
+off) is what decides it. Changing the prism pool or the lay budgets before that is guessing (CLAUDE.md, Debugging
+Methodology); that work is Yash's (`EnvironmentPrismPool`) and the perf branch's.
 

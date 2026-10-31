@@ -515,7 +515,7 @@ rider's own velocity, no stick steering). A single tunnel or a **Soliton Network
 | Bug ledger sender (bugledger/<user> branch, throwaway index) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs` |
 | Bug ledger git publisher (scoped, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerPublisher.cs` |
 | Bug ledger store contract (committed data) | `BugLedger/README.md` (project root) |
-| Shared signature core (runtime-safe, for the future in-game reporter) | `Assets/_Scripts/Utility/BugSignature.cs` |
+| Shared signature core (runtime-safe, for the future in-game reporter) | `Assets/_Scripts/Utility/Foundation/BugSignature.cs` |
 | Signature determinism tests | `Assets/_Scripts/Tests/Editor/BugSignatureTests.cs` |
 | Doc-link resolver (DOCS chips → GitHub) | `Assets/_Scripts/Editor/FrogletTools/FrogletDocLinks.cs` |
 | Diagnostics documentation | `Docs/DIAGNOSTICS.md` |

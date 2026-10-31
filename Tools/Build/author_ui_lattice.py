@@ -17,7 +17,8 @@ fails any screen that still names one of its materials.
 
 It also writes the rev 6 rims (ElementRim.shader, §45.3: ElementRim_<element>.mat) and the presence orb and party
 bonds (§45.4): Presence.shader / Bond.shader on UIPresence.cginc, Presence_Orb.mat (the friends orb in Menu_Main)
-and Bond_Party.mat (the party molecule's bonds in PartyPanel.prefab).
+and Bond_Party.mat (the party molecule's bonds in PartyPanel.prefab; Rev 40 E's card dropped them, section 107, and
+section 109 brought them back on the molecule that grows from the host).
 
 This writes the materials and the shader / include metas (deterministic guids), so every reference the menu
 generators emit (menu_b_motion.panel_sea_node / window_sea_node) resolves. The element colours are the theme's
@@ -322,6 +323,13 @@ SEA_ELSEWHERE = ("Assets/_Scenes/Authentication.unity", "Assets/_Scenes/Bootstra
                  "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab", "Assets/Resources/UI/EnvironmentLoadVeilContent.asset")
 
 
+def lit_image_doc(material_guid):
+    """A planted Image drawn with `material_guid` and no KitRimMesh beside it (the self-test's synthetic defect: the party
+    panel lost its own bonds to Rev 40 E's card, section 107, so the defect is added rather than edited in)."""
+    return ("--- !u!114 &987654321\nMonoBehaviour:\n  m_GameObject: {fileID: 987654320}\n"
+            f"  m_Material: {{fileID: 2100000, guid: {material_guid}, type: 2}}\n")
+
+
 def rim_pairs(text):
     """(gameObject, rim element) for every Image drawn with a material that reads KitRimMesh's UV1 (a rim, or "Bond" for
     the party bonds), and the GameObjects that carry KitRimMesh."""
@@ -503,7 +511,7 @@ def self_test(files):
         ("a screen still drawing the grid", lambda f: f.__setitem__("__screens__", dict(screens, **{
             WINDOWS[0]: screens[WINDOWS[0]] + f"  m_Sprite: {{fileID: 21300000, guid: {KIT_GRID}, type: 3}}\n"}))),
         ("a screen lit with an element rim again", lambda f: f.__setitem__("__screens__", dict(screens, **{
-            PARTY_PANEL: screens[PARTY_PANEL].replace(f"guid: {BOND_GUID}", f"guid: {RIM_GUID['Space']}", 1)}))),
+            PARTY_PANEL: screens[PARTY_PANEL] + lit_image_doc(RIM_GUID['Space'])}))),
         ("a window without its sea lines", lambda f: f.__setitem__("__screens__", dict(screens, **{
             WINDOWS[2]: screens[WINDOWS[2]].replace(SEA_GUID, "2" * 32)}))),
         ("a panel back on the lattice", lambda f: f.__setitem__("__screens__", dict(screens, **{
@@ -511,7 +519,7 @@ def self_test(files):
         ("the sign-in without its sea", lambda f: f.__setitem__("__screens__", dict(screens, **{
             SEA_ELSEWHERE[0]: screens[SEA_ELSEWHERE[0]].replace(SEA_GUID, "3" * 32)}))),
         ("a party bond without KitRimMesh", lambda f: f.__setitem__("__screens__", dict(screens, **{
-            PARTY_PANEL: screens[PARTY_PANEL].replace(RIM_SCRIPT, "5" * 32)}))),
+            PARTY_PANEL: screens[PARTY_PANEL] + lit_image_doc(BOND_GUID)}))),
     ]
     ok = True
     for label, mutate in cases:

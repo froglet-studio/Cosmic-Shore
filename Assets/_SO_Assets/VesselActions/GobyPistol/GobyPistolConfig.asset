@@ -37,7 +37,8 @@ MonoBehaviour:
   hillGrowthPerIsland: 0.08
   hillGrowthMax: 1.5
   trailBlockGap: 6
-  trailBlockScale: {x: 1.4, y: 0.4, z: 5.5}
+  trailBlockSection: {x: 1.4, y: 0.5}
+  trailShieldFill: 0.9
   pGravity: 19
   pDiveMul: 7.5
   pMinSpeed: 6
@@ -67,7 +68,7 @@ MonoBehaviour:
   pSlingPull: 0.22
   arriveDistance: 2
   restSeconds: 1.2
-  denUnitsPerPrism: 40
+  energyPerDenPrism: 8
   denMassScale:
     Enabled: 1
     Value: 1

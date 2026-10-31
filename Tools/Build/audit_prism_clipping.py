@@ -60,7 +60,7 @@ BAKE_FORMAT = "Assets/_Scripts/Controller/Environment/Spawning/PrismLayoutBakeFo
 # name the closed-form Blast Run layout; without its helpers the harness stopped compiling
 # (CS0246, 2026-10-28) and this audit stopped running.
 SB = "Assets/_Scripts/Controller/Arcade/Switchback"
-HELPERS = ["Assets/_Scripts/Utility/MathfNoAlloc.cs",
+HELPERS = ["Assets/_Scripts/Utility/Foundation/MathfNoAlloc.cs",
            f"{SB}/SwitchbackFeatures.cs", f"{SB}/SwitchbackBlastRun.cs",
            "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterStationBuilder.cs"]
 GYROID_TABLES = ["Assets/_Scripts/Controller/Assemblers/CornerSiteType.cs",

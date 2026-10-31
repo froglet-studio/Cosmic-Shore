@@ -16,12 +16,20 @@ namespace CosmicShore.Gameplay
     /// vessel's fuel resource - and every burn is its OWN event with its own duration. Press again
     /// while a pellet is still burning and a second one lights beside it; the two overlap, and each
     /// adds the same increment of speed, so four pellets burning at once is four times the effect of
-    /// one. Fuel refills at a fixed rate (the resource's authored <c>resourceGainRate</c>, ticked by
-    /// <see cref="ResourceSystem"/>) up to a capacity of exactly four pellets.
+    /// one. The tank holds exactly four pellets and does NOT refill on a clock.
+    ///
+    /// <para><b>The wall refills the tank</b> (Garrett, 2026-10-31). A pellet comes back only while
+    /// the Serpent's own wall is eating the Serpent's own trail: fly out at cruise in plane with a
+    /// wall and the trail is pulled into it. <see cref="SerpentWallAssembler"/> calls
+    /// <see cref="CreditWallBuilding"/> each time one of the owner's trail prisms lands, and the
+    /// time between consecutive landings (each gap capped at
+    /// <see cref="ConsumeBoostActionSO.WallBuildingGapSeconds"/>) is building time, paid at one
+    /// pellet per <see cref="ConsumeBoostActionSO.SecondsOfWallBuildingPerPellet"/> (2 s). Several
+    /// walls eating at once are one stretch of building, never two.</para>
     ///
     /// <para><b>The fuel resource IS the magazine.</b> There is no charge counter and no reload:
     /// how many pellets you hold is <c>floor(fuel / pelletCost)</c>, and a spent pellet comes back
-    /// on the resource's own clock. That is what makes it a resource to MANAGE - burn one now and
+    /// as the wall builds. That is what makes it a resource to MANAGE - burn one now and
     /// keep three in hand, or dump all four for a 4x overlap and fly on empty. A magazine-and-reload
     /// version replaced it for a while (four charges that came back only after the LAST burn ended
     /// plus a seven-second wait) and read as a cooldown ability rather than as a fuel tank; it is
@@ -68,18 +76,22 @@ namespace CosmicShore.Gameplay
 
         readonly List<float> _burnEndTimes = new();
 
+        // When one of this Serpent's own trail prisms last landed in its wall.
+        float _lastTrailEatenAt = float.NegativeInfinity;
+
         public ConsumeBoostActionSO Config => config;
         public int BurningCount => _burnEndTimes.Count;
 
         /// <summary>Which resource holds the fuel, or -1 when no config is wired yet.</summary>
         public int FuelResourceIndex => config ? config.ResourceIndex : -1;
 
-        /// <summary>Fuel one pellet costs, as a fraction of the resource. 0 when unconfigured.</summary>
-        public float PelletCost => config ? config.ResourceCost : 0f;
+        /// <summary>Fuel one pellet costs, as a fraction of the resource - the Time-5 cost while that
+        /// upgrade is active (five pellets). 0 when unconfigured.</summary>
+        public float PelletCost => config ? config.ResourceCostFor(_status) : 0f;
 
         /// <summary>
         /// How many pellets a FULL tank holds - derived from the resource's own capacity and the
-        /// pellet size, never authored twice. 4 on the shipped Serpent (1.0 / 0.25).
+        /// pellet size, never authored twice. 4 on the shipped Serpent (1.0 / 0.25), 5 at Time 5 (1.0 / 0.2).
         /// </summary>
         public int PelletCapacity
         {
@@ -124,6 +136,7 @@ namespace CosmicShore.Gameplay
             // A vessel swap re-runs Initialize on a live component, so drop whatever the previous
             // pilot had burning before adopting the new status.
             ClearBurns();
+            _lastTrailEatenAt = float.NegativeInfinity;
 
             _status = shipStatus;
             _resources = shipStatus?.ResourceSystem;
@@ -143,7 +156,7 @@ namespace CosmicShore.Gameplay
 
             if (config != so) config = so;
 
-            float cost = so.ResourceCost;
+            float cost = so.ResourceCostFor(_status ?? status);
             if (cost <= 0f)
             {
                 CSDebug.LogWarning($"[ConsumeBoost] '{so.name}' authors resourceCost {cost}; a pellet " +
@@ -166,6 +179,40 @@ namespace CosmicShore.Gameplay
 
             OnPelletBurned?.Invoke(duration, _burnEndTimes.Count);
             OnBurningCountChanged?.Invoke(_burnEndTimes.Count);
+        }
+
+        /// <summary>
+        /// One of this Serpent's own trail prisms just landed in one of its walls. The time since
+        /// the previous landing is building time - capped at
+        /// <see cref="ConsumeBoostActionSO.WallBuildingGapSeconds"/>, so a pause starts a new stretch
+        /// and pays nothing - refilled at one pellet per
+        /// <see cref="ConsumeBoostActionSO.SecondsOfWallBuildingPerPellet"/>. Landings in the same
+        /// frame (one wall or several) add nothing beyond the first, so two walls eating at once
+        /// refill no faster than one.
+        /// </summary>
+        public void CreditWallBuilding()
+        {
+            float now = Time.time;
+            float gap = now - _lastTrailEatenAt;
+            _lastTrailEatenAt = now;
+
+            if (!config || !TryGetFuel(out _)) return;
+
+            float fuel = WallBuildingFuel(gap, config.WallBuildingGapSeconds,
+                                          config.SecondsOfWallBuildingPerPellet, PelletCost);
+            if (fuel > 0f) _resources.ChangeResourceAmount(config.ResourceIndex, fuel);
+        }
+
+        /// <summary>
+        /// Fuel paid for one own-trail landing <paramref name="gap"/> seconds after the previous one:
+        /// the gap is building time, paid at one pellet (<paramref name="pelletCost"/> of fuel) per
+        /// <paramref name="secondsPerPellet"/>. Nothing for a same-frame landing (gap 0) or a pause
+        /// longer than <paramref name="maxGap"/> (a new stretch of building starts there).
+        /// </summary>
+        public static float WallBuildingFuel(float gap, float maxGap, float secondsPerPellet, float pelletCost)
+        {
+            if (!(gap > 0f) || gap > maxGap || secondsPerPellet <= 0f || pelletCost <= 0f) return 0f;
+            return gap / secondsPerPellet * pelletCost;
         }
 
         /// <summary>

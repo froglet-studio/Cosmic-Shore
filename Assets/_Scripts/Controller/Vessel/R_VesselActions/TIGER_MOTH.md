@@ -36,9 +36,9 @@ is to keep your invulnerability and a speed boost for 3 seconds after the drop e
 | Charge 5 | **Monarch**: the dust bites twice as deep | **Toll Gate**: the wormhole tolls rivals and wears the domain hue; without it the mouths are neutral and nobody pays | `TigerMothDropActionSO.TollsRivals` (the replicated unlock bit, every peer); `TigerMothDropExecutor.FollowTollUpgrade` switches a standing pair; `WormholeMouth.SetDomainTolled` |
 | Time 5 | **Far Drop**: the medium distance doubles | **Afterburn**: 3 s incorporeal and a speed boost after the landing | `TigerMothDropActionSO.HasAfterburn`; `TigerMothDropExecutor.End(landed, afterburn)` keeps the colliders off (the dust's back on) and calls `VesselTransformer.ModifyThrottle(2, 3)` on the owner |
 
-The old gates are switched OFF (vessel rule 26): Monarch's `upgradeElement` on
-`ButterflyScaleDustDebuffBySkimmerEffect.asset` is None, and Far Drop's `upgradeDistanceMultiplier` is gone from the SO
-and the asset. `author_tigermoth_assets.py --check` holds both off and both new cards on (with negative controls).
+The old gates are switched OFF (vessel rule 26): Monarch's `upgradeElement` is gone from
+`ButterflyScaleDustDebuffBySkimmerEffect.asset` and its SO with the bite itself (the dust shreds since 2026-10-31,
+§1.3), and Far Drop's `upgradeDistanceMultiplier` is gone from the SO and the asset. `author_tigermoth_assets.py --check` holds both off and both new cards on (with negative controls).
 
 An owned mouth now wears its owner's hue only while it tolls (`WormholeMouth.ApplySurface`): the colour is the toll's
 sign. The only other mouths, the crystal wormhole's, have no owner and were already neutral.
@@ -60,6 +60,33 @@ silence window lifts (`VesselSilence.Lift`) and every TEMPORARY negative element
 Every peer cleanses its own copy (silence is kept per peer; the contacts are simulated on every peer). A silence
 extension still on the wire when the dust lands re-silences the pilot on the peer it reaches late: lifts are not
 relayed (SILENCE.md relays extensions only).
+
+### 1.3 The dust shreds (2026-10-31)
+
+Garrett: "have the charge ability shred a random element petal every second and decrease the cooldown to .1 seconds at
+charge 10", and "most things take all four elements. this is one random element. as always score and silence should be
+proportional to petals, but this is one petal not 4." The petal is stolen (the contact verb), not burned.
+
+| | Was | Now |
+|---|---|---|
+| What one contact takes | a slice of every element (−0.33 each × Charge's bite, 0.5× → 2×) | ONE petal of ONE random element the rival holds |
+| How often | once per pass (a skimmer runs its vessel effects on entry), latched 1 s | every `shredInterval` for as long as the rival stays in the dust: 1 s at Charge 0, 0.1 s at Charge 10, floored at 0.1 s |
+| What Charge scales | the bite's size | the shred's RATE |
+| Silence | a Strike's worth (3.2 petals) per pass | one petal's worth per shred |
+| Score | one Strike per pass | one Strike per 3.2 petals shredded (a Strike's fleet price: ten points to the petal, on four elements) |
+| A rival with no petals | scored and silenced anyway | not admitted: no score, no silence |
+
+| Piece | Where |
+|---|---|
+| The shred (pick, steal, interval) | `VesselElementalDebuffBySkimmerEffectSO` (`IPacedContactPetalTake`); its asset is `ButterflyScaleDustDebuffBySkimmerEffect.asset` (`petalsPerShred`, `shredInterval`) |
+| The admission, silence and score per petal | `VesselCombatHitBySkimmerEffectSO.ExecutePaced`, `CombatHitDrain.TryAdmitPetals` / `PetalsFor`, `VesselSilence.OnPetalsAdmitted` |
+| The standing contact | `ButterflyCombatHitBySkimmerEffect.asset` `repeatWhileInside: 1`; `SkimmerImpactor` keeps the hulls inside it (only while its container holds a repeating effect) and `ReapplyVesselEffectsToOverlapping` re-runs those effects; `ButterflyDustField.Update` calls it every frame the dust is live |
+| The numbers | `author_butterfly_dust.py` (`SHRED_INTERVAL_*`), held by its `--check` and by `author_tigermoth_assets.py --check` (with negative controls) |
+
+The element is picked among those the rival holds by their REPLICATED level, with an integer hash of a running serial
+(never `UnityEngine.Random`, vessel rule 18). Only the machine that owns the Tiger Moth picks; the rival's owner settles
+the one element named, and clamps to what they hold. The interval reads the Tiger Moth's replicated Charge. Frame
+quantisation: the reporter runs once a frame, so at 30 fps the 0.1 s shred lands every 0.1-0.133 s.
 
 **Why the turn is exactly 90 degrees.** The hull falls along its down and flies on along that same line, so its forward
 has to land on its old down: a 90-degree pitch and nothing else (`TigerMothDropMath.TurnDegrees`, a constant).
@@ -92,6 +119,10 @@ their cards, previews and AI seats (`vesselClass: 29`), and their generators (`a
 Waystation's autopilot aims its BELLY at the next ring before a long gap and drops (§3.1). The Butterfly's own components keep their names (`ButterflyDustField`,
 `ButterflyAnimation`, `ButterflyHUDView`, `ButterflySpreadWingsAction`, the `Butterfly.fbx` model): the Tiger Moth is
 built from them, and renaming them is a separate refactor.
+
+**Waystation is the Drop Tower race since 2026-11-01**: the clusters with a staircase of SHORT HOPS through floor plates
+in every gap but the last (built as Waystation Prototype, 76, and folded in). It changes nothing in this kit
+(`WAYSTATION.md` "The Drop Tower", `Docs/Studios/TIGER_MOTH_TIME.md`).
 
 ### 3.1 Waystation's AI aims its belly (2026-10-29)
 
@@ -171,8 +202,16 @@ configs) compiles it clean against real Unity references; that is a compile, not
    across the line to the next cluster: thread it, roll, drop, and you land flying into the next coil. An AI does the
    same (it rolls its belly onto the next ring after the exit gate, then drops).
 8. MPPM, two clients: the second client sees the fall, the landing turn and the same wormhole pair.
+9. The shred (§1.3), toybox with an AI rival in Dust mode: hold the dust on a rival at Charge 0. The rival's flowers
+   lose one petal of ONE element about once a second, and yours gain it; a different element is picked from shred to
+   shred. Raise Charge to 10 (the element dial): about ten petals a second. A rival with no petals left loses nothing
+   and is not silenced. In Dustup the score rises by one dusting per ~3.2 petals while you stay on them.
 
 ## 7. Follow-ups
+
+- **Decision needed (Garrett): Dustup's target.** Ten dustings was set for ten passes; with the shred it is 32 s of dust
+  contact at Charge 0 and 3.2 s at Charge 10 (§1.3, `DUSTUP.md`). Re-tune after a playtest.
+- The bite sound plays when the dust first reaches a rival, not per shred (`scaleDustBiteEvent`, empty).
 
 - **Decision needed (Garrett):** the medium distance (900 u) and the afterburn's ×2 throttle are starting numbers.
 - The afterburn keeps the whole hull incorporeal, so crystals pass through it for those 3 s too (the dust stays on).

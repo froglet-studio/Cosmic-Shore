@@ -493,6 +493,15 @@ namespace CosmicShore.UI
                 case GameModes.BurrowRun:
                     // The same answer on the Meerkat's wormhole circuit: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BurrowRun");
+                case GameModes.ScarabRally:
+                    // Switchback's answer on the Scarab's ring race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_ScarabRally");
+                case GameModes.SerpentTime:
+                    // The circuit answer once more, on the Serpent's pellet circuit.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SerpentTime");
+                case GameModes.BrittleStarTime:
+                    // ...and on the Brittle Star's Speed Mode circuit.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BrittleStarTime");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which
@@ -508,6 +517,11 @@ namespace CosmicShore.UI
                     // check is the whole point - the dust spares teammates - and a duel between
                     // the fleet's two slowest-turning hulls is won by whoever FINDS the other.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Dustup");
+                case GameModes.SerpentGulag:
+                    // The Bends' provider again: the nearest pilot this player may snipe. In a 3,600 u cell the
+                    // duel is won by whoever FINDS the other first, then lines them up - the arrow answers the
+                    // first half; the scope, the nests and the cloak are the second.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_SerpentGulag");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's

@@ -19,9 +19,10 @@ namespace CosmicShore.UI
     /// <item><b>Time</b>: the Goby's dart, or the Pistol's dive down a hill.</item>
     /// </list>
     /// The controller (<see cref="GobyPistolHUDController"/>) also re-seeds each card's control chip, presses, veils and
-    /// counts per seat. Two gauges are this view's: the Time card's (the dart's charge, or the Pistol's speed) and the
-    /// Space card's (how far the undertow reaches, the same pull in both seats). The lockup adopts both through each
-    /// binding's <c>gauge</c>; this view writes them through its own fields (both are needed, the Urchin's lesson).
+    /// counts per seat. Three gauges are this view's: the Time card's (the dart's charge, or the Pistol's speed), the
+    /// Space card's (how far the undertow reaches, the same pull in both seats) and the Mass card's (the Pistol's energy,
+    /// Garrett 2026-10-29: "the energy should be shown on its mass icon"). The lockup adopts each through its binding's
+    /// <c>gauge</c>; this view writes them through its own fields (both are needed, the Urchin's lesson).
     /// <para>No icon here is an upgrade sprite: the level-5 signal is the card's own rim and bloom, so swapping an
     /// icon's sprite never fights <see cref="VesselHUDView.SetAbilityUpgraded"/>, which writes a sprite only where one
     /// is authored.</para>
@@ -50,6 +51,9 @@ namespace CosmicShore.UI
         [SerializeField] Image timeGauge;
         [Tooltip("The Space card's gauge: how far the undertow reaches (Space's level), in both seats.")]
         [SerializeField] Image spaceGauge;
+        [Tooltip("The Mass card's gauge: the Pistol's energy while the person flies it (the blocks it flew over gave it; its " +
+                 "next den is built from it). Empty while they fly the Goby.")]
+        [SerializeField] Image massGauge;
         [Tooltip("A gauge's colour as it fills.")]
         [SerializeField] Color gaugeColor = new(0.22f, 0.51f, 1f, 0.55f);
         [Tooltip("A full gauge's colour.")]
@@ -63,6 +67,7 @@ namespace CosmicShore.UI
             Seat = -1;
             Fill(timeGauge, 0f, force: true);
             Fill(spaceGauge, 0f, force: true);
+            Fill(massGauge, 0f, force: true);
             SetSeat(GobySeat);
         }
 
@@ -89,6 +94,7 @@ namespace CosmicShore.UI
 
         public void SetTimeGauge(float value01) => Fill(timeGauge, value01, force: false);
         public void SetSpaceGauge(float value01) => Fill(spaceGauge, value01, force: false);
+        public void SetMassGauge(float value01) => Fill(massGauge, value01, force: false);
 
         void Fill(Image gauge, float value01, bool force)
         {

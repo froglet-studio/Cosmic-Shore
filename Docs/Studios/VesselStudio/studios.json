@@ -202,6 +202,35 @@
       "docs": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
     },
     {
+      "id": "serpent",
+      "name": "Serpent",
+      "file": "serpent.html",
+      "kind": "built vessel - studio round 1 (its Time game, a design)",
+      "chip": "built vessel · round 1",
+      "summary": "The Serpent and its Time game, a dirty ring race: every gate holds several rings and any Serpent can plug one behind it with a seed wall (cloak just past it, or stop in it). Shoot the wall down with the scoped Sniper Shot, ram it, or take another ring; every round costs a crystal off the racing line. AI Serpents at Easy, Medium or Hard fly five play styles and play dirty too.",
+      "spec": [
+        {
+          "k": "Flight",
+          "v": "50 u/s · pellets stack to 9×"
+        },
+        {
+          "k": "Kit",
+          "v": "Scope · Sniper Shot · Seed Wall · Cloak"
+        },
+        {
+          "k": "Game",
+          "v": "Serpent Time (a design)"
+        },
+        {
+          "k": "Status",
+          "v": "the race is lab-only; the Serpent ships"
+        }
+      ],
+      "preview": "previews/serpent.png",
+      "accent": "#9be15d",
+      "docs": "Docs/Studios/SERPENT_TIME.md"
+    },
+    {
       "id": "orca",
       "name": "Orca",
       "file": "orca.html",
@@ -689,7 +718,6 @@
     "Manta",
     "Dolphin",
     "Rhino",
-    "Serpent",
     "Sparrow",
     "Urchin",
     "Grizzly",
