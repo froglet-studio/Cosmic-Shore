@@ -340,7 +340,7 @@ can judge (the final look, feel, audio). A clip never replaces `/verify-unity` o
   - **Never** put a C# string literal that reaches a `TMP_Text`, toast, dialogue or button label.
   - Text whose facts are computed is an **authored template with tokens** (`Hold {glyph:Time} to
     boost`). Code fills the tokens; a human owns the sentence. `TemplateText.Fill(template, "token", value, ...)`
-    (`Assets/_Scripts/UI/TemplateText.cs`) is the one filler; it returns empty for an empty template.
+    (`Assets/_Scripts/Data/TemplateText.cs`) is the one filler; it returns empty for an empty template.
   - An empty field shows nothing. That is how a line is deleted, so never fall back to a hardcoded
     default.
   - **Excluded:** logs, dev/diagnostic overlays and editor-tool UI.
