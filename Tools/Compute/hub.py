@@ -26,7 +26,9 @@ Run it behind a TLS proxy (Caddy on the VM: Tools/Compute/vm/setup-vm.sh); it li
 team key lives in ~/.froglet-compute/hub.json ({"key": ...}); the page asks for it once and keeps it in the browser.
 Standard library only.
 """
+import contextlib
 import hmac
+import io
 import json
 import os
 import subprocess
@@ -42,6 +44,7 @@ import manual_runs as R
 
 MAX_BODY = 256 * 1024
 HERE = os.path.dirname(os.path.abspath(__file__))
+AI_SYNC_EVERY = 3600                 # seconds between the VM's ai-branch syncs
 
 
 class Hub:
@@ -56,6 +59,7 @@ class Hub:
         self.prs, self.prs_at = [], 0
         self.error, self.started = None, time.time()      # the last build's failure, shown by the page
         self.posts = {}
+        self.ai_sync, self.ai_sync_at = None, 0.0        # the hourly ai-branch sync (the VM only): its last result
 
     # ── the snapshot ──
     def build_once(self, fetch=True):
@@ -95,7 +99,27 @@ class Hub:
             if quick:
                 quick = False
                 continue
+            if self.syncs_ai() and time.time() - self.ai_sync_at > AI_SYNC_EVERY:
+                self.sync_ai()
             time.sleep(self.rebuild)
+
+    # ── the ai branch: the VM keeps it current, so nobody runs a sync by hand (README section 15) ──
+    def syncs_ai(self):
+        return bool(self.github_token) and not self.app
+
+    def sync_ai(self):
+        """bleeding-edge into ai and Ys-bleeding-edge's AI paths replayed, pushed with the VM's token (the clone's
+        remote carries it). A failure is shown on the page and tried again next hour; it never stops the hub."""
+        self.ai_sync_at = time.time()
+        buf = io.StringIO()
+        try:
+            import ai_branch
+            with contextlib.redirect_stdout(buf):
+                rc = ai_branch.sync(push=True)
+            self.ai_sync = {"at": L.now(), "ok": rc == 0, "note": buf.getvalue().strip()[-600:]}
+        except Exception as e:
+            self.ai_sync = {"at": L.now(), "ok": False, "error": f"{type(e).__name__}: {e}", "note": buf.getvalue().strip()[-600:]}
+        L.log(f"hub: ai sync {'ok' if self.ai_sync['ok'] else 'failed'}: {self.ai_sync.get('error') or self.ai_sync['note'].splitlines()[-1:] or ''}", self.quiet)
 
     def _pull_requests(self):
         try:
@@ -113,6 +137,8 @@ class Hub:
             if self.data is None:
                 return None
             d = C.overlay(self.data, self.live, self.jobs)
+            if self.syncs_ai():
+                d = dict(d, ai=dict(d.get("ai") or {}, hub_sync=self.ai_sync or {"due": True}))
             if self.filed:
                 d = dict(d, manual=list(self.filed) + list(d.get("manual") or []))
             return d
@@ -268,6 +294,7 @@ def handler(hub, page):
             if path == "/api/status":
                 d = hub.snapshot() or {}
                 return self._send(200, {"hub": True, "app": bool(hub.app), "built": d.get("generated"), "error": hub.error,
+                                        "ai_synced": hub.ai_sync if hub.syncs_ai() else None,
                                         "live": (d.get("live") or {}).get("machines", []),
                                         "here": hub.here_runs() if hub.app else []})
             return self._send(404, {"error": "not found"})

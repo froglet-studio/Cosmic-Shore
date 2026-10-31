@@ -119,6 +119,18 @@ class Beacon:
             hb["current"] = {}
         return folder, path, hb
 
+    def starting(self, req, idle=None):
+        """The agent took a run the console sent: say so at once, naming it, so the console shows it as starting
+        before the session's first report (a Unity run opens Unity for a minute or more first)."""
+        folder, path, hb = self.heartbeat("working", idle)
+        hb["current"] = {"job": req.get("job"), "request": req.get("id"), "since": L.now(), "phase": "starting",
+                         "unit": _unit_of(req)}
+        L.post_heartbeat(hb)
+        L.write_json(path, hb)
+        self.last_live = time.time()
+        self.last_status = "working"
+        return hb
+
     def tick(self, status, idle=None, force=False):
         now = time.time()
         changed = status != self.last_status
@@ -137,6 +149,14 @@ class Beacon:
             self.last_git = now
         self.last_status = status
         return hb
+
+
+def _unit_of(req):
+    """The unit name a Unity run will work on (mode-vessel-iN), from its request; None for a search."""
+    args = (req or {}).get("args") or {}
+    if not (args.get("mode") and args.get("vessel")):
+        return None
+    return f"{str(args['mode']).lower()}-{str(args['vessel']).lower()}-i{int(args.get('intensity') or 4)}"
 
 
 # ── runs the console sent ────────────────────────────────────────────────────
@@ -263,6 +283,10 @@ def machine_status(hb, now=None, live=False):
     if (hb.get("current") or {}).get("job"):
         return "working"
     s = hb.get("status")
+    # "working" with no run to show: the agent took a run and the session has not reported yet (a Unity run opens
+    # Unity first), or a session ended and the next has not started. Never "working" with nothing running.
+    if s == "working":
+        return "starting"
     return s if s in STATUSES else "free"
 
 
@@ -275,6 +299,8 @@ def self_test():
             bad.append(f"agent: status at +{now - 1000}s ({'live' if live else 'git'}) should be {want}")
     if machine_status(dict(hb, current={"job": "x"}), 1010, True) != "working":
         bad.append("agent: a heartbeat with a job is working")
+    if machine_status(dict(hb, status="working", current={}), 1010, True) != "starting":
+        bad.append("agent: 'working' with no run to show is starting, never working")
     reqs = {"a": {"id": "a", "created": 1, "machine": "u/h", "start": "now", "budget": {"tries": 5}},
             "b": {"id": "b", "created": 2, "machine": "u/h", "start": "now", "not_before": 9e9, "budget": {"tries": 5}},
             "c": {"id": "c", "created": 3, "machine": "u/other", "start": "now", "budget": {"tries": 5}},

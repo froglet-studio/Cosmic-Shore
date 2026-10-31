@@ -150,7 +150,7 @@ def cmd_run(args):
             if due:
                 r = due[0]
                 L.log(f"agent: the console started {r['id']} ({r['job']}) here now", args.quiet)
-                beacon.tick("working", idle, force=True)
+                beacon.starting(r, idle)
                 session(["--request", r["id"], "--queue", *[q.replace("origin/", "") for q in queue]])
                 continue
         if not presence.away():

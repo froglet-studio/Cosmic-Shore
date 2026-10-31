@@ -142,7 +142,7 @@ textarea.field, .approve textarea { min-height: 60px; resize: vertical; }
 /* ── status, tags, pills ── */
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; background: var(--off); }
 .st { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-.st.working .dot { background: var(--accent); } .st.free .dot { background: var(--ok); } .st.in-use .dot { background: var(--warn); }
+.st.working .dot { background: var(--accent); } .st.starting .dot { background: var(--accent); animation: fc-pulse 1.2s ease-in-out infinite; } .st.free .dot { background: var(--ok); } .st.in-use .dot { background: var(--warn); }
 .st.outside-hours .dot { background: transparent; border: 1.5px solid var(--off); } .st.offline .dot { background: transparent; border: 1.5px solid var(--off); }
 .st + .sub, .sub { display: block; font-size: 12px; color: var(--dim); }
 .kind { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border: 1px solid var(--line2); border-radius: 11px; font-size: 12px; color: var(--muted); white-space: nowrap; vertical-align: middle; }
@@ -168,6 +168,10 @@ textarea.field, .approve textarea { min-height: 60px; resize: vertical; }
 .prog { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .prog i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
 .prog.mini { width: 90px; display: inline-block; vertical-align: middle; }
+.prog.wait i { width: 28%; animation: fc-slide 1.6s ease-in-out infinite; }
+@keyframes fc-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(360%); } }
+@keyframes fc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .prog.wait i, .st.starting .dot { animation: none; } }
 
 /* ── tables ── */
 .tablewrap { overflow-x: auto; }
@@ -552,7 +556,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     var d = DATA, act = (d.runs || {}).active || [], recent = (d.runs || {}).recent || [], c = fleet();
     var ready = d.jobs.filter(function (j) { return j.converged && j.status !== "promoted"; });
     var flights = d.recordings.flights, learned = flights.filter(function (f) { return f.state === "learned"; }).length, unseen = flights.filter(function (f) { return f.state === "new"; }).length;
-    var fleetWords = ["working", "free", "in use", "outside hours", "offline"].filter(function (k) { return c[k]; }).map(function (k) { return c[k] + " " + STATUS_TEXT[k].toLowerCase(); }).join(" · ");
+    var fleetWords = ["starting", "working", "free", "in use", "outside hours", "offline"].filter(function (k) { return c[k]; }).map(function (k) { return c[k] + " " + STATUS_TEXT[k].toLowerCase(); }).join(" · ");
     root.appendChild(title("Home"));
     var box = outboxCard(); if (box) root.appendChild(box);
     root.appendChild(h("div", { class: "stats", id: "home-hero" }, [
@@ -563,7 +567,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     // needs you
     var needs = [];
     ready.forEach(function (j) { var dl = delta(j); needs.push([IC.flag, j.title, "Finished searching" + (dl ? " · " + pctText(dl) + ", in the model" : "") + " · " + (j.evals || 0).toLocaleString() + " tries", "Review", function () { openJob(j.id); }]); });
-    if ((d.ai || {}).needs_sync) needs.push([IC.branch, "The ai branch is behind", (d.ai.behind_base || 0) + " bleeding-edge commits and " + (d.ai.waiting_ai_files || 0) + " AI files are waiting", "Open", function () { location.hash = "ai"; }]);
+    if ((d.ai || {}).needs_sync) needs.push([IC.branch, "The ai branch is behind", (d.ai.behind_base || 0) + " bleeding-edge commits and " + (d.ai.waiting_ai_files || 0) + " AI files are waiting" + (d.ai.hub_sync ? " · this console syncs it every hour" : ""), "Open", function () { location.hash = "ai"; }]);
     if (unseen) needs.push([IC.rec, unseen + " races the AI has not learned from yet", "The hourly learning sweep picks them up by itself", "View", function () { location.hash = "recordings"; }]);
     if (!d.machines.length) needs.push([IC.flag, "No computer has joined yet", "Add one with a single line in its terminal", "Add", openInstall]);
     var needList = h("div", { class: "rowlist" }, needs.length ? needs.map(function (n) { return rowItem([svgIcon(n[0]), h("div", { class: "t" }, [h("b", { text: n[1] }), h("span", { text: n[2] })]), h("button", { class: "btn small", type: "button", onclick: n[4], text: n[3] })]); })
@@ -595,6 +599,13 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     var elapsed = (r.updated || r.since) - (r.since || 0), budget = (r.minutes || 60) * 60;
     var frac = r.max_evals && r.evals != null ? Math.min(1, r.evals / r.max_evals) : Math.min(1, elapsed / budget);
     var better = r.best != null && r.best_start != null && r.best < r.best_start, k = runKind(r.job);
+    var starting = live && r.phase === "starting" && !r.evals;
+    if (starting) return h("div", { class: "run" }, [
+      h("div", { class: "top" }, [kindTag(k), h("b", { text: runName(r) }), h("span", { class: "note", text: "on " + String(r.machine || "").split("/").pop() }), h("span", { class: "grow" }),
+        r.request ? h("button", { class: "btn small", type: "button", title: "Stops within 30 s", onclick: function (e) { stopRun(r.request, e.target.closest(".run"), r.machine, runName(r)); } }, [svgIcon(IC.stop, 14), "Stop"]) : null]),
+      h("div", { class: "prog wait" }, [h("i")]),
+      h("div", { class: "facts" }, [h("span", null, [h("b", { text: "Starting" }), k === "unity" ? " · Unity is opening; the first match reports in a minute or two" : " · the first tries report within a minute"]),
+        h("span", null, [h("b", { text: dur(elapsed) })]), h("span", { text: "heard " + ago(r.updated) })])]);
     return h("div", { class: "run" }, [
       h("div", { class: "top" }, [kindTag(k), h("b", { text: runName(r) }), h("span", { class: "note", text: "on " + String(r.machine || "").split("/").pop() }), h("span", { class: "grow" }),
         live && r.request ? h("button", { class: "btn small", type: "button", title: "Stops within 30 s and keeps what it found", onclick: function (e) { stopRun(r.request, e.target.closest(".run"), r.machine, runName(r)); } }, [svgIcon(IC.stop, 14), "Stop"]) : null]),
@@ -609,7 +620,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     Object.keys(m.fix).forEach(function (k) { chips.push(k + " = " + m.fix[k]); });
     Object.keys(m.ranges).forEach(function (k) { chips.push(k + " in " + m.ranges[k][0] + "–" + m.ranges[k][1]); });
     Object.keys(m.args).forEach(function (k) { chips.push(k + ": " + JSON.stringify(m.args[k])); });
-    var when = m.state === "open" ? (m.not_before && m.not_before * 1000 > Date.now() ? "starts " + new Date(m.not_before * 1000).toLocaleString() : m.start === "now" ? "starts at once" : "starts when a computer is free") : "";
+    var when = waitReason(m);
     return h("div", { class: "mrun" }, [
       h("div", { class: "top" }, [h("span", { class: "pill " + ({ done: "learned", running: "ready", open: "waiting", cancelled: "idle" })[m.state], text: m.state === "open" ? "waiting" : m.state }),
         kindTag(runKind(m.job)), h("b", { text: runName(m) }), h("span", { class: "note", text: "by " + (m.by || "?") + " · " + ago(m.created) + (m.machine !== "any" ? " · on " + String(m.machine).split("/").pop() : "") + (when ? " · " + when : "") }),
@@ -624,12 +635,13 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   function renderRuns(root) {
     var act = (DATA.runs || {}).active || [], recent = (DATA.runs || {}).recent || [];
     root.appendChild(title("Runs"));
-    root.appendChild(kindLegend());
+    if (NOTICE && Date.now() - NOTICE.at < 180000) root.appendChild(h("div", { class: "banner", id: "sent-notice" }, [h("b", { text: NOTICE.text })]));
     var box = outboxCard(); if (box) root.appendChild(box);
     root.appendChild(h("div", { class: "sec", text: "Running · " + act.length }));
     if (act.length) act.forEach(function (r) { root.appendChild(runBox(r, true)); });
     else root.appendChild(h("div", { class: "card" }, [h("div", { class: "rowlist" }, [rowItem([h("div", { class: "t" }, [h("span", { text: "Nothing is running. " + DATA.machines.map(function (m) { return m.host + " is " + (STATUS_TEXT[mstatus(m)] || "").toLowerCase(); }).join("; ") + "." })])])])]));
-    var man = (DATA.manual || []).filter(function (m) { return m.state === "open" || m.state === "running"; });
+    var live = {}; act.forEach(function (r) { if (r.request) live[r.request] = true; });
+    var man = (DATA.manual || []).filter(function (m) { return (m.state === "open" || m.state === "running") && !live[m.id]; });   // a run shown above as Running is not listed twice
     if (man.length) { root.appendChild(h("div", { class: "sec", text: "Sent runs · " + man.length })); man.forEach(function (m) { root.appendChild(manualBox(m)); }); }
     root.appendChild(h("div", { class: "sec", text: "Finished" }));
     if (!recent.length) root.appendChild(h("p", { class: "note", text: "No finished run has been reported yet." }));
@@ -831,18 +843,18 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   }
 
   // ── computers ──
-  var STATUS_TEXT = { working: "Working", free: "Free", "in use": "In use", "outside hours": "Outside its hours", offline: "Offline" };
+  var STATUS_TEXT = { starting: "Starting", working: "Working", free: "Free", "in use": "In use", "outside hours": "Outside its hours", offline: "Offline" };
   var STATUS_NOTE = { working: "running a search or a game", free: "its person is away: it works on the queue", "in use": "its person is using it",
     "outside hours": "it works only in its set hours", offline: "nothing heard from it lately" };
   function mstatus(m) { return m.status || (m.active ? "working" : "offline"); }
   function fleet() { var c = { working: 0, free: 0, "in use": 0, "outside hours": 0, offline: 0 }; (DATA.machines || []).forEach(function (m) { c[mstatus(m)] = (c[mstatus(m)] || 0) + 1; }); return c; }
   function fleetLine() {
     var c = fleet(), parts = [];
-    ["working", "free", "in use", "outside hours", "offline"].forEach(function (k) { if (c[k]) parts.push(h("span", { class: "fl " + k.replace(" ", "-") }, [h("i"), c[k] + " " + STATUS_TEXT[k].toLowerCase()])); });
+    ["starting", "working", "free", "in use", "outside hours", "offline"].forEach(function (k) { if (c[k]) parts.push(h("span", { class: "fl " + k.replace(" ", "-") }, [h("i"), c[k] + " " + STATUS_TEXT[k].toLowerCase()])); });
     return h("div", { class: "fleet" }, parts);
   }
   // ── computers: Tailscale's machine list - filters, search, one row each, actions in the row's menu ──
-  var MORDER = { working: 0, free: 1, "in use": 2, "outside hours": 3, offline: 4 };
+  var MORDER = { starting: 0, working: 1, free: 2, "in use": 3, "outside hours": 4, offline: 5 };
   var MF = "all", MQ = "", MMENU = null;
   function machineMenu(m, act) {
     var copy = function () { try { navigator.clipboard.writeText(m.machine); } catch (e) {} MMENU = null; render(); };
@@ -958,7 +970,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     root.appendChild(h("p", { class: "lead", text: "bleeding-edge plus AI work. Searches read the game from it." }));
     if (a.error) { root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "Could not read the ai branch" }), h("p", { class: "note", text: a.error })])); return; }
     root.appendChild(h("div", { class: "banner" + (a.needs_sync ? " gold" : "") }, [h("b", { text: a.needs_sync ? "Behind: " + (a.behind_base || 0) + " bleeding-edge commits and " + (a.waiting_ai_files || 0) + " AI files from Yash's branch are waiting" : "Up to date" }),
-      a.needs_sync ? h("p", { class: "note", text: "Type sync in the Terminal to bring them in (it starts a cloud session)." }) : null]));
+      a.needs_sync ? h("p", { class: "note", text: a.hub_sync ? "This console brings them in every hour" + (a.hub_sync.at ? "; the last sync was " + ago(a.hub_sync.at) + (a.hub_sync.ok ? "." : " and failed: " + (a.hub_sync.error || a.hub_sync.note || "unknown") + ".") : "; the first is due within the hour.") : "Type sync in the Terminal to bring them in (it starts a cloud session)." }) : null]));
     var log = ((DATA.git || {}).branches || {}).ai || [];
     if (log.length) root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", null, [h("thead", null, [h("tr", null, ["Commit", "Who", "When", "What"].map(function (t) { return h("th", { text: t }); }))]),
       h("tbody", null, log.map(function (c) { return h("tr", null, [h("td", { class: "mono", text: c.sha }), h("td", { text: c.author }), h("td", { text: ago(c.time) }), h("td", { text: c.subject })]); }))])]));
@@ -1012,7 +1024,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   function closeInstall() { document.getElementById("sheet").hidden = true; }
 
   // ── manual runs: the New run sheet (manual_runs.py is the backend; the hub takes runs live from any phone) ──
-  var NR = null, LIVE = false, KEY = lsGet("fc-key") || "";
+  var NR = null, LIVE = false, KEY = lsGet("fc-key") || "", NOTICE = null;
   // Served by the app on this computer (compute.py app): its key comes with the page, and a run here starts at once.
   var APP = window.FC_APP || null; if (APP && APP.key) KEY = APP.key;
   function b64url(s) { var bin = ""; new TextEncoder().encode(s).forEach(function (b) { bin += String.fromCharCode(b); }); return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
@@ -1101,7 +1113,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     if (vessel) NR = nrFor(vessel, mode);
     else if (jid && formFor(jid)) NR = freshNR(jid);
     else if (!NR) { var first = catalog().hulls.filter(function (x) { return x.template; })[0]; NR = first ? nrFor(first.hull, (first.modes_now || [])[0]) : freshNR(Object.keys(DATA.forms || {})[0]); }
-    if (where) { NR.where = where; NR.start = machineInfo(where).remote_start ? "now" : "free"; }
+    if (where) { NR.where = where; NR.wherePicked = true; NR.start = machineInfo(where).remote_start ? "now" : "free"; }
     NR.made = null; closeJob(); drawNewRun(); document.getElementById("sheet").hidden = false;
   }
   function chip(label, on, cls, onclick, sub) {
@@ -1145,14 +1157,22 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     else drawSearchSteps(sheet);
     // 6. where + note
     var um = unityMachines();
-    var places = [["here", "This computer, now"], ["team", NR.unity ? "Any team computer with Unity" : "Any team computer"]].concat((NR.unity ? um : DATA.machines).map(function (m) { return [m.machine, m.host + " · " + (STATUS_TEXT[mstatus(m)] || "").toLowerCase()]; }));
-    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: (NR.unity ? "5" : "6") + "  Where" }), h("div", { class: "picks" }, places.map(function (p) { return chip(p[1], NR.where === p[0], "where", function () { NR.where = p[0]; NR.made = null; drawNewRun(); }); }))]));
+    if (LIVE && !APP && !NR.wherePicked) { var bp = bestPlace(); if (NR.where !== bp) { NR.where = bp; NR.start = bp !== "team" && machineInfo(bp).remote_start ? "now" : "free"; } }
+    var mplaces = (NR.unity ? um : DATA.machines).map(function (m) { var st = mstatus(m); return [m.machine, m.host, (STATUS_TEXT[st] || "").toLowerCase() + (st === "offline" ? "" : m.remote_start ? " · starts at once" : " · starts when free")]; });
+    var places = LIVE && !APP
+      ? mplaces.concat([["team", NR.unity ? "Any team computer with Unity" : "Any team computer", "the first free one takes it"], ["here", "This computer", "paste a line into a terminal"]])
+      : [["here", "This computer, now"], ["team", NR.unity ? "Any team computer with Unity" : "Any team computer"]].concat(mplaces.map(function (p) { return [p[0], p[1] + " · " + p[2].split(" · ")[0]]; }));
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: (NR.unity ? "5" : "6") + "  Where" }), h("div", { class: "picks" }, places.map(function (p) { return chip(p[1], NR.where === p[0], "where", function () { NR.where = p[0]; NR.wherePicked = true; NR.made = null; NR.start = p[0] !== "team" && p[0] !== "here" && machineInfo(p[0]).remote_start ? "now" : NR.start; drawNewRun(); }, p[2]); }))]));
     whenStep(sheet);
     if (NR.unity && !um.length) sheet.appendChild(h("p", { class: "note", text: "No team computer has reported Unity yet. Run it on this computer (it needs Unity " + "of the project's version, installed with Unity Hub), or install Froglet Compute on a PC that has Unity." }));
     var note = h("textarea", { class: "field", id: "nr-note", placeholder: "What do you want to learn? (optional; shown with the results)" }); note.value = NR.note; note.addEventListener("input", function () { NR.note = note.value; });
     sheet.appendChild(note);
     var out = h("div", { class: "approve", id: "nr-out" });
-    var go = NR.where === "here" ? (APP ? "Start it on this computer" : "Run on this computer") : (LIVE ? "Send it" : "Make the run") + (NR.where === "here" ? "" : NR.useAt ? " · at a time" : NR.start === "now" ? " · now" : " · when free");
+    var go;
+    if (NR.where === "here") go = APP ? "Start it on this computer" : "Run on this computer";
+    else if (LIVE) { var tgt = NR.where === "team" ? "the team" : String(NR.where).split("/").pop(), atOnce = NR.start === "now" && (NR.where === "team" || machineInfo(NR.where).remote_start);
+      go = NR.useAt ? "Send to " + tgt + " · at a time" : atOnce ? "Start on " + tgt + " now" : "Send to " + tgt + " · when free"; }
+    else go = "Make the run" + (NR.useAt ? " · at a time" : NR.start === "now" ? " · now" : " · when free");
     sheet.appendChild(h("button", { class: "btn cta big", type: "button", id: "nr-make", onclick: function () { makeRun(out); }, text: go + " · " + NR.vessel + " in " + modeName(NR.mode) }));
     sheet.appendChild(out);
     if (NR.made) showMade(out);
@@ -1265,14 +1285,16 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
         } else { line.textContent = (a[1].error || "Not started") + (a[1].problems ? ": " + a[1].problems.join("; ") : ""); if (btn) btn.disabled = false; }
       }, function () { line.textContent = "The app did not answer. Is its window still open?"; if (btn) btn.disabled = false; });
   }
-  function stopRun(id, place, machine, name) {
+  function stopRun(id, place, machine, name, sure) {
+    if (!sure && !window.confirm("Stop " + (name || "this run") + "? It stops within about 30 seconds and keeps what it found.")) return;
     var line = h("p", { class: "note" }); if (place) place.appendChild(line);
     if (LIVE) {
-      if (!KEY) return askKey(function () { stopRun(id, place); });
+      if (!KEY) return askKey(function () { stopRun(id, place, machine, name, true); });
       line.textContent = "Stopping…";
       fetch("api/cancel", { method: "POST", headers: { "Content-Type": "application/json", "X-Compute-Key": KEY }, body: JSON.stringify({ id: id }) })
         .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
-        .then(function (a) { line.textContent = a[0] === 200 ? "Stopped. The computer stops within about 30 seconds." : (a[1].error || "Not stopped"); if (a[0] === 200) refreshLive(); },
+        .then(function (a) { line.textContent = a[0] === 200 ? "Stopping…" : (a[1].error || "Not stopped");
+          if (a[0] === 200) { NOTICE = { at: Date.now(), text: "Stopping " + (name || id) + ". The computer stops within about 30 seconds and keeps what it found." }; refreshLive(); } },
           function () { line.textContent = "Could not reach the hub."; });
       return;
     }
@@ -1317,6 +1339,27 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     return r;
   }
   function machineInfo(name) { return (DATA.machines || []).filter(function (m) { return m.machine === name; })[0] || {}; }
+  // Why a sent run has not started: the computer it was sent to, as it is now, against what the run asked for.
+  function waitReason(m) {
+    if (m.state !== "open") return "";
+    if (m.not_before && m.not_before * 1000 > Date.now()) return "starts " + new Date(m.not_before * 1000).toLocaleString();
+    if (!m.machine || m.machine === "any") return m.start === "now" ? "starts on the first computer that allows a start at once" : "starts when a computer is free";
+    var mi = machineInfo(m.machine), st = mstatus(mi), host = String(m.machine).split("/").pop();
+    if (!mi.machine || st === "offline") return host + " is offline: it starts when its Froglet Compute is back";
+    if (st === "starting" || st === "working") return host + " is on another run: this one starts after it";
+    if (m.start === "now") return mi.remote_start ? "starts on " + host + " within a minute" : host + " does not allow a start while in use: it starts when its person is away";
+    if (st === "in use") return "waiting for " + host + "'s person to be away";
+    if (st === "outside hours") return host + " is outside its hours: it starts when they begin";
+    return "starts on " + host + " within a minute";
+  }
+  // The computer a run should go to when nothing was picked: a free one first, then one whose owner allows a start
+  // while it is in use, then any that is live; the team queue when none is.
+  function bestPlace() {
+    var ms = (NR && NR.unity ? unityMachines() : (DATA.machines || [])).filter(function (m) { return mstatus(m) !== "offline"; });
+    var rank = function (m) { var st = mstatus(m); return st === "free" ? 0 : (m.remote_start && st === "in use") ? 1 : st === "in use" ? 2 : 3; };
+    ms.sort(function (a, b) { return rank(a) - rank(b) || MORDER[mstatus(a)] - MORDER[mstatus(b)]; });
+    return ms.length && rank(ms[0]) < 3 ? ms[0].machine : "team";
+  }
   function whenStep(sheet) {
     if (NR.where === "here") return;
     var m = NR.where === "team" ? null : machineInfo(NR.where), canNow = !!(m && m.remote_start);
@@ -1342,7 +1385,13 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     fetch("api/requests", { method: "POST", headers: { "Content-Type": "application/json", "X-Compute-Key": KEY }, body: JSON.stringify(req) })
       .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
       .then(function (a) {
-        if (a[0] === 201) { line.textContent = "Sent. " + (NR.where === "team" ? "The first free computer" : NR.where) + " takes it within about two minutes when its person is away (a VM at once). Watch it under Runs."; refreshLive(); }
+        if (a[0] === 201) {
+          var tgt = NR.where === "team" ? "the first free computer" : String(NR.where).split("/").pop(), atOnce = NR.start === "now" && (NR.where === "team" || machineInfo(NR.where).remote_start);
+          NOTICE = { at: Date.now(), text: "Sent to " + tgt + ". " + (atOnce ? "It shows below as Starting within a minute" : (NR.where === "team" ? "It shows below under Sent runs until a computer is free" : "It shows below under Sent runs until " + tgt + " is free")) + (NR.unity ? "; Unity opens first, so the first match reports a minute or two later." : ".") };
+          document.getElementById("sheet").hidden = true; NR.made = null;
+          if (VIEW !== "runs") location.hash = "runs"; else render();
+          refreshLive();
+        }
         else if (a[0] === 401) { KEY = ""; lsSet("fc-key", ""); line.textContent = "That team key was not right."; askKey(function () { sendLive(req, out); }); }
         else line.textContent = (a[1].error || "Not sent") + (a[1].problems ? ": " + a[1].problems.join("; ") : "");
       }, function () { line.textContent = "Could not reach the hub. Try again in a moment."; });

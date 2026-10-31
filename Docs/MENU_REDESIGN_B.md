@@ -5096,3 +5096,40 @@ Built straight from the words (no board round): the same tray as the friends dra
 - **Gates:** `author_menu_configure.py` checks the tray wiring, the texture scale and that the tray ends at the column's
   edge; three new planted defects (FULL SCREEN back to the whole window, a frame-sized texture, START left on screen).
   `PreviewTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 109. Rev 41 mockups: the Compute console, a run you can see start (2026-10-31, built; awaiting board approval)
+
+**Asked (Shombith, 2026-10-31, on the live console at the VM):** "Half of the run does not make sense, can you please
+create some mockups of how they look and also the buttons dont work, registering a PC does not work that well there is
+no live bar". Measured on the live console before drawing: two runs sent to dragonsweapon at 22:48 were taken by its
+agent and stopped 44 s later, and in those 44 s the page showed nothing (a run reports only after its first match, and
+a Unity run spends its first minute opening Unity); the VM read "Working" over "Nothing is running"; New run opened on
+"This computer" (a line to paste), the wrong default on the live console; the `ai` branch sat 105 commits behind
+because nothing ran its sync.
+
+**On the canvas:** the Rev 38 page (`rev38`, the console's page; the canvas holds 40 pages and all 40 are taken, so the
+round sits under Rev 38's boards at y 3600). Copies: `Docs/MenuRedesignB/board/R41*.dc.html`. A states round of one
+design, the same kit as Rev 38 (Inter, the dark ground, Jade cyan as the one accent):
+- **R41Runs**: the line after Send ("Sent to dragonsweapon. It shows below as Starting within a minute…"), the run as
+  **Starting** with the sliding bar (the one motion on the page; off under reduced motion) beside a working run with
+  its real bar, a Sent run that says why it waits ("dragonsweapon is on another run: this one starts after it"), the
+  Finished table.
+- **R41NewRun**: Where lists the computers first with their status and "starts at once" / "starts when free", the best
+  one picked (free, else in use with a start allowed, else the team queue), "This computer · paste a line" last; the
+  button reads "Start on dragonsweapon now · Thresher in Thresher Time".
+- **R41Computers**: **Starting** as a status of its own (the agent took a run, nothing has reported yet) with the run
+  and "Unity is opening" under it; Working always names what runs; the row menu's Stop names the run and asks first.
+- **R41Notes**: what was wrong, measured, and what each fix changes.
+
+**Built in the same push** (`Tools/Compute/`): the agent posts a heartbeat with `phase: starting` and the unit the
+moment it takes a sent run (`Beacon.starting`); `machine_status` returns `starting` for a working heartbeat with no
+run; the worker posts the same before a command session; `console.runs` carries the phase; the page shows Starting
+(bar, status word, fleet counts, the empty-state line), the waiting reason (`waitReason`), the default place
+(`bestPlace`, until the person picks one), the button text, the notice after a send, a confirm before Stop, and a run
+shown as Running is not listed again under Sent runs. The hub syncs the `ai` branch every hour with its token
+(`Hub.sync_ai`; `Docs/Compute/README.md` section 15) and the AI branch page says when it last did. Gates:
+`compute.py self-test` (the agent's new case), the page in Chromium at 1360 and 390 px with a hub stub: Send closes the
+sheet, Runs shows the notice and the Starting box, Stop asks and shows Stopping.
+
+**Differs from the build:** nothing; the boards are the built page with the console's data of 2026-10-31. Waits on
+Shombith's look at the live console once the VM has pulled.

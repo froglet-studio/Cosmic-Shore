@@ -636,9 +636,15 @@ def run(args):
             import agent as A
             sess_presence = A.StopWhenCancelled(presence, req["id"], [q if q.startswith("origin/") else "origin/" + q for q in queue])
         if job["kind"] == "command":
+            hb["current"]["phase"] = "starting"
+            L.write_json(os.path.join(folder, "heartbeat.json"), hb)
+            L.post_heartbeat(hb)                 # the console shows the run as starting before Unity has opened
+
             def claim(unit_id):
                 hb["current"]["unit"] = unit_id
+                hb["updated"] = L.now()
                 L.write_json(os.path.join(folder, "heartbeat.json"), hb)
+                L.post_heartbeat(hb)
                 if not args.no_push:
                     L.publish(folder, *ident, f"compute: {job['id']}/{unit_id} claimed", quiet=quiet)
             out = command_session(job, root, sha, ident, machines, sess_presence, args.session, cores, quiet=quiet,

@@ -131,7 +131,7 @@ def runs(machines, jobs):
                            "since": cur.get("since"),
                            "updated": hb.get("updated"), "minutes": cur.get("minutes"), "max_evals": cur.get("max_evals"),
                            "evals": cur.get("evals"), "best": _num(cur.get("best")), "best_start": _num(cur.get("best_start")),
-                           "unit": cur.get("unit"), "progress": cur.get("progress")})
+                           "unit": cur.get("unit"), "progress": cur.get("progress"), "phase": cur.get("phase")})
         for r in hb.get("runs") or []:
             recent.append(dict(r, machine=who, title=title(r.get("job")),
                                best_start=_num(r.get("best_start")), best_end=_num(r.get("best_end"))))

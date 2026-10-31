@@ -189,7 +189,7 @@ person. Every compute AI job reads it.
   `sync --push` brings it in: it merges `bleeding-edge` into `ai`, then replays ONLY the AI paths (`AI_PATHS` in the
   tool) that changed on `Ys-bleeding-edge` since the last sync (the `AI-Sync-Ys:` trailer). Plumbing only: nobody's
   checkout is touched. A file edited differently on both sides stops it; that one is resolved by a pull request into
-  `ai`.
+  `ai`. **The VM's hub runs this sync every hour on its own** (section 15); a person runs it only to see it work.
 - The hourly AI learning sweep (`Docs/AI_SYSTEM/AUTO_LEARNING.md`, Yash's) still pushes to `Ys-bleeding-edge`, so the
   sync is the bridge until the sweep pushes to `ai`. Moving the sweep is the next step and needs Yash.
 - `ai` reaches `bleeding-edge` by an ordinary pull request.
@@ -341,6 +341,16 @@ data from git every minute, lays every computer's heartbeat on top the moment it
 every ~20 s), and files manual runs on `compute-queue` from any browser or phone, guarded by the team key. The page
 notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refreshes every 15 s.
 
+**What a sent run looks like, from Send to its first report** (Shombith, 2026-10-31: "there is no live bar"; design
+board Rev 41, `Docs/MENU_REDESIGN_B.md` section 109): Send closes the sheet and opens Runs with one line saying where
+the run went. The agent that takes it posts a heartbeat at once with `phase: starting` and the unit, so the run is on
+Runs within a minute as **Starting** with a sliding bar until the first evaluation or match reports (a Unity run spends
+its first minute or two opening Unity); the computer shows **Starting** too, never "Working" over "Nothing is running".
+A sent run that has not started says why, from the computer's own heartbeat (on another run, in use and its owner does
+not allow a start, offline, outside its hours). On the live console New run's Where lists the computers first and picks
+the best one (free, else in use with a start allowed, else the team queue); the button says what will happen ("Start on
+dragonsweapon now", "Send to dragonsweapon · when free"). Stop asks first.
+
 **The VM: Oracle Cloud Always Free** (an Ampere A1 ARM machine, up to 4 cores and 24 GB free for good; we use 2 and 12):
 
 1. Oracle console, Compute > Instances > Create instance. Image **Canonical Ubuntu 24.04**; shape
@@ -376,6 +386,9 @@ notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refre
    On the VM a run sent from the console starts within 15 minutes, when the current job re-ranks (`--session 15`),
    and "Now" is allowed there (the computer is the team's; `COMPUTE_REMOTE_START=0` turns that off). The hub
    restarts every 6 hours to pick up new code.
+   **The hub keeps the `ai` branch current by itself**: every hour it runs `ai_branch.py sync --push` with its
+   token (bleeding-edge merged in, Yash's AI paths replayed; section 14) and the AI branch page says when it last did
+   and whether it worked (`api/status` carries `ai_synced`). Nobody types `sync`. The app (section 18) never syncs.
 5. On each team computer, from its Cosmic-Shore folder, the printed line (`setup.py ... --hub <address> --hub-key
    <key>`), with the same `--nights` or `--always` it was installed with: the computer's progress then shows on the
    live console within seconds. The Install sheet on the live console adds these flags itself once the team key is
