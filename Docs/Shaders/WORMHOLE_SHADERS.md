@@ -953,3 +953,32 @@ Butterfly / crystal `Wormhole.shader` (§8) and its materials are untouched.
 A restored lab file names the old types (`MeerkatWormhole*`, `MeerkatRoot*`); rename them to the Soliton ones, or
 restore the matching old scripts too. The earlier removals are §12 (2ad588211) and §13 (0c8c5218c).
 
+
+## 16. THE look now: a plain wormhole (from 2026-11-01)
+
+Yash: "I want the wormhole effect back, that looks realistic, remove trunk and bark, root related shader parts, its gonna be
+plain worm hole with wider mouth looking cool from outside and inside, bending and warping of space time."
+
+Reference: the contour lens of 53b34e076 / 435ce058c (wall bend + glass) and 435ce058c's mouth wells (`ScreenWells`), here
+reworked as a point-mass lens. Still one full-screen pass (`SolitonTunnel.shader`, `SolitonTunnelLensPass`), no
+allocations, no new textures.
+
+| Part | What it does | Fields (`SolitonTunnelLook`, per config) |
+|---|---|---|
+| Wall bend | the contour lens on the tube's wall, breathing slowly | `Bend`, `Lens`, `WallInside`, `WallOutside`, `Wobble*`, `Rim*`, `Glint`, `Glow` |
+| Mouth lens (outside) | each live mouth bends the scene like a gravitational lens: the image at angle θ shows the scene at θ − θE²/θ, so the world round the mouth curls into an Einstein ring and, straight in, turns over and magnifies; fades out by 3 θE | `MouthLens` (strength), `MouthFlare` (θE = the mouth's angular radius × this: the visible, flared size) |
+| Einstein ring | a thin bright ring at θE in the tube's tint | `EinsteinRing` |
+| Throat shadow | a hint of darkness in the core so the mouth reads as a hole | `MouthShadow` |
+| Throat stretch (inside) | riding: the view stretches out from where you are heading, streaming toward the way out (log-polar waves), slightly twisted; the steady centre still holds | `InsideStretch`, `InsideFlow` (capped by Comfort `MaxFlowSpeed`), `InsideSwirl` |
+
+The physical mouth is wider too: `mouthDiameter` 35.6 → 44, `networkMouthDiameter` 13.9 → 18 (these drive the ride as well).
+Network channels lens only at their true openings (`MouthIn` / `MouthOut`), not at junctions. Up to 8 mouths (both ends of
+the 4 banked tubes).
+
+Removed (restore from this section's commit's parent): the network ("root") shimmer and pulses (`Shimmer`, `Pulse`,
+`PulseCount`, `PulseSpeed`, Comfort `MaxPulseSpeed` → now `MaxFlowSpeed`), and the spindle bridge over formed tubes
+(`bridgeOn`, `bridgeBrightness`, `bridgeWhite`, `bridgeMaxChannels`, `SolitonTunnelView.DrawBridges`). The reticle keeps its
+frame (`bridgeRings`, `bridgeSpindlesPerRing`, `bridgeRibs`, `bridgeSpindleThickness`, `bridgeShimmer`).
+
+Tuning: too much swirl round a mouth → lower `MouthLens`; mouth looks small → raise `MouthFlare`; queasy inside → lower
+`InsideStretch` / `InsideFlow` or Comfort `DistortionIntensity`.
