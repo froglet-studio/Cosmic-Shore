@@ -86,16 +86,24 @@ namespace CosmicShore.Gameplay
             cell = ctx.Cell;
             if (!EscortGeneRegistry.SquirrelCultivate.On || !cell || !cell.HasNucleusControlZone) return false;
             if (ctx.Threats.Count >= EscortGeneRegistry.SquirrelCultivateWhenThreatsBelow.Int) return false;
-            var dominant = cell.DominantDomain;
-            if (dominant == ctx.Domain)
+            // The escort pacifies a world only on a real claim (escort.pacifyMinVolume): lay on until it has, then stop.
+            var run = ctx.Run;
+            if (run && run.IsPacified(cell))
             {
                 if (_mode == Mode.Cultivate) _nucleiWon++;   // the world turned while we were laying
                 return false;
             }
-            if (dominant == Domains.Blue) return true;   // nobody's yet: take it
             float own = cell.GetNucleusDomainVolume(ctx.Domain);
-            float theirs = cell.GetNucleusDomainVolume(dominant);
-            bool keepGoing = own <= theirs * EscortGeneRegistry.SquirrelPacifyMargin;
+            float need = run ? run.PacifyMinVolume : 0f;
+            var dominant = cell.DominantDomain;
+            bool keepGoing;
+            if (dominant == ctx.Domain) keepGoing = own < need;
+            else if (dominant == Domains.Blue) keepGoing = true;   // nobody's yet: take it
+            else
+            {
+                float theirs = cell.GetNucleusDomainVolume(dominant);
+                keepGoing = own <= theirs * EscortGeneRegistry.SquirrelPacifyMargin || own < need;
+            }
             if (!keepGoing && _mode == Mode.Cultivate) _nucleiWon++;
             return keepGoing;
         }

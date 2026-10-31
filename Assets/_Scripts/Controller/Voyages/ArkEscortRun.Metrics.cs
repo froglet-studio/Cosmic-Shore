@@ -97,6 +97,8 @@ namespace CosmicShore.Gameplay
             _cellOfLeg = new Cell[_escort.Legs.Count];
             _report.BreachHull = tier.BreachHull;
             _report.PacifyShare = _escort.PacifyShare;
+            _report.PacifyMinVolume = _escort.PacifyMinVolume;
+            _report.PacifyNucleusSeconds = _escort.PacifyNucleusSeconds;
             _report.ParamKeys = ArkEscortParams.KeyPatterns();
             if (_pendingEcho != null) _report.Params = _pendingEcho;
             _pendingEcho = null;
@@ -372,14 +374,29 @@ namespace CosmicShore.Gameplay
             var nm = Unity.Netcode.NetworkManager.Singleton;
             if (nm != null && nm.IsListening && !nm.IsServer) return;
             var squad = SquadDomain;
+            float minVolume = _escort.PacifyMinVolume;
+            float dwellNeed = _escort.PacifyNucleusSeconds;
+            CollectSeats();
             for (int leg = 0; leg < _cellOfLeg.Length; leg++)
             {
                 var cell = _cellOfLeg[leg];
                 if (!cell || leg >= _report.LegReports.Count) continue;
                 var r = _report.LegReports[leg];
-                if (r.Pacified) continue;
+                // Only a world that started HOSTILE can be pacified: a friendly world's nucleus is the squad's colour from
+                // the start (its own flora), so "holding" it is not a turn the squad earned.
+                if (r.Pacified || !r.Hostile) continue;
+
+                // Earned, not stumbled into: the squad must HOLD the world (share of its control volume), have laid a real
+                // claim there (an absolute squad control volume, so an empty hostile nucleus crossed by one trail is not a
+                // pacification), and have WORKED its nucleus (seconds with a seat inside it; escorting the Ark through the
+                // core alone rarely reaches it). Calibrated on d4 sims: three Sparrows peak at 14-19k control and 22-56 s in a
+                // nucleus, three cultivating Squirrels at 12-32k and 45-99 s.
+                if (SquadInsideNucleus(cell)) r.NucleusSeconds += SampleSeconds;
+                float mine = cell.GetControlVolume(squad);
                 float share = SquadShare(cell, squad);
-                if (share < line) continue;
+                r.PeakSquadControl = Mathf.Max(r.PeakSquadControl, mine);
+                r.PeakShare = Mathf.Max(r.PeakShare, share);
+                if (share < line || mine < minVolume || r.NucleusSeconds < dwellNeed) continue;
 
                 int before = HostileCount(cell, squad);
                 cell.SparedDomain = squad;
@@ -397,6 +414,32 @@ namespace CosmicShore.Gameplay
                     $"[ArkEscort] {r.Name} pacified at {share:P0} of its control volume ({turned} creatures turned).");
             }
         }
+
+        /// <summary>True when a squad seat is inside <paramref name="cell"/>'s nucleus (its membrane without one).</summary>
+        bool SquadInsideNucleus(Cell cell)
+        {
+            float membrane = cell.MembraneRadius > 1f ? cell.MembraneRadius : 1200f;
+            for (int i = 0; i < _seatScratch.Count; i++)
+            {
+                var p = _seatScratch[i].status.Transform.position;
+                if (cell.HasNucleusControlZone ? cell.IsInsideNucleus(p)
+                        : (p - cell.transform.position).sqrMagnitude <= membrane * membrane)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>True once the escort has pacified <paramref name="cell"/> (the cultivator's stop signal).</summary>
+        public bool IsPacified(Cell cell)
+        {
+            if (!cell || _report == null) return false;
+            for (int leg = 0; leg < _cellOfLeg.Length && leg < _report.LegReports.Count; leg++)
+                if (_cellOfLeg[leg] == cell) return _report.LegReports[leg].Pacified;
+            return false;
+        }
+
+        /// <summary>The squad control volume a world needs before it can be pacified (0 when pacifying is off).</summary>
+        public float PacifyMinVolume => _escort && _escort.PacifyShare > 0f ? _escort.PacifyMinVolume : 0f;
 
         static int HostileCount(Cell cell, Domains squad)
         {

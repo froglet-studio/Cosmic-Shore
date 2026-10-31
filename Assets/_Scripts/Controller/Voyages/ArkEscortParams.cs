@@ -99,6 +99,18 @@ namespace CosmicShore.Gameplay
             Register("ark.cellSpacing", (t, _, v) => { t.Escort.CellSpacing = v; return true; });
             Register("ark.platesAreFood", (t, _, v) => { t.Escort.PlatesAreFood = v > 0.5f; return true; });
             Register("escort.maxPopulation", (t, _, v) => { t.Escort.MaxPopulation = v; return true; });
+            Register("escort.pacifyMinVolume", (t, _, v) =>
+            {
+                if (v < 0f || v > 1e8f) return false;
+                t.Escort.PacifyMinVolume = v;
+                return true;
+            });
+            Register("escort.pacifyNucleusSeconds", (t, _, v) =>
+            {
+                if (v < 0f || v > 600f) return false;
+                t.Escort.PacifyNucleusSeconds = v;
+                return true;
+            });
             Register("escort.pacifyShare", (t, _, v) =>
             {
                 if (v < 0f || v > 1f) return false;

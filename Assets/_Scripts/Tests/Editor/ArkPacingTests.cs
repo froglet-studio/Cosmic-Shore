@@ -153,11 +153,13 @@ namespace CosmicShore.Tests
             var escort = ScriptableObject.CreateInstance<ArkEscortSO>();
             try
             {
-                Assert.AreEqual(0.6f, escort.PacifyShare, 1e-5f);
-                var echo = ArkEscortParams.Apply(new ArkEscortParams.Target { Escort = escort },
-                    new Dictionary<string, float> { ["escort.pacifyShare"] = 0.75f });
-                Assert.IsTrue(echo[0].Applied);
                 Assert.AreEqual(0.75f, escort.PacifyShare, 1e-5f);
+                Assert.Greater(escort.PacifyMinVolume, 0f);
+                var echo = ArkEscortParams.Apply(new ArkEscortParams.Target { Escort = escort },
+                    new Dictionary<string, float> { ["escort.pacifyShare"] = 0.5f, ["escort.pacifyMinVolume"] = 1234f });
+                Assert.IsTrue(echo[0].Applied && echo[1].Applied);
+                Assert.AreEqual(0.5f, escort.PacifyShare, 1e-5f);
+                Assert.AreEqual(1234f, escort.PacifyMinVolume, 1e-3f);
                 echo = ArkEscortParams.Apply(new ArkEscortParams.Target { Escort = escort },
                     new Dictionary<string, float> { ["escort.pacifyShare"] = 1.5f });
                 Assert.IsFalse(echo[0].Applied);
