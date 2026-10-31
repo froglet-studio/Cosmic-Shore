@@ -355,8 +355,8 @@ namespace CosmicShore.Data
         ScarabRally = 72,
 
         // SerpentTime (73): the Serpent's TIME race - Thresher Time's shape (a lapped circuit on the shared
-        // HeadlongCircuit solver) where the speed is the fuel pellets: four in the tank, each a 3 s burn that
-        // stacks, one back every ~3.6 s. See _Scripts/Controller/Arcade/SERPENTTIME.md.
+        // HeadlongCircuit solver) where the speed is the fuel pellets: four in the tank, each a 6 s burn that
+        // stacks, refilled only by the Serpent's wall eating its own trail. See _Scripts/Controller/Arcade/SERPENTTIME.md.
         SerpentTime = 73,
 
         // BrittleStarTime (74): the Brittle Star's TIME race - the same lapped circuit, where Speed Mode (x6
