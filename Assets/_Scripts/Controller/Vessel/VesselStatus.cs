@@ -135,55 +135,40 @@ namespace CosmicShore.Gameplay
         public List<GameObject> ShipGeometries { get; set; }
         public Prism AttachedPrism { get; set; }
 
-        R_VesselActionHandler actionHandler;
-        public R_VesselActionHandler ActionHandler
+        /// <summary>
+        /// The one shape of every lazy component getter below. A DESTROYED vessel answers null,
+        /// the way Unity's own null does. Callers reach these getters through
+        /// <c>IVessel.VesselStatus</c>, an interface-typed cache that outlives the vessel, so a
+        /// <c>vessel?.VesselStatus?.ResourceSystem</c> chain - written to mean "skip if the vessel
+        /// is gone" - cannot see the destruction itself (<c>?.</c> is a plain reference test) and
+        /// used to fall through to <c>gameObject</c>, which throws MissingReferenceException typed
+        /// VesselStatus. Measured: the mode preview's teardown (ModePreviewSession.SetLocalTrailPaused,
+        /// bug ledger E-1f2ed4d48a) and the in-match systems that outlive a despawned vessel by a
+        /// frame. A live vessel is unchanged; a caller that does not test for null now fails at
+        /// its OWN line instead of inside this getter.
+        /// </summary>
+        T Lazy<T>(ref T cache) where T : Component
         {
-            get
-            {
-                actionHandler = actionHandler != null ? actionHandler : gameObject.GetOrAdd<R_VesselActionHandler>();
-                return actionHandler;
-            }
+            if (cache) return cache;
+            if (!this) return null;
+            cache = gameObject.GetOrAdd<T>();
+            return cache;
         }
+
+        R_VesselActionHandler actionHandler;
+        public R_VesselActionHandler ActionHandler => Lazy(ref actionHandler);
 
         VesselCustomization customization;
-        public VesselCustomization Customization
-        {
-            get
-            {
-                customization = customization != null ? customization : gameObject.GetOrAdd<VesselCustomization>();
-                return customization;
-            }
-        }
+        public VesselCustomization Customization => Lazy(ref customization);
 
         VesselAnimation vesselAnimation;
-        public VesselAnimation VesselAnimation
-        {
-            get
-            {
-                vesselAnimation = vesselAnimation != null ? vesselAnimation : gameObject.GetOrAdd<VesselAnimation>();
-                return vesselAnimation;
-            }
-        }
+        public VesselAnimation VesselAnimation => Lazy(ref vesselAnimation);
 
         VesselPrismController vesselPrismController;
-        public VesselPrismController VesselPrismController
-        {
-            get
-            {
-                vesselPrismController = vesselPrismController != null ? vesselPrismController : gameObject.GetOrAdd<VesselPrismController>();
-                return vesselPrismController;
-            }
-        }
+        public VesselPrismController VesselPrismController => Lazy(ref vesselPrismController);
 
         ResourceSystem _resourceSystem;
-        public ResourceSystem ResourceSystem
-        {
-            get
-            {
-                _resourceSystem = _resourceSystem != null ? _resourceSystem : gameObject.GetOrAdd<ResourceSystem>();
-                return _resourceSystem;
-            }
-        }
+        public ResourceSystem ResourceSystem => Lazy(ref _resourceSystem);
 
         VesselPilotLoadout _pilotLoadout;
         /// <summary>The pilot in the seat and the slotted artifacts; created and initialized on first use.</summary>
@@ -191,8 +176,8 @@ namespace CosmicShore.Gameplay
         {
             get
             {
-                _pilotLoadout = _pilotLoadout != null ? _pilotLoadout : gameObject.GetOrAdd<VesselPilotLoadout>();
-                if (!_pilotLoadout.IsInitialized)
+                _pilotLoadout = Lazy(ref _pilotLoadout);
+                if (_pilotLoadout && !_pilotLoadout.IsInitialized)
                     _pilotLoadout.Initialize(this);
                 return _pilotLoadout;
             }
@@ -203,74 +188,30 @@ namespace CosmicShore.Gameplay
         {
             get
             {
-                _elementalAbilityHandler = _elementalAbilityHandler != null
-                    ? _elementalAbilityHandler
-                    : gameObject.GetOrAdd<R_VesselElementalAbilityHandler>();
-                if (!_elementalAbilityHandler.IsInitialized)
+                _elementalAbilityHandler = Lazy(ref _elementalAbilityHandler);
+                if (_elementalAbilityHandler && !_elementalAbilityHandler.IsInitialized)
                     _elementalAbilityHandler.Initialize(this);
                 return _elementalAbilityHandler;
             }
         }
 
         VesselTransformer vesselTransformer;
-        public VesselTransformer VesselTransformer
-        {
-            get
-            {
-                vesselTransformer = vesselTransformer != null ? vesselTransformer : gameObject.GetOrAdd<VesselTransformer>();
-                return vesselTransformer;
-            }
-        }
+        public VesselTransformer VesselTransformer => Lazy(ref vesselTransformer);
 
         AIPilot aiPilot;
-        public AIPilot AIPilot
-        {
-            get
-            {
-                aiPilot = aiPilot != null ? aiPilot : gameObject.gameObject.GetOrAdd<AIPilot>();
-                return aiPilot;
-            }
-        }
+        public AIPilot AIPilot => Lazy(ref aiPilot);
 
         AICinematicBehavior aiCinematicBehavior;
-        public AICinematicBehavior AICinematicBehavior
-        {
-            get
-            {
-                aiCinematicBehavior = aiCinematicBehavior != null ? aiCinematicBehavior : gameObject.gameObject.GetOrAdd<AICinematicBehavior>();
-                return aiCinematicBehavior;
-            }
-        }
+        public AICinematicBehavior AICinematicBehavior => Lazy(ref aiCinematicBehavior);
 
         ElementalBarsController _elementalBarsController;
-        public ElementalBarsController ElementalBarsController
-        {
-            get
-            {
-                _elementalBarsController = _elementalBarsController != null ? _elementalBarsController : gameObject.GetOrAdd<ElementalBarsController>();
-                return _elementalBarsController;
-            }
-        }
+        public ElementalBarsController ElementalBarsController => Lazy(ref _elementalBarsController);
 
         VesselCameraCustomizer _vesselCameraCustomizer;
-        public VesselCameraCustomizer VesselCameraCustomizer
-        {
-            get
-            {
-                _vesselCameraCustomizer = _vesselCameraCustomizer != null ? _vesselCameraCustomizer : gameObject.GetOrAdd<VesselCameraCustomizer>();
-                return _vesselCameraCustomizer;
-            }
-        }
+        public VesselCameraCustomizer VesselCameraCustomizer => Lazy(ref _vesselCameraCustomizer);
 
         R_VesselElementStatsHandler _elementalStatsHandler;
-        public R_VesselElementStatsHandler ElementalStatsHandler
-        {
-            get
-            {
-                _elementalStatsHandler = _elementalStatsHandler != null ? _elementalStatsHandler : gameObject.GetOrAdd<R_VesselElementStatsHandler>();
-                return _elementalStatsHandler;
-            }
-        }
+        public R_VesselElementStatsHandler ElementalStatsHandler => Lazy(ref _elementalStatsHandler);
         
         // booleans
         public bool IsBoosting { get; set; }
