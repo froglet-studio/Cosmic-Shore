@@ -1,5 +1,10 @@
 # UI colour rules (Garrett, 2026-10-24)
 
+> **Which family a colour belongs to** (and the forbidden band between families) is decided by the source of truth,
+> `Docs/VesselModels/colour_domains.json` (`COLOR_DOMAINS.md`). `Tools/Build/colour_domains.py --check` holds this
+> page's family colours to it (`UITheme.asset` cta, danger, controlActive, purchase, tooltip, selection); the selection
+> blue `#3DB2FF` sits in the band between Blue and Jade, an open decision recorded there.
+
 Garrett's design feedback on the style-B menu and HUD, relayed by Shombith on 2026-10-24, and what it means in the
 assets. These rules hold for every UI surface: Menu_Main, the in-match HUD and canvases, the start flow, Maelstrom.
 `python3 Tools/Build/check_ui_colors.py` (`--self-test`) is the gate for the parts the assets can show.

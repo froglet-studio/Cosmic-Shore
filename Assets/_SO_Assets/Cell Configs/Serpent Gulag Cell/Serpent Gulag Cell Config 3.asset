@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Serpent Gulag Cell Config 3
   m_EditorClassIdentifier:
   CellName: Serpent Gulag
-  Description: 'Cell Blocks - intensity 3 of Serpent Gulag: eight nests, and eight barred screens
-    across the sight lines to the field. 1976 prisms, all neutral. Membrane radius 3600
+  Description: 'Cell Blocks - intensity 3 of Serpent Gulag: ten inner and six outer nests, twelve
+    barred screens across the sight lines to the field, eighty rubble clusters, danger
+    plates on the nest frames and the bars. 4228 prisms, all neutral. Membrane radius 3600
     (Cleave''s x3 shell), spawn ring 2200, the crystal field (radius 380) laid by the
     controller at every rung. NO NUCLEUS, no flora, no fauna. Authored by
     Tools/Build/author_serpent_gulag_assets.py - re-run it rather than hand-editing.'
@@ -31,11 +32,11 @@ MonoBehaviour:
   EnvironmentIntensity: 3
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 2676
-    RestlessExit: 2476
-    FrenzyEnter: 5576
-    FrenzyExit: 4976
-    RestlessEnterVolume: 926983
-    RestlessExitVolume: 923783
-    FrenzyEnterVolume: 973383
-    FrenzyExitVolume: 963783
+    RestlessEnter: 4928
+    RestlessExit: 4728
+    FrenzyEnter: 7828
+    FrenzyExit: 7228
+    RestlessEnterVolume: 2226191
+    RestlessExitVolume: 2222991
+    FrenzyEnterVolume: 2272591
+    FrenzyExitVolume: 2262991

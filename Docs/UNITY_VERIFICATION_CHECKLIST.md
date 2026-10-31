@@ -65,6 +65,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Compiled against Unity references (`unity_refcompile`, player + editor: 0 errors in project code); not opened in the editor.
+
+1. Serpent Gulag at Easy, Medium or Hard AI: the AIs do NOT fly at you. Each flies to a post 1,400-2,000 u from its
+   rival (behind a nest at I2+), stops, and a wall grows beside it from the nest plates / rubble; it turns in place
+   and snipes. Fly toward one: once you are inside 700-1,100 u it lowers its scope, starts moving and backs away.
+2. Legendary AI: it pushes in to ~900 u, digs in only ~5 s at a time and breaks off only when you are within ~350 u.
+3. Arenas: I2 8 nests + rubble; I3 16 nests, 12 cell blocks, rubble, some danger plates; I4 22 nests, 16 cell blocks,
+   140 rubble clusters, more danger. Frame time at I4 (6,008 prisms).
+4. Every mode with AI opponents: the opponents' team score column appears on the top bar beside yours, even before
+   anyone scores (it used to appear only after a stat changed, and never for a domain past the lobby's domain count).
+
 ### 🔴 The in-game score bar sits top-centre again: a Pop entrance no longer snaps a laid-out column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Shombith: "Score panel is always messed up in all games". `KitEntrance.Finish()` wrote the position it captured at
@@ -105,7 +118,8 @@ clip-audit and card-art harnesses. Affects: Garrett's Serpent (the prefab's skim
 4. AI: at I1 they mostly miss; at I4 they forage the field while reloading, hunt you across the cell, and cloak after
    a shot. Report an AI that never scopes or never fires (the press shape), or one that rams instead of shooting.
 5. The crystal field regrows a collected crystal after ~8 s in the same place.
-6. Frame time at I4 (2,652 neutral prisms, a 3,600 u membrane at a standard cell's shard count).
+6. Frame time at I4 (6,008 neutral prisms since the denser pass - 2,652 when this entry was written - in a 3,600 u
+   membrane at a standard cell's shard count).
 7. First-pass numbers to re-tune: target 3, spawn ring 2,200, field 24 crystals in 380 u, AI ladders.
 
 ### 🔴 The party molecule grows from the host; a lower blue on the friends window (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
@@ -19597,6 +19611,22 @@ Docs: `Assets/_Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYP
     the host punched is a hole on the client.
 11. **Waystation itself.** Fly Waystation (58) once. **Pass:** unchanged from bleeding-edge.
 
+## Lime element shades: one lime at four lightnesses, Charge darkest (`cece/funny-archimedes-hinjr4`, 2026-10-31) - NOT EDITOR-VERIFIED
+
+What changed: the four element shades (palette `ElementalCrystalColors`, the Wrasse kite view, the Wrasse Lasso Lab) are
+now one lime at four lightnesses: Charge `#2E5300`, Mass `#508900`, Space `#73C200`, Time `#99FF00`
+(`Docs/VesselModels/COLOR.md` §5d). Regenerated: `SpaceCrystalFresnelMaterial`, `TimeCrystalFresnelMaterial`,
+`MassDepthPrisms`, `OmniCrystalBody`, `OmniDepthPrisms`, `OmniChargeArcs`. Not compiled or opened in the editor.
+
+1. Any arena with free crystals: the four elemental crystals read as one lime family, ordered dark to light Charge,
+   Mass, Space, Time; none reads as Jade (teal), Gold or olive-brown. The omni stays the brightest lime crystal.
+2. **Charge**: the darkest crystal. Its plasma (the seam walk and the omni's flux arcs) must still read as lit. If it
+   looks too dim, the lever is the arcs' glow (`OmniChargeArcs` `_GlowIntensity`), not the shade.
+3. A free omni crystal: its pentagons, triangles, squares and rhombi wear Charge, Mass, Space and Time in that order of
+   lightness.
+4. Menu_Main ▸ Ark ▸ Elemental Converter ▸ CONVERT: each crystal flies in and lands in its own shade.
+5. The Wrasse (Toybox Vessel Changer): the kite view's motes are four lightnesses of one lime, told apart at a glance in a
+   group.
 ## Waystation is the Drop Tower race: Waystation Prototype folded into Waystation (58) (`claude/adoring-babbage-4jjppj`, 2026-11-01) - NOT EDITOR-VERIFIED
 
 Shombith: "make Waystation Prototype as Waystation". Garrett owns Waystation; this was done on that instruction. It

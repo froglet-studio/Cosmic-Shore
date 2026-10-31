@@ -8,11 +8,13 @@ namespace CosmicShore.Gameplay
     /// arena, and the AI marksmen. Config separation - authored by
     /// <c>Tools/Build/author_serpent_gulag_assets.py</c>, never by hand.
     ///
-    /// <para><b>Difficulty is the intensity row.</b> Every AI strength is a four-rung ladder (index =
-    /// intensity - 1), the shape Garrett's Serpent Charge marksman uses (SERPENTCHARGE.md on
-    /// <c>cece/vibrant-archimedes-n3xn3x</c>). The generator asserts each one is monotone toward harder
-    /// and that intensity 4's aim error is inside the rifle's 1.5 deg cone while intensity 1's is outside
-    /// it.</para>
+    /// <para><b>Difficulty is the seat's AI level</b> (Easy, Medium, Hard, Legendary - index = level - 1), never the
+    /// intensity: intensity is the MAP, difficulty the OPPONENT (<c>AIDifficulty.cs</c>). Every strength is a
+    /// four-rung ladder, the shape Garrett's Serpent Charge marksman uses (SERPENTCHARGE.md on
+    /// <c>cece/vibrant-archimedes-n3xn3x</c>). The skill ladders are monotone toward harder (the generator asserts
+    /// it, and that Legendary's aim error is inside the rifle's 1.5 deg cone while Easy's is outside it). The three
+    /// STYLE ladders (preferred range, keep-away, hold) are monotone from Easy to Hard - the patient sniper - and
+    /// Legendary breaks the pattern on purpose: it plays aggressively (closer, bolder, never parked for long).</para>
     /// </summary>
     [CreateAssetMenu(
         fileName = "SerpentGulagSettings",
@@ -40,7 +42,7 @@ namespace CosmicShore.Gameplay
                  "no network message.")]
         public int fieldSeed = 77;
 
-        [Header("AI marksmen - per intensity (index = intensity - 1)")]
+        [Header("AI marksmen - per AI difficulty (index = Easy 1, Medium 2, Hard 3, Legendary 4)")]
         [Tooltip("Seconds between re-choosing which rival to hunt (and re-rolling the aim error).")]
         public float[] aiRetargetSeconds = { 1.2f, 0.9f, 0.6f, 0.4f };
 
@@ -55,19 +57,40 @@ namespace CosmicShore.Gameplay
         public float[] aiHuntRange = { 1500f, 2000f, 2500f, 3000f };
 
         [Tooltip("The AI flies to the crystal field while its rifle has at least this many seconds of " +
-                 "recovery left (it reloads faster on Charge). A large number = never.")]
+                 "recovery left (it reloads faster on Charge) - only when it is not dug in and no rival is inside " +
+                 "its keep-away distance of the crystal. A large number = never.")]
         public float[] aiForageMinCooldownSeconds = { 999f, 7f, 5f, 3.5f };
+
+        [Tooltip("The range (u) the AI keeps from the rival it hunts: it picks a post this far from them (behind a " +
+                 "nest when one is near that range) and digs in there. A sniper fights from distance, never at it.")]
+        public float[] aiPreferredRange = { 1400f, 1700f, 2000f, 900f };
+
+        [Tooltip("A rival closer than this (u) makes the AI give up its post and back off to its preferred range - " +
+                 "it retreats, it does not turn to fight.")]
+        public float[] aiKeepAwayDistance = { 700f, 900f, 1100f, 350f };
+
+        [Tooltip("Seconds the AI stays dug in at a post (stopped, its stance wall growing) before it moves to another.")]
+        public float[] aiHoldSeconds = { 8f, 12f, 16f, 5f };
 
         [Tooltip("Chance the AI cloaks right after a shot, to vanish from the pilot it just fired on.")]
         public float[] aiCloakAfterShotChance = { 0f, 0.25f, 0.5f, 0.75f };
 
         [Header("AI marksmen - shared")]
-        [Tooltip("Inside this distance (u) the AI breaks away instead of lining up: a sniper cannot aim " +
-                 "at a pilot it is about to ram.")]
-        [Min(0f)] public float aiMinAimDistance = 250f;
+        [Tooltip("Within this distance (u) of its post the AI stops (B): the stopped Serpent's wall grows from the loose " +
+                 "mass beside it, and it is immune to elemental debuffs while stopped (the shipped stance).")]
+        [Min(1f)] public float aiPostArrivalRadius = 70f;
 
-        [Tooltip("How far (u) the AI breaks away to before it turns back in.")]
-        [Min(0f)] public float aiStandoffDistance = 650f;
+        [Tooltip("How far (u) behind a nest, on the side away from the rival, the AI's post is: the nest stands between " +
+                 "them and its plates are in the wall's reach.")]
+        [Min(0f)] public float aiBehindNestDistance = 75f;
+
+        [Tooltip("A post must be at least this much nearer the preferred range (u) than staying put, or the AI digs in " +
+                 "where it is.")]
+        [Min(0f)] public float aiRangeBand = 350f;
+
+        [Tooltip("Seconds the AI waits for a stop / go press to take before pressing again (the stance is a toggle, " +
+                 "so a second press inside the round trip would undo the first).")]
+        [Min(0.2f)] public float aiStanceRetrySeconds = 1f;
 
         [Tooltip("The AI raises its scope only when its rival is within this many degrees of its nose.")]
         [Range(1f, 60f)] public float aiScopeOpenAngle = 15f;
@@ -82,11 +105,11 @@ namespace CosmicShore.Gameplay
                  "to steal the hunt. 1 = no preference.")]
         [Min(1f)] public float aiHumanFocus = 2f;
 
-        /// <summary>The rung for <paramref name="intensity"/> (1-4, clamped) of a ladder.</summary>
-        public static float Rung(float[] ladder, int intensity)
+        /// <summary>The rung for AI level <paramref name="level"/> (1 Easy - 4 Legendary, clamped) of a ladder.</summary>
+        public static float Rung(float[] ladder, int level)
         {
             if (ladder == null || ladder.Length == 0) return 0f;
-            return ladder[Mathf.Clamp(intensity - 1, 0, ladder.Length - 1)];
+            return ladder[Mathf.Clamp(level - 1, 0, ladder.Length - 1)];
         }
     }
 }

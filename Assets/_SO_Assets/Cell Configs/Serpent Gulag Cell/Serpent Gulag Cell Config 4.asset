@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Serpent Gulag Cell Config 4
   m_EditorClassIdentifier:
   CellName: Serpent Gulag
-  Description: 'The Gulag - intensity 4 of Serpent Gulag: ten nests, twelve barred screens, danger
-    plates on the nest frames and the bars. 2652 prisms, all neutral. Membrane radius 3600
+  Description: 'The Gulag - intensity 4 of Serpent Gulag: twelve inner and ten outer nests, sixteen
+    barred screens, a hundred and forty rubble clusters, danger on every fourth frame plate
+    and bar and every fifth rubble cube. 6008 prisms, all neutral. Membrane radius 3600
     (Cleave''s x3 shell), spawn ring 2200, the crystal field (radius 380) laid by the
     controller at every rung. NO NUCLEUS, no flora, no fauna. Authored by
     Tools/Build/author_serpent_gulag_assets.py - re-run it rather than hand-editing.'
@@ -31,11 +32,11 @@ MonoBehaviour:
   EnvironmentIntensity: 4
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 3352
-    RestlessExit: 3152
-    FrenzyEnter: 6252
-    FrenzyExit: 5652
-    RestlessEnterVolume: 1194014
-    RestlessExitVolume: 1190814
-    FrenzyEnterVolume: 1240414
-    FrenzyExitVolume: 1230814
+    RestlessEnter: 6708
+    RestlessExit: 6508
+    FrenzyEnter: 9608
+    FrenzyExit: 9008
+    RestlessEnterVolume: 3219640
+    RestlessExitVolume: 3216440
+    FrenzyEnterVolume: 3266040
+    FrenzyExitVolume: 3256440

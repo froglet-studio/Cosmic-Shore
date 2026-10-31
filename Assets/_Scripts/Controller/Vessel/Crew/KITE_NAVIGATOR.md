@@ -280,7 +280,7 @@ Also fixed: `KiteNavigatorConfigTests` still asserted the board frame was `Eased
 
 "pull time [and] space away from jade and charge away from gold" - "it has to have green in the yellow and yellow in the
 green. it can not have any blue or orange at all." The boundary keeps only red + green: blue 0, green leading, and red a
-quarter to three quarters of green (an HSV hue of 75–105°). The four are now:
+quarter to three quarters of green (an HSV hue of 75–105°). The four were (until 2026-10-31):
 
 | Element | Colour | Character |
 |---|---|---|
@@ -291,6 +291,19 @@ quarter to three quarters of green (an HSV hue of 75–105°). The four are now:
 
 All four are 0.02 apart (one just-noticeable difference) in value, saturation and hue, the most the blue-free sheet
 allows. `Docs/VesselModels/COLOR.md` §5b has the numbers.
+
+### One lime, four lightnesses (Garrett, 2026-10-31)
+
+Round 9b's four colours were replaced: the motes are now one lime at four lightnesses, Charge the darkest, so a
+group of them reads as one colour and the eye sorts them by brightness first. `Docs/VesselModels/COLOR.md` §5d has the
+why and the numbers.
+
+| Element | Colour | Lightness |
+|---|---|---|
+| Charge | `#2E5300` | the darkest |
+| Mass | `#508900` | second |
+| Space | `#73C200` | third |
+| Time | `#99FF00` | the lightest |
 
 ## The phone boost (Garrett, 2026-10-21)
 
