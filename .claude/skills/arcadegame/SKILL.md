@@ -263,6 +263,14 @@ saw when opening Wrecking Ball). The gate names the exact using to add; it only 
 
 ## 6. What a mode must NEVER do
 
+- **Change the vessel (LOCKED, Shombith, 2026-10-31).** "The vessel kit as designed always stays the same, we just make
+  the game mode interesting." A mode never rations an ability (rounds bought with crystals), vetoes a press, adds a
+  contact effect (a wall that costs speed), rescales an ability or edits a vessel file (`R_VesselActions/**`,
+  `R_VesselActionHandler`, `Assemblers/**`, a vessel prefab or action SO) for its own sake. Its levers are the track, the
+  environment (prisms, debris, flora, hazards), the course ladder and its AI's choices. Serpent Time's round economy and
+  wall cost were built and retired for this (`SERPENTTIME.md`). A kit change is a vessel change: it goes to the vessel's
+  owner, never through a mode.
+
 - Build a parallel arena/spawner/culler the Cell already owns; add decay, timers or caps to mass.
 - Score from a stat nothing counts, or count a stat in a way only one mode can see (`StatsManager`
   counts platform-wide; a mode's rule PAYS).

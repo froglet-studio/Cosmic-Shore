@@ -132,19 +132,6 @@ namespace CosmicShore.Gameplay
         public IVesselStatus Owner => _shape.Owner;
         public Snapshot Shape => _shape;
 
-        /// <summary>
-        /// Is <paramref name="p"/> part of a standing Seed Wall: a brick a wall claimed, or a live wall's seed? A
-        /// question, never an error (Serpent Time asks it of every prism near a hull to charge the wall's cost).
-        /// </summary>
-        public static bool IsWallBrick(Prism p)
-        {
-            if (p == null) return false;
-            if (s_claimed.Contains(p)) return true;
-            for (int i = 0; i < Live.Count; i++)
-                if (Live[i] && Live[i].Prism == p) return true;
-            return false;
-        }
-
         /// <summary>The seed is alive (not destroyed, not sitting in the pool), the vessel that
         /// laid it still exists, and the seed is either still super-shielded (the cloak's wall) or
         /// still held by the stopped stance. Only an active wall grows and answers a crystal.</summary>

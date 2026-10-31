@@ -88,13 +88,18 @@ What it says:
 
 ## 4. Open decisions (Shombith's to make, with the vessel's owner where it touches the Serpent)
 
+**Rule (Shombith, 2026-10-31): the vessel kit as designed always stays the same; the mode is made interesting by its
+track, environment and AI, never by changing what an ability does.** That settles D-ST2, D-ST3 and D-ST5 below: no round
+economy, a wall does to a hull what the shipped Seed Wall does, and a snipe does what the shipped Sniper Shot does. The
+kit is Garrett's (#1642, merged 2026-10-31: Scope on Charge, Cloak / Sniper Shot on Space, Hunter's Sight, Fifth Pellet).
+
 - **D-ST1 Ring rule.** Any ring of a gate counts (round 1), or each ring is worth something different (a far ring pays
   more)?
-- **D-ST2 Round economy.** A crystal is one round (round 1). Should crystals also raise Charge (a faster rifle), as Serpent
+- **D-ST2 Round economy.** *Settled 2026-10-31: none (vessel rule above).* A crystal is one round (round 1). Should crystals also raise Charge (a faster rifle), as Serpent
   Charge's waves do?
-- **D-ST3 What a wall does to a hull.** Bounce or half speed (round 1), or something else (a stun, a trail cut)?
+- **D-ST3 What a wall does to a hull.** *Settled 2026-10-31: what the shipped wall does.* Bounce or half speed (round 1), or something else (a stun, a trail cut)?
 - **D-ST4 Own walls.** Let their owner through (round 1), or block everyone (riskier dirty play)?
-- **D-ST5 Snipe on a pilot.** Strip only (the game's rule), or add a stun in this mode?
+- **D-ST5 Snipe on a pilot.** *Settled 2026-10-31: the shipped rule.* Strip only (the game's rule), or add a stun in this mode?
 - **D-ST6 The arena.** The page's four loops are placeholders. In Unity, a real scene: reuse a gate race's course
   (`GateRaceController` modes) or the cell the Serpent Charge branch cloned?
 
@@ -111,9 +116,9 @@ What the game now does (details: `Assets/_Scripts/Controller/Arcade/SERPENTTIME.
 |---|---|
 | R1 a Time race | Serpent Time's circuit: 8 gates, 2 laps, golf |
 | R2 several rings at a gate | Ring clusters, 3 at I1/I2, 2 at I3/I4, any one counts (`SerpentTimeCluster`) |
-| R3 walls, shoot or go round | The shipped cloak lays a Seed Wall; a rival's brick costs half your speed (a shielded one most of it); the rifle clears it; another ring of the gate is open |
-| R4 rounds cost crystals | 1 at the start, +1 per crystal, 3 at most, 1 per shot; a scoped shot with none is dropped |
-| R5 a dirty AI | Picks the open ring, shoots walls when it holds a round, detours for crystals when short, cloaks just past a ring a rival still needs |
+| R3 walls, shoot or go round | The shipped cloak lays a Seed Wall, which does what it does everywhere; the rifle clears it; another ring of the gate is open |
+| R4 rounds cost crystals | **Retired 2026-10-31** (the mode never changes the vessel): the rifle's shipped cooldown is its only limit |
+| R5 a dirty AI | Picks the open ring, shoots walls when its rifle is ready, cloaks just past a ring a rival still needs |
 | R6 the cloak | Unchanged (the shipped `CloakSeedWallActionSO`) |
 
 The gate debris came over too (48 loose prisms round each gate, one grown back per gate every 1.5 s, kept 20 u clear of
@@ -126,3 +131,4 @@ and the four AI play styles (the game's AI is one dirty pilot at the lobby's dif
 |---|---|---|---|
 | 1 | 2026-10-27 | The page: the shipped Serpent, the race (R1 to R6), four AI styles, three levels, the scorecard above | (a) A cloak seed laid on top of a rival traps it bouncing in place: the seed is the Serpent's latest trail prism, behind it, and the AI routes round any wall across its path. (b) An AI that only aims for the ring circles it: the game's stick mix pins the hull at 25 u/s at full yaw (an 18 u turn), so the approach must line up on the ring's axis from far enough out, scaled by how far off the axis it is. (c) A sniper that starts lining up 280 u out and wants a 0.35° aim never fires: fire when the believed aim sits in the inner half of the cone at that distance, ease off the throttle while lining up, and back off for range. (d) Belief mistakes only on walls do not separate the levels, because few rings are walled; the Skim Race mistakes belong on every gate. (e) An InstancedMesh's colour attribute must exist before its first render, or the walls draw white (three r128). |
 | 2 | 2026-10-27 | Unity: Serpent Time (73) reshaped into the dirty race (§5) | The gate race needed four hooks to stand several rings at a gate (detection, the AI's ring, the lit ring, a per-pilot crystal budget); the course's own ring is kept, hidden, because the objective arrow, the race toasts and the AI's commit all read it |
+| 3 | 2026-10-31 | Unity: the round economy and the wall's speed cost retired; the three vessel files back to bleeding-edge; the AI shoots on the rifle's own cooldown and calls a ring walled by any rival prism in its mouth | A mode that rations an ability or adds a contact effect is changing the vessel. The track and the AI are the mode's levers. **The studio page (`serpent.html`) still models the round economy and the wall bounce; its next round removes them** |

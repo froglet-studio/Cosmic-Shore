@@ -17,9 +17,8 @@ MonoBehaviour:
   DisplayName: Serpent Time
   Description: Serpents only, and it is a dirty race. Every gate is a cluster of rings - thread
     any one. Cloak just past a ring and a Seed Wall grows in the way of whoever is behind
-    you; scope and shoot a wall open, ram it, or take another ring. Every sniper round
-    costs a crystal, so wander for them. Burn your pellets on the straights. Two laps.
-    Fastest domain home wins.
+    you; scope and shoot a wall open, ram it, or take another ring. Burn your pellets
+    on the straights. Two laps. Fastest domain home wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 717a8f247ddd4f47b1c6205902959fab, type: 3}

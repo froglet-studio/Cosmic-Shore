@@ -6,8 +6,8 @@ The shared work is hull_time_race.author; this file is the Serpent's spec.
 Run from the repo root:  python3 Tools/Build/author_serpent_time_assets.py [--check]
 
 WHAT THIS MODE IS. The Serpent's TIME card (it had none: Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md §2), reshaped
-2026-10-27 into the DIRTY race (Docs/Studios/SERPENT_TIME.md): ring clusters, Seed Walls that cost speed, sniper
-rounds bought with crystals, an AI that walls and shoots. The rules are SerpentTimeController's; this file authors
+2026-10-27 into the DIRTY race (Docs/Studios/SERPENT_TIME.md): ring clusters,
+gate debris that grows back, an AI that walls and shoots. The rules are SerpentTimeController's; this file authors
 the card text and the mode's own toasts.
 Thresher Time's shape - a lapped circuit on the shared HeadlongCircuit solver - cut by SerpentTimeCourse
 against the Serpent's Solid Fuel Pellets: four in the tank, each a 3 s burn that stacks (160 u/s on
@@ -70,17 +70,13 @@ htr.author(dict(
     comeback=0.45,
     description="""Serpents only, and it is a dirty race. Every gate is a cluster of rings - thread
     any one. Cloak just past a ring and a Seed Wall grows in the way of whoever is behind
-    you; scope and shoot a wall open, ram it, or take another ring. Every sniper round
-    costs a crystal, so wander for them. Burn your pellets on the straights. Two laps.
-    Fastest domain home wins.""",
+    you; scope and shoot a wall open, ram it, or take another ring. Burn your pellets
+    on the straights. Two laps. Fastest domain home wins.""",
     preview_objective="Thread any ring - wall the gate behind you",
     preview_notes="OPEN-ENDED, shell-only: Headlong''s solver cut for the Serpent, laid as ring clusters at match start, so a preview has no gates. It teaches the fuel pellets.",
-    # Serpent Time's own beats (SerpentTimeController posts them to the local pilot; GameToastSituation 153-156).
+    # Serpent Time's own beat (SerpentTimeController posts it to the local pilot; GameToastSituation 156).
     extra_toasts=[
-        (153, "Sniper rounds {0}/{1}", dict(domain_names=0)),
-        (154, "No sniper round - take a crystal", dict(domain_names=0)),
-        (155, "Seed Wall - speed lost", dict(domain_names=0, alpha=0.9)),
-        (156, "Any ring counts. Cloak past a ring to wall it. Crystals are sniper rounds.", dict(domain_names=0)),
+        (156, "Any ring counts. Cloak past a ring to wall it.", dict(domain_names=0)),
     ],
     build_after="MinigameScarabRally",
 ))

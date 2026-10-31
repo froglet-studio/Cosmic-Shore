@@ -17,22 +17,18 @@ namespace CosmicShore.Gameplay
     /// <item><b>Ring clusters.</b> Every gate stands as 3 rings (I1, I2) or 2 (I3, I4) side by side, any one of which
     /// threads it (<see cref="SerpentTimeCluster"/>). The course's own ring stays as the gate the platform, the
     /// objective arrow and the race toasts read; only its drawing is hidden.</item>
-    /// <item><b>Seed Walls cost speed.</b> A Serpent's cloak (RT unscoped) leaves a Seed Wall that grows from the loose
-    /// prisms round it. A hull that flies into a RIVAL's wall loses speed: half for a bare brick, most of it for a
-    /// shielded one (the Serpent's own prism impact damages the brick and does not slow the hull, so the cost is this
-    /// mode's). Your own domain's walls let you through.</item>
-    /// <item><b>Sniper rounds cost crystals.</b> A pilot starts with <see cref="startingRounds"/> round, takes one per
-    /// crystal up to <see cref="maxRounds"/>, and spends one per shot; a scoped rifle press with no round is dropped.
-    /// The crystals sit in the cell, off the racing line, so a round is a detour.</item>
+    /// <item><b>Gate debris.</b> Loose neutral prisms lie round every gate and grow back, so a Serpent that cloaks
+    /// there has the mass its Seed Wall grows from. The debris is the environment's; the wall is the shipped one.</item>
     /// <item><b>The AI plays dirty</b> (input-only, through the replicated press like a human's): it picks the open
-    /// ring of each gate, shoots a wall out of its ring when it holds a round, goes for crystals when it is short of
-    /// rounds, and cloaks just past a ring a rival still needs, so the wall grows in that rival's way.</item>
+    /// ring of each gate, shoots a wall out of its ring when its rifle is ready, and cloaks just past a ring a rival
+    /// still needs, so the wall grows in that rival's way.</item>
     /// </list>
     ///
-    /// <para><b>Where each rule runs.</b> Rounds, the press gate and the wall cost run on the machine that FLIES the
-    /// hull (the owner: a human's client, the server for an AI) - the same machine whose rifle cooldown is
-    /// authoritative (<see cref="SniperShotActionExecutor.Fired"/>) and whose transform the network follows - so
-    /// nothing new is replicated. The ring clusters are laid on every peer from the course each peer was sent.</para>
+    /// <para><b>The vessel is never changed here</b> (Shombith, 2026-10-31: "the vessel kit as designed always stays
+    /// the same, we just make the game mode interesting"). No press is gated, no ability is rationed, no contact effect
+    /// is added: the Sniper Shot, the Seed Wall, the cloak and the pellets do exactly what they do in every other mode.
+    /// The mode owns the track (the clusters, the debris) and its AI's choices. The AI runs on the server; the ring
+    /// clusters are laid on every peer from the course each peer was sent.</para>
     ///
     /// <para><b>The fuel question stays.</b> The Serpent cruises at 60 u/s; its Time ability is a tank of four Solid
     /// Fuel Pellets (each press burns one for 3 s, burns stack). See <see cref="SerpentTimeCourse"/> and
@@ -51,28 +47,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] int[] ringsPerGateByIntensity = { 3, 3, 2, 2 };
         [Tooltip("Seconds each cluster ring takes to bloom in when the course is raised.")]
         [SerializeField, Min(0f)] float clusterBloomSeconds = 0.9f;
-
-        [Header("Sniper rounds")]
-        [Tooltip("Rounds every pilot starts the race with.")]
-        [SerializeField, Min(0)] int startingRounds = 1;
-        [Tooltip("The most rounds a pilot can hold; a crystal taken at the cap is wasted.")]
-        [SerializeField, Min(1)] int maxRounds = 3;
-        [Tooltip("Rounds one crystal gives.")]
-        [SerializeField, Min(0)] int roundsPerCrystal = 1;
-        [Tooltip("Seconds between two 'no rounds' toasts, so a held trigger does not flood the screen.")]
-        [SerializeField, Min(0f)] float noRoundsToastSeconds = 2.5f;
-
-        [Header("Seed Walls")]
-        [Tooltip("Throttle multiplier a hull drops to on hitting a rival's bare wall brick (recovers over the slow).")]
-        [SerializeField, Range(0f, 1f)] float bareBrickThrottle = 0.5f;
-        [Tooltip("Throttle multiplier on hitting a rival's shielded brick or seed.")]
-        [SerializeField, Range(0f, 1f)] float shieldedBrickThrottle = 0.15f;
-        [Tooltip("Seconds the throttle takes to recover from a wall hit.")]
-        [SerializeField, Min(0.05f)] float wallSlowSeconds = 1.2f;
-        [Tooltip("Seconds after a wall hit before another can slow the same hull.")]
-        [SerializeField, Min(0f)] float wallHitCooldownSeconds = 0.5f;
-        [Tooltip("How close (u) a brick's centre must pass to the hull's path to count as a hit.")]
-        [SerializeField, Min(0.5f)] float wallContactRadius = 5f;
 
         [Header("Gate debris (the walls' fuel)")]
         [Tooltip("The prism every piece of gate debris is laid from: the environment prism (SpawnablePrism). " +
@@ -96,15 +70,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aiCloakRivalRange = 1400f;
         [Tooltip("Seconds between an AI's dirty cloaks (the shipped cloak recovers in 15 s).")]
         [SerializeField, Min(0f)] float aiCloakCooldownSeconds = 15.5f;
-        [Tooltip("Share of a ring's mouth rival bricks must cover before the AI calls the ring walled.")]
+        [Tooltip("Share of a ring's mouth rival prisms must cover before the AI calls the ring walled.")]
         [SerializeField, Range(0.05f, 1f)] float aiBlockedCoverage = 0.4f;
-        [Tooltip("Extra cost (u) the AI puts on a walled ring while it holds a round (it can shoot it open).")]
-        [SerializeField, Min(0f)] float aiBlockedCostWithRounds = 120f;
-        [Tooltip("Extra cost (u) the AI puts on a walled ring with no round (it would have to ram it).")]
-        [SerializeField, Min(0f)] float aiBlockedCostWithoutRounds = 600f;
+        [Tooltip("Extra cost (u) the AI puts on a walled ring (it shoots it open when its rifle is ready).")]
+        [SerializeField, Min(0f)] float aiBlockedCost = 120f;
         [Tooltip("The AI keeps its ring unless another is cheaper by this much (u).")]
         [SerializeField, Min(0f)] float aiRingSwitchHysteresis = 60f;
-        [Tooltip("Within this distance (u) of its ring the AI stops changing its mind, unless the ring is walled and it has no round.")]
+        [Tooltip("Within this distance (u) of its ring the AI stops changing its mind, unless the ring is walled and its rifle is not ready.")]
         [SerializeField, Min(0f)] float aiChoiceLockDistance = 250f;
         [Tooltip("The AI shoots a wall in its ring only from this range (u): near enough to aim, far enough to clear it in time.")]
         [SerializeField] Vector2 aiShotRange = new(90f, 1100f);
@@ -112,10 +84,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aiScopeSettleSeconds = 0.35f;
         [Tooltip("Seconds the AI tries to line up a shot before it lowers the scope.")]
         [SerializeField, Min(0.1f)] float aiShotGiveUpSeconds = 3f;
-        [Tooltip("Extra flying (u) an AI with NO round spends to take a crystal on the way.")]
-        [SerializeField, Min(0f)] float aiDetourWithoutRounds = 900f;
-        [Tooltip("Extra flying (u) an AI below the round cap spends to take a crystal on the way (0 at the cap).")]
-        [SerializeField, Min(0f)] float aiDetourBelowCap = 250f;
 
         protected override string ModeName => "Serpent Time";
 
@@ -137,16 +105,11 @@ namespace CosmicShore.Gameplay
         {
             public IPlayer Player;
             public bool FliesHere;
-            public int Rounds;
             public R_VesselActionHandler Handler;
             public SniperScopeActionExecutor Scope;
             public SniperShotActionExecutor Rifle;
             public AIPilot Autopilot;
             public bool FilterInstalled;
-
-            public Vector3 LastPosition;
-            public bool HasLastPosition;
-            public float WallCooldownUntil;
 
             // AI: which ring of the gate it flies for.
             public int ChoiceIndex = -1;
@@ -193,21 +156,16 @@ namespace CosmicShore.Gameplay
         static readonly List<Prism> s_prisms = new(128);
 
         bool _localRaceStarted;
-        float _nextNoRoundsToastAt;
 
         // ── Lifecycle ─────────────────────────────────────────────────────
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            ElementalCrystalImpactor.OnCrystalCollected += HandleCrystalCollected;
-            SniperShotActionExecutor.Fired += HandleShotFired;
         }
 
         public override void OnNetworkDespawn()
         {
-            ElementalCrystalImpactor.OnCrystalCollected -= HandleCrystalCollected;
-            SniperShotActionExecutor.Fired -= HandleShotFired;
             ReleasePilots();
             ClearDebris();
             base.OnNetworkDespawn();
@@ -216,12 +174,11 @@ namespace CosmicShore.Gameplay
             _localRaceStarted = false;
         }
 
-        /// <summary>Hand every vessel back as the race found it: no press gate, no AI filter, no held trigger.</summary>
+        /// <summary>Hand every vessel back as the race found it: no AI filter, no held trigger.</summary>
         void ReleasePilots()
         {
             foreach (var pilot in _pilots.Values)
             {
-                if (pilot.Handler && pilot.Handler.PressGate != null && pilot.FliesHere) pilot.Handler.PressGate = null;
                 if (pilot.Autopilot) pilot.Autopilot.SetCycledAbilityFilter(null);
                 if (pilot.Handler && pilot.FliesHere && pilot.Shot != ShotPhase.Idle)
                 {
@@ -345,8 +302,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Still loose debris: alive, still the debris's, not stolen into a wall (a steal re-colours it).</summary>
         static bool IsLooseDebris(Prism prism) =>
-            prism && !prism.destroyed && prism.ownerID == DebrisOwnerId && prism.Domain == Domains.Blue &&
-            !SerpentWallAssembler.IsWallBrick(prism);
+            prism && !prism.destroyed && prism.ownerID == DebrisOwnerId && prism.Domain == Domains.Blue;
 
         /// <summary>
         /// The debris grows back: every <see cref="debrisRegrowSeconds"/>, each gate holding fewer than
@@ -413,7 +369,7 @@ namespace CosmicShore.Gameplay
                 if (cluster[i]) cluster[i].SetIsNextForLocalPilot(lit);
         }
 
-        // ── Pilots, rounds and the press gate (the machine that flies each hull) ──
+        // ── Pilots (the machine that flies each hull) ──
 
         /// <summary>The same rule as the rifle's own: not spawned is the only machine there is, else the owner.</summary>
         static bool FliesHere(IPlayer player)
@@ -438,7 +394,6 @@ namespace CosmicShore.Gameplay
             {
                 Player = player,
                 FliesHere = FliesHere(player),
-                Rounds = startingRounds,
                 Rng = new System.Random(unchecked(System.Environment.TickCount * 17 + (int)player.PlayerNetId)),
             };
             _pilots[player] = pilot;
@@ -460,55 +415,9 @@ namespace CosmicShore.Gameplay
             // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a human's hull.
             pilot.Autopilot = status is Component c && c && c.TryGetComponent(out AIPilot ai) ? ai : null;
 
-            if (pilot.FliesHere && pilot.Handler)
-            {
-                var captured = pilot;
-                pilot.Handler.PressGate = ie => AllowPress(captured, ie);
-            }
         }
 
         bool IsScoped(Pilot pilot) => pilot.Scope && pilot.Scope.IsScoped;
-
-        /// <summary>RT while scoped is the rifle: it needs a round. Unscoped RT is the cloak, always allowed.</summary>
-        bool AllowPress(Pilot pilot, InputEvents ie)
-        {
-            if (ie != InputEvents.RightStickAction || !IsScoped(pilot) || pilot.Rounds > 0) return true;
-            if (pilot.Player.IsLocalUser && Time.time >= _nextNoRoundsToastAt)
-            {
-                _nextNoRoundsToastAt = Time.time + noRoundsToastSeconds;
-                GameToastAPI.Post(GameToastSituation.SerpentTimeNoRounds, pilot.Player.Domain);
-            }
-            return false;
-        }
-
-        void SetRounds(Pilot pilot, int rounds)
-        {
-            rounds = Mathf.Clamp(rounds, 0, maxRounds);
-            if (rounds == pilot.Rounds) return;
-            pilot.Rounds = rounds;
-            if (pilot.Player.IsLocalUser)
-                GameToastAPI.Post(GameToastSituation.SerpentTimeRounds, pilot.Player.Domain,
-                                  rounds.ToString(), maxRounds.ToString());
-        }
-
-        void HandleCrystalCollected(string playerName)
-        {
-            if (gameData == null || !gameData.IsTurnRunning) return;
-            foreach (var pilot in _pilots.Values)
-                if (pilot.FliesHere && pilot.Player.Name == playerName)
-                    SetRounds(pilot, pilot.Rounds + roundsPerCrystal);
-        }
-
-        void HandleShotFired(IVesselStatus shooter)
-        {
-            if (shooter == null) return;
-            foreach (var pilot in _pilots.Values)
-                if (pilot.FliesHere && ReferenceEquals(pilot.Player.Vessel?.VesselStatus, shooter))
-                {
-                    SetRounds(pilot, pilot.Rounds - 1);
-                    return;
-                }
-        }
 
         // A subclass must not declare Update (GateRaceController.Update runs the race); LateUpdate is free.
         void LateUpdate()
@@ -517,84 +426,19 @@ namespace CosmicShore.Gameplay
 
             TickDebrisRegrow();
 
-            var players = gameData.Players;
-            for (int i = 0; i < players.Count; i++)
-            {
-                var player = players[i];
-                if (player?.Vessel == null) continue;
-                var pilot = PilotFor(player);
-                if (pilot == null || !pilot.FliesHere) continue;
-                TickWallCost(pilot);
-            }
-
             if (!_localRaceStarted)
             {
                 _localRaceStarted = true;
                 var local = gameData.LocalPlayer;
-                if (local != null)
-                {
-                    GameToastAPI.Post(GameToastSituation.SerpentTimeWallHint, local.Domain);
-                    GameToastAPI.Post(GameToastSituation.SerpentTimeRounds, local.Domain,
-                                      startingRounds.ToString(), maxRounds.ToString());
-                }
+                if (local != null) GameToastAPI.Post(GameToastSituation.SerpentTimeWallHint, local.Domain);
             }
-        }
-
-        /// <summary>
-        /// The wall's cost: did this hull's path this frame (and a short lead ahead of its nose, so a fast hull cannot
-        /// step over a brick between frames) pass a rival's Seed Wall brick? Then it loses speed.
-        /// </summary>
-        void TickWallCost(Pilot pilot)
-        {
-            var vessel = pilot.Player.Vessel;
-            var status = vessel.VesselStatus;
-            var tf = vessel.Transform;
-            if (status == null || !tf) return;
-
-            Vector3 cur = tf.position;
-            Vector3 prev = pilot.HasLastPosition ? pilot.LastPosition : cur;
-            pilot.LastPosition = cur;
-            pilot.HasLastPosition = true;
-
-            if (Time.time < pilot.WallCooldownUntil) return;
-            if ((cur - prev).sqrMagnitude > 400f * 400f) return;   // a teleport, not a flight
-
-            var index = PrismSpatialIndex.Instance;
-            if (index == null || !index.IsAvailable) return;
-
-            float lead = Mathf.Max(status.Speed * Time.deltaTime * 2f, 6f);
-            index.QuerySegment(prev, cur + tf.forward * lead, wallContactRadius, s_prisms);
-
-            bool hit = false, shielded = false;
-            for (int i = 0; i < s_prisms.Count; i++)
-            {
-                var prism = s_prisms[i];
-                if (!prism || prism.destroyed || prism.Domain == pilot.Player.Domain) continue;
-                if (!SerpentWallAssembler.IsWallBrick(prism)) continue;
-                hit = true;
-                if (prism.prismProperties is { IsShielded: true } or { IsSuperShielded: true }) { shielded = true; break; }
-            }
-            if (!hit) return;
-
-            pilot.WallCooldownUntil = Time.time + wallHitCooldownSeconds;
-            status.VesselTransformer?.ModifyThrottle(shielded ? shieldedBrickThrottle : bareBrickThrottle, wallSlowSeconds);
-            if (pilot.Player.IsLocalUser)
-                GameToastAPI.Post(GameToastSituation.SerpentTimeWallHit, pilot.Player.Domain);
         }
 
         // ── The dirty AI (server) ─────────────────────────────────────────
 
-        protected override float AICrystalDetourSlackFor(IPlayer player)
-        {
-            var pilot = PilotFor(player);
-            if (pilot == null) return 0f;
-            if (pilot.Rounds <= 0) return aiDetourWithoutRounds;
-            return pilot.Rounds < maxRounds ? aiDetourBelowCap : 0f;
-        }
-
         /// <summary>
         /// The ring of this gate the AI flies for: the cheapest by distance (here, through it, on to the next gate) plus
-        /// a cost for a walled ring - small while it holds a round (it shoots it open), large without one (it would ram).
+        /// a cost for a walled ring (it shoots it open when its rifle is ready).
         /// Re-decided a few times a second, with hysteresis, and held once the pilot is close.
         /// </summary>
         protected override RaceGate ChooseAIGate(IPlayer player, int threaded, int ringIndex, RaceGate gate)
@@ -615,7 +459,6 @@ namespace CosmicShore.Gameplay
         {
             pilot.NextChoiceAt = Time.time + ChoiceSeconds;
             Vector3 next = threaded + 1 < RaceLength ? _course[RingIndexFor(threaded + 1)].Position : gates[0].Position;
-            float blockedCost = pilot.Rounds > 0 ? aiBlockedCostWithRounds : aiBlockedCostWithoutRounds;
 
             int best = 0;
             float bestCost = float.MaxValue, keptCost = float.MaxValue;
@@ -623,7 +466,7 @@ namespace CosmicShore.Gameplay
             {
                 pilot.SlotBlocked[slot] = IsWalled(gates[slot], pilot.Player.Domain, out pilot.SlotCentroid[slot]);
                 float cost = Vector3.Distance(self, gates[slot].Position) + Vector3.Distance(gates[slot].Position, next)
-                             + (pilot.SlotBlocked[slot] ? blockedCost : 0f);
+                             + (pilot.SlotBlocked[slot] ? aiBlockedCost : 0f);
                 if (cost < bestCost) { bestCost = cost; best = slot; }
                 if (!fresh && slot == pilot.ChoiceSlot) keptCost = cost;
             }
@@ -631,7 +474,7 @@ namespace CosmicShore.Gameplay
             if (!fresh)
             {
                 var kept = gates[pilot.ChoiceSlot];
-                bool stuck = pilot.SlotBlocked[pilot.ChoiceSlot] && pilot.Rounds <= 0;
+                bool stuck = pilot.SlotBlocked[pilot.ChoiceSlot] && !RifleReady(pilot);
                 bool close = (kept.Position - self).sqrMagnitude < aiChoiceLockDistance * aiChoiceLockDistance;
                 if ((close && !stuck) || keptCost <= bestCost + aiRingSwitchHysteresis) return;
             }
@@ -641,8 +484,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Do rival Seed Wall bricks cover enough of this ring's mouth to call it walled? Measured as the bricks' face
-        /// area against the mouth's, counting only bricks in a slab round the ring's plane and inside its mouth.
+        /// Does rival mass cover enough of this ring's mouth to call it walled? Measured as the prisms' face area against
+        /// the mouth's, counting only prisms in a slab round the ring's plane and inside its mouth. Any rival prism counts
+        /// (a Seed Wall's bricks are the usual ones); the question is asked of the prisms, never of the vessel's code.
         /// </summary>
         bool IsWalled(in RaceGate ring, Domains domain, out Vector3 centroid)
         {
@@ -657,8 +501,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < s_prisms.Count; i++)
             {
                 var prism = s_prisms[i];
-                if (!prism || prism.destroyed || prism.Domain == domain) continue;
-                if (!SerpentWallAssembler.IsWallBrick(prism)) continue;
+                if (!prism || prism.destroyed || prism.Domain == domain || prism.Domain == Domains.Blue) continue;
 
                 Vector3 offset = prism.transform.position - ring.Position;
                 float along = Vector3.Dot(offset, ring.Axis);
@@ -747,7 +590,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The AI's ring is walled and it holds a round: raise the scope (LT), and once it has settled and the nose is on
+        /// The AI's ring is walled and its rifle is ready: raise the scope (LT), and once it has settled and the nose is on
         /// the wall, fire (RT), then lower both. Every press goes the replicated way, so every peer sees the shot.
         /// </summary>
         void TickWallShot(Pilot pilot)
@@ -765,16 +608,16 @@ namespace CosmicShore.Gameplay
             switch (pilot.Shot)
             {
                 case ShotPhase.Idle:
-                    if (!walled || pilot.Rounds <= 0 || now < pilot.NextShotAt || pilot.ReleaseCloakAt >= 0f) return;
+                    if (!walled || now < pilot.NextShotAt || pilot.ReleaseCloakAt >= 0f) return;
                     if (distance < aiShotRange.x || distance > aiShotRange.y) return;
-                    if (pilot.Rifle && pilot.Rifle.CooldownRemaining > 0f) return;
+                    if (!RifleReady(pilot)) return;
                     pilot.Handler.PerformShipControllerActionsReplicated(InputEvents.LeftStickAction);
                     pilot.Shot = ShotPhase.Scoping;
                     pilot.ShotPhaseAt = now;
                     return;
 
                 case ShotPhase.Scoping:
-                    if (!walled || pilot.Rounds <= 0 || distance < aiShotRange.x || now - pilot.ShotPhaseAt > aiShotGiveUpSeconds)
+                    if (!walled || distance < aiShotRange.x || now - pilot.ShotPhaseAt > aiShotGiveUpSeconds)
                     {
                         pilot.Handler.StopShipControllerActionsReplicated(InputEvents.LeftStickAction);
                         pilot.Shot = ShotPhase.Idle;
@@ -797,6 +640,9 @@ namespace CosmicShore.Gameplay
                     return;
             }
         }
+
+        /// <summary>The shipped rifle's own cooldown is the only limit on a shot.</summary>
+        static bool RifleReady(Pilot pilot) => !pilot.Rifle || pilot.Rifle.CooldownRemaining <= 0f;
 
         /// <summary>Is the wall's centre inside the rifle's cone (its radius floored at 6 u, as the rifle's own path is)?</summary>
         static bool OnTarget(Pilot pilot, Transform tf, Vector3 target, float distance)

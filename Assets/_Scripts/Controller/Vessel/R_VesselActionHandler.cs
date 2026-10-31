@@ -808,7 +808,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void PerformShipControllerActionsReplicated(InputEvents ie)
         {
-            if (PressGate != null && !PressGate(ie)) return;
             if (IsSpawned && IsOwner)
                 SendButtonPressed_ServerRpc(ie, CurrentDevice());
             else
@@ -849,7 +848,6 @@ namespace CosmicShore.Gameplay
             }
             if (_suppressedInputs.Contains(ie)) { ReportPressOutcome(ie, "suppressed"); return; }
             if (IsInputMuted(ie)) { ReportPressOutcome(ie, "muted"); return; }
-            if (PressGate != null && !PressGate(ie)) { ReportPressOutcome(ie, "gated"); return; }
             // Unbound presses (IdleAction, the straight-line gestures) arrive every few frames,
             // so they get their own row rather than overwriting the ability that was pressed.
             ReportPress(ie);
@@ -926,15 +924,6 @@ namespace CosmicShore.Gameplay
         }
 
         #region Mute Input
-
-        /// <summary>
-        /// A MODE's veto over a press, asked on the machine the press starts on (the owner's input, or an AI's
-        /// replicated press) before it travels: return false to drop it. Unlike <see cref="SetInputSuppressed"/> the
-        /// answer can depend on live state - Serpent Time drops a scoped rifle press while the pilot has no sniper
-        /// round, which a fixed per-input switch cannot say because the same trigger is the cloak when unscoped.
-        /// Null (the default) lets every press through; the mode that sets it clears it.
-        /// </summary>
-        public System.Func<InputEvents, bool> PressGate { get; set; }
 
         /// <summary>
         /// Blanket on/off gate for one input event — unlike <see cref="MuteInput"/> there is no
