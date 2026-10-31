@@ -714,6 +714,8 @@ CAMERAS = {
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
     "Sirocco": (320, 10, 0.66, 46),
+    # Waystation Prototype: Waystation's angle, so the two cards read as the same race with towers added.
+    "WaystationPrototype": (35, 30, 0.95, 42),
     # Grizzly Charge is the Boneyard's fourth card (with Dog Fight / Salvo / Broadside / Dustup):
     # low, close, and down the axis of the Grizzly's run.
     "GrizzlyCharge": (75, 6, 0.55, 48),
@@ -859,6 +861,45 @@ def recipe(stem, card_path, pal, ends):
                 pt = v_add(list(a), v_mul(v_sub(list(b), list(a)), j / 12))
                 layers.append({"kind": "sphere", "c": pt, "r": 7.0, "base": [0.3, 0.2, 0.5],
                                "rim": [1.2, 0.8, 1.8], "emissive": [0.8, 0.5, 1.3], "unbound": True})
+        nucleus()
+    elif s == "WaystationPrototype":
+        # COURSE tier through the prototype's OFFLINE MIRROR (Tools/Build/waystation_prototype_course.py), whose own
+        # --compile proves it gate for gate and tile for tile against the shipped WaystationTower.cs: Waystation's
+        # clusters, the Drop Towers' rings and their walls (plain and danger prisms), at intensity 2 on the card's seed.
+        tier = "COURSE"
+        sys.path.insert(0, str(ROOT / "Tools/Build"))
+        import waystation_prototype_course as wpc   # noqa: E402
+        import waystation_course as wc              # noqa: E402
+        T, CT = wpc.read_tower(), wc.read_tables()
+        laid, best, per, towers, gap = wpc.build(T, CT, stable_seed(s), INTENSITY,
+                                                 ends.get("waystationPrototypeClusterTarget", 5))
+        trung = wpc.rung(T, INTENSITY)
+        for gp, facing, rad in laid:
+            hop = wpc.is_tower_ring((gp, facing, rad), trung)
+            layers.append({"kind": "ring", "c": list(gp), "n": list(facing), "R": rad, "r": rad * 0.12,
+                           "base": [0.2, 0.25, 0.3],
+                           "rim": [1.4, 0.95, 0.35] if hop else [0.6, 0.85, 1.4],
+                           "emissive": [0.9, 0.55, 0.2] if hop else [0.35, 0.55, 0.9]})
+        rows = []
+        plates = []
+        wpc.walls(T, laid, trung, plates)
+        n = T["TilesPerSide"]
+        for pl in plates:
+            tile = 2 * pl["half"] / n
+            for a in range(n):
+                for b in range(n):
+                    p = v_add(v_add(list(pl["c"]), v_mul(list(pl["u"]), -pl["half"] + tile * (a + 0.5))),
+                              v_mul(list(pl["v"]), -pl["half"] + tile * (b + 0.5)))
+                    danger = wpc.is_danger_tile(pl["gate"], pl["wall"], a * n + b, trung["DangerShare"])
+                    rows.append(prism(p, list(pl["n"]), list(pl["u"]), [tile, tile, T["TileThickness"]], BLUE,
+                                      DANGER if danger else PLAIN))
+        layers.append({"kind": "prisms", "rows": rows})
+        # The long last gap: a faint thread from the last exit gate to the final cluster - the wormhole drop.
+        a, b = best[len(best) - per - 1][0], best[len(best) - per][0]
+        for j in range(1, 12):
+            pt = v_add(list(a), v_mul(v_sub(list(b), list(a)), j / 12))
+            layers.append({"kind": "sphere", "c": pt, "r": 7.0, "base": [0.3, 0.2, 0.5],
+                           "rim": [1.2, 0.8, 1.8], "emissive": [0.8, 0.5, 1.3], "unbound": True})
         nucleus()
     elif s == "Tapestry":
         # MODEL tier: the arena is the bare Barren cell, so what the card shows is what the mode
@@ -1052,7 +1093,8 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime"):
+               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime",
+               "WaystationPrototype"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)

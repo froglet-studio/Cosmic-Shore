@@ -40,7 +40,7 @@ Measured off the shipped code and assets (the vessel-numbers pass that preceded 
 | **Manta** | flies beside it | Soar (free; costs yaw) 720 u/s | ram = slow (`VesselChangeSpeedByPrism`) |
 | **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 840 u/s (1200 before the 2026-09-25 retune) | none, **by design** — the hull ploughs prisms aside (`RhinoPloughPrismEffect`) and ramming costs no speed ("the bulldozer ignores mass", recorded in the Time row's description since 2026-10-16) |
 | **Dolphin** | skims for seed energy, not speed | charge (drift) → discharge 347 u/s | ram = slow + half the charge |
-| **Serpent** | flies beside it | 4 charges × 3 s at 160 u/s, regen 3.6 s/charge | none wired |
+| **Serpent** | flies beside it | 4 charges × 6 s at 160 u/s, no clock regen (refills only while its wall eats its trail, 2026-10-31) | none wired |
 | **Sparrow** | flies beside it | indefinite boost 135 u/s | ram = slow |
 | **Scarab** | flies beside it | 216 u/s ceiling, ×1.5 at Time 10 | none wired |
 | **Stoat** (on the card 2026-10-17) | flies beside it; its pair's gravity **never moves a rail** (super-shielded prisms are never admitted to `BlackHoleGravityField`) | the pathfinder's WARP: the flight clock ×2.5 while its pair bends the path (Time → ×5); turns scale with it, so its 72 u turning circle holds at any warp | none wired; a vessel crossing its attractor's horizon is carried out of the repulsor |

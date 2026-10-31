@@ -237,6 +237,23 @@ Serpentine (Serpent Time reshaped, 2026-10-31, same branch) taught four more:
   (`hull_time_race.author(extra_assets=...)`, Serpentine's `_own_cell_assets`): a cell config and spawn profile are
   shared by ~10 modes, so editing them in place re-tunes every one.
 
+Waystation Prototype (the Tiger Moth's Drop Tower race, 2026-10-31, `claude/adoring-babbage-4jjppj`,
+`WaystationPrototype/WAYSTATION_PROTOTYPE.md`) taught three:
+- **A prototype BESIDE a shipped mode reuses it without editing it**: a new `GameModes` id whose controller
+  INHERITS the original's, a course source that CALLS the original generator and post-processes its gates, a scene
+  cloned from the original's committed scene through `lib.committed_scene`. Where the original's AI must stand down
+  on the prototype's new pieces, raise its serialized threshold in the prototype's scene (Waystation's
+  `aiFoldMinDistance` 420 -> 700) and prove every new link is under it in the offline model, rather than adding a
+  seam to the original's file.
+- **An apostrophe in a single-quoted scalar breaks the asset exactly like the colon above, and `--check` cannot
+  see it**: `lib.toast` and a hand-written `Notes: '...'` wrap text in `'...'` without doubling `'`, so "The tower's
+  rings" ended the scalar. Double them (`text.replace("'", "''")`) and parse every authored `.asset`
+  in the generator; `check_generated_assets.py` (run by `/ship`'s gates) is what caught it (`REFACTOR_BACKLOG` S93).
+- **A per-peer mode structure is a pure function of the BROADCAST course**: clients receive gate positions, not the
+  seed (`GateRaceController.BroadcastCourse`), so walls, plates or debris derived on every peer must be computed from
+  the gates alone. Tag what a peer must tell apart in a field the broadcast already carries (the prototype's tower
+  rings use a radius no cluster ring uses) instead of widening the RPC.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```

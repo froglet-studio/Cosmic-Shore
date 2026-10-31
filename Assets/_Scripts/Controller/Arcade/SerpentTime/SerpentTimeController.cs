@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
     /// clusters are laid on every peer from the course each peer was sent.</para>
     ///
     /// <para><b>The fuel question stays.</b> The Serpent cruises at 60 u/s; its Time ability is a tank of four Solid
-    /// Fuel Pellets (each press burns one for 3 s, burns stack). See <see cref="SerpentTimeCourse"/> and
+    /// Fuel Pellets (each press burns one for 6 s, burns stack; the tank refills only while its wall eats its trail). See <see cref="SerpentTimeCourse"/> and
     /// SERPENTTIME.md.</para>
     /// </summary>
     public class SerpentTimeController : GateRaceController, IPlayerSpawnLine

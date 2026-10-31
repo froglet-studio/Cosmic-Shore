@@ -61,7 +61,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 # upstairs - reading either file alone gets a different (wrong) ring.
 RING_PREFAB = os.path.join(REPO, "Assets/_Prefabs/Projectile/AOEShieldedRingSpawner.prefab")
 BASE_PREFAB = os.path.join(REPO, "Assets/_Prefabs/Projectile/AOERingSpawner.prefab")
-OCTA_CS = os.path.join(REPO, "Assets/_Scripts/Utility/OctahedronMeshGenerator.cs")
+OCTA_CS = os.path.join(REPO, "Assets/_Scripts/Utility/Foundation/OctahedronMeshGenerator.cs")
 ICON_PNG = os.path.join(
     REPO, "Assets/_Graphics/Design Assests/HUD UI/Squirrel/ShieldedRingCrossSectionIcon.png")
 

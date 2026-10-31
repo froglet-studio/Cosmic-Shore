@@ -13,8 +13,9 @@ namespace CosmicShore.Gameplay
     /// <c>50 x multiplier + 10</c>: 160, 260, 360, 460 u/s. The turn rate GROWS with speed
     /// (<c>0.4 x speed + 80</c> deg/s), so the circle grows only from 33 u cruising to ~100 u on four
     /// pellets - the Serpent can carry a stack through most corners. What it cannot carry is the
-    /// tank: four pellets, 3 s each, one back every ~3.6 s. A lap is ~5,000 u; burning all four at
-    /// once covers ~1,400 u of it. The ladder tightens the mouths and the presentation, so a stack
+    /// tank: four pellets, 6 s each, and none come back on a clock - a pellet returns only for 2 s
+    /// of the Serpent's wall eating its own trail (SERPENT_FUEL_PELLETS.md). A lap is ~5,000 u;
+    /// burning all four at once covers ~2,800 u of it. The ladder tightens the mouths and the presentation, so a stack
     /// arriving at 460 u/s has to be aimed.</para>
     /// </summary>
     public static class SerpentTimeCourse
@@ -37,7 +38,7 @@ namespace CosmicShore.Gameplay
         public const float PelletMultiplier = 3f;
 
         /// <summary>`boostDuration` on ConsumeBoostAction.asset - one pellet's burn, s.</summary>
-        public const float PelletBurnSeconds = 3f;
+        public const float PelletBurnSeconds = 6f;
 
         /// <summary>Pellets the tank holds: `maxAmount` 1 / `resourceCost` 0.25.</summary>
         public const int TankPellets = 4;

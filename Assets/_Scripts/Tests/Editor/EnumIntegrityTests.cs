@@ -182,8 +182,10 @@ namespace CosmicShore.Tests
             // 65 -> 66 on 2026-10-27: BurrowRun (71), the Meerkat's time race (67 is still SerpentCharge's, in flight).
             // 66 -> 69 on 2026-10-27: ScarabRally (72), SerpentTime (73), BrittleStarTime (74) - Time races for
             // three hulls that had none (merged with BurrowRun from Ys-bleeding-edge).
+            // 69 -> 70 on 2026-10-31: WaystationPrototype (76), the Tiger Moth's Drop Tower race beside Waystation
+            // (72-74 are ScarabRally, SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(69, values.Length,
+            Assert.AreEqual(70, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -229,6 +231,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.ScarabRally, 72)]
         [TestCase(GameModes.SerpentTime, 73)]
         [TestCase(GameModes.BrittleStarTime, 74)]
+        [TestCase(GameModes.WaystationPrototype, 76)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

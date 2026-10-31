@@ -40,7 +40,7 @@ Read as five requirements:
 | Space | Scope (the eyepiece) | LT, depth = zoom | Left Shift | SCOPE latch, full zoom | 22° → 11° at full zoom (floor 8°) | Deep Focus (× 1.6 zoom) |
 | Charge | Sniper Shot | RT while scoped | Right Shift / F | RT while the scope is on | 12 s → 5.4 s recovery | Pierce (breaks super-shielded mass) |
 | Mass | Seed Wall | B (stop) or RT unscoped (cloak) | T / Right Shift | B / RT | bricks × 1 → × 2 | Lockdown (a crystal refills your walls' holes) |
-| Time | Solid Fuel Pellets | A | Space | A | burn 3 s → 4.8 s | none |
+| Time | Solid Fuel Pellets | A | Space | A | burn 6 s → 9.6 s; refills only while its wall eats its trail (1 pellet / 2 s) | Fifth Pellet |
 
 The round goes the full 3,000 u through every hostile prism in its 1.5° cone (radius floored at 6 u), never your own,
 and skips super-shielded mass until Pierce: `SniperShotActionExecutor.IsValidTarget`, which is the record where the docs

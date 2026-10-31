@@ -22,6 +22,7 @@ against a mode, not for it.
 | Sparrow | Breakwater | 6 | 6 | 7 | 4 | 4 | 7 | **5.7** | 4 Rivals/Feedback |
 | Manta | Redline | 9 | 7 | 8 | 4 | 2 | 3 | **5.5** | 2 Rivals |
 | Butterfly | Waystation | 9 | 6 | 7 | 4 | 3 | 4 | **5.5** | 3 Rivals |
+| Tiger Moth | Waystation Prototype (76, est. 2026-10-31; Waystation stays until Garrett approves) | 9 | 7 | 7 | 5 | 3 | 4 | **5.8** | 3 Rivals |
 | Thresher | Thresher Time | 6 | 7 | 7 | 5 | 4 | 4 | **5.5** | 4 Verb/Rivals |
 | Rhino | Headlong | 9 | 7 | 7 | 3 | 1 | 2 | **4.8** | 1 Rivals |
 | Grizzly | Grizzly Time | 8 | 7 | 7 | 3 | 2 | 2 | **4.8** | 2 Rivals |
