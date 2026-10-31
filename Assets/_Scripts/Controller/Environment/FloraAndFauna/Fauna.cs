@@ -879,8 +879,10 @@ namespace CosmicShore.Gameplay
         /// rate. 0 (the default) = this species never gnaws that tier. Only matters in a cell whose
         /// <see cref="Cell.ArmourIsFood"/> is set (the Ark escort's worlds); a species authors it on its own config.
         /// </summary>
-        protected float ArmourBite(bool superShielded) =>
-            superShielded ? _tunedSuperShieldBite ?? AuthoredArmourBite(true) : _tunedShieldBite ?? AuthoredArmourBite(false);
+        protected float ArmourBite(bool superShielded) => _biteScale *
+            (superShielded ? _tunedSuperShieldBite ?? AuthoredArmourBite(true) : _tunedShieldBite ?? AuthoredArmourBite(false));
+
+        float _biteScale = 1f;
 
         /// <summary>The species' authored armour bite (its config); <see cref="ArmourBite"/> lets a run's tuning win.</summary>
         protected virtual float AuthoredArmourBite(bool superShielded) => 0f;
@@ -901,6 +903,7 @@ namespace CosmicShore.Gameplay
         {
             if (tuning.TryGet(species, "shieldBite", out float v)) _tunedShieldBite = Mathf.Max(0f, v);
             if (tuning.TryGet(species, "superShieldBite", out v)) _tunedSuperShieldBite = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "biteScale", out v)) _biteScale = Mathf.Max(0f, v);
         }
 
         void ApplyRuntimeTuningFrom(Cell host)

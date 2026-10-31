@@ -60,13 +60,15 @@ namespace CosmicShore.Gameplay
             _paramTarget = null;
             // Genes are static: a run starts from the defaults, so one run's ai.* overrides never leak into the next.
             EscortGeneRegistry.ResetAll();
-            var pending = ArkEscortParams.Pending;
-            if (pending is not { Count: > 0 } || !_escort) return;
+            if (!_escort) return;
+            // Every run sails a COPY: the voyage's roll (worlds, variants, modifiers) and any named overrides write to it.
             _escortCopy = Instantiate(_escort);
             _escortCopy.name = _escort.name + " (runtime)";
             _escort = _escortCopy;
             _paramTarget = new ArkEscortParams.Target { Escort = _escortCopy, Difficulty = difficulty };
-            _pendingEcho = ArkEscortParams.Apply(_paramTarget, pending);
+            var pending = ArkEscortParams.Pending;
+            if (pending is { Count: > 0 }) _pendingEcho = ArkEscortParams.Apply(_paramTarget, pending);
+            RollAndApplyVoyage(difficulty);
         }
 
         // The overrides this run sailed with (null without any): their fauna half reaches each world in PrepareCellMetrics.
@@ -96,6 +98,7 @@ namespace CosmicShore.Gameplay
             _speedSamples = 0;
             _cellOfLeg = new Cell[_escort.Legs.Count];
             _report.BreachHull = tier.BreachHull;
+            ReportVoyage();
             _report.PacifyShare = _escort.PacifyShare;
             _report.PacifyMinVolume = _escort.PacifyMinVolume;
             _report.PacifyNucleusSeconds = _escort.PacifyNucleusSeconds;

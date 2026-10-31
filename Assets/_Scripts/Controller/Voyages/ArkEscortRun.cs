@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
             _squad = squad;
             _difficulty = Mathf.Clamp(difficulty, ArkEscortSO.MinDifficulty, ArkEscortSO.MaxDifficulty);
             _aiLocal = aiLocal;
-            _rng = new System.Random(_difficulty * 7919 + System.Environment.TickCount);
+            _rng = new System.Random(_difficulty * 7919 + _voyageSeed);   // the voyage's seed: one roll per voyage
             _survived = _fallen = false;
             _endAt = -1f;
             _leg = -1;
@@ -173,6 +173,7 @@ namespace CosmicShore.Gameplay
             EnsureSea();
             _cfg = _def.WithArk ? _def.WithArk.BuildConfig(_escort.VoyageName) : new ArkwayConfig { DisplayName = _escort.VoyageName };
             _cfg.Cells = _escort.Worlds(_difficulty);
+            _cfg.Seed = _voyageSeed;   // the corridor's headings belong to the voyage too
             _cfg.ArkSpeed *= tier.ArkSpeed;
             ApplyPacing(tier);
             if (_reactor) Destroy(_reactor);
@@ -305,7 +306,7 @@ namespace CosmicShore.Gameplay
         void OnUnderway()
         {
             Banner(TemplateText.Fill(_escort.DepartLine, "legs", _escort.Legs.Count.ToString(),
-                "difficulty", _difficulty.ToString()));
+                "difficulty", _difficulty.ToString()) + VoyageBannerSuffix());
             BringWingmates(force: true);
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;

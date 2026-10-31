@@ -29,6 +29,11 @@ namespace CosmicShore.Gameplay
             public ArkEscortSO Escort;
             public int Difficulty;
 
+            /// <summary>Variety overrides: the voyage's seed (null = this run picks one), the modifiers to force (a bitmask
+            /// over the escort's modifier list; -1 = roll them).</summary>
+            public int? VoyageSeed;
+            public int ModifierMask = -1;
+
             /// <summary>Per-species fauna overrides (<c>fauna.&lt;species&gt;.&lt;field&gt;</c>), handed to each escort world.</summary>
             public FaunaRuntimeTuning Fauna = new();
 
@@ -99,6 +104,20 @@ namespace CosmicShore.Gameplay
             Register("ark.cellSpacing", (t, _, v) => { t.Escort.CellSpacing = v; return true; });
             Register("ark.platesAreFood", (t, _, v) => { t.Escort.PlatesAreFood = v > 0.5f; return true; });
             Register("escort.maxPopulation", (t, _, v) => { t.Escort.MaxPopulation = v; return true; });
+            // ── Variety ──
+            Register("voyage.seed", (t, _, v) => { t.VoyageSeed = Mathf.RoundToInt(v); return true; });
+            Register("voyage.modifiers", (t, _, v) =>
+            {
+                if (v < -1f || v > int.MaxValue) return false;
+                t.ModifierMask = Mathf.RoundToInt(v);
+                return true;
+            });
+            Register("voyage.worlds", (t, _, v) =>
+            {
+                if (v < 0f || v > 20f) return false;
+                t.Escort.WorldsPerVoyage = Mathf.RoundToInt(v);
+                return true;
+            });
             Register("escort.pacifyMinVolume", (t, _, v) =>
             {
                 if (v < 0f || v > 1e8f) return false;
@@ -164,7 +183,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Sane upper bound for a fauna field (a value past it is refused, not clamped).</summary>
         static float FieldMax(string field) => field switch
         {
-            "shieldBite" or "superShieldBite" => 5f,
+            "shieldBite" or "superShieldBite" or "speedScale" or "biteScale" => 5f,
             "minSpeed" or "maxSpeed" or "cruiseSpeed" or "lungeSpeed" => 250f,
             "huntSpeed" or "pursuitSpeed" => 20f,
             "huntInterval" or "huntDuration" => 600f,

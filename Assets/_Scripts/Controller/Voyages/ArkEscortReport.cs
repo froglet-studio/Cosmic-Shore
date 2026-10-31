@@ -188,6 +188,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The share of a world's control volume that pacifies it (0 = off), and how many worlds were pacified.</summary>
         public float PacifyShare;
         public float PacifyMinVolume;
+        /// <summary>The voyage's roll: its seed, its worlds in order (variant names), its modifiers by name.</summary>
+        public int VoyageSeed;
+        public List<string> Worlds = new();
+        public List<string> Modifiers = new();
         public float PacifyNucleusSeconds;
         public int PacifiedLegs;
         public List<SeatStats> RunSeats = new();

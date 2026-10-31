@@ -48,6 +48,60 @@ namespace CosmicShore.ScriptableObjects
 
             [Tooltip("The banner line as the Ark crosses into this world (tokens {name}, {leg}, {legs}). Empty shows nothing.")]
             [TextArea] public string Arrival;
+
+            [Min(0f), Tooltip("Variety: how likely this world is to be one of a voyage's worlds when the voyage sails fewer " +
+                              "worlds than the escort lists (the hungriest world is always sailed, last).")]
+            public float Weight = 1f;
+
+            [Tooltip("Variety: alternative versions of this world (its signature threat variants). Each voyage rolls one " +
+                     "by weight; empty = the world above, always.")]
+            public List<WorldVariant> Variants = new();
+        }
+
+        /// <summary>One version of a leg's world: a voyage's seed rolls one per leg, by weight.</summary>
+        [Serializable]
+        public sealed class WorldVariant
+        {
+            [Tooltip("Shown on the card and the arrival banner instead of the leg's name. Empty keeps the leg's name.")]
+            public string Name;
+            [Tooltip("This variant's world (and its harder rungs). Empty keeps the leg's world and ladder.")]
+            public CellConfigDataSO World;
+            public List<CellConfigDataSO> Ladder = new();
+            [Min(0f)] public float Weight = 1f;
+            [Min(0f), Tooltip("Multiplier on the leg's threat (population share) for this variant.")]
+            public float ThreatScale = 1f;
+        }
+
+        /// <summary>What a voyage modifier changes (applied to the run's copy of the escort, never to an asset).</summary>
+        public enum ModifierKind
+        {
+            /// <summary>Every world's population (seeds and caps) times Factor.</summary>
+            Population = 0,
+            /// <summary>The reactor's seconds per regrown plate times Factor (above 1: thinner regrowth).</summary>
+            RegrowSeconds = 1,
+            /// <summary>Every creature's speed times Factor.</summary>
+            FaunaSpeed = 2,
+            /// <summary>Every armour bite times Factor.</summary>
+            ArmourBite = 3,
+            /// <summary>Every world starts hostile, at every difficulty.</summary>
+            AllHostile = 4,
+            /// <summary>The Ark's crawl and entry speeds times Factor (below 1: longer in every world).</summary>
+            ArkCrawl = 5,
+            /// <summary>The share of a world that pacifies it times Factor (below 1: easier to turn).</summary>
+            PacifyShare = 6,
+        }
+
+        /// <summary>A named twist one voyage may roll (Garrett, 2026-10-31: every voyage its own experience).</summary>
+        [Serializable]
+        public sealed class VoyageModifier
+        {
+            [Tooltip("Shown on the card and the departure banner.")]
+            public string Name;
+            public ModifierKind Kind;
+            public float Factor = 1f;
+            [Min(0f)] public float Weight = 1f;
+            [Range(1, 9), Tooltip("The lowest difficulty that can roll it.")]
+            public int MinDifficulty = 1;
         }
 
         [Serializable]
@@ -99,6 +153,21 @@ namespace CosmicShore.ScriptableObjects
                                  "plates are real food and the hull can truly fall. Off: armour is never food (the old rule).")]
         bool platesAreFood = true;
 
+        [Header("Variety (each voyage's seed rolls its worlds, their variants and its modifiers)")]
+        [SerializeField, Min(0), Tooltip("Worlds per voyage, drawn from the legs by weight (the hungriest world always last, " +
+                                         "the rest ramped by threat with a little shuffle). 0 = every leg.")]
+        int worldsPerVoyage = 4;
+
+        [SerializeField, Range(0f, 0.5f), Tooltip("Shuffle in the ramp: each world's threat is jittered by up to this before " +
+                                                  "ordering, so near-equal worlds trade places between voyages.")]
+        float rampJitter = 0.15f;
+
+        [SerializeField, Tooltip("Chance of 0, 1 and 2 modifiers on a voyage (normalized).")]
+        Vector3 modifierCountWeights = new(0.3f, 0.45f, 0.25f);
+
+        [SerializeField, Tooltip("The modifiers a voyage can roll.")]
+        List<VoyageModifier> modifiers = new();
+
         [SerializeField, Range(0f, 1f), Tooltip("A HOSTILE world is PACIFIED once the squad holds this share of its control volume " +
                                                 "(the nucleus claim, or the whole cell without a nucleus): its control is pinned " +
                                                 "to the squad, its live fauna re-coloured into the squad's domain, and its fauna " +
@@ -144,6 +213,16 @@ namespace CosmicShore.ScriptableObjects
         [TextArea] string overrunLine = "THE ARK IS OVERRUN IN {name}";
 
         public IReadOnlyList<Leg> Legs => legs;
+        public IReadOnlyList<VoyageModifier> Modifiers => modifiers;
+        public int WorldsPerVoyage { get => worldsPerVoyage; set => worldsPerVoyage = Mathf.Max(0, value); }
+        public float RampJitter => rampJitter;
+        public Vector3 ModifierCountWeights => modifierCountWeights;
+
+        /// <summary>Replace the legs (a RUNTIME copy only: the rolled voyage's worlds, in order).</summary>
+        public void SetLegs(List<Leg> rolled) => legs = rolled ?? new List<Leg>();
+
+        /// <summary>Replace the modifier list (a runtime copy or a test).</summary>
+        public void SetModifiers(List<VoyageModifier> list) => modifiers = list ?? new List<VoyageModifier>();
         public IReadOnlyList<Tier> Tiers => tiers;
         public ArkSpeedProfile ArkPacing { get => arkPacing; set => arkPacing = value; }
         public float CellSpacing { get => cellSpacing; set => cellSpacing = Mathf.Max(0f, value); }
