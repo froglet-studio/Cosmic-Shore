@@ -578,6 +578,327 @@
     spend, nextPorts, digest, portAt, batteryCap, boardEffect, reach, slipDestination, aiPlan, bestPlacements, legalInputs, aiPick, AI_PICK_ORDER };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
+<script id="hive-core">
+/* HiveCore - the Ratel's hive mode (Garrett 2026-10-31), engine-free: the hive's generation, the solver, the chain rules,
+ * the colour rewards, the AI's next chain, and the planar crystal the rewards land on. Every random draw comes from the
+ * `rnd` passed in (mulberry32), so a replay draws the same. Nothing here draws, reads a device or knows about the world.
+ * Assets/_Scripts/Controller/Vessel/Crew/HiveCore.cs is this block ported line for line, held to it by
+ * Tools/Build/hive_lab/parity.cjs. Colours are the Dynamo's: 0 empty, 1 Ruby, 2 Jade, 3 Gold; `own` is the player's.
+ * A hive cell is { dom, hits, danger } (dom 0 = a hole); a hive is { cells, solution, chain, stun, done, rewards, broken,
+ * chains, stings }. */
+(function (root) {
+  'use strict';
+  const D = root.DynamoCore;
+  const PERMS = [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]];
+  // Every one of the 39 patterns is cut from the one 3-colouring of the hex grid: colour class k = (q - r) mod 3, and two
+  // neighbours never share a class. A crystal is a colour permutation perm (prism colour = perm[k]); there are six (PERMS).
+  const CLASS = []; for (let i = 0; i < D.N; i++) CLASS.push((((D.Q[i] - D.R[i]) % 3) + 3) % 3);
+  const othersOf = (own) => [1, 2, 3].filter((c) => c !== own);
+  // The largest planar crystal on a board: over the six perms, the largest connected set of prisms whose colour equals
+  // perm[class]. Ties go to the earlier perm, then the lower cell. Returns { perm, cells, size } (size 0 on an empty board).
+  function largestCrystal(cells) {
+    let best = { perm: PERMS[0], cells: [], size: 0 };
+    for (const perm of PERMS) {
+      const seen = new Uint8Array(D.N);
+      for (let s = 0; s < D.N; s++) {
+        if (seen[s] || !cells[s] || cells[s] !== perm[CLASS[s]]) continue;
+        const q = [s]; seen[s] = 1;
+        for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (!seen[n] && cells[n] && cells[n] === perm[CLASS[n]]) { seen[n] = 1; q.push(n); }
+        if (q.length > best.size) best = { perm, cells: q.slice().sort((a, b) => a - b), size: q.length };
+      }
+    }
+    return best;
+  }
+  // Where a reward prism of colour c lands: an empty cell of c's class under the crystal's perm next to the crystal, nearest
+  // the centre then lowest index; else any empty cell of that class; else any empty cell. Returns { cell, tier } (tier 0 =
+  // on the crystal, 1 = its class elsewhere, 2 = anywhere) or null on a full board.
+  function crystalSlot(cells, crystal, c) {
+    const want = crystal.perm.indexOf(c), inC = new Uint8Array(D.N);
+    for (const i of crystal.cells) inC[i] = 1;
+    const tiers = [[], [], []];
+    for (let i = 0; i < D.N; i++) {
+      if (cells[i]) continue;
+      if (CLASS[i] !== want) { tiers[2].push(i); continue; }
+      tiers[crystal.size && D.NEIGH[i].some((n) => inC[n]) ? 0 : 1].push(i);
+    }
+    for (let t = 0; t < 3; t++) if (tiers[t].length) {
+      tiers[t].sort((a, b) => D.ringOf(a) - D.ringOf(b) || a - b);
+      return { cell: tiers[t][0], tier: t };
+    }
+    return null;
+  }
+  // The rewards go back with no pick and place themselves (Garrett 2026-10-31): `perColour` prisms of each rewarded colour,
+  // in reward order, onto the largest planar crystal (which grows as they land). Writes `cells`; returns what landed and
+  // the crystal after it. The charges are the caller's (the battery).
+  function placeRewards(cells, rewards, perColour) {
+    let crystal = largestCrystal(cells);
+    const landed = [];
+    for (const c of rewards) {
+      for (let k = 0; k < perColour; k++) {
+        const slot = crystalSlot(cells, crystal, c);
+        if (!slot) break;
+        cells[slot.cell] = c; landed.push({ cell: slot.cell, colour: c, tier: slot.tier });
+        if (slot.tier === 0) crystal = { perm: crystal.perm, cells: crystal.cells.concat([slot.cell]), size: crystal.size + 1 };
+      }
+    }
+    return { landed, crystal };
+  }
+  // The empty cells next to a crystal, each with the colour its class wants: where the pattern goes on (the glow).
+  function crystalNext(cells, crystal) {
+    const inC = new Uint8Array(D.N); for (const i of crystal.cells) inC[i] = 1;
+    const next = []; for (let i = 0; i < D.N; i++) if (!cells[i] && D.NEIGH[i].some((n) => inC[n])) next.push([i, crystal.perm[CLASS[i]]]);
+    return next;
+  }
+
+  // A hive is 37 cells, each { dom, hits, danger } (dom 0 = empty). The other two domains are laid as SNAKES: simple paths
+  // snakeMin..snakeMax long. Where two snakes of one colour cross, that cell is SHIELDED (hits 2): the first snake's chain
+  // strips the shield and the second's breaks it. Our own domain is the hive's body: never chained, some of it armoured
+  // (hits 2). DANGER cells (any domain) go where no snake runs: never chained, and a chain that touches one stings.
+  const live = (x, c) => x.dom === c && !x.danger && x.hits > 0;   // a cell a chain of colour c may run through
+  // One snake of `colour`: through cell `through` (a crossing) or from a random free cell, grown from either end through
+  // free cells. It writes nothing unless it reaches snakeMin.
+  function laySnake(dom, hits, rnd, colour, through, Pw) {
+    const free = (i) => dom[i] < 0;
+    let path;
+    if (through >= 0) path = [through];
+    else { const f = []; for (let i = 0; i < D.N; i++) if (free(i)) f.push(i); if (!f.length) return null; path = [f[Math.floor(rnd() * f.length)]]; }
+    const len = Pw.snakeMin + Math.floor(rnd() * (Math.max(Pw.snakeMin, Pw.snakeMax) - Pw.snakeMin + 1));
+    while (path.length < len) {
+      const k = Math.floor(rnd() * 2);
+      let grown = false;
+      for (let e = 0; e < 2 && !grown; e++) {
+        const head = (k + e) % 2 === 0, end = head ? path[path.length - 1] : path[0];
+        const next = D.NEIGH[end].filter((n) => free(n) && path.indexOf(n) < 0);
+        if (next.length) { const n = next[Math.floor(rnd() * next.length)]; if (head) path.push(n); else path.unshift(n); grown = true; }
+      }
+      if (!grown) break;
+    }
+    if (path.length < Pw.snakeMin) return null;
+    for (const i of path) { if (dom[i] === colour) hits[i]++; else { dom[i] = colour; hits[i] = 1; } }
+    return path;
+  }
+  // What every hive must hold (Garrett 2026-10-31): prisms of all three domains, a shielded prism in each, some danger.
+  function hiveHolds(cells, Pw) {
+    const doms = new Set(), shielded = new Set(); let danger = 0;
+    for (const x of cells) { if (!x.dom) continue; doms.add(x.dom); if (x.danger) danger++; else if (x.hits >= 2) shielded.add(x.dom); }
+    return { ok: doms.size === 3 && shielded.size === 3 && danger >= Pw.hiveDangerMin, domains: doms.size, shielded: shielded.size, danger };
+  }
+  function makeHive(rnd, Pw, own, why) {   // why (optional): counts the reason for each regeneration
+    const OTHERS = othersOf(own);
+    let regenerated = 0;
+    const fail = (k) => { if (why) why[k] = (why[k] || 0) + 1; };
+    for (let attempt = 0; attempt < 60; attempt++) {
+      if (attempt) regenerated++;
+      const dom = new Array(D.N).fill(-1), hits = new Array(D.N).fill(0);
+      let ok = true;
+      for (const c of OTHERS) {   // each other colour starts with a crossing: two snakes sharing one cell, its shield
+        const a = laySnake(dom, hits, rnd, c, -1, Pw);
+        const b = a && laySnake(dom, hits, rnd, c, a[Math.floor(rnd() * a.length)], Pw);
+        if (!b) { ok = false; break; }
+      }
+      if (!ok) { fail('no room for a crossing'); continue; }
+      const target = Math.round(Pw.hiveOtherShare * D.N);
+      let laid = dom.filter((d) => d > 0).length, tries = 0, k = 0;
+      while (laid < target && tries++ < 200) {
+        const c = OTHERS[k++ % 2], plain = []; for (let i = 0; i < D.N; i++) if (dom[i] === c && hits[i] === 1) plain.push(i);
+        const through = plain.length && rnd() < Pw.hiveCross ? plain[Math.floor(rnd() * plain.length)] : -1;
+        if (laySnake(dom, hits, rnd, c, through, Pw)) laid = dom.filter((d) => d > 0).length;
+      }
+      const rest = []; for (let i = 0; i < D.N; i++) if (dom[i] < 0) rest.push(i);
+      if (rest.length < Pw.hiveDangerMin + Pw.hiveHoles + 1) { fail('no room for danger'); continue; }
+      const danger = new Array(D.N).fill(false);
+      for (let d = 0; d < Pw.hiveDangerMin; d++) { const i = rest.splice(Math.floor(rnd() * rest.length), 1)[0]; danger[i] = true; dom[i] = 1 + Math.floor(rnd() * 3); hits[i] = 1; }
+      for (let h = 0; h < Pw.hiveHoles; h++) dom[rest.splice(Math.floor(rnd() * rest.length), 1)[0]] = 0;
+      for (const i of rest) { dom[i] = own; hits[i] = 1; }
+      for (let a = Math.max(1, Math.round(rest.length * Pw.hiveArmour)); a > 0; a--) hits[rest[Math.floor(rnd() * rest.length)]] = 2;
+      const cells = dom.map((d, i) => ({ dom: d > 0 ? d : 0, hits: d > 0 ? hits[i] : 0, danger: danger[i] }));
+      if (!hiveHolds(cells, Pw).ok) { fail('a rule not held'); continue; }
+      const solution = solveHive(cells, Pw.minChain, own);
+      if (solution) return { cells, solution, regenerated };
+      fail('solver said no');
+    }
+    return null;
+  }
+  // Every simple path of minChain..maxLen cells through `set` (a Set of live cells of one colour) that holds cell `must`
+  // (any path when must < 0). Kept once per cell set (the order a thumb drags them in is the first one found).
+  function pathsThrough(set, must, minChain, maxLen) {
+    const out = new Map(), path = [], used = new Set();
+    const dfs = (u) => {
+      if (path.length >= minChain && (must < 0 || used.has(must))) { const key = path.slice().sort((a, b) => a - b).join(','); if (!out.has(key)) out.set(key, path.slice()); }
+      if (path.length >= maxLen) return;
+      for (const n of D.NEIGH[u]) if (set.has(n) && !used.has(n)) { used.add(n); path.push(n); dfs(n); path.pop(); used.delete(n); }
+    };
+    for (const s of set) { used.add(s); path.push(s); dfs(s); path.pop(); used.delete(s); }
+    return Array.from(out.values());
+  }
+  // The solver: can every non-danger cell of the two other domains be cleared by chains of at least minChain through
+  // cells of one domain, each chain taking one hit from each of its cells (shielded 2, plain 1)? Per colour: take the
+  // lowest cell still standing, try every path of 3..8 live cells through it, take the hits, recurse; memo on the hits.
+  // A cell with h hits sits in exactly h chains of any solution, so the order of chains never matters and this search is
+  // complete. Danger cells are never in a chain. Returns the chains in play order, or null.
+  function solveHive(cells, minChain, own) {
+    let budget = 300000;
+    const all = [];
+    for (const c of othersOf(own)) {
+      const idxs = []; for (let i = 0; i < D.N; i++) if (live(cells[i], c)) idxs.push(i);
+      const hits = {}; for (const i of idxs) hits[i] = cells[i].hits;
+      const memo = new Map();
+      const solve = () => {
+        const standing = idxs.filter((i) => hits[i] > 0);
+        if (!standing.length) return [];
+        const key = idxs.map((i) => hits[i]).join('');
+        if (memo.has(key)) return memo.get(key);
+        if (--budget < 0) return null;
+        const set = new Set(standing), lowest = standing[0], comp = new Set([lowest]), q = [lowest];
+        for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (set.has(n) && !comp.has(n)) { comp.add(n); q.push(n); }
+        let result = null;
+        if (comp.size >= minChain) {
+          for (const p of pathsThrough(comp, lowest, minChain, 8)) {
+            for (const i of p) hits[i]--;
+            const rest = solve();
+            for (const i of p) hits[i]++;
+            if (rest) { result = [p].concat(rest); break; }
+          }
+        }
+        memo.set(key, result);
+        return result;
+      };
+      const sol = solve();
+      if (!sol) return null;
+      for (const p of sol) all.push(p);
+    }
+    return all;
+  }
+  // Is any chain left? A connected group of live cells of one other colour at least minChain big (for minChain 3 every such
+  // group holds one).
+  function anyChain(cells, minChain, own) {
+    const OTHERS = othersOf(own), seen = new Uint8Array(D.N);
+    for (let s = 0; s < D.N; s++) {
+      const c = cells[s].dom;
+      if (seen[s] || OTHERS.indexOf(c) < 0 || !live(cells[s], c)) continue;
+      const q = [s]; seen[s] = 1;
+      for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (!seen[n] && live(cells[n], c)) { seen[n] = 1; q.push(n); }
+      if (q.length >= minChain) return true;
+    }
+    return false;
+  }
+  // Every chain the board allows now (any colour), longest first: what the rookie picks from.
+  function chainsNow(cells, minChain, maxLen, own) {
+    const out = [];
+    for (const c of othersOf(own)) {
+      const set = new Set(); for (let i = 0; i < D.N; i++) if (live(cells[i], c)) set.add(i);
+      const seen = new Set();
+      for (const s of set) {
+        if (seen.has(s)) continue;
+        const comp = new Set([s]), q = [s];
+        for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (set.has(n) && !comp.has(n)) { comp.add(n); q.push(n); }
+        for (const i of comp) seen.add(i);
+        if (comp.size < minChain) continue;
+        for (const p of pathsThrough(comp, -1, minChain, maxLen)) out.push(p);
+      }
+    }
+    out.sort((a, b) => b.length - a.length || a[0] - b[0]);
+    return out;
+  }
+
+  // ---- hive mode's rules on a hive: what a thumb (or the AI) does to it ----
+  function create(made, own) {
+    const hive = { cells: made.cells, solution: made.solution, regenerated: made.regenerated, chain: [], stun: 0, done: [], rewards: [], broken: 0, chains: 0, stings: 0, total: {} };
+    for (const c of othersOf(own)) hive.total[c] = remaining(hive, c);
+    return hive;
+  }
+  // A colour's cells still standing: every non-danger cell of it with a hit left (shields included).
+  function remaining(hive, c) { let n = 0; for (const x of hive.cells) if (live(x, c)) n++; return n; }
+  function standingAll(hive, own) { let n = 0; for (const c of othersOf(own)) n += remaining(hive, c); return n; }
+  // A sting: the chain breaks with nothing in it destroyed, and the thumb is stunned for stingSeconds (no AP cost).
+  function sting(hive, Pw) { hive.chain = []; hive.stun = Pw.stingSeconds; hive.stings++; }
+  // Each returns 0 (refused), 1 (the chain started or grew), 2 (a sting) or 3 (a backtrack: the last cell dropped).
+  function chainStart(hive, cell, Pw, own) {
+    if (hive.stun > 0 || !(cell >= 0 && cell < D.N)) return 0;
+    const x = hive.cells[cell];
+    if (x.danger && x.dom) { sting(hive, Pw); return 2; }
+    if (othersOf(own).indexOf(x.dom) < 0 || !live(x, x.dom)) return 0;   // our own domain is the hive's body; holes are empty
+    hive.chain = [cell];
+    return 1;
+  }
+  function chainAdd(hive, cell, Pw) {
+    const ch = hive.chain;
+    if (hive.stun > 0 || !ch.length || !(cell >= 0 && cell < D.N)) return 0;
+    const last = ch[ch.length - 1];
+    if (cell === last) return 0;
+    if (ch.length >= 2 && cell === ch[ch.length - 2]) { ch.pop(); return 3; }
+    if (!D.isNeighbour(last, cell) || ch.indexOf(cell) >= 0) return 0;
+    const x = hive.cells[cell];
+    if (x.danger && x.dom) { sting(hive, Pw); return 2; }
+    if (!live(x, hive.cells[ch[0]].dom)) return 0;
+    ch.push(cell);
+    return 1;
+  }
+  // Rewards for completing a colour (Garrett 2026-10-31): 2 prisms of it on the Dynamo and 1 charge of it in the battery; both
+  // other colours done also gives the same in our own colour.
+  function rewardsFor(done, own) {
+    const out = done.slice();
+    if (othersOf(own).every((c) => done.indexOf(c) >= 0)) out.push(own);
+    return out;
+  }
+  // Let go: a chain of at least minChain takes one hit from each of its cells (a shield goes, or the prism breaks). Returns
+  // null when it was too short (it is dropped), else { colour, steps: [{ cell, broke }] in chain order, completed }.
+  function chainEnd(hive, Pw, own) {
+    const ch = hive.chain;
+    hive.chain = [];
+    if (ch.length < Pw.minChain) return null;
+    const c = hive.cells[ch[0]].dom, steps = [];
+    let broken = 0;
+    for (const i of ch) {
+      const x = hive.cells[i];
+      x.hits--;
+      if (x.hits <= 0) { x.dom = 0; x.hits = 0; broken++; steps.push({ cell: i, broke: true }); }
+      else steps.push({ cell: i, broke: false });
+    }
+    hive.broken += broken; hive.chains++;
+    let completed = false;
+    if (remaining(hive, c) === 0 && hive.done.indexOf(c) < 0) { hive.done.push(c); hive.rewards = rewardsFor(hive.done, own); completed = true; }
+    return { colour: c, steps, broken, completed };
+  }
+  // Why hive mode ends now, or '' to go on: cleared, out of time, or no chain left (with none in hand).
+  function endReason(hive, t, Pw, own) {
+    if (!standingAll(hive, own)) return 'clear';
+    if (t >= Pw.raidSeconds) return 'time';
+    if (!hive.chain.length && !anyChain(hive.cells, Pw.minChain, own)) return 'stuck';
+    return '';
+  }
+  // The AI Ratel's next chain (input-only: the caller drags it cell by cell). Skilled plays the solver's solution chain by
+  // chain (never touching danger); otherwise a random one of the four longest chains, sometimes cut short (it can strand
+  // cells), and a sloppy thumb sometimes slides on into a danger cell next to its end. `ai.plan` persists between calls.
+  function aiNextChain(hive, ai, solver, sloppy, rnd, Pw, own) {
+    let path = null;
+    const cells = hive.cells, standing = (p) => p.every((i) => live(cells[i], cells[p[0]].dom));
+    if (solver) {
+      if (!ai.plan) ai.plan = (hive.solution || []).slice();
+      while (ai.plan.length && !standing(ai.plan[0])) ai.plan.shift();
+      path = ai.plan.shift() || null;
+    }
+    if (!path) {
+      const all = chainsNow(cells, Pw.minChain, 6, own);
+      if (!all.length) return null;
+      path = all[Math.floor(rnd() * Math.min(4, all.length))];
+      if (!solver && path.length > Pw.minChain && rnd() < 0.5) path = path.slice(0, Pw.minChain + Math.floor(rnd() * (path.length - Pw.minChain)));
+      if (sloppy > 0 && rnd() < sloppy) {
+        const d = D.NEIGH[path[path.length - 1]].find((n) => cells[n].danger && cells[n].dom);
+        if (d != null) path = path.concat([d]);
+      }
+    }
+    return path;
+  }
+  function tick(hive, dt) { if (hive.stun > 0) hive.stun = Math.max(0, hive.stun - dt); }
+  function digest(hive) {
+    return hive.cells.map((x) => x.dom + '' + x.hits + (x.danger ? 'd' : '')).join('.') + '|' + hive.chain.join(',') + '|' + hive.stun.toFixed(6) + '|' + hive.done.join('') + '|' + hive.rewards.join('') +
+      '|' + hive.broken + '|' + hive.chains + '|' + hive.stings;
+  }
+  root.HiveCore = { PERMS, CLASS, othersOf, largestCrystal, crystalSlot, placeRewards, crystalNext, live, laySnake, hiveHolds, makeHive, pathsThrough,
+    solveHive, anyChain, chainsNow, create, remaining, standingAll, chainStart, chainAdd, rewardsFor, chainEnd, endReason, aiNextChain, tick, digest };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
 <script>
 (() => {
   'use strict';
@@ -812,194 +1133,15 @@
   const BIN = 5;        // seconds per intensity bin
   const ARC_BINS = 3;   // bins per arc window (15 s, one spin)
 
-  // ================= (3) The planar crystal =================
-  // Every one of the 39 patterns is cut from the one 3-colouring of the hex grid: colour class k = (q - r) mod 3, and two
-  // neighbours never share a class. A crystal is a colour permutation perm (prism colour = perm[k]); there are six (PERMS).
-  const CLASS = []; for (let i = 0; i < D.N; i++) CLASS.push((((D.Q[i] - D.R[i]) % 3) + 3) % 3);
-  // The largest planar crystal on a board: over the six perms, the largest connected set of prisms whose colour equals
-  // perm[class]. Ties go to the earlier perm, then the lower cell. Returns { perm, cells, size } (size 0 on an empty board).
-  function largestCrystal(cells) {
-    let best = { perm: PERMS[0], cells: [], size: 0 };
-    for (const perm of PERMS) {
-      const seen = new Uint8Array(D.N);
-      for (let s = 0; s < D.N; s++) {
-        if (seen[s] || !cells[s] || cells[s] !== perm[CLASS[s]]) continue;
-        const q = [s]; seen[s] = 1;
-        for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (!seen[n] && cells[n] && cells[n] === perm[CLASS[n]]) { seen[n] = 1; q.push(n); }
-        if (q.length > best.size) best = { perm, cells: q.slice().sort((a, b) => a - b), size: q.length };
-      }
-    }
-    return best;
-  }
-  // Where a reward prism of colour c lands: an empty cell of c's class under the crystal's perm next to the crystal, nearest
-  // the centre then lowest index; else any empty cell of that class; else any empty cell. Returns { cell, tier } (tier 0 =
-  // on the crystal, 1 = its class elsewhere, 2 = anywhere) or null on a full board.
-  function crystalSlot(cells, crystal, c) {
-    const want = crystal.perm.indexOf(c), inC = new Uint8Array(D.N);
-    for (const i of crystal.cells) inC[i] = 1;
-    const tiers = [[], [], []];
-    for (let i = 0; i < D.N; i++) {
-      if (cells[i]) continue;
-      if (CLASS[i] !== want) { tiers[2].push(i); continue; }
-      tiers[crystal.size && D.NEIGH[i].some((n) => inC[n]) ? 0 : 1].push(i);
-    }
-    for (let t = 0; t < 3; t++) if (tiers[t].length) {
-      tiers[t].sort((a, b) => D.ringOf(a) - D.ringOf(b) || a - b);
-      return { cell: tiers[t][0], tier: t };
-    }
-    return null;
-  }
-
-  // ================= (4) The hive: snakes, crossings, danger, the solver =================
-  // A hive is 37 cells, each { dom, hits, danger } (dom 0 = empty). The other two domains are laid as SNAKES: simple paths
-  // snakeMin..snakeMax long. Where two snakes of one colour cross, that cell is SHIELDED (hits 2): the first snake's chain
-  // strips the shield and the second's breaks it. Our own domain is the hive's body: never chained, some of it armoured
-  // (hits 2). DANGER cells (any domain) go where no snake runs: never chained, and a chain that touches one stings.
-  const live = (x, c) => x.dom === c && !x.danger && x.hits > 0;   // a cell a chain of colour c may run through
-  // One snake of `colour`: through cell `through` (a crossing) or from a random free cell, grown from either end through
-  // free cells. It writes nothing unless it reaches snakeMin.
-  function laySnake(dom, hits, rnd, colour, through, Pw) {
-    const free = (i) => dom[i] < 0;
-    let path;
-    if (through >= 0) path = [through];
-    else { const f = []; for (let i = 0; i < D.N; i++) if (free(i)) f.push(i); if (!f.length) return null; path = [f[Math.floor(rnd() * f.length)]]; }
-    const len = Pw.snakeMin + Math.floor(rnd() * (Math.max(Pw.snakeMin, Pw.snakeMax) - Pw.snakeMin + 1));
-    while (path.length < len) {
-      const k = Math.floor(rnd() * 2);
-      let grown = false;
-      for (let e = 0; e < 2 && !grown; e++) {
-        const head = (k + e) % 2 === 0, end = head ? path[path.length - 1] : path[0];
-        const next = D.NEIGH[end].filter((n) => free(n) && path.indexOf(n) < 0);
-        if (next.length) { const n = next[Math.floor(rnd() * next.length)]; if (head) path.push(n); else path.unshift(n); grown = true; }
-      }
-      if (!grown) break;
-    }
-    if (path.length < Pw.snakeMin) return null;
-    for (const i of path) { if (dom[i] === colour) hits[i]++; else { dom[i] = colour; hits[i] = 1; } }
-    return path;
-  }
-  // What every hive must hold (Garrett 2026-10-31): prisms of all three domains, a shielded prism in each, some danger.
-  function hiveHolds(cells, Pw) {
-    const doms = new Set(), shielded = new Set(); let danger = 0;
-    for (const x of cells) { if (!x.dom) continue; doms.add(x.dom); if (x.danger) danger++; else if (x.hits >= 2) shielded.add(x.dom); }
-    return { ok: doms.size === 3 && shielded.size === 3 && danger >= Pw.hiveDangerMin, domains: doms.size, shielded: shielded.size, danger };
-  }
-  function makeHive(rnd, Pw, why) {   // why (optional): counts the reason for each regeneration
-    let regenerated = 0;
-    const fail = (k) => { if (why) why[k] = (why[k] || 0) + 1; };
-    for (let attempt = 0; attempt < 60; attempt++) {
-      if (attempt) regenerated++;
-      const dom = new Array(D.N).fill(-1), hits = new Array(D.N).fill(0);
-      let ok = true;
-      for (const c of OTHERS) {   // each other colour starts with a crossing: two snakes sharing one cell, its shield
-        const a = laySnake(dom, hits, rnd, c, -1, Pw);
-        const b = a && laySnake(dom, hits, rnd, c, a[Math.floor(rnd() * a.length)], Pw);
-        if (!b) { ok = false; break; }
-      }
-      if (!ok) { fail('no room for a crossing'); continue; }
-      const target = Math.round(Pw.hiveOtherShare * D.N);
-      let laid = dom.filter((d) => d > 0).length, tries = 0, k = 0;
-      while (laid < target && tries++ < 200) {
-        const c = OTHERS[k++ % 2], plain = []; for (let i = 0; i < D.N; i++) if (dom[i] === c && hits[i] === 1) plain.push(i);
-        const through = plain.length && rnd() < Pw.hiveCross ? plain[Math.floor(rnd() * plain.length)] : -1;
-        if (laySnake(dom, hits, rnd, c, through, Pw)) laid = dom.filter((d) => d > 0).length;
-      }
-      const rest = []; for (let i = 0; i < D.N; i++) if (dom[i] < 0) rest.push(i);
-      if (rest.length < Pw.hiveDangerMin + Pw.hiveHoles + 1) { fail('no room for danger'); continue; }
-      const danger = new Array(D.N).fill(false);
-      for (let d = 0; d < Pw.hiveDangerMin; d++) { const i = rest.splice(Math.floor(rnd() * rest.length), 1)[0]; danger[i] = true; dom[i] = 1 + Math.floor(rnd() * 3); hits[i] = 1; }
-      for (let h = 0; h < Pw.hiveHoles; h++) dom[rest.splice(Math.floor(rnd() * rest.length), 1)[0]] = 0;
-      for (const i of rest) { dom[i] = OWN; hits[i] = 1; }
-      for (let a = Math.max(1, Math.round(rest.length * Pw.hiveArmour)); a > 0; a--) hits[rest[Math.floor(rnd() * rest.length)]] = 2;
-      const cells = dom.map((d, i) => ({ dom: d > 0 ? d : 0, hits: d > 0 ? hits[i] : 0, danger: danger[i] }));
-      if (!hiveHolds(cells, Pw).ok) { fail('a rule not held'); continue; }
-      const solution = solveHive(cells, Pw.minChain);
-      if (solution) return { cells, solution, regenerated };
-      fail('solver said no');
-    }
-    return null;
-  }
-  // Every simple path of minChain..maxLen cells through `set` (a Set of live cells of one colour) that holds cell `must`
-  // (any path when must < 0). Kept once per cell set (the order a thumb drags them in is the first one found).
-  function pathsThrough(set, must, minChain, maxLen) {
-    const out = new Map(), path = [], used = new Set();
-    const dfs = (u) => {
-      if (path.length >= minChain && (must < 0 || used.has(must))) { const key = path.slice().sort((a, b) => a - b).join(','); if (!out.has(key)) out.set(key, path.slice()); }
-      if (path.length >= maxLen) return;
-      for (const n of D.NEIGH[u]) if (set.has(n) && !used.has(n)) { used.add(n); path.push(n); dfs(n); path.pop(); used.delete(n); }
-    };
-    for (const s of set) { used.add(s); path.push(s); dfs(s); path.pop(); used.delete(s); }
-    return Array.from(out.values());
-  }
-  // The solver: can every non-danger cell of the two other domains be cleared by chains of at least minChain through
-  // cells of one domain, each chain taking one hit from each of its cells (shielded 2, plain 1)? Per colour: take the
-  // lowest cell still standing, try every path of 3..8 live cells through it, take the hits, recurse; memo on the hits.
-  // A cell with h hits sits in exactly h chains of any solution, so the order of chains never matters and this search is
-  // complete. Danger cells are never in a chain. Returns the chains in play order, or null.
-  function solveHive(cells, minChain) {
-    let budget = 300000;
-    const all = [];
-    for (const c of OTHERS) {
-      const idxs = []; for (let i = 0; i < D.N; i++) if (live(cells[i], c)) idxs.push(i);
-      const hits = {}; for (const i of idxs) hits[i] = cells[i].hits;
-      const memo = new Map();
-      const solve = () => {
-        const standing = idxs.filter((i) => hits[i] > 0);
-        if (!standing.length) return [];
-        const key = idxs.map((i) => hits[i]).join('');
-        if (memo.has(key)) return memo.get(key);
-        if (--budget < 0) return null;
-        const set = new Set(standing), lowest = standing[0], comp = new Set([lowest]), q = [lowest];
-        for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (set.has(n) && !comp.has(n)) { comp.add(n); q.push(n); }
-        let result = null;
-        if (comp.size >= minChain) {
-          for (const p of pathsThrough(comp, lowest, minChain, 8)) {
-            for (const i of p) hits[i]--;
-            const rest = solve();
-            for (const i of p) hits[i]++;
-            if (rest) { result = [p].concat(rest); break; }
-          }
-        }
-        memo.set(key, result);
-        return result;
-      };
-      const sol = solve();
-      if (!sol) return null;
-      for (const p of sol) all.push(p);
-    }
-    return all;
-  }
-  // Is any chain left? A connected group of live cells of one other colour at least minChain big (for minChain 3 every such
-  // group holds one).
-  function anyChain(cells, minChain) {
-    const seen = new Uint8Array(D.N);
-    for (let s = 0; s < D.N; s++) {
-      const c = cells[s].dom;
-      if (seen[s] || OTHERS.indexOf(c) < 0 || !live(cells[s], c)) continue;
-      const q = [s]; seen[s] = 1;
-      for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (!seen[n] && live(cells[n], c)) { seen[n] = 1; q.push(n); }
-      if (q.length >= minChain) return true;
-    }
-    return false;
-  }
-  // Every chain the board allows now (any colour), longest first: what the rookie picks from.
-  function chainsNow(cells, minChain, maxLen) {
-    const out = [];
-    for (const c of OTHERS) {
-      const set = new Set(); for (let i = 0; i < D.N; i++) if (live(cells[i], c)) set.add(i);
-      const seen = new Set();
-      for (const s of set) {
-        if (seen.has(s)) continue;
-        const comp = new Set([s]), q = [s];
-        for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (set.has(n) && !comp.has(n)) { comp.add(n); q.push(n); }
-        for (const i of comp) seen.add(i);
-        if (comp.size < minChain) continue;
-        for (const p of pathsThrough(comp, -1, minChain, maxLen)) out.push(p);
-      }
-    }
-    out.sort((a, b) => b.length - a.length || a[0] - b[0]);
-    return out;
-  }
+  // ================= (3)+(4) The planar crystal and the hive: the hive-core block (window.HiveCore) =================
+  // Moved there (2026-10-31) so Assets/_Scripts/Controller/Vessel/Crew/HiveCore.cs can be held to it by Tools/Build/hive_lab/parity.cjs.
+  const H = window.HiveCore;
+  const { CLASS, largestCrystal, crystalSlot, live, hiveHolds, pathsThrough } = H;
+  const makeHive = (rnd, Pw, why) => H.makeHive(rnd, Pw, OWN, why);
+  const solveHive = (cells, minChain) => H.solveHive(cells, minChain, OWN);
+  const anyChain = (cells, minChain) => H.anyChain(cells, minChain, OWN);
+  const chainsNow = (cells, minChain, maxLen) => H.chainsNow(cells, minChain, maxLen, OWN);
+  const remaining = H.remaining;
   // ================= (5) THE MODEL: the Dynamo, the strip, hive mode (pure: no drawing, no devices) =================
   function dynamoSettings(Pw) {
     return {
@@ -1086,66 +1228,30 @@
     const h = makeHive(R.rngH, Pw);
     R.m.regenerated += h.regenerated;
     R.phase = 'hive';
-    R.hive = { source, cells: h.cells, solution: h.solution, regenerated: h.regenerated, t: 0, chain: [], broken: 0, chains: 0, stings: 0, stun: 0, done: [], rewards: [] };
-    R.hive.total = {}; for (const c of OTHERS) R.hive.total[c] = remaining(R.hive, c);
+    R.hive = Object.assign(H.create(h, OWN), { source, t: 0 });
     R.ai.path = null; R.ai.plan = null;
     fx(R, { k: 'toast', text: (source === 'omni' ? 'The omnicrystal became a hive' : 'The Honeyguide reached its hive') + ': hive mode' });
   }
-  // A colour's cells still standing: every non-danger cell of it with a hit left (shields included).
-  function remaining(hive, c) { let n = 0; for (const x of hive.cells) if (live(x, c)) n++; return n; }
-  // A sting: the chain breaks with nothing in it destroyed, and the thumb is stunned for stingSeconds (no AP cost).
-  function sting(R, cell) {
-    const hive = R.hive;
-    hive.chain = []; hive.stun = R.P.stingSeconds; hive.stings++; R.m.stings++;
-    fx(R, { k: 'sting', cell }); fx(R, { k: 'toast', text: 'Stung: the chain broke' });
-  }
+  // The chain rules are HiveCore's; these add the lab's effects, toasts and yardstick.
+  function stingFx(R, cell) { R.m.stings++; fx(R, { k: 'sting', cell }); fx(R, { k: 'toast', text: 'Stung: the chain broke' }); }
   function chainStart(R, cell) {
-    const hive = R.hive;
-    if (hive.stun > 0 || !(cell >= 0 && cell < D.N)) return false;
-    const x = hive.cells[cell];
-    if (x.danger && x.dom) { sting(R, cell); return true; }
-    if (OTHERS.indexOf(x.dom) < 0 || !live(x, x.dom)) return false;   // our own domain is the hive's body; holes are empty
-    hive.chain = [cell]; act(R, 1);
-    return true;
+    const r = H.chainStart(R.hive, cell, R.P, OWN);
+    if (r === 2) { stingFx(R, cell); return true; }
+    if (r === 1) { act(R, 1); return true; }
+    return false;
   }
   function chainAdd(R, cell) {
-    const hive = R.hive, ch = hive.chain;
-    if (hive.stun > 0 || !ch.length || !(cell >= 0 && cell < D.N)) return false;
-    const last = ch[ch.length - 1];
-    if (cell === last) return false;
-    if (ch.length >= 2 && cell === ch[ch.length - 2]) { ch.pop(); return true; }   // backtrack
-    if (!D.isNeighbour(last, cell) || ch.indexOf(cell) >= 0) return false;
-    const x = hive.cells[cell];
-    if (x.danger && x.dom) { sting(R, cell); return true; }
-    if (!live(x, hive.cells[ch[0]].dom)) return false;
-    ch.push(cell); act(R, 1);
-    return true;
-  }
-  // Rewards for completing a colour (Garrett 2026-10-31): 2 prisms of it on the Dynamo and 1 charge of it in the battery; both
-  // other colours done also gives the same in our own colour. They are listed as earned and go back when hive mode ends.
-  function rewardsFor(done) {
-    const out = done.slice();
-    if (OTHERS.every((c) => done.indexOf(c) >= 0)) out.push(OWN);
-    return out;
+    const r = H.chainAdd(R.hive, cell, R.P);
+    if (r === 2) { stingFx(R, cell); return true; }
+    if (r === 1) { act(R, 1); return true; }
+    return r === 3;
   }
   function chainEnd(R) {
-    const hive = R.hive, ch = hive.chain;
-    hive.chain = [];
-    if (ch.length < R.P.minChain) return false;
-    const c = hive.cells[ch[0]].dom;
-    let broken = 0;
-    for (const i of ch) {   // each cell loses one hit: a shield goes, or the prism breaks
-      const x = hive.cells[i];
-      x.hits--;
-      if (x.hits <= 0) { x.dom = 0; x.hits = 0; broken++; fx(R, { k: 'shatter', cell: i, colour: c }); }
-      else fx(R, { k: 'unshield', cell: i, colour: c });
-    }
-    hive.broken += broken; hive.chains++; R.m.broken += broken; R.m.chains++;
-    if (remaining(hive, c) === 0 && hive.done.indexOf(c) < 0) {
-      hive.done.push(c);
-      hive.rewards = rewardsFor(hive.done);
-      fx(R, { k: 'toast', text: DOM[COLOUR_DOM[c]].name + ' complete: +' + R.P.rewardDynamo + ' prisms, +' + R.P.rewardBattery + ' charge' + (hive.rewards.length > hive.done.length ? '; both done: ' + DOM[OUR_DOMAIN].name + ' too' : '') });
-    }
+    const hive = R.hive, res = H.chainEnd(hive, R.P, OWN);
+    if (!res) return false;
+    for (const st of res.steps) fx(R, { k: st.broke ? 'shatter' : 'unshield', cell: st.cell, colour: res.colour });
+    R.m.broken += res.broken; R.m.chains++;
+    if (res.completed) fx(R, { k: 'toast', text: DOM[COLOUR_DOM[res.colour]].name + ' complete: +' + R.P.rewardDynamo + ' prisms, +' + R.P.rewardBattery + ' charge' + (hive.rewards.length > hive.done.length ? '; both done: ' + DOM[OUR_DOMAIN].name + ' too' : '') });
     return true;
   }
   // Hive mode ends: the rewards go back with no pick and place themselves on the largest planar crystal; the hive stays
@@ -1155,20 +1261,11 @@
     if (hive.chain.length) chainEnd(R);
     let left = 0; for (const c of OTHERS) left += remaining(hive, c);
     R.m.coloursDone += hive.done.length; R.m.stranded += left; if (!left) R.m.fullClears++; if (why === 'leave') R.m.left++;
-    let crystal = largestCrystal(st.cells);
-    const landed = [];
-    for (const c of hive.rewards) {
-      for (let k = 0; k < Pw.rewardDynamo; k++) {
-        const slot = crystalSlot(st.cells, crystal, c);
-        if (!slot) break;
-        st.cells[slot.cell] = c; landed.push(slot.cell); R.m.rewardPlaced++; if (slot.tier === 0) R.m.rewardOnCrystal++;
-        if (slot.tier === 0) crystal = { perm: crystal.perm, cells: crystal.cells.concat([slot.cell]), size: crystal.size + 1 };
-      }
-      for (let k = 0; k < Pw.rewardBattery; k++) D.boardEffect(st, R.S, 'charge', c);
-    }
+    const placed = H.placeRewards(st.cells, hive.rewards, Pw.rewardDynamo), crystal = placed.crystal, landed = placed.landed.map((x) => x.cell);
+    for (const x of placed.landed) { R.m.rewardPlaced++; if (x.tier === 0) R.m.rewardOnCrystal++; }
+    for (const c of hive.rewards) for (let k = 0; k < Pw.rewardBattery; k++) D.boardEffect(st, R.S, 'charge', c);
     drain(R);
-    const inC = new Uint8Array(D.N); for (const i of crystal.cells) inC[i] = 1;
-    const next = []; for (let i = 0; i < D.N; i++) if (!st.cells[i] && D.NEIGH[i].some((n) => inC[n])) next.push([i, crystal.perm[CLASS[i]]]);
+    const next = H.crystalNext(st.cells, crystal);
     fx(R, { k: 'crystal', cells: crystal.cells.slice(), landed, next });
     R.lastHive = { source: hive.source, broken: hive.broken, done: hive.done.slice(), rewards: hive.rewards.slice(), left, stings: hive.stings, why, seconds: hive.t };
     R.homeHives.push({ born: R.t, source: hive.source, bees: Pw.beesPerHive, mass: hive.cells.filter((x) => x.dom === OWN && !x.danger).length });
@@ -1178,11 +1275,9 @@
   }
   function hiveStep(R, dt) {
     const hive = R.hive;
-    hive.t += dt; if (hive.stun > 0) hive.stun = Math.max(0, hive.stun - dt);
-    let left = 0; for (const c of OTHERS) left += remaining(hive, c);
-    if (!left) leaveHive(R, 'clear');
-    else if (hive.t >= R.P.raidSeconds) leaveHive(R, 'time');
-    else if (!hive.chain.length && !anyChain(hive.cells, R.P.minChain)) leaveHive(R, 'stuck');
+    hive.t += dt; H.tick(hive, dt);
+    const why = H.endReason(hive, hive.t, R.P, OWN);
+    if (why) leaveHive(R, why);
   }
   function beesStep(R, dt) {   // symbolic: each left hive grows as its bees bring mass back (a transfer from opposing fauna)
     for (const h of R.homeHives) h.mass += h.bees * R.P.beeMassPerMinute * dt / 60;
@@ -1225,23 +1320,8 @@
         return;
       }
       if (ai.think > 0 || R.phase !== 'hive' || R.hive.stun > 0) return;
-      let path = null;
-      const cells = R.hive.cells, standing = (p) => p.every((i) => live(cells[i], cells[p[0]].dom));
-      if (sk.solver) {   // the skilled Ratel plays the solver's solution, chain by chain (it never touches danger)
-        if (!ai.plan) ai.plan = (R.hive.solution || []).slice();
-        while (ai.plan.length && !standing(ai.plan[0])) ai.plan.shift();
-        path = ai.plan.shift() || null;
-      }
-      if (!path) {   // the rookie: a random one of the four longest chains, sometimes cut short (it can strand cells)
-        const all = chainsNow(R.hive.cells, R.P.minChain, 6);
-        if (!all.length) return;
-        path = all[Math.floor(R.rngE() * Math.min(4, all.length))];
-        if (!sk.solver && path.length > R.P.minChain && R.rngE() < 0.5) path = path.slice(0, R.P.minChain + Math.floor(R.rngE() * (path.length - R.P.minChain)));
-        if (sk.sloppy > 0 && R.rngE() < sk.sloppy) {   // a sloppy thumb slides on into a danger cell next to the chain's end
-          const d = D.NEIGH[path[path.length - 1]].find((n) => cells[n].danger && cells[n].dom);
-          if (d != null) path = path.concat([d]);
-        }
-      }
+      const path = H.aiNextChain(R.hive, ai, sk.solver, sk.sloppy, R.rngE, R.P, OWN);
+      if (!path) return;
       ai.path = path; ai.at = 0; ai.cellT = 0;
       return;
     }
@@ -1967,12 +2047,12 @@
     const perm = PERMS[3]; for (const i of [a].concat(nb.slice(0, 2))) board[i] = perm[CLASS[i]];
     for (const i of [D.idx(3, -3), D.idx(3, -2), D.idx(2, -2), D.idx(2, -1)]) board[i] = 1;   // all Ruby: neighbours never share a class, so at most one cell of it is a crystal
     const lc = largestCrystal(board);
-    out.push(['finds the planted 3-cell crystal', lc.size === 3 && lc.perm === perm]);
+    out.push(['finds the planted 3-cell crystal', lc.size === 3 && lc.perm.join() === perm.join()]);
     const big = new Array(D.N).fill(0), p7 = PERMS[1], p4 = PERMS[5];   // p4 shares no class colour with p7, so the two never merge
     for (const i of [a].concat(nb)) big[i] = p7[CLASS[i]];
     for (const i of [D.idx(-3, 0), D.idx(-3, 1), D.idx(-2, 1), D.idx(-3, 2)]) big[i] = p4[CLASS[i]];
     const lb = largestCrystal(big);
-    out.push(['prefers the 7-cell crystal over a 4-cell one', lb.size === 7 && lb.perm === p7]);
+    out.push(['prefers the 7-cell crystal over a 4-cell one', lb.size === 7 && lb.perm.join() === p7.join()]);
     const slot = crystalSlot(big, lb, p7[CLASS[D.idx(2, 0)]]);
     out.push(['a reward lands on the crystal, in its class', !!slot && slot.tier === 0 && CLASS[slot.cell] === p7.indexOf(p7[CLASS[D.idx(2, 0)]])]);
     const A = runBatch(), B = runBatch();

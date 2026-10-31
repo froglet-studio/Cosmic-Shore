@@ -1920,10 +1920,11 @@
       ctx.font = sfs - 1 + 'px system-ui, sans-serif'; ctx.fillStyle = '#8a96a6';
       ctx.fillText(fitText(ab[1], L.w - 30 - nw), L.x + 18 + nw, L.y + 36);
     }
-    // the time to the next spin: a bar across the top that shrinks (no number). It stands still during a reveal.
+    // the time to the next spin: a bar across the top that shrinks from both sides to the centre (no number; Garrett
+    // 2026-10-31, the Ratel Raid Lab's bar). It stands still during a reveal.
     const barH = small ? 3 : 5, frac = clamp(1 - st.clock / w.S.tickSeconds, 0, 1);
     ctx.fillStyle = '#1c232d'; ctx.fillRect(L.x, L.y, L.w, barH);
-    ctx.fillStyle = rv ? '#4a5566' : soon ? '#ffb21f' : '#6fa8c8'; ctx.fillRect(L.x, L.y, L.w * frac, barH);
+    ctx.fillStyle = rv ? '#4a5566' : soon ? '#ffb21f' : '#6fa8c8'; ctx.fillRect(L.x + (L.w - L.w * frac) / 2, L.y, L.w * frac, barH);
     const builtCells = new Set(); const built = D.built(st, w.S);
     built.forEach((b) => { if (b) for (const c of b) builtCells.add(c); });
     const pulse = 0.5 + 0.5 * Math.sin(w.t * 6);
