@@ -1,0 +1,174 @@
+{
+    "schemaVersion": 1,
+    "reportId": "a5964635eb2d",
+    "timestamp": "2026-10-31T15:15:30.3795614Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "System Product Name (ASUS)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "claude/dazzling-ride-dpyvkx",
+    "gitCommitHash": "4f071013e9",
+    "trigger": "Return to menu — MinigameSerpentTime → Menu_Main",
+    "loadKind": "menuReturn",
+    "completionReason": "INTERRUPTED — application terminated during load (recovered snapshot)",
+    "interrupted": true,
+    "sceneFrom": "MinigameSerpentTime",
+    "sceneTo": "MinigameSerpentTime",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Local",
+    "connectedClients": 0,
+    "totalMs": 12133.072265625,
+    "visualReadyMs": -1.0,
+    "waitMs": 308.00848388671877,
+    "humanWaitMs": 0.0,
+    "workMs": 11825.0634765625,
+    "unattributedMs": 7.499105453491211,
+    "framesDuringLoad": 3,
+    "avgFpsDuringLoad": 0.24725806713104249,
+    "worstFrameMs": 11658.8388671875,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 7.492300033569336,
+            "endMs": 315.50079345703127,
+            "durationMs": 308.00848388671877,
+            "exclusiveMs": 308.00848388671877,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 315.5075988769531,
+            "endMs": 12133.072265625,
+            "durationMs": 11817.564453125,
+            "exclusiveMs": 11817.564453125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 11817.564453125,
+            "percent": 97.39960479736328,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 308.00848388671877,
+            "percent": 2.538586139678955,
+            "spanCount": 1,
+            "waitMs": 308.00848388671877
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 7.499105453491211,
+            "percent": 0.061807144433259967,
+            "spanCount": 0,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 11817.564453125,
+            "exclusiveMs": 11817.564453125,
+            "maxSingleMs": 11817.564453125,
+            "isWait": false
+        },
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 308.00848388671877,
+            "exclusiveMs": 308.00848388671877,
+            "maxSingleMs": 308.00848388671877,
+            "isWait": true
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 12133.0498046875,
+            "durationMs": 11658.8388671875,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 1710.9637451171875,
+            "durationMs": 427.0570068359375,
+            "during": "Scene load → activation (Menu_Main)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Return to menu — MinigameSerpentTime → Menu_Main"
+        },
+        {
+            "atMs": 1710.5550537109375,
+            "label": "Netcode scene load begins: Menu_Main"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Active prisms when load ended",
+            "value": 19820
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 12,
+            "totalMs": 2.5257999897003176,
+            "maxSingleMs": 0.5074999928474426
+        }
+    ],
+    "errors": [],
+    "hints": [
+        {
+            "id": "single-dominator",
+            "severity": 1,
+            "title": "One cost dominates this load",
+            "finding": "\"Scene load → activation (Menu_Main)\" alone is 97% of the load (11.8s).",
+            "fixAdvice": "See the hot-path breakdown for its per-stage costs. Cut its workload (content/intensity tuning), pool or pre-instantiate its prefabs, or spread the work across frames.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 11.7s during \"Scene load → activation (Menu_Main)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        }
+    ]
+}
