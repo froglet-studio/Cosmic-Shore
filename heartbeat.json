@@ -1,4 +1,5 @@
 {
+ "agent": true,
  "caps": {
   "bash": true,
   "caps_version": 2,
@@ -16,6 +17,7 @@
  "cores": 11,
  "current": {},
  "host": "dragonsweapon",
+ "idle_seconds": 1.687,
  "last": {
   "count": null,
   "epoch": "7dbc6703ac71",
@@ -24,6 +26,7 @@
   "stopped": "stopped from the console",
   "unit": "threshertime-thresher-i1"
  },
+ "remote_start": true,
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -194,10 +197,22 @@
    "unit": "threshertime-thresher-i1"
   }
  ],
+ "specs": {
+  "cores": 12,
+  "disk_free_gb": 61.3,
+  "os": "windows",
+  "os_name": "Windows 10",
+  "python": "3.11.9",
+  "ram_free_gb": 7.1,
+  "ram_gb": 31.9,
+  "unity": true,
+  "unity_open": true
+ },
+ "status": "in use",
  "totals": {
   "sessions": 14
  },
- "updated": 1793467183,
+ "updated": 1793468965,
  "user": "shombithofficial",
  "version": "1"
 }
