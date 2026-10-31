@@ -114,6 +114,29 @@ namespace CosmicShore.Gameplay
 
         public bool HasCells => _cells.Count > 0;
 
+        // The cell the Ark last left (its core reached, the corridor advanced): the departure anchor of the Ark's
+        // cell-aware speed profile. None before the first advance (the voyage opens in open water).
+        Cell _departedCell;
+        Vector3 _departedCentre;
+        bool _hasDeparture;
+
+        /// <summary>True once there is a cell behind the Ark (each world whose core it has reached).</summary>
+        public bool HasDeparture => _hasDeparture;
+
+        /// <summary>Centre of the cell the Ark is leaving.</summary>
+        public Vector3 DepartureCentre => _departedCentre;
+
+        /// <summary>Membrane radius of the cell the Ark is leaving, with the same fallback as <see cref="CurrentCellRadius"/>
+        /// (a struck or unbuilt membrane reads 0).</summary>
+        public float DepartureRadius
+        {
+            get
+            {
+                float r = _departedCell ? _departedCell.MembraneRadius : 0f;
+                return r > 1f ? r : _cfg?.LeashRadiusFallback ?? 1200f;
+            }
+        }
+
         /// <summary>
         /// Raised as a traversal cell is struck, BEFORE its drain runs. The run listens so the
         /// player's own trail mass laid in (and on the way to) that cell goes with it — a struck
@@ -217,6 +240,10 @@ namespace CosmicShore.Gameplay
             // corridor back onto itself.
             float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
             Vector3 first = origin + _heading * (hostRadius + _cfg.CellSpacing * 0.5f);
+            // No departure anchor at the start: the Ark sets sail from wherever the player stood in the host (often deep
+            // inside it), and crawling out through the host would be a long empty opening. It cruises to the first cell.
+            _departedCell = null;
+            _hasDeparture = false;
 
             if (!StandCell(first))
             {
@@ -259,6 +286,9 @@ namespace CosmicShore.Gameplay
                     return false;
             }
 
+            _departedCell = _cells[_targetIndex].Cell;
+            _departedCentre = _cells[_targetIndex].Centre;
+            _hasDeparture = true;
             _targetIndex++;
 
             // Stand the new NEXT beyond the new current, so the corridor always reaches one
