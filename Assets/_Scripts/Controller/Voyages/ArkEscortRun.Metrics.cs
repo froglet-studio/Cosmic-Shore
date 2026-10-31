@@ -382,19 +382,21 @@ namespace CosmicShore.Gameplay
                 var cell = _cellOfLeg[leg];
                 if (!cell || leg >= _report.LegReports.Count) continue;
                 var r = _report.LegReports[leg];
-                if (r.Pacified) continue;
+                // Only a world that started HOSTILE can be pacified: a friendly world's nucleus is the squad's colour from
+                // the start (its own flora), so "holding" it is not a turn the squad earned.
+                if (r.Pacified || !r.Hostile) continue;
 
                 // Earned, not stumbled into: the squad must HOLD the world (share of its control volume), have laid a real
                 // claim there (an absolute squad control volume, so an empty hostile nucleus crossed by one trail is not a
-                // pacification), and either be escorting the Ark through it or have worked its nucleus on purpose.
+                // pacification), and have WORKED its nucleus (seconds with a seat inside it; escorting the Ark through the
+                // core alone rarely reaches it). Calibrated on d4 sims: three Sparrows peak at 14-19k control and 22-56 s in a
+                // nucleus, three cultivating Squirrels at 12-32k and 45-99 s.
                 if (SquadInsideNucleus(cell)) r.NucleusSeconds += SampleSeconds;
                 float mine = cell.GetControlVolume(squad);
                 float share = SquadShare(cell, squad);
                 r.PeakSquadControl = Mathf.Max(r.PeakSquadControl, mine);
                 r.PeakShare = Mathf.Max(r.PeakShare, share);
-                bool arkIn = r.EnteredAt > 0f && leg <= _leg;
-                if (share < line || mine < minVolume) continue;
-                if (!arkIn && r.NucleusSeconds < dwellNeed) continue;
+                if (share < line || mine < minVolume || r.NucleusSeconds < dwellNeed) continue;
 
                 int before = HostileCount(cell, squad);
                 cell.SparedDomain = squad;

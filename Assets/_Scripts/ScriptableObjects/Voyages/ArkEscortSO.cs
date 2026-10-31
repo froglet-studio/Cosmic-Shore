@@ -99,7 +99,7 @@ namespace CosmicShore.ScriptableObjects
                                  "plates are real food and the hull can truly fall. Off: armour is never food (the old rule).")]
         bool platesAreFood = true;
 
-        [SerializeField, Range(0f, 1f), Tooltip("A world is PACIFIED once the squad holds this share of its control volume " +
+        [SerializeField, Range(0f, 1f), Tooltip("A HOSTILE world is PACIFIED once the squad holds this share of its control volume " +
                                                 "(the nucleus claim, or the whole cell without a nucleus): its control is pinned " +
                                                 "to the squad, its live fauna re-coloured into the squad's domain, and its fauna " +
                                                 "stop grazing the squad's mass, the Ark included. 0 = never pacify.")]
@@ -108,11 +108,11 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0f), Tooltip("Squad control volume (nucleus claim, cubic units) a world needs before it can be " +
                                           "pacified: a trail crossing an empty hostile nucleus is not a pacification; a " +
                                           "cultivator weaving mass into it is.")]
-        float pacifyMinVolume = 40000f;
+        float pacifyMinVolume = 25000f;
 
-        [SerializeField, Min(0f), Tooltip("A world AHEAD of the Ark (not yet entered) pacifies only after a squad seat has " +
-                                          "spent this many seconds inside its nucleus.")]
-        float pacifyNucleusSeconds = 20f;
+        [SerializeField, Min(0f), Tooltip("A world pacifies only after squad seats have spent this many seconds (in total) " +
+                                          "inside its nucleus: cultivation is deliberate work, not a pass through the core.")]
+        float pacifyNucleusSeconds = 40f;
 
         [Header("Words (every line is authored; empty shows nothing)")]
         [SerializeField, Tooltip("The voyage's name, on the build veil and the card.")]
