@@ -12,12 +12,50 @@ namespace CosmicShore.Gameplay
     /// Lightweight boid-like creature with separation, cohesion, and goal-seeking behaviors.
     /// Consumes enemy health prisms within range.
     /// </summary>
-    public class LightFauna : Fauna
+    public class LightFauna : Fauna, ISpeciesDataOverride
     {
         const string PLAYER_NAME = "light FaunaPrefab";
 
         [Header("Data")]
         [SerializeField] private LightFaunaDataSO data;
+
+        // The prefab's own data, kept so a per-world override can be undone on a body that lives
+        // again under a config without one (every Instantiate copies the prefab field, so this is
+        // belt-and-braces for anything that re-binds a live creature).
+        LightFaunaDataSO _prefabData;
+        bool _speciesDataResolved;
+
+        // Variant speed / mouthful overrides (FaunaVariantTuning.MinSpeed / MaxSpeed /
+        // FeedingClusterRadius), -1 = the data asset's. Boid has honoured these since the
+        // elemental contract landed; LightFauna read only Body / Starvation / Material until the
+        // escort worlds needed a per-config speed without a prefab variant.
+        float _minSpeedOverride = -1f, _maxSpeedOverride = -1f, _clusterRadiusOverride = -1f;
+
+        float MinSpeed => Mathf.Max(0f, _minSpeedOverride >= 0f ? _minSpeedOverride : data.minSpeed);
+        float MaxSpeed => Mathf.Max(MinSpeed, _maxSpeedOverride >= 0f ? _maxSpeedOverride : data.maxSpeed);
+
+        /// <summary>
+        /// Swap the prefab's <see cref="LightFaunaDataSO"/> for the one this creature's config names
+        /// (<see cref="FaunaConfigurationSO.SpeciesDataOverride"/>). Called by the spawner before
+        /// Initialize, and again from AssignLineage (through <see cref="ApplyVariantTuning"/> and the
+        /// first behaviour tick) so an offspring, which is born straight into Initialize, inherits
+        /// its lineage's world data too. Speeds and senses are world units; the body-relative
+        /// dials still ride <see cref="_bodyRatio"/>.
+        /// </summary>
+        public void BindSpeciesData(FaunaConfigurationSO cfg)
+        {
+            if (!_prefabData) _prefabData = data;
+            data = cfg && cfg.SpeciesDataOverride is LightFaunaDataSO worldData ? worldData : _prefabData;
+            _speciesDataResolved = true;
+        }
+
+        void ResolveSpeciesData()
+        {
+            if (_speciesDataResolved) return;
+            var cfg = SourceConfig;
+            if (!cfg) return;
+            BindSpeciesData(cfg);
+        }
 
         // NOTE: bleeding-edge's frame-paced grazing queue (maxConsumesPerFrame /
         // _pendingMeals / EatPrism / DrainPendingMeals) is intentionally NOT carried
@@ -47,7 +85,7 @@ namespace CosmicShore.Gameplay
 
         float SeparationRadius => Mathf.Max(0f, data.separationRadius) * _bodyRatio * ElementSpread;
         float ConsumeRadius => Mathf.Max(0f, data.consumeRadius) * _bodyRatio;
-        float FeedingClusterRadius => data.feedingClusterRadius * _bodyRatio;
+        float FeedingClusterRadius => (_clusterRadiusOverride >= 0f ? _clusterRadiusOverride : data.feedingClusterRadius) * _bodyRatio;
         float AttackRange => data.attackRange * _bodyRatio * ElementReach;
         /// <summary>Food is sensed in world units (further for Space), but never less far than the mouth reaches.</summary>
         float DetectionRadius => Mathf.Max(Mathf.Max(0f, data.detectionRadius) * ElementReach, ConsumeRadius);
@@ -118,6 +156,14 @@ namespace CosmicShore.Gameplay
             base.ApplyVariantTuning(tuning);
             float authored = Girth(AuthoredRootScale);
             _bodyRatio = authored > 1e-9f ? Girth(transform.localScale) / authored * BodyGirthFactor : 1f;
+
+            // Runs at AssignLineage: the lineage's world data (offspring never see the spawner hook).
+            ResolveSpeciesData();
+
+            if (tuning == null) return;
+            _minSpeedOverride = tuning.MinSpeed;
+            _maxSpeedOverride = tuning.MaxSpeed;
+            _clusterRadiusOverride = tuning.FeedingClusterRadius;
         }
 
         protected override void OnTeamChanged()
@@ -199,10 +245,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            float minSpeed = Mathf.Max(0f, data.minSpeed);
-            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
-
-            currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
+            currentVelocity = transform.forward * Random.Range(MinSpeed, MaxSpeed);
             StartCoroutine(UpdateBehaviorCoroutine());
         }
 
@@ -376,6 +419,7 @@ namespace CosmicShore.Gameplay
                 if (!data)
                     yield break;
 
+                ResolveSpeciesData(); // an offspring's lineage lands after its Initialize
                 float cadence = Mathf.Max(0.05f, data.behaviorUpdateRate + Phase) * GetAggressionCadenceMultiplier();
                 yield return CosmicShore.Utility.WaitCache.About(cadence);
                 UpdateBehavior();
@@ -802,8 +846,8 @@ namespace CosmicShore.Gameplay
             // faster than it cruises.
             if (diet == FaunaDiet.Predator && _targetPrey)
                 speedMult *= Mathf.Max(1f, data.pursuitSpeedMultiplier);
-            float minSpeed = Mathf.Max(0f, data.minSpeed) * speedMult;
-            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed * speedMult);
+            float minSpeed = MinSpeed * speedMult;
+            float maxSpeed = Mathf.Max(minSpeed, MaxSpeed * speedMult);
 
             currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
 
@@ -1038,8 +1082,8 @@ namespace CosmicShore.Gameplay
                 desiredRotation = rotation;
         }
 
-        public override float LeashTopSpeed => data ? Mathf.Max(0f, data.maxSpeed) * GetAggressionSpeedMultiplier() : 0f;
-        public override float LeashMinSpeed => data ? Mathf.Max(0f, data.minSpeed) : 0f;
+        public override float LeashTopSpeed => data ? MaxSpeed * GetAggressionSpeedMultiplier() : 0f;
+        public override float LeashMinSpeed => data ? MinSpeed : 0f;
         public override float LeashMouthReach => data ? ConsumeRadius * GetAggressionConsumeRadiusMultiplier() : 0f;
         public override bool LeashCanEat(Prism prism) => IsEdibleForHerbivore(prism);
 

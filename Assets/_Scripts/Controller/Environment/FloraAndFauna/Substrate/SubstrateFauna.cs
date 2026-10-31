@@ -39,11 +39,22 @@ namespace CosmicShore.Gameplay
     /// (births bloom in the shader, proxies appear and leave under an unchanged picture, deaths wither through the
     /// platform); every agent drops one crystal (only through a proxy - an agent with no proxy cannot die).
     /// </summary>
-    public class SubstrateFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation
+    public class SubstrateFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation,
+        ISpeciesDataOverride
     {
         [Header("Substrate")]
         [Tooltip("The species this population is (its parameters, drawing, proxy budget and feeding).")]
         [SerializeField] SubstrateSpeciesSO species;
+
+        /// <summary>
+        /// A per-world species asset (FaunaConfigurationSO.SpeciesDataOverride) replaces the prefab's
+        /// before the block is claimed - the Swarm world's pack hunters ring the escort's vessels and
+        /// its leeches hold on longer, while the shared Substrate Fauna assets stay as the lab tuned them.
+        /// </summary>
+        public void BindSpeciesData(FaunaConfigurationSO cfg)
+        {
+            if (cfg && cfg.SpeciesDataOverride is SubstrateSpeciesSO worldSpecies) species = worldSpecies;
+        }
 
         const float BloomTicks = 8f;
         const int HitBudgetPerFrame = 48;

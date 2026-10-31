@@ -43,13 +43,24 @@ namespace CosmicShore.Gameplay
     /// a kaiju), and <see cref="Predated"/> is sealed off — the segments are the
     /// killable surface.
     /// </summary>
-    public class WormFauna : Fauna
+    public class WormFauna : Fauna, ISpeciesDataOverride
     {
         const string PLAYER_NAME = "WormColony";
         const string MouthName = "Mouth";
 
         [Header("Worm Colony")]
         [SerializeField] WormColonyConfigSO config;
+
+        /// <summary>
+        /// A per-world colony config (FaunaConfigurationSO.SpeciesDataOverride) replaces the prefab's
+        /// before the chain is built, so one world's kaiju can hunt from further and more often
+        /// (The Maw) without the shared WormColonyConfig changing under every other biome. The
+        /// swap is on this instance's field only (a split-born half clones the root and inherits it).
+        /// </summary>
+        public void BindSpeciesData(FaunaConfigurationSO cfg)
+        {
+            if (cfg && cfg.SpeciesDataOverride is WormColonyConfigSO worldConfig) config = worldConfig;
+        }
         [Tooltip("The three colony member types. Head and Tail author danger prisms + " +
                  "an elemental heart; Body is the splittable connective tissue.")]
         [SerializeField] WormSegmentFauna headPrefab;
