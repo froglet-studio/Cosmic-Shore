@@ -65,7 +65,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 156
-    messageTemplate: 'Any ring counts. Cloak past a ring to wall it.'
+    messageTemplate: 'Any ring counts. Shoot through a covered ring, or find the open one.'
     tintWithDomainColor: 0
     useDomainColoredNames: 0
     alpha: 1

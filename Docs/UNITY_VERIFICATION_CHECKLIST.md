@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Time: covered rings and Rampage's living cells; the mode no longer changes the Serpent (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Written in a cloud session with no editor and no .NET SDK: not compiled. Supersedes the rounds and the wall's speed
+cost in the entry below (both retired: `SERPENTTIME.md`).
+
+1. Open `MinigameSerpentTime` and save once; the console stays clean. The Cell lists Rampage Cell Config 4, 3, 2, 1
+   (IntensityWise).
+2. Arcade > Serpent Time, I1: Rampage's sparse forest (67 plants) fills the cell; at I4 the dense one (335 plants).
+3. At each gate one ring of three (I1) is grown over with red danger slabs; the open ring moves from gate to gate. I4:
+   both rings of every gate covered.
+4. Scope and shoot a covered ring: a hole opens you can fly through without a hit; it grows back, one slab every 1.5 s.
+   Ram a covered ring: you pass and take the danger debuff (the shipped hit).
+5. The Serpent's kit is unchanged: scoped RT fires on the rifle's own cooldown with no crystals involved; a rival's
+   Seed Wall does not slow you beyond what its prisms do anywhere else.
+6. An AI Serpent picks the open ring, or shoots a covered one when its rifle is ready.
+7. EditMode: `SerpentTimeClusterTests` (incl. the two cover tests), `SerpentTimeCourseTests`.
+
 ### 🔴 Serpent Time, the dirty race: ring clusters, Seed Walls that cost speed, rounds from crystals, a dirty AI (`claude/dazzling-ride-dpyvkx`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed** (Shombith: "make the serpent and its time game the best game ... an dirty time game"; brief and studio

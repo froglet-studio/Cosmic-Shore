@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -73,5 +74,55 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Does every ring of the cluster stay inside a sphere of <paramref name="outer"/> mouths round the gate?</summary>
         public static bool FitsWithin(float ringScale, float spread, float outer) => spread + ringScale <= outer;
+
+        // ── Ring cover (Shombith, 2026-10-31: "rings get covered by prisms we shoot and find our way") ──
+
+        /// <summary>Covered rings per gate on intensity 1-4: one of three, two of three, one of two, both of two.</summary>
+        public static readonly int[] DefaultCoveredByIntensity = { 1, 2, 1, 2 };
+
+        /// <summary>
+        /// Is ring <paramref name="slot"/> of gate <paramref name="gateIndex"/> covered, when <paramref name="covered"/> of
+        /// its <paramref name="rings"/> rings are? The covered run starts at a slot picked from the gate's index, so which
+        /// ring is open moves round from gate to gate and the same on every peer.
+        /// </summary>
+        public static bool IsCovered(int gateIndex, int slot, int rings, int covered)
+        {
+            rings = Mathf.Max(1, rings);
+            covered = Mathf.Clamp(covered, 0, rings);
+            if (covered == 0) return false;
+            if (covered == rings) return true;
+            int start = (int)((unchecked((uint)gateIndex * 2654435761u) >> 16) % (uint)rings);
+            int k = ((slot - start) % rings + rings) % rings;
+            return k < covered;
+        }
+
+        /// <summary>
+        /// The centres of a square grid of cover slabs across <paramref name="ring"/>'s mouth, <paramref name="spacing"/>
+        /// apart in the ring's plane, kept <paramref name="edgeMargin"/> inside its rim so the ring itself stays visible.
+        /// A cell is kept when its centre sits within the trimmed mouth less a third of a cell, so the slabs reach the rim
+        /// without poking past it. Clears <paramref name="into"/> first.
+        /// </summary>
+        public static void CoverCells(in RaceGate ring, float spacing, float edgeMargin, List<Vector3> into)
+        {
+            into.Clear();
+            if (spacing <= 0f) return;
+            float reach = ring.Radius - Mathf.Max(0f, edgeMargin) - spacing * 0.35f;
+            if (reach <= 0f) { into.Add(ring.Position); return; }
+
+            Vector3 axis = ring.Axis.sqrMagnitude > 1e-6f ? ring.Axis.normalized : Vector3.forward;
+            Vector3 s = Vector3.Cross(axis, Vector3.up);
+            if (s.sqrMagnitude < 1e-4f) s = Vector3.Cross(axis, Vector3.right);
+            s.Normalize();
+            Vector3 u = Vector3.Cross(s, axis);
+
+            int n = Mathf.CeilToInt(reach / spacing);
+            for (int a = -n; a <= n; a++)
+            for (int b = -n; b <= n; b++)
+            {
+                float x = a * spacing, y = b * spacing;
+                if (x * x + y * y > reach * reach) continue;
+                into.Add(ring.Position + s * x + u * y);
+            }
+        }
     }
 }

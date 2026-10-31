@@ -17,6 +17,13 @@ namespace CosmicShore.Gameplay
     /// <item><b>Ring clusters.</b> Every gate stands as 3 rings (I1, I2) or 2 (I3, I4) side by side, any one of which
     /// threads it (<see cref="SerpentTimeCluster"/>). The course's own ring stays as the gate the platform, the
     /// objective arrow and the race toasts read; only its drawing is hidden.</item>
+    /// <item><b>Covered rings.</b> At each gate some rings are grown over with danger prisms (one of three at I1, two of
+    /// three at I2, one of two at I3, both at I4; which one moves round from gate to gate). Shoot a hole through
+    /// (the Sniper Shot clears every prism in its cone), ram through and take the shipped danger hit, or fly an open
+    /// ring. A cleared slab grows back, so the hole a leader shoots closes behind it.</item>
+    /// <item><b>The cell's own life.</b> The race runs in Rampage's four cells as they ship, sparsest at I1 and densest
+    /// at I4 (the scene lists them in reverse): their flora grow where they grow, on the racing line or off it, and
+    /// their fauna graze. Nothing is planted for the race.</item>
     /// <item><b>Gate debris.</b> Loose neutral prisms lie round every gate and grow back, so a Serpent that cloaks
     /// there has the mass its Seed Wall grows from. The debris is the environment's; the wall is the shipped one.</item>
     /// <item><b>The AI plays dirty</b> (input-only, through the replicated press like a human's): it picks the open
@@ -47,6 +54,19 @@ namespace CosmicShore.Gameplay
         [SerializeField] int[] ringsPerGateByIntensity = { 3, 3, 2, 2 };
         [Tooltip("Seconds each cluster ring takes to bloom in when the course is raised.")]
         [SerializeField, Min(0f)] float clusterBloomSeconds = 0.9f;
+
+        [Header("Ring cover (danger prisms across a ring's mouth)")]
+        [Tooltip("Rings covered at each gate on intensity 1-4 (of the 3, 3, 2, 2 a gate stands). The covered run starts " +
+                 "at a slot picked from the gate's index, so the open ring moves round from gate to gate.")]
+        [SerializeField] int[] coveredRingsPerGateByIntensity = { 1, 2, 1, 2 };
+        [Tooltip("Size of one cover slab (u): broad across the mouth, thin along the race's flow.")]
+        [SerializeField] Vector3 coverSlabScale = new(7f, 7f, 1.5f);
+        [Tooltip("Distance (u) between neighbouring slab centres in the ring's plane. At the slab's width the mouth is shut.")]
+        [SerializeField, Min(1f)] float coverSpacing = 7f;
+        [Tooltip("How far inside the ring's rim (u) the cover stops, so the ring itself stays visible.")]
+        [SerializeField, Min(0f)] float coverEdgeMargin = 2f;
+        [Tooltip("Every this many seconds, each covered ring grows ONE missing slab back, so a shot-out hole closes.")]
+        [SerializeField, Min(0.1f)] float coverRegrowSeconds = 1.5f;
 
         [Header("Gate debris (the walls' fuel)")]
         [Tooltip("The prism every piece of gate debris is laid from: the environment prism (SpawnablePrism). " +
@@ -146,6 +166,24 @@ namespace CosmicShore.Gameplay
             public readonly List<Prism> Pieces = new();
         }
 
+        /// <summary>Owner id no pilot carries: the cover is nobody's trail.</summary>
+        const string CoverOwnerId = "SerpentTimeCover";
+
+        /// <summary>One covered ring: its slab cells (fixed for the race) and the slab standing in each, if any.</summary>
+        sealed class CoveredRing
+        {
+            public Quaternion Rotation;
+            public Vector3[] Cells;
+            public Prism[] Pieces;
+            public Trail Trail;
+            public int NextCell;
+        }
+
+        readonly List<CoveredRing> _cover = new();
+        readonly List<RaceGate> _coveredGates = new();
+        float _nextCoverRegrowAt;
+        static readonly List<Vector3> s_cells = new(256);
+
         readonly List<GateDebris> _debris = new();
         Transform _debrisRoot;
         float _nextDebrisRegrowAt;
@@ -167,6 +205,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             ReleasePilots();
+            ClearCover();
             ClearDebris();
             base.OnNetworkDespawn();
             _clusters.Clear();
@@ -197,7 +236,9 @@ namespace CosmicShore.Gameplay
             _clusterGates.Clear();
 
             int rings = Mathf.Min(MaxRings, SerpentTimeCluster.RingsFor(Intensity, ringsPerGateByIntensity));
+            ClearCover();
             LayGateDebris(rings);
+            LayCover(rings);
             if (rings <= 1) return;
 
             var theme = gameData ? gameData.ThemeManagerData : null;
@@ -220,6 +261,88 @@ namespace CosmicShore.Gameplay
                 _clusters.Add(cluster);
                 _clusterGates.Add(gates);
             }
+        }
+
+        // ── Ring cover (every peer) ───────────────────────────────────────
+
+        /// <summary>
+        /// Grow danger slabs across the covered rings of every gate. Laid on every peer from the course each peer was
+        /// sent, like the debris, so a shot or a ram clears the same slabs everywhere. Each slab is an ordinary
+        /// environment prism laid as <see cref="PrismKind.Danger"/>: the Sniper Shot clears it and a hull that rams it
+        /// takes the shipped danger hit, with no rule of this mode's own.
+        /// </summary>
+        void LayCover(int rings)
+        {
+            _cover.Clear();
+            _coveredGates.Clear();
+            int covered = SerpentTimeCluster.RingsFor(Intensity, coveredRingsPerGateByIntensity);
+            if (coveredRingsPerGateByIntensity == null || coveredRingsPerGateByIntensity.Length == 0) covered = 0;
+            if (covered <= 0 || !debrisPrefab) return;
+            if (!_debrisRoot) _debrisRoot = new GameObject("SerpentTimeDebris").transform;
+
+            for (int i = 0; i < _course.Count; i++)
+            for (int slot = 0; slot < rings; slot++)
+            {
+                if (!SerpentTimeCluster.IsCovered(i, slot, rings, covered)) continue;
+                var ring = SerpentTimeCluster.Ring(_course[i], i, slot, rings);
+                SerpentTimeCluster.CoverCells(ring, coverSpacing, coverEdgeMargin, s_cells);
+                var cover = new CoveredRing
+                {
+                    Rotation = Quaternion.LookRotation(ring.Axis),
+                    Cells = s_cells.ToArray(),
+                    Pieces = new Prism[s_cells.Count],
+                    Trail = new Trail(),
+                };
+                for (int c = 0; c < cover.Cells.Length; c++) LaySlab(cover, c, forReveal: true);
+                _cover.Add(cover);
+                _coveredGates.Add(ring);
+            }
+            _nextCoverRegrowAt = Time.time + coverRegrowSeconds;
+        }
+
+        void LaySlab(CoveredRing cover, int cell, bool forReveal)
+        {
+            var prism = PrismTrailBuilder.LayOne(debrisPrefab,
+                new PrismLay(new SpawnPoint(cover.Cells[cell], cover.Rotation, coverSlabScale), Domains.Blue, PrismKind.Danger),
+                _debrisRoot, cover.Trail, CoverOwnerId, watchForReveal: forReveal);
+            if (!prism) return;
+            if (!forReveal) prism.CompletesAsLiveRibbon = true;
+            cover.Pieces[cell] = prism;
+        }
+
+        static bool IsStandingSlab(Prism prism) =>
+            prism && !prism.destroyed && prism.ownerID == CoverOwnerId && prism.Domain == Domains.Blue;
+
+        /// <summary>Each covered ring grows one missing slab back per <see cref="coverRegrowSeconds"/>, walking its cells.</summary>
+        void TickCoverRegrow()
+        {
+            if (_cover.Count == 0 || !debrisPrefab || Time.time < _nextCoverRegrowAt) return;
+            _nextCoverRegrowAt = Time.time + coverRegrowSeconds;
+            for (int r = 0; r < _cover.Count; r++)
+            {
+                var cover = _cover[r];
+                for (int step = 0; step < cover.Cells.Length; step++)
+                {
+                    int c = (cover.NextCell + step) % cover.Cells.Length;
+                    if (IsStandingSlab(cover.Pieces[c])) continue;
+                    LaySlab(cover, c, forReveal: false);
+                    cover.NextCell = c + 1;
+                    break;
+                }
+            }
+        }
+
+        void ClearCover()
+        {
+            for (int r = 0; r < _cover.Count; r++)
+            {
+                var pieces = _cover[r].Pieces;
+                for (int i = 0; i < pieces.Length; i++)
+                    if (IsStandingSlab(pieces[i]) && !EnvironmentPrismPool.TryRelease(pieces[i]))
+                        Destroy(pieces[i].gameObject);
+            }
+            _cover.Clear();
+            _coveredGates.Clear();
         }
 
         // ── Gate debris (every peer) ──────────────────────────────────────
@@ -425,6 +548,7 @@ namespace CosmicShore.Gameplay
             if (!IsSpawned || gameData == null || !gameData.IsTurnRunning) return;
 
             TickDebrisRegrow();
+            TickCoverRegrow();
 
             if (!_localRaceStarted)
             {
@@ -484,7 +608,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Does rival mass cover enough of this ring's mouth to call it walled? Measured as the prisms' face area against
+        /// Does rival mass, or the ring cover's danger slabs, close enough of this ring's mouth to call it walled? Measured as the prisms' face area against
         /// the mouth's, counting only prisms in a slab round the ring's plane and inside its mouth. Any rival prism counts
         /// (a Seed Wall's bricks are the usual ones); the question is asked of the prisms, never of the vessel's code.
         /// </summary>
@@ -501,7 +625,9 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < s_prisms.Count; i++)
             {
                 var prism = s_prisms[i];
-                if (!prism || prism.destroyed || prism.Domain == domain || prism.Domain == Domains.Blue) continue;
+                if (!prism || prism.destroyed || prism.Domain == domain) continue;
+                // Neutral mass blocks a ring only when it is dangerous (the ring cover); loose debris is not a wall.
+                if (prism.Domain == Domains.Blue && prism.prismProperties is not { IsDangerous: true }) continue;
 
                 Vector3 offset = prism.transform.position - ring.Position;
                 float along = Vector3.Dot(offset, ring.Axis);

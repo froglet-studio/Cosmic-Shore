@@ -69,6 +69,8 @@ def author(spec: dict):
     comeback, description, preview_objective, preview_notes, build_after, max_speed, card_extra_checks,
     new_field_lines (optional: serialized lines appended to the controller block, the mode's own fields),
     extra_toasts (optional: [(situation, template[, lib.toast kwargs])], the mode's own toasts after the race beats)
+    cell_configs (optional: [cell config guid, ...] - the scene Cell's CellConfigs; more than one is IntensityWise,
+                  list order = intensity 1..n. Omitted: the donor's barren race cell stays)
     """
     member = spec["member"]
     mid = mode_id(member)
@@ -143,8 +145,20 @@ def author(spec: dict):
                                   f"network hash {old}", expected=scene.count(f"GlobalObjectIdHash: {old}\n"))
         return scene
 
-    authored_blocks = (new_fields, "  spawnFormation: 1\n")
+    cell_block = None
+    if spec.get("cell_configs"):
+        cells = spec["cell_configs"]
+        cell_block = ("  CellConfigs:\n" + "".join(f"  - {{fileID: 11400000, guid: {c}, type: 2}}\n" for c in cells) +
+                      f"  cellTypeChoiceOptions: {1 if len(cells) > 1 else 0}\n")
+    authored_blocks = (new_fields, "  spawnFormation: 1\n") + ((cell_block,) if cell_block else ())
     scene, _ = lib.committed_scene(scene_rel, clone_scene, authored_blocks=authored_blocks)
+    # The mode's own cells replace the donor's: one Cell in the scene, its config list rewritten in place.
+    if cell_block and cell_block not in scene:
+        found = re.findall(r"^  CellConfigs:\n(?:  - \{[^\n]*\}\n)+  cellTypeChoiceOptions: \d+\n", scene, re.M)
+        if len(found) == 1:
+            scene = scene.replace(found[0], cell_block)
+        else:
+            errors.append(f"{os.path.basename(scene_rel)}: expected one Cell CellConfigs block, found {len(found)}")
     # One-shot migration for a scene committed before the mode authored its own field lines: append them to the
     # controller block. Stands down once applied (the full block is then in the scene).
     if new_fields not in scene and new_fields != base_fields and scene.count(base_fields) == 1:

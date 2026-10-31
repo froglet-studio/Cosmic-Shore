@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
 using UnityEngine;
@@ -90,6 +91,49 @@ namespace CosmicShore.Tests
                     }
                 }
             }
+        }
+
+        [Test]
+        public void Cover_leaves_the_right_number_of_rings_open_and_moves_the_open_one()
+        {
+            for (int rings = 1; rings <= 3; rings++)
+            for (int covered = 0; covered <= rings; covered++)
+            for (int gate = 0; gate < 16; gate++)
+            {
+                int n = 0;
+                for (int slot = 0; slot < rings; slot++) if (SerpentTimeCluster.IsCovered(gate, slot, rings, covered)) n++;
+                Assert.AreEqual(covered, n, $"gate {gate}: {covered} of {rings} should be covered");
+            }
+
+            // The open ring of a 3-ring, 2-covered gate is not the same slot on every gate.
+            var open = new HashSet<int>();
+            for (int gate = 0; gate < 16; gate++)
+                for (int slot = 0; slot < 3; slot++)
+                    if (!SerpentTimeCluster.IsCovered(gate, slot, 3, 2)) open.Add(slot);
+            Assert.Greater(open.Count, 1, "the open ring never moves");
+        }
+
+        [Test]
+        public void Cover_cells_lie_in_the_mouth_inside_the_rim()
+        {
+            var ring = new RaceGate(new Vector3(10f, 20f, 30f), new Vector3(0.4f, -0.3f, 1f).normalized, 45f);
+            var cells = new List<Vector3>();
+            SerpentTimeCluster.CoverCells(ring, 7f, 2f, cells);
+            Assert.Greater(cells.Count, 60, "a 45 u mouth should take dozens of 7 u slabs");
+            foreach (var c in cells)
+            {
+                Vector3 d = c - ring.Position;
+                Assert.AreEqual(0f, Vector3.Dot(d, ring.Axis), 1e-3f, "off the ring's plane");
+                Assert.LessOrEqual(d.magnitude, ring.Radius - 2f, "past the trimmed rim");
+            }
+
+            // The covered area reaches most of the mouth: no ring is left with an open lane round its edge.
+            float coveredArea = cells.Count * 49f;
+            Assert.Greater(coveredArea, 0.7f * Mathf.PI * ring.Radius * ring.Radius);
+
+            // A mouth smaller than one slab still gets one, at its centre.
+            SerpentTimeCluster.CoverCells(new RaceGate(Vector3.zero, Vector3.forward, 3f), 7f, 2f, cells);
+            Assert.AreEqual(1, cells.Count);
         }
     }
 }
