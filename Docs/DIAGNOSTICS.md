@@ -525,7 +525,7 @@ a clean run. Copy that shape.
 | The window (Crash Detector + Compile Timing tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |
 | On-screen UI report (reader, play mode only) | `Assets/_Scripts/Editor/Diagnostics/OnScreenUIReport.cs` |
 | Live-store gitignore (committed, self-healed by the tool) | `BugLedger/.gitignore` |
-| Shared signature core (**runtime-safe**) | `Assets/_Scripts/Utility/BugSignature.cs` |
+| Shared signature core (**runtime-safe**) | `Assets/_Scripts/Utility/Foundation/BugSignature.cs` |
 | Signature determinism tests (edit mode) | `Assets/_Scripts/Tests/Editor/BugSignatureTests.cs` |
 | Committed store contract | `BugLedger/README.md` (project root) |
 | Crash logs / reports (machine-local) | `Logs/CrashDetector/` (gitignored) |

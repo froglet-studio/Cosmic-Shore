@@ -148,7 +148,7 @@ change, and those are the commits nobody can bisect.
 
 ---
 
-## Phase 2 (steps 1–3 done; step 4 onward not started)
+## Phase 2 (steps 1–4 done; step 5 not started)
 
 **Phase 1 stopped here deliberately.** The next two candidate layers both drag gameplay code
 with them, so neither extracts without a refactor first. Forcing either would mean dragging
@@ -218,7 +218,8 @@ editor-side count is a function of runtime progress, not a fixed 26.
    fails to compile, which is the point of a leaf.
 3. ~~Extract `CosmicShore.SOAP`, minus the vessel/HUD channels.~~ **Done 2026-10-31** — see § Phase 2
    step 3 below.
-4. Decide where `Utility` actually divides, then extract the dependency-free part.
+4. ~~Decide where `Utility` actually divides, then extract the dependency-free part.~~ **Done 2026-10-31**
+   — see § Phase 2 step 4 below.
 5. Only then: `Assembly-CSharp-Editor` gets split, and tests get real asmdefs (§ Tests).
 
 ---
@@ -272,6 +273,35 @@ pass. The Editor compile, the domain reload and a play session are still owed
 `Assembly-CSharp`. An edit inside `Assembly-CSharp` still recompiles `Assembly-CSharp`; what stops
 is recompiling these three when gameplay changes. The seconds arrive with step 4 (the clean part
 of `Utility`) and the gameplay layers after it.
+
+---
+
+### Phase 2 step 4 (shipped 2026-10-31): `CosmicShore.Foundation` — `Utility/Foundation/`
+
+Measured on 2026-10-31: **88 of 272** runtime `Utility` files reach only `Data`, `DisplayName` and
+`SOAP` (a fixed-point closure over the tree). That set is not a layer: it mixes ecology data
+containers, AI-training genes, UI widgets and Netcode behaviours that happen to compile alone. The
+boundary drawn is the part that is a layer by purpose — **logging, math/geometry, and small general
+helpers** — 24 files, 4,153 lines, references `CosmicShore.Data`, `UniTask`, `Unity.Mathematics`:
+
+| group | files |
+|---|---|
+| logging | `CSDebug.cs` (with `CSLogChannel`), so every future leaf assembly can log |
+| math / geometry | `MathfNoAlloc`, `IcosahedralSymmetry`, `IcosphereMeshGenerator`, `OctahedronMeshGenerator`, `StellatedOctahedronMeshGenerator`, `HighPolyPrismMesh`, `PrismSierpinskiTiling`, `PrismSilverGnomonTiling`, `PrismSliceGeometry`, `GunSpreadMath`, `ShieldShellMath` |
+| helpers | `DisposableGroup`, `WaitCache`, `RateLimitCooldown`, `ClientPrefs`, `GuidSO`, `GuidContainerSO`, `TagSO`, `DontDestroyOnLoad`, `ITransform`, `ClassExtensions/TransformExtensions`, `BugSignature`, `Email/EmailValidator` |
+
+Every file moved by `git mv` with its `.meta` (guid, type name and namespace kept). The 28 tools,
+tests, skills and docs that named the old paths were updated (`check_console_logging.py`'s allowlist,
+the harness `run.sh` files, `prism_collision_burst_lab`, `PrismShieldMorphTests` among them).
+
+**Left out on purpose** (clean today, but not this layer): `Network/*` (NetworkBehaviours — moving
+them changes which assembly Netcode's codegen runs in; do it as its own step with a two-client test),
+`AITraining/Core/*` (Yash's area), the ecology `DataContainers/*`, UI widgets (`PopupPanel`,
+`NotificationUI`, `FadeIn`), the `*SSU` shader components, `Theater/*` and the `PerformanceBenchmark/*`
+statistics.
+
+Verified the same way as step 3 (headless `player` and `editor` configs identical to the untouched
+tree; gates unchanged). Editor compile and a play session owed.
 
 ---
 
