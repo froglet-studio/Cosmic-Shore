@@ -368,8 +368,8 @@ namespace CosmicShore.Data
         // as Garrett made it until he approves a replacement (Shombith, 2026-10-31). Waystation's clusters, with a DROP
         // TOWER in every gap but the last: a staircase of short hops through floor plates, each ring just past its plate
         // and a pipe beyond the next press point, so the skill is how long you hold (Flappy Bird's tap, on the Drop).
-        // Plates mix plain and danger prisms. The last gap stays the long drop that leaves the wormhole. 72-75 are taken
-        // by branches in flight (ScarabRally, SerpentTime, BrittleStarTime, LanternRun). See
+        // Plates mix plain and danger prisms. The last gap stays the long drop that leaves the wormhole. 72-74 are ScarabRally,
+        // SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight. See
         // _Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYPE.md and Docs/Studios/TIGER_MOTH_TIME.md.
         WaystationPrototype = 76,
 
