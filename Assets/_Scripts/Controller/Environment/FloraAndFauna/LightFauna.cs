@@ -236,6 +236,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override bool DefersHeartRelease => true;
 
+        protected override float AuthoredArmourBite(bool superShielded) =>
+            data ? (superShielded ? data.superShieldBite : data.shieldBite) : 0f;
+
+        protected override void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            base.ApplyRuntimeTuning(tuning, species);
+            data = tuning.ResolveLightData(data, species);   // the run's copy of the species data, never the asset
+        }
+
         void RemoveHusk()
         {
             // Terminal for every LightFauna death path — the guaranteed release point for a
@@ -938,12 +947,14 @@ namespace CosmicShore.Gameplay
             _feedTarget = null;
 
             int bites = 0;
+            Prism gnawed = null;
             if (IsEdibleForHerbivore(target))
             {
                 float meal = Mathf.Max(0f, target.Volume);   // read before the consume (round 11f: the stomach is conserved)
-                target.Consume(transform, domain, PLAYER_NAME, true, true);
-                NotifyFed(meal);
-                bites++;
+                var result = BiteMass(target, transform, domain, PLAYER_NAME, true);
+                if (result == BiteResult.Ate) NotifyFed(meal);
+                else if (result == BiteResult.Gnawed) gnawed = target;
+                if (result != BiteResult.None) bites++;
             }
 
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
@@ -955,10 +966,13 @@ namespace CosmicShore.Gameplay
                 var prism = FeedScratch[i];
                 if (prism == target || !IsEdibleForHerbivore(prism)) continue;
                 float meal = Mathf.Max(0f, prism.Volume);
-                prism.Consume(transform, domain, PLAYER_NAME, true, true);
-                NotifyFed(meal);
-                bites++;
+                var result = BiteMass(prism, transform, domain, PLAYER_NAME, true);
+                if (result == BiteResult.Ate) NotifyFed(meal);
+                if (result != BiteResult.None) bites++;
             }
+
+            // Armour still standing after a bite of wear: come back to it once this hold ends.
+            if (gnawed && !gnawed.destroyed) _feedTarget = gnawed;
 
             // Someone else got the whole mouthful first — nothing to watch, resume roaming.
             if (bites == 0)

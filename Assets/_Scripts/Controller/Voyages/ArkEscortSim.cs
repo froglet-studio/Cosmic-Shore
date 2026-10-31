@@ -38,6 +38,9 @@ namespace CosmicShore.Gameplay
     /// <item><c>-arkEscortQuit</c>: when the plan is done, write <c>{"done":true,...}</c> as the last line and, in a
     /// player, quit (the editor launcher exits the editor on <see cref="AllDone"/>).</item>
     /// </list>
+    /// <c>-arkEscortParams path.json</c>: a flat JSON object of named overrides (<c>{"ark.crawlSpeed": 18,
+    /// "tier.4.population": 0.7}</c>) every run applies to its runtime copy of the escort (<see cref="ArkEscortParams"/>);
+    /// each run's JSON line echoes them (<c>Params</c>) and lists the accepted key patterns (<c>ParamKeys</c>).
     /// Each line carries the job's <c>JobId</c>, <c>RunIndex</c>, <c>Seed</c>, <c>RealSeconds</c> and <c>FixedDt</c> ahead of
     /// the report's own fields. Parameters are not the sim's business: <c>-arkEscortParams</c> is read by the run.</para>
     /// </summary>
@@ -51,6 +54,7 @@ namespace CosmicShore.Gameplay
         const string DrainArg = "-arkEscortDrain";
         const string QuitArg = "-arkEscortQuit";
         const string FpsArg = "-arkEscortFps";
+        const string ParamsArg = "-arkEscortParams";
         const float ReadyTimeoutSeconds = 600f;
         const float RunTimeoutSeconds = 1800f;
         const float HeartbeatSeconds = 30f;
@@ -123,6 +127,7 @@ namespace CosmicShore.Gameplay
 
             if (plan.StartsWith("@")) sim.ParseJob(plan.Substring(1).Trim('"'));
             else sim.Parse(plan);
+            sim.LoadParams(Arg(args, ParamsArg));
             IsRunning = true;
             sim.RunAsync(sim.GetCancellationTokenOnDestroy()).Forget();
         }
@@ -136,6 +141,19 @@ namespace CosmicShore.Gameplay
 
         static bool TryFloat(string s, out float v) =>
             float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out v);
+
+        void LoadParams(string path)
+        {
+            ArkEscortParams.Pending = null;
+            if (string.IsNullOrEmpty(path)) return;
+            try
+            {
+                var values = ArkEscortParams.ParseFlatJson(File.ReadAllText(path));
+                ArkEscortParams.Pending = values;
+                Log($"params: {values.Count} overrides from {path}");
+            }
+            catch (Exception e) { Log($"could not read params {path}: {e.Message}"); }
+        }
 
         void ParseJob(string path)
         {
@@ -175,7 +193,10 @@ namespace CosmicShore.Gameplay
             for (int i = 0; ok && i < slots.Length; i++)
             {
                 ok = Enum.TryParse(vessels[i].Trim(), true, out VesselClassType v);
-                slots[i] = new SquadSlot(v, Element.None);
+                // A real element, not None: the run seeds seats to level 5 in their slot's element, and None seeds
+                // nothing - so the kits' level-5 safeties (Domain-Safe Skybursts, Clean Blast, Shield Steal) were
+                // off and the squad chewed the Ark's own hull. Each hull takes the element its safety lives in.
+                slots[i] = new SquadSlot(v, ArkEscortRoles.DefaultElement(v));
             }
             if (!ok) { Log($"bad squad '{squadText}'"); return; }
             _plan.Add((index, difficulty, new SavedSquad("escort sim", slots[0], slots[1], slots[2]), squadText));
@@ -278,6 +299,7 @@ namespace CosmicShore.Gameplay
             finally
             {
                 ArkEscortRun.Finished -= OnFinished;
+                ArkEscortParams.Pending = null;
                 ArkEscortRun.SeedOverride = null;
                 Time.timeScale = 1f;
                 Time.captureDeltaTime = 0f;
