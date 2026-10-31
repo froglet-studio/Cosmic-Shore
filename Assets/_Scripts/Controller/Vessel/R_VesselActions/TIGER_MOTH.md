@@ -215,7 +215,8 @@ configs) compiles it clean against real Unity references; that is a compile, not
 
 - **Decision needed (Garrett):** the medium distance (900 u) and the afterburn's ×2 throttle are starting numbers.
 - The afterburn keeps the whole hull incorporeal, so crystals pass through it for those 3 s too (the dust stays on).
-- **The Time card's icon is still the Fold's.** A drop glyph is `/ability-icon` work.
+- ~~The Time card's icon is still the Fold's.~~ Done 2026-10-31 by `/ability-icon` (`specs/tigermoth.py`): the moth with
+  its wings shut falling out of its wormhole, driven by `ButterflyHUDView.SetDrop`.
 - **The Waystation AI's belly aim is unplayed**: the offline model is a stand-in for AIPilot's steering, so how often it
   lines up in a real race, and whether 3 / 10 degrees are the right gates, is for the editor (and the learning sweep).
 - **Sound:** `dropEngageEvent`, `dropLandEvent`, `gatesOpenEvent`, `gateThreadEvent` ship empty (the FMOD rule).

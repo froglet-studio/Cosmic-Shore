@@ -65,6 +65,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Tiger Moth Time card: the Drop with its wormhole (`claude/tigermoth-drop-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** three kit parts (`TigerMoth_DropMouth`, `_DropStreaks`, `_DropMoth`) under the Time icon in
+`ButterflyHUDVariant.prefab`, `ButterflyHUDView.SetDrop` / `SetDropColor`, driven by `ButterflyHUDController` from
+`TigerMothDropExecutor.IsDropping` / `IsReady` and `TigerMothDropActionSO.TollsRivals`. No Unity and no .NET: not compiled.
+
+- [ ] Compiles; the variant opens with the view's `dropMouthIcon`, `dropStreaksIcon` and `dropMothIcon` wired.
+- [ ] Fly the Tiger Moth: the Time card shows the moth in your colour under a white wormhole, streaks dimmed.
+- [ ] Hold LT: the wormhole and the streaks go full; let go: they dim, and while the veil sweeps every part dims.
+- [ ] Reach Charge 5 (Toll Gate): the card's wormhole takes your domain colour.
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).

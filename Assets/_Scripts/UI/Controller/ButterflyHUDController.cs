@@ -1,5 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -17,7 +19,8 @@ namespace CosmicShore.UI
     /// <item><b>Mode</b> (the Mass card) — <see cref="SpreadWingsActionExecutor.MassMode01"/>. It is
     /// an EASED value with no event behind it, so polling is the honest drive.</item>
     /// <item><b>Drop recharge</b> (the Time card) — a cooldown is a CLOCK and there is no event to
-    /// ride. It is the feedback a refused Drop press gets.</item>
+    /// ride. It is the feedback a refused Drop press gets. The same poll drives the card's parts
+    /// (<see cref="ButterflyHUDView.SetDrop"/>): dropping, ready, and whether the wormhole tolls.</item>
     /// </list>
     ///
     /// <para>The wing-energy meter this used to bind is gone — the right trigger is a mode switch
@@ -37,11 +40,14 @@ namespace CosmicShore.UI
         [Tooltip("This vessel's mode executor (Mass mode / Dust mode on the right trigger).")]
         [SerializeField] SpreadWingsActionExecutor spreadExecutor;
 
+        [Inject] GameDataSO _gameData;
+        IVesselStatus _status;
         bool _isLocalPilotHud;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
+            _status = vesselStatus;
 
             if (!view) view = GetComponentInChildren<ButterflyHUDView>(true);
 
@@ -63,7 +69,23 @@ namespace CosmicShore.UI
             // it — the veil sizes itself on the ability PLATE, not the icon — which is what lets
             // a vessel with no authored icon art still report its recharge.
             if (dropExecutor)
+            {
                 View?.SetAbilityCooldown(Element.Time, dropExecutor.CooldownRemaining01);
+                if (view)
+                {
+                    view.SetDropColor(ResolveDomainSignalColor());
+                    view.SetDrop(dropExecutor.IsDropping, dropExecutor.IsReady, TigerMothDropActionSO.TollsRivals(_status));
+                }
+            }
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Angler's and
+        /// the Serpent's HUDs read it; alpha 0 until the palette resolves (the view keeps its last colour).</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return new Color(0f, 0f, 0f, 0f);
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
     }
 }

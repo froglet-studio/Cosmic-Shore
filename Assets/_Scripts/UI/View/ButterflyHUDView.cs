@@ -54,6 +54,19 @@ namespace CosmicShore.UI
         [Tooltip("Gauge colour as it reaches Dust mode.")]
         [SerializeField] Color dustModeColor = new(1f, 0.82f, 0.45f, 1f);
 
+        [Header("Time card: the Tiger Moth's Drop (icon_kit specs/tigermoth.py, Garrett picked A + the wormhole 2026-10-31)")]
+        [Tooltip("The wormhole the drop leaves behind (TigerMoth_DropMouth): white (neutral), the domain hue while " +
+                 "Charge 5 Toll Gate makes it toll rivals.")]
+        [SerializeField] Image dropMouthIcon;
+        [Tooltip("The fall streaks (TigerMoth_DropStreaks), white: full while dropping, dimmed otherwise.")]
+        [SerializeField] Image dropStreaksIcon;
+        [Tooltip("The Tiger Moth, wings shut (TigerMoth_DropMoth), the domain colour.")]
+        [SerializeField] Image dropMothIcon;
+        [Tooltip("Alpha of the wormhole and the streaks while the drop is ready but not held.")]
+        [SerializeField, Range(0f, 1f)] float dropIdleAlpha = 0.6f;
+        [Tooltip("Alpha every Time part dims to while the drop recharges (the fleet's veil sweeps over it).")]
+        [SerializeField, Range(0f, 1f)] float dropRechargingAlpha = 0.3f;
+
         /// <summary>
         /// Seat every readout at its resting value. Idempotent, because this re-runs on a vessel
         /// swap: the HUD component is not rebuilt, so a field left holding the previous pilot's
@@ -65,6 +78,36 @@ namespace CosmicShore.UI
         {
             SetMassMode(1f);
             SetAbilityCooldown(Element.Time, 0f);
+            _dropShown = -1;
+            SetDrop(false, true, false);
+        }
+
+        int _dropShown = -1;
+        Color _dropDomain = Color.white;
+
+        /// <summary>The pilot's domain colour on the Time card (alpha 0 = not resolved yet, keep the last).</summary>
+        public void SetDropColor(Color domain)
+        {
+            if (domain.a > 0f && domain != _dropDomain) { _dropDomain = domain; _dropShown = -1; }
+        }
+
+        /// <summary>
+        /// The Drop on the Time card (<c>TigerMothDropExecutor.IsDropping</c> / <c>IsReady</c>,
+        /// <c>TigerMothDropActionSO.TollsRivals</c>): the moth in the domain colour falling out of its wormhole; the
+        /// streaks and the wormhole full while the trigger holds it, dimmed while it waits; the wormhole the domain hue
+        /// once it tolls rivals; every part dim while the drop recharges.
+        /// </summary>
+        public void SetDrop(bool dropping, bool ready, bool tolls)
+        {
+            int key = (dropping ? 1 : 0) | (ready ? 2 : 0) | (tolls ? 4 : 0);
+            if (key == _dropShown) return;
+            _dropShown = key;
+            float a = dropping ? 1f : ready ? dropIdleAlpha : dropRechargingAlpha;
+            float moth = dropping || ready ? 1f : dropRechargingAlpha;
+            Color mouth = tolls ? _dropDomain : Color.white;
+            if (dropMouthIcon) dropMouthIcon.color = new Color(mouth.r, mouth.g, mouth.b, a);
+            if (dropStreaksIcon) dropStreaksIcon.color = new Color(1f, 1f, 1f, a);
+            if (dropMothIcon) dropMothIcon.color = new Color(_dropDomain.r, _dropDomain.g, _dropDomain.b, moth);
         }
 
         /// <summary>Push the mode, 1 = Mass mode, 0 = Dust mode, anything between = switching.</summary>

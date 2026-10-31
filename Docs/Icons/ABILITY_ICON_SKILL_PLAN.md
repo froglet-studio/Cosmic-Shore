@@ -317,6 +317,16 @@ beside it, the group the next paint sends white and the other dim in the domain 
 something is painted, white after; at Space 5 the shielded prism with its shield cracking off. Five parts;
 `AnglerHUDView.SetPaintGroups` / `SetPaintPrism` / `SetPaintColors`. Next: the Time card (Dash to the School).
 
+**The Tiger Moth** (round 4, 2026-10-31; `specs/tigermoth.py`). The vessel the round-4 list calls the Butterfly is the
+Tiger Moth now (the Butterfly retired 2026-10-29, `TIGER_MOTH.md`; a Butterfly may return as its own hull one day). It
+flies `ButterflyHUDVariant` / `ButterflyHUDView`, whose shipped sprites keep their `Butterfly_*` names; new parts are
+`TigerMoth_*` under `AbilityIcons/TigerMoth/`. The **Time card, the Drop**, went first (it still showed the retired
+Fold): Garrett picked A of A/B/C ("the fall") "and add a wormhole behind": the airframe side on with its wings shut
+(`Butterfly.fbx`, take `rig|fold`, pitch -90) in the domain colour, falling out of the wormhole mouth it leaves (white,
+the domain hue at Charge 5 Toll Gate), three fall streaks between. Three parts; `ButterflyHUDView.SetDrop` from
+`TigerMothDropExecutor.IsDropping` / `IsReady` and `TigerMothDropActionSO.TollsRivals`; the fleet's veil stays on the
+plate. Next: the Charge card (Scale Dust, the audit's "does not read").
+
 | Round | What | Why first |
 |---|---|---|
 | 0 | `ICON_LANGUAGE.md` draft (section 4) to Garrett and Shombith; settle round vs angular | everything downstream draws with it |

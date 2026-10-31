@@ -438,3 +438,10 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     move without anything else on the card moving. Look for a turn-taking state in the executor (`SendGroup`) before
     drawing the act alone.
 
+66. **Name the vessel the pilot flies, not the asset it inherited, and check every injected type's namespace.** The
+    Tiger Moth replaced the Butterfly and kept its HUD, so the files say Butterfly; the first Drop sheet went out as
+    "Butterfly", and Garrett: "the tigermoth is the new name for this vessel. you appear to be confused about that."
+    Read the vessel doc's header (a RETIRED line) before naming a spec, and name the spec, sheets and new parts for the
+    live vessel while leaving the inherited asset names alone. Separately, the Angler's controller injected
+    `GameDataSO` without `using CosmicShore.Utility`, a compile error someone else had to fix (#1651); with no compiler
+    in the session, grep the namespace of every type a C# change newly names.
