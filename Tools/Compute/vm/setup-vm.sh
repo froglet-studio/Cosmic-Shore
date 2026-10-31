@@ -26,7 +26,7 @@ trap 'printf "\n\033[1;31mstopped during %s (line %s). Fix what the lines above 
 # The branch Froglet Compute is read from: bleeding-edge once it is merged there (the raw file answers), the compute
 # branch until then; COMPUTE_BRANCH overrides either.
 if [ -n "${COMPUTE_BRANCH:-}" ]; then BRANCH="$COMPUTE_BRANCH"
-elif curl -fsSIo /dev/null https://raw.githubusercontent.com/froglet-studio/Cosmic-Shore/bleeding-edge/Tools/Compute/compute.py; then BRANCH=bleeding-edge
+elif curl -fsIo /dev/null https://raw.githubusercontent.com/froglet-studio/Cosmic-Shore/bleeding-edge/Tools/Compute/compute.py; then BRANCH=bleeding-edge
 else BRANCH=claude/eager-franklin-e6g77h; fi
 SVC=froglet
 BASE=/srv/froglet
