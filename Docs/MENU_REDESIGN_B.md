@@ -5010,3 +5010,27 @@ ONLINE list, F adds a tab strip.
 we can go with E". So: **E's open tray** (the party as one card with overlapping seats, names, Invite and Leave; the
 online pilots grouped by what can be done with them, one verb column per group) and **the built orb stays as the closed
 handle** (section 45.4), unchanged. Rev 39's options and D's rail and F are not built.
+
+### 107.1 Built (2026-10-31, awaiting in-editor approval)
+
+- **The party card** (`PartyPanel`, `author_menu_arcade.build_panel`): the molecule and its bonds are gone. Under "Your
+  party n / 4" and the online line, one framed card: the four `PartySlot`s in a row at `seat_x(i)` (62 px seats, each
+  14 over the one before, so later seats draw on top and the host's kick sits on a seat's top-left), the names line
+  (`ArcadeLobbyList.partyNamesText`, seat order, ", " between), the summary (`partySummaryText`, "{host} - {seats}":
+  "You host" / "{name} hosts", "1 seat open" / "{count} seats open" / "Party full"), then INVITE (focus into the list,
+  hidden when full) and LEAVE PARTY (hidden while solo). Every word is an authored field. The board's middle dot is
+  " - ": the generators keep prefab text ASCII.
+- **A seat** (`PartySlot`): the avatar in its domain ring, no name or role under it (the card's names line carries
+  them; the seat keeps its name in a hidden text, which the profile card reads). The open seat is an outlined octagon
+  with a +, a tile with no border at rest.
+- **The rows** (`PartyOnlineRow`): one fixed 120 x 32 slot at the right holds Invite, Join and Cancel, one at a time
+  (`KitOnlineRow.oneVerbPerRow`), each button 120 wide whatever its word. `FriendsListPanel.oneVerbPerRow` picks the
+  verb by status (in the menu Invite, in a party Join, in a match Spectate, invited Cancel). Name over status, as the
+  build's rows were, not the board's one line.
+- **The groups**: JOIN THEIR PARTY, IN THE MENU, IN A MATCH, YOU INVITED, each a header over its own list, shown only
+  while it has rows (`KitListCounter`); `FriendsListPanel.onlineGroups` parents each row and moves it when its state
+  changes; the empty line shows while all four are empty (`onlineEmptyLine`).
+- **Unchanged:** the orb and the drawer (`author_menu_friends_drawer.py --check` OK), the docking, the profile card.
+- **Gates:** `author_menu_arcade.py --self-test` (check_card: seats in a row, no bonds, authored words, one-verb rows in
+  one shared slot with the fitter off, the four groups wired in order; 8 new planted defects); `author_ui_lattice.py
+  --self-test` (its two bond plants retargeted); `PartyTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

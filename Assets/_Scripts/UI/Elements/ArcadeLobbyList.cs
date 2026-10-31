@@ -74,7 +74,31 @@ namespace CosmicShore.UI
                  "in the party, instead of showing a Leave that does nothing.")]
         [SerializeField] private CanvasGroup leaveGroup;
 
-        [Header("Party molecule (optional)")]
+        [Header("Party card (Rev 40 E, Docs/MENU_REDESIGN_B.md section 107; optional)")]
+        [Tooltip("The seated pilots' names in seat order, joined by Names Separator (\"Kai, Vireo, Nova\").")]
+        [SerializeField] private KitText partyNamesText;
+        [Tooltip("Between two names on the names line.")]
+        [SerializeField] private string namesSeparator = ", ";
+        [Tooltip("Who hosts and how many seats are open (\"You host · 1 seat open\").")]
+        [SerializeField] private KitText partySummaryText;
+        [Tooltip("The summary line: {host} is the host phrase, {seats} the seats phrase. Empty shows nothing.")]
+        [SerializeField] private string summaryTemplate = "{host} · {seats}";
+        [Tooltip("The host phrase when you host.")]
+        [SerializeField] private string youHostText = "You host";
+        [Tooltip("The host phrase when someone else hosts; {name} is the host's name.")]
+        [SerializeField] private string otherHostsTemplate = "{name} hosts";
+        [Tooltip("The seats phrase with one seat open.")]
+        [SerializeField] private string oneSeatOpenText = "1 seat open";
+        [Tooltip("The seats phrase with several open; {count} is how many.")]
+        [SerializeField] private string seatsOpenTemplate = "{count} seats open";
+        [Tooltip("The seats phrase with every seat taken.")]
+        [SerializeField] private string partyFullText = "Party full";
+        [Tooltip("The card's Invite button: moves focus into the online list, as an open seat does.")]
+        [SerializeField] private Button inviteButton;
+        [Tooltip("The Invite button's group, hidden while every seat is taken.")]
+        [SerializeField] private CanvasGroup inviteGroup;
+
+        [Header("Party molecule (optional; retired by the Rev 40 E card)")]
         [Tooltip("Rev 6 (Docs/MENU_REDESIGN_B.md §45.4): the bond drawn from the centre seat to each seat, index-aligned " +
                  "with Slots (the centre seat's entry stays empty). A seated pilot's bond takes their domain colour, " +
                  "Space while it is not known yet; an open seat's bond is Space, dimmed to Open Bond Alpha.")]
@@ -157,6 +181,8 @@ namespace CosmicShore.UI
         {
             if (leaveButton)
                 leaveButton.onClick.AddListener(OnLeaveButtonPressed);
+            if (inviteButton)
+                inviteButton.onClick.AddListener(OnAddSlotPressed);
 
             // Wire every empty slot's add button to open the FriendsListPanel.
             if (slots != null)
@@ -402,6 +428,7 @@ namespace CosmicShore.UI
 
             if (partyCountText)
                 partyCountText.SetText($"{seatCount} / {slotCount}");
+            DrawPartyCard(seatCount, slotCount);
 
             _drawnSeats = seatCount;
             for (int i = seatCount; i < MAX_SLOTS; i++)
@@ -453,6 +480,47 @@ namespace CosmicShore.UI
                 _seats.RemoveAt(localIdx);
                 _seats.Insert(drawable - 1, local);
             }
+        }
+
+        /// <summary>
+        /// The Rev 40 E party card's words: the seated names in seat order, and who hosts with how many seats are open.
+        /// Every word is authored on this component; code supplies the facts (CLAUDE.md, player-facing text).
+        /// </summary>
+        void DrawPartyCard(int seatCount, int slotCount)
+        {
+            bool full = seatCount >= slotCount;
+            KitVisibility.SetShown(inviteGroup, !full);
+            if (inviteButton) inviteButton.interactable = !full;
+            if (!partyNamesText && !partySummaryText) return;
+
+            var names = new List<string>(seatCount);
+            string hostName = null;
+            bool localHosts = false;
+            for (int i = 0; i < seatCount && i < _seats.Count; i++)
+            {
+                var seat = _seats[i];
+                string name = seat.IsLocal ? connectionData.LocalDisplayName : seat.Member.DisplayName;
+                if (!string.IsNullOrEmpty(name)) names.Add(name);
+                if (!seat.IsHost) continue;
+                hostName = name;
+                localHosts = seat.IsLocal;
+            }
+
+            if (partyNamesText) partyNamesText.SetText(string.Join(namesSeparator ?? string.Empty, names));
+            if (partySummaryText)
+                partySummaryText.SetText(PartySummary(summaryTemplate, localHosts ? youHostText
+                        : TemplateText.Fill(otherHostsTemplate, "name", hostName ?? string.Empty),
+                    slotCount - seatCount, oneSeatOpenText, seatsOpenTemplate, partyFullText));
+        }
+
+        /// <summary>The summary line from its authored parts. Pure, so it is tested without a party.</summary>
+        internal static string PartySummary(string template, string hostPhrase, int openSeats,
+                                            string oneOpen, string manyOpenTemplate, string full)
+        {
+            string seats = openSeats <= 0 ? full
+                         : openSeats == 1 ? oneOpen
+                         : TemplateText.Fill(manyOpenTemplate, "count", openSeats.ToString());
+            return TemplateText.Fill(template, "host", hostPhrase ?? string.Empty, "seats", seats ?? string.Empty);
         }
 
         Sprite PopulateLocalSlot(FriendInfoSlot slot)
