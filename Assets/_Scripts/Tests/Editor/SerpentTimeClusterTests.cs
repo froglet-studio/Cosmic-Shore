@@ -73,11 +73,7 @@ namespace CosmicShore.Tests
                 int k = SerpentTimeCluster.RingsFor(intensity, SerpentTimeCluster.DefaultRingsByIntensity);
                 for (int seed = 1; seed <= Seeds; seed++)
                 {
-                    var s = SerpentTimeCourse.ForIntensity(intensity);
-                    s.InnerRadius = Inner;
-                    s.OuterRadius = Outer;
-                    s.FirstGateDirection = Vector3.up;
-                    var course = HeadlongCircuit.Generate(seed, s);
+                    var course = SerpentTimeCourse.Build(seed, intensity, SerpentTimeCourse.GatesPerLap, Inner, Outer);
                     if (course == null || course.Count == 0) continue;
 
                     for (int a = 0; a < course.Count; a++)

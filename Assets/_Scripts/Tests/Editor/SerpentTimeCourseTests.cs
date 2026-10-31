@@ -9,33 +9,19 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The SerpentTime circuit contract: Headlong's shared solver on <see cref="SerpentTimeCourse"/>'s cut. The liveness
-    /// half (closed ring, shell, pole, mouth separation, presentation) is re-asserted because the
-    /// solver is shared, the ladder half is this hull's, and the vessel numbers the cut is stated
-    /// against are read back off the shipped assets. Swept over 400 seeds.
+    /// The Serpentine course contract (<see cref="SerpentTimeCourse.Build"/>, the switchback ladder): a closed lap of
+    /// rings inside the shell, legs long and clear of the nucleus, a hairpin at every ring but the ladder's two ends, no
+    /// two rings touching, mouths that tighten level by level, and one answer per seed; plus the vessel numbers the course
+    /// is flown with, read back off the shipped assets. Swept over 400 seeds.
     /// </summary>
     public class SerpentTimeCourseTests
     {
         const float Inner = 480f;
         const float Outer = 1080f;
         const int Seeds = 400;
+        const int PerLap = SerpentTimeCourse.GatesPerLap;
 
-        static HeadlongCircuitSettings Settings(int intensity)
-        {
-            var s = SerpentTimeCourse.ForIntensity(intensity);
-            s.InnerRadius = Inner;
-            s.OuterRadius = Outer;
-            s.FirstGateDirection = Vector3.up;
-            return s;
-        }
-
-        static List<RaceGate> Circuit(int intensity, int seed) => HeadlongCircuit.Generate(seed, Settings(intensity));
-
-        static float CornerRadius(List<RaceGate> c, int i)
-        {
-            int n = c.Count;
-            return RaceCourseGeometry.CornerRadius(c[(i - 1 + n) % n].Position, c[i].Position, c[(i + 1) % n].Position);
-        }
+        static List<RaceGate> Lap(int intensity, int seed) => SerpentTimeCourse.Build(seed, intensity, PerLap, Inner, Outer);
 
         static float AssetFloat(string path, string key)
         {
@@ -61,90 +47,91 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Every_intensity_yields_a_closed_ring_of_gates_inside_the_shell()
+        public void Every_lap_is_closed_and_inside_the_shell()
+        {
+            for (int intensity = 1; intensity <= 4; intensity++)
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var lap = Lap(intensity, seed);
+                Assert.AreEqual(PerLap, lap.Count);
+                foreach (var g in lap)
+                {
+                    float r = g.Position.magnitude;
+                    Assert.LessOrEqual(r + g.Radius, Outer, $"I{intensity} seed {seed}: a ring past the shell");
+                    Assert.GreaterOrEqual(r - g.Radius, Inner, $"I{intensity} seed {seed}: a ring inside the nucleus band");
+                    Assert.AreEqual(1f, g.Axis.magnitude, 1e-3f);
+                }
+            }
+        }
+
+        [Test]
+        public void Legs_are_long_and_clear_the_nucleus()
         {
             for (int intensity = 1; intensity <= 4; intensity++)
             {
-                var s = Settings(intensity);
+                var legs = new List<float>();
                 for (int seed = 1; seed <= Seeds; seed++)
                 {
-                    var c = Circuit(intensity, seed);
-                    Assert.IsNotNull(c, $"i{intensity} seed {seed}: generator returned null");
-                    Assert.AreEqual(s.GateCount, c.Count, $"i{intensity} seed {seed}: gate count");
-                    Assert.Less(RaceCourseGeometry.Angle(c[0].Position, Vector3.up), 0.1f, "gate 0 is off the spawn pole");
-                    for (int i = 0; i < c.Count; i++)
+                    var lap = Lap(intensity, seed);
+                    for (int i = 0; i < lap.Count; i++)
                     {
-                        float r = c[i].Position.magnitude;
-                        Assert.GreaterOrEqual(r, Inner - 0.01f, "inside the nucleus");
-                        Assert.LessOrEqual(r, Outer + 0.01f, "outside the membrane");
-                        for (int j = i + 1; j < c.Count; j++)
-                            Assert.GreaterOrEqual((c[i].Position - c[j].Position).magnitude, 2f * s.RingRadius - 0.01f,
-                                $"i{intensity} seed {seed}: gates {i} and {j} overlap");
+                        var a = lap[i].Position;
+                        var b = lap[(i + 1) % lap.Count].Position;
+                        legs.Add(Vector3.Distance(a, b));
+                        Assert.GreaterOrEqual(SerpentTimeCourse.DistanceFromCentre(a, b), Inner * SerpentTimeCourse.NucleusClearance - 0.5f,
+                            $"I{intensity} seed {seed}: leg {i + 1} cuts the nucleus");
                     }
                 }
+                legs.Sort();
+                Assert.Greater(legs[legs.Count / 2], 900f, $"I{intensity}: rings far apart (median leg)");
+                Assert.Greater(legs[0], 600f, $"I{intensity}: no short leg");
             }
         }
 
         [Test]
-        public void Every_corner_fits_its_floor_and_is_flyable_at_cruise()
+        public void Every_ring_but_the_ladders_ends_is_a_hairpin()
         {
             for (int intensity = 1; intensity <= 4; intensity++)
+            for (int seed = 1; seed <= Seeds; seed++)
             {
-                var s = Settings(intensity);
-                Assert.Greater(s.CornerFloorRadius, 1.5f * SerpentTimeCourse.CruiseRadius,
-                    $"i{intensity}: the floor must sit well above the cruise circle, so a pilot who never boosts holds every corner");
-                for (int seed = 1; seed <= Seeds; seed++)
-                {
-                    var c = Circuit(intensity, seed);
-                    for (int i = 0; i < c.Count; i++)
-                        Assert.GreaterOrEqual(CornerRadius(c, i), s.CornerFloorRadius - 0.01f,
-                            $"i{intensity} seed {seed}: corner {i} is sharper than the floor");
-                }
+                var lap = Lap(intensity, seed);
+                int hairpins = 0;
+                for (int i = 0; i < lap.Count; i++)
+                    if (SerpentTimeCourse.TurnDegrees(lap, i) >= 150f) hairpins++;
+                Assert.GreaterOrEqual(hairpins, lap.Count - 2, $"I{intensity} seed {seed}: {hairpins} hairpins");
             }
         }
 
         [Test]
-        public void Presentation_cap_covers_half_the_hardest_turn()
+        public void No_two_rings_touch()
         {
             for (int intensity = 1; intensity <= 4; intensity++)
+            for (int seed = 1; seed <= Seeds; seed++)
             {
-                float worst = 0f;
-                for (int seed = 1; seed <= Seeds; seed++)
-                {
-                    var c = Circuit(intensity, seed);
-                    int n = c.Count;
-                    for (int i = 0; i < n; i++)
-                        worst = Mathf.Max(worst, 0.5f * RaceCourseGeometry.Angle(
-                            c[i].Position - c[(i - 1 + n) % n].Position, c[(i + 1) % n].Position - c[i].Position));
-                }
-                Assert.Greater(Settings(intensity).MaxPresentDegrees, worst, $"i{intensity}: worst half-turn {worst:F1}");
+                var lap = Lap(intensity, seed);
+                for (int i = 0; i < lap.Count; i++)
+                for (int j = i + 1; j < lap.Count; j++)
+                    Assert.GreaterOrEqual(Vector3.Distance(lap[i].Position, lap[j].Position),
+                        lap[i].Radius + lap[j].Radius + SerpentTimeCourse.RingGap - 0.5f, $"I{intensity} seed {seed}: rings {i + 1} and {j + 1}");
             }
         }
 
         [Test]
-        public void Every_intensity_demands_the_corners_it_claims()
-        {
-            float reference = SerpentTimeCourse.FullStackRadius;
-            int[] expected = { 0, 0, 0, 2, 2 };   // index = intensity
-            for (int intensity = 1; intensity <= 4; intensity++)
-            {
-                var counts = new List<int>();
-                for (int seed = 1; seed <= Seeds; seed++)
-                {
-                    var c = Circuit(intensity, seed);
-                    counts.Add(Enumerable.Range(0, c.Count).Count(i => CornerRadius(c, i) < reference));
-                }
-                counts.Sort();
-                Assert.AreEqual(expected[intensity], counts[counts.Count / 2],
-                    $"i{intensity}: a median lap must have {expected[intensity]} corner(s) tighter than {reference:F0} u");
-            }
-        }
-
-        [Test]
-        public void Mouths_shrink_level_by_level()
+        public void Mouths_shrink_and_hairpins_sharpen_level_by_level()
         {
             for (int i = 2; i <= 4; i++)
-                Assert.Less(Settings(i).RingRadius, Settings(i - 1).RingRadius, $"i{i}: mouths must tighten");
+            {
+                Assert.Less(SerpentTimeCourse.RingRadiusFor(i), SerpentTimeCourse.RingRadiusFor(i - 1), $"I{i}: mouths must tighten");
+                Assert.Less(SerpentTimeCourse.LateralStepDegrees(i), SerpentTimeCourse.LateralStepDegrees(i - 1), $"I{i}: hairpins sharpen");
+            }
+        }
+
+        [Test]
+        public void One_seed_one_lap()
+        {
+            var a = Lap(3, 77);
+            var b = Lap(3, 77);
+            for (int i = 0; i < a.Count; i++) Assert.AreEqual(a[i].Position, b[i].Position);
         }
     }
 }

@@ -65,6 +65,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpentine: no shapes - rings far apart on a switchback ladder of hairpins (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. Supersedes the shape entries below (SerpentineGate is deleted) and the core-shrink steps.
+
+1. Any intensity: the rings stand alone (no shapes), far apart - about 1,000 u legs - on two banks across the cell.
+   After each ring the next is back across the cell, just beside the previous bank's ring: a hairpin. Two rings a lap
+   (the ladder's ends) are sweeping turns instead.
+2. I4's hairpins are sharper than I1's; rings 72 / 60 / 50 / 42 u.
+3. No leg passes through the nucleus; no ring sits outside the membrane.
+4. AI Serpents thread the hairpins (they fly in along the leg and turn round after); note any that circle a ring.
+5. EditMode: `SerpentTimeCourseTests` (shell, legs and nucleus, hairpins, ring gaps, ladder, determinism),
+   `SerpentTimeClusterTests`.
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).

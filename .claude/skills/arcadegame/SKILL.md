@@ -220,7 +220,7 @@ Serpentine (Serpent Time reshaped, 2026-10-31, same branch) taught four more:
 - **Show the course with the cell, not a drawn track**: `SnowChanger.SetFlow(IFlow)` points the cytoplasm's shards
   along whatever a mode answers per shard (Serpentine: the nearest leg of the lap, leaning toward the line), and
   null restores the crystal law. A cell with no crystal never built its shards; `SetFlow` builds them.
-- **An obstacle a hit can CLEAR is a shape the MODE lays, with a core.** A plant felled through its heart worked (a
+- **An obstacle a hit can CLEAR is a shape the MODE lays, with a core** (built, then removed the same day for plain rings far apart: the person wanted the RACE, spacing and hairpins, more than an obstacle; ask which before building either). A plant felled through its heart worked (a
   joust leaves a plant's plates standing, so the mode had to damage them itself) but read as "boring flora" and cost a
   plant's spindles and growth; Serpentine replaced it the same day with `SerpentineGate`: closed-form prisms after
   Breakwater's stations (plain shell, danger weave with exits carved for the hull, a plain core), laid on every peer from

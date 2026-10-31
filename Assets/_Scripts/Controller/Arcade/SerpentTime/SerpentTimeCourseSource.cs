@@ -6,8 +6,8 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Serpent Time's course: Headlong's solver cut to <see cref="SerpentTimeCourse.ForIntensity"/>. A closed circuit
-    /// that cannot fail - the shared solver relaxes toward a regular ring.
+    /// Serpent Time's course: a switchback ladder of rings far apart with hairpin bends (<see cref="SerpentTimeCourse.Build"/>),
+    /// relaxed toward a narrower ladder until every leg clears the nucleus.
     /// </summary>
     public sealed class SerpentTimeCourseSource : RaceCourseSource
     {
@@ -31,8 +31,8 @@ namespace CosmicShore.Gameplay
         public override List<RaceGate> Build(in RaceCourseRequest request, out string failure)
         {
             failure = null;
-            return HeadlongCourseSource.BuildCircuit(SerpentTimeCourse.ForIntensity(request.Intensity),
-                                                     request, LapsPerRace(request.Intensity));
+            int perLap = Mathf.Max(3, Mathf.CeilToInt(request.GateCount / (float)LapsPerRace(request.Intensity)));
+            return SerpentTimeCourse.Build(request.Seed, request.Intensity, perLap, request.Inner, request.Outer);
         }
     }
 }

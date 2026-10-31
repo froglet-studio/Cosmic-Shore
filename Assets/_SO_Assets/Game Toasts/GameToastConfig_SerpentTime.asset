@@ -65,7 +65,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 156
-    messageTemplate: 'A shape closes every ring. Slip through a gap, or break its gold core and it all comes apart.'
+    messageTemplate: 'The rings stand far apart and every crossing ends in a hairpin. Cloak past a ring to wall the pilot behind you.'
     tintWithDomainColor: 0
     useDomainColoredNames: 0
     alpha: 1
