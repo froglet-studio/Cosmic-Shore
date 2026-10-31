@@ -185,6 +185,9 @@ namespace CosmicShore.Editor
                 "finish the Meerkat wormhole circuit; the controller lays target/laps rings, so " +
                 "this is also the size of the circuit. Default " +
                 EndConditionOverridesSO.DefaultBurrowRunGateTarget + ".\n" +
+                "  • Waystation Prototype: CLUSTERS in the race; a Drop Tower stands in every gap but the last, and " +
+                "the finish line is every ring the course lays. Default " +
+                EndConditionOverridesSO.DefaultWaystationPrototypeClusterTarget + ".\n" +
                 "  • Regatta: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the mixed-fleet rail circuit. The arena lays eight rings a lap with the " +
                 "rails threaded through them, so this must be a multiple of eight. Default " +
@@ -250,6 +253,7 @@ namespace CosmicShore.Editor
             int tht = Mathf.Max(0, EditorGUILayout.IntField("Thresher Time - Gate Target (laps x rings)", _config.thresherTimeGateTarget));
             int wrr = Mathf.Max(0, EditorGUILayout.IntField("Wrasse Run - Gate Target (laps x rings)", _config.wrasseRunGateTarget));
             int brr = Mathf.Max(0, EditorGUILayout.IntField("Burrow Run - Gate Target (laps x rings)", _config.burrowRunGateTarget));
+            int wsp = Mathf.Max(0, EditorGUILayout.IntField("Waystation Prototype - Clusters", _config.waystationPrototypeClusterTarget));
             int rg  = Mathf.Max(0, EditorGUILayout.IntField("Regatta - Gate Target (laps x 8 rings)", _config.regattaGateTarget));
             int wb  = Mathf.Max(0, EditorGUILayout.IntField("Wrecking Ball - Prism Target", _config.wreckingBallPrismTarget));
             int ut  = Mathf.Max(0, EditorGUILayout.IntField("Undertow - Point Target", _config.undertowPointTarget));
@@ -293,6 +297,7 @@ namespace CosmicShore.Editor
                     _config.thresherTimeGateTarget = tht;
                     _config.wrasseRunGateTarget = wrr;
                     _config.burrowRunGateTarget = brr;
+                    _config.waystationPrototypeClusterTarget = wsp;
                     _config.regattaGateTarget = rg;
                     _config.wreckingBallPrismTarget = wb;
                     _config.undertowPointTarget = ut;
@@ -343,6 +348,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Thresher Time", tht > 0 ? tht.ToString() : EndConditionOverridesSO.DefaultThresherTimeGateTarget + " (default)");
             EditorGUILayout.LabelField("Wrasse Run", wrr > 0 ? wrr.ToString() : EndConditionOverridesSO.DefaultWrasseRunGateTarget + " (default)");
             EditorGUILayout.LabelField("Burrow Run", brr > 0 ? brr.ToString() : EndConditionOverridesSO.DefaultBurrowRunGateTarget + " (default)");
+            EditorGUILayout.LabelField("Waystation Prototype (clusters)", wsp > 0 ? wsp.ToString() : EndConditionOverridesSO.DefaultWaystationPrototypeClusterTarget + " (default)");
             EditorGUILayout.LabelField("Regatta", rg > 0 ? rg.ToString() : EndConditionOverridesSO.DefaultRegattaGateTarget + " (default)");
             EditorGUILayout.LabelField("Wrecking Ball", wb > 0 ? wb.ToString() : EndConditionOverridesSO.DefaultWreckingBallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Undertow", ut > 0 ? ut.ToString() : EndConditionOverridesSO.DefaultUndertowPointTarget + " (default)");
@@ -411,6 +417,7 @@ namespace CosmicShore.Editor
                    "Thresher Time: " + Fmt(_config.thresherTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultThresherTimeGateTarget) + "\n" +
                    "Wrasse Run: " + Fmt(_config.wrasseRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultWrasseRunGateTarget) + "\n" +
                    "Burrow Run: " + Fmt(_config.burrowRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultBurrowRunGateTarget) + "\n" +
+                   "Waystation Prototype (clusters): " + Fmt(_config.waystationPrototypeClusterTargetBuild, "default " + EndConditionOverridesSO.DefaultWaystationPrototypeClusterTarget) + "\n" +
                    "Regatta: " + Fmt(_config.regattaGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRegattaGateTarget) + "\n" +
                    "Wrecking Ball: " + Fmt(_config.wreckingBallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultWreckingBallPrismTarget) + "\n" +
                    "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget) + "\n" +

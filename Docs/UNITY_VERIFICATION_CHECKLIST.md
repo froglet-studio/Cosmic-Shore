@@ -19178,3 +19178,48 @@ move), `ThresherExecutor.CarryRig`, `ThresherChainSolver.Carry` / `LaunchExitMul
     leaves exactly along the crosshair and keeps flying at what it showed: no curve onto the line, no swing of the hull
     after leaving, and the camera stays behind you as you leave instead of watching you shoot off and then catching up.
 16. A plain release (no crosshair) still eases its spin to a stop (unchanged).
+
+## Waystation Prototype (76): the Tiger Moth's Drop Tower race beside Waystation (`claude/adoring-babbage-4jjppj`, 2026-10-31) - NOT EDITOR-VERIFIED
+
+A new mode; Waystation (58) is unchanged (Shombith: "don't change Waystation ... if Garrett approves then we replace").
+Authored in a cloud session with no Unity editor, so `/verify-unity` did not run. What did run:
+- `waystation_prototype_course.py --check` passes every check over 200 seeds × 4 intensities, and `--self-test`
+  watches each of its six negative controls fail.
+- `--compile` built and ran the shipped `WaystationTower.cs` (2267 gates, worst disagreement 0.0013 u; tile and danger
+  counts equal).
+- `author_waystation_prototype_assets.py --check` passes, with a watched negative control.
+- The `/arcadegame` §4 gates pass. `author_card_backgrounds --strict` fails only on the orphaned `Tandava.png`, which
+  bleeding-edge fails on too.
+
+Docs: `Assets/_Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYPE.md`, `Docs/Studios/TIGER_MOTH_TIME.md`.
+
+1. **Compile.** Open the project and let it compile. **Pass:** no errors in `WaystationTower.cs`,
+   `WaystationPrototypeCourseSource.cs`, `WaystationPrototypeController.cs`, `EndConditionOverridesSO.cs`,
+   `EndConditionOverridesWindow.cs` or `MiniGameHUD.cs`.
+2. **Edit-mode tests.** Run `WaystationTowerTests`, `EnumIntegrityTests` (67 members, `WaystationPrototype` = 76),
+   `RaceCourseSourceTests` and `WaystationCourseTests`. **Pass:** all green.
+3. **Open and save the scene.** Open `MinigameWaystationPrototype.unity` and save it, so the Editor mints its own ids
+   (it is a byte clone of Waystation's). Then commit the scene, and re-run
+   `python3 Tools/Build/author_waystation_prototype_assets.py --check`. **Pass:** OK. The controller shows Wall Prefab =
+   SpawnablePrism and Ai Fold Min Distance = 700.
+4. **Fly it at I1.** Arcade grid, Waystation Prototype, I1, with 2 Tiger Moth AIs.
+   - **Pass:** the clusters are Waystation's. Between clusters stand towers: square plates of tiles, mostly blue
+     (plain) with a few danger tiles, and each tower ring just under a plate. The last gap has no tower.
+   - Fly over a tower ring and tap LT. **Pass:** you fall through the plate, the ring counts, and you land flying
+     down the fall line.
+5. **Hold edges.** Tap too short (land on the plate), then hold too long (meet the pipe before the Drop is back).
+   **Pass:** a plain tile bursts and slows you for about a second. A danger tile stops you for about 3 s and burns your
+   elements, which is the vessel's own rule. Nothing else happens.
+6. **Regrowth.** Watch a hole you punched. **Pass:** it grows back one tile at a time, about 1.5 s apart.
+7. **The long last gap.** Drop the whole gap. **Pass:** the drop leaves the neutral wormhole pair, as in Waystation.
+8. **AI.** Watch the AIs.
+   - **Pass:** on a tower they fly over each ring, roll, tap and thread it. On the clusters and the long gap they fly
+     as in Waystation.
+   - **Note** any tower where an AI circles or crashes into the pipe; the seed is printed by the course logs.
+9. **Ladder.** Repeat at I4. **Pass:**
+   - the windows feel tighter;
+   - there are more danger tiles (about half);
+   - some sideways hops need a 90 degree roll first (rings abeam).
+10. **Two players.** One host, one client. **Pass:** both see the same plates with the same danger tiles, and a hole
+    the host punched is a hole on the client.
+11. **Waystation itself.** Fly Waystation (58) once. **Pass:** unchanged from bleeding-edge.
