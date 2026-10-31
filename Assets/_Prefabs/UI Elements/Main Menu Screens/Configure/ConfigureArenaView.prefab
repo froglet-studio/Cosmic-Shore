@@ -61,6 +61,15 @@ MonoBehaviour:
   fadeSeconds: 0.35
   fullOffsetMin: {x: 0, y: 0}
   fullOffsetMax: {x: 0, y: -84}
+  extendAsTray: 1
+  trayExtend: 700
+  rightSide:
+  - {fileID: 253373852854348913}
+  - {fileID: 519163268376081946}
+  - {fileID: 127824421134465493}
+  - {fileID: 491423725564152744}
+  followTray:
+  - {fileID: 324518534050767857}
 --- !u!114 &759785310634793265
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -376,6 +385,7 @@ MonoBehaviour:
   focusHint: {fileID: 819868265453055768}
   renderHeight: 360
   maxRenderHeight: 720
+  textureWidthScale: 1.63636
   doubleTapToFocus: 1
   doubleTapSeconds: 0.4
   guideTarget: {fileID: 319114659214574448}
@@ -12512,6 +12522,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 456494912019943762}
+  - component: {fileID: 127824421134465493}
   m_Layer: 5
   m_Name: Status
   m_TagString: Untagged
@@ -12540,6 +12551,18 @@ RectTransform:
   m_AnchoredPosition: {x: 1180, y: -940}
   m_SizeDelta: {x: 680, y: 24}
   m_Pivot: {x: 0, y: 1}
+--- !u!225 &127824421134465493
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 254802916240894626}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &538770486562553016
 GameObject:
   m_ObjectHideFlags: 0

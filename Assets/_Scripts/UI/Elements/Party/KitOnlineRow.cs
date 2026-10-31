@@ -34,11 +34,41 @@ namespace CosmicShore.UI
         [SerializeField] private CanvasGroup joinGroup;
         [SerializeField] private CanvasGroup cancelGroup;
 
+        [Header("One verb (Rev 40 E, Docs/MENU_REDESIGN_B.md section 107)")]
+        [Tooltip("Show at most ONE button: Cancel while our invite is out, else Join / Spectate, else Invite. The " +
+                 "three share one fixed slot, so a row can never draw two buttons over each other (2026-10-31: " +
+                 "INVITE and SPECTATE overlapped). The pending invite shows Cancel, not a dimmed Invited.")]
+        [SerializeField] private bool oneVerbPerRow;
+
+        bool _wantInvite, _wantJoin, _wantCancel;
+
         protected override void SetPartShown(Component part, bool shown)
         {
-            if (part == InviteButton) KitVisibility.SetShown(inviteGroup, shown);
-            else if (part == JoinButton) KitVisibility.SetShown(joinGroup, shown);
-            else if (part == CancelButton) KitVisibility.SetShown(cancelGroup, shown);
+            if (part == InviteButton) _wantInvite = shown;
+            else if (part == JoinButton) _wantJoin = shown;
+            else if (part == CancelButton) _wantCancel = shown;
+            else return;
+            ApplyParts();
+        }
+
+        void ApplyParts()
+        {
+            var (invite, join, cancel) = VisibleParts(oneVerbPerRow, _wantInvite, _wantJoin, _wantCancel);
+            KitVisibility.SetShown(inviteGroup, invite);
+            KitVisibility.SetShown(joinGroup, join);
+            KitVisibility.SetShown(cancelGroup, cancel);
+        }
+
+        /// <summary>
+        /// Which buttons show, from the ones the row asked for. With one verb a row shows a single button: Cancel wins,
+        /// then Join / Spectate, then Invite. Pure, so it is tested without a row.
+        /// </summary>
+        internal static (bool invite, bool join, bool cancel) VisibleParts(bool oneVerb, bool invite, bool join, bool cancel)
+        {
+            if (!oneVerb) return (invite, join, cancel);
+            if (cancel) return (false, false, true);
+            if (join) return (false, true, false);
+            return (invite, false, false);
         }
 
         protected override void DrawLabel(Status status, bool pending, string text, Color color)
@@ -68,9 +98,11 @@ namespace CosmicShore.UI
 
         protected override void OnInvitePendingChanged(bool pending)
         {
-            if (pending && InviteButton)
+            // With one verb the pending row shows only its Cancel (ApplyParts); otherwise the Invite stays, dimmed.
+            if (pending && InviteButton && !oneVerbPerRow)
             {
-                KitVisibility.SetShown(inviteGroup, true);
+                _wantInvite = true;
+                ApplyParts();
                 InviteButton.interactable = false;
             }
             if (inviteLabel) inviteLabel.SetText(pending ? invitedWord : inviteWord);

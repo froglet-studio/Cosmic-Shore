@@ -267,6 +267,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void OnlinePlayer_StillBooting_IsNotListed_UntilTheirLavaLampIsUp()
+        {
+            var data = NewData();
+            var lobby = new RosterLobby { Active = RosterSession.Create(out var roster) };
+            roster.Players.Add(Player("p2", ready: false));
+            var hcs = NewService(data, new RosterParty(), lobby);
+
+            Call(hcs, "RefreshOnlinePlayersDiff", true);
+            Assert.AreEqual(0, data.OnlinePlayers.Count, "signed into the presence lobby but still booting: not online yet");
+
+            roster.Players.Clear();
+            roster.Players.Add(Player("p2"));
+            Call(hcs, "RefreshOnlinePlayersDiff", false);
+            Assert.AreEqual(1, data.OnlinePlayers.Count, "listed the read their ready flag arrives in");
+        }
+
+        [Test]
+        public void IsListedOnline_NeedsTheReadyFlag()
+        {
+            Assert.IsTrue(HostConnectionService.IsListedOnline(Player("p2")));
+            Assert.IsFalse(HostConnectionService.IsListedOnline(Player("p2", ready: false)), "an older build or a booting player");
+            Assert.IsFalse(HostConnectionService.IsListedOnline(null));
+        }
+
+        [Test]
         public void OutgoingInvite_OutlivesOneShortRead_AndClearsWithTheRemoval()
         {
             var data = NewData();
@@ -319,13 +344,16 @@ namespace CosmicShore.Tests
             return hcs;
         }
 
-        static IReadOnlyPlayer Player(string id, bool spectator = false)
+        /// <param name="ready">Whether the player's lava lamp is up (HostConnectionService.READY_KEY); a booting player is not.</param>
+        static IReadOnlyPlayer Player(string id, bool spectator = false, bool ready = true)
         {
             var proxy = DispatchProxy.Create<IReadOnlyPlayer, RosterPlayer>();
             var p = (RosterPlayer)(object)proxy;
             p.IdValue = id;
             if (spectator)
                 p.PropertiesValue[PartySessionService.SPECTATOR_KEY] = new PlayerProperty("1", VisibilityPropertyOptions.Public);
+            if (ready)
+                p.PropertiesValue[HostConnectionService.READY_KEY] = new PlayerProperty("1", VisibilityPropertyOptions.Public);
             return proxy;
         }
 
