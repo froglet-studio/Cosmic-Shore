@@ -62,6 +62,7 @@ namespace CosmicShore.UI
         bool _flying, _wantFull, _captured;
         Vector2 _amin, _amax, _omin, _omax;
         Vector2[] _followBase;
+        bool _trayOut;      // the right side has been faded by the tray and is not fully back yet
 
         void OnEnable()
         {
@@ -146,12 +147,18 @@ namespace CosmicShore.UI
                 chrome.interactable = !_flying;                  // the pad belongs to the vessel while flying
                 chrome.blocksRaycasts = true;
             }
-            foreach (var group in rightSide)
+            // The right side is touched only while the tray is out or closing: at rest its groups belong to their own
+            // entrances (KitEntrance fades them in when the window opens), which a write of alpha 1 here would cut short.
+            if (f > 0f || _trayOut)
             {
-                if (!group) continue;
-                group.alpha = 1f - f;
-                group.interactable = f < 0.5f && !_flying;
-                group.blocksRaycasts = f < 0.5f;
+                foreach (var group in rightSide)
+                {
+                    if (!group) continue;
+                    group.alpha = 1f - f;
+                    group.interactable = f < 0.5f;
+                    group.blocksRaycasts = f < 0.5f;
+                }
+                _trayOut = f > 0f;
             }
             if (previewRect && _captured)
                 previewRect.offsetMax = new Vector2(_omax.x + trayExtend * f, _omax.y);
