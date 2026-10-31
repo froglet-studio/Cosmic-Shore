@@ -9,7 +9,8 @@ loss (entry minus lowest), so a tuning session sees where the damage happens. Do
 Lines written since the cell-aware pace and plate eating also carry: time inside/outside cells and the Ark's mean
 speed, kills on the Ark against elsewhere, plates lost per world (shielded / super), each seat's share of samples
 within 300 u and 900 u of the Ark, per-seat round stats, and the named overrides (-arkEscortParams) the run applied.
-Older lines lack those fields; their columns print blank.
+Pacification (escort.pacifyShare): per world, the share of runs in which the squad pacified it and how long after the
+Ark entered. Older lines lack those fields; their columns print blank.
 """
 import argparse, collections, json, statistics, sys
 
@@ -82,6 +83,26 @@ def main():
             v = [l["PlatesLost"] for r in rs for l in r["LegReports"] if l["Name"] == n and l["Reached"] and "PlatesLost" in l]
             per.append(fmt(mean(v), ".1f", 10))
         print(f"{d:>2} " + " ".join(cols) + "                          " + "  ".join(per))
+
+    # ── Pacification per world: share of runs pacified (mean seconds after entry; 'a' = some pacified ahead) ──
+    if any("PacifiedLegs" in r for r in runs):
+        print()
+        print(f"{'d':>2} {'pacified':>8}   per world: " + "  ".join(n[:10].rjust(10) for n in names))
+        for d in sorted(by):
+            rs = by[d]
+            tot = mean([r.get("PacifiedLegs", 0) for r in rs if "PacifiedLegs" in r])
+            per = []
+            for n in names:
+                ls = [l for r in rs for l in r["LegReports"] if l["Name"] == n and "Pacified" in l]
+                if not ls:
+                    per.append(" " * 10)
+                    continue
+                share = sum(1 for l in ls if l["Pacified"]) / len(ls)
+                after = [l["PacifiedAt"] - l["EnteredAt"] for l in ls if l["Pacified"] and l.get("EnteredAt", 0) > 0]
+                ahead = any(l.get("PacifiedAhead") for l in ls if l["Pacified"])
+                cell = f"{share:.0%}" + (f" {mean(after):.0f}s" if after else "") + (" a" if ahead else "")
+                per.append(cell.rjust(10))
+            print(f"{d:>2} {fmt(tot, '.1f', 8)}              " + "  ".join(per))
 
     # ── Escort proximity and round stats per seat ──
     seat_rows = collections.defaultdict(lambda: collections.defaultdict(list))

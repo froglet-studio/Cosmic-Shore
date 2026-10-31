@@ -117,6 +117,18 @@ namespace CosmicShore.Gameplay
             public List<SeatStats> SeatStats = new();
             public string ControllerAtExit;
             public List<TeamVolume> Territory = new();
+
+            /// <summary>The squad pacified this world (its share of the control volume reached the escort's pacifyShare).</summary>
+            public bool Pacified;
+            /// <summary>When (Time.time, like EnteredAt; -1 never), and the squad's share then.</summary>
+            public float PacifiedAt = -1f;
+            public float PacifyShare;
+            /// <summary>Pacified before the Ark entered this world (a cultivator raced ahead).</summary>
+            public bool PacifiedAhead;
+            /// <summary>The squad's share of this world's control volume at the leg's close.</summary>
+            public float SquadShareAtExit;
+            /// <summary>Live fauna re-coloured into the squad's domain at pacification.</summary>
+            public int FaunaTurned;
         }
 
         [System.Serializable]
@@ -160,6 +172,9 @@ namespace CosmicShore.Gameplay
         public float MeanArkSpeed;
         /// <summary>The breach line the tier sailed with (0 = only the true fall).</summary>
         public float BreachHull;
+        /// <summary>The share of a world's control volume that pacifies it (0 = off), and how many worlds were pacified.</summary>
+        public float PacifyShare;
+        public int PacifiedLegs;
         public List<SeatStats> RunSeats = new();
         public List<Param> Params = new();
         /// <summary>Every override key pattern this build accepts (<see cref="ArkEscortParams"/>).</summary>

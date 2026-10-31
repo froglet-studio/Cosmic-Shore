@@ -196,6 +196,21 @@ waived (a cracked plate is consumed through the normal implosion, and the Ark's 
 Side effect, accepted: armoured mass counts as an intruder for a pen's containment Frenzy in those worlds. This is an
 exception, not a precedent: the next one needs its own sign-off.
 
+### 0.y Granted carve-out: a pacified escort world spares its controller's own mass (2026-10-31)
+
+Asked for by Garrett (via the voyage coordinator): a squad that takes a world's territory pacifies it, and its fauna then
+help protect the Ark. Mechanism, all existing platform except one diet clause: when the squad holds
+`ArkEscortSO.pacifyShare` (default 0.6) of a world's CONTROL volume, `ArkEscortRun.TryPacify` calls
+`Cell.SetModeControlOverride(squad)` (the sanctioned controller re-colour: the live swarm takes the squad's colour, nothing
+dies, every later creature spawns in it) and sets `Cell.SparedDomain = squad`: in that cell, fauna of that domain do not
+graze that domain's mass anywhere, the nucleus exterior included (`Cell.SparesOwnMass`, read by
+`Cell.IsPreyForHerbivore` and the Boid forager's diet). That clause is the exception: it overrides "the nucleus exterior is
+voraciously edible regardless of domain" in pacified escort worlds only. Fence: one setter call site
+(`ArkEscortRun.TryPacify`, escort worlds, server only); it names a domain, not the Ark (no Ark weighting, no asymmetry: the
+cell still has one fauna colour, its controller's); mass is conserved and no creature is culled (a pacified world whose
+remaining food is its own domain's mass starves its fauna down through the ordinary starvation clock). An exception, not a
+precedent.
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count

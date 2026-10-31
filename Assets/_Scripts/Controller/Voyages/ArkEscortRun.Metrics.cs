@@ -57,14 +57,18 @@ namespace CosmicShore.Gameplay
             _escortCopy = null;
             _escort = _escortAsset ? _escortAsset : _escort;
             _pendingEcho = null;
+            _paramTarget = null;
             var pending = ArkEscortParams.Pending;
             if (pending is not { Count: > 0 } || !_escort) return;
             _escortCopy = Instantiate(_escort);
             _escortCopy.name = _escort.name + " (runtime)";
             _escort = _escortCopy;
-            _pendingEcho = ArkEscortParams.Apply(new ArkEscortParams.Target { Escort = _escortCopy, Difficulty = difficulty },
-                pending);
+            _paramTarget = new ArkEscortParams.Target { Escort = _escortCopy, Difficulty = difficulty };
+            _pendingEcho = ArkEscortParams.Apply(_paramTarget, pending);
         }
+
+        // The overrides this run sailed with (null without any): their fauna half reaches each world in PrepareCellMetrics.
+        ArkEscortParams.Target _paramTarget;
 
         List<ArkEscortReport.Param> _pendingEcho;
 
@@ -90,6 +94,7 @@ namespace CosmicShore.Gameplay
             _speedSamples = 0;
             _cellOfLeg = new Cell[_escort.Legs.Count];
             _report.BreachHull = tier.BreachHull;
+            _report.PacifyShare = _escort.PacifyShare;
             _report.ParamKeys = ArkEscortParams.KeyPatterns();
             if (_pendingEcho != null) _report.Params = _pendingEcho;
             _pendingEcho = null;
@@ -106,6 +111,17 @@ namespace CosmicShore.Gameplay
         {
             cell.ArmourIsFood = _escort.PlatesAreFood;
             if (leg >= 0 && leg < _cellOfLeg.Length) _cellOfLeg[leg] = cell;
+
+            // A run's fauna overrides (fauna.* keys): per-species values ride the cell to each creature it registers;
+            // per-world scales compose onto the tier's population (production gating only, nothing is culled).
+            var t = _paramTarget;
+            if (t == null) return;
+            if (t.Fauna is { HasAny: true }) cell.RuntimeFaunaTuning = t.Fauna;
+            int world = leg + 1;
+            cell.RuntimePopulationScale *= t.WorldValue(world, "populationScale", 1f);
+            cell.RuntimeFaunaFloorScale = t.WorldValue(world, "floorScale", 1f);
+            cell.RuntimeFaunaCapScale = t.WorldValue(world, "capScale", 1f);
+            if (leg >= 0 && leg < _report.LegReports.Count) _report.LegReports[leg].Population = cell.RuntimePopulationScale;
         }
 
         void HookArk()
@@ -219,6 +235,8 @@ namespace CosmicShore.Gameplay
                 r.SuperAtExit = super;
             }
             r.MeanSpeed = r.SpeedSamples > 0 ? r.SpeedSum / r.SpeedSamples : 0f;
+            var exitCell = leg >= 0 && leg < _cellOfLeg.Length ? _cellOfLeg[leg] : null;
+            if (exitCell) r.SquadShareAtExit = SquadShare(exitCell, SquadDomain);
 
             // Per-seat round stats over the leg.
             foreach (var kv in _seatNames)
@@ -259,6 +277,8 @@ namespace CosmicShore.Gameplay
                 foreach (var f in _threatPrune) _threatSeen.Remove(f);
                 _threatPrune.Clear();
             }
+
+            TryPacify();
 
             // Inside a cell or in the open, and the Ark's speed.
             if (ark.InsideCell) { r.InsideSeconds += SampleSeconds; _report.InsideSeconds += SampleSeconds; }
@@ -303,11 +323,84 @@ namespace CosmicShore.Gameplay
                 Fill(SeatStatsFor(_report.RunSeats, kv.Value.seat, kv.Value.vessel, kv.Key), now, start);
             }
             foreach (var cell in _cellOfLeg)
-                if (cell) cell.ArmourIsFood = false;
+                if (cell)
+                {
+                    cell.ArmourIsFood = false;
+                    // The tuning stays on a cell its creatures still read; only the scales go back for the next run.
+                    cell.RuntimeFaunaFloorScale = 1f;
+                    cell.RuntimeFaunaCapScale = 1f;
+                }
             _cellOfLeg = System.Array.Empty<Cell>();
             UnhookMetrics();
             _threatSeen.Clear();
             _seatOf.Clear();
+        }
+
+        // ── Pacification ─────────────────────────────────────────────────────
+
+        Domains SquadDomain => Ark ? Ark.Domain : VoyageRun.LiveDomain(_context);
+
+        /// <summary>The squad's share of a world's CONTROL volume (what decides who holds it), 0 when it holds nothing.</summary>
+        static float SquadShare(Cell cell, Domains squad)
+        {
+            float mine = 0f, total = 0f;
+            foreach (Domains d in System.Enum.GetValues(typeof(Domains)))
+            {
+                float v = cell.GetControlVolume(d);
+                total += v;
+                if (d == squad) mine = v;
+            }
+            return total > 0f ? mine / total : 0f;
+        }
+
+        /// <summary>
+        /// Every standing escort world the squad now holds past the escort's pacifyShare is PACIFIED, once: its control is
+        /// pinned to the squad (<see cref="Cell.SetModeControlOverride"/>: the live swarm is re-coloured, never killed, and
+        /// every later creature spawns in the squad's domain), its fauna stop grazing the squad's mass
+        /// (<see cref="Cell.SparedDomain"/>) and stop gnawing armour. Checked on the run's 1 Hz sample, for worlds ahead of
+        /// the Ark too: a cultivator that races ahead to the next nucleus pacifies it before the Ark arrives. Server only
+        /// (the pin replicates through the cell's own sync).
+        /// </summary>
+        void TryPacify()
+        {
+            float line = _escort ? _escort.PacifyShare : 0f;
+            if (line <= 0f || _report == null) return;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm != null && nm.IsListening && !nm.IsServer) return;
+            var squad = SquadDomain;
+            for (int leg = 0; leg < _cellOfLeg.Length; leg++)
+            {
+                var cell = _cellOfLeg[leg];
+                if (!cell || leg >= _report.LegReports.Count) continue;
+                var r = _report.LegReports[leg];
+                if (r.Pacified) continue;
+                float share = SquadShare(cell, squad);
+                if (share < line) continue;
+
+                int before = HostileCount(cell, squad);
+                cell.SparedDomain = squad;
+                cell.ArmourIsFood = false;
+                cell.SetModeControlOverride(squad);
+                int turned = before - HostileCount(cell, squad);   // a creature that refuses a re-colour stays hostile
+
+                r.Pacified = true;
+                r.PacifiedAt = Time.time;
+                r.PacifyShare = share;
+                r.PacifiedAhead = r.EnteredAt <= 0f || leg > _leg;
+                r.FaunaTurned = turned;
+                _report.PacifiedLegs++;
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[ArkEscort] {r.Name} pacified at {share:P0} of its control volume ({turned} creatures turned).");
+            }
+        }
+
+        static int HostileCount(Cell cell, Domains squad)
+        {
+            int n = 0;
+            var fauna = cell.LiveFauna;
+            for (int i = 0; i < fauna.Count; i++)
+                if (fauna[i] && fauna[i].Domain != squad) n++;
+            return n;
         }
 
         // ── Plumbing ─────────────────────────────────────────────────────────

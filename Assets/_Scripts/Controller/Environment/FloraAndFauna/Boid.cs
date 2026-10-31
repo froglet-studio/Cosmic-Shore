@@ -718,6 +718,8 @@ namespace CosmicShore.Gameplay
             if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null) return false;
             if (cell == null) return true;
+            // A pacified world's fauna leave their own domain's mass alone (Cell.SparedDomain).
+            if (cell.SparesOwnMass(domain, prism.Domain)) return false;
             // Band + cell pen: mass outside this creature's own annulus is unreachable, so it
             // is not food (Fauna.IsInsideBand). A forager's diet is otherwise any-domain, so
             // it does not go through IsPreyForMe's domain leg.
@@ -845,8 +847,17 @@ namespace CosmicShore.Gameplay
 
         protected override bool CanBeLeashed => forager && base.CanBeLeashed;
 
-        protected override float ArmourBite(bool superShielded) =>
+        protected override float AuthoredArmourBite(bool superShielded) =>
             forager ? (superShielded ? superShieldBite : shieldBite) : 0f;
+
+        protected override void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            base.ApplyRuntimeTuning(tuning, species);
+            if (tuning.TryGet(species, "minSpeed", out float v)) minSpeed = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "maxSpeed", out v)) maxSpeed = Mathf.Max(minSpeed, v);
+            if (tuning.TryGet(species, "huntSpeed", out v)) huntSpeedMultiplier = Mathf.Max(1f, v);
+            if (tuning.TryGet(species, "feedingClusterRadius", out v)) feedingClusterRadius = Mathf.Max(0f, v);
+        }
 
         public override bool LeashCanEat(Prism prism) => IsEdibleForForager(prism);
 
