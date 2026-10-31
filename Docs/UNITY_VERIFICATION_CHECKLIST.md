@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler Charge card: Erase / Lock-on drawn as "the spend" (`claude/angler-icons`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** the Charge card is five kit parts under its icon in `AnglerHUDVariant.prefab` (school, wake, hunter,
+rival, lock ring; `Angler_Lock*` under `AbilityIcons/Angler/Parts/`), the container's old `Angler_Command` sprite
+cleared. `AnglerHUDView.SetLockOnColor` / `SetLockOn`, driven by `AnglerHUDController` from `HunterCount` and the
+pilot's domain colour. No Unity and no .NET in the session: not compiled.
+
+- [ ] Compiles; `AnglerHUDVariant.prefab` opens with no missing references and the view's five `lock*Icon` fields wired.
+- [ ] Fly the Angler (Toybox Vessel Changer): the Charge card shows three QuadFish in your colour and a dim danger dart.
+- [ ] Hold LT onto a rival: the third creature turns white, a short white wake and a white ring round the rival appear,
+  the rival goes full danger, and the plate fills a third per hunter (lime while LT is held).
+- [ ] When every hunter is gone (its prey died or left): the card returns to three creatures in your colour.
+- [ ] Gold / Ruby pilots: the school takes the domain colour; the rival stays danger.
+
 ### 🔴 Serpent Lockdown seals closed holes (not on crystals); Seed Wall and omni cards from the wall's real geometry (`claude/serpent-icons`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** `SerpentWallAssembler`: Lockdown (Mass 5) now lays the same danger panels in the same places, but as

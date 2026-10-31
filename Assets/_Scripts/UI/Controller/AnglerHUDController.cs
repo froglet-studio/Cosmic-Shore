@@ -1,4 +1,6 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -22,6 +24,9 @@ namespace CosmicShore.UI
         [Tooltip("How fast the Lure card eases on and off (1/s).")]
         [SerializeField, Min(0f)] float lureEaseRate = 6f;
 
+        [Inject] GameDataSO _gameData;
+
+        IVesselStatus _status;
         bool _isLocalPilotHud;
         float _lure01;
         int _seeds;
@@ -29,6 +34,7 @@ namespace CosmicShore.UI
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
+            _status = vesselStatus;
 
             if (!view) view = GetComponentInChildren<AnglerHUDView>(true);
 
@@ -45,6 +51,8 @@ namespace CosmicShore.UI
             if (!_isLocalPilotHud || !view || !angler) return;
             float school = Mathf.Max(1, angler.TamedCount);
             view.SetCharge(Mathf.Clamp01(angler.HunterCount / 3f), angler.Erasing);   // spent hunters out (3+ = full)
+            view.SetLockOnColor(ResolveDomainSignalColor());
+            view.SetLockOn(angler.HunterCount > 0);
             _lure01 = Mathf.MoveTowards(_lure01, angler.Luring ? 1f : 0f, lureEaseRate * Time.unscaledDeltaTime);
             view.SetMass(Mathf.Max(angler.StrongestTame01, _lure01 * 0.15f), angler.Luring);
             view.SetFaunaCount(angler.TamedCount);
@@ -53,6 +61,15 @@ namespace CosmicShore.UI
             if (angler.FloraSeedCount > _seeds) view.PlayOmniCrystalCollected();   // a crystal just left a seed
             _seeds = angler.FloraSeedCount;
             view.SetTime(angler.DashReady ? 1f : 0f, angler.DashReady);
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Serpent's and the
+        /// Rhino's cards read it; alpha 0 until the palette resolves, so the view keeps the colour it has.</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return new Color(0f, 0f, 0f, 0f);
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
     }
 }
