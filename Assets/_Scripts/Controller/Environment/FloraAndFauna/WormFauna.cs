@@ -426,9 +426,13 @@ namespace CosmicShore.Gameplay
 
         void SetState(AttackState state)
         {
+            if (state == AttackState.Lunge && _state != AttackState.Lunge) Lunges++;
             _state = state;
             _stateSince = Time.time;
         }
+
+        /// <summary>Sim telemetry: lunges at vessels this session, every colony (read by the Ark escort's metrics).</summary>
+        public static int Lunges;
 
         void UpdateAttackState()
         {

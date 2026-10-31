@@ -99,6 +99,13 @@ namespace CosmicShore.ScriptableObjects
                                  "plates are real food and the hull can truly fall. Off: armour is never food (the old rule).")]
         bool platesAreFood = true;
 
+        [SerializeField, Range(0f, 1f), Tooltip("STAGED RELEASE: a world whose spawn profile starts its fauna at release " +
+                                                "tier 0 (The Boneyard's escort profiles: the first scavenger wave) opens tier 1 " +
+                                                "(the second wave) once the Ark is inside the world and within this share of the " +
+                                                "membrane radius from its centre. Production gating only, nothing is culled. " +
+                                                "0 = never (a world's tier stays where its profile put it).")]
+        float secondWaveAt = 0.6f;
+
         [SerializeField, Range(0f, 1f), Tooltip("A world is PACIFIED once the squad holds this share of its control volume " +
                                                 "(the nucleus claim, or the whole cell without a nucleus): its control is pinned " +
                                                 "to the squad, its live fauna re-coloured into the squad's domain, and its fauna " +
@@ -140,6 +147,7 @@ namespace CosmicShore.ScriptableObjects
         public float CellSpacing { get => cellSpacing; set => cellSpacing = Mathf.Max(0f, value); }
         public bool PlatesAreFood { get => platesAreFood; set => platesAreFood = value; }
         public float PacifyShare { get => pacifyShare; set => pacifyShare = Mathf.Clamp01(value); }
+        public float SecondWaveAt { get => secondWaveAt; set => secondWaveAt = Mathf.Clamp01(value); }
         public string OverrunLine => overrunLine;
         public float MaxPopulation { get => maxPopulation; set => maxPopulation = Mathf.Max(0.1f, value); }
         public string VoyageName => voyageName;

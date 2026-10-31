@@ -22,7 +22,6 @@ MonoBehaviour:
   ReproductionCooldownSeconds: 20
   MaxLivePopulation: 8
   ReleaseTier: 0
-  SpeciesDataOverride: {fileID: 11400000, guid: 30e9a3b8e3ba4c49b509cb933c62fcc8, type: 2}
   BandInnerRadius: 0
   BandOuterRadius: 0
   CenterFocusBias: 0

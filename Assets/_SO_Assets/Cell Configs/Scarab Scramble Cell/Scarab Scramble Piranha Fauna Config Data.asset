@@ -21,9 +21,6 @@ MonoBehaviour:
   ReproductionCooldownSeconds: 4
   MaxLivePopulation: 22
   ReleaseTier: 0
-  PlateLatchSeconds: 8
-  PlateLatchFlingSpeed: 90
-  PlateLatchScareRadius: 60
   BandInnerRadius: 0
   BandOuterRadius: 0
   CenterFocusBias: 0.35

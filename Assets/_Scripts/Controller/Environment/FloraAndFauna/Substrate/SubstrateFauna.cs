@@ -483,8 +483,44 @@ namespace CosmicShore.Gameplay
                 return;
             }
             var victim = _host?.VesselById(e.Other);
-            if (victim != null) fx.ApplyContact(victim, domain, e.Value);
+            if (victim != null) { fx.ApplyContact(victim, domain, e.Value); return; }
+
+            // A rider on the ARK (a cling-only hull, SubstrateCellHost.ArkById) sips a plate: the hull prism nearest the
+            // rider takes one creature bite through Fauna.BiteMass - plain plates are eaten, armoured ones gnawed at the
+            // sip's weight (AuthoredArmourBite) where the cell lets armour be food. The suction sinks to the rider's seat.
+            var ark = _host?.ArkById(e.Other);
+            if (!ark || !IsSimAuthority) return;
+            var core = _host.Core;
+            if (e.Index < 0 || e.Index >= core.Pos.Length) return;
+            var sp = core.Pos[e.Index];
+            Vector3 seat = _host.Centre + new Vector3(sp.X, sp.Y, sp.Z);
+            ark.GetLiveHullPrisms(seat, s_sipPlates);
+            if (s_sipPlates.Count == 0) return;
+            var plate = s_sipPlates[0];
+            if ((plate.transform.position - seat).sqrMagnitude > ArkSipReach * ArkSipReach) return;
+            if (!_sipMouth)
+            {
+                var go = new GameObject("SipMouth");
+                go.transform.SetParent(transform, false);
+                _sipMouth = go.transform;
+            }
+            _sipMouth.position = seat;
+            var result = BiteMass(plate, _sipMouth, domain, species.SpeciesName, IsShieldedMass(plate));
+            if (result != BiteResult.None) ArkSips++;
         }
+
+        /// <summary>A rider's bite on the Ark: the sip's weight in armour points (the leech's SipWeight; 0 for a species
+        /// that never clings, which never sips anything).</summary>
+        protected override float AuthoredArmourBite(bool superShielded) =>
+            species && species.Species.ClingMax > 0 ? Mathf.Max(0f, species.Species.SipWeight) : 0f;
+
+        /// <summary>How far from a rider's seat the plate it sips may be (the seat sits a little off the hull).</summary>
+        const float ArkSipReach = 60f;
+        static readonly List<Prism> s_sipPlates = new(128);
+        Transform _sipMouth;
+
+        /// <summary>Sim telemetry: bites riders have landed on an Ark's plates this session (read by the escort's metrics).</summary>
+        public static int ArkSips;
 
         bool _warnedSip;
 

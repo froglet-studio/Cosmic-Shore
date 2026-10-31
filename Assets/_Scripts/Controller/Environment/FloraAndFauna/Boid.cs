@@ -855,9 +855,11 @@ namespace CosmicShore.Gameplay
                 var prism = FeedScratch[i];
                 if (prism == grip || !IsEdibleForForager(prism)) continue;
                 float bite = Mathf.Max(0f, prism.Volume);
-                prism.Consume(transform, eaterDomain, _consumerName, IsShieldedMass(prism), true);
-                NotifyFed(bite);
-                bites++;
+                // Through the plate-eating path: an armoured plate takes a bite of wear (a gnaw keeps the rider on),
+                // a plain or cracked one is eaten.
+                var result = BiteMass(prism, transform, eaterDomain, _consumerName, IsShieldedMass(prism));
+                if (result == BiteResult.Ate) NotifyFed(bite);
+                if (result != BiteResult.None) bites++;
             }
             return bites > 0;
         }

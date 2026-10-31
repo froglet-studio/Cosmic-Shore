@@ -131,6 +131,16 @@ namespace CosmicShore.Gameplay
             public int FaunaTurned;
             /// <summary>Hull prisms lost to the squad's own fire in this world.</summary>
             public int FriendlyFire;
+
+            // The fauna threats (Docs/Voyages/ARK_ESCORT.md; briefs/fauna_threats_DONE.md), per world.
+            /// <summary>Plate latches taken by forager boids (Scarab Reef's piranha) while the Ark was in this world.</summary>
+            public int Latches;
+            /// <summary>Worm colony lunges at vessels while the Ark was in this world.</summary>
+            public int WormLunges;
+            /// <summary>Bites substrate riders (leeches) landed on the Ark's plates in this world.</summary>
+            public int ArkSips;
+            /// <summary>When this world's second fauna wave was released (Time.time; -1 never / no staged profile).</summary>
+            public float WaveReleasedAt = -1f;
         }
 
         [System.Serializable]
@@ -179,6 +189,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The share of a world's control volume that pacifies it (0 = off), and how many worlds were pacified.</summary>
         public float PacifyShare;
         public int PacifiedLegs;
+        /// <summary>The fauna threats over the run: plate latches, worm lunges, leech bites on the Ark, worlds whose
+        /// second wave was released, and the share of the membrane radius that released it.</summary>
+        public int Latches;
+        public int WormLunges;
+        public int ArkSips;
+        public int WavesReleased;
+        public float SecondWaveAt;
         public List<SeatStats> RunSeats = new();
         public List<Param> Params = new();
         /// <summary>Every override key pattern this build accepts (<see cref="ArkEscortParams"/>).</summary>
@@ -204,6 +221,8 @@ namespace CosmicShore.Gameplay
                           $"{l.HullAtEntry}>{l.HullMin}>{l.HullAtExit}, threats peak {l.PeakThreats}, kills {l.Kills}, " +
                           $"escorts near {(l.EscortSamples > 0 ? (float)l.EscortNear / l.EscortSamples : 0f):0.0}, " +
                           $"plates -{l.PlatesLost}/+{l.PlatesRegrown}, " +
+                          $"latches {l.Latches}, lunges {l.WormLunges}, sips {l.ArkSips}" +
+                          $"{(l.WaveReleasedAt >= 0f ? $", wave at {l.WaveReleasedAt - l.EnteredAt:0}s" : "")}, " +
                           $"{l.ExitedAt - l.EnteredAt:0}s]");
             }
             return sb.ToString();

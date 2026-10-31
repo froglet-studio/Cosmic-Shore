@@ -69,10 +69,14 @@ namespace CosmicShore.Gameplay
             return (plate.transform.position - positionWhenChosen).sqrMagnitude >= MovingPlateMinDrift * MovingPlateMinDrift;
         }
 
+        /// <summary>Sim telemetry: latches taken this session (read by the Ark escort's metrics per world).</summary>
+        public static int Latches;
+
         /// <summary>Take hold: remember the seat (where the body is now, in the grip's frame) and start the ride clock.</summary>
         public void Latch(Prism plate, Transform body)
         {
             _grip = plate;
+            Latches++;
             Vector3 seat = plate.transform.InverseTransformPoint(body.position);
             float reach = Mathf.Max(0.01f, SeatReach / Mathf.Max(1e-3f, plate.transform.lossyScale.magnitude / 1.7320508f));
             if (seat.sqrMagnitude > reach * reach) seat = seat.normalized * reach;

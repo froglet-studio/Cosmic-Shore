@@ -31,6 +31,8 @@ namespace CosmicShore.Gameplay
         readonly List<Fauna> _threatPrune = new();
         readonly List<(int seat, IVesselStatus status)> _seatScratch = new();
         Cell[] _cellOfLeg = System.Array.Empty<Cell>();
+        // The fauna threats' session counters at the leg's open (their deltas are the leg's).
+        int _latchMark, _lungeMark, _sipMark;
 
         struct StatMark
         {
@@ -97,6 +99,7 @@ namespace CosmicShore.Gameplay
             _cellOfLeg = new Cell[_escort.Legs.Count];
             _report.BreachHull = tier.BreachHull;
             _report.PacifyShare = _escort.PacifyShare;
+            _report.SecondWaveAt = _escort.SecondWaveAt;
             _report.ParamKeys = ArkEscortParams.KeyPatterns();
             if (_pendingEcho != null) _report.Params = _pendingEcho;
             _pendingEcho = null;
@@ -218,6 +221,9 @@ namespace CosmicShore.Gameplay
 
         void OpenLegMetrics(int leg)
         {
+            _latchMark = PlateLatch.Latches;
+            _lungeMark = WormFauna.Lunges;
+            _sipMark = SubstrateFauna.ArkSips;
             _legMark.Clear();
             CollectSeats();
             foreach (var (_, status) in _seatScratch)
@@ -238,6 +244,12 @@ namespace CosmicShore.Gameplay
                 r.SuperAtExit = super;
             }
             r.MeanSpeed = r.SpeedSamples > 0 ? r.SpeedSum / r.SpeedSamples : 0f;
+            r.Latches = PlateLatch.Latches - _latchMark;
+            r.WormLunges = WormFauna.Lunges - _lungeMark;
+            r.ArkSips = SubstrateFauna.ArkSips - _sipMark;
+            _report.Latches += r.Latches;
+            _report.WormLunges += r.WormLunges;
+            _report.ArkSips += r.ArkSips;
             var exitCell = leg >= 0 && leg < _cellOfLeg.Length ? _cellOfLeg[leg] : null;
             if (exitCell) r.SquadShareAtExit = SquadShare(exitCell, SquadDomain);
 
@@ -282,6 +294,7 @@ namespace CosmicShore.Gameplay
             }
 
             TryPacify();
+            TryReleaseWave(ark, r);
 
             // Inside a cell or in the open, and the Ark's speed.
             if (ark.InsideCell) { r.InsideSeconds += SampleSeconds; _report.InsideSeconds += SampleSeconds; }
@@ -396,6 +409,28 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
                     $"[ArkEscort] {r.Name} pacified at {share:P0} of its control volume ({turned} creatures turned).");
             }
+        }
+
+        /// <summary>
+        /// STAGED RELEASE (briefs/fauna_threats_DONE.md, The Boneyard): a world whose spawn profile starts its fauna at
+        /// release tier 0 holds its tier-1 species (the second wave) until the Ark is inside it and within
+        /// <see cref="ArkEscortSO.SecondWaveAt"/> of the membrane radius from its centre; then
+        /// <see cref="Cell.FaunaReleaseTier"/> opens tier 1 and both spawners seed it on their next tick. Production
+        /// gating only (nothing is culled); a world whose profile releases everything from the start has a tier of
+        /// int.MaxValue and is never touched. Checked on the run's 1 Hz sample for the current leg.
+        /// </summary>
+        void TryReleaseWave(Ark ark, ArkEscortReport.LegReport r)
+        {
+            float at = _escort ? _escort.SecondWaveAt : 0f;
+            if (at <= 0f || !ark || r == null || r.WaveReleasedAt >= 0f || _leg < 0 || _leg >= _cellOfLeg.Length) return;
+            var cell = _cellOfLeg[_leg];
+            if (!cell || cell.FaunaReleaseTier != 0 || !ark.InsideCell) return;
+            float line = at * cell.MembraneRadius;
+            if (line <= 0f || (ark.Position - cell.transform.position).sqrMagnitude > line * line) return;
+            cell.FaunaReleaseTier = 1;
+            r.WaveReleasedAt = Time.time;
+            _report.WavesReleased++;
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[ArkEscort] {r.Name}: second wave released.");
         }
 
         static int HostileCount(Cell cell, Domains squad)

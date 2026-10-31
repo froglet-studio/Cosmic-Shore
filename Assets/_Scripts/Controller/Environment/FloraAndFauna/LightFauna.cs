@@ -47,6 +47,12 @@ namespace CosmicShore.Gameplay
             if (!_prefabData) _prefabData = data;
             data = cfg && cfg.SpeciesDataOverride is LightFaunaDataSO worldData ? worldData : _prefabData;
             _speciesDataResolved = true;
+
+            // A run's fauna.* overrides (FaunaRuntimeTuning) win over the world's data: re-derive the run copy from
+            // the world data when this bind lands after the tuning did (an offspring's lineage, after its Initialize).
+            var runTuning = cell ? cell.RuntimeFaunaTuning : null;
+            if (runTuning is { HasAny: true } && runTuning.Touches(SpeciesKey))
+                data = runTuning.ResolveLightData(data, SpeciesKey);
         }
 
         void ResolveSpeciesData()
