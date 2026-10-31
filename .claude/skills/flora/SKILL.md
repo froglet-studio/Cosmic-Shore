@@ -608,6 +608,11 @@ author_<cell>_cell.py           # a cell built FROM a species; grows it to size 
   Euclidean nearest centre gave 17 of the nested gyroid's 24 tiles a disconnected fragment (a site
   across a channel is near in space, far along the surface); multi-source Dijkstra over the bond
   graph gave none. Same rule as §2's "order by hop distance", one step earlier.
+* **A pinned position does not pin the ATTITUDE.** `BorromeanFlora.Plant` honours `SetPlantPositionOverride` and
+  then sets `transform.rotation = Random.rotationUniform` (one shape, many faces), overriding the rotation
+  `CellLifeSpawnerBase.SpawnFlora` was handed. A mode that planted a Borromean guard "grown along a ring's axis" got a
+  random attitude, a different one per peer. Only the HEART (the plant's origin) is where you put it; build on that.
+  (Serpentine, `claude/dazzling-ride-dpyvkx`, 2026-10-31.)
 * **Run the shipped bookkeeping, not a transcription.** A population book that only touches
   `UnityEngine.Random`, `Time.time` and `Object`'s bool conversion compiles into a headless harness
   against a ~40-line stub file (`nested_gyroid_harness/ColonyStubs.cs`) — so the colony gates test

@@ -211,6 +211,24 @@ Serpent Time (2026-10-27, `claude/dazzling-ride-dpyvkx`, `SERPENTTIME.md`) taugh
   cloned this session: a package ASSET, which its "not judged" rule (package SCRIPTS only) does not cover. The shipped
   Thresher Time and Headlong scenes carry the same 11 references.
 
+Serpentine (Serpent Time reshaped, 2026-10-31, same branch) taught four more:
+- **A start line behind gate 0 for a SEEDED course** (`IPlayerSpawnLine` is asked during the spawn chain, before the
+  course exists): override `PickCourseSeed` to latch ONE seed for whichever asks first, and in `TryBuildSpawnPoses`
+  build the course with `CourseSource.Build` from that seed, the same `ResolveShell` and `AuthoredGateTarget`. Decline
+  (return false) when the cell cannot answer yet, rather than guess a shell the real build would not use. Release the
+  latch when the course is raised. `SerpentTimeController.TryBuildSpawnPoses`.
+- **Show the course with the cell, not a drawn track**: `SnowChanger.SetFlow(IFlow)` points the cytoplasm's shards
+  along whatever a mode answers per shard (Serpentine: the nearest leg of the lap, leaning toward the line), and
+  null restores the crystal law. A cell with no crystal never built its shards; `SetFlow` builds them.
+- **An obstacle a hit can CLEAR is a plant felled through its heart, by the mode**: a joust leaves a plant's plates
+  standing as a skeleton (`LifeForm.WitherToSkeleton`), so it clears nothing; the ordinary flora death blows the rest
+  apart. The mode watches each guard's heart (a hull within reach, or a sniper round read off the shipped rifle:
+  its cooldown rising is the shot) and damages every plate through `Prism.Damage(devastate: true)`, nearest the heart
+  first, a capped number a frame; the plant then dies the ordinary death itself. No vessel or flora code changes.
+- **A mode that wants fewer creatures gets its OWN copy of the cell**, generated from the shared one each run
+  (`hull_time_race.author(extra_assets=...)`, Serpentine's `_own_cell_assets`): a cell config and spawn profile are
+  shared by ~10 modes, so editing them in place re-tunes every one.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```
