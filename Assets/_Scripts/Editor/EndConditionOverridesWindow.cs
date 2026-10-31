@@ -129,10 +129,9 @@ namespace CosmicShore.Editor
                 "  • Switchback: gates in the course - both the length a pilot must thread " +
                 "and the number of rings laid, measured against a domain's LEAD RUNNER, default " +
                 EndConditionOverridesSO.DefaultSwitchbackGateTarget + ".\n" +
-                "  • Waystation: rings in the course - both the length a pilot must thread and " +
-                "the number laid, dealt into CLUSTERS and rounded up to a whole number of them, " +
-                "measured against a domain's LEAD RUNNER, default " +
-                EndConditionOverridesSO.DefaultWaystationRingTarget + ".\n" +
+                "  • Waystation: CLUSTERS in the race; a Drop Tower stands in every gap but the last, and " +
+                "the finish line is every ring the course lays, measured against a domain's LEAD RUNNER. Default " +
+                EndConditionOverridesSO.DefaultWaystationClusterTarget + ".\n" +
                 "  • Breakwater: stations in the course - both the length a pilot must thread " +
                 "and the number of breakwaters laid, measured against a domain's LEAD RUNNER. " +
                 "Also sizes the arena, so raising it adds mass as well as distance. Default " +
@@ -196,9 +195,6 @@ namespace CosmicShore.Editor
                 "  • Brittle Star Time: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the Brittle Star's Speed Mode circuit; the controller lays target/laps rings. Default " +
                 EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget + ".\n" +
-                "  • Waystation Prototype: CLUSTERS in the race; a Drop Tower stands in every gap but the last, and " +
-                "the finish line is every ring the course lays. Default " +
-                EndConditionOverridesSO.DefaultWaystationPrototypeClusterTarget + ".\n" +
                 "  • Regatta: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the mixed-fleet rail circuit. The arena lays eight rings a lap with the " +
                 "rails threaded through them, so this must be a multiple of eight. Default " +
@@ -250,7 +246,7 @@ namespace CosmicShore.Editor
             int al  = Mathf.Max(0, EditorGUILayout.IntField("Astro League - Goal Limit (mercy)", _config.astroLeagueGoalLimit));
             int sv  = Mathf.Max(0, EditorGUILayout.IntField("Salvo - Prism Target", _config.salvoPrismTarget));
             int sw  = Mathf.Max(0, EditorGUILayout.IntField("Switchback - Gate Target", _config.switchbackGateTarget));
-            int ws  = Mathf.Max(0, EditorGUILayout.IntField("Waystation - Ring Target", _config.waystationRingTarget));
+            int ws  = Mathf.Max(0, EditorGUILayout.IntField("Waystation - Clusters", _config.waystationClusterTarget));
             int bw  = Mathf.Max(0, EditorGUILayout.IntField("Breakwater - Station Target", _config.breakwaterStationTarget));
             int bl  = Mathf.Max(0, EditorGUILayout.IntField("Breakwater - Laps", _config.breakwaterLaps));
             int sk  = Mathf.Max(0, EditorGUILayout.IntField("Skein - Ring Target", _config.skeinRingTarget));
@@ -267,7 +263,6 @@ namespace CosmicShore.Editor
             int srl = Mathf.Max(0, EditorGUILayout.IntField("Scarab Rally - Gate Target (rings, an open chain)", _config.scarabRallyGateTarget));
             int spt = Mathf.Max(0, EditorGUILayout.IntField("Serpent Time - Gate Target (laps x rings)", _config.serpentTimeGateTarget));
             int bst = Mathf.Max(0, EditorGUILayout.IntField("Brittle Star Time - Gate Target (laps x rings)", _config.brittleStarTimeGateTarget));
-            int wsp = Mathf.Max(0, EditorGUILayout.IntField("Waystation Prototype - Clusters", _config.waystationPrototypeClusterTarget));
             int rg  = Mathf.Max(0, EditorGUILayout.IntField("Regatta - Gate Target (laps x 8 rings)", _config.regattaGateTarget));
             int wb  = Mathf.Max(0, EditorGUILayout.IntField("Wrecking Ball - Prism Target", _config.wreckingBallPrismTarget));
             int ut  = Mathf.Max(0, EditorGUILayout.IntField("Undertow - Point Target", _config.undertowPointTarget));
@@ -298,7 +293,7 @@ namespace CosmicShore.Editor
                     _config.astroLeagueGoalLimit = al;
                     _config.salvoPrismTarget = sv;
                     _config.switchbackGateTarget = sw;
-                    _config.waystationRingTarget = ws;
+                    _config.waystationClusterTarget = ws;
                     _config.breakwaterStationTarget = bw;
                     _config.breakwaterLaps = bl;
                     _config.skeinRingTarget = sk;
@@ -315,7 +310,6 @@ namespace CosmicShore.Editor
                     _config.scarabRallyGateTarget = srl;
                     _config.serpentTimeGateTarget = spt;
                     _config.brittleStarTimeGateTarget = bst;
-                    _config.waystationPrototypeClusterTarget = wsp;
                     _config.regattaGateTarget = rg;
                     _config.wreckingBallPrismTarget = wb;
                     _config.undertowPointTarget = ut;
@@ -352,7 +346,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Astro League", al > 0 ? al.ToString() : EndConditionOverridesSO.DefaultAstroLeagueGoalLimit + " (default)");
             EditorGUILayout.LabelField("Salvo", sv > 0 ? sv.ToString() : EndConditionOverridesSO.DefaultSalvoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Switchback", sw > 0 ? sw.ToString() : EndConditionOverridesSO.DefaultSwitchbackGateTarget + " (default)");
-            EditorGUILayout.LabelField("Waystation", ws > 0 ? ws.ToString() : EndConditionOverridesSO.DefaultWaystationRingTarget + " (default)");
+            EditorGUILayout.LabelField("Waystation (clusters)", ws > 0 ? ws.ToString() : EndConditionOverridesSO.DefaultWaystationClusterTarget + " (default)");
             EditorGUILayout.LabelField("Breakwater", bw > 0 ? bw.ToString() : EndConditionOverridesSO.DefaultBreakwaterStationTarget + " (default)");
             EditorGUILayout.LabelField("Breakwater laps", bl > 0 ? bl.ToString() : EndConditionOverridesSO.DefaultBreakwaterLaps + " (default)");
             EditorGUILayout.LabelField("Breakwater crossings", _config.GetBreakwaterCrossingTarget() + " (1 + (stations - 1) x laps)");
@@ -370,7 +364,6 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Scarab Rally", srl > 0 ? srl.ToString() : EndConditionOverridesSO.DefaultScarabRallyGateTarget + " (default)");
             EditorGUILayout.LabelField("Serpent Time", spt > 0 ? spt.ToString() : EndConditionOverridesSO.DefaultSerpentTimeGateTarget + " (default)");
             EditorGUILayout.LabelField("Brittle Star Time", bst > 0 ? bst.ToString() : EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget + " (default)");
-            EditorGUILayout.LabelField("Waystation Prototype (clusters)", wsp > 0 ? wsp.ToString() : EndConditionOverridesSO.DefaultWaystationPrototypeClusterTarget + " (default)");
             EditorGUILayout.LabelField("Regatta", rg > 0 ? rg.ToString() : EndConditionOverridesSO.DefaultRegattaGateTarget + " (default)");
             EditorGUILayout.LabelField("Wrecking Ball", wb > 0 ? wb.ToString() : EndConditionOverridesSO.DefaultWreckingBallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Undertow", ut > 0 ? ut.ToString() : EndConditionOverridesSO.DefaultUndertowPointTarget + " (default)");
@@ -426,7 +419,7 @@ namespace CosmicShore.Editor
                    "Astro League: " + Fmt(_config.astroLeagueGoalLimitBuild, "default " + EndConditionOverridesSO.DefaultAstroLeagueGoalLimit) + "\n" +
                    "Salvo: " + Fmt(_config.salvoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSalvoPrismTarget) + "\n" +
                    "Switchback: " + Fmt(_config.switchbackGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSwitchbackGateTarget) + "\n" +
-                   "Waystation: " + Fmt(_config.waystationRingTargetBuild, "default " + EndConditionOverridesSO.DefaultWaystationRingTarget) + "\n" +
+                   "Waystation (clusters): " + Fmt(_config.waystationClusterTargetBuild, "default " + EndConditionOverridesSO.DefaultWaystationClusterTarget) + "\n" +
                    "Breakwater: " + Fmt(_config.breakwaterStationTargetBuild, "default " + EndConditionOverridesSO.DefaultBreakwaterStationTarget) + "\n" +
                    "Breakwater laps: " + Fmt(_config.breakwaterLapsBuild, "default " + EndConditionOverridesSO.DefaultBreakwaterLaps) + "\n" +
                    "Skein: " + Fmt(_config.skeinRingTargetBuild, "default " + EndConditionOverridesSO.DefaultSkeinRingTarget) + "\n" +
@@ -443,7 +436,6 @@ namespace CosmicShore.Editor
                    "Scarab Rally: " + Fmt(_config.scarabRallyGateTargetBuild, "default " + EndConditionOverridesSO.DefaultScarabRallyGateTarget) + "\n" +
                    "Serpent Time: " + Fmt(_config.serpentTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentTimeGateTarget) + "\n" +
                    "Brittle Star Time: " + Fmt(_config.brittleStarTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget) + "\n" +
-                   "Waystation Prototype (clusters): " + Fmt(_config.waystationPrototypeClusterTargetBuild, "default " + EndConditionOverridesSO.DefaultWaystationPrototypeClusterTarget) + "\n" +
                    "Regatta: " + Fmt(_config.regattaGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRegattaGateTarget) + "\n" +
                    "Wrecking Ball: " + Fmt(_config.wreckingBallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultWreckingBallPrismTarget) + "\n" +
                    "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget) + "\n" +

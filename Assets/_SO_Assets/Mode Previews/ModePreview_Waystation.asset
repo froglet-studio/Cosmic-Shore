@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_Waystation
   m_EditorClassIdentifier:
   Mode: 58
-  Notes: 'The LOOKING phase is the Skim Race cell it runs in (Switchback''s). The FLIGHT phase stands the mode''s own clusters of rings (ModePreviewGateCourse, off the same RaceCourseSource the controller builds from, on the card-art seed) and starts the pilot behind the first ring; the fold carries them between clusters. Intensity is the COURSE, not the arena, so one cell serves every rung and an intensity nudge re-stands only the rings.'
+  Notes: 'The LOOKING phase is the Skim Race cell it runs in (Switchback''s). The FLIGHT phase stands the course''s rings (ModePreviewGateCourse, off the same RaceCourseSource the controller builds from): the clusters and the Drop Towers'' rings. The towers'' WALLS are laid by the match controller only, so the preview shows the rings without their plates. Intensity is the COURSE, not the arena.'
   PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
   PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
@@ -21,7 +21,7 @@ MonoBehaviour:
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 29
-  ObjectiveText: Weave the cluster, then fold
+  ObjectiveText: Weave the cluster, hop the tower
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

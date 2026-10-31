@@ -6,9 +6,9 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// WAYSTATION PROTOTYPE's Drop Towers (<see cref="WaystationTower"/>, Docs/Studios/TIGER_MOTH_TIME.md). The full
+    /// Waystation's Drop Towers (<see cref="WaystationTower"/>, Docs/Studios/TIGER_MOTH_TIME.md). The full
     /// verdicts - every hop's window, runway, corporeal clearance, the cell, the long last gap - are
-    /// <c>Tools/Build/waystation_prototype_course.py --check</c>, which mirrors this class over 200 seeds x 4
+    /// <c>Tools/Build/waystation_tower_course.py --check</c>, which mirrors this class over 200 seeds x 4
     /// intensities. These pin the properties on the shipped C# itself.
     /// </summary>
     [TestFixture]

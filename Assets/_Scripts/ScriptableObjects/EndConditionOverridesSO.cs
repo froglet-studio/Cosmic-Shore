@@ -150,12 +150,12 @@ namespace CosmicShore.ScriptableObjects
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
         public const int DefaultSwitchbackGateTarget = 26;
 
-        /// <summary>Waystation course length used when <see cref="waystationRingTarget"/> is 0
-        /// (auto/default) - how many switch rings a pilot must thread, which is also how many are
-        /// LAID. The rings are dealt into CLUSTERS, so this is the total across every cluster and
-        /// the course rounds it up to a whole number of them: what a pilot flies and what their
-        /// goal row counts to are the same authority, asked twice.</summary>
-        public const int DefaultWaystationRingTarget = 15;
+        /// <summary>Waystation race length used when <see cref="waystationClusterTarget"/> is 0 - CLUSTERS, not rings:
+        /// the race is that many clusters with a Drop Tower between each pair but the last (Docs/Studios/TIGER_MOTH_TIME.md).
+        /// Five gives every intensity three towers and the long wormhole drop as the finale. The ring count the race ends
+        /// on is the course's own (towers vary with the gaps), which <c>RaceGateTurnMonitor</c> takes from the laid course.
+        /// Replaced the 15-ring target when the Drop Tower course replaced the cluster-only one (2026-11-01).</summary>
+        public const int DefaultWaystationClusterTarget = 5;
 
         /// <summary>Breakwater course length used when <see cref="breakwaterStationTarget"/> is 0
         /// (auto/default) - how many stations are LAID: a polar START GATE plus a fourteen-station
@@ -253,12 +253,6 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Brittle Star Time RACE length used when <see cref="brittleStarTimeGateTarget"/> is 0 - gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit.
         /// Read by <c>BrittleStarTimeController</c> to size the course and, through it, by the turn monitor.</summary>
         public const int DefaultBrittleStarTimeGateTarget = 16;
-        /// <summary>Waystation Prototype race length used when <see cref="waystationPrototypeClusterTarget"/> is 0 -
-        /// CLUSTERS, not rings: the race is that many of Waystation's clusters with a Drop Tower between each pair
-        /// but the last (Docs/Studios/TIGER_MOTH_TIME.md). Five clusters gives every intensity three towers and the
-        /// long wormhole drop as the finale. The ring count the race ends on is the course's own (towers vary with
-        /// the gaps), which <c>RaceGateTurnMonitor</c> takes from the laid course.</summary>
-        public const int DefaultWaystationPrototypeClusterTarget = 5;
 
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
@@ -364,12 +358,9 @@ namespace CosmicShore.ScriptableObjects
                  "shorten it. 0 = default (26).")]
         [Min(0)] public int switchbackGateTarget = 26;
 
-        [Tooltip("Waystation: rings in the course, which is both how many a pilot must thread " +
-                 "to finish and how many are laid. They are dealt into CLUSTERS of " +
-                 "RingsPerCluster (per intensity), and the course rounds UP to a whole number " +
-                 "of clusters - a half-built cluster would end the race in the middle of one. " +
-                 "Compared against a domain's LEAD RUNNER, not a sum. 0 = default (15).")]
-        [Min(0)] public int waystationRingTarget = 15;
+        [Tooltip("Waystation: CLUSTERS in the race, with a Drop Tower in every gap but the last. The finish line is " +
+                 "every ring the course lays, towers included, measured against a domain's LEAD RUNNER. 0 = default (5).")]
+        [Min(0)] public int waystationClusterTarget = 5;
 
         [Tooltip("Breakwater: how many stations are LAID - a polar start gate plus a closed " +
                  "circuit of the rest. Each is 117-257 prisms of arena, so raising this raises " +
@@ -434,9 +425,6 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Brittle Star Time: gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit. 0 uses the default.")]
         [Min(0)] public int brittleStarTimeGateTarget = 16;
 
-        [Tooltip("Waystation Prototype: CLUSTERS in the race (Waystation's clusters, with a Drop Tower in every gap " +
-                 "but the last). The finish line is every ring the course lays, towers included. 0 uses the default.")]
-        [Min(0)] public int waystationPrototypeClusterTarget = 5;
 
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
@@ -517,7 +505,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 26;
         [Min(0)] public int breakwaterStationTargetBuild = 15;
-        [Min(0)] public int waystationRingTargetBuild = 15;
+        [Min(0)] public int waystationClusterTargetBuild = 5;
 
         [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
         [Min(0)] public int skeinRingTargetBuild = 24;
@@ -532,7 +520,6 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int scarabRallyGateTargetBuild = 24;
         [Min(0)] public int serpentTimeGateTargetBuild = 16;
         [Min(0)] public int brittleStarTimeGateTargetBuild = 16;
-        [Min(0)] public int waystationPrototypeClusterTargetBuild = 5;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 500;
         [Min(0)] public int tollwayTollTargetBuild = 3;
@@ -721,14 +708,12 @@ namespace CosmicShore.ScriptableObjects
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
 
         /// <summary>
-        /// Waystation course length ("thread all N rings"): the configured value when &gt; 0,
-        /// otherwise <see cref="DefaultWaystationRingTarget"/>. Read twice on purpose - by
-        /// <c>RaceGateTurnMonitor</c> for the target and by <c>WaystationController</c> for how
-        /// many rings to deal into clusters - so the course a pilot flies and the number their
-        /// goal row counts to are the same authority.
+        /// Waystation race length in CLUSTERS: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultWaystationClusterTarget"/>. Read by <c>WaystationCourseSource</c>, which lays that many
+        /// clusters (towers between them) and reports the rings it laid as the finish line.
         /// </summary>
-        public int GetWaystationRingTarget() =>
-            waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget;
+        public int GetWaystationClusterTarget() =>
+            waystationClusterTarget > 0 ? waystationClusterTarget : DefaultWaystationClusterTarget;
 
         /// <summary>Skein course length ("thread all N rings"). Read on purpose by every party
         /// that needs it - <c>RaceGateTurnMonitor</c> for the target (through the controller),
@@ -842,14 +827,6 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetBurrowRunGateTarget() =>
             burrowRunGateTarget > 0 ? burrowRunGateTarget : DefaultBurrowRunGateTarget;
-
-        /// <summary>
-        /// Waystation Prototype race length in CLUSTERS: the configured value when &gt; 0, otherwise
-        /// <see cref="DefaultWaystationPrototypeClusterTarget"/>. Read by
-        /// <c>WaystationPrototypeCourseSource</c>, which lays that many clusters and reports the rings it laid.
-        /// </summary>
-        public int GetWaystationPrototypeClusterTarget() =>
-            waystationPrototypeClusterTarget > 0 ? waystationPrototypeClusterTarget : DefaultWaystationPrototypeClusterTarget;
 
         /// <summary>
         /// Regatta race length ("thread N gates", i.e. laps x rings): the configured value when
@@ -988,7 +965,6 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.AstroLeague               => GetAstroLeagueGoalLimit(),
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
-                GameModes.Waystation                => waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget,
                 GameModes.Breakwater                => GetBreakwaterCrossingTarget(),
                 GameModes.Skein                     => skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget,
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
@@ -1002,8 +978,8 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ScarabRally               => GetScarabRallyGateTarget(),
                 GameModes.SerpentTime               => GetSerpentTimeGateTarget(),
                 GameModes.BrittleStarTime           => GetBrittleStarTimeGateTarget(),
-                // GameModes.WaystationPrototype has no row: its finish line is the rings the course lays (towers vary
-                // with the gaps), auto-calculated from the track like a SkimRace with a 0 count.
+                // GameModes.Waystation has no row: its finish line is the rings the course lays (towers vary with the
+                // gaps), auto-calculated from the track like a SkimRace with a 0 count.
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
@@ -1059,7 +1035,7 @@ namespace CosmicShore.ScriptableObjects
             astroLeagueGoalLimit == astroLeagueGoalLimitBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
-            waystationRingTarget == waystationRingTargetBuild &&
+            waystationClusterTarget == waystationClusterTargetBuild &&
             breakwaterStationTarget == breakwaterStationTargetBuild &&
             breakwaterLaps == breakwaterLapsBuild &&
             skeinRingTarget == skeinRingTargetBuild &&
@@ -1074,7 +1050,6 @@ namespace CosmicShore.ScriptableObjects
             scarabRallyGateTarget == scarabRallyGateTargetBuild &&
             serpentTimeGateTarget == serpentTimeGateTargetBuild &&
             brittleStarTimeGateTarget == brittleStarTimeGateTargetBuild &&
-            waystationPrototypeClusterTarget == waystationPrototypeClusterTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
@@ -1108,7 +1083,7 @@ namespace CosmicShore.ScriptableObjects
             astroLeagueGoalLimit = astroLeagueGoalLimitBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
-            waystationRingTarget = waystationRingTargetBuild;
+            waystationClusterTarget = waystationClusterTargetBuild;
             breakwaterStationTarget = breakwaterStationTargetBuild;
             breakwaterLaps = breakwaterLapsBuild;
             skeinRingTarget = skeinRingTargetBuild;
@@ -1123,7 +1098,6 @@ namespace CosmicShore.ScriptableObjects
             scarabRallyGateTarget = scarabRallyGateTargetBuild;
             serpentTimeGateTarget = serpentTimeGateTargetBuild;
             brittleStarTimeGateTarget = brittleStarTimeGateTargetBuild;
-            waystationPrototypeClusterTarget = waystationPrototypeClusterTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
@@ -1158,7 +1132,7 @@ namespace CosmicShore.ScriptableObjects
             astroLeagueGoalLimitBuild = astroLeagueGoalLimit;
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
-            waystationRingTargetBuild = waystationRingTarget;
+            waystationClusterTargetBuild = waystationClusterTarget;
             breakwaterStationTargetBuild = breakwaterStationTarget;
             breakwaterLapsBuild = breakwaterLaps;
             skeinRingTargetBuild = skeinRingTarget;
@@ -1173,7 +1147,6 @@ namespace CosmicShore.ScriptableObjects
             scarabRallyGateTargetBuild = scarabRallyGateTarget;
             serpentTimeGateTargetBuild = serpentTimeGateTarget;
             brittleStarTimeGateTargetBuild = brittleStarTimeGateTarget;
-            waystationPrototypeClusterTargetBuild = waystationPrototypeClusterTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;

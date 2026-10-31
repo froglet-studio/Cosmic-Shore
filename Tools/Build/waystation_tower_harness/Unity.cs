@@ -1,4 +1,4 @@
-// A Unity shim for WAYSTATION PROTOTYPE's harness: Garrett's waystation_harness/Unity.cs plus the few members
+// A Unity shim for Waystation's Drop Tower harness: Garrett's waystation_harness/Unity.cs plus the few members
 // WaystationTower.cs also uses (ProjectOnPlane, Distance, a Quaternion that only has to exist). Nothing here is a
 // reimplementation of gameplay - it is specified arithmetic, and the SHIPPED course files are the code under test.
 using System;
