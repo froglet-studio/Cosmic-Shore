@@ -361,6 +361,8 @@ notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refre
      https://raw.githubusercontent.com/froglet-studio/Cosmic-Shore/claude/eager-franklin-e6g77h/Tools/Compute/vm/setup-vm.sh
    bash setup-vm.sh
    ```
+   (once Froglet Compute is on bleeding-edge, `bleeding-edge` replaces the branch in that address, and the script picks
+   bleeding-edge by itself).
    (paste the token after the first line and press Enter: it is not shown and stays out of the shell's history).
    `Tools/Compute/vm/setup-vm.sh` waits for the new instance's own updates, installs git, Python, numpy and Caddy;
    opens 80/443 in the image's firewall (iptables; it does not touch ufw, which Oracle's images leave off); makes a
@@ -393,12 +395,12 @@ console's vessel x mode grid and the scout (Astro League since 2026-10-29: "not 
 keeps them. `make_unity_job.py` and the scout read the file, so a mode returns by deleting its line.
 
 The offline models are fast (hundreds of races a minute, any computer) but each one is a hand-made copy of one vessel
-on one course, so only 5 of the 61 vessel x mode pairs have one. Everything else has to be played in the game. The
+on one course, so only 5 of the 58 vessel x mode pairs have one (`compute.py console` counts them). Everything else has to be played in the game. The
 game already has an AI trainer (`Assets/_Scripts/Utility/AITraining`, studyholic, Garrett and Shombith): all-AI
 matches, a population of AIs, the best kept. Froglet Compute now starts it with nobody there:
 
 - **`unity-train`** (`Docs/Compute/jobs/unity-train.json`) is a command job with one unit per vessel, mode and
-  intensity: 57 pairs over the trainer's 34 scenarios, every multiplayer card with a scoring rule, with every hull a
+  intensity: 54 units over 33 modes (`make_unity_job.py --check`; the trainer's catalog holds 34 scenarios, Astro League is skipped), every multiplayer card with a scoring rule, with every hull a
   card seats where the scenario lets the hull change (Regatta, Broadside, Crystal Capture, Brood Rush, Astro League).
   `Tools/Compute/make_unity_job.py` writes the units from the trainer's own catalog (`--check`; the self-test runs
   it). The trainer gained 22 modes for this on 2026-10-28 (its README, "The other 22 cards"): 13 gate races that

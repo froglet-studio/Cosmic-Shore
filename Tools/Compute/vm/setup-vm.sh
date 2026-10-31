@@ -14,7 +14,8 @@
 # Optional, before running it:
 #   export COMPUTE_DOMAIN=compute.example.com   your own domain (its A record pointing at this VM); default:
 #                                               <public-ip>.sslip.io, which needs nothing
-#   export COMPUTE_BRANCH=bleeding-edge         once Froglet Compute is merged there
+#   export COMPUTE_BRANCH=<branch>              a branch of your own (bleeding-edge is picked by itself once Froglet
+#                                               Compute is merged there)
 #   export COMPUTE_REMOTE_START=0               runs sent from the console wait for the current job instead of
 #                                               starting at once (default 1: this computer is the team's)
 # Running it again updates everything and keeps the team key.
@@ -22,7 +23,11 @@ set -euo pipefail
 STEP="starting"
 trap 'printf "\n\033[1;31mstopped during %s (line %s). Fix what the lines above say, then run bash setup-vm.sh again: it is safe to re-run.\033[0m\n" "$STEP" "$LINENO" >&2' ERR
 
-BRANCH="${COMPUTE_BRANCH:-claude/eager-franklin-e6g77h}"
+# The branch Froglet Compute is read from: bleeding-edge once it is merged there (the raw file answers), the compute
+# branch until then; COMPUTE_BRANCH overrides either.
+if [ -n "${COMPUTE_BRANCH:-}" ]; then BRANCH="$COMPUTE_BRANCH"
+elif curl -fsSIo /dev/null https://raw.githubusercontent.com/froglet-studio/Cosmic-Shore/bleeding-edge/Tools/Compute/compute.py; then BRANCH=bleeding-edge
+else BRANCH=claude/eager-franklin-e6g77h; fi
 SVC=froglet
 BASE=/srv/froglet
 REPO="$BASE/Cosmic-Shore"
