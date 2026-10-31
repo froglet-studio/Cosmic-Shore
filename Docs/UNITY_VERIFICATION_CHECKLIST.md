@@ -16535,6 +16535,9 @@ run. Checked offline:
 
 ## 🔴 2026-10-17 — Rev 6 step 4: presence orb + party molecule (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
+> **Partly superseded 2026-10-31:** the party MOLECULE steps below no longer apply - Rev 40 E replaced it with a party card
+> (`Docs/MENU_REDESIGN_B.md` section 107; its own entry is near the top of this file). The ORB steps still apply.
+
 New: `Presence.shader`, `Bond.shader` + `UIPresence.cginc`, `Presence_Orb.mat`, `Bond_Party.mat`, `KitPresenceOrb.cs`;
 `ArcadeLobbyList` gains `PresenceChanged` / `TryGetSeat` / `seatBonds` and authored online lines; `PartySlot` /
 `PartyPanel` re-emitted as the molecule; the drawer's Handle replaced by the orb in Menu_Main. `/verify-unity` was not

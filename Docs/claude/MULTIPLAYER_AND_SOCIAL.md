@@ -384,6 +384,14 @@ instead of opening an overlay. Seating, invite, join, spectate, kick, leave and 
 as above - the kit rows only override how a state is drawn. Arena, Toy Box and Mission keep the
 legacy pair until item 8.
 
+**Rev 40 E (2026-10-31, `Docs/MENU_REDESIGN_B.md` section 107) reshaped it:** the seats are one row of
+overlapping avatars on a party card with the names, "You host - 1 seat open" and INVITE / LEAVE PARTY
+(all authored on `ArcadeLobbyList`; a seat no longer shows its name or role); each online row offers ONE
+verb in one fixed slot (`FriendsListPanel.oneVerbPerRow` + `KitOnlineRow.oneVerbPerRow`: in the menu Invite,
+in a party Join, in a match Spectate, invited Cancel); and ONLINE is four groups (`onlineGroups`: Join their
+party, In the menu, In a match, You invited) that a row moves between as its state changes. The Rev 6
+molecule (§45.4) and its bonds are gone; the orb is unchanged.
+
 **The party panel's SEATING is synced, not local** — `PartyRoster` puts the host in the
 first slot and the clients behind it in join order, the same on every device, by ordering on
 Netcode's replicated `OwnerClientId` rather than on `HostConnectionDataSO.PartyMembers`,
