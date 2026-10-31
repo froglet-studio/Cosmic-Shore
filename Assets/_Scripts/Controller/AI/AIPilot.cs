@@ -627,6 +627,9 @@ namespace CosmicShore.Gameplay
 
             foreach (var item in cellItems)
             {
+                // A destroyed item still listed (a torn-down world's crystal; the Ark escort's cells come and go):
+                // skip it, or this throws every frame and the pilot never steers (round 3: a seat that never sailed).
+                if (!item) continue;
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
