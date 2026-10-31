@@ -55,10 +55,18 @@ MonoBehaviour:
   density: 1
   spawnClearRadius: 0
   spawnClearPoints: []
-  nestCount: 10
-  nestRingRadius: 1400
-  nestHeightSpread: 450
-  screenCount: 12
-  screenRingRadius: 750
-  screenHeightSpread: 220
-  dangerEveryNth: 6
+  nestCount: 12
+  nestRingRadius: 1150
+  nestHeightSpread: 400
+  outerNestCount: 10
+  outerNestRingRadius: 1700
+  outerNestHeightSpread: 450
+  screenCount: 16
+  screenRingRadius: 900
+  screenHeightSpread: 240
+  rubbleCount: 140
+  rubbleInnerRadius: 520
+  rubbleOuterRadius: 1900
+  rubbleHeightSpread: 600
+  dangerEveryNth: 4
+  rubbleDangerEveryNth: 5
