@@ -260,6 +260,9 @@ namespace CosmicShore.Data
         // it on the right LINE is worth more than threading it fast. First DOMAIN whose LEAD
         // RUNNER threads the last ring wins, on ScoringMetric.SwitchesThreaded - the gate-race
         // platform, reused whole. See _Scripts/Controller/Arcade/WAYSTATION.md.
+        // Since 2026-11-01 Waystation is the Tiger Moth's Drop Tower race: the clusters with a staircase of short hops
+        // through plain and danger floor plates in every gap but the last (Docs/Studios/TIGER_MOTH_TIME.md). It was
+        // built as WaystationPrototype (76) beside this mode and folded in; 76 is retired and stays reserved.
         Waystation = 58,
 
         // Dustup (59): the Butterfly's CHARGE game - a dust duel. The Butterfly carries no gun;
@@ -364,25 +367,16 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/BRITTLESTARTIME.md.
         BrittleStarTime = 74,
 
-        // WaystationPrototype (76): the Tiger Moth's Time race REBUILT AS A PROTOTYPE beside Waystation (58), which stays
-        // as Garrett made it until he approves a replacement (Shombith, 2026-10-31). Waystation's clusters, with a DROP
-        // TOWER in every gap but the last: a staircase of short hops through floor plates, each ring just past its plate
-        // and a pipe beyond the next press point, so the skill is how long you hold (Flappy Bird's tap, on the Drop).
-        // Plates mix plain and danger prisms. The last gap stays the long drop that leaves the wormhole. 72-74 are ScarabRally,
-        // SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight. See
-        // _Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYPE.md and Docs/Studios/TIGER_MOTH_TIME.md.
-        WaystationPrototype = 76,
-
         // SerpentGulag (77): the Serpent's CHARGE game, a SNIPER DUEL at range in a 3,600 u cell. Pilots spawn far
         // apart; a field of elemental crystals floats in the middle (Charge shortens the rifle's recovery, so the
         // field is the risk and the reward); intensities 2-4 add sniper nests and barred cell blocks. A snipe (a
         // Sniper Shot that strips a rival pilot) is one point; first DOMAIN to the target wins. Beside Garrett's
         // in-flight SerpentCharge (67, cece/vibrant-archimedes-n3xn3x), which it does not touch. 75 is LanternRun's
-        // and 76 WaystationPrototype's. See _Scripts/Controller/Arcade/SERPENTGULAG.md.
+        // and 76 was WaystationPrototype's (folded into Waystation, reserved). See _Scripts/Controller/Arcade/SERPENTGULAG.md.
         SerpentGulag = 77,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 71) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 70) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

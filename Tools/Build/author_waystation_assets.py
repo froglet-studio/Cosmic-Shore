@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
-"""Author every asset Waystation adds - the Butterfly-only migration race.
+"""Author every asset Waystation adds - the Tiger Moth's Time race, the Drop Tower course.
 
 Waystation is a GATE RACE (GateRaceController, shared with Switchback, Headlong, Breakwater,
 Skein and Redline), so it adds no metric, no turn monitor and no scoring class: the rule is a
 SECOND ASSET on GateRaceScoringRuleSO and the monitor is the platform's, which asks the
-controller. What is genuinely its own is the COURSE - clusters of rings you weave, laid a FOLD
-apart - and that is proved offline by Tools/Build/waystation_course.py, which this script IMPORTS
-rather than retyping, so the numbers the model verified are the numbers the game ships.
+controller. What is genuinely its own is the COURSE - Garrett's clusters of rings you weave, with a
+Drop Tower of short hops through floor plates in every gap but the last (Docs/Studios/TIGER_MOTH_TIME.md)
+- and that is proved offline by Tools/Build/waystation_tower_course.py (over Garrett's
+waystation_course.py), which this script IMPORTS rather than retyping, so the numbers the model verified
+are the numbers the game ships.
+
+Since 2026-11-01 the Drop Tower race IS Waystation (Shombith: "make Waystation Prototype as Waystation").
+It was built as Waystation Prototype (GameModes 76) beside this mode; this script now authors what that
+mode's generator did and RETIRES the prototype's assets and registrations (RETIRED below), so a re-run can
+never bring them back.
 
 THE DONOR IS SWITCHBACK, because it is the platform's other OPEN chain (Headlong and Redline lap a
-closed circuit and Breakwater carries a lead-in gate). The clone swaps four things and nothing
-else: the controller script, the scoring rule, the four AI hulls (Dolphin -> Butterfly) and the
-removal of Switchback's own `firstGateDistance`, which Waystation deliberately does not have.
+closed circuit and Breakwater carries a lead-in gate). The clone swaps the controller script, the
+scoring rule and the four AI hulls (Dolphin -> Tiger Moth), removes Switchback's own fields, and adds
+the tower walls' prism (`wallPrefab`).
 
 Run with --check to validate and diff without writing.
 """
@@ -22,11 +29,19 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib          # noqa: E402
 import waystation_course as course     # noqa: E402
+import waystation_tower_course as tower  # noqa: E402
 
 MODE_ID = 58
-RING_TARGET = 15   # 24 until 2026-10-26 (a 205 s editor finish); 15 aims an experienced run near 90 s
+CLUSTERS = tower.CLUSTERS   # clusters a race lays; was a 15-ring target before the towers (2026-11-01)
 g = lib.Generator(mode_id=MODE_ID, mode_name="Waystation")
 errors = []
+
+
+def sq(text):
+    """A single-quoted YAML scalar doubles its apostrophes. lib.toast and the preview's Notes wrap their text in
+    '...' without escaping it, so "The tower's rings" ends the scalar mid-word and the asset does not parse - which a
+    text diff (--check) cannot see; the YAML parse at the end can (REFACTOR_BACKLOG S93)."""
+    return text.replace("'", "''")
 
 # ── guids read from the repo, never invented ────────────────────────────────
 EXISTING = {
@@ -38,11 +53,15 @@ EXISTING = {
     "SwitchbackScoringRule":  "b67719b27d5ca31d65b90aec65674945",
     "SkimRaceCellConfig":     "52de45c2fab54ea0a35bc37a311d80e6",
     "Butterfly":              lib.VESSELS["TigerMoth"],
+    "SpawnablePrism":         lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab"),
 }
+SPAWNABLE_PRISM_FILE_ID = 4563009547826722997   # the Prism component on SpawnablePrism.prefab
 
 SCRIPTS = {
     "WaystationController": "Assets/_Scripts/Controller/Arcade/Waystation/WaystationController.cs",
     "WaystationCourse":     "Assets/_Scripts/Controller/Arcade/Waystation/WaystationCourse.cs",
+    "WaystationTower":      "Assets/_Scripts/Controller/Arcade/Waystation/WaystationTower.cs",
+    "WaystationTowerTests": "Assets/_Scripts/Tests/Editor/WaystationTowerTests.cs",
 }
 G_SCRIPT = {name: lib.guid(f"script/{name}") for name in SCRIPTS}
 G_ASSET = {
@@ -60,28 +79,20 @@ T = course.read_tables()
 HULL_TOP, HULL_OMEGA, HULL_RADIUS = course.read_vessel()
 FOLD_REACH = course.read_fold_reach()
 
-if not course.run(seeds=200, target=RING_TARGET, quiet=True):
-    errors.append("waystation_course.py does not pass its own checks - the course is not shippable")
-
-# The ring target must be a whole number of clusters at EVERY intensity, or the turn monitor
-# publishes a finish line naming a ring the course never laid.
-for i in (1, 2, 3, 4):
-    per = int(T["RingsPerCluster"][i - 1])
-    laid = course.math.ceil(RING_TARGET / per) * per
-    if laid < RING_TARGET:
-        errors.append(f"intensity {i} lays {laid} rings for a target of {RING_TARGET}")
+if not tower.run(seeds=60, target=CLUSTERS, quiet=True):
+    errors.append("waystation_tower_course.py does not pass its own checks - the towers are not shippable")
 
 # ── the comeback rate is a FUNCTION OF THE TARGET ───────────────────────────
-# bonusLevels = deficit x rate, so a rate that survives a re-target silently stops meaning
-# anything. Sized against Switchback's curve (2.5 levels a quarter down): 0.64 x 15/4 = 2.4, the
-# 2.4 that 0.4 bought on the old 24-ring course.
-COMEBACK_RATE = 0.64
-quarter = RING_TARGET * 0.25
-if quarter * COMEBACK_RATE < 1.0:
-    errors.append(f"comeback rate {COMEBACK_RATE} buys only "
-                  f"{quarter * COMEBACK_RATE:.2f} element levels a quarter of the way down")
+# bonusLevels = deficit x rate. The finish line is every ring the course lays: at least the cluster rings (5 clusters
+# x 3..6), up to ~15 tower rings more. Sized on the SHORTEST race (I1's 15 cluster rings) so a quarter down always
+# buys at least one element level; 0.4 x 15/4 = 1.5 there, 0.4 x 39/4 = 3.9 at the longest. Was 0.64 on 15 rings.
+COMEBACK_RATE = 0.4
+shortest = CLUSTERS * int(T["RingsPerCluster"][0])
+if shortest * 0.25 * COMEBACK_RATE < 1.0:
+    errors.append(f"comeback rate {COMEBACK_RATE} buys only {shortest * 0.25 * COMEBACK_RATE:.2f} element levels "
+                  "a quarter of the way down the shortest race")
 
-# ── .cs.meta for the two new scripts, plus the folder ───────────────────────
+# ── .cs.meta for the scripts, plus the folder ───────────────────────
 g.folder_meta("Assets/_Scripts/Controller/Arcade/Waystation")
 for name, rel in SCRIPTS.items():
     g.script_meta(rel, G_SCRIPT[name])
@@ -100,10 +111,10 @@ g.emit_asset(
 
 # ── the arcade card ─────────────────────────────────────────────────────────
 DESCRIPTION = lib.wrap_yaml_scalar(
-    "Butterflies only. The rings come in clusters - weave the coil, line up on the gate at the "
-    "far end, then FOLD across the gap to the next one. The fold has one degree of freedom, the "
-    "heading you leave on, so the exit gate is the aiming device: thread it on the right line "
-    "and the jump is free. First team to put a pilot through the last ring takes it.")
+    "Tiger Moths only. Weave each cluster of rings, then climb down the Drop Tower to the next: short hops through "
+    "floor plates, each ring just past its plate. Tap too short and you land on the plate; hold too long and the "
+    "pipe ahead meets you before the Drop is back. Plates are mostly plain at low intensity, more of them danger as "
+    "it climbs. The last gap is one long drop, and it leaves a wormhole for whoever follows.")
 g.emit_asset(
     "Assets/_SO_Assets/Games/ArcadeGameWaystation.asset",
     G_ASSET["ArcadeGameWaystation"],
@@ -131,7 +142,7 @@ g.emit_asset(
       "  PlayUserAction: 0\n"
       f"  ComebackRatePerScoreDeficit: {lib.num(COMEBACK_RATE)}\n")
 
-# ── toasts: two idle hints and the shared race beats ────────────────────────
+# ── toasts: two idle hints in Drop words, and the shared race beats ────────────
 # The idle hints need no poster - the toast system fires them off idleSeconds. The race beats
 # (DomainRaceHalf / LeadChanged / HomeStretch = 129-131) are posted by GateRaceController's
 # DomainRaceToasts for every gate race; a beat this config does not author shows nothing. Worded
@@ -143,9 +154,9 @@ g.emit_asset(
     G_ASSET["GameToastConfig_Waystation"],
     lib.header_for(EXISTING["GameToastConfigSO"], "GameToastConfig_Waystation")
     + f"  gameMode: {MODE_ID}\n  toasts:\n"
-    + lib.toast(117, "Thread every ring around you - they only count in order",
+    + lib.toast(117, sq("The tower's rings hang under the plates - fly over one and TAP the Drop through it"),
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=25)
-    + lib.toast(118, "Out of rings? HOLD the fold and aim where you want to land",
+    + lib.toast(118, sq("Short lands on the plate, long meets the pipe - a quick tap, then roll for the next"),
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=40)
     + lib.toast(129, "{0} is halfway home - ring {1}/{2}", tint_domain=1, domain_names=0)
     + lib.toast(130, "{0} takes the lead - ring {1}/{2}", tint_domain=1, domain_names=0)
@@ -153,17 +164,16 @@ g.emit_asset(
 
 # ── the preview: the cell to look at, the rings to fly ───────────────────────
 NOTES = (
-    "The LOOKING phase is the Skim Race cell it runs in (Switchback''s). The FLIGHT phase stands "
-    "the mode''s own clusters of rings (ModePreviewGateCourse, off the same RaceCourseSource the "
-    "controller builds from, on the card-art seed) and starts the pilot behind the first ring; "
-    "the fold carries them between clusters. Intensity is the COURSE, not the arena, so one cell "
-    "serves every rung and an intensity nudge re-stands only the rings.")
+    "The LOOKING phase is the Skim Race cell it runs in (Switchback's). The FLIGHT phase stands the course's rings "
+    "(ModePreviewGateCourse, off the same RaceCourseSource the controller builds from): the clusters and the Drop "
+    "Towers' rings. The towers' WALLS are laid by the match controller only, so the preview shows the rings without "
+    "their plates. Intensity is the COURSE, not the arena.")
 g.emit_asset(
     "Assets/_SO_Assets/Mode Previews/ModePreview_Waystation.asset",
     G_ASSET["ModePreview_Waystation"],
     lib.header_for(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Waystation")
     + f"  Mode: {MODE_ID}\n"
-      f"  Notes: '{NOTES}'\n"
+      f"  Notes: '{sq(NOTES)}'\n"
       f"  PreviewCell: {{fileID: 11400000, guid: {EXISTING['SkimRaceCellConfig']}, type: 2}}\n"
       "  PreviewCellsByIntensity: []\n"
       "  StructurePrefab: {fileID: 0}\n"
@@ -171,7 +181,7 @@ g.emit_asset(
       "  PreviewFauna: {fileID: 0}\n"
       "  PreviewFaunaCount: 4\n"
       f"  Vessel: {lib.VESSEL_CLASS_ID['TigerMoth']}\n"
-      "  ObjectiveText: Weave the cluster, then fold\n"
+      "  ObjectiveText: Weave the cluster, hop the tower\n"
       "  ObjectiveMetric: 9\n"
       "  ObjectiveTarget: 0\n"
       "  DurationSeconds: 60\n"
@@ -199,7 +209,12 @@ scene = lib.replace_block(scene, "  firstGateDistance: 620\n", "",
 # clone stays right whether or not the donor has the field.
 scene = re.sub(r"^  featuresPrefab: \{[^\n]*\}\n", "", scene, count=1, flags=re.M)
 
-# The four AI seats fly the Butterfly.
+# The tower walls' prism: the environment prism Serpent Time's cover uses (WaystationController.wallPrefab).
+WALL_FIELD = (f"  wallPrefab: {{fileID: {SPAWNABLE_PRISM_FILE_ID}, guid: {EXISTING['SpawnablePrism']}, type: 3}}\n")
+scene = lib.replace_block(scene, "  reportResyncSeconds: 3\n", "  reportResyncSeconds: 3\n" + WALL_FIELD,
+                          "the controller block's last field")
+
+# The four AI seats fly the Tiger Moth.
 old_ai = "".join(f"  - vesselClass: 2\n    PlayerName: AI {i}\n    AvatarId: {i}\n"
                  "    IsAI: 1\n    AllowSpawning: 1\n" for i in range(4))
 new_ai = "".join(f"  - vesselClass: {lib.VESSEL_CLASS_ID['TigerMoth']}\n    PlayerName: AI {i}\n"
@@ -237,8 +252,77 @@ g.register_arcade_card(G_ASSET["ArcadeGameWaystation"])
 g.register_always_unlocked()
 g.register_build_scene("MinigameSkein", "MinigameWaystation",
                        G_ASSET["MinigameWaystation.unity"])
-g.set_end_condition("waystationRingTarget", after="switchbackGateTarget", value=RING_TARGET)
+g.set_end_condition("waystationClusterTarget", after="switchbackGateTarget", value=CLUSTERS)
 g.register_toast_config(G_ASSET["GameToastConfig_Waystation"])
 g.register_preview(G_ASSET["ModePreview_Waystation"])
+
+# ── RETIRED: Waystation Prototype (GameModes 76), folded into this mode on 2026-11-01 ─────────
+# Its generator is gone, so its assets and registrations are removed HERE, every run, so that nothing can re-add
+# them: the files go (Generator.stale), and every registry this script reads drops their guids and the id 76.
+RETIRED = {name: lib.guid(f"asset/{name}") for name in (
+    "WaystationPrototypeScoringRule", "ArcadeGameWaystationPrototype", "GameToastConfig_WaystationPrototype",
+    "ModePreview_WaystationPrototype")}
+RETIRED["MinigameWaystationPrototype.unity"] = lib.guid("scene/MinigameWaystationPrototype")
+for rel in ("Assets/_SO_Assets/Scoring Rules/WaystationPrototypeScoringRule.asset",
+            "Assets/_SO_Assets/Games/ArcadeGameWaystationPrototype.asset",
+            "Assets/_SO_Assets/Game Toasts/GameToastConfig_WaystationPrototype.asset",
+            "Assets/_SO_Assets/Mode Previews/ModePreview_WaystationPrototype.asset",
+            f"{lib.SCENES_DIR}/MinigameWaystationPrototype.unity",
+            "Assets/_Graphics/ARCADE/CardBackgrounds/WaystationPrototype.png"):
+    g.stale += [rel, rel + ".meta"]
+for registry in ("Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset",
+                 "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset",
+                 "Assets/Resources/ModePreviewLibrary.asset",
+                 "Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset",
+                 "ProjectSettings/EditorBuildSettings.asset"):
+    text = g.read_current(registry)
+    kept = "".join(ln for ln in text.splitlines(keepends=True)
+                   if not any(guid in ln for guid in RETIRED.values()))
+    # a build-scene entry is three lines; drop its orphaned `- enabled` / `path` lines with the guid line
+    kept = re.sub(r"  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameWaystationPrototype\.unity\n",
+                  "", kept)
+    if kept != text:
+        g.emit(registry, kept)
+progression = g.read_current("Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset")
+if re.search(r"^  - 76\n", progression, re.M):
+    g.emit("Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset",
+           re.sub(r"^  - 76\n", "", progression, count=1, flags=re.M))
+endcond = g.read_current("Assets/Resources/EndConditionOverrides.asset")
+cleaned = re.sub(r"^  (waystationRingTarget|waystationPrototypeClusterTarget)(Build)?: \d+\n", "", endcond, flags=re.M)
+if cleaned != endcond:
+    g.emit("Assets/Resources/EndConditionOverrides.asset", cleaned)
+for registry in ("Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset",
+                 "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset",
+                 "Assets/Resources/ModePreviewLibrary.asset",
+                 "Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset",
+                 "ProjectSettings/EditorBuildSettings.asset"):
+    if any(guid in g.read_current(registry) for guid in RETIRED.values()):
+        errors.append(f"{registry} still names a retired Waystation Prototype asset")
+
+
+def yaml_errors(rel, content):
+    """Parse one Unity .asset's documents (the %YAML / %TAG directives and the `--- !u!N &id` tags stripped)."""
+    import yaml
+    body = "\n".join(ln for ln in content.splitlines() if not ln.startswith("%"))
+    out = []
+    for doc in re.split(r"^--- !u!\d+ &-?\d+.*$", body, flags=re.M):
+        if not doc.strip():
+            continue
+        try:
+            yaml.safe_load(doc)
+        except yaml.YAMLError as e:
+            out.append(f"{rel} does not parse as YAML: {' '.join(str(e).split())[:160]}")
+    return out
+
+
+# Every authored .asset must PARSE, not only match its own text: --check is a diff, and a diff of a broken file
+# against the same broken file is clean.
+try:
+    import yaml  # noqa: F401
+    for rel, content in g.files.items():
+        if rel.endswith(".asset"):
+            errors += yaml_errors(rel, content)
+except ImportError:
+    print("note: PyYAML is not installed, so the authored assets were not parsed")
 
 g.finish(errors, referenced=EXISTING, minted=list(G_SCRIPT.values()) + list(G_ASSET.values()))

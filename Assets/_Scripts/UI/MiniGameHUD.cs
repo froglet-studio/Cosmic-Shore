@@ -440,10 +440,6 @@ namespace CosmicShore.UI
                     // one you owe is the only thing telling you which way out of the knot your
                     // next FOLD is aimed from.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Waystation");
-                case GameModes.WaystationPrototype:
-                    // Waystation's provider: a tower ring sits under a floor plate, so the arrow is what says which
-                    // way the next hop falls.
-                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_WaystationPrototype");
                 case GameModes.Headlong:
                     // Same provider: it asks whichever GateRaceController is in the scene, and on
                     // a lapped circuit "your next gate" is the only thing that distinguishes two

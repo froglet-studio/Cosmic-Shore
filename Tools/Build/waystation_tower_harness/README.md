@@ -1,9 +1,9 @@
-# waystation_prototype_harness
+# waystation_tower_harness
 
-Compiles and RUNS the **shipped** WAYSTATION PROTOTYPE course C# outside the editor, so
-`Tools/Build/waystation_prototype_course.py --compile` compares the offline model against the code the game runs.
+Compiles and RUNS the **shipped** Waystation Drop Tower C# outside the editor, so
+`Tools/Build/waystation_tower_course.py --compile` compares the offline model against the code the game runs.
 
-    python3 Tools/Build/waystation_prototype_course.py --compile
+    python3 Tools/Build/waystation_tower_course.py --compile
 
 `WaystationTower.cs`, `WaystationCourse.cs` (Garrett's, unedited) and `RaceCourseGeometry.cs` are
 `<Compile Include="../../../Assets/...">`d verbatim. `Unity.cs` is Garrett's `waystation_harness/Unity.cs` plus

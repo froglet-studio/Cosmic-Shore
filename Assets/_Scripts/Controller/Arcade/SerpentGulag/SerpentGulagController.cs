@@ -121,7 +121,7 @@ namespace CosmicShore.Gameplay
                                    "and fly the platform's own steering.");
                 return;
             }
-            _marksman.Arm(gameData, settings, Centre, NearestLiveCrystal);
+            _marksman.Arm(gameData, settings, Centre, NearestLiveCrystal, CollectNests());
         }
 
         void Update()
@@ -151,6 +151,22 @@ namespace CosmicShore.Gameplay
             }
 
             if (IsServer && _marksman.IsArmed) _marksman.Tick();
+        }
+
+        readonly List<Vector3> _nestScratch = new();
+
+        /// <summary>The centre of every sniper nest in world space, read off the arena's own environment (none at
+        /// intensity 1, which has no environment). The AI picks its posts behind them.</summary>
+        List<Vector3> CollectNests()
+        {
+            _nestScratch.Clear();
+            var env = arenaCell ? arenaCell.GetComponentInChildren<SpawnableSerpentGulag>(true) : null;
+            if (!env) env = FindAnyObjectByType<SpawnableSerpentGulag>();
+            if (!env) return _nestScratch;
+            env.CollectNestCentres(_nestScratch);
+            for (int i = 0; i < _nestScratch.Count; i++)
+                _nestScratch[i] = env.transform.TransformPoint(_nestScratch[i]);
+            return _nestScratch;
         }
 
         // ── The crystal field (every peer) ──

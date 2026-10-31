@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Serpent Gulag Cell Config 2
   m_EditorClassIdentifier:
   CellName: Serpent Gulag
-  Description: 'Watchtowers - intensity 2 of Serpent Gulag: six sniper nests on a ring around the
-    field, each with a firing slit facing the middle and an entry at its back. 936 prisms,
-    all neutral. Membrane radius 3600 (Cleave''s x3 shell), spawn ring 2200, the crystal
-    field (radius 380) laid by the controller at every rung. NO NUCLEUS, no flora, no fauna.
-    Authored by Tools/Build/author_serpent_gulag_assets.py - re-run it rather than
-    hand-editing.'
+  Description: 'Watchtowers - intensity 2 of Serpent Gulag: eight sniper nests on a ring round the
+    field (a firing slit facing the middle, an entry at the back) and forty rubble clusters
+    through the shell. 1568 prisms, all neutral. Membrane radius 3600 (Cleave''s x3 shell),
+    spawn ring 2200, the crystal field (radius 380) laid by the controller at every rung. NO
+    NUCLEUS, no flora, no fauna. Authored by Tools/Build/author_serpent_gulag_assets.py -
+    re-run it rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -32,11 +32,11 @@ MonoBehaviour:
   EnvironmentIntensity: 2
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 1636
-    RestlessExit: 1436
-    FrenzyEnter: 4536
-    FrenzyExit: 3936
-    RestlessEnterVolume: 583781
-    RestlessExitVolume: 580581
-    FrenzyEnterVolume: 630181
-    FrenzyExitVolume: 620581
+    RestlessEnter: 2268
+    RestlessExit: 2068
+    FrenzyEnter: 5168
+    FrenzyExit: 4568
+    RestlessEnterVolume: 1004439
+    RestlessExitVolume: 1001239
+    FrenzyEnterVolume: 1050839
+    FrenzyExitVolume: 1041239
