@@ -8,7 +8,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Serpent Time - the Serpent-only circuit race, and the Serpent's TIME card: the <b>dirty</b> race (Shombith,
+    /// Serpentine (named 2026-10-31; <c>GameModes.SerpentTime</c>, and every id and file keep that name) - the Serpent-only circuit race, and the Serpent's TIME card: the <b>dirty</b> race (Shombith,
     /// 2026-10-27, <c>Docs/Studios/SERPENT_TIME.md</c>). A closed loop of gates is cut through the cell and every
     /// pilot flies LAPS of it in order; the first domain whose lead runner threads the last gate of the last lap wins,
     /// scored on finish TIME.
@@ -19,14 +19,22 @@ namespace CosmicShore.Gameplay
     /// threads it (<see cref="SerpentTimeCluster"/>). The course's own ring stays as the gate the platform, the
     /// objective arrow and the race toasts read; only its drawing is hidden.</item>
     /// <item><b>Guarded rings.</b> A gate stands 2 rings at I1-I2 and 1 at I3-I4, and one ring of each gate is guarded
-    /// by a living plant: a Borromean flora (a membrane spanning its own rings) planted at the ring's mouth, of an element
+    /// by a living plant: a Borromean flora (a membrane spanning its own rings) standing near it (below), of an element
     /// that rises with intensity (Time at I1: plain plates; Mass: shielded plates that bounce a hull; Charge at I4: every
     /// plate danger). Fly the open ring, or hit the guard's HEART: a sniper round or a hull that passes through the
     /// middle of the plant fells all of it - every plate blows apart outward from the heart and the ring is open. What
     /// reaching the middle costs is the plates' own (Time's are free to ram through, Charge's burn petals, Mass's bounce
     /// a hull, so a Mass guard is shot). The guard is ordinary flora of the cell: it grows in, fauna graze it, and it
     /// dies by the ordinary flora death (its last plate gone, its heart drops). Nothing about the Serpent changes.</item>
-    /// <item><b>The cell's own life.</b> The race runs in the barren Skim Race cell with its trail-grazing food web (the
+    /// <item><b>Where the guards stand.</b> Not in the mouth: a fixed walk by gate (<see cref="SerpentTimeCluster.PlacementFor"/>)
+    /// puts each one on the racing line a little before its ring, beside the ring half-covering it, or as a pair either side
+    /// of the line before it, a narrow door. Gate 0's always stands beside, so the start is clear.</item>
+    /// <item><b>The start.</b> Everyone starts on a small ring behind gate 0, pointed through it (<see cref="TryBuildSpawnPoses"/>),
+    /// the course built early from the same seed it is later built from.</item>
+    /// <item><b>The cell's current.</b> The cytoplasm's shards point along the race line instead of at a crystal
+    /// (<see cref="SnowChanger.IFlow"/>), streaming round the circuit, so the course reads from anywhere in the cell
+    /// without drawing a track.</item>
+    /// <item><b>The cell's own life.</b> The race runs in its own copy of the barren Skim Race cell, with half its grazers (the
     /// Rampage forest it ran in for a day cost too much frame time, 2026-10-31); the guards are its flora.</item>
     /// <item><b>Gate debris.</b> Loose neutral prisms lie round every gate and grow back, so a Serpent that cloaks
     /// there has the mass its Seed Wall grows from. The debris is the environment's; the wall is the shipped one.</item>
@@ -45,7 +53,7 @@ namespace CosmicShore.Gameplay
     /// Fuel Pellets (each press burns one for 3 s, burns stack). See <see cref="SerpentTimeCourse"/> and
     /// SERPENTTIME.md.</para>
     /// </summary>
-    public class SerpentTimeController : GateRaceController
+    public class SerpentTimeController : GateRaceController, IPlayerSpawnLine
     {
         [Header("Serpent Time circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
@@ -75,6 +83,30 @@ namespace CosmicShore.Gameplay
         [SerializeField] int[] guardElementsI3 = { 2, 1 };
         [Tooltip("I4: the guard's element per gate (1 Charge, 2 Mass, 3 Space, 4 Time).")]
         [SerializeField] int[] guardElementsI4 = { 1, 2, 1 };
+
+        [Header("Where the guards stand")]
+        [Tooltip("How far before its ring (u), against the flow, an approach guard or a door stands: nearest and farthest " +
+                 "(each gate picks its own in between).")]
+        [SerializeField] Vector2 guardApproachDistance = new(150f, 300f);
+        [Tooltip("A beside guard's heart, off the ring's centre in the ring's plane, as a share of the mouth's radius.")]
+        [SerializeField, Range(0f, 2f)] float guardBesideFraction = 0.8f;
+        [Tooltip("A door's two hearts each stand this far (u) either side of the racing line. The plants are about 55 u " +
+                 "across (Time, Charge), so 70 leaves a narrow gap between them.")]
+        [SerializeField, Min(0f)] float guardDoorHalfWidth = 70f;
+
+        [Header("Start line")]
+        [Tooltip("How far behind gate 0 (u), against its axis, the start ring sits. Everyone starts there pointed through it.")]
+        [SerializeField, Min(1f)] float startLineStandoff = 300f;
+        [Tooltip("Radius (u) of the start ring round gate 0's axis.")]
+        [SerializeField, Min(0f)] float startLineRadius = 90f;
+
+        [Header("The cell's current")]
+        [Tooltip("Shards within this distance (u) of the race line are drawn as long streaks along it; past it they shrink " +
+                 "to motes, still pointing the way.")]
+        [SerializeField, Min(1f)] float currentStreakDistance = 450f;
+        [Tooltip("How hard a shard off the line leans back toward it (0 = only along the line). The current reads as a " +
+                 "river with a pull, so a pilot off course sees which way the line is.")]
+        [SerializeField, Range(0f, 2f)] float currentPull = 0.6f;
 
         [Header("Felling a guard (hit its heart)")]
         [Tooltip("A sniper round, or a hull, that passes within this distance (u) of a guard's heart fells the whole plant. " +
@@ -124,7 +156,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds the AI tries to line up a shot before it lowers the scope.")]
         [SerializeField, Min(0.1f)] float aiShotGiveUpSeconds = 3f;
 
-        protected override string ModeName => "Serpent Time";
+        protected override string ModeName => "Serpentine";
 
         /// <summary>Regatta's gate steering, which made the AI race Switchback and Warpline: commit from
         /// the approach point and aim through the ring's centre.</summary>
@@ -232,6 +264,7 @@ namespace CosmicShore.Gameplay
         {
             ReleasePilots();
             _guards.Clear();
+            ClearCurrent();
             ClearDebris();
             base.OnNetworkDespawn();
             _clusters.Clear();
@@ -264,6 +297,10 @@ namespace CosmicShore.Gameplay
             int rings = Mathf.Min(MaxRings, SerpentTimeCluster.RingsFor(Intensity, ringsPerGateByIntensity));
             LayGateDebris(rings);
             PlantGuards(rings);
+            // The next match draws its own seed (the start line latched this one).
+            _startSeedLatched = false;
+            _currentPending = _course.Count >= 2;
+            TryLayCurrent();
             if (rings <= 1) return;
 
             var theme = gameData ? gameData.ThemeManagerData : null;
@@ -291,9 +328,10 @@ namespace CosmicShore.Gameplay
         // ── Guarded rings (every peer) ────────────────────────────────────
 
         /// <summary>
-        /// Plant one guard flora at the mouth of each guarded ring, through the cell's own spawn call
-        /// (<see cref="CellLifeSpawnerBase.SpawnFlora"/>, the call the Spawn Matrix toy roots its plants with): rooted at the
-        /// ring's centre, grown along the ring's axis, so its membrane spans the mouth. Every peer plants its own, at the
+        /// Plant the guard flora of each guarded ring where its gate's placement puts them (before it, beside it, or a door
+        /// of two before it: <see cref="SerpentTimeCluster.GuardHearts"/>), through the cell's own spawn call
+        /// (<see cref="CellLifeSpawnerBase.SpawnFlora"/>, the call the Spawn Matrix toy roots its plants with), rooted at the
+        /// heart's spot. Every peer plants its own, at the
         /// same pose, element and domain (a playable domain picked by a hash of the gate: never Blue, which is bait to every
         /// fauna school), as the debris is laid. The plant is the cell's from then on: it grows, is grazed, and drops its
         /// heart when it dies. The plant turns itself to a random attitude when it plants (one shape, many faces), so its
@@ -320,20 +358,137 @@ namespace CosmicShore.Gameplay
                 var cfg = GuardFor(pattern[i % pattern.Length]);
                 if (!cfg || !cfg.FloraPrefab) continue;
                 var ring = SerpentTimeCluster.Ring(_course[i], i, slot, rings);
-                var flora = CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg, ring.Position, ring.Axis,
-                    Quaternion.LookRotation(ring.Axis), domainOverride: SerpentTimeCluster.GuardDomain(i, slot));
-                if (flora) _guards.Add(new Guard { Flora = flora, Gate = i, Slot = slot });
+                int hearts = SerpentTimeCluster.GuardHearts(ring, i, slot, SerpentTimeCluster.PlacementFor(i),
+                    guardApproachDistance, guardBesideFraction, guardDoorHalfWidth, s_hearts);
+                for (int h = 0; h < hearts; h++)
+                {
+                    var flora = CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg, s_hearts[h], ring.Axis,
+                        Quaternion.LookRotation(ring.Axis), domainOverride: SerpentTimeCluster.GuardDomain(i, slot));
+                    if (flora) _guards.Add(new Guard { Flora = flora, Gate = i, Slot = slot });
+                }
             }
         }
 
         FloraConfigurationSO GuardFor(int element) =>
             guardFloraByElement != null && element >= 1 && element <= guardFloraByElement.Length ? guardFloraByElement[element - 1] : null;
 
-        Guard GuardAt(int gateIndex, int slot)
+        static readonly Vector3[] s_hearts = new Vector3[2];
+
+        // ── The start line (server, during the spawn chain) ───────────────
+
+        int _startSeed;
+        bool _startSeedLatched;
+
+        /// <summary>One seed for the start line and the course: whichever asks first draws it, the other reuses it.</summary>
+        protected override int PickCourseSeed()
         {
-            for (int i = 0; i < _guards.Count; i++)
-                if (_guards[i].Gate == gateIndex && _guards[i].Slot == slot) return _guards[i];
-            return null;
+            if (!_startSeedLatched)
+            {
+                _startSeed = base.PickCourseSeed();
+                _startSeedLatched = true;
+            }
+            return _startSeed;
+        }
+
+        /// <summary>
+        /// Everyone starts on a ring behind gate 0, pointed through it (Regatta's and Skein's start, <see cref="CellSpawnFormation.BuildFacingRing"/>):
+        /// the platform's cell ring stood every pilot on the equator facing the centre, with gate 0 hundreds of units up
+        /// on the pole. The course is pure geometry, so it is built here from the seed it will be built from
+        /// (<see cref="PickCourseSeed"/>), the same shell and the same gate count. Declines (the platform ring) when the
+        /// cell cannot answer yet, rather than guess a shell the course would not be built in.
+        /// </summary>
+        public bool TryBuildSpawnPoses(int count, out Pose[] poses)
+        {
+            poses = null;
+            RaceGate first;
+            if (_course.Count > 0) first = _course[0];
+            else
+            {
+                if (gameData == null || !cellData || !Cell.FindByRuntimeData(cellData)) return false;
+                ResolveShell(out float inner, out float outer);
+                var request = new RaceCourseRequest(PickCourseSeed(), Intensity, AuthoredGateTarget(), inner, outer,
+                                                    ResolveCourseConfig());
+                var course = CourseSource.Build(request, out _);
+                if (course == null || course.Count == 0) return false;
+                first = new RaceGate(course[0].Position + ResolveCellCentre(), course[0].Axis, course[0].Radius);
+            }
+            poses = CellSpawnFormation.BuildFacingRing(count, first.Position, first.Axis, startLineStandoff, startLineRadius);
+            return true;
+        }
+
+        // ── The cell's current (every peer) ───────────────────────────────
+
+        /// <summary>
+        /// The race line as a current for the cytoplasm: each shard points along the circuit where it is nearest it (gate
+        /// to gate, in race order), leaning back toward the line by <see cref="currentPull"/>, and is drawn long near the line
+        /// and as a mote far from it. A closed polyline of a lap's gates: one segment test per gate per shard, on the
+        /// shards' own time-sliced reorientation.
+        /// </summary>
+        sealed class CourseCurrent : SnowChanger.IFlow
+        {
+            readonly Vector3[] _points;
+            readonly float _streak, _pull;
+
+            public CourseCurrent(List<RaceGate> course, float streak, float pull)
+            {
+                _points = new Vector3[course.Count];
+                for (int i = 0; i < course.Count; i++) _points[i] = course[i].Position;
+                _streak = Mathf.Max(1f, streak);
+                _pull = pull;
+            }
+
+            public bool TryFlow(Vector3 position, out Vector3 direction, out float stretch01)
+            {
+                direction = Vector3.forward;
+                stretch01 = 0f;
+                int n = _points.Length;
+                if (n < 2) return false;
+
+                float best = float.MaxValue;
+                Vector3 closest = _points[0], along = Vector3.forward;
+                for (int i = 0; i < n; i++)
+                {
+                    Vector3 a = _points[i], b = _points[(i + 1) % n];
+                    Vector3 ab = b - a;
+                    float len2 = ab.sqrMagnitude;
+                    if (len2 < 1e-4f) continue;
+                    float t = Mathf.Clamp01(Vector3.Dot(position - a, ab) / len2);
+                    Vector3 c = a + ab * t;
+                    float d2 = (position - c).sqrMagnitude;
+                    if (d2 >= best) continue;
+                    best = d2;
+                    closest = c;
+                    along = ab / Mathf.Sqrt(len2);
+                }
+
+                float distance = Mathf.Sqrt(best);
+                Vector3 toLine = distance > 1e-3f ? (closest - position) / distance : Vector3.zero;
+                direction = along + toLine * (_pull * Mathf.Clamp01(distance / _streak));
+                stretch01 = 1f - Mathf.Clamp01(distance / _streak);
+                return true;
+            }
+        }
+
+        SnowChanger _currentOn;
+        bool _currentPending;
+
+        /// <summary>Hand the course to the cell's cytoplasm, once the cell has made one (retried each frame until then).</summary>
+        void TryLayCurrent()
+        {
+            if (!_currentPending) return;
+            var cell = cellData ? Cell.FindByRuntimeData(cellData) : null;
+            var snow = cell ? cell.Cytoplasm : null;
+            if (!snow) return;
+            _currentPending = false;
+            _currentOn = snow;
+            snow.SetFlow(new CourseCurrent(_course, currentStreakDistance, currentPull));
+        }
+
+        void ClearCurrent()
+        {
+            _currentPending = false;
+            if (_currentOn) _currentOn.SetFlow(null);
+            _currentOn = null;
         }
 
         /// <summary>
@@ -623,12 +778,15 @@ namespace CosmicShore.Gameplay
 
         bool IsScoped(Pilot pilot) => pilot.Scope && pilot.Scope.IsScoped;
 
+        void TickLayCurrentIfPending() { if (_currentPending) TryLayCurrent(); }
+
         // A subclass must not declare Update (GateRaceController.Update runs the race); LateUpdate is free.
         void LateUpdate()
         {
             if (!IsSpawned || gameData == null || !gameData.IsTurnRunning) return;
 
             using var _ = s_tickMarker.Auto();
+            TickLayCurrentIfPending();
             TickGuards();
             TickDebrisRegrow();
 
@@ -690,15 +848,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Is this ring closed to the AI, and where does it shoot to open it? A standing Mass or Charge guard closes it, aimed
-        /// at its heart (a round through the middle fells the plant); a Time guard does not, because the AI's line through
-        /// the ring's centre runs through the heart and fells it for free. Otherwise, a rival wall (<see cref="IsWalled"/>).
+        /// Is this ring closed to the AI, and where does it shoot to open it? A standing Mass or Charge guard of the ring
+        /// (before it, beside it, or either side of a door) closes it, aimed at its heart (a round through the middle fells
+        /// the plant); a Time guard does not: its plates break free, and on the approach the AI's line runs through its
+        /// heart and fells it. Otherwise, a rival wall (<see cref="IsWalled"/>).
         /// </summary>
         bool Blocked(int gateIndex, int slot, in RaceGate ring, Domains domain, out Vector3 aim)
         {
-            var guard = GuardAt(gateIndex, slot);
-            if (guard != null && guard.Standing && guard.CostsToRam)
+            // A door is two guards on one ring: the first one standing is shot, then the other.
+            for (int i = 0; i < _guards.Count; i++)
             {
+                var guard = _guards[i];
+                if (guard.Gate != gateIndex || guard.Slot != slot || !guard.Standing || !guard.CostsToRam) continue;
                 aim = guard.Flora.HeartTransform.position;
                 return true;
             }

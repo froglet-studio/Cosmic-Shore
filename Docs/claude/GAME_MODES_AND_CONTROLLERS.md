@@ -960,7 +960,7 @@ spec file each (`author_scarab_rally_assets.py`, `author_serpent_time_assets.py`
   now the Scarab's Mass card (`ModeGenre`).
 - **Serpent Time** and **Brittle Star Time** use Thresher Time's shape (8 rings x 2 laps on the shared
   `HeadlongCircuit`), cut against a full pellet stack's ~100 u circle and Speed Mode's ~145 u circle.
-- **Serpent Time is the dirty race** (Shombith, 2026-10-27, `Docs/Studios/SERPENT_TIME.md`): each gate is a cluster of
+- **Serpent Time (shown as Serpentine since 2026-10-31) is the dirty race** (Shombith, 2026-10-27, `Docs/Studios/SERPENT_TIME.md`): each gate is a cluster of
   3 or 2 rings (any one counts), 48 regrowing debris prisms round every gate feed Seed Walls, a rival's wall brick costs
   a hull its speed, sniper rounds come from crystals (1 to start, 3 at most, 1 per shot), and the AI picks the open
   ring, shoots walls open, detours for crystals and cloaks past rings rivals still need. Four opt-in hooks on

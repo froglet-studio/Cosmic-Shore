@@ -130,6 +130,40 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Guards_mix_their_placements_and_keep_the_start_clear()
+        {
+            Assert.AreEqual(SerpentTimeCluster.GuardPlacement.Beside, SerpentTimeCluster.PlacementFor(0),
+                "gate 0's guard stands beside its ring: the start line is behind gate 0");
+            var seen = new HashSet<SerpentTimeCluster.GuardPlacement>();
+            for (int gate = 0; gate < 8; gate++) seen.Add(SerpentTimeCluster.PlacementFor(gate));
+            Assert.AreEqual(3, seen.Count, "a lap mixes approach, beside and door guards");
+
+            var ring = new RaceGate(new Vector3(0f, 800f, 0f), Vector3.forward, 60f);
+            var hearts = new Vector3[2];
+            var range = new Vector2(150f, 300f);
+            for (int gate = 0; gate < 16; gate++)
+            {
+                Assert.AreEqual(1, SerpentTimeCluster.GuardHearts(ring, gate, 0, SerpentTimeCluster.GuardPlacement.Approach,
+                                                                   range, 0.8f, 70f, hearts));
+                Vector3 off = hearts[0] - ring.Position;
+                Assert.That(-off.z, Is.InRange(150f - 1e-3f, 300f + 1e-3f), "an approach guard is 150-300 u before the ring");
+                Assert.AreEqual(0f, new Vector2(off.x, off.y).magnitude, 1e-3f, "...on the line through it");
+
+                SerpentTimeCluster.GuardHearts(ring, gate, 0, SerpentTimeCluster.GuardPlacement.Beside, range, 0.8f, 70f, hearts);
+                off = hearts[0] - ring.Position;
+                Assert.AreEqual(0f, off.z, 1e-3f, "a beside guard is in the ring's plane");
+                Assert.AreEqual(48f, off.magnitude, 1e-2f, "...0.8 of the mouth off its centre");
+
+                Assert.AreEqual(2, SerpentTimeCluster.GuardHearts(ring, gate, 0, SerpentTimeCluster.GuardPlacement.Door,
+                                                                   range, 0.8f, 70f, hearts));
+                Vector3 mid = (hearts[0] + hearts[1]) * 0.5f - ring.Position;
+                Assert.AreEqual(0f, new Vector2(mid.x, mid.y).magnitude, 1e-3f, "a door is centred on the line");
+                Assert.AreEqual(140f, Vector3.Distance(hearts[0], hearts[1]), 1e-2f, "...its two hearts 2 x 70 u apart");
+                Assert.AreEqual(0f, (hearts[0] - hearts[1]).z, 1e-3f, "...across the line, not along it");
+            }
+        }
+
+        [Test]
         public void A_round_fells_a_guard_only_through_its_heart()
         {
             var origin = Vector3.zero;

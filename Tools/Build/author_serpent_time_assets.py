@@ -50,8 +50,56 @@ FIELDS = """  rule: {{fileID: 11400000, guid: {rule}, type: 2}}
   reportResyncSeconds: 3
 """
 
+# The race's OWN cell (2026-10-31, Shombith: "you can decrease the number of fauna", picked: half): Skim Race's barren cell,
+# spawn profile and two grazers copied verbatim with only their names, their cross-references and the fauna numbers changed,
+# so the ~10 other modes on the Skim Race cell are untouched. Tadpoles 12 (up to 40) -> 6 (up to 20), brittlestars 4 (up
+# to 16) -> 2 (up to 8). Re-read from the Skim Race assets every run, so a change there reaches this copy.
+SKIM_DIR = "Assets/_SO_Assets/Cell Configs/Skim Race Cell"
+OWN_DIR = "Assets/_SO_Assets/Cell Configs/Serpentine Cell"
+FAUNA_CUTS = {  # source name: (own name, InitialSpawnCount, PopulationSize, MaxLivePopulation)
+    "Skim Race Tadpole Fauna Config Data": ("Serpentine Tadpole Fauna Config Data", 6, 6, 20),
+    "Skim Race Brittlestar Fauna Config Data": ("Serpentine Brittlestar Fauna Config Data", 2, 2, 8),
+}
+
+
+def _own_cell_assets():
+    import re
+    out, swaps = [], {}
+    for src, (name, initial, population, cap) in FAUNA_CUTS.items():
+        text = open(os.path.join(lib.ROOT, f"{SKIM_DIR}/{src}.asset"), encoding="utf-8").read()
+        for key, value in (("InitialSpawnCount", initial), ("PopulationSize", population), ("MaxLivePopulation", cap)):
+            text, n = re.subn(rf"^  {key}: \d+$", f"  {key}: {value}", text, flags=re.M)
+            assert n == 1, f"{src}: {key} not found once"
+        text = text.replace(f"m_Name: {src}\n", f"m_Name: {name}\n")
+        g_own = lib.guid(f"asset/{name}")
+        swaps[lib.existing_guid(f"{SKIM_DIR}/{src}.asset")] = g_own
+        out.append((f"{OWN_DIR}/{name}.asset", g_own, text))
+
+    profile = open(os.path.join(lib.ROOT, f"{SKIM_DIR}/Skim Race Spawn Profile.asset"), encoding="utf-8").read()
+    for old, new in swaps.items():
+        assert profile.count(old) == 1, f"spawn profile: fauna {old} not listed once"
+        profile = profile.replace(old, new)
+    profile = profile.replace("m_Name: Skim Race Spawn Profile\n", "m_Name: Serpentine Spawn Profile\n")
+    g_profile = lib.guid("asset/Serpentine Spawn Profile")
+    out.append((f"{OWN_DIR}/Serpentine Spawn Profile.asset", g_profile, profile))
+
+    cell = open(os.path.join(lib.ROOT, f"{SKIM_DIR}/Skim Race Cell Config.asset"), encoding="utf-8").read()
+    old_profile = lib.existing_guid(f"{SKIM_DIR}/Skim Race Spawn Profile.asset")
+    assert cell.count(old_profile) == 1, "cell config: spawn profile not referenced once"
+    cell = cell.replace(old_profile, g_profile)
+    cell = cell.replace("m_Name: Skim Race Cell Config\n", "m_Name: Serpentine Cell Config\n")
+    cell = re.sub(r"^  CellName: .*$", "  CellName: Serpentine", cell, count=1, flags=re.M)
+    cell = re.sub(r"^  Description: .*$", "  Description: Skim Race's barren race cell with half its grazers (Serpentine)",
+                  cell, count=1, flags=re.M)
+    g_cell = lib.guid("asset/Serpentine Cell Config")
+    out.append((f"{OWN_DIR}/Serpentine Cell Config.asset", g_cell, cell))
+    return out, g_cell
+
+
+OWN_CELL_ASSETS, OWN_CELL = _own_cell_assets()
+
 htr.author(dict(
-    member="SerpentTime", display="Serpent Time", hull="Serpent", class_id=lib.VESSEL_CLASS_ID["Serpent"],
+    member="SerpentTime", display="Serpentine", hull="Serpent", class_id=lib.VESSEL_CLASS_ID["Serpent"],
     scripts={
         "SerpentTimeController":   f"{MODE_DIR}/SerpentTimeController.cs",
         "SerpentTimeCourse":       f"{MODE_DIR}/SerpentTimeCourse.cs",
@@ -73,7 +121,8 @@ htr.author(dict(
     max_speed=460,
     # The barren Skim Race cell with its trail-grazing food web (Skim Race's own, the fastest arena in the game). Rampage's
     # four forests ran here for a day (2026-10-31) and cost too much frame time; the race's flora are now its ring guards.
-    cell_configs=[lib.existing_guid("Assets/_SO_Assets/Cell Configs/Skim Race Cell/Skim Race Cell Config.asset")],
+    cell_configs=[OWN_CELL],
+    extra_assets=OWN_CELL_ASSETS,
     target=16, laps=2, target_key="serpentTimeGateTarget", target_after="scarabRallyGateTarget",
     # A quarter-of-race deficit (4 gates) x 0.45 = 1.8 element levels - Thresher Time's number on the
     # same 16-gate race. The Serpent's Time lengthens a pellet's burn (3 s -> 4.8 s).

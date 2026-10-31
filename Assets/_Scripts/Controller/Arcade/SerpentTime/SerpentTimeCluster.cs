@@ -105,6 +105,72 @@ namespace CosmicShore.Gameplay
             return (h % 3u) switch { 0u => Domains.Jade, 1u => Domains.Ruby, _ => Domains.Gold };
         }
 
+        /// <summary>Where a gate's guard stands (Shombith, 2026-10-31: "don't just place them on the rings ... a little
+        /// bit earlier or around the ring").</summary>
+        public enum GuardPlacement
+        {
+            /// <summary>On the racing line, a little before the ring: dodge it, or hit its heart on the way in.</summary>
+            Approach = 0,
+            /// <summary>Beside the ring, its heart in the ring's plane off the centre: it half-covers the mouth.</summary>
+            Beside = 1,
+            /// <summary>A pair either side of the line a little before the ring: a narrow door to thread first.</summary>
+            Door = 2,
+        }
+
+        /// <summary>
+        /// The placement at gate <paramref name="gateIndex"/>: a fixed walk Beside, Approach, Door, Beside, ... so every lap
+        /// mixes all three and every peer agrees. Gate 0 is always Beside, so nothing stands on the start line (the start
+        /// is behind gate 0, pointed through it).
+        /// </summary>
+        public static GuardPlacement PlacementFor(int gateIndex) =>
+            (GuardPlacement)(((Mathf.Max(0, gateIndex) * 2 + 1) % 3 + 3) % 3);
+
+        /// <summary>
+        /// Where the guard hearts of <paramref name="placement"/> go for ring <paramref name="slot"/> of gate
+        /// <paramref name="gateIndex"/>, written into <paramref name="hearts"/> (length 2 or more); returns how many (1, or
+        /// 2 for a door). "Before" is against the ring's axis (the flow), by a distance in <paramref name="approachDistance"/>
+        /// picked from the gate; "beside" and the door's sides lie on a direction across the axis, also picked from the gate.
+        /// The same on every peer.
+        /// </summary>
+        public static int GuardHearts(in RaceGate ring, int gateIndex, int slot, GuardPlacement placement,
+                                      Vector2 approachDistance, float besideFraction, float doorHalfWidth, Vector3[] hearts)
+        {
+            Vector3 axis = ring.Axis.sqrMagnitude > 1e-6f ? ring.Axis.normalized : Vector3.forward;
+            Vector3 s = Vector3.Cross(axis, Vector3.up);
+            if (s.sqrMagnitude < 1e-4f) s = Vector3.Cross(axis, Vector3.right);
+            s.Normalize();
+            Vector3 u = Vector3.Cross(s, axis);
+
+            float angle = Hash01(gateIndex, slot, 0x68e31da4u) * 2f * Mathf.PI;
+            Vector3 across = Mathf.Cos(angle) * s + Mathf.Sin(angle) * u;
+            float back = Mathf.Lerp(Mathf.Min(approachDistance.x, approachDistance.y),
+                                    Mathf.Max(approachDistance.x, approachDistance.y), Hash01(gateIndex, slot, 0xb5297a4du));
+
+            switch (placement)
+            {
+                case GuardPlacement.Beside:
+                    hearts[0] = ring.Position + across * (ring.Radius * besideFraction);
+                    return 1;
+                case GuardPlacement.Door:
+                    Vector3 door = ring.Position - axis * back;
+                    hearts[0] = door + across * doorHalfWidth;
+                    hearts[1] = door - across * doorHalfWidth;
+                    return 2;
+                default:
+                    hearts[0] = ring.Position - axis * back;
+                    return 1;
+            }
+        }
+
+        static float Hash01(int gateIndex, int slot, uint salt)
+        {
+            uint h = unchecked((uint)gateIndex * 2654435761u ^ (uint)slot * 40503u ^ salt);
+            h ^= h >> 15;
+            h = unchecked(h * 2246822519u);
+            h ^= h >> 13;
+            return (h & 0xFFFFFFu) / (float)0x1000000;
+        }
+
         /// <summary>
         /// Does a sniper round fired from <paramref name="origin"/> along <paramref name="forward"/> (unit) pass through a
         /// guard's heart at <paramref name="heart"/>? In front of the muzzle, within the round's <paramref name="range"/>, and

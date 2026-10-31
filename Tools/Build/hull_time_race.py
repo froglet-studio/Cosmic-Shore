@@ -69,6 +69,8 @@ def author(spec: dict):
     comeback, description, preview_objective, preview_notes, build_after, max_speed, card_extra_checks,
     new_field_lines (optional: serialized lines appended to the controller block, the mode's own fields),
     extra_toasts (optional: [(situation, template[, lib.toast kwargs])], the mode's own toasts after the race beats)
+    extra_assets (optional: [(rel path, guid, content), ...] - assets the mode owns beyond its card, rule, toasts and
+    preview, e.g. its own cell config; emitted and minted like them),
     cell_configs (optional: [cell config guid, ...] - the scene Cell's CellConfigs; more than one is IntensityWise,
                   list order = intensity 1..n. Omitted: the donor's barren race cell stays)
     """
@@ -144,6 +146,14 @@ def author(spec: dict):
             scene = lib.swap_guid(scene, f"GlobalObjectIdHash: {old}\n", f"GlobalObjectIdHash: {n}\n",
                                   f"network hash {old}", expected=scene.count(f"GlobalObjectIdHash: {old}\n"))
         return scene
+
+    extra = spec.get("extra_assets", [])
+    # Their folders are the mode's own (new) folders, so they get minted metas like the mode's script folder.
+    extra_dirs = sorted({os.path.dirname(rel) for rel, _, _ in extra})
+    for d in extra_dirs:
+        g.folder_meta(d)
+    for rel, g_extra, content in extra:
+        g.emit_asset(rel, g_extra, content)
 
     cell_block = None
     if spec.get("cell_configs"):
@@ -255,7 +265,8 @@ def author(spec: dict):
     errors += spec.get("extra_errors", [])
 
     minted = list(g_script.values()) + [g_card, g_rule, g_preview, g_scene, g_toasts,
-                                        guid(f"folder/{mode_dir}"), guid(f"text/{spec['doc']}")]
+                                        guid(f"folder/{mode_dir}"), guid(f"text/{spec['doc']}")] + [x[1] for x in extra] \
+        + [guid(f"folder/{d}") for d in extra_dirs]
     g.finish(errors, referenced={"Vessel": vessel_guid, "BarrenRaceCell": BARREN_RACE_CELL,
                                  "PreviewCell": PREVIEW_CELL, "GateRaceScoringRuleSO": GATE_RACE_SCORING_RULE_SO},
              minted=minted)

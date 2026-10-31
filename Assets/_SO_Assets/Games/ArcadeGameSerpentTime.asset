@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   Mode: 73
   IsMultiplayer: 1
-  DisplayName: Serpent Time
+  DisplayName: Serpentine
   Description: Serpents only, and it is a dirty race through a living cell. Every gate is a
     ring or two, and a living plant guards one of them - plain at first, armoured and then
     dangerous as the intensity rises: take the open ring, or hit the guard's heart, with a

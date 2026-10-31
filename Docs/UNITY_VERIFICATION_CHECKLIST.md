@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpentine (Serpent Time): guards off the mouth, start behind gate 0, the cell's current, half the fauna (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session (no editor, no .NET SDK). Touches Yash's `SnowChanger` (a null-default `IFlow` hook: every
+other mode keeps pointing its shards at the crystal; check Skim Race too).
+
+1. Open `MinigameSerpentTime`, save once; console clean. The card reads **Serpentine**. The Cell lists Serpentine Cell
+   Config (`Assets/_SO_Assets/Cell Configs/Serpentine Cell/`).
+2. Start any intensity with 3 AI: everyone spawns on a small ring a few hundred units behind the first ring, nose
+   through it, not on the equator facing the centre.
+3. The shards in the cell all stream along the course; near the line they are long streaks, far away small motes that
+   lean toward the line. Fly a lap: the current turns where the course turns.
+4. Guards: gate 1's stands beside its ring, half-covering it; others stand 150-300 u before their ring on the line, or
+   as a pair either side of the line (a door with a narrow gap). None sit in a mouth. A heart hit still fells each one.
+5. Fauna: about half as many tadpoles and brittlestars as Skim Race.
+6. Skim Race: its shards still point at its crystal (regression check on `SnowChanger`).
+7. EditMode: `SerpentTimeClusterTests.Guards_mix_their_placements_and_keep_the_start_clear`.
+
 ### 🔴 Serpent Time: hit a guard's heart and the whole plant falls (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Extends the guarded-rings entry below. Mode code only (`SerpentTimeController.TickGuards` / `BeginFell` / `TickFell`,
