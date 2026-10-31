@@ -1,0 +1,18 @@
+{
+ "args": {
+  "intensity": 1,
+  "mode": "ThresherTime",
+  "vessel": "Thresher"
+ },
+ "budget": {
+  "tries": 10
+ },
+ "by": "you",
+ "created": 1793467116,
+ "id": "r20261031-224836-9a6a",
+ "job": "unity-train",
+ "machine": "shombithofficial/dragonsweapon",
+ "note": "",
+ "schema": "froglet-compute/request/1",
+ "start": "now"
+}
