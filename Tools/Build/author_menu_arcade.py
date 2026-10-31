@@ -122,7 +122,9 @@ ANY_VESSEL = -1                                         # VesselClassType.Any: t
 
 
 def vessel_choices():
-    """[(name, VesselClassType value)]: All, then each hull some arcade card seats, the Hangar's list order first."""
+    """[(name, VesselClassType value)]: All, then EVERY hull in the Hangar's list, in its order, then any hull an arcade
+    card seats that the list lacks. Shombith, 2026-10-31: "all vessels do not show up here" - the row used to offer only
+    the hulls some card seats (13 of 21, and the retired Butterfly). A hull with no game yet shows an empty grid."""
     by_guid = {}
     for meta in glob.glob(os.path.join(REPO, "Assets/_SO_Assets/**/*.asset.meta"), recursive=True):
         g = re.search(r"^guid: (\w+)", open(meta, encoding="utf-8").read(), re.M)
@@ -145,7 +147,7 @@ def vessel_choices():
             if v:
                 seated.add(v)
     listed = [vessel(read(g)) for g in re.findall(r"guid: (\w+)", open(os.path.join(REPO, VESSEL_LIST), encoding="utf-8").read())]
-    order = [v for v in listed if v in seated] + sorted(seated - set(listed), key=lambda v: v[1])
+    order = [v for v in listed if v] + sorted(seated - set(listed), key=lambda v: v[1])
     assert order, "no arcade card seats a vessel (ArcadeGames.asset moved?)"
     return [("All", ANY_VESSEL)] + order
 
@@ -1221,13 +1223,32 @@ def all_games_header(content):
 def option_row(content, key, names):
     """A row of option tabs under ALL GAMES, hidden (out of the layout) until its button opens it; the chosen one is
     underlined in the selection blue (KitTextTab)."""
-    row = content.child(N(key, key, R((0, 1), None, (0, 0), (CONTENT_W, OPT_ROW_H), (0, 1))))
-    row.add("cg", 225, canvas_group(False)).add("le", 114, le(ph=OPT_ROW_H, ignore=True)) \
-        .add("hlg", 114, K.hv_layout(False, (0, 0, 2, 2), 14, 3, (0, 0), (0, 0)))
+    lines = option_lines(names)
+    h = OPT_ROW_H * len(lines)
+    row = content.child(N(key, key, R((0, 1), None, (0, 0), (CONTENT_W, h), (0, 1))))
+    row.add("cg", 225, canvas_group(False)).add("le", 114, le(ph=h, ignore=True)) \
+        .add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 0, 0, (0, 0), (0, 0)))
+    # The options wrap onto as many lines as they need (the full fleet is wider than the grid): line 1 is the row itself
+    # when one line holds them all, so a short row (the elements) keeps its old shape.
+    for li, line in enumerate(lines):
+        holder = row.child(N(f"{key}/Line{li}", f"Line{li}", R((0, 1), None, (0, 0), (CONTENT_W, OPT_ROW_H), (0, 1))))
+        holder.add("hlg", 114, K.hv_layout(False, (0, 0, 2, 2), 14, 3, (0, 0), (0, 0)))
+        for i in line:
+            n = names[i]
+            H.text_tab(holder, f"{key}/Tab{i}", f"Tab{i}", n.upper(), "Label", K.label_width(n.upper(), "Label") + 16, 30)
+
+
+def option_lines(names):
+    """The option indices split into lines that each fit the grid's width, in order."""
+    lines, line, width = [], [], 0
     for i, n in enumerate(names):
-        H.text_tab(row, f"{key}/Tab{i}", f"Tab{i}", n.upper(), "Label", K.label_width(n.upper(), "Label") + 16, 30)
-    width = sum(K.label_width(n.upper(), "Label") + 16 for n in names) + 14 * (len(names) - 1)
-    assert width <= CONTENT_W, f"{key}: the options run past the grid's width ({width})"
+        w = K.label_width(n.upper(), "Label") + 16
+        if line and width + 14 + w > CONTENT_W:
+            lines.append(line)
+            line, width = [], 0
+        width += (14 if line else 0) + w
+        line.append(i)
+    return lines + [line] if line else lines
 
 
 def build_view(maelstrom_art, maelstrom_desc, weekly_art):
