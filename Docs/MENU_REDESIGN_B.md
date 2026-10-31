@@ -4956,7 +4956,7 @@ game".
   - the game-scene guards for a client that joins from the menu mid-match are untested;
   - a host can never rejoin.
 
-## 106. Rev 39 mockups: the friends tray, a calmer party and rows that never overlap (2026-10-31, awaiting a pick)
+## 106. Rev 39 mockups: the friends tray, a calmer party and rows that never overlap (2026-10-31; superseded by the Rev 40 pick, section 107)
 
 **Asked (Shombith, 2026-10-31, after the four-player test of 30 Oct):** "Change the UI of friends just the look and the
 center of the branch like animation, also the invite and other buttons overlap ... keep the feature where it extends as
@@ -4987,7 +4987,7 @@ still overflows). The tray's docking (section 68, `FriendsDrawerDock`) stays as 
 `ArcadeLobbyList` / `KitPartySlot` layout only, `OnlineInfoEntry` / `KitOnlineRow` slot choice; no change to invite,
 join, spectate, cancel or seating logic.
 
-## 107. Rev 40 mockups: three more friends trays, on the sea lines (2026-10-31, awaiting a pick)
+## 107. Rev 40 mockups: three more friends trays, on the sea lines (2026-10-31; Shombith picked E, with the current orb)
 
 **Asked (Shombith, 2026-10-31, on Rev 39):** "Good mockups send me a few more use the sea lines bg".
 
@@ -5005,3 +5005,8 @@ unchanged; every board is drawn over the sea lines (Rev 33's three drifting wave
 
 **Differs from the build:** as section 106; D replaces the orb with the rail, E adds authored group headers to the
 ONLINE list, F adds a tab strip.
+
+**Picked (Shombith, 2026-10-31):** "I dont like this part [D's rail] current friends icon is okay, we can keep it rest
+we can go with E". So: **E's open tray** (the party as one card with overlapping seats, names, Invite and Leave; the
+online pilots grouped by what can be done with them, one verb column per group) and **the built orb stays as the closed
+handle** (section 45.4), unchanged. Rev 39's options and D's rail and F are not built.
