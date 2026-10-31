@@ -335,8 +335,11 @@ namespace CosmicShore.Gameplay
 
         bool StandCell(Vector3 centre)
         {
+            // A failed stand must not cost the route its world: NextConfig has consumed the index, and the retry
+            // (StandAhead / AdvancePastTarget) would otherwise stand the NEXT world and silently skip this one.
+            int routeBefore = _routeNext;
             var config = NextConfig();
-            if (!config || !_template || !_template.RuntimeData) return false;
+            if (!config || !_template || !_template.RuntimeData) { UnconsumeRoute(routeBefore, config); return false; }
 
             // The mode preview's satellite recipe, verbatim: instantiate under an INACTIVE root
             // so the cell's OnEnable cannot wipe the shared runtime asset's config before it has
@@ -367,6 +370,7 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError("[Arkway] The cloned cell carries no Cell component - stand aborted.");
                 Destroy(root);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
 
@@ -398,6 +402,7 @@ namespace CosmicShore.Gameplay
                                    "InitializeSatellite - stand aborted (the Cell warned above with the reason).");
                 Destroy(root);
                 Destroy(runtime);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
 
@@ -521,7 +526,22 @@ namespace CosmicShore.Gameplay
             crystal.gameObject.SetActive(true);
             crystal.enabled = true;
             crystal.DeactivateModels();                        // the crystal's own fade-in bloom
-            if (runtime) runtime.AddCrystalToList(crystal);
+            if (!runtime) return;
+            // AddCrystalToList raises the shared OnCellItemsUpdated event: every AI pilot's handler runs inside this
+            // call. A listener's exception must not abort the STAND (it did: a pilot reading a destroyed crystal from
+            // another runtime's list threw here, and the escort skipped the world).
+            try { runtime.AddCrystalToList(crystal); }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[Arkway] A cell-items listener threw while the core crystal was registered " +
+                                   $"({e.GetType().Name}: {e.Message}) - the cell stands regardless.");
+            }
+        }
+
+        /// <summary>Give a failed stand's world back to the route (the retry stands the same world, not the next).</summary>
+        void UnconsumeRoute(int routeBefore, CellConfigDataSO consumed)
+        {
+            if (_route.Count > 0 && consumed && _routeNext > routeBefore) _routeNext = routeBefore;
         }
 
         /// <summary>

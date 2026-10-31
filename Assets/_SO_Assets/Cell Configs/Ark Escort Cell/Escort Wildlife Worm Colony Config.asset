@@ -43,12 +43,12 @@ MonoBehaviour:
   SegmentBloomSeconds: 2
   FallbackProductionPeriodSeconds: 30
   StarvationShedIntervalSeconds: 12
-  AggroRadius: 400
+  AggroRadius: 600
   StrikeRange: 90
   PursuitSpeedMultiplier: 1.45
   PursuitTurnMultiplier: 2
-  HuntIntervalSeconds: 18
-  HuntDurationSeconds: 14
+  HuntIntervalSeconds: 12
+  HuntDurationSeconds: 10
   TelegraphSeconds: 1.2
   TelegraphAmplitudeMultiplier: 2.5
   LungeSpeed: 70
