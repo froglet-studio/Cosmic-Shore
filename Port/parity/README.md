@@ -159,7 +159,9 @@ Unity golden exists. `run.json` records where the cut landed (`cut`) as well as 
 | post off (bloom and Panini) | 0.1075 | | |
 | Scene Color node returns 0.5 instead of black | 0.1004 | | |
 | Scene Color returns URP's unset-texture grey (sRGB 0.5 = 0.214 linear) | 0.0937 | | |
-| quality pinned to High (`PINNED_PREFS`), post off, grey Scene Color | **0.0387** | 0.0189 | 0.960 |
+| quality pinned to High (`PINNED_PREFS`), post off, grey Scene Color | 0.0387 | 0.0189 | 0.960 |
+| the prism destruction's fragments (`PrismCollisionBurst.shader`, family 12) fly instead of standing still | **0.0372** | 0.0192 | 0.964 |
+| (tried, not kept) the built-in Sphere as Unity's 24x16 UV sphere instead of the icosphere | 0.0393 | 0.0199 | 0.961 |
 
 What each one is:
 - **The golden has no post.** Stars fitted between the two engines (a KD-tree over detected stars, a similarity
@@ -175,6 +177,13 @@ What each one is:
   Unity's Scene Color node samples the unset-texture grey; Amoebius returned black. It now returns
   `sg_SceneColor` = 0.214 linear (`GraphProgramCache.SceneColorFallback`; a sweep of 0.12 / 0.17 / 0.21 / 0.35 /
   0.50 put the minimum there).
+- **The destruction's fragments.** Close to the camera a prism dies as its detail level (`PrismInteractionLod`): the
+  cut drawn by `CosmicShore/PrismCollisionBurst`, which Amoebius had no translation for, so every fragment stood at
+  rest and the grid looked unbroken. `SceneRenderer` family 12 now carries the FRAGMENT kind line for line
+  (`PrismBurstFragmentPose`, TEXCOORD2 bound at location 10); the roll, the suction and the lab kinds still draw at rest.
+- **The shell's sphere.** The blast shell (RippleGraph) pushes each vertex out by noise of its position, so Unity's
+  UV sphere gives it a spikier edge than Amoebius's icosphere. A 24x16 UV sphere matched the look but scored worse,
+  since the spikes land on different vertices; matching it needs Unity's exact sphere mesh.
 - **What is left** is the last 100 frames: the blast's debris placement, and the shell, which is greener, more
   opaque and more jagged in Unity at the same width. Early frames sit near rmse 0.01, mostly the codec.
 

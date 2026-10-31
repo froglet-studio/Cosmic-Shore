@@ -77,6 +77,8 @@ uniform vec4 uWarpCentre[4];     // _PrismGravityWarpCentre: xyz hole centre, w 
 uniform vec4 uWarpWeight[4];     // _PrismGravityWarpWeight: x GM*tau^2 (eased), y reach, z softening
 uniform vec4 uWarpParams;        // _PrismGravityWarpParams: (ln max stretch, live slots, -, -)
 uniform vec4 uSliceP0, uSliceP1, uSliceP2, uSliceP3; // PrismSlice material constants (see SetSliceUniforms)
+uniform vec4 uBurstMotion, uBurstSize, uBurstFade, uBurstNoise; // PrismCollisionBurst: _FragmentMotion, _FragmentSize, _FragmentFade, _FragmentNoise
+uniform vec4 uBurstK;            // PrismCollisionBurst: (_BurstShape.y tau, _ExplosionDials.x rotation, _FragmentVariety, -)
 uniform int uFamily;
 // PrismCradle.hlsl, translated: the last vertex node of both prism graphs. Every vertex inside
 // the drape reach of a riding hull slides along its own radius toward that hull's surface, with
@@ -263,9 +265,109 @@ void sliceVertex(mat4 M){
   vUv = aUv; vColor = aColor; vObj = pos; vObjNormal = aNormal; vOrigin = iM3.xyz;
   vOpacity = 1.0; vVelocity = vec3(0.0); vLit = vec2(0.0);
 }
+// PrismCollisionBurst.shader/.hlsl, translated: the prism's fine DETAIL LEVELS (Docs/PRISM_ANIMATION.md section 4.12),
+// the destruction's cut drawn on HighPolyPrismMesh, one stamp per death (the slice's channels, _SliceDrift.w the
+// explosion speed). The FRAGMENT kind is translated line for line (PrismBurstFragmentPose and what it calls); the
+// steal's ROLL, the SUCTION and the lab-only kinds are not translated yet and draw at rest on the flight, with
+// no dissolve. TEXCOORD2 (its triangle's centroid in face coords, z its size level) arrives at location 10
+// for this family (SceneRenderer binds the mesh's channel there, as for a compiled graph).
+float burstHash(vec3 p){ p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p = p + dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }
+vec3 burstHash3(vec3 p){ return vec3(burstHash(p), burstHash(p + 19.19), burstHash(p + 47.47)); }
+vec3 burstRotate(vec3 v, vec3 a, float ang){ float c = cos(ang), sn = sin(ang); return v * c + cross(a, v) * sn + a * (dot(a, v) * (1.0 - c)); }
+vec3 burstAxis(vec3 v, vec3 fallback){ float l2 = dot(v, v); return l2 > 1e-8 ? v / sqrt(l2) : fallback; }
+float burstGradientNoise(vec3 p){
+  vec3 i = floor(p); vec3 f = p - i;
+  vec3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+  float n000 = dot(burstHash3(i) * 2.0 - 1.0, f);
+  float n100 = dot(burstHash3(i + vec3(1,0,0)) * 2.0 - 1.0, f - vec3(1,0,0));
+  float n010 = dot(burstHash3(i + vec3(0,1,0)) * 2.0 - 1.0, f - vec3(0,1,0));
+  float n110 = dot(burstHash3(i + vec3(1,1,0)) * 2.0 - 1.0, f - vec3(1,1,0));
+  float n001 = dot(burstHash3(i + vec3(0,0,1)) * 2.0 - 1.0, f - vec3(0,0,1));
+  float n101 = dot(burstHash3(i + vec3(1,0,1)) * 2.0 - 1.0, f - vec3(1,0,1));
+  float n011 = dot(burstHash3(i + vec3(0,1,1)) * 2.0 - 1.0, f - vec3(0,1,1));
+  float n111 = dot(burstHash3(i + vec3(1,1,1)) * 2.0 - 1.0, f - vec3(1,1,1));
+  float x00 = mix(n000, n100, u.x), x10 = mix(n010, n110, u.x), x01 = mix(n001, n101, u.x), x11 = mix(n011, n111, u.x);
+  return clamp(1.6 * mix(mix(x00, x10, u.y), mix(x01, x11, u.y), u.z), -1.0, 1.0);
+}
+vec3 burstSeedWave(float seed, vec3 freq, vec3 phase){ return 1.0 - 4.0 * abs(fract(seed * freq + phase) - 0.5); }
+void burstFragmentPose(vec3 rest, vec3 N, vec3 middle, vec3 faceCentre, float outward, vec3 noisePoint, float level,
+    float radius, float age, float life, float amount, vec3 velocity, float rotation, vec4 noise, out vec3 pos, out vec3 nrm){
+  // the shape: burst, drift, lift, aim | sizeSpeed, sizeSpin, spinCap, levelRef | endSmall, endBig, shrink, speedGain
+  float sBurst = uBurstMotion.x, sDrift = uBurstMotion.y, sLift = uBurstMotion.z, sAim = uBurstMotion.w;
+  float sSizeSpeed = uBurstSize.x, sSizeSpin = uBurstSize.y, sSpinCap = uBurstSize.z, sLevelRef = uBurstSize.w;
+  float sEndSmall = uBurstFade.x, sEndBig = uBurstFade.y, sShrink = uBurstFade.z, sSpeedGain = uBurstFade.w;
+  float sSpeedRef = uBurstNoise.w, sTau = uBurstK.x, sVariety = uBurstK.z;
+  vec3 q = noisePoint * noise.y + noise.z * vec3(17.13, 31.71, 7.37);
+  float n1 = burstGradientNoise(q);
+  float n2 = burstGradientNoise(q + vec3(41.3, 11.9, 23.7));
+  float n3 = burstGradientNoise(q + vec3(73.1, 5.3, 61.7));
+  float n4 = burstGradientNoise(q + vec3(13.9, 89.3, 37.1));
+  float n5 = burstGradientNoise(q + vec3(97.7, 53.9, 3.1));
+  vec3 inPlane = middle - faceCentre;
+  inPlane = inPlane - N * dot(inPlane, N);
+  vec3 side = burstAxis(cross(N, inPlane), burstAxis(cross(N, vec3(0.31, 0.83, 0.47)), vec3(1.0, 0.0, 0.0)));
+  vec3 radial = burstAxis(inPlane, vec3(0.0)) * outward;
+  // the death's character (PrismBurstFragmentVariety)
+  vec3 a = burstSeedWave(noise.z, vec3(1.0, 2.0, 3.0), vec3(0.13, 0.57, 0.31));
+  vec3 b = burstSeedWave(noise.z, vec3(5.0, 7.0, 11.0), vec3(0.71, 0.23, 0.89));
+  vec3 c = burstSeedWave(noise.z, vec3(13.0, 17.0, 19.0), vec3(0.47, 0.05, 0.63));
+  vec3 d = burstSeedWave(noise.z, vec3(23.0, 29.0, 31.0), vec3(0.37, 0.81, 0.19));
+  float v = clamp(sVariety, 0.0, 1.0);
+  float chSpread = 1.0 + 0.5 * v * a.x, chTau = 1.0 + 0.5 * v * a.y, chSpin = 1.0 + 0.6 * v * a.z;
+  float chTurn = 0.4 * 3.14159265 * v * c.x;
+  vec3 chTilt = b * (0.5 * v / max(length(b), 1.0));
+  vec3 chEgg = normalize(d + vec3(1e-3, 0.0, 0.0));
+  float chStretch = 0.6 * v;
+  vec3 hit = burstAxis(velocity, vec3(0.0));
+  hit = dot(hit, hit) > 0.0 ? normalize(hit + chTilt) : hit;
+  float boost = 1.0 + sSpeedGain * max(length(velocity) / max(sSpeedRef, 1e-3) - 1.0, 0.0);
+  vec3 dir = burstAxis(radial + N * sLift + hit * (sAim * boost) + (burstAxis(inPlane, side) * n4 + side * n5) * noise.w, N);
+  float size = clamp(level, 0.0, 6.0);
+  float dist = radius * (sBurst * (1.0 - exp(-max(age, 0.0) / max(sTau * chTau, 1e-3))) + sDrift * max(age, 0.0))
+             * (1.0 + sSizeSpeed * size) * (1.0 + noise.w * n3) * boost * chSpread
+             * (1.0 + chStretch * (1.5 * dot(dir, chEgg) * dot(dir, chEgg) - 0.5));
+  float spin = min((1.0 + sSizeSpin * size) * chSpin, sSpinCap);
+  float a1 = amount * rotation * spin * (1.0 + noise.x * n1);
+  float a2 = amount * rotation * spin * (1.0 + noise.x * n2);
+  vec3 axis2 = burstRotate(burstAxis(cross(velocity, N), side), N, chTurn);
+  float share = mix(sEndBig, sEndSmall, clamp(max(level, 0.0) / max(sLevelRef, 1e-3), 0.0, 1.0));
+  float end = life * min(share * (1.0 + 0.08 * n4), 0.95);
+  float scale = 1.0 - smoothstep(end * (1.0 - clamp(sShrink, 0.0, 1.0)), end, age);
+  pos = middle + dir * dist + burstRotate(burstRotate(rest - middle, dir, a1), axis2, a2) * scale;
+  nrm = burstRotate(burstRotate(N, dir, a1), axis2, a2);
+}
+void burstVertex(mat4 M){
+  vec4 timing = X(0), insideStamp = X(3), drift = X(5);
+  float age = max(uClock - timing.x, 0.0);
+  float kind = floor(timing.w + 0.5);
+  mat3 model = mat3(M);
+  vec3 tri = iGrow.xyz;
+  vec3 rest = (M * vec4(aPos, 1.0)).xyz;
+  vec3 N = normalize(transpose(inverse(model)) * aNormal);
+  vec3 posWS = rest, nrmWS = N;
+  if (kind == 5.0) {
+    vec3 uOS = aTangent.xyz;
+    vec3 vOS = cross(aNormal, uOS);
+    vec3 centroidOS = aNormal * 0.5 + uOS * (tri.x - 0.5) + vOS * (tri.y - 0.5);
+    vec3 faceCentre = (M * vec4(aNormal * 0.5, 1.0)).xyz;
+    float radius = length(model * vec3(0.5));
+    burstFragmentPose(rest, N, (M * vec4(centroidOS, 1.0)).xyz, faceCentre, length(tri.xy * 2.0 - 1.0), centroidOS, tri.z,
+      radius, age, timing.y, drift.w * age, drift.xyz, uBurstK.y, vec4(uBurstNoise.x, uBurstNoise.y, timing.z, uBurstNoise.z), posWS, nrmWS);
+  }
+  posWS += drift.xyz * age;
+  gl_Position = uViewProj * vec4(posWS, 1.0);
+  vWorld = posWS;
+  vNormal = nrmWS;
+  vCutN = insideStamp.w > 0.5 ? insideStamp.rgb : iBright.rgb;   // the colour the back faces wear
+  vCut = vec4(0.0); vNoise = vec3(0.0); vPhase = vec2(0.0);
+  vDark = iDark; vBright = iBright;
+  vUv = aUv; vColor = aColor; vObj = aPos; vObjNormal = aNormal; vOrigin = iM3.xyz;
+  vOpacity = 1.0; vVelocity = vec3(0.0); vLit = vec2(0.0);
+}
 void main(){
   mat4 M = mat4(iM0, iM1, iM2, iM3);
   if (uFamily == 8) { sliceVertex(M); return; }
+  if (uFamily == 12) { burstVertex(M); return; }
   vec3 p = aPos;
   vec3 nO = aNormal;
   vec4 dark = iDark, bright = iBright;
@@ -428,7 +530,7 @@ flat in vec2 vPhase;
 uniform vec4 uSliceP0, uSliceP1, uSliceP2, uSliceP3;
 uniform vec4 uSliceHot;       // _CutHotColor
 uniform int uPrismGraph;
-uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal, 7 crackle, 8 slice, 9 built-in, 10 cloak ghost, 11 soft spark
+uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal, 7 crackle, 8 slice, 9 built-in, 10 cloak ghost, 11 soft spark, 12 prism burst
 uniform vec4 uParam;          // family-specific
 uniform vec4 uParam2;         // family-specific (9: camera fade near, inverse fade distance, alpha clip, fade flags)
 uniform vec3 uCamFwd;
@@ -820,6 +922,12 @@ void main(){
   vec4 col;
   if (uFamily == 8) {
     col = sliceColor();
+  } else if (uFamily == 12) {
+    // BurstFrag: the skin, base to rim at grazing angles; a back face wears the inside colour x _InnerGlow (uParam.x).
+    float fres = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), uFresPow);
+    vec3 c = mix(vDark.rgb, vBright.rgb, fres);
+    if (!gl_FrontFacing) c = mix(c, vCutN * uParam.x, 0.6);
+    col = vec4(c, 1.0);
   } else if (uFamily == 7) {
     vec3 nOS = gl_FrontFacing ? vObjNormal : -vObjNormal;
     col = crackle(vObj, nOS, uCamPosOS - vObj);
@@ -940,7 +1048,8 @@ void main(){
             public float ExplosiveRotation, ExplosiveSpread;
             public float[] Ext;             // the material's value for every extended clock property
             public ExtProp[] Layout;        // which properties the block carries (prism clock, or the slice stamps)
-            public Vector4 SliceP0, SliceP1, SliceP2, SliceP3; // PrismSlice material constants
+            public Vector4 SliceP0, SliceP1, SliceP2, SliceP3; // PrismSlice material constants (PrismCollisionBurst: _FragmentMotion, _FragmentSize, _FragmentFade, _FragmentNoise)
+            public Vector4 BurstK;                             // PrismCollisionBurst: (_BurstShape.y, _ExplosionDials.x, _FragmentVariety, -)
             public Color SliceHot;
             public GraphProgramCache.Entry Graph; // a compiled Shader Graph draws this material (null = the scene program)
             public int AlphaMode;                 // compiled graph: 0 alpha, 1 premultiply, 2 additive, 3 multiply
@@ -983,6 +1092,13 @@ void main(){
         {
             new("_SliceTiming", 0, 4), new("_SlicePlane", 4, 4), new("_SliceCentre", 8, 4),
             new("_SlicePivot", 12, 4), new("_SliceAxis", 16, 4), new("_SliceDrift", 20, 3),
+        };
+        // CosmicShore/PrismCollisionBurst's: the slice's channels (it rides the slice's carrier), with _SliceDrift.w
+        // the explosion speed the fragments' spin reads.
+        static readonly ExtProp[] BurstLayout =
+        {
+            new("_SliceTiming", 0, 4), new("_SlicePlane", 4, 4), new("_SliceCentre", 8, 4),
+            new("_SlicePivot", 12, 4), new("_SliceAxis", 16, 4), new("_SliceDrift", 20, 4),
         };
         static readonly int SlotDark = EntityDrawList.Slot("_DarkColor"), SlotBright = EntityDrawList.Slot("_BrightColor");
         static readonly int SlotGrowStart = EntityDrawList.Slot("_GrowStartTime"), SlotGrowRate = EntityDrawList.Slot("_GrowRate"), SlotGrowFrac = EntityDrawList.Slot("_GrowStartFrac");
@@ -1667,7 +1783,7 @@ void main(){
 
         bool EntityVisible(int i, Mesh mesh, in MatState st)
         {
-            if (st.PrismGraph == 2 || st.Family == 8) return true;     // debris / slice halves fly off their transform
+            if (st.PrismGraph == 2 || st.Family == 8 || st.Family == 12) return true;     // debris / slice halves / burst fragments fly off their transform
             if (_entities.TryGet(i, SlotFlightDuration, out var fd) && fd.x > 0f
                 && _entities.TryGet(i, SlotFlightStart, out var fs) && _cullClock < fs.x + fd.x) return true;
             if (_entities.TryGet(i, SlotSuctionDuration, out var sd) && sd.x > 0f
@@ -1734,6 +1850,18 @@ void main(){
                 st.SliceP2 = new Vector4(m.GetFloat("_CutShade"), m.GetFloat("_SeamCool"), m.GetFloat("_RimWidth"), m.GetFloat("_DissolveNoiseScale"));
                 st.SliceP3 = new Vector4(m.GetFloat("_DissolveNoise"), m.GetFloat("_EmberBand"), m.GetFloat("_EmberGlow"), m.GetFloat("_EmberWhite"));
                 st.SliceHot = m.GetShaderColor(IdCutHot);
+            }
+            else if (family == MaterialFamilies.Kind.PrismBurst)
+            {
+                // Opaque, ZWrite On, Cull Off (PrismCollisionBurst.shader's forward pass).
+                st.Family = 12; st.DarkId = IdDark; st.BrightId = IdBright; st.Cull = 0;
+                st.FresPow = m.GetFloat("_FresnelPower");
+                st.Param = new Vector4(m.GetFloat("_InnerGlow"), 0f, 0f, 0f);
+                st.SliceP0 = m.GetVector("_FragmentMotion");
+                st.SliceP1 = m.GetVector("_FragmentSize");
+                st.SliceP2 = m.GetVector("_FragmentFade");
+                st.SliceP3 = m.GetVector("_FragmentNoise");
+                st.BurstK = new Vector4(m.GetVector("_BurstShape").y, m.GetVector("_ExplosionDials").x, m.GetFloat("_FragmentVariety"), 0f);
             }
             else if (family == MaterialFamilies.Kind.Forcefield)
             {
@@ -1811,7 +1939,7 @@ void main(){
                 MaterialFamilies.WarnUntranslated(m.shader, st.Family == 1 ? "Lit (base colour x texture, N.L)" : "Unlit (base colour x texture)", why);
             }
             if (st.Graph == null && family is not (MaterialFamilies.Kind.None or MaterialFamilies.Kind.BlockGraph or MaterialFamilies.Kind.ExplodingBlockGraph
-                    or MaterialFamilies.Kind.PrismSlice or MaterialFamilies.Kind.Forcefield or MaterialFamilies.Kind.CloakGhost or MaterialFamilies.Kind.SoftSpark))
+                    or MaterialFamilies.Kind.PrismSlice or MaterialFamilies.Kind.PrismBurst or MaterialFamilies.Kind.Forcefield or MaterialFamilies.Kind.CloakGhost or MaterialFamilies.Kind.SoftSpark))
                 st.Route = "family-fallback";
 
             // The GPU's values: a plain colour property linearised, an HDR one as stored (ColorSpaceRules).
@@ -1875,7 +2003,7 @@ void main(){
                 st.ExplosiveSpread = m.GetFloat("_ExplosiveSpead"); // [sic] the graph's reference name
             }
             st.Ext = new float[ExtFloats];
-            st.Layout = st.Family == 8 ? SliceLayout : ExtLayout;
+            st.Layout = st.Family == 8 ? SliceLayout : st.Family == 12 ? BurstLayout : ExtLayout;
             foreach (var p in st.Layout)
             {
                 var v = p.Count == 1 ? new Vector4(m.GetFloat(p.Id), 0, 0, 0) : m.GetShaderVector(p.Id);
@@ -2141,6 +2269,15 @@ void main(){
                 _program.Set("uSliceP3", st.SliceP3.x, st.SliceP3.y, st.SliceP3.z, st.SliceP3.w);
                 _program.Set("uSliceHot", st.SliceHot.r, st.SliceHot.g, st.SliceHot.b, st.SliceHot.a);
             }
+            if (st.Family == 12)
+            {
+                _program.Set("uBurstMotion", st.SliceP0.x, st.SliceP0.y, st.SliceP0.z, st.SliceP0.w);
+                _program.Set("uBurstSize", st.SliceP1.x, st.SliceP1.y, st.SliceP1.z, st.SliceP1.w);
+                _program.Set("uBurstFade", st.SliceP2.x, st.SliceP2.y, st.SliceP2.z, st.SliceP2.w);
+                _program.Set("uBurstNoise", st.SliceP3.x, st.SliceP3.y, st.SliceP3.z, st.SliceP3.w);
+                _program.Set("uBurstK", st.BurstK.x, st.BurstK.y, st.BurstK.z, st.BurstK.w);
+                BindGraphUv23(entry);   // TEXCOORD2 at location 10, where this family reads it (iGrow)
+            }
             SetSkinUniforms(first, entry, _program);
             _program.Set("uFamily", st.Family);
             _program.Set("uPrismGraph", st.PrismGraph);
@@ -2171,6 +2308,7 @@ void main(){
             // Base vertex is always 0 here, so the core ES 3.0 / GL 3.1 call draws the same thing.
             _gl.DrawElementsInstanced(GlPrimitive.Triangles, (uint)entry.SubmeshCount[first.Submesh], DrawElementsType.UnsignedInt,
                 (void*)(entry.SubmeshStart[first.Submesh] * sizeof(uint)), (uint)n);
+            if (st.Family == 12) BindInstanceAttributes();
             DrawCalls++;
             Instances += n;
         }

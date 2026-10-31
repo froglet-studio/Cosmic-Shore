@@ -29,6 +29,7 @@ namespace CosmicShore.Render
             Vessel = 9,
             CloakGhost = 10,         // hand-written additive rim ghost: the Serpent's cloaked hull as its pilot sees it
             SoftSpark = 11,          // hand-written additive billboard glow: a round's spark, the Astro League ball's sparks
+            PrismBurst = 12,         // hand-written: the prism's destruction detail levels (the fragment cut flying apart)
         }
 
         /// <summary>guid → (family, the asset it was written against).</summary>
@@ -45,11 +46,12 @@ namespace CosmicShore.Render
             ["0236447d5f06b0541a43756d85b5f222"] = (Kind.Vessel, "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph"),
             ["3d37f897d98a45149820ed07d0873542"] = (Kind.CloakGhost, "Assets/_Graphics/Materials/Graphs/CloakGhost.shader"),
             ["dd64da08d275420c881c546e12e14a12"] = (Kind.SoftSpark, "Assets/_Graphics/Materials/Graphs/SoftSpark.shader"),
+            ["8c81436bbcb64574939e277dfd351312"] = (Kind.PrismBurst, "Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.shader"),
         };
 
         /// <summary>True for the families the renderer draws even when the shader compiles: the prism graphs, the slice, the forcefield.</summary>
         public static bool WinsOverCompiled(Kind kind)
-            => kind is Kind.BlockGraph or Kind.ExplodingBlockGraph or Kind.PrismSlice or Kind.Forcefield or Kind.CloakGhost or Kind.SoftSpark;
+            => kind is Kind.BlockGraph or Kind.ExplodingBlockGraph or Kind.PrismSlice or Kind.PrismBurst or Kind.Forcefield or Kind.CloakGhost or Kind.SoftSpark;
 
         /// <summary>The hand-tuned family of a shader, by guid (a shader with no asset has none).</summary>
         public static Kind For(Shader shader)
