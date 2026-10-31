@@ -62,8 +62,57 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
      Amplifier, Triplesynth, Universal Translator, Anode Ray, 5D Printer, Square-Peg Hammer, Reactor Cilia,
      Chrono-Compressor, Meta Machine, Mystic Eti, Vorticity Module), cream otherwise. While a free prism rides the cursor
      the free-prism line takes the band, in lime.
-5. **RT** pecks and **LT** flits. When the Ratel makes an upgrade card, the toast says which trigger it took, and the chip
+5. **Hive mode:** fly the Honeyguide into an Omni crystal (or let its AI). The Ratel's board becomes the hive and a comb of
+   prisms appears behind the hull. Drag 3 or more touching cells of one other colour and let go; touch danger and it stings;
+   tap **Leave** to end early. The rewards land on the board by themselves.
+6. **RT** pecks and **LT** flits. When the Ratel makes an upgrade card, the toast says which trigger it took, and the chip
    above the small board shows it with the seconds it has left.
+
+## Hive mode (Garrett, 2026-10-31; the Ratel Raid Lab round 2b)
+
+"the omnicrystal transforms into a hive. the ratel and the hive are invulnerable until the ratel leaves hive mode, the ratel
+enters hivemode after the honeyguide gets an omnicrystal, and the ratel ends their current timer." The design was played and
+decided in the Ratel Raid Lab (`Docs/Studios/HoneyguideRaidLab.html`, record `Docs/Studios/HONEYGUIDE_RAID_LAB.md`); its
+`hive-core` block is the record, `HiveCore.cs` is its port, held to it by `Tools/Build/hive_lab/parity.cjs`.
+
+- **Opening it.** An Omni crystal the hull collects (`HoneyguideOmniCrystalEffectSO`, in the omni list of the hull's own
+  `HoneyguideImpactorDataContainer`) opens hive mode on the machine that runs the Dynamo, once any pick of three in progress
+  is done. The current spin completes at once (`hiveCompletesSpin`; `DynamoCore.SpinNow`), and the Dynamo's clock holds.
+  One hive at a time: an omnicrystal taken in hive mode opens none.
+- **The hive in the world.** The omnicrystal becomes a flat hex comb of real prisms, `hiveOffset` (40 u) behind where it was
+  taken, square to the hull's flight, `hiveCellSpacing` apart: each cell's domain, every prism super-shielded while hive
+  mode lasts. Ours belong to the pilot, the other domains' to nobody. **Mass:** the hive's prisms are laid by a vessel
+  ability (the Wrasse's Mass cluster is the precedent); this is a source of mass, so it is flagged for Garrett.
+- **Invulnerable.** The hull holds elemental-debuff immunity (`ResourceSystem.SetElementalDebuffImmunity`) until the Ratel
+  leaves hive mode; the strike gate (`CombatHitDrain.TryAdmit`) and the petal loss honour it, and with them the silence a
+  hit would bring. The hive is super-shielded.
+- **The board.** The comb: the two other domains in their colours, a white ring on a shielded prism, danger in
+  `hiveDangerColour` ringed by its domain, our own domain dimmed as the hive's body. Drag a chain through 3 or more
+  touching cells of one other domain (back over the last cell drops it); let go to break it. A shield takes two passes; a
+  chain that touches danger stings (it breaks with nothing destroyed, and the thumb is stunned `stingSeconds`). The hive's
+  real prisms break with their cells, scored to the hull. **Leave** sits at the right of the band above the cards; the band
+  shows the rewards earned; the bar across the top is the hive's time left (`raidSeconds`, 15 s).
+- **Every hive is solvable.** `HiveCore.MakeHive` lays the other domains as snakes (a crossing of two snakes is a shielded
+  cell), puts at least `hiveDangerMin` danger prisms off every snake, holds all three domains and a shield in each, and the
+  solver proves a danger-free solution before the hive is used.
+- **Rewards, no pick.** Completing a colour earns 2 prisms of it on the Dynamo (`rewardDynamo`) and 1 charge (`rewardBattery`);
+  both colours earn our own too. When hive mode ends (cleared, timed out, or Leave) the prisms place themselves on the
+  Dynamo's largest planar crystal (every pattern is cut from the hex grid's one 3-colouring, class (q - r) mod 3), which
+  lights for `crystalGlowSeconds` with the cells it goes on to. A fresh spin starts.
+- **After.** The super shields come off and what is left of the hive stays as ordinary mass: shields where a cell still had
+  two hits, danger where it was danger.
+- **The AI Ratel** plays it too: `hiveSkills` by `engineerLevel` (Hard plays the solver's plan and never touches danger; Easy
+  is the lab's rookie: greedy chains, sometimes cut short, a sloppy thumb). Medium is between them (a proposal).
+- **A rider** (the Ratel played on another machine): hive moves travel as relay inputs, and the hive rides in the state copy.
+- **The strip.** A thin strip over the Ratel's big board: the Honeyguide, the nearest omnicrystal along it by distance
+  (`stripRangeU` at the far end, from `Crystal.Active` four times a second) and the distance in u (`stripOmniTemplate`). In
+  hive mode it shows the hive under the hull, ringed (invulnerable).
+- **The bars shrink from both sides to the centre**, the spin bar and the hive's alike.
+
+**Not in this port:** the bee fauna a left hive spawns (ecology: their mass must be a transfer from opposing fauna, never
+minted, under `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`; needs the ecology rules and their owner), and the Honeyguide's
+Mass power making a hive to fly to (it changes the element map: Mass is Flit on LT today, and what happens to Flit is
+Garrett's call). The strip shows omnicrystals only until then.
 
 ## Very Low: one view, the Ratel first (Garrett, 2026-10-22)
 
@@ -93,8 +142,11 @@ On the Very Low preset (`CrewSingleView`, `Docs/PLATFORM_UNIFICATION.md` §3.10)
 | The board (runtime overlay canvas, touch and mouse) | `HoneyguideDynamoView.cs` |
 | Prefab, class, map, registrations, config from the lab | `Tools/Build/author_honeyguide_assets.py` (`--check`, `--self-test`) |
 | The hull model (its own, built by `/vessel-model`) | `Assets/_Models/Vessel Models/Honeyguide.fbx`, `Tools/Build/vessel_model/specs/honeyguide.py`, `Docs/VesselModels/Honeyguide.md` |
+| Hive mode: generation, solver, chains, rewards, the planar crystal (engine-free, held to the Ratel Raid Lab by `Tools/Build/hive_lab/parity.cjs`) | `HiveCore.cs` |
+| Hive mode in the seat: the omnicrystal, the hive in the world, the AI, the strip, the relay | `HoneyguideCrew.Hive.cs` |
+| The omnicrystal's hook (in `HoneyguideImpactorDataContainer`'s omni list) | `HoneyguideOmniCrystalEffectSO.cs`, `HoneyguideOmniCrystalEffect.asset` |
 | The model's puppetry (wings, tail, turret, from measured motion) | `HoneyguideBody.cs` |
-| Edit-mode tests (golden from the lab's core) | `Assets/_Scripts/Tests/Editor/HoneyguideTests.cs` |
+| Edit-mode tests (golden from the lab's core) | `Assets/_Scripts/Tests/Editor/HoneyguideTests.cs`, `HiveCoreTests.cs` |
 
 ## The cards
 
@@ -162,11 +214,11 @@ Mass, Space, Time) are driven by the hull's `VesselAnimation`. The class card, i
 hangar preview are renders of the model (`render_cards.py Honeyguide`). The crystal fusion's four entries are bake-free
 until the editor's baker is run.
 
-## Proposed: a whole arc for the Ratel (2026-10-29)
+## A whole arc for the Ratel (2026-10-29)
 
-`Docs/Studios/ONE_THUMB_SEAT_ARCS.md` §3. Its first step is in (round 7, above: the bank of 6 and the pick of three).
-The rest is a proposal, shown in the Ratel Raid Lab (`Docs/Studios/HONEYGUIDE_RAID_LAB.md`): a **raid**: the Honeyguide finds a hostile hive, and the Ratel breaks its real prisms by chaining
-them on the board. Not decided; its §6 lists the decisions.
+`Docs/Studios/ONE_THUMB_SEAT_ARCS.md` §3. In: round 7 (the bank of 6 and the pick of three) and hive mode (above).
+Its first sketch of the raid (the Honeyguide finds a hostile hive and the Ratel breaks it by chaining) became hive mode.
+Still open there: a partial-colour reward, the reward size, the bees and the Mass-power hive.
 
 ## Not verified in the Editor
 

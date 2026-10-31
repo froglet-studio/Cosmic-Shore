@@ -65,6 +65,37 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Honeyguide and Ratel: hive mode (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Garrett: "this is good lets push these ratel changes to unity including the way the timer subtract from both sides to the
+center." `HiveCore.cs` (new, engine-free), `HoneyguideCrew.Hive.cs` (new), `HoneyguideOmniCrystalEffectSO` +
+`HoneyguideImpactorDataContainer` (the prefab's VesselImpactor now points at it), `HoneyguideDynamoView` (the comb, the
+strip, Leave, the crystal glow, the centred bars), `HoneyguideConfigSO` + asset (the hive's numbers, words, five empty FMOD
+slots), `DynamoCore.SpinNow` / `ReadState(out end)`. `/verify-unity` was unavailable (no Editor, no `unity` binary). Green:
+the headless reference compile, player and editor (0 errors in project code); `Tools/Build/hive_lab/parity.cjs` and
+`dynamo_lab/parity.cjs` PASS; `HiveCoreTests`' bodies run against the core with .NET (8/8); `author_honeyguide_assets.py
+--check` / `--self-test`; console-logging and conditional-compilation checks.
+
+1. Run `HiveCoreTests` (all 9; the config test needs the Editor) and `HoneyguideTests`.
+2. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. The strip over the board names the nearest
+   omnicrystal's distance; the diamond slides along it as the AI flies closer.
+3. When the hull takes the omnicrystal: the board's edge flashes amber, the comb replaces the Dynamo, the bar across the
+   top is amber and shrinks from both sides; a comb of super-shielded prisms stands about 40 u behind where the crystal
+   was. Look for: the comb clear of the hull, its cells in the board's colours.
+4. Drag 3 touching cells of one other colour and let go: their prisms break in the world. Drag back over the last cell:
+   it drops out. Drag into a red danger cell: the chain breaks, a sting toast, the thumb waits a second. A white-ringed
+   (shielded) cell needs two chains.
+5. Clear both colours (or wait 15 s, or tap Leave): the toast names the rewards; the reward prisms appear on the Dynamo
+   beside its largest crystal, which lights; the battery gains the charges; a fresh spin starts. What is left of the comb
+   is ordinary mass (shields and danger where they were).
+6. While in hive mode, let a rival hit the hull: no petals lost, no silence.
+7. Fly instead (the AI Ratel plays): the small board shows the comb and the AI clears it (Hard: no stings).
+8. A phone held portrait: the comb's cells, the Leave button and the strip are thumb-sized and nothing overlaps.
+9. Two machines (a rider on the Ratel): the rider's drags reach the hull's machine and both see the same comb.
+
+**First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
+Medium hive skill (a proposal between the lab's rookie and skilled).
+
 ### 🔴 Honeyguide and Ratel round 7: AP bank 6, the Ratel picks one of three abilities (`cece/jolly-lovelace-t8y3a1`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Garrett: "lets have the ap cap go to 6. lets do the 3 ability pick as well." `DynamoCore` (the pick input, the Offer event,

@@ -16,6 +16,19 @@ well. those will go in for sure, but show me the raid in an artifact."
 copies the lab's Dynamo (the `dynamo-core` block, byte for byte apart from its header comment) and builds hive mode
 around it.
 
+## Graduated to Unity (2026-10-31)
+
+Garrett: "this is good lets push these ratel changes to unity including the way the timer subtract from both sides to the
+center." The page's hive rules now live in one pure block, `<script id="hive-core">` (`window.HiveCore`), moved out of the
+main script with every random draw in the same order: `selfTest()` and the full `runBatch()` scorecard are byte-for-byte
+the same before and after. `Assets/_Scripts/Controller/Vessel/Crew/HiveCore.cs` is its port, held to it by
+`Tools/Build/hive_lab/parity.cjs` (PASS: 18,625 results alike over 72 played hives in 8 rule sets and all three domains,
+300 crystal boards and 220 solver cases; 11 planted controls caught). What reached the game, and what did not, is in
+`Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` "Hive mode": the strip (omnicrystals only), hive mode on an
+omnicrystal, the hive as real super-shielded prisms, chains, stings, shields, colour rewards on the planar crystal, the
+AI, a rider, the centred bars. Not ported: the bees, the Mass-power hive. The Honeyguide Lab's spin bar now shrinks from
+both sides too.
+
 ## Round 2b (2026-10-31): the restart, shields and danger
 
 **Decision log, read at the start of the round:** empty.

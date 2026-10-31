@@ -49,6 +49,11 @@ mate, decision log, platform detection) is the Crew Vessel Lab's, rebuilt around
 - **Rules tab:** Garrett's round 2 rules, each a box you can turn off (a control). **Patterns tab:** all 39 patterns and
   the passive each gives.
 
+## 2026-10-31: the spin bar shrinks from both sides to the centre
+
+Garrett: "including the way the timer subtract from both sides to the center" (the Ratel Raid Lab's bar). The page's
+spin bar and Unity's (`HoneyguideDynamoView`) now shrink toward the centre. `verify_lab.cjs` PASS.
+
 ## Round 7 (2026-10-29): the bank holds 6, and the Ratel picks one of three abilities
 
 Garrett, 2026-10-29, on the proposal `Docs/Studios/ONE_THUMB_SEAT_ARCS.md` §3: "lets have the ap cap go to 6. lets do the 3

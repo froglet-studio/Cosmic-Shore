@@ -148,7 +148,7 @@ Both are config changes (`HoneyguideConfigSO`: `apBank`, and the draw), the chea
 
 Patterns, charges, slips, the 39 cards and the two triggers stay unchanged.
 
-### Raid: the second game
+### Raid: the second game (became hive mode, IN UNITY 2026-10-31: `HONEYGUIDE.md` "Hive mode"; the round 2 rules replaced this sketch)
 
 The Honeyguide finds a **hive**: a hostile structure that is a surface or a volume
 (`PrismscapeTopology.DimensionOf` at Surface or above; a trail or loose prisms are not a hive) within `hiveReach` of
