@@ -7,7 +7,7 @@ changes behavior.
 **Logging channel: `CSDebug.Log` (not `Debug.*`).** Every line this
 overlay emits — the per-catch `NetDiag` lines and the `NetworkMonitor`
 transition lines — goes through `CSDebug.Log`
-(`Assets/_Scripts/Utility/CSDebug.cs`). This is deliberate:
+(`Assets/_Scripts/Utility/Foundation/CSDebug.cs`). This is deliberate:
 
 - **Stripped from release builds.** `CSDebug.Log` carries
   `[Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]`, so
