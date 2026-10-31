@@ -13,7 +13,7 @@ Each slot launches
     <exe> [-batchmode -nographics | -screen-width W -screen-height H -screen-fullscreen 0] -force-d3d11
           -logFile logs/<job>.a<k>.log -job-worker-count 1
           -arkEscortSim @jobs/running/<job>.player.json -arkEscortOut results/<job>.jsonl -arkEscortQuit
-          -arkEscortTimeScale 3 -arkEscortFps 60 [-arkEscortParams params/<job>.json]
+          -arkEscortDrain 3 -arkEscortFps 30 [-arkEscortParams params/<job>.json]
 and watches it: the exit, the {"done":true} line, a log heartbeat (--stall s without the log growing), a per-run
 clock (--run-timeout s without a new result line; --boot-timeout for the first), and crash markers in the log.
 A failed attempt kills the process tree and requeues only the runs without a finished result; after --max-attempts
@@ -167,6 +167,7 @@ class Runner:
         time_scale = float(job.get("timeScale", self.a.time_scale))
         if time_scale and time_scale != 1:
             args += ["-arkEscortTimeScale", f"{time_scale:g}"]
+        args += ["-arkEscortDrain", f"{self.a.drain:g}"]
         if fixed_dt <= 0 and self.a.fps > 0:
             args += ["-arkEscortFps", str(self.a.fps)]
         params = job.get("params")
@@ -521,15 +522,17 @@ def main():
     r.add_argument("--height", type=int, default=360)
     r.add_argument("--fixed-dt", type=float, default=0.0,
                    help="game seconds per frame (Time.captureDeltaTime); 0 = real time. Experimental: it ran slower")
-    r.add_argument("--time-scale", type=float, default=3.0, help="-arkEscortTimeScale (the editor sims use 3)")
-    r.add_argument("--fps", type=int, default=60, help="-arkEscortFps frame cap in real-time mode (0 = none)")
+    r.add_argument("--time-scale", type=float, default=1.0,
+                   help="-arkEscortTimeScale; above 1 the player falls into a frame-time spiral (DONE notes)")
+    r.add_argument("--drain", type=float, default=3, help="-arkEscortDrain: real seconds between runs")
+    r.add_argument("--fps", type=int, default=30, help="-arkEscortFps frame cap in real-time mode (0 = none)")
     r.add_argument("--job-workers", type=int, default=1, help="-job-worker-count per player (0 = Unity's default)")
     r.add_argument("--affinity", type=int, default=0, help="logical CPUs pinned per slot (needs psutil; 0 = none)")
     r.add_argument("--below-normal", type=int, default=1, help="run players at below-normal priority (1/0)")
     r.add_argument("--boot-timeout", type=float, default=300)
     r.add_argument("--run-timeout", type=float, default=600, help="seconds without a new result line")
     r.add_argument("--stall", type=float, default=180, help="seconds without the log growing (the sim beats every 30 s)")
-    r.add_argument("--quit-grace", type=float, default=30)
+    r.add_argument("--quit-grace", type=float, default=5, help="seconds after the done line before the hung exit is killed")
     r.add_argument("--max-attempts", type=int, default=3)
     r.add_argument("--stagger", type=float, default=5, help="seconds between launches")
     r.add_argument("--poll", type=float, default=2)

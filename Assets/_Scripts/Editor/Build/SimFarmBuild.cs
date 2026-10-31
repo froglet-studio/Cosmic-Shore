@@ -19,13 +19,13 @@ namespace CosmicShore.Editor
     /// <c>ArkEscortSim</c>'s <c>-arkEscortSim @job.json</c>. A tool, never shipped.
     ///
     /// <para><b>Nothing persists.</b> The define goes through <see cref="BuildPlayerOptions.extraScriptingDefines"/>; the
-    /// scripting backend (Mono, for a fast build), the product name (<see cref="ProductName"/>, so the farm's PlayerPrefs
+    /// scripting backend (IL2CPP, about 30 min; <c>-mono</c> builds in about 10), the product name (<see cref="ProductName"/>, so the farm's PlayerPrefs
     /// and persistent data never mix with the game's) and the fullscreen mode are set for the build and put back after it,
     /// whatever happens. Output is under the git-ignored <c>Builds/</c> unless <c>-buildOutput</c> names a folder.</para>
     ///
     /// <code>
     /// Unity -quit -batchmode -nographics -buildTarget StandaloneWindows64 -projectPath &lt;proj&gt; \
-    ///       -executeMethod CosmicShore.Editor.SimFarmBuild.Build [-buildOutput D:\VoyageFarm\build] [-il2cpp] -logFile &lt;log&gt;
+    ///       -executeMethod CosmicShore.Editor.SimFarmBuild.Build [-buildOutput D:\VoyageFarm\build] [-mono] -logFile &lt;log&gt;
     /// </code>
     /// </summary>
     public static class SimFarmBuild
@@ -38,7 +38,7 @@ namespace CosmicShore.Editor
 
         [MenuItem("FrogletTools/Build/Escort Sim Farm (Windows)", false, 125)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 1,
-            Description = "Windows dev player for the Ark escort sim farm: toybox scenes, FROGLET_WEB_TOYBOX, Mono, Builds/SimFarm.",
+            Description = "Windows dev player for the Ark escort sim farm: toybox scenes, FROGLET_WEB_TOYBOX, IL2CPP, Builds/SimFarm.",
             DocPath = "Tools/SimFarm/README.md")]
         public static void Build()
         {
@@ -66,7 +66,7 @@ namespace CosmicShore.Editor
                     if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null)
                         throw new FileNotFoundException($"The sim farm needs {path}, and there is no scene there.");
 
-                bool il2cpp = HasFlag("-il2cpp");
+                bool il2cpp = !HasFlag("-mono");
                 PlayerSettings.SetScriptingBackend(standalone, il2cpp ? ScriptingImplementation.IL2CPP : ScriptingImplementation.Mono2x);
                 PlayerSettings.productName = ProductName;
                 PlayerSettings.fullScreenMode = FullScreenMode.Windowed;

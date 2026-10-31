@@ -3,7 +3,7 @@
 N Windows players play Ark escorts with every seat on the AI, from a job folder, for tuning and for
 co-evolving escort AI params against fauna params.
 
-- `Assets/_Scripts/Editor/Build/SimFarmBuild.cs` builds the player: a Windows x64 development player, Mono, with the
+- `Assets/_Scripts/Editor/Build/SimFarmBuild.cs` builds the player: a Windows x64 development player, IL2CPP (`-mono` for a quicker build), with the
   browser Toybox's scenes and `FROGLET_WEB_TOYBOX` (no UGS, in-memory transport). Product name
   "Cosmic Shore SimFarm", so its PlayerPrefs and persistent data stay apart from the game's. ProjectSettings are
   restored after the build.

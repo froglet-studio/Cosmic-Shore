@@ -603,7 +603,8 @@ def main():
     ap.add_argument("--pop-fauna", type=int, default=8)
     ap.add_argument("--opponents-vessel", type=int, default=3, help="fauna each vessel meets in a vessel generation")
     ap.add_argument("--opponents-fauna", type=int, default=4, help="vessels each fauna meets in a fauna generation")
-    ap.add_argument("--runs-per-pairing", type=int, default=2, help="runs per job (difficulties cycled)")
+    ap.add_argument("--runs-per-pairing", type=int, default=4,
+                    help="runs per job (difficulties cycled); 4 keeps the ~40 s player boot small")
     ap.add_argument("--memory", type=int, default=40, help="a genome is scored over its last N runs")
     ap.add_argument("--archive-cap", type=int, default=16)
     ap.add_argument("--elites", type=int, default=4, help="hall-of-fame elites kept from earlier generations")
