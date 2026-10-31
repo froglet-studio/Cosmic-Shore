@@ -1,0 +1,49 @@
+{
+    "scene": "MinigameRegatta",
+    "timestamp": "2026-10-30 17:08:25",
+    "label": "",
+    "secondsSinceSceneLoad": 108.10456085205078,
+    "floraObjectsInScene": 0,
+    "faunaObjectsInScene": 0,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Regatta Cell Config 3",
+            "spawnProfile": "Barren Cell Spawn Profile",
+            "configChoice": "IntensityWise",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "IntensityWiseLifeSpawner",
+            "phase": "Frenzy",
+            "liveVolume": 736640.3125,
+            "liveEnvironmentVolume": 302037.59375,
+            "livePrismCount": 15655,
+            "floraPlantingEnabled": false,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 687530.0,
+            "frenzyEnterVolume": 1027530.0,
+            "frenzyExitVolume": 947530.0,
+            "frenzyEnterCount": 5809,
+            "frenzyExitCount": 5209,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Jade",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 0,
+            "faunaLiveTotal": 0,
+            "flora": [],
+            "fauna": []
+        }
+    ],
+    "notes": [
+        "Cell 0: planting is OFF because the phase is Frenzy."
+    ]
+}
