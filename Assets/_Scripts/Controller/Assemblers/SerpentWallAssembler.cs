@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -233,6 +234,12 @@ namespace CosmicShore.Gameplay
             if (_ripple != null) { StopCoroutine(_ripple); _ripple = null; }
         }
 
+        // Diagnostic markers only (2026-10-31: SerpentWallAssembler.Update was the top self-time in a Serpent Time capture,
+        // 4.1 ms avg / 37 ms max over five walls); they change nothing the wall does.
+        static readonly ProfilerMarker s_sweepMarker = new("SerpentWall.Sweep");
+        static readonly ProfilerMarker s_steerMarker = new("SerpentWall.SteerMembers");
+        static readonly ProfilerMarker s_panelsMarker = new("SerpentWall.LayPanels");
+
         void Update()
         {
             if (!_configured) return;
@@ -256,18 +263,21 @@ namespace CosmicShore.Gameplay
                 _locked = lockdown;
                 // An ended wall steals nothing, but still lets go of bricks that were shot out, so
                 // they do not stay claimed (and out of every other wall's reach) until its seed dies.
-                if (_growing) Sweep();
-                else ReleaseLostBricks();
+                using (s_sweepMarker.Auto())
+                {
+                    if (_growing) Sweep();
+                    else ReleaseLostBricks();
+                }
             }
 
             // A Lockdown wall seals each hole as soon as its four bricks stand.
             if (_panelsDirty && _locked)
             {
                 _panelsDirty = false;
-                LayPanels();
+                using (s_panelsMarker.Auto()) LayPanels();
             }
 
-            SteerMembers();
+            using (s_steerMarker.Auto()) SteerMembers();
         }
 
         // ---------------- Growth ----------------

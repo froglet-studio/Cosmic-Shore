@@ -65,6 +65,22 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Time: rings guarded by flora, back in the Skim Race cell, perf markers (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Supersedes the slab cover and the Rampage cells in the entry below. Not compiled in this session.
+
+1. Open `MinigameSerpentTime`, save once; console clean. The Cell lists only Skim Race Cell Config; the controller's
+   Guard Flora By Element holds the four Rampage Borromean configs (Charge, Mass, Space, Time).
+2. I1: every gate stands 2 rings; one has a Borromean plant growing across its mouth (Time: plain plates). Fly through
+   the plant: its plates break and you keep your speed. I2: Time and Mass guards (Mass plates bounce you).
+3. I3 / I4: one ring per gate, every one guarded; Charge guards are all danger. Shoot one: a hole opens where the cone
+   passed. Check the plant's membrane actually spans the ring (it is rooted at the centre, grown along the ring's axis):
+   if it grows sideways or misses the mouth, that is the orientation to fix.
+4. A destroyed guard drops its heart crystal. Fauna come to graze the guards.
+5. Profile (prof): compare the frame with Skim Race's; read `SerpentWall.Sweep` / `SteerMembers` / `LayPanels` and
+   `SerpentTime.Tick` / `SerpentTime.AI` in the capture.
+6. EditMode: `SerpentTimeClusterTests` (guard domain test), `SerpentTimeCourseTests`.
+
 ### 🔴 Serpent Time: covered rings and Rampage's living cells; the mode no longer changes the Serpent (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Written in a cloud session with no editor and no .NET SDK: not compiled. Supersedes the rounds and the wall's speed

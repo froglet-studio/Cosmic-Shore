@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
 using UnityEngine;
@@ -59,8 +60,8 @@ namespace CosmicShore.Tests
             var ring = SerpentTimeCluster.Ring(gate, 3, 0, 1);
             Assert.AreEqual(gate.Position, ring.Position);
             Assert.AreEqual(gate.Radius, ring.Radius);
-            Assert.AreEqual(3, SerpentTimeCluster.RingsFor(1, SerpentTimeCluster.DefaultRingsByIntensity));
-            Assert.AreEqual(2, SerpentTimeCluster.RingsFor(4, SerpentTimeCluster.DefaultRingsByIntensity));
+            Assert.AreEqual(2, SerpentTimeCluster.RingsFor(1, SerpentTimeCluster.DefaultRingsByIntensity));
+            Assert.AreEqual(1, SerpentTimeCluster.RingsFor(4, SerpentTimeCluster.DefaultRingsByIntensity));
             Assert.AreEqual(1, SerpentTimeCluster.RingsFor(2, null));
         }
 
@@ -114,44 +115,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Danger_slabs_take_their_share_and_none_or_all_at_the_ends()
+        public void Guard_domain_is_always_a_playable_domain_and_spread_over_the_course()
         {
-            int danger = 0, total = 0;
+            var seen = new HashSet<Domains>();
             for (int gate = 0; gate < 16; gate++)
-            for (int slot = 0; slot < 3; slot++)
-            for (int cell = 0; cell < 100; cell++)
+            for (int slot = 0; slot < 2; slot++)
             {
-                Assert.IsFalse(SerpentTimeCluster.IsDangerSlab(gate, slot, cell, 0f));
-                Assert.IsTrue(SerpentTimeCluster.IsDangerSlab(gate, slot, cell, 1f));
-                if (SerpentTimeCluster.IsDangerSlab(gate, slot, cell, 0.15f)) danger++;
-                total++;
+                var d = SerpentTimeCluster.GuardDomain(gate, slot);
+                Assert.That(d, Is.AnyOf(Domains.Jade, Domains.Ruby, Domains.Gold), "a guard is never Blue (bait to every school)");
+                Assert.AreEqual(d, SerpentTimeCluster.GuardDomain(gate, slot), "the same on every peer");
+                seen.Add(d);
             }
-            Assert.AreEqual(0.15f, danger / (float)total, 0.03f, "the I1 share is mostly plain prisms");
-            // The same slab answers the same way every time (every peer, every regrowth).
-            Assert.AreEqual(SerpentTimeCluster.IsDangerSlab(4, 1, 37, 0.5f), SerpentTimeCluster.IsDangerSlab(4, 1, 37, 0.5f));
-        }
-
-        [Test]
-        public void Cover_cells_lie_in_the_mouth_inside_the_rim()
-        {
-            var ring = new RaceGate(new Vector3(10f, 20f, 30f), new Vector3(0.4f, -0.3f, 1f).normalized, 45f);
-            var cells = new List<Vector3>();
-            SerpentTimeCluster.CoverCells(ring, 7f, 2f, cells);
-            Assert.Greater(cells.Count, 60, "a 45 u mouth should take dozens of 7 u slabs");
-            foreach (var c in cells)
-            {
-                Vector3 d = c - ring.Position;
-                Assert.AreEqual(0f, Vector3.Dot(d, ring.Axis), 1e-3f, "off the ring's plane");
-                Assert.LessOrEqual(d.magnitude, ring.Radius - 2f, "past the trimmed rim");
-            }
-
-            // The covered area reaches most of the mouth: no ring is left with an open lane round its edge.
-            float coveredArea = cells.Count * 49f;
-            Assert.Greater(coveredArea, 0.7f * Mathf.PI * ring.Radius * ring.Radius);
-
-            // A mouth smaller than one slab still gets one, at its centre.
-            SerpentTimeCluster.CoverCells(new RaceGate(Vector3.zero, Vector3.forward, 3f), 7f, 2f, cells);
-            Assert.AreEqual(1, cells.Count);
+            Assert.AreEqual(3, seen.Count, "all three playable domains guard some ring");
         }
     }
 }

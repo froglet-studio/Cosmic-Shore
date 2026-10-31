@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -20,8 +20,8 @@ namespace CosmicShore.Gameplay
         /// <summary>How far each gate's cluster is turned from the previous gate's, so neighbouring gates do not line up.</summary>
         public const float TwistPerGateRadians = 1.7f;
 
-        /// <summary>Rings per gate on intensity 1-4: three on the two open courses, two where the mouths shrink.</summary>
-        public static readonly int[] DefaultRingsByIntensity = { 3, 3, 2, 2 };
+        /// <summary>Rings per gate on intensity 1-4: two on the two open courses, one where the mouths shrink.</summary>
+        public static readonly int[] DefaultRingsByIntensity = { 2, 2, 1, 1 };
 
         /// <summary>
         /// Each ring's mouth and its distance from the gate's centre, as shares of the gate's mouth, for a
@@ -75,13 +75,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Does every ring of the cluster stay inside a sphere of <paramref name="outer"/> mouths round the gate?</summary>
         public static bool FitsWithin(float ringScale, float spread, float outer) => spread + ringScale <= outer;
 
-        // ── Ring cover (Shombith, 2026-10-31: "rings get covered by prisms we shoot and find our way") ──
-
-        /// <summary>Covered rings per gate on intensity 1-4: one of three, two of three, one of two, both of two.</summary>
-        public static readonly int[] DefaultCoveredByIntensity = { 1, 2, 1, 2 };
+        // ── Guarded rings (Shombith, 2026-10-31: "one ring only or max 2", guarded by flora) ──
 
         /// <summary>
-        /// Is ring <paramref name="slot"/> of gate <paramref name="gateIndex"/> covered, when <paramref name="covered"/> of
+        /// Is ring <paramref name="slot"/> of gate <paramref name="gateIndex"/> guarded (covered), when <paramref name="covered"/> of
         /// its <paramref name="rings"/> rings are? The covered run starts at a slot picked from the gate's index, so which
         /// ring is open moves round from gate to gate and the same on every peer.
         /// </summary>
@@ -96,50 +93,16 @@ namespace CosmicShore.Gameplay
             return k < covered;
         }
 
-        /// <summary>Share of a covered ring's slabs that are DANGER on intensity 1-4; the rest are plain prisms.</summary>
-        public static readonly float[] DefaultDangerShareByIntensity = { 0.15f, 0.3f, 0.5f, 0.7f };
-
         /// <summary>
-        /// Is slab <paramref name="cell"/> of covered ring <paramref name="slot"/> at gate <paramref name="gateIndex"/> a
-        /// danger prism, when <paramref name="share"/> of the slabs are? A hash of the three, the same on every peer and
-        /// for the whole race (a regrown slab is the same kind), scattered so a ring's cost cannot be read from afar.
+        /// The playable domain a guard plant at ring <paramref name="slot"/> of gate <paramref name="gateIndex"/> grows in:
+        /// Jade, Ruby or Gold by a hash of the two, the same on every peer and spread evenly over the course. Never Blue
+        /// (<see cref="CellLifeSpawnerBase.PickRandomDomain"/>: a Blue lifeform is bait to every domain's fauna).
         /// </summary>
-        public static bool IsDangerSlab(int gateIndex, int slot, int cell, float share)
+        public static Domains GuardDomain(int gateIndex, int slot)
         {
-            if (share <= 0f) return false;
-            if (share >= 1f) return true;
-            uint h = unchecked((uint)gateIndex * 73856093u ^ (uint)slot * 19349663u ^ (uint)cell * 83492791u);
-            h ^= h >> 13; h = unchecked(h * 0x5bd1e995u); h ^= h >> 15;
-            return (h & 0xFFFFu) / 65536f < share;
-        }
-
-        /// <summary>
-        /// The centres of a square grid of cover slabs across <paramref name="ring"/>'s mouth, <paramref name="spacing"/>
-        /// apart in the ring's plane, kept <paramref name="edgeMargin"/> inside its rim so the ring itself stays visible.
-        /// A cell is kept when its centre sits within the trimmed mouth less a third of a cell, so the slabs reach the rim
-        /// without poking past it. Clears <paramref name="into"/> first.
-        /// </summary>
-        public static void CoverCells(in RaceGate ring, float spacing, float edgeMargin, List<Vector3> into)
-        {
-            into.Clear();
-            if (spacing <= 0f) return;
-            float reach = ring.Radius - Mathf.Max(0f, edgeMargin) - spacing * 0.35f;
-            if (reach <= 0f) { into.Add(ring.Position); return; }
-
-            Vector3 axis = ring.Axis.sqrMagnitude > 1e-6f ? ring.Axis.normalized : Vector3.forward;
-            Vector3 s = Vector3.Cross(axis, Vector3.up);
-            if (s.sqrMagnitude < 1e-4f) s = Vector3.Cross(axis, Vector3.right);
-            s.Normalize();
-            Vector3 u = Vector3.Cross(s, axis);
-
-            int n = Mathf.CeilToInt(reach / spacing);
-            for (int a = -n; a <= n; a++)
-            for (int b = -n; b <= n; b++)
-            {
-                float x = a * spacing, y = b * spacing;
-                if (x * x + y * y > reach * reach) continue;
-                into.Add(ring.Position + s * x + u * y);
-            }
+            uint h = unchecked((uint)gateIndex * 2654435761u ^ (uint)slot * 40503u);
+            h ^= h >> 15;
+            return (h % 3u) switch { 0u => Domains.Jade, 1u => Domains.Ruby, _ => Domains.Gold };
         }
     }
 }
