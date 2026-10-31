@@ -1,11 +1,12 @@
 <!doctype html>
 <!--
-  Ratel Raid Lab (round 2) - a /labmaker browser studio for the Ratel's hive mode, the second game proposed for the Ratel's
+  Ratel Raid Lab (round 2b) - a /labmaker browser studio for the Ratel's hive mode, the second game proposed for the Ratel's
   seat of the Honeyguide (Docs/Studios/ONE_THUMB_SEAT_ARCS.md section 3), as Garrett's notes of 2026-10-31 reshaped it: a
   thin symbolic strip shows the Honeyguide and the distance to an omnicrystal (or a hive its Mass power made); reaching it
   starts hive mode on its own; every hive is solvable by chains of 3+; completing a colour pays prisms and a charge with no
   pick, and they place themselves on the Dynamo's largest planar crystal. Round 1 (the raid card, stings, the feast) is
-  superseded. The build is the real Dynamo, copied line for line
+  superseded. Round 2b: every hive holds all three domains, a shielded prism in each
+  (a crossing of two snakes; two passes) and danger prisms that sting; Restart starts the next seed's match. The build is the real Dynamo, copied line for line
   from Docs/Studios/HoneyguideLab.html (script id="dynamo-core") with the round 7 Breath settings: AP bank 6, a pick of
   three abilities. Write-up: Docs/Studios/HONEYGUIDE_RAID_LAB.md. Verify: node .claude/skills/labmaker/verify_lab.cjs <this file>
 -->
@@ -107,7 +108,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>Ratel Raid Lab<small>ROUND 2</small></h1>
+    <h1>Ratel Raid Lab<small>ROUND 2B</small></h1>
     <span class="seg" id="seatSeg" role="group" aria-label="Who plays the Ratel">
       <button data-who="human" aria-pressed="false" title="You play the Ratel: drag prisms, tap ports and cards; on a raid, drag chains">You</button>
       <button data-who="skilled" aria-pressed="true" title="Watch the skilled AI Ratel">AI skilled</button>
@@ -116,8 +117,9 @@
     <select id="variant" aria-label="Rules" title="Which rules the live board plays"></select>
     <button class="btn primary" id="hiveNow" title="Put the omnicrystal under the Honeyguide: hive mode starts">Hive now</button>
     <button class="btn" id="pause">Pause</button>
-    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="restart" title="A new match: the next seed, unpaused">Restart</button>
     <button class="btn" id="resetAll" title="Put every setting back to the candidate">Shipped</button>
+    <span class="meta" id="seedTag"></span>
     <span class="meta" id="diff"></span>
     <span class="meta" id="platform"></span>
   </header>
@@ -703,7 +705,7 @@
   // (Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset, HoneyguideConfigSO) with the round 7 Breath
   // (Garrett 2026-10-29: AP bank 6, a pick of three). Everything about the strip, hive mode, the rewards, the planar
   // crystal and the bees is a PROPOSAL from Garrett's round 2 notes (2026-10-31): nothing in the game has it.
-  const LAB = { name: 'Ratel Raid Lab', branch: 'cece/jolly-lovelace-t8y3a1', round: 2, doc: 'Docs/Studios/HONEYGUIDE_RAID_LAB.md', proposal: 'Docs/Studios/ONE_THUMB_SEAT_ARCS.md section 3' };
+  const LAB = { name: 'Ratel Raid Lab', branch: 'cece/jolly-lovelace-t8y3a1', round: '2b', doc: 'Docs/Studios/HONEYGUIDE_RAID_LAB.md', proposal: 'Docs/Studios/ONE_THUMB_SEAT_ARCS.md section 3' };
   const OWN = COLOUR_DOM.indexOf(OUR_DOMAIN);   // the player's domain as a Dynamo colour (Jade = 2)
   const OTHERS = [1, 2, 3].filter((c) => c !== OWN);
   const SHIPPED = {
@@ -732,6 +734,10 @@
     snakeMin: 3,            // lab: shortest snake the generator lays (a chain of its own)
     snakeMax: 5,            // lab: longest snake
     hiveHoles: 2,           // lab: empty cells in a hive
+    hiveCross: 0.35,        // lab: chance a later snake crosses a plain cell of its colour (one more shield)
+    hiveDangerMin: 2,       // Garrett 2026-10-31: "always include some danger prisms" (at least this many)
+    hiveArmour: 0.15,       // lab: share of our own body cells that are armoured (shielded); at least one
+    stingSeconds: 1,        // proposal: the stun after a chain touches a danger cell (the chain breaks, no AP cost)
     rewardDynamo: 2,        // Garrett 2026-10-31: "2 prisms of that color in their dynamo"
     rewardBattery: 1,       // Garrett 2026-10-31: "and 1 in their battery"
     crystalGlowSeconds: 1.6, // proposal: how long the planar crystal lights while the rewards land
@@ -764,6 +770,10 @@
     ['Hive', 'snakeMin', 3, 5, 1, 'Shortest snake', 'The generator lays each other-domain run as a snake at least this long.'],
     ['Hive', 'snakeMax', 3, 8, 1, 'Longest snake', 'And at most this long.'],
     ['Hive', 'hiveHoles', 0, 8, 1, 'Holes', 'Empty cells in a hive.'],
+    ['Hive', 'hiveCross', 0, 1, 0.05, 'Extra crossings', 'Chance a later snake crosses a plain cell of its colour, making one more shielded prism. Every other colour always gets one crossing.'],
+    ['Hive', 'hiveDangerMin', 1, 8, 1, 'Danger prisms', 'Danger prisms in every hive (any domain), placed off every snake: a chain that touches one stings.'],
+    ['Hive', 'hiveArmour', 0, 0.5, 0.01, 'Armoured body', 'Share of our own body cells that are shielded (at least one).'],
+    ['Hive', 'stingSeconds', 0, 3, 0.1, 'Sting stun (s)', 'A chain that touches danger breaks with nothing destroyed, and the thumb is stunned this long.'],
     ['Hive', 'rewardDynamo', 0, 6, 1, 'Reward prisms', 'Prisms of a completed colour that land on the Dynamo.'],
     ['Hive', 'rewardBattery', 0, 3, 1, 'Reward charges', 'Charges of a completed colour that go to the battery.'],
     ['Hive', 'crystalGlowSeconds', 0, 4, 0.1, 'Crystal lights for (s)', 'While the rewards land, the planar crystal and its next cells light.'],
@@ -785,11 +795,11 @@
   };
   // Difficulty changes belief and pace, never the rules (/vessel-ai). Build rows are the Honeyguide Lab's ESKILL.hard / .easy.
   const SKILL = {
-    skilled: { think: 0.45, top: 1, blunder: 0, noise: 5, cell: 0.22, solver: true },
-    rookie: { think: 1.6, top: 4, blunder: 0.25, noise: 400, cell: 0.5, solver: false },
+    skilled: { think: 0.45, top: 1, blunder: 0, noise: 5, cell: 0.22, solver: true, sloppy: 0 },
+    rookie: { think: 1.6, top: 4, blunder: 0.25, noise: 400, cell: 0.5, solver: false, sloppy: 0.15 },
   };
 
-  const LS = 'lab:' + LAB.name + ':r2:';
+  const LS = 'lab:' + LAB.name + ':r2b:';
   const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
   const P = Object.assign({}, SHIPPED, lsGet('P', {}));
@@ -840,38 +850,77 @@
     return null;
   }
 
-  // ================= (4) The hive: snakes, the solver =================
-  // A hive is 37 cells: the other two domains laid as snakes (simple paths snakeMin..snakeMax long; same-colour snakes may
-  // touch), a few holes, and the rest our own domain (the hive's body, never chained). cells[i] = { dom } (0 = empty).
-  function makeHive(rnd, Pw) {
-    for (let attempt = 0; attempt < 20; attempt++) {
-      const dom = new Array(D.N).fill(-1), target = Math.round(Pw.hiveOtherShare * D.N);
-      let laid = 0, tries = 0, k = 0;
+  // ================= (4) The hive: snakes, crossings, danger, the solver =================
+  // A hive is 37 cells, each { dom, hits, danger } (dom 0 = empty). The other two domains are laid as SNAKES: simple paths
+  // snakeMin..snakeMax long. Where two snakes of one colour cross, that cell is SHIELDED (hits 2): the first snake's chain
+  // strips the shield and the second's breaks it. Our own domain is the hive's body: never chained, some of it armoured
+  // (hits 2). DANGER cells (any domain) go where no snake runs: never chained, and a chain that touches one stings.
+  const live = (x, c) => x.dom === c && !x.danger && x.hits > 0;   // a cell a chain of colour c may run through
+  // One snake of `colour`: through cell `through` (a crossing) or from a random free cell, grown from either end through
+  // free cells. It writes nothing unless it reaches snakeMin.
+  function laySnake(dom, hits, rnd, colour, through, Pw) {
+    const free = (i) => dom[i] < 0;
+    let path;
+    if (through >= 0) path = [through];
+    else { const f = []; for (let i = 0; i < D.N; i++) if (free(i)) f.push(i); if (!f.length) return null; path = [f[Math.floor(rnd() * f.length)]]; }
+    const len = Pw.snakeMin + Math.floor(rnd() * (Math.max(Pw.snakeMin, Pw.snakeMax) - Pw.snakeMin + 1));
+    while (path.length < len) {
+      const k = Math.floor(rnd() * 2);
+      let grown = false;
+      for (let e = 0; e < 2 && !grown; e++) {
+        const head = (k + e) % 2 === 0, end = head ? path[path.length - 1] : path[0];
+        const next = D.NEIGH[end].filter((n) => free(n) && path.indexOf(n) < 0);
+        if (next.length) { const n = next[Math.floor(rnd() * next.length)]; if (head) path.push(n); else path.unshift(n); grown = true; }
+      }
+      if (!grown) break;
+    }
+    if (path.length < Pw.snakeMin) return null;
+    for (const i of path) { if (dom[i] === colour) hits[i]++; else { dom[i] = colour; hits[i] = 1; } }
+    return path;
+  }
+  // What every hive must hold (Garrett 2026-10-31): prisms of all three domains, a shielded prism in each, some danger.
+  function hiveHolds(cells, Pw) {
+    const doms = new Set(), shielded = new Set(); let danger = 0;
+    for (const x of cells) { if (!x.dom) continue; doms.add(x.dom); if (x.danger) danger++; else if (x.hits >= 2) shielded.add(x.dom); }
+    return { ok: doms.size === 3 && shielded.size === 3 && danger >= Pw.hiveDangerMin, domains: doms.size, shielded: shielded.size, danger };
+  }
+  function makeHive(rnd, Pw, why) {   // why (optional): counts the reason for each regeneration
+    let regenerated = 0;
+    const fail = (k) => { if (why) why[k] = (why[k] || 0) + 1; };
+    for (let attempt = 0; attempt < 60; attempt++) {
+      if (attempt) regenerated++;
+      const dom = new Array(D.N).fill(-1), hits = new Array(D.N).fill(0);
+      let ok = true;
+      for (const c of OTHERS) {   // each other colour starts with a crossing: two snakes sharing one cell, its shield
+        const a = laySnake(dom, hits, rnd, c, -1, Pw);
+        const b = a && laySnake(dom, hits, rnd, c, a[Math.floor(rnd() * a.length)], Pw);
+        if (!b) { ok = false; break; }
+      }
+      if (!ok) { fail('no room for a crossing'); continue; }
+      const target = Math.round(Pw.hiveOtherShare * D.N);
+      let laid = dom.filter((d) => d > 0).length, tries = 0, k = 0;
       while (laid < target && tries++ < 200) {
-        const colour = OTHERS[k % 2], len = Pw.snakeMin + Math.floor(rnd() * (Math.max(Pw.snakeMin, Pw.snakeMax) - Pw.snakeMin + 1));
-        const free = []; for (let i = 0; i < D.N; i++) if (dom[i] < 0) free.push(i);
-        if (!free.length) break;
-        const path = [free[Math.floor(rnd() * free.length)]];
-        while (path.length < len) {
-          const last = path[path.length - 1], next = D.NEIGH[last].filter((n) => dom[n] < 0 && path.indexOf(n) < 0);
-          if (!next.length) break;
-          path.push(next[Math.floor(rnd() * next.length)]);
-        }
-        if (path.length < Pw.snakeMin) continue;
-        for (const i of path) dom[i] = colour;
-        laid += path.length; k++;
+        const c = OTHERS[k++ % 2], plain = []; for (let i = 0; i < D.N; i++) if (dom[i] === c && hits[i] === 1) plain.push(i);
+        const through = plain.length && rnd() < Pw.hiveCross ? plain[Math.floor(rnd() * plain.length)] : -1;
+        if (laySnake(dom, hits, rnd, c, through, Pw)) laid = dom.filter((d) => d > 0).length;
       }
       const rest = []; for (let i = 0; i < D.N; i++) if (dom[i] < 0) rest.push(i);
-      for (let h = 0; h < Pw.hiveHoles && rest.length; h++) dom[rest.splice(Math.floor(rnd() * rest.length), 1)[0]] = 0;
-      for (const i of rest) dom[i] = OWN;
-      const hive = { cells: dom.map((d) => ({ dom: d })), regenerated: attempt };
-      const sol = solveHive(hive.cells, Pw.minChain);
-      if (sol) { hive.solution = sol; return hive; }
+      if (rest.length < Pw.hiveDangerMin + Pw.hiveHoles + 1) { fail('no room for danger'); continue; }
+      const danger = new Array(D.N).fill(false);
+      for (let d = 0; d < Pw.hiveDangerMin; d++) { const i = rest.splice(Math.floor(rnd() * rest.length), 1)[0]; danger[i] = true; dom[i] = 1 + Math.floor(rnd() * 3); hits[i] = 1; }
+      for (let h = 0; h < Pw.hiveHoles; h++) dom[rest.splice(Math.floor(rnd() * rest.length), 1)[0]] = 0;
+      for (const i of rest) { dom[i] = OWN; hits[i] = 1; }
+      for (let a = Math.max(1, Math.round(rest.length * Pw.hiveArmour)); a > 0; a--) hits[rest[Math.floor(rnd() * rest.length)]] = 2;
+      const cells = dom.map((d, i) => ({ dom: d > 0 ? d : 0, hits: d > 0 ? hits[i] : 0, danger: danger[i] }));
+      if (!hiveHolds(cells, Pw).ok) { fail('a rule not held'); continue; }
+      const solution = solveHive(cells, Pw.minChain);
+      if (solution) return { cells, solution, regenerated };
+      fail('solver said no');
     }
-    return null;   // never seen: snakes are chains of their own, so a hive is solvable by construction
+    return null;
   }
-  // Every simple path of minChain..maxLen cells through touching cells in `set` (a Set of cells of one colour) that holds
-  // cell `must` (any path when must < 0). Kept once per cell set (the order a thumb drags them in is the first one found).
+  // Every simple path of minChain..maxLen cells through `set` (a Set of live cells of one colour) that holds cell `must`
+  // (any path when must < 0). Kept once per cell set (the order a thumb drags them in is the first one found).
   function pathsThrough(set, must, minChain, maxLen) {
     const out = new Map(), path = [], used = new Set();
     const dfs = (u) => {
@@ -882,47 +931,53 @@
     for (const s of set) { used.add(s); path.push(s); dfs(s); path.pop(); used.delete(s); }
     return Array.from(out.values());
   }
-  // The solver: can every other-domain cell be cleared by chains of at least minChain? Per colour, per connected
-  // component: take the component's lowest cell, try every path through it (3..8 long), remove it, recurse; memo on the
-  // cells left. Returns the chains in play order, or null when some cell can never be cleared.
+  // The solver: can every non-danger cell of the two other domains be cleared by chains of at least minChain through
+  // cells of one domain, each chain taking one hit from each of its cells (shielded 2, plain 1)? Per colour: take the
+  // lowest cell still standing, try every path of 3..8 live cells through it, take the hits, recurse; memo on the hits.
+  // A cell with h hits sits in exactly h chains of any solution, so the order of chains never matters and this search is
+  // complete. Danger cells are never in a chain. Returns the chains in play order, or null.
   function solveHive(cells, minChain) {
-    const memo = new Map();
-    let budget = 200000;
-    const solveSet = (set) => {
-      if (!set.size) return [];
-      const key = Array.from(set).sort((a, b) => a - b).join(',');
-      if (memo.has(key)) return memo.get(key);
-      if (--budget < 0) return null;
-      const lowest = Math.min(...set), comp = new Set([lowest]), q = [lowest];
-      for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (set.has(n) && !comp.has(n)) { comp.add(n); q.push(n); }
-      let result = null;
-      if (comp.size >= minChain) {
-        for (const p of pathsThrough(comp, lowest, minChain, 8)) {
-          const left = new Set(set); for (const i of p) left.delete(i);
-          const rest = solveSet(left);
-          if (rest) { result = [p].concat(rest); break; }
-        }
-      }
-      memo.set(key, result);
-      return result;
-    };
-    let all = [];
+    let budget = 300000;
+    const all = [];
     for (const c of OTHERS) {
-      const set = new Set(); for (let i = 0; i < D.N; i++) if (cells[i].dom === c) set.add(i);
-      const sol = solveSet(set);
+      const idxs = []; for (let i = 0; i < D.N; i++) if (live(cells[i], c)) idxs.push(i);
+      const hits = {}; for (const i of idxs) hits[i] = cells[i].hits;
+      const memo = new Map();
+      const solve = () => {
+        const standing = idxs.filter((i) => hits[i] > 0);
+        if (!standing.length) return [];
+        const key = idxs.map((i) => hits[i]).join('');
+        if (memo.has(key)) return memo.get(key);
+        if (--budget < 0) return null;
+        const set = new Set(standing), lowest = standing[0], comp = new Set([lowest]), q = [lowest];
+        for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (set.has(n) && !comp.has(n)) { comp.add(n); q.push(n); }
+        let result = null;
+        if (comp.size >= minChain) {
+          for (const p of pathsThrough(comp, lowest, minChain, 8)) {
+            for (const i of p) hits[i]--;
+            const rest = solve();
+            for (const i of p) hits[i]++;
+            if (rest) { result = [p].concat(rest); break; }
+          }
+        }
+        memo.set(key, result);
+        return result;
+      };
+      const sol = solve();
       if (!sol) return null;
-      all = all.concat(sol);
+      for (const p of sol) all.push(p);
     }
     return all;
   }
-  // Is any chain left? A connected group of one other colour at least minChain big (for minChain 3 every such group holds one).
+  // Is any chain left? A connected group of live cells of one other colour at least minChain big (for minChain 3 every such
+  // group holds one).
   function anyChain(cells, minChain) {
     const seen = new Uint8Array(D.N);
     for (let s = 0; s < D.N; s++) {
       const c = cells[s].dom;
-      if (seen[s] || OTHERS.indexOf(c) < 0) continue;
+      if (seen[s] || OTHERS.indexOf(c) < 0 || !live(cells[s], c)) continue;
       const q = [s]; seen[s] = 1;
-      for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (!seen[n] && cells[n].dom === c) { seen[n] = 1; q.push(n); }
+      for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (!seen[n] && live(cells[n], c)) { seen[n] = 1; q.push(n); }
       if (q.length >= minChain) return true;
     }
     return false;
@@ -931,7 +986,7 @@
   function chainsNow(cells, minChain, maxLen) {
     const out = [];
     for (const c of OTHERS) {
-      const set = new Set(); for (let i = 0; i < D.N; i++) if (cells[i].dom === c) set.add(i);
+      const set = new Set(); for (let i = 0; i < D.N; i++) if (live(cells[i], c)) set.add(i);
       const seen = new Set();
       for (const s of set) {
         if (seen.has(s)) continue;
@@ -945,7 +1000,6 @@
     out.sort((a, b) => b.length - a.length || a[0] - b[0]);
     return out;
   }
-
   // ================= (5) THE MODEL: the Dynamo, the strip, hive mode (pure: no drawing, no devices) =================
   function dynamoSettings(Pw) {
     return {
@@ -968,7 +1022,7 @@
       omni: null, omniAt: V.hives ? Pw.omniEverySeconds * 0.5 : Infinity, massHive: null, massAt: V.hives ? Pw.massHiveEverySeconds * 0.5 : Infinity, target: null,
       ai: { think: 0, memo: {}, cellT: 0, path: null, at: 0, plan: null },
       slipT: Pw.plSlipSeconds, lastAct: -99, bins: [], hist: [], histT: 0, fx: [],
-      m: { patterns: 0, charges: 0, slips: 0, hivesOmni: 0, hivesMass: 0, coloursDone: 0, fullClears: 0, stranded: 0, broken: 0, chains: 0, left: 0,
+      m: { stings: 0, regenerated: 0, patterns: 0, charges: 0, slips: 0, hivesOmni: 0, hivesMass: 0, coloursDone: 0, fullClears: 0, stranded: 0, broken: 0, chains: 0, left: 0,
         rewardPlaced: 0, rewardOnCrystal: 0, acts: 0, restT: 0, stoppedT: 0, hiveT: 0, offers: 0 },
     };
     return R;
@@ -1025,24 +1079,45 @@
   // ---- hive mode ----
   function enterHive(R, source) {
     const st = R.dyn, Pw = R.P;
+    R.target = null;   // the target is gone with its omnicrystal or hive (round 2 left it set: the strip read a null target)
     if (source === 'omni') { R.omni = null; R.omniAt = R.t + Pw.omniEverySeconds * (0.75 + 0.5 * R.rngH()); R.m.hivesOmni++; }
     else { R.massHive = null; R.massAt = R.t + Pw.massHiveEverySeconds; R.m.hivesMass++; }
     if (R.cfg.hiveEndsSpin !== 'stop') { D.tick(st, R.S); drain(R); }   // "the ratel ends their current timer": the spin completes now
     const h = makeHive(R.rngH, Pw);
+    R.m.regenerated += h.regenerated;
     R.phase = 'hive';
-    R.hive = { source, cells: h.cells, solution: h.solution, regenerated: h.regenerated, t: 0, chain: [], broken: 0, chains: 0, done: [], rewards: [] };
-    R.hive.total = {}; for (const c of OTHERS) R.hive.total[c] = h.cells.filter((x) => x.dom === c).length;
+    R.hive = { source, cells: h.cells, solution: h.solution, regenerated: h.regenerated, t: 0, chain: [], broken: 0, chains: 0, stings: 0, stun: 0, done: [], rewards: [] };
+    R.hive.total = {}; for (const c of OTHERS) R.hive.total[c] = remaining(R.hive, c);
     R.ai.path = null; R.ai.plan = null;
     fx(R, { k: 'toast', text: (source === 'omni' ? 'The omnicrystal became a hive' : 'The Honeyguide reached its hive') + ': hive mode' });
   }
-  const remaining = (hive, c) => { let n = 0; for (const x of hive.cells) if (x.dom === c) n++; return n; };
+  // A colour's cells still standing: every non-danger cell of it with a hit left (shields included).
+  function remaining(hive, c) { let n = 0; for (const x of hive.cells) if (live(x, c)) n++; return n; }
+  // A sting: the chain breaks with nothing in it destroyed, and the thumb is stunned for stingSeconds (no AP cost).
+  function sting(R, cell) {
+    const hive = R.hive;
+    hive.chain = []; hive.stun = R.P.stingSeconds; hive.stings++; R.m.stings++;
+    fx(R, { k: 'sting', cell }); fx(R, { k: 'toast', text: 'Stung: the chain broke' });
+  }
+  function chainStart(R, cell) {
+    const hive = R.hive;
+    if (hive.stun > 0 || !(cell >= 0 && cell < D.N)) return false;
+    const x = hive.cells[cell];
+    if (x.danger && x.dom) { sting(R, cell); return true; }
+    if (OTHERS.indexOf(x.dom) < 0 || !live(x, x.dom)) return false;   // our own domain is the hive's body; holes are empty
+    hive.chain = [cell]; act(R, 1);
+    return true;
+  }
   function chainAdd(R, cell) {
     const hive = R.hive, ch = hive.chain;
-    if (!ch.length || !(cell >= 0 && cell < D.N)) return false;
+    if (hive.stun > 0 || !ch.length || !(cell >= 0 && cell < D.N)) return false;
     const last = ch[ch.length - 1];
     if (cell === last) return false;
     if (ch.length >= 2 && cell === ch[ch.length - 2]) { ch.pop(); return true; }   // backtrack
-    if (!D.isNeighbour(last, cell) || ch.indexOf(cell) >= 0 || hive.cells[cell].dom !== hive.cells[ch[0]].dom) return false;
+    if (!D.isNeighbour(last, cell) || ch.indexOf(cell) >= 0) return false;
+    const x = hive.cells[cell];
+    if (x.danger && x.dom) { sting(R, cell); return true; }
+    if (!live(x, hive.cells[ch[0]].dom)) return false;
     ch.push(cell); act(R, 1);
     return true;
   }
@@ -1058,8 +1133,14 @@
     hive.chain = [];
     if (ch.length < R.P.minChain) return false;
     const c = hive.cells[ch[0]].dom;
-    for (const i of ch) { hive.cells[i].dom = 0; fx(R, { k: 'shatter', cell: i, colour: c }); }
-    hive.broken += ch.length; hive.chains++; R.m.broken += ch.length; R.m.chains++;
+    let broken = 0;
+    for (const i of ch) {   // each cell loses one hit: a shield goes, or the prism breaks
+      const x = hive.cells[i];
+      x.hits--;
+      if (x.hits <= 0) { x.dom = 0; x.hits = 0; broken++; fx(R, { k: 'shatter', cell: i, colour: c }); }
+      else fx(R, { k: 'unshield', cell: i, colour: c });
+    }
+    hive.broken += broken; hive.chains++; R.m.broken += broken; R.m.chains++;
     if (remaining(hive, c) === 0 && hive.done.indexOf(c) < 0) {
       hive.done.push(c);
       hive.rewards = rewardsFor(hive.done);
@@ -1089,15 +1170,15 @@
     const inC = new Uint8Array(D.N); for (const i of crystal.cells) inC[i] = 1;
     const next = []; for (let i = 0; i < D.N; i++) if (!st.cells[i] && D.NEIGH[i].some((n) => inC[n])) next.push([i, crystal.perm[CLASS[i]]]);
     fx(R, { k: 'crystal', cells: crystal.cells.slice(), landed, next });
-    R.lastHive = { source: hive.source, broken: hive.broken, done: hive.done.slice(), rewards: hive.rewards.slice(), left, why, seconds: hive.t };
-    R.homeHives.push({ born: R.t, source: hive.source, bees: Pw.beesPerHive, mass: hive.cells.filter((x) => x.dom === OWN).length });
+    R.lastHive = { source: hive.source, broken: hive.broken, done: hive.done.slice(), rewards: hive.rewards.slice(), left, stings: hive.stings, why, seconds: hive.t };
+    R.homeHives.push({ born: R.t, source: hive.source, bees: Pw.beesPerHive, mass: hive.cells.filter((x) => x.dom === OWN && !x.danger).length });
     R.hive = null; R.ai.path = null; R.ai.plan = null;
     R.phase = 'build'; if (R.cfg.hiveEndsSpin !== 'stop') st.clock = 0;   // complete: a fresh full spin; stop: the old one resumes
     fx(R, { k: 'toast', text: (why === 'clear' ? 'Hive cleared' : why === 'leave' ? 'Left the hive' : why === 'stuck' ? 'No chain left' : 'Hive mode over') + ': ' + (hive.rewards.length ? hive.rewards.map((c) => DOM[COLOUR_DOM[c]].name).join(', ') + ' rewards land on the crystal' : 'no colour completed') });
   }
   function hiveStep(R, dt) {
     const hive = R.hive;
-    hive.t += dt;
+    hive.t += dt; if (hive.stun > 0) hive.stun = Math.max(0, hive.stun - dt);
     let left = 0; for (const c of OTHERS) left += remaining(hive, c);
     if (!left) leaveHive(R, 'clear');
     else if (hive.t >= R.P.raidSeconds) leaveHive(R, 'time');
@@ -1106,17 +1187,11 @@
   function beesStep(R, dt) {   // symbolic: each left hive grows as its bees bring mass back (a transfer from opposing fauna)
     for (const h of R.homeHives) h.mass += h.bees * R.P.beeMassPerMinute * dt / 60;
   }
-
   // ---- one seat input (the human's, or the AI's: the same object) ----
   function applyInput(R, inp) {
     const st = R.dyn;
     switch (inp.k) {
-      case 'chainStart': {
-        if (R.phase !== 'hive' || !(inp.cell >= 0 && inp.cell < D.N)) return false;
-        const d = R.hive.cells[inp.cell].dom;
-        if (OTHERS.indexOf(d) < 0) return false;   // our own domain is the hive's body; holes are empty
-        R.hive.chain = [inp.cell]; act(R, 1); return true;
-      }
+      case 'chainStart': return R.phase === 'hive' && chainStart(R, inp.cell);
       case 'chainAdd': return R.phase === 'hive' && chainAdd(R, inp.cell);
       case 'chainEnd': return R.phase === 'hive' && chainEnd(R);
       case 'leave': if (R.phase !== 'hive') return false; leaveHive(R, 'leave'); act(R, 1); return true;
@@ -1144,16 +1219,17 @@
           if (ai.at === 0) applyInput(R, { k: 'chainStart', cell: ai.path[0] });
           else applyInput(R, { k: 'chainAdd', cell: ai.path[ai.at] });
           ai.at++; ai.cellT += sk.cell;
-          if (R.phase !== 'hive') { ai.path = null; break; }
+          if (R.phase !== 'hive' || !R.hive.chain.length) { ai.path = null; break; }   // the hive ended, or a sting broke the chain
           if (ai.at >= ai.path.length) { applyInput(R, { k: 'chainEnd' }); ai.path = null; ai.think = sk.cell * 2; }
         }
         return;
       }
-      if (ai.think > 0 || R.phase !== 'hive') return;
+      if (ai.think > 0 || R.phase !== 'hive' || R.hive.stun > 0) return;
       let path = null;
-      if (sk.solver) {   // the skilled Ratel plays the solver's solution, chain by chain
+      const cells = R.hive.cells, standing = (p) => p.every((i) => live(cells[i], cells[p[0]].dom));
+      if (sk.solver) {   // the skilled Ratel plays the solver's solution, chain by chain (it never touches danger)
         if (!ai.plan) ai.plan = (R.hive.solution || []).slice();
-        while (ai.plan.length && !ai.plan[0].every((i) => OTHERS.indexOf(R.hive.cells[i].dom) >= 0)) ai.plan.shift();
+        while (ai.plan.length && !standing(ai.plan[0])) ai.plan.shift();
         path = ai.plan.shift() || null;
       }
       if (!path) {   // the rookie: a random one of the four longest chains, sometimes cut short (it can strand cells)
@@ -1161,6 +1237,10 @@
         if (!all.length) return;
         path = all[Math.floor(R.rngE() * Math.min(4, all.length))];
         if (!sk.solver && path.length > R.P.minChain && R.rngE() < 0.5) path = path.slice(0, R.P.minChain + Math.floor(R.rngE() * (path.length - R.P.minChain)));
+        if (sk.sloppy > 0 && R.rngE() < sk.sloppy) {   // a sloppy thumb slides on into a danger cell next to the chain's end
+          const d = D.NEIGH[path[path.length - 1]].find((n) => cells[n].danger && cells[n].dom);
+          if (d != null) path = path.concat([d]);
+        }
       }
       ai.path = path; ai.at = 0; ai.cellT = 0;
       return;
@@ -1208,7 +1288,7 @@
     return {
       patternsPerMin: r2(m.patterns / mins), apWastedPerMin: r2(R.dyn.wasted / mins), chargesPerMin: r2(m.charges / mins),
       hivesOmniPerMin: r2(m.hivesOmni / mins), hivesMassPerMin: r2(m.hivesMass / mins),
-      coloursPerHive: closed ? r2(m.coloursDone / done) : 0, fullClearPct: closed ? r2(m.fullClears / done) : 0, strandedPerHive: closed ? r2(m.stranded / done) : 0,
+      coloursPerHive: closed ? r2(m.coloursDone / done) : 0, stingsPerHive: closed ? r2(m.stings / done) : 0, regenPerHive: hives ? r2(m.regenerated / hives) : 0, fullClearPct: closed ? r2(m.fullClears / done) : 0, strandedPerHive: closed ? r2(m.stranded / done) : 0,
       brokenPerMin: r2(m.broken / mins), onCrystalPct: m.rewardPlaced ? r2(m.rewardOnCrystal / m.rewardPlaced) : 0,
       restShare: r2((m.restT + m.stoppedT) / T), hiveShare: r2(m.hiveT / T), actionsPerSec: r2(mean), arcCV: r2(wm > 0 ? sd / wm : 0), seconds: r2(R.t),
     };
@@ -1219,7 +1299,7 @@
     for (let i = 0; i < n; i++) simStep(R, dt, null);
     return { score: score(R), curve: R.bins.slice(0, Math.floor(R.t / BIN)).map((x) => Math.round((x / BIN) * 100) / 100) };
   }
-  const COLS = ['patternsPerMin', 'apWastedPerMin', 'chargesPerMin', 'hivesOmniPerMin', 'hivesMassPerMin', 'coloursPerHive', 'fullClearPct', 'strandedPerHive', 'brokenPerMin', 'onCrystalPct', 'restShare', 'hiveShare', 'actionsPerSec', 'arcCV'];
+  const COLS = ['patternsPerMin', 'apWastedPerMin', 'chargesPerMin', 'hivesOmniPerMin', 'hivesMassPerMin', 'coloursPerHive', 'fullClearPct', 'strandedPerHive', 'stingsPerHive', 'regenPerHive', 'brokenPerMin', 'onCrystalPct', 'restShare', 'hiveShare', 'actionsPerSec', 'arcCV'];
   // runBatch(): every variant x skill x seed, headless. The no-argument call is short (the verifier calls it three times).
   function runBatch(opts) {
     opts = opts || {};
@@ -1250,7 +1330,7 @@
   const PLATFORM = detectPlatform();
   const canvas = $('stage'), ctx = canvas.getContext('2d');
   const DT = 1 / 30;
-  let seed = 1, world = null, paused = false, manualClock = false, queue = [];
+  let seed = 1, world = null, paused = false, manualClock = false, queue = [], acc = 0, lastNow = 0;
   const ui = { layout: null, G: null, cardRects: [], offerRects: [], leaveRect: null, drag: null, chainDown: false, pointer: null, fx: [], toastT: 0, dStr: '', dVal: -1, homeStr: '', homeKey: '' };
   let WHO = lsGet('who', 'skilled');
   function liveCfg() { return { variant: OPT.variant, who: WHO, P, hiveEndsSpin: OPT.hiveEndsSpin, headless: false }; }
@@ -1258,7 +1338,7 @@
   function push(inp) { if (world && world.cfg.who === 'human') queue.push(inp); }
 
   // ---- colours of the stage (the game's board look: a dark panel, the domain palette) ----
-  const C = { bg: '#070a0e', panel: '#0d131a', cell: '#141c25', line: '#26313d', ink: '#e8edf3', muted: '#8a96a4', honey: '#ffb21f', hive: '#ff8a3d', ok: '#5cd68f', shield: '#bfe9ff' };
+  const C = { bg: '#070a0e', panel: '#0d131a', cell: '#141c25', line: '#26313d', ink: '#e8edf3', muted: '#8a96a4', honey: '#ffb21f', hive: '#ff8a3d', ok: '#5cd68f', shield: '#bfe9ff', danger: '#ff3b3b' };
   const colourOf = (c) => (c ? DOM[COLOUR_DOM[c]].color : C.line);
   function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
   const FONT = (w, px) => w + ' ' + px + 'px "IBM Plex Sans", system-ui, sans-serif';
@@ -1312,7 +1392,7 @@
       hexPath(tx, my, s * 1.1); ctx.fillStyle = C.hive; ctx.fill();
       ctx.strokeStyle = C.shield; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(hx, my, s * 1.5, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(tx, my, s * 1.7, 0, 7); ctx.stroke();
       ctx.fillStyle = C.shield; ctx.fillText('HIVE MODE · INVULNERABLE', tx + s * 2.4, my - 6);
-    } else if (R.target) {
+    } else if (R.target === 'omni' ? R.omni : R.target === 'mass' ? R.massHive : null) {
       const o = R.target === 'omni' ? R.omni : R.massHive, tx = hx + 16 + span * clamp(o.d / Math.max(1, R.P.targetFarU), 0, 1);
       ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(hx + 12, my); ctx.lineTo(tx - 10, my); ctx.stroke(); ctx.setLineDash([]);
       if (R.target === 'omni') { diamond(tx, my, s * 1.2); ctx.fillStyle = '#d8f3ff'; } else { hexPath(tx, my, s * 1.05); ctx.fillStyle = C.hive; }
@@ -1374,17 +1454,27 @@
   function drawHive(R, G) {
     const hive = R.hive, ch = hive.chain, inChain = new Set(ch);
     for (let i = 0; i < D.N; i++) {
-      const [x, y] = cellPx(G, i), d = hive.cells[i].dom, s = G.size;
+      const [x, y] = cellPx(G, i), cell = hive.cells[i], d = cell.dom, s = G.size;
       hexPath(x, y, s * 0.97); ctx.fillStyle = '#0b1016'; ctx.fill();
       if (!d) { hexPath(x, y, s * 0.9); ctx.strokeStyle = '#1c2530'; ctx.lineWidth = 1; ctx.stroke(); continue; }
-      if (d === OWN) {   // our own domain: the hive's body, never chained
+      if (cell.danger) {   // danger: a hazard in the comb, never raided (a stand-in for the game's DangerousBlockMaterial)
+        hexPath(x, y, s * 0.9); ctx.fillStyle = '#240709'; ctx.fill(); ctx.strokeStyle = C.danger; ctx.lineWidth = Math.max(2, s * 0.12); ctx.stroke();
+        ctx.strokeStyle = C.danger; ctx.lineWidth = Math.max(1.5, s * 0.08);
+        for (let k = 0; k < 6; k++) { const a = Math.PI / 3 * k; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * s * 0.18, y + Math.sin(a) * s * 0.18); ctx.lineTo(x + Math.cos(a) * s * 0.6, y + Math.sin(a) * s * 0.6); ctx.stroke(); }
+        ctx.beginPath(); ctx.arc(x, y, s * 0.16, 0, 7); ctx.fillStyle = colourOf(d); ctx.fill();
+        continue;
+      }
+      if (d === OWN) {   // our own domain: the hive's body, never chained; armoured cells carry a ring
         hexPath(x, y, s * 0.9); ctx.fillStyle = hexA(colourOf(d), 0.16); ctx.fill(); ctx.strokeStyle = hexA(colourOf(d), 0.42); ctx.lineWidth = 1.2; ctx.stroke();
+        if (cell.hits >= 2) { hexPath(x, y, s * 0.7); ctx.strokeStyle = hexA(C.shield, 0.45); ctx.lineWidth = Math.max(1.5, s * 0.08); ctx.stroke(); }
         continue;
       }
       const hot = inChain.has(i);
-      hexPath(x, y, s * 0.88); ctx.fillStyle = hot ? '#ffffff' : hexA(colourOf(d), 0.92); ctx.fill();
-      hexPath(x, y, s * 0.48); ctx.fillStyle = hot ? hexA(colourOf(d), 0.9) : 'rgba(0,0,0,.2)'; ctx.fill();
+      hexPath(x, y, s * 0.8); ctx.fillStyle = hot ? '#ffffff' : hexA(colourOf(d), 0.92); ctx.fill();
+      hexPath(x, y, s * 0.44); ctx.fillStyle = hot ? hexA(colourOf(d), 0.9) : 'rgba(0,0,0,.2)'; ctx.fill();
+      if (cell.hits >= 2) { hexPath(x, y, s * 0.95); ctx.strokeStyle = C.shield; ctx.lineWidth = Math.max(2.5, s * 0.14); ctx.stroke(); }   // the shield: one more pass
     }
+    if (hive.stun > 0) { const B = ui.layout.board; ctx.fillStyle = hexA(C.danger, 0.22 * hive.stun / Math.max(0.01, R.P.stingSeconds)); ctx.fillRect(B.x, B.y, B.w, B.h); }
     if (ch.length > 1) {
       ctx.beginPath(); ch.forEach((i, k) => { const [x, y] = cellPx(G, i); if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
       ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = Math.max(3, G.size * 0.22); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
@@ -1445,7 +1535,7 @@
         ctx.fillText(fitText(done ? DOM[COLOUR_DOM[c]].name + ' done' : (tot - left) + ' / ' + tot, colW2 - 22), x + 20, rowY);
       });
       ctx.fillStyle = C.muted; ctx.font = FONT('500', 11);
-      const rw = hive.rewards.length ? 'Earned: ' + hive.rewards.map((c) => '+' + R.P.rewardDynamo + ' ' + DOM[COLOUR_DOM[c]].name + ' +' + R.P.rewardBattery + ' charge').join(' · ') : 'Clear every cell of a colour to earn its reward';
+      const rw = (hive.stings ? 'Stung ' + hive.stings + ' · ' : '') + (hive.rewards.length ? 'Earned: ' + hive.rewards.map((c) => '+' + R.P.rewardDynamo + ' ' + DOM[COLOUR_DOM[c]].name + ' +' + R.P.rewardBattery + ' charge').join(' · ') : 'Clear every cell of a colour (rings take two chains) to earn it');
       ctx.fillText(fitText(rw, K.w - lw - 30), K.x + 12, K.y + K.h * 0.78);
       roundRect(lr.x, lr.y, lr.w, lr.h, 8); ctx.fillStyle = '#10171f'; ctx.fill(); ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.stroke();
       ctx.fillStyle = C.ink; ctx.font = FONT('600', 13); ctx.textAlign = 'center'; ctx.fillText('LEAVE', lr.x + lr.w / 2, lr.y + lr.h / 2 - 6);
@@ -1484,7 +1574,11 @@
       if (age > life || age < 0) continue;
       keep.push(e);
       const f = age / life;
-      if (e.k === 'shatter' && R.phase === 'hive') {
+      if (e.k === 'unshield' && R.phase === 'hive') {
+        const [x, y] = cellPx(G, e.cell); hexPath(x, y, G.size * (0.95 + f * 0.6)); ctx.strokeStyle = hexA(C.shield, 1 - f); ctx.lineWidth = 2.5; ctx.stroke();
+      } else if (e.k === 'sting' && R.phase === 'hive') {
+        const [x, y] = cellPx(G, e.cell); ctx.beginPath(); ctx.arc(x, y, G.size * (0.6 + f * 2.2), 0, 7); ctx.strokeStyle = hexA(C.danger, 1 - f); ctx.lineWidth = 3; ctx.stroke();
+      } else if (e.k === 'shatter' && R.phase === 'hive') {
         const [x, y] = cellPx(G, e.cell);
         for (let k = 0; k < 6; k++) { const a = Math.PI / 3 * k + e.seedA, d = G.size * (0.3 + f * 1.4), dy = f * f * G.size * 1.6; ctx.save(); ctx.translate(x + Math.cos(a) * d, y + Math.sin(a) * d + dy); ctx.rotate(a + f * 4); ctx.fillStyle = hexA(colourOf(e.colour), 1 - f); ctx.beginPath(); ctx.moveTo(0, -G.size * 0.28); ctx.lineTo(G.size * 0.24, G.size * 0.18); ctx.lineTo(-G.size * 0.24, G.size * 0.18); ctx.closePath(); ctx.fill(); ctx.restore(); }
       } else if (e.k === 'charge' && R.phase === 'build') {
@@ -1520,7 +1614,7 @@
     {   // the note row under the board: who plays, and what to do now
       const N = L.note, st = R.dyn;
       const t = R.cfg.who !== 'human' ? 'Watching the ' + R.cfg.who + ' AI Ratel. Tap "You" to play.'
-        : R.phase === 'hive' ? 'Drag through ' + R.P.minChain + '+ touching cells of one colour; let go to break them'
+        : R.phase === 'hive' ? (R.hive.stun > 0 ? 'Stung: wait a moment' : 'Drag ' + R.P.minChain + '+ cells of one colour; rings take two chains; red cells sting')
         : st.reveal && st.reveal.offers ? 'Tap an ability'
         : 'Drag prisms, tap ports, tap a lit card';
       ctx.fillStyle = C.muted; ctx.font = FONT('500', 11); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1624,9 +1718,9 @@
     f.append(s, sel); return f;
   }
   // The scorecard: measured headless; the table on load is the record's (Docs/Studios/HONEYGUIDE_RAID_LAB.md) until re-run.
-  const RECORD_BATCH = {"seeds":[1,2,3,4,5,6],"seconds":180,"rows":[{"variant":"r6","skill":"skilled","patternsPerMin":4.56,"apWastedPerMin":0,"chargesPerMin":4.72,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.12,"hiveShare":0,"actionsPerSec":0.21,"arcCV":0.19},{"variant":"r6","skill":"rookie","patternsPerMin":3,"apWastedPerMin":0,"chargesPerMin":3.17,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.11,"hiveShare":0,"actionsPerSec":0.21,"arcCV":0.16},{"variant":"breath","skill":"skilled","patternsPerMin":5.22,"apWastedPerMin":0,"chargesPerMin":5.22,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.08,"hiveShare":0,"actionsPerSec":0.28,"arcCV":0.27},{"variant":"breath","skill":"rookie","patternsPerMin":2.95,"apWastedPerMin":0,"chargesPerMin":2.95,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.1,"hiveShare":0,"actionsPerSec":0.24,"arcCV":0.2},{"variant":"hive","skill":"skilled","patternsPerMin":10.17,"apWastedPerMin":0.11,"chargesPerMin":16,"hivesOmniPerMin":1,"hivesMassPerMin":0.67,"coloursPerHive":2,"fullClearPct":1,"strandedPerHive":0,"brokenPerMin":30.95,"onCrystalPct":0.95,"restShare":0.11,"hiveShare":0.15,"actionsPerSec":0.83,"arcCV":0.8},{"variant":"hive","skill":"rookie","patternsPerMin":3.83,"apWastedPerMin":0.22,"chargesPerMin":4.39,"hivesOmniPerMin":0.95,"hivesMassPerMin":0.67,"coloursPerHive":0.38,"fullClearPct":0,"strandedPerHive":3.27,"brokenPerMin":22.55,"onCrystalPct":0.79,"restShare":0.09,"hiveShare":0.25,"actionsPerSec":0.62,"arcCV":0.57},{"variant":"idle","skill":"skilled","patternsPerMin":0,"apWastedPerMin":10.22,"chargesPerMin":0,"hivesOmniPerMin":0.89,"hivesMassPerMin":0.5,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":18.72,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.68,"hiveShare":0.32,"actionsPerSec":0,"arcCV":0},{"variant":"idle","skill":"rookie","patternsPerMin":0,"apWastedPerMin":10.22,"chargesPerMin":0,"hivesOmniPerMin":0.89,"hivesMassPerMin":0.5,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":18.72,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.68,"hiveShare":0.32,"actionsPerSec":0,"arcCV":0}],"traces":{"r6:skilled":[0.6,0,0,0.6,0,0,0.6,0,0,0.4,0.2,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0,0.4,0.2,0,0.4,0.2,0],"r6:rookie":[0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.2,0.4,0,0,0.6,0,0,0.4,0.2,0,0.4,0.2,0,0.6,0,0,0.4,0.2,0,0.4,0.2,0,0.4],"breath:skilled":[0.6,0,0,0.6,0,0,0.6,0,0,0.8,0,0,0.4,0.4,0,0.4,0.4,0,0.4,1.4,0.4,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0.2,0],"breath:rookie":[0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.4,0.4,0,0,0.6,0,0,0.6,0.2,0,0.6,0.2,0.2,0.4,0,0,0.6,0,0,0.6,0,0.2,0.4],"hive:skilled":[0.6,0,0,0.6,0,0,0.6,0.6,3.2,0.4,0,1.2,3.2,0.6,0,0,0.6,0,0,2.8,1.8,0,0,0,0.8,0,0,1.4,0.8,0.6,3.4,0.8,0,0,1.8],"hive:rookie":[0.6,0,0,0.6,0,0,0.6,0,1.6,1.4,0.6,0,0.2,1.6,1.4,0.4,0.6,0,1.6,1.4,0.6,0,0.2,0.4,0,0,1.2,1.4,1.2,0.4,0,0.4,1,1.4,1.2],"idle:skilled":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"idle:rookie":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}};
+  const RECORD_BATCH = {"seeds":[1,2,3,4,5,6],"seconds":180,"rows":[{"variant":"r6","skill":"skilled","patternsPerMin":4.56,"apWastedPerMin":0,"chargesPerMin":4.72,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"stingsPerHive":0,"regenPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.12,"hiveShare":0,"actionsPerSec":0.21,"arcCV":0.19},{"variant":"r6","skill":"rookie","patternsPerMin":3,"apWastedPerMin":0,"chargesPerMin":3.17,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"stingsPerHive":0,"regenPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.11,"hiveShare":0,"actionsPerSec":0.21,"arcCV":0.16},{"variant":"breath","skill":"skilled","patternsPerMin":5.22,"apWastedPerMin":0,"chargesPerMin":5.22,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"stingsPerHive":0,"regenPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.08,"hiveShare":0,"actionsPerSec":0.28,"arcCV":0.27},{"variant":"breath","skill":"rookie","patternsPerMin":2.95,"apWastedPerMin":0,"chargesPerMin":2.95,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"stingsPerHive":0,"regenPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.1,"hiveShare":0,"actionsPerSec":0.24,"arcCV":0.2},{"variant":"hive","skill":"skilled","patternsPerMin":9.94,"apWastedPerMin":0.11,"chargesPerMin":15.11,"hivesOmniPerMin":0.95,"hivesMassPerMin":0.67,"coloursPerHive":2,"fullClearPct":1,"strandedPerHive":0,"stingsPerHive":0,"regenPerHive":0.33,"brokenPerMin":27.22,"onCrystalPct":0.93,"restShare":0.11,"hiveShare":0.16,"actionsPerSec":0.84,"arcCV":0.83},{"variant":"hive","skill":"rookie","patternsPerMin":3.22,"apWastedPerMin":0.11,"chargesPerMin":3.39,"hivesOmniPerMin":0.84,"hivesMassPerMin":0.61,"coloursPerHive":0.12,"fullClearPct":0,"strandedPerHive":4.48,"stingsPerHive":0,"regenPerHive":0.2,"brokenPerMin":19.39,"onCrystalPct":0.42,"restShare":0.07,"hiveShare":0.24,"actionsPerSec":0.61,"arcCV":0.62},{"variant":"idle","skill":"skilled","patternsPerMin":0,"apWastedPerMin":10.17,"chargesPerMin":0,"hivesOmniPerMin":0.73,"hivesMassPerMin":0.61,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":18.53,"stingsPerHive":0,"regenPerHive":0.21,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.68,"hiveShare":0.32,"actionsPerSec":0,"arcCV":0},{"variant":"idle","skill":"rookie","patternsPerMin":0,"apWastedPerMin":10.17,"chargesPerMin":0,"hivesOmniPerMin":0.73,"hivesMassPerMin":0.61,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":18.53,"stingsPerHive":0,"regenPerHive":0.21,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.68,"hiveShare":0.32,"actionsPerSec":0,"arcCV":0}],"traces":{"r6:skilled":[0.6,0,0,0.6,0,0,0.6,0,0,0.4,0.2,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0,0.4,0.2,0,0.4,0.2,0],"r6:rookie":[0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.2,0.4,0,0,0.6,0,0,0.4,0.2,0,0.4,0.2,0,0.6,0,0,0.4,0.2,0,0.4,0.2,0,0.4],"breath:skilled":[0.6,0,0,0.6,0,0,0.6,0,0,0.8,0,0,0.4,0.4,0,0.4,0.4,0,0.4,1.4,0.4,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0.2,0],"breath:rookie":[0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.4,0.4,0,0,0.6,0,0,0.6,0.2,0,0.6,0.2,0.2,0.4,0,0,0.6,0,0,0.6,0,0.2,0.4],"hive:skilled":[0.6,0,0,0.6,0,0,0.6,0.6,3.2,0.8,0,0.6,3,1.2,0,0,0.6,0,0,2.6,2,0.2,0,0,0.8,0,0,1.2,1,0,2.6,2.8,0,0,0.6],"hive:rookie":[0.6,0,0,0.6,0,0,0.6,0,1.8,1.2,0.6,0,0.2,1.6,1.4,0.6,0,0,1.6,1.2,0.4,0,0.4,0.2,0,0.2,0.6,0,0.2,0.4,0.6,1.6,1,0.4,0],"idle:skilled":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"idle:rookie":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}};
   let lastBatch = RECORD_BATCH;
-  const COL_LABELS = [['patternsPerMin', 'Patterns /min'], ['chargesPerMin', 'Charges /min'], ['hivesOmniPerMin', 'Omni hives /min'], ['hivesMassPerMin', 'Mass hives /min'], ['coloursPerHive', 'Colours done /hive'], ['fullClearPct', 'Full clears'], ['strandedPerHive', 'Stranded /hive'], ['brokenPerMin', 'Hostile broken /min'], ['onCrystalPct', 'Rewards on crystal'], ['restShare', 'Rest share'], ['hiveShare', 'In hive mode'], ['actionsPerSec', 'Actions /s'], ['arcCV', 'Arc (15 s CV)']];
+  const COL_LABELS = [['patternsPerMin', 'Patterns /min'], ['chargesPerMin', 'Charges /min'], ['hivesOmniPerMin', 'Omni hives /min'], ['hivesMassPerMin', 'Mass hives /min'], ['coloursPerHive', 'Colours done /hive'], ['fullClearPct', 'Full clears'], ['strandedPerHive', 'Stranded /hive'], ['stingsPerHive', 'Stings /hive'], ['regenPerHive', 'Regenerated /hive'], ['brokenPerMin', 'Hostile broken /min'], ['onCrystalPct', 'Rewards on crystal'], ['restShare', 'Rest share'], ['hiveShare', 'In hive mode'], ['actionsPerSec', 'Actions /s'], ['arcCV', 'Arc (15 s CV)']];
   const PCT = { fullClearPct: 1, onCrystalPct: 1, restShare: 1, hiveShare: 1 };
   function chartSvg(curve, maxY, col) {
     const w = 220, h = 76, n = Math.max(2, curve.length), sx = (k) => 24 + (k / (n - 1)) * (w - 30), sy = (v) => h - 14 - (v / maxY) * (h - 22);
@@ -1759,18 +1853,34 @@
   for (const b of $('seatSeg').children) b.onclick = () => { WHO = b.dataset.who; lsSet('who', WHO); paintSeat(); reset(); };
   function paintVariant() { const s = $('variant'); if (!s.options.length) for (const [v, t] of Object.entries(OPT_LABELS.variant)) { const o = document.createElement('option'); o.value = v; o.textContent = t; s.appendChild(o); } s.value = OPT.variant; $('hiveNow').disabled = !VARIANTS[OPT.variant].hives; }
   $('variant').onchange = () => setOpt('variant', $('variant').value);
-  $('hiveNow').onclick = () => { if (world && world.V.hives && world.phase === 'build') { if (!world.omni) world.omni = { d: 0, born: world.t }; else world.omni.d = 0; } };
+  $('hiveNow').onclick = () => {   // the omnicrystal under the pilot: hive mode opens on the next step (unpaused, so it can)
+    if (!world || !world.V.hives || world.phase !== 'build') return;
+    if (!world.omni) world.omni = { d: 0, born: world.t }; else world.omni.d = 0;
+    if (world.massHive) world.massHive.d = Math.max(world.massHive.d, 1);
+    if (paused) { paused = false; $('pause').textContent = 'Pause'; }
+  };
   $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Play' : 'Pause'; };
-  $('restart').onclick = () => reset();
-  $('resetAll').onclick = () => { for (const k of Object.keys(SHIPPED)) P[k] = SHIPPED[k]; Object.assign(OPT, OPT_SHIPPED); lsSet('P', {}); lsSet('opt', OPT); reset(); paintVariant(); const a = document.querySelector('#dockTabs [aria-selected="true"]'); if (a) a.click(); refreshDiff(); };
+  // Restart (round 2b, Garrett 2026-10-31: "the restart doesn't work"). Round 2's Restart rebuilt the world from the SAME
+  // seed, so the board, ports, cards and hive schedule came back identical (at the opening it changed nothing visible), and
+  // while paused it rebuilt a world that stayed frozen at 0 s. Restart now starts the next seed's match, unpaused, with
+  // the toast, the drag, the chain in hand and the frame accumulator cleared. The seed shows in the header.
+  function restart() {
+    reset(seed + 1);
+    paused = false; $('pause').textContent = 'Pause';
+    ui.toastT = 0; $('toast').hidden = true; ui.pointer = null; ui.lastCell = null; acc = 0;
+    paintSeed();
+  }
+  function paintSeed() { $('seedTag').textContent = 'seed ' + seed; }
+  $('restart').onclick = restart;
+  $('resetAll').onclick = () => { for (const k of Object.keys(SHIPPED)) P[k] = SHIPPED[k]; Object.assign(OPT, OPT_SHIPPED); lsSet('P', {}); lsSet('opt', OPT); restart(); paintVariant(); const a = document.querySelector('#dockTabs [aria-selected="true"]'); if (a) a.click(); refreshDiff(); };
   $('platform').textContent = PLATFORM.device === 'phone' ? 'phone' : 'PC';
   paintSeat(); paintVariant();
 
   function fitStage() { if (innerWidth > 900) { document.documentElement.style.removeProperty('--stageH'); return; } const h = Math.max(560, innerHeight - document.querySelector('header').offsetHeight); document.documentElement.style.setProperty('--stageH', h + 'px'); }
   function resize() { fitStage(); const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
   addEventListener('resize', resize);
-  let acc = 0, lastNow = 0;
   function frame(now) {
+    requestAnimationFrame(frame);   // re-armed first: round 2's loop re-armed last, so one throw in render froze the page for good
     const el = lastNow ? Math.min(0.1, (now - lastNow) / 1000) : 0; lastNow = now;
     if (!manualClock) {
       resize(); longPress();
@@ -1778,44 +1888,80 @@
       render();
       if (ui.toastT > 0) { ui.toastT -= el; if (ui.toastT <= 0) $('toast').hidden = true; }
     }
-    requestAnimationFrame(frame);
   }
-  reset(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+  reset(); paintSeed(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
 
-  // Planted cases. The arc yardstick reads a flat seat as 0 and an on/off seat as 1. Generated hives are always solvable,
-  // and the solver catches a planted unsolvable one. Chains: a 2-chain is refused at minChain 3, our own domain refuses a
-  // chain. largestCrystal on planted boards. Rewards for one colour against both.
+  // Planted cases. The arc yardstick reads a flat seat as 0 and an on/off seat as 1. Restart, clicked, starts a really new
+  // match. Every generated hive holds all three domains, a shield in each and danger, and is solvable; the solver catches
+  // a planted unsolvable hive (a star, and a cell reachable only through danger). Chains: a 2-chain is refused, our own
+  // domain refuses a chain, danger stings and breaks nothing, a shield takes two passes. Rewards for one colour against
+  // both. largestCrystal on planted boards.
   function selfTest() {
     const out = [], P3 = Object.assign({}, P, { minChain: 3 });
     const arcOf = (bins) => { const R = makeRun(1, { variant: 'hive', who: 'skilled', P, headless: true }); R.bins = bins.slice(); R.t = bins.length * BIN; return score(R).arcCV; };
     out.push(['flat seat reads arc 0', arcOf(new Array(12).fill(3)) === 0]);
     out.push(['on/off spins read arc 1', arcOf([6, 6, 6, 0, 0, 0, 6, 6, 6, 0, 0, 0]) === 1]);
-    let solvable = 0, regen = 0; const N = 300;
-    for (let s = 1; s <= N; s++) { const h = makeHive(mulberry32(s * 977 + 3), P3); if (h && solveHive(h.cells, 3)) solvable++; if (h) regen += h.regenerated; }
-    out.push(['generated hives solvable (' + solvable + '/' + N + ', regenerated ' + regen + ')', solvable === N]);
-    const blank = () => { const c = []; for (let i = 0; i < D.N; i++) c.push({ dom: OWN }); return c; };
-    const star = blank(), a = D.CENTRE, nb = D.NEIGH[a];   // a centre with three leaves: any chain of 3 strands a leaf
-    star[a].dom = OTHERS[0]; star[nb[0]].dom = OTHERS[0]; star[nb[2]].dom = OTHERS[0]; star[nb[4]].dom = OTHERS[0];
+    // Restart, clicked the way a person does: from hive mode, paused, with a hive behind and a toast up
+    {
+      const seed0 = seed, keepWho = WHO, keepMc = manualClock;
+      manualClock = true; WHO = 'human'; reset(seed0);
+      world.homeHives.push({ born: 0, source: 'omni', bees: 5, mass: 9 }); world.t = 42; enterHive(world, 'omni'); world.hive.t = 3;
+      paused = true; $('pause').textContent = 'Play'; toast('stale'); const before = world, startOld = D.digest(makeRun(seed0, liveCfg()).dyn);
+      $('restart').click();
+      const fresh = makeRun(seed0 + 1, liveCfg());
+      out.push(['Restart starts a new match (next seed, 0 s, building, no hive, empty strip, unpaused)', world !== before && seed === seed0 + 1 && world.t === 0 && world.phase === 'build' && !world.hive && !world.homeHives.length && !world.omni && !world.massHive && !paused && $('pause').textContent === 'Pause' && $('toast').hidden && $('seedTag').textContent === 'seed ' + seed]);
+      out.push(['the restarted board is the next seed\'s, not the old opening', D.digest(world.dyn) === D.digest(fresh.dyn) && D.digest(world.dyn) !== startOld]);
+      // the freeze itself: a hive that ends inside a step, then a frame drawn before the strip moves on
+      reset(seed0); world.omni = { d: 0, born: 0 }; world.target = 'omni'; enterHive(world, 'omni'); leaveHive(world, 'leave');
+      let threw = ''; try { render(); } catch (e) { threw = e.message; }
+      out.push(['drawing the frame right after a hive ends does not throw' + (threw ? ' (' + threw + ')' : ''), !threw]);
+      WHO = keepWho; reset(seed0); paintSeed(); manualClock = keepMc;
+    }
+    // every hive: three domains, a shield in each, danger, solvable
+    let good = 0, regen = 0; const N = 300;
+    for (let s = 1; s <= N; s++) { const h = makeHive(mulberry32(s * 977 + 3), P3); if (h && hiveHolds(h.cells, P3).ok && solveHive(h.cells, 3)) good++; if (h) regen += h.regenerated; }
+    out.push(['every hive: 3 domains, a shield in each, >= ' + P3.hiveDangerMin + ' danger, solvable (' + good + '/' + N + ', regenerated ' + regen + ')', good === N]);
+    const blank = () => { const c = []; for (let i = 0; i < D.N; i++) c.push({ dom: OWN, hits: 1, danger: false }); return c; };
+    const a = D.CENTRE, nb = D.NEIGH[a], c1 = OTHERS[0], c2 = OTHERS[1];
+    const star = blank(); for (const i of [a, nb[0], nb[2], nb[4]]) star[i] = { dom: c1, hits: 1, danger: false };   // a centre with three leaves
     out.push(['solver catches a planted unsolvable star', solveHive(star, 3) === null]);
-    const line = blank(); line[a].dom = OTHERS[1]; line[nb[0]].dom = OTHERS[1]; line[nb[3]].dom = OTHERS[1];
-    out.push(['solver clears a planted line of 3', !!solveHive(line, 3)]);
+    const row = [D.idx(-3, 0), D.idx(-2, 0), D.idx(-1, 0), D.idx(0, 0), D.idx(1, 0)];   // a line of 5; the second is danger
+    const through = blank(); row.forEach((i, k) => { through[i] = { dom: c1, hits: 1, danger: k === 1 }; });
+    out.push(['solver catches a cell reachable only through danger', solveHive(through, 3) === null]);
+    through[row[1]] = { dom: c1, hits: 1, danger: false };
+    out.push(['the same line without the danger clears', !!solveHive(through, 3)]);
+    const crossing = blank(); for (const i of [nb[0], a, nb[3]]) crossing[i] = { dom: c2, hits: 1, danger: false };   // two snakes crossing at the centre
+    for (const i of [nb[1], nb[4]]) crossing[i] = { dom: c2, hits: 1, danger: false }; crossing[a].hits = 2;
+    const cs = solveHive(crossing, 3);
+    out.push(['solver clears a crossing in two chains through its shield', !!cs && cs.length === 2 && cs.every((p) => p.indexOf(a) >= 0)]);
+    // chains in hive mode
     const R = makeRun(3, { variant: 'hive', who: 'human', P: P3, hiveEndsSpin: 'complete', headless: true });
     enterHive(R, 'omni');
-    for (let i = 0; i < D.N; i++) R.hive.cells[i].dom = OWN;
-    const c1 = OTHERS[0], c2 = OTHERS[1];
-    R.hive.cells[a].dom = c1; R.hive.cells[nb[0]].dom = c1; R.hive.cells[nb[3]].dom = c1;
-    const far = [D.idx(-3, 3), D.idx(-2, 3), D.idx(-1, 3)]; for (const i of far) R.hive.cells[i].dom = c2;
+    for (let i = 0; i < D.N; i++) R.hive.cells[i] = { dom: OWN, hits: 1, danger: false };
+    for (const i of [a, nb[0], nb[3]]) R.hive.cells[i] = { dom: c1, hits: 1, danger: false };
+    R.hive.cells[nb[0]].hits = 2;   // shielded
+    const dz = nb[1]; R.hive.cells[dz] = { dom: c1, hits: 1, danger: true };
+    const far = [D.idx(-3, 3), D.idx(-2, 3), D.idx(-1, 3)]; for (const i of far) R.hive.cells[i] = { dom: c2, hits: 1, danger: false };
+    R.hive.total = {}; for (const c of OTHERS) R.hive.total[c] = remaining(R.hive, c);
     applyInput(R, { k: 'chainStart', cell: nb[0] }); applyInput(R, { k: 'chainAdd', cell: a });
-    out.push(['a 2-chain is refused at minChain 3', !applyInput(R, { k: 'chainEnd' }) && R.hive.cells[a].dom === c1]);
-    out.push(['our own domain refuses a chain', !applyInput(R, { k: 'chainStart', cell: nb[1] })]);
+    out.push(['a 2-chain is refused at minChain 3', !applyInput(R, { k: 'chainEnd' }) && R.hive.cells[a].hits === 1]);
+    out.push(['our own domain refuses a chain', !applyInput(R, { k: 'chainStart', cell: nb[2] })]);
+    applyInput(R, { k: 'chainStart', cell: nb[3] }); applyInput(R, { k: 'chainAdd', cell: a }); applyInput(R, { k: 'chainAdd', cell: dz });
+    out.push(['danger stings: the chain breaks, nothing destroyed, a stun', R.hive.chain.length === 0 && R.hive.stings === 1 && R.hive.cells[a].hits === 1 && R.hive.cells[nb[3]].hits === 1 && R.hive.stun > 0 && R.hive.cells[dz].danger && !applyInput(R, { k: 'chainStart', cell: a })]);
+    R.hive.stun = 0;
     applyInput(R, { k: 'chainStart', cell: nb[0] }); applyInput(R, { k: 'chainAdd', cell: a }); applyInput(R, { k: 'chainAdd', cell: nb[3] }); applyInput(R, { k: 'chainEnd' });
-    out.push(['one colour done: its reward only', JSON.stringify(R.hive.rewards) === JSON.stringify([c1])]);
+    const pass1 = R.hive.cells[nb[0]].dom === c1 && R.hive.cells[nb[0]].hits === 1 && R.hive.cells[a].dom === 0 && R.hive.cells[nb[3]].dom === 0;
+    out.push(['a shield takes the first pass and stays; plain cells break', pass1 && R.hive.done.length === 0]);
+    // the stripped cell now stands alone: plant two more so a second chain can take it
+    R.hive.cells[a] = { dom: c1, hits: 1, danger: false }; R.hive.cells[nb[3]] = { dom: c1, hits: 1, danger: false };
+    applyInput(R, { k: 'chainStart', cell: nb[0] }); applyInput(R, { k: 'chainAdd', cell: a }); applyInput(R, { k: 'chainAdd', cell: nb[3] }); applyInput(R, { k: 'chainEnd' });
+    out.push(['the second pass breaks it; the colour completes though its danger cell stands', R.hive.cells[nb[0]].dom === 0 && R.hive.cells[dz].danger && JSON.stringify(R.hive.rewards) === JSON.stringify([c1])]);
     applyInput(R, { k: 'chainStart', cell: far[0] }); applyInput(R, { k: 'chainAdd', cell: far[1] }); applyInput(R, { k: 'chainAdd', cell: far[2] }); applyInput(R, { k: 'chainEnd' });
     out.push(['both done: theirs and ours', JSON.stringify(R.hive.rewards) === JSON.stringify([c1, c2, OWN])]);
     const bat0 = R.dyn.battery.length, cells0 = R.dyn.cells.filter((x) => x).length;
     simStep(R, 0.01, null);   // cleared: hive mode ends, the rewards place themselves
     out.push(['rewards land: 6 prisms, 3 charges (battery capped)', R.phase === 'build' && R.dyn.cells.filter((x) => x).length === cells0 + 3 * P3.rewardDynamo && R.m.rewardPlaced === 6 && R.dyn.battery.length === Math.min(D.batteryCap(R.dyn, R.S), bat0 + 3)]);
-    // largestCrystal: an empty board, a planted crystal beside a larger wrong-coloured blob, a 7-cell crystal against a 4
+    // largestCrystal: an empty board, a planted crystal beside a wrong-coloured blob, a 7-cell crystal against a 4
     const board = new Array(D.N).fill(0);
     out.push(['empty board: crystal size 0', largestCrystal(board).size === 0]);
     const perm = PERMS[3]; for (const i of [a].concat(nb.slice(0, 2))) board[i] = perm[CLASS[i]];
@@ -1843,13 +1989,13 @@
     input: (inp) => { if (!world) return false; queue.push(inp); return true; },
     seat: (who) => { WHO = who; paintSeat(); reset(); },
     hive: (source) => { if (world && world.V.hives && world.phase === 'build' && !world.dyn.reveal) enterHive(world, source === 'mass' ? 'mass' : 'omni'); return world && world.phase === 'hive'; },
-    largestCrystal: (cells) => largestCrystal(cells || world.dyn.cells), crystalSlot, solveHive, makeHive, CLASS,
+    largestCrystal: (cells) => largestCrystal(cells || world.dyn.cells), crystalSlot, solveHive, makeHive, hiveHolds, CLASS, restart,
     solution: () => (world && world.hive ? world.hive.solution : null),
     cellPx: (i) => (ui.G ? cellPx(ui.G, i) : null), hexSize: () => (ui.G ? ui.G.size : 0), layout: () => ui.layout,
     world: () => world, makeRun, simStep, applyInput,
     state: () => ({ t: world.t, seed, phase: world.phase, digest: D.digest(world.dyn), ap: world.dyn.ap, bonusAp: world.dyn.bonusAp, ability: world.dyn.ability, battery: world.dyn.battery.slice(), free: world.dyn.free.slice(),
       target: world.target, omni: world.omni ? Math.round(world.omni.d) : null, massHive: world.massHive ? Math.round(world.massHive.d) : null, homeHives: world.homeHives.map((h) => ({ bees: h.bees, mass: Math.round(h.mass) })),
-      hive: world.hive ? { source: world.hive.source, t: world.hive.t, broken: world.hive.broken, done: world.hive.done.slice(), rewards: world.hive.rewards.slice(), chain: world.hive.chain.slice(), cells: world.hive.cells.map((c) => c.dom).join('') } : null,
+      hive: world.hive ? { source: world.hive.source, t: world.hive.t, broken: world.hive.broken, done: world.hive.done.slice(), rewards: world.hive.rewards.slice(), chain: world.hive.chain.slice(), stun: world.hive.stun, stings: world.hive.stings, cells: world.hive.cells.map((c) => (c.danger ? 'd' : '') + c.dom + (c.hits > 1 ? '+' : '')).join(' ') } : null,
       lastHive: world.lastHive, m: Object.assign({}, world.m) }),
   };
   window.__ratelRaidLab = window.__lab;

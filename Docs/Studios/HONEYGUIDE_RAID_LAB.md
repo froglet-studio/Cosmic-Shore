@@ -16,7 +16,149 @@ well. those will go in for sure, but show me the raid in an artifact."
 copies the lab's Dynamo (the `dynamo-core` block, byte for byte apart from its header comment) and builds hive mode
 around it.
 
-## Round 2 (2026-10-31): hive mode
+## Round 2b (2026-10-31): the restart, shields and danger
+
+**Decision log, read at the start of the round:** empty.
+
+Garrett, 2026-10-31:
+
+> "the restart doesn't work. the solvable puzzle should always include some danger prisms, prisms of all three domains, shielded prisms in all three domains."
+
+### The restart: what was broken, and why
+
+Reproduced in headless Chromium by clicking (desktop) and tapping (phone width) the header buttons in every state:
+building, mid-pick, in hive mode, after a hive, as You, after switching rules, and while paused.
+
+- **The cause: the page froze the moment a hive ended.** `leaveHive` cleared the omnicrystal (`R.omni = null`) but left
+  `R.target = 'omni'`. When the frame was drawn before the strip's next step, `drawStrip` read `R.omni.d` and threw
+  ("Cannot read properties of null (reading 'd')"). The frame loop re-armed `requestAnimationFrame` only at its end,
+  so one throw stopped the page for good. Restart then built a new world that nothing ever stepped or drew, so it
+  looked like it did nothing. Reproduced on the published round 2: hive mode at 1.2 s, the AI clears the hive, the
+  clock stops at 5.3 s with that error, and after Restart the clock stays at 0.
+- **Two smaller faults in the same button:**
+  - Restart rebuilt the **same seed**, so at the opening it changed nothing visible: as You, the board after Restart
+    was byte-identical to the board before.
+  - Restarting **while paused** built a world that stayed frozen at 0 s, with the button still reading "Play".
+- **The fix:**
+  - The target is cleared with its omnicrystal or hive (`enterHive`).
+  - The strip draws a target only if it still exists.
+  - The frame loop re-arms first, so one bad frame can never stop the page again.
+  - Restart starts the **next seed's** match, unpaused, with the toast, the drag, the chain in hand and the frame
+    accumulator cleared. The seed shows in the header.
+  - **Hive now** also unpauses, so the hive can open.
+  - **Shipped** restarts the same way.
+- **Checked by clicking**, desktop and phone: Restart from every state above gives the next seed with the clock running.
+  Pause holds and Play resumes; Hive now opens hive mode, while paused too; Shipped puts the sliders back. No page errors.
+  `selfTest()` clicks Restart itself: from hive mode, paused, with a hive behind and a toast up, it must give the next
+  seed, 0 s, building, no hive, an empty strip, unpaused, no toast, the next seed's own opening board (not the old one).
+  It also draws a frame right after a hive ends, which must not throw.
+
+### Read as (correct any of these)
+
+1. **Every hive always holds** prisms of all three domains, at least one shielded prism in each of the three, and at
+   least `hiveDangerMin` (2) danger prisms. The generator asserts it (`hiveHolds`) and regenerates when it fails.
+2. **Shielded**, other domains: takes two passes. A chain through it strips the shield (the ring bursts) and leaves the
+   prism; a later chain through it breaks it. **Shielded, our own domain**: the hive's armour (a faint ring). Our own
+   cells are never chained, so armour is only seen. At least one own cell is armoured (`hiveArmour` 15%).
+3. **Danger**: a hazard in the comb, in any domain. It is drawn as a dark cell with a red rim and spikes and a fleck of
+   its domain's colour; that is a stand-in for the game's `DangerousBlockMaterial`, not its look. A chain that touches
+   one **stings**: the chain breaks with nothing in it destroyed, and the thumb is stunned for `stingSeconds` (1 s). There
+   is no AP cost. Danger is never raided and does not count toward completing a colour. Solvable means a solution
+   exists that never touches danger.
+4. **Solvable**: every non-danger cell of the two other domains can be cleared by chains of 3 or more through cells of
+   one domain. Each chain takes one hit from each of its cells (shielded 2, plain 1), and a cell is gone at 0. The
+   solver works on that hit state (memo on it). A cell with h hits sits in exactly h chains of any solution, so the
+   order of chains never matters and the lowest-cell search is complete.
+5. **The generator builds it constructively.** Each other colour starts with a **crossing**: two snakes of that colour
+   sharing one cell, its shield (the first snake's chain strips it, the second clears it). More snakes follow, and a
+   later snake crosses a plain cell of its colour with chance `hiveCross` (35%), making another shield. Danger goes on
+   cells no snake runs through; then holes; then our own body, some of it armoured. The solver then proves the hive, and
+   it is regenerated on a failure.
+6. **Colour completion**: every non-danger cell of that colour cleared, shields included.
+7. **The AIs**: the skilled AI plays the solver's plan and never stings. The rookie picks among the longest chains, cuts
+   some short (stranding cells, shielded ones included), and with chance 15% slides on into a danger cell next to its
+   chain's end. The scorecard counts stings per hive.
+8. Round 2's chain rule (any touching cells of one other colour, at least 3) stands; round 2's "no shields, no
+   stings" is withdrawn.
+
+### Measured
+
+Same call as round 2 (6 seeds × 180 s, skilled and rookie, the same seeds in every row; headless Chromium, about 1.7 s).
+Round 6 and Breath are unchanged from round 2.
+
+| Rules | Ratel | Patterns /min | Charges /min | Omni hives /min | Mass hives /min | Colours done /hive | Full clears | Stranded /hive | Stings /hive | Regenerated /hive | Hostile broken /min | Rewards on crystal | Rest share | In hive mode | Arc (15 s CV) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 6 | skilled | 4.56 | 4.72 | 0 | 0 | – | – | – | – | – | 0 | – | 12% | 0% | 0.19 |
+| Round 6 | rookie | 3.00 | 3.17 | 0 | 0 | – | – | – | – | – | 0 | – | 11% | 0% | 0.16 |
+| Breath | skilled | 5.22 | 5.22 | 0 | 0 | – | – | – | – | – | 0 | – | 8% | 0% | 0.27 |
+| Breath | rookie | 2.95 | 2.95 | 0 | 0 | – | – | – | – | – | 0 | – | 10% | 0% | 0.20 |
+| **Breath + Hive** | skilled | **9.94** | **15.1** | 0.95 | 0.67 | **2.00** | **100%** | **0** | **0** | 0.33 | 27.2 | 93% | 11% | 16% | **0.83** |
+| **Breath + Hive** | rookie | 3.22 | 3.39 | 0.84 | 0.61 | 0.12 | 0% | 4.48 | 0 | 0.20 | 19.4 | 42% | 7% | 24% | 0.62 |
+| Idle Ratel (control) | either | 0 | 0 | 0.73 | 0.61 | 0 | 0% | 18.53 | 0 | 0.21 | 0 | – | 68% | 32% | 0 |
+
+- **The noise band** (seeds 1-3 against 4-6): skilled patterns 9.22 / 10.67, broken 24.8 / 29.7, arc 0.86 / 0.79;
+  rookie patterns 2.78 / 3.67, colours 0.08 / 0.15, stranded 4.83 / 4.13, on the crystal 33% / 50% (few placements).
+- **The other spin reading** (only stop the clock): skilled patterns 8.89, arc 0.79; rookie patterns 2.67, colours 0.24,
+  stranded 4.08, **stings 0.13 a hive**.
+- **The regeneration rate**, measured over 2000 generated hives: 234 regenerations, **11.7 per 100 hives**. 89% of hives
+  come first time, 9.9% need one retry, 0.9% two, one hive in 2000 needed three, and none failed. Every regeneration had
+  the same cause: a crossing snake with no room to grow to 3 (`makeHive(rnd, P, why)` counts reasons). **The solver
+  rejected none.** Shields by crossings and danger off the snakes make a hive solvable by construction; the solver is
+  the guard.
+
+### Checked
+
+- `verify_lab.cjs`: **PASS** at desktop 1600×900 and an iPhone 13 (no errors, fits, no sideways scroll, hooks, `SPEC`
+  in range, the manual clock advances, `runBatch()` deterministic within a page and across loads, the stage drawn).
+- `selfTest()`: **22 of 22**. New in 2b:
+  - **Restart, clicked**: a new match (next seed, 0 s, building, no hive, empty strip, unpaused, no toast), and the
+    next seed's board rather than the old opening;
+  - a frame drawn right after a hive ends does not throw (the freeze);
+  - **300 hives**, each with 3 domains, a shield in each and at least 2 danger, all solvable (24 regenerations);
+  - the solver catches a cell reachable only through danger: a planted line of 5 whose second cell is danger. The same
+    line with the danger cell made plain clears, so the danger flag is what decides;
+  - the solver clears a planted crossing in two chains, both through its shield;
+  - **a chain through danger stings**: it breaks, nothing in it loses a hit, the thumb is stunned (a chain start is
+    refused while it lasts);
+  - **a shield takes two passes**: the first chain leaves it standing with one hit while its plain cells break; the
+    second breaks it, and the colour completes though its danger cell still stands.
+
+  Kept from round 2: the arc yardstick, the star, the 2-chain and own-domain refusals, the rewards for one colour
+  against both and how they land, `largestCrystal` on planted boards, determinism.
+- The `dynamo-core` block is byte-identical to `HoneyguideLab.html`'s after its header comment.
+- Screenshots read, portrait first: hive mode shows the shield rings, the armoured body, and two danger cells (red rim,
+  spikes, a fleck of their domain). The strip is still thin, and the seed shows in the header.
+
+### Found
+
+1. **The freeze was the restart bug.** One unguarded read in the strip (`R.omni.d` after the omnicrystal was gone) threw
+   on the first frame after any hive ended, and the frame loop, re-armed only at its end, never ran again. Every round 2
+   hive that ended in the live page froze it. The scorecard never saw it: it runs headless and never draws.
+2. **Restart used the same seed**, so even when the page ran, Restart replayed the same opening.
+3. **The constructive generator never needs the solver to say no.** Of 2000 hives, 11.7% were laid again, all for room
+   (a crossing that could not grow to 3), and none for solvability.
+4. **Shields widen the rookie's cliff.** Colours completed per hive fall from 0.38 (round 2) to 0.12 and stranded cells
+   rise from 3.3 to 4.5, because a shield needs a second chain through it and the rookie rarely plans one.
+5. **Danger rarely stings an AI.** Two danger cells sit off every snake, so the skilled AI never touches one, and the
+   rookie stings 0 to 0.13 times a hive. Danger here mostly shapes where a person's thumb can go. A phone will show
+   more stings than the AI does.
+6. **The skilled AI's rewards stay rich** (patterns 9.94 a minute against 10.17 in round 2, inside the noise): shields
+   cost it time, not completions.
+
+### Decision needed (designer)
+
+- Whether danger should be **near** the snakes (one step off a chain's natural route) to make it bite. Today it is
+  anywhere no snake runs.
+- **The sting**: break the chain and a 1 s stun with no AP cost, or something harsher?
+- **How many shields** (one crossing per colour plus `hiveCross` 35% more) and **how much danger** (`hiveDangerMin` 2).
+- The earlier round 2 questions stand: the cliff (now steeper), the reward size, the spin reading, the timeout, the bees,
+  invulnerability, the Mass power's cooldown.
+
+## Round 2 (2026-10-31): hive mode (partly superseded by round 2b)
+
+Round 2b withdrew "no shields, no stings" (Read as 4) and replaced the scorecard (Measured, below, is round 2's). The
+rest of round 2 stands.
+
 
 **Decision log, read at the start of the round:** empty. Garrett's notes came through the session, not the page.
 
@@ -82,7 +224,7 @@ Garrett, 2026-10-31:
 - **Test surface:** `window.__lab` adds `hive(source)`, `largestCrystal`, `crystalSlot`, `solveHive`, `makeHive`,
   `solution()`, `CLASS` and a 15-check `selfTest()`.
 
-### Measured
+### Measured (superseded by round 2b)
 
 `window.__lab.runBatch({seeds:[1,2,3,4,5,6], seconds:180, skills:['skilled','rookie']})`, candidate settings, the same
 seeds in every row (headless Chromium, about 1.9 s):
