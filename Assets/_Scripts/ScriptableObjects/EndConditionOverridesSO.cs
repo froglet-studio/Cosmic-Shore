@@ -99,7 +99,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Serpent Gulag snipe target used when <see cref="serpentGulagSnipeTarget"/> is 0. One
         /// SNIPE - a Sniper Shot that strips a rival pilot (a Debuff-class combat hit) - is one point
         /// (SerpentGulagScoringRuleSO), summed across the domain's pilots.</summary>
-        public const int DefaultSerpentGulagSnipeTarget = 6;
+        public const int DefaultSerpentGulagSnipeTarget = 3;
 
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
@@ -467,8 +467,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int dustupPointTarget = 4;
 
         [Tooltip("Serpent Gulag: SNIPES a DOMAIN needs to win (race to N). One Sniper Shot that " +
-                 "strips a rival pilot is one snipe, summed across the domain's pilots. 0 = default (6).")]
-        [Min(0)] public int serpentGulagSnipeTarget = 6;
+                 "strips a rival pilot is one snipe, summed across the domain's pilots. 0 = default (3).")]
+        [Min(0)] public int serpentGulagSnipeTarget = 3;
 
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
@@ -539,7 +539,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int wreckingBallPrismTargetBuild = 650;
         [Min(0)] public int undertowPointTargetBuild = 12;
         [Min(0)] public int dustupPointTargetBuild = 4;
-        [Min(0)] public int serpentGulagSnipeTargetBuild = 6;
+        [Min(0)] public int serpentGulagSnipeTargetBuild = 3;
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;

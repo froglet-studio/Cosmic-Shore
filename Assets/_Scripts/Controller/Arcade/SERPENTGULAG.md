@@ -25,8 +25,8 @@ asserted monotone, I4's aim error inside the cone). If both land, the team picks
 | Metric | `ScoringMetric.CombatPoints` (8), reused. A snipe is a `Debuff`-class combat hit |
 | Rule | `SerpentGulagScoringRuleSO`: `snipePoints` **1**, every other hit class **0**; every result line an authored template |
 | Turn monitor | `SerpentGulagSnipeTurnMonitor : CombatPointTurnMonitorBase` |
-| Target | `EndConditionOverridesSO.serpentGulagSnipeTarget` (**6**) |
-| Comeback | rate **0.8**: a quarter behind (1.5 snipes) buys 1.2 element levels |
+| Target | `EndConditionOverridesSO.serpentGulagSnipeTarget` (**3**; 6 until 2026-10-31, Shombith: "make the score to 3 shots not 6") |
+| Comeback | rate **1.5**: a quarter behind (0.75 snipes) buys 1.125 element levels (0.8 at the first target of 6) |
 | Arena | four `Serpent Gulag Cell Config`s (IntensityWise), Cleave's x3 membrane (radius 3,600) |
 | Environment | `SpawnableSerpentGulag` (I2-I4), one prefab per rung, baked |
 | Objective arrow | `BendsObjectiveProvider`: the nearest rival pilot |
@@ -139,7 +139,7 @@ reference compile and the hand test. Not proved: how it plays.
   marksman should skip a cloaked rival (`ChooseRival` / `IsLiveRival`).
 - **The AI does not perch.** It hunts in the open and forages; it never parks in a nest's slit. A perch behaviour
   (fly in through the entry, stop, hold the slit's bearing) is the next AI step.
-- **The target (6) and the spawn ring (2,200) are reasoned, not measured.** Re-tune after a playtest.
+- **The target (3, Shombith's call after the first look) and the spawn ring (2,200) are first-pass numbers.** Re-tune after a playtest.
 - **The arrow gives positions away.** It points at the nearest rival in every mode that uses it; a sniper duel may
   want it off at higher intensities - a playtest call.
 - **Per-peer crystal field**: two peers can each collect "the same" crystal. Harmless while crystals score nothing.
