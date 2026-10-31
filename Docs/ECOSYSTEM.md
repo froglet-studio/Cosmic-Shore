@@ -179,6 +179,23 @@ homeostasis the food web is meant to produce, both now gone:
 
 ---
 
+### 0.x Granted carve-out: armour wears under creature bites in the Ark escort's worlds (2026-10-31)
+
+Resembles the rejected "make the Ark's plates edible by special-casing" and is NOT that. Asked for by Garrett
+(2026-10-31, via the voyage coordinator: "fauna should attack and actually eat the Ark's shielded and super-shielded
+plates, giving real hull loss", so the escort's artificial `BreachHull` line can go to 0). What it does: a cell with
+`Cell.ArmourIsFood` files armoured mass in its targeting grids and lets a species whose config authors a
+`shieldBite` / `superShieldBite` above 0 (`LightFaunaDataSO`, `Boid`) take armour off a bite at a time
+(`Prism.GnawArmour`: a shield cracks at 1 armour point, a super-shield at `Prism.SuperArmourPoints` = 2; the cracking bite
+eats the now-plain prism). The fence: `Cell.ArmourIsFood` has one setter call site, `ArkEscortRun.PrepareCellMetrics`
+(the escort's own worlds, cleared at its finish); `Prism.GnawArmour` has one caller, `Fauna.BiteMass`; nothing is
+Ark-specific (all armoured mass in such a cell wears the same, so no Ark weighting enters steering); vessels, explosions
+and abilities still meet `Prism.AbsorbSuperShieldHit` unchanged; wear runs only on the simulation authority
+(`Fauna.IsSimAuthority`), and the crack replicates as an ordinary shield drop. Mass conservation and continuity are not
+waived (a cracked plate is consumed through the normal implosion, and the Ark's reactor regrows the slot armoured).
+Side effect, accepted: armoured mass counts as an intruder for a pen's containment Frenzy in those worlds. This is an
+exception, not a precedent: the next one needs its own sign-off.
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count

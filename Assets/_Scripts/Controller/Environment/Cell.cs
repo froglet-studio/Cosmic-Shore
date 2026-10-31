@@ -3425,6 +3425,35 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool ShieldedMassIsFood => phase == CellPhase.Frenzy;
 
+        bool _armourIsFood;
+
+        /// <summary>
+        /// This world lets creatures that can GNAW armour wear through shielded and super-shielded mass
+        /// (<c>Fauna.ArmourBite</c> above 0; <see cref="Prism.GnawArmour"/>): armour is then filed in the targeting grids
+        /// like any other mass, and those species' diets take it a bite of wear at a time. Set ONLY by the Ark escort on
+        /// its own worlds (<c>ArkEscortRun.PrepareCell</c>; Garrett, 2026-10-31: the fauna should eat the Ark's armoured
+        /// plates for real), so Skim Race tracks, arenas and every other cell keep their armour inviolate. A species with
+        /// no bite still never eats armour here. Side effect, accepted: armoured mass counts as an intruder for a pen's
+        /// containment Frenzy. Recorded in Docs/ECOSYSTEM.md §0 (a granted carve-out of "super-shielded mass is never food").
+        /// </summary>
+        public bool ArmourIsFood
+        {
+            get => _armourIsFood;
+            set
+            {
+                if (_armourIsFood == value) return;
+                _armourIsFood = value;
+                _shieldRefile.Clear();
+                foreach (var kv in trackedBlocks)
+                {
+                    var props = kv.Key ? kv.Key.prismProperties : null;
+                    if (props != null && (props.IsShielded || props.IsSuperShielded)) _shieldRefile.Add(kv.Key);
+                }
+                for (int i = 0; i < _shieldRefile.Count; i++) NotifyBlockShieldStateChanged(_shieldRefile[i]);
+                _shieldRefile.Clear();
+            }
+        }
+
         /// <summary>
         /// The diet's shield rule in this cell, used for grid membership AND by every grazer
         /// (<c>Fauna.IsInedibleShield</c>), so "not food" and "not a steering target" can never disagree:
@@ -3434,8 +3463,10 @@ namespace CosmicShore.Gameplay
         {
             var props = block ? block.prismProperties : null;
             if (props == null) return false;
+            if (!props.IsShielded && !props.IsSuperShielded) return false;
+            if (_armourIsFood) return false;   // gnawable armour (ArmourIsFood): a steering target like any mass
             if (props.IsSuperShielded) return true;
-            return props.IsShielded && !ShieldedMassIsFood;
+            return !ShieldedMassIsFood;
         }
 
         // The Frenzy state the targeting grids were last filed under. Entering or leaving a Frenzy flips whether shielded
