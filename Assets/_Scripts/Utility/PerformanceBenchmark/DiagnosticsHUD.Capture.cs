@@ -194,6 +194,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 #endif
         }
 
+        static string s_captureGitCommit;
+        static string s_captureGitBranch;
+
         string WriteBundle(string label, int seconds, string burst, string prismPath, string cameras, string editor, string diagPath, string profPath,
                            string renderers, string cells, List<string> notes)
         {
@@ -203,6 +206,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Field(sb, "label", label);
             Field(sb, "scene", UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
             Field(sb, "timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+            // The commit the capture measured (Yash, 2026-10-30): the sweep groups and judges by it, so a regression
+            // points at a commit range instead of a guess from the timestamp. Cached once per session (git subprocess).
+            if (s_captureGitCommit == null)
+            {
+                s_captureGitCommit = BenchmarkReport.TryRunGit("rev-parse --short HEAD") ?? "";
+                s_captureGitBranch = BenchmarkReport.TryRunGit("rev-parse --abbrev-ref HEAD") ?? "";
+            }
+            Field(sb, "gitCommitHash", s_captureGitCommit);
+            Field(sb, "gitBranch", s_captureGitBranch);
             sb.Append("  \"diagSeconds\": ").Append(seconds).Append(",\n");
             Field(sb, "prismPath", prismPath);
             Field(sb, "cameras", cameras);
