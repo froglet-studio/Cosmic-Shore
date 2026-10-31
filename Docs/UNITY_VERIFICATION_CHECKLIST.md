@@ -73,10 +73,10 @@ cost in the entry below (both retired: `SERPENTTIME.md`).
 1. Open `MinigameSerpentTime` and save once; the console stays clean. The Cell lists Rampage Cell Config 4, 3, 2, 1
    (IntensityWise).
 2. Arcade > Serpent Time, I1: Rampage's sparse forest (67 plants) fills the cell; at I4 the dense one (335 plants).
-3. At each gate one ring of three (I1) is grown over with red danger slabs; the open ring moves from gate to gate. I4:
-   both rings of every gate covered.
+3. At each gate one ring of three (I1) is grown over with slabs, mostly plain with a few danger ones scattered in
+   (about 15 %); the open ring moves from gate to gate. I4: both rings of every gate covered, about 70 % danger.
 4. Scope and shoot a covered ring: a hole opens you can fly through without a hit; it grows back, one slab every 1.5 s.
-   Ram a covered ring: you pass and take the danger debuff (the shipped hit).
+   Ram a covered ring: plain slabs break with no cost; touching a danger slab gives the shipped danger debuff.
 5. The Serpent's kit is unchanged: scoped RT fires on the rifle's own cooldown with no crystals involved; a rival's
    Seed Wall does not slow you beyond what its prisms do anywhere else.
 6. An AI Serpent picks the open ring, or shoots a covered one when its rifle is ready.

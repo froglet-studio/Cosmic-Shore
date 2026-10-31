@@ -79,8 +79,8 @@ htr.author(dict(
     # same 16-gate race. The Serpent's Time lengthens a pellet's burn (3 s -> 4.8 s).
     comeback=0.45,
     description="""Serpents only, and it is a dirty race through a living cell. Every gate is a
-    cluster of rings - thread any one - and some are grown over with danger prisms: shoot
-    a way through, ram it and pay, or find the open ring. Cloak just past a ring and a
+    cluster of rings - thread any one - and some are grown over with prisms, a few of them
+    danger: shoot a way through, ram it and risk it, or find the open ring. Cloak just past a ring and a
     Seed Wall grows in the way of whoever is behind you. Two laps. Fastest domain home
     wins.""",
     preview_objective="Thread any ring - wall the gate behind you",

@@ -114,6 +114,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Danger_slabs_take_their_share_and_none_or_all_at_the_ends()
+        {
+            int danger = 0, total = 0;
+            for (int gate = 0; gate < 16; gate++)
+            for (int slot = 0; slot < 3; slot++)
+            for (int cell = 0; cell < 100; cell++)
+            {
+                Assert.IsFalse(SerpentTimeCluster.IsDangerSlab(gate, slot, cell, 0f));
+                Assert.IsTrue(SerpentTimeCluster.IsDangerSlab(gate, slot, cell, 1f));
+                if (SerpentTimeCluster.IsDangerSlab(gate, slot, cell, 0.15f)) danger++;
+                total++;
+            }
+            Assert.AreEqual(0.15f, danger / (float)total, 0.03f, "the I1 share is mostly plain prisms");
+            // The same slab answers the same way every time (every peer, every regrowth).
+            Assert.AreEqual(SerpentTimeCluster.IsDangerSlab(4, 1, 37, 0.5f), SerpentTimeCluster.IsDangerSlab(4, 1, 37, 0.5f));
+        }
+
+        [Test]
         public void Cover_cells_lie_in_the_mouth_inside_the_rim()
         {
             var ring = new RaceGate(new Vector3(10f, 20f, 30f), new Vector3(0.4f, -0.3f, 1f).normalized, 45f);

@@ -17,10 +17,12 @@ namespace CosmicShore.Gameplay
     /// <item><b>Ring clusters.</b> Every gate stands as 3 rings (I1, I2) or 2 (I3, I4) side by side, any one of which
     /// threads it (<see cref="SerpentTimeCluster"/>). The course's own ring stays as the gate the platform, the
     /// objective arrow and the race toasts read; only its drawing is hidden.</item>
-    /// <item><b>Covered rings.</b> At each gate some rings are grown over with danger prisms (one of three at I1, two of
-    /// three at I2, one of two at I3, both at I4; which one moves round from gate to gate). Shoot a hole through
-    /// (the Sniper Shot clears every prism in its cone), ram through and take the shipped danger hit, or fly an open
-    /// ring. A cleared slab grows back, so the hole a leader shoots closes behind it.</item>
+    /// <item><b>Covered rings.</b> At each gate some rings are grown over with prisms (one of three at I1, two of three
+    /// at I2, one of two at I3, both at I4; which one moves round from gate to gate). Most slabs are plain at I1 and
+    /// more are danger as intensity rises (15 / 30 / 50 / 70 %), scattered so a ring's cost is a surprise. Shoot a
+    /// hole through (the Sniper Shot clears every prism in its cone), ram through (free through plain slabs, the
+    /// shipped danger hit through danger ones), or fly an open ring. A cleared slab grows back as the same kind, so
+    /// the hole a leader shoots closes behind it.</item>
     /// <item><b>The cell's own life.</b> The race runs in Rampage's four cells as they ship, sparsest at I1 and densest
     /// at I4 (the scene lists them in reverse): their flora grow where they grow, on the racing line or off it, and
     /// their fauna graze. Nothing is planted for the race.</item>
@@ -55,10 +57,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds each cluster ring takes to bloom in when the course is raised.")]
         [SerializeField, Min(0f)] float clusterBloomSeconds = 0.9f;
 
-        [Header("Ring cover (danger prisms across a ring's mouth)")]
+        [Header("Ring cover (plain and danger prisms across a ring's mouth)")]
         [Tooltip("Rings covered at each gate on intensity 1-4 (of the 3, 3, 2, 2 a gate stands). The covered run starts " +
                  "at a slot picked from the gate's index, so the open ring moves round from gate to gate.")]
         [SerializeField] int[] coveredRingsPerGateByIntensity = { 1, 2, 1, 2 };
+        [Tooltip("Share of a covered ring's slabs that are DANGER on intensity 1-4; the rest are plain. Scattered by a " +
+                 "hash of gate, ring and slab, the same on every peer, so a ring's cost is a surprise until you are on it.")]
+        [SerializeField] float[] coverDangerShareByIntensity = { 0.15f, 0.3f, 0.5f, 0.7f };
         [Tooltip("Size of one cover slab (u): broad across the mouth, thin along the race's flow.")]
         [SerializeField] Vector3 coverSlabScale = new(7f, 7f, 1.5f);
         [Tooltip("Distance (u) between neighbouring slab centres in the ring's plane. At the slab's width the mouth is shut.")]
@@ -175,6 +180,7 @@ namespace CosmicShore.Gameplay
             public Quaternion Rotation;
             public Vector3[] Cells;
             public Prism[] Pieces;
+            public bool[] Danger;
             public Trail Trail;
             public int NextCell;
         }
@@ -266,10 +272,10 @@ namespace CosmicShore.Gameplay
         // ── Ring cover (every peer) ───────────────────────────────────────
 
         /// <summary>
-        /// Grow danger slabs across the covered rings of every gate. Laid on every peer from the course each peer was
+        /// Grow slabs, plain and danger, across the covered rings of every gate. Laid on every peer from the course each peer was
         /// sent, like the debris, so a shot or a ram clears the same slabs everywhere. Each slab is an ordinary
-        /// environment prism laid as <see cref="PrismKind.Danger"/>: the Sniper Shot clears it and a hull that rams it
-        /// takes the shipped danger hit, with no rule of this mode's own.
+        /// environment prism, plain or <see cref="PrismKind.Danger"/>: the Sniper Shot clears either, and a hull that rams
+        /// one gets what any hull gets from that kind of prism, with no rule of this mode's own.
         /// </summary>
         void LayCover(int rings)
         {
@@ -278,6 +284,9 @@ namespace CosmicShore.Gameplay
             int covered = SerpentTimeCluster.RingsFor(Intensity, coveredRingsPerGateByIntensity);
             if (coveredRingsPerGateByIntensity == null || coveredRingsPerGateByIntensity.Length == 0) covered = 0;
             if (covered <= 0 || !debrisPrefab) return;
+            float share = coverDangerShareByIntensity is { Length: > 0 }
+                ? coverDangerShareByIntensity[Mathf.Clamp(Intensity, 1, coverDangerShareByIntensity.Length) - 1]
+                : 0f;
             if (!_debrisRoot) _debrisRoot = new GameObject("SerpentTimeDebris").transform;
 
             for (int i = 0; i < _course.Count; i++)
@@ -291,8 +300,10 @@ namespace CosmicShore.Gameplay
                     Rotation = Quaternion.LookRotation(ring.Axis),
                     Cells = s_cells.ToArray(),
                     Pieces = new Prism[s_cells.Count],
+                    Danger = new bool[s_cells.Count],
                     Trail = new Trail(),
                 };
+                for (int c = 0; c < cover.Danger.Length; c++) cover.Danger[c] = SerpentTimeCluster.IsDangerSlab(i, slot, c, share);
                 for (int c = 0; c < cover.Cells.Length; c++) LaySlab(cover, c, forReveal: true);
                 _cover.Add(cover);
                 _coveredGates.Add(ring);
@@ -303,7 +314,8 @@ namespace CosmicShore.Gameplay
         void LaySlab(CoveredRing cover, int cell, bool forReveal)
         {
             var prism = PrismTrailBuilder.LayOne(debrisPrefab,
-                new PrismLay(new SpawnPoint(cover.Cells[cell], cover.Rotation, coverSlabScale), Domains.Blue, PrismKind.Danger),
+                new PrismLay(new SpawnPoint(cover.Cells[cell], cover.Rotation, coverSlabScale), Domains.Blue,
+                             cover.Danger[cell] ? PrismKind.Danger : PrismKind.Plain),
                 _debrisRoot, cover.Trail, CoverOwnerId, watchForReveal: forReveal);
             if (!prism) return;
             if (!forReveal) prism.CompletesAsLiveRibbon = true;

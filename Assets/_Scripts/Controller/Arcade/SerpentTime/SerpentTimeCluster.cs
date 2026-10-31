@@ -96,6 +96,23 @@ namespace CosmicShore.Gameplay
             return k < covered;
         }
 
+        /// <summary>Share of a covered ring's slabs that are DANGER on intensity 1-4; the rest are plain prisms.</summary>
+        public static readonly float[] DefaultDangerShareByIntensity = { 0.15f, 0.3f, 0.5f, 0.7f };
+
+        /// <summary>
+        /// Is slab <paramref name="cell"/> of covered ring <paramref name="slot"/> at gate <paramref name="gateIndex"/> a
+        /// danger prism, when <paramref name="share"/> of the slabs are? A hash of the three, the same on every peer and
+        /// for the whole race (a regrown slab is the same kind), scattered so a ring's cost cannot be read from afar.
+        /// </summary>
+        public static bool IsDangerSlab(int gateIndex, int slot, int cell, float share)
+        {
+            if (share <= 0f) return false;
+            if (share >= 1f) return true;
+            uint h = unchecked((uint)gateIndex * 73856093u ^ (uint)slot * 19349663u ^ (uint)cell * 83492791u);
+            h ^= h >> 13; h = unchecked(h * 0x5bd1e995u); h ^= h >> 15;
+            return (h & 0xFFFFu) / 65536f < share;
+        }
+
         /// <summary>
         /// The centres of a square grid of cover slabs across <paramref name="ring"/>'s mouth, <paramref name="spacing"/>
         /// apart in the ring's plane, kept <paramref name="edgeMargin"/> inside its rim so the ring itself stays visible.

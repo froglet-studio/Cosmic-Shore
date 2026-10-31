@@ -16,8 +16,8 @@ MonoBehaviour:
   IsMultiplayer: 1
   DisplayName: Serpent Time
   Description: Serpents only, and it is a dirty race through a living cell. Every gate is a
-    cluster of rings - thread any one - and some are grown over with danger prisms: shoot
-    a way through, ram it and pay, or find the open ring. Cloak just past a ring and a
+    cluster of rings - thread any one - and some are grown over with prisms, a few of them
+    danger: shoot a way through, ram it and risk it, or find the open ring. Cloak just past a ring and a
     Seed Wall grows in the way of whoever is behind you. Two laps. Fastest domain home
     wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
