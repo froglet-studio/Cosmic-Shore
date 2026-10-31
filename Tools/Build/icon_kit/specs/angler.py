@@ -17,7 +17,7 @@ The audit (ABILITY_ICON_SKILL_PLAN.md §2) has Command as "does not read". One c
 the hull's whole lockup, the Charge card first (the worst).
 
 Real geometry:
-  the hull     Angler.fbx (zup, nose -Y in the file) from the SIDE (pitch 90, yaw 0, no mirror: nose RIGHT) - the
+  the hull     Angler.fbx (the mesh's nose is +Y as _polys reads it) from the SIDE (pitch -90, yaw 0: nose RIGHT, mast up) - the
                anglerfish read: the broad bow, the jaw, the mast arching forward to the esca bulb (ANGLER.md §9).
   a creature   the QuadFish (QuadFish.prefab, the school's commonest; omniFauna and the "QuadFish don't always listen"
                rounds): a SpaceCrystal core (scale 2) and four HealthBlock prisms 0.186 x 0.8 x 0.2 at (+-0.908, +-0.738, 0),
@@ -37,7 +37,7 @@ from PIL import Image
 HULL = "Angler"
 ICON_DIR = "Assets/_Graphics/Icons/AbilityIcons/Angler/"
 FBX = "Assets/_Models/Vessel Models/Angler.fbx"
-VIEW_SIDE = dict(pitch=90, yaw=0, dilate_px=1.0)
+VIEW_SIDE = dict(pitch=-90, yaw=0, dilate_px=1.0)   # -90: upright (90 draws it keel up)
 
 
 def _png_mask(rel):
@@ -267,4 +267,116 @@ CHARGE_ICON = "7700000000000001105"     # the Charge slot's icon Image (was Angl
 REBIND += [
     dict(file=VARIANT, pair=dict(container=CHARGE_ICON, view=VIEW, after="colorBlendRate",
                                  children=[(n, i, f) for n, i, f, _d, _a in LOCKON_PARTS])),
+]
+
+
+# ---- Mass: Lure, Tame & Grow -----------------------------------------------------------------------------------------
+# The mechanic (AnglerConfig.asset, ANGLER.md 1d): A held lights the esca and stops the hull; the light sits lureAhead 14 u
+# ahead of the nose; wild herbivores within lureRadius 70 u turn to it, and one held within tameRadius 22 u for tameTime
+# 2.5 s joins the school (the count on this card). Plants in the light grow 3x. Mass 5 STEAL FAUNA: another Angler's
+# creatures can be lured and kept. Plate: the furthest-along taming (lime while luring). The hull is 6.5 u long (8.15 x
+# the prefab's 0.8), a QuadFish about 5 u across (its 2.03 scale). WHO: the Angler (domain), its esca (white, lit);
+# WHAT: a wild creature (blue) drawn in and tamed (domain); at Mass 5 a rival Angler's creature (danger) taken.
+# Keep the bottom-right corner light: the HUD writes the school count there (AnglerHUDView.MakeCount).
+ESCA_FILE = (0.0, 4.33, 0.92)           # the esca bulb, the mesh's furthest-forward vertex (file frame)
+
+
+def esca_at(box, cx, cy):
+    return mesh_silhouette.project_point(FBX, ESCA_FILE, pitch=VIEW_SIDE["pitch"], yaw=VIEW_SIDE["yaw"], box=box, cx=cx, cy=cy)
+
+
+# A: TO SCALE. The tame light (r 22 u) as one white disc round the lure point, the true-size Angler (domain) knocked out
+# at its edge 14 u behind the centre, a creature in the light, a wild one outside it heading in. 1.8 px per u.
+A_PX = 1.8
+A_LIGHT = (72.0, 60.0)
+
+
+def ma_hull_box():
+    return dict(box=8.15 * 0.8 * A_PX, cx=A_LIGHT[0] - 14 * A_PX - 3.25 * A_PX, cy=A_LIGHT[1])
+
+
+def ma_hull():
+    return angler(**ma_hull_box())
+
+
+def ma_fish_in():
+    return quadfish(A_LIGHT[0] + 6.0, A_LIGHT[1], 2.5 * A_PX * 1.6)
+
+
+def ma_fish_out():
+    return quadfish(118.0, 100.0, 2.5 * A_PX * 1.6)
+
+
+def ma_light():
+    return _clear_of(disc(*A_LIGHT, 22 * A_PX), ma_hull(), ma_fish_in(), px=2.5)
+
+
+# B: THE ANGLERFISH, close up (not to scale): the hull side-on (domain), its esca lit (white), one creature (blue,
+# then domain when tamed) under the light, nose to the bulb.
+B_HULL = dict(box=80.0, cx=40.0, cy=78.0)
+
+
+def mb_hull():
+    return angler(**B_HULL)
+
+
+def mb_bulb(lit=True):
+    x, y = esca_at(**B_HULL)
+    return disc(x, y, 7.5 if lit else 4.5)
+
+
+def mb_glow():
+    x, y = esca_at(**B_HULL)
+    return _clear_of(ring(x, y, 13.0, w=3.5), mb_hull(), px=2.5)
+
+
+def mb_fish():
+    x, y = esca_at(**B_HULL)
+    return quadfish(x + 22.0, y + 2.0, 10.0)
+
+
+# C: THE LIGHT, close up: the same hull, the light as a white disc hanging from the bulb, the creature inside it knocked
+# out in its own colour.
+def mc_light():
+    x, y = esca_at(**B_HULL)
+    return _clear_of(disc(x + 14.0, y + 6.0, 24.0), mb_hull(), mc_fish(), px=2.5)
+
+
+def mc_fish():
+    x, y = esca_at(**B_HULL)
+    return quadfish(x + 16.0, y + 8.0, 9.0)
+
+
+def mc_hull():
+    return _clear_of(mb_hull(), disc(*esca_at(**B_HULL), 0.1), px=0)
+
+
+MASS_GAUGE = {"rest": (0.0, None), "luring": (0.6, (150, 235, 41, 255)), "tamed": (0.0, (150, 235, 41, 255)),
+              "Mass 5: steal": (0.5, (150, 235, 41, 255))}
+MASS_BEFORE = ICON_DIR + "Angler_Leash.png"
+CARDS += [
+    dict(name="lure_a", group="lure", element="Mass", before=MASS_BEFORE,
+         title="A  to scale: the tame light (r 22 u) as a white disc, the true-size Angler (domain) at its edge, a creature in the light",
+         parts=dict(hull=ma_hull, light=ma_light, fin=ma_fish_in, fout=ma_fish_out),
+         states=[("rest", [("hull", "domain"), ("fin", "blue"), ("fout", "blue", 0.6)]),
+                 ("luring", [("light", "white"), ("hull", "domain"), ("fin", "blue"), ("fout", "blue", 0.6)]),
+                 ("tamed", [("light", "white"), ("hull", "domain"), ("fin", "domain"), ("fout", "blue", 0.6)]),
+                 ("Mass 5: steal", [("light", "white"), ("hull", "domain"), ("fin", "danger"), ("fout", "danger", 0.6)])],
+         lockup_state=1, gauge=MASS_GAUGE, gauge_marks_style="segments"),
+    dict(name="lure_b", group="lure", element="Mass", before=MASS_BEFORE,
+         title="B  the anglerfish (close up, not to scale): the Angler (domain), its esca lit (white), a creature drawn under the light",
+         parts=dict(hull=mb_hull, dark=lambda: mb_bulb(False), bulb=mb_bulb, glow=mb_glow, fish=mb_fish),
+         states=[("rest", [("hull", "domain"), ("fish", "blue", 0.6)]),
+                 ("luring", [("hull", "domain"), ("glow", "white", 0.6), ("bulb", "white"), ("fish", "blue")]),
+                 ("tamed", [("hull", "domain"), ("glow", "white", 0.6), ("bulb", "white"), ("fish", "domain")]),
+                 ("Mass 5: steal", [("hull", "domain"), ("glow", "white", 0.6), ("bulb", "white"), ("fish", "danger")])],
+         lockup_state=1, gauge=MASS_GAUGE, gauge_marks_style="segments"),
+    dict(name="lure_c", group="lure", element="Mass", before=MASS_BEFORE,
+         title="C  the light (close up): the Angler (domain), a white pool of light under its esca, the creature inside it",
+         parts=dict(hull=mb_hull, light=mc_light, fish=mc_fish),
+         states=[("rest", [("hull", "domain"), ("fish", "blue", 0.6)]),
+                 ("luring", [("hull", "domain"), ("light", "white"), ("fish", "blue")]),
+                 ("tamed", [("hull", "domain"), ("light", "white"), ("fish", "domain")]),
+                 ("Mass 5: steal", [("hull", "domain"), ("light", "white"), ("fish", "danger")])],
+         lockup_state=1, gauge=MASS_GAUGE, gauge_marks_style="segments"),
 ]
