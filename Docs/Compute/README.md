@@ -597,3 +597,22 @@ line to paste. **The app** is the live console (the hub, section 15) on your own
   key in its page, a refused host name, a refused run without the key or outside its search, a run started here that
   finishes and reports live, and the desktop launcher (a negative control: with the host check removed it fails).
 
+## 19. Follow-ups (debt this work created or saw; measured, not fixed here)
+
+- **`unity-train` publishes no replay or still**: `_save_unit` keeps top-level files under `max_mb` 8 only
+  (`worker.py`), so `<out>/replays` and `<out>/stills` stay on the computer that played; `recordings.json` lists them
+  (section 16). A viewer on the console needs a store the files can go to (the VM's disk, or the artifact's assets).
+- **The move of a trainer flight into `<out>/ai-flights` is a stopgap** for a game version from before 2026-10-29
+  (`FrogletComputeTraining.MoveNewestFlight`); once every PC trains on a build whose recorder refuses trainer matches,
+  delete it and the `ai-flights` row in `recordings.json`.
+- **Both VM services ran `--quiet`** until 2026-10-29, so a failed push left nothing in `journalctl`; `setup-vm.sh`
+  dropped the flag, and `compute_lib.log` still swallows a quiet worker's failures elsewhere (`install.py`'s task line
+  passes `--quiet`). Decide whether a worker's failures should always reach its log.
+- **`sync_job GUARDED` edit in `/ship-quick` broke the triplicate list** and was reverted (PR 1636's follow-ups);
+  `ai_branch_sync.py` still names three places the learners' output lands.
+- **`hub.py` and `console.py` read the whole of every results branch on each rebuild** (`gather`: `git show` per
+  unit file). Two machines take seconds; measure at ten before the VM serves the team.
+- **The console's "People raced this N times" counts flights by vessel and mode only** (`peopleRaces`), so a trainer
+  flight stored before 2026-10-29 counts until `recordings()` reads `not_a_person` (it reads the seen list, not the
+  learners' gate).
+

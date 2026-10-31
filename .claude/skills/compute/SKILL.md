@@ -104,3 +104,32 @@ set to `promoted` (unblocking whatever waits `after` it).
   `Affects: Shombith's tooling`.
 - **After changing `Tools/Compute`:** `python3 Tools/Compute/compute.py self-test` (about 10 s; `--quick` skips the
   end-to-end run) must be green before the commit.
+
+## 6. Traps (measured; add to this list, never re-learn)
+
+- **`python3 Tools/Compute/selftest.py` run directly does NOTHING** (exit 0 in 0.05 s): the self-test is
+  `python3 Tools/Compute/compute.py self-test` (`--quick` skips the end to end). Three commits on 2026-10-29 cited
+  "compute self-test green" from the bare file. A gate that cannot fail is not a gate: time it, and read what it printed.
+- **The console built in a fresh session (the hourly sync) read no job** while Froglet Compute lives on its own branch:
+  `QUEUE_REFS` are bleeding-edge, `ai`, `compute-queue`, and a worker's `config.json` adds the branch, but a new cloud
+  session has no config.json. `console.default_queue` adds `setup.APP_REF` until `Docs/Compute/jobs` is on
+  bleeding-edge. Symptom: "Searches 0" and "no trainer yet" on every vessel (2026-10-29).
+- **A page on claude.ai cannot reach a person's computer, and neither can a cloud session push to `ai`**: a run sent
+  from the snapshot waits for the hourly sync, then for the computer to be free. The answer is the always-on VM (README
+  section 15), not an app on the person's PC (section 18 exists, and it only helps the PC it runs on).
+- **`ai_branch.py` sync, two false stops and four real losses (2026-10-29)**: Yash merges Ys-bleeding-edge into
+  bleeding-edge himself, so `ai` takes his work through the bleeding-edge merge and the replay from the old trailer read
+  his own edits as a conflict; the first fix then lost work in scratch repos (a rename on Ys carried a file over a fix
+  made on `ai`, a deletion on `ai` undone, a rollback overwritten, work dropped after a partial promotion). git 2.43's
+  `merge-tree -Xno-renames` does NOT turn rename detection off; the replay is now per file, by blob, with no rename
+  guessing. Test any change to it with the self-test AND the 40 scratch scenarios' shape (a promoted Ys that keeps
+  editing, an older Ys head promoted, criss-cross merges), and run 20 random ten-week histories with an oracle after
+  every sync before pushing `origin/ai`.
+- **The AI trainer's seat reads as a human's** to anything that asks the AIPilot (it is switched off): mark the trainer
+  through `PilotControl.IsHeldByTrainer`, and remember the reload tail after an episode (the trainer released, the turn
+  still running) belongs to the trainer too. Seven trainer matches were stored and sent as Shombith's races before this
+  (`learn_from_flights.NOT_A_PERSON` names them).
+- **A Compute Unity run on a watched PC sends its reports through the person's own editor**: `BugHuntAutoSend` is
+  active in watch mode (not batchmode); whether it pushes from Compute's project copy under the person's name is
+  unverified. Check `origin/bugledger/<user>` after the first watched run.
+
