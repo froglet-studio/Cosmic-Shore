@@ -37,6 +37,8 @@ namespace CosmicShore.Gameplay
             public int Kills;
             public int EscortSamples;
             public int EscortNear;
+            /// <summary>Hull prisms lost to the squad's own fire in this world.</summary>
+            public int FriendlyFire;
         }
 
         [System.Serializable]
@@ -59,6 +61,8 @@ namespace CosmicShore.Gameplay
         public int HullTotal;
         /// <summary>Creatures killed by an active force (the squad, mostly) in the escort's worlds.</summary>
         public int Kills;
+        /// <summary>Ark hull prisms destroyed by something other than a creature: the squad's own fire.</summary>
+        public int FriendlyFire;
         /// <summary>AI wingmates that flew, and escort pilots armed (the local seat's included in the sim).</summary>
         public int Wingmates;
         public int Pilots;
@@ -76,7 +80,7 @@ namespace CosmicShore.Gameplay
             sb.Append($"d{Difficulty} {Squad}: {Result}");
             if (Result == Outcome.Fallen) sb.Append($"{(Overrun ? " (overrun)" : "")} in leg {FallenLeg + 1}");
             sb.Append($", hull min {HullMinFraction:P0} of {HullTotal}, {EndedAt - UnderwayAt:0}s under way, " +
-                      $"{Wingmates} wingmates, {Pilots} escort pilots. Legs:");
+                      $"{Wingmates} wingmates, {Pilots} escort pilots, {Kills} kills, {FriendlyFire} hull plates to friendly fire. Legs:");
             foreach (var l in LegReports)
             {
                 if (!l.Reached && l.EnteredAt <= 0f) continue;

@@ -147,6 +147,12 @@ namespace CosmicShore.Gameplay
         /// <summary>Raised ONCE, when the last hull prism has been destroyed or devoured.</summary>
         public event Action HullDestroyed;
 
+        /// <summary>Raised for each hull prism found destroyed at the next integrity scan (within half a second of
+        /// its fall), with its destroyer stamped on it (<see cref="Prism.DestroyerName"/>,
+        /// <see cref="Prism.DestroyedByCreature"/>): the escort counts the squad's own fire with it.</summary>
+        public event Action<Prism> HullPrismLost;
+        float _lastIntegrityScanAt;
+
         /// <summary>Total hull prisms laid (the full-health denominator).</summary>
         public int TotalCount { get; private set; }
 
@@ -882,13 +888,17 @@ namespace CosmicShore.Gameplay
         void ScanHullIntegrity()
         {
             int alive = 0;
+            var lost = HullPrismLost;
             for (int i = 0; i < _prisms.Count; i++)
             {
                 var prism = _prisms[i];
                 if (prism && !prism.destroyed && prism.gameObject.activeInHierarchy)
                     alive++;
+                else if (lost != null && prism && prism.destroyed && prism.DestroyedAt >= _lastIntegrityScanAt)
+                    lost(prism);   // fell since the last scan (a prism the pool has already re-issued is missed)
             }
             _aliveCount = alive;
+            _lastIntegrityScanAt = Time.time;
 
             if (alive == 0 && TotalCount > 0)
             {
