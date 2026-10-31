@@ -4955,3 +4955,53 @@ game".
   - re-initialising a vessel that is already initialised is new;
   - the game-scene guards for a client that joins from the menu mid-match are untested;
   - a host can never rejoin.
+
+## 106. Rev 39 mockups: the friends tray, a calmer party and rows that never overlap (2026-10-31, awaiting a pick)
+
+**Asked (Shombith, 2026-10-31, after the four-player test of 30 Oct):** "Change the UI of friends just the look and the
+center of the branch like animation, also the invite and other buttons overlap ... keep the feature where it extends as
+a tray into game cards."
+
+**On the canvas:** page "Rev 39 - Friends tray: a calmer party, rows that never overlap" (copies in
+`Docs/MenuRedesignB/board/R39*.dc.html`). Each option board is the Arcade window with the friends tray open, and has
+TRAY OPEN / TRAY CLOSED states so the cards can be seen moving with the tray (the one motion the round keeps).
+- **A, Seat row (recommended):** the four seats in one row (octagon avatar in its domain ring, name, role, an open seat
+  with Invite); each online row has ONE action slot, 128 wide, whose verb the row's state picks (Invite, Join, Spectate,
+  Cancel). The closed handle is a 236 x 64 tab: the people glyph, four seat pips in domain colour, "5 online".
+- **B, Roster list:** the party as four stacked lines (a thin domain bar, the host's crown, the host-only remove); online
+  rows have two fixed 104 slots, the second used only where a second verb exists (a pilot in another party: Invite and
+  Join). The closed handle is a vertical tab on the left edge.
+- **C, Squad tiles:** the party as a 2 x 2 grid of tiles; online pilots as compact cards with a full-width action foot.
+  The closed handle is a 100 x 100 tile of the four seats.
+- **Compare:** the three party pieces side by side, one online row in its four states for each option at the tray's
+  width, and today's row with INVITE running over SPECTATE.
+- **Why A:** one verb per row is the only layout that cannot overlap at any label length, and the row's state already
+  decides the verb; one row of seats reads at a glance. B keeps two verbs at the cost of the name's width; C shows four
+  online pilots before scrolling, not five.
+
+**Differs from the build:** the party molecule (the leader in the centre, three seats bonded at 155 / 25 / 270 degrees
+with flowing Bond dashes, section 45.4) and the orb's turning orbit go; no idle motion is left. Every row's buttons get
+fixed slots, so a button never takes its width from its label (the section 81 fix sized one slot; the two-button case
+still overflows). The tray's docking (section 68, `FriendsDrawerDock`) stays as built. After a pick:
+`author_menu_friends_drawer.py` (seats, the handle in place of the orb, slot widths, a no-overlap gate per row state),
+`ArcadeLobbyList` / `KitPartySlot` layout only, `OnlineInfoEntry` / `KitOnlineRow` slot choice; no change to invite,
+join, spectate, cancel or seating logic.
+
+## 107. Rev 40 mockups: three more friends trays, on the sea lines (2026-10-31, awaiting a pick)
+
+**Asked (Shombith, 2026-10-31, on Rev 39):** "Good mockups send me a few more use the sea lines bg".
+
+**On the canvas:** on the Rev 39 page (renamed "Rev 39-40 - Friends tray ..."; the canvas holds at most 40 pages and
+was full), the row under Rev 39 (copies `Docs/MenuRedesignB/board/R40*.dc.html`). Rev 39's brief and content are
+unchanged; every board is drawn over the sea lines (Rev 33's three drifting wave layers) instead of the photo backdrop.
+- **D, Pilot rail:** the tray never fully closes. Closed, a 72-wide rail on the left edge shows the four seats in their
+  domain rings and the online count; open, a 440 tray with each seat as a line carrying its hull.
+- **E, Grouped by verb:** online pilots sit under what can be done with them (Join their party, In the menu, In a
+  match, You invited), so each group's buttons share one column and one word; the party is one card (overlapping seats,
+  names, Invite, Leave).
+- **F, Tabs:** Party and Online share the tray one at a time; the party as four large seat cards (avatar, name, role,
+  hull), Online as Rev 39 A's list. The board's PARTY TAB / ONLINE TAB / TRAY CLOSED states switch them.
+- **Recommendation across both rounds:** Rev 39 A's tray with D's rail as its closed state.
+
+**Differs from the build:** as section 106; D replaces the orb with the rail, E adds authored group headers to the
+ONLINE list, F adds a tab strip.
