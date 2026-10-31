@@ -285,8 +285,14 @@ def serpent_model(c, level):
     cruise = v["ts"] + v["ms"]
     boosted = v["ts"] * c["serpent_boost"] * mul + v["ms"]
     duration = c["serpent_duration"] * mul
-    per_charge = c["serpent_cost"] / c["serpent_regen"]
-    duty = min(1.0, duration / per_charge)             # sustained, ignoring the 4-charge opening bank
+    # Sustained, ignoring the 4-pellet opening bank. Since 2026-10-31 the tank has no clock refill
+    # (resourceGainRate 0): a pellet comes back only while the Serpent's wall eats its own trail,
+    # which a racing line never does, so a sustained race runs at cruise.
+    if c["serpent_regen"] > 0:
+        per_charge = c["serpent_cost"] / c["serpent_regen"]
+        duty = min(1.0, duration / per_charge)
+    else:
+        duty = 0.0
     top = duty * boosted + (1 - duty) * cruise
     turn = min(v["pitch"], v["yaw"])
     return dict(top=top, corner=lambda r: corner_speed_simple(r, v["rts"], turn, top),

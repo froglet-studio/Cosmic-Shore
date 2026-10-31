@@ -120,6 +120,10 @@ Waystation's autopilot aims its BELLY at the next ring before a long gap and dro
 `ButterflyAnimation`, `ButterflyHUDView`, `ButterflySpreadWingsAction`, the `Butterfly.fbx` model): the Tiger Moth is
 built from them, and renaming them is a separate refactor.
 
+**Waystation Prototype (76, 2026-10-31)** is a fifth card for the Tiger Moth: the Time race rebuilt around SHORT HOPS,
+beside Waystation until Garrett approves a replacement. Waystation's clusters with a Drop Tower in every gap but the last.
+It changes nothing in this kit (`WaystationPrototype/WAYSTATION_PROTOTYPE.md`, `Docs/Studios/TIGER_MOTH_TIME.md`).
+
 ### 3.1 Waystation's AI aims its belly (2026-10-29)
 
 Garrett: "make the waystation AI aim its belly at the rings". `WaystationController.TryOverrideAim`, two phases, only
