@@ -621,3 +621,32 @@ CARDS += [
                  ("Space 5: shields", _sstate(1) + [("lit", "shielded")])],
          lockup_state=0, gauge=SPACE2_GAUGE, gauge_marks_style="segments"),
 ]
+
+
+# ---- Space in the game: D, the two groups (Garrett picked D, 2026-10-31: "D works") -----------------------------------
+# Five parts in the Space slot's container, driven by AnglerHUDView.SetPaintGroups / SetPaintPrism; the two counts are
+# HUD text the view builds beside the groups (the sheet's numbers are samples). Group A above, B below; the group the
+# next paint sends white, the other the domain colour at 60%; the prism blue until something is painted, white (lit)
+# after; at Space 5 (Paint Shields) the prism is shielded with its shield cracking off.
+PAINT_PARTS = [("PaintGroupA", "Angler_PaintGroupA", "paintGroupAIcon", sd_group(0), "group A (white when it is next)"),
+               ("PaintGroupB", "Angler_PaintGroupB", "paintGroupBIcon", sd_group(1), "group B (white when it is next)"),
+               ("PaintPrism", "Angler_PaintPrism", "paintPrismIcon", sd_prism, "the prism (blue; white once painted)"),
+               ("PaintShell", "Angler_PaintShell", "paintShellIcon", sd_shell, "Space 5: the cracked shield (shielded)"),
+               ("PaintCore", "Angler_PaintCore", "paintCoreIcon", sd_core, "Space 5: the painted prism inside (white)")]
+PAINT_COUNT_AT = [(52.0 / 128.0, 1 - GROUP_Y[0] / 128.0), (52.0 / 128.0, 1 - GROUP_Y[1] / 128.0)]   # the view's anchors
+ICONS += [dict(name=i, element="Space", act="Paint: " + act, draw=draw, subdir="Parts", family=False,
+               exempt=PART_EXEMPT) for _n, i, _f, draw, act in PAINT_PARTS]
+for c in CARDS:
+    if c["name"] == "paint_d":
+        CARDS.append(dict(c, name="paint", group=None,
+                          title="Paint (Space, picked D): group A above, B below, the next to send white, each with its "
+                                "count (HUD text; sample numbers); the lit prism ahead; Space 5 its shield cracks off"))
+        break
+CARDS[:] = [c for c in CARDS if c.get("group") != "paint"]
+LOCKUP["Space"] = dict(parts=dict(a=sd_group(0), b=sd_group(1), p=sd_prism),
+                       state=[("a", "white"), ("b", "domain", 0.6), ("p", "white")])
+SPACE_ICON = "7700000000000001125"      # the Space slot's icon Image (was Angler_Lure)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=SPACE_ICON, view=VIEW, after="lureJoinedSeconds",
+                                 children=[(n, i, f) for n, i, f, _d, _a in PAINT_PARTS])),
+]

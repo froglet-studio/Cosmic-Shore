@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler Space card: Paint drawn as the two groups (`claude/angler-paint-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** five kit parts under the Space icon in `AnglerHUDVariant.prefab` (`Angler_Paint*`), two runtime counts
+(`GroupACount` / `GroupBCount`, the fauna count's pattern), `AnglerHUDView.SetPaintGroups` / `SetPaintPrism` /
+`SetPaintColors` driven from `SendGroup`, `GroupCount` and `PaintedCount`. No Unity and no .NET: not compiled.
+
+- [ ] Compiles; the variant opens with the view's five `paint*Icon` fields wired.
+- [ ] Fly the Angler with a school of 3+: the Space card shows a creature above and one below, each with its count
+  (they sum to the Mass card's count); the top one (group A) is white, the bottom one dim in your colour.
+- [ ] Paint and let go: the highlight flips to the bottom group; paint and throw again: back to the top.
+- [ ] Paint a prism: the card's prism turns from blue to white; once nothing is lit, blue again.
+- [ ] Reach Space 5: the prism becomes the shielded one with its cracked shield.
+- [ ] The counts sit beside the creatures and do not cover the prism or the gauge; tune `groupCountAnchors` /
+  `groupCountFontSize` on the view if not.
+
 ### 🔴 Angler Charge card: Erase / Lock-on drawn as "the spend" (`claude/angler-icons`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 **What landed:** the Charge card is five kit parts under its icon in `AnglerHUDVariant.prefab` (school, wake, hunter,
