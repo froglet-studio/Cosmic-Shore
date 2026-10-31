@@ -195,11 +195,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// The wall's shape, fixed at placement from THIS vessel's elemental state (MASS is the
-        /// Serpent's wall element: R_VesselActions/SERPENT_SEED_WALL.md). Read here, on the
-        /// per-vessel executor, because the SO is shared by every Serpent.
-        /// </summary>
         /// <summary>This vessel's fuel pellets (its sibling executor), or null on a hull without them.</summary>
         ConsumeBoostActionExecutor FuelPellets()
         {
@@ -209,6 +204,11 @@ namespace CosmicShore.Gameplay
             return _fuelPellets;
         }
 
+        /// <summary>
+        /// The wall's shape, fixed at placement from THIS vessel's elemental state (MASS is the
+        /// Serpent's wall element: R_VesselActions/SERPENT_SEED_WALL.md). Read here, on the
+        /// per-vessel executor, because the SO is shared by every Serpent.
+        /// </summary>
         static SerpentWallAssembler.Snapshot SnapshotWallShape(SeedWallActionSO so, IVesselStatus status)
         {
             float mass = ElementalScaling.Multiplier(
