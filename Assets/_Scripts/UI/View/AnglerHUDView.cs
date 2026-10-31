@@ -16,7 +16,7 @@ namespace CosmicShore.UI
     /// <item><b>Charge</b> - the share of the school hunting a locked vessel; READY while LT erases.</item>
     /// <item><b>Mass</b> - the furthest-along taming in the light; READY while the lure is out.</item>
     /// <item><b>Space</b> - the picked squad's share out on a painted order; READY while RT paints with something painted.</item>
-    /// <item><b>Time</b> - full when the dash is ready (a school to dash to, no dash in flight); READY then.</item>
+    /// <item><b>Time</b> - stays empty: the parts show the dash (SetDash), since a full lime plate drowned them.</item>
     /// </list>
     /// The gauges are named for their element; each keeps the serialized name it had in round 2 (FormerlySerializedAs),
     /// so the HUD prefab's wiring survives the rename. Colour here is a GAUGE channel; the upgrade lives on the lockup's
@@ -31,7 +31,7 @@ namespace CosmicShore.UI
         [SerializeField, FormerlySerializedAs("leashGauge")] Image massGauge;
         [Tooltip("Space card: Paint - the picked squad's share out on a painted order.")]
         [SerializeField, FormerlySerializedAs("lureGauge")] Image spaceGauge;
-        [Tooltip("Time card: Dash to the School - full when the dash is ready.")]
+        [Tooltip("Time card: Dash to the School - stays empty (the parts show the dash; a full lime plate drowned them).")]
         [SerializeField, FormerlySerializedAs("tameGauge")] Image timeGauge;
 
         [Header("Counts")]
@@ -103,6 +103,26 @@ namespace CosmicShore.UI
         [Tooltip("Where each group's count sits in the Space icon (normalized, from bottom-left): group A, then group B.")]
         [SerializeField] Vector2[] groupCountAnchors = { new(0.406f, 0.734f), new(0.406f, 0.266f) };
 
+        [Header("Time card: Dash to the School (icon_kit specs/angler.py, Garrett picked H 2026-10-31)")]
+        [Tooltip("Group A (Angler_DashGroupA), above: white when the next dash goes to it, else the domain colour, dimmed.")]
+        [SerializeField] Image dashGroupAIcon;
+        [Tooltip("Group B (Angler_DashGroupB), below: white when the next dash goes to it, else the domain colour, dimmed.")]
+        [SerializeField] Image dashGroupBIcon;
+        [Tooltip("The hull 75% of the way to group A (Angler_DashHullA), domain colour; shown while A is next.")]
+        [SerializeField] Image dashHullAIcon;
+        [Tooltip("Where the hull was, dashing to A (Angler_DashGhostA), domain colour, dimmed; shown while A is next.")]
+        [SerializeField] Image dashGhostAIcon;
+        [Tooltip("The hull 75% of the way to group B (Angler_DashHullB), domain colour; shown while B is next.")]
+        [SerializeField] Image dashHullBIcon;
+        [Tooltip("Where the hull was, dashing to B (Angler_DashGhostB), domain colour, dimmed; shown while B is next.")]
+        [SerializeField] Image dashGhostBIcon;
+        [Tooltip("Alpha of the ghost (where the hull was) while the dash is ready.")]
+        [SerializeField, Range(0f, 1f)] float dashGhostAlpha = 0.6f;
+        [Tooltip("Alpha of the ghost while a dash is in flight.")]
+        [SerializeField, Range(0f, 1f)] float dashGhostFlightAlpha = 0.3f;
+        [Tooltip("Alpha of every Time part with no school (no dash).")]
+        [SerializeField, Range(0f, 1f)] float dashNoSchoolAlpha = 0.3f;
+
         /// <summary>Seat every readout at rest (nothing tamed, the light off). Idempotent: it re-runs on a swap.</summary>
         public override void Initialize()
         {
@@ -122,6 +142,49 @@ namespace CosmicShore.UI
             _spaceUpgraded = false;
             _painted = true;
             SetPaintPrism(false);
+            _dashShown = -2;
+            SetDash(0, false, false);
+        }
+
+        // ---- the Time card: where the hull was and where the dash puts it, toward the group it goes to ----
+
+        int _dashShown = -2;
+        Color _dashDomain = Color.white;
+
+        /// <summary>The pilot's domain colour on the Time card (alpha 0 = not resolved yet, keep the last).</summary>
+        public void SetDashColor(Color domain)
+        {
+            if (domain.a > 0f && domain != _dashDomain) { _dashDomain = domain; _dashShown = -2; }
+        }
+
+        /// <summary>
+        /// Which group the next dash goes to (<c>AnglerCommandExecutor.DashGroup</c>), whether there is a school to dash to,
+        /// and whether a dash is in flight: that group is white and its hull/ghost pair shows; the other group waits in the
+        /// domain colour at <see cref="paintWaitingAlpha"/>; with no school everything dims to <see cref="dashNoSchoolAlpha"/>.
+        /// </summary>
+        public void SetDash(int nextGroup, bool hasSchool, bool dashing)
+        {
+            int key = nextGroup | (hasSchool ? 2 : 0) | (dashing ? 4 : 0);
+            if (key == _dashShown) return;
+            _dashShown = key;
+            Color Domain(float a) => new(_dashDomain.r, _dashDomain.g, _dashDomain.b, a);
+            Color next = hasSchool ? Color.white : Domain(dashNoSchoolAlpha);
+            Color waiting = Domain(hasSchool ? paintWaitingAlpha : dashNoSchoolAlpha);
+            Color hull = Domain(hasSchool ? 1f : dashNoSchoolAlpha);
+            Color ghost = Domain(!hasSchool ? dashNoSchoolAlpha * dashGhostAlpha : dashing ? dashGhostFlightAlpha : dashGhostAlpha);
+            if (dashGroupAIcon) dashGroupAIcon.color = nextGroup == 0 ? next : waiting;
+            if (dashGroupBIcon) dashGroupBIcon.color = nextGroup == 1 ? next : waiting;
+            Show(dashHullAIcon, nextGroup == 0, hull);
+            Show(dashGhostAIcon, nextGroup == 0, ghost);
+            Show(dashHullBIcon, nextGroup == 1, hull);
+            Show(dashGhostBIcon, nextGroup == 1, ghost);
+        }
+
+        static void Show(Image icon, bool on, Color c)
+        {
+            if (!icon) return;
+            icon.enabled = on;
+            icon.color = c;
         }
 
         // ---- the Space card: the two groups that take turns, and the prism they eat ----
@@ -372,7 +435,6 @@ namespace CosmicShore.UI
         public void SetCharge(float hunting01, bool erasing) => Push(chargeGauge, hunting01, erasing);
         public void SetMass(float tame01, bool luring) => Push(massGauge, tame01, luring);
         public void SetSpace(float ordered01, bool painting) => Push(spaceGauge, ordered01, painting);
-        public void SetTime(float ready01, bool ready) => Push(timeGauge, ready01, ready);
 
         void Push(Image gauge, float fill01, bool ready)
         {

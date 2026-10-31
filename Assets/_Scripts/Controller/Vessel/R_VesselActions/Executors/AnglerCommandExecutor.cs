@@ -159,6 +159,10 @@ namespace CosmicShore.Gameplay
         public FloraConfigurationSO NextFloraSeed => _floraSeeds.Count > 0 ? _floraSeeds[0] : null;
         /// <summary>True when the Time ability can dash: a school to dash toward, and no dash in flight.</summary>
         public bool DashReady => _tamed.Count > 0 && Time.time >= _dashUntil;
+        /// <summary>The group the next dash goes to (0 or 1); a group with nobody in it is passed over, as Dash does.</summary>
+        public int DashGroup => ResolveGroup(_dashGroup);
+        /// <summary>A dash is in flight (it ignores another press until it lands).</summary>
+        public bool Dashing => Time.time < _dashUntil;
         /// <summary>The furthest-along taming in the light right now, 0..1.</summary>
         public float StrongestTame01
         {
