@@ -1,0 +1,657 @@
+{
+    "schemaVersion": 1,
+    "reportId": "799ea63d5645",
+    "timestamp": "2026-10-30T23:57:40.4299557Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "X570S AORUS MASTER (Gigabyte Technology Co., Ltd.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "a229b206e6",
+    "trigger": "Netcode scene load (client) — MinigameScarabScramble",
+    "loadKind": "launch",
+    "completionReason": "Loaded — arena complete (laid + grown), connecting screen done",
+    "interrupted": false,
+    "sceneFrom": "Maelstrom",
+    "sceneTo": "MinigameScarabScramble",
+    "gameMode": "ScarabScramble",
+    "intensity": 1,
+    "totalPlayers": 4,
+    "humanPlayers": 4,
+    "aiBackfill": 0,
+    "isMultiplayer": true,
+    "networkRole": "Client",
+    "connectedClients": 0,
+    "totalMs": 3299.298095703125,
+    "visualReadyMs": 1092.2342529296875,
+    "waitMs": 290.5596923828125,
+    "humanWaitMs": 0.0,
+    "workMs": 3008.73828125,
+    "unattributedMs": 1934.4100341796875,
+    "framesDuringLoad": 244,
+    "avgFpsDuringLoad": 73.95512390136719,
+    "worstFrameMs": 808.2919921875,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Client scene load (MinigameScarabScramble)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 0.38690000772476199,
+            "endMs": 1092.5616455078125,
+            "durationMs": 1092.1748046875,
+            "exclusiveMs": 1038.54443359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": 0,
+            "depth": 1,
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 1038.9312744140625,
+            "endMs": 1365.2718505859375,
+            "durationMs": 326.340576171875,
+            "exclusiveMs": 259.1923828125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 1041.07861328125,
+            "endMs": 1108.226806640625,
+            "durationMs": 67.148193359375,
+            "exclusiveMs": 17.394287109375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1041.2763671875,
+            "endMs": 1041.9493408203125,
+            "durationMs": 0.6729736328125,
+            "exclusiveMs": 0.6729736328125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1042.991455078125,
+            "endMs": 1043.2974853515625,
+            "durationMs": 0.3060302734375,
+            "exclusiveMs": 0.3060302734375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1043.299072265625,
+            "endMs": 1043.449462890625,
+            "durationMs": 0.150390625,
+            "exclusiveMs": 0.150390625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1043.4549560546875,
+            "endMs": 1045.020263671875,
+            "durationMs": 1.5653076171875,
+            "exclusiveMs": 1.5653076171875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1045.0478515625,
+            "endMs": 1045.6358642578125,
+            "durationMs": 0.5880126953125,
+            "exclusiveMs": 0.5880126953125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1045.6424560546875,
+            "endMs": 1046.1158447265625,
+            "durationMs": 0.473388671875,
+            "exclusiveMs": 0.473388671875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1046.1192626953125,
+            "endMs": 1046.5858154296875,
+            "durationMs": 0.466552734375,
+            "exclusiveMs": 0.466552734375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1046.58984375,
+            "endMs": 1047.0389404296875,
+            "durationMs": 0.4490966796875,
+            "exclusiveMs": 0.4490966796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1047.0430908203125,
+            "endMs": 1047.4989013671875,
+            "durationMs": 0.455810546875,
+            "exclusiveMs": 0.455810546875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 1047.583984375,
+            "endMs": 1051.41162109375,
+            "durationMs": 3.82763671875,
+            "exclusiveMs": 3.82763671875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (Kyoki)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 1051.41552734375,
+            "endMs": 1058.9853515625,
+            "durationMs": 7.56982421875,
+            "exclusiveMs": 7.56982421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 1058.9881591796875,
+            "endMs": 1062.4302978515625,
+            "durationMs": 3.442138671875,
+            "exclusiveMs": 3.442138671875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (ys1)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 1062.4332275390625,
+            "endMs": 1069.8160400390625,
+            "durationMs": 7.3828125,
+            "exclusiveMs": 7.3828125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 1069.81884765625,
+            "endMs": 1072.99365234375,
+            "durationMs": 3.1748046875,
+            "exclusiveMs": 3.1748046875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 17,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (Dragon)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 1072.996337890625,
+            "endMs": 1080.8154296875,
+            "durationMs": 7.819091796875,
+            "exclusiveMs": 7.819091796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 18,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 1080.81982421875,
+            "endMs": 1084.3482666015625,
+            "durationMs": 3.5284423828125,
+            "exclusiveMs": 3.5284423828125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 19,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (RedshirtBrownpants)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 1084.351318359375,
+            "endMs": 1092.23291015625,
+            "durationMs": 7.881591796875,
+            "exclusiveMs": 7.881591796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 20,
+            "parentId": -1,
+            "depth": 0,
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "startMs": 1365.275390625,
+            "endMs": 1365.2784423828125,
+            "durationMs": 0.0030517578125,
+            "exclusiveMs": 0.0030517578125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 1934.4100341796875,
+            "percent": 58.63095474243164,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 1038.54443359375,
+            "percent": 31.477739334106447,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 259.1923828125,
+            "percent": 7.855985641479492,
+            "spanCount": 1,
+            "waitMs": 259.1923828125
+        },
+        {
+            "category": 1,
+            "name": "Netcode & Sync",
+            "attributedMs": 31.3673095703125,
+            "percent": 0.9507267475128174,
+            "spanCount": 5,
+            "waitMs": 31.3673095703125
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 30.6533203125,
+            "percent": 0.9290860891342163,
+            "spanCount": 4,
+            "waitMs": 0.0
+        },
+        {
+            "category": 9,
+            "name": "Crystals",
+            "attributedMs": 3.1058349609375,
+            "percent": 0.09413623064756394,
+            "spanCount": 6,
+            "waitMs": 0.0
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 2.021728515625,
+            "percent": 0.06127753481268883,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": 12,
+            "name": "Game Flow & Countdown",
+            "attributedMs": 0.0030517578125,
+            "percent": 0.00009249718277715147,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Client scene load (MinigameScarabScramble)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 1092.1748046875,
+            "exclusiveMs": 1038.54443359375,
+            "maxSingleMs": 1092.1748046875,
+            "isWait": false
+        },
+        {
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 326.340576171875,
+            "exclusiveMs": 259.1923828125,
+            "maxSingleMs": 326.340576171875,
+            "isWait": true
+        },
+        {
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "count": 1,
+            "totalMs": 67.148193359375,
+            "exclusiveMs": 17.394287109375,
+            "maxSingleMs": 67.148193359375,
+            "isWait": true
+        },
+        {
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "count": 4,
+            "totalMs": 13.9730224609375,
+            "exclusiveMs": 13.9730224609375,
+            "maxSingleMs": 3.82763671875,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (RedshirtBrownpants)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 7.881591796875,
+            "exclusiveMs": 7.881591796875,
+            "maxSingleMs": 7.881591796875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Dragon)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 7.819091796875,
+            "exclusiveMs": 7.819091796875,
+            "maxSingleMs": 7.819091796875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Kyoki)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 7.56982421875,
+            "exclusiveMs": 7.56982421875,
+            "maxSingleMs": 7.56982421875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (ys1)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 7.3828125,
+            "exclusiveMs": 7.3828125,
+            "maxSingleMs": 7.3828125,
+            "isWait": false
+        },
+        {
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "count": 6,
+            "totalMs": 3.1058349609375,
+            "exclusiveMs": 3.1058349609375,
+            "maxSingleMs": 0.6729736328125,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1.5653076171875,
+            "exclusiveMs": 1.5653076171875,
+            "maxSingleMs": 1.5653076171875,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.3060302734375,
+            "exclusiveMs": 0.3060302734375,
+            "maxSingleMs": 0.3060302734375,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.150390625,
+            "exclusiveMs": 0.150390625,
+            "maxSingleMs": 0.150390625,
+            "isWait": false
+        },
+        {
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "count": 1,
+            "totalMs": 0.0030517578125,
+            "exclusiveMs": 0.0030517578125,
+            "maxSingleMs": 0.0030517578125,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 1296.28955078125,
+            "durationMs": 808.2919921875,
+            "during": "Client scene load (MinigameScarabScramble)"
+        },
+        {
+            "atMs": 1365.3507080078125,
+            "durationMs": 232.2191925048828,
+            "during": "InitDelayMs gate before InitializeGame (1000ms)"
+        },
+        {
+            "atMs": 219.29330444335938,
+            "durationMs": 215.8105926513672,
+            "during": "Client scene load (MinigameScarabScramble)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Netcode scene load (client) — MinigameScarabScramble"
+        },
+        {
+            "atMs": 0.3853999972343445,
+            "label": "Netcode scene load begins: MinigameScarabScramble"
+        },
+        {
+            "atMs": 1028.80078125,
+            "label": "Unity scene loaded: MinigameScarabScramble (Single)"
+        },
+        {
+            "atMs": 1034.6199951171875,
+            "label": "Game controller spawned (ScarabScrambleController, IsServer=False)"
+        },
+        {
+            "atMs": 1041.2509765625,
+            "label": "Game config received from server"
+        },
+        {
+            "atMs": 1045.04345703125,
+            "label": "Flora/fauna spawner started (cell 0, RandomLifeSpawner)"
+        },
+        {
+            "atMs": 1092.23486328125,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 1092.2530517578125,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 1092.560546875,
+            "label": "Netcode scene load complete: MinigameScarabScramble (client 2)"
+        },
+        {
+            "atMs": 1104.9385986328125,
+            "label": "Connecting panel shown (holding for arena build)"
+        },
+        {
+            "atMs": 1285.5692138671875,
+            "label": "Game config received from server"
+        },
+        {
+            "atMs": 1285.59716796875,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 1285.648681640625,
+            "label": "Connecting panel shown (holding for arena build)"
+        },
+        {
+            "atMs": 2393.024169921875,
+            "label": "Netcode scene load completed on ALL clients: MinigameScarabScramble"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Crystals spawned during load",
+            "value": 6
+        }
+    ],
+    "accumulators": [],
+    "errors": [],
+    "hints": []
+}
