@@ -282,7 +282,7 @@ Measured on 2026-10-31: **88 of 272** runtime `Utility` files reach only `Data`,
 `SOAP` (a fixed-point closure over the tree). That set is not a layer: it mixes ecology data
 containers, AI-training genes, UI widgets and Netcode behaviours that happen to compile alone. The
 boundary drawn is the part that is a layer by purpose — **logging, math/geometry, and small general
-helpers** — 24 files, 4,153 lines, references `CosmicShore.Data`, `UniTask`, `Unity.Mathematics`:
+helpers** — 24 files, 4,074 lines, references `CosmicShore.Data`, `UniTask`, `Unity.Mathematics`:
 
 | group | files |
 |---|---|
