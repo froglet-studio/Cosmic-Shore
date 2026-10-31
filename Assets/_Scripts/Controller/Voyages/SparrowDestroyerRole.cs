@@ -33,9 +33,12 @@ namespace CosmicShore.Gameplay
 
         public override string Name => "SparrowDestroyer";
 
+        /// <summary>Charge 5: Domain-Safe Skybursts spare the squad's own domain, the hull included.</summary>
+        bool DomainSafe => Status?.ElementalAbilityHandler && Status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge);
+
         public override string Notes() =>
             $"{Who} Sparrow: rockets {_rockets} (held by the Ark lane {_rocketsHeldByLane}), guns {_gunSeconds:0}s, " +
-            $"{_targetSeconds:0}s on a target, {_sweepSeconds:0}s sweeping a nucleus, guns {(_guns ? "found" : "MISSING")}, rocket {(_rocket ? "found" : "MISSING")}";
+            $"{_targetSeconds:0}s on a target, {_sweepSeconds:0}s sweeping a nucleus, guns {(_guns ? "found" : "MISSING")}, rocket {(_rocket ? "found" : "MISSING")}, domain-safe {(DomainSafe ? "on" : "OFF")}";
 
         public override void Arm(ArkEscortPilot pilot)
         {
@@ -69,14 +72,17 @@ namespace CosmicShore.Gameplay
                 // nose, so the nose must be on the heart to fire at all: steering at a standoff point beside it kept
                 // the weapons silent (round 2: 0-1 rockets and 0-2 s of guns in 340 s on a target). The hull through
                 // the heart is harmless on a Sparrow, and AvoidHull keeps the pass out of the Ark.
-                if (dist <= Mathf.Max(standoff * PassThroughFactor, EscortGeneRegistry.SparrowGunRange)) return lead;
+                var ark = ctx.Ark;
+                float keepOut = ctx.HullRadius + EscortGeneRegistry.ArkLaneMargin + 20f;
+                bool heartOnHull = ark && (heart - ark.Position).sqrMagnitude <= keepOut * keepOut;
+                // ...unless the creature sits ON the plating: a pass through it is a pass through the Ark (round 3:
+                // 22 plates in one world). Those are the rocket's (Domain-Safe at Charge 5), from the tangent point.
+                if (!heartOnHull && dist <= Mathf.Max(standoff * PassThroughFactor, EscortGeneRegistry.SparrowGunRange)) return lead;
                 // Far out: make for the firing position. Between the creature and the hull when that point is clear
                 // of the plating; for a creature ON the hull (a grazer) that point is inside the Ark, so stand off
                 // beside the creature instead, tangent to the hull on our own side, and shoot along the plating.
-                var ark = ctx.Ark;
                 Vector3 inboard = ctx.ArkSideOf(lead, standoff);
-                float keepOut = ctx.HullRadius + EscortGeneRegistry.ArkLaneMargin + 20f;
-                if (!ark || (inboard - ark.Position).sqrMagnitude > keepOut * keepOut) return inboard;
+                if (!ark || (!heartOnHull && (inboard - ark.Position).sqrMagnitude > keepOut * keepOut)) return inboard;
                 Vector3 radial = lead - ark.Position;
                 Vector3 side = Vector3.Cross(radial, Vector3.up);
                 if (side.sqrMagnitude < 1e-3f) side = ark.transform.right;
@@ -151,7 +157,9 @@ namespace CosmicShore.Gameplay
                     && angle <= EscortGeneRegistry.SparrowRocketAimDeg
                     && Ammo(_rocket.AmmoIndex) >= _rocket.AmmoCost)
                 {
-                    if (ctx.LaneClear(pos, heart, EscortGeneRegistry.SparrowRocketBlastRadius))
+                    // Charge 5 (Domain-Safe Skybursts): the blast spares the squad's own prisms, wildlife and pilots,
+                    // so the hull is no reason to hold the rocket - which is what kills a grazer ON the plating.
+                    if (DomainSafe || ctx.LaneClear(pos, heart, EscortGeneRegistry.SparrowRocketBlastRadius))
                     {
                         Press(_rocket, true);
                         _rockets++;

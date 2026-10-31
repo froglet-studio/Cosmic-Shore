@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
             SetSteering(false);
             _role?.Disarm();
             _role = null;
-            if (_retargeted && _pilot && _homeCell) _pilot.RetargetCell(_homeCell);
+            if (_retargeted && _pilot) _pilot.RetargetCell(_homeCell);   // null is fine: the pilot then seeks nothing rather than a dead world
             _retargeted = false;
             _run = null;
         }

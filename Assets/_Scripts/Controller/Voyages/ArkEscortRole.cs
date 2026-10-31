@@ -200,7 +200,7 @@ namespace CosmicShore.Gameplay
         public static Element DefaultElement(VesselClassType vessel) => vessel switch
         {
             VesselClassType.Sparrow => Element.Charge,
-            VesselClassType.Dolphin => Element.Space,
+            VesselClassType.Dolphin => Element.Mass,     // round 3: Crystal Seeding (Mass) - the escort cells offer almost no free crystals; Clean Blast (Space 5) is traded for a crystal supply, the role vetoes the hull itself
             VesselClassType.Serpent => Element.Space,
             VesselClassType.Squirrel => Element.Charge,
             VesselClassType.Scarab => Element.Charge,

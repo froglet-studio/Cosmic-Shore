@@ -195,7 +195,7 @@ namespace CosmicShore.Gameplay
             "preferred: approach direction within this many degrees of crystal-to-threat (round 2: 35 -> 50)");
         public static readonly EscortGene DolphinConeArkClearance = Define("ai.dolphin.coneArkClearance", 120f, 0f, 300f,
             "padding around the hull the cone's axis must clear");
-        public static readonly EscortGene DolphinCrystalSearchRadius = Define("ai.dolphin.crystalSearchRadius", 1600f, 300f, 2500f,
+        public static readonly EscortGene DolphinCrystalSearchRadius = Define("ai.dolphin.crystalSearchRadius", 2500f, 300f, 4000f,
             "crystals farther than this from the Ark are not candidates");
         public static readonly EscortGene DolphinWakeOffset = Define("ai.dolphin.wakeOffset", 150f, 20f, 300f,
             "with nothing to blast, skim the Ark's wake this far astern of the hull");
