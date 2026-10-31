@@ -527,3 +527,97 @@ CARDS += [
                  ("Space 5: shields", [("shell", "shielded"), ("core", "white"), ("fish", "domain")])],
          lockup_state=1, gauge=SPACE_GAUGE, gauge_marks_style="segments"),
 ]
+
+
+# ---- Space round 2: the two groups (Garrett, 2026-10-31: "it would be nice if I could see how many were in group A and
+# group B. It should alternate which is highlighted so the player knows which they are sending.") ---------------------
+# The school is two groups that take turns (ANGLER.md 1m): AnglerCommandExecutor.SendGroup is the group the next paint
+# sends, GroupCount(g) its size. Group A (0) always sits ABOVE, group B (1) BELOW, so a group keeps its place; the one
+# whose turn it is is WHITE and full, the one waiting is the domain colour at 60%. Each group's number is HUD text beside
+# it (like the Mass card's fauna count; the sheet draws sample numbers in place of the TMP text).
+def _number(text, x, y, size=22):
+    from PIL import ImageDraw, ImageFont
+    from canvas import SS
+    im = Image.new("L", (N, N), 0)
+    f = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", int(size * SS))
+    ImageDraw.Draw(im).text((x * SS, y * SS), text, fill=255, font=f, anchor="mm")
+    return np.asarray(im) > 127
+
+
+GROUP_Y = (34.0, 94.0)
+
+
+# D: THE TWO GROUPS AND THE LIT PRISM (C's prism, moved right): group A above and group B below at the left, each with its
+# count; the group whose turn it is white, and the lit prism (white) ahead.
+def sd_prism():
+    return prism_lit(94.0, 64.0, 30.0)
+
+
+def sd_group(g):
+    return lambda: quadfish(22.0, GROUP_Y[g], 10.0)
+
+
+def sd_count(g, n):
+    return lambda: _number(str(n), 52.0, GROUP_Y[g])
+
+
+def sd_shell():
+    p = prism(94.0, 64.0, 30.0) & ~prism(94.0, 64.0, 23.0)
+    from canvas import shift
+    top = p & fill([(0, 0), (128, 0), (128, 60), (0, 68)])
+    return shift(top, 2.0, -4.0) | shift(p & ~top, 2.0, 4.0)
+
+
+def sd_core():
+    return prism_lit(94.0, 64.0, 20.0)
+
+
+# E: THE TWO GROUPS, ONE ON ITS WAY: the group whose turn it is (white) leaves its place toward the lit prisms; the other
+# waits (domain, 60%). Each group is drawn as two creatures so its place reads as a group.
+def se_group(g, out=False):
+    def draw():
+        y = GROUP_Y[g]
+        return quadfish(18.0, y - 8.0, 7.5) | quadfish(30.0, y + 8.0, 7.5)
+    return draw
+
+
+def se_count(g, n):
+    return lambda: _number(str(n), 52.0, GROUP_Y[g])
+
+
+def se_lit():
+    return _prisms((88.0, 112.0), 64.0, 14.0)
+
+
+def _sstate(send, a=4, b=3, lit="white"):
+    on, off = ("ga", "ca"), ("gb", "cb")
+    if send == 1:
+        on, off = off, on
+    return [(on[0], "white"), (on[1], "white"), (off[0], "domain", 0.6), (off[1], "domain", 0.6)]
+
+
+SPACE2_GAUGE = {"A next": (0.0, None), "B next (A sent)": (0.5, None), "painting, B": (0.0, (150, 235, 41, 255)),
+                "Space 5: shields": (0.0, (150, 235, 41, 255))}
+CARDS[:] = [c for c in CARDS if c.get("group") != "paint" or c["name"] == "paint_c"]
+for c in CARDS:
+    if c["name"] == "paint_c":
+        c["title"] = "C  (round 1, no groups) the lit prism and the creature eating it; at Space 5 its shield cracks off"
+CARDS += [
+    dict(name="paint_d", group="paint", element="Space", before=SPACE_BEFORE,
+         title="D  the two groups: A above, B below, each with its count; the one the next paint sends WHITE; the lit prism ahead",
+         parts=dict(ga=sd_group(0), gb=sd_group(1), ca=sd_count(0, 4), cb=sd_count(1, 3), prism=sd_prism,
+                    shell=sd_shell, core=sd_core),
+         states=[("A next", _sstate(0) + [("prism", "blue")]),
+                 ("B next (A sent)", _sstate(1) + [("prism", "white")]),
+                 ("painting, B", _sstate(1) + [("prism", "white")]),
+                 ("Space 5: shields", _sstate(1) + [("shell", "shielded"), ("core", "white")])],
+         lockup_state=0, gauge=SPACE2_GAUGE, gauge_marks_style="segments"),
+    dict(name="paint_e", group="paint", element="Space", before=SPACE_BEFORE,
+         title="E  the two groups as pairs: A above, B below, each with its count; the next to send WHITE; two lit prisms ahead",
+         parts=dict(ga=se_group(0), gb=se_group(1), ca=se_count(0, 4), cb=se_count(1, 3), lit=se_lit),
+         states=[("A next", _sstate(0) + [("lit", "blue")]),
+                 ("B next (A sent)", _sstate(1) + [("lit", "white")]),
+                 ("painting, B", _sstate(1) + [("lit", "white")]),
+                 ("Space 5: shields", _sstate(1) + [("lit", "shielded")])],
+         lockup_state=0, gauge=SPACE2_GAUGE, gauge_marks_style="segments"),
+]
