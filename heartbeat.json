@@ -17,7 +17,7 @@
  "cores": 11,
  "current": {},
  "host": "dragonsweapon",
- "idle_seconds": 1276.39,
+ "idle_seconds": 1476.031,
  "last": {
   "count": 12,
   "epoch": "8ca46ea69479",
@@ -200,7 +200,7 @@
  "totals": {
   "sessions": 13
  },
- "updated": 1793444862,
+ "updated": 1793445062,
  "user": "shombithofficial",
  "version": "1"
 }
