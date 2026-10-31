@@ -228,7 +228,49 @@ namespace CosmicShore.Gameplay
         public static readonly EscortGene ScarabRingCooldown = Define("ai.scarab.ringCooldown", 12f, 2f, 60f,
             "seconds between ring presses");
 
+        // ── Command line ─────────────────────────────────────────────────────────────────────────────────────────
+
+        /// <summary>Argument naming gene overrides for a sim run: <c>-escortGenes "ai.squirrel.cultivate=0;ai.sparrow.standoff=120"</c>.
+        /// A test path for the sim launcher; the run's own <c>-arkEscortParams</c> JSON hook sets genes by key too.</summary>
+        public const string CommandLineArg = "-escortGenes";
+
+        // Declared LAST so every gene above exists when the command line is applied.
+        static readonly int s_fromCommandLine = ApplyCommandLine();
+
+        static int ApplyCommandLine()
+        {
+            string[] args;
+            try { args = Environment.GetCommandLineArgs(); }
+            catch (Exception) { return 0; }
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (!string.Equals(args[i], CommandLineArg, StringComparison.OrdinalIgnoreCase)) continue;
+                int n = ApplyLine(args[i + 1]);
+                Debug.Log($"[EscortGenes] {n} gene(s) set from the command line: {args[i + 1]}");
+                return n;
+            }
+            return 0;
+        }
+
+        /// <summary>Apply <c>key=value;key=value</c> (';' or ',' separated). Returns how many keys were known.</summary>
+        public static int ApplyLine(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return 0;
+            int applied = 0;
+            foreach (var pair in line.Trim('"').Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                int eq = pair.IndexOf('=');
+                if (eq <= 0) continue;
+                string key = pair.Substring(0, eq).Trim();
+                if (!float.TryParse(pair.Substring(eq + 1).Trim(), System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float value)) continue;
+                if (TrySet(key, value)) applied++;
+                else Debug.LogWarning($"[EscortGenes] Unknown gene '{key}'.");
+            }
+            return applied;
+        }
+
         /// <summary>Touch the registry so every gene above is declared (static initialisation).</summary>
-        public static void EnsureDefined() { _ = s_order.Count; }
+        public static void EnsureDefined() { _ = s_order.Count + s_fromCommandLine; }
     }
 }
