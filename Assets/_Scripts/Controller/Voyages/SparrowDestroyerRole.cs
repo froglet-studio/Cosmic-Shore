@@ -65,8 +65,20 @@ namespace CosmicShore.Gameplay
                 Vector3 lead = heart + _heartVelocity * EscortGeneRegistry.SparrowLeadSeconds;
                 float standoff = EscortGeneRegistry.SparrowStandoff;
                 float dist = (heart - Position).magnitude;
-                // Far out: make for the firing position between the creature and the hull. Close in: fly the pass.
-                return dist > standoff * PassThroughFactor ? ctx.ArkSideOf(lead, standoff) : lead;
+                if (dist <= standoff * PassThroughFactor) return lead;   // close in: fly the pass
+                // Far out: make for the firing position. Between the creature and the hull when that point is clear
+                // of the plating; for a creature ON the hull (a grazer) that point is inside the Ark, so stand off
+                // beside the creature instead, tangent to the hull on our own side, and shoot along the plating.
+                var ark = ctx.Ark;
+                Vector3 inboard = ctx.ArkSideOf(lead, standoff);
+                float keepOut = ctx.HullRadius + EscortGeneRegistry.ArkLaneMargin + 20f;
+                if (!ark || (inboard - ark.Position).sqrMagnitude > keepOut * keepOut) return inboard;
+                Vector3 radial = lead - ark.Position;
+                Vector3 side = Vector3.Cross(radial, Vector3.up);
+                if (side.sqrMagnitude < 1e-3f) side = ark.transform.right;
+                side.Normalize();
+                if (Vector3.Dot(side, Position - lead) < 0f) side = -side;
+                return lead + side * standoff;
             }
 
             if (ctx.Threats.Count < EscortGeneRegistry.SparrowSweepWhenThreatsBelow.Int && TrySweep(ctx, out var sweep))

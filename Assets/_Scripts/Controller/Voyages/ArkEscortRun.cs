@@ -529,7 +529,10 @@ namespace CosmicShore.Gameplay
                     seatLeash = escortPilot.Leash(leash);
                 if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= seatLeash * seatLeash) continue;
                 var side = i % 2 == 0 ? -1f : 1f;
-                var at = ark.Position + ark.transform.right * (side * WingmateAbeam * 2f) - ark.Forward * (WingmateAbeam * (1 + i));
+                // Abeam of the hull, never inside it: a modelled hull is wider than the authored spindle, and a vessel
+                // set down in the plating destroys plates (friendly fire at deploy).
+                float abeam = Mathf.Max(WingmateAbeam * 2f, (_context_?.HullRadius ?? HullHalfLength) + EscortGeneRegistry.ArkLaneMargin + 60f);
+                var at = ark.Position + ark.transform.right * (side * abeam) - ark.Forward * (WingmateAbeam * (1 + i));
                 vessel.SetPose(new Pose(at, Quaternion.LookRotation(ark.Forward, Vector3.up)));
             }
         }

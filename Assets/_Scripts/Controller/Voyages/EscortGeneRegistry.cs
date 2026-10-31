@@ -197,7 +197,7 @@ namespace CosmicShore.Gameplay
             "padding around the hull the cone's axis must clear");
         public static readonly EscortGene DolphinCrystalSearchRadius = Define("ai.dolphin.crystalSearchRadius", 1600f, 300f, 2500f,
             "crystals farther than this from the Ark are not candidates");
-        public static readonly EscortGene DolphinWakeOffset = Define("ai.dolphin.wakeOffset", 60f, 20f, 200f,
+        public static readonly EscortGene DolphinWakeOffset = Define("ai.dolphin.wakeOffset", 150f, 20f, 300f,
             "with nothing to blast, skim the Ark's wake this far astern of the hull");
 
         // ── Serpent (walls) ──────────────────────────────────────────────────────────────────────────────────────
