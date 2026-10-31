@@ -627,6 +627,11 @@ namespace CosmicShore.Gameplay
 
             foreach (var item in cellItems)
             {
+                // A destroyed item (a heart collected and pooled, a retired corridor cell's crystal) can still be
+                // in a runtime list this pilot reads while another list raises OnCellItemsUpdated - and this
+                // handler runs INSIDE that Raise, so a throw here aborted the caller: CellConveyor.SpawnCoreCrystal
+                // -> StandCell lost its world and the escort skipped it (The Boneyard at d1, The Maw at d6).
+                if (!item) continue;
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&

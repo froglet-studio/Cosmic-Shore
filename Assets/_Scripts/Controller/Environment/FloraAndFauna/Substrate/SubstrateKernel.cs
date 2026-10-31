@@ -143,12 +143,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        static int NearestPilot(in SubstrateAgentSoA s, int npil, float px, float py, float pz, out float dist)
+        // A cling-only hull (SubstratePilot.ClingOnly: the Ark) is a pilot only to a species that clings - its riders
+        // hunt it the way they hunt a vessel; every other species does not see it (no hunt, ring, dive or provocation).
+        static int NearestPilot(in SubstrateAgentSoA s, int npil, float px, float py, float pz, bool seeClingOnly, out float dist)
         {
             dist = 1e9f;
             int best = -1;
             for (int j = 0; j < npil; j++)
             {
+                if (!seeClingOnly && s.Pilots[j].ClingOnly != 0) continue;
                 float d = Len(px - s.Pilots[j].Pos.X, py - s.Pilots[j].Pos.Y, pz - s.Pilots[j].Pos.Z);
                 if (d < dist) { dist = d; best = j; }
             }
@@ -188,7 +191,7 @@ namespace CosmicShore.Gameplay
             float hu = s.Hunger[i] + k.Metabolism * dt;   // above 1 = the stomach is empty and the reserve is burning
             s.Hunger[i] = hu;
             float h = KernelMath.Min(1f, hu);
-            int pj = NearestPilot(s, w.NPil, px, py, pz, out float pd);
+            int pj = NearestPilot(s, w.NPil, px, py, pz, k.Cling != 0, out float pd);
             float prox = Clamp(1f - pd / k.Sense, 0f, 1f);
             float threat = s.FThreat[i], alarm = s.FAlarm[i];
             float fe = s.Fear[i];

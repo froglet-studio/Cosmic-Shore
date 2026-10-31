@@ -260,6 +260,13 @@ namespace CosmicShore.Gameplay
         public float DistanceToDestination => _hasDestination ? Vector3.Distance(transform.position, _destination) : -1f;
 
         /// <summary>Create an Ark root at a pose. Lay the hull with <see cref="LayHullAsync"/>.</summary>
+        /// <summary>Every enabled Ark (a cell's substrate senses the one inside it as a cling-only hull,
+        /// <see cref="SubstrateCellHost"/>). Joined in OnEnable, left in OnDisable.</summary>
+        public static readonly List<Ark> Live = new(2);
+
+        void OnEnable() { if (!Live.Contains(this)) Live.Add(this); }
+        void OnDisable() => Live.Remove(this);
+
         public static Ark Create(Transform parent, Vector3 position, Quaternion rotation)
         {
             var go = new GameObject("Ark");

@@ -117,6 +117,12 @@ namespace CosmicShore.Gameplay
                 t.Escort.PacifyShare = v;
                 return true;
             });
+            Register("escort.secondWaveAt", (t, _, v) =>
+            {
+                if (v < 0f || v > 1f) return false;
+                t.Escort.SecondWaveAt = v;
+                return true;
+            });
 
             // ── Tiers: tier.<1-9|all>.<field> ──
             RegisterTier("population", (tier, v) => tier.Population = Mathf.Max(0.05f, v));
