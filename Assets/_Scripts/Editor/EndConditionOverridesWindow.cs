@@ -105,6 +105,8 @@ namespace CosmicShore.Editor
                 "a creature the plate kills is 1, default " + EndConditionOverridesSO.DefaultUndertowPointTarget + ".\n" +
                 "  • Dustup: dustings a DOMAIN needs - one opposing Butterfly passing through your " +
                 "Scale Dust is 1, default " + EndConditionOverridesSO.DefaultDustupPointTarget + ".\n" +
+                "  • Serpent Gulag: snipes a DOMAIN needs - one Sniper Shot that strips a rival " +
+                "pilot is 1, default " + EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget + ".\n" +
                 "  • Tapestry: round length in SECONDS (timed - most mass STANDING at the whistle " +
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
@@ -270,6 +272,7 @@ namespace CosmicShore.Editor
             int wb  = Mathf.Max(0, EditorGUILayout.IntField("Wrecking Ball - Prism Target", _config.wreckingBallPrismTarget));
             int ut  = Mathf.Max(0, EditorGUILayout.IntField("Undertow - Point Target", _config.undertowPointTarget));
             int du  = Mathf.Max(0, EditorGUILayout.IntField("Dustup - Point Target", _config.dustupPointTarget));
+            int sg  = Mathf.Max(0, EditorGUILayout.IntField("Serpent Gulag - Snipe Target", _config.serpentGulagSnipeTarget));
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
@@ -317,6 +320,7 @@ namespace CosmicShore.Editor
                     _config.wreckingBallPrismTarget = wb;
                     _config.undertowPointTarget = ut;
                     _config.dustupPointTarget = du;
+                    _config.serpentGulagSnipeTarget = sg;
                     _config.tapestryRoundSeconds = tp;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
@@ -371,6 +375,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Wrecking Ball", wb > 0 ? wb.ToString() : EndConditionOverridesSO.DefaultWreckingBallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Undertow", ut > 0 ? ut.ToString() : EndConditionOverridesSO.DefaultUndertowPointTarget + " (default)");
             EditorGUILayout.LabelField("Dustup", du > 0 ? du.ToString() : EndConditionOverridesSO.DefaultDustupPointTarget + " (default)");
+            EditorGUILayout.LabelField("Serpent Gulag", sg > 0 ? sg.ToString() : EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget + " (default)");
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
@@ -443,6 +448,7 @@ namespace CosmicShore.Editor
                    "Wrecking Ball: " + Fmt(_config.wreckingBallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultWreckingBallPrismTarget) + "\n" +
                    "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget) + "\n" +
                    "Dustup: " + Fmt(_config.dustupPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDustupPointTarget) + "\n" +
+                   "Serpent Gulag: " + Fmt(_config.serpentGulagSnipeTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget) + "\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +

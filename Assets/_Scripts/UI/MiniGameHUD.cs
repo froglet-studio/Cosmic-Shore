@@ -521,6 +521,11 @@ namespace CosmicShore.UI
                     // check is the whole point - the dust spares teammates - and a duel between
                     // the fleet's two slowest-turning hulls is won by whoever FINDS the other.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Dustup");
+                case GameModes.SerpentGulag:
+                    // The Bends' provider again: the nearest pilot this player may snipe. In a 3,600 u cell the
+                    // duel is won by whoever FINDS the other first, then lines them up - the arrow answers the
+                    // first half; the scope, the nests and the cloak are the second.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_SerpentGulag");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's
