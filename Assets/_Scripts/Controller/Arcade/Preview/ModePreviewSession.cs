@@ -827,7 +827,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void SetLocalTrailPaused(bool paused)
         {
-            var controller = gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselPrismController;
+            // Alive() first: a launch mid-preview destroys the menu vessel while LocalPlayer still
+            // names it, and `?.` on the interface-typed chain cannot see that (bug ledger
+            // E-1f2ed4d48a / E-43417aef52, "Unwinding the ... preview hit: VesselStatus destroyed").
+            var vessel = gameData?.LocalPlayer?.Vessel;
+            if (!Alive(vessel)) return;
+            var controller = vessel.VesselStatus?.VesselPrismController;
             if (controller) controller.SetSpawnerPaused(paused);
         }
 
