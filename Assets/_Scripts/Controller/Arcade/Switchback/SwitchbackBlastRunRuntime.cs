@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Unity.Netcode;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -27,6 +28,11 @@ namespace CosmicShore.Gameplay
         const float PrismScanTimeout = 30f;
         const float PrismScanInterval = 0.5f;
 
+        static readonly ProfilerMarker s_tickMarker = new("Switchback.BlastRun.TickMovers");
+        static readonly ProfilerMarker s_scanMarker = new("Switchback.BlastRun.ScanPrisms");
+        /// <summary>The scan's reused buffer: one lay container of a few thousand prisms, every half second for 30 s.</summary>
+        static readonly List<Prism> s_found = new(4096);
+
         GameDataSO _gameData;
         int _intensity;
         int _seed;
@@ -48,6 +54,10 @@ namespace CosmicShore.Gameplay
         int _allExpected, _allMatched;
         Dictionary<Vector3Int, int> _laidCell;   // cell of a laid position -> first layout index in it
         int[] _laidNext;                         // chain within a cell (-1 = end)
+        // The movers' prisms, hashed the same way (every peer): a scan is one lookup per spawned prism instead of
+        // movers x spawned distance tests.
+        Dictionary<Vector3Int, int> _moveCell;
+        int[] _moveNext;
 
         bool _finished;
         int _blocksAtStart = -1;
@@ -71,6 +81,7 @@ namespace CosmicShore.Gameplay
                 foreach (var m in _layout.Movers) _tracked.Add((m.FirstPrism, m.Count));
                 foreach (var r in _tracked) _movingExpected += r.count;
                 _scanDeadline = Time.time + PrismScanTimeout;
+                BuildMovingIndex();
                 if (trackAllPrisms) BuildLaidIndex();
             }
         }
@@ -118,11 +129,53 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The still-static prisms the scan has not matched yet: look each spawned prism up by its position.</summary>
-        void MatchStatic(Prism[] found)
+        void BuildMovingIndex()
+        {
+            _moveNext = new int[_layout.Prisms.Count];
+            _moveCell = new Dictionary<Vector3Int, int>(_movingExpected);
+            // Ranges walked backwards so a cell's chain runs in layout order - the old linear match's order.
+            for (int r = _tracked.Count - 1; r >= 0; r--)
+                for (int k = _tracked[r].first + _tracked[r].count - 1; k >= _tracked[r].first; k--)
+                {
+                    if (k < 0 || k >= _moveNext.Length) continue;
+                    var c = CellOf(_layout.Prisms[k].Position);
+                    _moveNext[k] = _moveCell.TryGetValue(c, out int head) ? head : -1;
+                    _moveCell[c] = k;
+                }
+        }
+
+        /// <summary>The movers' prisms the scan has not matched yet: each spawned prism looked up by its position.</summary>
+        void MatchMoving(List<Prism> found)
         {
             float sq = PrismMatchDistance * PrismMatchDistance;
-            for (int f = 0; f < found.Length; f++)
+            for (int f = 0; f < found.Count && _movingMatched < _movingExpected; f++)
+            {
+                var prism = found[f];
+                if (!prism) continue;
+                Vector3 at = prism.transform.position;
+                var c = CellOf(at);
+                for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++)
+                for (int dz = -1; dz <= 1; dz++)
+                {
+                    if (!_moveCell.TryGetValue(new Vector3Int(c.x + dx, c.y + dy, c.z + dz), out int k)) continue;
+                    for (; k >= 0; k = _moveNext[k])
+                    {
+                        if (_moving[k] || _lost[k] || (_layout.Prisms[k].Position - at).sqrMagnitude > sq) continue;
+                        _moving[k] = prism;
+                        _movingMatched++;
+                        goto next;
+                    }
+                }
+                next: ;
+            }
+        }
+
+        /// <summary>The still-static prisms the scan has not matched yet: look each spawned prism up by its position.</summary>
+        void MatchStatic(List<Prism> found)
+        {
+            float sq = PrismMatchDistance * PrismMatchDistance;
+            for (int f = 0; f < found.Count; f++)
             {
                 var prism = found[f];
                 if (!prism) continue;
@@ -199,23 +252,12 @@ namespace CosmicShore.Gameplay
         {
             _nextScan = Time.time + PrismScanInterval;
             if (!_prismContainer) return;
-            var found = _prismContainer.GetComponentsInChildren<Prism>(true);
-            if (_trackAll && _allMatched < _allExpected) MatchStatic(found);
-            float sq = PrismMatchDistance * PrismMatchDistance;
-            foreach (var range in _tracked)
-                for (int j = 0; j < range.count; j++)
-                {
-                    int k = range.first + j;
-                    if (_moving[k] || _lost[k]) continue;
-                    Vector3 laid = _layout.Prisms[k].Position;
-                    for (int f = 0; f < found.Length; f++)
-                    {
-                        if (!found[f] || (found[f].transform.position - laid).sqrMagnitude > sq) continue;
-                        _moving[k] = found[f];
-                        _movingMatched++;
-                        break;
-                    }
-                }
+            using var _ = s_scanMarker.Auto();
+            s_found.Clear();
+            _prismContainer.GetComponentsInChildren(true, s_found);
+            if (_trackAll && _allMatched < _allExpected) MatchStatic(s_found);
+            if (_movingMatched < _movingExpected) MatchMoving(s_found);
+            s_found.Clear();
             if ((_movingMatched >= _movingExpected && (!_trackAll || _allMatched >= _allExpected))
                 || Time.time + PrismScanInterval >= _scanDeadline)
                 CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
@@ -232,6 +274,7 @@ namespace CosmicShore.Gameplay
         /// shield shell and the render matrix).</summary>
         void TickMovers(float t)
         {
+            using var _ = s_tickMarker.Auto();
             var movers = _layout.Movers;
             for (int i = 0; i < movers.Count; i++)
             {
