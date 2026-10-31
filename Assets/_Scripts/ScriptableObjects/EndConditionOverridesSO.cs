@@ -237,6 +237,17 @@ namespace CosmicShore.ScriptableObjects
         /// monitor for the finish line, so the two cannot drift.</summary>
         public const int DefaultBurrowRunGateTarget = 16;
 
+        /// <summary>Scarab Rally RACE length used when <see cref="scarabRallyGateTarget"/> is 0 - gate threadings - an OPEN chain flown once (Switchback's shape), so this is the number of rings laid. 24 ~ a 90 s experienced run at the Scarab's 216 u/s.
+        /// Read by <c>ScarabRallyController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultScarabRallyGateTarget = 24;
+
+        /// <summary>Serpent Time RACE length used when <see cref="serpentTimeGateTarget"/> is 0 - gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit.
+        /// Read by <c>SerpentTimeController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultSerpentTimeGateTarget = 16;
+
+        /// <summary>Brittle Star Time RACE length used when <see cref="brittleStarTimeGateTarget"/> is 0 - gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit.
+        /// Read by <c>BrittleStarTimeController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultBrittleStarTimeGateTarget = 16;
         /// <summary>Waystation Prototype race length used when <see cref="waystationPrototypeClusterTarget"/> is 0 -
         /// CLUSTERS, not rings: the race is that many of Waystation's clusters with a Drop Tower between each pair
         /// but the last (Docs/Studios/TIGER_MOTH_TIME.md). Five clusters gives every intensity three towers and the
@@ -409,6 +420,14 @@ namespace CosmicShore.ScriptableObjects
                  "controller lays target/laps rings, so this one number is both the finish line " +
                  "and the size of the circuit. 16 = two laps of eight. 0 uses the default.")]
         [Min(0)] public int burrowRunGateTarget = 16;
+        [Tooltip("Scarab Rally: gate threadings - an OPEN chain flown once (Switchback's shape), so this is the number of rings laid. 24 ~ a 90 s experienced run at the Scarab's 216 u/s. 0 uses the default.")]
+        [Min(0)] public int scarabRallyGateTarget = 24;
+
+        [Tooltip("Serpent Time: gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit. 0 uses the default.")]
+        [Min(0)] public int serpentTimeGateTarget = 16;
+
+        [Tooltip("Brittle Star Time: gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit. 0 uses the default.")]
+        [Min(0)] public int brittleStarTimeGateTarget = 16;
 
         [Tooltip("Waystation Prototype: CLUSTERS in the race (Waystation's clusters, with a Drop Tower in every gap " +
                  "but the last). The finish line is every ring the course lays, towers included. 0 uses the default.")]
@@ -501,6 +520,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int thresherTimeGateTargetBuild = 16;
         [Min(0)] public int wrasseRunGateTargetBuild = 16;
         [Min(0)] public int burrowRunGateTargetBuild = 16;
+        [Min(0)] public int scarabRallyGateTargetBuild = 24;
+        [Min(0)] public int serpentTimeGateTargetBuild = 16;
+        [Min(0)] public int brittleStarTimeGateTargetBuild = 16;
         [Min(0)] public int waystationPrototypeClusterTargetBuild = 5;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 500;
@@ -788,6 +810,21 @@ namespace CosmicShore.ScriptableObjects
         public int GetWrasseRunGateTarget() =>
             wrasseRunGateTarget > 0 ? wrasseRunGateTarget : DefaultWrasseRunGateTarget;
 
+        /// <summary>Scarab Rally race length: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultScarabRallyGateTarget"/>.</summary>
+        public int GetScarabRallyGateTarget() =>
+            scarabRallyGateTarget > 0 ? scarabRallyGateTarget : DefaultScarabRallyGateTarget;
+
+        /// <summary>Serpent Time race length: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultSerpentTimeGateTarget"/>.</summary>
+        public int GetSerpentTimeGateTarget() =>
+            serpentTimeGateTarget > 0 ? serpentTimeGateTarget : DefaultSerpentTimeGateTarget;
+
+        /// <summary>Brittle Star Time race length: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBrittleStarTimeGateTarget"/>.</summary>
+        public int GetBrittleStarTimeGateTarget() =>
+            brittleStarTimeGateTarget > 0 ? brittleStarTimeGateTarget : DefaultBrittleStarTimeGateTarget;
+
         /// <summary>
         /// Burrow Run race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultBurrowRunGateTarget"/>. Read by
@@ -944,6 +981,9 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ThresherTime              => GetThresherTimeGateTarget(),
                 GameModes.WrasseRun                 => GetWrasseRunGateTarget(),
                 GameModes.BurrowRun                 => GetBurrowRunGateTarget(),
+                GameModes.ScarabRally               => GetScarabRallyGateTarget(),
+                GameModes.SerpentTime               => GetSerpentTimeGateTarget(),
+                GameModes.BrittleStarTime           => GetBrittleStarTimeGateTarget(),
                 // GameModes.WaystationPrototype has no row: its finish line is the rings the course lays (towers vary
                 // with the gaps), auto-calculated from the track like a SkimRace with a 0 count.
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
@@ -1012,6 +1052,9 @@ namespace CosmicShore.ScriptableObjects
             thresherTimeGateTarget == thresherTimeGateTargetBuild &&
             wrasseRunGateTarget == wrasseRunGateTargetBuild &&
             burrowRunGateTarget == burrowRunGateTargetBuild &&
+            scarabRallyGateTarget == scarabRallyGateTargetBuild &&
+            serpentTimeGateTarget == serpentTimeGateTargetBuild &&
+            brittleStarTimeGateTarget == brittleStarTimeGateTargetBuild &&
             waystationPrototypeClusterTarget == waystationPrototypeClusterTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
@@ -1057,6 +1100,9 @@ namespace CosmicShore.ScriptableObjects
             thresherTimeGateTarget = thresherTimeGateTargetBuild;
             wrasseRunGateTarget = wrasseRunGateTargetBuild;
             burrowRunGateTarget = burrowRunGateTargetBuild;
+            scarabRallyGateTarget = scarabRallyGateTargetBuild;
+            serpentTimeGateTarget = serpentTimeGateTargetBuild;
+            brittleStarTimeGateTarget = brittleStarTimeGateTargetBuild;
             waystationPrototypeClusterTarget = waystationPrototypeClusterTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
@@ -1103,6 +1149,9 @@ namespace CosmicShore.ScriptableObjects
             thresherTimeGateTargetBuild = thresherTimeGateTarget;
             wrasseRunGateTargetBuild = wrasseRunGateTarget;
             burrowRunGateTargetBuild = burrowRunGateTarget;
+            scarabRallyGateTargetBuild = scarabRallyGateTarget;
+            serpentTimeGateTargetBuild = serpentTimeGateTarget;
+            brittleStarTimeGateTargetBuild = brittleStarTimeGateTarget;
             waystationPrototypeClusterTargetBuild = waystationPrototypeClusterTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;

@@ -497,6 +497,15 @@ namespace CosmicShore.UI
                 case GameModes.BurrowRun:
                     // The same answer on the Meerkat's wormhole circuit: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BurrowRun");
+                case GameModes.ScarabRally:
+                    // Switchback's answer on the Scarab's ring race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_ScarabRally");
+                case GameModes.SerpentTime:
+                    // The circuit answer once more, on the Serpent's pellet circuit.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SerpentTime");
+                case GameModes.BrittleStarTime:
+                    // ...and on the Brittle Star's Speed Mode circuit.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BrittleStarTime");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which

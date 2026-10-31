@@ -109,8 +109,7 @@ at I4, *and* a Drop every 3-5 s. A wider window has a farther far edge, and the 
 
 ## 4. Fun score (the six-dimension rubric of `Docs/AI_SYSTEM/TIME_GAME_FUN_SCORES.md`)
 
-Each dimension is scored 0-10, and anything unknown scores low. That scores file is on the Serpent Time branch
-(`claude/dazzling-ride-dpyvkx`), not yet on bleeding-edge. Copy this row into it when that branch merges.
+Each dimension is scored 0-10, and anything unknown scores low. The prototype's row is also in that scores table.
 
 | Vessel | Game | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun | Floor |
 |---|---|---|---|---|---|---|---|---|---|

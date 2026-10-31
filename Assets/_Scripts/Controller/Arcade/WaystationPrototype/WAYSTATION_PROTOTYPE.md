@@ -96,6 +96,7 @@ python3 Tools/Build/author_waystation_prototype_assets.py --check
   cluster. That gap is then flown or dropped Waystation's way.
 - **Regrowth is per peer**, as in Serpent Time. After heavy contact, two peers can disagree by a few tiles for a moment.
 - **The preview** shows the tower rings but not their walls, which only the match controller lays.
-- **The danger hash** duplicates Serpent Time's `SerpentTimeCluster.IsDangerSlab`, which lives on an unmerged branch.
-  Share one hash once both are merged.
+- **The danger hash** is the same function as Serpent Time's `SerpentTimeCluster.IsDangerSlab`, now also on
+  bleeding-edge, but written out again in `WaystationTower.Hash01`. Share one hash in a later cleanup; changing it
+  would change which tiles are danger, so the model and `--compile` must move with it.
 - **Replacing Waystation** is Garrett's call. What it would take is listed in `Docs/Studios/TIGER_MOTH_TIME.md` §5.

@@ -112,6 +112,9 @@ SOURCES = [
     f"{_AR}/Slingshot/SlingshotCourse.cs",
     f"{_AR}/ThresherTime/ThresherTimeCourse.cs",
     f"{_AR}/WrasseRun/WrasseRunCourse.cs",
+    f"{_AR}/ScarabRally/ScarabRallyCourse.cs",
+    f"{_AR}/SerpentTime/SerpentTimeCourse.cs",
+    f"{_AR}/BrittleStarTime/BrittleStarTimeCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -735,6 +738,13 @@ CAMERAS = {
     # of the lap's plane: shot lower than Thresher Time so the lift reads, from the far side so the two
     # octagons differ, with the kite threading a ring after lassoing Time motes (the harness's StageKite).
     "WrasseRun": (155, 40, 0.9, 42),
+    # Scarab Rally is Switchback's open walk on the Scarab's cut: shot low and from the side Switchback is
+    # not, so the hairpins read as a zig-zag rather than Switchback's flowing chain.
+    "ScarabRally": (250, 22, 0.85, 44),
+    # Serpent Time and Brittle Star Time are circuit octagons: two more angles, neither taken by the
+    # five circuits above.
+    "SerpentTime": (80, 48, 0.9, 42),
+    "BrittleStarTime": (340, 26, 0.9, 42),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
 }
@@ -791,7 +801,7 @@ def recipe(stem, card_path, pal, ends):
         layers.append(node)
         nucleus()
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Breakwater"):
+               "WrasseRun", "Breakwater", "ScarabRally", "SerpentTime", "BrittleStarTime"):
         # GateRaceController.BuildCourse, mirrored: the shell comes off the scene's controller and
         # the cell's nucleus (ResolveShell), the gate count off EndConditionOverrides.
         tier = "COURSE"
@@ -805,13 +815,15 @@ def recipe(stem, card_path, pal, ends):
                            "settings": settings, "color": [0.5, 0.7, 1.5]})
         else:
             settings["FirstGateDirection"] = [0, 1, 0]
-            if s == "Switchback":
-                settings["GateCount"] = ends.get("switchbackGateTarget", 20)
+            if s in ("Switchback", "ScarabRally"):
+                settings["GateCount"] = ends.get({"ScarabRally": "scarabRallyGateTarget"}.get(s, "switchbackGateTarget"), 20)
                 settings["FirstGateDistance"] = min(max(ctl.get("firstGateDistance", 620.0), inner), outer)
             else:
                 key = {"GrizzlyTime": "grizzlyTimeGateTarget",
                        "ThresherTime": "thresherTimeGateTarget",
-                       "WrasseRun": "wrasseRunGateTarget"}.get(s, f"{s.lower()}GateTarget")
+                       "WrasseRun": "wrasseRunGateTarget",
+                       "SerpentTime": "serpentTimeGateTarget",
+                       "BrittleStarTime": "brittleStarTimeGateTarget"}.get(s, f"{s.lower()}GateTarget")
                 target = ends.get(key, 24)
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
             # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse): the same generator.
@@ -823,7 +835,10 @@ def recipe(stem, card_path, pal, ends):
                                      "Slingshot": [0.35, 1.5, 0.95],
                                      "Warpline": [0.62, 1.0, 0.18],
                                      "ThresherTime": [1.6, 1.05, 0.25],
-                                     "WrasseRun": [0.3, 1.25, 1.45]}[s]})
+                                     "WrasseRun": [0.3, 1.25, 1.45],
+                                     "ScarabRally": [1.55, 0.75, 0.2],
+                                     "SerpentTime": [1.3, 0.3, 1.1],
+                                     "BrittleStarTime": [0.85, 0.35, 1.6]}[s]})
             nucleus()
     elif s == "Waystation":
         # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_course.py), which its own
@@ -1078,7 +1093,8 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Waystation", "WaystationPrototype"):
+               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime",
+               "WaystationPrototype"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1307,7 +1323,8 @@ def end_conditions():
     body = read(ROOT / END_CONDITIONS)
     out = {}
     for k in ("switchbackGateTarget", "breakwaterStationTarget", "breakwaterLaps", "waystationRingTarget",
-              "grizzlyTimeGateTarget", "thresherTimeGateTarget"):
+              "grizzlyTimeGateTarget", "thresherTimeGateTarget", "scarabRallyGateTarget",
+              "serpentTimeGateTarget", "brittleStarTimeGateTarget"):
         m = re.search(rf"^  {k}: (\d+)", body, re.M)
         if m:
             out[k] = int(m.group(1))
