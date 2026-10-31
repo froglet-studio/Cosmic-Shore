@@ -400,3 +400,15 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     each plate about its own centre so the gaps read at icon size. That matches `ElementIcons/OmniCrystal_Active.png`
     (`specs/scarab.py` `omni_crystal`). Before drawing any crystal, prism, ball or creature, find its FBX or its
     shipped mark first.
+
+61. **A structure the ability BUILDS is drawn from its own geometry code, at its real proportions, and each card shows
+    only the state that card owns.** The Seed Wall options drew a generic pinwheel; Garrett: "use the actual dimensions
+    of the wall. only show the shielded prisms in the omnicrystal icon. use the base prisms and danger prisms to denote
+    the upgrade with their actual positioning and scales." So the Mass card takes every number from
+    `SerpentWallLattice` (bricks 1 x 2 short sides on a pitch of 5, alternating up / right, the panel the exact tilted
+    square `CellPanel` returns): the wall as BUILT (base bricks, domain), the seed (white), and the level-5 state as the
+    danger panels where the game lays them. The shielded look belongs to what shields it - the crystal - so the
+    vessel's OMNI card shows the same wall with every brick shielded and nothing else (`specs/serpent.py`). Include
+    the omni card in a hull's analysis from the start: it is the fifth card, and the one an element card must not
+    duplicate. The real proportions may run the wall to the card's edge and leave thin bricks; argue `in_box` and
+    `coverage` in the spec rather than distort the lattice.

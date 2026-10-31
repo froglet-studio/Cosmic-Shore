@@ -1,4 +1,24 @@
-# Serpent — Scope (Space) + Sniper Shot (Charge)
+# Serpent — Scope (Charge) + Cloak / Sniper Shot (Space)
+
+> **Recut 2026-10-30 (Garrett):** *"Space should be the cloak and sniper shot abilities. the icon
+> should change when the scope is held so the glyph can stay in the same spot. charge is the scope.
+> keep the charge parameter the sniper cooldown. lets not have the scope have its own parameters.
+> lets just have a good scope to begin with. lets have the sniper shot destroy supershields from the
+> beginning. ... Charge L5 upgrade is instead of pierce it causes the scope to produce short lived
+> after images that the serpent can snipe instead. (much like hawkeye in marvel rivals)"*
+>
+> | Element | Card | Input | Parameter | Level 5 |
+> |---|---|---|---|---|
+> | Charge | **Scope** | LT | the SNIPER's recovery, 12 s → 5.4 s; the zoom is one fixed 12° | **Hunter's Sight**: rivals leave afterimages while scoped (0.25 s apart, 1 s each); a round through one strips that rival (`ScopeAfterimages.cs`) |
+> | Space | **Cloak / Sniper Shot** | RT | the Seed Wall's steal reach (unchanged) | **Shield Steal** (the wall half of Deep Focus; Space 5 is still Garrett's call) |
+>
+> The round breaks super-shielded mass at every level (Pierce is retired). The SPACE card swaps its
+> picture between cloak and sniper while the scope is held (`SerpentVesselHUDView.SetScoped`), and
+> the sniper's cooldown veil moved there with it. Afterimages are recorded only on the machine that
+> decides the strip (`ElementalTransfer.IsDecidedHere`) and drawn only for the local pilot, in
+> `CloakGhost.mat` tinted with the rival's domain colour. Everything below this box is the history
+> of the old split and is kept for the reasoning; where it names Space's magnification, Deep Focus
+> or Pierce, this box wins.
 
 Hold the **left trigger**: a magnified view down the vessel's own nose opens in an eyepiece beside
 the flight view, zoomed by the trigger's own depth, and a **reticle at the shot's true angular

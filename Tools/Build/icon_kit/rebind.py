@@ -27,6 +27,14 @@ A spec may carry `REBIND = [...]` with two kinds of step:
         / `<name>Icon` (deterministic fileIDs; the donor's other children are not copied), the icon wears `icon`, and
         a coreAbilities entry binds it - the Squirrel's DriftButton shape. `omni` (optional) also sets the view's
         omniAbilitySprite, the omni crystal card's art. Idempotent.
+    dict(file="Assets/_Prefabs/Spacevessels/Serpent.prefab", proxy=dict(view="<view fileID>", instance=<the vessel's
+         PrefabInstance of the HUD variant>, source_file="<the variant>", source_guid="<the variant's guid>",
+         after="pipEmptyColor", refs=[("seedWallBricksIcon", "<container fileID>", "SeedWallBricks"), ...],
+         fields={"omniAbilitySprite": ("icon", "Serpent_WallShield")}))
+        for a view that lives on the VESSEL prefab and reaches the HUD variant's Images through stripped proxies (the
+        Serpent, author_hull_ability_rows.py): each ref names a child a `pair` step made in the variant; its proxy
+        (fileID = the child's Image fileID XOR `instance`, Unity's rule) is added to the vessel once and the view
+        field pointed at it. `fields` as in `pair`. Idempotent.
     dict(file="Assets/.../SparrowHUDVariant.prefab", deactivate="<Image fileID>")
         switches that Image's GameObject off (m_IsActive: 0) - a readout nothing binds any more, left in place
 
@@ -316,6 +324,44 @@ def _apply_core(text, step, icon_meta):
     return text[:va] + vblk + text[vb:]
 
 
+def _apply_proxy(text, step, icon_meta):
+    px = step["proxy"]
+    for field, container, name in px["refs"]:
+        src_img = _fid(f"{px['source_file']}/{container}/{name}img")
+        local = int(src_img) ^ int(px["instance"])
+        if f"&{local} stripped\n" not in text:
+            text = text.rstrip("\n") + "\n" + f"""--- !u!114 &{local} stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {{fileID: {src_img}, guid: {px['source_guid']},
+    type: 3}}
+  m_PrefabInstance: {{fileID: {px['instance']}}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: 0}}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}}
+  m_Name: 
+  m_EditorClassIdentifier: 
+"""
+        va, vb = _block(text, px["view"])
+        vblk = text[va:vb]
+        replaced = _set_field(vblk, field, f"{{fileID: {local}}}")
+        if replaced is None:
+            replaced = re.sub(rf"^(\s*{px['after']}: .*\n)", lambda m: m.group(1) + f"  {field}: {{fileID: {local}}}\n",
+                              vblk, count=1, flags=re.M)
+        text = text[:va] + replaced + text[vb:]
+    for field, value in px.get("fields", {}).items():
+        v = _sprite_ref(guid_of(icon_meta[value[1]])) if isinstance(value, tuple) else value
+        va, vb = _block(text, px["view"])
+        vblk = text[va:vb]
+        replaced = _set_field(vblk, field, v)
+        if replaced is None:
+            replaced = re.sub(rf"^(\s*{px['after']}: .*\n)", lambda m: m.group(1) + f"  {field}: {v}\n", vblk, count=1,
+                              flags=re.M)
+        text = text[:va] + replaced + text[vb:]
+    return text
+
+
 def apply(root, steps, icon_meta, check=False):
     """icon_meta: name -> .meta path. Returns the list of files that changed (or would, under check)."""
     changed = []
@@ -335,6 +381,8 @@ def apply(root, steps, icon_meta, check=False):
             new = _apply_pair(text, step, icon_meta)
         elif "core" in step:
             new = _apply_core(text, step, icon_meta)
+        elif "proxy" in step:
+            new = _apply_proxy(text, step, icon_meta)
         elif "deactivate" in step:
             a, b = _block(text, step["deactivate"])
             go = re.search(r"m_GameObject: \{fileID: (\d+)\}", text[a:b]).group(1)

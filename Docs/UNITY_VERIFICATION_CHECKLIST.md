@@ -65,6 +65,22 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Lockdown seals closed holes (not on crystals); Seed Wall and omni cards from the wall's real geometry (`claude/serpent-icons`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** `SerpentWallAssembler`: Lockdown (Mass 5) now lays the same danger panels in the same places, but as
+each hole's fourth brick lands (and, when the upgrade comes on, for the holes already closed at the next steal sweep);
+a crystal only shields. HUD: the Mass card is three parts under the Mass icon in `SerpentHUDVariant.prefab` (bricks in
+domain colour, the white seed, the Lockdown panels shown only at Mass 5), bound on `Serpent.prefab`'s view through
+stripped proxies; the omni card's art is the shielded wall (`omniAbilitySprite`). No Unity in the session.
+
+- [ ] Compiles. Serpent.prefab opens with no missing-reference warnings; the view's three Seed Wall fields are wired.
+- [ ] Fly the Serpent (Toybox Vessel Changer): the Mass card shows nine small bricks in your colour round a white one;
+  the omni card shows the diamond wall; no placeholder art on either.
+- [ ] Below Mass 5 no panels on the card. At Mass 5 four danger squares appear in the holes.
+- [ ] Mass 5, stop to seed a wall, collect NO crystal: each hole gets its danger panel as its fourth brick lands.
+- [ ] Collect a crystal: the wall shields (beam and ripple) and no panels appear from the crystal itself.
+- [ ] Reach Mass 5 with a wall already grown: its closed holes seal within a fraction of a second.
+
 ### 🔴 A restored prism grows again, and blooms back in (`cece/eloquent-franklin-2b67vp`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed** (Affects: the prism core, Garrett's and Yash's; `Docs/PRISM_ANIMATION.md` §3.3): `SetupDestruction` turns a
@@ -19044,6 +19060,31 @@ squirrel". This undoes 622e271ca's swap; the 2026-10-28 Meerkat entry above is s
 5. Vessel Changer toy -> Meerkat, then back to Squirrel. **Pass:** both swaps work; the Meerkat still forms tunnels.
 6. `LavalampWormholeLab.unity` still flies the Meerkat.
 
+
+## Serpent recut: Scope on Charge, Cloak / Sniper on Space, Hunter's Sight, fifth pellet (2026-10-30) - NOT EDITOR-VERIFIED
+
+No Unity editor and no .NET SDK in the session, so nothing here was compiled. Branch `claude/serpent-icons`.
+Files: `SniperScopeActionSO/Executor.cs`, new `ScopeAfterimages.cs`, `SniperShotActionSO/Executor.cs`,
+`ConsumeBoostActionSO/Executor.cs`, `SerpentVesselHUDView.cs`, `SerpentHUDController.cs`, the Serpent map, its two
+action assets, `Serpent.prefab` (view fields) and `SerpentHUDVariant.prefab` (card sprites).
+
+1. Compile. **Pass:** no errors; the SniperScopeAction asset shows no missing-field warnings (three fields were removed).
+2. Hold LT (scope). **Pass:** the zoom settles at 12 degrees at every Charge and Space level; Space no longer changes it.
+3. Snipe a super-shielded prism at Charge 0. **Pass:** it is destroyed (it used to be skipped below Charge 5).
+4. Watch the SPACE card (RT) while pressing and releasing LT. **Pass:** the picture swaps cloak / sniper in place, the
+   trigger glyph does not move, and the card's cooldown veil follows the sniper's recovery. The CHARGE card shows the
+   scope and no longer carries the sniper veil.
+5. Raise Charge to 5 and scope near a rival. **Pass:** ghosts of the rival's hull appear about 4 a second, tinted in
+   the rival's domain colour, fading over 1 s. A round through a ghost strips the rival and shatters that ghost; a
+   ghost is never shown on the rival's screen or a spectator's.
+6. Raise Time to 5. **Pass:** the TIME card switches to five smaller pellet rows (PelletSlots5) with five pips that
+   line up on their slots; a full tank is 5 pellets (0.2 each); dropping below Time 5 restores the four-row layout.
+8. The cards (picked 2026-10-31). **Pass:** CHARGE shows the eyepiece with a centred reticle, and at Charge 5 the
+   reticle (danger) sits on the oldest of three faded afterimages behind a white rival. SPACE shows the cloaked
+   outline in the domain colour with a shielded seed; while LT is held, the Serpent, the white round, blue shards and
+   a shielded broken prism.
+7. AI Serpent at Charge 5 on the server. **Pass:** no ghosts are drawn anywhere; its rounds can still strip through
+   recorded afterimages.
 
 ## Thresher snap aim: both triggers pulled fast keep the pre-pull heading (`cece/sweet-newton-78wr4o`, 2026-10-30) - NOT EDITOR-VERIFIED
 

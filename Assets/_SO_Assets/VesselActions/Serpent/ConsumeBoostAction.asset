@@ -24,3 +24,4 @@ MonoBehaviour:
   boostDuration: 3
   resourceIndex: 1
   resourceCost: 0.25
+  upgradeResourceCost: 0.2

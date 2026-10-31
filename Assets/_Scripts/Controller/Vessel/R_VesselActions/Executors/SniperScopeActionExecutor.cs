@@ -1,4 +1,6 @@
 using CosmicShore.Data;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -32,16 +34,15 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>Only the WINDOW is local-pilot-only. A screen is a thing one machine has.</para>
     ///
-    /// <para><b>Element → parameter: SPACE sets the magnification</b> — the authored field of view
-    /// at full zoom divided by Space's multiplier, floored so the scope can never narrow into a
-    /// soda straw. Read at USE time (every frame while held), never cached at init, so a crystal
-    /// collected mid-scope widens the reach immediately.</para>
+    /// <para><b>No element parameter</b> (Garrett, 2026-10-30): the scope is the Serpent's CHARGE
+    /// card, Charge's number is the sniper's recovery, and the zoom is one authored magnification
+    /// at every level.</para>
     ///
-    /// <para><b>Space 5 — "Deep Focus".</b> One more magnification step: the upgrade multiplies
-    /// the zoom depth AND divides the floor by the same number, so the extra reach is actually
-    /// reachable rather than running straight into a ceiling the upgrade cannot pass. Gated on
-    /// <c>IsUpgradeActive(Element.Space)</c> — the replicated unlock bit — rather than a raw local
-    /// level read, because the same value sizes the reticle, which is drawn from it.</para>
+    /// <para><b>Charge 5 — "Hunter's Sight".</b> While the scope is up, every rival in range
+    /// leaves short-lived afterimages (<see cref="ScopeAfterimages"/>), and a sniper round through
+    /// one strips the real pilot. Gated on <c>IsUpgradeActive(Element.Charge)</c>, the replicated
+    /// unlock bit. The afterimages are recorded only where the strip is decided (the Serpent's
+    /// owner) and drawn only for the local pilot.</para>
     ///
     /// <para><b>It touches no mass and no speed.</b> The whole ability is a window, a field of
     /// view and a flag. A pilot who wants to hold still to take a shot already has a way: the
@@ -56,12 +57,16 @@ namespace CosmicShore.Gameplay
                  "falling back to field initializers.")]
         [SerializeField] private SniperScopeActionSO config;
 
+        [Inject] GameDataSO _gameData;
+
         IVesselStatus _status;
         SniperScopeActionSO _activeSo;
 
         ActionExecutorRegistry _registry;
         SniperShotActionExecutor _shot;
         SniperScopeOverlay _overlay;
+
+        readonly ScopeAfterimages _afterimages = new();
 
         bool _engaged;
         float _zoom01;   // the APPLIED zoom, chasing the trigger
@@ -75,6 +80,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The applied magnification, 0..1. Read by the HUD.</summary>
         public float Zoom01 => _zoom01;
+
+        /// <summary>Hunter's Sight's live afterimages; the sniper tests its round against them.</summary>
+        public ScopeAfterimages Afterimages => _afterimages;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -99,6 +107,7 @@ namespace CosmicShore.Gameplay
             // parentage - and the scope window behind it owns a RenderTexture, which is a leak
             // nothing reports if it outlives its owner.
             if (_overlay != null) { _overlay.Dispose(); _overlay = null; }
+            _afterimages.Dispose();
         }
 
         void OnDisable()
@@ -130,6 +139,7 @@ namespace CosmicShore.Gameplay
             _zoom01 = 0f;
             _activeSo = null;
             if (_overlay != null) _overlay.Hide();
+            _afterimages.Clear();
         }
 
         void Update()
@@ -146,6 +156,7 @@ namespace CosmicShore.Gameplay
             // needs a branch of its own.
             _zoom01 = Mathf.MoveTowards(_zoom01, target, response * Time.deltaTime);
 
+            TickAfterimages();
             DrawOverlay();
         }
 
@@ -254,13 +265,32 @@ namespace CosmicShore.Gameplay
             return Mathf.InverseLerp(dead, 1f, depth);
         }
 
-        bool IsDeepFocusUnlocked
+        bool IsHuntersSightUnlocked
         {
             get
             {
                 var elemental = _status?.ElementalAbilityHandler;
-                return elemental != null && elemental.IsUpgradeActive(Element.Space);
+                return elemental != null && elemental.IsUpgradeActive(Element.Charge);
             }
+        }
+
+        /// <summary>
+        /// Hunter's Sight: record the rivals' afterimages on the machine that decides the sniper's
+        /// strip (<see cref="ElementalTransfer.IsDecidedHere"/>), and draw them only for the local
+        /// pilot. Everywhere else, and below Charge 5, there are none.
+        /// </summary>
+        void TickAfterimages()
+        {
+            var so = ResolvedConfig;
+            if (so == null || _status == null || !IsHuntersSightUnlocked ||
+                !ElementalTransfer.IsDecidedHere(_status))
+            {
+                _afterimages.Clear();
+                return;
+            }
+
+            bool draw = _status.Player != null && _status.Player.IsLocalPilot;
+            _afterimages.Tick(_status, so, draw, _gameData);
         }
 
         /// <summary>
@@ -277,29 +307,11 @@ namespace CosmicShore.Gameplay
             return Mathf.Lerp(so.UnscopedFieldOfView, ResolveFieldOfViewAtFullZoom(), _zoom01);
         }
 
-        /// <summary>
-        /// The field of view at FULL magnification, after Space. Space's multiplier is a zoom
-        /// DEPTH, so it divides the angle — more Space, narrower scope, further sight — and the
-        /// result is floored by the authored minimum so no element level can narrow the view into
-        /// something unreadable. Deep Focus (Space 5) multiplies the depth and divides the floor
-        /// by the same number, so the upgrade moves the ceiling with the dial.
-        /// </summary>
+        /// <summary>The field of view at FULL magnification: the authored one, at every level.</summary>
         float ResolveFieldOfViewAtFullZoom()
         {
             var so = ResolvedConfig;
-            if (so == null) return 22f;
-
-            // minMul 1 rather than the default 0.25: Space may only ever ADD reach here. A
-            // Space-starved Serpent keeps the authored scope instead of having it widened into
-            // uselessness, which is the deficit band doing something the design never asked for.
-            float depth = ElementalScaling.Multiplier(
-                _status, Element.Space, atFull: so.ZoomDepthAtFullSpace, minMul: 1f);
-
-            float upgrade = IsDeepFocusUnlocked ? Mathf.Max(1f, so.UpgradeZoomDepthMultiplier) : 1f;
-            depth *= upgrade;
-
-            float floor = so.MinFieldOfView / upgrade;
-            return Mathf.Max(floor, so.FieldOfViewAtFullZoom / Mathf.Max(0.0001f, depth));
+            return so != null ? so.FieldOfViewAtFullZoom : 12f;
         }
     }
 }

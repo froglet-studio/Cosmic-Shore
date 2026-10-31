@@ -74,12 +74,13 @@ namespace CosmicShore.Gameplay
         /// <summary>Which resource holds the fuel, or -1 when no config is wired yet.</summary>
         public int FuelResourceIndex => config ? config.ResourceIndex : -1;
 
-        /// <summary>Fuel one pellet costs, as a fraction of the resource. 0 when unconfigured.</summary>
-        public float PelletCost => config ? config.ResourceCost : 0f;
+        /// <summary>Fuel one pellet costs, as a fraction of the resource - the Time-5 cost while that
+        /// upgrade is active (five pellets). 0 when unconfigured.</summary>
+        public float PelletCost => config ? config.ResourceCostFor(_status) : 0f;
 
         /// <summary>
         /// How many pellets a FULL tank holds - derived from the resource's own capacity and the
-        /// pellet size, never authored twice. 4 on the shipped Serpent (1.0 / 0.25).
+        /// pellet size, never authored twice. 4 on the shipped Serpent (1.0 / 0.25), 5 at Time 5 (1.0 / 0.2).
         /// </summary>
         public int PelletCapacity
         {
@@ -143,7 +144,7 @@ namespace CosmicShore.Gameplay
 
             if (config != so) config = so;
 
-            float cost = so.ResourceCost;
+            float cost = so.ResourceCostFor(_status ?? status);
             if (cost <= 0f)
             {
                 CSDebug.LogWarning($"[ConsumeBoost] '{so.name}' authors resourceCost {cost}; a pellet " +
