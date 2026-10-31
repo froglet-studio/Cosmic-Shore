@@ -1,0 +1,273 @@
+{
+    "schemaVersion": 1,
+    "reportId": "94cdf5611d53",
+    "timestamp": "2026-10-31T12:13:37.8701697Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "claude/voyage-variety",
+    "gitCommitHash": "f92309b19",
+    "trigger": "Cell swap -> Barren",
+    "loadKind": "launch",
+    "completionReason": "Cell swap: nothing to build behind a veil",
+    "interrupted": false,
+    "sceneFrom": "Menu_Main",
+    "sceneTo": "Menu_Main",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 2158.560791015625,
+    "visualReadyMs": -1.0,
+    "waitMs": 1283.4351806640625,
+    "humanWaitMs": 0.0,
+    "workMs": 875.1256103515625,
+    "unattributedMs": 9.55786418914795,
+    "framesDuringLoad": 28,
+    "avgFpsDuringLoad": 12.971606254577637,
+    "worstFrameMs": 1900.5120849609375,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 8.70740032196045,
+            "endMs": 1292.142578125,
+            "durationMs": 1283.4351806640625,
+            "exclusiveMs": 1283.4351806640625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: 64 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1292.1561279296875,
+            "endMs": 1295.114990234375,
+            "durationMs": 2.9588623046875,
+            "exclusiveMs": 2.9588623046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1295.118408203125,
+            "endMs": 2154.607421875,
+            "durationMs": 859.489013671875,
+            "exclusiveMs": 857.773193359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Flora spawn (TendrilFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 1445.3134765625,
+            "endMs": 1447.029296875,
+            "durationMs": 1.7158203125,
+            "exclusiveMs": 1.7158203125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 2155.419677734375,
+            "endMs": 2158.53955078125,
+            "durationMs": 3.119873046875,
+            "exclusiveMs": 3.119873046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 1283.4351806640625,
+            "percent": 59.45791244506836,
+            "spanCount": 1,
+            "waitMs": 1283.4351806640625
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 863.8519287109375,
+            "percent": 40.01980972290039,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 9.55786418914795,
+            "percent": 0.4427887499332428,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 6,
+            "name": "Flora",
+            "attributedMs": 1.7158203125,
+            "percent": 0.0794890895485878,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 1283.4351806640625,
+            "exclusiveMs": 1283.4351806640625,
+            "maxSingleMs": 1283.4351806640625,
+            "isWait": true
+        },
+        {
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 859.489013671875,
+            "exclusiveMs": 857.773193359375,
+            "maxSingleMs": 859.489013671875,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 3.119873046875,
+            "exclusiveMs": 3.119873046875,
+            "maxSingleMs": 3.119873046875,
+            "isWait": false
+        },
+        {
+            "label": "Cell swap: 64 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 2.9588623046875,
+            "exclusiveMs": 2.9588623046875,
+            "maxSingleMs": 2.9588623046875,
+            "isWait": false
+        },
+        {
+            "label": "Flora spawn (TendrilFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "count": 1,
+            "totalMs": 1.7158203125,
+            "exclusiveMs": 1.7158203125,
+            "maxSingleMs": 1.7158203125,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 1207.4940185546875,
+            "durationMs": 1900.5120849609375,
+            "during": "Cell swap: the retiring world suctions away (1.1s)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Cell swap -> Barren"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Suction: prisms not created yet (invisible; creation cancelled)",
+            "value": 23
+        },
+        {
+            "name": "Flora spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 15
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 70,
+            "totalMs": 9.066900253295899,
+            "maxSingleMs": 0.33390000462532046
+        }
+    ],
+    "errors": [
+        {
+            "timeSeconds": 0.09940540045499802,
+            "type": "Error",
+            "message": "[FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activate)' is a LOOPING (or sustaining) FMOD event but is being played as a fire-and-forget one-shot. A looping in…"
+        }
+    ],
+    "hints": [
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "1.3s (59%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 1.9s during \"Cell swap: the retiring world suctions away (1.1s)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "1 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}
