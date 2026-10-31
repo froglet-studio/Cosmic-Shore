@@ -52,6 +52,10 @@ namespace CosmicShore.Editor
             bool savedRunInBackground = PlayerSettings.runInBackground;
             bool savedVisibleInBackground = PlayerSettings.visibleInBackground;
             bool savedSplash = PlayerSettings.SplashScreen.show;
+            // The farm runs several players at once and nobody listens: build with Unity audio disabled.
+            var audioManager = new SerializedObject(AssetDatabase.LoadMainAssetAtPath("ProjectSettings/AudioManager.asset"));
+            var disableAudio = audioManager.FindProperty("m_DisableAudio");
+            bool savedDisableAudio = disableAudio != null && disableAudio.boolValue;
 
             try
             {
@@ -74,6 +78,7 @@ namespace CosmicShore.Editor
                 PlayerSettings.runInBackground = true;
                 PlayerSettings.visibleInBackground = true;
                 try { PlayerSettings.SplashScreen.show = false; } catch (Exception) { /* licence-dependent */ }
+                if (disableAudio != null) { disableAudio.boolValue = true; audioManager.ApplyModifiedPropertiesWithoutUndo(); }
 
                 Directory.CreateDirectory(outputFolder);
                 var options = new BuildPlayerOptions
@@ -120,6 +125,7 @@ namespace CosmicShore.Editor
                 PlayerSettings.runInBackground = savedRunInBackground;
                 PlayerSettings.visibleInBackground = savedVisibleInBackground;
                 try { PlayerSettings.SplashScreen.show = savedSplash; } catch (Exception) { }
+                if (disableAudio != null) { disableAudio.boolValue = savedDisableAudio; audioManager.ApplyModifiedPropertiesWithoutUndo(); }
                 AssetDatabase.SaveAssets();
             }
 

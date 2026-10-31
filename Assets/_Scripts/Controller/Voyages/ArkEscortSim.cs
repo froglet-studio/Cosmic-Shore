@@ -104,6 +104,9 @@ namespace CosmicShore.Gameplay
             var args = Environment.GetCommandLineArgs();
             string plan = Arg(args, PlanArg);
             if (string.IsNullOrEmpty(plan)) return;
+            // A sim is never listened to: silence it before anything plays (farm players run several at once).
+            AudioListener.volume = 0f;
+            AudioListener.pause = true;
             var go = new GameObject("ArkEscortSim");
             DontDestroyOnLoad(go);
             var sim = go.AddComponent<ArkEscortSim>();
