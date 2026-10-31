@@ -21,6 +21,7 @@ namespace CosmicShore.Tests
         [Test]
         [TestCase(FaunaDiet.Herbivore, 0)]
         [TestCase(FaunaDiet.Predator, 1)]
+        [TestCase(FaunaDiet.Pollinator, 2)]
         public void FaunaDiet_HasCorrectIntegerValue(FaunaDiet diet, int expected)
         {
             Assert.AreEqual(expected, (int)diet,
@@ -30,7 +31,7 @@ namespace CosmicShore.Tests
         [Test]
         public void FaunaDiet_HasExpectedMemberCount()
         {
-            Assert.AreEqual(2, Enum.GetValues(typeof(FaunaDiet)).Length,
+            Assert.AreEqual(3, Enum.GetValues(typeof(FaunaDiet)).Length,
                 "FaunaDiet member count changed - update tests + any diet switch logic.");
         }
 
