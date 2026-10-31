@@ -34,6 +34,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Raised once per escort as it ends, with what happened.</summary>
         public static event System.Action<ArkEscortReport> Finished;
 
+        /// <summary>The escort sim's seed for the next <see cref="SetSail"/> (consumed by it), so a farm run can be
+        /// replayed; null seeds from the clock as a played escort does.</summary>
+        public static int? SeedOverride;
+
         VoyageToyDefinitionSO _def;
         ArkEscortSO _escort;
         ToyContext _context;
@@ -112,7 +116,8 @@ namespace CosmicShore.Gameplay
             _squad = squad;
             _difficulty = Mathf.Clamp(difficulty, ArkEscortSO.MinDifficulty, ArkEscortSO.MaxDifficulty);
             _aiLocal = aiLocal;
-            _rng = new System.Random(_difficulty * 7919 + System.Environment.TickCount);
+            _rng = new System.Random(SeedOverride ?? (_difficulty * 7919 + System.Environment.TickCount));
+            SeedOverride = null;
             _survived = _fallen = false;
             _endAt = -1f;
             _leg = -1;

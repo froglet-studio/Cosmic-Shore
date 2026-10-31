@@ -21,7 +21,9 @@ def main():
         for i, line in enumerate(f):
             if i < a.since or not line.strip():
                 continue
-            runs.append(json.loads(line))
+            rec = json.loads(line)
+            if not rec.get("done"):  # the sim's last line under -arkEscortQuit ({"done":true,...}) is not a run
+                runs.append(rec)
     by = collections.defaultdict(list)
     for r in runs:
         if r.get("Result", 0) in (1, 2):
