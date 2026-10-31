@@ -274,7 +274,7 @@ for the retired Steady Eye bleed; round 4 removed the bleed and the field with i
 | `_Scripts/UI/View/ScopeRingGraphic.cs` | **new** — the generated ring/arc |
 | `_Scripts/UI/View/ScopePetalGeometry.cs` | **new** (round 8) — the CHARGE petal's outline, traced off the shipped sprite, plus the inradius/circumradius/area derived from it |
 | `_Scripts/UI/View/ScopePetalImage.cs` | **new** (round 8) — the eyepiece. A `RawImage` SUBCLASS overriding only `OnPopulateMesh`, so every part of the surface that renders is inherited |
-| `_Scripts/Utility/CSDebug.cs` | **+** (round 6) `CSLogChannel.SerpentScope` |
+| `_Scripts/Utility/Foundation/CSDebug.cs` | **+** (round 6) `CSLogChannel.SerpentScope` |
 | `_Scripts/UI/View/ScopeDiscGraphic.cs` | **added round 4, DELETED round 7** — the generated circular picture. Replaced round 3's `RawImage` and was never seen on screen; retired so two windows cannot compete for the next report |
 | `_Scripts/UI/View/AbilityLockupView.cs` | **+** (round 4) a LOCKED card draws its cooldown |
 | `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture camera; round 4 re-pointed it at the SCOPE, round 5 made it adopt the game's image, round 7 put its surface back to a `RawImage`, round 8 made its target SQUARE for the petal |

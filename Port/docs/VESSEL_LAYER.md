@@ -36,7 +36,7 @@ No action needed; listed so the tables below can omit them from "depends on".
 
 | Type | Defining file | Lines | Depends on (Unity / game) | Disposition |
 |---|---|---|---|---|
-| `ITransform` | `Utility/ITransform.cs` | 8 | Transform | **LEAF** |
+| `ITransform` | `Utility/Foundation/ITransform.cs` | 8 | Transform | **LEAF** |
 | `IInputStatus` | `Controller/IO/IInputStatus.cs` | 55 | `ScreenOrientation` (engine enum needed); InputController, ScriptableEventInputEvents | **SHALLOW** — cyclic with InputController (see SCC note) |
 | `InputController` | `Controller/IO/InputController.cs` | 275 | UnityEngine.InputSystem (`Keyboard/Gamepad/EnhancedTouchSupport`), `Screen/SystemInfo/Application`; IVessel, GameSetting, PauseSystem, all input strategies, MultiMouseService, DeviceOrientationHandler | **SHALLOW** after inert input-device shim |
 | `InputStatus` | `Controller/IO/InputStatus.cs` | 292 | NetworkBehaviour/NetworkVariable (✅); IInputStatus, InputController, ScriptableEventInputEvents | **SHALLOW** |
