@@ -28,8 +28,14 @@ namespace CosmicShore.Gameplay
         int _sweepIndex;
         Vector3 _sweepPoint;
         bool _sweeping;
+        int _rockets, _rocketsHeldByLane;
+        float _gunSeconds, _targetSeconds, _sweepSeconds;
 
         public override string Name => "SparrowDestroyer";
+
+        public override string Notes() =>
+            $"{Who} Sparrow: rockets {_rockets} (held by the Ark lane {_rocketsHeldByLane}), guns {_gunSeconds:0}s, " +
+            $"{_targetSeconds:0}s on a target, {_sweepSeconds:0}s sweeping a nucleus, guns {(_guns ? "found" : "MISSING")}, rocket {(_rocket ? "found" : "MISSING")}";
 
         public override void Arm(ArkEscortPilot pilot)
         {
@@ -59,8 +65,24 @@ namespace CosmicShore.Gameplay
                 Vector3 lead = heart + _heartVelocity * EscortGeneRegistry.SparrowLeadSeconds;
                 float standoff = EscortGeneRegistry.SparrowStandoff;
                 float dist = (heart - Position).magnitude;
-                // Far out: make for the firing position between the creature and the hull. Close in: fly the pass.
-                return dist > standoff * PassThroughFactor ? ctx.ArkSideOf(lead, standoff) : lead;
+                // Inside gun range: fly AT the creature (the strafing pass). The guns and the rocket leave along the
+                // nose, so the nose must be on the heart to fire at all: steering at a standoff point beside it kept
+                // the weapons silent (round 2: 0-1 rockets and 0-2 s of guns in 340 s on a target). The hull through
+                // the heart is harmless on a Sparrow, and AvoidHull keeps the pass out of the Ark.
+                if (dist <= Mathf.Max(standoff * PassThroughFactor, EscortGeneRegistry.SparrowGunRange)) return lead;
+                // Far out: make for the firing position. Between the creature and the hull when that point is clear
+                // of the plating; for a creature ON the hull (a grazer) that point is inside the Ark, so stand off
+                // beside the creature instead, tangent to the hull on our own side, and shoot along the plating.
+                var ark = ctx.Ark;
+                Vector3 inboard = ctx.ArkSideOf(lead, standoff);
+                float keepOut = ctx.HullRadius + EscortGeneRegistry.ArkLaneMargin + 20f;
+                if (!ark || (inboard - ark.Position).sqrMagnitude > keepOut * keepOut) return inboard;
+                Vector3 radial = lead - ark.Position;
+                Vector3 side = Vector3.Cross(radial, Vector3.up);
+                if (side.sqrMagnitude < 1e-3f) side = ark.transform.right;
+                side.Normalize();
+                if (Vector3.Dot(side, Position - lead) < 0f) side = -side;
+                return lead + side * standoff;
             }
 
             if (ctx.Threats.Count < EscortGeneRegistry.SparrowSweepWhenThreatsBelow.Int && TrySweep(ctx, out var sweep))
@@ -123,14 +145,19 @@ namespace CosmicShore.Gameplay
                            && angle <= EscortGeneRegistry.SparrowGunAimDeg
                            && ctx.LaneClear(pos, pos + nose * Mathf.Max(dist, EscortGeneRegistry.SparrowGunRange));
 
+                _targetSeconds += Time.deltaTime;
                 if (_rocket && Time.time >= _nextRocket
                     && dist >= EscortGeneRegistry.SparrowRocketMinRange && dist <= EscortGeneRegistry.SparrowRocketMaxRange
                     && angle <= EscortGeneRegistry.SparrowRocketAimDeg
-                    && Ammo(_rocket.AmmoIndex) >= _rocket.AmmoCost
-                    && ctx.LaneClear(pos, heart, EscortGeneRegistry.SparrowRocketBlastRadius))
+                    && Ammo(_rocket.AmmoIndex) >= _rocket.AmmoCost)
                 {
-                    Press(_rocket, true);
-                    _nextRocket = Time.time + EscortGeneRegistry.SparrowRocketCooldown;
+                    if (ctx.LaneClear(pos, heart, EscortGeneRegistry.SparrowRocketBlastRadius))
+                    {
+                        Press(_rocket, true);
+                        _rockets++;
+                        _nextRocket = Time.time + EscortGeneRegistry.SparrowRocketCooldown;
+                    }
+                    else _rocketsHeldByLane++;
                 }
             }
             else if (_sweeping && _guns)
@@ -140,6 +167,8 @@ namespace CosmicShore.Gameplay
                            && ctx.LaneClear(pos, pos + nose * EscortGeneRegistry.SparrowGunRange);
             }
 
+            if (fireGuns) _gunSeconds += Time.deltaTime;
+            if (_sweeping) _sweepSeconds += Time.deltaTime;
             if (fireGuns != _gunsHeld)
             {
                 Press(_guns, fireGuns);

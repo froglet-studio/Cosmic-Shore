@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
         {
             var ctx = _run ? _run.Context : null;
             if (ctx == null || !ctx.Ark || _role == null) return transform.position + transform.forward * 100f;
-            return _role.Steer(ctx);
+            return ctx.AvoidHull(transform.position, _role.Steer(ctx));
         }
 
         void Update()
