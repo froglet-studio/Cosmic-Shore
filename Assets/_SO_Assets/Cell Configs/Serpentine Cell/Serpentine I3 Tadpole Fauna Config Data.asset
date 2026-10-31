@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
-  m_Name: Serpentine Tadpole Fauna Config Data
+  m_Name: Serpentine I3 Tadpole Fauna Config Data
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24, type: 3}
   InitialSpawnCount: 6
@@ -19,7 +19,7 @@ MonoBehaviour:
   FeedsPerOffspring: 8
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 6
-  MaxLivePopulation: 20
+  MaxLivePopulation: 10
   Element: 2
   Variant:
     Enabled: 1

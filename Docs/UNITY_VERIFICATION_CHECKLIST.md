@@ -65,6 +65,65 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
+
+1. I1 Shallows: a few tadpoles (the cell keeps its own colours at every intensity; the tint was removed). Core: seven gold blocks.
+2. I2 Grazing Grounds: tadpoles and brittlestars. Core: three blocks.
+3. I3 Hunting Grounds: two sharks, piranha, tadpoles. Core: one block.
+4. I4 The Deep: sharks, piranha schools, brittlestars, tadpoles. Core: one small block - the hardest shot.
+5. Watch the creatures round the shapes: if grazers chew a core, the shape disintegrates (that is the rule, not a bug);
+   say if it happens too often. Frame time against the no-fauna build (live creatures are capped at 25).
+6. EditMode: `SerpentineGateTests.The_core_shrinks_as_the_intensity_rises` and the rest.
+
+### 🔴 Serpentine: a shape at every ring (Coil / Maw / Iris), a gold core that disintegrates it, Breakwater's ring sizes (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. Replaces the flora guards (all guard entries below are superseded). `SerpentineGate` lays
+the shapes from the environment prism on every peer; `SerpentTimeController.TickShapes` watches each core.
+
+1. Open `MinigameSerpentTime`, save once; console clean (the controller no longer has the guard fields).
+2. I1 and I2: every ring (72 / 60 u) is closed by a Coil: six red danger arms spiralling in to a gold core, two round
+   holes (26 / 21 u) to fly out through, and blue scale rings flaring back toward you round the ring. I3: a Maw (fangs
+   and a web, three 16 u holes, a wide hood). I4: an Iris (nine blades, three 12 u holes, a housing ring of blocks).
+3. Thread a hole: the gate counts. Touch the red weave: petals go, as on any danger prism.
+4. Shoot the gold core (scope + RT), or ram it: the whole shape bursts outward from the core over a few frames and the
+   ring is open. About 25 s later, with nobody inside it, it grows back.
+5. With 3 AI: they shoot cores when their rifles are ready and thread the holes otherwise.
+6. Frame time: compare with the flora build (the shapes are ~240 / 190 / 110 / 120 prisms a gate against 288-360).
+   At I4 check the Serpent fits the 12 u holes; if not, lower `ExitMargin` / the core in `SerpentineGate`.
+7. EditMode: `SerpentineGateTests`, `SerpentTimeClusterTests`, `SerpentTimeCourseTests`.
+
+### 🔴 Serpentine's card loads again: a colon had broken its YAML (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+The description written in `b4a0eaeefe` ended a line with "rises:", which YAML reads as a new key: Unity kept the name
+and lost every later field (card art, vessels, controls, `SceneName`), so the card showed white art and an empty
+controls panel and the mode did not load. Text fixed; `hull_time_race.py` now fails `--check` on a colon or ' #' in
+card text and on any generated .asset that does not parse.
+
+1. Arcade: the Serpentine card shows its art; the launch panel shows its full description and its controls.
+2. Start it: the scene loads and the race runs.
+
+### 🔴 Serpentine: one ring a gate, 65 / 55 / 48 / 40 u, a guard at every gate (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. Supersedes "2 rings at I1-I2" in the entries below.
+
+1. Each intensity: every gate is ONE ring (no clusters), radius 65 (I1), 55 (I2), 48 (I3), 40 (I4). The Serpent
+   threads them comfortably at I1-I3; I4 feels as before.
+2. Every gate has a guard (before, beside, or a door); the AI shoots Mass / Charge hearts and flies through Time ones.
+3. EditMode: `SerpentTimeClusterTests`, `SerpentTimeCourseTests` (mouths still tighten level by level, gates clear).
+
+### 🔴 A lifeform's death runs once: `LifeForm.DieOnce` (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`Flora.KillReplicated` (a client's mirror of a replicated plant's death) and `BranchingFlora`'s no-leaves auto-death
+called `Die()` without latching `dying`; `Die`'s own destruction reports back through `CheckIfDead`, which then ran the
+death a second time (a second `OnLifeFormDeath`, attributed to "Guy Fawkes", a second unregister and destroyed event).
+Both now call `LifeForm.DieOnce`. Not compiled in this session. Affects: Garrett's and Yash's ecology code.
+
+1. Host + client in a mode with a replicated flora species (a lattice colony cell): kill a plant on the host. On the
+   client it withers once; no second death sound, no kill credited to "Guy Fawkes" in the client's log or stats.
+2. EditMode: `LifeFormDieOnceTests`.
+
 ### 🔴 A mode's preview: FULL SCREEN extends as a tray (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/MENU_REDESIGN_B.md` section 108: `ConfigureCinema` tray mode, `ModePreviewWindow.textureWidthScale`
@@ -139,7 +198,7 @@ other mode keeps pointing its shards at the crystal; check Skim Race too).
    lean toward the line. Fly a lap: the current turns where the course turns.
 4. Guards: gate 1's stands beside its ring, half-covering it; others stand 150-300 u before their ring on the line, or
    as a pair either side of the line (a door with a narrow gap). None sit in a mouth. A heart hit still fells each one.
-5. Fauna: about half as many tadpoles and brittlestars as Skim Race.
+5. Fauna: none at all (the Serpentine spawn profile lists no fauna). Compare the frame with the half-fauna build.
 6. Skim Race: its shards still point at its crystal (regression check on `SnowChanger`).
 7. EditMode: `SerpentTimeClusterTests.Guards_mix_their_placements_and_keep_the_start_clear`.
 
