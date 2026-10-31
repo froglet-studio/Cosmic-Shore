@@ -29,7 +29,7 @@ namespace CosmicShore.UI
         IVesselStatus _status;
         bool _isLocalPilotHud;
         float _lure01;
-        int _seeds;
+        int _seeds, _tamed;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -44,6 +44,7 @@ namespace CosmicShore.UI
                                && vesselStatus.IsLocalUser;
             _lure01 = 0f;
             _seeds = 0;
+            _tamed = 0;
         }
 
         void Update()
@@ -56,6 +57,10 @@ namespace CosmicShore.UI
             _lure01 = Mathf.MoveTowards(_lure01, angler.Luring ? 1f : 0f, lureEaseRate * Time.unscaledDeltaTime);
             view.SetMass(Mathf.Max(angler.StrongestTame01, _lure01 * 0.15f), angler.Luring);
             view.SetFaunaCount(angler.TamedCount);
+            view.SetLureColor(ResolveDomainSignalColor());
+            if (angler.TamedCount > _tamed && angler.Luring) view.PlayLureJoined();   // one tamed in the light
+            _tamed = angler.TamedCount;
+            view.SetLure(angler.Luring);
             view.SetSpace(angler.Hunting / school, angler.Painting && angler.PaintedCount > 0);
             view.SetFloraSeeds(angler.FloraSeedCount);
             if (angler.FloraSeedCount > _seeds) view.PlayOmniCrystalCollected();   // a crystal just left a seed

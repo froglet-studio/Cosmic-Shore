@@ -380,3 +380,29 @@ CARDS += [
                  ("Mass 5: steal", [("hull", "domain"), ("light", "white"), ("fish", "danger")])],
          lockup_state=1, gauge=MASS_GAUGE, gauge_marks_style="segments"),
 ]
+
+
+# ---- Mass in the game: B, the anglerfish (Garrett picked B, 2026-10-31: "B is fine") ---------------------------------
+# Four parts in the Mass slot's container, driven by AnglerHUDView.SetLure: the hull (domain) always; the lit bulb and
+# its glow (white, 60%) while the lure is held; the creature drawn to the bulb - blue (60% at rest, full in the light),
+# danger at Mass 5 (Steal Fauna: another Angler's creature), the domain colour for a beat when one joins the school.
+LURE_PARTS = [("LureHull", "Angler_LureHull", "lureHullIcon", mb_hull, "the Angler side-on (domain)"),
+              ("LureGlow", "Angler_LureGlow", "lureGlowIcon", mb_glow, "the esca's glow (white, 60%; while luring)"),
+              ("LureBulb", "Angler_LureBulb", "lureBulbIcon", mb_bulb, "the lit esca bulb (white; while luring)"),
+              ("LureFish", "Angler_LureFish", "lureFishIcon", mb_fish,
+               "the creature drawn in (blue; danger at Mass 5; domain as it joins)")]
+ICONS += [dict(name=i, element="Mass", act="Lure, Tame & Grow: " + act, draw=draw, subdir="Parts", family=False,
+               exempt=PART_EXEMPT) for _n, i, _f, draw, act in LURE_PARTS]
+for c in CARDS:
+    if c["name"] == "lure_b":
+        CARDS.append(dict(c, name="lure", group=None,
+                          title="Lure, Tame & Grow (Mass, picked B): the Angler (domain), its esca lit (white), a creature "
+                                "drawn to the bulb (blue; danger at Mass 5; yours as it joins)"))
+        break
+CARDS[:] = [c for c in CARDS if c.get("group") != "lure"]
+LOCKUP["Mass"] = dict(parts=dict(h=mb_hull, f=mb_fish), state=[("h", "domain"), ("f", "blue", 0.6)])
+MASS_ICON = "7700000000000001115"       # the Mass slot's icon Image (was Angler_Leash); the fauna count is its child
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=MASS_ICON, view=VIEW, after="lockWakeAlpha",
+                                 children=[(n, i, f) for n, i, f, _d, _a in LURE_PARTS])),
+]

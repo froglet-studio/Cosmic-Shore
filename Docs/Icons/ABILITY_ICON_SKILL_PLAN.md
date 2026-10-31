@@ -306,7 +306,11 @@ on `Serpent.prefab`; `SetScoped` and `SetHuntersSight` toggle the part sets. The
 school (domain) left behind, the third spent (white) along its wake to the locked rival (danger) in the lock ring a
 hunted hull wears. Five parts in the Charge slot's container; `AnglerHUDView.SetLockOn` turns the third creature white
 and shows the wake and the ring while `HunterCount` > 0. The plate stays the hunters-out gauge. The creature is the
-QuadFish as its codex portrait reads (LESSONS 62). Next: the Mass card (Lure, Tame & Grow).
+QuadFish as its codex portrait reads (LESSONS 62). The **Mass card, Lure, Tame & Grow** (2026-10-31, Garrett picked B of
+three: to scale, the anglerfish, the pool): the Angler side-on (domain, upright at pitch -90, LESSONS 63), its esca lit
+white with a glow while A is held, a QuadFish drawn to the bulb - blue, danger at Mass 5 (Steal Fauna), the domain
+colour for a beat as one joins. Four parts; `AnglerHUDView.SetLure` / `PlayLureJoined`; the plate stays the taming
+gauge and the fauna count stays in the corner. Next: the Space card (Paint).
 
 | Round | What | Why first |
 |---|---|---|

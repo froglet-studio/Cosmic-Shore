@@ -78,6 +78,11 @@ pilot's domain colour. No Unity and no .NET in the session: not compiled.
   the rival goes full danger, and the plate fills a third per hunter (lime while LT is held).
 - [ ] When every hunter is gone (its prey died or left): the card returns to three creatures in your colour.
 - [ ] Gold / Ruby pilots: the school takes the domain colour; the rival stays danger.
+- [ ] **Mass card (same branch):** the Angler side-on in your colour with a dim blue QuadFish ahead of its bulb; the
+  fauna count still in the bottom-right corner.
+- [ ] Hold A (lure): the bulb lights white with a glow and the creature goes full blue; let go: both go out.
+- [ ] Tame a creature in the light: the card's creature wears your colour for about a second.
+- [ ] Reach Mass 5: the creature is danger-coloured (Steal Fauna), lit while luring.
 
 ### 🔴 Serpent Lockdown seals closed holes (not on crystals); Seed Wall and omni cards from the wall's real geometry (`claude/serpent-icons`, 2026-10-29) — NOT EDITOR-VERIFIED
 
