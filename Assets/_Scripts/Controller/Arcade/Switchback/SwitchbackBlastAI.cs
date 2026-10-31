@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay
             _levelFor = levelFor ?? (_ => 2);
             if (s_prismMask < 0) s_prismMask = LayerMask.GetMask("TrailBlocks");
             // One line per course: if mask is 0 or layer is -1 the TrailBlocks layer is gone and no AI can see a prism.
-            Debug.Log($"[Switchback AI] sense active mask={s_prismMask} layer={LayerMask.NameToLayer("TrailBlocks")} " +
+            CSDebug.Log($"[Switchback AI] sense active mask={s_prismMask} layer={LayerMask.NameToLayer("TrailBlocks")} " +
                       $"stations={planner.Layout.Stations.Count} debug={DebugSense}");
             _avoidFor = avoidFor ?? (_ => SwitchbackAvoidSkill.ForLevel(2));
             _planner = planner;
@@ -287,13 +287,14 @@ namespace CosmicShore.Gameplay
             {
                 st.Avoid = SwitchbackAvoidAction.Blast;
                 st.BlastCrystal = crystal; st.BlastLook = blocker; st.Blasts++;
-                Log(p, st, ring, SwitchbackAvoidAction.Blast, $"crystal={Vector3.Distance(self, crystal):F0}u cover={cov:P0}", along, blocking);
+                if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                    Log(p, st, ring, SwitchbackAvoidAction.Blast, $"crystal={Vector3.Distance(self, crystal):F0}u cover={cov:P0}", along, blocking);
                 aim = crystal + (blocker - crystal).normalized * StrikeThrough;
                 return true;
             }
             st.Avoid = SwitchbackAvoidAction.Avoid;
             st.AvoidAim = corridor * range;
-            if (prev != SwitchbackAvoidAction.Avoid) { st.Avoids++; Log(p, st, ring, SwitchbackAvoidAction.Avoid, $"turn={turn:F0} clear={clear:F0}u", along, blocking); }
+            if (prev != SwitchbackAvoidAction.Avoid) { st.Avoids++; if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch)) Log(p, st, ring, SwitchbackAvoidAction.Avoid, $"turn={turn:F0} clear={clear:F0}u", along, blocking); }
             aim = self + st.AvoidAim;
             return true;
         }
@@ -357,10 +358,13 @@ namespace CosmicShore.Gameplay
             if (!st.EmergOn)
             {
                 st.Emergencies++;
+                if (DebugSense || CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                {
                 string line = $"[Switchback AI] emergency pilot={p.PlayerNetId} impactIn={hitDist / speed:F2}s dist={hitDist:F0}u " +
                               $"speed={speed:F0} reach={reach:F0}u level={level} drifting={p.Vessel?.VesselStatus?.IsDrifting} " +
                               $"striking={striking} emergencies={st.Emergencies}";
-                if (DebugSense) Debug.Log(line); else CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, line);
+                if (DebugSense) CSDebug.Log(line); else CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, line);
+                }
             }
             st.EmergOn = true;
             steer = pos + st.EmergSteer * EmergSteerDistance;
@@ -445,7 +449,7 @@ namespace CosmicShore.Gameplay
             if (st.D.Plan != SwitchbackAIPlan.Blast) st.Phase = Phase.None;
             else if (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != st.D.Gate) st.Phase = Phase.None;
             if (st.Plans == 1) { st.StandingAtPlan = st.D.Standing; st.KeyTaken = false; }
-            if (st.Plans == 1 || prev.Plan != st.D.Plan)
+            if ((st.Plans == 1 || prev.Plan != st.D.Plan) && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
                 CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                     $"[Switchback AI] gate={ring} plan={st.D.Plan} crystal=" +
                     (st.D.Plan == SwitchbackAIPlan.Blast ? $"{Vector3.Distance(self, st.D.Key):F0}u" : "none") +
@@ -457,6 +461,7 @@ namespace CosmicShore.Gameplay
         void LogResult(IPlayer p, Pilot st)
         {
             if (st.D.Station < 0 && st.D.Plan == SwitchbackAIPlan.Direct) return;   // open gate: nothing to say
+            if (!CSDebug.IsVerbose(CSLogChannel.ArcadeMatch)) return;   // the strings below are the only work left
             int now = st.D.Station >= 0 ? _planner.Standing(st.D.Station, this) : 0;
             string result = st.D.Plan == SwitchbackAIPlan.Blast
                 ? (st.KeyTaken ? $"blasted standing {st.StandingAtPlan}->{now}" : "missed-key")
