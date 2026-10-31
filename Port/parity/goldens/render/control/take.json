@@ -9,7 +9,7 @@
   "frameFile": "frames/f<Frame>.png (the Recorder's <Frame>: 4 digits, the first Play frame is 0000)",
   "movie": "take.mp4",
   "unity": "6000.3.17f1",
-  "git": "",
+  "git": "10035cea2812ca8c01ed1d7a955cdb064122956c",
   "recorded": "2026-10-31T05:11:10Z",
   "keyframes": [
     {"frame": 0, "position": [-300, 110, -330], "lookAt": [0, 0, 0]},

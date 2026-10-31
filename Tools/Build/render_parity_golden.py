@@ -97,7 +97,33 @@ def record(unity, take, timeout):
           f"{'take.mp4 + take.json written' if ok else 'take NOT written'} -> {os.path.relpath(out, ROOT)}")
     if not ok:
         raise SystemExit(f"see {log}")
+    stamp_git(js)
     return out
+
+
+def stamp_git(js):
+    """Fill take.json's "git" with the commit the take was recorded on, when the editor left it empty.
+
+    RenderParityRecorder reads .git/HEAD itself, which is a FILE (gitdir: ...) in a worktree and
+    misses a ref that lives only in packed-refs, so the first golden shipped with "git": "". git
+    answers both; a dirty tree is marked so the take is never mistaken for that commit's exact state.
+    """
+    import json
+    take = json.load(open(js))
+    if take.get("git"):
+        return
+    try:
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        dirty = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", "Assets", "Packages", "ProjectSettings"], cwd=ROOT).returncode != 0
+    except (OSError, subprocess.CalledProcessError):
+        return
+    take["git"] = head + ("+dirty" if dirty else "")
+    text = open(js).read()
+    # rewrite only the one field, so the editor's layout (one keyframe per line) stays as written
+    import re
+    text = re.sub(r'"git":\s*"[^"]*"', '"git": "' + take["git"] + '"', text, count=1)
+    open(js, "w").write(text)
+    print(f"take.json git = {take['git']}")
 
 
 def push(out):
