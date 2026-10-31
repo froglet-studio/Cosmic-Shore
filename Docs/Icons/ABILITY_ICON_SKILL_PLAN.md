@@ -334,9 +334,12 @@ Charge 5 Toll Gate, in the domain colour, danger for a beat on a toll (`Wormhole
 Scale Dust**: A of A/B/C ("the shred"), without the petal ("Show a grey ship and turn it Red when you hit then it will
 look different then space"): the moth over its dust (shielded), the rival grey, danger for a beat on a bite
 (`ButterflyDustField.LastBiteTime`); at Charge 5 the same wormhole ring, red on a toll. Both in `ButterflyHUDView`
-(`SetDrop`, `SetScaleDust`, `SetPilotColors`). The **omni crystal card** (the bloom) is out as options; the kit now draws
-the omni card left of Charge in every lockup sheet ("you are still forgetting to show the omnicrystal totem"). Next:
-the omni pick, then Mass and Space.
+(`SetDrop`, `SetScaleDust`, `SetPilotColors`). The kit now draws the omni card left of Charge in every lockup sheet ("you are
+still forgetting to show the omnicrystal totem"). The **omni crystal card, the bloom**: A of A/B/C, "but make the moth
+to scale in the explosion": the moth small at the heart of a sphere of dust motes on a golden-angle spiral
+(`Core/TigerMoth_Bloom`, set as the view's `omniAbilitySprite`). True scale (span 21.35 in a 900-unit bloom) is about
+1.5 px, so the moth is drawn at the smallest size that still reads (box 24). The **Mass card** (Mass / Dust mode, seen
+from above so the wake's width shows) is out as options. Next: the Mass pick, then Space.
 
 | Round | What | Why first |
 |---|---|---|

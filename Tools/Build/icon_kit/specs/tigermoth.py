@@ -228,13 +228,119 @@ REBIND += [
 ]
 
 
+# ---- Mass: Mass / Dust mode --------------------------------------------------------------------------------------------
+# The mechanic (BUTTERFLY.md 3.2, kept by the Tiger Moth): RT TOGGLES. Mass mode spreads the wings and lays a WIDE wake of
+# piano keys (5x at Mass 0 -> 20x at Mass 15), dust off; Dust mode shuts the wings, narrows the wake to the bare key and
+# turns the dust on. The plate is the mode fill (full in Mass mode, empty in Dust mode). L5 Gilded Wake: Mass mode lays
+# SHIELDED keys. Seen from ABOVE, nose up, because width is the one thing the side view cannot show; the moth is the
+# hull in its two real poses (bind pose: wings spread; `rig|fold`: wings shut).
+TOP = dict(pitch=0, yaw=0, dilate_px=1.0, roll=-90)                 # from above, nose up
+M_SPREAD = lambda: mesh_silhouette.silhouette(FBX, box=80, cx=64, cy=32, **TOP)
+M_SHUT = lambda: mesh_silhouette.silhouette(FBX, box=58, cx=64, cy=32, take="rig|fold", **TOP)
+KEYS_Y = (78.0, 97.0, 116.0)
+
+
+def _key(y, hw, hh=5.5):
+    return fill([(64 - hw, y), (64 - hw + hh, y - hh), (64 + hw - hh, y - hh), (64 + hw, y),
+                 (64 + hw - hh, y + hh), (64 - hw + hh, y + hh)])
+
+
+def keys_core():
+    return _clear_of(sum_masks(_key(y, 12) for y in KEYS_Y), M_SPREAD(), px=2.5)
+
+
+def keys_wide():
+    # The width Mass adds: each key's two ends, cut clear of the core so the HUD can light them apart.
+    out = sum_masks(_key(y, 54 - 6 * i) for i, y in enumerate(KEYS_Y))
+    return _clear_of(out, keys_core(), M_SPREAD(), px=3.0)
+
+
+def sum_masks(masks):
+    out = empty()
+    for m in masks:
+        out |= m
+    return out
+
+
+# B: the wings are the mode - the spread moth over the wide keys, the shut moth over the bare keys in its dust.
+def b_spread():
+    return M_SPREAD()
+
+
+def b_shut():
+    return M_SHUT()
+
+
+def b_dust():
+    rng = np.random.default_rng(9)
+    out = empty()
+    for _ in range(14):
+        x, y = 64 + rng.uniform(-26, 26), 30 + rng.uniform(-24, 26)
+        out |= fill([(x, y - 3.2), (x + 3.2, y), (x, y + 3.2), (x - 3.2, y)])
+    return _clear_of(out, M_SHUT(), px=3.0)
+
+
+
+
+# C: the width - one wide key with arrows pushing its ends out (Mass widens the wake), the moth spread above it.
+def c_key():
+    return _key(84, 34, 7)
+
+
+def c_arrows():
+    out = empty()
+    for sgn in (-1, 1):
+        x0, x1 = 64 + sgn * 40, 64 + sgn * 58
+        out |= stroke([(x0, 84), (x1, 84)], w=4.5)
+        out |= fill([(x1 + sgn * 4, 84), (x1 - sgn * 5, 76), (x1 - sgn * 5, 92)])
+    return out
+
+
+def c_trail():
+    return sum_masks(_key(y, 10, 4.5) for y in (104, 120))
+
+
+MASS_BEFORE = ICON_DIR + "Butterfly_SpreadWings.png"
+MASS_GAUGE = {"Mass mode": (1.0, None), "Dust mode": (0.0, None), "Mass 5: Gilded Wake": (1.0, None)}
+CARDS += [
+    dict(name="mass_a", group="mass", element="Mass", before=MASS_BEFORE, before_gauge=True, gauge=MASS_GAUGE,
+         title="A  the wide wake: the moth from above, wings spread, laying wide piano keys; Dust mode drops their ends "
+               "and keeps the bare keys; Gilded Wake lays them shielded",
+         parts=dict(moth=M_SPREAD, core=keys_core, wide=keys_wide),
+         states=[("Mass mode", [("wide", "domain"), ("core", "domain"), ("moth", "domain")]),
+                 ("Dust mode", [("wide", "domain", 0.2), ("core", "domain"), ("moth", "domain")]),
+                 ("Mass 5: Gilded Wake", [("wide", "shielded"), ("core", "shielded"), ("moth", "domain")])],
+         lockup_state=0),
+    dict(name="mass_b", group="mass", element="Mass", before=MASS_BEFORE, before_gauge=True, gauge=MASS_GAUGE,
+         title="B  the wings are the mode: Mass mode the moth spread over wide keys; Dust mode the moth shut, the keys "
+               "bare and the dust round it (the two real poses, swapped by the HUD)",
+         parts=dict(spread=b_spread, shut=b_shut, dust=b_dust, core=keys_core, wide=keys_wide),
+         states=[("Mass mode", [("wide", "domain"), ("core", "domain"), ("spread", "domain")]),
+                 ("Dust mode", [("dust", "shielded"), ("core", "domain"), ("shut", "domain")]),
+                 ("Mass 5: Gilded Wake", [("wide", "shielded"), ("core", "shielded"), ("spread", "domain")])],
+         lockup_state=0),
+    dict(name="mass_c", group="mass", element="Mass", before=MASS_BEFORE, before_gauge=True, gauge=MASS_GAUGE,
+         title="C  the width: one wide key with its ends pushed out, the moth spread above; Dust mode the arrows go "
+               "and the key is bare",
+         parts=dict(moth=M_SPREAD, key=c_key, arrows=c_arrows, trail=c_trail),
+         states=[("Mass mode", [("arrows", "white"), ("key", "domain"), ("trail", "domain"), ("moth", "domain")]),
+                 ("Dust mode", [("trail", "domain"), ("key", "domain", 0.3), ("moth", "domain")]),
+                 ("Mass 5: Gilded Wake", [("arrows", "white"), ("key", "shielded"), ("trail", "shielded"),
+                                          ("moth", "domain")])],
+         lockup_state=0),
+]
+
+
 # ---- the OMNI crystal card: the bloom -----------------------------------------------------------------------------------
 # BUTTERFLY.md 3.3a (the Tiger Moth keeps it): flying through an omni crystal sets off a 900-unit BLOOM of the dust - a
 # sphere of motes in the pilot's shielded tier - that strips rivals' petals (ejected as crystals, a scored hit), cleanses
 # the pilot and every ally it reaches, kills rival lifeform hearts, and rolls the dust's own outcomes on every prism.
 # The card is VesselHUDView.omniAbilitySprite: ONE sprite, white (the lockup tints nothing on the omni card). Garrett,
 # 2026-10-31: "You are still forgetting to show the omnicrystal totem as part of this exercise."
-O_MOTH = moth(56, 64, 64)
+# Garrett picked A (2026-10-31): "omni A looks good but make the moth to scale in the explosion". At true scale the moth
+# (span 21.35) in a 900-unit bloom is 1.2% of its width, about 1.5 px on this canvas and nothing on a 40 px card, so it
+# is drawn as small as it still reads (box 24, about 8 px on the HUD) and the bloom fills the card to its rim.
+O_MOTH = moth(24, 64, 64)
 
 
 def annulus_motes(r0, r1, n, seed=11, s=4.2):
@@ -248,49 +354,29 @@ def annulus_motes(r0, r1, n, seed=11, s=4.2):
     return out
 
 
-# A: THE BLOOM. The moth at the heart of a sphere of its dust.
-def oa_dust():
-    return _clear_of(annulus_motes(34, 62, 34), O_MOTH(), px=3.0)
-
-
-# B: THE WAVEFRONT. The moth, the dust inside, and the bloom's edge as a ring going out.
-def ob_ring():
-    return ring(64, 64, 56, w=5.0)
-
-
-def ob_dust():
-    return _clear_of(annulus_motes(32, 48, 18, seed=5), O_MOTH(), px=3.0)
-
-
-# C: THE CRYSTAL INTO DUST. The omni crystal (the card's emblem shape, small, at the moth's nose) bursting into motes.
-def oc_crystal():
-    from canvas import ngon
-    return fill(ngon(5, 11, 104, 64, rot=-90)) & ~fill(ngon(5, 5, 104, 64, rot=90))
-
-
-def oc_dust():
-    rng = np.random.default_rng(3)
+def bloom_dust():
+    # The motes on a golden-angle spiral, so the sphere reads evenly filled with no clumps hiding the moth.
     out = empty()
-    for _ in range(22):
-        a = rng.uniform(0, 2 * math.pi)
-        r = rng.uniform(18, 50)
-        x, y = 100 + r * math.cos(a) * 0.6, 64 + r * math.sin(a)
-        out |= fill([(x, y - 4), (x + 4, y), (x, y + 4), (x - 4, y)])
-    return _clear_of(out & rect(0, 0, 128, 128), O_MOTH(), oc_crystal(), px=3.0)
+    n, r0, r1, s = 34, 22.0, 54.0, 5.0
+    for i in range(n):
+        r = math.sqrt(r0 * r0 + (r1 * r1 - r0 * r0) * (i + 0.5) / n)
+        a = i * math.pi * (3 - math.sqrt(5))
+        x, y = 64 + r * math.cos(a), 64 + r * math.sin(a)
+        out |= fill([(x, y - s), (x + s, y), (x, y + s), (x - s, y)])
+    return _clear_of(out, O_MOTH(), px=3.0)
 
 
-O_MOTH_LEFT = moth(56, 40, 64)
-OMNI_BEFORE = None
+def bloom():
+    return O_MOTH() | bloom_dust()
+
+
+ICONS += [dict(name="TigerMoth_Bloom", element="Omni", subdir="Core", family=False, draw=bloom,
+               act="The OMNI crystal card: the bloom, a 900-unit sphere of the dust round the moth (one white sprite)",
+               exempt={"components": "the bloom's motes", "gap": "the air between motes", "specks": "the motes"})]
 CARDS += [
-    dict(name="omni_a", group="omni", element="Omni",
-         title="A  the bloom: the moth at the heart of a sphere of its dust (one white sprite, as every omni card)",
-         parts=dict(moth=O_MOTH, dust=oa_dust), states=[("a crystal collected", [("dust", "white"), ("moth", "white")])]),
-    dict(name="omni_b", group="omni", element="Omni",
-         title="B  the wavefront: the moth, its dust, and the bloom's edge going out as a ring",
-         parts=dict(moth=O_MOTH, dust=ob_dust, ring=ob_ring),
-         states=[("a crystal collected", [("ring", "white"), ("dust", "white"), ("moth", "white")])]),
-    dict(name="omni_c", group="omni", element="Omni",
-         title="C  the crystal into dust: the moth meets an omni crystal and the crystal bursts into its dust",
-         parts=dict(moth=O_MOTH_LEFT, crystal=oc_crystal, dust=oc_dust),
-         states=[("a crystal collected", [("crystal", "white"), ("dust", "white"), ("moth", "white")])]),
+    dict(name="omni", element="Omni",
+         title="The OMNI crystal card (picked A): the bloom, the moth small at the heart of a sphere of its dust",
+         parts=dict(moth=O_MOTH, dust=bloom_dust), states=[("a crystal collected", [("dust", "white"), ("moth", "white")])]),
 ]
+LOCKUP["Omni"] = dict(parts=dict(i=bloom), state=[("i", "white")])
+REBIND[-1]["pair"]["fields"] = {"omniAbilitySprite": ("icon", "TigerMoth_Bloom")}

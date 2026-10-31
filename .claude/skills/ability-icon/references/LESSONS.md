@@ -467,3 +467,9 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     of this exercise." Every vessel has the card left of Charge (`VesselHUDView.omniAbilitySprite`, locked when empty);
     the kit's sheets now draw it (`states.ORDER`, `card.flower("Omni")`), and a hull's round is not done until its omni
     card has been asked about.
+
+69. **"To scale" has a floor: the smallest size that still reads.** "Make the moth to scale in the explosion": the
+    Tiger Moth (span 21.35) in its 900-unit bloom is 1.2% of the sphere, about 1.5 px on the 128 canvas and nothing on a
+    40 px card. Draw the small thing as small as it still reads (box ~24, about 8 px on the HUD), let the big thing fill
+    the card to its rim, and say the true ratio in the spec. Scatter many small marks on a golden-angle spiral, not a
+    seeded random: random clumps, and a clump hides the small thing at the centre.

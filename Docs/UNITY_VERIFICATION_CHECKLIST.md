@@ -80,6 +80,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   over a rival: the card's rival turns red for about 0.6 s on each bite.
 - [ ] Reach Charge 5 (Toll Gate): both cards show the wormhole ring in your colour; a rival flying through your
   wormhole turns both rings red for a beat.
+- [ ] The omni crystal card (left of Charge) shows the bloom: a small moth inside a ring of dust motes, white; it is no
+  longer locked.
 
 ### 🔴 Angler Time card: Dash to the School drawn as the jump (`claude/angler-dash-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
 
