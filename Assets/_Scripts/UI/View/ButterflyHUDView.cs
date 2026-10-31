@@ -54,6 +54,17 @@ namespace CosmicShore.UI
         [Tooltip("Gauge colour as it reaches Dust mode.")]
         [SerializeField] Color dustModeColor = new(1f, 0.82f, 0.45f, 1f);
 
+        [Header("Mass card: Mass / Dust mode (icon_kit specs/tigermoth.py, Garrett picked A 2026-10-31)")]
+        [Tooltip("The width Mass mode adds, each piano key's two ends (TigerMoth_MassKeyEnds): the domain colour, " +
+                 "shielded under Gilded Wake; fades to dustKeyEndsAlpha as the wake narrows into Dust mode.")]
+        [SerializeField] Image massKeyEndsIcon;
+        [Tooltip("The bare keys every mode lays (TigerMoth_MassKeys): the domain colour, shielded under Gilded Wake.")]
+        [SerializeField] Image massKeysIcon;
+        [Tooltip("The Tiger Moth from above, wings spread (TigerMoth_MassMoth), the domain colour.")]
+        [SerializeField] Image massMothIcon;
+        [Tooltip("Alpha of the key ends in Dust mode (the narrow wake).")]
+        [SerializeField, Range(0f, 1f)] float dustKeyEndsAlpha = 0.2f;
+
         [Header("Charge card: Scale Dust (icon_kit specs/tigermoth.py, Garrett picked A 2026-10-31)")]
         [Tooltip("Charge 5 Toll Gate: the wormhole ring (TigerMoth_ScaleDustRing), the domain colour; danger as a " +
                  "rival pays the toll. Hidden before the upgrade.")]
@@ -104,6 +115,27 @@ namespace CosmicShore.UI
 
         int _dropShown = -1, _dustShown = -1;
         Color _domain = Color.white, _shielded = Color.white;
+
+        /// <summary>
+        /// Push the mode, 1 = Mass mode, 0 = Dust mode, anything between = switching
+        /// (<c>SpreadWingsActionExecutor.MassMode01</c>, eased). The plate fills with it; the card's key ends fade with
+        /// it to the bare keys. <paramref name="gildedWake"/> is Mass 5 (the replicated unlock bit): the keys turn the
+        /// shielded colour as the wake widens, which is when Mass mode lays shielded prisms.
+        /// </summary>
+        public void SetMassMode(float massMode01, bool gildedWake = false)
+        {
+            float value = Mathf.Clamp01(massMode01);
+            if (wingEnergyGauge)
+            {
+                wingEnergyGauge.fillAmount = value;
+                wingEnergyGauge.color = Color.Lerp(dustModeColor, massModeColor, value);
+            }
+
+            var keys = gildedWake ? Color.Lerp(_domain, _shielded, value) : _domain;
+            if (massKeyEndsIcon) massKeyEndsIcon.color = A(keys, Mathf.Lerp(dustKeyEndsAlpha, 1f, value));
+            if (massKeysIcon) massKeysIcon.color = A(keys, 1f);
+            if (massMothIcon) massMothIcon.color = A(_domain, 1f);
+        }
 
         /// <summary>The pilot's domain and shielded colours (alpha 0 = not resolved yet, keep the last).</summary>
         public void SetPilotColors(Color domain, Color shielded)

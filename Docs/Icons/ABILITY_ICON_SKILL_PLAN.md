@@ -338,8 +338,11 @@ look different then space"): the moth over its dust (shielded), the rival grey, 
 still forgetting to show the omnicrystal totem"). The **omni crystal card, the bloom**: A of A/B/C, "but make the moth
 to scale in the explosion": the moth small at the heart of a sphere of dust motes on a golden-angle spiral
 (`Core/TigerMoth_Bloom`, set as the view's `omniAbilitySprite`). True scale (span 21.35 in a 900-unit bloom) is about
-1.5 px, so the moth is drawn at the smallest size that still reads (box 24). The **Mass card** (Mass / Dust mode, seen
-from above so the wake's width shows) is out as options. Next: the Mass pick, then Space.
+1.5 px, so the moth is drawn at the smallest size that still reads (box 24). The **Mass card, Mass / Dust mode**: A of A/B/C ("the wide
+wake"; Garrett first said C, then "actually. i like mass a"): seen from above so the wake's width shows, the moth with
+its wings spread over three piano keys; the keys' ends fade with the eased mode to the bare keys in Dust mode, and Gilded
+Wake (Mass 5) turns the keys shielded (`ButterflyHUDView.SetMassMode(mode, gildedWake)`); the plate keeps its mode fill.
+Next: Space (Dust Reach).
 
 | Round | What | Why first |
 |---|---|---|

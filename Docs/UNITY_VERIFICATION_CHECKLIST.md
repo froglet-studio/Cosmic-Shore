@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Tiger Moth Time and Charge cards: the Drop and Scale Dust (`claude/tigermoth-drop-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
+### 🔴 Tiger Moth Time, Charge, Mass and omni cards: the Drop, Scale Dust, the wide wake and the bloom (`claude/tigermoth-drop-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 **What landed:** kit parts under the Time icon (`TigerMoth_Drop*`) and the Charge icon (`TigerMoth_ScaleDust*`) in
 `ButterflyHUDVariant.prefab`; `ButterflyHUDView.SetDrop` / `SetScaleDust` / `SetPilotColors`, driven by
@@ -73,13 +73,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 `SpreadWingsActionExecutor` (`IsDustMode`, new `DustField`), `ButterflyDustField.LastBiteTime` (new) and
 `WormholeMouth.LastTollTime` (new). No Unity and no .NET: not compiled.
 
-- [ ] Compiles; the variant opens with the view's four `scaleDust*Icon` and three `drop*Icon` fields wired.
+- [ ] Compiles; the variant opens with the view's four `scaleDust*Icon`, three `drop*Icon` and three `mass*Icon` fields
+  wired, and `omniAbilitySprite` set to `TigerMoth_Bloom`.
 - [ ] Time: the moth in your colour, streaks dim; hold LT: streaks full; while the veil sweeps every part dims. No
   wormhole before Charge 5.
 - [ ] Charge: Mass mode dims the card; Dust mode shows the dust in your shielded colour and a grey rival; fly the dust
   over a rival: the card's rival turns red for about 0.6 s on each bite.
 - [ ] Reach Charge 5 (Toll Gate): both cards show the wormhole ring in your colour; a rival flying through your
   wormhole turns both rings red for a beat.
+- [ ] Mass: the moth from above over three wide keys, plate full; RT into Dust mode: the plate empties and the keys'
+  ends fade to the bare keys; back to Mass mode they return. At Mass 5 (Gilded Wake) the keys turn your shielded colour
+  in Mass mode.
 - [ ] The omni crystal card (left of Charge) shows the bloom: a small moth inside a ring of dust motes, white; it is no
   longer locked.
 

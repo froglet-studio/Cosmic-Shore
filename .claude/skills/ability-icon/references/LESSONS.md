@@ -473,3 +473,8 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     40 px card. Draw the small thing as small as it still reads (box ~24, about 8 px on the HUD), let the big thing fill
     the card to its rim, and say the true ratio in the spec. Scatter many small marks on a golden-angle spiral, not a
     seeded random: random clumps, and a clump hides the small thing at the centre.
+
+70. **Re-read the whole view file after rewriting a section of it.** Wiring the Tiger Moth's Time card replaced a block
+    of `ButterflyHUDView` and took `SetMassMode` with it, while the controller and `Initialize` still called it: a
+    compile error nobody here could see. With no compiler in the session, grep every method the controller calls on
+    the view (`grep -o 'view\.[A-Za-z]*(' Controller.cs`) against the view after each edit.

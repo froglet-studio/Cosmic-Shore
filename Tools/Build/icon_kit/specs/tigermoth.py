@@ -262,72 +262,35 @@ def sum_masks(masks):
     return out
 
 
-# B: the wings are the mode - the spread moth over the wide keys, the shut moth over the bare keys in its dust.
-def b_spread():
-    return M_SPREAD()
-
-
-def b_shut():
-    return M_SHUT()
-
-
-def b_dust():
-    rng = np.random.default_rng(9)
-    out = empty()
-    for _ in range(14):
-        x, y = 64 + rng.uniform(-26, 26), 30 + rng.uniform(-24, 26)
-        out |= fill([(x, y - 3.2), (x + 3.2, y), (x, y + 3.2), (x - 3.2, y)])
-    return _clear_of(out, M_SHUT(), px=3.0)
-
-
-
-
-# C: the width - one wide key with arrows pushing its ends out (Mass widens the wake), the moth spread above it.
-def c_key():
-    return _key(84, 34, 7)
-
-
-def c_arrows():
-    out = empty()
-    for sgn in (-1, 1):
-        x0, x1 = 64 + sgn * 40, 64 + sgn * 58
-        out |= stroke([(x0, 84), (x1, 84)], w=4.5)
-        out |= fill([(x1 + sgn * 4, 84), (x1 - sgn * 5, 76), (x1 - sgn * 5, 92)])
-    return out
-
-
-def c_trail():
-    return sum_masks(_key(y, 10, 4.5) for y in (104, 120))
-
-
-MASS_BEFORE = ICON_DIR + "Butterfly_SpreadWings.png"
-MASS_GAUGE = {"Mass mode": (1.0, None), "Dust mode": (0.0, None), "Mass 5: Gilded Wake": (1.0, None)}
+# Garrett picked A (2026-10-31, "actually. i like mass a"). The plate keeps its mode fill (wingEnergyGauge); the HUD
+# fades the key ends with the eased mode (ButterflyHUDView.SetMassMode) and turns the keys shielded under Gilded Wake.
+MASS_PARTS = [("MassKeyEnds", "TigerMoth_MassKeyEnds", "massKeyEndsIcon", keys_wide,
+               "the width Mass mode adds, each key's two ends (domain; shielded under Gilded Wake; faded in Dust mode)"),
+              ("MassKeys", "TigerMoth_MassKeys", "massKeysIcon", keys_core,
+               "the bare keys every mode lays (domain; shielded under Gilded Wake)"),
+              ("MassMoth", "TigerMoth_MassMoth", "massMothIcon", M_SPREAD, "the Tiger Moth from above, wings spread (domain)")]
+ICONS += [dict(name=i, element="Mass", act="Mass / Dust mode: " + act, draw=draw, subdir="Parts", family=False,
+               exempt={"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+                       "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part",
+                       "specks": "a part"})
+          for _n, i, _f, draw, act in MASS_PARTS]
+MASS_ON = [("wide", "domain"), ("core", "domain"), ("moth", "domain")]
 CARDS += [
-    dict(name="mass_a", group="mass", element="Mass", before=MASS_BEFORE, before_gauge=True, gauge=MASS_GAUGE,
-         title="A  the wide wake: the moth from above, wings spread, laying wide piano keys; Dust mode drops their ends "
-               "and keeps the bare keys; Gilded Wake lays them shielded",
+    dict(name="mass", element="Mass", before=ICON_DIR + "Butterfly_SpreadWings.png", before_gauge=True,
+         gauge={"Mass mode": (1.0, None), "Dust mode": (0.0, None), "Mass 5: Gilded Wake": (1.0, None)},
+         title="Mass / Dust mode (Mass, picked A): the moth from above, wings spread, laying wide piano keys; Dust mode "
+               "fades their ends to the bare keys; Gilded Wake lays them shielded",
          parts=dict(moth=M_SPREAD, core=keys_core, wide=keys_wide),
-         states=[("Mass mode", [("wide", "domain"), ("core", "domain"), ("moth", "domain")]),
+         states=[("Mass mode", MASS_ON),
                  ("Dust mode", [("wide", "domain", 0.2), ("core", "domain"), ("moth", "domain")]),
                  ("Mass 5: Gilded Wake", [("wide", "shielded"), ("core", "shielded"), ("moth", "domain")])],
          lockup_state=0),
-    dict(name="mass_b", group="mass", element="Mass", before=MASS_BEFORE, before_gauge=True, gauge=MASS_GAUGE,
-         title="B  the wings are the mode: Mass mode the moth spread over wide keys; Dust mode the moth shut, the keys "
-               "bare and the dust round it (the two real poses, swapped by the HUD)",
-         parts=dict(spread=b_spread, shut=b_shut, dust=b_dust, core=keys_core, wide=keys_wide),
-         states=[("Mass mode", [("wide", "domain"), ("core", "domain"), ("spread", "domain")]),
-                 ("Dust mode", [("dust", "shielded"), ("core", "domain"), ("shut", "domain")]),
-                 ("Mass 5: Gilded Wake", [("wide", "shielded"), ("core", "shielded"), ("spread", "domain")])],
-         lockup_state=0),
-    dict(name="mass_c", group="mass", element="Mass", before=MASS_BEFORE, before_gauge=True, gauge=MASS_GAUGE,
-         title="C  the width: one wide key with its ends pushed out, the moth spread above; Dust mode the arrows go "
-               "and the key is bare",
-         parts=dict(moth=M_SPREAD, key=c_key, arrows=c_arrows, trail=c_trail),
-         states=[("Mass mode", [("arrows", "white"), ("key", "domain"), ("trail", "domain"), ("moth", "domain")]),
-                 ("Dust mode", [("trail", "domain"), ("key", "domain", 0.3), ("moth", "domain")]),
-                 ("Mass 5: Gilded Wake", [("arrows", "white"), ("key", "shielded"), ("trail", "shielded"),
-                                          ("moth", "domain")])],
-         lockup_state=0),
+]
+LOCKUP["Mass"] = dict(parts=dict(wide=keys_wide, core=keys_core, moth=M_SPREAD), state=MASS_ON, gauge=1.0)
+MASS_ICON = "7700000000000001115"       # the Mass slot's icon Image (was Butterfly_SpreadWings)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=MASS_ICON, view=VIEW, after="wingEnergyGauge",
+                                 children=[(n, i, f) for n, i, f, _d, _a in MASS_PARTS])),
 ]
 
 
@@ -379,4 +342,4 @@ CARDS += [
          parts=dict(moth=O_MOTH, dust=bloom_dust), states=[("a crystal collected", [("dust", "white"), ("moth", "white")])]),
 ]
 LOCKUP["Omni"] = dict(parts=dict(i=bloom), state=[("i", "white")])
-REBIND[-1]["pair"]["fields"] = {"omniAbilitySprite": ("icon", "TigerMoth_Bloom")}
+next(r for r in REBIND if r["pair"]["container"] == CHARGE_ICON)["pair"]["fields"] = {"omniAbilitySprite": ("icon", "TigerMoth_Bloom")}

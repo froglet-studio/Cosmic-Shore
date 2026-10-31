@@ -63,7 +63,13 @@ namespace CosmicShore.UI
         {
             if (!_isLocalPilotHud) return;
 
-            if (view && spreadExecutor) view.SetMassMode(spreadExecutor.MassMode01);
+            if (view) view.SetPilotColors(ResolveDomainSignalColor(), ResolveShieldedColor());
+
+            if (view && spreadExecutor)
+            {
+                var abilities = _status?.ElementalAbilityHandler;
+                view.SetMassMode(spreadExecutor.MassMode01, abilities != null && abilities.IsUpgradeActive(Element.Mass));
+            }
 
             // The fleet's clockwise depleting veil on the Time plate. A LOCKED card still draws
             // it — the veil sizes itself on the ability PLATE, not the icon — which is what lets
@@ -75,7 +81,6 @@ namespace CosmicShore.UI
 
             if (view)
             {
-                view.SetPilotColors(ResolveDomainSignalColor(), ResolveShieldedColor());
                 bool tollGate = TigerMothDropActionSO.TollsRivals(_status);
                 float flash = view.HitFlashSeconds;
                 bool tolled = dropExecutor && Time.time - dropExecutor.LastTollTime < flash;
