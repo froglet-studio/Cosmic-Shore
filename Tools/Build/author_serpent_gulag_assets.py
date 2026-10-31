@@ -105,16 +105,23 @@ FIELD_COUNT = 24
 RIFLE_RANGE = 3000
 
 RUNGS = [
-    # intensity, label, blurb, seed, nests, nest ring, nest spread, screens, screen ring, screen spread, danger
+    # Shombith, 2026-10-31 (second pass): "Make the intensity environment harder and more populated". I1 keeps NO
+    # environment (his I1 spec); I2-I4 gained more nests, a second (outer) ring of nests, more cell blocks, danger, and
+    # RUBBLE - loose clusters that hide pilots and feed a stopped Serpent's wall.
     dict(i=1, label="Open Ground", blurb="no environment - open space, far spawns and the crystal field alone",
          prefab=None),
-    dict(i=2, label="Watchtowers", blurb="six sniper nests on a ring around the field, each with a firing slit "
-         "facing the middle and an entry at its back", seed=7702, nests=6, nestRing=1200, nestSpread=300,
-         screens=0, screenRing=700, screenSpread=200, danger=0),
-    dict(i=3, label="Cell Blocks", blurb="eight nests, and eight barred screens across the sight lines to the field",
-         seed=7703, nests=8, nestRing=1300, nestSpread=350, screens=8, screenRing=700, screenSpread=200, danger=0),
-    dict(i=4, label="The Gulag", blurb="ten nests, twelve barred screens, danger plates on the nest frames and the bars",
-         seed=7704, nests=10, nestRing=1400, nestSpread=450, screens=12, screenRing=750, screenSpread=220, danger=6),
+    dict(i=2, label="Watchtowers", blurb="eight sniper nests on a ring round the field (a firing slit facing the "
+         "middle, an entry at the back) and forty rubble clusters through the shell",
+         seed=7702, nests=8, nestRing=1150, nestSpread=300, outerNests=0, outerRing=1650, outerSpread=400,
+         screens=0, screenRing=850, screenSpread=200, rubble=40, rubbleSpread=500, danger=0, rubbleDanger=0),
+    dict(i=3, label="Cell Blocks", blurb="ten inner and six outer nests, twelve barred screens across the sight lines "
+         "to the field, eighty rubble clusters, danger plates on the nest frames and the bars",
+         seed=7703, nests=10, nestRing=1150, nestSpread=350, outerNests=6, outerRing=1650, outerSpread=400,
+         screens=12, screenRing=850, screenSpread=220, rubble=80, rubbleSpread=550, danger=8, rubbleDanger=0),
+    dict(i=4, label="The Gulag", blurb="twelve inner and ten outer nests, sixteen barred screens, a hundred and "
+         "forty rubble clusters, danger on every fourth frame plate and bar and every fifth rubble cube",
+         seed=7704, nests=12, nestRing=1150, nestSpread=400, outerNests=10, outerRing=1700, outerSpread=450,
+         screens=16, screenRing=900, screenSpread=240, rubble=140, rubbleSpread=600, danger=4, rubbleDanger=5),
 ]
 for r in RUNGS:
     if r["i"] > 1:
@@ -126,6 +133,8 @@ SLIT = (31.0, 9.0)
 ENTRY = (16.0, 16.0)
 SCREEN_W, SCREEN_H, BAR_STEP, BAR, BAR_SEG, RAIL_LEN, RAIL_CLEAR = 208.0, 120.0, 16.0, 3.0, 24.0, 16.0, 0.5
 FLUSH = 0.995
+RUBBLE_CUBE = 9.0
+RUBBLE_RADII = (520, 1900)
 
 
 def nest_plates():
@@ -165,7 +174,8 @@ def screen_prisms():
 def rung_census(r):
     if r["prefab"] is None:
         return 0, 0.0
-    prisms = nest_plates() * r["nests"] + screen_prisms() * r["screens"]
+    prisms = (nest_plates() * (r["nests"] + r["outerNests"]) + screen_prisms() * r["screens"]
+              + [(RUBBLE_CUBE * FLUSH,) * 3] * (8 * r["rubble"]))
     return len(prisms), sum(a * b * c for a, b, c in prisms)
 
 
@@ -205,14 +215,21 @@ g.emit_asset("Assets/_SO_Assets/Scoring Rules/SerpentGulagScoringRule.asset", G_
   defeatLabel: SNIPES LEFT
 """)
 
-# ── 3. Mode settings (the ladders: index = intensity - 1) ────────────────────
+# ── 3. Mode settings (the ladders: index = AI difficulty - 1; Easy, Medium, Hard, Legendary) ──
+# Difficulty is the OPPONENT, intensity the MAP (AIDifficulty.cs): the marksman reads each seat's own level.
 LADDERS = {
-    # name: (values, "up" = harder means larger, "down" = harder means smaller)
+    # name: (values, "up" = harder means larger, "down" = harder means smaller, "style" = the patient sniper rises
+    # Easy -> Hard and Legendary (aggressive, Shombith 2026-10-31) drops below Easy)
     "aiRetargetSeconds":          ([1.2, 0.9, 0.6, 0.4], "down"),
     "aiAimErrorDegrees":          ([3.0, 2.0, 1.2, 0.5], "down"),
     "aiScopeSettleSeconds":       ([1.0, 0.6, 0.3, 0.15], "down"),
     "aiHuntRange":                ([1500, 2000, 2500, 3000], "up"),
     "aiForageMinCooldownSeconds": ([999, 7, 5, 3.5], "down"),
+    # The sniper's discipline (Shombith, 2026-10-31: "keep distance as a sniper ... build its defenses ... not rush").
+    # Legendary "can play aggressively": it pushes to 900 u, breaks off only inside 350 u, and digs in for 5 s.
+    "aiPreferredRange":           ([1400, 1700, 2000, 900], "style"),
+    "aiKeepAwayDistance":         ([700, 900, 1100, 350], "style"),
+    "aiHoldSeconds":              ([8, 12, 16, 5], "style"),
     "aiCloakAfterShotChance":     ([0, 0.25, 0.5, 0.75], "up"),
 }
 
@@ -228,8 +245,10 @@ g.emit_asset("Assets/_SO_Assets/Games/SerpentGulagSettings.asset", G_ASSET["Serp
   fieldRadius: {lib.num(FIELD_RADIUS)}
   fieldRegrowSeconds: 8
   fieldSeed: 77
-""" + "".join(ladder_yaml(n) for n in LADDERS) + """  aiMinAimDistance: 250
-  aiStandoffDistance: 650
+""" + "".join(ladder_yaml(n) for n in LADDERS) + """  aiPostArrivalRadius: 70
+  aiBehindNestDistance: 75
+  aiRangeBand: 350
+  aiStanceRetrySeconds: 1
   aiScopeOpenAngle: 15
   aiShotGiveUpSeconds: 3
   aiLeadSeconds: 0.25
@@ -241,7 +260,8 @@ g.emit_asset("Assets/_SO_Assets/Games/SerpentGulagSettings.asset", G_ASSET["Serp
 DESCRIPTION = ("Serpents only - a sniper duel at range. You spawn far apart in a huge cell with a field of "
                "elemental crystals floating in the middle. Charge reloads your rifle faster, so the field is where "
                "you load up, in everyone's sights. Hold LT to scope and RT to fire - a round that strips a rival pilot "
-               "is one snipe. Higher intensities add sniper nests and barred cell blocks. First team to the target wins.")
+               "is one snipe. Higher intensities add sniper nests, barred cell blocks and rubble to hide in and build your "
+               "walls from. First team to the target wins.")
 g.emit_asset(CARD_REL, G_ASSET["ArcadeGameSerpentGulag"],
              lib.header_for(EXISTING["SO_ArcadeGame"], "ArcadeGameSerpentGulag") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
@@ -342,10 +362,18 @@ MonoBehaviour:
   nestCount: {r['nests']}
   nestRingRadius: {r['nestRing']}
   nestHeightSpread: {r['nestSpread']}
+  outerNestCount: {r['outerNests']}
+  outerNestRingRadius: {r['outerRing']}
+  outerNestHeightSpread: {r['outerSpread']}
   screenCount: {r['screens']}
   screenRingRadius: {r['screenRing']}
   screenHeightSpread: {r['screenSpread']}
+  rubbleCount: {r['rubble']}
+  rubbleInnerRadius: {RUBBLE_RADII[0]}
+  rubbleOuterRadius: {RUBBLE_RADII[1]}
+  rubbleHeightSpread: {r['rubbleSpread']}
   dangerEveryNth: {r['danger']}
+  rubbleDangerEveryNth: {r['rubbleDanger']}
 """)
 
 for r in RUNGS:
@@ -504,17 +532,21 @@ for name, (values, harder) in LADDERS.items():
     pairs = list(zip(values, values[1:]))
     if harder == "up" and any(b < a for a, b in pairs) or harder == "down" and any(b > a for a, b in pairs):
         errors.append(f"{name}: not monotone toward harder ({values})")
+    if harder == "style" and (any(b < a for a, b in pairs[:2]) or not values[3] < values[0]):
+        errors.append(f"{name}: the patient sniper must rise Easy -> Hard and Legendary (aggressive) sit below Easy ({values})")
     init = "{ " + ", ".join(lib.num(float(v)) + ("f" if True else "") for v in values) + " }"
     if f"{name} = {init};" not in settings_cs:
         errors.append(f"{name}: the C# initializer does not match {init}")
 aim = LADDERS["aiAimErrorDegrees"][0]
 if not (aim[3] < 1.5 < aim[0]):
-    errors.append("aim error ladder must put I4 inside the 1.5 deg cone and I1 outside it")
+    errors.append("aim error ladder must put Legendary inside the 1.5 deg cone and Easy outside it")
 
 # The geometry the duel promises.
 if not (FIELD_RADIUS < min(r["screenRing"] - SCREEN_W / 2 for r in RUNGS if r["prefab"])):
     errors.append("a cell block stands inside the crystal field")
-outer = max(math.hypot(r["nestRing"] + NEST_D, r["nestSpread"] + NEST_H) for r in RUNGS if r["prefab"])
+outer = max(max(math.hypot(r["nestRing"] + NEST_D, r["nestSpread"] + NEST_H),
+                math.hypot(r["outerRing"] + NEST_D, r["outerSpread"] + NEST_H) if r["outerNests"] else 0)
+            for r in RUNGS if r["prefab"])
 if not (outer < SPAWN_RING - 300):
     errors.append(f"a nest stands within 300 u of the spawn ring ({outer:.0f} vs {SPAWN_RING})")
 if not (SPAWN_RING + 600 < MEMBRANE_RADIUS):
@@ -527,6 +559,14 @@ for r in RUNGS:
         chord = 2 * r["nestRing"] * math.sin(math.pi / r["nests"])
         if chord < 3 * NEST_W:
             errors.append(f"I{r['i']}: nests crowd each other ({chord:.0f} u apart)")
+    if r["prefab"] and r["outerNests"] > 1:
+        chord = 2 * r["outerRing"] * math.sin(math.pi / r["outerNests"])
+        if chord < 3 * NEST_W:
+            errors.append(f"I{r['i']}: outer nests crowd each other ({chord:.0f} u apart)")
+        if r["outerRing"] - r["nestRing"] < 2 * NEST_D:
+            errors.append(f"I{r['i']}: the outer nest ring sits on the inner one")
+    if r["prefab"] and r["screens"] and r["nestRing"] - r["screenRing"] < 200:
+        errors.append(f"I{r['i']}: cell blocks stand within 200 u of the inner nests")
     if r["prefab"] and r["screens"] > 1:
         chord = 2 * r["screenRing"] * math.sin(math.pi / r["screens"])
         if chord < SCREEN_W * 1.3:
@@ -534,12 +574,28 @@ for r in RUNGS:
 counts = [r["count"] for r in RUNGS]
 if counts[0] != 0 or counts != sorted(counts):
     errors.append(f"the prism ladder must start at 0 (I1 has no environment) and rise ({counts})")
-if counts[-1] > 6000:
-    errors.append(f"I4 lays {counts[-1]} prisms - keep the duel arena light")
+if counts[-1] > 8000:
+    errors.append(f"I4 lays {counts[-1]} prisms - keep the duel arena light (Cleave's lightest rung lays ~11,000)")
+if not (FIELD_RADIUS + 100 < RUBBLE_RADII[0] and RUBBLE_RADII[1] + 200 < SPAWN_RING):
+    errors.append("rubble must lie between the crystal field and the spawn ring, clear of both")
+
+# The sniper's discipline: a post inside the rifle's reach and the hunt range, and a keep-away that leaves room for
+# the band the AI digs in within.
+pref, keep, hunt = (LADDERS[k][0] for k in ("aiPreferredRange", "aiKeepAwayDistance", "aiHuntRange"))
+LEVELS = ("Easy", "Medium", "Hard", "Legendary")
+for i in range(4):
+    if not (pref[i] <= hunt[i] and pref[i] <= RIFLE_RANGE):
+        errors.append(f"{LEVELS[i]}: preferred range {pref[i]} is past the hunt range or the rifle's reach")
+    if not (keep[i] + 350 <= pref[i]):
+        errors.append(f"{LEVELS[i]}: keep-away {keep[i]} leaves no band below the preferred range {pref[i]}")
+# The marksman reads the seat's difficulty, never the intensity (AIDifficulty.cs).
+marksman = g.read(SCRIPT_PATHS["SerpentGulagMarksman"])
+if "SelectedIntensity" in marksman or "AIDifficultyFor(" not in marksman:
+    errors.append("SerpentGulagMarksman must key its ladders on gameData.AIDifficultyFor(seat), not the intensity")
 
 # The C# twin of this census stays the C#: its constants must still be the ones counted here.
 spawnable = g.read(SCRIPT_PATHS["SpawnableSerpentGulag"])
-for needle in ("NestWidth = 90f, NestHeight = 60f, NestDepth = 90f", "Plate = 3f, Tile = 15f",
+for needle in ("NestWidth = 90f, NestHeight = 60f, NestDepth = 90f", "RubbleCube = 9f;", "Plate = 3f, Tile = 15f",
                "SlitHalfWidth = 31f, SlitHalfHeight = 9f", "EntryHalfWidth = 16f, EntryHalfHeight = 16f",
                "ScreenWidth = 208f, ScreenHeight = 120f",
                "BarStep = 16f, BarSection = 3f, BarSegment = 24f, RailLength = 16f",

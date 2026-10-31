@@ -119,6 +119,25 @@ namespace CosmicShore.UI
             if (view == null) view = multiplayerView;
         }
 
+        const float LayoutPollSeconds = 0.5f;
+        float _nextLayoutPoll;
+
+        /// <summary>
+        /// Re-check the domain layout twice a second while the bar is up. It was rebuilt only on a stat
+        /// change or a player added, so a pilot whose domain replicated after the turn started had no
+        /// column until somebody scored - in a mode where nobody scores for a while (a sniper duel)
+        /// the opponents' column never appeared. <see cref="ComputeLayoutSignature"/> is
+        /// allocation-free, so the poll costs a loop over the roster.
+        /// </summary>
+        protected override void Update()
+        {
+            base.Update();
+            if (!_useDomainView || !_domainPanelsBuilt || gameData == null) return;
+            if (Time.unscaledTime < _nextLayoutPoll) return;
+            _nextLayoutPoll = Time.unscaledTime + LayoutPollSeconds;
+            if (DomainLayoutChanged()) RebuildDomainPanels();
+        }
+
         protected override void OnMiniGameTurnStarted()
         {
             localRoundStats = gameData.LocalRoundStats;
@@ -219,18 +238,18 @@ namespace CosmicShore.UI
             _domainPanels.Clear();
 
             var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
-            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
-
             // Local player's own domain panel goes in the LEFT (ally) container -
             // always rendered when the local player has an active domain, even if
             // they happen to be the only member of it.
             if (localDomain != Domains.Blue)
                 CreateDomainPanel(localDomain, multiplayerView.AllyDomainContainer);
 
-            // Opposing-domain panels (1 or 2 depending on RequestedDomainCount) go
-            // in the RIGHT container. Only domains that actually have players are
-            // rendered, so 1v1 setups don't show empty panels.
-            for (int i = 0; i < dc; i++)
+            // Opposing-domain panels go in the RIGHT container: EVERY active domain that has a
+            // pilot, so 1v1 setups show no empty panels. Not limited to the first
+            // RequestedDomainCount domains - that is the host's preference, and an AI team on a
+            // domain past it scored with no column on the bar ("I dont see the opponent AIs score",
+            // 2026-10-31). HasPlayersInDomain already keeps empty domains off it.
+            for (int i = 0; i < GameDataSO.ActiveDomains.Length; i++)
             {
                 var d = GameDataSO.ActiveDomains[i];
                 if (d == localDomain) continue;

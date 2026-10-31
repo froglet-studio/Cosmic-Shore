@@ -8,9 +8,13 @@ namespace CosmicShore.Gameplay
     /// at all: open space, four pilots far apart, and the crystal field in the middle). See
     /// <c>Assets/_Scripts/Controller/Arcade/SERPENTGULAG.md</c>.
     ///
-    /// Two families, both painted neutral (<see cref="Domains.Blue"/>, as the Boneyard's crust is), so
-    /// every team's rifle cuts them alike:
+    /// Three families, all painted neutral (<see cref="Domains.Blue"/>, as the Boneyard's crust is), so
+    /// every team's rifle cuts them alike (the rubble is the third, below; since 2026-10-31 the nests stand on two
+    /// rings, the outer one half a step round):
     ///
+    ///   • <b>Rubble</b> - clusters of eight flush cubes scattered through the shell between the field and the spawn
+    ///     ring: somewhere to hide, and the loose mass a stopped Serpent's wall grows from, so a sniper who digs in
+    ///     beside rubble or behind a nest builds a thicker wall.
     ///   • <b>Nests</b> - hollow pods on a ring between the spawn ring and the crystal field, one face
     ///     (+z) turned to the arena centre. That face carries a wide firing SLIT; the back face carries
     ///     an ENTRY a Serpent flies in through. A Serpent parked inside sees the field and the nests across
@@ -43,6 +47,15 @@ namespace CosmicShore.Gameplay
         [Tooltip("Nests alternate above and below the ring's plane by up to this much (u).")]
         [SerializeField, Min(0f)] float nestHeightSpread = 300f;
 
+        [Header("Outer nests")]
+        [Tooltip("A second ring of nests, farther out and half a step round from the first, so every bearing " +
+                 "has a perch at two ranges. 0 = none.")]
+        [SerializeField, Min(0)] int outerNestCount = 0;
+        [Tooltip("Radius (u) of the outer ring.")]
+        [SerializeField, Min(0f)] float outerNestRingRadius = 1650f;
+        [Tooltip("Outer nests alternate above and below the plane by up to this much (u).")]
+        [SerializeField, Min(0f)] float outerNestHeightSpread = 400f;
+
         [Header("Cell blocks")]
         [Tooltip("Barred screens between the nests and the crystal field. 0 = none.")]
         [SerializeField, Min(0)] int screenCount = 0;
@@ -51,9 +64,23 @@ namespace CosmicShore.Gameplay
         [Tooltip("Screens alternate above and below the ring's plane by up to this much (u).")]
         [SerializeField, Min(0f)] float screenHeightSpread = 200f;
 
+        [Header("Rubble")]
+        [Tooltip("Loose clusters of eight cubes scattered through the shell between the field and the spawn ring. " +
+                 "Somewhere to hide, and the mass a stopped Serpent's wall grows from (it steals loose prisms near " +
+                 "its seed, SERPENT_SEED_WALL.md), so a sniper who digs in beside rubble builds a thicker wall. 0 = none.")]
+        [SerializeField, Min(0)] int rubbleCount = 0;
+        [Tooltip("Rubble lies at least this far (u) from the arena centre: outside the crystal field.")]
+        [SerializeField, Min(0f)] float rubbleInnerRadius = 520f;
+        [Tooltip("Rubble lies at most this far (u) from the arena centre: inside the spawn ring.")]
+        [SerializeField, Min(0f)] float rubbleOuterRadius = 1900f;
+        [Tooltip("Rubble lies within this height (u) of the arena's plane.")]
+        [SerializeField, Min(0f)] float rubbleHeightSpread = 600f;
+
         [Header("Danger")]
         [Tooltip("Every Nth nest frame plate and screen bar segment is a danger prism. 0 = none.")]
         [SerializeField, Min(0)] int dangerEveryNth = 0;
+        [Tooltip("Every Nth rubble cube is a danger prism. 0 = none.")]
+        [SerializeField, Min(0)] int rubbleDangerEveryNth = 0;
 
         // ── A nest (local frame: +z faces the arena centre) ──
         /// <summary>Outer size of a pod (u): roomy for a Serpent (about 9 x 12 x 11) to park in.</summary>
@@ -71,36 +98,133 @@ namespace CosmicShore.Gameplay
         /// <summary>Gap between a bar's ends and the rails, so they touch nothing.</summary>
         const float RailClearance = 0.5f;
 
+        // ── Rubble ──
+        /// <summary>One cube's edge (u); a cluster is 2 x 2 x 2 of them, flush.</summary>
+        const float RubbleCube = 9f;
+        /// <summary>Clear space kept between a rubble cluster's centre and a nest's / a screen's centre, and
+        /// between two clusters (u): bounding spheres (nest half-diagonal 77, screen half-width 104, cluster 16)
+        /// plus air, so no family touches another.</summary>
+        const float RubbleNestClear = 110f, RubbleScreenClear = 140f, RubbleRubbleClear = 40f;
+        /// <summary>Placement attempts per cluster before the rest are given up (never reached at the
+        /// authored densities; the generator's census assumes every cluster lands).</summary>
+        const int RubbleAttemptsPerCluster = 40;
+
         /// <summary>How close to exact contact a fitted face is laid (a hair under).</summary>
         const float Flush = 0.995f;
 
         protected override int DefaultSeed => 7707;
-        protected override int LayCapacity => 4096;
+        protected override int LayCapacity => 8192;
 
         protected override int BuildParameterHash() =>
-            System.HashCode.Combine(nestCount, nestRingRadius, nestHeightSpread, screenCount,
-                                    screenRingRadius, screenHeightSpread, dangerEveryNth, 1);
+            System.HashCode.Combine(
+                System.HashCode.Combine(nestCount, nestRingRadius, nestHeightSpread, outerNestCount,
+                                        outerNestRingRadius, outerNestHeightSpread),
+                System.HashCode.Combine(screenCount, screenRingRadius, screenHeightSpread, dangerEveryNth),
+                System.HashCode.Combine(rubbleCount, rubbleInnerRadius, rubbleOuterRadius, rubbleHeightSpread,
+                                        rubbleDangerEveryNth, 2));
 
         int _frameIndex;
+        int _rubbleIndex;
+        readonly System.Collections.Generic.List<Vector3> _nestCentres = new();
+        readonly System.Collections.Generic.List<Vector3> _screenCentres = new();
+        readonly System.Collections.Generic.List<Vector3> _rubbleCentres = new();
+
+        /// <summary>The first draw of the layout's random stream: where round the ring the first nest stands.
+        /// Taken here and in <see cref="CollectNestCentres"/> from the same seed, so both agree.</summary>
+        int LayoutSeed => seed != 0 ? seed : DefaultSeed;
 
         protected override void BuildEnvironment()
         {
             _frameIndex = 0;
+            _rubbleIndex = 0;
             float az0 = RangeF(0f, Mathf.PI * 2f);
 
+            _nestCentres.Clear();
+            CollectNestCentres(az0, _nestCentres);
+            foreach (var c in _nestCentres) LayNest(c);
+
+            _screenCentres.Clear();
+            for (int k = 0; k < screenCount; k++)
+            {
+                // Between the inner nests' bearings, so a screen sits across a sight line, not in front of a nest.
+                float az = az0 + Mathf.PI * 2f * (k + 0.5f) / Mathf.Max(1, screenCount);
+                float y = (k % 2 == 0 ? -1f : 1f) * screenHeightSpread * (0.5f + 0.5f * Hash01(k * 17 + 3));
+                var at = OnRing(az, screenRingRadius, y);
+                _screenCentres.Add(at);
+                LayScreen(at);
+            }
+
+            LayRubble();
+        }
+
+        /// <summary>
+        /// The centre of every nest, in this structure's local space (the arena centre is its origin): the inner
+        /// ring, then the outer ring half a step round. Read by the AI (<c>SerpentGulagMarksman</c>) to choose a
+        /// perch. It recomputes from the seed rather than from a build, because a baked layout never runs
+        /// <see cref="BuildEnvironment"/>.
+        /// </summary>
+        public void CollectNestCentres(System.Collections.Generic.List<Vector3> into)
+        {
+            var r = new System.Random(LayoutSeed);
+            float az0 = (float)(r.NextDouble() * (Mathf.PI * 2f));
+            CollectNestCentres(az0, into);
+        }
+
+        void CollectNestCentres(float az0, System.Collections.Generic.List<Vector3> into)
+        {
             for (int k = 0; k < nestCount; k++)
             {
                 float az = az0 + Mathf.PI * 2f * k / nestCount;
                 float y = (k % 2 == 0 ? 1f : -1f) * nestHeightSpread * (0.5f + 0.5f * Hash01(k * 31 + 7));
-                LayNest(OnRing(az, nestRingRadius, y));
+                into.Add(OnRing(az, nestRingRadius, y));
             }
-
-            for (int k = 0; k < screenCount; k++)
+            for (int k = 0; k < outerNestCount; k++)
             {
-                // Between the nests' bearings, so a screen sits across a sight line, not in front of a nest.
-                float az = az0 + Mathf.PI * 2f * (k + 0.5f) / Mathf.Max(1, screenCount);
-                float y = (k % 2 == 0 ? -1f : 1f) * screenHeightSpread * (0.5f + 0.5f * Hash01(k * 17 + 3));
-                LayScreen(OnRing(az, screenRingRadius, y));
+                float az = az0 + Mathf.PI * 2f * (k + 0.5f) / outerNestCount;
+                float y = (k % 2 == 0 ? -1f : 1f) * outerNestHeightSpread * (0.5f + 0.5f * Hash01(k * 53 + 11));
+                into.Add(OnRing(az, outerNestRingRadius, y));
+            }
+        }
+
+        /// <summary>Scatter the rubble clusters through the shell, clear of the nests, the screens and each other.</summary>
+        void LayRubble()
+        {
+            _rubbleCentres.Clear();
+            int attempts = rubbleCount * RubbleAttemptsPerCluster;
+            float inner = Mathf.Min(rubbleInnerRadius, rubbleOuterRadius), outer = Mathf.Max(rubbleInnerRadius, rubbleOuterRadius);
+            while (_rubbleCentres.Count < rubbleCount && attempts-- > 0)
+            {
+                // Uniform in the annulus's area, so the shell is evenly filled rather than bunched at the inside.
+                float az = RangeF(0f, Mathf.PI * 2f);
+                float rad = Mathf.Sqrt(RangeF(inner * inner, outer * outer));
+                float y = RangeF(-rubbleHeightSpread, rubbleHeightSpread);
+                var at = OnRing(az, rad, y);
+                if (!Clear(at, _nestCentres, RubbleNestClear) || !Clear(at, _screenCentres, RubbleScreenClear) ||
+                    !Clear(at, _rubbleCentres, RubbleRubbleClear))
+                    continue;
+                _rubbleCentres.Add(at);
+                var rot = Quaternion.Euler(RangeF(0f, 360f), RangeF(0f, 360f), RangeF(0f, 360f));
+                LayCluster(at, rot);
+            }
+        }
+
+        static bool Clear(Vector3 at, System.Collections.Generic.List<Vector3> others, float distance)
+        {
+            float d2 = distance * distance;
+            for (int i = 0; i < others.Count; i++)
+                if ((others[i] - at).sqrMagnitude < d2) return false;
+            return true;
+        }
+
+        void LayCluster(Vector3 at, Quaternion rot)
+        {
+            float h = RubbleCube * 0.5f;
+            var size = Vector3.one * (RubbleCube * Flush);
+            for (int i = 0; i < 8; i++)
+            {
+                var local = new Vector3((i & 1) == 0 ? -h : h, (i & 2) == 0 ? -h : h, (i & 4) == 0 ? -h : h);
+                bool danger = rubbleDangerEveryNth > 0 && (++_rubbleIndex % rubbleDangerEveryNth) == 0;
+                Emit(at + rot * local, rot, size, Domains.Blue, danger ? PrismKind.Danger : PrismKind.Plain);
             }
         }
 

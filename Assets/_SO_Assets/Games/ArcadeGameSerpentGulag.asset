@@ -18,8 +18,9 @@ MonoBehaviour:
   Description: 'Serpents only - a sniper duel at range. You spawn far apart in a huge cell with a field
     of elemental crystals floating in the middle. Charge reloads your rifle faster, so the
     field is where you load up, in everyone''s sights. Hold LT to scope and RT to fire - a
-    round that strips a rival pilot is one snipe. Higher intensities add sniper nests and
-    barred cell blocks. First team to the target wins.'
+    round that strips a rival pilot is one snipe. Higher intensities add sniper nests,
+    barred cell blocks and rubble to hide in and build your walls from. First team to the
+    target wins.'
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 6ae541e1fc3d4852bf8a958146f3e5df, type: 3}

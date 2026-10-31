@@ -14,8 +14,8 @@ where a sniper reloads faster: in the open, in every rival's sights. That is the
 
 **It sits beside Garrett's Serpent Charge** (`GameModes.SerpentCharge = 67`, a sniper duel in Rampage's forest,
 unmerged on `cece/vibrant-archimedes-n3xn3x` since 2026-10-16). This mode touches none of that branch's files and
-claims a different id; its AI ladder borrows that branch's ladder SHAPE (five rungs of marksman skill by intensity,
-asserted monotone, I4's aim error inside the cone). If both land, the team picks which card the Serpent keeps.
+claims a different id; its AI ladder borrows that branch's ladder SHAPE (four rungs of marksman skill, asserted monotone, the top rung's aim
+error inside the cone) - keyed here on each seat's AI difficulty, not on the intensity as that branch does. If both land, the team picks which card the Serpent keeps.
 
 | | |
 |---|---|
@@ -48,9 +48,17 @@ asserted monotone, I4's aim error inside the cone). If both land, the team picks
 | | Name | Environment | Prisms |
 |---|---|---|---|
 | I1 | Open Ground | none - the far spawns and the field alone (the spec's I1) | 0 |
-| I2 | Watchtowers | 6 sniper nests on a 1,200 u ring, heights alternating to +-300 | 936 |
-| I3 | Cell Blocks | 8 nests (ring 1,300) + 8 barred screens (ring 700) across the sight lines to the field | 1,976 |
-| I4 | The Gulag | 10 nests (ring 1,400, +-450) + 12 screens (ring 750), danger plates on nest frames and bars (every 6th) | 2,652 |
+| I2 | Watchtowers | 8 sniper nests (ring 1,150, +-300) and 40 rubble clusters | 1,568 |
+| I3 | Cell Blocks | 10 inner nests (1,150) + 6 outer (1,650), 12 barred screens (850), 80 rubble clusters, danger on every 8th frame plate and bar | 4,228 |
+| I4 | The Gulag | 12 inner nests (1,150, +-400) + 10 outer (1,700, +-450), 16 screens (900), 140 rubble clusters, danger on every 4th frame plate and bar and every 5th rubble cube | 6,008 |
+
+**Harder and more populated since 2026-10-31** (Shombith: "Make the intensity environment harder and more
+populated"): the first ladder was 936 / 1,976 / 2,652 prisms. I1 still has no environment, as his first spec asks.
+
+**Rubble** is a cluster of eight flush 9 u cubes, scattered evenly through the shell between the field and the spawn
+ring (520-1,900 u), clear of every nest, screen and other cluster. It hides a pilot, and it is the loose mass a
+stopped Serpent's wall grows from (the wall steals loose prisms near its seed, `SERPENT_SEED_WALL.md`): a sniper who
+digs in beside rubble or behind a nest builds a thicker wall than one in the open.
 
 **A nest** is a hollow pod (90 x 60 x 90 u) whose +z face is turned to the arena centre. That face has a 60 x 30 u
 **firing slit**, the back has a 30 x 30 u **entry**. A Serpent parked inside (B stops it) sees the field through the
@@ -85,30 +93,52 @@ spawns inside the field (`noNucleusSpawnRadius` 380).
 
 `AIPilot` writes a stick and a throttle, and the rifle fires only while the scope is up, so without a driver every
 AI Serpent would fly the match unable to score (the Tollway rule). The marksman is server-only and input-only:
-it steers with `SetExternalTargetProvider` and presses LT / RT with `PerformShipControllerActionsReplicated`, the
-press shape Serpent Time's AI uses, and releases every press on disarm. The cycler is kept off the cloak
-(`SetCycledAbilityFilter`), since RT is the rifle while scoped.
+it steers with `SetExternalTargetProvider` and presses LT / RT / B with `PerformShipControllerActionsReplicated`, the
+press shape Serpent Time's AI uses, and releases every press on disarm. The cycler is kept off the cloak and the stop
+toggle (`SetCycledAbilityFilter`): the marksman presses those itself.
 
-- **Forage**: while its rifle has at least the rung's threshold of recovery left, it flies to the nearest live
-  crystal of the field.
-- **Hunt**: otherwise it hunts the rival it can bring to bear most cheaply (distance over a turn factor, humans
-  preferred by `aiHumanFocus`), steering at that pilot plus a lead and a fixed aim error for the plan's life. Inside
-  250 u it breaks away to 650 u and turns back in.
-- **Shoot**: with the rival within 15 deg of its nose it raises the scope, waits the rung's settle time, and fires
-  when its AIM POINT is inside the cone - so an error wider than the 1.5 deg cone is a real miss.
-- **Cloak**: after a shot, with the rung's chance, it lowers the scope and cloaks.
+**A sniper keeps its distance and digs in** (Shombith, 2026-10-31: "the AI starts coming close to the vessel the AI
+should learn to keep distance as a sniper and try to build its defenses rather and not rush towards me"). Until then
+it steered AT its rival, which read as rushing. Now:
 
-| Ladder (`SerpentGulagSettings.asset`) | I1 | I2 | I3 | I4 |
+- **Post**: it picks a post at its level's preferred range from the rival it hunts. Where a nest stands near that range,
+  the post is 75 u BEHIND it, on the side away from the rival (the nest between them, its plates in the wall's reach);
+  otherwise straight back along the line it holds; already within the band (350 u), it stays put. It never heads back
+  to the nest it just left.
+- **Dig in**: at the post it presses B. The stopped Serpent's latest trail prism becomes a held seed and the wall grows
+  from the loose mass beside it (nest plates, rubble, its own trail) for as long as it stays stopped, and it is immune to
+  elemental debuffs meanwhile - the shipped stance, nothing added. It turns in place to track (turning is tripled while
+  stopped). The stance is read back off `IsTranslationRestricted` and re-pressed after 1 s if it did not take (a toggle).
+- **Shoot**: with the rival within 15 deg of its nose it raises the scope, waits its level's settle time, and fires when
+  its AIM POINT is inside the cone - so an error wider than the 1.5 deg cone is a real miss. After a shot, with its
+  level's chance, it cloaks.
+- **Relocate / retreat**: when its hold runs out it flies to a new post; the moment any rival comes inside its keep-away
+  distance it lowers the scope, leaves the stance and backs off to its preferred range. It never turns to fight.
+- **Forage**: while its rifle has at least its level's threshold of recovery left, and it is not dug in, it flies to
+  the nearest crystal of the field nobody is waiting at.
+
+**Difficulty is the seat's AI level, never the intensity** (intensity is the map, difficulty the opponent,
+`AIDifficulty.cs`; each seat's own level through `GameDataSO.AIDifficultyFor`). The first cut keyed these ladders on the
+intensity, against that rule. **Legendary plays aggressively** (Shombith: "Legendary AI can play aggressively for
+sure"): it pushes to 900 u, only breaks off inside 350 u and digs in for 5 s before moving again - still a sniper,
+never a rammer.
+
+| Ladder (`SerpentGulagSettings.asset`) | Easy | Medium | Hard | Legendary |
 |---|---|---|---|---|
 | re-plan every (s) | 1.2 | 0.9 | 0.6 | 0.4 |
 | aim error (deg, vs a 1.5 deg cone) | 3.0 | 2.0 | 1.2 | 0.5 |
 | scope settle (s) | 1.0 | 0.6 | 0.3 | 0.15 |
 | hunt range (u) | 1,500 | 2,000 | 2,500 | 3,000 |
 | forage while recovery left >= (s) | never | 7 | 5 | 3.5 |
+| preferred range (u) | 1,400 | 1,700 | 2,000 | **900** |
+| keep-away (u) | 700 | 900 | 1,100 | **350** |
+| hold a post (s) | 8 | 12 | 16 | **5** |
 | cloak after a shot | 0 | 0.25 | 0.5 | 0.75 |
 
-The generator asserts every ladder is monotone toward harder, that I4's aim is inside the cone and I1's outside it,
-and that the C# initializers equal the asset.
+The generator asserts the skill ladders are monotone toward harder, the three style ladders rise Easy to Hard with
+Legendary below Easy, Legendary's aim is inside the cone and Easy's outside it, every preferred range is inside the hunt
+range and the rifle's reach with a band above its keep-away, the marksman never reads the intensity, and the C#
+initializers equal the asset.
 
 ## Platform changes
 
@@ -137,8 +167,10 @@ reference compile and the hand test. Not proved: how it plays.
 - **The AI sees cloaked pilots.** The cloak executor exposes no public "is cloaked" state and the kit is not changed
   for a mode (LOCKED, 2026-10-31). Garrett's Serpent Charge branch carries an `IsCloaked` accessor; when it lands, the
   marksman should skip a cloaked rival (`ChooseRival` / `IsLiveRival`).
-- **The AI does not perch.** It hunts in the open and forages; it never parks in a nest's slit. A perch behaviour
-  (fly in through the entry, stop, hold the slit's bearing) is the next AI step.
+- **The AI digs in behind a nest, not inside it.** Its post is 75 u behind the nest; flying into the pod through the
+  back entry and holding the slit's bearing is the next step. It reaches the post by flying at it, so it may clip a
+  plate on the way (a plain prism costs a Serpent nothing to ram).
+- **The stance wall is the shipped one**: it grows only from loose mass near the seed, so in the open (I1) it is thin.
 - **The target (3, Shombith's call after the first look) and the spawn ring (2,200) are first-pass numbers.** Re-tune after a playtest.
 - **The arrow gives positions away.** It points at the nearest rival in every mode that uses it; a sniper duel may
   want it off at higher intensities - a playtest call.
