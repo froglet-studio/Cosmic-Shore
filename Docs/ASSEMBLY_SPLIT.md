@@ -365,3 +365,40 @@ is cleared; the counts are recorded in `.editorconfig` next to each rule.
 6. **One asmdef per commit**, so a bisect can name the boundary that broke something.
 7. Run `python3 Tools/CI/validate_project.py` and
    `python3 Tools/Build/check_conditional_compilation.py`.
+8. **Grep for the moved files' PATHS, not only their types.** Tools, harness `run.sh` files, tests
+   and gate allowlists read source by path (`check_console_logging.py` allowlists `CSDebug.cs` by
+   path; step 4 found 28 such readers). A moved file they name fails quietly or turns a gate red.
+9. **Compile it headless before and after, and diff the two results**:
+   `bash Tools/Build/unity_refcompile/run.sh` in the `player` and `--config editor` configs, on the
+   untouched tree (`git stash -u`) and on the split. Equal counts are the evidence; the absolute
+   numbers include standing reference-set artifacts.
+
+**Traps the 2026-10-31 steps paid for:**
+- **A type-name scan misses fully-qualified references.** `DisplayNameValidator` called
+  `CosmicShore.UI.TemplateText.Fill(...)` with no `using`, so the leaf check passed and the compile
+  failed. The compiler is the real leaf test; a scan only picks candidates.
+- **A type-name scan over-reports nested names.** `Events`, `State`, `Status`, `Kind` are declared
+  nested inside unrelated classes, so they look like outside references. Read each hit.
+- **The first error is the only one to read.** One failed leaf makes `Assembly-CSharp` compile
+  without it, and that cascades into hundreds of "type not found" errors. Filter the log to files
+  inside the new assembly's folder.
+- **Do not edit the tree during a cold `unity_refcompile` run.** It snapshots the file list first;
+  moving files mid-run produced `CS2001 source file could not be found` for every moved file.
+
+### Follow-ups (rows, not done on the step 3-4 branch)
+
+- **`Utility/Network/*` into its own step.** Clean today (no gameplay types), left out because
+  moving a `NetworkBehaviour` changes which assembly Netcode's codegen runs in. Needs a two-client
+  test (RPCs, `ClientNetworkTransform` sync) before and after. Owner to check with: Shombith
+  (multiplayer).
+- **The rest of the 88 clean `Utility` files** (ecology `DataContainers`, `AITraining/Core` — Yash's,
+  UI widgets, `*SSU` shader components, `Theater`, `PerformanceBenchmark` statistics) compile alone
+  but are not one layer, and moving them buys little compile time. Re-measure with
+  `CompileTimingMonitor` before spending a branch on them.
+- **`Docs/PRISM_ANIMATION.md` cites `Controller/Prisms/PrismFactory.cs` by line (6 refs).** Step 3
+  removed the 18-line `PrismType` enum from the top of that file, so every cited line is now 18 too
+  high. Re-anchor them on the symbol.
+- **The wall-clock table above is still empty.** It needs one developer machine and the protocol in
+  § Measuring; that number decides whether the gameplay-layer split is worth starting.
+
+
