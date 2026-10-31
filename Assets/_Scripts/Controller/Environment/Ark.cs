@@ -54,6 +54,73 @@ namespace CosmicShore.Gameplay
     /// The Ark itself never removes mass and never runs a timer over anyone else's - the one
     /// clock it owns is its own unhurried course.
     /// </summary>
+    /// <summary>
+    /// The cell-aware speed profile (<see cref="Ark.SetSpeedProfile(in ArkSpeedProfile)"/>): the Ark CRUISES in open water,
+    /// brakes to <see cref="Entry"/> across the <see cref="MembraneBand"/> outside the destination membrane, eases on to
+    /// <see cref="Crawl"/> over the same band inside it, crawls the cytoplasm to the core and on out through the far side
+    /// of the cell it is leaving, and only then accelerates back to cruise. Every speed is clamped to
+    /// <see cref="Ceiling"/>: an escort's Ark must never outrun the slowest hull guarding it.
+    /// </summary>
+    [System.Serializable]
+    public struct ArkSpeedProfile
+    {
+        [Min(1f), Tooltip("Open-water speed between cells, u/s. Keep it below every escort hull's cruise.")]
+        public float Cruise;
+        [Min(1f), Tooltip("Speed AT the destination membrane, u/s (the end of the braking band).")]
+        public float Entry;
+        [Min(1f), Tooltip("Speed through a cell's cytoplasm, u/s: from one membrane band inside the destination to the " +
+                          "core, and on out until the stern clears the cell it is leaving.")]
+        public float Crawl;
+        [Min(0f), Tooltip("Width, u, of the braking band outside a membrane and of the easing band inside it.")]
+        public float MembraneBand;
+        [Min(0f), Tooltip("Half the hull's length, u: the crawl holds until this far past the departed membrane.")]
+        public float HullHalfLength;
+        [Min(1f), Tooltip("No speed in the profile exceeds this, u/s.")]
+        public float Ceiling;
+
+        public static ArkSpeedProfile Default => new()
+        {
+            Cruise = 45f, Entry = 22f, Crawl = 14f, MembraneBand = 400f, HullHalfLength = 60f, Ceiling = 50f,
+        };
+
+        /// <summary>The profile with every speed at least 1 and none above <see cref="Ceiling"/>; crawl, entry, cruise ascending.</summary>
+        public ArkSpeedProfile Sanitized()
+        {
+            var p = this;
+            p.Ceiling = p.Ceiling <= 0f ? float.MaxValue : Mathf.Max(1f, p.Ceiling);
+            p.Cruise = Mathf.Clamp(p.Cruise, 1f, p.Ceiling);
+            p.Entry = Mathf.Clamp(p.Entry, 1f, p.Cruise);
+            p.Crawl = Mathf.Clamp(p.Crawl, 1f, p.Entry);
+            p.MembraneBand = Mathf.Max(0f, p.MembraneBand);
+            p.HullHalfLength = Mathf.Max(0f, p.HullHalfLength);
+            return p;
+        }
+
+        /// <summary>
+        /// The speed at a position, from its range past the destination membrane (<paramref name="dIn"/>, negative
+        /// inside) and past the departed membrane (<paramref name="dOut"/>, negative inside; +inf with no departure).
+        /// The slower of an exit ramp and an entry ramp, so it is continuous everywhere. Pure: tests read it directly.
+        /// </summary>
+        public float SpeedAt(float dIn, float dOut)
+        {
+            float band = Mathf.Max(1f, MembraneBand);
+            // Leaving: crawl until the stern clears the departed membrane, then ramp up to cruise over one band.
+            float exit = float.IsPositiveInfinity(dOut) ? Cruise
+                : Mathf.Lerp(Crawl, Cruise, Smooth((dOut - HullHalfLength) / band));
+            // Arriving: cruise outside the band, brake to entry at the membrane, ease to crawl one band inside it.
+            float entry = dIn >= 0f
+                ? Mathf.Lerp(Entry, Cruise, Smooth(dIn / band))
+                : Mathf.Lerp(Crawl, Entry, Smooth(1f + dIn / band));
+            return Mathf.Min(exit, entry);
+        }
+
+        static float Smooth(float t)
+        {
+            t = Mathf.Clamp01(t);
+            return t * t * (3f - 2f * t);
+        }
+    }
+
     public sealed class Ark : MonoBehaviour
     {
         // ── Hull proportions ─────────────────────────────────────────────────
@@ -105,6 +172,14 @@ namespace CosmicShore.Gameplay
         float _slowRadius;                                // range over which cruise eases to approach
         Vector3 _destination;
         bool _hasDestination;
+        // The cell-aware profile (SetSpeedProfile(in ArkSpeedProfile)); off = the legacy two-speed arrival profile.
+        ArkSpeedProfile _profile;
+        bool _useProfile;
+        float _destinationRadius;
+        Vector3 _departure;
+        float _departureRadius;
+        bool _hasDeparture;
+        bool _insideCell;
         bool _underWay;
         bool _laying;
         bool _layComplete;
@@ -132,6 +207,7 @@ namespace CosmicShore.Gameplay
             public bool RidesBone;
             public Vector3 ArkLocal;                       // the slot's centre in the Ark's space at rest
             public Prism Prism;
+            public bool Counted;                           // its prism was seen live and seated (HullPrismLost)
         }
 
         const string RegrowOwnerId = "Ark::regrow";
@@ -176,6 +252,13 @@ namespace CosmicShore.Gameplay
         /// setting (see <see cref="SetSpeedProfile"/>).</summary>
         public float Speed => _speed;
 
+        /// <summary>True while the hull's centre is inside the destination's or the departed cell's membrane (the
+        /// cell-aware profile; the legacy profile reads it from the slow band).</summary>
+        public bool InsideCell => _insideCell;
+
+        /// <summary>Range to the destination point, or -1 with none.</summary>
+        public float DistanceToDestination => _hasDestination ? Vector3.Distance(transform.position, _destination) : -1f;
+
         /// <summary>Create an Ark root at a pose. Lay the hull with <see cref="LayHullAsync"/>.</summary>
         public static Ark Create(Transform parent, Vector3 position, Quaternion rotation)
         {
@@ -219,6 +302,33 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Hull slots: the full-health prism count the reactor regrows toward.</summary>
         public int SlotCount => _slots.Count;
+
+        /// <summary>
+        /// Raised once for every hull prism that was seated and is now gone (devoured, or destroyed by an ability), with
+        /// the shield tier its SLOT was laid in (a plate gnawed through has already shed its live shield flags). Read
+        /// <see cref="Prism.DestroyerName"/> and <see cref="Prism.DestroyedByCreature"/> for who took it. A plate the
+        /// hold hands a carrier is not a loss. Detected on the integrity scan (every 0.5 s) and before a regrowth
+        /// reuses the slot, so no loss is missed. One event serves every listener: the escort's plate metrics and its
+        /// friendly-fire count (a loss not <see cref="Prism.DestroyedByCreature"/>).
+        /// </summary>
+        public event Action<Prism, PrismKind> HullPrismLost;
+
+        /// <summary>Seated hull prisms by their slot's authored tier (danger counts as plain).</summary>
+        public void CountAlive(out int plain, out int shielded, out int superShielded)
+        {
+            plain = shielded = superShielded = 0;
+            for (int i = 0; i < _slots.Count; i++)
+            {
+                var slot = _slots[i];
+                if (!IsSeated(slot)) continue;
+                switch (slot.Lay.Kind)
+                {
+                    case PrismKind.SuperShielded: superShielded++; break;
+                    case PrismKind.Shielded: shielded++; break;
+                    default: plain++; break;
+                }
+            }
+        }
 
         // ── Hull ─────────────────────────────────────────────────────────────
 
@@ -305,6 +415,7 @@ namespace CosmicShore.Gameplay
             TotalCount = _prisms.Count;
             _aliveCount = TotalCount;
             _layComplete = true;
+            for (int i = 0; i < _slots.Count; i++) _slots[i].Counted = IsSeated(_slots[i]);
         }
 
         /// <summary>
@@ -517,6 +628,7 @@ namespace CosmicShore.Gameplay
             // A hull prism is a mover's: it must not queue behind a growing corridor for its creation completion.
             prism.CompletesAsLiveRibbon = true;
 
+            NoteSlotLoss(target);
             int at = IndexOfHullPrism(target.Prism);
             if (at >= 0)
             {
@@ -528,6 +640,7 @@ namespace CosmicShore.Gameplay
                 TotalCount++;
             }
             target.Prism = prism;
+            target.Counted = true;
             _aliveCount = Mathf.Min(TotalCount, _aliveCount + 1);
             if (target.RidesBone && _model) _model.AddRider(prism);
 
@@ -754,10 +867,38 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetSpeedProfile(float approachSpeed, float cruiseSpeed, float slowRadius)
         {
+            _useProfile = false;
             _approachSpeed = Mathf.Max(1f, approachSpeed);
             _cruiseSpeed = Mathf.Max(_approachSpeed, cruiseSpeed);
             _slowRadius = Mathf.Max(0f, slowRadius);
+            _destinationRadius = _slowRadius;
         }
+
+        /// <summary>
+        /// The cell-aware profile (<see cref="ArkSpeedProfile"/>; the Ark escort, Garrett 2026-10-31: the Ark slowly enters
+        /// a cell and crawls through its cytoplasm under attack, with short gaps between cells). Still a pure function of
+        /// position: range past the destination membrane (<see cref="SetDestination(Vector3, float)"/>) and past the
+        /// membrane of the cell just left (<see cref="SetDeparture"/>). The legacy overload above turns it off.
+        /// </summary>
+        public void SetSpeedProfile(in ArkSpeedProfile profile)
+        {
+            _profile = profile.Sanitized();
+            _useProfile = true;
+            _approachSpeed = _profile.Crawl;
+            _cruiseSpeed = _profile.Cruise;
+        }
+
+        /// <summary>The cell the Ark is leaving: its centre and membrane radius. The crawl holds until the stern clears
+        /// it (cell-aware profile only).</summary>
+        public void SetDeparture(Vector3 centre, float membraneRadius)
+        {
+            _departure = centre;
+            _departureRadius = Mathf.Max(0f, membraneRadius);
+            _hasDeparture = true;
+        }
+
+        /// <summary>Forget the departed cell (open water behind).</summary>
+        public void ClearDeparture() => _hasDeparture = false;
 
         /// <summary>
         /// Whether the Ark is MAKING WAY. False until the voyage actually begins, and it is a
@@ -790,6 +931,7 @@ namespace CosmicShore.Gameplay
         public void SetDestination(Vector3 worldPosition, float slowRadius)
         {
             _slowRadius = Mathf.Max(0f, slowRadius);
+            _destinationRadius = _slowRadius;
             SetDestination(worldPosition);
         }
 
@@ -811,8 +953,21 @@ namespace CosmicShore.Gameplay
                     // Smoothstep over the approach band: flat cruise outside it, flat approach
                     // speed at the core, and no discontinuity at either end — an Ark that
                     // stepped between two speeds would read as a stutter, not as a landing.
-                    float t = _slowRadius > 1f ? Mathf.Clamp01(dist / _slowRadius) : 1f;
-                    _speed = Mathf.Lerp(_approachSpeed, _cruiseSpeed, t * t * (3f - 2f * t));
+                    if (_useProfile)
+                    {
+                        float dIn = dist - _destinationRadius;
+                        float dOut = _hasDeparture
+                            ? Vector3.Distance(transform.position, _departure) - _departureRadius
+                            : float.PositiveInfinity;
+                        _insideCell = dIn < 0f || dOut < 0f;
+                        _speed = _profile.SpeedAt(dIn, dOut);
+                    }
+                    else
+                    {
+                        float t = _slowRadius > 1f ? Mathf.Clamp01(dist / _slowRadius) : 1f;
+                        _insideCell = dist < _slowRadius;
+                        _speed = Mathf.Lerp(_approachSpeed, _cruiseSpeed, t * t * (3f - 2f * t));
+                    }
 
                     Vector3 dir = to / dist;
                     transform.position += dir * Mathf.Min(_speed * Time.deltaTime, dist);
@@ -879,8 +1034,29 @@ namespace CosmicShore.Gameplay
             if (_wakeRoot) Destroy(_wakeRoot.gameObject);
         }
 
+        static bool IsGone(Prism prism) => !prism || prism.destroyed || !prism.gameObject.activeInHierarchy;
+
+        /// <summary>A counted slot whose prism is gone is a loss, raised once; a prism the hold took leaves quietly.</summary>
+        void NoteSlotLoss(HullSlot slot)
+        {
+            if (!slot.Counted) return;
+            if (ReferenceEquals(slot.Prism, null) || IsGone(slot.Prism))
+            {
+                slot.Counted = false;
+                HullPrismLost?.Invoke(slot.Prism, slot.Lay.Kind);
+            }
+            else if (!IsSeated(slot)) slot.Counted = false;
+        }
+
         void ScanHullIntegrity()
         {
+            for (int i = 0; i < _slots.Count; i++)
+            {
+                var slot = _slots[i];
+                if (slot.Counted) NoteSlotLoss(slot);
+                else if (IsSeated(slot)) slot.Counted = true;
+            }
+
             int alive = 0;
             for (int i = 0; i < _prisms.Count; i++)
             {

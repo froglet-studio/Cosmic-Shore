@@ -111,6 +111,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] float feedingClusterRadius = 10f;
         [Tooltip("Cap on prisms consumed per mouthful — bounds the implosion-VFX burst.")]
         [SerializeField] int maxClusterBites = 6;
+        [Tooltip("Armour points this species wears off a SHIELDED prism per bite (a shield cracks at 1). 0 = never " +
+                 "gnaws shields. Only in a cell that lets armour be food (Cell.ArmourIsFood: the Ark escort's worlds).")]
+        [SerializeField, Min(0f)] float shieldBite;
+        [Tooltip("Armour points this species wears off a SUPER-SHIELDED prism per bite (cracks at " +
+                 "Prism.SuperArmourPoints). 0 = never gnaws super-shields. Only where Cell.ArmourIsFood is set.")]
+        [SerializeField, Min(0f)] float superShieldBite;
         [Tooltip("Rotation-speed multiplier while feeding, so the slow boid turn can " +
                  "actually reach the facing angle before the swarm drifts it away.")]
         [SerializeField] float feedingTurnBoost = 4f;
@@ -552,8 +558,8 @@ namespace CosmicShore.Gameplay
                 // through (IsInedibleShield: a Frenzy, or a herd upgrade), so that shield is eaten
                 // with its prism rather than shed.
                 float meal = Mathf.Max(0f, prism.Volume);   // read before the consume (round 11f: the stomach is conserved)
-                prism.Consume(transform, embeddedHealthPrism.Domain, _consumerName, IsShieldedMass(prism), true);
-                NotifyFed(meal);
+                if (BiteMass(prism, transform, embeddedHealthPrism.Domain, _consumerName, IsShieldedMass(prism)) == BiteResult.Ate)
+                    NotifyFed(meal);
             }
             else
             {
@@ -735,6 +741,8 @@ namespace CosmicShore.Gameplay
             if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null) return false;
             if (cell == null) return true;
+            // A pacified world's fauna leave their own domain's mass alone (Cell.SparedDomain).
+            if (cell.SparesOwnMass(domain, prism.Domain)) return false;
             // Band + cell pen: mass outside this creature's own annulus is unreachable, so it
             // is not food (Fauna.IsInsideBand). A forager's diet is otherwise any-domain, so
             // it does not go through IsPreyForMe's domain leg.
@@ -912,12 +920,14 @@ namespace CosmicShore.Gameplay
             string eaterName = _consumerName; // cached at Initialize (no per-mouthful concat garbage)
 
             int bites = 0;
+            Prism gnawed = null;
             if (IsEdibleForForager(feedTarget))
             {
                 float meal = Mathf.Max(0f, feedTarget.Volume);
-                feedTarget.Consume(transform, eaterDomain, eaterName, IsShieldedMass(feedTarget), true);
-                NotifyFed(meal);
-                bites++;
+                var result = BiteMass(feedTarget, transform, eaterDomain, eaterName, IsShieldedMass(feedTarget));
+                if (result == BiteResult.Ate) NotifyFed(meal);
+                else if (result == BiteResult.Gnawed) gnawed = feedTarget;
+                if (result != BiteResult.None) bites++;
             }
 
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
@@ -929,10 +939,13 @@ namespace CosmicShore.Gameplay
                 var prism = FeedScratch[i];
                 if (prism == feedTarget || !IsEdibleForForager(prism)) continue;
                 float bite = Mathf.Max(0f, prism.Volume);
-                prism.Consume(transform, eaterDomain, eaterName, IsShieldedMass(prism), true);
-                NotifyFed(bite);
-                bites++;
+                var result = BiteMass(prism, transform, eaterDomain, eaterName, IsShieldedMass(prism));
+                if (result == BiteResult.Ate) NotifyFed(bite);
+                if (result != BiteResult.None) bites++;
             }
+
+            // Armour still standing after a bite of wear: come back to it once this hold ends.
+            if (gnawed && !gnawed.destroyed) _feedTarget = gnawed;
 
             // Someone else got the whole mouthful first — nothing to watch, resume roaming.
             if (bites == 0)
@@ -942,6 +955,18 @@ namespace CosmicShore.Gameplay
         // --- The leash (Fauna.Leash, per-frame) ------------------------------
 
         protected override bool CanBeLeashed => forager && base.CanBeLeashed;
+
+        protected override float AuthoredArmourBite(bool superShielded) =>
+            forager ? (superShielded ? superShieldBite : shieldBite) : 0f;
+
+        protected override void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            base.ApplyRuntimeTuning(tuning, species);
+            if (tuning.TryGet(species, "minSpeed", out float v)) minSpeed = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "maxSpeed", out v)) maxSpeed = Mathf.Max(minSpeed, v);
+            if (tuning.TryGet(species, "huntSpeed", out v)) huntSpeedMultiplier = Mathf.Max(1f, v);
+            if (tuning.TryGet(species, "feedingClusterRadius", out v)) feedingClusterRadius = Mathf.Max(0f, v);
+        }
 
         public override bool LeashCanEat(Prism prism) => IsEdibleForForager(prism);
 

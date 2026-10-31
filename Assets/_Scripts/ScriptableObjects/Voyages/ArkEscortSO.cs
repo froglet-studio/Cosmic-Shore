@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -61,12 +62,14 @@ namespace CosmicShore.ScriptableObjects
             [Range(0f, 1f), Tooltip("Chance each Hostile leg actually starts hostile. Low tiers leave some worlds friendly.")]
             public float HostileShare = 1f;
 
-            [Min(0.25f), Tooltip("Multiplier on the Ark's speed: a slower Ark spends longer in each world.")]
+            [Min(0.25f), Tooltip("Multiplier on the Ark's CRAWL and ENTRY speeds (the pace inside a world): a slower Ark " +
+                                 "spends longer in each world. Open-water cruise is not scaled, so the gaps between " +
+                                 "worlds stay short and the Ark never outruns its escort.")]
             public float ArkSpeed = 1f;
 
-            [Range(0f, 0.95f), Tooltip("The Ark is overrun when its hull falls below this share: the escort is lost. The " +
-                                       "Ark's shielded plates are never grazed, so without a line it cannot fall to fauna; " +
-                                       "0 leaves only the true fall (the last plate).")]
+            [Range(0f, 0.95f), Tooltip("Optional: the Ark is overrun when its hull falls below this share. Since the escort's " +
+                                       "fauna gnaw through the armoured plates (platesAreFood), the hull can truly fall, so " +
+                                       "0 (only the true fall, the last plate) is the default; kept for experiments.")]
             public float BreachHull;
         }
 
@@ -80,6 +83,27 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.1f), Tooltip("Ceiling on a world's population multiplier (leg threat times tier), so the " +
                                             "hardest tier cannot ask a world for more creatures than a frame can carry.")]
         float maxPopulation = 4f;
+
+        [Header("The Ark's pace (cell-aware: cruise the gaps, brake on the membrane, crawl the cytoplasm)")]
+        [SerializeField, Tooltip("The escort's speed profile. The tier's ArkSpeed scales Crawl and Entry only. Cruise and " +
+                                 "Ceiling stay below every hull's cruise speed: the Ark must never outrun a Squirrel.")]
+        ArkSpeedProfile arkPacing = ArkSpeedProfile.Default;
+
+        [SerializeField, Min(0f), Tooltip("Centre-to-centre spacing between the escort's worlds, overriding the Arkway " +
+                                          "settings' spacing (0 keeps it). Must exceed two membrane radii (~1200-1300 " +
+                                          "each) plus a short gap of open water; the corridor floors it at 2000.")]
+        float cellSpacing = 2800f;
+
+        [SerializeField, Tooltip("The escort's worlds let creatures that can gnaw armour (a species' shield / super-shield " +
+                                 "bite) wear through shielded and super-shielded mass (Cell.ArmourIsFood), so the Ark's " +
+                                 "plates are real food and the hull can truly fall. Off: armour is never food (the old rule).")]
+        bool platesAreFood = true;
+
+        [SerializeField, Range(0f, 1f), Tooltip("A world is PACIFIED once the squad holds this share of its control volume " +
+                                                "(the nucleus claim, or the whole cell without a nucleus): its control is pinned " +
+                                                "to the squad, its live fauna re-coloured into the squad's domain, and its fauna " +
+                                                "stop grazing the squad's mass, the Ark included. 0 = never pacify.")]
+        float pacifyShare = 0.6f;
 
         [Header("Words (every line is authored; empty shows nothing)")]
         [SerializeField, Tooltip("The voyage's name, on the build veil and the card.")]
@@ -111,8 +135,13 @@ namespace CosmicShore.ScriptableObjects
         [TextArea] string overrunLine = "THE ARK IS OVERRUN IN {name}";
 
         public IReadOnlyList<Leg> Legs => legs;
+        public IReadOnlyList<Tier> Tiers => tiers;
+        public ArkSpeedProfile ArkPacing { get => arkPacing; set => arkPacing = value; }
+        public float CellSpacing { get => cellSpacing; set => cellSpacing = Mathf.Max(0f, value); }
+        public bool PlatesAreFood { get => platesAreFood; set => platesAreFood = value; }
+        public float PacifyShare { get => pacifyShare; set => pacifyShare = Mathf.Clamp01(value); }
         public string OverrunLine => overrunLine;
-        public float MaxPopulation => maxPopulation;
+        public float MaxPopulation { get => maxPopulation; set => maxPopulation = Mathf.Max(0.1f, value); }
         public string VoyageName => voyageName;
         public string CardTitle => cardTitle;
         public string CardLine => cardLine;
