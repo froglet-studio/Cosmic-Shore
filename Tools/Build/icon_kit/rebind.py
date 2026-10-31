@@ -214,7 +214,9 @@ def _apply_pair(text, step, icon_meta):
                 vblk = replaced
             else:
                 anchor = pair.get("after", "impactIcon")
-                vblk = re.sub(rf"^(\s*{anchor}: .*\n)", lambda m: m.group(1) + f"  {field}: {{fileID: {fid_img}}}\n", vblk, count=1, flags=re.M)
+                vblk, n = re.subn(rf"^(\s*{anchor}: .*\n)", lambda m: m.group(1) + f"  {field}: {{fileID: {fid_img}}}\n", vblk, count=1, flags=re.M)
+                if not n:   # a missing anchor used to drop the field silently (Angler Mass + Space, 2026-10-31)
+                    raise SystemExit(f"{step['file']}: anchor '{anchor}' is not serialized on {pair['view']}; {field} unbound")
             text = text[:va] + vblk + text[vb:]
     # The card's plate GAUGE: the abilityIcons entry for `element` points its `gauge` at the named child.
     if pair.get("binding"):
@@ -246,7 +248,9 @@ def _apply_pair(text, step, icon_meta):
         replaced = _set_field(vblk, field, v)
         if replaced is None:
             anchor = pair.get("after", "impactIcon")
-            replaced = re.sub(rf"^(\s*{anchor}: .*\n)", lambda m: m.group(1) + f"  {field}: {v}\n", vblk, count=1, flags=re.M)
+            replaced, n = re.subn(rf"^(\s*{anchor}: .*\n)", lambda m: m.group(1) + f"  {field}: {v}\n", vblk, count=1, flags=re.M)
+            if not n:
+                raise SystemExit(f"{step['file']}: anchor '{anchor}' is not serialized on {pair['view']}; {field} unset")
         text = text[:va] + replaced + text[vb:]
     return text
 

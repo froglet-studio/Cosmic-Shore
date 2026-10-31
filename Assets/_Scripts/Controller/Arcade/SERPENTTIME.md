@@ -43,10 +43,12 @@ rival's Seed Wall (`SerpentWallAssembler.IsWallBrick`). The three vessel files a
 
 The Serpent's Time ability is Solid Fuel Pellets (`R_VesselActions/SERPENT_FUEL_PELLETS.md`):
 - The tank holds four pellets.
-- Each press burns one for 3 s.
+- Each press burns one for 6 s (3 s until 2026-10-31).
 - Burns overlap and stack. Speed is `50 x (1 + 2n) + 10`: 60 u/s cruising, then 160 / 260 / 360 / 460 u/s with 1-4
   pellets lit.
-- One pellet refills every ~3.6 s.
+- Nothing refills on a clock (since 2026-10-31; one pellet every ~3.6 s before): a pellet comes back only
+  for 2 s of the Serpent's own Seed Wall eating its own trail. A race line does not do that, so the opening four
+  are the race unless the pilot stops to build.
 
 So every straight asks how many pellets it is worth. The Serpent's turn GROWS with speed (`0.4 x speed + 80`
 deg/s), so even a full stack turns a ~100 u circle. Corners rarely force it off the boost; the tank does, and the
