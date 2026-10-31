@@ -158,7 +158,8 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
 
 Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
 
-10. **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
+10. **[FIXED 2026-10-31, `Tools/Build/fix_serpent_crystal_pickup.py`: the skimmer is a live far-field crystal
+    catcher that hands each crystal to the hull; not yet flown in the editor]** **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
     GameObject is INACTIVE *and* which carries no `SkimmerImpactor`/container. Same class of
     fault the Dolphin had; deliberately left untouched by that branch (different vessel).
     Confirm with `FrogletTools > Vessels > Audits > Audit Vessel Skimmers`.
@@ -636,7 +637,7 @@ and the `SkimmerImpactor` whose `skimmer:` field points at it (recorded in
   (`OnCrystalCollected` is skipped), no element level, no hull fusion. The fix is to point
   `_nearFieldSkimmer` at each hull's nested Skimmer (the Manta's is the stripped
   `874579554510349383`); confirm first that these three hulls are meant to be flyable.
-- **[report] The Serpent cannot collect a crystal.** Its `_nearFieldSkimmer` is `VacuumSkimmer`, a
+- **[FIXED 2026-10-31 - Shombith asked for it: the Serpent SHOULD collect; `fix_serpent_crystal_pickup.py`]** **[report] The Serpent cannot collect a crystal.** Its `_nearFieldSkimmer` is `VacuumSkimmer`, a
   GameObject with `m_IsActive: 0`, its SphereCollider `m_Enabled: 0`, and no `SkimmerImpactor` or
   `ImpactCollider` at all, so nothing on the Serpent can take an elemental crystal (play-tested
   2026-10-08: crystals hit the hull and are not collected). Whether the Serpent SHOULD collect by
