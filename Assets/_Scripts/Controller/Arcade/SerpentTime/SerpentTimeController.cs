@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
     /// plate danger). Fly the open ring, or hit the guard's HEART: a sniper round or a hull that passes through the
     /// middle of the plant fells all of it - every plate blows apart outward from the heart and the ring is open. What
     /// reaching the middle costs is the plates' own (Time's are free to ram through, Charge's burn petals, Mass's bounce
-    /// a hull, so a Mass guard is shot). The guard is ordinary flora of the cell: it grows in, fauna graze it, and it
+    /// a hull, so a Mass guard is shot). The guard is ordinary flora of the cell: it grows in, and it
     /// dies by the ordinary flora death (its last plate gone, its heart drops). Nothing about the Serpent changes.</item>
     /// <item><b>Where the guards stand.</b> Not in the mouth: a fixed walk by gate (<see cref="SerpentTimeCluster.PlacementFor"/>)
     /// puts each one on the racing line a little before its ring, beside the ring half-covering it, or as a pair either side
@@ -34,8 +34,8 @@ namespace CosmicShore.Gameplay
     /// <item><b>The cell's current.</b> The cytoplasm's shards point along the race line instead of at a crystal
     /// (<see cref="SnowChanger.IFlow"/>), streaming round the circuit, so the course reads from anywhere in the cell
     /// without drawing a track.</item>
-    /// <item><b>The cell's own life.</b> The race runs in its own copy of the barren Skim Race cell, with half its grazers (the
-    /// Rampage forest it ran in for a day cost too much frame time, 2026-10-31); the guards are its flora.</item>
+    /// <item><b>The cell's own life.</b> The race runs in its own copy of the barren Skim Race cell, with no fauna (first half its
+    /// grazers, then none, for frame time; the Rampage forest it ran in for a day cost too much frame time, 2026-10-31); the guards are its flora.</item>
     /// <item><b>Gate debris.</b> Loose neutral prisms lie round every gate and grow back, so a Serpent that cloaks
     /// there has the mass its Seed Wall grows from. The debris is the environment's; the wall is the shipped one.</item>
     /// <item><b>The AI plays dirty</b> (input-only, through the replicated press like a human's): it picks the open

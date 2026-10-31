@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Serpentine Cell Config
   m_EditorClassIdentifier: 
   CellName: Serpentine
-  Description: Skim Race's barren race cell with half its grazers (Serpentine)
+  Description: Skim Race's barren race cell with no fauna (Serpentine)
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0

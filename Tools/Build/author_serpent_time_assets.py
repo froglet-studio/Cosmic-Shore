@@ -50,35 +50,20 @@ FIELDS = """  rule: {{fileID: 11400000, guid: {rule}, type: 2}}
   reportResyncSeconds: 3
 """
 
-# The race's OWN cell (2026-10-31, Shombith: "you can decrease the number of fauna", picked: half): Skim Race's barren cell,
-# spawn profile and two grazers copied verbatim with only their names, their cross-references and the fauna numbers changed,
-# so the ~10 other modes on the Skim Race cell are untouched. Tadpoles 12 (up to 40) -> 6 (up to 20), brittlestars 4 (up
-# to 16) -> 2 (up to 8). Re-read from the Skim Race assets every run, so a change there reaches this copy.
+# The race's OWN cell (2026-10-31, Shombith): Skim Race's barren cell and spawn profile copied verbatim with only their
+# names, their cross-reference and the fauna changed, so the ~10 other modes on the Skim Race cell are untouched. First
+# half the grazers; then, the same day, NO fauna at all ("very non performative, lets remove the fauna"): the copied
+# profile lists none. Re-read from the Skim Race assets every run, so any other change there reaches this copy.
 SKIM_DIR = "Assets/_SO_Assets/Cell Configs/Skim Race Cell"
 OWN_DIR = "Assets/_SO_Assets/Cell Configs/Serpentine Cell"
-FAUNA_CUTS = {  # source name: (own name, InitialSpawnCount, PopulationSize, MaxLivePopulation)
-    "Skim Race Tadpole Fauna Config Data": ("Serpentine Tadpole Fauna Config Data", 6, 6, 20),
-    "Skim Race Brittlestar Fauna Config Data": ("Serpentine Brittlestar Fauna Config Data", 2, 2, 8),
-}
 
 
 def _own_cell_assets():
     import re
-    out, swaps = [], {}
-    for src, (name, initial, population, cap) in FAUNA_CUTS.items():
-        text = open(os.path.join(lib.ROOT, f"{SKIM_DIR}/{src}.asset"), encoding="utf-8").read()
-        for key, value in (("InitialSpawnCount", initial), ("PopulationSize", population), ("MaxLivePopulation", cap)):
-            text, n = re.subn(rf"^  {key}: \d+$", f"  {key}: {value}", text, flags=re.M)
-            assert n == 1, f"{src}: {key} not found once"
-        text = text.replace(f"m_Name: {src}\n", f"m_Name: {name}\n")
-        g_own = lib.guid(f"asset/{name}")
-        swaps[lib.existing_guid(f"{SKIM_DIR}/{src}.asset")] = g_own
-        out.append((f"{OWN_DIR}/{name}.asset", g_own, text))
-
+    out = []
     profile = open(os.path.join(lib.ROOT, f"{SKIM_DIR}/Skim Race Spawn Profile.asset"), encoding="utf-8").read()
-    for old, new in swaps.items():
-        assert profile.count(old) == 1, f"spawn profile: fauna {old} not listed once"
-        profile = profile.replace(old, new)
+    profile, n = re.subn(r"^  SupportedFaunas:\n(?:  - \{[^\n]*\}\n)*", "  SupportedFaunas: []\n", profile, flags=re.M)
+    assert n == 1, "spawn profile: SupportedFaunas not found once"
     profile = profile.replace("m_Name: Skim Race Spawn Profile\n", "m_Name: Serpentine Spawn Profile\n")
     g_profile = lib.guid("asset/Serpentine Spawn Profile")
     out.append((f"{OWN_DIR}/Serpentine Spawn Profile.asset", g_profile, profile))
@@ -89,7 +74,7 @@ def _own_cell_assets():
     cell = cell.replace(old_profile, g_profile)
     cell = cell.replace("m_Name: Skim Race Cell Config\n", "m_Name: Serpentine Cell Config\n")
     cell = re.sub(r"^  CellName: .*$", "  CellName: Serpentine", cell, count=1, flags=re.M)
-    cell = re.sub(r"^  Description: .*$", "  Description: Skim Race's barren race cell with half its grazers (Serpentine)",
+    cell = re.sub(r"^  Description: .*$", "  Description: Skim Race's barren race cell with no fauna (Serpentine)",
                   cell, count=1, flags=re.M)
     g_cell = lib.guid("asset/Serpentine Cell Config")
     out.append((f"{OWN_DIR}/Serpentine Cell Config.asset", g_cell, cell))

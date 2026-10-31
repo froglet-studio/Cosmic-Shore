@@ -89,7 +89,7 @@ other mode keeps pointing its shards at the crystal; check Skim Race too).
    lean toward the line. Fly a lap: the current turns where the course turns.
 4. Guards: gate 1's stands beside its ring, half-covering it; others stand 150-300 u before their ring on the line, or
    as a pair either side of the line (a door with a narrow gap). None sit in a mouth. A heart hit still fells each one.
-5. Fauna: about half as many tadpoles and brittlestars as Skim Race.
+5. Fauna: none at all (the Serpentine spawn profile lists no fauna). Compare the frame with the half-fauna build.
 6. Skim Race: its shards still point at its crystal (regression check on `SnowChanger`).
 7. EditMode: `SerpentTimeClusterTests.Guards_mix_their_placements_and_keep_the_start_clear`.
 
