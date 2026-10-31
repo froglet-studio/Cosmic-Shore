@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
-  m_Name: Serpentine Spawn Profile
+  m_Name: Serpentine I4 Spawn Profile
   m_EditorClassIdentifier:
   FloraExcludeLocalDomain: 1
   FloraSpawnVolumeCeiling: 0
@@ -25,5 +25,7 @@ MonoBehaviour:
   FaunaInitialDelaySeconds: 0
   FaunaSpawnIntervalSeconds: 1
   SupportedFaunas:
-  - {fileID: 11400000, guid: c73e508847e681aef9404d396de96be5, type: 2}
-  - {fileID: 11400000, guid: 4c1e47b0fb5a4d9dce4e7a8007cda210, type: 2}
+  - {fileID: 11400000, guid: 2fa7ff6ab249c6465b819f15ab570160, type: 2}
+  - {fileID: 11400000, guid: b5aa9ffb588cee55b57f51fcbb695145, type: 2}
+  - {fileID: 11400000, guid: 491aa5c526cb79dfb215d12ed4a68c99, type: 2}
+  - {fileID: 11400000, guid: ed9f012efdcf653328d88745c170bec1, type: 2}

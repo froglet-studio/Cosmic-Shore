@@ -65,6 +65,126 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
+
+1. I1 Shallows: a few tadpoles (the cell keeps its own colours at every intensity; the tint was removed). Core: seven gold blocks.
+2. I2 Grazing Grounds: tadpoles and brittlestars. Core: three blocks.
+3. I3 Hunting Grounds: two sharks, piranha, tadpoles. Core: one block.
+4. I4 The Deep: sharks, piranha schools, brittlestars, tadpoles. Core: one small block - the hardest shot.
+5. Watch the creatures round the shapes: if grazers chew a core, the shape disintegrates (that is the rule, not a bug);
+   say if it happens too often. Frame time against the no-fauna build (live creatures are capped at 25).
+6. EditMode: `SerpentineGateTests.The_core_shrinks_as_the_intensity_rises` and the rest.
+
+### 🔴 Serpentine: a shape at every ring (Coil / Maw / Iris), a gold core that disintegrates it, Breakwater's ring sizes (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. Replaces the flora guards (all guard entries below are superseded). `SerpentineGate` lays
+the shapes from the environment prism on every peer; `SerpentTimeController.TickShapes` watches each core.
+
+1. Open `MinigameSerpentTime`, save once; console clean (the controller no longer has the guard fields).
+2. I1 and I2: every ring (72 / 60 u) is closed by a Coil: six red danger arms spiralling in to a gold core, two round
+   holes (26 / 21 u) to fly out through, and blue scale rings flaring back toward you round the ring. I3: a Maw (fangs
+   and a web, three 16 u holes, a wide hood). I4: an Iris (nine blades, three 12 u holes, a housing ring of blocks).
+3. Thread a hole: the gate counts. Touch the red weave: petals go, as on any danger prism.
+4. Shoot the gold core (scope + RT), or ram it: the whole shape bursts outward from the core over a few frames and the
+   ring is open. About 25 s later, with nobody inside it, it grows back.
+5. With 3 AI: they shoot cores when their rifles are ready and thread the holes otherwise.
+6. Frame time: compare with the flora build (the shapes are ~240 / 190 / 110 / 120 prisms a gate against 288-360).
+   At I4 check the Serpent fits the 12 u holes; if not, lower `ExitMargin` / the core in `SerpentineGate`.
+7. EditMode: `SerpentineGateTests`, `SerpentTimeClusterTests`, `SerpentTimeCourseTests`.
+
+### 🔴 Serpentine's card loads again: a colon had broken its YAML (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+The description written in `b4a0eaeefe` ended a line with "rises:", which YAML reads as a new key: Unity kept the name
+and lost every later field (card art, vessels, controls, `SceneName`), so the card showed white art and an empty
+controls panel and the mode did not load. Text fixed; `hull_time_race.py` now fails `--check` on a colon or ' #' in
+card text and on any generated .asset that does not parse.
+
+1. Arcade: the Serpentine card shows its art; the launch panel shows its full description and its controls.
+2. Start it: the scene loads and the race runs.
+
+### 🔴 Serpentine: one ring a gate, 65 / 55 / 48 / 40 u, a guard at every gate (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. Supersedes "2 rings at I1-I2" in the entries below.
+
+1. Each intensity: every gate is ONE ring (no clusters), radius 65 (I1), 55 (I2), 48 (I3), 40 (I4). The Serpent
+   threads them comfortably at I1-I3; I4 feels as before.
+2. Every gate has a guard (before, beside, or a door); the AI shoots Mass / Charge hearts and flies through Time ones.
+3. EditMode: `SerpentTimeClusterTests`, `SerpentTimeCourseTests` (mouths still tighten level by level, gates clear).
+
+### 🔴 A lifeform's death runs once: `LifeForm.DieOnce` (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`Flora.KillReplicated` (a client's mirror of a replicated plant's death) and `BranchingFlora`'s no-leaves auto-death
+called `Die()` without latching `dying`; `Die`'s own destruction reports back through `CheckIfDead`, which then ran the
+death a second time (a second `OnLifeFormDeath`, attributed to "Guy Fawkes", a second unregister and destroyed event).
+Both now call `LifeForm.DieOnce`. Not compiled in this session. Affects: Garrett's and Yash's ecology code.
+
+1. Host + client in a mode with a replicated flora species (a lattice colony cell): kill a plant on the host. On the
+   client it withers once; no second death sound, no kill credited to "Guy Fawkes" in the client's log or stats.
+2. EditMode: `LifeFormDieOnceTests`.
+
+### 🔴 A mode's preview: FULL SCREEN extends as a tray (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 108: `ConfigureCinema` tray mode, `ModePreviewWindow.textureWidthScale`
+(+ centre crop), `ConfigureView` / `ConfigureArenaView` regenerated. Compiled with `unity_refcompile`; not opened in Unity.
+
+- [ ] Open an Arcade card's configure window: the preview looks exactly as before (same framing, not squashed).
+- [ ] FLY, then FULL SCREEN: the preview's right edge slides right to the column's edge; the controls panel, the
+  settings card, the status line and START fade; the header, the briefing and FLY stay; more arena shows at the
+  sides, nothing stretched. The objective bar moves with the preview's right edge.
+- [ ] FULL SCREEN again, STOP, START or Esc: the tray slides back and the right side returns, pressable.
+- [ ] Same on an Arena card. A Maelstrom card is unchanged.
+- [ ] Profile the window open (frame time with the preview live) against `bleeding-edge`: the preview now renders a
+  1.64x wider texture.
+
+### 🔴 Friends tray, Rev 40 E: one party card, one verb per row, rows grouped (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 107. `PartyPanel`, `PartySlot`, `PartyOnlineRow` regenerated by
+`Tools/Build/author_menu_arcade.py`; `ArcadeLobbyList` (names and summary lines, Invite), `FriendsListPanel`
+(`oneVerbPerRow`, `onlineGroups`, `onlineEmptyLine`), `KitOnlineRow` (`oneVerbPerRow`), `OnlineInfoEntry` (state getters).
+Compiled with `unity_refcompile`; generator self-test 34/34; not opened in Unity.
+
+- [ ] Compiles; Menu_Main opens with no missing-reference warnings on the friends drawer.
+- [ ] Open the orb (unchanged): the tray shows "Your party 1 / 4", the card with your seat and three open octagons,
+  your name, "You host - 3 seats open", INVITE, no LEAVE PARTY while solo. No bonds, nothing moving at rest.
+- [ ] INVITE (and any open octagon) moves focus into the online list.
+- [ ] With a second player (MPPM P2) in the menu: a "IN THE MENU" group with P2's row and ONE button, INVITE. Press
+  it: the row moves to "YOU INVITED" with one button, CANCEL. Cancel: back to "IN THE MENU".
+- [ ] P2 hosting a party with P3: P2's row under "JOIN THEIR PARTY" with JOIN only; full: JOIN dimmed.
+- [ ] P2 in a match: the row under "IN A MATCH" with SPECTATE only. No row ever shows two buttons or a button over
+  the name.
+- [ ] In a party of 3: three seats overlap left to right in domain-colour rings, names "A, B, C", the summary names
+  the host ("You host" or "<name> hosts") and "1 seat open"; the host sees a kick on each member's top-left; hovering a
+  seat opens the profile card. Full party: INVITE hides, "Party full".
+- [ ] Gamepad: focus moves from INVITE / LEAVE into the grouped rows and back (KitFocusKeeper).
+
+### 🔴 Party recovery after the four-player test: online only once the lava lamp is up, stale memberships cleared, dead hosts not offered, Rejoin and host loss during a bounce (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/PartySystem/BUGS.md` B39-B44. `LavaLampPresence` + the `ready` presence property (B39);
+`StaleLobbyMembership` around the party join and both presence joins (B40); Relay "join code not found" classified Gone
+and `DeadPartySessions` (B41); `PartyInviteController`: a join waits for a running transition, a host loss during one
+is acted on when it ends, the Rejoin offer waits for the bounce (B42); a host with others cannot Join or Spectate away
+(`leavePartyFirstToast`, B43); the roster sync's null session (B44). Compiled with `unity_refcompile` (player and
+editor configs). No Unity Editor in the session: not compiled or run in Unity, no MPPM run. **Every player must be on
+this build**: an older build never publishes `ready`, so a new build does not list it online.
+
+MPPM, 3-4 virtual players with their own tags (or two machines, which is what the bugs need):
+- [ ] B39: start Play on P2 and watch P1's ONLINE list: P2 appears only when P2's menu has faded in, not during its boot
+  splash. P2 entering a match stays listed (with its match).
+- [ ] B39: stop P2's Play and start it again: P1's row for P2 does not flicker away and back for good; P2 rejoins the
+  presence lobby with no "already a member" warning loop (B40).
+- [ ] B41/B40: P1 hosts a party with P2. Pause P1's editor for 20 s (Relay drops it). On P3 press JOIN on P1's row:
+  "That party has ended." and P3 is back on its own menu; P3's row for P1 no longer offers JOIN/SPECTATE; a second
+  JOIN attempt elsewhere works (no "already a member").
+- [ ] B42: in the same setup P2 bounces "Host disconnected"; press REJOIN as soon as it appears: it is either not shown
+  until the menu is back, or the press waits and then runs - never "Already transitioning - ignoring rejoin".
+- [ ] B42: a host whose re-host fails (pause it again during its bounce): it bounces again and ends on a live solo party
+  (`net` shows a listening host), not `InParty` on a dead link.
+- [ ] B43: P1 hosts P2; on P1 press JOIN or SPECTATE on P3's row: the toast says to leave first and P2 stays in the party.
+- [ ] B44: no `NullReferenceException` in `PartyMemberService.SyncFromSession` across any of the above.
+- [ ] The edit-mode tests `PartyRecoveryTests`, `AbsenceStrikesTests`, `UgsRequestPolicyTests` pass.
+
 ### 🔴 Serpentine (Serpent Time): guards off the mouth, start behind gate 0, the cell's current, half the fauna (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session (no editor, no .NET SDK). Touches Yash's `SnowChanger` (a null-default `IFlow` hook: every
@@ -78,7 +198,7 @@ other mode keeps pointing its shards at the crystal; check Skim Race too).
    lean toward the line. Fly a lap: the current turns where the course turns.
 4. Guards: gate 1's stands beside its ring, half-covering it; others stand 150-300 u before their ring on the line, or
    as a pair either side of the line (a door with a narrow gap). None sit in a mouth. A heart hit still fells each one.
-5. Fauna: about half as many tadpoles and brittlestars as Skim Race.
+5. Fauna: none at all (the Serpentine spawn profile lists no fauna). Compare the frame with the half-fauna build.
 6. Skim Race: its shards still point at its crystal (regression check on `SnowChanger`).
 7. EditMode: `SerpentTimeClusterTests.Guards_mix_their_placements_and_keep_the_start_clear`.
 
@@ -16473,6 +16593,9 @@ run. Checked offline:
    Menu_Main's root canvas has TexCoord1 in Additional Shader Channels.
 
 ## 🔴 2026-10-17 — Rev 6 step 4: presence orb + party molecule (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+> **Partly superseded 2026-10-31:** the party MOLECULE steps below no longer apply - Rev 40 E replaced it with a party card
+> (`Docs/MENU_REDESIGN_B.md` section 107; its own entry is near the top of this file). The ORB steps still apply.
 
 New: `Presence.shader`, `Bond.shader` + `UIPresence.cginc`, `Presence_Orb.mat`, `Bond_Party.mat`, `KitPresenceOrb.cs`;
 `ArcadeLobbyList` gains `PresenceChanged` / `TryGetSeat` / `seatBonds` and authored online lines; `PartySlot` /

@@ -86,7 +86,10 @@ namespace CosmicShore.Gameplay
                 RadialSwing = new[] { 0.42f, 0.55f, 0.42f, 0.55f }[i - 1],
                 AngularSpread = new[] { 1.2f, 6.0f, 6.0f, 6.0f }[i - 1],
                 LateralPerturbation = new[] { 120f, 170f, 215f, 260f }[i - 1],
-                RingRadius = new[] { 90f, 68f, 52f, 40f }[i - 1],
+                // One ring a gate at Breakwater's port sizes (Shombith, 2026-10-31: "a big ring like sparrow's"), each
+                // closed by a SerpentineGate shape. Was 90 / 68 / 52 / 40 (flown as 54 / 41 u cluster rings at I1-I2), then
+                // 65 / 55 / 48 / 40 the same day.
+                RingRadius = new[] { 72f, 60f, 50f, 42f }[i - 1],
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],
                 MaxPresentDegrees = new[] { 50f, 80f, 80f, 82f }[i - 1],
             };
