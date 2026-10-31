@@ -29,6 +29,19 @@ namespace CosmicShore.Gameplay
 
         [Header("Refs")] [SerializeField] private Skimmer skimmer;
         public Skimmer Skimmer => skimmer;
+
+        VesselImpactor _hull;
+        Transform _hullOf;
+
+        /// <summary>Whether this skimmer's hull meets prisms now (<see cref="VesselImpactor.TakesPrismsByContact"/>; true
+        /// without a hull). The hull is looked up once per vessel, not per contact.</summary>
+        bool HullTakesPrisms()
+        {
+            var t = skimmer ? skimmer.VesselStatus?.Transform : null;
+            if (!t) return true;
+            if (t != _hullOf) { _hullOf = t; t.TryGetComponent(out _hull); }
+            return !_hull || _hull.TakesPrismsByContact;
+        }
         public override Domains OwnDomain => Skimmer.Domain;
         // Null-safe: the shell-contact tier polls this every frame for registered
         // probes (not just inside trigger callbacks), so an unwired skimmer ref
@@ -52,6 +65,13 @@ namespace CosmicShore.Gameplay
         // re-ran the sword's effects on that recycled prism wherever the pool had placed it.
         readonly Dictionary<PrismImpactor, float> _overlappingPrisms = new();
         readonly List<KeyValuePair<PrismImpactor, float>> _reapplyBuffer = new();
+
+        // Hulls currently inside this skimmer's trigger, counted per entering collider (a hull is
+        // several colliders, and leaving through one is not leaving). Kept only while the container
+        // carries an effect that RepeatsWhileInside, so every other skimmer pays nothing; the Tiger
+        // Moth's dust re-runs those effects every frame through ReapplyVesselEffectsToOverlapping.
+        readonly Dictionary<VesselImpactor, int> _overlappingVessels = new();
+        readonly List<VesselImpactor> _vesselReapplyBuffer = new();
         //private int ActivelySkimmingBlockCount;
         //[HideInInspector]
         public float CombinedWeight; // exposed for effects that need it
@@ -115,6 +135,51 @@ namespace CosmicShore.Gameplay
             PrismShellContactManager.UnregisterProbeOwner(this);
             // Disabled colliders fire no OnTriggerExit, so the overlap set would go stale.
             _overlappingPrisms.Clear();
+            _overlappingVessels.Clear();
+        }
+
+        /// <summary>
+        /// Re-runs, against every hull standing inside this skimmer, only the vessel effects that
+        /// <see cref="VesselSkimmerEffectsSO.RepeatsWhileInside"/>. A skimmer runs its vessel effects on
+        /// ENTRY; the Tiger Moth's dust calls this every frame from <c>ButterflyDustField</c> so its
+        /// shred keeps taking while a rival stays in the dust (the reporter's latch paces it). The
+        /// vessel twin of <see cref="ReapplyPrismEffectsToOverlapping"/>.
+        /// </summary>
+        public void ReapplyVesselEffectsToOverlapping()
+        {
+            if (!isInitialized || _overlappingVessels.Count == 0) return;
+            if (IsEffectContainerMissing(skimmerImpactorDataContainer, nameof(skimmerImpactorDataContainer)))
+                return;
+            var evs = skimmerImpactorDataContainer.VesselSkimmerEffects;
+            if (!DoesEffectExist(evs)) return;
+
+            _vesselReapplyBuffer.Clear();
+            _vesselReapplyBuffer.AddRange(_overlappingVessels.Keys);
+            for (int v = 0; v < _vesselReapplyBuffer.Count; v++)
+            {
+                var shipImpactor = _vesselReapplyBuffer[v];
+                // A hull that left without an exit (despawned, swapped, its colliders switched off).
+                if (!shipImpactor || !shipImpactor.isActiveAndEnabled || shipImpactor.Vessel?.VesselStatus == null)
+                {
+                    _overlappingVessels.Remove(shipImpactor);
+                    continue;
+                }
+                for (int i = 0; i < evs.Length; i++)
+                {
+                    var ev = evs[i];
+                    if (!ev || !ev.RepeatsWhileInside) continue;
+                    try { ev.Execute(shipImpactor, this); } catch (System.Exception ex) { ReportEffectThrow(ex, ev); }
+                }
+            }
+        }
+
+        bool TracksStandingVessels()
+        {
+            var evs = skimmerImpactorDataContainer ? skimmerImpactorDataContainer.VesselSkimmerEffects : null;
+            if (evs == null) return false;
+            for (int i = 0; i < evs.Length; i++)
+                if (evs[i] && evs[i].RepeatsWhileInside) return true;
+            return false;
         }
 
         /// <summary>
@@ -221,6 +286,17 @@ namespace CosmicShore.Gameplay
             if (!isInitialized)
                 return;
 
+            if (_overlappingVessels.Count > 0 && other.TryGetComponent(out ImpactCollider impactCollider)
+                && impactCollider.Impactor is VesselImpactor leaving)
+            {
+                if (_overlappingVessels.TryGetValue(leaving, out int inside))
+                {
+                    if (inside <= 1) _overlappingVessels.Remove(leaving);
+                    else _overlappingVessels[leaving] = inside - 1;
+                }
+                return;
+            }
+
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
 
@@ -270,6 +346,9 @@ namespace CosmicShore.Gameplay
                     // victim-effect chain ran against the pilot themselves (muting their
                     // own RightStickAction and spamming impact SFX).
                     if (ReferenceEquals(shipImpactor.Vessel?.VesselStatus, skimmer.VesselStatus)) return;
+                    if (!IsSweepDispatch && !IsShellDispatch && TracksStandingVessels())
+                        _overlappingVessels[shipImpactor] =
+                            _overlappingVessels.TryGetValue(shipImpactor, out int entered) ? entered + 1 : 1;
                     var evs = skimmerImpactorDataContainer.VesselSkimmerEffects;
                     if (!DoesEffectExist(evs)) return;
                     for (int i = 0; i < evs.Length; i++)
@@ -285,6 +364,9 @@ namespace CosmicShore.Gameplay
                     break;
 
                 case PrismImpactor prismImpactor:
+                    // a hull whose touch leaves prisms alone (IHullContactGate: the Jacks netting, the Meerkat inside a
+                    // tunnel) does not skim them either
+                    if (!IsSweepDispatch && !HullTakesPrisms()) return;
                     var prism = prismImpactor.Prism;
                     // A pilot does not skim the ribbon still coming out of their own ship.
                     // OWNER-scoped and time-boxed, never domain-scoped: a teammate's trail and

@@ -75,3 +75,4 @@ MonoBehaviour:
       prisms - and the warhead no longer kills your own domain's wildlife or
       debuffs your own pilots, since both halves of the detonation read one
       friendly-fire decision.
+  omniAbilityLabel: reloads its missiles

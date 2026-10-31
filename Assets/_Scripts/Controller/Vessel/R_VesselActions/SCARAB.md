@@ -147,6 +147,14 @@ mandate for determinism.
 | **A button** | **Switch** | Places a curved directional ring: deflects balls, pays energy when one threads it, then breaks |
 | **Crystal contact at full energy** | **Ball** | The crystal materialises into a ball carrying your velocity — no button, an aimed act |
 
+> **RECUT 2026-10-29 (Garrett).** The four mapped abilities are now **Shove · Switch · Nucleus
+> Seeding · Throttle** (§7): Charge scales the shove's DEBUFF and its L5 Backdraft adds the pull,
+> Mass 5 Sun Cores raises the dais's super-shielded suns, Space is the balls seeded on the nucleus
+> (L5 Core Breaker: they break super-shielded prisms), and Snap Dash is 5x stronger on a 5 s
+> cooldown. The ball forge is the Scarab's **omni-crystal** ability, and drift shows as a core card
+> beside the row, as the Squirrel's does (§12). The text below is the earlier kit, kept for history;
+> "cavitation" is a retired Mantis name and survives only in class names.
+
 Four element-mapped abilities — **Ball · Switch · Juke · Throttle** — plus drift as base kit (the
 Sparrow's strafing roll is the precedent for an unmapped base verb). Map in §7. There is no fifth
 button: a held modifier over the hull was built twice, on the drift and then on `Button2Action`,
@@ -785,6 +793,12 @@ layer so every strategy inherits it. The dash itself reuses
 the eased envelope are shared and already tested), gated on `IsUpgradeActive(Element.Time)` at
 the moment of the second tap.
 
+**Retuned 2026-10-29 (Garrett: "5x more significant, cooldown 5 seconds").** `ScarabVesselTransformer.dashSpeed`
+went 100 → **500** and the dash raises the velocity ceiling to that speed for its own duration
+(`ModifyVelocity(..., ceiling: dashSpeed)`), so the boost is not clipped back to the shared 100 u/s
+clamp. A dash then waits **`snapDashCooldownSeconds 5`** (`SnapDashOffCooldown`, tested in
+`ScarabKitTests`); a double-tap inside the cooldown does nothing, for the pilot and the autopilot alike.
+
 ### 3.7 The analog juke
 
 **SHIPPED 2026-09-04.** *The stick's magnitude is the dash's magnitude.*
@@ -934,6 +948,12 @@ The BLAST half of the round-3 pass is **not** retired — the plate still claims
 image, always, and that is §3.9.
 
 ### 3.9 The plate claims its own MIRROR IMAGE
+
+> **SUPERSEDED 2026-10-29.** The mirror is now the **Charge L5 upgrade, Backdraft**: at rest the shove
+> is push-only (`AOEScarabCavitation.prefab mirrorAboutStartPlane: 0`), and with Charge 5 held the
+> blast sets `SetMirrorAboutStartPlane(true)` per use, doubling the cylinder into push AND pull
+> (`ScarabCavitationBlast.PlateMirrors`). Undertow and Wrecking Ball tuned their AI ranges against
+> the always-mirrored plate; they were left as they are.
 
 **SHIPPED 2026-09-09**, replacing the held-drift plate INVERSION of 2026-09-07.
 
@@ -1306,6 +1326,12 @@ distinct failure cue. Outside a mode with goals (freestyle), the gate is inert.
 
 ### 4.1b What prisms cost the ball
 
+> **2026-10-29: a Scarab's balls are not slowed by mass.** `AstroLeagueBall.slowedByEatenMass` is
+> off on `AstroLeagueBall.prefab` (the forged and seeded balls), so the speed-cost column below no
+> longer applies to them; the Astro League scene's own ball keeps it. A ball stamped by **Core
+> Breaker** (Space 5, `SetBreaksSuperShieldedServer`) shatters super-shielded prisms
+> (`DeactivateShields` then a devastating `Damage`) instead of bouncing off them.
+
 The payload's whole relationship with mass is three rules, and the tier a prism is wearing is
 deliberately absent from all three:
 
@@ -1479,6 +1505,11 @@ discovered mid-implementation. Whether it belongs in the vessel branch at all is
 ---
 
 ### 4.6 Nucleus seeding — the Scarab studs the core (SHIPPED)
+
+> **2026-10-29: seeding is now the Space ability** (§7) and has a HUD slot: the Space card shows a
+> ball sitting in the membrane, growing with Space (×1 → ×4, `ScarabHUDView.SetSeedScale`). Space 5
+> **Core Breaker** stamps each seeded ball to break super-shielded prisms. "No HUD slot" below is
+> the earlier design.
 
 **Passive, platform-level, and not a minigame feature.** While a Scarab flies, balls of its own
 domain periodically appear **embedded in the cell's nucleus**, waiting for anyone to knock them
@@ -2273,6 +2304,23 @@ scale to double-dip against.
 Map asset: `Assets/Resources/ElementalAbilityMaps/Scarab.asset` (exact folder + name, 4 entries,
 `UnlockLevel 5 / RelockBelowLevel 4 / LatchPolicy Relock`).
 
+> **RECUT (2026-10-29) — the shipped map.** Garrett: Charge controls the blast's debuff, the name
+> "cavitation" goes, Charge 5 makes the blast push AND pull, Mass 5 adds the super-shielded prisms,
+> Space is the balls seeded on the membrane, the ball forge moves to the omni crystal, drift shows
+> beside the row; then: balls are not slowed, Space 5 breaks super-shielded prisms, Snap Dash 5x on a
+> 5 s cooldown.
+>
+> | Element | Ability | Quantitative | L5 upgrade |
+> |---|---|---|---|
+> | **Charge (1)** | **Shove** (the juke's blast, cooldown a flat 2.5 s) | Debuff magnitude ×1 → **×2.5** at Charge 10 (`VesselElementalDebuffByExplosionEffectSO.magnitudeAtFullCharge` on the Scarab-only `ScarabShoveDebuffByExplosionEffect.asset`) | **Backdraft** — the plate mirrors about its start plane: push and pull (§3.9) |
+> | **Mass (2)** | **Switch** | Ring aperture (`switchScale` 1 → 2.5) | **Sun Cores** — a scored switch's dais raises its super-shielded suns (`ScarabSwitch.LaysDaisElement`); without it only the wings rise |
+> | **Space (3)** | **Nucleus Seeding** | Seeded ball size ×1 → ×4 (`ScarabBallForge.SizeScaleFor`) | **Core Breaker** — the ball breaks super-shielded prisms (§4.1b) |
+> | **Time (4)** | **Throttle** | Top speed ×1 → ×1.5 | **Snap Dash** — 500 u/s, 5 s cooldown (§3.6) |
+>
+> The ball forge (crystal at full energy → a ball) is the omni-crystal ability and forges at ×1.
+> Cavitation Shear (`DevastatingOverride`) and the charge-scaled cooldown are retired.
+> Everything below this note is REVISION 3, kept for history.
+
 > **REVISION 3 (2026-08-15) — the map below is AUTHORED, not proposed.** Garrett's markup of
 > 2026-08-15 named Charge (cavitation blast cooldown, +CHARGE-5 shielded destruction), Mass-5
 > (shielded switch prisms), and Space (ball size ×4 at Space 10). Only the Space **L5 upgrade**
@@ -2489,8 +2537,16 @@ populated, ≥2 material slots per hull MeshRenderer.
 
 ## 12. HUD
 
-- **Four-icon row** (LOCKED order charge → mass → space → time): **Cavitation Blast · Switch ·
-  Ball Forge · Throttle**, authored at the shared row geometry. Standard three-layer upgrade signal; any icon
+- **Four-icon row** (LOCKED order charge → mass → space → time): **Shove · Switch · Nucleus
+  Seeding · Throttle** (recut 2026-10-29), authored at the shared row geometry by
+  `Tools/Build/icon_kit/author.py scarab`. The Shove card shows its pull half only while Backdraft is
+  up; the Seeding card's ball grows with Space. The **Throttle** card (2026-10-29, option A) is the Scarab flying right
+  in domain colour with a white wake in three lengths by trigger depth, the plate filled with speed / live top speed,
+  and from Time 5 the Snap Dash chevron ahead of the nose (white ready, grey for its 5 s cooldown); it is the one
+  polled readout (`ScarabHUDController.Update`). **Drift** is a core card beside the row
+  (`coreAbilities`, input 2, the Squirrel's pattern) and the **omni card** shows the Ball Forge
+  (`omniAbilitySprite = Scarab_BallForge`, drawn from the omni crystal's mesh). The energy meter
+  below is retired from the HUD with the old Space card. Standard three-layer upgrade signal; any icon
   doubling as a live gauge sets `tintIconOnUpgrade = false` and overrides `SetAbilityUpgraded`
   re-anchoring rest scales (the Squirrel reference).
 - **Element flowers**: fleet-required — author them (FrogletTools > Vessels > **Wire Elemental

@@ -81,7 +81,8 @@ this one.
    poll comes 2 s after a presence join (`FIRST_POLL_AFTER_JOIN_SECONDS`), since a join raises no push for the
    players already there. Trade-offs: a missed push, a lobby split or a stale local copy now waits up to ~20 s for
    the net, and the watchdog's three failed reads take ~60 s (a pushed removal or deletion still rejoins at once).
-   The re-measure is the next multiplayer test log (`reads`, `429s`, `voided`, pushes). **Then relax:** delete the boost window, the 4 s converge and the per-tick reads, and keep one 20 s ±
+   **Re-measured 2026-10-28** (`yskha-20261028_162901`, solo, on `4ed5438321` with steps 7-9): 12 lobby reads in 93 s,
+   **0.13 reads/s** (was 0.83), 1 rate-limited, 0 voided, 2 presence pushes. A party test is still to come. **Then relax:** delete the boost window, the 4 s converge and the per-tick reads, and keep one 20 s ±
    jitter safety poll. Re-measure with step 1's counter.
 9. **Done 2026-10-26** (the drain is a `Func<UniTask>` event, so the quit waits only as long as the leaves take,
    at most 1.5 s, and goes at once when nothing is held; the August SOAP channel and its asset were not ported, as

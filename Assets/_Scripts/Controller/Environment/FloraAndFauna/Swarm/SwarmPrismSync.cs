@@ -129,6 +129,68 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// A member's HEART pose (Docs/ECOSYSTEM.md §65.7): where the crystal the platform would show for it stands, so a
+    /// population drawn as data (a swarm, a builder colony, a substrate) draws its hearts with the elemental crystal's
+    /// OWN models and materials (<c>CrystalHeartDraw</c>) instead of a look of its own. The proxy chain, term for term:
+    /// the crystal root at the member root (interpolated position, <c>LookRotation(face, up)</c>), world scale = the one
+    /// crystal size x the molt's shrink x the newborn's bloom; each crystal model's own transform under that root.
+    /// Burst-compilable on the same terms as <see cref="SwarmBodyPose.PoseMatrix"/>.
+    /// </summary>
+    public static class SwarmHeartPose
+    {
+        /// <summary>
+        /// The element a member's heart shows at display <paramref name="alpha"/>, and its display factor: a molt
+        /// shrinks the old crystal away to the midpoint and re-forms the new one from it (<c>|1 - 2m|</c>), so the swap is
+        /// never a pop. A molt that finished this tick has from == to and runs m to 1.
+        /// </summary>
+        public static int DisplayedElement(in SwarmInstance s, float alpha, out float factor)
+        {
+            float m = s.PrevMolt + (s.CurMolt - s.PrevMolt) * alpha;
+            int from = (int)((s.Flags >> 3) & 3u), to = (int)((s.Flags >> 5) & 3u);
+            float d = 1f - 2f * m;
+            factor = m > 0f ? (d < 0f ? -d : d) : 1f;
+            return m >= 0.5f && to != from ? to : from;
+        }
+
+        /// <summary>
+        /// The crystal ROOT's world matrix for member <paramref name="s"/> drawn in <paramref name="element"/>'s list,
+        /// COLUMN-MAJOR. The zero matrix (drawn as a point) when the slot is dead or the heart is showing in the other
+        /// element's list mid-molt. <paramref name="heartScale"/> is the root's world scale
+        /// (<c>ElementalCrystalSetSO.CrystalWorldScale</c>).
+        /// </summary>
+        public static void PoseMatrix(in SwarmInstance s, int element, float alpha, float clock, float bloomTicks,
+                                      Vector3 up, Vector3 upAlt, float heartScale, out SwarmPoseMatrix m)
+        {
+            m = default;
+            if ((s.Flags & 1u) == 0u) return;
+            if (DisplayedElement(s, alpha, out float factor) != element) return;
+            float px = s.PrevPos.X + (s.CurPos.X - s.PrevPos.X) * alpha;
+            float py = s.PrevPos.Y + (s.CurPos.Y - s.PrevPos.Y) * alpha;
+            float pz = s.PrevPos.Z + (s.CurPos.Z - s.PrevPos.Z) * alpha;
+            float fx = s.PrevFace.X + (s.CurFace.X - s.PrevFace.X) * alpha;
+            float fy = s.PrevFace.Y + (s.CurFace.Y - s.PrevFace.Y) * alpha;
+            float fz = s.PrevFace.Z + (s.CurFace.Z - s.PrevFace.Z) * alpha;
+            float fl = KernelMath.Sqrt(fx * fx + fy * fy + fz * fz);
+            if (fl < 1e-5f) { fx = s.CurFace.X; fy = s.CurFace.Y; fz = s.CurFace.Z; fl = KernelMath.Sqrt(fx * fx + fy * fy + fz * fz); }
+
+            float bzx, bzy, bzz;
+            if (fl > 1e-5f) { bzx = fx / fl; bzy = fy / fl; bzz = fz / fl; } else { bzx = 0f; bzy = 0f; bzz = 1f; }
+            float ux = up.X, uy = up.Y, uz = up.Z;
+            if (KernelMath.Abs(bzx * ux + bzy * uy + bzz * uz) > 0.98f) { ux = upAlt.X; uy = upAlt.Y; uz = upAlt.Z; }
+            float bxx = uy * bzz - uz * bzy, bxy = uz * bzx - ux * bzz, bxz = ux * bzy - uy * bzx;
+            float lx = KernelMath.Sqrt(bxx * bxx + bxy * bxy + bxz * bxz);
+            if (lx > 1e-6f) { bxx /= lx; bxy /= lx; bxz /= lx; } else { bxx = 1f; bxy = 0f; bxz = 0f; }
+            float byx = bzy * bxz - bzz * bxy, byy = bzz * bxx - bzx * bxz, byz = bzx * bxy - bzy * bxx;
+
+            float k = heartScale * (factor > 0.001f ? factor : 0.001f) * SwarmBodyPose.Bloom(clock, s.BirthTick, bloomTicks);
+            m.C0X = bxx * k; m.C0Y = bxy * k; m.C0Z = bxz * k;
+            m.C1X = byx * k; m.C1Y = byy * k; m.C1Z = byz * k;
+            m.C2X = bzx * k; m.C2Y = bzy * k; m.C2Z = bzz * k;
+            m.C3X = px; m.C3Y = py; m.C3Z = pz; m.C3W = 1f;
+        }
+    }
+
     /// <summary>A body matrix, column-major, 64 bytes - field for field the layout of Unity.Mathematics.float4x4 (c0..c3,
     /// x..w), so the Burst job converts it with no shuffling. Blittable.</summary>
     public struct SwarmPoseMatrix

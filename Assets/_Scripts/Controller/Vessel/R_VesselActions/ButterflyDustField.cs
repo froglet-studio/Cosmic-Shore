@@ -64,9 +64,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] float fallSpeed = 6f;
 
         [Header("Audio")]
-        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust BITES an opposing pilot (the " +
-                 "all-element debuff lands). Played on every peer that resolves the bite, at the " +
-                 "victim. Already rate-limited per victim by the debuff's own cooldown. Leave " +
+        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust first reaches an opposing pilot (the " +
+                 "shred starts). Played on every peer that resolves the contact, at the " +
+                 "victim. Already rate-limited per victim by the effect's own cooldown. Leave " +
                  "empty for silence - never point it at a borrowed event to hear something.")]
         [SerializeField] FMODUnity.EventReference scaleDustBiteEvent;
 
@@ -101,8 +101,20 @@ namespace CosmicShore.Gameplay
         // GameObjectInjector.InjectRecursive'd on every spawn path.
         [Inject] GameDataSO _gameData;
 
+        [Header("Lit (every prism in the dust)")]
+        [Tooltip("Light every prism standing in the live capsule - any domain, any tier (super-shielded, shielded, " +
+                 "growing, plain), whatever the dust does or does not do to it (Garrett, 2026-10-29: \"the dust should be " +
+                 "causing the lit state on any prism it does or doesn't affect\"). One ungated PrismLit bank light that " +
+                 "follows the capsule; off while the capsule is (Mass mode, the Tiger Moth's incorporeal drop).")]
+        [SerializeField] bool lightsPrisms = true;
+
+        [Tooltip("Strength of that light, 0..1. Under the full 1 that a blast's or an aimed instrument's light uses, " +
+                 "because the dust is on for as long as Dust mode is.")]
+        [SerializeField, Range(0f, 1f)] float litStrength = 0.6f;
+
         IVesselStatus _status;
         Domains _paintedDomain;
+        bool _litPublished;
         bool _painted;
 
         CapsuleCollider _capsule;
@@ -210,6 +222,10 @@ namespace CosmicShore.Gameplay
             if (audio) audio.PlaySFXEvent(reference, position);
         }
 
+        /// <summary>Put the capsule's collider and impactor back to what the MODE says. Called by an ability that switched
+        /// every collider on the hull off for a while (the Tiger Moth's incorporeal drop), so a mode changed meanwhile wins.</summary>
+        public void ReassertColliders() => ApplyColliderState(_active);
+
         void ApplyColliderState(bool active)
         {
             if (_capsule) _capsule.enabled = active;
@@ -218,12 +234,46 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            ClearLit();
             if (_particles) _particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         }
 
         void OnDestroy()
         {
             if (_particles) Destroy(_particles.gameObject);
+        }
+
+        /// <summary>Publish the dust's light every frame the capsule is live: PrismLit flushes in LateUpdate, so the
+        /// light is published from Update. Ungated on purpose (every domain's mass, debris included): the sentence is
+        /// "this is in my dust", not "this is mine". A cylinder the capsule's length and radius, mirrored about its
+        /// centre (PrismLit has no capsule; the caps' rounding is the only part the cylinder over-lights).</summary>
+        void Update()
+        {
+            // The shred keeps taking while a rival stays in the dust: a skimmer runs its vessel effects
+            // on entry only, so the standing contact is re-run here every frame and the dust reporter's
+            // Charge-scaled latch window paces it (VesselElementalDebuffBySkimmerEffectSO, TIGER_MOTH.md).
+            if (_active && _impactor && _impactor.enabled) _impactor.ReapplyVesselEffectsToOverlapping();
+
+            bool live = lightsPrisms && _active && _capsule && _capsule.enabled;
+            if (!live)
+            {
+                ClearLit();
+                return;
+            }
+            MeasureCapsule(out float length, out float radius);
+            Vector3 centre = transform.TransformPoint(_capsule.center);
+            var domain = _status != null && _status.Player != null ? _status.Domain : Domains.Blue;
+            PrismLit.PublishLight(GetInstanceID(),
+                LitVolume.Cylinder(centre, -transform.up, length * 0.5f, radius, mirrored: true),
+                litStrength, PrismLit.DomainTint(domain));
+            _litPublished = true;
+        }
+
+        void ClearLit()
+        {
+            if (!_litPublished) return;
+            _litPublished = false;
+            PrismLit.ClearLight(GetInstanceID());
         }
 
         void LateUpdate()

@@ -12,5 +12,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62d7ce7301e04bd09a1e489c079cb315, type: 3}
   m_Name: SkimmerAdjustElementLevelByCrystalEffect
   m_EditorClassIdentifier:
-  levelPerUnitScale: 0.1
-  maxLevelGainPerCrystal: 0.5

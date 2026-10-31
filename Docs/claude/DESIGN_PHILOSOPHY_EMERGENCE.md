@@ -74,7 +74,7 @@ ones.
   than sitting beside them: mass that was static is now mass with a path. **The expectations**
   (`PrismMotion`, `Docs/PRISM_MOTION.md`): (1) **a moving prism that runs into another prism
   destroys BOTH** — scored to the force behind the motion, devastating; (1a) **shielded prisms bounce**
-  (Garrett, 2026-10-27): a collision a SHIELDED prism is part of, mover or struck, destroys neither, and the
+  (Garrett, 2026-10-27; LOCKED 2026-10-28): a collision a SHIELDED prism is part of, mover or struck, destroys neither, and the
   movers rebound off the contact (`PrismBounce`); (2) **"runs into" means the two prisms go from apart to touching over the step** — as
   their exact oriented BOXES when few prisms move (a plough throw, a sparse field), as the SPHERES of
   their volumes when many do — a three-level LADDER by moving count (`PrismMotionConfig`: level 1 ≤ 64
@@ -317,7 +317,7 @@ ones.
   `Docs/LIT.md`.
 - **Ark** — *a mothership: a prism-bodied home that travels the hypersea, wears a domain, and
   lives or dies by the food web.* Added at the prompter's explicit request as the anchor of the
-  highest-level gameplay arc — faction missions, where players venture into the hypersea for
+  highest-level gameplay arc — faction missions (now **Voyages**, `Docs/Voyages/VOYAGES.md`), where players venture into the hypersea for
   story-driven reasons with galactic consequences — and derisked first through the **Arkway**
   toy (the cellular Wanderway: a corridor of three satellite **Cells**, previous/current/next,
   that an `Ark` sails at its own unhurried pace while players are leashed to its side). Its
@@ -339,9 +339,10 @@ ones.
   Record: `Docs/ECOSYSTEM.md §41`, `Docs/ToySystem/ARCHITECTURE.md` § "Arkway".
 - **Soliton** — *a standing tunnel through space that keeps its shape, carries whatever enters one mouth out of the
   other, and is seen only by the way it bends the world.* Added at the prompter's explicit request (Garrett,
-  2026-10-27: "the meerkat should be producing a new fundamental (solitons)"). **DESIGN: nothing is built yet**; the
-  Meerkat's wormhole (`R_VesselActions/MEERKAT.md`) is the first maker, and the design is `Docs/Studios/MEERKAT.md`
-  § Garrett's direction. The curation checks:
+  2026-10-27: "the meerkat should be producing a new fundamental (solitons)"). **Partly built**: the Meerkat's wormhole
+  (`R_VesselActions/MEERKAT.md`) is the first maker, and its surface area and swallow are in Unity (Yash's round 23,
+  `MeerkatSwallow`, `MeerkatWormholeMath`); the rest is design, `Docs/Studios/MEERKAT.md` § Garrett's direction, whose
+  element definition is LOCKED (Garrett, 2026-10-28). The curation checks:
   1. **Name.** *Soliton*: a solitary wave that holds its shape as it travels. No other system uses the word.
   2. **Reach.**
      - The Meerkat's Space ability makes one.

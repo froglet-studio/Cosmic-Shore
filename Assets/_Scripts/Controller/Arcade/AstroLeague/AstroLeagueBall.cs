@@ -56,6 +56,11 @@ namespace CosmicShore.Gameplay
                  "match ball on its first approach to any edge.")]
         [SerializeField] bool destroyedBySuperShielded;
 
+        [Tooltip("Slow down when it eats (destroys) a prism, by the prism's volume against the " +
+                 "ball's mass. ON for the Astro League match ball; OFF for the Scarab's balls " +
+                 "(Garrett, 2026-10-29: a Scarab ball is never slowed by what it destroys).")]
+        [SerializeField] bool slowedByEatenMass = true;
+
         /// <summary>Every live ball, for systems that must find them without a per-frame
         /// FindObjectsByType (the Scarab's switch rings). Registered on enable, removed on
         /// disable, so it is exact and costs nothing to maintain.</summary>
@@ -280,6 +285,12 @@ namespace CosmicShore.Gameplay
         // its next home wearing the respawn's identity rotation. See Crystal.CollectPose.
         readonly NetworkVariable<CrystalForgeOrigin> n_ForgedFrom =
             new(default, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        // SPACE 5 on the Scarab that minted this ball ("Core Breaker", SCARAB.md section 7): the
+        // ball DESTROYS super-shielded prisms instead of being spent on them. Stamped once at
+        // birth, after Spawn, and replicated because every peer resolves its own prism copies.
+        readonly NetworkVariable<bool> n_BreaksSuperShielded =
+            new(false, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         float _lastSnapshotTime;
 
@@ -507,6 +518,17 @@ namespace CosmicShore.Gameplay
         /// radius forever. Astro League's per-peer intensity calls are unaffected: each peer
         /// applies the same value locally and the replicated echo is idempotent.
         /// </summary>
+        /// <summary>Server: stamp whether this ball destroys super-shielded prisms (its maker's
+        /// Space 5). A ball keeps it for life, like its size.</summary>
+        public void SetBreaksSuperShieldedServer(bool on)
+        {
+            if (!IsSpawned || IsServer) _breaksSuperShieldedLocal = on;
+            if (IsSpawned && IsServer) n_BreaksSuperShielded.Value = on;
+        }
+
+        bool _breaksSuperShieldedLocal;
+        bool BreaksSuperShielded => IsSpawned ? n_BreaksSuperShielded.Value : _breaksSuperShieldedLocal;
+
         public void SetSizeScale(float factor)
         {
             factor = Mathf.Max(0.01f, factor);
@@ -1372,6 +1394,15 @@ namespace CosmicShore.Gameplay
                     // is downgraded, and the ball paid for it.
                     if (prism.prismProperties.IsSuperShielded)
                     {
+                        // SPACE 5, "Core Breaker": the ball destroys it outright and flies on.
+                        if (BreaksSuperShielded)
+                        {
+                            // The sanctioned breaking sequence (Prism.Damage's note): shields off,
+                            // then a devastating hit, so the gate never sees a super-shield.
+                            prism.DeactivateShields();
+                            prism.Damage(ballVel, ballDomain, PilotName, devastate: true);
+                            continue;
+                        }
                         // Passing through untouched still answers: the deflection jiggle, the
                         // same as every other hit on super-shielded mass (Docs/LIT.md).
                         if (!destroyedBySuperShielded)
@@ -1458,7 +1489,8 @@ namespace CosmicShore.Gameplay
             if (eatenMass <= 0f) return;
 
             // Server slows the ball by the eaten mass (direction preserved); clients mirror via velocity.
-            if (isServer)
+            // A Scarab ball (slowedByEatenMass OFF) loses nothing to what it destroys.
+            if (isServer && slowedByEatenMass)
             {
                 float prismMass = settings.PrismDragMassScale * eatenMass;
                 rb.linearVelocity *= rb.mass / Mathf.Max(0.0001f, rb.mass + prismMass);

@@ -12,17 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ff80f96b277409facbda7aaf89a4df4, type: 3}
   m_Name: ButterflyScaleDustDebuffBySkimmerEffect
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.VesselElementalDebuffBySkimmerEffectSO
-  debuffMagnitude: -0.3333333
-  debuffDuration: 4
   elements: 01000000020000000300000004000000
-  biteScale:
+  petalsPerShred: 1
+  shredInterval:
     Enabled: 1
     Value: 1
-    Min: 0.5
-    Max: 2
+    Min: 1
+    Max: 0.1
     element: 1
     UseFloor: 1
-    Floor: 0.25
-  upgradeElement: 1
-  upgradeBiteMultiplier: 2
+    Floor: 0.1
   cooldown: 1

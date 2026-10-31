@@ -49,6 +49,17 @@ namespace CosmicShore.Gameplay
         // SFX can tell a creature (fauna) kill from a generic block destroy. Reset on pool reuse.
         bool _destroyedByCreature;
 
+        /// <summary>The force that destroyed this prism (the destroyed channel's attacker name), or
+        /// null while it stands. An Ark's fall is credited to whoever took its LAST hull prism
+        /// (Docs/Pilots/ARTIFACTS.md §5). Reset on pool reuse.</summary>
+        public string DestroyerName { get; private set; }
+
+        /// <summary>Game time this prism was destroyed (meaningless while it stands).</summary>
+        public float DestroyedAt { get; private set; }
+
+        /// <summary>True when fauna took this prism (a creature kill credits nobody).</summary>
+        public bool DestroyedByCreature => _destroyedByCreature;
+
         // Set transiently by Damage the same way, so the destroyed-channel payload can say
         // whether DIRECT GUNFIRE killed this prism. It exists for the weapon that reloads by
         // destroying mass (VesselRearmOnPrismDestruction): a Sparrow's tank is filled by its
@@ -339,6 +350,11 @@ namespace CosmicShore.Gameplay
                 if (scaleAnimator is not null) scaleAnimator.MaxScale = value;
             }
         }
+
+        /// <summary>The size this prism's prefab AUTHORED (its local scale before Awake zeroed it), unclamped: the
+        /// scale window trims <see cref="TargetScale"/>, never this. See PrismScaleAnimator.AuthoredTargetScale.</summary>
+        public Vector3 AuthoredScale =>
+            scaleAnimator && scaleAnimator.AuthoredTargetScale != Vector3.zero ? scaleAnimator.AuthoredTargetScale : transform.localScale;
 
         /// <summary>Widens this prism's scale-constraint window so an AUTHORED size survives
         /// <see cref="TargetScale"/>'s per-axis clamp. See PrismScaleAnimator.AdmitTargetScale.</summary>
@@ -984,6 +1000,9 @@ namespace CosmicShore.Gameplay
             _ownerHidden = false;
             CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            DestroyerName = null;         // pool reuse: the next life has no destroyer yet
+            DestroyedAt = 0f;             // pool reuse: recycled corpses come back (PrismRecycler); no stale death time
+            RecyclesWhenDestroyed = false; // pool reuse: each life opts in to recycling itself
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
             // Pool reuse: a prism whose scale window was widened for an AUTHORED size
             // (AdmitTargetScale) must not carry that ceiling into its next life.
@@ -1015,6 +1034,7 @@ namespace CosmicShore.Gameplay
             // resetting here is what stops it resetting THIS life's culling envelope.
             _lastSuperShieldJiggleTime = float.NegativeInfinity;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
+            _carried = false;   // (and no parcel holds a pooled prism)
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             IsSmallest = false;
             IsLargest = false;
@@ -1022,8 +1042,9 @@ namespace CosmicShore.Gameplay
             // SetupDestruction disables the scale animator (destroyed mass must stop scaling and
             // weighing). Re-arm it on pool-reuse creation so the re-minted prism grows in from
             // zero (continuity law) and GetCurrentVolume tracks again (volume is the spine).
-            // Gated on !enabled so fresh spawns and never-destroyed pooled reuse are untouched;
-            // Restore() never routes through here and keeps its bookkept-volume fallback.
+            // Gated on !enabled so fresh spawns and never-destroyed pooled reuse are untouched.
+            // Restore() never routes through here: it re-arms through RearmAfterRestore, keeping
+            // the size the prism died at and blooming it back in.
             if (scaleAnimator && !scaleAnimator.enabled)
             {
                 scaleAnimator.enabled = true;
@@ -1321,6 +1342,22 @@ namespace CosmicShore.Gameplay
         bool _creationQueued;
 
         /// <summary>
+        /// Bumped by every <see cref="SetupDestruction"/>. <see cref="PrismRecycler"/> stamps it on its queue entry
+        /// and acts only while it still matches, so a Restore followed by a second death never lets the FIRST
+        /// death's entry recycle the prism early (and a pool reuse is caught by <c>destroyed</c> going false).
+        /// </summary>
+        internal int DestroyEpoch { get; private set; }
+
+        /// <summary>
+        /// Opt-in for <see cref="PrismRecycler"/>'s environment route: this prism is free mass whose death nobody
+        /// else owns (a natural-death skeleton, <see cref="HealthPrism.LeaveAsSkeleton"/>), so once destroyed and
+        /// its death effect has played it goes back to <see cref="EnvironmentPrismPool"/>. Vessel-trail prisms do
+        /// not need it (their trail opts in, <see cref="Trail.RecycleDestroyedMembers"/>). Cleared on every
+        /// Initialize: each life states it again.
+        /// </summary>
+        public bool RecyclesWhenDestroyed { get; set; }
+
+        /// <summary>
         /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
         /// exactly the completion the coroutine would have run (visibility, collider, growth stamp, created
         /// event, spatial registration). For an OWNER that needs the prism real in the frame it asked - a swarm
@@ -1460,12 +1497,40 @@ namespace CosmicShore.Gameplay
                 _colliderBeforeLodCull = blockCollider.enabled;
                 blockCollider.enabled = false;
             }
-            else if (!destroyed && _colliderBeforeLodCull)
+            else if (!destroyed && !_carried && _colliderBeforeLodCull)
             {
                 blockCollider.enabled = true;
             }
             _lodCulled = culled;
         }
+
+        bool _carried;
+        bool _colliderBeforeCarry;
+
+        /// <summary>
+        /// A payload parcel is riding a vessel (<see cref="PayloadCarrier"/>,
+        /// Docs/Pilots/ARTIFACTS.md §2): the prism keeps its mass, its domain and its place in the
+        /// spatial index, but its collider is held off so the hull carrying it never strikes its own
+        /// cargo. The LOD manager's restore respects the hold. Clear it before the prism goes back to
+        /// a pool.
+        /// </summary>
+        public void SetCarried(bool carried)
+        {
+            if (_carried == carried || !blockCollider) { _carried = carried; return; }
+            if (carried)
+            {
+                _colliderBeforeCarry = blockCollider.enabled;
+                blockCollider.enabled = false;
+            }
+            else if (!destroyed && !_lodCulled && _colliderBeforeCarry)
+            {
+                blockCollider.enabled = true;
+            }
+            _carried = carried;
+        }
+
+        /// <summary>True while a payload parcel holds this prism (<see cref="SetCarried"/>).</summary>
+        public bool IsCarried => _carried;
 
         /// <summary>True while this prism's collider is enabled (LOD telemetry).</summary>
         public bool ColliderEnabled => blockCollider && blockCollider.enabled;
@@ -1626,6 +1691,8 @@ namespace CosmicShore.Gameplay
             prismProperties.volume = volumeAtDeath;
 
             destroyed = true;
+            DestroyerName = attackerPlayerName;
+            DestroyedAt = Time.time;
             _creationQueued = false;   // as the waiting coroutine did: killed while waiting never completes (a Restore registers itself)
             devastated = devastate;
 
@@ -1657,6 +1724,12 @@ namespace CosmicShore.Gameplay
             }
 
             _lastDestructionScale = destructionScale;
+
+            // Dead mass goes back to its pool once the death effect has played out, instead of living on
+            // forever as a hidden, active GameObject in its trail (the idle-Lavalamp leak). The recycler decides
+            // whether an owner keeps this corpse; see PrismRecycler for who is and is not recycled.
+            DestroyEpoch++;
+            PrismRecycler.Enqueue(this);
             return null;
         }
 
@@ -2090,6 +2163,11 @@ namespace CosmicShore.Gameplay
                 blockCollider.enabled = true;
                 SetRenderVisible(true);
                 destroyed = false;
+
+                // SetupDestruction turned the scale animator off; a restored prism grows again
+                // like any live one (an Urchin's ride restores then grows) and blooms back in
+                // from zero on the clock at the size it died at (Docs/PRISM_ANIMATION.md §3.3).
+                if (scaleAnimator) scaleAnimator.RearmAfterRestore();
 
                 // Restored mass weighs again — re-seed the cache (destroyed=false now).
                 RefreshVolumeCache();

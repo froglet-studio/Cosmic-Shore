@@ -50,3 +50,4 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: 'Momentum'
     UpgradeDescription: 'Above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino''s elements - the elemental-debuff ward scoped to DangerPrism alone, so an opposing pilot''s blast still lands (VesselElementalImmunity on the root, condition WhileAboveTopSpeedFraction, upgradeGate Time). The Time card lights while the ward is holding.'
+  omniAbilityLabel: Surge

@@ -20,6 +20,21 @@ A spec may carry `REBIND = [...]` with two kinds of step:
         entry (the Dolphin's Time card: the boost bank is the plate, not a ring); `gauge=None` UNBINDS the entry's
         gauge (the Sparrow's roll pip, 2026-10-26). A field whose value is None is DELETED from the view block (a
         field the C# no longer has). Idempotent: an existing child of that name is left alone.
+    dict(file="Assets/.../ScarabHUDVariant.prefab", core=dict(view="<view fileID>", donor="<button GameObject fileID>",
+         name="Drift", ability=1, input=2, icon="Scarab_Drift", omni="Scarab_BallForge"))
+        a NON-ELEMENTAL card (VesselHUDView.coreAbilities, CoreAbility `ability`, control `input`): the donor ability
+        button (its RectTransform, plate Image and Button) and its `Icon` child are cloned beside it as `<name>Button`
+        / `<name>Icon` (deterministic fileIDs; the donor's other children are not copied), the icon wears `icon`, and
+        a coreAbilities entry binds it - the Squirrel's DriftButton shape. `omni` (optional) also sets the view's
+        omniAbilitySprite, the omni crystal card's art. Idempotent.
+    dict(file="Assets/_Prefabs/Spacevessels/Serpent.prefab", proxy=dict(view="<view fileID>", instance=<the vessel's
+         PrefabInstance of the HUD variant>, source_file="<the variant>", source_guid="<the variant's guid>",
+         after="pipEmptyColor", refs=[("seedWallBricksIcon", "<container fileID>", "SeedWallBricks"), ...],
+         fields={"omniAbilitySprite": ("icon", "Serpent_WallShield")}))
+        for a view that lives on the VESSEL prefab and reaches the HUD variant's Images through stripped proxies (the
+        Serpent, author_hull_ability_rows.py): each ref names a child a `pair` step made in the variant; its proxy
+        (fileID = the child's Image fileID XOR `instance`, Unity's rule) is added to the vessel once and the view
+        field pointed at it. `fields` as in `pair`. Idempotent.
     dict(file="Assets/.../SparrowHUDVariant.prefab", deactivate="<Image fileID>")
         switches that Image's GameObject off (m_IsActive: 0) - a readout nothing binds any more, left in place
 
@@ -236,6 +251,117 @@ def _apply_pair(text, step, icon_meta):
     return text
 
 
+def _rt_of_go(text, go):
+    ga, gb = _block(text, go)
+    for c in re.findall(r"component: \{fileID: (\d+)\}", text[ga:gb]):
+        if text[_block(text, c)[0]:_block(text, c)[0] + 40].startswith("--- !u!224"):
+            return c
+    raise SystemExit(f"no RectTransform on {go}")
+
+
+def _apply_core(text, step, icon_meta):
+    core = step["core"]
+    seed = f"{step['file']}/core/{core['name']}"
+    donor_go = core["donor"]
+    donor_rt = _rt_of_go(text, donor_go)
+    ra, rb = _block(text, donor_rt)
+    parent_rt = re.search(r"m_Father: \{fileID: (\d+)\}", text[ra:rb]).group(1)
+    kids = re.findall(r"- \{fileID: (\d+)\}", text[ra:rb].split("m_Children:")[1].split("m_Father")[0])
+    icon_rt = next(k for k in kids
+                   if re.search(r"m_Name: Icon\n", text[slice(*_block(text, re.search(r"m_GameObject: \{fileID: (\d+)\}", text[slice(*_block(text, k))]).group(1)))]))
+    icon_go = re.search(r"m_GameObject: \{fileID: (\d+)\}", text[slice(*_block(text, icon_rt))]).group(1)
+    ids = {}
+    for go in (donor_go, icon_go):
+        ids[go] = None
+        ga, gb = _block(text, go)
+        for c in re.findall(r"component: \{fileID: (\d+)\}", text[ga:gb]):
+            ids[c] = None
+    for k in ids:
+        ids[k] = str(_fid(seed + k))
+    new_button_rt, new_icon_rt = ids[donor_rt], ids[icon_rt]
+    new_icon_img = next(ids[c] for c in re.findall(r"component: \{fileID: (\d+)\}", text[slice(*_block(text, icon_go))])
+                        if "m_Sprite:" in text[slice(*_block(text, c))])
+    guid = guid_of(icon_meta[core["icon"]])
+    if f"&{new_icon_img}\n" not in text:
+        blocks = []
+        for old in ids:
+            blk = text[slice(*_block(text, old))].rstrip("\n") + "\n"
+            for o, n in ids.items():
+                blk = re.sub(rf"(&|fileID: ){o}\b", lambda m: m.group(1) + n, blk)
+            if old == donor_go:
+                blk = re.sub(r"m_Name: [^\n]*", f"m_Name: {core['name']}Button", blk, count=1)
+            elif old == icon_go:
+                blk = re.sub(r"m_Name: [^\n]*", f"m_Name: {core['name']}Icon", blk, count=1)
+            elif old == donor_rt:
+                blk = re.sub(r"m_Children:\n(?:  - \{fileID: \d+\}\n)*", f"m_Children:\n  - {{fileID: {new_icon_rt}}}\n", blk, count=1)
+            blocks.append(blk)
+        text = text.rstrip("\n") + "\n" + "".join(blocks)
+        pa, pb = _block(text, parent_rt)
+        pblk = re.sub(r"(m_Children:\n(?:  - \{fileID: \d+\}\n)*)", lambda m: m.group(1) + f"  - {{fileID: {new_button_rt}}}\n",
+                      text[pa:pb], count=1)
+        text = text[:pa] + pblk + text[pb:]
+    text = _set_in_block(text, new_icon_img, "m_Sprite", _sprite_ref(guid))
+    text = _set_in_block(text, new_icon_img, "m_Color", "{r: 1, g: 1, b: 1, a: 1}")
+    # the coreAbilities entry
+    va, vb = _block(text, core["view"])
+    vblk = text[va:vb]
+    entry = (f"  - ability: {core['ability']}\n    icon: {{fileID: {new_icon_img}}}\n    gauge: {{fileID: 0}}\n"
+             f"    emblem: {{fileID: 0}}\n    input: {core['input']}\n")
+    if re.search(rf"^  - ability: {core['ability']}\n", vblk, re.M):
+        pass
+    elif re.search(r"^  coreAbilities: \[\]\n", vblk, re.M):
+        vblk = re.sub(r"^  coreAbilities: \[\]\n", "  coreAbilities:\n" + entry, vblk, count=1, flags=re.M)
+    elif re.search(r"^  coreAbilities:\n", vblk, re.M):
+        vblk = re.sub(r"^  coreAbilities:\n", "  coreAbilities:\n" + entry, vblk, count=1, flags=re.M)
+    else:
+        vblk = re.sub(r"^(  upgradeHighlightScale: )", "  coreAbilities:\n" + entry + r"\1", vblk, count=1, flags=re.M)
+    # optionally the OMNI card's lower-plate art (VesselHUDView.omniAbilitySprite) in the same pass
+    if core.get("omni"):
+        ref = _sprite_ref(guid_of(icon_meta[core["omni"]]))
+        replaced = _set_field(vblk, "omniAbilitySprite", ref)
+        vblk = replaced if replaced is not None else re.sub(
+            r"^(  upgradeHighlightScale: )", f"  omniAbilitySprite: {ref}\n" + r"\1", vblk, count=1, flags=re.M)
+    return text[:va] + vblk + text[vb:]
+
+
+def _apply_proxy(text, step, icon_meta):
+    px = step["proxy"]
+    for field, container, name in px["refs"]:
+        src_img = _fid(f"{px['source_file']}/{container}/{name}img")
+        local = int(src_img) ^ int(px["instance"])
+        if f"&{local} stripped\n" not in text:
+            text = text.rstrip("\n") + "\n" + f"""--- !u!114 &{local} stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {{fileID: {src_img}, guid: {px['source_guid']},
+    type: 3}}
+  m_PrefabInstance: {{fileID: {px['instance']}}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: 0}}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}}
+  m_Name: 
+  m_EditorClassIdentifier: 
+"""
+        va, vb = _block(text, px["view"])
+        vblk = text[va:vb]
+        replaced = _set_field(vblk, field, f"{{fileID: {local}}}")
+        if replaced is None:
+            replaced = re.sub(rf"^(\s*{px['after']}: .*\n)", lambda m: m.group(1) + f"  {field}: {{fileID: {local}}}\n",
+                              vblk, count=1, flags=re.M)
+        text = text[:va] + replaced + text[vb:]
+    for field, value in px.get("fields", {}).items():
+        v = _sprite_ref(guid_of(icon_meta[value[1]])) if isinstance(value, tuple) else value
+        va, vb = _block(text, px["view"])
+        vblk = text[va:vb]
+        replaced = _set_field(vblk, field, v)
+        if replaced is None:
+            replaced = re.sub(rf"^(\s*{px['after']}: .*\n)", lambda m: m.group(1) + f"  {field}: {v}\n", vblk, count=1,
+                              flags=re.M)
+        text = text[:va] + replaced + text[vb:]
+    return text
+
+
 def apply(root, steps, icon_meta, check=False):
     """icon_meta: name -> .meta path. Returns the list of files that changed (or would, under check)."""
     changed = []
@@ -253,6 +379,10 @@ def apply(root, steps, icon_meta, check=False):
             new = text.replace(f"guid: {step['old']}", f"guid: {guid}")
         elif "pair" in step:
             new = _apply_pair(text, step, icon_meta)
+        elif "core" in step:
+            new = _apply_core(text, step, icon_meta)
+        elif "proxy" in step:
+            new = _apply_proxy(text, step, icon_meta)
         elif "deactivate" in step:
             a, b = _block(text, step["deactivate"])
             go = re.search(r"m_GameObject: \{fileID: (\d+)\}", text[a:b]).group(1)

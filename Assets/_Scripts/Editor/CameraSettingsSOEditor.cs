@@ -27,13 +27,13 @@ namespace CosmicShore.Gameplay
             dynamicMinProp         = so.FindProperty(nameof(CameraSettingsSO.dynamicMinDistance));
             dynamicMaxProp         = so.FindProperty(nameof(CameraSettingsSO.dynamicMaxDistance));
             followSmoothTimeProp   = so.FindProperty(nameof(CameraSettingsSO.followSmoothTime));
-            rotationSmoothTimeProp = so.FindProperty(nameof(CameraSettingsSO.RotationSmoothTime));
-            disableSmoothingProp   = so.FindProperty(nameof(CameraSettingsSO.DisableSmoothing));
+            rotationSmoothTimeProp = so.FindProperty("rotationSmoothTime");
+            disableSmoothingProp   = so.FindProperty("disableSmoothing");
             nearClipProp           = so.FindProperty(nameof(CameraSettingsSO.nearClipPlane));
             farClipProp            = so.FindProperty(nameof(CameraSettingsSO.farClipPlane));
-            orthoSizeProp          = so.FindProperty(nameof(CameraSettingsSO.OrthographicSize));
-            enableAdaptiveZoomProp    = so.FindProperty(nameof(CameraSettingsSO.EnableAdaptiveZoom));
-            adaptiveMaxDistanceProp   = so.FindProperty(nameof(CameraSettingsSO.AdaptiveMaxDistance));
+            orthoSizeProp          = so.FindProperty("orthographicSize");
+            enableAdaptiveZoomProp    = so.FindProperty("enableAdaptiveZoom");
+            adaptiveMaxDistanceProp   = so.FindProperty("adaptiveMaxDistance");
         }
 
         public override void OnInspectorGUI()

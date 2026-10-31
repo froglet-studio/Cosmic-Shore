@@ -42,6 +42,7 @@ every run, --check included.
 """
 
 import argparse
+import glob
 import hashlib
 import importlib.util
 import math
@@ -110,10 +111,47 @@ S = dict(
     text_tab=K.kit_script("KitTextTab"),
 )
 
-# Section 85 (Shombith, 2026-10-26: "beside the all games tasks I want to have a sort and filter button"): one name per
-# ArcadeGridSort / ArcadeGridFilter value, in the enums' order (the tabs' order is the value).
-SORT_NAMES = ("Favourites", "A-Z", "Unlocked")
-FILTER_NAMES = ("All", "Favourites", "Unlocked", "Solo", "Multiplayer", "Charge", "Mass", "Space", "Time")
+# Section 90 (Shombith, 2026-10-27: "Favorites to the top by default, A-Z under. Drop the sort controls, the
+# locked/unlocked filter and solo/multiplayer. Two dropdowns: elements and vessels"). The order is fixed in
+# ArcadeGridOrder; the ELEMENT dropdown is All then Charge..Time (the tab's index is the choice), the VESSEL dropdown is
+# All then every hull an arcade card seats, in the Hangar's vessel-list order (vessel_choices()).
+ELEMENT_NAMES = ("All", "Charge", "Mass", "Space", "Time")
+ARCADE_LIST = "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"
+VESSEL_LIST = "Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset"
+ANY_VESSEL = -1                                         # VesselClassType.Any: the "All" choice
+
+
+def vessel_choices():
+    """[(name, VesselClassType value)]: All, then each hull some arcade card seats, the Hangar's list order first."""
+    by_guid = {}
+    for meta in glob.glob(os.path.join(REPO, "Assets/_SO_Assets/**/*.asset.meta"), recursive=True):
+        g = re.search(r"^guid: (\w+)", open(meta, encoding="utf-8").read(), re.M)
+        if g:
+            by_guid[g.group(1)] = meta[:-5]
+
+    def read(guid):
+        path = by_guid.get(guid)
+        return open(path, encoding="utf-8").read() if path else ""
+
+    def vessel(text_):
+        name, cls = re.search(r"^  Name: (.*)$", text_, re.M), re.search(r"^  Class: (-?\d+)$", text_, re.M)
+        return (name.group(1).strip(), int(cls.group(1))) if name and cls else None
+
+    seated = set()
+    for g in re.findall(r"guid: (\w+)", open(os.path.join(REPO, ARCADE_LIST), encoding="utf-8").read()):
+        block = re.search(r"^  Vessels:\n((?:  - .*\n)*)", read(g), re.M)
+        for vg in re.findall(r"guid: (\w+)", block.group(1)) if block else []:
+            v = vessel(read(vg))
+            if v:
+                seated.add(v)
+    listed = [vessel(read(g)) for g in re.findall(r"guid: (\w+)", open(os.path.join(REPO, VESSEL_LIST), encoding="utf-8").read())]
+    order = [v for v in listed if v in seated] + sorted(seated - set(listed), key=lambda v: v[1])
+    assert order, "no arcade card seats a vessel (ArcadeGames.asset moved?)"
+    return [("All", ANY_VESSEL)] + order
+
+
+VESSEL_CHOICES = vessel_choices()
+VESSEL_NAMES = tuple(n for n, _ in VESSEL_CHOICES)
 ALLG_H, OPT_ROW_H = 34, 34
 
 # --- data assets (guids read off the shipped wiring they replace) -------------------------------
@@ -874,6 +912,9 @@ ART_DRIFT_REACH = (5, 3)               # author_ui_lattice.ART_DRIFT: must stay 
 HULL_ICON = 60                         # the hull, lit (Hull_Lit.mat) - no plate behind it (section 73)
 HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")
 FLOWER = 34                            # the petals reach 0.42 of the sprite from its centre: the flower reads about 29 across
+GENRE_SHAPE = 24                       # the genre's element shape (ElementShapes/*_label.png), inside the 34 px slot
+GENRE_SHAPES = [K.meta_guid(f"Assets/_Graphics/ElementShapes/{e}_label.png")        # GameCard.GenreShapes: Charge..Time
+                for e in ("charge_pentagon", "mass_triangle", "space_kite", "time_diamond")]
 
 
 def drift_art(parent, key, name, r, sprite, material=None, preserve=False):
@@ -939,16 +980,19 @@ def build_card(placeholder_art):
                                              (0.5, 0.5))))
     title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
-    # Rev 24 (Shombith 2026-10-26): the genre's element as the HUD's whole flower, filled to the level the player bought
-    # for it on the mode's hull in the Hangar (GameCard.GenreFlower; every element starts at 1). A two-genre mode draws two.
-    # On the body's right edge, small (Shombith 2026-10-26: "The elemental icon can go on the right side and you can resize
-    # it a bit smaller"): a column centred in the body, so one flower sits in the middle and two stack (the card hides the
-    # second by SetActive, which the layout skips).
+    # Section 90 (Shombith 2026-10-27: "Arcade shows a single petal, not per-vessel upgrade numbers"): the genre's ONE
+    # element icon (GameCard.GenrePetal, in white), not the flower filled to a hull's bought level. On
+    # the body's right edge, small: a column centred in the body, so one petal sits in the middle and a two-genre mode's
+    # second stacks under it (GameCard hides an empty petal by disabling its image).
     col = root.child(N("Flowers", "Flowers", R((1, 0), None, (-12, BODY_H / 2), (FLOWER, BODY_H - 8), (1, 0.5))))
     col.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 4, 4, (0, 0), (0, 0)))
-    for i, key in enumerate(("Flower", "FlowerSecondary")):
-        H.element_flower(col, key, "GenreFlower" if i == 0 else "GenreFlowerSecondary", R(size=(FLOWER, FLOWER)),
-                         ("Time", "Space")[i], active=i == 0)
+    for key in ("Petal", "PetalSecondary"):
+        slot = col.child(N(key, key, R(size=(FLOWER, FLOWER))))
+        slot.add("le", 114, le(mw=FLOWER, mh=FLOWER, pw=FLOWER, ph=FLOWER))
+        # 2026-10-28 (Shombith: "the arcade cards again are using the old elelmental icons"): the image draws the
+        # element's SHAPE (GameCard.GenreShapes, the Codex's and the ability rows' icon), centred; the shape fills 0.95
+        # of its sprite, so it is drawn at 0.7 of the slot.
+        image_node(slot, f"{key}/Image", "Image", R(size=(GENRE_SHAPE, GENRE_SHAPE)), "TextLight", None, preserve=True)
 
     # On the art: who in the party asked for it (top left) and the favourite star (top right, on a dark disc).
     picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12, -12), (200, 24), (0, 1))))
@@ -994,10 +1038,11 @@ def build_card(placeholder_art):
              "  Index: 0\n"
              f"  VesselIcon: {ref(ctx.c('VesselIcon', 'img'))}\n"
              f"  VesselList: {K.ref(11400000, VESSEL_LIST, 2)}\n"
-             "  GenrePetal: {fileID: 0}\n"
-             "  GenrePetalSecondary: {fileID: 0}\n"
-             f"  GenreFlower: {ref(ctx.c('Flower', 'flower'))}\n"
-             f"  GenreFlowerSecondary: {ref(ctx.c('FlowerSecondary', 'flower'))}\n"
+             f"  GenrePetal: {ref(ctx.c('Petal/Image', 'img'))}\n"
+             f"  GenrePetalSecondary: {ref(ctx.c('PetalSecondary/Image', 'img'))}\n"
+             "  GenreShapes:\n" + "".join(f"  - {K.ref(21300000, g, 3)}\n" for g in GENRE_SHAPES) +
+             "  GenreFlower: {fileID: 0}\n"
+             "  GenreFlowerSecondary: {fileID: 0}\n"
              f"  AvatarSpace: {ref(ctx.rt('Picks'))}\n"
              f"  ProfileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n"
              "  LocalPickBorder: {fileID: 0}\n"
@@ -1109,8 +1154,9 @@ def replays_button(parent):
 
 
 def all_games_header(content):
-    """ALL GAMES and its count on the left; SORT and FILTER on the right (section 85). Each button names its choice
-    ("SORT: A-Z") and opens its row of options under this line; ArcadeGridOptions owns the rows and the choice."""
+    """ALL GAMES and its count on the left; the ELEMENT and VESSEL dropdowns on the right (sections 85, 97). Each button
+    names its choice ("Vessel: Sparrow") and opens its list under this line; ArcadeGridOptions owns the lists and the
+    choice."""
     allg = content.child(N("AllGames", "AllGames", R((0, 1), None, (0, 0), (CONTENT_W, ALLG_H), (0, 1))))
     allg.add("le", 114, le(ph=ALLG_H))
     lw = K.label_width("ALL GAMES", "Label")
@@ -1120,25 +1166,27 @@ def all_games_header(content):
           "NeutralLightest")
     opts = allg.child(N("AllGames/Options", "Options", R((1, 0.5), None, (-10, 0), (520, ALLG_H), (1, 0.5))))
     opts.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 5, (1, 0), (0, 0)))
-    for key, caption in (("Sort", f"Sort: {SORT_NAMES[0]}"), ("Filter", f"Filter: {FILTER_NAMES[0]}")):
+    for key, caption in (("Element", f"Element: {ELEMENT_NAMES[0]}"), ("Vessel", f"Vessel: {VESSEL_NAMES[0]}")):
         slot = wrap_slot(opts, f"AllGames/Options/{key}Slot", f"{key}Slot")
         slot.children.append(small_button(f"{key}Button", f"{key}Button", "Default", caption))
-    longest = max(K.button_size(f"Sort: {n}", small=True)[0] for n in SORT_NAMES) + 10 \
-        + max(K.button_size(f"Filter: {n}", small=True)[0] for n in FILTER_NAMES)
-    assert longest <= 520 and lw + 16 + 60 + 520 + 10 <= CONTENT_W, "SORT and FILTER do not fit beside ALL GAMES"
+    longest = max(K.button_size(f"Element: {n}", small=True)[0] for n in ELEMENT_NAMES) + 10 \
+        + max(K.button_size(f"Vessel: {n}", small=True)[0] for n in VESSEL_NAMES)
+    assert longest <= 520 and lw + 16 + 60 + 520 + 10 <= CONTENT_W, "ELEMENT and VESSEL do not fit beside ALL GAMES"
     allg.add("options", 114, lambda ctx, go: mono(go, S["grid_options"],
-             f"  sortButton: {ref(ctx.iref('SortButton', 'root#button'))}\n"
-             f"  sortLabel: {ref(ctx.iref('SortButton', 'Label#tmp'))}\n"
-             "  sortCaption: 'Sort: {choice}'\n"
-             "  sortNames:\n" + "".join(f"  - {n}\n" for n in SORT_NAMES)
-             + f"  sortRow: {ref(ctx.c('SortRow', 'cg'))}\n"
-             + refs("sortTabs", [ctx.c(f"SortRow/Tab{i}", "tab") for i in range(len(SORT_NAMES))])
-             + f"  filterButton: {ref(ctx.iref('FilterButton', 'root#button'))}\n"
-             f"  filterLabel: {ref(ctx.iref('FilterButton', 'Label#tmp'))}\n"
-             "  filterCaption: 'Filter: {choice}'\n"
-             "  filterNames:\n" + "".join(f"  - {n}\n" for n in FILTER_NAMES)
-             + f"  filterRow: {ref(ctx.c('FilterRow', 'cg'))}\n"
-             + refs("filterTabs", [ctx.c(f"FilterRow/Tab{i}", "tab") for i in range(len(FILTER_NAMES))])))
+             f"  elementButton: {ref(ctx.iref('ElementButton', 'root#button'))}\n"
+             f"  elementLabel: {ref(ctx.iref('ElementButton', 'Label#tmp'))}\n"
+             "  elementCaption: 'Element: {choice}'\n"
+             "  elementNames:\n" + "".join(f"  - {n}\n" for n in ELEMENT_NAMES)
+             + f"  elementRow: {ref(ctx.c('ElementRow', 'cg'))}\n"
+             + refs("elementTabs", [ctx.c(f"ElementRow/Tab{i}", "tab") for i in range(len(ELEMENT_NAMES))])
+             + f"  vesselButton: {ref(ctx.iref('VesselButton', 'root#button'))}\n"
+             f"  vesselLabel: {ref(ctx.iref('VesselButton', 'Label#tmp'))}\n"
+             "  vesselCaption: 'Vessel: {choice}'\n"
+             "  vesselNames:\n" + "".join(f"  - {n}\n" for n in VESSEL_NAMES)
+             + "  vesselChoices:\n"
+             + "".join(f"  - {c}\n" for _, c in VESSEL_CHOICES)
+             + f"  vesselRow: {ref(ctx.c('VesselRow', 'cg'))}\n"
+             + refs("vesselTabs", [ctx.c(f"VesselRow/Tab{i}", "tab") for i in range(len(VESSEL_NAMES))])))
 
 
 def option_row(content, key, names):
@@ -1204,7 +1252,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
 
     content.child(N("Gap1", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 18), (0, 1)))).add("le", 114, le(ph=18))
     all_games_header(content)
-    for key, names in (("SortRow", SORT_NAMES), ("FilterRow", FILTER_NAMES)):
+    for key, names in (("ElementRow", ELEMENT_NAMES), ("VesselRow", VESSEL_NAMES)):
         option_row(content, key, names)
     content.child(N("Gap2", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 10), (0, 1)))).add("le", 114, le(ph=10))
     empty = content.child(N("EmptyFilter", "EmptyFilter", R((0, 1), None, (0, 0), (CONTENT_W, 24), (0, 1)), active=False))
@@ -1503,7 +1551,7 @@ FIELDS = [
                                       partyCountText=S["kt"], leaveGroup=225)),
     ("PartyPanel", "root#friends", dict(onlineContent=224, requestsContent=224)),
     ("ArcadeGameCard", "root#card", dict(GameTitle=TMP, BackgroundImage=IMG, StarImage=IMG, VesselIcon=IMG,
-                                         GenreFlower=H.FLOWER_SCRIPT, GenreFlowerSecondary=H.FLOWER_SCRIPT, AvatarSpace=224, tile=S["tile"],
+                                         GenrePetal=IMG, GenrePetalSecondary=IMG, AvatarSpace=224, tile=S["tile"],
                                          starPaint=S["th"])),
     ("ArcadeView", "Weekly#weekly", dict(GameTitle=TMP, TimeRemaining=TMP, BackgroundImage=IMG)),
 ]
@@ -1620,21 +1668,31 @@ def validate_prefabs(files, guids):
 
     check_card_a(files[prefab_path("ArcadeGameCard")], "ArcadeGameCard", "Clip/Band", (CONTENT_W - (GRID_COLS - 1) * 10) / GRID_COLS,
                  ART_BAND_H)
+    # 2026-10-28: the genre icon is the element's shape (Charge, Mass, Space, Time), never the lone HUD petal.
+    _, card = doc_of(files[prefab_path("ArcadeGameCard")], K.FileIds("ArcadeGameCard")("root#card"))
+    shapes = re.search(r"^  GenreShapes:\n((?:  - .*\n)*)", card, re.M)
+    assert shapes and re.findall(r"guid: (\w+)", shapes.group(1)) == GENRE_SHAPES, \
+        "GameCard.GenreShapes must name the four ElementShapes icons, Charge to Time"
 
     view = files[prefab_path("ArcadeView")]
     V = K.FileIds("ArcadeView")
-    # Section 85: SORT and FILTER reach their buttons, labels and rows, with one tab per enum value in order.
+    # Sections 85 and 90: ELEMENT and VESSEL reach their buttons, labels and lists, with one tab per choice in order;
+    # no sort control is left.
     _, opts = doc_of(view, V("AllGames#options"))
     assert opts, "ArcadeView has no ArcadeGridOptions on ALL GAMES"
-    for field in ("sortButton", "sortLabel", "sortRow", "filterButton", "filterLabel", "filterRow"):
+    assert "sortButton" not in opts and "m_Name: SortRow" not in view and "m_text: 'Sort:" not in view, \
+        "the sort control is retired: favourites first, A-Z under (section 97)"
+    for field in ("elementButton", "elementLabel", "elementRow", "vesselButton", "vesselLabel", "vesselRow"):
         assert re.search(r"^  " + field + r": \{fileID: -?[1-9]\d*\}", opts, re.M), f"ArcadeGridOptions.{field} is unwired"
-    for field, names, row in (("sortTabs", SORT_NAMES, "SortRow"), ("filterTabs", FILTER_NAMES, "FilterRow")):
+    assert "  vesselChoices:\n" + "".join(f"  - {c}\n" for _, c in VESSEL_CHOICES) in opts, \
+        "ArcadeGridOptions.vesselChoices must match the vessel tabs, All (-1) first"
+    for field, names, row in (("elementTabs", ELEMENT_NAMES, "ElementRow"), ("vesselTabs", VESSEL_NAMES, "VesselRow")):
         block = re.search(r"^  " + field + r":\n((?:  - \{fileID: -?\d+\}\n)*)", opts, re.M)
         tabs = re.findall(r"fileID: (-?\d+)", block.group(1)) if block else []
         assert tabs == [str(V(f"{row}/Tab{i}#tab")) for i in range(len(names))], \
             f"ArcadeGridOptions.{field} must list the {row} tabs in enum order"
         assert f"  {field[:-4]}Names:\n" + "".join(f"  - {n}\n" for n in names) in opts, f"ArcadeGridOptions.{field[:-4]}Names drifted"
-    for row in ("SortRow", "FilterRow"):
+    for row in ("ElementRow", "VesselRow"):
         assert "  m_Alpha: 0\n" in doc_of(view, V(f"{row}#cg"))[1] and "  m_IgnoreLayout: 1\n" in doc_of(view, V(f"{row}#le"))[1], \
             f"{row} must start closed and out of the layout"
     for r in range(GRID_ROWS):
@@ -1799,6 +1857,7 @@ def self_test(current, files, guids):
             r"(m_CorrespondingSourceObject: \{fileID: )\d+(, guid: " + K.prefab_guid("KitButtonSmall") + ")",
             r"\g<1>4242\2", t, count=1)),
         "the card art standing still": prefab_plant(card, lambda t: t.replace(ART_DRIFT_MAT, "0" * 32)),
+        "the genre icon back to the petal": prefab_plant(card, lambda t: t.replace(GENRE_SHAPES[0], GENRE_SHAPES[1], 1)),
         "the hull back to a dark render": prefab_plant(card, lambda t: t.replace(HULL_LIT_MAT, ART_DRIFT_MAT)),
         "the art band with no overscan": prefab_plant(card, lambda t: re.sub(r"  overscan: [\d.]+\n", "  overscan: 1\n", t)),
         "lists not embedded": prefab_plant(panel, lambda t: t.replace("  embedded: 1\n", "  embedded: 0\n", 1)),
@@ -1837,13 +1896,15 @@ def self_test(current, files, guids):
         "the Join slot reading its button's rect (SPECTATE overflows)": prefab_plant(
             prefab_path("PartyOnlineRow"), lambda t: in_one(
                 t, K.FileIds("PartyOnlineRow")("JoinSlot#hlg"), "  m_ChildControlWidth: 1\n", "  m_ChildControlWidth: 0\n")),
-        "SORT without its button": prefab_plant(prefab_path("ArcadeView"), lambda t: re.sub(
-            r"(\n  sortButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
-        "a filter tab dropped": prefab_plant(prefab_path("ArcadeView"), lambda t: t.replace(
-            f"  - {{fileID: {K.FileIds('ArcadeView')('FilterRow/Tab8#tab')}}}\n", "", 1)),
-        "the sort row open on arrival": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
-            t, K.FileIds("ArcadeView")("SortRow#cg"), "  m_Alpha: 0\n", "  m_Alpha: 1\n")),
-        "a legacy ArcadeExploreView without its sort and filter": scene_plant(lambda s: s.replace(
+        "ELEMENT without its button": prefab_plant(prefab_path("ArcadeView"), lambda t: re.sub(
+            r"(\n  elementButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
+        "an element tab dropped": prefab_plant(prefab_path("ArcadeView"), lambda t: t.replace(
+            f"  - {{fileID: {K.FileIds('ArcadeView')('ElementRow/Tab4#tab')}}}\n", "", 1)),
+        "a vessel choice out of step with its tab": prefab_plant(prefab_path("ArcadeView"), lambda t: t.replace(
+            f"  vesselChoices:\n  - -1\n  - {VESSEL_CHOICES[1][1]}\n", f"  vesselChoices:\n  - -1\n  - 0\n", 1)),
+        "the vessel list open on arrival": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("VesselRow#cg"), "  m_Alpha: 0\n", "  m_Alpha: 1\n")),
+        "a legacy ArcadeExploreView without its dropdowns": scene_plant(lambda s: s.replace(
             f"gridOptions: {{fileID: {ids.stubs['gridOptions']}}}", "gridOptions: {fileID: 0}")),
         "a seat's relay opens the card on the wrong avatar": prefab_plant(prefab_path("PartySlot"), lambda t: t.replace(
             f"  anchor: {{fileID: {K.FileIds('PartySlot')('Occupied/Avatar/Icon#rt')}}}\n",

@@ -6,8 +6,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Scarab's cavitation blast (design: R_VesselActions/SCARAB.md §3.4) — the mantis-shrimp
-    /// punch that rides the dash. Fires along the JUKE direction whenever the pilot dashes and the
+    /// The Scarab's SHOVE (design: R_VesselActions/SCARAB.md §3.4; the class keeps its old
+    /// "cavitation" name, a vestige of the mantis kit it came from, because modes and tools address
+    /// it by type) — the punch that rides the dash. Fires along the JUKE direction whenever the pilot dashes and the
     /// blast is off cooldown: it shreds prisms, kills fauna (a creature dies when its body prisms
     /// are destroyed — platform-wide since Wildlife Liberation, so this needs no fauna-specific
     /// code), debuffs opposing pilots caught in it through the explosion's vessel-effect container,
@@ -31,21 +32,21 @@ namespace CosmicShore.Gameplay
     /// declines to fire while it is recharging. That split is deliberate: dodging is mobility and
     /// should never be rationed, while the destructive punch is a resource.
     ///
-    /// CHARGE scales the cooldown (×<see cref="cooldownMultiplierAtFullCharge"/> at level 10, the
-    /// fleet's authored-cooldown idiom — the Squirrel's boost ring and the Dolphin's crystal seed
-    /// both work this way, with the map's generic multiplier pinned to 1 so nothing double-dips).
-    /// CHARGE 5 unlocks "Cavitation Shear": the blast destroys SHIELDED prisms outright instead of
-    /// merely shedding their shields.
+    /// CHARGE scales how hard the shove DEBUFFS a pilot it engulfs, not how often it fires (Garrett,
+    /// 2026-10-29): the cooldown is a flat <see cref="cooldownSeconds"/>, and the bite is the blast
+    /// container's <see cref="VesselElementalDebuffByExplosionEffectSO"/>, which reads the FIRING
+    /// pilot's Charge level. The retired Charge-5 "Cavitation Shear" (shielded prisms destroyed
+    /// outright) went with it.
     ///
-    /// THE PLATE CLAIMS ITS OWN MIRROR IMAGE (SCARAB.md §3.9). Authored on the blast prefab
-    /// (<c>AOECylindricalExplosion.mirrorAboutStartPlane</c>), the volume is reflected through the
-    /// start plane — the plane through the hull whose normal is the dash — so it reaches as far
+    /// CHARGE 5 — "BACKDRAFT": THE PLATE CLAIMS ITS OWN MIRROR IMAGE (SCARAB.md §3.9). At rest the
+    /// shove only PUSHES: the volume runs from the hull forward. At Charge 5 it is reflected
+    /// through the start plane — the plane through the hull whose normal is the dash — so it reaches as far
     /// BEHIND the pilot as in front, doubling what one punch claims. The velocity is untouched and
     /// uniform across the whole doubled field, which is the entire point: the back half does not
     /// throw mass backwards, it drags mass FORWARD through the ship. Mass behind a Scarab is no
     /// longer safe from its own punch, and a ball behind one can be brought to the front of the
-    /// fight. Nothing here has to know about it — the plate expresses its own volume — and no
-    /// input modifies it, so the punch is ONE shape whichever way the pilot is holding their
+    /// fight. The blast sets the mirror on each instance before it is initialized
+    /// (<c>AOECylindricalExplosion.SetMirrorAboutStartPlane</c>), and no input modifies it, so the punch is ONE shape whichever way the pilot is holding their
     /// hands. (A held-button modifier over it was built twice and cut both times; SCARAB.md §3.8.)
     ///
     /// TWO EARLIER SHAPES ARE RETIRED HERE, and both were the held drift reaching for the punch.
@@ -77,12 +78,9 @@ namespace CosmicShore.Gameplay
                  "be measured. Matches the shipped Scarab hull, a single 4.5-unit sphere.")]
         [SerializeField, Min(0.1f)] float fallbackVesselRadius = 4.5f;
 
-        [Header("Cooldown (CHARGE)")]
-        [Tooltip("Seconds between blasts at element level 0.")]
+        [Header("Cooldown")]
+        [Tooltip("Seconds between blasts. Flat: Charge scales the blast's debuff, not its pace.")]
         [SerializeField, Min(0f)] float cooldownSeconds = 2.5f;
-
-        [Tooltip("Cooldown multiplier at CHARGE 10 — 0.5 halves it. Read live at fire time.")]
-        [SerializeField, Range(0.1f, 1f)] float cooldownMultiplierAtFullCharge = 0.5f;
 
         IVesselStatus _status;
         ScarabJukeController _juke;
@@ -129,18 +127,14 @@ namespace CosmicShore.Gameplay
             OnBlastReadyChanged?.Invoke(ready, CurrentCooldown());
         }
 
+        /// <summary>The wait between blasts — flat; no element paces it.</summary>
+        float CurrentCooldown() => cooldownSeconds;
+
         /// <summary>
-        /// CHARGE shortens the wait. The authored multiplier is what the cooldown reaches at
-        /// level 10, so this is the fleet's authored-cooldown idiom rather than the map's generic
-        /// scaler (which stays pinned to 1 for Charge — no double-dip). Clamped to [0, 1] because
-        /// the normalized band runs to 1.5 in overcharge and a maintained mechanism must not keep
-        /// paying past level 10.
+        /// CHARGE 5, "Backdraft": the plate also claims its mirror image behind the hull, so the
+        /// shove pushes AND pulls. Pure so a test can pin it: the upgrade is the only input.
         /// </summary>
-        float CurrentCooldown()
-        {
-            float t = Mathf.Clamp01(ElementalScaling.Level01(_status, Element.Charge));
-            return cooldownSeconds * Mathf.Lerp(1f, cooldownMultiplierAtFullCharge, t);
-        }
+        public static bool PlateMirrors(bool chargeUpgradeActive) => chargeUpgradeActive;
 
         /// <summary>
         /// The vessel's own collider radius in WORLD units, measured off
@@ -260,17 +254,19 @@ namespace CosmicShore.Gameplay
 
             float radius = ResolveVesselColliderRadius() * radiusPerVesselRadius;
 
-            // The plate's own reach and whether it mirrors are BOTH properties of the prefab, so
-            // there is nothing to compute here — this reads them only to say what it fired.
+            // Charge 5 (Backdraft) decides the mirror, per fire; the reach is the prefab's.
+            bool backdraft = PlateMirrors(_status.ElementalAbilityHandler != null
+                                          && _status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge));
             var cylinder = blastPrefab as AOECylindricalExplosion;
             float plateLength = cylinder ? radius * cylinder.LengthPerRadius : 0f;
 
             if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
                 CSDebug.LogVerbose(CSLogChannel.ScarabDash,
                     $"[ScarabCavitation] Plate fired radius {radius:F1}, reach {plateLength:F1}" +
-                    $"{(cylinder && cylinder.MirrorsAboutStartPlane ? " (mirrored — same reach behind)" : "")}.");
+                    $"{(backdraft ? " (Backdraft: mirrored, same reach behind)" : "")}.");
 
             var blast = Instantiate(blastPrefab, at, rotation);
+            if (blast is AOECylindricalExplosion plate) plate.SetMirrorAboutStartPlane(backdraft);
 
             // INJECT BEFORE Initialize, or the blast has no turn-end kill switch. AOEExplosion's
             // gameData is [Inject], and it is the ONLY thing that wires OnMiniGameTurnEnd ->
@@ -300,10 +296,9 @@ namespace CosmicShore.Gameplay
                 // Domain-tinted like every other blast in the fleet. Without it the explosion
                 // renders with whatever the prefab shipped and reads as nobody's.
                 OverrideMaterial = _status.AOEExplosionMaterial,
-                // CHARGE 5 — "Cavitation Shear": devastate destroys SHIELDED prisms outright
-                // instead of only shedding the shield. Per-use snapshot at fire time.
-                DevastatingOverride = _status.ElementalAbilityHandler != null
-                                      && _status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge)
+                // A shielded prism sheds its shield rather than breaking: pinned here, not left to
+                // the prefab, now that no upgrade turns it on (Cavitation Shear is retired).
+                DevastatingOverride = false
             });
 
             // INITIALIZE ONLY ARMS IT. `Initialize` sets the blast up and deliberately leaves it

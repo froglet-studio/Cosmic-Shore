@@ -109,6 +109,17 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Heading above the mode's authored rows. Empty draws no heading.")]
         string flightSectionTitle = "Controls";
 
+        [SerializeField, Tooltip("Section 90 (Shombith 2026-10-27: \"in the controls tab the omni crystal ability of the " +
+                                 "vessel should also show\"): the Omni crystal's icon on its row.")]
+        Sprite omniIcon;
+
+        [SerializeField, Tooltip("The Omni row's name when the hull's ability map authors none. {ability} is the map's " +
+                                 "OmniAbilityLabel. Empty: no Omni row.")]
+        string omniRowTemplate = "Omni crystal: {ability}";
+
+        [SerializeField, Tooltip("The Omni row's name when the hull's map authors no Omni ability. Empty: no Omni row then.")]
+        string omniDefaultLabel = "Omni crystal: fly into it";
+
         [SerializeField, Tooltip("Heading above the derived ability rows. Empty draws no heading.")]
         string abilitySectionTitle = "Abilities";
 
@@ -338,6 +349,20 @@ namespace CosmicShore.UI
             return used;
         }
 
+        /// <summary>The hull's Omni crystal row after its four elements: no button (you fly into it), no cooldown.</summary>
+        int BuildOmniRow(ElementalAbilityMapSO map, int used)
+        {
+            string label = map && !string.IsNullOrWhiteSpace(map.OmniAbilityLabel)
+                ? TemplateText.Fill(omniRowTemplate, "ability", map.OmniAbilityLabel.Trim())
+                : omniDefaultLabel;
+            if (string.IsNullOrEmpty(label)) return used;
+            var row = RowAt(used);
+            if (!row) return used;
+            RecordBinding(used, HintBinding.None);
+            row.Bind(Element.Omni, label, string.Empty, omniIcon, null, null, null, showsCooldown: false);
+            return used + 1;
+        }
+
         int BuildAbilityRows(GameModes mode, VesselClassType vesselClass, SO_Vessel vessel, int used)
         {
             if (vesselClass is VesselClassType.Any or VesselClassType.Random) return used;
@@ -348,8 +373,8 @@ namespace CosmicShore.UI
                 // Not a fault: a vessel without a map simply has no authored ability set yet, and
                 // the flight rows above still say everything that is true.
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
-                    $"[ArcadeLaunch] No ElementalAbilityMap for {vesselClass}; flight rows only.");
-                return used;
+                    $"[ArcadeLaunch] No ElementalAbilityMap for {vesselClass}; flight rows and the Omni row only.");
+                return BuildOmniRow(null, used);
             }
 
             var shown = controlsLibrary ? controlsLibrary.AbilitiesFor(mode) : null;
@@ -401,7 +426,7 @@ namespace CosmicShore.UI
 
                 used++;
             }
-            return used;
+            return BuildOmniRow(map, used);
         }
 
         /// <summary>

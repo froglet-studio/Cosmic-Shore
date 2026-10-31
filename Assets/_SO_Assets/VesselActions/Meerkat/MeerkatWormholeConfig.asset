@@ -12,16 +12,61 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79e5a66832b4490dada0056a58c42303, type: 3}
   m_Name: MeerkatWormholeConfig
   m_EditorClassIdentifier: 
+  comfort:
+    DistortionIntensity: 1
+    MaxWobbleSpeed: 0.25
+    MaxPulseSpeed: 1
+  trunkLook:
+    Bend: 3
+    Lens: 0.139
+    WallInside: 0.1
+    WallOutside: 0.15
+    Wobble: 0.2
+    WobbleWaves: 1.5
+    WobbleSpeed: 0.12
+    Rim: 0.05
+    RimTightness: 4
+    Glint: 0.25
+    Glow: 0.02
+    Shimmer: 0
+    Pulse: 0
+    PulseCount: 3
+    PulseSpeed: 0.6
+  trunkRide:
+    InsideBend: 0.5
+    InsideWobble: 0.5
+    SteadyCentre: 0.2
+  rootLook:
+    Bend: 3
+    Lens: 0.139
+    WallInside: 0.1
+    WallOutside: 0.15
+    Wobble: 0.2
+    WobbleWaves: 1.5
+    WobbleSpeed: 0.12
+    Rim: 0.05
+    RimTightness: 4
+    Glint: 0.25
+    Glow: 0.04
+    Shimmer: 0.5
+    Pulse: 0.12
+    PulseCount: 3
+    PulseSpeed: 0.6
+  rootRide:
+    InsideBend: 0.5
+    InsideWobble: 0.5
+    SteadyCentre: 0.2
   reticleAhead: 30
   bendMaxDegrees: 150
   shaftMin: 60
   shaftMax: 600
-  bendRadius: 60
-  throatDiameter: 8
-  mouthDiameter: 26
+  bendRadius: 10
+  ovalShortest: 0.2
+  ovalLongest: 1.1
+  ovalMaxSharpness: 8
+  throatDiameter: 7.1
+  mouthDiameter: 35.6
   keyRampSeconds: 0.5
-  rideEntryMultiplier: 1
-  rideMidMultiplier: 2.5
   rideExitMultiplier: 1.2
   rideSpeedTunnelScale: 5
   reticleDelaySeconds: 0.5
@@ -33,41 +78,124 @@ MonoBehaviour:
   reticleIdleAlpha: 0.053
   reticleWhite: 0.45
   reticleNearLight: 0.25
-  warpStrength: 0
-  dentStrength: 0
-  rippleStrength: 0
-  rippleEdge: 0.154
-  rippleSeconds: 1.2
-  bridgeVisibility: 0.163
-  bridgeGlass: 0.15
   bridgeRings: 36
   bridgeSpindlesPerRing: 21
   bridgeRibs: 5
   bridgeSpindleThickness: 0.25
   bridgeShimmer: 0.5
-  bridgeWhite: 0.45
-  formedLook: 1
-  fieldStrength: 6
-  fieldPitch: 0
-  fieldDrag: 0.5
-  fieldTwist: 0
-  fieldGlass: 1
-  fieldGlassIndex: 0.05
-  fieldGrazing: 0.9
-  fieldFlow: 0
-  fieldInner: 0.1
-  fieldOuter: 0.15
-  fieldProfile: 1
-  fieldRibs: 0.25
-  fieldRibSharpness: 3
-  fieldRibTravel: 1.2
-  fieldRibRings: 16
-  fieldRibLines: 12
+  omniOn: 1
+  menuAutopilotRoots: 1
+  networkReach:
+    Enabled: 1
+    Value: 0.5
+    Min: 0.5
+    Max: 1
+    element: 2
+    UseFloor: 1
+    Floor: 0.05
+  omniCount: 3
+  labyrinthBranchPointsMin: 6
+  labyrinthBranchPointsMax: 12
+  labyrinthOpeningsMin: 16
+  labyrinthOpeningsMax: 50
+  labyrinthRadiusMin: 100
+  labyrinthRadiusMax: 531
+  labyrinthSpread: 273
+  labyrinthRandomness: 0.45
+  labyrinthDiameter: 10.5
+  labyrinthMouthDiameter: 13.9
+  rootTip: 0.309
+  rootGnarl: 0.779
+  labyrinthFormSeconds: 0.8
+  rootCruise: 45
+  rootThrust: 90
+  rootMove: 55
+  rootDrag: 0.45
+  rootMaxSpeed: 119
+  rootBounce: 0.45
+  rootGravity: 0
+  areaL0: 6000
+  areaL10: 18000
+  suckRadius: 40
+  suckSpeed: 30
+  swallowShare: 1.5
+  carryStretch: 2
+  carryTwist: 0.5
+  fireSpeed: 120
+  fireGlideSeconds: 3
+  swallowPrismCap: 48
   aiWormhole: 1
   aiStraightMinDistance: 300
   aiBentMinDistance: 120
   aiShapeSeconds: 0.3
   aiNoise: 0
+  rush:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.4
+    element: 4
+    UseFloor: 1
+    Floor: 0.05
+  boostOut: 1.5
+  sentinelPool: 3
+  sentinelPoolL5: 6
+  guardShare: 1.5
+  aiZapRate: 5
+  zapPetals:
+    Enabled: 1
+    Value: 0.1
+    Min: 0.1
+    Max: 0.25
+    element: 1
+    UseFloor: 1
+    Floor: 0
+  zapCooldownSeconds: 0
+  onCombatHitLanded: {fileID: 0}
+  portalShare: 1.5
+  portalSize:
+    Enabled: 1
+    Value: 0.4
+    Min: 0.4
+    Max: 0.9
+    element: 2
+    UseFloor: 1
+    Floor: 0.05
+  zapEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sentinelPlacedEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sentinelLostEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  portalEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  prismFiredEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   formEvent:
     Guid:
       Data1: 0
@@ -76,6 +204,13 @@ MonoBehaviour:
       Data4: 0
     Path: 
   collapseEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  rootsEvent:
     Guid:
       Data1: 0
       Data2: 0

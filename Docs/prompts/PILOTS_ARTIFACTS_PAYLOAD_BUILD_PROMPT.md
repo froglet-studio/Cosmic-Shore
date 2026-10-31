@@ -88,8 +88,9 @@ and goes through Shombith.** Today there is one crystal balance (`CrystalCurrenc
 Converter is animation only. Build the Ark-screen panel against a device-local stand-in until his backend lands, as
 `PilotLoadoutStore` does.
 
-**6. The voyage.** Vaults (super-shielded shells with an artifact inside), the hold and extraction, built as a real
-mode through `/arcadegame` on the Arkway.
+**6. Voyages.** Vaults (super-shielded shells with an artifact inside), the hold and extraction belong to Voyages,
+the fourth game location after Toybox, Arcade and Arena (Garrett, 2026-10-28; `Docs/Pilots/ARTIFACTS.md` §8.5). They are
+not an Arkway mode: the Arkway is a toy, a taste of a freestyle voyage. Voyages need their own plan before any build.
 
 ## Rules that are not negotiable
 

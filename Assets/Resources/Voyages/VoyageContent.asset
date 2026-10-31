@@ -1,0 +1,394 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d64b9a37bef3a45c625084b1a5107af, type: 3}
+  m_Name: VoyageContent
+  m_EditorClassIdentifier:
+  content:
+    Locations:
+    - Id: loc.harbour.jade
+      Name: Celadon Harbour
+      Blurb: Home water for the Jade. Dock here and whatever is aboard is yours.
+      Experience: 0
+      Home: 1
+      ChartX: -6
+      ChartY: 0
+      ChartZ: -4
+      Cell: 0
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+    - Id: loc.harbour.ruby
+      Name: Carmine Harbour
+      Blurb: Home water for the Ruby. Dock here and whatever is aboard is yours.
+      Experience: 0
+      Home: 2
+      ChartX: 6
+      ChartY: 1
+      ChartZ: -4
+      Cell: 1
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+    - Id: loc.harbour.gold
+      Name: Aurum Harbour
+      Blurb: Home water for the Gold. Dock here and whatever is aboard is yours.
+      Experience: 0
+      Home: 4
+      ChartX: 0
+      ChartY: -1
+      ChartZ: 7
+      Cell: 2
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+    - Id: loc.tollmoor
+      Name: Tollmoor
+      Blurb: A neutral port where every lane crosses. News arrives here first and leaves here fastest.
+      Experience: 1
+      Home: 3
+      ChartX: 0
+      ChartY: 0
+      ChartZ: 0
+      Cell: 3
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+    - Id: loc.lantern
+      Name: Lantern Reach
+      Blurb: Vault shells drift here, lit from inside. Something sealed them, and something wants them back.
+      Experience: 2
+      Home: 3
+      ChartX: -5
+      ChartY: 2
+      ChartZ: 3
+      Cell: 4
+      Vaults: 3
+      Finds:
+      - artifact.hydra
+      - artifact.aftershock
+      HoldSeconds: 60
+    - Id: loc.hollow
+      Name: The Hollow
+      Blurb: A quiet cell with deep vaults. Quiet cells are quiet for a reason.
+      Experience: 2
+      Home: 3
+      ChartX: 4
+      ChartY: -2
+      ChartZ: 5
+      Cell: 5
+      Vaults: 2
+      Finds:
+      - artifact.aftershock
+      - artifact.hydra
+      HoldSeconds: 60
+    - Id: loc.verdigris
+      Name: Verdigris
+      Blurb: A contested core. Whoever holds its nucleus decides whose colour the waves fight for.
+      Experience: 3
+      Home: 3
+      ChartX: -1
+      ChartY: 3
+      ChartZ: -7
+      Cell: 6
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+    - Id: loc.saltmarch
+      Name: Saltmarch
+      Blurb: A core on the trade lane, ringed with old wreckage.
+      Experience: 3
+      Home: 3
+      ChartX: 5
+      ChartY: 1
+      ChartZ: 1
+      Cell: 7
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 75
+    Lanes:
+    - From: loc.harbour.jade
+      To: loc.lantern
+      Cells: 1
+    - From: loc.harbour.jade
+      To: loc.tollmoor
+      Cells: 2
+    - From: loc.harbour.ruby
+      To: loc.verdigris
+      Cells: 1
+    - From: loc.harbour.ruby
+      To: loc.tollmoor
+      Cells: 2
+    - From: loc.harbour.gold
+      To: loc.hollow
+      Cells: 1
+    - From: loc.harbour.gold
+      To: loc.tollmoor
+      Cells: 2
+    - From: loc.lantern
+      To: loc.tollmoor
+      Cells: 1
+    - From: loc.lantern
+      To: loc.verdigris
+      Cells: 2
+    - From: loc.tollmoor
+      To: loc.saltmarch
+      Cells: 1
+    - From: loc.hollow
+      To: loc.saltmarch
+      Cells: 2
+    - From: loc.verdigris
+      To: loc.saltmarch
+      Cells: 2
+    Crew:
+    - PilotId: pilot.callsign.citadel
+      Name: Oriel Vance
+      Faction: 2
+      Story: Reads a vault's shell like a face. Has opened more than she has kept.
+    - PilotId: pilot.callsign.talon
+      Name: Brisk Amadou
+      Faction: 2
+      Story: Tracks predators for a living, and sells what they guard.
+    - PilotId: pilot.callsign.doe
+      Name: Ilse Marren
+      Faction: 2
+      Story: Follows the grazers. Where they gather, something sealed lies near.
+    - PilotId: pilot.callsign.anvil
+      Name: Teodor Haskel
+      Faction: 2
+      Story: Weighs every find before he touches it. Usually right.
+    - PilotId: pilot.callsign.needle
+      Name: Pell
+      Faction: 2
+      Story: Finds the switch nobody else saw. Talks to it, too.
+    - PilotId: pilot.callsign.galleon
+      Name: Cass Morrow
+      Faction: 4
+      Story: Knows every Ark by its silhouette, and every wreck by its smell.
+    - PilotId: pilot.callsign.bandit
+      Name: Juno Rask
+      Faction: 4
+      Story: Calls the rival out before the rival knows they are a rival.
+    - PilotId: pilot.callsign.hornet
+      Name: Sable Okoye
+      Faction: 4
+      Story: Flies the burning edge of a wreck field for fun.
+    - PilotId: pilot.callsign.flume
+      Name: Aster Quill
+      Faction: 4
+      Story: Rides the tunnels others fear. Arrives early, leaves rich.
+    - PilotId: pilot.callsign.volt
+      Name: Merrin Tal
+      Faction: 1
+      Story: Prices news by its voltage. Fresh news sparks.
+    - PilotId: pilot.callsign.zodiac
+      Name: Dov Ferrante
+      Faction: 1
+      Story: Charts the fastest lane between any two ports, then charges for it.
+    - PilotId: pilot.callsign.sundial
+      Name: Noor Achebe
+      Faction: 1
+      Story: Never late. Has never once been late.
+    - PilotId: pilot.callsign.opal
+      Name: Wren Holloway
+      Faction: 1
+      Story: Carries sealed dispatches for three ports and reads none of them. Probably.
+    - PilotId: pilot.callsign.manger
+      Name: Rook Sandoval
+      Faction: 1
+      Story: Knows where the herds will feed tomorrow, and who will pay to know it.
+    - PilotId: pilot.callsign.ensign
+      Name: Lady Corvina Ash
+      Faction: 3
+      Story: Holds what is hers. Considers most things hers.
+    - PilotId: pilot.callsign.rampart
+      Name: Marshal Edda Kroll
+      Faction: 3
+      Story: Has held Verdigris twice and lost it once. Remembers the once.
+    - PilotId: pilot.callsign.wingman
+      Name: Captain Theo Lark
+      Faction: 3
+      Story: Never leaves a wing behind. Never lets you forget it.
+    - PilotId: pilot.callsign.ivy
+      Name: Warden Sorrel
+      Faction: 3
+      Story: Tends the gardens of the cores, and the guns that guard them.
+    Jobs:
+    - Id: job.return
+      Kind: 0
+      Faction: 1
+      Needs: 0
+      Goes: 0
+      Title: 'Sail home to {to}'
+      Summary: 'Dock at {to}. Everything aboard becomes yours.'
+      SuccessLine: 
+      FailLine: 
+      Reward: 0
+      RewardElement: 5
+      OnSuccess: 
+      OnFail: 
+    - Id: job.courier.dispatch
+      Kind: 0
+      Faction: 1
+      Needs: 0
+      Goes: 1
+      Title: '{pilot}: carry a sealed dispatch to {to}'
+      Summary: 'Reach {to} with the Ark standing. The news aboard will change what {to} knows.'
+      SuccessLine: '{pilot}''s dispatch reached {to}. The dock crews were talking about it before the hull cooled.'
+      FailLine: 'The dispatch for {to} never arrived.'
+      Reward: 6
+      RewardElement: 4
+      OnSuccess: ev.courier.delivered
+      OnFail: 
+    - Id: job.hunt.sighting
+      Kind: 1
+      Faction: 2
+      Needs: 1
+      Goes: 2
+      Title: '{pilot}: open the vaults at {to}'
+      Summary: 'Vaults are lit at {to}. Crack one with a payload, carry its artifact back to the Ark and stow it.'
+      SuccessLine: '{pilot}''s crew opened a vault at {to}. Its chart pointed somewhere new.'
+      FailLine: 'The vaults at {to} kept their secrets.'
+      Reward: 8
+      RewardElement: 3
+      OnSuccess: ev.hunt.opened
+      OnFail: ev.hunt.missed
+    - Id: job.hunt.rumour
+      Kind: 1
+      Faction: 2
+      Needs: 0
+      Goes: 2
+      Title: '{pilot}: chase a rumour of vaults at {to}'
+      Summary: 'Nobody has seen them lit, but {pilot} swears there are vaults at {to}. Crack one and stow what is inside.'
+      SuccessLine: '{pilot}''s rumour was true. A vault at {to} gave up its artifact.'
+      FailLine: '{to} was empty water, or looked like it.'
+      Reward: 4
+      RewardElement: 3
+      OnSuccess: ev.hunt.opened
+      OnFail: 
+    - Id: job.salvage.wreck
+      Kind: 2
+      Faction: 4
+      Needs: 2
+      Goes: 3
+      Title: '{pilot}: strip the wreck at {to}'
+      Summary: 'An Ark went down at {to} and its hold spilled. Grab what floats there with RB and stow it in your Ark before anyone else does.'
+      SuccessLine: '{pilot} picked the wreck at {to} clean.'
+      FailLine: 'Someone else got to the wreck at {to} first, or nobody did.'
+      Reward: 5
+      RewardElement: 2
+      OnSuccess: ev.salvage.stripped
+      OnFail: 
+    - Id: job.defence.aid
+      Kind: 3
+      Faction: 3
+      Needs: 3
+      Goes: 3
+      Title: '{pilot}: answer the call to hold {to}'
+      Summary: '{to} is under pressure. Keep the Ark under its core until the hold is done.'
+      SuccessLine: '{pilot}''s squad held {to}. The wardens there owe a favour, and paid it in news.'
+      FailLine: '{to} fell to the waves while the squad was away.'
+      Reward: 8
+      RewardElement: 1
+      OnSuccess: ev.defence.held
+      OnFail: ev.defence.lost
+    - Id: job.defence.patrol
+      Kind: 3
+      Faction: 3
+      Needs: 0
+      Goes: 3
+      Title: '{pilot}: patrol {to}'
+      Summary: 'Fly the flag at {to}. Keep the Ark under its core until the patrol is done.'
+      SuccessLine: '{pilot} flew the flag at {to}.'
+      FailLine: 'The patrol at {to} was cut short.'
+      Reward: 4
+      RewardElement: 1
+      OnSuccess: ev.defence.held
+      OnFail: 
+    Events:
+    - Id: ev.courier.delivered
+      Writes:
+      - Tag: 3
+        At: 0
+        About: 2
+        Line: 'Dock crews at {to} say {about} is asking for a squad to hold it.'
+      SpendsNews: 0
+    - Id: ev.hunt.opened
+      Writes:
+      - Tag: 1
+        At: 0
+        About: 1
+        Line: 'A vault chart from {to} shows lit shells at {about}.'
+      SpendsNews: 1
+    - Id: ev.hunt.missed
+      Writes: []
+      SpendsNews: 0
+    - Id: ev.salvage.stripped
+      Writes:
+      - Tag: 3
+        At: 0
+        About: 0
+        Line: 'With the wreck gone, the waves at {about} turned on the core. It asks for help.'
+      SpendsNews: 1
+    - Id: ev.defence.held
+      Writes:
+      - Tag: 1
+        At: 0
+        About: 1
+        Line: 'The wardens of {to} share a chart: vaults are lit at {about}.'
+      SpendsNews: 1
+    - Id: ev.defence.lost
+      Writes: []
+      SpendsNews: 0
+    Seeds:
+    - Port: loc.harbour.jade
+      Tag: 1
+      About: loc.lantern
+      Line: A trader swears the shells at Lantern Reach are lit again.
+    - Port: loc.harbour.ruby
+      Tag: 3
+      About: loc.verdigris
+      Line: Verdigris is losing its core to the waves and asks for a squad.
+    - Port: loc.harbour.gold
+      Tag: 1
+      About: loc.hollow
+      Line: Something is glowing at the bottom of the Hollow.
+    - Port: loc.tollmoor
+      Tag: 2
+      About: loc.saltmarch
+      Line: An Ark went down at Saltmarch. Its hold spilled, and nobody has claimed it yet.
+    SeedWrecks:
+    - At: loc.saltmarch
+      Artifacts:
+      - artifact.hydra
+      Line: A broken Ark at Saltmarch, its hold open to the sea.
+    WreckLine: 'An Ark fell at {about}. What it carried lies there now.'
+    WreckNewsLine: 'An Ark went down at {about} and its hold spilled. Nobody has claimed it yet.'
+  cellPool: []
+  lines:
+    VoyageName: VOYAGE
+    Depart: 'BOUND FOR {to}'
+    Arrived: 'ARRIVED AT {to}'
+    Vaults: 'VAULTS AHEAD: CRACK ONE, GRAB ITS ARTIFACT, STOW IT AT THE ARK'
+    Wreck: 'A WRECK: GRAB WHAT FLOATS WITH RB AND STOW IT AT THE ARK'
+    Hold: 'HOLD {to}: STAY WITH THE ARK'
+    HoldProgress: 'HOLDING {to}: {seconds}'
+    Done: JOB DONE
+    Failed: JOB LEFT UNDONE
+    Stowed: STOWED ABOARD
+    Extracted: 'DOCKED AT {to}: {count} FOUND ARTIFACTS ARE YOURS'
+    ArkLost: THE ARK IS LOST
+    NoWork: No pilot has work here. Seat other pilots, or sail on.
+    Following: 'SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB'
+    ChooseNext: LEAVE FREESTYLE TO CHOOSE YOUR NEXT VOYAGE
+    CardRoute: '{from} TO {to} - {pilot}'
+    CardHomeRoute: '{from} TO {to}'
+    CardUnderway: 'UNDER WAY TO {to}'

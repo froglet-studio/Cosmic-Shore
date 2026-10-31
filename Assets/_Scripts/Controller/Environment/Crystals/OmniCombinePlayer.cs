@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -45,6 +46,15 @@ namespace CosmicShore.Gameplay
     /// face gets its own corners. (Until 2026-10-13 the Charge crystal and the omni's pentagons also went through the
     /// edge-crawl bake; the Charge light is now drawn on the CPU, and Charge wears the omni's body material.)</para>
     ///
+    /// <para><b>Each crystal keeps its own shade of lime all the way in, and the omni wears all four</b> (Garrett,
+    /// 2026-10-28: "when the elemental crystals combine have them retain their separate colors"; Docs/PALETTE.md §2.12).
+    /// Every piece names its element per vertex (<see cref="CrystalElementPlates.Channel"/>): a crystal's every plate is
+    /// its own element, the omni's are their owners' (<c>plateOwner</c>), and the body material
+    /// (<c>OmniCrystalBody</c>, <c>_ElementShades</c> on) paints each in that element's shade - the shades
+    /// <c>author_omni_crystal_triangles.py</c> writes from the palette. The Mass prisms wear <c>MassDepthPrisms</c>
+    /// and land as the omni's triangles on <c>OmniDepthPrisms</c>, both the Mass shade. So a landed plate is already
+    /// exactly the omni's colour there and the omni dithers in over plates that match it.</para>
+    ///
     /// <para><b>Stepped by its owner, on unscaled time.</b> Every menu screen but HOME runs at
     /// <c>Time.timeScale = 0</c> (<c>ScreenSwitcher.NavigateTo</c>), so <see cref="Tick"/> takes its
     /// delta from the caller.</para>
@@ -60,6 +70,8 @@ namespace CosmicShore.Gameplay
         static readonly int ReachID = Shader.PropertyToID("_Reach");
         static readonly int FaceSplitID = Shader.PropertyToID("_FaceSplit");
         static readonly int SizeStartID = Shader.PropertyToID("_PlateScaleStart");
+        /// <summary>The element of each crystal slot, in <see cref="OmniCombineCore.Order"/>'s order.</summary>
+        internal static readonly Element[] SlotElements = { Element.Space, Element.Charge, Element.Mass, Element.Time };
         const float CoplanarDegrees = 20f;   // CrystalEdgeArcMeshBaker.CoplanarAngleDegrees
 
         OmniCombineConfigSO _config;
@@ -172,11 +184,14 @@ namespace CosmicShore.Gameplay
                 int plates = 0;
                 foreach (int q in d.plate) plates = Mathf.Max(plates, q + 1);
                 _morph[k] = new float[plates];
-                // Charge, Space and Time wear the omni's own body material, so the plates they land as are the omni's hue
-                // from the start: the hand-off changes nothing at base, and Charge's only contrast is its lit state.
-                var material = k == OmniCombineCore.Mass ? config.MassMaterial : config.ShellMaterial;
-                _crystals[k] = Piece.Build(transform, OmniCombineCore.Order[k], d.basis, d.tris, d.plate, material,
-                                           k == OmniCombineCore.Mass, bounds);
+                // Charge, Space and Time wear the omni's own body material, so the plates they land as are the omni's look,
+                // each in its own element's shade from start to landing; the hand-off changes nothing at base. Mass wears
+                // the game's Mass prisms, in the Mass shade, the same way.
+                bool isMass = k == OmniCombineCore.Mass;
+                var material = isMass ? config.MassMaterial : config.ShellMaterial;
+                var element = isMass ? null : Filled(d.basis.Length / 3, SlotElements[k]);
+                _crystals[k] = Piece.Build(transform, OmniCombineCore.Order[k], d.basis, d.tris, d.plate, element, material,
+                                           isMass, bounds);
                 if (_crystals[k] == null)
                 {
                     CSDebug.LogError($"[OmniCombinePlayer] The {OmniCombineCore.Order[k]} crystal did not build.", config);
@@ -213,7 +228,11 @@ namespace CosmicShore.Gameplay
             for (int t = 0; t < data.omni.tris.Length; t += 3)
                 if (data.omni.plateOwner[data.omni.plate[data.omni.tris[t]]] != OmniCombineCore.Mass)
                     bodyTris.AddRange(new[] { data.omni.tris[t], data.omni.tris[t + 1], data.omni.tris[t + 2] });
-            _omni = Piece.Build(transform, "Omni", data.omni.verts, bodyTris.ToArray(), data.omni.plate, config.OmniMaterial, false, bounds);
+            // Each omni plate in its owner's shade: the colour the crystal that lands on it flew in.
+            var omniElements = new Element[data.omni.plate.Length];
+            for (int i = 0; i < omniElements.Length; i++) omniElements[i] = SlotElements[data.omni.plateOwner[data.omni.plate[i]]];
+            _omni = Piece.Build(transform, "Omni", data.omni.verts, bodyTris.ToArray(), data.omni.plate, omniElements,
+                                config.OmniMaterial, false, bounds);
             if (_omni == null)
             {
                 CSDebug.LogError("[OmniCombinePlayer] The omni crystal did not build.", config);
@@ -685,6 +704,13 @@ namespace CosmicShore.Gameplay
             r.SetPropertyBlock(_block);
         }
 
+        static Element[] Filled(int count, Element element)
+        {
+            var elements = new Element[count];
+            System.Array.Fill(elements, element);
+            return elements;
+        }
+
         void OnDestroy()
         {
             foreach (var c in _crystals) c?.Dispose();
@@ -822,7 +848,8 @@ namespace CosmicShore.Gameplay
         /// <summary>One drawn mesh: unwelded per triangle (so each face has its own normal), fed from the core's
         /// per-vertex positions through <c>_corner</c> (drawn vertex -> art vertex) and <c>_face</c> (drawn
         /// triangle -> face, for the per-face normal). A depth piece also carries each corner's plate centre and
-        /// index in TEXCOORD2, which the depth-prism shader reads.</summary>
+        /// index in TEXCOORD2, which the depth-prism shader reads; a body piece carries each corner's element in
+        /// <see cref="CrystalElementPlates.Channel"/>, which the omni body shader paints by.</summary>
         sealed class Piece
         {
             public MeshRenderer Renderer;
@@ -832,8 +859,9 @@ namespace CosmicShore.Gameplay
             Vector3[] _verts, _normals, _faceNormals;
             Vector4[] _uv2;
 
+            /// <param name="element">Each art vertex's element (null: none written).</param>
             public static Piece Build(Transform parent, string name, float[] points, int[] tris, int[] plate,
-                                      Material material, bool depth, Bounds bounds)
+                                      Element[] element, Material material, bool depth, Bounds bounds)
             {
                 var source = FaceSplitSource(points, tris, plate, out var faceOfTri);
                 var mesh = Unweld(source);
@@ -843,6 +871,12 @@ namespace CosmicShore.Gameplay
                 mesh.bounds = bounds;
 
                 var oriented = Orient(points, tris, plate);
+                if (element != null)
+                {
+                    var ids = new Vector4[oriented.Length];
+                    for (int c = 0; c < oriented.Length; c++) ids[c] = new Vector4((int)element[oriented[c]], 0f, 0f, 0f);
+                    mesh.SetUVs(CrystalElementPlates.Channel, ids);
+                }
                 var piece = new Piece
                 {
                     _mesh = mesh,

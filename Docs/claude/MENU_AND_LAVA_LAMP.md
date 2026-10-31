@@ -42,7 +42,7 @@ public interface IScreen
 | Home | `HomeScreen` | No | `Start()` |
 | Ark (ARK) — the Elemental Converter (2026-10-13; the arcade moved to `ModalWindows.ARCADE`) | `ElementalConverterView` (+ the disabled legacy `StoreScreen`) | Yes | `OnScreenEnter()` → idle crystals; CONVERT plays the omni combine (`Docs/Studios/OMNI_COMBINE_LAB.md` § In the game) |
 | Store | `StoreScreen` (extends `View`) | No | `Start()` + `OnEnable()` events |
-| Port (Leaderboards) | `LeaderboardsMenu` | Yes | `OnScreenEnter()` → `LoadView()` |
+| Port (PORT) — faction messages and the weekly leaderboard (opened 2026-10-27, `Docs/MENU_REDESIGN_B.md` §90; the PlayFab-era `LeaderboardsMenu` panel is switched off) | `PortScreen` (`FactionMessagesPane`, `PortLeaderboardPane`) | Yes | `OnScreenEnter()` → the shown tab; the messages tab joins its Vivox channel while shown |
 | Hangar | `HangarScreen` | Yes | `OnScreenEnter()` → `LoadView()` |
 | Episodes | `EpisodeScreen` | No | Lazy `LoadView()` on panel toggle |
 
@@ -94,8 +94,9 @@ gradient) with one centred row under `NavBarButtons`: the `LeftArrrow` Button we
 "LT", five `KitTopNavTab` instances (`HangarLink`..`ProfileLink`, text labels, each with its
 `EventTrigger` -> `ScreenSwitcher.OnClick<X>Nav`), and `RightArrow` / "RT". `NavActiveImages` /
 `NavInactiveImages` point into the instances, so `UpdateNavBar` is unchanged; `NavBarLine` and
-`NavBarLineSprites` are deliberately empty. Locked PORT is drawn by an authored
-`MenuAvailabilityView` (padlock + dimmed word) that `disabledScreens` drives at runtime. The scene's
+`NavBarLineSprites` are deliberately empty. A locked tab is drawn by an authored
+`MenuAvailabilityView` (padlock + dimmed word) that `disabledScreens` drives at runtime (no tab is locked since
+PORT opened, §90). The scene's
 nav is generated: change it through `Tools/Build/author_menu_topnav.py` (`--check`, `--self-test`),
 not by hand. Details: `Docs/MENU_REDESIGN_B.md` §10.
 
@@ -224,6 +225,51 @@ Per-vessel HUD controllers (`IVesselHUDController` implementors):
 
 HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant.prefab`, `DolphinHUDVariant.prefab`).
 
+#### The lava lamp's default hull: Squirrel (2026-10-29)
+
+The hull the lava lamp spawns (the autopilot behind the menu, and the one you fly in freestyle) is
+`MainMenuController.menuVesselClass` on Menu_Main: **Squirrel** (6). It was the Meerkat (28) for one day, 2026-10-28
+(622e271ca), and went back to Squirrel on 2026-10-29 (Yash: "change the lavalamp default vessel from meerkat to
+squirrel"). `ConfigureMenuGameData` writes it to `gameData.selectedVesselClass` and onto the host's
+`NetDefaultVesselType`; `MenuServerPlayerVesselInitializer` spawns that. The Vessel Changer toy swaps it at runtime (the
+Meerkat is still on its roster). The Meerkat-only menu code (the executor's MenuLive perf guards, the autopilot's
+omnicrystal and camera rules) simply does not run for a Squirrel. The Lavalamp wormhole lab
+(`Game_TestDesign/LavalampWormholeLab.unity`) is its own scene and still flies the Meerkat.
+
+#### God mode: the lava lamp's inspection camera (2026-10-29)
+
+Fly a free camera through the lava lamp while the AI keeps flying the vessel (Yash: "I dont need a lab to check out
+this vessel's ability, I just need a god mode, with which I can fly smoothly in the environment without the vessel, and
+have an eye on everything while the Vessel is flown by AI"). This replaces the wormhole lab as the way to watch a hull's
+ability; the lab scene was left in place, but nothing needs it any more.
+
+| Input | Keyboard / mouse | Gamepad |
+|---|---|---|
+| Toggle god mode | **F2** | **L3** (left-stick click) |
+| Move | W A S D | left stick |
+| Up / down | E or Space / Q or Ctrl | RT / LT |
+| Look | hold the right mouse button and move | right stick |
+| Faster / slower | hold Shift / hold Alt | hold RB |
+| Cruise speed | mouse wheel (×1.2 per notch, 2 to 2000 u/s) | - |
+
+- **Where it works:** only the settled lava lamp (`MainMenuCameraController` in its `Menu` state: AI flying, the
+  player's flight input paused). Not in freestyle or during a menu/freestyle blend; the shortcut does nothing there.
+- **How it hooks the camera:** `MenuGodModeCamera` (`_Scripts/Controller/Camera/`, on Menu_Main's **Game** object next
+  to the camera rig) borrows the scene's MainCamera with `MainMenuCameraController.BeginInspection()`, starting at the
+  camera's current pose (any roll levels out over a moment). While it flies, the rig stops posing the camera. Exit
+  calls `EndInspection()`, which re-seeds the rig at the god camera's pose with the config-switch glide raised, so the
+  lava-lamp framing glides back instead of cutting. CM PlayerCam and `CameraManager` are untouched; the lava lamp never
+  uses them.
+- **Click to control still works:** taking the vessel (double tap, the pad's Select) ends god mode first, and the
+  enter-freestyle blend starts from the god camera's pose. Leaving the lava lamp any other way (a game launch, the scene
+  closing) ends it too.
+- **Input:** the vessel gets nothing from god mode; its flight input is already paused in the lava lamp and the AI
+  keeps the stick. UI keyboard/pad navigation is switched off while flying (WASD and Space would otherwise move and
+  press the menu's selection) and restored on exit. Mouse clicks still reach the UI.
+- **Dev switches** (Inspector on the component): `godModeEnabled`, `toggleKey`, `gamepadToggle`, speeds, acceleration
+  and damping (the glide), look sensitivity and smoothing, and `showHint` (a one-line controls reminder at the top left
+  while flying). Movement runs on unscaled time, so it still flies while the menu is paused.
+
 #### Vessel selection — RETIRED (2026-09-23)
 
 **Changing your hull in freestyle is the Vessel Changer TOY and nothing else.** The scene-authored
@@ -301,6 +347,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 |---|---|---|
 | Menu MiniGameHUD (freestyle HUD + vessel change trigger) | `MenuMiniGameHUD.cs` | `_Scripts/UI/` |
 | Freestyle toggle (autopilot↔control) | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
+| God mode (free inspection camera, F2 / L3) | `MenuGodModeCamera.cs` | `_Scripts/Controller/Camera/` |
 | Menu state machine | `MainMenuController.cs` | `_Scripts/System/` |
 | Menu vessel spawner (base) | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
 | Vessel selection (the ONLY one) | `VesselChangerToy.cs` + `ToyVesselRoster.cs` | `_Scripts/Controller/Toys/` |
@@ -319,6 +366,6 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **"Game UI" CanvasGroup controls all game panel visibility** — individual panels should not manage their own top-level visibility during freestyle toggles; the parent CanvasGroup handles fade in/out
 - **Vessel HUD reparenting is automatic** — do not manually instantiate or position vessel HUDs; the `onShipHUDInitialized` → `MiniGameHUD.OnShipHUDInitialized()` pipeline handles it
 - **Never author a panel of vessel/world/lifeform cards in a scene** — the roster goes stale the day a vessel ships and nothing says so. Hull selection is the Vessel Changer toy, reachable both by flying it and from the menu Toy Box; both read `ToyVesselRoster`
-- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner. That is exactly what MobileLow phones do: the lava lamp lays no trail and freestyle trail waits above 10,000 cell prisms, through a creation-side hold (`VesselPrismController.SetTierHold`, driven by `MenuCrystalClickHandler`; a mode preview and a Wanderway run are exempt) — nothing laid is removed (`Docs/PLATFORM_UNIFICATION.md` §3.6)
+- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner. That is exactly what MobileLow phones do: the lava lamp lays no trail and freestyle trail waits above 10,000 cell prisms, through a creation-side hold (`VesselPrismController.SetTierHold`, driven by `MenuCrystalClickHandler`; a mode preview and a Wanderway run are exempt) — nothing laid is removed (`Docs/PLATFORM_UNIFICATION.md` §3.6). **Dead mass is different (2026-10-29, Yash):** a prism that is already DESTROYED goes back to its pool once its death effect has played (`PrismRecycler`; vessel wakes and natural-death skeletons only, held while an Urchin exists - `Docs/PERFORMANCE_OPTIMIZATION.md` §2 row 10-29). That is what keeps an idle lava lamp's GameObject count and memory flat; it removes nothing alive, so it is not a cap or a TTL
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
 - **Phase 3 panels start inactive** — PlayerScoreCards are dynamically instantiated only when turns are active. The scored Phase 2 HUD (`EndShapeDetailHUD`) was deleted with C15.

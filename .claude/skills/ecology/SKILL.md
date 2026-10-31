@@ -67,6 +67,19 @@ what the carve-out silently broke — see the traps below.
 
 ## 2.6 Prism / trail traps (each of these cost real time)
 
+- **A population drawn as DATA misses every law written on GameObjects.** A swarm, a builder colony and a substrate
+  have no body prisms of their own and draw their hearts themselves, so an element law applied in `Fauna.ArmourBody`,
+  or a crystal re-look applied to the crystal prefabs' materials, never reaches them - the Swarm cell kept the old
+  Charge shield and a stale heart look until Garrett flew it (Docs/ECOSYSTEM.md §65.7). Put the law in the FRAME
+  (`SwarmInstance.ElementLaw`) so the look, the index and the proxies agree, and draw a heart with the crystal's OWN
+  materials (`CrystalHeartDraw`), never with a shader's copy of its look. When you change any lifeform law, grep the
+  three producers (`SwarmTickJob`, `BuilderColonyFauna.BuildFrame`, `SubstrateTickJob`) and the NCA creature.
+- **Moving ARMOUR between elements moves the DIET with it.** An armoured plant is no food outside a Frenzy
+  (`Fauna.IsInedibleShield`), so the element that wears the shield is the element no grazer eats. When the law moved
+  the armour from Charge to Mass, the Swarm cell's Inner whale, penned to a band that grew only Mass Borromean, lost
+  all its food, and no gate said so. The swarm generator's check that the band could pay its egg bill was simply never
+  run (Docs/ECOSYSTEM.md §65.7). After any change to which element is armoured, list every PENNED grazer
+  (a swarm band, a substrate pen, a mode's sector) and the element of the only flora it can reach.
 - **A SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY.** Both shield
   meshes are built from the box HALF-extents x `CIRCUMSCRIBING_SCALE` (3), so a prism of full
   size `S` gets a semi-axis of `1.5 S` — **3x the box's own extent**. The octahedron's vertices
@@ -80,6 +93,12 @@ what the carve-out silently broke — see the traps below.
   restores the envelope exactly - §35's "fit the PRISM, never the pattern"). Full table + the
   clearance and hinge consequences: the `asset-surgery` skill, "Trap: a SHIELD's size is not the
   prism's size".
+- **A shield CLEARS danger, so anything that re-armours must skip danger prisms - and "dangerous" is no longer
+  "authored teeth".** `PrismStateManager.ApplyShieldState` sets `IsDangerous = false`, so a regen that shields every
+  prism of an armoured lifeform strips its authored danger within one cycle (a Charge gyroid's octagon ring was
+  danger for its first few seconds only, until `LifeForm.ShieldRegenCoroutine` learned to skip it). Since §65 the
+  armoured element is MASS and CHARGE arms EVERY prism, so code that finds a mouth, a jaw or a tooth by
+  `IsDangerous` finds the whole body on a Charge creature: read `Fauna.IsAuthoredDanger`. Docs/ECOSYSTEM.md §65.
 - **A positional Add/Remove pair is asymmetric for anything that MOVES.** `Cell.AddBlock` files
   the fauna density grids at the position read at add time; a `RemoveBlock` that re-reads
   `transform.position` decrements whichever bucket the prism has since wandered into, stranding
@@ -474,17 +493,21 @@ what the carve-out silently broke — see the traps below.
   must keep its own per-plant budget: that budget is GEOMETRY (a gyroid octagon is 24 prisms around
   one crystal), so a cell-level `MaxTotalSpawnedObjectsOverride` does not thin the plant, it
   truncates a shape mid-figure.
-- **A SIZE that gameplay reads is a REWARD, and the band needs a ceiling with a margin.** A
-  lifeform heart's world scale is read in four places (collect reward, pickup trigger radius,
-  vacuum speed, capture flourish — the live domain fauna buff was a fifth and was removed,
-  `Docs/ECOSYSTEM.md` §15); the reward is
-  `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)`, so it SATURATES. Past that point two
-  visibly different hearts pay the same — a size the player can see and a reward they cannot.
-  When a band is authored rather than uniform, solve its scale constant so the LARGEST member
-  lands on the ceiling: that makes clipping structurally impossible instead of merely unlikely,
-  and it uses the whole band. Do NOT answer an overshoot by retuning `levelPerUnitScale` — it is
-  shared with every non-lifeform elemental crystal (the Wanderway conveyor, Dog Fight's arena
-  scatter). Compress the mapping instead.
+- **Every elemental crystal is ONE size and ONE petal — do not size one per lifeform again.**
+  (Garrett, 2026-10-26, `Docs/ECOSYSTEM.md` §64.) A heart, an ejected petal, an arena scatter and
+  a toy's pickup are all `ElementalCrystalSetSO.CrystalWorldScale` (3.55, the Elemental
+  Converter's elemental-to-omni ratio held against the fixed omni by `ElementalCrystalSizeTests`),
+  and the pickup grants the flat `LevelGainPerCrystal` = one petal. The size is still read in
+  three places that are not the reward — the pickup trigger radius, the vacuum speed, the capture
+  flourish — so a different size on one crystal is a different pickup, not a different reward.
+  The per-species `HeartWorldScale` fields (and the swarm / substrate / builder / NCA heart
+  vectors) are still serialized and generated and are read by NOTHING; wiring one back up revives
+  the retired §40.2 band. A NEW producer of elemental crystals sets the one size at mint
+  (`LifeFormCrystal.SetWorldScale` when parented), and a new heart SEAT has to hold a 3.55 heart
+  (`verify_fauna_heart_seat.py`). **Bodies were scaled to match it** (§64.4: body x k = 3.55 / the
+  retired heart, body lengths x k, speeds kept, volume x k^3): a body-size change is a VOLUME change, so
+  re-derive any ladder or egg/stock price that counts fauna bodies (the Swarm cell's generator does), and
+  grow food by scaling a plant WHOLE (`LatticeScale`), never by adding plants (colliders).
 - **"Spindles and crystals but no prisms" is a prism WAITING to be drawn, not a prism that was
   never made.** `Prism.CreateBlockCoroutine` keeps every laid prism's renderer and collider off
   until it wins a per-frame creation completion (6/frame at gameplay tier); spindles and crystals

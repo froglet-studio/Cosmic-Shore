@@ -5,8 +5,8 @@
 // the same SwarmMemberPoseOf / SwarmMemberShade over one SwarmInstance. Only the FETCH differs. There the instance
 // is read from a StructuredBuffer by SV_InstanceID; here it arrives as five float4 rows per instance in Unity's
 // instancing constant buffer (MaterialPropertyBlock arrays on Graphics.RenderMeshInstanced, packed by
-// SwarmMemberFallbackDraw.cs), and SwarmInstanceFromRows rebuilds it. Heart draws do not index a heart list on the
-// GPU: the CPU gathers each element's members into that element's own rows once per tick.
+// SwarmMemberFallbackDraw.cs), and SwarmInstanceFromRows rebuilds it. Bodies only: the members' hearts are the
+// elemental crystals' own draw (CrystalHeartDraw.cs, Docs/ECOSYSTEM.md §65.7) on every device.
 //
 // The matrices RenderMeshInstanced requires are identity and unread: the pose is entirely the instance data's,
 // exactly as on the SM 4.5 path. The prism occlusion corridor (a PLATFORM LAW, Docs/PRISM_ANIMATION.md §4.7) is

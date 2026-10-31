@@ -1,5 +1,10 @@
 # The Butterfly
 
+> **RETIRED 2026-10-29** (Garrett: "retire the butterfly, the tiger moth replaces it"). The Tiger Moth (`TIGER_MOTH.md`)
+> flies this airframe, its wings, dust, wake, camera, HUD and all four of its modes, with the Drop in place of the Fold.
+> `Butterfly.prefab`, its class asset and its map are deleted; everything below is the design record of the hull the
+> Tiger Moth is built from, and still describes every part except Time.
+
 > *"It captures what we lost when we moved the Manta from a graceful soaring vessel to a speeding
 > bomber. Someone who flies slow from far away with a wide piano-key trail. They get to enjoy
 > making beautiful curvy surfaces through the hypersea. While everyone else is fighting they are

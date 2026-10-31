@@ -53,6 +53,19 @@ namespace CosmicShore.Gameplay
         // there - GetBlockIndex then answered with a prism near the HEAD for one near the tail.
         Dictionary<Prism, int> trailBlockIndices;
 
+        /// <summary>
+        /// Opt-in for <see cref="PrismRecycler"/>: a DESTROYED pooled member of this trail is taken out of it
+        /// (<see cref="RemoveMembers"/>) and returned to its pool once its death effect has played. Off by
+        /// default - a trail whose owner holds its prisms by identity or by append-only index (Ark hull/wake,
+        /// Hijack yards, builder-laid spawnables, executor/projectile trails) must not have dead members pulled
+        /// out from under it. Only the vessel's own wake (<see cref="VesselPrismController"/>) opts in. A property,
+        /// not a field, so Unity never serializes it onto a prefab.
+        /// </summary>
+        public bool RecycleDestroyedMembers { get; set; }
+
+        [NonSerialized] readonly List<int> _removedIndices = new();
+        [NonSerialized] readonly List<Prism> _lookAheadBuffer = new();
+
         public Trail(bool isLoop = false)
         {
             this.isLoop = isLoop;
@@ -157,6 +170,66 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public event Action OnOldestRemoved;
 
+        /// <summary>
+        /// Takes the given DEAD prisms out of the trail in one compaction pass: survivors keep their order, the
+        /// index map is rebuilt for every survivor that moved, and a survivor whose
+        /// <c>prismProperties.Index</c> was its trail index (the vessel spawner and executors stamp it so, and
+        /// Skimmer reads it back as one) is restamped to its new index. Raises <see cref="OnMembersRemoved"/> once
+        /// with the removed OLD indices, ascending. Membership stamps (<c>prism.Trail</c>) are left alone - the
+        /// pool's ResetState clears them on reuse, and the hole-bridging walks already treat a pooled-away or
+        /// re-issued prism as a hole.
+        ///
+        /// <para><b>Not a cap and not a front-remover</b>: its one caller, <see cref="PrismRecycler"/>, only passes
+        /// prisms that are already destroyed and whose death effect has played, from a trail that opted in with
+        /// <see cref="RecycleDestroyedMembers"/>. Live mass never leaves a trail through here (mass conservation;
+        /// see <see cref="RemoveOldest()"/> for the recorded live-mass carve-outs).</para>
+        /// </summary>
+        /// <returns>How many prisms left the trail.</returns>
+        public int RemoveMembers(HashSet<Prism> members)
+        {
+            if (members == null || members.Count == 0 || TrailList.Count == 0) return 0;
+
+            _removedIndices.Clear();
+            int write = 0;
+            int count = TrailList.Count;
+            for (int read = 0; read < count; read++)
+            {
+                var block = TrailList[read];
+                if (block && members.Contains(block))
+                {
+                    trailBlockIndices.Remove(block);
+                    _removedIndices.Add(read);
+                    continue;
+                }
+
+                if (write != read)
+                {
+                    TrailList[write] = block;
+                    if (block)
+                    {
+                        trailBlockIndices[block] = write;
+                        var props = block.prismProperties;
+                        if (props != null && props.Index == (ushort)read) props.Index = (ushort)write;
+                    }
+                }
+                write++;
+            }
+
+            int removed = count - write;
+            if (removed == 0) return 0;
+            TrailList.RemoveRange(write, removed);
+            OnMembersRemoved?.Invoke(_removedIndices);
+            return removed;
+        }
+
+        /// <summary>
+        /// Raised after <see cref="RemoveMembers"/> compacted the trail, with the removed prisms' OLD indices in
+        /// ascending order (the list is reused - read it during the callback, do not keep it). An index-cacher
+        /// steps back by the number of removed indices below its own, exactly as <see cref="OnOldestRemoved"/>
+        /// asks of it for a front removal; <see cref="TrailFollower"/> rides both.
+        /// </summary>
+        public event Action<IReadOnlyList<int>> OnMembersRemoved;
+
         public void Clear()
         {
             // Un-stamp membership FIRST: a prism left pointing at a cleared container is a
@@ -185,7 +258,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// A block the ride can traverse. A DESTROYED prism still qualifies - its object stays
         /// in place as a restorable skeleton, so the geometry is intact and the rider can
-        /// (and does, via the payoff) restore it in passing. What does NOT qualify is a hole:
+        /// (and does, via the payoff) restore it in passing. (<see cref="PrismRecycler"/> takes dead prisms out of
+        /// an opted-in vessel wake after their death effect, but holds that while any restoring rider exists.) What does NOT qualify is a hole:
         /// a null entry (teardown), a pooled-away object (inactive), or a prism the pool has
         /// REUSED into a new life elsewhere (its membership stamp no longer names this trail -
         /// its transform is wherever its new life put it, and walking through it would fling
@@ -245,28 +319,56 @@ namespace CosmicShore.Gameplay
         /// Looking ahead of the trail. Bridges holes (see <see cref="IsRidable"/>): the
         /// returned list contains only traversable blocks, with missing prisms spliced over.
         /// Fewer than two entries means the ride has nowhere to go - the caller parks.
+        ///
+        /// <para>Returns a NEW list: for a caller that keeps the result (Skimmer's nudge-shard markers hold
+        /// theirs for seconds). A per-frame caller should use the overload that fills its own reused list
+        /// (or <see cref="LookAheadShared"/>) instead of allocating every contact.</para>
         /// </summary>
         public List<Prism> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
         {
+            var lookAheadBlocks = new List<Prism>();
+            LookAhead(index, lerp, direction, distance, lookAheadBlocks);
+            return lookAheadBlocks;
+        }
+
+        /// <summary>
+        /// <see cref="LookAhead(int, float, TrailFollowerDirection, float)"/> into this trail's own reused buffer:
+        /// no allocation, and the result is only valid until the next LookAheadShared call on THIS trail. Read it
+        /// and drop it - never store it.
+        /// </summary>
+        public List<Prism> LookAheadShared(int index, float lerp, TrailFollowerDirection direction, float distance)
+        {
+            LookAhead(index, lerp, direction, distance, _lookAheadBuffer);
+            return _lookAheadBuffer;
+        }
+
+        /// <summary>
+        /// <see cref="LookAhead(int, float, TrailFollowerDirection, float)"/> into a caller-owned list, which is
+        /// cleared first. An empty trail yields an empty list (it used to index an empty list and throw).
+        /// </summary>
+        public void LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance, List<Prism> lookAheadBlocks)
+        {
+            lookAheadBlocks.Clear();
             var incrementor = (int)direction;
             var distanceTravelled = 0f;
             var trailListCount = TrailList.Count;
+            if (trailListCount == 0) return;
 
             (index, incrementor) = IndexSafetyCheck(index, incrementor, trailListCount);
             if (!IsRidable(TrailList[index]))
             {
                 lerp = 0f;
                 if (!TryStepRidable(ref index, ref incrementor, trailListCount))
-                    return new List<Prism>();
+                    return;
             }
             var currentBlock = TrailList[index];
+            lookAheadBlocks.Add(currentBlock);
 
             int nextIndex = index;
             if (!TryStepRidable(ref nextIndex, ref incrementor, trailListCount))
-                return new List<Prism> { currentBlock };
+                return;
             var nextBlock = TrailList[nextIndex];
 
-            var lookAheadBlocks = new List<Prism> { currentBlock };
             var distanceToNextBlock = Vector3.Magnitude(RidePoint(nextBlock) - RidePoint(currentBlock)) * (1 - lerp);
 
             while (distanceTravelled < distance)
@@ -280,8 +382,6 @@ namespace CosmicShore.Gameplay
 
                 distanceToNextBlock = Vector3.Magnitude(RidePoint(nextBlock) - RidePoint(currentBlock));
             }
-
-            return lookAheadBlocks;
         }
         
         /// <summary>

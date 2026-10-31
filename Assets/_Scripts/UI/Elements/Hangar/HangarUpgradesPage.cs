@@ -45,6 +45,9 @@ namespace CosmicShore.UI
         [Header("The focused element")]
         [SerializeField] private TMP_Text elementText;
         [SerializeField] private TMP_Text stepText;
+        [Tooltip("Section 90: the focused element's crystals, held now and spent ever (the cloud profile's " +
+                 "ElementalCrystals). Hidden when the template is empty.")]
+        [SerializeField] private TMP_Text crystalsText;
         [SerializeField] private TMP_Text abilityText;
         [SerializeField] private TMP_Text descriptionText;
         [SerializeField] private KitElementFlower nowFlower;
@@ -66,8 +69,11 @@ namespace CosmicShore.UI
         [Tooltip("Optional line under the part's title.")]
         [SerializeField] private TMP_Text headerLineText;
 
-        [Tooltip("What the upgrade moment's ring and banner draw in: gold, because an upgrade is spent crystals. Docs/UI_COLOR_RULES.md: an element never has a fixed colour in the UI - its petal's shape says which it is.")]
-        [SerializeField] private UIColorToken elementTint = UIColorToken.Purchase;
+        [Tooltip("What the upgrade moment's ring, banner and flying crystals draw in over the vessel preview: silver " +
+                 "(Garrett flagged the gold there, 2026-10-27; Docs/VesselModels/COLOR.md: the preview stays in the neutral " +
+                 "family, as the cards' class livery does). The UPGRADE button itself stays gold: that is the spend. An " +
+                 "element never has a fixed colour in the UI - its petal's shape says which it is.")]
+        [SerializeField] private UIColorToken elementTint = UIColorToken.NeutralLightest;
 
         [Header("Price")]
         [Tooltip("Crystals per level: the next level costs this x that level (the owner: 100).")]
@@ -84,13 +90,15 @@ namespace CosmicShore.UI
         [Header("Words")]
         [SerializeField] private string[] elementNames = { "Charge", "Mass", "Space", "Time" };
         [Tooltip("Header line.")]
-        [SerializeField] private string defaultLine = "Spend crystals to raise an element. The hull changes as it grows.";
+        [SerializeField] private string defaultLine = "Spend OmniCrystals to raise an element. The hull changes as it grows.";
         [Tooltip("Header line for a vessel with no element shapes.")]
         [SerializeField] private string noMorphLine = "This hull keeps its shape at every level.";
         [Tooltip("The focused element's step; {level} and {next} are filled in.")]
         [SerializeField] private string stepTemplate = "LEVEL {level} TO {next}";
         [Tooltip("The step at the last level; {level} is filled in.")]
         [SerializeField] private string maxedStepTemplate = "LEVEL {level} - MAX";
+        [Tooltip("The focused element's crystals; {held} and {spent} are filled in, {element} names it.")]
+        [SerializeField] private string crystalsTemplate = "{element} CRYSTALS  {held} HELD - {spent} SPENT";
         [Tooltip("Under the NOW flower; {level} is filled in.")]
         [SerializeField] private string nowTemplate = "NOW {level}";
         [Tooltip("Under the NEXT flower; {level} is filled in.")]
@@ -285,6 +293,14 @@ namespace CosmicShore.UI
             if (elementText) elementText.text = ElementName(row).ToUpperInvariant();
             if (stepText) stepText.text = maxed ? TemplateText.Fill(maxedStepTemplate, "level", level)
                                                 : TemplateText.Fill(stepTemplate, "level", level, "next", next);
+            if (crystalsText)
+            {
+                var wallet = PlayerDataService.Instance;
+                long held = wallet ? wallet.GetElementalCrystalsHeld(row.element) : 0;
+                long spent = wallet ? wallet.GetElementalCrystalsSpent(row.element) : 0;
+                crystalsText.text = TemplateText.Fill(crystalsTemplate, "element", ElementName(row).ToUpperInvariant(),
+                                                      "held", held.ToString(), "spent", spent.ToString());
+            }
             if (abilityText) abilityText.text = row.open ? openSlotTitle : entry.AbilityLabel;
             if (descriptionText) descriptionText.text = row.open ? openSlotLine : entry.AbilityDescription;
             if (nowFlower) nowFlower.Set(row.element, row.level);

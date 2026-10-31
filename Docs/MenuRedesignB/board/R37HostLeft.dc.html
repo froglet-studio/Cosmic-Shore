@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 37 - The host left</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.disp{font-family:'Aldrich',sans-serif;letter-spacing:.06em}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.key{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;border:1px solid #434C89;font-family:'Chakra Petch';font-weight:600;font-size:12px;color:#C9CDEA;box-sizing:border-box}
+.flip{background-size:400% 400%;background-repeat:no-repeat;animation:fx var(--q) steps(4) infinite,fy var(--t) steps(4) infinite}
+@keyframes fx{from{background-position-x:0%}to{background-position-x:133.333%}}
+@keyframes fy{from{background-position-y:0%}to{background-position-y:133.333%}}
+@keyframes r33Sea{from{transform:translateX(0)}to{transform:translateX(-480px)}}
+
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.disp{font-family:'Aldrich',sans-serif;letter-spacing:.06em}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.key{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;border:1px solid #434C89;font-family:'Chakra Petch';font-weight:600;font-size:12px;color:#C9CDEA;box-sizing:border-box}
+.flip{background-size:400% 400%;background-repeat:no-repeat;animation:fx var(--q) steps(4) infinite,fy var(--t) steps(4) infinite}
+@keyframes fx{from{background-position-x:0%}to{background-position-x:133.333%}}
+@keyframes fy{from{background-position-y:0%}to{background-position-y:133.333%}}
+@keyframes r33Sea{from{transform:translateX(0)}to{transform:translateX(-480px)}}
+
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.abs{position:absolute}
+.frame{position:absolute;padding:1px;background:#2B3266}
+.frame>div{width:100%;height:100%;background:rgba(5,10,46,.94)}
+.steps label{cursor:pointer}
+.stage{position:absolute;inset:0;display:none}
+@keyframes r36Pan{from{transform:scale(1.06) translateX(-12px)}to{transform:scale(1.06) translateX(12px)}}
+@keyframes r36In{from{opacity:0}to{opacity:1}}
+@keyframes r36Up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes r36Type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes r36Ring{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.18)}}
+@keyframes r36Open{from{transform:scaleY(.02);opacity:.4}to{transform:none;opacity:1}}
+@keyframes r36Wave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+@keyframes r36FromL{from{transform:translateX(-120%)}to{transform:none}}
+@keyframes r36FromR{from{transform:translateX(120%)}to{transform:none}}
+@keyframes r36Draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@keyframes r36Fly{from{offset-distance:0%}to{offset-distance:100%}}
+@keyframes r36Out{to{opacity:0}}
+
+@keyframes r37Run{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+@keyframes r37Drain{from{width:100%}to{width:0%}}
+@keyframes r37Pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes r37Fade{0%,70%{opacity:1}100%{opacity:0}}
+.states label{cursor:pointer}
+</style>
+</helmet>
+<div style="width:1920px;height:1080px;position:relative;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich','Chakra Petch',sans-serif"><div class="abs" style="inset:0;overflow:hidden"><img src="/_blob/b4195b6e5e4d00204264de8c5f8bfbca" alt="" style="position:absolute;left:0;top:0;width:1920px;height:1080px;object-fit:cover;filter:blur(1.2px);animation:r36Pan 30s ease-in-out infinite alternate"></div><div class="abs" style="inset:0;background:rgba(0,2,18,0.1)"></div><div class="abs" style="inset:0;background:radial-gradient(ellipse 75% 70% at 50% 45%,rgba(0,0,0,0) 55%,rgba(0,1,10,.7))"></div><div class="abs" style="left:760px;top:28px;width:400px;text-align:center"><span class="cap" style="font-size:14px;color:#8C93C7;">First to the crystal</span><div class="disp num" style="font-size:44px;margin-top:6px">0:12.4</div></div><div class="abs" style="left:40px;top:30px;display:flex;gap:10px;align-items:center"><img class="oct" src="/_blob/e706037f2062090a1514ed6e21e28a7b" alt="" style="width:44px;height:44px;object-fit:cover"><span class="cap" style="font-size:15px;color:#E6E9FF;">Kai</span><span class="cap" style="font-size:15px;color:#99FF80;">1st</span></div><div class="abs hex" style="left:1600px;top:900px;width:112px;height:112px;background:#2B3266;padding:2px;box-sizing:border-box"><div class="hex" style="width:100%;height:100%;background:rgba(4,8,40,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24"><polygon points="12,1.5 20,12 12,22.5 4,12" fill="none" stroke="#E6E9FF" stroke-width="2"></polygon></svg><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;border:1px solid #434C89;font-family:Chakra Petch;font-weight:700;font-size:12px;color:#C9CDEA">RT</span></div></div><div class="abs hex" style="left:1468px;top:900px;width:112px;height:112px;background:#2B3266;padding:2px;box-sizing:border-box"><div class="hex" style="width:100%;height:100%;background:rgba(4,8,40,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24"><polygon points="12,2 21.5,9 18,20.5 6,20.5 2.5,9" fill="none" stroke="#E6E9FF" stroke-width="2"></polygon></svg><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;border:1px solid #434C89;font-family:Chakra Petch;font-weight:700;font-size:12px;color:#C9CDEA">LT</span></div></div><div class="abs hex" style="left:1336px;top:900px;width:112px;height:112px;background:#2B3266;padding:2px;box-sizing:border-box"><div class="hex" style="width:100%;height:100%;background:rgba(4,8,40,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24"><polygon points="12,2 21,9 12,22 3,9" fill="none" stroke="#E6E9FF" stroke-width="2"></polygon></svg><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;border:1px solid #434C89;font-family:Chakra Petch;font-weight:700;font-size:12px;color:#C9CDEA">X</span></div></div><div class="abs hex" style="left:1204px;top:900px;width:112px;height:112px;background:#2B3266;padding:2px;box-sizing:border-box"><div class="hex" style="width:100%;height:100%;background:rgba(4,8,40,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24"><polygon points="12,20.5 2,3.5 22,3.5" fill="none" stroke="#E6E9FF" stroke-width="2"></polygon></svg><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;border:1px solid #434C89;font-family:Chakra Petch;font-weight:700;font-size:12px;color:#C9CDEA">Y</span></div></div><div class="abs" style="left:1214px;top:868px;width:500px;height:6px;background:#2B3266"><div style="width:62%;height:100%;background:#E6E9FF"></div></div><div class="abs" style="left:1214px;top:844px"><span class="cap" style="font-size:12px;color:#8C93C7;">Boost</span></div><div class="abs" style="z-index:25;inset:0;background:rgba(0,1,10,0.78)"></div><div class="abs" style="z-index:30;left:640px;top:403px;width:640px;height:274px;opacity:0;animation:r37Pop .3s cubic-bezier(.2,.8,.2,1) .15s forwards"><div class="abs sl" style="left:0px;top:0px;width:640px;height:274px;background:#2B3266;padding:1px;box-sizing:border-box"><div class="sl" style="position:relative;width:100%;height:100%;background:rgba(4,8,40,.95);overflow:hidden"><div class="abs" style="left:34px;top:30px;display:flex;align-items:center;gap:10px"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8C93C7" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.4"></circle><path d="M5 20c1.2-4 4-5.6 7-5.6s5.8 1.6 7 5.6"></path><path d="M3 3l18 18"></path></svg><span class="cap" style="font-size:13px;color:#8C93C7;letter-spacing:.2em">Skim Race</span></div><div class="abs disp" style="left:34px;top:62px;font-size:34px">The host left</div><div class="abs" style="left:34px;top:116px;width:572px;font-family:Chakra Petch;font-size:17px;line-height:26px;color:#C9CDEA">The match ended when its host disconnected. Nothing you earned in it is lost.</div><div class="abs sls" style="left:34px;top:184px;width:270px;height:56px;background:#99FF80;padding:1px;box-sizing:border-box"><div class="sls" style="width:100%;height:100%;background:#99FF80;display:flex;align-items:center;justify-content:center;gap:12px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;border:1px solid #0B1A04;font-family:Chakra Petch;font-weight:700;font-size:12px;color:#0B1A04">A</span><span class="cap" style="font-size:16px;color:#0B1A04;">Back to Home</span></div></div></div></div><span class="abs" style="left:-7px;top:-7px;width:14px;height:14px;border-color:#E6E9FF;border-style:solid;border-width:2px 0 0 2px"></span><span class="abs" style="right:-7px;top:-7px;width:14px;height:14px;border-color:#E6E9FF;border-style:solid;border-width:2px 2px 0 0"></span><span class="abs" style="left:-7px;bottom:-7px;width:14px;height:14px;border-color:#E6E9FF;border-style:solid;border-width:0 0 2px 2px"></span><span class="abs" style="right:-7px;bottom:-7px;width:14px;height:14px;border-color:#E6E9FF;border-style:solid;border-width:0 2px 2px 0"></span></div><div class="abs" style="z-index:50;left:24px;top:20px;padding:6px 12px;border:1px dashed #434C89;background:rgba(0,1,10,.75);font-family:Chakra Petch;font-size:12px;letter-spacing:.14em;color:#C9CDEA;text-transform:uppercase">Board · The host left</div></div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

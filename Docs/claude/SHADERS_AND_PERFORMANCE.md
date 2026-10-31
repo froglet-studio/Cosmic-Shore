@@ -78,6 +78,9 @@ motion, give it a volume. A screen-space ring, a label or a word over it is the 
 
 ### HLSL / Shader Graph
 
+- **A watery or glassy surface, bent space, or a lit underground wall**: start from the Meerkat family and its recipe,
+  `Docs/Shaders/WATERY_GLASS.md` (the HLSL traps of porting an artifact's GLSL are listed there).
+
 - Custom Function nodes use HLSL files stored in a consistent location
 - Function signatures must follow Shader Graph conventions (proper `_float` suffix usage, sampler declarations)
 - Blend shapes are converted to textures for shader-driven animation (no controller scripts — animation is entirely GPU-driven for performance)

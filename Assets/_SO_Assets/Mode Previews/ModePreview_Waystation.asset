@@ -20,7 +20,7 @@ MonoBehaviour:
   TrackSpawnablesByIntensity: []
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
-  Vessel: 13
+  Vessel: 29
   ObjectiveText: Weave the cluster, then fold
   ObjectiveMetric: 9
   ObjectiveTarget: 0

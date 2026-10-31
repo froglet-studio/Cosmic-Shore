@@ -31,7 +31,11 @@ namespace CosmicShore.Core
     /// </summary>
     public class SceneLoader : MonoBehaviour
     {
-        [SerializeField] float waitBeforeLoading = 0.5f;
+        [Tooltip("Seconds the opaque splash shows before the load starts - long enough for it to reach the screen " +
+                 "ahead of the blocking collect and load. Both callers make the splash opaque instantly " +
+                 "(SetFadeImmediate), so this covers no fade; it was 0.5 s of nothing on every launch " +
+                 "(Docs/MENU_REDESIGN_B.md section 99.1).")]
+        [SerializeField, Min(0f)] float waitBeforeLoading = 0.1f;
 
         [SerializeField, Tooltip("How long the opaque splash keeps covering the screen after the menu " +
             "vessel is ready when RETURNING from a game scene, so end-of-session cleanup (despawn " +
@@ -62,6 +66,12 @@ namespace CosmicShore.Core
         // auth→menu, which should fade in as fast as they always have.
         string _lastLoadedSceneName;
         bool _holdVeilForMenuSettle;
+
+        // True from the host's pre-load collect until the splash fades: on a GAME entry that collect already
+        // reset the heap, so the after-load one is skipped - it ran inside OnClientReady, in the very frame the
+        // connecting panel appeared (Docs/MENU_REDESIGN_B.md section 99.2). Clients never reach the pre-load
+        // collect and keep their one; a return to the menu keeps both.
+        bool _collectedBeforeLoad;
 
         [Header("SOAP Events (wired in Bootstrap inspector)")]
         [SerializeField] ScriptableEventNoParam _onClickToMainMenuButton;
@@ -272,6 +282,8 @@ namespace CosmicShore.Core
 
         async UniTaskVoid FadeFromSplashWhenSettled()
         {
+            // A return to the menu keeps its after-load collect: that one frees the finished match.
+            bool menuReturn = _holdVeilForMenuSettle;
             // Game→menu return only: hold the opaque veil for a short settle window so
             // the previous session's cleanup (late despawns, pooled-prism churn, painting
             // regrow snap) finishes out of sight instead of visibly clearing after the
@@ -300,7 +312,8 @@ namespace CosmicShore.Core
             // is unreachable here — the most effective covered moment to take the
             // full GC and reset the mid-gameplay collection clock. After the settle
             // window above so the settle churn is collected too.
-            GC.Collect();
+            if (menuReturn || !_collectedBeforeLoad) GC.Collect();
+            _collectedBeforeLoad = false;
 
             _sceneTransitionManager?.FadeFromBlack().Forget();
 
@@ -321,6 +334,10 @@ namespace CosmicShore.Core
             // transition; the screen is covered by SetFadeImmediate below within the same
             // frame, so no un-paused gameplay is ever visible.
             PauseSystem.TogglePauseGame(false);
+
+            // A deliberate return (the pause menu, the match's end, the host ending the session): nothing to rejoin.
+            // A dropped link never comes through here - it bounces (PartyInviteController.HandleHostLossAsync).
+            MatchRejoin.Forget();
 
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
 
@@ -531,6 +548,7 @@ namespace CosmicShore.Core
             // GC (enabled project-wide) spreads minor work but still blocks fully
             // when the heap must expand; this resets that clock at every transition.
             GC.Collect();
+            _collectedBeforeLoad = true;
 
             if (isServer && nm.SceneManager != null)
             {
