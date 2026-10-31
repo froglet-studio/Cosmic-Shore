@@ -1,6 +1,6 @@
 {
  "_doc": "Written by Tools/Build/bake_prism_layouts.py - do not edit. One row per baked prefab: the bake it reads, its size, and the load time it saves (generate_ms, the live generation, against decode_ms, reading the bake; .NET 8 on the build container, a phone is slower). --check compares the bakes, not these timings.",
- "total_bytes": 22317073,
+ "total_bytes": 22550857,
  "bakes": [
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableAtlantis.prefab",
@@ -10,8 +10,8 @@
    "sites": 0,
    "bytes": 2844356,
    "sha256": "5f5c519150aaebda81451c950316ac6106ccb6f72c4c1a017d374e7af907e80b",
-   "generate_ms": 305.95,
-   "decode_ms": 3.49
+   "generate_ms": 243.35,
+   "decode_ms": 3.83
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableBoneyard1.prefab",
@@ -21,8 +21,8 @@
    "sites": 0,
    "bytes": 379838,
    "sha256": "b5b5ecc78b96bcdfd7bf518884bb037b2c8c2f5edbbef6a1c0de5673c23682e3",
-   "generate_ms": 4.48,
-   "decode_ms": 0.19
+   "generate_ms": 6.43,
+   "decode_ms": 0.26
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableBoneyard2.prefab",
@@ -32,8 +32,8 @@
    "sites": 0,
    "bytes": 676232,
    "sha256": "a9a7bbb41781b770bc23403e98d455bd8a018811689a5823c7855270821276b2",
-   "generate_ms": 13.05,
-   "decode_ms": 0.88
+   "generate_ms": 19.28,
+   "decode_ms": 0.91
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableBoneyard3.prefab",
@@ -43,8 +43,8 @@
    "sites": 0,
    "bytes": 1041926,
    "sha256": "18ddc6e6191cb46a28b2ec21eefbd03dedc2c8cd7d3175727193e71c212e50bf",
-   "generate_ms": 11.54,
-   "decode_ms": 6.56
+   "generate_ms": 16.9,
+   "decode_ms": 1.14
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableBoneyard4.prefab",
@@ -54,8 +54,8 @@
    "sites": 0,
    "bytes": 1455500,
    "sha256": "33e9f563138b2f82e31b34df284461a2bbe3b86d133287446d391c125cb995af",
-   "generate_ms": 21.25,
-   "decode_ms": 1.55
+   "generate_ms": 30.67,
+   "decode_ms": 2.86
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableCaldera.prefab",
@@ -65,8 +65,8 @@
    "sites": 0,
    "bytes": 1736858,
    "sha256": "9d6b112e0d00931b1aa91542cbf7e0de34e72c5970fe2062e311e0b3f75a8761",
-   "generate_ms": 148.07,
-   "decode_ms": 1.39
+   "generate_ms": 139.6,
+   "decode_ms": 2.6
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableDaedala.prefab",
@@ -76,8 +76,8 @@
    "sites": 0,
    "bytes": 1422068,
    "sha256": "089098ad4623156e921446fb7ad6c9bc64a364eae77e3fec730d399ebe227292",
-   "generate_ms": 48.22,
-   "decode_ms": 0.72
+   "generate_ms": 46.73,
+   "decode_ms": 0.95
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableGarland.prefab",
@@ -87,8 +87,8 @@
    "sites": 0,
    "bytes": 178910,
    "sha256": "dd140d553f6d530877f87cb773fd4f120544344c7f78dcf50e41d62c9ee8daf7",
-   "generate_ms": 11.14,
-   "decode_ms": 0.24
+   "generate_ms": 11.58,
+   "decode_ms": 0.26
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableGeode.prefab",
@@ -98,8 +98,8 @@
    "sites": 0,
    "bytes": 1443446,
    "sha256": "4b520c89fc209a280834de596e684ae7f9bf186321e4089f312037ed0fc25dff",
-   "generate_ms": 38.38,
-   "decode_ms": 1.68
+   "generate_ms": 41.8,
+   "decode_ms": 1.96
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableHesperides.prefab",
@@ -109,8 +109,8 @@
    "sites": 563,
    "bytes": 520627,
    "sha256": "941677d16a39972b6f33954490902bde82ef0a9068cce55d9f9c2c2dc62eefc9",
-   "generate_ms": 16.19,
-   "decode_ms": 0.3
+   "generate_ms": 15.84,
+   "decode_ms": 0.35
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableOrrery.prefab",
@@ -120,8 +120,8 @@
    "sites": 0,
    "bytes": 1452098,
    "sha256": "6612f182425a80d3e5d427aa79f8108e8bc836a207a5a1f76eb418a2dbc792ad",
-   "generate_ms": 27.29,
-   "decode_ms": 0.55
+   "generate_ms": 29.13,
+   "decode_ms": 0.76
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableOurobor.prefab",
@@ -131,8 +131,8 @@
    "sites": 0,
    "bytes": 1591370,
    "sha256": "3c5b48f1ef265cf2141c72306894b4db4799aefcdf9aefed6ba9fa53b408a7f6",
-   "generate_ms": 218.33,
-   "decode_ms": 0.71
+   "generate_ms": 262.48,
+   "decode_ms": 1.11
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnablePanes.prefab",
@@ -142,8 +142,8 @@
    "sites": 0,
    "bytes": 645992,
    "sha256": "72a981cec74bb996175b6b8bfa06b39ceef6d90e8c91cf4cb6536ed8e6293efa",
-   "generate_ms": 12.06,
-   "decode_ms": 0.8
+   "generate_ms": 12.15,
+   "decode_ms": 0.77
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableRibcage.prefab",
@@ -153,8 +153,41 @@
    "sites": 0,
    "bytes": 618734,
    "sha256": "f37d90553f48bd43491e7c05dad80d997425d81d1cd213c09fc2413cd674e3be",
-   "generate_ms": 24.63,
-   "decode_ms": 5.94
+   "generate_ms": 27.2,
+   "decode_ms": 0.5
+  },
+  {
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSerpentGulag2.prefab",
+   "shape": "SpawnableSerpentGulag",
+   "stem": "SpawnableSerpentGulag_f99b34a2fd83f761",
+   "prisms": 936,
+   "sites": 0,
+   "bytes": 39344,
+   "sha256": "74a3f9329ddd5be65fd418be80892118db11af46159e5ec771595793a555b28e",
+   "generate_ms": 0.12,
+   "decode_ms": 0.06
+  },
+  {
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSerpentGulag3.prefab",
+   "shape": "SpawnableSerpentGulag",
+   "stem": "SpawnableSerpentGulag_236d9960381e1c87",
+   "prisms": 1976,
+   "sites": 0,
+   "bytes": 83024,
+   "sha256": "c4627bd0c60067c0b8288388031856fb51825db8ce2c9dcb675be5090fde4c49",
+   "generate_ms": 0.25,
+   "decode_ms": 0.13
+  },
+  {
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSerpentGulag4.prefab",
+   "shape": "SpawnableSerpentGulag",
+   "stem": "SpawnableSerpentGulag_ef98c42be58500f5",
+   "prisms": 2652,
+   "sites": 0,
+   "bytes": 111416,
+   "sha256": "220d07fe9eadd7ecd91af205cd0bd34437f130d9b23372f0c6085dfc50ab7e47",
+   "generate_ms": 0.33,
+   "decode_ms": 0.1
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableSwell.prefab",
@@ -164,8 +197,8 @@
    "sites": 0,
    "bytes": 599666,
    "sha256": "aa9525d7196908f2162bb6a6bbf97b8d0ac40bebb846a041bf68980bc8fb9825",
-   "generate_ms": 14.31,
-   "decode_ms": 0.46
+   "generate_ms": 14.78,
+   "decode_ms": 0.28
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableTwistbands.prefab",
@@ -175,8 +208,8 @@
    "sites": 0,
    "bytes": 689798,
    "sha256": "5f67f3e7612cfd35a0191f6b4376eb2bb6d2f4acd606abbad486b246591cd1cb",
-   "generate_ms": 11.37,
-   "decode_ms": 1.21
+   "generate_ms": 11.08,
+   "decode_ms": 0.48
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage1.prefab",
@@ -186,8 +219,8 @@
    "sites": 0,
    "bytes": 386684,
    "sha256": "720a6a3ffad01001009fed416060484af3e6978296f783776ff800a57b4942f9",
-   "generate_ms": 6.68,
-   "decode_ms": 0.8
+   "generate_ms": 10.32,
+   "decode_ms": 0.35
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage2.prefab",
@@ -197,8 +230,8 @@
    "sites": 0,
    "bytes": 533264,
    "sha256": "a2935e89570366eb90f15799f23034daa6fbc289c2cd42fcaccf943210c8c8ca",
-   "generate_ms": 6.96,
-   "decode_ms": 0.23
+   "generate_ms": 9.59,
+   "decode_ms": 0.29
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage3.prefab",
@@ -208,8 +241,8 @@
    "sites": 0,
    "bytes": 556280,
    "sha256": "b2322e96d20395111e91c76b80966bcfba03338644d808b77d82cc84df4a3634",
-   "generate_ms": 15.48,
-   "decode_ms": 0.21
+   "generate_ms": 16.62,
+   "decode_ms": 0.25
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage4.prefab",
@@ -219,8 +252,8 @@
    "sites": 0,
    "bytes": 586184,
    "sha256": "5b57d53e33fe5f2b81cd09176baeada4b9df810516672e2407f1f779e52dad66",
-   "generate_ms": 10.06,
-   "decode_ms": 0.7
+   "generate_ms": 10.83,
+   "decode_ms": 0.26
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableYggdra.prefab",
@@ -230,8 +263,8 @@
    "sites": 0,
    "bytes": 1442312,
    "sha256": "8036604a7b882db5ba05ed21d2cbad4794899aeb18987cdb81edba8e3262bf78",
-   "generate_ms": 148.18,
-   "decode_ms": 0.47
+   "generate_ms": 245.5,
+   "decode_ms": 0.86
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableZephyr.prefab",
@@ -241,8 +274,8 @@
    "sites": 0,
    "bytes": 1514930,
    "sha256": "fffaf92aa03c5c1816a7d6bdf6d273f96fdc9a9abb20cb97c955ead7c0b6cfdd",
-   "generate_ms": 27.21,
-   "decode_ms": 6.74
+   "generate_ms": 27.88,
+   "decode_ms": 0.76
   }
  ]
 }

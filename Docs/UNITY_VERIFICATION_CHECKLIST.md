@@ -65,6 +65,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Gulag (GameModes 77), the Serpent's sniper duel; and the Serpent collects crystals (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`/verify-unity` could not run: no Unity editor in this cloud session. The C# was compiled against real Unity
+references with `Tools/Build/unity_refcompile/run.sh` (player and editor configs: 0 errors in project code), and the arena's C# was run in the
+clip-audit and card-art harnesses. Affects: Garrett's Serpent (the prefab's skimmer; no ability changed).
+
+**The crystal fix** (`Tools/Build/fix_serpent_crystal_pickup.py`):
+1. FrogletTools > Vessels > Audits > Audit Vessel Skimmers: the Serpent reads `FarFieldSkimmer: 'VacuumSkimmer' OK`.
+2. Freestyle, Serpent, fly through elemental crystals: each is taken and its element bar rises. Fly into an omni
+   crystal: it is taken (the crystal blast plays).
+3. Lay a cloak wall, then take any crystal: the wall re-shields (the beams from the crystal to its seed) - the kit's
+   own chain, which the skimmer now hands on to the hull.
+4. Watch for a crystal taken from too far away (the sphere is 25 u) or a camera nudge near prisms the Serpent did not
+   have before (a skimmer's skim feel); report either.
+5. EditMode: `SerpentCrystalPickupTests` (3 tests).
+
+**Serpent Gulag** (`Assets/_Scripts/Controller/Arcade/SERPENTGULAG.md`):
+1. Arcade > Serpent Gulag, 2-4 players with AI, at each intensity 1-4. I1: open space, pilots far apart, the crystal
+   field in the middle. I2: six nests. I3: eight nests and eight barred screens. I4: ten nests, twelve screens, danger
+   plates.
+2. Fly into a nest through its back entry, stop (B), and look out of the slit at the field.
+3. Scope (LT) and fire (RT) at a rival: a snipe toast, the score rises by one, first team to 6 wins, the results show
+   snipes and the reveal reads GULAG TIME / SNIPES LEFT.
+4. AI: at I1 they mostly miss; at I4 they forage the field while reloading, hunt you across the cell, and cloak after
+   a shot. Report an AI that never scopes or never fires (the press shape), or one that rams instead of shooting.
+5. The crystal field regrows a collected crystal after ~8 s in the same place.
+6. Frame time at I4 (2,652 neutral prisms, a 3,600 u membrane at a standard cell's shard count).
+7. First-pass numbers to re-tune: target 6, spawn ring 2,200, field 24 crystals in 380 u, AI ladders.
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
