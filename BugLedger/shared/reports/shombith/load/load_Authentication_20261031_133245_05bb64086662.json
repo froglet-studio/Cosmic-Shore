@@ -1,0 +1,529 @@
+{
+    "schemaVersion": 1,
+    "reportId": "05bb64086662",
+    "timestamp": "2026-10-31T13:32:45.1788748Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "System Product Name (ASUS)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "claude/dazzling-ride-dpyvkx",
+    "gitCommitHash": "d2745fad64",
+    "trigger": "Return to menu — MinigameSerpentTime → Menu_Main",
+    "loadKind": "menuReturn",
+    "completionReason": "Superseded by new load (Boot - Authentication -> Menu_Main)",
+    "interrupted": false,
+    "sceneFrom": "MinigameSerpentTime",
+    "sceneTo": "Authentication",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 320451.9375,
+    "visualReadyMs": -1.0,
+    "waitMs": 142.65789794921876,
+    "humanWaitMs": 0.0,
+    "workMs": 320309.28125,
+    "unattributedMs": 7.937805652618408,
+    "framesDuringLoad": 810,
+    "avgFpsDuringLoad": 2.5276801586151125,
+    "worstFrameMs": 9370.431640625,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 7.931000232696533,
+            "endMs": 150.58889770507813,
+            "durationMs": 142.65789794921876,
+            "exclusiveMs": 142.65789794921876,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 150.595703125,
+            "endMs": 320451.9375,
+            "durationMs": 320301.34375,
+            "exclusiveMs": 320209.03125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (SpentCrystalPoolManager, 8 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304486.375,
+            "endMs": 304490.53125,
+            "durationMs": 4.15625,
+            "exclusiveMs": 4.15625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (SpentCrystalPoolManager, 8 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304490.6875,
+            "endMs": 304492.03125,
+            "durationMs": 1.34375,
+            "exclusiveMs": 1.34375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (SpentCrystalPoolManager, 8 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304492.125,
+            "endMs": 304492.46875,
+            "durationMs": 0.34375,
+            "exclusiveMs": 0.34375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (SpentCrystalPoolManager, 8 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304492.5625,
+            "endMs": 304539.5625,
+            "durationMs": 47.0,
+            "exclusiveMs": 47.0,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (SpentCrystalPoolManager, 16 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304539.71875,
+            "endMs": 304540.4375,
+            "durationMs": 0.71875,
+            "exclusiveMs": 0.71875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (InteractivePrismPoolManager, 72 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304540.53125,
+            "endMs": 304559.375,
+            "durationMs": 18.84375,
+            "exclusiveMs": 18.84375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (InteractivePrismPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304559.53125,
+            "endMs": 304561.5625,
+            "durationMs": 2.03125,
+            "exclusiveMs": 2.03125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (InteractivePrismPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304561.65625,
+            "endMs": 304563.75,
+            "durationMs": 2.09375,
+            "exclusiveMs": 2.09375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (InteractivePrismPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304563.84375,
+            "endMs": 304565.875,
+            "durationMs": 2.03125,
+            "exclusiveMs": 2.03125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (InteractivePrismPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304565.96875,
+            "endMs": 304568.0,
+            "durationMs": 2.03125,
+            "exclusiveMs": 2.03125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (InteractivePrismPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304568.09375,
+            "endMs": 304571.6875,
+            "durationMs": 3.59375,
+            "exclusiveMs": 3.59375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (InteractivePrismPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304571.8125,
+            "endMs": 304574.0,
+            "durationMs": 2.1875,
+            "exclusiveMs": 2.1875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (InteractivePrismPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304574.15625,
+            "endMs": 304576.8125,
+            "durationMs": 2.65625,
+            "exclusiveMs": 2.65625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (PrismImplosionPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304576.96875,
+            "endMs": 304580.0,
+            "durationMs": 3.03125,
+            "exclusiveMs": 3.03125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 1,
+            "depth": 1,
+            "label": "Pool prewarm (PrismImplosionPoolManager, 2 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 304580.0625,
+            "endMs": 304580.3125,
+            "durationMs": 0.25,
+            "exclusiveMs": 0.25,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 320209.03125,
+            "percent": 99.92420196533203,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 142.65789794921876,
+            "percent": 0.044517721980810168,
+            "spanCount": 1,
+            "waitMs": 142.65789794921876
+        },
+        {
+            "category": 10,
+            "name": "Pooling & Prewarm",
+            "attributedMs": 92.3125,
+            "percent": 0.02880697138607502,
+            "spanCount": 15,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 7.937805652618408,
+            "percent": 0.0024770658928900959,
+            "spanCount": 0,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 320301.34375,
+            "exclusiveMs": 320209.03125,
+            "maxSingleMs": 320301.34375,
+            "isWait": false
+        },
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 142.65789794921876,
+            "exclusiveMs": 142.65789794921876,
+            "maxSingleMs": 142.65789794921876,
+            "isWait": true
+        },
+        {
+            "label": "Pool prewarm (SpentCrystalPoolManager, 8 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 4,
+            "totalMs": 52.84375,
+            "exclusiveMs": 52.84375,
+            "maxSingleMs": 47.0,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (InteractivePrismPoolManager, 72 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 1,
+            "totalMs": 18.84375,
+            "exclusiveMs": 18.84375,
+            "maxSingleMs": 18.84375,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (InteractivePrismPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 7,
+            "totalMs": 16.625,
+            "exclusiveMs": 16.625,
+            "maxSingleMs": 3.59375,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (PrismImplosionPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 1,
+            "totalMs": 3.03125,
+            "exclusiveMs": 3.03125,
+            "maxSingleMs": 3.03125,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (SpentCrystalPoolManager, 16 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 1,
+            "totalMs": 0.71875,
+            "exclusiveMs": 0.71875,
+            "maxSingleMs": 0.71875,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (PrismImplosionPoolManager, 2 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 1,
+            "totalMs": 0.25,
+            "exclusiveMs": 0.25,
+            "maxSingleMs": 0.25,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 9605.966796875,
+            "durationMs": 9370.431640625,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 306055.75,
+            "durationMs": 1543.4425048828125,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 308042.90625,
+            "durationMs": 1090.2763671875,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 306295.71875,
+            "durationMs": 472.9535827636719,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 308101.28125,
+            "durationMs": 336.7193908691406,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 314199.21875,
+            "durationMs": 293.9347839355469,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 314479.53125,
+            "durationMs": 276.3742980957031,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 1196.323486328125,
+            "durationMs": 222.1417999267578,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 306485.25,
+            "durationMs": 188.37490844726563,
+            "during": "Scene load → activation (Menu_Main)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Return to menu — MinigameSerpentTime → Menu_Main"
+        },
+        {
+            "atMs": 1195.68017578125,
+            "label": "Netcode scene load begins: Menu_Main"
+        },
+        {
+            "atMs": 307672.5625,
+            "label": "Unity scene loaded: Authentication (Single)"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Pool objects prewarmed during load",
+            "value": 202
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 18,
+            "totalMs": 2.7376999855041506,
+            "maxSingleMs": 0.33090001344680788
+        }
+    ],
+    "errors": [],
+    "hints": [
+        {
+            "id": "load-very-long",
+            "severity": 2,
+            "title": "Load exceeds a minute",
+            "finding": "This load took 320.5s — most players force-quit long before this.",
+            "fixAdvice": "Attack the biggest slices below; anything over ~15s needs structural fixes, not tuning.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "single-dominator",
+            "severity": 1,
+            "title": "One cost dominates this load",
+            "finding": "\"Scene load → activation (Menu_Main)\" alone is 100% of the load (320.2s).",
+            "fixAdvice": "See the hot-path breakdown for its per-stage costs. Cut its workload (content/intensity tuning), pool or pre-instantiate its prefabs, or spread the work across frames.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 9.4s during \"Scene load → activation (Menu_Main)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        }
+    ]
+}
