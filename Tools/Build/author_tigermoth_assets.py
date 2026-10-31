@@ -319,7 +319,13 @@ def errors() -> list:
     need("UpgradeLabel: Monarch" not in mp and "UpgradeLabel: Far Drop" not in mp, "a retired level-5 card is back on the map")
     need("upgradeDistanceMultiplier:" not in act, "Far Drop's distance multiplier is back on the drop")
     need(re.search(r"^  afterburnSeconds: [1-9]", act, re.M) is not None, "the Time-5 afterburn has no length")
-    need("  upgradeElement: 0\n" in read(SCALE_DUST_DEBUFF), "Monarch's bite gate is on again (upgradeElement must be None)")
+    dust = read(SCALE_DUST_DEBUFF)
+    # Monarch (a deeper bite) is retired with the bite itself: the dust SHREDS since 2026-10-31 (Garrett), one petal of
+    # one random element per Charge-scaled interval, 1 s at rest to 0.1 s at Charge 10 (author_butterfly_dust.py)
+    need("upgradeElement:" not in dust and "upgradeBiteMultiplier:" not in dust,
+         "Monarch's bite gate is back on the dust (the shred has no level-5 of its own)")
+    need(re.search(r"(?m)^  shredInterval:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 0\.1\n    element: 1\n", dust)
+         is not None, "the dust's shred is not Charge-scaled 1 s -> 0.1 s")
     need(f"guid: {CLEANSE_EFFECT_GUID}" in read(DUST_CONTAINER), "the dust does not cleanse allies (cleanse effect not on the dust)")
     return out
 
@@ -347,7 +353,8 @@ def self_test() -> int:
         write_quiet(PREFAB, good)
     # the level-5 re-scope (2026-10-29): each retired gate coming back, and the cleanse leaving the dust, is caught
     others = [
-        ("monarch back", SCALE_DUST_DEBUFF, "  upgradeElement: 0\n", "  upgradeElement: 1\n"),
+        ("monarch back", SCALE_DUST_DEBUFF, "  cooldown: 1\n", "  upgradeElement: 1\n  cooldown: 1\n"),
+        ("shred off charge", SCALE_DUST_DEBUFF, "    Max: 0.1\n    element: 1\n", "    Max: 0.1\n    element: 4\n"),
         ("far drop back", ACTION, "  fullCooldownDistance: 900\n", "  fullCooldownDistance: 900\n  upgradeDistanceMultiplier: 2\n"),
         ("old charge card", MAP, "UpgradeLabel: Toll Gate", "UpgradeLabel: Monarch"),
         ("cleanse off the dust", DUST_CONTAINER, f"  - {{fileID: 11400000, guid: {CLEANSE_EFFECT_GUID}, type: 2}}\n", ""),

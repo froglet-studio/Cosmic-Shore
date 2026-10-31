@@ -347,8 +347,34 @@ namespace CosmicShore.Data
         // the speed you went in with. See _Scripts/Controller/Arcade/BURROWRUN.md.
         BurrowRun = 71,
 
+        // ScarabRally (72): the Scarab's TIME race - Switchback's walk (an open chain of rings flown in order,
+        // hairpins only a drift makes, I3 walls and I4 danger prisms beside the line) cut for the Scarab: hold
+        // the throttle, drift the hairpins, juke into the mouths. No ball. Scarab Scramble is the Scarab's Mass
+        // card. 71 is BurrowRun's on Ys-bleeding-edge, 67 SerpentCharge's in flight. See
+        // _Scripts/Controller/Arcade/SCARABRALLY.md.
+        ScarabRally = 72,
+
+        // SerpentTime (73): the Serpent's TIME race - Thresher Time's shape (a lapped circuit on the shared
+        // HeadlongCircuit solver) where the speed is the fuel pellets: four in the tank, each a 6 s burn that
+        // stacks, refilled only by the Serpent's wall eating its own trail. See _Scripts/Controller/Arcade/SERPENTTIME.md.
+        SerpentTime = 73,
+
+        // BrittleStarTime (74): the Brittle Star's TIME race - the same lapped circuit, where Speed Mode (x6
+        // cruise) is the race and the mouths ask when to drop back to Cruise to thread. See
+        // _Scripts/Controller/Arcade/BRITTLESTARTIME.md.
+        BrittleStarTime = 74,
+
+        // WaystationPrototype (76): the Tiger Moth's Time race REBUILT AS A PROTOTYPE beside Waystation (58), which stays
+        // as Garrett made it until he approves a replacement (Shombith, 2026-10-31). Waystation's clusters, with a DROP
+        // TOWER in every gap but the last: a staircase of short hops through floor plates, each ring just past its plate
+        // and a pipe beyond the next press point, so the skill is how long you hold (Flappy Bird's tap, on the Drop).
+        // Plates mix plain and danger prisms. The last gap stays the long drop that leaves the wormhole. 72-74 are ScarabRally,
+        // SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight. See
+        // _Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYPE.md and Docs/Studios/TIGER_MOTH_TIME.md.
+        WaystationPrototype = 76,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 66) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 70) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

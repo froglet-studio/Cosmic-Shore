@@ -45,7 +45,7 @@ re-read 2026-10-06 after #974 (per-hull AI boost policies, `Assets/_Scripts/Cont
 | Rhino | 50 → 1200 | ramp on a straight stick | yes, by the gesture | **energised sword pops super-shield**; no slow wired |
 | Urchin | 65 → 300 on its OWN-colour rail (20 on a rival's; Time-5 Slipstream 300) | riding, no resource | `UrchinAutopilotDriver` (`Resources/UrchinAutopilotConfig.asset`) in **Skein, Hijack and Regatta** (Regatta since #986): ride / reverse / leave per rail, Slip off a wrong or parked rail, Chain Spikes only on CONVERTIBLE hostile mass (`IsConvertible` skips super-shielded prisms, so Regatta's super-shielded rival lanes are left, not spiked), Track Projector on a long lined-up leg (Skein, Regatta; never Hijack). Hijack uses only the driver's spike and Slip presses, with its own `ChooseRail` and its own yard-table hostile test. Broadside and every other card: steering only (aim down the rail; `ram: 1` holds the grind at full speed) | rides the shell's envelope |
 | Squirrel | 60 → 300 | skim energy (+0.1/contact, decays 0.3/s) | yes, two ways: in **Skim Race and Regatta** the seat flies `SkimRacePilot` (`SkimRaceAIDeployment`; Regatta via `RegattaRingObjective`); elsewhere `SkimRingAIPolicySO` lays the Boost Ring ahead on a dead-straight leg while skim boost is low and holds the stick centred through it (off in Skim Race/Joust/Astro League; `requireAIPlayer`, so never in the menu lava-lamp). Ring prisms land on the simulating machine only | ram **resets** the boost |
-| Serpent | 60 → 160 (×1.6 Time 10, duration too) | 4 charges × 3 s, regen 3.6 s | yes (`PelletBoostAIPolicySO`: stacks pellets on straights) | no slow wired |
+| Serpent | 60 → 160 (×1.6 Time 10, duration too) | 4 charges × 6 s, no clock regen (its wall eating its trail refills it) | yes (`PelletBoostAIPolicySO`: stacks pellets on straights) | no slow wired |
 | Sparrow | 35 → 135 (×1.5 Time 10) | indefinite boost (free) | yes (`HoldBoostAIPolicySO`: holds on straights; off in Dog Fight/Wildlife Liberation) | ram = slow |
 | Scarab | 216 → 324 (Time 1→1.5) | throttle ceiling | throttle (always full) + Time-5 Snap Dash (`SnapDashAIPolicySO`; off in the ball modes Astro League/Scramble/Tollway) | no slow wired |
 
@@ -158,6 +158,17 @@ bash Tools/Build/regatta_course_harness/run.sh        # after ANY edit to a pure
 python3 Tools/Build/render_card_backgrounds.py --check   # after ANY arena/course edit: the card must still be that arena
 python3 Tools/Build/bake_prism_layouts.py --check       # a CellEnvironmentSpawnableBase arena loads from its bake (ECOSYSTEM §62.2b)
 ```
+
+**A VESSEL change turns an arena card's gate red without anyone touching the arena.** The balance
+model reads each hull's economy off its assets, so when a vessel's sustain is designed away the
+spread gate fails on the next run of the card's generator. Measured 2026-10-31
+(`cece/keen-johnson-hqxdt9`): the Serpent's pellets lost their clock refill, and
+`regatta_balance.py` first crashed (a `ZeroDivisionError` on `serpent_regen`; a model must accept
+a rate of 0), then put the Serpent at cruise for the whole race (241.7 s at I1 against the Rhino's
+17.8 s), so `author_regatta_assets.py --check` went red. Re-tuning the card is the card owner's
+call and a mode never changes the vessel (CLAUDE.md), so the vessel branch reports the red gate
+rather than re-authoring the card. Run every arena card's `--check` after any change to a
+vessel's speed or boost economy.
 
 The editor still owns: whether a hull actually latches / skims / clears the mouth at the speed
 the model assumed, whether a guest's own hull carries the seeded levels (watch the HUD flowers:

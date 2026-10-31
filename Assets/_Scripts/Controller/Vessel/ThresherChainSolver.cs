@@ -519,6 +519,28 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The aimed launch's EXIT BUFF (Garrett, 2026-10-30: "come out of a dual trigger swing with a speed buff that
+        /// makes the exit speed 3x what it would be with the current physics, this can decay over 3 seconds ... to
+        /// compensate for the time lost staying still"): the multiplier on the hull's travel <paramref name="t"/>
+        /// seconds after the launch, <paramref name="multiplier"/> at the launch easing linearly to 1 at
+        /// <paramref name="seconds"/> (the fleet's own <c>ModifyThrottle</c> shape). 1 outside it.
+        /// </summary>
+        public static float LaunchExitMultiplier(float t, float multiplier, float seconds)
+            => seconds > 0f && t >= 0f && t < seconds ? Mathf.Lerp(Mathf.Max(1f, multiplier), 1f, t / seconds) : 1f;
+
+        /// <summary>
+        /// Carry the ball (and a pivot) by <paramref name="delta"/> with the hull: the share of the hull's travel the
+        /// physics did not make (<see cref="LaunchExitMultiplier"/>). The rig moves as one body, so the chain sees the
+        /// ship exactly where its own physics put it relative to the ball and nothing brakes the extra; velocities are
+        /// untouched.
+        /// </summary>
+        public void Carry(Vector3 delta)
+        {
+            BallPosition += delta;
+            if (Mode == ThresherMode.Pivot) Pivot += delta;
+        }
+
+        /// <summary>
         /// Seconds until the ship, circling at its current speed, reaches the launch point for
         /// <paramref name="aim"/> — the wait an LT release NOW would cost. Infinity when there is no
         /// launch point (not planted, or the aim is along the orbit's axis).
@@ -1350,6 +1372,13 @@ namespace CosmicShore.Gameplay
         public Vector3 NodeVelocity(int i, float dt)
             => dt > 0f ? (Points[i] - _previous[i]) / dt : Vector3.zero;
 
+        /// <summary>Translate the whole chain with the hull (<see cref="ThresherChainSolver.Carry"/>): every link and its
+        /// previous position move together, so no link gains a velocity from it.</summary>
+        public void Carry(Vector3 delta)
+        {
+            for (int i = 0; i < Points.Length; i++) { Points[i] += delta; _previous[i] += delta; }
+        }
+
         public void Reset(Vector3 hull, Vector3 ball)
         {
             int n = Points.Length;
@@ -1571,6 +1600,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// How much of the stick the aim reads <paramref name="sinceAim"/> seconds after it started: a SmoothStep from
+        /// 0 to 1 over <paramref name="easeSeconds"/> (0 = all of it at once). A stick already over when the aim
+        /// begins takes the aim over smoothly instead of swinging it at the full rate on the first frame; it is never
+        /// ignored (2026-10-30: a latch that waited for the stick to centre "disengaged the controls").
+        /// </summary>
+        public static float AimStickAuthority(float sinceAim, float easeSeconds)
+            => easeSeconds > 0f ? Mathf.SmoothStep(0f, 1f, sinceAim / easeSeconds) : 1f;
+
+        /// <summary>
         /// Turn the aim with the stick, in SCREEN terms for the launch camera (looking along the aim,
         /// aimUp up, screen-right = aimUp × aim; the crosshair at screen centre is the aim): stick X swings the aim right/left about
         /// <paramref name="aimUp"/> at <paramref name="yawRate"/> (rad/s), stick Y pitches it at
@@ -1590,10 +1628,20 @@ namespace CosmicShore.Gameplay
                 Vector3 right = Vector3.Cross(aimUp, aim);
                 aim = aim * Mathf.Cos(yaw) + right * Mathf.Sin(yaw);
             }
-            if (Mathf.Abs(pitch) > 0f)
+            PitchAim(ref aim, ref aimUp, pitch);
+        }
+
+        /// <summary>
+        /// Pitch aim and aimUp together by <paramref name="radians"/> (positive DOWN, <see cref="TurnAim"/>'s sign),
+        /// so the orbit plane tilts with the aim; both come back unit and perpendicular. The snap aim eases the plane
+        /// onto the pilot's flight line with it (<see cref="ThresherSnapAim"/>).
+        /// </summary>
+        public static void PitchAim(ref Vector3 aim, ref Vector3 aimUp, float radians)
+        {
+            if (Mathf.Abs(radians) > 0f)
             {
-                Vector3 a = aim * Mathf.Cos(pitch) - aimUp * Mathf.Sin(pitch);
-                aimUp = aimUp * Mathf.Cos(pitch) + aim * Mathf.Sin(pitch);
+                Vector3 a = aim * Mathf.Cos(radians) - aimUp * Mathf.Sin(radians);
+                aimUp = aimUp * Mathf.Cos(radians) + aim * Mathf.Sin(radians);
                 aim = a;
             }
 

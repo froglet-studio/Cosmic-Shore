@@ -115,3 +115,8 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
 ## 6. Hand tests in the Unity editor
 
 Kept in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, section "The voyage slice", as each increment lands.
+
+## 7. The Ark escort
+
+A voyage of its own beside the jobs: any three vessels escort the Ark through five worlds at a difficulty from 1 to 9,
+tuned by an AI sim. [ARK_ESCORT.md](ARK_ESCORT.md).

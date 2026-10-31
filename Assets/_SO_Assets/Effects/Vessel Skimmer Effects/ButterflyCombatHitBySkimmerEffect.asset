@@ -17,3 +17,4 @@ MonoBehaviour:
   sameVictimCooldownSeconds: 1
   requireOwningMachine: 1
   requireFasterThanVictim: 0
+  repeatWhileInside: 1
