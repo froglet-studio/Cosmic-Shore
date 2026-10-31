@@ -8,6 +8,8 @@
   "tries": 10
  },
  "by": "you",
+ "cancelled": true,
+ "cancelled_at": 1793467152,
  "created": 1793467106,
  "id": "r20261031-224826-16e9",
  "job": "unity-train",
