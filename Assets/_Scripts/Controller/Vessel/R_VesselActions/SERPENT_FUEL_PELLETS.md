@@ -37,6 +37,9 @@ partial fill at half brightness, and spending snaps the pips down at once while 
 (`pipFillRate`). The pips read the fuel resource itself, never a count of presses, so the readout
 and the gate that decides whether a press burns cannot disagree.
 
+- **Mirrored to fly right** (Garrett, 2026-10-30), nose first like every hull on the row: the
+  generator mirrors `PelletSlots.png`, `Line_1..4.png` are flipped, their anchored x negated and
+  their fill origin moved to the right (the pellet's round nose) on `SerpentHUDVariant.prefab`.
 - `PelletSlots.png` is **derived**, never hand-edited: `Tools/Build/author_serpent_pellet_icon.py`
   keys the translucent decagon plate and its rim stroke out of `Base.png` (the ability lockup
   retired the fleet's decagon backdrops — every card draws its own trapezoid plate). `--check`
@@ -79,9 +82,13 @@ and the gate that decides whether a press burns cannot disagree.
 | `pipFillRate` | `SerpentVesselHUDView` | 1.5 pellets/s | How fast the pips pour up to the real level |
 | `pelletIgniteEvent` | `ConsumeBoostActionExecutor` on `Serpent.prefab` | *empty* | Dedicated FMOD ignite sound; empty falls back to the shared `BoostActivate` category |
 
-Level 5 (Time) is still an **open design slot** — nothing is invented here. The old FLEET_MAPS
-proposal *Endless Coil* ("chains without the reload pause") no longer means anything, because the
-reload is gone.
+**Level 5 (Time): Fifth Pellet** (Garrett, 2026-10-30: "Time L5 lets give players a fifth
+pellet"). `upgradeResourceCost` 0.2 replaces the 0.25 pellet while `IsUpgradeActive(Time)`, so the
+same 1.0 tank holds five; a pellet still burns and boosts exactly as before (five at once is 11x),
+and at the shared 0.07/s refill a pellet now comes back in ~2.9 s instead of ~3.6 s. The TIME card
+re-lays itself as five rows (`SerpentVesselHUDView.SetFivePellets`: the slots swap to
+`PelletSlots5.png` from `author_serpent_pellet_icon.py`, the pips shrink to 0.8 and close up to
+24.9 apart, and a fifth pip is cloned from the first).
 
 ## Verification status
 

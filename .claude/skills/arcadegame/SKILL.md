@@ -192,6 +192,43 @@ flying still heads for its next target (the studio's idle takeover, `/vessel-stu
 human seat with no input simply flies straight, so a mode that can leave a seat unattended needs an AI
 backfill, not a drifting hull).
 
+Serpent Time (2026-10-27, `claude/dazzling-ride-dpyvkx`, `SERPENTTIME.md`) taught three more:
+- **Mode-laid prism mass is laid on EVERY peer from a seed the course gives.** A Seed Wall assembles from each
+  peer's own prisms, so debris laid on the server alone would not exist where the wall is built. Seed each gate
+  from its index and broadcast position (`SerpentTimeController.DebrisSeed`). Lay the first cohort with
+  `PrismTrailBuilder.LayOne(..., watchForReveal: true)` behind the connecting panel. Anything regrown mid-race takes
+  `watchForReveal: false` and `CompletesAsLiveRibbon = true`, or the arena-ready gate can never all-clear. Then
+  MEASURE the shell against the other gates on the real circuits: uncapped, a 120 u debris band reached into a
+  neighbour's rings on I2 and I3.
+- **A field of the mode's OWN controller enters a committed scene through the generator**, not by hand:
+  `hull_time_race.author(new_field_lines=...)` appends it to the authored controller block with a one-shot migration
+  that stands down once applied. Watch `--check` name the scene before the write.
+- **Standing several rings at one gate keeps the course's ring**, hidden (`RaceGateRing.SetVisualHidden`): the
+  objective arrow, the race toasts and the AI's commit all read it. The mode answers `ThreadsGate` and
+  `ChooseAIGate` (`GateRaceController`), and the cluster's centre lies OUTSIDE every ring of a 3-ring cluster, so an
+  AI left on the course's ring never threads.
+- `check_generated_assets.py` reports the Input System's default UI actions (guid `ca9f5fa9…`) on every arena scene
+  cloned this session: a package ASSET, which its "not judged" rule (package SCRIPTS only) does not cover. The shipped
+  Thresher Time and Headlong scenes carry the same 11 references.
+
+Serpentine (Serpent Time reshaped, 2026-10-31, same branch) taught four more:
+- **A start line behind gate 0 for a SEEDED course** (`IPlayerSpawnLine` is asked during the spawn chain, before the
+  course exists): override `PickCourseSeed` to latch ONE seed for whichever asks first, and in `TryBuildSpawnPoses`
+  build the course with `CourseSource.Build` from that seed, the same `ResolveShell` and `AuthoredGateTarget`. Decline
+  (return false) when the cell cannot answer yet, rather than guess a shell the real build would not use. Release the
+  latch when the course is raised. `SerpentTimeController.TryBuildSpawnPoses`.
+- **Show the course with the cell, not a drawn track**: `SnowChanger.SetFlow(IFlow)` points the cytoplasm's shards
+  along whatever a mode answers per shard (Serpentine: the nearest leg of the lap, leaning toward the line), and
+  null restores the crystal law. A cell with no crystal never built its shards; `SetFlow` builds them.
+- **An obstacle a hit can CLEAR is a plant felled through its heart, by the mode**: a joust leaves a plant's plates
+  standing as a skeleton (`LifeForm.WitherToSkeleton`), so it clears nothing; the ordinary flora death blows the rest
+  apart. The mode watches each guard's heart (a hull within reach, or a sniper round read off the shipped rifle:
+  its cooldown rising is the shot) and damages every plate through `Prism.Damage(devastate: true)`, nearest the heart
+  first, a capped number a frame; the plant then dies the ordinary death itself. No vessel or flora code changes.
+- **A mode that wants fewer creatures gets its OWN copy of the cell**, generated from the shared one each run
+  (`hull_time_race.author(extra_assets=...)`, Serpentine's `_own_cell_assets`): a cell config and spawn profile are
+  shared by ~10 modes, so editing them in place re-tunes every one.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```
@@ -248,6 +285,14 @@ saw when opening Wrecking Ball). The gate names the exact using to add; it only 
   nothing can teach; say in `<MODE>.md` whether it has one.
 
 ## 6. What a mode must NEVER do
+
+- **Change the vessel (LOCKED, Shombith, 2026-10-31).** "The vessel kit as designed always stays the same, we just make
+  the game mode interesting." A mode never rations an ability (rounds bought with crystals), vetoes a press, adds a
+  contact effect (a wall that costs speed), rescales an ability or edits a vessel file (`R_VesselActions/**`,
+  `R_VesselActionHandler`, `Assemblers/**`, a vessel prefab or action SO) for its own sake. Its levers are the track, the
+  environment (prisms, debris, flora, hazards), the course ladder and its AI's choices. Serpent Time's round economy and
+  wall cost were built and retired for this (`SERPENTTIME.md`). A kit change is a vessel change: it goes to the vessel's
+  owner, never through a mode.
 
 - Build a parallel arena/spawner/culler the Cell already owns; add decay, timers or caps to mass.
 - Score from a stat nothing counts, or count a stat in a way only one mode can see (`StatsManager`

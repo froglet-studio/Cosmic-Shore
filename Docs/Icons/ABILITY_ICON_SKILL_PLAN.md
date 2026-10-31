@@ -286,6 +286,36 @@ the Squirrel's pattern). The Ball Forge placeholder is retired. **The Scarab's T
 afterimage, thrust chevrons): the Scarab flying right in domain colour, a white wake in three lengths by trigger depth
 (`ScarabHUDView.WakeStepFor`), the plate as the speed meter, and the Time 5 Snap Dash chevron ahead (white ready, grey
 waiting). The Throttle placeholder is retired and the Scarab is done. Next: the Serpent.
+**The Serpent's Mass and omni cards** (2026-10-29, Garrett's direction, no options round): the Mass card is the Seed
+Wall drawn from `SerpentWallLattice`'s real numbers - nine base bricks round a white seed in domain colour, and at
+Mass 5 the Lockdown danger panels in the four closed holes at their real size and tilt; the omni card is the same
+wall with every brick shielded (what a crystal does to it). The Serpent's view lives on `Serpent.prefab`, so the kit
+grew a `proxy` rebind step (stripped proxies into the HUD variant). Lockdown itself was recut in the same change:
+panels when a hole's four bricks close, crystals only shield (LESSONS 61). The Sniper Shot options are out.
+**The Serpent recut** (2026-10-30, Garrett): the Time card is the shipped pellet art mirrored to fly right (five rows at
+Time 5, `author_serpent_pellet_icon.py`). The CHARGE card is now the Scope (one fixed 12 degree zoom; Charge sets the
+sniper's recovery; Charge 5 Hunter's Sight leaves rival afterimages the sniper can hit), and the SPACE card is Cloak /
+Sniper Shot: one RT card whose picture swaps while the scope is held so its glyph never moves
+(`SerpentVesselHUDView.SetScoped`, two sprites). Garrett picked Scope A (the Charge-petal
+eyepiece and the reticle at the zoom's true size; at Charge 5 the reticle moves onto a rival's oldest afterimage, in
+danger) and Cloak / Sniper B (the cloaked outline leaving its shielded seed; the Serpent's round clearing bricks and a
+super-shielded prism) on 2026-10-31. Both cards are kit parts in the variant's slot containers, reached through proxies
+on `Serpent.prefab`; `SetScoped` and `SetHuntersSight` toggle the part sets. The Serpent is done.
+**The Angler** (round 4, 2026-10-31; `specs/angler.py`): the Charge card, **Erase / Lock-on**, went first (the audit's
+"does not read"). Garrett picked B of four (the hunt, the spend, the bite, the eraser): "the spend" - two of your
+school (domain) left behind, the third spent (white) along its wake to the locked rival (danger) in the lock ring a
+hunted hull wears. Five parts in the Charge slot's container; `AnglerHUDView.SetLockOn` turns the third creature white
+and shows the wake and the ring while `HunterCount` > 0. The plate stays the hunters-out gauge. The creature is the
+QuadFish as its codex portrait reads (LESSONS 62). The **Mass card, Lure, Tame & Grow** (2026-10-31, Garrett picked B of
+three: to scale, the anglerfish, the pool): the Angler side-on (domain, upright at pitch -90, LESSONS 63), its esca lit
+white with a glow while A is held, a QuadFish drawn to the bulb - blue, danger at Mass 5 (Steal Fauna), the domain
+colour for a beat as one joins. Four parts; `AnglerHUDView.SetLure` / `PlayLureJoined`; the plate stays the taming
+gauge and the fauna count stays in the corner. The **Space card, Paint** (2026-10-31, two rounds; Garrett picked D):
+round 1 drew the brush, the throw and the lit prism; Garrett asked to see "how many were in group A and group B" with
+the next group highlighted (LESSONS 64). D: group A above and B below, each a QuadFish with its live count (HUD text)
+beside it, the group the next paint sends white and the other dim in the domain colour; the prism ahead blue until
+something is painted, white after; at Space 5 the shielded prism with its shield cracking off. Five parts;
+`AnglerHUDView.SetPaintGroups` / `SetPaintPrism` / `SetPaintColors`. Next: the Time card (Dash to the School).
 
 | Round | What | Why first |
 |---|---|---|

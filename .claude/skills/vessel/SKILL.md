@@ -970,6 +970,38 @@ applies to new abilities, new resources on the meter list, and anything that add
       `--check` confirms the two agree.
     - **The executors find their controls by event** (`Enum.GetValues(typeof(InputEvents))`), so the AI follows a
       rebind with no change. The control-chip tests name events, so update those.
+64. **A speed buff on a TETHERED vessel must carry the tether, or the tether takes the buff back.** The fleet's
+    `throttleMultiplier` scales only a frame's travel, never the momentum, so it reads like the clean way to say "N x
+    what the physics gives". It is not, for anything whose physics reads the hull's POSITION against a body it is tied
+    to. `cece/sweet-newton-78wr4o` (2026-10-30) gave the Thresher's aimed launch a x3 exit: the chain saw the hull run
+    ahead of the ball, stretched, and braked the physics to its 42 u/s floor in 0.25 s, so 3 s after the launch the
+    ship had gone 579 u against today's 532 (RT held), and 622 against 655 with RT released, which is worse than no
+    buff. Carry the whole rig by the extra travel after each move (ball, pivot and chain links with their previous
+    positions, so no link gains a velocity; `ThresherExecutor.CarryRig`), and sweep the carried stretch so the ball
+    still hits what it passes. The physics then stays today's frame for frame (1 272 u and 1 570 u). **Test the
+    untouched half**: assert the physics speed trace equals the unbuffed one, not only that the ship went further
+    (`ExitBuff_MultipliesTheExitAndLeavesThePhysicsAlone_BecauseTheRigIsCarried`).
+65. **Entering a mode that hands the sticks a new job must EASE their authority in, never latch them off.** A stick
+    already over when the job changes (the turn the pilot was flying, now an aim at 180 deg/s) jumps the new job at
+    full rate on its first frame. Ignoring the stick until it re-centres stops that and reads to the pilot as "the
+    controls disengaged ... I had to return it to home position and move the sticks again" (Garrett, 2026-10-30, on the
+    Thresher's snap aim). Ramp the authority from 0 to full over a short dial (`ThresherCameraFraming.AimStickAuthority`,
+    SmoothStep over `aimStickEaseSeconds` 0.3): a held stick starts working on the first frame and never stops.
+
+66. **A skimmer runs its vessel effects on ENTRY, so a contact meant to keep working while a rival STAYS needs the
+    standing-contact path, and a take priced in petals must price its silence and score in petals too.** The Tiger
+    Moth's shred (`cece/gallant-gauss-1lsqle`, 2026-10-31: one petal of one random element per Charge-scaled tick)
+    found that `SkimmerImpactor`'s stay handler runs no effects: Dustup had been designed around "one dusting per
+    pass" because of it. The shape that works: `SkimmerImpactor` keeps the hulls standing inside it (only while its
+    container holds an effect whose `RepeatsWhileInside` is true, so no other skimmer pays), the vessel's own component
+    calls `ReapplyVesselEffectsToOverlapping` every frame (the vessel twin of the Rhino's prism re-apply), and the
+    reporter's latch window paces it. The take implements `IPacedContactPetalTake`: its own window
+    (`SameVictimCooldownSeconds`), its worth in petals (`PetalsPerTake`, which `CombatHitDrain.TryAdmitPetals` silences
+    for), and `CanTakeFrom`, so a victim with nothing to take is not admitted. Score follows petals: one hit of the class
+    per `CombatHitDrain.PetalsFor(class)` petals (a Strike is 3.2: ten points to the petal, on four elements). Two
+    consequences to check before adopting it: a mode scored on that contact now scores on TIME in contact (re-tune its
+    target), and a one-element take must pick among the elements the victim HOLDS by their replicated level, or it
+    lands on an empty element while another still has petals.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

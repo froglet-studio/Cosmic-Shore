@@ -16,9 +16,21 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-29 from canvas version `1793289528-2f59`: Rev 3 to Rev 38, 323 boards on 39 pages. The canvas's launch page is `rev38`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-10-31 from the canvas: Rev 3 to Rev 39, 332 boards on 40 pages. The canvas's launch page is `rev39`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
+
+### Rev 39-40 - Friends tray: a calmer party, rows that never overlap  (page `rev39`)
+
+- [`R39Compare.dc.html`](R39Compare.dc.html) - Rev 39 - compare: the party piece of A, B and C side by side, and one online row in its four states (Invite, Join, Spectate, Invited - cancel) at the tray's width
+- [`R39A.dc.html`](R39A.dc.html) - Rev 39 A - Seat row: the four seats in one row, no bonds; one action per online row in a fixed slot (recommended) - interactive
+- [`R39B.dc.html`](R39B.dc.html) - Rev 39 B - Roster list: the party as four stacked seat lines; online rows with two fixed action slots - interactive
+- [`R39C.dc.html`](R39C.dc.html) - Rev 39 C - Squad tiles: the party as a 2x2 tile grid; online pilots as compact cards - interactive
+- [`R39Notes.dc.html`](R39Notes.dc.html) - Rev 39 - notes: what changes against the built drawer, why A, what the build touches
+- [`R40D.dc.html`](R40D.dc.html) - Rev 40 D - Pilot rail: closed, a 72-wide rail keeps the four seats on screen; open, a 440 tray - interactive
+- [`R40E.dc.html`](R40E.dc.html) - Rev 40 E - Grouped by verb: online pilots under what you can do with them; the party as one card - interactive
+- [`R40F.dc.html`](R40F.dc.html) - Rev 40 F - Tabs: Party and Online share the tray, one at a time, at full size - interactive
+- [`R40Notes.dc.html`](R40Notes.dc.html) - Rev 40 - notes: what each adds against Rev 39, the pick across both rounds
 
 ### Rev 38 - Computer artifact  (page `rev38`)
 

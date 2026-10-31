@@ -65,6 +65,12 @@ namespace CosmicShore.Data
                     primary = Element.Mass;
                     return true;
 
+                // The Scarab's ball game is its MASS card (Garrett, 2026-10-27): a ball is a
+                // crystal made into mass and driven home. Its Time card is Scarab Rally, a ring race.
+                case GameModes.ScarabScramble:
+                    primary = Element.Mass;
+                    return true;
+
                 // BOTH. The nucleus claim is won by laying your own mass inside it and taken by
                 // tearing the other side's out, so the mode is a making game and a destroying
                 // game at once and the card says both.

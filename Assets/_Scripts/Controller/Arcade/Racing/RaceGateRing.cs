@@ -231,6 +231,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Hide or show the drawing while the gate keeps its place, its mouth and its index. For a mode that
+        /// stands its OWN rings at a gate (Serpent Time's ring clusters): the course's ring stays the gate the
+        /// objective arrow and the AI read, and the mode's rings are what the pilot sees and threads.
+        /// </summary>
+        public void SetVisualHidden(bool hidden)
+        {
+            if (_visual) _visual.gameObject.SetActive(!hidden);
+        }
+
+        /// <summary>
         /// Take the gate down without popping it out of existence (the continuity law applies to
         /// a marker exactly as it applies to a prism). The ring withers over
         /// <paramref name="seconds"/> and the gate goes with it.

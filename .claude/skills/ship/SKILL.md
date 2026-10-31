@@ -79,12 +79,10 @@ ten minutes, a green run of it (negative-controlled) IS evidence, and the verifi
 "compiled against Unity reference assemblies (`unity_refcompile`), not opened in the editor" instead
 of "not compiled". How to run it, and its false positives: `/asset-surgery` §4.
 
-**A green `unity_refcompile` does not cover Amoebius.** Amoebius compiles the same `Assets/_Scripts` against its own
-`UnityEngine` shim, as a development build with no platform symbol, so a Unity API the shim lacks breaks the engine
-and nothing on the Unity side notices (2026-10-19: `Debug.developerConsoleEnabled`, CS0117). When the branch calls a
-Unity API the game did not call before, `dotnet build Port/src/CosmicShore.Live` (.NET 10 SDK, `dotnet-install.sh
---channel 10.0`, about 2 minutes) is the check; `Docs/CONDITIONAL_COMPILATION.md` "The Amoebius variant" has the
-guard that keeps player-only APIs out of it.
+**Amoebius is not part of a ship.** A ship never builds, tests or patches Amoebius (Shombith, 2026-10-31). The
+engine is brought up to date with the game every three weeks by the scheduled **Amoebius update** task (a fresh cloud
+session: `dotnet build Port/src/CosmicShore.Player`, `dotnet test Port/tests/CosmicShore.Tests`, stand-ins fixed to
+Unity's real shape). A branch that breaks the engine build is fixed there, not here.
 
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
@@ -207,13 +205,7 @@ sees no conflict (2026-10-27: Ys-bleeding-edge removed the Omega crews; bleeding
 Warden). The `generated_assets` gate names the dangling guid. Re-run the generator that owns the referencing asset on the
 merged tree; hand-delete only files that generator no longer emits, once a guid search shows nothing references them.
 
-**Amoebius builds only where you build it.** The `amoebius` CI job runs daily and on demand, not on PRs, so a promote
-that brings new game code can break the engine build with nothing red on the PR. When a .NET 10 SDK is already present
-(`~/.dotnet`), also run `dotnet build Port/src/CosmicShore.Player -nologo -v q` (and `dotnet test
-Port/tests/CosmicShore.Tests`, naming any failure that is red on bleeding-edge too). The usual break is game code naming a
-Unity type the engine stands in for under another shape - a `List<>` overload (`Graphics.RenderMeshInstanced`), or an
-attribute class named with an `Attribute` suffix where Unity's has none (`RequireComponent`, broken by `TheaterGhost`'s
-cast): fix the stand-in to Unity's real shape, never the game code, and say "Affects: Shombith's Amoebius engine".
+**Amoebius is not rebuilt here.** The three-weekly scheduled Amoebius update owns the engine build (see §0.05).
 
 **Push.** `git push -u origin "$BRANCH"`. Rejected because someone pushed meanwhile: `git fetch origin
 "$BRANCH"`, `git merge origin/$BRANCH`, re-run the gates if the new commits touched C#, push again. Network
