@@ -149,13 +149,13 @@ namespace CosmicShore.Gameplay
             "no rocket at a creature closer than this (it would burst in the hull's own face)");
         public static readonly EscortGene SparrowRocketMaxRange = Define("ai.sparrow.rocketMaxRange", 220f, 120f, 320f,
             "no rocket at a creature farther than this (the fuze's reach)");
-        public static readonly EscortGene SparrowRocketAimDeg = Define("ai.sparrow.rocketAimDeg", 5f, 1f, 15f,
+        public static readonly EscortGene SparrowRocketAimDeg = Define("ai.sparrow.rocketAimDeg", 8f, 1f, 20f,
             "the creature must be within this many degrees of the nose for a rocket");
         public static readonly EscortGene SparrowRocketCooldown = Define("ai.sparrow.rocketCooldown", 1.5f, 0.5f, 6f,
             "seconds between rockets");
         public static readonly EscortGene SparrowRocketBlastRadius = Define("ai.sparrow.rocketBlastRadius", 170f, 60f, 260f,
             "the rocket's destructive blast radius the Ark must be kept out of");
-        public static readonly EscortGene SparrowGunAimDeg = Define("ai.sparrow.gunAimDeg", 8f, 2f, 20f,
+        public static readonly EscortGene SparrowGunAimDeg = Define("ai.sparrow.gunAimDeg", 12f, 2f, 25f,
             "the creature must be within this many degrees of the nose for the guns");
         public static readonly EscortGene SparrowGunRange = Define("ai.sparrow.gunRange", 240f, 100f, 260f,
             "guns fire at a creature up to this far");

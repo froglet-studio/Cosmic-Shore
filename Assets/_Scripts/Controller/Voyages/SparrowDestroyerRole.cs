@@ -65,7 +65,11 @@ namespace CosmicShore.Gameplay
                 Vector3 lead = heart + _heartVelocity * EscortGeneRegistry.SparrowLeadSeconds;
                 float standoff = EscortGeneRegistry.SparrowStandoff;
                 float dist = (heart - Position).magnitude;
-                if (dist <= standoff * PassThroughFactor) return lead;   // close in: fly the pass
+                // Inside gun range: fly AT the creature (the strafing pass). The guns and the rocket leave along the
+                // nose, so the nose must be on the heart to fire at all: steering at a standoff point beside it kept
+                // the weapons silent (round 2: 0-1 rockets and 0-2 s of guns in 340 s on a target). The hull through
+                // the heart is harmless on a Sparrow, and AvoidHull keeps the pass out of the Ark.
+                if (dist <= Mathf.Max(standoff * PassThroughFactor, EscortGeneRegistry.SparrowGunRange)) return lead;
                 // Far out: make for the firing position. Between the creature and the hull when that point is clear
                 // of the plating; for a creature ON the hull (a grazer) that point is inside the Ark, so stand off
                 // beside the creature instead, tangent to the hull on our own side, and shoot along the plating.
