@@ -5034,3 +5034,25 @@ handle** (section 45.4), unchanged. Rev 39's options and D's rail and F are not 
 - **Gates:** `author_menu_arcade.py --self-test` (check_card: seats in a row, no bonds, authored words, one-verb rows in
   one shared slot with the fitter off, the four groups wired in order; 8 new planted defects); `author_ui_lattice.py
   --self-test` (its two bond plants retargeted); `PartyTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 108. A mode's preview: FULL SCREEN extends as a tray (2026-10-31, awaiting in-editor approval)
+
+**Asked (Shombith, 2026-10-31):** "during the preview of each game mode when we press fullscreen it goes actual full
+screen rather the play area should extend as a tray and the other parts of the UI (right side) should get hidden".
+Built straight from the words (no board round): the same tray as the friends drawer's, applied to the preview.
+
+- **What changes** (`ConfigureView` and `ConfigureArenaView`, `author_menu_configure.py`): FULL SCREEN (while flying)
+  no longer grows the preview to the whole window and fades everything. The preview's right edge slides out 700 units
+  (x 1160 to 1860 at 1920 x 1080, the settings column's right edge) over `fadeSeconds`, and only the right side fades:
+  the controls panel, the settings card, the status line and START (`ConfigureCinema.extendAsTray`, `trayExtend`,
+  `rightSide`). The header, the briefing under the preview and the fly row stay. The objective bar rides the preview's
+  right edge (`followTray`). Pressing it again, or handing the stick back, slides the tray home.
+- **No stretched picture.** A live preview texture cannot be swapped mid-session, so the preview renders a texture as
+  wide as the open tray from the start (`ModePreviewWindow.textureWidthScale`, 1800 / 1100) and shows the centre that
+  fits its frame (`RawImage.uvRect`, `VisibleWidth`). The framed view is the same picture as before; the tray reveals
+  more arena at the sides. Cost: the preview renders 1.64x as many pixels while the window is open (the measured
+  height is unchanged, capped at 720).
+- **Unchanged:** the Maelstrom window (no flying, no FULL SCREEN); every other `ModePreviewWindow` (scale 1).
+- **Gates:** `author_menu_configure.py` checks the tray wiring, the texture scale and that the tray ends at the column's
+  edge; three new planted defects (FULL SCREEN back to the whole window, a frame-sized texture, START left on screen).
+  `PreviewTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
