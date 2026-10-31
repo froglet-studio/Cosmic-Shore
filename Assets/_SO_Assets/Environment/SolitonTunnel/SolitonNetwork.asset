@@ -15,36 +15,35 @@ MonoBehaviour:
   comfort:
     DistortionIntensity: 1
     MaxWobbleSpeed: 0.25
-    MaxPulseSpeed: 1
+    MaxFlowSpeed: 1
   look:
     Bend: 3
     Lens: 0.139
     WallInside: 0.1
-    WallOutside: 0.15
-    Wobble: 0.2
+    WallOutside: 0.2
+    Wobble: 0.15
     WobbleWaves: 1.5
     WobbleSpeed: 0.12
-    Rim: 0.05
+    Rim: 0.04
     RimTightness: 4
-    Glint: 0.25
-    Glow: 0.04
-    Shimmer: 0.5
-    Pulse: 0.12
-    PulseCount: 3
-    PulseSpeed: 0.6
+    Glint: 0.2
+    Glow: 0.01
+    MouthLens: 0.45
+    MouthFlare: 1.8
+    EinsteinRing: 0.2
+    MouthShadow: 0.3
+    InsideStretch: 0.1
+    InsideFlow: 0.6
+    InsideSwirl: 0.06
   ride:
     InsideBend: 0.5
     InsideWobble: 0.5
     SteadyCentre: 0.2
-  bridgeOn: 1
-  bridgeBrightness: 0.35
   bridgeRings: 36
   bridgeSpindlesPerRing: 21
   bridgeRibs: 5
   bridgeSpindleThickness: 0.25
   bridgeShimmer: 0.5
-  bridgeWhite: 0.3
-  bridgeMaxChannels: 4
   tintFromMaker: 1
   overrideTint: {r: 0.31, g: 0.85, b: 1, a: 1}
   tintStrength: 0.35
@@ -53,7 +52,7 @@ MonoBehaviour:
   ovalLongest: 1.1
   ovalMaxSharpness: 8
   throatDiameter: 7.1
-  mouthDiameter: 35.6
+  mouthDiameter: 44
   networkBranchPointsMin: 6
   networkBranchPointsMax: 12
   networkOpeningsMin: 16
@@ -63,7 +62,7 @@ MonoBehaviour:
   networkSpread: 273
   networkRandomness: 0.45
   networkDiameter: 10.5
-  networkMouthDiameter: 13.9
+  networkMouthDiameter: 18
   networkTip: 0.309
   networkGnarl: 0.779
   formSeconds: 0.4

@@ -169,7 +169,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // the spindle bridge over its tubes (drawn once a frame, shared with every maker)
+        // the additive view (makers' reticles; drawn once a frame, shared with every maker)
         void LateUpdate()
         {
             if (_tunnels.Count + _networks.Count > 0) SolitonTunnelView.DrawOncePerFrame();

@@ -13,9 +13,10 @@ namespace CosmicShore.Gameplay
     /// the tube; its momentum carries it, and it leaves along its own velocity (a slingshot). RT gives a small push along the
     /// tube (<see cref="ThrustOn"/>, <see cref="Thrust"/>). There is no left-stick steering inside.</para>
     ///
-    /// <para><b>The look</b> is the jelly lens (<c>SolitonTunnel.shader</c>, <see cref="SolitonTunnelLensPass"/>) plus the
-    /// additive spindle bridge (<see cref="SolitonTunnelView"/>), tinted by the maker's domain colour (or
-    /// <see cref="OverrideTint"/>). Field reference: <c>Docs/Shaders/WORMHOLE_SHADERS.md</c> and <c>Docs/WORMHOLES.md</c>.</para>
+    /// <para><b>The look</b> is a plain wormhole (<c>SolitonTunnel.shader</c>, <see cref="SolitonTunnelLensPass"/>): bent
+    /// space on the wall, a gravitational lens at each flared mouth, a stretch streaming along the throat inside, faintly
+    /// tinted by the maker's domain colour (or <see cref="OverrideTint"/>). Formed tubes draw no spindle bridge any more; the
+    /// maker's aim reticle (<see cref="SolitonTunnelView"/>) still uses the frame numbers below. Field reference: <c>Docs/Shaders/WORMHOLE_SHADERS.md</c> and <c>Docs/WORMHOLES.md</c>.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "SolitonTunnelConfig", menuName = "ScriptableObjects/Environment/Soliton Tunnel Config")]
     public sealed class SolitonTunnelConfigSO : ScriptableObject
@@ -23,16 +24,12 @@ namespace CosmicShore.Gameplay
         [Header("Look")]
         [Tooltip("The comfort master: scales every bend, lens, breath and pulse, and caps their speeds.")]
         [SerializeField] SolitonTunnelComfort comfort = SolitonTunnelComfort.Default;
-        [Tooltip("The jelly lens: how the tube bends what you see through its wall, breathes, and catches the light.")]
+        [Tooltip("The wormhole: how the tube bends space through its wall, lenses round its mouths, and warps inside.")]
         [SerializeField] SolitonTunnelLook look = SolitonTunnelLook.TunnelDefault;
         [Tooltip("How the tube looks from inside while you ride it (calmer).")]
         [SerializeField] SolitonTunnelRideView ride = SolitonTunnelRideView.Default;
 
-        [Header("Look: Spindle Bridge")]
-        [Tooltip("Draw the additive spindle bridge (rings of glowing spindles and ribs) over a formed tube.")]
-        [SerializeField] bool bridgeOn = true;
-        [Tooltip("The bridge's brightness on a formed tube (0 = off; the Meerkat's aim reticle has its own).")]
-        [SerializeField, Range(0f, 1f)] float bridgeBrightness = 0.35f;
+        [Header("Look: Aim Reticle Frame")]
         [Tooltip("...rings along the tube")]
         [SerializeField, Range(2, 60)] int bridgeRings = 36;
         [Tooltip("...spindles per ring")]
@@ -43,17 +40,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.05f, 4f)] float bridgeSpindleThickness = 0.25f;
         [Tooltip("...shimmer (a slow glow running along it)")]
         [SerializeField, Range(0f, 1f)] float bridgeShimmer = 0.5f;
-        [Tooltip("...toward white (0 = the tint's own colour)")]
-        [SerializeField, Range(0f, 1f)] float bridgeWhite = 0.3f;
-        [Tooltip("A Soliton Network draws the bridge only on this many of its channels nearest the camera (0 = none).")]
-        [SerializeField, Range(0, 16)] int bridgeMaxChannels = 4;
 
         [Header("Look: Domain Tint")]
         [Tooltip("Tint the tube with its maker's domain colour (a placed tube with no maker uses Override Tint).")]
         [SerializeField] bool tintFromMaker = true;
         [Tooltip("The tint when Tint From Maker is off, or the tube has no maker.")]
         [SerializeField] Color overrideTint = new(0.31f, 0.85f, 1f, 1f);
-        [Tooltip("How strongly the tint colours the jelly and the bridge (0 = clear, untinted).")]
+        [Tooltip("How strongly the tint colours the wormhole's wall light and Einstein ring (0 = clear, untinted).")]
         [SerializeField, Range(0f, 1f)] float tintStrength = 0.35f;
 
         [Header("Shape: Single Tunnel")]
@@ -68,7 +61,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Throat diameter (u)")]
         [SerializeField, Range(2f, 60f)] float throatDiameter = 7.1f;
         [Tooltip("Mouth diameter (u)")]
-        [SerializeField, Range(4f, 120f)] float mouthDiameter = 35.6f;
+        [SerializeField, Range(4f, 120f)] float mouthDiameter = 44f;
 
         [Header("Shape: Soliton Network")]
         [Tooltip("Branch points (min)")]
@@ -90,7 +83,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Channel diameter (u)")]
         [SerializeField, Range(2f, 100f)] float networkDiameter = 10.5f;
         [Tooltip("Channel mouth diameter (u)")]
-        [SerializeField, Range(2f, 150f)] float networkMouthDiameter = 13.9f;
+        [SerializeField, Range(2f, 150f)] float networkMouthDiameter = 18f;
         [Tooltip("Tip narrowing (1 = none)")]
         [SerializeField, Range(0.05f, 1f)] float networkTip = 0.309f;
         [Tooltip("Gnarl (how much a channel wanders)")]
@@ -130,15 +123,11 @@ namespace CosmicShore.Gameplay
         public SolitonTunnelLook Look => look;
         public SolitonTunnelRideView Ride => ride;
 
-        public bool BridgeOn => bridgeOn && bridgeBrightness > 0f;
-        public float BridgeBrightness => bridgeBrightness;
         public int BridgeRings => bridgeRings;
         public int BridgeSpindlesPerRing => bridgeSpindlesPerRing;
         public int BridgeRibs => bridgeRibs;
         public float BridgeSpindleThickness => bridgeSpindleThickness;
         public float BridgeShimmer => bridgeShimmer;
-        public float BridgeWhite => bridgeWhite;
-        public int BridgeMaxChannels => bridgeMaxChannels;
 
         public bool TintFromMaker => tintFromMaker;
         public Color OverrideTint => overrideTint;

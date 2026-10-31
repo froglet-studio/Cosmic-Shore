@@ -7,11 +7,9 @@ using UnityEngine.Rendering;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// What a Soliton Tunnel LOOKS like outside the lens (<see cref="SolitonTunnelLensPass"/> draws the jelly bent space):
+    /// What a Soliton Tunnel draws outside the lens (<see cref="SolitonTunnelLensPass"/> draws the wormhole itself). Formed
+    /// tubes draw nothing here any more (2026-11-01: the spindle bridge went with the plain wormhole look):
     /// <list type="bullet">
-    /// <item><b>The spindle bridge</b> over every formed Soliton Tunnel, and over the <see cref="SolitonTunnelConfigSO.BridgeMaxChannels"/>
-    /// channels of each Soliton Network nearest the camera: the additive wireframe of rings, spindles and ribs, in the tube's
-    /// domain tint toward white by <c>Bridge White</c>, at <c>Bridge Brightness</c> × its fade (off with <c>Bridge On</c>).</item>
     /// <item><b>A maker's reticle</b> (its pilot only; round 9, Yash: "the reticle is the silhouette of the geometry"): the
     /// same wireframe, condensing the way the tunnel will, at its own brightness, in its pilot's domain colour toward white
     /// by <c>reticleWhite</c>.</item>
@@ -118,59 +116,10 @@ namespace CosmicShore.Gameplay
                 if (ret.Alpha > 0f) DrawReticle(ret, e.Config, eye, colour);
                 if (hasGhost) DrawReticle(ghost, e.Config, eye, colour);
             }
-            DrawBridges(eye);
 
             Upload(ref s_tris, "SolitonTunnelSpindles", s_tv, s_tc, s_ti);
             var additive = new RenderParams(s_additive) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
             if (s_ti.Count > 0) Graphics.RenderMesh(additive, s_tris, 0, Matrix4x4.identity);
-        }
-
-        // ------------------------------------------------------------------ the spindle bridge over formed tubes
-
-        static readonly List<(float d, int i)> s_chans = new();
-
-        /// <summary>The bridge over every formed tunnel, and over each network's nearest <c>BridgeMaxChannels</c> channels.</summary>
-        static void DrawBridges(Vector3 eye)
-        {
-            var live = SolitonTunnel.Live;
-            for (int i = 0; i < live.Count; i++)
-            {
-                var t = live[i];
-                var cfg = t.Config;
-                if (!cfg || !cfg.BridgeOn || t.W.S1 - t.W.S0 < 1f) continue;
-                float fade = t.Fade;
-                if (fade <= 0.004f) continue;
-                var tint = t.Tint; tint.a = 1f;
-                BridgeFrame(Tube.Conic(t.A, t.T0, t.Side, t.Path, t.B, t.M, t.W.S0, t.W.S1), cfg.BridgeBrightness * fade, tint,
-                            cfg.BridgeWhite, cfg, eye, SpindleNear, SpindleFull, 1f);
-            }
-            var nets = SolitonNetwork.Live;
-            var eyeD = SolitonNetwork.D(eye);
-            for (int n = 0; n < nets.Count; n++)
-            {
-                var net = nets[n];
-                var cfg = net.Config;
-                if (!cfg || !cfg.BridgeOn || cfg.BridgeMaxChannels <= 0) continue;
-                s_chans.Clear();
-                for (int i = 0; i < net.Channels.Count; i++)
-                {
-                    ref var w = ref net.Life[i];
-                    if (w.Phase == SolitonTunnelMath.Phase.Gone || w.S1 - w.S0 < 1 || ChannelFade(w) <= 0.004f) continue;
-                    var c = net.Channels[i];
-                    double s = System.Math.Max(w.S0, System.Math.Min(w.S1, SolitonTunnelMath.Nearest(c.Path, eyeD)));
-                    s_chans.Add(((float)SolitonTunnelMath.At(c.Path, s, out _).DistanceTo(eyeD), i));
-                }
-                s_chans.Sort((x, y) => x.d.CompareTo(y.d));
-                var tint = net.Tint; tint.a = 1f;
-                int take = Mathf.Min(s_chans.Count, cfg.BridgeMaxChannels);
-                for (int k = 0; k < take; k++)
-                {
-                    int i = s_chans[k].i;
-                    ref var w = ref net.Life[i];
-                    BridgeFrame(Tube.Channel(net.Channels[i], (float)w.S0, (float)w.S1, cfg.NetworkTip),
-                                cfg.BridgeBrightness * ChannelFade(w), tint, cfg.BridgeWhite, cfg, eye, SpindleNear, SpindleFull, 1f);
-                }
-            }
         }
 
         // ------------------------------------------------------------------ the reticle (drawReticle)

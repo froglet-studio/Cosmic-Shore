@@ -9,14 +9,15 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// THE Soliton look (Yash, 2026-10-29: "I want to feel I'm inside the wormhole ... pleasant calm distortion, little jelly
-    /// like clear liquidy hollow"): the bent space everyone sees round every Soliton Tunnel and every Soliton Network channel,
+    /// THE Soliton look, a plain wormhole (Yash, 2026-11-01: "plain worm hole with wider mouth looking cool from outside and
+    /// inside, bending and warping of space time"): the bent space everyone sees round every Soliton Tunnel and every Soliton Network channel,
     /// made by a vessel or placed (<c>Docs/Shaders/WORMHOLE_SHADERS.md</c> §14), the sibling of <see cref="BlackHoleLensPass"/> and <see cref="VortexRingLensPass"/> with the same plumbing. After
     /// URP has drawn the TRANSPARENTS the camera's colour is copied and drawn back through one full-screen triangle
     /// (<c>SolitonTunnel.shader</c>): each pixel's ray is marched through a thin shell on the walls of the
     /// <see cref="MaxTubes"/> tubes nearest the camera, bent along them and refracted a little at the wall (a clear jelly), the
-    /// bend breathing slowly; a clear rim, a glint, a faint glow, (a network by default) a shimmer and soft pulses, and its
-    /// config's domain tint (<c>_MWTubeTint</c>). Each tube draws with its own config's <see cref="SolitonTunnelLook"/>; a tube the camera is inside draws with its
+    /// bend breathing slowly; a clear rim, a glint, a faint glow, and its config's domain tint (<c>_MWTubeTint</c>). Each live
+    /// mouth of those tubes (<see cref="ScreenWells"/>, up to <see cref="MaxWells"/>) is a gravitational lens with an Einstein
+    /// ring; riding a tube, its throat stretches and streams toward the way out (<c>_MWHole</c>). Each tube draws with its own config's <see cref="SolitonTunnelLook"/>; a tube the camera is inside draws with its
     /// <see cref="SolitonTunnelRideView"/> (calmer, a still centre); <see cref="SolitonTunnelComfort"/> scales every motion
     /// and caps its speed. Tunnels are <c>Shape.y</c> 0; network channels 1, a 3D polyline (<see cref="PathPoints"/> points at
     /// even steps of s, each its radius, and the channel's carried normal).
@@ -31,6 +32,8 @@ namespace CosmicShore.Gameplay
         public const int MaxTubes = 4;
         /// <summary>Points along each tube's centreline the shader measures it by (round 22: the arc, at even steps of s).</summary>
         public const int PathPoints = 25;
+        /// <summary>The most mouths lensed at once (both ends of each banked tube).</summary>
+        public const int MaxWells = 8;
 
         static readonly int SceneColorId = Shader.PropertyToID("_MeerkatSceneColor");
         static readonly int ViewId = Shader.PropertyToID("_MWView");
@@ -47,6 +50,10 @@ namespace CosmicShore.Gameplay
         static readonly int CamFId = Shader.PropertyToID("_MWCamF");
         static readonly int LightDirId = Shader.PropertyToID("_MWLightDir");
         static readonly int TubeTintId = Shader.PropertyToID("_MWTubeTint");
+        static readonly int WellCId = Shader.PropertyToID("_MWWellC");
+        static readonly int WellPId = Shader.PropertyToID("_MWWellP");
+        static readonly int WellTId = Shader.PropertyToID("_MWWellT");
+        static readonly int HoleId = Shader.PropertyToID("_MWHole");
 
         static SolitonTunnelLensPass s_pass;
         static Material s_lens;
@@ -67,8 +74,8 @@ namespace CosmicShore.Gameplay
         static readonly Near[] s_near = new Near[MaxTubes];
         static int s_nearN;
 
-        // The looks' running phases (wobble, pulse, shimmer per kind), advanced once a frame at their comfort-capped speeds.
-        static readonly float[] s_phase = new float[6];
+        // The looks' running phases (wobble, throat flow per kind), advanced once a frame at their comfort-capped speeds.
+        static readonly float[] s_phase = new float[4];
         static int s_phaseFrame = -1;
 
         /// <summary>The bank for one camera: up to <see cref="MaxTubes"/> tubes, both kinds' looks, the eye.</summary>
@@ -82,6 +89,10 @@ namespace CosmicShore.Gameplay
             public readonly Vector4[] Bound = new Vector4[MaxTubes];   // world centre, radius
             public readonly Vector4[] Look = new Vector4[10];          // per kind (tunnel 0..4, network 5..9): see PackLook
             public readonly Vector4[] Tint = new Vector4[MaxTubes];    // rgb the domain tint, a its strength (0 = clear)
+            public readonly Vector4[] WellC = new Vector4[MaxWells];   // a mouth on screen: x, y (screen heights), depth, radius
+            public readonly Vector4[] WellP = new Vector4[MaxWells];   // its Einstein angle, lens strength, ring, shadow
+            public readonly Vector4[] WellT = new Vector4[MaxWells];   // its tube's tint
+            public Vector4 Hole;                                       // mouths, throat stretch, flow phase, twist
             public Vector4 CamPos, CamR, CamU, CamF;
             /// <summary>How far the eye is inside a tube (0..1), and that tube's kind's steady centre.</summary>
             public float Inside, Steady;
@@ -97,6 +108,10 @@ namespace CosmicShore.Gameplay
                 System.Array.Copy(Norm, o.Norm, MaxTubes * PathPoints);
                 System.Array.Copy(Look, o.Look, Look.Length);
                 System.Array.Copy(Tint, o.Tint, MaxTubes);
+                System.Array.Copy(WellC, o.WellC, MaxWells);
+                System.Array.Copy(WellP, o.WellP, MaxWells);
+                System.Array.Copy(WellT, o.WellT, MaxWells);
+                o.Hole = Hole;
                 o.Inside = Inside; o.Steady = Steady;
                 o.CamPos = CamPos; o.CamR = CamR; o.CamU = CamU; o.CamF = CamF;
                 o.Count = Count;
@@ -206,6 +221,10 @@ namespace CosmicShore.Gameplay
                     d.block.SetVector(CamFId, t.CamF);
                     d.block.SetVector(LightDirId, d.light);
                     d.block.SetVectorArray(TubeTintId, t.Tint);
+                    d.block.SetVectorArray(WellCId, t.WellC);
+                    d.block.SetVectorArray(WellPId, t.WellP);
+                    d.block.SetVectorArray(WellTId, t.WellT);
+                    d.block.SetVector(HoleId, t.Hole);
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, d.material, 0, MeshTopology.Triangles, 3, 1, d.block);
                 });
             }
@@ -253,6 +272,7 @@ namespace CosmicShore.Gameplay
             bank.Count = count;
             bank.Inside = 0f;
             bank.Steady = 0f;
+            int insideAt = -1;
             for (int i = 0; i < MaxTubes; i++)
             {
                 for (int j = 0; j < PathPoints; j++) bank.Norm[i * PathPoints + j] = Vector4.zero;
@@ -271,6 +291,7 @@ namespace CosmicShore.Gameplay
                 {
                     bank.Inside = inside;
                     bank.Steady = s_near[i].Config.Ride.SteadyCentre;
+                    insideAt = i;
                 }
             }
             if (count == 0) return 0;
@@ -286,11 +307,78 @@ namespace CosmicShore.Gameplay
             var comfort = c0.Comfort;
             AdvancePhases(tunnelCfg.Look, networkCfg.Look, comfort);
             PackLook(bank.Look, 0, tunnelCfg.Look, tunnelCfg.Ride, comfort, 0);
-            PackLook(bank.Look, 5, networkCfg.Look, networkCfg.Ride, comfort, 3);
+            PackLook(bank.Look, 5, networkCfg.Look, networkCfg.Ride, comfort, 2);
             var ct = cam.transform;
             bank.CamPos = new Vector4(eye.x, eye.y, eye.z, Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * 0.5f));
             bank.CamR = ct.right; bank.CamU = ct.up; bank.CamF = ct.forward;
+            int wells = ScreenWells(cam, bank);
+            float I = Mathf.Clamp01(comfort.DistortionIntensity), stretch = 0f, flow = 0f, swirl = 0f;
+            if (insideAt >= 0 && bank.Inside > 0f)
+            {
+                var il = s_near[insideAt].Config.Look;
+                stretch = Mathf.Clamp(il.InsideStretch, 0f, 0.5f) * I * bank.Inside;
+                swirl = Mathf.Clamp(il.InsideSwirl, 0f, 0.5f) * I * bank.Inside;
+                flow = s_phase[s_near[insideAt].Tunnel != null ? 1 : 3];
+            }
+            bank.Hole = new Vector4(wells, stretch, flow, swirl);
             return count;
+        }
+
+        /// <summary>
+        /// The mouths of the banked tubes as gravitational lenses (435ce058c's <c>ScreenWells</c>, a point-mass lens now): each
+        /// end of a tunnel's live window, and each true opening of a network channel (<c>MouthIn</c> / <c>MouthOut</c>) its
+        /// dug window has reached, in front of the camera. Its Einstein angle is the mouth's angular radius × the look's
+        /// <see cref="SolitonTunnelLook.MouthFlare"/>; its strength fades with the tube, as the camera comes right up to the
+        /// mouth, and (×0.3) for the tube you are riding. No allocations. Returns how many.
+        /// </summary>
+        static int ScreenWells(Camera cam, ContourTubes bank)
+        {
+            int n = 0;
+            var worldToCamera = cam.worldToCameraMatrix;
+            var eye = cam.transform.position;
+            float f = 0.5f / Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * 0.5f);
+            float I = Mathf.Clamp01(s_near[0].Config.Comfort.DistortionIntensity);
+            for (int i = 0; i < bank.Count && n < MaxWells; i++)
+            {
+                var near = s_near[i];
+                var cfg = near.Config;
+                var look = cfg.Look;
+                if (look.MouthLens <= 0f && look.EinsteinRing <= 0f && look.MouthShadow <= 0f) continue;
+                float ride = 1f - 0.7f * bank.Shape[i].z;
+                for (int end = 0; end < 2 && n < MaxWells; end++)
+                {
+                    Vector3 at; float rM, fade;
+                    if (near.Tunnel != null)
+                    {
+                        var t = near.Tunnel;
+                        float s = end == 0 ? t.W.S0 : t.W.S1;
+                        at = t.At(s, out _); rM = t.Radius(s); fade = t.Fade;
+                    }
+                    else
+                    {
+                        var c = near.Net.Channels[near.Channel];
+                        ref var w = ref near.Net.Life[near.Channel];
+                        if (end == 0 ? !c.MouthIn || w.S0 > 0.5 : !c.MouthOut || w.S1 < c.L - 0.5) continue;
+                        double s = end == 0 ? w.S0 : w.S1;
+                        at = SolitonNetwork.V(SolitonTunnelMath.At(c.Path, s, out _));
+                        rM = (float)SolitonTunnelMath.Radius(c, s, cfg.NetworkTip); fade = SolitonTunnelView.ChannelFade(w);
+                    }
+                    var view = worldToCamera.MultiplyPoint3x4(at);
+                    float depth = -view.z;
+                    if (depth <= cam.nearClipPlane + 1f || rM <= 1e-3f) continue;
+                    float D = Vector3.Distance(eye, at);
+                    float k = fade * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.6f * rM, 2f * rM, D));
+                    if (k <= 0.004f) continue;
+                    float thE = BlackHoleLens.Angular(f, rM * Mathf.Max(1f, look.MouthFlare), D);
+                    bank.WellC[n] = new Vector4(f * view.x / depth, f * view.y / depth, depth, rM);
+                    bank.WellP[n] = new Vector4(thE, Mathf.Clamp01(look.MouthLens) * I * k * ride, Mathf.Clamp01(look.EinsteinRing) * k,
+                        Mathf.Clamp01(look.MouthShadow) * k * ride);
+                    bank.WellT[n] = bank.Tint[i];
+                    n++;
+                }
+            }
+            for (int i = n; i < MaxWells; i++) bank.WellC[i] = bank.WellP[i] = bank.WellT[i] = Vector4.zero;
+            return n;
         }
 
         /// <summary>Whether a tube of this kind has anything to draw (bending, or light on its wall).</summary>
@@ -310,36 +398,34 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// One kind's look as the shader reads it (<c>_MWLook[k..k+4]</c>), with the comfort master folded in: bend, lens,
-        /// wobble and pulse × Distortion intensity; the phases advance at speeds capped by Comfort (<see cref="AdvancePhases"/>).
+        /// One kind's look as the shader reads it (<c>_MWLook[k..k+4]</c>), with the comfort master folded in: bend, lens and
+        /// wobble × Distortion intensity; the phases advance at speeds capped by Comfort (<see cref="AdvancePhases"/>).
         /// </summary>
         static void PackLook(Vector4[] o, int k, in SolitonTunnelLook l, in SolitonTunnelRideView r, in SolitonTunnelComfort c, int ph)
         {
             float I = Mathf.Clamp01(c.DistortionIntensity);
             o[k] = new Vector4(l.Bend * Mathf.Deg2Rad * I, l.Lens * LensScale * I, Mathf.Max(0.02f, l.WallInside), Mathf.Max(0.02f, l.WallOutside));
-            o[k + 1] = new Vector4(Mathf.Min(1f, l.Wobble * I), Mathf.Max(0.5f, l.WobbleWaves), s_phase[ph], l.Shimmer);
+            o[k + 1] = new Vector4(Mathf.Min(1f, l.Wobble * I), Mathf.Max(0.5f, l.WobbleWaves), s_phase[ph], 0f);
             o[k + 2] = new Vector4(l.Rim, Mathf.Max(1f, l.RimTightness), l.Glint, l.Glow);
-            o[k + 3] = new Vector4(l.Pulse * I, Mathf.Max(1f, l.PulseCount), s_phase[ph + 1], s_phase[ph + 2]);
+            o[k + 3] = Vector4.zero;
             o[k + 4] = new Vector4(Mathf.Clamp01(r.InsideBend), Mathf.Clamp01(r.InsideWobble), Mathf.Max(0f, r.SteadyCentre), 0f);
         }
 
         /// <summary>The jelly lens's refraction per unit of <see cref="SolitonTunnelLook.Lens"/> (the Tube Lens Lab's glass index).</summary>
         public const float LensScale = 0.05f;
 
-        /// <summary>Once a frame: each kind's wobble, pulse and shimmer phase, at speeds capped by the comfort settings.</summary>
+        /// <summary>Once a frame: each kind's wobble and throat-flow phase, at speeds capped by the comfort settings.</summary>
         static void AdvancePhases(in SolitonTunnelLook tunnel, in SolitonTunnelLook network, in SolitonTunnelComfort c)
         {
             if (s_phaseFrame == Time.frameCount) return;
             s_phaseFrame = Time.frameCount;
             float dt = Time.deltaTime;
-            float I = Mathf.Clamp01(c.DistortionIntensity);
             for (int kind = 0; kind < 2; kind++)
             {
                 var l = kind == 1 ? network : tunnel;
-                int b = kind * 3;
+                int b = kind * 2;
                 s_phase[b] = Mathf.Repeat(s_phase[b] + dt * Mathf.Min(l.WobbleSpeed, c.MaxWobbleSpeed), 1f);
-                s_phase[b + 1] = Mathf.Repeat(s_phase[b + 1] + dt * Mathf.Min(l.PulseSpeed, c.MaxPulseSpeed), 1f);
-                s_phase[b + 2] = Mathf.Repeat(s_phase[b + 2] + dt * 0.05f * I, 1f);
+                s_phase[b + 1] = Mathf.Repeat(s_phase[b + 1] + dt * Mathf.Min(l.InsideFlow, c.MaxFlowSpeed), 1f);
             }
         }
 
