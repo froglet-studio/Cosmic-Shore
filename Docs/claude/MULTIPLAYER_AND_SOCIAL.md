@@ -389,8 +389,10 @@ overlapping avatars on a party card with the names, "You host - 1 seat open" and
 (all authored on `ArcadeLobbyList`; a seat no longer shows its name or role); each online row offers ONE
 verb in one fixed slot (`FriendsListPanel.oneVerbPerRow` + `KitOnlineRow.oneVerbPerRow`: in the menu Invite,
 in a party Join, in a match Spectate, invited Cancel); and ONLINE is four groups (`onlineGroups`: Join their
-party, In the menu, In a match, You invited) that a row moves between as its state changes. The Rev 6
-molecule (§45.4) and its bonds are gone; the orb is unchanged.
+party, In the menu, In a match, You invited) that a row moves between as its state changes. The orb is unchanged.
+**Section 109 (the same day)** brought the Rev 6 molecule back inside that card and made it GROW: the host in the centre,
+the members plus one open socket on a ring re-laid at runtime (`ArcadeLobbyList.expandingMolecule`, `RingSeats`,
+`MoleculeAngle`), so the seats show names and roles again and the card's separate names line is gone.
 
 **The party panel's SEATING is synced, not local** — `PartyRoster` puts the host in the
 first slot and the clients behind it in join order, the same on every device, by ordering on

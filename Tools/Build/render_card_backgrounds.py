@@ -88,6 +88,7 @@ SOURCES = [
     "Assets/_Scripts/Data/Enums/Domains.cs",
     "Assets/_Scripts/Data/Enums/PrismKind.cs",
     "Assets/_Scripts/Data/Enums/PrismscapeDimension.cs",
+    "Assets/_Scripts/Data/Enums/SwitchbackFunType.cs",
     f"{_SP}/SpawnPoint.cs",
     f"{_SP}/SpawnTrailData.cs",
     f"{_SP}/FloraPlantingSite.cs",
@@ -95,6 +96,7 @@ SOURCES = [
     f"{_MG}/SpawnableSwell.cs",
     f"{_MG}/SpawnableWildlifeCage.cs",
     f"{_MG}/SpawnableBoneyard.cs",
+    f"{_MG}/SpawnableSerpentGulag.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -747,6 +749,9 @@ CAMERAS = {
     "BrittleStarTime": (340, 26, 0.9, 42),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
+    # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
+    # tracer crossing the middle (the one thing that scores) reads against it.
+    "SerpentGulag": (50, 26, 0.62, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1251,6 +1256,23 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             glow(p, span * 0.006, JADE, 1.2, 0.6)
         glow(v_add(top, [0, -span * 0.3, 0]), span * 0.05, JADE, 0.9, 0.35)
         stage["vessels"] = vessels([(JADE, 0.25, 10, 30, 70), (RUBY, 0.3, -10, 200, 70)])
+    elif s == "SerpentGulag":
+        # The crystal field in the middle (every intensity), and a SNIPE across it: a Sniper Shot's tracer from
+        # a nest on one side to a rival pilot on the other, who takes the hit (a glow in the shooter's colour).
+        for k in range(14):
+            crystal(v_add(centre, v_mul(rng.unit(), span * 0.12 * rng.u() ** 0.33)), span * 0.012)
+        a = v_add(centre, v_mul(v_norm([0.8, 0.12, -0.55]), span * 0.85))
+        b = v_add(centre, v_mul(v_norm([-0.75, -0.05, 0.6]), span * 0.7))
+        d = v_norm(v_sub(b, a))
+        side = v_norm(v_cross([0, 1, 0], d)); u = v_cross(d, side)
+        w = span * 0.0025   # a hitscan line, not a beam
+        sig = domain_signal(pal, JADE, 1.4)
+        layers.append({"kind": "box", "c": v_mul(v_add(a, b), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
+                       "az": v_mul(d, math.sqrt(v_dot(v_sub(b, a), v_sub(b, a))) / 2),
+                       "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+        glow(a, span * 0.02, JADE, 1.0, 0.4)
+        glow(b, span * 0.035, JADE, 1.1, 0.45)
+        stage["vessels"] = vessels([(JADE, 0.85, 8, 330, 20), (RUBY, 0.7, -4, 140, 25), (GOLD, 0.8, 12, 230, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

@@ -373,8 +373,16 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYPE.md and Docs/Studios/TIGER_MOTH_TIME.md.
         WaystationPrototype = 76,
 
+        // SerpentGulag (77): the Serpent's CHARGE game, a SNIPER DUEL at range in a 3,600 u cell. Pilots spawn far
+        // apart; a field of elemental crystals floats in the middle (Charge shortens the rifle's recovery, so the
+        // field is the risk and the reward); intensities 2-4 add sniper nests and barred cell blocks. A snipe (a
+        // Sniper Shot that strips a rival pilot) is one point; first DOMAIN to the target wins. Beside Garrett's
+        // in-flight SerpentCharge (67, cece/vibrant-archimedes-n3xn3x), which it does not touch. 75 is LanternRun's
+        // and 76 WaystationPrototype's. See _Scripts/Controller/Arcade/SERPENTGULAG.md.
+        SerpentGulag = 77,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 70) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 71) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

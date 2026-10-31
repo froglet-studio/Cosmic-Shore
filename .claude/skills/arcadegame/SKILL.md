@@ -254,6 +254,23 @@ Waystation Prototype (the Tiger Moth's Drop Tower race, 2026-10-31, `claude/ador
   the gates alone. Tag what a peer must tell apart in a field the broadcast already carries (the prototype's tower
   rings use a radius no cluster ring uses) instead of widening the RPC.
 
+Serpent Gulag (the Serpent's sniper duel, 2026-10-31, `claude/funny-fermat-9m75dr`, `SERPENTGULAG.md`) taught four:
+- **A mode's own environment generator is cheap to PROVE before Unity**: write a Python twin of its counts and
+  volumes in the generator (PhaseThresholds need them anyway), then run the shipped C# through
+  `audit_prism_clipping.py <Spawnable> -v --json` and compare. Serpent Gulag's twin matched the C# prism for prism and
+  volume to the unit on all three rungs, and the audit's 0-clipping verdict is the "no prism interpenetrates" law
+  checked. Build a hollow shape flush by NESTING its faces (front/back full size, sides between them, caps between
+  the sides) rather than overlapping corners. Read only serialized fields, never the intensity, or the bake refuses.
+- **The .NET SDK is one `apt-get install -y dotnet-sdk-8.0` away, at `/usr/lib/dotnet`**, and the bake, clip-audit and
+  card-art harnesses default to `~/.dotnet`: export `DOTNET_ROOT=/usr/lib/dotnet` or they fail with "no csc.dll".
+  `unity_refcompile` then compiles the whole project against real Unity references in ~10 min cold.
+- **Check the weapon's real rules before designing cover.** The Sniper Shot pierces everything and breaks
+  super-shields (`pierceCount` 0), so a nest is concealment, not armour; a cover design that assumed the round stops
+  at the first prism would have been wrong. Read the ability's executor, not its doc.
+- **A new mode beside a collaborator's unmerged one of the same idea gets its own id and touches nothing of theirs**
+  (Garrett's Serpent Charge, 67, in flight since 2026-10-16): borrow the SHAPE of their design (the AI ladder) and
+  credit it, never their class names, which would collide when both land.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```

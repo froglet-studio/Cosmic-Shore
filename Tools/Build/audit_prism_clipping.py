@@ -60,7 +60,7 @@ BAKE_FORMAT = "Assets/_Scripts/Controller/Environment/Spawning/PrismLayoutBakeFo
 # name the fun-type enum and the closed-form feature layout; without them the harness stopped
 # compiling (CS0246 'SwitchbackFunType', 2026-10-28) and this audit stopped running.
 SB = "Assets/_Scripts/Controller/Arcade/Switchback"
-HELPERS = ["Assets/_Scripts/Utility/MathfNoAlloc.cs",
+HELPERS = ["Assets/_Scripts/Utility/Foundation/MathfNoAlloc.cs",
            "Assets/_Scripts/Data/Enums/SwitchbackFunType.cs",
            f"{SB}/SwitchbackFeatures.cs", f"{SB}/SwitchbackLiveFeatures.cs", f"{SB}/SwitchbackBlastRun.cs",
            "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterStationBuilder.cs"]

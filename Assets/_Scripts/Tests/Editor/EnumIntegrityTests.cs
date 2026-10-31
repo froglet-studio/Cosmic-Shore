@@ -184,8 +184,10 @@ namespace CosmicShore.Tests
             // three hulls that had none (merged with BurrowRun from Ys-bleeding-edge).
             // 69 -> 70 on 2026-10-31: WaystationPrototype (76), the Tiger Moth's Drop Tower race beside Waystation
             // (72-74 are ScarabRally, SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight).
+            // 70 -> 71 on 2026-10-31: SerpentGulag (77), the Serpent's sniper duel (67 is still SerpentCharge's and
+            // 75 LanternRun's, both in flight).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(70, values.Length,
+            Assert.AreEqual(71, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

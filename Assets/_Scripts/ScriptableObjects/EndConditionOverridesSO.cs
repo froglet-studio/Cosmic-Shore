@@ -96,6 +96,11 @@ namespace CosmicShore.ScriptableObjects
         /// editor match had not reached it by 211 s).</summary>
         public const int DefaultDustupPointTarget = 4;
 
+        /// <summary>Serpent Gulag snipe target used when <see cref="serpentGulagSnipeTarget"/> is 0. One
+        /// SNIPE - a Sniper Shot that strips a rival pilot (a Debuff-class combat hit) - is one point
+        /// (SerpentGulagScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultSerpentGulagSnipeTarget = 3;
+
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
         /// "most standing at the whistle" is the only honest end condition.</summary>
@@ -461,6 +466,10 @@ namespace CosmicShore.ScriptableObjects
                  "domain's pilots. 0 = default (4).")]
         [Min(0)] public int dustupPointTarget = 4;
 
+        [Tooltip("Serpent Gulag: SNIPES a DOMAIN needs to win (race to N). One Sniper Shot that " +
+                 "strips a rival pilot is one snipe, summed across the domain's pilots. 0 = default (3).")]
+        [Min(0)] public int serpentGulagSnipeTarget = 3;
+
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
         [Min(0)] public int tapestryRoundSeconds = 90;
@@ -530,6 +539,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int wreckingBallPrismTargetBuild = 650;
         [Min(0)] public int undertowPointTargetBuild = 12;
         [Min(0)] public int dustupPointTargetBuild = 4;
+        [Min(0)] public int serpentGulagSnipeTargetBuild = 3;
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
@@ -890,6 +900,14 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget > 0 ? dustupPointTarget : DefaultDustupPointTarget;
 
         /// <summary>
+        /// Serpent Gulag snipe target ("first domain to N snipes"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultSerpentGulagSnipeTarget"/>. Compared against a DOMAIN's summed
+        /// CombatPoints.
+        /// </summary>
+        public int GetSerpentGulagSnipeTarget() =>
+            serpentGulagSnipeTarget > 0 ? serpentGulagSnipeTarget : DefaultSerpentGulagSnipeTarget;
+
+        /// <summary>
         /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
         /// <see cref="DefaultTapestryRoundSeconds"/>. Read by TapestryTimeTurnMonitor at
         /// StartMonitor on every peer, so the clock and the whistle cannot disagree.
@@ -992,6 +1010,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
                 GameModes.Dustup                    => GetDustupPointTarget(),
+                GameModes.SerpentGulag              => GetSerpentGulagSnipeTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush.
@@ -1062,6 +1081,7 @@ namespace CosmicShore.ScriptableObjects
             wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
             undertowPointTarget == undertowPointTargetBuild &&
             dustupPointTarget == dustupPointTargetBuild &&
+            serpentGulagSnipeTarget == serpentGulagSnipeTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
@@ -1110,6 +1130,7 @@ namespace CosmicShore.ScriptableObjects
             wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
             undertowPointTarget = undertowPointTargetBuild;
             dustupPointTarget = dustupPointTargetBuild;
+            serpentGulagSnipeTarget = serpentGulagSnipeTargetBuild;
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
@@ -1159,6 +1180,7 @@ namespace CosmicShore.ScriptableObjects
             wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
             undertowPointTargetBuild = undertowPointTarget;
             dustupPointTargetBuild = dustupPointTarget;
+            serpentGulagSnipeTargetBuild = serpentGulagSnipeTarget;
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;

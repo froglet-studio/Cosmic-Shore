@@ -39,6 +39,7 @@ MonoBehaviour:
   wreckingBallPrismTarget: 650
   undertowPointTarget: 12
   dustupPointTarget: 4
+  serpentGulagSnipeTarget: 3
   tapestryRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
@@ -91,6 +92,7 @@ MonoBehaviour:
   wreckingBallPrismTargetBuild: 650
   undertowPointTargetBuild: 12
   dustupPointTargetBuild: 4
+  serpentGulagSnipeTargetBuild: 3
   tapestryRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
