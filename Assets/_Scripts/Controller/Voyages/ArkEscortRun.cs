@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// <para>Every run writes an <see cref="ArkEscortReport"/> (each world's hull and threat, how it ended), raised on
     /// <see cref="Finished"/>; the escort sim (<c>ArkEscortSim</c>) logs it, so the tiers are tuned from what happened.</para>
     /// </summary>
-    public sealed class ArkEscortRun : MonoBehaviour
+    public sealed partial class ArkEscortRun : MonoBehaviour
     {
         const float BannerSeconds = 5f;
         const float SampleSeconds = 1f;
@@ -88,6 +88,7 @@ namespace CosmicShore.Gameplay
         {
             _def = definition;
             _escort = escort;
+            _escortAsset = escort;
             _context = context;
             _root = toyboxRoot;
             _onEnded = onEnded;
@@ -102,6 +103,7 @@ namespace CosmicShore.Gameplay
         public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal)
         {
             if (_active || local?.Transform == null || !_def || !_escort || squad == null) return false;
+            UseRuntimeEscort(difficulty);
             var tier = _escort.TierFor(difficulty);
             if (tier == null || _escort.Legs.Count == 0)
             {
@@ -124,6 +126,7 @@ namespace CosmicShore.Gameplay
             _cfg = _def.WithArk ? _def.WithArk.BuildConfig(_escort.VoyageName) : new ArkwayConfig { DisplayName = _escort.VoyageName };
             _cfg.Cells = _escort.Worlds(_difficulty);
             _cfg.ArkSpeed *= tier.ArkSpeed;
+            ApplyPacing(tier);
             if (_reactor) Destroy(_reactor);
             _reactor = _cfg.ArkReactor ? _cfg.ArkReactor.WithRegrowSeconds(tier.RegrowSeconds) : null;
             if (_reactor) _cfg.ArkReactor = _reactor;
@@ -151,6 +154,7 @@ namespace CosmicShore.Gameplay
                     World = _escort.WorldFor(i, _difficulty) ? _escort.WorldFor(i, _difficulty).name : string.Empty,
                 });
 
+            BeginMetrics(tier);
             _active = true;
             Deploy(local, VoyageRun.LiveDomain(_context));
             _sea.Begin(local);
@@ -193,6 +197,7 @@ namespace CosmicShore.Gameplay
                 _killFeeds.Add(cell.RuntimeData);
             }
             _report.LegReports[routePosition].Hostile = hostile;
+            PrepareCellMetrics(cell, routePosition);
         }
 
         void Deploy(IVesselStatus local, Domains domain)
@@ -232,6 +237,7 @@ namespace CosmicShore.Gameplay
             var pilot = c.GetComponent<ArkEscortPilot>();
             if (!pilot) pilot = c.gameObject.AddComponent<ArkEscortPilot>();
             pilot.Arm(this, seat);
+            _seatOf[vessel.VesselStatus] = seat;
             if (!_pilots.Contains(pilot)) _pilots.Add(pilot);
         }
 
@@ -244,6 +250,7 @@ namespace CosmicShore.Gameplay
             BringWingmates(force: true);
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
+            HookArk();
             // The first world was entered behind the veil, before the hull was laid: its entry is the moment it opens.
             if (_leg >= 0)
             {
@@ -321,6 +328,7 @@ namespace CosmicShore.Gameplay
             r.EnteredAt = Time.time;
             r.HullAtEntry = Ark ? Ark.AliveCount : 0;
             r.HullMin = r.HullAtEntry;
+            OpenLegMetrics(leg);
             var authored = _escort.Legs[leg];
             Banner(TemplateText.Fill(authored.Arrival, "name", authored.Name, "leg", (leg + 1).ToString(),
                 "legs", _escort.Legs.Count.ToString()));
@@ -352,6 +360,7 @@ namespace CosmicShore.Gameplay
             r.ExitedAt = Time.time;
             r.HullAtExit = Ark ? Ark.AliveCount : 0;
             r.Reached = true;
+            CloseLegMetrics(leg, r);
         }
 
         void Sample()
@@ -360,7 +369,7 @@ namespace CosmicShore.Gameplay
             if (!ark || _leg < 0) return;
             var r = _report.LegReports[_leg];
             r.HullMin = Mathf.Min(r.HullMin, ark.AliveCount);
-            int near = CountThreats(ark.Position, ArkEscortPilot.GuardRadius, null);
+            int near = CountThreats(ark.Position, ArkEscortPilot.GuardRadius, _threatScratch);
             r.PeakThreats = Mathf.Max(r.PeakThreats, near);
             r.ThreatSeconds += near > 0 ? SampleSeconds : 0f;
             // How many of the squad are actually with the Ark (the escort AI's leash and hunting, measured).
@@ -375,6 +384,7 @@ namespace CosmicShore.Gameplay
             }
             r.EscortSamples++;
             r.EscortNear += with;
+            SampleMetrics(ark, r);
             _report.Wingmates = Mathf.Max(_report.Wingmates, _wingmates.Count);
             _report.Pilots = Mathf.Max(_report.Pilots, _pilots.Count);
             _report.HullMinFraction = Mathf.Min(_report.HullMinFraction, ark.HealthFraction);
@@ -384,6 +394,8 @@ namespace CosmicShore.Gameplay
                 Leg = _leg,
                 Hull = ark.AliveCount,
                 Threats = near,
+                Speed = ark.Speed,
+                Inside = ark.InsideCell,
             });
         }
 
@@ -476,6 +488,7 @@ namespace CosmicShore.Gameplay
             _active = false;
             _report.Result = outcome;
             _report.EndedAt = Time.time;
+            FinishMetrics();
             _report.ReachedLegs = 0;
             foreach (var r in _report.LegReports)
                 if (r.Reached) _report.ReachedLegs++;
@@ -546,6 +559,8 @@ namespace CosmicShore.Gameplay
             }
             if (_active) SquadDeployment.Recall();
             if (_reactor) Destroy(_reactor);
+            UnhookMetrics();
+            if (_escortCopy) Destroy(_escortCopy);
             _onEnded = null;
         }
     }
