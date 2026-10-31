@@ -148,7 +148,7 @@ change, and those are the commits nobody can bisect.
 
 ---
 
-## Phase 2 (steps 1–2 done 2026-10-17; step 3 onward not started)
+## Phase 2 (steps 1–3 done; step 4 onward not started)
 
 **Phase 1 stopped here deliberately.** The next two candidate layers both drag gameplay code
 with them, so neither extracts without a refactor first. Forcing either would mean dragging
@@ -216,9 +216,62 @@ editor-side count is a function of runtime progress, not a fixed 26.
    kept) to `Controller/Player/`, namespace `CosmicShore.Data` kept. `CosmicShore.Data` then
    referenced nothing, so its asmdef `references` is now `[]` — any Netcode type added to `Data/`
    fails to compile, which is the point of a leaf.
-3. Extract `CosmicShore.SOAP`, minus the vessel/HUD channels.
+3. ~~Extract `CosmicShore.SOAP`, minus the vessel/HUD channels.~~ **Done 2026-10-31** — see § Phase 2
+   step 3 below.
 4. Decide where `Utility` actually divides, then extract the dependency-free part.
 5. Only then: `Assembly-CSharp-Editor` gets split, and tests get real asmdefs (§ Tests).
+
+---
+
+### Phase 2 step 3 (shipped 2026-10-31): `CosmicShore.SOAP` and `CosmicShore.DisplayName`
+
+Measured on the tree, runtime files only (no `Editor/` or `Tests/` folders):
+
+| assembly | folder | files | lines | references |
+|---|---|---:|---:|---|
+| `CosmicShore.Data` | `Data/` | 81 | 5,667 | none |
+| `CosmicShore.DisplayName` | `Utility/DisplayName/` | 2 | 744 | `CosmicShore.Data` |
+| `CosmicShore.SOAP` | `ScriptableObjects/SOAP/` | 56 | 1,340 | `CosmicShore.Data`, `CosmicShore.DisplayName`, `Obvious.Soap` |
+| `Assembly-CSharp` (what is left) | everything else | 2,338 | 565,921 | all of the above (auto-referenced) |
+
+Every move is a `git mv` of the file **and** its `.meta` (guid kept, so no scene, prefab or asset
+reference changes), with the type name and namespace unchanged:
+
+- `PrismType` (the enum) moved out of `Controller/Prisms/PrismFactory.cs` into
+  `Data/Enums/PrismType.cs`, verbatim, namespace `CosmicShore.Gameplay` kept. It was the one
+  payload type `PrismEventChannelWithReturnSO` needed from gameplay.
+- `UI/TemplateText.cs` → `Data/TemplateText.cs` (namespace `CosmicShore.UI` kept): a dependency-free
+  string filler that `DisplayNameValidator` calls.
+- `ScriptableObjects/DisplayNameValidationConfigSO.cs` → `Utility/DisplayName/`, beside the
+  validator it configures; the pair is the `CosmicShore.DisplayName` leaf, which the party SOAP
+  payloads (`PartyInviteData`, `PartyPlayerData`) call.
+- The SOAP files that carry gameplay types moved to **`ScriptableObjects/SOAPGameplay/`**, which
+  stays in `Assembly-CSharp`: `VesselPrefabContainer` (`IVesselStatus`), the whole
+  `ScriptableVesselHUDData` channel (`MiniGameHUD` payload), and `ScriptableEventVesselImpactor` /
+  `ScriptableEventExplosionDebuffApplied` (`VesselImpactor`, `IVessel`). The rest of
+  `ScriptableClassType` stayed: `VesselClassType` is a `Data` enum.
+- `ScriptableObjects/SOAP/AssemblyInfo.cs` grants `InternalsVisibleTo` to `Assembly-CSharp`
+  (`System/NetworkMonitor.cs` writes `NetworkMonitorData`'s `internal set` properties) and to
+  `Assembly-CSharp-Editor` (the tests, as before).
+
+**The rule this adds for everyone:** a new SOAP event, variable or listener whose payload is a
+gameplay type (a vessel, a HUD, a MonoBehaviour from `Controller/` or `UI/`) goes in
+`ScriptableObjects/SOAPGameplay/`, not `ScriptableObjects/SOAP/`. Put there by mistake, it fails
+to compile with "type or namespace not found" — loud, at once, never silent.
+
+**Verified headless, not in the Unity Editor** (no editor in the agent container):
+`Tools/Build/unity_refcompile/run.sh` in the `player` and `editor` configs, on the untouched tree
+and on the split, gave identical results (player: 0 project errors, 4 unverified both times;
+editor: 0 project errors, 7 unobtainable-package / 8 unverified / 47 unchanged-Editor-file errors
+both times), with the three new assemblies compiling clean. `validate_project.py` warnings are
+identical before and after; `check_conditional_compilation.py` and `check_console_logging.py`
+pass. The Editor compile, the domain reload and a play session are still owed
+(recorded in the commit's Verification status, which `/qa-backlog` picks up).
+
+**What it buys today is small, and that is expected:** ~1.4% of runtime lines left
+`Assembly-CSharp`. An edit inside `Assembly-CSharp` still recompiles `Assembly-CSharp`; what stops
+is recompiling these three when gameplay changes. The seconds arrive with step 4 (the clean part
+of `Utility`) and the gameplay layers after it.
 
 ---
 
