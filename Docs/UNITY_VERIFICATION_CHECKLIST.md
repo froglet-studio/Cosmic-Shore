@@ -118,7 +118,8 @@ clip-audit and card-art harnesses. Affects: Garrett's Serpent (the prefab's skim
 4. AI: at I1 they mostly miss; at I4 they forage the field while reloading, hunt you across the cell, and cloak after
    a shot. Report an AI that never scopes or never fires (the press shape), or one that rams instead of shooting.
 5. The crystal field regrows a collected crystal after ~8 s in the same place.
-6. Frame time at I4 (2,652 neutral prisms, a 3,600 u membrane at a standard cell's shard count).
+6. Frame time at I4 (6,008 neutral prisms since the denser pass - 2,652 when this entry was written - in a 3,600 u
+   membrane at a standard cell's shard count).
 7. First-pass numbers to re-tune: target 3, spawn ring 2,200, field 24 crystals in 380 u, AI ladders.
 
 ### 🔴 The party molecule grows from the host; a lower blue on the friends window (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED

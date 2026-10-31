@@ -14,8 +14,8 @@ where a sniper reloads faster: in the open, in every rival's sights. That is the
 
 **It sits beside Garrett's Serpent Charge** (`GameModes.SerpentCharge = 67`, a sniper duel in Rampage's forest,
 unmerged on `cece/vibrant-archimedes-n3xn3x` since 2026-10-16). This mode touches none of that branch's files and
-claims a different id; its AI ladder borrows that branch's ladder SHAPE (five rungs of marksman skill by intensity,
-asserted monotone, I4's aim error inside the cone). If both land, the team picks which card the Serpent keeps.
+claims a different id; its AI ladder borrows that branch's ladder SHAPE (four rungs of marksman skill, asserted monotone, the top rung's aim
+error inside the cone) - keyed here on each seat's AI difficulty, not on the intensity as that branch does. If both land, the team picks which card the Serpent keeps.
 
 | | |
 |---|---|
