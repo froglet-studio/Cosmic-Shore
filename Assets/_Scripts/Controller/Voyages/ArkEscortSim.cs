@@ -27,6 +27,9 @@ namespace CosmicShore.Gameplay
         const string OutArg = "-arkEscortOut";
         const string ScaleArg = "-arkEscortTimeScale";
         const string ParamsArg = "-arkEscortParams";
+        /// <summary><c>-arkEscortVerbose</c>: the ToyBox verbose channel into the editor log, so a run's END REASON
+        /// ("[ArkEscort] Ended: ...", "[Arkway] Voyage ended: ...") is in the sim log instead of silent.</summary>
+        const string VerboseArg = "-arkEscortVerbose";
         const float ReadyTimeoutSeconds = 600f;
         const float RunTimeoutSeconds = 1800f;
 
@@ -56,6 +59,7 @@ namespace CosmicShore.Gameplay
                     System.Globalization.CultureInfo.InvariantCulture, out float s)) sim._scale = Mathf.Clamp(s, 0.25f, 8f);
             sim.Parse(plan);
             sim.LoadParams(Arg(args, ParamsArg));
+            if (Array.IndexOf(args, VerboseArg) >= 0) CSDebug.VerboseChannels |= CSLogChannel.ToyBox;
             IsRunning = true;
             sim.RunAsync(sim.GetCancellationTokenOnDestroy()).Forget();
         }
