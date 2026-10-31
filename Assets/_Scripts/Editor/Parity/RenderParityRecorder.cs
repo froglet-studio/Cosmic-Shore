@@ -137,7 +137,20 @@ namespace CosmicShore.Editor.Parity
             static void OnPlayMode(PlayModeStateChange change)
             {
                 if (!SessionState.GetBool(KeyActive, false)) return;
-                if (change == PlayModeStateChange.EnteredPlayMode) Begin();
+                if (change == PlayModeStateChange.EnteredPlayMode)
+                {
+                    // A throw here would leave Play mode running with nothing to end it: a batch run
+                    // would sit until the wrapper's timeout kills it, skipping every restore.
+                    try { Begin(); }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                        Debug.LogError("[RenderParity] the Recorder did not start; cancelling");
+                        bool batch = SessionState.GetBool(KeyBatch, false);
+                        Cancel();
+                        if (batch) EditorApplication.Exit(1);
+                    }
+                }
                 else if (change == PlayModeStateChange.ExitingPlayMode) End();
             }
 
@@ -169,7 +182,8 @@ namespace CosmicShore.Editor.Parity
                 png.OutputFormat = ImageRecorderSettings.ImageRecorderOutputFormat.PNG;
                 png.CaptureAlpha = false;
                 png.imageInputSettings = CameraInput(s_take);
-                png.OutputFile = Path.Combine(s_dir, "frames", "f<Frame>");
+                // Concatenated, not Path.Combine: Mono's Path.Combine rejects the Recorder's <Frame> wildcard.
+                png.OutputFile = Path.Combine(s_dir, "frames") + "/f<Frame>";
                 settings.AddRecorderSettings(png);
 
                 var movie = ScriptableObject.CreateInstance<MovieRecorderSettings>();
