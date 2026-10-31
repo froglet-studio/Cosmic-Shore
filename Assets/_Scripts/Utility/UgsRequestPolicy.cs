@@ -200,7 +200,9 @@ namespace CosmicShore.Utility
                         // the stale-index catch-all, which the refresh loop must keep ignoring as Benign.
                         if (se.Error != SessionError.Unknown && se.InnerException is NullReferenceException)
                             return UgsFailureClass.Transient;
-                        var byError = ClassifySessionError(se.Error, se.Message);
+                        // The Unknown catch-all is read by its WHOLE chain's words: "Failed to join allocation"
+                        // says nothing, its inner RelayServiceException ("join code not found") says the party is over.
+                        var byError = ClassifySessionError(se.Error, se.Error == SessionError.Unknown ? FlattenMessages(se) : se.Message);
                         if (byError.HasValue) return byError.Value;
                         break; // an error member this table does not know - keep walking, then read the words
                     }
@@ -370,6 +372,14 @@ namespace CosmicShore.Utility
 
             if (Has(msg, "is full") || Has(msg, "lobby full") || Has(msg, "LobbyFull") || Has(msg, "no available slots"))
                 return UgsFailureClass.Full;
+
+            // A Relay allocation that no longer exists: the host froze past Relay's ~10 s silence or quit, and
+            // its lobby (and the presence row advertising it) outlived it. "Failed to join allocation ...
+            // RelayServiceException: Not Found: join code not found" (the four-player test of 2026-10-30, five
+            // joins into a dead host over 4.5 min). The party is over, exactly as a deleted lobby is.
+            if (Has(msg, "join code not found") || Has(msg, "allocation ID not found") ||
+                (Has(msg, "allocation") && Has(msg, "Not Found")))
+                return UgsFailureClass.Gone;
 
             bool namesASession = Has(msg, "session") || Has(msg, "lobby");
             if (namesASession &&

@@ -440,6 +440,10 @@ namespace CosmicShore.UI
                     // one you owe is the only thing telling you which way out of the knot your
                     // next FOLD is aimed from.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Waystation");
+                case GameModes.WaystationPrototype:
+                    // Waystation's provider: a tower ring sits under a floor plate, so the arrow is what says which
+                    // way the next hop falls.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_WaystationPrototype");
                 case GameModes.Headlong:
                     // Same provider: it asks whichever GateRaceController is in the scene, and on
                     // a lapped circuit "your next gate" is the only thing that distinguishes two
@@ -493,6 +497,15 @@ namespace CosmicShore.UI
                 case GameModes.BurrowRun:
                     // The same answer on the Meerkat's wormhole circuit: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BurrowRun");
+                case GameModes.ScarabRally:
+                    // Switchback's answer on the Scarab's ring race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_ScarabRally");
+                case GameModes.SerpentTime:
+                    // The circuit answer once more, on the Serpent's pellet circuit.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SerpentTime");
+                case GameModes.BrittleStarTime:
+                    // ...and on the Brittle Star's Speed Mode circuit.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BrittleStarTime");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which

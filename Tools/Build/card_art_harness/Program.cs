@@ -111,6 +111,9 @@ static class Program
             case "slingshot":
             case "threshertime":
             case "wrasserun":
+            case "scarabrally":
+            case "serpenttime":
+            case "brittlestartime":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -124,6 +127,9 @@ static class Program
                     "slingshot" => HeadlongCircuit.Generate(seed, Apply(SlingshotCourse.ForIntensity(intensity), layer)),
                     "threshertime" => HeadlongCircuit.Generate(seed, Apply(ThresherTimeCourse.ForIntensity(intensity), layer)),
                     "wrasserun" => HeadlongCircuit.Generate(seed, Apply(WrasseRunCourse.ForIntensity(intensity), layer)),
+                    "scarabrally" => SwitchbackCourse.Generate(seed, Apply(ScarabRallyCourse.ForIntensity(intensity), layer)),
+                    "serpenttime" => HeadlongCircuit.Generate(seed, Apply(SerpentTimeCourse.ForIntensity(intensity), layer)),
+                    "brittlestartime" => HeadlongCircuit.Generate(seed, Apply(BrittleStarTimeCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -132,7 +138,7 @@ static class Program
                 foreach (var g in gates)
                     scene.Ring(ToV(g.Position), ToV(g.Axis), g.Radius, g.Radius * tube, gm, 56, 8);
                 if (layer.TryGetProperty("path", out var pe) && pe.GetBoolean())
-                    DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback", pal, layer);
+                    DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback" && kind != "scarabrally", pal, layer);
                 if (kind == "threshertime") StageSling(scene, gates);
                 if (kind == "wrasserun") StageKite(scene, gates);
                 return 0;

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -40,10 +41,14 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Crystals</b> (<see cref="SerpentWallShieldByCrystalEffectSO"/>, omni and every
     /// element) draw a beam from the crystal to the seed of every active wall the collecting
-    /// Serpent owns and ripple a shield through each wall, ring by ring. If the Serpent's Mass
-    /// upgrade (Lockdown) is active WHEN the crystal is collected, the wall also seals every
-    /// square hole with a flat danger panel, a crack's width short of the shields around it;
-    /// holes the wall completes afterwards are sealed as their fourth brick lands.</para>
+    /// Serpent owns and ripple a shield through each wall, ring by ring. That is all a crystal
+    /// does.</para>
+    ///
+    /// <para><b>Lockdown</b> (the Mass upgrade, Garrett 2026-10-29): while it is active, every
+    /// square hole whose four surrounding bricks have all closed is sealed with a flat danger
+    /// panel, a crack's width short of the shields around it. It no longer waits for a crystal:
+    /// a hole is sealed as its fourth brick lands, and the holes already closed when the upgrade
+    /// comes on are sealed at the next steal sweep.</para>
     ///
     /// <para><b>Multiplayer.</b> Like the legacy wall and the Scarab switch, the wall is rebuilt
     /// independently on every peer from replicated inputs (the cloak and stance presses, the
@@ -54,7 +59,7 @@ namespace CosmicShore.Gameplay
     {
         /// <summary>The shape a wall is born with. Built by SeedAssemblerActionExecutor from the
         /// placing vessel's elemental state, then never changed. Lockdown is NOT part of it: it is
-        /// read from the owner's replicated unlock bit when a crystal arrives.</summary>
+        /// read from the owner's replicated unlock bit at each steal sweep.</summary>
         public struct Snapshot
         {
             public SeedWallActionSO Config;
@@ -229,6 +234,12 @@ namespace CosmicShore.Gameplay
             if (_ripple != null) { StopCoroutine(_ripple); _ripple = null; }
         }
 
+        // Diagnostic markers only (2026-10-31: SerpentWallAssembler.Update was the top self-time in a Serpent Time capture,
+        // 4.1 ms avg / 37 ms max over five walls); they change nothing the wall does.
+        static readonly ProfilerMarker s_sweepMarker = new("SerpentWall.Sweep");
+        static readonly ProfilerMarker s_steerMarker = new("SerpentWall.SteerMembers");
+        static readonly ProfilerMarker s_panelsMarker = new("SerpentWall.LayPanels");
+
         void Update()
         {
             if (!_configured) return;
@@ -245,21 +256,28 @@ namespace CosmicShore.Gameplay
             if (Time.time >= _nextSweepAt)
             {
                 _nextSweepAt = Time.time + _shape.Config.StealSweepInterval;
+                // Lockdown follows the owner's upgrade: on, every closed hole is due a panel; off,
+                // no new panels (the ones laid stay as ordinary prisms).
+                bool lockdown = LockdownActive();
+                if (lockdown && !_locked) _panelsDirty = true;
+                _locked = lockdown;
                 // An ended wall steals nothing, but still lets go of bricks that were shot out, so
                 // they do not stay claimed (and out of every other wall's reach) until its seed dies.
-                if (_growing) Sweep();
-                else ReleaseLostBricks();
+                using (s_sweepMarker.Auto())
+                {
+                    if (_growing) Sweep();
+                    else ReleaseLostBricks();
+                }
             }
 
-            // A Lockdown wall seals each hole as soon as its four bricks stand, not only on the
-            // next crystal.
+            // A Lockdown wall seals each hole as soon as its four bricks stand.
             if (_panelsDirty && _locked)
             {
                 _panelsDirty = false;
-                LayPanels();
+                using (s_panelsMarker.Auto()) LayPanels();
             }
 
-            SteerMembers();
+            using (s_steerMarker.Auto()) SteerMembers();
         }
 
         // ---------------- Growth ----------------
@@ -465,25 +483,20 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (LockdownActive() && IsActive)
-            {
-                _locked = true;
-                LayPanels();
-            }
             _ripple = null;
         }
 
-        /// <summary>The owner's Mass upgrade (Lockdown), read from the REPLICATED unlock bit when
-        /// the crystal arrives, so every peer decides the same way and a wall laid before the
-        /// upgrade still locks on the next crystal after it.</summary>
+        /// <summary>The owner's Mass upgrade (Lockdown), read from the REPLICATED unlock bit, so
+        /// every peer decides the same way and a wall laid before the upgrade still locks once it
+        /// comes on.</summary>
         bool LockdownActive()
         {
             var abilities = _shape.Owner?.ElementalAbilityHandler;
             return abilities && abilities.IsUpgradeActive(Element.Mass);
         }
 
-        /// <summary>Seal every hole whose four corner bricks are standing. Re-run on each crystal,
-        /// so a panel that was shot out comes back with the next one.</summary>
+        /// <summary>Seal every hole whose four corner bricks are standing. Re-run on every brick
+        /// landing while locked, so a panel that was shot out comes back as the wall grows.</summary>
         void LayPanels()
         {
             var channel = _shape.Config.PrismSpawnChannel;

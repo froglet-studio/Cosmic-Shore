@@ -183,6 +183,15 @@ to the sweep. A new learner joins `ai_learn.py`. **The AIs train in each vessel'
 first), never in Regatta**; the arena games are rebuilt later from those skills (Yash, 2026-10-27,
 `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`). Details and what is not automatic yet: `Docs/AI_SYSTEM/AUTO_LEARNING.md`.
 
+## A game mode never changes the vessel (LOCKED rule, Shombith, 2026-10-31)
+
+"The vessel kit as designed always stays the same, we just make the game mode interesting." A mode makes itself
+interesting with its **track, environment and AI**, never by changing what a vessel's ability does: no rationing an
+ability (Serpent Time's crystal-bought sniper rounds), no press vetoes, no added contact effects (its walls that cost
+speed), no per-mode rescaling, no edits to vessel code or assets for one mode. Both of those Serpent Time rules were built
+and retired for this. A kit change is a vessel change and goes to the vessel's owner (`who_works_where.py`), never through
+a mode. `/arcadegame` §6.
+
 ## Testing
 
 ### Test Infrastructure
