@@ -88,8 +88,6 @@ SOURCES = [
     "Assets/_Scripts/Data/Enums/Domains.cs",
     "Assets/_Scripts/Data/Enums/PrismKind.cs",
     "Assets/_Scripts/Data/Enums/PrismscapeDimension.cs",
-    # SwitchbackCourse names the fun-type enum since 2026-10-28; without it the harness stopped compiling
-    # (CS0246 'SwitchbackFunType') - the same break audit_prism_clipping.py fixed for its own harness.
     "Assets/_Scripts/Data/Enums/SwitchbackFunType.cs",
     f"{_SP}/SpawnPoint.cs",
     f"{_SP}/SpawnTrailData.cs",
