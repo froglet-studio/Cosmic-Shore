@@ -30,9 +30,12 @@ namespace CosmicShore.Gameplay
     /// <item><b>The cell's current.</b> The cytoplasm's shards point along the race line instead of at a crystal
     /// (<see cref="SnowChanger.IFlow"/>), streaming round the circuit, so the course reads from anywhere in the cell
     /// without drawing a track.</item>
-    /// <item><b>The cell's own life.</b> The race runs in its own copy of the barren Skim Race cell, with no fauna (first
-    /// half its grazers, then none, for frame time; the Rampage forest it ran in for a day cost too much frame time,
-    /// 2026-10-31).</item>
+    /// <item><b>Each intensity a different place</b> (2026-10-31, Shombith: "different experiences in different
+    /// environments"): its own cell config with its own creatures (at most 25 live) and its own tint
+    /// (<see cref="worldTintByIntensity"/>): I1 the Shallows (warm turquoise, a few tadpoles), I2 the Grazing Grounds
+    /// (green, tadpoles and brittlestars), I3 the Hunting Grounds (blood-red, sharks, piranha, tadpoles), I4 the Deep
+    /// (dark indigo, sharks, piranha schools, brittlestars, tadpoles). And the core shrinks, so the shot gets harder
+    /// (<see cref="SerpentineGate.CoreFor"/>).</item>
     /// <item><b>Gate debris.</b> Loose neutral prisms lie round every gate and grow back, so a Serpent that cloaks
     /// there has the mass its Seed Wall grows from. The debris is the environment's; the wall is the shipped one.</item>
     /// <item><b>The AI plays dirty</b> (input-only, through the replicated press like a human's): with its rifle ready
@@ -77,6 +80,28 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float shapeRegrowSeconds = 25f;
         [Tooltip("Prisms a growing-back shape lays each frame.")]
         [SerializeField, Min(1)] int shapeRegrowPerFrame = 40;
+
+        [Header("Each intensity a different place")]
+        [Tooltip("The colours the cell wears at intensity 1-4 (Shallows, Grazing Grounds, Hunting Grounds, The Deep), " +
+                 "eased in as the course is raised. The creatures of each place are its own cell config " +
+                 "(Serpentine Cell Config 1-4, authored by Tools/Build/author_serpent_time_assets.py).")]
+        [SerializeField] CellPalette[] worldTintByIntensity =
+        {
+            // Shallows: warm turquoise water, a sunlit nucleus.
+            Palette(new Color(0.35f, 1.25f, 1.1f), new Color(0.08f, 0.32f, 0.3f), new Color(1f, 0.8f, 0.4f, 0.6f),
+                    new Color(0.95f, 0.75f, 0.35f), new Color(0.8f, 1f, 0.85f)),
+            // Grazing Grounds: green, grown over.
+            Palette(new Color(0.55f, 1.3f, 0.4f), new Color(0.12f, 0.3f, 0.1f), new Color(0.8f, 1f, 0.4f, 0.6f),
+                    new Color(0.65f, 0.9f, 0.3f), new Color(0.7f, 1f, 0.5f)),
+            // Hunting Grounds: blood-red.
+            Palette(new Color(1.4f, 0.3f, 0.25f), new Color(0.35f, 0.06f, 0.05f), new Color(1f, 0.4f, 0.3f, 0.6f),
+                    new Color(0.9f, 0.3f, 0.25f), new Color(1f, 0.55f, 0.5f)),
+            // The Deep: dark indigo.
+            Palette(new Color(0.25f, 0.25f, 0.9f), new Color(0.03f, 0.03f, 0.12f), new Color(0.35f, 0.3f, 1f, 0.5f),
+                    new Color(0.25f, 0.22f, 0.7f), new Color(0.35f, 0.4f, 0.9f)),
+        };
+        [Tooltip("Seconds the cell takes to ease into its place's colours.")]
+        [SerializeField, Min(0f)] float worldTintSeconds = 2f;
 
         [Header("Start line")]
         [Tooltip("How far behind gate 0 (u), against its axis, the start ring sits. Everyone starts there pointed through it.")]
@@ -185,6 +210,7 @@ namespace CosmicShore.Gameplay
             public int Gate;
             public RaceGate Ring;
             public SerpentineGate.Shape Shape;
+            public int Intensity;
             public readonly List<SerpentineGate.Part> Parts = new();
             public readonly List<Prism> Prisms = new();
             public Trail Trail;
@@ -276,6 +302,7 @@ namespace CosmicShore.Gameplay
             int rings = Mathf.Min(MaxRings, SerpentTimeCluster.RingsFor(Intensity, ringsPerGateByIntensity));
             LayGateDebris(rings);
             LayShapes(rings);
+            TintWorld();
             // The next match draws its own seed (the start line latched this one).
             _startSeedLatched = false;
             _currentPending = _course.Count >= 2;
@@ -304,6 +331,29 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // ── Each intensity a different place (every peer) ─────────────────
+
+        static CellPalette Palette(Color membraneBright, Color membraneDull, Color nucleusEdge, Color nucleusStraight,
+                                   Color cytoplasm) => new()
+        {
+            MembraneBright = membraneBright, MembraneDull = membraneDull, NucleusEdge = nucleusEdge,
+            NucleusStraight = nucleusStraight, Cytoplasm = cytoplasm,
+        };
+
+        /// <summary>Ease the cell into this intensity's colours (<see cref="worldTintByIntensity"/>); the creatures come
+        /// with the intensity's own cell config. A draw-only tint (<see cref="CellVisualTint"/>): nothing of the cell's
+        /// gameplay is touched.</summary>
+        void TintWorld()
+        {
+            if (worldTintByIntensity is not { Length: > 0 }) return;
+            var cell = cellData ? Cell.FindByRuntimeData(cellData) : null;
+            if (!cell) return;
+            var tint = CellVisualTint.For(cell);
+            tint.Prepare();
+            tint.TransitionTo(worldTintByIntensity[Mathf.Clamp(Intensity, 1, worldTintByIntensity.Length) - 1],
+                              worldTintSeconds, 0f);
+        }
+
         // ── The shapes at the rings (every peer) ──────────────────────────
 
         SerpentineGate.Shape CurrentShape => SerpentineGate.ShapeFor(Intensity);
@@ -322,8 +372,8 @@ namespace CosmicShore.Gameplay
             var shape = CurrentShape;
             for (int i = 0; i < _course.Count; i++)
             {
-                var gs = new GateShape { Gate = i, Ring = _course[i], Shape = shape, Trail = new Trail() };
-                SerpentineGate.Build(_course[i], i, shape, gs.Parts);
+                var gs = new GateShape { Gate = i, Ring = _course[i], Shape = shape, Intensity = Intensity, Trail = new Trail() };
+                SerpentineGate.Build(_course[i], i, Intensity, gs.Parts);
                 for (int k = 0; k < gs.Parts.Count; k++) gs.Prisms.Add(LayPart(gs, k, forReveal: true));
                 gs.Standing = true;
                 _shapes.Add(gs);
@@ -418,7 +468,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Is any hull inside this shape's reach (so growing it back now would lay prisms on it)?</summary>
         bool HullWithin(GateShape gs)
         {
-            float reach = SerpentineGate.OuterReach(gs.Ring.Radius, gs.Shape);
+            float reach = SerpentineGate.OuterReach(gs.Ring.Radius, gs.Intensity);
             var players = gameData.Players;
             for (int i = 0; i < players.Count; i++)
             {
@@ -619,7 +669,7 @@ namespace CosmicShore.Gameplay
                 SerpentTimeCluster.Layout(rings, out float ringScale, out float spread);
                 return gate.Radius * (spread + ringScale);
             }
-            return SerpentineGate.OuterReach(gate.Radius, CurrentShape);
+            return SerpentineGate.OuterReach(gate.Radius, Intensity);
         }
 
         /// <summary>The same number on every peer: the gate's index and its position (the course is broadcast).</summary>
@@ -863,11 +913,11 @@ namespace CosmicShore.Gameplay
                 float best = float.MaxValue;
                 for (int e = 0; e < exits; e++)
                 {
-                    float d = (SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Shape, e).Position - tf.position).sqrMagnitude;
+                    float d = (SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Intensity, e).Position - tf.position).sqrMagnitude;
                     if (d < best) { best = d; pilot.ExitIndex = e; }
                 }
             }
-            return SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Shape, pilot.ExitIndex);
+            return SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Intensity, pilot.ExitIndex);
         }
 
         /// <summary>

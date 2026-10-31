@@ -65,6 +65,18 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
+
+1. I1 Shallows: the cell eases to warm turquoise; a few tadpoles. Core: seven gold blocks.
+2. I2 Grazing Grounds: green; tadpoles and brittlestars. Core: three blocks.
+3. I3 Hunting Grounds: blood-red; two sharks, piranha, tadpoles. Core: one block.
+4. I4 The Deep: dark indigo; sharks, piranha schools, brittlestars, tadpoles. Core: one small block - the hardest shot.
+5. Watch the creatures round the shapes: if grazers chew a core, the shape disintegrates (that is the rule, not a bug);
+   say if it happens too often. Frame time against the no-fauna build (live creatures are capped at 25).
+6. EditMode: `SerpentineGateTests.The_core_shrinks_as_the_intensity_rises` and the rest.
+
 ### 🔴 Serpentine: a shape at every ring (Coil / Maw / Iris), a gold core that disintegrates it, Breakwater's ring sizes (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. Replaces the flora guards (all guard entries below are superseded). `SerpentineGate` lays
