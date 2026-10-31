@@ -92,6 +92,8 @@ the headless reference compile, player and editor (0 errors in project code); `T
 7. Fly instead (the AI Ratel plays): the small board shows the comb and the AI clears it (Hard: no stings).
 8. A phone held portrait: the comb's cells, the Leave button and the strip are thumb-sized and nothing overlaps.
 9. Two machines (a rider on the Ratel): the rider's drags reach the hull's machine and both see the same comb.
+10. Bees: when hive mode ends, a bee hive appears 12 u behind the comb in our domain; within a few seconds its first bees
+    hatch and patrol the comb, and an opposing creature that comes near is stung (see the Bees entry for what to look for).
 
 **First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
 Medium hive skill (a proposal between the lab's rookie and skilled).

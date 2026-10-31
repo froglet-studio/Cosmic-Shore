@@ -63,6 +63,8 @@ SEAT_SCRIPT_META = os.path.join(CREW_DIR, "HoneyguideCrew.cs.meta")
 CONFIG_SCRIPT = os.path.join(CREW_DIR, "HoneyguideConfigSO.cs")
 CONFIG_DIR = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "Honeyguide")
 CONFIG = os.path.join(CONFIG_DIR, "HoneyguideConfig.asset")
+# The native bee hive the Ratel's left hive plants (Bee Hive Flora Mass, written by Tools/Build/author_bee_assets.py).
+BEE_HIVE_MASS_GUID = "ecbd6d53cbd0ad77e60b2ab91b9310b1"
 LAB = os.path.join(ROOT, "Docs", "Studios", "HoneyguideLab.html")
 GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"   # GameData.asset (KiteNavigatorConfig wires the same)
 # Hive mode (Garrett 2026-10-31): an Omni crystal the Honeyguide collects becomes a hive. The hull's VesselImpactor gets its
@@ -234,6 +236,8 @@ def config_asset(lab, cs: str, script_guid: str) -> str:
     for name, t, v in fields:
         if name in lab["shipped"] and t in ("float", "int"):
             v = num(lab["shipped"][name])
+        if name == "leftBeeHiveBehind":
+            text += f"  leftBeeHive: {{fileID: 11400000, guid: {BEE_HIVE_MASS_GUID}, type: 2}}\n"
         if name == "peckRange":
             text += f"  peckAction: {{fileID: 11400000, guid: {PECK_GUID}, type: 2}}\n"
         text += f"  {name}: {v}\n"
@@ -309,6 +313,8 @@ def check_config(text: str, lab, cs: str, script_guid: str):
         want(p[3] == effects.get(key), f"HoneyguideConfig pattern {k} ({cname}): effect {p[3]}, the lab's is {key}")
         want(p[4] == lab["effects"].get(key), f"HoneyguideConfig pattern {k} ({cname}): the effect text is not the lab's")
         want(p[5] == (key in PARKED), f"HoneyguideConfig pattern {k} ({cname}): parked is {p[5]}, should be {key in PARKED}")
+    want(f"  leftBeeHive: {{fileID: 11400000, guid: {BEE_HIVE_MASS_GUID}, type: 2}}" in text,
+         "HoneyguideConfig: leftBeeHive is not the Bee Hive Flora Mass config (the left hive would plant no bees)")
     want(engines == lab["engines"], "HoneyguideConfig: the engines are not the lab's ENGINES (the port sets would differ)")
     want(len(abilities) == len(lab["abilities"]) and all(
         a == (k, *lab["abilityText"][key]) for k, (a, key) in enumerate(zip(abilities, lab["abilities"]))),
@@ -908,6 +914,7 @@ def self_test():
     expect(check_config(cfg.replace("    - '. M C C .'\n", "    - '. M C . .'\n", 1), lab, cs, cg), 1, "an engine port dropped")
     expect(check_config(cfg.replace("name: 'Overclock'", "name: 'Overclocked'"), lab, cs, cg), 1, "an ability renamed")
     expect(check_config(cfg.replace(GAME_DATA_GUID, "0" * 32), lab, cs, cg), 1, "gameData unwired")
+    expect(check_config(cfg.replace(BEE_HIVE_MASS_GUID, "0" * 32), lab, cs, cg), 1, "the left hive plants no bees")
     expect(check_config(cfg.replace("  retiredAbilities:\n  - 2\n", "  retiredAbilities: \n", 1), lab, cs, cg), 1, "Printer drawn again")
     for key in ("tickSeconds: 15\n", "apBank: 6\n", "abilityChoices: 3\n", "pickSeconds: 10\n", "usesPerPattern: 3\n", "patternsPerShuffle: 4\n", "aimCone: 45\n", "revealAbility: 3.5\n",
                 "peckRange: 45\n", "flitDistance: 18\n", "flitCooldown: 2\n", "activeSeconds: 20\n", "activeLevelGain: 0.25\n"):

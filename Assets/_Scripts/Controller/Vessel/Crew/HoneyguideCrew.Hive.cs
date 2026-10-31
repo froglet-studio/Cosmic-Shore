@@ -238,7 +238,9 @@ namespace CosmicShore.Gameplay
             string rewards = _hive.Rewards.Count > 0
                 ? TemplateText.Fill(_cfg.HiveRewardsTemplate, "colours", ColourList(_hive.Rewards))
                 : _cfg.HiveNoRewardsLine;
+            bool hadComb = _comb != null;
             ReleaseComb();
+            if (hadComb && !_rider) SeedBees();
             SetImmune(false);
             _hive = null;
             _hivePath = null;
@@ -272,6 +274,8 @@ namespace CosmicShore.Gameplay
         // hull's flight, square to it, so the hull that just took it is not inside it - each cell's domain, every one
         // super-shielded (invulnerable) while hive mode lasts. Laid by the hull's own spawn channel, as the Condenser's lane
         // is; ours belong to the pilot, the other domains' to nobody.
+        Vector3 _combAt, _combNormal;
+
         void LayComb(Vector3 at)
         {
             _comb = new Prism[DynamoCore.CellCount];
@@ -286,6 +290,8 @@ namespace CosmicShore.Gameplay
             right.Normalize();
             var up = Vector3.Cross(normal, right);
             var rot = Quaternion.LookRotation(normal, up);
+            _combAt = at;
+            _combNormal = normal;
             var scale = spawner.TrailBaseScale;
             float sp = _cfg.HiveCellSpacing, root3 = Mathf.Sqrt(3f);
             for (int i = 0; i < DynamoCore.CellCount; i++)
@@ -343,6 +349,20 @@ namespace CosmicShore.Gameplay
                 else if (x.Hits >= 2) p.ActivateShield();
             }
             _comb = null;
+        }
+
+        // Garrett 2026-10-31: "after the hive is left it should spawn bee fauna in the player's domain that protect it". A native
+        // bee hive (BeeHiveFlora, Docs/ECOSYSTEM.md section 66) is planted in our domain behind the comb; its bees guard the comb
+        // within their guard radius and grow their hive from mass stung off opposing fauna. The comb's prisms are trail
+        // prisms, not a plant's health prisms, so they stay as our mass beside the hive rather than being adopted as its comb.
+        // A client's hull plants nothing: a networked flora is planted by the simulation's authority (SpawnFlora's gate).
+        void SeedBees()
+        {
+            var config = _cfg.LeftBeeHive;
+            if (!config || _status == null) return;
+            var at = _combAt - _combNormal * _cfg.LeftBeeHiveBehind;
+            var cell = Cell.FindCellContaining(at) ?? Cell.FindNearestActiveCell(at);
+            if (cell) BeeHiveFlora.SeedAt(cell, config, at, _status.Domain);
         }
 
         // ------------------------------------------------------------------ the strip

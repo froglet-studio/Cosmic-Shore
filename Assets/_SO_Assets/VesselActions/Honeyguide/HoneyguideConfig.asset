@@ -47,6 +47,8 @@ MonoBehaviour:
   crystalGlowSeconds: 1.6
   hiveCellSpacing: 2.5
   hiveOffset: 40
+  leftBeeHive: {fileID: 11400000, guid: ecbd6d53cbd0ad77e60b2ab91b9310b1, type: 2}
+  leftBeeHiveBehind: 12
   hiveSkills:
   - cell: 0.5
     solver: 0

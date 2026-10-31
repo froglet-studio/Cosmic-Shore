@@ -238,6 +238,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("The hive in the world is laid this far behind where the omnicrystal was taken, square to the hull's flight, " +
                  "so the hull that took it is not inside it (u).")]
         [SerializeField, Min(0f)] float hiveOffset = 40f;
+        [Tooltip("Garrett 2026-10-31: the hive the Ratel leaves spawns bees of the player's domain that guard it and grow it. A " +
+                 "native bee hive (a Bee Hive Flora config) is planted behind the comb when hive mode ends, in our domain; its bees " +
+                 "guard the comb and grow the hive from mass stung off opposing fauna. Empty = no bees.")]
+        [SerializeField] FloraConfigurationSO leftBeeHive;
+        [Tooltip("How far behind the comb's back face the bee hive is planted (u), so its own comb does not grow into ours.")]
+        [SerializeField, Min(0f)] float leftBeeHiveBehind = 12f;
         [Tooltip("The Ratel AI in hive mode, by engineerLevel (Easy, Medium, Hard; the lab's rookie and skilled are Easy and Hard).")]
         [SerializeField] HoneyguideHiveSkill[] hiveSkills =
         {
@@ -651,6 +657,8 @@ namespace CosmicShore.Gameplay
         public float CrystalGlowSeconds => crystalGlowSeconds;
         public float HiveCellSpacing => hiveCellSpacing;
         public float HiveOffset => hiveOffset;
+        public FloraConfigurationSO LeftBeeHive => leftBeeHive;
+        public float LeftBeeHiveBehind => leftBeeHiveBehind;
         public float StripRangeU => stripRangeU;
         public Color HiveDangerColour => hiveDangerColour;
         public HoneyguideHiveSkill HiveSkill => hiveSkills is { Length: > 0 }

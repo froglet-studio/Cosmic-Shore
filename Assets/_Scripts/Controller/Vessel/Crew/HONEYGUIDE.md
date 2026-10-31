@@ -109,8 +109,14 @@ decided in the Ratel Raid Lab (`Docs/Studios/HoneyguideRaidLab.html`, record `Do
   hive mode it shows the hive under the hull, ringed (invulnerable).
 - **The bars shrink from both sides to the centre**, the spin bar and the hive's alike.
 
-**Not in this port:** the bee fauna a left hive spawns (ecology: their mass must be a transfer from opposing fauna, never
-minted, under `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`; needs the ecology rules and their owner), and the Honeyguide's
+- **Bees guard the left hive** (Garrett 2026-10-31): when hive mode ends, a native bee hive (`BeeHiveFlora`, the
+  pollinator fauna, `Docs/ECOSYSTEM.md` §66) is planted in our domain `leftBeeHiveBehind` (12 u) behind the comb, from the
+  config's `leftBeeHive` (Bee Hive Flora Mass). Its bees guard the comb and grow their hive from mass stung off opposing
+  fauna (a transfer, never minted). The comb's own prisms are trail prisms, not a plant's, so they stay as our mass beside
+  the hive instead of becoming its comb. A client's hull plants none (a networked flora is planted by the simulation's
+  authority): a follow-up for a hull flown on a client.
+
+**Not in this port:** the Honeyguide's
 Mass power making a hive to fly to (it changes the element map: Mass is Flit on LT today, and what happens to Flit is
 Garrett's call). The strip shows omnicrystals only until then.
 
