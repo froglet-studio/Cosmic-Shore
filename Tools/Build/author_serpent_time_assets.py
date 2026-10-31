@@ -49,8 +49,8 @@ FIELDS = """  rule: {{fileID: 11400000, guid: {rule}, type: 2}}
 # Shallows > Grazing Grounds > Hunting Grounds > The Deep ladder and "medium, up to ~25" creatures). Every cell is Skim
 # Race's barren cell and spawn profile copied with only names, the cross-reference and the fauna list changed; each
 # creature is an existing config copied with only its name and its numbers changed (Skim Race's tadpole and brittlestar,
-# Garland's shark, Scarab Scramble's piranha), so no other mode's cell or creature is touched. The tint each place wears
-# is the controller's (SerpentTimeController.worldTintByIntensity). Re-read from the sources every run.
+# Garland's shark, Scarab Scramble's piranha), so no other mode's cell or creature is touched. Re-read from the
+# sources every run.
 SKIM_DIR = "Assets/_SO_Assets/Cell Configs/Skim Race Cell"
 OWN_DIR = "Assets/_SO_Assets/Cell Configs/Serpentine Cell"
 FAUNA_SOURCES = {

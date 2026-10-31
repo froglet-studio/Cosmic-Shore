@@ -31,10 +31,10 @@ namespace CosmicShore.Gameplay
     /// (<see cref="SnowChanger.IFlow"/>), streaming round the circuit, so the course reads from anywhere in the cell
     /// without drawing a track.</item>
     /// <item><b>Each intensity a different place</b> (2026-10-31, Shombith: "different experiences in different
-    /// environments"): its own cell config with its own creatures (at most 25 live) and its own tint
-    /// (<see cref="worldTintByIntensity"/>): I1 the Shallows (warm turquoise, a few tadpoles), I2 the Grazing Grounds
-    /// (green, tadpoles and brittlestars), I3 the Hunting Grounds (blood-red, sharks, piranha, tadpoles), I4 the Deep
-    /// (dark indigo, sharks, piranha schools, brittlestars, tadpoles). And the core shrinks, so the shot gets harder
+    /// environments"): its own cell config with its own creatures (at most 25 live): I1 the Shallows (a few tadpoles),
+    /// I2 the Grazing Grounds (tadpoles and brittlestars), I3 the Hunting Grounds (sharks, piranha, tadpoles), I4 the
+    /// Deep (sharks, piranha schools, brittlestars, tadpoles). The cell keeps its own colours (a per-place tint was tried
+    /// and removed, 2026-10-31). And the core shrinks, so the shot gets harder
     /// (<see cref="SerpentineGate.CoreFor"/>).</item>
     /// <item><b>Gate debris.</b> Loose neutral prisms lie round every gate and grow back, so a Serpent that cloaks
     /// there has the mass its Seed Wall grows from. The debris is the environment's; the wall is the shipped one.</item>
@@ -80,28 +80,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float shapeRegrowSeconds = 25f;
         [Tooltip("Prisms a growing-back shape lays each frame.")]
         [SerializeField, Min(1)] int shapeRegrowPerFrame = 40;
-
-        [Header("Each intensity a different place")]
-        [Tooltip("The colours the cell wears at intensity 1-4 (Shallows, Grazing Grounds, Hunting Grounds, The Deep), " +
-                 "eased in as the course is raised. The creatures of each place are its own cell config " +
-                 "(Serpentine Cell Config 1-4, authored by Tools/Build/author_serpent_time_assets.py).")]
-        [SerializeField] CellPalette[] worldTintByIntensity =
-        {
-            // Shallows: warm turquoise water, a sunlit nucleus.
-            Palette(new Color(0.35f, 1.25f, 1.1f), new Color(0.08f, 0.32f, 0.3f), new Color(1f, 0.8f, 0.4f, 0.6f),
-                    new Color(0.95f, 0.75f, 0.35f), new Color(0.8f, 1f, 0.85f)),
-            // Grazing Grounds: green, grown over.
-            Palette(new Color(0.55f, 1.3f, 0.4f), new Color(0.12f, 0.3f, 0.1f), new Color(0.8f, 1f, 0.4f, 0.6f),
-                    new Color(0.65f, 0.9f, 0.3f), new Color(0.7f, 1f, 0.5f)),
-            // Hunting Grounds: blood-red.
-            Palette(new Color(1.4f, 0.3f, 0.25f), new Color(0.35f, 0.06f, 0.05f), new Color(1f, 0.4f, 0.3f, 0.6f),
-                    new Color(0.9f, 0.3f, 0.25f), new Color(1f, 0.55f, 0.5f)),
-            // The Deep: dark indigo.
-            Palette(new Color(0.25f, 0.25f, 0.9f), new Color(0.03f, 0.03f, 0.12f), new Color(0.35f, 0.3f, 1f, 0.5f),
-                    new Color(0.25f, 0.22f, 0.7f), new Color(0.35f, 0.4f, 0.9f)),
-        };
-        [Tooltip("Seconds the cell takes to ease into its place's colours.")]
-        [SerializeField, Min(0f)] float worldTintSeconds = 2f;
 
         [Header("Start line")]
         [Tooltip("How far behind gate 0 (u), against its axis, the start ring sits. Everyone starts there pointed through it.")]
@@ -302,7 +280,6 @@ namespace CosmicShore.Gameplay
             int rings = Mathf.Min(MaxRings, SerpentTimeCluster.RingsFor(Intensity, ringsPerGateByIntensity));
             LayGateDebris(rings);
             LayShapes(rings);
-            TintWorld();
             // The next match draws its own seed (the start line latched this one).
             _startSeedLatched = false;
             _currentPending = _course.Count >= 2;
@@ -329,29 +306,6 @@ namespace CosmicShore.Gameplay
                 _clusters.Add(cluster);
                 _clusterGates.Add(gates);
             }
-        }
-
-        // ── Each intensity a different place (every peer) ─────────────────
-
-        static CellPalette Palette(Color membraneBright, Color membraneDull, Color nucleusEdge, Color nucleusStraight,
-                                   Color cytoplasm) => new()
-        {
-            MembraneBright = membraneBright, MembraneDull = membraneDull, NucleusEdge = nucleusEdge,
-            NucleusStraight = nucleusStraight, Cytoplasm = cytoplasm,
-        };
-
-        /// <summary>Ease the cell into this intensity's colours (<see cref="worldTintByIntensity"/>); the creatures come
-        /// with the intensity's own cell config. A draw-only tint (<see cref="CellVisualTint"/>): nothing of the cell's
-        /// gameplay is touched.</summary>
-        void TintWorld()
-        {
-            if (worldTintByIntensity is not { Length: > 0 }) return;
-            var cell = cellData ? Cell.FindByRuntimeData(cellData) : null;
-            if (!cell) return;
-            var tint = CellVisualTint.For(cell);
-            tint.Prepare();
-            tint.TransitionTo(worldTintByIntensity[Mathf.Clamp(Intensity, 1, worldTintByIntensity.Length) - 1],
-                              worldTintSeconds, 0f);
         }
 
         // ── The shapes at the rings (every peer) ──────────────────────────
