@@ -1,22 +1,20 @@
-// SolitonTunnel.shader - THE Soliton look (2026-10-29, Yash: "I want to feel I'm inside the wormhole ... pleasant
-// calm distortion, little jelly like clear liquidy hollow"), drawn in ONE full-screen pass by SolitonTunnelLensPass.cs after
-// the transparents, from its copy of the camera colour (_MeerkatSceneColor). Every formed Soliton Tunnel (_MWTubeShape.y 0)
-// and every channel of a Soliton Network (_MWTubeShape.y 1), made by a vessel or placed, is bent, clear space:
-//   - BEND: each pixel's ray is marched through a thin shell on every nearby tube's wall, graded to zero at the shell's
-//     edges (quintic), and pulled along the tube there; the pixel shows where the bent ray lands. The tube is measured over
-//     its LIVE window [s0, s1] (SolitonTunnelShapeMath.Radius) so it forms and collapses with it;
-//   - LENS: the shell's own gradient refracts the ray a little at the wall (the jelly edge; analytic, no extra samples);
-//   - WOBBLE: the bend swells and eases slowly along the tube (the jelly breathing), speed capped by the comfort settings;
-//   - a clear RIM where the view grazes the wall, a GLINT of the main light, a faint GLOW, and (a network's numbers by
-//     default) a thin-film SHIMMER and soft PULSES running along it;
-//   - its DOMAIN TINT (_MWTubeTint, SolitonTunnelConfigSO's Tint: the maker's domain colour or an override, a its
-//     strength; 0 = clear): a wash over the bent scene seen through the wall and the colour of its glow and rim. No fog.
-// Each kind has its own numbers (_MWLook, SolitonTunnelLook + SolitonTunnelRideView): while the camera is inside a
-// tube (_MWTubeShape.z), that tube bends and breathes by its ride's Inside share, and the middle of the screen is held still
-// (_MWView.yz) so where you are heading stays steady. Comfort's Distortion intensity is folded in on the C# side.
-// A ray bent off the screen shows the screen mirrored at its edge. A vessel in front of a tube is neither bent nor lit.
-// Removed 2026-10-29 (Docs/Shaders/WORMHOLE_SHADERS.md §14, restore 0c8c5218c): pitch, twist, flow, the profile choice,
-// the ribs, the glass's 4-sample gradient, dispersion, the water tint / absorption. Earlier shaders: §12.
+// SolitonTunnel.shader - THE Soliton look: a PLAIN WORMHOLE (2026-11-01, Yash: "plain worm hole with wider mouth looking
+// cool from outside and inside, bending and warping of space time"), drawn in ONE full-screen pass by SolitonTunnelLensPass.cs
+// after the transparents, from its copy of the camera colour (_MeerkatSceneColor). Every formed Soliton Tunnel
+// (_MWTubeShape.y 0) and every channel of a Soliton Network (_MWTubeShape.y 1), made by a vessel or placed, is bent space:
+//   - WALL BEND (the contour lens, 53b34e076 / 435ce058c): each pixel's ray is marched through a thin shell on every nearby
+//     tube's wall, graded to zero at the shell's edges, and pulled along the tube there; the shell's gradient refracts it a
+//     little (LENS) and the bend breathes slowly along the tube (WOBBLE). A faint clear RIM, GLINT and GLOW mark the wall.
+//   - MOUTH LENS (from outside; the 435ce058c mouth wells, now a point-mass lens): each live mouth (_MWWell*) bends the
+//     scene round it like a gravitational lens - the image at angle th from the mouth's centre shows the scene at
+//     th - thE^2 / th, so the world round the flared mouth curls into an EINSTEIN RING and, looking straight in, turns over
+//     and magnifies; a thin bright ring at thE and a hint of shadow in the throat's core make it read as a hole.
+//   - THROAT STRETCH (from inside, _MWHole): riding a tube, the view stretches out from where you are heading and the
+//     warp streams toward the way out (log-polar waves) with a slight twist; the middle of the screen stays still.
+//   - its DOMAIN TINT (_MWTubeTint): a faint wash through the wall and the colour of its rim and ring. No fog.
+// Comfort's Distortion intensity and every speed cap are folded in on the C# side. A vessel in front of a tube or a mouth
+// is neither bent nor lit. Removed 2026-11-01 (Docs/Shaders/WORMHOLE_SHADERS.md §16, restore from this commit's parent):
+// the trunk / root (network) shimmer and pulses, the spindle bridge over formed tubes. Earlier shaders: §12-§15.
 Shader "CosmicShore/SolitonTunnel"
 {
     Properties { }
@@ -66,9 +64,9 @@ Shader "CosmicShore/SolitonTunnel"
             float4 _MWTubeTint[MEERKAT_LENS_MAX_TUBES];
             // The look per kind (tunnel 0..4, network 5..9; SolitonTunnelLensPass.PackLook):
             //   +0 bend (rad per crossing), lens, wall inside, wall outside (x local radius)
-            //   +1 wobble, wobble waves, wobble phase, shimmer
+            //   +1 wobble, wobble waves, wobble phase, -
             //   +2 rim, rim tightness, glint, glow
-            //   +3 pulse, pulse count, pulse phase, shimmer phase
+            //   +3 -
             //   +4 inside bend, inside wobble, steady centre, -
             float4 _MWLook[10];
             float4 _MWCamPos;   // xyz the eye, w tan(fov / 2)
@@ -76,6 +74,16 @@ Shader "CosmicShore/SolitonTunnel"
             float4 _MWCamU;
             float4 _MWCamF;
             float4 _MWLightDir;   // xyz toward the main light, w its strength (0: no glint)
+
+            // The mouths (SolitonTunnelLensPass.ScreenWells): C (x, y screen heights from the centre, y up; z depth; w the
+            // mouth's world radius, the foreground margin), P (x Einstein angle thE in screen heights, y lens strength,
+            // z ring brightness, w throat shadow), T its tube's tint (rgb, a strength).
+            #define MEERKAT_LENS_MAX_WELLS 8
+            float4 _MWWellC[MEERKAT_LENS_MAX_WELLS];
+            float4 _MWWellP[MEERKAT_LENS_MAX_WELLS];
+            float4 _MWWellT[MEERKAT_LENS_MAX_WELLS];
+            // x mouths in the bank, y the throat stretch (x how far inside), z its flow phase, w its twist
+            float4 _MWHole;
 
             TEXTURE2D(_MeerkatSceneColor);
 
@@ -314,39 +322,67 @@ Shader "CosmicShore/SolitonTunnel"
                 return SAMPLE_TEXTURE2D_LOD(_MeerkatSceneColor, sampler_LinearClamp, suv, 0).rgb;
             }
 
-            // The bent scene (one sample), washed by the domain tint through the wall, then the wall's light: rim, glint, glow, shimmer
-            // and pulses (tinted).
-            half4 MWShade(float2 p, float2 disp, float aspect)
+            // The mouths: a point-mass lens round each (the scene at th - thE^2 / th, softened at the centre, fading out by
+            // 3 thE), the Einstein ring's light and the throat's shadow.
+            float2 MWWells(float2 p, float sceneZ, inout float3 light, inout float shadow)
+            {
+                float2 disp = float2(0.0, 0.0);
+                int n = (int)_MWHole.x;
+                for (int i = 0; i < MEERKAT_LENS_MAX_WELLS; i++)
+                {
+                    if (i >= n) break;
+                    float4 c = _MWWellC[i], w = _MWWellP[i];
+                    if (sceneZ < c.z - c.w) continue;   // something in front of the mouth is not bent
+                    float2 d = p - c.xy;
+                    float r = length(d), te = max(w.x, 1e-5);
+                    float x = r / (3.0 * te);
+                    if (x >= 1.0) continue;
+                    float m = (1.0 - x * x); m *= m;
+                    float2 dir = d / max(r, 1e-6);
+                    float soft = 0.15 * te;
+                    disp -= dir * (w.y * te * te * r / (r * r + soft * soft)) * m;
+                    float4 t = _MWWellT[i];
+                    float3 tc = lerp(float3(1.0, 1.0, 1.0), t.rgb, saturate(t.a));
+                    float k = (r - te) / (0.06 * te);
+                    light += tc * (w.z * exp(-k * k) * m);
+                    shadow = max(shadow, w.w * (1.0 - smoothstep(0.15 * te, 0.6 * te, r)));
+                }
+                return disp;
+            }
+
+            // Riding: the throat stretches out from where you are heading, streaming toward the way out, slightly twisted.
+            float2 MWStretch(float2 p)
+            {
+                if (_MWHole.y <= 0.0) return float2(0.0, 0.0);
+                float r = length(p);
+                float wave = 0.6 + 0.4 * sin(2.0 * MW_PI * (log(max(r, 1e-3)) * 1.6 - _MWHole.z));
+                float k = smoothstep(0.05, 0.6, r) * wave;
+                return (-p * _MWHole.y + float2(-p.y, p.x) * _MWHole.w) * k;
+            }
+
+            // The bent scene (one sample), darkened in a throat, washed by the domain tint through the wall, then the light:
+            // the wall's rim, glint and glow, and the mouths' Einstein rings.
+            half4 MWShade(float2 p, float2 disp, float aspect, float3 ring, float shadow)
             {
                 float4 L = g_mwLayer.a;
                 float od = L.x;
-                if (dot(disp, disp) < 1e-12 && od < 1e-4) discard;
+                if (dot(disp, disp) < 1e-12 && od < 1e-4 && dot(ring, ring) < 1e-8) discard;
                 // riding a tube: the middle of the screen stays still (comfort)
                 if (_MWView.y > 0.0 && _MWView.z > 0.0)
                     disp *= lerp(1.0, smoothstep(0.4 * _MWView.z, _MWView.z, length(p)), _MWView.y);
-                float3 col = MWScene(p + disp, aspect);
+                float3 col = MWScene(p + disp, aspect) * (1.0 - shadow) + ring;
                 if (od < 1e-4) return half4(col, 1.0);
                 float layer = 1.0 - exp(-od);
-                float net = saturate(L.w / od);              // the share of it that was a network channel
+                float net = saturate(L.w / od);              // the share of it that was a network channel (its own numbers)
                 float rim = 1.0 - exp(-L.y), glint = 1.0 - exp(-L.z);
-                float4 t2 = _MWLook[2], r2 = _MWLook[7], t3 = _MWLook[3], r3 = _MWLook[8];
-                float4 l2 = lerp(t2, r2, net), l3 = net > 0.5 ? r3 : t3;
-                float shimmer = lerp(_MWLook[1].w, _MWLook[6].w, net), pulseAmt = lerp(t3.x, r3.x, net);
-                float u = g_mwLayer.u / od, phi = g_mwLayer.phi / od;
-                float3 film = float3(1.0, 1.0, 1.0);
-                if (shimmer > 0.0)
-                {
-                    float x = phi / (2.0 * MW_PI) * 1.5 + u + l3.w;
-                    film = lerp(film, 0.6 + 0.4 * cos(2.0 * MW_PI * (x + float3(0.0, 0.33, 0.67))), shimmer);
-                }
-                float pulse = pulseAmt > 0.0 ? pulseAmt * pow(saturate(0.5 + 0.5 * cos(2.0 * MW_PI * (u * l3.y - l3.z))), 12.0) : 0.0;
+                float4 l2 = lerp(_MWLook[2], _MWLook[7], net);
                 // the domain tint: its colour (strength-weighted) and how strongly it was met
                 float tintK = saturate(g_mwLayer.tint.a / od);
                 float3 tintC = g_mwLayer.tint.a > 1e-5 ? g_mwLayer.tint.rgb / g_mwLayer.tint.a : float3(1.0, 1.0, 1.0);
                 col = lerp(col, col * lerp(float3(1.0, 1.0, 1.0), tintC * 1.25, 0.6) + tintC * 0.03, tintK * layer);
-                film *= lerp(float3(1.0, 1.0, 1.0), tintC, tintK);
-                col += film * ((l2.w + pulse) * layer + l2.x * rim);                    // the wall's glow, pulses and rim
-                col += _MWLightDir.w * l2.z * glint * float3(1.0, 0.98, 0.95);          // the light off the jelly
+                float3 film = lerp(float3(1.0, 1.0, 1.0), tintC, tintK);
+                col += film * (l2.w * layer + l2.x * rim);                             // the wall's glow and rim
+                col += _MWLightDir.w * l2.z * glint * float3(1.0, 0.98, 0.95);          // the light off the wall
                 return half4(col, 1.0);
             }
 
@@ -365,7 +401,11 @@ Shader "CosmicShore/SolitonTunnel"
                 float2 p = (uv - 0.5) * float2(aspect, 1.0);
                 float sceneZ = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
                 float2 disp = MWContour(p, sceneZ);
-                return MWShade(p, disp, aspect);
+                float3 ring = float3(0.0, 0.0, 0.0);
+                float shadow = 0.0;
+                disp += MWWells(p, sceneZ, ring, shadow);
+                disp += MWStretch(p);
+                return MWShade(p, disp, aspect, ring, shadow);
             }
             ENDHLSL
         }
