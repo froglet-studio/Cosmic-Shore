@@ -137,9 +137,16 @@ namespace CosmicShore.Gameplay
         /// what the same hit would take from a pilot who held enough.
         /// </summary>
         public static float SecondsForPoints(int points, float secondsPerPetal) =>
-            points <= 0 || secondsPerPetal <= 0f
-                ? 0f
-                : points / CombatHitDrain.PointsPerLevel * ElementsAHitIsPricedOn * secondsPerPetal;
+            secondsPerPetal <= 0f ? 0f : PetalsForPoints(points) * secondsPerPetal;
+
+        /// <summary>
+        /// A scored hit's worth in PETALS: ten points to the petal, on each of the four elements. The
+        /// one conversion silence and a petal-priced score both use, so a take priced in petals (the
+        /// Tiger Moth's shred: one petal off one element) and a take priced in points (every other
+        /// hit) silence the same per petal.
+        /// </summary>
+        public static float PetalsForPoints(int points) =>
+            points <= 0 ? 0f : points / CombatHitDrain.PointsPerLevel * ElementsAHitIsPricedOn;
 
         /// <summary>
         /// The silence left after a new take of <paramref name="addSeconds"/> lands on a pilot who
@@ -219,13 +226,22 @@ namespace CosmicShore.Gameplay
         /// Returns the seconds added.
         /// </summary>
         public static float OnHitAdmitted(IVesselStatus victim, int points, ElementalDebuffSources source)
+            => OnPetalsAdmitted(victim, PetalsForPoints(points), source);
+
+        /// <summary>
+        /// <see cref="OnHitAdmitted"/> for a hit priced in PETALS rather than points: the silence is
+        /// <paramref name="petals"/> times the config's seconds per petal. The Tiger Moth's shred
+        /// takes one petal off one element, so it silences for one petal, a quarter of what a hit
+        /// priced on all four elements at one petal each would.
+        /// </summary>
+        public static float OnPetalsAdmitted(IVesselStatus victim, float petals, ElementalDebuffSources source)
         {
-            if (victim == null || points <= 0) return 0f;
+            if (victim == null || petals <= 0f) return 0f;
 
             var config = Config;
             if (!Silences(source, config.SilencingSources)) return 0f;
 
-            float add = SecondsForPoints(points, config.SecondsPerPetal);
+            float add = config.SecondsPerPetal <= 0f ? 0f : petals * config.SecondsPerPetal;
             if (add <= 0f) return 0f;
 
             NoteHit(victim.PlayerName);
