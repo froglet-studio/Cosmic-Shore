@@ -46,6 +46,12 @@ PLAYER_DLL = os.path.join(ROOT, "Port", "src", "CosmicShore.Player", "bin", "Deb
 FFMPEG = shutil.which("ffmpeg") or "ffmpeg"
 
 
+# DisplayGraphicsSettings' PlayerPrefs (gfx.*) and PlatformProfile's tier override: QualityPresetSetting.High,
+# AdaptivePerformanceSetting.Off, AntiAliasingSetting.MSAA4x (the URP asset's MSAA 4), DeviceTier.Desktop.
+PINNED_PREFS = {"gfx.Preset": 3, "gfx.BasePreset": 3, "gfx.Adaptive": 0, "gfx.AA": 4, "gfx.RenderScale": 100,
+                "gfx.Initialized": 1, "gfx.Version": 3, "platform.tierOverride": 0}
+
+
 def take_settings(take):
     """fps, warm-up, frames, size, msaa: from the golden's take.json when it exists, else the scene's authored numbers."""
     p = os.path.join(GOLDENS, take, "take.json")
@@ -58,7 +64,7 @@ def take_settings(take):
 
 # ---------------------------------------------------------------- record
 
-def record(take, out):
+def record(take, out, port=47990, post=None):
     sys.path.insert(0, os.path.join(ROOT, "Tools", "Build", "music_video"))
     import shoot  # the player wrapper + control port (Tools/Build/music_video/shoot.py)
     ts = take_settings(take)
@@ -71,8 +77,20 @@ def record(take, out):
     def L(m):
         print(m, flush=True); log.write(m + "\n"); log.flush()
 
+    # The golden's post stack, as measured from its pixels (take.json "post"): "off" records with the camera's
+    # post-processing skipped (COSMIC_SHORE_POST_OFF=all), so a golden captured without Panini and bloom is
+    # compared like for like. Absent, the scene's own post stack renders, as in the game.
+    # --post overrides it ("off", "on", or a list of effects to skip: "panini", "bloom").
+    post = str(post or ts.get("post", "on")).lower()
+    if post == "on": os.environ.pop("COSMIC_SHORE_POST_OFF", None)
+    else: os.environ["COSMIC_SHORE_POST_OFF"] = "all" if post == "off" else post
     extra = ["--scene", SCENE, "--step-hz", str(fps), "--msaa", str(ts.get("msaa", 4)), "--render-scale", "1", "--render-from", "999999999"]
-    p = shoot.Player(47990, "parity", os.path.join(out, "player.log"), size=f"{w}x{h}", extra=extra)
+    # Pin the graphics settings the golden was recorded under (Desktop, High, no adaptive drop). Left to
+    # itself the profile's first run auto-detects a software GL as Low, and adaptive performance drops
+    # it there anyway on a slow frame: Low bakes the sky into a panorama, turns HDR off and caps the
+    # render scale, so the take was being scored against a different sky (measured 2026-10-31).
+    shoot.write_prefs("parity", PINNED_PREFS, L)
+    p = shoot.Player(port, "parity", os.path.join(out, "player.log"), size=f"{w}x{h}", extra=extra)
     try:
         p.wait_up()
         # The scene starts directly (no first-run prompts: the scene has no menu). Wait for the take to count.
@@ -86,6 +104,7 @@ def record(take, out):
             p.wait(5)
         if take_frame is None:
             raise RuntimeError("the take never started counting (is the scene's RenderParityTake alive? see player.log)")
+        L(f"post-processing: {post}")
         L(f"take frame {take_frame} now; recording from warm-up frame -{min(warm, 10)} through the take")
         # Record from 10 frames before take frame 0 (the camera's jump there aligns the sequences) to the end.
         lead = min(warm, 10)
@@ -107,7 +126,7 @@ def record(take, out):
         cut = align_index(head) if len(head) > 1 else 0
         L(f"{got} frames recorded (lead {lead}, take {n}, cut at frame {cut}) -> {frames_dir}")
         if cut != lead: L(f"  warning: the cut landed on frame {cut}, not {lead}; the comparison aligns on the cut anyway")
-        json.dump({"take": take, "lead": lead, "cut": cut, "takeFrames": n, "fps": fps, "width": w, "height": h, "recorded": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())},
+        json.dump({"take": take, "post": post, "lead": lead, "cut": cut, "takeFrames": n, "fps": fps, "width": w, "height": h, "recorded": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())},
                   open(os.path.join(out, "run.json"), "w"), indent=1)
         return got >= total - 1
     finally:
@@ -236,16 +255,17 @@ def main(argv=None):
     ap.add_argument("--golden")
     ap.add_argument("--actual")
     ap.add_argument("--every", type=int, default=30)
+    ap.add_argument("--post", help="record with post-processing on, off, or skipping a list (panini,bloom); default: take.json's post")
     a = ap.parse_args(argv)
     if a.cmd == "record":
         out = a.out or os.path.join(RESULTS, a.take)
         os.makedirs(out, exist_ok=True)
-        return 0 if record(a.take, out) else 1
+        return 0 if record(a.take, out, post=a.post) else 1
     if a.cmd == "self":
         d1, d2 = os.path.join(RESULTS, a.take + "-self1"), os.path.join(RESULTS, a.take + "-self2")
         for d in (d1, d2):
             os.makedirs(d, exist_ok=True)
-            if not record(a.take, d): return 1
+            if not record(a.take, d, post=a.post): return 1
         compare(a.take, d1, d2, a.every, os.path.join(RESULTS, a.take + "-self"))
         return 0
     golden = a.golden or os.path.join(GOLDENS, a.take)

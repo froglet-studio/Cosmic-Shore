@@ -25,6 +25,12 @@ namespace CosmicShore.Render
         public float TanHalfFovX, TanHalfFovY;
 
         /// <summary>
+        /// COSMIC_SHORE_POST_OFF: post effects a diagnostic run skips ("all", or a list naming "bloom" and/or
+        /// "panini"); empty in play. Port/tools/render_parity.py sets it to match a golden recorded without post.
+        /// </summary>
+        static readonly string SkippedEffects = System.Environment.GetEnvironmentVariable("COSMIC_SHORE_POST_OFF") ?? "";
+
+        /// <summary>
         /// The post state one camera renders with: nothing unless the camera's URP data turns
         /// post-processing on (the original's per-camera switch — the connecting panel's arena
         /// preview renders without it), otherwise the blended volume stack's Bloom and Panini.
@@ -40,10 +46,12 @@ namespace CosmicShore.Render
             if (!data.requiresVolumeFrameworkUpdate && data.volumeStack != null) stack = data.volumeStack;
             else stack.Update(camera.transform.position, data.volumeLayerMask.value);
 
-            var bloom = stack.GetComponent<CosmicShore.Engine.Rendering.Bloom>();
+            var off = SkippedEffects;
+            if (off == "all") return s;
+            var bloom = off.Contains("bloom") ? null : stack.GetComponent<CosmicShore.Engine.Rendering.Bloom>();
             if (bloom != null && bloom.intensity.value > 0f) s.SetBloom(bloom);
             var panini = stack.GetComponent<CosmicShore.Engine.Rendering.PaniniProjection>();
-            if (panini != null && panini.distance.value > 0f)
+            if (panini != null && panini.distance.value > 0f && !off.Contains("panini"))
             {
                 s.Panini = true;
                 s.PaniniDistance = panini.distance.value;

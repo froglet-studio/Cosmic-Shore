@@ -11,6 +11,8 @@
   "unity": "6000.3.17f1",
   "git": "10035cea2812ca8c01ed1d7a955cdb064122956c",
   "recorded": "2026-10-31T05:11:10Z",
+  "post": "off",
+  "postNote": "Measured from the pixels, not written by the recorder: these frames carry neither the profile's Panini (0.7, crop to fit) nor its bloom, though the game shows both. Amoebius's stars land on these frames' stars at scale 1.000 with post off and at 1.16 with Panini, and with the High preset post off scores loss 0.0387 against 0.2451 (Panini off, bloom on) and 0.2765 (both on). render_parity.py records with post off while this says off; drop the field once a golden is recorded with post.",
   "keyframes": [
     {"frame": 0, "position": [-300, 110, -330], "lookAt": [0, 0, 0]},
     {"frame": 150, "position": [-90, 70, -360], "lookAt": [0, 10, 0]},

@@ -138,7 +138,7 @@ One scene, both engines, frame for frame, scored pixel by pixel:
 | Determinism | `python3 Port/tools/render_parity.py self` | Amoebius against itself twice: the floor the loss can reach. Measured 2026-10-29: two runs are bit-identical over all 301 pairs (loss 0.0000, ssim 1.000), so every non-zero number in a Unity comparison is a real difference |
 
 The golden PNG frames are git-ignored (300 MB a take); `take.mp4` and `take.json` are committed, and `compare`
-decodes the movie when the PNGs are absent (a ~0.005 rmse floor from the encode). The loop: `compare` names
+decodes the movie when the PNGs are absent (the encode is H.264 4:2:0 at 4.8 Mbps, so the floor is not ~0.005: chroma is halved on every edge; record from the PNGs when they are on hand). The loop: `compare` names
 the worst tile and frame, the sheet shows what is there, the engine is fixed (a family, a graph node, a
 state), `record` and `compare` again. Everything on both sides is the game's own code and assets; nothing in
 the scene is a mock.
@@ -149,3 +149,32 @@ object loads nameless), a tool scene needs the `[StandaloneScene]` marker or the
 recorded, and the blast at take frame 150 does destroy the grid in Amoebius (405 prisms down to 140 by frame
 350) while its shell draws nothing visible from 400 units away - the first candidate for the loss once the
 Unity golden exists. `run.json` records where the cut landed (`cut`) as well as the intended lead.
+
+### Scores, 2026-10-31 (control take, decoded from `take.mp4`)
+
+| Change | loss | rmse | ssim |
+|---|---|---|---|
+| first score (the cloud's auto-detected Low preset, post on) | 0.1478 | | |
+| Panini skipped | 0.1211 | | |
+| post off (bloom and Panini) | 0.1075 | | |
+| Scene Color node returns 0.5 instead of black | 0.1004 | | |
+| Scene Color returns URP's unset-texture grey (sRGB 0.5 = 0.214 linear) | 0.0937 | | |
+| quality pinned to High (`PINNED_PREFS`), post off, grey Scene Color | **0.0387** | 0.0189 | 0.960 |
+
+What each one is:
+- **The golden has no post.** Stars fitted between the two engines (a KD-tree over detected stars, a similarity
+  fit) land at scale 1.000 with post off and 1.16 with Panini, and under High post on scores 0.2765, Panini
+  skipped 0.2451, post off 0.0387. The game itself shows Panini and bloom, so the Unity Recorder path drops the
+  volume; that is a Unity-side question. `take.json` carries `"post": "off"` and `render_parity.py record`
+  follows it (`--post on|off|bloom,panini` overrides), through the player's `COSMIC_SHORE_POST_OFF`
+  (`PostPass.cs`; empty in play). Drop the field once a golden is recorded with post.
+- **The quality preset is pinned.** A machine with no `gfx.*` prefs auto-detects; the cloud picked Low, which
+  bakes the sky into the static panorama and turns HDR off. `record` writes `PINNED_PREFS` (High, MSAA 4,
+  render scale 100, no adaptive, no tier override) into the parity profile before every run.
+- **Scene Color.** The project leaves the opaque texture off (`URP_Asset` `m_RequireOpaqueTexture: 0`), so
+  Unity's Scene Color node samples the unset-texture grey; Amoebius returned black. It now returns
+  `sg_SceneColor` = 0.214 linear (`GraphProgramCache.SceneColorFallback`; a sweep of 0.12 / 0.17 / 0.21 / 0.35 /
+  0.50 put the minimum there).
+- **What is left** is the last 100 frames: the blast's debris placement, and the shell, which is greener, more
+  opaque and more jagged in Unity at the same width. Early frames sit near rmse 0.01, mostly the codec.
+
