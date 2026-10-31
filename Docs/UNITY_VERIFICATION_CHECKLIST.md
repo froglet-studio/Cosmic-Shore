@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Bees: the pollinator fauna and its hive, a flora slot (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Garrett: "proper bees ... a fauna that acts more like a flora ... take the slot of a productive flora". New:
+`FaunaDiet.Pollinator`, `BeeFauna` (a Boid that never eats), `BeeHiveFlora` (the hive, a Flora listed in
+SupportedFloras), `BeeWingDriver`, `BeeMath`; assets by `Tools/Build/author_bee_assets.py` (`--check`, `--self-test`
+4/4): `BeeFauna.prefab`, `BeeHive.prefab`, eight Lifeforms configs, the Hesperides hive config (listed by
+`Tools/ecosim/gen_hesperides_assets.py`), the network prefab entry, the Spawn Matrix "Bee Hive" row. Record:
+`Docs/ECOSYSTEM.md` §66. `/verify-unity` was unavailable (no Editor). Green: the headless reference compile, player and
+editor configs (0 errors in project code); `BeeMathTests` (7) run against `BeeMath.cs` under .NET 8;
+`author_flora_armour.py`, `author_lifeform_heart_collection.py`, `verify_fauna_heart_seat.py`,
+`author_spawn_matrix_roster.py` `--check`.
+
+1. Run the edit-mode tests `BeeMathTests` and `EcologyEnumIntegrityTests`.
+2. Let Unity import: `BeeFauna.prefab` must open with three body prisms (BeeAbdomen, BeeWingL, BeeWingR), the wings'
+   tadpole skin hidden, `BeeWingDriver` on the root; `BeeHive.prefab` with its four bee configs wired. If the
+   NetworkObject regenerates its `GlobalObjectIdHash` on import, re-save and note it.
+3. Cell Selector → **Hesperides**. Two hives grow a comb of hex tubes round their heart; within about a spawn period,
+   three bees hatch near each and fly to the flowers. Watch a visited plant: it grows faster for ~10 s.
+4. Release a herbivore (Spawn Matrix, Tadpole) of another domain near a hive: the bees fly at it, sting prisms off it,
+   fly home; the hive lays a new comb cell once the store holds 34.6 (one cell's volume).
+5. Spawn Matrix → **Bee Hive** (flora row), each element: the bees wear the element (Mass shielded, Charge danger).
+6. Shoot a bee: it dies, drops its heart. Kill a hive: its bees keep pollinating where they are.
+7. Perf: Hesperides with 4 hives and 32 bees: no allocation spike from the bees' 0.4 s think.
+
 ### 🔴 Honeyguide and Ratel round 7: AP bank 6, the Ratel picks one of three abilities (`cece/jolly-lovelace-t8y3a1`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Garrett: "lets have the ap cap go to 6. lets do the 3 ability pick as well." `DynamoCore` (the pick input, the Offer event,

@@ -251,6 +251,12 @@ MonoBehaviour:
   - Name: Snap Trap
     ElementConfigs:
     - {fileID: 11400000, guid: b61248e2fe33d5cc91e5178d9cac74e3, type: 2}
+  - Name: Bee Hive
+    ElementConfigs:
+    - {fileID: 11400000, guid: a38a0bfaf481fc7710eac8b72df268ba, type: 2}
+    - {fileID: 11400000, guid: ecbd6d53cbd0ad77e60b2ab91b9310b1, type: 2}
+    - {fileID: 11400000, guid: a5377585e015e312364b61e697b9c41b, type: 2}
+    - {fileID: 11400000, guid: 4562d81fa994cba268652bb660f205ea, type: 2}
   - Name: Nested Gyroid
     ElementConfigs:
     - {fileID: 11400000, guid: 6e701b36d4cf67162c0c8be83591d947, type: 2}
@@ -358,6 +364,8 @@ MonoBehaviour:
     Description: "A slime-mould grove at the rim: five beating hearts cable together, danger pulses run down the cables, and your wake repels it."
   - Species: Snap Trap
     Description: "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, then snap shut on danger teeth."
+  - Species: Bee Hive
+    Description: "A comb of hexagonal cells and the bees it raises. The bees pollinate nearby plants, which then grow faster, and sting opposing creatures near the hive, carrying their mass home to build more comb. They eat no plants."
   - Species: Nested Gyroid
     Description: "Seven nested gyroid sheets woven together by fibres: a solid 3D lattice rather than one surface. Each plant is one octagon tile on every sheet; the colony buds into neighbouring tiles about every 30s."
   - Species: Borromean

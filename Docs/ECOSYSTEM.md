@@ -12707,3 +12707,104 @@ outgrow the band (`Docs/SWARM_FAUNA.md` §14.2). The Spawn Matrix's "Swarm Borro
 Time forks; the canonical Borromean row still offers Mass. Found by sweeping every `author_*.py --check` at ship
 time, not only the ones the gates run. The Wrecking Ball's Borromean forks (Rampage's, re-armoured on this branch) and
 the Clawfish anatomy generator (whose seat predated the body scale) had drifted the same silent way.
+
+## 66. THE BEES — a fauna that produces, and the hive that takes a flora slot (Garrett, 2026-10-31)
+
+Garrett, 2026-10-31:
+
+> "go ahead and invest in making us some proper bees that can be native fauna independent of the ratel and honeyguide's
+> presence as well (they will still bring about their presence with their mass and omnicrystal abilities, but bees
+> should be a fauna available for cells that interact positively with flora instead of the typical consumption
+> behavior.) the mutualistic and productive nature of bees places them as a fauna that acts more like a flora in terms
+> of their effect on the ecology. thus thery can take the slot of a productive flora instead of a consuming fauna. this
+> is a new class of fauna that expands out fundamental understanding of their affect on ecology. please fit them in and
+> enable them to be a premier fuana so this vessel pair can showcase them."
+
+Earlier the same day, about the hive the Ratel leaves: "after the hive is left it should spawn bee fauna in the
+player's domain that protect it pull mass out of opposing fauna to bring back mass to grow the hive."
+
+### 66.1 The class: POLLINATOR
+
+`FaunaDiet.Pollinator = 2` is the third fauna role, beside the two consumers (Herbivore 0, Predator 1). Curated as an
+EXTENSION of the Flora & Fauna fundamental, not a new one (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`): a fauna's role
+is not fixed by its kingdom. Every existing diet test is an explicit equality, so a pollinator is automatically
+neither herbivore prey signal (`Cell.GetLiveHerbivoreCount`, a predator's prey list) nor leashable (`Fauna.CanBeLeashed`).
+
+### 66.2 The hive is the flora; the bees are its members
+
+`BeeHiveFlora` (a `Flora`) is what a cell lists, in `SpawnProfileSO.SupportedFloras`, so a cell grows bees by planting
+hives, and the bee population counts against the FLORA budget and caps, never the fauna spawner's. The hive raises its
+bees itself (one per `Cell.CurrentFaunaSpawnPeriod` × `hatchPeriodScale`, the period every population reads, so it is
+right under both spawners; the clock is stamped before the can-I-hatch gates), `BeeMath.BeesFor`: 3 bees for the seed
+comb, +1 per 9 cells past it, at most 8. Hatching stops with the cell's production freeze (`FloraPlantingEnabled`), as
+planting does. A bee config (`Bee Fauna <Element>`) has no seed count, no feeds and no cap: nothing but a hive makes bees.
+
+**The comb.** A stack of hex combs (`BeeMath.CellPosition`: 19 cells a comb, combs alternately in front of and behind
+the first), laid as a spiral outward one cell at a time (every cell touches one already laid), round the heart, which
+sits in the first comb's centre cell. 57 cells at most (2.4 × 2.4 × 6 prisms).
+
+**Mass: the comb past its seed is a TRANSFER.** The first 12 cells grow the way any plant grows (a producer). Every cell
+after them is built from `BeeMath.HoneyStore`: a ledger that only bees deposit into (each deposit the volume of body
+prisms they stung off opposing fauna) and a cell is laid only by spending its own volume from it, so
+`Deposited == Spent + Stored` always (a laid-and-failed cell is refunded). Nothing is minted; a hive with no prey near it
+stops at its seed. A hive buds a daughter (a swarm) through the one flora offspring path, one per full comb's growth
+(`GrowthPerOffspring` = 57), under the cell's cap and cooldown.
+
+### 66.3 What a bee does (`BeeFauna`, a `Boid`)
+
+A bee flies as a Boid (the school's steering; its body prisms are registered, moving mass) with `forager` off and no
+collision effects, so the boid never eats. It never starves (`starvationSeconds 0`): a producer, like its slot. Every
+0.4 s it decides (`BeeMath.Decide`):
+
+- **Pollinate**: fly to a flower within the hive's 420 u and land on it: `Flora.Hasten(1.6, 10 s)`, the plant's OWN
+  growth path (the door the Angler's lure uses), so a pollinated plant grows faster under all its own budgets and gates.
+  Bees fan out (`BeeMath.PickIndex`), 3 visits a trip.
+- **Raid**: an opposing creature within the hive's 260 u is flown at and stung: its nearest unshielded body prism is
+  consumed toward the bee (`Prism.Consume`, attributed to the bee) and its volume carried. Defending the hive and
+  feeding it are one act. Shielded body prisms are passed over (`Fauna.IsShieldedMass`), as every forager passes them.
+- **Return**: home with the load (or full at 32): `BeeHiveFlora.Deposit`.
+
+A bee whose hive dies keeps pollinating round where it is; nothing times it out.
+
+### 66.4 The body (premier, and within budget)
+
+`BeeFauna.prefab` is a fork of the tadpole (`author_bee_assets.py`): the heart at the front with the body trailing
+(§23.9, the tadpole arrangement, so `verify_fauna_heart_seat.py` needs nothing new), the tadpole's body spindle as the
+ABDOMEN (prism 2.2 × 2.2 × 3.2), and two more `TadpoleSpindle` instances as the WINGS (their tadpole skin hidden, each
+one thin prism 3.6 × 0.25 × 2.0 on a pivot beside the thorax with an 18° dihedral). `BeeWingDriver` flaps them: the CPU
+driver tier (a wing is a `HealthPrism`), `localRotation` only, 9 beats a second (the read of a blur), ±38°, a per-bee
+phase. Root scale 3 (the tadpole's, sized to the one heart, §64.4); the config's `BodyPrismScale` is zero so each prism
+keeps its own shape (one retarget would make the wings abdomens). The element's armour applies as to every creature
+(`Fauna.ArmourBody`): a Mass bee's three prisms are shielded, a Charge bee's are all danger.
+
+**What a real model would add:** a fuzzy striped thorax and abdomen, a head with antennae, legs. The prism body reads as a
+bee in silhouette (a heart-thorax, an abdomen, two flapping plates) but it is not a drawn bee. The art team's call.
+
+### 66.5 Where bees are native
+
+The **Hesperides** garden (terraced beds of eight flowering species and two topiaries): 2 hives seeded, cap 4, the four
+elements spread from the palette. A garden is where pollination shows. Its spawn profile is owned by
+`Tools/ecosim/gen_hesperides_assets.py`, which now lists the hive by the guid `author_bee_assets.py` mints; that script
+owns the config and `--check` fails if the profile drops it. The Spawn Matrix's **Bee Hive** row (flora) releases a hive
+of any element anywhere. No other cell has bees yet.
+
+**Colliders at the Hesperides caps:** 228 comb prisms + 4 hive hearts (flora prisms, LOD-culled like every plant's),
+96 bee prisms + 32 bee hearts (32 bees). The bees' senses ride the hive's shared read (`senseSeconds` 0.5: the cell's
+live fauna list and the flora heart registry, no physics query) and one spatial-index sphere per sting.
+
+### 66.6 The entry point for the Ratel and the Honeyguide
+
+```csharp
+BeeHiveFlora.SeedAt(cell, hiveConfig, position, domain, adopt: standingPrisms);
+```
+
+founds a hive through the canonical flora spawn path (`CellLifeSpawnerBase.SpawnFlora`, so the cap, the registry and the
+variant apply) and hands `adopt` (standing prisms: what the Ratel left of a raided hive) over as its first comb
+(reparented, re-teamed, counted against the seed). The Honeyguide's Mass power is the same call with no `adopt`.
+
+### 66.7 Not verified, and open
+
+Nothing here has run in the Editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). Open for Garrett: the numbers (bees per
+hive, haste, radii, the comb's size), whether pollinators should be prey for predators (today they are not: predators
+hunt herbivores only), whether bees should pollinate opposing-domain flora (today they pollinate any), and a real bee
+model.

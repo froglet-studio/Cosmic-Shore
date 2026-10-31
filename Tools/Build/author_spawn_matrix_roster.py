@@ -158,6 +158,8 @@ FLORA = [
     ("SchwarzP Topiary", ["Cell Configs/Hesperides Cell/Hesperides SchwarzP Topiary Config Data.asset"]),
     ("Physarum", ["Threat Flora/Swarm Physarum Flora Space Config Data.asset"]),
     ("Snap Trap", ["Threat Flora/Swarm Snap Trap Flora Time Config Data.asset"]),
+    # a flora slot that raises fauna: the hive is the plant, its bees its members (author_bee_assets.py)
+    ("Bee Hive", lifeform_set("Bee Hive")),
 ]
 
 # ── Species descriptions ───────────────────────────────────────────────────────
@@ -254,6 +256,9 @@ DESCRIPTIONS = {
                 "down the cables, and your wake repels it.",
     "Snap Trap": "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, "
                  "then snap shut on danger teeth.",
+    "Bee Hive": "A comb of hexagonal cells and the bees it raises. The bees pollinate nearby plants, which then "
+                "grow faster, and sting opposing creatures near the hive, carrying their mass home to build more comb. "
+                "They eat no plants.",
     "Gyroid Topiary": "A clipped gyroid specimen for garden beds: 30-prism tiles with smaller leaves in "
                       "Mass slabs, a colony that stops at eight instead of sprawling into a lattice.",
     "SchwarzP Topiary": "A clipped Schwarz-P specimen for garden beds: 36-prism tiles with smaller leaves "
