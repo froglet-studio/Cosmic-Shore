@@ -1,0 +1,182 @@
+{
+    "schemaVersion": 1,
+    "reportId": "932dc08c8926",
+    "timestamp": "2026-10-31T00:00:17.1506929Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "a229b206e6",
+    "trigger": "Game launch — Skein → MinigameSkein",
+    "loadKind": "launch",
+    "completionReason": "Cell swap: the new world is laid and grown, the veil lifts",
+    "interrupted": false,
+    "sceneFrom": "Maelstrom",
+    "sceneTo": "MinigameSkein",
+    "gameMode": "Skein",
+    "intensity": 2,
+    "totalPlayers": 4,
+    "humanPlayers": 1,
+    "aiBackfill": 3,
+    "isMultiplayer": true,
+    "networkRole": "Local",
+    "connectedClients": 0,
+    "totalMs": 1079.01416015625,
+    "visualReadyMs": -1.0,
+    "waitMs": 102.21699523925781,
+    "humanWaitMs": 0.0,
+    "workMs": 976.7971801757813,
+    "unattributedMs": 3.3073031902313234,
+    "framesDuringLoad": 2,
+    "avgFpsDuringLoad": 1.853543758392334,
+    "worstFrameMs": 952.0316772460938,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 3.3020999431610109,
+            "endMs": 105.51909637451172,
+            "durationMs": 102.21699523925781,
+            "exclusiveMs": 102.21699523925781,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene load → activation (MinigameSkein)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 105.52429962158203,
+            "endMs": 1079.01416015625,
+            "durationMs": 973.4898681640625,
+            "exclusiveMs": 973.4898681640625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 973.4898681640625,
+            "percent": 90.22030639648438,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 102.21699523925781,
+            "percent": 9.473183631896973,
+            "spanCount": 1,
+            "waitMs": 102.21699523925781
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 3.3073031902313234,
+            "percent": 0.3065115511417389,
+            "spanCount": 0,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Scene load → activation (MinigameSkein)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 973.4898681640625,
+            "exclusiveMs": 973.4898681640625,
+            "maxSingleMs": 973.4898681640625,
+            "isWait": false
+        },
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 102.21699523925781,
+            "exclusiveMs": 102.21699523925781,
+            "maxSingleMs": 102.21699523925781,
+            "isWait": true
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 1070.5980224609375,
+            "durationMs": 952.0316772460938,
+            "during": "Scene load → activation (MinigameSkein)"
+        },
+        {
+            "atMs": 749.2409057617188,
+            "durationMs": 415.0185852050781,
+            "during": "Scene load → activation (MinigameSkein)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Game launch — Skein → MinigameSkein"
+        },
+        {
+            "atMs": 748.973388671875,
+            "label": "Netcode scene load begins: MinigameSkein"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Active prisms when load ended",
+            "value": 5083
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 464,
+            "totalMs": 31.914400100708009,
+            "maxSingleMs": 0.20550000667572022
+        }
+    ],
+    "errors": [
+        {
+            "timeSeconds": 0.08592389523983002,
+            "type": "Error",
+            "message": "Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.OnTransportFailure to be notified of such events programmatically."
+        },
+        {
+            "timeSeconds": 0.08833219856023789,
+            "type": "Error",
+            "message": "[Netcode] Host is shutting down due to network transport failure of UnityTransport!"
+        },
+        {
+            "timeSeconds": 1.0458494424819947,
+            "type": "Exception",
+            "message": "NullReferenceException: Object reference not set to an instance of an object"
+        }
+    ],
+    "hints": [
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "3 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}
