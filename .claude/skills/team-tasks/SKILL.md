@@ -172,6 +172,9 @@ issues, milestones, branches and the week's merges back.
 - Never edit the machine block (`<!-- team-task ... -->`) by hand, and never the markdown board
   (`Docs/TEAM_TASKS.md` is a stub; a task a branch still writes there in the old format is filed by the next sweep).
 - Never turn on `.claude/hooks/team_tasks_nudge.py` again (Shombith, 2026-10-23: the per-prompt hooks slowed every chat).
+- Never file a ticket for work a MACHINE does: a search for the team's idle hardware is a compute job
+  (`Docs/Compute/jobs/`, `/compute-job`), not a ticket. The hand test or decision a converged search leaves for a
+  person may be a ticket, suggested the usual way.
 
 ## /ship
 

@@ -65,6 +65,80 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The AI trainer covers every multiplayer card: 22 more scenarios, gate races seek the next ring (`claude/eager-franklin-e6g77h`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `TrainingModeCatalog` +22 rows (13 gate races, Broadside, Dustup, Undertow, Sirocco, Wrecking Ball,
+Bloomrush, Hijack, Tapestry, Tollway); `FitnessProfileSO.MetricRecipes` (each mode's own ScoringMetric through
+`ScoringMetrics.Read`, three new kinds `SwitchesThreaded` 20, `PrismsStolen` 21, `VolumeRemaining` 22, plus the time
+penalty); `TargetSensor.TargetMode.NextGate` (4) reads `GateRaceController.TryGetNextRing`; 22 scenario/profile pairs
+written by `Tools/Build/author_training_scenarios.py` (`--check`). The twelve existing scenarios are unchanged.
+Affects: the AI trainer's owners (studyholic, Garrett, Shombith).
+
+**Verified without the editor:** `unity_refcompile` (editor and player configs, see the commit); the generator's
+self-test (a fresh pair passes; a drifted TargetMode, a missing profile and a recipe without a row each fail);
+`author_training_scenarios.py --check` over all 34 rows.
+
+**Test in the editor:**
+1. `AITrainingCoreTests`: `Catalog_EveryLiveMode_HasScenarioAndProfileMatchingApplyFor` (now 34 rows),
+   `MetricRecipes_OnePerMode_EachInTheCatalog_AndNoScoreRow`, `TargetSensor_NextGate_NoRace_HasNoTarget` pass.
+2. FrogletTools > AI > AI Training: the Mode list shows the new cards. Pick **Headlong · Rhino · I4**, Target
+   episodes 6, Learn: the AIs fly toward the next ring (not crystals), the gate count climbs, fitness is positive
+   after a match. Repeat with **Regatta** (arena: hull Manta) and **Broadside** (combat points move).
+3. **Wrasse Run** (a crew hull): note whether the trainer drives the pilot seat at all.
+4. The first real run (Switchback, Dolphin, I2, 32 matches through Froglet Compute) scored 0 gates on every AI: a pilot
+   new to the match kept the default "closest crystal" target because the runner sets `TargetMode` after
+   `BindVessel` built the sensors. `TrainingPilot.BeginEpisode` now applies it (test
+   `Pilot_TargetModeSetAfterBind_AppliesAtBeginEpisode`). Re-run Switchback with "Show the game": the Dolphins should
+   head for the rings.
+
+### 🔴 Froglet Compute runs the AI trainer in a Unity with no window (`claude/eager-franklin-e6g77h`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `Tools/Compute/unity/FrogletComputeTraining.cs`, an editor batch entry that is NOT part of the game:
+`Tools/Compute/unity_run.py` copies it into Froglet Compute's own copy of the project (`~/.froglet-compute/unity/`,
+never the person's checkout) and starts `Unity -batchmode -executeMethod
+CosmicShore.Utility.AITraining.Editor.FrogletComputeTraining.Run`. It does what the AI Training window's Learn button
+does (control asset, AutoStartOnPlay, Play from Bootstrap) with the overnight batch flags on, writes `status.json` /
+`result.json` / `genome.json`, and quits at the target, the deadline or a stop file. No file under `Assets/` changes.
+Affects: the AI trainer's owners (studyholic, Garrett, Shombith) - it drives their trainer unchanged.
+
+**Verified without the editor:** `unity_refcompile --config editor`: the file compiles against the real Unity
+references with 0 errors (it was the one gated file); a planted wrong method name in it failed the same run.
+`check_conditional_compilation.py`: OK. `compute.py self-test` "unity runs": a fake Unity following the same contract
+- a queued unit done and published, resume from a saved session, Ctrl-C stops cleanly, a compile error stops the run,
+an automatic run waits while the person's Unity is open, a missing Unity is reported; a planted skip of the copy step
+fails it.
+
+**Test on a PC with Unity 6000.3.17f1 (Unity Hub):**
+1. `python Tools/Compute/compute.py unity --find` names the editor.
+2. From the console's New run, pick Squirrel > Skim Race (purple), I4, 10 matches, This computer; paste the line.
+   The first run imports the project into `~/.froglet-compute/unity/Cosmic-Shore` (an hour or more, once).
+3. `~/.froglet-compute/runs/unity-train~<id>/<unit>/status.json` moves through "loading the match" to "training" and
+   `episodes_total` climbs; `unity.log` there shows `[FrogletCompute]` lines and the trainer's own.
+4. It ends with `result.json` (`ok: true`) and `genome.json`; Runs on the console shows the request done.
+5. Your own project is unchanged (`git status` clean) and your open Unity was never disturbed.
+If Play never reaches a match (sign-in, the menu), the run stops after 15 minutes with exit 3 and the reason in
+`result.json`: send `unity.log`.
+
+**Added 2026-10-29: the game's own recorders and the Third Eye** (`Docs/Compute/README.md` section 16). Compiled with
+`unity_refcompile --config editor` (0 errors; a planted error in the file failed the same run). Not run in the editor.
+- [ ] After a run: `<out>/replays` holds at most two replay pairs (`.cstheater` + `.replay.json`, each with a
+      `.compute.json`), `replays/best` holds the match where the best fitness rose, and `recordings.json` lists them
+      with `replays_setup: "on"`.
+- [ ] `Documents/CosmicShore Diagnostics/Flights` gains no new `flight_*.json` during the run (list it before and
+      after); `<out>/ai-flights` holds `aiflight_*.json` instead.
+- [ ] MY REPLAYS on another device does not list the training matches (the run's ReplayConfig lists none in Cloud Save).
+- [ ] Show the game: the Third Eye opens on the match once Play reaches it; `recordings.json` says `third_eye: "open..."`.
+- [ ] Copy a `replays/best` pair into the project's `Recordings` folder: MY REPLAYS > WATCH plays it, Y or Tab gives
+      the free camera.
+- [ ] Next run: the copy's `TheaterConfig.asset` is back to its tracked value and the untracked `ReplayConfig.asset` is gone.
+- [ ] (2026-10-29) An AI Training run (the window's Learn, or Compute): the Console shows no "AI training record not
+      stored" warning per match and Documents' Flights gains nothing; a race you fly yourself is still stored, with
+      `"pilot":"human"` in its header (`"mixed"` after a You / AI toggle).
+- [ ] Third Eye during an AI Training run: the trainer's hull draws a lime aim line to its target ("AI trainer:
+      Seeking Waypoint" in the readout), the You / AI toggle on it says "the AI trainer is flying this hull".
+- [ ] A watched Compute run writes `<out>/stills/still_*.png` about every minute and a `best_*.png` when the best
+      fitness rises: the picture is the Third Eye's view with the trails and aim lines drawn in, the right way up.
+- [ ] `ThirdEyeStillTests` pass (Test Runner, edit mode).
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).

@@ -1,0 +1,88 @@
+{
+ "after": [
+  "bioform-forge"
+ ],
+ "area_owner": "Garrett (NCA creatures, research branch cece/gifted-curie-x2cpd0)",
+ "asked_by": "Garrett 2026-10-26",
+ "blocked_reason": "needs forged targets: promote bioform-forge, commit chosen <kind>.prisms.json to Tools/Compute/bioforms/, add one unit each, set ready",
+ "command": {
+  "argv": [
+   "{python}",
+   "Tools/NCA/nca3d.py",
+   "train",
+   "--target",
+   "{unit.name}",
+   "--prisms",
+   "{tools}/bioforms/{unit.name}.prisms.json",
+   "--out",
+   "{out}",
+   "--voxel-scale",
+   "0.5",
+   "--pad-xy",
+   "3",
+   "--init3d",
+   "Tools/NCA/results/lizard3d_swim/model.pt",
+   "--threads",
+   "{threads}",
+   "--batch-size",
+   "4",
+   "--damage-n",
+   "1",
+   "--pool-size",
+   "256",
+   "--steps",
+   "6000",
+   "--clock-steps",
+   "800",
+   "--lr-drop-step",
+   "4000"
+  ],
+  "keep": [
+   "model.pt",
+   "opt.pt",
+   "state.json",
+   "status.json",
+   "config.json",
+   "loss.npy"
+  ],
+  "lease_hours": 3,
+  "max_mb": 20,
+  "paths": [
+   "Tools/NCA/"
+  ],
+  "progress": {
+   "file": "status.json",
+   "key": "step",
+   "of": "steps"
+  },
+  "resume": [
+   "--resume"
+  ],
+  "resume_if": [
+   "state.json"
+  ],
+  "score": {
+   "file": "status.json",
+   "key": "median50"
+  },
+  "units": [],
+  "version": "1"
+ },
+ "goal": "Turn the best forged swarm bodies into NCA creatures that grow from one cell, swim with no animation and heal (Docs/NCA_CREATURES.md): the compute-bound half of the bioform pipeline.",
+ "id": "nca-train-forged",
+ "kind": "command",
+ "plan": "bioforms",
+ "promote": "A trained unit's model.pt goes through export_nca3d_creature.py on the research branch, then a SPECIES row in author_nca_creatures.py (Docs/NCA_CREATURES.md) - Garrett's area: ask first.",
+ "ref": "origin/cece/gifted-curie-x2cpd0",
+ "requires": [
+  "python3",
+  "numpy",
+  "torch"
+ ],
+ "schema": "froglet-compute/job/1",
+ "stage": 2,
+ "status": "proposed",
+ "title": "Grow forged bioforms as 3D neural cellular automata (torch, hours per body)",
+ "updated": "2026-10-26",
+ "value": 6
+}

@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-31 from canvas version `1793448867-3e1e`: Rev 3 to Rev 39, 332 boards on 40 pages. The canvas's launch page is `rev39`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-10-31 from canvas version `1793468682-c423`: Rev 3 to Rev 39, 336 boards on 40 pages. The canvas's launch page is `rev38`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
 
@@ -40,6 +40,10 @@ Copied on 2026-10-31 from canvas version `1793448867-3e1e`: Rev 3 to Rev 39, 332
 - [`R38Searches.dc.html`](R38Searches.dc.html) - Rev 38 Searches - Searches: list and an Optuna-style detail panel
 - [`R38NewRun.dc.html`](R38NewRun.dc.html) - Rev 38 NewRun - New run: vessel, mode, where, when
 - [`R38Notes.dc.html`](R38Notes.dc.html) - Rev 38 - Notes: what changes and why
+- [`R41Runs.dc.html`](R41Runs.dc.html) - Rev 41 Runs - Runs: a sent run shows at once as Starting, with a live bar and why a waiting run waits
+- [`R41NewRun.dc.html`](R41NewRun.dc.html) - Rev 41 NewRun - New run: Where defaults to the best live PC and the button says what happens
+- [`R41Computers.dc.html`](R41Computers.dc.html) - Rev 41 Computers - Computers: Starting is a status, never Working with nothing running
+- [`R41Notes.dc.html`](R41Notes.dc.html) - Rev 41 - notes: what was wrong on the live console and what each fix changes
 
 ### Rev 37 - Connection: lost, reconnecting, back online, rejoin  (page `rev37`)
 

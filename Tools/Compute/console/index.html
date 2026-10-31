@@ -1,0 +1,1744 @@
+<meta charset="utf-8">
+<title>Froglet Compute Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Froglet Compute Console: an application (2026-10-29, the design board's Rev 38 "Computer artifact"; Shombith picked
+   Linear's shell, Tailscale's machine list and Optuna's study view). One stylesheet: a sidebar, a top bar, lists and
+   tables, status as a dot and a word, one accent. Light and dark follow the system; data-theme on <html> forces one.
+   One static page + console.json beside it (Tools/Compute/console.py). */
+:root {
+  --bg: #FBFBFC; --side: #F4F5F7; --surface: #FFFFFF; --raised: #F0F1F4; --sunk: #F4F5F7;
+  --line: #E4E6EA; --line2: #D5D8DE; --text: #16181D; --muted: #555A66; --dim: #646A76;
+  --accent: #00809E; --on: #FFFFFF; --tint: rgba(0,128,158,0.10);
+  --ok: #1A7F52; --warn: #9A6400; --unity: #7E46CC; --off: #8A909B; --bad: #C2372B;
+  --shadow: 0 12px 32px rgba(15,18,25,0.14);
+  --ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0C10; --side: #08090C; --surface: #101218; --raised: #161921; --sunk: #0D0F14;
+    --line: #1F232C; --line2: #2A2F3A; --text: #E6E8EE; --muted: #A0A5B0; --dim: #858B97;
+    --accent: #00D4FF; --on: #00141A; --tint: rgba(0,212,255,0.10);
+    --ok: #4CC38A; --warn: #E8B44C; --unity: #C58CFF; --off: #6B7180; --bad: #F2665A;
+    --shadow: 0 16px 40px rgba(0,0,0,0.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0C10; --side: #08090C; --surface: #101218; --raised: #161921; --sunk: #0D0F14;
+  --line: #1F232C; --line2: #2A2F3A; --text: #E6E8EE; --muted: #A0A5B0; --dim: #858B97;
+  --accent: #00D4FF; --on: #00141A; --tint: rgba(0,212,255,0.10);
+  --ok: #4CC38A; --warn: #E8B44C; --unity: #C58CFF; --off: #6B7180; --bad: #F2665A;
+  --shadow: 0 16px 40px rgba(0,0,0,0.5);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/20px var(--ui); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.005em; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code, .mono { font-family: var(--mono); font-size: 12.5px; }
+.num, td.num { font-variant-numeric: tabular-nums; }
+.note { font-size: 12.5px; color: var(--muted); }
+.lead { font-size: 13px; color: var(--muted); max-width: 80ch; }
+.grow { flex: 1; }
+
+/* ── the shell: sidebar + top bar ── */
+.app { display: grid; grid-template-columns: 240px minmax(0, 1fr); height: 100%; }
+.side { background: var(--side); border-right: 1px solid var(--line); padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; min-height: 0; }
+.side .brand:has(.livetag:not([hidden])) .led { display: none; }
+.side .brand { white-space: nowrap; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 6px; margin-bottom: 12px; color: var(--text); text-decoration: none; font-weight: 600; }
+.side .brand .mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); color: var(--on); display: inline-grid; place-items: center; flex: none; }
+.side a, .side .navbtn { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: var(--muted); text-decoration: none; border: 0; background: transparent; cursor: pointer; text-align: left; width: 100%; font-size: 14px; }
+.side a svg, .side .navbtn svg { flex: none; color: var(--dim); }
+.side a:hover, .side .navbtn:hover { background: var(--raised); color: var(--text); }
+.side a[aria-current="page"] { background: var(--raised); color: var(--text); font-weight: 500; }
+.side a[aria-current="page"] svg { color: var(--text); }
+.side a .n { margin-left: auto; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.side a .n:empty { display: none; }
+.side kbd { margin-left: auto; font: 12px var(--mono); color: var(--dim); }
+.side .sep { height: 1px; background: var(--line); margin: 10px 4px; }
+.side .foot { border-top: 1px solid var(--line); margin-top: 8px; padding: 10px 6px 2px; font-size: 12px; color: var(--dim); display: grid; gap: 2px; }
+.side .foot b { color: var(--muted); font-weight: 500; }
+.led { width: 8px; height: 8px; border-radius: 50%; background: var(--off); display: inline-block; flex: none; }
+.led.on { background: var(--ok); }
+.livetag { font-size: 11px; font-weight: 600; color: var(--ok); border: 1px solid currentColor; border-radius: 9px; padding: 0 6px; line-height: 16px; }
+.main { display: grid; grid-template-rows: 56px minmax(0, 1fr); min-width: 0; min-height: 0; }
+.topbar { display: flex; align-items: center; gap: 12px; padding: 0 24px; border-bottom: 1px solid var(--line); min-width: 0; }
+.topbar h1 { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar .fresh { font-size: 12px; color: var(--dim); white-space: nowrap; }
+.topbar .menu-btn { display: none; }
+.content { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; min-width: 0; }
+.scroll { overflow-y: auto; min-height: 0; }
+.pane { padding: 20px 24px 40px; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); max-width: 1440px; }
+.pane > * { min-width: 0; }
+.statusbar { display: none; }
+
+/* ── controls ── */
+.btn, .tbtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 6px;
+  border: 1px solid var(--line2); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; text-decoration: none; }
+.btn:hover, .tbtn:hover { background: var(--raised); }
+.btn.cta, .btn.pri, .tbtn.cta { background: var(--accent); border-color: var(--accent); color: var(--on); font-weight: 600; }
+.btn.cta:hover, .btn.pri:hover, .tbtn.cta:hover { filter: brightness(1.06); background: var(--accent); }
+.btn.small { height: 28px; padding: 0 10px; font-size: 12.5px; }
+.btn.ghost, .tbtn.ghost { background: transparent; }
+.btn.icon { width: 32px; padding: 0; border-color: transparent; background: transparent; color: var(--muted); }
+.btn.icon:hover { background: var(--raised); color: var(--text); }
+.btn.big { height: 40px; width: 100%; font-size: 14px; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.tab { height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.tab:hover { color: var(--text); }
+.tab[aria-pressed="true"] { background: var(--raised); border-color: var(--line2); color: var(--text); }
+.tab .num { color: var(--dim); }
+.searchbox { display: flex; align-items: center; gap: 8px; height: 32px; width: 260px; max-width: 100%; padding: 0 10px; border: 1px solid var(--line2); border-radius: 6px; background: var(--surface); color: var(--dim); }
+.searchbox input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 13px; }
+.field, select.field, input.field, textarea.field, .filters select, .approve textarea { width: 100%; font-size: 13px; color: var(--text); background: var(--surface); border: 1px solid var(--line2); border-radius: 6px; padding: 7px 10px; }
+textarea.field, .approve textarea { min-height: 60px; resize: vertical; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.filters select { width: auto; }
+.toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ── surfaces ── */
+.card, .tablewrap, .empty, .banner, .run, .mrun, .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.card { padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; overflow: hidden; }
+.card > .ch { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+.card > .ch h3 { font-size: 13px; flex: 1; }
+.card > .ch a { font-size: 12px; color: var(--muted); }
+.card > .cb { padding: 14px 16px; display: grid; gap: 10px; }
+.banner { padding: 12px 16px; display: grid; gap: 4px; }
+.banner.gold { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+.banner.bad { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+.banner.ruby { border-color: color-mix(in srgb, var(--unity) 45%, var(--line)); }
+.empty { padding: 26px; text-align: center; color: var(--muted); display: grid; gap: 8px; justify-items: center; }
+.sec { font-size: 12px; font-weight: 600; color: var(--dim); }
+.rowlist > .r { display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 8px 16px; border-top: 1px solid var(--line); }
+.rowlist > .r:first-child { border-top: 0; }
+.rowlist > .r .t { flex: 1; min-width: 0; }
+.rowlist > .r .t b { font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rowlist > .r .t span { font-size: 12px; color: var(--muted); }
+.rowlist > .r .w { font-size: 12px; color: var(--dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 2px; }
+.stat span { font-size: 12px; color: var(--dim); }
+.stat b { font-size: 26px; line-height: 34px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat i { font-style: normal; font-size: 12px; color: var(--muted); }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+.cols > div { display: grid; gap: 20px; min-width: 0; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tile { padding: 12px 14px; display: grid; gap: 2px; text-align: left; }
+.tile b { font-size: 22px; line-height: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile span { font-size: 12px; color: var(--muted); }
+
+/* ── status, tags, pills ── */
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; background: var(--off); }
+.st { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.st.working .dot { background: var(--accent); } .st.starting .dot { background: var(--accent); animation: fc-pulse 1.2s ease-in-out infinite; } .st.free .dot { background: var(--ok); } .st.in-use .dot { background: var(--warn); }
+.st.outside-hours .dot { background: transparent; border: 1.5px solid var(--off); } .st.offline .dot { background: transparent; border: 1.5px solid var(--off); }
+.st + .sub, .sub { display: block; font-size: 12px; color: var(--dim); }
+.kind { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border: 1px solid var(--line2); border-radius: 11px; font-size: 12px; color: var(--muted); white-space: nowrap; vertical-align: middle; }
+.kind::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--off); }
+.kind.k-model::before { background: var(--accent); } .kind.k-unity::before { background: var(--unity); }
+.kind.k-player::before { background: var(--warn); } .kind.k-train::before { background: var(--muted); }
+.kinds { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13px; color: var(--muted); }
+.kinds span { display: inline-flex; align-items: center; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 12px; font-weight: 500; white-space: nowrap; border: 1px solid var(--line2); color: var(--muted); background: transparent; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--off); }
+.pill.converged::before, .pill.waitingyes::before, .pill.waiting::before, .pill.blocked::before { background: var(--warn); }
+.pill.ready::before, .pill.searching::before { background: var(--accent); }
+.pill.learned::before, .pill.valid::before, .pill.promoted::before { background: var(--ok); }
+.pill.new::before, .pill.notrun::before { background: var(--bad); }
+.flag { font-size: 12px; color: var(--muted); }
+.flag.on { color: var(--text); }
+.delta.good { color: var(--ok); } .delta.worse { color: var(--bad); }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 12px; height: 6px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+.fleet { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+
+/* ── progress ── */
+.prog { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+.prog.mini { width: 90px; display: inline-block; vertical-align: middle; }
+.prog.wait i { width: 28%; animation: fc-slide 1.6s ease-in-out infinite; }
+@keyframes fc-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(360%); } }
+@keyframes fc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .prog.wait i, .st.starting .dot { animation: none; } }
+
+/* ── tables ── */
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 0 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { height: 36px; font-size: 12px; font-weight: 500; color: var(--dim); white-space: nowrap; }
+td { height: 52px; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr.click { cursor: pointer; }
+tbody tr.click:hover td { background: var(--raised); }
+td.num { text-align: right; } th.num { text-align: right; }
+td .sub { margin-top: 2px; }
+td.cell { text-align: center; white-space: nowrap; }
+.wide { min-width: 760px; }
+.matrix td { height: 34px; }
+.matrix td.cell span { display: inline-block; min-width: 2.1em; padding: 1px 5px; margin: 1px; border-radius: 4px; font-size: 12px; }
+.matrix td.cell .l { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.matrix td.cell .w { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+.matrix td.cell .n { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+.params { max-height: none; }
+.vm-grid td { height: 30px; padding: 0 4px; }
+.vm-grid td:first-child { padding-left: 12px; white-space: nowrap; }
+.vm-grid td.cell button { width: 26px; height: 20px; border: 0; border-radius: 4px; cursor: pointer; font-size: 10px; }
+.vm-grid td.cell button.now { background: var(--tint); color: var(--accent); }
+.vm-grid td.cell button.unity { background: color-mix(in srgb, var(--unity) 16%, transparent); color: var(--unity); }
+.vm-grid td.cell button.game { background: transparent; color: var(--dim); border: 1px solid var(--line); }
+.vm-grid th.mh { writing-mode: vertical-rl; transform: rotate(180deg); height: 96px; padding: 6px 2px; }
+
+/* ── the row menu ── */
+.menuwrap { position: relative; display: inline-block; }
+.rmenu { position: absolute; right: 0; top: 36px; z-index: 20; width: 250px; padding: 6px; border: 1px solid var(--line2); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow); text-align: left; }
+.rmenu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: 5px; background: transparent; color: var(--text); font-size: 13px; cursor: pointer; text-align: left; }
+.rmenu button:hover:not(:disabled) { background: var(--raised); }
+.rmenu button:disabled { color: var(--dim); cursor: default; }
+.rmenu .why { font-size: 12px; color: var(--dim); padding: 6px 10px 4px; line-height: 16px; }
+
+/* ── searches: list + study panel ── */
+.study { display: grid; grid-template-columns: 420px minmax(0, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; min-height: 640px; }
+.slist { border-right: 1px solid var(--line); overflow-y: auto; }
+.slist .sec { padding: 14px 16px 6px; display: block; }
+.slist details > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.slist details > summary::-webkit-details-marker { display: none; }
+.slist details > summary::before { content: "›"; color: var(--dim); }
+.slist details[open] > summary::before { content: "⌄"; }
+.sitem { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 6px 16px; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; color: var(--text); }
+.sitem:hover { background: var(--raised); }
+.sitem[aria-current="true"] { background: var(--raised); }
+.sitem .t { flex: 1; min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sitem[aria-current="true"] .t { font-weight: 600; }
+.sitem .n { width: 64px; text-align: right; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.sitem .d { width: 64px; text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
+.sdetail { padding: 20px 24px 28px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+.sdetail .head { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.sdetail .head h2 { font-size: 20px; line-height: 26px; }
+.sdetail .kicker { font-size: 12px; color: var(--dim); }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.kpi { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+.kpi span { display: block; font-size: 12px; color: var(--dim); }
+.kpi b { font-size: 20px; line-height: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.plot { width: 100%; height: auto; display: block; }
+.plot text { font: 11px var(--ui); fill: var(--dim); }
+.plot .grid { stroke: var(--line); }
+.plot .line { stroke: var(--accent); fill: none; stroke-width: 2; }
+.plot .pt { fill: var(--accent); }
+.plot .base { stroke: var(--warn); stroke-dasharray: 5 4; }
+.plot .basel { fill: var(--warn); }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 16px; font-size: 13px; margin: 0; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.bars { display: grid; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) 120px; gap: 10px; align-items: center; }
+.bar-row .lbl { font-size: 12px; color: var(--dim); }
+.bar-row .tracks { display: grid; gap: 3px; }
+.bar-row .tr { height: 6px; border-radius: 3px; background: transparent; overflow: hidden; }
+.bar-row .tr i { display: block; height: 100%; border-radius: 3px; }
+.bar-row .tr.s i { background: var(--line2); } .bar-row .tr.b i { background: var(--accent); }
+.bar-row .val { text-align: right; font: 12px var(--ui); color: var(--muted); white-space: pre; font-variant-numeric: tabular-nums; }
+.spark { width: 140px; height: 36px; display: block; }
+.decisions { display: grid; gap: 6px; }
+.decision { display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+.decision img { width: 20px; height: 20px; border-radius: 50%; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.approve { padding: 14px 16px; display: grid; gap: 10px; }
+.approve h3 { font-size: 13px; }
+
+/* ── runs ── */
+.run, .mrun { padding: 12px 16px; display: grid; gap: 8px; }
+.run .top, .mrun .top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.run .top b, .mrun .top b { font-weight: 500; }
+.run .facts, .mrun .facts { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.run .facts b { color: var(--text); font-weight: 500; }
+.mrun q { color: var(--muted); font-style: italic; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font: 12px var(--mono); padding: 2px 7px; border-radius: 4px; background: var(--raised); color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.frow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--line); }
+.frow:first-of-type { border-top: 0; }
+.item { display: flex; align-items: center; gap: 14px; }
+
+/* ── sheets: New run, install ── */
+.sheetwrap { position: fixed; inset: 0; z-index: 40; background: rgba(8,10,14,0.5); display: grid; justify-items: center; align-items: start; padding: 72px 16px 16px; overflow-y: auto; }
+.sheet { width: min(640px, 100%); min-width: 0; background: var(--surface); border: 1px solid var(--line2); border-radius: 12px; box-shadow: var(--shadow); padding: 20px 24px 22px; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+.sheet.wide { width: min(760px, 100%); }
+.sheet > * { min-width: 0; }
+.sheet h2 { font-size: 16px; }
+.step { display: grid; gap: 8px; min-width: 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.step > b, .step > summary { font-size: 12px; font-weight: 600; color: var(--muted); }
+.step > summary { cursor: pointer; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.pick { display: inline-flex; align-items: baseline; gap: 6px; height: 30px; align-items: center; padding: 0 10px; border: 1px solid var(--line2); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; max-width: 100%; }
+.pick small { font-size: 11.5px; color: var(--dim); font-weight: 400; }
+.pick:hover { background: var(--raised); }
+.pick::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none; display: none; }
+.pick.now::before { display: inline-block; background: var(--accent); } .pick.unity::before { display: inline-block; background: var(--unity); }
+.pick.game::before { display: inline-block; background: var(--off); } .pick.game { color: var(--muted); }
+.pick.on, .pick.where.on, .pick.game.on, .pick.unity.on, .pick.int.on { border-color: var(--accent); background: var(--tint); color: var(--text); }
+.pick.off { opacity: 0.45; cursor: not-allowed; }
+.pick.int { min-width: 44px; justify-content: center; }
+.note.people { padding-left: 10px; border-left: 2px solid var(--ok); }
+.seg { display: inline-flex; padding: 3px; gap: 3px; border: 1px solid var(--line2); border-radius: 8px; background: var(--surface); }
+.seg button { border: 0; background: transparent; color: var(--muted); padding: 0 12px; height: 26px; border-radius: 5px; cursor: pointer; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--raised); color: var(--text); }
+.srow { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.srange { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; background: transparent; cursor: pointer; margin: 0; --a: 0%; --b: 50%; }
+.srange::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--line2) var(--a), var(--accent) var(--a), var(--accent) var(--b), var(--line2) var(--b)); }
+.srange::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--line2) var(--a), var(--accent) var(--a), var(--accent) var(--b), var(--line2) var(--b)); }
+.srange::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--text); border: 0; }
+.srange::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--text); border: 0; }
+.bubble { flex: none; min-width: 56px; text-align: right; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tune { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 92px auto; gap: 10px; align-items: center; min-width: 0; }
+.tname { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track { position: relative; min-width: 0; }
+.dual { position: relative; height: 20px; }
+.dual .srange { position: absolute; inset: 0; pointer-events: none; }
+.dual .srange::-webkit-slider-thumb { pointer-events: auto; } .dual .srange::-moz-range-thumb { pointer-events: auto; }
+.dual .srange + .srange::-webkit-slider-runnable-track, .dual .srange + .srange::-moz-range-track { background: transparent; }
+.today { position: absolute; top: -2px; width: 2px; height: 24px; background: var(--warn); pointer-events: none; transform: translateX(-1px); }
+.sval { font-size: 12px; color: var(--muted); text-align: right; white-space: nowrap; }
+.lock { border: 1px solid var(--line2); background: transparent; color: var(--muted); font-size: 12px; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
+.lock.on { border-color: var(--warn); color: var(--warn); }
+.cmdline { display: flex; gap: 8px; align-items: center; background: var(--sunk); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; font-family: var(--mono); font-size: 12px; min-width: 0; }
+.cmdline code { overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0; }
+.copyrow { display: flex; gap: 8px; align-items: stretch; min-width: 0; }
+.copyrow .cmdline { flex: 1; }
+.isteps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: i; }
+.isteps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 2px 12px; counter-increment: i; }
+.isteps li::before { content: counter(i); grid-row: span 3; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; background: var(--raised); color: var(--text); }
+.isteps b { font-weight: 600; } .isteps p { font-size: 13px; color: var(--muted); }
+.opts { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
+.opts label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.opts input { accent-color: var(--accent); }
+details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted); }
+.flabel { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.cols2, .kv2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+
+/* ── the drawer (kept for the install and older paths) ── */
+.drawer { position: fixed; inset: 0; z-index: 30; display: grid; grid-template-columns: 1fr min(580px, 100%); background: rgba(8,10,14,0.4); }
+.drawer .scrim { border: 0; background: transparent; cursor: pointer; }
+.panel { background: var(--surface); border-left: 1px solid var(--line2); overflow-y: auto; display: grid; align-content: start; gap: 14px; padding: 20px; }
+
+/* ── terminal (always dark) ── */
+.term { border-top: 1px solid var(--line); background: #0A0B0F; display: grid; grid-template-rows: 32px minmax(0, 1fr); height: 300px; min-height: 0; color-scheme: dark; }
+.term.tall { height: 62vh; }
+.termbar { display: flex; align-items: center; gap: 10px; padding: 0 10px 0 14px; background: #121419; border-bottom: 1px solid #1F232C; font-size: 12px; color: #A0A5B0; user-select: none; }
+.termbar .tab { color: #E6E8EE; height: 24px; }
+.termbar .sp { flex: 1; }
+.termbar button { background: none; border: 0; color: #A0A5B0; cursor: pointer; padding: 4px 6px; font-size: 12px; }
+.termbar button:hover { color: #E6E8EE; }
+.tout { overflow-y: auto; padding: 10px 14px 4px; font: 12.5px/1.55 var(--mono); color: #CFD3DD; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 0; }
+.tout .line { min-height: 1.55em; }
+.tout .p, .tin .p { color: #4CC38A; } .tout .p .path, .tin .p .path { color: #00D4FF; }
+.tout .ok { color: #4CC38A; } .tout .warn { color: #E8B44C; } .tout .err { color: #F2665A; }
+.tout .dim { color: #858B97; } .tout .hl { color: #7FE7FF; } .tout .ruby { color: #C58CFF; } .tout .b { color: #E6E8EE; font-weight: 600; }
+.tout a { color: #7FE7FF; }
+.tin { display: flex; align-items: center; gap: 8px; padding: 2px 14px 10px; font: 12.5px/1.55 var(--mono); }
+.tin .p { white-space: nowrap; }
+.tin input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: #E6E8EE; font: inherit; caret-color: #00D4FF; padding: 0; }
+
+/* ── tour ── */
+.tour { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+.tour .spot { position: fixed; border: 2px solid var(--accent); border-radius: 8px; box-shadow: 0 0 0 9999px rgba(8,10,14,0.6); transition: all 0.2s ease; pointer-events: none; }
+.tour .spot.none { box-shadow: 0 0 0 9999px rgba(8,10,14,0.6); border-color: transparent; }
+.tour .tip { position: fixed; width: min(360px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line2); border-radius: 10px; padding: 16px 18px 12px; display: grid; gap: 8px; pointer-events: auto; box-shadow: var(--shadow); transition: top 0.2s ease, left 0.2s ease; }
+.tour .tip h3 { font-size: 15px; } .tour .tip p { font-size: 13px; color: var(--muted); }
+.tour .tip .foot { display: flex; align-items: center; gap: 8px; }
+.tour .tip .count { font-size: 12px; color: var(--dim); margin-right: auto; }
+@media (prefers-reduced-motion: reduce) { .tour .spot, .tour .tip { transition: none; } }
+
+/* ── narrow screens: the sidebar slides in ── */
+@media (max-width: 1100px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .study { grid-template-columns: minmax(0, 1fr); }
+  .slist { border-right: 0; border-bottom: 1px solid var(--line); max-height: 360px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; left: 0; top: 0; bottom: 0; width: 260px; z-index: 50; transform: translateX(-105%); transition: transform 0.2s ease; box-shadow: var(--shadow); }
+  .app.menu-open .side { transform: none; }
+  .topbar .menu-btn { display: inline-flex; }
+  .topbar { padding: 0 12px 0 8px; gap: 8px; }
+  .topbar .fresh, .topbar .searchbox { display: none; }
+  .pane { padding: 16px 16px 40px; }
+  .tune { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .tune .track { grid-column: 1 / -1; grid-row: 2; }
+  .hide-narrow { display: none; }
+  .wide { min-width: 0; }
+  .term { height: 46vh; }
+}
+@media (prefers-reduced-motion: reduce) { .side { transition: none; } }
+</style>
+
+<div class="app" id="win">
+  <div class="lights" hidden>
+    <button class="r" id="l-red" aria-label="Close the open panel"></button>
+    <button class="y" id="l-yellow" aria-label="Hide the sidebar"></button>
+    <button class="g" id="l-green" aria-label="Zoom the window"></button>
+  </div>
+  <nav class="side" id="nav" aria-label="Views">
+    <a class="brand" href="#home" aria-label="Froglet Compute, home"><span class="mark" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l5-7 4 4 7-10"/></svg></span><span>Froglet Compute</span><span class="led" id="led"></span><span class="livetag" id="livetag" hidden>Live</span></a>
+    <a href="#home" data-view="home" id="nav-home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+    <a href="#runs" data-view="runs" id="nav-runs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z"/></svg><span>Runs</span><span class="n" id="n-runs"></span></a>
+    <a href="#machines" data-view="machines" id="nav-machines"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span>Computers</span><span class="n" id="n-machines"></span></a>
+    <a href="#searches" data-view="searches" id="nav-searches"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19l5-7 4 4 7-10"/><path d="M4 4v15h16"/></svg><span>Searches</span><span class="n" id="n-searches"></span></a>
+    <a href="#recordings" data-view="recordings" id="nav-recordings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span>Recordings</span><span class="n" id="n-recordings"></span></a>
+    <a href="#ai" data-view="ai" id="nav-ai"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M6 8v8M18 8c0 5-12 3-12 8"/></svg><span>AI branch</span></a>
+    <div class="sep"></div>
+    <button class="navbtn" type="button" id="b-install"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add a computer</span></button>
+    <div class="grow"></div>
+    <button class="navbtn" type="button" id="b-tour"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14M12 17h.01"/></svg><span>Tour</span></button>
+    <a href="#terminal" data-view="terminal" id="nav-term"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l5 5-5 5M12 17h7"/></svg><span>Terminal</span><kbd>⌘J</kbd></a>
+    <div class="foot" id="sidefoot"></div>
+  </nav>
+  <div class="main">
+    <header class="topbar">
+      <button class="btn icon menu-btn" type="button" id="b-menu" aria-label="Show the menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <h1 id="ptitle">Home</h1>
+      <span class="grow"></span>
+      <span class="fresh" id="fresh">loading</span>
+      <button class="btn pri" type="button" id="b-newrun"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New run</button>
+    </header>
+    <div class="content">
+      <div class="scroll" id="scroll"><div class="pane" id="main"><div class="empty"><b>Loading</b><span>The console reads console.json, published next to it.</span></div></div></div>
+      <div>
+        <section class="term" id="term" hidden aria-label="Terminal">
+          <div class="termbar"><span class="tab"><span class="led on"></span>compute — console</span><span class="sp"></span>
+            <button type="button" id="t-tall">Expand</button><button type="button" id="t-clear">Clear</button><button type="button" id="t-close">Close</button></div>
+          <div class="tout" id="tout" role="log" aria-live="polite"></div>
+        </section>
+        <div class="statusbar"><span id="sb-left">froglet-studio/Cosmic-Shore</span><span class="sp"></span><span id="sb-right"></span><button type="button" id="sb-term">Terminal ⌘J</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="drawer" id="drawer" hidden>
+  <button class="scrim" id="scrim" aria-label="Close"></button>
+  <div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title"></div>
+</div>
+<div class="sheetwrap" id="sheet" hidden></div>
+<div class="tour" id="tour" hidden><div class="spot" id="spot"></div><div class="tip sliver" id="tip" role="dialog" aria-live="polite"></div></div>
+
+<script>
+(function () {
+  "use strict";
+  var DATA = null, VIEW = "home", OPEN = null;
+  var CAP = { db: null, user: null, me: null, sample: null, mcp: null, approvals: {}, processed: {}, outbox: {}, sent: {}, canApprove: null, ready: false };
+  var CCR = "Claude Code Remote";
+  var VIEWS = ["home", "runs", "searches", "machines", "recordings", "ai"];
+
+  // ── helpers: text always through textContent ──
+  function h(tag, attrs, kids) {
+    var el = document.createElement(tag);
+    if (attrs) for (var k in attrs) {
+      var v = attrs[k];
+      if (v == null || v === false) continue;
+      if (k === "class") el.className = v; else if (k === "text") el.textContent = v;
+      else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), v); else el.setAttribute(k, v === true ? "" : v);
+    }
+    (kids || []).forEach(function (c) { if (c != null && c !== false) el.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return el;
+  }
+  function svg(tag, attrs) { var el = document.createElementNS("http://www.w3.org/2000/svg", tag); for (var k in attrs) el.setAttribute(k, attrs[k]); return el; }
+  function ago(t) {
+    if (!t) return "never"; var s = Math.max(0, Date.now() / 1000 - t);
+    if (s < 90) return "just now"; if (s < 5400) return Math.round(s / 60) + " min ago";
+    if (s < 129600) return Math.round(s / 3600) + " h ago"; return Math.round(s / 86400) + " days ago";
+  }
+  function dur(sec) { sec = Math.max(0, sec || 0); if (sec < 90) return Math.round(sec) + " s"; if (sec < 5400) return Math.round(sec / 60) + " min"; return (sec / 3600).toFixed(1) + " h"; }
+  function fmt(x, d) { return x == null || !isFinite(x) ? "–" : Number(x).toFixed(d == null ? 3 : d); }
+  function delta(j) {
+    if (!j.best || !j.baseline || j.best.loss == null || j.baseline.loss == null) return null;
+    var b = j.baseline.loss, v = j.best.loss; return { pct: (b - v) / Math.max(Math.abs(b), 1e-9) * 100, better: v < b };
+  }
+  function pctText(dl) { return (dl.better ? Math.abs(dl.pct).toFixed(1) + "% better" : Math.abs(dl.pct).toFixed(1) + "% worse") + " than today's"; }
+  function runnable(j) { return j.status === "ready" && !(j.reason || "").match(/^(invalid|not run|waits on|status)/); }
+  function stateOf(j) {
+    if (j.status === "promoted") return ["promoted", "in the game"];
+    if (j.converged) return ["converged", "ready for a yes"];
+    if ((j.reason || "").indexOf("not run:") === 0) return ["notrun", "not run"];
+    if (j.status === "ready" && (j.reason || "").indexOf("waits on") === 0) return ["blocked", "waiting"];
+    if (runnable(j)) return ["ready", j.evals ? "searching" : "not started"];
+    return [j.status, j.status === "blocked" ? "waiting" : j.status];
+  }
+  function jobById(id) { return DATA && DATA.jobs.filter(function (j) { return j.id === id; })[0]; }
+  // Three kinds of work show up here: a PC searching the offline race model, a PC playing the real game in Unity with
+  // no window (AI against AI), and a person playing in the Unity editor (a recording).
+  var KIND = { model: "Offline model", unity: "Unity · AI vs AI", train: "Training", player: "Played by" };
+  function runKind(job) { var base = String(job || "").split("~")[0], j = jobById(base) || {}; return base === "unity-train" ? "unity" : (j.kind === "command" ? "train" : "model"); }
+  function kindTag(k, who) { return h("span", { class: "kind k-" + k, title: k === "unity" ? "a computer playing the real game in Unity, no window, AI against AI" : k === "model" ? "a computer searching the offline race model (Python, no Unity)" : k === "player" ? "a person playing in the Unity editor; the race is recorded and the AI learns from it" : "a long training on a computer", text: k === "player" ? "Played by " + (who || "someone") : KIND[k] }); }
+  function niceName(list, key, token) { var t = String(token || "").toLowerCase(), hit = (list || []).filter(function (x) { return String(x[key] || "").toLowerCase() === t; })[0]; return hit ? (hit.name || hit[key]) : (t.charAt(0).toUpperCase() + t.slice(1)); }
+  function runName(r) {
+    if (r && r.unit) { var p = String(r.unit).split("-"), lvl = /^i\d$/.test(p[p.length - 1]) ? p.pop() : "", v = p.pop();
+      return niceName(catalog().hulls, "hull", v) + " in " + niceName(catalog().modes, "mode", p.join("-")) + (lvl ? " · " + lvl.toUpperCase() : ""); }
+    var base = String((r && r.job) || "").split("~")[0], t = (r && r.title) || (jobById(base) || {}).title || base;
+    return String(t).replace(/^Manual run: /, "").replace(/ \(\d+ vessel x mode pairs\)$/, "");
+  }
+  function title(t) {
+    var el = document.getElementById("ptitle"); if (el) el.textContent = t;      // the top bar carries the title
+    return document.createComment(" " + t + " ");
+  }
+  function stopped(s) {
+    return ({ "max evals": "finished its budget", "budget": "its time was up", "the person came back": "stopped: its person came back", "finished": "finished", "every unit is done or taken": "nothing left to take" })[s] || (s || "–");
+  }
+  function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
+
+  // ── a search's progress line: the best as tries accumulate (better draws higher); today's value dashed ──
+  function spark(j, w, hgt) {
+    w = w || 180; hgt = hgt || 46;
+    var c = j.curve || [], base = j.baseline && j.baseline.loss;
+    var box = svg("svg", { viewBox: "0 0 " + w + " " + hgt, class: "spark", role: "img", "aria-label": c.length ? "best score from " + fmt(c[0][1]) + " to " + fmt(c[c.length - 1][1]) : "no results yet" });
+    if (!c.length) { box.appendChild(svg("line", { x1: 0, x2: w, y1: hgt / 2, y2: hgt / 2, stroke: "rgba(116,123,173,0.35)", "stroke-dasharray": "3 5", fill: "none" })); return box; }
+    var ys = c.map(function (p) { return p[1]; }); if (base != null) ys.push(base);
+    var lo = Math.min.apply(null, ys), hi = Math.max.apply(null, ys); if (hi - lo < 1e-9) { hi += 1; lo -= 1; }
+    var maxE = Math.max(c[c.length - 1][0], 1), pad = 4;
+    function X(e) { return pad + (w - 2 * pad) * e / maxE; }
+    function Y(v) { return hgt - (pad + (hgt - 2 * pad) * (hi - v) / (hi - lo)); }
+    for (var g = 1; g < 3; g++) box.appendChild(svg("line", { x1: pad, x2: w - pad, y1: g * hgt / 3, y2: g * hgt / 3, stroke: "rgba(116,123,173,0.16)", "stroke-width": 0.6, fill: "none" }));
+    if (base != null) box.appendChild(svg("line", { x1: pad, x2: w - pad, y1: Y(base), y2: Y(base), stroke: "#747bad", "stroke-dasharray": "4 3", "stroke-width": 1.1, fill: "none" }));
+    var pts = [], last = null;
+    c.forEach(function (p) { if (last != null) pts.push(X(p[0]).toFixed(1) + "," + Y(last).toFixed(1)); pts.push(X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1)); last = p[1]; });
+    pts.push((w - pad).toFixed(1) + "," + Y(last).toFixed(1));
+    var x0 = pts[0].split(",")[0];
+    box.appendChild(svg("path", { d: "M" + pts.join(" L") + " L" + (w - pad) + "," + (hgt - 1) + " L" + x0 + "," + (hgt - 1) + " Z", fill: "rgba(0,212,255,0.14)", stroke: "none" }));
+    box.appendChild(svg("polyline", { points: pts.join(" "), fill: "none", stroke: "#00d4ff", "stroke-width": 1.8, "stroke-linejoin": "round" }));
+    box.appendChild(svg("circle", { cx: w - pad, cy: Y(last), r: 3, fill: "#80eaff" }));
+    return box;
+  }
+
+  // ── chrome ──
+  var VIEW_TITLE = { home: "Home", runs: "Runs", searches: "Searches", machines: "Computers", recordings: "Recordings", ai: "AI branch" };
+  function renderChrome() {
+    var d = DATA, active = (d.runs || {}).active || [];
+    document.getElementById("led").className = "led" + (active.length ? " on" : "");
+    document.getElementById("fresh").textContent = (LIVE ? "live · " : "snapshot · ") + ago(d.generated);
+    document.getElementById("ptitle").textContent = VIEW_TITLE[VIEW] || "";
+    document.title = (VIEW_TITLE[VIEW] || "Home") + " · Froglet Compute";
+    document.getElementById("n-searches").textContent = d.jobs.length;
+    document.getElementById("n-machines").textContent = d.machines.length;
+    document.getElementById("n-recordings").textContent = d.recordings.flights.length;
+    document.getElementById("n-runs").textContent = active.length ? active.length + " live" : "";
+    var f = document.getElementById("sidefoot"); f.textContent = "";
+    f.appendChild(h("span", null, [h("b", { text: (d.branch || "") }), d.branch ? " · " : "", "data " + ago(d.generated)]));
+    f.appendChild(h("span", { text: LIVE ? "Live: updates every few seconds" : (d.sync_every ? "Snapshot · updates every " + d.sync_every : "Snapshot") }));
+    document.getElementById("sb-left").textContent = (d.repo || "froglet-studio/Cosmic-Shore") + (d.branch ? " · " + d.branch : "");
+    document.getElementById("sb-right").textContent = "data " + ago(d.generated);
+    document.querySelectorAll("#nav a").forEach(function (a) { if (a.dataset.view === VIEW) a.setAttribute("aria-current", "page"); else if (a.id !== "nav-term" || document.getElementById("term").hidden) a.removeAttribute("aria-current"); });
+  }
+  function svgIcon(d, size) { var s = svg("svg", { width: size || 16, height: size || 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" });
+    d.split("|").forEach(function (p) { s.appendChild(svg("path", { d: p })); }); return s; }
+  var IC = { flag: "M5 21V4h11l-2 4 2 4H5", branch: "M6 8v8|M18 8c0 5-12 3-12 8|M4 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0|M16 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0", rec: "M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0|M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0",
+    more: "M5 12h.01M12 12h.01M19 12h.01", send: "M4 12l16-8-6 16-3-6z", play: "M7 5l12 7-12 7z", stop: "M7 7h10v10H7z", copy: "M8 8h12v12H8z|M4 16V4h12", check: "M5 12l5 5 9-10", info: "M12 8h.01|M11 12h1v5h1" };
+  function card(titleText, right, body, id) {
+    return h("section", { class: "card", id: id || null }, [h("div", { class: "ch" }, [h("h3", { text: titleText }), right || null]), body]);
+  }
+  function rowItem(kids) { return h("div", { class: "r" }, kids); }
+  function stDot(st, sub) { return h("span", null, [h("span", { class: "st " + st.replace(" ", "-") }, [h("span", { class: "dot" }), STATUS_TEXT[st] || st]), sub ? h("span", { class: "sub", text: sub }) : null]); }
+  function raceTime(f) { var t = Date.parse(f.date + "T" + (f.time || "00:00")); return isFinite(t) ? Math.floor(t / 1000) : 0; }
+
+  // ── home: counts, what needs you, recent activity, the computers ──
+  function renderHome(root) {
+    var d = DATA, act = (d.runs || {}).active || [], recent = (d.runs || {}).recent || [], c = fleet();
+    var ready = d.jobs.filter(function (j) { return j.converged && j.status !== "promoted"; });
+    var flights = d.recordings.flights, learned = flights.filter(function (f) { return f.state === "learned"; }).length, unseen = flights.filter(function (f) { return f.state === "new"; }).length;
+    var fleetWords = ["starting", "working", "free", "in use", "outside hours", "offline"].filter(function (k) { return c[k]; }).map(function (k) { return c[k] + " " + STATUS_TEXT[k].toLowerCase(); }).join(" · ");
+    root.appendChild(title("Home"));
+    var box = outboxCard(); if (box) root.appendChild(box);
+    root.appendChild(h("div", { class: "stats", id: "home-hero" }, [
+      h("div", { class: "stat" }, [h("span", { text: "Computers" }), h("b", { text: String(d.machines.length) }), h("i", { text: fleetWords || "none joined yet" })]),
+      h("div", { class: "stat" }, [h("span", { text: "Running now" }), h("b", { text: String(act.length) }), h("i", { text: act.length ? act.map(function (a) { return String(a.machine).split("/").pop(); }).join(", ") : "nothing running" })]),
+      h("div", { class: "stat" }, [h("span", { text: "Ready for a yes" }), h("b", { text: String(ready.length) }), h("i", { text: "one of the core four approves" })]),
+      h("div", { class: "stat" }, [h("span", { text: "Races recorded" }), h("b", { text: String(flights.length) }), h("i", { text: learned + " learned · " + unseen + " new" })])]));
+    // needs you
+    var needs = [];
+    ready.forEach(function (j) { var dl = delta(j); needs.push([IC.flag, j.title, "Finished searching" + (dl ? " · " + pctText(dl) + ", in the model" : "") + " · " + (j.evals || 0).toLocaleString() + " tries", "Review", function () { openJob(j.id); }]); });
+    if ((d.ai || {}).needs_sync) needs.push([IC.branch, "The ai branch is behind", (d.ai.behind_base || 0) + " bleeding-edge commits and " + (d.ai.waiting_ai_files || 0) + " AI files are waiting" + (d.ai.hub_sync ? " · this console syncs it every hour" : ""), "Open", function () { location.hash = "ai"; }]);
+    if (unseen) needs.push([IC.rec, unseen + " races the AI has not learned from yet", "The hourly learning sweep picks them up by itself", "View", function () { location.hash = "recordings"; }]);
+    if (!d.machines.length) needs.push([IC.flag, "No computer has joined yet", "Add one with a single line in its terminal", "Add", openInstall]);
+    var needList = h("div", { class: "rowlist" }, needs.length ? needs.map(function (n) { return rowItem([svgIcon(n[0]), h("div", { class: "t" }, [h("b", { text: n[1] }), h("span", { text: n[2] })]), h("button", { class: "btn small", type: "button", onclick: n[4], text: n[3] })]); })
+      : [rowItem([h("div", { class: "t" }, [h("b", { text: "Nothing needs you" }), h("span", { text: "Searches are still going; a finished one shows up here." })])])]);
+    // recent activity: computers' runs and people's races, newest first
+    var acts = recent.slice(0, 8).map(function (r) { var k = runKind(r.job), imp = r.best_end != null && r.best_start != null && r.best_end < r.best_start;
+      return { t: r.end || 0, kind: k, who: "", name: runName(r), where: String(r.machine || "").split("/").pop(),
+        what: (r.evals || 0).toLocaleString() + (k === "unity" ? " matches" : " tries") + (r.best_end != null ? " · " + (imp ? fmt(r.best_start) + " → " : "best ") + fmt(r.best_end) : "") }; })
+      .concat(flights.map(function (f) { return { t: raceTime(f), kind: "player", who: f.user, name: f.vessel + " in " + f.mode, where: "editor", what: f.state === "learned" ? "AI learned from it" : (f.state === "waiting" ? "waiting" : "not learned yet") }; }))
+      .sort(function (a, b) { return b.t - a.t; }).slice(0, 8);
+    var actList = h("div", { class: "rowlist" }, acts.length ? acts.map(function (a) {
+      return rowItem([kindTag(a.kind, a.who), h("div", { class: "t" }, [h("b", { text: a.name }), h("span", { text: a.where + " · " + a.what })]), h("span", { class: "w", text: ago(a.t) })]); })
+      : [rowItem([h("div", { class: "t" }, [h("span", { text: "No runs or races yet." })])])]);
+    var machList = h("div", { class: "rowlist" }, d.machines.length ? d.machines.slice().sort(function (a, b) { return MORDER[mstatus(a)] - MORDER[mstatus(b)]; }).slice(0, 6).map(function (m) {
+      return rowItem([stDot(mstatus(m)), h("div", { class: "t" }, [h("b", { text: m.host })]), h("span", { class: "w", text: ago(m.updated) })]); })
+      : [rowItem([h("div", { class: "t" }, [h("span", { text: "No computer yet." })]), h("button", { class: "btn small", type: "button", onclick: openInstall, text: "Add" })])]);
+    var finds = d.jobs.filter(function (j) { var dl = delta(j); return dl && dl.better; }).sort(function (a, b) { return delta(b).pct - delta(a).pct; }).slice(0, 4);
+    var findList = h("div", { class: "rowlist" }, finds.map(function (j) { var dl = delta(j);
+      return rowItem([h("b", { class: "delta good num", style: "width:52px", text: Math.abs(dl.pct).toFixed(0) + "%" }), h("div", { class: "t" }, [h("b", { text: j.title })]), h("button", { class: "btn icon", type: "button", "aria-label": "Open " + j.title, onclick: function () { openJob(j.id); } }, [svgIcon("M9 6l6 6-6 6")])]); }));
+    root.appendChild(h("div", { class: "cols" }, [
+      h("div", null, [card("Needs you", h("span", { class: "num note", text: String(needs.length) }), needList, "home-needs"),
+        card("Recent activity", h("a", { href: "#runs", text: "All runs" }), actList, "home-running")]),
+      h("div", null, [card("Computers", h("a", { href: "#machines", text: "Open" }), machList, "home-fleet"),
+        finds.length ? card("Best finds so far", h("a", { href: "#searches", text: "Searches" }), findList, "home-finds") : null])]));
+  }
+
+  // ── runs ──
+  function runBox(r, live) {
+    var elapsed = (r.updated || r.since) - (r.since || 0), budget = (r.minutes || 60) * 60;
+    var frac = r.max_evals && r.evals != null ? Math.min(1, r.evals / r.max_evals) : Math.min(1, elapsed / budget);
+    var better = r.best != null && r.best_start != null && r.best < r.best_start, k = runKind(r.job);
+    var starting = live && r.phase === "starting" && !r.evals;
+    if (starting) return h("div", { class: "run" }, [
+      h("div", { class: "top" }, [kindTag(k), h("b", { text: runName(r) }), h("span", { class: "note", text: "on " + String(r.machine || "").split("/").pop() }), h("span", { class: "grow" }),
+        r.request ? h("button", { class: "btn small", type: "button", title: "Stops within 30 s", onclick: function (e) { stopRun(r.request, e.target.closest(".run"), r.machine, runName(r)); } }, [svgIcon(IC.stop, 14), "Stop"]) : null]),
+      h("div", { class: "prog wait" }, [h("i")]),
+      h("div", { class: "facts" }, [h("span", null, [h("b", { text: "Starting" }), k === "unity" ? " · Unity is opening; the first match reports in a minute or two" : " · the first tries report within a minute"]),
+        h("span", null, [h("b", { text: dur(elapsed) })]), h("span", { text: "heard " + ago(r.updated) })])]);
+    return h("div", { class: "run" }, [
+      h("div", { class: "top" }, [kindTag(k), h("b", { text: runName(r) }), h("span", { class: "note", text: "on " + String(r.machine || "").split("/").pop() }), h("span", { class: "grow" }),
+        live && r.request ? h("button", { class: "btn small", type: "button", title: "Stops within 30 s and keeps what it found", onclick: function (e) { stopRun(r.request, e.target.closest(".run"), r.machine, runName(r)); } }, [svgIcon(IC.stop, 14), "Stop"]) : null]),
+      h("div", { class: "prog" }, [h("i", { style: "width:" + Math.max(3, Math.round(frac * 100)) + "%" })]),
+      h("div", { class: "facts" }, [h("span", null, [h("b", { text: (r.evals || 0).toLocaleString() + (r.max_evals ? " / " + r.max_evals : "") }), k === "unity" ? " matches" : " tries"]),
+        h("span", null, [h("b", { text: dur(elapsed) })]),
+        r.best != null ? h("span", null, ["best ", h("b", { text: fmt(r.best) }), better ? h("span", { class: "delta good", text: " ↓" }) : ""]) : null,
+        h("span", { text: "heard " + ago(r.updated) })])]);
+  }
+  function manualBox(m) {
+    var better = m.best != null && m.today != null && m.best < m.today, frac = m.budget ? Math.min(1, (m.tries || 0) / m.budget) : 0, chips = [];
+    Object.keys(m.fix).forEach(function (k) { chips.push(k + " = " + m.fix[k]); });
+    Object.keys(m.ranges).forEach(function (k) { chips.push(k + " in " + m.ranges[k][0] + "–" + m.ranges[k][1]); });
+    Object.keys(m.args).forEach(function (k) { chips.push(k + ": " + JSON.stringify(m.args[k])); });
+    var when = waitReason(m);
+    return h("div", { class: "mrun" }, [
+      h("div", { class: "top" }, [h("span", { class: "pill " + ({ done: "learned", running: "ready", open: "waiting", cancelled: "idle" })[m.state], text: m.state === "open" ? "waiting" : m.state }),
+        kindTag(runKind(m.job)), h("b", { text: runName(m) }), h("span", { class: "note", text: "by " + (m.by || "?") + " · " + ago(m.created) + (m.machine !== "any" ? " · on " + String(m.machine).split("/").pop() : "") + (when ? " · " + when : "") }),
+        h("span", { class: "grow" }), (m.state === "open" || m.state === "running") ? h("button", { class: "btn small", type: "button", title: "Stops within 30 s and keeps what it found", onclick: function (e) { stopRun(m.id, e.target.closest(".mrun"), m.running_on, runName(m)); } }, [svgIcon(IC.stop, 14), "Stop"]) : null]),
+      m.note ? h("q", { text: m.note }) : null,
+      chips.length ? h("div", { class: "chips" }, chips.map(function (c) { return h("span", { class: "chip", text: c }); })) : null,
+      h("div", { class: "prog" }, [h("i", { style: "width:" + Math.max(2, Math.round(frac * 100)) + "%" })]),
+      h("div", { class: "facts" }, [h("span", null, [h("b", { text: (m.tries || 0) + " / " + m.budget }), " tries"]),
+        m.best != null ? h("span", null, ["best ", h("b", { text: fmt(m.best) }), m.today != null ? " vs today's " + fmt(m.today) : "", better ? h("span", { class: "delta good", text: " (" + ((m.today - m.best) / Math.abs(m.today) * 100).toFixed(1) + "% better)" }) : ""]) : null,
+        m.problems.length ? h("span", { class: "delta worse", text: "cannot run: " + m.problems.join("; ") }) : null])]);
+  }
+  function renderRuns(root) {
+    var act = (DATA.runs || {}).active || [], recent = (DATA.runs || {}).recent || [];
+    root.appendChild(title("Runs"));
+    if (NOTICE && Date.now() - NOTICE.at < 180000) root.appendChild(h("div", { class: "banner", id: "sent-notice" }, [h("b", { text: NOTICE.text })]));
+    var box = outboxCard(); if (box) root.appendChild(box);
+    root.appendChild(h("div", { class: "sec", text: "Running · " + act.length }));
+    if (act.length) act.forEach(function (r) { root.appendChild(runBox(r, true)); });
+    else root.appendChild(h("div", { class: "card" }, [h("div", { class: "rowlist" }, [rowItem([h("div", { class: "t" }, [h("span", { text: "Nothing is running. " + DATA.machines.map(function (m) { return m.host + " is " + (STATUS_TEXT[mstatus(m)] || "").toLowerCase(); }).join("; ") + "." })])])])]));
+    var live = {}; act.forEach(function (r) { if (r.request) live[r.request] = true; });
+    var man = (DATA.manual || []).filter(function (m) { return (m.state === "open" || m.state === "running") && !live[m.id]; });   // a run shown above as Running is not listed twice
+    if (man.length) { root.appendChild(h("div", { class: "sec", text: "Sent runs · " + man.length })); man.forEach(function (m) { root.appendChild(manualBox(m)); }); }
+    root.appendChild(h("div", { class: "sec", text: "Finished" }));
+    if (!recent.length) root.appendChild(h("p", { class: "note", text: "No finished run has been reported yet." }));
+    else root.appendChild(h("div", { class: "tablewrap" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, [["Kind"], ["What"], ["Computer"], ["Tries", "num"], ["Result", "num"], ["Ended because"], ["", "num"]].map(function (t) { return h("th", { class: t[1] || null, text: t[0] }); }))]),
+      h("tbody", null, recent.map(function (r) {
+        var k = runKind(r.job), imp = r.best_end != null && (r.best_start == null || r.best_end < r.best_start);
+        var res = r.best_end == null ? "–" : (r.best_start == null ? fmt(r.best_end) : (imp ? fmt(r.best_start) + " → " + fmt(r.best_end) : "no better than " + fmt(r.best_start)));
+        var base = String(r.job || "").split("~")[0];
+        return h("tr", { class: jobById(base) ? "click" : null, onclick: function () { if (jobById(base)) openJob(base); } }, [h("td", null, [kindTag(k)]), h("td", { text: runName(r) }), h("td", { class: "note", text: String(r.machine || "").split("/").pop() }),
+          h("td", { class: "num note", text: (r.evals || 0).toLocaleString() }), h("td", { class: "num" + (imp && r.best_start != null ? " delta good" : ""), text: res }),
+          h("td", { class: "note", text: stopped(r.stopped) }), h("td", { class: "num note", text: ago(r.end) })]); }))])]));
+    var races = ((DATA.recordings || {}).flights || []).slice().sort(function (a, b) { return raceTime(b) - raceTime(a); }).slice(0, 5);
+    if (races.length) root.appendChild(card("Races people played", h("a", { href: "#recordings", text: "All races" }), h("div", { class: "rowlist" }, races.map(function (f) {
+      return rowItem([kindTag("player", f.user), h("div", { class: "t" }, [h("b", { text: f.vessel + " in " + f.mode })]), h("span", { class: "note", text: f.state === "learned" ? "AI learned from it" : f.state === "waiting" ? "waiting" : "not learned yet" }), h("span", { class: "w", text: f.date + " " + f.time })]); }))));
+  }
+
+  // ── searches: Optuna's study view - a list, and the picked search's history, settings and intensities ──
+  var STAB = "history";
+  function searchGroups() {
+    return [["Ready for a yes", function (j) { return j.converged && j.status !== "promoted"; }, false],
+      ["Searching", function (j) { return !j.converged && runnable(j); }, false],
+      ["Waiting for an earlier step", function (j) { return !j.converged && !runnable(j) && j.status !== "promoted" && j.status !== "retired" && j.status !== "proposed"; }, true],
+      ["Proposed", function (j) { return j.status === "proposed"; }, true],
+      ["In the game", function (j) { return j.status === "promoted" || j.status === "retired"; }, true]];
+  }
+  function pickedSearch() {
+    if (OPEN === "grid") return "grid";
+    if (OPEN && jobById(OPEN)) return OPEN;
+    var first = null; searchGroups().some(function (g) { var js = DATA.jobs.filter(g[1]); if (js.length) { first = js.sort(function (a, b) { return (b.evals || 0) - (a.evals || 0); })[0].id; return true; } return false; });
+    return first;
+  }
+  function sItem(j, sel) {
+    var dl = delta(j);
+    return h("button", { class: "sitem job", type: "button", "aria-current": sel ? "true" : null, onclick: function () { OPEN = j.id; STAB = "history"; render(); } }, [
+      h("span", { class: "t", text: j.title || j.id }), h("span", { class: "n", text: (j.evals || 0).toLocaleString() }),
+      h("span", { class: "d" + (dl ? (dl.better ? " delta good" : " delta worse") : ""), text: dl ? (dl.better ? "−" : "+") + Math.abs(dl.pct).toFixed(1) + "%" : "–" })]);
+  }
+  function plotHistory(j) {
+    var pts = (j.curve || []).filter(function (p) { return isFinite(p[0]) && isFinite(p[1]); });
+    var base = j.baseline && isFinite(j.baseline.loss) ? j.baseline.loss : null;
+    if (!pts.length) return h("p", { class: "note", text: "No tries reported yet." });
+    var W = 820, H = 260, L = 52, T = 14, PW = W - L - 14, PH = H - T - 30;
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; }).concat(base != null ? [base] : []);
+    var x1 = Math.max.apply(null, xs) * 1.04 || 1, ylo = Math.min.apply(null, ys), yhi = Math.max.apply(null, ys), pad = (yhi - ylo) * 0.08 || Math.abs(yhi) * 0.05 || 1;
+    ylo -= pad; yhi += pad;
+    var X = function (v) { return L + PW * v / x1; }, Y = function (v) { return T + PH * (yhi - v) / (yhi - ylo); };
+    var s = svg("svg", { class: "plot", viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Best score after each try: " + fmt(pts[0][1]) + " at the start, " + fmt(pts[pts.length - 1][1]) + " after " + pts[pts.length - 1][0].toLocaleString() + " tries" + (base != null ? "; today's AI " + fmt(base) : "") });
+    for (var i = 0; i <= 4; i++) { var v = ylo + (yhi - ylo) * i / 4; s.appendChild(svg("line", { class: "grid", x1: L, x2: L + PW, y1: Y(v), y2: Y(v) }));
+      var tx = svg("text", { x: L - 8, y: Y(v) + 4, "text-anchor": "end" }); tx.textContent = fmt(v, 3); s.appendChild(tx); }
+    for (var k = 0; k <= 4; k++) { var xv = Math.round(x1 * k / 4); var t2 = svg("text", { x: X(xv), y: H - 8, "text-anchor": "middle" }); t2.textContent = xv.toLocaleString(); s.appendChild(t2); }
+    if (base != null) { s.appendChild(svg("line", { class: "base", x1: L, x2: L + PW, y1: Y(base), y2: Y(base) }));
+      var bl = svg("text", { class: "basel", x: L + PW, y: Y(base) - 6, "text-anchor": "end" }); bl.textContent = "today " + fmt(base); s.appendChild(bl); }
+    var d = "M" + X(pts[0][0]) + "," + Y(pts[0][1]);
+    for (var m = 1; m < pts.length; m++) d += " L" + X(pts[m][0]) + "," + Y(pts[m - 1][1]) + " L" + X(pts[m][0]) + "," + Y(pts[m][1]);
+    d += " L" + X(x1) + "," + Y(pts[pts.length - 1][1]);
+    s.appendChild(svg("path", { class: "line", d: d }));
+    pts.forEach(function (p) { s.appendChild(svg("circle", { class: "pt", cx: X(p[0]), cy: Y(p[1]), r: 2.6 })); });
+    return s;
+  }
+  function searchDetail(j) {
+    var s = stateOf(j), dl = delta(j), c = j.convergence || {}, wrap = h("div", { class: "sdetail" });
+    var runsHere = ((DATA.runs || {}).recent || []).filter(function (r) { return String(r.job).split("~")[0] === j.id; });
+    wrap.appendChild(h("div", { class: "head" }, [h("div", { class: "grow" }, [
+      h("div", { class: "kicker" }, [h("span", { class: "pill " + s[0], text: s[1] }), j.plan ? "  " + (j.plan === "regatta-balance" ? "Regatta plan" : j.plan) + (j.stage != null ? " · stage " + j.stage : "") : ""]),
+      h("h2", { id: "panel-title", text: j.title || j.id })]),
+      formFor(j.id) ? h("button", { class: "btn", type: "button", onclick: function () { openNewRun(j.id); } }, [svgIcon(IC.play, 14), "Run this my way"]) : null]));
+    if (j.goal) wrap.appendChild(h("p", { class: "lead", text: j.goal }));
+    wrap.appendChild(h("div", { class: "kpis" }, [
+      h("div", { class: "kpi" }, [h("span", { text: "Best score" }), h("b", { text: j.best ? fmt(j.best.loss) : "–" })]),
+      h("div", { class: "kpi" }, [h("span", { text: "Today's AI" }), h("b", { text: j.baseline ? fmt(j.baseline.loss) : "–" })]),
+      h("div", { class: "kpi" }, [h("span", { text: dl && !dl.better ? "Worse by" : "Better by" }), h("b", { class: dl ? (dl.better ? "delta good" : "delta worse") : null, text: dl ? Math.abs(dl.pct).toFixed(1) + "%" : "–" })]),
+      h("div", { class: "kpi" }, [h("span", { text: "Tries" }), h("b", { text: (j.evals || 0).toLocaleString() })])]));
+    var tabs = [["history", "History"], ["settings", "Settings"], ["intensity", "Per intensity"], ["runs", "Runs · " + runsHere.length]];
+    wrap.appendChild(h("div", { class: "tabs", role: "group", "aria-label": "Search detail" }, tabs.map(function (t) { return h("button", { class: "tab", type: "button", "aria-pressed": STAB === t[0] ? "true" : "false", onclick: function () { STAB = t[0]; render(); } }, [t[1]]); })));
+    if (STAB === "history") {
+      wrap.appendChild(h("div", null, [h("h3", { style: "font-size:13px", text: "Optimization history" }), h("p", { class: "note", text: "The best score after each try, lower is better" + (j.kind === "command" ? "." : ", in the offline model. The game decides if it is real.") })]));
+      wrap.appendChild(plotHistory(j));
+      wrap.appendChild(h("dl", { class: "kv" }, [h("dt", { text: "Done when" }), h("dd", { text: j.converged ? "done: it stopped improving" : "after at least " + (c.min_evals || 0).toLocaleString() + " tries, once it stops improving" }),
+        h("dt", { text: "Computer time" }), h("dd", { text: (j.machine_hours || 0) + " hours in " + runsHere.length + (runsHere.length === 1 ? " run" : " runs") }),
+        j.reason && !runnable(j) ? h("dt", { text: "Waiting for" }) : null, j.reason && !runnable(j) ? h("dd", { text: j.reason }) : null]));
+      if (j.archive) wrap.appendChild(h("p", { class: "note", text: j.archive.filled + " of " + j.archive.cells + " body shapes have a good design; the search keeps the best one of each." }));
+    } else if (STAB === "settings") {
+      var p = (j.best || {}).params, b0 = (j.baseline || {}).params;
+      wrap.appendChild(p ? h("div", { class: "tablewrap" }, [h("table", null, [h("thead", null, [h("tr", null, [h("th", { text: "Setting" }), h("th", { class: "num", text: "Today" }), h("th", { class: "num", text: "Found" })])]),
+        h("tbody", null, Object.keys(p).sort().map(function (k) { var a = b0 ? b0[k] : null, v = p[k];
+          return h("tr", null, [h("td", { class: "mono", text: k }), h("td", { class: "num note", text: typeof a === "number" ? fmt(a, 3) : (a == null ? "–" : String(a)) }), h("td", { class: "num", text: typeof v === "number" ? fmt(v, 3) : String(v) })]); }))])])
+        : h("p", { class: "note", text: "No settings found yet." }));
+    } else if (STAB === "intensity") {
+      wrap.appendChild(bars(j) || h("p", { class: "note", text: "This search does not report race times per intensity." }));
+    } else {
+      wrap.appendChild(runsHere.length ? h("div", { class: "tablewrap" }, [h("table", null, [h("thead", null, [h("tr", null, [h("th", { text: "Computer" }), h("th", { class: "num", text: "Tries" }), h("th", { class: "num", text: "Best" }), h("th", { text: "Ended because" }), h("th", { class: "num", text: "" })])]),
+        h("tbody", null, runsHere.slice(0, 12).map(function (r) { return h("tr", null, [h("td", { text: String(r.machine).split("/").pop() }), h("td", { class: "num", text: (r.evals || 0).toLocaleString() }), h("td", { class: "num", text: r.best_end != null ? fmt(r.best_end) : "–" }), h("td", { class: "note", text: stopped(r.stopped) }), h("td", { class: "num note", text: ago(r.end) })]); }))])])
+        : h("p", { class: "note", text: "No run has reported on this search yet." }));
+    }
+    if (j.best && j.best.limits) wrap.appendChild(h("div", { class: "banner gold" }, [h("b", { text: "What the model does not see" }), h("p", { class: "note", text: j.best.limits })]));
+    var ap = approvalCard(j); ap.className = "card approve"; wrap.appendChild(ap);
+    if (j.promote) wrap.appendChild(h("details", null, [h("summary", { class: "note", style: "cursor:pointer", text: "How a yes reaches the game" }), h("p", { class: "note", text: j.promote })]));
+    wrap.appendChild(h("p", { class: "note mono", text: j.id + " · epoch " + (j.epoch || "–") + " · code from " + j.ref }));
+    return wrap;
+  }
+  function renderSearches(root) {
+    var d = DATA, sel = pickedSearch();
+    root.appendChild(title("Searches"));
+    var list = h("div", { class: "slist", id: "search-list" });
+    searchGroups().forEach(function (g, gi) {
+      var js = d.jobs.filter(g[1]); if (!js.length) return;
+      js.sort(function (a, b) { return (b.evals || 0) - (a.evals || 0); });
+      var items = js.map(function (j) { return sItem(j, j.id === sel); });
+      if (g[2] && !js.some(function (j) { return j.id === sel; })) list.appendChild(h("details", null, [h("summary", { text: g[0] + " · " + js.length })].concat(items)));
+      else list.appendChild(h("div", { id: gi === 1 ? "searching-group" : null }, [h("span", { class: "sec", text: g[0] + " · " + js.length })].concat(items)));
+    });
+    list.appendChild(h("button", { class: "sitem", type: "button", "aria-current": sel === "grid" ? "true" : null, onclick: function () { OPEN = "grid"; render(); } }, [h("span", { class: "t", text: "Every vessel in every mode" }), h("span", { class: "n", text: "grid" })]));
+    var right = sel === "grid" ? h("div", { class: "sdetail" }, [vesselGrid()]) : (sel ? searchDetail(jobById(sel)) : h("div", { class: "sdetail" }, [h("p", { class: "note", text: "No search yet." })]));
+    root.appendChild(h("div", { class: "study" }, [list, right]));
+  }
+
+  // every vessel x every mode it is offered in: a blue cell runs now (opens New run on that pair), a purple one plays the game
+  function vesselGrid() {
+    var c = catalog(), hulls = c.hulls.map(function (x) { return x.hull; }), n = 0, now = 0, inGame = 0;
+    var runsNow = function (m) { return m.hulls.some(function (x) { return x.status === "now"; }) ? 0 : (m.hulls.some(function (x) { return x.status === "unity"; }) ? 1 : 2); };
+    var rows = c.modes.slice().sort(function (a, b) { return runsNow(a) - runsNow(b) || a.name.localeCompare(b.name); }).map(function (m) {
+      var by = {}; m.hulls.forEach(function (x) { by[x.hull] = x; n++; if (x.status === "now") now++; if (x.status === "unity") inGame++; });
+      return h("tr", null, [h("td", null, [h("b", { text: m.name }), h("span", { class: "note", text: " " + m.kind })])].concat(hulls.map(function (hu) {
+        var x = by[hu]; if (!x) return h("td", { class: "cell" });
+        return h("td", { class: "cell" }, [h("button", { type: "button", class: x.status, title: hu + " in " + m.name + ": " + STATUS_WORDS[x.status], "aria-label": hu + " in " + m.name,
+          onclick: function () { openNewRun(null, hu, m.mode); }, text: x.status === "game" ? "·" : "▶" })]); })));
+    });
+    return h("div", { id: "vgrid", style: "display:grid;gap:10px" }, [h("h2", { style: "font-size:16px", text: "Every vessel in every mode" }),
+      h("p", { class: "note", text: (now + inGame) + " of " + n + " pairs can run. Blue (" + now + "): the offline race model, any computer, minutes. Purple (" + inGame + "): real matches in Unity, no window, on a computer with Unity. Grey (" + (n - now - inGame) + "): no trainer scenario yet." }),
+      h("div", { class: "tablewrap" }, [h("table", { class: "matrix vm-grid" }, [h("thead", null, [h("tr", null, [h("th", { text: "Mode" })].concat(hulls.map(function (hu) { return h("th", { class: "mh", text: hu }); })))]), h("tbody", null, rows)])])]);
+  }
+
+  // ── a search's sheet ──
+  function bars(j) {
+    var s = (j.baseline || {}).seconds_by_intensity, b = (j.best || {}).seconds_by_intensity;
+    if (!s && !b) return null;
+    var keys = Object.keys(s || b).sort(), all = [];
+    keys.forEach(function (k) { if (s && s[k] != null) all.push(s[k]); if (b && b[k] != null) all.push(b[k]); });
+    var max = Math.max.apply(null, all.concat([1]));
+    return h("div", { class: "card sliver" }, [h("h3", { text: "Race time per intensity, in the model" }),
+      h("div", { class: "legend" }, [h("span", null, [h("i", { style: "background:var(--inactive)" }), "today's AI"]), h("span", null, [h("i", { style: "background:var(--jade)" }), "best found"])]),
+      h("div", { class: "bars" }, keys.map(function (k) { var sv = s && s[k], bv = b && b[k];
+        return h("div", { class: "bar-row" }, [h("span", { class: "lbl", text: "I" + k }), h("div", { class: "tracks" }, [h("div", { class: "tr s" }, [h("i", { style: "width:" + (sv != null ? 100 * sv / max : 0) + "%" })]), h("div", { class: "tr b" }, [h("i", { style: "width:" + (bv != null ? 100 * bv / max : 0) + "%" })])]),
+          h("span", { class: "val", text: fmt(sv, 1) + " s\n" + fmt(bv, 1) + " s" })]); })),
+      (j.best && j.best.dnf) || (j.baseline && j.baseline.dnf) ? h("p", { class: "note", text: "Races not finished: today's AI " + ((j.baseline || {}).dnf || 0) + " of " + ((j.baseline || {}).races || "?") + ", best found " + ((j.best || {}).dnf || 0) + " of " + ((j.best || {}).races || "?") + ". A race not finished counts as a very long one." }) : null]);
+  }
+  function paramsTable(j) {
+    var p = (j.best || {}).params, s = (j.baseline || {}).params; if (!p) return null;
+    return h("details", { class: "card sliver" }, [h("summary", { text: "The settings it found (" + Object.keys(p).length + ")", style: "cursor:pointer;font-family:var(--head)" }), h("div", { class: "params" }, [h("table", null, [
+      h("thead", null, [h("tr", null, [h("th", { text: "Setting" }), h("th", { text: "Today" }), h("th", { text: "Found" })])]),
+      h("tbody", null, Object.keys(p).sort().map(function (k) { var a = s ? s[k] : null, v = p[k];
+        return h("tr", null, [h("td", { class: "mono", text: k }), h("td", { class: "num", text: typeof a === "number" ? fmt(a, 3) : (a == null ? "–" : String(a)) }), h("td", { class: "num", text: typeof v === "number" ? fmt(v, 3) : String(v) })]); }))])])]);
+  }
+  function openJob(id) { OPEN = id; STAB = "history"; if (VIEW !== "searches") location.hash = "searches"; else render(); }
+  function closeJob() { document.getElementById("drawer").hidden = true; }
+  function renderDrawer() {            // the picked search lives in the Searches view now; refresh it when its decisions change
+    var a = document.activeElement;
+    if (DATA && VIEW === "searches" && TI < 0 && !(a && a.tagName === "TEXTAREA") && document.getElementById("sheet").hidden) render();
+  }
+
+  // ── approvals (claude.ai: the page's own store) ──
+  function approvalsFor(jid) { var out = []; for (var uid in CAP.approvals) { var d = CAP.approvals[uid][jid]; if (d) out.push({ by: uid, d: d }); } return out; }
+  function staleDecision(d, j) { return d.epoch !== j.epoch || !j.best || Math.abs((d.loss || 0) - j.best.loss) > 1e-9; }
+  function approvalCard(j) {
+    var card = h("div", { class: "card sliver approve" }, [h("h3", { text: "Put it in the game?" })]);
+    var done = CAP.processed[j.id];
+    if (done) card.appendChild(h("div", { class: "banner" }, [h("b", { text: "Acted on: " + (done.state || "done") }), done.note ? h("p", { class: "note", text: done.note }) : null]));
+    var list = approvalsFor(j.id);
+    if (list.length) {
+      var box = h("div", { class: "decisions" }); card.appendChild(box);
+      (CAP.user ? CAP.user.profiles(list.map(function (x) { return x.by; })) : Promise.resolve({})).then(function (ps) {
+        list.forEach(function (x) { var pr = ps[x.by] || {}, st = staleDecision(x.d, j);
+          box.appendChild(h("div", { class: "decision" }, [pr.avatarUrl ? h("img", { src: pr.avatarUrl, alt: "" }) : null, h("b", { text: pr.name || "Someone" }),
+            h("span", { class: "pill " + (x.d.decision === "approve" ? (st ? "waiting" : "valid") : "idle"), text: x.d.decision === "approve" ? (st ? "approved an older best" : "approved") : "declined" }),
+            x.d.note ? h("span", { class: "note", text: "“" + x.d.note + "”" }) : null])); });
+      });
+    }
+    if (!CAP.db) { card.appendChild(h("p", { class: "note", text: window.claude ? (CAP.ready ? "This view cannot save a decision." : "Connecting…") : "Deciding works in the claude.ai console. Here: ask a Claude session to approve " + j.id + "." })); return card; }
+    if (!j.best) { card.appendChild(h("p", { class: "note", text: "Nothing to decide until a computer reports a result." })); return card; }
+    if (CAP.canApprove === false) { card.appendChild(h("p", { class: "note", text: "Garrett, Caleb, Shombith or Yash decide this." })); return card; }
+    card.appendChild(h("p", { class: "note", text: (j.converged ? "This search has finished. " : "This search is still going: a yes counts only while this is still the best. ") + "Say yes and the next session writes these settings into the game on the ai branch; " + (j.area_owner ? j.area_owner + " is told." : "the area's owner is told.") }));
+    var note = h("textarea", { id: "note-" + j.id, placeholder: "What you checked (optional)" });
+    var msg = h("p", { class: "note" });
+    function decide(kind) { return function () {
+      var bs = card.querySelectorAll("button"); bs.forEach(function (x) { x.disabled = true; });
+      saveDecision(j, kind, note.value).then(function () { msg.textContent = kind === "approve" ? "Saved. The next refresh acts on it." : "Declined."; },
+        function (e) { msg.textContent = saveError(e); bs.forEach(function (x) { x.disabled = false; }); });
+    }; }
+    card.appendChild(note);
+    card.appendChild(h("div", { class: "btns" }, [h("button", { class: "btn cta", type: "button", onclick: decide("approve"), text: "Yes, put it in" }), h("button", { class: "btn", type: "button", onclick: decide("decline"), text: "Not this one" })]));
+    card.appendChild(msg);
+    return card;
+  }
+  function saveError(e) { return e && e.code === "invalid_argument" ? "Your access to this page does not allow deciding. Ask Shombith for Contributor access." : "Not saved (" + ((e && e.code) || "error") + "). Try again in a moment."; }
+  function saveDecision(j, kind, noteText) {
+    var ref = CAP.db.doc("approvals/" + CAP.me.id), patch = { decisions: {} };
+    patch.decisions[j.id] = { decision: kind, epoch: j.epoch, loss: j.best.loss, note: String(noteText || "").slice(0, 500), at: Math.floor(Date.now() / 1000) };
+    return ref.get().then(function (snap) { return snap.exists ? ref.update(patch) : ref.set(patch); });
+  }
+
+  // ── computers ──
+  var STATUS_TEXT = { starting: "Starting", working: "Working", free: "Free", "in use": "In use", "outside hours": "Outside its hours", offline: "Offline" };
+  var STATUS_NOTE = { working: "running a search or a game", free: "its person is away: it works on the queue", "in use": "its person is using it",
+    "outside hours": "it works only in its set hours", offline: "nothing heard from it lately" };
+  function mstatus(m) { return m.status || (m.active ? "working" : "offline"); }
+  function fleet() { var c = { working: 0, free: 0, "in use": 0, "outside hours": 0, offline: 0 }; (DATA.machines || []).forEach(function (m) { c[mstatus(m)] = (c[mstatus(m)] || 0) + 1; }); return c; }
+  function fleetLine() {
+    var c = fleet(), parts = [];
+    ["starting", "working", "free", "in use", "outside hours", "offline"].forEach(function (k) { if (c[k]) parts.push(h("span", { class: "fl " + k.replace(" ", "-") }, [h("i"), c[k] + " " + STATUS_TEXT[k].toLowerCase()])); });
+    return h("div", { class: "fleet" }, parts);
+  }
+  // ── computers: Tailscale's machine list - filters, search, one row each, actions in the row's menu ──
+  var MORDER = { starting: 0, working: 1, free: 2, "in use": 3, "outside hours": 4, offline: 5 };
+  var MF = "all", MQ = "", MMENU = null;
+  function machineMenu(m, act) {
+    var copy = function () { try { navigator.clipboard.writeText(m.machine); } catch (e) {} MMENU = null; render(); };
+    return h("div", { class: "rmenu", role: "menu" }, [
+      h("button", { role: "menuitem", type: "button", onclick: function () { MMENU = null; openNewRun(null, null, null, m.machine); NR.start = "free"; drawNewRun(); } }, [svgIcon(IC.send, 14), "Send a run…"]),
+      h("button", { role: "menuitem", type: "button", disabled: !m.remote_start, onclick: function () { MMENU = null; openNewRun(null, null, null, m.machine); } }, [svgIcon(IC.play, 14), "Start a run now"]),
+      h("button", { role: "menuitem", type: "button", disabled: !(act && act.request), onclick: function (e) { var row = e.target.closest("tr"); MMENU = null; stopRun(act.request, row && row.parentElement ? row.closest(".tablewrap") : null, m.machine, runName(act)); } }, [svgIcon(IC.stop, 14), "Stop the run (keeps what it found)"]),
+      h("button", { role: "menuitem", type: "button", onclick: copy }, [svgIcon(IC.copy, 14), "Copy the computer's name"]),
+      h("div", { class: "why", text: (m.remote_start ? "Its owner lets a run start at once." : "A run sent here waits until it is free; its owner can allow more (compute.py remote-start on).") + (act ? "" : " Nothing is running on it now.") })]);
+  }
+  function renderMachines(root) {
+    var ms = DATA.machines, c = fleet(), runs = (DATA.runs || {}).active || [];
+    root.appendChild(title("Computers"));
+    var tabs = [["all", "All", ms.length], ["working", "Working", c.working || 0], ["free", "Free", c.free || 0], ["in use", "In use", c["in use"] || 0], ["outside hours", "Outside hours", c["outside hours"] || 0], ["offline", "Offline", c.offline || 0]];
+    var q = h("input", { type: "search", placeholder: "Search computers", "aria-label": "Search computers" }); q.value = MQ;
+    q.addEventListener("input", function () { MQ = q.value; fillRows(); });
+    root.appendChild(h("div", { class: "toolbar" }, [h("div", { class: "tabs", role: "group", "aria-label": "Filter computers" }, tabs.map(function (t) {
+      return h("button", { class: "tab", type: "button", "aria-pressed": MF === t[0] ? "true" : "false", onclick: function () { MF = t[0]; MMENU = null; render(); } }, [t[1], h("span", { class: "num", text: String(t[2]) })]); })),
+      h("span", { class: "grow" }), h("label", { class: "searchbox" }, [svgIcon("M11 18a7 7 0 1 0 0-14a7 7 0 0 0 0 14z|M20 20l-4-4", 14), q]),
+      h("button", { class: "btn", type: "button", onclick: openInstall }, [svgIcon("M12 5v14|M5 12h14", 14), "Add a computer"])]));
+    var body = h("tbody");
+    var table = h("div", { class: "tablewrap", style: "overflow:visible" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["Computer", "Status", "OS", "Hardware", "Unity", "Remote start", "Doing", ""].map(function (t, i) { return h("th", { class: i >= 2 && i <= 6 ? "hide-narrow" : null, text: t }); }))]), body])]);
+    function fillRows() {
+      body.textContent = "";
+      var shown = ms.slice().sort(function (a, b) { return MORDER[mstatus(a)] - MORDER[mstatus(b)] || String(a.host).localeCompare(b.host); }).filter(function (m) {
+        var hay = [m.host, m.user, (m.specs || {}).os_name, m.os].join(" ").toLowerCase();
+        return (MF === "all" || mstatus(m) === MF) && (!MQ || hay.indexOf(MQ.toLowerCase()) >= 0); });
+      if (!shown.length) { body.appendChild(h("tr", null, [h("td", { colspan: "8", class: "note", style: "text-align:center;height:72px", text: ms.length ? "No computer matches." : "No computer has joined yet. Add one with a single line in its terminal." })])); return; }
+      shown.forEach(function (m) {
+        var st = mstatus(m), sp = m.specs || {}, act = runs.filter(function (a) { return a.machine === m.machine; })[0], l = m.last || {};
+        var unity = sp.unity || (m.caps || []).indexOf("unity") >= 0;
+        var hw = [(sp.cores || m.cores) ? (sp.cores || m.cores) + " cores" : null, sp.ram_gb ? Math.round(sp.ram_gb) + " GB" : null].filter(Boolean).join(" · ");
+        var doing = act ? h("span", null, [kindTag(runKind(act.job)), " ", runName(act), act.progress != null ? h("span", { class: "sub", text: Math.round(Math.min(1, act.progress) * 100) + "% · heard " + ago(act.updated) }) : null])
+          : h("span", { class: "note" }, [l.job ? "Last: " + runName(l) : "No run yet"]);
+        var menuBtn = h("button", { class: "btn icon", type: "button", "aria-label": "Actions for " + m.host, "aria-haspopup": "menu", "aria-expanded": MMENU === m.machine ? "true" : "false",
+          onclick: function (e) { e.stopPropagation(); MMENU = MMENU === m.machine ? null : m.machine; fillRows(); } }, [svgIcon(IC.more, 18)]);
+        body.appendChild(h("tr", null, [
+          h("td", null, [h("b", { text: m.host }), h("span", { class: "sub", text: m.user })]),
+          h("td", null, [stDot(st, (st === "offline" ? "last heard " : "heard ") + ago(m.updated) + (m.live ? " · live" : ""))]),
+          h("td", { class: "note hide-narrow", text: sp.os_name || m.os || "–" }),
+          h("td", { class: "num note hide-narrow", text: hw || "–" }),
+          h("td", { class: "note hide-narrow", text: unity ? "Yes" + (sp.unity_open ? " (open)" : "") : "No" }),
+          h("td", { class: "note hide-narrow", text: m.remote_start ? "Allowed" : "Waits until free" }),
+          h("td", { class: "hide-narrow" }, [doing]),
+          h("td", { style: "text-align:right;width:48px" }, [h("span", { class: "menuwrap" }, [menuBtn, MMENU === m.machine ? machineMenu(m, act) : null])])]));
+      });
+    }
+    fillRows();
+    root.appendChild(table);
+    root.appendChild(h("p", { class: "note", text: "A computer joins with one line in its terminal (Add a computer). It works only while its person is away, unless its owner allows runs to start at once." + (LIVE ? "" : " This page is a snapshot; the live console shows each computer by the second.") }));
+  }
+
+  // ── recordings ──
+  var REC = { user: "", state: "" };
+  function renderRecordings(root) {
+    var all = DATA.recordings.flights, n = { learned: 0, waiting: 0, new: 0 }, bytes = 0;
+    all.forEach(function (f) { n[f.state] = (n[f.state] || 0) + 1; bytes += f.bytes || 0; });
+    root.appendChild(title("Recordings", "races people played in the Unity editor"));
+    root.appendChild(h("p", { class: "lead", text: "A person playing in the Unity editor. The AI learns from these every hour." }));
+    root.appendChild(h("div", { class: "tiles" }, [[all.length, "races recorded"], [n.learned, "the AI learned from"], [n.waiting, "waiting (reason below)"], [n.new, "not seen yet"], [(bytes / 1048576).toFixed(0) + " MB", "from " + DATA.recordings.branches + " people"]]
+      .map(function (t) { return h("div", { class: "tile sliver" }, [h("b", { text: String(t[0]) }), h("span", { text: t[1] })]); })));
+    var modes = {}, vessels = {}, cell = {};
+    all.forEach(function (f) { modes[f.mode] = 1; vessels[f.vessel] = 1; var k = f.vessel + "|" + f.mode; cell[k] = cell[k] || { learned: 0, waiting: 0, new: 0 }; cell[k][f.state]++; });
+    var ml = Object.keys(modes).sort(), vl = Object.keys(vessels).sort();
+    if (ml.length) root.appendChild(h("div", { class: "card sliver" }, [h("h3", { text: "Races by vessel and mode" }),
+      h("div", { class: "legend" }, [h("span", null, [h("i", { style: "background:var(--cta)" }), "learned"]), h("span", null, [h("i", { style: "background:var(--gold)" }), "waiting"]), h("span", null, [h("i", { style: "background:var(--danger)" }), "not seen yet"])]),
+      h("div", { class: "tablewrap" }, [h("table", { class: "matrix", style: "min-width:" + (130 + ml.length * 96) + "px" }, [h("thead", null, [h("tr", null, [h("th", { text: "Vessel" })].concat(ml.map(function (m) { return h("th", { text: m }); })))]),
+        h("tbody", null, vl.map(function (v) { return h("tr", null, [h("td", null, [h("b", { text: v })])].concat(ml.map(function (m) { var c = cell[v + "|" + m]; if (!c) return h("td", { class: "cell" });
+          return h("td", { class: "cell" }, [c.learned ? h("span", { class: "l", title: "learned", text: String(c.learned) }) : null, c.waiting ? h("span", { class: "w", title: "waiting", text: String(c.waiting) }) : null, c.new ? h("span", { class: "n", title: "not seen yet", text: String(c.new) }) : null]); }))); }))])])]));
+    var users = {}; all.forEach(function (f) { users[f.user] = 1; });
+    var fu = h("select", { id: "rec-user", "aria-label": "Person" }, [h("option", { value: "", text: "Everyone" })].concat(Object.keys(users).sort().map(function (u) { return h("option", { value: u, text: u }); })));
+    var fs = h("select", { id: "rec-state", "aria-label": "State" }, [["", "Any state"], ["learned", "Learned"], ["waiting", "Waiting"], ["new", "Not seen yet"]].map(function (o) { return h("option", { value: o[0], text: o[1] }); }));
+    fu.value = REC.user; fs.value = REC.state;
+    var list = h("tbody");
+    function fill() { list.textContent = "";
+      all.filter(function (f) { return (!REC.user || f.user === REC.user) && (!REC.state || f.state === REC.state); }).slice(0, 200).forEach(function (f) {
+        list.appendChild(h("tr", null, [h("td", { class: "mono", text: f.date + " " + f.time }), h("td", { text: f.user }), h("td", { text: f.vessel }), h("td", { text: f.mode }),
+          h("td", null, [h("span", { class: "pill " + f.state, text: f.state === "new" ? "not seen yet" : f.state })]), h("td", { class: "note", text: f.why || "" })])); }); }
+    fu.addEventListener("change", function () { REC.user = fu.value; fill(); }); fs.addEventListener("change", function () { REC.state = fs.value; fill(); }); fill();
+    root.appendChild(h("div", { class: "filters" }, [h("h3", { text: "Latest races" }), fu, fs]));
+    root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["When", "Who", "Vessel", "Mode", "State", "Why it waits"].map(function (t) { return h("th", { text: t }); }))]), list])]));
+    renderUnityRecordings(root);
+  }
+
+  // The Unity trainer's own matches, kept with the game's recorders (README section 16): never learned from.
+  function renderUnityRecordings(root) {
+    var runs = DATA.recordings.unity || [], flights = 0, rows = [];
+    root.appendChild(h("div", { class: "filters" }, [h("h3", { text: "AI matches recorded in Unity" })]));
+    runs.forEach(function (r) {
+      flights += r.flights || 0;
+      r.replays.forEach(function (p) {
+        rows.push(h("tr", null, [h("td", null, [kindTag("unity"), " ", h("b", { text: r.unit })]),
+          h("td", { text: p.kept === "best" ? "Where it improved" : "Latest" }),
+          h("td", { class: "num", text: p.episodes != null ? String(p.episodes) : "–" }),
+          h("td", { class: "num", text: p.fitness != null ? Number(p.fitness).toFixed(3) : "–" }),
+          h("td", { class: "num hide-narrow", style: "white-space:nowrap", text: (p.bytes / 1048576).toFixed(1) + " MB" }),
+          h("td", { text: r.machine }),
+          h("td", { class: "note mono hide-narrow", text: r.replays_folder || "" })]));
+      });
+    });
+    if (!rows.length) {
+      root.appendChild(h("p", { class: "note", text: "None yet. Each Unity trainer run keeps its last two matches and the one where the AI improved, on the computer that played them." }));
+      return;
+    }
+    root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["Run", "Which", "Episodes", "Fitness", "Size", "Computer", "Folder there"].map(function (t, i) { return h("th", { class: i === 4 || i === 6 ? "hide-narrow" : null, text: t }); }))]), h("tbody", null, rows)])]));
+    root.appendChild(h("p", { class: "note", text: "To watch one: on that computer, copy its .cstheater and .replay.json into the Cosmic-Shore folder's Recordings, then Profile > MY REPLAYS > WATCH (Y or Tab for the free camera). The trainer's own flights (" + flights + " so far) are kept apart from people's races, so the AI never learns from itself. Show the game on a run opens the Third Eye on it." }));
+  }
+
+  // ── ai branch ──
+  function renderAi(root) {
+    var a = DATA.ai || {};
+    root.appendChild(title("AI branch", "where the AI's code lives"));
+    root.appendChild(h("p", { class: "lead", text: "bleeding-edge plus AI work. Searches read the game from it." }));
+    if (a.error) { root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "Could not read the ai branch" }), h("p", { class: "note", text: a.error })])); return; }
+    root.appendChild(h("div", { class: "banner" + (a.needs_sync ? " gold" : "") }, [h("b", { text: a.needs_sync ? "Behind: " + (a.behind_base || 0) + " bleeding-edge commits and " + (a.waiting_ai_files || 0) + " AI files from Yash's branch are waiting" : "Up to date" }),
+      a.needs_sync ? h("p", { class: "note", text: a.hub_sync ? "This console brings them in every hour" + (a.hub_sync.at ? "; the last sync was " + ago(a.hub_sync.at) + (a.hub_sync.ok ? "." : " and failed: " + (a.hub_sync.error || a.hub_sync.note || "unknown") + ".") : "; the first is due within the hour.") : "Type sync in the Terminal to bring them in (it starts a cloud session)." }) : null]));
+    var log = ((DATA.git || {}).branches || {}).ai || [];
+    if (log.length) root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", null, [h("thead", null, [h("tr", null, ["Commit", "Who", "When", "What"].map(function (t) { return h("th", { text: t }); }))]),
+      h("tbody", null, log.map(function (c) { return h("tr", null, [h("td", { class: "mono", text: c.sha }), h("td", { text: c.author }), h("td", { text: ago(c.time) }), h("td", { text: c.subject })]); }))])]));
+  }
+
+  // ── install sheet ──
+  var OS = /Win/.test(navigator.platform || navigator.userAgent) ? "windows" : (/Mac/.test(navigator.platform || navigator.userAgent) ? "mac" : "linux");
+  var IOPT = { nights: false, always: false };
+  function installCommand() {
+    var i = DATA.install || {}, base = OS === "windows" ? i.windows : i.unix, extra = [];
+    if (IOPT.nights) extra.push("--nights"); if (IOPT.always) extra.push("--always");
+    if (LIVE && KEY) extra.push("--hub " + location.origin + " --hub-key " + KEY);
+    return (base || "") + (extra.length ? " " + extra.join(" ") : "");
+  }
+  function copyBtn(getText) {
+    var b = h("button", { class: "btn cta", type: "button", text: "Copy" });
+    b.addEventListener("click", function () { var t = getText();
+      function sel() { var c = b.parentElement.querySelector("code"); var r = document.createRange(); r.selectNodeContents(c); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; }
+      try { navigator.clipboard.writeText(t).then(function () { b.textContent = "Copied"; }, sel); } catch (e) { sel(); }
+      setTimeout(function () { b.textContent = "Copy"; }, 1800); });
+    return b;
+  }
+  function openInstall() {
+    if (!DATA) return;
+    var w = document.getElementById("sheet"); w.textContent = "";
+    var sheet = h("div", { class: "sheet", role: "dialog", "aria-modal": "true", "aria-labelledby": "inst-title" });
+    function draw() {
+      sheet.textContent = "";
+      var term = OS === "windows" ? "PowerShell" : "Terminal";
+      sheet.appendChild(h("div", { class: "top", style: "display:flex;justify-content:space-between;align-items:center;gap:12px" }, [h("h2", { id: "inst-title", text: "Install on this computer" }), h("button", { class: "btn", type: "button", onclick: closeInstall, text: "Close" })]));
+      sheet.appendChild(h("p", { class: "lead", text: "A web page cannot install anything by itself, so this is one line you paste into " + term + ". It runs only while you are away, at the lowest priority, and stops the moment you touch the keyboard or mouse." }));
+      sheet.appendChild(h("div", { class: "seg", role: "group", "aria-label": "Your computer" }, [["mac", "macOS"], ["windows", "Windows"], ["linux", "Linux"]].map(function (o) {
+        return h("button", { type: "button", "aria-pressed": OS === o[0] ? "true" : "false", onclick: function () { OS = o[0]; draw(); }, text: o[1] }); })));
+      var cmd = installCommand();
+      sheet.appendChild(h("ol", { class: "isteps" }, [
+        h("li", null, [h("b", { text: "Open " + term }), h("p", { text: OS === "mac" ? "Press ⌘ Space, type Terminal, press Return." : (OS === "windows" ? "Press the Windows key, type PowerShell, press Enter." : "Open your terminal.") })]),
+        h("li", null, [h("b", { text: "Go to your Cosmic-Shore folder" }), h("p", { text: "The folder you open in Unity. For example:" }), h("div", { class: "cmdline" }, [h("code", { text: OS === "windows" ? "cd C:\\path\\to\\Cosmic-Shore" : "cd ~/path/to/Cosmic-Shore" })])]),
+        h("li", null, [h("b", { text: "Paste this and press " + (OS === "mac" ? "Return" : "Enter") }), h("div", { class: "opts" }, [
+            h("label", null, [h("input", { type: "checkbox", id: "opt-nights", checked: IOPT.nights || null, onchange: function (e) { IOPT.nights = e.target.checked; draw(); } }), "Only at night (22:00–07:00)"]),
+            h("label", null, [h("input", { type: "checkbox", id: "opt-always", checked: IOPT.always || null, onchange: function (e) { IOPT.always = e.target.checked; draw(); } }), "Nobody uses this computer (work all the time)"])]),
+          h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: cmd })]), copyBtn(function () { return installCommand(); })])])]));
+      sheet.appendChild(h("p", { class: "note", text: "It checks Python and git, copies its code into ~/.froglet-compute, registers itself with your " + (OS === "mac" ? "Mac" : OS === "windows" ? "PC" : "computer") + ", and does a two-minute first run so your computer shows up under Computers after the next refresh. Most searches need numpy: " + (OS === "windows" ? "python -m pip install --user numpy" : "python3 -m pip install --user numpy") + "." }));
+      sheet.appendChild(h("p", { class: "note", text: "Stop it any time: the same line with --uninstall at the end." }));
+      if (LIVE) sheet.appendChild(h("p", { class: "note", text: KEY ? "This line also puts the computer on this live console: its progress shows here, and on any phone, within seconds." : "Enter the team key (New run → Send it asks for it) and this line will also put the computer on this live console." }));
+      if ((DATA.install || {}).merged === false) sheet.appendChild(h("p", { class: "note", text: "Until Froglet Compute is merged into bleeding-edge, this installs from the " + DATA.install.ref + " branch." }));
+    }
+    draw();
+    w.appendChild(sheet); w.hidden = false;
+    var c = sheet.querySelector(".btn"); if (c) c.focus();
+  }
+  function closeInstall() { document.getElementById("sheet").hidden = true; }
+
+  // ── manual runs: the New run sheet (manual_runs.py is the backend; the hub takes runs live from any phone) ──
+  var NR = null, LIVE = false, KEY = lsGet("fc-key") || "", NOTICE = null;
+  // Served by the app on this computer (compute.py app): its key comes with the page, and a run here starts at once.
+  var APP = window.FC_APP || null; if (APP && APP.key) KEY = APP.key;
+  function b64url(s) { var bin = ""; new TextEncoder().encode(s).forEach(function (b) { bin += String.fromCharCode(b); }); return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function newReqId() { var d = new Date(), p = function (n) { return String(n).padStart(2, "0"); };
+    return "r" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + "-" + Math.floor(Math.random() * 65536).toString(16).padStart(4, "0"); }
+  function formFor(jid) { return ((DATA && DATA.forms) || {})[jid]; }
+  function catalog() { return (DATA && DATA.catalog) || { hulls: [], modes: [] }; }
+  function hullInfo(h) { return catalog().hulls.filter(function (x) { return x.hull === h; })[0] || { hull: h, template: null, modes_now: [] }; }
+  var STATUS_WORDS = { now: "runs now (offline model)", unity: "in the game (needs Unity)", game: "no trainer yet" };
+  function unityInfo() { return catalog().unity || null; }
+  function unityMachines() { return (DATA.machines || []).filter(function (m) { return (m.caps || []).indexOf("unity") >= 0; }); }
+  function hullStatus(hull) {
+    if (hullInfo(hull).template) return "now";
+    return modesFor(hull).some(function (m) { return m.status === "unity"; }) ? "unity" : "game";
+  }
+  function modeName(mode) { var m = catalog().modes.filter(function (x) { return x.mode === mode; })[0]; return m ? m.name : mode; }
+  function modesFor(hull) {
+    var hi = hullInfo(hull), seen = {}, out = [];
+    catalog().modes.forEach(function (m) { var c = m.hulls.filter(function (x) { return x.hull === hull; })[0];
+      if (c) { out.push({ mode: m.mode, name: m.name, kind: m.kind, status: c.status, unity: !!c.unity }); seen[m.mode] = 1; } });
+    (hi.modes_now || []).forEach(function (m) { if (!seen[m]) out.push({ mode: m, name: m, kind: "course", status: "now", extra: true }); });
+    var rank = { now: 0, unity: 1, game: 2 };
+    return out.sort(function (a, b) { return rank[a.status] - rank[b.status] || a.name.localeCompare(b.name); });
+  }
+  function freshNR(jid) {
+    var f = formFor(jid) || { space: [], args: {} }, modes = {}, vals = {}, args = {};
+    f.space.forEach(function (d) { modes[d.name] = "search"; vals[d.name] = { lo: d.lo, hi: d.hi, v: d.init != null ? d.init : (d.choices ? d.choices[0] : d.lo) }; });
+    Object.keys(f.args).forEach(function (k) { args[k] = JSON.stringify(f.args[k]); });
+    return { job: jid, vessel: f.hull || null, mode: f.mode || null, tries: 500, where: "here", start: "free", modes: modes, vals: vals, args: args, note: "", made: null };
+  }
+  function keepWhen(n) { if (NR) { n.where = NR.where; n.start = NR.start || "free"; n.useAt = NR.useAt; n.at = NR.at; } else n.start = "free"; return n; }
+  function nrFor(vessel, mode, engine) {
+    var pm = modesFor(vessel).filter(function (x) { return x.mode === mode; })[0], u = unityInfo();
+    if (engine == null && NR && NR.vessel === vessel && NR.mode === mode) engine = NR.engine;
+    if (pm && u && (pm.status === "unity" || (pm.status === "now" && pm.unity && engine === "game"))) {
+      var un = { job: u.job, unity: true, vessel: vessel, mode: mode, intensity: 4, matches: 50, watch: true, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
+      if (NR) { un.note = NR.note || ""; if (NR.unity) { un.intensity = NR.intensity || 4; un.matches = NR.matches || 50; un.watch = NR.watch !== false; } }
+      un.engine = "game";
+      return keepWhen(un);
+    }
+    var t = hullInfo(vessel).template, n = t ? freshNR(t) : { job: null, vessel: vessel, mode: mode, tries: 500, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
+    n.vessel = vessel; n.mode = mode;
+    if (t && mode && n.args.mode != null) n.args.mode = JSON.stringify(mode);
+    if (NR) { n.tries = NR.tries || n.tries; n.note = NR.note || ""; }
+    n.engine = "model";
+    return keepWhen(n);
+  }
+  function pairStatus() { if (!NR.vessel || !NR.mode) return null; var m = modesFor(NR.vessel).filter(function (x) { return x.mode === NR.mode; })[0]; return m ? m.status : null; }
+  function nrRequest() {
+    if (NR.unity) {
+      var ue = [], ur = { schema: "froglet-compute/request/1", id: newReqId(), job: NR.job, by: who(), created: Math.floor(Date.now() / 1000), note: NR.note.trim(),
+        budget: { tries: parseInt(NR.matches, 10) || 0 }, machine: NR.where === "here" || NR.where === "team" ? "any" : NR.where,
+        args: { mode: NR.mode, vessel: NR.vessel, intensity: NR.intensity } };
+      whenFields(ur);
+      var lim = (unityInfo() || {}).episodes || { lo: 5, hi: 2000 };
+      if (!(ur.budget.tries >= lim.lo && ur.budget.tries <= lim.hi)) ue.push("matches must be " + lim.lo + "–" + lim.hi);
+      return { req: ur, errs: ue };
+    }
+    var f = formFor(NR.job), errs = [];
+    if (!f) return { req: null, errs: [NR.vessel + " in " + NR.mode + " needs the real game, which no computer can run yet."] };
+    var req = { schema: "froglet-compute/request/1", id: newReqId(), job: NR.job, by: who(), created: Math.floor(Date.now() / 1000), note: NR.note.trim(),
+      budget: { tries: parseInt(NR.tries, 10) || 0 }, machine: NR.where === "here" || NR.where === "team" ? "any" : NR.where };
+    var fix = {}, ranges = {}, args = {};
+    f.space.forEach(function (d) { var m = NR.modes[d.name], v = NR.vals[d.name];
+      if (m === "fix") { var x = d.type === "choice" ? v.v : Number(v.v); if (d.type !== "choice" && (!isFinite(x) || x < d.lo || x > d.hi)) errs.push(d.name + " must be between " + d.lo + " and " + d.hi); fix[d.name] = x; }
+      if (m === "range") { var lo = Number(v.lo), hi = Number(v.hi); if (!(isFinite(lo) && isFinite(hi) && lo < hi && lo >= d.lo && hi <= d.hi)) errs.push(d.name + ": the low end must be under the high end"); ranges[d.name] = [lo, hi]; } });
+    Object.keys(NR.args).forEach(function (k) { var t = NR.args[k]; if (t === JSON.stringify(f.args[k])) return;
+      try { args[k] = JSON.parse(t); } catch (e) { errs.push(k + " is not a number or a list like [1, 2]"); } });
+    if (args.intensities && !args.intensities.length) errs.push("pick at least one intensity");
+    if (Object.keys(fix).length >= f.space.length) errs.push("leave at least one setting free to search");
+    if (!(req.budget.tries >= 1 && req.budget.tries <= 200000)) errs.push("tries must be 1–200000");
+    if (Object.keys(fix).length) req.fix = fix; if (Object.keys(ranges).length) req.ranges = ranges; if (Object.keys(args).length) req.args = args;
+    whenFields(req);
+    return { req: req, errs: errs };
+  }
+  function whenFields(req) {
+    if (NR.where === "here") return;
+    if (NR.start === "now") req.start = "now";
+    if (NR.useAt && NR.at) { var t = Date.parse(NR.at); if (isFinite(t)) req.not_before = Math.floor(t / 1000); }
+  }
+  function appCmd(rest) {
+    return OS === "windows" ? "python $HOME\\.froglet-compute\\app\\Tools\\Compute\\compute.py " + rest : "python3 ~/.froglet-compute/app/Tools/Compute/compute.py " + rest;
+  }
+  function openNewRun(jid, vessel, mode, where) {
+    if (!DATA) return;
+    if (vessel) NR = nrFor(vessel, mode);
+    else if (jid && formFor(jid)) NR = freshNR(jid);
+    else if (!NR) { var first = catalog().hulls.filter(function (x) { return x.template; })[0]; NR = first ? nrFor(first.hull, (first.modes_now || [])[0]) : freshNR(Object.keys(DATA.forms || {})[0]); }
+    if (where) { NR.where = where; NR.wherePicked = true; NR.start = machineInfo(where).remote_start ? "now" : "free"; }
+    NR.made = null; closeJob(); drawNewRun(); document.getElementById("sheet").hidden = false;
+  }
+  function chip(label, on, cls, onclick, sub) {
+    return h("button", { type: "button", class: "pick " + (cls || "") + (on ? " on" : ""), "aria-pressed": on ? "true" : "false", onclick: onclick }, [h("span", { text: label }), sub ? h("small", { text: sub }) : null]);
+  }
+  function slider(id, lo, hi, step, val, oninput, label) {
+    var pct = function (v) { return ((v - lo) / (hi - lo || 1)) * 100; };
+    var inp = h("input", { type: "range", id: id, min: String(lo), max: String(hi), step: String(step), value: String(val), class: "srange", "aria-label": label || id });
+    var paint = function () { inp.style.setProperty("--b", pct(Number(inp.value)) + "%"); };
+    inp.addEventListener("input", function () { paint(); oninput(Number(inp.value)); });
+    paint(); return inp;
+  }
+  function drawNewRun() {
+    var w = document.getElementById("sheet"), keepScroll = w.scrollTop, again = !w.hidden && !!w.querySelector("#nr-title"); w.textContent = "";
+    var sheet = h("div", { class: "sheet wide" + (again ? " still" : ""), role: "dialog", "aria-modal": "true", "aria-labelledby": "nr-title" }), st = pairStatus();
+    w.appendChild(sheet);
+    sheet.appendChild(h("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:12px" }, [h("h2", { id: "nr-title", text: "New run" }), h("button", { class: "btn", type: "button", onclick: closeInstall, text: "Close" })]));
+    // 1. vessel
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "1  Vessel" }), h("div", { class: "picks" }, catalog().hulls.map(function (x) {
+      var hs = hullStatus(x.hull);
+      return chip(x.hull, NR.vessel === x.hull, hs, function () { NR = nrFor(x.hull, (modesFor(x.hull)[0] || {}).mode); drawNewRun(); }, { now: "runs now", unity: "in the game", game: "no trainer yet" }[hs]);
+    }))]));
+    // 2. mode
+    if (NR.vessel) sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "2  Game mode" }), h("div", { class: "picks" }, modesFor(NR.vessel).map(function (m) {
+      return chip(m.name, NR.mode === m.mode, m.status, function () { NR = nrFor(NR.vessel, m.mode); drawNewRun(); }, (m.kind === "arena" ? "arena" : m.kind === "arcade" ? "arcade" : "course") + ({ now: "", unity: " · in the game", game: " · no trainer yet" }[m.status]));
+    }))]));
+    var pm = NR.vessel ? modesFor(NR.vessel).filter(function (m) { return m.mode === NR.mode; })[0] : null;
+    if (pm && pm.status === "now" && pm.unity) sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "   Where it plays" }), h("div", { class: "picks" }, [
+      chip("Offline race model", NR.engine !== "game", "now", function () { NR = nrFor(NR.vessel, NR.mode, "model"); drawNewRun(); }, "any computer, thousands of tries in minutes"),
+      chip("The real game (Unity)", NR.engine === "game", "unity", function () { NR = nrFor(NR.vessel, NR.mode, "game"); drawNewRun(); }, "real matches, a PC with Unity")])]));
+    var ppl = peopleRaces(NR.vessel, NR.mode);
+    if (pm && ppl.n) sheet.appendChild(h("p", { class: "note people" }, [h("b", { text: "People raced this " + ppl.n + " time" + (ppl.n === 1 ? "" : "s") + ". " }),
+      "The game's own AI learns from those races every hour (Yash's AI learning sweep): " + ppl.learned + " learned from, " + ppl.waiting + " waiting" + (ppl.newer ? ", " + ppl.newer + " not seen yet" : "") + ". Play it in the editor to teach it more."]));
+    if (st === "game" || !NR.job) {
+      var mn = (modesFor(NR.vessel || "").filter(function (m) { return m.mode === NR.mode; })[0] || {}).name || NR.mode;
+      sheet.appendChild(h("div", { class: "banner gold" }, [h("b", { text: (NR.vessel || "This vessel") + (mn ? " in " + mn : "") + " needs the real game" }),
+        h("p", { class: "note", text: "Nothing can run this pair yet. Blue pairs run on the offline race models; purple pairs play real matches through the Unity trainer, which has a scenario for every multiplayer card with a scoring rule. This one has none: Maelstrom chains other modes, and Grizzly Charge is still in development." })]));
+      return;
+    }
+    if (NR.unity) drawUnitySteps(sheet);
+    else drawSearchSteps(sheet);
+    // 6. where + note
+    var um = unityMachines();
+    if (LIVE && !APP && !NR.wherePicked) { var bp = bestPlace(); if (NR.where !== bp) { NR.where = bp; NR.start = bp !== "team" && machineInfo(bp).remote_start ? "now" : "free"; } }
+    var mplaces = (NR.unity ? um : DATA.machines).map(function (m) { var st = mstatus(m); return [m.machine, m.host, (STATUS_TEXT[st] || "").toLowerCase() + (st === "offline" ? "" : m.remote_start ? " · starts at once" : " · starts when free")]; });
+    var places = LIVE && !APP
+      ? mplaces.concat([["team", NR.unity ? "Any team computer with Unity" : "Any team computer", "the first free one takes it"], ["here", "This computer", "paste a line into a terminal"]])
+      : [["here", "This computer, now"], ["team", NR.unity ? "Any team computer with Unity" : "Any team computer"]].concat(mplaces.map(function (p) { return [p[0], p[1] + " · " + p[2].split(" · ")[0]]; }));
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: (NR.unity ? "5" : "6") + "  Where" }), h("div", { class: "picks" }, places.map(function (p) { return chip(p[1], NR.where === p[0], "where", function () { NR.where = p[0]; NR.wherePicked = true; NR.made = null; NR.start = p[0] !== "team" && p[0] !== "here" && machineInfo(p[0]).remote_start ? "now" : NR.start; drawNewRun(); }, p[2]); }))]));
+    whenStep(sheet);
+    if (NR.unity && !um.length) sheet.appendChild(h("p", { class: "note", text: "No team computer has reported Unity yet. Run it on this computer (it needs Unity " + "of the project's version, installed with Unity Hub), or install Froglet Compute on a PC that has Unity." }));
+    var note = h("textarea", { class: "field", id: "nr-note", placeholder: "What do you want to learn? (optional; shown with the results)" }); note.value = NR.note; note.addEventListener("input", function () { NR.note = note.value; });
+    sheet.appendChild(note);
+    var out = h("div", { class: "approve", id: "nr-out" });
+    var go;
+    if (NR.where === "here") go = APP ? "Start it on this computer" : "Run on this computer";
+    else if (LIVE) { var tgt = NR.where === "team" ? "the team" : String(NR.where).split("/").pop(), atOnce = NR.start === "now" && (NR.where === "team" || machineInfo(NR.where).remote_start);
+      go = NR.useAt ? "Send to " + tgt + " · at a time" : atOnce ? "Start on " + tgt + " now" : "Send to " + tgt + " · when free"; }
+    else go = "Make the run" + (NR.useAt ? " · at a time" : NR.start === "now" ? " · now" : " · when free");
+    sheet.appendChild(h("button", { class: "btn cta big", type: "button", id: "nr-make", onclick: function () { makeRun(out); }, text: go + " · " + NR.vessel + " in " + modeName(NR.mode) }));
+    sheet.appendChild(out);
+    if (NR.made) showMade(out);
+    w.scrollTop = keepScroll;
+  }
+  function drawUnitySteps(sheet) {
+    sheet.appendChild(h("div", { class: "banner ruby" }, [h("b", { text: NR.vessel + " in " + modeName(NR.mode) + " plays in the real game" }),
+      h("p", { class: "note", text: "The AI trainer plays all-AI matches in a Unity with no window and keeps the best AI it finds. It runs on a computer with Unity installed, in Froglet Compute's own copy of the project (your project and your open Unity are left alone). The first run on a computer imports the project once: an hour or more." })]));
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "3  Intensity" }), h("div", { class: "picks" }, ((unityInfo() || {}).intensities || [4]).map(function (i) {
+      return chip("I" + i, NR.intensity === i, "int i" + i, function () { NR.intensity = i; NR.made = null; drawNewRun(); });
+    }))]));
+    var mv = h("output", { class: "bubble", text: String(NR.matches) });
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "4  How many matches" }), h("div", { class: "srow" }, [slider("nr-matches", 10, 500, 10, Math.min(500, Math.max(10, NR.matches)), function (v) { NR.matches = v; mv.textContent = String(v); }, "matches"), mv]),
+      h("p", { class: "note", text: "Each match tests a few of the trainer's AIs at once, one per seat, played at up to four times game speed; a generation is several matches. The trainer keeps its population between runs, so more matches keep improving it." })]));
+    if (NR.where === "here") sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "   Watch it" }), h("div", { class: "picks" }, [
+      chip("Show the game", NR.watch, "where", function () { NR.watch = true; NR.made = null; drawNewRun(); }, "Unity opens with its window at game speed, and the Third Eye on the match"),
+      chip("No window", !NR.watch, "where", function () { NR.watch = false; NR.made = null; drawNewRun(); }, "faster: up to 4x, nothing to see")])]));
+  }
+  function drawSearchSteps(sheet) {
+    var f = formFor(NR.job);
+    // 3. intensities
+    if (NR.args.intensities != null) {
+      var cur = []; try { cur = JSON.parse(NR.args.intensities); } catch (e) {}
+      sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "3  Intensity" }), h("div", { class: "picks" }, [1, 2, 3, 4].map(function (i) {
+        var on = cur.indexOf(i) >= 0;
+        return chip("I" + i, on, "int i" + i, function () { var c = cur.filter(function (x) { return x !== i; }); if (!on) c.push(i); c.sort(); NR.args.intensities = JSON.stringify(c); drawNewRun(); });
+      }))]));
+    }
+    // 4. tries
+    var tv = h("output", { class: "bubble", text: String(NR.tries) });
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "4  How many tries" }), h("div", { class: "srow" }, [slider("nr-tries", 100, 5000, 100, Math.min(5000, Math.max(100, NR.tries)), function (v) { NR.tries = v; tv.textContent = String(v); }, "tries"), tv]),
+      h("p", { class: "note", text: "About " + Math.max(1, Math.round(NR.tries / 300)) + " min on a laptop for a drive search; more tries, better answers." })]));
+    // 5. tune (optional)
+    var rows = f.space.map(function (d) {
+      if (d.type === "choice") return null;
+      var m = NR.modes[d.name], v = NR.vals[d.name], step = (d.hi - d.lo) / 200;
+      var lock = h("button", { type: "button", class: "lock" + (m === "fix" ? " on" : ""), title: m === "fix" ? "held at a value: click to search it" : "searched: click to hold it", "aria-label": d.name + (m === "fix" ? " held" : " searched"),
+        onclick: function () { NR.modes[d.name] = m === "fix" ? "search" : "fix"; if (NR.modes[d.name] === "fix" && (v.v == null)) v.v = d.init; drawNewRun(); }, text: m === "fix" ? "held" : "free" });
+      var val = h("span", { class: "sval mono" });
+      var body;
+      if (m === "fix") { val.textContent = fmt(Number(v.v), 2); body = slider("s-" + d.name, d.lo, d.hi, step, Number(v.v), function (x) { v.v = x; val.textContent = fmt(x, 2); }, d.name); }
+      else {
+        var lo = Number(v.lo), hi = Number(v.hi), show = function () { val.textContent = fmt(lo, 1) + " – " + fmt(hi, 1); NR.modes[d.name] = (lo > d.lo || hi < d.hi) ? "range" : "search"; v.lo = lo; v.hi = hi; };
+        var a = slider("s-" + d.name + "-lo", d.lo, d.hi, step, lo, function (x) { lo = Math.min(x, hi - step); show(); }, d.name + " low"),
+            b = slider("s-" + d.name + "-hi", d.lo, d.hi, step, hi, function (x) { hi = Math.max(x, lo + step); show(); }, d.name + " high");
+        var span = function () { a.style.setProperty("--a", ((lo - d.lo) / (d.hi - d.lo) * 100) + "%"); a.style.setProperty("--b", ((hi - d.lo) / (d.hi - d.lo) * 100) + "%"); };
+        a.addEventListener("input", span); b.addEventListener("input", span);
+        show(); span(); body = h("div", { class: "dual" }, [a, b]);
+      }
+      var mark = d.init != null ? h("i", { class: "today", style: "left:" + ((d.init - d.lo) / (d.hi - d.lo) * 100) + "%", title: "today's " + d.init }) : null;
+      return h("div", { class: "tune" }, [h("span", { class: "mono tname", text: d.name }), h("div", { class: "track" }, [body, mark]), val, lock]);
+    });
+    var changed = Object.keys(NR.modes).filter(function (k) { return NR.modes[k] !== "search"; }).length;
+    sheet.appendChild(h("details", { class: "step", open: changed ? true : null }, [h("summary", { text: "5  Tune the settings (optional)" + (changed ? " · " + changed + " changed" : " · all searched freely") }),
+      h("p", { class: "note", text: "Drag the ends to narrow what is searched, or hold a setting at one value. The white tick is today's value." })].concat(rows)));
+  }
+  function makeRun(out) {
+    var r = nrRequest(); out.textContent = "";
+    if (r.errs.length) { out.appendChild(h("div", { class: "banner bad" }, r.errs.map(function (e) { return h("p", { class: "note", text: e }); }))); return; }
+    if (APP && NR.where === "here") return runHere(r.req, out);
+    NR.made = r.req; showMade(out);
+    if (NR.where !== "here" && LIVE) sendLive(r.req, out);
+    out.scrollIntoView({ block: "nearest" });
+  }
+  function showMade(out) {
+    var req = NR.made, tok = b64url(JSON.stringify(req)); out.textContent = "";
+    if (NR.where === "here") {
+      var term = OS === "windows" ? "PowerShell" : "Terminal";
+      out.appendChild(h("div", { class: "seg", role: "group", "aria-label": "Your computer" }, [["windows", "Windows"], ["mac", "macOS"], ["linux", "Linux"]].map(function (o) {
+        return h("button", { type: "button", "aria-pressed": OS === o[0] ? "true" : "false", onclick: function () { OS = o[0]; showMade(out); }, text: o[1] }); })));
+      out.appendChild(h("p", null, [h("b", { text: "Paste this into " + term + " and press Enter. " }), (NR.unity ? "It starts Unity with no window and plays " + req.budget.tries + " matches now" : "It runs " + req.budget.tries + " tries now") + ", without waiting for you to be away, and shows up under Runs."]));
+      var runLine = appCmd("run --request " + tok + (NR.unity && NR.watch ? " --watch" : ""));
+      out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: runLine })]), copyBtn(function () { return runLine; })]));
+      out.appendChild(h("p", { class: "note", text: "Needs Froglet Compute installed on this computer once (the Install button)" + (NR.unity ? ", and Unity of the project's version from Unity Hub. Check with: " + appCmd("unity --find") : ".") }));
+      out.appendChild(h("p", { class: "note", text: "Simpler: open Froglet Compute from your desktop (the install puts it there; or " + appCmd("app") + "). It is this console on your computer, live, and Start it on this computer starts the run at once, with nothing to paste." }));
+      return;
+    }
+    if (LIVE) { out.appendChild(h("p", { class: "note", id: "nr-live", text: "Sending…" })); return; }
+    out.appendChild(h("p", { class: "note", text: "Nobody types anything on the other computer: its Froglet Compute picks this up from the team queue." }));
+    if (canSend()) {
+      var sentMsg = h("p", { class: "note" });
+      out.appendChild(h("button", { class: "btn cta", type: "button", onclick: function (e) { e.target.disabled = true; sentMsg.textContent = "Sending…";
+        sendOutbox({ kind: "run", token: tok, title: (NR.vessel || "") + (NR.mode ? " in " + niceName(catalog().modes, "mode", NR.mode) : "") + (NR.unity ? " · I" + NR.intensity + " · Unity" : "") || req.job }).then(function () {
+          sentMsg.textContent = "Sent. The next sync (within the hour) puts it on the team queue; Runs shows it waiting until then."; },
+          function (er) { sentMsg.textContent = saveError(er); e.target.disabled = false; }); }, text: "Send" }));
+      out.appendChild(sentMsg);
+    }
+    var other = h("details", { class: "other" }, [h("summary", { text: "Other ways to send it now" })]);
+    out.appendChild(other); out = other;
+    if (CAP.mcp) {
+      var msg = h("p", { class: "note" });
+      out.appendChild(h("button", { class: "btn cta", type: "button", onclick: function (e) { e.target.disabled = true; msg.textContent = "Starting a Claude Code session to file it…";
+        createSession("File a Froglet Compute manual run. In froglet-studio/Cosmic-Shore (branch " + (DATA.branch || "the compute branch") + "), run `python3 Tools/Compute/compute.py request new --token " + tok + " --push --local` and report the request id and what it printed. Change nothing else.", "Compute console: file " + req.id)
+          .then(function (lk) { msg.textContent = "Filing it: "; if (lk) msg.appendChild(lk); }, function (er) { msg.textContent = er; e.target.disabled = false; }); }, text: "File it now (starts a cloud session)" }));
+      out.appendChild(msg);
+    }
+    out.appendChild(h("p", { class: "note", text: "From your own terminal (any computer with Froglet Compute), instantly:" }));
+    out.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("request new --token " + tok + " --push") })]), copyBtn(function () { return appCmd("request new --token " + tok + " --push"); })]));
+  }
+  function runHere(req, out) {
+    var line = h("p", { class: "note", text: "Starting…" }), btn = document.getElementById("nr-make");
+    out.appendChild(line); if (btn) btn.disabled = true;
+    fetch("api/run-here", { method: "POST", headers: { "Content-Type": "application/json", "X-Compute-Key": KEY }, body: JSON.stringify({ token: b64url(JSON.stringify(req)), watch: !!(NR.unity && NR.watch) }) })
+      .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
+      .then(function (a) {
+        if (a[0] === 201) {
+          line.textContent = (NR.unity ? (NR.watch ? "Started: Unity opens with the match and the Third Eye. " : "Started: Unity plays with no window. ") + "The first run on a computer imports the project once (an hour or more)."
+            : "Started on this computer.") + " Follow it under Runs; Stop is there too. Its log: " + a[1].log;
+          refreshLive();
+        } else { line.textContent = (a[1].error || "Not started") + (a[1].problems ? ": " + a[1].problems.join("; ") : ""); if (btn) btn.disabled = false; }
+      }, function () { line.textContent = "The app did not answer. Is its window still open?"; if (btn) btn.disabled = false; });
+  }
+  function stopRun(id, place, machine, name, sure) {
+    if (!sure && !window.confirm("Stop " + (name || "this run") + "? It stops within about 30 seconds and keeps what it found.")) return;
+    var line = h("p", { class: "note" }); if (place) place.appendChild(line);
+    if (LIVE) {
+      if (!KEY) return askKey(function () { stopRun(id, place, machine, name, true); });
+      line.textContent = "Stopping…";
+      fetch("api/cancel", { method: "POST", headers: { "Content-Type": "application/json", "X-Compute-Key": KEY }, body: JSON.stringify({ id: id }) })
+        .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
+        .then(function (a) { line.textContent = a[0] === 200 ? "Stopping…" : (a[1].error || "Not stopped");
+          if (a[0] === 200) { NOTICE = { at: Date.now(), text: "Stopping " + (name || id) + ". The computer stops within about 30 seconds and keeps what it found." }; refreshLive(); } },
+          function () { line.textContent = "Could not reach the hub."; });
+      return;
+    }
+    var here = "On " + (machine ? String(machine).split("/").pop() : "that computer") + " itself, Ctrl+C in its window stops it at once.";
+    if (canSend()) {
+      line.textContent = "Stopping…";
+      sendOutbox({ kind: "stop", id: id, title: "Stop: " + (name || id) }).then(function () { line.textContent = "Stop sent: it reaches the computer at the next sync (within the hour), then it stops within 30 s. " + here; },
+        function (e) { line.textContent = saveError(e); });
+      return;
+    }
+    line.textContent = "To stop it from anywhere, run this in a terminal. " + here;
+    if (place) place.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: appCmd("request cancel " + id) })]), copyBtn(function () { return appCmd("request cancel " + id); })]));
+  }
+  // ── the outbox: what people send from this page when it has no hub (README section 17). Each person appends to
+  // outbox/<their id>; the hourly sync session files every item on the team queue and records it in sent/<item id>. ──
+  function canSend() { return !!(CAP.db && CAP.me && CAP.me.id); }
+  function sendOutbox(item) {
+    var k = "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), ref = CAP.db.doc("outbox/" + CAP.me.id), patch = { items: {} };
+    patch.items[k] = Object.assign({ at: Math.floor(Date.now() / 1000) }, item);
+    return ref.get().then(function (snap) { return snap.exists ? ref.update(patch) : ref.set(patch); });
+  }
+  function outboxItems() {
+    var out = []; Object.keys(CAP.outbox || {}).forEach(function (who) { var items = (CAP.outbox[who] || {}).items || {};
+      Object.keys(items).forEach(function (k) { out.push({ key: k, who: who, item: items[k], sent: (CAP.sent || {})[k] }); }); });
+    return out.sort(function (a, b) { return (b.item.at || 0) - (a.item.at || 0); });
+  }
+  function outboxCard() {
+    var day = Date.now() / 1000 - 86400, rows = outboxItems().filter(function (o) { return !o.sent || (!o.sent.ok && (o.sent.at || 0) > day); });
+    if (!rows.length) return null;
+    return h("div", { class: "card sliver", id: "outbox" }, [h("h3", { text: "Sent from this page · waiting for the next sync" })].concat(rows.map(function (o) {
+      return h("div", { class: "frow" }, [h("span", { class: "pill " + (o.sent ? "idle" : "waiting"), text: o.sent ? "not filed" : "waiting" }), h("b", { text: o.item.title || o.item.kind }),
+        h("span", { class: "note", text: o.sent ? o.sent.note || "" : "sent " + ago(o.item.at) })]); })));
+  }
+  function kindLegend() {
+    return h("div", { class: "kinds" }, [h("span", null, [kindTag("model"), " a computer searches the race model (no Unity)"]),
+      h("span", null, [kindTag("unity"), " a computer plays the real game, no window"]), h("span", null, [kindTag("player", "a person"), " someone playing in the Unity editor"])]);
+  }
+  function peopleRaces(vessel, mode) {
+    var r = { n: 0, learned: 0, waiting: 0, newer: 0 };
+    ((DATA.recordings || {}).flights || []).forEach(function (f) { if (f.vessel !== vessel || f.mode !== mode) return; r.n++;
+      if (f.state === "learned") r.learned++; else if (f.state === "waiting") r.waiting++; else r.newer++; });
+    return r;
+  }
+  function machineInfo(name) { return (DATA.machines || []).filter(function (m) { return m.machine === name; })[0] || {}; }
+  // Why a sent run has not started: the computer it was sent to, as it is now, against what the run asked for.
+  function waitReason(m) {
+    if (m.state !== "open") return "";
+    if (m.not_before && m.not_before * 1000 > Date.now()) return "starts " + new Date(m.not_before * 1000).toLocaleString();
+    if (!m.machine || m.machine === "any") return m.start === "now" ? "starts on the first computer that allows a start at once" : "starts when a computer is free";
+    var mi = machineInfo(m.machine), st = mstatus(mi), host = String(m.machine).split("/").pop();
+    if (!mi.machine || st === "offline") return host + " is offline: it starts when its Froglet Compute is back";
+    if (st === "starting" || st === "working") return host + " is on another run: this one starts after it";
+    if (m.start === "now") return mi.remote_start ? "starts on " + host + " within a minute" : host + " does not allow a start while in use: it starts when its person is away";
+    if (st === "in use") return "waiting for " + host + "'s person to be away";
+    if (st === "outside hours") return host + " is outside its hours: it starts when they begin";
+    return "starts on " + host + " within a minute";
+  }
+  // The computer a run should go to when nothing was picked: a free one first, then one whose owner allows a start
+  // while it is in use, then any that is live; the team queue when none is.
+  function bestPlace() {
+    var ms = (NR && NR.unity ? unityMachines() : (DATA.machines || [])).filter(function (m) { return mstatus(m) !== "offline"; });
+    var rank = function (m) { var st = mstatus(m); return st === "free" ? 0 : (m.remote_start && st === "in use") ? 1 : st === "in use" ? 2 : 3; };
+    ms.sort(function (a, b) { return rank(a) - rank(b) || MORDER[mstatus(a)] - MORDER[mstatus(b)]; });
+    return ms.length && rank(ms[0]) < 3 ? ms[0].machine : "team";
+  }
+  function whenStep(sheet) {
+    if (NR.where === "here") return;
+    var m = NR.where === "team" ? null : machineInfo(NR.where), canNow = !!(m && m.remote_start);
+    if (NR.start === "now" && !canNow) NR.start = "free";
+    var at = h("input", { class: "field", type: "datetime-local", id: "nr-at", style: "max-width:240px" });
+    if (NR.at) at.value = NR.at; at.addEventListener("input", function () { NR.at = at.value; NR.made = null; });
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "   When" }), h("div", { class: "picks" }, [
+      chip("When it's free", NR.start === "free" && !NR.useAt, "where", function () { NR.start = "free"; NR.useAt = false; NR.made = null; drawNewRun(); }, "its person is away"),
+      m ? chip("Now", NR.start === "now", "where" + (canNow ? "" : " off"), function () { if (!canNow) return; NR.start = "now"; NR.useAt = false; NR.made = null; drawNewRun(); }, canNow ? "starts at once, even in use" : "its owner has not allowed this") : null,
+      chip("At a time", !!NR.useAt, "where", function () { NR.useAt = true; NR.made = null; drawNewRun(); }, "then when free" + (canNow ? ", or at once" : ""))]),
+      NR.useAt ? at : null,
+      m && !canNow ? h("p", { class: "note", text: "To let runs start at once on " + m.host + ", its owner runs: compute.py remote-start on" }) : null]));
+  }
+  function askKey(then) {
+    var w = document.getElementById("sheet"), box = h("div", { class: "banner" }, [h("b", { text: "The team key" }), h("p", { class: "note", text: "This console sends runs to the team's computers. Enter the team key once; this browser remembers it. Shombith has it (it is printed when the VM is set up)." })]);
+    var inp = h("input", { class: "field mono", id: "key-input", type: "password", autocomplete: "off", placeholder: "team key" });
+    box.appendChild(inp); box.appendChild(h("button", { class: "btn cta", type: "button", onclick: function () { KEY = inp.value.trim(); lsSet("fc-key", KEY); box.remove(); then(); }, text: "Save" }));
+    var out = document.getElementById("nr-out") || w.querySelector(".sheet"); out.appendChild(box); inp.focus();
+  }
+  function sendLive(req, out) {
+    if (!KEY) return askKey(function () { sendLive(req, out); });
+    var line = document.getElementById("nr-live") || out.appendChild(h("p", { class: "note" }));
+    fetch("api/requests", { method: "POST", headers: { "Content-Type": "application/json", "X-Compute-Key": KEY }, body: JSON.stringify(req) })
+      .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
+      .then(function (a) {
+        if (a[0] === 201) {
+          var tgt = NR.where === "team" ? "the first free computer" : String(NR.where).split("/").pop(), atOnce = NR.start === "now" && (NR.where === "team" || machineInfo(NR.where).remote_start);
+          NOTICE = { at: Date.now(), text: "Sent to " + tgt + ". " + (atOnce ? "It shows below as Starting within a minute" : (NR.where === "team" ? "It shows below under Sent runs until a computer is free" : "It shows below under Sent runs until " + tgt + " is free")) + (NR.unity ? "; Unity opens first, so the first match reports a minute or two later." : ".") };
+          document.getElementById("sheet").hidden = true; NR.made = null;
+          if (VIEW !== "runs") location.hash = "runs"; else render();
+          refreshLive();
+        }
+        else if (a[0] === 401) { KEY = ""; lsSet("fc-key", ""); line.textContent = "That team key was not right."; askKey(function () { sendLive(req, out); }); }
+        else line.textContent = (a[1].error || "Not sent") + (a[1].problems ? ": " + a[1].problems.join("; ") : "");
+      }, function () { line.textContent = "Could not reach the hub. Try again in a moment."; });
+  }
+  function refreshLive() {
+    return fetch("console.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (!d) return; DATA = d;
+      var sheetOpen = !document.getElementById("sheet").hidden, typing = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+      if (!typing) { render(); if (OPEN) renderDrawer(); }
+      if (sheetOpen && NR && !typing && !NR.made) { /* leave the form as the person left it */ }
+    }).catch(function () {});
+  }
+  function goLive() {
+    fetch("api/status", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (s) {
+      if (!s || !s.hub) return;
+      LIVE = true; document.getElementById("win").classList.add("live");
+      if (DATA && TI < 0 && document.getElementById("sheet").hidden) render();
+      var tag = document.getElementById("livetag"); if (tag) tag.hidden = false;
+      setInterval(refreshLive, 15000);
+    }).catch(function () {});
+  }
+
+  // ── tour: a spotlight on one control at a time ──
+  var TOUR = [
+    { t: "Welcome to Froglet Compute", b: "This page shows what the team's computers are searching for while their people are away, what they have found, and what needs a decision. Eleven short stops." },
+    { el: "#nav-home", view: "home", t: "Home", b: "Start here. One sentence says what is happening, Needs you lists anything waiting on a person, and Running now shows live work." },
+    { el: "#b-install", t: "Install", b: "Add your computer with one line in your terminal. It works only while you are away and stops the moment you come back." },
+    { el: "#nav-runs", view: "runs", t: "Runs", b: "Each run is one computer working on one search for up to an hour (15 minutes on the VM). Live runs show a progress bar and report every few minutes. Finished runs say what they found." },
+    { el: "#b-newrun", t: "New run", b: "Pick a vessel, a game mode and the intensities, drag the tries slider, and press Run. Running on this computer gives you one line for PowerShell or Terminal; on the team's live console (the VM) a run goes to any computer in one tap, from a phone too." },
+    { el: "#nav-searches", view: "searches", t: "Searches", b: "Everything the computers look for: AI driving settings per vessel and mode, the Regatta balance, new swarm bodies. The green number is how much better the best find is than what the game ships today." },
+    { el: "#searching-group .job", view: "searches", t: "Open a search", b: "Click any search for its race times per intensity, the settings it found, its runs, and, when you are one of the core four, a button to put it in the game." },
+    { el: "#nav-machines", view: "machines", t: "Computers", b: "Every computer that joined, as it is now: working, free (its person is away), in use, outside its hours or offline, with its cores, memory, disk and whether it has Unity. Send a run to one: when it is free, at a time you pick, or at once if its owner allows it. Stop a run from here too." },
+    { el: "#nav-recordings", view: "recordings", t: "Recordings", b: "Every race played in the Unity editor is recorded on its own. The AI learns from them every hour; this shows what it has learned from and what waits." },
+    { el: "#nav-term", t: "Terminal", b: "For when you want more: type help. ask answers questions about this data, and task starts a Claude Code session to do work such as syncing the ai branch or refreshing this page." },
+    { el: "#fresh", t: "How fresh it is", b: "The page is a snapshot of the computers' reports. In the Terminal, refresh rebuilds it. You can replay this tour any time with the Tour button." }
+  ];
+  var TI = -1;
+  function startTour(i) { TI = i || 0; closeJob(); closeInstall(); document.getElementById("tour").hidden = false; showStep(); }
+  function endTour() { TI = -1; document.getElementById("tour").hidden = true; lsSet("fc-tour", "done"); }
+  function showStep() {
+    var s = TOUR[TI]; if (!s) return endTour();
+    if (s.view && VIEW !== s.view) { location.hash = s.view; }
+    setTimeout(function () {
+      var spot = document.getElementById("spot"), tip = document.getElementById("tip"), el = s.el ? document.querySelector(s.el) : null;
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+      var r = el ? el.getBoundingClientRect() : null, vw = window.innerWidth, vh = window.innerHeight;
+      if (r && r.width) { spot.className = "spot"; spot.style.left = (r.left - 6) + "px"; spot.style.top = (r.top - 6) + "px"; spot.style.width = (r.width + 12) + "px"; spot.style.height = (r.height + 12) + "px"; }
+      else { spot.className = "spot none"; spot.style.left = vw / 2 + "px"; spot.style.top = vh / 2 + "px"; spot.style.width = "0px"; spot.style.height = "0px"; }
+      tip.textContent = "";
+      tip.appendChild(h("h3", { text: s.t })); tip.appendChild(h("p", { text: s.b }));
+      tip.appendChild(h("div", { class: "foot" }, [h("span", { class: "count", text: (TI + 1) + " / " + TOUR.length }),
+        TI > 0 ? h("button", { class: "tbtn", type: "button", onclick: function () { TI--; showStep(); }, text: "Back" }) : h("button", { class: "tbtn", type: "button", onclick: endTour, text: "Skip" }),
+        h("button", { class: "tbtn cta", type: "button", id: "tour-next", onclick: function () { TI++; showStep(); }, text: TI === TOUR.length - 1 ? "Done" : "Next" })]));
+      var tw = Math.min(360, vw - 32), th = tip.offsetHeight || 170, left, top;
+      if (r && r.width) {
+        if (r.right + 16 + tw < vw) { left = r.right + 16; top = Math.min(Math.max(16, r.top), vh - th - 16); }
+        else if (r.bottom + 16 + th < vh) { left = Math.min(Math.max(16, r.left), vw - tw - 16); top = r.bottom + 16; }
+        else { left = Math.min(Math.max(16, r.left), vw - tw - 16); top = Math.max(16, r.top - th - 16); }
+      } else { left = (vw - tw) / 2; top = Math.max(16, (vh - th) / 2); }
+      tip.style.left = left + "px"; tip.style.top = top + "px";
+      var nx = document.getElementById("tour-next"); if (nx) nx.focus();
+    }, s.view ? 120 : 0);
+  }
+
+  // ── terminal ──
+  var T = { out: null, input: null, hist: [], hi: 0, pending: null, env: null };
+  function who() { var n = CAP.me && CAP.me.name ? CAP.me.name.split(/\s+/)[0].toLowerCase() : (APP && APP.machine ? String(APP.machine).split("/")[0] : "you"); return n.replace(/[^a-z0-9_-]/g, "") || "you"; }
+  function prompt() { return h("span", { class: "p" }, [who() + "@froglet-compute ", h("span", { class: "path", text: "~" }), " %"]); }
+  function out(parts, cls) {
+    var line = h("div", { class: "line" + (cls ? " " + cls : "") });
+    (Array.isArray(parts) ? parts : [parts]).forEach(function (p) { if (p == null) return; if (typeof p === "string") line.appendChild(document.createTextNode(p)); else if (p.nodeType) line.appendChild(p); else line.appendChild(h("span", { class: p.c || "", text: p.t })); });
+    T.out.appendChild(line); T.out.scrollTop = T.out.scrollHeight; return line;
+  }
+  function pad(s, n) { s = String(s == null ? "" : s); return s.length >= n ? s.slice(0, n - 1) + "…" : s + new Array(n - s.length + 1).join(" "); }
+  function link(href, text) { return h("a", { href: href, target: "_blank", rel: "noopener", text: text || href }); }
+  var HELP = [["status", "everything at a glance"], ["runs", "what each computer is doing"], ["jobs", "every search"], ["job <id>", "one search: best, today's, why it waits"],
+    ["open <view|job>", "show home, runs, searches, machines, recordings, ai, or a search"], ["recordings [person]", "races sent from the editor"], ["ai", "the ai branch"],
+    ["git log [bleeding-edge|ai|Ys-bleeding-edge]", "recent commits"], ["git branches", "branches this console reads"], ["prs", "open pull requests"],
+    ["approve <job> [note] / decline <job>", "decide a search's best (core four)"], ["run <search> [--tries N] [--fix a=v] [--range a=lo:hi] [--arg k=v] [--note …] [--team]", "a manual run, your way"], ["requests", "every manual run"], ["install", "the one-line install"], ["tour", "the guided tour"],
+    ["ask <question>", "ask Claude about this data"], ["task <prompt>", "start a Claude Code cloud session on the repo"], ["sync", "task: bring the ai branch up to date"],
+    ["refresh", "task: rebuild this page's data and republish it"], ["sessions", "your recent Claude Code sessions"], ["env [n]", "pick where tasks run"], ["clear", "clear the screen"]];
+  var CMDS = {
+    help: function () { out([{ t: "Froglet Compute", c: "b" }, { t: "  ·  ask, task and sessions use your Claude account", c: "dim" }]); HELP.forEach(function (r) { out([{ t: "  " + pad(r[0], 44), c: "hl" }, { t: r[1], c: "dim" }]); }); out([{ t: "  ↑/↓ history · Tab completes · ⌘J or Ctrl+` toggles this panel", c: "dim" }]); },
+    status: function () { var d = DATA, act = (d.runs || {}).active || [], a = d.ai || {};
+      out([{ t: "data      ", c: "dim" }, "built " + ago(d.generated)]);
+      out([{ t: "running   ", c: "dim" }, { t: String(act.length), c: act.length ? "ok" : "warn" }, " runs on " + d.machines.length + " joined computer(s)"]);
+      out([{ t: "searches  ", c: "dim" }, d.jobs.filter(runnable).length + " searching, " + d.jobs.filter(function (j) { return j.converged; }).length + " ready for a yes, " + d.jobs.length + " total"]);
+      out([{ t: "ai        ", c: "dim" }, a.needs_sync ? { t: "behind (run `sync`)", c: "warn" } : { t: "up to date", c: "ok" }]);
+      out([{ t: "races     ", c: "dim" }, d.recordings.flights.length + " recorded, " + d.recordings.flights.filter(function (f) { return f.state === "new"; }).length + " not seen by the AI yet"]); },
+    runs: function () { var act = (DATA.runs || {}).active || [], rec = (DATA.runs || {}).recent || [];
+      if (!act.length) out("nothing running now", "dim");
+      act.forEach(function (r) { out([{ t: "● ", c: "ok" }, { t: pad(r.machine, 26), c: "hl" }, pad(r.job, 24), (r.evals || 0) + " tries · best " + fmt(r.best) + " · last heard " + ago(r.updated)]); });
+      rec.slice(0, 10).forEach(function (r) { out([{ t: "○ ", c: "dim" }, { t: pad(r.machine, 26), c: "dim" }, pad(r.job, 24), pad((r.evals || 0) + " tries", 12), pad(r.best_end != null ? "best " + fmt(r.best_end) : "", 14), { t: ago(r.end) + " · " + stopped(r.stopped), c: "dim" }]); }); },
+    jobs: function () { out([{ t: pad("SEARCH", 26) + pad("STATE", 16) + pad("TRIES", 8) + pad("BEST", 9) + pad("TODAY", 9) + "BETTER", c: "dim" }]);
+      DATA.jobs.forEach(function (j) { var s = stateOf(j), dl = delta(j);
+        out([{ t: pad(j.id, 26), c: "hl" }, { t: pad(s[1], 16), c: s[0] === "ready" ? "ok" : (s[0] === "converged" ? "warn" : (s[0] === "notrun" ? "err" : "dim")) }, pad(j.evals || 0, 8), pad(fmt(j.best && j.best.loss), 9), pad(fmt(j.baseline && j.baseline.loss), 9),
+          dl ? { t: (dl.better ? "" : "−") + Math.abs(dl.pct).toFixed(1) + "%", c: dl.better ? "ok" : "err" } : ""]); }); },
+    job: function (args) { var j = jobById(args[0]); if (!j) return out("no search " + (args[0] || "(name one)") + " · try `jobs`", "err");
+      var dl = delta(j); out([{ t: j.title, c: "b" }]); out([{ t: "  " + j.id + " · " + stateOf(j)[1] + " · code from " + j.ref, c: "dim" }]);
+      out(["  best ", { t: fmt(j.best && j.best.loss), c: "hl" }, "  today " + fmt(j.baseline && j.baseline.loss), dl ? { t: "  (" + pctText(dl) + ")", c: dl.better ? "ok" : "err" } : "", "  · " + (j.evals || 0) + " tries"]);
+      var sb = (j.best || {}).seconds_by_intensity, ss = (j.baseline || {}).seconds_by_intensity;
+      if (sb || ss) Object.keys(sb || ss).sort().forEach(function (k) { out(["  I" + k + "  today " + pad(fmt(ss && ss[k], 1) + " s", 10) + " best ", { t: fmt(sb && sb[k], 1) + " s", c: "hl" }]); });
+      if (j.reason && !runnable(j)) out([{ t: "  waits: " + j.reason, c: "warn" }]);
+      out([{ t: "  `open " + j.id + "` shows it · `approve " + j.id + "` says yes", c: "dim" }]); },
+    open: function (args) { var t = args[0] || ""; if (t === "queue") t = "searches";
+      if (VIEWS.indexOf(t) >= 0) { location.hash = t; return out("opened " + t, "dim"); }
+      if (jobById(t)) { openJob(t); return out("opened " + t, "dim"); } out("open what? " + VIEWS.join(", ") + ", or a search id", "err"); },
+    recordings: function (args) { var u = args[0], all = DATA.recordings.flights.filter(function (f) { return !u || f.user === u; });
+      var by = {}; all.forEach(function (f) { var k = f.vessel + " " + f.mode; by[k] = by[k] || { l: 0, w: 0, n: 0 }; by[k][f.state[0]]++; });
+      out([{ t: all.length + " races" + (u ? " from " + u : "") + " · learned / waiting / not seen", c: "dim" }]);
+      Object.keys(by).sort().forEach(function (k) { var c = by[k]; out(["  " + pad(k, 30), { t: pad(c.l, 5), c: "ok" }, { t: pad(c.w, 5), c: "warn" }, { t: String(c.n), c: c.n ? "err" : "dim" }]); }); },
+    ai: function () { var a = DATA.ai || {}; out(["origin/ai @ ", { t: (a.sha || "").slice(0, 9), c: "hl" }, " · " + (a.behind_base || 0) + " behind bleeding-edge"]); out(a.needs_sync ? [{ t: (a.waiting_ai_files || 0) + " AI files waiting · run `sync`", c: "warn" }] : [{ t: "up to date", c: "ok" }]); },
+    git: function (args) { var g = DATA.git || {};
+      if (args[0] === "branches") { Object.keys(g.branches || {}).forEach(function (b) { var c = g.branches[b][0]; out([{ t: pad(b, 22), c: "hl" }, c ? c.sha + "  " + ago(c.time) + "  " + c.subject : ""]); }); (g.results || []).forEach(function (r) { out([{ t: pad(r.ref, 40), c: "ruby" }, { t: ago(r.time), c: "dim" }]); }); return; }
+      if (args[0] === "log") { var b = args[1] || "bleeding-edge", rows = (g.branches || {})[b]; if (!rows) return out("no snapshot of " + b + " · bleeding-edge, ai or Ys-bleeding-edge", "err");
+        rows.forEach(function (c) { out([{ t: c.sha + " ", c: "warn" }, pad(c.subject, 70), { t: " " + c.author + ", " + ago(c.time), c: "dim" }]); }); return out([{ t: "snapshot from " + ago(DATA.generated) + " · live git work: task \"…\"", c: "dim" }]); }
+      out("git log [branch] · git branches · anything else: task \"git …\"", "err"); },
+    prs: function () { var p = DATA.pull_requests || []; if (!p.length) return out("no pull requests in this snapshot · `refresh` adds them", "warn");
+      p.forEach(function (r) { out([{ t: "#" + pad(r.number, 6), c: "hl" }, pad((r.draft ? "[draft] " : "") + r.title, 72), { t: " " + (r.user || "") + " → " + (r.base || ""), c: "dim" }, " ", link(r.url, "↗")]); }); },
+    approve: function (args) { decideFromTerm("approve", args); }, decline: function (args) { decideFromTerm("decline", args); },
+    run: function (args) { var j = args.shift(); if (!formFor(j)) return out("run <search> [--tries N] [--fix name=value] [--range name=low:high] [--arg key=value] [--note \"…\"] [--team]  · or New run", "err");
+      NR = freshNR(j); var team = false;
+      for (var i = 0; i < args.length; i++) { var a = args[i], v = args[i + 1];
+        if (a === "--tries") { NR.tries = v; i++; } else if (a === "--team") team = true; else if (a === "--note") { NR.note = v; i++; }
+        else if (a === "--fix" && v) { var kv = v.split("="); if (NR.modes[kv[0]] != null) { NR.modes[kv[0]] = "fix"; NR.vals[kv[0]].v = kv[1]; } i++; }
+        else if (a === "--range" && v) { var kr = v.split("="), lh = (kr[1] || "").split(":"); if (NR.modes[kr[0]] != null) { NR.modes[kr[0]] = "range"; NR.vals[kr[0]].lo = lh[0]; NR.vals[kr[0]].hi = lh[1]; } i++; }
+        else if (a === "--arg" && v) { var ka = v.split("="); if (NR.args[ka[0]] != null) NR.args[ka[0]] = ka.slice(1).join("="); i++; } }
+      NR.where = team ? "team" : "here";
+      var r = nrRequest(); if (r.errs.length) return r.errs.forEach(function (e) { out(e, "err"); });
+      var tok = b64url(JSON.stringify(r.req));
+      out([{ t: "request " + r.req.id, c: "b" }, "  " + r.req.budget.tries + " tries" + (r.req.note ? " · " + r.req.note : "")]);
+      out([{ t: "now, on your computer:  ", c: "dim" }, { t: appCmd("run --request " + tok), c: "hl" }]);
+      out([{ t: "for the team:           ", c: "dim" }, { t: appCmd("request new --token " + tok + " --push"), c: "hl" }, { t: "  (or New run → File it now)", c: "dim" }]); },
+    requests: function () { var m = DATA.manual || []; if (!m.length) return out("no manual runs · `run <search> …` or New run", "dim");
+      m.forEach(function (r) { out([{ t: pad(r.state, 10), c: r.state === "done" ? "ok" : (r.state === "running" ? "hl" : "warn") }, pad(r.job, 24), pad((r.tries || 0) + "/" + r.budget, 12), pad(r.best != null ? "best " + fmt(r.best) : "", 14), { t: (r.note || "").slice(0, 60), c: "dim" }]); }); },
+    install: function () { out(installCommand(), "hl"); out("Run it from your Cosmic-Shore folder. The Install button explains each step.", "dim"); openInstall(); },
+    tour: function () { toggleTerm(false); startTour(0); },
+    ask: function (args, raw) { ask(raw.replace(/^ask\s+/, "")); },
+    task: function (args, raw) { var p = raw.replace(/^task\s+/, "").replace(/^["']|["']$/g, ""); if (!p.trim()) return out("task <what the session should do>", "err"); planTask(p); },
+    sync: function () { planTask("In froglet-studio/Cosmic-Shore, run `python3 Tools/Compute/ai_branch.py status`, then `python3 Tools/Compute/ai_branch.py sync --push` (with the branch " + (DATA.branch || "that carries Tools/Compute") + " checked out until Froglet Compute is on bleeding-edge). Report what came over; if it stops on a conflict, report the files and stop."); },
+    refresh: function () { if (!DATA.url) return out("this console does not know its own address · build it with compute.py console --url", "err");
+      planTask("Refresh the Froglet Compute Console. In froglet-studio/Cosmic-Shore on branch " + (DATA.branch || "the compute branch") + ": list the open pull requests with the GitHub tools and save them as JSON to a scratch file, run `python3 Tools/Compute/compute.py console --local --out <scratch dir> --prs <that file> --url " + DATA.url + "`, then republish the artifact " + DATA.url + " from <scratch dir>/index.html with console.json beside it (Artifact publish with url, file_path and files). Then check the page's approvals: export its `approvals` collection and the profiles of their ids with ArtifactData, run `compute.py console --approvals <file> --profiles <file>`, act on each VALID one per Docs/Compute/README.md section 8, and write `processed/<job>` in the page's store."); },
+    sessions: function () { sessions(); }, env: function (args) { envs(args[0] == null ? null : args[0], false); },
+    clear: function () { T.out.textContent = ""; }, history: function () { T.hist.forEach(function (c, i) { out([{ t: pad(i + 1, 5), c: "dim" }, c]); }); },
+    yes: function () { if (!T.pending) return out("nothing waiting for a yes", "dim"); var p = T.pending; T.pending = null; startTask(p); },
+    no: function () { if (T.pending) { T.pending = null; out("cancelled", "dim"); } }
+  };
+  function decideFromTerm(kind, args) {
+    var j = jobById(args[0]); if (!j) return out("no search " + (args[0] || "(name one)"), "err");
+    if (!CAP.db || !CAP.me || !CAP.me.id) return out("deciding needs the claude.ai console", "err");
+    if (CAP.canApprove === false) return out("Garrett, Caleb, Shombith or Yash decide this", "err");
+    if (!j.best) return out(j.id + " has no result yet", "warn");
+    saveDecision(j, kind, args.slice(1).join(" ")).then(function () { out([{ t: kind === "approve" ? "approved " : "declined ", c: kind === "approve" ? "ok" : "warn" }, j.id + " at best " + fmt(j.best.loss)]); if (OPEN) renderDrawer(); }, function (e) { out(saveError(e), "err"); });
+  }
+  function ask(q) {
+    if (!q.trim()) return out("ask <question>", "err");
+    if (!CAP.sample) return out("asking Claude works in the claude.ai console", "err");
+    var brief = { built: DATA.generated, jobs: DATA.jobs.map(function (j) { return { id: j.id, title: j.title, state: stateOf(j)[1], tries: j.evals, best: j.best && j.best.loss, today: j.baseline && j.baseline.loss, seconds_best: j.best && j.best.seconds_by_intensity, seconds_today: j.baseline && j.baseline.seconds_by_intensity, waits: j.reason, limits: j.best && j.best.limits }; }),
+      runs: DATA.runs, machines: DATA.machines.map(function (m) { return { machine: m.machine, active: m.active, updated: m.updated }; }), ai: DATA.ai,
+      recordings: DATA.recordings.flights.slice(0, 120).map(function (f) { return [f.date, f.user, f.vessel, f.mode, f.state, f.why]; }) };
+    var line = out([{ t: "thinking…", c: "dim" }]);
+    CAP.sample("You answer questions in the Froglet Compute console for Cosmic Shore's team: idle computers search vessel AI driving settings and other parameters in an offline model of the game (lower score is better; drive scores are mean log race seconds). Answer briefly and specifically in plain text from this data only; say when it cannot answer.\n\nDATA:\n" + JSON.stringify(brief).slice(0, 120000) + "\n\nQUESTION: " + q,
+      { cache: false, onText: function (u) { line.textContent = u.text; T.out.scrollTop = T.out.scrollHeight; } })
+      .then(function (r) { line.textContent = r.text; }, function (e) { line.textContent = e.text || ""; out(e.code === "not_granted" ? "asking Claude was not allowed for this page" : (e.code === "rate_limited" ? "too many questions right now, try later" : "could not ask (" + e.code + ")"), "err"); });
+  }
+  function ccrPayload(r) { var p = r && r.payload; if (p && p.ccr) p = p.ccr; return p || {}; }
+  function mcpError(e) { var c = e && e.code;
+    out(c === "server_not_connected" ? "Claude Code Remote is not connected for your account (claude.ai Settings → Connectors)" : c === "not_in_manifest" || c === "approval_required" ? "this page is not allowed to use Claude Code Remote for you; allow it when asked" :
+      c === "needs_reauth" ? "reconnect Claude Code Remote in claude.ai Settings → Connectors" : "Claude Code Remote failed (" + (c || "error") + ")" + (e && e.message ? ": " + e.message : ""), "err"); }
+  function envs(pick, quiet) {
+    if (!CAP.mcp) { out("tasks need the claude.ai console (Claude Code Remote)", "err"); return Promise.resolve(null); }
+    return CAP.mcp.callTool(CCR, "list_environments", { limit: 20 }).then(function (r) {
+      var list = (ccrPayload(r).environments || []).filter(function (e) { return e.state === "active"; });
+      if (!list.length) { out("no active Claude Code environment on your account · create one at claude.ai/code", "err"); return null; }
+      if (pick != null) { var n = parseInt(pick, 10); if (list[n - 1]) T.env = list[n - 1]; }
+      if (!T.env) T.env = list[0];
+      if (!quiet) list.forEach(function (e, i) { out([{ t: (e.environment_id === T.env.environment_id ? "● " : "  ") + (i + 1) + "  ", c: "hl" }, pad(e.name, 28), { t: e.kind, c: "dim" }]); });
+      return T.env;
+    }, function (e) { mcpError(e); return null; });
+  }
+  function planTask(p) {
+    if (!CAP.mcp) return out("tasks need the claude.ai console (Claude Code Remote)", "err");
+    T.pending = p; out([{ t: "task  ", c: "ruby" }, p]);
+    out([{ t: "This starts a Claude Code cloud session on your account, on " + (DATA.repo || "the repo") + (DATA.branch ? " @ " + DATA.branch : "") + ". It can change and push code like any session. Type ", c: "dim" }, { t: "yes", c: "hl" }, { t: " to start or ", c: "dim" }, { t: "no", c: "hl" }, { t: ".", c: "dim" }]);
+  }
+  function createSession(prompt, title) {
+    return (T.env ? Promise.resolve(T.env) : envs(null, true)).then(function (env) {
+      if (!env) throw "No Claude Code environment on your account.";
+      var input = { prompt: prompt, title: title, environment_id: env.environment_id, source_url: "https://github.com/" + (DATA.repo || "froglet-studio/Cosmic-Shore") };
+      if (DATA.branch && DATA.branch !== "HEAD") input.source_revision = DATA.branch;
+      return CAP.mcp.callTool(CCR, "create_session", input).then(function (r) {
+        var pl = ccrPayload(r), id = pl.session_id || pl.id || (pl.session && pl.session.id);
+        return id ? link("https://claude.ai/code/" + id, "open the session") : null;
+      }, function (e) { mcpError(e); throw "Claude Code Remote failed (" + ((e && e.code) || "error") + ")."; });
+    });
+  }
+  function startTask(p) {
+    out("starting…", "dim");
+    (T.env ? Promise.resolve(T.env) : envs(null, true)).then(function (env) {
+      if (!env) return;
+      var input = { prompt: p, title: "Compute console: " + p.replace(/\s+/g, " ").slice(0, 60), environment_id: env.environment_id, source_url: "https://github.com/" + (DATA.repo || "froglet-studio/Cosmic-Shore") };
+      if (DATA.branch && DATA.branch !== "HEAD") input.source_revision = DATA.branch;
+      return CAP.mcp.callTool(CCR, "create_session", input).then(function (r) {
+        var pl = ccrPayload(r), id = pl.session_id || pl.id || (pl.session && pl.session.id);
+        if (id) out([{ t: "started ", c: "ok" }, link("https://claude.ai/code/" + id, id)]); else out([{ t: "started", c: "ok" }, { t: " · " + JSON.stringify(pl).slice(0, 300), c: "dim" }]);
+        out("`sessions` shows how it is doing", "dim");
+      }, mcpError);
+    });
+  }
+  function sessions() {
+    if (!CAP.mcp) return out("sessions need the claude.ai console (Claude Code Remote)", "err");
+    out("reading…", "dim");
+    CAP.mcp.callTool(CCR, "list_sessions", { limit: 8, mine: true }).then(function (r) {
+      var rows = ccrPayload(r).data || []; if (!rows.length) return out("no sessions", "dim");
+      rows.forEach(function (s) { var st = String(s.status_bucket || s.session_status || "").replace(/^SESSION_STATUS_(BUCKET_)?/, "").toLowerCase();
+        out([{ t: pad(st, 11), c: st === "working" ? "ok" : (st === "failed" ? "err" : "dim") }, link("https://claude.ai/code/" + s.id, pad(s.title || s.id, 44)), { t: "  " + (s.updated_at || "").slice(0, 16).replace("T", " "), c: "dim" }]);
+        if (s.post_turn_summary && s.post_turn_summary.recent_action) out([{ t: "           " + s.post_turn_summary.recent_action, c: "dim" }]); });
+    }, mcpError);
+  }
+  function complete(v) {
+    var parts = v.split(/\s+/), names = Object.keys(CMDS).filter(function (n) { return ["yes", "no"].indexOf(n) < 0; });
+    if (parts.length === 1) { var m = names.filter(function (n) { return n.indexOf(parts[0]) === 0; }); if (m.length === 1) return m[0] + " "; if (m.length) out(m.join("  "), "dim"); return v; }
+    if (["job", "open", "approve", "decline"].indexOf(parts[0]) >= 0) {
+      var pool = DATA.jobs.map(function (j) { return j.id; }).concat(parts[0] === "open" ? VIEWS : []);
+      var mm = pool.filter(function (n) { return n.indexOf(parts[1] || "") === 0; }); if (mm.length === 1) return parts[0] + " " + mm[0] + " "; if (mm.length) out(mm.join("  "), "dim");
+    }
+    return v;
+  }
+  function run(raw) {
+    var line = raw.trim(); out([prompt(), " " + line]); if (!line) return;
+    T.hist.push(line); T.hi = T.hist.length;
+    var args = line.match(/"[^"]*"|'[^']*'|\S+/g).map(function (a) { return a.replace(/^["']|["']$/g, ""); }), cmd = args.shift().toLowerCase();
+    if (T.pending && cmd !== "yes" && cmd !== "no") { T.pending = null; out("(the waiting task was cancelled)", "dim"); }
+    if (!DATA && ["help", "clear"].indexOf(cmd) < 0) return out("the data has not loaded", "err");
+    var fn = CMDS[cmd]; if (fn) { try { fn(args, line); } catch (e) { out(String(e && e.message || e), "err"); } } else out("command not found: " + cmd + " · `help`", "err");
+  }
+  function buildTerm() {
+    T.out = document.getElementById("tout");
+    document.getElementById("term").appendChild(h("div", { class: "tin" }, [prompt(), h("input", { id: "tin", type: "text", autocomplete: "off", autocapitalize: "off", spellcheck: "false", "aria-label": "Terminal input" })]));
+    T.input = document.getElementById("tin");
+    T.input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { var v = T.input.value; T.input.value = ""; run(v); }
+      else if (e.key === "ArrowUp") { if (T.hi > 0) { T.hi--; T.input.value = T.hist[T.hi] || ""; } e.preventDefault(); }
+      else if (e.key === "ArrowDown") { if (T.hi < T.hist.length) { T.hi++; T.input.value = T.hist[T.hi] || ""; } e.preventDefault(); }
+      else if (e.key === "Tab") { e.preventDefault(); if (DATA) T.input.value = complete(T.input.value); }
+      else if (e.key === "l" && e.ctrlKey) { e.preventDefault(); CMDS.clear(); }
+    });
+    T.out.addEventListener("click", function () { if (!window.getSelection().toString()) T.input.focus(); });
+    out([{ t: "Froglet Compute", c: "b" }, { t: "  ·  type ", c: "dim" }, { t: "help", c: "hl" }, { t: " for commands", c: "dim" }]);
+  }
+  function refreshPrompt() { var p = document.querySelector(".tin .p"); if (p) p.replaceWith(prompt()); }
+  function toggleTerm(force) {
+    var t = document.getElementById("term"), show = force == null ? t.hidden : force;
+    t.hidden = !show; if (show) setTimeout(function () { T.input.focus(); }, 0);
+    var n = document.getElementById("nav-term"); if (show) n.setAttribute("aria-current", "page"); else n.removeAttribute("aria-current");
+  }
+
+  // ── capabilities (claude.ai only; the page works without them) ──
+  function connect() {
+    if (!window.claude || !window.claude.use) { CAP.ready = true; return; }
+    var u = window.claude.use.bind(window.claude);
+    u("sample").then(function (s) { CAP.sample = s; });
+    u("mcp").then(function (m) { CAP.mcp = m; });
+    Promise.all([u("db"), u("user")]).then(function (r) {
+      CAP.db = r[0]; CAP.user = r[1]; CAP.ready = true;
+      if (!CAP.user) { if (OPEN) renderDrawer(); return; }
+      CAP.user.me().then(function (me) {
+        CAP.me = me; refreshPrompt();
+        var first = (me.name || "").split(/\s+/)[0].toLowerCase(), core = ((DATA && DATA.core) || []).map(function (c) { return c.toLowerCase(); });
+        CAP.canApprove = !me.id ? false : (first ? core.indexOf(first) >= 0 : null);
+        if (OPEN) renderDrawer();
+      });
+      if (!CAP.db) return;
+      CAP.db.collection("approvals").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = ((d.data() || {}).decisions) || {}; }); CAP.approvals = a; if (DATA && TI < 0) render(); if (OPEN) renderDrawer(); }, function () {});
+      CAP.db.collection("outbox").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = d.data() || {}; }); CAP.outbox = a; if (DATA && TI < 0 && VIEW === "runs" && document.getElementById("sheet").hidden) render(); }, function () {});
+      CAP.db.collection("sent").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = d.data() || {}; }); CAP.sent = a; if (DATA && TI < 0 && VIEW === "runs" && document.getElementById("sheet").hidden) render(); }, function () {});
+      CAP.db.collection("processed").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = d.data() || {}; }); CAP.processed = a; if (OPEN) renderDrawer(); }, function () {});
+    });
+  }
+
+  // ── routing and boot ──
+  function render() {
+    var root = document.getElementById("main"); root.textContent = "";
+    renderChrome();
+    ({ home: renderHome, runs: renderRuns, searches: renderSearches, machines: renderMachines, recordings: renderRecordings, ai: renderAi })[VIEW](root);
+    if (!LIVE) root.appendChild(h("p", { class: "note foot", text: "Snapshot of " + new Date(DATA.generated * 1000).toLocaleString() + (DATA.sync_every ? " · updates every " + DATA.sync_every : "") }));
+  }
+  function route() {
+    var v = (location.hash || "").replace("#", "");
+    if (v === "queue") v = "searches";
+    if (v === "terminal") { toggleTerm(true); return; }
+    VIEW = VIEWS.indexOf(v) >= 0 ? v : "home";
+    if (DATA) render();
+    document.getElementById("scroll").scrollTop = 0;
+  }
+  window.addEventListener("hashchange", route);
+  document.getElementById("nav-term").addEventListener("click", function (e) { e.preventDefault(); toggleTerm(); });
+  document.getElementById("sb-term").addEventListener("click", function () { toggleTerm(); });
+  document.getElementById("t-close").addEventListener("click", function () { toggleTerm(false); });
+  document.getElementById("t-clear").addEventListener("click", function () { CMDS.clear(); });
+  document.getElementById("t-tall").addEventListener("click", function (e) { var t = document.getElementById("term"); t.classList.toggle("tall"); e.target.textContent = t.classList.contains("tall") ? "Shrink" : "Expand"; });
+  document.getElementById("l-red").addEventListener("click", function () { if (TI >= 0) endTour(); else if (!document.getElementById("sheet").hidden) closeInstall(); else if (OPEN) closeJob(); else toggleTerm(false); });
+  document.getElementById("l-yellow").addEventListener("click", function () { document.getElementById("win").classList.toggle("nosidebar"); });
+  document.getElementById("l-green").addEventListener("click", function () { document.getElementById("win").classList.toggle("zoomed"); });
+  document.getElementById("b-install").addEventListener("click", openInstall);
+  document.getElementById("b-tour").addEventListener("click", function () { startTour(0); });
+  document.getElementById("b-newrun").addEventListener("click", function () { openNewRun(); });
+  document.getElementById("b-menu").addEventListener("click", function (e) { e.stopPropagation(); document.getElementById("win").classList.toggle("menu-open"); });
+  document.getElementById("nav").addEventListener("click", function (e) { if (e.target.closest("a, button")) document.getElementById("win").classList.remove("menu-open"); });
+  document.addEventListener("click", function (e) {
+    var w = document.getElementById("win"); if (w.classList.contains("menu-open") && !e.target.closest("#nav")) w.classList.remove("menu-open");
+    if (MMENU && !e.target.closest(".menuwrap")) { MMENU = null; if (VIEW === "machines") render(); }
+  });
+  document.getElementById("scrim").addEventListener("click", closeJob);
+  document.getElementById("sheet").addEventListener("click", function (e) { if (e.target.id === "sheet") closeInstall(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && MMENU) { MMENU = null; render(); return; }
+    if (e.key === "Escape") { if (TI >= 0) endTour(); else if (!document.getElementById("sheet").hidden) closeInstall(); else if (OPEN) closeJob(); }
+    if (TI >= 0 && e.key === "ArrowRight") { TI++; showStep(); }
+    if (TI >= 0 && e.key === "ArrowLeft" && TI > 0) { TI--; showStep(); }
+    if ((e.metaKey && e.key.toLowerCase() === "j") || (e.ctrlKey && e.key === "`")) { e.preventDefault(); toggleTerm(); }
+  });
+  window.addEventListener("resize", function () { if (TI >= 0) showStep(); });
+  buildTerm();
+  route();
+  // The app and the hub answer 503 until their first build from git is done (a minute or more the first time, when
+  // they fetch every team branch): wait and say so, and show the build's own error if it failed.
+  function load(tries) {
+    fetch("console.json", { cache: "no-store" }).then(function (r) {
+      if (r.status === 503) return r.json().catch(function () { return {}; }).then(function (j) { throw { waiting: true, info: j }; });
+      if (!r.ok) throw new Error("HTTP " + r.status); return r.json();
+    }).then(function (d) {
+      DATA = d; render(); connect(); goLive();
+      if (!lsGet("fc-tour")) setTimeout(function () { startTour(0); }, 400);
+    }).catch(function (e) {
+      var root = document.getElementById("main"); root.textContent = "";
+      if (e && e.waiting && !(e.info && e.info.failed)) {
+        root.appendChild(h("div", { class: "empty" }, [h("b", { text: "Starting up" }), h("span", { text: "Reading the team's results from git" + (e.info && e.info.seconds ? " (" + e.info.seconds + " s so far)" : "") + ". The first time takes a minute or two; this page opens by itself." })]));
+        document.getElementById("fresh").textContent = "starting";
+        return setTimeout(function () { load((tries || 0) + 1); }, 3000);
+      }
+      var msg = e && e.waiting ? "Its last build failed: " + e.info.error + ". It tries again every minute; the app's window shows more." : "This page reads console.json from its own folder (" + e.message + "). Build it with python3 Tools/Compute/compute.py console and publish both files together.";
+      root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "The data did not load" }), h("p", { class: "note", text: msg })]));
+      document.getElementById("fresh").textContent = "no data";
+      if (e && e.waiting) setTimeout(function () { load((tries || 0) + 1); }, 15000);
+    });
+  }
+  load(0);
+})();
+</script>

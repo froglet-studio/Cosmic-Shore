@@ -636,6 +636,58 @@
         "Steam upload, once an app id exists: ./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal"
       ]
     },
+    "compute": {
+      "title": "Froglet Compute (idle-hardware learning)",
+      "aliases": [
+        "compute",
+        "idle compute",
+        "compute queue",
+        "compute board",
+        "froglet compute",
+        "regatta balance plan",
+        "bioform forge"
+      ],
+      "owner": "Shombith",
+      "people": [
+        "Garrett",
+        "Yash"
+      ],
+      "audience": [
+        "everyone"
+      ],
+      "branch": "cece/clever-ritchie-q8270q",
+      "branchNote": "until merged into bleeding-edge; then the queue lives on bleeding-edge, Ys-bleeding-edge and compute-queue",
+      "summary": "A queue of learning searches (AI drives per vessel and intensity, the Regatta course and elemental balance plan, swarm bioforms, NCA creature trainings) that every collaborator's computer works through when idle, merged on one board, with a scout that finds what to search next. Asked for by Garrett 2026-10-26; tooling, so changes go through Shombith (CLAUDE.md).",
+      "paths": [
+        "Tools/Compute",
+        "Docs/Compute",
+        ".claude/skills/compute",
+        ".claude/skills/compute-job",
+        ".claude/skills/compute-scout",
+        ".claude/skills/regatta-balance",
+        ".claude/skills/bioform-forge",
+        "Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md"
+      ],
+      "docs": [
+        "Docs/Compute/README.md",
+        "Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md",
+        "Docs/Compute/BOARD.md",
+        "Docs/Compute/OPPORTUNITIES.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/COMPUTE.md",
+      "taskAreas": [
+        "Compute",
+        "Regatta AI",
+        "AI training"
+      ],
+      "test": [
+        "python3 Tools/Compute/compute.py self-test",
+        "python3 Tools/Compute/compute.py doctor, then top --why",
+        "python3 Tools/Compute/compute.py run --once (on a Windows or macOS machine: the first real run there)",
+        "python3 Tools/Compute/compute.py board"
+      ]
+    },
     "attribution": {
       "title": "Attribution audit",
       "aliases": [

@@ -1,0 +1,859 @@
+{
+ "area_owner": "the AI trainer: studyholic, Garrett and Shombith (Docs/AI_SYSTEM/AI_TRAINING_PLAN.md); deployed AI: Yash",
+ "asked_by": "Shombith 2026-10-28",
+ "command": {
+  "argv": [
+   "{python}",
+   "{tools}/unity_run.py",
+   "--sha",
+   "{sha}",
+   "--out",
+   "{out}",
+   "--mode",
+   "{unit.mode}",
+   "--vessel",
+   "{unit.vessel}",
+   "--intensity",
+   "{unit.intensity}",
+   "--episodes",
+   "{unit.episodes}",
+   "--minutes",
+   "{minutes}",
+   "--overlay-ref",
+   "{app_ref}",
+   "--overlay",
+   "Assets/_Scripts/Utility/AITraining/",
+   "--overlay",
+   "Assets/_SO_Assets/AI Training/",
+   "--quiet"
+  ],
+  "count": {
+   "file": "status.json",
+   "key": "episodes_total"
+  },
+  "keep": [
+   "status.json",
+   "result.json",
+   "genome.json",
+   "SessionState.asset",
+   "unity-tail.log",
+   "recordings.json"
+  ],
+  "lease_hours": 3,
+  "max_mb": 8,
+  "pairs": {
+   "Bends": {
+    "locked": true,
+    "name": "The Bends",
+    "token": "Bends",
+    "vessels": [
+     "Dolphin"
+    ]
+   },
+   "Bloomrush": {
+    "locked": true,
+    "name": "Bloomrush",
+    "token": "Bloomrush",
+    "vessels": [
+     "Manta"
+    ]
+   },
+   "Breakwater": {
+    "locked": true,
+    "name": "Breakwater",
+    "token": "Breakwater",
+    "vessels": [
+     "Sparrow"
+    ]
+   },
+   "Broadside": {
+    "locked": false,
+    "name": "Broadside",
+    "token": "Broadside",
+    "vessels": [
+     "Manta",
+     "Dolphin",
+     "Rhino",
+     "Urchin",
+     "Squirrel",
+     "Sparrow",
+     "Scarab"
+    ]
+   },
+   "BroodRush": {
+    "locked": false,
+    "name": "Brood Rush",
+    "token": "NucleusRush",
+    "vessels": [
+     "Squirrel",
+     "Manta",
+     "Dolphin",
+     "Rhino",
+     "Serpent",
+     "Sparrow"
+    ]
+   },
+   "BurrowRun": {
+    "locked": true,
+    "name": "Burrow Run",
+    "token": "BurrowRun",
+    "vessels": [
+     "Meerkat"
+    ]
+   },
+   "Cleave": {
+    "locked": true,
+    "name": "Cleave",
+    "token": "Ribcage",
+    "vessels": [
+     "Rhino"
+    ]
+   },
+   "DogFight": {
+    "locked": true,
+    "name": "Dog Fight",
+    "token": "DogFight",
+    "vessels": [
+     "Sparrow"
+    ]
+   },
+   "Dustup": {
+    "locked": true,
+    "name": "Dustup",
+    "token": "Dustup",
+    "vessels": [
+     "Butterfly"
+    ]
+   },
+   "GrizzlyTime": {
+    "locked": true,
+    "name": "Grizzly Time",
+    "token": "GrizzlyTime",
+    "vessels": [
+     "Grizzly"
+    ]
+   },
+   "Headlong": {
+    "locked": true,
+    "name": "Headlong",
+    "token": "Headlong",
+    "vessels": [
+     "Rhino"
+    ]
+   },
+   "Hijack": {
+    "locked": true,
+    "name": "Hijack",
+    "token": "Hijack",
+    "vessels": [
+     "Urchin"
+    ]
+   },
+   "Joust": {
+    "locked": true,
+    "name": "Joust",
+    "token": "Joust",
+    "vessels": [
+     "Squirrel"
+    ]
+   },
+   "Rampage": {
+    "locked": true,
+    "name": "Rampage",
+    "token": "Rampage",
+    "vessels": [
+     "Dolphin"
+    ]
+   },
+   "Redline": {
+    "locked": true,
+    "name": "Redline",
+    "token": "Redline",
+    "vessels": [
+     "Manta"
+    ]
+   },
+   "Regatta": {
+    "locked": false,
+    "name": "Regatta",
+    "token": "Regatta",
+    "vessels": [
+     "Manta",
+     "Dolphin",
+     "Rhino",
+     "Urchin",
+     "Squirrel",
+     "Serpent",
+     "Sparrow",
+     "Scarab",
+     "Stoat"
+    ]
+   },
+   "Salvo": {
+    "locked": true,
+    "name": "Salvo",
+    "token": "Salvo",
+    "vessels": [
+     "Sparrow"
+    ]
+   },
+   "ScarabScramble": {
+    "locked": true,
+    "name": "Scarab Scramble",
+    "token": "ScarabScramble",
+    "vessels": [
+     "Scarab"
+    ]
+   },
+   "Scurry": {
+    "locked": false,
+    "name": "Scurry",
+    "token": "CrystalCapture",
+    "vessels": [
+     "Sparrow",
+     "Manta",
+     "Squirrel"
+    ]
+   },
+   "Sirocco": {
+    "locked": true,
+    "name": "Sirocco",
+    "token": "Sirocco",
+    "vessels": [
+     "Butterfly"
+    ]
+   },
+   "Skein": {
+    "locked": true,
+    "name": "Skein",
+    "token": "Skein",
+    "vessels": [
+     "Urchin"
+    ]
+   },
+   "SkimRace": {
+    "locked": true,
+    "name": "Skim Race",
+    "token": "HexRace",
+    "vessels": [
+     "Squirrel"
+    ]
+   },
+   "Slingshot": {
+    "locked": true,
+    "name": "Slingshot",
+    "token": "Slingshot",
+    "vessels": [
+     "Stoat"
+    ]
+   },
+   "Switchback": {
+    "locked": true,
+    "name": "Switchback",
+    "token": "Switchback",
+    "vessels": [
+     "Dolphin"
+    ]
+   },
+   "Tapestry": {
+    "locked": true,
+    "name": "Tapestry",
+    "token": "Tapestry",
+    "vessels": [
+     "Butterfly"
+    ]
+   },
+   "ThresherTime": {
+    "locked": true,
+    "name": "Thresher Time",
+    "token": "ThresherTime",
+    "vessels": [
+     "Thresher"
+    ]
+   },
+   "Tollway": {
+    "locked": true,
+    "name": "Tollway",
+    "token": "Tollway",
+    "vessels": [
+     "Scarab"
+    ]
+   },
+   "Undertow": {
+    "locked": true,
+    "name": "Undertow",
+    "token": "Undertow",
+    "vessels": [
+     "Scarab"
+    ]
+   },
+   "Warpline": {
+    "locked": true,
+    "name": "Warpline",
+    "token": "Warpline",
+    "vessels": [
+     "Meerkat"
+    ]
+   },
+   "Waystation": {
+    "locked": true,
+    "name": "Waystation",
+    "token": "Waystation",
+    "vessels": [
+     "Butterfly"
+    ]
+   },
+   "WildlifeLiberation": {
+    "locked": true,
+    "name": "Wildlife Liberation",
+    "token": "WildlifeLiberation",
+    "vessels": [
+     "Sparrow"
+    ]
+   },
+   "WrasseRun": {
+    "locked": true,
+    "name": "Wrasse Run",
+    "token": "WrasseRun",
+    "vessels": [
+     "Wrasse"
+    ]
+   },
+   "WreckingBall": {
+    "locked": true,
+    "name": "Wrecking Ball",
+    "token": "WreckingBall",
+    "vessels": [
+     "Scarab"
+    ]
+   }
+  },
+  "paths": [
+   "ProjectSettings/"
+  ],
+  "progress": {
+   "file": "status.json",
+   "key": "episodes_total",
+   "of": "unit_episodes"
+  },
+  "request": {
+   "episodes": {
+    "hi": 2000,
+    "lo": 5
+   },
+   "intensity": [
+    1,
+    2,
+    3,
+    4
+   ]
+  },
+  "score": {
+   "file": "status.json",
+   "key": "loss"
+  },
+  "units": [
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "HexRace",
+     "vessel": "Squirrel"
+    },
+    "id": "skimrace-squirrel-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "CrystalCapture",
+     "vessel": "Sparrow"
+    },
+    "id": "scurry-sparrow-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "CrystalCapture",
+     "vessel": "Manta"
+    },
+    "id": "scurry-manta-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "CrystalCapture",
+     "vessel": "Squirrel"
+    },
+    "id": "scurry-squirrel-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Joust",
+     "vessel": "Squirrel"
+    },
+    "id": "joust-squirrel-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Rampage",
+     "vessel": "Dolphin"
+    },
+    "id": "rampage-dolphin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Ribcage",
+     "vessel": "Rhino"
+    },
+    "id": "cleave-rhino-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "WildlifeLiberation",
+     "vessel": "Sparrow"
+    },
+    "id": "wildlifeliberation-sparrow-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "DogFight",
+     "vessel": "Sparrow"
+    },
+    "id": "dogfight-sparrow-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Bends",
+     "vessel": "Dolphin"
+    },
+    "id": "bends-dolphin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "ScarabScramble",
+     "vessel": "Scarab"
+    },
+    "id": "scarabscramble-scarab-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Salvo",
+     "vessel": "Sparrow"
+    },
+    "id": "salvo-sparrow-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "NucleusRush",
+     "vessel": "Squirrel"
+    },
+    "id": "broodrush-squirrel-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "NucleusRush",
+     "vessel": "Manta"
+    },
+    "id": "broodrush-manta-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "NucleusRush",
+     "vessel": "Dolphin"
+    },
+    "id": "broodrush-dolphin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "NucleusRush",
+     "vessel": "Rhino"
+    },
+    "id": "broodrush-rhino-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "NucleusRush",
+     "vessel": "Serpent"
+    },
+    "id": "broodrush-serpent-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "NucleusRush",
+     "vessel": "Sparrow"
+    },
+    "id": "broodrush-sparrow-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Regatta",
+     "vessel": "Manta"
+    },
+    "id": "regatta-manta-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Regatta",
+     "vessel": "Dolphin"
+    },
+    "id": "regatta-dolphin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Regatta",
+     "vessel": "Rhino"
+    },
+    "id": "regatta-rhino-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Regatta",
+     "vessel": "Urchin"
+    },
+    "id": "regatta-urchin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Regatta",
+     "vessel": "Squirrel"
+    },
+    "id": "regatta-squirrel-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Regatta",
+     "vessel": "Serpent"
+    },
+    "id": "regatta-serpent-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Regatta",
+     "vessel": "Sparrow"
+    },
+    "id": "regatta-sparrow-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Regatta",
+     "vessel": "Scarab"
+    },
+    "id": "regatta-scarab-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Regatta",
+     "vessel": "Stoat"
+    },
+    "id": "regatta-stoat-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Headlong",
+     "vessel": "Rhino"
+    },
+    "id": "headlong-rhino-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Redline",
+     "vessel": "Manta"
+    },
+    "id": "redline-manta-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Switchback",
+     "vessel": "Dolphin"
+    },
+    "id": "switchback-dolphin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Breakwater",
+     "vessel": "Sparrow"
+    },
+    "id": "breakwater-sparrow-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Skein",
+     "vessel": "Urchin"
+    },
+    "id": "skein-urchin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Waystation",
+     "vessel": "Butterfly"
+    },
+    "id": "waystation-butterfly-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "GrizzlyTime",
+     "vessel": "Grizzly"
+    },
+    "id": "grizzlytime-grizzly-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Slingshot",
+     "vessel": "Stoat"
+    },
+    "id": "slingshot-stoat-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Warpline",
+     "vessel": "Meerkat"
+    },
+    "id": "warpline-meerkat-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "ThresherTime",
+     "vessel": "Thresher"
+    },
+    "id": "threshertime-thresher-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "WrasseRun",
+     "vessel": "Wrasse"
+    },
+    "id": "wrasserun-wrasse-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "BurrowRun",
+     "vessel": "Meerkat"
+    },
+    "id": "burrowrun-meerkat-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Broadside",
+     "vessel": "Manta"
+    },
+    "id": "broadside-manta-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Broadside",
+     "vessel": "Dolphin"
+    },
+    "id": "broadside-dolphin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Broadside",
+     "vessel": "Rhino"
+    },
+    "id": "broadside-rhino-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Broadside",
+     "vessel": "Urchin"
+    },
+    "id": "broadside-urchin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Broadside",
+     "vessel": "Squirrel"
+    },
+    "id": "broadside-squirrel-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Broadside",
+     "vessel": "Sparrow"
+    },
+    "id": "broadside-sparrow-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Broadside",
+     "vessel": "Scarab"
+    },
+    "id": "broadside-scarab-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Dustup",
+     "vessel": "Butterfly"
+    },
+    "id": "dustup-butterfly-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Undertow",
+     "vessel": "Scarab"
+    },
+    "id": "undertow-scarab-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Sirocco",
+     "vessel": "Butterfly"
+    },
+    "id": "sirocco-butterfly-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "WreckingBall",
+     "vessel": "Scarab"
+    },
+    "id": "wreckingball-scarab-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Bloomrush",
+     "vessel": "Manta"
+    },
+    "id": "bloomrush-manta-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Hijack",
+     "vessel": "Urchin"
+    },
+    "id": "hijack-urchin-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Tapestry",
+     "vessel": "Butterfly"
+    },
+    "id": "tapestry-butterfly-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "Tollway",
+     "vessel": "Scarab"
+    },
+    "id": "tollway-scarab-i4"
+   }
+  ],
+  "version": "1"
+ },
+ "goal": "Every vessel and mode the offline race models cannot reach, learned in the game itself: the AI trainer (Assets/_Scripts/Utility/AITraining) plays all-AI matches in a Unity with no window on a team PC, one unit per vessel, mode and intensity, and keeps the best genome.",
+ "id": "unity-train",
+ "kind": "command",
+ "plan": "ai-training",
+ "promote": "A unit's genome.json is a proposal: import it on the AI Training window's Archive tab (Import JSON) for that vessel, mode and intensity, then Deploy. The trainer's owners and the AI owner (Yash) decide.",
+ "ref": "origin/ai",
+ "requires": [
+  "unity"
+ ],
+ "schema": "froglet-compute/job/1",
+ "status": "proposed",
+ "title": "Train each vessel's AI in the real game: the Unity trainer, run headless (54 vessel x mode pairs)",
+ "updated": "2026-10-28",
+ "value": 7
+}
