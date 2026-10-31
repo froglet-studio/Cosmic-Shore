@@ -2086,8 +2086,8 @@ MonoBehaviour:
     maxAmount: 1
     initialAmount: 0.75
   - Name: Boost
-    initialResourceGainRate: 0.4
-    resourceGainRate: 0.07
+    initialResourceGainRate: 0
+    resourceGainRate: 0
     maxAmount: 1
     initialAmount: 1
   ChargeTestHarness: 0

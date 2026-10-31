@@ -27,6 +27,11 @@ namespace CosmicShore.Gameplay
     /// ends it when the Serpent flies again. Either way an ended wall stands where it is, stops
     /// stealing and stops answering crystals.</para>
     ///
+    /// <para><b>Eating its own trail refuels the Serpent.</b> Each of the owner's own trail prisms
+    /// that lands is reported to the owner's <see cref="ConsumeBoostActionExecutor"/>
+    /// (<see cref="Snapshot.Fuel"/>), which turns the building time into fuel pellets - the only
+    /// refill the tank has (R_VesselActions/SERPENT_FUEL_PELLETS.md).</para>
+    ///
     /// <para><b>Space is the wall's reach</b>, read live each sweep: the steal radius scales with
     /// the owner's Space multiplier, and the Space upgrade lets the wall take an opponent's
     /// SHIELDED prisms (without it they are left alone; super-shielded prisms never move).</para>
@@ -72,6 +77,10 @@ namespace CosmicShore.Gameplay
             /// <summary>The stopped stance's wall: active, without a super-shield, until
             /// <see cref="ReleaseHold"/>.</summary>
             public bool HeldByStance;
+            /// <summary>The owner's fuel pellets. Each of the owner's own trail prisms that lands
+            /// in the wall is reported to it: the wall eating the trail is the only thing that
+            /// refills the tank (R_VesselActions/SERPENT_FUEL_PELLETS.md). Null = no refill.</summary>
+            public ConsumeBoostActionExecutor Fuel;
         }
 
         sealed class Member
@@ -417,6 +426,9 @@ namespace CosmicShore.Gameplay
                     m.Landed = true;
                     RemoveInFlight(i);
                     if (!own) m.Prism.Steal(_shape.PlayerName, _shape.Domain, true);
+                    // The wall ate the owner's own trail: that building refills its fuel pellets.
+                    else if (_shape.Fuel && m.Prism.PlayerName == _shape.PlayerName)
+                        _shape.Fuel.CreditWallBuilding();
                     if (_locked) _panelsDirty = true;
                 }
                 m.Prism.NotifyPositionChanged();

@@ -94,6 +94,34 @@ clip-audit and card-art harnesses. Affects: Garrett's Serpent (the prefab's skim
 6. Frame time at I4 (2,652 neutral prisms, a 3,600 u membrane at a standard cell's shard count).
 7. First-pass numbers to re-tune: target 6, spawn ring 2,200, field 24 crystals in 380 u, AI ladders.
 
+### 🔴 Serpent fuel pellets: no clock refill, the wall eating its own trail refills them, 6 s burns (`cece/keen-johnson-hqxdt9`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`/verify-unity` could not run (no editor or `unity` binary in the cloud session). Compiled offline with
+`Tools/Build/unity_refcompile` (player and editor configs: 0 errors in project code). Design and numbers:
+`R_VesselActions/SERPENT_FUEL_PELLETS.md` § "The wall refills the tank".
+
+1. Freestyle, Serpent: four pellets lit. Tap A: one burns for **6 s** (was 3 s).
+2. Burn all four, fly on: **no pellet comes back** on its own.
+3. Lay a wall (cloak, or stop for the stance), fly out at cruise in the wall's plane: the trail is pulled in and
+   a pellet pours back over ~2 s of that. Leave the plane: the refill stops.
+4. Time 10 (`TimeTestHarness`): a burn lasts 9.6 s.
+5. AI Serpent: burns its opening four, then refuels only when its walls eat its trail.
+6. EditMode: `SerpentPelletRefillTests`, `SerpentTimeCourseTests.Course_constants_match_the_shipped_Serpent`.
+
+### 🔴 Angler Time card: Dash to the School drawn as the jump (`claude/angler-dash-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** six kit parts under the Time icon in `AnglerHUDVariant.prefab` (`Angler_Dash*`),
+`AnglerHUDView.SetDash` / `SetDashColor` driven from the new `AnglerCommandExecutor.DashGroup` / `Dashing`; the Time plate
+is no longer filled (`SetTime` removed). The same change writes the `lure*Icon` and `paint*Icon` view fields the Mass and
+Space rebinds had silently dropped (#1650, #1652). No Unity and no .NET: not compiled.
+
+- [ ] Compiles; the variant opens with the view's `lure*Icon`, `paint*Icon` and six `dash*Icon` fields wired.
+- [ ] With no school, the Time card shows a dim ghost and hull toward the top group and both groups dim.
+- [ ] Tame 2+: the top group is white, the ghost (dim) and hull (your colour) point up to it; dash: the ghost dims
+  further while the dash flies, then the card swings to the bottom group.
+- [ ] The Time plate stays empty throughout.
+- [ ] Mass and Space cards now tint (re-run their #1650 / #1652 lines above).
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
@@ -11200,7 +11228,7 @@ parameter object. `GunSpreadProfile` gained three authored fields (`plateauSecon
 `blowoutGrowthDegreesPerSecond`, `blowoutMaxMultiplier`) and derives the blow-out cap from the
 sustainable one rather than authoring it twice. `GunSprayAccuracy` passes `_profile.Stages`.
 `FullAutoAction.asset` retuned: onset `0.12 → 2`, growth `1 → 0.75`, plus the three new keys.
-Files: `_Scripts/Utility/GunSpreadMath.cs`, `R_VesselActions/Data Containers/GunSpreadProfile.cs`,
+Files: `_Scripts/Utility/Foundation/GunSpreadMath.cs`, `R_VesselActions/Data Containers/GunSpreadProfile.cs`,
 `R_VesselActions/Executors/GunSprayAccuracy.cs`,
 `_Scripts/Tests/Editor/GunSpreadMathTests.cs`, `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset`.
 
@@ -16100,7 +16128,7 @@ What ran instead of `/verify-unity`: `unity_refcompile --config editor` (0 error
 
 ## 🔴 2026-10-16 — Send to Claude with no question; generic per-frame fixes (unverified: no Unity CLI in the session)
 
-**Files:** `BugHuntAutoSend.cs` (no dialog: sends what is new after Play, one console line), `Utility/WaitCache.cs` (new) and
+**Files:** `BugHuntAutoSend.cs` (no dialog: sends what is new after Play, one console line), `Utility/Foundation/WaitCache.cs` (new) and
 27 coroutine timer sites, `GunTransformer.cs`, `scan_perframe_allocations.py`. What ran instead of `/verify-unity`:
 `unity_refcompile` player-dev (OK) and editor (0 errors in changed files), an Amoebius lava-lamp A/B, the gates.
 
