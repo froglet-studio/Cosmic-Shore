@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The in-game score bar sits top-centre again: a Pop entrance no longer snaps a laid-out column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Shombith: "Score panel is always messed up in all games". `KitEntrance.Finish()` wrote the position it captured at
+`Play()` back for EVERY mode; the score column (`DomainScorePanel.prefab`, a Pop entrance) captured its pre-layout
+(0,0), the top bar's HorizontalLayoutGroup then gave it top-left anchors and placed it, and the pop's finish snapped
+it to (0,0) under those anchors: the column's centre on the bar's top-left corner, half off the top of the screen.
+Now only Rise / Drop entrances (the ones that move) write the position (`KitEntrance.MovesPosition`).
+
+1. Any mode (Skim Race, Rampage, Serpent Gulag), 2+ teams: the team score columns sit side by side, centred at the
+   top, fully on screen, the local team first - during the pop and after it.
+2. Score a point: the column punches its glow and stays put.
+3. Menu: any Pop / Grow / Fade entrance inside a list (claims, picks, meter bars) still lands in its row.
+4. EditMode: `KitMotionTests.Entrance_WritesPosition_OnlyForTheModesThatMoveIt`.
+
 ### 🔴 Serpent Gulag (GameModes 77), the Serpent's sniper duel; and the Serpent collects crystals (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 `/verify-unity` could not run: no Unity editor in this cloud session. The C# was compiled against real Unity
@@ -86,13 +100,13 @@ clip-audit and card-art harnesses. Affects: Garrett's Serpent (the prefab's skim
    field in the middle. I2: six nests. I3: eight nests and eight barred screens. I4: ten nests, twelve screens, danger
    plates.
 2. Fly into a nest through its back entry, stop (B), and look out of the slit at the field.
-3. Scope (LT) and fire (RT) at a rival: a snipe toast, the score rises by one, first team to 6 wins, the results show
+3. Scope (LT) and fire (RT) at a rival: a snipe toast, the score rises by one, first team to 3 wins (6 until 2026-10-31), the results show
    snipes and the reveal reads GULAG TIME / SNIPES LEFT.
 4. AI: at I1 they mostly miss; at I4 they forage the field while reloading, hunt you across the cell, and cloak after
    a shot. Report an AI that never scopes or never fires (the press shape), or one that rams instead of shooting.
 5. The crystal field regrows a collected crystal after ~8 s in the same place.
 6. Frame time at I4 (2,652 neutral prisms, a 3,600 u membrane at a standard cell's shard count).
-7. First-pass numbers to re-tune: target 6, spawn ring 2,200, field 24 crystals in 380 u, AI ladders.
+7. First-pass numbers to re-tune: target 3, spawn ring 2,200, field 24 crystals in 380 u, AI ladders.
 
 ### 🔴 The party molecule grows from the host; a lower blue on the friends window (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
 

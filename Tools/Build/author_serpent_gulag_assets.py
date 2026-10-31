@@ -88,12 +88,13 @@ CYTOPLASM_FILEID = 639495419069806261
 SPAWNABLE_GO, SPAWNABLE_TR, SPAWNABLE_MB = 7700000000000201, 7700000000000202, 7700000000000203
 
 # ── The duel ─────────────────────────────────────────────────────────────────
-SNIPE_TARGET = 6          # kept in sync with EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget (checked)
+SNIPE_TARGET = 3          # Shombith, 2026-10-31: "make the score to 3 shots not 6"; kept in sync with EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget (checked)
 SNIPE_POINTS = 1
 DEBUFF_CLASS = 2          # CombatHitClass.Debuff - what SniperShotAction reports its pilot strip as
-# Comeback - a FUNCTION OF THE TARGET (bonusLevels = deficit x rate). A quarter of the race behind (1.5 snipes) buys
-# 1.2 element levels; on this hull a Charge level is a faster rifle.
-COMEBACK_RATE = 0.8
+# Comeback - a FUNCTION OF THE TARGET (bonusLevels = deficit x rate). A quarter of the race behind (0.75 snipes) buys
+# 1.125 element levels (Dustup's 1.5 at its 4-point target); on this hull a Charge level is a faster rifle. Was 0.8
+# against the first target of 6, which would have bought 0.6 of a level at 3 - the re-target trap.
+COMEBACK_RATE = 1.5
 
 # ── The arena (Cleave's x3 membrane at every rung) ───────────────────────────
 MEMBRANE_RADIUS = 3600.0
