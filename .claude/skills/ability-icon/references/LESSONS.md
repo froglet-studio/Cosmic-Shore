@@ -423,3 +423,10 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     liberty the drawing takes. Garrett picked B ("the spend", "B is fine"): when an ability COSTS something (a lock
     spends a creature), the card shows the cost - the school left behind in the domain colour, the spent one white.
 
+63. **A hull's side view can come out keel-up: check where a known point lands before drawing.** `mesh_silhouette`'s
+    pitch 90 drew the Angler upside down (its esca hung below the keel); `project_point` on the bulb (the mesh's
+    furthest-forward vertex) put it below the centre, and pitch -90 set it upright. Project one point you know (a mast,
+    a fin, the nose) and confirm it lands where the ship has it before any option goes out. On the Mass card Garrett took
+    the close-up (B) over the to-scale light (A): the hull and its lit esca ARE the Angler, so a true-size speck lost
+    the identity the card is for (contrast the Scarab's bubble, LESSONS 56, where the volume was the act).
+
