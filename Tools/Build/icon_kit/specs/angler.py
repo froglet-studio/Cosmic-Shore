@@ -403,7 +403,7 @@ CARDS[:] = [c for c in CARDS if c.get("group") != "lure"]
 LOCKUP["Mass"] = dict(parts=dict(h=mb_hull, f=mb_fish), state=[("h", "domain"), ("f", "blue", 0.6)])
 MASS_ICON = "7700000000000001115"       # the Mass slot's icon Image (was Angler_Leash); the fauna count is its child
 REBIND += [
-    dict(file=VARIANT, pair=dict(container=MASS_ICON, view=VIEW, after="lockWakeAlpha",
+    dict(file=VARIANT, pair=dict(container=MASS_ICON, view=VIEW, after="lockSchoolIcon",
                                  children=[(n, i, f) for n, i, f, _d, _a in LURE_PARTS])),
 ]
 
@@ -647,7 +647,7 @@ LOCKUP["Space"] = dict(parts=dict(a=sd_group(0), b=sd_group(1), p=sd_prism),
                        state=[("a", "white"), ("b", "domain", 0.6), ("p", "white")])
 SPACE_ICON = "7700000000000001125"      # the Space slot's icon Image (was Angler_Lure)
 REBIND += [
-    dict(file=VARIANT, pair=dict(container=SPACE_ICON, view=VIEW, after="lureJoinedSeconds",
+    dict(file=VARIANT, pair=dict(container=SPACE_ICON, view=VIEW, after="lockSchoolIcon",
                                  children=[(n, i, f) for n, i, f, _d, _a in PAINT_PARTS])),
 ]
 
@@ -752,4 +752,35 @@ CARDS += [
                  ("dashing to A", _tstate(0, [("wa", "white", 0.6), ("ha", "domain")])),
                  ("ready, B next", _tstate(1, [("wb", "white"), ("hb", "domain")]))],
          lockup_state=0, gauge=TIME_GAUGE, gauge_marks_style="segments"),
+]
+
+
+# ---- Time in the game: H, the jump (Garrett picked H, 2026-10-31: "H is fine") ----------------------------------------
+# Six parts in the Time slot's container, driven by AnglerHUDView.SetDash: the two groups (A above, B below; the one the
+# next dash goes to white, the other the domain colour at 60%) and, for each group, the hull where the dash puts it and
+# the ghost where it was; only the next group's pair shows. The ghost dims while a dash runs; with no school (no dash)
+# everything dims. The plate stays empty: a full lime plate drowned the white parts (the Scarab's Snap Dash rule).
+DASH_PARTS = [("DashGroupA", "Angler_DashGroupA", "dashGroupAIcon", t_group(0), "group A (white when the next dash goes to it)"),
+              ("DashGroupB", "Angler_DashGroupB", "dashGroupBIcon", t_group(1), "group B (white when the next dash goes to it)"),
+              ("DashHullA", "Angler_DashHullA", "dashHullAIcon", t_hull_at(0, 0.75), "the hull 75% of the way to A (domain)"),
+              ("DashGhostA", "Angler_DashGhostA", "dashGhostAIcon", th_ghost(0), "where the hull was, dashing to A (domain, dim)"),
+              ("DashHullB", "Angler_DashHullB", "dashHullBIcon", t_hull_at(1, 0.75), "the hull 75% of the way to B (domain)"),
+              ("DashGhostB", "Angler_DashGhostB", "dashGhostBIcon", th_ghost(1), "where the hull was, dashing to B (domain, dim)")]
+ICONS += [dict(name=i, element="Time", act="Dash: " + act, draw=draw, subdir="Parts", family=False,
+               exempt=PART_EXEMPT) for _n, i, _f, draw, act in DASH_PARTS]
+for c in CARDS:
+    if c["name"] == "dash_h":
+        CARDS.append(dict(c, name="dash", group=None,
+                          states=c["states"] + [("no school", [("g0", "domain", 0.3), ("g1", "domain", 0.3),
+                                                               ("ga", "domain", 0.2), ("ha", "domain", 0.3)])],
+                          title="Dash to the School (Time, picked H): where the hull was (ghost) and where the dash puts "
+                                "it, 75% of the way to the next group (white); the other group waits; all dim with no school"))
+        break
+CARDS[:] = [c for c in CARDS if c.get("group") != "dash"]
+LOCKUP["Time"] = dict(parts=dict(a=t_group(0), b=t_group(1), h=t_hull_at(0, 0.75), g=th_ghost(0)),
+                      state=[("a", "white"), ("b", "domain", 0.6), ("g", "domain", 0.6), ("h", "domain")])
+TIME_ICON = "7700000000000001135"       # the Time slot's icon Image (was Angler_Tame)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=TIME_ICON, view=VIEW, after="lockSchoolIcon",
+                                 children=[(n, i, f) for n, i, f, _d, _a in DASH_PARTS])),
 ]

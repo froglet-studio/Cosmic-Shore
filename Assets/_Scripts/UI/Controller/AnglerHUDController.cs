@@ -68,7 +68,9 @@ namespace CosmicShore.UI
             view.SetFloraSeeds(angler.FloraSeedCount);
             if (angler.FloraSeedCount > _seeds) view.PlayOmniCrystalCollected();   // a crystal just left a seed
             _seeds = angler.FloraSeedCount;
-            view.SetTime(angler.DashReady ? 1f : 0f, angler.DashReady);
+            view.SetDashColor(ResolveDomainSignalColor());
+            bool hasSchool = angler.TamedCount > 0;
+            view.SetDash(hasSchool ? angler.DashGroup : 0, hasSchool, angler.Dashing);
         }
 
         /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Serpent's and the
