@@ -208,10 +208,7 @@ namespace CosmicShore.Gameplay
                     _last = null;
                     float started = Now;
                     var freestyle = FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include);
-                    if (freestyle && !freestyle.IsInFreestyle && !freestyle.IsTransitioning) freestyle.ToggleTransition();
-                    float settle = Now + 60f;
-                    while (freestyle && (!freestyle.IsInFreestyle || freestyle.IsTransitioning) && Now < settle)
-                        await UniTask.Delay(500, DelayType.Realtime, cancellationToken: ct);
+                    await EnterFreestyleAsync(freestyle, Now + 60f, ct);
                     harbour = VoyageHarbour.Current;
                     if (!harbour) { Log("the harbour went away entering freestyle"); break; }
 
@@ -283,9 +280,7 @@ namespace CosmicShore.Gameplay
                     // Into freestyle here, with all the time it needs (a first play in the editor imports as it goes, and
                     // the harbour's own hand-off waits only a few seconds); the escort then sails straight from it.
                     await UniTask.Delay(_fixedDt > 0f ? 2000 : 5000, DelayType.Realtime, cancellationToken: ct);
-                    if (!freestyle.IsInFreestyle && !freestyle.IsTransitioning) freestyle.ToggleTransition();
-                    while ((!freestyle.IsInFreestyle || freestyle.IsTransitioning) && Now < deadline)
-                        await UniTask.Delay(500, DelayType.Realtime, cancellationToken: ct);
+                    await EnterFreestyleAsync(freestyle, deadline, ct);
                     await UniTask.Delay(_fixedDt > 0f ? 1000 : 3000, DelayType.Realtime, cancellationToken: ct);
                     Log($"ready after {Now - start:0}s");
                     return VoyageHarbour.Current;
@@ -303,6 +298,17 @@ namespace CosmicShore.Gameplay
                 await UniTask.Delay(1000, DelayType.Realtime, cancellationToken: ct);
             }
             return null;
+        }
+
+        /// <summary>Into freestyle, asking again whenever the menu is idle outside it: a toggle asked while the menu's own
+        /// intro transition runs is dropped, and the menu then settles outside freestyle.</summary>
+        static async UniTask EnterFreestyleAsync(MenuCrystalClickHandler freestyle, float deadline, CancellationToken ct)
+        {
+            while (freestyle && (!freestyle.IsInFreestyle || freestyle.IsTransitioning) && Now < deadline)
+            {
+                if (!freestyle.IsInFreestyle && !freestyle.IsTransitioning) freestyle.ToggleTransition();
+                await UniTask.Delay(500, DelayType.Realtime, cancellationToken: ct);
+            }
         }
 
         void OnFinished(ArkEscortReport report) => _last = report;
