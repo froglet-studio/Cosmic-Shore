@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_WaystationPrototype
   m_EditorClassIdentifier:
   Mode: 76
-  Notes: 'The LOOKING phase is the Skim Race cell Waystation runs in. The FLIGHT phase stands the course's rings (ModePreviewGateCourse, off the same RaceCourseSource the controller builds from): the clusters and the Drop Towers' rings. The towers' WALLS are laid by the match controller only, so the preview shows the rings without their plates. Intensity is the COURSE, not the arena.'
+  Notes: 'The LOOKING phase is the Skim Race cell Waystation runs in. The FLIGHT phase stands the course''s rings (ModePreviewGateCourse, off the same RaceCourseSource the controller builds from): the clusters and the Drop Towers'' rings. The towers'' WALLS are laid by the match controller only, so the preview shows the rings without their plates. Intensity is the COURSE, not the arena.'
   PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
   PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}

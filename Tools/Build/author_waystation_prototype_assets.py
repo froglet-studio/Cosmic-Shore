@@ -15,6 +15,7 @@ prototype's hop autopilot takes the towers (the model's `standdown` check proves
 Run with --check to validate and diff without writing.
 """
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -25,6 +26,13 @@ MODE_ID = 76
 CLUSTERS = tower.CLUSTERS
 AI_FOLD_MIN_DISTANCE = int(tower.AI_FOLD_MIN_DISTANCE)
 g = lib.Generator(mode_id=MODE_ID, mode_name="WaystationPrototype")
+
+
+def sq(text):
+    """A single-quoted YAML scalar doubles its apostrophes. lib.toast and the preview's Notes wrap their text in
+    '...' without escaping it, so "The tower's rings" ended the scalar mid-word and the asset did not parse - which
+    a text diff (--check) cannot see; the YAML parse below can."""
+    return text.replace("'", "''")
 errors = []
 
 # ── guids read from the repo, never invented ────────────────────────────────
@@ -124,9 +132,9 @@ g.emit_asset(
     G_ASSET["GameToastConfig_WaystationPrototype"],
     lib.header_for(EXISTING["GameToastConfigSO"], "GameToastConfig_WaystationPrototype")
     + f"  gameMode: {MODE_ID}\n  toasts:\n"
-    + lib.toast(117, "The tower's rings hang under the plates - fly over one and TAP the Drop through it",
+    + lib.toast(117, sq("The tower's rings hang under the plates - fly over one and TAP the Drop through it"),
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=25)
-    + lib.toast(118, "Short lands on the plate, long meets the pipe - a quick tap, then roll for the next",
+    + lib.toast(118, sq("Short lands on the plate, long meets the pipe - a quick tap, then roll for the next"),
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=40)
     + lib.toast(129, "{0} is halfway home - ring {1}/{2}", tint_domain=1, domain_names=0)
     + lib.toast(130, "{0} takes the lead - ring {1}/{2}", tint_domain=1, domain_names=0)
@@ -143,7 +151,7 @@ g.emit_asset(
     G_ASSET["ModePreview_WaystationPrototype"],
     lib.header_for(EXISTING["ModePreviewDefinitionSO"], "ModePreview_WaystationPrototype")
     + f"  Mode: {MODE_ID}\n"
-      f"  Notes: '{NOTES}'\n"
+      f"  Notes: '{sq(NOTES)}'\n"
       f"  PreviewCell: {{fileID: 11400000, guid: {EXISTING['SkimRaceCellConfig']}, type: 2}}\n"
       "  PreviewCellsByIntensity: []\n"
       "  StructurePrefab: {fileID: 0}\n"
@@ -200,5 +208,33 @@ g.register_build_scene("MinigameWaystation", "MinigameWaystationPrototype",
 g.set_end_condition("waystationPrototypeClusterTarget", after="burrowRunGateTarget", value=CLUSTERS)
 g.register_toast_config(G_ASSET["GameToastConfig_WaystationPrototype"])
 g.register_preview(G_ASSET["ModePreview_WaystationPrototype"])
+
+# Every authored .asset must PARSE, not only match its own text: --check is a diff, and a diff of a broken file
+# against the same broken file is clean (the apostrophe bug above shipped that way and only
+# check_generated_assets.py saw it).
+
+
+def yaml_errors(rel, content):
+    """Parse one Unity .asset's documents (the %YAML / %TAG directives and the `--- !u!N &id` tags stripped)."""
+    import yaml
+    body = "\n".join(ln for ln in content.splitlines() if not ln.startswith("%"))
+    out = []
+    for doc in re.split(r"^--- !u!\d+ &-?\d+.*$", body, flags=re.M):
+        if not doc.strip():
+            continue
+        try:
+            yaml.safe_load(doc)
+        except yaml.YAMLError as e:
+            out.append(f"{rel} does not parse as YAML: {' '.join(str(e).split())[:160]}")
+    return out
+
+
+try:
+    import yaml  # noqa: F401
+    for rel, content in g.files.items():
+        if rel.endswith(".asset"):
+            errors += yaml_errors(rel, content)
+except ImportError:
+    print("note: PyYAML is not installed, so the authored assets were not parsed")
 
 g.finish(errors, referenced=EXISTING, minted=list(G_SCRIPT.values()) + list(G_ASSET.values()))
