@@ -148,6 +148,27 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void PacifyShareIsAParam()
+        {
+            var escort = ScriptableObject.CreateInstance<ArkEscortSO>();
+            try
+            {
+                Assert.AreEqual(0.6f, escort.PacifyShare, 1e-5f);
+                var echo = ArkEscortParams.Apply(new ArkEscortParams.Target { Escort = escort },
+                    new Dictionary<string, float> { ["escort.pacifyShare"] = 0.75f });
+                Assert.IsTrue(echo[0].Applied);
+                Assert.AreEqual(0.75f, escort.PacifyShare, 1e-5f);
+                echo = ArkEscortParams.Apply(new ArkEscortParams.Target { Escort = escort },
+                    new Dictionary<string, float> { ["escort.pacifyShare"] = 1.5f });
+                Assert.IsFalse(echo[0].Applied);
+            }
+            finally
+            {
+                Object.DestroyImmediate(escort);
+            }
+        }
+
+        [Test]
         public void AiKeysGoToTheExternalSetter()
         {
             var before = ArkEscortParams.ExternalSetter;

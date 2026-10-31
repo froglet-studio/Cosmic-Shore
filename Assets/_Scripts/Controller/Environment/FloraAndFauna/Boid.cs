@@ -718,6 +718,8 @@ namespace CosmicShore.Gameplay
             if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null) return false;
             if (cell == null) return true;
+            // A pacified world's fauna leave their own domain's mass alone (Cell.SparedDomain).
+            if (cell.SparesOwnMass(domain, prism.Domain)) return false;
             // Band + cell pen: mass outside this creature's own annulus is unreachable, so it
             // is not food (Fauna.IsInsideBand). A forager's diet is otherwise any-domain, so
             // it does not go through IsPreyForMe's domain leg.

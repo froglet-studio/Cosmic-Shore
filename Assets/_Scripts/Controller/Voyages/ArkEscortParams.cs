@@ -99,6 +99,12 @@ namespace CosmicShore.Gameplay
             Register("ark.cellSpacing", (t, _, v) => { t.Escort.CellSpacing = v; return true; });
             Register("ark.platesAreFood", (t, _, v) => { t.Escort.PlatesAreFood = v > 0.5f; return true; });
             Register("escort.maxPopulation", (t, _, v) => { t.Escort.MaxPopulation = v; return true; });
+            Register("escort.pacifyShare", (t, _, v) =>
+            {
+                if (v < 0f || v > 1f) return false;
+                t.Escort.PacifyShare = v;
+                return true;
+            });
 
             // ── Tiers: tier.<1-9|all>.<field> ──
             RegisterTier("population", (tier, v) => tier.Population = Mathf.Max(0.05f, v));

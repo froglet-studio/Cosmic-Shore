@@ -572,10 +572,26 @@ namespace CosmicShore.Gameplay
             if (FaunaContainmentRadius > 0f && !IsInsideFaunaContainment(position))
                 return false;
 
+            if (SparesOwnMass(faunaDomain, preyDomain)) return false;
+
             if (HasNucleusControlZone)
                 return !IsInsideNucleus(position);
             return preyDomain != faunaDomain;
         }
+
+        /// <summary>
+        /// A PACIFIED world (the Ark escort; Garrett, 2026-10-31: a squad that takes a world's territory pacifies it, and
+        /// its fauna then help protect the Ark): this domain's fauna do not graze this domain's mass anywhere in the cell,
+        /// the nucleus exterior included. Null (every other cell) keeps the diet as it was. Set ONLY by
+        /// <c>ArkEscortRun.TryPacify</c>, together with <see cref="SetModeControlOverride"/> (which re-colours the live
+        /// swarm and pins the spawn colour), so a pacified world's one fauna colour is the squad's and its creatures eat only
+        /// other domains' mass. Symmetric (it names a domain, not the Ark). Recorded in Docs/ECOSYSTEM.md section 0.
+        /// </summary>
+        public Domains? SparedDomain { get; set; }
+
+        /// <summary>True when a pacified world spares <paramref name="preyDomain"/>'s mass from its own fauna.</summary>
+        public bool SparesOwnMass(Domains eaterDomain, Domains preyDomain) =>
+            SparedDomain is { } spared && preyDomain == spared && eaterDomain == spared;
 
         /// <summary>
         /// Radius (world units, centred on the cell) the cell's fauna are penned inside, or 0
