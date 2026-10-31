@@ -25,7 +25,7 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 # compile without the logger's own dependencies.
 {
   echo "namespace CosmicShore.Utility {"
-  sed -n '/public enum CSLogChannel/,/^    }/p' "$ROOT/Assets/_Scripts/Utility/CSDebug.cs"
+  sed -n '/public enum CSLogChannel/,/^    }/p' "$ROOT/Assets/_Scripts/Utility/Foundation/CSDebug.cs"
   echo "}"
 } > "$OUT/Generated.cs"
 

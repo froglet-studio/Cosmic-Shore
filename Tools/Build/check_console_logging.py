@@ -39,7 +39,7 @@ TOOL_PATHS = (
     "Assets/_Scripts/Utility/ScreenShots/",
     "Assets/_Scripts/Utility/Recording/",
     "Assets/_Scripts/Utility/GamepadDebugger.cs",
-    "Assets/_Scripts/Utility/CSDebug.cs",
+    "Assets/_Scripts/Utility/Foundation/CSDebug.cs",
     "Assets/_Scripts/Controller/Environment/EcosystemPerfProbe.cs",
     "Assets/_Scripts/Controller/ECS/Rendering/PrismRenderStressTest.cs",
     "Assets/_Scripts/ScriptableObjects/SnowStressTestSpawner.cs",

@@ -434,7 +434,10 @@ namespace CosmicShore.UI
         {
             return status switch
             {
-                OnlineInfoEntry.Status.Online => (true, OnlineInfoEntry.JoinMode.Hidden),
+                // A pilot alone in the menu hosts their own party: the row's one verb is Invite (KitOnlineRow shows it
+                // over Join for this status), but Join stays on the row's state so their profile card offers it too
+                // (Shombith, 2026-10-31: "there is no join button").
+                OnlineInfoEntry.Status.Online => (true, join),
                 OnlineInfoEntry.Status.InLobby or OnlineInfoEntry.Status.LobbyFull => (false, join),
                 OnlineInfoEntry.Status.InMatch => (false, join),
                 _ => (false, OnlineInfoEntry.JoinMode.Hidden),

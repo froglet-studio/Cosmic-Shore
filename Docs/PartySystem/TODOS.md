@@ -218,8 +218,6 @@ rosters' shipped values, so the three read the same today. The debt is the three
 - **Orphaned doc comment** in `HostConnectionService.cs` (`/// </summary>` then `/// <summary>` at about line 1507,
   above `ResetPartyLayerAsync`'s doc; from `c440ad83ac`, 2026-10-26): the earlier method's doc block has no method of
   its own. Measured with the ship skill's orphan-doc scan. Decide which block belongs to which member.
-- **`Bond_Party.mat` / `Bond.shader` have no user** since Rev 40 E removed the party molecule (section 107):
-  `author_ui_lattice.py` still emits them. Keep (a future bond) or retire with the lattice generator's owner.
 - **The online rows draw name over status** (two lines, as the built rows did); the Rev 40 E board drew them on one
   line. A look decision for the board's owner, not a defect.
 - **Mixed builds hide each other**: a build without B39's `ready` presence flag is never listed online by one with it.

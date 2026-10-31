@@ -97,6 +97,13 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
   re-render just the named card, and LOOK at it before committing - a re-render is a new picture.
 - **Seeds are int32.** Mask derived seeds to non-negative 31 bits on both sides of the boundary.
 
+- **The harness is a second compile of shipped files, so an upstream edit can break it without touching a card.**
+  `SwitchbackCourse.cs` began naming `SwitchbackFunType` (2026-10-28) and the harness stopped compiling (CS0246) until
+  the enum joined `SOURCES` (2026-10-31, rendering Serpent Gulag). `audit_prism_clipping.py` had fixed the same break
+  in its own source list: when one harness breaks on a new type, grep the others' source lists for it.
+- **A named run (`render_card_backgrounds.py <Stem>`) writes the PNG but not `card_backgrounds_manifest.json`**, so a
+  card rendered while the full roster cannot run (S95) is missing from the manifest until the next full run.
+
 ## 4. What this is NOT
 
 It is not the game's renderer and does not claim to be: it draws the SAME geometry in the SAME

@@ -1,4 +1,4 @@
-// Ported verbatim from Assets/_Scripts/Utility/DontDestroyOnLoad.cs
+// Ported verbatim from Assets/_Scripts/Utility/Foundation/DontDestroyOnLoad.cs
 // (bootstrap arc 2026-07-08). Mechanical substitutions (README):
 // UnityEngine → CosmicShore.Engine. FULLY LIVE — the persistence marker
 // AppManager.EnsurePersistent stamps onto managers (the engine's
