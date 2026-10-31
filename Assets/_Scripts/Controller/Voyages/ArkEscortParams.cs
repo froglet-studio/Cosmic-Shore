@@ -28,6 +28,21 @@ namespace CosmicShore.Gameplay
         {
             public ArkEscortSO Escort;
             public int Difficulty;
+
+            /// <summary>Per-species fauna overrides (<c>fauna.&lt;species&gt;.&lt;field&gt;</c>), handed to each escort world.</summary>
+            public FaunaRuntimeTuning Fauna = new();
+
+            /// <summary>Per-world fauna scales (<c>fauna.&lt;1-9|all&gt;.{populationScale, floorScale, capScale}</c>), by
+            /// world ("all" or the 1-based leg number) and field.</summary>
+            public readonly Dictionary<(string world, string field), float> World = new();
+
+            /// <summary>Leg <paramref name="world1"/>'s (1-based) value for <paramref name="field"/>, else the "all" value,
+            /// else <paramref name="fallback"/>.</summary>
+            public float WorldValue(int world1, string field, float fallback)
+            {
+                if (World.TryGetValue((world1.ToString(CultureInfo.InvariantCulture), field), out float v)) return v;
+                return World.TryGetValue(("all", field), out v) ? v : fallback;
+            }
         }
 
         /// <summary>Apply <paramref name="value"/>; <paramref name="capture"/> is the placeholder's segment (or null).
@@ -92,8 +107,51 @@ namespace CosmicShore.Gameplay
             RegisterTier("arkSpeed", (tier, v) => tier.ArkSpeed = Mathf.Max(0.25f, v));
             RegisterTier("breachHull", (tier, v) => tier.BreachHull = Mathf.Clamp(v, 0f, 0.95f));
 
-            // Fauna fields ("fauna.<configName>.<field>") register here by name when their runtime copies exist.
+            // ── Fauna: fauna.<species>.<field> (FaunaRuntimeTuning), and fauna.<world 1-9|all>.<scale> ──
+            foreach (var field in FaunaRuntimeTuning.AllFields())
+            {
+                if (field == "floorScale" || field == "capScale") continue;
+                string f = field;
+                float max = FieldMax(f);
+                Register("fauna.{species}." + f, (t, species, v) =>
+                {
+                    if (t.Fauna == null || IsWorld(species) && species != "all" || v < 0f || v > max) return false;
+                    t.Fauna.Set(species, f, v);
+                    return true;
+                });
+            }
+            foreach (var scale in new[] { "populationScale", "floorScale", "capScale" })
+            {
+                string f = scale;
+                Register("fauna.{world}." + f, (t, who, v) =>
+                {
+                    if (v < 0f || v > 4f) return false;
+                    if (IsWorld(who))
+                    {
+                        t.World[(who.ToLowerInvariant(), f)] = v;
+                        return true;
+                    }
+                    if (f == "populationScale" || t.Fauna == null) return false;   // species take floor and cap only
+                    t.Fauna.Set(who, f, v);
+                    return true;
+                });
+            }
         }
+
+        /// <summary>A world selector: a 1-based leg number or "all".</summary>
+        static bool IsWorld(string who) =>
+            string.Equals(who, "all", StringComparison.OrdinalIgnoreCase)
+            || int.TryParse(who, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) && n >= 1 && n <= ArkEscortSO.MaxDifficulty;
+
+        /// <summary>Sane upper bound for a fauna field (a value past it is refused, not clamped).</summary>
+        static float FieldMax(string field) => field switch
+        {
+            "shieldBite" or "superShieldBite" => 5f,
+            "minSpeed" or "maxSpeed" or "cruiseSpeed" or "lungeSpeed" => 250f,
+            "huntSpeed" or "pursuitSpeed" => 20f,
+            "huntInterval" or "huntDuration" => 600f,
+            _ => 3000f,   // radii and ranges
+        };
 
         delegate void PacingField(ref ArkSpeedProfile profile, float value);
 
@@ -140,7 +198,10 @@ namespace CosmicShore.Gameplay
                     }
                     else if (TryFind(kv.Key, out var entry, out string capture))
                     {
-                        param.Applied = target?.Escort && entry.Set(target, capture, kv.Value);
+                        // fauna.* keys write the run's fauna tuning; every other key writes the escort copy.
+                        bool reachable = target != null
+                                         && (kv.Key.StartsWith("fauna.", StringComparison.Ordinal) || target.Escort != null);
+                        param.Applied = reachable && entry.Set(target, capture, kv.Value);
                         if (!param.Applied) param.Note = "refused";
                     }
                     else param.Note = "unknown key";

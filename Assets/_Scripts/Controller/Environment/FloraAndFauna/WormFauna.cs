@@ -208,6 +208,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        protected override float AuthoredArmourBite(bool superShielded) =>
+            config ? (superShielded ? config.SuperShieldBite : config.ShieldBite) : 0f;
+
+        protected override void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            base.ApplyRuntimeTuning(tuning, species);
+            config = tuning.ResolveWormConfig(config, species);   // the run's copy, never the asset
+        }
+
         public override void Initialize(Cell cell)
         {
             base.Initialize(cell); // record the explicit host cell
@@ -740,9 +749,9 @@ namespace CosmicShore.Gameplay
                 var prism = PrismScratch[i];
                 if (!IsEdiblePrism(prism)) continue;
                 float meal = Mathf.Max(0f, prism.Volume);   // read before the consume (round 11f: the stomach is conserved)
-                prism.Consume(head, domain, PLAYER_NAME, true, true);
-                NotifyFed(meal);
-                bites++;
+                var result = BiteMass(prism, head, domain, PLAYER_NAME, true);
+                if (result == BiteResult.Ate) NotifyFed(meal);
+                if (result != BiteResult.None) bites++;
             }
         }
 

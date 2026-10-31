@@ -80,6 +80,74 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void SpeciesKeysNormalize()
+        {
+            Assert.AreEqual("shark", FaunaRuntimeTuning.SpeciesKey("MassSharkFauna(Clone)"));
+            Assert.AreEqual("brittlestar", FaunaRuntimeTuning.SpeciesKey("MassBrittlestarFauna"));
+            Assert.AreEqual("quadfish", FaunaRuntimeTuning.SpeciesKey("QuadFish"));
+            Assert.AreEqual("tadpole", FaunaRuntimeTuning.SpeciesKey("TadPoleFauna (Clone)"));
+            Assert.AreEqual("wormcolony", FaunaRuntimeTuning.SpeciesKey("WormColony"));
+        }
+
+        [Test]
+        public void FaunaKeysReachTheRunTuning()
+        {
+            var target = new ArkEscortParams.Target();
+            var echo = ArkEscortParams.Apply(target, new Dictionary<string, float>
+            {
+                ["fauna.shark.maxSpeed"] = 40f,
+                ["fauna.all.shieldBite"] = 0.3f,
+                ["fauna.quadfish.capScale"] = 1.5f,
+                ["fauna.2.populationScale"] = 0.5f,
+                ["fauna.all.floorScale"] = 1.2f,
+                ["fauna.shark.populationScale"] = 2f,   // species take floor and cap, not population
+                ["fauna.shark.maxSpeed2"] = 1f,         // unknown field
+                ["fauna.shark.minSpeed"] = 9999f,       // out of range
+            });
+            var applied = new Dictionary<string, bool>();
+            foreach (var e in echo) applied[e.Key] = e.Applied;
+            Assert.IsTrue(applied["fauna.shark.maxSpeed"]);
+            Assert.IsTrue(applied["fauna.all.shieldBite"]);
+            Assert.IsTrue(applied["fauna.quadfish.capScale"]);
+            Assert.IsTrue(applied["fauna.2.populationScale"]);
+            Assert.IsTrue(applied["fauna.all.floorScale"]);
+            Assert.IsFalse(applied["fauna.shark.populationScale"]);
+            Assert.IsFalse(applied["fauna.shark.maxSpeed2"]);
+            Assert.IsFalse(applied["fauna.shark.minSpeed"]);
+
+            Assert.IsTrue(target.Fauna.TryGet("shark", "maxSpeed", out float v));
+            Assert.AreEqual(40f, v);
+            Assert.IsTrue(target.Fauna.TryGet("brittlestar", "shieldBite", out v));   // via "all"
+            Assert.AreEqual(0.3f, v, 1e-5f);
+            Assert.AreEqual(1.5f, target.Fauna.CapScale("quadfish"), 1e-5f);
+            Assert.AreEqual(0.5f, target.WorldValue(2, "populationScale", 1f), 1e-5f);
+            Assert.AreEqual(1f, target.WorldValue(3, "populationScale", 1f), 1e-5f);
+            Assert.AreEqual(1.2f, target.WorldValue(4, "floorScale", 1f), 1e-5f);
+        }
+
+        [Test]
+        public void LightDataIsCopiedNotEdited()
+        {
+            var source = ScriptableObject.CreateInstance<LightFaunaDataSO>();
+            var tuning = new FaunaRuntimeTuning();
+            tuning.Set("shark", "maxSpeed", 50f);
+            try
+            {
+                var copy = tuning.ResolveLightData(source, "shark");
+                Assert.AreNotSame(source, copy);
+                Assert.AreEqual(50f, copy.maxSpeed);
+                Assert.AreEqual(6f, source.maxSpeed);
+                Assert.AreSame(copy, tuning.ResolveLightData(source, "shark"));
+                Assert.AreSame(source, tuning.ResolveLightData(source, "quadfish"));
+                Object.DestroyImmediate(copy);
+            }
+            finally
+            {
+                Object.DestroyImmediate(source);
+            }
+        }
+
+        [Test]
         public void AiKeysGoToTheExternalSetter()
         {
             var before = ArkEscortParams.ExternalSetter;

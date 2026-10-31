@@ -556,6 +556,7 @@ namespace CosmicShore.Gameplay
                     ProvisionHeart(pick.Element);
                 if (pick.Tuning is { Enabled: true })
                     ApplyVariantTuning(pick.Tuning);
+                ApplyRuntimeTuningFrom(host);   // a run's overrides win over the variant's
 
                 // RE-SIZE THE HEART LAST, and unconditionally. This is load-bearing and it is
                 // easy to delete by accident, because from here it looks redundant with
@@ -878,7 +879,36 @@ namespace CosmicShore.Gameplay
         /// rate. 0 (the default) = this species never gnaws that tier. Only matters in a cell whose
         /// <see cref="Cell.ArmourIsFood"/> is set (the Ark escort's worlds); a species authors it on its own config.
         /// </summary>
-        protected virtual float ArmourBite(bool superShielded) => 0f;
+        protected float ArmourBite(bool superShielded) =>
+            superShielded ? _tunedSuperShieldBite ?? AuthoredArmourBite(true) : _tunedShieldBite ?? AuthoredArmourBite(false);
+
+        /// <summary>The species' authored armour bite (its config); <see cref="ArmourBite"/> lets a run's tuning win.</summary>
+        protected virtual float AuthoredArmourBite(bool superShielded) => 0f;
+
+        float? _tunedShieldBite, _tunedSuperShieldBite;
+        string _speciesKey;
+
+        /// <summary>This creature's species key for run tuning (<see cref="FaunaRuntimeTuning.SpeciesKey"/>).</summary>
+        public string SpeciesKey => _speciesKey ??= FaunaRuntimeTuning.SpeciesKey(name);
+
+        /// <summary>
+        /// Take a run's overrides for this species (<see cref="FaunaRuntimeTuning"/>; only in cells that carry one). Called
+        /// as the cell takes the creature (<see cref="Initialize"/>) and again after its variant tuning
+        /// (<see cref="AssignLineage(Cell, FaunaConfigurationSO, LifeformVariantPick{FaunaVariantTuning}?)"/>), so it
+        /// must be idempotent: set absolute values, never scale what is already there.
+        /// </summary>
+        protected virtual void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            if (tuning.TryGet(species, "shieldBite", out float v)) _tunedShieldBite = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "superShieldBite", out v)) _tunedSuperShieldBite = Mathf.Max(0f, v);
+        }
+
+        void ApplyRuntimeTuningFrom(Cell host)
+        {
+            var tuning = host ? host.RuntimeFaunaTuning : null;
+            if (tuning == null || !tuning.HasAny || !tuning.Touches(SpeciesKey)) return;
+            ApplyRuntimeTuning(tuning, SpeciesKey);
+        }
 
         /// <summary>True when this creature may wear through <paramref name="prism"/>'s armour: its cell lets armour be
         /// food and this species bites that tier.</summary>
@@ -1500,6 +1530,7 @@ namespace CosmicShore.Gameplay
         public virtual void Initialize(Cell cell)
         {
             hostCell = cell;
+            ApplyRuntimeTuningFrom(cell);
         }
 
         // ===================================================================

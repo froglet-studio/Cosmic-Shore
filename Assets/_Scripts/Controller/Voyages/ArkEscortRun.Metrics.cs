@@ -57,14 +57,18 @@ namespace CosmicShore.Gameplay
             _escortCopy = null;
             _escort = _escortAsset ? _escortAsset : _escort;
             _pendingEcho = null;
+            _paramTarget = null;
             var pending = ArkEscortParams.Pending;
             if (pending is not { Count: > 0 } || !_escort) return;
             _escortCopy = Instantiate(_escort);
             _escortCopy.name = _escort.name + " (runtime)";
             _escort = _escortCopy;
-            _pendingEcho = ArkEscortParams.Apply(new ArkEscortParams.Target { Escort = _escortCopy, Difficulty = difficulty },
-                pending);
+            _paramTarget = new ArkEscortParams.Target { Escort = _escortCopy, Difficulty = difficulty };
+            _pendingEcho = ArkEscortParams.Apply(_paramTarget, pending);
         }
+
+        // The overrides this run sailed with (null without any): their fauna half reaches each world in PrepareCellMetrics.
+        ArkEscortParams.Target _paramTarget;
 
         List<ArkEscortReport.Param> _pendingEcho;
 
@@ -106,6 +110,17 @@ namespace CosmicShore.Gameplay
         {
             cell.ArmourIsFood = _escort.PlatesAreFood;
             if (leg >= 0 && leg < _cellOfLeg.Length) _cellOfLeg[leg] = cell;
+
+            // A run's fauna overrides (fauna.* keys): per-species values ride the cell to each creature it registers;
+            // per-world scales compose onto the tier's population (production gating only, nothing is culled).
+            var t = _paramTarget;
+            if (t == null) return;
+            if (t.Fauna is { HasAny: true }) cell.RuntimeFaunaTuning = t.Fauna;
+            int world = leg + 1;
+            cell.RuntimePopulationScale *= t.WorldValue(world, "populationScale", 1f);
+            cell.RuntimeFaunaFloorScale = t.WorldValue(world, "floorScale", 1f);
+            cell.RuntimeFaunaCapScale = t.WorldValue(world, "capScale", 1f);
+            if (leg >= 0 && leg < _report.LegReports.Count) _report.LegReports[leg].Population = cell.RuntimePopulationScale;
         }
 
         void HookArk()
@@ -303,7 +318,13 @@ namespace CosmicShore.Gameplay
                 Fill(SeatStatsFor(_report.RunSeats, kv.Value.seat, kv.Value.vessel, kv.Key), now, start);
             }
             foreach (var cell in _cellOfLeg)
-                if (cell) cell.ArmourIsFood = false;
+                if (cell)
+                {
+                    cell.ArmourIsFood = false;
+                    // The tuning stays on a cell its creatures still read; only the scales go back for the next run.
+                    cell.RuntimeFaunaFloorScale = 1f;
+                    cell.RuntimeFaunaCapScale = 1f;
+                }
             _cellOfLeg = System.Array.Empty<Cell>();
             UnhookMetrics();
             _threatSeen.Clear();

@@ -1668,7 +1668,39 @@ namespace CosmicShore.Gameplay
         /// through <see cref="ResolveFaunaPopulation"/>. 0 stays 0 (uncapped).
         /// </summary>
         public int ResolveFaunaCap(FaunaConfigurationSO config) =>
-            config ? ResolveFaunaPopulation(config.MaxLivePopulation) : 0;
+            config ? ScaleTuned(ResolveFaunaPopulation(config.MaxLivePopulation),
+                RuntimeFaunaCapScale * (RuntimeFaunaTuning?.CapScale(SpeciesOf(config)) ?? 1f)) : 0;
+
+        /// <summary>
+        /// This cell's seed FLOOR for a species (<c>PopulationSize</c> / <c>InitialSpawnCount</c>, as the spawner names
+        /// it): <see cref="ResolveFaunaPopulation"/>, then the run's floor scales (<see cref="RuntimeFaunaFloorScale"/>,
+        /// the species' <c>floorScale</c> in <see cref="RuntimeFaunaTuning"/>). Untuned cells: identical to
+        /// <see cref="ResolveFaunaPopulation"/>. A floor above the cap is still clamped by the cap where producers check it.
+        /// </summary>
+        public int ResolveFaunaFloor(FaunaConfigurationSO config, int authored) =>
+            ScaleTuned(ResolveFaunaPopulation(authored),
+                RuntimeFaunaFloorScale * (config ? RuntimeFaunaTuning?.FloorScale(SpeciesOf(config)) ?? 1f : 1f));
+
+        /// <summary>A run's per-species fauna overrides for this cell, or null (every cell but a tuned escort world).
+        /// Set by the Ark escort's PrepareCell; read as each creature registers (<c>Fauna.Initialize</c>).</summary>
+        public FaunaRuntimeTuning RuntimeFaunaTuning { get; set; }
+
+        /// <summary>Multiplier on every species' seed floor here (a run's <c>fauna.&lt;world&gt;.floorScale</c>); 1 = untouched.</summary>
+        public float RuntimeFaunaFloorScale { get; set; } = 1f;
+
+        /// <summary>Multiplier on every species' live cap here (a run's <c>fauna.&lt;world&gt;.capScale</c>); 1 = untouched.
+        /// Production gating only: nothing is culled to meet a lowered cap.</summary>
+        public float RuntimeFaunaCapScale { get; set; } = 1f;
+
+        static string SpeciesOf(FaunaConfigurationSO config) =>
+            config && config.FaunaPrefab ? FaunaRuntimeTuning.SpeciesKey(config.FaunaPrefab.name) : null;
+
+        /// <summary>0 stays 0 (uncapped), a non-zero number never rounds below 1, scale 1 is the identity.</summary>
+        static int ScaleTuned(int resolved, float scale)
+        {
+            if (resolved <= 0 || scale <= 0f || Mathf.Approximately(scale, 1f)) return resolved;
+            return Mathf.Max(1, Mathf.FloorToInt(resolved * scale + 0.5f));
+        }
 
         /// <summary>
         /// True when this species is already at or over this cell's live cap - the one place

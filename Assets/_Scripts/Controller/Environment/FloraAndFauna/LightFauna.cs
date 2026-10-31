@@ -236,8 +236,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override bool DefersHeartRelease => true;
 
-        protected override float ArmourBite(bool superShielded) =>
+        protected override float AuthoredArmourBite(bool superShielded) =>
             data ? (superShielded ? data.superShieldBite : data.shieldBite) : 0f;
+
+        protected override void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            base.ApplyRuntimeTuning(tuning, species);
+            data = tuning.ResolveLightData(data, species);   // the run's copy of the species data, never the asset
+        }
 
         void RemoveHusk()
         {
