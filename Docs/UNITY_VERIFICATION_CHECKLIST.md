@@ -79,6 +79,238 @@ Space rebinds had silently dropped (#1650, #1652). No Unity and no .NET: not com
 - [ ] The Time plate stays empty throughout.
 - [ ] Mass and Space cards now tint (re-run their #1650 / #1652 lines above).
 
+### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
+
+1. I1 Shallows: a few tadpoles (the cell keeps its own colours at every intensity; the tint was removed). Core: seven gold blocks.
+2. I2 Grazing Grounds: tadpoles and brittlestars. Core: three blocks.
+3. I3 Hunting Grounds: two sharks, piranha, tadpoles. Core: one block.
+4. I4 The Deep: sharks, piranha schools, brittlestars, tadpoles. Core: one small block - the hardest shot.
+5. Watch the creatures round the shapes: if grazers chew a core, the shape disintegrates (that is the rule, not a bug);
+   say if it happens too often. Frame time against the no-fauna build (live creatures are capped at 25).
+6. EditMode: `SerpentineGateTests.The_core_shrinks_as_the_intensity_rises` and the rest.
+
+### 🔴 Serpentine: a shape at every ring (Coil / Maw / Iris), a gold core that disintegrates it, Breakwater's ring sizes (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. Replaces the flora guards (all guard entries below are superseded). `SerpentineGate` lays
+the shapes from the environment prism on every peer; `SerpentTimeController.TickShapes` watches each core.
+
+1. Open `MinigameSerpentTime`, save once; console clean (the controller no longer has the guard fields).
+2. I1 and I2: every ring (72 / 60 u) is closed by a Coil: six red danger arms spiralling in to a gold core, two round
+   holes (26 / 21 u) to fly out through, and blue scale rings flaring back toward you round the ring. I3: a Maw (fangs
+   and a web, three 16 u holes, a wide hood). I4: an Iris (nine blades, three 12 u holes, a housing ring of blocks).
+3. Thread a hole: the gate counts. Touch the red weave: petals go, as on any danger prism.
+4. Shoot the gold core (scope + RT), or ram it: the whole shape bursts outward from the core over a few frames and the
+   ring is open. About 25 s later, with nobody inside it, it grows back.
+5. With 3 AI: they shoot cores when their rifles are ready and thread the holes otherwise.
+6. Frame time: compare with the flora build (the shapes are ~240 / 190 / 110 / 120 prisms a gate against 288-360).
+   At I4 check the Serpent fits the 12 u holes; if not, lower `ExitMargin` / the core in `SerpentineGate`.
+7. EditMode: `SerpentineGateTests`, `SerpentTimeClusterTests`, `SerpentTimeCourseTests`.
+
+### 🔴 Serpentine's card loads again: a colon had broken its YAML (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+The description written in `b4a0eaeefe` ended a line with "rises:", which YAML reads as a new key: Unity kept the name
+and lost every later field (card art, vessels, controls, `SceneName`), so the card showed white art and an empty
+controls panel and the mode did not load. Text fixed; `hull_time_race.py` now fails `--check` on a colon or ' #' in
+card text and on any generated .asset that does not parse.
+
+1. Arcade: the Serpentine card shows its art; the launch panel shows its full description and its controls.
+2. Start it: the scene loads and the race runs.
+
+### 🔴 Serpentine: one ring a gate, 65 / 55 / 48 / 40 u, a guard at every gate (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. Supersedes "2 rings at I1-I2" in the entries below.
+
+1. Each intensity: every gate is ONE ring (no clusters), radius 65 (I1), 55 (I2), 48 (I3), 40 (I4). The Serpent
+   threads them comfortably at I1-I3; I4 feels as before.
+2. Every gate has a guard (before, beside, or a door); the AI shoots Mass / Charge hearts and flies through Time ones.
+3. EditMode: `SerpentTimeClusterTests`, `SerpentTimeCourseTests` (mouths still tighten level by level, gates clear).
+
+### 🔴 A lifeform's death runs once: `LifeForm.DieOnce` (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`Flora.KillReplicated` (a client's mirror of a replicated plant's death) and `BranchingFlora`'s no-leaves auto-death
+called `Die()` without latching `dying`; `Die`'s own destruction reports back through `CheckIfDead`, which then ran the
+death a second time (a second `OnLifeFormDeath`, attributed to "Guy Fawkes", a second unregister and destroyed event).
+Both now call `LifeForm.DieOnce`. Not compiled in this session. Affects: Garrett's and Yash's ecology code.
+
+1. Host + client in a mode with a replicated flora species (a lattice colony cell): kill a plant on the host. On the
+   client it withers once; no second death sound, no kill credited to "Guy Fawkes" in the client's log or stats.
+2. EditMode: `LifeFormDieOnceTests`.
+
+### 🔴 A mode's preview: FULL SCREEN extends as a tray (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 108: `ConfigureCinema` tray mode, `ModePreviewWindow.textureWidthScale`
+(+ centre crop), `ConfigureView` / `ConfigureArenaView` regenerated. Compiled with `unity_refcompile`; not opened in Unity.
+
+- [ ] Open an Arcade card's configure window: the preview looks exactly as before (same framing, not squashed).
+- [ ] FLY, then FULL SCREEN: the preview's right edge slides right to the column's edge; the controls panel, the
+  settings card, the status line and START fade; the header, the briefing and FLY stay; more arena shows at the
+  sides, nothing stretched. The objective bar moves with the preview's right edge.
+- [ ] FULL SCREEN again, STOP, START or Esc: the tray slides back and the right side returns, pressable.
+- [ ] Same on an Arena card. A Maelstrom card is unchanged.
+- [ ] Profile the window open (frame time with the preview live) against `bleeding-edge`: the preview now renders a
+  1.64x wider texture.
+
+### 🔴 Friends tray, Rev 40 E: one party card, one verb per row, rows grouped (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 107. `PartyPanel`, `PartySlot`, `PartyOnlineRow` regenerated by
+`Tools/Build/author_menu_arcade.py`; `ArcadeLobbyList` (names and summary lines, Invite), `FriendsListPanel`
+(`oneVerbPerRow`, `onlineGroups`, `onlineEmptyLine`), `KitOnlineRow` (`oneVerbPerRow`), `OnlineInfoEntry` (state getters).
+Compiled with `unity_refcompile`; generator self-test 34/34; not opened in Unity.
+
+- [ ] Compiles; Menu_Main opens with no missing-reference warnings on the friends drawer.
+- [ ] Open the orb (unchanged): the tray shows "Your party 1 / 4", the card with your seat and three open octagons,
+  your name, "You host - 3 seats open", INVITE, no LEAVE PARTY while solo. No bonds, nothing moving at rest.
+- [ ] INVITE (and any open octagon) moves focus into the online list.
+- [ ] With a second player (MPPM P2) in the menu: a "IN THE MENU" group with P2's row and ONE button, INVITE. Press
+  it: the row moves to "YOU INVITED" with one button, CANCEL. Cancel: back to "IN THE MENU".
+- [ ] P2 hosting a party with P3: P2's row under "JOIN THEIR PARTY" with JOIN only; full: JOIN dimmed.
+- [ ] P2 in a match: the row under "IN A MATCH" with SPECTATE only. No row ever shows two buttons or a button over
+  the name.
+- [ ] In a party of 3: three seats overlap left to right in domain-colour rings, names "A, B, C", the summary names
+  the host ("You host" or "<name> hosts") and "1 seat open"; the host sees a kick on each member's top-left; hovering a
+  seat opens the profile card. Full party: INVITE hides, "Party full".
+- [ ] Gamepad: focus moves from INVITE / LEAVE into the grouped rows and back (KitFocusKeeper).
+
+### 🔴 Party recovery after the four-player test: online only once the lava lamp is up, stale memberships cleared, dead hosts not offered, Rejoin and host loss during a bounce (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/PartySystem/BUGS.md` B39-B44. `LavaLampPresence` + the `ready` presence property (B39);
+`StaleLobbyMembership` around the party join and both presence joins (B40); Relay "join code not found" classified Gone
+and `DeadPartySessions` (B41); `PartyInviteController`: a join waits for a running transition, a host loss during one
+is acted on when it ends, the Rejoin offer waits for the bounce (B42); a host with others cannot Join or Spectate away
+(`leavePartyFirstToast`, B43); the roster sync's null session (B44). Compiled with `unity_refcompile` (player and
+editor configs). No Unity Editor in the session: not compiled or run in Unity, no MPPM run. **Every player must be on
+this build**: an older build never publishes `ready`, so a new build does not list it online.
+
+MPPM, 3-4 virtual players with their own tags (or two machines, which is what the bugs need):
+- [ ] B39: start Play on P2 and watch P1's ONLINE list: P2 appears only when P2's menu has faded in, not during its boot
+  splash. P2 entering a match stays listed (with its match).
+- [ ] B39: stop P2's Play and start it again: P1's row for P2 does not flicker away and back for good; P2 rejoins the
+  presence lobby with no "already a member" warning loop (B40).
+- [ ] B41/B40: P1 hosts a party with P2. Pause P1's editor for 20 s (Relay drops it). On P3 press JOIN on P1's row:
+  "That party has ended." and P3 is back on its own menu; P3's row for P1 no longer offers JOIN/SPECTATE; a second
+  JOIN attempt elsewhere works (no "already a member").
+- [ ] B42: in the same setup P2 bounces "Host disconnected"; press REJOIN as soon as it appears: it is either not shown
+  until the menu is back, or the press waits and then runs - never "Already transitioning - ignoring rejoin".
+- [ ] B42: a host whose re-host fails (pause it again during its bounce): it bounces again and ends on a live solo party
+  (`net` shows a listening host), not `InParty` on a dead link.
+- [ ] B43: P1 hosts P2; on P1 press JOIN or SPECTATE on P3's row: the toast says to leave first and P2 stays in the party.
+- [ ] B44: no `NullReferenceException` in `PartyMemberService.SyncFromSession` across any of the above.
+- [ ] The edit-mode tests `PartyRecoveryTests`, `AbsenceStrikesTests`, `UgsRequestPolicyTests` pass.
+
+### 🔴 Serpentine (Serpent Time): guards off the mouth, start behind gate 0, the cell's current, half the fauna (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session (no editor, no .NET SDK). Touches Yash's `SnowChanger` (a null-default `IFlow` hook: every
+other mode keeps pointing its shards at the crystal; check Skim Race too).
+
+1. Open `MinigameSerpentTime`, save once; console clean. The card reads **Serpentine**. The Cell lists Serpentine Cell
+   Config (`Assets/_SO_Assets/Cell Configs/Serpentine Cell/`).
+2. Start any intensity with 3 AI: everyone spawns on a small ring a few hundred units behind the first ring, nose
+   through it, not on the equator facing the centre.
+3. The shards in the cell all stream along the course; near the line they are long streaks, far away small motes that
+   lean toward the line. Fly a lap: the current turns where the course turns.
+4. Guards: gate 1's stands beside its ring, half-covering it; others stand 150-300 u before their ring on the line, or
+   as a pair either side of the line (a door with a narrow gap). None sit in a mouth. A heart hit still fells each one.
+5. Fauna: none at all (the Serpentine spawn profile lists no fauna). Compare the frame with the half-fauna build.
+6. Skim Race: its shards still point at its crystal (regression check on `SnowChanger`).
+7. EditMode: `SerpentTimeClusterTests.Guards_mix_their_placements_and_keep_the_start_clear`.
+
+### 🔴 Serpent Time: hit a guard's heart and the whole plant falls (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Extends the guarded-rings entry below. Mode code only (`SerpentTimeController.TickGuards` / `BeginFell` / `TickFell`,
+`SerpentTimeCluster.RoundPassesHeart`); the Serpent, the rifle and the flora code are untouched. Not compiled in this session.
+
+1. I1, a Time guard: fly straight through the middle of the plant (within 9 u of its heart crystal). The whole plant
+   bursts outward from the heart over a few frames, every plate gone, and its heart crystal drops in the ring. Fly
+   through its edge instead: only the plates you touch break, the plant stays.
+2. Scope and shoot the middle of a guard from 300-1000 u: the same burst. Shoot its edge: only the cone's hole.
+3. I2 / I3, a Mass guard (sparse armoured plates): one round through its middle fells it. A Charge guard (I3 / I4):
+   shooting the middle fells it for free, flying through the middle fells it but the danger plates you touch cost petals.
+4. With 3 AI at I3 / I4 (one guarded ring per gate): the AI scopes and fires at a Mass or Charge guard's heart from
+   90-1100 u and the plant falls; it flies straight through a Time guard and fells it. Before this the AI never shot
+   on a one-ring gate.
+5. Two peers: a round through a heart on one fells the guard on both (each peer fells its own copy from the replicated
+   press). Watch for a frame spike on the burst (48 plates a frame, `guardFellPlatesPerFrame`).
+6. EditMode: `SerpentTimeClusterTests.A_round_fells_a_guard_only_through_its_heart`.
+
+### 🔴 Serpent Time: rings guarded by flora, back in the Skim Race cell, perf markers (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Supersedes the slab cover and the Rampage cells in the entry below. Not compiled in this session.
+
+1. Open `MinigameSerpentTime`, save once; console clean. The Cell lists only Skim Race Cell Config; the controller's
+   Guard Flora By Element holds the four Rampage Borromean configs (Charge, Mass, Space, Time).
+2. I1: every gate stands 2 rings; one has a Borromean plant growing across its mouth (Time: plain plates). Fly through
+   the plant: its plates break and you keep your speed. I2: Time and Mass guards (Mass plates bounce you).
+3. I3 / I4: one ring per gate, every one guarded; Charge guards are all danger. Shoot one: a hole opens where the cone
+   passed. (Superseded: guards no longer stand in the mouth, see the Serpentine entry above.)
+4. A destroyed guard drops its heart crystal. Fauna come to graze the guards.
+5. Profile (prof): compare the frame with Skim Race's; read `SerpentWall.Sweep` / `SteerMembers` / `LayPanels` and
+   `SerpentTime.Tick` / `SerpentTime.AI` in the capture.
+6. EditMode: `SerpentTimeClusterTests` (guard domain test), `SerpentTimeCourseTests`.
+
+### 🔴 Serpent Time: covered rings and Rampage's living cells; the mode no longer changes the Serpent (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Written in a cloud session with no editor and no .NET SDK: not compiled. Supersedes the rounds and the wall's speed
+cost in the entry below (both retired: `SERPENTTIME.md`).
+
+1. Open `MinigameSerpentTime` and save once; the console stays clean. The Cell lists Rampage Cell Config 4, 3, 2, 1
+   (IntensityWise).
+2. Arcade > Serpent Time, I1: Rampage's sparse forest (67 plants) fills the cell; at I4 the dense one (335 plants).
+3. At each gate one ring of three (I1) is grown over with slabs, mostly plain with a few danger ones scattered in
+   (about 15 %); the open ring moves from gate to gate. I4: both rings of every gate covered, about 70 % danger.
+4. Scope and shoot a covered ring: a hole opens you can fly through without a hit; it grows back, one slab every 1.5 s.
+   Ram a covered ring: plain slabs break with no cost; touching a danger slab gives the shipped danger debuff.
+5. The Serpent's kit is unchanged: scoped RT fires on the rifle's own cooldown with no crystals involved; a rival's
+   Seed Wall does not slow you beyond what its prisms do anywhere else.
+6. An AI Serpent picks the open ring, or shoots a covered one when its rifle is ready.
+7. EditMode: `SerpentTimeClusterTests` (incl. the two cover tests), `SerpentTimeCourseTests`.
+
+### 🔴 Serpent Time, the dirty race: ring clusters, Seed Walls that cost speed, rounds from crystals, a dirty AI (`claude/dazzling-ride-dpyvkx`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Shombith: "make the serpent and its time game the best game ... an dirty time game"; brief and studio
+round: `Docs/Studios/SERPENT_TIME.md`, rules: `Assets/_Scripts/Controller/Arcade/SERPENTTIME.md` "The dirty race"):
+- Serpent Time (`GameModes.SerpentTime = 73`, from `cece/confident-goodall-6cpxan`, merged here) reshaped, no new id.
+- Every gate is 3 rings (I1, I2) or 2 (I3, I4) side by side; any one threads it. The next cluster lights lime.
+- A rival's Seed Wall brick costs a hull half its throttle (a shielded one 85%), recovering over 1.2 s.
+- 1 sniper round at the start, +1 per crystal, 3 at most, 1 per shot; a scoped RT with no round is dropped (toast).
+- Gate debris (follow-up commit): 48 loose prisms round every gate, one grown back per gate every 1.5 s; the mass a wall
+  laid at a gate is built from. Measured headless: on 200 courses per intensity no gate's debris comes within 20 u of
+  another gate's rings.
+- The AI takes the open ring, scopes and shoots a wall out of its ring when it holds a round, detours for crystals when
+  short, and cloaks just past a ring a rival still needs.
+- Opt-in hooks other code can ignore: `GateRaceController.ThreadsGate / ChooseAIGate / AICrystalDetourSlackFor /
+  OnLocalNextGateChanged`, `R_VesselActionHandler.PressGate`, `SniperShotActionExecutor.Fired`,
+  `SerpentWallAssembler.IsWallBrick`, `AIPilot.SetCycledAbilityFilter`, `RaceGateRing.SetVisualHidden`.
+
+**Verified without the editor:** reference compile, player and editor, 0 errors in project code. `SerpentTimeClusterTests` 4/4 under dotnet against the race-course harness's Unity math
+(the real circuits, 120 seeds x 4 intensities: no ring of one gate reaches another gate's ring); a mutated layout fails
+it. `author_serpent_time_assets.py --check` OK (and fails on a hand-edited toast); Scarab Rally and Brittle Star Time
+still match their generators after the shared `hull_time_race.py` change. Gates: using directives, console logging,
+switch labels, enum references, conditional compilation, self-referential locals, game-list scenes, preview spawns.
+`/verify-unity` was NOT run: no Unity editor in this cloud session.
+
+**Verify in editor:**
+1. Open `MinigameSerpentTime` once and save it (the controller's new fields take their defaults). EditMode
+   `SerpentTimeClusterTests` and `SerpentTimeCourseTests` pass; the console is clean on entering Play.
+2. Arcade ▸ Serpent Time, I1, you + 3 AI. Every gate shows THREE rings, the next cluster lime; flying through any one
+   counts the gate (I3/I4: two rings, smaller). No plain big ring is drawn at a gate.
+3. Toasts at the start: the hint, then "Sniper rounds 1/3". Take a crystal: 2/3. Scope (LT) and fire (RT): 1/3 and the
+   shot goes off. Fire until 0: the next scoped RT does nothing and says "No sniper round". Unscoped RT still cloaks.
+4. Every gate has a loose cloud of neutral prisms round it (not inside the rings), there when the race starts. Cloak
+   just past a ring with an AI behind you: a Seed Wall grows round the seed, pulling that debris in, and the cloud grows
+   back over the next minute. Fly into a RIVAL's wall: you slow and
+   see "Seed Wall - speed lost"; your own walls let you through.
+5. Watch an AI (Follow camera on it): it threads a ring that is not walled when one is; with a round it raises its scope
+   and shoots a wall out of its ring; with none it swings off for crystals; past a ring you still need, it cloaks
+   sometimes (not every 4 s as before).
+6. Two machines (host + client): the client's rounds and wall slow work on the client's hull; the host sees the client's
+   shots and walls; nobody's rounds are shared.
+
+**First-pass tuning** (controller fields, starting points): coverage to call a ring walled 0.4; walled-ring cost +120 /
++600; shot range 90-1100 u; crystal detour 900 / 250 u; cloak chance 0.8, 15.5 s apart; brick throttle 0.5 / 0.15 over
+1.2 s. Debris: 48 a gate, 26-120 u beyond the rings, one back every 1.5 s, 2.6 u pieces.
+
 ### 🔴 Angler Space card: Paint drawn as the two groups (`claude/angler-paint-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 **What landed:** five kit parts under the Space icon in `AnglerHUDVariant.prefab` (`Angler_Paint*`), two runtime counts
@@ -16376,6 +16608,9 @@ run. Checked offline:
 
 ## 🔴 2026-10-17 — Rev 6 step 4: presence orb + party molecule (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
+> **Partly superseded 2026-10-31:** the party MOLECULE steps below no longer apply - Rev 40 E replaced it with a party card
+> (`Docs/MENU_REDESIGN_B.md` section 107; its own entry is near the top of this file). The ORB steps still apply.
+
 New: `Presence.shader`, `Bond.shader` + `UIPresence.cginc`, `Presence_Orb.mat`, `Bond_Party.mat`, `KitPresenceOrb.cs`;
 `ArcadeLobbyList` gains `PresenceChanged` / `TryGetSeat` / `seatBonds` and authored online lines; `PartySlot` /
 `PartyPanel` re-emitted as the molecule; the drawer's Handle replaced by the orb in Menu_Main. `/verify-unity` was not
@@ -18586,6 +18821,37 @@ gate race and the Skim Race pilot. EditMode: `PerSeatAIDifficultyTests`, `Arcade
 7. Freestyle (lava lamp): Vessel Changer > Stoat, then > Meerkat. **Pass:** each flies; the Stoat's LT/RT pair and B
    mode switch work, the Meerkat's right-stick reticle and RT tunnel work.
 
+## 🔴 Gate races: per-gate and finish sound slots — NOT EDITOR-VERIFIED (`cece/confident-goodall-6cpxan`, 2026-10-27)
+
+`GateRaceController` gained `gateThreadedEvent` and `courseFinishedEvent`. Both are FMOD slots, shipped empty. They play
+for the local pilot only and come from `LightLocalNextGate`'s progress. No Unity CLI was available in the session, so
+this has not been compiled in the Editor.
+
+1. Open any gate-race scene (Switchback, for example). The controller's inspector should show an **Audio** header with
+   two empty slots.
+2. Assign any event to the gate slot and race. It should play once per ring threaded, and never on the first frame of
+   the race.
+3. Assign an event to the finish slot. It should play on the last ring instead of the gate sound.
+
+## 🔴 Scarab Rally, Serpent Time, Brittle Star Time + the Scarab switch on elemental crystals — NOT EDITOR-VERIFIED (`cece/confident-goodall-6cpxan`, 2026-10-27)
+
+Authored headless. The C# was compiled against real Unity references (`unity_refcompile`), and the course tests
+were compiled and run offline over 400 seeds. Nothing has been opened in Unity.
+
+1. Open `MinigameScarabRally`, `MinigameSerpentTime` and `MinigameBrittleStarTime` once each and save them, so the
+   Editor mints their own ids. Then run each `Tools/Build/author_*_assets.py --check`.
+2. Arcade grid → each card → race at I1 and I4 with AI rivals. Pass if:
+   - every ring is reachable;
+   - the AI threads rings and finishes;
+   - the arrow names your next ring.
+3. Scarab Rally I2: the hairpins need a drift to keep speed. Scarab Rally I3/I4: walls and danger prisms appear.
+4. Scarab, any mode (Freestyle, Tollway, Scramble):
+   - Press Switch with no elemental crystal ahead: refused, and no charge spent.
+   - Fly at a free elemental crystal, a flora heart, or a fauna carrying its heart: the ring forms around it.
+   - Fly at an omni crystal: refused.
+5. Run the edit-mode tests `ScarabRallyCourseTests`, `SerpentTimeCourseTests`, `BrittleStarTimeCourseTests`,
+   `ModeGenreTests` and `EnumIntegrityTests`.
+
 
 ## 🔴 2026-10-27 — The Port: faction messages (Vivox) and the weekly leaderboard (unverified: no Unity editor in the session)
 
@@ -19192,3 +19458,68 @@ move), `ThresherExecutor.CarryRig`, `ThresherChainSolver.Carry` / `LaunchExitMul
     leaves exactly along the crosshair and keeps flying at what it showed: no curve onto the line, no swing of the hull
     after leaving, and the camera stays behind you as you leave instead of watching you shoot off and then catching up.
 16. A plain release (no crosshair) still eases its spin to a stop (unchanged).
+
+## Destroyed vessel: VesselStatus's component getters answer null, mode-preview teardown checks the vessel (`claude/festive-ramanujan-8wdiiz`, 2026-10-31) - NOT EDITOR-VERIFIED
+
+**Files:** `VesselStatus.cs` (every lazy component getter goes through one `Lazy<T>` that returns null once the vessel is
+destroyed), `ModePreviewSession.cs` (`SetLocalTrailPaused` checks `Alive(vessel)` first). Shombith sent a console
+screenshot from a match: five `MissingReferenceException: The object of type 'CosmicShore.Gameplay.VesselStatus' has
+been destroyed`, without a stack. The one stack on record (bug ledger E-1f2ed4d48a / E-43417aef52, `bugledger/owner`)
+is `ModePreviewSession.SetLocalTrailPaused -> VesselStatus.get_VesselPrismController -> Component.get_gameObject`.
+The shape behind it: `IVessel.VesselStatus` is an interface-typed cache that outlives the vessel, so
+`vessel?.VesselStatus?.ResourceSystem` (28 such chains: animations, AIPilot, effects SOs, ElementalComebackSystem,
+SalvoController, Waystation...) cannot see the destruction and fell through to `gameObject`, which throws. No Unity in
+the session; the reference compile checked the C#.
+
+1. Compile. **Pass:** no errors.
+2. Play a match where vessels leave mid-match (AI backfill swap, Vessel Changer in freestyle, a player leaving, the end
+   of a match). **Pass:** no `MissingReferenceException ... VesselStatus` in the Console.
+3. Open a mode preview card in the Arcade, tap in to fly, then launch the mode while the preview is live. **Pass:** no
+   `[ModePreview] Unwinding the ... preview hit: ... VesselStatus has been destroyed` error.
+4. If a VesselStatus error still appears, click it and send the stack (the bug ledger sends it after the play test):
+   a caller that reads a getter without a null test now fails at ITS OWN line with a NullReferenceException, which
+   names the system still holding the dead vessel.
+## Waystation Prototype (76): the Tiger Moth's Drop Tower race beside Waystation (`claude/adoring-babbage-4jjppj`, 2026-10-31) - NOT EDITOR-VERIFIED
+
+A new mode; Waystation (58) is unchanged (Shombith: "don't change Waystation ... if Garrett approves then we replace").
+Authored in a cloud session with no Unity editor, so `/verify-unity` did not run. What did run:
+- `waystation_prototype_course.py --check` passes every check over 200 seeds × 4 intensities, and `--self-test`
+  watches each of its six negative controls fail.
+- `--compile` built and ran the shipped `WaystationTower.cs` (2267 gates, worst disagreement 0.0013 u; tile and danger
+  counts equal).
+- `author_waystation_prototype_assets.py --check` passes, with a watched negative control.
+- The `/arcadegame` §4 gates pass. `author_card_backgrounds --strict` fails only on the orphaned `Tandava.png`, which
+  bleeding-edge fails on too.
+
+Docs: `Assets/_Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYPE.md`, `Docs/Studios/TIGER_MOTH_TIME.md`.
+
+1. **Compile.** Open the project and let it compile. **Pass:** no errors in `WaystationTower.cs`,
+   `WaystationPrototypeCourseSource.cs`, `WaystationPrototypeController.cs`, `EndConditionOverridesSO.cs`,
+   `EndConditionOverridesWindow.cs` or `MiniGameHUD.cs`.
+2. **Edit-mode tests.** Run `WaystationTowerTests`, `EnumIntegrityTests` (67 members, `WaystationPrototype` = 76),
+   `RaceCourseSourceTests` and `WaystationCourseTests`. **Pass:** all green.
+3. **Open and save the scene.** Open `MinigameWaystationPrototype.unity` and save it, so the Editor mints its own ids
+   (it is a byte clone of Waystation's). Then commit the scene, and re-run
+   `python3 Tools/Build/author_waystation_prototype_assets.py --check`. **Pass:** OK. The controller shows Wall Prefab =
+   SpawnablePrism and Ai Fold Min Distance = 700.
+4. **Fly it at I1.** Arcade grid, Waystation Prototype, I1, with 2 Tiger Moth AIs.
+   - **Pass:** the clusters are Waystation's. Between clusters stand towers: square plates of tiles, mostly blue
+     (plain) with a few danger tiles, and each tower ring just under a plate. The last gap has no tower.
+   - Fly over a tower ring and tap LT. **Pass:** you fall through the plate, the ring counts, and you land flying
+     down the fall line.
+5. **Hold edges.** Tap too short (land on the plate), then hold too long (meet the pipe before the Drop is back).
+   **Pass:** a plain tile bursts and slows you for about a second. A danger tile stops you for about 3 s and burns your
+   elements, which is the vessel's own rule. Nothing else happens.
+6. **Regrowth.** Watch a hole you punched. **Pass:** it grows back one tile at a time, about 1.5 s apart.
+7. **The long last gap.** Drop the whole gap. **Pass:** the drop leaves the neutral wormhole pair, as in Waystation.
+8. **AI.** Watch the AIs.
+   - **Pass:** on a tower they fly over each ring, roll, tap and thread it. On the clusters and the long gap they fly
+     as in Waystation.
+   - **Note** any tower where an AI circles or crashes into the pipe; the seed is printed by the course logs.
+9. **Ladder.** Repeat at I4. **Pass:**
+   - the windows feel tighter;
+   - there are more danger tiles (about half);
+   - some sideways hops need a 90 degree roll first (rings abeam).
+10. **Two players.** One host, one client. **Pass:** both see the same plates with the same danger tiles, and a hole
+    the host punched is a hole on the client.
+11. **Waystation itself.** Fly Waystation (58) once. **Pass:** unchanged from bleeding-edge.
