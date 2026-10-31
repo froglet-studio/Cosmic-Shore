@@ -109,8 +109,7 @@ Supersedes the slab cover and the Rampage cells in the entry below. Not compiled
 2. I1: every gate stands 2 rings; one has a Borromean plant growing across its mouth (Time: plain plates). Fly through
    the plant: its plates break and you keep your speed. I2: Time and Mass guards (Mass plates bounce you).
 3. I3 / I4: one ring per gate, every one guarded; Charge guards are all danger. Shoot one: a hole opens where the cone
-   passed. Check the plant's membrane actually spans the ring (it is rooted at the centre, grown along the ring's axis):
-   if it grows sideways or misses the mouth, that is the orientation to fix.
+   passed. (Superseded: guards no longer stand in the mouth, see the Serpentine entry above.)
 4. A destroyed guard drops its heart crystal. Fauna come to graze the guards.
 5. Profile (prof): compare the frame with Skim Race's; read `SerpentWall.Sweep` / `SteerMembers` / `LayPanels` and
    `SerpentTime.Tick` / `SerpentTime.AI` in the capture.

@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds each cluster ring takes to bloom in when the course is raised.")]
         [SerializeField, Min(0f)] float clusterBloomSeconds = 0.9f;
 
-        [Header("Guarded rings (a Borromean flora planted at the ring's mouth)")]
+        [Header("Guarded rings (a Borromean flora standing near the ring)")]
         [Tooltip("Rings guarded at each gate on intensity 1-4 (of the 2, 2, 1, 1 a gate stands). The guarded ring is picked " +
                  "from the gate's index, so which ring is open moves round from gate to gate.")]
         [SerializeField] int[] guardedRingsPerGateByIntensity = { 1, 1, 1, 1 };
