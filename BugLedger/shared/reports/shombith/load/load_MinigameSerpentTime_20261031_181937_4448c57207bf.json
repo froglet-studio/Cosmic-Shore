@@ -1,0 +1,806 @@
+{
+    "schemaVersion": 1,
+    "reportId": "4448c57207bf",
+    "timestamp": "2026-10-31T18:19:37.1062263Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "System Product Name (ASUS)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "735b91c640",
+    "trigger": "Game launch — SerpentTime → MinigameSerpentTime",
+    "loadKind": "launch",
+    "completionReason": "Loaded — arena complete (laid + grown), connecting screen done",
+    "interrupted": false,
+    "sceneFrom": "Menu_Main",
+    "sceneTo": "MinigameSerpentTime",
+    "gameMode": "SerpentTime",
+    "intensity": 3,
+    "totalPlayers": 2,
+    "humanPlayers": 2,
+    "aiBackfill": 0,
+    "isMultiplayer": true,
+    "networkRole": "Host",
+    "connectedClients": 2,
+    "totalMs": 8156.85791015625,
+    "visualReadyMs": 5229.4443359375,
+    "waitMs": 1231.1126708984375,
+    "humanWaitMs": 0.0,
+    "workMs": 6925.7451171875,
+    "unattributedMs": 2106.105712890625,
+    "framesDuringLoad": 228,
+    "avgFpsDuringLoad": 27.951940536499025,
+    "worstFrameMs": 2668.063232421875,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 19.737699508666993,
+            "endMs": 104.90799713134766,
+            "durationMs": 85.17029571533203,
+            "exclusiveMs": 85.17029571533203,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene load → activation (MinigameSerpentTime)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 104.91570281982422,
+            "endMs": 4205.1171875,
+            "durationMs": 4100.20166015625,
+            "exclusiveMs": 4100.20166015625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4233.1953125,
+            "endMs": 5178.24853515625,
+            "durationMs": 945.05322265625,
+            "exclusiveMs": 0.03564453125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 2,
+            "depth": 1,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4233.23095703125,
+            "endMs": 5249.421875,
+            "durationMs": 1016.19091796875,
+            "exclusiveMs": 13.9697265625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 3,
+            "depth": 2,
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4247.20068359375,
+            "endMs": 5294.82568359375,
+            "durationMs": 1047.625,
+            "exclusiveMs": 937.71044921875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 4,
+            "depth": 3,
+            "label": "Vessel instantiate+inject+spawn (Serpent)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 5178.5166015625,
+            "endMs": 5190.83251953125,
+            "durationMs": 12.31591796875,
+            "exclusiveMs": 12.31591796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 4,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (Dragon)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 5190.8525390625,
+            "endMs": 5229.4423828125,
+            "durationMs": 38.58984375,
+            "exclusiveMs": 38.58984375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 4,
+            "depth": 3,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 5229.80517578125,
+            "endMs": 5231.25,
+            "durationMs": 1.44482421875,
+            "exclusiveMs": 1.44482421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 4,
+            "depth": 3,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 5232.8720703125,
+            "endMs": 5233.7783203125,
+            "durationMs": 0.90625,
+            "exclusiveMs": 0.90625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 4,
+            "depth": 3,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 5233.7890625,
+            "endMs": 5234.03955078125,
+            "durationMs": 0.25048828125,
+            "exclusiveMs": 0.25048828125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 4,
+            "depth": 3,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 5234.0556640625,
+            "endMs": 5243.259765625,
+            "durationMs": 9.2041015625,
+            "exclusiveMs": 9.2041015625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 4,
+            "depth": 3,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 5243.51904296875,
+            "endMs": 5245.30224609375,
+            "durationMs": 1.783203125,
+            "exclusiveMs": 1.783203125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 4,
+            "depth": 3,
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 5249.40576171875,
+            "endMs": 5488.72314453125,
+            "durationMs": 239.3173828125,
+            "exclusiveMs": 0.3779296875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 12,
+            "depth": 4,
+            "label": "Vessel instantiate+inject+spawn (Serpent)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 5249.67529296875,
+            "endMs": 5262.80322265625,
+            "durationMs": 13.1279296875,
+            "exclusiveMs": 13.1279296875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 12,
+            "depth": 4,
+            "label": "Pair init - inject + vessel.Initialize (Kyoki)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 5262.826171875,
+            "endMs": 5294.78369140625,
+            "durationMs": 31.95751953125,
+            "exclusiveMs": 30.2333984375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 14,
+            "depth": 5,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 5291.1240234375,
+            "endMs": 5292.84814453125,
+            "durationMs": 1.72412109375,
+            "exclusiveMs": 1.72412109375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 12,
+            "depth": 4,
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 5294.80029296875,
+            "endMs": 5488.654296875,
+            "durationMs": 193.85400390625,
+            "exclusiveMs": 193.8486328125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 17,
+            "parentId": 16,
+            "depth": 5,
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "startMs": 5294.83203125,
+            "endMs": 5294.83740234375,
+            "durationMs": 0.00537109375,
+            "exclusiveMs": 0.00537109375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 18,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 5771.8935546875,
+            "endMs": 6339.79296875,
+            "durationMs": 567.8994140625,
+            "exclusiveMs": 567.8994140625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 19,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Fauna spawn (MassSharkFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 6476.4775390625,
+            "endMs": 6505.3017578125,
+            "durationMs": 28.82421875,
+            "exclusiveMs": 28.82421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 20,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Fauna spawn (TadPoleFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 6505.36474609375,
+            "endMs": 6509.53271484375,
+            "durationMs": 4.16796875,
+            "exclusiveMs": 4.16796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 21,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Fauna spawn (TadPoleFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 6509.5927734375,
+            "endMs": 6512.5302734375,
+            "durationMs": 2.9375,
+            "exclusiveMs": 2.9375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 22,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Fauna spawn (TadPoleFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 7478.8515625,
+            "endMs": 7482.22509765625,
+            "durationMs": 3.37353515625,
+            "exclusiveMs": 3.37353515625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 23,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Fauna spawn (TadPoleFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 7482.2763671875,
+            "endMs": 7484.92626953125,
+            "durationMs": 2.64990234375,
+            "exclusiveMs": 2.64990234375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 4100.20166015625,
+            "percent": 50.26692581176758,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 2106.105712890625,
+            "percent": 25.82006072998047,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 1231.1126708984375,
+            "percent": 15.092976570129395,
+            "spanCount": 6,
+            "waitMs": 1231.1126708984375
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 578.26025390625,
+            "percent": 7.089252471923828,
+            "spanCount": 4,
+            "waitMs": 0.0
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 94.26708984375,
+            "percent": 1.1556789875030518,
+            "spanCount": 4,
+            "waitMs": 0.0
+        },
+        {
+            "category": 7,
+            "name": "Fauna",
+            "attributedMs": 41.953125,
+            "percent": 0.5143294930458069,
+            "spanCount": 5,
+            "waitMs": 0.0
+        },
+        {
+            "category": 9,
+            "name": "Crystals",
+            "attributedMs": 4.9521484375,
+            "percent": 0.06071146950125694,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": 12,
+            "name": "Game Flow & Countdown",
+            "attributedMs": 0.00537109375,
+            "percent": 0.00006584758375538513,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Scene load → activation (MinigameSerpentTime)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 4100.20166015625,
+            "exclusiveMs": 4100.20166015625,
+            "maxSingleMs": 4100.20166015625,
+            "isWait": false
+        },
+        {
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 1047.625,
+            "exclusiveMs": 937.71044921875,
+            "maxSingleMs": 1047.625,
+            "isWait": true
+        },
+        {
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 567.8994140625,
+            "exclusiveMs": 567.8994140625,
+            "maxSingleMs": 567.8994140625,
+            "isWait": false
+        },
+        {
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 2,
+            "totalMs": 433.17138671875,
+            "exclusiveMs": 194.2265625,
+            "maxSingleMs": 239.3173828125,
+            "isWait": true
+        },
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 85.17029571533203,
+            "exclusiveMs": 85.17029571533203,
+            "maxSingleMs": 85.17029571533203,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Dragon)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 38.58984375,
+            "exclusiveMs": 38.58984375,
+            "maxSingleMs": 38.58984375,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Kyoki)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 31.95751953125,
+            "exclusiveMs": 30.2333984375,
+            "maxSingleMs": 31.95751953125,
+            "isWait": false
+        },
+        {
+            "label": "Fauna spawn (MassSharkFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "count": 1,
+            "totalMs": 28.82421875,
+            "exclusiveMs": 28.82421875,
+            "maxSingleMs": 28.82421875,
+            "isWait": false
+        },
+        {
+            "label": "Vessel instantiate+inject+spawn (Serpent)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 2,
+            "totalMs": 25.44384765625,
+            "exclusiveMs": 25.44384765625,
+            "maxSingleMs": 13.1279296875,
+            "isWait": false
+        },
+        {
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 2,
+            "totalMs": 1961.244140625,
+            "exclusiveMs": 14.00537109375,
+            "maxSingleMs": 1016.19091796875,
+            "isWait": true
+        },
+        {
+            "label": "Fauna spawn (TadPoleFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "count": 4,
+            "totalMs": 13.12890625,
+            "exclusiveMs": 13.12890625,
+            "maxSingleMs": 4.16796875,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 9.2041015625,
+            "exclusiveMs": 9.2041015625,
+            "maxSingleMs": 9.2041015625,
+            "isWait": false
+        },
+        {
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "count": 3,
+            "totalMs": 4.9521484375,
+            "exclusiveMs": 4.9521484375,
+            "maxSingleMs": 1.783203125,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.90625,
+            "exclusiveMs": 0.90625,
+            "maxSingleMs": 0.90625,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.25048828125,
+            "exclusiveMs": 0.25048828125,
+            "maxSingleMs": 0.25048828125,
+            "isWait": false
+        },
+        {
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "count": 1,
+            "totalMs": 0.00537109375,
+            "exclusiveMs": 0.00537109375,
+            "maxSingleMs": 0.00537109375,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 5337.349609375,
+            "durationMs": 2668.063232421875,
+            "during": "Scene load → activation (MinigameSerpentTime)"
+        },
+        {
+            "atMs": 1746.749755859375,
+            "durationMs": 1592.022705078125,
+            "during": "Scene load → activation (MinigameSerpentTime)"
+        },
+        {
+            "atMs": 5489.4443359375,
+            "durationMs": 725.962890625,
+            "during": "InitDelayMs gate before InitializeGame (1000ms)"
+        },
+        {
+            "atMs": 1868.272216796875,
+            "durationMs": 165.3603057861328,
+            "during": "Scene load → activation (MinigameSerpentTime)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Game launch — SerpentTime → MinigameSerpentTime"
+        },
+        {
+            "atMs": 1465.1038818359375,
+            "label": "Netcode scene load begins: MinigameSerpentTime"
+        },
+        {
+            "atMs": 4205.298828125,
+            "label": "Unity scene loaded: MinigameSerpentTime (Single)"
+        },
+        {
+            "atMs": 4233.2490234375,
+            "label": "Game controller spawned (SerpentTimeController, IsServer=True)"
+        },
+        {
+            "atMs": 4665.7822265625,
+            "label": "Netcode scene load complete: MinigameSerpentTime (client 0)"
+        },
+        {
+            "atMs": 5229.44580078125,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 5243.45556640625,
+            "label": "Flora/fauna spawner started (cell 0, IntensityWiseLifeSpawner)"
+        },
+        {
+            "atMs": 5245.42236328125,
+            "label": "Connecting panel shown (holding for arena build)"
+        },
+        {
+            "atMs": 5294.83984375,
+            "label": "Session started (app state → InGame)"
+        },
+        {
+            "atMs": 7104.09619140625,
+            "label": "Netcode scene load complete: MinigameSerpentTime (client 1)"
+        },
+        {
+            "atMs": 7104.3642578125,
+            "label": "Netcode scene load completed on ALL clients: MinigameSerpentTime"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Prisms laid during load",
+            "value": 1364
+        },
+        {
+            "name": "Vessels spawned during load",
+            "value": 2
+        },
+        {
+            "name": "Crystals spawned during load",
+            "value": 3
+        },
+        {
+            "name": "Fauna spawned during load",
+            "value": 5
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 1376
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism lay: pool Get + component Awakes",
+            "count": 1364,
+            "totalMs": 356.68218994140627,
+            "maxSingleMs": 2.240799903869629
+        },
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 1400,
+            "totalMs": 196.60000610351563,
+            "maxSingleMs": 0.5936999917030335
+        },
+        {
+            "label": "Prism lay: Initialize (reset + grow coroutine start)",
+            "count": 1364,
+            "totalMs": 27.243200302124025,
+            "maxSingleMs": 0.0608999989926815
+        },
+        {
+            "label": "Prism lay: kind + trail.Add",
+            "count": 1364,
+            "totalMs": 11.533699989318848,
+            "maxSingleMs": 0.06210000067949295
+        },
+        {
+            "label": "Prism lay: team + pose",
+            "count": 1364,
+            "totalMs": 5.618299961090088,
+            "maxSingleMs": 0.03550000116229057
+        },
+        {
+            "label": "Prism lay: TargetScale (scale-manager registration)",
+            "count": 1364,
+            "totalMs": 2.575200080871582,
+            "maxSingleMs": 0.006800000090152025
+        }
+    ],
+    "errors": [],
+    "hints": [
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "1.2s (15%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "single-dominator",
+            "severity": 1,
+            "title": "One cost dominates this load",
+            "finding": "\"Scene load → activation (MinigameSerpentTime)\" alone is 50% of the load (4.1s).",
+            "fixAdvice": "See the hot-path breakdown for its per-stage costs. Cut its workload (content/intensity tuning), pool or pre-instantiate its prefabs, or spread the work across frames.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 2.7s during \"Scene load → activation (MinigameSerpentTime)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        }
+    ]
+}
