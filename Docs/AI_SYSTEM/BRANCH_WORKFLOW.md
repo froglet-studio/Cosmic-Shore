@@ -1,11 +1,11 @@
-# AI System — Branch Workflow (AI work lives on `Ys-bleeding-edge`)
+# AI System — Branch Workflow (AI work lives on `ai`)
 
-**2026-10-09: the `ai-system` branch is retired.** Its work (the Skim Race AI retunes, the perf
-diagnostics, these docs) was merged into `claude/peaceful-rubin-hhw49n` and from there into
-`Ys-bleeding-edge`, and the branch was deleted. Every AI session now works on **`Ys-bleeding-edge`**
-(the user's call). The same day `claude/peaceful-rubin-hhw49n` (the Stoat, the black and white
-holes, Amoebius, the Vessel Studio) was merged into `Ys-bleeding-edge` and deleted, so that work lives here too.
-The rules below are the old ones with that one change; the history is in `SYNC_LOG.md`.
+**2026-10-28: `ai` is the one branch for all AI work** (Shombith, head of tooling). It replaced `Ys-bleeding-edge`, which
+was the AI home from 2026-10-09 (when the `ai-system` branch was merged into it and retired) and also served as Yash's
+integration branch for any area. **No personal integration branch any more**: AI work builds on `ai` and reaches
+`bleeding-edge` by PR; everything else goes on its own short-lived branch with a PR straight into `bleeding-edge`.
+`Ys-bleeding-edge` is left in place; Yash brings its unmerged commits to `bleeding-edge` himself. The history is in
+`SYNC_LOG.md`.
 
 Run the sync report first, every time — it lists what is waiting to come in, and which of it is AI work:
 
@@ -18,56 +18,43 @@ python3 Tools/Build/ai_branch_sync.py --no-fetch # offline / already fetched
 
 ## 1. The branches
 
-| Branch | Owner and purpose | What `Ys-bleeding-edge` does with it |
+| Branch | Owner and purpose | What `ai` does with it |
 |---|---|---|
-| `bleeding-edge` | The team's integration branch. Everyone's PRs land here, including **new vessel AI written by other people** (Urchin rails, Scarab jukes, Grizzly bombs). | **Pull only.** Merge the latest `bleeding-edge` INTO `Ys-bleeding-edge` (a merge commit) before and during work. New AI found here is *intake* (§4). **Nothing goes from `Ys-bleeding-edge` to `bleeding-edge` until the user has tested it** (Yash, 2026-10-15); then by pull request, when the user decides. |
-| `Ys-bleeding-edge` | **Home.** Ys's integration branch: everything in `bleeding-edge` plus multiplayer / party / networking, and now every vessel AI (review, restructure, diagnose, test, tune). | — |
-| `perf/performance-optimization` | Performance testing: the instruments (`prof`, `diag`, `burst`, `freeze`, `ab`), allocation gates, perf fixes. | **Two-way.** Pull its tools and fixes; merge Ys into perf when an AI change needs perf testing (§3). |
+| `bleeding-edge` | The team's integration branch. Everyone's PRs land here, including **new vessel AI written by other people** (Urchin rails, Scarab jukes, Grizzly bombs). | **Pull, then PR back.** Merge the latest `bleeding-edge` INTO `ai` (a merge commit) before and during work. New AI found here is *intake* (§4). AI work goes from `ai` to `bleeding-edge` by pull request. |
+| `ai` | **Home.** Every vessel AI (review, restructure, diagnose, test, tune) and the AI learning sweep's output. | — |
+| `perf/performance-optimization` | Performance testing: the instruments (`prof`, `diag`, `burst`, `freeze`, `ab`), allocation gates, perf fixes. | **Two-way.** Pull its tools and fixes; merge `ai` into perf when an AI change needs perf testing (§3). |
 
-**Ownership rule.** A change belongs on the branch that owns its area, then merges across:
+**Ownership rule.** A change belongs on the branch that owns its area:
 
-| Area | Owning branch |
+| Area | Where it goes |
 |---|---|
-| `Assets/_Scripts/Controller/AI/**`, mode/ability AI code, AI configs, `Docs/SKIM_RACE_AI*.md`, `Docs/AI_SYSTEM/**`, the Skim Race simulator | `Ys-bleeding-edge` |
-| Party, presence, lobby, netcode, multiplayer packages | `Ys-bleeding-edge` |
+| `Assets/_Scripts/Controller/AI/**`, mode/ability AI code, AI configs, `Docs/SKIM_RACE_AI*.md`, `Docs/AI_SYSTEM/**`, the Skim Race simulator, the AI learning sweep's results | `ai` (a short-lived branch off `ai` with a PR into it is fine too), then a PR into `bleeding-edge` |
 | `Assets/_Scripts/Utility/PerformanceBenchmark/**`, `Docs/PERFORMANCE_OPTIMIZATION.md`, allocation / Burst gates | `perf/performance-optimization` |
-| Stoat, black holes, `Port/`, `Docs/Studios/**`, `/vessel-studio` | `Ys-bleeding-edge` |
-| Everything else (modes, vessels, ecology, UI) | `bleeding-edge` (via its authors). **Yash's own sessions: `Ys-bleeding-edge` too** (below) |
+| Everything else (multiplayer, modes, vessels, ecology, UI, studios, `Port/`) | its own short-lived branch off `bleeding-edge`, with a PR straight into `bleeding-edge` |
 
-**Yash's sessions build on `Ys-bleeding-edge` first, whatever the area (Yash, 2026-10-25).** "I'm changing features and
-adding them to Ys-bleeding-edge, testing them first and then deciding whether to push it or not in bleeding edge." So a
-session Yash drives, on any feature (a menu flow, a mode, a vessel, not only AI or multiplayer):
-
-- branches from `Ys-bleeding-edge` (or merges it into the working branch before the PR) and opens its PR **into
-  `Ys-bleeding-edge`**;
-- **never pushes to `bleeding-edge` and never opens a PR into it**, `/to-bleeding-edge` included, unless Yash asks for
-  that promotion in the chat;
-- leaves the promotion to Yash, who tests on `Ys-bleeding-edge` and then decides.
-
-(The first change this would have caught: #1529, the return-to-launch-panel flow, went straight to `bleeding-edge`; its
-doc follow-up #1537 was retargeted to `Ys-bleeding-edge`.)
+**No personal integration branch** (Shombith, 2026-10-28). Before that, Yash's sessions built every feature on
+`Ys-bleeding-edge` first and promoted it later (2026-10-25); that rule is retired.
 
 ---
 
-## 2. Pulling into `Ys-bleeding-edge` (the routine sync)
+## 2. Pulling into `ai` (the routine sync)
 
 1. **Report.** `python3 Tools/Build/ai_branch_sync.py`. Read the "AI commits" lines for each source.
 2. **Merge, never rebase** (others pull these branches; history is never rewritten):
    ```sh
-   git checkout Ys-bleeding-edge && git pull --ff-only origin Ys-bleeding-edge
+   git checkout ai && git pull --ff-only origin ai
    git merge --no-ff origin/bleeding-edge                    # when the report shows work there
    git merge --no-ff origin/perf/performance-optimization    # when perf landed a tool or fix
    ```
 3. **Resolve** with §5, hunk by hunk. **Verify** (§6). The merge message carries the sources, every
    conflict and its resolution, and the results; `SYNC_LOG.md` gets one row.
-4. **Push** `git push -u origin Ys-bleeding-edge`, then intake (§4) for any new AI the merge brought.
+4. **Push** `git push -u origin ai`, then intake (§4) for any new AI the merge brought.
 
 ## 3. Exchanging with `perf/performance-optimization`
 
-- **perf → Ys**: merge perf whenever it lands a tool, a gate, or a fix the AI uses. Never cherry-pick.
-- **Ys → perf**: merge Ys into perf when an AI change must be perf-tested there.
-- **Perf findings about the AI** are written into the AI's own doc on `Ys-bleeding-edge`
-  (`DIAGNOSIS_PLAYBOOK.md` §4).
+- **perf → ai**: merge perf whenever it lands a tool, a gate, or a fix the AI uses. Never cherry-pick.
+- **ai → perf**: merge `ai` into perf when an AI change must be perf-tested there.
+- **Perf findings about the AI** are written into the AI's own doc on `ai` (`DIAGNOSIS_PLAYBOOK.md` §4).
 
 ## 4. When someone adds a new vessel AI on bleeding-edge
 

@@ -1,15 +1,14 @@
 # AI System — start here
 
-Every vessel AI in Cosmic Shore is reviewed, restructured, diagnosed, tested and tuned on
-**`Ys-bleeding-edge`** (since 2026-10-09; the `ai-system` branch that held this work was merged there and
-retired). Others keep writing AI on `bleeding-edge`; it is pulled in, taken in, and diagnosed one AI at a
-time. Performance testing runs in parallel on `perf/performance-optimization`, and the branches exchange
-work by merge. Testing an AI visually: the one Vessel Studio artifact (`/vessel-studio`) in a browser, and the **Third Eye**
+Every vessel AI in Cosmic Shore is reviewed, restructured, diagnosed, tested and tuned on **`ai`**, the one
+branch for all AI work (Shombith, head of tooling, 2026-10-28; it replaced `Ys-bleeding-edge`, which held this work
+from 2026-10-09, after the `ai-system` branch before it). AI work builds on `ai` and goes to `bleeding-edge` by PR.
+AI others write on `bleeding-edge` is pulled into `ai`, taken in, and diagnosed one AI at a time. Testing an AI visually: the one Vessel Studio artifact (`/vessel-studio`) in a browser, and the **Third Eye**
 window in Unity (FrogletTools > AI > Third Eye). The rules every AI follows, difficulty, finish times and the
 test ladder: the **`/vessel-ai`** skill.
 
-**Yash's sessions, any area: build on `Ys-bleeding-edge`, PR into it, and never push or open a PR into `bleeding-edge`**
-unless Yash asks; Yash tests there and decides what is promoted (2026-10-25, [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) §1).
+**Non-AI work goes on its own short-lived branch with a PR straight into `bleeding-edge`. No personal integration
+branch** (Shombith, 2026-10-28, [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) §1).
 
 | Read | When |
 |---|---|
@@ -17,7 +16,7 @@ unless Yash asks; Yash tests there and decides what is promoted (2026-10-25, [`B
 | [`AUTO_LEARNING.md`](AUTO_LEARNING.md) | **The AIs learn on their own (LOCKED, Yash 2026-10-26):** every recorded race reaches the hourly AI learning sweep (`ai_learn.py --run`), which relearns, judges and pushes. Never ask a person to run a learner; a new learner joins `ai_learn.py` |
 | [`MINIGAME_TRAINING_PLAN.md`](MINIGAME_TRAINING_PLAN.md) | **The current plan (Yash, 2026-10-26, restated 2026-10-27):** train each vessel's AI in its OWN minigames, its Time minigame first (Dolphin → Switchback, Stoat → Warpline; the vessel → minigame map), never in Regatta; learn from repeated play (automatic: `AUTO_LEARNING.md`); then rebuild the arena games (Regatta first) as a mix of the learned skills, so any vessel fits them |
 | [`REGATTA_AI_ROADMAP.md`](REGATTA_AI_ROADMAP.md) | **The Regatta record (superseded as the plan 2026-10-26):** six racing AIs for Regatta (Squirrel, Stoat, Manta, Rhino, Urchin, Dolphin), one way to build a racing AI (a hull drive on the shared course / belief / steering), and the order with each step's status. As of 2026-10-17: the Stoat is on the card, the Rhino drive is rebuilt (step 4), the Dolphin drifts again at the peak (step 6), Regatta steers through the ring's centre; none of it run in the editor yet |
-| [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) | Before any merge into or out of `Ys-bleeding-edge`: the branches, which way work flows, conflict rules, verification |
+| [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) | Before any merge into or out of `ai`: the branches, which way work flows, conflict rules, verification |
 | [`AI_TRAINING_PLAN.md`](AI_TRAINING_PLAN.md) | AI training end to end (training data from Unity editor play only; the Training AI for Regatta page was deleted 2026-10-16), what Unity has today, the four layers (watch in the AI Lab, AIs train each other in the genetic trainer, learn from players with consent, nothing ships itself) and the order of work |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Before touching any AI: the six layers, the roster of every AI (source of truth), what is wrong today, the target architecture |
 | [`DIAGNOSIS_PLAYBOOK.md`](DIAGNOSIS_PLAYBOOK.md) | Before diagnosing an AI or taking a new one in: the five tiers of evidence, the procedure, the intake checklist, the user's test script, the status board |
@@ -33,7 +32,7 @@ unless Yash asks; Yash tests there and decides what is promoted (2026-10-25, [`B
 python3 Tools/Build/ai_branch_sync.py
 ```
 
-It fetches `Ys-bleeding-edge` and the three source branches and reports what is waiting, which of it is AI work, and which AI
+It fetches `ai` and its source branches and reports what is waiting, which of it is AI work, and which AI
 files the roster does not know yet. It only reads; merging is a separate, deliberate step.
 
 ## Facts a newcomer needs
@@ -58,7 +57,7 @@ files the roster does not know yet. It only reads; merging is a separate, delibe
 - **Opponent seats are pinned to the Squirrel** (`SO_ArcadeGame.OpponentAIVessel`, `author_regatta_assets.py`). Other hulls
   race as ally or host picks, or through the Third Eye's You / AI toggle.
 - **What is where.** `bleeding-edge` has everything up to PR #1165 (2026-10-17): Regatta difficulty, the learners, the
-  per-mode variant machinery, the Squirrel's learned ring face. Only `Ys-bleeding-edge` has the Stoat on the Regatta card
+  per-mode variant machinery, the Squirrel's learned ring face. Only `Ys-bleeding-edge` had (as of 2026-10-17) the Stoat on the Regatta card
   (`67aaa050a`), the Rhino brake (`658fda119`), the Dolphin peak re-drift and centre-line gate steering (`9b064721b`) and
   the Manta's Regatta Soar bands (`f4e35748c`). `SYNC_LOG.md` has the rows.
 - **Dates.** These docs use the team's local date, one day ahead of git's UTC timestamps for evening work.

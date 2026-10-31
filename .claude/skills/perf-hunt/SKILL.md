@@ -25,7 +25,7 @@ confirmation and its Project Record). In the editor, the Scene view's **Bug Hunt
 while playing, the auto-capture countdown (`PerfAutoCapture`: no Capture button). After Play, `BugHuntAutoSend` sends
 new errors, captures, flights and network logs by itself and shows a small **confirmation** (no question,
 `BugHuntSendConfirmation`) that expands into the **Project Record**: each branch on the performance path
-(`branchFlow` in `status.json`: Ys-bleeding-edge first, then bleeding-edge) read from its own `Docs/perf/status.json`,
+(`branchFlow` in `status.json`: bleeding-edge, reached by PR from each fix's own short-lived branch) read from its own `Docs/perf/status.json`,
 plus the person's sends; also at FrogletTools > Diagnostics > Project Record. Everything else is answered in Claude from
 the status file. Do not add another window, menu tool or dashboard for this system; extend the status file (the Project
 Record and the badge read it) instead. **Every sweep or status run writes `status.json`; commit it on the branch you work
@@ -140,9 +140,10 @@ baselines with the fix. A regression that was NOT this change's (the base moved)
 
 The GitHub Action does the measuring; a scheduled Claude session does the resolving:
 
-1. `git fetch origin` and `git checkout Ys-bleeding-edge` (the working branch); `python3 Tools/Build/perf_hunt.py
+1. `git fetch origin` and a short-lived branch off `origin/bleeding-edge` (no personal integration branch, 2026-10-28); `python3 Tools/Build/perf_hunt.py
    sweep --write --tasks` (and `--amoebius --no-build` after `dotnet build Port/src/CosmicShore.Player -c Release`).
-2. For each NEW regression: §2-§5 above, one commit each, on `Ys-bleeding-edge`, team rules applied.
+2. For each NEW regression: §2-§5 above, one commit each, on that branch, team rules applied; then a PR into
+   `bleeding-edge` (a fix in AI code goes on `ai` instead, `Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`).
 3. Nothing regressed is a valid run: commit the refreshed `Docs/Reports/PERFORMANCE.md` anyway so the report shows the
    sweep is alive, and say in one line what was measured and that nothing moved.
 4. Never adopt a WORSE baseline to make a run green. A regression nobody can fix today stays a task on the board.

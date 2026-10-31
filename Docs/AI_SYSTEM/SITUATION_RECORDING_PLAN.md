@@ -164,7 +164,7 @@ their own consent question; no personal data is recorded.
 | **S6** | Behaviour cloning | Only if S5 leaves a measured gap |
 
 
-Everything on `Ys-bleeding-edge` first. The recorder and `learn_from_flights.py` are session 013Gr's work from today
+AI work goes on `ai`, the one AI branch (`BRANCH_WORKFLOW.md`). The recorder and `learn_from_flights.py` are session 013Gr's work from today
 (Yash's sessions): extend them, do not fork them. The genetic trainer (`Assets/_Scripts/Utility/AITraining/`) belongs to
 studyholic, Garrett and Shombith; any use of it is agreed with them first.
 

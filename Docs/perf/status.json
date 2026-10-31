@@ -50,12 +50,8 @@
   ],
   "branchFlow": [
     {
-      "branch": "Ys-bleeding-edge",
-      "role": "Performance work lands here first (Yash runs the performance work)"
-    },
-    {
       "branch": "bleeding-edge",
-      "role": "The team's shared branch: performance work arrives here from Ys-bleeding-edge"
+      "role": "The team's shared branch: performance work arrives here by PR from its own short-lived branch"
     }
   ],
   "bugs": {

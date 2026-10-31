@@ -70,7 +70,7 @@ IDLE_DAYS = 14   # a live task whose branch has had no commit for this long goes
 # any task it finds there that has no issue yet, and migrate reads them.
 BRIDGE_REFS = ("origin/bleeding-edge", "origin/Ys-bleeding-edge")
 # Many sessions file from these, about unrelated work: "one ticket per branch" does not fold their tasks together.
-SHARED_BRANCHES = ("bleeding-edge", "Ys-bleeding-edge", "main", "master", "development", "HEAD", "unknown")
+SHARED_BRANCHES = ("bleeding-edge", "ai", "Ys-bleeding-edge", "main", "master", "development", "HEAD", "unknown")
 OLD_WORKFLOW = "team-tasks-sync.yml"
 
 LABEL = "team-task"
