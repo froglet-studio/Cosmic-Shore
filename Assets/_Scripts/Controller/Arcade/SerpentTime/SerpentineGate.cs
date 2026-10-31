@@ -14,8 +14,10 @@ namespace CosmicShore.Gameplay
     /// out to <see cref="ShellRatio"/> of the ring's radius. A landmark you see from far away, and it cannot hurt you.</item>
     /// <item><b>The weave</b>, danger, across the ring's mouth: a pattern of bars a hull cannot slip through anywhere but
     /// at the <b>exits</b> (2 or 3 holes carved out of it, sized for the Serpent), the places to leave from.</item>
-    /// <item><b>The core</b>, plain: seven blocks at the ring's centre. Break any one of them (a sniper round, a ram)
-    /// and the mode disintegrates the whole shape (<see cref="SerpentTimeController"/>).</item>
+    /// <item><b>The core</b>, plain, at the ring's centre: it shrinks with intensity so the shot gets harder (Shombith,
+    /// 2026-10-31, "make shots harder on higher levels", picked "smaller core only"): seven 6 u blocks at I1, three 5 u
+    /// blocks at I2, one 5 u block at I3, one 3.5 u block at I4 (<see cref="CoreFor"/>). Break any core block (a sniper
+    /// round, a ram) and the mode disintegrates the whole shape (<see cref="SerpentTimeController"/>).</item>
     /// </list>
     /// <para>Three shapes, one per intensity band (picked by Shombith): <see cref="Shape.Coil"/> at I1-I2 (six scaled arms
     /// spiral in to the core, a horn of scale rings behind), <see cref="Shape.Maw"/> at I3 (fangs from the rim, a web of
@@ -49,13 +51,35 @@ namespace CosmicShore.Gameplay
         }
 
         // ── The core ──────────────────────────────────────────────────────────────────────────
-        public const float CoreCube = 6f;
-        /// <summary>The six outer core blocks stand this far from the centre, in the ring's plane.</summary>
-        public const float CoreSpacing = 7f;
-        /// <summary>Radius of the circle that contains every core block (7 + half a block's diagonal).</summary>
-        public static readonly float CoreReach = CoreSpacing + CoreCube * 0.5f * Mathf.Sqrt(2f);
-        /// <summary>The weave starts here, clear of the core.</summary>
-        public static readonly float WeaveStart = CoreReach + 1.5f;
+        /// <summary>The core at an intensity: how many blocks (1 at the centre, 3 or 7 round it), their size, and how far
+        /// the outer ones stand from the centre.</summary>
+        public readonly struct Core
+        {
+            public readonly int Blocks;
+            public readonly float Cube;
+            public readonly float Spacing;
+            public Core(int blocks, float cube, float spacing) { Blocks = blocks; Cube = cube; Spacing = spacing; }
+
+            /// <summary>Radius of the circle that contains every core block.</summary>
+            public float Reach => (Blocks > 1 ? Spacing : 0f) + Cube * 0.5f * Mathf.Sqrt(2f);
+        }
+
+        /// <summary>The core shrinks as the intensity rises: 7 x 6 u, 3 x 5 u, 1 x 5 u, 1 x 3.5 u.</summary>
+        public static Core CoreFor(int intensity) => Mathf.Clamp(intensity, 1, 4) switch
+        {
+            1 => new Core(7, 6f, 7f),
+            2 => new Core(3, 5f, 4f),
+            3 => new Core(1, 5f, 0f),
+            _ => new Core(1, 3.5f, 0f),
+        };
+
+        /// <summary>The weave's curves start here: clear of the core, and never closer in than 10 u, where a dozen arms
+        /// or blades would crowd into one another.</summary>
+        public static float WeaveStart(int intensity) => Mathf.Max(CoreFor(intensity).Reach + 1.5f, 10f);
+
+        /// <summary>The exits are laid out round the I1 core at every intensity, so a smaller core makes the SHOT harder
+        /// and leaves the exits as they were.</summary>
+        static readonly float ExitBandStart = new Core(7, 6f, 7f).Reach + 1.5f;
 
         // ── The weave ─────────────────────────────────────────────────────────────────────────
         /// <summary>Distance between neighbouring passes of the weave: Breakwater's rake pitch, against which a hull
@@ -100,16 +124,19 @@ namespace CosmicShore.Gameplay
 
         public static int ExitCount(Shape shape) => shape == Shape.Coil ? 2 : 3;
 
+        public static int ExitCount(int intensity) => ExitCount(ShapeFor(intensity));
+
         /// <summary>An exit's radius: half the band between the weave's start and the rim, less a margin, at most 26 u.</summary>
         public static float ExitRadius(float ringRadius) =>
-            Mathf.Min(ExitMaxRadius, (ringRadius - RimMargin - WeaveStart) * 0.5f - ExitMargin);
+            Mathf.Min(ExitMaxRadius, (ringRadius - RimMargin - ExitBandStart) * 0.5f - ExitMargin);
 
         /// <summary>How far an exit's centre stands from the ring's centre: the middle of the weave's band.</summary>
-        public static float ExitDistance(float ringRadius) => (WeaveStart + ringRadius - RimMargin) * 0.5f;
+        public static float ExitDistance(float ringRadius) => (ExitBandStart + ringRadius - RimMargin) * 0.5f;
 
         /// <summary>The farthest any part of a gate's shape reaches from the ring's centre (for keeping debris clear).</summary>
-        public static float OuterReach(float ringRadius, Shape shape)
+        public static float OuterReach(float ringRadius, int intensity)
         {
+            var shape = ShapeFor(intensity);
             float r = ringRadius * ShellRatio;
             if (shape == Shape.Maw) r *= HoodStretch;
             float back = (ringRadius * ShellRatio - ringRadius) * ShellFlare;
@@ -118,8 +145,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Exit <paramref name="exit"/> of gate <paramref name="gateIndex"/>, as a ring the AI can aim through
         /// (same axis as the gate; it lies inside the gate's mouth, so threading it threads the gate).</summary>
-        public static RaceGate Exit(in RaceGate ring, int gateIndex, Shape shape, int exit)
+        public static RaceGate Exit(in RaceGate ring, int gateIndex, int intensity, int exit)
         {
+            var shape = ShapeFor(intensity);
             Frame(ring, gateIndex, out Vector3 s, out Vector3 u, out Vector3 axis, out float twist);
             float a = twist + 0.5f + exit * 2f * Mathf.PI / ExitCount(shape);
             Vector3 c = ring.Position + (Mathf.Cos(a) * s + Mathf.Sin(a) * u) * ExitDistance(ring.Radius);
@@ -128,17 +156,22 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Every part of gate <paramref name="gateIndex"/>'s shape at <paramref name="ring"/>, appended to
         /// <paramref name="into"/>: core first, then the weave, then the shell.</summary>
-        public static void Build(in RaceGate ring, int gateIndex, Shape shape, List<Part> into)
+        public static void Build(in RaceGate ring, int gateIndex, int intensity, List<Part> into)
         {
+            var shape = ShapeFor(intensity);
+            var core = CoreFor(intensity);
+            float weaveStart = WeaveStart(intensity);
             Frame(ring, gateIndex, out Vector3 s, out Vector3 u, out Vector3 axis, out float twist);
-            var g = new Geometry(ring.Position, s, u, axis, ring.Radius, gateIndex, shape, into);
+            var g = new Geometry(ring.Position, s, u, axis, ring.Radius, gateIndex, shape, weaveStart, into);
 
-            // The core: one block at the centre, six round it.
-            g.Block(Vector2.zero, 0f, CoreCube, PrismKind.Plain, core: true);
-            for (int k = 0; k < 6; k++)
+            // The core: one block at the centre (I3, I4), or blocks round it (three at I2, seven at I1 with one central).
+            if (core.Blocks == 1 || core.Blocks == 7)
+                g.Block(Vector2.zero, 0f, core.Cube, PrismKind.Plain, core: true);
+            int outerBlocks = core.Blocks == 7 ? 6 : core.Blocks == 3 ? 3 : 0;
+            for (int k = 0; k < outerBlocks; k++)
             {
-                float a = twist + k * Mathf.PI / 3f;
-                g.Block(new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * CoreSpacing, 0f, CoreCube, PrismKind.Plain, core: true);
+                float a = twist + k * 2f * Mathf.PI / outerBlocks;
+                g.Block(new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * core.Spacing, 0f, core.Cube, PrismKind.Plain, core: true);
             }
 
             switch (shape)
@@ -147,7 +180,7 @@ namespace CosmicShore.Gameplay
                 {
                     // Six Archimedean arms, r = start + b t, theta = arm + t: neighbouring passes are 2 pi b / 6 = Pitch apart.
                     float b = Pitch * CoilArms / (2f * Mathf.PI);
-                    float tEnd = (ring.Radius - RimMargin - WeaveStart) / b;
+                    float tEnd = (ring.Radius - RimMargin - weaveStart) / b;
                     for (int arm = 0; arm < CoilArms; arm++)
                         g.Spiral(twist + arm * 2f * Mathf.PI / CoilArms, b, tEnd, BarCross, BarCross);
                     g.Circle(ring.Radius - RimMargin - BarCross * 0.5f, 0f);
@@ -157,7 +190,7 @@ namespace CosmicShore.Gameplay
                 case Shape.Iris:
                 {
                     // Blades swept IrisSweep radians from rim to core; enough of them that neighbours are a Pitch apart.
-                    float b = (ring.Radius - RimMargin - WeaveStart) / IrisSweep;
+                    float b = (ring.Radius - RimMargin - weaveStart) / IrisSweep;
                     int blades = Mathf.CeilToInt(2f * Mathf.PI * b / Pitch);
                     for (int k = 0; k < blades; k++)
                         g.Spiral(twist + k * 2f * Mathf.PI / blades, b, IrisSweep, IrisPlateWidth, IrisPlateThickness);
@@ -174,10 +207,10 @@ namespace CosmicShore.Gameplay
                     for (int k = 0; k < fangs; k++)
                     {
                         float a = twist + k * 2f * Mathf.PI / fangs;
-                        float inner = k % 2 == 0 ? WeaveStart : ring.Radius * MawShortFang;
+                        float inner = k % 2 == 0 ? weaveStart : ring.Radius * MawShortFang;
                         g.Radial(a, inner, rim, -BarCross * 0.5f);
                     }
-                    for (float r = WeaveStart + MawRingPitch * 0.5f; r <= rim - BarCross; r += MawRingPitch)
+                    for (float r = weaveStart + MawRingPitch * 0.5f; r <= rim - BarCross; r += MawRingPitch)
                         g.Circle(r, BarCross * 0.5f);
                     g.ShellRings(stagger: true, stretch: HoodStretch);
                     break;
@@ -204,12 +237,13 @@ namespace CosmicShore.Gameplay
             readonly float _radius;
             readonly Vector2[] _exits;
             readonly float _exitRadius;
+            readonly float _weaveStart;
             readonly List<Part> _into;
 
             public Geometry(Vector3 centre, Vector3 s, Vector3 u, Vector3 axis, float radius, int gateIndex, Shape shape,
-                            List<Part> into)
+                            float weaveStart, List<Part> into)
             {
-                _centre = centre; _s = s; _u = u; _axis = axis; _radius = radius; _into = into;
+                _centre = centre; _s = s; _u = u; _axis = axis; _radius = radius; _into = into; _weaveStart = weaveStart;
                 int n = ExitCount(shape);
                 _exits = new Vector2[n];
                 float twist = gateIndex * SerpentTimeCluster.TwistPerGateRadians;
@@ -291,13 +325,13 @@ namespace CosmicShore.Gameplay
             public void Spiral(float theta0, float b, float tEnd, float width, float thickness)
             {
                 float t = 0f;
-                Vector2 prev = Polar(WeaveStart, theta0);
+                Vector2 prev = Polar(_weaveStart, theta0);
                 while (t < tEnd - 1e-4f)
                 {
-                    float r = WeaveStart + b * t;
+                    float r = _weaveStart + b * t;
                     float dt = Mathf.Min(tEnd - t, ChordMax / Mathf.Sqrt(r * r + b * b));
                     t += dt;
-                    Vector2 next = Polar(WeaveStart + b * t, theta0 + t);
+                    Vector2 next = Polar(_weaveStart + b * t, theta0 + t);
                     Bar(prev, next, 0f, width, thickness);
                     prev = next;
                 }

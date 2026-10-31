@@ -30,9 +30,12 @@ namespace CosmicShore.Gameplay
     /// <item><b>The cell's current.</b> The cytoplasm's shards point along the race line instead of at a crystal
     /// (<see cref="SnowChanger.IFlow"/>), streaming round the circuit, so the course reads from anywhere in the cell
     /// without drawing a track.</item>
-    /// <item><b>The cell's own life.</b> The race runs in its own copy of the barren Skim Race cell, with no fauna (first
-    /// half its grazers, then none, for frame time; the Rampage forest it ran in for a day cost too much frame time,
-    /// 2026-10-31).</item>
+    /// <item><b>Each intensity a different place</b> (2026-10-31, Shombith: "different experiences in different
+    /// environments"): its own cell config with its own creatures (at most 25 live): I1 the Shallows (a few tadpoles),
+    /// I2 the Grazing Grounds (tadpoles and brittlestars), I3 the Hunting Grounds (sharks, piranha, tadpoles), I4 the
+    /// Deep (sharks, piranha schools, brittlestars, tadpoles). The cell keeps its own colours (a per-place tint was tried
+    /// and removed, 2026-10-31). And the core shrinks, so the shot gets harder
+    /// (<see cref="SerpentineGate.CoreFor"/>).</item>
     /// <item><b>Gate debris.</b> Loose neutral prisms lie round every gate and grow back, so a Serpent that cloaks
     /// there has the mass its Seed Wall grows from. The debris is the environment's; the wall is the shipped one.</item>
     /// <item><b>The AI plays dirty</b> (input-only, through the replicated press like a human's): with its rifle ready
@@ -185,6 +188,7 @@ namespace CosmicShore.Gameplay
             public int Gate;
             public RaceGate Ring;
             public SerpentineGate.Shape Shape;
+            public int Intensity;
             public readonly List<SerpentineGate.Part> Parts = new();
             public readonly List<Prism> Prisms = new();
             public Trail Trail;
@@ -322,8 +326,8 @@ namespace CosmicShore.Gameplay
             var shape = CurrentShape;
             for (int i = 0; i < _course.Count; i++)
             {
-                var gs = new GateShape { Gate = i, Ring = _course[i], Shape = shape, Trail = new Trail() };
-                SerpentineGate.Build(_course[i], i, shape, gs.Parts);
+                var gs = new GateShape { Gate = i, Ring = _course[i], Shape = shape, Intensity = Intensity, Trail = new Trail() };
+                SerpentineGate.Build(_course[i], i, Intensity, gs.Parts);
                 for (int k = 0; k < gs.Parts.Count; k++) gs.Prisms.Add(LayPart(gs, k, forReveal: true));
                 gs.Standing = true;
                 _shapes.Add(gs);
@@ -418,7 +422,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Is any hull inside this shape's reach (so growing it back now would lay prisms on it)?</summary>
         bool HullWithin(GateShape gs)
         {
-            float reach = SerpentineGate.OuterReach(gs.Ring.Radius, gs.Shape);
+            float reach = SerpentineGate.OuterReach(gs.Ring.Radius, gs.Intensity);
             var players = gameData.Players;
             for (int i = 0; i < players.Count; i++)
             {
@@ -619,7 +623,7 @@ namespace CosmicShore.Gameplay
                 SerpentTimeCluster.Layout(rings, out float ringScale, out float spread);
                 return gate.Radius * (spread + ringScale);
             }
-            return SerpentineGate.OuterReach(gate.Radius, CurrentShape);
+            return SerpentineGate.OuterReach(gate.Radius, Intensity);
         }
 
         /// <summary>The same number on every peer: the gate's index and its position (the course is broadcast).</summary>
@@ -863,11 +867,11 @@ namespace CosmicShore.Gameplay
                 float best = float.MaxValue;
                 for (int e = 0; e < exits; e++)
                 {
-                    float d = (SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Shape, e).Position - tf.position).sqrMagnitude;
+                    float d = (SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Intensity, e).Position - tf.position).sqrMagnitude;
                     if (d < best) { best = d; pilot.ExitIndex = e; }
                 }
             }
-            return SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Shape, pilot.ExitIndex);
+            return SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Intensity, pilot.ExitIndex);
         }
 
         /// <summary>

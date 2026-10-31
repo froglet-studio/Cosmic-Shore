@@ -44,38 +44,77 @@ FIELDS = """  rule: {{fileID: 11400000, guid: {rule}, type: 2}}
   reportResyncSeconds: 3
 """
 
-# The race's OWN cell (2026-10-31, Shombith): Skim Race's barren cell and spawn profile copied verbatim with only their
-# names, their cross-reference and the fauna changed, so the ~10 other modes on the Skim Race cell are untouched. First
-# half the grazers; then, the same day, NO fauna at all ("very non performative, lets remove the fauna"): the copied
-# profile lists none. Re-read from the Skim Race assets every run, so any other change there reaches this copy.
+# The race's OWN cells, one per intensity, so each intensity is a different place (Shombith, 2026-10-31: "we need the
+# intensity level to feel like different experiences in different environments ... maybe add back fauna"; picked the
+# Shallows > Grazing Grounds > Hunting Grounds > The Deep ladder and "medium, up to ~25" creatures). Every cell is Skim
+# Race's barren cell and spawn profile copied with only names, the cross-reference and the fauna list changed; each
+# creature is an existing config copied with only its name and its numbers changed (Skim Race's tadpole and brittlestar,
+# Garland's shark, Scarab Scramble's piranha), so no other mode's cell or creature is touched. Re-read from the
+# sources every run.
 SKIM_DIR = "Assets/_SO_Assets/Cell Configs/Skim Race Cell"
 OWN_DIR = "Assets/_SO_Assets/Cell Configs/Serpentine Cell"
+FAUNA_SOURCES = {
+    "Tadpole": f"{SKIM_DIR}/Skim Race Tadpole Fauna Config Data.asset",
+    "Brittlestar": f"{SKIM_DIR}/Skim Race Brittlestar Fauna Config Data.asset",
+    "Shark": "Assets/_SO_Assets/Cell Configs/Garland Cell/Garland Shark Fauna Config Data.asset",
+    "Piranha": "Assets/_SO_Assets/Cell Configs/Scarab Scramble Cell/Scarab Scramble Piranha Fauna Config Data.asset",
+}
+# intensity: (place, [(creature, InitialSpawnCount, PopulationSize, MaxLivePopulation), ...]); live caps sum to <= 25.
+WORLDS = {
+    1: ("Shallows", [("Tadpole", 6, 6, 10)]),
+    2: ("Grazing Grounds", [("Tadpole", 8, 8, 14), ("Brittlestar", 3, 3, 6)]),
+    3: ("Hunting Grounds", [("Shark", 2, 2, 3), ("Piranha", 6, 6, 10), ("Tadpole", 6, 6, 10)]),
+    4: ("The Deep", [("Shark", 2, 2, 3), ("Piranha", 8, 8, 12), ("Brittlestar", 2, 2, 4), ("Tadpole", 4, 4, 6)]),
+}
+
+
+def _read(rel):
+    return open(os.path.join(lib.ROOT, rel), encoding="utf-8").read()
 
 
 def _own_cell_assets():
     import re
-    out = []
-    profile = open(os.path.join(lib.ROOT, f"{SKIM_DIR}/Skim Race Spawn Profile.asset"), encoding="utf-8").read()
-    profile, n = re.subn(r"^  SupportedFaunas:\n(?:  - \{[^\n]*\}\n)*", "  SupportedFaunas: []\n", profile, flags=re.M)
-    assert n == 1, "spawn profile: SupportedFaunas not found once"
-    profile = profile.replace("m_Name: Skim Race Spawn Profile\n", "m_Name: Serpentine Spawn Profile\n")
-    g_profile = lib.guid("asset/Serpentine Spawn Profile")
-    out.append((f"{OWN_DIR}/Serpentine Spawn Profile.asset", g_profile, profile))
+    out, cells = [], []
+    for intensity, (place, fauna) in WORLDS.items():
+        assert sum(cap for _, _, _, cap in fauna) <= 25, f"I{intensity}: more than 25 live creatures"
+        fauna_guids = []
+        for creature, initial, population, cap in fauna:
+            src = FAUNA_SOURCES[creature]
+            text = _read(src)
+            for key, value in (("InitialSpawnCount", initial), ("PopulationSize", population), ("MaxLivePopulation", cap)):
+                text, n = re.subn(rf"^  {key}: \d+$", f"  {key}: {value}", text, flags=re.M)
+                assert n == 1, f"{src}: {key} not found once"
+            name = f"Serpentine I{intensity} {creature} Fauna Config Data"
+            text = re.sub(r"^  m_Name: .*$", f"  m_Name: {name}", text, count=1, flags=re.M)
+            g = lib.guid(f"asset/{name}")
+            fauna_guids.append(g)
+            out.append((f"{OWN_DIR}/{name}.asset", g, text))
 
-    cell = open(os.path.join(lib.ROOT, f"{SKIM_DIR}/Skim Race Cell Config.asset"), encoding="utf-8").read()
-    old_profile = lib.existing_guid(f"{SKIM_DIR}/Skim Race Spawn Profile.asset")
-    assert cell.count(old_profile) == 1, "cell config: spawn profile not referenced once"
-    cell = cell.replace(old_profile, g_profile)
-    cell = cell.replace("m_Name: Skim Race Cell Config\n", "m_Name: Serpentine Cell Config\n")
-    cell = re.sub(r"^  CellName: .*$", "  CellName: Serpentine", cell, count=1, flags=re.M)
-    cell = re.sub(r"^  Description: .*$", "  Description: Skim Race's barren race cell with no fauna (Serpentine)",
-                  cell, count=1, flags=re.M)
-    g_cell = lib.guid("asset/Serpentine Cell Config")
-    out.append((f"{OWN_DIR}/Serpentine Cell Config.asset", g_cell, cell))
-    return out, g_cell
+        profile = _read(f"{SKIM_DIR}/Skim Race Spawn Profile.asset")
+        listing = "  SupportedFaunas:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in fauna_guids)
+        profile, n = re.subn(r"^  SupportedFaunas:(?: \[\])?\n(?:  - \{[^\n]*\}\n)*", listing, profile, flags=re.M)
+        assert n == 1, "spawn profile: SupportedFaunas not found once"
+        pname = f"Serpentine I{intensity} Spawn Profile"
+        profile = profile.replace("m_Name: Skim Race Spawn Profile\n", f"m_Name: {pname}\n")
+        g_profile = lib.guid(f"asset/{pname}")
+        out.append((f"{OWN_DIR}/{pname}.asset", g_profile, profile))
+
+        cell = _read(f"{SKIM_DIR}/Skim Race Cell Config.asset")
+        old_profile = lib.existing_guid(f"{SKIM_DIR}/Skim Race Spawn Profile.asset")
+        assert cell.count(old_profile) == 1, "cell config: spawn profile not referenced once"
+        cell = cell.replace(old_profile, g_profile)
+        cname = f"Serpentine Cell Config {intensity}"
+        cell = cell.replace("m_Name: Skim Race Cell Config\n", f"m_Name: {cname}\n")
+        cell = re.sub(r"^  CellName: .*$", f"  CellName: Serpentine - {place}", cell, count=1, flags=re.M)
+        cell = re.sub(r"^  Description: .*$", f"  Description: Serpentine at intensity {intensity} - {place}",
+                      cell, count=1, flags=re.M)
+        g_cell = lib.guid(f"asset/{cname}")
+        out.append((f"{OWN_DIR}/{cname}.asset", g_cell, cell))
+        cells.append(g_cell)
+    return out, cells
 
 
-OWN_CELL_ASSETS, OWN_CELL = _own_cell_assets()
+OWN_CELL_ASSETS, OWN_CELLS = _own_cell_assets()
 
 htr.author(dict(
     member="SerpentTime", display="Serpentine", hull="Serpent", class_id=lib.VESSEL_CLASS_ID["Serpent"],
@@ -102,7 +141,7 @@ htr.author(dict(
     max_speed=460,
     # The barren Skim Race cell with its trail-grazing food web (Skim Race's own, the fastest arena in the game). Rampage's
     # four forests ran here for a day (2026-10-31) and cost too much frame time; the shapes at the rings are mode-laid prisms (SerpentineGate).
-    cell_configs=[OWN_CELL],
+    cell_configs=OWN_CELLS,
     extra_assets=OWN_CELL_ASSETS,
     target=16, laps=2, target_key="serpentTimeGateTarget", target_after="scarabRallyGateTarget",
     # A quarter-of-race deficit (4 gates) x 0.45 = 1.8 element levels - Thresher Time's number on the

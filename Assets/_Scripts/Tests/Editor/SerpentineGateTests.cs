@@ -22,10 +22,10 @@ namespace CosmicShore.Tests
         static RaceGate Ring(float radius) =>
             new RaceGate(new Vector3(10f, 800f, -30f), new Vector3(0.3f, 0.2f, 0.93f).normalized, radius);
 
-        static List<SerpentineGate.Part> Build(in RaceGate ring, int gate, SerpentineGate.Shape shape)
+        static List<SerpentineGate.Part> Build(in RaceGate ring, int gate, int intensity)
         {
             var parts = new List<SerpentineGate.Part>();
-            SerpentineGate.Build(ring, gate, shape, parts);
+            SerpentineGate.Build(ring, gate, intensity, parts);
             return parts;
         }
 
@@ -55,12 +55,13 @@ namespace CosmicShore.Tests
         [Test]
         public void Exits_lie_inside_the_mouth_and_clear_of_the_core()
         {
-            foreach (float r in Radii)
+            for (int i = 0; i < 4; i++)
             {
+                float r = Radii[i];
                 float d = SerpentineGate.ExitDistance(r), e = SerpentineGate.ExitRadius(r);
                 Assert.Greater(e, 10f, $"R {r}: an exit a Serpent can thread");
                 Assert.LessOrEqual(d + e, r, $"R {r}: an exit inside the ring's mouth, so threading it threads the gate");
-                Assert.GreaterOrEqual(d - e, SerpentineGate.CoreReach, $"R {r}: an exit clear of the core");
+                Assert.GreaterOrEqual(d - e, SerpentineGate.CoreFor(i + 1).Reach, $"R {r}: an exit clear of the core");
             }
         }
 
@@ -69,14 +70,13 @@ namespace CosmicShore.Tests
         {
             for (int i = 0; i < 4; i++)
             {
-                var shape = SerpentineGate.ShapeFor(i + 1);
                 for (int gate = 0; gate < 8; gate++)
                 {
                     var ring = Ring(Radii[i]);
-                    var parts = Build(ring, gate, shape);
-                    for (int e = 0; e < SerpentineGate.ExitCount(shape); e++)
+                    var parts = Build(ring, gate, i + 1);
+                    for (int e = 0; e < SerpentineGate.ExitCount(i + 1); e++)
                     {
-                        var exit = SerpentineGate.Exit(ring, gate, shape, e);
+                        var exit = SerpentineGate.Exit(ring, gate, i + 1, e);
                         foreach (var p in parts)
                         {
                             if (!p.Weave) continue;
@@ -95,23 +95,23 @@ namespace CosmicShore.Tests
             const float largestHole = 6.5f;   // radius: the weave's own pitch (12 u, 3 u bars) leaves about 4.5
             for (int i = 0; i < 4; i++)
             {
-                var shape = SerpentineGate.ShapeFor(i + 1);
                 float r = Radii[i];
+                float coreReach = SerpentineGate.CoreFor(i + 1).Reach;
                 var ring = new RaceGate(Vector3.zero, Vector3.forward, r);
                 for (int gate = 0; gate < 4; gate++)
                 {
-                    var parts = Build(ring, gate, shape);
+                    var parts = Build(ring, gate, i + 1);
                     var exits = new List<RaceGate>();
-                    for (int e = 0; e < SerpentineGate.ExitCount(shape); e++) exits.Add(SerpentineGate.Exit(ring, gate, shape, e));
+                    for (int e = 0; e < SerpentineGate.ExitCount(i + 1); e++) exits.Add(SerpentineGate.Exit(ring, gate, i + 1, e));
 
                     for (float x = -r; x <= r; x += 1.5f)
                     for (float y = -r; y <= r; y += 1.5f)
                     {
                         var p = new Vector3(x, y, 0f);
                         float fromCentre = p.magnitude;
-                        if (fromCentre <= SerpentineGate.CoreReach || fromCentre >= r - 2f) continue;
+                        if (fromCentre <= coreReach || fromCentre >= r - 2f) continue;
 
-                        float clear = Mathf.Min(fromCentre - SerpentineGate.CoreReach, r - 2f - fromCentre + 2f);
+                        float clear = Mathf.Min(fromCentre - coreReach, r - 2f - fromCentre + 2f);
                         foreach (var part in parts)
                         {
                             if (!part.Weave) continue;
@@ -135,9 +135,8 @@ namespace CosmicShore.Tests
         {
             for (int i = 0; i < 4; i++)
             {
-                var shape = SerpentineGate.ShapeFor(i + 1);
                 var ring = Ring(Radii[i]);
-                var parts = Build(ring, 3, shape);
+                var parts = Build(ring, 3, i + 1);
                 int core = 0;
                 for (int k = 0; k < parts.Count; k++)
                 {
@@ -160,7 +159,7 @@ namespace CosmicShore.Tests
                         Assert.Greater(inPlane.magnitude, ring.Radius, "the shell stands outside the rim");
                     }
                 }
-                Assert.AreEqual(7, core, "seven core blocks");
+                Assert.AreEqual(SerpentineGate.CoreFor(i + 1).Blocks, core, $"I{i + 1}: the core's blocks");
             }
         }
 
@@ -169,12 +168,11 @@ namespace CosmicShore.Tests
         {
             for (int i = 0; i < 4; i++)
             {
-                var shape = SerpentineGate.ShapeFor(i + 1);
                 var ring = Ring(Radii[i]);
-                float reach = SerpentineGate.OuterReach(ring.Radius, shape);
+                float reach = SerpentineGate.OuterReach(ring.Radius, i + 1);
                 for (int gate = 0; gate < 8; gate++)
                 {
-                    var parts = Build(ring, gate, shape);
+                    var parts = Build(ring, gate, i + 1);
                     Assert.LessOrEqual(parts.Count, 260, $"I{i + 1} gate {gate}: {parts.Count} prisms");
                     foreach (var p in parts)
                         Assert.LessOrEqual((p.Position - ring.Position).magnitude, reach, $"I{i + 1}: a part past OuterReach");
@@ -183,11 +181,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void The_core_shrinks_as_the_intensity_rises()
+        {
+            for (int i = 2; i <= 4; i++)
+            {
+                var hi = SerpentineGate.CoreFor(i);
+                var lo = SerpentineGate.CoreFor(i - 1);
+                Assert.LessOrEqual(hi.Reach, lo.Reach, $"I{i}: a core no bigger than I{i - 1}'s");
+                Assert.IsTrue(hi.Blocks < lo.Blocks || hi.Cube < lo.Cube, $"I{i}: a smaller core than I{i - 1}'s");
+            }
+            Assert.AreEqual(7, SerpentineGate.CoreFor(1).Blocks);
+            Assert.AreEqual(1, SerpentineGate.CoreFor(4).Blocks);
+        }
+
+        [Test]
         public void The_build_is_deterministic()
         {
             var ring = Ring(60f);
-            var a = Build(ring, 5, SerpentineGate.Shape.Coil);
-            var b = Build(ring, 5, SerpentineGate.Shape.Coil);
+            var a = Build(ring, 5, 2);
+            var b = Build(ring, 5, 2);
             Assert.AreEqual(a.Count, b.Count);
             for (int k = 0; k < a.Count; k++)
             {
@@ -201,7 +213,6 @@ namespace CosmicShore.Tests
         {
             for (int intensity = 1; intensity <= 4; intensity++)
             {
-                var shape = SerpentineGate.ShapeFor(intensity);
                 for (int seed = 1; seed <= Seeds; seed++)
                 {
                     var s = SerpentTimeCourse.ForIntensity(intensity);
@@ -213,8 +224,8 @@ namespace CosmicShore.Tests
                     for (int a = 0; a < course.Count; a++)
                     for (int b = a + 1; b < course.Count; b++)
                     {
-                        float need = SerpentineGate.OuterReach(course[a].Radius, shape) +
-                                     SerpentineGate.OuterReach(course[b].Radius, shape);
+                        float need = SerpentineGate.OuterReach(course[a].Radius, intensity) +
+                                     SerpentineGate.OuterReach(course[b].Radius, intensity);
                         Assert.Greater(Vector3.Distance(course[a].Position, course[b].Position), need,
                             $"I{intensity} seed {seed}: gates {a + 1} and {b + 1}'s shapes meet");
                     }
