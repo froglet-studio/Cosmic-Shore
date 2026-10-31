@@ -442,3 +442,12 @@
 2026-10-31T11:59:50.756Z editor load: play=False capture=True minPlay=15s issues=113
 2026-10-31T12:02:11.369Z editor load: play=False capture=True minPlay=15s issues=113
 2026-10-31T12:10:16.860Z PlayMode session ended (283s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ef80d03980 E-05e4645aad
+2026-10-31T13:02:48.887Z EditMode session ended (63min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-ef80d03980 E-05e4645aad E-9ffdd241c2 E-2d33e20d83
+2026-10-31T13:03:28.221Z scripts compiled clean: closed 1 compile error(s)
+2026-10-31T13:03:28.225Z editor load: play=False capture=True minPlay=15s issues=114
+2026-10-31T13:06:10.789Z editor load: play=False capture=True minPlay=15s issues=114
+2026-10-31T13:13:56.146Z EditMode session ended (11min editor span, script reload): 0 fix(es) waiting; counted: none
+2026-10-31T13:14:06.647Z editor load: play=False capture=True minPlay=15s issues=114
+2026-10-31T13:16:28.035Z editor load: play=False capture=True minPlay=15s issues=114
+2026-10-31T13:19:46.807Z editor load: play=False capture=True minPlay=15s issues=114
+2026-10-31T13:27:26.761Z PlayMode session ended (354s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ef80d03980 E-46ca22c3ef
