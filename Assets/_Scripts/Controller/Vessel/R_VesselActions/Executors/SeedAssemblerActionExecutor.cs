@@ -31,6 +31,9 @@ namespace CosmicShore.Gameplay
         // the cloak can seed (and end) its own wall while the stance is held.
         SerpentWallAssembler _heldWall;
 
+        // The fuel pellets a wall refills as it eats this vessel's trail; resolved on first seed.
+        ConsumeBoostActionExecutor _fuelPellets;
+
         public event Action<Prism> OnSeedStarted;
         public event Action<Prism> OnBondingBegan;
         public event Action OnSeedStopped;
@@ -93,6 +96,7 @@ namespace CosmicShore.Gameplay
             {
                 var shape = SnapshotWallShape(so, status);
                 shape.HeldByStance = heldByStance;
+                shape.Fuel = FuelPellets();
                 // Release any earlier hold BEFORE configuring: the stance can stop on the same
                 // live seed again, and Configure re-holds it.
                 if (heldByStance) ReleaseHeldWall();
@@ -196,6 +200,15 @@ namespace CosmicShore.Gameplay
         /// Serpent's wall element: R_VesselActions/SERPENT_SEED_WALL.md). Read here, on the
         /// per-vessel executor, because the SO is shared by every Serpent.
         /// </summary>
+        /// <summary>This vessel's fuel pellets (its sibling executor), or null on a hull without them.</summary>
+        ConsumeBoostActionExecutor FuelPellets()
+        {
+            if (_fuelPellets) return _fuelPellets;
+            var registry = GetComponentInParent<ActionExecutorRegistry>();
+            _fuelPellets = registry ? registry.Get<ConsumeBoostActionExecutor>() : null;
+            return _fuelPellets;
+        }
+
         static SerpentWallAssembler.Snapshot SnapshotWallShape(SeedWallActionSO so, IVesselStatus status)
         {
             float mass = ElementalScaling.Multiplier(

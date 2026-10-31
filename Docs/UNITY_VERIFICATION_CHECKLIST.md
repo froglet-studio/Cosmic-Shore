@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent fuel pellets: no clock refill, the wall eating its own trail refills them, 6 s burns (`cece/keen-johnson-hqxdt9`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`/verify-unity` could not run (no editor or `unity` binary in the cloud session). Compiled offline with
+`Tools/Build/unity_refcompile` (player and editor configs: 0 errors in project code). Design and numbers:
+`R_VesselActions/SERPENT_FUEL_PELLETS.md` § "The wall refills the tank".
+
+1. Freestyle, Serpent: four pellets lit. Tap A: one burns for **6 s** (was 3 s).
+2. Burn all four, fly on: **no pellet comes back** on its own.
+3. Lay a wall (cloak, or stop for the stance), fly out at cruise in the wall's plane: the trail is pulled in and
+   a pellet pours back over ~2 s of that. Leave the plane: the refill stops.
+4. Time 10 (`TimeTestHarness`): a burn lasts 9.6 s.
+5. AI Serpent: burns its opening four, then refuels only when its walls eat its trail.
+6. EditMode: `SerpentPelletRefillTests`, `SerpentTimeCourseTests.Course_constants_match_the_shipped_Serpent`.
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
