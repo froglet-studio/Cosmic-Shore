@@ -65,6 +65,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 A lifeform's death runs once: `LifeForm.DieOnce` (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`Flora.KillReplicated` (a client's mirror of a replicated plant's death) and `BranchingFlora`'s no-leaves auto-death
+called `Die()` without latching `dying`; `Die`'s own destruction reports back through `CheckIfDead`, which then ran the
+death a second time (a second `OnLifeFormDeath`, attributed to "Guy Fawkes", a second unregister and destroyed event).
+Both now call `LifeForm.DieOnce`. Not compiled in this session. Affects: Garrett's and Yash's ecology code.
+
+1. Host + client in a mode with a replicated flora species (a lattice colony cell): kill a plant on the host. On the
+   client it withers once; no second death sound, no kill credited to "Guy Fawkes" in the client's log or stats.
+2. EditMode: `LifeFormDieOnceTests`.
+
 ### 🔴 Serpentine (Serpent Time): guards off the mouth, start behind gate 0, the cell's current, half the fauna (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session (no editor, no .NET SDK). Touches Yash's `SnowChanger` (a null-default `IFlow` hook: every
