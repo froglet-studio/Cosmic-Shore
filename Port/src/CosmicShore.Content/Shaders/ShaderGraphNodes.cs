@@ -19,7 +19,7 @@ namespace CosmicShore.Content.Shaders
         /// <summary>Supported node types whose output only approximates Unity's (and why).</summary>
         public static IReadOnlyDictionary<string, string> ApproximateNodeTypes { get; } = new Dictionary<string, string>
         {
-            ["SceneColorNode"] = "no opaque-texture copy: returns black",
+            ["SceneColorNode"] = "no opaque-texture copy: returns URP's unset-texture grey (the project leaves the opaque texture off)",
             ["SceneDepthNode"] = "no depth-texture copy: returns the far plane",
             ["ObjectNode"] = "world bounds are the object's origin",
             ["CameraNode"] = "orthographic width/height read the camera's ortho params only",
@@ -319,7 +319,7 @@ namespace CosmicShore.Content.Shaders
                         return;
                     case "SceneColorNode":
                         Unit.Approx("SceneColorNode: " + ApproximateNodeTypes["SceneColorNode"]);
-                        outs[1] = new V("vec3(0.0)", K.Vec3);
+                        outs[1] = new V("sg_SceneColor.rgb", K.Vec3);
                         return;
                     case "SceneDepthNode":
                         Unit.Approx("SceneDepthNode: " + ApproximateNodeTypes["SceneDepthNode"]);

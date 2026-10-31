@@ -59,6 +59,15 @@ namespace CosmicShore.Render
     /// </summary>
     public sealed class GraphProgramCache : IDisposable
     {
+        /// <summary>
+        /// What a Scene Color node samples. The project's URP asset leaves the opaque texture off
+        /// (m_RequireOpaqueTexture 0), so URP never fills _CameraOpaqueTexture and Unity samples its
+        /// default grey texture there: sRGB 0.5, 0.214 linear. The blast shell's alpha is that
+        /// colour's red x opacity (RippleGraph), so black (the old stand-in) drew no shell at all.
+        /// Measured against the render-parity golden 2026-10-31 (High preset, post off): 0.12 loss 0.0398,
+        /// 0.17 0.0387, 0.214 0.0387, 0.35 0.0424, 0.5 0.0489; black drew no shell at all.
+        /// </summary>
+        const float SceneColorFallback = 0.21404114f;
         internal sealed class Uniform
         {
             public string Name;      // GLSL name (array names without "[0]")
@@ -147,6 +156,7 @@ uniform vec4 sg_Time;             // t, sin t, cos t, dt
 uniform vec4 sg_ScreenParams;     // w, h, 1 + 1/w, 1 + 1/h
 uniform vec4 sg_ProjectionParams; // sign, near, far, 1/far
 uniform vec4 sg_OrthoParams;      // ortho width, height, -, isOrtho
+uniform vec4 sg_SceneColor;        // what a Scene Color node reads: see SceneColorFallback
 uniform sampler2D sg_White;
 uniform sampler2D sg_Black;
 uniform sampler2D sg_Grey;
@@ -367,6 +377,7 @@ uniform int uVertexColor;
             p.Set("sg_ProjectionParams", 1f, f.Near, f.Far, 1f / Math.Max(f.Far, 1e-6f));
             float oh = f.OrthoSize, ow = oh * f.Aspect;
             p.Set("sg_OrthoParams", ow, oh, 0f, f.Orthographic ? 1f : 0f);
+            float sc = SceneColorFallback; p.Set("sg_SceneColor", sc, sc, sc, sc);
             p.Set("uLightDir", f.LightDir.x, f.LightDir.y, f.LightDir.z);
             p.Set("uLightColor", f.LightColor.x, f.LightColor.y, f.LightColor.z);
             if (f.SH != null) fixed (float* sh = f.SH) _gl.Uniform3(p.Loc("uSH"), 9, sh);
