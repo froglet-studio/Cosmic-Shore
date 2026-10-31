@@ -139,7 +139,7 @@ render_cards.py Squirrel Rhino Thresher --compare out.jpg --candidates before.js
 
 `before.json` holds the old values in the candidates format, `{label: {role: {rim, face, mult}}}`.
 
-## 5b. Lime's four shades: the Wrasse's lasso elements (Garrett, 2026-10-21)
+## 5b. Lime's four shades: the Wrasse's lasso elements (Garrett, 2026-10-21; replaced by §5d on 2026-10-31)
 
 > "make all four of the lasso elements different hues, saturations and values within the lime green color family
 > (lime). make a 3d boundary that defines the space as distinct from jade, ruby, gold, blue (neutral), and fire (danger).
@@ -202,6 +202,33 @@ margin's thickness (0.05) along every border. Garrett shaped it by eye in the Co
 truth. `python3 Tools/Build/colour_domains.py --check` holds every anchor above, the four Lime element shades and the
 UI theme's family colours to it. §5b's nearest-anchor boundary is the older rule, still used by `kite_mote_colors.py`
 to pick the element shades, and all four shades rest inside the truth's Lime.
+
+## 5d. Lime's four shades, second cut: one lime, four lightnesses (Garrett, 2026-10-31)
+
+This replaces §5b's shades (§5b stays as the record of the first cut).
+
+Garrett, 2026-10-31: "keep them similar hues so they don't have the ugly multitone interactions when grouped. also our
+eyes process lightness faster than frequency ... so we might get more ability to distinguish them quickly, especially the
+wrasse, if they are different lightnesses ... make charge the darkest because its plasma lights it up. lets distribute
+the other three along a lightness axis within a yellow-green hue within the LIME family." He picked the ladder in the
+Lime Element Shades page (https://claude.ai/artifact/9EiMAiant8FR6wXbtesyTP): **one lime (HSV hue 84°, red 0.6 of
+green, no blue) at four lightnesses, evenly spaced in OKLab L from 0.40 to 0.902, darkest to lightest Charge, Mass,
+Space, Time.** Scaling a colour's linear RGB keeps its OKLab hue exactly, so the four are one hue (133°) and differ only
+in lightness, about 8.4 just-noticeable differences apart.
+
+| Element | Colour | sRGB | OKLab L | in Lime (source of truth) |
+|---|---|---|---|---|
+| Charge | `#2E5300` | (0.1821, 0.327, 0) | 0.400 | 0.2 JND inside its border |
+| Mass | `#508900` | (0.312, 0.5361, 0) | 0.567 | 1.1 JND |
+| Space | `#73C200` | (0.4519, 0.7614, 0) | 0.734 | 2.0 JND |
+| Time | `#99FF00` | (0.6, 1, 0) | 0.902 | 2.9 JND |
+
+Against the 2026-10-21 shades, the closest pair moved from 1.6 JND apart in lightness (0.5 JND for a protan viewer, where
+two were effectively one colour) to 8.4 JND for every kind of vision. `Tools/Build/kite_mote_colors.py` now writes this
+ladder (`--check` holds it in Lime, one hue, evenly spaced and in order) to the Wrasse's kite view
+(`KiteNavigatorConfig.asset`), the Wrasse Lasso Lab and the palette (`OriginalColorSetSO.ElementalCrystalColors`), and
+the crystal generators carry the palette onto the elemental crystals, the omni crystal's element shapes and the elemental
+converter's animation.
 
 ## 6. Open: decisions and checks owed
 

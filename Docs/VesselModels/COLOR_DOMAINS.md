@@ -114,8 +114,6 @@ Under the old rule it sat in the band (the lab's finding 02).
 ## What the truth does not change yet
 
 - **No palette asset changed.** Every anchor is the game's own colour.
-- **The Lime element shades are still derived by the old rule.** `Tools/Build/kite_mote_colors.py` finds the four
-  shades inside its own nearest-anchor Lime boundary and writes them to `KiteNavigatorConfig.asset`, the Wrasse Lasso
-  Lab and `OriginalColorSetSO.ElementalCrystalColors`. All four rest inside the truth's Lime, so nothing disagrees
-  today. Deriving them from the truth instead would re-pick the shades: a visible change to every elemental crystal,
-  and a decision for Garrett.
+- **The Lime element shades follow the truth** (since 2026-10-31): one lime at four lightnesses, picked by Garrett
+  inside the truth's Lime (`COLOR.md` §5d). `kite_mote_colors.py --check` and this gate both hold all four inside Lime;
+  Charge, the darkest, sits 0.2 JND inside its border.

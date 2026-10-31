@@ -1824,3 +1824,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: for anything shaped by eye on top of an optimiser, store the optimiser's output as the definition, prove it by replaying the page's path against numbers saved with the shape, and turn the inputs into assertions. Ask which part the person liked before "fixing" an accidental input: here it was the boundaries, not the anchors.
 - Evidence: `colour_domains.json` `cells`; `colour_domains.py --check` / `--self-test` (seven planted failures); the page's `__lab.runBatch()` matches the Python checker to 0.01 points.
 - Promoted: no
+
+### L-STU-162 — A comparison page the person will PICK on needs a save path on its first publish
+- Lab: Lime Element Shades (`Docs/Studios/LimeElementShades.html`) · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: the first publish compared ladders with sliders but kept their state only in the viewer's browser. Garrett set his values and asked "can you retrieve them?"; they could not be read, a republish added a db-backed "Save my pick" and a copyable text line, and he had to set them again. Three saves then landed (two identical), so the latest by `savedAt` is the pick.
+- Do instead: any page whose purpose is a CHOICE (a pick, a tuning, a vote) declares `db` and carries a save button and a plain-text readout from its first publish; read the latest save by `savedAt`, and say which one you took.
+- Evidence: the page's `picks` collection (three documents, 2026-10-31 20:31-20:33); `kite_mote_colors.py` `PICKED`.
+- Promoted: no

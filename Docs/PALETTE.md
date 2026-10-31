@@ -763,7 +763,7 @@ hold translation curves that ARE that offset and were being dropped as no-ops ag
 It never reaches the shells anyway — they reference the MESH, whose vertices Unity keeps in node
 space. *Before removing a transform that looks like an export artifact, check what reads it.*
 
-### 2.11 Each free elemental crystal wears its own shade of lime (Garrett, 2026-10-27)
+### 2.11 Each free elemental crystal wears its own shade of lime (Garrett, 2026-10-27; shades replaced 2026-10-31, §2.13)
 
 "Right now mass crystals and omnicrystals are the hardest to distinguish. Shift the colors on each
 element to match the color shifts we used for the wrasse's 2d elements." Measured before the change:
@@ -872,6 +872,23 @@ turns its `_ElementShades` off. Colour FAMILY still says who collects; the shade
 **Not modelled:** the Omni Shepard Lab and the Omni Combine Lab draw the omni body in one lime (their parity
 harnesses hold shape and motion, not colour), and `crystal_bloom_preview.py`'s "Omni" row measures the body's
 `_BrightColor` alone.
+
+### 2.13 The four shades became one lime at four lightnesses (Garrett, 2026-10-31)
+
+The shades §2.11 and §2.12 measured were replaced. §2.11's tables describe the 2026-10-27 shades and stay as that
+round's record; the rules they explain (each crystal takes its shade at the donor's brightness, the omni wears all four
+on its element's shapes) are unchanged. The four are now `Docs/VesselModels/COLOR.md` §5d:
+
+| Element | Colour | sRGB | OKLab L | in Lime (source of truth) |
+|---|---|---|---|---|
+| Charge | `#2E5300` | (0.1821, 0.327, 0) | 0.400 | 0.2 JND inside its border |
+| Mass | `#508900` | (0.312, 0.5361, 0) | 0.567 | 1.1 JND |
+| Space | `#73C200` | (0.4519, 0.7614, 0) | 0.734 | 2.0 JND |
+| Time | `#99FF00` | (0.6, 1, 0) | 0.902 | 2.9 JND |
+
+Charge is the darkest (its plasma lights it up), so its crystal and its arcs (`OmniChargeArcs`) are much darker than
+before; the arcs' white core still carries their light. The omni's own lime (`#7cfc00` body, at full CTA strength) is
+untouched.
 
 ## 3. The colour-space rule (this is the trap)
 

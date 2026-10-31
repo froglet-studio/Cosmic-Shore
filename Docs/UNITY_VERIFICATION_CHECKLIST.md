@@ -19523,3 +19523,20 @@ Docs: `Assets/_Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYP
 10. **Two players.** One host, one client. **Pass:** both see the same plates with the same danger tiles, and a hole
     the host punched is a hole on the client.
 11. **Waystation itself.** Fly Waystation (58) once. **Pass:** unchanged from bleeding-edge.
+
+## Lime element shades: one lime at four lightnesses, Charge darkest (`cece/funny-archimedes-hinjr4`, 2026-10-31) - NOT EDITOR-VERIFIED
+
+What changed: the four element shades (palette `ElementalCrystalColors`, the Wrasse kite view, the Wrasse Lasso Lab) are
+now one lime at four lightnesses: Charge `#2E5300`, Mass `#508900`, Space `#73C200`, Time `#99FF00`
+(`Docs/VesselModels/COLOR.md` §5d). Regenerated: `SpaceCrystalFresnelMaterial`, `TimeCrystalFresnelMaterial`,
+`MassDepthPrisms`, `OmniCrystalBody`, `OmniDepthPrisms`, `OmniChargeArcs`. Not compiled or opened in the editor.
+
+1. Any arena with free crystals: the four elemental crystals read as one lime family, ordered dark to light Charge,
+   Mass, Space, Time; none reads as Jade (teal), Gold or olive-brown. The omni stays the brightest lime crystal.
+2. **Charge**: the darkest crystal. Its plasma (the seam walk and the omni's flux arcs) must still read as lit. If it
+   looks too dim, the lever is the arcs' glow (`OmniChargeArcs` `_GlowIntensity`), not the shade.
+3. A free omni crystal: its pentagons, triangles, squares and rhombi wear Charge, Mass, Space and Time in that order of
+   lightness.
+4. Menu_Main ▸ Ark ▸ Elemental Converter ▸ CONVERT: each crystal flies in and lands in its own shade.
+5. The Wrasse (Toybox Vessel Changer): the kite view's motes are four lightnesses of one lime, told apart at a glance in a
+   group.
