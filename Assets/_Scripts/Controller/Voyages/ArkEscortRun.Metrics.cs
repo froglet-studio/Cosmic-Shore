@@ -58,6 +58,8 @@ namespace CosmicShore.Gameplay
             _escort = _escortAsset ? _escortAsset : _escort;
             _pendingEcho = null;
             _paramTarget = null;
+            // Genes are static: a run starts from the defaults, so one run's ai.* overrides never leak into the next.
+            EscortGeneRegistry.ResetAll();
             var pending = ArkEscortParams.Pending;
             if (pending is not { Count: > 0 } || !_escort) return;
             _escortCopy = Instantiate(_escort);
@@ -169,6 +171,7 @@ namespace CosmicShore.Gameplay
                 default: r.PlatesLostPlain++; break;
             }
             bool creature = prism && prism.DestroyedByCreature;
+            CountFriendlyFire(prism);   // the escort roles' count: a loss to anything but a creature
             if (creature) { r.PlatesByCreature++; _report.PlatesByCreature++; }
             string killer = prism && !string.IsNullOrEmpty(prism.DestroyerName) ? prism.DestroyerName : "unknown";
             Bump(r.PlateKillers, killer);
@@ -332,6 +335,7 @@ namespace CosmicShore.Gameplay
                 }
             _cellOfLeg = System.Array.Empty<Cell>();
             UnhookMetrics();
+            EscortGeneRegistry.ResetAll();   // and play after a sim run is back on the defaults
             _threatSeen.Clear();
             _seatOf.Clear();
         }

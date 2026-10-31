@@ -29,7 +29,6 @@ namespace CosmicShore.Gameplay
         const float LeashCheckSeconds = 2f;
         const float WingmateAbeam = 140f;
         const float EndAfterSurvivedSeconds = 4f;
-        const float EscortLeashFactor = 1.4f;
 
         /// <summary>Raised once per escort as it ends, with what happened.</summary>
         public static event System.Action<ArkEscortReport> Finished;
@@ -68,11 +67,32 @@ namespace CosmicShore.Gameplay
             _report.Kills++;
         }
 
+        /// <summary>A hull prism fell to something other than a creature: in the escort that is the squad's own fire
+        /// (a rocket's blast, a gun's round, a blast cone through the hull), the number the roles' lane tests exist to
+        /// keep at zero. Fed by the one hull-loss event (<see cref="Ark.HullPrismLost"/>, subscribed in the metrics
+        /// partial).</summary>
+        void CountFriendlyFire(Prism prism)
+        {
+            if (!_active || !prism || prism.DestroyedByCreature) return;
+            _report.FriendlyFire++;
+            if (_leg >= 0) _report.LegReports[_leg].FriendlyFire++;
+        }
+
         ArkEscortReport _report;
         int _leg = -1;
+        ArkEscortContext _context_;
 
         /// <summary>True from setting sail until the escort ends.</summary>
         public bool IsActive => _active;
+
+        /// <summary>What the escort's seats share: threats ranked, claims, the lane-clear test. Null between escorts.</summary>
+        public ArkEscortContext Context => _context_;
+
+        /// <summary>The world the Ark is in or bound for, or null.</summary>
+        public Cell CurrentCell => _corridor ? _corridor.CurrentCell : null;
+
+        /// <summary>Half the Ark hull's length: the sphere a weapon's lane keeps clear.</summary>
+        public float HullHalfLength => _cfg != null ? Mathf.Max(30f, _cfg.ArkHullLength) * 0.5f : 55f;
 
         /// <summary>The difficulty sailing now (1-9), or 0.</summary>
         public int Difficulty => _active ? _difficulty : 0;
@@ -156,6 +176,9 @@ namespace CosmicShore.Gameplay
 
             BeginMetrics(tier);
             _active = true;
+            _context_?.Uninstall();
+            _context_ = new ArkEscortContext(this);
+            _context_.Install();
             Deploy(local, VoyageRun.LiveDomain(_context));
             _sea.Begin(local);
             return true;
@@ -212,11 +235,19 @@ namespace CosmicShore.Gameplay
 
             if (!swapper || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
             var t = local.Transform;
+            var prefabs = swapper.VesselPrefabContainer;
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
             {
                 if (seat == mySeat) continue;
                 var slot = _squad.GetSlot(seat);
                 if (!VesselRequirement.IsConcrete(slot.Vessel)) continue;
+                // A hull with no registered prefab (Falcon, Termite, Shrike) cannot be released: the seat sails empty,
+                // said once here rather than as a companion-spawn error with no seat named.
+                if (prefabs && !prefabs.TryGetShipPrefab(slot.Vessel, out _, reportMissing: false))
+                {
+                    CSDebug.LogWarning($"[ArkEscort] Seat {seat + 1} names {slot.Vessel}, which has no vessel prefab - it sails empty.");
+                    continue;
+                }
                 int seated = seat;
                 var pose = new Pose(t.position + t.right * (WingmateAbeam * (seat < mySeat ? -1f : 1f)) - t.forward * 60f,
                     t.rotation);
@@ -303,6 +334,7 @@ namespace CosmicShore.Gameplay
             }
 
             TrackLeg();
+            _context_?.Tick();
             CheckBreach();
             if (!_active || !_sea.IsRunning) return;
             if (Time.time >= _nextSample)
@@ -324,6 +356,9 @@ namespace CosmicShore.Gameplay
             if (!cell || !_legOf.TryGetValue(cell, out int leg) || leg == _leg) return;
             CloseLeg(_leg);
             _leg = leg;
+            // The seats' pilots follow the Ark into the world: their crystal lists point at it from here.
+            foreach (var p in _pilots)
+                if (p) p.OnLegChanged(cell);
             var r = _report.LegReports[leg];
             r.EnteredAt = Time.time;
             r.HullAtEntry = Ark ? Ark.AliveCount : 0;
@@ -452,16 +487,19 @@ namespace CosmicShore.Gameplay
         {
             var ark = Ark;
             if (!ark) return;
-            // An escort's leash is its guard: a wingmate that strays past it is no use to the Ark.
-            float leash = Mathf.Min(_def.WingmateLeash, ArkEscortPilot.GuardRadius * EscortLeashFactor);
-            float leashSqr = leash * leash;
+            // An escort's leash is its guard: a wingmate that strays past it is no use to the Ark. A seat's role may
+            // let its own leash out (the Squirrel's nucleus run), by ArkEscortPilot.Leash.
+            float leash = Mathf.Min(_def.WingmateLeash, ArkEscortPilot.GuardRadius * EscortGeneRegistry.LeashFactor);
             int n = _wingmates.Count + (_aiLocal ? 1 : 0);
             for (int i = 0; i < n; i++)
             {
                 var vessel = i < _wingmates.Count ? _wingmates[i] : _context?.GameData?.LocalPlayer?.Vessel;
                 var status = Alive(vessel);
                 if (status == null || !status.Transform) continue;
-                if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= leashSqr) continue;
+                float seatLeash = leash;
+                if (status is Component sc && sc && sc.TryGetComponent(out ArkEscortPilot escortPilot))
+                    seatLeash = escortPilot.Leash(leash);
+                if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= seatLeash * seatLeash) continue;
                 var side = i % 2 == 0 ? -1f : 1f;
                 var at = ark.Position + ark.transform.right * (side * WingmateAbeam * 2f) - ark.Forward * (WingmateAbeam * (1 + i));
                 vessel.SetPose(new Pose(at, Quaternion.LookRotation(ark.Forward, Vector3.up)));
@@ -500,6 +538,8 @@ namespace CosmicShore.Gameplay
             foreach (var p in _pilots)
                 if (p) p.Disarm();
             _pilots.Clear();
+            _context_?.Uninstall();
+            _context_ = null;
             SquadDeployment.Recall();
             var swapper = _context?.VesselInitializer;
             foreach (var w in _wingmates)

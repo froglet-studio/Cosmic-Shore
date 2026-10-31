@@ -129,6 +129,8 @@ namespace CosmicShore.Gameplay
             public float SquadShareAtExit;
             /// <summary>Live fauna re-coloured into the squad's domain at pacification.</summary>
             public int FaunaTurned;
+            /// <summary>Hull prisms lost to the squad's own fire in this world.</summary>
+            public int FriendlyFire;
         }
 
         [System.Serializable]
@@ -155,6 +157,8 @@ namespace CosmicShore.Gameplay
         public int Kills;
         public int KillsOnArk;
         public int KillsElsewhere;
+        /// <summary>Ark hull prisms destroyed by something other than a creature: the squad's own fire.</summary>
+        public int FriendlyFire;
         /// <summary>AI wingmates that flew, and escort pilots armed (the local seat's included in the sim).</summary>
         public int Wingmates;
         public int Pilots;
@@ -190,9 +194,9 @@ namespace CosmicShore.Gameplay
             if (Result == Outcome.Fallen) sb.Append($"{(Overrun ? " (overrun)" : "")} in leg {FallenLeg + 1}");
             sb.Append($", hull min {HullMinFraction:P0} of {HullTotal}, {EndedAt - UnderwayAt:0}s under way " +
                       $"({InsideSeconds:0}s in cells, {OutsideSeconds:0}s out, mean {MeanArkSpeed:0.0} u/s), " +
-                      $"plates lost {PlatesLost} ({PlatesLostShielded} shielded, {PlatesLostSuper} super), " +
-                      $"kills {KillsOnArk} on the Ark / {KillsElsewhere} elsewhere, " +
-                      $"{Wingmates} wingmates, {Pilots} escort pilots. Legs:");
+                      $"plates lost {PlatesLost} ({PlatesLostShielded} shielded, {PlatesLostSuper} super, " +
+                      $"{FriendlyFire} to friendly fire), {Kills} kills ({KillsOnArk} on the Ark / {KillsElsewhere} elsewhere), " +
+                      $"{PacifiedLegs} worlds pacified, {Wingmates} wingmates, {Pilots} escort pilots. Legs:");
             foreach (var l in LegReports)
             {
                 if (!l.Reached && l.EnteredAt <= 0f) continue;

@@ -92,7 +92,10 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; ok && i < slots.Length; i++)
                 {
                     ok = Enum.TryParse(vessels[i].Trim(), true, out VesselClassType v);
-                    slots[i] = new SquadSlot(v, Element.None);
+                    // A real element, not None: the run seeds seats to level 5 in their slot's element, and None seeds
+                    // nothing - so the kits' level-5 safeties (Domain-Safe Skybursts, Clean Blast, Shield Steal) were
+                    // off and the squad chewed the Ark's own hull. Each hull takes the element its safety lives in.
+                    slots[i] = new SquadSlot(v, ArkEscortRoles.DefaultElement(v));
                 }
                 if (!ok) { Log($"bad squad '{parts[1]}'"); continue; }
                 _plan.Add((d, new SavedSquad("escort sim", slots[0], slots[1], slots[2]), parts[1]));

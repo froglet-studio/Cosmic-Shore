@@ -308,7 +308,8 @@ namespace CosmicShore.Gameplay
         /// the shield tier its SLOT was laid in (a plate gnawed through has already shed its live shield flags). Read
         /// <see cref="Prism.DestroyerName"/> and <see cref="Prism.DestroyedByCreature"/> for who took it. A plate the
         /// hold hands a carrier is not a loss. Detected on the integrity scan (every 0.5 s) and before a regrowth
-        /// reuses the slot, so no loss is missed.
+        /// reuses the slot, so no loss is missed. One event serves every listener: the escort's plate metrics and its
+        /// friendly-fire count (a loss not <see cref="Prism.DestroyedByCreature"/>).
         /// </summary>
         public event Action<Prism, PrismKind> HullPrismLost;
 

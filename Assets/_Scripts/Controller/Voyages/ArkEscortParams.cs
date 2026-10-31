@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Hook for keys starting <c>ai.</c> (e.g. <c>ai.sparrow.engageRadius</c>): the AI-pilot gene registry
         /// sets it (<c>EscortGeneRegistry.TrySet</c>). Unset, those keys are echoed as not applied.</summary>
-        public static Func<string, float, bool> ExternalSetter;
+        public static Func<string, float, bool> ExternalSetter = EscortGeneRegistry.TrySet;
 
         /// <summary>The overrides the next escort applies at set-sail (the sim loads them once; they apply to every run).</summary>
         public static Dictionary<string, float> Pending;
@@ -71,7 +71,7 @@ namespace CosmicShore.Gameplay
         {
             var keys = new List<string>(Entries.Count + 1);
             foreach (var e in Entries) keys.Add(e.Pattern);
-            keys.Add("ai.*");
+            foreach (var gene in EscortGeneRegistry.All) keys.Add(gene.Key);
             return keys;
         }
 

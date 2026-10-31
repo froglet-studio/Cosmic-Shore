@@ -62,7 +62,7 @@ def main():
     # ── Pace, kills, plates (new fields; blank for old lines) ──
     print()
     print(f"{'d':>2} {'in s':>6} {'out s':>6} {'in%':>5} {'u/s':>5} {'k@ark':>6} {'k else':>6} {'plates':>6} "
-          f"{'shld':>5} {'super':>5} {'regrow':>6}   plates lost per world: " + "  ".join(n[:10].rjust(10) for n in names))
+          f"{'shld':>5} {'super':>5} {'regrow':>6} {'ff':>5}   plates lost per world: " + "  ".join(n[:10].rjust(10) for n in names))
     for d in sorted(by):
         rs = by[d]
         ins = mean([r["InsideSeconds"] for r in rs if "InsideSeconds" in r])
@@ -77,6 +77,7 @@ def main():
             fmt(mean([r["PlatesLostShielded"] for r in rs if "PlatesLostShielded" in r]), ".1f", 5),
             fmt(mean([r["PlatesLostSuper"] for r in rs if "PlatesLostSuper" in r]), ".1f", 5),
             fmt(mean([r["PlatesRegrown"] for r in rs if "PlatesRegrown" in r]), ".1f", 6),
+            fmt(mean([r["FriendlyFire"] for r in rs if "FriendlyFire" in r]), ".1f", 5),
         ]
         per = []
         for n in names:
