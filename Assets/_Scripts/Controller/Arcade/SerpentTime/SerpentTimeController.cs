@@ -15,32 +15,33 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>What makes it dirty</b> (each piece is a rule of this mode; the vessel is the shipped Serpent):</para>
     /// <list type="bullet">
-    /// <item><b>Ring clusters.</b> Every gate stands as 3 rings (I1, I2) or 2 (I3, I4) side by side, any one of which
-    /// threads it (<see cref="SerpentTimeCluster"/>). The course's own ring stays as the gate the platform, the
-    /// objective arrow and the race toasts read; only its drawing is hidden.</item>
-    /// <item><b>Guarded rings.</b> A gate stands 2 rings at I1-I2 and 1 at I3-I4, and one ring of each gate is guarded
-    /// by a living plant: a Borromean flora (a membrane spanning its own rings) standing near it (below), of an element
-    /// that rises with intensity (Time at I1: plain plates; Mass: shielded plates that bounce a hull; Charge at I4: every
-    /// plate danger). Fly the open ring, or hit the guard's HEART: a sniper round or a hull that passes through the
-    /// middle of the plant fells all of it - every plate blows apart outward from the heart and the ring is open. What
-    /// reaching the middle costs is the plates' own (Time's are free to ram through, Charge's burn petals, Mass's bounce
-    /// a hull, so a Mass guard is shot). The guard is ordinary flora of the cell: it grows in, fauna graze it, and it
-    /// dies by the ordinary flora death (its last plate gone, its heart drops). Nothing about the Serpent changes.</item>
-    /// <item><b>Where the guards stand.</b> Not in the mouth: a fixed walk by gate (<see cref="SerpentTimeCluster.PlacementFor"/>)
-    /// puts each one on the racing line a little before its ring, beside the ring half-covering it, or as a pair either side
-    /// of the line before it, a narrow door. Gate 0's always stands beside, so the start is clear.</item>
+    /// <item><b>One ring a gate</b> (2026-10-31; Shombith: "make all intensities have only 1 gate"), at Breakwater's
+    /// sizes: 72 / 60 / 50 / 42 u at I1-I4 (<see cref="SerpentTimeCourse.ForIntensity"/>). Ring clusters (several rings
+    /// side by side, any one threading the gate, <see cref="SerpentTimeCluster"/>) are still supported through
+    /// <see cref="ringsPerGateByIntensity"/>, and ship off.</item>
+    /// <item><b>A shape at every ring</b> (2026-10-31, after Breakwater's stations; <see cref="SerpentineGate"/>): a plain
+    /// shell flaring back round the ring, a danger weave across its mouth with 2-3 exits cut for the Serpent (the places
+    /// to leave from), and a plain gold core at the centre. Coil at I1-I2, Maw at I3, Iris at I4. Break any core block (a
+    /// sniper round, a ram) and the whole shape disintegrates, bursting outward from the core; it grows back
+    /// <see cref="shapeRegrowSeconds"/> later, once no hull is inside it. Thread an exit, or open the ring. Nothing about
+    /// the Serpent changes: the round and the ram break prisms as they do everywhere.</item>
     /// <item><b>The start.</b> Everyone starts on a small ring behind gate 0, pointed through it (<see cref="TryBuildSpawnPoses"/>),
     /// the course built early from the same seed it is later built from.</item>
     /// <item><b>The cell's current.</b> The cytoplasm's shards point along the race line instead of at a crystal
     /// (<see cref="SnowChanger.IFlow"/>), streaming round the circuit, so the course reads from anywhere in the cell
     /// without drawing a track.</item>
-    /// <item><b>The cell's own life.</b> The race runs in its own copy of the barren Skim Race cell, with half its grazers (the
-    /// Rampage forest it ran in for a day cost too much frame time, 2026-10-31); the guards are its flora.</item>
+    /// <item><b>Each intensity a different place</b> (2026-10-31, Shombith: "different experiences in different
+    /// environments"): its own cell config with its own creatures (at most 25 live): I1 the Shallows (a few tadpoles),
+    /// I2 the Grazing Grounds (tadpoles and brittlestars), I3 the Hunting Grounds (sharks, piranha, tadpoles), I4 the
+    /// Deep (sharks, piranha schools, brittlestars, tadpoles). The cell keeps its own colours (a per-place tint was tried
+    /// and removed, 2026-10-31). And the core shrinks, so the shot gets harder
+    /// (<see cref="SerpentineGate.CoreFor"/>).</item>
     /// <item><b>Gate debris.</b> Loose neutral prisms lie round every gate and grow back, so a Serpent that cloaks
     /// there has the mass its Seed Wall grows from. The debris is the environment's; the wall is the shipped one.</item>
-    /// <item><b>The AI plays dirty</b> (input-only, through the replicated press like a human's): it picks the open
-    /// ring of each gate, shoots a guard's heart or a wall out of its ring when its rifle is ready, and cloaks just past a ring a rival
-    /// still needs, so the wall grows in that rival's way.</item>
+    /// <item><b>The AI plays dirty</b> (input-only, through the replicated press like a human's): with its rifle ready
+    /// it lines up on a standing shape's core and shoots it open; otherwise it threads the nearest exit. It shoots a
+    /// rival's wall out of its ring the same way, and cloaks just past a ring a rival still needs, so the wall grows in
+    /// that rival's way.</item>
     /// </list>
     ///
     /// <para><b>The vessel is never changed here</b> (Shombith, 2026-10-31: "the vessel kit as designed always stays
@@ -62,37 +63,23 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1)] int laps = SerpentTimeCourseSource.DefaultLaps;
 
         [Header("Ring clusters")]
-        [Tooltip("Rings standing at each gate on intensity 1-4; any one of them threads the gate. 1 = the plain gate.")]
-        [SerializeField] int[] ringsPerGateByIntensity = { 2, 2, 1, 1 };
+        [Tooltip("Rings standing at each gate on intensity 1-4; any one of them threads the gate. 1 = the plain gate " +
+                 "(every intensity since 2026-10-31).")]
+        [SerializeField] int[] ringsPerGateByIntensity = { 1, 1, 1, 1 };
         [Tooltip("Seconds each cluster ring takes to bloom in when the course is raised.")]
         [SerializeField, Min(0f)] float clusterBloomSeconds = 0.9f;
 
-        [Header("Guarded rings (a Borromean flora standing near the ring)")]
-        [Tooltip("Rings guarded at each gate on intensity 1-4 (of the 2, 2, 1, 1 a gate stands). The guarded ring is picked " +
-                 "from the gate's index, so which ring is open moves round from gate to gate.")]
-        [SerializeField] int[] guardedRingsPerGateByIntensity = { 1, 1, 1, 1 };
-        [Tooltip("The guard plant for each element, in Element order: Charge, Mass, Space, Time. Rampage's Borromean " +
-                 "flora configs, used as they ship. Authored by Tools/Build/author_serpent_time_assets.py.")]
-        [SerializeField] FloraConfigurationSO[] guardFloraByElement = new FloraConfigurationSO[4];
-        [Tooltip("I1: the guard's element per gate, walked by gate index (1 Charge, 2 Mass, 3 Space, 4 Time). " +
-                 "Time grows plain plates, Mass shielded ones that bounce a hull, Charge danger ones.")]
-        [SerializeField] int[] guardElementsI1 = { 4 };
-        [Tooltip("I2: the guard's element per gate (1 Charge, 2 Mass, 3 Space, 4 Time).")]
-        [SerializeField] int[] guardElementsI2 = { 4, 2 };
-        [Tooltip("I3: the guard's element per gate (1 Charge, 2 Mass, 3 Space, 4 Time).")]
-        [SerializeField] int[] guardElementsI3 = { 2, 1 };
-        [Tooltip("I4: the guard's element per gate (1 Charge, 2 Mass, 3 Space, 4 Time).")]
-        [SerializeField] int[] guardElementsI4 = { 1, 2, 1 };
-
-        [Header("Where the guards stand")]
-        [Tooltip("How far before its ring (u), against the flow, an approach guard or a door stands: nearest and farthest " +
-                 "(each gate picks its own in between).")]
-        [SerializeField] Vector2 guardApproachDistance = new(150f, 300f);
-        [Tooltip("A beside guard's heart, off the ring's centre in the ring's plane, as a share of the mouth's radius.")]
-        [SerializeField, Range(0f, 2f)] float guardBesideFraction = 0.8f;
-        [Tooltip("A door's two hearts each stand this far (u) either side of the racing line. The plants are about 55 u " +
-                 "across (Time, Charge), so 70 leaves a narrow gap between them.")]
-        [SerializeField, Min(0f)] float guardDoorHalfWidth = 70f;
+        [Header("The shapes at the rings (SerpentineGate)")]
+        [Tooltip("Prisms a disintegrating shape blows apart each frame, from the core outward, so it bursts over a few " +
+                 "frames instead of all in one.")]
+        [SerializeField, Min(1)] int shapeBurstPerFrame = 48;
+        [Tooltip("Speed (u/s) a disintegrating shape's prisms fly apart at, outward from its core.")]
+        [SerializeField, Min(0f)] float shapeBurstSpeed = 40f;
+        [Tooltip("Seconds after a shape disintegrates before it grows back (it waits on, while any hull is inside its " +
+                 "reach). 0 = it never grows back.")]
+        [SerializeField, Min(0f)] float shapeRegrowSeconds = 25f;
+        [Tooltip("Prisms a growing-back shape lays each frame.")]
+        [SerializeField, Min(1)] int shapeRegrowPerFrame = 40;
 
         [Header("Start line")]
         [Tooltip("How far behind gate 0 (u), against its axis, the start ring sits. Everyone starts there pointed through it.")]
@@ -108,17 +95,6 @@ namespace CosmicShore.Gameplay
                  "river with a pull, so a pilot off course sees which way the line is.")]
         [SerializeField, Range(0f, 2f)] float currentPull = 0.6f;
 
-        [Header("Felling a guard (hit its heart)")]
-        [Tooltip("A sniper round, or a hull, that passes within this distance (u) of a guard's heart fells the whole plant. " +
-                 "The heart sits in a clear alcove at the middle of the membrane (5.8 u round it on Time and Charge, 11 u on " +
-                 "Mass), so this is about that alcove: aim at the middle of the plant.")]
-        [SerializeField, Min(0f)] float guardHeartHitRadius = 9f;
-        [Tooltip("Plates a felled guard blows apart each frame, nearest its heart first, so the plant bursts outward over a " +
-                 "few frames instead of all in one.")]
-        [SerializeField, Min(1)] int guardFellPlatesPerFrame = 48;
-        [Tooltip("Speed (u/s) a felled guard's plates fly apart at, outward from its heart.")]
-        [SerializeField, Min(0f)] float guardFellDebrisSpeed = 40f;
-
         [Header("Gate debris (the walls' fuel)")]
         [Tooltip("The prism every piece of gate debris is laid from: the environment prism (SpawnablePrism). " +
                  "Authored by Tools/Build/author_serpent_time_assets.py. Unset = no debris, and a warning.")]
@@ -129,7 +105,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Every this many seconds, each gate short of its debris grows one piece back, so a gate is never " +
                  "stripped bare for the rest of the race.")]
         [SerializeField, Min(0.1f)] float debrisRegrowSeconds = 1.5f;
-        [Tooltip("How far beyond the gate's outermost ring (u) the debris lies: nearest and farthest.")]
+        [Tooltip("How far beyond the gate's shape (u) the debris lies: nearest and farthest.")]
         [SerializeField] Vector2 debrisDistanceBeyondRings = new(26f, 120f);
         [Tooltip("Size of one piece of debris (u).")]
         [SerializeField] Vector3 debrisScale = new(2.6f, 2.6f, 2.6f);
@@ -143,7 +119,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aiCloakCooldownSeconds = 15.5f;
         [Tooltip("Share of a ring's mouth rival prisms must cover before the AI calls the ring walled.")]
         [SerializeField, Range(0.05f, 1f)] float aiBlockedCoverage = 0.4f;
-        [Tooltip("Extra cost (u) the AI puts on a walled ring, or one a Mass or Charge guard stands in (it shoots it open when its rifle is ready).")]
+        [Tooltip("Extra cost (u) the AI puts on a walled ring (it shoots it open when its rifle is ready).")]
         [SerializeField, Min(0f)] float aiBlockedCost = 120f;
         [Tooltip("The AI keeps its ring unless another is cheaper by this much (u).")]
         [SerializeField, Min(0f)] float aiRingSwitchHysteresis = 60f;
@@ -198,26 +174,32 @@ namespace CosmicShore.Gameplay
             public float NextShotAt;
             public System.Random Rng;
 
-            // Every peer: the rifle's cooldown last frame. It rising is a round fired (the press replicates, so every
-            // peer's copy of the rifle fires), read to see whether the round went through a guard's heart.
-            public float RifleCooldownSeen;
+            // AI: which exit of its gate's shape it threads (-1 = none chosen yet), and for which gate.
+            public int ExitIndex = -1;
+            public int ExitGate = -1;
         }
 
-        /// <summary>One ring guard: the plant, the ring it stands in, and - once its heart is hit - the burst felling it.</summary>
-        sealed class Guard
+        /// <summary>Owner id no pilot carries: the prisms of the shapes at the rings.</summary>
+        const string ShapeOwnerId = "SerpentineGate";
+
+        /// <summary>One gate's shape: its parts, the prisms laid for them (index for index), and its state.</summary>
+        sealed class GateShape
         {
-            public Flora Flora;
-            public int Gate, Slot;
-            public bool Felling;
-            public Vector3 FelledFrom;
-            public readonly List<HealthPrism> Burst = new();
-            public int BurstAt;
-
-            public bool Standing => Flora && !Felling && !Flora.IsDying;
-
-            /// <summary>Reaching this guard's heart costs a hull something (Charge plates are danger, Mass plates bounce), so
-            /// the AI shoots it; a Time guard's plain plates break free, so the AI flies through its middle.</summary>
-            public bool CostsToRam => Flora && Flora.Element is Element.Charge or Element.Mass;
+            public int Gate;
+            public RaceGate Ring;
+            public SerpentineGate.Shape Shape;
+            public int Intensity;
+            public readonly List<SerpentineGate.Part> Parts = new();
+            public readonly List<Prism> Prisms = new();
+            public Trail Trail;
+            /// <summary>Whole and standing: the core is intact.</summary>
+            public bool Standing;
+            /// <summary>Disintegrating: <see cref="Cursor"/> walks the prisms, blowing them apart.</summary>
+            public bool Bursting;
+            /// <summary>Growing back: <see cref="Cursor"/> walks the parts, relaying the missing ones.</summary>
+            public bool Regrowing;
+            public int Cursor;
+            public float RegrowAt = -1f;
         }
 
         const int MaxRings = 3;
@@ -238,7 +220,8 @@ namespace CosmicShore.Gameplay
             public readonly List<Prism> Pieces = new();
         }
 
-        readonly List<Guard> _guards = new();
+        readonly List<GateShape> _shapes = new();
+        Transform _shapeRoot;
         static readonly ProfilerMarker s_tickMarker = new("SerpentTime.Tick");
         static readonly ProfilerMarker s_aiMarker = new("SerpentTime.AI");
 
@@ -263,7 +246,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             ReleasePilots();
-            _guards.Clear();
+            ClearShapes();
             ClearCurrent();
             ClearDebris();
             base.OnNetworkDespawn();
@@ -296,7 +279,7 @@ namespace CosmicShore.Gameplay
 
             int rings = Mathf.Min(MaxRings, SerpentTimeCluster.RingsFor(Intensity, ringsPerGateByIntensity));
             LayGateDebris(rings);
-            PlantGuards(rings);
+            LayShapes(rings);
             // The next match draws its own seed (the start line latched this one).
             _startSeedLatched = false;
             _currentPending = _course.Count >= 2;
@@ -325,54 +308,146 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── Guarded rings (every peer) ────────────────────────────────────
+        // ── The shapes at the rings (every peer) ──────────────────────────
+
+        SerpentineGate.Shape CurrentShape => SerpentineGate.ShapeFor(Intensity);
 
         /// <summary>
-        /// Plant the guard flora of each guarded ring where its gate's placement puts them (before it, beside it, or a door
-        /// of two before it: <see cref="SerpentTimeCluster.GuardHearts"/>), through the cell's own spawn call
-        /// (<see cref="CellLifeSpawnerBase.SpawnFlora"/>, the call the Spawn Matrix toy roots its plants with), rooted at the
-        /// heart's spot. Every peer plants its own, at the
-        /// same pose, element and domain (a playable domain picked by a hash of the gate: never Blue, which is bait to every
-        /// fauna school), as the debris is laid. The plant is the cell's from then on: it grows, is grazed, and drops its
-        /// heart when it dies. The plant turns itself to a random attitude when it plants (one shape, many faces), so its
-        /// plates differ a little per peer; its HEART, which felling it is about, is the ring's centre on every peer.
+        /// Lay every gate's shape (<see cref="SerpentineGate.Build"/>) from the environment prism, on every peer from the
+        /// course it was sent, as the debris is: a shape is closed form, so every peer's copy is the same. Behind the
+        /// connecting panel (watchForReveal), so the arena-ready gate waits for them. One ring a gate only: a cluster of
+        /// rings has no single mouth for a shape to close.
         /// </summary>
-        void PlantGuards(int rings)
+        void LayShapes(int rings)
         {
-            _guards.Clear();
-            int guarded = SerpentTimeCluster.RingsFor(Intensity, guardedRingsPerGateByIntensity);
-            if (guardedRingsPerGateByIntensity == null || guardedRingsPerGateByIntensity.Length == 0) guarded = 0;
-            var pattern = Intensity switch { 1 => guardElementsI1, 2 => guardElementsI2, 3 => guardElementsI3, _ => guardElementsI4 };
-            if (guarded <= 0 || pattern is not { Length: > 0 }) return;
-            var cell = cellData ? Cell.FindByRuntimeData(cellData) : null;
-            if (!cell)
-            {
-                CSDebug.LogWarning("[Serpent Time] No cell to plant the ring guards in: the rings stand open.");
-                return;
-            }
-
+            ClearShapes();
+            if (rings > 1 || !debrisPrefab) return;
+            _shapeRoot = new GameObject("SerpentineShapes").transform;
+            var shape = CurrentShape;
             for (int i = 0; i < _course.Count; i++)
-            for (int slot = 0; slot < rings; slot++)
             {
-                if (!SerpentTimeCluster.IsCovered(i, slot, rings, guarded)) continue;
-                var cfg = GuardFor(pattern[i % pattern.Length]);
-                if (!cfg || !cfg.FloraPrefab) continue;
-                var ring = SerpentTimeCluster.Ring(_course[i], i, slot, rings);
-                int hearts = SerpentTimeCluster.GuardHearts(ring, i, slot, SerpentTimeCluster.PlacementFor(i),
-                    guardApproachDistance, guardBesideFraction, guardDoorHalfWidth, s_hearts);
-                for (int h = 0; h < hearts; h++)
+                var gs = new GateShape { Gate = i, Ring = _course[i], Shape = shape, Intensity = Intensity, Trail = new Trail() };
+                SerpentineGate.Build(_course[i], i, Intensity, gs.Parts);
+                for (int k = 0; k < gs.Parts.Count; k++) gs.Prisms.Add(LayPart(gs, k, forReveal: true));
+                gs.Standing = true;
+                _shapes.Add(gs);
+            }
+        }
+
+        Prism LayPart(GateShape gs, int k, bool forReveal)
+        {
+            var part = gs.Parts[k];
+            var prism = PrismTrailBuilder.LayOne(debrisPrefab,
+                new PrismLay(new SpawnPoint(part.Position, part.Rotation, part.Scale), Domains.Blue, part.Kind),
+                _shapeRoot, gs.Trail, ShapeOwnerId, watchForReveal: forReveal);
+            if (prism && !forReveal) prism.CompletesAsLiveRibbon = true;
+            return prism;
+        }
+
+        /// <summary>Still a prism of its shape: alive, and not taken (a destroyed prism goes back to the pool and is
+        /// re-issued to somebody else; a Seed Wall that pulls one in re-owns it).</summary>
+        static bool Holds(Prism prism) => prism && !prism.destroyed && prism.ownerID == ShapeOwnerId;
+
+        /// <summary>
+        /// Every peer, every frame: a standing shape whose core lost a block (a sniper round, a ram, anything that
+        /// breaks a prism) disintegrates; a disintegrating one blows <see cref="shapeBurstPerFrame"/> more prisms apart,
+        /// core outward (the parts are listed core, weave, shell); a fallen one grows back <see cref="shapeRegrowSeconds"/>
+        /// later, once no hull is inside its reach, <see cref="shapeRegrowPerFrame"/> prisms a frame.
+        /// </summary>
+        void TickShapes()
+        {
+            float now = Time.time;
+            for (int g = 0; g < _shapes.Count; g++)
+            {
+                var gs = _shapes[g];
+                if (gs.Standing)
                 {
-                    var flora = CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg, s_hearts[h], ring.Axis,
-                        Quaternion.LookRotation(ring.Axis), domainOverride: SerpentTimeCluster.GuardDomain(i, slot));
-                    if (flora) _guards.Add(new Guard { Flora = flora, Gate = i, Slot = slot });
+                    for (int k = 0; k < gs.Parts.Count; k++)
+                    {
+                        if (!gs.Parts[k].Core) break;   // the core is listed first
+                        if (Holds(gs.Prisms[k])) continue;
+                        gs.Standing = false;
+                        gs.Bursting = true;
+                        gs.Cursor = 0;
+                        break;
+                    }
+                }
+
+                if (gs.Bursting)
+                {
+                    int budget = shapeBurstPerFrame;
+                    while (budget > 0 && gs.Cursor < gs.Prisms.Count)
+                    {
+                        var prism = gs.Prisms[gs.Cursor++];
+                        if (!Holds(prism)) continue;
+                        Vector3 impact = (prism.transform.position - gs.Ring.Position).normalized * shapeBurstSpeed;
+                        if (prism.prismProperties is { IsSuperShielded: true }) prism.DeactivateShields(impact);
+                        prism.Damage(impact, Domains.Blue, string.Empty, devastate: true);
+                        budget--;
+                    }
+                    if (gs.Cursor >= gs.Prisms.Count)
+                    {
+                        gs.Bursting = false;
+                        gs.RegrowAt = shapeRegrowSeconds > 0f ? now + shapeRegrowSeconds : -1f;
+                    }
+                    continue;
+                }
+
+                if (!gs.Standing && !gs.Regrowing && gs.RegrowAt >= 0f && now >= gs.RegrowAt && !HullWithin(gs))
+                {
+                    gs.Regrowing = true;
+                    gs.Cursor = 0;
+                }
+
+                if (gs.Regrowing)
+                {
+                    int budget = shapeRegrowPerFrame;
+                    while (budget > 0 && gs.Cursor < gs.Parts.Count)
+                    {
+                        int k = gs.Cursor++;
+                        if (Holds(gs.Prisms[k])) continue;
+                        gs.Prisms[k] = LayPart(gs, k, forReveal: false);
+                        budget--;
+                    }
+                    if (gs.Cursor >= gs.Parts.Count)
+                    {
+                        gs.Regrowing = false;
+                        gs.RegrowAt = -1f;
+                        gs.Standing = true;
+                    }
                 }
             }
         }
 
-        FloraConfigurationSO GuardFor(int element) =>
-            guardFloraByElement != null && element >= 1 && element <= guardFloraByElement.Length ? guardFloraByElement[element - 1] : null;
+        /// <summary>Is any hull inside this shape's reach (so growing it back now would lay prisms on it)?</summary>
+        bool HullWithin(GateShape gs)
+        {
+            float reach = SerpentineGate.OuterReach(gs.Ring.Radius, gs.Intensity);
+            var players = gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var tf = players[i]?.Vessel?.Transform;
+                if (tf && (tf.position - gs.Ring.Position).sqrMagnitude < reach * reach) return true;
+            }
+            return false;
+        }
 
-        static readonly Vector3[] s_hearts = new Vector3[2];
+        GateShape ShapeAt(int gateIndex) =>
+            gateIndex >= 0 && gateIndex < _shapes.Count && _shapes[gateIndex].Gate == gateIndex ? _shapes[gateIndex] : null;
+
+        void ClearShapes()
+        {
+            for (int g = 0; g < _shapes.Count; g++)
+            {
+                var prisms = _shapes[g].Prisms;
+                for (int i = 0; i < prisms.Count; i++)
+                    if (Holds(prisms[i]) && !EnvironmentPrismPool.TryRelease(prisms[i]))
+                        Destroy(prisms[i].gameObject);
+            }
+            _shapes.Clear();
+            if (_shapeRoot && _shapeRoot.childCount == 0) Destroy(_shapeRoot.gameObject);
+            _shapeRoot = null;
+        }
 
         // ── The start line (server, during the spawn chain) ───────────────
 
@@ -491,94 +566,6 @@ namespace CosmicShore.Gameplay
             _currentOn = null;
         }
 
-        /// <summary>
-        /// Every peer, every frame: a hull within <see cref="guardHeartHitRadius"/> of a standing guard's heart, or a
-        /// sniper round fired this frame whose line passes that close to it, fells the guard. The round is read off the
-        /// shipped rifle (its cooldown rising is the shot; ship position and forward, its range and cone, are the round's
-        /// own), never changed: the rifle does exactly what it does everywhere, and the plant answers being hit in its
-        /// heart. Every peer resolves the same press and the same heart, so every peer fells its own copy.
-        /// </summary>
-        void TickGuards()
-        {
-            if (_guards.Count == 0) return;
-            float hit2 = guardHeartHitRadius * guardHeartHitRadius;
-            var players = gameData.Players;
-            for (int p = 0; p < players.Count; p++)
-            {
-                var player = players[p];
-                var tf = player?.Vessel?.Transform;
-                if (!tf) continue;
-                var pilot = PilotFor(player);
-                bool fired = false;
-                if (pilot != null && pilot.Rifle)
-                {
-                    float cooldown = pilot.Rifle.CooldownRemaining;
-                    fired = cooldown > pilot.RifleCooldownSeen + 0.05f;
-                    pilot.RifleCooldownSeen = cooldown;
-                }
-
-                for (int g = 0; g < _guards.Count; g++)
-                {
-                    var guard = _guards[g];
-                    if (!guard.Standing) continue;
-                    Vector3 heart = guard.Flora.HeartTransform.position;
-                    if ((heart - tf.position).sqrMagnitude <= hit2 ||
-                        fired && SerpentTimeCluster.RoundPassesHeart(tf.position, tf.forward, pilot.Rifle.RangeUnits,
-                                                                     pilot.Rifle.ConeHalfAngleDegrees, heart, guardHeartHitRadius))
-                        BeginFell(guard, heart);
-                }
-            }
-
-            for (int g = 0; g < _guards.Count; g++)
-                if (_guards[g].Felling) TickFell(_guards[g]);
-        }
-
-        void BeginFell(Guard guard, Vector3 heart)
-        {
-            guard.Felling = true;
-            guard.FelledFrom = heart;
-            guard.BurstAt = 0;
-            guard.Flora.GetComponentsInChildren(true, guard.Burst);
-            // Nearest the heart first, so the plant bursts outward from where it was hit. Rare (once per guard), so the
-            // comparison's capture is no per-frame cost.
-            guard.Burst.Sort((a, b) => (a.transform.position - heart).sqrMagnitude
-                                       .CompareTo((b.transform.position - heart).sqrMagnitude));
-        }
-
-        /// <summary>
-        /// Blow up to <see cref="guardFellPlatesPerFrame"/> of a felled guard's plates apart this frame, through the
-        /// ordinary prism damage (devastating, as the flora's own death does, so armour does not hold; a super-shield
-        /// comes off first, the sanctioned order). The plant then dies by the ordinary flora death the moment its last
-        /// plate goes: its spindles wither and its heart drops. A plate it grew during the burst is caught at the end.
-        /// </summary>
-        void TickFell(Guard guard)
-        {
-            var flora = guard.Flora;
-            if (!flora)
-            {
-                guard.Felling = false;
-                guard.Burst.Clear();
-                return;
-            }
-
-            int budget = guardFellPlatesPerFrame;
-            while (budget > 0 && guard.BurstAt < guard.Burst.Count)
-            {
-                var plate = guard.Burst[guard.BurstAt++];
-                if (!plate || plate.destroyed || plate.LifeForm != flora) continue;
-                Vector3 impact = (plate.transform.position - guard.FelledFrom).normalized * guardFellDebrisSpeed;
-                if (plate.prismProperties is { IsSuperShielded: true }) plate.DeactivateShields(impact);
-                plate.Damage(impact, Domains.Blue, string.Empty, devastate: true);
-                budget--;
-            }
-            if (guard.BurstAt < guard.Burst.Count) return;
-
-            guard.BurstAt = 0;
-            guard.Burst.Clear();
-            if (!flora.IsDying) flora.GetComponentsInChildren(true, guard.Burst);
-            if (guard.Burst.Count == 0) guard.Felling = false;
-        }
-
         // ── Gate debris (every peer) ──────────────────────────────────────
 
         /// <summary>
@@ -603,18 +590,16 @@ namespace CosmicShore.Gameplay
             // already in world coordinates.
             _debrisRoot = new GameObject("SerpentTimeDebris").transform;
 
-            SerpentTimeCluster.Layout(rings, out float ringScale, out float spread);
-            float reachInMouths = rings > 1 ? spread + ringScale : 1f;
             for (int i = 0; i < _course.Count; i++)
             {
                 var gate = _course[i];
-                float reach = gate.Radius * reachInMouths;
+                float reach = GateReach(gate, rings);
                 // Never into another gate's rings: on a tight course two gates can sit closer than two debris shells.
                 float farthest = reach + Mathf.Max(debrisDistanceBeyondRings.x, debrisDistanceBeyondRings.y);
                 for (int j = 0; j < _course.Count; j++)
                     if (j != i)
                         farthest = Mathf.Min(farthest, Vector3.Distance(gate.Position, _course[j].Position)
-                                                       - _course[j].Radius * reachInMouths - DebrisClearOfOtherGates);
+                                                       - GateReach(_course[j], rings) - DebrisClearOfOtherGates);
                 farthest = Mathf.Max(farthest, reach + 1f);
                 var debris = new GateDebris
                 {
@@ -628,6 +613,17 @@ namespace CosmicShore.Gameplay
                 for (int n = 0; n < debrisPerGate; n++) LayDebris(debris, forReveal: true);
             }
             _nextDebrisRegrowAt = Time.time + debrisRegrowSeconds;
+        }
+
+        /// <summary>How far a gate's own things reach from its centre: its cluster's outermost ring, or its shape.</summary>
+        float GateReach(in RaceGate gate, int rings)
+        {
+            if (rings > 1)
+            {
+                SerpentTimeCluster.Layout(rings, out float ringScale, out float spread);
+                return gate.Radius * (spread + ringScale);
+            }
+            return SerpentineGate.OuterReach(gate.Radius, Intensity);
         }
 
         /// <summary>The same number on every peer: the gate's index and its position (the course is broadcast).</summary>
@@ -755,8 +751,6 @@ namespace CosmicShore.Gameplay
             };
             _pilots[player] = pilot;
             RefreshVessel(pilot);
-            // A rifle already cooling when first seen fired before this race looked, not now.
-            pilot.RifleCooldownSeen = pilot.Rifle ? pilot.Rifle.CooldownRemaining : 0f;
             return pilot;
         }
 
@@ -787,7 +781,7 @@ namespace CosmicShore.Gameplay
 
             using var _ = s_tickMarker.Auto();
             TickLayCurrentIfPending();
-            TickGuards();
+            TickShapes();
             TickDebrisRegrow();
 
             if (!_localRaceStarted)
@@ -802,12 +796,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The ring of this gate the AI flies for: the cheapest by distance (here, through it, on to the next gate) plus
-        /// a cost for a walled ring or one a Mass or Charge guard stands in (it shoots it open when its rifle is ready).
-        /// Re-decided a few times a second, with hysteresis, and held once the pilot is close.
+        /// a cost for a walled ring (it shoots it open when its rifle is ready). Re-decided a few times a second, with
+        /// hysteresis, and held once the pilot is close. A gate of one ring with its shape standing: <see cref="ChooseShapeLine"/>.
         /// </summary>
         protected override RaceGate ChooseAIGate(IPlayer player, int threaded, int ringIndex, RaceGate gate)
         {
-            if (!HasCluster(ringIndex)) return gate;
+            if (!HasCluster(ringIndex)) return ChooseShapeLine(player, ringIndex, gate);
             var pilot = PilotFor(player);
             var tf = player.Vessel?.Transform;
             if (pilot == null || !tf) return _clusterGates[ringIndex][0];
@@ -848,19 +842,48 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Is this ring closed to the AI, and where does it shoot to open it? A standing Mass or Charge guard of the ring
-        /// (before it, beside it, or either side of a door) closes it, aimed at its heart (a round through the middle fells
-        /// the plant); a Time guard does not: its plates break free, and on the approach the AI's line runs through its
-        /// heart and fells it. Otherwise, a rival wall (<see cref="IsWalled"/>).
+        /// Where the AI flies at a gate whose shape stands: at the CORE while it can shoot it (rifle ready, or a shot
+        /// already lining up, and far enough out to fire), so its nose comes onto the core; otherwise through an exit, the
+        /// one nearest it when it first looked, held for the gate. A fallen shape: the ring itself.
+        /// </summary>
+        RaceGate ChooseShapeLine(IPlayer player, int ringIndex, RaceGate gate)
+        {
+            var gs = ShapeAt(ringIndex);
+            if (gs == null || !gs.Standing) return gate;
+            var pilot = PilotFor(player);
+            var tf = player.Vessel?.Transform;
+            if (pilot == null || !tf) return gate;
+
+            float distance = Vector3.Distance(tf.position, gate.Position);
+            bool shooting = pilot.Shot != ShotPhase.Idle ||
+                            (RifleReady(pilot) && distance > aiShotRange.x && distance < aiShotRange.y);
+            if (shooting) return gate;
+
+            int exits = SerpentineGate.ExitCount(gs.Shape);
+            if (pilot.ExitGate != ringIndex || pilot.ExitIndex < 0 || pilot.ExitIndex >= exits)
+            {
+                pilot.ExitGate = ringIndex;
+                pilot.ExitIndex = 0;
+                float best = float.MaxValue;
+                for (int e = 0; e < exits; e++)
+                {
+                    float d = (SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Intensity, e).Position - tf.position).sqrMagnitude;
+                    if (d < best) { best = d; pilot.ExitIndex = e; }
+                }
+            }
+            return SerpentineGate.Exit(gs.Ring, gs.Gate, gs.Intensity, pilot.ExitIndex);
+        }
+
+        /// <summary>
+        /// Is this ring closed to the AI, and where does it shoot to open it? A standing shape closes it, aimed at its core
+        /// (break a core block and the shape disintegrates); otherwise a rival wall (<see cref="IsWalled"/>).
         /// </summary>
         bool Blocked(int gateIndex, int slot, in RaceGate ring, Domains domain, out Vector3 aim)
         {
-            // A door is two guards on one ring: the first one standing is shot, then the other.
-            for (int i = 0; i < _guards.Count; i++)
+            var gs = slot == 0 ? ShapeAt(gateIndex) : null;
+            if (gs != null && gs.Standing)
             {
-                var guard = _guards[i];
-                if (guard.Gate != gateIndex || guard.Slot != slot || !guard.Standing || !guard.CostsToRam) continue;
-                aim = guard.Flora.HeartTransform.position;
+                aim = gs.Ring.Position;
                 return true;
             }
             return IsWalled(ring, domain, out aim);
@@ -885,7 +908,7 @@ namespace CosmicShore.Gameplay
             {
                 var prism = s_prisms[i];
                 if (!prism || prism.destroyed || prism.Domain == domain) continue;
-                // Loose neutral debris is not a wall, and a plant's plates are the guard's question (Blocked), not a wall's.
+                // Loose neutral debris and the shapes (both Blue) are not a wall; the shape is Blocked's own question.
                 if (prism.Domain == Domains.Blue || prism is HealthPrism) continue;
 
                 Vector3 offset = prism.transform.position - ring.Position;
@@ -976,8 +999,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The AI's ring is walled (or a Mass or Charge guard stands in it) and its rifle is ready: raise the scope (LT), and
-        /// once it has settled and the nose is on the wall or the guard's heart, fire (RT), then lower both. Every press goes
+        /// The AI's ring is walled (or its shape stands) and its rifle is ready: raise the scope (LT), and once it has
+        /// settled and the nose is on the wall or the shape's core, fire (RT), then lower both. Every press goes
         /// the replicated way, so every peer sees the shot. A gate of one ring has no cluster to choose from, so its one ring
         /// is asked here, on the same cadence.
         /// </summary>

@@ -62,6 +62,41 @@ def project_network_hashes(exclude: str) -> "set[int]":
     return seen
 
 
+def plain_scalar_errors(field: str, text: str) -> "list[str]":
+    """Text the generator writes as a PLAIN (unquoted) YAML scalar - the card's DisplayName and Description, the
+    preview's ObjectiveText - must not contain what YAML reads as structure. A colon followed by a space or a line end
+    starts a new key, so Unity's parser stops there and every field after it on the asset is lost: the card keeps its
+    name and loses its background art, its vessels and its controls (Serpentine, 2026-10-31, "rises:" at a line end; and
+    Serpent Time, 2026-10-27, "fuel: tap"). ' #' starts a comment. Use ' - ' instead of a colon."""
+    errors = []
+    if re.search(r":(\s|$)", text):
+        errors.append(f"{field}: a colon before a space or a line end breaks the card's YAML (use ' - '): {text.split(chr(10))[0][:60]!r}...")
+    if " #" in text:
+        errors.append(f"{field}: ' #' starts a YAML comment and drops the rest")
+    if text[:1] in "-?:,[]{}#&*!|>'\"%@`":
+        errors.append(f"{field}: starts with a YAML indicator character {text[:1]!r}")
+    return errors
+
+
+def yaml_parse_errors(files: "dict[str, str]") -> "list[str]":
+    """Every .asset this run writes must parse as YAML (Unity's !u! tags and %TAG/--- headers stripped), when PyYAML is
+    present: the general net under plain_scalar_errors."""
+    try:
+        import yaml  # noqa: PLC0415
+    except ImportError:
+        return []
+    errors = []
+    for rel, text in files.items():
+        if not rel.endswith(".asset"):
+            continue
+        body = re.sub(r"^(%YAML|%TAG|--- ).*\n", "", text, flags=re.M)
+        try:
+            yaml.safe_load(body)
+        except yaml.YAMLError as e:
+            errors.append(f"{os.path.basename(rel)} is not valid YAML: {str(e).splitlines()[0]} ({getattr(e, 'problem_mark', '')})")
+    return errors
+
+
 def author(spec: dict):
     """spec keys:
     member, display, hull, class_id, scripts {name: path}, doc, donor_scene, donor_controller_guid,
@@ -263,6 +298,10 @@ def author(spec: dict):
         if not os.path.exists(os.path.join(ROOT, p)):
             errors.append(f"script {p} does not exist")
     errors += spec.get("extra_errors", [])
+    errors += plain_scalar_errors("DisplayName", spec["display"])
+    errors += plain_scalar_errors("Description", spec["description"])
+    errors += plain_scalar_errors("ObjectiveText", spec["preview_objective"])
+    errors += yaml_parse_errors(g.files)
 
     minted = list(g_script.values()) + [g_card, g_rule, g_preview, g_scene, g_toasts,
                                         guid(f"folder/{mode_dir}"), guid(f"text/{spec['doc']}")] + [x[1] for x in extra] \

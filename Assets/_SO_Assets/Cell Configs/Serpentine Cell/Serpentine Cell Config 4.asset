@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
-  m_Name: Serpentine Cell Config
+  m_Name: Serpentine Cell Config 4
   m_EditorClassIdentifier: 
-  CellName: Serpentine
-  Description: Skim Race's barren race cell with half its grazers (Serpentine)
+  CellName: Serpentine - The Deep
+  Description: Serpentine at intensity 4 - The Deep
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -24,7 +24,7 @@ MonoBehaviour:
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20,
     type: 3}
   CellModifiers: []
-  SpawnProfile: {fileID: 11400000, guid: b988c6848e29de3f89d586533e771de1, type: 2}
+  SpawnProfile: {fileID: 11400000, guid: 530ec7b3f31d6071cb93cd4f7e072dbc, type: 2}
   SenseRadiusOverride: 3000
   PhaseThresholds:
     RestlessEnter: 600
