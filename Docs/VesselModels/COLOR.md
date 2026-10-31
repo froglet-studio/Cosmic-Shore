@@ -193,6 +193,15 @@ The motes in the kite view and the pilot's faint mote dots wear them. The kite's
 other call to action keep the palette's one lime. Mass sits on the boundary's Jade edge (+0.05): the dark green-yellows
 are the ones nearest Jade's teal. Narrowing the window further squeezes the four together (at 78–102°, under 0.02 apart).
 
+## 5c. The families as regions: the convex-cell rule (adopted 2026-10-31)
+
+Garrett adopted a second rule for where each family's region ends: six convex cells that fill OKLab with no gaps,
+kept apart by a band of the margin's thickness (0.05 in OKLab) along each border. It is defined, measured and
+compared with the nearest-anchor rule above in [`COLOR_DOMAINS.md`](COLOR_DOMAINS.md), with the definitions in
+[`colour_domains.json`](colour_domains.json) and the shaping tool in the Colour Domains artifact
+(https://claude.ai/artifact/QT7nMWURMQgznfAnAg2FXh). `kite_mote_colors.py` still uses the nearest-anchor rule; no
+asset changed.
+
 ## 6. Open: decisions and checks owed
 
 - **Jade's and Ruby's hues: deferred** (Garrett, 2026-10-18: "we'll address the jade and ruby hues later").
