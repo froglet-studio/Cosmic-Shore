@@ -391,7 +391,8 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
     t0 = time.time()
     count0 = _read_metric(c.get("count"), run_dir) or 0         # live "evals" are this session's, as for a search
     with open(log_path, "a", encoding="utf-8") as logf:
-        penv = dict(os.environ, FROGLET_COMPUTE_REPO=L.REPO, **({"FROGLET_COMPUTE_MANUAL": "1"} if manual else {}))
+        penv = dict(os.environ, FROGLET_COMPUTE_REPO=L.REPO, **({"FROGLET_COMPUTE_MANUAL": "1"} if manual else {}),
+                    **({"FROGLET_COMPUTE_UNITY_WATCH": "1"} if (unit.get("args") or {}).get("watch") is True else {}))
         proc = subprocess.Popen(argv, cwd=root, stdout=logf, stderr=subprocess.STDOUT, env=penv, **kw)
         stopped = "budget"
         last_pub = time.time()

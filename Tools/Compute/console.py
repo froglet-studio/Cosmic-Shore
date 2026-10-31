@@ -190,7 +190,16 @@ def catalog(jobs, cwd=None):
     (nothing can run it yet)."""
     import manual_runs as R
     chart = None
-    for ref in (L.AI_REF, "origin/bleeding-edge"):
+    # The compute branch first while Froglet Compute lives on it (its chart carries the trainer's newest modes, the
+    # Time races of 2026-10-31); ai and bleeding-edge after it, as before.
+    refs = [L.AI_REF, "origin/bleeding-edge"]
+    try:
+        import setup
+        if setup.APP_REF and setup.APP_REF != "bleeding-edge":
+            refs.insert(0, f"origin/{setup.APP_REF}")
+    except Exception:
+        pass
+    for ref in refs:
         raw = L.git_ok("show", f"{ref}:{CHART}", cwd=cwd)
         if raw:
             try:

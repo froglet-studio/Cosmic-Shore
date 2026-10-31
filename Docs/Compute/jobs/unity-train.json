@@ -37,7 +37,8 @@
    "genome.json",
    "SessionState.asset",
    "unity-tail.log",
-   "recordings.json"
+   "recordings.json",
+   "bugledger.json"
   ],
   "lease_hours": 3,
   "max_mb": 8,
@@ -64,6 +65,14 @@
     "token": "Breakwater",
     "vessels": [
      "Sparrow"
+    ]
+   },
+   "BrittleStarTime": {
+    "locked": true,
+    "name": "Brittle Star Time",
+    "token": "BrittleStarTime",
+    "vessels": [
+     "BrittleStar"
     ]
    },
    "Broadside": {
@@ -197,6 +206,14 @@
      "Sparrow"
     ]
    },
+   "ScarabRally": {
+    "locked": true,
+    "name": "Scarab Rally",
+    "token": "ScarabRally",
+    "vessels": [
+     "Scarab"
+    ]
+   },
    "ScarabScramble": {
     "locked": true,
     "name": "Scarab Scramble",
@@ -213,6 +230,14 @@
      "Sparrow",
      "Manta",
      "Squirrel"
+    ]
+   },
+   "SerpentTime": {
+    "locked": true,
+    "name": "Serpentine",
+    "token": "SerpentTime",
+    "vessels": [
+     "Serpent"
     ]
    },
    "Sirocco": {
@@ -339,7 +364,7 @@
   "request": {
    "episodes": {
     "hi": 2000,
-    "lo": 5
+    "lo": 1
    },
    "intensity": [
     1,
@@ -708,6 +733,33 @@
     "args": {
      "episodes": 200,
      "intensity": 4,
+     "mode": "SerpentTime",
+     "vessel": "Serpent"
+    },
+    "id": "serpenttime-serpent-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "ScarabRally",
+     "vessel": "Scarab"
+    },
+    "id": "scarabrally-scarab-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
+     "mode": "BrittleStarTime",
+     "vessel": "BrittleStar"
+    },
+    "id": "brittlestartime-brittlestar-i4"
+   },
+   {
+    "args": {
+     "episodes": 200,
+     "intensity": 4,
      "mode": "Broadside",
      "vessel": "Manta"
     },
@@ -853,7 +905,7 @@
  ],
  "schema": "froglet-compute/job/1",
  "status": "proposed",
- "title": "Train each vessel's AI in the real game: the Unity trainer, run headless (54 vessel x mode pairs)",
+ "title": "Train each vessel's AI in the real game: the Unity trainer, run headless (57 vessel x mode pairs)",
  "updated": "2026-10-28",
  "value": 7
 }

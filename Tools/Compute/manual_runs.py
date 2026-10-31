@@ -132,7 +132,9 @@ def _when_problems(req):
 def _command_problems(req, job):
     """A command job takes a manual run only when it declares `command.pairs` (what may be played) and
     `command.request` (the intensities and match counts allowed): the unity-train job. The request picks one pair and
-    one intensity, and its budget is the number of matches; nothing else about the command can change."""
+    one intensity or a list of them (one unit per level, the budget is the matches PER level), and `watch: true` opens
+    Unity with its window on the computer that runs it (Shombith, 2026-11-01: "show the game"); nothing else about
+    the command can change."""
     p, c = [], job.get("command") or {}
     pairs, rule = c.get("pairs") or {}, c.get("request") or {}
     if not pairs:
@@ -140,16 +142,21 @@ def _command_problems(req, job):
     if req.get("fix") or req.get("ranges"):
         p.append("a run in the game has no settings to hold or narrow (only mode, vessel, intensity, matches)")
     a = req.get("args") or {}
-    extra = sorted(set(a) - {"mode", "vessel", "intensity"})
+    extra = sorted(set(a) - {"mode", "vessel", "intensity", "watch"})
     if extra:
-        p.append("args: only mode, vessel and intensity can be set (" + ", ".join(extra) + " cannot)")
+        p.append("args: only mode, vessel, intensity and watch can be set (" + ", ".join(extra) + " cannot)")
+    if "watch" in a and not isinstance(a["watch"], bool):
+        p.append("args: watch must be true or false")
     pair = pairs.get(a.get("mode"))
     if pair is None:
         p.append(f"args: mode must be one of {', '.join(sorted(pairs))}")
     elif a.get("vessel", pair["vessels"][0]) not in pair["vessels"]:
         p.append(f"args: {pair.get('name', a.get('mode'))} is played by {', '.join(pair['vessels'])}")
-    if a.get("intensity", 4) not in (rule.get("intensity") or [4]):
-        p.append(f"args: intensity must be one of {rule.get('intensity') or [4]}")
+    allowed = rule.get("intensity") or [4]
+    levels = a.get("intensity", 4)
+    levels = levels if isinstance(levels, list) else [levels]
+    if not levels or any(x not in allowed for x in levels) or len(set(map(str, levels))) != len(levels):
+        p.append(f"args: intensity must be one of {allowed}, or a list of them with no repeats")
     ep = rule.get("episodes") or {"lo": 1, "hi": 2000}
     tries = (req.get("budget") or {}).get("tries")
     if not isinstance(tries, int) or isinstance(tries, bool) or not ep["lo"] <= tries <= ep["hi"]:
@@ -224,16 +231,34 @@ def derive(job, req):
     return j
 
 
+def intensities(req):
+    """The levels a Unity request plays, in order: one per unit."""
+    x = ((req or {}).get("args") or {}).get("intensity", 4)
+    return [int(v) for v in (x if isinstance(x, list) else [x])] or [4]
+
+
+def intensity_text(req):
+    lv = intensities(req)
+    if len(lv) == 1:
+        return f"I{lv[0]}"
+    return f"I{lv[0]}-{lv[-1]}" if lv == list(range(lv[0], lv[-1] + 1)) else "I" + ", I".join(map(str, lv))
+
+
 def _derive_command(job, req):
-    """One unit: the pair, the intensity, the matches asked for."""
+    """One unit per intensity: the pair, the level, the matches asked for (per level), and whether the game is shown."""
     j, a = copy.deepcopy(job), req.get("args") or {}
     pair = j["command"]["pairs"][a["mode"]]
-    vessel, intensity = a.get("vessel") or pair["vessels"][0], int(a.get("intensity", 4))
-    unit = {"id": f"{a['mode'].lower()}-{vessel.lower()}-i{intensity}",
-            "args": {"mode": pair["token"], "vessel": vessel, "intensity": intensity, "episodes": int(req["budget"]["tries"])}}
-    j["command"]["units"] = [unit]
+    vessel = a.get("vessel") or pair["vessels"][0]
+    units = []
+    for intensity in intensities(req):
+        args = {"mode": pair["token"], "vessel": vessel, "intensity": intensity, "episodes": int(req["budget"]["tries"])}
+        if a.get("watch") is True:
+            args["watch"] = True
+        units.append({"id": f"{a['mode'].lower()}-{vessel.lower()}-i{intensity}", "args": args})
+    j["command"]["units"] = units
     j["id"], j["request"], j["status"] = f"{job['id']}~{req['id']}", req, "ready"
-    j["title"] = f"Manual run: {vessel} in {pair.get('name', a['mode'])}, I{intensity} (in the game)"
+    j["title"] = (f"Manual run: {vessel} in {pair.get('name', a['mode'])}, {intensity_text(req)} (in the game"
+                  + (", shown on its screen)" if a.get("watch") is True else ")"))
     return j
 
 
@@ -283,7 +308,8 @@ def progress(req, machines, now=None):
             tries += int(cur.get("evals") or 0)
             if L.finite(cur.get("best")) and (best is None or cur["best"] < best):
                 best = cur["best"]
-    budget = int((req.get("budget") or {}).get("tries", 0))
+    # A Unity request at several intensities is one unit per level, each with the budget's matches: done when all are.
+    budget = int((req.get("budget") or {}).get("tries", 0)) * (len(intensities(req)) if (req.get("args") or {}).get("mode") else 1)
     state = "cancelled" if req.get("cancelled") else ("done" if tries >= budget > 0 else ("running" if running else "open"))
     return {"state": state, "tries": tries, "done_tries": done_tries, "budget": budget, "best": best, "machines": who,
             "running_on": running, "updated": updated}
@@ -427,7 +453,7 @@ def self_test():
         bad.append("requests: a token does not round-trip")
     # A run in the game (a command job with pairs): one pair, one intensity, a number of matches, nothing else.
     game = {"id": "unity-train", "kind": "command", "command": {
-        "argv": ["x"], "units": [], "request": {"intensity": [1, 2, 3, 4], "episodes": {"lo": 5, "hi": 2000}},
+        "argv": ["x"], "units": [], "request": {"intensity": [1, 2, 3, 4], "episodes": {"lo": 1, "hi": 2000}},
         "pairs": {"AstroLeague": {"token": "AstroLeague", "name": "Astro League", "vessels": ["Rhino", "Scarab"]},
                   "Joust": {"token": "Joust", "name": "Joust", "vessels": ["Squirrel"], "locked": True}}}}
     g = build("unity-train", 40, args=["mode=\"AstroLeague\"", "vessel=\"Scarab\"", "intensity=2"])
@@ -438,9 +464,35 @@ def self_test():
                     ("intensity 7", build("unity-train", 40, args=["mode=\"Joust\"", "intensity=7"])),
                     ("a held setting", build("unity-train", 40, fix=["a=1"], args=["mode=\"Joust\""])),
                     ("another argument", build("unity-train", 40, args=["mode=\"Joust\"", "argv=\"rm\""])),
-                    ("too few matches", build("unity-train", 2, args=["mode=\"Joust\""]))]:
+                    ("too few matches", build("unity-train", 0, args=["mode=\"Joust\""])),
+                    ("a repeated intensity", build("unity-train", 40, args=["mode=\"Joust\"", "intensity=[2, 2]"])),
+                    ("an empty intensity list", build("unity-train", 40, args=["mode=\"Joust\"", "intensity=[]"])),
+                    ("intensity 5 in a list", build("unity-train", 40, args=["mode=\"Joust\"", "intensity=[1, 5]"])),
+                    ("watch as a word", build("unity-train", 40, args=["mode=\"Joust\"", "watch=\"yes\""]))]:
         if not problems(r, game):
             bad.append(f"requests: {what} was accepted for a run in the game")
+    # Every intensity, shown on the computer's screen, one match: one unit per level, the budget per level.
+    every = build("unity-train", 1, args=["mode=\"Joust\"", "intensity=[1, 2, 3, 4]", "watch=true"])
+    if problems(every, game):
+        bad.append(f"requests: a one-match run at every intensity, shown, was refused: {problems(every, game)}")
+    else:
+        dj = derive(game, every)
+        ids = [u["id"] for u in dj["command"]["units"]]
+        if ids != ["joust-squirrel-i1", "joust-squirrel-i2", "joust-squirrel-i3", "joust-squirrel-i4"]:
+            bad.append(f"requests: every intensity did not derive one unit per level in order: {ids}")
+        if not all(u["args"].get("watch") is True and u["args"]["episodes"] == 1 for u in dj["command"]["units"]):
+            bad.append("requests: the units of a shown one-match run lost watch or the matches")
+        if "I1-4" not in dj["title"] or "shown" not in dj["title"]:
+            bad.append(f"requests: the title does not say the levels and the screen: {dj['title']}")
+        st = progress(every, [{"user": "a", "host": "b", "requests": {every["id"]: {"tries": 3, "updated": L.now()}}, "heartbeat": {}}])
+        if st["budget"] != 4 or st["state"] != "open":
+            bad.append(f"requests: the budget of a four-level run is per level times four, open until all are done: {st}")
+        st = progress(every, [{"user": "a", "host": "b", "requests": {every["id"]: {"tries": 4, "updated": L.now()}}, "heartbeat": {}}])
+        if st["state"] != "done":
+            bad.append(f"requests: a four-level run with every level played is not done: {st['state']}")
+        one = derive(game, build("unity-train", 40, args=["mode=\"Joust\"", "intensity=3"]))
+        if [u["id"] for u in one["command"]["units"]] != ["joust-squirrel-i3"] or "watch" in one["command"]["units"][0]["args"]:
+            bad.append("requests: a one-level run without watch changed shape")
     for what, r in [("an unknown start", dict(g, start="whenever")), ("a negative schedule", dict(g, not_before=-5))]:
         if not problems(r, game):
             bad.append(f"requests: {what} was accepted")

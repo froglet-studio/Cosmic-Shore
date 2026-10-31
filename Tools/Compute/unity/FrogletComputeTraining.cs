@@ -7,6 +7,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using CosmicShore.Data;
+using CosmicShore.Editor;
+using CosmicShore.Utility.PerformanceBenchmark;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -53,6 +55,19 @@ namespace CosmicShore.Utility.AITraining.Editor
         const string KeyBaseEpisodes = "FrogletCompute.BaseEpisodes";
         const string KeyStartTime = "FrogletCompute.StartTime";
         const string KeyThirdEye = "FrogletCompute.ThirdEye";
+        const string KeyNextDiag = "FrogletCompute.NextDiag";         // editor seconds of the next diagnostics recording
+        const string KeyDiagNote = "FrogletCompute.DiagNote";         // what the last `diag` answered
+        const string KeyLedger = "FrogletCompute.Ledger";             // "", "sending", "done": the bug-ledger send after a watched run
+        const string KeyLedgerStart = "FrogletCompute.LedgerStart";
+        // A watched run records the game's diagnostics (DiagnosticsHUD `diag`: fps, frame times, spikes, draws, memory)
+        // for DiagSeconds every DiagEverySeconds, so the performance of a real match lands in Documents/CosmicShore
+        // Diagnostics as a perf report, and the bug ledger's "Send to Claude" (BugLedgerSender) carries it with the run's
+        // console errors when the run ends (Shombith, 2026-11-01: "show the game ... so the game collects performance
+        // data using the bug reporting tool"). A headless run records nothing: its camera is off, so its frames mean nothing.
+        const int DiagSeconds = 60;
+        const double DiagEverySeconds = 300;
+        const double DiagFirstAfterSeconds = 20;
+        const double LedgerWaitSeconds = 180;
         const string KeyReplays = "FrogletCompute.Replays";
         const string KeyBest = "FrogletCompute.Best";
         const string KeyBestRose = "FrogletCompute.BestRose";
@@ -178,7 +193,7 @@ namespace CosmicShore.Utility.AITraining.Editor
 
             if (SessionState.GetBool(KeyFinishing, false))
             {
-                if (!EditorApplication.isPlaying && !EditorApplication.isPlayingOrWillChangePlaymode)
+                if (!EditorApplication.isPlaying && !EditorApplication.isPlayingOrWillChangePlaymode && SendToLedgerDone(outDir))
                     EditorApplication.Exit(SessionState.GetInt(KeyExitCode, 0));
                 return;
             }
@@ -194,6 +209,7 @@ namespace CosmicShore.Utility.AITraining.Editor
             bool running = EditorApplication.isPlaying && telemetry != null && telemetry.IsRunning;
             if (running) _sawRunning = true;
             if (running) OpenThirdEyeOnce();
+            if (running) RecordDiagnostics(scenario);
             SweepRecordings(outDir, state);
             if (running) TakeStill(outDir, state);
             WriteStatus(outDir, running ? "training" : (EditorApplication.isPlaying ? "loading the match" : "starting"),
@@ -242,7 +258,68 @@ namespace CosmicShore.Utility.AITraining.Editor
             WriteResult(outDir, code, reason, control);
             Debug.Log($"[FrogletCompute] {reason}");
             if (EditorApplication.isPlaying) EditorApplication.isPlaying = false;
-            else EditorApplication.Exit(code);
+            else if (!Watched) EditorApplication.Exit(code);        // a watched run leaves through SendToLedgerDone
+        }
+
+        /// <summary>Unity has its window and a person may be watching: -trainWatch, never in batch mode.</summary>
+        static bool Watched => HasArg("-trainWatch") && !Application.isBatchMode;
+
+        /// <summary>
+        /// A watched match: every DiagEverySeconds, a DiagSeconds recording of the game's diagnostics, tagged with the
+        /// scenario so two runs' reports are told apart by name. The HUD spawns itself in Play mode; when it is not
+        /// there (an older game) the answer is kept in the status and nothing else changes.
+        /// </summary>
+        static void RecordDiagnostics(TrainingScenarioSO scenario)
+        {
+            if (!Watched) return;
+            double now = EditorApplication.timeSinceStartup;
+            float next = SessionState.GetFloat(KeyNextDiag, 0f);
+            if (next <= 0f)
+            {
+                SessionState.SetFloat(KeyNextDiag, (float)(now + DiagFirstAfterSeconds));
+                return;
+            }
+            if (now < next) return;
+            SessionState.SetFloat(KeyNextDiag, (float)(now + DiagEverySeconds));
+            string key = scenario != null ? scenario.Key : "trainer";
+            string note = DiagnosticsHUD.RunConsole($"diag froglet-compute-{key} {DiagSeconds}");
+            SessionState.SetString(KeyDiagNote, note ?? "");
+        }
+
+        /// <summary>
+        /// After a watched run: one "Send to Claude" (BugLedgerSender, the bug ledger) with the run's console errors
+        /// and the diagnostics it recorded, then true once it has finished or LedgerWaitSeconds have passed. A headless
+        /// run sends nothing (its errors are in unity.log, which the worker keeps) and returns true at once.
+        /// </summary>
+        static bool SendToLedgerDone(string outDir)
+        {
+            if (!Watched) return true;
+            string st = SessionState.GetString(KeyLedger, "");
+            if (st == "done") return true;
+            double now = EditorApplication.timeSinceStartup;
+            if (st == "")
+            {
+                SessionState.SetString(KeyLedger, "sending");
+                SessionState.SetString(KeyLedgerStart, now.ToString(CultureInfo.InvariantCulture));
+                BugLedgerSender.SendInBackground(withReports: true);
+                return false;
+            }
+            double started = double.TryParse(SessionState.GetString(KeyLedgerStart, ""), NumberStyles.Float,
+                CultureInfo.InvariantCulture, out var s) ? s : now;
+            bool timedOut = now - started > LedgerWaitSeconds;
+            if (BugLedgerSender.IsBusy && !timedOut) return false;
+            SessionState.SetString(KeyLedger, "done");
+            if (!string.IsNullOrEmpty(outDir))
+            {
+                var j = new Json()
+                    .Str("outcome", timedOut && BugLedgerSender.IsBusy ? "still sending when the run left" : BugLedgerSender.LastOutcome.ToString())
+                    .Str("detail", BugLedgerSender.LastDetail ?? "")
+                    .Str("branch", BugLedgerSender.BranchFor(Environment.UserName))
+                    .Str("diagnostics", SessionState.GetString(KeyDiagNote, ""))
+                    .Num("updated", Now());
+                WriteAtomic(Path.Combine(outDir, "bugledger.json"), j.End());
+            }
+            return true;
         }
 
         static void Fail(string outDir, int code, string reason)
@@ -527,6 +604,7 @@ namespace CosmicShore.Utility.AITraining.Editor
                 .Num("generation", state != null && state.Population != null ? state.Population.Generation : 0)
                 .Num("best_fitness", best)
                 .Num("loss", IsFinite(best) ? -best : float.NaN)
+                .Str("diagnostics", SessionState.GetString(KeyDiagNote, ""))
                 .Num("updated", Now());
             WriteAtomic(Path.Combine(outDir, "status.json"), j.End());
         }

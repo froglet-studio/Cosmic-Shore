@@ -168,6 +168,7 @@ textarea.field, .approve textarea { min-height: 60px; resize: vertical; }
 .prog { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .prog i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
 .prog.mini { width: 90px; display: inline-block; vertical-align: middle; }
+.field.num { width: 92px; flex: none; }
 .prog.wait i { width: 28%; animation: fc-slide 1.6s ease-in-out infinite; }
 @keyframes fc-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(360%); } }
 @keyframes fc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -1060,8 +1061,8 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     var pm = modesFor(vessel).filter(function (x) { return x.mode === mode; })[0], u = unityInfo();
     if (engine == null && NR && NR.vessel === vessel && NR.mode === mode) engine = NR.engine;
     if (pm && u && (pm.status === "unity" || (pm.status === "now" && pm.unity && engine === "game"))) {
-      var un = { job: u.job, unity: true, vessel: vessel, mode: mode, intensity: 4, matches: 50, watch: true, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
-      if (NR) { un.note = NR.note || ""; if (NR.unity) { un.intensity = NR.intensity || 4; un.matches = NR.matches || 50; un.watch = NR.watch !== false; } }
+      var un = { job: u.job, unity: true, vessel: vessel, mode: mode, intensities: [4], matches: 50, watch: true, where: "here", modes: {}, vals: {}, args: {}, note: "", made: null };
+      if (NR) { un.note = NR.note || ""; un.where = NR.where; un.wherePicked = NR.wherePicked; if (NR.unity) { un.intensities = (NR.intensities || [4]).slice(); un.matches = NR.matches || 50; un.watch = NR.watch !== false; } }
       un.engine = "game";
       return keepWhen(un);
     }
@@ -1072,14 +1073,17 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     n.engine = "model";
     return keepWhen(n);
   }
+  function intensityText() { var lv = NR.intensities || []; if (lv.length <= 1) return "I" + (lv[0] || 4); var run = lv.every(function (x, i) { return i === 0 || x === lv[i - 1] + 1; }); return run ? "I" + lv[0] + "-" + lv[lv.length - 1] : "I" + lv.join(", I"); }
   function pairStatus() { if (!NR.vessel || !NR.mode) return null; var m = modesFor(NR.vessel).filter(function (x) { return x.mode === NR.mode; })[0]; return m ? m.status : null; }
   function nrRequest() {
     if (NR.unity) {
       var ue = [], ur = { schema: "froglet-compute/request/1", id: newReqId(), job: NR.job, by: who(), created: Math.floor(Date.now() / 1000), note: NR.note.trim(),
         budget: { tries: parseInt(NR.matches, 10) || 0 }, machine: NR.where === "here" || NR.where === "team" ? "any" : NR.where,
-        args: { mode: NR.mode, vessel: NR.vessel, intensity: NR.intensity } };
+        args: { mode: NR.mode, vessel: NR.vessel, intensity: NR.intensities.length === 1 ? NR.intensities[0] : NR.intensities.slice() } };
+      if (NR.watch) ur.args.watch = true;
+      if (!NR.intensities.length) ue.push("pick at least one intensity");
       whenFields(ur);
-      var lim = (unityInfo() || {}).episodes || { lo: 5, hi: 2000 };
+      var lim = (unityInfo() || {}).episodes || { lo: 1, hi: 2000 };
       if (!(ur.budget.tries >= lim.lo && ur.budget.tries <= lim.hi)) ue.push("matches must be " + lim.lo + "–" + lim.hi);
       return { req: ur, errs: ue };
     }
@@ -1124,6 +1128,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     var inp = h("input", { type: "range", id: id, min: String(lo), max: String(hi), step: String(step), value: String(val), class: "srange", "aria-label": label || id });
     var paint = function () { inp.style.setProperty("--b", pct(Number(inp.value)) + "%"); };
     inp.addEventListener("input", function () { paint(); oninput(Number(inp.value)); });
+    inp.addEventListener("paint", paint);          // the value was set from outside (the number field beside it)
     paint(); return inp;
   }
   function drawNewRun() {
@@ -1162,7 +1167,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     var places = LIVE && !APP
       ? mplaces.concat([["team", NR.unity ? "Any team computer with Unity" : "Any team computer", "the first free one takes it"], ["here", "This computer", "paste a line into a terminal"]])
       : [["here", "This computer, now"], ["team", NR.unity ? "Any team computer with Unity" : "Any team computer"]].concat(mplaces.map(function (p) { return [p[0], p[1] + " · " + p[2].split(" · ")[0]]; }));
-    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: (NR.unity ? "5" : "6") + "  Where" }), h("div", { class: "picks" }, places.map(function (p) { return chip(p[1], NR.where === p[0], "where", function () { NR.where = p[0]; NR.wherePicked = true; NR.made = null; NR.start = p[0] !== "team" && p[0] !== "here" && machineInfo(p[0]).remote_start ? "now" : NR.start; drawNewRun(); }, p[2]); }))]));
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "6  Where" }), h("div", { class: "picks" }, places.map(function (p) { return chip(p[1], NR.where === p[0], "where", function () { NR.where = p[0]; NR.wherePicked = true; NR.made = null; NR.start = p[0] !== "team" && p[0] !== "here" && machineInfo(p[0]).remote_start ? "now" : NR.start; drawNewRun(); }, p[2]); }))]));
     whenStep(sheet);
     if (NR.unity && !um.length) sheet.appendChild(h("p", { class: "note", text: "No team computer has reported Unity yet. Run it on this computer (it needs Unity " + "of the project's version, installed with Unity Hub), or install Froglet Compute on a PC that has Unity." }));
     var note = h("textarea", { class: "field", id: "nr-note", placeholder: "What do you want to learn? (optional; shown with the results)" }); note.value = NR.note; note.addEventListener("input", function () { NR.note = note.value; });
@@ -1180,16 +1185,23 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   }
   function drawUnitySteps(sheet) {
     sheet.appendChild(h("div", { class: "banner ruby" }, [h("b", { text: NR.vessel + " in " + modeName(NR.mode) + " plays in the real game" }),
-      h("p", { class: "note", text: "The AI trainer plays all-AI matches in a Unity with no window and keeps the best AI it finds. It runs on a computer with Unity installed, in Froglet Compute's own copy of the project (your project and your open Unity are left alone). The first run on a computer imports the project once: an hour or more." })]));
-    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "3  Intensity" }), h("div", { class: "picks" }, ((unityInfo() || {}).intensities || [4]).map(function (i) {
-      return chip("I" + i, NR.intensity === i, "int i" + i, function () { NR.intensity = i; NR.made = null; drawNewRun(); });
-    }))]));
-    var mv = h("output", { class: "bubble", text: String(NR.matches) });
-    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "4  How many matches" }), h("div", { class: "srow" }, [slider("nr-matches", 10, 500, 10, Math.min(500, Math.max(10, NR.matches)), function (v) { NR.matches = v; mv.textContent = String(v); }, "matches"), mv]),
-      h("p", { class: "note", text: "Each match tests a few of the trainer's AIs at once, one per seat, played at up to four times game speed; a generation is several matches. The trainer keeps its population between runs, so more matches keep improving it." })]));
-    if (NR.where === "here") sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "   Watch it" }), h("div", { class: "picks" }, [
-      chip("Show the game", NR.watch, "where", function () { NR.watch = true; NR.made = null; drawNewRun(); }, "Unity opens with its window at game speed, and the Third Eye on the match"),
-      chip("No window", !NR.watch, "where", function () { NR.watch = false; NR.made = null; drawNewRun(); }, "faster: up to 4x, nothing to see")])]));
+      h("p", { class: "note", text: "The AI trainer plays all-AI matches in Unity and keeps the best AI it finds. It runs on a computer with Unity installed, in Froglet Compute's own copy of the project (that computer's own project and open Unity are left alone). The first run on a computer imports the project once: an hour or more." })]));
+    var levels = (unityInfo() || {}).intensities || [4], all = levels.every(function (i) { return NR.intensities.indexOf(i) >= 0; });
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "3  Intensity" }), h("div", { class: "picks" }, levels.map(function (i) {
+      var on = NR.intensities.indexOf(i) >= 0;
+      return chip("I" + i, on, "int i" + i, function () { var c = NR.intensities.filter(function (x) { return x !== i; }); if (!on) c.push(i); c.sort(); NR.intensities = c; NR.made = null; drawNewRun(); });
+    }).concat([chip("All " + levels.length, all, "where", function () { NR.intensities = all ? [levels[levels.length - 1]] : levels.slice(); NR.made = null; drawNewRun(); }, all ? "one run per level, in order" : "every level, one run each")])),
+      NR.intensities.length > 1 ? h("p", { class: "note", text: "One run per level, I" + NR.intensities[0] + " first; the matches below are per level." }) : null]));
+    var mv = h("input", { class: "field num", id: "nr-matches-n", type: "number", min: "1", max: "2000", step: "1", "aria-label": "matches", value: String(NR.matches) });
+    var sl = slider("nr-matches", 1, 500, 1, Math.min(500, Math.max(1, NR.matches)), function (v) { NR.matches = v; mv.value = String(v); NR.made = null; }, "matches");
+    mv.addEventListener("input", function () { var v = parseInt(mv.value, 10); if (v >= 1) { NR.matches = v; sl.value = String(Math.min(500, v)); sl.dispatchEvent(new Event("paint")); NR.made = null; } });
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "4  How many matches" }), h("div", { class: "srow" }, [sl, mv]),
+      h("p", { class: "note", text: "One match is a run: a quick look at a pair in the game. Each match tests a few of the trainer's AIs at once, one per seat; a generation is several matches, and the trainer keeps its population between runs, so more matches keep improving it." })]));
+    var showHost = NR.where === "here" ? "this computer" : NR.where === "team" ? "the computer that takes it" : String(NR.where).split("/").pop();
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "5  Show the game" }), h("div", { class: "picks" }, [
+      chip("Show the game", NR.watch, "where", function () { NR.watch = true; NR.made = null; drawNewRun(); }, "Unity opens with its window on " + showHost + ", at game speed, the Third Eye on the match"),
+      chip("No window", !NR.watch, "where", function () { NR.watch = false; NR.made = null; drawNewRun(); }, "faster: up to 4x, nothing to see")]),
+      NR.watch ? h("p", { class: "note", text: "While the game is shown it records its diagnostics (fps, frame times, spikes, memory) every five minutes, and when the run ends the bug ledger's Send to Claude carries them with the run's console errors (Bug Hunt), so a watched run is also a performance report of the real game." }) : null]));
   }
   function drawSearchSteps(sheet) {
     var f = formFor(NR.job);
@@ -1255,7 +1267,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     if (canSend()) {
       var sentMsg = h("p", { class: "note" });
       out.appendChild(h("button", { class: "btn cta", type: "button", onclick: function (e) { e.target.disabled = true; sentMsg.textContent = "Sending…";
-        sendOutbox({ kind: "run", token: tok, title: (NR.vessel || "") + (NR.mode ? " in " + niceName(catalog().modes, "mode", NR.mode) : "") + (NR.unity ? " · I" + NR.intensity + " · Unity" : "") || req.job }).then(function () {
+        sendOutbox({ kind: "run", token: tok, title: (NR.vessel || "") + (NR.mode ? " in " + niceName(catalog().modes, "mode", NR.mode) : "") + (NR.unity ? " · " + intensityText() + " · Unity" : "") || req.job }).then(function () {
           sentMsg.textContent = "Sent. The next sync (within the hour) puts it on the team queue; Runs shows it waiting until then."; },
           function (er) { sentMsg.textContent = saveError(er); e.target.disabled = false; }); }, text: "Send" }));
       out.appendChild(sentMsg);
@@ -1366,11 +1378,13 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     if (NR.start === "now" && !canNow) NR.start = "free";
     var at = h("input", { class: "field", type: "datetime-local", id: "nr-at", style: "max-width:240px" });
     if (NR.at) at.value = NR.at; at.addEventListener("input", function () { NR.at = at.value; NR.made = null; });
-    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "   When" }), h("div", { class: "picks" }, [
+    sheet.appendChild(h("div", { class: "step" }, [h("b", { text: "7  When" }), h("div", { class: "picks" }, [
       chip("When it's free", NR.start === "free" && !NR.useAt, "where", function () { NR.start = "free"; NR.useAt = false; NR.made = null; drawNewRun(); }, "its person is away"),
-      m ? chip("Now", NR.start === "now", "where" + (canNow ? "" : " off"), function () { if (!canNow) return; NR.start = "now"; NR.useAt = false; NR.made = null; drawNewRun(); }, canNow ? "starts at once, even in use" : "its owner has not allowed this") : null,
-      chip("At a time", !!NR.useAt, "where", function () { NR.useAt = true; NR.made = null; drawNewRun(); }, "then when free" + (canNow ? ", or at once" : ""))]),
-      NR.useAt ? at : null,
+      m ? chip("Now", NR.start === "now" && !NR.useAt, "where" + (canNow ? "" : " off"), function () { if (!canNow) return; NR.start = "now"; NR.useAt = false; NR.made = null; drawNewRun(); }, canNow ? "starts at once, even in use" : "its owner has not allowed this") : null,
+      chip("At a time", !!NR.useAt, "where", function () { NR.useAt = true; NR.made = null; drawNewRun(); }, "from then on" + (canNow ? ", when free or at once" : ", when free"))]),
+      NR.useAt ? h("div", { class: "srow" }, [at, canNow ? h("div", { class: "picks" }, [
+        chip("then when it's free", NR.start !== "now", "where", function () { NR.start = "free"; NR.made = null; drawNewRun(); }),
+        chip("then at once", NR.start === "now", "where", function () { NR.start = "now"; NR.made = null; drawNewRun(); }, "even in use")]) : null]) : null,
       m && !canNow ? h("p", { class: "note", text: "To let runs start at once on " + m.host + ", its owner runs: compute.py remote-start on" }) : null]));
   }
   function askKey(then) {
@@ -1387,7 +1401,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
       .then(function (a) {
         if (a[0] === 201) {
           var tgt = NR.where === "team" ? "the first free computer" : String(NR.where).split("/").pop(), atOnce = NR.start === "now" && (NR.where === "team" || machineInfo(NR.where).remote_start);
-          NOTICE = { at: Date.now(), text: "Sent to " + tgt + ". " + (atOnce ? "It shows below as Starting within a minute" : (NR.where === "team" ? "It shows below under Sent runs until a computer is free" : "It shows below under Sent runs until " + tgt + " is free")) + (NR.unity ? "; Unity opens first, so the first match reports a minute or two later." : ".") };
+          NOTICE = { at: Date.now(), text: "Sent to " + tgt + ". " + (atOnce ? "It shows below as Starting within a minute" : (NR.where === "team" ? "It shows below under Sent runs until a computer is free" : "It shows below under Sent runs until " + tgt + " is free")) + (NR.unity ? (NR.watch ? "; Unity opens with its window on " + tgt + " first" : "; Unity opens first") + ", so the first match reports a minute or two later" + (NR.intensities.length > 1 ? "; " + NR.intensities.length + " runs, one per intensity" : "") + "." : ".") };
           document.getElementById("sheet").hidden = true; NR.made = null;
           if (VIEW !== "runs") location.hash = "runs"; else render();
           refreshLive();

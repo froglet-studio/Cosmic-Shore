@@ -156,7 +156,9 @@ def _unit_of(req):
     args = (req or {}).get("args") or {}
     if not (args.get("mode") and args.get("vessel")):
         return None
-    return f"{str(args['mode']).lower()}-{str(args['vessel']).lower()}-i{int(args.get('intensity') or 4)}"
+    lv = args.get("intensity") or 4
+    lv = lv[0] if isinstance(lv, list) and lv else lv          # several levels: the first unit starts first
+    return f"{str(args['mode']).lower()}-{str(args['vessel']).lower()}-i{int(lv)}"
 
 
 # ── runs the console sent ────────────────────────────────────────────────────

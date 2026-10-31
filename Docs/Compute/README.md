@@ -413,7 +413,7 @@ game already has an AI trainer (`Assets/_Scripts/Utility/AITraining`, studyholic
 matches, a population of AIs, the best kept. Froglet Compute now starts it with nobody there:
 
 - **`unity-train`** (`Docs/Compute/jobs/unity-train.json`) is a command job with one unit per vessel, mode and
-  intensity: 54 units over 33 modes (`make_unity_job.py --check`; the trainer's catalog holds 34 scenarios, Astro League is skipped), every multiplayer card with a scoring rule, with every hull a
+  intensity: 57 units over 36 modes (`make_unity_job.py --check`; the trainer's catalog holds 37 scenarios, Astro League is skipped; the three Time races of 2026-10-31, Serpentine, Scarab Rally and Brittle Star Time, joined on 2026-11-01), every multiplayer card with a scoring rule, with every hull a
   card seats where the scenario lets the hull change (Regatta, Broadside, Crystal Capture, Brood Rush, Astro League).
   `Tools/Compute/make_unity_job.py` writes the units from the trainer's own catalog (`--check`; the self-test runs
   it). The trainer gained 22 modes for this on 2026-10-28 (its README, "The other 22 cards"): 13 gate races that
@@ -429,9 +429,22 @@ matches, a population of AIs, the best kept. Froglet Compute now starts it with 
   writes `status.json` (live), `result.json` and `genome.json`. The person's checkout and their open Unity are never
   touched; an automatic run waits while their own Unity has the project open (the two would race), a manual run goes
   ahead.
-- **Watching it**: `compute.py run --request <token> --watch` (the console's "Show the game", on by default for this
-  computer) opens Unity with its window instead of `-batchmode`, camera and sound on, at game speed: the AIs play in
-  the Game view. Without it the run has no window and plays at up to 4x.
+- **Watching it**: `compute.py run --request <token> --watch` (the console's "Show the game", on by default) opens
+  Unity with its window instead of `-batchmode`, camera and sound on, at game speed: the AIs play in the Game view.
+  Without it the run has no window and plays at up to 4x. **On any computer** (Shombith, 2026-11-01: "show the game
+  for another PC as well"): a sent run carries `args.watch: true`, the worker starts that unit with
+  `FROGLET_COMPUTE_UNITY_WATCH=1`, and Unity opens its window on the computer that plays it.
+- **A watched run is a performance report** (Shombith, 2026-11-01: "so the game collects performance data using the
+  bug reporting tool"): 20 s into the match and every 5 minutes after, the trainer runs the game's own `diag` (the
+  DiagnosticsHUD, `Assets/_Scripts/Utility/PerformanceBenchmark/BENCHMARK_TOOL.md`) for 60 s, tagged
+  `froglet-compute-<scenario>`, so a perf report (fps, frame times, spikes, draws, memory) lands in
+  `Documents/CosmicShore Diagnostics`; when the run ends, before Unity quits, it runs the bug ledger's "Send to Claude"
+  (`BugLedgerSender`, `/bug-ledger`), which pushes the run's console errors and those reports to `bugledger/<user>`,
+  and writes `<out>/bugledger.json` (sent / nothing new / failed, and why). A headless run records none of this: its
+  camera is off, so its frames mean nothing.
+- **Every intensity, one match**: New run's Intensity takes any set of levels (All 4 is one chip); a request with
+  `intensity: [1, 2, 3, 4]` is one unit per level, played in order, the matches per level, done when every level is.
+  Matches go down to 1 (a run of one match is the quick look at a pair in the game).
 - **What a run records, with the game's own tools (Shombith, 2026-10-29)**: every match the trainer plays already
   records a replay (the Theater, `Docs/REPLAYS.md`). `FrogletComputeTraining.cs` points it at `<out>/replays` and
   gives the copy a ReplayConfig of its own (keep 2, Cloud Save list 0, so training never fills a person's MY REPLAYS

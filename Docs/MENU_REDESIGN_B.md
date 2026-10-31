@@ -5133,3 +5133,15 @@ sheet, Runs shows the notice and the Starting box, Stop asks and shows Stopping.
 
 **Differs from the build:** nothing; the boards are the built page with the console's data of 2026-10-31. Waits on
 Shombith's look at the live console once the VM has pulled.
+
+**Follow-up, built from the words, no board round (Shombith, 2026-11-01, on R41NewRun's sheet):** "we should have the
+option to select all intensities and also to make just one match available too. Also latest like serpentine and
+other game modes are not here already ... show the game for another pc as well ... so the game collects performance
+data using the bug reporting tool", and the sheet showed Now and At a time both lit. Built: the seven steps numbered
+the same for every run (1 Vessel, 2 Game mode, 3 Intensity, 4 How many matches, 5 Show the game, 6 Where, 7 When);
+Intensity is a set with an "All 4" chip (one run per level, in order); matches go down to 1 with a number field
+beside the slider; Show the game is a step for every Where, and a watched run records the game's diagnostics and
+sends them with its console errors through the bug ledger (`Docs/Compute/README.md` section 16); When lights one
+chip, and At a time shows what follows the time (when free, or at once); Serpentine, Scarab Rally and Brittle Star
+Time are on the vessel x mode grid (the trainer's catalog, the regenerated chart). R41NewRun stays the record of the
+Where fix; the sheet's later shape is the built page.

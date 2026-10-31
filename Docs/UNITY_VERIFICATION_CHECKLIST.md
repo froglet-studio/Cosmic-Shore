@@ -139,6 +139,20 @@ If Play never reaches a match (sign-in, the menu), the run stops after 15 minute
 - [ ] A watched Compute run writes `<out>/stills/still_*.png` about every minute and a `best_*.png` when the best
       fitness rises: the picture is the Third Eye's view with the trails and aim lines drawn in, the right way up.
 - [ ] `ThirdEyeStillTests` pass (Test Runner, edit mode).
+- [ ] (2026-11-01) New run > Thresher > Thresher Time > All 4 > 1 match > Show the game > dragonsweapon > Now, sent
+  from the live console: Runs shows four runs one after another (I1 first), each of one match; Unity opens with its
+  window on dragonsweapon for each.
+- [ ] (2026-11-01) During a watched run, about 20 s into the match and every 5 minutes: the DiagnosticsHUD's status
+  line says it is recording (`diag froglet-compute-<scenario> 60`), and `Documents/CosmicShore Diagnostics` gains a
+  `diag_<scene>_froglet-compute-<scenario>_<stamp>.json` and `.txt` a minute later; `status.json`'s `diagnostics`
+  field holds the HUD's answer.
+- [ ] (2026-11-01) When a watched run ends: Unity stays open up to three minutes while the bug ledger sends, then
+  quits; `<out>/bugledger.json` says `Sent` (or `NothingNew`) and names `bugledger/<user>`; that branch's
+  `BugLedger/shared/reports/<user>/perf/` holds the diag reports. A headless run writes no `bugledger.json`.
+- [ ] (2026-11-01) New run lists Serpent > Serpentine, Scarab > Scarab Rally and BrittleStar > Brittle Star Time as
+  purple (in the game); a one-match run of each starts, plays and reports gates threaded (`status.json`
+  `best_fitness` finite after the match). **These three scenarios were authored from the catalog
+  (`author_training_scenarios.py`) and compiled against the Unity references, never played: the first run tells.**
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
