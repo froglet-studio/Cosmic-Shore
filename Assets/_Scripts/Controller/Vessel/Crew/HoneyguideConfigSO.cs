@@ -125,6 +125,16 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f)] public float blunder;
     }
 
+    /// <summary>One Ratel-AI difficulty in hive mode (the Ratel Raid Lab's SKILL): seconds per cell it drags, whether it plays
+    /// the solver's plan (never touching danger), and how often its thumb slides on into a danger cell.</summary>
+    [Serializable]
+    public sealed class HoneyguideHiveSkill
+    {
+        [Min(0.02f)] public float cell = 0.22f;
+        public bool solver = true;
+        [Range(0f, 1f)] public float sloppy;
+    }
+
     public enum HoneyguideAILevel
     {
         Easy = 0,
@@ -190,6 +200,55 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab RETIRED_ABILITIES: abilities the Ratel never draws. Garrett 2026-10-22: Printer (a free prism at the start " +
                  "of every spin) is out for now, \"too confusing to players on mobile\".")]
         [SerializeField] DynamoAbility[] retiredAbilities = { DynamoAbility.Printer };
+
+        [Header("Hive mode (the Ratel Raid Lab, Garrett 2026-10-31; HONEYGUIDE.md \"Hive mode\")")]
+        [Tooltip("An omnicrystal the hull collects becomes a hive, and the Ratel goes into hive mode.")]
+        [SerializeField] bool hiveMode = true;
+        [Tooltip("lab hiveEndsSpin 'complete': entering hive mode completes the current spin at once (\"the ratel ends their " +
+                 "current timer\"), and a fresh spin starts on the way out. Off: the clock only stops, and the old spin resumes.")]
+        [SerializeField] bool hiveCompletesSpin = true;
+        [Tooltip("lab raidSeconds: hive mode ends when the hive is cleared, after this long, or when the Ratel leaves.")]
+        [SerializeField, Min(1f)] float raidSeconds = 15f;
+        [Tooltip("lab minChain (Garrett: 3): a chain is a path through touching cells of one other domain, at least this long.")]
+        [SerializeField, Min(2)] int minChain = 3;
+        [Tooltip("lab snakeMin: the generator lays each other-domain run as a snake at least this long.")]
+        [SerializeField, Min(2)] int snakeMin = 3;
+        [Tooltip("lab snakeMax: and at most this long.")]
+        [SerializeField, Min(2)] int snakeMax = 5;
+        [Tooltip("lab hiveOtherShare: share of the 37 cells laid as the other two domains (the rest is ours).")]
+        [SerializeField, Range(0.1f, 0.8f)] float hiveOtherShare = 0.45f;
+        [Tooltip("lab hiveHoles: empty cells in a hive.")]
+        [SerializeField, Min(0)] int hiveHoles = 2;
+        [Tooltip("lab hiveCross: chance a later snake crosses a plain cell of its colour, making one more shielded prism.")]
+        [SerializeField, Range(0f, 1f)] float hiveCross = 0.35f;
+        [Tooltip("lab hiveDangerMin (Garrett: \"always include some danger prisms\"): danger prisms in every hive, off every snake.")]
+        [SerializeField, Min(0)] int hiveDangerMin = 2;
+        [Tooltip("lab hiveArmour: share of our own body cells that are shielded (at least one).")]
+        [SerializeField, Range(0f, 1f)] float hiveArmour = 0.15f;
+        [Tooltip("lab stingSeconds: a chain that touches danger breaks with nothing destroyed, and the thumb is stunned this long.")]
+        [SerializeField, Min(0f)] float stingSeconds = 1f;
+        [Tooltip("lab rewardDynamo (Garrett: 2): prisms of a completed colour that land on the Dynamo.")]
+        [SerializeField, Min(0)] int rewardDynamo = 2;
+        [Tooltip("lab rewardBattery (Garrett: 1): charges of a completed colour that go to the battery.")]
+        [SerializeField, Min(0)] int rewardBattery = 1;
+        [Tooltip("lab crystalGlowSeconds: how long the planar crystal lights while the rewards land.")]
+        [SerializeField, Min(0f)] float crystalGlowSeconds = 1.6f;
+        [Tooltip("The hive in the world: the distance between neighbouring cells' centres is this times the square root of 3 (u).")]
+        [SerializeField, Min(0.5f)] float hiveCellSpacing = 2.5f;
+        [Tooltip("The hive in the world is laid this far behind where the omnicrystal was taken, square to the hull's flight, " +
+                 "so the hull that took it is not inside it (u).")]
+        [SerializeField, Min(0f)] float hiveOffset = 40f;
+        [Tooltip("The Ratel AI in hive mode, by engineerLevel (Easy, Medium, Hard; the lab's rookie and skilled are Easy and Hard).")]
+        [SerializeField] HoneyguideHiveSkill[] hiveSkills =
+        {
+            new() { cell = 0.5f, solver = false, sloppy = 0.15f },
+            new() { cell = 0.35f, solver = false, sloppy = 0.05f },
+            new() { cell = 0.22f, solver = true, sloppy = 0f },
+        };
+        [Tooltip("The strip over the Ratel's board: the farthest omnicrystal it draws at its far end (u). Nearer ones sit along it.")]
+        [SerializeField, Min(10f)] float stripRangeU = 1600f;
+        [Tooltip("The danger prisms' colour on the Ratel's board.")]
+        [SerializeField] Color hiveDangerColour = new(0.85f, 0.12f, 0.08f, 1f);
 
         [Header("The Slip (the Honeyguide's Time ability)")]
         [Tooltip("lab minSlipTrailLength: shortest trail (prisms) a slip rides.")]
@@ -400,6 +459,30 @@ namespace CosmicShore.Gameplay
         [SerializeField] string revealPortsLine = "New injection ports";
         [Tooltip("The heading over the abilities offered to pick from (round 7). Empty = no heading.")]
         [SerializeField] string pickAbilityTitle = "Pick the Ratel's next ability";
+        [Tooltip("Hive mode's heading over the board. Empty = no heading.")]
+        [SerializeField] string hiveTitle = "Hive: drag 3 or more of one colour";
+        [Tooltip("The Leave button in hive mode (the rewards earned so far are kept).")]
+        [SerializeField] string hiveLeaveLabel = "Leave";
+        [Tooltip("The toast when an omnicrystal becomes a hive.")]
+        [SerializeField] string hiveEnterToast = "The omnicrystal became a hive: hive mode";
+        [Tooltip("The toast when a colour is completed. Tokens: {colour}, {prisms}, {charges}.")]
+        [SerializeField] string hiveColourDoneTemplate = "{colour} complete: +{prisms} prisms, +{charges} charge";
+        [Tooltip("Added when both other colours are done and our own is rewarded too. Tokens: {colour}.")]
+        [SerializeField] string hiveBothDoneTemplate = "Both done: {colour} too";
+        [Tooltip("The toast when a chain touches a danger prism.")]
+        [SerializeField] string hiveStungToast = "Stung: the chain broke";
+        [Tooltip("The band above the cards in hive mode: the rewards earned so far. Tokens: {colours}. Empty = no line.")]
+        [SerializeField] string hiveEarnedTemplate = "Earned: {colours}";
+        [Tooltip("The toast when hive mode ends. Tokens: {rewards} (hiveRewardsTemplate, or hiveNoRewardsLine).")]
+        [SerializeField] string hiveEndTemplate = "Hive mode over: {rewards}";
+        [Tooltip("{rewards} when a colour was completed. Tokens: {colours}.")]
+        [SerializeField] string hiveRewardsTemplate = "{colours} rewards land on the crystal";
+        [Tooltip("{rewards} when no colour was completed.")]
+        [SerializeField] string hiveNoRewardsLine = "no colour completed";
+        [Tooltip("The strip over the board while the Honeyguide closes on an omnicrystal. Tokens: {distance} (u).")]
+        [SerializeField] string stripOmniTemplate = "Omnicrystal {distance} u";
+        [Tooltip("The strip while no omnicrystal is out. Empty = no line.")]
+        [SerializeField] string stripNoTargetLine = "No omnicrystal in sight";
         [Tooltip("The toast when a pattern is made (the game's toast, top right under Settings). Tokens: {name}, {level} (empty for " +
                  "a one-off), {text} (the card's effect).")]
         [SerializeField] string madeToastTemplate = "{name} {level}: {text}";
@@ -435,6 +518,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference upgradeSfx;
         [SerializeField] EventReference spinSfx;
         [SerializeField] EventReference revealSfx;
+        [SerializeField] EventReference hiveEnterSfx;
+        [SerializeField] EventReference hiveChainSfx;
+        [SerializeField] EventReference hiveStingSfx;
+        [SerializeField] EventReference hiveColourSfx;
+        [SerializeField] EventReference hiveLeaveSfx;
 
         [Header("Wiring")]
         [Tooltip("Runtime GameData (the players, for the AI crew rule).")]
@@ -553,6 +641,40 @@ namespace CosmicShore.Gameplay
         public EventReference UpgradeSfx => upgradeSfx;
         public EventReference SpinSfx => spinSfx;
         public EventReference RevealSfx => revealSfx;
+        public EventReference HiveEnterSfx => hiveEnterSfx;
+        public EventReference HiveChainSfx => hiveChainSfx;
+        public EventReference HiveStingSfx => hiveStingSfx;
+        public EventReference HiveColourSfx => hiveColourSfx;
+        public EventReference HiveLeaveSfx => hiveLeaveSfx;
+        public bool HiveMode => hiveMode;
+        public bool HiveCompletesSpin => hiveCompletesSpin;
+        public float CrystalGlowSeconds => crystalGlowSeconds;
+        public float HiveCellSpacing => hiveCellSpacing;
+        public float HiveOffset => hiveOffset;
+        public float StripRangeU => stripRangeU;
+        public Color HiveDangerColour => hiveDangerColour;
+        public HoneyguideHiveSkill HiveSkill => hiveSkills is { Length: > 0 }
+            ? hiveSkills[Mathf.Clamp((int)engineerLevel, 0, hiveSkills.Length - 1)] : new HoneyguideHiveSkill();
+        public string HiveTitle => hiveTitle;
+        public string HiveLeaveLabel => hiveLeaveLabel;
+        public string HiveEnterToast => hiveEnterToast;
+        public string HiveColourDoneTemplate => hiveColourDoneTemplate;
+        public string HiveBothDoneTemplate => hiveBothDoneTemplate;
+        public string HiveStungToast => hiveStungToast;
+        public string HiveEarnedTemplate => hiveEarnedTemplate;
+        public string HiveEndTemplate => hiveEndTemplate;
+        public string HiveRewardsTemplate => hiveRewardsTemplate;
+        public string HiveNoRewardsLine => hiveNoRewardsLine;
+        public string StripOmniTemplate => stripOmniTemplate;
+        public string StripNoTargetLine => stripNoTargetLine;
+
+        /// <summary>The hive core's settings from this asset (the Ratel Raid Lab's SHIPPED).</summary>
+        public HiveSettings ToHiveSettings() => new()
+        {
+            MinChain = minChain, SnakeMin = snakeMin, SnakeMax = snakeMax, HiveHoles = hiveHoles, HiveDangerMin = hiveDangerMin,
+            RewardDynamo = rewardDynamo, RewardBattery = rewardBattery, HiveOtherShare = hiveOtherShare, HiveCross = hiveCross,
+            HiveArmour = hiveArmour, StingSeconds = stingSeconds, RaidSeconds = raidSeconds,
+        };
         public GameDataSO GameData => gameData;
 
         /// <summary>Colour 1-3's display colour (white for anything else).</summary>

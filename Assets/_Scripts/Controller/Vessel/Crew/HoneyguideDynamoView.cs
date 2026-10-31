@@ -46,6 +46,8 @@ namespace CosmicShore.Gameplay
         static readonly Color Cream = new(1f, 0.953f, 0.812f, 1f);
         static readonly Color Label = new(0.851f, 0.788f, 0.639f, 1f);
         static readonly Color Backdrop = new(0.043f, 0.051f, 0.071f, 1f);   // the board's panel, opaque
+        static readonly Color HiveBar = new(1f, 0.655f, 0f, 1f);             // hive mode's time left
+        static readonly Color StripTrack = new(0.165f, 0.2f, 0.25f, 1f);
 
         readonly HoneyguideCrew _crew;
         readonly GameObject _root;
@@ -59,6 +61,11 @@ namespace CosmicShore.Gameplay
         readonly TMP_Text[] _offerNames = new TMP_Text[MaxOffers], _offerTexts = new TMP_Text[MaxOffers];
         readonly Rect[] _offerRects = new Rect[MaxOffers];
         int _offerCount;
+        // hive mode (Garrett 2026-10-31): the strip over the board, the Leave button, the thumb's chain
+        readonly TMP_Text _strip, _leave;
+        Rect _stripRect, _leaveRect;
+        bool _hiveDrag;
+        int _hiveLast = -1;
 
         // this frame's layout, in canvas pixels (y up)
         Rect _rect, _apRect, _chipRect, _flyRect, _lineRect;
@@ -120,6 +127,8 @@ namespace CosmicShore.Gameplay
             _detail = MakeText("CardDetail", Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
             _chip = MakeText("TriggerChip", Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
             _fly = MakeText("FlyButton", Cream, FontStyles.Bold, TextAlignmentOptions.Center);
+            _strip = MakeText("Strip", Muted, FontStyles.Normal, TextAlignmentOptions.MidlineRight);
+            _leave = MakeText("LeaveButton", Cream, FontStyles.Bold, TextAlignmentOptions.Center);
             for (int k = 0; k < 3; k++)
             {
                 _slotNames[k] = MakeText("Slot" + k, new Color(0.91f, 0.93f, 0.95f, 1f), FontStyles.Bold, TextAlignmentOptions.TopLeft);
@@ -229,6 +238,10 @@ namespace CosmicShore.Gameplay
             }
             PlaceFrame();
             float ui = _ui;
+            // the strip (Garrett 2026-10-31: "a symbolic view ... in a thin strip"): just above the board, on the big board only
+            float stripH = _small ? 0f : 1.5f * _text;
+            top += stripH;
+            _stripRect = _small ? default : new Rect(_rect.x + pad, _rect.yMax - top, _rect.width - 2f * pad, stripH);
             float bw = _rect.width - 2f * pad, bh = _rect.height - top - slotsH - freeH - 2f * pad;
             _size = Mathf.Max(6f, Mathf.Min(bw / (7f * Mathf.Sqrt(3f)), bh / 11f));
             _cx = _rect.center.x;
@@ -237,6 +250,10 @@ namespace CosmicShore.Gameplay
             for (int k = 0; k < 3; k++) _slots[k] = new Rect(_rect.x + pad + k * (sw + gap), _rect.y + pad / 2f, sw, slotsH);
             // the band between the board and the cards: what the last pattern made does, or the free prism's line
             _lineRect = new Rect(_rect.x + 8f * ui, _slots[0].yMax + pad * 0.25f, _rect.width - 16f * ui, freeH);
+            // hive mode's Leave button: the band's right end
+            float lw = Mathf.Max(5f * _text, 44f * ui);
+            _leaveRect = _small || !_crew.InHive ? default
+                : new Rect(_lineRect.xMax - lw, _lineRect.y, lw, Mathf.Max(_lineRect.height, 1.8f * _text));
             _apRect = new Rect(_rect.x, _rect.yMax - 28f * ui, Mathf.Max(80f * ui, _rect.width * 0.45f), 28f * ui);
             _chipRect = _small ? new Rect(_rect.x, _rect.yMax + 6f * ui, _rect.width, 52f * ui) : default;
             // The Fly button: a thumb-sized square just left of the big board, at its top (no scaler on this canvas: pixels).
@@ -309,31 +326,40 @@ namespace CosmicShore.Gameplay
 
             Place(_seat, new Rect(_rect.x + 10f * ui, _rect.yMax - 28f * ui, 120f * ui, 26f * ui), fs, _small ? "" : cfg.RatelLabel);
             var ab = cfg.AbilityText(core.Ability);
+            bool hive = _crew.InHive;
+            string abName = hive ? cfg.HiveTitle : ab == null ? "" : ab.name, abText = hive || ab == null ? "" : ab.text;
             if (turned)   // portrait: the ability's name on its own line under the seat row, its words wrapped below it
             {
                 float nameY = _rect.yMax - 28f * ui - 1.4f * fs, textH = 2.5f * 0.9f * fs;
-                Place(_abilityName, new Rect(_rect.x + 10f * ui, nameY, _rect.width - 20f * ui, 1.4f * fs), fs, ab == null ? "" : ab.name);
-                Place(_abilityText, new Rect(_rect.x + 10f * ui, nameY - textH, _rect.width - 20f * ui, textH), fs * 0.9f, ab == null ? "" : ab.text);
+                Place(_abilityName, new Rect(_rect.x + 10f * ui, nameY, _rect.width - 20f * ui, 1.4f * fs), fs, abName);
+                Place(_abilityText, new Rect(_rect.x + 10f * ui, nameY - textH, _rect.width - 20f * ui, textH), fs * 0.9f, abText);
             }
             else
             {
                 float abY = _rect.yMax - 46f * ui;
-                Place(_abilityName, new Rect(_rect.x + 10f * ui, abY, _rect.width * 0.3f, 18f * ui), fs * 0.9f, _small || ab == null ? "" : ab.name);
+                Place(_abilityName, new Rect(_rect.x + 10f * ui, abY, _rect.width * (hive ? 0.9f : 0.3f), 18f * ui), fs * 0.9f, _small ? "" : abName);
                 Place(_abilityText, new Rect(_rect.x + 12f * ui + _rect.width * 0.3f, abY, _rect.width * 0.7f - 24f * ui, 18f * ui), fs * 0.8f,
-                      _small || ab == null ? "" : ab.text);
+                      _small ? "" : abText);
             }
 
             // Above the cards, always (Garrett 2026-10-23): what the last pattern made does, until the next one; the free
             // prism's line instead while one rides the cursor. Lime when it is about the Dynamo itself; it flashes white as
             // the pattern is made.
-            bool freeLine = core.FreePlace > 0 && core.RevealState == null;
+            bool freeLine = core.FreePlace > 0 && core.RevealState == null && !hive;
             string madeLine = _small ? ""
+                : hive ? (_crew.Hive.Rewards.Count > 0 ? TemplateText.Fill(cfg.HiveEarnedTemplate, "colours", _crew.ColourList(_crew.Hive.Rewards)) : "")
                 : freeLine ? TemplateText.Fill(cfg.FreePrismTemplate, "count", core.FreePlace.ToString(), "colour", cfg.ColourName(core.Free[0]))
                 : _crew.MadeLine;
             var lineColour = freeLine || _crew.MadeLineDynamo ? cfg.DynamoLineColour : Cream;
             float lineFlash = cfg.MadeJuiceSeconds > 0f ? 1f - Mathf.Clamp01((Time.time - _crew.LastMade.At) / cfg.MadeJuiceSeconds) : 0f;
             _free.color = Color.Lerp(lineColour, Color.white, lineFlash * lineFlash);
-            Place(_free, _lineRect, fs * (turned ? 0.85f : 0.8f), madeLine);
+            var lineRect = _leaveRect.width > 0f ? new Rect(_lineRect.x, _lineRect.y, _lineRect.width - _leaveRect.width - 6f * ui, _lineRect.height) : _lineRect;
+            Place(_free, lineRect, fs * (turned ? 0.85f : 0.8f), madeLine);
+            Place(_leave, _leaveRect, fs, _leaveRect.width > 0f ? cfg.HiveLeaveLabel : "");
+            string stripLine = _small ? ""
+                : _crew.StripDistance >= 0f ? TemplateText.Fill(cfg.StripOmniTemplate, "distance", Mathf.RoundToInt(_crew.StripDistance).ToString())
+                : cfg.StripNoTargetLine;
+            Place(_strip, new Rect(_stripRect.x, _stripRect.y, _stripRect.width, _stripRect.height), fs * 0.8f, stripLine);
 
             var built = core.Built(_crew.Settings);
             for (int k = 0; k < 3; k++)
@@ -341,7 +367,7 @@ namespace CosmicShore.Gameplay
                 int pid = k < core.Slots.Length ? core.Slots[k] : -1;
                 var r = _slots[k];
                 string name = !_small && pid >= 0 && pid < cfg.Patterns.Count ? cfg.Patterns[pid].name : "";
-                bool lit = built.Length > k && built[k] != null && core.RevealState == null;
+                bool lit = built.Length > k && built[k] != null && core.RevealState == null && !hive;
                 if (turned)   // portrait: the card's name on up to two lines, sized to the board's text
                 {
                     float cs = 0.8f * fs;
@@ -418,7 +444,7 @@ namespace CosmicShore.Gameplay
             _flyRect = new Rect(_rect.x, _rect.yMax - bs, Mathf.Max(bs, Mathf.Min(_rect.width, bs * 1.6f)), bs);
             Place(_seat, default, fs, ""); Place(_abilityName, default, fs, ""); Place(_abilityText, default, fs, "");
             Place(_free, default, fs, ""); Place(_revealTitle, default, fs, ""); Place(_revealText, default, fs, "");
-            Place(_detail, default, fs, ""); Place(_chip, default, fs, "");
+            Place(_detail, default, fs, ""); Place(_chip, default, fs, ""); Place(_strip, default, fs, ""); Place(_leave, default, fs, "");
             for (int k = 0; k < 3; k++) { Place(_slotNames[k], default, fs, ""); Place(_slotTaps[k], default, fs, ""); }
             for (int k = 0; k < MaxOffers; k++) { Place(_offerNames[k], default, fs, ""); Place(_offerTexts[k], default, fs, ""); }
             _offerCount = 0;
@@ -510,7 +536,12 @@ namespace CosmicShore.Gameplay
             return d;
         }
 
-        internal void CancelDrag() => _dragFrom = -1;
+        internal void CancelDrag()
+        {
+            _dragFrom = -1;
+            _hiveDrag = false;
+            _hiveLast = -1;
+        }
 
         // Playing the Ratel: the lab's engDown / up. Layout is last frame's (the board does not move between frames).
         internal void ReadEngineerInput(DynamoCore core, DynamoSettings s)
@@ -523,6 +554,7 @@ namespace CosmicShore.Gameplay
             bool secondary = mouse != null && mouse.rightButton.wasPressedThisFrame;
             if ((pressed || secondary) && _detailSlot >= 0) { _detailSlot = -1; return; }   // any click closes the card details
             if (pressed && _flyRect.Contains(at)) { _flyTapped = true; return; }            // back to flying
+            if (_crew.InHive) { HiveThumb(at, pressed, released, held); return; }
             if (secondary && _rect.Contains(at)) { Secondary(core, at); return; }
             if (pressed && _rect.Contains(at))
             {
@@ -578,6 +610,33 @@ namespace CosmicShore.Gameplay
             if (core.PortAt(c) != 0) _crew.EngineerInput(DynamoInput.Refuel(c));
         }
 
+        // Hive mode's thumb (the Ratel Raid Lab's): press on a cell to start a chain, drag over touching cells of its colour
+        // (back over the last one to drop it), let go to break it; the Leave button ends hive mode.
+        void HiveThumb(Vector2 at, bool pressed, bool released, bool held)
+        {
+            if (pressed && _leaveRect.Contains(at)) { _hiveDrag = false; _crew.HiveInput(3, -1); return; }
+            if (pressed && _rect.Contains(at))
+            {
+                int c = PxCell(at);
+                _hiveDrag = c >= 0;
+                _hiveLast = c;
+                if (c >= 0) _crew.HiveInput(0, c);
+                return;
+            }
+            if (!_hiveDrag) return;
+            if (held)
+            {
+                int c = PxCell(at);
+                if (c >= 0 && c != _hiveLast) { _hiveLast = c; _crew.HiveInput(1, c); }
+            }
+            if (released || !held)
+            {
+                _hiveDrag = false;
+                _hiveLast = -1;
+                _crew.HiveInput(2, -1);
+            }
+        }
+
         // a drag across several cells: one move per step, along empty cells (Long Reach: one move); capped by the AP held
         static List<DynamoInput> PathTinkers(DynamoCore core, int from, int to)
         {
@@ -625,12 +684,18 @@ namespace CosmicShore.Gameplay
             HoneyguideMesh.Quad(vh, _rect, Panel);
             HoneyguideMesh.Outline(vh, _rect, 1f, Edge);
 
-            // the time to the next spin: a bar across the top that shrinks (no number); it stands still during a reveal
+            // the time to the next spin: a bar across the top that shrinks from both sides to the centre (no number; Garrett
+            // 2026-10-31, the Ratel Raid Lab's bar); it stands still during a reveal. In hive mode it is the hive's time left.
             var rv = core.RevealState;
-            float barH = (_small ? 3f : 5f) * ui, frac = Mathf.Clamp01(1f - (float)(core.Clock / s.TickSeconds));
-            bool soon = rv == null && s.TickSeconds - core.Clock < 1.5;
+            var hive = _crew.Hive;
+            var hs = _crew.HiveSettings;
+            float barH = (_small ? 3f : 5f) * ui;
+            float frac = hive != null ? Mathf.Clamp01(1f - (float)(_crew.HiveTime / hs.RaidSeconds)) : Mathf.Clamp01(1f - (float)(core.Clock / s.TickSeconds));
+            bool soon = hive == null && rv == null && s.TickSeconds - core.Clock < 1.5;
             HoneyguideMesh.Quad(vh, new Rect(_rect.x, _rect.yMax - barH, _rect.width, barH), BarTrack);
-            HoneyguideMesh.Quad(vh, new Rect(_rect.x, _rect.yMax - barH, _rect.width * frac, barH), rv != null ? BarStill : soon ? ApFull : BarRun);
+            HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * frac / 2f, _rect.yMax - barH, _rect.width * frac, barH),
+                                hive != null ? HiveBar : rv != null ? BarStill : soon ? ApFull : BarRun);
+            if (!_small) Strip(vh, cfg);
 
             // AP pips and the battery
             float pipY = _rect.yMax - 15f * ui, apX = _rect.x + (_small ? 12f : 70f) * ui;
@@ -655,8 +720,21 @@ namespace CosmicShore.Gameplay
                 else HoneyguideMesh.Ring(vh, at, 5f * ui, 6.5f * ui, 16, 0f, new Color(0.235f, 0.275f, 0.329f, 1f));
             }
 
-            // the cells; a matched empty cell (a port standing in for a prism) is outlined white
             var built = core.Built(s);
+            if (hive != null)
+            {
+                Comb(vh, hive, cfg, now);
+                Cards(vh, core, cfg, s, built, now);
+                if (!_small && _leaveRect.width > 2f)
+                {
+                    HoneyguideMesh.Quad(vh, _leaveRect, Panel);
+                    HoneyguideMesh.Outline(vh, _leaveRect, 2f, HiveBar);
+                }
+                FlyButton(vh);
+                return;
+            }
+
+            // the cells; a matched empty cell (a port standing in for a prism) is outlined white
             var builtCells = new HashSet<int>();
             foreach (var b in built) if (b != null) foreach (int c in b) builtCells.Add(c);
             float pulse = 0.5f + 0.5f * Mathf.Sin(now * 6f);
@@ -700,53 +778,11 @@ namespace CosmicShore.Gameplay
                     HoneyguideMesh.Hex(vh, _pointerAt + new Vector2(_size * (0.95f + 0.45f * k), -_size * 0.95f), _size * 0.22f, 0f, cfg.ColourOf(core.Free[k]));
             }
 
-            // the three cards: lit when the board shows the pattern; the shape; one pip per make before it is replaced
-            for (int k = 0; k < 3 && k < core.Slots.Length; k++)
-            {
-                int pid = core.Slots[k];
-                if (pid < 0 || pid >= cfg.Patterns.Count) continue;
-                var pat = cfg.Patterns[pid];
-                var r = _slots[k];
-                bool lit = built[k] != null;
-                var fam = cfg.ColourOf(pat.family);
-                float flash = Mathf.Clamp01(1f - (now - _crew.RetiredAt[k]));
-                HoneyguideMesh.Quad(vh, r, lit ? Alpha(fam, 0.22f + 0.2f * pulse) : flash > 0f ? Alpha(Color.white, 0.25f * flash) : Card);
-                HoneyguideMesh.Outline(vh, r, lit ? 2f : 1f, lit ? fam : Alpha(fam, 0.45f));
-                int uses = s.UsesPerPattern;
-                if (uses > 0 && !_small)
-                    for (int u = 0; u < uses; u++)
-                        HoneyguideMesh.Disc(vh, new Vector2(r.xMax - 7f * ui - (uses - 1 - u) * 8f * ui, r.y + 7f * ui), 2.6f * ui, u < core.Uses[k] ? ApFull : UsePip);
-                var cells = HoneyguideConfigSO.ParseShape(pat.shape);
-                if (cells.Length == 0) continue;
-                float head = _cardHead, sz = Mathf.Min(r.width / 12f, (r.height - head - 6f) / 6.5f);
-                float ox = r.center.x, oy = r.y + (r.height - head) / 2f, mq = 0f, mr = 0f;
-                foreach (var c in cells) { mq += c[0] + c[1] / 2f; mr += c[1]; }
-                mq /= cells.Length; mr /= cells.Length;
-                foreach (var c in cells)
-                    HoneyguideMesh.Hex(vh, new Vector2(ox + sz * Mathf.Sqrt(3f) * (c[0] + c[1] / 2f - mq), oy - sz * 1.5f * (c[1] - mr)), sz * 0.92f, 0f, cfg.ColourOf(c[2]));
-            }
+            Cards(vh, core, cfg, s, built, now);
+            CrystalGlow(vh, cfg, now);
 
             // the reveal: the board dims; the labels name the new ability, then the new ports
-            if (rv != null)
-            {
-                bool picking = rv.Stage == 1 && rv.Offers != null;
-                float total = rv.Stage == 1 ? (float)(picking ? s.PickSeconds : s.RevealAbility) : (float)s.RevealPorts, prog = total > 0f ? Mathf.Clamp01((float)rv.T / total) : 0f;
-                if (rv.Stage == 1) HoneyguideMesh.Quad(vh, new Rect(_rect.x, _slots[0].yMax, _rect.width, _rect.height - _slots[0].height - barH), new Color(0f, 0f, 0f, picking ? 0.75f : 0.6f));
-                if (picking)   // round 7: the offered abilities' cards, and under them the time left to pick
-                {
-                    for (int k = 0; k < _offerCount; k++)
-                    {
-                        HoneyguideMesh.Quad(vh, _offerRects[k], Card);
-                        HoneyguideMesh.Outline(vh, _offerRects[k], 2f * ui, Ability);
-                    }
-                    if (_offerCount > 0 && total > 0f)
-                    {
-                        var last = _offerRects[_offerCount - 1];
-                        HoneyguideMesh.Quad(vh, new Rect(last.x, last.y - 6f * ui, last.width * prog, 2f * ui), Ability);
-                    }
-                }
-                else HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * 0.4f * prog, _cy - _size * 2.6f, _rect.width * 0.8f * prog, 2f * ui), Ability);
-            }
+            if (rv != null) Reveal(vh, rv, s, barH);
 
             // over the reveal's dimming: a fourth pattern made starts the reveal, and its juice still plays
             MadeJuice(vh, core, cfg, now, cap);
@@ -765,13 +801,148 @@ namespace CosmicShore.Gameplay
                 HoneyguideMesh.Quad(vh, _chipRect, new Color(1f, 0.655f, 0f, 0.35f * lit));
                 HoneyguideMesh.Outline(vh, _chipRect, 2f, new Color(1f, 0.655f, 0f, lit));
             }
+            FlyButton(vh);
+        }
 
-            // the Fly button beside the big board
-            if (!_small && _flyRect.width > 2f)
+        // the Fly button beside the big board
+        void FlyButton(VertexHelper vh)
+        {
+            if (_small || _flyRect.width <= 2f) return;
+            HoneyguideMesh.Quad(vh, _flyRect, Panel);
+            HoneyguideMesh.Outline(vh, _flyRect, 2f, Ability);
+        }
+
+        // the three cards: lit when the board shows the pattern; the shape; one pip per make before it is replaced
+        void Cards(VertexHelper vh, DynamoCore core, HoneyguideConfigSO cfg, DynamoSettings s, List<int>[] built, float now)
+        {
+            float ui = _ui, pulse = 0.5f + 0.5f * Mathf.Sin(now * 6f);
+            bool hive = _crew.InHive;
+            for (int k = 0; k < 3 && k < core.Slots.Length; k++)
             {
-                HoneyguideMesh.Quad(vh, _flyRect, Panel);
-                HoneyguideMesh.Outline(vh, _flyRect, 2f, Ability);
+                int pid = core.Slots[k];
+                if (pid < 0 || pid >= cfg.Patterns.Count) continue;
+                var pat = cfg.Patterns[pid];
+                var r = _slots[k];
+                bool lit = built[k] != null && !hive;
+                var fam = cfg.ColourOf(pat.family);
+                float flash = Mathf.Clamp01(1f - (now - _crew.RetiredAt[k]));
+                HoneyguideMesh.Quad(vh, r, lit ? Alpha(fam, 0.22f + 0.2f * pulse) : flash > 0f ? Alpha(Color.white, 0.25f * flash) : Card);
+                HoneyguideMesh.Outline(vh, r, lit ? 2f : 1f, lit ? fam : Alpha(fam, 0.45f));
+                int uses = s.UsesPerPattern;
+                if (uses > 0 && !_small)
+                    for (int u = 0; u < uses; u++)
+                        HoneyguideMesh.Disc(vh, new Vector2(r.xMax - 7f * ui - (uses - 1 - u) * 8f * ui, r.y + 7f * ui), 2.6f * ui, u < core.Uses[k] ? ApFull : UsePip);
+                var cells = HoneyguideConfigSO.ParseShape(pat.shape);
+                if (cells.Length == 0) continue;
+                float head = _cardHead, sz = Mathf.Min(r.width / 12f, (r.height - head - 6f) / 6.5f);
+                float ox = r.center.x, oy = r.y + (r.height - head) / 2f, mq = 0f, mr = 0f;
+                foreach (var c in cells) { mq += c[0] + c[1] / 2f; mr += c[1]; }
+                mq /= cells.Length; mr /= cells.Length;
+                foreach (var c in cells)
+                    HoneyguideMesh.Hex(vh, new Vector2(ox + sz * Mathf.Sqrt(3f) * (c[0] + c[1] / 2f - mq), oy - sz * 1.5f * (c[1] - mr)), sz * 0.92f, 0f, cfg.ColourOf(c[2]));
             }
+        }
+
+        void Reveal(VertexHelper vh, DynamoCore.Reveal rv, DynamoSettings s, float barH)
+        {
+            float ui = _ui;
+            bool picking = rv.Stage == 1 && rv.Offers != null;
+            float total = rv.Stage == 1 ? (float)(picking ? s.PickSeconds : s.RevealAbility) : (float)s.RevealPorts, prog = total > 0f ? Mathf.Clamp01((float)rv.T / total) : 0f;
+            if (rv.Stage == 1) HoneyguideMesh.Quad(vh, new Rect(_rect.x, _slots[0].yMax, _rect.width, _rect.height - _slots[0].height - barH), new Color(0f, 0f, 0f, picking ? 0.75f : 0.6f));
+            if (picking)   // round 7: the offered abilities' cards, and under them the time left to pick
+            {
+                for (int k = 0; k < _offerCount; k++)
+                {
+                    HoneyguideMesh.Quad(vh, _offerRects[k], Card);
+                    HoneyguideMesh.Outline(vh, _offerRects[k], 2f * ui, Ability);
+                }
+                if (_offerCount > 0 && total > 0f)
+                {
+                    var last = _offerRects[_offerCount - 1];
+                    HoneyguideMesh.Quad(vh, new Rect(last.x, last.y - 6f * ui, last.width * prog, 2f * ui), Ability);
+                }
+            }
+            else HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * 0.4f * prog, _cy - _size * 2.6f, _rect.width * 0.8f * prog, 2f * ui), Ability);
+        }
+
+        // ------------------------------------------------------------------ hive mode (the Ratel Raid Lab's drawHive)
+
+        // The comb: the other domains' prisms in their colours, a white ring on a shielded one, danger in the danger colour
+        // ringed by its domain, our own domain dimmed as the hive's body; the chain in the thumb outlined and joined; a sting
+        // flashes the danger cell it touched.
+        void Comb(VertexHelper vh, Hive hive, HoneyguideConfigSO cfg, float now)
+        {
+            int own = _crew.Own;
+            float pulse = 0.5f + 0.5f * Mathf.Sin(now * 6f);
+            for (int i = 0; i < DynamoCore.CellCount; i++)
+            {
+                var p = CellPx(i);
+                var x = hive.Cells[i];
+                HoneyguideMesh.Hex(vh, p, _size * 0.95f, 0f, Cell);
+                HoneyguideMesh.HexRing(vh, p, _size * 0.95f, 1f, 0f, CellEdge);
+                if (x.Dom == 0) continue;
+                var col = cfg.ColourOf(x.Dom);
+                if (x.Danger)
+                {
+                    HoneyguideMesh.Hex(vh, p, _size * 0.8f, 0f, cfg.HiveDangerColour);
+                    HoneyguideMesh.HexRing(vh, p, _size * 0.8f, Mathf.Max(2f, _size * 0.14f), 0f, col);
+                    continue;
+                }
+                if (x.Dom == own) HoneyguideMesh.Hex(vh, p, _size * 0.8f, 0f, Alpha(col, 0.35f));
+                else Prism(vh, p, _size * 0.62f, col, 0f);
+                if (x.Hits >= 2) HoneyguideMesh.HexRing(vh, p, _size * 0.86f, Mathf.Max(2f, _size * 0.12f), 0f, Alpha(Color.white, 0.9f));
+            }
+            var ch = hive.Chain;
+            for (int k = 0; k < ch.Count; k++)
+            {
+                var p = CellPx(ch[k]);
+                HoneyguideMesh.HexRing(vh, p, _size * 0.95f, Mathf.Max(2f, _size * 0.16f), 0f, Alpha(Color.white, 0.7f + 0.3f * pulse));
+                if (k > 0) HoneyguideMesh.Line(vh, CellPx(ch[k - 1]), p, Mathf.Max(2f, _size * 0.18f), Color.white);
+            }
+            float sting = 1f - Mathf.Clamp01((now - _crew.StungAt) / 0.6f);
+            if (sting > 0f && _crew.StungCell >= 0)
+            {
+                HoneyguideMesh.HexRing(vh, CellPx(_crew.StungCell), _size * (0.95f + 0.6f * (1f - sting)), Mathf.Max(2f, _size * 0.2f), 0f, Alpha(cfg.HiveDangerColour, sting));
+                HoneyguideMesh.Outline(vh, _rect, 3f * _ui * sting, Alpha(cfg.HiveDangerColour, sting));
+            }
+            float open = 1f - Mathf.Clamp01((now - _crew.HiveAt) / 0.8f);   // the hive opening: the board's edge flashes amber
+            if (open > 0f) HoneyguideMesh.Outline(vh, _rect, 4f * _ui * open, Alpha(HiveBar, open));
+        }
+
+        // After hive mode: the planar crystal the rewards landed on lights, the cells they landed in flash, and the cells it
+        // goes on to show the colour each wants - so the crystal's pattern teaches itself (Garrett 2026-10-31).
+        void CrystalGlow(VertexHelper vh, HoneyguideConfigSO cfg, float now)
+        {
+            float g = cfg.CrystalGlowSeconds > 0f ? 1f - (now - _crew.GlowAt) / cfg.CrystalGlowSeconds : 0f;
+            if (g <= 0f) return;
+            float pulse = 0.5f + 0.5f * Mathf.Sin(now * 10f);
+            foreach (int i in _crew.GlowCells)
+                HoneyguideMesh.HexRing(vh, CellPx(i), _size * 0.95f, Mathf.Max(2f, _size * 0.12f), 0f, Alpha(Color.white, g * (0.5f + 0.5f * pulse)));
+            foreach (int i in _crew.GlowLanded)
+                HoneyguideMesh.Hex(vh, CellPx(i), _size * 0.95f, 0f, Alpha(Color.white, 0.5f * g));
+            foreach (var n in _crew.GlowNext)
+                HoneyguideMesh.Hex(vh, CellPx(n[0]), _size * 0.5f, 0f, Alpha(cfg.ColourOf(n[1]), 0.35f * g));
+        }
+
+        // The strip: the Honeyguide at the left, the nearest omnicrystal along the track by its distance (the far end is
+        // stripRangeU), a diamond; in hive mode the hive, a hex, under the hull. Its distance is the text at the right.
+        void Strip(VertexHelper vh, HoneyguideConfigSO cfg)
+        {
+            var r = _stripRect;
+            if (r.width < 4f) return;
+            float ui = _ui, cy = r.center.y, x0 = r.x + 8f * ui, x1 = r.x + r.width * 0.62f;
+            HoneyguideMesh.Quad(vh, new Rect(x0, cy - 1f * ui, x1 - x0, 2f * ui), StripTrack);
+            HoneyguideMesh.Disc(vh, new Vector2(x0, cy), 5f * ui, Ability);
+            if (_crew.InHive)
+            {
+                HoneyguideMesh.Hex(vh, new Vector2(x0 + 12f * ui, cy), 6f * ui, 0f, HiveBar);
+                HoneyguideMesh.Ring(vh, new Vector2(x0, cy), 7f * ui, 8.5f * ui, 16, 0f, Alpha(Color.white, 0.8f));   // invulnerable
+                return;
+            }
+            float d = _crew.StripDistance;
+            if (d < 0f) return;
+            float f = Mathf.Clamp01(d / Mathf.Max(1f, cfg.StripRangeU));
+            HoneyguideMesh.Poly(vh, new Vector2(Mathf.Lerp(x0 + 12f * ui, x1, f), cy), 6f * ui, 4, Mathf.PI / 2f, Color.white);
         }
 
         const float ChargePop = 0.35f;   // seconds the landed charge swells and its ring spreads
@@ -960,6 +1131,20 @@ namespace CosmicShore.Gameplay
             Ring(vh, at, Mathf.Max(0f, r - w), r, 6, HexRot + rot, c);
 
         internal static void Disc(VertexHelper vh, Vector2 at, float r, Color c) => Poly(vh, at, r, 14, 0f, c);
+
+        internal static void Line(VertexHelper vh, Vector2 a, Vector2 b, float w, Color c)
+        {
+            var d = b - a;
+            if (d.sqrMagnitude < 1e-6f) return;
+            var n = new Vector2(-d.y, d.x).normalized * (w / 2f);
+            int i = vh.currentVertCount;
+            vh.AddVert(V(a - n, c));
+            vh.AddVert(V(a + n, c));
+            vh.AddVert(V(b + n, c));
+            vh.AddVert(V(b - n, c));
+            vh.AddTriangle(i, i + 1, i + 2);
+            vh.AddTriangle(i, i + 2, i + 3);
+        }
 
         // A pointy-top hexagon of radius rHex turning into a disc of radius rDisc as m runs 0 to 1: every rim point's radius
         // blends from the hexagon's edge at that angle to the circle (24 rim points, so the corners are exact at m = 0).

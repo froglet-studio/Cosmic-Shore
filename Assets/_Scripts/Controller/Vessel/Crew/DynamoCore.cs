@@ -743,6 +743,10 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>Spin now, as the clock would (the lab's <c>tick</c>): the hive mode's "the ratel ends their current
+        /// timer" (Garrett 2026-10-31) completes the spin at once.</summary>
+        public void SpinNow(DynamoSettings s) => Tick(s);
+
         // The spin: the port pattern turns 60 degrees clockwise as one piece; the prisms stay where they are.
         void Tick(DynamoSettings s)
         {
@@ -826,8 +830,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Overwrite this board with a state <see cref="WriteState"/> wrote. False (and the board untouched past
         /// the point it failed) when the data is not one: a copy from another build.</summary>
-        public bool ReadState(int[] d)
+        public bool ReadState(int[] d) => ReadState(d, out _);
+
+        /// <summary><see cref="ReadState(int[])"/>, also giving the index just past the board's ints (the hive mode's state
+        /// follows them in the same message).</summary>
+        public bool ReadState(int[] d, out int end)
         {
+            end = 0;
             int i = 0;
             bool Has(int n) => d != null && i + n <= d.Length;
             if (!Has(1) || d[i] != Cells.Length || !Has(1 + Cells.Length)) return false;
@@ -862,6 +871,7 @@ namespace CosmicShore.Gameplay
             if (!Has(2)) return false;
             Ability = (DynamoAbility)d[i++];
             Rng = d[i++];
+            end = i;
             return true;
         }
 

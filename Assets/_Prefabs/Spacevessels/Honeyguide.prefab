@@ -1483,7 +1483,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselImpactorDataContainerSO: {fileID: 11400000, guid: bd2b4a654fb302e47a23cf303280df2d,
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: b2bc4391e7b140e481bb8923269a8a24,
     type: 2}
   networkVesselImpactor: {fileID: 2035987173373189047}
 --- !u!114 &223934081028988333

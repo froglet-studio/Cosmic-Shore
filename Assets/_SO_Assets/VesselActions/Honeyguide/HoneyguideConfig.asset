@@ -30,6 +30,35 @@ MonoBehaviour:
   rotatable: 1
   retiredAbilities:
   - 2
+  hiveMode: 1
+  hiveCompletesSpin: 1
+  raidSeconds: 15
+  minChain: 3
+  snakeMin: 3
+  snakeMax: 5
+  hiveOtherShare: 0.45
+  hiveHoles: 2
+  hiveCross: 0.35
+  hiveDangerMin: 2
+  hiveArmour: 0.15
+  stingSeconds: 1
+  rewardDynamo: 2
+  rewardBattery: 1
+  crystalGlowSeconds: 1.6
+  hiveCellSpacing: 2.5
+  hiveOffset: 40
+  hiveSkills:
+  - cell: 0.5
+    solver: 0
+    sloppy: 0.15
+  - cell: 0.35
+    solver: 0
+    sloppy: 0.05
+  - cell: 0.22
+    solver: 1
+    sloppy: 0
+  stripRangeU: 1600
+  hiveDangerColour: {r: 0.85, g: 0.12, b: 0.08, a: 1}
   minSlipTrailLength: 6
   slipReach: 400
   exitOffset: 8
@@ -310,6 +339,18 @@ MonoBehaviour:
   revealAbilityTemplate: 'New ability: {name}'
   revealPortsLine: 'New injection ports'
   pickAbilityTitle: 'Pick the Ratel''s next ability'
+  hiveTitle: 'Hive: drag 3 or more of one colour'
+  hiveLeaveLabel: Leave
+  hiveEnterToast: 'The omnicrystal became a hive: hive mode'
+  hiveColourDoneTemplate: '{colour} complete: +{prisms} prisms, +{charges} charge'
+  hiveBothDoneTemplate: 'Both done: {colour} too'
+  hiveStungToast: 'Stung: the chain broke'
+  hiveEarnedTemplate: 'Earned: {colours}'
+  hiveEndTemplate: 'Hive mode over: {rewards}'
+  hiveRewardsTemplate: '{colours} rewards land on the crystal'
+  hiveNoRewardsLine: no colour completed
+  stripOmniTemplate: 'Omnicrystal {distance} u'
+  stripNoTargetLine: No omnicrystal in sight
   madeToastTemplate: '{name} {level}: {text}'
   abilityToastTemplate: 'The Ratel''s new ability, {name}: {text}'
   cardDetailTemplate: "{name}\n{text}\nMade {uses} of {max}\n\nClick anywhere to close"
@@ -666,6 +707,41 @@ MonoBehaviour:
       Data4: 0
     Path: 
   revealSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveEnterSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveChainSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveStingSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveColourSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveLeaveSfx:
     Guid:
       Data1: 0
       Data2: 0

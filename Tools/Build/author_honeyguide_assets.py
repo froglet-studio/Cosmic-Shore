@@ -65,6 +65,18 @@ CONFIG_DIR = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "Honeyg
 CONFIG = os.path.join(CONFIG_DIR, "HoneyguideConfig.asset")
 LAB = os.path.join(ROOT, "Docs", "Studios", "HoneyguideLab.html")
 GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"   # GameData.asset (KiteNavigatorConfig wires the same)
+# Hive mode (Garrett 2026-10-31): an Omni crystal the Honeyguide collects becomes a hive. The hull's VesselImpactor gets its
+# own container - the Sparrow's, plus HoneyguideOmniCrystalEffect in its omni list (the Wrasse's pattern,
+# author_wrasse_assets.py). Not a one-shot for the prefab: the retarget is held to it.
+CONTAINERS = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Effect Containers", "VesselContainers")
+DONOR_CONTAINER = os.path.join(CONTAINERS, "SparrowImpactorDataContainer.asset")
+HONEYGUIDE_CONTAINER = os.path.join(CONTAINERS, "HoneyguideImpactorDataContainer.asset")
+HIVE_EFFECT = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Vessel Crystal Effects", "HoneyguideOmniCrystalEffect.asset")
+HIVE_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "ImpactEffects", "EffectsSO", "Vessel Crystal Effects",
+                                "HoneyguideOmniCrystalEffectSO.cs.meta")
+DONOR_CONTAINER_GUID = "bd2b4a654fb302e47a23cf303280df2d"
+HONEYGUIDE_CONTAINER_GUID = "b2bc4391e7b140e481bb8923269a8a24"
+HIVE_EFFECT_GUID = "3ab296496c38413dabd5fbf6955d17f6"
 
 # 19 is the Wrasse, 20 the Orca, 21 the Starling, 22 the Marlin, now the Jacks (all on bleeding-edge, 2026-10-21): the Honeyguide is 23.
 HONEYGUIDE_CLASS_ID = 23
@@ -198,7 +210,8 @@ def num(v: str) -> str:
 
 
 EMPTY_EVENT = "    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
-SFX = ("patternMadeSfx", "slipSfx", "jumpSfx", "flitSfx", "upgradeSfx", "spinSfx", "revealSfx")
+SFX = ("patternMadeSfx", "slipSfx", "jumpSfx", "flitSfx", "upgradeSfx", "spinSfx", "revealSfx",
+       "hiveEnterSfx", "hiveChainSfx", "hiveStingSfx", "hiveColourSfx", "hiveLeaveSfx")
 
 
 def upgrades_yaml(lab, effects) -> str:
@@ -662,6 +675,39 @@ def check_model(text: str, script_guid: str):
     return errs
 
 # ----------------------------------------------------------------------------- checks
+def retarget_container(text: str) -> str:
+    """The hull's VesselImpactor on HoneyguideImpactorDataContainer (an Omni crystal opens hive mode). Idempotent."""
+    return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {HONEYGUIDE_CONTAINER_GUID},")
+
+
+def container_asset(donor: str) -> str:
+    text = replace_once(donor, "  m_Name: SparrowImpactorDataContainer\n", "  m_Name: HoneyguideImpactorDataContainer\n", "container name")
+    m = re.search(r"  vesselCrystalEffects:\n((?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)*)", text)
+    if not m:
+        raise RuntimeError("donor drifted: the Sparrow container's vesselCrystalEffects list was not found")
+    return text[:m.end(1)] + f"  - {{fileID: 11400000, guid: {HIVE_EFFECT_GUID}, type: 2}}\n" + text[m.end(1):]
+
+
+def hive_effect_asset(script_guid: str) -> str:
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            "  m_Name: HoneyguideOmniCrystalEffect\n  m_EditorClassIdentifier: \n")
+
+
+def check_container(container: str, effect: str, hive_script_guid: str):
+    errs = []
+    if f"  - {{fileID: 11400000, guid: {HIVE_EFFECT_GUID}, type: 2}}\n" not in container.split("  vesselElementalCrystalEffects:")[0]:
+        errs.append("HoneyguideImpactorDataContainer: HoneyguideOmniCrystalEffect is not in its omni (vesselCrystalEffects) list "
+                    "(an Omni crystal would not open hive mode)")
+    if "  m_Name: HoneyguideImpactorDataContainer\n" not in container:
+        errs.append("HoneyguideImpactorDataContainer: is not named HoneyguideImpactorDataContainer")
+    if f"guid: {hive_script_guid}, type: 3" not in effect:
+        errs.append("HoneyguideOmniCrystalEffect.asset: does not name HoneyguideOmniCrystalEffectSO")
+    return errs
+
+
 def check_prefab(text: str, script_guid: str):
     errs = []
     def want(cond, msg):
@@ -684,6 +730,8 @@ def check_prefab(text: str, script_guid: str):
          "Honeyguide.prefab: HoneyguideCrew.config is not HoneyguideConfig.asset (a null config never seats the Ratel)")
     want(INPUT_BLOCK in text, "Honeyguide.prefab: RT / LT are not the Honeyguide's triggers (or Button2 is not the boost)")
     want(AI_BLOCK in text, "Honeyguide.prefab: the AIPilot's abilities are not the boost alone (it would fire the Sparrow's guns)")
+    want(f"guid: {HONEYGUIDE_CONTAINER_GUID}," in text and f"guid: {DONOR_CONTAINER_GUID}," not in text,
+         "Honeyguide.prefab: the VesselImpactor is not on HoneyguideImpactorDataContainer (an Omni crystal would not open hive mode)")
     for g in SPARROW_TRIGGER_GUIDS:   # its executors may still point at them (default actions, profiles): the input may not
         want(f"  - Ability: {{fileID: 11400000, guid: {g}, type: 2}}" not in text and f"    - {{fileID: 11400000, guid: {g}, type: 2}}" not in text,
              f"Honeyguide.prefab: the input or the AIPilot still names the Sparrow's action {g}")
@@ -730,6 +778,12 @@ def check_all():
         return ["Honeyguide.prefab (+ .meta) is missing: run Tools/Build/author_honeyguide_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Honeyguide.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid)
+    for path, guid in ((HONEYGUIDE_CONTAINER, HONEYGUIDE_CONTAINER_GUID), (HIVE_EFFECT, HIVE_EFFECT_GUID)):
+        if not os.path.exists(path) or not os.path.exists(path + ".meta"):
+            return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run Tools/Build/author_honeyguide_assets.py"]
+        if guid_of(path + ".meta") != guid:
+            errs.append(f"{os.path.relpath(path, ROOT)}.meta: guid is not the tool's")
+    errs += check_container(read(HONEYGUIDE_CONTAINER), read(HIVE_EFFECT), guid_of(HIVE_SCRIPT_META))
     if not os.path.exists(MODEL_FBX) or not os.path.exists(MODEL_FBX + ".meta") or guid_of(MODEL_FBX + ".meta") != MODEL_FBX_GUID:
         errs.append("Honeyguide.fbx (+ .meta, guid MODEL_FBX_GUID) is missing: run Tools/Build/vessel_model/build.py "
                     "Tools/Build/vessel_model/specs/honeyguide.py")
@@ -756,7 +810,7 @@ def author():
     if not os.path.exists(PREFAB):   # the spent one-shots stand down once committed
         write(PREFAB, build_clone(read(DONOR), script_guid))
         write(PREFAB + ".meta", prefab_meta())
-    old = read(PREFAB); new = model_retrofit(retarget_triggers(old), guid_of(BODY_SCRIPT_META))   # not one-shots: held to them
+    old = read(PREFAB); new = retarget_container(model_retrofit(retarget_triggers(old), guid_of(BODY_SCRIPT_META)))   # not one-shots: held to them
     if new != old:
         write(PREFAB, new)
     if not os.path.isdir(CONFIG_DIR):
@@ -774,6 +828,11 @@ def author():
         write(MAP, build_map(read(DONOR_MAP)))
         if not os.path.exists(MAP + ".meta"):
             write(MAP + ".meta", native_meta(MAP_GUID))
+    if not os.path.exists(HIVE_EFFECT):
+        write(HIVE_EFFECT, hive_effect_asset(guid_of(HIVE_SCRIPT_META))); write(HIVE_EFFECT + ".meta", native_meta(HIVE_EFFECT_GUID))
+    if not os.path.exists(HONEYGUIDE_CONTAINER):
+        write(HONEYGUIDE_CONTAINER, container_asset(read(DONOR_CONTAINER)))
+        write(HONEYGUIDE_CONTAINER + ".meta", native_meta(HONEYGUIDE_CONTAINER_GUID))
     if not os.path.exists(PECK):
         write(PECK, peck_asset(read(DONOR_PECK))); write(PECK + ".meta", native_meta(PECK_GUID))
     trigger_guid = guid_of(TRIGGER_SCRIPT_META)
@@ -790,12 +849,17 @@ def author():
 def self_test():
     """Every check must fire on a broken copy of the set (negative controls), and pass on it intact."""
     script_guid = guid_of(SEAT_SCRIPT_META)
-    good = retarget_triggers(build_clone(read(DONOR), script_guid))
+    good = retarget_container(retarget_triggers(build_clone(read(DONOR), script_guid)))
     fails = []
     def expect(errs, n_min, what):
         if not ((len(errs) == 0) if n_min == 0 else (len(errs) >= n_min)):
             fails.append(f"{what}: {errs}")
     expect(check_prefab(good, script_guid), 0, "a fresh clone passes")
+    expect(check_prefab(good.replace(HONEYGUIDE_CONTAINER_GUID, DONOR_CONTAINER_GUID), script_guid), 1, "the Sparrow's impactor container")
+    hc, he, hs = container_asset(read(DONOR_CONTAINER)), hive_effect_asset(guid_of(HIVE_SCRIPT_META)), guid_of(HIVE_SCRIPT_META)
+    expect(check_container(hc, he, hs), 0, "a fresh container and effect pass")
+    expect(check_container(read(DONOR_CONTAINER), he, hs), 1, "the Sparrow's container")
+    expect(check_container(hc, he.replace(hs, "0" * 32), hs), 1, "the effect names another script")
     expect(check_prefab(good.replace(f"  vesselType: {HONEYGUIDE_CLASS_ID}\n", f"  vesselType: {SPARROW_CLASS_ID}\n"), script_guid), 1, "the Sparrow's vesselType")
     expect(check_prefab(re.sub(r"(  GlobalObjectIdHash: )\d+", r"\g<1>1124080984", good, count=1), script_guid), 1, "the donor's hash")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {SEAT_ID}}}\n", ""), script_guid), 1, "the seat off the root")

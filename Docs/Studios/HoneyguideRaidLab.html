@@ -892,7 +892,7 @@
   }
   function tick(hive, dt) { if (hive.stun > 0) hive.stun = Math.max(0, hive.stun - dt); }
   function digest(hive) {
-    return hive.cells.map((x) => x.dom + '' + x.hits + (x.danger ? 'd' : '')).join('.') + '|' + hive.chain.join(',') + '|' + hive.stun.toFixed(6) + '|' + hive.done.join('') + '|' + hive.rewards.join('') +
+    return hive.cells.map((x) => x.dom + '' + x.hits + (x.danger ? 'd' : '')).join('.') + '|' + hive.chain.join(',') + '|' + Math.round(hive.stun * 1e6) + '|' + hive.done.join('') + '|' + hive.rewards.join('') +
       '|' + hive.broken + '|' + hive.chains + '|' + hive.stings;
   }
   root.HiveCore = { PERMS, CLASS, othersOf, largestCrystal, crystalSlot, placeRewards, crystalNext, live, laySnake, hiveHolds, makeHive, pathsThrough,
