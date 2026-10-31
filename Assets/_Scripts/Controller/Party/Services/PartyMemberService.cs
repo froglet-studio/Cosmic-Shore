@@ -120,6 +120,8 @@ namespace CosmicShore.Gameplay
             ISet<string> departed = null, bool serverRead = true)
         {
             if (_connectionData.PartyMembers == null) return System.Array.Empty<string>();
+            // A session let go between a caller's await and this call (a join or leave started) has no roster to read.
+            if (session?.Players == null) return System.Array.Empty<string>();
 
             // Build a fast-lookup set of current session player IDs. A SPECTATOR is in the
             // session (it needs the Relay seat to watch) but is never a party member: it is

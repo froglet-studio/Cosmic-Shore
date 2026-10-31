@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Party recovery after the four-player test: online only once the lava lamp is up, stale memberships cleared, dead hosts not offered, Rejoin and host loss during a bounce (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/PartySystem/BUGS.md` B39-B44. `LavaLampPresence` + the `ready` presence property (B39);
+`StaleLobbyMembership` around the party join and both presence joins (B40); Relay "join code not found" classified Gone
+and `DeadPartySessions` (B41); `PartyInviteController`: a join waits for a running transition, a host loss during one
+is acted on when it ends, the Rejoin offer waits for the bounce (B42); a host with others cannot Join or Spectate away
+(`leavePartyFirstToast`, B43); the roster sync's null session (B44). Compiled with `unity_refcompile` (player and
+editor configs). No Unity Editor in the session: not compiled or run in Unity, no MPPM run. **Every player must be on
+this build**: an older build never publishes `ready`, so a new build does not list it online.
+
+MPPM, 3-4 virtual players with their own tags (or two machines, which is what the bugs need):
+- [ ] B39: start Play on P2 and watch P1's ONLINE list: P2 appears only when P2's menu has faded in, not during its boot
+  splash. P2 entering a match stays listed (with its match).
+- [ ] B39: stop P2's Play and start it again: P1's row for P2 does not flicker away and back for good; P2 rejoins the
+  presence lobby with no "already a member" warning loop (B40).
+- [ ] B41/B40: P1 hosts a party with P2. Pause P1's editor for 20 s (Relay drops it). On P3 press JOIN on P1's row:
+  "That party has ended." and P3 is back on its own menu; P3's row for P1 no longer offers JOIN/SPECTATE; a second
+  JOIN attempt elsewhere works (no "already a member").
+- [ ] B42: in the same setup P2 bounces "Host disconnected"; press REJOIN as soon as it appears: it is either not shown
+  until the menu is back, or the press waits and then runs - never "Already transitioning - ignoring rejoin".
+- [ ] B42: a host whose re-host fails (pause it again during its bounce): it bounces again and ends on a live solo party
+  (`net` shows a listening host), not `InParty` on a dead link.
+- [ ] B43: P1 hosts P2; on P1 press JOIN or SPECTATE on P3's row: the toast says to leave first and P2 stays in the party.
+- [ ] B44: no `NullReferenceException` in `PartyMemberService.SyncFromSession` across any of the above.
+- [ ] The edit-mode tests `PartyRecoveryTests`, `AbsenceStrikesTests`, `UgsRequestPolicyTests` pass.
+
 ### 🔴 Angler Space card: Paint drawn as the two groups (`claude/angler-paint-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 **What landed:** five kit parts under the Space icon in `AnglerHUDVariant.prefab` (`Angler_Paint*`), two runtime counts
