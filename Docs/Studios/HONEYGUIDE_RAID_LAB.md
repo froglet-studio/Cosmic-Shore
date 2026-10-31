@@ -1,8 +1,9 @@
 # Ratel Raid Lab
 
-A browser lab (`/labmaker`) that lets a person play the **raid** proposed for the Ratel's seat of the Honeyguide, and
-measures what it does to the seat's rhythm. Page: `Docs/Studios/HoneyguideRaidLab.html`. Live artifact:
-https://claude.ai/artifact/5ZGDVoET4mreTbvQ1YHrMo (private to Garrett until shared from its Share menu; its own decision log).
+A browser lab (`/labmaker`) for the second game proposed for the Ratel's seat of the Honeyguide: **hive mode** (round 1
+called it the raid). A person plays it on the real Dynamo, and a headless scorecard measures what it does to the seat's
+rhythm. Page: `Docs/Studios/HoneyguideRaidLab.html`. Live artifact: https://claude.ai/artifact/5ZGDVoET4mreTbvQ1YHrMo
+(private to Garrett until shared from its Share menu; its own decision log).
 
 **The question** (Garrett, 2026-10-29): the Ratel "is a fun puzzle but it needs something to break up the repetition of
 pure pattern building ... you can't escape the time pressure of fiddling with your next three moves." Then, on the
@@ -12,9 +13,192 @@ well. those will go in for sure, but show me the raid in an artifact."
 **Who else works here:** the Honeyguide and Ratel are Garrett's crew vessel
 (`Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md`); its lab is the Honeyguide Lab
 (`Docs/Studios/HoneyguideLab.html`, https://claude.ai/artifact/4B7oZwb5aYxFJR7XKyWx7v). This lab changes neither. It
-copies the lab's Dynamo and adds the raid around it.
+copies the lab's Dynamo (the `dynamo-core` block, byte for byte apart from its header comment) and builds hive mode
+around it.
 
-## What the page is
+## Round 2 (2026-10-31): hive mode
+
+**Decision log, read at the start of the round:** empty. Garrett's notes came through the session, not the page.
+
+Garrett, 2026-10-31:
+
+> "Ratel: seeing a symbolic view (low fidelity) of the honeyguide gameplay that can run on old devices in a thin strip is great, even if it only reported distance to an omnicrystal. the omnicrystal transforms into a hive. the ratel and the hive are invulnerable until the ratel leaves hive mode, the ratel enters hivemode after the honeyguide gets an omnicrystal, and the ratel ends their current timer. The shortest chain should be 3. every hive should be solvable, which means all of the prisms of the other domains are raided. after the hive is left it should spawn bee fauna in the player's domain that protect it pull mass out of opposing fauna to bring back mass to grow the hive. the honeyguide's mass power is to produce one hive in a random location within the cytoplasm that the honeyguide can find which also begin as all 3 domains and is similar to finding an omnicrystal. this is distinguished in the ratel's view only in the symbolic view when they see the honeyguide approaching a hive instead of an omnicrystal. after the hive mode times out players can take their rewards back to the main puzzle without needing to select a boon. the prisms should not need to be placed manually afterward. if you look at the patterns they are all cut from a planar crystal that represents the only way a hex grid can be tiled with 3 colors. if you detect the largest planar crystal in their dynamo then you can add the new prisms to that planar crystal, which helps teach the player about that planar crystal pattern. if they complete a whole color then they get 2 prisms of that color in their dynamo and 1 in their battery. if they complete both colors they get the same rewards in the other color and their own."
+
+### Read as (correct any of these)
+
+1. **The strip** stays thin (44 to 60 px) and symbolic: plain canvas shapes and two cached strings, so it allocates
+   nothing per frame. It shows the Honeyguide, its target and the distance to it in u. An **omnicrystal is a diamond**,
+   a **Mass-power hive a hexagon**: the icon is the only place the two differ. Omnicrystals appear on a seeded schedule
+   (`omniEverySeconds` 45, ±25%, once the last is taken). The Mass power makes one hive every `massHiveEverySeconds`
+   (70) at a random distance (`targetNearU` 400 to `targetFarU` 1600 u). The stand-in pilot flies to the nearer one at
+   `plSpeed` (60 u/s); the other one's distance waits. Both kinds of hive begin with all three domains and use the same
+   generator.
+2. **Hive mode starts on its own** when the Honeyguide reaches its target. Round 1's Hive card and the AI's "when to
+   raid" policy are gone. If the Ratel is in the middle of a pick of three, hive mode waits until it picks.
+   "Ends their current timer" is read as **the spin completes at once** (the ports turn and the spin's AP arrive); the
+   clock then stays stopped through hive mode, and a fresh full spin starts on return. A rule option
+   (`hiveEndsSpin`) offers the other reading, **only stop the clock**: the old spin then resumes where it was.
+3. **Invulnerable**: the Honeyguide and the hive cannot be harmed while the Ratel is in hive mode. The lab has no
+   damage model, so the strip shows it (a shield ring on both) and it is listed under Not modelled as a Unity rule.
+   Round 1's "the pilot leaves the hive" ending is gone. A **Leave** button ends hive mode and keeps what was earned;
+   the AI never leaves early.
+4. **Chains**: a path through touching cells of ONE other domain, at least 3 long (`minChain` 3), no maximum. Our own
+   domain (Jade) is the hive's body and refuses a chain. Round 1's shields, stings, super-shields and per-chain honey and
+   AP are dropped: they fight solvability (a super-shielded cell splits a run; a sting makes cells unreachable), and the
+   new rewards replace them.
+5. **Every hive is solvable**: the generator lays the two other domains as **snakes** (simple paths of 3 to 5 cells;
+   snakes of the same colour may touch) up to `hiveOtherShare` (45%) of the cells, leaves `hiveHoles` (2) empty, and
+   fills the rest with our domain. A **solver** then proves every other-domain cell can be cleared by chains of 3 or
+   more. Per colour and per connected group it takes the group's lowest cell, tries every simple path of 3 to 8 cells
+   through it, removes it and recurses, memoised on the cells left. A hive that fails is regenerated. The skilled AI
+   plays the solver's solution. The rookie picks among the four longest chains and cuts some short, so it can strand
+   cells; the scorecard counts them.
+6. **Rewards, automatic, no boon**: clearing every cell of one other colour pays 2 prisms of it on the Dynamo
+   (`rewardDynamo`) and 1 charge of it in the battery (`rewardBattery`); clearing both other colours also pays the same in
+   our own colour. They are shown in the hive panel as they are earned and **go back when hive mode ends** (cleared, timed
+   out after `raidSeconds` 15, Leave, or no chain of 3 left), with no pick: round 1's feast is gone. The prisms **place
+   themselves**.
+7. **The planar crystal**: all 39 patterns are cut from the one 3-colouring of the hex grid, colour class
+   `k = ((q − r) mod 3 + 3) mod 3`, and neighbours never share a class. A crystal is a colour permutation (prism colour =
+   `perm[k]`); there are six. The **largest planar crystal** is, over the six, the largest connected set of board prisms
+   whose colour is `perm[class]` (ties: the earlier perm, then the lower cell). A reward prism lands on an empty cell of
+   its colour's class next to the crystal (nearest the centre, then lowest index), else on any empty cell of that class,
+   else on any empty cell. Each landed prism joins the crystal, so the next one can sit beside it. While they land, the
+   crystal's cells light, the rewards ring, and the empty cells touching the crystal show a ghost prism in the colour the
+   crystal puts there, for `crystalGlowSeconds` (1.6 s). `__lab.largestCrystal(cells)` exposes it.
+8. **After the hive is left** it stays in the strip as our hive, with `beesPerHive` (5) bees and a mass that grows as each
+   bee brings `beeMassPerMinute` (4) back a minute. Symbolic only (Not modelled, Decision needed).
+9. **The round 7 Breath** (AP bank 6, a pick of three every 4 patterns) stays as it is on the main puzzle.
+
+### What the page is now
+
+- The strip, hive mode and the hive panel replace round 1's Hive card, raid and feast. The build, the pick of three
+  and the AI's build planner are unchanged.
+- **Hive mode's panel** (where the cards sit) counts each other colour (cleared / total, "done" when complete), lists the
+  rewards earned, and holds **Leave** for a thumb.
+- **Header:** You / AI skilled / AI rookie, the rules (Round 6, Breath, Breath + Hive), **Hive now** (puts the omnicrystal
+  under the pilot).
+- **Settings:** Rules (and the spin option), Strip, Hive. The decision log's topics follow the notes.
+- **Test surface:** `window.__lab` adds `hive(source)`, `largestCrystal`, `crystalSlot`, `solveHive`, `makeHive`,
+  `solution()`, `CLASS` and a 15-check `selfTest()`.
+
+### Measured
+
+`window.__lab.runBatch({seeds:[1,2,3,4,5,6], seconds:180, skills:['skilled','rookie']})`, candidate settings, the same
+seeds in every row (headless Chromium, about 1.9 s):
+
+| Rules | Ratel | Patterns /min | Charges /min | Omni hives /min | Mass hives /min | Colours done /hive | Full clears | Stranded /hive | Hostile broken /min | Rewards on crystal | Rest share | In hive mode | Arc (15 s CV) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 6 (bank 3, random draw) | skilled | 4.56 | 4.72 | 0 | 0 | – | – | – | 0 | – | 12% | 0% | 0.19 |
+| Round 6 | rookie | 3.00 | 3.17 | 0 | 0 | – | – | – | 0 | – | 11% | 0% | 0.16 |
+| Breath (bank 6, pick of three) | skilled | 5.22 | 5.22 | 0 | 0 | – | – | – | 0 | – | 8% | 0% | 0.27 |
+| Breath | rookie | 2.95 | 2.95 | 0 | 0 | – | – | – | 0 | – | 10% | 0% | 0.20 |
+| **Breath + Hive** | skilled | **10.17** | **16.0** | 1.00 | 0.67 | **2.00** | **100%** | **0** | 30.9 | 95% | 11% | 15% | **0.80** |
+| **Breath + Hive** | rookie | 3.83 | 4.39 | 0.95 | 0.67 | 0.38 | 0% | 3.27 | 22.6 | 79% | 9% | 25% | 0.57 |
+| Idle Ratel (control) | either | 0 | 0 | 0.89 | 0.50 | 0 | 0% | 18.72 | 0 | – | 68% | 32% | 0 |
+
+- AP wasted a minute is 0 in every AI row but Breath + Hive (0.11 skilled, 0.22 rookie: a completed spin can overflow
+  the bank) and the idle control (10.22).
+- **The noise band** (seeds 1-3 against 4-6): skilled patterns 9.34 / 11.0, charges 15 / 17, broken 31.2 / 30.7, on
+  the crystal 96% / 93%, arc 0.82 / 0.78; rookie patterns 3.22 / 4.45, colours 0.32 / 0.43, stranded 3.60 / 2.93, on the
+  crystal 100% / 58% (few placements, so wide).
+- **The other spin reading** (`hiveEndsSpin` = only stop the clock), same seeds: skilled patterns 9.17 (against 10.17),
+  charges 15.3, arc 0.75; rookie patterns 2.73 (against 3.83). Completing the spin is worth about one pattern a minute,
+  just outside the noise.
+- **The idle control** reads 0 everywhere a Ratel acts. Its hives time out after 15 s with every other-domain cell left
+  (18.7 a hive), so it sits in hive mode 32% of the match.
+
+**What it says:**
+- **Hive mode keeps the arc round 1 found** (0.80 skilled against round 6's 0.19), now without a card to tap.
+- **The rewards are rich.** A full clear pays 6 prisms and 3 charges. The skilled Ratel full-clears every hive (1.67 a
+  minute), so its patterns more than double (4.56 → 10.17) and its charges more than triple (4.72 → 16.0). The battery
+  holds 3, so many of those charges replace older ones.
+- **The reward is a cliff.** The rookie breaks 22.6 hostile prisms a minute but completes only 0.38 colours a hive and
+  strands 3.3 cells. It never full-clears, so it earns almost nothing, and its patterns barely move (3.00 → 3.83).
+- **The crystal placement works where the board allows it**: 95% of the skilled AI's rewards land on the crystal, 79% of
+  the rookie's (its board is messier, so the crystal's empty cells of the right class run out sooner).
+
+### Checked
+
+- `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideRaidLab.html`: **PASS** at desktop 1600×900 and an
+  iPhone 13: no console errors, the desktop fits, the phone does not scroll sideways, hooks present and not throwing,
+  `SPEC` inside `SHIPPED` and its ranges, the manual clock advances, `runBatch()` deterministic within a page and across
+  two loads, the stage not blank.
+- `window.__lab.selfTest()`: **15 of 15**:
+  - the arc reads 0 for a flat seat and 1 for an on/off one;
+  - 300 generated hives are all solvable (0 regenerated);
+  - the solver rejects a planted star (a centre with three leaves: every chain of 3 strands a leaf) and clears a line of 3;
+  - a 2-chain is refused at `minChain` 3;
+  - our own domain refuses a chain;
+  - one colour done pays only its reward; both pay theirs and ours;
+  - a full clear lands 6 prisms and 3 charges (the battery capped);
+  - `largestCrystal` reads 0 on an empty board, finds a planted 3-cell crystal beside a wrong-coloured blob, and prefers a
+    7-cell crystal over a touching 4-cell one of a perm sharing no class colour;
+  - a reward lands on the crystal, in its class;
+  - `runBatch` is deterministic.
+- The `dynamo-core` block is byte-identical to `HoneyguideLab.html`'s after its header comment (checked by script).
+- Screenshots read, portrait first: the strip flying to an omnicrystal (226 u), hive mode with a chain held after one
+  colour was done, and the crystal lighting as the rewards land. Fixed from them: the crystal's next slots were dashed
+  outlines that read as ports (now ghost prisms), the toast covered the hive's top row and, on desktop, the side panel
+  (now just above the note row, centred on the board), the header still said round 1, and the spin option's labels
+  clipped in their select.
+
+### Found
+
+1. **A snake hive is solvable by construction.** Each snake is a chain of 3 or more on its own, so clearing snake by
+   snake always works. The solver confirmed 300 of 300 hives with no regeneration. It stays as the guard and as the
+   skilled AI's plan; the planted star is what proves it can say no.
+2. **The rookie strands cells by taking the long chain through a junction**, which cuts a group into pieces smaller than
+   3. With the all-or-nothing reward that is the difference between earning a colour and earning nothing.
+3. **Rewards at this size dominate the build.** Two full clears a minute double the pattern rate; the main puzzle risks
+   becoming the place where hive rewards are spent.
+4. **Completing the spin on entry is a free spin per hive**: its 3 AP can overflow a full bank of 6 (the first AP wasted
+   in any non-idle row).
+5. **No bug in the copied Dynamo.** Hive mode writes the Dynamo only through `D.tick` (the completed spin),
+   `D.boardEffect('charge')` (reward charges) and `st.cells` (reward prisms on empty cells).
+
+### Decision needed (designer)
+
+- **Keep hive mode as played**, change it, or drop it: tap **You**, then **Hive now**, on a phone.
+- **The cliff**: should a colour pay something before it is complete (per cell, or per chain), or is all-or-nothing the
+  point?
+- **The size of the rewards**: 2 prisms + 1 charge per colour, and the same in ours for both. The skilled AI's pattern
+  rate more than doubles.
+- **"Ends their current timer"**: complete the spin (default) or only stop the clock?
+- **The hive mode timeout** (15 s) and **Leave** (keeps what was earned).
+- **The bees** (in Unity this is ecology, below): their count, how they find opposing fauna, and how fast a hive grows.
+  It needs the ecology rules (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`; mass is conserved, so the bees' mass is a
+  transfer from opposing fauna, never minted) and whoever owns ecology.
+- **Invulnerability** in Unity: what exactly cannot be harmed (the hull, the hive's prisms, both) and for how long.
+- **The Mass power's cooldown** (70 s) against the omnicrystal's (45 s ±25%).
+
+### Not modelled
+
+- **The Honeyguide.** The pilot is a stand-in that flies a straight line to the nearer target and spends a charge about
+  every 7 s. Omnicrystals and Mass-power hives come on seeded clocks, not from a real cytoplasm.
+- **Invulnerability** (a Unity rule): the lab has no damage, so the shield rings only show it.
+- **The bees and the hive left behind** (ecology in Unity): bee fauna of our domain that guard the hive and pull mass out
+  of opposing fauna to grow it. Here a bee count and a mass that grows at a stand-in rate.
+- **The pilot-side card effects.** Only the cards that change the Dynamo fire (as round 1).
+- **A hive's cells** are generated snakes on our domain's body, not a projection of a real structure.
+- **Sound, haptics, network play**, and what the Honeyguide sees while the Ratel is in hive mode.
+- **The AI is a heuristic**: a person plays between the skilled and rookie rows, and the cliff hits them in between.
+- **Lab §1.5's four element games**: this lab asks one question (a Space-kind destruction game) and has no Time, Mass or
+  Charge games.
+
+### Next
+
+Garrett plays round 2 on a phone and records the decisions in the page. Round 3 then answers the cliff and the reward
+size from that log. After that, hive mode moves into the Honeyguide Lab as a round and, through `/artifact-to-unity`,
+into `DynamoCore.cs` and `HoneyguideDynamoView.cs`. In Unity the omnicrystal and the Mass power's hive are real, and the
+bees join ecology.
+
+## Round 1 (2026-10-29): the raid (superseded by round 2)
+
+Kept as it was measured. Round 2 dropped the Hive card, the Ratel's choice of when to raid, shields, stings,
+super-shields, per-chain honey and AP, and the feast.
+
+### What the page is
 
 - **The build is the real Dynamo.** The `dynamo-core` script block is copied line for line from the Honeyguide Lab's
   round 7 working copy (2026-10-29), with the round 7 Breath that Garrett decided: AP bank 6 (3 a spin, what is not
@@ -44,7 +228,7 @@ copies the lab's Dynamo and adds the raid around it.
 - **Test surface:** `window.__lab` (`manualClock`, `tick`, `reset`, `score`, `runBatch`, `state`, `SHIPPED`, `SPEC`,
   `P`, `PLATFORM`, plus `input`, `hive`, `bestChains`, `selfTest`).
 
-## Measured
+### Measured
 
 `window.__lab.runBatch({seeds:[1,2,3,4,5,6], seconds:180, skills:['skilled','rookie']})`, candidate settings, the same
 seeds in every row (run headless in Chromium, about 2.5 s):
@@ -79,7 +263,7 @@ seeds in every row (run headless in Chromium, about 2.5 s):
 - **Breath alone is a small change for the AI** (patterns +14% skilled, none for the rookie, arc 0.19 → 0.27). The AI
   never wastes AP under either bank, so this scorecard cannot measure the pressure Garrett named. Only a person can.
 
-## Checked
+### Checked
 
 - `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideRaidLab.html`: **PASS** at desktop 1600×900 and
   an iPhone 13. No console errors; the desktop fits the window; the phone does not scroll sideways; the hooks are
@@ -92,7 +276,7 @@ seeds in every row (run headless in Chromium, about 2.5 s):
   super-shielded cell and a cell of the other domain are refused. A danger cell stings, breaks the chain and takes the
   AP. A shield takes the first pass while the plain prism beside it breaks. `runBatch` is deterministic.
 
-## Found
+### Found
 
 1. **The first arc measure could not see the problem.** Over 5 s bins, round 6 scored 1.34 and the raid 1.30, because
    one spin is itself a burst then a wait. Measured per spin (15 s windows), the burst repeats inside every window, so
@@ -107,7 +291,7 @@ seeds in every row (run headless in Chromium, about 2.5 s):
    writes the Dynamo only through `D.boardEffect` ('charge'), `st.free` (honey) and `st.ap` (banked AP, capped at the
    bank).
 
-## Decision needed (designer)
+### Decision needed (designer)
 
 - **Keep the raid, change it, or drop it**, after playing it as the Ratel on a phone (tap **You**, then **Find a
   hive**). Record it in the page's Decisions tab.
@@ -117,7 +301,7 @@ seeds in every row (run headless in Chromium, about 2.5 s):
 - **The feast's three**: a new ability, new ports or a card swap. Right three?
 - **Who decides when to raid**: the Ratel (this page), or does the pilot's arrival start it?
 
-## Not modelled
+### Not modelled
 
 - The Honeyguide. The pilot is a stand-in: it spends a charge about every 7 s, finds a hive on a seeded clock and holds
   it 85% of the time. Whether a real pilot finds and holds hives, and how a hive is chosen in the world, is not tested.
@@ -131,7 +315,7 @@ seeds in every row (run headless in Chromium, about 2.5 s):
 - Lab §1.5's four element games: this lab asks one question (the raid, a Space-kind destruction game) and has no
   Time, Mass or Charge games.
 
-## Next
+### Next
 
 Garrett plays it on a phone and records the decisions. If the raid stays, round 2 tunes the pay and the stings from
 that log. Then it moves into the Honeyguide Lab as a round, and through `/artifact-to-unity` into `DynamoCore.cs`

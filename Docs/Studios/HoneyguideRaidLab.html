@@ -1,9 +1,11 @@
 <!doctype html>
 <!--
-  Ratel Raid Lab (round 1) - a /labmaker browser studio for the Ratel's raid, the second game proposed for the Ratel's
-  seat of the Honeyguide (Docs/Studios/ONE_THUMB_SEAT_ARCS.md section 3). The Honeyguide finds a hostile hive; the Ratel
-  chooses when to raid it; the Dynamo becomes the hive's comb and the Ratel breaks real prisms by dragging chains; then a
-  feast (place the honey, pick one of three) and the build goes on. The build is the real Dynamo, copied line for line
+  Ratel Raid Lab (round 2) - a /labmaker browser studio for the Ratel's hive mode, the second game proposed for the Ratel's
+  seat of the Honeyguide (Docs/Studios/ONE_THUMB_SEAT_ARCS.md section 3), as Garrett's notes of 2026-10-31 reshaped it: a
+  thin symbolic strip shows the Honeyguide and the distance to an omnicrystal (or a hive its Mass power made); reaching it
+  starts hive mode on its own; every hive is solvable by chains of 3+; completing a colour pays prisms and a charge with no
+  pick, and they place themselves on the Dynamo's largest planar crystal. Round 1 (the raid card, stings, the feast) is
+  superseded. The build is the real Dynamo, copied line for line
   from Docs/Studios/HoneyguideLab.html (script id="dynamo-core") with the round 7 Breath settings: AP bank 6, a pick of
   three abilities. Write-up: Docs/Studios/HONEYGUIDE_RAID_LAB.md. Verify: node .claude/skills/labmaker/verify_lab.cjs <this file>
 -->
@@ -105,14 +107,14 @@
 <body>
 <div id="app">
   <header>
-    <h1>Ratel Raid Lab<small>ROUND 1</small></h1>
+    <h1>Ratel Raid Lab<small>ROUND 2</small></h1>
     <span class="seg" id="seatSeg" role="group" aria-label="Who plays the Ratel">
       <button data-who="human" aria-pressed="false" title="You play the Ratel: drag prisms, tap ports and cards; on a raid, drag chains">You</button>
       <button data-who="skilled" aria-pressed="true" title="Watch the skilled AI Ratel">AI skilled</button>
       <button data-who="rookie" aria-pressed="false" title="Watch the rookie AI Ratel">AI rookie</button>
     </span>
     <select id="variant" aria-label="Rules" title="Which rules the live board plays"></select>
-    <button class="btn primary" id="hiveNow" title="The Honeyguide finds a hive now">Find a hive</button>
+    <button class="btn primary" id="hiveNow" title="Put the omnicrystal under the Honeyguide: hive mode starts">Hive now</button>
     <button class="btn" id="pause">Pause</button>
     <button class="btn" id="restart">Restart</button>
     <button class="btn" id="resetAll" title="Put every setting back to the candidate">Shipped</button>
@@ -698,41 +700,45 @@
 
   // ================= (2) LAB meta + the shipped numbers =================
   // A READER of the shipped numbers. The Dynamo's are HoneyguideConfig.asset's
-  // (Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset, HoneyguideConfigSO) with the round 7 Breath that
-  // Garrett decided on 2026-10-29. Everything about the hive, the raid and the feast is a PROPOSAL: nothing in the game has it.
-  const LAB = { name: 'Ratel Raid Lab', branch: 'cece/jolly-lovelace-t8y3a1', round: 1, doc: 'Docs/Studios/HONEYGUIDE_RAID_LAB.md', proposal: 'Docs/Studios/ONE_THUMB_SEAT_ARCS.md section 3' };
+  // (Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset, HoneyguideConfigSO) with the round 7 Breath
+  // (Garrett 2026-10-29: AP bank 6, a pick of three). Everything about the strip, hive mode, the rewards, the planar
+  // crystal and the bees is a PROPOSAL from Garrett's round 2 notes (2026-10-31): nothing in the game has it.
+  const LAB = { name: 'Ratel Raid Lab', branch: 'cece/jolly-lovelace-t8y3a1', round: 2, doc: 'Docs/Studios/HONEYGUIDE_RAID_LAB.md', proposal: 'Docs/Studios/ONE_THUMB_SEAT_ARCS.md section 3' };
+  const OWN = COLOUR_DOM.indexOf(OUR_DOMAIN);   // the player's domain as a Dynamo colour (Jade = 2)
+  const OTHERS = [1, 2, 3].filter((c) => c !== OWN);
   const SHIPPED = {
     // The Dynamo (HoneyguideConfigSO), round 7 Breath
     tickSeconds: 15,        // HoneyguideConfigSO.tickSeconds
     apPerTick: 3,           // HoneyguideConfigSO.apPerTick
     apBank: 6,              // HoneyguideConfigSO.apBank: Garrett 2026-10-29 "lets have the ap cap go to 6" (was 3)
-    abilityChoices: 3,      // HoneyguideLab round 7 abilityChoices: Garrett 2026-10-29 "lets do the 3 ability pick as well"
-    pickSeconds: 10,        // HoneyguideLab round 7 pickSeconds (proposal): after this the first offer is taken
+    abilityChoices: 3,      // HoneyguideConfigSO.abilityChoices: Garrett 2026-10-29 "lets do the 3 ability pick as well"
+    pickSeconds: 10,        // HoneyguideConfigSO.pickSeconds (proposal): after this the first offer is taken
     bonusApCap: 2,          // HoneyguideConfigSO.bonusApCap (the Refund ability)
     batteryCap: 3,          // HoneyguideConfigSO.batteryCap
     revealAbility: 3.5,     // HoneyguideConfigSO.revealAbility (the old random draw only)
     revealPorts: 2,         // HoneyguideConfigSO.revealPorts
     usesPerPattern: 3,      // HoneyguideConfigSO.usesPerPattern
     patternsPerShuffle: 4,  // HoneyguideConfigSO.patternsPerShuffle
-    // The hive (proposal: a hostile surface or volume the Honeyguide's Peck marks)
-    hiveEverySeconds: 40,   // proposal: about how often the Honeyguide finds a hive (seeded, +/- 25%)
-    hiveLingerSeconds: 20,  // proposal: how long the Hive card stays lit before the Honeyguide flies past it
-    hiveBlobs: 5,           // lab: domain patches in a comb (each cell takes the domain of the nearest)
-    hiveOwn: 0.12,          // lab: share of patches in our own domain (Jade): they cannot be broken
-    hiveHoles: 0.08,        // lab: share of empty cells in a comb (more on the rim)
-    hiveShield: 0.15,       // lab: share of hostile cells that are shielded (two passes)
-    hiveDanger: 0.07,       // lab: share of hostile cells that are danger prisms (they sting)
-    hiveSuper: 0.04,        // lab: share of hostile cells that are super-shielded (never chained, never broken)
-    // The raid and the feast (proposals)
-    raidSeconds: 12,        // proposal: the longest a raid lasts
-    raidMinChain: 2,        // proposal: shortest chain that breaks
-    honeyChain: 3,          // proposal: a chain that breaks this many prisms pays one honey (a free prism of its domain)
-    raidApEvery: 4,         // proposal: +1 AP for every this many prisms a chain breaks (up to the AP bank)
-    raidChargeChain: 6,     // proposal: a chain that breaks this many also sends a charge of its domain to the battery
-    raidStingAp: 1,         // proposal: AP a sting costs
-    feastSeconds: 10,       // proposal: the longest the feast holds the clock
-    // The stand-in Honeyguide (lab only: the pilot's seat is not modelled here)
-    plHold: 0.85,           // lab: chance the pilot holds the hive for a whole raid
+    // The strip: what the Honeyguide is flying to (Garrett 2026-10-31: "even if it only reported distance to an omnicrystal")
+    omniEverySeconds: 45,   // lab: about how often an omnicrystal appears (seeded, +/- 25%) once the last one is taken
+    massHiveEverySeconds: 70, // proposal: the Honeyguide's Mass power makes one hive this often (Garrett 2026-10-31)
+    targetNearU: 400,       // lab: nearest an omnicrystal or a Mass-power hive appears (u)
+    targetFarU: 1600,       // lab: farthest (u): "a random location within the cytoplasm"
+    plSpeed: 60,            // lab: the stand-in pilot's speed toward its target (u/s)
+    // Hive mode (proposals)
+    raidSeconds: 15,        // proposal: hive mode times out after this
+    minChain: 3,            // Garrett 2026-10-31: "The shortest chain should be 3"
+    hiveOtherShare: 0.45,   // lab: share of the 37 cells laid as the other two domains' snakes
+    snakeMin: 3,            // lab: shortest snake the generator lays (a chain of its own)
+    snakeMax: 5,            // lab: longest snake
+    hiveHoles: 2,           // lab: empty cells in a hive
+    rewardDynamo: 2,        // Garrett 2026-10-31: "2 prisms of that color in their dynamo"
+    rewardBattery: 1,       // Garrett 2026-10-31: "and 1 in their battery"
+    crystalGlowSeconds: 1.6, // proposal: how long the planar crystal lights while the rewards land
+    // After the hive is left (symbolic stand-ins for ecology the lab does not model)
+    beesPerHive: 5,         // proposal: bee fauna a left hive spawns (Garrett 2026-10-31)
+    beeMassPerMinute: 4,    // lab: mass each bee brings back a minute from opposing fauna (a transfer, never minted)
+    // The stand-in Honeyguide (lab only)
     plSlipSeconds: 7,       // lab: about how often the pilot spends a charge on a slip (seeded, +/- 30%)
     // Lab measurement
     restGap: 2,             // lab: seconds without a move, while holding AP, before it counts as resting
@@ -746,58 +752,201 @@
     ['Dynamo', 'pickSeconds', 0, 30, 1, 'Pick time (s)', 'The clock stays stopped while the Ratel picks; then the first offer is taken (0 = no limit).'],
     ['Dynamo', 'batteryCap', 1, 6, 1, 'Battery', 'Slip charges held.'],
     ['Dynamo', 'patternsPerShuffle', 1, 8, 1, 'Patterns per new ability', 'Every this many patterns: a new ability and new ports.'],
-    ['Hive', 'hiveEverySeconds', 10, 120, 1, 'A hive about every (s)', 'How often the Honeyguide finds a hive (a hostile surface or volume) and marks it.'],
-    ['Hive', 'hiveLingerSeconds', 5, 60, 1, 'Hive card stays lit (s)', 'How long the Ratel has to choose to raid before the Honeyguide flies past.'],
-    ['Hive', 'hiveBlobs', 1, 12, 1, 'Domain patches', 'Patches of one domain in a comb. Fewer patches, longer chains.'],
-    ['Hive', 'hiveOwn', 0, 0.5, 0.01, 'Our own share', 'Patches in our own domain (Jade): they cannot be broken, and they split the comb.'],
-    ['Hive', 'hiveHoles', 0, 0.4, 0.01, 'Holes', 'Empty cells in the comb.'],
-    ['Hive', 'hiveShield', 0, 0.5, 0.01, 'Shielded', 'Hostile cells with a shield: the first chain through one takes the shield, the next breaks it.'],
-    ['Hive', 'hiveDanger', 0, 0.3, 0.01, 'Danger', 'Danger prisms: dragging into one stings, breaks the chain and costs AP.'],
-    ['Hive', 'hiveSuper', 0, 0.3, 0.01, 'Super-shielded', 'Never chained and never broken (super-shielded mass is never destroyed).'],
-    ['Raid', 'raidSeconds', 4, 30, 1, 'Raid lasts at most (s)', 'The raid ends when the comb has no chain left, at this time, or when the pilot leaves the hive.'],
-    ['Raid', 'raidMinChain', 1, 4, 1, 'Shortest chain', 'Shortest chain that breaks.'],
-    ['Raid', 'honeyChain', 2, 8, 1, 'Honey from a chain of', 'A chain that breaks this many pays one free prism of its domain for the build.'],
-    ['Raid', 'raidApEvery', 2, 10, 1, '+1 AP every', 'Prisms a chain breaks for each AP it banks.'],
-    ['Raid', 'raidChargeChain', 3, 12, 1, 'Charge from a chain of', 'A chain that breaks this many also sends a charge of its domain to the battery.'],
-    ['Raid', 'raidStingAp', 0, 3, 1, 'AP a sting costs', 'What dragging into a danger prism costs.'],
-    ['Raid', 'feastSeconds', 2, 30, 1, 'Feast holds the clock (s)', 'The longest the clock stays stopped for the feast (pick and place the honey).'],
-    ['Pilot', 'plHold', 0.1, 1, 0.01, 'Pilot holds the hive', 'Chance the stand-in Honeyguide stays near the hive for a whole raid (it fends rivals off).'],
-    ['Pilot', 'plSlipSeconds', 2, 20, 0.5, 'A slip about every (s)', 'How often the stand-in pilot spends a charge.'],
-    ['Pilot', 'restGap', 0.5, 6, 0.5, 'Rest after (s) still', 'Lab yardstick: seconds without a move, holding AP, before the Ratel counts as resting.'],
+    ['Strip', 'omniEverySeconds', 10, 180, 1, 'An omnicrystal about every (s)', 'How long after the last one is taken a new omnicrystal appears.'],
+    ['Strip', 'massHiveEverySeconds', 10, 300, 1, 'Mass power: a hive every (s)', 'The Honeyguide\'s Mass power makes one hive at a random distance this often.'],
+    ['Strip', 'targetNearU', 50, 2000, 10, 'Nearest target (u)', 'The nearest an omnicrystal or a Mass-power hive appears.'],
+    ['Strip', 'targetFarU', 100, 4000, 10, 'Farthest target (u)', 'The farthest: a random place in the cytoplasm.'],
+    ['Strip', 'plSpeed', 10, 200, 5, 'Pilot speed (u/s)', 'How fast the stand-in Honeyguide closes on its target.'],
+    ['Strip', 'plSlipSeconds', 2, 20, 0.5, 'A slip about every (s)', 'How often the stand-in pilot spends a charge.'],
+    ['Hive', 'raidSeconds', 4, 40, 1, 'Hive mode times out (s)', 'Hive mode ends when the hive is cleared, at this time, or when the Ratel leaves.'],
+    ['Hive', 'minChain', 2, 5, 1, 'Shortest chain', 'Garrett: 3. A chain is a path through touching cells of one other domain.'],
+    ['Hive', 'hiveOtherShare', 0.15, 0.7, 0.01, 'Other domains\' share', 'How much of the hive is laid as the other two domains (the rest is ours).'],
+    ['Hive', 'snakeMin', 3, 5, 1, 'Shortest snake', 'The generator lays each other-domain run as a snake at least this long.'],
+    ['Hive', 'snakeMax', 3, 8, 1, 'Longest snake', 'And at most this long.'],
+    ['Hive', 'hiveHoles', 0, 8, 1, 'Holes', 'Empty cells in a hive.'],
+    ['Hive', 'rewardDynamo', 0, 6, 1, 'Reward prisms', 'Prisms of a completed colour that land on the Dynamo.'],
+    ['Hive', 'rewardBattery', 0, 3, 1, 'Reward charges', 'Charges of a completed colour that go to the battery.'],
+    ['Hive', 'crystalGlowSeconds', 0, 4, 0.1, 'Crystal lights for (s)', 'While the rewards land, the planar crystal and its next cells light.'],
+    ['Hive', 'beesPerHive', 0, 20, 1, 'Bees per hive', 'Bee fauna a hive spawns once it is left (symbolic here).'],
+    ['Hive', 'beeMassPerMinute', 0, 20, 0.5, 'Mass per bee a minute', 'Stand-in rate at which bees bring mass back from opposing fauna.'],
+    ['Hive', 'restGap', 0.5, 6, 0.5, 'Rest after (s) still', 'Lab yardstick: seconds without a move, holding AP, before the Ratel counts as resting.'],
   ];
-  const OPT_SHIPPED = { variant: 'raid', aiGo: 'finish' };
+  const OPT_SHIPPED = { variant: 'hive', hiveEndsSpin: 'complete' };
   const OPT_LABELS = {
-    variant: { raid: 'Breath + Raid (the candidate)', breath: 'Breath only (AP bank 6, pick of three)', r6: 'Round 6 (AP bank 3, random draw)' },
-    aiGo: { finish: 'Finish the pattern in hand, then raid', now: 'Raid the moment a hive is found' },
+    variant: { hive: 'Breath + Hive (the candidate)', breath: 'Breath only (AP bank 6, pick of three)', r6: 'Round 6 (AP bank 3, random draw)' },
+    hiveEndsSpin: { complete: 'Complete the spin (ports turn, AP arrive)', stop: 'Only stop the clock' },
   };
   // Each scorecard row. P overrides SHIPPED for that row only.
   const VARIANTS = {
-    r6: { label: 'Round 6', note: 'AP bank 3, random draw, no raids (the game today)', P: { apBank: 3, abilityChoices: 1 }, raids: false },
-    breath: { label: 'Breath', note: 'AP bank 6 + pick of three, no raids (going in)', P: {}, raids: false },
-    raid: { label: 'Breath + Raid', note: 'the candidate', P: {}, raids: true },
-    idle: { label: 'Idle Ratel', note: 'negative control: hives come, the Ratel never moves', P: {}, raids: true, idle: true },
+    r6: { label: 'Round 6', note: 'AP bank 3, random draw, no hives (the game today)', P: { apBank: 3, abilityChoices: 1 }, hives: false },
+    breath: { label: 'Breath', note: 'AP bank 6 + pick of three, no hives (going in)', P: {}, hives: false },
+    hive: { label: 'Breath + Hive', note: 'the candidate', P: {}, hives: true },
+    idle: { label: 'Idle Ratel', note: 'negative control: hives come, the Ratel never moves', P: {}, hives: true, idle: true },
   };
   // Difficulty changes belief and pace, never the rules (/vessel-ai). Build rows are the Honeyguide Lab's ESKILL.hard / .easy.
   const SKILL = {
-    skilled: { think: 0.45, top: 1, blunder: 0, noise: 5, cell: 0.22, chainTop: 1, sloppy: 0, pickBest: true },
-    rookie: { think: 1.6, top: 4, blunder: 0.25, noise: 400, cell: 0.5, chainTop: 4, sloppy: 0.15, pickBest: false },
+    skilled: { think: 0.45, top: 1, blunder: 0, noise: 5, cell: 0.22, solver: true },
+    rookie: { think: 1.6, top: 4, blunder: 0.25, noise: 400, cell: 0.5, solver: false },
   };
 
-  const LS = 'lab:' + LAB.name + ':r1:';
+  const LS = 'lab:' + LAB.name + ':r2:';
   const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
   const P = Object.assign({}, SHIPPED, lsGet('P', {}));
   for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
   const OPT = Object.assign({}, OPT_SHIPPED, lsGet('opt', {}));
-  for (const k of Object.keys(OPT)) if (!(k in OPT_SHIPPED)) delete OPT[k];
+  for (const k of Object.keys(OPT)) if (!(k in OPT_SHIPPED) || !(OPT[k] in OPT_LABELS[k])) OPT[k] = OPT_SHIPPED[k];
 
   function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-  const hexDist = (a, b) => { const dq = D.Q[a] - D.Q[b], dr = D.R[a] - D.R[b]; return (Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr)) / 2; };
-  const BIN = 5;   // seconds per intensity bin
+  const BIN = 5;        // seconds per intensity bin
   const ARC_BINS = 3;   // bins per arc window (15 s, one spin)
 
-  // ================= (3) THE MODEL: the Dynamo, the hive, the raid, the feast (pure: no drawing, no devices) =================
+  // ================= (3) The planar crystal =================
+  // Every one of the 39 patterns is cut from the one 3-colouring of the hex grid: colour class k = (q - r) mod 3, and two
+  // neighbours never share a class. A crystal is a colour permutation perm (prism colour = perm[k]); there are six (PERMS).
+  const CLASS = []; for (let i = 0; i < D.N; i++) CLASS.push((((D.Q[i] - D.R[i]) % 3) + 3) % 3);
+  // The largest planar crystal on a board: over the six perms, the largest connected set of prisms whose colour equals
+  // perm[class]. Ties go to the earlier perm, then the lower cell. Returns { perm, cells, size } (size 0 on an empty board).
+  function largestCrystal(cells) {
+    let best = { perm: PERMS[0], cells: [], size: 0 };
+    for (const perm of PERMS) {
+      const seen = new Uint8Array(D.N);
+      for (let s = 0; s < D.N; s++) {
+        if (seen[s] || !cells[s] || cells[s] !== perm[CLASS[s]]) continue;
+        const q = [s]; seen[s] = 1;
+        for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (!seen[n] && cells[n] && cells[n] === perm[CLASS[n]]) { seen[n] = 1; q.push(n); }
+        if (q.length > best.size) best = { perm, cells: q.slice().sort((a, b) => a - b), size: q.length };
+      }
+    }
+    return best;
+  }
+  // Where a reward prism of colour c lands: an empty cell of c's class under the crystal's perm next to the crystal, nearest
+  // the centre then lowest index; else any empty cell of that class; else any empty cell. Returns { cell, tier } (tier 0 =
+  // on the crystal, 1 = its class elsewhere, 2 = anywhere) or null on a full board.
+  function crystalSlot(cells, crystal, c) {
+    const want = crystal.perm.indexOf(c), inC = new Uint8Array(D.N);
+    for (const i of crystal.cells) inC[i] = 1;
+    const tiers = [[], [], []];
+    for (let i = 0; i < D.N; i++) {
+      if (cells[i]) continue;
+      if (CLASS[i] !== want) { tiers[2].push(i); continue; }
+      tiers[crystal.size && D.NEIGH[i].some((n) => inC[n]) ? 0 : 1].push(i);
+    }
+    for (let t = 0; t < 3; t++) if (tiers[t].length) {
+      tiers[t].sort((a, b) => D.ringOf(a) - D.ringOf(b) || a - b);
+      return { cell: tiers[t][0], tier: t };
+    }
+    return null;
+  }
+
+  // ================= (4) The hive: snakes, the solver =================
+  // A hive is 37 cells: the other two domains laid as snakes (simple paths snakeMin..snakeMax long; same-colour snakes may
+  // touch), a few holes, and the rest our own domain (the hive's body, never chained). cells[i] = { dom } (0 = empty).
+  function makeHive(rnd, Pw) {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const dom = new Array(D.N).fill(-1), target = Math.round(Pw.hiveOtherShare * D.N);
+      let laid = 0, tries = 0, k = 0;
+      while (laid < target && tries++ < 200) {
+        const colour = OTHERS[k % 2], len = Pw.snakeMin + Math.floor(rnd() * (Math.max(Pw.snakeMin, Pw.snakeMax) - Pw.snakeMin + 1));
+        const free = []; for (let i = 0; i < D.N; i++) if (dom[i] < 0) free.push(i);
+        if (!free.length) break;
+        const path = [free[Math.floor(rnd() * free.length)]];
+        while (path.length < len) {
+          const last = path[path.length - 1], next = D.NEIGH[last].filter((n) => dom[n] < 0 && path.indexOf(n) < 0);
+          if (!next.length) break;
+          path.push(next[Math.floor(rnd() * next.length)]);
+        }
+        if (path.length < Pw.snakeMin) continue;
+        for (const i of path) dom[i] = colour;
+        laid += path.length; k++;
+      }
+      const rest = []; for (let i = 0; i < D.N; i++) if (dom[i] < 0) rest.push(i);
+      for (let h = 0; h < Pw.hiveHoles && rest.length; h++) dom[rest.splice(Math.floor(rnd() * rest.length), 1)[0]] = 0;
+      for (const i of rest) dom[i] = OWN;
+      const hive = { cells: dom.map((d) => ({ dom: d })), regenerated: attempt };
+      const sol = solveHive(hive.cells, Pw.minChain);
+      if (sol) { hive.solution = sol; return hive; }
+    }
+    return null;   // never seen: snakes are chains of their own, so a hive is solvable by construction
+  }
+  // Every simple path of minChain..maxLen cells through touching cells in `set` (a Set of cells of one colour) that holds
+  // cell `must` (any path when must < 0). Kept once per cell set (the order a thumb drags them in is the first one found).
+  function pathsThrough(set, must, minChain, maxLen) {
+    const out = new Map(), path = [], used = new Set();
+    const dfs = (u) => {
+      if (path.length >= minChain && (must < 0 || used.has(must))) { const key = path.slice().sort((a, b) => a - b).join(','); if (!out.has(key)) out.set(key, path.slice()); }
+      if (path.length >= maxLen) return;
+      for (const n of D.NEIGH[u]) if (set.has(n) && !used.has(n)) { used.add(n); path.push(n); dfs(n); path.pop(); used.delete(n); }
+    };
+    for (const s of set) { used.add(s); path.push(s); dfs(s); path.pop(); used.delete(s); }
+    return Array.from(out.values());
+  }
+  // The solver: can every other-domain cell be cleared by chains of at least minChain? Per colour, per connected
+  // component: take the component's lowest cell, try every path through it (3..8 long), remove it, recurse; memo on the
+  // cells left. Returns the chains in play order, or null when some cell can never be cleared.
+  function solveHive(cells, minChain) {
+    const memo = new Map();
+    let budget = 200000;
+    const solveSet = (set) => {
+      if (!set.size) return [];
+      const key = Array.from(set).sort((a, b) => a - b).join(',');
+      if (memo.has(key)) return memo.get(key);
+      if (--budget < 0) return null;
+      const lowest = Math.min(...set), comp = new Set([lowest]), q = [lowest];
+      for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (set.has(n) && !comp.has(n)) { comp.add(n); q.push(n); }
+      let result = null;
+      if (comp.size >= minChain) {
+        for (const p of pathsThrough(comp, lowest, minChain, 8)) {
+          const left = new Set(set); for (const i of p) left.delete(i);
+          const rest = solveSet(left);
+          if (rest) { result = [p].concat(rest); break; }
+        }
+      }
+      memo.set(key, result);
+      return result;
+    };
+    let all = [];
+    for (const c of OTHERS) {
+      const set = new Set(); for (let i = 0; i < D.N; i++) if (cells[i].dom === c) set.add(i);
+      const sol = solveSet(set);
+      if (!sol) return null;
+      all = all.concat(sol);
+    }
+    return all;
+  }
+  // Is any chain left? A connected group of one other colour at least minChain big (for minChain 3 every such group holds one).
+  function anyChain(cells, minChain) {
+    const seen = new Uint8Array(D.N);
+    for (let s = 0; s < D.N; s++) {
+      const c = cells[s].dom;
+      if (seen[s] || OTHERS.indexOf(c) < 0) continue;
+      const q = [s]; seen[s] = 1;
+      for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (!seen[n] && cells[n].dom === c) { seen[n] = 1; q.push(n); }
+      if (q.length >= minChain) return true;
+    }
+    return false;
+  }
+  // Every chain the board allows now (any colour), longest first: what the rookie picks from.
+  function chainsNow(cells, minChain, maxLen) {
+    const out = [];
+    for (const c of OTHERS) {
+      const set = new Set(); for (let i = 0; i < D.N; i++) if (cells[i].dom === c) set.add(i);
+      const seen = new Set();
+      for (const s of set) {
+        if (seen.has(s)) continue;
+        const comp = new Set([s]), q = [s];
+        for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (set.has(n) && !comp.has(n)) { comp.add(n); q.push(n); }
+        for (const i of comp) seen.add(i);
+        if (comp.size < minChain) continue;
+        for (const p of pathsThrough(comp, -1, minChain, maxLen)) out.push(p);
+      }
+    }
+    out.sort((a, b) => b.length - a.length || a[0] - b[0]);
+    return out;
+  }
+
+  // ================= (5) THE MODEL: the Dynamo, the strip, hive mode (pure: no drawing, no devices) =================
   function dynamoSettings(Pw) {
     return {
       tickSeconds: Pw.tickSeconds, apPerTick: Pw.apPerTick, apBank: Pw.apBank, bonusApCap: Pw.bonusApCap, batteryCap: Pw.batteryCap,
@@ -809,15 +958,18 @@
     };
   }
   function makeRun(seed, cfg) {
-    const V = VARIANTS[cfg.variant] || VARIANTS.raid, Pw = Object.assign({}, cfg.P || P, V.P), S = dynamoSettings(Pw);
+    const V = VARIANTS[cfg.variant] || VARIANTS.hive, Pw = Object.assign({}, cfg.P || P, V.P), S = dynamoSettings(Pw);
     seed = seed >>> 0;
     const R = {
       t: 0, seed, cfg, V, P: Pw, S, dyn: D.create(S, seed * 2654435761 + 1),
       rngE: mulberry32(seed * 7919 + 11), rngH: mulberry32(seed * 40503 + 7), rngP: mulberry32(seed * 9301 + 49297),
-      phase: 'build', hive: null, nextHive: V.raids ? Pw.hiveEverySeconds * 0.6 : Infinity, raid: null, feast: null, lastRaid: null,
-      ai: { think: 0, memo: {}, cellT: 0, path: null, at: 0, justMade: false },
-      slipT: Pw.plSlipSeconds, pilotX: 0, lastAct: -99, bins: [], hist: [], histT: 0, fx: [], lastPid: null,
-      m: { patterns: 0, charges: 0, slips: 0, hives: 0, missed: 0, raids: 0, chains: 0, broken: 0, honey: 0, stings: 0, raidAp: 0, raidWaste: 0, acts: 0, restT: 0, stoppedT: 0, raidT: 0, offers: 0, picks: 0 },
+      phase: 'build', hive: null, lastHive: null, homeHives: [],
+      // the strip: the omnicrystal and the Mass-power hive the pilot can fly to (d = distance in u, null = none)
+      omni: null, omniAt: V.hives ? Pw.omniEverySeconds * 0.5 : Infinity, massHive: null, massAt: V.hives ? Pw.massHiveEverySeconds * 0.5 : Infinity, target: null,
+      ai: { think: 0, memo: {}, cellT: 0, path: null, at: 0, plan: null },
+      slipT: Pw.plSlipSeconds, lastAct: -99, bins: [], hist: [], histT: 0, fx: [],
+      m: { patterns: 0, charges: 0, slips: 0, hivesOmni: 0, hivesMass: 0, coloursDone: 0, fullClears: 0, stranded: 0, broken: 0, chains: 0, left: 0,
+        rewardPlaced: 0, rewardOnCrystal: 0, acts: 0, restT: 0, stoppedT: 0, hiveT: 0, offers: 0 },
     };
     return R;
   }
@@ -848,180 +1000,128 @@
     const ev = R.dyn.events;
     for (let i = 0; i < ev.length; i++) {
       const e = ev[i];
-      if (e.k === 'ability') { R.m.patterns++; R.lastPid = e.pid; fx(R, { k: 'made', slot: e.slot, pid: e.pid }); }
+      if (e.k === 'ability') { R.m.patterns++; fx(R, { k: 'made', slot: e.slot, pid: e.pid }); }
       else if (e.k === 'pick') { boardCard(R, e.pid, e.colour); fx(R, { k: 'charge', cell: e.cell, colour: e.colour }); }
       else if (e.k === 'charge') R.m.charges++;
       else if (e.k === 'offer') R.m.offers++;
       else if (e.k === 'shuffle') fx(R, { k: 'toast', text: 'New ability: ' + (ABILITY_TEXT[e.ability] || [e.ability])[0] });
-      else if (e.k === 'tick') fx(R, { k: 'spin' });
     }
     ev.length = 0;
   }
 
-  // ---- the hive: a comb of the structure's real prisms, projected onto the 37 cells ----
-  function makeComb(rnd, Pw) {
-    const seeds = [], used = new Set();
-    for (let k = 0; k < Pw.hiveBlobs; k++) {
-      let c = Math.floor(rnd() * D.N), guard = 0;
-      while (used.has(c) && guard++ < 40) c = Math.floor(rnd() * D.N);
-      used.add(c);
-      seeds.push({ c, dom: rnd() < Pw.hiveOwn ? 2 : rnd() < 0.5 ? 1 : 3 });
-    }
-    const cells = [];
-    for (let i = 0; i < D.N; i++) {
-      let best = 0;
-      for (let k = 1; k < seeds.length; k++) if (hexDist(i, seeds[k].c) < hexDist(i, seeds[best].c)) best = k;
-      const dom = seeds[best].dom, rim = D.ringOf(i) === 3;
-      if (rnd() < Pw.hiveHoles * (rim ? 1.6 : 0.6)) { cells.push({ dom: 0, kind: 'empty' }); continue; }
-      if (dom === 2) { cells.push({ dom: 2, kind: 'own' }); continue; }
-      const r = rnd();
-      const kind = r < Pw.hiveSuper ? 'super' : r < Pw.hiveSuper + Pw.hiveDanger ? 'danger' : r < Pw.hiveSuper + Pw.hiveDanger + Pw.hiveShield ? 'shield' : 'plain';
-      cells.push({ dom, kind });
-    }
-    return cells;
+  // ---- the strip: an omnicrystal on a schedule, a hive from the Mass power on its own cooldown; the pilot flies to the nearer ----
+  const farU = (R) => R.P.targetNearU + R.rngP() * Math.max(0, R.P.targetFarU - R.P.targetNearU);
+  function stripStep(R, dt) {
+    const Pw = R.P;
+    if (!R.omni && R.t >= R.omniAt) R.omni = { d: farU(R), born: R.t };
+    if (!R.massHive && R.t >= R.massAt) { R.massHive = { d: farU(R), born: R.t }; fx(R, { k: 'toast', text: 'The Honeyguide\'s Mass power made a hive' }); }
+    const tgt = R.omni && (!R.massHive || R.omni.d <= R.massHive.d) ? 'omni' : R.massHive ? 'mass' : null;
+    R.target = tgt;
+    if (!tgt) return;
+    const o = tgt === 'omni' ? R.omni : R.massHive;
+    o.d = Math.max(0, o.d - Pw.plSpeed * dt);
+    if (o.d <= 0 && !R.dyn.reveal) enterHive(R, tgt);   // it waits over a pick in progress, then the hive opens
   }
-  const chainable = (c) => c.kind === 'plain' || c.kind === 'shield';
-  function anyChain(raid, minChain) {   // is there a connected same-domain group of chainable cells at least minChain big?
-    const seen = new Uint8Array(D.N), cells = raid.cells;
-    for (let s = 0; s < D.N; s++) {
-      if (seen[s] || !chainable(cells[s])) continue;
-      const q = [s]; seen[s] = 1;
-      for (let h = 0; h < q.length; h++) for (const n of D.NEIGH[q[h]]) if (!seen[n] && chainable(cells[n]) && cells[n].dom === cells[s].dom) { seen[n] = 1; q.push(n); }
-      if (q.length >= minChain) return true;
-    }
-    return false;
+  // ---- hive mode ----
+  function enterHive(R, source) {
+    const st = R.dyn, Pw = R.P;
+    if (source === 'omni') { R.omni = null; R.omniAt = R.t + Pw.omniEverySeconds * (0.75 + 0.5 * R.rngH()); R.m.hivesOmni++; }
+    else { R.massHive = null; R.massAt = R.t + Pw.massHiveEverySeconds; R.m.hivesMass++; }
+    if (R.cfg.hiveEndsSpin !== 'stop') { D.tick(st, R.S); drain(R); }   // "the ratel ends their current timer": the spin completes now
+    const h = makeHive(R.rngH, Pw);
+    R.phase = 'hive';
+    R.hive = { source, cells: h.cells, solution: h.solution, regenerated: h.regenerated, t: 0, chain: [], broken: 0, chains: 0, done: [], rewards: [] };
+    R.hive.total = {}; for (const c of OTHERS) R.hive.total[c] = h.cells.filter((x) => x.dom === c).length;
+    R.ai.path = null; R.ai.plan = null;
+    fx(R, { k: 'toast', text: (source === 'omni' ? 'The omnicrystal became a hive' : 'The Honeyguide reached its hive') + ': hive mode' });
   }
-  // The AI's search: the longest simple path through chainable cells of one domain, from each start (a bounded DFS).
-  function bestChains(raid, minChain, top) {
-    const cells = raid.cells, out = [], val = (i) => (cells[i].kind === 'plain' ? 1 : 0.5);
-    for (let s = 0; s < D.N; s++) {
-      const c = cells[s];
-      if (!chainable(c)) continue;
-      let budget = 2500, best = null, bestV = -1, v = val(s);
-      const path = [s], used = new Uint8Array(D.N); used[s] = 1;
-      const dfs = (u) => {
-        if (--budget < 0) return;
-        if (v > bestV) { bestV = v; best = path.slice(); }
-        for (const n of D.NEIGH[u]) if (!used[n] && chainable(cells[n]) && cells[n].dom === c.dom) { used[n] = 1; path.push(n); v += val(n); dfs(n); v -= val(n); path.pop(); used[n] = 0; }
-      };
-      dfs(s);
-      if (best && best.length >= minChain) out.push({ path: best, v: bestV });
-    }
-    out.sort((a, b) => b.v - a.v || a.path[0] - b.path[0]);
-    return out.slice(0, top).map((o) => o.path);
-  }
-  function foundHive(R) {
-    R.hive = { at: R.t, until: R.t + R.P.hiveLingerSeconds, comb: makeComb(R.rngH, R.P) };
-    R.m.hives++;
-    fx(R, { k: 'toast', text: 'The Honeyguide found a hive: tap the Hive card to raid it' });
-  }
-  function startRaid(R) {
-    R.phase = 'raid';
-    R.raid = { cells: R.hive.comb.map((c) => ({ dom: c.dom, kind: c.kind })), t: 0, chain: [], broken: 0, stings: 0, chains: 0, honey: 0, left: false, start: R.t };
-    R.hive = null; R.m.raids++; R.ai.path = null;
-  }
-  function stingNow(R, cell) {
-    const raid = R.raid, st = R.dyn;
-    raid.stings++; R.m.stings++; raid.chain = [];
-    let n = R.P.raidStingAp; const a = Math.min(st.ap, n); st.ap -= a; n -= a; st.bonusAp = Math.max(0, st.bonusAp - n);
-    fx(R, { k: 'sting', cell });
-  }
+  const remaining = (hive, c) => { let n = 0; for (const x of hive.cells) if (x.dom === c) n++; return n; };
   function chainAdd(R, cell) {
-    const raid = R.raid, ch = raid.chain;
-    if (!ch.length || cell < 0 || cell >= D.N) return false;
+    const hive = R.hive, ch = hive.chain;
+    if (!ch.length || !(cell >= 0 && cell < D.N)) return false;
     const last = ch[ch.length - 1];
     if (cell === last) return false;
     if (ch.length >= 2 && cell === ch[ch.length - 2]) { ch.pop(); return true; }   // backtrack
-    if (!D.isNeighbour(last, cell) || ch.indexOf(cell) >= 0) return false;
-    const c = raid.cells[cell];
-    if (c.kind === 'danger') { stingNow(R, cell); return true; }
-    if (!chainable(c) || c.dom !== raid.cells[ch[0]].dom) return false;
+    if (!D.isNeighbour(last, cell) || ch.indexOf(cell) >= 0 || hive.cells[cell].dom !== hive.cells[ch[0]].dom) return false;
     ch.push(cell); act(R, 1);
     return true;
   }
+  // Rewards for completing a colour (Garrett 2026-10-31): 2 prisms of it on the Dynamo and 1 charge of it in the battery; both
+  // other colours done also gives the same in our own colour. They are listed as earned and go back when hive mode ends.
+  function rewardsFor(done) {
+    const out = done.slice();
+    if (OTHERS.every((c) => done.indexOf(c) >= 0)) out.push(OWN);
+    return out;
+  }
   function chainEnd(R) {
-    const raid = R.raid, ch = raid.chain, st = R.dyn, Pw = R.P;
-    raid.chain = [];
-    if (ch.length < Pw.raidMinChain) return false;
-    const dom = raid.cells[ch[0]].dom;
-    let broken = 0;
-    for (const i of ch) {
-      const c = raid.cells[i];
-      if (c.kind === 'plain') { c.kind = 'empty'; c.dom = 0; broken++; fx(R, { k: 'shatter', cell: i, colour: dom }); }
-      else if (c.kind === 'shield') { c.kind = 'plain'; fx(R, { k: 'unshield', cell: i }); }
+    const hive = R.hive, ch = hive.chain;
+    hive.chain = [];
+    if (ch.length < R.P.minChain) return false;
+    const c = hive.cells[ch[0]].dom;
+    for (const i of ch) { hive.cells[i].dom = 0; fx(R, { k: 'shatter', cell: i, colour: c }); }
+    hive.broken += ch.length; hive.chains++; R.m.broken += ch.length; R.m.chains++;
+    if (remaining(hive, c) === 0 && hive.done.indexOf(c) < 0) {
+      hive.done.push(c);
+      hive.rewards = rewardsFor(hive.done);
+      fx(R, { k: 'toast', text: DOM[COLOUR_DOM[c]].name + ' complete: +' + R.P.rewardDynamo + ' prisms, +' + R.P.rewardBattery + ' charge' + (hive.rewards.length > hive.done.length ? '; both done: ' + DOM[OUR_DOMAIN].name + ' too' : '') });
     }
-    raid.broken += broken; raid.chains++; R.m.broken += broken; R.m.chains++;
-    if (broken >= Pw.honeyChain) { st.free.push(dom); raid.honey++; R.m.honey++; fx(R, { k: 'honey', cell: ch[ch.length - 1], colour: dom }); }
-    const gain = Math.floor(broken / Pw.raidApEvery);
-    if (gain > 0) { const room = Math.max(0, Pw.apBank - st.ap), g = Math.min(room, gain); st.ap += g; R.m.raidAp += g; R.m.raidWaste += gain - g; }
-    if (broken >= Pw.raidChargeChain) { D.boardEffect(st, R.S, 'charge', dom); drain(R); }
     return true;
   }
-  function endRaid(R, why) {
-    const raid = R.raid;
-    if (raid.chain.length) chainEnd(R);
-    R.lastRaid = { broken: raid.broken, honey: raid.honey, stings: raid.stings, chains: raid.chains, why, seconds: raid.t };
-    R.raid = null; R.ai.path = null;
-    R.phase = 'feast';
-    R.feast = { t: 0, picked: false, options: feastOptions(R) };
-    R.nextHive = R.t + R.P.hiveEverySeconds * (0.75 + 0.5 * R.rngH());
-    fx(R, { k: 'toast', text: (why === 'left' ? 'The Honeyguide left the hive. ' : why === 'clear' ? 'Comb cleared. ' : 'Raid over. ') + raid.broken + ' prisms broken: feast' });
-  }
-  function raidStep(R, dt) {
-    const raid = R.raid, Pw = R.P;
-    raid.t += dt;
-    const hazard = -Math.log(clamp(Pw.plHold, 0.01, 1)) / Math.max(1, Pw.raidSeconds);
-    if (!raid.left && R.rngP() < hazard * dt) raid.left = true;
-    if (raid.left) endRaid(R, 'left');
-    else if (raid.t >= Pw.raidSeconds) endRaid(R, 'time');
-    else if (!raid.chain.length && !anyChain(raid, Pw.raidMinChain)) endRaid(R, 'clear');
-  }
-  // ---- the feast: the clock stays stopped; place the honey and pick one of three ----
-  function feastOptions(R) {
-    const st = R.dyn, S = R.S, rnd = R.rngH, pool = S.abilities.filter((a) => a !== st.ability);
-    const ability = pool[Math.floor(rnd() * pool.length)];
-    let set = Math.floor(rnd() * (S.portSets.length - 1)); if (set >= st.portSet) set++;
-    const slot = Math.floor(rnd() * st.slots.length), cand = [];
-    for (let p = 0; p < S.patterns.length; p++) if (st.slots.indexOf(p) < 0) cand.push(p);
-    return [{ k: 'ability', a: ability }, { k: 'engine', set }, { k: 'card', slot, from: st.slots[slot], pid: cand[Math.floor(rnd() * cand.length)] }];
-  }
-  function feastPick(R, k) {
-    const f = R.feast, st = R.dyn;
-    if (!f || f.picked || !(k >= 0 && k < f.options.length)) return false;
-    const o = f.options[k];
-    if (o.k === 'ability') st.ability = o.a;
-    else if (o.k === 'engine') { st.portSet = o.set; st.ports = R.S.portSets[o.set].map((p) => [p[0], p[1]]); }
-    else { st.slots[o.slot] = o.pid; st.uses[o.slot] = 0; }
-    f.picked = true; f.choice = k; R.m.picks++;
-    return true;
-  }
-  function feastStep(R, dt) {
-    const f = R.feast;
-    f.t += dt;
-    if ((f.picked && !R.dyn.free.length) || f.t >= R.P.feastSeconds) {
-      if (!f.picked) feastPick(R, 0);
-      R.feast = null; R.phase = 'build';
+  // Hive mode ends: the rewards go back with no pick and place themselves on the largest planar crystal; the hive stays
+  // behind with its bees; a fresh full spin starts.
+  function leaveHive(R, why) {
+    const hive = R.hive, st = R.dyn, Pw = R.P;
+    if (hive.chain.length) chainEnd(R);
+    let left = 0; for (const c of OTHERS) left += remaining(hive, c);
+    R.m.coloursDone += hive.done.length; R.m.stranded += left; if (!left) R.m.fullClears++; if (why === 'leave') R.m.left++;
+    let crystal = largestCrystal(st.cells);
+    const landed = [];
+    for (const c of hive.rewards) {
+      for (let k = 0; k < Pw.rewardDynamo; k++) {
+        const slot = crystalSlot(st.cells, crystal, c);
+        if (!slot) break;
+        st.cells[slot.cell] = c; landed.push(slot.cell); R.m.rewardPlaced++; if (slot.tier === 0) R.m.rewardOnCrystal++;
+        if (slot.tier === 0) crystal = { perm: crystal.perm, cells: crystal.cells.concat([slot.cell]), size: crystal.size + 1 };
+      }
+      for (let k = 0; k < Pw.rewardBattery; k++) D.boardEffect(st, R.S, 'charge', c);
     }
+    drain(R);
+    const inC = new Uint8Array(D.N); for (const i of crystal.cells) inC[i] = 1;
+    const next = []; for (let i = 0; i < D.N; i++) if (!st.cells[i] && D.NEIGH[i].some((n) => inC[n])) next.push([i, crystal.perm[CLASS[i]]]);
+    fx(R, { k: 'crystal', cells: crystal.cells.slice(), landed, next });
+    R.lastHive = { source: hive.source, broken: hive.broken, done: hive.done.slice(), rewards: hive.rewards.slice(), left, why, seconds: hive.t };
+    R.homeHives.push({ born: R.t, source: hive.source, bees: Pw.beesPerHive, mass: hive.cells.filter((x) => x.dom === OWN).length });
+    R.hive = null; R.ai.path = null; R.ai.plan = null;
+    R.phase = 'build'; if (R.cfg.hiveEndsSpin !== 'stop') st.clock = 0;   // complete: a fresh full spin; stop: the old one resumes
+    fx(R, { k: 'toast', text: (why === 'clear' ? 'Hive cleared' : why === 'leave' ? 'Left the hive' : why === 'stuck' ? 'No chain left' : 'Hive mode over') + ': ' + (hive.rewards.length ? hive.rewards.map((c) => DOM[COLOUR_DOM[c]].name).join(', ') + ' rewards land on the crystal' : 'no colour completed') });
+  }
+  function hiveStep(R, dt) {
+    const hive = R.hive;
+    hive.t += dt;
+    let left = 0; for (const c of OTHERS) left += remaining(hive, c);
+    if (!left) leaveHive(R, 'clear');
+    else if (hive.t >= R.P.raidSeconds) leaveHive(R, 'time');
+    else if (!hive.chain.length && !anyChain(hive.cells, R.P.minChain)) leaveHive(R, 'stuck');
+  }
+  function beesStep(R, dt) {   // symbolic: each left hive grows as its bees bring mass back (a transfer from opposing fauna)
+    for (const h of R.homeHives) h.mass += h.bees * R.P.beeMassPerMinute * dt / 60;
   }
 
   // ---- one seat input (the human's, or the AI's: the same object) ----
   function applyInput(R, inp) {
     const st = R.dyn;
     switch (inp.k) {
-      case 'raid':
-        if (R.phase !== 'build' || !R.hive || st.reveal) return false;
-        startRaid(R); act(R, 1); return true;
-      case 'chainStart':
-        if (R.phase !== 'raid' || !(inp.cell >= 0 && inp.cell < D.N)) return false;
-        if (R.raid.cells[inp.cell].kind === 'danger') { stingNow(R, inp.cell); return true; }
-        if (!chainable(R.raid.cells[inp.cell])) return false;
-        R.raid.chain = [inp.cell]; act(R, 1); return true;
-      case 'chainAdd': return R.phase === 'raid' && chainAdd(R, inp.cell);
-      case 'chainEnd': return R.phase === 'raid' && chainEnd(R);
-      case 'feastPick': { const ok = R.phase === 'feast' && feastPick(R, inp.choice); if (ok) act(R, 1); return ok; }
+      case 'chainStart': {
+        if (R.phase !== 'hive' || !(inp.cell >= 0 && inp.cell < D.N)) return false;
+        const d = R.hive.cells[inp.cell].dom;
+        if (OTHERS.indexOf(d) < 0) return false;   // our own domain is the hive's body; holes are empty
+        R.hive.chain = [inp.cell]; act(R, 1); return true;
+      }
+      case 'chainAdd': return R.phase === 'hive' && chainAdd(R, inp.cell);
+      case 'chainEnd': return R.phase === 'hive' && chainEnd(R);
+      case 'leave': if (R.phase !== 'hive') return false; leaveHive(R, 'leave'); act(R, 1); return true;
     }
-    if (R.phase === 'raid') return false;
-    if (R.phase === 'feast' && !(inp.k === 'refuel' && inp.colour)) return false;   // the feast takes only the honey
+    if (R.phase !== 'build') return false;
     const ok = D.apply(st, R.S, inp);
     if (ok) act(R, 1);
     drain(R);
@@ -1029,8 +1129,7 @@
   }
 
   // ---- the AI Ratel: input-only. It writes the same inputs a thumb does. ----
-  const FEAST_GOOD = ['overclock', 'refund', 'freeFire', 'longReach'];
-  function emptyCellFor(R) {   // where an AI with honey and no plan for it puts a free prism: an empty cell off the ports
+  function emptyCellFor(R) {   // where an AI with a free prism and no plan for it puts it: an empty cell off the ports
     const st = R.dyn, out = [];
     for (let i = 0; i < D.N; i++) if (st.cells[i] === 0 && D.portAt(st, i) === 0) out.push(i);
     return out.length ? out[Math.floor(R.rngE() * out.length)] : -1;
@@ -1038,108 +1137,89 @@
   function aiStep(R, dt) {
     const ai = R.ai, sk = SKILL[R.cfg.who] || SKILL.skilled, st = R.dyn;
     ai.think -= dt;
-    if (R.phase === 'raid') {
+    if (R.phase === 'hive') {
       if (ai.path) {
         ai.cellT -= dt;
         while (ai.path && ai.cellT <= 0) {
           if (ai.at === 0) applyInput(R, { k: 'chainStart', cell: ai.path[0] });
           else applyInput(R, { k: 'chainAdd', cell: ai.path[ai.at] });
           ai.at++; ai.cellT += sk.cell;
-          if (R.phase !== 'raid' || !R.raid.chain.length) { ai.path = null; break; }   // stung, or the raid ended
+          if (R.phase !== 'hive') { ai.path = null; break; }
           if (ai.at >= ai.path.length) { applyInput(R, { k: 'chainEnd' }); ai.path = null; ai.think = sk.cell * 2; }
         }
         return;
       }
-      if (ai.think > 0) return;
-      const chains = bestChains(R.raid, R.P.raidMinChain, sk.chainTop);
-      if (!chains.length) return;
-      let path = chains[sk.chainTop > 1 ? Math.floor(R.rngE() * chains.length) : 0];
-      if (sk.chainTop > 1) path = path.slice(0, Math.max(R.P.raidMinChain, Math.round(path.length * (0.6 + 0.4 * R.rngE()))));
-      if (sk.sloppy > 0 && R.rngE() < sk.sloppy) {   // a sloppy thumb slides into a danger prism next to the chain's end
-        const end = path[path.length - 1], d = D.NEIGH[end].find((n) => R.raid.cells[n].kind === 'danger');
-        if (d != null) path = path.concat([d]);
+      if (ai.think > 0 || R.phase !== 'hive') return;
+      let path = null;
+      if (sk.solver) {   // the skilled Ratel plays the solver's solution, chain by chain
+        if (!ai.plan) ai.plan = (R.hive.solution || []).slice();
+        while (ai.plan.length && !ai.plan[0].every((i) => OTHERS.indexOf(R.hive.cells[i].dom) >= 0)) ai.plan.shift();
+        path = ai.plan.shift() || null;
+      }
+      if (!path) {   // the rookie: a random one of the four longest chains, sometimes cut short (it can strand cells)
+        const all = chainsNow(R.hive.cells, R.P.minChain, 6);
+        if (!all.length) return;
+        path = all[Math.floor(R.rngE() * Math.min(4, all.length))];
+        if (!sk.solver && path.length > R.P.minChain && R.rngE() < 0.5) path = path.slice(0, R.P.minChain + Math.floor(R.rngE() * (path.length - R.P.minChain)));
       }
       ai.path = path; ai.at = 0; ai.cellT = 0;
       return;
     }
     if (ai.think > 0) return;
     ai.think = sk.think;
-    if (R.phase === 'feast') {
-      const f = R.feast;
-      if (!f.picked) {
-        let k = 0;
-        if (sk.pickBest) k = FEAST_GOOD.indexOf(f.options[0].a) >= 0 ? 0 : 2;
-        else k = Math.floor(R.rngE() * f.options.length);
-        applyInput(R, { k: 'feastPick', choice: k }); return;
-      }
-      if (st.free.length) {
-        const inp = D.aiPlan(st, R.S, sk, [0, 1, 1, 1], R.rngE, ai.memo);
-        if (inp && inp.k === 'refuel' && inp.colour) { applyInput(R, inp); return; }
-        const c = emptyCellFor(R); if (c >= 0) applyInput(R, { k: 'refuel', cell: c, colour: st.free[0] });
-      }
-      return;
-    }
-    // build: a hive is raided now, or once the pattern in hand is made (OPT aiGo)
-    if (R.hive && !st.reveal && (R.cfg.aiGo === 'now' || ai.justMade || R.hive.until - R.t < 3)) { ai.justMade = false; applyInput(R, { k: 'raid' }); return; }
     const inp = D.aiPlan(st, R.S, sk, [0, 1, 1, 1], R.rngE, ai.memo);
-    if (inp) {
-      if (inp.k === 'activate') ai.memo.key = '';
-      applyInput(R, inp);
-      ai.justMade = inp.k === 'activate';
-    } else {
-      if (R.hive && !st.reveal) { applyInput(R, { k: 'raid' }); return; }   // nothing to do: go now
-      if (st.free.length && !st.reveal) { const c = emptyCellFor(R); if (c >= 0) applyInput(R, { k: 'refuel', cell: c, colour: st.free[0] }); }
-    }
+    if (inp) { if (inp.k === 'activate') ai.memo.key = ''; applyInput(R, inp); }
+    else if (st.free.length && !st.reveal) { const c = emptyCellFor(R); if (c >= 0) applyInput(R, { k: 'refuel', cell: c, colour: st.free[0] }); }
   }
 
   // ---- one step of the seat. `inputs` are the human's (empty in the batch) ----
   function simStep(R, dt, inputs) {
     const Pw = R.P, st = R.dyn;
     R.t += dt;
-    if (R.phase !== 'raid') {   // the stand-in Honeyguide spends a charge on a slip now and then (it holds the hive on a raid)
-      R.slipT -= dt; R.pilotX += dt;
-      if (R.slipT <= 0) { R.slipT = Pw.plSlipSeconds * (0.7 + 0.6 * R.rngP()); if (st.battery.length) { st.battery.shift(); R.m.slips++; fx(R, { k: 'slip' }); } }
+    if (R.phase !== 'hive') {   // the stand-in Honeyguide spends a charge on a slip now and then, and flies to its target
+      R.slipT -= dt;
+      if (R.slipT <= 0) { R.slipT = Pw.plSlipSeconds * (0.7 + 0.6 * R.rngP()); if (st.battery.length) { st.battery.shift(); R.m.slips++; } }
+      if (R.V.hives) stripStep(R, dt);
     }
-    if (R.V.raids && R.phase === 'build' && !R.hive && R.t >= R.nextHive) foundHive(R);
-    if (R.hive && R.phase === 'build' && R.t > R.hive.until) { R.hive = null; R.m.missed++; R.nextHive = R.t + Pw.hiveEverySeconds * (0.75 + 0.5 * R.rngH()); fx(R, { k: 'toast', text: 'The Honeyguide flew past the hive' }); }
+    beesStep(R, dt);
     if (inputs) for (const inp of inputs) applyInput(R, inp);
     if (R.cfg.who !== 'human' && !R.V.idle) aiStep(R, dt);
     if (R.phase === 'build') { D.advance(st, R.S, dt); drain(R); }
-    else if (R.phase === 'raid') raidStep(R, dt);
-    else if (R.phase === 'feast') feastStep(R, dt);
+    else if (R.phase === 'hive') hiveStep(R, dt);
     // the yardstick
-    const stopped = R.phase === 'feast' || (R.phase === 'build' && !!st.reveal);
+    const stopped = R.phase === 'build' && !!st.reveal;
     if (stopped) R.m.stoppedT += dt;
-    else if (R.phase === 'raid') R.m.raidT += dt;
+    else if (R.phase === 'hive') R.m.hiveT += dt;
     else if (st.ap + st.bonusAp >= 1 && R.t - R.lastAct > Pw.restGap) R.m.restT += dt;
     const b = Math.floor(R.t / BIN); while (R.bins.length <= b) R.bins.push(0);
-    if (!headless(R)) { R.histT += dt; if (R.histT >= 0.5) { R.histT -= 0.5; R.hist.push({ t: R.t, ph: R.phase === 'raid' ? 2 : stopped ? 1 : 0 }); if (R.hist.length > 240) R.hist.shift(); } }
+    if (!headless(R)) { R.histT += dt; if (R.histT >= 0.5) { R.histT -= 0.5; R.hist.push(R.phase === 'hive' ? 2 : stopped ? 1 : 0); if (R.hist.length > 240) R.hist.shift(); } }
   }
 
   function score(R) {
-    const mins = Math.max(1e-9, R.t / 60), m = R.m, T = Math.max(1e-9, R.t);
-    // The arc: actions a second in 15 s windows (one spin). A spin's burst-then-wait repeats inside every window, so a board that
-    // only builds reads as a flat line here; a raid or a feast moves a whole window. CV = spread / mean of the windows.
+    const mins = Math.max(1e-9, R.t / 60), m = R.m, T = Math.max(1e-9, R.t), hives = m.hivesOmni + m.hivesMass, done = Math.max(1, hives - (R.hive ? 1 : 0));
+    // The arc: actions a second in 15 s windows (one spin). A spin's burst-then-wait repeats inside every window, so a
+    // board that only builds reads as a flat line; hive mode moves a whole window. CV = spread / mean of the windows.
     const full = R.bins.slice(0, Math.floor(R.t / BIN)), win = [];
     for (let k = 0; k + ARC_BINS <= full.length; k += ARC_BINS) { let n = 0; for (let j = 0; j < ARC_BINS; j++) n += full[k + j]; win.push(n / (ARC_BINS * BIN)); }
     const all = full.reduce((a, b) => a + b, 0), mean = full.length ? all / (full.length * BIN) : 0;
     const wm = win.length ? win.reduce((a, b) => a + b, 0) / win.length : 0;
     const sd = win.length ? Math.sqrt(win.reduce((a, b) => a + (b - wm) * (b - wm), 0) / win.length) : 0;
-    const r2 = (v) => Math.round(v * 100) / 100;
+    const r2 = (v) => Math.round(v * 100) / 100, closed = hives - (R.hive ? 1 : 0);
     return {
-      patternsPerMin: r2(m.patterns / mins), apWastedPerMin: r2((R.dyn.wasted + m.raidWaste) / mins), chargesPerMin: r2(m.charges / mins),
-      brokenPerMin: r2(m.broken / mins), raidsPerMin: r2(m.raids / mins), hivesMissed: m.missed, honeyPerMin: r2(m.honey / mins), stingsPerMin: r2(m.stings / mins),
-      restShare: r2((m.restT + m.stoppedT) / T), stoppedShare: r2(m.stoppedT / T), raidShare: r2(m.raidT / T),
-      actionsPerSec: r2(mean), arcCV: r2(wm > 0 ? sd / wm : 0), seconds: r2(R.t),
+      patternsPerMin: r2(m.patterns / mins), apWastedPerMin: r2(R.dyn.wasted / mins), chargesPerMin: r2(m.charges / mins),
+      hivesOmniPerMin: r2(m.hivesOmni / mins), hivesMassPerMin: r2(m.hivesMass / mins),
+      coloursPerHive: closed ? r2(m.coloursDone / done) : 0, fullClearPct: closed ? r2(m.fullClears / done) : 0, strandedPerHive: closed ? r2(m.stranded / done) : 0,
+      brokenPerMin: r2(m.broken / mins), onCrystalPct: m.rewardPlaced ? r2(m.rewardOnCrystal / m.rewardPlaced) : 0,
+      restShare: r2((m.restT + m.stoppedT) / T), hiveShare: r2(m.hiveT / T), actionsPerSec: r2(mean), arcCV: r2(wm > 0 ? sd / wm : 0), seconds: r2(R.t),
     };
   }
   function runOne(variant, skill, seed, seconds, dt) {
-    const R = makeRun(seed, { variant, who: skill, P, aiGo: OPT.aiGo, headless: true });
+    const R = makeRun(seed, { variant, who: skill, P, hiveEndsSpin: OPT.hiveEndsSpin, headless: true });
     const n = Math.round(seconds / dt);
     for (let i = 0; i < n; i++) simStep(R, dt, null);
     return { score: score(R), curve: R.bins.slice(0, Math.floor(R.t / BIN)).map((x) => Math.round((x / BIN) * 100) / 100) };
   }
-  const COLS = ['patternsPerMin', 'apWastedPerMin', 'chargesPerMin', 'brokenPerMin', 'raidsPerMin', 'honeyPerMin', 'stingsPerMin', 'restShare', 'stoppedShare', 'raidShare', 'actionsPerSec', 'arcCV'];
+  const COLS = ['patternsPerMin', 'apWastedPerMin', 'chargesPerMin', 'hivesOmniPerMin', 'hivesMassPerMin', 'coloursPerHive', 'fullClearPct', 'strandedPerHive', 'brokenPerMin', 'onCrystalPct', 'restShare', 'hiveShare', 'actionsPerSec', 'arcCV'];
   // runBatch(): every variant x skill x seed, headless. The no-argument call is short (the verifier calls it three times).
   function runBatch(opts) {
     opts = opts || {};
@@ -1159,7 +1239,7 @@
     return { seeds, seconds, rows, traces };
   }
 
-  // ================= (4) The live page =================
+  // ================= (6) The live page =================
   function detectPlatform() {
     const host = window.__labHost || {};
     const ua = navigator.userAgent || '', ipad = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
@@ -1171,23 +1251,14 @@
   const canvas = $('stage'), ctx = canvas.getContext('2d');
   const DT = 1 / 30;
   let seed = 1, world = null, paused = false, manualClock = false, queue = [];
-  const ui = { layout: null, G: null, cardRects: [], offerRects: [], feastRects: [], hiveRect: null, drag: null, chainDown: false, pointer: null, fx: [], toastT: 0, lastTime: 0 };
+  const ui = { layout: null, G: null, cardRects: [], offerRects: [], leaveRect: null, drag: null, chainDown: false, pointer: null, fx: [], toastT: 0, dStr: '', dVal: -1, homeStr: '', homeKey: '' };
   let WHO = lsGet('who', 'skilled');
-  function liveCfg() { return { variant: OPT.variant, who: WHO, P, aiGo: OPT.aiGo, headless: false }; }
+  function liveCfg() { return { variant: OPT.variant, who: WHO, P, hiveEndsSpin: OPT.hiveEndsSpin, headless: false }; }
   function reset(s) { if (s != null) seed = s >>> 0; world = makeRun(seed, liveCfg()); queue = []; ui.drag = null; ui.fx = []; ui.chainDown = false; }
   function push(inp) { if (world && world.cfg.who === 'human') queue.push(inp); }
 
-  const PORT_LABEL = (() => {
-    const label = new Map();
-    for (const e of Object.values(ENGINES)) for (let k = 0; k < 6; k++) for (const pm of PERMS) {
-      const ports = e.ports.map((p) => { let c = p[0]; for (let j = 0; j < k; j++) c = D.rot60(c); return [c, pm[p[1] - 1]]; });
-      const key = ports.map((p) => p[0] + ':' + p[1]).sort().join(',');
-      if (!label.has(key)) label.set(key, e.label);
-    }
-    return PORT_SETS.map((ps) => label.get(ps.map((p) => p[0] + ':' + p[1]).sort().join(',')) || 'New ports');
-  })();
   // ---- colours of the stage (the game's board look: a dark panel, the domain palette) ----
-  const C = { bg: '#070a0e', panel: '#0d131a', cell: '#141c25', line: '#26313d', ink: '#e8edf3', muted: '#8a96a4', honey: '#ffb21f', raid: '#ff5a5f', steel: '#9aa6b4', ok: '#5cd68f' };
+  const C = { bg: '#070a0e', panel: '#0d131a', cell: '#141c25', line: '#26313d', ink: '#e8edf3', muted: '#8a96a4', honey: '#ffb21f', hive: '#ff8a3d', ok: '#5cd68f', shield: '#bfe9ff' };
   const colourOf = (c) => (c ? DOM[COLOUR_DOM[c]].color : C.line);
   function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
   const FONT = (w, px) => w + ' ' + px + 'px "IBM Plex Sans", system-ui, sans-serif';
@@ -1199,8 +1270,8 @@
     const sideRoom = W - colW - 36;
     const x0 = wide ? (sideRoom > 240 ? 12 : (W - colW) / 2) : 0;
     const pad = wide ? 0 : 10, cx0 = x0 + pad, cw = colW - pad * 2;
-    const strip = { x: cx0, y: 8, w: cw, h: clamp(H * 0.12, 54, 96) };
-    const ribbon = { x: cx0, y: strip.y + strip.h + 4, w: cw, h: 8 };
+    const strip = { x: cx0, y: 8, w: cw, h: clamp(H * 0.075, 44, 60) };
+    const ribbon = { x: cx0, y: strip.y + strip.h + 4, w: cw, h: 6 };
     const hud = { x: cx0, y: ribbon.y + ribbon.h + 6, w: cw, h: 40 };
     const cards = { x: cx0, w: cw, h: clamp(cw * 0.27, 76, 120) }; cards.y = H - cards.h - 10;
     const note = { x: cx0, w: cw, h: 20 }; note.y = cards.y - 4 - note.h;
@@ -1225,53 +1296,50 @@
   function wrapText(t, w) { const out = []; let line = ''; for (const word of String(t).split(' ')) { const next = line ? line + ' ' + word : word; if (ctx.measureText(next).width > w && line) { out.push(line); line = word; } else line = next; } if (line) out.push(line); return out; }
   function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 
-  // ---- the strip: where the Honeyguide is flying, and the hive it found ----
+  // ---- the strip: symbolic and cheap (plain shapes, two cached strings). The Honeyguide, its target and the distance in u.
+  //      An omnicrystal is a diamond, a Mass-power hive a hexagon: the icon is the only place the two differ. ----
+  function diamond(x, y, s) { ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + s * 0.7, y); ctx.lineTo(x, y + s); ctx.lineTo(x - s * 0.7, y); ctx.closePath(); }
   function drawStrip(R, L) {
-    const S = L.strip, t = R.t;
-    ctx.save(); roundRect(S.x, S.y, S.w, S.h, 8); ctx.fillStyle = C.panel; ctx.fill(); ctx.clip();
-    const scroll = R.pilotX * 46, my = S.y + S.h * 0.58;
-    for (let k = 0; k < 26; k++) {   // trail prisms drifting past (decoration of the pilot's world)
-      const span = S.w + 80, x = S.x + ((k * 97 + 40 - scroll * (0.6 + (k % 3) * 0.2)) % span + span) % span - 40, y = S.y + 10 + ((k * 37) % Math.max(10, S.h - 20));
-      ctx.fillStyle = hexA(colourOf(1 + (k % 3)), 0.28); ctx.fillRect(x, y, 6, 2);
-    }
-    const px0 = S.x + S.w * 0.3;
-    let hiveX = null;
-    if (R.hive) hiveX = px0 + S.w * 0.18 - (t - R.hive.at) * 4;
-    else if (R.raid) hiveX = px0 + S.w * 0.18;
-    else if (R.V.raids && R.phase === 'build' && R.nextHive - t < 5) hiveX = px0 + S.w * 0.18 + (R.nextHive - t) * S.w * 0.14;
-    if (hiveX != null) {   // the hive: a clump of hostile comb
-      const hs = Math.max(4, S.h * 0.09), lit = R.hive || R.raid;
-      for (let k = 0; k < 7; k++) {
-        const a = k ? Math.PI / 3 * k : 0, d = k ? hs * 1.75 : 0;
-        hexPath(hiveX + Math.cos(a) * d, my + Math.sin(a) * d, hs); ctx.fillStyle = hexA(colourOf(k % 2 ? 1 : 3), lit ? 0.9 : 0.45); ctx.fill();
-      }
-      if (R.hive) { const f = clamp((R.hive.until - t) / R.P.hiveLingerSeconds, 0, 1); ctx.beginPath(); ctx.arc(hiveX, my, hs * 3.2, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); ctx.strokeStyle = C.honey; ctx.lineWidth = 2; ctx.stroke(); }
-    }
-    // the Honeyguide: orbits the hive on a raid, drifts off if it leaves
-    let hx = px0, hy = my + Math.sin(t * 1.7) * S.h * 0.12, hh = 0;
-    if (R.raid && hiveX != null) { const a = t * 2.2, rr = S.h * 0.32; hx = hiveX + Math.cos(a) * rr * 1.6; hy = my + Math.sin(a) * rr; hh = a + Math.PI / 2; }
-    ctx.save(); ctx.translate(hx, hy); ctx.rotate(hh);
-    ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-7, -6); ctx.lineTo(-3, 0); ctx.lineTo(-7, 6); ctx.closePath(); ctx.fillStyle = C.honey; ctx.fill(); ctx.restore();
-    ctx.restore();
+    const S = L.strip, my = S.y + S.h * 0.56, s = Math.max(5, S.h * 0.16);
+    roundRect(S.x, S.y, S.w, S.h, 8); ctx.fillStyle = C.panel; ctx.fill();
+    const hx = S.x + 26, homeW = R.homeHives.length ? Math.min(S.w * 0.32, 150) : 0, span = S.w - 60 - homeW;
     ctx.fillStyle = C.muted; ctx.font = FONT('600', 10); ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-    ctx.fillText('THE HONEYGUIDE (stand-in pilot)', S.x + 8, S.y + 6);
-    ctx.textAlign = 'right'; ctx.fillStyle = R.hive ? C.honey : R.raid ? C.raid : C.muted;
-    const msg = R.raid ? 'Holding the hive' : R.hive ? 'Hive found: ' + Math.ceil(R.hive.until - t) + ' s' : R.V.raids ? 'Scouting for a hive' : 'No raids in these rules';
-    ctx.fillText(msg, S.x + S.w - 8, S.y + 6);
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText('HONEYGUIDE', S.x + 8, S.y + 5);
+    // the pilot
+    ctx.beginPath(); ctx.moveTo(hx + 9, my); ctx.lineTo(hx - 7, my - 6); ctx.lineTo(hx - 3, my); ctx.lineTo(hx - 7, my + 6); ctx.closePath(); ctx.fillStyle = C.honey; ctx.fill();
+    if (R.phase === 'hive') {   // hive mode: the pilot at its hive; both invulnerable (shield rings) until the Ratel leaves
+      const tx = hx + 28;
+      hexPath(tx, my, s * 1.1); ctx.fillStyle = C.hive; ctx.fill();
+      ctx.strokeStyle = C.shield; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(hx, my, s * 1.5, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(tx, my, s * 1.7, 0, 7); ctx.stroke();
+      ctx.fillStyle = C.shield; ctx.fillText('HIVE MODE · INVULNERABLE', tx + s * 2.4, my - 6);
+    } else if (R.target) {
+      const o = R.target === 'omni' ? R.omni : R.massHive, tx = hx + 16 + span * clamp(o.d / Math.max(1, R.P.targetFarU), 0, 1);
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(hx + 12, my); ctx.lineTo(tx - 10, my); ctx.stroke(); ctx.setLineDash([]);
+      if (R.target === 'omni') { diamond(tx, my, s * 1.2); ctx.fillStyle = '#d8f3ff'; } else { hexPath(tx, my, s * 1.05); ctx.fillStyle = C.hive; }
+      ctx.fill();
+      const d = Math.round(o.d); if (d !== ui.dVal) { ui.dVal = d; ui.dStr = d + ' u'; }
+      ctx.fillStyle = C.ink; ctx.font = FONT('600', 12); ctx.textAlign = tx > S.x + S.w - homeW - 60 ? 'right' : 'left';
+      ctx.fillText(ui.dStr, tx + (ctx.textAlign === 'right' ? -s * 1.6 : s * 1.6), my - 7);
+      ctx.textAlign = 'left';
+    } else { ctx.fillStyle = C.muted; ctx.fillText(R.V.hives ? 'scouting' : 'no hives in these rules', hx + 18, my - 6); }
+    if (homeW) {   // the hives left behind: ours now, with bees bringing mass back (symbolic)
+      const x0 = S.x + S.w - homeW, n = R.homeHives.length;
+      let bees = 0, mass = 0; for (const h of R.homeHives) { bees += h.bees; mass += h.mass; }
+      const key = n + ':' + bees + ':' + Math.floor(mass); if (key !== ui.homeKey) { ui.homeKey = key; ui.homeStr = n + (n > 1 ? ' hives · ' : ' hive · ') + bees + ' bees · mass ' + Math.floor(mass); }
+      for (let k = 0; k < Math.min(n, 6); k++) { const h = R.homeHives[n - 1 - k]; hexPath(x0 + 8 + k * 14, my + 4, clamp(3 + h.mass / 12, 3, 7)); ctx.fillStyle = colourOf(OWN); ctx.fill(); }
+      ctx.fillStyle = C.muted; ctx.font = FONT('500', 10); ctx.fillText(fitText(ui.homeStr, homeW - 4), x0, S.y + 5);
+    }
+    ctx.textBaseline = 'alphabetic';
   }
-  // ---- the ribbon: the last two minutes, coloured by phase (build, clock stopped, raid) ----
-  function drawRibbon(R, L) {
+  function drawRibbon(R, L) {   // the last two minutes by phase: build, clock stopped (a pick), hive mode
     const B = L.ribbon, h = R.hist, n = 240, w = B.w / n;
     ctx.fillStyle = C.panel; ctx.fillRect(B.x, B.y, B.w, B.h);
-    for (let k = 0; k < h.length; k++) { const s = h[k]; ctx.fillStyle = s.ph === 2 ? C.raid : s.ph === 1 ? C.honey : '#2b3a4b'; ctx.fillRect(B.x + (n - h.length + k) * w, B.y, Math.ceil(w), B.h); }
+    for (let k = 0; k < h.length; k++) { ctx.fillStyle = h[k] === 2 ? C.hive : h[k] === 1 ? C.honey : '#2b3a4b'; ctx.fillRect(B.x + (n - h.length + k) * w, B.y, Math.ceil(w), B.h); }
   }
-  // ---- the HUD: the spin (or raid) clock, AP, battery, ability ----
   function drawHud(R, L) {
     const H = L.hud, st = R.dyn, P0 = R.P;
     let f = 0, col = C.honey;
-    if (R.phase === 'raid') { f = clamp(1 - R.raid.t / P0.raidSeconds, 0, 1); col = C.raid; }
-    else if (R.phase === 'feast') { f = clamp(1 - R.feast.t / P0.feastSeconds, 0, 1); col = C.ok; }
+    if (R.phase === 'hive') { f = clamp(1 - R.hive.t / P0.raidSeconds, 0, 1); col = C.hive; }
     else if (!st.reveal) f = clamp(1 - st.clock / P0.tickSeconds, 0, 1);
     ctx.fillStyle = C.line; ctx.fillRect(H.x, H.y, H.w, 4); ctx.fillStyle = col; ctx.fillRect(H.x + (H.w - H.w * f) / 2, H.y, H.w * f, 4);
     const y = H.y + 24, bank = P0.apBank + (st.ability === 'overclock' ? 1 : 0);
@@ -1281,14 +1349,13 @@
     const cap = D.batteryCap(st, R.S), bx = H.x + H.w - cap * 14 - 2;
     ctx.fillStyle = C.muted; ctx.textAlign = 'right'; ctx.fillText('BATTERY', bx - 6, y); ctx.textAlign = 'left';
     for (let k = 0; k < cap; k++) { ctx.beginPath(); ctx.arc(bx + 7 + k * 14, y, 5, 0, 7); if (k < st.battery.length) { ctx.fillStyle = colourOf(st.battery[k]); ctx.fill(); } else { ctx.strokeStyle = '#4a5664'; ctx.lineWidth = 1.2; ctx.stroke(); } }
-    const ab = (ABILITY_TEXT[st.ability] || [st.ability])[0], mid = H.x + 26 + (bank + st.bonusAp) * 13 + 8, room = bx - 70 - mid;
-    ctx.fillStyle = C.ink; ctx.font = FONT('600', 12); ctx.textAlign = 'center';
-    const label = R.phase === 'raid' ? 'RAID' : R.phase === 'feast' ? 'FEAST' : ab;
-    ctx.fillStyle = R.phase === 'raid' ? C.raid : R.phase === 'feast' ? C.ok : C.ink;
-    ctx.fillText(fitText(label, Math.max(20, room)), mid + room / 2 + 30, y);
+    const mid = H.x + 26 + (bank + st.bonusAp) * 13 + 8, room = bx - 70 - mid;
+    ctx.font = FONT('600', 12); ctx.textAlign = 'center';
+    ctx.fillStyle = R.phase === 'hive' ? C.hive : C.ink;
+    ctx.fillText(fitText(R.phase === 'hive' ? 'HIVE MODE' : (ABILITY_TEXT[st.ability] || [st.ability])[0], Math.max(20, room)), mid + room / 2 + 30, y);
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
-  // ---- the board: the Dynamo, or the hive's comb on a raid ----
+  // ---- the board: the Dynamo, or the hive in hive mode ----
   function drawBuild(R, G) {
     const st = R.dyn, built = D.built(st, R.S), lit = new Set();
     built.forEach((cells) => { if (cells) for (const c of cells) lit.add(c); });
@@ -1304,34 +1371,31 @@
     if (soon) for (const p of D.nextPorts(st)) { const [x, y] = cellPx(G, p[0]); ctx.beginPath(); ctx.arc(x, y, Math.max(2, G.size * 0.16) * (0.7 + 0.5 * pulse), 0, 7); ctx.strokeStyle = hexA(colourOf(p[1]), 0.8); ctx.lineWidth = 1.5; ctx.stroke(); }
     if (ui.drag && ui.drag.hover != null && ui.drag.hover !== ui.drag.from) { const [x, y] = cellPx(G, ui.drag.hover); hexPath(x, y, G.size * 0.95); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke(); }
   }
-  function drawComb(R, G) {
-    const raid = R.raid, ch = raid.chain, inChain = new Set(ch), t = R.t;
+  function drawHive(R, G) {
+    const hive = R.hive, ch = hive.chain, inChain = new Set(ch);
     for (let i = 0; i < D.N; i++) {
-      const [x, y] = cellPx(G, i), c = raid.cells[i], s = G.size;
+      const [x, y] = cellPx(G, i), d = hive.cells[i].dom, s = G.size;
       hexPath(x, y, s * 0.97); ctx.fillStyle = '#0b1016'; ctx.fill();
-      if (c.kind === 'empty') { hexPath(x, y, s * 0.9); ctx.strokeStyle = '#1c2530'; ctx.lineWidth = 1; ctx.stroke(); continue; }
-      const col = colourOf(c.dom), hot = inChain.has(i);
-      if (c.kind === 'plain' || c.kind === 'shield') {
-        hexPath(x, y, s * 0.88); ctx.fillStyle = hot ? '#ffffff' : hexA(col, 0.92); ctx.fill();
-        hexPath(x, y, s * 0.5); ctx.fillStyle = hot ? hexA(col, 0.9) : 'rgba(0,0,0,.22)'; ctx.fill();
-        if (c.kind === 'shield') { hexPath(x, y, s * 0.97); ctx.strokeStyle = '#e9f6ff'; ctx.lineWidth = Math.max(2, s * 0.13); ctx.stroke(); }
-      } else if (c.kind === 'own') { hexPath(x, y, s * 0.82); ctx.fillStyle = hexA(col, 0.22); ctx.fill(); ctx.strokeStyle = hexA(col, 0.5); ctx.lineWidth = 1.2; ctx.stroke(); }
-      else if (c.kind === 'super') { hexPath(x, y, s * 0.88); ctx.fillStyle = '#5d6875'; ctx.fill(); hexPath(x, y, s * 0.97); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2.5, s * 0.18); ctx.stroke(); }
-      else if (c.kind === 'danger') {
-        hexPath(x, y, s * 0.88); ctx.fillStyle = '#2a0b0e'; ctx.fill();
-        ctx.strokeStyle = C.raid; ctx.lineWidth = Math.max(1.5, s * 0.1);
-        for (let k = 0; k < 3; k++) { const a = Math.PI / 3 * k + t * 0.6; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * s * 0.55, y + Math.sin(a) * s * 0.55); ctx.lineTo(x - Math.cos(a) * s * 0.55, y - Math.sin(a) * s * 0.55); ctx.stroke(); }
+      if (!d) { hexPath(x, y, s * 0.9); ctx.strokeStyle = '#1c2530'; ctx.lineWidth = 1; ctx.stroke(); continue; }
+      if (d === OWN) {   // our own domain: the hive's body, never chained
+        hexPath(x, y, s * 0.9); ctx.fillStyle = hexA(colourOf(d), 0.16); ctx.fill(); ctx.strokeStyle = hexA(colourOf(d), 0.42); ctx.lineWidth = 1.2; ctx.stroke();
+        continue;
       }
+      const hot = inChain.has(i);
+      hexPath(x, y, s * 0.88); ctx.fillStyle = hot ? '#ffffff' : hexA(colourOf(d), 0.92); ctx.fill();
+      hexPath(x, y, s * 0.48); ctx.fillStyle = hot ? hexA(colourOf(d), 0.9) : 'rgba(0,0,0,.2)'; ctx.fill();
     }
-    if (ch.length > 1) {   // the chain: one bright line through its cells
+    if (ch.length > 1) {
       ctx.beginPath(); ch.forEach((i, k) => { const [x, y] = cellPx(G, i); if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
       ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = Math.max(3, G.size * 0.22); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
-      const [lx, ly] = cellPx(G, ch[ch.length - 1]); ctx.fillStyle = '#ffffff'; ctx.font = DFONT(Math.max(12, G.size * 0.7)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const broken = ch.filter((i) => raid.cells[i].kind === 'plain').length;
-      ctx.fillText(String(broken), lx, ly - G.size * 1.2); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    }
+    if (ch.length) {
+      const [lx, ly] = cellPx(G, ch[ch.length - 1]), ok = ch.length >= R.P.minChain;
+      ctx.fillStyle = ok ? '#ffffff' : C.muted; ctx.font = DFONT(Math.max(12, G.size * 0.7)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(ok ? String(ch.length) : ch.length + '/' + R.P.minChain, lx, ly - G.size * 1.2); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     }
   }
-  function drawOffers(R, B) {   // the pick of three (the round 7 Breath): three cards over the board, the clock stopped
+  function drawOffers(R, B) {   // the pick of three (round 7 Breath): three cards over the board, the clock stopped
     const st = R.dyn, rv = st.reveal; ui.offerRects = [];
     ctx.fillStyle = 'rgba(5,8,12,.82)'; ctx.fillRect(B.x, B.y, B.w, B.h);
     const n = rv.offers.length, cw = Math.min(B.w - 24, 380), head = 28, gap = 8;
@@ -1349,7 +1413,7 @@
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
   function drawBanner(B, text, col) { ctx.font = DFONT(13); const w = ctx.measureText(text).width + 20; roundRect(B.x + (B.w - w) / 2, B.y + 4, w, 22, 6); ctx.fillStyle = 'rgba(5,8,12,.85)'; ctx.fill(); ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, B.x + B.w / 2, B.y + 15); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; }
-  // ---- the cards row: three patterns and the Hive card; the raid's tally; the feast's three ----
+  // ---- the cards row: three patterns while building; in hive mode, the hive's tally, the rewards earned and Leave ----
   function patternCard(R, k, r) {
     const st = R.dyn, pid = st.slots[k];
     if (pid < 0) return;
@@ -1366,57 +1430,39 @@
     ctx.textAlign = 'left';
     ui.cardRects.push({ r, slot: k });
   }
-  function hiveCard(R, r) {
-    const on = !!R.hive && !R.dyn.reveal, t = R.t, pulse = 0.5 + 0.5 * Math.sin(t * 6);
-    roundRect(r.x, r.y, r.w, r.h, 8); ctx.fillStyle = on ? hexA(C.honey, 0.18 + 0.2 * pulse) : '#0c1117'; ctx.fill(); ctx.strokeStyle = on ? C.honey : C.line; ctx.lineWidth = on ? 2 : 1; ctx.stroke();
-    const s = Math.min(r.w, r.h) * 0.12, cx = r.x + r.w / 2, cy = r.y + r.h * 0.42;
-    for (let k = 0; k < 7; k++) { const a = Math.PI / 3 * k, d = k ? s * 1.75 : 0; hexPath(cx + Math.cos(a) * d, cy + Math.sin(a) * d, s); ctx.fillStyle = on ? hexA(k % 2 ? colourOf(1) : colourOf(3), 0.95) : '#26313d'; ctx.fill(); }
-    ctx.fillStyle = on ? '#ffffff' : C.muted; ctx.font = FONT('600', 10); ctx.textAlign = 'center';
-    ctx.fillText(on ? 'RAID THE HIVE' : 'NO HIVE YET', cx, r.y + r.h - 16);
-    if (R.hive) { const f = clamp((R.hive.until - t) / R.P.hiveLingerSeconds, 0, 1); ctx.fillStyle = C.honey; ctx.fillRect(r.x + 6, r.y + r.h - 7, (r.w - 12) * f, 3); }
-    ctx.textAlign = 'left';
-    if (on) ui.hiveRect = r;
-  }
   function drawCards(R, L) {
-    const K = L.cards, st = R.dyn; ui.cardRects = []; ui.hiveRect = null; ui.feastRects = [];
-    if (R.phase === 'raid') {
-      const raid = R.raid;
-      roundRect(K.x, K.y, K.w, K.h, 8); ctx.fillStyle = '#160b0d'; ctx.fill(); ctx.strokeStyle = hexA(C.raid, 0.6); ctx.lineWidth = 1.5; ctx.stroke();
+    const K = L.cards; ui.cardRects = []; ui.leaveRect = null;
+    if (R.phase === 'hive') {
+      const hive = R.hive, lw = clamp(K.w * 0.24, 70, 110), lr = { x: K.x + K.w - lw, y: K.y, w: lw, h: K.h };
+      roundRect(K.x, K.y, K.w - lw - 6, K.h, 8); ctx.fillStyle = '#170f08'; ctx.fill(); ctx.strokeStyle = hexA(C.hive, 0.6); ctx.lineWidth = 1.5; ctx.stroke();
       ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-      ctx.fillStyle = C.raid; ctx.font = DFONT(clamp(K.h * 0.24, 16, 26)); ctx.fillText('RAID', K.x + 14, K.y + K.h * 0.3);
-      ctx.fillStyle = C.ink; ctx.font = FONT('600', 13);
-      ctx.fillText(raid.broken + ' broken  ·  ' + raid.honey + ' honey  ·  ' + raid.stings + ' stung', K.x + 14, K.y + K.h * 0.58);
-      ctx.fillStyle = C.muted; ctx.font = FONT('400', 11);
-      ctx.fillText(fitText('Drag through touching cells of one colour; let go to break them. Red cells sting.', K.w - 28), K.x + 14, K.y + K.h * 0.82);
-      ctx.textBaseline = 'alphabetic';
-      return;
-    }
-    if (R.phase === 'feast') {
-      const f = R.feast, n = f.options.length, gap = 6, w = (K.w - gap * (n - 1)) / n;
-      f.options.forEach((o, k) => {
-        const r = { x: K.x + k * (w + gap), y: K.y, w, h: K.h }, chosen = f.picked && f.choice === k, dim = f.picked && !chosen;
-        roundRect(r.x, r.y, r.w, r.h, 8); ctx.fillStyle = chosen ? hexA(C.ok, 0.3) : '#0f1a14'; ctx.fill(); ctx.strokeStyle = dim ? C.line : C.ok; ctx.lineWidth = 2; ctx.stroke();
-        const head = o.k === 'ability' ? 'NEW ABILITY' : o.k === 'engine' ? 'NEW PORTS' : 'SWAP A CARD';
-        const main = o.k === 'ability' ? (ABILITY_TEXT[o.a] || [o.a])[0] : o.k === 'engine' ? PORT_LABEL[o.set] : PATTERNS[o.pid].name;
-        const sub = o.k === 'ability' ? (ABILITY_TEXT[o.a] || ['', ''])[1] : o.k === 'engine' ? 'New port pattern, turned and recoloured' : 'for ' + (o.from >= 0 ? PATTERNS[o.from].name : 'an empty slot');
-        ctx.textAlign = 'center'; ctx.fillStyle = dim ? C.muted : C.ok; ctx.font = FONT('600', 10); ctx.fillText(head, r.x + r.w / 2, r.y + 16);
-        ctx.fillStyle = dim ? C.muted : '#ffffff'; ctx.font = FONT('600', clamp(r.w / 9, 11, 15)); ctx.fillText(fitText(main, r.w - 10), r.x + r.w / 2, r.y + r.h * 0.48);
-        ctx.fillStyle = C.muted; ctx.font = FONT('400', 10); wrapText(sub, r.w - 12).slice(0, Math.max(1, Math.floor((r.h * 0.3 - 4) / 12) + 1)).forEach((ln, j) => ctx.fillText(ln, r.x + r.w / 2, r.y + r.h * 0.68 + j * 12));
-        ctx.textAlign = 'left';
-        if (!f.picked) ui.feastRects.push(r);
+      ctx.fillStyle = C.hive; ctx.font = DFONT(clamp(K.h * 0.2, 14, 22)); ctx.fillText(hive.source === 'omni' ? 'OMNICRYSTAL HIVE' : 'MASS-POWER HIVE', K.x + 12, K.y + K.h * 0.2);
+      const rowY = K.y + K.h * 0.47, colW2 = (K.w - lw - 30) / OTHERS.length;
+      OTHERS.forEach((c, j) => {
+        const x = K.x + 12 + j * colW2, left = remaining(hive, c), tot = hive.total[c], done = hive.done.indexOf(c) >= 0;
+        hexPath(x + 7, rowY, 7); ctx.fillStyle = colourOf(c); ctx.fill();
+        ctx.fillStyle = done ? C.ok : C.ink; ctx.font = FONT('600', 12);
+        ctx.fillText(fitText(done ? DOM[COLOUR_DOM[c]].name + ' done' : (tot - left) + ' / ' + tot, colW2 - 22), x + 20, rowY);
       });
+      ctx.fillStyle = C.muted; ctx.font = FONT('500', 11);
+      const rw = hive.rewards.length ? 'Earned: ' + hive.rewards.map((c) => '+' + R.P.rewardDynamo + ' ' + DOM[COLOUR_DOM[c]].name + ' +' + R.P.rewardBattery + ' charge').join(' · ') : 'Clear every cell of a colour to earn its reward';
+      ctx.fillText(fitText(rw, K.w - lw - 30), K.x + 12, K.y + K.h * 0.78);
+      roundRect(lr.x, lr.y, lr.w, lr.h, 8); ctx.fillStyle = '#10171f'; ctx.fill(); ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = C.ink; ctx.font = FONT('600', 13); ctx.textAlign = 'center'; ctx.fillText('LEAVE', lr.x + lr.w / 2, lr.y + lr.h / 2 - 6);
+      ctx.fillStyle = C.muted; ctx.font = FONT('400', 10); ctx.fillText('keep rewards', lr.x + lr.w / 2, lr.y + lr.h / 2 + 10);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      if (R.cfg.who === 'human') ui.leaveRect = lr;
       return;
     }
-    const raids = R.V.raids, n = raids ? 4 : 3, gap = 6, w = (K.w - gap * (n - 1)) / n;
+    const gap = 6, w = (K.w - gap * 2) / 3;
     for (let k = 0; k < 3; k++) patternCard(R, k, { x: K.x + k * (w + gap), y: K.y, w, h: K.h });
-    if (raids) hiveCard(R, { x: K.x + 3 * (w + gap), y: K.y, w, h: K.h });
   }
-  // ---- the side panel (a wide stage only): the match so far as an arc ----
-  function drawSide(R, L) {
+  function drawSide(R, L) {   // a wide stage only: the match so far
     const S = L.side; if (!S) return;
     ctx.fillStyle = C.panel; roundRect(S.x, S.y, S.w, S.h, 8); ctx.fill();
     ctx.fillStyle = C.muted; ctx.font = FONT('600', 11); ctx.fillText('THIS MATCH', S.x + 12, S.y + 20);
-    const m = R.m, rows = [['Time', Math.floor(R.t) + ' s'], ['Patterns made', m.patterns], ['Charges', m.charges], ['Hives found', m.hives + (m.missed ? ' (' + m.missed + ' missed)' : '')], ['Raids', m.raids], ['Hostile prisms broken', m.broken], ['Honey', m.honey], ['Stings', m.stings], ['AP wasted', R.dyn.wasted + m.raidWaste]];
+    const m = R.m, bees = R.homeHives.reduce((a, h) => a + h.bees, 0);
+    const rows = [['Time', Math.floor(R.t) + ' s'], ['Patterns made', m.patterns], ['Charges', m.charges], ['Hives: omnicrystal / Mass power', m.hivesOmni + ' / ' + m.hivesMass], ['Colours completed', m.coloursDone], ['Full clears', m.fullClears], ['Cells stranded', m.stranded], ['Hostile prisms broken', m.broken], ['Rewards on the crystal', m.rewardOnCrystal + ' / ' + m.rewardPlaced], ['Our hives · bees', R.homeHives.length + ' · ' + bees]];
     ctx.font = FONT('400', 12);
     rows.forEach(([k, v], j) => { const y = S.y + 44 + j * 20; ctx.fillStyle = C.muted; ctx.fillText(k, S.x + 12, y); ctx.fillStyle = C.ink; ctx.textAlign = 'right'; ctx.fillText(String(v), S.x + S.w - 12, y); ctx.textAlign = 'left'; });
     const cy = S.y + 44 + rows.length * 20 + 16, ch = Math.max(60, Math.min(160, S.h - (cy - S.y) - 70));
@@ -1424,35 +1470,31 @@
     const bins = R.bins.slice(0, Math.max(0, Math.floor(R.t / BIN))).slice(-36), x0 = S.x + 12, w = S.w - 24, y0 = cy + 10;
     ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.strokeRect(x0, y0, w, ch);
     if (bins.length > 1) { const mx = Math.max(1, ...bins.map((b) => b / BIN)); ctx.beginPath(); bins.forEach((b, k) => { const x = x0 + (k / 35) * w, y = y0 + ch - (b / BIN / mx) * (ch - 4); if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.strokeStyle = C.honey; ctx.lineWidth = 2; ctx.stroke(); }
-    const ly = y0 + ch + 18; [['Build', '#2b3a4b'], ['Clock stopped', C.honey], ['Raid', C.raid]].forEach(([k, c], j) => { ctx.fillStyle = c; ctx.fillRect(x0 + j * (w / 3), ly - 8, 10, 8); ctx.fillStyle = C.muted; ctx.font = FONT('400', 11); ctx.fillText(k, x0 + j * (w / 3) + 14, ly); });
+    const ly = y0 + ch + 18; [['Build', '#2b3a4b'], ['Clock stopped', C.honey], ['Hive mode', C.hive]].forEach(([k, c], j) => { ctx.fillStyle = c; ctx.fillRect(x0 + j * (w / 3), ly - 8, 10, 8); ctx.fillStyle = C.muted; ctx.font = FONT('400', 11); ctx.fillText(k, x0 + j * (w / 3) + 14, ly); });
   }
-  // ---- juice: shattered comb, stings, honey, charges ----
+  // ---- juice: shattered cells, charges, and the planar crystal lighting as the rewards land ----
   function takeFx(R) {
-    for (const e of R.fx) {
-      if (e.k === 'toast') toast(e.text);
-      else ui.fx.push(Object.assign({ t0: R.t, seedA: ui.fx.length * 1.7 }, e));
-      if (e.k === 'sting') toast('Stung! -' + R.P.raidStingAp + ' AP');
-    }
+    for (const e of R.fx) { if (e.k === 'toast') toast(e.text); else ui.fx.push(Object.assign({ t0: R.t, seedA: ui.fx.length * 1.7 }, e)); }
     R.fx.length = 0;
   }
   function drawFx(R, G) {
     const t = R.t, keep = [];
     for (const e of ui.fx) {
-      const age = t - e.t0, life = e.k === 'shatter' ? 0.7 : e.k === 'sting' ? 0.5 : e.k === 'honey' ? 0.9 : 0.6;
+      const age = t - e.t0, life = e.k === 'shatter' ? 0.7 : e.k === 'crystal' ? Math.max(0.3, R.P.crystalGlowSeconds) : 0.6;
       if (age > life || age < 0) continue;
       keep.push(e);
       const f = age / life;
-      if (e.k === 'shatter' && e.cell != null) {
+      if (e.k === 'shatter' && R.phase === 'hive') {
         const [x, y] = cellPx(G, e.cell);
         for (let k = 0; k < 6; k++) { const a = Math.PI / 3 * k + e.seedA, d = G.size * (0.3 + f * 1.4), dy = f * f * G.size * 1.6; ctx.save(); ctx.translate(x + Math.cos(a) * d, y + Math.sin(a) * d + dy); ctx.rotate(a + f * 4); ctx.fillStyle = hexA(colourOf(e.colour), 1 - f); ctx.beginPath(); ctx.moveTo(0, -G.size * 0.28); ctx.lineTo(G.size * 0.24, G.size * 0.18); ctx.lineTo(-G.size * 0.24, G.size * 0.18); ctx.closePath(); ctx.fill(); ctx.restore(); }
-      } else if (e.k === 'sting' && e.cell != null) {
-        const [x, y] = cellPx(G, e.cell); ctx.beginPath(); ctx.arc(x, y, G.size * (0.6 + f * 2.2), 0, 7); ctx.strokeStyle = hexA(C.raid, 1 - f); ctx.lineWidth = 3; ctx.stroke();
-      } else if (e.k === 'honey' && e.cell != null) {
-        const [x, y] = cellPx(G, e.cell), tx = ui.layout.hud.x + 30, ty = ui.layout.hud.y + 24, k = 1 - (1 - f) * (1 - f);
-        ctx.beginPath(); ctx.arc(x + (tx - x) * k, y + (ty - y) * k - Math.sin(f * Math.PI) * G.size * 2, G.size * 0.4, 0, 7); ctx.fillStyle = colourOf(e.colour); ctx.fill(); ctx.strokeStyle = '#ffd98a'; ctx.lineWidth = 2; ctx.stroke();
-      } else if (e.k === 'charge' && e.cell != null && R.phase === 'build') {
+      } else if (e.k === 'charge' && R.phase === 'build') {
         const [x, y] = cellPx(G, e.cell), tx = ui.layout.hud.x + ui.layout.hud.w - 20, ty = ui.layout.hud.y + 24, k = 1 - (1 - f) * (1 - f);
         ctx.beginPath(); ctx.arc(x + (tx - x) * k, y + (ty - y) * k - Math.sin(f * Math.PI) * G.size * 2, G.size * 0.34, 0, 7); ctx.fillStyle = colourOf(e.colour); ctx.fill();
+      } else if (e.k === 'crystal' && R.phase === 'build') {   // the crystal's cells light, the rewards ring, the next slots show their colour
+        const glow = Math.sin(Math.min(1, f * 3) * Math.PI / 2) * (1 - Math.max(0, f - 0.7) / 0.3);
+        for (const i of e.cells) { const [x, y] = cellPx(G, i); hexPath(x, y, G.size * 0.95); ctx.strokeStyle = hexA('#ffffff', 0.85 * glow); ctx.lineWidth = 2.5; ctx.stroke(); }
+        for (const [i, c] of e.next) { const [x, y] = cellPx(G, i); hexPath(x, y, G.size * 0.74); ctx.fillStyle = hexA(colourOf(c), 0.45 * glow); ctx.fill(); }   // ghost prisms: the colour each next cell takes
+        for (const i of e.landed) { const [x, y] = cellPx(G, i); ctx.beginPath(); ctx.arc(x, y, G.size * (0.8 + f * 0.9), 0, 7); ctx.strokeStyle = hexA('#ffd98a', 1 - f); ctx.lineWidth = 3; ctx.stroke(); }
       }
     }
     ui.fx = keep;
@@ -1466,29 +1508,27 @@
     takeFx(R);
     drawStrip(R, L); drawRibbon(R, L); drawHud(R, L);
     const G = boardGeom(L.board); ui.G = G;
-    if (R.phase === 'raid') drawComb(R, G); else drawBuild(R, G);
+    if (R.phase === 'hive') drawHive(R, G); else drawBuild(R, G);
     drawFx(R, G);
     ui.offerRects = [];
     if (R.phase === 'build' && R.dyn.reveal && R.dyn.reveal.offers) drawOffers(R, L.board);
     else if (R.phase === 'build' && R.dyn.reveal) drawBanner(L.board, R.dyn.reveal.stage === 1 ? 'NEW ABILITY: ' + (ABILITY_TEXT[R.dyn.ability] || [''])[0].toUpperCase() : 'NEW PORTS', '#9fe6ff');
-    else if (R.phase === 'feast') drawBanner(L.board, R.dyn.free.length ? 'FEAST: PICK ONE · PLACE ' + R.dyn.free.length + ' HONEY' : R.feast.picked ? 'FEAST' : 'FEAST: PICK ONE', C.ok);
     else if (R.phase === 'build' && R.dyn.free.length && R.cfg.who === 'human') drawBanner(L.board, 'TAP AN EMPTY CELL: ' + R.dyn.free.length + ' FREE', colourOf(R.dyn.free[0]));
-    if (R.dyn.free.length && ui.pointer && R.phase !== 'raid' && R.cfg.who === 'human') { ctx.beginPath(); ctx.arc(ui.pointer[0], ui.pointer[1] - 28, G.size * 0.5, 0, 7); ctx.fillStyle = colourOf(R.dyn.free[0]); ctx.fill(); }
+    if (R.dyn.free.length && ui.pointer && R.phase === 'build' && R.cfg.who === 'human') { ctx.beginPath(); ctx.arc(ui.pointer[0], ui.pointer[1] - 28, G.size * 0.5, 0, 7); ctx.fillStyle = colourOf(R.dyn.free[0]); ctx.fill(); }
     drawCards(R, L);
     drawSide(R, L);
     {   // the note row under the board: who plays, and what to do now
       const N = L.note, st = R.dyn;
       const t = R.cfg.who !== 'human' ? 'Watching the ' + R.cfg.who + ' AI Ratel. Tap "You" to play.'
-        : R.phase === 'raid' ? 'Drag a chain; let go to break it'
-        : R.phase === 'feast' ? (R.feast.picked ? (st.free.length ? 'Tap empty cells to place your honey' : '') : 'Pick one card below')
-        : st.reveal && st.reveal.offers ? 'Tap an ability' : R.hive ? 'A hive is waiting: tap the Hive card when you are ready'
+        : R.phase === 'hive' ? 'Drag through ' + R.P.minChain + '+ touching cells of one colour; let go to break them'
+        : st.reveal && st.reveal.offers ? 'Tap an ability'
         : 'Drag prisms, tap ports, tap a lit card';
       ctx.fillStyle = C.muted; ctx.font = FONT('500', 11); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(fitText(t, N.w - 8), N.x + N.w / 2, N.y + N.h / 2); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     }
   }
 
-  // ================= (5) The thumb =================
+  // ================= (7) The thumb =================
   const inRect = (r, x, y) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
   function pt(ev) { const r = canvas.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
   function pathTinkers(from, to) {   // the Honeyguide Lab's drag: one move per step along empty cells (Long Reach: one move)
@@ -1512,15 +1552,13 @@
     try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* synthetic */ }
     const R = world, st = R.dyn;
     for (let k = 0; k < ui.offerRects.length; k++) if (inRect(ui.offerRects[k], x, y)) { push({ k: 'pick', slot: k }); return; }
-    for (let k = 0; k < ui.feastRects.length; k++) if (inRect(ui.feastRects[k], x, y)) { push({ k: 'feastPick', choice: k }); return; }
-    if (inRect(ui.hiveRect, x, y)) { push({ k: 'raid' }); return; }
+    if (inRect(ui.leaveRect, x, y)) { push({ k: 'leave' }); return; }
     for (const c of ui.cardRects) if (inRect(c.r, x, y)) { push({ k: 'activate', slot: c.slot }); return; }
     const c = pxCell(ui.G, x, y);
     if (c < 0) return;
-    if (R.phase === 'raid') { push({ k: 'chainStart', cell: c }); ui.chainDown = true; ui.lastCell = c; return; }
+    if (R.phase === 'hive') { push({ k: 'chainStart', cell: c }); ui.chainDown = true; ui.lastCell = c; return; }
     if (ev.button === 2) { if (st.cells[c]) push({ k: 'remove', cell: c }); return; }
     if (st.free.length && st.cells[c] === 0) { push({ k: 'refuel', cell: c, colour: st.free[0] }); return; }
-    if (R.phase !== 'build') return;
     if (st.cells[c]) { ui.drag = { from: c, hover: c, t: performance.now(), moved: false }; return; }
     if (D.portAt(st, c)) push({ k: 'refuel', cell: c });
   });
@@ -1542,9 +1580,9 @@
   canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('pointerleave', () => { if (!ui.chainDown && !ui.drag) ui.pointer = null; });
   function longPress() { if (ui.drag && !ui.drag.moved && performance.now() - ui.drag.t > 450) { push({ k: 'remove', cell: ui.drag.from }); ui.drag = null; } }
-  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; ui.toastT = 2.2; if (ui.layout) t.style.top = Math.round(ui.layout.board.y + 6) + 'px'; }
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; ui.toastT = 2.4; if (ui.layout) { t.style.top = Math.max(Math.round(ui.layout.board.y + 6), Math.round(ui.layout.note.y - 44)) + 'px'; t.style.left = Math.round(ui.layout.board.x + ui.layout.board.w / 2) + 'px'; } }
 
-  // ================= (6) Settings, scorecard, decisions, about =================
+  // ================= (8) Settings, scorecard, decisions, about =================
   function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
   function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
   function optDiff() { const o = {}; for (const k in OPT_SHIPPED) if (OPT[k] !== OPT_SHIPPED[k]) o[k] = OPT[k]; return o; }
@@ -1562,9 +1600,8 @@
     for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
     const saved = lsGet(storeKey, tabs[0].name); show(tabs.some((t) => t.name === saved) ? saved : tabs[0].name);
   }
-  function sliderGroup(group, extra) {
+  function sliderGroup(group) {
     const box = document.createElement('div');
-    if (extra) box.appendChild(extra());
     for (const [g, key, lo, hi, step, label, tip] of SPEC) {
       if (g !== group) continue;
       const f = document.createElement('label'); f.className = 'field';
@@ -1587,10 +1624,11 @@
     f.append(s, sel); return f;
   }
   // The scorecard: measured headless; the table on load is the record's (Docs/Studios/HONEYGUIDE_RAID_LAB.md) until re-run.
-  const RECORD_BATCH = {"seeds":[1,2,3,4,5,6],"seconds":180,"rows":[{"variant":"r6","skill":"skilled","patternsPerMin":4.56,"apWastedPerMin":0,"chargesPerMin":4.72,"brokenPerMin":0,"raidsPerMin":0,"honeyPerMin":0,"stingsPerMin":0,"restShare":0.12,"stoppedShare":0.09,"raidShare":0,"actionsPerSec":0.21,"arcCV":0.19},{"variant":"r6","skill":"rookie","patternsPerMin":3,"apWastedPerMin":0,"chargesPerMin":3.17,"brokenPerMin":0,"raidsPerMin":0,"honeyPerMin":0,"stingsPerMin":0,"restShare":0.11,"stoppedShare":0.06,"raidShare":0,"actionsPerSec":0.21,"arcCV":0.16},{"variant":"breath","skill":"skilled","patternsPerMin":5.22,"apWastedPerMin":0,"chargesPerMin":5.22,"brokenPerMin":0,"raidsPerMin":0,"honeyPerMin":0,"stingsPerMin":0,"restShare":0.08,"stoppedShare":0.05,"raidShare":0,"actionsPerSec":0.28,"arcCV":0.27},{"variant":"breath","skill":"rookie","patternsPerMin":2.95,"apWastedPerMin":0,"chargesPerMin":2.95,"brokenPerMin":0,"raidsPerMin":0,"honeyPerMin":0,"stingsPerMin":0,"restShare":0.1,"stoppedShare":0.04,"raidShare":0,"actionsPerSec":0.24,"arcCV":0.2},{"variant":"raid","skill":"skilled","patternsPerMin":6.83,"apWastedPerMin":0.28,"chargesPerMin":8.67,"brokenPerMin":28.89,"raidsPerMin":1.33,"honeyPerMin":2.78,"stingsPerMin":0,"restShare":0.12,"stoppedShare":0.1,"raidShare":0.15,"actionsPerSec":0.99,"arcCV":0.87},{"variant":"raid","skill":"rookie","patternsPerMin":3.5,"apWastedPerMin":0,"chargesPerMin":4.78,"brokenPerMin":13.22,"raidsPerMin":1.17,"honeyPerMin":1.34,"stingsPerMin":0.06,"restShare":0.13,"stoppedShare":0.09,"raidShare":0.19,"actionsPerSec":0.59,"arcCV":0.63},{"variant":"idle","skill":"skilled","patternsPerMin":0,"apWastedPerMin":11.67,"chargesPerMin":0,"brokenPerMin":0,"raidsPerMin":0,"honeyPerMin":0,"stingsPerMin":0,"restShare":1,"stoppedShare":0,"raidShare":0,"actionsPerSec":0,"arcCV":0},{"variant":"idle","skill":"rookie","patternsPerMin":0,"apWastedPerMin":11.67,"chargesPerMin":0,"brokenPerMin":0,"raidsPerMin":0,"honeyPerMin":0,"stingsPerMin":0,"restShare":1,"stoppedShare":0,"raidShare":0,"actionsPerSec":0,"arcCV":0}],"traces":{"r6:skilled":[0.6,0,0,0.6,0,0,0.6,0,0,0.4,0.2,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0,0.4,0.2,0,0.4,0.2,0],"r6:rookie":[0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.2,0.4,0,0,0.6,0,0,0.4,0.2,0,0.4,0.2,0,0.6,0,0,0.4,0.2,0,0.4,0.2,0,0.4],"breath:skilled":[0.6,0,0,0.6,0,0,0.6,0,0,0.8,0,0,0.4,0.4,0,0.4,0.4,0,0.4,1.4,0.4,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0.2,0],"breath:rookie":[0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.4,0.4,0,0,0.6,0,0,0.6,0.2,0,0.6,0.2,0.2,0.4,0,0,0.6,0,0,0.6,0,0.2,0.4],"raid:skilled":[0.6,0,0,0.6,0.6,3.8,2,0.6,0.2,0,0.6,0.2,0,0.6,0.8,4.6,1.8,0,0.2,0.8,0,0,0.6,1.8,3.8,1.4,1,0,0,0.8,0,0,1.4,4,0.8],"raid:rookie":[0.6,0,0,0.6,0.2,1.8,1.4,0.8,0.8,0.6,0.4,0,0,0.2,0.4,0.2,1.4,2,1,0.6,0.6,0.4,0,0,0.6,0.2,1.4,1.8,1,0.6,0.6,0.6,0,0.6,0.4],"idle:skilled":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"idle:rookie":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}};
+  const RECORD_BATCH = {"seeds":[1,2,3,4,5,6],"seconds":180,"rows":[{"variant":"r6","skill":"skilled","patternsPerMin":4.56,"apWastedPerMin":0,"chargesPerMin":4.72,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.12,"hiveShare":0,"actionsPerSec":0.21,"arcCV":0.19},{"variant":"r6","skill":"rookie","patternsPerMin":3,"apWastedPerMin":0,"chargesPerMin":3.17,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.11,"hiveShare":0,"actionsPerSec":0.21,"arcCV":0.16},{"variant":"breath","skill":"skilled","patternsPerMin":5.22,"apWastedPerMin":0,"chargesPerMin":5.22,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.08,"hiveShare":0,"actionsPerSec":0.28,"arcCV":0.27},{"variant":"breath","skill":"rookie","patternsPerMin":2.95,"apWastedPerMin":0,"chargesPerMin":2.95,"hivesOmniPerMin":0,"hivesMassPerMin":0,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":0,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.1,"hiveShare":0,"actionsPerSec":0.24,"arcCV":0.2},{"variant":"hive","skill":"skilled","patternsPerMin":10.17,"apWastedPerMin":0.11,"chargesPerMin":16,"hivesOmniPerMin":1,"hivesMassPerMin":0.67,"coloursPerHive":2,"fullClearPct":1,"strandedPerHive":0,"brokenPerMin":30.95,"onCrystalPct":0.95,"restShare":0.11,"hiveShare":0.15,"actionsPerSec":0.83,"arcCV":0.8},{"variant":"hive","skill":"rookie","patternsPerMin":3.83,"apWastedPerMin":0.22,"chargesPerMin":4.39,"hivesOmniPerMin":0.95,"hivesMassPerMin":0.67,"coloursPerHive":0.38,"fullClearPct":0,"strandedPerHive":3.27,"brokenPerMin":22.55,"onCrystalPct":0.79,"restShare":0.09,"hiveShare":0.25,"actionsPerSec":0.62,"arcCV":0.57},{"variant":"idle","skill":"skilled","patternsPerMin":0,"apWastedPerMin":10.22,"chargesPerMin":0,"hivesOmniPerMin":0.89,"hivesMassPerMin":0.5,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":18.72,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.68,"hiveShare":0.32,"actionsPerSec":0,"arcCV":0},{"variant":"idle","skill":"rookie","patternsPerMin":0,"apWastedPerMin":10.22,"chargesPerMin":0,"hivesOmniPerMin":0.89,"hivesMassPerMin":0.5,"coloursPerHive":0,"fullClearPct":0,"strandedPerHive":18.72,"brokenPerMin":0,"onCrystalPct":0,"restShare":0.68,"hiveShare":0.32,"actionsPerSec":0,"arcCV":0}],"traces":{"r6:skilled":[0.6,0,0,0.6,0,0,0.6,0,0,0.4,0.2,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0,0.4,0.2,0,0.4,0.2,0],"r6:rookie":[0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.2,0.4,0,0,0.6,0,0,0.4,0.2,0,0.4,0.2,0,0.6,0,0,0.4,0.2,0,0.4,0.2,0,0.4],"breath:skilled":[0.6,0,0,0.6,0,0,0.6,0,0,0.8,0,0,0.4,0.4,0,0.4,0.4,0,0.4,1.4,0.4,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.6,0.2,0],"breath:rookie":[0.6,0,0,0.6,0,0,0.6,0,0,0.6,0,0,0.4,0.4,0,0,0.6,0,0,0.6,0.2,0,0.6,0.2,0.2,0.4,0,0,0.6,0,0,0.6,0,0.2,0.4],"hive:skilled":[0.6,0,0,0.6,0,0,0.6,0.6,3.2,0.4,0,1.2,3.2,0.6,0,0,0.6,0,0,2.8,1.8,0,0,0,0.8,0,0,1.4,0.8,0.6,3.4,0.8,0,0,1.8],"hive:rookie":[0.6,0,0,0.6,0,0,0.6,0,1.6,1.4,0.6,0,0.2,1.6,1.4,0.4,0.6,0,1.6,1.4,0.6,0,0.2,0.4,0,0,1.2,1.4,1.2,0.4,0,0.4,1,1.4,1.2],"idle:skilled":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"idle:rookie":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}};
   let lastBatch = RECORD_BATCH;
-  const COL_LABELS = [['patternsPerMin', 'Patterns /min'], ['apWastedPerMin', 'AP wasted /min'], ['chargesPerMin', 'Charges /min'], ['brokenPerMin', 'Hostile broken /min'], ['raidsPerMin', 'Raids /min'], ['honeyPerMin', 'Honey /min'], ['stingsPerMin', 'Stings /min'], ['restShare', 'Rest share'], ['stoppedShare', 'Clock stopped'], ['raidShare', 'Raiding'], ['actionsPerSec', 'Actions /s'], ['arcCV', 'Arc (15 s CV)']];
-  function chartSvg(curve, maxY, raidCol) {
+  const COL_LABELS = [['patternsPerMin', 'Patterns /min'], ['chargesPerMin', 'Charges /min'], ['hivesOmniPerMin', 'Omni hives /min'], ['hivesMassPerMin', 'Mass hives /min'], ['coloursPerHive', 'Colours done /hive'], ['fullClearPct', 'Full clears'], ['strandedPerHive', 'Stranded /hive'], ['brokenPerMin', 'Hostile broken /min'], ['onCrystalPct', 'Rewards on crystal'], ['restShare', 'Rest share'], ['hiveShare', 'In hive mode'], ['actionsPerSec', 'Actions /s'], ['arcCV', 'Arc (15 s CV)']];
+  const PCT = { fullClearPct: 1, onCrystalPct: 1, restShare: 1, hiveShare: 1 };
+  function chartSvg(curve, maxY, col) {
     const w = 220, h = 76, n = Math.max(2, curve.length), sx = (k) => 24 + (k / (n - 1)) * (w - 30), sy = (v) => h - 14 - (v / maxY) * (h - 22);
     let d = ''; curve.forEach((v, k) => { d += (k ? 'L' : 'M') + sx(k).toFixed(1) + ' ' + sy(v).toFixed(1); });
     const area = d + 'L' + sx(curve.length - 1).toFixed(1) + ' ' + sy(0) + 'L' + sx(0) + ' ' + sy(0) + 'Z';
@@ -1598,17 +1636,17 @@
     return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" role="img" aria-label="actions a second over the match">' +
       '<line x1="24" x2="' + (w - 6) + '" y1="' + sy(0) + '" y2="' + sy(0) + '" stroke="var(--line)"/>' +
       '<line x1="24" x2="' + (w - 6) + '" y1="' + sy(mean).toFixed(1) + '" y2="' + sy(mean).toFixed(1) + '" stroke="var(--muted)" stroke-dasharray="3 3"/>' +
-      '<path d="' + area + '" fill="' + raidCol + '" fill-opacity=".16"/><path d="' + d + '" fill="none" stroke="' + raidCol + '" stroke-width="1.6"/>' +
+      '<path d="' + area + '" fill="' + col + '" fill-opacity=".16"/><path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="1.6"/>' +
       '<text class="ax" x="2" y="' + (sy(maxY) + 4) + '">' + maxY.toFixed(1) + '</text><text class="ax" x="2" y="' + sy(0) + '">0</text>' +
       '<text class="ax" x="24" y="' + (h - 2) + '">0 s</text><text class="ax" x="' + (w - 40) + '" y="' + (h - 2) + '">' + (curve.length * BIN) + ' s</text></svg>';
   }
-  const VAR_COL = { r6: 'var(--muted)', breath: 'var(--changed)', raid: 'var(--honey)', idle: 'var(--warn)' };
+  const VAR_COL = { r6: 'var(--muted)', breath: 'var(--changed)', hive: 'var(--honey)', idle: 'var(--warn)' };
   function renderScorecard(box) {
     const b = lastBatch, tw = box.querySelector('#scoreTable'), charts = box.querySelector('#charts'), note = box.querySelector('#scoreNote');
     if (!b) { note.textContent = 'Not run yet.'; return; }
     note.textContent = (b === RECORD_BATCH ? 'Measured for the record (' : 'Measured in this browser (') + b.seeds.length + ' seeds × ' + b.seconds + ' s each, every row the same seeds). Rest share = seconds holding AP with no move for ' + P.restGap + ' s, plus clock-stopped time. Arc = how much the actions a second change between 15 s windows, one spin each (0 = every spin the same).';
     let html = '<tr><th>Rules</th><th>Ratel</th>' + COL_LABELS.map(([, l]) => '<th>' + l + '</th>').join('') + '</tr>';
-    for (const r of b.rows) html += '<tr class="' + (r.variant === 'raid' ? 'cand' : '') + '"><td>' + VARIANTS[r.variant].label + '</td><td>' + r.skill + '</td>' + COL_LABELS.map(([k]) => '<td>' + (k.endsWith('Share') ? Math.round(r[k] * 100) + '%' : r[k]) + '</td>').join('') + '</tr>';
+    for (const r of b.rows) html += '<tr class="' + (r.variant === 'hive' ? 'cand' : '') + '"><td>' + VARIANTS[r.variant].label + '</td><td>' + r.skill + '</td>' + COL_LABELS.map(([k]) => '<td>' + (PCT[k] ? Math.round(r[k] * 100) + '%' : r[k]) + '</td>').join('') + '</tr>';
     tw.innerHTML = html;
     const curves = Object.entries(b.traces).filter(([k]) => k.endsWith(':skilled'));
     const maxY = Math.max(0.5, ...curves.map(([, c]) => Math.max(0, ...c)));
@@ -1616,7 +1654,7 @@
   }
   function scorecardPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<p class="hint">Every row is the same Dynamo, AI and seeds; only the rules differ. Charts: actions a second in 5 s bins over one match (dashed line: the mean). A flat line is the repetition Garrett named; the candidate should show peaks (raids) and valleys (feasts, picks).</p>' +
+    box.innerHTML = '<p class="hint">Every row is the same Dynamo, AI and seeds; only the rules differ. Charts: actions a second in 5 s bins over one match (dashed line: the mean). A flat line is the repetition Garrett named; the candidate should show peaks (hive mode) and valleys (picks).</p>' +
       '<p><button class="btn primary" id="runScore">Run the scorecard (6 seeds × 180 s, skilled and rookie)</button> <span class="meta" id="scoreBusy"></span></p>' +
       '<p class="meta" id="scoreNote"></p><div class="tablewrap"><table id="scoreTable"></table></div><div class="charts" id="charts"></div>';
     box.querySelector('#runScore').onclick = () => {
@@ -1635,17 +1673,18 @@
     if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
     localLog.push(doc); lsSet('log', localLog); return 'local';
   }
-  const TOPICS = ['The raid: keep, change or drop', 'When a hive is found', 'Who decides when to raid', 'Chain rules', 'Honey and AP', 'Stings', 'The feast', 'Raid length', 'Other idea'];
+  const TOPICS = ['Hive mode: keep, change or drop', 'The strip', 'Ending the spin timer', 'Chains', 'Solvable hives', 'Rewards', 'The planar crystal placement', 'Bees and the hive left behind', 'Hive mode length', 'Other idea'];
   function currentChoice(topic) {
     switch (topic) {
-      case 'The raid: keep, change or drop': return 'Keep the raid as played: build, a hive found, raid, feast.';
-      case 'When a hive is found': return 'A hive about every ' + P.hiveEverySeconds + ' s; the Hive card stays lit ' + P.hiveLingerSeconds + ' s';
-      case 'Who decides when to raid': return 'The Ratel taps the Hive card when it chooses (' + OPT_LABELS.aiGo[OPT.aiGo] + ' for the AI)';
-      case 'Chain rules': return 'Drag touching cells of one colour, shortest chain ' + P.raidMinChain + '; shielded take two passes; super-shielded never break';
-      case 'Honey and AP': return 'Honey from a chain of ' + P.honeyChain + ', +1 AP every ' + P.raidApEvery + ', a charge from ' + P.raidChargeChain;
-      case 'Stings': return 'A danger cell stings: the chain breaks and costs ' + P.raidStingAp + ' AP';
-      case 'The feast': return 'Clock stopped up to ' + P.feastSeconds + ' s: place the honey, pick one of new ability / new ports / swap a card';
-      case 'Raid length': return 'At most ' + P.raidSeconds + ' s; the pilot holds the hive ' + Math.round(P.plHold * 100) + '% of raids';
+      case 'Hive mode: keep, change or drop': return 'Keep hive mode as played: the Honeyguide reaches an omnicrystal or a Mass-power hive, hive mode, rewards land, build.';
+      case 'The strip': return 'A thin symbolic strip: the Honeyguide, its target (diamond = omnicrystal, hexagon = Mass-power hive) and the distance in u';
+      case 'Ending the spin timer': return OPT_LABELS.hiveEndsSpin[OPT.hiveEndsSpin];
+      case 'Chains': return 'Touching cells of one other domain, at least ' + P.minChain + '; our own domain is the hive\'s body';
+      case 'Solvable hives': return 'Laid as snakes of ' + P.snakeMin + '-' + P.snakeMax + '; a solver proves every other-domain cell can be cleared';
+      case 'Rewards': return 'A colour completed: +' + P.rewardDynamo + ' prisms on the Dynamo, +' + P.rewardBattery + ' charge; both: the same in ours too. No pick; they place themselves';
+      case 'The planar crystal placement': return 'Reward prisms land next to the largest planar crystal, in the cell its pattern says; the crystal lights ' + P.crystalGlowSeconds + ' s';
+      case 'Bees and the hive left behind': return P.beesPerHive + ' bees per hive, each bringing ' + P.beeMassPerMinute + ' mass a minute back from opposing fauna (a transfer)';
+      case 'Hive mode length': return 'Times out after ' + P.raidSeconds + ' s; Leave keeps what was earned';
       default: return 'Settings: ' + JSON.stringify(Object.assign({}, diffOnly(), optDiff()));
     }
   }
@@ -1683,33 +1722,33 @@
   })();
   function aboutPanel() {
     const box = document.createElement('div'); box.className = 'prose';
-    box.innerHTML = '<h3>The question</h3><p>Garrett, 2026-10-29: the Ratel "is a fun puzzle but it needs something to break up the repetition of pure pattern building"; and then: "show me the raid in an artifact". The raid is the proposal in ONE_THUMB_SEAT_ARCS.md §3: build → a hive is found → the Ratel chooses when → raid → feast → build.</p>' +
-      '<h3>How to play the Ratel</h3><ul><li><b>Build</b> (the Dynamo, as in the game): drag a prism along empty cells (1 AP a step), tap a port to inject (1 AP), tap a lit card to make its pattern (1 AP). Hold a prism still (or right-click) to delete it. AP now carries over up to 6.</li>' +
-      '<li><b>Pick</b>: every 4 patterns the clock stops and you pick one of three abilities.</li>' +
-      '<li><b>Raid</b>: when the Honeyguide finds a hive, the Hive card lights. Tap it when you choose. The board becomes the hive: drag through touching cells of one colour and let go to break them. White-rimmed cells are shielded (two passes), red cells sting, steel cells never break, faint Jade cells are ours.</li>' +
-      '<li><b>Feast</b>: the clock stays stopped. Pick one of three and place your honey (free prisms) on empty cells.</li></ul>' +
+    box.innerHTML = '<h3>The question</h3><p>Garrett, 2026-10-29: the Ratel "is a fun puzzle but it needs something to break up the repetition of pure pattern building". Round 2 plays his notes of 2026-10-31: the omnicrystal becomes a hive, hive mode starts on its own, every hive is solvable, rewards land without a pick on the largest planar crystal, and a hive left behind keeps bees.</p>' +
+      '<h3>How to play the Ratel</h3><ul><li><b>Build</b> (the Dynamo, as in the game): drag a prism along empty cells (1 AP a step), tap a port to inject (1 AP), tap a lit card to make its pattern (1 AP). Hold a prism still (or right-click) to delete it. AP carries over up to 6; every 4 patterns you pick one of three abilities.</li>' +
+      '<li><b>The strip</b> shows the Honeyguide, what it is flying to and how far: a diamond is an omnicrystal, a hexagon a hive its Mass power made.</li>' +
+      '<li><b>Hive mode</b> starts when it gets there (the spin ends now). Drag through ' + P.minChain + ' or more touching cells of one colour that is not ours, and let go to break them. Faint Jade cells are our hive\'s body. Clear every cell of a colour for its reward; clear both for ours too. LEAVE keeps what you earned.</li>' +
+      '<li><b>Back on the Dynamo</b> the rewards place themselves next to the largest planar crystal, which lights up with the cells it would fill next.</li></ul>' +
       '<h3>What this lab does NOT model</h3><ul>' +
-      '<li>The Honeyguide. The pilot is a stand-in: it spends a charge about every ' + P.plSlipSeconds + ' s, finds a hive on a seeded clock and holds it with a set chance. Whether a pilot finds and holds hives in the real game, and how the hive is chosen (a hostile surface or volume, PrismscapeTopology.DimensionOf), is not tested.</li>' +
-      '<li>The pilot-side card effects. Only the cards that change the Dynamo itself fire (Amanita Furnace, Big Red Button, Dragon Saddle, Zero Point (its drain), Triplesynth, Universal Translator, Anode Ray, 5D Printer, Square-Peg Hammer, Reactor Cilia, Chrono-Compressor, Vorticity Module). The 13 trigger upgrades and the passives do nothing here.</li>' +
-      '<li>The hive\'s comb is a seeded stand-in for a projection of real prisms (patches of a domain, holes, shields, danger and super-shielded cells), not a capture of a real structure.</li>' +
-      '<li>What the broken prisms are worth to the squad: the scorecard counts them, nothing scores them.</li>' +
-      '<li>Sound, haptics, network play and the Honeyguide\'s view while the Ratel raids.</li>' +
-      '<li>The AI Ratel is a heuristic: the Honeyguide Lab\'s planner for the build, a longest-chain search for the raid. A person plays differently; the scorecard shows the shape, a phone decides.</li></ul>' +
+      '<li>The Honeyguide. The pilot is a stand-in: it flies a straight line to the nearer target at ' + P.plSpeed + ' u/s and spends a charge about every ' + P.plSlipSeconds + ' s. Omnicrystals come on a seeded clock, and the Mass power on a cooldown.</li>' +
+      '<li>Invulnerability. The lab has no damage: the shield rings in the strip only show the Unity rule (the Honeyguide and the hive cannot be harmed while the Ratel is in hive mode).</li>' +
+      '<li>The bees. A left hive\'s bee count and growing mass are a symbolic stand-in. In the game they are ecology: bee fauna in our domain that guard the hive and pull mass out of opposing fauna to grow it. Mass is conserved, so that mass is a transfer, never minted (ECOSYSTEM_DESIGN_PRINCIPLES.md).</li>' +
+      '<li>The pilot-side card effects. Only the cards that change the Dynamo itself fire. The 13 trigger upgrades and the passives do nothing here.</li>' +
+      '<li>A hive\'s cells are generated (snakes of the other two domains on our own domain\'s body), not captured from a real structure.</li>' +
+      '<li>Sound, haptics, network play, and what the Honeyguide sees while the Ratel is in hive mode.</li>' +
+      '<li>The AI Ratel is a heuristic: the Honeyguide Lab\'s planner for the build; in hive mode the skilled AI plays the solver\'s solution and the rookie picks among the longest chains. A person plays differently.</li></ul>' +
       '<p class="meta">' + LAB.name + ' round ' + LAB.round + ' · branch ' + LAB.branch + ' · write-up ' + LAB.doc + '</p>';
     return box;
   }
   function rulesPanel() {
     const box = document.createElement('div');
     box.appendChild(selectField('Rules on the live board', 'variant'));
-    box.appendChild(selectField('AI Ratel: when to raid', 'aiGo'));
+    box.appendChild(selectField('When hive mode starts', 'hiveEndsSpin'));
     const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Candidate = what is underlined when it differs. Every change restarts the live board; the scorecard uses the sliders too.'; box.appendChild(p);
     return box;
   }
   makeTabs('dockTabs', 'dockBody', [
     { name: 'Rules', build: () => { const b = rulesPanel(); b.appendChild(sliderGroup('Dynamo')); return b; } },
+    { name: 'Strip', build: () => sliderGroup('Strip') },
     { name: 'Hive', build: () => sliderGroup('Hive') },
-    { name: 'Raid', build: () => sliderGroup('Raid') },
-    { name: 'Pilot', build: () => sliderGroup('Pilot') },
   ], 'dock');
   makeTabs('bottomTabs', 'bottomBody', [
     { name: 'Scorecard', build: scorecardPanel },
@@ -1718,13 +1757,12 @@
   ], 'bottom');
   function paintSeat() { for (const b of $('seatSeg').children) b.setAttribute('aria-pressed', String(b.dataset.who === WHO)); }
   for (const b of $('seatSeg').children) b.onclick = () => { WHO = b.dataset.who; lsSet('who', WHO); paintSeat(); reset(); };
-  function paintVariant() { const s = $('variant'); if (!s.options.length) for (const [v, t] of Object.entries(OPT_LABELS.variant)) { const o = document.createElement('option'); o.value = v; o.textContent = t; s.appendChild(o); } s.value = OPT.variant; $('hiveNow').disabled = !VARIANTS[OPT.variant].raids; }
+  function paintVariant() { const s = $('variant'); if (!s.options.length) for (const [v, t] of Object.entries(OPT_LABELS.variant)) { const o = document.createElement('option'); o.value = v; o.textContent = t; s.appendChild(o); } s.value = OPT.variant; $('hiveNow').disabled = !VARIANTS[OPT.variant].hives; }
   $('variant').onchange = () => setOpt('variant', $('variant').value);
-  $('hiveNow').onclick = () => { if (world && world.V.raids && world.phase === 'build' && !world.hive) { world.nextHive = world.t; } };
+  $('hiveNow').onclick = () => { if (world && world.V.hives && world.phase === 'build') { if (!world.omni) world.omni = { d: 0, born: world.t }; else world.omni.d = 0; } };
   $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Play' : 'Pause'; };
   $('restart').onclick = () => reset();
-  $('resetAll').onclick = () => { for (const k of Object.keys(SHIPPED)) P[k] = SHIPPED[k]; Object.assign(OPT, OPT_SHIPPED); lsSet('P', {}); lsSet('opt', OPT); reset(); paintVariant(); makeTabsRefresh(); refreshDiff(); };
-  function makeTabsRefresh() { const a = document.querySelector('#dockTabs [aria-selected="true"]'); if (a) a.click(); }
+  $('resetAll').onclick = () => { for (const k of Object.keys(SHIPPED)) P[k] = SHIPPED[k]; Object.assign(OPT, OPT_SHIPPED); lsSet('P', {}); lsSet('opt', OPT); reset(); paintVariant(); const a = document.querySelector('#dockTabs [aria-selected="true"]'); if (a) a.click(); refreshDiff(); };
   $('platform').textContent = PLATFORM.device === 'phone' ? 'phone' : 'PC';
   paintSeat(); paintVariant();
 
@@ -1744,45 +1782,75 @@
   }
   reset(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
 
-  // Planted cases: the arc yardstick must read a flat seat as 0 and an on/off seat as 1; the chain rules must sting,
-  // refuse super-shielded and other-domain cells, and take two passes on a shield.
+  // Planted cases. The arc yardstick reads a flat seat as 0 and an on/off seat as 1. Generated hives are always solvable,
+  // and the solver catches a planted unsolvable one. Chains: a 2-chain is refused at minChain 3, our own domain refuses a
+  // chain. largestCrystal on planted boards. Rewards for one colour against both.
   function selfTest() {
-    const out = [];
-    const arcOf = (bins) => { const R = makeRun(1, { variant: 'raid', who: 'skilled', P, aiGo: 'finish', headless: true }); R.bins = bins.slice(); R.t = bins.length * BIN; return score(R).arcCV; };
+    const out = [], P3 = Object.assign({}, P, { minChain: 3 });
+    const arcOf = (bins) => { const R = makeRun(1, { variant: 'hive', who: 'skilled', P, headless: true }); R.bins = bins.slice(); R.t = bins.length * BIN; return score(R).arcCV; };
     out.push(['flat seat reads arc 0', arcOf(new Array(12).fill(3)) === 0]);
     out.push(['on/off spins read arc 1', arcOf([6, 6, 6, 0, 0, 0, 6, 6, 6, 0, 0, 0]) === 1]);
-    const R = makeRun(3, { variant: 'raid', who: 'human', P, aiGo: 'finish', headless: true });
-    foundHive(R); startRaid(R);
-    const cells = R.raid.cells; for (let i = 0; i < D.N; i++) { cells[i].dom = 1; cells[i].kind = 'plain'; }
-    const a = D.CENTRE, n = D.NEIGH[a];
-    cells[n[0]].kind = 'danger'; cells[n[1]].kind = 'super'; cells[n[2]].dom = 3; cells[n[3]].kind = 'shield';
-    applyInput(R, { k: 'chainStart', cell: a });
-    out.push(['super-shielded refused', !applyInput(R, { k: 'chainAdd', cell: n[1] })]);
-    out.push(['other domain refused', !applyInput(R, { k: 'chainAdd', cell: n[2] })]);
-    const ap0 = R.dyn.ap + R.dyn.bonusAp; applyInput(R, { k: 'chainAdd', cell: n[0] });
-    out.push(['danger stings and breaks the chain', R.raid.chain.length === 0 && R.m.stings === 1 && R.dyn.ap + R.dyn.bonusAp === Math.max(0, ap0 - P.raidStingAp)]);
-    applyInput(R, { k: 'chainStart', cell: a }); applyInput(R, { k: 'chainAdd', cell: n[3] }); applyInput(R, { k: 'chainEnd' });
-    out.push(['a shield takes the first pass', cells[n[3]].kind === 'plain' && cells[a].kind === 'empty' && R.m.broken === 1]);
+    let solvable = 0, regen = 0; const N = 300;
+    for (let s = 1; s <= N; s++) { const h = makeHive(mulberry32(s * 977 + 3), P3); if (h && solveHive(h.cells, 3)) solvable++; if (h) regen += h.regenerated; }
+    out.push(['generated hives solvable (' + solvable + '/' + N + ', regenerated ' + regen + ')', solvable === N]);
+    const blank = () => { const c = []; for (let i = 0; i < D.N; i++) c.push({ dom: OWN }); return c; };
+    const star = blank(), a = D.CENTRE, nb = D.NEIGH[a];   // a centre with three leaves: any chain of 3 strands a leaf
+    star[a].dom = OTHERS[0]; star[nb[0]].dom = OTHERS[0]; star[nb[2]].dom = OTHERS[0]; star[nb[4]].dom = OTHERS[0];
+    out.push(['solver catches a planted unsolvable star', solveHive(star, 3) === null]);
+    const line = blank(); line[a].dom = OTHERS[1]; line[nb[0]].dom = OTHERS[1]; line[nb[3]].dom = OTHERS[1];
+    out.push(['solver clears a planted line of 3', !!solveHive(line, 3)]);
+    const R = makeRun(3, { variant: 'hive', who: 'human', P: P3, hiveEndsSpin: 'complete', headless: true });
+    enterHive(R, 'omni');
+    for (let i = 0; i < D.N; i++) R.hive.cells[i].dom = OWN;
+    const c1 = OTHERS[0], c2 = OTHERS[1];
+    R.hive.cells[a].dom = c1; R.hive.cells[nb[0]].dom = c1; R.hive.cells[nb[3]].dom = c1;
+    const far = [D.idx(-3, 3), D.idx(-2, 3), D.idx(-1, 3)]; for (const i of far) R.hive.cells[i].dom = c2;
+    applyInput(R, { k: 'chainStart', cell: nb[0] }); applyInput(R, { k: 'chainAdd', cell: a });
+    out.push(['a 2-chain is refused at minChain 3', !applyInput(R, { k: 'chainEnd' }) && R.hive.cells[a].dom === c1]);
+    out.push(['our own domain refuses a chain', !applyInput(R, { k: 'chainStart', cell: nb[1] })]);
+    applyInput(R, { k: 'chainStart', cell: nb[0] }); applyInput(R, { k: 'chainAdd', cell: a }); applyInput(R, { k: 'chainAdd', cell: nb[3] }); applyInput(R, { k: 'chainEnd' });
+    out.push(['one colour done: its reward only', JSON.stringify(R.hive.rewards) === JSON.stringify([c1])]);
+    applyInput(R, { k: 'chainStart', cell: far[0] }); applyInput(R, { k: 'chainAdd', cell: far[1] }); applyInput(R, { k: 'chainAdd', cell: far[2] }); applyInput(R, { k: 'chainEnd' });
+    out.push(['both done: theirs and ours', JSON.stringify(R.hive.rewards) === JSON.stringify([c1, c2, OWN])]);
+    const bat0 = R.dyn.battery.length, cells0 = R.dyn.cells.filter((x) => x).length;
+    simStep(R, 0.01, null);   // cleared: hive mode ends, the rewards place themselves
+    out.push(['rewards land: 6 prisms, 3 charges (battery capped)', R.phase === 'build' && R.dyn.cells.filter((x) => x).length === cells0 + 3 * P3.rewardDynamo && R.m.rewardPlaced === 6 && R.dyn.battery.length === Math.min(D.batteryCap(R.dyn, R.S), bat0 + 3)]);
+    // largestCrystal: an empty board, a planted crystal beside a larger wrong-coloured blob, a 7-cell crystal against a 4
+    const board = new Array(D.N).fill(0);
+    out.push(['empty board: crystal size 0', largestCrystal(board).size === 0]);
+    const perm = PERMS[3]; for (const i of [a].concat(nb.slice(0, 2))) board[i] = perm[CLASS[i]];
+    for (const i of [D.idx(3, -3), D.idx(3, -2), D.idx(2, -2), D.idx(2, -1)]) board[i] = 1;   // all Ruby: neighbours never share a class, so at most one cell of it is a crystal
+    const lc = largestCrystal(board);
+    out.push(['finds the planted 3-cell crystal', lc.size === 3 && lc.perm === perm]);
+    const big = new Array(D.N).fill(0), p7 = PERMS[1], p4 = PERMS[5];   // p4 shares no class colour with p7, so the two never merge
+    for (const i of [a].concat(nb)) big[i] = p7[CLASS[i]];
+    for (const i of [D.idx(-3, 0), D.idx(-3, 1), D.idx(-2, 1), D.idx(-3, 2)]) big[i] = p4[CLASS[i]];
+    const lb = largestCrystal(big);
+    out.push(['prefers the 7-cell crystal over a 4-cell one', lb.size === 7 && lb.perm === p7]);
+    const slot = crystalSlot(big, lb, p7[CLASS[D.idx(2, 0)]]);
+    out.push(['a reward lands on the crystal, in its class', !!slot && slot.tier === 0 && CLASS[slot.cell] === p7.indexOf(p7[CLASS[D.idx(2, 0)]])]);
     const A = runBatch(), B = runBatch();
     out.push(['runBatch deterministic', JSON.stringify(A) === JSON.stringify(B)]);
     return { pass: out.every((r) => r[1]), checks: out };
   }
 
-  // ================= (7) The test surface =================
+  // ================= (9) The test surface =================
   window.__lab = {
     LAB, SHIPPED, SPEC, P, OPT, PLATFORM, VARIANTS, PATTERNS, PORT_SETS, core: D,
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { dt = dt || DT; n = n || 1; for (let i = 0; i < n; i++) simStep(world, dt, queue.splice(0)); resize(); render(); },
-    reset, score: () => score(world), runBatch, setParam, setOpt, record,
+    reset, score: () => score(world), runBatch, setParam, setOpt, record, selfTest,
     input: (inp) => { if (!world) return false; queue.push(inp); return true; },
     seat: (who) => { WHO = who; paintSeat(); reset(); },
-    hive: () => { if (world && world.V.raids && world.phase === 'build' && !world.hive) foundHive(world); return !!(world && world.hive); },
-    bestChains: () => (world && world.raid ? bestChains(world.raid, world.P.raidMinChain, 5) : []),
+    hive: (source) => { if (world && world.V.hives && world.phase === 'build' && !world.dyn.reveal) enterHive(world, source === 'mass' ? 'mass' : 'omni'); return world && world.phase === 'hive'; },
+    largestCrystal: (cells) => largestCrystal(cells || world.dyn.cells), crystalSlot, solveHive, makeHive, CLASS,
+    solution: () => (world && world.hive ? world.hive.solution : null),
     cellPx: (i) => (ui.G ? cellPx(ui.G, i) : null), hexSize: () => (ui.G ? ui.G.size : 0), layout: () => ui.layout,
-    world: () => world, makeRun, simStep, applyInput, selfTest,
+    world: () => world, makeRun, simStep, applyInput,
     state: () => ({ t: world.t, seed, phase: world.phase, digest: D.digest(world.dyn), ap: world.dyn.ap, bonusAp: world.dyn.bonusAp, ability: world.dyn.ability, battery: world.dyn.battery.slice(), free: world.dyn.free.slice(),
-      hive: !!world.hive, raid: world.raid ? { t: world.raid.t, broken: world.raid.broken, chain: world.raid.chain.slice(), cells: world.raid.cells.map((c) => c.kind[0] + c.dom).join(' ') } : null,
-      feast: world.feast ? { picked: world.feast.picked, options: world.feast.options.map((o) => o.k) } : null, m: Object.assign({}, world.m) }),
+      target: world.target, omni: world.omni ? Math.round(world.omni.d) : null, massHive: world.massHive ? Math.round(world.massHive.d) : null, homeHives: world.homeHives.map((h) => ({ bees: h.bees, mass: Math.round(h.mass) })),
+      hive: world.hive ? { source: world.hive.source, t: world.hive.t, broken: world.hive.broken, done: world.hive.done.slice(), rewards: world.hive.rewards.slice(), chain: world.hive.chain.slice(), cells: world.hive.cells.map((c) => c.dom).join('') } : null,
+      lastHive: world.lastHive, m: Object.assign({}, world.m) }),
   };
   window.__ratelRaidLab = window.__lab;
 })();
