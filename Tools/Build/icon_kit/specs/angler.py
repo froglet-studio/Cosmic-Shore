@@ -235,3 +235,36 @@ CARDS += [
                          ("ring", "white")]),
          lockup_state=2, gauge=GAUGE, gauge_marks_style="segments"),
 ]
+
+
+# ---- Charge in the game: B, the spend (Garrett picked B, 2026-10-31: "B is fine") -----------------------------------
+# Five parts in the Charge slot's container, tinted and shown by AnglerHUDView.SetLockOn: the school (domain) always;
+# the third creature in the domain colour while it is still in the school, white once a lock has spent it (any hunter
+# out), with its wake (white, 60%) and the lock ring (white); the rival danger, at 60% until it is hunted. The plate
+# keeps its gauge (the hunters out, 3 = full; lime while LT erases).
+LOCKON_PARTS = [("LockSchool", "Angler_LockSchool", "lockSchoolIcon", b_school, "the two creatures left in the school (domain)"),
+                ("LockWake", "Angler_LockWake", "lockWakeIcon", b_wake, "the spent creature's wake (white, 60%; hunters out)"),
+                ("LockHunter", "Angler_LockHunter", "lockHunterIcon", b_hunter, "the third creature (domain; white once spent)"),
+                ("LockRival", "Angler_LockRival", "lockRivalIcon", rival, "the rival (danger; 60% until it is hunted)"),
+                ("LockRing", "Angler_LockRing", "lockRingIcon", ring_at_rival, "the lock ring a hunted hull wears (white; hunters out)")]
+PART_EXEMPT = {"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+               "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part", "specks": "a part"}
+ICONS += [dict(name=i, element="Charge", act="Erase / Lock-on: " + act, draw=draw, subdir="Parts", family=False,
+               exempt=PART_EXEMPT) for _n, i, _f, draw, act in LOCKON_PARTS]
+for c in CARDS:
+    if c["name"] == "lockon_b":
+        CARDS.append(dict(c, name="lockon", group=None,
+                          title="Erase / Lock-on (Charge, picked B): your school (domain), the third creature spent "
+                                "(white) toward the locked rival (danger)"))
+        break
+CARDS[:] = [c for c in CARDS if c.get("group") != "lockon"]   # the losers' sheets go once the owner picks
+LOCKUP["Charge"] = dict(parts=dict(s=b_school, h=b_hunter, r=rival),
+                        state=[("s", "domain"), ("h", "domain"), ("r", "danger", 0.6)])
+
+VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab"
+VIEW = "5875684227236902712"            # AnglerHUDView on the variant
+CHARGE_ICON = "7700000000000001105"     # the Charge slot's icon Image (was Angler_Command)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=CHARGE_ICON, view=VIEW, after="colorBlendRate",
+                                 children=[(n, i, f) for n, i, f, _d, _a in LOCKON_PARTS])),
+]

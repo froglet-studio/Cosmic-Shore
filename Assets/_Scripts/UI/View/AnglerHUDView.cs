@@ -49,6 +49,24 @@ namespace CosmicShore.UI
         [Tooltip("How fast a gauge eases to its colour (1/s, exponential, unscaled time).")]
         [SerializeField, Min(0f)] float colorBlendRate = 15f;
 
+        [Header("Charge card: Erase / Lock-on (icon_kit specs/angler.py, Garrett picked B 2026-10-31)")]
+        [Tooltip("The two creatures left in the school (Angler_LockSchool): the pilot's domain colour.")]
+        [SerializeField] Image lockSchoolIcon;
+        [Tooltip("The spent creature's wake (Angler_LockWake): white, shown while a hunter is out.")]
+        [SerializeField] Image lockWakeIcon;
+        [Tooltip("The third creature (Angler_LockHunter): the domain colour in the school, white once a lock spends it.")]
+        [SerializeField] Image lockHunterIcon;
+        [Tooltip("The rival (Angler_LockRival): the danger tint, dimmed until it is hunted.")]
+        [SerializeField] Image lockRivalIcon;
+        [Tooltip("The lock ring a hunted hull wears (Angler_LockRing): white, shown while a hunter is out.")]
+        [SerializeField] Image lockRingIcon;
+        [Tooltip("The rival's colour: the danger tint (ElementalBarsConfigSO.FireColor), as the Rhino's danger prisms.")]
+        [SerializeField] Color lockDangerColor = new(1f, 0.3294f, 0.1020f, 1f);
+        [Tooltip("The rival's alpha while nothing hunts it.")]
+        [SerializeField, Range(0f, 1f)] float lockRivalIdleAlpha = 0.6f;
+        [Tooltip("The wake's alpha while a hunter is out.")]
+        [SerializeField, Range(0f, 1f)] float lockWakeAlpha = 0.6f;
+
         /// <summary>Seat every readout at rest (nothing tamed, the light off). Idempotent: it re-runs on a swap.</summary>
         public override void Initialize()
         {
@@ -56,6 +74,43 @@ namespace CosmicShore.UI
             Seat(massGauge);
             Seat(spaceGauge);
             Seat(timeGauge);
+            _lockDomain = Color.white;
+            _lockHunting = true;
+            SetLockOn(false);
+        }
+
+        // ---- the Charge card: one creature spent per lock, out hunting the locked rival ----
+
+        Color _lockDomain = Color.white;
+        bool _lockHunting;
+
+        /// <summary>The school's colour on the Charge card: the pilot's domain (alpha 0 = not resolved yet, keep the last).</summary>
+        public void SetLockOnColor(Color domain)
+        {
+            if (domain.a <= 0f || domain == _lockDomain) return;
+            _lockDomain = domain;
+            if (lockSchoolIcon) lockSchoolIcon.color = domain;
+            if (lockHunterIcon && !_lockHunting) lockHunterIcon.color = domain;
+        }
+
+        /// <summary>
+        /// Whether a lock has spent a creature that is still out hunting (<c>AnglerCommandExecutor.HunterCount</c> &gt; 0): the
+        /// third creature turns white and leaves its wake, the rival wears the lock ring at full danger. How many is the plate.
+        /// </summary>
+        public void SetLockOn(bool hunting)
+        {
+            if (hunting == _lockHunting) return;
+            _lockHunting = hunting;
+            if (lockHunterIcon) lockHunterIcon.color = hunting ? Color.white : _lockDomain;
+            if (lockWakeIcon)
+            {
+                lockWakeIcon.enabled = hunting;
+                lockWakeIcon.color = new Color(1f, 1f, 1f, lockWakeAlpha);
+            }
+            if (lockRingIcon) lockRingIcon.enabled = hunting;
+            if (lockRivalIcon)
+                lockRivalIcon.color = new Color(lockDangerColor.r, lockDangerColor.g, lockDangerColor.b,
+                                                hunting ? lockDangerColor.a : lockDangerColor.a * lockRivalIdleAlpha);
         }
 
         void Seat(Image gauge)

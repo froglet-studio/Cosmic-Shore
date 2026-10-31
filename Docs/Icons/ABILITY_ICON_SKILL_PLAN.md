@@ -301,6 +301,12 @@ eyepiece and the reticle at the zoom's true size; at Charge 5 the reticle moves 
 danger) and Cloak / Sniper B (the cloaked outline leaving its shielded seed; the Serpent's round clearing bricks and a
 super-shielded prism) on 2026-10-31. Both cards are kit parts in the variant's slot containers, reached through proxies
 on `Serpent.prefab`; `SetScoped` and `SetHuntersSight` toggle the part sets. The Serpent is done.
+**The Angler** (round 4, 2026-10-31; `specs/angler.py`): the Charge card, **Erase / Lock-on**, went first (the audit's
+"does not read"). Garrett picked B of four (the hunt, the spend, the bite, the eraser): "the spend" - two of your
+school (domain) left behind, the third spent (white) along its wake to the locked rival (danger) in the lock ring a
+hunted hull wears. Five parts in the Charge slot's container; `AnglerHUDView.SetLockOn` turns the third creature white
+and shows the wake and the ring while `HunterCount` > 0. The plate stays the hunters-out gauge. The creature is the
+QuadFish as its codex portrait reads (LESSONS 62). Next: the Mass card (Lure, Tame & Grow).
 
 | Round | What | Why first |
 |---|---|---|

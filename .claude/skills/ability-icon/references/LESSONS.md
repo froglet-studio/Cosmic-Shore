@@ -412,3 +412,14 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     the omni card in a hull's analysis from the start: it is the fifth card, and the one an element card must not
     duplicate. The real proportions may run the wall to the card's edge and leave thin bricks; argue `in_box` and
     `coverage` in the spec rather than distort the lattice.
+
+## 2026-10-31 - the Angler's Charge card (Erase / Lock-on)
+
+62. **A creature is drawn from its own prefab, in the view that keeps it whole.** The Angler's school is fauna, and the
+    QuadFish (`QuadFish.prefab`: a crystal core and four HealthBlock fins at (+-0.908, +-0.738), each turned 51 deg) is
+    its commonest. Side-on, the fin pairs overlap into a ball with two loose fins that read as an "S" at 60 px; the
+    codex portrait's look - the core with its four fins in an X - reads as the creature at every size. Look at the
+    codex portrait (`Assets/_Graphics/Codex/fauna_*.png`) before picking a creature's view, and say in the spec which
+    liberty the drawing takes. Garrett picked B ("the spend", "B is fine"): when an ability COSTS something (a lock
+    spends a creature), the card shows the cost - the school left behind in the domain colour, the spent one white.
+
