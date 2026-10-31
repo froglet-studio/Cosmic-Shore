@@ -59,6 +59,35 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AStall_IsFollowedByWhatTheMachineWasDoing()
+        {
+            FrameStallWatch.ContextProvider = () => "focused no; async prism clones waiting 1";
+            try
+            {
+                Frame(0);
+                Frame(39.6);
+                var context = NetSessionRecorder.BuildRecord().lifecycle.Where(e => e.e == "stallContext").Select(e => e.detail).ToArray();
+                CollectionAssert.AreEqual(new[] { "focused no; async prism clones waiting 1" }, context,
+                    "the 30 Oct freezes said only '39.6s in Menu_Main'");
+                Frame(0.016);
+                Assert.AreEqual(1, NetSessionRecorder.BuildRecord().lifecycle.Count(e => e.e == "stallContext"), "only stalls carry it");
+            }
+            finally { FrameStallWatch.ContextProvider = FrameStallWatch.DescribeContext; }
+        }
+
+        [Test]
+        public void AsyncClonesInFlight_AreCountedAndNeverGoNegative()
+        {
+            FrameStallWatch.BeginAsyncClone();
+            FrameStallWatch.BeginAsyncClone();
+            FrameStallWatch.EndAsyncClone();
+            StringAssert.Contains("async prism clones waiting 1", FrameStallWatch.DescribeContext());
+            FrameStallWatch.EndAsyncClone();
+            FrameStallWatch.EndAsyncClone();
+            StringAssert.Contains("async prism clones waiting 0", FrameStallWatch.DescribeContext());
+        }
+
+        [Test]
         public void AFreezeAcrossASceneChange_NamesTheSceneItStartedIn()
         {
             Frame(0, "MinigameBloomrush");

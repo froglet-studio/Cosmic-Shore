@@ -52,7 +52,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B42 | Pressing REJOIN right after a bounce does nothing ("Already transitioning - ignoring rejoin"), and a host loss reported during a recovery is dropped, leaving the player in a dead party that reads `InParty` (Garrett's re-host died "server didn't answer any BIND message" inside his bounce) | Fixed 2026-10-31: the Rejoin offer waits for the bounce to end, a join pressed during a transition waits for it (20 s), and a host loss during a transition is acted on when it ends if the link is still down (at most 3 recoveries in 90 s) | 🟡 |
 | B43 | A HOST with others in its party who presses Join or Spectate ends the party for all of them without a word (Caleb's spectate bounced Shombith; his join bounced Yash and Shombith) | Fixed 2026-10-31: refused before teardown with an authored toast (`PartyInviteController.leavePartyFirstToast`); accepting an invite is unchanged | 🟡 |
 | B44 | `NullReferenceException` in `PartyMemberService.SyncFromSession` 0.1 s after a join starts (belac x2, 2026-10-30) | Fixed 2026-10-31: the refresh reads the session after its await and stops when a transition has let it go | 🟡 |
-| B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein (stalled in a streamed prism lay, `EnvironmentPrismPool`'s async clone batch, "InstantiateAsync ... maxSingle 82554ms"), one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine). The other three machines did the same swap in 1.2-2.4 s | Open: needs a profile on that machine (B36's measuring is in place). Not changed here: it is the prism-pool / performance work in flight on `perf/performance-optimization` | 🔴 |
+| B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein, one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine; the other three did the same swap in 1.2-2.4 s) | Investigated 2026-10-31 (section below): not the prism lay's own work and not its clone watchdog; the frames are spent outside anything the game measures. Each stall now records focus, memory against RAM and async clones in flight (`stallContext`), so the next one names its cause. Open | 🔴 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2486,4 +2486,33 @@ machines yet; `Docs/UNITY_VERIFICATION_CHECKLIST.md` holds the steps.
 **What was not.** The freezes (B45). Every drop in this session followed one on Garrett's machine, so B39-B44 make the
 game recover from a drop; they do not stop it. The boot-order decision (start the Relay host after the menu is up, B36)
 also stays open.
+
+### B45 investigated (2026-10-31): what the freezes are not, and what the next one will say
+
+Read from Garrett's load reports (`origin/bugledger/gradi:BugLedger/shared/reports/gradi/load/`) and the merged console.
+
+- **82.6 s, Maelstrom cell swap to Skein** (`load_Maelstrom_20261031_000016`). Rails RAIL000-RAIL014 laid in 23-161 ms
+  each. RAIL015 (464 prisms, one async clone batch) began at 1.22 s; the frame that froze began at 1.59 s and ended at
+  84.18 s. The pool's clone watchdog forces completion only after 4 s of waiting, so it could not have fired 0.4 s in:
+  the batch's forced completion did not cause this frame, and neither did the lay's per-prism work (5,104 prisms cost
+  0.4 s in total across the whole load). Load Insights pins a frame to whatever span is open, so "Streamed prism lay"
+  is where the frame was, not proof of what it spent.
+- **6.0 s, Regatta to menu** (`load_Menu_Main_20261031_000906`). The frame came FIRST and the watchdog's "not
+  integrated after 4s - forcing WaitForCompletion" warning AFTER it: the long frame used up the watchdog's 4 s. The
+  warning is a symptom of a freeze, not its cause. (A 4.3 s frame in the client scene load came 7 s earlier.)
+- **39.6 s on the menu, 14.6 s during the re-host.** No load ran. The console is silent from a crystal collect at
+  1610 s to the stall at 1652 s; nothing recorded what ran.
+- **Ruled out:** the "Unity Remote requirements check failed" (adb) errors on that machine come only at Play start
+  (1267 s, 1876 s), never beside a freeze.
+- **Not ruled out, and now recorded:** the Editor losing focus or being minimised (all four played in the Editor while
+  on a call), memory pressure paging the machine (one host holding the server, a 5,000-prism arena and the Editor), and
+  Editor-side work in the frame (asset import, shader or Burst compilation). Every stall is now followed by a
+  `stallContext` mark: `focused yes/no; Unity reserved N MB, managed N MB, of N MB RAM; async prism clones waiting N`
+  (`FrameStallWatch.DescribeContext`; the pool counts its batches). `net_logs.py show` prints it beside the stall.
+
+**Next:** the next multiplayer test sends the context by itself. If it says `focused no`, the fix is the Editor's
+run-in-background behaviour (or testing in a player build); if reserved memory is near the RAM, it is memory; if
+clones are waiting and neither of those, a Profiler capture of that swap on that machine (Garrett, Editor, Deep Profile
+off) is what decides it. Changing the prism pool or the lay budgets before that is guessing (CLAUDE.md, Debugging
+Methodology); that work is Yash's (`EnvironmentPrismPool`) and the perf branch's.
 
