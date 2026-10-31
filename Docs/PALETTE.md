@@ -1,5 +1,8 @@
 # PALETTE.md — the domain colour set (and how to change a prism tier safely)
 
+> Which of the six families a colour belongs to, and the forbidden band between them, is decided by
+> `Docs/VesselModels/colour_domains.json` (`COLOR_DOMAINS.md`, `Tools/Build/colour_domains.py --check`).
+
 Scope: `SO_ColorSet` — the per-domain colours that drive vessels, prisms, crystals,
 AOE and UI. This doc exists because prism colours are **measurable**, not a matter of
 taste alone: the shielded tier was hand-tuned twice by eye and both passes missed the

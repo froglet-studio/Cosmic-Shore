@@ -1,79 +1,121 @@
-# Colour domains: the convex-cell rule (adopted 2026-10-31)
+# Colour domains: the source of truth for the six families
 
-The six colour families of `COLOR.md` §1 (Fire, Gold, Lime, Jade, Blue, Ruby), drawn as regions of colour space, and
-the rule that decides which family a colour belongs to. Explored, shaped and adopted in the **Colour Domains**
-artifact (https://claude.ai/artifact/QT7nMWURMQgznfAnAg2FXh). The adopted definitions are in
-[`colour_domains.json`](colour_domains.json).
+**[`colour_domains.json`](colour_domains.json) is the source of truth** for which of the six colour families of
+`COLOR.md` §1 (Fire, Gold, Lime, Jade, Blue, Ruby) a colour belongs to, and where the forbidden band between them lies.
+Garrett shaped it by eye on 2026-10-31 in the **Colour Domains** lab (https://claude.ai/artifact/QT7nMWURMQgznfAnAg2FXh,
+source `Docs/Studios/ColourDomainsLab.html`) and adopted it: "these 'shaped by eye' save is looking pretty good. its not
+perfect but it is the best we've ever had. please update everything so that become the source of truth for the six
+domains."
 
-## What was adopted
+```
+python3 Tools/Build/colour_domains.py classify '#00D4FF'   # which family, how far inside its border
+python3 Tools/Build/colour_domains.py --report             # every anchor, the element shades, the shares
+python3 Tools/Build/colour_domains.py --check              # the gate (below)
+python3 Tools/Build/colour_domains.py --self-test          # proves the gate names each failure it exists for
+```
 
-Garrett, 2026-10-31: "I want these regions to be convex hulls that encroach on each other's territory, but respect
-the thickness of the forbidden band. But those bands should separate regions from each other, not themselves, hence
-the convex constraint." Then: "save off the proposal as the new rule."
+## The rule
 
-- **The space is OKLab.** The band's thickness (the margin, 0.05, about 2.5 just-noticeable differences) is an OKLab
-  distance. Only the OKLab view shows the band as an even slab; RGB, HSV, HSL and CIELAB stretch it.
+- **The space is OKLab** (`x = [L, a, b]`). The band's thickness, the margin (0.05, about 2.5 just-noticeable
+  differences), is an OKLab distance. Only the lab's OKLab view shows the band as an even slab. RGB, HSV, HSL and CIELAB
+  stretch it.
 - **Every family is one convex cell, and the six cells fill OKLab with no gaps.** Each family has a score that rises in
-  a straight line across OKLab (`A_f(x) = n_f·x + c_f`). A colour goes to the family that scores highest there.
-- **The band** is every colour within half the margin of a border between two cells. It only ever lies between two
-  different families, never inside one.
-- **The fit.** A family's core is its anchors plus the colours it took over by erasing. Blue's anchors include black
-  and white, so it still owns every grey. The scores are fitted so every core colour sits as far from every border of
-  its cell as it can, and at least half a band away. Two steps: a multiclass maximum-margin fit (squared hinge, Newton's
-  method), then a refinement on the true OKLab distance to each border.
-- **The only empty space is the band, and it is the same thickness everywhere.** Nothing else may leave a colour
-  unowned (Garrett, 2026-10-31: "i was still able to create large gaps and the starting config has gaps that are
-  thicker than others"). Where three or more cells meet, their bands overlap at the corner; that is the only place
-  the band looks wider.
-- **Erasing** removes colours from the family that owns them: each erased colour becomes a "taken" colour of the
-  neighbour that scores highest there, and the cells are refitted. A colour that can't change hands without opening a
-  wider gap (too close to its own family's anchors, or where the neighbour would crowd a third family) stays where it
-  is. An anchor outweighs a taken colour 30 to 1 in the fit, so erasing never pushes an anchor into the band.
-- **Reach** raises a family's score so its borders slide toward its neighbours (every reach is 0 in the adopted rule).
+  a straight line across OKLab, `A_f(x) = n_f · x + c_f` (the `cells` in the JSON). A colour belongs to the family that
+  scores highest there.
+- **The band** is every colour within half the margin of its cell's border with any other family. That border is the
+  plane `A_f = A_g`, and the test is `(A_f − A_g) / |n_f − n_g| < margin / 2`. The band lies only between two families,
+  never inside one, and it is the same thickness on every border. Where three or more cells meet, their bands overlap
+  at the corner; that is the only place the band looks wider.
+- **The cells are frozen.** They are exactly the boundaries the lab had fitted while Garrett shaped them. Nothing refits
+  them; changing them means shaping again in the lab and adopting the result.
 
-## The adopted definitions
+## The anchors: the game's colours, checked against the truth
 
-Garrett's saved proposal "convex hulls with forbidden thickness", re-fitted with the gap-free solver above. It moves two
-anchors from the game's values:
+Each family's **anchors** are the colours the game already draws for it, read live from the assets. They are listed
+in the JSON with their source: the domain UI and signal colours, the CTA pair, the HUD ladder, the kite view's lime,
+the vessel body, glass and engine ember, and black and white for Blue (every grey is Blue's, `COLOR.md` rule 1).
 
-| family | anchor | game today | adopted |
+**They are the check, not the input.** Every anchor rests inside its own family, clear of the band, with one exception
+the JSON names and explains. The engine ember face (`#300A05`) is within one band of black, so no convex border can
+give it full clearance. It sits 0.0007 OKLab inside the band's edge. The four Lime element shades (Charge, Mass, Space,
+Time, `OriginalColorSetSO.ElementalCrystalColors`) all rest inside Lime, 1.8–3.0 JND clear.
+
+While shaping, two anchors were dragged by accident: the engine ember rim and Jade UI. Garrett, 2026-10-31: "i didn't
+mean to move the anchors that was not intentional. the work i liked was the boundary definitions for each region and
+the forbidden zones." Both are back at their game values in the truth, and both rest inside their own family.
+
+## The UI's family colours
+
+`Docs/UI_COLOR_RULES.md` gives five UI theme colours a family. Five of the six rest in their family:
+
+| UITheme | family | colour | clearance |
 |---|---|---|---|
-| Fire | Engine ember rim | `#6B1C0A` | `#6A361C` |
-| Jade | Jade UI | `#0EC0B6` | `#0CA899` |
+| `cta` | Lime | `#99FF80` | 0.1 JND (on the edge) |
+| `danger` | Fire | `#FF4B3A` | 3.2 JND |
+| `controlActive` | Jade | `#00D4FF` | 0.7 JND |
+| `purchase` | Gold | `#FFAE00` | 1.7 JND |
+| `tooltip` | Ruby | `#A600FF` | 3.9 JND |
+| `selection` | Blue | `#3DB2FF` | **in the band**, 0.0077 OKLab from Blue's border with Jade (needs 0.025) |
 
-Of the proposal's 132 erased colours, 37 went to a neighbour and 35 are now band. 52 could not move without opening a
-gap, so they stay in their old family. 50 taken colours are kept (only the corners of each family's core matter).
+**Open decision:** move the selection blue into Blue, or reshape Blue in the lab. Until then it is listed as an
+exception in the JSON, so any new drift still fails the gate.
 
-Share of the sRGB gamut (a 25³ grid), measured on the artifact:
+## The gate: `colour_domains.py --check`
 
-| | game today (nearest anchor) | adopted (convex cells) |
+`--check` exits 1 when any of these is true:
+
+- an anchor's colour in the game no longer matches the JSON (it names the asset), so a palette or HUD change that moves
+  a family's colour is caught;
+- an anchor is not inside its own family, clear of the band, unless it is listed as an exception;
+- a Lime element shade has left Lime;
+- a UI theme colour named for a family (`UITheme.asset`: `cta`, `danger`, `controlActive`, `purchase`, `tooltip`,
+  `selection`) is not in that family, clear of the band, unless it is listed as an exception;
+- the measured shares in the JSON are stale;
+- the lab embeds a different truth.
+
+`--self-test` plants each of those failures and confirms every one is named. The tool reads; it writes nothing.
+
+When a palette colour moves on purpose, run `--check`. If the moved colour still rests in its family, update its
+`rgb`/`hex` in the JSON. If it doesn't, the family has to be reshaped in the lab first.
+
+## What the truth measures
+
+Share of the sRGB gamut (a 25³ grid, `--report`), next to the old nearest-anchor rule the tools used before:
+
+| | old rule (nearest anchor) | source of truth |
 |---|---|---|
-| Fire | 6.6% | 15.6% |
-| Gold | 1.7% | 1.8% |
-| Lime | 9.4% | 12.3% |
-| Jade | 4.3% | 8.9% |
-| Blue | 34.5% | 20.8% |
-| Ruby | 7.4% | 4.6% |
+| Fire | 6.6% | 16.9% |
+| Gold | 1.7% | 1.6% |
+| Lime | 9.4% | 14.2% |
+| Jade | 4.3% | 7.7% |
+| Blue | 34.5% | 18.1% |
+| Ruby | 7.4% | 5.5% |
 | Forbidden band | 36.0% | 36.0% |
 
-About 36–38% of the gamut is band under the convex rule. That is the cost of a 0.05 band in OKLab, where the whole
-screen gamut is about 1 tall and 0.3 wide; a narrower band is the lever for more usable colour.
+About a third of the gamut is band under either rule. That is the cost of a 0.05 band in OKLab, where the whole screen
+gamut is about 1 tall and 0.3 wide; a narrower band is the lever for more usable colour.
 
-## Why the earlier convex versions left gaps
+Under the truth, the UI style guide's Jade `#00D4FF` (`Docs/STYLE_FOUNDATION.md`) falls inside Jade, 0.7 JND clear.
+Under the old rule it sat in the band (the lab's finding 02).
 
-The first convex version (artifact version 3) put a band in the middle of each pair's gap independently. Fifteen
-independent bands do not tile space, so pockets were left that no family owned. Erased colours were then only handed
-over if the neighbour's whole hull cleared every other hull. The saved proposal ended with 65.5% of the gamut as band:
-its 132 erase cuts handed only 11 colours to a neighbour. Version 4 fitted one partition for all six families at once,
-so the pockets were gone, but it still turned every colour no neighbour could take into a flat cut. Behind a cut the
-space was empty however deep it went: in the version-4 definitions, 17.1% of the gamut was empty space behind cuts,
-and the Jade/Ruby gap was a band plus a cut. Version 5 (adopted) has no cuts.
+## How the lab got here (what not to repeat)
 
-## What has not changed
+1. **Nearest anchor** (`kite_mote_colors.py`, `COLOR.md` §5b): regions of any shape, bent by every extra anchor.
+2. **Independent pairwise bands** (lab v3): fifteen bands placed pair by pair do not tile space. Pockets were left
+   that no family owned; a saved proposal ended with 65.5% of the gamut as band.
+3. **One fit for all six, with erase cuts** (lab v4): no pockets, but a colour no neighbour could take became a flat
+   cut, and the space behind a cut was empty however deep it went. That was 17.1% of the gamut, and it is why the
+   Jade/Ruby gap was thicker than the others.
+4. **No cuts** (lab v5): the only empty space is the band. An erased colour goes to the neighbour that scores highest
+   there; one that can't move without opening a wider gap stays. Garrett shaped "shaped by eye" on this version.
+5. **Frozen** (lab v6, this): the fit is not unique, because different starting points reach different boundaries
+   (84% agreement on a 41³ grid). So the truth stores the boundaries themselves, not the inputs that produced them.
 
-- **The game still uses the nearest-anchor rule.** `Tools/Build/kite_mote_colors.py` (which derives the four Lime
-  element shades) and `COLOR.md` §5b define it. Moving the game to the convex-cell rule means a new version of that
-  script, which also re-derives the element shades.
-- **No palette asset changed.** The two moved anchors exist only in the definitions. Putting them in the game means
-  editing `vessel_colors.py` (the engine ember rim) and `OriginalColorSetSO.JadeColors.TrailHighlightColor` (Jade UI).
-  The Jade hue is already an open decision (`COLOR.md` §6).
+## What the truth does not change yet
+
+- **No palette asset changed.** Every anchor is the game's own colour.
+- **The Lime element shades are still derived by the old rule.** `Tools/Build/kite_mote_colors.py` finds the four
+  shades inside its own nearest-anchor Lime boundary and writes them to `KiteNavigatorConfig.asset`, the Wrasse Lasso
+  Lab and `OriginalColorSetSO.ElementalCrystalColors`. All four rest inside the truth's Lime, so nothing disagrees
+  today. Deriving them from the truth instead would re-pick the shades: a visible change to every elemental crystal,
+  and a decision for Garrett.

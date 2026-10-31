@@ -1782,3 +1782,24 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: retire a drawn option with a list next to the lab's shipped settings and a matching list on the game's config, held equal by the generator's `--check`. Never delete the key or the enum member. When a game test plays the shipped config, recompute its golden by running the real C# core on the real asset as well as the page, and the two must agree.
 - Evidence: `abilityPool` in the page's dynamo-core block; `DynamoSettings.Abilities`, `HoneyguideConfigSO.retiredAbilities`; `author_honeyguide_assets.py` check "retiredAbilities is not the lab's RETIRED_ABILITIES"; `HoneyguideTests.Ratel_NeverDrawsPrinter_WhileItIsRetired`.
 - Promoted: no
+
+### L-STU-159 — Independent pairwise boundaries do not tile space: fit one partition for every family at once
+- Lab: Colour Domains Lab (`Docs/Studios/ColourDomainsLab.html`) · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: Garrett asked for convex regions that "encroach on each other's territory, but respect the thickness of the forbidden band". Round 3 put a band in the middle of each pair's gap, one pair at a time. Fifteen bands chosen independently leave pockets that no family owns; Garrett's saved proposal ended with 65.5% of the gamut as band, and he reported regions "not encroaching in order to fill in". Round 4 gave every family one score `A_f = n_f·x + c_f` and the colour to the highest: the cells are convex and tile the space by construction, and the band is the same thickness on every border.
+- Do instead: when regions must be convex AND fill a space, fit them TOGETHER as a max-affine partition (a multiclass maximum-margin fit, then a refinement on the true distance to each border). Never place pairwise boundaries one by one.
+- Evidence: `fitAffine` / `refineCells` in the page; `Tools/Build/colour_domains.py classify`.
+- Promoted: no
+
+### L-STU-160 — A tool that cuts space when it cannot hand it over creates the gaps it exists to prevent
+- Lab: Colour Domains Lab · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: the eraser removed a colour from its family, and when no neighbour could take it, cut a flat face through it. Behind a cut the space was empty however deep it went: 17.1% of the gamut, and a Jade/Ruby gap visibly thicker than every other band. Garrett: "i was still able to create large gaps and the starting config has gaps that are thicker than others". Measured by walking a line from Jade's signal to Ruby's and printing the owner of each step (`JJJJJJJ..xxxxBBBB....RRRR`, x = cut), which named the cause in one line.
+- Do instead: an edit that cannot be honoured without breaking the invariant (here: the only empty space is the band) must leave the colour where it is and SAY so, never fall back to something that silently breaks the invariant. When a user reports an uneven result, print a 1-D walk through the space with the owner at each step before theorising.
+- Evidence: `handOff` in the page (no cuts); `COLOR_DOMAINS.md` § How the lab got here.
+- Promoted: no
+
+### L-STU-161 — When a shaped result comes from a fit that is not unique, freeze the RESULT, not the inputs
+- Lab: Colour Domains Lab · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: Garrett liked the boundaries of his "shaped by eye" save and asked for them as the source of truth. Refitting the same inputs from a different starting point agreed on only 84% of a 41³ grid, and restoring two anchors he had dragged by accident moved 7% of all colours. Replaying the page's exact path (start from the previous adopted fit, 400 steps) reproduced the saved shares to within 0.05 points, so those boundaries were frozen as the truth's `cells`, and the anchors became a CHECK against them (all inside, one named exception) rather than the input.
+- Do instead: for anything shaped by eye on top of an optimiser, store the optimiser's output as the definition, prove it by replaying the page's path against numbers saved with the shape, and turn the inputs into assertions. Ask which part the person liked before "fixing" an accidental input: here it was the boundaries, not the anchors.
+- Evidence: `colour_domains.json` `cells`; `colour_domains.py --check` / `--self-test` (seven planted failures); the page's `__lab.runBatch()` matches the Python checker to 0.01 points.
+- Promoted: no

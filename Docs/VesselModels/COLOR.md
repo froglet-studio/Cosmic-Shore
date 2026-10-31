@@ -151,7 +151,7 @@ render_cards.py Squirrel Rhino Thresher --compare out.jpg --candidates before.js
 
 - **The space** is OKLab: L is the value, and the angle and radius of (a, b) are the hue and the saturation. A distance
   there is a visible difference; about 0.02 is just noticeable.
-- **The boundary** contains every sRGB colour at least 0.05 nearer a lime anchor than any anchor of another family. The
+- **The boundary** (the older nearest-anchor rule; the six families' source of truth is now §5c) contains every sRGB colour at least 0.05 nearer a lime anchor than any anchor of another family. The
   anchors are what the game already draws:
   - Lime: the CTA signal, BrightCTA / the HUD's lime, and the kite's lime.
   - Jade, Ruby, Gold: each domain's UI and signal colours.
@@ -193,14 +193,15 @@ The motes in the kite view and the pilot's faint mote dots wear them. The kite's
 other call to action keep the palette's one lime. Mass sits on the boundary's Jade edge (+0.05): the dark green-yellows
 are the ones nearest Jade's teal. Narrowing the window further squeezes the four together (at 78–102°, under 0.02 apart).
 
-## 5c. The families as regions: the convex-cell rule (adopted 2026-10-31)
+## 5c. The families as regions: the source of truth (2026-10-31)
 
-Garrett adopted a second rule for where each family's region ends: six convex cells that fill OKLab with no gaps,
-kept apart by a band of the margin's thickness (0.05 in OKLab) along each border. It is defined, measured and
-compared with the nearest-anchor rule above in [`COLOR_DOMAINS.md`](COLOR_DOMAINS.md), with the definitions in
-[`colour_domains.json`](colour_domains.json) and the shaping tool in the Colour Domains artifact
-(https://claude.ai/artifact/QT7nMWURMQgznfAnAg2FXh). `kite_mote_colors.py` still uses the nearest-anchor rule; no
-asset changed.
+**Which family a colour belongs to is decided by [`colour_domains.json`](colour_domains.json)**, explained in
+[`COLOR_DOMAINS.md`](COLOR_DOMAINS.md): six convex cells in OKLab that fill the space, kept apart by a band of the
+margin's thickness (0.05) along every border. Garrett shaped it by eye in the Colour Domains lab
+(https://claude.ai/artifact/QT7nMWURMQgznfAnAg2FXh, `Docs/Studios/ColourDomainsLab.html`) and made it the source of
+truth. `python3 Tools/Build/colour_domains.py --check` holds every anchor above, the four Lime element shades and the
+UI theme's family colours to it. §5b's nearest-anchor boundary is the older rule, still used by `kite_mote_colors.py`
+to pick the element shades, and all four shades rest inside the truth's Lime.
 
 ## 6. Open: decisions and checks owed
 

@@ -1,19 +1,68 @@
 {
-  "format": "cosmic-shore-colour-domains/3",
+  "format": "cosmic-shore-colour-domains/4",
+  "status": "SOURCE OF TRUTH for the six colour domains: which family a colour belongs to, and where the forbidden band lies",
+  "name": "shaped by eye",
   "adopted": "2026-10-31",
+  "by": "Garrett",
   "artifact": "https://claude.ai/artifact/QT7nMWURMQgznfAnAg2FXh",
-  "source": "Garrett's proposal \"convex hulls with forbidden thickness\" (2026-10-31), re-fitted with the gap-free cell solver and no cuts",
-  "space": "OKLab",
-  "rule": "convex-cells",
+  "checker": "python3 Tools/Build/colour_domains.py --check",
+  "space": "OKLab, x = [L, a, b] of the sRGB colour (Bjorn Ottosson 2020)",
+  "rule": "Each family f has a score A_f(x) = n_f . x + c_f. A colour belongs to the family with the highest score, unless it lies within margin/2 (OKLab distance) of that family cell border with any other family, A_f(x) - A_g(x) < (margin/2) |n_f - n_g|: then it is in the forbidden band. The cells are convex, fill OKLab with no gaps, and the band is the same thickness on every border.",
   "margin": 0.05,
-  "weights": {
-    "anchor": 30,
-    "taken": 1
+  "cells": {
+    "fire": {
+      "n": [
+        0.001287,
+        0.317596,
+        0.046646
+      ],
+      "c": 0.032165
+    },
+    "gold": {
+      "n": [
+        0.019962,
+        0.16431,
+        0.229468
+      ],
+      "c": 0.007794
+    },
+    "lime": {
+      "n": [
+        -0.016072,
+        -0.152405,
+        0.311618
+      ],
+      "c": 0.017049
+    },
+    "jade": {
+      "n": [
+        0.000796,
+        -0.23786,
+        -0.030262
+      ],
+      "c": 0.021545
+    },
+    "blue": {
+      "n": [
+        0.00415,
+        0.11425,
+        -0.072808
+      ],
+      "c": 0.040834
+    },
+    "ruby": {
+      "n": [
+        0.074667,
+        0.616661,
+        -0.484357
+      ],
+      "c": -0.119387
+    }
   },
   "families": {
     "fire": {
-      "signal": "Danger signal",
-      "reach": 0,
+      "meaning": "Danger: bad, avoid it or deal with it",
+      "signal": "fire-0",
       "anchors": [
         {
           "id": "fire-0",
@@ -40,11 +89,11 @@
         {
           "id": "fire-2",
           "name": "Engine ember rim",
-          "hex": "#6A361C",
+          "hex": "#6B1C0A",
           "rgb": [
-            0.4155,
-            0.2104,
-            0.1094
+            0.42,
+            0.11,
+            0.04
           ],
           "source": "vessel_colors.py · engine rim (EngineVesselMaterial _Color1)"
         },
@@ -60,28 +109,24 @@
           "source": "vessel_colors.py · engine face (EngineVesselMaterial _Color2)"
         }
       ],
-      "taken": [
-        {
-          "hex": "#F78068",
-          "rgb": [
-            0.9688,
-            0.5,
-            0.4063
-          ]
-        },
-        {
-          "hex": "#EF8068",
-          "rgb": [
-            0.9375,
-            0.5,
-            0.4063
-          ]
-        }
-      ]
+      "shaping": {
+        "taken": [
+          "#F78068",
+          "#EF8068",
+          "#400858",
+          "#480070",
+          "#480068",
+          "#480070",
+          "#480080",
+          "#480087",
+          "#400087",
+          "#580080"
+        ]
+      }
     },
     "gold": {
-      "signal": "Gold UI = signal",
-      "reach": 0,
+      "meaning": "Commerce: Team 3",
+      "signal": "gold-0",
       "anchors": [
         {
           "id": "gold-0",
@@ -95,60 +140,25 @@
           "source": "OriginalColorSetSO · GoldColors.TrailHighlightColor"
         }
       ],
-      "taken": [
-        {
-          "hex": "#FFF730",
-          "rgb": [
-            1,
-            0.9688,
-            0.1875
-          ]
-        },
-        {
-          "hex": "#FFFF60",
-          "rgb": [
-            1,
-            1,
-            0.375
-          ]
-        },
-        {
-          "hex": "#C7B700",
-          "rgb": [
-            0.7813,
-            0.7188,
-            0
-          ]
-        },
-        {
-          "hex": "#F7D797",
-          "rgb": [
-            0.9688,
-            0.8438,
-            0.5938
-          ]
-        },
-        {
-          "hex": "#FFDF97",
-          "rgb": [
-            1,
-            0.875,
-            0.5938
-          ]
-        },
-        {
-          "hex": "#F7F7C7",
-          "rgb": [
-            0.9688,
-            0.9688,
-            0.7813
-          ]
-        }
-      ]
+      "shaping": {
+        "taken": [
+          "#FFFF60",
+          "#C7B700",
+          "#F7D797",
+          "#FFDF97",
+          "#F7F7C7",
+          "#FFF700",
+          "#FFF700",
+          "#E7F700",
+          "#DFEF18",
+          "#FFEF00",
+          "#FFEF00"
+        ]
+      }
     },
     "lime": {
-      "signal": "CTA signal",
-      "reach": 0,
+      "meaning": "Call to action: a categorically good thing to collect or click",
+      "signal": "lime-0",
       "anchors": [
         {
           "id": "lime-0",
@@ -184,141 +194,44 @@
           "source": "KiteNavigatorView.cs · Lime"
         }
       ],
-      "taken": [
-        {
-          "hex": "#FFFF28",
-          "rgb": [
-            1,
-            1,
-            0.1563
-          ]
-        },
-        {
-          "hex": "#EFFF30",
-          "rgb": [
-            0.9375,
-            1,
-            0.1875
-          ]
-        },
-        {
-          "hex": "#FFFF20",
-          "rgb": [
-            1,
-            1,
-            0.125
-          ]
-        },
-        {
-          "hex": "#FFFF00",
-          "rgb": [
-            1,
-            1,
-            0
-          ]
-        },
-        {
-          "hex": "#EFF700",
-          "rgb": [
-            0.9375,
-            0.9688,
-            0
-          ]
-        },
-        {
-          "hex": "#DFDF40",
-          "rgb": [
-            0.875,
-            0.875,
-            0.25
-          ]
-        },
-        {
-          "hex": "#EFF710",
-          "rgb": [
-            0.9375,
-            0.9688,
-            0.0625
-          ]
-        },
-        {
-          "hex": "#204800",
-          "rgb": [
-            0.125,
-            0.2813,
-            0
-          ]
-        },
-        {
-          "hex": "#204808",
-          "rgb": [
-            0.125,
-            0.2813,
-            0.0313
-          ]
-        },
-        {
-          "hex": "#205000",
-          "rgb": [
-            0.125,
-            0.3125,
-            0
-          ]
-        },
-        {
-          "hex": "#205808",
-          "rgb": [
-            0.125,
-            0.3438,
-            0.0313
-          ]
-        },
-        {
-          "hex": "#406028",
-          "rgb": [
-            0.25,
-            0.375,
-            0.1563
-          ]
-        },
-        {
-          "hex": "#406030",
-          "rgb": [
-            0.25,
-            0.375,
-            0.1875
-          ]
-        },
-        {
-          "hex": "#406830",
-          "rgb": [
-            0.25,
-            0.4063,
-            0.1875
-          ]
-        },
-        {
-          "hex": "#407030",
-          "rgb": [
-            0.25,
-            0.4375,
-            0.1875
-          ]
-        }
-      ]
+      "shaping": {
+        "taken": [
+          "#FFFF28",
+          "#EFFF30",
+          "#FFFF20",
+          "#EFF700",
+          "#DFDF40",
+          "#204800",
+          "#204808",
+          "#205000",
+          "#205808",
+          "#406028",
+          "#406030",
+          "#406830",
+          "#407030",
+          "#EFEF20",
+          "#EFEF28",
+          "#EFEF30",
+          "#F7FF30",
+          "#FFFF10",
+          "#FFFF18",
+          "#FFFF20",
+          "#FFFF00"
+        ]
+      }
     },
     "jade": {
-      "signal": "Jade signal",
-      "reach": 0,
+      "meaning": "Order: Team 1",
+      "signal": "jade-1",
       "anchors": [
         {
           "id": "jade-0",
           "name": "Jade UI",
-          "hex": "#0CA899",
+          "hex": "#0EC0B6",
           "rgb": [
-            0.0484,
-            0.6579,
-            0.6005
+            0.0549,
+            0.7529,
+            0.7137
           ],
           "source": "OriginalColorSetSO · JadeColors.TrailHighlightColor"
         },
@@ -334,156 +247,32 @@
           "source": "GetDomainSignalColor(Jade): the UI colour at brightest channel 1"
         }
       ],
-      "taken": [
-        {
-          "hex": "#00FF8F",
-          "rgb": [
-            0,
-            1,
-            0.5625
-          ]
-        },
-        {
-          "hex": "#508F70",
-          "rgb": [
-            0.3125,
-            0.5625,
-            0.4375
-          ]
-        },
-        {
-          "hex": "#307860",
-          "rgb": [
-            0.1875,
-            0.4688,
-            0.375
-          ]
-        },
-        {
-          "hex": "#60B750",
-          "rgb": [
-            0.375,
-            0.7188,
-            0.3125
-          ]
-        },
-        {
-          "hex": "#088068",
-          "rgb": [
-            0.0313,
-            0.5,
-            0.4063
-          ]
-        },
-        {
-          "hex": "#088F68",
-          "rgb": [
-            0.0313,
-            0.5625,
-            0.4063
-          ]
-        },
-        {
-          "hex": "#308060",
-          "rgb": [
-            0.1875,
-            0.5,
-            0.375
-          ]
-        },
-        {
-          "hex": "#508760",
-          "rgb": [
-            0.3125,
-            0.5313,
-            0.375
-          ]
-        },
-        {
-          "hex": "#488068",
-          "rgb": [
-            0.2813,
-            0.5,
-            0.4063
-          ]
-        },
-        {
-          "hex": "#008FFF",
-          "rgb": [
-            0,
-            0.5625,
-            1
-          ]
-        },
-        {
-          "hex": "#0087F7",
-          "rgb": [
-            0,
-            0.5313,
-            0.9688
-          ]
-        },
-        {
-          "hex": "#0087FF",
-          "rgb": [
-            0,
-            0.5313,
-            1
-          ]
-        },
-        {
-          "hex": "#0080EF",
-          "rgb": [
-            0,
-            0.5,
-            0.9375
-          ]
-        },
-        {
-          "hex": "#0887FF",
-          "rgb": [
-            0.0313,
-            0.5313,
-            1
-          ]
-        },
-        {
-          "hex": "#1080EF",
-          "rgb": [
-            0.0625,
-            0.5,
-            0.9375
-          ]
-        },
-        {
-          "hex": "#1078DF",
-          "rgb": [
-            0.0625,
-            0.4688,
-            0.875
-          ]
-        },
-        {
-          "hex": "#0878EF",
-          "rgb": [
-            0.0313,
-            0.4688,
-            0.9375
-          ]
-        },
-        {
-          "hex": "#0858AF",
-          "rgb": [
-            0.0313,
-            0.3438,
-            0.6875
-          ]
-        }
-      ]
+      "shaping": {
+        "taken": [
+          "#00FF8F",
+          "#508F70",
+          "#307860",
+          "#60B750",
+          "#088068",
+          "#088F68",
+          "#308060",
+          "#508760",
+          "#488068",
+          "#008FFF",
+          "#0087F7",
+          "#0087FF",
+          "#0080EF",
+          "#0887FF",
+          "#1080EF",
+          "#1078DF",
+          "#0878EF",
+          "#0858AF"
+        ]
+      }
     },
     "blue": {
-      "signal": "Blue UI = signal",
-      "reach": 0,
+      "meaning": "Neutral: no team, and every grey",
+      "signal": "blue-0",
       "anchors": [
         {
           "id": "blue-0",
@@ -574,76 +363,27 @@
           "source": "COLOR.md rule 1: every grey is Blue's"
         }
       ],
-      "taken": [
-        {
-          "hex": "#380818",
-          "rgb": [
-            0.2188,
-            0.0313,
-            0.0938
-          ]
-        },
-        {
-          "hex": "#502870",
-          "rgb": [
-            0.3125,
-            0.1563,
-            0.4375
-          ]
-        },
-        {
-          "hex": "#402068",
-          "rgb": [
-            0.25,
-            0.125,
-            0.4063
-          ]
-        },
-        {
-          "hex": "#502868",
-          "rgb": [
-            0.3125,
-            0.1563,
-            0.4063
-          ]
-        },
-        {
-          "hex": "#CFCFA7",
-          "rgb": [
-            0.8125,
-            0.8125,
-            0.6563
-          ]
-        },
-        {
-          "hex": "#EFDFB7",
-          "rgb": [
-            0.9375,
-            0.875,
-            0.7188
-          ]
-        },
-        {
-          "hex": "#E7EFC7",
-          "rgb": [
-            0.9063,
-            0.9375,
-            0.7813
-          ]
-        },
-        {
-          "hex": "#DFE7BF",
-          "rgb": [
-            0.875,
-            0.9063,
-            0.75
-          ]
-        }
-      ]
+      "shaping": {
+        "taken": [
+          "#380818",
+          "#CFCFA7",
+          "#EFDFB7",
+          "#E7EFC7",
+          "#DFE7BF",
+          "#4000F7",
+          "#4000FF",
+          "#E78FBF",
+          "#F79FCF",
+          "#C770AF",
+          "#700880",
+          "#680078",
+          "#FFA7EF"
+        ]
+      }
     },
     "ruby": {
-      "signal": "Ruby signal",
-      "reach": 0,
+      "meaning": "Freedom: Team 2",
+      "signal": "ruby-1",
       "anchors": [
         {
           "id": "ruby-0",
@@ -668,16 +408,64 @@
           "source": "GetDomainSignalColor(Ruby): the UI colour at brightest channel 1"
         }
       ],
-      "taken": [
-        {
-          "hex": "#60009F",
-          "rgb": [
-            0.375,
-            0,
-            0.625
-          ]
-        }
-      ]
+      "shaping": {
+        "taken": [
+          "#60009F",
+          "#6800EF",
+          "#6800F7",
+          "#6800FF",
+          "#6808FF",
+          "#6810FF",
+          "#6818FF",
+          "#6820FF",
+          "#6828FF",
+          "#6830EF",
+          "#6830F7",
+          "#7018FF",
+          "#7020FF",
+          "#7028FF",
+          "#7030FF",
+          "#7038F7",
+          "#7830FF"
+        ]
+      }
+    }
+  },
+  "exceptions": [
+    {
+      "anchor": "fire-3",
+      "reason": "The engine ember face (#300A05) is within one band of black, and every grey is Blue's, so no convex border can give it full clearance. It sits 0.0007 OKLab inside the band edge."
+    },
+    {
+      "anchor": "ui:selection",
+      "reason": "OPEN DECISION: the UI's selection blue #3DB2FF sits in the band, 0.0077 OKLab from Blue's border with Jade (needs 0.025). Either move the selection colour into Blue or reshape Blue in the lab; until then it is listed here so any NEW drift still fails."
+    }
+  ],
+  "measured": {
+    "tool": "python3 Tools/Build/colour_domains.py --report",
+    "grid": "25^3 sRGB",
+    "shares": {
+      "fire": 16.91,
+      "gold": 1.6,
+      "lime": 14.2,
+      "jade": 7.67,
+      "blue": 18.1,
+      "ruby": 5.52
+    },
+    "band": 36.01
+  },
+  "history": [
+    "2026-10-31 shaped by eye in the artifact (proposal tymgckn91vbfk8hlro2y); the boundaries are frozen exactly as the page fitted them while Garrett shaped. Two anchors (engine ember rim, Jade UI) had been dragged by accident and are restored to their game values here; under the frozen boundaries both rest inside their own family."
+  ],
+  "ui_tokens": {
+    "source": "Assets/_SO_Assets/UI/UITheme.asset (Docs/UI_COLOR_RULES.md)",
+    "tokens": {
+      "cta": "lime",
+      "danger": "fire",
+      "controlActive": "jade",
+      "purchase": "gold",
+      "tooltip": "ruby",
+      "selection": "blue"
     }
   }
 }
