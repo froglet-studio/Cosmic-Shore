@@ -129,6 +129,11 @@ namespace CosmicShore.Gameplay
             public float SquadShareAtExit;
             /// <summary>Live fauna re-coloured into the squad's domain at pacification.</summary>
             public int FaunaTurned;
+            /// <summary>Seconds (1 Hz samples) a squad seat spent inside this world's nucleus before it was pacified, and
+            /// the largest squad control volume and share seen (the pacify gates' inputs, for tuning).</summary>
+            public float NucleusSeconds;
+            public float PeakSquadControl;
+            public float PeakShare;
             /// <summary>Hull prisms lost to the squad's own fire in this world.</summary>
             public int FriendlyFire;
 
@@ -169,6 +174,10 @@ namespace CosmicShore.Gameplay
         public int KillsElsewhere;
         /// <summary>Ark hull prisms destroyed by something other than a creature: the squad's own fire.</summary>
         public int FriendlyFire;
+        /// <summary>Who did it, as <c>"destroyer:count"</c> (the destroyer name stamped on the prism), most first.</summary>
+        public List<string> FriendlyFireBy = new();
+        /// <summary>One line per escort seat from its role (<c>IArkEscortRole.Notes</c>): what it did, in counters.</summary>
+        public List<string> RoleNotes = new();
         /// <summary>AI wingmates that flew, and escort pilots armed (the local seat's included in the sim).</summary>
         public int Wingmates;
         public int Pilots;
@@ -188,6 +197,8 @@ namespace CosmicShore.Gameplay
         public float BreachHull;
         /// <summary>The share of a world's control volume that pacifies it (0 = off), and how many worlds were pacified.</summary>
         public float PacifyShare;
+        public float PacifyMinVolume;
+        public float PacifyNucleusSeconds;
         public int PacifiedLegs;
         /// <summary>The fauna threats over the run: plate latches, worm lunges, leech bites on the Ark, worlds whose
         /// second wave was released, and the share of the membrane radius that released it.</summary>
@@ -212,7 +223,7 @@ namespace CosmicShore.Gameplay
             sb.Append($", hull min {HullMinFraction:P0} of {HullTotal}, {EndedAt - UnderwayAt:0}s under way " +
                       $"({InsideSeconds:0}s in cells, {OutsideSeconds:0}s out, mean {MeanArkSpeed:0.0} u/s), " +
                       $"plates lost {PlatesLost} ({PlatesLostShielded} shielded, {PlatesLostSuper} super, " +
-                      $"{FriendlyFire} to friendly fire), {Kills} kills ({KillsOnArk} on the Ark / {KillsElsewhere} elsewhere), " +
+                      $"{FriendlyFire} to friendly fire{(FriendlyFireBy.Count > 0 ? " [" + string.Join(", ", FriendlyFireBy) + "]" : "")}), {Kills} kills ({KillsOnArk} on the Ark / {KillsElsewhere} elsewhere), " +
                       $"{PacifiedLegs} worlds pacified, {Wingmates} wingmates, {Pilots} escort pilots. Legs:");
             foreach (var l in LegReports)
             {
@@ -225,6 +236,7 @@ namespace CosmicShore.Gameplay
                           $"{(l.WaveReleasedAt >= 0f ? $", wave at {l.WaveReleasedAt - l.EnteredAt:0}s" : "")}, " +
                           $"{l.ExitedAt - l.EnteredAt:0}s]");
             }
+            foreach (var note in RoleNotes) sb.Append(" | ").Append(note);
             return sb.ToString();
         }
     }

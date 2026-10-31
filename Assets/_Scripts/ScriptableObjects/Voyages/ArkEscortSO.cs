@@ -106,11 +106,20 @@ namespace CosmicShore.ScriptableObjects
                                                 "0 = never (a world's tier stays where its profile put it).")]
         float secondWaveAt = 0.6f;
 
-        [SerializeField, Range(0f, 1f), Tooltip("A world is PACIFIED once the squad holds this share of its control volume " +
+        [SerializeField, Range(0f, 1f), Tooltip("A HOSTILE world is PACIFIED once the squad holds this share of its control volume " +
                                                 "(the nucleus claim, or the whole cell without a nucleus): its control is pinned " +
                                                 "to the squad, its live fauna re-coloured into the squad's domain, and its fauna " +
                                                 "stop grazing the squad's mass, the Ark included. 0 = never pacify.")]
-        float pacifyShare = 0.6f;
+        float pacifyShare = 0.75f;
+
+        [SerializeField, Min(0f), Tooltip("Squad control volume (nucleus claim, cubic units) a world needs before it can be " +
+                                          "pacified: a trail crossing an empty hostile nucleus is not a pacification; a " +
+                                          "cultivator weaving mass into it is.")]
+        float pacifyMinVolume = 25000f;
+
+        [SerializeField, Min(0f), Tooltip("A world pacifies only after squad seats have spent this many seconds (in total) " +
+                                          "inside its nucleus: cultivation is deliberate work, not a pass through the core.")]
+        float pacifyNucleusSeconds = 40f;
 
         [Header("Words (every line is authored; empty shows nothing)")]
         [SerializeField, Tooltip("The voyage's name, on the build veil and the card.")]
@@ -148,6 +157,8 @@ namespace CosmicShore.ScriptableObjects
         public bool PlatesAreFood { get => platesAreFood; set => platesAreFood = value; }
         public float PacifyShare { get => pacifyShare; set => pacifyShare = Mathf.Clamp01(value); }
         public float SecondWaveAt { get => secondWaveAt; set => secondWaveAt = Mathf.Clamp01(value); }
+        public float PacifyMinVolume { get => pacifyMinVolume; set => pacifyMinVolume = Mathf.Max(0f, value); }
+        public float PacifyNucleusSeconds { get => pacifyNucleusSeconds; set => pacifyNucleusSeconds = Mathf.Max(0f, value); }
         public string OverrunLine => overrunLine;
         public float MaxPopulation { get => maxPopulation; set => maxPopulation = Mathf.Max(0.1f, value); }
         public string VoyageName => voyageName;

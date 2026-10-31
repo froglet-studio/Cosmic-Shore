@@ -40,8 +40,31 @@ namespace CosmicShore.Gameplay
         public Cell Cell => _run ? _run.CurrentCell : null;
         public Domains Domain => Ark ? Ark.Domain : Domains.Blue;
 
-        /// <summary>Half the hull's length: the sphere every lane test keeps clear (plus the lane margin).</summary>
-        public float HullRadius => _run ? _run.HullHalfLength : 55f;
+        /// <summary>The hull's radius about the Ark's position: the larger of half the authored hull length and the
+        /// measured reach of the live hull prisms (a modelled hull is wider than the spindle; measured every few
+        /// seconds). Every lane test and the steering's hull avoidance keep this sphere clear (plus margins).</summary>
+        public float HullRadius => Mathf.Max(_run ? _run.HullHalfLength : 55f, _measuredHullRadius);
+
+        float _measuredHullRadius;
+        float _nextHullMeasure;
+        readonly List<Prism> _hullScratch = new();
+        const float HullMeasureSeconds = 3f;
+
+        void MeasureHull(Ark ark)
+        {
+            if (Time.time < _nextHullMeasure) return;
+            _nextHullMeasure = Time.time + HullMeasureSeconds;
+            ark.GetLiveHullPrisms(ark.Position, _hullScratch);
+            float far2 = 0f;
+            for (int i = 0; i < _hullScratch.Count; i++)
+            {
+                var p = _hullScratch[i];
+                if (!p) continue;
+                float d2 = (p.transform.position - ark.Position).sqrMagnitude;
+                if (d2 > far2) far2 = d2;
+            }
+            if (far2 > 0f) _measuredHullRadius = Mathf.Sqrt(far2) + 8f;   // plus a plate's half-length
+        }
 
         /// <summary>The live threats, most urgent first (re-ranked every retargetSeconds).</summary>
         public IReadOnlyList<Fauna> Threats => _threats;
@@ -70,6 +93,7 @@ namespace CosmicShore.Gameplay
         {
             var ark = Ark;
             if (!ark) return;
+            MeasureHull(ark);
             if (Time.time >= _nextRank) Rank(ark);
             Sites.Sample(this);
         }
@@ -188,6 +212,44 @@ namespace CosmicShore.Gameplay
             float t = len2 > 1e-6f ? Mathf.Clamp01(Vector3.Dot(centre - a, ab) / len2) : 0f;
             Vector3 nearest = a + ab * t;
             return (nearest - centre).sqrMagnitude > radius * radius;
+        }
+
+        /// <summary>
+        /// Keep a hull out of the Ark: a steering target whose straight path from <paramref name="from"/> would cross
+        /// the hull sphere (plus the lane margin) is pushed sideways to skirt it, and a hull already inside the sphere
+        /// is sent straight out. A vessel through the hull destroys plates (vessel impacts take prisms), which was most
+        /// of the escort's friendly fire: a grazer on the hull puts the creature's heart, and any standoff on its Ark
+        /// side, inside the plating.
+        /// </summary>
+        public Vector3 AvoidHull(Vector3 from, Vector3 target)
+        {
+            var ark = Ark;
+            if (!ark) return target;
+            Vector3 centre = ark.Position;
+            float r = HullRadius + EscortGeneRegistry.ArkLaneMargin;
+            Vector3 fromCentre = from - centre;
+            if (fromCentre.sqrMagnitude < r * r)
+            {
+                // Inside: out along the radial, biased toward where we were going.
+                Vector3 outDir = fromCentre.sqrMagnitude > 1e-3f ? fromCentre.normalized : ark.transform.right;
+                Vector3 wish = (target - from);
+                if (wish.sqrMagnitude > 1e-3f) outDir = (outDir + wish.normalized * 0.5f).normalized;
+                return centre + outDir * (r + 60f);
+            }
+            if (SegmentClearsSphere(from, target, centre, r)) return target;
+
+            // The path crosses the hull: slide the target around the sphere, on the side it already leans to.
+            Vector3 ab = target - from;
+            float len2 = ab.sqrMagnitude;
+            if (len2 < 1e-3f) return target;
+            float t = Mathf.Clamp01(Vector3.Dot(centre - from, ab) / len2);
+            Vector3 nearest = from + ab * t;
+            Vector3 side = nearest - centre;
+            if (side.sqrMagnitude < 1e-3f) side = Vector3.Cross(ab, Vector3.up);
+            if (side.sqrMagnitude < 1e-3f) side = ark.transform.right;
+            side.Normalize();
+            // A waypoint beside the hull: the vessel rounds it, then its target is clear again next frame.
+            return centre + side * (r + 40f);
         }
 
         /// <summary>The idle station for a seat: ahead of the bow on the seat's own side.</summary>

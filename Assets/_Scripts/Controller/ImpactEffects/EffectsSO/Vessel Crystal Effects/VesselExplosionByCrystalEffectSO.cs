@@ -167,6 +167,10 @@ namespace CosmicShore.Gameplay
                 _coreMultiplierAtRestCharge, _coreMultiplierAtFullCharge, _minCoreMultiplier);
         }
 
+        /// <summary>A blast fired: the vessel and the index of the resource whose level set its size (read it for the
+        /// energy spent). The Ark escort's Dolphin role counts its blasts with it.</summary>
+        public static event System.Action<IVesselStatus, int> Fired;
+
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
             if (vesselImpactor == null || vesselImpactor.Vessel == null)
@@ -209,6 +213,7 @@ namespace CosmicShore.Gameplay
                 affectSelfOverride = !sparesAllies;
             }
 
+            Fired?.Invoke(status, _resourceIndex);
             ExplosionHelper.CreateExplosion(
                 _aoePrefabs,
                 vesselImpactor,
