@@ -17,8 +17,8 @@ fails any screen that still names one of its materials.
 
 It also writes the rev 6 rims (ElementRim.shader, §45.3: ElementRim_<element>.mat) and the presence orb and party
 bonds (§45.4): Presence.shader / Bond.shader on UIPresence.cginc, Presence_Orb.mat (the friends orb in Menu_Main)
-and Bond_Party.mat (the party molecule's bonds in PartyPanel.prefab until Rev 40 E's card replaced them, section 107;
-the material stays, unused, for any future bond).
+and Bond_Party.mat (the party molecule's bonds in PartyPanel.prefab; Rev 40 E's card dropped them, section 107, and
+section 109 brought them back on the molecule that grows from the host).
 
 This writes the materials and the shader / include metas (deterministic guids), so every reference the menu
 generators emit (menu_b_motion.panel_sea_node / window_sea_node) resolves. The element colours are the theme's

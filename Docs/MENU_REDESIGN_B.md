@@ -5030,7 +5030,14 @@ handle** (section 45.4), unchanged. Rev 39's options and D's rail and F are not 
 - **The groups**: JOIN THEIR PARTY, IN THE MENU, IN A MATCH, YOU INVITED, each a header over its own list, shown only
   while it has rows (`KitListCounter`); `FriendsListPanel.onlineGroups` parents each row and moves it when its state
   changes; the empty line shows while all four are empty (`onlineEmptyLine`).
-- **Unchanged:** the orb and the drawer (`author_menu_friends_drawer.py --check` OK), the docking, the profile card.
+- **Unchanged:** the orb and the drawer (`author_menu_friends_drawer.py --check` OK), the docking.
+- **The profile card, fixed the same day** (Shombith's screenshot: one unreadable button, "there is no join button"):
+  REPORT and BLOCK (and the three report reasons) were runtime copies of INVITE, and a copy keeps the original's place,
+  so INVITE, REPORT and BLOCK drew as one button. The card is now 336 tall with JOIN / INVITE on one row and REPORT /
+  BLOCK under them, all authored slots 172 wide (`author_menu_friends_drawer.CARD_ACTIONS`; the reasons take the same
+  slots, `FriendProfilePopup.reasonGroups`); the drawer generator fails if two actions shown together overlap. JOIN was
+  missing because the one-verb rows hid Join for a pilot alone in the menu: the row still says INVITE, but its state
+  keeps Join, so their card offers JOIN and INVITE.
 - **Gates:** `author_menu_arcade.py --self-test` (check_card: seats in a row, no bonds, authored words, one-verb rows in
   one shared slot with the fitter off, the four groups wired in order; 8 new planted defects); `author_ui_lattice.py
   --self-test` (its two bond plants retargeted); `PartyTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
@@ -5056,3 +5063,28 @@ Built straight from the words (no board round): the same tray as the friends dra
 - **Gates:** `author_menu_configure.py` checks the tray wiring, the texture scale and that the tray ends at the column's
   edge; three new planted defects (FULL SCREEN back to the whole window, a frame-sized texture, START left on screen).
   `PreviewTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 109. The party molecule back, and it grows from the host (2026-10-31, awaiting in-editor approval)
+
+**Asked (Shombith, 2026-10-31, after E shipped):** "we liked the old plasma kind design for the lobby with connected tree but
+it locked it for 4 players only do something where it is expandable with the host and its there, also decrease the tone of
+the blue a little bit on the bg". Built straight from the words; E's online rows, groups and profile card stay.
+
+- **The molecule is back** in E's party card (`PartyPanel`, `author_menu_arcade.build_panel`): the host in the centre, the
+  members bonded to it with the flowing bonds (`Bond_Party.mat`), each seat the avatar in its domain ring over the name
+  and role (the Rev 6 `PartySlot`, §45.4). Under it: "You host - 1 seat open", then INVITE and LEAVE PARTY.
+- **It grows** (`ArcadeLobbyList.expandingMolecule`, `LayoutMolecule`): the ring shows the seated members plus ONE open
+  socket while a seat is free, spread evenly round the host (`MoleculeAngle`: one seat straight below; two left and
+  right; three the old triangle), and re-lays every time the party changes; the other slots and their bonds hide. The
+  ring is computed from the slots the panel has (`RingSeats`), not from three fixed angles, so a bigger panel grows
+  further; the party itself stays 4 (`Docs/MULTIPLAYER_START_HERE.md` §2). The prefab is authored at the full party
+  (`MOL_ANGLES` = the computed three-seat ring), and the gate checks the runtime numbers match the generator's.
+- **The background's blue is lower**: the drawer window's SurfaceDark wash over its black is 0.45 (was 0.6,
+  `author_menu_friends_drawer.WINDOW_TINT`); the pilot record keeps 0.6.
+- **Fixed on the way:** E's party card read `CARD_H`, which the arcade game card redefines lower in the same generator, so
+  it came out 296 tall instead of its own height; the card's constants are now `PCARD_*`.
+- **Gates:** `author_menu_arcade.py --self-test` 36/36 (check_molecule: bonds start at the host and end at their seats,
+  each with KitRimMesh; the growing fields; plants "the molecule locked again", the old bond plants);
+  `author_menu_friends_drawer.py`, `author_ui_lattice.py` and the other Menu_Main generators `--check` OK;
+  `PartyTrayTests` (ring size and angles). Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
