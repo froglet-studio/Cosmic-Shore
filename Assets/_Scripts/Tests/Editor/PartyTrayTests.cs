@@ -17,10 +17,15 @@ namespace CosmicShore.Tests
         // ── One verb per row ───────────────────────────────────────────────────────────────────
 
         [Test]
-        public void ASoloPilotInTheMenu_IsInvited_NotJoined()
+        public void ASoloPilotInTheMenu_RowSaysInvite_ButJoinStaysForTheProfileCard()
         {
             // Every pilot in the menu hosts their own eager party, so the old row offered INVITE and JOIN side by side.
-            Assert.AreEqual((true, JoinMode.Hidden), FriendsListPanel.OneVerb(Status.Online, JoinMode.Join));
+            // The row now shows INVITE alone; Join stays on its state so the profile card can offer it (2026-10-31).
+            Assert.AreEqual((true, JoinMode.Join), FriendsListPanel.OneVerb(Status.Online, JoinMode.Join));
+            Assert.AreEqual((true, false, false), KitOnlineRow.VisibleParts(true, true, true, false, preferInvite: true),
+                "the row's one button is INVITE");
+            Assert.AreEqual((false, false, true), KitOnlineRow.VisibleParts(true, true, true, true, preferInvite: true),
+                "an invite out still shows only Cancel");
         }
 
         [Test]

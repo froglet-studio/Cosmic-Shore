@@ -5030,7 +5030,14 @@ handle** (section 45.4), unchanged. Rev 39's options and D's rail and F are not 
 - **The groups**: JOIN THEIR PARTY, IN THE MENU, IN A MATCH, YOU INVITED, each a header over its own list, shown only
   while it has rows (`KitListCounter`); `FriendsListPanel.onlineGroups` parents each row and moves it when its state
   changes; the empty line shows while all four are empty (`onlineEmptyLine`).
-- **Unchanged:** the orb and the drawer (`author_menu_friends_drawer.py --check` OK), the docking, the profile card.
+- **Unchanged:** the orb and the drawer (`author_menu_friends_drawer.py --check` OK), the docking.
+- **The profile card, fixed the same day** (Shombith's screenshot: one unreadable button, "there is no join button"):
+  REPORT and BLOCK (and the three report reasons) were runtime copies of INVITE, and a copy keeps the original's place,
+  so INVITE, REPORT and BLOCK drew as one button. The card is now 336 tall with JOIN / INVITE on one row and REPORT /
+  BLOCK under them, all authored slots 172 wide (`author_menu_friends_drawer.CARD_ACTIONS`; the reasons take the same
+  slots, `FriendProfilePopup.reasonGroups`); the drawer generator fails if two actions shown together overlap. JOIN was
+  missing because the one-verb rows hid Join for a pilot alone in the menu: the row still says INVITE, but its state
+  keeps Join, so their card offers JOIN and INVITE.
 - **Gates:** `author_menu_arcade.py --self-test` (check_card: seats in a row, no bonds, authored words, one-verb rows in
   one shared slot with the fitter off, the four groups wired in order; 8 new planted defects); `author_ui_lattice.py
   --self-test` (its two bond plants retargeted); `PartyTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
