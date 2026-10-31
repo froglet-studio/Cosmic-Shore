@@ -76,6 +76,33 @@ namespace CosmicShore.Gameplay
             if (!_active || !prism || prism.DestroyedByCreature) return;
             _report.FriendlyFire++;
             if (_leg >= 0) _report.LegReports[_leg].FriendlyFire++;
+            string who = string.IsNullOrEmpty(prism.DestroyerName) ? "(unnamed)" : prism.DestroyerName;
+            _friendlyFireBy[who] = _friendlyFireBy.TryGetValue(who, out int n) ? n + 1 : 1;
+        }
+
+        readonly Dictionary<string, int> _friendlyFireBy = new();
+
+        /// <summary>The friendly-fire tally as "Vessel(name):count" where the name is one of the squad's seats, and each
+        /// seat's role notes. Called before the pilots are disarmed.</summary>
+        void WriteSeatNotes()
+        {
+            _report.FriendlyFireBy.Clear();
+            foreach (var kv in _friendlyFireBy)
+            {
+                string who = kv.Key;
+                foreach (var p in _pilots)
+                    if (p && p.Status != null && p.Status.PlayerName == kv.Key) { who = $"{p.Status.VesselType}({kv.Key})"; break; }
+                _report.FriendlyFireBy.Add($"{who}:{kv.Value}");
+            }
+            _report.FriendlyFireBy.Sort((a, b) => Count(b).CompareTo(Count(a)));
+            static int Count(string s) => int.TryParse(s.Substring(s.LastIndexOf(':') + 1), out int c) ? c : 0;
+
+            _report.RoleNotes.Clear();
+            foreach (var p in _pilots)
+            {
+                string note = p && p.Role != null ? p.Role.Notes() : null;
+                if (!string.IsNullOrEmpty(note)) _report.RoleNotes.Add(note);
+            }
         }
 
         ArkEscortReport _report;
@@ -151,6 +178,7 @@ namespace CosmicShore.Gameplay
             _legOf.Clear();
             _cells.Clear();
             _seeded.Clear();
+            _friendlyFireBy.Clear();
 
             EnsureSea();
             _cfg = _def.WithArk ? _def.WithArk.BuildConfig(_escort.VoyageName) : new ArkwayConfig { DisplayName = _escort.VoyageName };
@@ -521,7 +549,10 @@ namespace CosmicShore.Gameplay
                     seatLeash = escortPilot.Leash(leash);
                 if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= seatLeash * seatLeash) continue;
                 var side = i % 2 == 0 ? -1f : 1f;
-                var at = ark.Position + ark.transform.right * (side * WingmateAbeam * 2f) - ark.Forward * (WingmateAbeam * (1 + i));
+                // Abeam of the hull, never inside it: a modelled hull is wider than the authored spindle, and a vessel
+                // set down in the plating destroys plates (friendly fire at deploy).
+                float abeam = Mathf.Max(WingmateAbeam * 2f, (_context_?.HullRadius ?? HullHalfLength) + EscortGeneRegistry.ArkLaneMargin + 60f);
+                var at = ark.Position + ark.transform.right * (side * abeam) - ark.Forward * (WingmateAbeam * (1 + i));
                 vessel.SetPose(new Pose(at, Quaternion.LookRotation(ark.Forward, Vector3.up)));
             }
         }
@@ -550,6 +581,7 @@ namespace CosmicShore.Gameplay
             _report.ReachedLegs = 0;
             foreach (var r in _report.LegReports)
                 if (r.Reached) _report.ReachedLegs++;
+            WriteSeatNotes();
 
             if (_corridor) _corridor.PrepareCell = null;
             foreach (var feed in _killFeeds)

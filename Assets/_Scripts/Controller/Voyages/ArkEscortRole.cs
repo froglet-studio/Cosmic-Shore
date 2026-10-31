@@ -23,6 +23,8 @@ namespace CosmicShore.Gameplay
         /// <summary>The wingmate leash for this seat, given the squad's.</summary>
         float Leash(ArkEscortContext ctx, float leash);
         void OnLegChanged(Cell cell);
+        /// <summary>What this role did, one line for the report (rockets fired, jousts, crystals taken...), or null.</summary>
+        string Notes();
     }
 
     /// <summary>Shared plumbing for the roles: the seat, the hull, its pilot, pressing abilities and inputs.</summary>
@@ -88,6 +90,10 @@ namespace CosmicShore.Gameplay
         protected virtual void OnTick(ArkEscortContext ctx) { }
         public virtual float Leash(ArkEscortContext ctx, float leash) => leash;
         public virtual void OnLegChanged(Cell cell) { }
+        public virtual string Notes() => null;
+
+        /// <summary>"seat N Vessel(name)" for the report lines.</summary>
+        protected string Who => $"seat {Seat + 1} {(Status != null ? Status.VesselType.ToString() : "?")}({(Status != null ? Status.PlayerName : "?")})";
 
         // ── Helpers ──────────────────────────────────────────────────────────
 

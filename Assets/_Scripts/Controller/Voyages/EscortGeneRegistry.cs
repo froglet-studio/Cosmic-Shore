@@ -149,13 +149,13 @@ namespace CosmicShore.Gameplay
             "no rocket at a creature closer than this (it would burst in the hull's own face)");
         public static readonly EscortGene SparrowRocketMaxRange = Define("ai.sparrow.rocketMaxRange", 220f, 120f, 320f,
             "no rocket at a creature farther than this (the fuze's reach)");
-        public static readonly EscortGene SparrowRocketAimDeg = Define("ai.sparrow.rocketAimDeg", 5f, 1f, 15f,
+        public static readonly EscortGene SparrowRocketAimDeg = Define("ai.sparrow.rocketAimDeg", 8f, 1f, 20f,
             "the creature must be within this many degrees of the nose for a rocket");
         public static readonly EscortGene SparrowRocketCooldown = Define("ai.sparrow.rocketCooldown", 1.5f, 0.5f, 6f,
             "seconds between rockets");
         public static readonly EscortGene SparrowRocketBlastRadius = Define("ai.sparrow.rocketBlastRadius", 170f, 60f, 260f,
             "the rocket's destructive blast radius the Ark must be kept out of");
-        public static readonly EscortGene SparrowGunAimDeg = Define("ai.sparrow.gunAimDeg", 8f, 2f, 20f,
+        public static readonly EscortGene SparrowGunAimDeg = Define("ai.sparrow.gunAimDeg", 12f, 2f, 25f,
             "the creature must be within this many degrees of the nose for the guns");
         public static readonly EscortGene SparrowGunRange = Define("ai.sparrow.gunRange", 240f, 100f, 260f,
             "guns fire at a creature up to this far");
@@ -187,17 +187,17 @@ namespace CosmicShore.Gameplay
 
         // ── Dolphin (blaster) ────────────────────────────────────────────────────────────────────────────────────
 
-        public static readonly EscortGene DolphinReach = Define("ai.dolphin.reach", 800f, 200f, 2400f,
-            "the cone's reach assumed when choosing a crystal");
-        public static readonly EscortGene DolphinReachUse = Define("ai.dolphin.reachUse", 0.7f, 0.1f, 1f,
-            "a crystal counts only if the threats are within reach x this of it");
-        public static readonly EscortGene DolphinApproachAlignDeg = Define("ai.dolphin.approachAlignDeg", 35f, 5f, 60f,
-            "preferred: approach direction within this many degrees of crystal-to-threat");
+        public static readonly EscortGene DolphinReach = Define("ai.dolphin.reach", 1200f, 200f, 2400f,
+            "the cone's reach assumed when choosing a crystal (round 2: 800 -> 1200, the d3 Dolphin squad blasted too rarely)");
+        public static readonly EscortGene DolphinReachUse = Define("ai.dolphin.reachUse", 0.9f, 0.1f, 1f,
+            "a crystal counts only if the threats are within reach x this of it (round 2: 0.7 -> 0.9)");
+        public static readonly EscortGene DolphinApproachAlignDeg = Define("ai.dolphin.approachAlignDeg", 50f, 5f, 60f,
+            "preferred: approach direction within this many degrees of crystal-to-threat (round 2: 35 -> 50)");
         public static readonly EscortGene DolphinConeArkClearance = Define("ai.dolphin.coneArkClearance", 120f, 0f, 300f,
             "padding around the hull the cone's axis must clear");
-        public static readonly EscortGene DolphinCrystalSearchRadius = Define("ai.dolphin.crystalSearchRadius", 1200f, 300f, 2500f,
+        public static readonly EscortGene DolphinCrystalSearchRadius = Define("ai.dolphin.crystalSearchRadius", 1600f, 300f, 2500f,
             "crystals farther than this from the Ark are not candidates");
-        public static readonly EscortGene DolphinWakeOffset = Define("ai.dolphin.wakeOffset", 60f, 20f, 200f,
+        public static readonly EscortGene DolphinWakeOffset = Define("ai.dolphin.wakeOffset", 150f, 20f, 300f,
             "with nothing to blast, skim the Ark's wake this far astern of the hull");
 
         // ── Serpent (walls) ──────────────────────────────────────────────────────────────────────────────────────
@@ -228,7 +228,49 @@ namespace CosmicShore.Gameplay
         public static readonly EscortGene ScarabRingCooldown = Define("ai.scarab.ringCooldown", 12f, 2f, 60f,
             "seconds between ring presses");
 
+        // ── Command line ─────────────────────────────────────────────────────────────────────────────────────────
+
+        /// <summary>Argument naming gene overrides for a sim run: <c>-escortGenes "ai.squirrel.cultivate=0;ai.sparrow.standoff=120"</c>.
+        /// A test path for the sim launcher; the run's own <c>-arkEscortParams</c> JSON hook sets genes by key too.</summary>
+        public const string CommandLineArg = "-escortGenes";
+
+        // Declared LAST so every gene above exists when the command line is applied.
+        static readonly int s_fromCommandLine = ApplyCommandLine();
+
+        static int ApplyCommandLine()
+        {
+            string[] args;
+            try { args = Environment.GetCommandLineArgs(); }
+            catch (Exception) { return 0; }
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (!string.Equals(args[i], CommandLineArg, StringComparison.OrdinalIgnoreCase)) continue;
+                int n = ApplyLine(args[i + 1]);
+                Debug.Log($"[EscortGenes] {n} gene(s) set from the command line: {args[i + 1]}");
+                return n;
+            }
+            return 0;
+        }
+
+        /// <summary>Apply <c>key=value;key=value</c> (';' or ',' separated). Returns how many keys were known.</summary>
+        public static int ApplyLine(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return 0;
+            int applied = 0;
+            foreach (var pair in line.Trim('"').Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                int eq = pair.IndexOf('=');
+                if (eq <= 0) continue;
+                string key = pair.Substring(0, eq).Trim();
+                if (!float.TryParse(pair.Substring(eq + 1).Trim(), System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float value)) continue;
+                if (TrySet(key, value)) applied++;
+                else Debug.LogWarning($"[EscortGenes] Unknown gene '{key}'.");
+            }
+            return applied;
+        }
+
         /// <summary>Touch the registry so every gene above is declared (static initialisation).</summary>
-        public static void EnsureDefined() { _ = s_order.Count; }
+        public static void EnsureDefined() { _ = s_order.Count + s_fromCommandLine; }
     }
 }
