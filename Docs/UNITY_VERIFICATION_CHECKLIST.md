@@ -362,6 +362,22 @@ Throttle, a Drift core card, the Ball Forge on the omni card. No Unity editor in
 - [ ] Undertow and Wrecking Ball (Yash): play one round each; the AI was tuned against the always-mirrored plate, so
   note whether it misses blasts behind it now.
 
+### 🔴 The Tiger Moth's dust shreds: one petal of one random element per Charge-scaled interval (`cece/gallant-gauss-1lsqle`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor configs, 0 project errors); the static gates,
+`author_butterfly_dust.py --check`, `author_tigermoth_assets.py --check` / `--self-test` and
+`author_combat_debuff_magnitudes.py --check` pass, and `elemental_transfer_harness` passes with its stale
+`ElementalCrystalSetSO.CrystalWorldScale` stub patched locally (that stub is broken on bleeding-edge too). No editor in the
+session, so `/verify-unity` did not run. Steps: `TIGER_MOTH.md` §6 step 9, design in §1.3.
+- [ ] Edit-mode: `TigerMothShredTests` (3) and `VesselSilenceTests` pass.
+- [ ] Hold a Dust-mode Tiger Moth's dust on an AI rival at Charge 0: the rival loses one petal of ONE element about once a second and the Tiger Moth gains it; the element varies shred to shred.
+- [ ] Charge 10 (toybox element dial): about ten petals a second. A rival with no petals left loses nothing and is not silenced.
+- [ ] Dustup: the score rises by one dusting per ~3.2 petals while you stay on a rival; hovering now pays (it used to score once per pass). Note how fast a match ends against the target of 10.
+- [ ] An ally in the dust is still cleansed, never shredded.
+- [ ] MPPM, two clients: a shred taken by the client's Tiger Moth lands on the host's copy of the rival (same element, one petal).
+
+First-pass numbers: shred interval 1 s at Charge 0 → 0.1 s at Charge 10 (Garrett), one petal a shred, one Strike per 3.2 petals (the Strike's fleet price). Dustup's target of 10 is untuned for the shred.
+
 ### 🔴 The Tiger Moth's re-scoped level 5s (Toll Gate, Afterburn), the dust's ally cleanse, Waystation's square exit gates (`cece/keen-lovelace-cyci91`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor configs, 0 project errors); `waystation_course.py`

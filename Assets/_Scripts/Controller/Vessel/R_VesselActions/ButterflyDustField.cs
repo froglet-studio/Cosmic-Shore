@@ -64,9 +64,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] float fallSpeed = 6f;
 
         [Header("Audio")]
-        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust BITES an opposing pilot (the " +
-                 "all-element debuff lands). Played on every peer that resolves the bite, at the " +
-                 "victim. Already rate-limited per victim by the debuff's own cooldown. Leave " +
+        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust first reaches an opposing pilot (the " +
+                 "shred starts). Played on every peer that resolves the contact, at the " +
+                 "victim. Already rate-limited per victim by the effect's own cooldown. Leave " +
                  "empty for silence - never point it at a borrowed event to hear something.")]
         [SerializeField] FMODUnity.EventReference scaleDustBiteEvent;
 
@@ -249,6 +249,11 @@ namespace CosmicShore.Gameplay
         /// centre (PrismLit has no capsule; the caps' rounding is the only part the cylinder over-lights).</summary>
         void Update()
         {
+            // The shred keeps taking while a rival stays in the dust: a skimmer runs its vessel effects
+            // on entry only, so the standing contact is re-run here every frame and the dust reporter's
+            // Charge-scaled latch window paces it (VesselElementalDebuffBySkimmerEffectSO, TIGER_MOTH.md).
+            if (_active && _impactor && _impactor.enabled) _impactor.ReapplyVesselEffectsToOverlapping();
+
             bool live = lightsPrisms && _active && _capsule && _capsule.enabled;
             if (!live)
             {
