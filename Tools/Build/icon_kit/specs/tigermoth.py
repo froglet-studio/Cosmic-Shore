@@ -294,6 +294,87 @@ REBIND += [
 ]
 
 
+# ---- Space: Dust Reach ------------------------------------------------------------------------------------------------
+# The mechanic (BUTTERFLY.md 3.3, kept by the Tiger Moth): passive, lives in Dust mode. Space is the dust capsule's
+# LENGTH (60 -> 150 across Space 0..10), and the capsule is what the dust does to MASS: own plain prisms it touches grow /
+# turn dangerous / turn shielded; rival prisms are destroyed / shrunk / stolen. L5 Diamond Dust: 6% of own plain prisms
+# super-shield instead. Side on like the Charge card (the dust hangs below the hull), but the moth small and high so the
+# column is LONG, and prisms in it instead of a rival ship: the Charge card is the dust on pilots, this one on mass.
+R_MOTH = moth(62, 58, 22)
+
+
+def r_motes():
+    return motes(30, 98, 44, 126, n=16, seed=21, s=4.4)
+
+
+def r_own():
+    return prism_lit(40, 82, 19)
+
+
+def r_rival_shards():
+    # A rival prism broken in three: the diamond cut along two lines and its pieces pushed apart.
+    cx, cy, sz = 86.0, 100.0, 19.0
+    whole = prism_lit(cx, cy, sz)
+    out = empty()
+    cuts = [rect(0, 0, cx - 1.5, cy - 1.5), rect(cx + 1.5, 0, 128, cy + 2.5), rect(0, cy + 1.5, cx - 1.5, 128)]
+    shifts = [(-5, -5), (6, -1), (-3, 6)]
+    for c, (dx, dy) in zip(cuts, shifts):
+        piece = whole & c
+        out |= np.roll(np.roll(piece, int(dy * N / 128), 0), int(dx * N / 128), 1)
+    return out
+
+
+def r_dust():
+    return _clear_of(r_motes(), R_MOTH(), r_own(), r_rival_shards(), px=3.0)
+
+
+def r_capsule():
+    # B: the capsule's outline, the length Space buys, as a long stadium hanging below the hull.
+    x0, x1, y0, y1 = 18.0, 110.0, 30.0, 124.0
+    r = (x1 - x0) / 2
+    pts = [(x0, y0 + r)]
+    pts += [((x0 + x1) / 2 + r * math.cos(t), y0 + r - r * math.sin(t)) for t in np.linspace(math.pi, 0, 24)]
+    pts += [(x1, y1 - r)]
+    pts += [((x0 + x1) / 2 + r * math.cos(t), y1 - r + r * math.sin(t)) for t in np.linspace(0, -math.pi, 24)]
+    return _clear_of(stroke(pts, w=3.5, closed=True), R_MOTH(), px=3.0)
+
+
+def r_reach():
+    # C: the reach as a measure - a bracket down the right side, from the hull to the capsule's end.
+    out = stroke([(116, 40), (116, 124)], w=4.5)
+    for y in (40, 124):
+        out |= stroke([(108, y), (124, y)], w=4.5)
+    return out
+
+
+SPACE_ON = [("dust", "shielded"), ("own", "shielded"), ("rival", "danger"), ("moth", "domain")]
+SPACE_DIAMOND = [("dust", "shielded"), ("own", "white"), ("rival", "danger"), ("moth", "domain")]
+SPACE_MASS = [("dust", "shielded", 0.25), ("own", "shielded", 0.4), ("rival", "danger", 0.4), ("moth", "domain", 0.4)]
+SPACE_BEFORE = ICON_DIR + "Butterfly_Wingreach.png"
+CARDS += [
+    dict(name="space_a", group="space", element="Space", before=SPACE_BEFORE,
+         title="A  the dust on mass: the moth small and high, its dust hanging LONG below it; your prism in it turned "
+               "shielded, a rival prism broken; Diamond Dust: yours super-shields (white)",
+         parts=dict(dust=r_dust, own=r_own, rival=r_rival_shards, moth=R_MOTH),
+         states=[("Dust mode", SPACE_ON), ("Space 5: Diamond Dust", SPACE_DIAMOND), ("Mass mode (no dust)", SPACE_MASS)],
+         lockup_state=0),
+    dict(name="space_b", group="space", element="Space", before=SPACE_BEFORE,
+         title="B  the capsule: A inside the capsule's outline, so the card shows the shape Space stretches",
+         parts=dict(cap=r_capsule, dust=r_dust, own=r_own, rival=r_rival_shards, moth=R_MOTH),
+         states=[("Dust mode", [("cap", "white", 0.7)] + SPACE_ON),
+                 ("Space 5: Diamond Dust", [("cap", "white", 0.7)] + SPACE_DIAMOND),
+                 ("Mass mode (no dust)", [("cap", "white", 0.2)] + SPACE_MASS)],
+         lockup_state=0),
+    dict(name="space_c", group="space", element="Space", before=SPACE_BEFORE,
+         title="C  the reach: A with a bracket down the side, hull to the dust's end, the length Space buys",
+         parts=dict(reach=r_reach, dust=r_dust, own=r_own, rival=r_rival_shards, moth=R_MOTH),
+         states=[("Dust mode", [("reach", "white")] + SPACE_ON),
+                 ("Space 5: Diamond Dust", [("reach", "white")] + SPACE_DIAMOND),
+                 ("Mass mode (no dust)", [("reach", "white", 0.3)] + SPACE_MASS)],
+         lockup_state=0),
+]
+
+
 # ---- the OMNI crystal card: the bloom -----------------------------------------------------------------------------------
 # BUTTERFLY.md 3.3a (the Tiger Moth keeps it): flying through an omni crystal sets off a 900-unit BLOOM of the dust - a
 # sphere of motes in the pilot's shielded tier - that strips rivals' petals (ejected as crystals, a scored hit), cleanses
