@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay
             radius = cell ? cell.SenseRadius : 0f;
             var field = MeerkatOmnicrystalField.Instance;
             if (field && field.HasCourse)
-                radius = Mathf.Max(radius, RaceCourseSource.DefaultOuterRadius, field.FarthestRingFrom(centre) + 60f);
+                radius = CosmicShore.Utility.MathfNoAlloc.Max(radius, RaceCourseSource.DefaultOuterRadius, field.FarthestRingFrom(centre) + 60f);
             if (radius < 100f) radius = RaceCourseSource.DefaultOuterRadius;
         }
 
