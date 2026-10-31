@@ -1096,7 +1096,7 @@ the editor yet.
 | Prefab wiring | `_Prefabs/Spacevessels/Urchin.prefab`: `GunVesselTransformer` + `TrailFollower` (1D) + `BlockscapeFollower` (2D) |
 | The cradle — vessel half | `Controller/Vessel/PrismCradleSource.cs` (ensured by `GunVesselTransformer.Initialize`; reads `IsRiding`; eases strength; measures the radius once) |
 | The cradle — publisher | `Utility/PrismCradle.cs` (4-slot frame-stamped bank → `_PrismCradleCentre[]`, `_PrismCradleWeight[]`, `_PrismCradleParams`, flushed in LateUpdate — AND the residency pass that swaps the high-poly mesh onto the nearest prisms and hands it back) |
-| The cradle — geometry | `Utility/HighPolyPrismMesh.cs` (the identical solid subdivided per face, shared + cached per subdivision, hard edges, face-local UV0, per-face centroid in TEXCOORD1) |
+| The cradle — geometry | `Utility/Foundation/HighPolyPrismMesh.cs` (the identical solid subdivided per face, shared + cached per subdivision, hard edges, face-local UV0, per-face centroid in TEXCOORD1) |
 | The cradle — shader | `_Graphics/Materials/Graphs/PrismCradle.hlsl` (`PrismCradleDeform`: Position, Normal → OutPosition, OutNormal — nothing else), spliced LAST on BlockGraph + ExplodingBlockGraph by `Tools/Shaders/wire_prism_cradle.py`; proven by `Tools/Shaders/verify_prism_cradle.py`. It is the LAST node on the vertex chain and `PrismClockWiringValidator` asserts both of its feeders, because a second morph spliced after it would ripple the very vertices the drape had just closed onto the hull and re-open the hole — so any future member of the family goes in FRONT of this one |
 | The cradle — tuning | `ScriptableObjects/PrismCradleConfigSO.cs` → `Assets/Resources/PrismCradleConfig.asset` |
 

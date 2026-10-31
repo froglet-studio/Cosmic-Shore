@@ -272,7 +272,7 @@ trigger skimmers; a convex-mesh solid is invisible to solid swipes). The
   slot reuse can never alias a stale shell.
 - `ShellContactQueryJob` (Burst): the AOE-style linear scan with the flag-byte
   early-out, plus an **exact** narrowphase from `ShieldShellMath`
-  (`_Scripts/Utility/ShieldShellMath.cs`): sphere / capsule / oriented-box
+  (`_Scripts/Utility/Foundation/ShieldShellMath.cs`): sphere / capsule / oriented-box
   probes vs the octahedron (25-axis SAT for boxes, world-space triangle
   distances for sphere/capsule) and vs the stella as the **union of its two
   tetrahedra** — a probe touching a spike tip collides; a probe threaded
