@@ -129,6 +129,11 @@ namespace CosmicShore.Gameplay
             public float SquadShareAtExit;
             /// <summary>Live fauna re-coloured into the squad's domain at pacification.</summary>
             public int FaunaTurned;
+            /// <summary>Seconds (1 Hz samples) a squad seat spent inside this world's nucleus before it was pacified, and
+            /// the largest squad control volume and share seen (the pacify gates' inputs, for tuning).</summary>
+            public float NucleusSeconds;
+            public float PeakSquadControl;
+            public float PeakShare;
             /// <summary>Hull prisms lost to the squad's own fire in this world.</summary>
             public int FriendlyFire;
         }
@@ -178,6 +183,8 @@ namespace CosmicShore.Gameplay
         public float BreachHull;
         /// <summary>The share of a world's control volume that pacifies it (0 = off), and how many worlds were pacified.</summary>
         public float PacifyShare;
+        public float PacifyMinVolume;
+        public float PacifyNucleusSeconds;
         public int PacifiedLegs;
         public List<SeatStats> RunSeats = new();
         public List<Param> Params = new();

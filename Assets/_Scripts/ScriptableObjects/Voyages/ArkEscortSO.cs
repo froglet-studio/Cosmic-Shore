@@ -103,7 +103,16 @@ namespace CosmicShore.ScriptableObjects
                                                 "(the nucleus claim, or the whole cell without a nucleus): its control is pinned " +
                                                 "to the squad, its live fauna re-coloured into the squad's domain, and its fauna " +
                                                 "stop grazing the squad's mass, the Ark included. 0 = never pacify.")]
-        float pacifyShare = 0.6f;
+        float pacifyShare = 0.75f;
+
+        [SerializeField, Min(0f), Tooltip("Squad control volume (nucleus claim, cubic units) a world needs before it can be " +
+                                          "pacified: a trail crossing an empty hostile nucleus is not a pacification; a " +
+                                          "cultivator weaving mass into it is.")]
+        float pacifyMinVolume = 40000f;
+
+        [SerializeField, Min(0f), Tooltip("A world AHEAD of the Ark (not yet entered) pacifies only after a squad seat has " +
+                                          "spent this many seconds inside its nucleus.")]
+        float pacifyNucleusSeconds = 20f;
 
         [Header("Words (every line is authored; empty shows nothing)")]
         [SerializeField, Tooltip("The voyage's name, on the build veil and the card.")]
@@ -140,6 +149,8 @@ namespace CosmicShore.ScriptableObjects
         public float CellSpacing { get => cellSpacing; set => cellSpacing = Mathf.Max(0f, value); }
         public bool PlatesAreFood { get => platesAreFood; set => platesAreFood = value; }
         public float PacifyShare { get => pacifyShare; set => pacifyShare = Mathf.Clamp01(value); }
+        public float PacifyMinVolume { get => pacifyMinVolume; set => pacifyMinVolume = Mathf.Max(0f, value); }
+        public float PacifyNucleusSeconds { get => pacifyNucleusSeconds; set => pacifyNucleusSeconds = Mathf.Max(0f, value); }
         public string OverrunLine => overrunLine;
         public float MaxPopulation { get => maxPopulation; set => maxPopulation = Mathf.Max(0.1f, value); }
         public string VoyageName => voyageName;

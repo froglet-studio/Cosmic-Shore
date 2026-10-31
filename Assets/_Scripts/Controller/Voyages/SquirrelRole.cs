@@ -79,12 +79,16 @@ namespace CosmicShore.Gameplay
             cell = ctx.Cell;
             if (!EscortGeneRegistry.SquirrelCultivate.On || !cell || !cell.HasNucleusControlZone) return false;
             if (ctx.Threats.Count >= EscortGeneRegistry.SquirrelCultivateWhenThreatsBelow.Int) return false;
-            var dominant = cell.DominantDomain;
-            if (dominant == ctx.Domain) return false;
-            if (dominant == Domains.Blue) return true;   // nobody's yet: take it
+            // The escort pacifies a world only on a real claim (escort.pacifyMinVolume): lay on until it has, then stop.
+            var run = ctx.Run;
+            if (run && run.IsPacified(cell)) return false;
             float own = cell.GetNucleusDomainVolume(ctx.Domain);
+            float need = run ? run.PacifyMinVolume : 0f;
+            var dominant = cell.DominantDomain;
+            if (dominant == ctx.Domain) return own < need;
+            if (dominant == Domains.Blue) return true;   // nobody's yet: take it
             float theirs = cell.GetNucleusDomainVolume(dominant);
-            return own <= theirs * EscortGeneRegistry.SquirrelPacifyMargin;
+            return own <= theirs * EscortGeneRegistry.SquirrelPacifyMargin || own < need;
         }
 
         /// <summary>Into the nucleus, then a golden-angle weave inside it at the weave radius.</summary>
