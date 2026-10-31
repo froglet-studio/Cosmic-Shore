@@ -6,8 +6,9 @@
 <!-- Serpent Studio, round 1: the Serpent's Time game, a DIRTY ring race (Shombith, 2026-10-27: "we are gonna make the
      serpent and its time game the best game"). A page of the Vessel Studio (Docs/Studios/VesselStudio/), and a DESIGN
      studio for the mode: the Serpent itself is a READER of the shipped numbers (every SHIP constant names its asset),
-     the race around it (courses, ring clusters, debris, the round-per-crystal economy, the AI's brains) is lab-only and
-     says so. Design brief and round log: Docs/Studios/SERPENT_TIME.md. -->
+     the race around it (courses, ring clusters, covered rings, debris, the AI's brains) is lab-only and says so.
+     Round 2 (2026-10-31): the mode never changes the vessel (Shombith, CLAUDE.md): no round economy, a wall does what the
+     shipped wall does; Garrett's ability recut (#1642); rings covered by plain and danger slabs, the game's own rule. Design brief and round log: Docs/Studios/SERPENT_TIME.md. -->
 <style>
   :root {
     color-scheme: dark;
@@ -53,7 +54,6 @@
   .pips { display: flex; gap: 4px; }
   .pips i { flex: 1; height: 8px; border-radius: 3px; background: #ffffff1a; position: relative; overflow: hidden; }
   .pips i > b { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--time); }
-  .pips.rounds i > b { background: var(--charge); }
   .meter { height: 7px; border-radius: 4px; background: #ffffff1a; overflow: hidden; }
   .meter > i { display: block; height: 100%; width: 0; }
   .meter.rifle > i { background: var(--charge); }
@@ -164,8 +164,8 @@
   <header class="top">
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1>Serpent Studio</h1>
-    <span class="round">Round 1 · Serpent Time, the dirty race</span>
-    <p class="sub">The Serpent's Time game: a ring race where every gate holds several rings, everyone can see them, and any Serpent can plug a ring with a wall. Cloak just past a ring, or stop in it, and a seed wall grows from the loose mass around the gate. Rivals shoot it down with the Sniper Shot, ram through it, or take another ring. A round costs a crystal, and the crystals are off the racing line, so you have to go out of your way for them. The Serpent's numbers are the shipped ones; the race around it is a design (lab-only) for the team to decide.</p>
+    <span class="round">Round 2 · Serpent Time, the dirty race</span>
+    <p class="sub">The Serpent's Time game: a ring race where every gate holds several rings, everyone can see them, and any Serpent can plug a ring with a wall. Cloak just past a ring, or stop in it, and a seed wall grows from the loose mass around the gate. Rivals shoot it down with the Sniper Shot, ram through it, or take another ring. Some rings are grown over with prisms, mostly plain at low intensity and more of them danger as it rises: shoot a way through, ram it and risk the danger hit, or find the open ring. The Serpent's kit is exactly the shipped one (the mode never changes the vessel); its numbers are the shipped ones; the race around it is a design (lab-only) for the team to decide.</p>
   </header>
 
   <div class="layout">
@@ -180,7 +180,7 @@
           <div class="board" id="board"></div>
           <div class="bars">
             <div class="row"><span>Pellets (A)</span><b id="hPellets">4</b></div><div class="pips" id="mPellets"><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i></div>
-            <div class="row"><span>Rounds (crystals)</span><b id="hRounds">1</b></div><div class="pips rounds" id="mRounds"></div>
+            <div class="row"><span>Danger debuff</span><b id="hDebuff">none</b></div>
             <div class="row"><span>Sniper Shot (scoped RT)</span><b id="hRifle">ready</b></div><div class="meter rifle"><i id="mRifle"></i></div>
             <div class="row"><span>Cloak (RT)</span><b id="hCloak">ready</b></div><div class="meter cloak"><i id="mCloak"></i></div>
           </div>
@@ -193,7 +193,7 @@
         <div class="overlay" id="overlay">
           <div class="card">
             <h2 id="ovTitle">Serpent Time, intensity 1</h2>
-            <p id="ovText">Thread one ring of every gate, in order; the first Serpent home wins. Plug a ring behind you with a wall (cloak just past it, or stop in it), and get through the walls the others leave: shoot them down, ram them, or take another ring. Every round costs a crystal. Add AI Serpents in Game Config (+).</p>
+            <p id="ovText">Thread one ring of every gate, in order; the first Serpent home wins. Plug a ring behind you with a wall (cloak just past it, or stop in it), and get through the walls the others leave: shoot them down, ram them, or take another ring. Covered rings: shoot a hole, ram (plain slabs break free, danger ones debuff you), or fly the open one. Add AI Serpents in Game Config (+).</p>
             <div class="keys">
               <span>Gamepad</span><span>both sticks steer (the game's mix) · LT scope · RT shoot when scoped, cloak when not · A pellet · B stop</span>
               <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · L-Shift scope · R-Shift or F shoot / cloak · Space pellet · T stop</span>
@@ -213,7 +213,7 @@
           <div class="portrait">Turn the phone sideways</div>
         </div>
       </div>
-      <p class="note afternote" style="margin-top:8px">Show AI thinking draws each AI's line to the point it is steering for. Green: flying a ring. Violet: working the Serpent (a shot, a wall, a crystal for a round). Amber: it has not noticed a new wall yet. Red: it misjudged a wall and believes the ring is open. The last two are the Easy and Medium mistakes.</p>
+      <p class="note afternote" style="margin-top:8px">Show AI thinking draws each AI's line to the point it is steering for. Green: flying a ring. Violet: working the Serpent (a shot, a wall, a cloak). Amber: it has not noticed a new wall yet. Red: it misjudged a wall and believes the ring is open. The last two are the Easy and Medium mistakes.</p>
     </section>
 
     <aside>
@@ -296,13 +296,15 @@
           <summary>Where the numbers come from, and what is not modelled</summary>
           <ul>
             <li>Flight: <code>Serpent.prefab</code> VesselTransformer: speed = throttle × 50 u/s × boost, never under MinimumSpeed 10; pitch and yaw 80°/s, roll 20°/s. No drift.</li>
-            <li>Solid Fuel Pellets (Time, A): <code>ConsumeBoostAction.asset</code>: a press burns a quarter of the tank for 3 s (× 1 → 1.6 at Time 10); burns overlap, each adds 2× cruise (1 pellet 3×, 4 pellets 9×). The tank refills 0.07 a second (<code>Serpent.prefab</code> resource "Boost"). <code>SERPENT_FUEL_PELLETS.md</code>.</li>
-            <li>Sniper Shot (Charge, scoped RT): <code>SniperShotAction.asset</code>: 12 s recovery (× 0.45 at Charge 10), 3,000 u, a 1.5° cone with a 6 u floor on its radius. As <code>SniperShotActionExecutor</code> does: the round goes the full range through every hostile prism in its cone, never your own, and skips super-shielded mass until Pierce (Charge 5). A rival pilot in the cone is stripped one level of each element (<code>vesselStripPerElement</code> 0.1).</li>
-            <li>Scope (Space, LT): <code>SniperScopeAction.asset</code>: 60° unscoped, 22° at full zoom, zoom depth × 2 at Space 10 (11°), floor 8°; Deep Focus (Space 5) × 1.6 the depth and ÷ 1.6 the floor. The trigger's depth is the zoom.</li>
-            <li>Seed Wall (Mass): <code>SeedWallAction.asset</code>: bricks 6 × 3 u (× 1 → 2 at Mass 10), stolen from loose prisms within 40 u of its edge (× 1 → 2 at Space 10), one sweep every 0.3 s. Stop (B) seeds a shielded wall that grows only while you stay stopped; the cloak (RT unscoped, <code>CloakSeedWallAction.asset</code>: 15 s) seeds a super-shielded one that grows until its seed is broken. A broken seed lets its bricks go as loose prisms. Lockdown (Mass 5): a crystal you collect refills the holes in your walls, shielded. A crystal also shields your growing walls (the ripple).</li>
-            <li>Lab-only, the mode itself: the four courses (8 to 12 gates, 2 or 3 rings a gate), the loose debris round each gate (the wall's fuel), the trail every hull lays (a prism every 8 u, gone after 30 s), a round per crystal (1 at the start, 3 at most), crystals 150 to 350 u off the racing line, a wall's 45 s life and 160-brick cap, what a wall does to a hull that hits it (a bounce off a shielded brick, half your speed through a bare one), and your own walls letting you through.</li>
-            <li>The AI: input-only, through the same sticks, triggers and buttons a pilot has. Its play styles are brains over the four element levels (when it walls, stops, snipes, detours for a round, how many pellets it stacks), lab-only. It picks the ring of each gate it can get through cheapest, threads a gap in a part-built wall, and shoots or rams a wall it cannot go round.</li>
-            <li>Not modelled: the wall's herringbone holes and its pull animation (a stolen prism lands at once), the Lockdown danger panels' damage, elemental crystals (a crystal here is a round), the eject of stripped petals as crystals, team domains, lifeforms, sound. Read every time as relative: between styles, levels, rules, and walls on against walls off.</li>
+            <li>Solid Fuel Pellets (Time, A): <code>ConsumeBoostAction.asset</code>: a press burns a quarter of the tank for 3 s (× 1 → 1.6 at Time 10); burns overlap, each adds 2× cruise (1 pellet 3×, 4 pellets 9×). Fifth Pellet (Time 5): a fifth of the tank each, five in it. The tank refills 0.07 a second (<code>Serpent.prefab</code> resource "Boost"). <code>SERPENT_FUEL_PELLETS.md</code>.</li>
+            <li>Abilities as Garrett recut them (#1642, <code>ElementalAbilityMaps/Serpent.asset</code>): Charge = Scope, Mass = Seed Wall, Space = Cloak / Sniper Shot, Time = Solid Fuel Pellets.</li>
+            <li>Sniper Shot (Space, scoped RT): <code>SniperShotAction.asset</code>: 12 s recovery, set by CHARGE (× 0.45 at Charge 10), 3,000 u, a 1.5° cone with a 6 u floor on its radius. As <code>SniperShotActionExecutor</code> does: the round goes the full range through every hostile prism in its cone, super-shielded ones included, never your own. A rival pilot in the cone is stripped one level of each element (<code>vesselStripPerElement</code> 0.1). Its cooldown is its only limit: the mode rations nothing.</li>
+            <li>Scope (Charge, LT): <code>SniperScopeAction.asset</code>: 60° unscoped, 12° at full zoom; the trigger's depth is the zoom. Hunter's Sight (Charge 5, afterimages of rivals) is not modelled.</li>
+            <li>Seed Wall (Mass): <code>SeedWallAction.asset</code>: bricks 6 × 3 u (× 1 → 2 at Mass 10), stolen from loose prisms within 40 u of its edge (× 1 → 2 at Space 10), one sweep every 0.3 s. Stop (B) seeds a shielded wall that grows only while you stay stopped; the cloak (RT unscoped, <code>CloakSeedWallAction.asset</code>: 15 s) seeds a super-shielded one that grows until its seed is broken. A broken seed lets its bricks go as loose prisms. A crystal shields your growing walls (the ripple). A bare brick a hull flies into breaks and the hull keeps its speed (<code>VesselDamagePrismEffect</code>); a shielded brick or a seed bounces it. Lockdown (Mass 5, danger panels in closed holes) and Shield Steal (Space 5) are not modelled.</li>
+            <li>Covered rings (<code>SerpentTimeController</code>, <code>SerpentTimeCluster</code>, the same hashes): 1 of 3, 2 of 3, 1 of 2, 2 of 2 rings covered per gate at I1-I4, by a grid of 7 × 7 × 1.5 u slabs 7 u apart, 15 / 30 / 50 / 70 % of them danger, scattered; one slab grows back per covered ring every 1.5 s, the same kind. A plain slab breaks free on a ram; a danger slab breaks and debuffs every element by a level for 4 s, 1 s between hits (<code>VesselElementalDebuffByDangerPrismEffect.asset</code>, its tuned value read as one level). The Sniper Shot clears either.</li>
+            <li>Lab-only, the mode itself: the four courses (8 to 12 gates, 2 or 3 rings a gate), the loose debris round each gate (the wall's fuel), the trail every hull lays (a prism every 8 u, gone after 30 s), crystals 150 to 350 u off the racing line, a wall's 45 s life and 160-brick cap, and your own walls letting you through. The game races in Rampage's four living cells (its flora and fauna); the page's open space has none.</li>
+            <li>The AI: input-only, through the same sticks, triggers and buttons a pilot has. Its play styles are brains over the four element levels (when it walls, stops, snipes, how many pellets it stacks), lab-only. It picks the ring of each gate it can get through cheapest, threads a gap in a part-built wall, and shoots or rams a wall it cannot go round. A ring whose danger slabs block its pass points counts as walled; plain slabs it rams.</li>
+            <li>Not modelled: the wall's herringbone holes and its pull animation (a stolen prism lands at once), the Lockdown danger panels' damage, Rampage's flora and fauna (the game's arena), elemental crystals' petals, the eject of stripped petals as crystals, team domains, lifeforms, sound. Read every time as relative: between styles, levels, rules, and walls on against walls off.</li>
           </ul>
         </details>
         <p class="note">The mode's design brief and what each round changed: <code>Docs/Studios/SERPENT_TIME.md</code>. Want a change? <a href="index.html#agent">Ask the studio agent</a>.</p>
@@ -326,45 +328,57 @@
   // ================= shipped numbers (the Serpent as it ships) =================
   const SHIP = {
     throttle: 50, minSpeed: 10, pitchYaw: 80, roll: 20,                                   // Serpent.prefab VesselTransformer
-    pellet: { cost: 0.25, burn: 3, mult: 3, refill: 0.07, timeAtFull: 1.6, floor: 0.25 }, // ConsumeBoostAction.asset; Serpent.prefab resource "Boost" (0.07/s)
-    rifle: { cooldown: 12, atFullCharge: 0.45, range: 3000, cone: 1.5, minR: 6, beam: 0.35 }, // SniperShotAction.asset
-    scope: { unscoped: 60, full: 22, depthAtFullSpace: 2, floor: 8, deepFocus: 1.6, response: 12, deadzone: 0.08 }, // SniperScopeAction.asset
+    pellet: { cost: 0.25, upgradeCost: 0.2, burn: 3, mult: 3, refill: 0.07, timeAtFull: 1.6, floor: 0.25 }, // ConsumeBoostAction.asset (Fifth Pellet at Time 5: cost 0.2); Serpent.prefab resource "Boost" (0.07/s)
+    rifle: { cooldown: 12, atFullCharge: 0.45, range: 3000, cone: 1.5, minR: 6, beam: 0.35 }, // SniperShotAction.asset (Charge sets the recovery; the round always pierces, super-shields included)
+    scope: { unscoped: 60, full: 12, response: 12, deadzone: 0.08 }, // SniperScopeAction.asset
     cloak: { cooldown: 15, fadeIn: 0.4 },                                                  // CloakSeedWallAction.asset (cloaked until the cooldown ends)
     wall: { long: 6, short: 3, massAtFull: 2, massFloor: 0.5, stealR: 40, spaceAtFull: 2, spaceFloor: 0.5, sweep: 0.3 }, // SeedWallAction.asset
     strip: 1,                                                                              // SniperShotAction vesselStripPerElement 0.1 = one level of ten
+    danger: { levels: 1, seconds: 4, cooldown: 1 },                                        // VesselElementalDebuffByDangerPrismEffect.asset (4 s, 1 s cooldown; tuned -0.1 read as one level of ten)
+  };
+  // Serpent Time's covered rings, as SerpentTimeController / SerpentTimeCluster ship them (the same hashes, so the page and
+  // the game cover the same slabs): rings covered per gate, the share of slabs that are danger, the slab and its grid
+  const COVER = { covered: [1, 2, 1, 2], danger: [0.15, 0.3, 0.5, 0.7], slab: [7, 7, 1.5], spacing: 7, margin: 2, regrow: 1.5 };
+  const isCovered = (gate, slot, rings, covered) => {
+    covered = clamp(covered, 0, rings); if (covered === 0) return false; if (covered === rings) return true;
+    const start = ((Math.imul(gate, 2654435761) >>> 0) >>> 16) % rings;
+    return (((slot - start) % rings) + rings) % rings < covered;
+  };
+  const isDangerSlab = (gate, slot, cell, share) => {
+    if (share <= 0) return false; if (share >= 1) return true;
+    let h = (Math.imul(gate, 73856093) ^ Math.imul(slot, 19349663) ^ Math.imul(cell, 83492791)) >>> 0;
+    h = (h ^ (h >>> 13)) >>> 0; h = Math.imul(h, 0x5bd1e995) >>> 0; h = (h ^ (h >>> 15)) >>> 0;
+    return (h & 0xFFFF) / 65536 < share;
   };
   // the mode (lab-only: Serpent Time is a design; every default here is a proposal)
   const RULE_DEFS = [
     { key: 'laps', label: 'Laps', min: 1, max: 4, step: 1, v: 2, unit: '' },
-    { key: 'roundsStart', label: 'Rounds at the start', min: 0, max: 3, step: 1, v: 1, unit: '' },
-    { key: 'roundsCap', label: 'Rounds held at most', min: 1, max: 6, step: 1, v: 3, unit: '' },
     { key: 'crystalsPerGate', label: 'Crystals per gate', min: 0, max: 2, step: 0.25, v: 0.75, unit: '' },
     { key: 'crystalRespawn', label: 'Crystal respawn', min: 2, max: 30, step: 1, v: 12, unit: 's' },
     { key: 'debrisPerGate', label: 'Loose debris round each gate', min: 0, max: 120, step: 4, v: 48, unit: '' },
     { key: 'wallLife', label: 'Wall life (0 = forever)', min: 0, max: 120, step: 5, v: 45, unit: 's' },
     { key: 'wallCap', label: 'Bricks per wall at most', min: 20, max: 300, step: 10, v: 160, unit: '' },
     { key: 'steals', label: 'Prisms a wall steals per sweep', min: 2, max: 48, step: 2, v: 12, unit: '' },
-    { key: 'wallSlow', label: 'Speed kept through a bare brick', min: 0.1, max: 1, step: 0.05, v: 0.5, unit: '×' },
     { key: 'snipeStun', label: 'Stun on a sniped pilot', min: 0, max: 3, step: 0.25, v: 0, unit: 's' },
   ];
   const LAB = { trailSpacing: 8, trailLife: 30, hullR: 2, reach: 25, limit: 260, debrisRegrow: 1.5 };   // lab-only: the trail, the hull's wall-contact radius, the crystal reach, the race's time limit
   const DIFF = { Easy: { reaction: 0.5, mistake: 0.099, aim: 2.0 }, Medium: { reaction: 0.25, mistake: 0.045, aim: 1.2 }, Hard: { reaction: 0, mistake: 0, aim: 0.5 } };
   const ELEMENTS = [
-    { key: 'charge', name: 'Charge', color: '--charge', ability: 'Sniper Shot', l5: 'Pierce' },
+    { key: 'charge', name: 'Charge', color: '--charge', ability: 'Scope', l5: "Hunter's Sight" },        // ElementalAbilityMaps/Serpent.asset (Garrett's recut, #1642)
     { key: 'mass', name: 'Mass', color: '--mass', ability: 'Seed Wall', l5: 'Lockdown' },
-    { key: 'space', name: 'Space', color: '--space', ability: 'Scope', l5: 'Deep Focus' },
-    { key: 'time', name: 'Time', color: '--time', ability: 'Solid Fuel Pellets', l5: '(none)' },
+    { key: 'space', name: 'Space', color: '--space', ability: 'Cloak / Sniper Shot', l5: 'Shield Steal' },
+    { key: 'time', name: 'Time', color: '--time', ability: 'Solid Fuel Pellets', l5: 'Fifth Pellet' },
   ];
   // play styles: named types over the four element levels (D6), each with how its AI flies it (D23, lab-only brains)
   const TYPES = [
     { name: 'Dirty', lv: { charge: 5, mass: 5, space: 5, time: 5 }, brain: { cloakWall: 1, stance: 0.5, snipe: 0.5, shootWalls: 1, keep: 1, detour: 320, pellets: 2, reserve: 0.25 },
-      info: 'Every L5 at once (Pierce, Lockdown, Deep Focus). Walls every ring a rival still needs, stops to wall when it leads, shoots what blocks it, snipes when a rival lines up.' },
+      info: 'Every L5 at once (Hunter\'s Sight, Lockdown, Shield Steal, Fifth Pellet). Walls every ring a rival still needs, stops to wall when it leads, shoots what blocks it, snipes when a rival lines up.' },
     { name: 'Racer', lv: { charge: 0, mass: 0, space: 3, time: 10 }, brain: { cloakWall: 0.2, stance: 0, snipe: 0.1, shootWalls: 1, keep: 1, detour: 120, pellets: 4, reserve: 0 },
-      info: 'Long pellet burns (× 1.6) and a clean line: stacks all four pellets on a straight, seldom walls, shoots only what is in its way.' },
+      info: 'Long pellet burns (× 1.6) and a fifth pellet: stacks all four pellets on a straight, seldom walls, shoots only what is in its way.' },
     { name: 'Bricklayer', lv: { charge: 0, mass: 10, space: 8, time: 2 }, brain: { cloakWall: 1, stance: 1, snipe: 0, shootWalls: 0.6, keep: 1, detour: 260, pellets: 2, reserve: 0.25 },
-      info: 'Double-size bricks and double steal reach (Lockdown, Deep Focus): plugs every ring behind it and stops in a gate when it leads.' },
+      info: 'Double-size bricks and double steal reach (Lockdown, Shield Steal): plugs every ring behind it and stops in a gate when it leads.' },
     { name: 'Marksman', lv: { charge: 10, mass: 0, space: 6, time: 4 }, brain: { cloakWall: 0.5, stance: 0, snipe: 1, shootWalls: 1, keep: 0, detour: 520, pellets: 2, reserve: 0.25 },
-      info: 'A 5.4 s rifle with Pierce and Deep Focus: goes out of its way for rounds and spends them on rivals and walls alike.' },
+      info: 'A 5.4 s rifle (Hunter\'s Sight): snipes rivals and walls alike.' },
     { name: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 }, brain: { cloakWall: 0.5, stance: 0, snipe: 0.3, shootWalls: 1, keep: 1, detour: 250, pellets: 2, reserve: 0.25 },
       info: 'The start of a match: every element at 0, no level-5 upgrade.' },
   ];
@@ -387,16 +401,15 @@
     idleHold: true, walls: true, type: 'Dirty', lv: Object.assign({}, TYPES[0].lv), rules: {},
   };
   for (const r of RULE_DEFS) S.rules[r.key] = r.v;
-  const LS = 'cs.studio.serpent.v1';
+  const LS = 'cs.studio.serpent.v2';   // v2: the round economy and the wall slow are gone (round 2)
   try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s, { lv: Object.assign({}, S.lv, s.lv || {}), rules: Object.assign({}, S.rules, s.rules || {}) }); } catch (e) { /* storage blocked */ }
   function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* storage blocked */ } }
   function mults(lv) {
-    const f = (k) => clamp(lv[k] / 10, 0, 1), df = lv.space >= 5;
-    const depth = lerp(1, SHIP.scope.depthAtFullSpace, f('space')) * (df ? SHIP.scope.deepFocus : 1);
+    const f = (k) => clamp(lv[k] / 10, 0, 1);
     return {
-      rifleCd: SHIP.rifle.cooldown * lerp(1, SHIP.rifle.atFullCharge, f('charge')), pierce: lv.charge >= 5,
+      rifleCd: SHIP.rifle.cooldown * lerp(1, SHIP.rifle.atFullCharge, f('charge')), pierce: true, hunters: lv.charge >= 5,
       brick: Math.max(SHIP.wall.massFloor, lerp(1, SHIP.wall.massAtFull, f('mass'))), lockdown: lv.mass >= 5,
-      scopeFov: Math.max(SHIP.scope.floor / (df ? SHIP.scope.deepFocus : 1), SHIP.scope.full / depth), deepFocus: df,
+      scopeFov: SHIP.scope.full, shieldSteal: lv.space >= 5, pelletCost: lv.time >= 5 ? SHIP.pellet.upgradeCost : SHIP.pellet.cost,
       stealR: SHIP.wall.stealR * Math.max(SHIP.wall.spaceFloor, lerp(1, SHIP.wall.spaceAtFull, f('space'))),
       burn: SHIP.pellet.burn * Math.max(SHIP.pellet.floor, lerp(1, SHIP.pellet.timeAtFull, f('time'))),
     };
@@ -432,8 +445,9 @@
   function makeWorld(courseId, specs, seed, rules, wallsOn) {
     const C = buildCourse(courseId, rules.laps);
     const W = { C, rules, wallsOn, t: 0, rand: rng(seed), pilots: [], prisms: [], grid: new Grid(30), walls: [], crystals: [], shots: [], events: [], over: false, dirty: true, wallsDirty: true, watch: 0, wallId: 0, debrisT: 0,
-      stats: { walls: 0, wallShots: 0, crashes: 0, snipes: 0, rounds: 0 } };
+      stats: { walls: 0, wallShots: 0, crashes: 0, snipes: 0, shots: 0, dangerHits: 0 }, cover: [], coverT: 0 };
     for (const g of C.gates) for (let i = 0; i < rules.debrisPerGate; i++) addDebris(W, g);
+    layCover(W, courseId);
     const nCry = Math.round(C.gates.length * rules.crystalsPerGate);
     for (let i = 0; i < nCry; i++) W.crystals.push(placeCrystal(W, { alive: true, at: 0, id: i }));
     const g0 = C.gates[0], start = g0.c.clone().addScaledVector(g0.n, -170), q0 = quatFrom(g0.n), side = basis(g0.n).s;
@@ -441,7 +455,7 @@
       const off = (i - (specs.length - 1) / 2) * 24, type = typeOf(spec.style), lv = Object.assign({}, spec.lv || type.lv);
       const P = {
         i, spec, domain: VesselStudioDomains.get(spec.domain || DOM[i % DOM.length].key), pos: start.clone().addScaledVector(side, off), prev: new V(), quat: q0.clone(),
-        speed: 0, stun: 0, gate: 0, finishT: null, passT: -9, rounds: rules.roundsStart, rifleAt: 0, cloakAt: 0, cloakUntil: -1, zoom: 0, lt: 0, rtWas: 0, aWas: 0, bWas: 0,
+        speed: 0, stun: 0, gate: 0, finishT: null, passT: -9, debuffUntil: -1, debuffed: false, dangerCd: 0, dangerHits: 0, rifleAt: 0, cloakAt: 0, cloakUntil: -1, zoom: 0, lt: 0, rtWas: 0, aWas: 0, bWas: 0,
         fuel: 1, burns: [], stopped: false, stanceWall: null, trailAcc: 0, trailN: 0, throttle: 0.5, lv, m: mults(lv), brain: type.brain, style: type.name,
         crashes: 0, shots: 0, wallShots: 0, snipes: 0, walls: 0, crystals: 0, mistakes: 0,
         hc: spec.ai ? { level: DIFF[spec.ai], rng: rng(seed * 31 + i * 7 + 1), walls: new Map() } : null,
@@ -460,6 +474,23 @@
     const q = new Q().setFromEuler(new THREE.Euler(r() * 6.3, r() * 6.3, r() * 6.3));
     addPrism(W, { pos: g.c.clone().addScaledVector(d, dist), quat: q, kind: 'debris', owner: -1, gate: g.k });
   }
+  // ---- covered rings: a grid of slabs across the mouth, plain or danger (SerpentTimeCluster.CoverCells / IsDangerSlab) ----
+  function layCover(W, courseId) {
+    const covered = COVER.covered[courseId - 1] || 0, share = COVER.danger[courseId - 1] || 0;
+    for (const g of W.C.gates) g.rings.forEach((r, j) => {
+      if (!isCovered(g.k, j, g.rings.length, covered)) return;
+      const reach = r.r - COVER.margin - COVER.spacing * 0.35, n = Math.ceil(Math.max(0, reach) / COVER.spacing), cells = [];
+      for (let a = -n; a <= n; a++) for (let b = -n; b <= n; b++) {
+        const x = a * COVER.spacing, y = b * COVER.spacing; if (x * x + y * y > reach * reach) continue;
+        cells.push(r.c.clone().addScaledVector(r.s, x).addScaledVector(r.u, y));
+      }
+      if (!cells.length) cells.push(r.c.clone());
+      const ring = { r, gate: g.k, quat: quatFrom(r.n), cells: cells.map((pos, c) => ({ pos, danger: isDangerSlab(g.k, j, c, share), p: null })), next: 0 };
+      ring.cells.forEach((cell) => laySlab(W, ring, cell));
+      W.cover.push(ring);
+    });
+  }
+  function laySlab(W, ring, cell) { cell.p = addPrism(W, { pos: cell.pos.clone(), quat: ring.quat.clone(), kind: 'cover', danger: cell.danger, owner: -1, gate: ring.gate, n: ring.r.n }); }
   function placeCrystal(W, cr) {   // off the racing line: 150-350 u to the side of a random point between two gates
     const r = W.rand, G = W.C.gates, k = Math.floor(r() * G.length), a = G[k], b = G[(k + 1) % G.length], m = a.c.clone().lerp(b.c, 0.3 + r() * 0.4);
     const t = b.c.clone().sub(a.c).normalize(), bs = basis(t), ang = r() * Math.PI * 2, off = lerp(150, 350, r());
@@ -468,7 +499,7 @@
   const fwdOf = (P) => new V(0, 0, -1).applyQuaternion(P.quat), upOf = (P) => new V(0, 1, 0).applyQuaternion(P.quat), rightOf = (P) => new V(1, 0, 0).applyQuaternion(P.quat);
   const cloaked = (W, P) => W.t < P.cloakUntil;
   const scoped = (P) => P.lt > SHIP.scope.deadzone;
-  const rifleReady = (W, P) => W.t >= P.rifleAt && P.rounds >= 1;
+  const rifleReady = (W, P) => W.t >= P.rifleAt;   // the shipped cooldown is the rifle's only limit
   const cloakReady = (W, P) => W.t >= P.cloakAt;
 
   // ---- the seed wall: a herringbone of 2:1 bricks round a seed, stealing loose mass from its edge (SERPENT_SEED_WALL.md) ----
@@ -525,7 +556,7 @@
   function coneHit(origin, dir, p, tanH) { const d = p.clone().sub(origin), t = d.dot(dir); if (t <= 0 || t > SHIP.rifle.range) return false; return d.addScaledVector(dir, -t).length() <= Math.max(SHIP.rifle.minR, t * tanH); }
   function fire(W, P) {
     const o = P.pos.clone(), dir = fwdOf(P), tanH = Math.tan(SHIP.rifle.cone * DEG);
-    P.rounds--; P.rifleAt = W.t + P.m.rifleCd; P.shots++; W.stats.rounds++;
+    P.rifleAt = W.t + P.m.rifleCd; P.shots++; W.stats.shots++;
     let bricks = 0;
     for (const p of W.prisms) if (!p.dead && p.owner !== P.i && coneHit(o, dir, p.pos, tanH)) removePrism(W, p);
     for (const w of W.walls) {
@@ -537,7 +568,7 @@
     for (const X of W.pilots) {
       if (X === P || X.finishT != null || !coneHit(o, dir, X.pos, tanH)) continue;
       for (const e of ELEMENTS) X.lv[e.key] = Math.max(0, X.lv[e.key] - SHIP.strip);
-      X.m = mults(X.lv); X.stun = Math.max(X.stun, W.rules.snipeStun); P.snipes++; W.stats.snipes++;
+      X.m = mults(effLv(X)); X.stun = Math.max(X.stun, W.rules.snipeStun); P.snipes++; W.stats.snipes++;
       if (X.i === W.watch || P.i === W.watch) W.events.push(P.domain.name + ' sniped ' + X.domain.name + ': one level of each element');
     }
     W.shots.push({ a: o, b: o.clone().addScaledVector(dir, SHIP.rifle.range), t: W.t, color: P.domain.color });
@@ -552,8 +583,10 @@
   // ---- one step of one pilot: the same physics for a player and an AI ----
   const ease = (x) => x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1);
   const AX = new V(1, 0, 0), AY = new V(0, 1, 0), AZ = new V(0, 0, 1), dq = new Q();
+  const effLv = (P) => { if (!P.debuffed) return P.lv; const o = {}; for (const e of ELEMENTS) o[e.key] = Math.max(0, P.lv[e.key] - SHIP.danger.levels); return o; };
   function stepPilot(W, P, inp, dt) {
     P.prev.copy(P.pos);
+    const deb = W.t < P.debuffUntil; if (deb !== P.debuffed) { P.debuffed = deb; P.m = mults(effLv(P)); }
     if (P.finishT != null) { P.speed *= Math.exp(-1.5 * dt); P.pos.addScaledVector(fwdOf(P), P.speed * dt); return; }
     let XSum, YSum, YDiff, XDiff;
     if (inp.pad) { XSum = ease(inp.R.x + inp.L.x); YSum = -ease(inp.R.y + inp.L.y); YDiff = ease(inp.R.y - inp.L.y); XDiff = (inp.R.x - inp.L.x + 2) / 4; }
@@ -565,7 +598,7 @@
     P.quat.normalize();
     // buttons: A burns a pellet, B is the stance, LT is the scope, RT shoots scoped or cloaks unscoped
     const a = inp.a || 0, b = inp.b || 0, rt = inp.rt || 0;
-    if (a > 0.5 && P.aWas <= 0.5 && P.fuel >= SHIP.pellet.cost - 1e-6 && !P.stopped) { P.fuel -= SHIP.pellet.cost; P.burns.push(W.t + P.m.burn); }
+    if (a > 0.5 && P.aWas <= 0.5 && P.fuel >= P.m.pelletCost - 1e-6 && !P.stopped) { P.fuel -= P.m.pelletCost; P.burns.push(W.t + P.m.burn); }
     if (b > 0.5 && P.bWas <= 0.5) {
       P.stopped = !P.stopped;
       if (P.stopped) P.stanceWall = seedWall(W, P, 'stance');
@@ -589,7 +622,8 @@
       P.trailAcc += P.speed * dt;
       while (P.trailAcc >= LAB.trailSpacing) { P.trailAcc -= LAB.trailSpacing; addPrism(W, { pos: P.pos.clone().addScaledVector(fwd, -4), quat: P.quat.clone(), kind: 'trail', owner: P.i, life: LAB.trailLife }); P.trailN++; }
     }
-    // walls: a bounce off a shielded brick or a seed, half your speed through a bare one; your own let you through
+    // walls, as the shipped hull meets prisms: a bare brick breaks and the hull keeps its speed (VesselDamagePrismEffect); a
+    // shielded brick or a seed bounces it (the locked prism rule); your own let you through
     for (const w of W.walls) {
       if (w.dead || w.owner === P.i) continue;
       const d0 = P.prev.clone().sub(w.pos).dot(w.n), d1 = P.pos.clone().sub(w.pos).dot(w.n);
@@ -599,10 +633,21 @@
       const hit = wallHitAt(w, la, lb, LAB.hullR); if (hit == null) continue;
       const br = hit === 'seed' ? null : w.bricks.get(hit);
       P.crashes++; W.stats.crashes++;
-      if (!br && w.seedShield === 0) { releaseWall(W, w, { by: P.i, text: P.domain.name + ' rammed a seed: its wall falls apart' }); P.speed *= W.rules.wallSlow; continue; }
+      if (!br && w.seedShield === 0) { releaseWall(W, w, { by: P.i, text: P.domain.name + ' rammed a seed: its wall falls apart' }); continue; }
       if (!br && w.seedShield === 1) w.seedShield = 0;   // a plain-shielded stance seed loses its shield; a super-shielded cloak seed never does to a hull
-      if (br && !br.shield) { w.bricks.delete(hit); w.count--; W.wallsDirty = true; P.speed *= W.rules.wallSlow; if (P.i === W.watch) W.events.push('Rammed through a bare brick'); }
+      if (br && !br.shield) { w.bricks.delete(hit); w.count--; W.wallsDirty = true; if (P.i === W.watch) W.events.push('Rammed through a bare brick'); }
       else { if (br) br.shield = false; P.pos.copy(x).addScaledVector(w.n, d0 > 0 ? 2.5 : -2.5); P.speed = SHIP.minSpeed; P.stun = Math.max(P.stun, 0.8); if (P.i === W.watch) W.events.push(hit === 'seed' ? 'Bounced off a seed' : 'Bounced off a shielded brick'); break; }
+    }
+    // covered rings: a plain slab breaks and costs nothing; a danger slab breaks and debuffs (the shipped danger hit)
+    for (const p of W.grid.near(P.pos, 12, tmpArr)) {
+      if (p.dead || p.kind !== 'cover') continue;
+      const rel = P.pos.clone().sub(p.pos), along = rel.dot(p.n); if (Math.abs(along) > COVER.slab[2] / 2 + LAB.hullR + P.speed * dt) continue;
+      if (rel.addScaledVector(p.n, -along).length() > COVER.slab[0] * 0.6 + LAB.hullR) continue;   // inside the slab's face
+      removePrism(W, p);
+      if (p.danger && W.t >= P.dangerCd) {
+        P.debuffUntil = W.t + SHIP.danger.seconds; P.dangerCd = W.t + SHIP.danger.cooldown; P.dangerHits++; W.stats.dangerHits++;
+        if (P.i === W.watch) W.events.push('Danger slab: every element down a level for ' + SHIP.danger.seconds + ' s');
+      }
     }
     // the gate: thread any ring of it, front to back
     const g = W.C.gates[P.gate % W.C.gates.length];
@@ -615,21 +660,16 @@
       if (P.gate >= W.C.total) { P.finishT = W.t; if (P.i === W.watch) W.events.push('Finished in ' + W.t.toFixed(1) + ' s'); }
       break;
     }
-    // crystals: a round each (lab-only), a ripple of shield through your growing walls, and Lockdown's refill
+    // crystals: a ripple of shield through your growing walls (SeedWallAction shieldRippleStep); nothing else in this mode
     for (const cr of W.crystals) {
       if (!cr.alive || cr.pos.distanceTo(P.pos) > LAB.reach) continue;
       cr.alive = false; cr.at = W.t + W.rules.crystalRespawn; P.crystals++;
-      P.rounds = Math.min(W.rules.roundsCap, P.rounds + 1);
       for (const w of W.walls) {
         if (w.dead || w.owner !== P.i) continue;
         if (w.growing) for (const bb of w.bricks.values()) bb.shield = true;
-        if (P.m.lockdown) {   // Lockdown (Mass 5): every hole the wall had grown past is sealed again, and the whole wall shielded
-          for (const h of w.order) { if (h.d > w.edge) break; const kk = key(h.i, h.j); if (!w.bricks.has(kk)) { w.bricks.set(kk, { i: h.i, j: h.j, shield: true }); w.count++; } }
-          for (const bb of w.bricks.values()) bb.shield = true;
-        }
         W.wallsDirty = true;
       }
-      if (P.i === W.watch) W.events.push('Crystal: ' + P.rounds + ' round' + (P.rounds === 1 ? '' : 's') + (P.m.lockdown && P.walls ? ', Lockdown seals your walls' : ''));
+      if (P.i === W.watch && P.walls) W.events.push('Crystal: a shield ripple through your growing walls');
     }
   }
   function stepWorld(W, dt, inputs) {
@@ -643,6 +683,16 @@
     }
     if (W.walls.length > 40) W.walls = W.walls.filter((w) => !w.dead);
     for (const cr of W.crystals) if (!cr.alive && W.t >= cr.at) placeCrystal(W, cr);
+    // a covered ring grows one missing slab back every COVER.regrow seconds, the same kind as before
+    W.coverT += dt;
+    if (W.coverT >= COVER.regrow) {
+      W.coverT = 0;
+      for (const ring of W.cover) for (let step = 0; step < ring.cells.length; step++) {
+        const c = (ring.next + step) % ring.cells.length, cell = ring.cells[c];
+        if (cell.p && !cell.p.dead) continue;
+        laySlab(W, ring, cell); ring.next = c + 1; break;
+      }
+    }
     // the gates' debris grows back slowly (lab-only), so a gate is never stripped bare for the rest of the race
     W.debrisT += dt;
     if (W.debrisT > LAB.debrisRegrow) {
@@ -667,8 +717,10 @@
     if (s.mis) { if (w.pos.distanceTo(P.pos) < 60) s.mis = false; else { P.misjudged = true; return false; } }
     return true;
   }
+  const tmpArr2 = [];
   const SAMPLES = [[0, 0]].concat([0, 1, 2, 3, 4, 5].map((k) => [Math.cos(k * Math.PI / 3) * 0.55, Math.sin(k * Math.PI / 3) * 0.55]));
-  function coverAt(W, P, r, p) {   // the wall (if any) that blocks the straight pass through point p of ring r
+  function coverAt(W, P, r, p) {   // the wall or danger slab (if any) that blocks the straight pass through point p of ring r
+    for (const q of W.grid.near(p, 9, tmpArr2)) if (!q.dead && q.kind === 'cover' && q.danger && q.pos.distanceTo(p) < COVER.slab[0] * 0.6 + LAB.hullR) return { w: null, q: q.pos.clone() };
     for (const w of W.walls) {
       if (w.dead || w.owner === P.i || w.count === 0 && !w.seedAlive) continue;
       if (w.pos.distanceTo(r.c) > w.edge + r.r + 60) continue;
@@ -742,11 +794,11 @@
     let pick = null;
     for (const r of gate.rings) {
       const pl = ringPlan(W, P, r);
-      const cost = pl.open ? pl.open.cost : r.c.distanceTo(P.pos) + (rifleReady(W, P) || P.rounds >= 1 ? 140 : 600);
+      const cost = pl.open ? pl.open.cost : r.c.distanceTo(P.pos) + (W.t + 3 >= P.rifleAt ? 140 : 600);
       if (!pick || cost < pick.cost) pick = { r, pl, cost };
     }
     if (A.ring && A.ring.gate === gate.k && A.ring !== pick.r) {   // hysteresis: stay on a ring unless another is clearly cheaper
-      const pl = ringPlan(W, P, A.ring), cost = pl.open ? pl.open.cost : A.ring.c.distanceTo(P.pos) + (P.rounds >= 1 ? 140 : 600);
+      const pl = ringPlan(W, P, A.ring), cost = pl.open ? pl.open.cost : A.ring.c.distanceTo(P.pos) + (W.t + 3 >= P.rifleAt ? 140 : 600);
       const committed = pl.open && A.ring.c.distanceTo(P.pos) < 150;   // close in on an open ring: no second thoughts
       if (committed || cost < pick.cost * 1.15) pick = { r: A.ring, pl, cost };
     }
@@ -782,8 +834,8 @@
       let ramAt = ring.c;
       if (w0) { let far = -1; for (const [x, y] of SAMPLES) { const p = ring.c.clone().addScaledVector(ring.s, x * ring.r * 1.3).addScaledVector(ring.u, y * ring.r * 1.3), d = p.distanceTo(w0.pos); if (d > far) { far = d; ramAt = p; } } }
       aim = through(ramAt); state = 'ram'; color = 'mech';
-      if (cov && B.shootWalls >= 0.5 && P.rounds >= 1 && dRing > 35) {   // 3. shoot the wall down: the seed if the round can break it, else a hole at the centre
-        const w = cov.w, seedOk = w.seedAlive && (w.seedShield < 2 || P.m.pierce) && w.pos.distanceTo(ring.c) < ring.r + 14;
+      if (cov && B.shootWalls >= 0.5 && W.t + 3 >= P.rifleAt && dRing > 35) {   // 3. shoot the wall down: the seed if the round can break it, else a hole at the centre
+        const w = cov.w, seedOk = !!w && w.seedAlive && (w.seedShield < 2 || P.m.pierce) && w.pos.distanceTo(ring.c) < ring.r + 14;
         const tgt = seedOk ? w.pos : cov.q;
         if (A.plan !== 'wall' || !A.target || A.target.distanceToSquared(tgt) > 4) { A.plan = 'wall'; A.target = tgt.clone(); A.err = aimError(P, tgt); }
         aim = A.target.clone().add(A.err); state = 'shoot wall'; lining = true;
@@ -795,8 +847,8 @@
       }
     }
     if (state === 'ring' || state === 'ram') { if (A.plan === 'wall') A.plan = ''; A.backOut = false; }
-    // 4. snipe a rival who lines up (a Marksman goes looking for the line), keeping a round for walls unless it is a Marksman
-    if (state === 'ring' && B.snipe > 0 && P.rounds >= 1 + B.keep && rifleReady(W, P)) {
+    // 4. snipe a rival who lines up (a Marksman goes looking for the line); the rifle's own cooldown is the only limit
+    if (state === 'ring' && B.snipe > 0 && rifleReady(W, P)) {
       const fwd = fwdOf(P), toAim = aim.clone().sub(P.pos).normalize(); let best = null;
       for (const X of rivals) {
         if (cloaked(W, X)) continue;   // nobody tracks a cloaked pilot
@@ -812,16 +864,7 @@
         }
       } else if (A.plan === 'snipe') A.plan = '';
     }
-    // 5. a crystal for a round: worth a detour when the rifle is short of rounds
-    if (state === 'ring' && P.rounds < Math.min(W.rules.roundsCap, 1 + B.keep + (B.snipe > 0.8 ? 1 : 0))) {
-      const base = aim.distanceTo(P.pos), fwd = fwdOf(P); let best = null;
-      for (const cr of W.crystals) {
-        if (!cr.alive) continue;
-        const d = cr.pos.distanceTo(P.pos), extra = d + cr.pos.distanceTo(aim) - base;
-        if (extra < B.detour && cr.pos.clone().sub(P.pos).normalize().dot(fwd) > 0.1 && (!best || extra < best.extra)) best = { cr, extra };
-      }
-      if (best) { aim = best.cr.pos.clone(); state = 'crystal'; color = 'mech'; }
-    }
+    // 5. (round 1's crystal detour for a round is gone: a racing AI never detours, and a crystal is no round)
     // 6. dirty: just through a ring a rival still needs, cloak (RT unscoped) and leave a seed to plug it
     if (W.wallsOn && P.gate !== A.passHandled && t - P.passT < 0.35 && P.gate > 0) {
       A.passHandled = P.gate;
@@ -833,7 +876,7 @@
       }
     }
     if (A.cloakNow) { lt = 0; if (!scoped(P) && P.rtWas <= 0.5) { rt = 1; A.cloakNow = false; } state = 'cloak'; color = 'mech'; }
-    if (state === 'ring' || state === 'crystal' || state === 'cloak') { const round = avoidWalls(W, P, aim, ring); if (round) { aim = round; state = 'round a wall'; } }
+    if (state === 'ring' || state === 'cloak') { const round = avoidWalls(W, P, aim, ring); if (round) { aim = round; state = 'round a wall'; } }
     const s = steer(P, aim, true, lining);
     const out = s.inp; out.lt = lt; out.rt = rt;
     if (A.stopNow && P.bWas <= 0.5) { out.b = 1; A.stopNow = false; }
@@ -843,7 +886,7 @@
     const lastLap = P.gate >= W.C.total - G.length, reserve = lastLap ? 0 : B.reserve;
     const turnAfter = next.c.clone().sub(ring.c).normalize().dot(ring.n), v2 = SHIP.throttle * (1 + (SHIP.pellet.mult - 1) * (P.burns.length + 1));
     const room = turnAfter > 0.55 ? v2 * 1.2 : v2 * P.m.burn;
-    if (!lt && s.err < 9 && t - A.lastA > 0.4 && P.fuel >= SHIP.pellet.cost + reserve && P.burns.length < B.pellets && Math.min(dRing, aim.distanceTo(P.pos) + 40) > room && P.aWas <= 0.5) { out.a = 1; A.lastA = t; }
+    if (!lt && s.err < 9 && t - A.lastA > 0.4 && P.fuel >= P.m.pelletCost + reserve && P.burns.length < B.pellets && Math.min(dRing, aim.distanceTo(P.pos) + 40) > room && P.aWas <= 0.5) { out.a = 1; A.lastA = t; }
     if (P.unnoticed) color = 'unnoticed'; else if (P.misjudged) color = 'misjudged';
     P.aim = aim; P.aiState = P.unnoticed ? 'not noticed' : P.misjudged ? 'misjudged' : state; P.thinkC = color;
     return out;
@@ -856,7 +899,7 @@
     const W = makeWorld(course, specs, seed, o.rules, o.walls); W.watch = -1;
     const dt = 1 / 30; while (!W.over) stepWorld(W, dt, W.pilots.map((P) => aiInput(W, P)));
     const order = W.pilots.slice().sort((a, b) => (a.finishT ?? 1e9) - (b.finishT ?? 1e9) || b.gate - a.gate);
-    return { t: +W.t.toFixed(1), winner: order[0].style, winnerT: order[0].finishT, pilots: W.pilots.map((P) => ({ style: P.style, level: P.spec.ai, finishT: P.finishT, gate: P.gate, crashes: P.crashes, shots: P.shots, wallShots: P.wallShots, snipes: P.snipes, walls: P.walls, crystals: P.crystals, mistakes: P.mistakes })), stats: Object.assign({}, W.stats) };
+    return { t: +W.t.toFixed(1), winner: order[0].style, winnerT: order[0].finishT, pilots: W.pilots.map((P) => ({ style: P.style, level: P.spec.ai, finishT: P.finishT, gate: P.gate, crashes: P.crashes, dangerHits: P.dangerHits, shots: P.shots, wallShots: P.wallShots, snipes: P.snipes, walls: P.walls, crystals: P.crystals, mistakes: P.mistakes })), stats: Object.assign({}, W.stats) };
   }
 
   // ================= rendering =================
@@ -875,6 +918,7 @@
   brickMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); brickMesh.frustumCulled = false; scene.add(brickMesh);
   const shieldMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.45 }), MAXB);
   shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); shieldMesh.frustumCulled = false; scene.add(shieldMesh);
+  const DANGER = new THREE.Color(0xff3b30), COVERC = new THREE.Color(0x6f78b8);   // the game's danger red; a plain slab reads as debris, a shade lighter
   const DEBRIS = new THREE.Color(0x3a4380), WHITE = new THREE.Color(0xffffff), m4 = new THREE.Matrix4(), tmpC = new THREE.Color(), sc = new V();
   // give each instanced mesh its colour attribute before the first render: a material compiled without it never picks it
   // up later, and the walls drew white (three r128 decides USE_INSTANCING_COLOR when it builds the program)
@@ -887,6 +931,7 @@
       if (p.kind === 'trail' && own && cloaked(W, own) && own.i !== viewIdx()) continue;   // a cloaked trail is hidden from everyone else
       if (p.kind === 'trail' && own && own.i === viewIdx() && S.cam === 'Chase' && W.t - p.born < 1.2) continue;   // the trail just laid would fill a chase camera (/vessel-studio section 7)
       if (p.kind === 'debris') { sc.set(2.6, 2.6, 2.6); tmpC.copy(DEBRIS); }
+      else if (p.kind === 'cover') { sc.set(COVER.slab[0], COVER.slab[1], COVER.slab[2]); tmpC.copy(p.danger ? DANGER : COVERC); }
       else if (p.kind === 'loose') { sc.set(3, 1.6, 1); tmpC.set(own ? own.domain.color : 0x8090c0).lerp(DEBRIS, 0.5); }
       else { sc.set(1.4, 1.4, 6); tmpC.set(own ? own.domain.color : 0x8090c0).multiplyScalar(0.8); }
       m4.compose(p.pos, p.quat, sc); prismMesh.setMatrixAt(n, m4); prismMesh.setColorAt(n, tmpC); n++;
@@ -1023,7 +1068,7 @@
     eye.hidden = false; eye.style.width = eye.style.height = size + 'px'; eye.style.left = x + 'px'; eye.style.top = y + 'px';
     const coneR = Math.tan(SHIP.rifle.cone * DEG) / Math.tan(fov / 2 * DEG) * size / 2;
     $('eyeCone').style.width = $('eyeCone').style.height = Math.max(4, coneR * 2) + 'px';
-    $('eyeLab').textContent = fov.toFixed(1) + '° · ' + (rifleReady(W, P) ? 'RT fires' : P.rounds < 1 ? 'no rounds: find a crystal' : 'recovering');
+    $('eyeLab').textContent = fov.toFixed(1) + '° · ' + (rifleReady(W, P) ? 'RT fires' : 'recovering');
     scopeCam.fov = fov; scopeCam.aspect = 1; scopeCam.updateProjectionMatrix();
     scopeCam.position.copy(P.pos).addScaledVector(fwdOf(P), 3); scopeCam.quaternion.copy(P.quat);
     const hv = view.hulls[P.i], tv = view.tails[P.i], hw = hv.visible, tw = tv.visible; hv.visible = false; tv.visible = false;
@@ -1184,8 +1229,8 @@
     $('typeName').textContent = S.type; const t = TYPES.find((x) => x.name === S.type); $('typeInfo').textContent = t ? t.info : 'Custom levels (player 1 flies the Dirty brain when the AI holds it).';
     const m = mults(S.lv);
     for (const E of ELEMENTS) {
-      const r = elRows[E.key]; r.inp.value = S.lv[E.key]; r.out.textContent = S.lv[E.key]; r.badge.classList.toggle('on', E.key !== 'time' && S.lv[E.key] >= 5); r.badge.style.setProperty('--accent', 'var(' + E.color + ')');
-      const val = E.key === 'charge' ? m.rifleCd.toFixed(1) + ' s recovery' : E.key === 'mass' ? (SHIP.wall.long * m.brick).toFixed(1) + ' × ' + (SHIP.wall.short * m.brick).toFixed(1) + ' u bricks' : E.key === 'space' ? m.scopeFov.toFixed(1) + '° at full zoom · ' + Math.round(m.stealR) + ' u steal' : m.burn.toFixed(1) + ' s a pellet';
+      const r = elRows[E.key]; r.inp.value = S.lv[E.key]; r.out.textContent = S.lv[E.key]; r.badge.classList.toggle('on', S.lv[E.key] >= 5); r.badge.style.setProperty('--accent', 'var(' + E.color + ')');
+      const val = E.key === 'charge' ? m.scopeFov.toFixed(0) + '° at full zoom · ' + m.rifleCd.toFixed(1) + ' s rifle recovery' : E.key === 'mass' ? (SHIP.wall.long * m.brick).toFixed(1) + ' × ' + (SHIP.wall.short * m.brick).toFixed(1) + ' u bricks' : E.key === 'space' ? Math.round(m.stealR) + ' u steal reach' : m.burn.toFixed(1) + ' s a pellet · ' + Math.round(1 / m.pelletCost) + ' in the tank';
       r.wl.textContent = ''; r.wl.append(document.createTextNode(E.ability + ' '), elx('b', null, val));
     }
   }
@@ -1236,7 +1281,6 @@
   });
 
   // ---- HUD ----
-  const roundPips = []; function ensureRoundPips(n) { const box = $('mRounds'); while (roundPips.length < n) { const i = elx('i'), b = elx('b'); i.appendChild(b); box.appendChild(i); roundPips.push(i); } while (roundPips.length > n) box.removeChild(roundPips.pop()); }
   function hud() {
     if (!W) return;
     const P = W.pilots[viewIdx()] || W.pilots[0]; W.watch = P.i;
@@ -1244,11 +1288,10 @@
     $('hWho').textContent = P.domain.name + (P.spec.ai ? ' · AI ' + P.spec.ai + ' · ' + P.style : ' · ' + P.style) + (idleHeld && P.i === 0 ? ' · AI holding' : '') + ' · u/s';
     $('hSpeed').textContent = Math.round(P.speed);
     $('hGate').textContent = P.finishT != null ? 'Finished · ' + P.finishT.toFixed(1) + ' s' : 'Gate ' + Math.min(P.gate + 1, W.C.total) + ' / ' + W.C.total + ' · lap ' + lap + ' / ' + S.rules.laps + (P.stopped ? ' · STOPPED' : '');
-    const pel = P.fuel / SHIP.pellet.cost; $('hPellets').textContent = Math.floor(pel + 1e-6) + (P.burns.length ? ' · ' + P.burns.length + ' burning · ' + (1 + (SHIP.pellet.mult - 1) * P.burns.length) + '×' : '');
+    const pel = P.fuel / P.m.pelletCost; $('hPellets').textContent = Math.floor(pel + 1e-6) + (P.burns.length ? ' · ' + P.burns.length + ' burning · ' + (1 + (SHIP.pellet.mult - 1) * P.burns.length) + '×' : '');
     [...$('mPellets').children].forEach((i, k) => { i.firstElementChild.style.width = (clamp(pel - k, 0, 1) * 100) + '%'; i.firstElementChild.style.opacity = pel - k >= 1 ? '1' : '0.5'; });
-    ensureRoundPips(S.rules.roundsCap); roundPips.forEach((i, k) => { i.firstElementChild.style.width = k < P.rounds ? '100%' : '0'; });
-    $('hRounds').textContent = P.rounds + ' / ' + S.rules.roundsCap;
-    const rl = Math.max(0, P.rifleAt - W.t); $('hRifle').textContent = P.rounds < 1 ? 'no rounds' : rl > 0 ? rl.toFixed(1) + ' s' : 'ready'; $('mRifle').style.width = ((1 - rl / P.m.rifleCd) * 100) + '%';
+    $('hDebuff').textContent = P.debuffed ? 'elements -1 · ' + (P.debuffUntil - W.t).toFixed(1) + ' s' : 'none';
+    const rl = Math.max(0, P.rifleAt - W.t); $('hRifle').textContent = rl > 0 ? rl.toFixed(1) + ' s' : 'ready'; $('mRifle').style.width = ((1 - rl / P.m.rifleCd) * 100) + '%';
     const cl = Math.max(0, P.cloakAt - W.t), ck = cloaked(W, P); $('hCloak').textContent = ck ? 'cloaked ' + (P.cloakUntil - W.t).toFixed(1) + ' s' : cl > 0 ? cl.toFixed(1) + ' s' : 'ready'; $('mCloak').style.width = ((1 - cl / SHIP.cloak.cooldown) * 100) + '%';
     $('cloakTag').hidden = !ck;
     const b = $('board'); b.textContent = '';
@@ -1260,13 +1303,13 @@
       if (X.misjudged) st.style.color = 'var(--hard)'; else if (X.unnoticed) st.style.color = 'var(--medium)';
       row.append(dot, elx('span', null, X.domain.name + (X.spec.ai ? ' · ' + X.spec.ai : '')), st); b.appendChild(row);
     });
-    abCards.charge.cd.style.width = ((1 - rl / P.m.rifleCd) * 100) + '%'; abCards.charge.st.textContent = P.rounds + ' rds · ' + (rl > 0 ? rl.toFixed(1) + ' s' : 'ready');
+    abCards.charge.st.textContent = scoped(P) ? lerp(SHIP.scope.unscoped, P.m.scopeFov, P.zoom).toFixed(1) + '°' : 'LT'; abCards.charge.cd.style.width = (P.zoom * 100) + '%';
     abCards.mass.st.textContent = P.walls + ' walls' + (P.stopped ? ' · stopped' : ''); abCards.mass.cd.style.width = ((1 - cl / SHIP.cloak.cooldown) * 100) + '%';
-    abCards.space.st.textContent = scoped(P) ? lerp(SHIP.scope.unscoped, P.m.scopeFov, P.zoom).toFixed(1) + '°' : 'LT'; abCards.space.cd.style.width = (P.zoom * 100) + '%';
+    abCards.space.st.textContent = scoped(P) ? 'rifle ' + (rl > 0 ? rl.toFixed(1) + ' s' : 'ready') : 'cloak ' + (cl > 0 ? cl.toFixed(1) + ' s' : 'ready'); abCards.space.cd.style.width = ((1 - (scoped(P) ? rl / P.m.rifleCd : cl / SHIP.cloak.cooldown)) * 100) + '%';
     abCards.time.st.textContent = Math.floor(pel + 1e-6) + ' pellets'; abCards.time.cd.style.width = (P.fuel * 100) + '%';
-    for (const E of ELEMENTS) abCards[E.key].c.style.borderColor = E.key !== 'time' && P.lv[E.key] >= 5 ? 'var(' + E.color + ')' : '';
+    for (const E of ELEMENTS) abCards[E.key].c.style.borderColor = P.lv[E.key] >= 5 ? 'var(' + E.color + ')' : '';
     $('readWho').textContent = P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '');
-    const live = [['speed', P.speed.toFixed(1) + ' u/s'], ['throttle', Math.round(P.throttle * 100) + '%'], ['boost', (1 + (SHIP.pellet.mult - 1) * P.burns.length) + '×'], ['fuel', (P.fuel * 100).toFixed(0) + '%'], ['rounds', String(P.rounds)], ['rifle', P.m.rifleCd.toFixed(1) + ' s' + (P.m.pierce ? ' · Pierce' : '')], ['scope', P.m.scopeFov.toFixed(1) + '°' + (P.m.deepFocus ? ' · Deep Focus' : '')], ['bricks', (SHIP.wall.long * P.m.brick).toFixed(1) + ' × ' + (SHIP.wall.short * P.m.brick).toFixed(1)], ['steal reach', Math.round(P.m.stealR) + ' u'], ['walls laid', String(P.walls)], ['shots · snipes', P.shots + ' · ' + P.snipes], ['crashes', String(P.crashes)], ['crystals', String(P.crystals)], ['AI state', P.spec.ai ? P.aiState : idleHeld && P.i === 0 ? 'AI holding' : 'player']];
+    const live = [['speed', P.speed.toFixed(1) + ' u/s'], ['throttle', Math.round(P.throttle * 100) + '%'], ['boost', (1 + (SHIP.pellet.mult - 1) * P.burns.length) + '×'], ['fuel', (P.fuel * 100).toFixed(0) + '%'], ['danger hits', String(P.dangerHits)], ['rifle', P.m.rifleCd.toFixed(1) + ' s' + (P.m.hunters ? " · Hunter's Sight" : '')], ['scope', P.m.scopeFov.toFixed(1) + '° at full zoom'], ['pellets', String(Math.round(1 / P.m.pelletCost)) + (P.m.pelletCost < SHIP.pellet.cost ? ' · Fifth Pellet' : '')], ['bricks', (SHIP.wall.long * P.m.brick).toFixed(1) + ' × ' + (SHIP.wall.short * P.m.brick).toFixed(1)], ['steal reach', Math.round(P.m.stealR) + ' u'], ['walls laid', String(P.walls)], ['shots · snipes', P.shots + ' · ' + P.snipes], ['crashes', String(P.crashes)], ['crystals', String(P.crystals)], ['AI state', P.spec.ai ? P.aiState : idleHeld && P.i === 0 ? 'AI holding' : 'player']];
     const box = $('read'); if (box.childElementCount !== live.length * 2) { box.textContent = ''; for (const [k] of live) box.append(elx('span', null, k), elx('b')); }
     live.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
     const running = race === 'running' && !paused;
@@ -1325,7 +1368,7 @@
 
   // test hook for scripted checks (no effect on play)
   window.__serpentStudio = {
-    get state() { const P = W.pilots[0]; return { race, t: +W.t.toFixed(2), course: S.course, total: W.C.total, speed: +P.speed.toFixed(1), walls: W.walls.filter((w) => !w.dead).length, pilots: W.pilots.map((p) => ({ name: p.domain.name, ai: p.spec.ai, style: p.style, gate: p.gate, finishT: p.finishT, rounds: p.rounds, walls: p.walls, shots: p.shots, crashes: p.crashes, state: p.aiState })) }; },
+    get state() { const P = W.pilots[0]; return { race, t: +W.t.toFixed(2), course: S.course, total: W.C.total, speed: +P.speed.toFixed(1), walls: W.walls.filter((w) => !w.dead).length, pilots: W.pilots.map((p) => ({ name: p.domain.name, ai: p.spec.ai, style: p.style, gate: p.gate, finishT: p.finishT, dangerHits: p.dangerHits, walls: p.walls, shots: p.shots, crashes: p.crashes, state: p.aiState })) }; },
     set: (k, v) => { S[k] = v; if (k === 'players') racePanel.set('players', v, true); newRace(); }, startRace, raceHeadless, runScorecard, scoreRow, specsFor, mults, ide: IDE, get world() { return W; },
     sim: { makeWorld, stepWorld, aiInput, ringPlan, rules: () => Object.assign({}, S.rules) },   // the pure step, for headless traces
     drawn: () => ({ prisms: prismMesh.count, bricks: brickMesh.count, shields: shieldMesh.count, seeds: seedMeshes.size }),
