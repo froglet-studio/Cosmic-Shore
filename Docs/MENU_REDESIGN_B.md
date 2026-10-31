@@ -4955,3 +4955,104 @@ game".
   - re-initialising a vessel that is already initialised is new;
   - the game-scene guards for a client that joins from the menu mid-match are untested;
   - a host can never rejoin.
+
+## 106. Rev 39 mockups: the friends tray, a calmer party and rows that never overlap (2026-10-31; superseded by the Rev 40 pick, section 107)
+
+**Asked (Shombith, 2026-10-31, after the four-player test of 30 Oct):** "Change the UI of friends just the look and the
+center of the branch like animation, also the invite and other buttons overlap ... keep the feature where it extends as
+a tray into game cards."
+
+**On the canvas:** page "Rev 39 - Friends tray: a calmer party, rows that never overlap" (copies in
+`Docs/MenuRedesignB/board/R39*.dc.html`). Each option board is the Arcade window with the friends tray open, and has
+TRAY OPEN / TRAY CLOSED states so the cards can be seen moving with the tray (the one motion the round keeps).
+- **A, Seat row (recommended):** the four seats in one row (octagon avatar in its domain ring, name, role, an open seat
+  with Invite); each online row has ONE action slot, 128 wide, whose verb the row's state picks (Invite, Join, Spectate,
+  Cancel). The closed handle is a 236 x 64 tab: the people glyph, four seat pips in domain colour, "5 online".
+- **B, Roster list:** the party as four stacked lines (a thin domain bar, the host's crown, the host-only remove); online
+  rows have two fixed 104 slots, the second used only where a second verb exists (a pilot in another party: Invite and
+  Join). The closed handle is a vertical tab on the left edge.
+- **C, Squad tiles:** the party as a 2 x 2 grid of tiles; online pilots as compact cards with a full-width action foot.
+  The closed handle is a 100 x 100 tile of the four seats.
+- **Compare:** the three party pieces side by side, one online row in its four states for each option at the tray's
+  width, and today's row with INVITE running over SPECTATE.
+- **Why A:** one verb per row is the only layout that cannot overlap at any label length, and the row's state already
+  decides the verb; one row of seats reads at a glance. B keeps two verbs at the cost of the name's width; C shows four
+  online pilots before scrolling, not five.
+
+**Differs from the build:** the party molecule (the leader in the centre, three seats bonded at 155 / 25 / 270 degrees
+with flowing Bond dashes, section 45.4) and the orb's turning orbit go; no idle motion is left. Every row's buttons get
+fixed slots, so a button never takes its width from its label (the section 81 fix sized one slot; the two-button case
+still overflows). The tray's docking (section 68, `FriendsDrawerDock`) stays as built. After a pick:
+`author_menu_friends_drawer.py` (seats, the handle in place of the orb, slot widths, a no-overlap gate per row state),
+`ArcadeLobbyList` / `KitPartySlot` layout only, `OnlineInfoEntry` / `KitOnlineRow` slot choice; no change to invite,
+join, spectate, cancel or seating logic.
+
+## 107. Rev 40 mockups: three more friends trays, on the sea lines (2026-10-31; Shombith picked E, with the current orb)
+
+**Asked (Shombith, 2026-10-31, on Rev 39):** "Good mockups send me a few more use the sea lines bg".
+
+**On the canvas:** on the Rev 39 page (renamed "Rev 39-40 - Friends tray ..."; the canvas holds at most 40 pages and
+was full), the row under Rev 39 (copies `Docs/MenuRedesignB/board/R40*.dc.html`). Rev 39's brief and content are
+unchanged; every board is drawn over the sea lines (Rev 33's three drifting wave layers) instead of the photo backdrop.
+- **D, Pilot rail:** the tray never fully closes. Closed, a 72-wide rail on the left edge shows the four seats in their
+  domain rings and the online count; open, a 440 tray with each seat as a line carrying its hull.
+- **E, Grouped by verb:** online pilots sit under what can be done with them (Join their party, In the menu, In a
+  match, You invited), so each group's buttons share one column and one word; the party is one card (overlapping seats,
+  names, Invite, Leave).
+- **F, Tabs:** Party and Online share the tray one at a time; the party as four large seat cards (avatar, name, role,
+  hull), Online as Rev 39 A's list. The board's PARTY TAB / ONLINE TAB / TRAY CLOSED states switch them.
+- **Recommendation across both rounds:** Rev 39 A's tray with D's rail as its closed state.
+
+**Differs from the build:** as section 106; D replaces the orb with the rail, E adds authored group headers to the
+ONLINE list, F adds a tab strip.
+
+**Picked (Shombith, 2026-10-31):** "I dont like this part [D's rail] current friends icon is okay, we can keep it rest
+we can go with E". So: **E's open tray** (the party as one card with overlapping seats, names, Invite and Leave; the
+online pilots grouped by what can be done with them, one verb column per group) and **the built orb stays as the closed
+handle** (section 45.4), unchanged. Rev 39's options and D's rail and F are not built.
+
+### 107.1 Built (2026-10-31, awaiting in-editor approval)
+
+- **The party card** (`PartyPanel`, `author_menu_arcade.build_panel`): the molecule and its bonds are gone. Under "Your
+  party n / 4" and the online line, one framed card: the four `PartySlot`s in a row at `seat_x(i)` (62 px seats, each
+  14 over the one before, so later seats draw on top and the host's kick sits on a seat's top-left), the names line
+  (`ArcadeLobbyList.partyNamesText`, seat order, ", " between), the summary (`partySummaryText`, "{host} - {seats}":
+  "You host" / "{name} hosts", "1 seat open" / "{count} seats open" / "Party full"), then INVITE (focus into the list,
+  hidden when full) and LEAVE PARTY (hidden while solo). Every word is an authored field. The board's middle dot is
+  " - ": the generators keep prefab text ASCII.
+- **A seat** (`PartySlot`): the avatar in its domain ring, no name or role under it (the card's names line carries
+  them; the seat keeps its name in a hidden text, which the profile card reads). The open seat is an outlined octagon
+  with a +, a tile with no border at rest.
+- **The rows** (`PartyOnlineRow`): one fixed 120 x 32 slot at the right holds Invite, Join and Cancel, one at a time
+  (`KitOnlineRow.oneVerbPerRow`), each button 120 wide whatever its word. `FriendsListPanel.oneVerbPerRow` picks the
+  verb by status (in the menu Invite, in a party Join, in a match Spectate, invited Cancel). Name over status, as the
+  build's rows were, not the board's one line.
+- **The groups**: JOIN THEIR PARTY, IN THE MENU, IN A MATCH, YOU INVITED, each a header over its own list, shown only
+  while it has rows (`KitListCounter`); `FriendsListPanel.onlineGroups` parents each row and moves it when its state
+  changes; the empty line shows while all four are empty (`onlineEmptyLine`).
+- **Unchanged:** the orb and the drawer (`author_menu_friends_drawer.py --check` OK), the docking, the profile card.
+- **Gates:** `author_menu_arcade.py --self-test` (check_card: seats in a row, no bonds, authored words, one-verb rows in
+  one shared slot with the fitter off, the four groups wired in order; 8 new planted defects); `author_ui_lattice.py
+  --self-test` (its two bond plants retargeted); `PartyTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 108. A mode's preview: FULL SCREEN extends as a tray (2026-10-31, awaiting in-editor approval)
+
+**Asked (Shombith, 2026-10-31):** "during the preview of each game mode when we press fullscreen it goes actual full
+screen rather the play area should extend as a tray and the other parts of the UI (right side) should get hidden".
+Built straight from the words (no board round): the same tray as the friends drawer's, applied to the preview.
+
+- **What changes** (`ConfigureView` and `ConfigureArenaView`, `author_menu_configure.py`): FULL SCREEN (while flying)
+  no longer grows the preview to the whole window and fades everything. The preview's right edge slides out 700 units
+  (x 1160 to 1860 at 1920 x 1080, the settings column's right edge) over `fadeSeconds`, and only the right side fades:
+  the controls panel, the settings card, the status line and START (`ConfigureCinema.extendAsTray`, `trayExtend`,
+  `rightSide`). The header, the briefing under the preview and the fly row stay. The objective bar rides the preview's
+  right edge (`followTray`). Pressing it again, or handing the stick back, slides the tray home.
+- **No stretched picture.** A live preview texture cannot be swapped mid-session, so the preview renders a texture as
+  wide as the open tray from the start (`ModePreviewWindow.textureWidthScale`, 1800 / 1100) and shows the centre that
+  fits its frame (`RawImage.uvRect`, `VisibleWidth`). The framed view is the same picture as before; the tray reveals
+  more arena at the sides. Cost: the preview renders 1.64x as many pixels while the window is open (the measured
+  height is unchanged, capped at 720).
+- **Unchanged:** the Maelstrom window (no flying, no FULL SCREEN); every other `ModePreviewWindow` (scale 1).
+- **Gates:** `author_menu_configure.py` checks the tray wiring, the texture scale and that the tray ends at the column's
+  edge; three new planted defects (FULL SCREEN back to the whole window, a frame-sized texture, START left on screen).
+  `PreviewTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
