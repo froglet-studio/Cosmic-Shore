@@ -122,7 +122,7 @@ namespace CosmicShore.Tests
             for (int slot = 0; slot < 2; slot++)
             {
                 var d = SerpentTimeCluster.GuardDomain(gate, slot);
-                Assert.That(d, Is.AnyOf(Domains.Jade, Domains.Ruby, Domains.Gold), "a guard is never Blue (bait to every school)");
+                Assert.IsTrue(d == Domains.Jade || d == Domains.Ruby || d == Domains.Gold, $"gate {gate} ring {slot}: {d} - a guard is never Blue (bait to every school)");
                 Assert.AreEqual(d, SerpentTimeCluster.GuardDomain(gate, slot), "the same on every peer");
                 seen.Add(d);
             }
