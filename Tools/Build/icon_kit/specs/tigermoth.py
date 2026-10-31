@@ -141,3 +141,98 @@ REBIND += [
     dict(file=VARIANT, pair=dict(container=TIME_ICON, view=VIEW, after="wingEnergyGauge",
                                  children=[(n, i, f) for n, i, f, _d, _a in DROP_PARTS])),
 ]
+
+
+# ---- Charge: Scale Dust -------------------------------------------------------------------------------------------------
+# The mechanic (TIGER_MOTH.md 1.3): in Dust mode a capsule hangs BELOW the hull, drawn as falling motes in the shielded
+# tier of the pilot's domain; while a rival stays inside it, it shreds ONE petal of ONE random element they hold every
+# shredInterval (1 s at Charge 0 -> 0.1 s at Charge 10). The petal is stolen. Charge is the RATE. WHO: the moth (domain),
+# wings shut as Dust mode folds them; WHAT: the rival (danger) in its dust, a petal coming off. No dust (Mass mode): dim.
+import toy_portraits                     # noqa: E402  (the petal shapes come from the HUD's own sprites)
+from canvas import rect                  # noqa: E402
+
+
+def dart(x, y, s=1.0):
+    """A rival (any vessel): the fleet's plain dart, nose right."""
+    return fill([(x + 11 * s, y), (x - 8 * s, y - 8 * s), (x - 3 * s, y), (x - 8 * s, y + 8 * s)])
+
+
+def motes(x0, x1, y0, y1, n=14, seed=7, s=3.2):
+    """The dust: small diamonds scattered down a column (a fixed scatter, the same every render)."""
+    rng = np.random.default_rng(seed)
+    out = empty()
+    for _ in range(n):
+        x, y = rng.uniform(x0, x1), rng.uniform(y0, y1)
+        out |= fill([(x, y - s), (x + s, y), (x, y + s), (x - s, y)])
+    return out
+
+
+S_MOTH = moth(76, 54, 28)
+S_RIVAL = (52.0, 96.0)
+
+
+def s_rival():
+    return dart(*S_RIVAL, s=2.6)
+
+
+def s_dust():
+    return _clear_of(motes(16, 92, 58, 126, n=22, s=4.6), S_MOTH(), s_rival(), px=2.5)
+
+
+# A: THE SHRED. One petal coming off the rival in the dust, flying out to the right.
+def a_petal():
+    return toy_portraits.petal("Space", (90.0, 86.0), -30.0, 44.0)
+
+
+# B: THE RATE. Petals coming off one after another, each a different element (one random element per shred): the
+# trail of them is the rate Charge raises.
+def b_petals(n):
+    def draw():
+        out = empty()
+        spots = [("Mass", (86.0, 92.0), -15.0, 30.0), ("Time", (102.0, 66.0), -40.0, 28.0), ("Charge", (112.0, 36.0), -65.0, 26.0)]
+        for el, tip, d, L in spots[:n]:
+            out |= toy_portraits.petal(el, tip, d, L)
+        return out
+    return draw
+
+
+# C: THE CAPSULE. The dust as the capsule it is (a rounded column hanging under the hull, outlined), the rival inside
+# it, a petal leaving through its wall.
+def c_capsule():
+    import toy_portraits as tp
+    body = rect(20, 56, 86, 112) | disc(53, 56, 33) | disc(53, 112, 33)
+    body &= rect(0, 46, 128, 126)
+    edge = body & tp.grown(~body, 4.0)
+    return _clear_of(edge, S_MOTH(), px=2.0)
+
+
+def c_petal():
+    return toy_portraits.petal("Space", (94.0, 86.0), -25.0, 40.0)
+
+
+S_LIT = [("dust", "shielded"), ("moth", "domain"), ("rival", "danger")]
+CHARGE_BEFORE = ICON_DIR + "Butterfly_ScaleDust.png"
+CARDS += [
+    dict(name="dust_a", group="dust", element="Charge", before=CHARGE_BEFORE,
+         title="A  the shred: the moth (domain) over its dust (shielded), a rival (danger) in it, one petal coming off (white)",
+         parts=dict(moth=S_MOTH, dust=s_dust, rival=s_rival, petal=a_petal),
+         states=[("shredding", S_LIT + [("petal", "white")]),
+                 ("dust on, nobody in it", [("dust", "shielded"), ("moth", "domain")]),
+                 ("Mass mode (no dust)", [("dust", "shielded", 0.25), ("moth", "domain", 0.4)])],
+         lockup_state=0),
+    dict(name="dust_b", group="dust", element="Charge", before=CHARGE_BEFORE,
+         title="B  the rate: petals of different elements coming off one after another; Charge 10 sheds three to Charge 0's one",
+         parts=dict(moth=S_MOTH, dust=s_dust, rival=s_rival, p1=b_petals(1), p3=b_petals(3)),
+         states=[("Charge 0: one a second", S_LIT + [("p1", "white")]),
+                 ("Charge 10: ten a second", S_LIT + [("p3", "white")]),
+                 ("Mass mode (no dust)", [("dust", "shielded", 0.25), ("moth", "domain", 0.4)])],
+         lockup_state=1),
+    dict(name="dust_c", group="dust", element="Charge", before=CHARGE_BEFORE,
+         title="C  the capsule: the dust drawn as the capsule hanging under the hull (shielded), the rival inside, a petal "
+               "leaving through its wall",
+         parts=dict(moth=S_MOTH, cap=c_capsule, rival=s_rival, petal=c_petal),
+         states=[("shredding", [("cap", "shielded"), ("moth", "domain"), ("rival", "danger"), ("petal", "white")]),
+                 ("dust on, nobody in it", [("cap", "shielded"), ("moth", "domain")]),
+                 ("Mass mode (no dust)", [("cap", "shielded", 0.25), ("moth", "domain", 0.4)])],
+         lockup_state=0),
+]
