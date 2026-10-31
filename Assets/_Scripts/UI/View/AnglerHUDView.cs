@@ -67,6 +67,24 @@ namespace CosmicShore.UI
         [Tooltip("The wake's alpha while a hunter is out.")]
         [SerializeField, Range(0f, 1f)] float lockWakeAlpha = 0.6f;
 
+        [Header("Mass card: Lure, Tame & Grow (icon_kit specs/angler.py, Garrett picked B 2026-10-31)")]
+        [Tooltip("The Angler side-on (Angler_LureHull): the pilot's domain colour.")]
+        [SerializeField] Image lureHullIcon;
+        [Tooltip("The esca's glow (Angler_LureGlow): white, shown while the lure is held.")]
+        [SerializeField] Image lureGlowIcon;
+        [Tooltip("The lit esca bulb (Angler_LureBulb): white, shown while the lure is held.")]
+        [SerializeField] Image lureBulbIcon;
+        [Tooltip("The creature drawn to the bulb (Angler_LureFish): blue; danger at Mass 5 (Steal Fauna); the domain colour for a beat as one joins.")]
+        [SerializeField] Image lureFishIcon;
+        [Tooltip("The wild creature's colour (ElementalBarsConfigSO.BlueColor).")]
+        [SerializeField] Color lureWildColor = new(56f / 255f, 130f / 255f, 1f, 1f);
+        [Tooltip("The creature's alpha while the lure is not held.")]
+        [SerializeField, Range(0f, 1f)] float lureIdleAlpha = 0.6f;
+        [Tooltip("The glow's alpha while the lure is held.")]
+        [SerializeField, Range(0f, 1f)] float lureGlowAlpha = 0.6f;
+        [Tooltip("How long the creature wears the domain colour after one joins the school (s, unscaled).")]
+        [SerializeField, Min(0f)] float lureJoinedSeconds = 1f;
+
         /// <summary>Seat every readout at rest (nothing tamed, the light off). Idempotent: it re-runs on a swap.</summary>
         public override void Initialize()
         {
@@ -77,6 +95,46 @@ namespace CosmicShore.UI
             _lockDomain = Color.white;
             _lockHunting = true;
             SetLockOn(false);
+            _joinedUntil = 0f;
+            _massUpgraded = false;
+            _luring = true;
+            SetLure(false);
+        }
+
+        // ---- the Mass card: the esca lit, a creature drawn to it ----
+
+        bool _luring, _massUpgraded;
+        float _joinedUntil;
+
+        /// <summary>The hull's colour on the Mass card: the pilot's domain (alpha 0 = not resolved yet, keep the last).</summary>
+        public void SetLureColor(Color domain)
+        {
+            if (domain.a <= 0f) return;
+            if (lureHullIcon) lureHullIcon.color = domain;
+            _lureDomain = domain;
+        }
+
+        Color _lureDomain = Color.white;
+
+        /// <summary>A creature just joined the school: the drawn creature wears the domain colour for a beat.</summary>
+        public void PlayLureJoined() => _joinedUntil = Time.unscaledTime + lureJoinedSeconds;
+
+        /// <summary>Whether the lure is held: the bulb lights and glows, the creature comes into the light.</summary>
+        public void SetLure(bool luring)
+        {
+            _luring = luring;
+            if (lureBulbIcon) lureBulbIcon.enabled = luring;
+            if (lureGlowIcon)
+            {
+                lureGlowIcon.enabled = luring;
+                lureGlowIcon.color = new Color(1f, 1f, 1f, lureGlowAlpha);
+            }
+            if (!lureFishIcon) return;
+            Color c = Time.unscaledTime < _joinedUntil ? _lureDomain
+                    : _massUpgraded ? lockDangerColor
+                    : lureWildColor;
+            if (!luring && Time.unscaledTime >= _joinedUntil) c.a *= lureIdleAlpha;
+            lureFishIcon.color = c;
         }
 
         // ---- the Charge card: one creature spent per lock, out hunting the locked rival ----
@@ -223,6 +281,11 @@ namespace CosmicShore.UI
         public override void SetAbilityUpgraded(Element element, bool upgraded)
         {
             base.SetAbilityUpgraded(element, upgraded);
+            if (element == Element.Mass)
+            {
+                _massUpgraded = upgraded;   // Steal Fauna: the creature drawn in may be another Angler's
+                SetLure(_luring);
+            }
             var gauge = element switch
             {
                 Element.Charge => chargeGauge,

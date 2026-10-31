@@ -380,3 +380,150 @@ CARDS += [
                  ("Mass 5: steal", [("hull", "domain"), ("light", "white"), ("fish", "danger")])],
          lockup_state=1, gauge=MASS_GAUGE, gauge_marks_style="segments"),
 ]
+
+
+# ---- Mass in the game: B, the anglerfish (Garrett picked B, 2026-10-31: "B is fine") ---------------------------------
+# Four parts in the Mass slot's container, driven by AnglerHUDView.SetLure: the hull (domain) always; the lit bulb and
+# its glow (white, 60%) while the lure is held; the creature drawn to the bulb - blue (60% at rest, full in the light),
+# danger at Mass 5 (Steal Fauna: another Angler's creature), the domain colour for a beat when one joins the school.
+LURE_PARTS = [("LureHull", "Angler_LureHull", "lureHullIcon", mb_hull, "the Angler side-on (domain)"),
+              ("LureGlow", "Angler_LureGlow", "lureGlowIcon", mb_glow, "the esca's glow (white, 60%; while luring)"),
+              ("LureBulb", "Angler_LureBulb", "lureBulbIcon", mb_bulb, "the lit esca bulb (white; while luring)"),
+              ("LureFish", "Angler_LureFish", "lureFishIcon", mb_fish,
+               "the creature drawn in (blue; danger at Mass 5; domain as it joins)")]
+ICONS += [dict(name=i, element="Mass", act="Lure, Tame & Grow: " + act, draw=draw, subdir="Parts", family=False,
+               exempt=PART_EXEMPT) for _n, i, _f, draw, act in LURE_PARTS]
+for c in CARDS:
+    if c["name"] == "lure_b":
+        CARDS.append(dict(c, name="lure", group=None,
+                          title="Lure, Tame & Grow (Mass, picked B): the Angler (domain), its esca lit (white), a creature "
+                                "drawn to the bulb (blue; danger at Mass 5; yours as it joins)"))
+        break
+CARDS[:] = [c for c in CARDS if c.get("group") != "lure"]
+LOCKUP["Mass"] = dict(parts=dict(h=mb_hull, f=mb_fish), state=[("h", "domain"), ("f", "blue", 0.6)])
+MASS_ICON = "7700000000000001115"       # the Mass slot's icon Image (was Angler_Leash); the fauna count is its child
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=MASS_ICON, view=VIEW, after="lockWakeAlpha",
+                                 children=[(n, i, f) for n, i, f, _d, _a in LURE_PARTS])),
+]
+
+
+# ---- Space: Paint -----------------------------------------------------------------------------------------------------
+# The mechanic (ANGLER.md 1, 1a, 1c, 1j, 1m): RT held, a beam from the nose (3200 u, never narrower than 6 u) paints
+# prisms LIT (their colour lifted 75% toward white) and every creature prefers them; half the school balls up ahead of
+# the nose. Let go: that half flies at the NEWEST lit prisms and eats them, one creature per prism; the next throw sends
+# the other half. Space 5 PAINT SHIELDS: shielded prisms paint too and the squad cracks the shield off. Plate: the
+# picked half's share out on an order (lime while RT paints with something painted). WHO: your squad (domain); WHAT: the
+# prisms you painted (lit, white) - the untouched blue, the eaten gone (negative space).
+from motifs import prism, prism_lit
+
+
+def _prisms(xs, y, s):
+    out = empty()
+    for x in xs:
+        out |= prism(x, y, s)
+    return out
+
+
+# A: THE BRUSH. The Angler (domain) at the left, its paint beam (white) across a row of prisms: the ones under it lit
+# (white), one past its end still blue; the squad balled up ahead of the nose.
+SA_HULL = dict(box=58.0, cx=29.0, cy=56.0)
+SA_ROW = (72.0, 94.0, 116.0)
+
+
+def sa_hull():
+    return angler(**SA_HULL)
+
+
+def sa_beam():
+    x, y = esca_at(**SA_HULL)
+    return _clear_of(stroke([(x + 3, y), (104.0, y)], w=4.5), sa_lit(), sa_ball(), px=2.5)
+
+
+def sa_lit():
+    x, y = esca_at(**SA_HULL)
+    return _prisms(SA_ROW[:2], y, 14.0)
+
+
+def sa_wild():
+    x, y = esca_at(**SA_HULL)
+    return prism(SA_ROW[2], y, 14.0)
+
+
+def sa_ball():
+    return quadfish(44.0, 96.0, 10.0) | quadfish(70.0, 96.0, 10.0)
+
+
+# B: THE THROW. Three of your squad (domain) flying right at the lit prisms (white); the first already eaten (its
+# prism cut out of the row as negative space), one blue prism left alone.
+SB_ROW = (86.0, 112.0)
+
+
+def sb_squad():
+    return quadfish(18.0, 34.0, 11.0) | quadfish(18.0, 94.0, 11.0) | quadfish(50.0, 64.0, 11.0)
+
+
+def sb_lit():
+    return _prisms(SB_ROW, 64.0, 16.0)
+
+
+def sb_wild():
+    return prism(100.0, 104.0, 11.0)
+
+
+def sb_eat():
+    """The front creature at its prism: a bite out of the first lit prism."""
+    return _clear_of(prism(SB_ROW[0], 64.0, 16.0), disc(72.0, 64.0, 10.0), px=0.5) | prism(SB_ROW[1], 64.0, 16.0)
+
+
+# C: THE LIT PRISM. One big painted prism (white, its lit face cut) and the creature that is eating it (domain) at its
+# corner; at Space 5 the prism is shielded (shielded colour) and its shield cracks off in two halves.
+def sc_prism():
+    return _clear_of(prism_lit(76.0, 64.0, 40.0), sc_fish(), px=2.5)
+
+
+def sc_fish():
+    return quadfish(30.0, 64.0, 15.0)
+
+
+def sc_shield_halves():
+    from canvas import shift
+    p = prism(76.0, 64.0, 40.0) & ~prism(76.0, 64.0, 32.0)
+    top = p & fill([(0, 0), (128, 0), (128, 60), (0, 68)])
+    bot = p & ~fill([(0, 0), (128, 0), (128, 60), (0, 68)])
+    return _clear_of(shift(top, 3.0, -4.0) | shift(bot, 3.0, 4.0), sc_fish(), px=2.5)
+
+
+def sc_core():
+    return _clear_of(prism_lit(76.0, 64.0, 28.0), sc_fish(), px=2.5)
+
+
+SPACE_GAUGE = {"rest": (0.0, None), "painting": (0.0, (150, 235, 41, 255)), "thrown": (0.5, None),
+               "Space 5: shields": (0.5, None)}
+SPACE_BEFORE = ICON_DIR + "Angler_Lure.png"
+CARDS += [
+    dict(name="paint_a", group="paint", element="Space", before=SPACE_BEFORE,
+         title="A  the brush: the Angler's beam (white) across prisms it lit (white), one past it still blue; the squad balled up ahead",
+         parts=dict(hull=sa_hull, beam=sa_beam, lit=sa_lit, wild=sa_wild, ball=sa_ball),
+         states=[("rest", [("hull", "domain"), ("lit", "blue"), ("wild", "blue"), ("ball", "domain", 0.6)]),
+                 ("painting", [("hull", "domain"), ("beam", "white"), ("lit", "white"), ("wild", "blue"), ("ball", "domain")]),
+                 ("thrown", [("hull", "domain"), ("lit", "white"), ("wild", "blue"), ("ball", "domain", 0.6)]),
+                 ("Space 5: shields", [("hull", "domain"), ("beam", "white"), ("lit", "shielded"), ("wild", "blue"), ("ball", "domain")])],
+         lockup_state=1, gauge=SPACE_GAUGE, gauge_marks_style="segments"),
+    dict(name="paint_b", group="paint", element="Space", before=SPACE_BEFORE,
+         title="B  the throw: your squad (domain) flying at the lit prisms (white), the first bitten into; the unpainted one left blue",
+         parts=dict(squad=sb_squad, lit=sb_lit, eat=sb_eat, wild=sb_wild),
+         states=[("rest", [("squad", "domain", 0.6), ("lit", "blue"), ("wild", "blue")]),
+                 ("painting", [("squad", "domain"), ("lit", "white"), ("wild", "blue")]),
+                 ("thrown", [("squad", "domain"), ("eat", "white"), ("lit", "white", 0.0), ("wild", "blue")]),
+                 ("Space 5: shields", [("squad", "domain"), ("lit", "shielded"), ("wild", "blue")])],
+         lockup_state=2, gauge=SPACE_GAUGE, gauge_marks_style="segments"),
+    dict(name="paint_c", group="paint", element="Space", before=SPACE_BEFORE,
+         title="C  the lit prism: one painted prism (white) and the creature eating it (domain); at Space 5 its shield cracks off",
+         parts=dict(prism=sc_prism, fish=sc_fish, shell=sc_shield_halves, core=sc_core),
+         states=[("rest", [("prism", "blue"), ("fish", "domain", 0.6)]),
+                 ("painting", [("prism", "white"), ("fish", "domain")]),
+                 ("thrown", [("prism", "white"), ("fish", "domain")]),
+                 ("Space 5: shields", [("shell", "shielded"), ("core", "white"), ("fish", "domain")])],
+         lockup_state=1, gauge=SPACE_GAUGE, gauge_marks_style="segments"),
+]
