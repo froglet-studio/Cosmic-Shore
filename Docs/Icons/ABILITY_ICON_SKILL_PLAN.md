@@ -286,6 +286,21 @@ the Squirrel's pattern). The Ball Forge placeholder is retired. **The Scarab's T
 afterimage, thrust chevrons): the Scarab flying right in domain colour, a white wake in three lengths by trigger depth
 (`ScarabHUDView.WakeStepFor`), the plate as the speed meter, and the Time 5 Snap Dash chevron ahead (white ready, grey
 waiting). The Throttle placeholder is retired and the Scarab is done. Next: the Serpent.
+**The Serpent's Mass and omni cards** (2026-10-29, Garrett's direction, no options round): the Mass card is the Seed
+Wall drawn from `SerpentWallLattice`'s real numbers - nine base bricks round a white seed in domain colour, and at
+Mass 5 the Lockdown danger panels in the four closed holes at their real size and tilt; the omni card is the same
+wall with every brick shielded (what a crystal does to it). The Serpent's view lives on `Serpent.prefab`, so the kit
+grew a `proxy` rebind step (stripped proxies into the HUD variant). Lockdown itself was recut in the same change:
+panels when a hole's four bricks close, crystals only shield (LESSONS 61). The Sniper Shot options are out.
+**The Serpent recut** (2026-10-30, Garrett): the Time card is the shipped pellet art mirrored to fly right (five rows at
+Time 5, `author_serpent_pellet_icon.py`). The CHARGE card is now the Scope (one fixed 12 degree zoom; Charge sets the
+sniper's recovery; Charge 5 Hunter's Sight leaves rival afterimages the sniper can hit), and the SPACE card is Cloak /
+Sniper Shot: one RT card whose picture swaps while the scope is held so its glyph never moves
+(`SerpentVesselHUDView.SetScoped`, two sprites). Garrett picked Scope A (the Charge-petal
+eyepiece and the reticle at the zoom's true size; at Charge 5 the reticle moves onto a rival's oldest afterimage, in
+danger) and Cloak / Sniper B (the cloaked outline leaving its shielded seed; the Serpent's round clearing bricks and a
+super-shielded prism) on 2026-10-31. Both cards are kit parts in the variant's slot containers, reached through proxies
+on `Serpent.prefab`; `SetScoped` and `SetHuntersSight` toggle the part sets. The Serpent is done.
 
 | Round | What | Why first |
 |---|---|---|

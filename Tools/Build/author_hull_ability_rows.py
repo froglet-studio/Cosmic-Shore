@@ -367,8 +367,13 @@ SERPENT_HUD_INSTANCE = 4033090122440962496       # Serpent.prefab's PrefabInstan
 SERPENT_VIEW = "5470374086122723936"              # SerpentVesselHUDView, added on Serpent.prefab
 SERPENT_TIME_ICON = "5867477772541908519"         # the shipped Time binding (stripped TimeIcon)
 SERPENT_BASE = 7710000000000002000
-SERPENT_ICONS = {CHARGE: "Serpent_SniperShot-PLACEHOLDER.png", MASS: "Serpent_SeedWall-PLACEHOLDER.png",
-                 SPACE: "Serpent_Scope-PLACEHOLDER.png"}
+# Charge is the Scope and Space the cloak / sniper shot since Garrett's recut (2026-10-30), so the two placeholders swapped.
+SERPENT_ICONS = {CHARGE: "Serpent_Scope-PLACEHOLDER.png", MASS: "Serpent_SeedWall-PLACEHOLDER.png",
+                 SPACE: "Serpent_SniperShot-PLACEHOLDER.png"}
+# Slots whose icon Image the icon kit has taken over (Tools/Build/icon_kit/specs/serpent.py): it becomes a transparent
+# container over the kit's parts, so its Image and RectTransform blocks are the kit's to check, not this script's.
+# The authoring pass still writes the placeholder; the kit's rebind then rewrites it.
+SERPENT_KIT_OWNED = (CHARGE, MASS, SPACE)
 # Elements the FIRST authoring pass wrote. The Mass slot (Seed Wall, SERPENT_SEED_WALL.md) was
 # designed later and is added by serpent_add_slots onto a row that already carries these.
 SERPENT_FIRST_PASS = (CHARGE, SPACE)
@@ -577,8 +582,11 @@ def main() -> int:
     else:
         needles = []
         for el, png in SERPENT_ICONS.items():
-            needles += host_blocks(slot_ids(SERPENT_BASE, el), el, SERPENT_STRIPPED_ROOT,
-                                   serpent_frame(el), sprite_guid("Serpent", png))
+            ids = slot_ids(SERPENT_BASE, el)
+            blocks = host_blocks(ids, el, SERPENT_STRIPPED_ROOT, serpent_frame(el), sprite_guid("Serpent", png))
+            if el in SERPENT_KIT_OWNED:
+                blocks = [b for b in blocks if f"&{ids['icon_img']}\n" not in b and f"&{ids['icon_rt']}\n" not in b]
+            needles += blocks
         ok &= verify(SERPENT_VARIANT, var_have, needles, "the Serpent hosts")
         local = {TIME: SERPENT_TIME_ICON}
         ves_needles = []
