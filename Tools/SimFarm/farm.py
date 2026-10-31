@@ -149,7 +149,7 @@ class Runner:
         player_path = self.farm.running / f"{job_id}.player.json"
         write_json_atomic(player_path, player_job)
 
-        args = [str(self.exe)]
+        args = [sys.executable, str(self.exe)] if self.exe.suffix == ".py" else [str(self.exe)]  # .py: a test double
         mode = job.get("mode") or self.a.mode
         if mode == "nographics":
             args += ["-batchmode", "-nographics"]
