@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The party molecule grows from the host; a lower blue on the friends window (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 109: `PartyPanel` / `PartySlot` regenerated (`author_menu_arcade.py`),
+`ArcadeLobbyList.expandingMolecule` (`LayoutMolecule`, `RingSeats`, `MoleculeAngle`), the drawer window's wash 0.45
+(Menu_Main, `author_menu_friends_drawer.py`). Compiled with `unity_refcompile`; not opened in Unity.
+
+- [ ] Open the orb alone: your seat in the centre of the card with one bonded "+" socket straight below it; nothing else.
+- [ ] A second player joins: their seat on the left, a socket on the right, both bonded to the host; the bond to a seated
+  pilot takes their domain colour, the socket's is dim.
+- [ ] Three: the old triangle (upper left, below, upper right) with no gap where the socket was. Four: no socket.
+- [ ] Someone leaves: the ring closes up and the socket returns. The seats rise in once when the window opens and never
+  jump back to their authored places.
+- [ ] The friends window's background reads a little less blue than before; the pilot record is unchanged.
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).

@@ -98,7 +98,7 @@ namespace CosmicShore.UI
         [Tooltip("The Invite button's group, hidden while every seat is taken.")]
         [SerializeField] private CanvasGroup inviteGroup;
 
-        [Header("Party molecule (optional; retired by the Rev 40 E card)")]
+        [Header("Party molecule (optional; section 45.4, made to grow in section 109)")]
         [Tooltip("Rev 6 (Docs/MENU_REDESIGN_B.md §45.4): the bond drawn from the centre seat to each seat, index-aligned " +
                  "with Slots (the centre seat's entry stays empty). A seated pilot's bond takes their domain colour, " +
                  "Space while it is not known yet; an open seat's bond is Space, dimmed to Open Bond Alpha.")]
@@ -107,6 +107,16 @@ namespace CosmicShore.UI
         [SerializeField, Range(0f, 1f)] private float openBondAlpha = 0.35f;
         [Tooltip("The chrome theme, for the bonds' Space colour.")]
         [SerializeField] private UIThemeSO theme;
+        [Tooltip("The molecule grows with the party (Shombith, 2026-10-31: \"expandable with the host and its there\"): slot 0, " +
+                 "the host, stays where it is authored; the ring shows the members plus one open socket, evenly round the " +
+                 "host, and every other slot and its bond hide. Off: the slots stay where they are authored.")]
+        [SerializeField] private bool expandingMolecule;
+        [Tooltip("From the host's avatar to a ring seat's (canvas units). The bonds are this long.")]
+        [SerializeField] private float ringRadius = 120f;
+        [Tooltip("A seat's centre sits this far below its avatar's (the name under it).")]
+        [SerializeField] private float seatAvatarOffset = 20f;
+        [Tooltip("The ring's angles start here (degrees counter-clockwise from the right), half a step round.")]
+        [SerializeField] private float firstAngle = 90f;
 
         /// <summary>Max slots rendered - the party size, <c>HostConnectionDataSO.MaxPartySlots</c> (4).</summary>
         const int MAX_SLOTS = 4;
@@ -440,9 +450,72 @@ namespace CosmicShore.UI
             _seatedFingerprint = _netFingerprint;
             _hasSeated         = true;
 
+            LayoutMolecule(seatCount, slotCount);
             PushDomainGlows();
             TintBonds();
             PresenceChanged?.Invoke();
+        }
+
+        Vector2 _hostAvatar;
+        bool _hostCaptured;
+
+        /// <summary>
+        /// Section 109: the molecule grows from the host. The ring holds every seated member and, while a seat is free, ONE
+        /// open socket, spread evenly round the host (<see cref="MoleculeAngle"/>); each shown seat's bond points at it,
+        /// and the slots and bonds beyond the ring hide. A party of one is the host and one socket; a full party has no
+        /// socket. Nothing here is fixed to four: the ring is computed from the slots the panel has.
+        /// </summary>
+        void LayoutMolecule(int seatCount, int slotCount)
+        {
+            if (!expandingMolecule || slots == null || slots.Length == 0 || !slots[0]) return;
+            if (!_hostCaptured && slots[0].transform is RectTransform hostRect)
+            {
+                // The host seat's REST pose: its entrance may be lifting it right now (KitEntrance.RestPosition).
+                var rest = hostRect.TryGetComponent(out KitEntrance rise) ? rise.RestPosition : hostRect.anchoredPosition;
+                _hostAvatar = rest + new Vector2(0f, seatAvatarOffset);
+                _hostCaptured = true;
+            }
+
+            int ring = RingSeats(seatCount, slotCount);
+            for (int i = 1; i < slots.Length; i++)
+            {
+                var slot = slots[i];
+                var bond = seatBonds != null && i < seatBonds.Length ? seatBonds[i] : null;
+                bool shown = i <= ring;
+                if (slot && slot.TryGetComponent(out CanvasGroup group)) KitVisibility.SetShown(group, shown);
+                if (bond) bond.enabled = shown;
+                if (!shown || !slot || !(slot.transform is RectTransform rect)) continue;
+
+                float a = MoleculeAngle(i - 1, ring, firstAngle) * Mathf.Deg2Rad;
+                var avatar = _hostAvatar + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * ringRadius;
+                rect.anchoredPosition = avatar - new Vector2(0f, seatAvatarOffset);
+                if (bond && bond.transform is RectTransform bondRect)
+                {
+                    bondRect.anchoredPosition = _hostAvatar;
+                    bondRect.localEulerAngles = new Vector3(0f, 0f, a * Mathf.Rad2Deg);
+                    bondRect.sizeDelta = new Vector2(ringRadius, bondRect.sizeDelta.y);
+                }
+            }
+        }
+
+        /// <summary>How many seats the ring shows round the host: the other members and one open socket while a seat is free.</summary>
+        internal static int RingSeats(int seatCount, int slotCount)
+        {
+            int members = Mathf.Max(0, seatCount - 1);
+            int open = seatCount < slotCount ? 1 : 0;
+            return Mathf.Clamp(members + open, 0, Mathf.Max(0, slotCount - 1));
+        }
+
+        /// <summary>
+        /// Ring seat <paramref name="k"/> of <paramref name="n"/>, degrees counter-clockwise from the right: evenly spread,
+        /// half a step past <paramref name="first"/> (one seat sits straight below the host; three make the old triangle).
+        /// Mirrored by author_menu_arcade.ring_angle. Pure, so it is tested without a panel.
+        /// </summary>
+        internal static float MoleculeAngle(int k, int n, float first = 90f)
+        {
+            if (n <= 0) return first;
+            float a = (first + 360f * (k + 0.5f) / n) % 360f;
+            return a < 0f ? a + 360f : a;
         }
 
         /// <summary>

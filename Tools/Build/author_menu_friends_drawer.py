@@ -152,7 +152,9 @@ def orb_node(parent):
     return o
 
 
-WINDOW_TINT = 0.6   # the same wash as author_menu_profile.RECORD_TINT
+# The window's blue wash over its black. 0.6 was the pilot record's (author_menu_profile.RECORD_TINT); 0.45 since
+# 2026-10-31 (Shombith, on the friends tray: "decrease the tone of the blue a little bit on the bg"). The record keeps 0.6.
+WINDOW_TINT = 0.45
 
 
 def window_node(parent):
