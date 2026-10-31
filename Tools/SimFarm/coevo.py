@@ -427,13 +427,75 @@ class Driver:
 
     # ---- one generation ---------------------------------------------------------------------------------------
     def evolving(self, gen: int) -> str:
+        if self.a.frozen_fauna:
+            return "vessel"
         return "vessel" if gen % 2 == 0 else "fauna"
+
+    # ---- curriculum against frozen fauna ----------------------------------------------------------------------
+    def frozen_fauna_gid(self, d: int) -> str:
+        """The frozen fauna for difficulty d (best/fauna_d<d>.json of an earlier session), as a fauna genome."""
+        path = Path(self.a.frozen_fauna) / f"fauna_d{d}.json"
+        genes = read_json(path) if path.exists() else {}
+        genes = dict(genes, __d=d, __frozen=str(path))
+        gid = self.add_genome("fauna", genes, born=0)
+        self.s["genomes"][gid]["frozen"] = True
+        return gid
+
+    def plan_curriculum(self):
+        """Every escort genome plays the current curriculum difficulty (R runs) and one run a level below, each
+        against that difficulty's frozen fauna. The level moves up once the best feasible escort wins at least the
+        target rate there over >= 4 runs."""
+        a = self.a
+        gen = self.s["gen"]
+        diffs = [int(x) for x in a.difficulties.split(",")]
+        level = self.s.setdefault("level", 0)
+        jobs = []
+        for i, vg in enumerate(self.s["pop"]["vessel"]):
+            squad = self.s["genomes"][vg]["genes"].get("__squad", a.squad).split(",")
+            plan = [(diffs[level], a.runs_per_pairing)] + ([(diffs[level - 1], 1)] if level > 0 else [])
+            for d, n in plan:
+                fg = self.frozen_fauna_gid(d)
+                params = dict(self.space.params("vessel", self.s["genomes"][vg]["genes"]))
+                params.update(self.space.params("fauna", self.s["genomes"][fg]["genes"]))
+                runs = [{"index": r, "difficulty": d, "squad": squad} for r in range(n)]
+                jobs.append({"jobId": f"{a.session}-g{gen:03d}-{i:02d}d{d}-{vg[:7]}", "seed": int(self.rng.integers(1, 2**30)),
+                             "runs": runs, "params": params or None, "tag": f"coevo:{a.session}",
+                             "meta": {"gen": gen, "vessel": vg, "fauna": fg}})
+        return jobs, diffs, level
+
+    def advance_curriculum(self):
+        diffs = [int(x) for x in self.a.difficulties.split(",")]
+        level = self.s.get("level", 0)
+        d = diffs[level]
+        best = 0.0
+        for k in self.s["pop"]["vessel"] + self.s["archive"]["vessel"]:
+            runs = [r for r in self.s["genomes"][k]["runs"][-self.a.memory:] if r["d"] == d]
+            if len(runs) >= 4 and vessel_gates(self.s["genomes"][k]["runs"][-self.a.memory:]) == 0:
+                best = max(best, statistics.mean(1.0 if r["win"] else 0.0 for r in runs))
+        self.s.setdefault("levelHistory", []).append([self.s["gen"], d, round(best, 3)])
+        if best >= target(d) and level < len(diffs) - 1:
+            self.s["level"] = level + 1
+            print(f"[coevo] curriculum: d{d} passed (best win {best:.0%} >= {target(d):.0%}); next d{diffs[level + 1]}",
+                  flush=True)
 
     def hall_of_fame(self, side: str) -> list[str]:
         hof = list(dict.fromkeys(self.s["archive"][side] + self.s["elites"][side]))
         return hof
 
     def plan(self):
+        if self.a.frozen_fauna:
+            jobs, _, level = self.plan_curriculum()
+            self.s["jobs"] = [{"jobId": j["jobId"], "vessel": j["meta"]["vessel"], "fauna": j["meta"]["fauna"],
+                               "runs": j["runs"], "job": j} for j in jobs]
+            if not self.fake:
+                for j in jobs:
+                    if self.farm.job_state(j["jobId"]) is None:
+                        self.farm.submit(j)
+            self.s["phase"] = "submitted"
+            self.save()
+            print(f"[coevo] gen {self.s['gen']}: curriculum level {level}, {len(jobs)} jobs, "
+                  f"{sum(len(j['runs']) for j in jobs)} runs ({self.regime['vessel'].current})", flush=True)
+            return
         gen = self.s["gen"]
         side = self.evolving(gen)
         other = "fauna" if side == "vessel" else "vessel"
@@ -570,7 +632,7 @@ class Driver:
         """(fit, diversity[, -complexity]); a vessel that breaks the gates is pushed below every feasible one."""
         g = self.s["genomes"]
         out = {}
-        gids = [k for k in gids if not g[k].get("idle")]
+        gids = [k for k in gids if not g[k].get("idle") and not g[k].get("frozen")]
         if side == "vessel":
             descs = {}
             for k in gids:
@@ -687,6 +749,9 @@ class Driver:
         self.s["pop"][side] = self.evolve(side, pop_objs) if pop_objs else self.s["pop"][side]
         self.regime[side].step(best_regime)
         report["nextPop"] = self.s["pop"][side]
+        if self.a.frozen_fauna:
+            self.advance_curriculum()
+            report["curriculum"] = {"level": self.s.get("level", 0), "history": self.s.get("levelHistory", [])}
 
         write_json_atomic(self.dir / f"gen_{gen:03d}.json", report)
         for sd in SIDES:
@@ -817,6 +882,9 @@ def main():
     ap.add_argument("--crossover", type=float, default=0.3)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--poll", type=float, default=10)
+    ap.add_argument("--frozen-fauna", default=None,
+                    help="curriculum mode: a best/ folder with fauna_d<d>.json; only the escorts evolve, from the "
+                         "first difficulty up")
     ap.add_argument("--idle-runs", type=int, default=1, help="runs per fauna against the idle escort (fauna gens)")
     ap.add_argument("--clusters", type=int, default=3, help="strategy clusters for the fauna's diversity")
     ap.add_argument("--fake", action="store_true", help="synthetic evaluator, no farm")
