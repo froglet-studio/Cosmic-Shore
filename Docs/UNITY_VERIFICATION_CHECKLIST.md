@@ -19322,3 +19322,24 @@ move), `ThresherExecutor.CarryRig`, `ThresherChainSolver.Carry` / `LaunchExitMul
     leaves exactly along the crosshair and keeps flying at what it showed: no curve onto the line, no swing of the hull
     after leaving, and the camera stays behind you as you leave instead of watching you shoot off and then catching up.
 16. A plain release (no crosshair) still eases its spin to a stop (unchanged).
+
+## Destroyed vessel: VesselStatus's component getters answer null, mode-preview teardown checks the vessel (`claude/festive-ramanujan-8wdiiz`, 2026-10-31) - NOT EDITOR-VERIFIED
+
+**Files:** `VesselStatus.cs` (every lazy component getter goes through one `Lazy<T>` that returns null once the vessel is
+destroyed), `ModePreviewSession.cs` (`SetLocalTrailPaused` checks `Alive(vessel)` first). Shombith sent a console
+screenshot from a match: five `MissingReferenceException: The object of type 'CosmicShore.Gameplay.VesselStatus' has
+been destroyed`, without a stack. The one stack on record (bug ledger E-1f2ed4d48a / E-43417aef52, `bugledger/owner`)
+is `ModePreviewSession.SetLocalTrailPaused -> VesselStatus.get_VesselPrismController -> Component.get_gameObject`.
+The shape behind it: `IVessel.VesselStatus` is an interface-typed cache that outlives the vessel, so
+`vessel?.VesselStatus?.ResourceSystem` (28 such chains: animations, AIPilot, effects SOs, ElementalComebackSystem,
+SalvoController, Waystation...) cannot see the destruction and fell through to `gameObject`, which throws. No Unity in
+the session; the reference compile checked the C#.
+
+1. Compile. **Pass:** no errors.
+2. Play a match where vessels leave mid-match (AI backfill swap, Vessel Changer in freestyle, a player leaving, the end
+   of a match). **Pass:** no `MissingReferenceException ... VesselStatus` in the Console.
+3. Open a mode preview card in the Arcade, tap in to fly, then launch the mode while the preview is live. **Pass:** no
+   `[ModePreview] Unwinding the ... preview hit: ... VesselStatus has been destroyed` error.
+4. If a VesselStatus error still appears, click it and send the stack (the bug ledger sends it after the play test):
+   a caller that reads a getter without a null test now fails at ITS OWN line with a NullReferenceException, which
+   names the system still holding the dead vessel.
