@@ -403,7 +403,7 @@ CARDS[:] = [c for c in CARDS if c.get("group") != "lure"]
 LOCKUP["Mass"] = dict(parts=dict(h=mb_hull, f=mb_fish), state=[("h", "domain"), ("f", "blue", 0.6)])
 MASS_ICON = "7700000000000001115"       # the Mass slot's icon Image (was Angler_Leash); the fauna count is its child
 REBIND += [
-    dict(file=VARIANT, pair=dict(container=MASS_ICON, view=VIEW, after="lockWakeAlpha",
+    dict(file=VARIANT, pair=dict(container=MASS_ICON, view=VIEW, after="lockSchoolIcon",
                                  children=[(n, i, f) for n, i, f, _d, _a in LURE_PARTS])),
 ]
 
@@ -647,6 +647,140 @@ LOCKUP["Space"] = dict(parts=dict(a=sd_group(0), b=sd_group(1), p=sd_prism),
                        state=[("a", "white"), ("b", "domain", 0.6), ("p", "white")])
 SPACE_ICON = "7700000000000001125"      # the Space slot's icon Image (was Angler_Lure)
 REBIND += [
-    dict(file=VARIANT, pair=dict(container=SPACE_ICON, view=VIEW, after="lureJoinedSeconds",
+    dict(file=VARIANT, pair=dict(container=SPACE_ICON, view=VIEW, after="lockSchoolIcon",
                                  children=[(n, i, f) for n, i, f, _d, _a in PAINT_PARTS])),
+]
+
+
+# ---- Time: Dash to the School -----------------------------------------------------------------------------------------
+# The mechanic (ANGLER.md 1f, 1m): B dashes the hull dashFrac 75% of the way to ONE group's centre, measured when pressed,
+# in dashTime 0.35 s; the next dash goes to the other group (AnglerCommandExecutor._dashGroup, exposed as DashGroup). No
+# school, no dash; a group already round the hull is passed over. Time also speeds the tamed fauna x1 -> x2. Plate: full
+# when the dash is ready. WHO: the Angler (domain); WHAT: the group it will dash to (white, the Space card's highlight
+# carried over), the other waiting (domain, 60%). Groups keep the Space card's places: A above, B below, on the right.
+TG = ((104.0, 30.0), (104.0, 98.0))     # group A, group B
+T_HULL = (28.0, 64.0)
+T_BOX = 50.0
+
+
+def t_group(g):
+    return lambda: quadfish(TG[g][0], TG[g][1], 12.0)
+
+
+def _toward(g, frac):
+    (x0, y0), (x1, y1) = T_HULL, TG[g]
+    return x0 + (x1 - x0) * frac, y0 + (y1 - y0) * frac
+
+
+def _heading(g):
+    (x0, y0), (x1, y1) = T_HULL, TG[g]
+    return math.degrees(math.atan2(y1 - y0, x1 - x0))
+
+
+def t_hull_at(g, frac, box=T_BOX):
+    def draw():
+        x, y = _toward(g, frac)
+        return mesh_silhouette.silhouette(FBX, box=box, cx=x, cy=y, roll=_heading(g), **VIEW_SIDE)
+    return draw
+
+
+# F: THE PATH. The Angler at the left (domain), a dashed course to the next group ending at 75% of the way (a tick).
+def tf_path(g):
+    def draw():
+        out = empty()
+        for a, b in ((0.30, 0.42), (0.50, 0.62)):
+            out |= stroke([_toward(g, a), _toward(g, b)], w=4.5)
+        x, y = _toward(g, 0.75)
+        h = math.radians(_heading(g))
+        nx, ny = -math.sin(h), math.cos(h)
+        out |= stroke([(x - nx * 8, y - ny * 8), (x + nx * 8, y + ny * 8)], w=4.5)
+        return _clear_of(out, t_group(g)(), px=2.5)
+    return draw
+
+
+def tf_hull():
+    return mesh_silhouette.silhouette(FBX, box=T_BOX, cx=T_HULL[0], cy=T_HULL[1], **VIEW_SIDE)
+
+
+# H: THE JUMP. Where the hull was (a ghost) and where the dash puts it: 75% of the way to the next group, turned to it.
+def th_ghost(g):
+    return lambda: _clear_of(t_hull_at(g, 0.0)(), t_hull_at(g, 0.75)(), px=2.5)
+
+
+# I: THE DASH. Only the hull, already at 75% and turned to its group, a speed wedge behind it.
+def ti_wedge(g):
+    def draw():
+        from motifs import speed_wedge
+        x, y = _toward(g, 0.40)
+        m = speed_wedge(x - 10, y, 22.0, 6.0)
+        h = _heading(g)
+        from canvas import SS
+        im = Image.fromarray(m.astype(np.uint8) * 255).rotate(-h, center=(x * SS, y * SS))
+        return _clear_of(np.asarray(im) > 127, t_hull_at(g, 0.75)(), px=2.5)
+    return draw
+
+
+def _tstate(next_g, extra):
+    w = 1 - next_g
+    return [("g%d" % next_g, "white"), ("g%d" % w, "domain", 0.6)] + extra
+
+
+# The plate is UNBOUND on these options: today it fills lime when the dash is ready, and a full lime plate drowns white
+# parts (see the sheet's BEFORE). Ready is shown by the parts instead (white ready, dim while a dash runs), the Scarab's
+# Snap Dash chevron rule.
+TIME_GAUGE = {}
+TIME_BEFORE = ICON_DIR + "Angler_Tame.png"
+CARDS += [
+    dict(name="dash_f", group="dash", element="Time", before=TIME_BEFORE,
+         title="F  the path: the Angler (domain), a dashed course to the next group (white) ending at 75% of the way; the other waits",
+         parts=dict(g0=t_group(0), g1=t_group(1), hull=tf_hull, pa=tf_path(0), pb=tf_path(1)),
+         states=[("ready, A next", _tstate(0, [("hull", "domain"), ("pa", "white")])),
+                 ("dashing to A", _tstate(0, [("hull", "domain"), ("pa", "white", 0.6)])),
+                 ("ready, B next", _tstate(1, [("hull", "domain"), ("pb", "white")]))],
+         lockup_state=0, gauge=TIME_GAUGE, gauge_marks_style="segments"),
+    dict(name="dash_h", group="dash", element="Time", before=TIME_BEFORE,
+         title="H  the jump: where the hull was (ghost) and where the dash puts it, 75% of the way to the next group (white)",
+         parts=dict(g0=t_group(0), g1=t_group(1), ha=t_hull_at(0, 0.75), ga=th_ghost(0), hb=t_hull_at(1, 0.75), gb=th_ghost(1)),
+         states=[("ready, A next", _tstate(0, [("ga", "domain", 0.6), ("ha", "domain")])),
+                 ("dashing to A", _tstate(0, [("ga", "domain", 0.3), ("ha", "domain")])),
+                 ("ready, B next", _tstate(1, [("gb", "domain", 0.6), ("hb", "domain")]))],
+         lockup_state=0, gauge=TIME_GAUGE, gauge_marks_style="segments"),
+    dict(name="dash_i", group="dash", element="Time", before=TIME_BEFORE,
+         title="I  the dash: the hull already 75% of the way, turned to the next group (white), a speed wedge behind it",
+         parts=dict(g0=t_group(0), g1=t_group(1), ha=t_hull_at(0, 0.75), wa=ti_wedge(0), hb=t_hull_at(1, 0.75), wb=ti_wedge(1)),
+         states=[("ready, A next", _tstate(0, [("wa", "white"), ("ha", "domain")])),
+                 ("dashing to A", _tstate(0, [("wa", "white", 0.6), ("ha", "domain")])),
+                 ("ready, B next", _tstate(1, [("wb", "white"), ("hb", "domain")]))],
+         lockup_state=0, gauge=TIME_GAUGE, gauge_marks_style="segments"),
+]
+
+
+# ---- Time in the game: H, the jump (Garrett picked H, 2026-10-31: "H is fine") ----------------------------------------
+# Six parts in the Time slot's container, driven by AnglerHUDView.SetDash: the two groups (A above, B below; the one the
+# next dash goes to white, the other the domain colour at 60%) and, for each group, the hull where the dash puts it and
+# the ghost where it was; only the next group's pair shows. The ghost dims while a dash runs; with no school (no dash)
+# everything dims. The plate stays empty: a full lime plate drowned the white parts (the Scarab's Snap Dash rule).
+DASH_PARTS = [("DashGroupA", "Angler_DashGroupA", "dashGroupAIcon", t_group(0), "group A (white when the next dash goes to it)"),
+              ("DashGroupB", "Angler_DashGroupB", "dashGroupBIcon", t_group(1), "group B (white when the next dash goes to it)"),
+              ("DashHullA", "Angler_DashHullA", "dashHullAIcon", t_hull_at(0, 0.75), "the hull 75% of the way to A (domain)"),
+              ("DashGhostA", "Angler_DashGhostA", "dashGhostAIcon", th_ghost(0), "where the hull was, dashing to A (domain, dim)"),
+              ("DashHullB", "Angler_DashHullB", "dashHullBIcon", t_hull_at(1, 0.75), "the hull 75% of the way to B (domain)"),
+              ("DashGhostB", "Angler_DashGhostB", "dashGhostBIcon", th_ghost(1), "where the hull was, dashing to B (domain, dim)")]
+ICONS += [dict(name=i, element="Time", act="Dash: " + act, draw=draw, subdir="Parts", family=False,
+               exempt=PART_EXEMPT) for _n, i, _f, draw, act in DASH_PARTS]
+for c in CARDS:
+    if c["name"] == "dash_h":
+        CARDS.append(dict(c, name="dash", group=None,
+                          states=c["states"] + [("no school", [("g0", "domain", 0.3), ("g1", "domain", 0.3),
+                                                               ("ga", "domain", 0.2), ("ha", "domain", 0.3)])],
+                          title="Dash to the School (Time, picked H): where the hull was (ghost) and where the dash puts "
+                                "it, 75% of the way to the next group (white); the other group waits; all dim with no school"))
+        break
+CARDS[:] = [c for c in CARDS if c.get("group") != "dash"]
+LOCKUP["Time"] = dict(parts=dict(a=t_group(0), b=t_group(1), h=t_hull_at(0, 0.75), g=th_ghost(0)),
+                      state=[("a", "white"), ("b", "domain", 0.6), ("g", "domain", 0.6), ("h", "domain")])
+TIME_ICON = "7700000000000001135"       # the Time slot's icon Image (was Angler_Tame)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=TIME_ICON, view=VIEW, after="lockSchoolIcon",
+                                 children=[(n, i, f) for n, i, f, _d, _a in DASH_PARTS])),
 ]

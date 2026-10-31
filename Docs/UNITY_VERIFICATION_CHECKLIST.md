@@ -79,6 +79,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 5. AI Serpent: burns its opening four, then refuels only when its walls eat its trail.
 6. EditMode: `SerpentPelletRefillTests`, `SerpentTimeCourseTests.Course_constants_match_the_shipped_Serpent`.
 
+### 🔴 Angler Time card: Dash to the School drawn as the jump (`claude/angler-dash-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** six kit parts under the Time icon in `AnglerHUDVariant.prefab` (`Angler_Dash*`),
+`AnglerHUDView.SetDash` / `SetDashColor` driven from the new `AnglerCommandExecutor.DashGroup` / `Dashing`; the Time plate
+is no longer filled (`SetTime` removed). The same change writes the `lure*Icon` and `paint*Icon` view fields the Mass and
+Space rebinds had silently dropped (#1650, #1652). No Unity and no .NET: not compiled.
+
+- [ ] Compiles; the variant opens with the view's `lure*Icon`, `paint*Icon` and six `dash*Icon` fields wired.
+- [ ] With no school, the Time card shows a dim ghost and hull toward the top group and both groups dim.
+- [ ] Tame 2+: the top group is white, the ghost (dim) and hull (your colour) point up to it; dash: the ghost dims
+  further while the dash flies, then the card swings to the bottom group.
+- [ ] The Time plate stays empty throughout.
+- [ ] Mass and Space cards now tint (re-run their #1650 / #1652 lines above).
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
