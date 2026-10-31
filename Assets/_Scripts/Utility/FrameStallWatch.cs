@@ -12,6 +12,12 @@
 //   machine. Nothing in the log said a frame had frozen, so the drops read as a network fault. This
 //   records the freeze; the drop then names it (MultiplayerSetup.OnTransportFailure, "relayDrop").
 //
+// WHAT IT SAYS ABOUT A STALL (2026-10-31): the four-player test of 30 Oct lost its host to frames of 82.6 s,
+// 39.6 s and 14.6 s on one machine, and nothing recorded what that machine was doing: the other three did the
+// same cell swap in 1.2-2.4 s. Each stall is now followed by a "stallContext" mark: whether the game (or the
+// Editor) had focus, the memory Unity and the managed heap held against the machine's RAM (paging freezes
+// everything), and how many async prism-clone batches were waiting on the engine (B45).
+//
 // THREAD SAFETY: main-thread only. The clock is a settable delegate so tests drive it.
 // ─────────────────────────────────────────────────────────────────────────────
 using System;
@@ -49,6 +55,17 @@ namespace CosmicShore.Utility
         static double s_lastStallSeconds;
         static double s_lastStallEndedAt = double.NegativeInfinity;
 
+        /// <summary>What a stall's "stallContext" mark says. Tests substitute it; <see cref="DescribeContext"/> otherwise.</summary>
+        public static Func<string> ContextProvider { get; set; } = DescribeContext;
+
+        static int s_asyncClonesInFlight;
+
+        /// <summary>An async prism-clone batch is waiting on the engine (EnvironmentPrismPool). Pair with <see cref="EndAsyncClone"/>.</summary>
+        public static void BeginAsyncClone() => s_asyncClonesInFlight++;
+
+        /// <summary>The batch begun with <see cref="BeginAsyncClone"/> has integrated, failed or been abandoned.</summary>
+        public static void EndAsyncClone() { if (s_asyncClonesInFlight > 0) s_asyncClonesInFlight--; }
+
         /// <summary>The longest stall recorded this Play, in seconds (0 when none).</summary>
         public static double LongestStallSeconds { get; private set; }
 
@@ -74,6 +91,7 @@ namespace CosmicShore.Utility
 
             string seconds = frame.ToString("0.0", CultureInfo.InvariantCulture);
             NetSessionRecorder.Mark("stall", $"{seconds}s in {where}");
+            NetSessionRecorder.Mark("stallContext", SafeContext());
             if (frame >= RELAY_RISK_SECONDS)
                 CSDebug.LogWarning($"[Net] The game froze for {seconds} s in {where} while online. Unity Relay drops a " +
                                    "connection after about 10 s without traffic, so this session may end with 'player timed out " +
@@ -94,6 +112,27 @@ namespace CosmicShore.Utility
                    $"{since.ToString("0.0", CultureInfo.InvariantCulture)} s earlier";
         }
 
+        /// <summary>
+        /// One line on the machine's state as a stall ends: focus, memory against RAM, async clones in flight. Read once
+        /// per stall (seconds apart at the least), so its cost does not matter.
+        /// </summary>
+        public static string DescribeContext()
+        {
+            const double MB = 1024.0 * 1024.0;
+            double reservedMB = UnityEngine.Profiling.Profiler.GetTotalReservedMemoryLong() / MB;
+            double managedMB  = GC.GetTotalMemory(false) / MB;
+            int    ramMB      = SystemInfo.systemMemorySize;
+            return string.Format(CultureInfo.InvariantCulture,
+                "focused {0}; Unity reserved {1:0} MB, managed {2:0} MB, of {3} MB RAM; async prism clones waiting {4}",
+                Application.isFocused ? "yes" : "no", reservedMB, managedMB, ramMB, s_asyncClonesInFlight);
+        }
+
+        static string SafeContext()
+        {
+            try { return ContextProvider(); }
+            catch (Exception e) { return $"context unavailable ({e.GetType().Name})"; }
+        }
+
         static bool SafeOnline()
         {
             try { return OnlineProvider(); }
@@ -109,6 +148,7 @@ namespace CosmicShore.Utility
             s_lastStallSeconds = 0;
             s_lastStallEndedAt = double.NegativeInfinity;
             LongestStallSeconds = 0;
+            s_asyncClonesInFlight = 0;
         }
 
         static int s_generation;
