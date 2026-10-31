@@ -112,7 +112,7 @@ def _dim(state, a=0.3):
 
 
 DROP_PARTS = [("DropMouth", "TigerMoth_DropMouth", "dropMouthIcon", drop_mouth,
-               "the wormhole it leaves (white; the domain hue at Charge 5 Toll Gate)"),
+               "Charge 5 Toll Gate: the wormhole it leaves (domain; danger on a toll)"),
               ("DropStreaks", "TigerMoth_DropStreaks", "dropStreaksIcon", drop_streaks, "the fall (white, full while dropping)"),
               ("DropMoth", "TigerMoth_DropMoth", "dropMothIcon", drop_moth, "the Tiger Moth, wings shut (domain)")]
 ICONS += [dict(name=i, element="Time", act="Drop: " + act, draw=draw, subdir="Parts", family=False,
@@ -120,20 +120,25 @@ ICONS += [dict(name=i, element="Time", act="Drop: " + act, draw=draw, subdir="Pa
                        "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part",
                        "specks": "a part"})
           for _n, i, _f, draw, act in DROP_PARTS]
-DROP_READY = [("mouth", "white", 0.6), ("streaks", "white", 0.6), ("moth", "domain")]
-DROP_LIT = [("mouth", "white"), ("streaks", "white"), ("moth", "domain")]
+# Garrett, 2026-10-31, on the built card: "the portal should only appear once the upgrade comes", as "a colored ring",
+# and "when an enemy goes through the charge upgraded portal make it red". The wormhole is drawn only at Charge 5 Toll
+# Gate (the drop leaves a neutral pair before it, which the card does not draw), in the domain colour; a toll flashes it
+# danger.
+DROP_READY = [("streaks", "white", 0.6), ("moth", "domain")]
+DROP_LIT = [("streaks", "white"), ("moth", "domain")]
 CARDS += [
     dict(name="drop", element="Time", before=ICON_DIR + "Butterfly_Fold.png",
-         title="Drop (Time, picked A + the wormhole): the moth, wings shut (domain), falling out of the wormhole it leaves "
-               "behind (white; the domain hue at Charge 5); the fall streaks between",
+         title="Drop (Time, picked A): the moth, wings shut (domain), falling; at Charge 5 Toll Gate the wormhole it "
+               "leaves behind appears as a ring in the domain colour, red as a rival pays through it",
          parts=dict(mouth=drop_mouth, streaks=drop_streaks, moth=drop_moth),
          states=[("ready", DROP_READY),
                  ("dropping (LT held)", DROP_LIT),
-                 ("Charge 5: Toll Gate", [("mouth", "domain"), ("streaks", "white", 0.6), ("moth", "domain")]),
+                 ("Charge 5: Toll Gate", [("mouth", "domain")] + DROP_READY),
+                 ("a rival pays the toll", [("mouth", "danger")] + DROP_READY),
                  ("recharging (veil)", _dim(DROP_READY))],
          lockup_state=0),
 ]
-LOCKUP["Time"] = dict(parts=dict(mouth=drop_mouth, streaks=drop_streaks, moth=drop_moth), state=DROP_READY)
+LOCKUP["Time"] = dict(parts=dict(streaks=drop_streaks, moth=drop_moth), state=DROP_READY)
 VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/ButterflyHUDVariant.prefab"
 VIEW = "5875684227236902712"            # ButterflyHUDView
 TIME_ICON = "7700000000000001135"       # the Time slot's icon Image (was Butterfly_Fold)
@@ -146,10 +151,13 @@ REBIND += [
 # ---- Charge: Scale Dust -------------------------------------------------------------------------------------------------
 # The mechanic (TIGER_MOTH.md 1.3): in Dust mode a capsule hangs BELOW the hull, drawn as falling motes in the shielded
 # tier of the pilot's domain; while a rival stays inside it, it shreds ONE petal of ONE random element they hold every
-# shredInterval (1 s at Charge 0 -> 0.1 s at Charge 10). The petal is stolen. Charge is the RATE. WHO: the moth (domain),
-# wings shut as Dust mode folds them; WHAT: the rival (danger) in its dust, a petal coming off. No dust (Mass mode): dim.
-import toy_portraits                     # noqa: E402  (the petal shapes come from the HUD's own sprites)
+# shredInterval (1 s at Charge 0 -> 0.1 s at Charge 10). Charge 5 is Toll Gate: the Drop's wormhole tolls rivals.
+# Round 1 drew A the shred, B the rate, C the capsule; Garrett picked A (2026-10-31): "we don't need the element to be
+# seen coming out. Show a grey ship and turn it Red when you hit then it will look different then space", and "when
+# charge is upgraded, show a colored ring" - the same wormhole ring the Time card wears, red as a rival pays through it.
 from canvas import rect                  # noqa: E402
+
+GREY = (150, 154, 170, 255)              # a rival the dust has not reached: no team, no threat yet
 
 
 def dart(x, y, s=1.0):
@@ -167,72 +175,122 @@ def motes(x0, x1, y0, y1, n=14, seed=7, s=3.2):
     return out
 
 
-S_MOTH = moth(76, 54, 28)
-S_RIVAL = (52.0, 96.0)
+S_MOTH = moth(76, 54, 30)
+S_RIVAL = (54.0, 98.0)
+S_RING = (98.0, 16.0, 22.0, 7.0)         # the Toll Gate wormhole, top right, clear of the moth
 
 
-def s_rival():
+def dust_moth():
+    return S_MOTH()
+
+
+def dust_rival():
     return dart(*S_RIVAL, s=2.6)
 
 
-def s_dust():
-    return _clear_of(motes(16, 92, 58, 126, n=22, s=4.6), S_MOTH(), s_rival(), px=2.5)
+def dust_motes():
+    return _clear_of(motes(16, 96, 60, 126, n=22, s=4.6), S_MOTH(), dust_rival(), px=2.5)
 
 
-# A: THE SHRED. One petal coming off the rival in the dust, flying out to the right.
-def a_petal():
-    return toy_portraits.petal("Space", (90.0, 86.0), -30.0, 44.0)
+def dust_ring():
+    cx, cy, rx, ry = S_RING
+    return _clear_of(_oval(cx, cy, rx, ry, 4.0) | _oval(cx, cy + 2.0, rx * 0.55, ry * 0.5, 3.0), S_MOTH(), px=2.5)
 
 
-# B: THE RATE. Petals coming off one after another, each a different element (one random element per shred): the
-# trail of them is the rate Charge raises.
-def b_petals(n):
-    def draw():
-        out = empty()
-        spots = [("Mass", (86.0, 92.0), -15.0, 30.0), ("Time", (102.0, 66.0), -40.0, 28.0), ("Charge", (112.0, 36.0), -65.0, 26.0)]
-        for el, tip, d, L in spots[:n]:
-            out |= toy_portraits.petal(el, tip, d, L)
-        return out
-    return draw
-
-
-# C: THE CAPSULE. The dust as the capsule it is (a rounded column hanging under the hull, outlined), the rival inside
-# it, a petal leaving through its wall.
-def c_capsule():
-    import toy_portraits as tp
-    body = rect(20, 56, 86, 112) | disc(53, 56, 33) | disc(53, 112, 33)
-    body &= rect(0, 46, 128, 126)
-    edge = body & tp.grown(~body, 4.0)
-    return _clear_of(edge, S_MOTH(), px=2.0)
-
-
-def c_petal():
-    return toy_portraits.petal("Space", (94.0, 86.0), -25.0, 40.0)
-
-
-S_LIT = [("dust", "shielded"), ("moth", "domain"), ("rival", "danger")]
-CHARGE_BEFORE = ICON_DIR + "Butterfly_ScaleDust.png"
+DUST_PARTS = [("ScaleDustRing", "TigerMoth_ScaleDustRing", "scaleDustRingIcon", dust_ring,
+               "Charge 5 Toll Gate: the wormhole (domain; danger on a toll)"),
+              ("ScaleDustMotes", "TigerMoth_ScaleDustMotes", "scaleDustMotesIcon", dust_motes, "the dust (shielded)"),
+              ("ScaleDustRival", "TigerMoth_ScaleDustRival", "scaleDustRivalIcon", dust_rival, "a rival (grey; danger on a hit)"),
+              ("ScaleDustMoth", "TigerMoth_ScaleDustMoth", "scaleDustMothIcon", dust_moth, "the Tiger Moth, wings shut (domain)")]
+ICONS += [dict(name=i, element="Charge", act="Scale Dust: " + act, draw=draw, subdir="Parts", family=False,
+               exempt={"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+                       "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part",
+                       "specks": "a part"})
+          for _n, i, _f, draw, act in DUST_PARTS]
+DUST_ON = [("dust", "shielded"), ("moth", "domain"), ("rival", GREY)]
 CARDS += [
-    dict(name="dust_a", group="dust", element="Charge", before=CHARGE_BEFORE,
-         title="A  the shred: the moth (domain) over its dust (shielded), a rival (danger) in it, one petal coming off (white)",
-         parts=dict(moth=S_MOTH, dust=s_dust, rival=s_rival, petal=a_petal),
-         states=[("shredding", S_LIT + [("petal", "white")]),
-                 ("dust on, nobody in it", [("dust", "shielded"), ("moth", "domain")]),
-                 ("Mass mode (no dust)", [("dust", "shielded", 0.25), ("moth", "domain", 0.4)])],
+    dict(name="scaledust", element="Charge", before=ICON_DIR + "Butterfly_ScaleDust.png",
+         title="Scale Dust (Charge, picked A): the moth (domain) over its dust (shielded), a rival grey until the dust "
+               "hits it, red then; at Charge 5 the Toll Gate wormhole as a ring (domain, red as a rival pays)",
+         parts=dict(dust=dust_motes, moth=dust_moth, rival=dust_rival, ring=dust_ring),
+         states=[("Dust mode", DUST_ON),
+                 ("a hit", [("dust", "shielded"), ("moth", "domain"), ("rival", "danger")]),
+                 ("Charge 5: Toll Gate", DUST_ON + [("ring", "domain")]),
+                 ("a rival pays the toll", DUST_ON + [("ring", "danger")]),
+                 ("Mass mode (no dust)", [("dust", "shielded", 0.25), ("moth", "domain", 0.4), ("rival", GREY, 0.4)])],
          lockup_state=0),
-    dict(name="dust_b", group="dust", element="Charge", before=CHARGE_BEFORE,
-         title="B  the rate: petals of different elements coming off one after another; Charge 10 sheds three to Charge 0's one",
-         parts=dict(moth=S_MOTH, dust=s_dust, rival=s_rival, p1=b_petals(1), p3=b_petals(3)),
-         states=[("Charge 0: one a second", S_LIT + [("p1", "white")]),
-                 ("Charge 10: ten a second", S_LIT + [("p3", "white")]),
-                 ("Mass mode (no dust)", [("dust", "shielded", 0.25), ("moth", "domain", 0.4)])],
-         lockup_state=1),
-    dict(name="dust_c", group="dust", element="Charge", before=CHARGE_BEFORE,
-         title="C  the capsule: the dust drawn as the capsule hanging under the hull (shielded), the rival inside, a petal "
-               "leaving through its wall",
-         parts=dict(moth=S_MOTH, cap=c_capsule, rival=s_rival, petal=c_petal),
-         states=[("shredding", [("cap", "shielded"), ("moth", "domain"), ("rival", "danger"), ("petal", "white")]),
-                 ("dust on, nobody in it", [("cap", "shielded"), ("moth", "domain")]),
-                 ("Mass mode (no dust)", [("cap", "shielded", 0.25), ("moth", "domain", 0.4)])],
-         lockup_state=0),
+]
+LOCKUP["Charge"] = dict(parts=dict(dust=dust_motes, moth=dust_moth, rival=dust_rival), state=DUST_ON)
+CHARGE_ICON = "7700000000000001105"     # the Charge slot's icon Image (was Butterfly_ScaleDust)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=CHARGE_ICON, view=VIEW, after="wingEnergyGauge",
+                                 children=[(n, i, f) for n, i, f, _d, _a in DUST_PARTS])),
+]
+
+
+# ---- the OMNI crystal card: the bloom -----------------------------------------------------------------------------------
+# BUTTERFLY.md 3.3a (the Tiger Moth keeps it): flying through an omni crystal sets off a 900-unit BLOOM of the dust - a
+# sphere of motes in the pilot's shielded tier - that strips rivals' petals (ejected as crystals, a scored hit), cleanses
+# the pilot and every ally it reaches, kills rival lifeform hearts, and rolls the dust's own outcomes on every prism.
+# The card is VesselHUDView.omniAbilitySprite: ONE sprite, white (the lockup tints nothing on the omni card). Garrett,
+# 2026-10-31: "You are still forgetting to show the omnicrystal totem as part of this exercise."
+O_MOTH = moth(56, 64, 64)
+
+
+def annulus_motes(r0, r1, n, seed=11, s=4.2):
+    rng = np.random.default_rng(seed)
+    out = empty()
+    for _ in range(n):
+        a = rng.uniform(0, 2 * math.pi)
+        r = math.sqrt(rng.uniform(r0 * r0, r1 * r1))
+        x, y = 64 + r * math.cos(a), 64 + r * math.sin(a)
+        out |= fill([(x, y - s), (x + s, y), (x, y + s), (x - s, y)])
+    return out
+
+
+# A: THE BLOOM. The moth at the heart of a sphere of its dust.
+def oa_dust():
+    return _clear_of(annulus_motes(34, 62, 34), O_MOTH(), px=3.0)
+
+
+# B: THE WAVEFRONT. The moth, the dust inside, and the bloom's edge as a ring going out.
+def ob_ring():
+    return ring(64, 64, 56, w=5.0)
+
+
+def ob_dust():
+    return _clear_of(annulus_motes(32, 48, 18, seed=5), O_MOTH(), px=3.0)
+
+
+# C: THE CRYSTAL INTO DUST. The omni crystal (the card's emblem shape, small, at the moth's nose) bursting into motes.
+def oc_crystal():
+    from canvas import ngon
+    return fill(ngon(5, 11, 104, 64, rot=-90)) & ~fill(ngon(5, 5, 104, 64, rot=90))
+
+
+def oc_dust():
+    rng = np.random.default_rng(3)
+    out = empty()
+    for _ in range(22):
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(18, 50)
+        x, y = 100 + r * math.cos(a) * 0.6, 64 + r * math.sin(a)
+        out |= fill([(x, y - 4), (x + 4, y), (x, y + 4), (x - 4, y)])
+    return _clear_of(out & rect(0, 0, 128, 128), O_MOTH(), oc_crystal(), px=3.0)
+
+
+O_MOTH_LEFT = moth(56, 40, 64)
+OMNI_BEFORE = None
+CARDS += [
+    dict(name="omni_a", group="omni", element="Omni",
+         title="A  the bloom: the moth at the heart of a sphere of its dust (one white sprite, as every omni card)",
+         parts=dict(moth=O_MOTH, dust=oa_dust), states=[("a crystal collected", [("dust", "white"), ("moth", "white")])]),
+    dict(name="omni_b", group="omni", element="Omni",
+         title="B  the wavefront: the moth, its dust, and the bloom's edge going out as a ring",
+         parts=dict(moth=O_MOTH, dust=ob_dust, ring=ob_ring),
+         states=[("a crystal collected", [("ring", "white"), ("dust", "white"), ("moth", "white")])]),
+    dict(name="omni_c", group="omni", element="Omni",
+         title="C  the crystal into dust: the moth meets an omni crystal and the crystal bursts into its dust",
+         parts=dict(moth=O_MOTH_LEFT, crystal=oc_crystal, dust=oc_dust),
+         states=[("a crystal collected", [("crystal", "white"), ("dust", "white"), ("moth", "white")])]),
 ]

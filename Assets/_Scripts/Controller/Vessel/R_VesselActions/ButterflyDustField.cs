@@ -175,7 +175,15 @@ namespace CosmicShore.Gameplay
         // ── audio — called by the dust's effect SOs, which find this component on the skimmer ──
 
         /// <summary>Scale Dust bit an opposing pilot. Empty slot = silence.</summary>
-        public void PlayScaleDustBite(Vector3 position) => Play(scaleDustBiteEvent, position);
+        public void PlayScaleDustBite(Vector3 position)
+        {
+            LastBiteTime = Time.time;
+            Play(scaleDustBiteEvent, position);
+        }
+
+        /// <summary>When the dust last bit an opposing pilot (<see cref="Time.time"/>), on this peer; negative infinity
+        /// until it has. The Tiger Moth's HUD turns its Charge card's rival red on it.</summary>
+        public float LastBiteTime { get; private set; } = float.NegativeInfinity;
 
         /// <summary>Dust Reach touched a prism: <paramref name="ownMass"/> = tended (own domain),
         /// otherwise blighted. Throttled per kind; empty slot = silence.</summary>

@@ -65,16 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Tiger Moth Time card: the Drop with its wormhole (`claude/tigermoth-drop-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
+### 🔴 Tiger Moth Time and Charge cards: the Drop and Scale Dust (`claude/tigermoth-drop-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
 
-**What landed:** three kit parts (`TigerMoth_DropMouth`, `_DropStreaks`, `_DropMoth`) under the Time icon in
-`ButterflyHUDVariant.prefab`, `ButterflyHUDView.SetDrop` / `SetDropColor`, driven by `ButterflyHUDController` from
-`TigerMothDropExecutor.IsDropping` / `IsReady` and `TigerMothDropActionSO.TollsRivals`. No Unity and no .NET: not compiled.
+**What landed:** kit parts under the Time icon (`TigerMoth_Drop*`) and the Charge icon (`TigerMoth_ScaleDust*`) in
+`ButterflyHUDVariant.prefab`; `ButterflyHUDView.SetDrop` / `SetScaleDust` / `SetPilotColors`, driven by
+`ButterflyHUDController` from `TigerMothDropExecutor` (`IsDropping`, `IsReady`, new `LastTollTime`),
+`SpreadWingsActionExecutor` (`IsDustMode`, new `DustField`), `ButterflyDustField.LastBiteTime` (new) and
+`WormholeMouth.LastTollTime` (new). No Unity and no .NET: not compiled.
 
-- [ ] Compiles; the variant opens with the view's `dropMouthIcon`, `dropStreaksIcon` and `dropMothIcon` wired.
-- [ ] Fly the Tiger Moth: the Time card shows the moth in your colour under a white wormhole, streaks dimmed.
-- [ ] Hold LT: the wormhole and the streaks go full; let go: they dim, and while the veil sweeps every part dims.
-- [ ] Reach Charge 5 (Toll Gate): the card's wormhole takes your domain colour.
+- [ ] Compiles; the variant opens with the view's four `scaleDust*Icon` and three `drop*Icon` fields wired.
+- [ ] Time: the moth in your colour, streaks dim; hold LT: streaks full; while the veil sweeps every part dims. No
+  wormhole before Charge 5.
+- [ ] Charge: Mass mode dims the card; Dust mode shows the dust in your shielded colour and a grey rival; fly the dust
+  over a rival: the card's rival turns red for about 0.6 s on each bite.
+- [ ] Reach Charge 5 (Toll Gate): both cards show the wormhole ring in your colour; a rival flying through your
+  wormhole turns both rings red for a beat.
 
 ### 🔴 Angler Time card: Dash to the School drawn as the jump (`claude/angler-dash-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
 

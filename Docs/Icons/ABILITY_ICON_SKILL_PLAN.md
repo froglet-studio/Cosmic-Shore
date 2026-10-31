@@ -327,11 +327,16 @@ is done; next Butterfly, then Brittle Star.
 Tiger Moth now (the Butterfly retired 2026-10-29, `TIGER_MOTH.md`; a Butterfly may return as its own hull one day). It
 flies `ButterflyHUDVariant` / `ButterflyHUDView`, whose shipped sprites keep their `Butterfly_*` names; new parts are
 `TigerMoth_*` under `AbilityIcons/TigerMoth/`. The **Time card, the Drop**, went first (it still showed the retired
-Fold): Garrett picked A of A/B/C ("the fall") "and add a wormhole behind": the airframe side on with its wings shut
-(`Butterfly.fbx`, take `rig|fold`, pitch -90) in the domain colour, falling out of the wormhole mouth it leaves (white,
-the domain hue at Charge 5 Toll Gate), three fall streaks between. Three parts; `ButterflyHUDView.SetDrop` from
-`TigerMothDropExecutor.IsDropping` / `IsReady` and `TigerMothDropActionSO.TollsRivals`; the fleet's veil stays on the
-plate. Next: the Charge card (Scale Dust, the audit's "does not read").
+Fold): Garrett picked A of A/B/C ("the fall"): the airframe side on with its wings shut (`Butterfly.fbx`, take
+`rig|fold`, pitch -90) in the domain colour, three fall streaks above. On the built card: "the portal should only appear
+once the upgrade comes", as "a colored ring", "red" when an enemy goes through it - so the wormhole mouth shows only at
+Charge 5 Toll Gate, in the domain colour, danger for a beat on a toll (`WormholeMouth.LastTollTime`). The **Charge card,
+Scale Dust**: A of A/B/C ("the shred"), without the petal ("Show a grey ship and turn it Red when you hit then it will
+look different then space"): the moth over its dust (shielded), the rival grey, danger for a beat on a bite
+(`ButterflyDustField.LastBiteTime`); at Charge 5 the same wormhole ring, red on a toll. Both in `ButterflyHUDView`
+(`SetDrop`, `SetScaleDust`, `SetPilotColors`). The **omni crystal card** (the bloom) is out as options; the kit now draws
+the omni card left of Charge in every lockup sheet ("you are still forgetting to show the omnicrystal totem"). Next:
+the omni pick, then Mass and Space.
 
 | Round | What | Why first |
 |---|---|---|

@@ -454,3 +454,16 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     live vessel while leaving the inherited asset names alone. Separately, the Angler's controller injected
     `GameDataSO` without `using CosmicShore.Utility`, a compile error someone else had to fix (#1651); with no compiler
     in the session, grep the namespace of every type a C# change newly names.
+
+67. **Draw an upgrade's part only once the upgrade is live, and say who it hit by colour, not by what flew off.**
+    Garrett on the Tiger Moth: "the portal should only appear once the upgrade comes" (the Toll Gate wormhole had been
+    drawn at rest), and on Scale Dust: "we don't need the element to be seen coming out. Show a grey ship and turn it
+    Red when you hit then it will look different then space." A rival that turns from grey to danger on contact says
+    "hit" without a second object, and it keeps the Charge card apart from the Space card's own dust. An upgrade that
+    reaches two cards (Toll Gate is Charge's, its wormhole is the Time card's) shows on both, the same ring in the
+    domain colour, red as a rival pays.
+
+68. **The omni crystal card is part of every lockup.** "You are still forgetting to show the omnicrystal totem as part
+    of this exercise." Every vessel has the card left of Charge (`VesselHUDView.omniAbilitySprite`, locked when empty);
+    the kit's sheets now draw it (`states.ORDER`, `card.flower("Omni")`), and a hull's round is not done until its omni
+    card has been asked about.

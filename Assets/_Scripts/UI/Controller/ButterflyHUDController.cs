@@ -71,12 +71,28 @@ namespace CosmicShore.UI
             if (dropExecutor)
             {
                 View?.SetAbilityCooldown(Element.Time, dropExecutor.CooldownRemaining01);
-                if (view)
-                {
-                    view.SetDropColor(ResolveDomainSignalColor());
-                    view.SetDrop(dropExecutor.IsDropping, dropExecutor.IsReady, TigerMothDropActionSO.TollsRivals(_status));
-                }
             }
+
+            if (view)
+            {
+                view.SetPilotColors(ResolveDomainSignalColor(), ResolveShieldedColor());
+                bool tollGate = TigerMothDropActionSO.TollsRivals(_status);
+                float flash = view.HitFlashSeconds;
+                bool tolled = dropExecutor && Time.time - dropExecutor.LastTollTime < flash;
+                if (dropExecutor) view.SetDrop(dropExecutor.IsDropping, dropExecutor.IsReady, tollGate, tolled);
+                var dust = spreadExecutor ? spreadExecutor.DustField : null;
+                bool hit = dust && Time.time - dust.LastBiteTime < flash;
+                view.SetScaleDust(spreadExecutor && spreadExecutor.IsDustMode, hit, tollGate, tolled);
+            }
+        }
+
+        /// <summary>The pilot's shielded colour, the dust's (<c>GetShieldedSignalColor</c>, the Angler's read); alpha 0
+        /// until the theme resolves or for the unteamed Blue domain.</summary>
+        Color ResolveShieldedColor()
+        {
+            var theme = _gameData?.ThemeManagerData;
+            if (theme == null || _status == null || _status.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
+            return theme.GetShieldedSignalColor(_status.Domain);
         }
 
         /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Angler's and
