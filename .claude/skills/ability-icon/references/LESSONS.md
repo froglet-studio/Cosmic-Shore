@@ -438,6 +438,15 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     move without anything else on the card moving. Look for a turn-taking state in the executor (`SendGroup`) before
     drawing the act alone.
 
+65. **A rebind step that cannot find its `after=` anchor must fail, never drop the field.** The Angler's Mass and Space
+    steps anchored on `lockWakeAlpha` and `lureJoinedSeconds`, view fields with C# defaults that Unity had never
+    serialized into the prefab, so `rebind.py` created every part Image and wrote none of the `lure*Icon` /
+    `paint*Icon` fields: two cards merged with parts the HUD never tints, and `--check` reported no drift because the
+    rebuilt output matched. `rebind.py` now raises when an anchor is missing. Anchor on a field the prefab already
+    serializes (an earlier part's `...Icon` reference is safe), and after a rebind grep the prefab for every new field.
+    On the Time card Garrett took H, "the jump" (a ghost where the hull was, the hull where the dash puts it), over a
+    dashed path or a speed wedge: the set distance is what the dash is, and only the before/after pair shows it.
+
 66. **Name the vessel the pilot flies, not the asset it inherited, and check every injected type's namespace.** The
     Tiger Moth replaced the Butterfly and kept its HUD, so the files say Butterfly; the first Drop sheet went out as
     "Butterfly", and Garrett: "the tigermoth is the new name for this vessel. you appear to be confused about that."

@@ -315,7 +315,13 @@ round 1 drew the brush, the throw and the lit prism; Garrett asked to see "how m
 the next group highlighted (LESSONS 64). D: group A above and B below, each a QuadFish with its live count (HUD text)
 beside it, the group the next paint sends white and the other dim in the domain colour; the prism ahead blue until
 something is painted, white after; at Space 5 the shielded prism with its shield cracking off. Five parts;
-`AnglerHUDView.SetPaintGroups` / `SetPaintPrism` / `SetPaintColors`. Next: the Time card (Dash to the School).
+`AnglerHUDView.SetPaintGroups` / `SetPaintPrism` / `SetPaintColors`. **Time (Dash to the School) DONE 2026-10-31**
+(`claude/angler-dash-icon`, Garrett picked H of F/H/I "the jump"): the two groups in the Space card's places (A above, B
+below), the next dash's group white and the other dim in the domain colour, and for the next group a ghost where the
+hull was and the hull where the dash puts it, 75% of the way, turned to it. Six parts; `AnglerHUDView.SetDash` from
+`AnglerCommandExecutor.DashGroup` / `Dashing`. The plate stays empty (a full lime plate drowned the white parts). The
+same change wires the Mass and Space parts, whose view fields the rebind had silently dropped (LESSONS 65). The Angler
+is done; next Butterfly, then Brittle Star.
 
 **The Tiger Moth** (round 4, 2026-10-31; `specs/tigermoth.py`). The vessel the round-4 list calls the Butterfly is the
 Tiger Moth now (the Butterfly retired 2026-10-29, `TIGER_MOTH.md`; a Butterfly may return as its own hull one day). It
