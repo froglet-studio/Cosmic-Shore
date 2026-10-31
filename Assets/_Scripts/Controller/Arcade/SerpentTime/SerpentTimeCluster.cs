@@ -20,8 +20,8 @@ namespace CosmicShore.Gameplay
         /// <summary>How far each gate's cluster is turned from the previous gate's, so neighbouring gates do not line up.</summary>
         public const float TwistPerGateRadians = 1.7f;
 
-        /// <summary>Rings per gate on intensity 1-4: two on the two open courses, one where the mouths shrink.</summary>
-        public static readonly int[] DefaultRingsByIntensity = { 2, 2, 1, 1 };
+        /// <summary>Rings per gate on intensity 1-4: one everywhere (2026-10-31). Clusters stay available.</summary>
+        public static readonly int[] DefaultRingsByIntensity = { 1, 1, 1, 1 };
 
         /// <summary>
         /// Each ring's mouth and its distance from the gate's centre, as shares of the gate's mouth, for a

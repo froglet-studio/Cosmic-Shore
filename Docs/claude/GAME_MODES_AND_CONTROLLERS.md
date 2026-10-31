@@ -960,8 +960,8 @@ spec file each (`author_scarab_rally_assets.py`, `author_serpent_time_assets.py`
   now the Scarab's Mass card (`ModeGenre`).
 - **Serpent Time** and **Brittle Star Time** use Thresher Time's shape (8 rings x 2 laps on the shared
   `HeadlongCircuit`), cut against a full pellet stack's ~100 u circle and Speed Mode's ~145 u circle.
-- **Serpent Time (shown as Serpentine since 2026-10-31) is the dirty race** (Shombith, 2026-10-27, `Docs/Studios/SERPENT_TIME.md`): each gate is a cluster of
-  2 or 1 rings (any one counts), living guard plants stand before, beside or either side of a ring and fall whole
+- **Serpent Time (shown as Serpentine since 2026-10-31) is the dirty race** (Shombith, 2026-10-27, `Docs/Studios/SERPENT_TIME.md`): each gate is ONE ring
+  (65 / 55 / 48 / 40 u at I1-I4), a living guard plant stands before, beside or either side of every ring and falls whole
   when a round or a hull goes through their heart, 48 regrowing debris prisms round every gate feed Seed Walls, the
   start is behind gate 0, the cytoplasm's shards stream along the race line, and the AI picks the open ring, shoots
   guards' hearts and walls open, and cloaks past rings rivals still need. The vessel is never changed (the rounds
@@ -1391,7 +1391,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             ├── WarplineController                — the Stoat's time race; Slingshot's cut in 5 long legs x 2 laps, won on the pathfinder's warp boost (field dipole)
             ├── ThresherTimeController            — Thresher-only circuit race; Grizzly Time's octagon cut to the Thresher's 229u full-sling circle (plant, wind in, let go), 8 gates x 3 laps; AI races at cruise (never slings)
             ├── WrasseRunController               — the Wrasse and Grouper's circuit race; a ring counts only when the kite (the hull's IRingThreadProbe) threads it, 8 gates x 2 laps; Time loops fuel the Grouper's boosts
-            ├── SerpentTimeController             — Serpentine: Serpent-only DIRTY circuit race; 8 gates x 2 laps, 1-2 rings a gate, guard plants felled by a hit to the heart, regrowing debris, a start behind gate 0, the cytoplasm as the race's current, a dirty AI
+            ├── SerpentTimeController             — Serpentine: Serpent-only DIRTY circuit race; 8 gates x 2 laps, one ring a gate, a guard plant at every gate felled by a hit to the heart, regrowing debris, a start behind gate 0, the cytoplasm as the race's current, a dirty AI
             ├── BrittleStarTimeController         — Brittle Star-only circuit race; 8 gates x 2 laps cut against Speed Mode's ~145 u circle (0/1/2/3 corners it cannot hold)
             ├── RegattaController                 — the ARENA race: every playable hull, three domain-coloured super-shielded rails braided along a lapped circuit, a start line behind gate 0 (`IPlayerSpawnLine`); the grid balanced by the card's `StartingElements`
             └── WaystationController              — Butterfly-only migration race; an OPEN chain dealt into CLUSTERS (coils you weave) laid a FOLD apart, so the course is half flown and half teleported. A teleport threads NOTHING (`VesselTransformer.TeleportCount`), and an autopilot folds through the base's new `OnServerTick` seam

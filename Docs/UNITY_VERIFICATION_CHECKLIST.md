@@ -65,6 +65,15 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpentine: one ring a gate, 65 / 55 / 48 / 40 u, a guard at every gate (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Not compiled in this session. Supersedes "2 rings at I1-I2" in the entries below.
+
+1. Each intensity: every gate is ONE ring (no clusters), radius 65 (I1), 55 (I2), 48 (I3), 40 (I4). The Serpent
+   threads them comfortably at I1-I3; I4 feels as before.
+2. Every gate has a guard (before, beside, or a door); the AI shoots Mass / Charge hearts and flies through Time ones.
+3. EditMode: `SerpentTimeClusterTests`, `SerpentTimeCourseTests` (mouths still tighten level by level, gates clear).
+
 ### 🔴 A lifeform's death runs once: `LifeForm.DieOnce` (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 `Flora.KillReplicated` (a client's mirror of a replicated plant's death) and `BranchingFlora`'s no-leaves auto-death

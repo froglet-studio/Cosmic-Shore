@@ -60,7 +60,7 @@ namespace CosmicShore.Tests
             var ring = SerpentTimeCluster.Ring(gate, 3, 0, 1);
             Assert.AreEqual(gate.Position, ring.Position);
             Assert.AreEqual(gate.Radius, ring.Radius);
-            Assert.AreEqual(2, SerpentTimeCluster.RingsFor(1, SerpentTimeCluster.DefaultRingsByIntensity));
+            Assert.AreEqual(1, SerpentTimeCluster.RingsFor(1, SerpentTimeCluster.DefaultRingsByIntensity), "one ring a gate at every intensity");
             Assert.AreEqual(1, SerpentTimeCluster.RingsFor(4, SerpentTimeCluster.DefaultRingsByIntensity));
             Assert.AreEqual(1, SerpentTimeCluster.RingsFor(2, null));
         }

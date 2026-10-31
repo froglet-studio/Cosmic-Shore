@@ -86,7 +86,9 @@ namespace CosmicShore.Gameplay
                 RadialSwing = new[] { 0.42f, 0.55f, 0.42f, 0.55f }[i - 1],
                 AngularSpread = new[] { 1.2f, 6.0f, 6.0f, 6.0f }[i - 1],
                 LateralPerturbation = new[] { 120f, 170f, 215f, 260f }[i - 1],
-                RingRadius = new[] { 90f, 68f, 52f, 40f }[i - 1],
+                // One ring a gate, sized for the Serpent's large hull (Shombith, 2026-10-31: "a little bigger ... intensity 4 scale
+                // is fine"). Was 90 / 68 / 52 / 40, flown as clusters of 54 / 41 u rings at I1-I2.
+                RingRadius = new[] { 65f, 55f, 48f, 40f }[i - 1],
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],
                 MaxPresentDegrees = new[] { 50f, 80f, 80f, 82f }[i - 1],
             };

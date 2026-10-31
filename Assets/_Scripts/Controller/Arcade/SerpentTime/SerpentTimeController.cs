@@ -15,10 +15,11 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>What makes it dirty</b> (each piece is a rule of this mode; the vessel is the shipped Serpent):</para>
     /// <list type="bullet">
-    /// <item><b>Ring clusters.</b> Every gate stands as 3 rings (I1, I2) or 2 (I3, I4) side by side, any one of which
-    /// threads it (<see cref="SerpentTimeCluster"/>). The course's own ring stays as the gate the platform, the
-    /// objective arrow and the race toasts read; only its drawing is hidden.</item>
-    /// <item><b>Guarded rings.</b> A gate stands 2 rings at I1-I2 and 1 at I3-I4, and one ring of each gate is guarded
+    /// <item><b>One ring a gate</b> (2026-10-31; Shombith: "make all intensities have only 1 gate"), sized for a large
+    /// hull: 65 / 55 / 48 / 40 u at I1-I4 (<see cref="SerpentTimeCourse.ForIntensity"/>). Ring clusters (several rings
+    /// side by side, any one threading the gate, <see cref="SerpentTimeCluster"/>) are still supported through
+    /// <see cref="ringsPerGateByIntensity"/>, and ship off.</item>
+    /// <item><b>Guarded rings.</b> Every gate is guarded
     /// by a living plant: a Borromean flora (a membrane spanning its own rings) standing near it (below), of an element
     /// that rises with intensity (Time at I1: plain plates; Mass: shielded plates that bounce a hull; Charge at I4: every
     /// plate danger). Fly the open ring, or hit the guard's HEART: a sniper round or a hull that passes through the
@@ -62,13 +63,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1)] int laps = SerpentTimeCourseSource.DefaultLaps;
 
         [Header("Ring clusters")]
-        [Tooltip("Rings standing at each gate on intensity 1-4; any one of them threads the gate. 1 = the plain gate.")]
-        [SerializeField] int[] ringsPerGateByIntensity = { 2, 2, 1, 1 };
+        [Tooltip("Rings standing at each gate on intensity 1-4; any one of them threads the gate. 1 = the plain gate " +
+                 "(every intensity since 2026-10-31).")]
+        [SerializeField] int[] ringsPerGateByIntensity = { 1, 1, 1, 1 };
         [Tooltip("Seconds each cluster ring takes to bloom in when the course is raised.")]
         [SerializeField, Min(0f)] float clusterBloomSeconds = 0.9f;
 
         [Header("Guarded rings (a Borromean flora standing near the ring)")]
-        [Tooltip("Rings guarded at each gate on intensity 1-4 (of the 2, 2, 1, 1 a gate stands). The guarded ring is picked " +
+        [Tooltip("Rings guarded at each gate on intensity 1-4 (of the rings a gate stands; with one ring a gate, 1 guards every gate). The guarded ring is picked " +
                  "from the gate's index, so which ring is open moves round from gate to gate.")]
         [SerializeField] int[] guardedRingsPerGateByIntensity = { 1, 1, 1, 1 };
         [Tooltip("The guard plant for each element, in Element order: Charge, Mass, Space, Time. Rampage's Borromean " +
