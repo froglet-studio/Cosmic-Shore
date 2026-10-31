@@ -206,7 +206,7 @@ class Runner:
         lines = read_lines(results)
         if len(lines) > slot.lines_seen:
             slot.lines_seen = len(lines)
-            slot.last_progress = t
+            slot.last_progress = slot.last_log_change = t
         done = [r for r in lines if r.get("done")]
         if done and not slot.done_seen_at:
             slot.done_seen_at = t
@@ -521,7 +521,7 @@ def main():
     r.add_argument("--below-normal", type=int, default=1, help="run players at below-normal priority (1/0)")
     r.add_argument("--boot-timeout", type=float, default=300)
     r.add_argument("--run-timeout", type=float, default=600, help="seconds without a new result line")
-    r.add_argument("--stall", type=float, default=240, help="seconds without the log growing")
+    r.add_argument("--stall", type=float, default=180, help="seconds without the log growing (the sim beats every 30 s)")
     r.add_argument("--quit-grace", type=float, default=30)
     r.add_argument("--max-attempts", type=int, default=3)
     r.add_argument("--stagger", type=float, default=5, help="seconds between launches")

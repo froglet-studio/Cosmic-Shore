@@ -48,6 +48,7 @@ namespace CosmicShore.Gameplay
         const string QuitArg = "-arkEscortQuit";
         const float ReadyTimeoutSeconds = 600f;
         const float RunTimeoutSeconds = 1800f;
+        const float HeartbeatSeconds = 30f;
 
         /// <summary>Raised once every planned run has finished (or the sim gave up): the editor launcher exits on it.</summary>
         public static event Action<bool> AllDone;
@@ -222,10 +223,22 @@ namespace CosmicShore.Gameplay
 
                     float deadline = Now + RunTimeoutSeconds;
                     float sailed = Now;
+                    float gameSailed = Time.time;
+                    int framesSailed = Time.frameCount;
+                    float beat = Now + HeartbeatSeconds;
                     while (_last == null && Now < deadline)
                     {
                         ApplyClock();
                         await UniTask.Delay(1000, DelayType.Realtime, cancellationToken: ct);
+                        if (Now > beat)
+                        {
+                            // The farm's heartbeat (a quiet run logs nothing for minutes), and its speed: game s per real s.
+                            beat = Now + HeartbeatSeconds;
+                            float real = Mathf.Max(0.001f, Now - sailed);
+                            Log($"beat: {real:0}s real, {Time.time - gameSailed:0}s game " +
+                                $"(x{(Time.time - gameSailed) / real:0.00}), {(Time.frameCount - framesSailed) / real:0} fps, " +
+                                $"escorting {(harbour && harbour.IsEscorting ? "yes" : "no")}");
+                        }
                         harbour = VoyageHarbour.Current;
                         if (harbour && !harbour.IsEscorting && _last == null && Now > sailed + 60f)
                         {

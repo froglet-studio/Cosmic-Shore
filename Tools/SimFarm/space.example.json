@@ -1,22 +1,29 @@
 {
- "_note": "Example genome space. Gene names are the -arkEscortParams registry's keys (claude/voyage-ark-core); the names below follow the briefs and must be matched to the registry's actual names before a real session. Genes starting with __ are the driver's own and never sent.",
+ "_note": "Example genome space. Keys are -arkEscortParams registry keys as of claude/voyage-night (ArkEscortParams.cs, EscortGeneRegistry.cs, FaunaRuntimeTuning.cs); values are numbers only (0/1 for switches). Ranges and defaults for ai.* are the registry's own; the fauna.* defaults are guesses (the species' assets differ), so check each run line's Params echo for refused or unknown keys. Genes starting with __ are the driver's own and never sent.",
  "vessel": {"genes": {
-  "__squad": {"type": "choice", "choices": ["Sparrow,Rhino,Manta", "Squirrel,Dolphin,Serpent", "Sparrow,Sparrow,Sparrow"], "default": "Sparrow,Rhino,Manta"},
-  "escortPilot.GuardRadius": {"type": "float", "min": 400, "max": 1400, "default": 900},
-  "escortPilot.StationRadius": {"type": "float", "min": 120, "max": 600, "default": 260},
-  "escortPilot.RetargetSeconds": {"type": "float", "min": 0.2, "max": 2.0, "default": 0.5, "log": true},
-  "escortPilot.LeashFactor": {"type": "float", "min": 1.0, "max": 3.0, "default": 2.0},
-  "aiPilot.*.defaultAggressivenessHigh": {"type": "float", "min": 0.0, "max": 0.2, "default": 0.05},
-  "aiPilot.*.avoidanceHigh": {"type": "float", "min": 0.5, "max": 5.0, "default": 2.5},
-  "aiPilot.*.breakOrbits": {"type": "bool", "default": true}
+  "__squad": {"type": "choice", "choices": ["Sparrow,Sparrow,Sparrow", "Sparrow,Squirrel,Dolphin", "Squirrel,Dolphin,Serpent"], "default": "Sparrow,Sparrow,Sparrow"},
+  "ai.escort.guardRadius": {"type": "float", "min": 400, "max": 1400, "default": 900},
+  "ai.escort.retargetMargin": {"type": "float", "min": 0, "max": 0.5, "default": 0.15},
+  "ai.escort.stationRadius": {"type": "float", "min": 120, "max": 600, "default": 260},
+  "ai.escort.leashFactor": {"type": "float", "min": 1.0, "max": 3.0, "default": 1.4},
+  "ai.escort.arkLaneMargin": {"type": "float", "min": 10, "max": 120, "default": 40},
+  "ai.sparrow.standoff": {"type": "float", "min": 60, "max": 300, "default": 150},
+  "ai.sparrow.rocketMaxRange": {"type": "float", "min": 120, "max": 320, "default": 220},
+  "ai.sparrow.gunAimDeg": {"type": "float", "min": 2, "max": 20, "default": 8},
+  "ai.sparrow.nucleusSweepWhenThreatsBelow": {"type": "float", "min": 0, "max": 4, "default": 1},
+  "ai.squirrel.cultivate": {"type": "int", "min": 0, "max": 1, "default": 1},
+  "ai.squirrel.cultivateWhenThreatsBelow": {"type": "float", "min": 0, "max": 6, "default": 1},
+  "ai.dolphin.reachUse": {"type": "float", "min": 0.1, "max": 1.0, "default": 0.7},
+  "ai.serpent.wallStandoff": {"type": "float", "min": 150, "max": 600, "default": 320}
  }},
  "fauna": {"genes": {
-  "escort.tier.Population": {"type": "float", "min": 0.6, "max": 2.0, "default": 1.0},
-  "escort.tier.HostileShare": {"type": "float", "min": 0.0, "max": 1.0, "default": 0.8},
-  "escort.tier.RegrowSeconds": {"type": "float", "min": 0.5, "max": 6.0, "default": 2.0, "log": true},
-  "fauna.*.goalUpdateInterval": {"type": "float", "min": 1.0, "max": 8.0, "default": 5.0},
-  "fauna.*.goalOrbitRadius": {"type": "float", "min": 30, "max": 120, "default": 55},
-  "fauna.*.starvationSeconds": {"type": "float", "min": 30, "max": 120, "default": 60},
-  "fauna.*.predationImmunitySeconds": {"type": "float", "min": 2, "max": 10, "default": 6}
+  "fauna.all.populationScale": {"type": "float", "min": 0.5, "max": 2.0, "default": 1.0},
+  "fauna.all.capScale": {"type": "float", "min": 0.5, "max": 2.0, "default": 1.0},
+  "fauna.all.shieldBite": {"type": "float", "min": 0.0, "max": 3.0, "default": 1.0},
+  "fauna.all.maxSpeed": {"type": "float", "min": 20, "max": 70, "default": 35},
+  "fauna.all.huntInterval": {"type": "float", "min": 5, "max": 40, "default": 20},
+  "fauna.all.attackRange": {"type": "float", "min": 10, "max": 40, "default": 20},
+  "fauna.3.populationScale": {"type": "float", "min": 0.5, "max": 2.0, "default": 1.0},
+  "fauna.5.populationScale": {"type": "float", "min": 0.5, "max": 2.0, "default": 1.0}
  }}
 }

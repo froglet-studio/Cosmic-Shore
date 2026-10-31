@@ -163,7 +163,8 @@ class Space:
 
 
 def params_of(genes: dict) -> dict:
-    return {k: v for k, v in genes.items() if not k.startswith("__")}
+    """The genes the run sees: numbers only (the params registry takes "key": number), switches as 0/1."""
+    return {k: (int(v) if isinstance(v, bool) else v) for k, v in genes.items() if not k.startswith("__")}
 
 
 def gid_of(side: str, genes: dict) -> str:
