@@ -19596,3 +19596,33 @@ Docs: `Assets/_Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYP
 10. **Two players.** One host, one client. **Pass:** both see the same plates with the same danger tiles, and a hole
     the host punched is a hole on the client.
 11. **Waystation itself.** Fly Waystation (58) once. **Pass:** unchanged from bleeding-edge.
+
+## Waystation is the Drop Tower race: Waystation Prototype folded into Waystation (58) (`claude/adoring-babbage-4jjppj`, 2026-11-01) - NOT EDITOR-VERIFIED
+
+Shombith: "make Waystation Prototype as Waystation". Garrett owns Waystation; this was done on that instruction. It
+supersedes the "Waystation Prototype (76)" entry above.
+- The card, scene, controller and course source are Waystation's, now carrying the towers.
+- GameModes 76 is retired and reserved. Its assets, scene and registrations are deleted, and
+  `author_waystation_assets.py` removes them on every run.
+- The target is now `waystationClusterTarget` = 5 clusters.
+- The long-drop AI's `aiFoldMinDistance` default is now 700.
+
+No Unity editor in the cloud session, so `/verify-unity` did not run. What did run:
+- `unity_refcompile`: player and editor (changed files).
+- `waystation_tower_course.py --check` and `--compile`.
+- `author_waystation_assets.py --check`.
+- The `/arcadegame` gates.
+
+1. **Compile.** **Pass:** no errors. In particular there must be none in:
+   - `WaystationController.cs`, `WaystationCourseSource.cs` and `WaystationTower.cs`;
+   - `EndConditionOverridesSO.cs` and `EndConditionOverridesWindow.cs`.
+2. **Edit-mode tests.** Run `WaystationTowerTests`, `WaystationCourseTests`, `EnumIntegrityTests` (70 members, no 76)
+   and `RaceCourseSourceTests`. **Pass:** all green.
+3. **Arcade grid.** **Pass:** one Waystation card, showing the tower card art and the Drop text. There is no
+   "Waystation Prototype" card. FrogletTools > Game Modes > End Game Conditions shows "Waystation - Clusters" = 5.
+4. **Open and save the scene.** Open `MinigameWaystation.unity` and save it. **Pass:** the controller shows
+   Wall Prefab = SpawnablePrism, and Ai Fold Min Distance shows 700.
+5. **Fly it.** Fly Waystation at I1 and I4 and run steps 4-10 of the "Waystation Prototype (76)" entry above
+   (towers, hold edges, regrowth, the long drop and wormhole, the AI, two players), on Waystation's card.
+6. **Old saves.** A player whose last selected mode was 76 opens the Arcade. **Pass:** no error. They land on a
+   default card.

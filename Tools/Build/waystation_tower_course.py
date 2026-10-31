@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""The offline authority for WAYSTATION PROTOTYPE's Drop Towers (Docs/Studios/TIGER_MOTH_TIME.md).
+"""The offline authority for WAYSTATION's Drop Towers (Docs/Studios/TIGER_MOTH_TIME.md).
 
-It MIRRORS Assets/_Scripts/Controller/Arcade/WaystationPrototype/WaystationTower.cs (the tower rings, the plates and
+It MIRRORS Assets/_Scripts/Controller/Arcade/Waystation/WaystationTower.cs (the tower rings, the plates and
 the tile kinds) on top of Garrett's own course model, `waystation_course.py`, which it IMPORTS and never edits: the
-prototype's clusters are Waystation's clusters. The tower tables are read out of the C#, and the hull's numbers out
+towers stand between Garrett's clusters, which are unchanged. The tower tables are read out of the C#, and the hull's numbers out
 of TigerMoth.prefab and TigerMothDropAction.asset, so the model cannot describe a tower the game does not lay or a
 Drop the vessel does not have.
 
@@ -22,7 +22,7 @@ What it proves, per intensity, over the whole seed sweep:
   towers     every gap but the last carries a tower of at least one D hop
   long       the last gap is long enough to leave a wormhole (>= LongGapMin) on every swept seed
   standdown  every tower ring is nearer its predecessor than the scene's aiFoldMinDistance, so Garrett's long-drop
-             autopilot (WaystationController) stands down on towers and the prototype's hop autopilot takes them
+             autopilot (WaystationController) stands down on towers and the hop autopilot (same controller) takes them
   danger     the danger tiles take their share (within 0.03), none at share 0 and all at share 1
   radius     a tower ring's radius is never a cluster ring's at the same intensity
 
@@ -40,13 +40,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import waystation_course as wc  # noqa: E402  (Garrett's model, imported read-only)
 
 ROOT = Path(__file__).resolve().parents[2]
-CS_TOWER = ROOT / "Assets/_Scripts/Controller/Arcade/WaystationPrototype/WaystationTower.cs"
+CS_TOWER = ROOT / "Assets/_Scripts/Controller/Arcade/Waystation/WaystationTower.cs"
 TIGER_MOTH = ROOT / "Assets/_Prefabs/Spacevessels/TigerMoth.prefab"
 DROP_ASSET = ROOT / "Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset"
-PROTO_SCENE = ROOT / "Assets/_Scenes/Multiplayer Scenes/MinigameWaystationPrototype.unity"
 
-# the prototype scene raises Garrett's long-drop threshold so his autopilot drops only across the long gap
-AI_FOLD_MIN_DISTANCE = 700.0
+# Waystation's long-drop threshold, read off WaystationController so a retune moves the standdown check with it
+def _ai_fold_min_distance():
+    src = (ROOT / "Assets/_Scripts/Controller/Arcade/Waystation/WaystationController.cs").read_text(encoding="utf-8")
+    m = re.search(r"float aiFoldMinDistance = ([0-9.]+)f;", src)
+    assert m, "aiFoldMinDistance not found in WaystationController.cs"
+    return float(m.group(1))
+
+
+AI_FOLD_MIN_DISTANCE = _ai_fold_min_distance()
 CLUSTERS = 5
 
 add, sub, mul, dot, mag, cross, safe, perp = wc.add, wc.sub, wc.mul, wc.dot, wc.mag, wc.cross, wc.safe, wc.perp
@@ -668,7 +674,7 @@ def self_test(seeds, target):
         ("a long final gap nobody can reach (LongGapMin 5000)", dict(T=variant(LongGapMin=5000.0)), ("long",)),
         ("tower rings as wide as the cluster rings", dict(T=variant(HopRingRadius=[56.0, 50.0, 44.0, 40.0])),
          ("radius",)),
-        ("Garrett's long-drop autopilot left at its shipped 420 u", dict(standdown=420.0), ("standdown",)),
+        ("the long-drop autopilot back at its pre-tower 420 u", dict(standdown=420.0), ("standdown",)),
     )
     for label, c, expect in controls:
         print(f"self-test: {label}")
@@ -692,7 +698,7 @@ def self_test(seeds, target):
     return True
 
 
-HARNESS = ROOT / "Tools/Build/waystation_prototype_harness"
+HARNESS = ROOT / "Tools/Build/waystation_tower_harness"
 HARNESS_CSPROJ = """<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -704,7 +710,7 @@ HARNESS_CSPROJ = """<Project Sdk="Microsoft.NET.Sdk">
     <Compile Include="Program.cs" />
     <Compile Include="Unity.cs" />
     <Compile Include="Stubs.cs" />
-    <Compile Include="../../../Assets/_Scripts/Controller/Arcade/WaystationPrototype/WaystationTower.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Waystation/WaystationTower.cs" />
     <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Waystation/WaystationCourse.cs" />
     <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs" />
   </ItemGroup>
@@ -730,7 +736,7 @@ def compile_and_compare(seeds, clusters):
     if not Path(dotnet).exists():
         print("--compile needs a dotnet SDK (see .claude/skills/asset-surgery). SKIPPED, not passed.")
         return False
-    csproj = HARNESS / "waystation_prototype_harness.csproj"
+    csproj = HARNESS / "waystation_tower_harness.csproj"
     if not csproj.exists():
         csproj.write_text(HARNESS_CSPROJ, encoding="utf-8")
     made = subprocess.run([dotnet, "build", "-v", "q", "--nologo"], cwd=HARNESS, capture_output=True, text=True)
@@ -738,7 +744,7 @@ def compile_and_compare(seeds, clusters):
         print(made.stdout[-4000:] or made.stderr[-4000:])
         print("the shipped course files DO NOT COMPILE")
         return False
-    dll = HARNESS / "bin/Debug/net8.0/waystation_prototype_harness.dll"
+    dll = HARNESS / "bin/Debug/net8.0/waystation_tower_harness.dll"
     out = subprocess.run([dotnet, str(dll), str(seeds), str(clusters)], capture_output=True, text=True)
     if out.returncode != 0:
         print(out.stderr[-4000:])

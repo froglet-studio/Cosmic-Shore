@@ -1,5 +1,5 @@
 // The two outside members WaystationTower.cs reads, at their shipped values, so the pure file compiles without the
-// rest of the game. Each is a CONSTANT or a one-line formula; `waystation_prototype_course.py --compile` asserts them
+// rest of the game. Each is a CONSTANT or a one-line formula; `waystation_tower_course.py --compile` asserts them
 // against the real files, so a stub that drifts fails there.
 using UnityEngine;
 

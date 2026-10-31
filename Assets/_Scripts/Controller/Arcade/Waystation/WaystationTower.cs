@@ -5,7 +5,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// One rung of the Drop Tower: every number a tower is laid from at one intensity. The tables are MEASURED by
-    /// <c>Tools/Build/waystation_prototype_course.py</c>, which reads them out of this file and fails the build when a
+    /// <c>Tools/Build/waystation_tower_course.py</c>, which reads them out of this file and fails the build when a
     /// tower stops being flyable (Docs/Studios/TIGER_MOTH_TIME.md has the table and why each number is what it is).
     /// </summary>
     public struct WaystationTowerSettings
@@ -78,7 +78,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// WAYSTATION PROTOTYPE's Drop Tower: a staircase of short hops laid along the drop line between two clusters
+    /// Waystation's Drop Tower: a staircase of short hops laid along the drop line between two clusters
     /// (Docs/Studios/TIGER_MOTH_TIME.md). Pure: no <c>UnityEngine.Random</c>, no <c>Time</c>, no scene, so every peer
     /// derives the same tower and walls from the broadcast course, and the whole thing is measured offline.
     ///
@@ -464,7 +464,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The prototype's course: Garrett's clusters (<see cref="WaystationCourse"/>, unchanged) with a Drop Tower in
+        /// Waystation's course: Garrett's clusters (<see cref="WaystationCourse"/>, unchanged) with a Drop Tower in
         /// every gap but the LAST, which stays the long drop - the wormhole route - and comes last so its long
         /// recharge never costs a tower. Seeds are tried until the last gap is long enough to leave a wormhole.
         /// </summary>

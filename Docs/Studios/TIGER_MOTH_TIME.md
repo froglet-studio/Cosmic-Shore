@@ -3,10 +3,11 @@
 The Tiger Moth's TIME card is Garrett's **Waystation** (GameModes 58). This page records the work to make it fun on
 Shombith's direction: vertical movement, like Flappy Bird.
 
-The work ships as a separate mode, **Waystation Prototype** (GameModes 76). Waystation stays as Garrett made it until he
-approves a replacement (Shombith, 2026-10-31).
+Round 1 shipped as a separate mode, Waystation Prototype (GameModes 76, PR #1661), so Waystation stayed as Garrett made
+it until a replacement was approved. **Round 2 (2026-11-01) made it Waystation**: the Drop Tower course is now
+Waystation's own, and 76 is retired and reserved (§5).
 
-The mode doc is `Assets/_Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYPE.md`.
+The mode doc is `Assets/_Scripts/Controller/Arcade/WAYSTATION.md` ("The Drop Tower").
 
 ## 1. What was wrong (measured on Waystation, 2026-10-31)
 
@@ -78,7 +79,7 @@ of hops is a walk on a lattice, not a scroll. Against that rule:
 - What is left over goes into the last hop: the **plunge** into the next cluster, up to 300 u deeper. It does not go into
   a longer runway, because that would widen the window past its authored width.
 
-**Measured numbers.** `Tools/Build/waystation_prototype_course.py`, 200 seeds × 4 intensities, 5 clusters. Every check
+**Measured numbers.** `Tools/Build/waystation_tower_course.py` (named `waystation_prototype_course.py` in round 1), 200 seeds × 4 intensities, 5 clusters. Every check
 passes.
 
 | | I1 | I2 | I3 | I4 |
@@ -109,12 +110,12 @@ at I4, *and* a Drop every 3-5 s. A wider window has a farther far edge, and the 
 
 ## 4. Fun score (the six-dimension rubric of `Docs/AI_SYSTEM/TIME_GAME_FUN_SCORES.md`)
 
-Each dimension is scored 0-10, and anything unknown scores low. The prototype's row is also in that scores table.
+Each dimension is scored 0-10, and anything unknown scores low. Waystation's row in that scores table is now the Drop Tower course's.
 
 | Vessel | Game | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun | Floor |
 |---|---|---|---|---|---|---|---|---|---|
-| Tiger Moth | Waystation (58), as measured | 9 | 6 | 7 | 4 | 3 | 4 | **5.5** | 3 Rivals |
-| Tiger Moth | **Waystation Prototype (76)**, est. | 9 | 7 | 7 | 5 | 3 | 4 | **5.8** | 3 Rivals |
+| Tiger Moth | Waystation (58), clusters only, before 2026-11-01 | 9 | 6 | 7 | 4 | 3 | 4 | **5.5** | 3 Rivals |
+| Tiger Moth | **Waystation (58), the Drop Tower course**, est. | 9 | 7 | 7 | 5 | 3 | 4 | **5.8** | 3 Rivals |
 
 **Why each score:**
 - **Verb 9:** the Drop is the whole race, short taps and one long plunge.
@@ -127,17 +128,30 @@ Each dimension is scored 0-10, and anything unknown scores low. The prototype's 
 - **Fairness 4:** never played. A danger landing is a full stop plus a permanent element burn, which may be harsh, and
   that is the vessel's rule, not the mode's.
 
-## 5. If Garrett approves: replacing Waystation
+## 5. Round 2: the prototype became Waystation (2026-11-01)
 
-These are left untouched in Waystation on purpose:
-- The card description, toast 118 and the preview's ObjectiveText and Notes still say Butterfly and FOLD
-  (`author_waystation_assets.py`).
-- `waystation_course.py --target` defaults to 24, and so do its harness and `WaystationCourseTests`. The shipped target
-  is 15.
-- `WAYSTATION.md`:
-  - it says target 24, comeback 0.4 and "six checks"; the code has 15, 0.64 and seven;
-  - it cites the retired `WaystationFoldTests` and `aiFoldAimDegrees`;
-  - it says `maxPlausibleSpeed` is 400; the scene has 1000.
+Shombith, after merging PR #1661: "make Waystation Prototype as Waystation". Garrett owns Waystation; this was done on
+that instruction, and every commit says so.
 
-The replacement is either to point the Waystation card at the prototype's scene and controller, or to fold
-`WaystationTower` into `WaystationCourseSource`. The generator, the model and the tests here are the record of both.
+**How it was folded in:**
+- **One mode, 58.** The card, scene, scoring rule, toasts and preview are Waystation's own, now authored with the
+  prototype's words (`author_waystation_assets.py`). GameModes 76 is retired and reserved, like 7, 28, 29, 31 and 47.
+- **One controller.** `WaystationController` gained the tower walls, their regrowth and the hop autopilot.
+  `WaystationPrototypeController` is gone.
+- **One course source.** `WaystationCourseSource` lays the clusters and the towers.
+- **The long-drop autopilot.** Its `aiFoldMinDistance` default rose from 420 to 700, so it stands down on every tower
+  link. The model reads the number off the controller.
+- **The target.** It is now `waystationClusterTarget` = 5 clusters. The finish line is every ring laid (18-41).
+  `waystationRingTarget` = 15 is retired.
+- **The comeback rate** went from 0.64 to 0.4, sized on the shortest race.
+- **The model and its harness** became `waystation_tower_course.py` and `waystation_tower_harness/`.
+- **The prototype's assets and registrations** are deleted. The generator removes them on every run, so nothing can
+  bring them back.
+
+**What round 1 left stale in Waystation, and what happened to it:**
+- **Fixed:** the card description, toast 118 and the preview's ObjectiveText and Notes, which said Butterfly and FOLD,
+  now use the Drop Tower's words.
+- **Fixed:** `WAYSTATION.md`'s header table (target, comeback, the hull). Its Butterfly- and Fold-era sections are kept
+  as the record of the clusters, under a note saying so.
+- **Still open:** `waystation_course.py --target` defaults to 24, and so do its harness and `WaystationCourseTests`.
+  They exercise Garrett's cluster generator alone, which a ring target still sizes.
