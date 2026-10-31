@@ -39,7 +39,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 81e1cc30914b65e48b7551479143a005, type: 2}
   - {fileID: 11400000, guid: 8fbab90eb61d9b8429305c20fe9eb239, type: 2}
   Games:
-  - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}
   TrainingGames:
   - {fileID: 11400000, guid: 8a556ca669e7f474483174c3513af298, type: 2}
