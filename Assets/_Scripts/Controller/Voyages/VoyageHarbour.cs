@@ -61,6 +61,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The Ark escort's difficulty while one is out, else 0.</summary>
         public int EscortDifficulty => IsEscorting ? _escort.Difficulty : 0;
 
+        /// <summary>The voyage the running escort rolled (its worlds and modifiers), or null.</summary>
+        public ArkEscortVariety.RolledVoyage EscortVoyage => IsEscorting ? _escort.Voyage : null;
+
         /// <summary>The job the running voyage sails, or null.</summary>
         public VoyageJob CurrentJob => _run && _run.IsActive ? _run.CurrentJob : null;
 

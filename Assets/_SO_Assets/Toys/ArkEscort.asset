@@ -112,6 +112,50 @@ MonoBehaviour:
     Ceiling: 50
   cellSpacing: 2800
   platesAreFood: 1
+  worldsPerVoyage: 4
+  rampJitter: 0.15
+  modifierCountWeights: {x: 0.3, y: 0.45, z: 0.25}
+  modifiers:
+  - Name: SWARMING SEAS
+    Kind: 0
+    Factor: 1.3
+    Weight: 1
+    MinDifficulty: 1
+  - Name: SWIFT FAUNA
+    Kind: 2
+    Factor: 1.25
+    Weight: 1
+    MinDifficulty: 1
+  - Name: THIN REACTOR
+    Kind: 1
+    Factor: 1.6
+    Weight: 1
+    MinDifficulty: 2
+  - Name: RAVENOUS
+    Kind: 3
+    Factor: 2.0
+    Weight: 1
+    MinDifficulty: 3
+  - Name: RED TIDE
+    Kind: 4
+    Factor: 1.0
+    Weight: 0.7
+    MinDifficulty: 2
+  - Name: BECALMED
+    Kind: 5
+    Factor: 0.75
+    Weight: 1
+    MinDifficulty: 1
+  - Name: FERTILE WORLDS
+    Kind: 6
+    Factor: 0.85
+    Weight: 0.8
+    MinDifficulty: 1
+  - Name: CALM WATERS
+    Kind: 0
+    Factor: 0.8
+    Weight: 0.8
+    MinDifficulty: 1
   voyageName: ARK ESCORT
   cardTitle: Escort the Ark
   cardLine: Difficulty {difficulty}, {legs} worlds

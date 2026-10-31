@@ -958,6 +958,8 @@ namespace CosmicShore.Gameplay
 
         protected override bool CanBeLeashed => forager && base.CanBeLeashed;
 
+        float _scaledMinSpeed = float.NaN, _scaledMaxSpeed = float.NaN;
+
         protected override float AuthoredArmourBite(bool superShielded) =>
             forager ? (superShielded ? superShieldBite : shieldBite) : 0f;
 
@@ -967,6 +969,14 @@ namespace CosmicShore.Gameplay
             if (tuning.TryGet(species, "minSpeed", out float v)) minSpeed = Mathf.Max(0f, v);
             if (tuning.TryGet(species, "maxSpeed", out v)) maxSpeed = Mathf.Max(minSpeed, v);
             if (tuning.TryGet(species, "huntSpeed", out v)) huntSpeedMultiplier = Mathf.Max(1f, v);
+            // A multiplier, applied once to whatever the speeds are now (this runs again after the variant tuning, which
+            // may rewrite them): values this method already scaled are recognised and left alone.
+            if (tuning.TryGet(species, "speedScale", out v))
+            {
+                float k = Mathf.Max(0f, v);
+                if (!Mathf.Approximately(minSpeed, _scaledMinSpeed)) _scaledMinSpeed = minSpeed *= k;
+                if (!Mathf.Approximately(maxSpeed, _scaledMaxSpeed)) _scaledMaxSpeed = maxSpeed *= k;
+            }
             if (tuning.TryGet(species, "feedingClusterRadius", out v)) feedingClusterRadius = Mathf.Max(0f, v);
         }
 

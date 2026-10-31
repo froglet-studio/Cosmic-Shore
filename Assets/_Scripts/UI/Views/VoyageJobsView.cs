@@ -126,9 +126,13 @@ namespace CosmicShore.UI
             int difficulty, bool sail)
         {
             string d = difficulty.ToString();
-            string legs = escort.Legs.Count.ToString();
+            // The voyage this escort sails (or will): its worlds in order and its modifiers, under the card's line.
+            var voyage = sail ? ArkEscortRun.PreviewVoyage(escort, difficulty) : VoyageHarbour.Current?.EscortVoyage;
+            string legs = (voyage is { Legs: { Count: > 0 } } ? voyage.Legs.Count : escort.Legs.Count).ToString();
+            string line = TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", d);
+            if (voyage is { WorldNames: { Count: > 0 } }) line += "\n" + voyage.Describe();
             card.Show(content, style, null, null,
-                TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", d),
+                line,
                 TemplateText.Fill(escort.CardTitle, "difficulty", d, "legs", legs),
                 sail ? () => SetSailEscort(difficulty) : null);
             if (sail)

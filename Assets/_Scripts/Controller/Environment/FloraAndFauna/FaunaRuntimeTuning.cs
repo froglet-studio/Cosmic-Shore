@@ -25,7 +25,8 @@ namespace CosmicShore.Gameplay
         public const string AllSpecies = "all";
 
         /// <summary>Fields every species takes (Fauna base and the cell's population resolution).</summary>
-        public static readonly string[] CommonFields = { "shieldBite", "superShieldBite", "floorScale", "capScale" };
+        public static readonly string[] CommonFields =
+            { "shieldBite", "superShieldBite", "floorScale", "capScale", "speedScale", "biteScale" };
 
         /// <summary>LightFauna fields (a runtime copy of its <see cref="LightFaunaDataSO"/>).</summary>
         public static readonly string[] LightFields =
@@ -117,6 +118,11 @@ namespace CosmicShore.Gameplay
             if (TryGet(species, "huntDuration", out v)) copy.huntDurationSeconds = Mathf.Max(0f, v);
             if (TryGet(species, "territory", out v)) copy.territoryRadius = Mathf.Max(0f, v);
             if (TryGet(species, "pursuitSpeed", out v)) copy.pursuitSpeedMultiplier = Mathf.Max(1f, v);
+            if (TryGet(species, "speedScale", out v))   // a multiplier on top (a voyage's "swift fauna")
+            {
+                copy.minSpeed *= Mathf.Max(0f, v);
+                copy.maxSpeed *= Mathf.Max(0f, v);
+            }
             _copies[(source, species)] = copy;
             return copy;
         }
@@ -134,12 +140,18 @@ namespace CosmicShore.Gameplay
             if (TryGet(species, "huntInterval", out v)) copy.HuntIntervalSeconds = Mathf.Max(0f, v);
             if (TryGet(species, "huntDuration", out v)) copy.HuntDurationSeconds = Mathf.Max(0f, v);
             if (TryGet(species, "mouthRadius", out v)) copy.MouthRadius = Mathf.Max(0f, v);
+            if (TryGet(species, "speedScale", out v))
+            {
+                copy.CruiseSpeed *= Mathf.Max(0f, v);
+                copy.LungeSpeed *= Mathf.Max(0f, v);
+            }
             _copies[(source, species)] = copy;
             return copy;
         }
 
         bool TouchesAny(string species, string[] fields)
         {
+            if (TryGet(species, "speedScale", out _)) return true;
             foreach (var f in fields)
                 if (TryGet(species, f, out _)) return true;
             return false;
