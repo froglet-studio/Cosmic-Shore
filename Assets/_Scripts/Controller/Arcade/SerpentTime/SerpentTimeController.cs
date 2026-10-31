@@ -21,15 +21,17 @@ namespace CosmicShore.Gameplay
     /// <item><b>Guarded rings.</b> A gate stands 2 rings at I1-I2 and 1 at I3-I4, and one ring of each gate is guarded
     /// by a living plant: a Borromean flora (a membrane spanning its own rings) planted at the ring's mouth, of an element
     /// that rises with intensity (Time at I1: plain plates; Mass: shielded plates that bounce a hull; Charge at I4: every
-    /// plate danger). Fly the open ring, ram the guard and pay what its prisms cost any hull, or shoot a way through.
-    /// The guard is ordinary flora of the cell: it grows in, fauna graze it, and a plant destroyed drops its heart crystal.
-    /// Nothing about the Serpent changes.</item>
+    /// plate danger). Fly the open ring, or hit the guard's HEART: a sniper round or a hull that passes through the
+    /// middle of the plant fells all of it - every plate blows apart outward from the heart and the ring is open. What
+    /// reaching the middle costs is the plates' own (Time's are free to ram through, Charge's burn petals, Mass's bounce
+    /// a hull, so a Mass guard is shot). The guard is ordinary flora of the cell: it grows in, fauna graze it, and it
+    /// dies by the ordinary flora death (its last plate gone, its heart drops). Nothing about the Serpent changes.</item>
     /// <item><b>The cell's own life.</b> The race runs in the barren Skim Race cell with its trail-grazing food web (the
     /// Rampage forest it ran in for a day cost too much frame time, 2026-10-31); the guards are its flora.</item>
     /// <item><b>Gate debris.</b> Loose neutral prisms lie round every gate and grow back, so a Serpent that cloaks
     /// there has the mass its Seed Wall grows from. The debris is the environment's; the wall is the shipped one.</item>
     /// <item><b>The AI plays dirty</b> (input-only, through the replicated press like a human's): it picks the open
-    /// ring of each gate, shoots a wall out of its ring when its rifle is ready, and cloaks just past a ring a rival
+    /// ring of each gate, shoots a guard's heart or a wall out of its ring when its rifle is ready, and cloaks just past a ring a rival
     /// still needs, so the wall grows in that rival's way.</item>
     /// </list>
     ///
@@ -74,6 +76,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("I4: the guard's element per gate (1 Charge, 2 Mass, 3 Space, 4 Time).")]
         [SerializeField] int[] guardElementsI4 = { 1, 2, 1 };
 
+        [Header("Felling a guard (hit its heart)")]
+        [Tooltip("A sniper round, or a hull, that passes within this distance (u) of a guard's heart fells the whole plant. " +
+                 "The heart sits in a clear alcove at the middle of the membrane (5.8 u round it on Time and Charge, 11 u on " +
+                 "Mass), so this is about that alcove: aim at the middle of the plant.")]
+        [SerializeField, Min(0f)] float guardHeartHitRadius = 9f;
+        [Tooltip("Plates a felled guard blows apart each frame, nearest its heart first, so the plant bursts outward over a " +
+                 "few frames instead of all in one.")]
+        [SerializeField, Min(1)] int guardFellPlatesPerFrame = 48;
+        [Tooltip("Speed (u/s) a felled guard's plates fly apart at, outward from its heart.")]
+        [SerializeField, Min(0f)] float guardFellDebrisSpeed = 40f;
+
         [Header("Gate debris (the walls' fuel)")]
         [Tooltip("The prism every piece of gate debris is laid from: the environment prism (SpawnablePrism). " +
                  "Authored by Tools/Build/author_serpent_time_assets.py. Unset = no debris, and a warning.")]
@@ -98,7 +111,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aiCloakCooldownSeconds = 15.5f;
         [Tooltip("Share of a ring's mouth rival prisms must cover before the AI calls the ring walled.")]
         [SerializeField, Range(0.05f, 1f)] float aiBlockedCoverage = 0.4f;
-        [Tooltip("Extra cost (u) the AI puts on a walled ring (it shoots it open when its rifle is ready).")]
+        [Tooltip("Extra cost (u) the AI puts on a walled ring, or one a Mass or Charge guard stands in (it shoots it open when its rifle is ready).")]
         [SerializeField, Min(0f)] float aiBlockedCost = 120f;
         [Tooltip("The AI keeps its ring unless another is cheaper by this much (u).")]
         [SerializeField, Min(0f)] float aiRingSwitchHysteresis = 60f;
@@ -152,6 +165,27 @@ namespace CosmicShore.Gameplay
             public float ShotPhaseAt;
             public float NextShotAt;
             public System.Random Rng;
+
+            // Every peer: the rifle's cooldown last frame. It rising is a round fired (the press replicates, so every
+            // peer's copy of the rifle fires), read to see whether the round went through a guard's heart.
+            public float RifleCooldownSeen;
+        }
+
+        /// <summary>One ring guard: the plant, the ring it stands in, and - once its heart is hit - the burst felling it.</summary>
+        sealed class Guard
+        {
+            public Flora Flora;
+            public int Gate, Slot;
+            public bool Felling;
+            public Vector3 FelledFrom;
+            public readonly List<HealthPrism> Burst = new();
+            public int BurstAt;
+
+            public bool Standing => Flora && !Felling && !Flora.IsDying;
+
+            /// <summary>Reaching this guard's heart costs a hull something (Charge plates are danger, Mass plates bounce), so
+            /// the AI shoots it; a Time guard's plain plates break free, so the AI flies through its middle.</summary>
+            public bool CostsToRam => Flora && Flora.Element is Element.Charge or Element.Mass;
         }
 
         const int MaxRings = 3;
@@ -172,7 +206,7 @@ namespace CosmicShore.Gameplay
             public readonly List<Prism> Pieces = new();
         }
 
-        readonly List<Flora> _guards = new();
+        readonly List<Guard> _guards = new();
         static readonly ProfilerMarker s_tickMarker = new("SerpentTime.Tick");
         static readonly ProfilerMarker s_aiMarker = new("SerpentTime.AI");
 
@@ -262,7 +296,8 @@ namespace CosmicShore.Gameplay
         /// ring's centre, grown along the ring's axis, so its membrane spans the mouth. Every peer plants its own, at the
         /// same pose, element and domain (a playable domain picked by a hash of the gate: never Blue, which is bait to every
         /// fauna school), as the debris is laid. The plant is the cell's from then on: it grows, is grazed, and drops its
-        /// heart when it dies.
+        /// heart when it dies. The plant turns itself to a random attitude when it plants (one shape, many faces), so its
+        /// plates differ a little per peer; its HEART, which felling it is about, is the ring's centre on every peer.
         /// </summary>
         void PlantGuards(int rings)
         {
@@ -287,12 +322,107 @@ namespace CosmicShore.Gameplay
                 var ring = SerpentTimeCluster.Ring(_course[i], i, slot, rings);
                 var flora = CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg, ring.Position, ring.Axis,
                     Quaternion.LookRotation(ring.Axis), domainOverride: SerpentTimeCluster.GuardDomain(i, slot));
-                if (flora) _guards.Add(flora);
+                if (flora) _guards.Add(new Guard { Flora = flora, Gate = i, Slot = slot });
             }
         }
 
         FloraConfigurationSO GuardFor(int element) =>
             guardFloraByElement != null && element >= 1 && element <= guardFloraByElement.Length ? guardFloraByElement[element - 1] : null;
+
+        Guard GuardAt(int gateIndex, int slot)
+        {
+            for (int i = 0; i < _guards.Count; i++)
+                if (_guards[i].Gate == gateIndex && _guards[i].Slot == slot) return _guards[i];
+            return null;
+        }
+
+        /// <summary>
+        /// Every peer, every frame: a hull within <see cref="guardHeartHitRadius"/> of a standing guard's heart, or a
+        /// sniper round fired this frame whose line passes that close to it, fells the guard. The round is read off the
+        /// shipped rifle (its cooldown rising is the shot; ship position and forward, its range and cone, are the round's
+        /// own), never changed: the rifle does exactly what it does everywhere, and the plant answers being hit in its
+        /// heart. Every peer resolves the same press and the same heart, so every peer fells its own copy.
+        /// </summary>
+        void TickGuards()
+        {
+            if (_guards.Count == 0) return;
+            float hit2 = guardHeartHitRadius * guardHeartHitRadius;
+            var players = gameData.Players;
+            for (int p = 0; p < players.Count; p++)
+            {
+                var player = players[p];
+                var tf = player?.Vessel?.Transform;
+                if (!tf) continue;
+                var pilot = PilotFor(player);
+                bool fired = false;
+                if (pilot != null && pilot.Rifle)
+                {
+                    float cooldown = pilot.Rifle.CooldownRemaining;
+                    fired = cooldown > pilot.RifleCooldownSeen + 0.05f;
+                    pilot.RifleCooldownSeen = cooldown;
+                }
+
+                for (int g = 0; g < _guards.Count; g++)
+                {
+                    var guard = _guards[g];
+                    if (!guard.Standing) continue;
+                    Vector3 heart = guard.Flora.HeartTransform.position;
+                    if ((heart - tf.position).sqrMagnitude <= hit2 ||
+                        fired && SerpentTimeCluster.RoundPassesHeart(tf.position, tf.forward, pilot.Rifle.RangeUnits,
+                                                                     pilot.Rifle.ConeHalfAngleDegrees, heart, guardHeartHitRadius))
+                        BeginFell(guard, heart);
+                }
+            }
+
+            for (int g = 0; g < _guards.Count; g++)
+                if (_guards[g].Felling) TickFell(_guards[g]);
+        }
+
+        void BeginFell(Guard guard, Vector3 heart)
+        {
+            guard.Felling = true;
+            guard.FelledFrom = heart;
+            guard.BurstAt = 0;
+            guard.Flora.GetComponentsInChildren(true, guard.Burst);
+            // Nearest the heart first, so the plant bursts outward from where it was hit. Rare (once per guard), so the
+            // comparison's capture is no per-frame cost.
+            guard.Burst.Sort((a, b) => (a.transform.position - heart).sqrMagnitude
+                                       .CompareTo((b.transform.position - heart).sqrMagnitude));
+        }
+
+        /// <summary>
+        /// Blow up to <see cref="guardFellPlatesPerFrame"/> of a felled guard's plates apart this frame, through the
+        /// ordinary prism damage (devastating, as the flora's own death does, so armour does not hold; a super-shield
+        /// comes off first, the sanctioned order). The plant then dies by the ordinary flora death the moment its last
+        /// plate goes: its spindles wither and its heart drops. A plate it grew during the burst is caught at the end.
+        /// </summary>
+        void TickFell(Guard guard)
+        {
+            var flora = guard.Flora;
+            if (!flora)
+            {
+                guard.Felling = false;
+                guard.Burst.Clear();
+                return;
+            }
+
+            int budget = guardFellPlatesPerFrame;
+            while (budget > 0 && guard.BurstAt < guard.Burst.Count)
+            {
+                var plate = guard.Burst[guard.BurstAt++];
+                if (!plate || plate.destroyed || plate.LifeForm != flora) continue;
+                Vector3 impact = (plate.transform.position - guard.FelledFrom).normalized * guardFellDebrisSpeed;
+                if (plate.prismProperties is { IsSuperShielded: true }) plate.DeactivateShields(impact);
+                plate.Damage(impact, Domains.Blue, string.Empty, devastate: true);
+                budget--;
+            }
+            if (guard.BurstAt < guard.Burst.Count) return;
+
+            guard.BurstAt = 0;
+            guard.Burst.Clear();
+            if (!flora.IsDying) flora.GetComponentsInChildren(true, guard.Burst);
+            if (guard.Burst.Count == 0) guard.Felling = false;
+        }
 
         // ── Gate debris (every peer) ──────────────────────────────────────
 
@@ -470,6 +600,8 @@ namespace CosmicShore.Gameplay
             };
             _pilots[player] = pilot;
             RefreshVessel(pilot);
+            // A rifle already cooling when first seen fired before this race looked, not now.
+            pilot.RifleCooldownSeen = pilot.Rifle ? pilot.Rifle.CooldownRemaining : 0f;
             return pilot;
         }
 
@@ -497,6 +629,7 @@ namespace CosmicShore.Gameplay
             if (!IsSpawned || gameData == null || !gameData.IsTurnRunning) return;
 
             using var _ = s_tickMarker.Auto();
+            TickGuards();
             TickDebrisRegrow();
 
             if (!_localRaceStarted)
@@ -511,7 +644,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The ring of this gate the AI flies for: the cheapest by distance (here, through it, on to the next gate) plus
-        /// a cost for a walled ring (it shoots it open when its rifle is ready).
+        /// a cost for a walled ring or one a Mass or Charge guard stands in (it shoots it open when its rifle is ready).
         /// Re-decided a few times a second, with hysteresis, and held once the pilot is close.
         /// </summary>
         protected override RaceGate ChooseAIGate(IPlayer player, int threaded, int ringIndex, RaceGate gate)
@@ -524,11 +657,11 @@ namespace CosmicShore.Gameplay
             var gates = _clusterGates[ringIndex];
             bool fresh = pilot.ChoiceIndex != threaded || pilot.ChoiceSlot < 0 || pilot.ChoiceSlot >= gates.Length;
             if (fresh || Time.time >= pilot.NextChoiceAt)
-                ChooseRing(pilot, tf.position, threaded, gates, fresh);
+                ChooseRing(pilot, tf.position, threaded, ringIndex, gates, fresh);
             return gates[pilot.ChoiceSlot];
         }
 
-        void ChooseRing(Pilot pilot, Vector3 self, int threaded, RaceGate[] gates, bool fresh)
+        void ChooseRing(Pilot pilot, Vector3 self, int threaded, int ringIndex, RaceGate[] gates, bool fresh)
         {
             pilot.NextChoiceAt = Time.time + ChoiceSeconds;
             Vector3 next = threaded + 1 < RaceLength ? _course[RingIndexFor(threaded + 1)].Position : gates[0].Position;
@@ -537,7 +670,7 @@ namespace CosmicShore.Gameplay
             float bestCost = float.MaxValue, keptCost = float.MaxValue;
             for (int slot = 0; slot < gates.Length; slot++)
             {
-                pilot.SlotBlocked[slot] = IsWalled(gates[slot], pilot.Player.Domain, out pilot.SlotCentroid[slot]);
+                pilot.SlotBlocked[slot] = Blocked(ringIndex, slot, gates[slot], pilot.Player.Domain, out pilot.SlotCentroid[slot]);
                 float cost = Vector3.Distance(self, gates[slot].Position) + Vector3.Distance(gates[slot].Position, next)
                              + (pilot.SlotBlocked[slot] ? aiBlockedCost : 0f);
                 if (cost < bestCost) { bestCost = cost; best = slot; }
@@ -557,7 +690,23 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Does rival mass, or a guard's danger or shielded plates, close enough of this ring's mouth to call it walled? Measured as the prisms' face area against
+        /// Is this ring closed to the AI, and where does it shoot to open it? A standing Mass or Charge guard closes it, aimed
+        /// at its heart (a round through the middle fells the plant); a Time guard does not, because the AI's line through
+        /// the ring's centre runs through the heart and fells it for free. Otherwise, a rival wall (<see cref="IsWalled"/>).
+        /// </summary>
+        bool Blocked(int gateIndex, int slot, in RaceGate ring, Domains domain, out Vector3 aim)
+        {
+            var guard = GuardAt(gateIndex, slot);
+            if (guard != null && guard.Standing && guard.CostsToRam)
+            {
+                aim = guard.Flora.HeartTransform.position;
+                return true;
+            }
+            return IsWalled(ring, domain, out aim);
+        }
+
+        /// <summary>
+        /// Does rival mass close enough of this ring's mouth to call it walled? Measured as the prisms' face area against
         /// the mouth's, counting only prisms in a slab round the ring's plane and inside its mouth. Any rival prism counts
         /// (a Seed Wall's bricks are the usual ones); the question is asked of the prisms, never of the vessel's code.
         /// </summary>
@@ -575,10 +724,8 @@ namespace CosmicShore.Gameplay
             {
                 var prism = s_prisms[i];
                 if (!prism || prism.destroyed || prism.Domain == domain) continue;
-                // Loose neutral debris is not a wall. A guard's danger or shielded plates are, whatever their domain:
-                // ramming them costs something; its plain plates are not (they break free).
-                bool costly = prism.prismProperties is { IsDangerous: true } or { IsShielded: true } or { IsSuperShielded: true };
-                if (!costly && (prism.Domain == Domains.Blue || prism is HealthPrism)) continue;   // a plain guard plate breaks free
+                // Loose neutral debris is not a wall, and a plant's plates are the guard's question (Blocked), not a wall's.
+                if (prism.Domain == Domains.Blue || prism is HealthPrism) continue;
 
                 Vector3 offset = prism.transform.position - ring.Position;
                 float along = Vector3.Dot(offset, ring.Axis);
@@ -668,8 +815,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The AI's ring is walled and its rifle is ready: raise the scope (LT), and once it has settled and the nose is on
-        /// the wall, fire (RT), then lower both. Every press goes the replicated way, so every peer sees the shot.
+        /// The AI's ring is walled (or a Mass or Charge guard stands in it) and its rifle is ready: raise the scope (LT), and
+        /// once it has settled and the nose is on the wall or the guard's heart, fire (RT), then lower both. Every press goes
+        /// the replicated way, so every peer sees the shot. A gate of one ring has no cluster to choose from, so its one ring
+        /// is asked here, on the same cadence.
         /// </summary>
         void TickWallShot(Pilot pilot)
         {
@@ -678,7 +827,14 @@ namespace CosmicShore.Gameplay
             float now = Time.time;
             int threaded = pilot.Player.RoundStats?.SwitchesThreaded ?? 0;
             int ringIndex = threaded < RaceLength ? RingIndexFor(threaded) : -1;
-            bool aimed = HasCluster(ringIndex) && pilot.ChoiceIndex == threaded && pilot.ChoiceSlot >= 0;
+            if (ringIndex >= 0 && !HasCluster(ringIndex) && (pilot.ChoiceIndex != threaded || now >= pilot.NextChoiceAt))
+            {
+                pilot.ChoiceIndex = threaded;
+                pilot.ChoiceSlot = 0;
+                pilot.NextChoiceAt = now + ChoiceSeconds;
+                pilot.SlotBlocked[0] = Blocked(ringIndex, 0, _course[ringIndex], pilot.Player.Domain, out pilot.SlotCentroid[0]);
+            }
+            bool aimed = ringIndex >= 0 && pilot.ChoiceIndex == threaded && pilot.ChoiceSlot >= 0;
             bool walled = aimed && pilot.SlotBlocked[pilot.ChoiceSlot];
             Vector3 target = aimed ? pilot.SlotCentroid[pilot.ChoiceSlot] : tf.position;
             float distance = Vector3.Distance(tf.position, target);

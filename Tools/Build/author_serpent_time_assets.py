@@ -80,15 +80,15 @@ htr.author(dict(
     comeback=0.45,
     description="""Serpents only, and it is a dirty race through a living cell. Every gate is a
     ring or two, and a living plant guards one of them - plain at first, armoured and then
-    dangerous as the intensity rises: take the open ring, ram the guard and pay, or shoot
-    a way through. Cloak just past a ring and a
+    dangerous as the intensity rises: take the open ring, or hit the guard's heart, with a
+    round or your hull through its middle, and the whole plant falls. Cloak just past a ring and a
     Seed Wall grows in the way of whoever is behind you. Two laps. Fastest domain home
     wins.""",
     preview_objective="Thread any ring - wall the gate behind you",
     preview_notes="OPEN-ENDED, shell-only: Headlong''s solver cut for the Serpent, laid as ring clusters at match start, so a preview has no gates. It teaches the fuel pellets.",
     # Serpent Time's own beat (SerpentTimeController posts it to the local pilot; GameToastSituation 156).
     extra_toasts=[
-        (156, "A plant guards one ring of every gate. Take the open one, or break through.", dict(domain_names=0)),
+        (156, "A plant guards one ring of every gate. Hit its heart and the whole plant falls.", dict(domain_names=0)),
     ],
     build_after="MinigameScarabRally",
 ))

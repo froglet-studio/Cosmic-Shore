@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Time: hit a guard's heart and the whole plant falls (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Extends the guarded-rings entry below. Mode code only (`SerpentTimeController.TickGuards` / `BeginFell` / `TickFell`,
+`SerpentTimeCluster.RoundPassesHeart`); the Serpent, the rifle and the flora code are untouched. Not compiled in this session.
+
+1. I1, a Time guard: fly straight through the middle of the plant (within 9 u of its heart crystal). The whole plant
+   bursts outward from the heart over a few frames, every plate gone, and its heart crystal drops in the ring. Fly
+   through its edge instead: only the plates you touch break, the plant stays.
+2. Scope and shoot the middle of a guard from 300-1000 u: the same burst. Shoot its edge: only the cone's hole.
+3. I2 / I3, a Mass guard (sparse armoured plates): one round through its middle fells it. A Charge guard (I3 / I4):
+   shooting the middle fells it for free, flying through the middle fells it but the danger plates you touch cost petals.
+4. With 3 AI at I3 / I4 (one guarded ring per gate): the AI scopes and fires at a Mass or Charge guard's heart from
+   90-1100 u and the plant falls; it flies straight through a Time guard and fells it. Before this the AI never shot
+   on a one-ring gate.
+5. Two peers: a round through a heart on one fells the guard on both (each peer fells its own copy from the replicated
+   press). Watch for a frame spike on the burst (48 plates a frame, `guardFellPlatesPerFrame`).
+6. EditMode: `SerpentTimeClusterTests.A_round_fells_a_guard_only_through_its_heart`.
+
 ### 🔴 Serpent Time: rings guarded by flora, back in the Skim Race cell, perf markers (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Supersedes the slab cover and the Rampage cells in the entry below. Not compiled in this session.

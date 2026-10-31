@@ -104,5 +104,22 @@ namespace CosmicShore.Gameplay
             h ^= h >> 15;
             return (h % 3u) switch { 0u => Domains.Jade, 1u => Domains.Ruby, _ => Domains.Gold };
         }
+
+        /// <summary>
+        /// Does a sniper round fired from <paramref name="origin"/> along <paramref name="forward"/> (unit) pass through a
+        /// guard's heart at <paramref name="heart"/>? In front of the muzzle, within the round's <paramref name="range"/>, and
+        /// within <paramref name="hitRadius"/> of its line (or inside its cone of <paramref name="coneHalfAngleDegrees"/>
+        /// there, where the cone is the wider). The rifle's own geometry asked of one point; the rifle is never changed.
+        /// </summary>
+        public static bool RoundPassesHeart(Vector3 origin, Vector3 forward, float range, float coneHalfAngleDegrees,
+                                            Vector3 heart, float hitRadius)
+        {
+            Vector3 to = heart - origin;
+            float along = Vector3.Dot(to, forward);
+            if (along <= 0f || along > range) return false;
+            float lateral = (to - forward * along).magnitude;
+            float cone = along * Mathf.Tan(Mathf.Clamp(coneHalfAngleDegrees, 0f, 89f) * Mathf.Deg2Rad);
+            return lateral <= Mathf.Max(hitRadius, cone);
+        }
     }
 }

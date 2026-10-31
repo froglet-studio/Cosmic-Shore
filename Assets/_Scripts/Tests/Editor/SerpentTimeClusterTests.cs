@@ -128,5 +128,22 @@ namespace CosmicShore.Tests
             }
             Assert.AreEqual(3, seen.Count, "all three playable domains guard some ring");
         }
+
+        [Test]
+        public void A_round_fells_a_guard_only_through_its_heart()
+        {
+            var origin = Vector3.zero;
+            var nose = Vector3.forward;
+            // Straight through the heart, and just inside the hit radius of it.
+            Assert.IsTrue(SerpentTimeCluster.RoundPassesHeart(origin, nose, 3000f, 0.5f, new Vector3(0f, 0f, 400f), 9f));
+            Assert.IsTrue(SerpentTimeCluster.RoundPassesHeart(origin, nose, 3000f, 0.5f, new Vector3(8.5f, 0f, 200f), 9f));
+            // Through the plant's plates but wide of the heart: no.
+            Assert.IsFalse(SerpentTimeCluster.RoundPassesHeart(origin, nose, 3000f, 0.5f, new Vector3(30f, 0f, 200f), 9f));
+            // Behind the muzzle, or past the round's range: no.
+            Assert.IsFalse(SerpentTimeCluster.RoundPassesHeart(origin, nose, 3000f, 0.5f, new Vector3(0f, 0f, -50f), 9f));
+            Assert.IsFalse(SerpentTimeCluster.RoundPassesHeart(origin, nose, 3000f, 0.5f, new Vector3(0f, 0f, 3200f), 9f));
+            // Far out the cone is the wider: 2000 u at 0.5 deg is ~17.5 u, so 15 u off the line still counts.
+            Assert.IsTrue(SerpentTimeCluster.RoundPassesHeart(origin, nose, 3000f, 0.5f, new Vector3(15f, 0f, 2000f), 9f));
+        }
     }
 }
