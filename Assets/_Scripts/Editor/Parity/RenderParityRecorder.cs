@@ -43,6 +43,8 @@ namespace CosmicShore.Editor.Parity
         const string KeyActive = "CosmicShore.RenderParity.Active";
         const string KeyTake = "CosmicShore.RenderParity.Take";
         const string KeyBatch = "CosmicShore.RenderParity.Batch";
+        const string KeyRestoreBootstrap = "CosmicShore.RenderParity.RestoreBootstrap";
+        const string KeyPrevLoadBootstrap = "CosmicShore.RenderParity.PrevLoadBootstrap";
 
         [MenuItem("FrogletTools/Amoebius/Render Parity: Record Control Take", false, 320)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 4,
@@ -54,8 +56,21 @@ namespace CosmicShore.Editor.Parity
         {
             SessionState.EraseBool(KeyActive);
             SessionState.EraseString(KeyTake);
+            RestoreBootstrap();
             if (EditorApplication.isPlaying) EditorApplication.ExitPlaymode();
             Debug.Log("[RenderParity] cancelled");
+        }
+
+        /// <summary>
+        /// Puts back the SceneBootstrapper "Load Main_Menu Scene" pref that <see cref="Record"/> cleared
+        /// for the take (an EditorPref, so it outlives this editor: every exit path restores it).
+        /// </summary>
+        static void RestoreBootstrap()
+        {
+            if (!SessionState.GetBool(KeyRestoreBootstrap, false)) return;
+            SceneBootstrapper.LoadBootstrapSceneOnPlay = SessionState.GetBool(KeyPrevLoadBootstrap, true);
+            SessionState.EraseBool(KeyRestoreBootstrap);
+            SessionState.EraseBool(KeyPrevLoadBootstrap);
         }
 
         /// <summary>
@@ -76,6 +91,7 @@ namespace CosmicShore.Editor.Parity
             if (!SessionState.GetBool(KeyActive, false))
             {
                 Debug.LogError("[RenderParity] batch record did not start (see the errors above)");
+                RestoreBootstrap();
                 EditorApplication.Exit(1);
             }
         }
@@ -93,6 +109,14 @@ namespace CosmicShore.Editor.Parity
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             SessionState.SetBool(KeyActive, true);
             SessionState.SetString(KeyTake, take);
+            // Play the control scene itself - suppress SceneBootstrapper's Bootstrap redirect for the
+            // take (as BenchmarkAutoStart does) and restore it when the take ends.
+            if (!SessionState.GetBool(KeyRestoreBootstrap, false))
+            {
+                SessionState.SetBool(KeyRestoreBootstrap, true);
+                SessionState.SetBool(KeyPrevLoadBootstrap, SceneBootstrapper.LoadBootstrapSceneOnPlay);
+            }
+            SceneBootstrapper.LoadBootstrapSceneOnPlay = false;
             Debug.Log($"[RenderParity] recording take '{take}' -> {Path.Combine(GoldensRoot, take)}");
             EditorApplication.EnterPlaymode();
         }
@@ -183,6 +207,7 @@ namespace CosmicShore.Editor.Parity
                 Debug.Log($"[RenderParity] recorded in {(DateTime.UtcNow - s_started).TotalSeconds:F0} s -> {s_dir}");
                 SessionState.EraseBool(KeyActive);
                 SessionState.EraseString(KeyTake);
+                RestoreBootstrap();
                 bool batch = SessionState.GetBool(KeyBatch, false);
                 SessionState.EraseBool(KeyBatch);
                 if (batch)
@@ -207,6 +232,7 @@ namespace CosmicShore.Editor.Parity
                 s_take = null;
                 SessionState.EraseBool(KeyActive);
                 SessionState.EraseString(KeyTake);
+                RestoreBootstrap();
             }
 
             static void WriteTakeJson()
