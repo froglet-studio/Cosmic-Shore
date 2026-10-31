@@ -1,6 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using FMODUnity;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -89,8 +90,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(1f, 3f)] float hillGrowthMax = 1.5f;
         [Tooltip("A trail block every this many u along the dart.")]
         [SerializeField, Min(2f)] float trailBlockGap = 6f;
-        [Tooltip("A trail block's size (x across, y thick, z along the dart).")]
-        [SerializeField] Vector3 trailBlockScale = new(1.4f, 0.4f, 5.5f);
+        [Tooltip("A trail block's cross-section: x across the plane (it grows here when flown over), y its thickness in the plane. " +
+                 "Its length along the dart is not authored: it is the length whose SHIELD meets the next block's tip to tip " +
+                 "(trailBlockGap / 3 x trailShieldFill), so a shielded trail is a chain of diamonds, never crossing spikes.")]
+        [SerializeField] Vector2 trailBlockSection = new(1.4f, 0.5f);
+        [Tooltip("The share of the shield-flush length a trail block takes (1: shielded tips touch; less leaves a gap between " +
+                 "the diamonds). The shipped hills never cross at 1 (GobyPistolEnergyTests.Trail_ShieldedNeighboursMeetTipToTip).")]
+        [SerializeField, Range(0.5f, 1f)] float trailShieldFill = 0.9f;
 
         [Header("Pistol: the ride, Tiny Wings' physics (Docs/PISTOL_TINY_WINGS_STUDY.md): a frictionless body under gravity, a " +
                 "dive about seven times gravity, almost no drag, a landing that keeps its speed along the slope and loses only " +
@@ -135,13 +141,73 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("A slingshot pull this long (a share of the screen's short side) is a full jump.")]
         [SerializeField, Range(0.05f, 0.6f)] float pSlingPull = 0.22f;
 
+        [Header("Pistol: a broken trail (Garrett, 2026-10-28: \"the shrimp should have to clear the destroyed section\"; " +
+                "2026-10-29: a fall restores what it got past and drops it beyond the gap)")]
+        [Tooltip("Where a trail block was destroyed the ground is a hole. A Pistol this far under the ground's line over a hole has " +
+                 "fallen in: the gap's blocks it got past are restored, it loses all its energy, and it reappears on the next " +
+                 "standing ground beyond the gap with its speed. Less, it still catches the far lip, u.")]
+        [SerializeField, Min(0f)] float pEdgeGrace = 1.2f;
+        [Tooltip("Seconds the vortex-ring portals last where the Pistol fell in and where it reappears.")]
+        [SerializeField, Min(0.05f)] float fallPopSeconds = 0.5f;
+        [Tooltip("How far the Pistol spins end over end as it comes out of the portal, degrees (it ends upright).")]
+        [SerializeField, Min(0f)] float fallSpinDegrees = 540f;
+        [Tooltip("The portals' radius, u (the Pistol is 2.7 u long).")]
+        [SerializeField, Min(0.5f)] float fallRingRadius = 2.4f;
+
+        [Header("Pistol: energy from skipped blocks (Garrett, 2026-10-29: \"this reward the player for making big jumps\")")]
+        [Tooltip("The energy one block flown over (not ridden) gives, the first of a flight.")]
+        [SerializeField, Min(0f)] float energyPerSkippedBlock = 1f;
+        [Tooltip("Each further block of the same flight gives this much more (x the first's): the nth gives 1 + bonus n, so a " +
+                 "flight over 10 blocks earns 19, over 20 earns 58.")]
+        [SerializeField, Range(0f, 1f)] float energyFlightBonus = 0.2f;
+        [Tooltip("The most energy the Pistol holds (its Mass card's gauge is full here): a full den's worth at Mass's rest.")]
+        [SerializeField, Min(1f)] float energyMax = 640f;
+        [Tooltip("A block flown over grows this much OUT OF THE PLANE (across the trail, its x), u a skip.")]
+        [SerializeField, Min(0f)] float skipGrowStep = 0.8f;
+        [Tooltip("A block grows across the trail to this width, u; one this wide is shielded when flown over again.")]
+        [SerializeField, Min(0.5f)] float skipGrowMax = 8f;
+        [Header("Pistol: the juice of a skipped block (Garrett, 2026-10-29: \"there should be some good juice associated with " +
+                "growing, restoring, and shielding prisms\" ... \"lets get the juice on landing\")")]
+        [Tooltip("A rewarded block throws this many lit, faceted shards in the Pistol's plane (a restored one draws them in).")]
+        [SerializeField, Range(0, 16)] int juiceShards = 6;
+        [Tooltip("Seconds a block's juice lasts.")]
+        [SerializeField, Min(0.05f)] float juiceSeconds = 0.45f;
+        [Tooltip("How far the shards fly, u.")]
+        [SerializeField, Min(0f)] float juiceReach = 4f;
+        [Tooltip("A shard's edge, u.")]
+        [SerializeField, Min(0.05f)] float juiceShardSize = 0.55f;
+        [Tooltip("The block's flash: a lit shell this much bigger than the block, shrinking onto it.")]
+        [SerializeField, Range(1f, 3f)] float juicePulseScale = 1.7f;
+        [Tooltip("Shielded: the shards' colour, the palette's call-to-action lime (never a domain's: cyan reads as Jade). Grown " +
+                 "and restored shards wear the pair's own domain colour, lit.")]
+        [SerializeField] Color juiceShieldColor = new(157f / 255f, 1f, 46f / 255f, 1f);
+        [Tooltip("The juice comes when a flight lands (or falls in, or reaches the perch), running back over the jump's blocks " +
+                 "from where it came down at this speed, u/s.")]
+        [SerializeField, Min(1f)] float juiceRippleSpeed = 160f;
+        [Tooltip("FMOD: a block grown by a jump. Leave empty for silence. Played at most once per juiceSoundSpacing.")]
+        [SerializeField] EventReference growEvent;
+        [Tooltip("FMOD: a block shielded by a jump. Leave empty for silence.")]
+        [SerializeField] EventReference shieldEvent;
+        [Tooltip("FMOD: a destroyed block restored (by a jump over it, or a fall that got that far). Leave empty for silence.")]
+        [SerializeField] EventReference restoreEvent;
+        [Tooltip("FMOD: the Pistol falls through a gap and comes out of the portal beyond it. Leave empty for silence.")]
+        [SerializeField] EventReference fallThroughEvent;
+        [Tooltip("Seconds between two of one kind's sounds (a long jump rewards a block every few frames).")]
+        [SerializeField, Min(0f)] float juiceSoundSpacing = 0.07f;
+
+        [Tooltip("How fast a crystal beside the plane drifts into it, u/s (within the undertow's reach).")]
+        [SerializeField, Min(0f)] float crystalPullSpeed = 30f;
+        [Tooltip("A crystal this much past the Pistol's body (and its own half size) is taken, u.")]
+        [SerializeField, Min(0f)] float crystalTouchPad = 1.5f;
+
         [Header("Pistol: perches and dens")]
         [Tooltip("The Pistol arrives at a perch within this many u of it.")]
         [SerializeField, Min(1f)] float arriveDistance = 2f;
         [Tooltip("Seconds the Pistol rests at a perch, building its den.")]
         [SerializeField, Min(0.1f)] float restSeconds = 1.2f;
-        [Tooltip("One den prism per this many u travelled since the last den (before Mass).")]
-        [SerializeField, Min(1f)] float denUnitsPerPrism = 40f;
+        [Tooltip("One den prism per this much of the Pistol's energy (before Mass). The shipped Tiny Wings rider (the AI) gathers " +
+                 "about 185 over a 900 u island and 385 over 1800 u, a sloppy one 20-70, one that never flies none.")]
+        [SerializeField, Min(0.1f)] float energyPerDenPrism = 8f;
         [Tooltip("Mass: den prisms are scaled by this (x1 at rest -> x2.5 at level 10).")]
         [SerializeField] ElementalFloat denMassScale = ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.25f);
         [Tooltip("The most prisms one den holds.")]
@@ -160,8 +226,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(1f)] float denClearance = 1.1f;
 
         [Header("Pistol: the undertow (mass pulled into the plane)")]
-        [Tooltip("Space: how far either side of the plane mass is pulled in, u (40 at rest -> 200 at level 10). Danger, " +
-                 "super-shielded and the pair's own prisms never move; shielded ones only with the Space upgrade.")]
+        [Tooltip("Space: how far out of the plane mass is pulled in, u (40 at rest -> 200 at level 10), from the half the " +
+                 "Pistol plays this way (one side of the trail riding ahead, the other riding back); crystals from either side. " +
+                 "Danger, super-shielded and the pair's own prisms never move; shielded ones only with the Space upgrade.")]
         [SerializeField] ElementalFloat pullReach = ElementalFloat.Multiplier(40f, 200f, Element.Space, 10f);
         [Tooltip("How fast pulled mass moves toward the plane, u/s.")]
         [SerializeField, Min(1f)] float pullSpeed = 60f;
@@ -233,13 +300,20 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Holding the dive this long once the map opens sets off on the highlighted path (so holding the dive through a " +
                  "perch rides on); a fresh press sets off at once.")]
         [SerializeField, Min(0f)] float chooseHoldSeconds = 0.5f;
+        [Tooltip("The map's tilt when it first opens, degrees, so an island's two half planes (one side ridden ahead, the other " +
+                 "ridden back) part on the screen; the person's spin is kept from there.")]
+        [SerializeField, Range(-80f, 80f)] float mapStartTilt = 35f;
+        [Tooltip("A half plane's wing reaches this far out of the trail at its fullest (the half with the most opposing prisms), " +
+                 "as a share of the map's radius.")]
+        [SerializeField, Range(0.005f, 0.2f)] float mapWingReach = 0.05f;
         [Tooltip("The map camera's field of view, degrees.")]
         [SerializeField, Range(20f, 90f)] float mapFov = 50f;
         [Tooltip("Room round the perches on the map: 1 frames them edge to edge.")]
         [SerializeField, Range(1f, 2f)] float mapMargin = 1.2f;
-        [Tooltip("A path's glow, thickest (the island with the most opposing prisms), as a share of the map's radius.")]
+        [Tooltip("The map's scale for its marks, as a share of the map's radius: the pointer and the den mark are a few of " +
+                 "these; the trail's own bar is mapPathThinShare of it.")]
         [SerializeField, Range(0.001f, 0.05f)] float mapPathThickness = 0.014f;
-        [Tooltip("An empty path's glow, as a share of the thickest.")]
+        [Tooltip("The trail's bar on the map, as a share of mapPathThickness (each half plane's wing stands out of it).")]
         [SerializeField, Range(0.05f, 1f)] float mapPathThinShare = 0.25f;
         [Tooltip("A tap or click this close to a path's glowing bar, pixels at 160 dpi (scaled up on denser screens), picks " +
                  "it; a tap on the picked path rides it.")]
@@ -322,7 +396,10 @@ namespace CosmicShore.ScriptableObjects
         public float SlopeDegrees => slopeDegrees;
         public PistolPlane.HillSpec HillSpec => new(hillHalfLengthMin, hillHalfLengthMax, hillHalfHeightMin, hillHalfHeightMax, hillBand, hillGrowthPerIsland, hillGrowthMax);
         public float TrailBlockGap => trailBlockGap;
-        public Vector3 TrailBlockScale => trailBlockScale;
+        /// <summary>A trail block's size (x across, y thick, z along the dart), its length the one whose shield meets the next
+        /// block's (<see cref="PistolGround.ShieldFlushLength"/>).</summary>
+        public Vector3 TrailBlockScale => new(trailBlockSection.x, trailBlockSection.y,
+            PistolGround.ShieldFlushLength(Mathf.Max(2f, trailBlockGap), OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE, trailShieldFill));
         public float BodyR => pBodyR;
         public float PathScoreBand => pathScoreBand;
         public float PathScoreInterval => pathScoreInterval;
@@ -349,8 +426,32 @@ namespace CosmicShore.ScriptableObjects
         public bool AimedJump => aimedJump;
         public ElementalFloat JumpCooldown => jumpCooldown;
         public float ArriveDistance => arriveDistance;
+        public float FallPopSeconds => fallPopSeconds;
+        public float FallSpinDegrees => fallSpinDegrees;
+        public float FallRingRadius => fallRingRadius;
         public float RestSeconds => restSeconds;
-        public float DenUnitsPerPrism => denUnitsPerPrism;
+        public float EnergyPerDenPrism => energyPerDenPrism;
+        public float EnergyPerSkippedBlock => energyPerSkippedBlock;
+        public float EnergyFlightBonus => energyFlightBonus;
+        public float EnergyMax => energyMax;
+        public float SkipGrowStep => skipGrowStep;
+        public float SkipGrowMax => skipGrowMax;
+        public float CrystalPullSpeed => crystalPullSpeed;
+        public int JuiceShards => juiceShards;
+        public float JuiceSeconds => juiceSeconds;
+        public float JuiceReach => juiceReach;
+        public float JuiceShardSize => juiceShardSize;
+        public float JuicePulseScale => juicePulseScale;
+        public Color JuiceShieldColor => juiceShieldColor;
+        public float JuiceRippleSpeed => juiceRippleSpeed;
+        public EventReference GrowEvent => growEvent;
+        public EventReference ShieldEvent => shieldEvent;
+        public EventReference RestoreEvent => restoreEvent;
+        public EventReference FallThroughEvent => fallThroughEvent;
+        public float JuiceSoundSpacing => juiceSoundSpacing;
+        public float CrystalTouchPad => crystalTouchPad;
+        public float MapStartTilt => mapStartTilt;
+        public float MapWingReach => mapWingReach;
         public ElementalFloat DenMassScale => denMassScale;
         public int DenMax => denMax;
         public float DenShieldedShare => denShieldedShare;
@@ -407,7 +508,7 @@ namespace CosmicShore.ScriptableObjects
             pGravity = pGravity, pDiveMul = pDiveMul, pMinSpeed = pMinSpeed, pDrag = pDrag, pGoodLand = pGoodLand, pMinAir = pMinAir,
             pAirGravity = pAirGravity, pSmoothBoost = pSmoothBoost, pHardKeep = pHardKeep, pMaxSpeed = pMaxSpeed,
             pLaunchRange = pLaunchRange, pLaunchSpeed = pLaunchSpeed, pLaunchCharges = pLaunchCharges, pLaunchCd = jumpCooldown.Value,
-            pGhostTime = pGhostTime, pGhostCd = pGhostCd, pVortexCd = pVortexCd,
+            pGhostTime = pGhostTime, pGhostCd = pGhostCd, pVortexCd = pVortexCd, pEdgeGrace = pEdgeGrace,
         };
 
         public VortexRing.Settings Vortex => new()
