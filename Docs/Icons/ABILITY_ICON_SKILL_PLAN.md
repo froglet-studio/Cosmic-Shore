@@ -310,7 +310,12 @@ QuadFish as its codex portrait reads (LESSONS 62). The **Mass card, Lure, Tame &
 three: to scale, the anglerfish, the pool): the Angler side-on (domain, upright at pitch -90, LESSONS 63), its esca lit
 white with a glow while A is held, a QuadFish drawn to the bulb - blue, danger at Mass 5 (Steal Fauna), the domain
 colour for a beat as one joins. Four parts; `AnglerHUDView.SetLure` / `PlayLureJoined`; the plate stays the taming
-gauge and the fauna count stays in the corner. Next: the Space card (Paint).
+gauge and the fauna count stays in the corner. The **Space card, Paint** (2026-10-31, two rounds; Garrett picked D):
+round 1 drew the brush, the throw and the lit prism; Garrett asked to see "how many were in group A and group B" with
+the next group highlighted (LESSONS 64). D: group A above and B below, each a QuadFish with its live count (HUD text)
+beside it, the group the next paint sends white and the other dim in the domain colour; the prism ahead blue until
+something is painted, white after; at Space 5 the shielded prism with its shield cracking off. Five parts;
+`AnglerHUDView.SetPaintGroups` / `SetPaintPrism` / `SetPaintColors`. Next: the Time card (Dash to the School).
 
 | Round | What | Why first |
 |---|---|---|

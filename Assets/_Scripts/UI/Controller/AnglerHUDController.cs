@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
 
@@ -62,6 +63,9 @@ namespace CosmicShore.UI
             _tamed = angler.TamedCount;
             view.SetLure(angler.Luring);
             view.SetSpace(angler.Hunting / school, angler.Painting && angler.PaintedCount > 0);
+            view.SetPaintColors(ResolveDomainSignalColor(), ResolveShieldedColor());
+            view.SetPaintGroups(angler.GroupCount(0), angler.GroupCount(1), angler.SendGroup);
+            view.SetPaintPrism(angler.PaintedCount > 0);
             view.SetFloraSeeds(angler.FloraSeedCount);
             if (angler.FloraSeedCount > _seeds) view.PlayOmniCrystalCollected();   // a crystal just left a seed
             _seeds = angler.FloraSeedCount;
@@ -70,6 +74,14 @@ namespace CosmicShore.UI
 
         /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Serpent's and the
         /// Rhino's cards read it; alpha 0 until the palette resolves, so the view keeps the colour it has.</summary>
+        /// <summary>The pilot's SHIELDED colour (Space 5's prism shield); alpha 0 until the palette resolves, as the Serpent's.</summary>
+        Color ResolveShieldedColor()
+        {
+            var theme = _gameData?.ThemeManagerData;
+            if (theme == null || _status == null || _status.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
+            return theme.GetShieldedSignalColor(_status.Domain);
+        }
+
         Color ResolveDomainSignalColor()
         {
             var colorSet = _gameData?.ThemeManagerData?.ColorSet;

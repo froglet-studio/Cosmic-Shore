@@ -430,3 +430,11 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     the close-up (B) over the to-scale light (A): the hull and its lit esca ARE the Angler, so a true-size speck lost
     the identity the card is for (contrast the Scarab's bubble, LESSONS 56, where the volume was the act).
 
+64. **When the ability alternates between two of something, the card shows both, how many, and whose turn it is.** The
+    Angler's paint sends one of two groups per throw, A then B. Garrett on the first Paint options: "it would be nice if
+    I could see how many were in group A and group B. It should alternate which is highlighted so the player knows which
+    they are sending." D took it: each group keeps a fixed place (A above, B below) with its live count as HUD text
+    beside it, the next to send white and the waiting one dim in the domain colour. A fixed place lets the highlight
+    move without anything else on the card moving. Look for a turn-taking state in the executor (`SendGroup`) before
+    drawing the act alone.
+
