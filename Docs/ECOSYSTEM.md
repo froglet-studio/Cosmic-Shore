@@ -179,6 +179,38 @@ homeostasis the food web is meant to produce, both now gone:
 
 ---
 
+### 0.x Granted carve-out: armour wears under creature bites in the Ark escort's worlds (2026-10-31)
+
+Resembles the rejected "make the Ark's plates edible by special-casing" and is NOT that. Asked for by Garrett
+(2026-10-31, via the voyage coordinator: "fauna should attack and actually eat the Ark's shielded and super-shielded
+plates, giving real hull loss", so the escort's artificial `BreachHull` line can go to 0). What it does: a cell with
+`Cell.ArmourIsFood` files armoured mass in its targeting grids and lets a species whose config authors a
+`shieldBite` / `superShieldBite` above 0 (`LightFaunaDataSO`, `Boid`) take armour off a bite at a time
+(`Prism.GnawArmour`: a shield cracks at 1 armour point, a super-shield at `Prism.SuperArmourPoints` = 2; the cracking bite
+eats the now-plain prism). The fence: `Cell.ArmourIsFood` has one setter call site, `ArkEscortRun.PrepareCellMetrics`
+(the escort's own worlds, cleared at its finish); `Prism.GnawArmour` has one caller, `Fauna.BiteMass`; nothing is
+Ark-specific (all armoured mass in such a cell wears the same, so no Ark weighting enters steering); vessels, explosions
+and abilities still meet `Prism.AbsorbSuperShieldHit` unchanged; wear runs only on the simulation authority
+(`Fauna.IsSimAuthority`), and the crack replicates as an ordinary shield drop. Mass conservation and continuity are not
+waived (a cracked plate is consumed through the normal implosion, and the Ark's reactor regrows the slot armoured).
+Side effect, accepted: armoured mass counts as an intruder for a pen's containment Frenzy in those worlds. This is an
+exception, not a precedent: the next one needs its own sign-off.
+
+### 0.y Granted carve-out: a pacified escort world spares its controller's own mass (2026-10-31)
+
+Asked for by Garrett (via the voyage coordinator): a squad that takes a world's territory pacifies it, and its fauna then
+help protect the Ark. Mechanism, all existing platform except one diet clause: when the squad holds
+`ArkEscortSO.pacifyShare` (default 0.6) of a world's CONTROL volume, `ArkEscortRun.TryPacify` calls
+`Cell.SetModeControlOverride(squad)` (the sanctioned controller re-colour: the live swarm takes the squad's colour, nothing
+dies, every later creature spawns in it) and sets `Cell.SparedDomain = squad`: in that cell, fauna of that domain do not
+graze that domain's mass anywhere, the nucleus exterior included (`Cell.SparesOwnMass`, read by
+`Cell.IsPreyForHerbivore` and the Boid forager's diet). That clause is the exception: it overrides "the nucleus exterior is
+voraciously edible regardless of domain" in pacified escort worlds only. Fence: one setter call site
+(`ArkEscortRun.TryPacify`, escort worlds, server only); it names a domain, not the Ark (no Ark weighting, no asymmetry: the
+cell still has one fauna colour, its controller's); mass is conserved and no creature is culled (a pacified world whose
+remaining food is its own domain's mass starves its fauna down through the ordinary starvation clock). An exception, not a
+precedent.
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count

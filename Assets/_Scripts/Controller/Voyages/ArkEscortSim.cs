@@ -16,13 +16,17 @@ namespace CosmicShore.Gameplay
     /// started with <c>-arkEscortSim</c>, which the editor launcher (<c>ArkEscortSimLauncher</c>) passes.
     ///
     /// <para>Arguments: <c>-arkEscortSim "5:Sparrow,Rhino,Manta;3:Squirrel,Dolphin,Serpent"</c> (difficulty:three vessels,
-    /// runs separated by ';'), <c>-arkEscortOut path.jsonl</c>, <c>-arkEscortTimeScale 3</c>.</para>
+    /// runs separated by ';'), <c>-arkEscortOut path.jsonl</c>, <c>-arkEscortTimeScale 3</c>, and
+    /// <c>-arkEscortParams path.json</c>: a flat JSON object of named overrides (<c>{"ark.crawlSpeed": 18,
+    /// "tier.4.population": 0.7}</c>) every run applies to its runtime copy of the escort (<see cref="ArkEscortParams"/>);
+    /// each run's JSON line echoes them (<c>Params</c>) and lists the accepted key patterns (<c>ParamKeys</c>).</para>
     /// </summary>
     public sealed class ArkEscortSim : MonoBehaviour
     {
         const string PlanArg = "-arkEscortSim";
         const string OutArg = "-arkEscortOut";
         const string ScaleArg = "-arkEscortTimeScale";
+        const string ParamsArg = "-arkEscortParams";
         const float ReadyTimeoutSeconds = 600f;
         const float RunTimeoutSeconds = 1800f;
 
@@ -51,6 +55,7 @@ namespace CosmicShore.Gameplay
             if (float.TryParse(Arg(args, ScaleArg), System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.InvariantCulture, out float s)) sim._scale = Mathf.Clamp(s, 0.25f, 8f);
             sim.Parse(plan);
+            sim.LoadParams(Arg(args, ParamsArg));
             IsRunning = true;
             sim.RunAsync(sim.GetCancellationTokenOnDestroy()).Forget();
         }
@@ -60,6 +65,19 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < args.Length - 1; i++)
                 if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase)) return args[i + 1];
             return null;
+        }
+
+        void LoadParams(string path)
+        {
+            ArkEscortParams.Pending = null;
+            if (string.IsNullOrEmpty(path)) return;
+            try
+            {
+                var values = ArkEscortParams.ParseFlatJson(File.ReadAllText(path));
+                ArkEscortParams.Pending = values;
+                Log($"params: {values.Count} overrides from {path}");
+            }
+            catch (Exception e) { Log($"could not read params {path}: {e.Message}"); }
         }
 
         void Parse(string plan)
@@ -140,6 +158,7 @@ namespace CosmicShore.Gameplay
             finally
             {
                 ArkEscortRun.Finished -= OnFinished;
+                ArkEscortParams.Pending = null;
                 Time.timeScale = 1f;
                 IsRunning = false;
                 Log(ok ? "done" : "stopped");

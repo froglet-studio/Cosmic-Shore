@@ -76,6 +76,15 @@ namespace CosmicShore.Gameplay
                  "defaults 20/10 a predator alternates 10s resting / 10s hunting.")]
         [Min(0f)] public float huntDurationSeconds = 10f;
 
+        [Header("Armour (only where Cell.ArmourIsFood: the Ark escort's worlds)")]
+        [Tooltip("Armour points this species wears off a SHIELDED prism per bite (a shield cracks at 1, then the bite " +
+                 "eats it). 0 = this species never gnaws shields. The feed hold brings the creature back to the same " +
+                 "plate, so 0.5 strips a shield in two holds.")]
+        [Min(0f)] public float shieldBite;
+        [Tooltip("Armour points this species wears off a SUPER-SHIELDED prism per bite (cracks at " +
+                 "Prism.SuperArmourPoints = 2). 0 = never gnaws super-shields.")]
+        [Min(0f)] public float superShieldBite;
+
         [Header("Death (wither)")]
         [Tooltip("Continuity rule - nothing pops out of existence. On death the soft tissue withers " +
                  "one spindle ring at a time and the body prisms are left standing as a skeleton " +

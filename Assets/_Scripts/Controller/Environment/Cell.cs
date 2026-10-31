@@ -572,10 +572,26 @@ namespace CosmicShore.Gameplay
             if (FaunaContainmentRadius > 0f && !IsInsideFaunaContainment(position))
                 return false;
 
+            if (SparesOwnMass(faunaDomain, preyDomain)) return false;
+
             if (HasNucleusControlZone)
                 return !IsInsideNucleus(position);
             return preyDomain != faunaDomain;
         }
+
+        /// <summary>
+        /// A PACIFIED world (the Ark escort; Garrett, 2026-10-31: a squad that takes a world's territory pacifies it, and
+        /// its fauna then help protect the Ark): this domain's fauna do not graze this domain's mass anywhere in the cell,
+        /// the nucleus exterior included. Null (every other cell) keeps the diet as it was. Set ONLY by
+        /// <c>ArkEscortRun.TryPacify</c>, together with <see cref="SetModeControlOverride"/> (which re-colours the live
+        /// swarm and pins the spawn colour), so a pacified world's one fauna colour is the squad's and its creatures eat only
+        /// other domains' mass. Symmetric (it names a domain, not the Ark). Recorded in Docs/ECOSYSTEM.md section 0.
+        /// </summary>
+        public Domains? SparedDomain { get; set; }
+
+        /// <summary>True when a pacified world spares <paramref name="preyDomain"/>'s mass from its own fauna.</summary>
+        public bool SparesOwnMass(Domains eaterDomain, Domains preyDomain) =>
+            SparedDomain is { } spared && preyDomain == spared && eaterDomain == spared;
 
         /// <summary>
         /// Radius (world units, centred on the cell) the cell's fauna are penned inside, or 0
@@ -1668,7 +1684,39 @@ namespace CosmicShore.Gameplay
         /// through <see cref="ResolveFaunaPopulation"/>. 0 stays 0 (uncapped).
         /// </summary>
         public int ResolveFaunaCap(FaunaConfigurationSO config) =>
-            config ? ResolveFaunaPopulation(config.MaxLivePopulation) : 0;
+            config ? ScaleTuned(ResolveFaunaPopulation(config.MaxLivePopulation),
+                RuntimeFaunaCapScale * (RuntimeFaunaTuning?.CapScale(SpeciesOf(config)) ?? 1f)) : 0;
+
+        /// <summary>
+        /// This cell's seed FLOOR for a species (<c>PopulationSize</c> / <c>InitialSpawnCount</c>, as the spawner names
+        /// it): <see cref="ResolveFaunaPopulation"/>, then the run's floor scales (<see cref="RuntimeFaunaFloorScale"/>,
+        /// the species' <c>floorScale</c> in <see cref="RuntimeFaunaTuning"/>). Untuned cells: identical to
+        /// <see cref="ResolveFaunaPopulation"/>. A floor above the cap is still clamped by the cap where producers check it.
+        /// </summary>
+        public int ResolveFaunaFloor(FaunaConfigurationSO config, int authored) =>
+            ScaleTuned(ResolveFaunaPopulation(authored),
+                RuntimeFaunaFloorScale * (config ? RuntimeFaunaTuning?.FloorScale(SpeciesOf(config)) ?? 1f : 1f));
+
+        /// <summary>A run's per-species fauna overrides for this cell, or null (every cell but a tuned escort world).
+        /// Set by the Ark escort's PrepareCell; read as each creature registers (<c>Fauna.Initialize</c>).</summary>
+        public FaunaRuntimeTuning RuntimeFaunaTuning { get; set; }
+
+        /// <summary>Multiplier on every species' seed floor here (a run's <c>fauna.&lt;world&gt;.floorScale</c>); 1 = untouched.</summary>
+        public float RuntimeFaunaFloorScale { get; set; } = 1f;
+
+        /// <summary>Multiplier on every species' live cap here (a run's <c>fauna.&lt;world&gt;.capScale</c>); 1 = untouched.
+        /// Production gating only: nothing is culled to meet a lowered cap.</summary>
+        public float RuntimeFaunaCapScale { get; set; } = 1f;
+
+        static string SpeciesOf(FaunaConfigurationSO config) =>
+            config && config.FaunaPrefab ? FaunaRuntimeTuning.SpeciesKey(config.FaunaPrefab.name) : null;
+
+        /// <summary>0 stays 0 (uncapped), a non-zero number never rounds below 1, scale 1 is the identity.</summary>
+        static int ScaleTuned(int resolved, float scale)
+        {
+            if (resolved <= 0 || scale <= 0f || Mathf.Approximately(scale, 1f)) return resolved;
+            return Mathf.Max(1, Mathf.FloorToInt(resolved * scale + 0.5f));
+        }
 
         /// <summary>
         /// True when this species is already at or over this cell's live cap - the one place
@@ -3425,6 +3473,35 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool ShieldedMassIsFood => phase == CellPhase.Frenzy;
 
+        bool _armourIsFood;
+
+        /// <summary>
+        /// This world lets creatures that can GNAW armour wear through shielded and super-shielded mass
+        /// (<c>Fauna.ArmourBite</c> above 0; <see cref="Prism.GnawArmour"/>): armour is then filed in the targeting grids
+        /// like any other mass, and those species' diets take it a bite of wear at a time. Set ONLY by the Ark escort on
+        /// its own worlds (<c>ArkEscortRun.PrepareCell</c>; Garrett, 2026-10-31: the fauna should eat the Ark's armoured
+        /// plates for real), so Skim Race tracks, arenas and every other cell keep their armour inviolate. A species with
+        /// no bite still never eats armour here. Side effect, accepted: armoured mass counts as an intruder for a pen's
+        /// containment Frenzy. Recorded in Docs/ECOSYSTEM.md §0 (a granted carve-out of "super-shielded mass is never food").
+        /// </summary>
+        public bool ArmourIsFood
+        {
+            get => _armourIsFood;
+            set
+            {
+                if (_armourIsFood == value) return;
+                _armourIsFood = value;
+                _shieldRefile.Clear();
+                foreach (var kv in trackedBlocks)
+                {
+                    var props = kv.Key ? kv.Key.prismProperties : null;
+                    if (props != null && (props.IsShielded || props.IsSuperShielded)) _shieldRefile.Add(kv.Key);
+                }
+                for (int i = 0; i < _shieldRefile.Count; i++) NotifyBlockShieldStateChanged(_shieldRefile[i]);
+                _shieldRefile.Clear();
+            }
+        }
+
         /// <summary>
         /// The diet's shield rule in this cell, used for grid membership AND by every grazer
         /// (<c>Fauna.IsInedibleShield</c>), so "not food" and "not a steering target" can never disagree:
@@ -3434,8 +3511,10 @@ namespace CosmicShore.Gameplay
         {
             var props = block ? block.prismProperties : null;
             if (props == null) return false;
+            if (!props.IsShielded && !props.IsSuperShielded) return false;
+            if (_armourIsFood) return false;   // gnawable armour (ArmourIsFood): a steering target like any mass
             if (props.IsSuperShielded) return true;
-            return props.IsShielded && !ShieldedMassIsFood;
+            return !ShieldedMassIsFood;
         }
 
         // The Frenzy state the targeting grids were last filed under. Entering or leaving a Frenzy flips whether shielded
