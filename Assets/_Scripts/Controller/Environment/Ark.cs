@@ -939,41 +939,72 @@ namespace CosmicShore.Gameplay
         public bool HasArrived(float within) =>
             _hasDestination && (transform.position - _destination).sqrMagnitude <= within * within;
 
+        /// <summary>One slice of the course: move toward the destination at the profile's speed for <paramref name="dt"/>
+        /// seconds. True when the Ark moved.</summary>
+        bool StepCourse(float dt)
+        {
+            Vector3 to = _destination - transform.position;
+            float dist = to.magnitude;
+            if (dist > 0.5f)
+            {
+                // Smoothstep over the approach band: flat cruise outside it, flat approach
+                // speed at the core, and no discontinuity at either end — an Ark that
+                // stepped between two speeds would read as a stutter, not as a landing.
+                if (_useProfile)
+                {
+                    float dIn = dist - _destinationRadius;
+                    float dOut = _hasDeparture
+                        ? Vector3.Distance(transform.position, _departure) - _departureRadius
+                        : float.PositiveInfinity;
+                    _insideCell = dIn < 0f || dOut < 0f;
+                    _speed = _profile.SpeedAt(dIn, dOut);
+                }
+                else
+                {
+                    float t = _slowRadius > 1f ? Mathf.Clamp01(dist / _slowRadius) : 1f;
+                    _insideCell = dist < _slowRadius;
+                    _speed = Mathf.Lerp(_approachSpeed, _cruiseSpeed, t * t * (3f - 2f * t));
+                }
+
+                Vector3 dir = to / dist;
+                transform.position += dir * Mathf.Min(_speed * dt, dist);
+                transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                    Quaternion.LookRotation(dir, Vector3.up),
+                    TurnDegreesPerSecond * dt);
+                return true;
+            }
+            return false;
+        }
+
+        float _pendingAdvance;
+        float _holdCourseUntil = float.NegativeInfinity;
+
+        /// <summary>
+        /// Sail <paramref name="seconds"/> of course at once (a few seconds per frame): a party follower whose own world
+        /// built later than the host's brings its Ark level with the host's (the pace has no state, so the same course
+        /// stepped forward lands where the host's Ark is). Capped at two minutes.
+        /// </summary>
+        public void AdvanceCourse(float seconds) => _pendingAdvance = Mathf.Min(120f, _pendingAdvance + Mathf.Max(0f, seconds));
+
+        /// <summary>Hold the Ark still for <paramref name="seconds"/> (a follower that set out before the host).</summary>
+        public void HoldCourse(float seconds) =>
+            _holdCourseUntil = Mathf.Max(_holdCourseUntil, Time.time + Mathf.Min(120f, Mathf.Max(0f, seconds)));
+
         void Update()
         {
             if (_retiring) return;
 
             bool moved = false;
-            if (_underWay && _hasDestination && !_hullLost)
+            if (_underWay && _hasDestination && !_hullLost && Time.time >= _holdCourseUntil)
             {
-                Vector3 to = _destination - transform.position;
-                float dist = to.magnitude;
-                if (dist > 0.5f)
+                moved = StepCourse(Time.deltaTime);
+                // A party follower catching up with the host's Ark (AdvanceCourse): the same course function, stepped
+                // forward in small slices a few seconds per frame, so it ends where the host's Ark is.
+                for (int k = 0; k < 50 && _pendingAdvance > 0f; k++)
                 {
-                    // Smoothstep over the approach band: flat cruise outside it, flat approach
-                    // speed at the core, and no discontinuity at either end — an Ark that
-                    // stepped between two speeds would read as a stutter, not as a landing.
-                    if (_useProfile)
-                    {
-                        float dIn = dist - _destinationRadius;
-                        float dOut = _hasDeparture
-                            ? Vector3.Distance(transform.position, _departure) - _departureRadius
-                            : float.PositiveInfinity;
-                        _insideCell = dIn < 0f || dOut < 0f;
-                        _speed = _profile.SpeedAt(dIn, dOut);
-                    }
-                    else
-                    {
-                        float t = _slowRadius > 1f ? Mathf.Clamp01(dist / _slowRadius) : 1f;
-                        _insideCell = dist < _slowRadius;
-                        _speed = Mathf.Lerp(_approachSpeed, _cruiseSpeed, t * t * (3f - 2f * t));
-                    }
-
-                    Vector3 dir = to / dist;
-                    transform.position += dir * Mathf.Min(_speed * Time.deltaTime, dist);
-                    transform.rotation = Quaternion.RotateTowards(transform.rotation,
-                        Quaternion.LookRotation(dir, Vector3.up),
-                        TurnDegreesPerSecond * Time.deltaTime);
+                    float dt = Mathf.Min(0.1f, _pendingAdvance);
+                    if (!StepCourse(dt)) break;   // at the core: the corridor retargets, the rest follows next frame
+                    _pendingAdvance -= dt;
                     moved = true;
                 }
             }

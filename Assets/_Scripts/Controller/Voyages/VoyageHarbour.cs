@@ -223,7 +223,11 @@ namespace CosmicShore.Gameplay
                         FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include), null, false, course);
                     return;
                 case VoyageCourseKind.EscortEnd:
-                    if (IsEscorting && _escort.IsFollowing) _escort.GiveUp("the host's escort ended");
+                    if (IsEscorting && _escort.IsFollowing)
+                        _escort.EndWithHost((ArkEscortReport.Outcome)course.Result, course.FallenLeg, course.Overrun);
+                    return;
+                case VoyageCourseKind.EscortUnderway:
+                    if (IsEscorting && _escort.IsFollowing) _escort.OnHostUnderway(course.ServerTime);
                     return;
             }
             EnsureRun();

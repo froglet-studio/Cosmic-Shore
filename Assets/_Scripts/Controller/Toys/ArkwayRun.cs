@@ -820,10 +820,19 @@ namespace CosmicShore.Gameplay
             _hud.ShowBanner(line, ArkHold.Config.BannerSeconds);
         }
 
+        /// <summary>False on a party follower: its Ark's fall does not end its voyage, the host's outcome does (the Ark
+        /// escort's shared fate). The fall is still raised (<see cref="ArkFallen"/>).</summary>
+        public bool EndsOnArkFall { get; set; } = true;
+
         void OnArkHullDestroyed()
         {
             ArkFallen?.Invoke();
             EnsureHud();
+            if (!EndsOnArkFall)
+            {
+                _hud.ShowBanner("THE ARK IS DOWN - HOLDING FOR THE HOST", BannerSeconds);
+                return;
+            }
             _hud.ShowBanner("THE ARK HAS FALLEN", BannerSeconds);
             End(returnToCell: true, "the Ark's last hull prism was destroyed");
         }

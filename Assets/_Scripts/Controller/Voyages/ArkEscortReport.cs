@@ -191,6 +191,11 @@ namespace CosmicShore.Gameplay
         public int Seed;
         public bool Following;
         public int HumanSeats = 1;
+        /// <summary>A follower: the host's outcome it ended with (shared fate), and what its own Ark did meanwhile.</summary>
+        public Outcome HostOutcome;
+        public Outcome LocalOutcome;
+        /// <summary>A follower: how much later (+, fast-forwarded) or earlier (-, held) than the host its Ark set out.</summary>
+        public float ArkSyncSeconds;
         public List<SeatStats> RunSeats = new();
         public List<Param> Params = new();
         /// <summary>Every override key pattern this build accepts (<see cref="ArkEscortParams"/>).</summary>

@@ -15,8 +15,11 @@ namespace CosmicShore.Data
         /// <summary>The host set sail on an Ark escort: every friend sails the same escort (difficulty, seed, home pose)
         /// in the seat the host gave them; AI fills the seats nobody took.</summary>
         EscortSail = 3,
-        /// <summary>The host's escort ended: every friend's escort ends too.</summary>
+        /// <summary>The host's escort ended, with its outcome: every friend's escort ends with the same one.</summary>
         EscortEnd = 4,
+        /// <summary>The host's Ark got under way, at <see cref="VoyageCourse.ServerTime"/>: a friend whose world built
+        /// later fast-forwards its Ark to match (one that set out earlier holds).</summary>
+        EscortUnderway = 5,
     }
 
     /// <summary>
@@ -41,5 +44,11 @@ namespace CosmicShore.Data
         public float HomeX, HomeY, HomeZ, HomeQx, HomeQy, HomeQz, HomeQw;
         /// <summary>Client ids of the party's humans in seat order (seat 0 first, -1 = an AI seat).</summary>
         public List<long> SeatClients = new();
+        /// <summary>EscortUnderway: the network's server time (seconds) when the host's Ark got under way.</summary>
+        public double ServerTime;
+        /// <summary>EscortEnd: the host's outcome (ArkEscortReport.Outcome as an int), the leg it fell in, overrun.</summary>
+        public int Result;
+        public int FallenLeg = -1;
+        public bool Overrun;
     }
 }

@@ -297,6 +297,7 @@ namespace CosmicShore.Gameplay
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
             HookArk();
+            CoopOnUnderway();
             // The first world was entered behind the veil, before the hull was laid: its entry is the moment it opens.
             if (_leg >= 0)
             {
@@ -309,6 +310,7 @@ namespace CosmicShore.Gameplay
         void OnRouteEnded()
         {
             if (!_active || _fallen) return;
+            if (FollowerHolds(ArkEscortReport.Outcome.Survived)) return;   // a friend waits for the host's outcome
             // The Ark holds at the last world's core: it made it through.
             _survived = true;
             CloseLeg(_leg);
@@ -320,6 +322,7 @@ namespace CosmicShore.Gameplay
         void OnArkFallen()
         {
             if (!_active) return;
+            if (FollowerHolds(ArkEscortReport.Outcome.Fallen)) return;   // a friend waits for the host's outcome
             _fallen = true;
             CloseLeg(_leg);
             int leg = Mathf.Max(0, _leg);
@@ -349,6 +352,8 @@ namespace CosmicShore.Gameplay
             }
 
             TrackLeg();
+            TickCoop();
+            if (!_active) return;
             _context_?.Tick();
             CheckBreach();
             if (!_active || !_sea.IsRunning) return;
@@ -388,7 +393,7 @@ namespace CosmicShore.Gameplay
         void CheckBreach()
         {
             var ark = Ark;
-            if (!ark || _fallen || _survived || _leg < 0 || ark.TotalCount == 0) return;
+            if (!ark || _fallen || _survived || _leg < 0 || ark.TotalCount == 0 || _following) return;
             float line = _escort.TierFor(_difficulty)?.BreachHull ?? 0f;
             if (line <= 0f || ark.HealthFraction >= line) return;
             _fallen = true;

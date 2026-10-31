@@ -89,12 +89,13 @@ namespace CosmicShore.UI
                 var none = Use(1 + extra);
                 none[0].ShowStepper(null, null, null, null);
                 none[0].Show(content, style, here, null, string.Empty, lines.NoWork, null);
-                if (escort) ShowEscort(none[1], content, style, escort, Difficulty, sail: true);
+                if (escort) ShowEscort(none[1], content, style, escort, Difficulty, sail: VoyageCourseLink.IsLeader);
                 return;
             }
 
             var shown = Use(jobs.Count + extra);
-            if (escort) ShowEscort(shown[jobs.Count], content, style, escort, Difficulty, sail: true);
+            // In a party only the host picks the difficulty and sets sail; a friend's card waits for the host's course.
+            if (escort) ShowEscort(shown[jobs.Count], content, style, escort, Difficulty, sail: VoyageCourseLink.IsLeader);
             for (int i = 0; i < jobs.Count; i++)
             {
                 var job = jobs[i];

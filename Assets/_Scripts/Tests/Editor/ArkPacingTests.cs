@@ -190,6 +190,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EscortEndAndUnderwayCarryOutcomeAndTime()
+        {
+            var end = new CosmicShore.Data.VoyageCourse
+            {
+                Kind = CosmicShore.Data.VoyageCourseKind.EscortEnd,
+                Result = (int)ArkEscortReport.Outcome.Fallen, FallenLeg = 3, Overrun = true,
+            };
+            var e = JsonUtility.FromJson<CosmicShore.Data.VoyageCourse>(JsonUtility.ToJson(end));
+            Assert.AreEqual(ArkEscortReport.Outcome.Fallen, (ArkEscortReport.Outcome)e.Result);
+            Assert.AreEqual(3, e.FallenLeg);
+            Assert.IsTrue(e.Overrun);
+
+            var go = new CosmicShore.Data.VoyageCourse { Kind = CosmicShore.Data.VoyageCourseKind.EscortUnderway, ServerTime = 1234.5678 };
+            var g = JsonUtility.FromJson<CosmicShore.Data.VoyageCourse>(JsonUtility.ToJson(go));
+            Assert.AreEqual(1234.5678, g.ServerTime, 1e-6);
+        }
+
+        [Test]
         public void ArkPaceIsAPureFunctionOfPosition()
         {
             // Two peers with the same destination and departure read the same speed at the same place, whatever they
