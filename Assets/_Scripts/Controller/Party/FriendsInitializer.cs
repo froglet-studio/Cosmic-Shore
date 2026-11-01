@@ -50,6 +50,34 @@ namespace CosmicShore.Gameplay
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
 
+        void Awake()
+        {
+            // Offline must go out while the app is still alive to send it: OnDestroy alone runs during
+            // teardown, where the await rarely completes, so a friend who quit kept reading "online".
+            ApplicationLifecycleManager.OnAppQuitRequested += HandleAppQuitRequested;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+#endif
+        }
+
+#if UNITY_EDITOR
+        // Stopping Play never raises Application.wantsToQuit, so the quit hook above never runs there.
+        void HandlePlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+        {
+            if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode) SetPresenceOffline();
+        }
+#endif
+
+        UniTask HandleAppQuitRequested()
+        {
+            if (friendsService == null || !friendsService.IsInitialized || _offlineSent) return UniTask.CompletedTask;
+            _offlineSent = true;
+            CSDebug.LogVerbose(CSLogChannel.Party, "[FriendsInitializer] Quit: setting UGS Friends availability Offline.");
+            return friendsService.SetAvailabilityAsync(Availability.Offline);
+        }
+
+        private bool _offlineSent;
+
         void Start()
         {
             // HostConnectionService.Awake() sets Instance before any Start() runs.
@@ -78,6 +106,10 @@ namespace CosmicShore.Gameplay
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
             UnwirePartySubscriptions();
+            ApplicationLifecycleManager.OnAppQuitRequested -= HandleAppQuitRequested;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+#endif
             SetPresenceOffline();
         }
 
@@ -215,7 +247,8 @@ namespace CosmicShore.Gameplay
 
         public async void SetPresenceOffline()
         {
-            if (friendsService == null || !friendsService.IsInitialized) return;
+            if (friendsService == null || !friendsService.IsInitialized || _offlineSent) return;
+            _offlineSent = true;
 
             try
             {
