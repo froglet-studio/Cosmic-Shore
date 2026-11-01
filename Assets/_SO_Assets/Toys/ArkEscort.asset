@@ -208,5 +208,7 @@ MonoBehaviour:
   survivedLine: THE ARK MADE IT THROUGH
   fallenLine: THE ARK FELL IN {name}
   overrunLine: THE ARK IS OVERRUN IN {name}
+  courseLine: '{from} TO {to}'
+  berthedLine: BERTHED AT {to}
   lowerLabel: '<'
   raiseLabel: '>'

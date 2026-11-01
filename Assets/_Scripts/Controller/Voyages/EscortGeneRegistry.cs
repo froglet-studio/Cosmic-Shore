@@ -246,7 +246,7 @@ namespace CosmicShore.Gameplay
             {
                 if (!string.Equals(args[i], CommandLineArg, StringComparison.OrdinalIgnoreCase)) continue;
                 int n = ApplyLine(args[i + 1]);
-                Debug.Log($"[EscortGenes] {n} gene(s) set from the command line: {args[i + 1]}");
+                CosmicShore.Utility.CSDebug.Log($"[EscortGenes] {n} gene(s) set from the command line: {args[i + 1]}");
                 return n;
             }
             return 0;

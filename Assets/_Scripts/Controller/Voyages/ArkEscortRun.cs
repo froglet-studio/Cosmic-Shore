@@ -206,6 +206,7 @@ namespace CosmicShore.Gameplay
                     Population = _escort.PopulationFor(i, _difficulty),
                     World = _escort.WorldFor(i, _difficulty) ? _escort.WorldFor(i, _difficulty).name : string.Empty,
                 });
+            PlanCourse();
 
             BeginMetrics(tier);
             _active = true;
@@ -315,7 +316,7 @@ namespace CosmicShore.Gameplay
         void OnUnderway()
         {
             Banner(TemplateText.Fill(_escort.DepartLine, "legs", _escort.Legs.Count.ToString(),
-                "difficulty", _difficulty.ToString()) + VoyageBannerSuffix());
+                "difficulty", _difficulty.ToString()) + CourseBannerSuffix() + VoyageBannerSuffix());
             BringWingmates(force: true);
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
@@ -336,7 +337,7 @@ namespace CosmicShore.Gameplay
             _survived = true;
             CloseLeg(_leg);
             Banner(TemplateText.Fill(_escort.SurvivedLine, "difficulty", _difficulty.ToString(),
-                "hull", Ark ? Mathf.RoundToInt(Ark.HealthFraction * 100f).ToString() : "0"));
+                "hull", Ark ? Mathf.RoundToInt(Ark.HealthFraction * 100f).ToString() : "0") + BerthedBannerSuffix());
             _endAt = Time.time + EndAfterSurvivedSeconds;
         }
 
@@ -594,6 +595,7 @@ namespace CosmicShore.Gameplay
             _cells.Clear();
             _legOf.Clear();
             if (_aiLocal) LocalVessel()?.Vessel?.ToggleAIPilot(false);
+            if (outcome == ArkEscortReport.Outcome.Survived) ArriveOnCourse();
 
             CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[ArkEscort] {_report.Summary()}");
             Finished?.Invoke(_report);

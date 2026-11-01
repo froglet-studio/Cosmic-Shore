@@ -64,6 +64,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The voyage the running escort rolled (its worlds and modifiers), or null.</summary>
         public ArkEscortVariety.RolledVoyage EscortVoyage => IsEscorting ? _escort.Voyage : null;
 
+        /// <summary>The running escort's course on the galactic map (location ids, from first), or null.</summary>
+        public IReadOnlyList<string> EscortCourse => IsEscorting ? _escort.Course : null;
+
         /// <summary>The job the running voyage sails, or null.</summary>
         public VoyageJob CurrentJob => _run && _run.IsActive ? _run.CurrentJob : null;
 

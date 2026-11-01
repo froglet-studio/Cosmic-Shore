@@ -205,6 +205,14 @@ namespace CosmicShore.Gameplay
         public int VoyageSeed;
         public List<string> Worlds = new();
         public List<string> Modifiers = new();
+        /// <summary>Where on the galactic map the escort set out from and was bound for (location ids, empty with no
+        /// course; Docs/Voyages/ARK_ESCORT.md §5), and the course measured on the real HyperSea (light years, cells,
+        /// intensity I1-I4; 0 when the content is not charted).</summary>
+        public string From;
+        public string To;
+        public float CourseLightYears;
+        public int CourseCells;
+        public int CourseIntensity;
         public float PacifyNucleusSeconds;
         public int PacifiedLegs;
         /// <summary>The fauna threats over the run: plate latches, worm lunges, leech bites on the Ark, worlds whose
@@ -226,6 +234,7 @@ namespace CosmicShore.Gameplay
         {
             var sb = new StringBuilder();
             sb.Append($"d{Difficulty} {Squad}: {Result}");
+            if (!string.IsNullOrEmpty(To)) sb.Append($" ({From} > {To}, {CourseLightYears:0} ly)");
             if (Result == Outcome.Fallen) sb.Append($"{(Overrun ? " (overrun)" : "")} in leg {FallenLeg + 1}");
             sb.Append($", hull min {HullMinFraction:P0} of {HullTotal}, {EndedAt - UnderwayAt:0}s under way " +
                       $"({InsideSeconds:0}s in cells, {OutsideSeconds:0}s out, mean {MeanArkSpeed:0.0} u/s), " +

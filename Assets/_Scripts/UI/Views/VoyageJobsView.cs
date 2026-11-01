@@ -79,8 +79,11 @@ namespace CosmicShore.UI
             if (harbour.IsEscorting && escort)
             {
                 var card = Use(1)[0];
-                ShowEscort(card, lines, escort, harbour.EscortDifficulty, sail: false);
-                ShowMap(false);
+                var course = harbour.EscortCourse;
+                ShowEscort(card, content, lines, escort, harbour.EscortDifficulty, course, sail: false);
+                // The map frames the escort's course while it is out, as it does a job's (ARK_ESCORT.md §5).
+                if (course != null) Map(content, style, course[0], course, CourseLine(content, lines, course));
+                else ShowMap(false);
                 return;
             }
 
@@ -114,14 +117,14 @@ namespace CosmicShore.UI
                 var none = Use(1 + extra);
                 none[0].ShowStepper(null, null, null, null);
                 none[0].Show(string.Empty, lines.NoWork, null, null, false, null, null, null, null);
-                if (escort) ShowEscort(none[1], lines, escort, Difficulty, sail: true);
+                if (escort) ShowEscort(none[1], content, lines, escort, Difficulty, VoyageRules.EscortRoute(state, content), sail: true);
                 Map(content, style, here, null, null);
                 return;
             }
             if (_open >= jobs.Count) _open = -1;
 
             var shown = Use(jobs.Count + extra);
-            if (escort) ShowEscort(shown[jobs.Count], lines, escort, Difficulty, sail: true);
+            if (escort) ShowEscort(shown[jobs.Count], content, lines, escort, Difficulty, VoyageRules.EscortRoute(state, content), sail: true);
             for (int i = 0; i < jobs.Count; i++)
             {
                 var job = jobs[i];
@@ -293,17 +296,30 @@ namespace CosmicShore.UI
                 Mathf.Clamp(value, ArkEscortSO.MinDifficulty, ArkEscortSO.MaxDifficulty));
         }
 
-        /// <summary>The Ark escort's card: its title at the picked difficulty, a stepper to change it, and Set sail.</summary>
-        void ShowEscort(VoyageJobCard card, VoyageLines lines, ArkEscortSO escort, int difficulty, bool sail)
+        /// <summary>The Ark escort's card: its title at the picked difficulty, a stepper to change it, and Set sail. With
+        /// a <paramref name="course"/> (location ids, from first; ARK_ESCORT.md §5) the card names where the escort sails
+        /// from and to, as the jobs' cards do, and its course line is measured on the real HyperSea.</summary>
+        void ShowEscort(VoyageJobCard card, VoyageContent content, VoyageLines lines, ArkEscortSO escort, int difficulty,
+            IReadOnlyList<string> course, bool sail)
         {
             string d = difficulty.ToString();
             // The voyage this escort sails (or will): its worlds in order and its modifiers, as the card's course line.
             var voyage = sail ? ArkEscortRun.PreviewVoyage(escort, difficulty) : VoyageHarbour.Current?.EscortVoyage;
             string legs = (voyage is { Legs: { Count: > 0 } } ? voyage.Legs.Count : escort.Legs.Count).ToString();
-            string course = voyage is { WorldNames: { Count: > 0 } } ? voyage.Describe() : null;
+            string worlds = voyage is { WorldNames: { Count: > 0 } } ? voyage.Describe() : null;
+            string line = TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", d);
+            string sea = null;
+            if (course is { Count: >= 2 })
+            {
+                // Where from and where to, in the jobs' own authored route line, and the real sea between them.
+                line = VoyageRules.Fill(lines.CardHomeRoute, content.Location(course[0]), content.Location(course[^1]),
+                    content.Location(course[^1]), null) + "\n" + line;
+                sea = CourseLine(content, lines, course);
+            }
+            string courseText = string.IsNullOrEmpty(sea) ? worlds : string.IsNullOrEmpty(worlds) ? sea : sea + "\n" + worlds;
             // The escort is a card of its own kind: always open, its difficulty and Set sail on show.
-            card.Show(TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", d),
-                TemplateText.Fill(escort.CardTitle, "difficulty", d, "legs", legs), course, null, true, null, null, null,
+            card.Show(line, TemplateText.Fill(escort.CardTitle, "difficulty", d, "legs", legs), courseText, null, true,
+                null, null, null,
                 sail ? () => SetSailEscort(difficulty) : null);
             if (sail)
                 card.ShowStepper(escort.LowerLabel, escort.RaiseLabel,

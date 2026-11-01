@@ -235,6 +235,13 @@ namespace CosmicShore.ScriptableObjects
                                  "{leg}, {legs}, {hull}).")]
         [TextArea] string overrunLine = "THE ARK IS OVERRUN IN {name}";
 
+        [SerializeField, Tooltip("Under the departure banner when the escort sails between two places on the chart " +
+                                 "(tokens {from}, {to}; Docs/Voyages/ARK_ESCORT.md §5). Empty shows nothing.")]
+        string courseLine = "{from} TO {to}";
+
+        [SerializeField, Tooltip("Under the made-it banner when the escort berths at a place on the chart (token {to}).")]
+        string berthedLine = "BERTHED AT {to}";
+
         public IReadOnlyList<Leg> Legs => legs;
         public IReadOnlyList<VoyageModifier> Modifiers => modifiers;
         public int WorldsPerVoyage { get => worldsPerVoyage; set => worldsPerVoyage = Mathf.Max(0, value); }
@@ -255,6 +262,8 @@ namespace CosmicShore.ScriptableObjects
         public float PacifyMinVolume { get => pacifyMinVolume; set => pacifyMinVolume = Mathf.Max(0f, value); }
         public float PacifyNucleusSeconds { get => pacifyNucleusSeconds; set => pacifyNucleusSeconds = Mathf.Max(0f, value); }
         public string OverrunLine => overrunLine;
+        public string CourseLine => courseLine;
+        public string BerthedLine => berthedLine;
         public float MaxPopulation { get => maxPopulation; set => maxPopulation = Mathf.Max(0.1f, value); }
         public string VoyageName => voyageName;
         public string CardTitle => cardTitle;
