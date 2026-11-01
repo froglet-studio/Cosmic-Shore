@@ -14,16 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {
+ "current": {},
+ "host": "dragonsweapon",
+ "last": {
+  "count": null,
+  "epoch": "754c681331e3",
   "job": "unity-train~r20261102-005148-167f",
-  "max_evals": 2,
-  "minutes": 60.0,
-  "phase": "starting",
-  "request": "r20261102-005148-167f",
-  "since": 1793561515,
+  "rc": null,
+  "stopped": "budget",
   "unit": "serpenttime-serpent-i3"
  },
- "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -192,12 +192,24 @@
    "start": 1793467162,
    "stopped": "stopped from the console",
    "unit": "threshertime-thresher-i1"
+  },
+  {
+   "best_end": null,
+   "best_start": null,
+   "end": 1793561776,
+   "epoch": "754c681331e3",
+   "evals": null,
+   "job": "unity-train~r20261102-005148-167f",
+   "request": "r20261102-005148-167f",
+   "start": 1793561487,
+   "stopped": "budget",
+   "unit": "serpenttime-serpent-i3"
   }
  ],
  "totals": {
-  "sessions": 14
+  "sessions": 15
  },
- "updated": 1793561516,
+ "updated": 1793561776,
  "user": "shombithofficial",
  "version": "1"
 }
