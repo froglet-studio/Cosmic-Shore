@@ -67,7 +67,10 @@ script did — so a gate printing `FAIL` in the very output you are reading come
 0". That is this file's own *"a gate that ABORTS looks exactly like a gate that passes"*,
 produced by the measurement rather than by the gate, and it is worse than the original
 because you have the failure text on screen and a number telling you to ignore it. Run the
-script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. Do this on the
+script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. **A command substitution in the SAME
+`echo` resets it too:** `check; echo "$gen @ $(git rev-parse --short HEAD): exit $?"` prints `git`'s status, so an A/B
+of a red generator against its merge's parent read "exit 0" on BOTH sides, twice in one session
+(`claude/ci-runs-failing-i6u77f`, 2026-11-01). Capture first: `check; rc=$?; echo "... exit $rc"`. Do this on the
 negative control too: a `--check` you have only ever watched SUCCEED is a `--check` you have
 not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
 restore and confirm the tree is clean (`git status --short` on the asset path).

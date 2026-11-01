@@ -161,6 +161,14 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a holder steers this creature.</summary>
         public bool IsLeashed => Leash != null;
 
+        /// <summary>
+        /// True while the holder asks for more speed than <paramref name="ownTopSpeed"/> - a THROW (the Angler's sling).
+        /// Then the behaviour tick leaves the velocity to the leash's per-frame steer instead of clamping it back to the
+        /// creature's own range (ANGLER.md follow-up 11). Any order at or under the creature's own top speed returns false.
+        /// </summary>
+        protected bool LeashOwnsSpeed(float ownTopSpeed) =>
+            Leash != null && Leash.TrySteer(this, out _, out float speed, out _) && speed > ownTopSpeed + 0.01f;
+
         /// <summary>Which creatures a leash can hold: those that eat prisms. A predator eats creatures, never prisms, so
         /// there is nothing to order it to eat.</summary>
         protected virtual bool CanBeLeashed => diet == FaunaDiet.Herbivore;

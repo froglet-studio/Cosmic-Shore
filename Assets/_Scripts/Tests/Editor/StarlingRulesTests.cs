@@ -286,10 +286,13 @@ namespace CosmicShore.Tests
         {
             var rules = new StarlingRules(Config());
             Assert.IsFalse(rules.Pick(Element.Charge), "no hand, no pick");
-            for (int i = 0; i < 20; i++)
+            rules.DealHand();
+            Assert.IsTrue(rules.Pick(Element.Charge), "the first hand is the spread hand");
+            Assert.IsFalse(rules.HasHand);
+            for (int i = 1; i < 20; i++)
             {
                 rules.DealHand();
-                Assert.IsTrue(rules.Pick(Element.Charge));
+                Assert.IsTrue(rules.PickFocus(), "every later hand is a Charge hand");
                 Assert.IsFalse(rules.HasHand);
             }
             Assert.AreEqual(StarlingRules.MaxLevel, rules.Level(StarlingCardIds.Lasers));
@@ -303,11 +306,10 @@ namespace CosmicShore.Tests
             var rules = new StarlingRules(Config());
             Assert.AreEqual(200, rules.CapNow);
             Assert.AreEqual(30, rules.MinNow);
-            rules.DealHand();
-            rules.Pick(Element.Mass);
+            Take(rules, Element.Mass);
             Assert.AreEqual(206, rules.CapNow, "level 1: cap 200 + (46 - 40) = +6");
             Assert.AreEqual(30, rules.MinNow, "level 1: minimum 30 + (6 - 6) = +0");
-            for (int i = 0; i < 4; i++) { rules.DealHand(); rules.Pick(Element.Mass); }
+            for (int i = 0; i < 4; i++) Take(rules, Element.Mass);
             Assert.AreEqual(5, rules.Level(StarlingCardIds.BigFamily));
             Assert.AreEqual(230, rules.CapNow, "level 5: 200 + (70 - 40) = 230");
             Assert.AreEqual(32, rules.MinNow, "level 5: 30 + (8 - 6) = 32");
@@ -318,16 +320,122 @@ namespace CosmicShore.Tests
         {
             var rules = new StarlingRules(Config());
             Assert.AreEqual(30f, rules.PhaseLength(StarlingPhase.Omnicrystal), 1e-4f);
-            rules.DealHand();
-            rules.Pick(Element.Time);
+            Take(rules, Element.Time);
             Assert.AreEqual(30f * 0.97f, rules.PhaseLength(StarlingPhase.Omnicrystal), 1e-4f, "level 1 cuts 3%");
             Assert.AreEqual(1, rules.SwarmCount(true), "no Split held");
-            rules.DealHand();
-            rules.Pick(Element.Space);
+            Take(rules, Element.Space);
             Assert.AreEqual(1, rules.SwarmCount(false));
             Assert.AreEqual(2, rules.SwarmCount(true), "below level 5 the split is timed");
-            for (int i = 0; i < 4; i++) { rules.DealHand(); rules.Pick(Element.Space); }
+            for (int i = 0; i < 4; i++) Take(rules, Element.Space);
             Assert.AreEqual(2, rules.SwarmCount(false), "level 5: the split is permanent");
+        }
+
+        /// <summary>Draw a hand of <paramref name="element"/> and take its first card (the known deck wires one card per element).</summary>
+        static void Take(StarlingRules rules, Element element)
+        {
+            Assert.IsTrue(rules.ChooseDrawElement(element));
+            rules.DealHand();
+            Assert.IsTrue(rules.PickAt(0));
+        }
+
+        // ---- the draw element (Garrett, 2026-11-01) ----
+
+        /// <summary>A deck with six wired Time cards and one of each other element (the shipped deck wires six per element).</summary>
+        static StarlingConfigSO TimeHeavyConfig()
+        {
+            var cards = new List<StarlingCard>
+            {
+                new(StarlingCardIds.Lasers, Element.Charge, "Lasers", true),
+                new(StarlingCardIds.BigFamily, Element.Mass, "Big Family", true),
+                new(StarlingCardIds.Split, Element.Space, "Split", true),
+            };
+            foreach (var id in new[] { StarlingCardIds.Quickening, StarlingCardIds.Agility, StarlingCardIds.Dragonfly,
+                                       StarlingCardIds.SkipAhead, StarlingCardIds.HurryUp, StarlingCardIds.BlinkStep })
+                cards.Add(new StarlingCard(id, Element.Time, id, true));
+            return StarlingConfigSO.CreateForTests(StarlingCardDeckSO.CreateForTests(cards));
+        }
+
+        [Test]
+        public void TheFirstPick_SetsTheDrawElement_AndEveryLaterHandIsFiveDifferentCardsOfIt()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            Assert.AreEqual(Element.None, rules.DrawElement);
+            rules.DealHand();
+            Assert.IsFalse(rules.IsElementHand, "no draw element yet: the spread hand");
+            Assert.AreEqual(4, rules.HandSize);
+            Assert.IsTrue(rules.Pick(Element.Time));
+            Assert.AreEqual(Element.Time, rules.DrawElement, "nothing chosen: it keeps the picked card's element");
+
+            for (int hand = 0; hand < 20; hand++)
+            {
+                rules.DealHand();
+                Assert.IsTrue(rules.IsElementHand);
+                Assert.AreEqual(Element.Time, rules.HandElement);
+                Assert.AreEqual(StarlingRules.ElementHandSize, rules.HandSize, "five of the six wired Time cards");
+                var seen = new HashSet<string>();
+                for (int i = 0; i < rules.HandSize; i++)
+                {
+                    var card = rules.HandCard(i);
+                    Assert.IsFalse(card.IsEmpty);
+                    Assert.AreEqual(Element.Time, card.Card.Element);
+                    Assert.AreEqual(1, card.Level, "at the element's level");
+                    Assert.IsTrue(seen.Add(card.Card.Id), $"{card.Card.Id} offered twice");
+                }
+                Assert.IsTrue(rules.HandCard(StarlingRules.ElementHandSize).IsEmpty);
+                Assert.IsFalse(rules.Pick(Element.Time), "an element hand is not picked by element");
+                Assert.IsTrue(rules.PickFocus());
+                Assert.AreEqual(Element.Time, rules.DrawElement, "nothing chosen: it keeps the old one");
+            }
+        }
+
+        [Test]
+        public void TheDrawElement_IsChosenOnlyWithNoHandUp_AndAnElementWithFewerWiredCardsOffersWhatItHas()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            Assert.IsTrue(rules.ChooseDrawElement(Element.Mass), "it can be chosen before the first hand");
+            Assert.IsFalse(rules.ChooseDrawElement(Element.None));
+            rules.EndPhase(false);   // the omnicrystal phase's timeout draw
+            Assert.IsTrue(rules.IsElementHand);
+            Assert.AreEqual(1, rules.HandSize, "Mass wires one card here");
+            Assert.AreEqual(StarlingCardIds.BigFamily, rules.HandCard(0).Card.Id);
+            Assert.IsFalse(rules.ChooseDrawElement(Element.Space), "pick from the hand up first");
+            Assert.IsTrue(rules.PickAt(0));
+            Assert.IsTrue(rules.ChooseDrawElement(Element.Space));
+            rules.OnOmniCollected();   // an omnicrystal draw outside its phase
+            Assert.AreEqual(Element.Space, rules.HandElement);
+            Assert.AreEqual(StarlingCardIds.Split, rules.HandCard(0).Card.Id);
+        }
+
+        [Test]
+        public void TheFocus_WrapsAlongTheHand_AndPickingTakesTheHighlightedCard()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            rules.ChooseDrawElement(Element.Time);
+            rules.DealHand();
+            Assert.AreEqual(0, rules.Focus);
+            rules.MoveFocus(-1);
+            Assert.AreEqual(4, rules.Focus, "left from the first card wraps to the last");
+            rules.MoveFocus(1);
+            rules.MoveFocus(1);
+            rules.MoveFocus(1);
+            Assert.AreEqual(2, rules.Focus);
+            string id = rules.HandCard(2).Card.Id;
+            Assert.IsTrue(rules.PickFocus());
+            Assert.AreEqual(1, rules.Level(id));
+            Assert.AreEqual(1, rules.HeldInElement(Element.Time), "only the highlighted card was taken");
+            rules.DealHand();
+            Assert.AreEqual(0, rules.Focus, "a new hand starts on its first card");
+        }
+
+        [Test]
+        public void ANewRun_ForgetsTheDrawElement()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            rules.ChooseDrawElement(Element.Charge);
+            rules.Reset(3);
+            Assert.AreEqual(Element.None, rules.DrawElement);
+            rules.DealHand();
+            Assert.IsFalse(rules.IsElementHand);
         }
 
         [Test]
