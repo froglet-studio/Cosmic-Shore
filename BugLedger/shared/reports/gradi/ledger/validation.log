@@ -585,3 +585,6 @@
 2026-11-01T18:59:19.007Z PlayMode session ended (1174s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-af714de326 E-5c27bd1550 E-f8152d07a5
 2026-11-01T19:25:33.052Z PlayMode session ended (525s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ced2f8d740 E-e5ff2abb8c E-e6054bc064 E-cd8ad9dbfe E-ad793f31fe
 2026-11-01T19:26:11.117Z E-c4b9286c3a: fix 9195c61b7 taken (EditMode); needs 2 clean run(s)
+2026-11-01T22:25:17.772Z EditMode session ended (231min editor span, script reload): 1 fix(es) waiting; counted: E-c4b9286c3a 1/2; fired: E-33f6725d3d E-ca127debd0 E-33876f4909 E-ced2f8d740 E-e5ff2abb8c E-e6054bc064 E-af714de326 E-5c27bd1550 E-f8152d07a5 E-cd8ad9dbfe E-ad793f31fe
+2026-11-01T22:33:09.299Z editor load: play=True capture=True minPlay=15s issues=115
+2026-11-01T22:42:04.122Z PlayMode session ended (456s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-33876f4909 E-cdf0c783c1
