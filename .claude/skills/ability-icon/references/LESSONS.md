@@ -457,3 +457,15 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     one sprite per amount, swapped at runtime (`VesselHUDView.SetOmniAbilitySprite`). Garrett picked this over a
     picture of the gift (2026-11-01: "I like that c can display the resource amount held"): offer a counting option
     whenever the crystal fills a stock.
+
+## 2026-11-01 - the Honeyguide: seventeen icons in one round, for a trigger that swaps its ability
+
+66. **A trigger whose ability is swapped needs a family, not four cards.** Garrett: "we will need an icon for each
+    ability that can take over" - the Honeyguide's RT and LT each show whichever banked ability is current, so the
+    thirteen upgrades are drawn as one family with the base icons (`Upgrades/` subfolder, still under the 24 px
+    distinct gate, which holds them apart). Two things the first draft got wrong at 40 px: a loop with a straight tether
+    reads as a MAGNIFYING GLASS (the lasso's rope must curve and leave the loop tangentially), and an even-spiked ring
+    reads as a GEAR (vary the spike lengths and put the act's subject, here the hull, in the hole). Several hulls'
+    real meshes in one icon fragment into many components at small boxes; a ghost copy at 0.6 with `close_px` 2 keeps
+    each hull one piece. Not reviewed by the owner yet.
+

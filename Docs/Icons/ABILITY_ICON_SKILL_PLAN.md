@@ -340,6 +340,15 @@ DONE 2026-11-01** (picked C, "the stock": "I like that c can display the resourc
 spare-ring slots, a held spare a solid pentagon and an empty slot an outline, so the one-colour card still counts; three
 sprites (`Core/BrittleStar_OmniStock0..2`) swapped by `BrittleStarHUDView.SetSpareRings` through the new
 `VesselHUDView.SetOmniAbilitySprite`. The Brittle Star is done; next the rhombus recut of the shipped hulls.
+**The Honeyguide** (2026-11-01, round 1, not yet reviewed by Garrett; `cece/jolly-lovelace-t8y3a1`): Garrett, "so we will
+need an icon for each ability that can take over". Seventeen white sprites for the trigger redesign (Honeyguide Lab round
+8): the four element cards (Slip on Time, Peck on Space RT, Flit on Charge LT, Hive on Mass) in
+`AbilityIcons/Honeyguide/`, and the thirteen abilities a Ratel card banks onto a trigger in `Honeyguide/Upgrades/`
+(`specs/honeyguide.py`). The hull is its real mesh (view A, plan). Sheets: `Docs/Icons/sheets/honeyguide.png` (the
+cards), `honeyguide_contact.png` (128 and 40 together), `honeyguide_rt_space.png` and `honeyguide_lt_charge.png` (each
+trigger card with its base and three banked uppers as the current icon). Nothing is bound yet: the Unity port of the
+trigger redesign binds them and adds the card's tick queue (one tick per banked use, each in its ability's shade of the
+HUD blue), which the kit's `card.py` does not draw yet.
 
 | Round | What | Why first |
 |---|---|---|
