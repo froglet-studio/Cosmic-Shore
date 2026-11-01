@@ -95,8 +95,11 @@ python3 Tools/Build/fauna_kit/preview.py <species> --out <png>  # four views; LO
    units at root scale 1, the Etherion at the origin, travel along +z.
 2. **Run the checker until it says `celestial`.** Do not argue with a law in code; if one is wrong, take it to Garrett.
 3. **Render the preview and read it.** Then show it to the person before building (`SendUserFile`).
-4. **Build the prefab FROM the spec** with the species generator (`Tools/Build/author_<species>_assets.py`), which reads
-   the same dict: braid spindles are `TadpoleSpindle`/`Branch` instances, prisms are `HealthBlock`/`DangerBlock`
+4. **Build the prefab FROM the spec** with `Tools/Build/fauna_kit/build.py` (`build_body`), called by the species
+   generator (`Tools/Build/author_<species>_assets.py`; `author_bee_assets.py` is the worked example), which reads the
+   same dict and holds the prefab to it with `build.read_back`. Render the BUILT prefab with
+   `python3 Tools/Build/fauna_kit/render_prefab.py <species> <prefab> --out <png>` (the real braid mesh at the prefab's
+   own poses). The old wording of this step, kept for its rules: braid spindles are `TadpoleSpindle`/`Branch` instances, prisms are `HealthBlock`/`DangerBlock`
    instances placed as direct children of their spindle, the root scale uniform (do NOT copy the tadpole's rotated,
    0.4-scaled root), the heart at the origin. Its `--check` holds the prefab to the spec. Keep guids when replacing a
    body.
@@ -122,6 +125,24 @@ python3 Tools/Build/fauna_kit/preview.py <species> --out <png>  # four views; LO
 - **The Space opt-in is per config.** The bee's four configs shipped without `ErodeSpindle`, so the Space bee did not
   out-span the Mass bee.
 - **A model skin is not a body.** A sculpted FBX under a spindle hides the wireframe and invites Earth anatomy.
+- **Measure the Mass swing to the SHIELDS, not the boxes** (the bee, 2026-11-01). A shield is an octahedron reaching
+  1.5 x a prism's size, so a body cleared for its boxes puts a Mass heart inside its own armour: the bee's first spec
+  said Mass 2.5, and the octahedra need 3.812 (`celestial.shield_dist`, exact point-to-triangle). Space is then
+  1.6477 x that, so a too-small Mass makes a too-small Space as well.
+- **Roll every repeated part RADIALLY.** A symmetric set of centres is not a symmetric body: a plate posed with an
+  arbitrary up turns a different face to the axis on each copy. `celestial.oriented` gives every spindle and prism a
+  radial local y, and the builder and the checker share it, so what is checked is what is built.
+- **Build from documents you own, not nested spindle prefabs.** A `TadpoleSpindle` instance is a spindle WITH one prism;
+  a limb that carries three (the bee's spine) cannot take more without added-object surgery. The builder writes plain
+  spindle GameObjects (a `Spindle` + a `Braid` child on the shipped mesh) and nests only the prisms
+  (`DynamicHealthBlock` / `DangerBlock`, the worm tail's way), sized by `m_LocalScale` (what `SeatAuthoredSize` admits).
+- **Scale a braid UNIFORMLY.** `Fauna.ErodeSpindle` measures a skin with one scale (its x column), and the braid's
+  proportion is its look; a z-only stretch would mis-seat every prism on Space.
+- **One hook, not five call sites.** A species with a carried up needs every rotation its class writes to ask it:
+  `Boid.SteeringUpFor` (world +y by default) is the one place, and `BeeFauna` overrides it with
+  `CelestialFrame.CarryUp`. `LightFauna`, `WormFauna` and the drawn populations still need the same hook.
+- **The heart-seat gate does not see a spindle body.** `verify_fauna_heart_seat.py` walks model-instance bodies; a body
+  built from a spec is held by `celestial.py` L1 (box clearance) and L8 (shield clearance) instead.
 
 ## 6. Open decisions (ask; do not default)
 

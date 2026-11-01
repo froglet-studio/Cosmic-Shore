@@ -12780,33 +12780,46 @@ collision effects, so the boid never eats. It never starves (`starvationSeconds 
 
 A bee whose hive dies keeps pollinating round where it is; nothing times it out.
 
-### 66.4 The body (premier, and within budget)
+### 66.4 The body: a celestial lifeform, built from its spec (Garrett, 2026-11-01)
 
-**Round 2: a real model** (Garrett, 2026-11-01: "make a real bee model with /fauna"). `Assets/_Models/Fauna/Bee.fbx` is
-built by `Tools/Build/bee_model/build_bee.py` (Blender-as-a-module, the /vessel-model install, `zup_identity` axes so it
-lands 1:1 in the bee's local units, head on +z): a fuzzy faceted THORAX (noise-displaced, flat-shaded), a waist, a plump
-ABDOMEN of four fuzzy bands parted by three recessed grooves (the stripes, in FORM: the body is one material slot because
-it is the Spindle's renderer and the spindle LOD owns its material) ending in a short stinger, two compound-eye domes and
-two elbowed antennae, six jointed legs (the hind pair with pollen baskets), and FOUR membrane WINGS, each its own object
-pivoted at its root (`Bee_WingFL/FR/HL/HR`). 3,452 triangles, no colliders, no rig (no Animator rides on a bee). **The
-head is the heart**: the lifeform's crystal sits at the origin with the body trailing (§23.9, the tadpole arrangement),
-so the model has no head shell to bury it in - the eyes flank it and the antennae reach forward past it. The contact
-sheet (four views, the heart drawn as a stand-in octahedron of the one crystal size) is rendered by the same script
-(`--render <dir>`).
+> "fauna have rules like bodies made of spindles that are wireframe inspired structures suitable for the space element
+> to make thinner. there must be a long skinny danger prism as a stinger. other health prisms around its body. it isn't
+> actually a bee. it is a celestial etherion based life form. it doesn't really have a sense of up"
 
-**In the prefab** (`author_bee_assets.py`, guids kept): a `BeeModel` GameObject carrying a `Spindle` with the `Bee.fbx`
-instance under it (the Clawfish's pattern: the spindle resolves the model's body renderer itself, so no fbx-internal
-fileID is authored); the model's materials are remapped by NAME in `Bee.fbx.meta` (`BeeBody` -> the shared
-`SpindleMaterial`, `BeeWing` -> `BranchingMembraneMaterial`). The tadpole skin of the abdomen instance is hidden (the
-model is the body). The bee's conserved mass stays its three `HealthPrism`s: the ABDOMEN core (2.0 × 2.0 × 2.8, at the
-model abdomen's widest point, z -5.7, inside the mesh) and the two "wing" prisms, now each forewing's LEADING-EDGE VEIN
-(3.9 × 0.22 × 0.28 along the forewing on its pivot, the model's 9° dihedral; round 1's pivots tilted DOWN, the sign is
-fixed). `BeeWingDriver` flaps the four model wings and the two veins as one (`leftWings` / `rightWings`, found by name:
-the CPU driver tier, `localRotation` only, 9 beats a second, ±38°, a per-bee phase). Root scale 3 (sized to the one heart,
-§64.4). The element's armour applies as to every creature (`Fauna.ArmourBody`): a Mass bee's three prisms are shielded
-(the abdomen's octahedron reads as a shell round the body), a Charge bee's are all danger (the veins show it).
+The bee is not an Earth insect. Its body obeys the `/fauna-creation` skill's laws and is BUILT FROM ITS SPEC,
+`Tools/Build/fauna_kit/specs/bee.py`, by the kit's generic builder `Tools/Build/fauna_kit/build.py` (through
+`author_bee_assets.py`); `celestial.py bee` checks the laws and the generator's `--check` reads the prefab BACK against the
+spec (`build.read_back`: every part's world pose and size from the prefab's own transforms and overrides).
 
-**Colliders: unchanged** (3 body prisms + 1 heart a bee; the model imports none).
+- **The Etherion leads** at the origin; the body trails behind it (−z). The root is identity rotation and scale 1 (the
+  tadpole's rotated, 0.4-scaled root is no longer inherited), so the spec's numbers are world units.
+- **A wireframe of five braid spindles**, each a plain GameObject with a `Spindle` and a `Braid` child drawing the shipped
+  braid mesh (`bonita.fbx` `BezierCurve.001`, `SpindleMaterial`), scaled uniformly to span its limb: the **Spine**
+  (−1.5 → −11 on the axis), three **Vanes** sweeping back from it at 120° (to a 7 u radius at −6.5), and the **Sting**
+  off its end. Every spindle is the transform child of its parent (`parentSpindle` wired): the path to the heart.
+- **Seven prisms, each a direct child of its limb**: three **Ribs** round the Spine (0.8 × 0.8 × 3.2, `DynamicHealthBlock`),
+  a **VanePlate** on each vane (0.5 × 2.0 × 3.6), and the **Stinger**: one long skinny `DangerBlock`, 0.5 × 0.5 × 6, at the
+  trailing extremity. Each prism's local y is radial, so the three copies are exact copies.
+- **No up.** Three-fold round its travel axis, and it steers with a CARRIED up: `Boid.SteeringUpFor` (world +y for every
+  other boid) is overridden by `BeeFauna` with `CelestialFrame.CarryUp` (parallel transport: the minimal rotation between
+  headings carries the body's own up; no flip at the poles, never righted to the world; `CelestialFrameTests`).
+- **The vanes beat**: `BeeVaneDriver` (the CPU driver tier, `localRotation` only) strokes each vane ±24° about its root's
+  tangent, 9 times a second, the three a third of a beat apart (a wave round the spine). It replaces `BeeWingDriver`.
+- **The element forms** (`Bee Fauna <Element>.asset`, from the spec's table): Charge and Time at body scale 1 (Charge:
+  every prism danger); **Mass 3.82**: the heart's 12.44 u swing must clear every plate's and rib's SHIELD octahedron
+  (1.5 × the prism's size), and the nearest, a vane plate's, sits 3.263 u out at scale 1, so 3.812 is the floor (the first
+  spec said 2.5, measured to the prism boxes: that would have put a Mass bee's heart inside its own shields; the checker now
+  measures the octahedra and `--self-test` plants the 2.5); **Space 6.2942** (1.6477 × Mass) with `ErodeSpindle: 1`. The
+  stinger keeps its size on Space (`Fauna.ErodeSpindle` skips authored danger; Garrett's call whether it should thin).
+- **The mouth**: a bee does not eat (`mouth: none`). It is a `Boid`, and the authored-danger mouth is `LightFauna`'s, so
+  the stinger never becomes a mouth; `BeeFauna.Sting` stings with its own reach.
+
+**Retired**: round 2's Earth insect (`Bee.fbx`, its import meta and `Tools/Build/bee_model/build_bee.py`: a sculpted
+thorax, six jointed legs, compound eyes, antennae, a striped belly and four wings with a dihedral "up") and its
+`BeeModel` spindle. It broke every law the skill now holds (a solid skin instead of spindles, an up, no prism stinger).
+
+**Colliders: 7 body prisms + 1 heart a bee** (was 3 + 1). At the Hesperides caps (4 hives × 8 bees = 32 bees) that is
+224 bee prisms + 32 hearts (was 96 + 32): **+128 prism colliders at the cap**, beside the hives' 228 comb prisms.
 
 ### 66.5 Where bees are native
 

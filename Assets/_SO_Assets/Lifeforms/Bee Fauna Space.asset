@@ -24,8 +24,9 @@ MonoBehaviour:
   Variant:
     Enabled: 1
     HeartWorldScale: 0
-    BaseBodyScale: 3
+    BaseBodyScale: 6.2942
     BodyPrismScale: {x: 0, y: 0, z: 0}
+    ErodeSpindle: 1
     BodyMaterial: {fileID: 0}
     StarvationSeconds: 0
     Forager: 2

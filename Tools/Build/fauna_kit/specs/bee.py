@@ -68,13 +68,16 @@ SPEC = {
          "at": [0.0, 0.0, -17.0], "size": [0.5, 0.5, 6.0], "axis": [0, 0, 1]},
     ],
     "elements": {
-        # Mass: every plain prism shielded; the body grown until the heart's 12.44 u swing clears every shield.
-        "Mass": {"body_scale": 2.5, "shield_all": True},
+        # Mass: every plain prism shielded; the body grown until the heart's 12.44 u swing clears every shield. Measured to
+        # the shield OCTAHEDRA (1.5 x a prism's size), the nearest vane plate's sits 3.263 u out at scale 1, so the body
+        # needs 3.812 (2026-11-01: the first spec said 2.5, measured to the prism boxes, which would have put the Mass heart
+        # inside its own shields; the checker now measures the octahedra).
+        "Mass": {"body_scale": 3.82, "shield_all": True},
         # Charge: every body prism danger; the spindles part hardest (SPINDLE_LOD.md).
         "Charge": {"body_scale": 1.0, "all_danger": True},
         # Space: 1.6477 x the Mass span, spindles eroded where thickest, prisms refit as needles. Whether the stinger
         # thins too is Garrett's call: Fauna.ErodeSpindle skips authored danger today.
-        "Space": {"body_scale": round(2.5 * 1.6477, 4), "erode_spindle": True, "span_over_mass": 1.6477, "stinger_thins": False},
+        "Space": {"body_scale": round(3.82 * 1.6477, 4), "erode_spindle": True, "span_over_mass": 1.6477, "stinger_thins": False},
         # Time: as authored. No body expression for Time is written anywhere yet (an open decision, not a default).
         "Time": {"body_scale": 1.0},
     },

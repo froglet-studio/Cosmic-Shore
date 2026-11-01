@@ -66,8 +66,32 @@ def frame(axis):
     return r, u, f
 
 
+def oriented(forward, at):
+    """(right, up, forward) with the up RADIAL: the direction from the travel axis out to `at`, square to forward. A
+    part repeated round the axis then turns with it, so the n copies are exact copies (L6). A part ON the axis (no
+    radial) takes the arbitrary frame. The builder (build.py) poses every spindle and prism with this same rule."""
+    f = unit(forward)
+    radial = [at[0], at[1], 0.0]
+    radial = sub(radial, mul(f, dot(radial, f)))
+    if norm(radial) < 1e-6:
+        return frame(forward)
+    u = unit(radial)
+    r = cross(u, f)
+    return r, u, f
+
+
+def prism_frame(p):
+    return oriented(p["axis"], p["at"])
+
+
+def spindle_frame(s):
+    """A spindle's local +z points from its tip back to its root: the braid mesh trails along its own -z."""
+    mid = [(s["from"][i] + s["to"][i]) / 2 for i in range(3)]
+    return oriented(sub(s["from"], s["to"]), mid)
+
+
 def box_axes(p):
-    r, u, f = frame(p["axis"])
+    r, u, f = prism_frame(p)
     half = [p["size"][0] / 2, p["size"][1] / 2, p["size"][2] / 2]
     return [r, u, f], half
 
@@ -109,6 +133,50 @@ def box_point_dist(p, x):
         e = max(0.0, abs(c) - h[i])
         acc += e * e
     return math.sqrt(acc)
+
+
+def tri_point_dist(p, a, b, c):
+    """Exact distance from p to the triangle abc (Ericson, Real-Time Collision Detection 5.1.5)."""
+    ab, ac, ap = sub(b, a), sub(c, a), sub(p, a)
+    d1, d2 = dot(ab, ap), dot(ac, ap)
+    if d1 <= 0 and d2 <= 0:
+        return norm(ap)
+    bp = sub(p, b)
+    d3, d4 = dot(ab, bp), dot(ac, bp)
+    if d3 >= 0 and d4 <= d3:
+        return norm(bp)
+    vc = d1 * d4 - d3 * d2
+    if vc <= 0 and d1 >= 0 and d3 <= 0:
+        return norm(sub(p, add(a, mul(ab, d1 / (d1 - d3)))))
+    cp = sub(p, c)
+    d5, d6 = dot(ab, cp), dot(ac, cp)
+    if d6 >= 0 and d5 <= d6:
+        return norm(cp)
+    vb = d5 * d2 - d1 * d6
+    if vb <= 0 and d2 >= 0 and d6 <= 0:
+        return norm(sub(p, add(a, mul(ac, d2 / (d2 - d6)))))
+    va = d3 * d6 - d5 * d4
+    if va <= 0 and (d4 - d3) >= 0 and (d5 - d6) >= 0:
+        return norm(sub(p, add(b, mul(sub(c, b), (d4 - d3) / ((d4 - d3) + (d5 - d6))))))
+    den = 1.0 / (va + vb + vc)
+    return norm(sub(p, add(a, add(mul(ab, vb * den), mul(ac, vc * den)))))
+
+
+SHIELD_SEMI_AXIS = 3.0   # OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE on the box HALF-extents: a shield reaches 1.5 x the size
+
+
+def shield_dist(p, x):
+    """Distance from x to prism p's SHIELD: the octahedron whose vertices sit on the box's axes at 3 x the half-extents
+    (/ecology 2.6, "a SHIELD's size is not the prism's size"). 0 inside."""
+    A, h = box_axes(p)
+    d = sub(x, p["at"])
+    if sum(abs(dot(d, A[i])) / (SHIELD_SEMI_AXIS * h[i]) for i in range(3)) <= 1.0:
+        return 0.0
+    v = []
+    for i in range(3):
+        for sgn in (-1, 1):
+            v.append(add(p["at"], mul(A[i], sgn * SHIELD_SEMI_AXIS * h[i])))
+    return min(tri_point_dist(x, v[0 + sx], v[2 + sy], v[4 + sz]) for sx in (0, 1) for sy in (0, 1) for sz in (0, 1))
 
 
 def rot_z(v, ang):
@@ -231,9 +299,14 @@ def check(spec):
              "L8 Space: say whether the stinger thins (Fauna.ErodeSpindle skips authored danger today)")
     if "Mass" in el:
         plain = [p for p in prisms if p.get("kind") == "health"]
-        need = max((MASS_SWING / max(box_point_dist(p, [0, 0, 0]) + 1e-9, 1e-9)) for p in plain) if plain else 1.0
+        # the body grows with the root and the heart does not: k x (distance at root scale 1) must reach the swing
+        need = max(MASS_SWING / max(shield_dist(p, [0, 0, 0]), 1e-9) for p in plain) if plain else 1.0
         want(el["Mass"].get("body_scale", 0) >= need - 1e-3,
-             f"L8 Mass body_scale {el['Mass'].get('body_scale')} is under {need:.3f}: a Mass heart's swing needs {MASS_SWING} u to every shielded prism")
+             f"L8 Mass body_scale {el['Mass'].get('body_scale')} is under {need:.3f}: a Mass heart's swing needs {MASS_SWING} u "
+             f"(ElementalArmour.HeartSwingClearance) to every shield octahedron (1.5 x a prism's size)")
+        if "Space" in el:
+            want(abs(el["Space"].get("body_scale", 0) - el["Mass"].get("body_scale", 0) * SPACE_OVER_MASS) < 1e-3,
+                 f"L8 Space body_scale must be Mass's x {SPACE_OVER_MASS} (= {el['Mass'].get('body_scale', 0) * SPACE_OVER_MASS:.4f})")
     if "Charge" in el:
         want(el["Charge"].get("all_danger") is True, "L8 Charge: every body prism is danger (Fauna.ArmourBody)")
 
@@ -285,6 +358,7 @@ def self_test():
     planted("a solid model skin", lambda s: s.update(model="Bee.fbx"), "L2")
     planted("steering with world up", lambda s: s.update(steering_up="world"), "L6")
     planted("Space not eroded", lambda s: s["elements"]["Space"].update(erode_spindle=False), "L8")
+    planted("a Mass heart inside its shields", lambda s: s["elements"]["Mass"].update(body_scale=2.5), "L8")
     planted("a leg by name", lambda s: s["spindles"][1].update(name="Leg1") or [p.update(spindle="Leg1") for p in s["prisms"] if p["spindle"] == base["spindles"][1]["name"]], "L9")
 
     def overlap(s):
