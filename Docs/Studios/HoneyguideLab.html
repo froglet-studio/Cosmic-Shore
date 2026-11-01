@@ -621,7 +621,7 @@
     activeLevelGain: 0.25, // proposal: a repeat of the same active refreshes it and grows its reach this much a level
     // Round 8 (Garrett 2026-11-01): RT is a Space active and LT a Charge active, pulled to preview and released to fire (never
     // analog); the upgrade cards BANK uses on them, newest first. Time is the Slip; Mass is the passive hive. No boost button.
-    usesPerCard: 1,        // proposal: uses (ticks) one made upgrade card banks on its trigger
+    usesPerCard: 3,        // Garrett 2026-11-01: "the three uses per card is good"; every make of the card banks 3 uses
     peckBurst: 3,          // proposal: shots one Peck release fires (RT, Space)
     peckCooldown: 1,       // proposal: seconds between Peck releases
     flitStrikeRadius: 8,   // proposal: Flit strikes every rival vessel and creature within this of its dart (LT, Charge)
@@ -758,7 +758,7 @@
   // Round 8 (Garrett 2026-11-01): "right trigger should be a space active ability ... left trigger should be charge active
   // ability ... charge should always be able to attack vessels and fauna. space should always be able to reduce opposing
   // prism volume ... the ability has a preview when pulled and then completes when released." btn 0 = RT (Space), 1 = LT
-  // (Charge). Each upgrade card BANKS one use (a tick) on its trigger; the newest banked ability is current and fires
+  // (Charge). Each make of an upgrade card BANKS usesPerCard (3) uses (ticks) on its trigger; the newest banked ability is current and fires
   // first; with none banked the base ability fires. pv names what the pull previews (drawn in the arena).
   const ACTIVES8 = {
     lance: { btn: 0, reach: 120, glyph: 'GL', pv: 'line', text: 'RT, Space. Pull: the line 120 u ahead. Release: a lance shatters every hostile prism on it and lays a trail of your newest charge\'s domain along it to slip on.' },
@@ -1616,7 +1616,7 @@
     if (w.bombs.length) w.bombs = w.bombs.filter((b) => b.t > 0);
   }
   // ---- round 8: the queue, the pull-and-release triggers, the strikes, creatures and the Mass hive ----
-  // A made upgrade card banks one use on its trigger. The same ability again adds a tick; any ability banked becomes the
+  // A made upgrade card banks usesPerCard uses on its trigger. The same ability again adds a tick; any ability banked becomes the
   // newest, i.e. current (its icon on the card); a stack: the current one fires first, then the next most recent.
   function bank8(w, hull, key) {
     const k = ACTIVES8[key].btn, q = hull.q[k], at = q.findIndex((e) => e.key === key);
@@ -1998,8 +1998,7 @@
     { name: 'Round 7: RT attack / LT move, timed upgrades, boost button', opts: { triggers: 'r7' } },
     { name: 'Round 8, no hives (Mass passive off)', opts: {}, P: { massHiveSeconds: 100000 } },
     { name: 'Round 8, no creatures', opts: {}, P: { creatureCount: 0 } },
-    { name: 'Round 8, 3 uses per card', opts: {}, P: { usesPerCard: 3 } },
-    { name: 'Round 8, 3 uses per card, no hives', opts: {}, P: { usesPerCard: 3, massHiveSeconds: 100000 } },
+    { name: 'Round 8, 1 use per card (as first built)', opts: {}, P: { usesPerCard: 1 } },
   ];
   const COLS = [
     ['destsPerMin', 'Legs/min', 'Race legs a minute: destinations reached, plus the share of the last leg flown. Higher is better.'],
@@ -2680,7 +2679,7 @@
     const s = f.querySelector('select'); s.value = crew.mate; s.onchange = () => { crew.mate = s.value; lsSet('mate', crew.mate); applyCrew(); };
     box.appendChild(f);
     const h = document.createElement('div'); h.className = 'hint';
-    h.innerHTML = '<b>Ratel (Engineer):</b> drag a prism to move it (1 AP a cell). Tap an empty injection port to inject a prism of its colour (1 AP). An empty port already counts as a prism of its colour in a pattern, but a pattern needs at least one real prism. When a card lights, tap it (1 AP): one of its real prisms, drawn at random, goes to the battery, and its domain is a slip charge. The ports turn 60 degrees every spin; the bar across the top shrinks until the next one. Every 4 patterns the clock stops: first your new ability is shown, then the new ports, then the bar starts again. Each card is a tabletop upgrade with its own effect (the Patterns tab lists them); its pips count the makes before it is replaced. Your ability is under the AP row; it changes, with the ports, every 4 patterns.<br><b>Pilot (Honeyguide), round 8:</b> A/D or ←/→ steer. RT (E or K) is your Space active: hold it to see the preview, let go to fire; Peck, three quick shots, unless the Ratel has banked an upgrade. LT (Q or J) is your Charge active the same way: Flit, a dart that strikes rival vessels and creatures, unless an upgrade is banked. Hold X as you let go to cancel. Each upgrade card the Ratel makes banks one use: a tick on the RT or LT card; the newest banked ability is current (its icon on the card) and fires first. Space upgrades: Genesis Lance, Little Bang Grenade, Particle Harmonizer, Fugacity Discharger, Sepia Drone, Thruster Swarm, Eyelet Jet. Charge upgrades: Hard Light Lasso, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon. Mass is the hive (fly to it when one appears); there is no boost button. On a phone, fly with two thumbs (slide a thumb sideways to steer); lift your left thumb to preview LT and touch it back down to fire; your right thumb does the same for RT; lift both to cancel. The Slip is your Time ability: fly onto a trail of a domain you hold, nose within 45 degrees of its line, and you jump to the end you point at. The dashed line shows where it would take you.';
+    h.innerHTML = '<b>Ratel (Engineer):</b> drag a prism to move it (1 AP a cell). Tap an empty injection port to inject a prism of its colour (1 AP). An empty port already counts as a prism of its colour in a pattern, but a pattern needs at least one real prism. When a card lights, tap it (1 AP): one of its real prisms, drawn at random, goes to the battery, and its domain is a slip charge. The ports turn 60 degrees every spin; the bar across the top shrinks until the next one. Every 4 patterns the clock stops: first your new ability is shown, then the new ports, then the bar starts again. Each card is a tabletop upgrade with its own effect (the Patterns tab lists them); its pips count the makes before it is replaced. Your ability is under the AP row; it changes, with the ports, every 4 patterns.<br><b>Pilot (Honeyguide), round 8:</b> A/D or ←/→ steer. RT (E or K) is your Space active: hold it to see the preview, let go to fire; Peck, three quick shots, unless the Ratel has banked an upgrade. LT (Q or J) is your Charge active the same way: Flit, a dart that strikes rival vessels and creatures, unless an upgrade is banked. Hold X as you let go to cancel. Each time the Ratel makes an upgrade card it banks three uses: three ticks on the RT or LT card; the newest banked ability is current (its icon on the card) and fires first. Space upgrades: Genesis Lance, Little Bang Grenade, Particle Harmonizer, Fugacity Discharger, Sepia Drone, Thruster Swarm, Eyelet Jet. Charge upgrades: Hard Light Lasso, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon. Mass is the hive (fly to it when one appears); there is no boost button. On a phone, fly with two thumbs (slide a thumb sideways to steer); lift your left thumb to preview LT and touch it back down to fire; your right thumb does the same for RT; lift both to cancel. The Slip is your Time ability: fly onto a trail of a domain you hold, nose within 45 degrees of its line, and you jump to the end you point at. The dashed line shows where it would take you.';
     box.appendChild(h);
     return box;
   }
@@ -2777,7 +2776,7 @@
   function aboutPanel() {
     const box = document.createElement('div');
     box.innerHTML = '<p id="aboutHead"></p>' +
-      '<p><b>Round 8 (Garrett, 2026-11-01).</b> Time is the Slip (passive). RT is a Space active that always cuts opposing prism volume; LT is a Charge active that always strikes rival vessels and creatures. Both are digital: pull to see a preview, release to fire. On a phone fly with two thumbs (drag either thumb sideways to steer); lift your LEFT thumb to preview LT, touch it back down to fire; lift your RIGHT thumb for RT; lift both to cancel. Keyboard: hold E or K (RT) or Q or J (LT) to preview, let go to fire, hold X as you let go to cancel. Each upgrade card the Ratel makes BANKS a use on its trigger: a tick on the card; the newest ability is current (its icon on the card) and fires first. Mass is a passive: every ' + P.massHiveSeconds + ' s a hive of all three domains appears to fly to (hive mode itself is the Ratel Raid Lab). No boost button: a card\'s boost burns at once. Round 7 is the "The triggers" setting\'s other choice.</p>' +
+      '<p><b>Round 8 (Garrett, 2026-11-01).</b> Time is the Slip (passive). RT is a Space active that always cuts opposing prism volume; LT is a Charge active that always strikes rival vessels and creatures. Both are digital: pull to see a preview, release to fire. On a phone fly with two thumbs (drag either thumb sideways to steer); lift your LEFT thumb to preview LT, touch it back down to fire; lift your RIGHT thumb for RT; lift both to cancel. Keyboard: hold E or K (RT) or Q or J (LT) to preview, let go to fire, hold X as you let go to cancel. Each time the Ratel makes an upgrade card it BANKS ' + P.usesPerCard + ' uses on its trigger: a tick each on the card; the newest ability is current (its icon on the card) and fires first. Mass is a passive: every ' + P.massHiveSeconds + ' s a hive of all three domains appears to fly to (hive mode itself is the Ratel Raid Lab). No boost button: a card\'s boost burns at once. Round 7 is the "The triggers" setting\'s other choice.</p>' +
       '<p><b>The question.</b> Is the handoff fun? The Ratel builds patterns on a hex Dynamo whose injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery (a slip charge in its domain) and fires the card\'s own effect. The Honeyguide is not a Sparrow: RT is always Peck (a weak attack) and LT always Flit (a short move). Its Time ability is the Slip: touch a trail of a domain you hold, nose within 45 degrees of the trail\'s line, and ride it to the end you point at. Round 6 (Garrett: "the right trigger should always be a weak attack power that gets upgraded sometimes. the left should be a movement power that works similar. the 39 patterns should still be unique") gives every card its own effect: six attack upgrades take RT for 20 s, seven move upgrades take LT for 20 s, and the other 26 are timed passives or one-off effects. Sign off on a phone, as the Engineer, on the Decisions tab ("this is fun").</p>' +
       '<p><b>What this lab does NOT model.</b></p><ul class="plain">' +
       '<li>The world is a flat 2D disc, not the 3D cell. A prism\'s z axis is its trail\'s direction in the plane; "1-D" is measured locally (at most two neighbours within 1.5 prism spacings), so a crossing of two trails is 2-D where they cross. The 2-D beds stand in for walls, flora and the cell\'s structures.</li>' +
@@ -2834,21 +2833,25 @@
       const fresh = () => { const w = makeWorld(11, cfgFrom({}, 'hard', 'none', 'hard')); w.seats.pilot.who = 'none'; return w; };
       const step = (w, cmd) => { const c = Object.assign({ steer: 0, boost: false, lt: false, rt: false, arm: false, jump: false, cancel: false }, cmd); stepActives(w, w.hulls[0], c, 1 / 30); stepRunning; };
       // the queue: the same ability again adds a tick; a new one becomes current; the stack fires newest first
+      // U: the ticks one make banks (usesPerCard; Garrett 2026-11-01: 3)
       let w = fresh(), h = w.hulls[0];
-      bank8(w, h, 'lance'); bank8(w, h, 'lance'); bank8(w, h, 'littlebang');
-      ok('same ability banks a tick; a new one becomes current', current8(h, 0) === 'littlebang' && h.q[0].length === 2 && h.q[0][0].n === 2 && ticks8(h, 0) === 3, JSON.stringify(h.q[0]));
+      const U = Math.max(1, Math.round(w.P.usesPerCard));
       bank8(w, h, 'lance');
-      ok('banking an ability already queued moves it to current with its ticks', current8(h, 0) === 'lance' && h.q[0][h.q[0].length - 1].n === 3, JSON.stringify(h.q[0]));
+      ok('one make banks usesPerCard ticks', ticks8(h, 0) === U && U === 3, ticks8(h, 0) + ' ticks, usesPerCard ' + U);
+      bank8(w, h, 'lance'); bank8(w, h, 'littlebang');
+      ok('same ability banks more ticks; a new one becomes current', current8(h, 0) === 'littlebang' && h.q[0].length === 2 && h.q[0][0].n === 2 * U && ticks8(h, 0) === 3 * U, JSON.stringify(h.q[0]));
+      bank8(w, h, 'lance');
+      ok('banking an ability already queued moves it to current with its ticks', current8(h, 0) === 'lance' && h.q[0][h.q[0].length - 1].n === 3 * U, JSON.stringify(h.q[0]));
       // a pull previews and does nothing; the release fires and spends one tick
       w = fresh(); h = w.hulls[0]; bank8(w, h, 'littlebang');
       step(w, { rt: true });
-      ok('a pull previews without firing', h.pv[0] && h.pv[0].key === 'littlebang' && w.bombs.length === 0 && ticks8(h, 0) === 1, JSON.stringify(h.pv[0]));
+      ok('a pull previews without firing', h.pv[0] && h.pv[0].key === 'littlebang' && w.bombs.length === 0 && ticks8(h, 0) === U, JSON.stringify(h.pv[0]));
       step(w, { rt: true }); step(w, { rt: false });
-      ok('the release fires and spends the tick', w.bombs.length === 1 && ticks8(h, 0) === 0 && !h.pv[0], w.bombs.length + ' bombs, ' + ticks8(h, 0) + ' ticks');
+      ok('the release fires and spends one tick', w.bombs.length === 1 && ticks8(h, 0) === U - 1 && !h.pv[0], w.bombs.length + ' bombs, ' + ticks8(h, 0) + ' ticks');
       // cancel: both thumbs lifted at the release
       w = fresh(); h = w.hulls[0]; bank8(w, h, 'littlebang');
       step(w, { rt: true }); step(w, { rt: false, cancel: true });
-      ok('a cancelled release fires nothing and keeps the tick', w.bombs.length === 0 && ticks8(h, 0) === 1 && w.m.cancelled === 1, w.m.cancelled);
+      ok('a cancelled release fires nothing and keeps the tick', w.bombs.length === 0 && ticks8(h, 0) === U && w.m.cancelled === 1, w.m.cancelled);
       // the base: Peck fires a burst of shots; nothing banked, nothing spent
       w = fresh(); h = w.hulls[0];
       step(w, { rt: true }); step(w, { rt: false });
@@ -2859,12 +2862,12 @@
       ok('Flit strikes a creature on its lane', w.m.jousts === 1, w.m.jousts);
       w = fresh(); h = w.hulls[0]; w.creatures = []; for (let i = 1; i < w.hulls.length; i++) { w.hulls[i].x = 900; w.hulls[i].z = 900; }
       bank8(w, h, 'lasso'); step(w, { lt: true }); step(w, { lt: false });
-      ok('a lasso with no target fizzles and keeps its tick', ticks8(h, 1) === 1 && w.m.fizzles === 1 && !h.reel, ticks8(h, 1));
+      ok('a lasso with no target fizzles and keeps its tick', ticks8(h, 1) === U && w.m.fizzles === 1 && !h.reel, ticks8(h, 1));
       // the lasso hooks a creature and strikes it on arrival
       w = fresh(); h = w.hulls[0]; w.creatures = [{ x: h.x + Math.cos(h.h) * 60, z: h.z + Math.sin(h.h) * 60, h: 0 }];
       bank8(w, h, 'lasso'); step(w, { lt: true }); step(w, { lt: false });
       for (let i = 0; i < 90 && h.reel; i++) { moveHull(w, h, 0, false, 1 / 30); stepRunning(w, h, 1 / 30); }
-      ok('the lasso reels to a creature and strikes it', w.m.jousts === 1 && ticks8(h, 1) === 0, w.m.jousts);
+      ok('the lasso reels to a creature and strikes it', w.m.jousts === 1 && ticks8(h, 1) === U - 1, w.m.jousts);
       return { pass: out.every((x) => x.pass), cases: out };
     },
     // which cards the hard crew makes: { effect: makes } summed over seeds (headless)

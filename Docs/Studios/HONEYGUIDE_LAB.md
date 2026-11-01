@@ -104,7 +104,9 @@ No boost button any more (two actives only): a card that gives boost burns it at
 
 ### The queue
 
-- Every made upgrade card **banks** `usesPerCard` (1) use on its trigger: a tick on the card.
+- Every time the Ratel makes (completes) an upgrade card it **banks** `usesPerCard` (3) uses on its trigger: a tick each
+  on the card (Garrett, 2026-11-01: "the three uses per card is good. each completion of a pattern should be a stored
+  use of the ability for the honeyguide").
 - The same ability again adds a tick. Any ability banked becomes **current**: its icon on the card. A stack: the current one
   fires first; when its ticks run out the next most recent banked one is current; with none banked, Peck or Flit.
 - Nothing expires.
@@ -175,7 +177,7 @@ Legs/min SE about ±0.14, so a difference under about 0.3 is noise. The solo row
 
 - `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html`: PASS (desktop and iPhone 13); desktop
   and phone screenshots read, plus a staged one with banked ticks and both previews drawn.
-- `window.__lab.selfTest8()`: 9 of 9 pass: the same ability banks a tick; a new one becomes current; a re-banked one moves
+- `window.__lab.selfTest8()`: 10 of 10 pass (2026-11-01, at 3 uses per card; the new case: one make banks `usesPerCard` ticks): the same ability banks a tick; a new one becomes current; a re-banked one moves
   to current with its ticks; a pull previews without firing; the release fires and spends the tick; a cancelled release
   keeps it; Peck fires its burst; Flit strikes a creature on its lane; a lasso with no target fizzles and keeps its tick;
   the lasso reels to a creature and strikes it. Planted defects (no cancel; a re-bank that drops its ticks) fail 3 cases.
@@ -192,7 +194,7 @@ Legs/min SE about ±0.14, so a difference under about 0.3 is noise. The solo row
 
 ### Decisions needed (Garrett)
 
-- **Uses per card**: 1 (as built), or more? At 1 the upgrades barely show; at 3 they match round 7's volume.
+- ~~Uses per card~~: **decided 2026-11-01, 3** (every completion banks 3 uses). The 1-use row is kept as a variant.
 - The list above: each ability's trigger, preview and release, and the conversions in "Read as".
 - The Peck burst (3 shots, every 1 s), the Flit strike lane (8 u), the landing strike (12 u) and the hive cadence (45 s).
 - Whether a cancelled preview should keep its tick (as built).
