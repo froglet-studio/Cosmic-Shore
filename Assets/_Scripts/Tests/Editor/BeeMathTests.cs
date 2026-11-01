@@ -75,6 +75,34 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheLedger_BuildsEachDomainsComb_FromThatDomainsMass()
+        {
+            // Garrett 2026-11-01: the hive is "a structure made from all three". A cell is paid by ONE domain's mass and laid
+            // in that domain, so mass is conserved per domain as well as in total.
+            const int ruby = 2, gold = 4;
+            var ledger = new BeeMath.HoneyLedger();
+            ledger.Deposit(ruby, 20f);
+            ledger.Deposit(gold, 10f);
+            ledger.Deposit(gold, 9f);
+            Assert.IsTrue(ledger.TrySpend(16f, out int first));
+            Assert.AreEqual(ruby, first, "the domain holding the most pays first");
+            Assert.IsTrue(ledger.TrySpend(16f, out int second));
+            Assert.AreEqual(gold, second, "then the next one that can pay alone");
+            Assert.IsFalse(ledger.TrySpend(16f, out int none), "no domain holds a whole cell: nothing is mixed into one");
+            Assert.AreEqual(-1, none);
+            ledger.Refund(gold, 16f);
+            Assert.AreEqual(39f, ledger.Deposited, 1e-4f);
+            Assert.AreEqual(ledger.Deposited, ledger.Spent + ledger.Stored, 1e-4f, "Deposited == Spent + Stored, in total");
+            for (int d = 0; d < BeeMath.HoneyLedger.Slots; d++)
+            {
+                var s = ledger.Of(d);
+                Assert.AreEqual(s.Deposited, s.Spent + s.Stored, 1e-4f, $"domain {d}: Deposited == Spent + Stored");
+            }
+            ledger.Deposit(9, 50f);   // not a domain: refused
+            Assert.AreEqual(39f, ledger.Deposited, 1e-4f);
+        }
+
+        [Test]
         public void TheColony_GrowsWithTheComb_WithinItsBounds()
         {
             Assert.AreEqual(3, BeeMath.BeesFor(12, 12, 9, 3, 8), "the seed comb keeps the minimum");

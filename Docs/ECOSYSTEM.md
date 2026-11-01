@@ -12727,8 +12727,10 @@ player's domain that protect it pull mass out of opposing fauna to bring back ma
 
 `FaunaDiet.Pollinator = 2` is the third fauna role, beside the two consumers (Herbivore 0, Predator 1). Curated as an
 EXTENSION of the Flora & Fauna fundamental, not a new one (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`): a fauna's role
-is not fixed by its kingdom. Every existing diet test is an explicit equality, so a pollinator is automatically
-neither herbivore prey signal (`Cell.GetLiveHerbivoreCount`, a predator's prey list) nor leashable (`Fauna.CanBeLeashed`).
+is not fixed by its kingdom. A pollinator IS prey (round 2, Garrett 2026-11-01: predators may eat bees): every predation
+site asks one predicate, `FaunaDiets.IsPrey` (every diet but Predator; `LightFauna`'s three, `VirtualFauna`'s two,
+`Cell.GetLiveHerbivoreCount`'s prey signal), so a bee eaten is ordinary consumption and its body prisms' mass goes the
+way every prey's does. It is not leashable (`Fauna.CanBeLeashed` reads `Diet == Herbivore`).
 
 ### 66.2 The hive is the flora; the bees are its members
 
@@ -12743,11 +12745,20 @@ planting does. A bee config (`Bee Fauna <Element>`) has no seed count, no feeds 
 the first), laid as a spiral outward one cell at a time (every cell touches one already laid), round the heart, which
 sits in the first comb's centre cell. 57 cells at most (2.4 × 2.4 × 6 prisms).
 
-**Mass: the comb past its seed is a TRANSFER.** The first 12 cells grow the way any plant grows (a producer). Every cell
-after them is built from `BeeMath.HoneyStore`: a ledger that only bees deposit into (each deposit the volume of body
-prisms they stung off opposing fauna) and a cell is laid only by spending its own volume from it, so
-`Deposited == Spent + Stored` always (a laid-and-failed cell is refunded). Nothing is minted; a hive with no prey near it
-stops at its seed. A hive buds a daughter (a swarm) through the one flora offspring path, one per full comb's growth
+**Mass: the comb past its seed is a TRANSFER, domain for domain** (round 2, Garrett 2026-11-01: "build a structure made from
+all three"). The first 12 cells grow the way any plant grows (a producer), in the hive's own domain. Every cell after them
+is built from `BeeMath.HoneyLedger`: a store kept PER DOMAIN that only bees deposit into (each deposit the volume of body
+prisms they stung off opposing fauna, filed under the domain it was stung from) and a cell is paid by ONE domain's mass
+and LAID IN THAT DOMAIN (`LifeForm.NewBlockDomain`, read by `AddHealthBlock` before the cell files the prism in its
+per-domain grids), so `Deposited == Spent + Stored` holds in total and per domain (a laid-and-failed cell is refunded to
+its own domain). The comb is therefore made of all three domains in exactly the proportion the bees brought home, and
+nothing is minted or re-coloured; a hive with no prey near it stops at its seed. The hive stays ONE plant of one domain
+for the cell's accounting (its flora slot, its cap, its heart): it is the comb's prisms that carry three domains, each
+counted where it belongs (a Ruby comb cell is Ruby mass: Ruby's herbivores leave it, the others may graze it). Checked
+against the invariants: the per-domain grids are filed at add time with the cell's own domain (the tracker's
+ChangeTeam-before-AddBlock order is kept), the element armour reads the hive's ELEMENT, not a domain, and the heart is the
+hive's. `LifeForm.SetTeam` (a lifeform changing domain) would still re-team every comb cell to one domain: no system
+re-teams a hive today; say so if one starts to. A hive buds a daughter (a swarm) through the one flora offspring path, one per full comb's growth
 (`GrowthPerOffspring` = 57), under the cell's cap and cooldown.
 
 ### 66.3 What a bee does (`BeeFauna`, a `Boid`)
@@ -12756,11 +12767,14 @@ A bee flies as a Boid (the school's steering; its body prisms are registered, mo
 collision effects, so the boid never eats. It never starves (`starvationSeconds 0`): a producer, like its slot. Every
 0.4 s it decides (`BeeMath.Decide`):
 
-- **Pollinate**: fly to a flower within the hive's 420 u and land on it: `Flora.Hasten(1.6, 10 s)`, the plant's OWN
+- **Pollinate**: fly to a flower within the hive's 420 u, of ANY of the three domains (mutualism, not a team fight;
+  Garrett 2026-11-01: "they should pollinate all three"), and land on it: `Flora.Hasten(1.6, 10 s)`, the plant's OWN
   growth path (the door the Angler's lure uses), so a pollinated plant grows faster under all its own budgets and gates.
   Bees fan out (`BeeMath.PickIndex`), 3 visits a trip.
 - **Raid**: an opposing creature within the hive's 260 u is flown at and stung: its nearest unshielded body prism is
-  consumed toward the bee (`Prism.Consume`, attributed to the bee) and its volume carried. Defending the hive and
+  consumed toward the bee (`Prism.Consume`, attributed to the bee) and its volume carried, by the domain it was stung
+  from. Bees still GUARD only against the other domains (`f.Domain != domain`): pollination is for every domain,
+  defence is for the hive's. Defending the hive and
   feeding it are one act. Shielded body prisms are passed over (`Fauna.IsShieldedMass`), as every forager passes them.
 - **Return**: home with the load (or full at 32): `BeeHiveFlora.Deposit`.
 
@@ -12768,25 +12782,52 @@ A bee whose hive dies keeps pollinating round where it is; nothing times it out.
 
 ### 66.4 The body (premier, and within budget)
 
-`BeeFauna.prefab` is a fork of the tadpole (`author_bee_assets.py`): the heart at the front with the body trailing
-(§23.9, the tadpole arrangement, so `verify_fauna_heart_seat.py` needs nothing new), the tadpole's body spindle as the
-ABDOMEN (prism 2.2 × 2.2 × 3.2), and two more `TadpoleSpindle` instances as the WINGS (their tadpole skin hidden, each
-one thin prism 3.6 × 0.25 × 2.0 on a pivot beside the thorax with an 18° dihedral). `BeeWingDriver` flaps them: the CPU
-driver tier (a wing is a `HealthPrism`), `localRotation` only, 9 beats a second (the read of a blur), ±38°, a per-bee
-phase. Root scale 3 (the tadpole's, sized to the one heart, §64.4); the config's `BodyPrismScale` is zero so each prism
-keeps its own shape (one retarget would make the wings abdomens). The element's armour applies as to every creature
-(`Fauna.ArmourBody`): a Mass bee's three prisms are shielded, a Charge bee's are all danger.
+**Round 2: a real model** (Garrett, 2026-11-01: "make a real bee model with /fauna"). `Assets/_Models/Fauna/Bee.fbx` is
+built by `Tools/Build/bee_model/build_bee.py` (Blender-as-a-module, the /vessel-model install, `zup_identity` axes so it
+lands 1:1 in the bee's local units, head on +z): a fuzzy faceted THORAX (noise-displaced, flat-shaded), a waist, a plump
+ABDOMEN of four fuzzy bands parted by three recessed grooves (the stripes, in FORM: the body is one material slot because
+it is the Spindle's renderer and the spindle LOD owns its material) ending in a short stinger, two compound-eye domes and
+two elbowed antennae, six jointed legs (the hind pair with pollen baskets), and FOUR membrane WINGS, each its own object
+pivoted at its root (`Bee_WingFL/FR/HL/HR`). 3,452 triangles, no colliders, no rig (no Animator rides on a bee). **The
+head is the heart**: the lifeform's crystal sits at the origin with the body trailing (§23.9, the tadpole arrangement),
+so the model has no head shell to bury it in - the eyes flank it and the antennae reach forward past it. The contact
+sheet (four views, the heart drawn as a stand-in octahedron of the one crystal size) is rendered by the same script
+(`--render <dir>`).
 
-**What a real model would add:** a fuzzy striped thorax and abdomen, a head with antennae, legs. The prism body reads as a
-bee in silhouette (a heart-thorax, an abdomen, two flapping plates) but it is not a drawn bee. The art team's call.
+**In the prefab** (`author_bee_assets.py`, guids kept): a `BeeModel` GameObject carrying a `Spindle` with the `Bee.fbx`
+instance under it (the Clawfish's pattern: the spindle resolves the model's body renderer itself, so no fbx-internal
+fileID is authored); the model's materials are remapped by NAME in `Bee.fbx.meta` (`BeeBody` -> the shared
+`SpindleMaterial`, `BeeWing` -> `BranchingMembraneMaterial`). The tadpole skin of the abdomen instance is hidden (the
+model is the body). The bee's conserved mass stays its three `HealthPrism`s: the ABDOMEN core (2.0 × 2.0 × 2.8, at the
+model abdomen's widest point, z -5.7, inside the mesh) and the two "wing" prisms, now each forewing's LEADING-EDGE VEIN
+(3.9 × 0.22 × 0.28 along the forewing on its pivot, the model's 9° dihedral; round 1's pivots tilted DOWN, the sign is
+fixed). `BeeWingDriver` flaps the four model wings and the two veins as one (`leftWings` / `rightWings`, found by name:
+the CPU driver tier, `localRotation` only, 9 beats a second, ±38°, a per-bee phase). Root scale 3 (sized to the one heart,
+§64.4). The element's armour applies as to every creature (`Fauna.ArmourBody`): a Mass bee's three prisms are shielded
+(the abdomen's octahedron reads as a shell round the body), a Charge bee's are all danger (the veins show it).
+
+**Colliders: unchanged** (3 body prisms + 1 heart a bee; the model imports none).
 
 ### 66.5 Where bees are native
 
 The **Hesperides** garden (terraced beds of eight flowering species and two topiaries): 2 hives seeded, cap 4, the four
 elements spread from the palette. A garden is where pollination shows. Its spawn profile is owned by
 `Tools/ecosim/gen_hesperides_assets.py`, which now lists the hive by the guid `author_bee_assets.py` mints; that script
-owns the config and `--check` fails if the profile drops it. The Spawn Matrix's **Bee Hive** row (flora) releases a hive
-of any element anywhere. No other cell has bees yet.
+owns the config and `--check` fails if the profile drops it. No other cell has bees natively (Garrett, 2026-11-01: "that
+was is fine").
+
+**Every list a cell, a toy or the codex picks lifeforms from** (round 2, "be sure to add them to the various lists"):
+- **a new cell's spawn profile**: the canonical element palette in `_SO_Assets/Lifeforms` (`Bee Hive Flora <Element>`
+  in `SupportedFloras`; `Bee Fauna <Element>` exists, but a cell grows bees through hives, never the fauna spawner);
+- **the Spawn Matrix (the freestyle lifeform bench)**: a **Bee Hive** flora row and, new, a **Bee** fauna row (a bee
+  released without a hive pollinates where it is) - `author_spawn_matrix_roster.py`, which also gives both their Toy
+  Box descriptions;
+- **the Codex**: harvested from the configs and the roster names (`CodexHarvester`), so both species are picked up by
+  the next FrogletTools > UI > Codex > Scan & Merge; its `GrowthModel` and `BehaviourModel` now name `BeeHiveFlora` and
+  `BeeFauna` instead of printing the class name. The shipped `Codex.asset` rows are written by that editor scan
+  (not run here);
+- **the gates that enumerate lifeforms by prefab** (`author_lifeform_heart_collection.py`, `audit_lifeform_crystals.py`)
+  already found both prefabs in round 1.
 
 **Colliders at the Hesperides caps:** 228 comb prisms + 4 hive hearts (flora prisms, LOD-culled like every plant's),
 96 bee prisms + 32 bee hearts (32 bees). The bees' senses ride the hive's shared read (`senseSeconds` 0.5: the cell's
@@ -12800,11 +12841,13 @@ BeeHiveFlora.SeedAt(cell, hiveConfig, position, domain, adopt: standingPrisms);
 
 founds a hive through the canonical flora spawn path (`CellLifeSpawnerBase.SpawnFlora`, so the cap, the registry and the
 variant apply) and hands `adopt` (standing prisms: what the Ratel left of a raided hive) over as its first comb
-(reparented, re-teamed, counted against the seed). The Honeyguide's Mass power is the same call with no `adopt`.
+(reparented, counted against the seed, and since round 2 each KEEPING its own domain: the hive is made of all three). The Honeyguide's Mass power is the same call with no `adopt`.
 
 ### 66.7 Not verified, and open
 
-Nothing here has run in the Editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). Open for Garrett: the numbers (bees per
-hive, haste, radii, the comb's size), whether pollinators should be prey for predators (today they are not: predators
-hunt herbivores only), whether bees should pollinate opposing-domain flora (today they pollinate any), and a real bee
-model.
+Nothing here has run in the Editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). Round 2 (Garrett, 2026-11-01) settled four
+of round 1's questions: the numbers stand ("a fine start"), predators eat bees, bees pollinate all three domains and build
+from all three, Hesperides stays the native cell. Open: the bee's COLOUR (one material slot draws it in the spindle's
+domain colour, so the stripes are grooves, not yellow and black; a second slot would need the spindle LOD to own two
+materials), whether a client's hive should replicate its three-domain comb (store-paid cells are laid where the bees
+sting, on the simulation's authority), and how the model reads at gameplay distance in the Editor.

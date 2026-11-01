@@ -35,6 +35,15 @@ namespace CosmicShore.Tests
                 "FaunaDiet member count changed - update tests + any diet switch logic.");
         }
 
+        // Garrett 2026-11-01: predators may eat bees. The one predicate every predation site asks.
+        [TestCase(FaunaDiet.Herbivore, true)]
+        [TestCase(FaunaDiet.Pollinator, true)]
+        [TestCase(FaunaDiet.Predator, false)]
+        public void FaunaDiets_IsPrey_EveryDietButThePredators(FaunaDiet diet, bool prey)
+        {
+            Assert.AreEqual(prey, FaunaDiets.IsPrey(diet), $"{diet}: prey should be {prey}");
+        }
+
         // ---- CellPhase (drives flora growth + fauna aggression) ----
         // 3-phase ladder since the steady-until-frenzy collapse (Docs/ECOSYSTEM.md §0/§5):
         // phase maps 1:1 onto CellAggressionLevel.

@@ -16,9 +16,11 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The comb.</b> A stack of hex combs (<see cref="BeeMath.CellPosition"/>) round the heart, which sits in
     /// the first comb's centre cell like a queen cell. The first <see cref="seedCells"/> cells grow the way any plant
-    /// grows (a producer); every cell past them is BUILT FROM THE STORE: the mass the bees carry home, which they sting
-    /// off opposing fauna. <see cref="BeeMath.HoneyStore"/> keeps that ledger, so the comb's growth past its seed is
-    /// exactly what was carried in and nothing is minted.</para>
+    /// grows (a producer), in the hive's own domain; every cell past them is BUILT FROM THE STORE: the mass the bees carry
+    /// home, which they sting off opposing fauna, laid in the DOMAIN of the mass that paid for it, so the comb is made of
+    /// all three domains (Garrett, 2026-11-01). <see cref="BeeMath.HoneyLedger"/> keeps that ledger per domain, so the
+    /// comb's growth past its seed is exactly what was carried in, colour for colour, and nothing is minted. The hive
+    /// itself stays ONE plant of one domain for the cell's accounting (its slot, its cap, its heart).</para>
     ///
     /// <para><b>The bees.</b> One more bee for every <see cref="cellsPerBee"/> cells of comb, up to <see cref="maxBees"/>,
     /// hatched one per <see cref="Cell.CurrentFaunaSpawnPeriod"/> (× <see cref="hatchPeriodScale"/>) - the period every
@@ -73,7 +75,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("A comb cell built from brought-home mass.")]
         [SerializeField] EventReference hiveGrowSfx;
 
-        BeeMath.HoneyStore _store;
+        readonly BeeMath.HoneyLedger _store = new();
+        Domains? _layDomain;
         int _nextCell;
         float _nextHatchAt = -1f;
         readonly List<BeeFauna> _bees = new();
@@ -83,8 +86,11 @@ namespace CosmicShore.Gameplay
         Spindle _comb;
         IReadOnlyList<HealthPrism> _adopt;
 
-        /// <summary>The ledger of what the bees brought home (read by tests and the codex).</summary>
-        public BeeMath.HoneyStore Store => _store;
+        /// <summary>The ledger of what the bees brought home, per domain (read by tests and the codex).</summary>
+        public BeeMath.HoneyLedger Store => _store;
+
+        /// <summary>A comb cell is laid in the domain of the mass that paid for it (the seed cells, in the hive's own).</summary>
+        protected override Domains NewBlockDomain => _layDomain ?? domain;
         public int CombCells => HealthBlockCount;
         public int LiveBees => _bees.Count;
         public float GuardRadius => guardRadius;
@@ -117,8 +123,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Hand standing prisms to this hive as its first comb (before Initialize; taken on Plant).</summary>
         public void QueueAdoption(IReadOnlyList<HealthPrism> prisms) => _adopt = prisms;
 
-        /// <summary>A bee is home with <paramref name="volume"/> of mass stung off opposing fauna: the comb is built from it.</summary>
-        public void Deposit(float volume) => _store.Deposit(volume);
+        /// <summary>A bee is home with <paramref name="volume"/> of mass stung off opposing fauna of <paramref name="from"/>:
+        /// comb of that domain is built from it.</summary>
+        public void Deposit(float volume, Domains from) => _store.Deposit((int)from, volume);
 
         // ------------------------------------------------------------------ planting and growth
 
@@ -141,8 +148,9 @@ namespace CosmicShore.Gameplay
                 if (!p || p.destroyed) continue;
                 p.transform.SetParent(Comb().transform, true);
                 p.LifeForm = this;
-                p.ChangeTeam(domain);
+                _layDomain = p.Domain;   // an adopted prism keeps its own domain: the hive is made of all three
                 AddHealthBlock(p);
+                _layDomain = null;
             }
             // the adopted comb stands in for as much of the seed as it covers
             _nextCell = Mathf.Max(_nextCell, Mathf.Min(maxCells, HealthBlockCount));
@@ -165,16 +173,17 @@ namespace CosmicShore.Gameplay
             if (_nextCell >= maxCells) return;
             bool seed = _nextCell < seedCells;
             float cost = CellVolume;
-            if (!seed && !_store.TrySpend(cost)) return;
-            if (LayCell(_nextCell))
+            int from = (int)domain;
+            if (!seed && !_store.TrySpend(cost, out from)) return;
+            if (LayCell(_nextCell, (Domains)from))
             {
                 _nextCell++;
                 if (!seed) Play(hiveGrowSfx, transform.position);
             }
-            else if (!seed) _store.Refund(cost);
+            else if (!seed) _store.Refund(from, cost);
         }
 
-        bool LayCell(int index)
+        bool LayCell(int index, Domains cellDomain)
         {
             // cell 0 of the first comb is the heart's (the queen cell): the comb is laid round it
             BeeMath.CellPosition(index + 1, cellsPerComb, cellSpacing, combSpacing, out float x, out float y, out float z);
@@ -182,7 +191,9 @@ namespace CosmicShore.Gameplay
             var position = t.TransformPoint(new Vector3(x, y, z));
             var prism = EnvironmentPrismPool.Get(healthPrism, position, t.rotation);
             if (!prism) return false;
+            _layDomain = cellDomain;
             AddHealthBlock(prism);
+            _layDomain = null;
             prism.AdmitTargetScale(cellLeaf);
             prism.TargetScale = cellLeaf;
             prism.transform.SetParent(Comb().transform, true);
