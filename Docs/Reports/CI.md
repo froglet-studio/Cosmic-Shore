@@ -115,7 +115,9 @@ from CI run 41336210737.
    the log, as one `::error` annotation each, in the run's step summary and in the step output `red`. The guard and
    Unity CI both call it, the guard's tracking issue now lists the red generators, and the autofix prompt runs the same
    script. Measured on `be1f4d582`: exit 1 with all four (Angler, Meerkat, Regatta, Undertow) named; exit 0 on two
-   passing generators; exit 1 on a misspelt path.
+   passing generators; exit 1 on a misspelt path. On GitHub: Unity CI run
+   [41340979013](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41340979013) (static tier on this branch)
+   ran all 60 and named all four, each with its own annotation. The guard's half runs only on a bleeding-edge push.
 2. **Meerkat:** restore `onCombatHitLanded` to `Event_CombatHitStats` in `MeerkatWormholeConfig.asset`. This is a
    behaviour bug, not just drift. Owner: Yash.
 3. **Angler:** update `ICON_SWAP` / the HUD check to the recut icons. Owner: the icon session's author with Garrett.
