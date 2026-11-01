@@ -267,6 +267,16 @@
    ]
   },
   {
+   "mode": "SerpentGulag",
+   "name": "Serpent Gulag",
+   "hulls": [
+    "Serpent"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "SerpentTime",
    "name": "Serpentine",
    "hulls": [
@@ -1117,6 +1127,7 @@
    "offeredIn": [
     "BroodRush",
     "Regatta",
+    "SerpentGulag",
     "SerpentTime"
    ],
    "gateRacesOffered": [

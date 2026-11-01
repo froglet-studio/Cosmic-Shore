@@ -43,7 +43,7 @@ Stats are read off the hull's prefab:
 | Meerkat | 'Sentinel Mode' | 'Exit Portal' | 'Soliton' | 'Faster Ride' | 60 | 120 / 120 | 1 | BurrowRun, Warpline |
 | Rhino | 'Energize' | 'Afterimage' | 'Blade Reach' | 'Ramp Spool' | 50 | 90 / 90 | 4 | AstroLeague, Broadside, BroodRush, Cleave, Headlong, Regatta |
 | Scarab | Shove | Switch | Nucleus Seeding | Throttle | 25 | 100 / 100 | 4 | AstroLeague, Broadside, Regatta, ScarabRally, ScarabScramble, Tollway, Undertow, WreckingBall |
-| Serpent | Scope | Seed Wall | Cloak / Sniper Shot | Solid Fuel Pellets | 50 | 80 / 80 | 4 | BroodRush, Regatta, SerpentTime |
+| Serpent | Scope | Seed Wall | Cloak / Sniper Shot | Solid Fuel Pellets | 50 | 80 / 80 | 4 | BroodRush, Regatta, SerpentGulag, SerpentTime |
 | Sparrow | Skyburst Rockets | Turret Stance | Pulsefire Cannons | Afterburner | 25 | 80 / 80 | 5 | Breakwater, Broadside, BroodRush, DogFight, Maelstrom, Regatta, Salvo, Scurry, WildlifeLiberation |
 | Squirrel | Crystal Joust | Boost Ring | Steal | Skimming | 60 | 120 / 120 | 1 | AstroLeague, Broadside, BroodRush, Joust, Maelstrom, Regatta, Scurry, SkimRace |
 | Stoat | Ripple | Mass / Time Mode | Field Dipole | Pathfinder / Time Mode | 60 | 48 / 48 | 1 | Regatta, Slingshot |
@@ -161,6 +161,7 @@ finishing ends it). This is the only AI record so far; no AI-only race is record
 | Scarab Rally | ScarabRally | Arcade | Scarab |
 | Scarab Scramble | ScarabScramble | Arcade | Scarab |
 | Scurry | Scurry | Arcade | Sparrow, Manta, Squirrel |
+| Serpent Gulag | SerpentGulag | Arcade | Serpent |
 | Serpentine | SerpentTime | Arcade | Serpent |
 | Sirocco | Sirocco | Arcade | Tiger Moth |
 | Skein | Skein | Arcade | Urchin |
