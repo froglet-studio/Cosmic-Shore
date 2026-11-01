@@ -53,7 +53,8 @@ namespace CosmicShore.UI
 
         void ApplyParts()
         {
-            var (invite, join, cancel) = VisibleParts(oneVerbPerRow, _wantInvite, _wantJoin, _wantCancel);
+            var (invite, join, cancel) = VisibleParts(oneVerbPerRow, _wantInvite, _wantJoin, _wantCancel,
+                                                      preferInvite: CurrentStatus == Status.Online);
             KitVisibility.SetShown(inviteGroup, invite);
             KitVisibility.SetShown(joinGroup, join);
             KitVisibility.SetShown(cancelGroup, cancel);
@@ -61,12 +62,15 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Which buttons show, from the ones the row asked for. With one verb a row shows a single button: Cancel wins,
-        /// then Join / Spectate, then Invite. Pure, so it is tested without a row.
+        /// then Join / Spectate, then Invite - except for a pilot alone in the menu (<paramref name="preferInvite"/>),
+        /// whose row says Invite while Join stays on offer in their profile card. Pure, so it is tested without a row.
         /// </summary>
-        internal static (bool invite, bool join, bool cancel) VisibleParts(bool oneVerb, bool invite, bool join, bool cancel)
+        internal static (bool invite, bool join, bool cancel) VisibleParts(bool oneVerb, bool invite, bool join, bool cancel,
+                                                                           bool preferInvite = false)
         {
             if (!oneVerb) return (invite, join, cancel);
             if (cancel) return (false, false, true);
+            if (invite && preferInvite) return (true, false, false);
             if (join) return (false, true, false);
             return (invite, false, false);
         }

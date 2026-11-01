@@ -1,6 +1,6 @@
 ---
 name: prism-morph
-description: Use for ANY Cosmic Shore effect that DEFORMS prism geometry to live gameplay data — a liquid/silky/fabric-like morph of the prism surface itself (drape, wrap, ripple, bulge, pucker, melt), built on the seamless high-poly mesh swap plus a GPU vertex map driven by a per-frame global-uniform bank. Loads the four-part recipe (mesh, residency, bank, map), the clock-material-law argument that makes it legal, the ownership and invisible-swap contracts, the analytic-normal rules, the wirer + clang++ proof-by-convergence harness, and the collider/triangle budget gate. Trigger when editing Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl or any sibling vertex-deformation HLSL, Assets/_Scripts/Utility/PrismCradle.cs, Assets/_Scripts/Utility/HighPolyPrismMesh.cs, Prism.SetRenderMeshOverride / RenderMeshOverride, Tools/Shaders/wire_prism_*.py or verify_prism_*.py, or Docs/PRISM_ANIMATION.md §4.7.
+description: Use for ANY Cosmic Shore effect that DEFORMS prism geometry to live gameplay data — a liquid/silky/fabric-like morph of the prism surface itself (drape, wrap, ripple, bulge, pucker, melt), built on the seamless high-poly mesh swap plus a GPU vertex map driven by a per-frame global-uniform bank. Loads the four-part recipe (mesh, residency, bank, map), the clock-material-law argument that makes it legal, the ownership and invisible-swap contracts, the analytic-normal rules, the wirer + clang++ proof-by-convergence harness, and the collider/triangle budget gate. Trigger when editing Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl or any sibling vertex-deformation HLSL, Assets/_Scripts/Utility/PrismCradle.cs, Assets/_Scripts/Utility/Foundation/HighPolyPrismMesh.cs, Prism.SetRenderMeshOverride / RenderMeshOverride, Tools/Shaders/wire_prism_*.py or verify_prism_*.py, or Docs/PRISM_ANIMATION.md §4.7.
 ---
 
 # High-Poly Prism Morph Protocol
@@ -19,7 +19,7 @@ first member already paid.
 
 **The reference implementation is the Urchin's CRADLE.** Read it before you write anything:
 `Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl`, `Assets/_Scripts/Utility/PrismCradle.cs`,
-`Assets/_Scripts/Utility/HighPolyPrismMesh.cs`, `Docs/PRISM_ANIMATION.md` §4.7.2. Its history
+`Assets/_Scripts/Utility/Foundation/HighPolyPrismMesh.cs`, `Docs/PRISM_ANIMATION.md` §4.7.2. Its history
 is the reason this skill is worth its weight: **two rounds of rigid per-facet motion were
 rejected on look** (a whole face, then a per-wedge cut), a 10× tone-down made a small glitch
 instead of a big one, and the branch went stale. The redesign — same spirit, more surface,

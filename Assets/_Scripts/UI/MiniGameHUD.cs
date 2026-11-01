@@ -440,10 +440,6 @@ namespace CosmicShore.UI
                     // one you owe is the only thing telling you which way out of the knot your
                     // next FOLD is aimed from.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Waystation");
-                case GameModes.WaystationPrototype:
-                    // Waystation's provider: a tower ring sits under a floor plate, so the arrow is what says which
-                    // way the next hop falls.
-                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_WaystationPrototype");
                 case GameModes.Headlong:
                     // Same provider: it asks whichever GateRaceController is in the scene, and on
                     // a lapped circuit "your next gate" is the only thing that distinguishes two
@@ -521,6 +517,11 @@ namespace CosmicShore.UI
                     // check is the whole point - the dust spares teammates - and a duel between
                     // the fleet's two slowest-turning hulls is won by whoever FINDS the other.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Dustup");
+                case GameModes.SerpentGulag:
+                    // The Bends' provider again: the nearest pilot this player may snipe. In a 3,600 u cell the
+                    // duel is won by whoever FINDS the other first, then lines them up - the arrow answers the
+                    // first half; the scope, the nests and the cloak are the second.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_SerpentGulag");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's

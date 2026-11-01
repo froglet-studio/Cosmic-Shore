@@ -15,7 +15,7 @@ MonoBehaviour:
   gameMode: 58
   toasts:
   - situation: 117
-    messageTemplate: 'Thread every ring around you - they only count in order'
+    messageTemplate: 'The tower''s rings hang under the plates - fly over one and TAP the Drop through it'
     tintWithDomainColor: 0
     useDomainColoredNames: 0
     alpha: 1
@@ -25,7 +25,7 @@ MonoBehaviour:
     idleSeconds: 25
     repeatWhileIdle: 1
   - situation: 118
-    messageTemplate: 'Out of rings? HOLD the fold and aim where you want to land'
+    messageTemplate: 'Short lands on the plate, long meets the pipe - a quick tap, then roll for the next'
     tintWithDomainColor: 0
     useDomainColoredNames: 0
     alpha: 1

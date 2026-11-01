@@ -120,6 +120,12 @@ MonoBehaviour:
   - Name: Harrier
     ElementConfigs:
     - {fileID: 11400000, guid: 0054a60f9ec44a978eacd0cf5c1a5309, type: 2}
+  - Name: Bee
+    ElementConfigs:
+    - {fileID: 11400000, guid: 3835f7fe16bd8628035f8ac5c3d97633, type: 2}
+    - {fileID: 11400000, guid: bf8b71ceef5d5c2d72b5f91153cefb04, type: 2}
+    - {fileID: 11400000, guid: d178ed24d3b1f5225cd670822633f7b7, type: 2}
+    - {fileID: 11400000, guid: e9cd5e24a37dca338302c40167224d61, type: 2}
   floraSpecies:
   - Name: Gyroid
     ElementConfigs:
@@ -251,6 +257,12 @@ MonoBehaviour:
   - Name: Snap Trap
     ElementConfigs:
     - {fileID: 11400000, guid: b61248e2fe33d5cc91e5178d9cac74e3, type: 2}
+  - Name: Bee Hive
+    ElementConfigs:
+    - {fileID: 11400000, guid: a38a0bfaf481fc7710eac8b72df268ba, type: 2}
+    - {fileID: 11400000, guid: ecbd6d53cbd0ad77e60b2ab91b9310b1, type: 2}
+    - {fileID: 11400000, guid: a5377585e015e312364b61e697b9c41b, type: 2}
+    - {fileID: 11400000, guid: 4562d81fa994cba268652bb660f205ea, type: 2}
   - Name: Nested Gyroid
     ElementConfigs:
     - {fileID: 11400000, guid: 6e701b36d4cf67162c0c8be83591d947, type: 2}
@@ -310,6 +322,8 @@ MonoBehaviour:
     Description: "120 small fish that school as the lab's evolved herd: tight, aligned schools that swerve round a hunter or a ship. Harmless; ram them. Time crystals. Needs flora."
   - Species: Harrier
     Description: "8 sprinters that hunt the shoal as a pack. A hunter streaks out when it bursts and can burn only after 0.4 s of it. Charge crystals. Spawn with a Shoal or it scavenges flora."
+  - Species: Bee
+    Description: "A pollinator. It eats no plants: it makes the plants it visits, of every colour, grow faster. Released on its own it pollinates wherever it is; predators hunt it."
   - Species: Gyroid
     Description: "A colony of 30-prism tiles of a saddle-shaped minimal surface, budding a neighbour about every 30s into one endless lattice. Space grows needles."
   - Species: SchwarzP
@@ -358,6 +372,8 @@ MonoBehaviour:
     Description: "A slime-mould grove at the rim: five beating hearts cable together, danger pulses run down the cables, and your wake repels it."
   - Species: Snap Trap
     Description: "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, then snap shut on danger teeth."
+  - Species: Bee Hive
+    Description: "A comb of hexagonal cells and the bees it raises. The bees pollinate plants of every colour, which then grow faster, and sting opposing creatures near the hive, carrying their mass home: the comb is built from it, in the colours they brought. They eat no plants."
   - Species: Nested Gyroid
     Description: "Seven nested gyroid sheets woven together by fibres: a solid 3D lattice rather than one surface. Each plant is one octagon tile on every sheet; the colony buds into neighbouring tiles about every 30s."
   - Species: Borromean

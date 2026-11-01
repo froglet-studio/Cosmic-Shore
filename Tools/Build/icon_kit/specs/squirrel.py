@@ -143,8 +143,8 @@ def drift_trail_blocks():
 
 
 def drift_trail_octa():
-    """The trail while drifting: octahedrons - a drift lays SHIELDED prisms, and a shielded prism reads as a
-    diamond where a bare one reads as a square (Docs/claude/VESSEL_HUD_AND_ELEMENTS.md)."""
+    """The trail while drifting: octahedrons - a drift lays SHIELDED prisms, and a shielded prism is two close
+    triangles (never the rhombus, Garrett 2026-11-01) where a bare one reads as a square."""
     m = empty()
     for x in DRIFT_TRAIL_X:
         m |= prism(x, DRIFT_Y, 9)
@@ -200,7 +200,7 @@ ICONS = [
     dict(name="Squirrel_DriftTrailBlocks", element="Core", act="Drift: the trail at rest (blocks)", draw=drift_trail_blocks, subdir="Core", family=False,
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "three prisms", "specks": "seam slivers", "gap": "seams", "thin": "seams", "at40": "the seams close at 40 px, the blocks stay"}),
     dict(name="Squirrel_DriftTrailOcta", element="Core", act="Drift: the trail while drifting (octahedrons)", draw=drift_trail_octa, subdir="Core", family=False,
-         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "three prisms"}),
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "three prisms, each two halves", "thin": "a shielded prism is two close triangles (never the rhombus, Garrett 2026-11-01): the halves are slim", "gap": "the cut between the halves is the shape"}),
 ]
 
 REBIND = [

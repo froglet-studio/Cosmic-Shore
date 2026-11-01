@@ -316,11 +316,20 @@ def _brick(i, j, k):
 
 
 def _rhombus(i, j, k):
+    """A SHIELDED brick: the old rhombus cut in half along its long axis, two close triangles (Garrett, 2026-11-01: never
+    the rhombus for a prism; the Time petal owns it)."""
     P = _wall_px(k)
     cx, cy = i * WALL_PITCH, j * WALL_PITCH
     hl, hs = WALL_REACH * WALL_SHORT * WALL_ASPECT / 2, WALL_REACH * WALL_SHORT / 2
     a, b = ((0, hl), (hs, 0)) if _up(i, j) else ((hl, 0), (0, hs))
-    return fill([P(cx + a[0], cy + a[1]), P(cx + b[0], cy + b[1]), P(cx - a[0], cy - a[1]), P(cx - b[0], cy - b[1])])
+    g = 0.16 * hs                                     # half the cut, in wall units, along the short axis
+    bn = (b[0] / hs * g, b[1] / hs * g)
+    out = None
+    for sg in (1, -1):
+        ox, oy = cx + sg * bn[0], cy + sg * bn[1]
+        tri = fill([P(ox + a[0], oy + a[1]), P(ox + sg * b[0], oy + sg * b[1]), P(ox - a[0], oy - a[1])])
+        out = tri if out is None else out | tri
+    return out
 
 
 def _panel(i, j, k):

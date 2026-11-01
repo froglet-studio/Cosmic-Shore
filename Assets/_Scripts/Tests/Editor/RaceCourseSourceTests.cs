@@ -41,8 +41,6 @@ namespace CosmicShore.Tests
             (GameModes.Skein,      "MinigameSkein",      "Controller/Arcade/Skein/SkeinController.cs"),
             (GameModes.Regatta,    "MinigameRegatta",    "Controller/Arcade/Regatta/RegattaController.cs"),
             (GameModes.Waystation, "MinigameWaystation", "Controller/Arcade/Waystation/WaystationController.cs"),
-            (GameModes.WaystationPrototype, "MinigameWaystationPrototype",
-             "Controller/Arcade/WaystationPrototype/WaystationPrototypeController.cs"),
         };
 
         [Test]

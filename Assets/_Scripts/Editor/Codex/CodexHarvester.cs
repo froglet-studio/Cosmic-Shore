@@ -736,6 +736,7 @@ namespace CosmicShore.Editor.Codex
             "AssembledFlora" => "Lattice colony — tiles a repeating surface, one plant per site",
             "BranchingFlora" => "Branching — grows outward from a stem",
             "PhyllotacticFlora" => "Phyllotactic — whorled leaves on a spiral",
+            "BeeHiveFlora" => "Hive — a comb of all three domains, built from the mass its bees bring home; raises its bees",
             var other => other,
         };
 
@@ -743,6 +744,7 @@ namespace CosmicShore.Editor.Codex
         {
             "LightFauna" => "Shoals — separation, cohesion and a shared goal",
             "Boid" => "Boid shoal — the classic flocking three rules",
+            "BeeFauna" => "Pollinator — makes flowers of every domain grow faster; guards its hive and stings intruders",
             "WormFauna" => "Colony — a chain of segments following the head; splits when cut",
             var other => other,
         };

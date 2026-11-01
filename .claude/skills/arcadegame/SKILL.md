@@ -237,8 +237,8 @@ Serpentine (Serpent Time reshaped, 2026-10-31, same branch) taught four more:
   (`hull_time_race.author(extra_assets=...)`, Serpentine's `_own_cell_assets`): a cell config and spawn profile are
   shared by ~10 modes, so editing them in place re-tunes every one.
 
-Waystation Prototype (the Tiger Moth's Drop Tower race, 2026-10-31, `claude/adoring-babbage-4jjppj`,
-`WaystationPrototype/WAYSTATION_PROTOTYPE.md`) taught three:
+Waystation Prototype (the Tiger Moth's Drop Tower race, 2026-10-31, `claude/adoring-babbage-4jjppj`; folded into
+Waystation on 2026-11-01, `WAYSTATION.md` "The Drop Tower") taught three, plus how a prototype is folded back in:
 - **A prototype BESIDE a shipped mode reuses it without editing it**: a new `GameModes` id whose controller
   INHERITS the original's, a course source that CALLS the original generator and post-processes its gates, a scene
   cloned from the original's committed scene through `lib.committed_scene`. Where the original's AI must stand down
@@ -253,6 +253,41 @@ Waystation Prototype (the Tiger Moth's Drop Tower race, 2026-10-31, `claude/ador
   seed (`GateRaceController.BroadcastCourse`), so walls, plates or debris derived on every peer must be computed from
   the gates alone. Tag what a peer must tell apart in a field the broadcast already carries (the prototype's tower
   rings use a radius no cluster ring uses) instead of widening the RPC.
+
+Serpent Gulag (the Serpent's sniper duel, 2026-10-31, `claude/funny-fermat-9m75dr`, `SERPENTGULAG.md`) taught four:
+- **A mode's own environment generator is cheap to PROVE before Unity**: write a Python twin of its counts and
+  volumes in the generator (PhaseThresholds need them anyway), then run the shipped C# through
+  `audit_prism_clipping.py <Spawnable> -v --json` and compare. Serpent Gulag's twin matched the C# prism for prism and
+  volume to the unit on all three rungs, and the audit's 0-clipping verdict is the "no prism interpenetrates" law
+  checked. Build a hollow shape flush by NESTING its faces (front/back full size, sides between them, caps between
+  the sides) rather than overlapping corners. Read only serialized fields, never the intensity, or the bake refuses.
+- **The .NET SDK is one `apt-get install -y dotnet-sdk-8.0` away, at `/usr/lib/dotnet`**, and the bake, clip-audit and
+  card-art harnesses default to `~/.dotnet`: export `DOTNET_ROOT=/usr/lib/dotnet` or they fail with "no csc.dll".
+  `unity_refcompile` then compiles the whole project against real Unity references in ~10 min cold.
+- **Check the weapon's real rules before designing cover.** The Sniper Shot pierces everything and breaks
+  super-shields (`pierceCount` 0), so a nest is concealment, not armour; a cover design that assumed the round stops
+  at the first prism would have been wrong. Read the ability's executor, not its doc.
+- **An AI's SKILL is the seat's AI difficulty, never the intensity** (`AIDifficulty.cs`: intensity is the map, difficulty the
+  opponent; read each seat's own level with `GameDataSO.AIDifficultyFor(player)`). Serpent Gulag first keyed its ladders on
+  the intensity, borrowed from a sibling that does; the generator now fails if the marksman reads `SelectedIntensity`. A
+  STYLE can differ by level too: Legendary plays aggressively (shorter range, briefer holds) while Easy-Hard are patient.
+- **A ranged AI that steers AT its rival reads as rushing**, however well it shoots. Give it a POST (a range from the rival,
+  behind cover) and the vessel's own defensive verb at the post (the Serpent's stop, which grows its wall), and make it
+  retreat, not fight, when a rival closes in.
+- **The bake and card harnesses read primitive fields only**: a `Vector2` serialized field on a spawnable makes
+  `bake_prism_layouts.py` refuse ("does not read rubbleRadii"). Two floats cost nothing; extending the shared reader is a
+  tooling change (Shombith's).
+- **A new mode beside a collaborator's unmerged one of the same idea gets its own id and touches nothing of theirs**
+  (Garrett's Serpent Charge, 67, in flight since 2026-10-16): borrow the SHAPE of their design (the AI ladder) and
+  credit it, never their class names, which would collide when both land.
+
+- **Folding a prototype back in** (2026-11-01, Waystation Prototype -> Waystation): move the pure file (`git mv`
+  keeps its guid), merge the subclass into the original controller rather than keeping two, have the ORIGINAL's
+  generator author the prototype's words and fields, and make that generator RETIRE the prototype every run (its
+  files on `Generator.stale`, its guids stripped from every registry, its id out of `ProgressionConfig`) so nothing
+  can re-add them once the prototype's own generator is deleted. Retire the enum id and keep it reserved; rename a
+  target whose MEANING changed (`waystationRingTarget` 15 rings -> `waystationClusterTarget` 5 clusters) instead of
+  reusing the old name.
 
 ## 4. Gates (no Unity needed; run them all)
 

@@ -125,6 +125,104 @@ player, editor and webgl: 0 errors in project code; planted errors in the overla
 9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
    boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
    (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
+### 🔴 Brittle Star ability row recut (Charge, Mass, Space, Time) and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
+`chargeStarIcon`, `cordsOffAlpha` and `SetCords(cordsOut01, pull01, domain)`; `readyColor` is gone; the controller injects
+`GameDataSO` for the domain colour; `BrittleStarExecutor.CordPull01` is new.
+
+**Verify in editor**
+- [ ] It compiles; `BrittleStarHUDVariant.prefab` shows the three Charge parts wired on the view, no missing references.
+- [ ] Fly the Brittle Star: the Charge card is the hull nose-on in your domain colour with five dim whips; Y (Charge Mode)
+      brings the whips to full white; pulling RT crossfades them to five straight sabers, releasing brings the whips back.
+- [ ] No card turns lime when its mode is on; the Space plate still goes hot while overheated.
+- [ ] Mass card: the star seen from behind (domain) with five lines of prisms coming at you, dim until B (Creation)
+      turns them white; as Mass levels up the blocks fatten (crossfade to `BrittleStar_MassTrailsFat`).
+      New: `massTrailsIcon`, `massTrailsFatIcon`, `massStarIcon`, `trailsOffAlpha`, `SetCreationTrails`,
+      `BrittleStarExecutor.BlockGirth01`.
+- [ ] Space card: the star flying right with five rounds; with the aim stick centred they meet ahead, pushed they splay;
+      dim until X (Space Mode); overheated they dim and the plate goes hot; at high Space the splayed rounds sit further
+      out. New: `spaceRoundsIcon`, `spaceRoundsMeetIcon`, `spaceRoundsFarIcon`, `spaceStarIcon`, `SetGuns`,
+      `BrittleStarExecutor.Splay01` / `Range01`.
+- [ ] Time card: dim gapped blocks behind the star; A (Speed Mode) stretches them into one joined line, longer at high
+      Time. New: `timeTrailCruiseIcon`, `timeTrailFastIcon`, `timeTrailFasterIcon`, `timeStarIcon`, `SetSpeedTrail`,
+      `BrittleStarExecutor.SpeedBoost01`.
+- [ ] Omni card: the star over two empty ring slots at the start; each crystal fills one (solid), a throw (LT) empties
+      one. New: `omniStock0Sprite`..`omniStock2Sprite`, `SetSpareRings`, and on the shared base
+      `VesselHUDView.SetOmniAbilitySprite` (protected, additive; no other hull calls it).
+
+
+### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Compiled against Unity references (`unity_refcompile`, player + editor: 0 errors in project code); not opened in the editor.
+
+1. Serpent Gulag at Easy, Medium or Hard AI: the AIs do NOT fly at you. Each flies to a post 1,400-2,000 u from its
+   rival (behind a nest at I2+), stops, and a wall grows beside it from the nest plates / rubble; it turns in place
+   and snipes. Fly toward one: once you are inside 700-1,100 u it lowers its scope, starts moving and backs away.
+2. Legendary AI: it pushes in to ~900 u, digs in only ~5 s at a time and breaks off only when you are within ~350 u.
+3. Arenas: I2 8 nests + rubble; I3 16 nests, 12 cell blocks, rubble, some danger plates; I4 22 nests, 16 cell blocks,
+   140 rubble clusters, more danger. Frame time at I4 (6,008 prisms).
+4. Every mode with AI opponents: the opponents' team score column appears on the top bar beside yours, even before
+   anyone scores (it used to appear only after a stat changed, and never for a domain past the lobby's domain count).
+
+### 🔴 The in-game score bar sits top-centre again: a Pop entrance no longer snaps a laid-out column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Shombith: "Score panel is always messed up in all games". `KitEntrance.Finish()` wrote the position it captured at
+`Play()` back for EVERY mode; the score column (`DomainScorePanel.prefab`, a Pop entrance) captured its pre-layout
+(0,0), the top bar's HorizontalLayoutGroup then gave it top-left anchors and placed it, and the pop's finish snapped
+it to (0,0) under those anchors: the column's centre on the bar's top-left corner, half off the top of the screen.
+Now only Rise / Drop entrances (the ones that move) write the position (`KitEntrance.MovesPosition`).
+
+1. Any mode (Skim Race, Rampage, Serpent Gulag), 2+ teams: the team score columns sit side by side, centred at the
+   top, fully on screen, the local team first - during the pop and after it.
+2. Score a point: the column punches its glow and stays put.
+3. Menu: any Pop / Grow / Fade entrance inside a list (claims, picks, meter bars) still lands in its row.
+4. EditMode: `KitMotionTests.Entrance_WritesPosition_OnlyForTheModesThatMoveIt`.
+
+### 🔴 Serpent Gulag (GameModes 77), the Serpent's sniper duel; and the Serpent collects crystals (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`/verify-unity` could not run: no Unity editor in this cloud session. The C# was compiled against real Unity
+references with `Tools/Build/unity_refcompile/run.sh` (player and editor configs: 0 errors in project code), and the arena's C# was run in the
+clip-audit and card-art harnesses. Affects: Garrett's Serpent (the prefab's skimmer; no ability changed).
+
+**The crystal fix** (`Tools/Build/fix_serpent_crystal_pickup.py`):
+1. FrogletTools > Vessels > Audits > Audit Vessel Skimmers: the Serpent reads `FarFieldSkimmer: 'VacuumSkimmer' OK`.
+2. Freestyle, Serpent, fly through elemental crystals: each is taken and its element bar rises. Fly into an omni
+   crystal: it is taken (the crystal blast plays).
+3. Lay a cloak wall, then take any crystal: the wall re-shields (the beams from the crystal to its seed) - the kit's
+   own chain, which the skimmer now hands on to the hull.
+4. Watch for a crystal taken from too far away (the sphere is 25 u) or a camera nudge near prisms the Serpent did not
+   have before (a skimmer's skim feel); report either.
+5. EditMode: `SerpentCrystalPickupTests` (3 tests).
+
+**Serpent Gulag** (`Assets/_Scripts/Controller/Arcade/SERPENTGULAG.md`):
+1. Arcade > Serpent Gulag, 2-4 players with AI, at each intensity 1-4. I1: open space, pilots far apart, the crystal
+   field in the middle. I2: six nests. I3: eight nests and eight barred screens. I4: ten nests, twelve screens, danger
+   plates.
+2. Fly into a nest through its back entry, stop (B), and look out of the slit at the field.
+3. Scope (LT) and fire (RT) at a rival: a snipe toast, the score rises by one, first team to 3 wins (6 until 2026-10-31), the results show
+   snipes and the reveal reads GULAG TIME / SNIPES LEFT.
+4. AI: at I1 they mostly miss; at I4 they forage the field while reloading, hunt you across the cell, and cloak after
+   a shot. Report an AI that never scopes or never fires (the press shape), or one that rams instead of shooting.
+5. The crystal field regrows a collected crystal after ~8 s in the same place.
+6. Frame time at I4 (6,008 neutral prisms since the denser pass - 2,652 when this entry was written - in a 3,600 u
+   membrane at a standard cell's shard count).
+7. First-pass numbers to re-tune: target 3, spawn ring 2,200, field 24 crystals in 380 u, AI ladders.
+
+### 🔴 The party molecule grows from the host; a lower blue on the friends window (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 109: `PartyPanel` / `PartySlot` regenerated (`author_menu_arcade.py`),
+`ArcadeLobbyList.expandingMolecule` (`LayoutMolecule`, `RingSeats`, `MoleculeAngle`), the drawer window's wash 0.45
+(Menu_Main, `author_menu_friends_drawer.py`). Compiled with `unity_refcompile`; not opened in Unity.
+
+- [ ] Open the orb alone: your seat in the centre of the card with one bonded "+" socket straight below it; nothing else.
+- [ ] A second player joins: their seat on the left, a socket on the right, both bonded to the host; the bond to a seated
+  pilot takes their domain colour, the socket's is dim.
+- [ ] Three: the old triangle (upper left, below, upper right) with no gap where the socket was. Four: no socket.
+- [ ] Someone leaves: the ring closes up and the socket returns. The seats rise in once when the window opens and never
+  jump back to their authored places.
+- [ ] The friends window's background reads a little less blue than before; the pilot record is unchanged.
+
 ### 🔴 Serpent fuel pellets: no clock refill, the wall eating its own trail refills them, 6 s burns (`cece/keen-johnson-hqxdt9`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 `/verify-unity` could not run (no editor or `unity` binary in the cloud session). Compiled offline with
@@ -246,6 +344,8 @@ Compiled with `unity_refcompile`; generator self-test 34/34; not opened in Unity
   the host ("You host" or "<name> hosts") and "1 seat open"; the host sees a kick on each member's top-left; hovering a
   seat opens the profile card. Full party: INVITE hides, "Party full".
 - [ ] Gamepad: focus moves from INVITE / LEAVE into the grouped rows and back (KitFocusKeeper).
+- [ ] Hover a pilot in the menu: the profile card shows JOIN and INVITE side by side and REPORT / BLOCK under them,
+  every word readable. JOIN joins their party. REPORT swaps the four for CHEATING / OFFENSIVE NAME / TROLLING, readable.
 
 ### 🔴 Party recovery after the four-player test: online only once the lava lamp is up, stale memberships cleared, dead hosts not offered, Rejoin and host loss during a bounce (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
 
@@ -760,6 +860,136 @@ Compiled against the Unity reference assemblies (player and editor configs, 0 pr
 - [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
 
 First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+### 🔴 Honeyguide and Ratel: hive mode (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Garrett: "this is good lets push these ratel changes to unity including the way the timer subtract from both sides to the
+center." `HiveCore.cs` (new, engine-free), `HoneyguideCrew.Hive.cs` (new), `HoneyguideOmniCrystalEffectSO` +
+`HoneyguideImpactorDataContainer` (the prefab's VesselImpactor now points at it), `HoneyguideDynamoView` (the comb, the
+strip, Leave, the crystal glow, the centred bars), `HoneyguideConfigSO` + asset (the hive's numbers, words, five empty FMOD
+slots), `DynamoCore.SpinNow` / `ReadState(out end)`. `/verify-unity` was unavailable (no Editor, no `unity` binary). Green:
+the headless reference compile, player and editor (0 errors in project code); `Tools/Build/hive_lab/parity.cjs` and
+`dynamo_lab/parity.cjs` PASS; `HiveCoreTests`' bodies run against the core with .NET (8/8); `author_honeyguide_assets.py
+--check` / `--self-test`; console-logging and conditional-compilation checks.
+
+1. Run `HiveCoreTests` (all 9; the config test needs the Editor) and `HoneyguideTests`.
+2. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. The strip over the board names the nearest
+   omnicrystal's distance; the diamond slides along it as the AI flies closer.
+3. When the hull takes the omnicrystal: the board's edge flashes amber, the comb replaces the Dynamo, the bar across the
+   top is amber and shrinks from both sides; a comb of super-shielded prisms stands about 40 u behind where the crystal
+   was. Look for: the comb clear of the hull, its cells in the board's colours.
+4. Drag 3 touching cells of one other colour and let go: their prisms break in the world. Drag back over the last cell:
+   it drops out. Drag into a red danger cell: the chain breaks, a sting toast, the thumb waits a second. A white-ringed
+   (shielded) cell needs two chains.
+5. Clear both colours (or wait 15 s, or tap Leave): the toast names the rewards; the reward prisms appear on the Dynamo
+   beside its largest crystal, which lights; the battery gains the charges; a fresh spin starts. What is left of the comb
+   is ordinary mass (shields and danger where they were).
+6. While in hive mode, let a rival hit the hull: no petals lost, no silence.
+7. Fly instead (the AI Ratel plays): the small board shows the comb and the AI clears it (Hard: no stings).
+8. A phone held portrait: the comb's cells, the Leave button and the strip are thumb-sized and nothing overlaps.
+9. Two machines (a rider on the Ratel): the rider's drags reach the hull's machine and both see the same comb.
+10. Bees: when hive mode ends, a bee hive appears 12 u behind the comb in our domain; within a few seconds its first bees
+    hatch and patrol the comb, and an opposing creature that comes near is stung (see the Bees entry for what to look for).
+
+**First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
+Medium hive skill (a proposal between the lab's rookie and skilled).
+### 🔴 Bees: a celestial body built from its spec, no up, vanes and a stinger (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+Garrett: "it isn't actually a bee. it is a celestial etherion based life form. it doesn't really have a sense of up ...
+then apply those learnings to the bee". `BeeFauna.prefab`'s body is built from `Tools/Build/fauna_kit/specs/bee.py` by
+`Tools/Build/fauna_kit/build.py` (the `/fauna-creation` skill): five braid spindles (Spine, Vane0-2, Sting), seven prisms
+(Rib0-2, VanePlate0-2, the Stinger, a 0.5 x 0.5 x 6 `DangerBlock`), the root identity and scale 1; `BeeVaneDriver`
+replaces `BeeWingDriver`; `Boid.SteeringUpFor` (world +y for every other boid) and `BeeFauna`'s carried up
+(`CelestialFrame`); Mass body scale 3.82, Space 6.2942 + `ErodeSpindle`. `Bee.fbx` and `bee_model/build_bee.py` are
+retired, so round 2's steps 1-3 below are superseded. `/verify-unity` unavailable (no Editor). Green: reference compile
+player and editor (0 errors in project code); `celestial.py bee` and `--self-test`; `author_bee_assets.py --check` and
+`--self-test` (7/7, the prefab read back against the spec); `CelestialFrameTests` under .NET 8 (5/5); heart collection,
+spindle sway, spawn roster, console logging and the C# gates. An offline render of the built prefab (`fauna_kit/
+render_prefab.py`) reads three-fold with the needle trailing.
+
+1. Open `BeeFauna.prefab`: the heart crystal at the origin; behind it a braided spine with three vanes sweeping back at
+   120 degrees, each carrying a plate; three rib prisms round the spine; a short braid at the tail carrying a long red
+   needle. Nothing ahead of the heart, no part on one side only. The braids' splayed ends: check which end of the
+   `BezierCurve.001` mesh is its tip (the builder assumes the mesh trails along its -z from its origin with a 0.55 stub
+   ahead, as the tadpole's does) and that no braid pokes through the heart.
+2. Play (Hesperides, or the Spawn Matrix Bee row): the vanes beat as a wave round the spine; a bee turning straight up or
+   down does not flip or snap level (it keeps whatever roll it had); a swarm reads as busy, not as insects.
+3. The four elements side by side (Spawn Matrix): Charge all red; a Mass bee about 3.8x the size with every plate and rib
+   shielded and its heart's swing clear of every shield; a Space bee 1.65x the Mass bee, its braids thinned where thickest,
+   the stinger unchanged; Time as Charge's size.
+4. `Fauna.ErodeSpindle` picks the skin with the most vertices as the body: all five braids tie, so check the Space bee
+   erodes along the Spine (not a vane) and the plates and ribs refit to their limbs.
+5. A bee is hunted and eaten by a predator (round 2's step 4) and its seven prisms leave as a skeleton when it starves.
+
+### 🔴 Bees round 2: a real bee model; predators eat bees; three-domain pollination and comb (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+Garrett: "2. yes. 3 they should pollinate all three and build a structure made from all three. 4. ... be sure to add them
+to the variuous list ... 5. make a real bee model with /fauna". `Bee.fbx` (`Tools/Build/bee_model/build_bee.py`), the
+prefab's `BeeModel` spindle, `BeeWingDriver` (four model wings + two vein prisms), `FaunaDiets.IsPrey`, `BeeMath.HoneyLedger`,
+`LifeForm.NewBlockDomain`, the Spawn Matrix's Bee row, the Codex's bee lines (`Docs/ECOSYSTEM.md` §66). `/verify-unity`
+unavailable (no Editor). Green: reference compile player and editor (0 errors in project code); `author_bee_assets.py
+--check` and `--self-test` (6/6); the bee and prey test bodies under .NET 8 (11/11); the fauna, ecology and C# gates.
+
+1. Unity imports `Assets/_Models/Fauna/Bee.fbx` at 1:1 with the head toward +z and no Animator; its `BeeBody` slot shows
+   `SpindleMaterial` and `BeeWing` the membrane material (the remap is by name in the .meta).
+2. Open `BeeFauna.prefab`: the model sits behind the heart crystal (the heart is the face, the eyes flank it), the abdomen
+   prism is inside the abdomen, the two vein prisms lie along the forewings' leading edges and tilt UP like the wings.
+3. Play: the four wings and the veins beat together; bees read as bees at gameplay distance (the stripes are grooves in
+   the domain colour - judge whether a yellow/black slot is wanted).
+4. Release a predator near a hive (Spawn Matrix): it hunts bees and eats them.
+5. Watch a hive grow past its seed: comb cells appear in the domains of the creatures its bees stung (a Jade hive grows
+   Ruby and Gold cells), and bees land on flowers of every domain.
+6. Spawn Matrix: the **Bee** row releases a lone bee that pollinates where it is; Codex > Scan & Merge lists the bee and
+   the hive with their behaviour lines.
+
+### 🔴 Bees: the pollinator fauna and its hive, a flora slot (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Garrett: "proper bees ... a fauna that acts more like a flora ... take the slot of a productive flora". New:
+`FaunaDiet.Pollinator`, `BeeFauna` (a Boid that never eats), `BeeHiveFlora` (the hive, a Flora listed in
+SupportedFloras), `BeeWingDriver`, `BeeMath`; assets by `Tools/Build/author_bee_assets.py` (`--check`, `--self-test`
+4/4): `BeeFauna.prefab`, `BeeHive.prefab`, eight Lifeforms configs, the Hesperides hive config (listed by
+`Tools/ecosim/gen_hesperides_assets.py`), the network prefab entry, the Spawn Matrix "Bee Hive" row. Record:
+`Docs/ECOSYSTEM.md` §66. `/verify-unity` was unavailable (no Editor). Green: the headless reference compile, player and
+editor configs (0 errors in project code); `BeeMathTests` (7) run against `BeeMath.cs` under .NET 8;
+`author_flora_armour.py`, `author_lifeform_heart_collection.py`, `verify_fauna_heart_seat.py`,
+`author_spawn_matrix_roster.py` `--check`.
+
+1. Run the edit-mode tests `BeeMathTests` and `EcologyEnumIntegrityTests`.
+2. Let Unity import: `BeeFauna.prefab` must open with three body prisms (BeeAbdomen, BeeWingL, BeeWingR), the wings'
+   tadpole skin hidden, `BeeWingDriver` on the root; `BeeHive.prefab` with its four bee configs wired. If the
+   NetworkObject regenerates its `GlobalObjectIdHash` on import, re-save and note it.
+3. Cell Selector → **Hesperides**. Two hives grow a comb of hex tubes round their heart; within about a spawn period,
+   three bees hatch near each and fly to the flowers. Watch a visited plant: it grows faster for ~10 s.
+4. Release a herbivore (Spawn Matrix, Tadpole) of another domain near a hive: the bees fly at it, sting prisms off it,
+   fly home; the hive lays a new comb cell once the store holds 34.6 (one cell's volume).
+5. Spawn Matrix → **Bee Hive** (flora row), each element: the bees wear the element (Mass shielded, Charge danger).
+6. Shoot a bee: it dies, drops its heart. Kill a hive: its bees keep pollinating where they are.
+7. Perf: Hesperides with 4 hives and 32 bees: no allocation spike from the bees' 0.4 s think.
+
+### 🔴 Honeyguide and Ratel round 7: AP bank 6, the Ratel picks one of three abilities (`cece/jolly-lovelace-t8y3a1`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Garrett: "lets have the ap cap go to 6. lets do the 3 ability pick as well." `DynamoCore` (the pick input, the Offer event,
+`AIPickOrder`, the reveal's offers in `WriteState` / `ReadState` and the digest), `HoneyguideConfigSO` (`apBank` 6,
+`abilityChoices` 3, `pickSeconds` 10, `pickAbilityTitle`), `HoneyguideDynamoView` (three tappable cards over the dimmed
+board, the time left under them), `HoneyguideCrew` (the Offer event). `/verify-unity` was unavailable (no Editor, no
+`unity` binary). Green: the headless reference compile, player and editor configs (0 errors in project code); `Tools/Build/dynamo_lab/parity.cjs` PASS (lab = C#, 13 planted controls caught);
+`author_honeyguide_assets.py --check` and `--self-test`; the new `HoneyguideTests` bodies run against the core with .NET 8
+(the tests themselves, which load the asset, need the Editor).
+
+1. Run the edit-mode tests: `HoneyguideTests.Config_CarriesRound7_ApBankSix_AndAPickOfThree`,
+   `Ratel_IsOfferedThreeAbilities_TheClockWaitsForItsPick_AndItGetsTheOneItPicked`, `Ratel_WhoDoesNotPickInTime_GetsTheFirstOffer`,
+   `TheAIRatel_PicksByItsOrder`, `TheBank_KeepsUnspentAP_UpToSix`, and the existing `RatelBoard_CopiedToAnotherMachine_...`.
+2. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. Let a spin pass without moving: the AP row shows 6
+   pips lit. Let another pass: still 6.
+3. Make a fourth pattern: the board dims, a heading reads "Pick the Ratel's next ability" and three cards name an ability
+   and what it does; a line under them runs down over 10 s. The spin bar does not move. Tap one: the toast names it, it
+   is the ability under the AP row, and the new ports are shown.
+4. Make a fourth pattern again and do not tap: after 10 s the top card's ability is taken.
+5. On a phone held portrait: the three cards fit inside the board and each is big enough for a thumb.
+6. Fly the Honeyguide (the AI plays the Ratel): every fourth pattern, the small board shows the three names briefly and
+   the AI takes one within about half a second.
+7. Two machines (a rider on the Ratel): the rider sees the offers, its tap reaches the hull's machine, and both boards
+   show the ability taken.
+
 ### 🔴 God mode in the lava lamp: a free inspection camera on F2 / L3 (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** `MenuGodModeCamera` on Menu_Main's Game object. F2 (or L3) swaps the lava-lamp camera for a free-fly
@@ -11259,7 +11489,7 @@ parameter object. `GunSpreadProfile` gained three authored fields (`plateauSecon
 `blowoutGrowthDegreesPerSecond`, `blowoutMaxMultiplier`) and derives the blow-out cap from the
 sustainable one rather than authoring it twice. `GunSprayAccuracy` passes `_profile.Stages`.
 `FullAutoAction.asset` retuned: onset `0.12 → 2`, growth `1 → 0.75`, plus the three new keys.
-Files: `_Scripts/Utility/GunSpreadMath.cs`, `R_VesselActions/Data Containers/GunSpreadProfile.cs`,
+Files: `_Scripts/Utility/Foundation/GunSpreadMath.cs`, `R_VesselActions/Data Containers/GunSpreadProfile.cs`,
 `R_VesselActions/Executors/GunSprayAccuracy.cs`,
 `_Scripts/Tests/Editor/GunSpreadMathTests.cs`, `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset`.
 
@@ -16159,7 +16389,7 @@ What ran instead of `/verify-unity`: `unity_refcompile --config editor` (0 error
 
 ## 🔴 2026-10-16 — Send to Claude with no question; generic per-frame fixes (unverified: no Unity CLI in the session)
 
-**Files:** `BugHuntAutoSend.cs` (no dialog: sends what is new after Play, one console line), `Utility/WaitCache.cs` (new) and
+**Files:** `BugHuntAutoSend.cs` (no dialog: sends what is new after Play, one console line), `Utility/Foundation/WaitCache.cs` (new) and
 27 coroutine timer sites, `GunTransformer.cs`, `scan_perframe_allocations.py`. What ran instead of `/verify-unity`:
 `unity_refcompile` player-dev (OK) and editor (0 errors in changed files), an Amoebius lava-lamp A/B, the gates.
 
@@ -19597,3 +19827,67 @@ Docs: `Assets/_Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYP
 10. **Two players.** One host, one client. **Pass:** both see the same plates with the same danger tiles, and a hole
     the host punched is a hole on the client.
 11. **Waystation itself.** Fly Waystation (58) once. **Pass:** unchanged from bleeding-edge.
+
+## Lime element shades: one lime at four lightnesses, Charge darkest (`cece/funny-archimedes-hinjr4`, 2026-10-31) - NOT EDITOR-VERIFIED
+
+What changed: the four element shades (palette `ElementalCrystalColors`, the Wrasse kite view, the Wrasse Lasso Lab) are
+now one lime at four lightnesses: Charge `#2E5300`, Mass `#508900`, Space `#73C200`, Time `#99FF00`
+(`Docs/VesselModels/COLOR.md` §5d). Regenerated: `SpaceCrystalFresnelMaterial`, `TimeCrystalFresnelMaterial`,
+`MassDepthPrisms`, `OmniCrystalBody`, `OmniDepthPrisms`, `OmniChargeArcs`. Not compiled or opened in the editor.
+
+1. Any arena with free crystals: the four elemental crystals read as one lime family, ordered dark to light Charge,
+   Mass, Space, Time; none reads as Jade (teal), Gold or olive-brown. The omni stays the brightest lime crystal.
+2. **Charge**: the darkest crystal. Its plasma (the seam walk and the omni's flux arcs) must still read as lit. If it
+   looks too dim, the lever is the arcs' glow (`OmniChargeArcs` `_GlowIntensity`), not the shade.
+3. A free omni crystal: its pentagons, triangles, squares and rhombi wear Charge, Mass, Space and Time in that order of
+   lightness.
+4. Menu_Main ▸ Ark ▸ Elemental Converter ▸ CONVERT: each crystal flies in and lands in its own shade.
+5. The Wrasse (Toybox Vessel Changer): the kite view's motes are four lightnesses of one lime, told apart at a glance in a
+   group.
+## Waystation is the Drop Tower race: Waystation Prototype folded into Waystation (58) (`claude/adoring-babbage-4jjppj`, 2026-11-01) - NOT EDITOR-VERIFIED
+
+Shombith: "make Waystation Prototype as Waystation". Garrett owns Waystation; this was done on that instruction. It
+supersedes the "Waystation Prototype (76)" entry above.
+- The card, scene, controller and course source are Waystation's, now carrying the towers.
+- GameModes 76 is retired and reserved. Its assets, scene and registrations are deleted, and
+  `author_waystation_assets.py` removes them on every run.
+- The target is now `waystationClusterTarget` = 5 clusters.
+- The long-drop AI's `aiFoldMinDistance` default is now 700.
+
+No Unity editor in the cloud session, so `/verify-unity` did not run. What did run:
+- `unity_refcompile`: player and editor (changed files).
+- `waystation_tower_course.py --check` and `--compile`.
+- `author_waystation_assets.py --check`.
+- The `/arcadegame` gates.
+
+1. **Compile.** **Pass:** no errors. In particular there must be none in:
+   - `WaystationController.cs`, `WaystationCourseSource.cs` and `WaystationTower.cs`;
+   - `EndConditionOverridesSO.cs` and `EndConditionOverridesWindow.cs`.
+2. **Edit-mode tests.** Run `WaystationTowerTests`, `WaystationCourseTests`, `EnumIntegrityTests` (70 members, no 76)
+   and `RaceCourseSourceTests`. **Pass:** all green.
+3. **Arcade grid.** **Pass:** one Waystation card, showing the tower card art and the Drop text. There is no
+   "Waystation Prototype" card. FrogletTools > Game Modes > End Game Conditions shows "Waystation - Clusters" = 5.
+4. **Open and save the scene.** Open `MinigameWaystation.unity` and save it. **Pass:** the controller shows
+   Wall Prefab = SpawnablePrism, and Ai Fold Min Distance shows 700.
+5. **Fly it.** Fly Waystation at I1 and I4 and run steps 4-10 of the "Waystation Prototype (76)" entry above
+   (towers, hold edges, regrowth, the long drop and wormhole, the AI, two players), on Waystation's card.
+6. **Old saves.** A player whose last selected mode was 76 opens the Arcade. **Pass:** no error. They land on a
+   default card.
+## Honeyguide round 8: banked triggers, pull to preview, Mass hive (2026-11-01) - NOT EDITOR-VERIFIED, NOT COMPILED
+
+**Files:** `HoneyguideCrew.Triggers.cs` (rewritten), `HoneyguideCrew.Preview.cs` and `HoneyguideCrew.MassHive.cs` (new),
+`HoneyguideCrew.Pilot.cs`, `.Zip.cs`, `.Hive.cs`, `HoneyguideDynamoView.cs`, `HoneyguideConfigSO.cs`, `HoneyguideConfig.asset`,
+`HoneyguidePeckAction.asset` (firingRate 10), `Honeyguide.prefab` (no boost), `ElementalAbilityMaps/Honeyguide.asset`,
+`TouchControlProfiles.asset` (RT glyph on Space). The session had no Editor and no .NET SDK, so the C# was not compiled:
+compile first. Design: `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` "The triggers (lab round 8)".
+
+1. Compile. **Pass:** no errors in the Honeyguide files; EditMode `HoneyguideTests` pass.
+2. Toybox Vessel Changer -> Honeyguide and Ratel. Hold RT. **Pass:** a blue aim line 45 u ahead; let go: three quick shots.
+3. Hold LT. **Pass:** a dart line and ring 18 u ahead; let go: the hull darts; a rival or creature in the ring is struck.
+4. Make an upgrade card on the Ratel (or let its AI). **Pass:** a toast "... on RT x3"; the chip shows the card's name and
+   three dots; three releases spend them, then Peck/Flit return. Making it again before they are spent adds three.
+5. Hold RT and LT together, let go. **Pass:** nothing fires (cancel). On a phone: lift both thumbs, touch down.
+6. With the Lasso banked and nothing ahead: the pull draws nothing; the release toasts "No target" and keeps the use.
+7. Wait 45 s in freestyle. **Pass:** a turning hexagonal frame appears far off in the cell; flying through it opens hive mode.
+8. Button2 does nothing on the Honeyguide (no boost button); an AI Honeyguide still flies and uses its triggers.
+

@@ -66,7 +66,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | Sparrow | Breakwater | gate race through breakwaters | 7 hand-flown (I1, I4). The steering fix and the rocket that clears the way are in, the rocket's range and aim learned from Yash's shots (§6) |
 | Butterfly | Waystation | fold race | 2 (Caleb, I1). The AI threaded 0 rings (before the fold fix) |
 | Scarab | **Scarab Rally** (new 2026-10-27; Scarab Scramble is now its Mass card) | ring race: throttle, drift, juke | none yet |
-| **Tiger Moth** | **Waystation Prototype** (76, beside Waystation until Garrett approves) | Drop Tower race: short hops through plates | none yet. Garrett's belly-aim AI takes the clusters and the long drop; a new hop autopilot (`WaystationPrototypeController.TickHops`) takes the towers. No learner reads it yet |
+| **Tiger Moth** | **Waystation** (the Drop Tower course since 2026-11-01) | Drop Tower race: short hops through plates, then one long drop | none yet on the towers. The belly-aim autopilot takes the clusters and the long drop; the hop autopilot (`WaystationController.TickHops`) takes the towers. No learner reads it yet |
 | Scarab | Scarab Scramble / Tollway | goal race / toll race | none yet |
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
 | Thresher | Thresher Time | gate race, the sling | 3 races; the sling drive is in (2026-10-26) |
