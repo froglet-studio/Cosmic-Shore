@@ -45,7 +45,7 @@ everything (section 3, the noise warning).
 
 | Piece | State | Where | The gap |
 |---|---|---|---|
-| Third Eye: Chase / Follow / Free cameras on any pilot, trails, AI aim lines, per-AI phase readout | Built, **editor only** | `Assets/_Scripts/Editor/AI/ThirdEye*.cs` | Not in a player build; read-only (no time scale, no spawning, no hull picking); no graphs |
+| Third Eye: Chase / Follow / Free cameras on any pilot, trails, AI aim lines, per-AI phase readout | Built; **since 2026-11-01 in the game scene** as the AI Diagnose panel (F2, editor + development builds) | `Assets/_Scripts/Controller/Camera/ThirdEye/` | Not in a release build; read-only (no time scale, no spawning, no hull picking); no graphs |
 | Genetic AI trainer: genome population, novelty bonus, hall of fame, fitness recipes per mode, overnight schedule, deploys through `TrainingArchiveSO` | Built (~8,100 lines) | `Assets/_Scripts/Utility/AITraining/` (README), FrogletTools ▸ AI ▸ AI Training | One archive entry (Skim Race Squirrel, generation 0), and it is unused in play. No Regatta fitness recipe or steering genes. Deploys only in the editor. Amoebius's tournament found its best genome flies worse than a random one: selection is noise-dominated |
 | Skim Race AI Benchmark: N races through the real launch flow, a JSON record per race, CSV traces | Built | `Editor/AI/SkimRaceBenchmarkWindow.cs`, `Controller/AI/SkimRace/SkimRace*Recorder.cs` | Skim Race only |
 | Time scale above 1 | Built, ×8 cap | `TrainingAutoLauncher.cs` | Only inside the trainer |
@@ -70,7 +70,7 @@ rather than a second one. Its parts:
 - **Seats:** any hull on any seat, each with its own difficulty and its trained or untrained AI (as in the artifact's
   *Race trained vs untrained*).
 - **Time:** 0.25×–8×, pause, single step (the trainer's ×8 cap, reused).
-- **The Third Eye, in the lab at runtime.** The window stays editor-only, but its rig, trails and readout move to a
+- **The Third Eye, in the lab at runtime.** *(Done differently 2026-11-01: the window is gone and the tool is the in-game AI Diagnose panel in editor + development builds; the graphs below are still open.)* The window stays editor-only, but its rig, trails and readout move to a
   runtime assembly so a development build shows them too. Data on screen:
   - a speed graph per pilot;
   - a phase timeline (approach / through / break-off / missed mouth);
