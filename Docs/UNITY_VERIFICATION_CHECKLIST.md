@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Butterfly, Rhino and Manta omni-crystal morph: the crystal becomes the spherical blast (`claude/sphere-blast-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+One retirement (`SphereBlastCrystalMorphByCrystal.asset`) wired into the Butterfly, Rhino and Manta containers replaces
+the husk spray: the crystal's cage lands on the plain `AOEExplosion` sphere each hull's omni effect already fires, and
+the sphere takes over. Record: `R_VesselActions/SPHERE_BLAST_CRYSTAL_MORPH.md`. Headless harness and `unity_refcompile` ran;
+no editor.
+
+- [ ] Compiles; `SphereBlastCrystalMorphGeometryTests` green.
+- [ ] Butterfly: no husk spray; the cage bursts onto the bloom sphere; total ≈ 0.44 s.
+- [ ] Rhino: the cage folds onto the small slow blast behind the hull, which keeps swelling; the Surge still fires.
+- [ ] Manta: the cage lands on the Kabloom self-blast; planted bombs and the flower are unchanged.
+- [ ] Prisms inside the blast break from the first frame (the blast is unchanged, only its first 0.37 s is drawn by the morph).
+- [ ] Every other hull unchanged (Squirrel ring, Scarab forge still morph; Sparrow and Goby still spray).
+- [ ] MPPM two clients: the morph plays on both.
+
 ### 🔴 Fair play T1: Google Play Games sign-in on Android (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `PlayGamesSignIn` (mirrors `GameCenterSignIn`), `PlayGamesPlatform` (C#, calls the Java bridge),

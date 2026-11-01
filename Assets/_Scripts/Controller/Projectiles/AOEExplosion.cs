@@ -128,6 +128,97 @@ namespace CosmicShore.Gameplay
         /// or the per-instance <see cref="InitializeStruct.DurationOverride"/>).</summary>
         public float Duration => ExplosionDuration;
 
+        // ── Omni-crystal morph seam (SPHERE_BLAST_CRYSTAL_MORPH.md) ─────────────────────────────
+
+        /// <summary>
+        /// Raised at the end of the BASE <see cref="Initialize"/> — after the blast is posed and
+        /// sized, before it detonates — for every blast that runs it (the plain sphere, and the
+        /// subclasses that call <c>base.Initialize</c>). The spherical-blast omni-crystal morph
+        /// (<see cref="SphereBlastCrystalMorph"/>) listens for the blast its own pickup fires and
+        /// lands the spent crystal on it; it filters on <see cref="IsPlainSphere"/>.
+        ///
+        /// Named apart from <c>AOEConicExplosion.Initialized</c> on purpose: the two seams were
+        /// built for different shapes, and one name on base and subclass would hide the other.
+        /// Listeners are visuals: they may hold the blast's PHOTONS
+        /// (<see cref="HoldPhotonsForMorph"/>), never its sweep. Invoked isolated.
+        /// </summary>
+        public static event Action<AOEExplosion> BlastInitialized;
+
+        // Fast enter-play-mode keeps statics: a listener stranded by a stopped session must not be
+        // called into the next one.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetBlastStatics() => BlastInitialized = null;
+
+        /// <summary>True for the plain spherical blast — this exact class, drawing a mesh — and
+        /// false for every subclass, whose shape or payload is its own (cones, prism layers,
+        /// flowers).</summary>
+        public bool IsPlainSphere => GetType() == typeof(AOEExplosion) && BlastMesh != null;
+
+        /// <summary>The mesh the blast draws (Unity's built-in sphere on every shipped prefab:
+        /// radius 0.5 at unit scale), or null when the prefab authors none.</summary>
+        public Mesh BlastMesh => TryGetComponent<MeshFilter>(out var filter) ? filter.sharedMesh : null;
+
+        /// <summary>
+        /// The blast mesh's object-to-world matrix as <see cref="ExplodeAsync"/> will draw it
+        /// <paramref name="secondsSinceInitialize"/> after <see cref="Initialize"/>: the spawn pose,
+        /// scaled by the same delay-then-<c>sin(t·π/2)</c> curve
+        /// (<see cref="SphereBlastMorphGeometry.EaseAt"/>). The plain sphere never moves, so the
+        /// pose is exact and only the scale grows.
+        /// </summary>
+        public Matrix4x4 BlastLocalToWorldAt(float secondsSinceInitialize)
+        {
+            float ease = SphereBlastMorphGeometry.EaseAt(secondsSinceInitialize, ExplosionDelay, ExplosionDuration);
+            return Matrix4x4.TRS(transform.position, transform.rotation, MaxScaleVector * ease);
+        }
+
+        static readonly int TextureColorId = Shader.PropertyToID("_TextureColor");
+        static readonly int FresnelColorId = Shader.PropertyToID("_FresnelColor");
+        static readonly int BlastColorId = Shader.PropertyToID("_Color");
+        static readonly int BlastEdgeColorId = Shader.PropertyToID("_EdgeColor");
+        static readonly int BlastDarkColorId = Shader.PropertyToID("_DarkColor");
+        static readonly int BlastBrightColorId = Shader.PropertyToID("_BrightColor");
+
+        /// <summary>
+        /// The colour pair this blast draws, as (dark = body, bright = rim): the AOE material's
+        /// <c>_TextureColor</c>/<c>_FresnelColor</c> (what <c>ThemeManager</c> tints per domain),
+        /// else <c>_Color</c>/<c>_EdgeColor</c>, else <c>_DarkColor</c>/<c>_BrightColor</c>. Read off
+        /// the material the blast was initialised with, because the renderer only receives it once
+        /// the delay has run. Alpha forced to 1: the blast's opacity is its own <c>_Opacity</c>.
+        /// </summary>
+        public bool TryGetBlastColours(out Color dark, out Color bright)
+        {
+            dark = bright = default;
+            var mat = Material ? Material : (meshRenderer ? meshRenderer.sharedMaterial : null);
+            if (!mat) return false;
+            if (!TryPair(mat, TextureColorId, FresnelColorId, out dark, out bright) &&
+                !TryPair(mat, BlastColorId, BlastEdgeColorId, out dark, out bright) &&
+                !TryPair(mat, BlastDarkColorId, BlastBrightColorId, out dark, out bright))
+                return false;
+            dark.a = bright.a = 1f;
+            return true;
+        }
+
+        static bool TryPair(Material mat, int a, int b, out Color dark, out Color bright)
+        {
+            dark = bright = default;
+            if (!mat.HasProperty(a) || !mat.HasProperty(b)) return false;
+            dark = mat.GetColor(a);
+            bright = mat.GetColor(b);
+            return true;
+        }
+
+        /// <summary>
+        /// Holds the blast's PHOTONS while a morph draws in its place — nothing else. The sweep, the
+        /// trigger and the prism damage run from the frame it detonates, exactly as without a
+        /// morph. <see cref="Renderer.forceRenderingOff"/> composes with the renderer's own enabled
+        /// state (which the delay and the end of the sweep drive). Cleared by every
+        /// <see cref="Initialize"/>, so a pooled life never inherits a hold.
+        /// </summary>
+        public void HoldPhotonsForMorph(bool hold)
+        {
+            if (meshRenderer) meshRenderer.forceRenderingOff = hold;
+        }
+
         /// <summary>
         /// What this blast hands the mass it destroys. On the proportional contract the
         /// vector IS the debris velocity, so the blast supplies a ceiling in the same
@@ -281,6 +372,19 @@ namespace CosmicShore.Gameplay
             // Subscribe to game events - OnEnable fires before DI injection
             // for runtime-spawned objects, so retry here after injection.
             SubscribeToGameEvents();
+
+            // A hold left by a morph on a previous life of this object never carries over.
+            HoldPhotonsForMorph(false);
+
+            // ISOLATED: a listener is a VISUAL and must never be able to stop the blast it watches.
+            try
+            {
+                BlastInitialized?.Invoke(this);
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogError($"[AOEExplosion] a BlastInitialized listener threw; the blast is unaffected. {e}");
+            }
         }
 
         /// <summary>
