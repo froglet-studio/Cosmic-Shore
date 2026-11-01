@@ -25,7 +25,7 @@ MonoBehaviour:
     Ladder: []
     Threat: 0.8
     Hostile: 1
-    HostileFrom: 2
+    HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}"
   - Name: The Boneyard
     World: {fileID: 11400000, guid: ec82f02b0dd547d7ab52d7d54b89983c, type: 2}
@@ -36,14 +36,14 @@ MonoBehaviour:
     - {fileID: 11400000, guid: ec82f02b0dd547d7ab52d7d54b89983c, type: 2}
     Threat: 1
     Hostile: 1
-    HostileFrom: 6
+    HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}. THE SCAVENGERS ARE STIRRING."
   - Name: The Swarm
     World: {fileID: 11400000, guid: 79ef8710fad245f6b201bc6f082669c0, type: 2}
     Ladder: []
     Threat: 1.1
     Hostile: 1
-    HostileFrom: 4
+    HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}"
   - Name: The Maw
     World: {fileID: 11400000, guid: a36e4cce77294cdd8e0f7987a39d4778, type: 2}
@@ -54,54 +54,72 @@ MonoBehaviour:
     - {fileID: 11400000, guid: a36e4cce77294cdd8e0f7987a39d4778, type: 2}
     Threat: 1.2
     Hostile: 1
-    HostileFrom: 2
+    HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}. EVERYTHING HERE IS HUNGRY. HOLD THE ARK."
   tiers:
-  - Population: 0.2
-    RegrowSeconds: 0.3
+  - Population: 0.4
+    RegrowSeconds: 0.5
     HostileShare: 1
     ArkSpeed: 1.3
     BreachHull: 0
-  - Population: 0.3
-    RegrowSeconds: 0.4
+    LureShare: 0.1
+    SpawnPeriodScale: 1.0
+  - Population: 0.5
+    RegrowSeconds: 0.6
     HostileShare: 1
     ArkSpeed: 1.2
     BreachHull: 0
-  - Population: 0.45
-    RegrowSeconds: 0.6
+    LureShare: 0.15
+    SpawnPeriodScale: 0.95
+  - Population: 0.6
+    RegrowSeconds: 0.8
     HostileShare: 1
     ArkSpeed: 1.1
     BreachHull: 0
-  - Population: 0.6
-    RegrowSeconds: 0.9
+    LureShare: 0.2
+    SpawnPeriodScale: 0.9
+  - Population: 0.7
+    RegrowSeconds: 1.0
     HostileShare: 1
     ArkSpeed: 1
     BreachHull: 0
-  - Population: 0.75
-    RegrowSeconds: 1.3
+    LureShare: 0.3
+    SpawnPeriodScale: 0.8
+  - Population: 0.85
+    RegrowSeconds: 1.4
     HostileShare: 1
     ArkSpeed: 0.95
     BreachHull: 0
-  - Population: 0.9
-    RegrowSeconds: 1.9
+    LureShare: 0.4
+    SpawnPeriodScale: 0.7
+  - Population: 1.0
+    RegrowSeconds: 2.0
     HostileShare: 1
     ArkSpeed: 0.9
     BreachHull: 0
-  - Population: 1.05
-    RegrowSeconds: 2.8
+    LureShare: 0.5
+    SpawnPeriodScale: 0.6
+  - Population: 1.15
+    RegrowSeconds: 3.0
     HostileShare: 1
     ArkSpeed: 0.85
     BreachHull: 0
-  - Population: 1.2
-    RegrowSeconds: 4
+    LureShare: 0.6
+    SpawnPeriodScale: 0.5
+  - Population: 1.3
+    RegrowSeconds: 4.5
     HostileShare: 1
     ArkSpeed: 0.8
     BreachHull: 0
-  - Population: 1.4
-    RegrowSeconds: 6
+    LureShare: 0.75
+    SpawnPeriodScale: 0.45
+  - Population: 1.5
+    RegrowSeconds: 7.0
     HostileShare: 1
     ArkSpeed: 0.75
     BreachHull: 0
+    LureShare: 0.9
+    SpawnPeriodScale: 0.35
   maxPopulation: 2
   arkPacing:
     Cruise: 45
