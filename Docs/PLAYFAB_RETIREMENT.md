@@ -118,7 +118,7 @@ survives and no scene or prefab reference is disturbed.
 ### 2d · Comment-only — untouched
 
 `System/Quest/QuestSystem.cs`, `UI/Views/ArcadeExploreView.cs`, `UI/ScreenSwitcher.cs`,
-`UI/Modals/AppInitializationModal.cs`, `Utility/CSDebug.cs`,
+`UI/Modals/AppInitializationModal.cs`, `Utility/Foundation/CSDebug.cs`,
 `ScriptableObjects/SO_CommerceAvailability.cs` name PlayFab only in comments that explain why
 something is inert. They are left as-is — the comments stay true.
 

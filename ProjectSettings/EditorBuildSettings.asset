@@ -135,11 +135,11 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity
     guid: 44434b4493159039a94408c64fd2bf38
   - enabled: 1
-    path: Assets/_Scenes/Multiplayer Scenes/MinigameWaystationPrototype.unity
-    guid: cba1725b4e67db8d706ab9abfe75cafe
-  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameDustup.unity
     guid: e22eb90422d763de08d219612851e916
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSerpentGulag.unity
+    guid: f1dafdd792e362cf255b47c56fcc1ffd
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTapestry.unity
     guid: 66ee08b9dff6ca4fd973337baf4857af

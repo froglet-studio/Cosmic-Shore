@@ -184,7 +184,6 @@ namespace CosmicShore.Gameplay
             GameModes.Skein      => new SkeinCourseSource(),
             GameModes.Regatta    => new RegattaCourseSource(),
             GameModes.Waystation => new WaystationCourseSource(),
-            GameModes.WaystationPrototype => new WaystationPrototypeCourseSource(),
             _ => null,
         };
 
@@ -192,7 +191,7 @@ namespace CosmicShore.Gameplay
         public static readonly GameModes[] GateRaceModes =
         {
             GameModes.Switchback, GameModes.Headlong, GameModes.Redline, GameModes.Breakwater,
-            GameModes.Skein, GameModes.Regatta, GameModes.Waystation, GameModes.WaystationPrototype,
+            GameModes.Skein, GameModes.Regatta, GameModes.Waystation,
         };
     }
 }

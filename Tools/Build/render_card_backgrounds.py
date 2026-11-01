@@ -88,6 +88,7 @@ SOURCES = [
     "Assets/_Scripts/Data/Enums/Domains.cs",
     "Assets/_Scripts/Data/Enums/PrismKind.cs",
     "Assets/_Scripts/Data/Enums/PrismscapeDimension.cs",
+    "Assets/_Scripts/Data/Enums/SwitchbackFunType.cs",
     f"{_SP}/SpawnPoint.cs",
     f"{_SP}/SpawnTrailData.cs",
     f"{_SP}/FloraPlantingSite.cs",
@@ -95,6 +96,7 @@ SOURCES = [
     f"{_MG}/SpawnableSwell.cs",
     f"{_MG}/SpawnableWildlifeCage.cs",
     f"{_MG}/SpawnableBoneyard.cs",
+    f"{_MG}/SpawnableSerpentGulag.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -714,8 +716,6 @@ CAMERAS = {
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
     "Sirocco": (320, 10, 0.66, 46),
-    # Waystation Prototype: Waystation's angle, so the two cards read as the same race with towers added.
-    "WaystationPrototype": (35, 30, 0.95, 42),
     # Grizzly Charge is the Boneyard's fourth card (with Dog Fight / Salvo / Broadside / Dustup):
     # low, close, and down the axis of the Grizzly's run.
     "GrizzlyCharge": (75, 6, 0.55, 48),
@@ -747,6 +747,9 @@ CAMERAS = {
     "BrittleStarTime": (340, 26, 0.9, 42),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
+    # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
+    # tracer crossing the middle (the one thing that scores) reads against it.
+    "SerpentGulag": (50, 26, 0.62, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -841,38 +844,16 @@ def recipe(stem, card_path, pal, ends):
                                      "BrittleStarTime": [0.85, 0.35, 1.6]}[s]})
             nucleus()
     elif s == "Waystation":
-        # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_course.py), which its own
-        # --compile proves gate-for-gate against the shipped WaystationCourse.cs - so this is the
-        # shipped course at intensity 2 on the card's seed, not a sketch of one.
+        # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_tower_course.py), whose own --compile proves
+        # it gate for gate and tile for tile against the shipped WaystationTower.cs: the clusters, the Drop Towers'
+        # rings and their walls (plain and danger prisms), at intensity 2 on the card's seed.
         tier = "COURSE"
         sys.path.insert(0, str(ROOT / "Tools/Build"))
-        import waystation_course as wc   # noqa: E402
-        T = wc.read_tables()
-        gates, clust, centres, folds, per = wc.generate(stable_seed(s), INTENSITY,
-                                                        ends.get("waystationRingTarget", 24), T)
-        for gp, facing, rad in gates:
-            layers.append({"kind": "ring", "c": list(gp), "n": list(facing), "R": rad, "r": rad * 0.12,
-                           "base": [0.2, 0.25, 0.3], "rim": [0.6, 0.85, 1.4], "emissive": [0.35, 0.55, 0.9]})
-        # The FOLD: a faint thread from each cluster's exit gate to the next cluster's first ring -
-        # the jump the mode is built on, drawn as a dotted line because it is not flown.
-        for k in range(len(clust) - 1):
-            a, b = clust[k][-1], clust[k + 1][0]
-            for j in range(1, 12):
-                pt = v_add(list(a), v_mul(v_sub(list(b), list(a)), j / 12))
-                layers.append({"kind": "sphere", "c": pt, "r": 7.0, "base": [0.3, 0.2, 0.5],
-                               "rim": [1.2, 0.8, 1.8], "emissive": [0.8, 0.5, 1.3], "unbound": True})
-        nucleus()
-    elif s == "WaystationPrototype":
-        # COURSE tier through the prototype's OFFLINE MIRROR (Tools/Build/waystation_prototype_course.py), whose own
-        # --compile proves it gate for gate and tile for tile against the shipped WaystationTower.cs: Waystation's
-        # clusters, the Drop Towers' rings and their walls (plain and danger prisms), at intensity 2 on the card's seed.
-        tier = "COURSE"
-        sys.path.insert(0, str(ROOT / "Tools/Build"))
-        import waystation_prototype_course as wpc   # noqa: E402
+        import waystation_tower_course as wpc       # noqa: E402
         import waystation_course as wc              # noqa: E402
         T, CT = wpc.read_tower(), wc.read_tables()
         laid, best, per, towers, gap = wpc.build(T, CT, stable_seed(s), INTENSITY,
-                                                 ends.get("waystationPrototypeClusterTarget", 5))
+                                                 ends.get("waystationClusterTarget", 5))
         trung = wpc.rung(T, INTENSITY)
         for gp, facing, rad in laid:
             hop = wpc.is_tower_ring((gp, facing, rad), trung)
@@ -1093,8 +1074,7 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime",
-               "WaystationPrototype"):
+               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1251,6 +1231,23 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             glow(p, span * 0.006, JADE, 1.2, 0.6)
         glow(v_add(top, [0, -span * 0.3, 0]), span * 0.05, JADE, 0.9, 0.35)
         stage["vessels"] = vessels([(JADE, 0.25, 10, 30, 70), (RUBY, 0.3, -10, 200, 70)])
+    elif s == "SerpentGulag":
+        # The crystal field in the middle (every intensity), and a SNIPE across it: a Sniper Shot's tracer from
+        # a nest on one side to a rival pilot on the other, who takes the hit (a glow in the shooter's colour).
+        for k in range(14):
+            crystal(v_add(centre, v_mul(rng.unit(), span * 0.12 * rng.u() ** 0.33)), span * 0.012)
+        a = v_add(centre, v_mul(v_norm([0.8, 0.12, -0.55]), span * 0.85))
+        b = v_add(centre, v_mul(v_norm([-0.75, -0.05, 0.6]), span * 0.7))
+        d = v_norm(v_sub(b, a))
+        side = v_norm(v_cross([0, 1, 0], d)); u = v_cross(d, side)
+        w = span * 0.0025   # a hitscan line, not a beam
+        sig = domain_signal(pal, JADE, 1.4)
+        layers.append({"kind": "box", "c": v_mul(v_add(a, b), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
+                       "az": v_mul(d, math.sqrt(v_dot(v_sub(b, a), v_sub(b, a))) / 2),
+                       "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+        glow(a, span * 0.02, JADE, 1.0, 0.4)
+        glow(b, span * 0.035, JADE, 1.1, 0.45)
+        stage["vessels"] = vessels([(JADE, 0.85, 8, 330, 20), (RUBY, 0.7, -4, 140, 25), (GOLD, 0.8, 12, 230, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

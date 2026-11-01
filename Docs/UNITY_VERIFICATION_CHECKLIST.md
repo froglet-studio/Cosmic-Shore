@@ -92,6 +92,91 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 - [ ] The omni crystal card (left of Charge) shows the bloom: a small moth inside a ring of dust motes, white; it is no
   longer locked.
 
+### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Compiled against Unity references (`unity_refcompile`, player + editor: 0 errors in project code); not opened in the editor.
+
+1. Serpent Gulag at Easy, Medium or Hard AI: the AIs do NOT fly at you. Each flies to a post 1,400-2,000 u from its
+   rival (behind a nest at I2+), stops, and a wall grows beside it from the nest plates / rubble; it turns in place
+   and snipes. Fly toward one: once you are inside 700-1,100 u it lowers its scope, starts moving and backs away.
+2. Legendary AI: it pushes in to ~900 u, digs in only ~5 s at a time and breaks off only when you are within ~350 u.
+3. Arenas: I2 8 nests + rubble; I3 16 nests, 12 cell blocks, rubble, some danger plates; I4 22 nests, 16 cell blocks,
+   140 rubble clusters, more danger. Frame time at I4 (6,008 prisms).
+4. Every mode with AI opponents: the opponents' team score column appears on the top bar beside yours, even before
+   anyone scores (it used to appear only after a stat changed, and never for a domain past the lobby's domain count).
+
+### 🔴 The in-game score bar sits top-centre again: a Pop entrance no longer snaps a laid-out column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Shombith: "Score panel is always messed up in all games". `KitEntrance.Finish()` wrote the position it captured at
+`Play()` back for EVERY mode; the score column (`DomainScorePanel.prefab`, a Pop entrance) captured its pre-layout
+(0,0), the top bar's HorizontalLayoutGroup then gave it top-left anchors and placed it, and the pop's finish snapped
+it to (0,0) under those anchors: the column's centre on the bar's top-left corner, half off the top of the screen.
+Now only Rise / Drop entrances (the ones that move) write the position (`KitEntrance.MovesPosition`).
+
+1. Any mode (Skim Race, Rampage, Serpent Gulag), 2+ teams: the team score columns sit side by side, centred at the
+   top, fully on screen, the local team first - during the pop and after it.
+2. Score a point: the column punches its glow and stays put.
+3. Menu: any Pop / Grow / Fade entrance inside a list (claims, picks, meter bars) still lands in its row.
+4. EditMode: `KitMotionTests.Entrance_WritesPosition_OnlyForTheModesThatMoveIt`.
+
+### 🔴 Serpent Gulag (GameModes 77), the Serpent's sniper duel; and the Serpent collects crystals (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`/verify-unity` could not run: no Unity editor in this cloud session. The C# was compiled against real Unity
+references with `Tools/Build/unity_refcompile/run.sh` (player and editor configs: 0 errors in project code), and the arena's C# was run in the
+clip-audit and card-art harnesses. Affects: Garrett's Serpent (the prefab's skimmer; no ability changed).
+
+**The crystal fix** (`Tools/Build/fix_serpent_crystal_pickup.py`):
+1. FrogletTools > Vessels > Audits > Audit Vessel Skimmers: the Serpent reads `FarFieldSkimmer: 'VacuumSkimmer' OK`.
+2. Freestyle, Serpent, fly through elemental crystals: each is taken and its element bar rises. Fly into an omni
+   crystal: it is taken (the crystal blast plays).
+3. Lay a cloak wall, then take any crystal: the wall re-shields (the beams from the crystal to its seed) - the kit's
+   own chain, which the skimmer now hands on to the hull.
+4. Watch for a crystal taken from too far away (the sphere is 25 u) or a camera nudge near prisms the Serpent did not
+   have before (a skimmer's skim feel); report either.
+5. EditMode: `SerpentCrystalPickupTests` (3 tests).
+
+**Serpent Gulag** (`Assets/_Scripts/Controller/Arcade/SERPENTGULAG.md`):
+1. Arcade > Serpent Gulag, 2-4 players with AI, at each intensity 1-4. I1: open space, pilots far apart, the crystal
+   field in the middle. I2: six nests. I3: eight nests and eight barred screens. I4: ten nests, twelve screens, danger
+   plates.
+2. Fly into a nest through its back entry, stop (B), and look out of the slit at the field.
+3. Scope (LT) and fire (RT) at a rival: a snipe toast, the score rises by one, first team to 3 wins (6 until 2026-10-31), the results show
+   snipes and the reveal reads GULAG TIME / SNIPES LEFT.
+4. AI: at I1 they mostly miss; at I4 they forage the field while reloading, hunt you across the cell, and cloak after
+   a shot. Report an AI that never scopes or never fires (the press shape), or one that rams instead of shooting.
+5. The crystal field regrows a collected crystal after ~8 s in the same place.
+6. Frame time at I4 (6,008 neutral prisms since the denser pass - 2,652 when this entry was written - in a 3,600 u
+   membrane at a standard cell's shard count).
+7. First-pass numbers to re-tune: target 3, spawn ring 2,200, field 24 crystals in 380 u, AI ladders.
+
+### 🔴 The party molecule grows from the host; a lower blue on the friends window (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 109: `PartyPanel` / `PartySlot` regenerated (`author_menu_arcade.py`),
+`ArcadeLobbyList.expandingMolecule` (`LayoutMolecule`, `RingSeats`, `MoleculeAngle`), the drawer window's wash 0.45
+(Menu_Main, `author_menu_friends_drawer.py`). Compiled with `unity_refcompile`; not opened in Unity.
+
+- [ ] Open the orb alone: your seat in the centre of the card with one bonded "+" socket straight below it; nothing else.
+- [ ] A second player joins: their seat on the left, a socket on the right, both bonded to the host; the bond to a seated
+  pilot takes their domain colour, the socket's is dim.
+- [ ] Three: the old triangle (upper left, below, upper right) with no gap where the socket was. Four: no socket.
+- [ ] Someone leaves: the ring closes up and the socket returns. The seats rise in once when the window opens and never
+  jump back to their authored places.
+- [ ] The friends window's background reads a little less blue than before; the pilot record is unchanged.
+
+### 🔴 Serpent fuel pellets: no clock refill, the wall eating its own trail refills them, 6 s burns (`cece/keen-johnson-hqxdt9`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+`/verify-unity` could not run (no editor or `unity` binary in the cloud session). Compiled offline with
+`Tools/Build/unity_refcompile` (player and editor configs: 0 errors in project code). Design and numbers:
+`R_VesselActions/SERPENT_FUEL_PELLETS.md` § "The wall refills the tank".
+
+1. Freestyle, Serpent: four pellets lit. Tap A: one burns for **6 s** (was 3 s).
+2. Burn all four, fly on: **no pellet comes back** on its own.
+3. Lay a wall (cloak, or stop for the stance), fly out at cruise in the wall's plane: the trail is pulled in and
+   a pellet pours back over ~2 s of that. Leave the plane: the refill stops.
+4. Time 10 (`TimeTestHarness`): a burn lasts 9.6 s.
+5. AI Serpent: burns its opening four, then refuels only when its walls eat its trail.
+6. EditMode: `SerpentPelletRefillTests`, `SerpentTimeCourseTests.Course_constants_match_the_shipped_Serpent`.
+
 ### 🔴 Angler Time card: Dash to the School drawn as the jump (`claude/angler-dash-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 **What landed:** six kit parts under the Time icon in `AnglerHUDVariant.prefab` (`Angler_Dash*`),
@@ -199,6 +284,8 @@ Compiled with `unity_refcompile`; generator self-test 34/34; not opened in Unity
   the host ("You host" or "<name> hosts") and "1 seat open"; the host sees a kick on each member's top-left; hovering a
   seat opens the profile card. Full party: INVITE hides, "Party full".
 - [ ] Gamepad: focus moves from INVITE / LEAVE into the grouped rows and back (KitFocusKeeper).
+- [ ] Hover a pilot in the menu: the profile card shows JOIN and INVITE side by side and REPORT / BLOCK under them,
+  every word readable. JOIN joins their party. REPORT swaps the four for CHEATING / OFFENSIVE NAME / TROLLING, readable.
 
 ### 🔴 Party recovery after the four-player test: online only once the lava lamp is up, stale memberships cleared, dead hosts not offered, Rejoin and host loss during a bounce (`claude/intelligent-turing-aw29so`, 2026-10-31) — NOT EDITOR-VERIFIED
 
@@ -11212,7 +11299,7 @@ parameter object. `GunSpreadProfile` gained three authored fields (`plateauSecon
 `blowoutGrowthDegreesPerSecond`, `blowoutMaxMultiplier`) and derives the blow-out cap from the
 sustainable one rather than authoring it twice. `GunSprayAccuracy` passes `_profile.Stages`.
 `FullAutoAction.asset` retuned: onset `0.12 → 2`, growth `1 → 0.75`, plus the three new keys.
-Files: `_Scripts/Utility/GunSpreadMath.cs`, `R_VesselActions/Data Containers/GunSpreadProfile.cs`,
+Files: `_Scripts/Utility/Foundation/GunSpreadMath.cs`, `R_VesselActions/Data Containers/GunSpreadProfile.cs`,
 `R_VesselActions/Executors/GunSprayAccuracy.cs`,
 `_Scripts/Tests/Editor/GunSpreadMathTests.cs`, `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset`.
 
@@ -16112,7 +16199,7 @@ What ran instead of `/verify-unity`: `unity_refcompile --config editor` (0 error
 
 ## 🔴 2026-10-16 — Send to Claude with no question; generic per-frame fixes (unverified: no Unity CLI in the session)
 
-**Files:** `BugHuntAutoSend.cs` (no dialog: sends what is new after Play, one console line), `Utility/WaitCache.cs` (new) and
+**Files:** `BugHuntAutoSend.cs` (no dialog: sends what is new after Play, one console line), `Utility/Foundation/WaitCache.cs` (new) and
 27 coroutine timer sites, `GunTransformer.cs`, `scan_perframe_allocations.py`. What ran instead of `/verify-unity`:
 `unity_refcompile` player-dev (OK) and editor (0 errors in changed files), an Amoebius lava-lamp A/B, the gates.
 
@@ -19550,3 +19637,49 @@ Docs: `Assets/_Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYP
 10. **Two players.** One host, one client. **Pass:** both see the same plates with the same danger tiles, and a hole
     the host punched is a hole on the client.
 11. **Waystation itself.** Fly Waystation (58) once. **Pass:** unchanged from bleeding-edge.
+
+## Lime element shades: one lime at four lightnesses, Charge darkest (`cece/funny-archimedes-hinjr4`, 2026-10-31) - NOT EDITOR-VERIFIED
+
+What changed: the four element shades (palette `ElementalCrystalColors`, the Wrasse kite view, the Wrasse Lasso Lab) are
+now one lime at four lightnesses: Charge `#2E5300`, Mass `#508900`, Space `#73C200`, Time `#99FF00`
+(`Docs/VesselModels/COLOR.md` §5d). Regenerated: `SpaceCrystalFresnelMaterial`, `TimeCrystalFresnelMaterial`,
+`MassDepthPrisms`, `OmniCrystalBody`, `OmniDepthPrisms`, `OmniChargeArcs`. Not compiled or opened in the editor.
+
+1. Any arena with free crystals: the four elemental crystals read as one lime family, ordered dark to light Charge,
+   Mass, Space, Time; none reads as Jade (teal), Gold or olive-brown. The omni stays the brightest lime crystal.
+2. **Charge**: the darkest crystal. Its plasma (the seam walk and the omni's flux arcs) must still read as lit. If it
+   looks too dim, the lever is the arcs' glow (`OmniChargeArcs` `_GlowIntensity`), not the shade.
+3. A free omni crystal: its pentagons, triangles, squares and rhombi wear Charge, Mass, Space and Time in that order of
+   lightness.
+4. Menu_Main ▸ Ark ▸ Elemental Converter ▸ CONVERT: each crystal flies in and lands in its own shade.
+5. The Wrasse (Toybox Vessel Changer): the kite view's motes are four lightnesses of one lime, told apart at a glance in a
+   group.
+## Waystation is the Drop Tower race: Waystation Prototype folded into Waystation (58) (`claude/adoring-babbage-4jjppj`, 2026-11-01) - NOT EDITOR-VERIFIED
+
+Shombith: "make Waystation Prototype as Waystation". Garrett owns Waystation; this was done on that instruction. It
+supersedes the "Waystation Prototype (76)" entry above.
+- The card, scene, controller and course source are Waystation's, now carrying the towers.
+- GameModes 76 is retired and reserved. Its assets, scene and registrations are deleted, and
+  `author_waystation_assets.py` removes them on every run.
+- The target is now `waystationClusterTarget` = 5 clusters.
+- The long-drop AI's `aiFoldMinDistance` default is now 700.
+
+No Unity editor in the cloud session, so `/verify-unity` did not run. What did run:
+- `unity_refcompile`: player and editor (changed files).
+- `waystation_tower_course.py --check` and `--compile`.
+- `author_waystation_assets.py --check`.
+- The `/arcadegame` gates.
+
+1. **Compile.** **Pass:** no errors. In particular there must be none in:
+   - `WaystationController.cs`, `WaystationCourseSource.cs` and `WaystationTower.cs`;
+   - `EndConditionOverridesSO.cs` and `EndConditionOverridesWindow.cs`.
+2. **Edit-mode tests.** Run `WaystationTowerTests`, `WaystationCourseTests`, `EnumIntegrityTests` (70 members, no 76)
+   and `RaceCourseSourceTests`. **Pass:** all green.
+3. **Arcade grid.** **Pass:** one Waystation card, showing the tower card art and the Drop text. There is no
+   "Waystation Prototype" card. FrogletTools > Game Modes > End Game Conditions shows "Waystation - Clusters" = 5.
+4. **Open and save the scene.** Open `MinigameWaystation.unity` and save it. **Pass:** the controller shows
+   Wall Prefab = SpawnablePrism, and Ai Fold Min Distance shows 700.
+5. **Fly it.** Fly Waystation at I1 and I4 and run steps 4-10 of the "Waystation Prototype (76)" entry above
+   (towers, hold edges, regrowth, the long drop and wormhole, the AI, two players), on Waystation's card.
+6. **Old saves.** A player whose last selected mode was 76 opens the Arcade. **Pass:** no error. They land on a
+   default card.
