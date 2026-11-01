@@ -965,6 +965,26 @@ node .claude/skills/labmaker/verify_lab.cjs <lab.html> --out <scratch>
 **Report**: labs touched, the verifier verdict per lab, the CATALOG rows changed, the LEARNINGS
 ids added and anything promoted, or an explicit "lab touched, nothing new learned: <why>".
 
+## 3.57 Compute capture (any branch that touched a search or a model — feeds `/compute`)
+
+The team's idle machines search whatever is queued in `Docs/Compute/jobs/` (`Docs/Compute/README.md`). A branch
+feeds that queue, or breaks it, in three ways; check each:
+
+```sh
+git diff --name-only <merge-base>..HEAD | grep -E '^(Tools/Compute/|Docs/Compute/jobs/)'      # the system itself
+git diff --name-only <merge-base>..HEAD | grep -E '^Tools/Build/[^/]*(_sim|_balance|_budget)\.py$'   # a model a job imports
+git diff <merge-base>..HEAD -- 'Tools/Build/*.py' | grep -cE '^\+.*(--sweep|itertools\.product\()'   # a new hand-rolled search
+```
+
+- **The system or a job file changed**: `python3 Tools/Compute/compute.py self-test` and `validate` are green
+  before the PR; a changed loss bumped its evaluator's `VERSION`.
+- **A model a job imports changed** (`race_models.py` names them): its jobs start a new epoch by themselves (the
+  inputs hash); say so in the PR, because the board's numbers reset for those jobs.
+- **A new hand-rolled search**: one line in the PR ("a candidate compute job: <script>"); `/compute-scout`'s
+  `sweeps` lens will list it. Converting it is a `/compute-job`, never part of this branch unless it asked.
+
+**Report**: the three answers, or "no compute surface touched".
+
 ## 3.6 Refactor-opportunity pass (§3.5 for DEBT — rows only, never edits)
 
 §3.5 harvests what the session learned. This harvests what the session **saw and did not
