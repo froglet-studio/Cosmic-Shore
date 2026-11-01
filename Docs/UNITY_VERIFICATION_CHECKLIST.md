@@ -65,6 +65,57 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 B47: a rejoin hands the reclaimed hull to the rejoiner with ChangePlayer, not a second Initialize (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync` no longer calls `Initialize` on the reclaimed
+vessel (the roster has always initialised it first, so the guard refused it and skipped input, camera and HUD). The new
+`ClaimReclaimedPair` does nothing if the pair was already set up as this machine's own; otherwise it stops a local
+autopilot, calls `VesselController.ChangePlayer` (the pilot-swap path), `AdoptCurrentMotion`, repaints, raises the pair
+event and snaps the camera. The claim also waits for the vessel's ownership. `MultiplayerHUD` logs one warning per pilot
+that is in the roster with no name (the unexplained half of B47). `VesselController` is not changed. Details:
+`Docs/PartySystem/BUGS.md` B47.
+
+**Verified without the editor:** `unity_refcompile` player and editor configs, 0 errors in project code;
+`check_console_logging.py` 0 problems. Not run anywhere; no new edit-mode test (the claim is a NetworkBehaviour coroutine
+on live Netcode state).
+
+**Test (MPPM, three players: main editor hosts, Player 2 and Player 3 join; Serpent Time or Skim Race):**
+1. Host a party, both virtual players join, start the match, and wait until all three are flying.
+2. Drop Player 2: stop Player 2's Play (or cut its network for about 10 s with the Network Simulator). Expected on the
+   host: `leaverToAI` in the net log and the "pilot handed to AI" toast; Player 2's ship keeps flying under the AI.
+3. Start Player 2 again; it lands on Home with REJOIN selected. Press REJOIN. Expected on the host: `clientApproved <n>
+   rejoin`, then `seatReclaimed <name>`.
+4. On Player 2, expected: **no** `Double initialization not allowed!` in its console; **no** `[SerpentScope] The scope
+   window is NOT being drawn` warning (Serpent); the camera follows its old ship; the sticks fly it at once; abilities fire
+   and the ability row lights; the HUD shows; same domain and same score; no second ship; the AI no longer flies it.
+5. On the host and Player 3, expected: Player 2's seat keeps its name on the domain bar and scoreboard, and no
+   `ArgumentNullException` (B46). If any console shows `[MultiplayerHUD] Pilot <id> is in the roster with no name`, copy
+   that line into the test report: it names the pilot the missing-name half of B47 is about.
+6. Repeat steps 2-4 two more times (the order in which ownership and the roster arrive varies run to run). Expected: the
+   same result every time.
+7. Regression: in the menu's freestyle, swap vessels with the Vessel Changer, and in an arena match do a D-pad pilot
+   swap. Expected: both still work, with no `Double initialization` error.
+
+### 🔴 UgsRequestPolicyTests: the B34 test's fake SDK frame pinned against inlining (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `[MethodImpl(MethodImplOptions.NoInlining)]` on the test's fake `LobbyChannel.UnsubscribeAsync` in
+`Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs`. `UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown` is
+unchanged: it still needs both "LobbyChannel" and "UnsubscribeAsync" in the stack trace.
+
+**Why:** `LobbyUnsubscribeAfterWireTeardown_MatchesOnlyTheSdkFrame` failed in the editor (Unity 6000.3.17f1; 163 of 164
+multiplayer edit-mode tests passed). The likely cause, consistent with the evidence but not proven: Mono inlined the
+one-line thrower into `LobbyChannel.Throw`, so the trace named only `LobbyChannel.Throw`. The sibling test that matches
+on the class name alone (`LobbyPatcher`) passed, which fits that reading.
+
+**Verified without the editor:** `unity_refcompile --config editor` compiled the file with 0 errors. Not run anywhere.
+
+**Test (editor):**
+1. Window > General > Test Runner > EditMode, run `UgsRequestPolicyTests`. Expected: all pass, including
+   `LobbyUnsubscribeAfterWireTeardown_MatchesOnlyTheSdkFrame`.
+2. Run the whole multiplayer edit-mode set again. Expected: 164 of 164.
+3. If step 1 still fails, the inlining reading is wrong: put a breakpoint in the test, read `LobbyChannel.Throw().StackTrace`
+   and paste it back. Do not loosen the rule in `UgsRequestPolicy.cs`.
+
 ### 🔴 Fair play T1: Google Play Games sign-in on Android (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `PlayGamesSignIn` (mirrors `GameCenterSignIn`), `PlayGamesPlatform` (C#, calls the Java bridge),

@@ -54,7 +54,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B44 | `NullReferenceException` in `PartyMemberService.SyncFromSession` 0.1 s after a join starts (belac x2, 2026-10-30) | Fixed 2026-10-31: the refresh reads the session after its await and stops when a transition has let it go | 🟡 |
 | B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein, one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine; the other three did the same swap in 1.2-2.4 s) | Investigated 2026-10-31 (section below): not the prism lay's own work and not its clone watchdog; the frames are spent outside anything the game measures. Each stall now records focus, memory against RAM and async clones in flight (`stallContext`), so the next one names its cause. Open | 🔴 |
 | B46 | `ArgumentNullException` (Dictionary key) every time a match HUD rebuilds its domain panels while a seat has no name yet: 1,636 times on Garrett's client after Yash rejoined a Serpent match (2026-10-31, `gradi+shombith+yskha-20261031_173835`; Bug Ledger `E-376e5a6f8d`) | Fixed 2026-11-01: `MiniGameHUD.ResolveAIAvatarSprite` answers null for an empty name. Why the reclaimed seat had no name on another client is open (B47) | 🟡 |
-| B47 | A rejoin reclaims the seat (`clientApproved 4 rejoin`, `seatReclaimed ys1`) but the rejoining client logs `Double initialization not allowed!` from `VesselController.Initialize`, and another client sees that seat with no name (B46); the rejoiner left again 35 s later (same test) | Open: one occurrence; the next rejoin in a test log says whether it repeats | 🟡 |
+| B47 | A rejoin reclaims the seat (`clientApproved 4 rejoin`, `seatReclaimed ys1`) but the rejoining client logs `Double initialization not allowed!` from `VesselController.Initialize`, and another client sees that seat with no name (B46); the rejoiner left again 35 s later (same test) | Double init root-caused and fixed 2026-11-01 (`claude/mp-rejoin-b47`, section below): the seat claim re-ran `Initialize` on a vessel the roster had already initialised, so the rejoiner got no input, camera or HUD; the claim now hands the live hull over with `ChangePlayer`, as the pilot swap does. Not editor-verified. The missing name is NOT explained: it is `Player.Name` null on Garrett's machine, which pilot is unknown; a one-line warning now names it next time | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2499,6 +2499,50 @@ Read: `gradi+shombith+yskha-20261031_173835` (three machines, Skim Race, Threshe
   the boot-order decision (host after the menu is up).
 - **The Amoebius edit-mode suite no longer builds**: code merged since 29 Oct (Third Eye HUD, Game Center and Play
   Games sign-in, Fulmen, the multiplayer debug overlay) uses 102 engine APIs the port lacks. Not filled in this sweep.
+
+### B47 investigated (2026-11-01, remote fix session, `claude/mp-rejoin-b47`): the double initialization
+
+**Not reproduced and not run in the editor.** Read from the code and the test log above
+(`net_logs.py show gradi+shombith+yskha-20261031_173835 --lines`).
+
+**What happened on the rejoiner (Yash, client 4).** The claim (`ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync`)
+waits until the Player is ours, is human and has a vessel. `Player.Vessel` is set only by `InitializePair`
+(`Player.InitializeForMultiplayerMode`), so **the roster has always initialised the pair before the claim runs**: there is
+no order in which the claim comes first; it simply waits. The claim then called `ReInitializePair`, which calls
+`vessel.Initialize(player)` on that same vessel. `VesselController.Initialize` sees `VesselStatus.Player` set, logs
+`Double initialization not allowed!` and returns. Two orders reach it:
+- The roster pairs land before the ownership and the human flag (the likely one here: the host hands the seat back 2 s after
+  approval, and the roster reply follows at once): `Initialize` ran with `IsLocalUser` false, so the guard skipped the
+  local user's bindings (`ActionHandler.ToggleSubscription`, `VesselCameraCustomizer.Initialize`, the HUD's
+  `SubscribeToEvents`) and the local pilot's platform laws. The log agrees: 1.8 s after the error, on Yash's machine,
+  `[SerpentScope] The scope window is NOT being drawn: this vessel is an AI or a remote replica`, which means
+  `IsLocalPilot` answered false for his own ship. He had a ship he could not fly. He dropped again 20 s later, after
+  "Baselib failed to send" warnings, so the second leave looks like his network again, not this bug.
+- Ownership and the flag land first: `InitializePair` set the pair up as his own, and the claim's second `Initialize` was a
+  harmless error line.
+
+**The fix.** The claim no longer calls `Initialize` on a live vessel. `ClaimReclaimedPair` does nothing when the roster
+already set the pair up as this machine's own (it remembers the vessel it initialised as the local user's), and otherwise
+hands the live hull to the local pilot through `VesselController.ChangePlayer`, the path the arena pilot swap uses
+(`PilotSwap.ApplyLocal`): it stops a local autopilot if one runs, re-binds input, HUD, camera and the platform laws, and
+`AdoptCurrentMotion` so the local transformer takes over from the replicated kinematics. The claim now also waits for the
+VESSEL's ownership, not only the Player's. A vessel nobody initialised still takes the full `Initialize` path. The
+double-initialization guard is unchanged for every caller, and the vessel swap path (`ReInitializePair` on a fresh vessel)
+is unchanged.
+
+**The missing name (B46) is not explained.** What is proven: the Bug Ledger stack (`E-376e5a6f8d`) runs
+`MultiplayerHUD.OnMiniGameTurnStarted` > `RebuildDomainPanels` > `CreateDomainPanel` > `ResolveAIAvatarSprite`, and that call
+reads `Player.Name` from `gameData.Players`, not `RoundStats.Name`. The key was `null`, not empty: `NetName.ToString()` is
+never null, so this Player was never named on Garrett's machine at all. `Player.Name` is set only by pair-init and by a
+`NetName` change; a Player joins `gameData.Players` in its `OnNetworkSpawn` (and in `ReRegisterPersistentPlayers`) before
+either. So it was a Player in Garrett's roster that was never paired there and whose `NetName` arrived with its spawn.
+What is not proven: which pilot it was, or that the rejoin caused it. `NetName` survives `ConvertPlayerToAI` and
+`TryReclaimSeat` on the host (ownership changes do not write it, and nothing in either writes it), and the rejoin makes no
+new Player (`CreatePlayerObject = !rejoin`). The timing does not settle it either: the console times put Garrett's first
+exception at 1298.8 s, after the rejoin, but the Bug Ledger's `createdUtc` (17:59:26) matches the host's turn start at
+1251 s, before it. **Next time:** `MultiplayerHUD` now logs one warning per unnamed pilot (net id, AI flag, hull, domain);
+the next test log names it. A candidate fix if it proves to be the spawn gap: mirror `Name` from `NetName` in
+`Player.OnNetworkSpawn`, as `PrepareForNewScene` already does on the server. Not made, because the cause is not proven.
 
 ## B39-B45 - the four-player session of 2026-10-30 (Yash, Caleb, Shombith, Garrett)
 
