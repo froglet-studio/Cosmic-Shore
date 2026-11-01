@@ -302,7 +302,11 @@ jobs:
     name: Unity compile
     needs: validate
     # Nothing a build reads was touched -> skip. A docs-only push cannot break a build.
-    if: needs.validate.outputs.unity_relevant == 'true'
+    # Runs even when a static check failed: trunk can stay red on one generator for
+    # days (Docs/Reports/CI.md), and a compile that waits for green static checks
+    # would not run at all for that whole time. The scope output is written by the
+    # validate job's first step, so it is set whenever a later check failed.
+    if: ${{ !cancelled() && needs.validate.outputs.unity_relevant == 'true' }}
     runs-on: ubuntu-latest
     # A cold Library (first run, or a packages-lock change) imports the whole project.
     timeout-minutes: 180
