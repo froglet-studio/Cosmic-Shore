@@ -335,8 +335,11 @@ star flying right, a round (a disc with a short streak, never a rhombus) out of 
 stick centred and splayed as it is pushed, further out as Space doubles the range; dim with the mode off or overheated,
 the plate the heat (`SetGuns` from `Destruction01` / `Splay01` / `Range01` / `Overheated`). **Time (Speed) DONE
 2026-11-01** (picked A, "the stretch"): the star flying right, its gapped cruise blocks (dim, mode off) stretched into one
-joined line of long square-X prisms, longer at Time's x8 (`SetSpeedTrail` from `Speed01` / `SpeedBoost01`). Next: the omni
-card.
+joined line of long square-X prisms, longer at Time's x8 (`SetSpeedTrail` from `Speed01` / `SpeedBoost01`). **Omni
+DONE 2026-11-01** (picked C, "the stock": "I like that c can display the resource amount held"): the star over its two
+spare-ring slots, a held spare a solid pentagon and an empty slot an outline, so the one-colour card still counts; three
+sprites (`Core/BrittleStar_OmniStock0..2`) swapped by `BrittleStarHUDView.SetSpareRings` through the new
+`VesselHUDView.SetOmniAbilitySprite`. The Brittle Star is done; next the rhombus recut of the shipped hulls.
 
 | Round | What | Why first |
 |---|---|---|

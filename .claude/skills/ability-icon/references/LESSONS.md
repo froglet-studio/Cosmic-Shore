@@ -452,3 +452,8 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     colour) changes it. Say "on" with the parts: the whips white at full alpha, dim (0.25) with the mode off. When an
     ability has an analog input (RT's pull), give the two ends their own parts and let the view crossfade them on the
     input (whips out, sabers in), so the card moves with the trigger instead of flipping.
+76. **An omni card can count, by shape.** The omni card is one sprite tinted one colour, so a resource the crystal
+    adds (the Brittle Star's spare rings, 0-2) is drawn as slots: a solid shape per unit held, an outline per empty slot,
+    one sprite per amount, swapped at runtime (`VesselHUDView.SetOmniAbilitySprite`). Garrett picked this over a
+    picture of the gift (2026-11-01: "I like that c can display the resource amount held"): offer a counting option
+    whenever the crystal fills a stock.

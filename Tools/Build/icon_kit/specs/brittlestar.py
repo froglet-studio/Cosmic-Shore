@@ -596,3 +596,35 @@ CARDS += [
     dict(name="omni_c", group="omni", element="Omni", title="C  the stock: the star and the two spare rings it can hold",
          parts=dict(i=omni_c), states=[("a crystal collected", [("i", "white")])]),
 ]
+
+
+# ---- the OMNI card in the game: C, the stock (Garrett picked C, 2026-11-01: "I like that c can display the resource
+# amount held") -------------------------------------------------------------------------------------------------------------
+# The card is ONE sprite tinted one colour, so the count is drawn by SHAPE: a spare held is a solid pentagon, an empty
+# slot a thin outline. Three sprites (0, 1, 2 spares); BrittleStarHUDView.SetSpareRings swaps them
+# (VesselHUDView.SetOmniAbilitySprite). The view's omniAbilitySprite is the start state, no spare.
+def stock_ring(cx, cy, r, held):
+    pts = ngon(5, r, cx, cy, rot=-90)
+    return fill(pts) if held else stroke(pts, w=2.2, closed=True)
+
+
+def omni_stock(n):
+    return lambda: O_C_STAR() | stock_ring(42, 102, 16, n >= 1) | stock_ring(86, 102, 16, n >= 2)
+
+
+OMNI_STOCK = [f"BrittleStar_OmniStock{n}" for n in range(3)]
+ICONS += [dict(name=OMNI_STOCK[n], element="Omni", subdir="Core", family=False, draw=omni_stock(n),
+               act=f"The OMNI crystal card: the star and its spare-ring stock, {n} of 2 held (one white sprite)",
+               exempt={"components": "the star and its two ring slots", "gap": "the slots apart from the star",
+                       "thin": "an empty slot is an outline on purpose"})
+          for n in range(3)]
+CARDS[:] = [c for c in CARDS if c.get("group") != "omni"]
+CARDS += [dict(name="omni", element="Omni",
+               title="The OMNI crystal card (picked C): the star and its two spare-ring slots, solid when held",
+               parts={f"s{n}": omni_stock(n) for n in range(3)},
+               states=[("no spare", [("s0", "white")]), ("1 spare", [("s1", "white")]), ("2 spares (full)", [("s2", "white")])])]
+LOCKUP["Omni"] = dict(parts=dict(i=omni_stock(1)), state=[("i", "white")])
+for r in REBIND:
+    if r["pair"]["container"] == TIME_ICON:
+        r["pair"]["fields"] = {"omniAbilitySprite": ("icon", OMNI_STOCK[0]),
+                               **{f"omniStock{n}Sprite": ("icon", OMNI_STOCK[n]) for n in range(3)}}

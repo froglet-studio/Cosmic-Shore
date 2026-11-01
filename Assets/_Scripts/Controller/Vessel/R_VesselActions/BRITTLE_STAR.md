@@ -348,7 +348,8 @@ colour with a whip out of each turret, crossfading to five straight sabers as RT
 from `CordsOut01` / `CordPull01`), the whips dim while the mode is off. The Mass card is the star seen from behind with each corner's
 line of prisms coming at you, dim with Creation off, the blocks fattening with Mass (`SetCreationTrails`). The Space
 card is the star flying right with a round out of each turret, meeting or splaying with the aim stick (`SetGuns`); the
-Time card its trail of blocks stretching into one joined line in Speed Mode (`SetSpeedTrail`).
+Time card its trail of blocks stretching into one joined line in Speed Mode (`SetSpeedTrail`). The omni card counts the
+spare rings: two slots under the star, solid when held (`SetSpareRings`).
 
 ## 5. The elemental map and level 5 (`Resources/ElementalAbilityMaps/BrittleStar.asset`)
 

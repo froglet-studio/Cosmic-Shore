@@ -191,6 +191,10 @@ MonoBehaviour:
   chargeStarIcon: {fileID: 940399868776945763}
   massStarIcon: {fileID: 383810789263282925}
   spaceStarIcon: {fileID: 406785962684991672}
+  omniStock2Sprite: {fileID: 21300000, guid: cc406a095942c589002499e7fb18a217, type: 3}
+  omniStock1Sprite: {fileID: 21300000, guid: 7b78c93c76dc1b4428aeeffaa72d95f1, type: 3}
+  omniStock0Sprite: {fileID: 21300000, guid: f43bf7918a998a98bbc4ee0fd82ea266, type: 3}
+  omniAbilitySprite: {fileID: 21300000, guid: f43bf7918a998a98bbc4ee0fd82ea266, type: 3}
   timeStarIcon: {fileID: 1115220133456360907}
   timeTrailFasterIcon: {fileID: 346191384640062913}
   timeTrailFastIcon: {fileID: 632679312105457004}

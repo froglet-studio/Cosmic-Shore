@@ -76,6 +76,14 @@ namespace CosmicShore.UI
         [Tooltip("Alpha of the cruise trail while Speed Mode is off.")]
         [SerializeField, Range(0f, 1f)] float cruiseTrailAlpha = 0.4f;
 
+        [Header("Omni card: the spare-ring stock (icon_kit specs/brittlestar.py, Garrett picked C 2026-11-01)")]
+        [Tooltip("The omni card with no spare ring held (BrittleStar_OmniStock0): two empty slots under the star.")]
+        [SerializeField] Sprite omniStock0Sprite;
+        [Tooltip("One spare held (BrittleStar_OmniStock1): one solid ring, one empty slot.")]
+        [SerializeField] Sprite omniStock1Sprite;
+        [Tooltip("Two spares held, the stock full (BrittleStar_OmniStock2): both rings solid.")]
+        [SerializeField] Sprite omniStock2Sprite;
+
         [Header("Colours")]
         [Tooltip("Every gauge's resting colour.")]
         [SerializeField] Color gaugeColor = new(0.59f, 0.65f, 0.76f, 1f);
@@ -170,6 +178,13 @@ namespace CosmicShore.UI
             if (timeTrailFasterIcon) timeTrailFasterIcon.color = new Color(1f, 1f, 1f, on * boost);
             if (timeStarIcon) timeStarIcon.color = _domain;
         }
+
+        /// <summary>
+        /// The omni card shows the spare-ring stock every crystal adds to: an empty slot or a solid ring per spare
+        /// (<paramref name="spares"/>, 0..2, <c>BrittleStarExecutor.SpareRings</c>).
+        /// </summary>
+        public void SetSpareRings(int spares) =>
+            SetOmniAbilitySprite(spares >= 2 ? omniStock2Sprite : spares == 1 ? omniStock1Sprite : omniStock0Sprite);
 
         Color _domain = Color.white;
 

@@ -87,6 +87,9 @@ No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `c
 - [ ] Time card: dim gapped blocks behind the star; A (Speed Mode) stretches them into one joined line, longer at high
       Time. New: `timeTrailCruiseIcon`, `timeTrailFastIcon`, `timeTrailFasterIcon`, `timeStarIcon`, `SetSpeedTrail`,
       `BrittleStarExecutor.SpeedBoost01`.
+- [ ] Omni card: the star over two empty ring slots at the start; each crystal fills one (solid), a throw (LT) empties
+      one. New: `omniStock0Sprite`..`omniStock2Sprite`, `SetSpareRings`, and on the shared base
+      `VesselHUDView.SetOmniAbilitySprite` (protected, additive; no other hull calls it).
 
 
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
