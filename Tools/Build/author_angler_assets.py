@@ -192,6 +192,13 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": I.guid_for("Angler_Command.png"
              "783faf75777a15c5b2241cfc3e2691d3": I.guid_for("Angler_Leash.png"),
              "586d56db81bb568c940094830cd59abb": I.guid_for("Angler_Lure.png"),
              "669089ec7ad29ed295eccc53d8615225": I.guid_for("Angler_Tame.png")}
+# A card the icon kit has recut (Tools/Build/icon_kit/specs/angler.py, Garrett's ability icon polish) wears kit PARTS on
+# child Images and its slot Image carries no sprite, so the round-1 sprite is gone on purpose: the first part's view
+# field stands in (the BrittleStar's KIT_RECUT, author_brittlestar_assets.py).
+KIT_RECUT = {"ebdd346798d474b5a5ab2364683a8725": "lockSchoolIcon",    # Charge (was Angler_Command): the lock-on parts
+             "783faf75777a15c5b2241cfc3e2691d3": "lureHullIcon",      # Mass (was Angler_Leash): the lure parts
+             "586d56db81bb568c940094830cd59abb": "paintGroupAIcon",   # Space (was Angler_Lure): the paint parts
+             "669089ec7ad29ed295eccc53d8615225": "dashGroupAIcon"}    # Time (was Angler_Tame): the dash parts
 CARD_ACTIVE, CARD_INACTIVE = I.guid_for(I.CARD_ACTIVE), I.guid_for(I.CARD_INACTIVE)
 # the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
 # names a new PNG md5("cosmic-shore-card:" + its repo path); Angler.png / Angler_Inactive.png keep the guids above
@@ -728,7 +735,9 @@ def check(files: "dict[str, str]") -> "list[str]":
             # the round-2 key until Unity re-saves the variant, the element-named one after (FormerlySerializedAs)
             need(re.search(r"  (%s|%s): \{fileID: [1-9]\d*\}" % (field, renamed), hud), f"HUD view field {renamed} is not wired")
         for old, new in ICON_SWAP.items():
-            need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+            recut = KIT_RECUT.get(old)
+            done = new in hud or (recut and re.search(r"  %s: \{fileID: [1-9]\d*\}" % recut, hud))
+            need(old not in hud and done, f"HUD icon {new} not swapped in")
         need(f"  seedSprite: {{fileID: 21300000, guid: {SEED_SPRITE}, type: 3}}\n" in hud,
              "AnglerHUDView.seedSprite is not wired (the omni card's seed, round 4)")
 
@@ -846,6 +855,7 @@ def self_test() -> int:
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.Angler", "")),
         "the element map drifted": (MAP, lambda t: t.replace("Input: 7", "Input: 14")),
         "the combat-hit channel unwired": (PREFAB, lambda t: t.replace(f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}", "  onCombatHitLanded: {fileID: 0}")),
+        "a recut card's parts unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  lureHullIcon: \{fileID: \d+\}", "  lureHullIcon: {fileID: 0}", t)),
         "the seed sprite unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  seedSprite: .*\n", "", t)),
         "the camera back in": (CAMERA, lambda t: t.replace(f"z: -{CHASE_BACK}", "z: -40")),
         "the dash unbound": (PREFAB, lambda t: t.replace("  - InputEvent: 7\n", "  - InputEvent: 13\n")),
