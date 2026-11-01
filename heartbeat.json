@@ -1,4 +1,5 @@
 {
+ "agent": true,
  "caps": {
   "bash": true,
   "caps_version": 2,
@@ -16,6 +17,7 @@
  "cores": 11,
  "current": {},
  "host": "dragonsweapon",
+ "idle_seconds": 0.016,
  "last": {
   "count": null,
   "epoch": "754c681331e3",
@@ -24,6 +26,7 @@
   "stopped": "stopped from the console",
   "unit": "serpenttime-serpent-i3"
  },
+ "remote_start": true,
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -230,10 +233,22 @@
    "unit": "serpenttime-serpent-i3"
   }
  ],
+ "specs": {
+  "cores": 12,
+  "disk_free_gb": 71.0,
+  "os": "windows",
+  "os_name": "Windows 10",
+  "python": "3.11.9",
+  "ram_free_gb": 14.2,
+  "ram_gb": 31.9,
+  "unity": true,
+  "unity_open": true
+ },
+ "status": "in use",
  "totals": {
   "sessions": 17
  },
- "updated": 1793562558,
+ "updated": 1793562702,
  "user": "shombithofficial",
  "version": "1"
 }
