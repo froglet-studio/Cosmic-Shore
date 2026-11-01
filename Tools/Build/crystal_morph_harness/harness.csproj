@@ -23,6 +23,8 @@
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalMorphPanelCensusTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/CrystalHullFusionGeometry.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalHullFusionGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/CrystalMorphRecast.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/ShrikeCrystalMorphGeometryTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/SphereBlastMorphGeometry.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/SphereBlastCrystalMorphGeometryTests.cs" />
   </ItemGroup>

@@ -65,6 +65,18 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Shrike omni-crystal morph: the crystal folds into its nest flora (`claude/shrike-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+`ShrikeCrystalMorphByCrystal.asset` (wired by `author_shrike_assets.py`) replaces the husk spray: the cage lands on the
+bud of the nest flora the pickup grows. Record: `R_VesselActions/SHRIKE_CRYSTAL_MORPH.md`. Headless harness and
+`unity_refcompile` ran; no editor.
+
+- [ ] Compiles; `ShrikeCrystalMorphGeometryTests` green.
+- [ ] Omni crystal: no husk spray; the cage rises onto the bud; the flora then grows missiles as before.
+- [ ] The stem appearing at the hand-off does not pop (if it does, see the doc's follow-up).
+- [ ] Elemental crystals and the Mass detach still grow their flora, with no morph.
+- [ ] MPPM two clients: the morph plays on both.
+
 ### 🔴 Butterfly, Rhino and Manta omni-crystal morph: the crystal becomes the spherical blast (`claude/sphere-blast-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 One retirement (`SphereBlastCrystalMorphByCrystal.asset`) wired into the Butterfly, Rhino and Manta containers replaces
