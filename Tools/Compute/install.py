@@ -83,9 +83,13 @@ def windows_startup(pythonw, launcher):
     return os.path.join(startup_dir(), "FrogletCompute.vbs"), text
 
 
-def _stop_windows_agents():
-    """Stop running agents (the launcher's pythonw) so a new install starts the new code, once."""
-    ps = ("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*froglet-compute*worker.pyw*' -or $_.CommandLine -like '*froglet-compute*tray.pyw*' } | "
+def _stop_windows_agents(trays=False):
+    """Stop every running agent: the launcher's pythonw (`worker.pyw`), a checkout's or the handover copy's
+    `compute.py run` (the old filter missed those two, so Uninstall left the agent working: Shombith, 2026-11-01
+    "it's not uninstalling"). With `trays`, every tray too. Never this process itself."""
+    agents = r"($_.CommandLine -like '*froglet-compute*worker.pyw*' -or $_.CommandLine -match 'compute\.py\"?\s+run(\s|$)')"
+    which = agents + (r" -or $_.CommandLine -match '(tray\.pyw?\"?|compute\.py\"?\s+tray)(\s|$)'" if trays else "")
+    ps = (f"Get-CimInstance Win32_Process | Where-Object {{ $_.ProcessId -ne {os.getpid()} -and ({which}) }} | "
           "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }")
     subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, creationflags=0x08000000)
 
@@ -117,7 +121,7 @@ def install(minutes=10, dry=False, between=None, always=False, home=None, repo=N
             fh.write(vtext)
         # The old ON IDLE task (installs before 2026-10-28) and any running agent go; the new one starts now.
         subprocess.run(["schtasks", "/Delete", "/F", "/TN", "FrogletCompute"], capture_output=True, creationflags=0x08000000)
-        _stop_windows_agents()
+        _stop_windows_agents(trays=True)
         subprocess.Popen([pythonw, launcher], cwd=workdir, close_fds=True,
                          creationflags=0x00000008 | 0x00000200 | 0x08000000)   # detached, own group, no window
         print(f"installed: the agent starts at login ({vbs}) and runs now; its log: {log}")
@@ -171,7 +175,7 @@ def uninstall():
     system = platform.system()
     if system == "Windows":
         subprocess.run(["schtasks", "/Delete", "/F", "/TN", "FrogletCompute"], capture_output=True, creationflags=0x08000000)
-        _stop_windows_agents()
+        _stop_windows_agents(trays=True)
         for path in (os.path.join(startup_dir(), "FrogletCompute.vbs"),
                      os.path.join(os.path.expanduser("~"), ".froglet-compute", "worker.pyw")):
             if os.path.exists(path):

@@ -364,10 +364,13 @@ the outbox, from a checkout `forget.py machine <user>/<host> --push` or `forget.
 
 **The installer is a window** (`setup.py --gui`; Shombith, 2026-11-01: "still I had to add the path in the terminal"):
 the file the console serves (`/install/windows.bat`, `mac.sh`, `linux.sh`) downloads `setup.py` from the hub
-(`/install/setup.py`, with the key) and opens the setup window with no terminal: it finds the Cosmic-Shore folder by
-itself (the current folder, then home, Documents, Desktop, source, GitHub, Projects and every drive root two levels
-deep, a folder named *cosmic* with `.git` and `Assets/_Scripts`) or takes one from Browse, asks when the computer may
-work and whether a sent run may start at once, installs with a log, and ends in the tray. The paste line still works.
+(`/install/setup.py`, with the key) and opens the setup window with no terminal: the person **browses to their
+Cosmic-Shore folder** (never searched for, Shombith 2026-11-01; the current folder is offered when it is a checkout),
+picks when the computer may work and whether a sent run may start at once, installs with a log, and ends in the tray.
+The paste line still works. **One tray per computer** (`tray.lock`: the installer's and the login entry's second tray
+leaves at once) and **Uninstall stops everything**: `compute.py uninstall` stops every agent (the launcher, a
+checkout's `compute.py run`, the handover copy) and every tray, removes the task and login entries, and the tray quits.
+A `.exe` instead of the `.bat`: not yet (it has to be built on Windows and, unsigned, SmartScreen warns on it; see §19).
 
 **The tray** (`Tools/Compute/tray.py`, `compute.py tray`; Shombith, 2026-11-01: "build the tray app ... with uninstall
 option ... after install users can do the configuration"): the installer's last step puts a small icon on the
@@ -683,6 +686,13 @@ line to paste. **The app** is the live console (the hub, section 15) on your own
 
 ## 19. Follow-ups (debt this work created or saw; measured, not fixed here)
 
+- **A Windows `.exe` installer instead of the `.bat`** (Shombith, 2026-11-01: "why a bat file not exe"). The `.bat` is
+  a text file the hub writes per link (the address, the key and the schedule go in it); an `.exe` is a binary that has
+  to be BUILT on Windows (PyInstaller over `setup.py --gui`, a `windows-latest` GitHub Actions job can), cannot carry
+  the key, so it would read it from its own file name (`FrogletCompute-<key>.exe`, the hub serving the built binary
+  under that name), and unsigned it trips SmartScreen ("Windows protected your PC", a Run anyway click) on every PC,
+  which is a worse first impression than the `.bat`'s one prompt; signing needs a code-signing certificate (a few
+  hundred dollars a year, and an EV one to skip the reputation wait). Build it when the team wants the certificate.
 - **`unity-train` publishes no replay or still**: `_save_unit` keeps top-level files under `max_mb` 8 only
   (`worker.py`), so `<out>/replays` and `<out>/stills` stay on the computer that played; `recordings.json` lists them
   (section 16). A viewer on the console needs a store the files can go to (the VM's disk, or the artifact's assets).

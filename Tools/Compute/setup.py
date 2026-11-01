@@ -66,40 +66,8 @@ def is_checkout(path):
     return os.path.isdir(os.path.join(path, ".git")) and os.path.isdir(os.path.join(path, "Assets", "_Scripts"))
 
 
-def find_checkout():
-    """The person's Cosmic-Shore folder, found without asking: the current folder, then the usual places two levels
-    deep (home, Documents, Desktop, source, GitHub, Projects, repos, every drive root on Windows)."""
-    cwd = os.getcwd()
-    if is_checkout(cwd):
-        return cwd
-    home = os.path.expanduser("~")
-    roots = [home] + [os.path.join(home, d) for d in ("Documents", "Desktop", "source", "source/repos", "GitHub", "Projects",
-                                                        "projects", "repos", "git", "dev", "Unity", "Unity Projects", "work")]
-    if os.name == "nt":
-        roots += [f"{d}:\\" for d in "CDEF" if os.path.isdir(f"{d}:\\")]
-    seen = set()
-    for root in roots:
-        if not os.path.isdir(root) or root in seen:
-            continue
-        seen.add(root)
-        for depth in (1, 2):
-            try:
-                entries = [root] if depth == 1 else [os.path.join(root, e) for e in os.listdir(root) if os.path.isdir(os.path.join(root, e)) and not e.startswith(".")]
-            except OSError:
-                continue
-            for base in entries:
-                try:
-                    for e in os.listdir(base):
-                        p = os.path.join(base, e)
-                        if "cosmic" in e.lower() and os.path.isdir(p) and is_checkout(p):
-                            return p
-                except OSError:
-                    pass
-    return ""
-
-
 def gui(argv):
-    """The installer window: the folder (found, or Browse), when the computer may work, Install with a log, then the
+    """The installer window: the folder (Browse; the current one when it is a checkout, never searched for), when the computer may work, Install with a log, then the
     tray. No terminal: the .bat and .sh the console serves start this (Shombith, 2026-11-01: "why can't there be a
     good looking installer").""" 
     global SINK
@@ -113,13 +81,13 @@ def gui(argv):
     ttk.Label(f, text="Froglet Compute", font=("", 15, "bold")).grid(column=0, row=0, columnspan=3, sticky="w")
     ttk.Label(f, text="This computer trains the team's AI while you are away, steered from the console.", foreground="#666").grid(column=0, row=1, columnspan=3, sticky="w", pady=(0, 12))
     ttk.Label(f, text="Your Cosmic-Shore folder").grid(column=0, row=2, sticky="w")
-    folder = tk.StringVar(value=find_checkout())
+    folder = tk.StringVar(value=os.getcwd() if is_checkout(os.getcwd()) else "")    # never searched for (Shombith, 2026-11-01)
     ent = ttk.Entry(f, textvariable=folder, width=58); ent.grid(column=1, row=2, sticky="ew", padx=(8, 6))
     def browse():
         d = filedialog.askdirectory(title="Your Cosmic-Shore folder (the one you open in Unity)")
         if d: folder.set(d)
     ttk.Button(f, text="Browse…", command=browse).grid(column=2, row=2)
-    found = ttk.Label(f, text="found it" if folder.get() else "not found: press Browse and pick the folder you open in Unity", foreground="#2a7" if folder.get() else "#b55")
+    found = ttk.Label(f, text="this folder" if folder.get() else "press Browse and pick the folder you open in Unity", foreground="#2a7" if folder.get() else "#666")
     found.grid(column=1, row=3, sticky="w", padx=(8, 0))
     ttk.Label(f, text="When may it work?", font=("", 10, "bold")).grid(column=0, row=4, columnspan=3, sticky="w", pady=(14, 4))
     whens = [("away", "Whenever I'm away (10 minutes idle, on mains power)"), ("nights", "Only at night (22:00 to 07:00)"),
