@@ -26,8 +26,12 @@ namespace CosmicShore.Gameplay
             {
                 var cell = _cellOfLeg[leg];
                 if (!cell) continue;
-                bool pacified = leg < _report.LegReports.Count && _report.LegReports[leg].Pacified;
-                bool held = pacified || cell.DominantDomain == squad;
+                // "Under the team's control": a hostile world the squad PACIFIED (earned: escort.pacifyShare, min volume and
+                // nucleus time), or a world that started friendly and is still the squad's. Leading an empty hostile
+                // nucleus with the Ark's own hull is not control.
+                var legReport = leg < _report.LegReports.Count ? _report.LegReports[leg] : null;
+                bool pacified = legReport is { Pacified: true };
+                bool held = pacified || legReport is { Hostile: false } && cell.DominantDomain == squad;
 
                 // The lure: hostile, unpacified worlds only (a pacified world's fauna are the squad's own colour).
                 if (held || lure <= 0f) cell.SetFeedingLure(null, squad, 0f);
@@ -51,10 +55,24 @@ namespace CosmicShore.Gameplay
         {
             var tier = _escort.TierFor(_difficulty);
             cell.RuntimeFaunaSpawnPeriodScale = tier != null ? Mathf.Max(0.05f, tier.SpawnPeriodScale) : 1f;
+            // The tier's armour bites, on every creature of the escort's worlds (through the run's fauna tuning).
+            var f = _paramTarget?.Fauna;
+            if (tier == null || f == null) return;
+            if (tier.ShieldBiteMin > 0f) f.Set(FaunaRuntimeTuning.AllSpecies, "shieldBiteMin", tier.ShieldBiteMin);
+            if (tier.SuperShieldBiteMin > 0f) f.Set(FaunaRuntimeTuning.AllSpecies, "superShieldBiteMin", tier.SuperShieldBiteMin);
+            if (!Mathf.Approximately(tier.BiteScale, 1f))
+            {
+                float now = f.TryGet(FaunaRuntimeTuning.AllSpecies, "biteScale", out float b) ? b : 1f;
+                if (!_biteScaleApplied) f.Set(FaunaRuntimeTuning.AllSpecies, "biteScale", now * tier.BiteScale);
+                _biteScaleApplied = true;
+            }
         }
+
+        bool _biteScaleApplied;
 
         void ClearChaos()
         {
+            _biteScaleApplied = false;
             foreach (var cell in _cellOfLeg)
                 if (cell)
                 {

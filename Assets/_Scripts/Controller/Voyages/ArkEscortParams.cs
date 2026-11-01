@@ -150,6 +150,9 @@ namespace CosmicShore.Gameplay
             RegisterTier("arkSpeed", (tier, v) => tier.ArkSpeed = Mathf.Max(0.25f, v));
             RegisterTier("breachHull", (tier, v) => tier.BreachHull = Mathf.Clamp(v, 0f, 0.95f));
             RegisterTier("lureShare", (tier, v) => tier.LureShare = Mathf.Clamp01(v));
+            RegisterTier("shieldBiteMin", (tier, v) => tier.ShieldBiteMin = Mathf.Max(0f, v));
+            RegisterTier("superShieldBiteMin", (tier, v) => tier.SuperShieldBiteMin = Mathf.Max(0f, v));
+            RegisterTier("biteScale", (tier, v) => tier.BiteScale = Mathf.Max(0f, v));
             RegisterTier("spawnPeriodScale", (tier, v) => tier.SpawnPeriodScale = Mathf.Max(0.05f, v));
 
             // ── Fauna: fauna.<species>.<field> (FaunaRuntimeTuning), and fauna.<world 1-9|all>.<scale> ──

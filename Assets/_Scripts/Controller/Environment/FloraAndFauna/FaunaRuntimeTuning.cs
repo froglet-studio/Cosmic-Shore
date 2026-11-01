@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Fields every species takes (Fauna base and the cell's population resolution).</summary>
         public static readonly string[] CommonFields =
-            { "shieldBite", "superShieldBite", "floorScale", "capScale", "speedScale", "biteScale" };
+            { "shieldBite", "superShieldBite", "floorScale", "capScale", "speedScale", "biteScale", "shieldBiteMin", "superShieldBiteMin" };
 
         /// <summary>LightFauna fields (a runtime copy of its <see cref="LightFaunaDataSO"/>).</summary>
         public static readonly string[] LightFields =

@@ -57,69 +57,96 @@ MonoBehaviour:
     HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}. EVERYTHING HERE IS HUNGRY. HOLD THE ARK."
   tiers:
-  - Population: 0.4
+  - Population: 0.35
     RegrowSeconds: 0.5
     HostileShare: 1
     ArkSpeed: 1.3
     BreachHull: 0
-    LureShare: 0.1
+    LureShare: 0.05
     SpawnPeriodScale: 1.0
-  - Population: 0.5
+    ShieldBiteMin: 0
+    SuperShieldBiteMin: 0
+    BiteScale: 1
+  - Population: 0.4
     RegrowSeconds: 0.6
     HostileShare: 1
     ArkSpeed: 1.2
     BreachHull: 0
-    LureShare: 0.15
-    SpawnPeriodScale: 0.95
-  - Population: 0.6
+    LureShare: 0.08
+    SpawnPeriodScale: 1.0
+    ShieldBiteMin: 0
+    SuperShieldBiteMin: 0
+    BiteScale: 1
+  - Population: 0.5
     RegrowSeconds: 0.8
     HostileShare: 1
     ArkSpeed: 1.1
     BreachHull: 0
-    LureShare: 0.2
-    SpawnPeriodScale: 0.9
-  - Population: 0.7
+    LureShare: 0.1
+    SpawnPeriodScale: 0.95
+    ShieldBiteMin: 0.03
+    SuperShieldBiteMin: 0
+    BiteScale: 1
+  - Population: 0.55
     RegrowSeconds: 1.0
     HostileShare: 1
     ArkSpeed: 1
     BreachHull: 0
-    LureShare: 0.3
-    SpawnPeriodScale: 0.8
-  - Population: 0.85
+    LureShare: 0.15
+    SpawnPeriodScale: 0.9
+    ShieldBiteMin: 0.05
+    SuperShieldBiteMin: 0.02
+    BiteScale: 1.0
+  - Population: 0.65
     RegrowSeconds: 1.4
     HostileShare: 1
     ArkSpeed: 0.95
     BreachHull: 0
-    LureShare: 0.4
-    SpawnPeriodScale: 0.7
-  - Population: 1.0
+    LureShare: 0.22
+    SpawnPeriodScale: 0.8
+    ShieldBiteMin: 0.08
+    SuperShieldBiteMin: 0.04
+    BiteScale: 1.15
+  - Population: 0.78
     RegrowSeconds: 2.0
     HostileShare: 1
     ArkSpeed: 0.9
     BreachHull: 0
-    LureShare: 0.5
-    SpawnPeriodScale: 0.6
-  - Population: 1.15
+    LureShare: 0.3
+    SpawnPeriodScale: 0.72
+    ShieldBiteMin: 0.11
+    SuperShieldBiteMin: 0.05
+    BiteScale: 1.3
+  - Population: 0.9
     RegrowSeconds: 3.0
     HostileShare: 1
     ArkSpeed: 0.85
     BreachHull: 0
-    LureShare: 0.6
-    SpawnPeriodScale: 0.5
-  - Population: 1.3
+    LureShare: 0.4
+    SpawnPeriodScale: 0.65
+    ShieldBiteMin: 0.15
+    SuperShieldBiteMin: 0.07
+    BiteScale: 1.5
+  - Population: 1.1
     RegrowSeconds: 4.5
     HostileShare: 1
     ArkSpeed: 0.8
     BreachHull: 0
-    LureShare: 0.75
-    SpawnPeriodScale: 0.45
-  - Population: 1.5
+    LureShare: 0.6
+    SpawnPeriodScale: 0.5
+    ShieldBiteMin: 0.22
+    SuperShieldBiteMin: 0.1
+    BiteScale: 1.9
+  - Population: 1.4
     RegrowSeconds: 7.0
     HostileShare: 1
     ArkSpeed: 0.75
     BreachHull: 0
-    LureShare: 0.9
-    SpawnPeriodScale: 0.35
+    LureShare: 0.8
+    SpawnPeriodScale: 0.4
+    ShieldBiteMin: 0.3
+    SuperShieldBiteMin: 0.15
+    BiteScale: 2.4
   maxPopulation: 2
   arkPacing:
     Cruise: 45

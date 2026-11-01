@@ -133,6 +133,15 @@ namespace CosmicShore.ScriptableObjects
 
             [Min(0.05f), Tooltip("Multiplier on every escort world's fauna spawn period: below 1, waves come faster.")]
             public float SpawnPeriodScale = 1f;
+
+            [Min(0f), Tooltip("Every escort creature that bites armour bites at least this hard, in armour points per bite " +
+                              "(a shield cracks at 1); the Ark's armoured plates are otherwise only gnawed by the few " +
+                              "species that author a bite. 0 = authored bites only.")]
+            public float ShieldBiteMin;
+            [Min(0f), Tooltip("As above for super-shields (crack at 2).")]
+            public float SuperShieldBiteMin;
+            [Min(0f), Tooltip("Multiplier on every armour bite in the escort's worlds.")]
+            public float BiteScale = 1f;
         }
 
         [Header("The run")]
