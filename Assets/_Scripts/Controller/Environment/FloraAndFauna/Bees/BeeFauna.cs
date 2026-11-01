@@ -81,6 +81,18 @@ namespace CosmicShore.Gameplay
             if (IsSimAuthority) StartCoroutine(BeeLoop());
         }
 
+        /// <summary>No sense of up (Garrett 2026-11-01; the /fauna-creation skill, law L6): every turn carries the body's own
+        /// up along with it (<see cref="CelestialFrame.CarryUp"/>), so the bee never rights itself to the world's +y and never
+        /// flips heading straight up or down. Its body is three-fold round its travel axis, so no roll is a wrong one.</summary>
+        protected override Vector3 SteeringUpFor(Vector3 forward)
+        {
+            var up = transform.up;
+            var from = transform.forward;
+            CelestialFrame.CarryUp(up.x, up.y, up.z, from.x, from.y, from.z, forward.x, forward.y, forward.z,
+                out double x, out double y, out double z);
+            return new Vector3((float)x, (float)y, (float)z);
+        }
+
         /// <summary>The goal is the trip's: the flower, the quarry or the hive (re-read on the base goal clock too).</summary>
         protected override Vector3 ResolveGoal()
         {

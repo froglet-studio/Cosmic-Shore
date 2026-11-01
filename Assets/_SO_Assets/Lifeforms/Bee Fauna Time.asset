@@ -24,7 +24,7 @@ MonoBehaviour:
   Variant:
     Enabled: 1
     HeartWorldScale: 0
-    BaseBodyScale: 3
+    BaseBodyScale: 1
     BodyPrismScale: {x: 0, y: 0, z: 0}
     BodyMaterial: {fileID: 0}
     StarvationSeconds: 0
