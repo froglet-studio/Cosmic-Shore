@@ -754,6 +754,10 @@ def run(quick=False):
     ps = people_seed.self_test()
     print("people seed: " + ("ok (two races seed the throttle and boost genes; one race, AI-held samples and two presses do not)" if not ps else "FAILED\n  " + "\n  ".join(ps)))
     failures += ps
+    import tray
+    tr = tray.self_test()
+    print("tray: " + ("ok (the schedule's flags, the status line from a heartbeat)" if not tr else "FAILED\n  " + "\n  ".join(tr)))
+    failures += tr
     import forget
     fg = forget.self_test()
     print("forget: " + ("ok (a run's folders leave a results branch, the checkout untouched; bad names refused)" if not fg else "FAILED\n  " + "\n  ".join(fg)))

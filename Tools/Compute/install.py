@@ -85,7 +85,7 @@ def windows_startup(pythonw, launcher):
 
 def _stop_windows_agents():
     """Stop running agents (the launcher's pythonw) so a new install starts the new code, once."""
-    ps = ("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*froglet-compute*worker.pyw*' } | "
+    ps = ("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*froglet-compute*worker.pyw*' -or $_.CommandLine -like '*froglet-compute*tray.pyw*' } | "
           "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }")
     subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, creationflags=0x08000000)
 

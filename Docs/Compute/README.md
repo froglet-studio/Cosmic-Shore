@@ -360,6 +360,18 @@ in words first; live through the hub (`/api/forget`, `/api/forget-run`; `api/sta
 the outbox, from a checkout `forget.py machine <user>/<host> --push` or `forget.py run <id> --push`. The archive and the
 `ai` branch keep what was already promoted; people's recorded races are the bug ledger's, never touched here.
 
+**The tray** (`Tools/Compute/tray.py`, `compute.py tray`; Shombith, 2026-11-01: "build the tray app ... with uninstall
+option ... after install users can do the configuration"): the installer's last step puts a small icon on the
+computer (it starts at login) that says what the computer is doing (Working on <run>, Free, In use, Paused, Outside
+its hours, Not running), **Pauses and Resumes** (a `paused` file the agent honours: nothing starts, the console shows
+"Paused", the run in progress finishes), sets the **Schedule** (whenever away, only at night, every day between two
+hours, only when someone sends a run, all the time; and whether a sent run may start at once: it re-registers the
+agent through `compute.py install` with the same flags the installer takes), **opens the console**, and
+**uninstalls** (the agent, its login entry and the tray's; asked first). The schedule window opens by itself at the end
+of an install. With `pystray` and `Pillow` (the installer runs `pip install --user pystray pillow`; both optional) it is
+a real tray icon with a menu; without them it is a small window with the same buttons. The pure parts (the schedule's
+flags, the status line) are self-tested; the windows are not run here (no display).
+
 **The agent keeps up with the branch by itself** (2026-11-01: a run at two intensities sat "waiting" because
 dragonsweapon's agent still ran the code from before intensity lists and skipped it as invalid): every half hour the
 resident agent fetches the install ref, and when its `Tools/Compute` differs from the copy it runs, it exports the

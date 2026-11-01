@@ -19,7 +19,7 @@ import urllib.request
 
 import compute_lib as L
 
-STATUSES = ("working", "free", "in use", "outside hours", "offline")
+STATUSES = ("working", "free", "in use", "outside hours", "offline", "paused")
 LIVE_EVERY, GIT_MIN, GIT_MAX = 60, 600, 1800
 
 

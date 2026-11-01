@@ -157,9 +157,17 @@ def main(argv):
     if not dry:                     # the app: the console on this computer, a run started here at once (README section 18)
         out = subprocess.run([sys.executable, compute, "app", "--shortcut"], cwd=repo, capture_output=True, text=True)
         say("5. " + (out.stdout.strip() or "no desktop launcher: " + out.stderr.strip()[-200:]))
-    say("\ndone. It now works whenever you are away. Open Froglet Compute from the desktop (or: "
-        + os.path.basename(sys.executable) + " " + compute + " app) to start a run on this computer at once.")
-    say("Stop it any time:  git show origin/" + ref + ":Tools/Compute/setup.py | python3 - --uninstall")
+    if not dry:                     # the tray: status, pause, schedule, uninstall, no terminal (tray.py)
+        if "--no-tray" not in opts:
+            pip = subprocess.run([sys.executable, "-m", "pip", "install", "--user", "--quiet", "pystray", "pillow"],
+                                 capture_output=True, text=True)
+            tray_note = "a tray icon" if pip.returncode == 0 else "a small window (pystray could not be installed: pip said " + (pip.stderr or pip.stdout).strip()[-120:] + ")"
+            subprocess.run([sys.executable, compute, "tray", "--install-autostart"], cwd=repo, capture_output=True)
+            subprocess.run([sys.executable, compute, "tray", "--start", "--configure"], cwd=repo, capture_output=True)
+            say(f"6. Froglet Compute runs as {tray_note}: it opens now and asks when this computer may work; it starts at login.")
+    say("\ndone. It now works whenever you are away, or as you set it in the tray's Schedule. The tray also pauses, opens the"
+        " console and uninstalls.")
+    say("Stop it any time: the tray's Uninstall, or  git show origin/" + ref + ":Tools/Compute/setup.py | python3 - --uninstall")
     return 0
 
 

@@ -402,6 +402,10 @@ If Play never reaches a match (sign-in, the menu), the run stops after 15 minute
   `unity.log` shows the first population's genomes carrying those values (the AI Training window's population
   view: throttle.base and boost.min_charge equal the seed's, not the registry defaults 0.65 / 0.5). A second run of
   the same unit (a resume) says "not applied: resuming this scenario's own population".
+- [ ] (2026-11-01, the tray) After the installer runs on a Windows PC: a Froglet Compute icon is in the tray (or a small
+  window when pystray could not be installed), the schedule window opened by itself, and Save re-registers the agent
+  (the Computers page shows the PC again within a minute). Pause: the console shows the PC as Paused and a sent run
+  waits; Resume: it starts. Uninstall: the tray and the agent are gone from the Startup folder and the processes list.
 - [ ] (2026-11-01, the right hulls) A Compute run of Serpent in Serpentine straight after a Dolphin in Switchback run:
   every seat in the match is a Serpent (the Third Eye's Pilots list), none a Dolphin or Sparrow; the host seat's hull
   is the Serpent too. `TrainingAutoLauncher` now syncs the mode's card before launching (the allowed-hull list the

@@ -149,6 +149,11 @@ def cmd_run(args):
 
     while True:
         idle = L.idle_seconds()
+        if not args.once and os.path.exists(os.path.join(L.cache_dir(), "paused")):
+            # Paused from the tray: nothing starts, the console says so; Resume removes the file.
+            beacon.tick("paused", idle)
+            time.sleep(30)
+            continue
         if not args.once and L.HUB_REPLY.get("leave"):
             # The console removed this computer (Remove this computer): uninstall and stop, nothing typed here.
             L.log("agent: the console removed this computer: uninstalling", args.quiet)
@@ -572,6 +577,11 @@ def main(argv=None):
     p.add_argument("--queue", nargs="*", help="queue refs (default: bleeding-edge, ai, compute-queue)")
     p.add_argument("--dry-run", action="store_true")
     sub.add_parser("uninstall")
+    p = sub.add_parser("tray", help="the tray icon: status, pause, schedule, open the console, uninstall (tray.py)")
+    p.add_argument("--configure", action="store_true", help="open the schedule window at once")
+    p.add_argument("--install-autostart", action="store_true")
+    p.add_argument("--remove-autostart", action="store_true")
+    p.add_argument("--start", action="store_true", help="start the tray detached and return")
     p = sub.add_parser("board")
     common(p)
     p.add_argument("--write", action="store_true")
@@ -689,7 +699,13 @@ def main(argv=None):
                                home=args.home, repo=args.repo, queue=args.queue, only_sent=args.only_sent)
     if args.cmd == "uninstall":
         import install
+        import tray as T
+        T.remove_autostart()
+        T.set_paused(False)
         return install.uninstall()
+    if args.cmd == "tray":
+        import tray as T
+        return T.main([f for f in ("--configure", "--install-autostart", "--remove-autostart", "--start") if getattr(args, f.strip("-").replace("-", "_"), False)])
     if args.cmd == "board":
         import board
         return board.run(args)

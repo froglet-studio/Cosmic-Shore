@@ -174,7 +174,7 @@ textarea.field, .approve textarea { min-height: 60px; resize: vertical; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; background: var(--off); }
 .st { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
 .st.working .dot { background: var(--accent); } .st.starting .dot { background: var(--accent); animation: fc-pulse 1.2s ease-in-out infinite; } .st.free .dot { background: var(--ok); } .st.in-use .dot { background: var(--warn); }
-.st.outside-hours .dot { background: transparent; border: 1.5px solid var(--off); } .st.offline .dot { background: transparent; border: 1.5px solid var(--off); }
+.st.outside-hours .dot { background: transparent; border: 1.5px solid var(--off); } .st.paused .dot { background: var(--warn); } .st.offline .dot { background: transparent; border: 1.5px solid var(--off); }
 .st + .sub, .sub { display: block; font-size: 12px; color: var(--dim); }
 .kind { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border: 1px solid var(--line2); border-radius: 11px; font-size: 12px; color: var(--muted); white-space: nowrap; vertical-align: middle; }
 .kind::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--off); }
@@ -591,7 +591,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     var d = DATA, act = (d.runs || {}).active || [], recent = (d.runs || {}).recent || [], c = fleet();
     var ready = d.jobs.filter(function (j) { return j.converged && j.status !== "promoted"; });
     var flights = d.recordings.flights, learned = flights.filter(function (f) { return f.state === "learned"; }).length, unseen = flights.filter(function (f) { return f.state === "new"; }).length;
-    var fleetWords = ["starting", "working", "free", "in use", "outside hours", "offline"].filter(function (k) { return c[k]; }).map(function (k) { return c[k] + " " + STATUS_TEXT[k].toLowerCase(); }).join(" · ");
+    var fleetWords = ["starting", "working", "free", "in use", "outside hours", "paused", "offline"].filter(function (k) { return c[k]; }).map(function (k) { return c[k] + " " + STATUS_TEXT[k].toLowerCase(); }).join(" · ");
     root.appendChild(title("Home"));
     var box = outboxCard(); if (box) root.appendChild(box);
     root.appendChild(h("div", { class: "stats", id: "home-hero" }, [
@@ -881,18 +881,18 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   }
 
   // ── computers ──
-  var STATUS_TEXT = { starting: "Starting", working: "Working", free: "Free", "in use": "In use", "outside hours": "Outside its hours", offline: "Offline" };
+  var STATUS_TEXT = { starting: "Starting", working: "Working", free: "Free", "in use": "In use", "outside hours": "Outside its hours", paused: "Paused", offline: "Offline" };
   var STATUS_NOTE = { working: "running a search or a game", free: "its person is away: it works on the queue", "in use": "its person is using it",
     "outside hours": "it works only in its set hours", offline: "nothing heard from it lately" };
   function mstatus(m) { return m.status || (m.active ? "working" : "offline"); }
   function fleet() { var c = { working: 0, free: 0, "in use": 0, "outside hours": 0, offline: 0 }; (DATA.machines || []).forEach(function (m) { c[mstatus(m)] = (c[mstatus(m)] || 0) + 1; }); return c; }
   function fleetLine() {
     var c = fleet(), parts = [];
-    ["starting", "working", "free", "in use", "outside hours", "offline"].forEach(function (k) { if (c[k]) parts.push(h("span", { class: "fl " + k.replace(" ", "-") }, [h("i"), c[k] + " " + STATUS_TEXT[k].toLowerCase()])); });
+    ["starting", "working", "free", "in use", "outside hours", "paused", "offline"].forEach(function (k) { if (c[k]) parts.push(h("span", { class: "fl " + k.replace(" ", "-") }, [h("i"), c[k] + " " + STATUS_TEXT[k].toLowerCase()])); });
     return h("div", { class: "fleet" }, parts);
   }
   // ── computers: Tailscale's machine list - filters, search, one row each, actions in the row's menu ──
-  var MORDER = { starting: 0, working: 1, free: 2, "in use": 3, "outside hours": 4, offline: 5 };
+  var MORDER = { starting: 0, working: 1, free: 2, "in use": 3, "outside hours": 4, paused: 5, offline: 6 };
   var MF = "all", MQ = "", MMENU = null;
   function machineMenu(m, act) {
     var copy = function () { try { navigator.clipboard.writeText(m.machine); } catch (e) {} MMENU = null; render(); };
