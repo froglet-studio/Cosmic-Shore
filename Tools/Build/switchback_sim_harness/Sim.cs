@@ -104,11 +104,13 @@ sealed class Opts
     public int[] Intensities = { 1, 2, 3, 4 };
     public int[] Levels = { 1, 2, 3, 4 };
     public int[] Seeds = { 45501, 45502, 45503, 45504, 1, 2, 3, 4, 5, 6, 7, 8 };
-    public int Gates = 20;
+    public int Gates = 26;          // EndConditionOverrides.switchbackGateTarget (2026-11-01)
     public float Dt = 1f / 60f;
     public float MaxSeconds = 600f;
     public bool Planner = true, Sense = true, Emergency = true, Drive = true, NoLayout, RealCone, FlyRoll;
-    public bool DangerOnly;   // a what-if: the sense and the emergency sweep see only Danger prisms (plain hits are cheap)
+    // SwitchbackController.aiDodgeDangerOnly / aiNoDodgeNearRing, decided by SwitchbackPrismAvoidance.Dodges (shipped 2026-11-02)
+    public bool DangerOnly = true;
+    public float NoDodgeNear = 200f;
     public HitModel Hit = HitModel.Default;
     public float PickupRadius = 12f;     // Dolphin EnergySkimmer: radius 0.5 x scale 20 = 10 u, plus the crystal's own
     public float HullRadius = 3f;        // SwitchbackPrismAvoidance.ShipRadius
@@ -143,6 +145,7 @@ sealed class Opts
                 case "cone": o.RealCone = v != "0"; break;
                 case "roll": o.FlyRoll = v != "0"; break;
                 case "dangerOnly": o.DangerOnly = v != "0"; break;
+                case "noDodgeNear": o.NoDodgeNear = float.Parse(v); break;
                 case "pickup": o.PickupRadius = float.Parse(v); break;
                 case "hull": o.HullRadius = float.Parse(v); break;
                 case "hit.slow": o.Hit.SlowFactor = float.Parse(v); break;
@@ -406,7 +409,9 @@ sealed class Race
                 else
                 {
                     Vector3 goal = gateAim ? gAim : ringAt;
-                    if (o.Sense && SenseAim(goal, out Vector3 sAim)) aim = sAim;
+                    bool closeToRing = !SwitchbackPrismAvoidance.Dodges(true, Vector3.Distance(pos, ring), false, o.NoDodgeNear);
+                    if (closeToRing) avoidAct = SwitchbackAvoidAction.Clear;
+                    if (o.Sense && !closeToRing && SenseAim(goal, out Vector3 sAim)) aim = sAim;
                     else if (gateAim) aim = gAim;
                 }
             }
@@ -416,7 +421,8 @@ sealed class Race
 
             // ---- the emergency sweep (every frame hot, every other frame cold), down the real velocity
             bool emerg = false;
-            if (o.Emergency && !o.NoLayout && EmergencyCheck(out Vector3 eSteer))
+            bool nearRing = !SwitchbackPrismAvoidance.Dodges(true, Vector3.Distance(pos, ring), false, o.NoDodgeNear);
+            if (o.Emergency && !o.NoLayout && !nearRing && EmergencyCheck(out Vector3 eSteer))
             {
                 emerg = true; desired = (eSteer - pos).normalized; drifting = false; extending = false;
             }
@@ -616,7 +622,7 @@ sealed class Race
             foreach (int k in w.Query)
             {
                 if (n >= pts.Length) break;
-                if (o.DangerOnly && w.L.Prisms[k].Kind != PrismKind.Danger) continue;
+                if (!SwitchbackPrismAvoidance.Dodges(w.L.Prisms[k].Kind == PrismKind.Danger, float.MaxValue, o.DangerOnly, 0f)) continue;
                 w.Pose(k, t, out Vector3 c, out _);
                 if (SegPointDist(s0, s1, c) - w.Extent(k) > probe) continue;
                 pts[n] = c; radii[n] = w.Extent(k); n++;
@@ -689,7 +695,7 @@ sealed class Race
             bool any = false;
             foreach (int k in w.Query)
             {
-                if (o.DangerOnly && w.L.Prisms[k].Kind != PrismKind.Danger) continue;
+                if (!SwitchbackPrismAvoidance.Dodges(w.L.Prisms[k].Kind == PrismKind.Danger, float.MaxValue, o.DangerOnly, 0f)) continue;
                 w.Pose(k, t, out Vector3 c, out _);
                 float along = Vector3.Dot(c - p0, dir);
                 if (along < 0f || along > dist + w.Extent(k)) continue;

@@ -200,6 +200,18 @@ namespace CosmicShore.Gameplay
         }
     
         /// <summary>The emergency sweep never looks shorter than this, u (slow hulls still need room to turn).</summary>
+        /// <summary>
+        /// Whether a sensed prism is one to dodge (SWITCHBACK.md "Step 1: dodge only what costs", 2026-11-02). A plain prism
+        /// costs the Dolphin about 0.25 s when it is hit (x0.5 speed easing back over 1 s), a Danger prism about 1.5 s (a dead
+        /// stop easing back over 3 s), and a dodge costs more than either when it pulls the hull off its line: in the real
+        /// soak (`soak_results.md`) 35 of 38 course hits were side-swipes taken while dodging, and offline every level that
+        /// dodged more raced slower. So with <paramref name="dangerOnly"/> only a Danger prism is dodged, and nothing is
+        /// dodged within <paramref name="noDodgeNear"/> u of the ring: there the line to the mouth (or a blocked gate's eye,
+        /// ringed by Danger rakes) is the line. <paramref name="noDodgeNear"/> 0 = dodge up to the ring.
+        /// </summary>
+        public static bool Dodges(bool isDanger, float distanceToRing, bool dangerOnly, float noDodgeNear) =>
+            (isDanger || !dangerOnly) && !(noDodgeNear > 0f && distanceToRing < noDodgeNear);
+
         public const float EmergencyMinReach = 25f;
         /// <summary>The sweep's sphere: the hull's half-width, u, plus a share of the level's clearance.</summary>
         public const float ShipRadius = 3f;

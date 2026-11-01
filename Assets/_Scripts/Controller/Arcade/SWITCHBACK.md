@@ -924,6 +924,8 @@ difficulty's clearance. Raise it if hulls still clip prism edges, lower it if th
 | `aiSkillOverride` + `aiSkills` | off | Replace the intensity-to-skill mapping with four hand-set skills (I1-I4) |
 | `aiPlanGizmos` | on | Scene-view plan lines (select the controller) |
 | `aiSenseDebug` | off | Sense / sweep / dodge lines and Info-level dodge logs |
+| `aiDodgeDangerOnly` | on | Dodge only Danger prisms; plain ones are flown through (Step 1) |
+| `aiNoDodgeNearRing` | 200 | u from the ring inside which nothing is dodged (Step 1); 0 = dodge up to the ring |
 
 ## Offline: the Blast Run simulator (2026-11-01)
 
@@ -960,6 +962,30 @@ It is a model: Unity decides.
    of each other: the blasts remove prisms (fewer hits), and the setup turn behind the key costs about as much. The
    planner's `HitPenalty` (0.6 s a prism) is over twice the measured plain-hit cost, which makes it blast and dodge more
    than it should.
+
+### Step 1: dodge only what costs (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead, start with step 1". `SwitchbackPrismAvoidance.Dodges(isDanger, distanceToRing, dangerOnly,
+noDodgeNear)` decides, for the sense and for the emergency sweep alike, whether a prism is dodged. With the
+controller's defaults (`aiDodgeDangerOnly` on, `aiNoDodgeNearRing` 200 u) the AI dodges only Danger prisms, and nothing
+at all in the last 200 u to its ring: there the line to the mouth (a blocked gate's eye, ringed by Danger rakes) is the
+line. It flies straight through plain prisms, which cost it about 0.25 s each. Untick `aiDodgeDangerOnly` and set
+`aiNoDodgeNearRing` to 0 for the old dodge-everything AI. Gate blasts (the planner) are unchanged; the sense's crystal
+blast now fires only at Danger obstacles. Rival and own trails are plain prisms, so they are flown through too; the
+per-AI lanes at open rings still keep the AIs off each other's lines.
+
+Why: in the real soak (`soak_results.md`, I1, Unity) 35 of the 38 course hits were side-swipes taken WHILE dodging,
+and Legendary raced slower than Easy. Offline (24 courses a cell, 26 gates, one AI alone), median seconds:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Before (Easy / Legendary) | 126 / 136 | 198 / 225 | 269 / 326 | 288 / never finishes (0 of 24) |
+| Step 1 (Easy / Legendary) | 96 / 94 | 168 / 175 | 177 / 189 | 172 / 205 (24 of 24) |
+
+Every intensity and level now finishes all 24 courses; ring misses at I4 Legendary fell from 1,299 to 200, emergency
+dodges from 2,247 to 112. The AI hits more plain prisms (at I3 about 30-40 a race), which is the trade.
+`soak_SwitchbackBlastAI.fix.diff` (Yash's session, not applied) makes each dodge more accurate and is compatible.
+Tests: `SwitchbackPrismAvoidanceTests.Dodges_OnlyDangerPrisms_AndNothingInTheLastStretchToTheRing`.
 
 ## Watching the AI: the AI Diagnose panel (2026-11-01)
 

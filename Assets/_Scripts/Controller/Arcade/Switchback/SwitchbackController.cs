@@ -47,6 +47,12 @@ namespace CosmicShore.Gameplay
         {
             SwitchbackAISkill.ForLevel(1), SwitchbackAISkill.ForLevel(2), SwitchbackAISkill.ForLevel(3), SwitchbackAISkill.ForLevel(4),
         };
+        [Tooltip("The AI dodges only Danger prisms and flies straight through plain ones (SwitchbackPrismAvoidance.Dodges). " +
+                 "A plain hit costs ~0.25 s, a dodge more: in the soak 35 of 38 course hits came while dodging. Off = dodge any prism.")]
+        [SerializeField] bool aiDodgeDangerOnly = true;
+        [Tooltip("u from the ring inside which the AI does not dodge at all: the line to the mouth (a blocked gate's eye, ringed " +
+                 "by Danger rakes) is the line. 0 = dodge up to the ring. 200 measured best offline (switchback_sim_harness).")]
+        [SerializeField, Min(0f)] float aiNoDodgeNearRing = 200f;
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
         [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
@@ -194,7 +200,12 @@ namespace CosmicShore.Gameplay
             foreach (var p in gameData.Players)
             {
                 if (p == null) continue;
-                bool ai = p.IsInitializedAsAI || (p is Player human && PilotControl.IsHeldByAI(human));
+                bool ai = p.IsInitializedAsAI;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // PilotControl (the AI-flies switch) exists only in editor and development builds; in a release build
+                // no human's hull can be handed to the AI, so the AI flag alone is the whole answer.
+                if (!ai && p is Player human) ai = PilotControl.IsHeldByAI(human);
+#endif
                 int avoids = 0, blasts = 0, emerg = 0;
                 _blastAI?.TryCounts(p, out avoids, out blasts, out emerg);
                 int threaded = 0;
@@ -275,6 +286,10 @@ namespace CosmicShore.Gameplay
                 ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
                                         RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
                                         p => (int)gameData.AIDifficultyFor(p))
+                {
+                    DodgeDangerOnly = aiDodgeDangerOnly,
+                    NoDodgeNearRing = aiNoDodgeNearRing,
+                }
                 : null;
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,

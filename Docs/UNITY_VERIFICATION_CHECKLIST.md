@@ -65,6 +65,119 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Switchback AI step 1: dodge only Danger prisms, none in the last 200 u to the ring (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `SwitchbackPrismAvoidance.Dodges`, used by `SwitchbackBlastAI`'s sense and emergency sweep;
+`SwitchbackController.aiDodgeDangerOnly` (on) and `aiNoDodgeNearRing` (200 u). The AI flies straight through plain
+prisms and never dodges in the final stretch to a ring.
+
+**Verified without the editor:** reference compile (editor, player-dev); console-logging, using-directive and
+conditional-compilation gates; `switchback_sim_harness` selftest and eval (24 courses x I1-I4 x 4 levels: every cell
+finishes all 24, I4 Legendary 0 of 24 -> median 205 s; `SWITCHBACK.md` "Step 1"). NOT run:
+`SwitchbackPrismAvoidanceTests` in Unity, the real soak.
+
+**Verify in editor:**
+1. Run `SwitchbackPrismAvoidanceTests` (EditMode): all pass, `Dodges_OnlyDangerPrisms_AndNothingInTheLastStretchToTheRing` included.
+2. The soak (`SwitchbackSoakRunner`, I1-I4 x D1-D4): AI race times fall against `soak_results.md`, Legendary is no
+   slower than Easy, and course hits taken while dodging (`emerg=True` in the per-hit log) mostly disappear.
+3. Switchback I3 / I4 against AI Dolphins (AI Diagnose panel, "AI sense" overlay): they fly through plain blocks, swerve
+   only for red Danger blocks, and never swerve in the last stretch before a ring.
+### 🔴 Switchback: PilotControl calls guarded so a release build compiles (`claude/switchback-pilotcontrol-guard`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `PilotControl` is compiled only under `UNITY_EDITOR || DEVELOPMENT_BUILD`, and Switchback's hit counter
+(`SwitchbackController.NoteHits`) and soak runner (`SwitchbackSoakRunner`) called it unguarded, so every release player
+build failed (CS0103 at `SwitchbackController.cs:197`, `SwitchbackSoakRunner.cs:168`; from `95631f4129`). Both calls are
+now inside the same guard (`Docs/CONDITIONAL_COMPILATION.md` Pattern 1). In a release build the hit counter counts a pilot
+as AI only by `IsInitializedAsAI` (no hull can be handed to the AI there), and the soak runner logs that it cannot hand
+the host seat over. Editor and development builds behave exactly as before.
+
+**Verified without the editor:** `unity_refcompile` player (was failing), player-dev, editor and webgl configs: 0 errors
+in project code. `check_conditional_compilation.py` OK; ship gates all OK.
+
+**Test (editor):**
+1. Play a Switchback race; toggle your hull to AI with the Third Eye's You / AI switch partway. Expected: the race summary
+   log and AI Diagnose hit readout count your seat as AI after the toggle, as before.
+2. Run the Switchback soak (`SwitchbackSoakLauncher`). Expected: every seat AI, no "host seat not handed to the AI" error.
+3. Make a release (non-development) player build of any platform. Expected: it compiles past the scripts step.
+
+### 🔴 B47: a rejoin hands the reclaimed hull to the rejoiner with ChangePlayer, not a second Initialize (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync` no longer calls `Initialize` on the reclaimed
+vessel (the roster has always initialised it first, so the guard refused it and skipped input, camera and HUD). The new
+`ClaimReclaimedPair` does nothing if the pair was already set up as this machine's own; otherwise it stops a local
+autopilot, calls `VesselController.ChangePlayer` (the pilot-swap path), `AdoptCurrentMotion`, repaints, raises the pair
+event and snaps the camera. The claim also waits for the vessel's ownership. `MultiplayerHUD` logs one warning per pilot
+that is in the roster with no name (the unexplained half of B47). `VesselController` is not changed. Details:
+`Docs/PartySystem/BUGS.md` B47.
+
+**Verified without the editor:** `unity_refcompile` player and editor configs, 0 errors in project code;
+`check_console_logging.py` 0 problems. Not run anywhere; no new edit-mode test (the claim is a NetworkBehaviour coroutine
+on live Netcode state).
+
+**Test (MPPM, three players: main editor hosts, Player 2 and Player 3 join; Serpent Time or Skim Race):**
+1. Host a party, both virtual players join, start the match, and wait until all three are flying.
+2. Drop Player 2: stop Player 2's Play (or cut its network for about 10 s with the Network Simulator). Expected on the
+   host: `leaverToAI` in the net log and the "pilot handed to AI" toast; Player 2's ship keeps flying under the AI.
+3. Start Player 2 again; it lands on Home with REJOIN selected. Press REJOIN. Expected on the host: `clientApproved <n>
+   rejoin`, then `seatReclaimed <name>`.
+4. On Player 2, expected: **no** `Double initialization not allowed!` in its console; **no** `[SerpentScope] The scope
+   window is NOT being drawn` warning (Serpent); the camera follows its old ship; the sticks fly it at once; abilities fire
+   and the ability row lights; the HUD shows; same domain and same score; no second ship; the AI no longer flies it.
+5. On the host and Player 3, expected: Player 2's seat keeps its name on the domain bar and scoreboard, and no
+   `ArgumentNullException` (B46). If any console shows `[MultiplayerHUD] Pilot <id> is in the roster with no name`, copy
+   that line into the test report: it names the pilot the missing-name half of B47 is about.
+6. Repeat steps 2-4 two more times (the order in which ownership and the roster arrive varies run to run). Expected: the
+   same result every time.
+7. Regression: in the menu's freestyle, swap vessels with the Vessel Changer, and in an arena match do a D-pad pilot
+   swap. Expected: both still work, with no `Double initialization` error.
+
+### 🔴 UgsRequestPolicyTests: the B34 test's fake SDK frame pinned against inlining (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `[MethodImpl(MethodImplOptions.NoInlining)]` on the test's fake `LobbyChannel.UnsubscribeAsync` in
+`Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs`. `UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown` is
+unchanged: it still needs both "LobbyChannel" and "UnsubscribeAsync" in the stack trace.
+
+**Why:** `LobbyUnsubscribeAfterWireTeardown_MatchesOnlyTheSdkFrame` failed in the editor (Unity 6000.3.17f1; 163 of 164
+multiplayer edit-mode tests passed). The likely cause, consistent with the evidence but not proven: Mono inlined the
+one-line thrower into `LobbyChannel.Throw`, so the trace named only `LobbyChannel.Throw`. The sibling test that matches
+on the class name alone (`LobbyPatcher`) passed, which fits that reading.
+
+**Verified without the editor:** `unity_refcompile --config editor` compiled the file with 0 errors. Not run anywhere.
+
+**Test (editor):**
+1. Window > General > Test Runner > EditMode, run `UgsRequestPolicyTests`. Expected: all pass, including
+   `LobbyUnsubscribeAfterWireTeardown_MatchesOnlyTheSdkFrame`.
+2. Run the whole multiplayer edit-mode set again. Expected: 164 of 164.
+3. If step 1 still fails, the inlining reading is wrong: put a breakpoint in the test, read `LobbyChannel.Throw().StackTrace`
+   and paste it back. Do not loosen the rule in `UgsRequestPolicy.cs`.
+
+### 🔴 Shrike omni-crystal morph: the crystal folds into its nest flora (`claude/shrike-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+`ShrikeCrystalMorphByCrystal.asset` (wired by `author_shrike_assets.py`) replaces the husk spray: the cage lands on the
+bud of the nest flora the pickup grows. Record: `R_VesselActions/SHRIKE_CRYSTAL_MORPH.md`. Headless harness and
+`unity_refcompile` ran; no editor.
+
+- [ ] Compiles; `ShrikeCrystalMorphGeometryTests` green.
+- [ ] Omni crystal: no husk spray; the cage rises onto the bud; the flora then grows missiles as before.
+- [ ] The stem appearing at the hand-off does not pop (if it does, see the doc's follow-up).
+- [ ] Elemental crystals and the Mass detach still grow their flora, with no morph.
+- [ ] MPPM two clients: the morph plays on both.
+
+### 🔴 Butterfly, Rhino and Manta omni-crystal morph: the crystal becomes the spherical blast (`claude/sphere-blast-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+One retirement (`SphereBlastCrystalMorphByCrystal.asset`) wired into the Butterfly, Rhino and Manta containers replaces
+the husk spray: the crystal's cage lands on the plain `AOEExplosion` sphere each hull's omni effect already fires, and
+the sphere takes over. Record: `R_VesselActions/SPHERE_BLAST_CRYSTAL_MORPH.md`. Headless harness and `unity_refcompile` ran;
+no editor.
+
+- [ ] Compiles; `SphereBlastCrystalMorphGeometryTests` green.
+- [ ] Butterfly: no husk spray; the cage bursts onto the bloom sphere; total ≈ 0.44 s.
+- [ ] Rhino: the cage folds onto the small slow blast behind the hull, which keeps swelling; the Surge still fires.
+- [ ] Manta: the cage lands on the Kabloom self-blast; planted bombs and the flower are unchanged.
+- [ ] Prisms inside the blast break from the first frame (the blast is unchanged, only its first 0.37 s is drawn by the morph).
+- [ ] Every other hull unchanged (Squirrel ring, Scarab forge still morph; Sparrow and Goby still spray).
+- [ ] MPPM two clients: the morph plays on both.
+
 ### 🔴 Fair play T1: Google Play Games sign-in on Android (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `PlayGamesSignIn` (mirrors `GameCenterSignIn`), `PlayGamesPlatform` (C#, calls the Java bridge),

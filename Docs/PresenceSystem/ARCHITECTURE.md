@@ -248,6 +248,6 @@ These are the current timings. They supersede any older poll numbers in this fol
 - **Leaving promptly:** in the editor, `HostConnectionService` leaves the presence lobby on `ExitingPlayMode`, so a stopped MPPM player's row goes at once. Quitting also sets UGS Friends availability to **Offline** (`FriendsInitializer`).
 - **Friends panel:** `FriendsListPanel` re-reads UGS Friends every 15 s while open (`FRIENDS_REFRESH_SECONDS`).
 - **Diagnostics:** the multiplayer debug overlay (Ctrl+Shift+M, `Utility/Diagnostics/MultiplayerDebugOverlay.cs`) shows lobby id, converge outcome, lobbies visible, strikes, the poll timer and watchers, Friends presence, the arcade `LobbySnapshot`, and per-player RTT.
-- **Tests:** `Tests/Editor/MultiplayerBugHuntTests.cs`. Manual: [MULTIPLAYER_TEST_CHECKLIST.md](MULTIPLAYER_TEST_CHECKLIST.md).
+- **Tests:** `Tests/Editor/MultiplayerBugHuntTests.cs`. Manual: [TEST_CHECKLIST.md](../Multiplayer/TEST_CHECKLIST.md).
 
 Guest arcade AI rosters (game config) are drawn from the host's replicated `ArcadeConfigSyncManager.LobbySnapshot`, not from local edits. `ArcadeGameConfigureModal.ClientRosterDrifted` redraws a guest whose roster drifts from the snapshot. See [Docs/Multiplayer/README.md](../Multiplayer/README.md).

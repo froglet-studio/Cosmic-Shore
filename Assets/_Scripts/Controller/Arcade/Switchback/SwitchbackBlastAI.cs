@@ -114,6 +114,25 @@ namespace CosmicShore.Gameplay
 
         public SwitchbackBlastPlanner Planner => _planner;
 
+        /// <summary>Dodge only Danger prisms (<see cref="SwitchbackPrismAvoidance.Dodges"/>); set by the controller.</summary>
+        public bool DodgeDangerOnly { get; set; }
+
+        /// <summary>u from the ring inside which nothing is dodged (<see cref="SwitchbackPrismAvoidance.Dodges"/>).</summary>
+        public float NoDodgeNearRing { get; set; }
+
+        /// <summary>Whether the pilot is inside the no-dodge stretch before ring <paramref name="ring"/>.</summary>
+        bool NearRing(Vector3 self, int ring) =>
+            NoDodgeNearRing > 0f && ring >= 0 && ring < _course.Count &&
+            !SwitchbackPrismAvoidance.Dodges(true, Vector3.Distance(self, _course[ring].Position), false, NoDodgeNearRing);
+
+        /// <summary>Whether a sensed collider is a prism to dodge: any prism, or with <see cref="DodgeDangerOnly"/> a Danger one.</summary>
+        bool DodgeWorthy(Collider c)
+        {
+            if (!DodgeDangerOnly) return true;
+            var pr = c != null ? c.GetComponentInParent<Prism>() : null;
+            return pr != null && pr.prismProperties != null && pr.prismProperties.IsDangerous;
+        }
+
         /// <summary>This pilot's sense and sweep tallies so far (the hit counter's race summary). False before its first plan.</summary>
         public bool TryCounts(IPlayer p, out int avoids, out int blasts, out int emergencies)
         {
@@ -252,6 +271,14 @@ namespace CosmicShore.Gameplay
                 Log(p, st, ring, SwitchbackAvoidAction.Clear, passed ? "blast-done" : "blast-key-gone", 0f, 0);
                 st.Avoid = SwitchbackAvoidAction.Clear;
             }
+            // Inside the last stretch to the ring the line to the mouth is the line (SwitchbackPrismAvoidance.Dodges).
+            if (NearRing(self, ring))
+            {
+                if (st.Avoid != SwitchbackAvoidAction.Clear && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                    Log(p, st, ring, SwitchbackAvoidAction.Clear, "near-ring", 0f, 0);
+                st.Avoid = SwitchbackAvoidAction.Clear;
+                return false;
+            }
             if (Time.time < st.NextSense)
             {
                 if (st.Avoid != SwitchbackAvoidAction.Avoid) return false;
@@ -271,6 +298,13 @@ namespace CosmicShore.Gameplay
             float probe = skill.Clearance * 2.5f;
             int n = Physics.OverlapCapsuleNonAlloc(self + dir * SenseStart, self + dir * range, probe, s_hits, s_prismMask,
                                                    QueryTriggerInteraction.Collide);
+            int kept = 0;
+            for (int i = 0; i < n; i++)
+            {
+                if (!DodgeWorthy(s_hits[i])) continue;
+                s_hits[kept++] = s_hits[i];
+            }
+            n = kept;
             for (int i = 0; i < n; i++)
             {
                 var b = s_hits[i].bounds;
@@ -332,6 +366,7 @@ namespace CosmicShore.Gameplay
 
             float speed = vel.magnitude;
             if (speed < 1f) { st.EmergOn = false; return false; }
+            if (st.Threaded >= 0 && NearRing(pos, _ringIndexFor(st.Threaded))) { st.EmergOn = false; return false; }
             Vector3 dir = vel / speed;
             int level = _levelFor(p);
             var skill = _avoidFor(p);
@@ -350,9 +385,9 @@ namespace CosmicShore.Gameplay
                 if (along > 0f && CrystalAt(c)) limit = Mathf.Min(limit, along - 2f);
             }
 
-            bool hit = Sweep(pos, dir, radius, limit, out float hitDist, out Vector3 hitAt, out Vector3 normal);
+            bool hit = Sweep(pos, dir, radius, limit, out float hitDist, out Vector3 hitAt, out Vector3 normal, this);
             if (!hit && Vector3.Angle(dir, fwd) > 8f)
-                hit = Sweep(pos, fwd, radius, limit * 0.6f, out hitDist, out hitAt, out normal);
+                hit = Sweep(pos, fwd, radius, limit * 0.6f, out hitDist, out hitAt, out normal, this);
 
             st.SweepFrom = pos; st.SweepTo = pos + dir * Mathf.Max(limit, 0f); st.SweepRadius = radius;
             st.SweepHitAny = hit; st.SweepHit = hitAt;
@@ -385,7 +420,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The nearest TrailBlocks hit down <paramref name="dir"/> (start-overlaps skipped: the hull's own fresh trail).</summary>
-        static bool Sweep(Vector3 pos, Vector3 dir, float radius, float dist, out float hitDist, out Vector3 centre, out Vector3 normal)
+        static bool Sweep(Vector3 pos, Vector3 dir, float radius, float dist, out float hitDist, out Vector3 centre, out Vector3 normal,
+                          SwitchbackBlastAI filter = null)
         {
             hitDist = float.MaxValue; centre = default; normal = default;
             if (dist <= 0.5f) return false;
@@ -395,6 +431,7 @@ namespace CosmicShore.Gameplay
             {
                 ref RaycastHit h = ref s_rayHits[i];
                 if (h.distance <= 0f || h.distance >= hitDist || h.collider == null) continue;
+                if (filter != null && !filter.DodgeWorthy(h.collider)) continue;
                 hitDist = h.distance; centre = h.collider.bounds.center; normal = h.normal; any = true;
             }
             return any;

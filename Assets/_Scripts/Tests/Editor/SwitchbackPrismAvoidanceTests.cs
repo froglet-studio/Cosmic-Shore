@@ -16,6 +16,20 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Dodges_OnlyDangerPrisms_AndNothingInTheLastStretchToTheRing()
+        {
+            // Step 1 (2026-11-02): a plain hit costs ~0.25 s, a dodge more; the line to the mouth is the line.
+            Assert.IsTrue(SwitchbackPrismAvoidance.Dodges(isDanger: true, distanceToRing: 500f, dangerOnly: true, noDodgeNear: 200f));
+            Assert.IsFalse(SwitchbackPrismAvoidance.Dodges(isDanger: false, distanceToRing: 500f, dangerOnly: true, noDodgeNear: 200f),
+                "a plain prism is flown through");
+            Assert.IsFalse(SwitchbackPrismAvoidance.Dodges(isDanger: true, distanceToRing: 150f, dangerOnly: true, noDodgeNear: 200f),
+                "nothing is dodged inside the last 200 u to the ring");
+            // The switches off: the old behaviour, every prism dodged up to the ring.
+            Assert.IsTrue(SwitchbackPrismAvoidance.Dodges(isDanger: false, distanceToRing: 150f, dangerOnly: false, noDodgeNear: 0f));
+            Assert.IsTrue(SwitchbackPrismAvoidance.Dodges(isDanger: false, distanceToRing: 500f, dangerOnly: false, noDodgeNear: 200f));
+        }
+
+        [Test]
         public void TrailOnTheLine_IsBlocked_AndACorridorClearsIt([Values(1, 2, 3, 4)] int level)
         {
             var skill = SwitchbackAvoidSkill.ForLevel(level);
