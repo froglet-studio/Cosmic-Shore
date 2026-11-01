@@ -155,8 +155,8 @@ The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navi
 
 ```
 Assets/
-├── _Scripts/                  # All first-party C# code (~1,100 files)
-│   ├── Controller/            # Gameplay systems (~536 files)
+├── _Scripts/                  # All first-party C# code (3,061 files, 2026-11-01)
+│   ├── Controller/            # Gameplay systems (1,373 files)
 │   │   ├── Vessel/            # Vessel core, actions, prisms, trails
 │   │   ├── Environment/       # Cells, crystals, flora/fauna, spawning
 │   │   ├── ImpactEffects/     # Impactors + Effect SOs
@@ -165,7 +165,7 @@ Assets/
 │   │   ├── Camera/            # Per-vessel camera system
 │   │   ├── AI/                # AIPilot, AIGunner
 │   │   └── ...                # Projectiles, IO, FX, Managers, etc.
-│   ├── System/                # Application-level systems (~126 files)
+│   ├── System/                # Application-level systems (157 files)
 │   │   ├── Bootstrap/         # BootstrapConfigSO, SceneTransitionManager, ApplicationLifecycleManager
 │   │   ├── Systems/Auth/      # AuthenticationController (MonoBehaviour adapter)
 │   │   ├── Instrumentation/   # Analytics (UGS)
@@ -179,10 +179,10 @@ Assets/
 │   │   ├── SplashToAuthFlow.cs
 │   │   ├── NetworkMonitor.cs
 │   │   └── ...                # Audio, LoadOut, Quest, Ads, etc.
-│   ├── UI/                    # Game & app UI (~188 files)
+│   ├── UI/                    # Game & app UI (460 files)
 │   │   ├── Screens/           # Menu screens (Home, Arcade, Store, Hangar, Leaderboards, Episodes)
 │   │   ├── Interfaces/        # IScreen, IVesselHUDController, IVesselHUDView
-│   │   ├── Elements/          # Reusable components (NavLink, NavGroup, ProfileDisplayWidget)
+│   │   ├── Elements/          # Reusable components (NavLink, NavGroup, card and lobby widgets)
 │   │   ├── Views/             # PlayerDataService, screen views
 │   │   ├── Controller/        # HUD controllers
 │   │   ├── Modals/            # ModalWindowManager, Settings, Profile, Purchase dialogs

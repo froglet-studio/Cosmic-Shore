@@ -19,6 +19,8 @@ or write to the backend goes through Shombith first.
 | (no file) | Faction messages in the Port: Unity Vivox text channels, switched on in the dashboard, below | T8 |
 | `AccessControl/moderation-policy.json` | Lets players send reports to UGS Moderation (the Report button on the profile popup) | T8 |
 | (no file) | Steam sign-in is a dashboard identity provider plus `Assets/Resources/SteamConfig.asset`, below | T1 |
+| `CloudCode/trust.js` | Phase B: each account's trust record (private custom data `fp-<player id>`), its pool (shore, Undertow, quitters), the notice and the appeal, and the review queue (`fairplay-review`) | phase B, R13, R15 |
+| `CloudCode/trust.test.cjs` | `node Tools/UGS/CloudCode/trust.test.cjs` | phase B |
 
 ## Switching on the server-owned wallet
 
@@ -26,7 +28,8 @@ The game ships with it **off** (`ServerEconomyGate.Enabled = false` in
 `Assets/_Scripts/System/CloudData/ServerEconomy.cs`). While it is off, nothing calls Cloud Code and the wallet
 works exactly as before. Turn it on in this order, development environment first:
 
-1. **Run the tests:** `node Tools/UGS/CloudCode/economy.test.cjs` prints `11 passed`.
+1. **Run the tests:** `node Tools/UGS/CloudCode/economy.test.cjs` prints `16 passed`, and
+   `python3 Tools/Build/author_economy_catalog.py --check` prints OK.
 2. **Install and sign in to the UGS CLI** (needs dashboard access to project
    `3030fd69-28ab-433f-b4bd-22b9b93c5118`):
    ```
@@ -65,12 +68,16 @@ old direct write open.
 Off in the game (`MatchReportGate.Enabled = false` in `Assets/_Scripts/System/CloudData/ServerMatchReports.cs`; while
 off, `MatchReporter` is never attached).
 
-1. `node Tools/UGS/CloudCode/match-report.test.cjs` prints `21 passed`.
+1. `node Tools/UGS/CloudCode/match-report.test.cjs` prints `24 passed`.
 2. `ugs deploy Tools/UGS/CloudCode/match-report.js` (development first).
 3. Set `MatchReportGate.Enabled = true` in a test build and run the "Match reports" editor checks in
    `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Read a player's `FAIRPLAY_CONDUCT` and a host's `FAIRPLAY_SIGNALS` in the
    dashboard (Cloud Save > Player data > protected).
 4. Production: deploy, then ship the build with the gate on.
+
+Host observations (T5/T6, phase B): the host's own `end` may carry `observed` (speed, jumps, steering about its
+guests); each is filed on the guest as a `host_observed` signal naming the host. `trust.js` counts them only once two
+different hosts reported the same account. Steering is never filed on a minor.
 
 Minors (R13): each `start` carries the birth year the age screen recorded, kept in the protected key `FAIRPLAY_AGE`
 (only ever moved younger). A player not surely 18, or of unknown age, gets no quit record, and every signal about them
@@ -94,6 +101,44 @@ Report and Block are live in the game (no gate): they appear on the player profi
 2. Apply `ugs access upsert-project-policy Tools/UGS/AccessControl/moderation-policy.json` if a report returns 403
    (the research found Moderation reports need a player allow statement; confirm on first use).
 3. Name the person who reviews the queue (the owner decision in `Docs/AntiCheat/README.md` §8).
+
+## Switching on the trust record, the Undertow and the notice (phase B)
+
+Off in the game (`FairPlayTrustGate.Enabled = false` in `Assets/_Scripts/System/CloudData/ServerTrust.cs`). It needs
+match reports on first (they write the signals it reads).
+
+1. `node Tools/UGS/CloudCode/trust.test.cjs` prints `18 passed`.
+2. `ugs deploy Tools/UGS/CloudCode/trust.js` (development first). Redeploy `match-report.js` and `weekly-score.js` too
+   (both read the trust record now).
+3. **Twin boards:** for each weekly board (`weekly_challenge` and every regional `weekly_challenge_*`), create
+   `<id>_undertow` in the dashboard with the same sort order and reset schedule. An Undertow account's times go there.
+4. Set `FairPlayTrustGate.Enabled = true` in a test build and run the "Fair play phase B" editor checks in
+   `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+5. Production: deploy, create the twin boards, ship the build with the gate on.
+
+**Tuning:** `trust.js` `RULES` (signal weights, `watchAt` 100, `undertowAt` 300, the 30-day decay, the quit rule,
+three matches before the notice). Change them there and redeploy; every account is re-evaluated at its next sign-in.
+
+## Reviewing fair-play accounts (phase B)
+
+Nothing restricts ranked or public play without a person (GDPR Art. 22; `Docs/AntiCheat/README.md` §4.6).
+
+1. **The queue:** dashboard > Cloud Save > Custom data > **private** > `fairplay-review`, key `queue`. Each entry names
+   an account the system moved on its own (`undertow`, or `review` for a minor or unknown age) or one with an open
+   appeal, and where its record is.
+2. **The record:** private custom data `fp-<player id>`, key `trust`: the stage, the reasons with their evidence (the
+   match, the scores each side reported, the hours or durations), the appeal text if any.
+3. **Decide** by adding a `review` field to that record and saving:
+   - `{"decision": "clear", "by": "<you>", "note": "..."}`: a false positive. Every signal so far is set aside, the
+     account returns to the shore, an open appeal is upheld.
+   - `{"decision": "uphold", "by": "<you>"}`: the measure stands and an open appeal is refused.
+   - `{"decision": "restrict", "until": "2026-12-01", "by": "<you>", "note": "..."}`: ranked and public play locked
+     until the date (the Undertow pool and the twin boards); the player is told at once. Paid content is never touched.
+4. The account's next sign-in applies the decision once (`review.appliedAt` is stamped) and removes it from the queue.
+
+**Who reviews: Shombith** (decided 2026-10-26, `Docs/AntiCheat/README.md` §8). A routine: open the queue once a day
+while the gate is on; decide each entry; answer every open appeal within a week (the Code of Conduct promises a person
+looks at it).
 
 ## Switching on Steam sign-in (T1)
 
@@ -125,8 +170,13 @@ game's old client-written copy in `PLAYER_PROFILE` is only a display cache the s
 - **Not yet:**
   - **Earn amounts are capped, not proven.** The server cannot see a match result until every player reports
     it (Threat Board T4), so a cheater can still claim the top placement reward every match, within the caps.
-  - **Vessel and hangar unlock records** stay in client-written keys. The crystals for them are spent on the
-    server, but an edited save could still show something as unlocked without paying.
+  - ~~Vessel and hangar unlock records~~ **moved to the server 2026-10-26**: `unlockVessel` and `upgradeHangar` charge
+    the catalog price and record the unlock in the same protected write, and the game replaces its own copies with the
+    server's list (`VesselUnlockSystem.ApplyServerOwnership`). An account's old unlocks come across once, capped at
+    20,000 crystals of value (`migrateUnlocks`). Prices: run `python3 Tools/Build/author_economy_catalog.py` after
+    changing a vessel's `UnlockCost`, a starter flag or the Hangar's `crystalsPerLevel`, then redeploy `economy.js`
+    (`--check` in the bleeding-edge guard fails until you do). Editor debug unlocks (the Froglet Toolbox) are undone
+    while the server wallet is on.
   - **Episode tokens** are unchanged. They are bought with real money and need each store's receipt check,
     which waits on the DLC-vs-tokens decision (`Docs/Legal/DLC_VS_TOKENS_QUESTIONNAIRE.md`).
   - **Offline changes:** if the server cannot be reached, the local change stands until the next server answer,

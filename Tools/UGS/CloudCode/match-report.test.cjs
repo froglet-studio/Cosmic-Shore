@@ -15,6 +15,13 @@ class FakeDataApi {
     store.set(id, { value: JSON.parse(JSON.stringify(body.value)), writeLock: "w" + ++lock });
   }
 }
+const priv = new Map(); // "customId/key" -> { value, writeLock }  (trust.js's record)
+FakeDataApi.prototype.getPrivateCustomItems = async function (_p, id, keys) {
+  return { data: { results: keys.filter((k) => priv.has(id + "/" + k)).map((k) => ({ key: k, ...JSON.parse(JSON.stringify(priv.get(id + "/" + k))) })) } };
+};
+FakeDataApi.prototype.setPrivateCustomItem = async function (_p, id, body) {
+  priv.set(id + "/" + body.key, { value: JSON.parse(JSON.stringify(body.value)), writeLock: "w" + ++lock });
+};
 const realLoad = Module._load;
 Module._load = function (req) {
   if (req === "@unity-services/cloud-save-1.4") return { DataApi: FakeDataApi };
@@ -206,6 +213,43 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     } finally { Date.now = realNow; }
     const s = signalsOf("farm");
     assert.equal(s.length, 1); assert.equal(s[0].kind, "around_the_clock"); assert.equal(s[0].review, "standard");
+  });
+
+  // ---- Phase B: matches in a pool count toward the notice (trust.js) ----
+  await test("a finished match in the Undertow counts toward the notice; on the shore it does not", async () => {
+    priv.set("fp-under/trust", { value: { stage: "undertow", matches: 2 }, writeLock: "w0" });
+    priv.set("fp-shore/trust", { value: { stage: "shore", matches: 0 }, writeLock: "w0" });
+    for (const p of ["under", "shore"]) {
+      await call(p, { action: "start", matchId: "pb", mode: "Joust", hostId: p, players: [p] });
+      await call(p, { action: "end", matchId: "pb", mode: "Joust", hostId: p, players: [p], scores: [], winner: p });
+    }
+    assert.equal(priv.get("fp-under/trust").value.matches, 3);
+    assert.equal(priv.get("fp-shore/trust").value.matches, 0);
+  });
+
+  // ---- Host-observed signals (T5/T6) ----
+  await test("the host's end report files its observations on each guest, naming the host", async () => {
+    const ps = ["obshost", "g7", "kid7"];
+    await call("kid7", { action: "start", matchId: "o1", mode: "Joust", hostId: "obshost", players: ps, birthYear: Y - 12 });
+    await call("obshost", { action: "start", matchId: "o1", mode: "Joust", hostId: "obshost", players: ps });
+    await call("obshost", { action: "end", matchId: "o1", mode: "Joust", hostId: "obshost", players: ps, scores: [], winner: "obshost",
+      observed: [{ id: "g7", kind: "speed", measured: 900, limit: 400 }, { id: "g7", kind: "speed", measured: 950, limit: 400 },
+                 { id: "g7", kind: "teleport", measured: 1, limit: 0 }, { id: "stranger", kind: "speed", measured: 999, limit: 1 },
+                 { id: "kid7", kind: "steering", measured: 1, limit: 3 }, { id: "kid7", kind: "speed", measured: 800, limit: 400 }] });
+    const g = signalsOf("g7");
+    assert.equal(g.length, 1, "one per guest and kind, unknown kinds and non-players dropped");
+    assert.deepEqual([g[0].kind, g[0].sub, g[0].measured, g[0].reporter], ["host_observed", "speed", 950, "obshost"]);
+    const k = signalsOf("kid7").map((x) => x.sub);
+    assert.deepEqual(k, ["speed"], "AI-like steering is never filed on a minor; speed is a security check and is");
+    assert.equal(signalsOf("stranger").length, 0);
+  });
+
+  await test("a guest cannot file observations about anyone", async () => {
+    const ps = ["h8", "liar"];
+    await call("liar", { action: "start", matchId: "o2", mode: "Joust", hostId: "h8", players: ps });
+    await call("liar", { action: "end", matchId: "o2", mode: "Joust", hostId: "h8", players: ps, scores: [], winner: "liar",
+      observed: [{ id: "h8", kind: "speed", measured: 999, limit: 1 }] });
+    assert.equal(signalsOf("h8").filter((x) => x.kind === "host_observed").length, 0);
   });
 
   console.log(`\n${passed} passed`);

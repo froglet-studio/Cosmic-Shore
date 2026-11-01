@@ -6,6 +6,11 @@
 // Tools/UGS/AccessControl/project-policy.json applied, players can no longer write a leaderboard,
 // so every weekly time goes through this script, which checks it before posting it.
 //
+// Phase B, the shadow board (Docs/AntiCheat/README.md 4.6): an account trust.js has put in the Undertow (or a person
+// restricted) posts to the twin board "<leaderboardId>" + SHADOW_SUFFIX instead, so its times never reach the public
+// board; its own client splices its row back into the page it reads (WeeklyChallengeLeaderboardService), so its view
+// looks normal. Create each twin board in the dashboard beside its public board (Tools/UGS/README.md).
+//
 // Params: leaderboardId, seconds, periodKey, avatarId (optional)
 // Returns: { ok, reason }
 //
@@ -15,6 +20,8 @@ const { LeaderboardsApi } = require("@unity-services/leaderboards-1.1");
 const { DataApi } = require("@unity-services/cloud-save-1.4");
 
 const SUBMITS_KEY = "WEEKLY_SCORE_SUBMITS";
+const TRUST_KEY = "trust";            // trust.js's record, private custom data "fp-" + player id
+const SHADOW_SUFFIX = "_undertow";    // trust.js RULES.shadowBoardSuffix
 
 const RULES = {
   // The boards this script may write: the world board and any regional board named after it
@@ -42,6 +49,21 @@ function weekKey(ms) {
 function boardAllowed(id) {
   if (typeof id !== "string" || id.length === 0 || id.length > 50) return false;
   return RULES.boardIds.includes(id) || RULES.boardPrefixes.some((p) => id.startsWith(p));
+}
+
+// Pure: the board a verified time goes to, given the poster's trust stage.
+function targetBoard(leaderboardId, stage) {
+  return stage === "undertow" || stage === "restricted" ? leaderboardId + SHADOW_SUFFIX : leaderboardId;
+}
+
+async function trustStage(saves, projectId, playerId) {
+  try {
+    const res = await saves.getPrivateCustomItems(projectId, "fp-" + playerId, [TRUST_KEY]);
+    const row = res && res.data && res.data.results ? res.data.results.find((r) => r.key === TRUST_KEY) : null;
+    return row && row.value ? row.value.stage : "shore";
+  } catch (e) {
+    return "shore";   // no record yet, or trust.js not deployed: the public board, as before phase B
+  }
 }
 
 // The rules, as a pure function: (params, submit history, now) -> { ok, reason }.
@@ -85,7 +107,8 @@ module.exports = async ({ params, context, logger }) => {
   if (Number.isInteger(params.avatarId) && params.avatarId >= 0) metadata.a = params.avatarId;
 
   const boards = new LeaderboardsApi(context);
-  await boards.addLeaderboardPlayerScore(projectId, params.leaderboardId, playerId, { score: params.seconds, metadata });
+  const target = targetBoard(params.leaderboardId, await trustStage(saves, projectId, playerId));
+  await boards.addLeaderboardPlayerScore(projectId, target, playerId, { score: params.seconds, metadata });
 
   const body = {
     key: SUBMITS_KEY,
@@ -104,4 +127,4 @@ module.exports.params = {
   avatarId: { type: "Numeric", required: false },
 };
 
-module.exports._test = { check, weekKey, RULES };
+module.exports._test = { check, weekKey, targetBoard, RULES };
