@@ -396,10 +396,33 @@ namespace CosmicShore.Gameplay
             // when they run, by which time Reflex has filled them).
             ApplicationLifecycleManager.OnAppQuitRequested += HandleAppQuitRequested;
             ApplicationLifecycleManager.OnAppPaused        += HandleAppPaused;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+#endif
 
             if (bootStatusRetryRequestedEvent != null)
                 bootStatusRetryRequestedEvent.OnRaised += HandleBootStatusRetryRequested;
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Stopping Play never raises <c>Application.wantsToQuit</c>, so <see cref="HandleAppQuitRequested"/>
+        /// never ran in the Editor and the only leave was OnDestroy's teardown await, which rarely lands: the
+        /// player stayed a ghost row on every peer until UGS reaped them (~30 s) plus two absent reads.
+        /// ExitingPlayMode fires while the player loop is still alive, so the leave request goes out a frame
+        /// earlier than OnDestroy. It is started, not awaited: blocking the main thread here would deadlock the
+        /// SDK's main-thread continuations. PresenceLobbyService.LeaveAsync's own guard makes OnDestroy's
+        /// backstop a no-op once this leave is in flight.
+        /// </summary>
+        private void HandlePlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+        {
+            if (state != UnityEditor.PlayModeStateChange.ExitingPlayMode || Instance != this) return;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[HostConnectionService] ExitingPlayMode: leaving presence lobby {_lobbyService?.ActiveLobby?.Id ?? "(none)"} " +
+                $"and party {_partySessionService?.ActiveSession?.Id ?? "(none)"}.");
+            HandleAppQuitRequested().Forget();
+        }
+#endif
 
         void Start()
         {
@@ -539,6 +562,9 @@ namespace CosmicShore.Gameplay
             LavaLampPresence.Shown   -= HandleLavaLampShown;
             ApplicationLifecycleManager.OnAppQuitRequested -= HandleAppQuitRequested;
             ApplicationLifecycleManager.OnAppPaused        -= HandleAppPaused;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+#endif
             if (authenticationDataVariable != null)
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnsubscribeFromProfileChanges();
