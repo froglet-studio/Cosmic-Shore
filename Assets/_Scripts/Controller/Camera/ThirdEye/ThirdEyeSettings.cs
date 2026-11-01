@@ -15,8 +15,10 @@ namespace CosmicShore.Gameplay
     {
         public const string Key = "CosmicShore.ThirdEye.Settings";
 
-        public ThirdEyeCameraMode Mode = ThirdEyeCameraMode.Free;
-        public ThirdEyeFreeMode FreeMode = ThirdEyeFreeMode.Fly;
+        // Session-only (never saved, Yash 2026-11-01): the diagnose camera mode and the overlays start off every run,
+        // so the game always opens on its default camera.
+        [NonSerialized] public ThirdEyeCameraMode Mode = ThirdEyeCameraMode.Free;
+        [NonSerialized] public ThirdEyeFreeMode FreeMode = ThirdEyeFreeMode.Fly;
 
         public float Fov = 70f;
         public float ChaseDistance = 30f, ChaseHeight = 8f, ChaseLookAhead = 40f, ChaseSmoothing = 8f;
@@ -24,7 +26,7 @@ namespace CosmicShore.Gameplay
         // Free fly is the lava lamp's FreeFlyCamera (its own speeds); these are orbit's.
         public float OrbitDistance = 80f, LookSensitivity = 0.15f;
 
-        public bool ShowThinking, ShowLabels, ShowTrails;
+        [NonSerialized] public bool ShowThinking, ShowLabels, ShowTrails;
         public float TrailSeconds = 8f;
 
         public void Clamp()

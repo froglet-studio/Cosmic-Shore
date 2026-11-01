@@ -39,6 +39,31 @@ namespace CosmicShore.Gameplay
 
         public static ThirdEye Instance { get; private set; }
 
+        // Nothing survives a play session or a domain reload: no instance, no overlay left on (Yash, 2026-11-01).
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            Instance = null;
+            AllOverlaysOff(null);
+        }
+
+        static void AllOverlaysOff(ThirdEyeSettings st)
+        {
+            if (st != null) st.ShowThinking = st.ShowTrails = st.ShowLabels = false;
+            var all = ThirdEyeOverlays.All;
+            for (int i = 0; i < all.Count; i++) all[i].On = false;
+        }
+
+        // The game stopping closes the panel: a scene unloading (match end, back to menu), quitting, editor Play stop.
+        void OnSceneUnloaded(UnityEngine.SceneManagement.Scene _) => SetPanel(false);
+        void OnApplicationQuit() => SetPanel(false);
+#if UNITY_EDITOR
+        void OnPlayModeChanged(UnityEditor.PlayModeStateChange change)
+        {
+            if (change == UnityEditor.PlayModeStateChange.ExitingPlayMode) SetPanel(false);
+        }
+#endif
+
         public ThirdEyeSettings Settings { get; private set; }
 
         // ── State ────────────────────────────────────────────────────────────
@@ -109,11 +134,19 @@ namespace CosmicShore.Gameplay
             _hud.Eye = this;
             _hud.enabled = false;
             Utility.PerformanceBenchmark.DiagnosticsHUD.RegisterCommand(CommandName, HandleCommand);
+            UnityEngine.SceneManagement.SceneManager.sceneUnloaded += OnSceneUnloaded;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeChanged;
+#endif
         }
 
         void OnDestroy()
         {
             if (Instance != this) return;
+            UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= OnSceneUnloaded;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+#endif
             StopDriving();
             SetPanel(false);
             HoldInput(false);
@@ -171,7 +204,15 @@ namespace CosmicShore.Gameplay
                 _panelSavedLock = Cursor.lockState;
                 _panelSavedVisible = Cursor.visible;
             }
-            else if (!open && _panelCursor)
+            if (!open)
+            {
+                // Closed = the default view and zero cost (Yash, 2026-11-01): release the camera (the gameplay /
+                // menu camera, its FOV and driver come back) and turn every overlay off.
+                StopDriving();
+                AllOverlaysOff(Settings);
+                _trails.Clear();
+            }
+            if (!open && _panelCursor)
             {
                 _panelCursor = false;
                 Cursor.lockState = _panelSavedLock;
@@ -303,6 +344,7 @@ namespace CosmicShore.Gameplay
         void StartDriving()
         {
             if (_driving) return;
+            if (!_panel) SetPanel(true);   // diagnose cameras exist only while the panel is open
             var cam = Camera.main;
             if (!cam) { _note = "No main camera to drive."; return; }
             _driving = true;
@@ -458,6 +500,7 @@ namespace CosmicShore.Gameplay
             string verb = a[0].ToLowerInvariant();
             bool? arg = a.Length > 1 ? a[1].ToLowerInvariant() switch { "on" or "1" or "true" => true, "off" or "0" or "false" => false, _ => null } : null;
             var s = Settings;
+            if (verb != "panel" && !_panel) SetPanel(true);   // every diagnose feature lives with the open panel
             switch (verb)
             {
                 case "panel": SetPanel(arg ?? !_panel); return $"panel {(_panel ? "open" : "closed")}";

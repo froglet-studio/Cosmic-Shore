@@ -19838,3 +19838,17 @@ command field + Send (Enter sends) wired to DiagnosticsHUD (`aidiag ...`, `help`
 4. Click the command field and type `wasd`: hull doesn't steer. Send `aidiag thinking on`, `aidiag next`, `help`, `timescale 0.5`: replies shown.
 5. Menu_Main: F2 still toggles god mode, flight unchanged.
 6. Release build: no panel, no `aidiag` command.
+
+## 2026-11-01 — AI Diagnose: default cameras untouched, diagnose views only while the panel is open
+
+**Evidence:** the Third Eye / AI Diagnose commits (8b8ac6762, e203498f9) touch no gameplay or menu camera file
+(CustomCameraController, CameraManager, MainMenuCameraController, CameraFeelConfig, Menu_Main.unity are unchanged by
+them); the FreeFlyCamera refactor only moved god-mode flight code. **What landed:** closing the panel (F2, `aidiag
+panel off`, scene unload, quit, editor Play stop) releases the camera (gameplay driver + FOV restored) and turns all
+overlays off. Camera mode and overlay toggles are no longer saved; statics reset on SubsystemRegistration. Any
+`aidiag` camera/overlay command opens the panel first.
+
+1. Start Switchback and Menu_Main: default chase / lava-lamp follow camera, no panel, no overlays (even if they were on last run).
+2. F2 → Free fly → F2: chase camera back exactly (FOV too), overlays gone.
+3. Panel open with Orbit + trails, end the match / go to menu: panel closed, default camera.
+4. Panel open, stop Play, press Play: panel closed, default camera, overlays off.
