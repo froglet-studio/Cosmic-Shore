@@ -52,7 +52,24 @@ def installer(name, url, key, flags):
     import setup
     ref = setup.APP_REF if L.git_ok("cat-file", "-e", "origin/bleeding-edge:Tools/Compute/setup.py") is None else "bleeding-edge"
     opts = " ".join([f"--hub {url}", f"--hub-key {key}", *flags])
+    if name == "setup.py":
+        with open(os.path.join(HERE, "setup.py"), encoding="utf-8") as fh:
+            return fh.read(), "text/x-python", "froglet-compute-setup.py"
     if name == "windows.bat":
+        # The window does the rest: it finds the Cosmic-Shore folder (or Browse), asks the schedule, installs, starts the tray.
+        text = "\r\n".join([
+            "@echo off", "setlocal",
+            "where python >nul 2>&1 || (echo Python is not installed. Install Python 3 from python.org (tick \"Add to PATH\"), then run this again. & pause & exit /b 1)",
+            "where git >nul 2>&1 || (echo Git is not installed. Install Git for Windows, then run this again. & pause & exit /b 1)",
+            'set "SETUP=%TEMP%\\froglet-compute-setup.py"',
+            f'curl -fsSL "{url}/install/setup.py?key={key}" -o "%SETUP%" || (echo Could not reach the console at {url}. & pause & exit /b 1)',
+            'for /f "delims=" %%p in (\'where python\') do (set "PY=%%p" & goto :found)',
+            ":found",
+            'set "PYW=%PY:python.exe=pythonw.exe%"',
+            f'if exist "%PYW%" (start "" "%PYW%" "%SETUP%" --gui {opts}) else (start "" "%PY%" "%SETUP%" --gui {opts})',
+            "exit /b 0", ""])
+        return text, "application/x-bat", "froglet-compute-setup.bat"
+    if name == "windows-plain.bat":
         text = "\r\n".join([
             "@echo off", "setlocal",
             "echo Froglet Compute: putting this PC on the team console.",
@@ -69,15 +86,11 @@ def installer(name, url, key, flags):
     if name in ("mac.sh", "linux.sh"):
         text = "\n".join([
             "#!/bin/bash", "set -e",
-            "echo 'Froglet Compute: putting this computer on the team console.'",
             "command -v git >/dev/null || { echo 'git is not installed.'; exit 1; }",
             "command -v python3 >/dev/null || { echo 'python3 is not installed.'; exit 1; }",
-            'REPO="$(cd "$(dirname "$0")" && pwd)"',
-            'if [ ! -d "$REPO/.git" ]; then read -r -p "Path to your Cosmic-Shore folder (the one you open in Unity): " REPO; fi',
-            'cd "$REPO" && [ -d .git ] || { echo "That is not the Cosmic-Shore folder."; exit 1; }',
-            f"git fetch origin {ref}",
-            f"git show origin/{ref}:Tools/Compute/setup.py | python3 - {opts}",
-            f"echo; echo 'Done. This computer shows on {url} within a minute.'", ""])
+            'SETUP="${TMPDIR:-/tmp}/froglet-compute-setup.py"',
+            f'curl -fsSL "{url}/install/setup.py?key={key}" -o "$SETUP"',
+            f'python3 "$SETUP" --gui {opts}', ""])
         return text, "text/x-shellscript", "froglet-compute-setup.sh"
     return None, None, None
 AI_SYNC_EVERY = 3600                 # seconds between the VM's ai-branch syncs

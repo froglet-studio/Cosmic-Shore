@@ -41,15 +41,143 @@ APP_REF = "claude/eager-franklin-e6g77h"     # the compute branch, until Froglet
 APP = os.path.join(os.environ.get("FROGLET_COMPUTE_HOME") or os.path.join(os.path.expanduser("~"), ".froglet-compute"), "app")
 
 
+SINK = None             # the installer window's log, when there is one (say() writes there too)
+NO_WINDOW = {"creationflags": 0x08000000} if os.name == "nt" else {}
+
+
 def say(msg=""):
     print(msg, flush=True)
+    if SINK is not None:
+        try:
+            SINK(msg)
+        except Exception:
+            pass
 
 
 def git(*args, check=True):
-    p = subprocess.run(["git", *args], capture_output=True, text=True)
+    p = subprocess.run(["git", *args], capture_output=True, text=True, **NO_WINDOW)
     if check and p.returncode:
         raise SystemExit(f"\nstopped: git {' '.join(args)} failed:\n{(p.stderr or p.stdout).strip()}")
     return p.stdout.strip()
+
+
+def is_checkout(path):
+    """A Cosmic-Shore checkout: a .git and the game's Assets folder."""
+    return os.path.isdir(os.path.join(path, ".git")) and os.path.isdir(os.path.join(path, "Assets", "_Scripts"))
+
+
+def find_checkout():
+    """The person's Cosmic-Shore folder, found without asking: the current folder, then the usual places two levels
+    deep (home, Documents, Desktop, source, GitHub, Projects, repos, every drive root on Windows)."""
+    cwd = os.getcwd()
+    if is_checkout(cwd):
+        return cwd
+    home = os.path.expanduser("~")
+    roots = [home] + [os.path.join(home, d) for d in ("Documents", "Desktop", "source", "source/repos", "GitHub", "Projects",
+                                                        "projects", "repos", "git", "dev", "Unity", "Unity Projects", "work")]
+    if os.name == "nt":
+        roots += [f"{d}:\\" for d in "CDEF" if os.path.isdir(f"{d}:\\")]
+    seen = set()
+    for root in roots:
+        if not os.path.isdir(root) or root in seen:
+            continue
+        seen.add(root)
+        for depth in (1, 2):
+            try:
+                entries = [root] if depth == 1 else [os.path.join(root, e) for e in os.listdir(root) if os.path.isdir(os.path.join(root, e)) and not e.startswith(".")]
+            except OSError:
+                continue
+            for base in entries:
+                try:
+                    for e in os.listdir(base):
+                        p = os.path.join(base, e)
+                        if "cosmic" in e.lower() and os.path.isdir(p) and is_checkout(p):
+                            return p
+                except OSError:
+                    pass
+    return ""
+
+
+def gui(argv):
+    """The installer window: the folder (found, or Browse), when the computer may work, Install with a log, then the
+    tray. No terminal: the .bat and .sh the console serves start this (Shombith, 2026-11-01: "why can't there be a
+    good looking installer").""" 
+    global SINK
+    import threading
+    import tkinter as tk
+    from tkinter import ttk, filedialog, messagebox
+    root = tk.Tk()
+    root.title("Froglet Compute Setup")
+    root.resizable(False, False)
+    f = ttk.Frame(root, padding=18); f.grid()
+    ttk.Label(f, text="Froglet Compute", font=("", 15, "bold")).grid(column=0, row=0, columnspan=3, sticky="w")
+    ttk.Label(f, text="This computer trains the team's AI while you are away, steered from the console.", foreground="#666").grid(column=0, row=1, columnspan=3, sticky="w", pady=(0, 12))
+    ttk.Label(f, text="Your Cosmic-Shore folder").grid(column=0, row=2, sticky="w")
+    folder = tk.StringVar(value=find_checkout())
+    ent = ttk.Entry(f, textvariable=folder, width=58); ent.grid(column=1, row=2, sticky="ew", padx=(8, 6))
+    def browse():
+        d = filedialog.askdirectory(title="Your Cosmic-Shore folder (the one you open in Unity)")
+        if d: folder.set(d)
+    ttk.Button(f, text="Browse…", command=browse).grid(column=2, row=2)
+    found = ttk.Label(f, text="found it" if folder.get() else "not found: press Browse and pick the folder you open in Unity", foreground="#2a7" if folder.get() else "#b55")
+    found.grid(column=1, row=3, sticky="w", padx=(8, 0))
+    ttk.Label(f, text="When may it work?", font=("", 10, "bold")).grid(column=0, row=4, columnspan=3, sticky="w", pady=(14, 4))
+    whens = [("away", "Whenever I'm away (10 minutes idle, on mains power)"), ("nights", "Only at night (22:00 to 07:00)"),
+             ("hours", "Every day between two hours"), ("sent", "Only when someone sends a run from the console"),
+             ("always", "All the time (nobody uses this computer)")]
+    when = tk.StringVar(value="away")
+    for i, (k, lab) in enumerate(whens):
+        ttk.Radiobutton(f, text=lab, value=k, variable=when).grid(column=0, row=5 + i, columnspan=3, sticky="w", pady=1)
+    hrs = ttk.Frame(f); hrs.grid(column=0, row=10, columnspan=3, sticky="w", padx=(24, 0))
+    frm, to = tk.StringVar(value="20:00"), tk.StringVar(value="06:00")
+    ttk.Label(hrs, text="from").grid(column=0, row=0); ttk.Entry(hrs, textvariable=frm, width=6).grid(column=1, row=0, padx=4)
+    ttk.Label(hrs, text="to").grid(column=2, row=0); ttk.Entry(hrs, textvariable=to, width=6).grid(column=3, row=0, padx=4)
+    ttk.Label(hrs, text="(only for \"every day between two hours\")", foreground="#666").grid(column=4, row=0, padx=(8, 0))
+    remote = tk.BooleanVar(value=True)
+    ttk.Checkbutton(f, text="A run sent from the console may start at once, even while I use this computer", variable=remote).grid(column=0, row=11, columnspan=3, sticky="w", pady=(8, 0))
+    log = tk.Text(f, height=9, width=80, state="disabled", font=("Consolas" if os.name == "nt" else "Menlo", 9))
+    log.grid(column=0, row=12, columnspan=3, sticky="ew", pady=(12, 0))
+    buttons = ttk.Frame(f); buttons.grid(column=0, row=13, columnspan=3, sticky="e", pady=(10, 0))
+    install_btn = ttk.Button(buttons, text="Install")
+    ttk.Button(buttons, text="Close", command=root.destroy).grid(column=0, row=0, padx=4)
+    install_btn.grid(column=1, row=0)
+
+    def write(msg):
+        def put():
+            log.config(state="normal"); log.insert("end", msg + "\n"); log.see("end"); log.config(state="disabled")
+        root.after(0, put)
+    SINK = write
+
+    def run():
+        repo = folder.get().strip()
+        if not is_checkout(repo):
+            messagebox.showerror("Froglet Compute", "That is not a Cosmic-Shore checkout: pick the folder you open in Unity (it has Assets and .git)."); return
+        args = [a for a in argv if a not in ("--gui",)]
+        if "--repo" in args:
+            i = args.index("--repo"); del args[i:i + 2]
+        args += ["--repo", repo, "--no-first-run"]
+        w = when.get()
+        if w == "nights": args.append("--nights")
+        elif w == "hours": args += ["--between", f"{frm.get().strip()}-{to.get().strip()}"]
+        elif w == "sent": args.append("--only-sent")
+        elif w == "always": args.append("--always")
+        if remote.get() and "--allow-remote-start" not in args: args.append("--allow-remote-start")
+        install_btn.config(state="disabled")
+        def work():
+            try:
+                rc = main(args)
+                write("" if rc == 0 else f"stopped ({rc})")
+                if rc == 0:
+                    write("Done. The tray icon is yours now: it shows what this computer does, pauses it, changes this schedule, opens the console and uninstalls.")
+                    root.after(0, lambda: install_btn.config(text="Done", command=root.destroy, state="normal"))
+            except SystemExit as e:
+                write(str(e)); root.after(0, lambda: install_btn.config(state="normal"))
+            except Exception as e:
+                write(f"{type(e).__name__}: {e}"); root.after(0, lambda: install_btn.config(state="normal"))
+        threading.Thread(target=work, daemon=True).start()
+    install_btn.config(command=run)
+    root.mainloop()
+    return 0
 
 
 def ref_with_compute():
@@ -90,6 +218,10 @@ def copy_app(ref):
 
 def main(argv):
     opts = set(argv)
+    if "--gui" in opts:
+        return gui(argv)
+    if "--repo" in argv and argv.index("--repo") + 1 < len(argv):
+        os.chdir(argv[argv.index("--repo") + 1])
     if ("--hub" in opts) != ("--hub-key" in opts):
         raise SystemExit("stopped: --hub and --hub-key go together (the console's Install sheet shows both)")
     dry = "--dry-run" in opts
@@ -137,8 +269,10 @@ def main(argv):
         except Exception:
             cfg = {}
         cfg.update({"repo": repo, "ref": ref, "queue": queue})
-        if "--allow-remote-start" in opts:
-            cfg["remote_start"] = True
+        cfg["remote_start"] = "--allow-remote-start" in opts
+        cfg["schedule"] = {"when": "nights" if "--nights" in opts else "always" if "--always" in opts else "sent" if "--only-sent" in opts
+                           else "hours" if "--between" in argv else "away",
+                           "between": argv[argv.index("--between") + 1] if "--between" in argv and argv.index("--between") + 1 < len(argv) else None}
         if "--hub" in argv and "--hub-key" in argv:
             cfg["hub"], cfg["hub_key"] = argv[argv.index("--hub") + 1], argv[argv.index("--hub-key") + 1]
         with open(os.path.join(os.path.dirname(APP), "config.json"), "w", encoding="utf-8") as fh:
@@ -163,7 +297,7 @@ def main(argv):
                                  capture_output=True, text=True)
             tray_note = "a tray icon" if pip.returncode == 0 else "a small window (pystray could not be installed: pip said " + (pip.stderr or pip.stdout).strip()[-120:] + ")"
             subprocess.run([sys.executable, compute, "tray", "--install-autostart"], cwd=repo, capture_output=True)
-            subprocess.run([sys.executable, compute, "tray", "--start", "--configure"], cwd=repo, capture_output=True)
+            subprocess.run([sys.executable, compute, "tray", "--start"] + ([] if SINK is not None else ["--configure"]), cwd=repo, capture_output=True)
             say(f"6. Froglet Compute runs as {tray_note}: it opens now and asks when this computer may work; it starts at login.")
     say("\ndone. It now works whenever you are away, or as you set it in the tray's Schedule. The tray also pauses, opens the"
         " console and uninstalls.")

@@ -360,13 +360,20 @@ in words first; live through the hub (`/api/forget`, `/api/forget-run`; `api/sta
 the outbox, from a checkout `forget.py machine <user>/<host> --push` or `forget.py run <id> --push`. The archive and the
 `ai` branch keep what was already promoted; people's recorded races are the bug ledger's, never touched here.
 
+**The installer is a window** (`setup.py --gui`; Shombith, 2026-11-01: "still I had to add the path in the terminal"):
+the file the console serves (`/install/windows.bat`, `mac.sh`, `linux.sh`) downloads `setup.py` from the hub
+(`/install/setup.py`, with the key) and opens the setup window with no terminal: it finds the Cosmic-Shore folder by
+itself (the current folder, then home, Documents, Desktop, source, GitHub, Projects and every drive root two levels
+deep, a folder named *cosmic* with `.git` and `Assets/_Scripts`) or takes one from Browse, asks when the computer may
+work and whether a sent run may start at once, installs with a log, and ends in the tray. The paste line still works.
+
 **The tray** (`Tools/Compute/tray.py`, `compute.py tray`; Shombith, 2026-11-01: "build the tray app ... with uninstall
 option ... after install users can do the configuration"): the installer's last step puts a small icon on the
 computer (it starts at login) that says what the computer is doing (Working on <run>, Free, In use, Paused, Outside
 its hours, Not running), **Pauses and Resumes** (a `paused` file the agent honours: nothing starts, the console shows
 "Paused", the run in progress finishes), sets the **Schedule** (whenever away, only at night, every day between two
 hours, only when someone sends a run, all the time; and whether a sent run may start at once: it re-registers the
-agent through `compute.py install` with the same flags the installer takes), **opens the console**, and
+agent through `compute.py install` with the same flags the installer takes), **opens the console**, **Quits** (stops the agent until the next login; Start brings it back), and
 **uninstalls** (the agent, its login entry and the tray's; asked first). The schedule window opens by itself at the end
 of an install. With `pystray` and `Pillow` (the installer runs `pip install --user pystray pillow`; both optional) it is
 a real tray icon with a menu; without them it is a small window with the same buttons. The pure parts (the schedule's

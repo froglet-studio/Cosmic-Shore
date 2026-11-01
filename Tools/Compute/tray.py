@@ -221,6 +221,35 @@ def remove_autostart():
     return removed
 
 
+def stop_agent():
+    """Stop the agent now (it comes back at the next login, or from Start in the menu)."""
+    system = platform.system()
+    if system == "Windows":
+        import install as I
+        I._stop_windows_agents()
+    elif system == "Darwin":
+        import install as I
+        subprocess.run(["launchctl", "unload", os.path.join(os.path.expanduser("~"), "Library", "LaunchAgents", I.LABEL + ".plist")], capture_output=True)
+    else:
+        subprocess.run(["systemctl", "--user", "stop", "froglet-compute.service"], capture_output=True)
+
+
+def start_agent():
+    """Start the agent now, the way the login entry does."""
+    system = platform.system()
+    if system == "Windows":
+        import install as I
+        launcher = os.path.join(L.cache_dir(), "worker.pyw")
+        if os.path.exists(launcher):
+            subprocess.Popen([I.windowless(sys.executable), launcher], cwd=load_config().get("repo") or L.REPO, close_fds=True,
+                             creationflags=0x00000008 | 0x00000200 | 0x08000000)
+    elif system == "Darwin":
+        import install as I
+        subprocess.run(["launchctl", "load", os.path.join(os.path.expanduser("~"), "Library", "LaunchAgents", I.LABEL + ".plist")], capture_output=True)
+    else:
+        subprocess.run(["systemctl", "--user", "start", "froglet-compute.service"], capture_output=True)
+
+
 def start_detached(configure=False):
     """Start the tray now, with no window of its own (the installer's last step)."""
     args = [sys.executable, COMPUTE, "tray"] + (["--configure"] if configure else [])
@@ -329,12 +358,13 @@ def run_tray(configure=False):
         return pystray.Menu(
             pystray.MenuItem(text, None, enabled=False),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Resume" if paused else "Pause (the current run finishes)", lambda: (set_paused(not is_paused()), icon.update_menu())),
+            pystray.MenuItem("Start the agent", lambda: (start_agent(), time.sleep(1), icon.update_menu()), visible=not agent_running()),
+            pystray.MenuItem("Resume" if paused else "Pause (the current run finishes)", lambda: (set_paused(not is_paused()), icon.update_menu()), visible=agent_running()),
             pystray.MenuItem("Schedule…", lambda: threading.Thread(target=lambda: schedule_window(), daemon=True).start()),
             pystray.MenuItem("Open the console", lambda: webbrowser.open(console_url())),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Uninstall…", lambda: uninstall()),
-            pystray.MenuItem("Quit the tray (the agent keeps working)", lambda: icon.stop()))
+            pystray.MenuItem("Quit (stops the agent until the next login)", lambda: (stop_agent(), icon.stop())))
 
     def uninstall():
         tk, ttk, messagebox = _tk()
@@ -371,16 +401,17 @@ def run_window(configure=False):
     status = ttk.Label(frame, text="", font=("", 11, "bold")); status.grid(column=0, row=0, columnspan=2, sticky="w")
     sub = ttk.Label(frame, text="This computer trains the team's AI while you are away.", foreground="#666"); sub.grid(column=0, row=1, columnspan=2, sticky="w", pady=(0, 10))
     pause_btn = ttk.Button(frame, text="Pause"); pause_btn.grid(column=0, row=2, sticky="ew", pady=2)
+    ttk.Button(frame, text="Quit (stops the agent until the next login)", command=lambda: (stop_agent(), root.destroy())).grid(column=0, row=5, columnspan=2, sticky="ew", pady=(8, 0))
     ttk.Button(frame, text="Schedule…", command=lambda: schedule_window(root, refresh)).grid(column=1, row=2, sticky="ew", pady=2, padx=(6, 0))
     ttk.Button(frame, text="Open the console", command=lambda: webbrowser.open(console_url())).grid(column=0, row=3, sticky="ew", pady=2)
     ttk.Button(frame, text="Uninstall…", command=lambda: do_uninstall(lambda q: messagebox.askyesno("Froglet Compute", q)) and root.destroy()).grid(column=1, row=3, sticky="ew", pady=2, padx=(6, 0))
-    ttk.Label(frame, text="Closing this window keeps the computer working.", foreground="#666").grid(column=0, row=4, columnspan=2, sticky="w", pady=(10, 0))
+    ttk.Label(frame, text="Closing this window keeps the computer working; Quit stops it.", foreground="#666").grid(column=0, row=4, columnspan=2, sticky="w", pady=(10, 0))
 
     def refresh():
         text = status_text(heartbeat(), agent_running(), is_paused())
-        status.config(text=text); pause_btn.config(text="Resume" if is_paused() else "Pause (the current run finishes)")
+        status.config(text=text); pause_btn.config(text="Start the agent" if not agent_running() else ("Resume" if is_paused() else "Pause (the current run finishes)"))
         root.after(10000, refresh)
-    pause_btn.config(command=lambda: (set_paused(not is_paused()), refresh()))
+    pause_btn.config(command=lambda: ((start_agent() if not agent_running() else set_paused(not is_paused())), refresh()))
     refresh()
     if configure:
         root.after(300, lambda: schedule_window(root, refresh))
