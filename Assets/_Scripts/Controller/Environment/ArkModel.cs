@@ -148,6 +148,7 @@ namespace CosmicShore.Gameplay
             _root.localScale *= _scale;
 
             IndexBones(_root);
+            MakeDoubleSided();
             BindPuppets();
             BindReactor();
 
@@ -157,6 +158,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            foreach (var copy in _doubleSided.Values) if (copy) Destroy(copy);
+            _doubleSided.Clear();
             if (_hold) _hold.ParcelGranted -= OnParcelGranted;
         }
 
@@ -328,11 +331,51 @@ namespace CosmicShore.Gameplay
                     if (!materials[i]) continue;
                     for (int j = 0; j < _def.DomainReplacesMaterials.Count; j++)
                     {
-                        if (materials[i] != _def.DomainReplacesMaterials[j]) continue;
+                        var placeholder = _def.DomainReplacesMaterials[j];
+                        // The placeholder may already wear its double-sided copy (MakeDoubleSided runs at attach).
+                        bool isPlaceholder = materials[i] == placeholder
+                            || placeholder && _doubleSided.TryGetValue(placeholder, out var c) && c == materials[i];
+                        if (!isPlaceholder) continue;
                         materials[i] = ship;
                         changed = true;
                         break;
                     }
+                }
+                if (changed) renderer.sharedMaterials = materials;
+            }
+            MakeDoubleSided();
+        }
+
+        // ── Render both faces ────────────────────────────────────────────────
+        // The owner, 2026-10-31: "the Ark has inverted materials: the inside of the hull renders but not the outside".
+        // The model's parts are built as closed and open shells whose winding is not consistent across parts (the
+        // mantle cavity is meant to be seen from inside), and the domain's ship material (and the Body material) cull
+        // back faces, so a part wound inward vanishes from outside. The Ark draws every material double-sided on its own
+        // per-Ark copies; the shared vessel materials are untouched.
+
+        readonly Dictionary<Material, Material> _doubleSided = new();
+
+        void MakeDoubleSided()
+        {
+            if (!_root) return;
+            foreach (var renderer in _root.GetComponentsInChildren<Renderer>(true))
+            {
+                var materials = renderer.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    var m = materials[i];
+                    if (!m || _doubleSided.ContainsValue(m)) continue;
+                    if (!_doubleSided.TryGetValue(m, out var copy))
+                    {
+                        copy = new Material(m) { name = m.name + " (Ark, both faces)", doubleSidedGI = true };
+                        if (copy.HasProperty("_Cull")) copy.SetFloat("_Cull", 0f);          // ShaderGraph / URP: Off
+                        if (copy.HasProperty("_CullMode")) copy.SetFloat("_CullMode", 0f);
+                        if (copy.HasProperty("_RenderFace")) copy.SetFloat("_RenderFace", 0f); // URP Lit: Both
+                        _doubleSided[m] = copy;
+                    }
+                    materials[i] = copy;
+                    changed = true;
                 }
                 if (changed) renderer.sharedMaterials = materials;
             }
