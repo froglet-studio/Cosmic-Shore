@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-31 from canvas version `1793468682-c423`: Rev 3 to Rev 39, 336 boards on 40 pages. The canvas's launch page is `rev38`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-01 from canvas version `1793567971-556c`: Rev 3 to Rev 39, 341 boards on 40 pages. The canvas's launch page is `rev38`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
 
@@ -44,6 +44,11 @@ Copied on 2026-10-31 from canvas version `1793468682-c423`: Rev 3 to Rev 39, 336
 - [`R41NewRun.dc.html`](R41NewRun.dc.html) - Rev 41 NewRun - New run: Where defaults to the best live PC and the button says what happens
 - [`R41Computers.dc.html`](R41Computers.dc.html) - Rev 41 Computers - Computers: Starting is a status, never Working with nothing running
 - [`R41Notes.dc.html`](R41Notes.dc.html) - Rev 41 - notes: what was wrong on the live console and what each fix changes
+- [`R42Compare.dc.html`](R42Compare.dc.html) - Rev 42 - the Home page's top (the four tiles and the Needs you list) in A, B and C side by side
+- [`R42A.dc.html`](R42A.dc.html) - Rev 42 A - Marquee: each view opens on a full-width film still with the title set in it, the lists below (recommended)
+- [`R42B.dc.html`](R42B.dc.html) - Rev 42 B - Poster cards: every card wears its own still as a header band, bolder poster type
+- [`R42C.dc.html`](R42C.dc.html) - Rev 42 C - Ledger: the light edition, paper grey, stills as thin bands, dense rows
+- [`R42Notes.dc.html`](R42Notes.dc.html) - Rev 42 - notes: what each look changes against the built page, and what stays
 
 ### Rev 37 - Connection: lost, reconnecting, back online, rejoin  (page `rev37`)
 

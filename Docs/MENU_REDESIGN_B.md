@@ -5177,3 +5177,24 @@ sends them with its console errors through the bug ledger (`Docs/Compute/README.
 chip, and At a time shows what follows the time (when free, or at once); Serpentine, Scarab Rally and Brittle Star
 Time are on the vessel x mode grid (the trainer's catalog, the regenerated chart). R41NewRun stays the record of the
 Where fix; the sheet's later shape is the built page.
+
+## 111. Rev 42 mockups: the Compute console, three looks for the Silver Screen (2026-11-01, awaiting a pick)
+
+**Asked (Shombith, 2026-11-01):** "I feel the console app can look better", after the Silver Screen theme (his site's
+look) and the film stills behind each view (section 110's follow-up).
+
+**On the canvas:** the Rev 38 page (`rev38`, the console's page; the canvas holds 40 pages and all are taken, so the
+round sits under Rev 41 at y 6120). Copies: `Docs/MenuRedesignB/board/R42*.dc.html`. An options round, the Home page
+whole in each, the same data (the live console's of 2026-11-01), the stills as canvas assets:
+- **R42A · Marquee (recommended):** each view opens on a full-width still with the title set in it, as a film poster;
+  the stat tiles overlap the still's bottom edge; the lists follow unchanged. Recommended because it gives the pages
+  the cinema the theme promises without touching a row: a stylesheet change and one hero block per view.
+- **R42B · Poster cards:** no hero; every card wears its still as a 96 px band with its title set over it; the tiles
+  become posters with the number set large. More picture per screen; every card then needs a still that fits.
+- **R42C · Ledger:** the light edition, paper grey and ink, the stills as thin bands, denser rows; the light theme the
+  page already has, made deliberate.
+- **R42Compare:** the Home page's top in A, B and C side by side at the same scale. **R42Notes:** what each changes.
+
+**Differs from the build:** A changes the top of each view (a hero with the still and the title); B the cards' headers
+and the tiles; C the ground, the type colour and the row density. The sidebar, the top bar, the lists, the type and
+the one accent stay in all three. Nothing is built until Shombith picks.
