@@ -12,7 +12,10 @@ any reel can be re-rendered (in Unity too) or re-cut.
 Runs where Amoebius builds (Gbox; a cloud session needs the .NET 10 SDK hosts allowed).
 
     python Tools/Build/highlights/render_reel.py --moments moments.json --flights FLIGHTS --out OUT \
-        [--count 6] [--player PATH_TO_CosmicShore(.exe)] [--size 1280x720]
+        [--count 6] [--player PATH_TO_CosmicShore(.exe)] [--size 1280x720] [--game OTHER_CHECKOUT]
+
+--game films with a player built in another checkout (when this one's Amoebius does not build): its player,
+its assets (COSMIC_SHORE_PROJECT) and its enums; moments in modes or hulls that checkout lacks are skipped.
 """
 from __future__ import annotations
 
@@ -37,11 +40,11 @@ PLAYER_PROJECT = os.path.join(REPO, "Port", "src", "CosmicShore.Player")
 DIRECTOR = "[ReplayMatch]"
 
 
-def pick(moments, count):
+def pick(moments, count, playable=None):
     """The reel's moments: best first by score, one per flight, no two of the same lead type in a row, the best last."""
     chosen, flights = [], set()
     for m in moments:
-        if m["flight"] in flights:
+        if m["flight"] in flights or (playable and not playable(m)):
             continue
         lead = m["events"][0]["type"]
         if chosen and chosen[-1]["events"][0]["type"] == lead and len(moments) > count * 3:
@@ -53,17 +56,17 @@ def pick(moments, count):
     return chosen[1:][::-1] + chosen[:1] if len(chosen) > 1 else chosen  # weakest first, the best moment last
 
 
-def player_exe(arg):
+def player_exe(arg, project=PLAYER_PROJECT, built=False):
     if arg:
         return arg
-    for cfg in ("Debug",):
-        for name in ("CosmicShore.exe", "CosmicShore"):
-            p = os.path.join(PLAYER_PROJECT, "bin", cfg, "net10.0", name)
-            if os.path.exists(p):
-                return p
-    subprocess.run(["dotnet", "build", PLAYER_PROJECT, "-c", "Debug", "-v", "q", "-nologo"], check=True)
-    return player_exe(None) if any(os.path.exists(os.path.join(PLAYER_PROJECT, "bin", "Debug", "net10.0", n))
-                                   for n in ("CosmicShore.exe", "CosmicShore")) else sys.exit("no player build")
+    for name in ("CosmicShore.exe", "CosmicShore"):
+        p = os.path.join(project, "bin", "Debug", "net10.0", name)
+        if os.path.exists(p):
+            return p
+    if built:
+        sys.exit("no player build")
+    subprocess.run(["dotnet", "build", project, "-c", "Debug", "-v", "q", "-nologo"], check=True)
+    return player_exe(None, project, True)
 
 
 def replay_clock(p):
@@ -72,18 +75,20 @@ def replay_clock(p):
     return float(m.group(1)) if m else None
 
 
-def film_moment(exe, m, flights_root, work, recordings, port, size, every):
+def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=None, slow=0.4):
     flight_path = m["path"] if os.path.exists(m["path"]) else next(iter(glob.glob(os.path.join(flights_root, "**", m["flight"]), recursive=True)), None)
     if not flight_path:
         raise SystemExit(f"flight {m['flight']} not found under {flights_root}")
     shutil.rmtree(recordings, ignore_errors=True)
     os.makedirs(recordings, exist_ok=True)
-    flight_to_replay.convert_file(flight_path, recordings)
+    flight_to_replay.convert_file(flight_path, recordings, game)
 
     shots = os.path.join(work, "frames")
     shutil.rmtree(shots, ignore_errors=True)
     os.makedirs(shots)
     env = dict(os.environ, COSMIC_SHORE_PROFILE="reels", COSMIC_SHORE_NET="off", COSMIC_SHORE_AUDIO="off")
+    if game:
+        env["COSMIC_SHORE_PROJECT"] = game
     log = open(os.path.join(work, "player.log"), "w")
     proc = subprocess.Popen([exe, "--frames", "100000000", "--render-from", "2000000000", "--size", size,
                              "--control-port", str(port)], env=env, stdout=log, stderr=subprocess.STDOUT)
@@ -107,12 +112,17 @@ def film_moment(exe, m, flights_root, work, recordings, port, size, every):
             raise SystemExit("the replay never started (no ReplayMatchDirector): see player.log")
         p.do("key F7")  # the development build's diagnostics overlay off
         target = max(0.0, m["start"])
-        if clock < target - 1.0:
+        if clock < target - 2.5:
             p.do("timescale 8")
-            while (clock or 0) < target - 0.5:
+            while (clock or 0) < target - 2.0:  # 10 frames at 8x is 1.3 s of race: stop early, never past the start
                 p.wait(10)
                 clock = replay_clock(p) or clock
-            p.do("timescale 1")
+        # each picture costs ~5 game frames in control round-trips, so film in slow motion; the replay clock beside
+        # every frame puts it back to true speed (0.4 gives about 30 pictures a game second instead of 12)
+        p.do(f"timescale {slow}")
+        while (clock or 0) < target:
+            p.wait(1)
+            clock = replay_clock(p) or clock
         n = 0
         while True:
             p.wait(every)
@@ -143,10 +153,16 @@ def film_moment(exe, m, flights_root, work, recordings, port, size, every):
     clip = os.path.join(work, "clip.mp4")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst, "-r", "30",
                     "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", clip], check=True)
-    return clip, rows
+    return clip, rows, rows[-1][1] - rows[0][1] + (rows[-1][1] - rows[-2][1])
+
+
+def _commit(repo):
+    r = subprocess.run(["git", "-C", repo, "rev-parse", "--short=10", "HEAD"], capture_output=True, text=True)
+    return r.stdout.strip() or None
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # the console's replies carry symbols a cp1252 console cannot print
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--moments", required=True)
     ap.add_argument("--flights", required=True)
@@ -156,23 +172,29 @@ def main():
     ap.add_argument("--recordings", required=True,
                     help="the 'reels' profile's Recordings folder (where the player's ReplayStore looks; see player.log)")
     ap.add_argument("--size", default="1280x720")
-    ap.add_argument("--every", type=int, default=2, help="game frames between pictures (2 = 30 fps)")
+    ap.add_argument("--every", type=int, default=1, help="game frames to wait between pictures (on top of the control round-trips)")
     ap.add_argument("--port", type=int, default=47831)
     ap.add_argument("--name", default="reel")
+    ap.add_argument("--slow", type=float, default=0.4, help="the timescale while filming (true speed is restored from the clock)")
+    ap.add_argument("--game", help="the checkout the player was built from, when not this one")
     a = ap.parse_args()
+    game = os.path.abspath(a.game) if a.game else None
 
     doc = json.load(open(a.moments))
-    chosen = pick(doc.get("all") or doc["top"], a.count)
-    exe = player_exe(a.player)
+    modes, hulls, _ = flight_to_replay.enums(game)
+    chosen = pick(doc.get("all") or doc["top"], a.count,
+                  lambda m: m["mode"] in modes and m["hull"] in hulls)
+    exe = player_exe(a.player, os.path.join(game, "Port", "src", "CosmicShore.Player") if game else PLAYER_PROJECT)
     os.makedirs(a.out, exist_ok=True)
-    clips, cuts = [], []
+    clips, cuts, durs = [], [], []
     for i, m in enumerate(chosen):
         work = os.path.join(a.out, f"{a.name}_m{i:02d}")
         os.makedirs(work, exist_ok=True)
         print(f"[{i + 1}/{len(chosen)}] {m['mode']} {m['hull']} {m['pilot']} {m['start']}-{m['end']} s: "
               + ", ".join(e["type"] for e in m["events"]))
-        clip, rows = film_moment(exe, m, a.flights, work, a.recordings, a.port, a.size, a.every)
+        clip, rows, dur = film_moment(exe, m, a.flights, work, a.recordings, a.port, a.size, a.every, game, a.slow)
         clips.append(clip)
+        durs.append(dur)
         cuts.append({"index": i, "flight": m["flight"], "pilot": m["pilot"], "mode": m["mode"], "hull": m["hull"],
                      "start": m["start"], "peak": m["peak"], "end": m["end"], "shot": "chase (replay default)",
                      "events": m["events"], "features": m["features"], "score": m["score"],
@@ -182,8 +204,6 @@ def main():
     if len(clips) == 1:
         shutil.copy(clips[0], reel)
     else:
-        durs = [float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", c],
-                                     capture_output=True, text=True).stdout.strip()) for c in clips]
         fade, inputs, chain, last, off = 0.4, [], [], "[0:v]", 0.0
         for c in clips:
             inputs += ["-i", c]
@@ -200,7 +220,8 @@ def main():
             t += durs[i] - (fade if i < len(cuts) - 1 else 0)
             c["reel_end"] = round(t, 2)
     json.dump({"schema": "cosmic-shore.reel/1", "reel": os.path.basename(reel), "renderer": "amoebius",
-               "weights": doc.get("weights"), "moments": cuts}, open(os.path.join(a.out, f"{a.name}.json"), "w"), indent=1)
+               "weights": doc.get("weights"),
+               "player_commit": _commit(game or REPO), "moments": cuts}, open(os.path.join(a.out, f"{a.name}.json"), "w"), indent=1)
     print(f"wrote {reel}")
 
 

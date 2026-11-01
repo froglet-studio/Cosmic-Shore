@@ -38,18 +38,19 @@ GAMEPAD = 1  # InputDeviceType.Gamepad: desktop presses resolve against the pad 
 PLAYABLE_DOMAINS = [1, 2, 4]  # Jade, Ruby, Gold (Domains.cs: Blue is the neutral sentinel)
 
 
-def _enum(path, name):
+def _enum(path, name, repo=None):
     """Read `Name = N` members of a C# enum off disk, so a renumbering is never copied by hand."""
-    src = open(os.path.join(REPO, path), encoding="utf-8").read()
+    src = open(os.path.join(repo or REPO, path), encoding="utf-8").read()
     body = src[src.index(f"enum {name}"):]
     body = body[body.index("{") + 1: body.index("}")]
     return {m.group(1): int(m.group(2)) for m in re.finditer(r"^\s*(\w+)\s*=\s*(-?\d+)", body, re.M)}
 
 
-def enums():
-    return (_enum("Assets/_Scripts/Data/Enums/GameModes.cs", "GameModes"),
-            _enum("Assets/_Scripts/Data/Enums/VesselClassType.cs", "VesselClassType"),
-            _enum("Assets/_Scripts/Data/Enums/Domains.cs", "Domains"))
+def enums(repo=None):
+    """The game's enums; `repo` is the checkout the player was built from when it is not this one."""
+    return (_enum("Assets/_Scripts/Data/Enums/GameModes.cs", "GameModes", repo),
+            _enum("Assets/_Scripts/Data/Enums/VesselClassType.cs", "VesselClassType", repo),
+            _enum("Assets/_Scripts/Data/Enums/Domains.cs", "Domains", repo))
 
 
 # ---- C# BinaryWriter encoding --------------------------------------------------------------------
@@ -203,9 +204,9 @@ def _ticks(date_text):
     return int((d - dt.datetime(1, 1, 1)).total_seconds() * 10_000_000)
 
 
-def convert_file(path, out_dir):
+def convert_file(path, out_dir, repo=None):
     flight = json.load(open(path, encoding="utf-8"))
-    modes, hulls, domains = enums()
+    modes, hulls, domains = enums(repo)
     tracks, actions, duration = convert(flight, modes, hulls, domains)
     ticks = _ticks(flight.get("date", ""))
     base = os.path.splitext(os.path.basename(path))[0].replace("flight_", "Flight_")

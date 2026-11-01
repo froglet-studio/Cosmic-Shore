@@ -48,6 +48,13 @@ Every script has `--self-test`. `render_reel.py` needs the Amoebius Debug player
 lives in the DiagnosticsHUD registry, which Release strips) and ffmpeg; a cloud session can build Amoebius only
 when its network allows the .NET download hosts, so reels are rendered on Gbox, in a worktree of their own.
 
+When this checkout's Amoebius does not build (2026-11-01: the game had run ahead of the port engine since
+2026-10-28), build the player in a second worktree at the last commit that builds and still has
+`ReplayMatchDirector` (aeee5ad6b1 then), and pass `--game <that worktree>`: its player, assets and enums are used,
+and moments in modes or hulls it lacks are skipped. Each picture costs about 5 game frames of control round-trips,
+so filming runs at `--slow 0.4` (about 30 pictures a game second); the replay clock puts the clip back at true speed.
+The player profile `reels` keeps its data in `%LOCALAPPDATA%/CosmicShore-reels` (Recordings under it).
+
 ## Rules
 
 - **Reels rendered by Amoebius are for learning what to show.** Anything public is re-rendered from the same

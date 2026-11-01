@@ -61,7 +61,9 @@ class Flight:
         self.name = os.path.basename(path)
         self.mode = data.get("mode", "?")
         self.hull = data.get("hull", "?")
-        self.pilot = path.replace("\\", "/").split("/reports/")[-1].split("/")[0] if "/reports/" in path.replace("\\", "/") else "?"
+        p = path.replace("\\", "/")
+        # bugledger reports/<user>/flights/..., or --fetch-bugledger's DEST/<user>/flight_*.json
+        self.pilot = p.split("/reports/")[-1].split("/")[0] if "/reports/" in p else (p.split("/")[-2] if "/" in p else "?")
         self.finished = bool(data.get("finished"))
         self.hz = float(data.get("sampleHz") or 10)
         cols = data["columns"]
