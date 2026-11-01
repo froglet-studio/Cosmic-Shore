@@ -1,13 +1,12 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+// Dev tool: compiled only into the editor and development builds (as PilotControl, which it drives).
 using System.Collections.Generic;
 using CosmicShore.Data;
-using CosmicShore.Editor.Froglet;
-using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using UnityEditor;
 using UnityEngine;
 
-namespace CosmicShore.Editor.AI
+namespace CosmicShore.Gameplay
 {
     /// <summary>One pilot the Third Eye can watch: a live vessel in the running game.</summary>
     public sealed class ThirdEyePilot
@@ -197,7 +196,9 @@ namespace CosmicShore.Editor.AI
                    $"lift {course.SkimLift:F1} u, direct {(driver.AllowDirectFlight ? (driver.DirectFlight ? "ON" : "armed") : "off")}";
         }
 
-        public static ThirdEyeThinking Read(ThirdEyePilot pilot)
+        /// <param name="text">False skips every string (state, detail, skim): the Game-view aim lines need only the
+        /// points and the colour, so drawing them every frame formats nothing.</param>
+        public static ThirdEyeThinking Read(ThirdEyePilot pilot, bool text = true)
         {
             var t = new ThirdEyeThinking();
             if (pilot == null || !pilot.Alive) return t;
@@ -218,28 +219,29 @@ namespace CosmicShore.Editor.AI
                 if (handicap != null && handicap.Misjudging)
                 {
                     t.State = "Misjudged crystal";
-                    t.Color = FrogletEditorPalette.Ruby;
+                    t.Color = ThirdEyeColors.Ruby;
                 }
                 else if (handicap != null && handicap.Unnoticed)
                 {
                     t.State = "Not noticed yet";
-                    t.Color = FrogletEditorPalette.Gold;
+                    t.Color = ThirdEyeColors.Gold;
                 }
                 else if (d.Mode == SkimRaceDriver.Mode.Recovering)
                 {
                     t.State = "Recovering";
-                    t.Color = FrogletEditorPalette.Violet;
+                    t.Color = ThirdEyeColors.Violet;
                 }
                 else
                 {
                     t.State = d.Mode.ToString();
-                    t.Color = FrogletEditorPalette.Lime;
+                    t.Color = ThirdEyeColors.Lime;
                 }
 
                 string level = handicap == null || handicap.Level.IsNone
                     ? "no handicap (Hard)"
                     : $"reaction {handicap.Level.ReactionSeconds:F2} s, mistake chance {handicap.Level.MistakeChance:P1}, mistakes {handicap.Mistakes}";
                 string recovery = string.IsNullOrEmpty(d.LastRecoveryReason) ? "" : $" (last: {d.LastRecoveryReason})";
+                if (!text) return t;
                 t.Detail = $"heading error {d.HeadingErrorDegrees:F0} deg, command error {d.CommandErrorDegrees:F0} deg, " +
                            $"recoveries {d.Recoveries}{recovery}" +
                            (d.CrystalPull ? ", crystal pull" : "") + (d.Unreachable ? ", UNREACHABLE" : "") +
@@ -257,10 +259,17 @@ namespace CosmicShore.Editor.AI
                 t.Aim = ai.TargetPosition;
                 t.HasTarget = o.Has;
                 t.Target = o.Objective;
-                t.State = ai.IsBreakingOrbit ? "Breaking orbit" : o.Has ? PhaseText(o, pilot) : "Seeking";
-                t.Color = ai.IsBreakingOrbit ? FrogletEditorPalette.Violet
-                    : o.Has && o.Mistake ? FrogletEditorPalette.Ruby
-                    : FrogletEditorPalette.Azure;
+                if (text) t.State = ai.IsBreakingOrbit ? "Breaking orbit" : o.Has ? PhaseText(o, pilot) : "Seeking";
+                t.Color = ai.IsBreakingOrbit ? ThirdEyeColors.Violet
+                    : o.Has && o.Mistake ? ThirdEyeColors.Ruby
+                    : ThirdEyeColors.Azure;
+                if (!text)
+                {
+                    var b = ai.Belief;
+                    if (b != null && b.Misjudging) t.Color = ThirdEyeColors.Ruby;
+                    else if (b != null && b.Unnoticed) t.Color = ThirdEyeColors.Gold;
+                    return t;
+                }
                 string lap = o.Has && o.Lap > 0 ? $"lap {o.Lap}, " : "";
                 string objective = o.Has ? $"{Vector3.Distance(pilot.Hull.position, o.Objective):F0} u to it, " : "";
                 string boost = ai.BoostStatus;
@@ -274,12 +283,12 @@ namespace CosmicShore.Editor.AI
                     if (belief.Misjudging)
                     {
                         t.State = "Misjudged target";
-                        t.Color = FrogletEditorPalette.Ruby;
+                        t.Color = ThirdEyeColors.Ruby;
                     }
                     else if (belief.Unnoticed)
                     {
                         t.State = "Not noticed yet";
-                        t.Color = FrogletEditorPalette.Gold;
+                        t.Color = ThirdEyeColors.Gold;
                     }
                     t.Detail += $" | reaction {belief.Level.ReactionSeconds:F2} s, mistake chance " +
                                 $"{belief.Level.MistakeChance:P1}, mistakes {belief.Mistakes}";
@@ -288,7 +297,7 @@ namespace CosmicShore.Editor.AI
             return t;
         }
 
-        /// <summary>The mode's report in words. Editor-side, so the game never formats a string per frame.</summary>
+        /// <summary>The mode's report in words. Only formatted while the Third Eye panel shows it, never by the game.</summary>
         static string PhaseText(in AIPilot.ObjectiveReport o, ThirdEyePilot pilot)
         {
             string ring = o.Ring >= 0 ? $" ring {o.Ring + 1}" : "";
@@ -305,27 +314,36 @@ namespace CosmicShore.Editor.AI
             };
         }
 
-        const string GameColorSetPath = "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset";
-        static SO_ColorSet s_gameColors;
-
         /// <summary>
-        /// A domain's colour as the GAME shows it (the live <c>OriginalColorSetSO</c>'s signal colour, the
-        /// one the studios read through <c>studio-domains.js</c>), so a label matches the pilot's trail.
-        /// Game Ruby is magenta, not the editor palette's red. Falls back to the editor palette only if the
-        /// asset is missing.
+        /// A domain's colour as the GAME shows it (the live theme's signal colour, <see cref="PrismLit.DomainTint"/>),
+        /// so a label matches the pilot's trail. Falls back to fixed colours when no theme is loaded (a tool scene).
         /// </summary>
         public static Color DomainColor(ThirdEyePilot pilot)
         {
-            if (pilot == null || !pilot.HasDomain) return FrogletEditorPalette.Muted;
-            if (!s_gameColors) s_gameColors = AssetDatabase.LoadAssetAtPath<SO_ColorSet>(GameColorSetPath);
-            if (s_gameColors) return s_gameColors.GetDomainSignalColor(pilot.Domain);
+            if (pilot == null || !pilot.HasDomain) return ThirdEyeColors.Muted;
+            if (PrismLit.ColorSet != null) return PrismLit.ColorSet.GetDomainSignalColor(pilot.Domain);
             return pilot.Domain switch
             {
-                Domains.Jade => FrogletEditorPalette.Jade,
-                Domains.Ruby => FrogletEditorPalette.Magenta,
-                Domains.Gold => FrogletEditorPalette.Gold,
-                _ => FrogletEditorPalette.Azure,
+                Domains.Jade => ThirdEyeColors.Jade,
+                Domains.Ruby => ThirdEyeColors.Magenta,
+                Domains.Gold => ThirdEyeColors.Gold,
+                _ => ThirdEyeColors.Azure,
             };
         }
     }
+
+    /// <summary>The Third Eye's accent colours (the Froglet editor palette's values, usable in a player build).</summary>
+    public static class ThirdEyeColors
+    {
+        public static readonly Color Jade = new(0.16f, 0.78f, 0.56f);
+        public static readonly Color Ruby = new(0.93f, 0.27f, 0.38f);
+        public static readonly Color Gold = new(0.98f, 0.75f, 0.18f);
+        public static readonly Color Azure = new(0.24f, 0.60f, 0.95f);
+        public static readonly Color Violet = new(0.62f, 0.42f, 0.94f);
+        public static readonly Color Cyan = new(0.16f, 0.78f, 0.82f);
+        public static readonly Color Magenta = new(0.90f, 0.36f, 0.71f);
+        public static readonly Color Lime = new(0.62f, 0.83f, 0.24f);
+        public static readonly Color Muted = new(0.55f, 0.57f, 0.62f);
+    }
 }
+#endif

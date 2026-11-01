@@ -471,30 +471,32 @@ namespace CosmicShore.Gameplay
                 $" aimErr={st.D.AimErrorDegrees:F1} result={result} pilot={p.PlayerNetId}");
         }
 
-        /// <summary>The sense view (the controller's OnDrawGizmos while aiSenseDebug): per pilot the sense tube (green
-        /// clear / yellow blocked), the emergency sweep (cyan clear / red hit, magenta to the hit) and the dodge (white).</summary>
-        public void DrawSenseGizmos()
+        /// <summary>The sense view (aiSenseDebug: the controller's OnDrawGizmos, or the in-game Third Eye's "AI sense"
+        /// overlay): per pilot the sense tube (green clear / yellow blocked), the emergency sweep (cyan clear / red hit,
+        /// magenta to the hit) and the dodge (white). Drawn into <paramref name="sink"/> - Gizmos or the Game view.</summary>
+        public void DrawSenseGizmos(IDebugLineSink sink)
         {
             foreach (var kv in _pilots)
             {
                 var st = kv.Value;
-                Gizmos.color = st.SenseBlocked ? Color.yellow : Color.green;
-                Gizmos.DrawLine(st.SenseFrom, st.SenseTo);
-                Gizmos.DrawWireSphere(st.SenseTo, st.SenseRadius);
-                Gizmos.color = st.SweepHitAny ? Color.red : Color.cyan;
-                Gizmos.DrawLine(st.SweepFrom, st.SweepTo);
-                Gizmos.DrawWireSphere(st.SweepTo, st.SweepRadius);
-                if (st.SweepHitAny) { Gizmos.color = Color.magenta; Gizmos.DrawWireSphere(st.SweepHit, 3f); }
-                if (st.EmergOn) { Gizmos.color = Color.white; Gizmos.DrawLine(st.SweepFrom, st.SweepFrom + st.EmergSteer * EmergSteerDistance); }
-                if (st.Avoid == SwitchbackAvoidAction.Avoid) { Gizmos.color = new Color(1f, 0.6f, 0f); Gizmos.DrawLine(st.SweepFrom, st.SweepFrom + st.AvoidAim); }
+                var tube = st.SenseBlocked ? Color.yellow : Color.green;
+                sink.Line(st.SenseFrom, st.SenseTo, tube);
+                sink.WireSphere(st.SenseTo, st.SenseRadius, tube);
+                var sweep = st.SweepHitAny ? Color.red : Color.cyan;
+                sink.Line(st.SweepFrom, st.SweepTo, sweep);
+                sink.WireSphere(st.SweepTo, st.SweepRadius, sweep);
+                if (st.SweepHitAny) sink.WireSphere(st.SweepHit, 3f, Color.magenta);
+                if (st.EmergOn) sink.Line(st.SweepFrom, st.SweepFrom + st.EmergSteer * EmergSteerDistance, Color.white);
+                if (st.Avoid == SwitchbackAvoidAction.Avoid) sink.Line(st.SweepFrom, st.SweepFrom + st.AvoidAim, new Color(1f, 0.6f, 0f));
             }
         }
 
         static string Fmt(float s) => float.IsInfinity(s) ? "-" : s.ToString("F2");
 
-        /// <summary>Editor gizmos (the controller's OnDrawGizmosSelected): per pilot planning a blast, the line to its
-        /// key, the fire line (yellow), the gape axis (cyan) and the aim point.</summary>
-        public void DrawGizmos()
+        /// <summary>The plan view (aiPlanGizmos: the controller's OnDrawGizmosSelected, or the in-game Third Eye's
+        /// "AI plan" overlay): per pilot planning a blast, the line to its key, the fire line (yellow), the gape axis
+        /// (cyan) and the aim point; a threading pilot's line to the ring it threads.</summary>
+        public void DrawGizmos(IDebugLineSink sink)
         {
             foreach (var kv in _pilots)
             {
@@ -503,19 +505,17 @@ namespace CosmicShore.Gameplay
                 if (tf == null) continue;
                 if (d.Plan != SwitchbackAIPlan.Blast)
                 {
-                    Gizmos.color = d.Plan == SwitchbackAIPlan.Thread ? new Color(1f, 0.5f, 0f) : Color.green;
                     if (kv.Value.Threaded >= 0 && kv.Value.Threaded < _raceLength())
-                        Gizmos.DrawLine(tf.position, _course[_ringIndexFor(kv.Value.Threaded)].Position);
+                        sink.Line(tf.position, _course[_ringIndexFor(kv.Value.Threaded)].Position,
+                                  d.Plan == SwitchbackAIPlan.Thread ? new Color(1f, 0.5f, 0f) : Color.green);
                     continue;
                 }
-                Gizmos.color = kv.Value.Phase == Phase.Done ? Color.gray : Color.magenta;
-                Gizmos.DrawLine(tf.position, d.Key);
-                Gizmos.DrawWireSphere(d.Key, 6f);
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawLine(d.Key, d.AimPoint);
-                Gizmos.DrawWireSphere(d.AimPoint, 8f);
-                Gizmos.color = Color.cyan;
-                Gizmos.DrawLine(d.Key - d.FireUp * 40f, d.Key + d.FireUp * 40f);
+                var keyCol = kv.Value.Phase == Phase.Done ? Color.gray : Color.magenta;
+                sink.Line(tf.position, d.Key, keyCol);
+                sink.WireSphere(d.Key, 6f, keyCol);
+                sink.Line(d.Key, d.AimPoint, Color.yellow);
+                sink.WireSphere(d.AimPoint, 8f, Color.yellow);
+                sink.Line(d.Key - d.FireUp * 40f, d.Key + d.FireUp * 40f, Color.cyan);
             }
         }
     }

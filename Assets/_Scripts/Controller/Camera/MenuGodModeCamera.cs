@@ -115,13 +115,18 @@ namespace CosmicShore.Gameplay
             _speed = Mathf.Clamp(moveSpeed, moveSpeedRange.x, moveSpeedRange.y);
         }
 
+        /// <summary>The enabled god-mode camera, if any. The in-game Third Eye leaves F2 to it while one exists.</summary>
+        public static MenuGodModeCamera Current { get; private set; }
+
         void OnEnable()
         {
+            Current = this;
             if (menuCamera) menuCamera.InspectionEnded += HandleInspectionEnded;
         }
 
         void OnDisable()
         {
+            if (Current == this) Current = null;
             if (menuCamera)
             {
                 menuCamera.InspectionEnded -= HandleInspectionEnded;

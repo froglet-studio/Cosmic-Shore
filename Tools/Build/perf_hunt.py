@@ -68,9 +68,9 @@ SCENARIOS = [
     # Dolphin's Time Arcade (Yash, 2026-10-30: "make Switchback very performant"). Blast Run is Switchback's only
     # intensity type; I2 is the everyday race, I4 the densest block field with the most clock-driven movers.
     ("Switchback", "Switchback I2", "MinigameSwitchback", 90,
-     "Play Arcade > Switchback (Dolphin), intensity 2, 2 AI, in Release for 90 s, Third Eye closed, fps uncapped: the editor captures it by itself"),
+     "Play Arcade > Switchback (Dolphin), intensity 2, 2 AI, in Release for 90 s, Third Eye off (F2), fps uncapped: the editor captures it by itself"),
     ("SwitchbackBlast", "Switchback Blast Run I4", "MinigameSwitchback", 90,
-     "Play Arcade > Switchback (Dolphin), intensity 4 (densest Blast Run field), 3 AI, in Release for 90 s, Third Eye closed, fps uncapped"),
+     "Play Arcade > Switchback (Dolphin), intensity 4 (densest Blast Run field), 3 AI, in Release for 90 s, Third Eye off (F2), fps uncapped"),
 ]
 REPORT = os.path.join(REPO, "Docs", "Reports", "PERFORMANCE.md")
 # Where performance work happens, in order (Yash, 2026-10-17: "mostly all my performance works will be done in

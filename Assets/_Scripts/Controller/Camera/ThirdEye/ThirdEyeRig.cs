@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Editor.AI
+namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Third Eye's camera math, pure: no scene, no camera, no editor state, so every pose is a

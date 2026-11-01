@@ -153,8 +153,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// (JsonUtility cannot nest arbitrary documents), the text answers as strings.
         /// </summary>
         /// <summary>
-        /// Every enabled camera and what it renders to. A second camera drawing the world (the Third Eye
-        /// window, a preview, a Scene view) renders the scene again that frame, so a capture taken with one
+        /// Every enabled camera and what it renders to. A second camera drawing the world (a mode
+        /// preview, a Scene view; the old editor Third Eye window did, until it moved onto the game camera) renders the scene again that frame, so a capture taken with one
         /// open measures two frames' worth of rendering; the reader warns when it sees more than one.
         /// </summary>
         static string DescribeCameras()

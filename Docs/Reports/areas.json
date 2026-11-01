@@ -51,7 +51,7 @@
       "test": [
         "Pull Ys-bleeding-edge, open Unity, wait for the compile.",
         "Arcade > Regatta, solo, Hard. Tap the AI chips to seat Squirrel, Manta, Rhino, Urchin and Dolphin. Launch.",
-        "FrogletTools > AI > Third Eye, Trails on: each AI reads Approach then Through near a ring; after a missed ring it reads break-off and comes straight back.",
+        "the Third Eye (F2, panel F3), Trails on: each AI reads Approach then Through near a ring; after a missed ring it reads break-off and comes straight back.",
         "Every hull finishes three laps at I1; repeat at I3. Note any hull that does not, and at which ring."
       ]
     },
@@ -183,7 +183,7 @@
         "Performance"
       ],
       "test": [
-        "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, close the Third Eye window.",
+        "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, leave the Third Eye off (F2).",
         "Play, Cell Selector > Lattice, wait 8 minutes.",
         "Keep playing: the editor captures S2 by itself at 8 minutes (the Scene view badge counts down and says Saved).",
         "Stop playing: the capture goes to Claude by itself.",

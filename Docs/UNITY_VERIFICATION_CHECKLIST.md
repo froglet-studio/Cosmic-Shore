@@ -1842,7 +1842,7 @@ removed (now the base rule). `RegattaNoCrystalTargetTests` became `RaceAIWaypoin
 
 **Verify in editor:**
 1. Run `RaceAIWaypointsOnlyTests` (EditMode): both pass.
-2. Play Switchback with AI Dolphins and watch one in FrogletTools > AI > Third Eye: its phase is only Approach / Through
+2. Play Switchback with AI Dolphins and watch one in the Third Eye (F2, panel F3): its phase is only Approach / Through
    ring N (never "Crystal on the way"), and it flies past crystals beside its line.
 3. The same in Breakwater (AI Sparrows) and Headlong.
 
@@ -5357,7 +5357,7 @@ As a guest: an opponent chip shows the (i) and hover name but is not tappable fo
 on the Arcade's Skim Race card, and Medium is lit. The vessel carousel sits under it: hull icon, arrows and SELECT
 VESSEL all inside its frame, nothing touching ADD AI. (2) Press Easy, then Hard. The row lights the
 pick, and the pad's left/right steps it. As a guest the row is greyed and shows the host's pick. (3) Launch Astro
-League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's state flickers amber/ruby and it
+League on Easy with the Third Eye open (the Third Eye (F2, panel F3)). The AI's state flickers amber/ruby and it
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
@@ -5982,7 +5982,7 @@ and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
 
 **Verify in editor:**
 1. Run `RegattaNoCrystalTargetTests` in the Test Runner (edit mode): both tests pass.
-2. Start Regatta, solo, with a Rhino and other hulls on AI seats. Open FrogletTools ▸ AI ▸ Third Eye. No AI readout
+2. Start Regatta, solo, with a Rhino and other hulls on AI seats. Open the Third Eye (F2, panel F3). No AI readout
    ever says "Crystal on the way"; each AI's aim line goes to its ring, or along its rail.
 3. Fly beside an omni crystal near the racing line: no AI bends off its line toward it.
 
@@ -6057,7 +6057,7 @@ and columns; `learn_from_flights.py --self-test` skips `held` rows (negative con
 
 ### 🔴 Third Eye: a You / AI toggle on every pilot (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
-**What landed:** FrogletTools ▸ AI ▸ Third Eye has a **Pilots** panel: each pilot's row has **You | AI**. Your own hull:
+**What landed:** the Third Eye (F2, panel F3) has a **Pilots** panel: each pilot's row has **You | AI**. Your own hull:
 **AI** lets the AI fly it (your input pauses; in a gate race it gets the race steering, `GateRaceController.ArmAIPilot`),
 **You** takes it back. An AI's hull, either team: **You** takes it over and the AI flies the hull you left
 (`PilotControl.TryTakeOver`, the arena pilot swap's exchange without its same-team / AI-teammate rule). Host or solo only.
@@ -6066,7 +6066,7 @@ AI is already holding at the start. `Player.ExecutePilotSwapServer` is the arena
 **Verified without the editor:** `unity_refcompile` (see the commit), the AI-state, logging, using, conditional-compilation
 gates. Nothing has been played.
 **Verify in editor:**
-1. Regatta, solo, Hard, five hulls seated. Open FrogletTools ▸ AI ▸ Third Eye; the Pilots panel lists six rows.
+1. Regatta, solo, Hard, five hulls seated. Open the Third Eye (F2, panel F3); the Pilots panel lists six rows.
 2. On your row press **AI**. Your hull keeps racing: it threads the rings (readout *Approach* / *Through*), your sticks do
    nothing. Press **You**: control comes back, nothing held (no stuck drift or boost).
 3. On a rival AI's row (another domain) press **You**. The gameplay camera and your sticks move to that hull; your old
@@ -6112,7 +6112,7 @@ the session that wrote it. Proved offline: player-dev and editor `unity_refcompi
 
 **Verify in editor:**
 1. Arcade ▸ Regatta, solo, Hard. Tap the AI chips to seat Squirrel, Manta, Rhino, Urchin and Dolphin, then launch.
-2. Open FrogletTools ▸ AI ▸ Third Eye and turn on Trails. Step through each AI with Tab: its trail should pass through every ring.
+2. Open the Third Eye (F2, panel F3) and turn on Trails. Step through each AI with Tab: its trail should pass through every ring.
 3. The readout should read Approach ring N, then Through ring N, with the lap climbing. A cyan ring marks the ring it is after.
 4. **Rhino:** the readout shows "ramping on the straight" on long legs. Speed climbs well past 100 u/s, then it lets go before each ring and still threads it.
 5. **Urchin:** "Heading for its own rail", then "Riding the rail" on its OWN colour at about 300 u/s. It should not crawl at 20 u/s on a rival lane.
@@ -6136,7 +6136,7 @@ the changed files beyond the unfetchable Reflex and Unity.Services.Multiplayer p
 1. Arcade ▸ Regatta, solo, 6 seats over 3 domains. Every AI chip, both teams, steps when you tap it
    (auto → Manta → Dolphin → Rhino → Urchin → Squirrel → …). An opponent chip on auto shows the Squirrel.
 2. Seat Squirrel, Manta, Rhino, Urchin, Dolphin; launch at intensity 1, Hard. Each AI spawns in the hull
-   its chip showed (FrogletTools ▸ AI ▸ Third Eye to watch any of them).
+   its chip showed (the Third Eye (F2, panel F3) to watch any of them).
 3. Note per hull: finished 3 laps or not, place, rings missed, where it got stuck.
 4. With a guest: the guest can still tap only their own team's ally chips.
 
@@ -7790,7 +7790,7 @@ the hull cruised straight, the camera sat at `(0, 6.5, -21)` looking 40 u ahead)
 still squeezes `autopilotHold01` = 0.8, left as shipped until it is flown.
 ### 🔴 Third Eye: watch Play mode from a second camera in its own editor window (`Ys-bleeding-edge`, 2026-10-09) — NOT EDITOR-VERIFIED
 
-**What landed** (`.claude/skills/vessel-ai/SKILL.md` §4.1): **FrogletTools > AI > Third Eye**
+**What landed** (`.claude/skills/vessel-ai/SKILL.md` §4.1): **the Third Eye (F2, panel F3)**
 (`Assets/_Scripts/Editor/AI/ThirdEye*.cs`). A hidden camera of its own renders into the window while you play
 in the Game view. Pick any pilot, then Chase / Follow / Free (Fly or Orbit), the Vessel Studio's cameras.
 *AI thinking* draws each AI's aim (Skim Race pilot: green racing, amber not noticed, red misjudged, violet
@@ -7804,7 +7804,7 @@ Logging, conditional-compilation and using-directive gates pass. `/verify-unity`
 
 **Verify in editor:**
 1. The project compiles; Test Runner > EditMode: `ThirdEyeRigTests` (10) pass.
-2. Open **FrogletTools > AI > Third Eye** and dock it beside the Game view. Out of Play mode it says so.
+2. Open **the Third Eye (F2, panel F3)** and dock it beside the Game view. Out of Play mode it says so.
 3. Arcade ▸ Skim Race, I2, Medium, 1 AI. Play the race yourself in the Game view. Expect the Third Eye to show
    the match from behind YOUR hull (Chase) with the look of the game (bloom, tonemapping, same sky), and the
    Game view to be unaffected (same frame rate feel, same camera).
@@ -15692,7 +15692,7 @@ the dipole, and the path-watching autopilot held its poles while the hull circle
 (`StoatDipoleConfigSO.autopilotMaxOrbitDegrees` = 360) and waits the 2 s interval before the next pair.
 `STOAT_DIPOLE.md` §1. `SweptAround`/`OrbitCapReached` compiled and their tests run under Roslyn; the
 executor edit was checked by reading only.
-1. Watch an AI Stoat in the Third Eye (FrogletTools > AI > Third Eye). When it falls into orbit round its
+1. Watch an AI Stoat in the Third Eye (the Third Eye (F2, panel F3)). When it falls into orbit round its
    own black hole it must come out after at most one lap.
 2. It must still dive THROUGH the sink to the source (a wormhole pass is not counted as orbiting).
 3. Race times should not get worse than the studio's (Hard 49-59 s); if they do, raise the cap to 540.
@@ -19804,3 +19804,23 @@ SwitchbackController in the hierarchy to see the gizmos.
 7. Untick `aiBlastPlanner` and fly once more.
    - **Pass:** there are no `[Switchback AI]` lines, and the AIs detour for keys as before.
 
+
+### 🔴 Third Eye moved into the game scene (`Ys-bleeding-edge`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** the FrogletTools ▸ AI ▸ Third Eye window (a second camera and RenderTexture) is gone. The Third Eye
+now drives the MAIN camera in the Game view, in the editor and development builds only
+(`Assets/_Scripts/Controller/Camera/ThirdEye/`). Refcompile player + editor OK, `ThirdEyeRigTests` unchanged.
+
+1. Play Arcade ▸ Switchback with AI Dolphins. Nothing Third-Eye shows on screen, and the profiler shows no `ThirdEyeHud.OnGUI`.
+2. **F2**: the camera leaves your hull in Free fly. Hold RMB and move the mouse to look; with RMB held, WASD / E / Q fly
+   and Shift is fast; the wheel changes speed. **F2** again: the gameplay camera snaps back behind your hull with the right FOV.
+3. F2, then **C** cycles Chase → Follow → Free, **V** switches Fly ↔ Orbit, **Tab** / `]` / `[` change the pilot, **F** frames it.
+4. **F3** opens the panel. Pilots: set your hull to **AI**; it flies itself; then **You** on an AI Dolphin; you fly it.
+5. **F4** (or Overlays in the panel): aim lines and target rings, trails and labels show in the Game view. Turn on
+   *AI plan (Switchback)* and *AI sense (Switchback)*: the same lines as the scene gizmos now draw in the Game view.
+6. Die or finish while the Third Eye is on (death / end camera): no errors; F2 still works on the new camera.
+7. Pause the editor while driving: you can still fly round the frozen frame.
+8. In the main menu, the god-mode camera keeps F2 for itself (the Third Eye ignores it there).
+9. A release (non-development) player build compiles and has no Third Eye.
+
+**Dropped:** the window's Resolution and clip settings (there's no RenderTexture now), and drag-look in Chase / Follow (use RMB).

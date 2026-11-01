@@ -112,12 +112,42 @@ namespace CosmicShore.Gameplay
 
         void OnDrawGizmosSelected()
         {
-            if (aiPlanGizmos && _blastAI != null) _blastAI.DrawGizmos();
+            if (aiPlanGizmos && _blastAI != null) _blastAI.DrawGizmos(GizmoLineSink.Instance);
         }
 
         void OnDrawGizmos()
         {
-            if (aiSenseDebug && _blastAI != null) _blastAI.DrawSenseGizmos();
+            if (aiSenseDebug && _blastAI != null) _blastAI.DrawSenseGizmos(GizmoLineSink.Instance);
+        }
+
+        // The in-game Third Eye (F3 panel, Overlays) draws the same two views in the Game view. Registering is a list
+        // add; nothing runs unless the overlay is switched on in a dev build, where ThirdEye exists at all.
+        ThirdEyeOverlays.Overlay _planOverlay, _senseOverlay;
+
+        void RegisterThirdEyeOverlays()
+        {
+            if (_planOverlay != null) return;
+            _planOverlay = ThirdEyeOverlays.Register("AI plan (Switchback)",
+                "Each AI's blast plan: line to its key, fire line, gape axis, aim point (server only).",
+                sink => { if (_blastAI != null) _blastAI.DrawGizmos(sink); });
+            _senseOverlay = ThirdEyeOverlays.Register("AI sense (Switchback)",
+                "Each AI's prism sense tube, emergency sweep and dodge. Also turns on aiSenseDebug's lines and logs.",
+                sink => { if (_blastAI != null) _blastAI.DrawSenseGizmos(sink); },
+                on => { aiSenseDebug = on; SwitchbackBlastAI.DebugSense = on; },
+                aiSenseDebug);
+        }
+
+        void UnregisterThirdEyeOverlays()
+        {
+            ThirdEyeOverlays.Unregister(_planOverlay);
+            ThirdEyeOverlays.Unregister(_senseOverlay);
+            _planOverlay = _senseOverlay = null;
+        }
+
+        public override void OnDestroy()
+        {
+            UnregisterThirdEyeOverlays();
+            base.OnDestroy();
         }
 
         protected override RaceCourseSource CreateCourseSource() =>
@@ -184,6 +214,7 @@ namespace CosmicShore.Gameplay
             bool planAI = IsServer && aiBlastPlanner;
             _runtime.Init(gameData, intensity, IsServer ? CourseSeedUsed : 0, _course.Count, () => RaceLength, layout, container,
                           trackAllPrisms: planAI && layout.Stations.Count > 0);
+            RegisterThirdEyeOverlays();
             _blastAI = planAI
                 ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
                                         RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
@@ -226,6 +257,7 @@ namespace CosmicShore.Gameplay
                 _blastLayout = null;
                 _blastAI = null;
             }
+            UnregisterThirdEyeOverlays();
             base.OnNetworkDespawn();
         }
     }
