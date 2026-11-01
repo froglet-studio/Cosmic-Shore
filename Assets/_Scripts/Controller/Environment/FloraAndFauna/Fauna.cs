@@ -1405,10 +1405,36 @@ namespace CosmicShore.Gameplay
         // from the rest of a creature's Update (PERFORMANCE_OPTIMIZATION.md §1, S5).
         static readonly Unity.Profiling.ProfilerMarker s_BodySyncMarker = new("Fauna.BodySync");
 
+        // Far bodies sync at a third of the rate (Switchback perf pass 2026-11-02: 54 bodies, ~0.45 ms/frame). Beyond
+        // FarBodySyncDistance from the view camera a creature's index entry, shell and render matrix are refreshed every
+        // FarBodySyncEvery frames, staggered by instance; at that range a frame or two of lag is under a pixel and the
+        // senses that read the index tick slower than that anyway. Near ones, and any with no camera, sync every frame.
+        const float FarBodySyncDistance = 250f;
+        const int FarBodySyncEvery = 3;
+        static int s_farCheckFrame = -1;
+        static Vector3 s_viewPos;
+        static bool s_hasView;
+
+        bool SkipFarBodySyncThisFrame()
+        {
+            int frame = Time.frameCount;
+            if (s_farCheckFrame != frame)
+            {
+                s_farCheckFrame = frame;
+                var cam = CameraManager.ViewCamera;
+                s_hasView = cam;
+                if (s_hasView) s_viewPos = cam.transform.position;
+            }
+            if (!s_hasView) return false;
+            if ((transform.position - s_viewPos).sqrMagnitude < FarBodySyncDistance * FarBodySyncDistance) return false;
+            return (frame + GetInstanceID()) % FarBodySyncEvery != 0;
+        }
+
         protected void NotifyBodyPrismsMoved()
         {
             var prisms = _bodyPrisms;
             if (prisms == null) return;
+            if (SkipFarBodySyncThisFrame()) return;
             using (s_BodySyncMarker.Auto())
             {
                 for (int i = 0; i < prisms.Length; i++)
