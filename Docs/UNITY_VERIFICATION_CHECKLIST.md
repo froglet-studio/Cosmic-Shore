@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play T1: Google Play Games sign-in on Android (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `PlayGamesSignIn` (mirrors `GameCenterSignIn`), `PlayGamesPlatform` (C#, calls the Java bridge),
+`Assets/Plugins/Android/PlayGamesSignIn.androidlib` (the bridge, its `build.gradle` with the one dependency
+`com.google.android.gms:play-services-games-v2:22.1.0`, and a manifest that removes the library's start-up provider), and
+`PlayGamesAppId` (an Android build step that writes the Play Games project ID into the manifest while the switch is on).
+`PlatformSignIn` now also picks Play Games on Android. `MobileSignInConfig` ships with the switch off and both ids empty.
+
+**Verified without the editor:** the Java bridge compiled against the real `play-services-games-v2` 22.1.0 and
+`play-services-tasks` 18.2.0 classes (a wrong API call planted in it was caught). `unity_refcompile` player and editor 0
+errors; the Android-only C# compiled with its guard forced on, and a planted error there was caught. The device-read gate
+lists the three Java-bridge calls as reviewed exceptions (4 findings without them). **Not checked anywhere:** a Gradle
+build of the `.androidlib` (Unity's Android build), and `PlayGamesAppId` (needs the Android module).
+
+**Test (Android):**
+1. With the switch OFF, make an Android build: it builds, launches and signs in anonymously as before. In the built APK
+   (Android Studio > Analyze APK, or `apkanalyzer manifest print`), `PlayGamesInitProvider` is absent and there is no
+   `com.google.android.gms.games.APP_ID` meta-data.
+2. Set up the Play Console project and the UGS provider (Tools/UGS/README.md), fill both ids, tick the switch, build to a
+   phone signed in to Play Games as a tester: first launch signs in with no screen; the UGS player shows a Google Play
+   Games identity.
+3. Clear the app's data and launch again: the same UGS player id comes back.
+4. An install with an existing anonymous account: after sign-in, the account gains the Play Games identity and keeps its
+   progress.
+5. A phone not signed in to Play Games: the game signs in anonymously, no error dialog.
+
 ### 🔴 Fair play T1 and T3: Game Center sign-in on iOS, server-owned episode tokens (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:**
