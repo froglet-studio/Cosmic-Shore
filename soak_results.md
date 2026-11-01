@@ -58,3 +58,19 @@ The log line is `[Switchback AI] hit pilot=… src=… speed drifting boosting e
 - **Repeat stall hits:** many course hits come in pairs 0.2–0.6 s apart, the second at a speed of 1–35 after the first impact.
 - **Own trail (11):** every one came at a speed of 1–9 and 100–170° off the nose. The ship had already crashed and slowed, then backed into its own fresh trail. These come from crashes, not from the self-trail filter.
 - **Fix written, not yet measured in Unity:** see `soak_SwitchbackBlastAI.fix.diff`. It sizes rods from their closest point, uses the contact point and not the collider centre, pushes off prisms beside the hull, and picks a clear escape direction. The run failed because the disk filled up (125 of 125 GB, "No space left on device").
+
+## Before (committed code bd653b110), real Unity, 3 AI Dolphins, hits summed over the 3 AIs per race
+| Combo | Races | Per-race totals | Course / Mover / Rival / Own (all races) | Mean per race |
+|---|---|---|---|---|
+| I1 D1 | 2 | 33, 36 | 50 / 0 / 8 / 11 | **34.5** |
+| I1 D4 | 2 | 38, 9 | 24 / 0 / 13 / 10 | **23.5** |
+| I3 D4 | 1 (stopped at 420 s) | 34 | 18 / 0 / 5 / 11 | **34** |
+| I3 D1 | 1 (Unity crashed at ~347 s) | ~60 (per-hit log) | — | **~60** |
+
+## After: side-swipe fix (real Unity, I1 D1, 2 races per row)
+| Version | Course | Mover | Rival | Own | Total (2 races) | Mean per race | vs before 34.5 |
+|---|---|---|---|---|---|---|---|
+| fix 1: closest-point rods, contact-point escape, clear-escape search, beside-hull push | 76 | 0 | 10 | 16 | 102 | **51.0** | worse |
+| fix 2: fix 1 without the beside-hull push | 39 | 0 | 18 | 20 | 77 | **38.5** | worse |
+
+In fix 1's per-hit log, 21 of 76 course hits came at a speed under 30. The beside-hull push fired the whole time a ship threaded an eye, so ships stalled and bounced. Fix 2 cut course hits from 50 to 39 (−22%), but rival and own-trail hits rose, so the total still went up. **Neither fix is applied to the game code.** I stopped after I1 D1 and did not run I1 D4, I3 D1 or I3 D4, because both versions were already worse there. Fix 2's source is kept in `soak_SwitchbackBlastAI.fix2.cs.txt` for the next attempt. Its lead: keep fix 2's course-prism changes and look at why own-trail and rival hits rise when the escape direction changes.
