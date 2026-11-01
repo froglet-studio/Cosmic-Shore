@@ -74,6 +74,14 @@ namespace CosmicShore.Gameplay
         public const float FIRST_POLL_AFTER_JOIN_SECONDS = 2f;
 
         /// <summary>
+        /// Seconds from that first fire to a second one. Two players starting together both create a lobby;
+        /// the first converge can run before the other's lobby is queryable (UGS's query index lags a
+        /// write), so the split used to wait a whole <see cref="SAFETY_POLL_SECONDS"/> to heal: a friend
+        /// who just logged in stayed invisible. One extra read per join.
+        /// </summary>
+        public const float FOLLOW_UP_POLL_AFTER_JOIN_SECONDS = 5f;
+
+        /// <summary>
         /// Fraction by which the interval is randomised, per fire (Docs/PresenceSystem/TODOS.md TODO-P3).
         /// Without it every client in a lobby of up to 100 polls on the same period, so their reads and
         /// the property writes behind them arrive in clusters - which is what the SDK's

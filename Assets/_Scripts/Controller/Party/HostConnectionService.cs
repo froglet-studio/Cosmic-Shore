@@ -217,6 +217,12 @@ namespace CosmicShore.Gameplay
         // list's strikes live here; the party list's live in PartyMemberService. The departure sets are
         // per-diff scratch, filled from each service's push.
         private readonly AbsenceStrikes   _onlineAbsences   = new();
+
+        /// <summary>A presence-lobby join is waiting for its second converge (see ApplyPostLobbyJoinState).</summary>
+        private bool _followUpPollPending;
+
+        /// <summary><c>Time.realtimeSinceStartup</c> of the last safety poll fired (0 before the first). Diagnostics.</summary>
+        public float LastSafetyPollAtRealtime { get; private set; }
         private readonly HashSet<string>  _onlineDepartures = new();
         private readonly HashSet<string>  _partyDepartures  = new();
         private bool   _partyLeaveSubscribed;
@@ -544,7 +550,16 @@ namespace CosmicShore.Gameplay
             // 10 s tick because the menu's 1.5 s one was too busy for it; at 20 s one cadence serves both
             // (in a match it keeps "in game", who is online and the outgoing invites current).
             if (_scheduler.ShouldFireNow(Time.unscaledDeltaTime))
+            {
+                LastSafetyPollAtRealtime = Time.realtimeSinceStartup;
                 RefreshAsync().Forget();
+                if (_followUpPollPending)
+                {
+                    // The join's second converge (FOLLOW_UP_POLL_AFTER_JOIN_SECONDS), then the normal cadence.
+                    _followUpPollPending = false;
+                    _scheduler.FireAfter(LobbyRefreshScheduler.FOLLOW_UP_POLL_AFTER_JOIN_SECONDS);
+                }
+            }
         }
 
         async void OnDestroy()
@@ -2626,6 +2641,11 @@ namespace CosmicShore.Gameplay
             // The join raises no push for the players already in the lobby, and a simultaneous-create
             // split heals in that tick's converge.
             _scheduler.FireAfter(LobbyRefreshScheduler.FIRST_POLL_AFTER_JOIN_SECONDS);
+            _followUpPollPending = true;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[HostConnectionService] In presence lobby {lobby.Id} (host={lobby.IsHost}, players={lobby.Players?.Count ?? 0}); " +
+                $"converge at +{LobbyRefreshScheduler.FIRST_POLL_AFTER_JOIN_SECONDS}s and " +
+                $"+{LobbyRefreshScheduler.FIRST_POLL_AFTER_JOIN_SECONDS + LobbyRefreshScheduler.FOLLOW_UP_POLL_AFTER_JOIN_SECONDS}s.");
 
             _eventBus.RaiseHostConnectionEstablished();
         }
