@@ -685,6 +685,15 @@ own population from the gene registry's defaults; nothing from a run reached the
   rows (2026-10-28 to 10-30, before the next-gate fix) read negative; Update AI is a yes to THAT genome, not to the
   idea. The archive entry's Notes name the unit, the machine, the episodes and the approver.
 
+- **The AI flies where people fly** (Shombith, 2026-11-01, the step after the seed): the seed also carries the
+  **people's lines**, the paths of their five best races of the pair (most rings, then longest; this intensity's
+  first) resampled every 10 units (`linePoints` / `lineStarts`), and every fitness profile now has a third row,
+  **PeopleLine** at weight 0.5 (`author_training_scenarios.py --refresh-profiles` wrote it into all 25 recipe
+  profiles, guids kept): `PeopleLineFitness` samples the pilot's distance to the nearest point of any line every
+  0.25 s and returns minus the mean, so among AIs that score the same the trainer keeps the one that flies where
+  people fly, and a path 40 units off costs 20, under one gate, so the score still decides. With no line loaded
+  (nobody raced the pair, or a run outside Compute) the term is exactly 0. `PeopleLineTests` pins it.
+
 Gates: `people_seed.py --self-test` (two races seed the throttle and boost genes; one race, AI-held samples and two
 presses do not; the pair filter and the trainer's token), `archive_update.py --self-test` (entries round-trip in
 Unity's shape, replace and append, the best epoch wins across automatic and manual runs, only the core four promote),

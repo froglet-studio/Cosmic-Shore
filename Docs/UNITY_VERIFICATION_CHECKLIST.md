@@ -376,6 +376,9 @@ If Play never reaches a match (sign-in, the menu), the run stops after 15 minute
   `unity.log` shows the first population's genomes carrying those values (the AI Training window's population
   view: throttle.base and boost.min_charge equal the seed's, not the registry defaults 0.65 / 0.5). A second run of
   the same unit (a resume) says "not applied: resuming this scenario's own population".
+- [ ] (2026-11-01, where people fly) `PeopleLineTests` pass (Test Runner, edit mode). A Unity run of a pair with
+  people's races: `status.json`'s `people_line` reads "N points from M race(s)" and the AI Training window's fitness
+  breakdown shows a PeopleLine row (a negative number, small against the gates); a pair nobody raced shows 0 there.
 - [ ] (2026-11-01, Update AI) On the console's Vessel AIs page press Update AI for a vessel, say yes as one of the core
   four: `origin/ai` gains a `chore(ai): <Vessel>'s AI from Froglet Compute` commit touching only
   `Assets/_SO_Assets/AI Training/Archive.asset`; pull `ai` into a checkout: Unity imports the asset without a warning,

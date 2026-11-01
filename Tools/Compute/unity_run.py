@@ -189,7 +189,7 @@ def people_seed_file(args, out, quiet=None):
         except Exception:
             pass
         recs = P.records_for(mode, args.vessel or "", token=args.mode, fetch=True)
-        s = P.seed(recs, mode, args.vessel or "")
+        s = P.seed(recs, mode, args.vessel or "", int(args.intensity) if str(args.intensity).isdigit() else None)
         if s is None:
             L.log(f"unity: no people's seed ({len(recs)} race(s) of {args.vessel} in {mode} by people): the registry defaults", quiet)
             _status(out, seed=f"none: {len(recs)} race(s) by people ({P.MIN_FLIGHTS} needed)")

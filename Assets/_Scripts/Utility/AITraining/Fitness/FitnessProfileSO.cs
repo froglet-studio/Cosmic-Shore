@@ -53,6 +53,9 @@ namespace CosmicShore.Utility.AITraining
             PrismsStolen = 21,
             // ScoringMetric.VolumeRemaining: standing volume, a live stock (Tapestry).
             VolumeRemaining = 22,
+            // Where people fly: minus the mean distance (units) from the pilot's path to the people's recorded lines
+            // of this pair (PeopleLine, loaded by Froglet Compute's seed); 0 when no line is loaded.
+            PeopleLine = 23,
         }
 
         [Serializable]

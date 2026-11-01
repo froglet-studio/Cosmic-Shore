@@ -20,3 +20,6 @@ MonoBehaviour:
   - Kind: 10
     Weight: 1
     Label: TimePenalty
+  - Kind: 23
+    Weight: 0.5
+    Label: PeopleLine

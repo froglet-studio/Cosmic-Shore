@@ -28,6 +28,10 @@ GAMEMODES_CS = "Assets/_Scripts/Data/Enums/GameModes.cs"
 VESSELS_CS = "Assets/_Scripts/Data/Enums/VesselClassType.cs"
 ASSETS = "Assets/_SO_Assets/AI Training"
 SCENARIO_SCRIPT = f"{TRAIN}/Runner/TrainingScenarioSO.cs.meta"
+# Where people fly (FitnessComponents.PeopleLineFitness): minus the mean distance in units from the people's recorded
+# lines, 0 when no line is loaded. 0.5 per unit: a path 40 units off the people's costs 20, under one gate (100) or
+# one combat point's weight, so scoring still decides and the line breaks ties (Shombith, 2026-11-01).
+PEOPLE_LINE_WEIGHT = 0.5
 PROFILE_SCRIPT = f"{TRAIN}/Fitness/FitnessProfileSO.cs.meta"
 
 ROW = re.compile(r'new\(GameModes\.(\w+),\s*"(\w+)",\s*"([^"]*)",\s*VesselClassType\.(\w+),\s*(true|false),\s*(\d+),\s*'
@@ -88,7 +92,8 @@ HEADER = ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMono
 
 def profile_yaml(m, row, rec):
     entries = "".join(f"  - Kind: {m['kinds'][k]}\n    Weight: {num(w)}\n    Label: {lb}\n"
-                      for k, w, lb in ((rec["kind"], rec["weight"], rec["label"]), ("TimePenalty", 1, "TimePenalty")))
+                      for k, w, lb in ((rec["kind"], rec["weight"], rec["label"]), ("TimePenalty", 1, "TimePenalty"),
+                                       ("PeopleLine", PEOPLE_LINE_WEIGHT, "PeopleLine")))
     return (HEADER + f"  m_Script: {{fileID: 11500000, guid: {m['profile_script']}, type: 3}}\n"
             f"  m_Name: FitnessProfile_{row['token']}\n  m_EditorClassIdentifier: \n"
             f"  Description: {yq(rec['description'])}\n  Entries:\n" + entries)
@@ -151,16 +156,27 @@ def problems(m, root=ROOT):
             if field(p, "Description") != yq(rec["description"]):
                 bad.append(f"{t}: the profile's Description differs from FitnessProfileSO.MetricRecipes")
             kinds = [int(x) for x in re.findall(r"- Kind: (\d+)", p)]
-            if kinds != [m["kinds"][rec["kind"]], m["kinds"]["TimePenalty"]]:
-                bad.append(f"{t}: the profile's rows are {kinds}, the recipe says {rec['kind']} + TimePenalty")
+            if kinds != [m["kinds"][rec["kind"]], m["kinds"]["TimePenalty"], m["kinds"]["PeopleLine"]]:
+                bad.append(f"{t}: the profile's rows are {kinds}, the recipe says {rec['kind']} + TimePenalty + PeopleLine")
     return bad
 
 
-def write(m, root=ROOT, quiet=False):
-    made = []
+def write(m, root=ROOT, quiet=False, refresh_profiles=False):
+    """Author the missing pairs; with `refresh_profiles`, also rewrite every existing profile's rows from its recipe
+    (the guid and .meta stay, so every scenario's reference holds) when the profile recipe changes, as the PeopleLine
+    row did on 2026-11-01."""
+    made, refreshed = [], []
     for row in m["rows"]:
         sp, pp = paths(row, root)
         if os.path.exists(sp) and os.path.exists(pp):
+            rec = m["recipes"].get(row["mode"])
+            if refresh_profiles and rec is not None:
+                text = profile_yaml(m, row, rec)
+                with open(pp, encoding="utf-8") as fh:
+                    if fh.read() != text:
+                        with open(pp, "w", encoding="utf-8", newline="\n") as out:
+                            out.write(text)
+                        refreshed.append(row["token"])
             continue
         rec = m["recipes"].get(row["mode"])
         if rec is None:
@@ -175,7 +191,8 @@ def write(m, root=ROOT, quiet=False):
                 fh.write(text)
         made.append(row["token"])
     if not quiet:
-        print(f"wrote {len(made)} scenario/profile pair(s)" + (": " + ", ".join(made) if made else ""))
+        print(f"wrote {len(made)} scenario/profile pair(s)" + (": " + ", ".join(made) if made else "")
+              + (f"; refreshed {len(refreshed)} profile(s)" if refreshed else ""))
     return made
 
 
@@ -224,6 +241,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--refresh-profiles", action="store_true", help="rewrite every profile's rows from its recipe (guids kept)")
     a = ap.parse_args()
     if a.self_test:
         bad = self_test()
@@ -231,7 +249,7 @@ def main():
         return 1 if bad else 0
     m = model()
     if not a.check:
-        write(m)
+        write(m, refresh_profiles=a.refresh_profiles)
     bad = problems(m)
     print(f"{len(m['rows'])} catalog rows, {len(m['recipes'])} metric recipes: " + ("ok" if not bad else "PROBLEMS"))
     for b in bad:

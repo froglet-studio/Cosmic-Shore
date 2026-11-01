@@ -60,6 +60,7 @@ namespace CosmicShore.Utility.AITraining.Editor
         const string KeyLedger = "FrogletCompute.Ledger";             // "", "sending", "done": the bug-ledger send after a watched run
         const string KeyLedgerStart = "FrogletCompute.LedgerStart";
         const string KeySeed = "FrogletCompute.Seed";               // what the people's seed gave this run, for status.json
+        const string KeyPeopleLine = "FrogletCompute.PeopleLine";   // the people's lines loaded for the fitness term
         // A watched run records the game's diagnostics (DiagnosticsHUD `diag`: fps, frame times, spikes, draws, memory)
         // for DiagSeconds every DiagEverySeconds, so the performance of a real match lands in Documents/CosmicShore
         // Diagnostics as a perf report, and the bug ledger's "Send to Claude" (BugLedgerSender) carries it with the run's
@@ -165,6 +166,7 @@ namespace CosmicShore.Utility.AITraining.Editor
             control.DisableCameraRendering = !watch;
             control.AutoStartOnPlay = true;
             SessionState.SetString(KeySeed, ApplySeed(state, scenario));
+            SessionState.SetString(KeyPeopleLine, LoadPeopleLine(state));
             if (control.Telemetry != null) control.Telemetry.IsRunning = false;   // a crashed run can leave it on
             SessionState.SetString(KeyReplays, PrepareReplays(outDir));
             SessionState.SetFloat(KeyBest, state.HallOfFameBestFitness);
@@ -297,6 +299,42 @@ namespace CosmicShore.Utility.AITraining.Editor
                 EditorUtility.SetDirty(state);
             }
             return $"{applied} gene(s) from the people's races{(unknown > 0 ? $", {unknown} unknown skipped" : "")}: {SeedNote(path)}";
+        }
+
+        [Serializable]
+        class PeopleLineFile
+        {
+            public List<float> linePoints = new();
+            public List<int> lineStarts = new();
+            public int lineFlights;
+        }
+
+        /// <summary>
+        /// The people's lines from the seed file (linePoints flat x y z, lineStarts) onto the state, for
+        /// PeopleLineFitness; kept across a resume (the line is the fitness's reference, not the population's).
+        /// Cleared when the file has none, so an old line never outlives the races it came from.
+        /// </summary>
+        static string LoadPeopleLine(TrainingSessionStateSO state)
+        {
+            if (state == null) return "none: no state";
+            string path = Arg("-trainSeed");
+            PeopleLineFile f = null;
+            try { if (!string.IsNullOrEmpty(path) && File.Exists(path)) f = JsonUtility.FromJson<PeopleLineFile>(File.ReadAllText(path)); }
+            catch { f = null; }
+            state.PeopleLinePoints.Clear();
+            state.PeopleLineStarts.Clear();
+            if (f == null || f.linePoints == null || f.linePoints.Count < 6)
+            {
+                state.PeopleLineNote = "none";
+                EditorUtility.SetDirty(state);
+                return "none: the seed carries no line";
+            }
+            for (int i = 0; i + 2 < f.linePoints.Count; i += 3)
+                state.PeopleLinePoints.Add(new Vector3(f.linePoints[i], f.linePoints[i + 1], f.linePoints[i + 2]));
+            state.PeopleLineStarts.AddRange(f.lineStarts ?? new List<int>());
+            state.PeopleLineNote = $"{state.PeopleLinePoints.Count} points from {f.lineFlights} race(s)";
+            EditorUtility.SetDirty(state);
+            return state.PeopleLineNote;
         }
 
         /// <summary>The seed's genes by name: JsonUtility round-trips the genome's private lists, this reads them.</summary>
@@ -671,6 +709,7 @@ namespace CosmicShore.Utility.AITraining.Editor
                 .Num("loss", IsFinite(best) ? -best : float.NaN)
                 .Str("diagnostics", SessionState.GetString(KeyDiagNote, ""))
                 .Str("seed", SessionState.GetString(KeySeed, ""))
+                .Str("people_line", SessionState.GetString(KeyPeopleLine, ""))
                 .Num("updated", Now());
             WriteAtomic(Path.Combine(outDir, "status.json"), j.End());
         }
