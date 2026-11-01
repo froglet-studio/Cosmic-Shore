@@ -289,6 +289,24 @@ Serpent Gulag (the Serpent's sniper duel, 2026-10-31, `claude/funny-fermat-9m75d
   target whose MEANING changed (`waystationRingTarget` 15 rings -> `waystationClusterTarget` 5 clusters) instead of
   reusing the old name.
 
+Lantern Run (the Angler's Time race, 2026-11-01, `claude/intelligent-lovelace-ynskrg`, `LANTERNRUN.md`) taught four:
+- **Hang anything a mode places relative to a ring on the ring's AXIS, not on the chord from the previous ring.**
+  `HeadlongCircuit` presents a ring up to ~76 degrees off that chord (`MaxPresentDegrees`), so a "near cluster before
+  the ring, far cluster past it" pair laid on the chord drew a line that crossed the ring's plane up to FOUR mouths off
+  centre at I4 (400 seeds); on `RaceGate.Axis` it threads the mouth by construction. Assert it per leg with a plane
+  crossing (`LanternRunCourse.CrossesPlaneAt`), not by eye.
+- **A pure course test runs in about a second outside Unity**: compile `card_art_harness/UnityShim.cs`,
+  `HeadlongCircuit.cs`, `RaceCourseGeometry.cs`, the course and its `*CourseTests.cs` with csc against a ten-line NUnit
+  stand-in (`[Test]`, the `Assert` members the test uses, a reflection `Main`). Negative-control it by compiling a
+  mutated copy of the course (one constant changed) in place of the real one.
+- **Renaming a hull_time_race mode before it lands is a regenerate, not a sweep**: every guid is derived from the
+  member name, so `git rm` the generated assets, reverse the first commit's registry hunks
+  (`git diff <c>~1 <c> -- <registries> | git apply -R`), `git mv` the sources, rename the tokens, and re-run the
+  generator and `/cardart`. Hand-renaming the assets would keep the old name's guids under the new name.
+- **No `dotnet-sdk-8.0` apt package in some containers**: the tarball from `builds.dotnet.microsoft.com` (e.g.
+  `dotnet/Sdk/8.0.404/dotnet-sdk-8.0.404-linux-x64.tar.gz`) unpacked into `~/.dotnet` is what `unity_refcompile`, the
+  card harness and the course runner look for by default.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```

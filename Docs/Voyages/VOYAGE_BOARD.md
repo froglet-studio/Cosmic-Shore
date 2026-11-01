@@ -49,10 +49,16 @@ closed to every Ark (proposed).
   berths, and its `measure`. Pure C#, no engine type.
 - **`VoyageChart`** (`VoyageChart.cs`): the voyage content's charted locations (each a 3-cell berth) and a job's route
   sailed on the real sea, leg by leg along the lanes `VoyageRules.Route` picks; legs are cached.
-- **The Voyage window's job cards** (`VoyageMapGraphic`): the sea around the places, painted once from the density field
-  and shared by every card; the job's course cell by cell; a corner with the whole galaxy, Sol and where this water is;
-  and under the map the content's `CardCourse` line (`{ly}`, `{years}`, `{minutes}`, `{sea}`, `{intensity}`), e.g.
-  "1,500 LY THROUGH WATER - LIGHT TAKES 1,500 YEARS". Uncharted content draws the old flat chart.
+- **The Voyage window** (Garrett, 2026-11-01: "the map should be visible ... and the voyage cards below that. drilling
+  into a card expands its information and causes the map to focus on that path, but the map remains. on the voyage
+  card players confirm their squad mission difficulty etc."): ONE galaxy map (`VoyageMapGraphic`, stood by
+  `VoyageJobsView` just before the job cards) with the sea around the places, painted from the density field, a corner
+  with the whole galaxy, Sol and where this water is. Each job card is closed by default: route and pilot, title and
+  the course line `CardCourse` (`{ly}`, `{years}`, `{minutes}`, `{sea}`, `{intensity}`), e.g. "1,500 LY THROUGH WATER -
+  LIGHT TAKES 1,500 YEARS". OPEN (or a press anywhere on the card) expands it to its brief (`CardDetails`, or
+  `CardHomeDetails` for the way home: the mission, the place, the squad's seats, the intensity, the pay, who brought
+  it) with Set sail, and the map frames that job's course cell by cell. One card is open at a time; closing it gives
+  the map back every place. Uncharted content draws the old flat chart.
 - The lanes' `cells` still set how long a leg sails in the Arkway; the card shows the real distance (§5 decision 8).
 
 ## 4. Keeping the board and the game the same

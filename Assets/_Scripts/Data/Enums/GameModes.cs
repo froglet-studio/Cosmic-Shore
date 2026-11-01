@@ -367,6 +367,12 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/BRITTLESTARTIME.md.
         BrittleStarTime = 74,
 
+        // LanternRun (75): the Angler's TIME race - a lapped circuit (the shared HeadlongCircuit solver) where every leg
+        // carries TWO regrowing prism MASS clusters on the ring's axis, one for each of the Angler's two groups: paint the
+        // near cluster and throw one group, paint the far one (past the ring) and throw the other, then dash to each in
+        // turn - you paint your path and zoom along it. See _Scripts/Controller/Arcade/LANTERNRUN.md.
+        LanternRun = 75,
+
         // SerpentGulag (77): the Serpent's CHARGE game, a SNIPER DUEL at range in a 3,600 u cell. Pilots spawn far
         // apart; a field of elemental crystals floats in the middle (Charge shortens the rifle's recovery, so the
         // field is the risk and the reward); intensities 2-4 add sniper nests and barred cell blocks. A snipe (a
@@ -376,7 +382,7 @@ namespace CosmicShore.Data
         SerpentGulag = 77,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 70) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 71) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
