@@ -746,6 +746,53 @@
         "Fly into an omni crystal: a Soliton Network opens round you, sized by your Mass; an AI Meerkat's opens when it takes one.",
         "Burrow Run (the Meerkat's Time mini-game): the AI forms wormholes, slides them and threads its rings."
       ]
+    },
+    "ci": {
+      "title": "CI (GitHub Actions)",
+      "aliases": [
+        "ci",
+        "ci runs",
+        "github actions",
+        "workflows",
+        "bleeding-edge guard",
+        "guard",
+        "unity ci",
+        "amoebius parity ci",
+        "parity ci",
+        "perf-daily",
+        "why is ci red",
+        "ci failing"
+      ],
+      "owner": "Shombith",
+      "people": [
+        "Yash",
+        "Garrett"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "bleeding-edge",
+      "branchNote": "the workflows run from bleeding-edge; the report is measured against a named commit",
+      "summary": "Every GitHub Actions workflow and why it is red: four stale asset generators (Angler, Meerkat, Regatta, Undertow) fail the bleeding-edge guard, Unity CI and every PR; the Amoebius port has never passed parity CI and today does not compile (16 missing Unity APIs), which also fails perf-daily.",
+      "paths": [
+        ".github/workflows",
+        "Tools/CI",
+        "Tools/Build/arcade_mode_lib.py"
+      ],
+      "docs": [
+        "CLAUDE.md",
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/CI.md",
+      "taskAreas": [
+        "CI"
+      ],
+      "test": [
+        "git fetch origin && git checkout --detach origin/bleeding-edge",
+        "Run every Tools/Build/author_*_assets.py --check (Docs/Reports/CI.md section 5); each RED line is a failing gate.",
+        "Read the latest Amoebius parity CI run for the port's compile errors."
+      ]
     }
   }
 }

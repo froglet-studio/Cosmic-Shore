@@ -550,7 +550,13 @@
     "SeaFroth": "FROTH",
     "SeaWater": "WATER",
     "SeaThick": "THICK WATER",
-    "SeaReef": "REEF"
+    "SeaReef": "REEF",
+    "CardOpen": "Open",
+    "CardClose": "Close",
+    "CardDetails": "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}",
+    "CardHomeDetails": "{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}",
+    "CardSquadSeat": "{vessel} ({pilot})",
+    "CardSquadSeparator": ", "
   },
   "toy": {
     "id": "voyage",

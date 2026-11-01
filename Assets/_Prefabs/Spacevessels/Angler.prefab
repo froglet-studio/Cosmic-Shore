@@ -876,7 +876,7 @@ MonoBehaviour:
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 9105512684531825410}
-  boostPolicy: {fileID: 11400000, guid: c691910cb0114ea7aeb572bc51b71a6a, type: 2}
+  boostPolicy: {fileID: 11400000, guid: 14f4fdf5a368ba5fc8ae2d519ea8f001, type: 2}
 --- !u!114 &5500781737155866732
 MonoBehaviour:
   m_ObjectHideFlags: 0

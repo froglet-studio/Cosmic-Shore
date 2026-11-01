@@ -1,6 +1,4 @@
 using System;
-using CosmicShore.Data;
-using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,48 +6,206 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One job on the Voyage window, drawn as a voyage card (<see cref="VoyageJobsView"/> stands one per job on offer):
-    /// the galaxy map in the art's place with the job's course on it, the course and the pilot who brought it, the job's
-    /// title, and Set sail. Every word is the voyage content's (<see cref="VoyageContentSO"/>), never this class's.
+    /// One job on the Voyage window (<see cref="VoyageJobsView"/> stands one per job on offer). Closed, it is the course
+    /// and the pilot who brought it, the job's title and its course line; OPEN expands it in place to the brief, where the
+    /// player confirms the squad, the mission and its intensity and sets sail (Garrett, 2026-11-01: "drilling into a card
+    /// expands its information and causes the map to focus on that path, but the map remains. on the voyage card players
+    /// confirm their squad mission difficulty etc."). The one galaxy map stands beside the cards
+    /// (<see cref="VoyageMapGraphic"/>), so the card carries no art. Every word is the voyage content's
+    /// (<c>VoyageContentSO</c>), never this class's.
     /// </summary>
     public class VoyageJobCard : MonoBehaviour
     {
         [Header("The card")]
-        [Tooltip("The card's art. The galaxy map is drawn over its area, and the art itself is hidden.")]
+        [Tooltip("The card's art. Hidden: the window's one galaxy map stands beside the cards.")]
         [SerializeField] Image art;
         [SerializeField] TMP_Text eyebrowText;
         [SerializeField] TMP_Text titleText;
-        [Tooltip("Set sail on this card's job.")]
+        [Tooltip("Set sail on this card's job. Shown while the card is open.")]
         [SerializeField] Button setSailButton;
 
-        VoyageMapGraphic _map;
-        Action _onSetSail;
+        // The card's parts by their prefab names (MissionView.prefab's Voyage3, a copy of the open voyage card).
+        const string OpenChipName = "Open";
+        const string OpenFillName = "Open/Fill";
+        const string OpenLabelName = "Open/Label";
+        const string ClipName = "Clip";
+        const string FadeName = "Clip/Fade";
+        const string DetailsName = "Details";
+        const string CourseName = "Course";
+
+        // Heights and rows, from the card's foot (its children anchor to the bottom edge).
+        const float ClosedHeight = 176f;
+        const float OpenHeight = 560f;
+        const float Inset = 24f;
+        const float SailFoot = 22f;
+        const float TitleHalf = 31f;
+        const float LineHeight = 24f;
+
+        Button _toggle, _clipToggle;
+        TMP_Text _openLabel, _details, _course;
+        LayoutElement _layout;
+        Action _onSetSail, _onToggle;
+        bool _built;
 
         void Awake()
         {
+            Build();
             if (setSailButton) setSailButton.onClick.AddListener(OnSetSail);
         }
 
         void OnDestroy()
         {
             if (setSailButton) setSailButton.onClick.RemoveListener(OnSetSail);
+            if (_toggle) _toggle.onClick.RemoveListener(OnToggle);
+            if (_clipToggle) _clipToggle.onClick.RemoveListener(OnToggle);
         }
 
         void OnSetSail() => _onSetSail?.Invoke();
+        void OnToggle() => _onToggle?.Invoke();
 
-        /// <summary>Draw the card. A null <paramref name="onSetSail"/> leaves Set sail dark (nothing to set out on);
-        /// <paramref name="course"/> is the line under the map (the course's light years and water), null shows none.</summary>
-        public void Show(VoyageContent content, VoyageToyDefinitionSO style, string here,
-            System.Collections.Generic.IReadOnlyList<string> route, string eyebrow, string title, Action onSetSail,
-            string course = null)
+        /// <summary>The text the window's map copies for its place names.</summary>
+        public TMP_Text LabelTemplate => eyebrowText ? eyebrowText : titleText;
+
+        /// <summary>
+        /// Draw the card. <paramref name="onToggle"/> opens or closes it (null: no OPEN chip, the card stays as
+        /// <paramref name="open"/> says). A null <paramref name="onSetSail"/> leaves Set sail dark. Empty texts show
+        /// nothing.
+        /// </summary>
+        public void Show(string eyebrow, string title, string course, string details, bool open, Action onToggle,
+            string openLabel, string closeLabel, Action onSetSail)
         {
+            Build();
             if (eyebrowText) eyebrowText.text = eyebrow ?? string.Empty;
             if (titleText) titleText.text = title ?? string.Empty;
             _onSetSail = onSetSail;
+            _onToggle = onToggle;
             if (setSailButton) setSailButton.interactable = onSetSail != null;
-            var map = Map();
-            if (map) map.Show(content, style, here, route, course);
+
+            var chip = transform.Find(OpenChipName);
+            if (chip) chip.gameObject.SetActive(onToggle != null);
+            if (_clipToggle) _clipToggle.enabled = onToggle != null;
+            if (_openLabel) _openLabel.text = (open ? closeLabel : openLabel) ?? string.Empty;
+
+            Text(_course, course, true);
+            Text(_details, details, open);
+            if (setSailButton) setSailButton.gameObject.SetActive(open);
+            Lay(open);
         }
+
+        static void Text(TMP_Text t, string value, bool show)
+        {
+            if (!t) return;
+            bool any = show && !string.IsNullOrEmpty(value);
+            t.gameObject.SetActive(any);
+            if (any) t.text = value;
+        }
+
+        // ── Building the card's parts (once; a copy of the card brings them along) ───
+
+        void Build()
+        {
+            if (_built) return;
+            _built = true;
+            TryGetComponent(out _layout);
+            if (art) art.enabled = false;
+            var fade = transform.Find(FadeName);
+            if (fade) fade.gameObject.SetActive(false);
+
+            // OPEN was a sign on the open voyage cards; here it is the control that drills in.
+            var chip = transform.Find(OpenChipName);
+            if (chip)
+            {
+                var fill = transform.Find(OpenFillName);
+                Graphic target = fill && fill.TryGetComponent(out Graphic g) ? g : null;
+                if (target) target.raycastTarget = true;
+                if (!chip.TryGetComponent(out _toggle)) _toggle = chip.gameObject.AddComponent<Button>();
+                _toggle.targetGraphic = target;
+                _toggle.onClick.AddListener(OnToggle);
+                var label = transform.Find(OpenLabelName);
+                if (label) label.TryGetComponent(out _openLabel);
+            }
+            // The whole card opens it too: its dark ground is the press target (Set sail stands above it).
+            var clip = transform.Find(ClipName);
+            if (clip && clip.TryGetComponent(out Graphic ground))
+            {
+                ground.raycastTarget = true;
+                if (!clip.TryGetComponent(out _clipToggle)) _clipToggle = clip.gameObject.AddComponent<Button>();
+                _clipToggle.transition = Selectable.Transition.None;
+                _clipToggle.targetGraphic = ground;
+                _clipToggle.onClick.AddListener(OnToggle);
+            }
+
+            // Nothing else on the card catches a press meant for it (the title, the eyebrow, the border).
+            foreach (var gfx in GetComponentsInChildren<Graphic>(true))
+            {
+                var at = gfx.transform;
+                if (at == clip || (chip && at.IsChildOf(chip))) continue;
+                if (setSailButton && at.IsChildOf(setSailButton.transform)) continue;
+                gfx.raycastTarget = false;
+            }
+
+            _course = Line(CourseName, TextAlignmentOptions.BottomLeft, false);
+            _details = Line(DetailsName, TextAlignmentOptions.TopLeft, true);
+        }
+
+        TMP_Text Line(string name, TextAlignmentOptions align, bool wrap)
+        {
+            var existing = transform.Find(name);
+            if (existing && existing.TryGetComponent(out TMP_Text found)) return found;
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(transform, false);
+            // Above the card's ground, under Set sail.
+            if (setSailButton) go.transform.SetSiblingIndex(setSailButton.transform.GetSiblingIndex());
+            var t = go.AddComponent<TextMeshProUGUI>();
+            var from = eyebrowText ? eyebrowText : titleText;
+            if (from)
+            {
+                t.font = from.font;
+                t.fontSharedMaterial = from.fontSharedMaterial;
+                t.fontSize = from.fontSize;
+                t.color = from.color;
+            }
+            t.alignment = align;
+            t.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
+            t.overflowMode = TextOverflowModes.Ellipsis;
+            t.raycastTarget = false;
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            return t;
+        }
+
+        /// <summary>Stand the parts for the card closed (title and course line) or open (the brief and Set sail).</summary>
+        void Lay(bool open)
+        {
+            float height = open ? OpenHeight : ClosedHeight;
+            if (_layout) _layout.preferredHeight = height;
+            else ((RectTransform)transform).sizeDelta = new Vector2(((RectTransform)transform).sizeDelta.x, height);
+
+            float sailTop = SailFoot;
+            if (open && setSailButton) sailTop += ((RectTransform)setSailButton.transform).rect.height + 16f;
+            if (titleText)
+            {
+                var rt = titleText.rectTransform;
+                float y = open ? height - 56f - TitleHalf : SailFoot + LineHeight + 12f + TitleHalf;
+                rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, y);
+            }
+            float courseY = open ? height - 56f - 2f * TitleHalf - 8f - LineHeight : SailFoot;
+            Place(_course, courseY, LineHeight);
+            float detailsTop = courseY - 12f;
+            Place(_details, sailTop, Mathf.Max(0f, detailsTop - sailTop));
+        }
+
+        static void Place(TMP_Text t, float y, float h)
+        {
+            if (!t) return;
+            var rt = t.rectTransform;
+            rt.sizeDelta = new Vector2(-2f * Inset, h);
+            rt.anchoredPosition = new Vector2(0f, y);
+        }
+
+        // ── The Ark escort's difficulty stepper ──────────────────────────────
 
         Button _lower, _raise;
         Vector2 _sailMin, _sailMax;
@@ -117,28 +273,6 @@ namespace CosmicShore.UI
             button.interactable = true;
             var text = button.GetComponentInChildren<TMP_Text>(true);
             if (text) text.text = label ?? string.Empty;
-        }
-
-        VoyageMapGraphic Map()
-        {
-            if (_map) return _map;
-            _map = GetComponentInChildren<VoyageMapGraphic>(true);
-            if (_map || !art) return _map;
-
-            art.enabled = false;
-            var go = new GameObject("GalaxyMap", typeof(RectTransform));
-            go.transform.SetParent(art.transform.parent, false);
-            go.transform.SetSiblingIndex(art.transform.GetSiblingIndex() + 1);
-            var rt = (RectTransform)go.transform;
-            var from = art.rectTransform;
-            rt.anchorMin = from.anchorMin;
-            rt.anchorMax = from.anchorMax;
-            rt.pivot = from.pivot;
-            rt.anchoredPosition = from.anchoredPosition;
-            rt.sizeDelta = from.sizeDelta;
-            _map = go.AddComponent<VoyageMapGraphic>();
-            _map.SetLabelTemplate(eyebrowText ? eyebrowText : titleText);
-            return _map;
         }
     }
 }
