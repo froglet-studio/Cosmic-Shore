@@ -15,12 +15,15 @@
   <ItemGroup>
     <Compile Include="UnityStub.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="ElementPlatesShim.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/CrystalMorphMeshBuilder.cs" />
-    <Compile Include="../../../Assets/_Scripts/Utility/IcosphereMeshGenerator.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/Foundation/IcosphereMeshGenerator.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalMorphMeshBuilderTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalMorphPanelCensusTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/CrystalHullFusionGeometry.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalHullFusionGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/CrystalMorphRecast.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/ShrikeCrystalMorphGeometryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.14.0" />
