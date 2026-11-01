@@ -123,6 +123,7 @@ PRISM_VOLUME = PRISM_SCALE[0] * PRISM_SCALE[1] * PRISM_SCALE[2]
 # The balance the model can reach, and the gate that says so. The residual is the Rhino - the
 # one hull no element reaches - against a Time-10 Sparrow; what closes it is not this script.
 MAX_TUNED_SPREAD = 6.1
+CRUISE_ONLY = RB.CRUISE_ONLY   # held out of the pace and the spread gate; why: regatta_balance.py
 
 # ── The measured course, and the guard on its provenance ─────────────────────
 COURSE = RB.read_course()
@@ -537,13 +538,25 @@ for i in range(1, 5):
                       f"[95%, 100%] of {prisms_at(i)} x {PRISM_VOLUME:.0f} - the flush fit has drifted")
 
 # The balance the model reaches, asserted so a vessel retune that breaks it is caught here.
+_consts = RB.read_constants()
+for h in CRUISE_ONLY:
+    if any(RB.MODELS[h](_consts, lv).get("duty", 0) > 0 for lv in range(RB.MIN_LEVEL, RB.MAX_LEVEL + 1)):
+        errors.append(f"{h} boosts on a racing line again - drop it from CRUISE_ONLY so the spread gate covers it")
+
+
+def _spread(times):
+    kept = [t for h, t in times.items() if h not in CRUISE_ONLY]
+    return max(kept) / min(kept)
+
+
 for i in range(1, 5):
     b = BALANCE[i]
-    if b["spread"] > MAX_TUNED_SPREAD:
-        errors.append(f"intensity {i}: tuned lap-time spread {b['spread']:.2f}x exceeds {MAX_TUNED_SPREAD}x - "
+    spread, rest_spread = _spread(b["times"]), _spread(b["restTimes"])
+    if spread > MAX_TUNED_SPREAD:
+        errors.append(f"intensity {i}: tuned lap-time spread {spread:.2f}x exceeds {MAX_TUNED_SPREAD}x - "
                       "re-derive the starting elements or the course (regatta_balance.py)")
-    if b["spread"] > b["restSpread"] + 1e-9:
-        errors.append(f"intensity {i}: tuning made the spread WORSE ({b['restSpread']:.2f}x -> {b['spread']:.2f}x)")
+    if spread > rest_spread + 1e-9:
+        errors.append(f"intensity {i}: tuning made the spread WORSE ({rest_spread:.2f}x -> {spread:.2f}x)")
     for h, lv in b["levels"].items():
         if not (RB.MIN_LEVEL <= lv <= RB.MAX_LEVEL):
             errors.append(f"intensity {i}: {h} tuned to level {lv}, outside the resource band")
