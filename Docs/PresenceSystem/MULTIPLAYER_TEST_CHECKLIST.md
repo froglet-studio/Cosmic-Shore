@@ -1,5 +1,7 @@
 # Multiplayer bug-hunt checklist (friends panel / presence / arcade lobby)
 
+> Related: [Docs/Multiplayer/README.md](../Multiplayer/README.md) (index), [MULTIPLAYER_ARCHITECTURE.md](../Multiplayer/MULTIPLAYER_ARCHITECTURE.md) (netcode concepts and status). Automated EditMode cover: `MultiplayerBugHuntTests`, `ConnectionQualityTests`, `HitReportGuardTests`, `MatchRejoinTests`, `DisconnectNoticeTests`.
+
 The manual half of the hybrid bug hunt. The automated half is
 `Assets/_Scripts/Tests/Editor/MultiplayerBugHuntTests.cs` plus `AbsenceStrikesTests`,
 `PresencePushTests` and `ArcadeLobbySnapshotTests`. Run those in the Test Runner (EditMode) first.
