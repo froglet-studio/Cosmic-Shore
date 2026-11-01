@@ -211,6 +211,27 @@ cell still has one fauna colour, its controller's); mass is conserved and no cre
 remaining food is its own domain's mass starves its fauna down through the ordinary starvation clock). An exception, not a
 precedent.
 
+### 0.z Granted carve-out: the Ark escort's feeding lure (2026-10-31)
+
+This is the scripted Ark seek that §0 and the design principles reject ("not to weight the Ark"), and it is granted
+here on purpose. The owner, after playing d8-d9: "we need way more fauna relentlessly attacking our Ark ... mad never-ending
+chaos", with the difficulty ladder 4 achievable, 7 barely beatable, 9 unbeatable. The food web alone (plates as food,
+wake, populations) left multiple worlds with no pressure on the Ark.
+
+What it does: `Cell.SetFeedingLure(lure, ownDomain, share)`. A `share` of the cell's goal picks, the densest-region
+queries (`GetExplosionTarget`, `GetDensestRegionAnyDomain`) that every grazer steers by, return the lure's position,
+jittered, instead of the densest mass. Fauna of `ownDomain` are never lured.
+
+The fence:
+- One caller, `ArkEscortRun.TickChaos`, on the escort's own worlds, with the Ark as the lure. Pacified or held worlds are
+  cleared, and everything is cleared at the escort's end.
+- The share is the tier's `LureShare`, from 0.1 at d1 to 0.9 at d9.
+- It changes steering only: diets, edibility, deaths and populations are untouched, so a lured creature eats only what
+  its own diet allows when it arrives. Mass conservation, continuity, one fauna colour per cell and the no-cull rule all
+  still hold.
+
+This is an exception, not a precedent: the next one needs its own sign-off.
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count

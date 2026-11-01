@@ -592,12 +592,19 @@ namespace CosmicShore.Gameplay
         /// The fixed rate: one beat every <see cref="CosmicShore.ScriptableObjects.ArkReactorSO.RegrowSeconds"/>, and a
         /// beat regrows one prism when a slot is empty. A beat with nothing to regrow is not saved up.
         /// </summary>
+        /// <summary>
+        /// Whether the reactor may regrow right now (default true). The Ark escort gates it (Garrett, 2026-10-31): the Ark
+        /// heals only inside the nucleus of a world the squad controls. A closed gate is not saved up: beats that fall
+        /// while closed are lost, exactly as a beat with nothing to regrow is.
+        /// </summary>
+        public bool RegrowAllowed { get; set; } = true;
+
         void TickReactor()
         {
             if (!_reactorDefinition || _retiring) return;
             float now = Time.time;
             float period = _reactorDefinition.RegrowSeconds;
-            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowOne())
+            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowAllowed && RegrowOne())
                 _lastRegrowAt = now;
 
             if (_model) _model.SetReactor(now - _lastRegrowAt < 2f * period);

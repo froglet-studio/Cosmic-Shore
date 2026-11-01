@@ -125,6 +125,14 @@ namespace CosmicShore.ScriptableObjects
                                        "fauna gnaw through the armoured plates (platesAreFood), the hull can truly fall, so " +
                                        "0 (only the true fall, the last plate) is the default; kept for experiments.")]
             public float BreachHull;
+
+            [Range(0f, 1f), Tooltip("Share of a hostile world's fauna goal picks that steer onto the Ark (the escort's " +
+                                    "feeding lure, Docs/ECOSYSTEM.md 0.z): 0 = the food web alone, 1 = every creature " +
+                                    "hunts the Ark. Steering only; diets are unchanged.")]
+            public float LureShare;
+
+            [Min(0.05f), Tooltip("Multiplier on every escort world's fauna spawn period: below 1, waves come faster.")]
+            public float SpawnPeriodScale = 1f;
         }
 
         [Header("The run")]

@@ -1138,8 +1138,50 @@ namespace CosmicShore.Gameplay
             {
                 var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
                 if (!profile) return 0f;
-                return Mathf.Max(0.05f, profile.BaseFaunaSpawnTime);
+                return Mathf.Max(0.05f, profile.BaseFaunaSpawnTime * Mathf.Max(0.05f, RuntimeFaunaSpawnPeriodScale));
             }
+        }
+
+        /// <summary>Multiplier on this cell's fauna spawn period (below 1: creatures come faster). 1 everywhere but a
+        /// mode that asks (the Ark escort's tiers). Production gating only: nothing is culled.</summary>
+        public float RuntimeFaunaSpawnPeriodScale { get; set; } = 1f;
+
+        // ── The feeding lure (an Ark escort carve-out) ──────────────────────
+
+        Transform _feedingLure;
+        Domains _feedingLureDomain = Domains.Blue;
+        float _feedingLureShare;
+        float _feedingLureJitter = 60f;
+
+        /// <summary>
+        /// A GRANTED, FENCED carve-out of "no direct Ark weighting" (Garrett, 2026-10-31: "way more fauna relentlessly
+        /// attacking our Ark ... mad never-ending chaos" at the high difficulties; recorded in Docs/ECOSYSTEM.md §0.z):
+        /// while set, a <paramref name="share"/> of this cell's fauna goal picks (the densest-region queries every grazer
+        /// steers by) land on <paramref name="lure"/> (jittered by <paramref name="jitter"/> units) instead of the densest
+        /// mass. Fauna of <paramref name="ownDomain"/> are never lured. The ONE caller is <c>ArkEscortRun</c>, on its own
+        /// worlds, with the Ark as the lure and the tier's share; null clears it. Steering only: diets, edibility, deaths
+        /// and populations are untouched, so a lured creature still only eats what its diet allows on arrival.
+        /// </summary>
+        public void SetFeedingLure(Transform lure, Domains ownDomain, float share, float jitter = 60f)
+        {
+            _feedingLure = lure;
+            _feedingLureDomain = ownDomain;
+            _feedingLureShare = Mathf.Clamp01(share);
+            _feedingLureJitter = Mathf.Max(0f, jitter);
+        }
+
+        /// <summary>The lure's point for a goal pick of <paramref name="eaterDomain"/> (null: any), when the roll takes it.
+        /// An all-domain query (null) is only lured when the cell's fauna are not the lure's own domain.</summary>
+        bool TryFeedingLure(Domains? eaterDomain, out Vector3 point)
+        {
+            point = default;
+            if (!_feedingLure || _feedingLureShare <= 0f) return false;
+            // GetExplosionTarget(domain) asks for mass NOT of `domain` (the asker's own colour): the lure's colour.
+            var asker = eaterDomain ?? ControllingDomain;
+            if (asker == _feedingLureDomain) return false;
+            if (Random.value >= _feedingLureShare) return false;
+            point = _feedingLure.position + Random.insideUnitSphere * _feedingLureJitter;
+            return true;
         }
 
         /// <summary>
@@ -3548,6 +3590,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Vector3 GetExplosionTarget(Domains domain)
         {
+            if (TryFeedingLure(domain, out var lure)) return lure;
             if (!countGrids.TryGetValue(domain, out var grid) || grid == null)
                 return GetCellAnchorPosition();
 
@@ -3582,6 +3625,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool TryGetDensestRegionAnyDomain(out Vector3 region)
         {
+            if (TryFeedingLure(null, out region)) return true;
             region = GetCellAnchorPosition();
             if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
                 return false;

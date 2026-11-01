@@ -120,6 +120,7 @@ namespace CosmicShore.Gameplay
         void PrepareCellMetrics(Cell cell, int leg)
         {
             cell.ArmourIsFood = _escort.PlatesAreFood;
+            PrepareChaos(cell);
             if (leg >= 0 && leg < _cellOfLeg.Length) _cellOfLeg[leg] = cell;
 
             // A run's fauna overrides (fauna.* keys): per-species values ride the cell to each creature it registers;
@@ -142,6 +143,7 @@ namespace CosmicShore.Gameplay
             if (!ark) return;
             _hookedArk = ark;
             ark.HullPrismLost += OnHullPrismLost;
+            ark.RegrowAllowed = false;   // no healing until a held nucleus (TickChaos)
             ark.HullPrismRegrown += OnHullPrismRegrown;
         }
 
@@ -299,6 +301,7 @@ namespace CosmicShore.Gameplay
             }
 
             TryPacify();
+            TickChaos(ark, r);
             TryReleaseWave(ark, r);
 
             // Inside a cell or in the open, and the Ark's speed.
@@ -343,6 +346,7 @@ namespace CosmicShore.Gameplay
                 var start = _runMark.GetValueOrDefault(kv.Key, now);
                 Fill(SeatStatsFor(_report.RunSeats, kv.Value.seat, kv.Value.vessel, kv.Key), now, start);
             }
+            ClearChaos();
             foreach (var cell in _cellOfLeg)
                 if (cell)
                 {

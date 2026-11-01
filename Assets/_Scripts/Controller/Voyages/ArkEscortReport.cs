@@ -103,6 +103,8 @@ namespace CosmicShore.Gameplay
             public int PlatesLostSuper;
             public int PlatesByCreature;
             public int PlatesRegrown;
+            /// <summary>Seconds (1 Hz) the reactor was allowed to regrow: the Ark inside a held world's nucleus.</summary>
+            public float RegrowSeconds;
             public List<NameCount> PlateKillers = new();
             public int PlainAtExit;
             public int ShieldedAtExit;
@@ -190,6 +192,7 @@ namespace CosmicShore.Gameplay
         public int PlatesLostSuper;
         public int PlatesByCreature;
         public int PlatesRegrown;
+        public float RegrowSeconds;
         public float InsideSeconds;
         public float OutsideSeconds;
         public float MeanArkSpeed;
