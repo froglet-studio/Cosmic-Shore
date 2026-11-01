@@ -21,6 +21,36 @@ or write to the backend goes through Shombith first.
 | (no file) | Steam sign-in is a dashboard identity provider plus `Assets/Resources/SteamConfig.asset`, below | T1 |
 | `CloudCode/trust.js` | Phase B: each account's trust record (private custom data `fp-<player id>`), its pool (shore, Undertow, quitters), the notice and the appeal, and the review queue (`fairplay-review`) | phase B, R13, R15 |
 | `CloudCode/trust.test.cjs` | `node Tools/UGS/CloudCode/trust.test.cjs` | phase B |
+| `Commerce/entitlements.js` | Paid content, kept apart from fair play (R14): episode tokens and owned episodes in the protected key `PLAYER_ENTITLEMENTS`. A token is created only from an order its storefront confirmed, counted from the script's own `STORE` table, once per order | T3 |
+| `Commerce/entitlements.test.cjs` | `node Tools/UGS/Commerce/entitlements.test.cjs` | T3 |
+| (no file) | Game Center sign-in on iOS is a dashboard identity provider plus `Assets/Resources/MobileSignInConfig.asset`, below | T1 |
+| `deploy.sh` | Runs every script's tests and the price check, then uploads all five scripts to one environment | all |
+
+## Deploying the scripts
+
+The scripts in this folder do nothing until they are uploaded to UGS: the game calls them by name (`economy`,
+`weekly-score`, `match-report`, `trust`, `entitlements`), and until they exist on Unity's servers those calls fail. Each
+switch in the game stays off until its script is deployed, so **deploy first, then turn switches on**. Deploying is safe
+at any time: nothing calls a script while its switch is off.
+
+"development" and "production" are the two UGS environments on Unity's servers, not git branches. Scripts are
+deployed from **bleeding-edge**, development first.
+
+**With the button (no terminal):**
+1. Once: make a UGS service account (Unity Cloud dashboard > Administration > Service accounts > New, role Cloud Code
+   Editor, then Add key) and put its key id and secret in GitHub as repository secrets `UGS_CLI_SERVICE_KEY_ID` and
+   `UGS_CLI_SERVICE_SECRET_KEY` (repository Settings > Secrets and variables > Actions > New repository secret).
+2. GitHub > Actions > **Deploy UGS scripts** > Run workflow > branch `bleeding-edge`, environment `development` > Run.
+   It tests every script, checks the vessel prices and uploads the five scripts (`.github/workflows/ugs-deploy.yml`).
+3. Dashboard > Cloud Code > Scripts, development environment: the five are there.
+4. After the editor checks pass with a switch on, run it again with `production`.
+
+**From a terminal instead:** `npm install -g ugs`, `ugs login` with the same key, then
+`bash Tools/UGS/deploy.sh development` from the repository root.
+
+`deploy.sh` never applies the access policies (`AccessControl/*.json`): `project-policy.json` blocks direct leaderboard
+posts, which breaks every build that still posts directly. Apply it only once a build with `ServerScoreGate` on is out
+(below). Redeploy after any change to a script, its `RULES`, or a vessel price.
 
 ## Switching on the server-owned wallet
 
@@ -156,8 +186,42 @@ starts and every player signs in anonymously. Code: `Assets/_Scripts/System/Stea
 What it does: a launch with no cached session (a first launch or a reinstall) signs in with Steam, so the player lands on
 the account tied to their Steam id. A launch with a cached anonymous session resumes it and links Steam to it. If that
 Steam id already belongs to another account, the session stays put and a warning is logged (no progress is moved).
-Every failure falls back to an anonymous sign-in. Not done: Apple (iOS) and Google (Android) sign-in, which need the
-Sign in with Apple and Play Games plugins.
+Every failure falls back to an anonymous sign-in. iOS is Game Center, below. Not done: Google Play Games on Android,
+which needs a dependency (the Play Games plugin, or Google's games library and a small Java bridge).
+
+## Switching on Game Center sign-in (T1, iOS)
+
+Off in the game: `Assets/Resources/MobileSignInConfig.asset` ships `signInWithGameCenter: 0`. Code:
+`Assets/_Scripts/System/PlatformSignIn/` and the native half `Assets/Plugins/iOS/GameCenter/GameCenterSignIn.mm` (no
+package: it calls Apple's GameKit directly). Game Center signs in silently, like Steam: Apple asks the player once, in
+the iOS Settings app, and the game never shows Game Center's sign-in screen.
+
+1. **Apple developer site:** enable Game Center on the App ID `com.FrogletGames.CosmicShore`, and Game Center in App
+   Store Connect for the app.
+2. **UGS dashboard:** Player Authentication > Identity providers > add **Apple Game Center** with the bundle id
+   `com.FrogletGames.CosmicShore` (development environment first).
+3. **The game:** tick `signInWithGameCenter` in `MobileSignInConfig`. The iOS build then adds the Game Center capability
+   to the Xcode project itself (`GameCenterCapability`, only while the box is ticked). Run the "Game Center sign-in"
+   checks in `Docs/UNITY_VERIFICATION_CHECKLIST.md` on a device signed in to Game Center.
+4. **Production:** add the provider to production too, then ship the build with the config on.
+
+Same rules as Steam: no cached session signs in WITH Game Center; a cached anonymous session is kept and Game Center is
+linked to it; a Game Center account already tied to another UGS account is left alone; every failure is anonymous.
+
+## Switching on server-owned episode tokens (T3)
+
+Off in the game (`ServerEntitlementGate.Enabled = false` in `Assets/_Scripts/System/Monetization/ServerEntitlements.cs`).
+Nothing sells episodes or tokens yet, so this is the store the storefront will write to, built ahead of it.
+
+1. `node Tools/UGS/Commerce/entitlements.test.cjs` prints `7 passed`; deploy with `deploy.sh`.
+2. Set `ServerEntitlementGate.Enabled = true` in a test build and run the "Server-owned episode tokens" checks.
+3. **A storefront:** the DLC-vs-tokens decision (`Docs/Legal/DLC_VS_TOKENS_QUESTIONNAIRE.md`) picks it. It joins
+   `entitlements.js` as one `PROVIDERS` entry whose `verify()` asks that store's server (Steam: ISteamMicroTxn or DLC
+   ownership with the publisher key; Apple: the App Store Server API; Google: the Play Developer API). Until then every
+   real storefront answers `provider_not_configured`, and the editor's fake one works only outside production.
+4. Keep `STORE` (tokens per episode, bundle sizes) in step with `SO_EpisodeTokenConfig` until that asset exists.
+
+No client-held tokens move across: no storefront has ever sold one, so all of them came from the editor's fake provider.
 
 No Access Control policy is needed for the wallet: players can never write a protected Cloud Save key, so the
 game's old client-written copy in `PLAYER_PROFILE` is only a display cache the server ignores.
