@@ -1,69 +1,61 @@
-# Concept fleet and supervessels — where it stands (report for Yash, 2026-10-26, evening)
+# Concept fleet and supervessels — PARKED (report for Yash, 2026-11-01)
 
-**Branches:** the studio pages and the Omega crews are on `Ys-bleeding-edge`; the Flea is on `claude/flea-vessel`
-(Garrett's); nothing of it is on `bleeding-edge`. **Artifact:** the Vessel Studio, version 40
-(https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). **Design record and id ledger:** `Docs/Studios/CONCEPT_FLEET.md`
-(§0 is the rule every vessel session follows so sessions build on each other instead of colliding). **Status:** two
-things are in Unity and neither has been opened in an editor yet.
+**Status: parked on Yash's word (2026-11-01): "for now we won't be making any more new vessels."** Every prototype is
+kept as it is and playable in the Vessel Studio (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa, version 66). A
+session brings one back only when Yash asks for it by name. **Branches:** the studio pages are on `Ys-bleeding-edge` and
+`bleeding-edge`; the Flea's Unity build is on `claude/flea-vessel` (Garrett's, unmerged); the Gibbon's Tether half is on
+`cece/loving-feynman-hlgf18` (unmerged). **The full catalogue:** `Docs/Studios/CONCEPT_FLEET.md` §13 (what each one is,
+where it stopped, how to bring it back).
 
 ## 1. In one minute
 
-- **Ten concept vessels** (2026-10-17): Garrett kept the Gibbon (web-slinger), Flea, Dragonfly, Marlin and Albatross.
-  Only the Gibbon has had its round-2 session; the other four are round-1 pages.
-- **The Flea is in Unity** on `claude/flea-vessel` (vessel 24, 2026-10-24): flyable from the Toybox's Vessel Changer,
-  the page's maths ported with golden tests, the Stoat's body as a stand-in. Garrett has not flown it yet.
-- **The Omega crews are in Unity** on `Ys-bleeding-edge` (vessels 25-27, 2026-10-26; Yash: "make this prototype in
-  Ys-bleeding-edge, I wanna test there"), rebuilt the same day after his first test as a MARCH FORMATION with three
-  roles: Warden = Stoat (mobility) / Sparrow (attack) / Rhino (defence), Bulwark = Scarab / Grizzly / Butterfly,
-  Tempest = Squirrel / Thresher / Manta. The three fly as one rigid flock; the D-pad moves you (and the camera) between
-  them while the AI holds the other two; the attack seat aims and fires, the defence seat shields and fires the ward.
-  The lab's combine (mega / omega forms) stays on the page, not in the game yet. `Crew/OMEGA_CREW.md`,
-  `Docs/Studios/CONCEPT_FLEET.md` §10.3, the hand test in the checklist.
-- **The vessel id ledger** (CONCEPT_FLEET.md §0): 24 Flea, 25-27 the Omega crews, **28 is the next free id**. The
-  Tether / Gibbon, Dragonfly, Marlin and Albatross have none yet; the name "Marlin" is kept in the
-  game for a swordsman (the Jacks were "Marlin and Jacks"), so the drifter's name still needs Garrett's call.
+- **What we made.** The concept ten (Gibbon, Flea, Albatross, Remora, Dragonfly, Mole, Marlin, Eel, Octopus, Gecko; Garrett
+  kept the first five he named: Gibbon, Flea, Dragonfly, Marlin, Albatross), two supervessels (the Omega crews, then the
+  Siphonophore), the calm three (Moon Jelly, Sea Turtle, Seahorse) and play-style choices for Garrett's Orca.
+- **What is in Unity.** Only the Flea, on Garrett's unmerged branch (id 24), never opened in an editor. The Omega crews
+  were built in Unity (ids 25-27) and removed on 2026-10-27. Nothing else is in the game.
+- **What comes next instead** (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §10): each existing vessel's Time minigame,
+  made hard and challenging with AI rivals learned from people's races; then the arena games such as Regatta. Yash plays
+  the Dolphin in Switchback himself; Claude sessions build the Stoat (Slingshot) and the Meerkat (Warpline) with him.
+- **Ids.** 28 Meerkat and 29 Tiger Moth are taken on `bleeding-edge`; **30 is the next free id** (the ledger in
+  `CONCEPT_FLEET.md` §0).
 
-## 2. Each vessel, one line
+## 2. Each prototype, one line
 
-| Vessel | Where it is | Next step |
+| Prototype | Where it stopped | To bring it back |
 |---|---|---|
-| Gibbon | Web-slinger, round 2 done in the studio (§8.3); AI moves but finishes no course | Yash flies it and decides the feel; the Tether prototype (`cece/loving-feynman-hlgf18`) is still unmerged (T-20261017-e64b) |
-| Flea | **Unity, `claude/flea-vessel`** (24): Vessel Changer, FleaMath goldens, Stoat body | Garrett flies the branch (T-20261024-bd25), then its small racing game (T-20261017-929b) |
-| Warden / Bulwark / Tempest | **Unity, `Ys-bleeding-edge`** (25-27, round 2: the march formation with mobility / attack / defence seats): Vessel Changer, OmegaMath goldens, Stoat body + placeholder member bodies | Yash flies them (the hand test; a ticket for it is filed by `/team-tasks add` on his yes: the session could not reach the Froglet Tasks page's store); Keep / Drop per crew on the studio's Decisions tab; then round 3: member bodies (`/vessel-model`), the combine in the game, multiplayer swapping, the Omega Run mode (`/arcadegame`) |
-| Dragonfly | Round 1 page | Control swap, stored boosts, the mine / joust kit (T-20261017-3cc7) |
-| Marlin | Round 1 page (drifter) | Pure drifter, never grips (T-20261017-1bc9); its name needs a decision |
-| Albatross | Round 1 page (glider, AI weak) | Nucleus-frame up/down, thermals, membrane cost (T-20261017-ba54); needs a cell stage in the studio |
+| Gibbon (web-slinger) | Studio round 2; its AI finishes no course; Tether half unmerged | Yash decides the feel, then the AI, an id, Unity |
+| Flea (ricochet) | **Unity** on `claude/flea-vessel` (24), never flown in the editor | Garrett flies it (T-20261024-bd25), then its racing minigame |
+| Albatross (soarer) | Round 1 page, weak AI | A cell stage in the studio for thermals (T-20261017-ba54) |
+| Dragonfly (hoverer) | Round 1 page | The control swap and the mine / joust kit (T-20261017-3cc7) |
+| Marlin (drifter) | Round 1 page; needs a new name (the game keeps "Marlin" for a swordsman) | A pure drifter (T-20261017-1bc9) and Garrett's name call |
+| Remora, Mole, Eel, Octopus, Gecko | Round 1 pages, not among Garrett's five | Only on request |
+| Omega Crews | Superseded; removed from Unity; page kept as the record | Not planned (the Siphonophore replaced it) |
+| Siphonophore | Studio round 2, its ability kit flown one ability at a time; no id | Yash picks the kit; then an id and Unity |
+| Moon Jelly, Sea Turtle, Seahorse | Round 1 pages (the calm Level 1 three) | Only on request |
+| Orca play styles (Garrett's Orca) | Lab round 9: Tank / Breath / Tide, Shield / Dock, Fly-by-wire / Seeker; none in Unity | Yash and Garrett pick one per ability |
 
 ## 3. How the sessions stay out of each other's way (CONCEPT_FLEET.md §0)
 
-Every vessel session, at its start and its end: (1) the id ledger and the enum on every branch before claiming a
-number, claimed in one commit with the ledger row; (2) a section in `Docs/Studios/CONCEPT_FLEET.md`, and this report
-refreshed with `python3 Tools/Build/team_report.py area concept-fleet --write`; (3) one page in the ONE Vessel Studio
-artifact, decisions on its Decisions tab; (4) in Unity, a generator that owns the prefab and the registrations, a doc
-beside the code, the hand test in the checklist, `clones.json`, and `Affects:` in the commit naming whose area it
-touches; (5) hand-offs only as suggested tickets through `/team-tasks`, one per branch, never assigned. The Omega crews
-are built on Garrett's crew plumbing (the seat ring, the Orca's trigger actions and lifecycle) and the Stoat donor
-without changing them; a session that changes those asks Garrett first.
+The rule still holds for the day a prototype comes back: the id ledger and the enum on every branch before claiming a
+number; a section in `Docs/Studios/CONCEPT_FLEET.md` and this report refreshed with
+`python3 Tools/Build/team_report.py area concept-fleet --write`; one page in the ONE Vessel Studio artifact; in Unity a
+generator that owns the prefab and registrations, a doc beside the code and the hand test in the checklist; hand-offs
+only as suggested tickets through `/team-tasks`, never assigned. Garrett's crew plumbing (the Orca) and the Stoat donor
+are built on, never changed, without asking Garrett.
 
-## 4. Open tasks and decisions
+## 4. Open tasks and decisions (all waiting; none is being worked while parked)
 
-- Yash: fly the Omega crews (no ticket yet: say yes and a session files it); playtest the concept pages and record Keep / Drop
-  (T-20261017-b227); the round-2 sessions (T-20261017-3c5d); review Joseph Zhou's pull request (T-20261017-b900).
-- Garrett: fly the Flea (T-20261024-bd25); the open design questions (T-20261017-b999); the Marlin name.
-- **Decided 2026-10-27 (design principle):** a Voltron vessel is designed from the ground up, with parts that are not
-  complete vessels and a loop that alternates apart / combined; never assembled from autonomous vessels (which is why the
-  Warden's omega had no reason to split). The composed crews are a test bed for the plumbing; the next round designs
-  one supervessel's parts and loop in the artifact first (CONCEPT_FLEET.md §10.4).
-- Any session: the AI ladders once the five settle (T-20261017-3244); a crew mistake for the Omega levels (Hard is not
-  shown fastest yet).
+- Garrett: fly the Flea branch (T-20261024-bd25); the Marlin's name; the open design questions (T-20261017-b999).
+- Yash with Garrett: the Orca's play styles (one option per ability, or a choice for the player).
+- Yash: the Siphonophore's kit, when he brings it back; Keep / Drop on the concept pages (T-20261017-b227).
+- The open tickets in the generated block below stay as they are; none was filed or closed for the parking.
 
 ## 5. How to try it
 
-- The studio: open the artifact (link above), the hub's "New vessels · the concept fleet" row or the Omega Crews bay,
-  pick a vessel, fly it on a gamepad, keys or a phone, record Keep / Drop on its Decisions tab.
-- Unity, `Ys-bleeding-edge`: Menu_Main freestyle, Toy Box, Vessel Changer, Warden; the steps are the Omega crews section
-  at the top of `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
-- Unity, `claude/flea-vessel`: the Flea from the same Vessel Changer (`R_VesselActions/FLEA.md` §6).
+- The studio: open the artifact (link above), pick a bay (the "New vessels · the concept fleet" row, the Siphonophore,
+  Omega Crews, Orca or a calm bay), fly it on a gamepad, keys or a phone, and record on its Decisions tab.
+- Unity, `claude/flea-vessel`: Menu_Main freestyle, Toy Box, Vessel Changer, Flea (`R_VesselActions/FLEA.md` §6).
 
 ## 6. Generated: who touched it, what merged, the open tickets
 
@@ -71,11 +63,27 @@ This block is refreshed by `python3 Tools/Build/team_report.py area concept-flee
 a report on this area runs that, never answers from memory (`Docs/TEAM.md` rule 10).
 
 <!-- team_report:begin (generated by Tools/Build/team_report.py; do not edit) -->
-_Generated 2026-10-26 from git (last 30 days), who_works_where.py and the team-task issues: `python3 Tools/Build/team_report.py area concept-fleet --days 30`._
+_Generated 2026-11-01 from git (last 14 days), who_works_where.py and the team-task issues: `python3 Tools/Build/team_report.py area concept-fleet --days 14`._
 
 ### Recent changes (25+)
-- 2026-10-26 `46db6d58c` feat(siphonophore): the Voltron vessel designed from the ground up, in the Vessel Studio; the three Unity Omega crews removed — on Ys-bleeding-edge
-- 2026-10-26 `3871d4117` docs(omega): the design principle - a Voltron vessel is designed from the ground up, never assembled from autonomous vessels — on Ys-bleeding-edge
+- 2026-10-29 `a8c7d6b07` Soliton Tunnels: jelly lens + spindle bridge with domain tint, slip-and-slide ride with small RT thrust, environmental fundamental (SolitonTunnelConfigSO), Trunk/Root/Labyrinth renamed to Soliton Tunnel/Network (GUIDs + FormerlySerializedAs kept), Froglet Tools Environmental Fundamentals window, lab and old shaders removed (restore from 2d1e8726c, see WORMHOLE_SHADERS.md section 15) — on Ys-bleeding-edge
+- 2026-10-28 `742f4349e` docs(meerkat): round 25 write-up, §7a, the verification entry, clones.json — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-28 `006fcea2c` docs(meerkat): Garrett's kit - MEERKAT.md section 8, FLEET_MAPS approved + shipped, protocol 23, hand tests — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-28 `4f8269efe` feat(meerkat): slide the tunnel as you slide the roots (round 24, artifact + Unity) — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-28 `f252617ed` feat(meerkat): Garrett's surface area and the soliton's swallow, artifact round 23 cloned to Unity — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-28 `d2d51211e` feat(meerkat): clone the tree and the Omnicrystal's roots from the Vessel Studio artifact, flown on the left stick — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-27 `43d90d49f` feat(meerkat): round 7 - the umbrella-handle tunnel: LT sets the shaft, the stick the bend — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-27 `7f7fcb37b` feat(vessel-studio): the calm three - Moon Jelly, Sea Turtle and Seahorse as Level 1 studios, compared with the Orca — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-27 `b8d6ef57a` feat(meerkat): the wormhole vessel in Unity - Toybox, AI and its Time race Burrow Run — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-27 `fe90fbf03` docs(concept-fleet): keep Canopy Run as the Gibbon's first-mode idea — on another branch
+- 2026-10-27 `ac3ed9f2e` feat(siphonophore): Ram Spool - Helm RT winds the colony up; a red ram opens a wall; round 2 recorded — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-27 `f24f26e59` feat(siphonophore): Pulse Jet - the Bell inhales on RT and jets on release, chaining on the beat — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-27 `9bf4b061d` feat(siphonophore): Tentacle Lash and Trawl, stand-in rivals, and a wall detour for the AI — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-27 `1039d5ecd` feat(siphonophore): Slipstream - the Bell leads, the others draft in its wake; B calls the fuse — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-26 `fd798c450` fix(vessel-studio): the Flea's hub preview no longer reads past its path on the first frame — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-26 `74fa8cf81` feat(siphonophore): ability kit for the three zooids and the colony, borrowed from the fleet — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-26 `46db6d58c` feat(siphonophore): the Voltron vessel designed from the ground up, in the Vessel Studio; the three Unity Omega crews removed — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-26 `3871d4117` docs(omega): the design principle - a Voltron vessel is designed from the ground up, never assembled from autonomous vessels — on Ys-bleeding-edge, bleeding-edge
 - 2026-10-26 `63a08b12a` feat(omega): the crews march as one formation with mobility, attack and defence seats; the bodies take their colour — on Ys-bleeding-edge, bleeding-edge
 - 2026-10-26 `b036761b0` docs(concept-fleet): the vessel id ledger and the shared-work rule, the Omega crews and the Flea in the area report and the class list — on Ys-bleeding-edge, bleeding-edge
 - 2026-10-26 `6350dfc87` feat(omega): the Omega crews in Unity - Warden, Bulwark, Tempest (25-27): mega forms that combine into one omega form with three seats — on Ys-bleeding-edge, bleeding-edge
@@ -83,36 +91,11 @@ _Generated 2026-10-26 from git (last 30 days), who_works_where.py and the team-t
 - 2026-10-24 `eca1568b8` docs(concept-fleet): the Flea's Unity branch is up; Garrett's flight test; the Tether's free id is now 25 — on Ys-bleeding-edge, bleeding-edge
 - 2026-10-24 `6332aab74` feat(flea): the Flea (vessel 24) flies in Unity - bounce off mass, RT timed to the contact, LT crouch and hop — on another branch
 - 2026-10-24 `9a79de22d` docs(reports): the concept fleet's report and area; the Tether's free id is now 24 — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-22 `ebbb963d9` feat(goby): the Goby & Pistol's own kit - dart and perch, dens, undertow, homing rings — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-21 `562d5f325` feat(goby): the Pistol's marks go into the world (lab v14) — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-21 `f4bc034ba` feat(goby): lab round 13 - the Pistol as a 2.5D character on a tangent plane — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-18 `751959531` feat(studio): Goby lab round 12 - slingshot, a tiny Pistol on a wide view, downhill toward the Goby, the Settled unroll, the real hull — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-18 `ea77f28d5` feat(goby): the vortex ring and flares are lit faceted volumes; ship-pass fixes — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-18 `e570a66ca` chore(goby): the clone record names prototype v10 — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-18 `d4d9259de` feat(goby): the Pistol's view drawn as the game draws it — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-18 `b2bd220bb` docs(tether): the next free vessel id is 18, not 17 (the Angler merged at 17) — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-18 `6e8487298` feat(vessel-studio): the Gibbon is a web-slinger - no engine, elastic webs from both hands — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-18 `84c9ba332` feat(vessel-studio): the Gibbon's two modes - time mode on the Tether's auto-tethers, space mode on two tethers — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-18 `b3fafd81f` feat(angler): A lures and B dashes (the Sparrow's buttons); fix "the QuadFish don't always listen" — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-17 `671497959` feat(angler): clone round 6 - the lit queue: the school eats every lit prism, newest first — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-17 `71dab4feb` docs(concept-fleet): Garrett's review decides the ten; round 2 order is Given, Flea, Dragonfly, Marlin, Albatross — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-17 `c1f2fd660` feat(angler): round 5 - speed back to 40, a smaller accurate brush, a level camera that rises while luring or dashing — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-17 `422d52e66` docs(concept-fleet): round 2 is one vessel per session; the Gibbon merges the Tether prototype — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-17 `989e690e4` fix(vessel-studio): the Albatross flies as a glider; the concept fleet's four-course scorecard — on Ys-bleeding-edge, bleeding-edge
 
 ### Also in flight on other branches
+- `cece/exciting-thompson-wdi3wm` (unattributed, 2026-10-27): docs(verification): checklist entry for the Time crystal sound fix
 - `claude/flea-vessel` (unattributed, 2026-10-24): feat(flea): the Flea (vessel 24) flies in Unity - bounce off mass, RT timed to the contact, LT crouch and hop
 
 ### Open tickets (Froglet Tasks)
 - T-20261024-bd25 [open] test: Fly the Unity Flea from branch claude/flea-vessel: Menu_Main freestyle, Toy Box > Vessel Changer > Flea; RT (Right Shift / LMB) timed to a prism contact is a perfect bounce, LT (Left Shift / RMB) crouches and hops (who: anyone)
-- T-20261017-1bc9 [open] dev: Pure drifter: never gets grip, less drift assist, the kit built around drifting; tune for fun (who: anyone)
-- T-20261017-3cc7 [open] dev: Control swap (LT held: look stick becomes roll / elevation, no A/B), long-cooldown stored boosts along the current motion, and a precision kit: grasping joust that steals an element, and geometry mines (triangle / square / kite / pentagon / rhombus) (who: anyone)
-- T-20261017-ba54 [open] dev: Up/down from the nearest point on the nucleus (cytoplasm and nucleus), small strong thermals with an explosion, a membrane-crossing consequence that grows faster than linear with time avoided; qualitative before numbers (who: anyone)
-- T-20261017-929b [open] dev: Give Garrett a branch with the Flea; if good, bring it into the game as a playable vessel, then a small racing game, then push to bleeding-edge (who: anyone)
-- T-20261017-a640 [open] dev: Gibbon (+ the Tether; the notes' "Given" is the Gibbon): two modes from cece/loving-feynman-hlgf18: time mode = the branch's auto-tethers, space mode = two sticks + two triggers (one pair per tether), slicing by what the tethers cut, movement by 0 / 1 / 2 tethers attached; the time <-> space transition first (who: anyone)
-- T-20261017-e64b [open] dev: Bring cece/loving-feynman-hlgf18 (the Tether prototype) onto Ys-bleeding-edge: Tether = 14 collides with Thresher = 14; take the next free id (re-check before claiming: 17 went to the Angler and the Kite's branch claims 19, so 18 as of 2026-10-18; 18 then went to the Goby and 19-23 are taken: 24 as of 2026-10-24), rewrite TETHER.md section 12, run check_network_prefab_hashes.py and the edit-mode suite (who: anyone)
-- T-20261017-3c5d [open] dev: Round 2 of the concept fleet: one vessel per session in the owner's order (CONCEPT_FLEET.md section 8); the Gibbon's session merges the Tether prototype (section 8.1) (who: anyone)
-- T-20261017-b999 [open] decision: Decide the concept fleet's three open design questions before any port: the Albatross's own gravity (a vessel that falls in a HyperSea without gravity), the Remora's compounding slipstream (two drafters ratchet each other to the cap) and whether a tow may take petals, and the Dragonfly / Marlin second input strategy (left stick = translation, RT = throttle). (who: anyone)
-- T-20261017-3244 [open] dev: Give the picked concept vessels a clean AI difficulty ladder (Hard fastest on every course, D24): the shared belief mistakes barely cost these fast movers and the lab-only press delay punishes tempo mechanics (the Octopus's Easy DNFs; the Albatross's Easy loses the updraft). One AI round per kept vessel, scorecard before and after. (who: anyone)
-- T-20261017-b227 [open] test: Playtest the ten concept vessels in the Vessel Studio artifact (hub row 'New vessels - the concept fleet'): fly each on phone and PC, watch its AI, and Record Keep / Drop with a line of why on each page's Decisions tab; then pick five, then three (Docs/Studios/CONCEPT_FLEET.md section 1). (who: anyone)
 <!-- team_report:end -->

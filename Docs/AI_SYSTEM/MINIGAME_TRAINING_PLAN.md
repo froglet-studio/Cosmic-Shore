@@ -1,6 +1,6 @@
 # Training the AIs through each vessel's own minigames
 
-**Decided by Yash, 2026-10-26, restated 2026-10-27.** **Focus since 2026-10-27: the Stoat (Slingshot) and the Meerkat (Warpline), §8.** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`).
+**Decided by Yash, 2026-10-26, restated 2026-10-27 and 2026-11-01.** **Focus since 2026-11-01 (§10): no new vessels; each existing vessel's Time minigame, then the arena games. Yash flies the Dolphin in Switchback (§9) himself; the Stoat (Slingshot) and the Meerkat (Warpline) are the vessels Claude sessions build with him (§8).** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`).
 
 **The plan in one paragraph (2026-10-27).** The AIs are not trained in Regatta. Each vessel is trained in its OWN
 minigames: first its **Time minigame** (the card whose genre petal is Time, usually its race: the Stoat's is Warpline),
@@ -423,3 +423,28 @@ finishes I4 in about 120-145 s at every level. Blasting as flown today saves abo
 plan that follows from it, in order: dodge only what costs (Danger prisms, never inside the last stretch to a ring);
 make the blast free (fly THROUGH the key on the racing line with the nose drifted onto the door, no setup turn behind
 it); set the planner's hit costs from the measured ones; then drift-spam, from Yash's Blast Run races.
+
+## 10. The order of work from 2026-11-01: minigames first, no new vessels (Yash)
+
+> "For now we won't be making any more new vessels. We will be focusing on making the mini games. The time mini games,
+> all our existing vessels, awesome. And then finally we will make arena games such as regattas. So for now you can for
+> me focus on stoat and meerkat. But other than that, I'm totally focused on dolphins, switchback, time game, where I'm
+> making awesome AI so the game feels hard to play as well as challenging." (Yash, 2026-11-01)
+
+1. **No new vessels.** Every prototype (the concept ten, the Siphonophore, the Omega crews, the calm three, the Orca's
+   play styles) is parked and catalogued in `Docs/Studios/CONCEPT_FLEET.md` §13. A session brings one back only when
+   Yash asks for it by name.
+2. **The Time minigames of the existing vessels, made awesome.** One per vessel (§2), four intensities that teach then
+   test (§1), and an AI that makes it hard and challenging to win: rivals of the same hull, learned from people's races
+   (`AUTO_LEARNING.md`), at every intensity.
+3. **Then the arena games**, Regatta first, rebuilt from the skills the vessels learned in their own minigames (§4).
+
+**Who is on what.**
+
+| Work | Who | Where it is written |
+|---|---|---|
+| The Dolphin in **Switchback** (Blast Run): an AI that drifts into the key crystal with the nose on the obstacle, blasts it and drift-spams to the ring, so the race is hard to win | **Yash** plays it at every intensity; the AI sessions build from his races | §9; `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md` |
+| The **Stoat** in **Slingshot** and the **Meerkat** in **Warpline**: the kit, the race and the AI | Claude sessions with Yash | §7, §8; `Docs/Studios/STOAT_PLAY_STYLES.md`, `Docs/Studios/MEERKAT.md` |
+| The other vessels' Time minigames | later, one vessel at a time, in the §2 order | §2 |
+| The arena games (Regatta and the rest) | after the Time minigames | §4; `REGATTA_AI_ROADMAP.md` (on hold) |
+

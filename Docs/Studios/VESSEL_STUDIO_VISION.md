@@ -61,6 +61,11 @@ status) in every change that moves a step**, and add what a step taught to §6.
 
 ## 4. Status and order (update in every change that moves a step)
 
+**Order from 2026-11-01 (Yash): no new vessels.** The steps that make new vessels (B2, B3's new kinds, B4, B9) wait;
+every prototype made so far is parked in `CONCEPT_FLEET.md` §13 and comes back only when Yash asks for it. The work is
+the existing vessels' Time minigames (B6, built for real by `/arcadegame`), then the arena games (B7), with the AI
+learned from people's races (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §10).
+
 | Step | Status (date) | Done when |
 |---|---|---|
 | B1 + New studio on all three surfaces | **Done** 2026-10-14 | the card on the hub, Amoebius and Unity; Create reaches Claude Code or an AGENT chat (`parity_gate.py`, `StudioServerTests`) |

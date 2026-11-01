@@ -178,7 +178,8 @@ section title, dropdown, row label, button, transport) before publishing; they m
    - `studio-ide.js`: docks, tabs, pop-outs, folds;
    - `studio-look.js`: sky, prism field, crystals, marker;
   - `studio-theme.js`: the fonts, sizes, spacing and chrome colours (D29);
-  - `studio-domains.js`: the game's domain colours.
+  - `studio-domains.js`: the game's domain colours;
+  - `studio-audio.js`: ability sounds synthesized in the browser (Web Audio, no files), the stage's Sound on / off (`mountToggle`, key M) and the Sound card (`mountPanel`: Play, four sliders, Confirm / Redo into the decision log). They brief the game's FMOD events, which ship empty.
 
    Then every studio gets the change.
 7. **Every panel and popup closes** with ×, a press outside it, and Escape (D15).

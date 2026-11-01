@@ -737,6 +737,7 @@
     "studio-kinds.js",
     "studio-vessel.js",
     "omega-studio.js",
-    "siphonophore-studio.js", "studio-audio.js"
+    "siphonophore-studio.js",
+    "studio-audio.js"
   ]
 }
