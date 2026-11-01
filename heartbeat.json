@@ -14,16 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {},
- "host": "dragonsweapon",
- "last": {
-  "count": null,
-  "epoch": "754c681331e3",
+ "current": {
   "job": "unity-train~r20261102-005148-167f",
-  "rc": 1,
-  "stopped": "stopped from the console",
+  "max_evals": 2,
+  "minutes": 60.0,
+  "phase": "starting",
+  "request": "r20261102-005148-167f",
+  "since": 1793562053,
   "unit": "serpenttime-serpent-i3"
  },
+ "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -209,7 +209,7 @@
  "totals": {
   "sessions": 15
  },
- "updated": 1793562037,
+ "updated": 1793562054,
  "user": "shombithofficial",
  "version": "1"
 }
