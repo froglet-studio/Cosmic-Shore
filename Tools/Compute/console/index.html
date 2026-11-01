@@ -56,11 +56,11 @@ body > * { position: relative; z-index: 1; }
 /* the silver screen: one still of the game behind each view (Tools/Compute/console/stills/<view>.jpg, the mode's card
    art in black and white), faded into the ground so the lists stay readable; nothing when the file is not served */
 .scroll { position: relative; }
-.still { position: absolute; left: 0; right: 0; top: 0; height: 420px; pointer-events: none; z-index: 0;
+.filmstill { position: absolute; left: 0; right: 0; top: 0; height: 420px; pointer-events: none; z-index: 0;
   background-size: cover; background-position: center 30%; filter: grayscale(1) contrast(1.1); opacity: 0.22;
   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0) 100%); mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0) 100%); }
-:root[data-theme="light"] .still { opacity: 0.12; }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .still { opacity: 0.12; } }
+:root[data-theme="light"] .filmstill { opacity: 0.12; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .filmstill { opacity: 0.12; } }
 .pane { position: relative; z-index: 1; }
 .card .stillband { height: 96px; background-size: cover; background-position: center 35%; filter: grayscale(1) contrast(1.1); opacity: 0.55; border-bottom: 1px solid var(--line); }
 h1, h2, h3, .sec, .step > b, .step > summary, .tile b, .topbar h1, .side .brand, #ptitle { font-family: var(--head); font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -446,7 +446,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
       <button class="btn pri" type="button" id="b-newrun"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New run</button>
     </header>
     <div class="content">
-      <div class="scroll" id="scroll"><div class="still" id="still" aria-hidden="true"></div><div class="pane" id="main"><div class="empty"><b>Loading</b><span>The console reads console.json, published next to it.</span></div></div></div>
+      <div class="scroll" id="scroll"><div class="filmstill" id="filmstill" aria-hidden="true"></div><div class="pane" id="main"><div class="empty"><b>Loading</b><span>The console reads console.json, published next to it.</span></div></div></div>
       <div>
         <section class="term" id="term" hidden aria-label="Terminal">
           <div class="termbar"><span class="tab"><span class="led on"></span>compute — console</span><span class="sp"></span>
@@ -1774,7 +1774,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   function stillFor(view) { return "stills/" + (view === "queue" ? "searches" : view) + ".jpg"; }
   function render() {
     var root = document.getElementById("main"); root.textContent = "";
-    var st = document.getElementById("still"); if (st) st.style.backgroundImage = "url(" + stillFor(VIEW) + ")";
+    var st = document.getElementById("filmstill"); if (st) st.style.backgroundImage = "url(" + stillFor(VIEW) + ")";
     renderChrome();
     ({ home: renderHome, runs: renderRuns, searches: renderSearches, machines: renderMachines, recordings: renderRecordings, ai: renderAi, vessels: renderVessels })[VIEW](root);
     if (!LIVE) root.appendChild(h("p", { class: "note foot", text: "Snapshot of " + new Date(DATA.generated * 1000).toLocaleString() + (DATA.sync_every ? " · updates every " + DATA.sync_every : "") }));
