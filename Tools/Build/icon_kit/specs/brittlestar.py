@@ -17,13 +17,13 @@ lines), Speed (the ring with trails). The Charge card goes first: it shows an ab
 Real geometry:
   the hull     BrittleStar.fbx seen NOSE-ON (yaw 90, pitch -90: a pentagon point up) - the ring of five arms round the
                cockpit, a turret at each corner. From above or the side it is a line: the ring stands across the nose.
-  a prism      the fleet's diamond (motifs.prism_lit); a sliced one is the diamond cut along the cord's line, halves apart.
+  a prism      two close triangles (motifs.prism_halves; never the rhombus, the Time petal's shape); a sliced one has
+               its cut along the cord's line, the halves apart.
 """
 import math
 
 import mesh_silhouette
 from canvas import N, empty, fill, stroke
-from motifs import prism_lit
 
 import numpy as np
 from PIL import Image
@@ -110,18 +110,17 @@ SLICED = (64 + 50 * math.cos(math.radians(54)), 64 + 50 * math.sin(math.radians(
 
 
 def sliced_prism():
-    cx, cy, s = SLICED
-    whole = prism_lit(cx, cy, s)
-    a = math.radians(-90 + 72 * 2)       # the cut runs along cord 2 (lower right)
+    # The prism as two close triangles (never the rhombus: the Time petal's shape, Garrett 2026-11-01), its cut lying
+    # along cord 2 - the cord has just sliced it, and the halves have come apart.
+    cx, cy, s_ = SLICED
+    a = math.radians(-90 + 72 * 2)
     ux, uy = math.cos(a), math.sin(a)
-    yy, xx = np.mgrid[0:N, 0:N] * (128.0 / N)
-    side = (xx - cx) * (-uy) + (yy - cy) * ux
-    gap = 2.2
+    px, py = -uy, ux
+    w, g = s_ * 0.8, 2.6
     out = empty()
     for sgn in (-1, 1):
-        half = whole & (sgn * side > gap)
-        d = int(round(3.0 * N / 128))
-        out |= np.roll(np.roll(half, int(round(-uy * sgn * d)), 1), int(round(ux * sgn * d)), 0)
+        ox, oy = cx + px * g * sgn, cy + py * g * sgn
+        out |= fill([(ox + ux * s_, oy + uy * s_), (ox - ux * s_, oy - uy * s_), (ox + px * w * sgn, oy + py * w * sgn)])
     return out
 
 
