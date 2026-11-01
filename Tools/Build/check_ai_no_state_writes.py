@@ -71,6 +71,8 @@ REFLECTION = re.compile(r"\.SetValue\s*\(|\bBindingFlags\b|\bSendMessage\s*\(|\b
 
 # (path suffix, receiver regex, member, reason) - each a reviewed exception.
 ALLOW = [
+    ("Camera/ThirdEye/ThirdEyeHud.cs", r"^Eye\.Fly$", "Speed",
+     "the AI Diagnose fly-speed slider sets the dev free-fly CAMERA speed (FreeFlyCamera), never a vessel"),
     ("Utility/AITraining/Pilot/TrainingPilot.cs", r"^_ctx$", "Speed",
      "_ctx is the genome's own DecisionContext, filled from a READ of _status.Speed"),
     ("Utility/AITraining/Pilot/TrainingPilot.cs", r"^_ctx$", "IsBoosting",
