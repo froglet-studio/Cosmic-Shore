@@ -7933,7 +7933,8 @@ three cells. The Ark itself is ~150 prisms and ~150 always-on nothing — its la
 TMP text — plus its WAKE, one prism per 45 units of travel bounded by `arkWakeBudget` (400) and
 ordinarily retired with the cell it was laid in, so ~150 standing in steady state. One crystal
 (one always-on trigger) per traversal cell, three standing. Satellite cells run no cytoplasm
-(4k shard motes each stays preview-suppressed). (They also used to be barred from
+(4k shard motes each stays preview-suppressed), except an Ark escort's worlds, which opt in
+thinned (§41.6). (They also used to be barred from
 `DomainFaunaBuffSystem.EnsureExists`, whose runtime rebinding a satellite strike could leave
 holding a dead SO; that system is removed — §15 — so the hazard and its guard are both gone.)
 
@@ -7982,6 +7983,26 @@ holding a dead SO; that system is removed — §15 — so the hazard and its gua
   controlling colour is whatever domain dominates its authored environment's volume. The
   dials are `prismStride`, `populationScale`, and the corridor's own churn (the food web
   grazes the world down); no new control lever was added, per §0.
+
+### 41.6 The Ark's feel: a solid hull, an escort world's own shards (2026-11-01)
+
+Garrett's playtest of the escort. Two recorded exceptions to the satellite and Ark rules above.
+Neither touches §0: no prism is created, removed or weighted by them, and no creature's
+steering, diet or reach changes.
+
+- **The Ark is solid to VESSELS only** (`ArkHullSolid`). A signed distance over the modelled
+  hull's envelope (ported from `ark_reverse.py`), with the hangar and the ring tunnel carved out
+  as the one passage. A vessel inside it is set back on the surface and its nose turned along
+  it. Creatures, rounds, blasts and abilities are untouched, so every hull prism is still shot
+  and grazed exactly as before (§0.x armour wear, plates as food, the reactor's regrowth and the
+  super-shield absorb all unchanged). Fence: one component, on a modelled Ark, acting on
+  `VesselStatus.Live` within the hull's reach, on the vessel's authority only.
+- **An escort world runs its own cytoplasm** (`Cell.SatelliteCytoplasmEnabled`). The field is
+  bound to the satellite's own runtime, so its shards point at that world's crystal, built when
+  the crystal is handed to the cell, and thinned (`SatelliteCytoplasmSpacingScale`, 1.5 from the
+  escort = about 30% of the authored count) because three worlds stand at once. Shards are
+  visuals, not mass. One setter call site: `ArkEscortRun.PrepareCell`. Dying limbs in those
+  worlds now condense into their shards (bounded by `maxMorphedShards`, as in a scene cell).
 
 ---
 
