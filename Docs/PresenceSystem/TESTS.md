@@ -1,5 +1,7 @@
 # Presence System — Manual Test Procedures
 
+> The friends-panel freshness, slow-join, stale-AI and netcode cases (RTT, transform tuning, score guard, rejoin) live in [MULTIPLAYER_TEST_CHECKLIST.md](MULTIPLAYER_TEST_CHECKLIST.md), with the debug overlay (Ctrl+Shift+M). EditMode: `MultiplayerBugHuntTests`.
+
 Presence-lobby-specific MPPM scenarios. For party (Relay) gameplay
 tests see `../PartySystem/TESTS.md`. For NetDiag-specific tests see
 `../NetworkDiagnostics/TESTS.md`.

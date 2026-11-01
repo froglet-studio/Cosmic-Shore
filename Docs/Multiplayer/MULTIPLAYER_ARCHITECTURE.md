@@ -1,6 +1,6 @@
 # Multiplayer architecture: the concepts, where Cosmic Shore stands, and what we need
 
-Written 2026-11-01 from an audit of `Ys-bleeding-edge` @ `21735dcd9`. It explains each netcode
+Written 2026-11-01 from an audit of `Ys-bleeding-edge` @ `21735dcd9`; §1 and §3 updated 2026-11-02 to the shipped state (§5). Index of all multiplayer docs: [`README.md`](README.md). It explains each netcode
 concept once, in terms of Netcode for GameObjects (NGO) 2.13 and Unity Gaming Services (UGS), then
 says what Cosmic Shore does today and whether we need more. Read `Docs/MULTIPLAYER_START_HERE.md`
 first for the standing rules (a party is 4, free tiers, push only to Ys-bleeding-edge), and
@@ -30,17 +30,17 @@ That profile tells us the following:
 | Transport / NAT | Unity Transport over **UGS Relay**. Sessions are created with `.WithRelayNetwork()`, so NAT is never an issue, and nobody's IP is exposed. | `Controller/Multiplayer/MultiplayerSetup.cs:436-443`, `Controller/Party/Services/PartySessionService.cs:229-235` |
 | Sessions / lobby | Two layers: a **presence lobby** (who is online), plus a **party session** (the people you play with, max 4) created by the inviter. | `Controller/Party/`, `Docs/PresenceSystem/`, `Docs/PartySystem/` |
 | Matchmaking | **None.** Play is invite-only, with no `WithMatchmaking` / Matchmaker / QuickJoin. | grep |
-| Tick rate | `TickRate: 30`. `EnableTimeResync: 0`. Heartbeat 500 ms, connect timeout 1 s × 10 attempts. | `NetworkManager.prefab` |
+| Tick rate | `TickRate: 30`. `EnableTimeResync: 1` since 2026-11-01 (`TimeResyncInterval: 30`). Heartbeat 500 ms, connect timeout 1 s × 10 attempts. | `NetworkManager.prefab` |
 | Ship authority | **Owner-authoritative movement.** Every vessel prefab uses `ClientNetworkTransform` (`OnIsServerAuthoritative() => false`). Owner-written input state (`InputStatus` `n_xSum`, `n_throt`, …) and owner-written `Player` NetworkVariables (name, vessel, avatar). The host owns roster and score state (`NetDomain`, `NetIsAI`, …, `Server` write). | `Utility/Network/ClientNetworkTransform.cs`, `_Prefabs/Spacevessels/*.prefab`, `Controller/IO/InputStatus.cs:37-41`, `Controller/Player/Player.cs:30-111` |
-| NetworkTransform | `Interpolate: 1`, `PositionMaxInterpolationTime: 0.1`, position threshold 0.001, scale synced. Full-precision floats (no half-float), Euler rotation (no quaternion sync or compression). Reliable deltas (`UseUnreliableDeltas: 0`). | `_Prefabs/Spacevessels/TigerMoth.prefab:100-130` (all hulls alike) |
+| NetworkTransform | All 17 vessel prefabs (`ClientNetworkTransform`): `Interpolate: 1`, `PositionMaxInterpolationTime: 0.1`, position threshold 0.001. Since 2026-11-01: `UseQuaternionSynchronization: 1`, `UseQuaternionCompression: 1`, `UseHalfFloatPrecision: 1`, `UseUnreliableDeltas: 1`, and scale not synced (only Tiger Moth had synced it). | `_Prefabs/Spacevessels/*.prefab` |
 | Prisms / trails | **Not NetworkObjects.** Each peer grows trails locally from the replicated ship motion. Destruction and steals are **reported to the host** by ServerRpc (`ReportEnvironmentPrismDestroyed_ServerRpc`, `ReportPrismStolen_ServerRpc`), and the host scores. This is the main reason bandwidth stays small despite thousands of prisms. | `Controller/Player/Player.cs:722-820`, `Controller/Managers/StatsManager.cs:417-432` |
 | Other replicated systems | Fauna, Fulmen (server-time-stamped events), wrecking ball, arcade lobby (`LobbySnapshot` NetworkVariable). | `Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs`, `Controller/Environment/Fulmen/FulmenNetSync.cs`, `Controller/Multiplayer/ArcadeConfigSyncManager.cs` |
-| RTT / ping | **Not used in gameplay or UI.** NGO metrics are enabled (`NetworkMessageMetrics: 1`). Diagnostics are in `Docs/NetworkDiagnostics/`. | grep `GetCurrentRtt` → none |
+| RTT / ping | The host samples each client's RTT once a second (`NetworkTransport.GetCurrentRtt(OwnerClientId)`) into `Player.NetRttMs` (server-write `ushort`; 0 for host and AI). Thresholds are in `ConnectionQuality` (≤100 Good, ≤200 Fair, >200 Poor). The debug overlay (Ctrl+Shift+M) has a **Network (RTT)** section. Clients show a **Poor connection - N ms** badge after 3 s above 200 ms. Not on the party panel or scoreboard yet. | `Controller/Player/Player.cs` (`SampleRtt`), `Utility/Network/ConnectionQuality.cs`, `Utility/Network/ConnectionWarningBadge.cs`, `Utility/Diagnostics/MultiplayerDebugOverlay.cs` |
 | Prediction / lag comp | **None**, and none is needed for your own ship (you own it, so there is zero input latency). Remote ships are interpolated ~0.1 s behind. | — |
 | Interest management | **None** (no `CheckObjectVisibility` / `NetworkShow` / `NetworkHide`). Everyone receives everything. | grep |
 | Host migration | **None.** If the host leaves, the match ends (`DisconnectNotice` paths). | `Tests/Editor/DisconnectNoticeTests.cs`, `Controller/Party/StateMachine/PartyStateMachine.cs` |
 | Reconnection | **Mid-match rejoin exists** (correction to the first draft of this doc). When a guest drops, the host hands its Player and vessel to the AI (`DontDestroyWithOwner`, `NetIsAI`), so its score keeps counting. The client remembers the match (`MatchRejoin` record, 30 min) and `DisconnectNotice` offers Rejoin. The host matches the UGS PlayerId from the approval payload and gives the seat back (`TryReclaimSeat`). | `Controller/Multiplayer/ServerPlayerVesselInitializer.cs` (`HandleClientDisconnectedForAITakeover`, `TryReclaimSeat`), `Controller/Multiplayer/MatchRejoin.cs`, `UI/Elements/DisconnectNotice.cs`, `Tests/Editor/MatchRejoinTests.cs` |
-| Anti-cheat | **Observe-only host checks**: `MovementPlausibilityMonitor` measures guest speed and teleports and raises signals, never kicks. Connection approval is on. | `Controller/Multiplayer/MovementPlausibilityMonitor.cs`, `Docs/AntiCheat/README.md` |
+| Anti-cheat | `MovementPlausibilityMonitor` measures guest speed and teleports and signals them to the server via match reports; it never kicks. Connection approval is on. Prism reports pass `HitReportGuard` (volume cap 10 000, token bucket 600 burst / 300 per s per player). The server-checked weekly leaderboard is built but gated off (`ServerScoreGate.Enabled = false`). | `Controller/Multiplayer/MovementPlausibilityMonitor.cs`, `Controller/Multiplayer/HitReportGuard.cs`, `System/CloudData/ServerScores.cs`, `Docs/AntiCheat/README.md` |
 
 ## 2. The concepts
 
@@ -315,17 +315,17 @@ Movement cheats in a friends-only co-op game are low priority.
 |---|---|---|
 | Authoritative server | **Need now (keep host-auth rules + owner-auth movement)** | The right, free model for 4-player co-op; no dedicated servers until ranked play with stakes. |
 | Matchmaking | **Later** | Invite + AI fill covers a small population; add QuickJoin first, Matchmaker only for ranked. |
-| Tick rate | **Need now (keep 30 Hz, enable time resync)** | 30 Hz is enough with interpolation; only drift correction is missing. |
+| Tick rate | **Done (30 Hz, time resync on)** | 30 Hz is enough with interpolation; resync now corrects drift. |
 | Interest management | **Not needed** | ≤ 6 ships and local prisms; nothing large to cull. |
-| Ping / RTT | **Need now** | Cheap, and it is the first thing players and the host need to see when it stutters. |
+| Ping / RTT | **Done (overlay + badge); party panel / scoreboard pending** | Players and the host can now see when the network is the problem. |
 | Client prediction / reconciliation | **Not needed (movement); Later (local-first ability VFX)** | Owner authority already gives zero-latency control. |
-| Interpolation | **Need now — have it; tune it** | On at 0.1 s; tune it under the simulator and fix the transform settings. |
+| Interpolation | **Have it; tuned** | On at 0.1 s with quaternion compression, half floats and unreliable deltas; verify under the simulator. |
 | Lag compensation | **Not needed** | Hits are judged by the colliding client; the risk is trust, not lag. |
 | Relay / NAT | **Need now — done** | All sessions use Relay; Steam SDR is an optional later cost saver. |
 | Host migration | **Later (graceful host-leave now)** | Short matches; true migration costs weeks. |
 | Reconnection | **Done (pre-existing) — verify** | AI takeover + seat reclaim by PlayerId already ship. |
-| Bandwidth / serialization | **Need now (low effort)** | NetworkTransform is untuned (scale synced, Euler, full floats, reliable). |
-| Anti-cheat | **Need now for scores; Later for movement** | Clients send score volumes the host believes. |
+| Bandwidth / serialization | **Done (transform settings); packed inputs skipped** | NetworkTransform tuned on all hulls (§5). |
+| Anti-cheat | **Host guard done; Cloud Code gated off; movement later** | `HitReportGuard` caps client prism reports; `ServerScoreGate` waits on deploy. |
 
 ## 4. Roadmap to seamless multiplayer (prioritised)
 
@@ -352,3 +352,5 @@ Movement cheats in a friends-only co-op game are low priority.
 | 5. Mid-match rejoin | **Already implemented** | See §2.11. No code change; checklist §5 cases 7-9 verify it. |
 
 Tests: `Tests/Editor/ConnectionQualityTests.cs`, `Tests/Editor/HitReportGuardTests.cs`, plus the existing `MatchRejoinTests`. Manual: `Docs/PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md` §5.
+
+Paths and settings cited in this doc were re-verified on 2026-11-02: `Controller/Party/HostConnectionService.cs`, `Docs/PartySystem/`, `Docs/ARCADE_MATCH_LENGTH.md`, and `UseCMBService: 0` in `NetworkManager.prefab` all exist as stated.
