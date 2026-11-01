@@ -5,6 +5,11 @@ list (3,065 runs in total), the failed jobs' logs, and every guard step run loca
 pinned to a single merge by running its check on the merge and on the merge's first parent. **Nothing was fixed in
 this pass.** The fixes belong to the areas' owners and are listed in section 4.
 
+**Update, 2026-11-01 19:45 UTC (`bleeding-edge` at `7e2ee3d23`, #1677):** Meerkat, Angler and Undertow are fixed on
+bleeding-edge by `feature/starling-element-draws` (`77fedb3ad`, `1421c3022`, `af10c6d17`). **Regatta is the one red
+generator left**, so the guard and Unity CI stay red on it alone. Amoebius is unchanged. Sections 1-3 are the
+18:50 measurement and are kept as the record.
+
 ## 1. In one minute
 
 - **Two separate problems make "all the CI runs" red.** Every red run on bleeding-edge and on PRs comes from one or both.
@@ -121,18 +126,16 @@ from CI run 41336210737.
    passing generators; exit 1 on a misspelt path. On GitHub: Unity CI run
    [41340979013](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41340979013) (static tier on this branch)
    ran all 60 and named all four, each with its own annotation. The guard's half runs only on a bleeding-edge push.
-2. **Meerkat:** restore `onCombatHitLanded` to `Event_CombatHitStats` in `MeerkatWormholeConfig.asset`. This is a
-   behaviour bug, not just drift. Owner: Yash.
-3. **Angler:** *done on `claude/ci-runs-failing-i6u77f` (Shombith's call, 2026-11-01).* The HUD check no longer
-   expects the flat `Angler_*.png` icons from before the recut. It requires that the Stoat's four icons are gone and
-   that each of the four icon-kit cards (Lock, Lure, Paint, Dash) carries its own parts from
-   `AbilityIcons/Angler/Parts`, reading their guids from the parts' `.meta` files, so the icon kit owns them. Two new
-   negative controls in `--self-test` (27/27 fire).
-4. **Undertow:** *done on `claude/ci-runs-failing-i6u77f` (Shombith's call, 2026-11-01: the asset is current, the
-   generator was out of date).* The generator now emits Garrett's recut debuff (`ScarabShoveDebuffByExplosionEffect`) as
-   the plate's first effect, so the container on disk is left as it is. Negative control: putting the old debuff back
-   into the asset makes `--check` fail.
-5. **Regatta:** re-derive the starting elements (`regatta_balance.py`), or settle the Serpent's place on the Regatta
+2. **Meerkat:** *done on bleeding-edge* (`77fedb3ad`, #1677): `onCombatHitLanded` restored to `Event_CombatHitStats`
+   in `MeerkatWormholeConfig.asset`. This was a behaviour bug (a zap scored nowhere), not just drift.
+3. **Angler:** *done on bleeding-edge* (`1421c3022`, #1677). The HUD check accepts a card the icon kit recut, using
+   the BrittleStar generator's `KIT_RECUT` pattern: the card passes when its first part's view field is wired.
+   `claude/ci-runs-failing-i6u77f` had a parallel fix (it read the parts' sprite guids from their `.meta` files) and
+   took #1677's version at the merge, since that version follows the pattern the other recut generators use.
+4. **Undertow:** *done on bleeding-edge* (`af10c6d17`, #1677). The generator emits Garrett's recut debuff
+   (`ScarabShoveDebuffByExplosionEffect`); the shipped container is unchanged. The same fix had been made on
+   `claude/ci-runs-failing-i6u77f`, which took #1677's version at the merge.
+5. **Regatta** (the one red generator left): re-derive the starting elements (`regatta_balance.py`), or settle the Serpent's place on the Regatta
    card with its owner.
 6. **Amoebius:** add the 16 missing shims (or `#if` the platform sign-in files out of the port), then see whether the
    three engine tests still fail. Owner: Shombith (Amoebius).
