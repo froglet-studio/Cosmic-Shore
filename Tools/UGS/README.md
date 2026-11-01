@@ -33,16 +33,20 @@ The scripts in this folder do nothing until they are uploaded to UGS: the game c
 switch in the game stays off until its script is deployed, so **deploy first, then turn switches on**. Deploying is safe
 at any time: nothing calls a script while its switch is off.
 
-1. Install the UGS CLI once: `npm install -g ugs`.
-2. Sign in, either way:
-   - `ugs login` with a service account key (Unity Cloud dashboard > Administration > Service accounts > a key with
-     the Cloud Code Editor role), or
-   - set `UGS_CLI_SERVICE_KEY_ID` and `UGS_CLI_SERVICE_SECRET_KEY` in the environment. A Claude cloud session reads
-     them from the environment's settings and can run the deploy itself; never paste them into a chat.
-3. `bash Tools/UGS/deploy.sh development`. It runs the tests and the price check, then uploads `economy.js`,
-   `weekly-score.js`, `match-report.js`, `trust.js` and `entitlements.js`.
-4. In the dashboard (Cloud Code > Scripts) the five appear in the development environment.
-5. After the editor checks pass with a switch on: `bash Tools/UGS/deploy.sh production`.
+"development" and "production" are the two UGS environments on Unity's servers, not git branches. Scripts are
+deployed from **bleeding-edge**, development first.
+
+**With the button (no terminal):**
+1. Once: make a UGS service account (Unity Cloud dashboard > Administration > Service accounts > New, role Cloud Code
+   Editor, then Add key) and put its key id and secret in GitHub as repository secrets `UGS_CLI_SERVICE_KEY_ID` and
+   `UGS_CLI_SERVICE_SECRET_KEY` (repository Settings > Secrets and variables > Actions > New repository secret).
+2. GitHub > Actions > **Deploy UGS scripts** > Run workflow > branch `bleeding-edge`, environment `development` > Run.
+   It tests every script, checks the vessel prices and uploads the five scripts (`.github/workflows/ugs-deploy.yml`).
+3. Dashboard > Cloud Code > Scripts, development environment: the five are there.
+4. After the editor checks pass with a switch on, run it again with `production`.
+
+**From a terminal instead:** `npm install -g ugs`, `ugs login` with the same key, then
+`bash Tools/UGS/deploy.sh development` from the repository root.
 
 `deploy.sh` never applies the access policies (`AccessControl/*.json`): `project-policy.json` blocks direct leaderboard
 posts, which breaks every build that still posts directly. Apply it only once a build with `ServerScoreGate` on is out
