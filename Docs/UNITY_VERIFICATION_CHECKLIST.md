@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Switchback AI step 1: dodge only Danger prisms, none in the last 200 u to the ring (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `SwitchbackPrismAvoidance.Dodges`, used by `SwitchbackBlastAI`'s sense and emergency sweep;
+`SwitchbackController.aiDodgeDangerOnly` (on) and `aiNoDodgeNearRing` (200 u). The AI flies straight through plain
+prisms and never dodges in the final stretch to a ring.
+
+**Verified without the editor:** reference compile (editor, player-dev); console-logging, using-directive and
+conditional-compilation gates; `switchback_sim_harness` selftest and eval (24 courses x I1-I4 x 4 levels: every cell
+finishes all 24, I4 Legendary 0 of 24 -> median 205 s; `SWITCHBACK.md` "Step 1"). NOT run:
+`SwitchbackPrismAvoidanceTests` in Unity, the real soak.
+
+**Verify in editor:**
+1. Run `SwitchbackPrismAvoidanceTests` (EditMode): all pass, `Dodges_OnlyDangerPrisms_AndNothingInTheLastStretchToTheRing` included.
+2. The soak (`SwitchbackSoakRunner`, I1-I4 x D1-D4): AI race times fall against `soak_results.md`, Legendary is no
+   slower than Easy, and course hits taken while dodging (`emerg=True` in the per-hit log) mostly disappear.
+3. Switchback I3 / I4 against AI Dolphins (AI Diagnose panel, "AI sense" overlay): they fly through plain blocks, swerve
+   only for red Danger blocks, and never swerve in the last stretch before a ring.
+
 ### 🔴 B47: a rejoin hands the reclaimed hull to the rejoiner with ChangePlayer, not a second Initialize (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync` no longer calls `Initialize` on the reclaimed

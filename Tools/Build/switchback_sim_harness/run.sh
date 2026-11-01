@@ -10,7 +10,7 @@
 #
 # Flags: planner=0 (the plain gate AI: no blast planner), sense=0, emergency=0, drive=0 (no charge drive),
 #        cone=1 (blast with a cone nearer the asset's than the planner's under-promising slot), roll=1 (the gape
-#        flown as planned; the game does not fly roll), pickup=<u>, hull=<u>, dangerOnly=1 (sense and sweep see only Danger prisms), gates=<n>, dt=<s>,
+#        flown as planned; the game does not fly roll), pickup=<u>, hull=<u>, dangerOnly=0|1 and noDodgeNear=<u> (the shipped SwitchbackController.aiDodgeDangerOnly 1 / aiNoDodgeNearRing 200; 0 0 = the old dodge-everything AI), gates=<n>, dt=<s>,
 #        hit.slow / hit.secs / hit.dangerSlow / hit.dangerSecs / hit.meter / hit.destroys=0|1 (what a prism does).
 # Levels: 1 Easy, 2 Medium, 3 Hard, 4 Legendary (SwitchbackAISkill.ForLevel, SwitchbackAvoidSkill.ForLevel).
 #
