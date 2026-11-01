@@ -2596,6 +2596,19 @@ namespace CosmicShore.Gameplay
         public bool SatelliteEcologyEnabled { get; set; }
 
         /// <summary>
+        /// Opt a SATELLITE into its cytoplasm: the drifting shard field that points at the cell's crystal (a satellite
+        /// otherwise runs none, see <see cref="SpawnCytoplasm"/>). The Ark escort's worlds are the opt-in (Garrett,
+        /// 2026-11-01: "the cells should have their own shards (cytoplasm) that help find their own crystal"): the field
+        /// is bound to the satellite's own runtime, so its shards point at that world's crystal, and it is thinned by
+        /// <see cref="SatelliteCytoplasmSpacingScale"/> because three worlds stand at once. Set BEFORE
+        /// <see cref="InitializeSatellite"/>. Honoured only while <see cref="IsSatellite"/>.
+        /// </summary>
+        public bool SatelliteCytoplasmEnabled { get; set; }
+
+        /// <summary>A satellite's shard spacing over its config's (1 = as authored; 1.5 = about 30% of the shards).</summary>
+        public float SatelliteCytoplasmSpacingScale { get; set; } = 1.5f;
+
+        /// <summary>
         /// Runtime multiplier over every flora/fauna population this cell resolves, composed on
         /// top of the profile's own authored scales inside <see cref="ResolveFaunaPopulation"/> /
         /// <see cref="ResolveFloraPopulation"/> - so, like
@@ -3266,7 +3279,9 @@ namespace CosmicShore.Gameplay
             // paying a second cell's worth of them beside the running menu is atmosphere nobody
             // asked for at a frame cost everybody feels. Structure only; the scene cell's own
             // cytoplasm is untouched.
-            if (IsSatellite) return;
+            // The one opt-in (SatelliteCytoplasmEnabled): an Ark escort's worlds, where the shards are how a pilot finds
+            // each world's own crystal.
+            if (IsSatellite && !SatelliteCytoplasmEnabled) return;
 
             // Guarded for repeat passes, exactly like the environment spawn: the field holds ONE
             // cytoplasm and every cleanup path (ResetCell, the swap retire, the toy re-parent) reads
@@ -3280,6 +3295,13 @@ namespace CosmicShore.Gameplay
             {
                 spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
                 spawnedCytoplasm.SetOrigin(transform.position);
+                if (IsSatellite)
+                {
+                    // its OWN runtime (its crystal, its cell-items event), thinned, built when its crystal arrives
+                    spawnedCytoplasm.Rebind(runtime);
+                    spawnedCytoplasm.SpacingScale = SatelliteCytoplasmSpacingScale;
+                    spawnedCytoplasm.InitializeWhenCrystalArrives = true;
+                }
                 spawnedCytoplasm.Initialize();
             }
         }

@@ -30,6 +30,10 @@ namespace CosmicShore.Gameplay
         const float WingmateAbeam = 140f;
         const float EndAfterSurvivedSeconds = 4f;
 
+        /// <summary>Each escort world's cytoplasm spacing over its config's: a world's own shards, pointing at its own
+        /// crystal, thinned because three worlds stand at once (<see cref="Cell.SatelliteCytoplasmEnabled"/>).</summary>
+        const float CellShardSpacing = 1.5f;
+
         /// <summary>Raised once per escort as it ends, with what happened.</summary>
         public static event System.Action<ArkEscortReport> Finished;
 
@@ -237,6 +241,8 @@ namespace CosmicShore.Gameplay
             var leg = _escort.Legs[routePosition];
             var tier = _escort.TierFor(_difficulty);
             cell.RuntimePopulationScale = _escort.PopulationFor(routePosition, _difficulty);
+            cell.SatelliteCytoplasmEnabled = true;
+            cell.SatelliteCytoplasmSpacingScale = CellShardSpacing;
             bool hostile = leg.Hostile && _difficulty >= leg.HostileFrom && _rng.NextDouble() < tier.HostileShare;
             if (hostile)
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(VoyageRun.LiveDomain(_context)));
