@@ -19216,6 +19216,12 @@ gate race and the Skim Race pilot. EditMode: `PerSeatAIDifficultyTests`, `Arcade
    and press Easy: every AI reads "Easy AI". Launch with AI 1 Easy, AI 2 Legendary: AI 2 flies visibly cleaner.
 6. Same Arcade card as a guest: the pedestals show each AI's level and cannot be pressed for it.
 
+**Status (2026-11-01):** still unverified. Checked on `Ys-bleeding-edge` at `4f875bd14c`: the code is intact (nothing in the
+725 commits since `9f6db7cc49` touched the difficulty paths); the refcompile and `gates.sh` passed at push time. No
+screenshot of the real window exists yet; the only images made were mockups drawn on the Rev 20 G / Rev 25 B boards.
+A local session with Unity open should capture: an Arcade card (Scurry) with three AI, no AI selected, then AI 1 and
+AI 2 each selected with different levels; and an Arena card (Regatta) with an AI selected (the vessel strip follows it).
+
 ## 🔴 2026-10-27 — Stoat flies Slingshot, Meerkat flies Warpline; the Time Race Prototyper (unverified: no Unity editor in the session)
 
 **Files:** `ArcadeGameWarpline.asset` + `ModePreview_Warpline.asset` (Vessels / preview: the Meerkat; `author_warpline_assets.py`),

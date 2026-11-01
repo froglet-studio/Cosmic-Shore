@@ -164,6 +164,9 @@ hand yours to the AI.
 - The learned Squirrel AI in Regatta: does it hit the rail less? (T-20261016-39e6).
 - The recorder checks: 24/24 on a finish, button presses, the hull named (checklist, 2026-10-16).
 - The You / AI toggle (T-20261015-e266).
+- Each AI its own difficulty (2026-10-27, `Ys-bleeding-edge`, not yet in `bleeding-edge`): press an AI's podium on the
+  Regatta card (or any card with AI) and Easy / Medium / Hard / Legendary sets that AI only. Not yet run in the editor
+  and no screenshot of the real window yet; checklist entry "Each AI seat its own difficulty".
 - The checklist entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md` (Regatta, 2026-10-14 to 2026-10-16).
 
 **Flights of the other hulls** (Yash, T-20261016-89ed): the Manta has learned. The Rhino needs **one more finished
