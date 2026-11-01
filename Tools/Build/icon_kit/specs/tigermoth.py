@@ -165,14 +165,21 @@ def dart(x, y, s=1.0):
     return fill([(x + 11 * s, y), (x - 8 * s, y - 8 * s), (x - 3 * s, y), (x - 8 * s, y + 8 * s)])
 
 
-def motes(x0, x1, y0, y1, n=14, seed=7, s=3.2):
-    """The dust: small diamonds scattered down a column (a fixed scatter, the same every render)."""
+def motes(x0, x1, y0, y1, n=14, seed=7, s=3.2, tone=None):
+    """The dust: small diamonds scattered down a column (a fixed scatter, the same every render). `tone` 0, 1 or 2 keeps
+    only every third mote from that one: the dust is made of three colours (Garrett, 2026-11-01: "make a dust made of
+    danger color, team domain color, team shielded domain color"), the same three the game's motes wear
+    (ButterflyDustField.ResolveMotePalette), so each colour is its own part and the HUD tints them apart."""
     rng = np.random.default_rng(seed)
     out = empty()
-    for _ in range(n):
+    for i in range(n):
         x, y = rng.uniform(x0, x1), rng.uniform(y0, y1)
-        out |= fill([(x, y - s), (x + s, y), (x, y + s), (x - s, y)])
+        if tone is None or i % 3 == tone:
+            out |= fill([(x, y - s), (x + s, y), (x, y + s), (x - s, y)])
     return out
+
+
+DUST_TONES = ("danger", "domain", "shielded")   # the three colours of the dust, mote by mote
 
 
 S_MOTH = moth(76, 54, 30)
@@ -188,8 +195,11 @@ def dust_rival():
     return dart(*S_RIVAL, s=2.6)
 
 
-def dust_motes():
-    return _clear_of(motes(16, 96, 60, 126, n=22, s=4.6), S_MOTH(), dust_rival(), px=2.5)
+def dust_motes_tone(tone):
+    return lambda: _clear_of(motes(16, 96, 60, 126, n=22, s=4.6, tone=tone), S_MOTH(), dust_rival(), px=2.5)
+
+
+dust_motes_danger, dust_motes_domain, dust_motes = (dust_motes_tone(t) for t in range(3))
 
 
 def dust_ring():
@@ -199,7 +209,12 @@ def dust_ring():
 
 DUST_PARTS = [("ScaleDustRing", "TigerMoth_ScaleDustRing", "scaleDustRingIcon", dust_ring,
                "Charge 5 Toll Gate: the wormhole (domain; danger on a toll)"),
-              ("ScaleDustMotes", "TigerMoth_ScaleDustMotes", "scaleDustMotesIcon", dust_motes, "the dust (shielded)"),
+              ("ScaleDustMotesDanger", "TigerMoth_ScaleDustMotesDanger", "scaleDustMotesDangerIcon", dust_motes_danger,
+               "the dust, its danger third (danger)"),
+              ("ScaleDustMotesDomain", "TigerMoth_ScaleDustMotesDomain", "scaleDustMotesDomainIcon", dust_motes_domain,
+               "the dust, its domain third (domain)"),
+              ("ScaleDustMotes", "TigerMoth_ScaleDustMotes", "scaleDustMotesIcon", dust_motes,
+               "the dust, its shielded third (shielded)"),
               ("ScaleDustRival", "TigerMoth_ScaleDustRival", "scaleDustRivalIcon", dust_rival, "a rival (grey; danger on a hit)"),
               ("ScaleDustMoth", "TigerMoth_ScaleDustMoth", "scaleDustMothIcon", dust_moth, "the Tiger Moth, wings shut (domain)")]
 ICONS += [dict(name=i, element="Charge", act="Scale Dust: " + act, draw=draw, subdir="Parts", family=False,
@@ -207,20 +222,27 @@ ICONS += [dict(name=i, element="Charge", act="Scale Dust: " + act, draw=draw, su
                        "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part",
                        "specks": "a part"})
           for _n, i, _f, draw, act in DUST_PARTS]
-DUST_ON = [("dust", "shielded"), ("moth", "domain"), ("rival", GREY)]
+DUST_MOTES = dict(dust_d=dust_motes_danger, dust_p=dust_motes_domain, dust=dust_motes)
+
+
+def dust_tones(a=None):
+    return [(k, c) + ((a,) if a is not None else ()) for k, c in zip(("dust_d", "dust_p", "dust"), DUST_TONES)]
+
+
+DUST_ON = dust_tones() + [("moth", "domain"), ("rival", GREY)]
 CARDS += [
     dict(name="scaledust", element="Charge", before=ICON_DIR + "Butterfly_ScaleDust.png",
-         title="Scale Dust (Charge, picked A): the moth (domain) over its dust (shielded), a rival grey until the dust "
-               "hits it, red then; at Charge 5 the Toll Gate wormhole as a ring (domain, red as a rival pays)",
-         parts=dict(dust=dust_motes, moth=dust_moth, rival=dust_rival, ring=dust_ring),
+         title="Scale Dust (Charge, picked A): the moth (domain) over its dust (danger, domain and shielded motes), a "
+               "rival grey until the dust hits it, red then; at Charge 5 the Toll Gate wormhole as a ring",
+         parts=dict(moth=dust_moth, rival=dust_rival, ring=dust_ring, **DUST_MOTES),
          states=[("Dust mode", DUST_ON),
-                 ("a hit", [("dust", "shielded"), ("moth", "domain"), ("rival", "danger")]),
+                 ("a hit", dust_tones() + [("moth", "domain"), ("rival", "danger")]),
                  ("Charge 5: Toll Gate", DUST_ON + [("ring", "domain")]),
                  ("a rival pays the toll", DUST_ON + [("ring", "danger")]),
-                 ("Mass mode (no dust)", [("dust", "shielded", 0.25), ("moth", "domain", 0.4), ("rival", GREY, 0.4)])],
+                 ("Mass mode (no dust)", dust_tones(0.25) + [("moth", "domain", 0.4), ("rival", GREY, 0.4)])],
          lockup_state=0),
 ]
-LOCKUP["Charge"] = dict(parts=dict(dust=dust_motes, moth=dust_moth, rival=dust_rival), state=DUST_ON)
+LOCKUP["Charge"] = dict(parts=dict(moth=dust_moth, rival=dust_rival, **DUST_MOTES), state=DUST_ON)
 CHARGE_ICON = "7700000000000001105"     # the Charge slot's icon Image (was Butterfly_ScaleDust)
 REBIND += [
     dict(file=VARIANT, pair=dict(container=CHARGE_ICON, view=VIEW, after="wingEnergyGauge",
@@ -240,19 +262,43 @@ M_SHUT = lambda: mesh_silhouette.silhouette(FBX, box=58, cx=64, cy=32, take="rig
 KEYS_Y = (78.0, 97.0, 116.0)
 
 
-def _key(y, hw, hh=5.5):
-    return fill([(64 - hw, y), (64 - hw + hh, y - hh), (64 + hw - hh, y - hh), (64 + hw, y),
-                 (64 + hw - hh, y + hh), (64 - hw + hh, y + hh)])
+KEY_HH, KEY_CORE, KEY_GAP = 5.5, 12.0, 3.5   # half-height, the bare key's half-width, the square cut between core and end
 
 
+def _key_hw(i):
+    return 54.0 - 6.0 * i                    # the wide keys taper a little toward the bottom: the wake behind
+
+
+# Garrett, 2026-11-01: "make the base have more square edges. including the cut out. once gilded then change them to
+# octahedrons on the outside but keep them square edge on the interior." So every key is a rectangle and the cut between
+# its core and its ends is a straight vertical gap; under Gilded Wake the ends' OUTER edge comes to a point (the
+# prism's octahedral tip), their inner edge staying square against the cut.
 def keys_core():
-    return _clear_of(sum_masks(_key(y, 12) for y in KEYS_Y), M_SPREAD(), px=2.5)
+    return sum_masks(rect(64 - KEY_CORE, y - KEY_HH, 64 + KEY_CORE, y + KEY_HH) for y in KEYS_Y)
+
+
+def _ends(pointed):
+    out = empty()
+    for i, y in enumerate(KEYS_Y):
+        hw = _key_hw(i)
+        for sgn in (-1, 1):
+            x0, x1 = 64 + sgn * (KEY_CORE + KEY_GAP), 64 + sgn * hw
+            if pointed:
+                tip = x1 - sgn * KEY_HH
+                out |= fill([(x0, y - KEY_HH), (tip, y - KEY_HH), (x1, y), (tip, y + KEY_HH), (x0, y + KEY_HH)])
+            else:
+                out |= rect(min(x0, x1), y - KEY_HH, max(x0, x1), y + KEY_HH)
+    return out
 
 
 def keys_wide():
-    # The width Mass adds: each key's two ends, cut clear of the core so the HUD can light them apart.
-    out = sum_masks(_key(y, 54 - 6 * i) for i, y in enumerate(KEYS_Y))
-    return _clear_of(out, keys_core(), M_SPREAD(), px=3.0)
+    # The width Mass adds: each key's two ends, square, cut clear of the core so the HUD can light them apart.
+    return _ends(False)
+
+
+def keys_wide_gilded():
+    # Gilded Wake (Mass 5): the same ends with an octahedral point on the outside, square against the cut.
+    return _ends(True)
 
 
 def sum_masks(masks):
@@ -265,7 +311,9 @@ def sum_masks(masks):
 # Garrett picked A (2026-10-31, "actually. i like mass a"). The plate keeps its mode fill (wingEnergyGauge); the HUD
 # fades the key ends with the eased mode (ButterflyHUDView.SetMassMode) and turns the keys shielded under Gilded Wake.
 MASS_PARTS = [("MassKeyEnds", "TigerMoth_MassKeyEnds", "massKeyEndsIcon", keys_wide,
-               "the width Mass mode adds, each key's two ends (domain; shielded under Gilded Wake; faded in Dust mode)"),
+               "the width Mass mode adds, each key's two square ends (domain; faded in Dust mode; hidden under Gilded Wake)"),
+              ("MassKeyEndsGilded", "TigerMoth_MassKeyEndsGilded", "massKeyEndsGildedIcon", keys_wide_gilded,
+               "Gilded Wake: the ends pointed on the outside, square inside (shielded; faded in Dust mode)"),
               ("MassKeys", "TigerMoth_MassKeys", "massKeysIcon", keys_core,
                "the bare keys every mode lays (domain; shielded under Gilded Wake)"),
               ("MassMoth", "TigerMoth_MassMoth", "massMothIcon", M_SPREAD, "the Tiger Moth from above, wings spread (domain)")]
@@ -280,10 +328,10 @@ CARDS += [
          gauge={"Mass mode": (1.0, None), "Dust mode": (0.0, None), "Mass 5: Gilded Wake": (1.0, None)},
          title="Mass / Dust mode (Mass, picked A): the moth from above, wings spread, laying wide piano keys; Dust mode "
                "fades their ends to the bare keys; Gilded Wake lays them shielded",
-         parts=dict(moth=M_SPREAD, core=keys_core, wide=keys_wide),
+         parts=dict(moth=M_SPREAD, core=keys_core, wide=keys_wide, gilded=keys_wide_gilded),
          states=[("Mass mode", MASS_ON),
                  ("Dust mode", [("wide", "domain", 0.2), ("core", "domain"), ("moth", "domain")]),
-                 ("Mass 5: Gilded Wake", [("wide", "shielded"), ("core", "shielded"), ("moth", "domain")])],
+                 ("Mass 5: Gilded Wake", [("gilded", "shielded"), ("core", "shielded"), ("moth", "domain")])],
          lockup_state=0),
 ]
 LOCKUP["Mass"] = dict(parts=dict(wide=keys_wide, core=keys_core, moth=M_SPREAD), state=MASS_ON, gauge=1.0)
@@ -300,20 +348,19 @@ REBIND += [
 # turn dangerous / turn shielded; rival prisms are destroyed / shrunk / stolen. L5 Diamond Dust: 6% of own plain prisms
 # super-shield instead. Side on like the Charge card (the dust hangs below the hull), but the moth small and high so the
 # column is LONG, and prisms in it instead of a rival ship: the Charge card is the dust on pilots, this one on mass.
-R_MOTH = moth(62, 58, 22)
-
-
-def r_motes():
-    return motes(30, 98, 44, 126, n=16, seed=21, s=4.4)
+R_MOTH = moth(52, 54, 20)
+R_OWN = (36.0, 80.0, 16.0)               # your prism the dust has tended (shielded)
+R_RIVAL = (78.0, 102.0, 18.0)            # a rival prism the dust has broken (grey: no team)
+R_DIAMOND = (98.0, 58.0, 14.0)           # Space 5 Diamond Dust: your mass super-shielded (the stella octangula)
 
 
 def r_own():
-    return prism_lit(40, 82, 19)
+    return prism_lit(*R_OWN)
 
 
 def r_rival_shards():
     # A rival prism broken in three: the diamond cut along two lines and its pieces pushed apart.
-    cx, cy, sz = 86.0, 100.0, 19.0
+    cx, cy, sz = R_RIVAL
     whole = prism_lit(cx, cy, sz)
     out = empty()
     cuts = [rect(0, 0, cx - 1.5, cy - 1.5), rect(cx + 1.5, 0, 128, cy + 2.5), rect(0, cy + 1.5, cx - 1.5, 128)]
@@ -324,54 +371,57 @@ def r_rival_shards():
     return out
 
 
-def r_dust():
-    return _clear_of(r_motes(), R_MOTH(), r_own(), r_rival_shards(), px=3.0)
+def r_diamond():
+    from specs.rhino import stella        # the fleet's super-shield, as the Rhino's Blade Reach card draws it
+    return _clear_of(stella(R_DIAMOND[0], R_DIAMOND[1], R_DIAMOND[2]), R_MOTH(), px=2.5)
 
 
-def r_capsule():
-    # B: the capsule's outline, the length Space buys, as a long stadium hanging below the hull.
-    x0, x1, y0, y1 = 18.0, 110.0, 30.0, 124.0
-    r = (x1 - x0) / 2
-    pts = [(x0, y0 + r)]
-    pts += [((x0 + x1) / 2 + r * math.cos(t), y0 + r - r * math.sin(t)) for t in np.linspace(math.pi, 0, 24)]
-    pts += [(x1, y1 - r)]
-    pts += [((x0 + x1) / 2 + r * math.cos(t), y1 - r + r * math.sin(t)) for t in np.linspace(0, -math.pi, 24)]
-    return _clear_of(stroke(pts, w=3.5, closed=True), R_MOTH(), px=3.0)
+def r_motes_tone(tone):
+    return lambda: _clear_of(motes(20, 108, 40, 126, n=24, seed=21, s=4.4, tone=tone), R_MOTH(), r_own(),
+                             r_rival_shards(), r_diamond(), px=3.0)
 
 
-def r_reach():
-    # C: the reach as a measure - a bracket down the right side, from the hull to the capsule's end.
-    out = stroke([(116, 40), (116, 124)], w=4.5)
-    for y in (40, 124):
-        out |= stroke([(108, y), (124, y)], w=4.5)
-    return out
+r_motes_danger, r_motes_domain, r_motes = (r_motes_tone(t) for t in range(3))
 
-
-SPACE_ON = [("dust", "shielded"), ("own", "shielded"), ("rival", "danger"), ("moth", "domain")]
-SPACE_DIAMOND = [("dust", "shielded"), ("own", "white"), ("rival", "danger"), ("moth", "domain")]
-SPACE_MASS = [("dust", "shielded", 0.25), ("own", "shielded", 0.4), ("rival", "danger", 0.4), ("moth", "domain", 0.4)]
-SPACE_BEFORE = ICON_DIR + "Butterfly_Wingreach.png"
+REACH_PARTS = [("DustReachMotesDanger", "TigerMoth_DustReachMotesDanger", "dustReachMotesDangerIcon", r_motes_danger,
+                "the dust, its danger third (danger)"),
+               ("DustReachMotesDomain", "TigerMoth_DustReachMotesDomain", "dustReachMotesDomainIcon", r_motes_domain,
+                "the dust, its domain third (domain)"),
+               ("DustReachMotes", "TigerMoth_DustReachMotes", "dustReachMotesIcon", r_motes,
+                "the dust, its shielded third (shielded)"),
+               ("DustReachRival", "TigerMoth_DustReachRival", "dustReachRivalIcon", r_rival_shards,
+                "a rival prism the dust broke (grey)"),
+               ("DustReachOwn", "TigerMoth_DustReachOwn", "dustReachOwnIcon", r_own,
+                "your prism the dust tended (shielded)"),
+               ("DustReachDiamond", "TigerMoth_DustReachDiamond", "dustReachDiamondIcon", r_diamond,
+                "Space 5 Diamond Dust: a super-shielded prism (white), hidden before the upgrade"),
+               ("DustReachMoth", "TigerMoth_DustReachMoth", "dustReachMothIcon", R_MOTH,
+                "the Tiger Moth, wings shut (domain)")]
+ICONS += [dict(name=i, element="Space", act="Dust Reach: " + act, draw=draw, subdir="Parts", family=False,
+               exempt={"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+                       "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part",
+                       "specks": "a part"})
+          for _n, i, _f, draw, act in REACH_PARTS]
+REACH_MOTES = dict(dust_d=r_motes_danger, dust_p=r_motes_domain, dust=r_motes)
+SPACE_ON = dust_tones() + [("own", "shielded"), ("rival", GREY), ("moth", "domain")]
+# Garrett, 2026-11-01, on the options (A recommended): the dust in its three colours, and "use a supershielded prism icon
+# that only comes in with the upgrade".
 CARDS += [
-    dict(name="space_a", group="space", element="Space", before=SPACE_BEFORE,
-         title="A  the dust on mass: the moth small and high, its dust hanging LONG below it; your prism in it turned "
-               "shielded, a rival prism broken; Diamond Dust: yours super-shields (white)",
-         parts=dict(dust=r_dust, own=r_own, rival=r_rival_shards, moth=R_MOTH),
-         states=[("Dust mode", SPACE_ON), ("Space 5: Diamond Dust", SPACE_DIAMOND), ("Mass mode (no dust)", SPACE_MASS)],
+    dict(name="dustreach", element="Space", before=ICON_DIR + "Butterfly_Wingreach.png",
+         title="Dust Reach (Space, A): the moth high, its dust hanging long below it in its three colours, your prism "
+               "in it shielded and a rival's broken; Space 5 Diamond Dust brings in a super-shielded prism",
+         parts=dict(own=r_own, rival=r_rival_shards, diamond=r_diamond, moth=R_MOTH, **REACH_MOTES),
+         states=[("Dust mode", SPACE_ON),
+                 ("Space 5: Diamond Dust", SPACE_ON + [("diamond", "white")]),
+                 ("Mass mode (no dust)", dust_tones(0.25) + [("own", "shielded", 0.4), ("rival", GREY, 0.4),
+                                                             ("moth", "domain", 0.4)])],
          lockup_state=0),
-    dict(name="space_b", group="space", element="Space", before=SPACE_BEFORE,
-         title="B  the capsule: A inside the capsule's outline, so the card shows the shape Space stretches",
-         parts=dict(cap=r_capsule, dust=r_dust, own=r_own, rival=r_rival_shards, moth=R_MOTH),
-         states=[("Dust mode", [("cap", "white", 0.7)] + SPACE_ON),
-                 ("Space 5: Diamond Dust", [("cap", "white", 0.7)] + SPACE_DIAMOND),
-                 ("Mass mode (no dust)", [("cap", "white", 0.2)] + SPACE_MASS)],
-         lockup_state=0),
-    dict(name="space_c", group="space", element="Space", before=SPACE_BEFORE,
-         title="C  the reach: A with a bracket down the side, hull to the dust's end, the length Space buys",
-         parts=dict(reach=r_reach, dust=r_dust, own=r_own, rival=r_rival_shards, moth=R_MOTH),
-         states=[("Dust mode", [("reach", "white")] + SPACE_ON),
-                 ("Space 5: Diamond Dust", [("reach", "white")] + SPACE_DIAMOND),
-                 ("Mass mode (no dust)", [("reach", "white", 0.3)] + SPACE_MASS)],
-         lockup_state=0),
+]
+LOCKUP["Space"] = dict(parts=dict(own=r_own, rival=r_rival_shards, moth=R_MOTH, **REACH_MOTES), state=SPACE_ON)
+SPACE_ICON = "7700000000000001125"      # the Space slot's icon Image (was Butterfly_Wingreach)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=SPACE_ICON, view=VIEW, after="wingEnergyGauge",
+                                 children=[(n, i, f) for n, i, f, _d, _a in REACH_PARTS])),
 ]
 
 

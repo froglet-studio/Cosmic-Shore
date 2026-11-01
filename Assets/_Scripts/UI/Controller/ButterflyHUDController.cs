@@ -63,7 +63,7 @@ namespace CosmicShore.UI
         {
             if (!_isLocalPilotHud) return;
 
-            if (view) view.SetPilotColors(ResolveDomainSignalColor(), ResolveShieldedColor());
+            if (view) view.SetPilotColors(ResolveDomainSignalColor(), ResolveShieldedColor(), ResolveDangerColor());
 
             if (view && spreadExecutor)
             {
@@ -88,6 +88,9 @@ namespace CosmicShore.UI
                 var dust = spreadExecutor ? spreadExecutor.DustField : null;
                 bool hit = dust && Time.time - dust.LastBiteTime < flash;
                 view.SetScaleDust(spreadExecutor && spreadExecutor.IsDustMode, hit, tollGate, tolled);
+                var abilities = _status?.ElementalAbilityHandler;
+                view.SetDustReach(spreadExecutor && spreadExecutor.IsDustMode,
+                                  abilities != null && abilities.IsUpgradeActive(Element.Space));
             }
         }
 
@@ -98,6 +101,14 @@ namespace CosmicShore.UI
             var theme = _gameData?.ThemeManagerData;
             if (theme == null || _status == null || _status.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
             return theme.GetShieldedSignalColor(_status.Domain);
+        }
+
+        /// <summary>The fleet's danger colour (<c>SO_ColorSet.GetDangerSignalColor</c>), the dust's danger third on the
+        /// cards; alpha 0 until the palette resolves.</summary>
+        Color ResolveDangerColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            return colorSet == null ? new Color(0f, 0f, 0f, 0f) : colorSet.GetDangerSignalColor();
         }
 
         /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Angler's and

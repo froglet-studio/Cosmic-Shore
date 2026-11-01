@@ -58,6 +58,9 @@ namespace CosmicShore.UI
         [Tooltip("The width Mass mode adds, each piano key's two ends (TigerMoth_MassKeyEnds): the domain colour, " +
                  "shielded under Gilded Wake; fades to dustKeyEndsAlpha as the wake narrows into Dust mode.")]
         [SerializeField] Image massKeyEndsIcon;
+        [Tooltip("Gilded Wake (Mass 5): the key ends pointed on the outside, square inside " +
+                 "(TigerMoth_MassKeyEndsGilded), the shielded colour. Shown in place of massKeyEndsIcon once upgraded.")]
+        [SerializeField] Image massKeyEndsGildedIcon;
         [Tooltip("The bare keys every mode lays (TigerMoth_MassKeys): the domain colour, shielded under Gilded Wake.")]
         [SerializeField] Image massKeysIcon;
         [Tooltip("The Tiger Moth from above, wings spread (TigerMoth_MassMoth), the domain colour.")]
@@ -71,6 +74,11 @@ namespace CosmicShore.UI
         [SerializeField] Image scaleDustRingIcon;
         [Tooltip("The dust (TigerMoth_ScaleDustMotes), the pilot's shielded colour; dim in Mass mode.")]
         [SerializeField] Image scaleDustMotesIcon;
+        [Tooltip("The dust's danger third (TigerMoth_ScaleDustMotesDanger): the dust is made of three colours, danger, " +
+                 "domain and shielded, as the game's motes are (ButterflyDustField.ResolveMotePalette).")]
+        [SerializeField] Image scaleDustMotesDangerIcon;
+        [Tooltip("The dust's domain third (TigerMoth_ScaleDustMotesDomain).")]
+        [SerializeField] Image scaleDustMotesDomainIcon;
         [Tooltip("A rival in the dust (TigerMoth_ScaleDustRival): grey, danger for a beat when the dust bites.")]
         [SerializeField] Image scaleDustRivalIcon;
         [Tooltip("The Tiger Moth, wings shut (TigerMoth_ScaleDustMoth), the domain colour.")]
@@ -83,6 +91,23 @@ namespace CosmicShore.UI
         [SerializeField, Min(0f)] float hitFlashSeconds = 0.6f;
         [Tooltip("Alpha of the Charge card's parts in Mass mode (no dust).")]
         [SerializeField, Range(0f, 1f)] float noDustAlpha = 0.35f;
+
+        [Header("Space card: Dust Reach (icon_kit specs/tigermoth.py, A, 2026-11-01)")]
+        [Tooltip("The dust's danger third (TigerMoth_DustReachMotesDanger).")]
+        [SerializeField] Image dustReachMotesDangerIcon;
+        [Tooltip("The dust's domain third (TigerMoth_DustReachMotesDomain).")]
+        [SerializeField] Image dustReachMotesDomainIcon;
+        [Tooltip("The dust's shielded third (TigerMoth_DustReachMotes).")]
+        [SerializeField] Image dustReachMotesIcon;
+        [Tooltip("A rival prism the dust broke (TigerMoth_DustReachRival), grey.")]
+        [SerializeField] Image dustReachRivalIcon;
+        [Tooltip("Your prism the dust tended (TigerMoth_DustReachOwn), the shielded colour.")]
+        [SerializeField] Image dustReachOwnIcon;
+        [Tooltip("Space 5 Diamond Dust: a super-shielded prism (TigerMoth_DustReachDiamond), white. Hidden before " +
+                 "the upgrade.")]
+        [SerializeField] Image dustReachDiamondIcon;
+        [Tooltip("The Tiger Moth, wings shut (TigerMoth_DustReachMoth), the domain colour.")]
+        [SerializeField] Image dustReachMothIcon;
 
         [Header("Time card: the Tiger Moth's Drop (icon_kit specs/tigermoth.py, Garrett picked A 2026-10-31)")]
         [Tooltip("Charge 5 Toll Gate: the wormhole the drop leaves (TigerMoth_DropMouth), the domain colour; danger as " +
@@ -111,10 +136,12 @@ namespace CosmicShore.UI
             _dropShown = _dustShown = -1;
             SetDrop(false, true, false, false);
             SetScaleDust(false, false, false, false);
+            _reachShown = -1;
+            SetDustReach(false, false);
         }
 
-        int _dropShown = -1, _dustShown = -1;
-        Color _domain = Color.white, _shielded = Color.white;
+        int _dropShown = -1, _dustShown = -1, _reachShown = -1;
+        Color _domain = Color.white, _shielded = Color.white, _danger = Color.white;
 
         /// <summary>
         /// Push the mode, 1 = Mass mode, 0 = Dust mode, anything between = switching
@@ -132,16 +159,27 @@ namespace CosmicShore.UI
             }
 
             var keys = gildedWake ? Color.Lerp(_domain, _shielded, value) : _domain;
-            if (massKeyEndsIcon) massKeyEndsIcon.color = A(keys, Mathf.Lerp(dustKeyEndsAlpha, 1f, value));
+            float ends = Mathf.Lerp(dustKeyEndsAlpha, 1f, value);
+            if (massKeyEndsIcon)
+            {
+                massKeyEndsIcon.enabled = !gildedWake || !massKeyEndsGildedIcon;
+                massKeyEndsIcon.color = A(keys, ends);
+            }
+            if (massKeyEndsGildedIcon)
+            {
+                massKeyEndsGildedIcon.enabled = gildedWake;
+                massKeyEndsGildedIcon.color = A(keys, ends);
+            }
             if (massKeysIcon) massKeysIcon.color = A(keys, 1f);
             if (massMothIcon) massMothIcon.color = A(_domain, 1f);
         }
 
-        /// <summary>The pilot's domain and shielded colours (alpha 0 = not resolved yet, keep the last).</summary>
-        public void SetPilotColors(Color domain, Color shielded)
+        /// <summary>The pilot's domain, shielded and danger colours (alpha 0 = not resolved yet, keep the last).</summary>
+        public void SetPilotColors(Color domain, Color shielded, Color danger)
         {
-            if (domain.a > 0f && domain != _domain) { _domain = domain; _dropShown = _dustShown = -1; }
-            if (shielded.a > 0f && shielded != _shielded) { _shielded = shielded; _dustShown = -1; }
+            if (domain.a > 0f && domain != _domain) { _domain = domain; _dropShown = _dustShown = _reachShown = -1; }
+            if (shielded.a > 0f && shielded != _shielded) { _shielded = shielded; _dustShown = _reachShown = -1; }
+            if (danger.a > 0f && danger != _danger) { _danger = danger; _dustShown = _reachShown = -1; }
         }
 
         static Color A(Color c, float a) => new(c.r, c.g, c.b, a);
@@ -185,8 +223,34 @@ namespace CosmicShore.UI
                 scaleDustRingIcon.color = tolled ? hitColor : _domain;
             }
             if (scaleDustMotesIcon) scaleDustMotesIcon.color = A(_shielded, a);
+            if (scaleDustMotesDangerIcon) scaleDustMotesDangerIcon.color = A(_danger, a);
+            if (scaleDustMotesDomainIcon) scaleDustMotesDomainIcon.color = A(_domain, a);
             if (scaleDustRivalIcon) scaleDustRivalIcon.color = A(hit && dustOn ? hitColor : rivalIdleColor, a);
             if (scaleDustMothIcon) scaleDustMothIcon.color = A(_domain, dustOn ? 1f : noDustAlpha);
+        }
+
+        /// <summary>
+        /// Dust Reach on the Space card: the moth over its long dust (danger, domain and shielded motes), your prism in
+        /// it shielded, a rival's broken and grey; all dim in Mass mode. At Space 5 Diamond Dust
+        /// (<paramref name="diamondDust"/>) a super-shielded prism comes in, white.
+        /// </summary>
+        public void SetDustReach(bool dustOn, bool diamondDust)
+        {
+            int key = (dustOn ? 1 : 0) | (diamondDust ? 2 : 0);
+            if (key == _reachShown) return;
+            _reachShown = key;
+            float a = dustOn ? 1f : noDustAlpha;
+            if (dustReachMotesDangerIcon) dustReachMotesDangerIcon.color = A(_danger, a);
+            if (dustReachMotesDomainIcon) dustReachMotesDomainIcon.color = A(_domain, a);
+            if (dustReachMotesIcon) dustReachMotesIcon.color = A(_shielded, a);
+            if (dustReachRivalIcon) dustReachRivalIcon.color = A(rivalIdleColor, a);
+            if (dustReachOwnIcon) dustReachOwnIcon.color = A(_shielded, a);
+            if (dustReachDiamondIcon)
+            {
+                dustReachDiamondIcon.enabled = diamondDust;
+                dustReachDiamondIcon.color = A(Color.white, a);
+            }
+            if (dustReachMothIcon) dustReachMothIcon.color = A(_domain, a);
         }
 
         /// <summary>How long a bite or a toll shows on the cards.</summary>

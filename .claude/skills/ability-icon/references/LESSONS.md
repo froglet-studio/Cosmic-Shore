@@ -478,3 +478,11 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     of `ButterflyHUDView` and took `SetMassMode` with it, while the controller and `Initialize` still called it: a
     compile error nobody here could see. With no compiler in the session, grep every method the controller calls on
     the view (`grep -o 'view\.[A-Za-z]*(' Controller.cs`) against the view after each edit.
+
+71. **One colour language for an effect, in the world and on its card.** "make a dust made of danger color, team domain
+    color, team shielded domain color. use this in the icon and for the actual dust". When a card draws a world effect
+    in several colours, each colour is its own part (the kit's `motes(tone=)` splits one scatter into thirds), and the
+    game's effect reads the same palette from one shared method, so the card and the world cannot drift.
+72. **Mass reads square; its upgrade sharpens the outside.** The Tiger Moth's keys: rectangles with a straight cut
+    ("more square edges. including the cut out"); Gilded Wake points their OUTER ends ("octahedrons on the outside but
+    keep them square edge on the interior"). An upgrade drawn as a swapped part, not a tint alone.

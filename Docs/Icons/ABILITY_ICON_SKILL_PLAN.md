@@ -342,7 +342,16 @@ to scale in the explosion": the moth small at the heart of a sphere of dust mote
 wake"; Garrett first said C, then "actually. i like mass a"): seen from above so the wake's width shows, the moth with
 its wings spread over three piano keys; the keys' ends fade with the eased mode to the bare keys in Dust mode, and Gilded
 Wake (Mass 5) turns the keys shielded (`ButterflyHUDView.SetMassMode(mode, gildedWake)`); the plate keeps its mode fill.
-Next: Space (Dust Reach).
+On the built card: "make the base have more square edges. including the cut out. once gilded then
+change them to octahedrons on the outside but keep them square edge on the interior": the keys are rectangles with a
+straight cut, and Gilded Wake swaps in ends pointed on the outside (`TigerMoth_MassKeyEndsGilded`). **The dust** in
+three colours ("make a dust made of danger color, team domain color, team shielded domain color. use this in the icon
+and for the actual dust on the ability and omnicrystal dust effects"): the Charge and Space cards' motes are three parts
+(danger, domain, shielded), and the game's capsule and bloom motes take the same three
+(`ButterflyDustField.ResolveMotePalette`). The **Space card, Dust Reach**: A (the dust on mass): the moth high, its dust
+long below it, your prism in it shielded, a rival's broken and grey; Space 5 Diamond Dust brings in a super-shielded
+prism (the Rhino's flat stella octangula, white), "only with the upgrade". The omni card stays one white sprite. Next:
+the Brittle Star.
 
 | Round | What | Why first |
 |---|---|---|
