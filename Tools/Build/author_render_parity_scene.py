@@ -28,6 +28,7 @@ discrepancies." Unity records it with FrogletTools > Amoebius > Render Parity (R
 Amoebius with Port/tools/render_parity.py, which also scores the two against each other.
 """
 import argparse
+import glob
 import os
 import re
 import sys
@@ -51,7 +52,7 @@ THEME_DATA = "d45a23e6bd2da304988606fba6c97628"
 HARNESS_SCRIPT = "073aad2d2c4c494f9ae322d3d37f8ebc"         # PrismGridExplosionHarness.cs
 GRID_CONFIG_SCRIPT = "5cd132ed964743619915a3b1038018e2"     # PrismGridTestConfigSO.cs
 TAKE_SCRIPT = "7c2e1a9d4b5f4e0c8a1d2f3e4b5c6d70"            # RenderParityTake.cs
-FLIGHT_SCRIPT = "7c2e1a9d4b5f4e0c8a1d2f3e4b5c6d72"          # RenderParityFlight.cs
+FLIGHT_SCRIPT = "d6df4250342f4fc681e5d3b796e7a326"          # RenderParityFlight.cs
 FLIGHT_SCENE = "Assets/_Scenes/Game_TestDesign/RenderParityFlight.unity"
 FLIGHT_SCENE_GUID = "7c2e1a9d4b5f4e0c8a1d2f3e4b5c6d82"
 GYROID_BRANCH_PREFAB = "932f1e7dbf4a4c04824d09eb4510cafc"   # Assets/_Prefabs/FloraAndFauna/Spindles/GyroidBranch.prefab
@@ -116,6 +117,15 @@ def check_guids():
         meta = os.path.join(ROOT, rel + ".meta")
         if not os.path.exists(meta) or f"guid: {guid}" not in open(meta).read():
             bad.append(f"{rel} is not guid {guid}")
+    # A guid this script names must belong to ONE asset: the flight script's first guid was the Parity folder's,
+    # Unity re-assigned both on import and the scene's component loaded as a missing script (2026-11-01).
+    owned = list(CHECKED_GUIDS) + [SCENE_GUID, CONFIG_GUID, FLIGHT_SCENE_GUID]
+    seen = {}
+    for meta in glob.glob(os.path.join(ROOT, "Assets", "**", "*.meta"), recursive=True):
+        m = re.search(r"^guid: (\w+)", open(meta, errors="ignore").read(), re.M)
+        if m and m.group(1) in owned:
+            seen.setdefault(m.group(1), []).append(os.path.relpath(meta, ROOT))
+    bad += [f"guid {g} is shared by {', '.join(v)}" for g, v in seen.items() if len(v) > 1]
     if bad:
         raise SystemExit("asset guids drifted:\n  " + "\n  ".join(bad))
 
