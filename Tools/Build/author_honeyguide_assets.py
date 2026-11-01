@@ -15,19 +15,19 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md;
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
         - HoneyguideCrew on the root, wired to HoneyguideConfig.asset
         - the triggers retargeted (lab round 6): RightStickAction -> HoneyguideRTAction, LeftStickAction -> HoneyguideLTAction,
-          Button2 keeps the boost, the turret-stance toggle and the guns are gone; its AIPilot keeps only the boost (the crew
-          presses the AI's triggers itself). Applied to the shipped prefab too, so it is not a one-shot.
+          and nothing else (round 8: no boost button; the turret-stance toggle and the guns are gone); its AIPilot presses
+          nothing of its own (the crew presses the AI's triggers itself). Applied to the shipped prefab too: not a one-shot.
       Everything else is the Sparrow's: the lab flies the Sparrow's airframe.
     Assets/_SO_Assets/VesselActions/Honeyguide/: HoneyguidePeckAction.asset (RT's Peck, a FullAutoActionSO: the lab's peckRate
       and peckRange through the Sparrow's gun, no spread, no growth) and HoneyguideRTAction / HoneyguideLTAction.asset (the
       two HoneyguideTriggerActionSO the input maps).
     Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset (+ .meta): every number, card and word, READ FROM THE
-      LAB (CARDS, CARD_EFFECTS, EFFECTS, ACTIVES, ENGINES, ABILITY_TEXT, ESKILL, SHIPPED) with the C# initializers for the effect
+      LAB (CARDS, CARD_EFFECTS, EFFECTS, ACTIVES8, ENGINES, ABILITY_TEXT, ESKILL, SHIPPED) with the C# initializers for the effect
       numbers the lab keeps in code. No card is parked (round 6: the trigger cards are the upgrades).
     SO_Class_Honeyguide (the Sparrow's icons, owned from the start, its card reads "Honeyguide and Ratel") + its entry in
     SO_Classlist_All / _Classes; one entry each in `Vessel Prefab Container.asset` (the root TRANSFORM) and
-    `DefaultNetworkPrefabs.asset` (the root GAMEOBJECT); Resources/ElementalAbilityMaps/Honeyguide.asset (MAP_ENTRIES: Charge
-    Peck on RT, Mass Flit on LT, Space the Slip, Time the Sparrow's Afterburner; written whenever it differs); and four
+    `DefaultNetworkPrefabs.asset` (the root GAMEOBJECT); Resources/ElementalAbilityMaps/Honeyguide.asset (MAP_ENTRIES, round 8:
+    Charge Flit on LT, Mass the hive, Space Peck on RT, Time the Slip; written whenever it differs); and four
     CrystalHullFusionConfig entries (the Sparrow's: it draws the Sparrow's mesh).
     The toybox roster (ToyVesselRoster.Default) is CODE and is not written here.
 
@@ -63,8 +63,22 @@ SEAT_SCRIPT_META = os.path.join(CREW_DIR, "HoneyguideCrew.cs.meta")
 CONFIG_SCRIPT = os.path.join(CREW_DIR, "HoneyguideConfigSO.cs")
 CONFIG_DIR = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "Honeyguide")
 CONFIG = os.path.join(CONFIG_DIR, "HoneyguideConfig.asset")
+# The native bee hive the Ratel's left hive plants (Bee Hive Flora Mass, written by Tools/Build/author_bee_assets.py).
+BEE_HIVE_MASS_GUID = "ecbd6d53cbd0ad77e60b2ab91b9310b1"
 LAB = os.path.join(ROOT, "Docs", "Studios", "HoneyguideLab.html")
 GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"   # GameData.asset (KiteNavigatorConfig wires the same)
+# Hive mode (Garrett 2026-10-31): an Omni crystal the Honeyguide collects becomes a hive. The hull's VesselImpactor gets its
+# own container - the Sparrow's, plus HoneyguideOmniCrystalEffect in its omni list (the Wrasse's pattern,
+# author_wrasse_assets.py). Not a one-shot for the prefab: the retarget is held to it.
+CONTAINERS = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Effect Containers", "VesselContainers")
+DONOR_CONTAINER = os.path.join(CONTAINERS, "SparrowImpactorDataContainer.asset")
+HONEYGUIDE_CONTAINER = os.path.join(CONTAINERS, "HoneyguideImpactorDataContainer.asset")
+HIVE_EFFECT = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Vessel Crystal Effects", "HoneyguideOmniCrystalEffect.asset")
+HIVE_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "ImpactEffects", "EffectsSO", "Vessel Crystal Effects",
+                                "HoneyguideOmniCrystalEffectSO.cs.meta")
+DONOR_CONTAINER_GUID = "bd2b4a654fb302e47a23cf303280df2d"
+HONEYGUIDE_CONTAINER_GUID = "b2bc4391e7b140e481bb8923269a8a24"
+HIVE_EFFECT_GUID = "3ab296496c38413dabd5fbf6955d17f6"
 
 # 19 is the Wrasse, 20 the Orca, 21 the Starling, 22 the Marlin, now the Jacks (all on bleeding-edge, 2026-10-21): the Honeyguide is 23.
 HONEYGUIDE_CLASS_ID = 23
@@ -94,8 +108,8 @@ SPARROW_TRIGGER_GUIDS = ["c23cd2f2729292e468689b36e50be258", "7c369aa0e2711144b9
 # Cards that are never drawn. Round 6 parks none: the trigger cards are the triggers' upgrades.
 PARKED = []
 
-# The lab's ACTIVES use -> HoneyguideTriggerUse
-USES = {"press": 0, "hold": 1, "charge": 2}
+# The lab's ACTIVES8 pv (round 8: what a pull previews) -> HoneyguidePreview
+PREVIEWS = {"line": 0, "lob": 1, "cone": 2, "ring": 3, "thrust": 4, "hook": 5, "land": 6, "hops": 7, "dart": 8}
 
 
 def guid_of(meta_path: str) -> str:
@@ -149,13 +163,14 @@ def read_lab(html: str):
     lab["eskill"] = [(float(m.group(2)), int(m.group(3)), float(m.group(4))) for m in re.finditer(
         r"^    (easy|medium|hard): \{ think: ([\d.]+), top: (\d+), blunder: ([\d.]+)", lab_block(html, "ESKILL"), re.M)]
     lab["shipped"] = {m.group(1): m.group(2) for m in re.finditer(r"^    (\w+): (-?[\d.]+),", lab_block(html, "SHIPPED"), re.M)}
-    active_rows = list(re.finditer(r"^    (\w+): \{ btn: (\d), use: '(\w+)', cd: ([\d.]+), reach: ([\d.]+), text: %s \},$" % JS_STR,
-                                   lab_block(html, "ACTIVES"), re.M))
-    lab["actives"] = [(m.group(1), int(m.group(2)), m.group(3), m.group(4), m.group(5)) for m in active_rows]
-    # an upgrade card's words are its ACTIVES text (EFFECTS names it: `text: ACTIVES.lasso.text`)
+    # round 8 (Garrett 2026-11-01): ACTIVES8 - the trigger each upgrade banks on, its reach and what its pull previews
+    active_rows = list(re.finditer(r"^    (\w+): \{ btn: (\d), reach: ([\d.]+), glyph: '\w+', pv: '(\w+)', text: %s \},$" % JS_STR,
+                                   lab_block(html, "ACTIVES8"), re.M))
+    lab["actives"] = [(m.group(1), int(m.group(2)), m.group(3), m.group(4)) for m in active_rows]
+    # an upgrade card's words are its ACTIVES8 text (EFFECTS names it: `text: ACTIVES8.lasso.text`)
     for m in active_rows:
-        if re.search(r"^    %s: \{.*text: ACTIVES\.%s\.text \},$" % (m.group(1), m.group(1)), lab_block(html, "EFFECTS"), re.M):
-            lab["effects"][m.group(1)] = js_unescape(m.group(6))
+        if re.search(r"^    %s: \{.*text: ACTIVES8\.%s\.text \},$" % (m.group(1), m.group(1)), lab_block(html, "EFFECTS"), re.M):
+            lab["effects"][m.group(1)] = js_unescape(m.group(5))
     return lab
 
 
@@ -198,15 +213,16 @@ def num(v: str) -> str:
 
 
 EMPTY_EVENT = "    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
-SFX = ("patternMadeSfx", "slipSfx", "jumpSfx", "flitSfx", "upgradeSfx", "spinSfx", "revealSfx")
+SFX = ("patternMadeSfx", "slipSfx", "jumpSfx", "flitSfx", "upgradeSfx", "spinSfx", "revealSfx",
+       "hiveEnterSfx", "hiveChainSfx", "hiveStingSfx", "hiveColourSfx", "hiveLeaveSfx")
 
 
 def upgrades_yaml(lab, effects) -> str:
-    """The lab's ACTIVES as HoneyguideConfigSO.upgrades (each sfx slot ships empty)."""
+    """The lab's ACTIVES8 as HoneyguideConfigSO.upgrades (each sfx slot ships empty)."""
     text = "  upgrades:\n"
-    for key, btn, use, cd, reach in lab["actives"]:
-        text += (f"  - effect: {effects[key]}\n    trigger: {btn}\n    use: {USES[use]}\n    cooldown: {num(cd)}\n"
-                 f"    reach: {num(reach)}\n    sfx:\n" + EMPTY_EVENT.replace("\n    ", "\n      ").replace("    Guid", "      Guid", 1))
+    for key, btn, reach, pv in lab["actives"]:
+        text += (f"  - effect: {effects[key]}\n    trigger: {btn}\n    reach: {num(reach)}\n    preview: {PREVIEWS[pv]}\n"
+                 f"    sfx:\n" + EMPTY_EVENT.replace("\n    ", "\n      ").replace("    Guid", "      Guid", 1))
     return text
 
 
@@ -221,10 +237,12 @@ def config_asset(lab, cs: str, script_guid: str) -> str:
     for name, t, v in fields:
         if name in lab["shipped"] and t in ("float", "int"):
             v = num(lab["shipped"][name])
+        if name == "leftBeeHiveBehind":
+            text += f"  leftBeeHive: {{fileID: 11400000, guid: {BEE_HIVE_MASS_GUID}, type: 2}}\n"
         if name == "peckRange":
             text += f"  peckAction: {{fileID: 11400000, guid: {PECK_GUID}, type: 2}}\n"
         text += f"  {name}: {v}\n"
-        if name == "activeLevelGain":
+        if name == "postFireCooldown":
             text += upgrades_yaml(lab, effects)
         if name == "upgradeToastTemplate":
             text += "  triggerNames:\n  - RT\n  - LT\n  basePowerNames:\n  - Peck\n  - Flit\n"
@@ -296,6 +314,8 @@ def check_config(text: str, lab, cs: str, script_guid: str):
         want(p[3] == effects.get(key), f"HoneyguideConfig pattern {k} ({cname}): effect {p[3]}, the lab's is {key}")
         want(p[4] == lab["effects"].get(key), f"HoneyguideConfig pattern {k} ({cname}): the effect text is not the lab's")
         want(p[5] == (key in PARKED), f"HoneyguideConfig pattern {k} ({cname}): parked is {p[5]}, should be {key in PARKED}")
+    want(f"  leftBeeHive: {{fileID: 11400000, guid: {BEE_HIVE_MASS_GUID}, type: 2}}" in text,
+         "HoneyguideConfig: leftBeeHive is not the Bee Hive Flora Mass config (the left hive would plant no bees)")
     want(engines == lab["engines"], "HoneyguideConfig: the engines are not the lab's ENGINES (the port sets would differ)")
     want(len(abilities) == len(lab["abilities"]) and all(
         a == (k, *lab["abilityText"][key]) for k, (a, key) in enumerate(zip(abilities, lab["abilities"]))),
@@ -308,13 +328,14 @@ def check_config(text: str, lab, cs: str, script_guid: str):
         want(f"  {sfx}:\n" in text, f"HoneyguideConfig: no {sfx} slot")
     want(f"  peckAction: {{fileID: 11400000, guid: {PECK_GUID}, type: 2}}" in text,
          "HoneyguideConfig: peckAction is not HoneyguidePeckAction.asset (RT would do nothing until an upgrade)")
-    want(len(lab["actives"]) == 13, f"HoneyguideLab.html: {len(lab['actives'])} ACTIVES read, not 13 (the lab moved: fix this reader)")
-    ups = [(int(m.group(1)), int(m.group(2)), int(m.group(3)), float(m.group(4)), float(m.group(5))) for m in re.finditer(
-        r"^  - effect: (\d+)\n    trigger: (\d)\n    use: (\d)\n    cooldown: ([\d.]+)\n    reach: ([\d.]+)\n", text, re.M)]
-    want(ups == [(effects[k], b, USES[u], float(cd), float(r)) for k, b, u, cd, r in lab["actives"]],
-         "HoneyguideConfig: the upgrades are not the lab's ACTIVES (card, trigger, use, cooldown, reach)")
+    want(len(lab["actives"]) == 13, f"HoneyguideLab.html: {len(lab['actives'])} ACTIVES8 read, not 13 (the lab moved: fix this reader)")
+    ups = [(int(m.group(1)), int(m.group(2)), float(m.group(3)), int(m.group(4))) for m in re.finditer(
+        r"^  - effect: (\d+)\n    trigger: (\d)\n    reach: ([\d.]+)\n    preview: (\d)\n", text, re.M)]
+    want(ups == [(effects[k], b, float(r), PREVIEWS[pv]) for k, b, r, pv in lab["actives"]],
+         "HoneyguideConfig: the upgrades are not the lab's ACTIVES8 (card, trigger, reach, preview)")
     for key, *_ in lab["actives"]:
-        want(key in lab["cardEffects"], f"HoneyguideLab.html: ACTIVES.{key} is no card's effect")
+        want(key in lab["cardEffects"], f"HoneyguideLab.html: ACTIVES8.{key} is no card's effect")
+    want(re.search(r"^  usesPerCard: (\d+)\n", text, re.M) is not None, "HoneyguideConfig: no usesPerCard (round 8 banks uses)")
     return errs
 
 
@@ -355,19 +376,18 @@ def build_clone(donor: str, script_guid: str) -> str:
 
 INPUT_BLOCK = ("  _inputEventShipActions:\n"
                "  - InputEvent: 1\n    ShipActions:\n    - {fileID: 11400000, guid: %s, type: 2}\n"
-               "  - InputEvent: 2\n    ShipActions:\n    - {fileID: 11400000, guid: %s, type: 2}\n"
-               "  - InputEvent: 7\n    ShipActions:\n    - {fileID: 11400000, guid: %s, type: 2}\n") % (RT_GUID, LT_GUID, BOOST_GUID)
-AI_BLOCK = ("  abilities:\n"
-            "  - Ability: {fileID: 11400000, guid: %s, type: 2}\n    Duration: 2\n    Cooldown: 10\n") % BOOST_GUID
+               "  - InputEvent: 2\n    ShipActions:\n    - {fileID: 11400000, guid: %s, type: 2}\n") % (RT_GUID, LT_GUID)
+# Round 8 has no boost button ("a card's boost burns at once"), so the AIPilot presses nothing of its own either.
+AI_BLOCK = "  abilities: []\n"
 
 
 def retarget_triggers(text: str) -> str:
-    """RT and LT to the crew's trigger actions, Button2 the boost; the AIPilot boosts and the crew presses its triggers."""
+    """RT and LT to the crew's trigger actions and nothing else (round 8: no boost button); the crew presses the AI's triggers."""
     text, n = re.subn(r"  _inputEventShipActions:\n(?:  - InputEvent: \d+\n    ShipActions:\n(?:    - \{[^\n]*\}\n)*)+",
                       lambda m: INPUT_BLOCK, text, count=1)
     if n != 1:
         raise RuntimeError("Honeyguide.prefab: _inputEventShipActions not found")
-    text, n = re.subn(r"  abilities:\n(?:  - Ability: \{[^\n]*\}\n    Duration: [\d.]+\n    Cooldown: [\d.]+\n)+",
+    text, n = re.subn(r"  abilities:(?: \[\]\n|\n(?:  - Ability: \{[^\n]*\}\n    Duration: [\d.]+\n    Cooldown: [\d.]+\n)+)",
                       lambda m: AI_BLOCK, text, count=1)
     if n != 1:
         raise RuntimeError("Honeyguide.prefab: the AIPilot's abilities list not found")
@@ -466,23 +486,21 @@ def register_network(text: str) -> str:
                    "    OverridingTargetPrefab: {fileID: 0}\n")
 
 
-# The four cards, charge -> mass -> space -> time (the LOCKED four-icon row). Peck and Flit are the triggers' base powers;
-# the Slip is the Honeyguide's ride; the Afterburner and its Elemental Ward are the Sparrow's, unchanged.
+# The four cards, charge -> mass -> space -> time (the LOCKED four-icon row), lab round 8 (Garrett 2026-11-01): Charge is LT,
+# Flit and its banked upgrades (they strike vessels and creatures); Mass is the hive to fly to; Space is RT, Peck and its banked
+# upgrades (they cut opposing prism volume); Time is the Slip, the base the others build on.
 MAP_ENTRIES = [
-    (1, "Peck", "Hold RT for a weak shot, two and a half a second, out to 45 u. When the Ratel makes an attack card (Hard "
-                "Light Lasso, Genesis Lance, Little Bang Grenade, Sepia Drone, Particle Harmonizer, Fugacity Discharger) RT "
-                "is that card's for 20 s, then Peck comes back.", 1, "", ""),
-    (2, "Flit", "Press LT for a short thrust 18 u ahead, every 2 s. When the Ratel makes a move card (Hexapod Eyelet Jet, "
-                "Thruster Swarm, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) LT is that "
-                "card's for 20 s, then Flit comes back.", 2, "", ""),
-    (3, "Slip", "Touch a trail of a domain the battery holds with your nose along it and ride it to its end, fast: the "
-                "charge is spent. The Ratel charges the battery by making patterns on the Dynamo.", 0, "Piercing Pecks",
-     "Pecks pierce through prisms instead of stopping at the first."),
-    (4, "Afterburner", "Hold to boost indefinitely - there is no heat and no meter. Boosting at full stick deflection "
-                       "performs one strafing roll per press (base, no unlock). Time raises the boost speed; at level 5 "
-                       "boosting also makes you immune to elemental debuffs.", 7, "Elemental Ward",
-     "While boosting, elemental debuffs cannot land - danger prisms and skimmer overtakes leave your levels untouched. "
-     "Buffs still apply."),
+    (1, "Flit", "Hold LT to see the dart, let go to fly it: 18 u ahead, striking every rival vessel and creature within 8 u "
+                "of its lane, every 2 s. Each Charge card the Ratel makes (Hard Light Lasso, Blink Drive, All Terrain "
+                "Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) banks three uses on LT; the newest fires first.", 2, "", ""),
+    (2, "Hive", "Every 45 s (sooner as Mass rises) a hive appears somewhere in the cell. Fly to it to open hive mode.",
+     0, "", ""),
+    (3, "Peck", "Hold RT to see the aim line, let go for three quick shots, every 1 s. Each Space card the Ratel makes "
+                "(Genesis Lance, Little Bang Grenade, Particle Harmonizer, Fugacity Discharger, Sepia Drone, Thruster Swarm, "
+                "Hexapod Eyelet Jet) banks three uses on RT; the newest fires first. Hold both triggers to cancel.", 1,
+     "Piercing Pecks", "Pecks pierce through prisms instead of stopping at the first."),
+    (4, "Slip", "Touch a trail of a domain the battery holds with your nose along it and ride it to its end, fast: the "
+                "charge is spent. The Ratel charges the battery by making patterns on the Dynamo.", 0, "", ""),
 ]
 
 
@@ -502,7 +520,7 @@ def peck_asset(donor: str) -> str:
     """The Sparrow's FullAutoAction with the lab's Peck: peckRate shots a second, a range of peckRange (range = speed x
     2T/pi), no growth and no spread (a zero cap and growth is GunSpreadProfile's sanctioned opt-out)."""
     text = replace_once(donor, "  m_Name: FullAutoAction\n", "  m_Name: HoneyguidePeckAction\n", "peck name")
-    text = re.sub(r"  firingRate: [\d.]+\n", "  firingRate: 2.5\n", text, count=1)
+    text = re.sub(r"  firingRate: [\d.]+\n", "  firingRate: 10\n", text, count=1)   # round 8: a release's burst, 0.1 s apart
     text = re.sub(r"  projectileTime: [\d.]+\n", "  projectileTime: 0.3\n", text, count=1)
     text = re.sub(r"  speedValue: [\d.]+\n", "  speedValue: 236\n", text, count=1)
     text = re.sub(r"  growthFactorAtRestingMass: [\d.]+\n", "  growthFactorAtRestingMass: 1\n", text, count=1)
@@ -526,9 +544,9 @@ def check_actions(peck: str, rt: str, lt: str, trigger_guid: str):
         if not cond:
             errs.append(msg)
     want("guid: 3e69e441921845c0809b6c506eee66e0" in peck, "HoneyguidePeckAction: not a FullAutoActionSO")
-    for key, v in (("firingRate", "2.5"), ("projectileTime", "0.3"), ("speedValue", "236"), ("growthFactorAtRestingMass", "1"),
+    for key, v in (("firingRate", "10"), ("projectileTime", "0.3"), ("speedValue", "236"), ("growthFactorAtRestingMass", "1"),
                    ("growthFactorAtFullMass", "1"), ("ammoCost", "0"), ("maxHalfAngleDegrees", "0")):
-        want(f"  {key}: {v}\n" in peck or f"    {key}: {v}\n" in peck, f"HoneyguidePeckAction: {key} is not {v} (the lab's Peck: 2.5 a second, 45 u, no growth)")
+        want(f"  {key}: {v}\n" in peck or f"    {key}: {v}\n" in peck, f"HoneyguidePeckAction: {key} is not {v} (the lab's Peck: a burst 0.1 s apart, 45 u, no growth)")
     for name, text, k in (("HoneyguideRTAction", rt, 0), ("HoneyguideLTAction", lt, 1)):
         want(f"guid: {trigger_guid}, type: 3" in text and f"  trigger: {k}\n" in text, f"{name}: not HoneyguideTriggerActionSO trigger {k}")
     return errs
@@ -662,6 +680,39 @@ def check_model(text: str, script_guid: str):
     return errs
 
 # ----------------------------------------------------------------------------- checks
+def retarget_container(text: str) -> str:
+    """The hull's VesselImpactor on HoneyguideImpactorDataContainer (an Omni crystal opens hive mode). Idempotent."""
+    return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {HONEYGUIDE_CONTAINER_GUID},")
+
+
+def container_asset(donor: str) -> str:
+    text = replace_once(donor, "  m_Name: SparrowImpactorDataContainer\n", "  m_Name: HoneyguideImpactorDataContainer\n", "container name")
+    m = re.search(r"  vesselCrystalEffects:\n((?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)*)", text)
+    if not m:
+        raise RuntimeError("donor drifted: the Sparrow container's vesselCrystalEffects list was not found")
+    return text[:m.end(1)] + f"  - {{fileID: 11400000, guid: {HIVE_EFFECT_GUID}, type: 2}}\n" + text[m.end(1):]
+
+
+def hive_effect_asset(script_guid: str) -> str:
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            "  m_Name: HoneyguideOmniCrystalEffect\n  m_EditorClassIdentifier: \n")
+
+
+def check_container(container: str, effect: str, hive_script_guid: str):
+    errs = []
+    if f"  - {{fileID: 11400000, guid: {HIVE_EFFECT_GUID}, type: 2}}\n" not in container.split("  vesselElementalCrystalEffects:")[0]:
+        errs.append("HoneyguideImpactorDataContainer: HoneyguideOmniCrystalEffect is not in its omni (vesselCrystalEffects) list "
+                    "(an Omni crystal would not open hive mode)")
+    if "  m_Name: HoneyguideImpactorDataContainer\n" not in container:
+        errs.append("HoneyguideImpactorDataContainer: is not named HoneyguideImpactorDataContainer")
+    if f"guid: {hive_script_guid}, type: 3" not in effect:
+        errs.append("HoneyguideOmniCrystalEffect.asset: does not name HoneyguideOmniCrystalEffectSO")
+    return errs
+
+
 def check_prefab(text: str, script_guid: str):
     errs = []
     def want(cond, msg):
@@ -682,8 +733,10 @@ def check_prefab(text: str, script_guid: str):
     want(seat and f"guid: {script_guid}" in seat.group(1), "Honeyguide.prefab: the HoneyguideCrew document is missing or names another script")
     want(seat and f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}" in seat.group(1),
          "Honeyguide.prefab: HoneyguideCrew.config is not HoneyguideConfig.asset (a null config never seats the Ratel)")
-    want(INPUT_BLOCK in text, "Honeyguide.prefab: RT / LT are not the Honeyguide's triggers (or Button2 is not the boost)")
-    want(AI_BLOCK in text, "Honeyguide.prefab: the AIPilot's abilities are not the boost alone (it would fire the Sparrow's guns)")
+    want(INPUT_BLOCK in text, "Honeyguide.prefab: RT / LT are not the Honeyguide's triggers (or a boost button is back)")
+    want(AI_BLOCK in text, "Honeyguide.prefab: the AIPilot presses abilities of its own (round 8 has none; it would fire the Sparrow's guns)")
+    want(f"guid: {HONEYGUIDE_CONTAINER_GUID}," in text and f"guid: {DONOR_CONTAINER_GUID}," not in text,
+         "Honeyguide.prefab: the VesselImpactor is not on HoneyguideImpactorDataContainer (an Omni crystal would not open hive mode)")
     for g in SPARROW_TRIGGER_GUIDS:   # its executors may still point at them (default actions, profiles): the input may not
         want(f"  - Ability: {{fileID: 11400000, guid: {g}, type: 2}}" not in text and f"    - {{fileID: 11400000, guid: {g}, type: 2}}" not in text,
              f"Honeyguide.prefab: the input or the AIPilot still names the Sparrow's action {g}")
@@ -709,7 +762,7 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
              f"SO_Class_Honeyguide: {field} is not the model's render (run render_cards.py Honeyguide, then this tool)")
     want(f"  vesselClass: {HONEYGUIDE_CLASS_ID}\n" in kmap and "  m_Name: Honeyguide\n" in kmap,
          "ElementalAbilityMaps/Honeyguide: wrong class or name")
-    want(kmap == build_map(read(DONOR_MAP)), "ElementalAbilityMaps/Honeyguide: its cards are not MAP_ENTRIES (Peck, Flit, Slip, Afterburner)")
+    want(kmap == build_map(read(DONOR_MAP)), "ElementalAbilityMaps/Honeyguide: its cards are not MAP_ENTRIES (Flit, Hive, Peck, Slip)")
     hg, sparrow = fusion_entries(fusion, HONEYGUIDE_CLASS_ID), fusion_entries(fusion, SPARROW_CLASS_ID)
     want(len(hg) == 4, f"CrystalHullFusionConfig: {len(hg)} Honeyguide entries, not 4 (CrystalHullFusionConfigTests needs one per element)")
     nobake = lambda e: re.sub(r"    bake: \{[^}]*\}\n", "", e.split("\n", 1)[1])
@@ -730,6 +783,12 @@ def check_all():
         return ["Honeyguide.prefab (+ .meta) is missing: run Tools/Build/author_honeyguide_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Honeyguide.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid)
+    for path, guid in ((HONEYGUIDE_CONTAINER, HONEYGUIDE_CONTAINER_GUID), (HIVE_EFFECT, HIVE_EFFECT_GUID)):
+        if not os.path.exists(path) or not os.path.exists(path + ".meta"):
+            return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run Tools/Build/author_honeyguide_assets.py"]
+        if guid_of(path + ".meta") != guid:
+            errs.append(f"{os.path.relpath(path, ROOT)}.meta: guid is not the tool's")
+    errs += check_container(read(HONEYGUIDE_CONTAINER), read(HIVE_EFFECT), guid_of(HIVE_SCRIPT_META))
     if not os.path.exists(MODEL_FBX) or not os.path.exists(MODEL_FBX + ".meta") or guid_of(MODEL_FBX + ".meta") != MODEL_FBX_GUID:
         errs.append("Honeyguide.fbx (+ .meta, guid MODEL_FBX_GUID) is missing: run Tools/Build/vessel_model/build.py "
                     "Tools/Build/vessel_model/specs/honeyguide.py")
@@ -756,7 +815,7 @@ def author():
     if not os.path.exists(PREFAB):   # the spent one-shots stand down once committed
         write(PREFAB, build_clone(read(DONOR), script_guid))
         write(PREFAB + ".meta", prefab_meta())
-    old = read(PREFAB); new = model_retrofit(retarget_triggers(old), guid_of(BODY_SCRIPT_META))   # not one-shots: held to them
+    old = read(PREFAB); new = retarget_container(model_retrofit(retarget_triggers(old), guid_of(BODY_SCRIPT_META)))   # not one-shots: held to them
     if new != old:
         write(PREFAB, new)
     if not os.path.isdir(CONFIG_DIR):
@@ -774,6 +833,11 @@ def author():
         write(MAP, build_map(read(DONOR_MAP)))
         if not os.path.exists(MAP + ".meta"):
             write(MAP + ".meta", native_meta(MAP_GUID))
+    if not os.path.exists(HIVE_EFFECT):
+        write(HIVE_EFFECT, hive_effect_asset(guid_of(HIVE_SCRIPT_META))); write(HIVE_EFFECT + ".meta", native_meta(HIVE_EFFECT_GUID))
+    if not os.path.exists(HONEYGUIDE_CONTAINER):
+        write(HONEYGUIDE_CONTAINER, container_asset(read(DONOR_CONTAINER)))
+        write(HONEYGUIDE_CONTAINER + ".meta", native_meta(HONEYGUIDE_CONTAINER_GUID))
     if not os.path.exists(PECK):
         write(PECK, peck_asset(read(DONOR_PECK))); write(PECK + ".meta", native_meta(PECK_GUID))
     trigger_guid = guid_of(TRIGGER_SCRIPT_META)
@@ -790,12 +854,17 @@ def author():
 def self_test():
     """Every check must fire on a broken copy of the set (negative controls), and pass on it intact."""
     script_guid = guid_of(SEAT_SCRIPT_META)
-    good = retarget_triggers(build_clone(read(DONOR), script_guid))
+    good = retarget_container(retarget_triggers(build_clone(read(DONOR), script_guid)))
     fails = []
     def expect(errs, n_min, what):
         if not ((len(errs) == 0) if n_min == 0 else (len(errs) >= n_min)):
             fails.append(f"{what}: {errs}")
     expect(check_prefab(good, script_guid), 0, "a fresh clone passes")
+    expect(check_prefab(good.replace(HONEYGUIDE_CONTAINER_GUID, DONOR_CONTAINER_GUID), script_guid), 1, "the Sparrow's impactor container")
+    hc, he, hs = container_asset(read(DONOR_CONTAINER)), hive_effect_asset(guid_of(HIVE_SCRIPT_META)), guid_of(HIVE_SCRIPT_META)
+    expect(check_container(hc, he, hs), 0, "a fresh container and effect pass")
+    expect(check_container(read(DONOR_CONTAINER), he, hs), 1, "the Sparrow's container")
+    expect(check_container(hc, he.replace(hs, "0" * 32), hs), 1, "the effect names another script")
     expect(check_prefab(good.replace(f"  vesselType: {HONEYGUIDE_CLASS_ID}\n", f"  vesselType: {SPARROW_CLASS_ID}\n"), script_guid), 1, "the Sparrow's vesselType")
     expect(check_prefab(re.sub(r"(  GlobalObjectIdHash: )\d+", r"\g<1>1124080984", good, count=1), script_guid), 1, "the donor's hash")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {SEAT_ID}}}\n", ""), script_guid), 1, "the seat off the root")
@@ -836,17 +905,21 @@ def self_test():
     expect(check_config(cfg.replace("shape: C2,0 M1,1 S0,2 M0,3\n", "shape: C2,0 M1,1 S0,2\n", 1), lab, cs, cg), 1, "a card's shape changed")
     expect(check_config(re.sub(r"(    parked: )0", r"\g<1>1", cfg, count=1), lab, cs, cg), 1, "a live card parked")
     expect(check_config(re.sub(r"(    reach: )90\n", r"\g<1>91\n", cfg, count=1), lab, cs, cg), 1, "an upgrade's reach drifted")
+    expect(check_config(re.sub(r"^  usesPerCard: \d+\n", "", cfg, count=1, flags=re.M), lab, cs, cg), 1, "no uses banked")
     expect(check_config(re.sub(r"(    trigger: )0\n", r"\g<1>1\n", cfg, count=1), lab, cs, cg), 1, "an attack upgrade on LT")
     expect(check_config(cfg.replace(PECK_GUID, "0" * 32), lab, cs, cg), 1, "Peck unwired")
-    if len(lab["actives"]) != 13 or sum(1 for a in lab["actives"] if a[1] == 0) != 6:
-        fails.append(f"the lab reader: {len(lab['actives'])} ACTIVES (13: 6 on RT, 7 on LT)")
+    if len(lab["actives"]) != 13 or sum(1 for a in lab["actives"] if a[1] == 0) != 7:
+        fails.append(f"the lab reader: {len(lab['actives'])} ACTIVES8 (13: 7 on RT, 6 on LT)")
+    expect(check_config(re.sub(r"(    preview: )5\n", r"\g<1>6\n", cfg, count=1), lab, cs, cg), 1, "the lasso previews a landing")
     expect(check_config(re.sub(r"(    effect: )1\n", r"\g<1>2\n", cfg, count=1), lab, cs, cg), 1, "a card's effect swapped")
     expect(check_config(cfg.replace("    - '. M C C .'\n", "    - '. M C . .'\n", 1), lab, cs, cg), 1, "an engine port dropped")
     expect(check_config(cfg.replace("name: 'Overclock'", "name: 'Overclocked'"), lab, cs, cg), 1, "an ability renamed")
     expect(check_config(cfg.replace(GAME_DATA_GUID, "0" * 32), lab, cs, cg), 1, "gameData unwired")
+    expect(check_config(cfg.replace(BEE_HIVE_MASS_GUID, "0" * 32), lab, cs, cg), 1, "the left hive plants no bees")
     expect(check_config(cfg.replace("  retiredAbilities:\n  - 2\n", "  retiredAbilities: \n", 1), lab, cs, cg), 1, "Printer drawn again")
-    for key in ("tickSeconds: 15\n", "usesPerPattern: 3\n", "patternsPerShuffle: 4\n", "aimCone: 45\n", "revealAbility: 3.5\n",
-                "peckRange: 45\n", "flitDistance: 18\n", "flitCooldown: 2\n", "activeSeconds: 20\n", "activeLevelGain: 0.25\n"):
+    for key in ("tickSeconds: 15\n", "apBank: 6\n", "abilityChoices: 3\n", "pickSeconds: 10\n", "usesPerPattern: 3\n", "patternsPerShuffle: 4\n", "aimCone: 45\n", "revealAbility: 3.5\n",
+                "peckRange: 45\n", "flitDistance: 18\n", "flitCooldown: 2\n", "usesPerCard: 3\n", "peckBurst: 3\n", "peckCooldown: 1\n",
+                "flitStrikeRadius: 8\n", "strikeRadius: 12\n", "massHiveSeconds: 45\n", "hiveReach: 25\n"):
         if f"  {key}" not in cfg:
             fails.append(f"the fresh config does not carry the lab's {key.strip()}")
 

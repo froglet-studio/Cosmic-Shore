@@ -1,6 +1,6 @@
 # Honeyguide patterns and abilities
 
-Lab round 6, 2026-10-21. Source of truth: `Docs/Studios/HoneyguideLab.html` on `claude/honeyguide-ratel` (the lab's Patterns tab draws every shape). This is the list the Unity port copies. The Unity build is still round 4; the rows below marked RT or LT changed in rounds 5 and 6.
+Lab round 6, 2026-10-21; the triggers are round 8 (2026-11-01). Source of truth: `Docs/Studios/HoneyguideLab.html` on `claude/honeyguide-ratel` (the lab's Patterns tab draws every shape). This is the list the Unity port copies. The Unity build is still round 4; the rows below marked RT or LT changed in rounds 5 and 6.
 
 ## How a pattern works
 
@@ -8,14 +8,27 @@ Lab round 6, 2026-10-21. Source of truth: `Docs/Studios/HoneyguideLab.html` on `
 - A shape matches in any of its six rotations. With the Mirror ability, mirror images match too.
 - An empty injection port counts as a prism of its colour, but every match needs at least one real prism.
 - Making a pattern costs 1 AP. One of its real prisms, drawn at random, goes to the battery as a slip charge of its domain, and the pattern fires its own effect.
-- A pattern made for the third time is replaced by a random one. Every 4 patterns the Ratel gets a new random ability and a new port pattern. The spin clock stops for that: 3.5 s to read the ability, then 2 s to see the new ports, then the clock restarts.
-- The port pattern turns 60° clockwise every 15 s, shown as a shrinking bar across the top. Each spin gives 3 AP (bank 3). The battery holds 3.
+- A pattern made for the third time is replaced by a random one. Every 4 patterns the Ratel is offered three abilities and picks one (round 7, Garrett 2026-10-29), then gets a new port pattern. The spin clock stops for that: up to 10 s to pick (then the first offer is taken), then 2 s to see the new ports, then the clock restarts.
+- The port pattern turns 60° clockwise every 15 s, shown as a shrinking bar across the top. Each spin gives 3 AP; unspent AP are kept up to 6 (round 7; was 3). The battery holds 3.
 
 **Colours:** R = Ruby, J = Jade, G = Gold. The tabletop print's M, C and S map to R, J and G. **Cells** are axial hex coordinates (q, r), the same as `DynamoCore`: E is (+1, 0) and SE is (0, +1). Shapes are listed as printed; their position on the board does not matter.
 
 **Pattern names** are the tabletop upgrade-card names (Garrett, 2026-10-21: keep them). Each pattern's effect is converted from its card: from the card's text where it has a real-time reading, otherwise from its name. Mutons in the card text are now prisms.
 
-## The triggers (round 6)
+## The triggers (round 8, 2026-11-01)
+
+Round 8 replaces the round 6 trigger rules below (kept for the record). Garrett: RT is a Space active that always cuts
+opposing prism volume, LT a Charge active that always strikes rival vessels and creatures; both are pulled to preview
+and released to fire, never analog; each upgrade card banks a use (a tick) on its trigger, the newest banked ability is
+current and fires first. Time is the Slip; Mass is the passive hive. The full list (each ability's preview and release)
+is in `Docs/Studios/HONEYGUIDE_LAB.md`, round 8.
+
+| Trigger | Base | Upgrades (banked, newest first) |
+|---|---|---|
+| **RT, Space** | Peck: pull the aim line, release three shots | Genesis Lance, Little Bang Grenade, Particle Harmonizer, Fugacity Discharger, Sepia Drone, Thruster Swarm, Hexapod Eyelet Jet |
+| **LT, Charge** | Flit: pull an 18 u dart, release it to strike what it passes | Hard Light Lasso, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon |
+
+## The triggers (round 6, superseded by round 8)
 
 Garrett, 2026-10-21: "the right trigger should always be a weak attack power that gets upgraded sometimes. the left should
 be a movement power that works similar. the 39 patterns should still be unique." The Honeyguide has no guns.
