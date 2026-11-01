@@ -187,6 +187,7 @@ namespace CosmicShore.Gameplay
             float deadline = Time.unscaledTime + timeout;
             while (Time.unscaledTime < deadline)
             {
+                DismissPrivacyOverlay(Log);
                 var gameData = VoyageLaunch.ResolveGameData();
                 var vessel = gameData ? gameData.LocalPlayer?.Vessel : null;
                 if (SceneManager.GetActiveScene().name == MenuScene && !VoyageScene.Current && vessel.IsAlive()
@@ -198,6 +199,19 @@ namespace CosmicShore.Gameplay
                 await UniTask.Delay(1000, DelayType.Realtime, cancellationToken: ct);
             }
             return false;
+        }
+
+        /// <summary>
+        /// The first-run privacy overlay (age gate, consent) holds the boot until a person answers it, and a sim has no
+        /// person. It is closed UNANSWERED: nothing is granted, analytics stays off (the safe default), and the overlay
+        /// asks again on the next ordinary launch.
+        /// </summary>
+        internal static void DismissPrivacyOverlay(Action<string> log)
+        {
+            var privacy = CosmicShore.UI.PrivacyConsentOverlay.Current;
+            if (!privacy) return;
+            log?.Invoke("the privacy overlay is up - closing it unanswered (nothing granted; analytics stays off)");
+            Destroy(privacy.gameObject);
         }
 
         /// <summary>The voyage scene loaded and its harbour sailed the escort.</summary>

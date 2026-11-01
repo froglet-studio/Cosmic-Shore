@@ -108,6 +108,7 @@ namespace CosmicShore.Gameplay
 
         static bool MenuReady()
         {
+            ArkEscortSim.DismissPrivacyOverlay(Log);
             var gameData = VoyageLaunch.ResolveGameData();
             return SceneManager.GetActiveScene().name == MenuScene && !VoyageScene.Current && gameData
                    && gameData.LocalPlayer?.Vessel.IsAlive() == true && !EnvironmentLoadVeil.IsCovering;
