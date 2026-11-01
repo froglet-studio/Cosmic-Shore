@@ -120,13 +120,15 @@ namespace CosmicShore.Gameplay
             if (aiSenseDebug && _blastAI != null) _blastAI.DrawSenseGizmos(GizmoLineSink.Instance);
         }
 
-        // The in-game Third Eye (F3 panel, Overlays) draws the same two views in the Game view. Registering is a list
+        // The in-game Third Eye (AI Diagnose panel, Overlays) draws the same two views in the Game view. Registering is a list
         // add; nothing runs unless the overlay is switched on in a dev build, where ThirdEye exists at all.
         ThirdEyeOverlays.Overlay _planOverlay, _senseOverlay;
+        ThirdEyeReadouts.Readout _hitsReadout;
 
         void RegisterThirdEyeOverlays()
         {
             if (_planOverlay != null) return;
+            _hitsReadout = ThirdEyeReadouts.Register("Hits", SwitchbackHitStats.Readout);
             _planOverlay = ThirdEyeOverlays.Register("AI plan (Switchback)",
                 "Each AI's blast plan: line to its key, fire line, gape axis, aim point (server only).",
                 sink => { if (_blastAI != null) _blastAI.DrawGizmos(sink); });
@@ -141,7 +143,9 @@ namespace CosmicShore.Gameplay
         {
             ThirdEyeOverlays.Unregister(_planOverlay);
             ThirdEyeOverlays.Unregister(_senseOverlay);
+            ThirdEyeReadouts.Unregister(_hitsReadout);
             _planOverlay = _senseOverlay = null;
+            _hitsReadout = null;
         }
 
         public override void OnDestroy()
@@ -161,6 +165,52 @@ namespace CosmicShore.Gameplay
             if (gameData && gameData.SwitchbackFixedSeed && courseSeed == 0 && CourseSeedOverride.Forced == 0)
                 return SwitchbackBlastRun.FixedSeed(Intensity);
             return base.PickCourseSeed();
+        }
+
+        // ── The hit counter (SWITCHBACK.md "AI: the hit counter") ──────────────────────
+
+        SwitchbackHitStats _hits;
+        float _nextHitNote;
+
+        protected override void OnCountdownTimerEnded()
+        {
+            base.OnCountdownTimerEnded();
+            if (IsServer) _hits?.BeginRace();
+        }
+
+        protected override void OnServerTick()
+        {
+            base.OnServerTick();
+            if (_hits != null && !_hits.Running && !_hits.Ended && gameData && gameData.IsTurnRunning) _hits.BeginRace();
+            if (_hits == null || !_hits.Running || Time.time < _nextHitNote) return;
+            _nextHitNote = Time.time + 0.25f;
+            NoteHits();
+        }
+
+        void NoteHits()
+        {
+            if (_hits == null || gameData == null) return;
+            int length = RaceLength;
+            foreach (var p in gameData.Players)
+            {
+                if (p == null) continue;
+                bool ai = p.IsInitializedAsAI || (p is Player human && PilotControl.IsHeldByAI(human));
+                int avoids = 0, blasts = 0, emerg = 0;
+                _blastAI?.TryCounts(p, out avoids, out blasts, out emerg);
+                int threaded = 0;
+                foreach (var st in gameData.RoundStatsList)
+                    if (st != null && st.Name == p.Name) { threaded = st.SwitchesThreaded; break; }
+                float finish = threaded >= length && length > 0 ? _hits.Elapsed : -1f;
+                _hits.Note(p, ai, ai ? (int)gameData.AIDifficultyFor(p) : 0, avoids, blasts, emerg, threaded, finish);
+            }
+        }
+
+        protected override void OnTurnEndedCustom()
+        {
+            base.OnTurnEndedCustom();
+            if (!IsServer || _hits == null || !_hits.Running) return;
+            NoteHits();
+            _hits.EndRace(Intensity, CourseSeedUsed);
         }
 
         // ── Blast Run (SWITCHBACK.md "Blast Run") ──────────────────────
@@ -215,6 +265,12 @@ namespace CosmicShore.Gameplay
             _runtime.Init(gameData, intensity, IsServer ? CourseSeedUsed : 0, _course.Count, () => RaceLength, layout, container,
                           trackAllPrisms: planAI && layout.Stations.Count > 0);
             RegisterThirdEyeOverlays();
+            if (IsServer)
+            {
+                _hits?.Dispose();
+                var rt = _runtime;
+                _hits = new SwitchbackHitStats(pr => rt && rt.IsMover(pr));
+            }
             _blastAI = planAI
                 ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
                                         RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
@@ -249,6 +305,8 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            _hits?.Dispose();
+            _hits = null;
             if (_blastLayout != null)
             {
                 BlastRunKeyCrystals.Clear();

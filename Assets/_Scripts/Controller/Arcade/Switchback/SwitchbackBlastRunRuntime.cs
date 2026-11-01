@@ -41,6 +41,7 @@ namespace CosmicShore.Gameplay
 
         SwitchbackFeatureLayout _layout;
         Transform _prismContainer;
+        readonly HashSet<Prism> _moverSet = new();   // every matched mover prism, for the hit counter
         Prism[] _moving;            // per layout prism index; null until matched (and for non-moving ones)
         bool[] _lost;               // per layout prism index: matched once, since destroyed, pooled or re-parented
         int _movingExpected, _movingMatched;
@@ -63,6 +64,9 @@ namespace CosmicShore.Gameplay
         int _blocksAtStart = -1;
 
         /// <summary>Hand over the match: the Blast Run layout and the container its prisms were laid into.</summary>
+        /// <summary>True when <paramref name="p"/> is one of the course's moving prisms (once matched).</summary>
+        public bool IsMover(Prism p) => p != null && _moverSet.Contains(p);
+
         public void Init(GameDataSO gameData, int intensity, int seed, int courseCount, System.Func<int> raceLength,
                          SwitchbackFeatureLayout layout, Transform prismContainer, bool trackAllPrisms = false)
         {
@@ -163,6 +167,7 @@ namespace CosmicShore.Gameplay
                     {
                         if (_moving[k] || _lost[k] || (_layout.Prisms[k].Position - at).sqrMagnitude > sq) continue;
                         _moving[k] = prism;
+                        _moverSet.Add(prism);
                         _movingMatched++;
                         goto next;
                     }

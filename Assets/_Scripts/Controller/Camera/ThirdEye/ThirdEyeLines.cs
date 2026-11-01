@@ -184,4 +184,43 @@ namespace CosmicShore.Gameplay
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics() => s_list.Clear();
     }
+
+    /// <summary>
+    /// Text a mode adds to the AI Diagnose panel (e.g. Switchback's "Hits": each pilot's prism contacts by source), also
+    /// printed by <c>aidiag &lt;name&gt;</c>. Read only while the panel is open; registering is a list add.
+    /// </summary>
+    public static class ThirdEyeReadouts
+    {
+        public sealed class Readout
+        {
+            public string Name;
+            public Func<string> Text;
+        }
+
+        static readonly List<Readout> s_list = new();
+
+        public static IReadOnlyList<Readout> All => s_list;
+
+        public static Readout Register(string name, Func<string> text)
+        {
+            var r = new Readout { Name = name, Text = text };
+            s_list.Add(r);
+            return r;
+        }
+
+        public static void Unregister(Readout r)
+        {
+            if (r != null) s_list.Remove(r);
+        }
+
+        public static Readout Find(string name)
+        {
+            foreach (var r in s_list)
+                if (string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase)) return r;
+            return null;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_list.Clear();
+    }
 }

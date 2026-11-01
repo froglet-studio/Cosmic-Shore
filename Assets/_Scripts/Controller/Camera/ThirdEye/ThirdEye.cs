@@ -495,9 +495,11 @@ namespace CosmicShore.Gameplay
         string HandleCommand(string[] a)
         {
             const string Usage = "aidiag panel|cam [on|off] · chase|follow|fly|orbit · next|prev|frame · " +
-                                 "thinking|trails|labels [on|off] · overlay <name> [on|off] · you|ai (watched pilot)";
+                                 "thinking|trails|labels [on|off] · overlay <name> [on|off] · you|ai (watched pilot) · hits (or any readout)";
             if (a.Length == 0) return Usage;
             string verb = a[0].ToLowerInvariant();
+            var readout = ThirdEyeReadouts.Find(verb);
+            if (readout != null) return readout.Text?.Invoke() ?? "";
             bool? arg = a.Length > 1 ? a[1].ToLowerInvariant() switch { "on" or "1" or "true" => true, "off" or "0" or "false" => false, _ => null } : null;
             var s = Settings;
             if (verb != "panel" && !_panel) SetPanel(true);   // every diagnose feature lives with the open panel

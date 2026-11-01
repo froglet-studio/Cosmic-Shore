@@ -112,6 +112,15 @@ namespace CosmicShore.Gameplay
 
         public SwitchbackBlastPlanner Planner => _planner;
 
+        /// <summary>This pilot's sense and sweep tallies so far (the hit counter's race summary). False before its first plan.</summary>
+        public bool TryCounts(IPlayer p, out int avoids, out int blasts, out int emergencies)
+        {
+            avoids = blasts = emergencies = 0;
+            if (p == null || !_pilots.TryGetValue(p, out var st)) return false;
+            avoids = st.Avoids; blasts = st.Blasts; emergencies = st.Emergencies;
+            return true;
+        }
+
         public bool PrismStanding(int k) => _prisms == null || _prisms.PrismStanding(k);
         public bool KeyAvailable(int station) => station >= 0 && station < _keyPresent.Length && _keyPresent[station];
 

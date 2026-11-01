@@ -138,6 +138,17 @@ namespace CosmicShore.Gameplay
             }
             if (all.Count == 0) GUILayout.Label("(Modes add their own here, e.g. Switchback's AI plan / AI sense.)", _small);
 
+            // Readouts (a mode's own text, e.g. Switchback's Hits)
+            var reads = ThirdEyeReadouts.All;
+            for (int i = 0; i < reads.Count; i++)
+            {
+                GUILayout.Space(6f);
+                GUILayout.Label("<b>" + reads[i].Name + "</b>", _label);
+                string text = null;
+                try { text = reads[i].Text?.Invoke(); } catch (System.Exception ex) { text = ex.Message; }
+                GUILayout.Label(text ?? "", _small);
+            }
+
             // Settings
             GUILayout.Space(6f);
             _showSettings = GUILayout.Toggle(_showSettings, " <b>Settings</b>", _label);
