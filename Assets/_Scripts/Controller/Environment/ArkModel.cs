@@ -151,6 +151,7 @@ namespace CosmicShore.Gameplay
             MakeDoubleSided();
             BindPuppets();
             BindReactor();
+            AttachSolid();
 
             _hold = ark.Hold;
             if (_hold) _hold.ParcelGranted += OnParcelGranted;
@@ -346,6 +347,28 @@ namespace CosmicShore.Gameplay
             MakeDoubleSided();
         }
 
+        /// <summary>The hull made solid to vessels, and the bulkhead that closes the stern gape (<see cref="ArkHullSolid"/>),
+        /// in the model's own (dressed) Body and Window materials.</summary>
+        void AttachSolid()
+        {
+            Material body = null, window = null;
+            foreach (var renderer in _root.GetComponentsInChildren<Renderer>(true))
+            {
+                var m = renderer.sharedMaterials;
+                if (m.Length > SlotBody && m[SlotBody]) body = m[SlotBody];
+                if (m.Length > SlotWindow && m[SlotWindow]) window = m[SlotWindow];
+                if (body) break;
+            }
+            Solid = ArkHullSolid.Attach(_ark, _root, _scale, body, window);
+        }
+
+        /// <summary>The hull's solid body (vessels slide along it; the tunnel is the one way through).</summary>
+        public ArkHullSolid Solid { get; private set; }
+
+        // The model's material slots (ArkReverse.fbx: 0 Domain, 1 Body, 2 Window, 3 Engine).
+        const int SlotDomain = 0, SlotBody = 1, SlotWindow = 2, SlotEngine = 3;
+        static readonly int ColorMultiplierId = Shader.PropertyToID("_ColorMultiplier");
+
         // ── Render both faces ────────────────────────────────────────────────
         // The owner, 2026-10-31: "the Ark has inverted materials: the inside of the hull renders but not the outside".
         // The model's parts are built as closed and open shells whose winding is not consistent across parts (the
@@ -372,6 +395,9 @@ namespace CosmicShore.Gameplay
                         if (copy.HasProperty("_Cull")) copy.SetFloat("_Cull", 0f);          // ShaderGraph / URP: Off
                         if (copy.HasProperty("_CullMode")) copy.SetFloat("_CullMode", 0f);
                         if (copy.HasProperty("_RenderFace")) copy.SetFloat("_RenderFace", 0f); // URP Lit: Both
+                        MakeOpaque(copy);
+                        if (copy.HasProperty(ColorMultiplierId))
+                            copy.SetFloat(ColorMultiplierId, copy.GetFloat(ColorMultiplierId) * SlotBrightness(i));
                         _doubleSided[m] = copy;
                     }
                     materials[i] = copy;
@@ -380,6 +406,38 @@ namespace CosmicShore.Gameplay
                 if (changed) renderer.sharedMaterials = materials;
             }
         }
+
+        /// <summary>
+        /// The vessel materials the model wears are TRANSPARENT (Body and every domain's ship material: _Surface 1, no
+        /// depth write), which suits a small vessel and not a 196-unit ship: with no depth, the cavity's glow, the brood
+        /// and the far side's neon drew through the hull, so the Ark read as a lit lantern you could see across (the
+        /// owner, 2026-11-01: "the ark is far too bright ... not visibility ... through the whole ark"). The Ark's copies
+        /// are opaque and write depth; their colours are the same.
+        /// </summary>
+        static void MakeOpaque(Material m)
+        {
+            if (!m.HasProperty("_Surface")) return;
+            m.SetFloat("_Surface", 0f);
+            if (m.HasProperty("_ZWrite")) m.SetFloat("_ZWrite", 1f);
+            if (m.HasProperty("_SrcBlend")) m.SetFloat("_SrcBlend", 1f);
+            if (m.HasProperty("_DstBlend")) m.SetFloat("_DstBlend", 0f);
+            if (m.HasProperty("_SrcBlendAlpha")) m.SetFloat("_SrcBlendAlpha", 1f);
+            if (m.HasProperty("_DstBlendAlpha")) m.SetFloat("_DstBlendAlpha", 0f);
+            m.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.SetOverrideTag("RenderType", "Opaque");
+            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+        }
+
+        /// <summary>How bright a slot's copy is drawn (<see cref="ArkModelDefinitionSO"/>'s look): the glow slots are
+        /// toned down so the Ark reads as a hull, not a lamp, while its domain still reads.</summary>
+        float SlotBrightness(int slot) => slot switch
+        {
+            SlotDomain => _def.DomainBrightness,
+            SlotBody => _def.BodyBrightness,
+            SlotWindow => _def.WindowBrightness,
+            SlotEngine => _def.EngineBrightness,
+            _ => 1f,
+        };
 
         // ── Puppetry ─────────────────────────────────────────────────────────
 
