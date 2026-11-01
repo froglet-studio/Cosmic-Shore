@@ -72,71 +72,71 @@ MonoBehaviour:
     HostileShare: 1
     ArkSpeed: 1.2
     BreachHull: 0
-    LureShare: 0.08
+    LureShare: 0.07
     SpawnPeriodScale: 1.0
     ShieldBiteMin: 0
     SuperShieldBiteMin: 0
     BiteScale: 1
-  - Population: 0.5
+  - Population: 0.45
     RegrowSeconds: 0.8
     HostileShare: 1
     ArkSpeed: 1.1
     BreachHull: 0
-    LureShare: 0.1
+    LureShare: 0.09
     SpawnPeriodScale: 0.95
-    ShieldBiteMin: 0.03
+    ShieldBiteMin: 0.02
     SuperShieldBiteMin: 0
     BiteScale: 1
-  - Population: 0.55
+  - Population: 0.52
     RegrowSeconds: 1.0
     HostileShare: 1
     ArkSpeed: 1
     BreachHull: 0
-    LureShare: 0.15
+    LureShare: 0.12
     SpawnPeriodScale: 0.9
-    ShieldBiteMin: 0.05
+    ShieldBiteMin: 0.04
     SuperShieldBiteMin: 0.02
     BiteScale: 1.0
-  - Population: 0.65
+  - Population: 0.6
     RegrowSeconds: 1.4
     HostileShare: 1
     ArkSpeed: 0.95
     BreachHull: 0
-    LureShare: 0.22
-    SpawnPeriodScale: 0.8
-    ShieldBiteMin: 0.08
-    SuperShieldBiteMin: 0.04
-    BiteScale: 1.15
-  - Population: 0.78
+    LureShare: 0.18
+    SpawnPeriodScale: 0.82
+    ShieldBiteMin: 0.07
+    SuperShieldBiteMin: 0.03
+    BiteScale: 1.1
+  - Population: 0.72
     RegrowSeconds: 2.0
     HostileShare: 1
     ArkSpeed: 0.9
     BreachHull: 0
-    LureShare: 0.3
-    SpawnPeriodScale: 0.72
-    ShieldBiteMin: 0.11
+    LureShare: 0.26
+    SpawnPeriodScale: 0.74
+    ShieldBiteMin: 0.1
     SuperShieldBiteMin: 0.05
-    BiteScale: 1.3
-  - Population: 0.9
+    BiteScale: 1.25
+  - Population: 0.85
     RegrowSeconds: 3.0
     HostileShare: 1
     ArkSpeed: 0.85
     BreachHull: 0
-    LureShare: 0.4
-    SpawnPeriodScale: 0.65
-    ShieldBiteMin: 0.15
-    SuperShieldBiteMin: 0.07
-    BiteScale: 1.5
+    LureShare: 0.35
+    SpawnPeriodScale: 0.66
+    ShieldBiteMin: 0.13
+    SuperShieldBiteMin: 0.06
+    BiteScale: 1.4
   - Population: 1.1
     RegrowSeconds: 4.5
     HostileShare: 1
     ArkSpeed: 0.8
     BreachHull: 0
-    LureShare: 0.6
+    LureShare: 0.55
     SpawnPeriodScale: 0.5
-    ShieldBiteMin: 0.22
+    ShieldBiteMin: 0.2
     SuperShieldBiteMin: 0.1
-    BiteScale: 1.9
+    BiteScale: 1.8
   - Population: 1.4
     RegrowSeconds: 7.0
     HostileShare: 1
