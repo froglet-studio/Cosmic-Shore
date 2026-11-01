@@ -1,0 +1,22 @@
+{
+ "args": {
+  "intensity": [
+   3,
+   4
+  ],
+  "mode": "SerpentTime",
+  "vessel": "Serpent",
+  "watch": true
+ },
+ "budget": {
+  "tries": 1
+ },
+ "by": "you",
+ "created": 1793562719,
+ "id": "r20261102-012159-e345",
+ "job": "unity-train",
+ "machine": "shombithofficial/dragonsweapon",
+ "note": "",
+ "schema": "froglet-compute/request/1",
+ "start": "now"
+}
