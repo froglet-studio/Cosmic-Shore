@@ -1066,6 +1066,19 @@ namespace CosmicShore.Gameplay
             BodyGirthFactor = bodySpindle.Map.Thickest;
 
             _authoredPrismSeats ??= new Dictionary<HealthPrism, Vector3>();
+            // Each host's vertices in the world and its world-to-mesh inverse, once per refit instead of once per prism
+            // (perf pass 2026-11-02). The same MultiplyPoint3x4 / inverse on the same inputs, so every distance and seat
+            // is bit-identical to the per-prism version.
+            var worldVerts = new Vector3[hosts.Count][];
+            var worldToMeshOf = new Matrix4x4[hosts.Count];
+            for (int h = 0; h < hosts.Count; h++)
+            {
+                var toWorld = hosts[h].toWorld;
+                var verts = hosts[h].spindle.Vertices;
+                var w = worldVerts[h] = new Vector3[verts.Length];
+                for (int i = 0; i < verts.Length; i++) w[i] = toWorld.MultiplyPoint3x4(verts[i]);
+                worldToMeshOf[h] = toWorld.inverse;
+            }
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
             {
                 if (!hp || !hp.transform.parent || !IsSpindlePart(hp)) continue;
@@ -1078,17 +1091,16 @@ namespace CosmicShore.Gameplay
                 {
                     // measured in the WORLD: a braid stretched along its length only (the shipped Branch, the tadpole's,
                     // a /fauna-creation body) has no single unit, and one axis's would misjudge the nearest host
-                    var toWorld = hosts[h].toWorld;
-                    var verts = hosts[h].spindle.Vertices;
+                    var verts = worldVerts[h];
                     for (int i = 0; i < verts.Length; i++)
                     {
-                        float d = (toWorld.MultiplyPoint3x4(verts[i]) - centre).sqrMagnitude;
+                        float d = (verts[i] - centre).sqrMagnitude;
                         if (d < nearest) { nearest = d; host = h; }
                     }
                 }
                 if (host < 0) continue;
                 var (_, seat, meshToWorld) = hosts[host];
-                var worldToMesh = meshToWorld.inverse;
+                var worldToMesh = worldToMeshOf[host];
                 var local = worldToMesh.MultiplyPoint3x4(centre);
                 hp.transform.position = meshToWorld.MultiplyPoint3x4(seat.Map.Map(local) + seat.Shift);
 
