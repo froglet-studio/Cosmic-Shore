@@ -394,6 +394,16 @@ def apply_outbox(export, sent, jobs, refs=None, push=True, cwd=None, names=None)
                 rid = str(item.get("id") or "")
                 r = cancel(rid, refs, push=push, cwd=cwd, quiet=True) if ID.fullmatch(rid) else None
                 res.update(ok=bool(r), request=rid, note="stopped: its computer stops within 30 s" if r else "no such run on the queue")
+            elif item.get("kind") in ("forget", "forget-run"):
+                import forget as F
+                if item.get("machine"):
+                    r = F.forget_machine(str(item.get("machine")), push=push, cwd=cwd)
+                else:
+                    rid = str(item.get("id") or "")
+                    if ID.fullmatch(rid):
+                        cancel(rid, refs, push=push, cwd=cwd, quiet=True)
+                    r = F.forget_run(rid, push=push, cwd=cwd)
+                res.update(ok=bool(r.get("ok")), note=r.get("note", ""))
             elif item.get("kind") == "update-ai":
                 import archive_update as AU
                 by = (names or {}).get(viewer) or str(item.get("by") or "")

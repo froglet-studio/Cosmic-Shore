@@ -99,6 +99,8 @@ class Hub:
         self.ai_sync, self.ai_sync_at = None, 0.0        # the hourly ai-branch sync (the VM only): its last result
         self.updates = {}                                # Update AI: vessel -> {state, by, note, at} (archive_update.py)
         self.code_check_at = time.time()                 # the VM's self-restart on newer code (restart_if_code_moved)
+        self.leaving = set()                             # computers the console removed: their next heartbeat is told to leave
+        self.forgets = {}                                # Remove / Delete: machine or request id -> {state, note, at}
 
     # ── the snapshot ──
     def build_once(self, fetch=True):
@@ -204,6 +206,8 @@ class Hub:
                 d = dict(d, ai=dict(d.get("ai") or {}, hub_sync=self.ai_sync or {"due": True}))
             if self.updates:
                 d = dict(d, ai_updates=dict(self.updates))
+            if self.forgets:
+                d = dict(d, forgets=dict(self.forgets))
             if self.filed:
                 d = dict(d, manual=list(self.filed) + list(d.get("manual") or []))
             return d
@@ -214,8 +218,13 @@ class Hub:
 
     def heartbeat(self, body):
         user, host = L.slug(body.get("user")), L.slug(body.get("host"))
+        me = f"{user}/{host}"
         with self.lock:
-            self.live[f"{user}/{host}"] = {"hb": body, "at": L.now()}
+            if me in self.leaving:
+                self.leaving.discard(me)
+                self.live.pop(me, None)
+                return 200, {"ok": True, "leave": True}
+            self.live[me] = {"hb": body, "at": L.now()}
         return 200, {"ok": True}
 
     def request(self, body):
@@ -265,6 +274,43 @@ class Hub:
                     f["state"] = "cancelled"
         L.log(f"hub: stopped {rid}", self.quiet)
         return 200, {"id": rid, "cancelled": True}
+
+    def forget(self, body):
+        """Remove a computer: its agent is told to uninstall at its next heartbeat, its results branch is deleted, the
+        console forgets it. Or delete a run's data (`id`): the run is cancelled and its folders leave every results
+        branch. Both run in the background; /api/status `forgets` says how it went."""
+        import forget as F
+        machine, rid = str(body.get("machine") or ""), str(body.get("id") or "")
+        key = machine or rid
+        if not key:
+            return 400, {"error": "no machine and no run"}
+        with self.lock:
+            if (self.forgets.get(key) or {}).get("state") == "running":
+                return 409, {"error": f"{key} is being removed already"}
+            self.forgets[key] = {"state": "running", "at": L.now(), "note": ""}
+            if machine:
+                self.leaving.add(machine)
+                self.live.pop(machine, None)
+        def work():
+            try:
+                if machine:
+                    r = F.forget_machine(machine, push=True)
+                else:
+                    known = self.requests.get(rid)
+                    if known and not known.get("cancelled"):
+                        R.file(dict(known, cancelled=True, cancelled_at=L.now()), quiet=True)
+                    r = F.forget_run(rid, push=True)
+            except Exception as e:
+                r = {"ok": False, "note": f"{type(e).__name__}: {e}"}
+            with self.lock:
+                self.forgets[key] = {"state": "done" if r.get("ok") else "failed", "at": L.now(), "note": r.get("note", "")}
+            L.log(f"hub: forget {key}: {r.get('note')}", self.quiet)
+            try:
+                self.build_once(fetch=True)
+            except Exception:
+                pass
+        threading.Thread(target=work, name=f"forget-{key}", daemon=True).start()
+        return 202, {"key": key, "state": "running"}
 
     def update_ai(self, body):
         """Update AI: the vessel's trained genomes onto the ai branch, in the background; one at a time per vessel."""
@@ -424,7 +470,7 @@ def handler(hub, page):
                 d = hub.snapshot() or {}
                 return self._send(200, {"hub": True, "app": bool(hub.app), "built": d.get("generated"), "error": hub.error,
                                         "ai_synced": hub.ai_sync if hub.syncs_ai() else None,
-                                        "updates": hub.updates,
+                                        "updates": hub.updates, "forgets": hub.forgets,
                                         "live": (d.get("live") or {}).get("machines", []),
                                         "here": hub.here_runs() if hub.app else []})
             return self._send(404, {"error": "not found"})
@@ -450,6 +496,11 @@ def handler(hub, page):
                     return self._send(*hub.cancel(body))
                 except Exception as e:
                     return self._send(400, {"error": f"not a stop: {e}"})
+            if path in ("/api/forget", "/api/forget-run"):
+                try:
+                    return self._send(*hub.forget(body))
+                except Exception as e:
+                    return self._send(400, {"error": f"not removed: {e}"})
             if path == "/api/update-ai":
                 try:
                     return self._send(*hub.update_ai(body))

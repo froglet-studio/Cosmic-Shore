@@ -291,19 +291,28 @@ def hub_config():
     return (url.rstrip("/"), key) if url and key else (None, None)
 
 
+HUB_REPLY = {}          # the hub's last answer to this process's heartbeat ({"leave": true} when the console removed it)
+
+
 def post_heartbeat(hb):
     """Send a heartbeat to the hub in the background: a phone sees the run's progress in seconds. Never blocks the
-    worker and never fails it: a hub that is down only means the console falls back to git's slower updates."""
+    worker and never fails it: a hub that is down only means the console falls back to git's slower updates. The
+    hub's answer is kept in HUB_REPLY (the agent reads "leave": the console removed this computer)."""
     url, key = hub_config()
     if not url:
         return
 
     def send():
+        global HUB_REPLY
         try:
             import urllib.request
             r = urllib.request.Request(url + "/api/heartbeat", data=json.dumps(hb, default=float).encode(), method="POST",
                                        headers={"Content-Type": "application/json", "X-Compute-Key": key})
-            urllib.request.urlopen(r, timeout=5).read()
+            raw = urllib.request.urlopen(r, timeout=5).read()
+            try:
+                HUB_REPLY = json.loads(raw.decode()) or {}
+            except Exception:
+                HUB_REPLY = {}
         except Exception:
             pass
     import threading

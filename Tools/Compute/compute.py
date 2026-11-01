@@ -149,6 +149,16 @@ def cmd_run(args):
 
     while True:
         idle = L.idle_seconds()
+        if not args.once and L.HUB_REPLY.get("leave"):
+            # The console removed this computer (Remove this computer): uninstall and stop, nothing typed here.
+            L.log("agent: the console removed this computer: uninstalling", args.quiet)
+            A.unlock()
+            import install
+            try:
+                install.uninstall()
+            finally:
+                L.HUB_REPLY.clear()
+            return 0
         if not args.once and code_ref and time.time() - last_code >= CODE_CHECK_SECONDS:
             last_code = time.time()
             if _in_checkout():

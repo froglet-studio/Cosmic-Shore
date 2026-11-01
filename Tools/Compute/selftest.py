@@ -754,6 +754,10 @@ def run(quick=False):
     ps = people_seed.self_test()
     print("people seed: " + ("ok (two races seed the throttle and boost genes; one race, AI-held samples and two presses do not)" if not ps else "FAILED\n  " + "\n  ".join(ps)))
     failures += ps
+    import forget
+    fg = forget.self_test()
+    print("forget: " + ("ok (a run's folders leave a results branch, the checkout untouched; bad names refused)" if not fg else "FAILED\n  " + "\n  ".join(fg)))
+    failures += fg
     au = archive_update.self_test()
     print("update AI: " + ("ok (entries round-trip in Unity's shape, the best epoch wins, only the core four promote)" if not au else "FAILED\n  " + "\n  ".join(au)))
     failures += au

@@ -351,6 +351,15 @@ whenever its person is away (the default), only at night, every day between two 
 someone sends a run from the console (`--only-sent`: it stays free and never picks queue work), or all the time; and
 whether a sent run may start at once while the person is at the computer. Weekly schedules are not there yet.
 
+**Remove a computer, delete a run's data** (`Tools/Compute/forget.py`; Shombith, 2026-11-01): the Computers row menu's
+"Remove this computer…" tells the computer's agent to uninstall itself at its next heartbeat (the hub answers it
+`leave`), deletes its results branch `compute/<user>/<host>` on origin and forgets it on the console; "Delete" on a
+finished run (and "Delete its data" on a sent run that is done or cancelled) stops it if it still runs and removes its
+`jobs/<job>~<id>/` and `requests/<id>*` from every computer's results branch with one plumbing commit each. Both ask
+in words first; live through the hub (`/api/forget`, `/api/forget-run`; `api/status` `forgets`), on the snapshot through
+the outbox, from a checkout `forget.py machine <user>/<host> --push` or `forget.py run <id> --push`. The archive and the
+`ai` branch keep what was already promoted; people's recorded races are the bug ledger's, never touched here.
+
 **The agent keeps up with the branch by itself** (2026-11-01: a run at two intensities sat "waiting" because
 dragonsweapon's agent still ran the code from before intensity lists and skipped it as invalid): every half hour the
 resident agent fetches the install ref, and when its `Tools/Compute` differs from the copy it runs, it exports the

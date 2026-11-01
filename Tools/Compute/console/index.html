@@ -116,6 +116,7 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; }
 .btn:hover, .tbtn:hover { background: var(--raised); }
 .btn.cta, .btn.pri, .tbtn.cta { background: var(--accent); border-color: var(--accent); color: var(--on); font-weight: 600; }
 .btn, .tbtn, .pick, .kind, .pill { font-family: var(--mono); font-size: 12px; letter-spacing: 0.02em; }
+[role=menuitem].danger { color: var(--bad); }
 .btn.cta, .btn.pri, .tbtn.cta { font-family: var(--head); font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 400; }
 .pick.on { color: var(--accent); }
 .btn.cta:hover, .btn.pri:hover, .tbtn.cta:hover { filter: brightness(1.06); background: var(--accent); }
@@ -666,7 +667,8 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
       h("div", { class: "prog" }, [h("i", { style: "width:" + Math.max(2, Math.round(frac * 100)) + "%" })]),
       h("div", { class: "facts" }, [h("span", null, [h("b", { text: (m.tries || 0) + " / " + m.budget }), " tries"]),
         m.best != null ? h("span", null, ["best ", h("b", { text: fmt(m.best) }), m.today != null ? " vs today's " + fmt(m.today) : "", better ? h("span", { class: "delta good", text: " (" + ((m.today - m.best) / Math.abs(m.today) * 100).toFixed(1) + "% better)" }) : ""]) : null,
-        m.problems.length ? h("span", { class: "delta worse", text: "cannot run: " + m.problems.join("; ") }) : null])]);
+        m.problems.length ? h("span", { class: "delta worse", text: "cannot run: " + m.problems.join("; ") }) : null,
+      (m.state === "done" || m.state === "cancelled") ? h("button", { class: "btn small", type: "button", title: "Delete this run's data from every computer", onclick: function (e) { forgetThing({ id: m.id }, runName(m), e.target.closest(".mrun")); } }, ["Delete its data"]) : null])]);
   }
   function renderRuns(root) {
     var act = (DATA.runs || {}).active || [], recent = (DATA.runs || {}).recent || [];
@@ -688,7 +690,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
         var base = String(r.job || "").split("~")[0];
         return h("tr", { class: jobById(base) ? "click" : null, onclick: function () { if (jobById(base)) openJob(base); } }, [h("td", null, [kindTag(k)]), h("td", { text: runName(r) }), h("td", { class: "note", text: String(r.machine || "").split("/").pop() }),
           h("td", { class: "num note", text: (r.evals || 0).toLocaleString() }), h("td", { class: "num" + (imp && r.best_start != null ? " delta good" : ""), text: res }),
-          h("td", { class: "note", text: stopped(r.stopped) }), h("td", { class: "num note", text: ago(r.end) })]); }))])]));
+          h("td", { class: "note", text: stopped(r.stopped) }), h("td", { class: "num note" }, [h("span", { text: ago(r.end) }), r.request ? h("button", { class: "btn small", type: "button", title: "Delete this run's data from every computer", style: "margin-left:8px", onclick: function (e) { e.stopPropagation(); forgetThing({ id: r.request }, runName(r), e.target.closest(".tablewrap")); } }, ["Delete"]) : null])]); }))])]));
     var races = ((DATA.recordings || {}).flights || []).slice().sort(function (a, b) { return raceTime(b) - raceTime(a); }).slice(0, 5);
     if (races.length) root.appendChild(card("Races people played", h("a", { href: "#recordings", text: "All races" }), h("div", { class: "rowlist" }, races.map(function (f) {
       return rowItem([kindTag("player", f.user), h("div", { class: "t" }, [h("b", { text: f.vessel + " in " + f.mode })]), h("span", { class: "note", text: f.state === "learned" ? "AI learned from it" : f.state === "waiting" ? "waiting" : "not learned yet" }), h("span", { class: "w", text: f.date + " " + f.time })]); }))));
@@ -899,11 +901,13 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
       h("button", { role: "menuitem", type: "button", disabled: !m.remote_start, onclick: function () { MMENU = null; openNewRun(null, null, null, m.machine); } }, [svgIcon(IC.play, 14), "Start a run now"]),
       h("button", { role: "menuitem", type: "button", disabled: !(act && act.request), onclick: function (e) { var row = e.target.closest("tr"); MMENU = null; stopRun(act.request, row && row.parentElement ? row.closest(".tablewrap") : null, m.machine, runName(act)); } }, [svgIcon(IC.stop, 14), "Stop the run (keeps what it found)"]),
       h("button", { role: "menuitem", type: "button", onclick: copy }, [svgIcon(IC.copy, 14), "Copy the computer's name"]),
+      h("button", { role: "menuitem", type: "button", class: "danger", onclick: function (e) { MMENU = null; forgetThing({ machine: m.machine }, m.host, e.target.closest(".tablewrap")); } }, [svgIcon(IC.stop, 14), "Remove this computer…"]),
       h("div", { class: "why", text: (m.remote_start ? "Its owner lets a run start at once." : "A run sent here waits until it is free; its owner can allow more (compute.py remote-start on).") + (act ? "" : " Nothing is running on it now.") })]);
   }
   function renderMachines(root) {
     var ms = DATA.machines, c = fleet(), runs = (DATA.runs || {}).active || [];
     root.appendChild(title("Computers"));
+    if (NOTICE && Date.now() - NOTICE.at < 180000) root.appendChild(h("div", { class: "banner", id: "sent-notice" }, [h("b", { text: NOTICE.text })]));
     var tabs = [["all", "All", ms.length], ["working", "Working", c.working || 0], ["free", "Free", c.free || 0], ["in use", "In use", c["in use"] || 0], ["outside hours", "Outside hours", c["outside hours"] || 0], ["offline", "Offline", c.offline || 0]];
     var q = h("input", { type: "search", placeholder: "Search computers", "aria-label": "Search computers" }); q.value = MQ;
     q.addEventListener("input", function () { MQ = q.value; fillRows(); });
@@ -1455,6 +1459,26 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     ((DATA.recordings || {}).flights || []).forEach(function (f) { if (f.vessel !== vessel || f.mode !== mode) return; r.n++;
       if (f.state === "learned") r.learned++; else if (f.state === "waiting") r.waiting++; else r.newer++; });
     return r;
+  }
+  // Remove a computer (its agent uninstalls itself, its results branch goes) or delete a run's data (its folders leave
+  // every computer's results). A person's choice, asked twice in words; live through the hub, else the outbox.
+  function forgetThing(what, name, place) {
+    var isMachine = !!what.machine;
+    var msg = isMachine ? "Remove " + name + " from Froglet Compute? Its agent uninstalls itself at its next heartbeat and every result it published is deleted. To join again, run the installer on it."
+                        : "Delete the data of " + name + "? It is stopped if it still runs, and its files leave every computer's results. The archive and the ai branch keep what was already promoted.";
+    if (!window.confirm(msg)) return;
+    var line = h("p", { class: "note", text: isMachine ? "Removing…" : "Deleting…" }); if (place) place.appendChild(line);
+    if (LIVE) {
+      if (!KEY) return askKey(function () { forgetThing(what, name, place); });
+      fetch(isMachine ? "api/forget" : "api/forget-run", { method: "POST", headers: { "Content-Type": "application/json", "X-Compute-Key": KEY }, body: JSON.stringify(what) })
+        .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
+        .then(function (a) { if (a[0] === 202) { NOTICE = { at: Date.now(), text: (isMachine ? "Removing " + name + ". It leaves this console within a minute; its PC stops by itself." : "Deleting " + name + "'s data from every computer.") }; setTimeout(refreshLive, 5000); render(); }
+          else line.textContent = a[1].error || "Not done"; }, function () { line.textContent = "Could not reach the hub."; });
+      return;
+    }
+    if (canSend()) { sendOutbox(Object.assign({ kind: isMachine ? "forget" : "forget-run", title: (isMachine ? "Remove " : "Delete ") + name }, what)).then(function () { line.textContent = "Sent. The next sync (within the hour) does it."; }, function (e) { line.textContent = saveError(e); }); return; }
+    var cmd = "python3 Tools/Compute/forget.py " + (isMachine ? "machine " + what.machine : "run " + what.id) + " --push";
+    line.textContent = "From a checkout:"; place.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: cmd })]), copyBtn(function () { return cmd; })]));
   }
   function machineInfo(name) { return (DATA.machines || []).filter(function (m) { return m.machine === name; })[0] || {}; }
   // Why a sent run has not started: the computer it was sent to, as it is now, against what the run asked for.
