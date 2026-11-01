@@ -108,7 +108,7 @@ namespace CosmicShore.Gameplay
     /// the second and every later cell stream in unveiled beside live play, which is what a
     /// satellite build is for — and the voyage opens only when that veil actually comes down.
     /// </summary>
-    public sealed class ArkwayRun : MonoBehaviour, IObjectiveProvider
+    public sealed partial class ArkwayRun : MonoBehaviour, IObjectiveProvider
     {
         const float TickSeconds = 0.2f;
 
@@ -719,6 +719,7 @@ namespace CosmicShore.Gameplay
 
             float leash = _conveyor.CurrentCellRadius * Mathf.Max(1f, _cfg.LeashRadiusFactor);
             float distSqr = (t.position - _ark.Position).sqrMagnitude;
+            TrackLeashShell(leash, t.position);
 
             bool breached = _leashBreachedAt >= 0f;
             if (!breached)
@@ -879,10 +880,14 @@ namespace CosmicShore.Gameplay
                 return;
             }
             _arrow.HideOnScreenWithin = ArrowHideOnScreenWithin;
+            HookDamageAlarm();
+            EnsureLeashShell();
         }
 
         void DestroyObjectiveArrow()
         {
+            UnhookDamageAlarm();
+            DestroyLeashShell();
             if (!_arrow) return;
             Destroy(_arrow.gameObject);
             _arrow = null;
