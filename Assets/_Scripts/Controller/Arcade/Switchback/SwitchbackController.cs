@@ -194,7 +194,12 @@ namespace CosmicShore.Gameplay
             foreach (var p in gameData.Players)
             {
                 if (p == null) continue;
-                bool ai = p.IsInitializedAsAI || (p is Player human && PilotControl.IsHeldByAI(human));
+                bool ai = p.IsInitializedAsAI;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // PilotControl (the AI-flies switch) exists only in editor and development builds; in a release build
+                // no human's hull can be handed to the AI, so the AI flag alone is the whole answer.
+                if (!ai && p is Player human) ai = PilotControl.IsHeldByAI(human);
+#endif
                 int avoids = 0, blasts = 0, emerg = 0;
                 _blastAI?.TryCounts(p, out avoids, out blasts, out emerg);
                 int threaded = 0;
