@@ -75,10 +75,10 @@ SPEC = {
         "Mass": {"body_scale": 3.82, "shield_all": True},
         # Charge: every body prism danger; the spindles part hardest (SPINDLE_LOD.md).
         "Charge": {"body_scale": 1.0, "all_danger": True},
-        # Space: 1.6477 x the Mass span, spindles eroded where thickest, prisms refit as needles. Whether the stinger
-        # thins too is Garrett's call: Fauna.ErodeSpindle skips authored danger today.
-        "Space": {"body_scale": round(3.82 * 1.6477, 4), "erode_spindle": True, "span_over_mass": 1.6477, "stinger_thins": False},
-        # Time: as authored. No body expression for Time is written anywhere yet (an open decision, not a default).
-        "Time": {"body_scale": 1.0},
+        # Space: 1.6477 x the Mass span, spindles eroded where thickest, every prism refit as a needle, the stinger too
+        # (Garrett 2026-11-01: "the stinger can thin on space. the stinger is just a danger prism").
+        "Space": {"body_scale": round(3.82 * 1.6477, 4), "erode_spindle": True, "span_over_mass": 1.6477, "stinger_thins": True},
+        # Time: the base body, faster (Garrett 2026-11-01: "time makes them faster, but it is the base essentially").
+        "Time": {"body_scale": 1.0, "speed_scale": 1.4},
     },
 }

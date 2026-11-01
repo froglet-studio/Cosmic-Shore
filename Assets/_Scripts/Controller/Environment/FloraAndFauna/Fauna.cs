@@ -1084,7 +1084,8 @@ namespace CosmicShore.Gameplay
                 var local = worldToMesh.MultiplyPoint3x4(centre);
                 hp.transform.position = meshToWorld.MultiplyPoint3x4(seat.Map.Map(local) + seat.Shift);
 
-                if (IsAuthoredDanger(hp)) continue;   // a tooth keeps its size, at its new seat (never a Charge body's armed prism)
+                // every prism is refit, authored danger too: "the stinger can thin on space. the stinger is just a danger
+                // prism" (Garrett 2026-11-01). A tooth or a stinger is a prism like any other; there is no danger exception.
 
                 var authored = hp.AuthoredScale;
                 var parent = hp.transform.parent.localToWorldMatrix;

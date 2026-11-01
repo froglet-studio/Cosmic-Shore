@@ -35,8 +35,8 @@ MonoBehaviour:
     SeparationRadius: 40
     FeedingClusterRadius: -1
     GoalWeight: 6
-    MinSpeed: 14
-    MaxSpeed: 26
+    MinSpeed: 19.6
+    MaxSpeed: 36.4
     OverrideAudio: 1
     AudioLoopEvent:
       Guid:

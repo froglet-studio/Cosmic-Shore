@@ -35,6 +35,9 @@ PRISM_REACH = 2.5           # a body prism's nearest point must lie within this 
 TERRESTRIAL = ("leg", "belly", "back", "dorsal", "ventral", "eye", "antenna", "foot", "feet", "head", "torso",
                "thorax", "abdomen", "wing")   # Earth anatomy; a celestial body names its parts by what they are
 ELEMENTS = ("Charge", "Mass", "Space", "Time")
+# Garrett 2026-11-01: "time makes them faster, but it is the base essentially". Time is the base body (scale 1), moving
+# faster by the shipped tadpole's Time:base speed band (15-20 against 10-15 u/s, midpoints 17.5 / 12.5).
+TIME_SPEED = 1.4
 
 
 # ------------------------------------------------------------------ geometry
@@ -295,8 +298,14 @@ def check(spec):
     if "Space" in el:
         want(el["Space"].get("erode_spindle") is True and abs(el["Space"].get("span_over_mass", 0) - SPACE_OVER_MASS) < 1e-3,
              f"L8 Space must erode its spindles and out-span Mass by {SPACE_OVER_MASS} (FaunaElementalForm)")
-        want(el["Space"].get("stinger_thins") in (True, False),
-             "L8 Space: say whether the stinger thins (Fauna.ErodeSpindle skips authored danger today)")
+        # Garrett 2026-11-01: "the stinger can thin on space. the stinger is just a danger prism" - no exception
+        want(el["Space"].get("stinger_thins", True) is True,
+             "L8 Space: the stinger thins like every prism (a stinger is just a danger prism; Fauna.ErodeSpindle has no danger exception)")
+    if "Time" in el:
+        want(abs(el["Time"].get("body_scale", 0) - 1.0) < 1e-6,
+             "L8 Time is the base body (body_scale 1): Time makes a creature faster, not bigger or smaller")
+        want(abs(el["Time"].get("speed_scale", 1.0) - TIME_SPEED) < 1e-6,
+             f"L8 Time moves {TIME_SPEED} x the base speed band (the tadpole's Time:base); say speed_scale {TIME_SPEED}")
     if "Mass" in el:
         plain = [p for p in prisms if p.get("kind") == "health"]
         # the body grows with the root and the heart does not: k x (distance at root scale 1) must reach the swing
@@ -358,6 +367,9 @@ def self_test():
     planted("a solid model skin", lambda s: s.update(model="Bee.fbx"), "L2")
     planted("steering with world up", lambda s: s.update(steering_up="world"), "L6")
     planted("Space not eroded", lambda s: s["elements"]["Space"].update(erode_spindle=False), "L8")
+    planted("a Time body that is not faster", lambda s: s["elements"]["Time"].update(speed_scale=1.0), "L8")
+    planted("a Time body resized", lambda s: s["elements"]["Time"].update(body_scale=2.0), "L8")
+    planted("a stinger that keeps its size on Space", lambda s: s["elements"]["Space"].update(stinger_thins=False), "L8")
     planted("a Mass heart inside its shields", lambda s: s["elements"]["Mass"].update(body_scale=2.5), "L8")
     planted("a leg by name", lambda s: s["spindles"][1].update(name="Leg1") or [p.update(spindle="Leg1") for p in s["prisms"] if p["spindle"] == base["spindles"][1]["name"]], "L9")
 

@@ -304,6 +304,12 @@ def hive_prefab():
 
 # ── the configs ─────────────────────────────────────────────────────────────────────────────────────────────────
 
+def bee_speed(form):
+    """The element's speed band: the bee's own, times the spec's speed_scale (Time 1.4: the base body, faster)."""
+    k = float(form.get("speed_scale", 1.0))
+    return (round(BEE_SPEED[0] * k, 4), round(BEE_SPEED[1] * k, 4))
+
+
 def bee_config(e, value):
     pg = guid(rel(prefab_path("BeeFauna")))
     form = spec()["elements"][e]   # the spec's element table (/fauna-creation L8)
@@ -326,7 +332,7 @@ def bee_config(e, value):
         f"    BehaviorUpdateRate: {_g(BEE_BEHAVIOUR_RATE)}\n"
         "    TrailBlockInteractionRadius: -1\n    SeparationRadius: 40\n    FeedingClusterRadius: -1\n"
         "    GoalWeight: 6\n"
-        f"    MinSpeed: {BEE_SPEED[0]}\n    MaxSpeed: {BEE_SPEED[1]}\n"
+        f"    MinSpeed: {_g(bee_speed(form)[0])}\n    MaxSpeed: {_g(bee_speed(form)[1])}\n"
         "    OverrideAudio: 1\n    AudioLoopEvent:\n      Guid:\n        Data1: 0\n        Data2: 0\n        Data3: 0\n"
         "        Data4: 0\n      Path: \n    AudioMinDistance: -1\n    AudioMaxDistance: -1\n")
 
@@ -441,6 +447,9 @@ def verify(out):
         form, cfg = sp["elements"][e], out[bee_cfg_path(e)]
         if f"    BaseBodyScale: {_g(float(form['body_scale']))}\n" not in cfg:
             problems.append(f"Bee Fauna {e}: BaseBodyScale is not the spec's {form['body_scale']}")
+        lo, hi = bee_speed(form)
+        if f"    MinSpeed: {_g(lo)}\n    MaxSpeed: {_g(hi)}\n" not in cfg:
+            problems.append(f"Bee Fauna {e}: the speed band is not the spec's {lo}-{hi} u/s (speed_scale)")
         if bool(form.get("erode_spindle")) != ("    ErodeSpindle: 1\n" in cfg):
             problems.append(f"Bee Fauna {e}: ErodeSpindle is not the spec's ({bool(form.get('erode_spindle'))})")
     for gone in ("Bee.fbx", "Bee.fbx.meta"):
@@ -501,6 +510,7 @@ def self_test():
         ("the stinger made a health prism", lambda o: o.__setitem__(prefab_path("BeeFauna"), o[prefab_path("BeeFauna")].replace(
             "aad956930fb933f4b82b992b1bc2b773", "4a31e01f8b69a584ca245a1687beb4c2"))),
         ("Space not eroded", lambda o: o.__setitem__(bee_cfg_path("Space"), o[bee_cfg_path("Space")].replace("    ErodeSpindle: 1\n", ""))),
+        ("Time not faster", lambda o: o.__setitem__(bee_cfg_path("Time"), re.sub(r"    MinSpeed: [^\n]+\n    MaxSpeed: [^\n]+\n", "    MinSpeed: 14\n    MaxSpeed: 26\n", o[bee_cfg_path("Time")]))),
         ("hive unlisted", lambda o: o.__setitem__(HESP_PROFILE, read(HESP_PROFILE).replace(
             f"  - {{fileID: 11400000, guid: {guid(rel(hesp_hive_path()))}, type: 2}}\n", ""))),
     ]

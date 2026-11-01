@@ -3785,6 +3785,9 @@ speed.
    leave *something* behind, the question to answer first is what a danger prism does in a skeleton
    — stay dangerous forever, shed its danger state on detach, or be the one prism kind the skeleton
    drops. Do not "just enable it".
+   **Answered for danger (Garrett, 2026-11-01)**: "danger prisms are left behind without need for exceptions": a
+   skeleton keeps its danger prisms as they are. The worm colony still keeps its suction death for the other reason
+   above (a kaiju skeleton is a wall); turning it into a skeleton is a separate decision, not taken.
 2. **Flora deaths other than the joust still detonate** (`DamageAll` + `ForceWitherAll`). That is
    deliberate for now — a plant grazed to its lethal threshold has been actively eaten — but if the
    skeleton reads well in play, making it universal for flora is a one-line change to the branch in
@@ -12559,7 +12562,8 @@ place:
 Only what the ELEMENT changed is undone on a pooled body's next life. What the prefab authored (the worm head's shielded
 plate cage, the teeth) is never touched.
 
-Mouths, jaws and the Space erosion's "a tooth keeps its size" read `Fauna.IsAuthoredDanger`. On a Charge creature every
+Mouths and jaws read `Fauna.IsAuthoredDanger` (the Space erosion read it too, for "a tooth keeps its size", until
+Garrett, 2026-11-01: "the stinger can thin on space. the stinger is just a danger prism. danger prisms are left behind without need for exceptions"; every prism is now refit on Space, teeth and stingers included). On a Charge creature every
 prism is dangerous, and a mouth at the centroid of its whole body would be no mouth.
 
 At the §64.8 body scales the Mass shark, QuadFish, Clawfish and Brittlestar keep their 12.44 u swing clear of every
@@ -12809,8 +12813,13 @@ spec (`build.read_back`: every part's world pose and size from the prefab's own 
   every prism danger); **Mass 3.82**: the heart's 12.44 u swing must clear every plate's and rib's SHIELD octahedron
   (1.5 × the prism's size), and the nearest, a vane plate's, sits 3.263 u out at scale 1, so 3.812 is the floor (the first
   spec said 2.5, measured to the prism boxes: that would have put a Mass bee's heart inside its own shields; the checker now
-  measures the octahedra and `--self-test` plants the 2.5); **Space 6.2942** (1.6477 × Mass) with `ErodeSpindle: 1`. The
-  stinger keeps its size on Space (`Fauna.ErodeSpindle` skips authored danger; Garrett's call whether it should thin).
+  measures the octahedra and `--self-test` plants the 2.5); **Space 6.2942** (1.6477 × Mass) with `ErodeSpindle: 1`, the
+  stinger thinned with the rest (Garrett 2026-11-01, below); **Time** the base body at scale 1, its speed band 1.4 × the
+  bee's (19.6-36.4 u/s against 14-26: "time makes them faster, but it is the base essentially"; 1.4 is the shipped
+  tadpole's Time:base band, 17.5 / 12.5).
+- **Decided (Garrett, 2026-11-01)**: "the stinger can thin on space. the stinger is just a danger prism. danger prisms are left behind without need for exceptions". `Fauna.ErodeSpindle` no longer skips authored danger (this reaches every
+  eroded species: the Space shark's teeth and the brittlestar's spines thin as needles too). A skeleton already leaves
+  every body prism, danger included (`Fauna.LeaveSkeleton`), so nothing changes there. Three-fold symmetry stays.
 - **The mouth**: a bee does not eat (`mouth: none`). It is a `Boid`, and the authored-danger mouth is `LightFauna`'s, so
   the stinger never becomes a mouth; `BeeFauna.Sting` stings with its own reach.
 

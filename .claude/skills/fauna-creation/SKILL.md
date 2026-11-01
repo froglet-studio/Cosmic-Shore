@@ -57,7 +57,7 @@ that out of the HyperSea's own parts.
 | L5 | **A stinger: one long, skinny, authored danger prism** at the trailing extremity, on a terminal limb (length ≥ 4 and ≥ 6× its thickness). Any axis outside the scale animator's [0.5, 10] window is `seat_authored` (`Fauna.SeatAuthoredSize`). The spec declares where the creature feeds (`mouth`), because LightFauna puts the mouth at the authored-danger centroid. | Garrett 2026-11-01; ECOSYSTEM.md §64.9; `LightFauna.cs` 458-465 |
 | L6 | **No sense of up.** The body is n-fold symmetric round +z, n ≥ 3, and the species steers with a CARRIED up (parallel-transported, like `SubstrateArms.Frame`), never `Vector3.up`. | Garrett 2026-11-01; ECOSYSTEM.md §18.1 |
 | L7 | **Prisms never interpenetrate**; spindles may pass through anything. Fit flush: keep every prism, shrink minimally, at authoring time. | PRINCIPLES (LOCKED); Garrett 2026-10-20 |
-| L8 | **The four element forms are written down.** Mass: every plain prism shielded, the body grown until the heart's 12.44 u swing clears every shield. Charge: every prism danger, spindles part hardest. Space: 1.6477× Mass's span, spindles eroded where thickest, prisms refit as needles. Time: see §7 (open). | ECOSYSTEM.md §64.8-9, §65 (Garrett 2026-10-27/28) |
+| L8 | **The four element forms are written down.** Mass: every plain prism shielded, the body grown until the heart's 12.44 u swing clears every shield. Charge: every prism danger, spindles part hardest. Space: 1.6477× Mass's span, spindles eroded where thickest, every prism refit as a needle, the stinger too. Time: the base body (scale 1), 1.4× faster. | ECOSYSTEM.md §64.8-9, §65 (Garrett 2026-10-27/28); Garrett 2026-11-01 (Time, the stinger) |
 | L9 | **No Earth anatomy names** (leg, belly, back, eye, antenna, wing, thorax...). Name a part for what it is here: spine, vane, rib, plate, sting, tine. | this skill |
 | L10 | **A premise and a role.** What it is, the feeling it is for ("surrounded ... scary", Garrett on the substrate), and what it does in the food web. Every lifeform feeds and reproduces. | Garrett 2026-10-08; SUBSTRATE_FAUNA.md |
 
@@ -115,8 +115,9 @@ python3 Tools/Build/fauna_kit/preview.py <species> --out <png>  # four views; LO
 - **The default up.** `SafeLookRotation.TryGet(forward)` defaults to `Vector3.up`, and `LightFauna`, `Boid`,
   `WormFauna`, `NcaCreatureFauna`, `SubstrateFauna` and `BuilderColonyFauna` all steer that way. A symmetric body
   steered with world up still behaves as if it has a top. The only up-free frame shipped is `SubstrateArms.Frame`.
-- **Space does not thin a stinger.** `Fauna.ErodeSpindle` skips authored danger (`Fauna.cs` ~1081, "a tooth keeps its
-  size"). If the stinger should thin on Space, that is a change to the erosion, decided by Garrett.
+- **(Resolved 2026-11-01) "Space does not thin a stinger".** `Fauna.ErodeSpindle` used to skip authored danger ("a tooth
+  keeps its size"). Garrett: "the stinger can thin on space. the stinger is just a danger prism." The exception is gone:
+  every prism is refit on Space, teeth and stingers included, and `celestial.py` L8 rejects `stinger_thins: False`.
 - **The mouth follows the danger.** LightFauna puts the mouth at the authored-danger centroid, so a creature whose only
   danger is a rear stinger "eats" from its tail. Declare `mouth`.
 - **Copying the tadpole root.** The tadpole's root carries a rotation and a 0.4 scale; a species forked from it inherits
@@ -154,12 +155,14 @@ python3 Tools/Build/fauna_kit/preview.py <species> --out <png>  # four views; LO
 
 ## 6. Open decisions (ask; do not default)
 
-- **Time's body form.** Nothing anywhere gives Time a body expression (it is "as authored"; its only identity is the
-  faster clock, and that is written for flora). Every new species asks Garrett until he sets it.
-- **Does the stinger thin on Space** (§5)?
-- **What a danger prism does in a skeleton** (ECOSYSTEM.md §26.6, §26.9): the worm is excluded from leaving one because
-  of its danger; a stinger species needs the answer.
-- **Symmetry order per species** where 3 is not obvious.
+- **Symmetry order per species** where 3 is not obvious (3 is right for the bee).
+
+Decided by Garrett, 2026-11-01 (now laws, not questions):
+- **Time is the base body, faster**: "time makes them faster, but it is the base essentially". Time's `body_scale` is 1
+  and its speed band is `TIME_SPEED` (1.4, the shipped tadpole's Time:base band) times the species' own (L8).
+- **The stinger thins on Space**: "the stinger is just a danger prism". No danger exception in the erosion (L8).
+- **A skeleton leaves danger prisms as they are**: "danger prisms are left behind without need for exceptions".
+  `Fauna.LeaveSkeleton` already drops every body prism; never add a danger branch to it.
 
 ## 7. Extending this to other lifeforms (the plan)
 
