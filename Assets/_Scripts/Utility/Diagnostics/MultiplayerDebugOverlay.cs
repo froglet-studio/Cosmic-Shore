@@ -10,11 +10,13 @@
 //   - every lobby player's ready flag, whether they are listed, and their absence strikes;
 //   - the online list rows, pending departures, the safety-poll timer and watchers;
 //   - UGS Friends presence for every friend;
-//   - the replicated arcade LobbySnapshot (generation, seats, humans, placed AI).
+//   - the replicated arcade LobbySnapshot (generation, seats, humans, placed AI);
+//   - network: this machine's RTT to the host and every spawned Player's host-sampled RTT.
 // "Copy" puts the whole text on the clipboard so it can be pasted into a bug report.
 // ─────────────────────────────────────────────────────────────────────────────
 using System.Text;
 using CosmicShore.Gameplay;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -82,6 +84,24 @@ namespace CosmicShore.Utility
             var sync = ArcadeConfigSyncManager.Instance;
             if (!sync || !sync.IsSpawned) sb.AppendLine("  (sync manager not spawned)");
             else sb.Append("  ").Append(sync.IsServer ? "[host] " : "[guest] ").AppendLine(sync.CurrentLobby.ToString());
+
+            sb.AppendLine("── Network (RTT) ──");
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) sb.AppendLine("  (not connected)");
+            else
+            {
+                if (!nm.IsServer && nm.NetworkConfig.NetworkTransport != null)
+                    sb.Append("  me -> host: ").AppendLine(ConnectionQuality.Label(
+                        (int)nm.NetworkConfig.NetworkTransport.GetCurrentRtt(NetworkManager.ServerClientId)));
+                sb.Append("  time resync: ").AppendLine(nm.NetworkConfig.EnableTimeResync ? "on" : "off");
+                foreach (var p in FindObjectsByType<Player>(FindObjectsSortMode.None))
+                {
+                    if (!p.IsSpawned) continue;
+                    sb.Append("  ").Append(p.NetName.Value.ToString()).Append(p.NetIsAI.Value ? " [AI]" : "")
+                      .Append(" client ").Append(p.OwnerClientId).Append("  ")
+                      .AppendLine(p.NetIsAI.Value ? "-" : ConnectionQuality.Label(p.NetRttMs.Value));
+                }
+            }
 
             return sb.ToString();
         }

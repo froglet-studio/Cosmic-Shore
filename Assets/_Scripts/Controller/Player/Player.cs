@@ -82,6 +82,15 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<FixedString64Bytes> NetUgsPlayerId = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         /// <summary>
+        /// Round-trip time from the HOST to this player's machine in ms, sampled by the host once a
+        /// second from UnityTransport (<see cref="ConnectionQuality.SampleIntervalSeconds"/>). 0 for
+        /// the host's own player and for AI. Read by the multiplayer debug overlay; thresholds in
+        /// <see cref="ConnectionQuality"/>.
+        /// </summary>
+        public NetworkVariable<ushort> NetRttMs = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        float _nextRttSampleTime;
+
+        /// <summary>
         /// True once this player has tapped READY in the Maelstrom hub. Same shape as
         /// <see cref="NetRematchVote"/> and <see cref="NetArenaReady"/>: server-write,
         /// everyone-read STATE, so the hub can put a FACE against every ready press rather than
@@ -201,11 +210,25 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (IsSpawned && IsServer) KeepStationValid();
+            if (IsSpawned && IsServer) SampleRtt();
             // the person on this machine (IsLocalPilot also covers the legacy un-networked spawn, where only their own
             // hull's seats are in the ring)
             if (!IsLocalPilot || (IsSpawned && !IsLocalUser)) return;
             _localStation ??= new LocalCrewStation(this);
             _localStation.Tick(gameData);
+        }
+
+        /// <summary>Host only: refresh <see cref="NetRttMs"/> from the transport once a second.</summary>
+        void SampleRtt()
+        {
+            if (Time.unscaledTime < _nextRttSampleTime) return;
+            _nextRttSampleTime = Time.unscaledTime + ConnectionQuality.SampleIntervalSeconds;
+
+            var nm = NetworkManager;
+            ushort rtt = 0;
+            if (!NetIsAI.Value && nm != null && OwnerClientId != nm.LocalClientId && nm.NetworkConfig.NetworkTransport != null)
+                rtt = ConnectionQuality.ToWire(nm.NetworkConfig.NetworkTransport.GetCurrentRtt(OwnerClientId));
+            if (NetRttMs.Value != rtt) NetRttMs.Value = rtt;
         }
 
         /// <summary>A menu parked this person's own hull on its AI (<see cref="CrewSeat.ReturnHumansToHull"/>): a ride ends
