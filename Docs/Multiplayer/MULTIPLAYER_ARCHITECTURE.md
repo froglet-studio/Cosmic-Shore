@@ -39,7 +39,7 @@ That profile tells us the following:
 | Prediction / lag comp | **None**, and none is needed for your own ship (you own it, so there is zero input latency). Remote ships are interpolated ~0.1 s behind. | — |
 | Interest management | **None** (no `CheckObjectVisibility` / `NetworkShow` / `NetworkHide`). Everyone receives everything. | grep |
 | Host migration | **None.** If the host leaves, the match ends (`DisconnectNotice` paths). | `Tests/Editor/DisconnectNoticeTests.cs`, `Controller/Party/StateMachine/PartyStateMachine.cs` |
-| Reconnection | **Party/presence level only** (the lobby reconnect path in `HostConnectionService`). There is no rejoin into a running match. | `Controller/Party/HostConnectionService.cs` |
+| Reconnection | **Mid-match rejoin exists** (correction to the first draft of this doc). When a guest drops, the host hands its Player and vessel to the AI (`DontDestroyWithOwner`, `NetIsAI`), so its score keeps counting. The client remembers the match (`MatchRejoin` record, 30 min) and `DisconnectNotice` offers Rejoin. The host matches the UGS PlayerId from the approval payload and gives the seat back (`TryReclaimSeat`). | `Controller/Multiplayer/ServerPlayerVesselInitializer.cs` (`HandleClientDisconnectedForAITakeover`, `TryReclaimSeat`), `Controller/Multiplayer/MatchRejoin.cs`, `UI/Elements/DisconnectNotice.cs`, `Tests/Editor/MatchRejoinTests.cs` |
 | Anti-cheat | **Observe-only host checks**: `MovementPlausibilityMonitor` measures guest speed and teleports and raises signals, never kicks. Connection approval is on. | `Controller/Multiplayer/MovementPlausibilityMonitor.cs`, `Docs/AntiCheat/README.md` |
 
 ## 2. The concepts
@@ -251,9 +251,9 @@ Do **not** move to dedicated servers before there is ranked play with stakes. Do
 - NGO needs a new connection plus approval. The game has to map the returning `PlayerId` back to the seat and re-own the ship.
 - `HeartbeatTimeoutMS` / `ClientConnectionBufferTimeout` decide how fast a drop is declared.
 
-**Cosmic Shore.** It reconnects to the **presence/party** level only. A mid-match drop loses your seat, and the AI may take over or the seat stays empty.
+**Cosmic Shore.** It is already built: AI takeover on drop, then seat reclaim by UGS PlayerId through a connection-approval payload, with the client side in `DisconnectNotice`. The AI holds the seat for the rest of the match, not just 60 s, and the score is preserved on the Player object. (The first draft of this doc missed this.)
 
-**Verdict: Need soon.** This is the biggest "seamless" gap after ping visibility, especially on mobile, where the app gets backgrounded:
+**Verdict: Done — verify it.** What remains is testing on real networks (checklist §5) and mobile backgrounding. The original plan was:
 
 - Rejoin by UGS PlayerId within 60 s.
 - Restore domain and score.
@@ -272,7 +272,7 @@ Do **not** move to dedicated servers before there is ranked play with stakes. Do
 **Cosmic Shore.**
 
 - **Good:** prisms are not networked, the lobby is one struct, and Fulmen sends events, not state.
-- **Not tuned:** ship transforms are full-precision Euler with reliable deltas, and **scale is synced**. Ships don't scale, which wastes bytes and can gimbal on loops. Five owner float NetworkVariables are sent for input.
+- **Not tuned (before 2026-11-01):** ship transforms were full-precision Euler with reliable deltas, and Tiger Moth also synced scale. **Now tuned — see §5.** Five owner float NetworkVariables are sent for input.
 
 **Verdict: Need now (low effort).** For every vessel prefab's `ClientNetworkTransform`:
 
@@ -304,7 +304,7 @@ Then measure with the Network Profiler before and after. Pack the 5 input floats
 
 1. Have the host **re-derive volume** from its own copy of the prism (or clamp to the hull's maximum), instead of trusting the float.
 2. Rate-limit report RPCs per player per second.
-3. Submit leaderboard and weekly-challenge scores **from the host via Cloud Code**, with validation.
+3. Submit leaderboard and weekly-challenge scores **via Cloud Code**. The client half already exists (`System/CloudData/ServerScores.cs`, `weekly-score` endpoint), behind `ServerScoreGate.Enabled = false` until the script and the Access Control policy are deployed (`Tools/UGS/README.md`).
 4. Set the plausibility ceilings once enough data is measured.
 
 Movement cheats in a friends-only co-op game are low priority.
@@ -323,7 +323,7 @@ Movement cheats in a friends-only co-op game are low priority.
 | Lag compensation | **Not needed** | Hits are judged by the colliding client; the risk is trust, not lag. |
 | Relay / NAT | **Need now — done** | All sessions use Relay; Steam SDR is an optional later cost saver. |
 | Host migration | **Later (graceful host-leave now)** | Short matches; true migration costs weeks. |
-| Reconnection | **Need soon** | Mobile backgrounding and Wi-Fi blips are the biggest seamless gap; AI can hold the seat. |
+| Reconnection | **Done (pre-existing) — verify** | AI takeover + seat reclaim by PlayerId already ship. |
 | Bandwidth / serialization | **Need now (low effort)** | NetworkTransform is untuned (scale synced, Euler, full floats, reliable). |
 | Anti-cheat | **Need now for scores; Later for movement** | Clients send score volumes the host believes. |
 
@@ -341,3 +341,14 @@ Movement cheats in a friends-only co-op game are low priority.
 | 8 | **QuickJoin "open party" matchmaking** with AI backfill | Lets solo players find humans when the population exists | 1 week |
 | 9 | **Automated NGO host + client PlayMode tests** (MPPM / two NetworkManagers in one process) for spawn, kick AI, reconnect and host-leave | Stops regressions in the paths above | 1–2 weeks to set up the harness |
 | 10 | **Host migration**, or a dedicated / distributed-authority option for ranked | Only when ranked play or long matches justify it | Weeks; decide later |
+
+## 5. Implementation status (2026-11-01)
+
+| Roadmap step | Status | What changed |
+|---|---|---|
+| 2. RTT everywhere | **Done (overlay + badge); partial (UI)** | `Player.NetRttMs` (server-write ushort) is sampled by the host once a second via `NetworkTransport.GetCurrentRtt(OwnerClientId)`. 0 for host and AI. `Utility/Network/ConnectionQuality.cs` holds the thresholds: ≤100 Good, ≤200 Fair, >200 Poor. The debug overlay has a Network (RTT) section. `Utility/Network/ConnectionWarningBadge.cs` is a runtime-built, release-build "Poor connection" badge on clients after 3 s above 200 ms. **Not done:** RTT on the party panel and scoreboard rows (bind `Player.NetRttMs` + `ConnectionQuality.Label`), and a party-wide relay region choice: Sessions picks the relay by the host's QoS, and changing that is not low-risk. |
+| 3. Transform tuning | **Done** | All 17 vessel prefabs (`_Prefabs/Spacevessels/*.prefab`, `ClientNetworkTransform`): `UseQuaternionSynchronization 0→1`, `UseQuaternionCompression 0→1`, `UseHalfFloatPrecision 0→1`, `UseUnreliableDeltas 0→1`. Tiger Moth `SyncScaleX/Y/Z 1→0` (the others already had it off). `NetworkManager.prefab` `EnableTimeResync 0→1` (interval 30 s). Packed input floats: **skipped**. `InputStatus` NetworkVariables are read widely; there is little gain for the risk. |
+| 4. Score integrity | **Done (host guard); Cloud Code pre-existing, gated off** | `Controller/Multiplayer/HitReportGuard.cs`: per-player token bucket (600 burst, 300/s) and a per-report volume cap of 10 000. It is applied in `ReportEnvironmentPrismDestroyed_ServerRpc` and `ReportPrismStolen_ServerRpc`, and the clamped volume is also what is debited from a steal victim. Turning on `ServerScoreGate` needs the Cloud Code script and the Access Control deploy (follow-up). |
+| 5. Mid-match rejoin | **Already implemented** | See §2.11. No code change; checklist §5 cases 7-9 verify it. |
+
+Tests: `Tests/Editor/ConnectionQualityTests.cs`, `Tests/Editor/HitReportGuardTests.cs`, plus the existing `MatchRejoinTests`. Manual: `Docs/PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md` §5.

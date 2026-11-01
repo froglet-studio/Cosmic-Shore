@@ -60,3 +60,33 @@ The manual half of the hybrid bug hunt. The automated half is
 - Invite → accept → party forms → start a match → return to the menu. The online list should be correct afterwards.
 - Leave the party, then rejoin.
 - Leave the friends panel open for 5 minutes. No `query failed` / rate-limit warnings should appear (8 s polls are about 0.13 GET/s).
+
+## 5. Netcode roadmap checks (RTT, transform tuning, score guard, rejoin)
+
+See Docs/Multiplayer/MULTIPLAYER_ARCHITECTURE.md §5 for what changed. Run with two MPPM players or two builds.
+
+**RTT**
+1. A hosts, B joins, start any match. Open the overlay (Ctrl+Shift+M) on both.
+   - **Expected:** a `── Network (RTT) ──` section lists every Player. The host's own row shows `-- ms`, AI rows show `-`, B's row shows a real value (a few ms locally) and refreshes about once a second. On B, `me -> host:` shows its RTT. `time resync: on`.
+2. Add latency on B: Unity Transport Network Simulator / MPPM network profile, or `clumsy` on Windows, with 300 ms.
+   - **Expected:** after ~3 s B shows an orange **Poor connection - N ms** badge top-right. The host overlay shows B as `(Poor)`. Remove the latency → the badge goes within ~1 s.
+   - The host never shows the badge.
+
+**Ship transform tuning** (all 17 vessel prefabs)
+3. Fly every hull class on the guest, watching from the host, including barrel rolls, loops, Scarab juke, Brittle Star and Tiger Moth.
+   - **Expected:** smooth remote motion with no rotation flips or snapping at ±180°, and no visible position stepping.
+   - Tiger Moth no longer syncs scale. Its size must look the same on both screens; report it if a grow/shrink effect only shows on one peer.
+4. Repeat at 150 ms / 3 % loss. Some extra smoothing is fine; teleport-like jumps are not.
+5. Fly far out to the arena edge. With half-float positions, the remote ship must not jitter there.
+
+**Score guard**
+6. Play a normal Rampage / wall-shredding match as the guest.
+   - **Expected:** the guest's prism score matches what it was before this change. The host log has **no** `Prism reports from … throttled` lines.
+   - If that line appears in honest play, report the mode and hull: the limits (600 burst, 300/s) need raising.
+
+**Mid-match rejoin** (pre-existing feature, re-verify)
+7. In a match, kill B's process (or pull its network).
+   - **Expected on A:** a "handed to AI" toast. B's ship keeps flying under AI, and B's score keeps counting.
+8. Restart B and log in.
+   - **Expected:** the rejoin notice appears. Accept → B is back in the same match, flying the same ship, with its score intact. The host log has `seatReclaimed`.
+9. Decline (NOT NOW). The AI keeps the seat to the end, and the offer is not shown again.
