@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -49,6 +50,9 @@ namespace CosmicShore.UI
         // Domain attribution is read from Player.Domain (the authoritative NetDomain mirror), never
         // RoundStats.Domain (a derived copy that can lag behind on a client).
         int _builtLayoutSignature;
+
+        // Pilots already reported as unnamed (B47), so the warning is one line per pilot, not one per rebuild.
+        readonly HashSet<ulong> _reportedUnnamedPilots = new();
         bool _domainPanelsBuilt;
 
         protected override void OnEnable()
@@ -307,6 +311,22 @@ namespace CosmicShore.UI
             RebuildDomainPanels();
         }
 
+        /// <summary>
+        /// A pilot in the roster with no name at all on this machine (null, not empty: an empty NetName still names it
+        /// ""). Player.Name is set only by pair-init and by a NetName CHANGE, so this is a Player that joined the roster
+        /// (Player.OnNetworkSpawn, ClientPlayerVesselInitializer.ReRegisterPersistentPlayers) without ever being
+        /// paired here. It made B46 throw on every rebuild; which pilot it was, and why, is open (B47 in
+        /// Docs/PartySystem/BUGS.md), so the next one says who it is.
+        /// </summary>
+        void ReportUnnamedPilot(IPlayer p)
+        {
+            if (!_reportedUnnamedPilots.Add(p.PlayerNetId)) return;
+            CSDebug.LogWarning(
+                $"[MultiplayerHUD] Pilot {p.PlayerNetId} is in the roster with no name on this machine " +
+                $"(AI={p.IsInitializedAsAI}, vessel={(p.Vessel != null ? p.Vessel.VesselStatus.VesselType.ToString() : "none")}, " +
+                $"domain={p.Domain}): it was never pair-initialised here. Docs/PartySystem/BUGS.md B47.");
+        }
+
         void CreateDomainPanel(Domains domain, Transform container)
         {
             if (!container || multiplayerView.DomainPanelPrefab == null) return;
@@ -333,6 +353,7 @@ namespace CosmicShore.UI
             {
                 var p = players[i];
                 if (p == null || p.Domain != domain) continue;
+                if (p.Name == null) ReportUnnamedPilot(p);
                 bool isLocal = gameData.LocalPlayer != null && p.Name == gameData.LocalPlayer.Name;
                 Sprite avatar = isLocal ? null : ResolveAIAvatarSprite(p.Name);
                 if (avatar == null) avatar = ResolveAvatarSprite(p.AvatarId);

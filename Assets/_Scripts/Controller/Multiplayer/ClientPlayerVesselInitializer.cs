@@ -45,6 +45,10 @@ namespace CosmicShore.Gameplay
         CancellationTokenSource _rosterRetryCts;
         bool _localPairResolved;
 
+        // The vessel this machine last initialised as its OWN (the local user's pair). A rejoin's
+        // seat claim reads it to tell "already set up as mine" from "set up as somebody else's" (B47).
+        IVessel _vesselInitializedAsLocal;
+
         // Load Time Insights span: open while pairs are queued waiting for replication.
         int _pendingWaitSpan = -1;
 
@@ -275,13 +279,17 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid ClaimReclaimedSeatAsync(ulong playerNetId, CancellationToken ct)
         {
-            // Ownership, NetIsAI and the vessel id replicate on their own messages; wait for all three (bounded).
+            // Ownership (the Player's AND the vessel's), NetIsAI and the vessel id replicate on their own messages;
+            // wait for all of them (bounded). p.Vessel is set only by InitializePair, so the roster has always
+            // initialised the pair here by the time this loop lets go - as somebody else's if the ownership and
+            // the human flag had not landed yet (B47).
             Player player = null;
             float until = Time.unscaledTime + 10f;
             while (Time.unscaledTime < until)
             {
                 if (gameData.TryGetPlayerByNetworkObjectId(playerNetId, out var ip) && ip is Player p
-                    && p.IsOwner && !p.NetIsAI.Value && p.Vessel != null)
+                    && p.IsOwner && !p.NetIsAI.Value && p.Vessel != null
+                    && (p.Vessel is not NetworkBehaviour vesselNet || !vesselNet.IsSpawned || vesselNet.IsOwner))
                 {
                     player = p;
                     break;
@@ -296,7 +304,7 @@ namespace CosmicShore.Gameplay
             }
 
             gameData.ClaimLocalPlayer(player);
-            ReInitializePair(player, player.Vessel);
+            ClaimReclaimedPair(player, player.Vessel);
 
             // A match already under way: the countdown that frees input has been and gone.
             if (gameData.IsTurnRunning && player.InputController != null)
@@ -311,6 +319,43 @@ namespace CosmicShore.Gameplay
             _localPairResolved = true;
             _rosterRetryCts?.Cancel();
             gameData.InvokeClientReady();
+        }
+
+        /// <summary>
+        /// Makes the reclaimed pair this machine's own (B47, Docs/PartySystem/BUGS.md). Nothing to do when the roster
+        /// already initialised it as the local user's.
+        ///
+        /// <para>The vessel is LIVE: the roster initialised it before the claim could run (the claim waits for
+        /// <c>Player.Vessel</c>, which only InitializePair sets). Calling <c>Initialize</c> on it again is refused by
+        /// VesselController's double-initialization guard, which skips every local-user binding (input, camera, HUD,
+        /// the platform laws) and left the rejoiner watching a ship it could not fly. A live hull handed to the local
+        /// pilot goes through <c>ChangePlayer</c>, exactly as the arena pilot swap does (<see cref="PilotSwap"/>).
+        /// A vessel nobody has initialised (not reachable today) still takes the full Initialize path.</para>
+        /// </summary>
+        void ClaimReclaimedPair(Player player, IVessel vessel)
+        {
+            if (ReferenceEquals(_vesselInitializedAsLocal, vessel))
+                return;
+
+            if (vessel.VesselStatus.Player == null)
+            {
+                ReInitializePair(player, vessel);
+                return;
+            }
+
+            InjectVesselDependencies(vessel);
+            if (vessel.VesselStatus.AutoPilotEnabled) vessel.ToggleAIPilot(false);
+            player.SetDomain(player.NetDomain.Value);
+            vessel.ChangePlayer(player);
+            // This machine simulates the hull from here; it was following the network's kinematics a frame ago.
+            vessel.VesselStatus.VesselTransformer.AdoptCurrentMotion();
+            ShipHelper.SetShipProperties(themeManagerData, vessel);
+            player._vesselThemeManagerData = themeManagerData;
+            _vesselInitializedAsLocal = vessel;
+
+            gameData.InvokePlayerPairInitialized(player.PlayerNetId);
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
 
         // ---------------------------------------------------------
@@ -612,6 +657,7 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser)
             {
+                _vesselInitializedAsLocal = vessel;
                 // Local pair resolved - stop the client-pull retry loop and clear the splash.
                 _localPairResolved = true;
                 _rosterRetryCts?.Cancel();
@@ -651,8 +697,12 @@ namespace CosmicShore.Gameplay
             // while in freestyle; MainMenuController re-activates non-local swapped vessels.
             gameData.InvokePlayerPairInitialized(player.PlayerNetId);
 
-            if (player.IsLocalUser && CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
+            if (player.IsLocalUser)
+            {
+                _vesselInitializedAsLocal = newVessel;
+                if (CameraManager.Instance)
+                    CameraManager.Instance.SnapPlayerCameraToTarget();
+            }
         }
     }
 }

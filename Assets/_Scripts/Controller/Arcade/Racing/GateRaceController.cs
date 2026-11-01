@@ -286,32 +286,10 @@ namespace CosmicShore.Gameplay
         {
             var request = new RaceCourseRequest(seed, Intensity, gateCount, inner, outer,
                                                 ResolveCourseConfig());
-            PrepareCourseSource(CourseSource);
             var course = CourseSource.Build(request, out string failure);
             if (course == null) CourseFailureDetail = failure;
             return course;
         }
-
-        /// <summary>
-        /// The config a course that is a property of its ARENA reads (Skein's cable, Regatta's
-        /// rails): the cell's EXPECTED config, never <c>Config</c>, which latches a second after
-        /// the first build attempt. A mode whose course is pure geometry ignores it.
-        /// </summary>
-        /// <summary>
-        /// Last word on the course source before each build, on the SERVER: a mode with a per-match knob the
-        /// source reads (Switchback's fun type) sets it here. Default: nothing.
-        /// </summary>
-        protected virtual void PrepareCourseSource(RaceCourseSource source) { }
-
-        /// <summary>
-        /// A small per-match integer the server broadcasts WITH the course, so every peer lays the same mode
-        /// geometry for it (Switchback: its <c>SwitchbackFunType</c>). The server answers from its own config; a
-        /// client reads <see cref="ReceivedCourseVariant"/>, set before <see cref="OnCourseRaised"/>. Default 0.
-        /// </summary>
-        protected virtual int CourseVariant => 0;
-
-        /// <summary>The variant the server sent with the course; -1 until a course arrives (and on the server).</summary>
-        protected int ReceivedCourseVariant { get; private set; } = -1;
 
         /// <summary>The seed this match's course is generated from, drawn ONCE per match on the server. Default:
         /// the authored seed, else <see cref="CourseSeedOverride.Forced"/>, else a fresh draw.</summary>
@@ -321,12 +299,10 @@ namespace CosmicShore.Gameplay
         protected int CourseSeedUsed => _pendingCourseSeed;
 
         /// <summary>
-        /// A mode's OTHER way to thread the gate at <paramref name="raceIndex"/> (ring <paramref name="ringIndex"/>),
-        /// tested on the same owner-simulated hull segment as the ring itself: Switchback's shortcut rings. True
-        /// credits the gate exactly as threading it would. Default: none.
+        /// The config a course that is a property of its ARENA reads (Skein's cable, Regatta's
+        /// rails): the cell's EXPECTED config, never <c>Config</c>, which latches a second after
+        /// the first build attempt. A mode whose course is pure geometry ignores it.
         /// </summary>
-        protected virtual bool ThreadsAlternate(int raceIndex, int ringIndex, Vector3 prev, Vector3 cur) => false;
-
         protected virtual CellConfigDataSO ResolveCourseConfig()
         {
             var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
@@ -466,6 +442,27 @@ namespace CosmicShore.Gameplay
         protected virtual bool TryOverrideAim(IPlayer pilot, out Vector3 target)
         {
             target = default;
+            return false;
+        }
+
+        /// <summary>
+        /// A per-pilot offset (in the ring's plane, inside its mouth) added to where an AI aims through ring
+        /// <paramref name="ringNo"/>. Zero by default: every AI aims at the same centre-line points, so in a mode whose
+        /// hulls lay trails each AI flies straight down the trail the one ahead just laid (Switchback, Yash 2026-10-29).
+        /// </summary>
+        /// <summary>The per-frame imminent-impact hook installed on every armed AI (<see cref="AIPilot.SetEmergencySteerProvider"/>), or null.</summary>
+        protected virtual AIPilot.EmergencySteer AIEmergencySteerFor(IPlayer pilot) => null;
+
+        protected virtual Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) => Vector3.zero;
+
+        /// <summary>
+        /// Where a DRIFTING pilot points its nose instead of its steering target (the default drift look), or false for
+        /// the default. Switchback's blast AI holds the nose - and so the Dolphin's blast cone - on the obstacle while it
+        /// takes its key (<see cref="SwitchbackBlastAI"/>). Server only, like the steering it sits beside.
+        /// </summary>
+        protected virtual bool TryOverrideDriftLook(IPlayer pilot, out Vector3 look)
+        {
+            look = default;
             return false;
         }
 
@@ -793,13 +790,13 @@ namespace CosmicShore.Gameplay
                 packed[o + 5] = course[i].Axis.z;
                 packed[o + 6] = course[i].Radius;
             }
-            SyncCourse_ClientRpc(packed, CourseVariant, target);
+            SyncCourse_ClientRpc(packed, target);
         }
 
         const int FloatsPerGate = 7;
 
         [ClientRpc]
-        void SyncCourse_ClientRpc(float[] packed, int variant, ClientRpcParams rpcParams = default)
+        void SyncCourse_ClientRpc(float[] packed, ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;   // the server laid its own copy before broadcasting
 
@@ -810,7 +807,6 @@ namespace CosmicShore.Gameplay
                     new Vector3(packed[o + 3], packed[o + 4], packed[o + 5]),
                     packed[o + 6]));
 
-            ReceivedCourseVariant = variant;
             ApplyCourse(course);
         }
 
@@ -1122,8 +1118,7 @@ namespace CosmicShore.Gameplay
                 int ringNo = RingIndexFor(index);
                 if (!_rings[ringNo]) continue;
                 bool hullThreads = HullThreadsWhileProbeLive || !run.Probe.Live;
-                if (!(hullThreads && ThreadsGate(ringNo, prev, cur)) && !(probeFlew && ThreadsGate(ringNo, probePrev, probeCur))
-                    && !(hullThreads && ThreadsAlternate(index, ringNo, prev, cur))) continue;
+                if (!(hullThreads && ThreadsGate(ringNo, prev, cur)) && !(probeFlew && ThreadsGate(ringNo, probePrev, probeCur))) continue;
 
                 run.Optimistic = index + 1;
                 run.LastReportTime = Time.time;
@@ -1326,6 +1321,8 @@ namespace CosmicShore.Gameplay
                     ringAt = belief.Point;
                 }
                 bool misjudged = ringAt != gate.Position;
+                // The pilot's own lane through the mouth (zero unless the mode spreads its AIs: AILaneOffset).
+                ringAt += AILaneOffset(captured, ringNo, gate);
 
                 // Crossed this ring's plane OUTSIDE the mouth: a miss. The side latched for this ring is now
                 // the wrong one and the far-side point is behind the pilot and close, so it would circle that
@@ -1417,13 +1414,16 @@ namespace CosmicShore.Gameplay
                 return throughPoint;
             });
             pilot.SetNextLegProvider(() => after);
+            pilot.SetEmergencySteerProvider(AIEmergencySteerFor(captured));
 
             // A race flies flat out, and a drifting hull (the Dolphin's charge) points its nose where it is
             // going rather than at the cell centre, so a discharge fires down the line to the ring
             // (2026-10-14 Regatta audit: it fired wide of the ring).
             pilot.SetThrottleFloor(AIThrottleFloor);
             var aiPilot = pilot;
-            pilot.SetDriftLookTargetProvider(() => aiPilot && aiPilot.Objective.Has ? aiPilot.TargetPosition : (Vector3?)null);
+            pilot.SetDriftLookTargetProvider(() =>
+                TryOverrideDriftLook(captured, out Vector3 look) ? look
+                : aiPilot && aiPilot.Objective.Has ? aiPilot.TargetPosition : (Vector3?)null);
         }
 
         /// <summary>

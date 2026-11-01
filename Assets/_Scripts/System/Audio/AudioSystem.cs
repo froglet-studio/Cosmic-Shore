@@ -368,6 +368,19 @@ namespace CosmicShore.Core
         float[] _throttleWindowStart;
         int[] _throttleWindowCount;
 
+        // Held gameplay SFX: owned instances for LOOPING / sustaining category events (Boost
+        // Activate), one per (owner, category). See StartHeldGameplaySFX. A plain list - there are
+        // a handful at most (one per locally piloted boosting vessel) and it must not allocate.
+        struct HeldSfx
+        {
+            public GameplaySFXCategory Category;
+            public UnityEngine.Object Owner;
+            public int OwnerId;
+            public GameObject AttachTo;
+            public FMOD.Studio.EventInstance Instance;
+        }
+        readonly List<HeldSfx> _heldSfx = new();
+
         // Owned FMOD music instance (see class summary).
         FMOD.Studio.EventInstance _musicInstance;
         bool _musicStarted;
@@ -466,6 +479,7 @@ namespace CosmicShore.Core
             }
             if (heard != null) Soundtrack?.NoteLegacySound(heard);
             Soundtrack?.Tick();
+            if (_heldSfx.Count > 0) SweepOrphanedHeldSfx();
         }
 
         [AOT.MonoPInvokeCallback(typeof(FMOD.Studio.EVENT_CALLBACK))]
@@ -484,6 +498,7 @@ namespace CosmicShore.Core
             s_musicHandle = IntPtr.Zero;
             FmodSafe.StopAndRelease(ref _musicInstance, _musicStarted, FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
             _musicStarted = false;
+            StopAllHeldGameplaySFX(FMOD.Studio.STOP_MODE.IMMEDIATE);
             Soundtrack?.Dispose();
             if (Instance == this) Instance = null;
         }
@@ -611,6 +626,7 @@ namespace CosmicShore.Core
         {
             sfxEnabled = status;
             ApplyVcaVolumes();
+            ApplyHeldSfxVolumes();
         }
 
         void ChangeMusicLevel(float level)
@@ -626,6 +642,7 @@ namespace CosmicShore.Core
         {
             sfxVolume = level / 5f;   // max .2 -- default max volume is too high (legacy AudioSource path)
             ApplyVcaVolumes();
+            ApplyHeldSfxVolumes();
         }
 
         // ---------- Music API (Unity AudioSource - legacy) ----------
@@ -788,6 +805,150 @@ namespace CosmicShore.Core
                 Debug.LogWarning(
                     $"[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.{category}. " +
                     $"Wire it on the AudioSystem GameObject. (This warning fires once per category.)");
+            }
+        }
+
+        // ---------- Held gameplay SFX (owned instances) ----------
+        //
+        // For a category whose sound lasts as long as an ability does (Boost Activate: a looping,
+        // Speed-driven boost bed authored with a crossfaded loop region). Such an event can never
+        // go through PlayGameplaySFX: fire-and-forget start()+release() leaks one immortal voice
+        // per call, so FMODOneShotVolumeHelper refuses it (logs an error, plays nothing). Here the
+        // AudioSystem OWNS the instance instead - started on the ability's begin, stopped with a
+        // fade-out and released on its end - which is the "own the instance" fix that error asks for.
+        //
+        // An event that is NOT looping is played as an ordinary attached one-shot and not tracked,
+        // so the call sites are correct whichever way FMOD Studio authors the event.
+
+        /// <summary>
+        /// Starts the event wired for <paramref name="category"/> as a HELD sound owned by
+        /// <paramref name="owner"/>, attached to <paramref name="attachTo"/>. Pair every call with
+        /// <see cref="StopHeldGameplaySFX"/> on the ability's end. Re-starting a sound the same
+        /// owner already holds replaces it (never two voices per owner). If the owner is destroyed
+        /// or deactivated without stopping it, the next Update stops and releases it anyway.
+        /// The caller decides WHO hears it (the boost sites gate on the local pilot).
+        /// </summary>
+        public void StartHeldGameplaySFX(GameplaySFXCategory category, UnityEngine.Object owner, GameObject attachTo)
+        {
+            if (owner == null) return;
+            if (GameplaySFXEvents == null) InitializeGameplaySFXEvents();
+
+            if (!GameplaySFXEvents.TryGetValue(category, out var reference) || reference.IsNull)
+            {
+                if (warnOnUnwiredCategory && _warnedGameplayCategories.Add(category))
+                {
+                    Debug.LogWarning(
+                        $"[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.{category}. " +
+                        $"Wire it on the AudioSystem GameObject. (This warning fires once per category.)");
+                }
+                return;
+            }
+
+            // Re-trigger: drop the previous voice before starting a new one (no double voices).
+            StopHeldGameplaySFX(category, owner, FMOD.Studio.STOP_MODE.IMMEDIATE);
+
+            float volume = ResolveFMODSFXVolume() * GetCategoryVolumeScale(category);
+            if (volume <= 0f) return;   // muted: no instance, same contract as the one-shot path
+
+            if (!FmodSafe.TryCreateInstance(reference, out FMOD.Studio.EventInstance instance, this)) return;
+
+            if (FMODOneShotVolumeHelper.IsFireAndForgetSafe(reference, instance))
+            {
+                // Stops by itself: an ordinary one-shot, nothing to own.
+                instance.setVolume(volume);
+                if (attachTo != null) FmodSafe.Attach(instance, attachTo);
+                instance.start();
+                instance.release();
+                return;
+            }
+
+            instance.setVolume(volume);
+            if (attachTo != null)
+            {
+                instance.set3DAttributes(RuntimeUtils.To3DAttributes(attachTo.transform.position));
+                FmodSafe.Attach(instance, attachTo);
+            }
+
+            var result = instance.start();
+            if (result != FMOD.RESULT.OK)
+            {
+                Debug.LogError($"[AudioSystem] held SFX '{reference}' ({category}) start() returned {result}.", this);
+                FmodSafe.StopAndRelease(ref instance, false, FMOD.Studio.STOP_MODE.IMMEDIATE);
+                return;
+            }
+
+            _heldSfx.Add(new HeldSfx
+            {
+                Category = category,
+                Owner = owner,
+                OwnerId = owner.GetInstanceID(),
+                AttachTo = attachTo,
+                Instance = instance,
+            });
+        }
+
+        /// <summary>
+        /// Stops (fading out by default) and releases the held sound <paramref name="owner"/> started
+        /// for <paramref name="category"/>. A no-op when nothing is held, so end paths may call it
+        /// unconditionally (and more than once).
+        /// </summary>
+        public void StopHeldGameplaySFX(GameplaySFXCategory category, UnityEngine.Object owner,
+            FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
+        {
+            if (_heldSfx.Count == 0) return;
+            // Compare ids, not references: a destroyed owner still has its id.
+            int ownerId = ReferenceEquals(owner, null) ? 0 : owner.GetInstanceID();
+            for (int i = _heldSfx.Count - 1; i >= 0; i--)
+            {
+                var held = _heldSfx[i];
+                if (held.Category != category || held.OwnerId != ownerId) continue;
+                ReleaseHeldAt(i, stopMode);
+            }
+        }
+
+        /// <summary>Stops and releases every held sound (scene teardown / AudioSystem destroy).</summary>
+        public void StopAllHeldGameplaySFX(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
+        {
+            for (int i = _heldSfx.Count - 1; i >= 0; i--)
+                ReleaseHeldAt(i, stopMode);
+        }
+
+        void ReleaseHeldAt(int index, FMOD.Studio.STOP_MODE stopMode)
+        {
+            var held = _heldSfx[index];
+            _heldSfx.RemoveAt(index);
+            FmodSafe.StopAndRelease(ref held.Instance, true, stopMode);
+        }
+
+        /// <summary>
+        /// Safety net for an end path that never ran: an owner (or the object the sound rides on)
+        /// that was destroyed or deactivated - a vessel despawned, a scene unloaded mid-boost - has
+        /// its sound faded out and released here rather than looping forever.
+        /// </summary>
+        void SweepOrphanedHeldSfx()
+        {
+            for (int i = _heldSfx.Count - 1; i >= 0; i--)
+            {
+                var held = _heldSfx[i];
+                bool ownerGone = held.Owner == null
+                                 || (held.Owner is Behaviour b && !b.isActiveAndEnabled)
+                                 || (held.Owner is Component c && !c.gameObject.activeInHierarchy);
+                bool targetGone = !ReferenceEquals(held.AttachTo, null)
+                                  && (held.AttachTo == null || !held.AttachTo.activeInHierarchy);
+                if (ownerGone || targetGone) ReleaseHeldAt(i, FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            }
+        }
+
+        /// <summary>SFX slider / mute changed: re-apply to every held sound (one-shots are too short to care).</summary>
+        void ApplyHeldSfxVolumes()
+        {
+            if (_heldSfx.Count == 0) return;
+            float baseVolume = ResolveFMODSFXVolume();
+            for (int i = 0; i < _heldSfx.Count; i++)
+            {
+                var held = _heldSfx[i];
+                if (held.Instance.isValid())
+                    held.Instance.setVolume(baseVolume * GetCategoryVolumeScale(held.Category));
             }
         }
 

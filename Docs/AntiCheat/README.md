@@ -217,6 +217,8 @@ Nobody can ask about an account that has not joined their party, so the check re
 pass (an older build) stays until `FairPlayTrustGate.RemoveUnverifiedGuests` is turned on. The server checks (results,
 scores, rewards) never depended on routing.
 
+**Client prism reports are capped on the host (2026-11-01).** A guest's machine detects its own prism destroys and steals and reports the volume (`Player.ReportEnvironmentPrismDestroyed_ServerRpc`, `ReportPrismStolen_ServerRpc`). The host now passes each report through `HitReportGuard` (`Controller/Multiplayer/HitReportGuard.cs`): the volume is capped at 10 000 per prism, and a per-player token bucket allows 600 at once, refilled at 300/s. A throttle logs `Prism reports from … throttled`. This bounds a modded guest; it does not stop a modded host (T4). Tests: `HitReportGuardTests`.
+
 **Host-observed signals reach the server (2026-10-26).** The host's movement monitor (T5 speed and jumps, T6 AI-like
 steering) used to keep its signals on the host. `MatchReporter` now sends them with the host's own `end` report, keyed
 by each guest's UGS id; `match-report.js` files them on the guest as `host_observed` naming the host, and only the

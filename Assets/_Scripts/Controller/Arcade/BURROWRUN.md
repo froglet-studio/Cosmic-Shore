@@ -40,7 +40,7 @@ roots grow at once from you, sized by your last tunnel; you fly them on the left
 ## 3. AI
 
 The platform's `AIPilot` flies the line (the gate approach, `AICommitFromApproachPoint`); the Meerkat's wormhole
-autopilot (`MeerkatWormholeExecutor.Autopilot`, the studio's `aiInput` / `aiGatePlan`) forms the tunnels: once its
+autopilot (`MeerkatSolitonExecutor.Autopilot`, the studio's `aiInput` / `aiGatePlan`) forms the tunnels: once its
 reticle is back and its ring is at least `aiBentMinDistance` away, it tries every bend and LT squeeze, keeps the one
 whose way out heads within 0.26 rad of the ring with 60 u to spare, holds its line while it bends the reticle for
 `aiShapeSeconds`, then presses RT through the **replicated** press path. Easy and Medium race on `GateRaceHandicap`

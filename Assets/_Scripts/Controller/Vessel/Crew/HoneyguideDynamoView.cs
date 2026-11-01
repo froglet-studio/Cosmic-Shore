@@ -348,7 +348,7 @@ namespace CosmicShore.Gameplay
             bool freeLine = core.FreePlace > 0 && core.RevealState == null && !hive;
             string madeLine = _small ? ""
                 : hive ? (_crew.Hive.Rewards.Count > 0 ? TemplateText.Fill(cfg.HiveEarnedTemplate, "colours", _crew.ColourList(_crew.Hive.Rewards)) : "")
-                : freeLine ? TemplateText.Fill(cfg.FreePrismTemplate, "count", core.FreePlace.ToString(), "colour", cfg.ColourName(core.Free[0]))
+                : freeLine ? _mFree.Fill(cfg.FreePrismTemplate, "count", IntText(core.FreePlace), "colour", cfg.ColourName(core.Free[0]))
                 : _crew.MadeLine;
             var lineColour = freeLine || _crew.MadeLineDynamo ? cfg.DynamoLineColour : Cream;
             float lineFlash = cfg.MadeJuiceSeconds > 0f ? 1f - Mathf.Clamp01((Time.time - _crew.LastMade.At) / cfg.MadeJuiceSeconds) : 0f;
@@ -357,7 +357,7 @@ namespace CosmicShore.Gameplay
             Place(_free, lineRect, fs * (turned ? 0.85f : 0.8f), madeLine);
             Place(_leave, _leaveRect, fs, _leaveRect.width > 0f ? cfg.HiveLeaveLabel : "");
             string stripLine = _small ? ""
-                : _crew.StripDistance >= 0f ? TemplateText.Fill(cfg.StripOmniTemplate, "distance", Mathf.RoundToInt(_crew.StripDistance).ToString())
+                : _crew.StripDistance >= 0f ? _mStrip.Fill(cfg.StripOmniTemplate, "distance", IntText(Mathf.RoundToInt(_crew.StripDistance)))
                 : cfg.StripNoTargetLine;
             Place(_strip, new Rect(_stripRect.x, _stripRect.y, _stripRect.width, _stripRect.height), fs * 0.8f, stripLine);
 
@@ -384,7 +384,7 @@ namespace CosmicShore.Gameplay
             var offers = rv != null && rv.Stage == 1 ? rv.Offers : null;
             string title = "", body = "";
             if (offers != null) title = cfg.PickAbilityTitle;
-            else if (rv != null && rv.Stage == 1 && ab != null) { title = TemplateText.Fill(cfg.RevealAbilityTemplate, "name", ab.name); body = _small ? "" : ab.text; }
+            else if (rv != null && rv.Stage == 1 && ab != null) { title = _mReveal.Fill(cfg.RevealAbilityTemplate, "name", ab.name); body = _small ? "" : ab.text; }
             else if (rv != null && rv.Stage == 2) title = cfg.RevealPortsLine;
             var titleRect = new Rect(_rect.x + 10f * ui, _cy + _size * 0.6f, _rect.width - 20f * ui, 30f * ui);
             LayOffers(cfg, offers, ui, fs, ref titleRect);
@@ -397,8 +397,8 @@ namespace CosmicShore.Gameplay
             if (_detailSlot >= 0 && core.Slots[_detailSlot] < cfg.Patterns.Count)
             {
                 var pat = cfg.Patterns[core.Slots[_detailSlot]];
-                detail = TemplateText.Fill(cfg.CardDetailTemplate, "name", pat.name, "text", pat.effectText,
-                                           "uses", core.Uses[_detailSlot].ToString(), "max", cfg.UsesPerPattern.ToString());
+                detail = _mDetail.Fill(cfg.CardDetailTemplate, "name", pat.name, "text", pat.effectText,
+                                         "uses", IntText(core.Uses[_detailSlot]), "max", IntText(cfg.UsesPerPattern));
             }
             Place(_detail, DetailRect(ui), fs * 1.15f, detail);
 
@@ -413,11 +413,11 @@ namespace CosmicShore.Gameplay
                     ChipUpgraded |= b != null;
                     int uses = _crew.BankedUses(k);
                     string power = b == null ? cfg.BasePowerName(k)
-                        : TemplateText.Fill(cfg.UpgradePowerTemplate, "name", b.Name, "ticks", Ticks(cfg.TickGlyph, uses),
-                                            "uses", uses.ToString());
-                    string line = TemplateText.Fill(cfg.TriggerChipTemplate, "trigger", cfg.TriggerName(k), "power", power);
+                        : _mPower[k].Fill(cfg.UpgradePowerTemplate, "name", b.Name, "ticks", _mTicks[k].Ticks(cfg.TickGlyph, uses),
+                                            "uses", IntText(uses));
+                    string line = _mChip[k].Fill(cfg.TriggerChipTemplate, "trigger", cfg.TriggerName(k), "power", power);
                     if (line.Length == 0) continue;
-                    chip = chip.Length > 0 ? chip + "\n" + line : line;
+                    chip = chip.Length > 0 ? _mChipJoin.Join(chip, line) : line;
                 }
             }
             Place(_chip, _chipRect, fs, chip);
@@ -427,6 +427,41 @@ namespace CosmicShore.Gameplay
             if (_small) ReadSmallViewTaps();
             _graphic.SetVerticesDirty();
         }
+
+        // Perf (Switchback pass 2026-11-02): Frame runs every frame and rebuilt every board string with TemplateText.Fill
+        // (params array + one Replace per key) and int.ToString(). Each call site now keeps its last inputs and result,
+        // so the strings are only rebuilt when what they say changes. Output text is identical.
+        sealed class FillMemo
+        {
+            string _t, _v1, _v2, _v3, _v4, _r;
+            internal string Fill(string t, string k1, string v1, string k2 = null, string v2 = null,
+                                 string k3 = null, string v3 = null, string k4 = null, string v4 = null)
+            {
+                if (_r != null && ReferenceEquals(t, _t) && v1 == _v1 && v2 == _v2 && v3 == _v3 && v4 == _v4) return _r;
+                _t = t; _v1 = v1; _v2 = v2; _v3 = v3; _v4 = v4;
+                return _r = k4 != null ? TemplateText.Fill(t, k1, v1, k2, v2, k3, v3, k4, v4)
+                          : k3 != null ? TemplateText.Fill(t, k1, v1, k2, v2, k3, v3)
+                          : k2 != null ? TemplateText.Fill(t, k1, v1, k2, v2)
+                          : TemplateText.Fill(t, k1, v1);
+            }
+            internal string Join(string a, string b)
+            {
+                if (_r != null && a == _v1 && b == _v2) return _r;
+                _v1 = a; _v2 = b;
+                return _r = a + "\n" + b;
+            }
+            int _n = -1;
+            internal string Ticks(string glyph, int n)
+            {
+                if (_r != null && n == _n && ReferenceEquals(glyph, _t)) return _r;
+                _t = glyph; _n = n;
+                return _r = HoneyguideDynamoView.Ticks(glyph, n);
+            }
+        }
+        readonly FillMemo _mFree = new(), _mStrip = new(), _mReveal = new(), _mDetail = new(), _mChipJoin = new();
+        readonly FillMemo[] _mPower = { new(), new() }, _mChip = { new(), new() }, _mTicks = { new(), new() };
+        static readonly string[] s_ints = new string[1000];
+        static string IntText(int n) => n >= 0 && n < s_ints.Length ? s_ints[n] ??= n.ToString() : n.ToString();
 
         // One glyph a banked use (the lab's ticks on the trigger's card).
         static string Ticks(string glyph, int n)

@@ -171,9 +171,10 @@ namespace CosmicShore.Gameplay
 
             // Time -> burn duration, read at use time (x1 at rest, x1.6 at Time 10).
             float duration = Mathf.Max(0.05f, so.BoostDuration * so.TimeDurationMultiplier(_status));
+            bool wasBurning = _burnEndTimes.Count > 0;
             _burnEndTimes.Add(Time.time + duration);
 
-            PlayIgniteSound();
+            PlayIgniteSound(wasBurning);
             ApplyMultiplier();
 
             OnPelletBurned?.Invoke(duration, _burnEndTimes.Count);
@@ -231,6 +232,7 @@ namespace CosmicShore.Gameplay
                 if (_burnEndTimes[i] <= now) _burnEndTimes.RemoveAt(i);
             if (_burnEndTimes.Count == before) return;
 
+            if (_burnEndTimes.Count == 0) StopBoostBed();
             ApplyMultiplier();
             OnBurningCountChanged?.Invoke(_burnEndTimes.Count);
         }
@@ -265,6 +267,7 @@ namespace CosmicShore.Gameplay
         {
             bool hadBurns = _burnEndTimes.Count > 0;
             _burnEndTimes.Clear();
+            StopBoostBed();
 
             if (_status != null)
             {
@@ -303,15 +306,21 @@ namespace CosmicShore.Gameplay
             return fuel != null;
         }
 
-        void PlayIgniteSound()
+        /// <param name="alreadyBurning">A pellet was already lit: the shared boost bed is
+        /// already playing, so the fallback has nothing to add.</param>
+        void PlayIgniteSound(bool alreadyBurning)
         {
             var audio = audioSystem ? audioSystem : AudioSystem.Instance;
             if (!audio) return;
 
             if (!pelletIgniteEvent.IsNull)
                 audio.PlaySFXEvent(pelletIgniteEvent, transform.position);
-            else
-                audio.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
+            else if (!alreadyBurning)
+                // Boost Activate LOOPS, so the fallback is held for the burn (one-shot path refuses
+                // it): started by the first pellet, stopped when the last burns out or is cleared.
+                HeldVesselSfx.Begin(audio, GameplaySFXCategory.BoostActivate, this, _status);
         }
+
+        void StopBoostBed() => HeldVesselSfx.End(audioSystem, GameplaySFXCategory.BoostActivate, this);
     }
 }

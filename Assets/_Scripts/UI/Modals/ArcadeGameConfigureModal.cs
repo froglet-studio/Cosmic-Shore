@@ -499,7 +499,7 @@ namespace CosmicShore.UI
             ApplyWeeklyChallengePresentation();
             ApplyAIDifficultyPresentation();
             InitializeConfigControls(selectedGame);
-            RefreshSwitchbackFunTypePicker();
+            RefreshSwitchbackSeedPicker();
             InitializeDefaultShipFromAvailable();
             RefreshVesselPicker();
             RefreshStartAvailability();
@@ -1072,6 +1072,13 @@ namespace CosmicShore.UI
 
             int humans = CurrentPartyHumanCount;
             int total = Mathf.Max(humans, config.PlayerCount);
+
+            // A guest draws only the AI the host PLACED. On the host every AI seat is a placement
+            // (ReconcileAiPlacements), so "seats minus humans" beyond the placement list can only
+            // be a guest-side miscount (a stale HumanCount or PlayerCount) - and drawing it made
+            // balanced phantom bots, e.g. one the host had just kicked.
+            if (IsClientMode)
+                total = Mathf.Min(total, humans + config.AIDomains.Count);
 
             // Clients pass their (empty) placement list: placed AI are host-side state, so a
             // client's roster shows the synced seat count with the AI seats drawn EMPTY - honest,
@@ -3154,8 +3161,8 @@ namespace CosmicShore.UI
             // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;
 
-            // Switchback's fun type and seed mode (ArcadeGameConfigureModal.SwitchbackFunTypePicker.cs).
-            SyncSwitchbackFunType();
+            // Switchback's seed mode (ArcadeGameConfigureModal.SwitchbackSeedPicker.cs).
+            SyncSwitchbackSeedMode();
 
             // How well the AI flies. A card that does not offer the setting launches on the
             // default, so a value remembered on a card nobody could see never reaches a match.
@@ -3272,7 +3279,7 @@ namespace CosmicShore.UI
             InitializeGameMetaView(game);
             ApplyAIDifficultyPresentation();
             InitializeConfigControls(game);
-            RefreshSwitchbackFunTypePicker();
+            RefreshSwitchbackSeedPicker();
             InitializeDefaultShipFromAvailable();
             RefreshVesselPicker();
             RefreshStartAvailability();
@@ -3337,6 +3344,17 @@ namespace CosmicShore.UI
         /// dismissed the card themselves is not fought with; a host who re-opens (a new
         /// generation) reaches them either way.</para>
         /// </summary>
+        /// <summary>True when this guest's config no longer matches the host's replicated roster.</summary>
+        bool ClientRosterDrifted(ArcadeConfigSyncManager.LobbySnapshot lobby)
+        {
+            if (config.PlayerCount != Mathf.Max(1, lobby.PlayerCount)) return true;
+            var placed = lobby.PlacedAiDomains();
+            if (config.AIDomains.Count != placed.Length) return true;
+            for (int i = 0; i < placed.Length; i++)
+                if ((int)config.AIDomains[i] != placed[i]) return true;
+            return false;
+        }
+
         void ReconcileClientLobby()
         {
             if (!UsesLaunchPanels || !arcadeConfigSyncManager) return;
@@ -3371,7 +3389,23 @@ namespace CosmicShore.UI
                 return;
             }
 
-            if (lobby.Generation == _appliedLobbyGeneration) return;
+            if (lobby.Generation == _appliedLobbyGeneration)
+            {
+                // Same lobby, but the roster drawn here can still drift from the host's: a roster
+                // event that landed while this instance was gated out, or two writes collapsed into
+                // one delta. The host kicked an AI and a guest kept drawing it (2026-10 playtest).
+                // The snapshot is the truth - once a second, redraw from it when they disagree.
+                if (IsClientMode && config != null && ClientRosterDrifted(lobby))
+                {
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                        $"[ArcadeConfigModal] Guest roster drifted from lobby gen {lobby.Generation} " +
+                        $"(drawn pc={config.PlayerCount} ai=[{string.Join(",", config.AIDomains)}], " +
+                        $"host pc={lobby.PlayerCount} ai={lobby.AiCount}) - redrawing from the snapshot.");
+                    HandleRosterChangedOnClient(lobby.PlayerCount, lobby.DomainCount, lobby.PlacedAiDomains(),
+                                                lobby.PlacedAiVessels(), lobby.PlacedAiDifficulties());
+                }
+                return;
+            }
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ArcadeConfigModal] Lobby gen {lobby.Generation} was never drawn on this guest " +

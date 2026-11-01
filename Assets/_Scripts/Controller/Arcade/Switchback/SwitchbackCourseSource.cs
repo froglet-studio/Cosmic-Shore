@@ -18,10 +18,6 @@ namespace CosmicShore.Gameplay
 
         public const float DefaultFirstGateDistance = 620f;
 
-        /// <summary>The fun type this match's course is drawn for (SWITCHBACK.md "Fun types"): Baseline, Plan 2 and
-        /// Plan 3 fly the shipped ladder; Plan 1 and Combined fly Plan 1's. Set by the controller before each build.</summary>
-        public SwitchbackFunType FunType = SwitchbackFunType.Baseline;
-
         public override GameModes Mode => GameModes.Switchback;
 
         public override int AuthoredGateTarget(int intensity)
@@ -43,7 +39,7 @@ namespace CosmicShore.Gameplay
             failure = null;
             float inner = request.Inner, outer = request.Outer;
 
-            var settings = SwitchbackCourseSettings.ForIntensity(request.Intensity, FunType);
+            var settings = SwitchbackCourseSettings.ForIntensity(request.Intensity);
             settings.InnerRadius = inner;
             settings.OuterRadius = outer;
             settings.FirstGateDirection = Vector3.up;   // the equatorial spawn ring's pole

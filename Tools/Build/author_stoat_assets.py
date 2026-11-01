@@ -910,6 +910,9 @@ BARS_VIEW_SCRIPT = "5f380cf9710e6ec478121956993a387e"
 MODE_ACTION = "f05e7ded817a4670bb78832c9c879566"
 RIPPLE_CONFIG = "da077e9619f845c388ad5b7baf8da948"
 OVERCLOCK_EFFECT = "6b508a166e124e95a6490871697185de"
+# The omni crystal's effect on the Stoat: Fulmen (FulmenByCrystalEffectSO), which replaced Overclock (Yash, cbd0ae2268).
+# The Overclock asset is still authored below; the container just no longer lists it.
+FULMEN_EFFECT = "a45807f7b21b4c898e6646a9865c0bba"
 CAMERA_SETTINGS = "2fb2a0bb0eaf4bd1863fdf55490fa869"
 VESSEL_CONTAINER = "63a1b912028e471b9b7a2df570e90be8"
 SKIMMER_CONTAINER = "ffdd072d412946c6ad6adf899a6ef7a6"
@@ -1489,7 +1492,7 @@ def vessel_container_asset() -> str:
             "  vesselPrismEffects:\n" + g("243d6d82ba7f20146a70bdc112b9a278") + g("4da62d4eefe03594ba35027dd537aff0") +
             g("04f85a1f6b06b9248827bf8740168b2b") + g("6c233c580949b13419f068454c74a110") +
             g("c7ccaca885824b24b716b12148d77ce1") + g("ca2d1be3880b82941a0465a1f7e45280") +
-            "  vesselCrystalEffects:\n" + g("8de915fb00503344ca89a92a0a127b00") + g(OVERCLOCK_EFFECT) +
+            "  vesselCrystalEffects:\n" + g("8de915fb00503344ca89a92a0a127b00") + g(FULMEN_EFFECT) +
             "  vesselMassCrystalEffects: []\n  vesselChargeCrystalEffects: []\n  vesselSpaceCrystalEffects: []\n"
             "  vesselTimeCrystalEffects: []\n  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
             "  omniCrystalRetirement: {fileID: 0}\n")
