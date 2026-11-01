@@ -29,7 +29,7 @@ The manual half of the hybrid bug hunt. The automated half is
 1. A, B and C are all in the menu and can see each other in the friends/online panel.
 2. **B stops Play in the Editor.** Do it once by quitting the build normally, and once by killing the process.
 3. On A and C, keep the friends panel **open**.
-   - **Expected after Editor Stop / normal quit:** B's row disappears within ~2 s. The log line `[HostConnectionService] Exiting Play mode - leaving presence lobby ...` should appear on B.
+   - **Expected after Editor Stop / normal quit:** B's row disappears within ~2 s. The log line `[HostConnectionService] ExitingPlayMode: leaving presence lobby ...` should appear on B.
    - **Expected after a killed process:** B's row disappears within ~30 s of UGS reaping B (8 s watched poll × 2 strikes). The overlay shows `strikes=1` for B first.
    - **Expected in Friends:** B shows offline within ~15 s. The panel re-reads Friends every 15 s while it's open.
 4. Repeat with the panel **closed**, then open it. The open itself triggers a Friends re-read and the 8 s cadence.
