@@ -6,11 +6,13 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The <b>escort sim</b>: plays Ark escorts with every seat flown by the AI, one after another, and writes each run's
+    /// The <b>escort sim</b>: plays Ark escorts with every seat flown by the AI, one after another, each in the voyage scene
+    /// launched from the menu the way the Voyage window launches it (<see cref="VoyageLaunch"/>), and writes each run's
     /// <see cref="ArkEscortReport"/> as a JSON line, so the difficulty tiers are tuned from what happened rather than
     /// guessed (Docs/Voyages/ARK_ESCORT.md, "Tuning"). A tool, never a player path: it does nothing unless the process was
     /// started with <c>-arkEscortSim</c>, which the editor launcher (<c>ArkEscortSimLauncher</c>) passes.
@@ -32,6 +34,9 @@ namespace CosmicShore.Gameplay
         const string VerboseArg = "-arkEscortVerbose";
         const float ReadyTimeoutSeconds = 600f;
         const float RunTimeoutSeconds = 1800f;
+        const float SailTimeoutSeconds = 240f;
+        const float ReturnTimeoutSeconds = 240f;
+        const string MenuScene = "Menu_Main";
 
         /// <summary>Raised once every planned run has finished (or the sim gave up): the editor launcher exits on it.</summary>
         public static event Action<bool> AllDone;
@@ -115,36 +120,36 @@ namespace CosmicShore.Gameplay
             try
             {
                 Log($"plan: {_plan.Count} runs, time scale {_scale}, out {_out}");
-                var harbour = await ReadyAsync(ct);
-                if (!harbour) { Log("never ready - giving up"); return; }
+                if (!await MenuReadyAsync(ReadyTimeoutSeconds, ct)) { Log("never ready - giving up"); return; }
 
                 ArkEscortRun.Finished += OnFinished;
                 for (int i = 0; i < _plan.Count; i++)
                 {
                     var (difficulty, squad, name) = _plan[i];
-                    harbour = VoyageHarbour.Current;
-                    if (!harbour) { Log("the harbour went away"); break; }
                     Log($"run {i + 1}/{_plan.Count}: d{difficulty} {name}");
                     _last = null;
-                    var freestyle = FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include);
-                    if (freestyle && !freestyle.IsInFreestyle && !freestyle.IsTransitioning) freestyle.ToggleTransition();
-                    float settle = Time.unscaledTime + 60f;
-                    while (freestyle && (!freestyle.IsInFreestyle || freestyle.IsTransitioning) && Time.unscaledTime < settle)
-                        await UniTask.Delay(500, DelayType.Realtime, cancellationToken: ct);
-                    harbour = VoyageHarbour.Current;
-                    if (!harbour) { Log("the harbour went away entering freestyle"); break; }
-                    harbour.SetSailEscort(difficulty, freestyle, squad, aiLocal: true);
 
-                    float deadline = Time.unscaledTime + RunTimeoutSeconds;
-                    while (_last == null && Time.unscaledTime < deadline)
+                    // The escort has its own scene: set sail from the menu exactly as the Voyage window does.
+                    if (!VoyageLaunch.Begin(VoyageLaunchRequest.ForEscort(difficulty, squad, aiLocal: true)))
                     {
-                        Time.timeScale = _scale;
-                        await UniTask.Delay(1000, DelayType.Realtime, cancellationToken: ct);
-                        harbour = VoyageHarbour.Current;
-                        if (harbour && !harbour.IsEscorting && _last == null && Time.unscaledTime > deadline - RunTimeoutSeconds + 60f)
+                        Log("the voyage scene could not be launched");
+                        break;
+                    }
+                    if (!await EscortOutAsync(ct))
+                        Log("the escort is not out (did not sail in the voyage scene)");
+                    else
+                    {
+                        float deadline = Time.unscaledTime + RunTimeoutSeconds;
+                        while (_last == null && Time.unscaledTime < deadline)
                         {
-                            Log("the escort is not out (did not sail, or ended unreported)");
-                            break;
+                            Time.timeScale = _scale;
+                            await UniTask.Delay(1000, DelayType.Realtime, cancellationToken: ct);
+                            var harbour = VoyageHarbour.Current;
+                            if ((!harbour || !harbour.IsEscorting) && _last == null)
+                            {
+                                Log("the escort ended unreported");
+                                break;
+                            }
                         }
                     }
                     Time.timeScale = 1f;
@@ -152,11 +157,13 @@ namespace CosmicShore.Gameplay
                     {
                         Log("no report (timed out or never sailed)");
                         Write(new ArkEscortReport { Difficulty = difficulty, Squad = name, Result = ArkEscortReport.Outcome.None });
+                        // A run that hung in the voyage scene still has to come home before the next can launch.
+                        VoyageScene.Current?.Leave();
                     }
                     else Write(_last);
 
-                    // Let the corridor drain before the next run stands its own.
-                    await UniTask.Delay(8000, DelayType.Realtime, cancellationToken: ct);
+                    // The voyage scene returns to the menu on its own once the escort is over; the next run sets out from it.
+                    if (!await MenuReadyAsync(ReturnTimeoutSeconds, ct)) { Log("never back in the menu - giving up"); break; }
                 }
                 ok = true;
             }
@@ -173,39 +180,37 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The game is in the menu with a vessel and a harbour; enters freestyle if the harbour waits for it.</summary>
-        async UniTask<VoyageHarbour> ReadyAsync(CancellationToken ct)
+        /// <summary>The game is in the menu with a live local vessel and no load veil (a first play in the editor imports as
+        /// it goes, so the wait is generous), then a short settle.</summary>
+        async UniTask<bool> MenuReadyAsync(float timeout, CancellationToken ct)
         {
-            float deadline = Time.unscaledTime + ReadyTimeoutSeconds;
-            bool asked = false;
+            float deadline = Time.unscaledTime + timeout;
             while (Time.unscaledTime < deadline)
             {
-                var freestyle = FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include);
-                var harbour = VoyageHarbour.Current;
-                if (harbour && freestyle)
+                var gameData = VoyageLaunch.ResolveGameData();
+                var vessel = gameData ? gameData.LocalPlayer?.Vessel : null;
+                if (SceneManager.GetActiveScene().name == MenuScene && !VoyageScene.Current && vessel.IsAlive()
+                    && !EnvironmentLoadVeil.IsCovering)
                 {
-                    // Into freestyle here, with all the time it needs (a first play in the editor imports as it goes, and
-                    // the harbour's own hand-off waits only a few seconds); the escort then sails straight from it.
                     await UniTask.Delay(5000, DelayType.Realtime, cancellationToken: ct);
-                    if (!freestyle.IsInFreestyle && !freestyle.IsTransitioning) freestyle.ToggleTransition();
-                    while ((!freestyle.IsInFreestyle || freestyle.IsTransitioning) && Time.unscaledTime < deadline)
-                        await UniTask.Delay(500, DelayType.Realtime, cancellationToken: ct);
-                    await UniTask.Delay(3000, DelayType.Realtime, cancellationToken: ct);
-                    return VoyageHarbour.Current;
-                }
-                if (!harbour && freestyle && !asked && !freestyle.IsTransitioning && !freestyle.IsInFreestyle)
-                {
-                    // The harbour stands with the toybox; on a build where the toybox waits for freestyle, ask for it.
-                    if (Time.unscaledTime > deadline - ReadyTimeoutSeconds + 30f)
-                    {
-                        asked = true;
-                        Log("no harbour after 30s in the menu - entering freestyle");
-                        freestyle.ToggleTransition();
-                    }
+                    return true;
                 }
                 await UniTask.Delay(1000, DelayType.Realtime, cancellationToken: ct);
             }
-            return null;
+            return false;
+        }
+
+        /// <summary>The voyage scene loaded and its harbour sailed the escort.</summary>
+        async UniTask<bool> EscortOutAsync(CancellationToken ct)
+        {
+            float deadline = Time.unscaledTime + SailTimeoutSeconds;
+            while (Time.unscaledTime < deadline)
+            {
+                var harbour = VoyageHarbour.Current;
+                if (harbour && harbour.IsEscorting) return true;
+                await UniTask.Delay(500, DelayType.Realtime, cancellationToken: ct);
+            }
+            return false;
         }
 
         void OnFinished(ArkEscortReport report) => _last = report;
