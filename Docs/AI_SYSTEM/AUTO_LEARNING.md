@@ -157,3 +157,9 @@ Switchback learner takes finished Blast Run races only), but they could have. No
   Compute's watched runs save a still every minute and when the AI improves (`Docs/Compute/README.md` section 16).
 Changing the learners' code makes the next sweep learn every flight again (`learners_fingerprint`); that is by design.
 
+**2026-11-01, the two paths joined (Shombith; `Docs/Compute/README.md` section 20):** a Unity trainer run on Froglet
+Compute now starts from the people's races too. `Tools/Compute/people_seed.py` reads the same flight records this sweep
+learns from (and skips the same AI-flown ones) and seeds the trainer's first population with the throttle and boost
+habits they show; the sweep itself and the drive numbers it writes are unchanged. The other way round, the console's
+Update AI writes a run's best genome into the game's archive on `ai` with a core-four approval (`archive_update.py`).
+

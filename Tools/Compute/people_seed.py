@@ -1,0 +1,194 @@
+"""The people's seed: the genes a Unity trainer run starts from, measured from the people's own recorded races.
+
+    python3 Tools/Compute/people_seed.py --mode SkimRace --vessel Squirrel --out seed.json [--token HexRace] [--no-fetch]
+    python3 Tools/Compute/people_seed.py --self-test
+
+This is where the two learning paths join (Shombith, 2026-11-01: "join the two learning paths"). The hourly AI learning
+sweep (Yash's, Docs/AI_SYSTEM/AUTO_LEARNING.md) learns from every race a person plays in the editor; the Unity trainer
+(a Froglet Compute run, README section 16) breeds its own AI population from all-AI matches. Until now the trainer
+started every fresh population from the gene registry's defaults, so what people had taught the game was not in the
+run. Now `unity_run.py` calls this before a run: it reads the same flight records the sweep learns from (the
+`bugledger/<user>` branches, `learn_from_flights.flights_on_branches`, which leaves out every flight the AI flew), keeps
+the ones of this pair, and measures the gene-shaped quantities a person's flying shows:
+
+    throttle.base        the throttle they hold when not boosting (median)
+    boost.min_charge     the charge they wait for before a boost (median at each press)
+    boost.hold_seconds   how long they hold a boost (median press)
+    boost.cooldown       how long they wait between boosts (median gap)
+
+The trainer (FrogletComputeTraining.ApplySeed) lays these over the registry defaults gene by gene for the FIRST
+population of a fresh scenario; a resumed population keeps what it learned. The seed is a proposal of where to start,
+never a rule: the search moves on from it. Every number needs enough evidence (MIN_FLIGHTS races, MIN_EVENTS presses) or
+it is left to the default, and the seed says what it measured (`note`, `flights`, `people`). The file is the
+trainer's genome.json shape (geneNames / geneValues), so the game reads it with its own importer.
+"""
+import argparse
+import json
+import os
+import statistics
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, os.path.join(ROOT, "Tools", "Build"))
+
+MIN_FLIGHTS = 2        # races of this pair before any gene is written
+MIN_EVENTS = 3         # boost presses before a boost gene is written
+MIN_SAMPLES = 200      # throttle samples before throttle.base is written
+GENES = {              # gene -> (lo, hi): the registry's bounds, so a measurement never leaves the search space
+    "throttle.base": (0.3, 1.0),
+    "boost.min_charge": (0.0, 1.0),
+    "boost.hold_seconds": (0.2, 3.0),
+    "boost.cooldown": (0.5, 6.0),
+}
+
+
+def _col(d, name):
+    cols = d.get("columns") or []
+    return cols.index(name) if name in cols else -1
+
+
+def _rows(d):
+    return d.get("samples") or []
+
+
+def this_pair(d, mode, vessel, token=None):
+    """A record of this pair: the mode by its GameModes name (or the trainer's token for it) and the hull by name."""
+    m = str(d.get("mode") or "")
+    h = str(d.get("hull") or d.get("vessel") or "")
+    return h.lower() == str(vessel).lower() and (m.lower() == str(mode).lower() or (token and m.lower() == str(token).lower()))
+
+
+def measure(records):
+    """The gene measurements from a list of parsed flight records (dicts with columns and samples), with evidence."""
+    throttle, charges, holds, gaps = [], [], [], []
+    for d in records:
+        it, ib, ith, ich, ihd = (_col(d, n) for n in ("t", "boost", "throttle", "charge", "held"))
+        if it < 0 or ib < 0:
+            continue
+        on, t_on, t_off = False, None, None
+        for r in _rows(d):
+            if ihd >= 0 and len(r) > ihd and r[ihd]:
+                continue                                  # the AI held the hull for this sample: not the person
+            boost = bool(r[ib]) if len(r) > ib else False
+            if ith >= 0 and len(r) > ith and not boost and isinstance(r[ith], (int, float)):
+                throttle.append(float(r[ith]))
+            t = float(r[it])
+            if boost and not on:
+                on, t_on = True, t
+                if t_off is not None:
+                    gaps.append(t - t_off)
+                if ich >= 0 and len(r) > ich and isinstance(r[ich], (int, float)):
+                    charges.append(float(r[ich]))
+            elif not boost and on:
+                on, t_off = False, t
+                holds.append(t - t_on)
+    out, why = {}, []
+    def put(gene, values, need, what):
+        if len(values) >= need:
+            lo, hi = GENES[gene]
+            out[gene] = round(min(hi, max(lo, statistics.median(values))), 4)
+            why.append(f"{gene} from {len(values)} {what}")
+        else:
+            why.append(f"{gene} left to the default ({len(values)} {what}, {need} needed)")
+    put("throttle.base", throttle, MIN_SAMPLES, "samples")
+    put("boost.min_charge", charges, MIN_EVENTS, "boost presses")
+    put("boost.hold_seconds", holds, MIN_EVENTS, "boost presses")
+    put("boost.cooldown", gaps, MIN_EVENTS, "boost gaps")
+    return out, why
+
+
+def seed(records, mode, vessel):
+    """The seed file's content for these records (already this pair's), or None when there is too little."""
+    people = sorted({str(d.get("user") or d.get("person") or "").strip() for d in records} - {""})
+    if len(records) < MIN_FLIGHTS:
+        return None
+    genes, why = measure(records)
+    if not genes:
+        return None
+    return {"geneNames": list(genes), "geneValues": [genes[k] for k in genes], "enabledModules": [],
+            "GenerationBorn": 0, "EvaluationCount": 0, "Fitness": 0.0, "NoveltyScore": 0.0, "Lineage": "people-seed",
+            "schema": "froglet-compute/people-seed/1", "mode": mode, "vessel": vessel, "flights": len(records),
+            "people": people, "measured": why,
+            "note": f"{len(records)} race(s) by {', '.join(people) if people else 'the team'}: " + ", ".join(k for k in genes)}
+
+
+def records_for(mode, vessel, token=None, fetch=True):
+    import learn_from_flights as F
+    if fetch:
+        F.git("fetch", "-q", "origin", "+refs/heads/bugledger/*:refs/remotes/origin/bugledger/*")
+    out = []
+    for name, text in F.flights_on_branches():
+        d, err = F.parse(name, text)
+        if d is None or not this_pair(d, mode, vessel, token):
+            continue
+        d.setdefault("user", name.split("/reports/")[1].split("/")[0] if "/reports/" in name else "")
+        out.append(d)
+    return out
+
+
+def self_test():
+    bad = []
+    cols = ["t", "boost", "throttle", "charge", "held"]
+    def flight(mode="SkimRace", hull="Squirrel", presses=4, held=False, n=400):
+        rows, t = [], 0.0
+        for i in range(n):
+            b = 1 if (i // 40) % 2 == 1 and (i // 40) // 2 < presses else 0       # a 2 s press every 4 s
+            rows.append([t, b, 0.8 if not b else 1.0, 0.6 if b else 0.1, 1 if held else 0])
+            t += 0.05
+        return {"mode": mode, "hull": hull, "columns": cols, "samples": rows, "user": "shombith"}
+    s = seed([flight(), flight()], "SkimRace", "Squirrel")
+    if not s or "throttle.base" not in s["geneNames"] or "boost.min_charge" not in s["geneNames"]:
+        bad.append(f"two races did not seed the throttle and boost genes: {s}")
+    else:
+        g = dict(zip(s["geneNames"], s["geneValues"]))
+        if abs(g["throttle.base"] - 0.8) > 0.01 or abs(g["boost.min_charge"] - 0.6) > 0.01 or abs(g["boost.hold_seconds"] - 2.0) > 0.2:
+            bad.append(f"the measurements are off: {g}")
+        if s["flights"] != 2 or s["people"] != ["shombith"] or "2 race(s)" not in s["note"]:
+            bad.append(f"the provenance is wrong: {s['note']} {s['people']}")
+    if seed([flight()], "SkimRace", "Squirrel") is not None:
+        bad.append("one race seeded (MIN_FLIGHTS)")
+    if not this_pair(flight(), "SkimRace", "Squirrel") or this_pair(flight(), "Regatta", "Squirrel") or this_pair(flight(), "SkimRace", "Rhino"):
+        bad.append("the pair filter is wrong")
+    if not this_pair(flight(mode="HexRace"), "SkimRace", "Squirrel", token="HexRace"):
+        bad.append("the trainer's token for a mode is not accepted")
+    held = seed([flight(held=True), flight(held=True)], "SkimRace", "Squirrel")
+    if held is not None:
+        bad.append("samples the AI held were measured as the person's")
+    few = seed([flight(presses=1), flight(presses=1)], "SkimRace", "Squirrel")
+    if few and "boost.min_charge" in few["geneNames"]:
+        bad.append("two presses wrote a boost gene (MIN_EVENTS)")
+    return bad
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--mode", help="the GameModes name")
+    ap.add_argument("--vessel")
+    ap.add_argument("--token", help="the trainer's token for the mode, when it differs (HexRace for SkimRace)")
+    ap.add_argument("--out")
+    ap.add_argument("--no-fetch", action="store_true")
+    ap.add_argument("--self-test", action="store_true")
+    a = ap.parse_args(argv)
+    if a.self_test:
+        bad = self_test()
+        print("people_seed self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
+        return 1 if bad else 0
+    if not (a.mode and a.vessel):
+        ap.error("--mode and --vessel")
+    recs = records_for(a.mode, a.vessel, a.token, fetch=not a.no_fetch)
+    s = seed(recs, a.mode, a.vessel)
+    if s is None:
+        print(f"no seed: {len(recs)} race(s) of {a.vessel} in {a.mode} by people ({MIN_FLIGHTS} needed, with enough boosts)")
+        return 2
+    if a.out:
+        with open(a.out, "w", encoding="utf-8") as fh:
+            json.dump(s, fh, indent=1)
+        print(f"seed: {s['note']} -> {a.out}")
+    else:
+        print(json.dumps(s, indent=1))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

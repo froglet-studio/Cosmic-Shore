@@ -60,6 +60,7 @@ class Hub:
         self.error, self.started = None, time.time()      # the last build's failure, shown by the page
         self.posts = {}
         self.ai_sync, self.ai_sync_at = None, 0.0        # the hourly ai-branch sync (the VM only): its last result
+        self.updates = {}                                # Update AI: vessel -> {state, by, note, at} (archive_update.py)
 
     # ── the snapshot ──
     def build_once(self, fetch=True):
@@ -139,6 +140,8 @@ class Hub:
             d = C.overlay(self.data, self.live, self.jobs)
             if self.syncs_ai():
                 d = dict(d, ai=dict(d.get("ai") or {}, hub_sync=self.ai_sync or {"due": True}))
+            if self.updates:
+                d = dict(d, ai_updates=dict(self.updates))
             if self.filed:
                 d = dict(d, manual=list(self.filed) + list(d.get("manual") or []))
             return d
@@ -200,6 +203,36 @@ class Hub:
                     f["state"] = "cancelled"
         L.log(f"hub: stopped {rid}", self.quiet)
         return 200, {"id": rid, "cancelled": True}
+
+    def update_ai(self, body):
+        """Update AI: the vessel's trained genomes onto the ai branch, in the background; one at a time per vessel."""
+        import archive_update as AU
+        vessel, by = str(body.get("vessel") or ""), str(body.get("by") or "").strip()
+        if by not in AU.approvers():
+            return 403, {"error": f"the approver must be one of the core four: {', '.join(AU.approvers())}"}
+        if not vessel:
+            return 400, {"error": "no vessel"}
+        with self.lock:
+            cur = self.updates.get(vessel)
+            if cur and cur.get("state") == "running":
+                return 409, {"error": f"{vessel} is being updated already"}
+            self.updates[vessel] = {"state": "running", "by": by, "at": L.now(), "note": "writing the archive on the ai branch"}
+        def work():
+            try:
+                r = AU.update(vessel, by, push=True)
+            except Exception as e:
+                r = {"ok": False, "note": f"{type(e).__name__}: {e}"}
+            with self.lock:
+                self.updates[vessel] = {"state": "done" if r.get("ok") else "failed", "by": by, "at": L.now(),
+                                        "note": r.get("note", ""), "sha": r.get("sha"), "entries": r.get("entries")}
+            L.log(f"hub: update AI {vessel} by {by}: {r.get('note')}", self.quiet)
+            if r.get("ok"):
+                try:
+                    self.build_once(fetch=True)      # the page shows the archive as it now is
+                except Exception:
+                    pass
+        threading.Thread(target=work, name=f"update-ai-{vessel}", daemon=True).start()
+        return 202, {"vessel": vessel, "state": "running"}
 
     def run_here(self, body):
         """The app only: start a run on this computer now, as `compute.py run --request <token>` (the line the page
@@ -295,6 +328,7 @@ def handler(hub, page):
                 d = hub.snapshot() or {}
                 return self._send(200, {"hub": True, "app": bool(hub.app), "built": d.get("generated"), "error": hub.error,
                                         "ai_synced": hub.ai_sync if hub.syncs_ai() else None,
+                                        "updates": hub.updates,
                                         "live": (d.get("live") or {}).get("machines", []),
                                         "here": hub.here_runs() if hub.app else []})
             return self._send(404, {"error": "not found"})
@@ -320,6 +354,11 @@ def handler(hub, page):
                     return self._send(*hub.cancel(body))
                 except Exception as e:
                     return self._send(400, {"error": f"not a stop: {e}"})
+            if path == "/api/update-ai":
+                try:
+                    return self._send(*hub.update_ai(body))
+                except Exception as e:
+                    return self._send(400, {"error": f"not an update: {e}"})
             if path == "/api/run-here":
                 try:
                     return self._send(*hub.run_here(body))

@@ -38,7 +38,8 @@
    "SessionState.asset",
    "unity-tail.log",
    "recordings.json",
-   "bugledger.json"
+   "bugledger.json",
+   "seed.json"
   ],
   "lease_hours": 3,
   "max_mb": 8,

@@ -371,6 +371,16 @@ If Play never reaches a match (sign-in, the menu), the run stops after 15 minute
 - [ ] (2026-11-01) When a watched run ends: Unity stays open up to three minutes while the bug ledger sends, then
   quits; `<out>/bugledger.json` says `Sent` (or `NothingNew`) and names `bugledger/<user>`; that branch's
   `BugLedger/shared/reports/<user>/perf/` holds the diag reports. A headless run writes no `bugledger.json`.
+- [ ] (2026-11-01, the people's seed) A Unity run of a pair you have raced at least twice in the editor (Squirrel in
+  Skim Race): `<out>/seed.json` exists, `status.json`'s `seed` reads "N gene(s) from the people's races: ..." and
+  `unity.log` shows the first population's genomes carrying those values (the AI Training window's population
+  view: throttle.base and boost.min_charge equal the seed's, not the registry defaults 0.65 / 0.5). A second run of
+  the same unit (a resume) says "not applied: resuming this scenario's own population".
+- [ ] (2026-11-01, Update AI) On the console's Vessel AIs page press Update AI for a vessel, say yes as one of the core
+  four: `origin/ai` gains a `chore(ai): <Vessel>'s AI from Froglet Compute` commit touching only
+  `Assets/_SO_Assets/AI Training/Archive.asset`; pull `ai` into a checkout: Unity imports the asset without a warning,
+  the Archive's inspector lists the new entry with its Notes, and a normal match of that mode on an AI seat with
+  `TrainingControl.DeployArchiveInNormalPlay` on installs a TrainingPilot (the Third Eye reads "AI trainer" on it).
 - [ ] (2026-11-01) New run lists Serpent > Serpentine, Scarab > Scarab Rally and BrittleStar > Brittle Star Time as
   purple (in the game); a one-match run of each starts, plays and reports gates threaded (`status.json`
   `best_fitness` finite after the match). **These three scenarios were authored from the catalog

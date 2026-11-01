@@ -59,6 +59,7 @@ namespace CosmicShore.Utility.AITraining.Editor
         const string KeyDiagNote = "FrogletCompute.DiagNote";         // what the last `diag` answered
         const string KeyLedger = "FrogletCompute.Ledger";             // "", "sending", "done": the bug-ledger send after a watched run
         const string KeyLedgerStart = "FrogletCompute.LedgerStart";
+        const string KeySeed = "FrogletCompute.Seed";               // what the people's seed gave this run, for status.json
         // A watched run records the game's diagnostics (DiagnosticsHUD `diag`: fps, frame times, spikes, draws, memory)
         // for DiagSeconds every DiagEverySeconds, so the performance of a real match lands in Documents/CosmicShore
         // Diagnostics as a perf report, and the bug ledger's "Send to Claude" (BugLedgerSender) carries it with the run's
@@ -163,6 +164,7 @@ namespace CosmicShore.Utility.AITraining.Editor
             control.MuteAudio = !watch;
             control.DisableCameraRendering = !watch;
             control.AutoStartOnPlay = true;
+            SessionState.SetString(KeySeed, ApplySeed(state, scenario));
             if (control.Telemetry != null) control.Telemetry.IsRunning = false;   // a crashed run can leave it on
             SessionState.SetString(KeyReplays, PrepareReplays(outDir));
             SessionState.SetFloat(KeyBest, state.HallOfFameBestFitness);
@@ -259,6 +261,69 @@ namespace CosmicShore.Utility.AITraining.Editor
             Debug.Log($"[FrogletCompute] {reason}");
             if (EditorApplication.isPlaying) EditorApplication.isPlaying = false;
             else if (!Watched) EditorApplication.Exit(code);        // a watched run leaves through SendToLedgerDone
+        }
+
+        /// <summary>
+        /// -trainSeed &lt;file&gt;: the people's seed (people_seed.py's genome.json shape: geneNames and geneValues
+        /// measured from their recorded races of this pair). Laid over the registry defaults gene by gene, so a seed
+        /// that names three genes starts a population that is the defaults with those three where people fly them;
+        /// a gene the registry no longer knows is skipped. Only a FRESH population takes it: a run resuming this
+        /// scenario's saved population keeps what it learned. Returns the line status.json shows.
+        /// </summary>
+        static string ApplySeed(TrainingSessionStateSO state, TrainingScenarioSO scenario)
+        {
+            string path = Arg("-trainSeed");
+            if (string.IsNullOrEmpty(path)) return "none: no -trainSeed";
+            if (!File.Exists(path)) return "none: the seed file is missing";
+            if (state != null && scenario != null && state.ScenarioKey == scenario.Key && state.Population != null
+                && state.Population.PopulationSize > 0)
+                return "not applied: resuming this scenario's own population";
+            var file = GenomeJson.LoadFromFile(path);
+            if (file == null) return "none: the seed file did not parse";
+            var seed = TrainingGenome.FromRegistryDefaults();
+            int applied = 0, unknown = 0;
+            foreach (var pair in SeedPairs(path))
+            {
+                if (!seed.Has(pair.Key)) { unknown++; continue; }
+                seed.Set(pair.Key, pair.Value);
+                applied++;
+            }
+            if (applied == 0) return "none: the seed named no gene the registry knows";
+            if (state != null)
+            {
+                state.PendingSeed = seed;
+                state.HasPendingSeed = true;
+                state.PendingSeedNote = SeedNote(path);
+                EditorUtility.SetDirty(state);
+            }
+            return $"{applied} gene(s) from the people's races{(unknown > 0 ? $", {unknown} unknown skipped" : "")}: {SeedNote(path)}";
+        }
+
+        /// <summary>The seed's genes by name: JsonUtility round-trips the genome's private lists, this reads them.</summary>
+        static IEnumerable<KeyValuePair<string, float>> SeedPairs(string path)
+        {
+            var g = GenomeJson.LoadFromFile(path);
+            if (g == null) yield break;
+            var names = typeof(TrainingGenome).GetField("geneNames", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(g) as List<string>;
+            var values = typeof(TrainingGenome).GetField("geneValues", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(g) as List<float>;
+            if (names == null || values == null) yield break;
+            for (int i = 0; i < names.Count && i < values.Count; i++)
+                yield return new KeyValuePair<string, float>(names[i], values[i]);
+        }
+
+        /// <summary>The seed file's own "note" (who flew, how many races), read without a schema: one JSON string field.</summary>
+        static string SeedNote(string path)
+        {
+            try
+            {
+                string text = File.ReadAllText(path);
+                int i = text.IndexOf("\"note\"", StringComparison.Ordinal);
+                if (i < 0) return "";
+                int q1 = text.IndexOf('"', text.IndexOf(':', i) + 1);
+                int q2 = text.IndexOf('"', q1 + 1);
+                return q1 > 0 && q2 > q1 ? text.Substring(q1 + 1, q2 - q1 - 1) : "";
+            }
+            catch { return ""; }
         }
 
         /// <summary>Unity has its window and a person may be watching: -trainWatch, never in batch mode.</summary>
@@ -605,6 +670,7 @@ namespace CosmicShore.Utility.AITraining.Editor
                 .Num("best_fitness", best)
                 .Num("loss", IsFinite(best) ? -best : float.NaN)
                 .Str("diagnostics", SessionState.GetString(KeyDiagNote, ""))
+                .Str("seed", SessionState.GetString(KeySeed, ""))
                 .Num("updated", Now());
             WriteAtomic(Path.Combine(outDir, "status.json"), j.End());
         }

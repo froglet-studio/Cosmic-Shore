@@ -391,7 +391,12 @@ def build(local=False, fetch=True, cwd=None, prs=None, url=None, queue=None):
     machines = L.gather(cwd=cwd)
     out_jobs, out_machines = jobs_and_machines(jobs, machines, L.capabilities())
     run_data = runs(machines, jobs)
-    return {"schema": SCHEMA, "generated": L.now(), "core": core_four(),
+    try:
+        import archive_update as AU
+        vessel_ai = AU.status(machines, cwd)
+    except Exception as e:
+        vessel_ai = [{"error": f"{type(e).__name__}: {e}"}]
+    return {"schema": SCHEMA, "generated": L.now(), "core": core_four(), "vessel_ai": vessel_ai,
             "queue": "working tree (--local)" if local else refs,
             "jobs": out_jobs, "machines": out_machines, "runs": run_data, "install": install_info(cwd),
             "manual": manual(jobs, machines, cwd, None if local else refs), "forms": run_forms(jobs), "catalog": catalog(jobs, cwd),

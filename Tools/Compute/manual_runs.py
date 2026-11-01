@@ -394,6 +394,11 @@ def apply_outbox(export, sent, jobs, refs=None, push=True, cwd=None, names=None)
                 rid = str(item.get("id") or "")
                 r = cancel(rid, refs, push=push, cwd=cwd, quiet=True) if ID.fullmatch(rid) else None
                 res.update(ok=bool(r), request=rid, note="stopped: its computer stops within 30 s" if r else "no such run on the queue")
+            elif item.get("kind") == "update-ai":
+                import archive_update as AU
+                by = (names or {}).get(viewer) or str(item.get("by") or "")
+                r = AU.update(str(item.get("vessel") or ""), by, push=push, cwd=cwd)
+                res.update(ok=bool(r.get("ok")), note=r.get("note", ""), vessel=item.get("vessel"))
             else:
                 res["note"] = "unknown kind"
         except Exception as e:

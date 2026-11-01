@@ -42,6 +42,7 @@ sys.path.insert(0, HERE)
 import compute_lib as L  # noqa: E402
 
 BATCH_CS = os.path.join(HERE, "unity", "FrogletComputeTraining.cs")
+JOB_ID = "unity-train"
 ENTRY = "CosmicShore.Utility.AITraining.Editor.FrogletComputeTraining.Run"
 STATE_ASSET = "Assets/_SO_Assets/AI Training/SessionState.asset"
 INJECT_DIR = "Assets/Editor/FrogletCompute"
@@ -173,6 +174,36 @@ def prepare_project(sha, repo=None, dest=None, quiet=False, overlay_sha=None, ov
 
 # ── one run ──────────────────────────────────────────────────────────────────
 
+def people_seed_file(args, out, quiet=None):
+    """The people's seed for this pair (people_seed.py: the genes their recorded races show), written to
+    <out>/seed.json and handed to the trainer as -trainSeed; None when there are too few races, when the learners are
+    not in this checkout, or when anything about it fails (a seed is help, never a reason not to run)."""
+    quiet = args.quiet if quiet is None else quiet
+    try:
+        sys.path.insert(0, os.path.join(L.REPO, "Tools", "Build"))
+        import people_seed as P
+        mode = args.mode
+        try:                                                   # the GameModes name the flights carry, from the job's pairs
+            pairs = ((L.load_jobs().get(JOB_ID) or {}).get("command") or {}).get("pairs") or {}
+            mode = next((k for k, v in pairs.items() if v.get("token") == args.mode), args.mode)
+        except Exception:
+            pass
+        recs = P.records_for(mode, args.vessel or "", token=args.mode, fetch=True)
+        s = P.seed(recs, mode, args.vessel or "")
+        if s is None:
+            L.log(f"unity: no people's seed ({len(recs)} race(s) of {args.vessel} in {mode} by people): the registry defaults", quiet)
+            _status(out, seed=f"none: {len(recs)} race(s) by people ({P.MIN_FLIGHTS} needed)")
+            return None
+        path = os.path.join(out, "seed.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(s, fh, indent=1)
+        L.log(f"unity: the people's seed: {s['note']}", quiet)
+        return path
+    except Exception as e:
+        L.log(f"unity: no people's seed ({type(e).__name__}: {e}): the registry defaults", quiet)
+        return None
+
+
 def unity_argv(unity, project, out, args, deadline, watch=False):
     # Watching: Unity opens with its window and plays the match in the Game view, camera and sound on, at game speed.
     argv = [unity] + ([] if watch else ["-batchmode"]) + ["-projectPath", project, "-executeMethod", ENTRY,
@@ -248,7 +279,10 @@ def run(args):
     if os.path.exists(saved):                       # resume this unit's population where it stopped
         shutil.copy2(saved, os.path.join(project, *STATE_ASSET.split("/")))
     watch = args.watch or os.environ.get("FROGLET_COMPUTE_UNITY_WATCH") == "1"
+    seed_path = None if args.no_seed else people_seed_file(args, out)
     argv = unity_argv(unity, project, out, args, deadline, watch=watch)
+    if seed_path:
+        argv += ["-trainSeed", seed_path]
     L.log("unity: " + " ".join(argv), args.quiet)
     _status(out, phase="opening Unity (importing on the first run)", unit_episodes=args.episodes)
 
@@ -329,6 +363,7 @@ def main(argv=None):
                     "laid over the code while the code ref has not touched them (a trainer change not merged yet)")
     ap.add_argument("--overlay", action="append", help="a path taken from --overlay-ref (repeatable)")
     ap.add_argument("--nographics", action="store_true", help="start Unity with -nographics")
+    ap.add_argument("--no-seed", action="store_true", help="start from the registry defaults, not the people's seed")
     ap.add_argument("--watch", action="store_true", help="open Unity with its window and play at game speed, to watch "
                     "the AIs (also FROGLET_COMPUTE_UNITY_WATCH=1, which `compute.py run --watch` sets)")
     ap.add_argument("--poll", type=float, default=float(os.environ.get("FROGLET_COMPUTE_UNITY_POLL") or 5.0))

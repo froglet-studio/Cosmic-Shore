@@ -649,3 +649,45 @@ line to paste. **The app** is the live console (the hub, section 15) on your own
   flight stored before 2026-10-29 counts until `recordings()` reads `not_a_person` (it reads the seen list, not the
   learners' gate).
 
+## 20. Update AI, and the people's seed: the two learning paths joined (Shombith, 2026-11-01)
+
+Shombith's question: "a new game mode is created and users play it a few times, that data is recorded automatically
+and reused by the AI in a compute run, and each vessel has an Update AI button which pushes its AI according to the
+difficulty levels it trained on." Until today the two halves did not meet: the hourly AI learning sweep (Yash's,
+`Docs/AI_SYSTEM/AUTO_LEARNING.md`) learned from people's races into the drive numbers, and a Unity trainer run bred its
+own population from the gene registry's defaults; nothing from a run reached the game. Now:
+
+- **The people's seed** (`Tools/Compute/people_seed.py`): before every Unity trainer run, `unity_run.py` reads the same
+  flight records the sweep learns from (every `bugledger/<user>` branch, every flight the AI did not fly), keeps this
+  vessel-and-mode's, and measures the gene-shaped quantities a person's flying shows: the throttle they hold when not
+  boosting, the charge they wait for before a boost, how long they hold it, how long they wait between boosts. With
+  two or more races (and three or more presses for a boost gene) it writes `<out>/seed.json` in the trainer's own
+  genome shape and starts Unity with `-trainSeed`. `FrogletComputeTraining.ApplySeed` lays those genes over the
+  registry defaults for the FIRST population of a fresh scenario (`TrainingSessionStateSO.PendingSeed`); a resumed
+  population keeps what it learned, and a pair nobody has raced starts from the defaults as before. `status.json`'s
+  `seed` says what was taken ("3 gene(s) from the people's races: 6 race(s) by shombith: ..."), the unit keeps the
+  file, and the console's Vessel AIs page shows it. The seed is where the search starts, never where it must stay.
+- **Update AI** (`Tools/Compute/archive_update.py`, the console's **Vessel AIs** page): the game already deploys
+  trained AIs. `TrainingDeploymentService` installs the genome `Assets/_SO_Assets/AI Training/Archive.asset` holds for
+  a (vessel, mode, intensity) on every AI seat of a normal match (intensity 4 is the trained vector; 1-3 dither it, or
+  fly their own entry when `UseStoredGenomeForLowerIntensity`). A compute run writes its best genome only into the
+  PC's project copy. The page lists, per vessel, every (mode, intensity) a run trained, the best fitness across every
+  machine and epoch (`jobs/unity-train*/<epoch>/files/<unit>/genome.json` and its `status.json`), against the archive's
+  entry on `origin/ai`. **Update AI** writes the newer ones in: one commit on the `ai` branch (plumbing, so it runs on
+  the VM's bare clone) that upserts the vessel's entries in the exact YAML shape Unity writes, with `Approved-by:
+  <name>`; the name must be one of the core four (section 8: a promotion is a person's yes; the page asks once and
+  remembers). On the live console the hub does it (`POST /api/update-ai`, the team key, one at a time per vessel,
+  `api/status` carries `updates`); on the claude.ai snapshot the press goes to the outbox and the hourly sync applies
+  it (`compute.py request outbox`, kind `update-ai`); from a checkout, `archive_update.py update --vessel X --by NAME
+  --push`. `ai` reaches `bleeding-edge` by its ordinary pull request, so the shipped game changes only when that merges.
+- **What a person judges:** the page shows the trainer's fitness, which is the scenario's own score (gates threaded
+  minus a time penalty, combat points, and so on). A run that scored nothing still has a "best" genome, so the first
+  rows (2026-10-28 to 10-30, before the next-gate fix) read negative; Update AI is a yes to THAT genome, not to the
+  idea. The archive entry's Notes name the unit, the machine, the episodes and the approver.
+
+Gates: `people_seed.py --self-test` (two races seed the throttle and boost genes; one race, AI-held samples and two
+presses do not; the pair filter and the trainer's token), `archive_update.py --self-test` (entries round-trip in
+Unity's shape, replace and append, the best epoch wins across automatic and manual runs, only the core four promote),
+both in `compute.py self-test`; `archive_update.py update` without `--push` built a real commit on `origin/ai` for the
+Sparrow (one entry added, one file changed, parent `origin/ai`). The trainer compiled against the Unity references.
+Not played in the editor: the checklist has the steps.

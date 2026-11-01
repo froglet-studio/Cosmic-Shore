@@ -750,6 +750,13 @@ def run(quick=False):
             ai = ai_branch.self_test()
         print("ai branch sync: " + ("ok (AI changes come over, others do not, conflicts stop it)" if not ai else "FAILED"))
         failures += ai
+    import people_seed, archive_update
+    ps = people_seed.self_test()
+    print("people seed: " + ("ok (two races seed the throttle and boost genes; one race, AI-held samples and two presses do not)" if not ps else "FAILED\n  " + "\n  ".join(ps)))
+    failures += ps
+    au = archive_update.self_test()
+    print("update AI: " + ("ok (entries round-trip in Unity's shape, the best epoch wins, only the core four promote)" if not au else "FAILED\n  " + "\n  ".join(au)))
+    failures += au
     if not quick:
         e2e = end_to_end()
         print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched; the hub; the app starts a run here; an agent shows live, runs what the console starts, stops when stopped)" if not e2e else "FAILED"))

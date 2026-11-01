@@ -418,6 +418,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     <a href="#searches" data-view="searches" id="nav-searches"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19l5-7 4 4 7-10"/><path d="M4 4v15h16"/></svg><span>Searches</span><span class="n" id="n-searches"></span></a>
     <a href="#recordings" data-view="recordings" id="nav-recordings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span>Recordings</span><span class="n" id="n-recordings"></span></a>
     <a href="#ai" data-view="ai" id="nav-ai"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M6 8v8M18 8c0 5-12 3-12 8"/></svg><span>AI branch</span></a>
+    <a href="#vessels" data-view="vessels" id="nav-vessels"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-7 9 7-9 7z"/><path d="M12 5v14"/></svg><span>Vessel AIs</span><span class="n" id="n-vessels"></span></a>
     <div class="sep"></div>
     <button class="navbtn" type="button" id="b-install"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add a computer</span></button>
     <div class="grow"></div>
@@ -460,7 +461,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   var DATA = null, VIEW = "home", OPEN = null;
   var CAP = { db: null, user: null, me: null, sample: null, mcp: null, approvals: {}, processed: {}, outbox: {}, sent: {}, canApprove: null, ready: false };
   var CCR = "Claude Code Remote";
-  var VIEWS = ["home", "runs", "searches", "machines", "recordings", "ai"];
+  var VIEWS = ["home", "runs", "searches", "machines", "recordings", "ai", "vessels"];
 
   // ── helpers: text always through textContent ──
   function h(tag, attrs, kids) {
@@ -553,6 +554,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     document.getElementById("n-searches").textContent = d.jobs.length;
     document.getElementById("n-machines").textContent = d.machines.length;
     document.getElementById("n-recordings").textContent = d.recordings.flights.length;
+    var nv = (d.vessel_ai || []).filter(function (v) { return v.newer; }).length; document.getElementById("n-vessels").textContent = nv ? nv + " new" : "";
     document.getElementById("n-runs").textContent = active.length ? active.length + " live" : "";
     var f = document.getElementById("sidefoot"); f.textContent = "";
     f.appendChild(h("span", null, [h("b", { text: (d.branch || "") }), d.branch ? " · " : "", "data " + ago(d.generated)]));
@@ -590,6 +592,8 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     ready.forEach(function (j) { var dl = delta(j); needs.push([IC.flag, j.title, "Finished searching" + (dl ? " · " + pctText(dl) + ", in the model" : "") + " · " + (j.evals || 0).toLocaleString() + " tries", "Review", function () { openJob(j.id); }]); });
     if ((d.ai || {}).needs_sync) needs.push([IC.branch, "The ai branch is behind", (d.ai.behind_base || 0) + " bleeding-edge commits and " + (d.ai.waiting_ai_files || 0) + " AI files are waiting" + (d.ai.hub_sync ? " · this console syncs it every hour" : ""), "Open", function () { location.hash = "ai"; }]);
     if (unseen) needs.push([IC.rec, unseen + " races the AI has not learned from yet", "The hourly learning sweep picks them up by itself", "View", function () { location.hash = "recordings"; }]);
+    var newer = (d.vessel_ai || []).filter(function (v) { return v.newer; });
+    if (newer.length) needs.push([IC.flag, newer.map(function (v) { return v.vessel; }).join(", ") + (newer.length === 1 ? " has" : " have") + " a trained AI newer than the game's", "Update AI puts it in the game on the ai branch; one of the core four says yes", "Open", function () { location.hash = "vessels"; }]);
     if (!d.machines.length) needs.push([IC.flag, "No computer has joined yet", "Add one with a single line in its terminal", "Add", openInstall]);
     var needList = h("div", { class: "rowlist" }, needs.length ? needs.map(function (n) { return rowItem([svgIcon(n[0]), h("div", { class: "t" }, [h("b", { text: n[1] }), h("span", { text: n[2] })]), h("button", { class: "btn small", type: "button", onclick: n[4], text: n[3] })]); })
       : [rowItem([h("div", { class: "t" }, [h("b", { text: "Nothing needs you" }), h("span", { text: "Searches are still going; a finished one shows up here." })])])]);
@@ -995,6 +999,54 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     var log = ((DATA.git || {}).branches || {}).ai || [];
     if (log.length) root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", null, [h("thead", null, [h("tr", null, ["Commit", "Who", "When", "What"].map(function (t) { return h("th", { text: t }); }))]),
       h("tbody", null, log.map(function (c) { return h("tr", null, [h("td", { class: "mono", text: c.sha }), h("td", { text: c.author }), h("td", { text: ago(c.time) }), h("td", { text: c.subject })]); }))])]));
+  }
+
+  // ── vessel AIs: what the trainer found per vessel, mode and intensity, against the game's archive, and the Update AI button ──
+  function approver() { var n = lsGet("fc-by") || (CAP.me && CAP.me.name ? CAP.me.name.split(/\s+/)[0] : ""); return (DATA.core || []).indexOf(n) >= 0 ? n : ""; }
+  function askApprover(then) {
+    var box = h("div", { class: "banner" }, [h("b", { text: "Who says yes?" }), h("p", { class: "note", text: "Update AI is a promotion: one of the core four approves it, and the commit on the ai branch names them." }),
+      h("div", { class: "picks" }, (DATA.core || []).map(function (n) { return chip(n, approver() === n, "where", function () { lsSet("fc-by", n); box.remove(); then(n); }); }))]);
+    return box;
+  }
+  function updateAi(vessel, place) {
+    var by = approver();
+    if (!by) { place.appendChild(askApprover(function () { updateAi(vessel, place); })); return; }
+    var line = h("p", { class: "note", text: "Updating…" }); place.appendChild(line);
+    if (LIVE) {
+      if (!KEY) return askKey(function () { updateAi(vessel, place); });
+      fetch("api/update-ai", { method: "POST", headers: { "Content-Type": "application/json", "X-Compute-Key": KEY }, body: JSON.stringify({ vessel: vessel, by: by }) })
+        .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
+        .then(function (a) { if (a[0] === 202) { NOTICE = { at: Date.now(), text: "Updating " + vessel + "'s AI on the ai branch, approved by " + by + ". This page says when it is in." }; setTimeout(refreshLive, 4000); render(); }
+          else line.textContent = a[1].error || "Not updated"; }, function () { line.textContent = "Could not reach the hub."; });
+      return;
+    }
+    if (canSend()) { sendOutbox({ kind: "update-ai", vessel: vessel, by: by, title: "Update AI: " + vessel }).then(function () { line.textContent = "Sent. The next sync (within the hour) writes " + vessel + "'s AI onto the ai branch, approved by " + by + "."; }, function (e) { line.textContent = saveError(e); }); return; }
+    line.textContent = "From a checkout, one of the core four runs:";
+    var cmd = "python3 Tools/Compute/archive_update.py update --vessel " + vessel + " --by " + by + " --push";
+    place.appendChild(h("div", { class: "copyrow" }, [h("div", { class: "cmdline" }, [h("code", { text: cmd })]), copyBtn(function () { return cmd; })]));
+  }
+  function renderVessels(root) {
+    var vs = DATA.vessel_ai || [], ups = DATA.ai_updates || {};
+    root.appendChild(title("Vessel AIs", "what the trainer found, against the game"));
+    root.appendChild(h("p", { class: "lead", text: "Every vessel the Unity trainer has played, per mode and intensity: the best AI a compute run found (the game's own trainer, seeded from the people's races), against the AI the game ships for that pair (the archive on the ai branch, which every normal match deploys). Update AI writes the newer ones in; one of the core four says yes." }));
+    if (NOTICE && Date.now() - NOTICE.at < 180000) root.appendChild(h("div", { class: "banner", id: "sent-notice" }, [h("b", { text: NOTICE.text })]));
+    if (vs.length && vs[0].error) { root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "Could not read the trained AIs" }), h("p", { class: "note", text: vs[0].error })])); return; }
+    if (!vs.length) { root.appendChild(h("div", { class: "card" }, [h("div", { class: "rowlist" }, [rowItem([h("div", { class: "t" }, [h("span", { text: "No compute run has published a trained AI yet. Send a run in the game (New run, a purple pair) and it shows here when the first matches report." })])])])])); return; }
+    vs.forEach(function (v) {
+      var up = ups[v.vessel], body = h("div", { class: "tablewrap" });
+      body.appendChild(h("table", { class: "wide" }, [h("thead", null, [h("tr", null, [["Mode"], ["Intensity"], ["Trained best", "num"], ["Matches", "num"], ["Where"], ["In the game", "num"], [""]].map(function (t) { return h("th", { class: t[1] || null, text: t[0] }); }))]),
+        h("tbody", null, v.rows.map(function (r) { return h("tr", null, [h("td", { text: niceName(catalog().modes, "mode", r.mode) }), h("td", { text: "I" + r.intensity }),
+          h("td", { class: "num", text: fmt(r.fitness, 2) }), h("td", { class: "num", text: String(r.episodes) }),
+          h("td", null, [h("span", { text: String(r.machine || "").split("/").pop() + " · " + ago(r.updated) }), r.seed && r.seed.indexOf("none") !== 0 && r.seed.indexOf("not applied") !== 0 ? h("span", { class: "sub", text: "seeded: " + r.seed }) : null]),
+          h("td", { class: "num", text: r.archive_fitness == null ? "not yet" : fmt(r.archive_fitness, 2) }),
+          h("td", null, [r.newer ? h("span", { class: "pill waiting", text: r.archive_fitness == null ? "new" : "better" }) : h("span", { class: "pill learned", text: "in" })])]); }))]));
+      var right = up && up.state === "running" ? h("span", { class: "pill ready", text: "updating · " + up.by }) :
+        v.newer ? h("button", { class: "btn cta", type: "button", onclick: function (e) { updateAi(v.vessel, e.target.closest(".card")); } }, [svgIcon(IC.flag, 14), "Update AI · " + v.newer + " pair" + (v.newer === 1 ? "" : "s")]) :
+        h("span", { class: "note", text: "the game has its best" });
+      var c = card(v.vessel, right, body, "vessel-" + v.vessel.toLowerCase());
+      if (up && up.state !== "running") c.appendChild(h("p", { class: "note", text: (up.state === "done" ? "Updated " : "Not updated: ") + (up.note || "") + " · " + ago(up.at) }));
+      root.appendChild(c);
+    });
   }
 
   // ── install sheet ──
@@ -1710,7 +1762,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   function render() {
     var root = document.getElementById("main"); root.textContent = "";
     renderChrome();
-    ({ home: renderHome, runs: renderRuns, searches: renderSearches, machines: renderMachines, recordings: renderRecordings, ai: renderAi })[VIEW](root);
+    ({ home: renderHome, runs: renderRuns, searches: renderSearches, machines: renderMachines, recordings: renderRecordings, ai: renderAi, vessels: renderVessels })[VIEW](root);
     if (!LIVE) root.appendChild(h("p", { class: "note foot", text: "Snapshot of " + new Date(DATA.generated * 1000).toLocaleString() + (DATA.sync_every ? " · updates every " + DATA.sync_every : "") }));
   }
   function route() {
