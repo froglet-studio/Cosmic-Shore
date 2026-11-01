@@ -1,0 +1,10 @@
+{
+ "best": null,
+ "derived": "unity-train~r20261102-011411-e146",
+ "epoch": "754c681331e3",
+ "id": "r20261102-011411-e146",
+ "job": "unity-train",
+ "stopped": "stopped from the console",
+ "tries": 0,
+ "updated": 1793562558
+}
