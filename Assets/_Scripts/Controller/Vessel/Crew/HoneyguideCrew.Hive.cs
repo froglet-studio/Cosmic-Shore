@@ -367,7 +367,7 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the strip
 
-        // The nearest omnicrystal's distance from the hull, a few times a second, from the crystals' own registry.
+        // The nearest omnicrystal's (or Mass hive's) distance from the hull, a few times a second, from the crystals' own registry.
         void ScanStrip()
         {
             if (Time.time < _stripScanAt) return;
@@ -382,6 +382,7 @@ namespace CosmicShore.Gameplay
                 float d = (c.transform.position - from).sqrMagnitude;
                 if (d < best) best = d;
             }
+            if (_massHiveUp) best = Mathf.Min(best, (_massHiveAt - from).sqrMagnitude);   // the Mass hive opens hive mode too
             StripDistance = best < float.MaxValue ? Mathf.Sqrt(best) : -1f;
         }
 

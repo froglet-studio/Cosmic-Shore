@@ -402,18 +402,19 @@ namespace CosmicShore.Gameplay
             }
             Place(_detail, DetailRect(ui), fs * 1.15f, detail);
 
-            // the triggers, beside the small board while the human flies: RT and LT, each its base power or the upgrade on it
+            // the triggers, beside the small board while the human flies: RT and LT, each its base power or its current banked upgrade and its uses
             string chip = "";
             ChipUpgraded = false;
             if (_small)
             {
                 for (int k = 0; k < 2; k++)
                 {
-                    var u = _crew.Upgrades[k];
-                    ChipUpgraded |= u != null;
-                    string power = u == null ? cfg.BasePowerName(k)
-                        : TemplateText.Fill(cfg.UpgradePowerTemplate, "name", u.Name, "level", u.Level > 1 ? HoneyguideCrew.Roman(u.Level) : "",
-                                            "seconds", Mathf.CeilToInt(Mathf.Max(0f, u.Left)).ToString());
+                    var b = _crew.Current(k);
+                    ChipUpgraded |= b != null;
+                    int uses = _crew.BankedUses(k);
+                    string power = b == null ? cfg.BasePowerName(k)
+                        : TemplateText.Fill(cfg.UpgradePowerTemplate, "name", b.Name, "ticks", Ticks(cfg.TickGlyph, uses),
+                                            "uses", uses.ToString());
                     string line = TemplateText.Fill(cfg.TriggerChipTemplate, "trigger", cfg.TriggerName(k), "power", power);
                     if (line.Length == 0) continue;
                     chip = chip.Length > 0 ? chip + "\n" + line : line;
@@ -425,6 +426,15 @@ namespace CosmicShore.Gameplay
 
             if (_small) ReadSmallViewTaps();
             _graphic.SetVerticesDirty();
+        }
+
+        // One glyph a banked use (the lab's ticks on the trigger's card).
+        static string Ticks(string glyph, int n)
+        {
+            if (string.IsNullOrEmpty(glyph) || n <= 0) return "";
+            var sb = new System.Text.StringBuilder(glyph.Length * n);
+            for (int i = 0; i < n; i++) sb.Append(glyph);
+            return sb.ToString();
         }
 
         internal bool ChipShown { get; private set; }

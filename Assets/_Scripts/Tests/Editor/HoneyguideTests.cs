@@ -47,26 +47,29 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Triggers_ArePeckAndFlit_UpgradedByThirteenCards()
+        public void Triggers_ArePeckAndFlit_UpgradedByThirteenBankedCards()
         {
-            // Garrett 2026-10-21: "the right trigger should always be a weak attack power that gets upgraded sometimes. the
-            // left should be a movement power that works similar. the 39 patterns should still be unique."
+            // Lab round 8 (Garrett 2026-11-01): RT is a Space active, LT a Charge active, pull to preview and release to fire;
+            // "the three uses per card is good. each completion of a pattern should be a stored use of the ability".
             var c = Load();
-            Assert.AreEqual(13, c.Upgrades.Count, "the lab's ACTIVES");
-            Assert.AreEqual(6, c.Upgrades.Count(u => u.trigger == 0), "six attack upgrades take RT");
-            Assert.AreEqual(7, c.Upgrades.Count(u => u.trigger == 1), "seven move upgrades take LT");
+            Assert.AreEqual(13, c.Upgrades.Count, "the lab's ACTIVES8");
+            Assert.AreEqual(7, c.Upgrades.Count(u => u.trigger == 0), "seven Space upgrades bank on RT");
+            Assert.AreEqual(6, c.Upgrades.Count(u => u.trigger == 1), "six Charge upgrades bank on LT");
             Assert.AreEqual(13, c.Upgrades.Select(u => u.effect).Distinct().Count(), "one upgrade per card");
             foreach (var u in c.Upgrades)
                 Assert.AreEqual(1, c.Patterns.Count(p => p.effect == u.effect), $"{u.effect} is exactly one card's effect");
             Assert.AreEqual(39, c.Patterns.Select(p => p.effect).Distinct().Count(), "the 39 patterns are still unique");
-            Assert.AreEqual(20f, c.ActiveSeconds, "an upgrade holds its trigger 20 s");
-            Assert.AreEqual(HoneyguideTriggerUse.Hold, c.UpgradeFor(HoneyguideEffect.Harmonizer).use);
-            Assert.AreEqual(HoneyguideTriggerUse.Charge, c.UpgradeFor(HoneyguideEffect.Fugacity).use);
+            Assert.AreEqual(3, c.UsesPerCard, "every make of an upgrade card banks three uses");
+            Assert.AreEqual(1, c.UpgradeFor(HoneyguideEffect.Lasso).trigger, "the lasso strikes: it is a Charge (LT) upgrade");
+            Assert.AreEqual(0, c.UpgradeFor(HoneyguideEffect.Eyelet).trigger, "the Eyelet Jet cuts prisms: a Space (RT) upgrade");
+            Assert.AreEqual(HoneyguidePreview.Hook, c.UpgradeFor(HoneyguideEffect.Lasso).preview);
+            Assert.AreEqual(HoneyguidePreview.Hops, c.UpgradeFor(HoneyguideEffect.Monte).preview);
             Assert.IsNull(c.UpgradeFor(HoneyguideEffect.Plow), "a passive card is not an upgrade");
 
             var peck = c.PeckAction as FullAutoActionSO;
             Assert.IsNotNull(peck, "RT's Peck is a FullAutoActionSO through the hull's own gun");
-            Assert.AreEqual(2.5f, peck.FiringRate, 1e-4f, "lab peckRate");
+            Assert.AreEqual(10f, peck.FiringRate, 1e-4f, "a Peck release's burst, 0.1 s apart");
+            Assert.AreEqual(3, c.PeckBurst, "lab peckBurst");
             float range = peck.ResolveSpeed(null) * 2f * peck.ProjectileTime / Mathf.PI;
             Assert.AreEqual(c.PeckRange, range, 0.5f, "lab peckRange: range = speed x 2T / pi");
             Assert.IsFalse(peck.Spread.Enabled, "a Peck does not spray");
@@ -91,11 +94,11 @@ namespace CosmicShore.Tests
                 }
             }
             Assert.IsTrue(found.TryGetValue((int)InputEvents.RightStickAction, out var rt) && rt is HoneyguideTriggerActionSO { Trigger: 0 },
-                "RT is not the Honeyguide's trigger 0 (Peck and the attack upgrades)");
+                "RT is not the Honeyguide's trigger 0 (Peck and the Space upgrades)");
             Assert.IsTrue(found.TryGetValue((int)InputEvents.LeftStickAction, out var lt) && lt is HoneyguideTriggerActionSO { Trigger: 1 },
-                "LT is not the Honeyguide's trigger 1 (Flit and the move upgrades)");
+                "LT is not the Honeyguide's trigger 1 (Flit and the Charge upgrades)");
             Assert.IsFalse(found.ContainsKey((int)InputEvents.Button1Action), "the Sparrow's turret-stance toggle is gone");
-            Assert.IsTrue(found.ContainsKey((int)InputEvents.Button2Action), "the boost stays");
+            Assert.IsFalse(found.ContainsKey((int)InputEvents.Button2Action), "round 8 has no boost button");
         }
 
         [Test]

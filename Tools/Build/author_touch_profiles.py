@@ -90,8 +90,9 @@ PROFILES = [
     # Back, are each seat's own buttons round the right thumb, drawn by the seat (GobyPistolButtons), not profile extras
     # (only the seat the person is in shows them). Nothing is bound to its thumb lifts, so lifting a thumb fires nothing.
     profile("Goby", "ThumbLifts"),
-    # The Honeyguide's RT Peck and LT Flit; its Time card (B, the boost) is a button.
-    profile("Honeyguide", "ThumbLifts", glyphs=[("Charge", "LiftLeftThumb"), ("Mass", "LiftRightThumb")]),
+    # The Honeyguide (lab round 8, 2026-11-01): LT is its Charge active (Flit and the Charge upgrades), RT its Space active
+    # (Peck and the Space upgrades); lift a thumb to preview, touch it back down to fire, lift both to cancel. No boost.
+    profile("Honeyguide", "ThumbLifts", glyphs=[("Charge", "LiftLeftThumb"), ("Space", "LiftRightThumb")]),
 
     # ---- Totem buttons: no thumb-lift abilities; cards (and extras) round the right thumb.
     profile("Urchin", "TotemButtons"),

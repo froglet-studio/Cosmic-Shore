@@ -162,35 +162,53 @@ repeat raises their level up to `passiveMaxLevel`.
 
 No card is parked. Thirteen of them are **trigger upgrades**, below.
 
-## The triggers (lab round 6)
+## The triggers (lab round 8, Garrett 2026-11-01)
 
-Garrett, 2026-10-21: "the right trigger should always be a weak attack power that gets upgraded sometimes. the left
-should be a movement power that works similar. the 39 patterns should still be unique."
+"right trigger should be a space active ability ... left trigger should be charge active ability ... charge should always
+be able to attack vessels and fauna. space should always be able to reduce opposing prism volume ... the ability has a
+preview when pulled and then completes when released." And: "the three uses per card is good. each completion of a
+pattern should be a stored use of the ability for the honeyguide."
 
-- **RT Peck**: a weak shot while held, through the hull's own gun (`peckAction`, 2.5 a second, 45 u, no spray).
-- **LT Flit**: a short throw 18 u ahead, every 2 s.
-- An **upgrade card** takes its trigger over for `activeSeconds` (20 s), then the base power comes back. The same card
-  again refreshes it and grows its reach by `activeLevelGain` a level, up to III. Another card on the same trigger
-  replaces it. The `upgrades` table on the config is the lab's `ACTIVES`, held to it by `author_honeyguide_assets.py`.
+- **Pull to preview, release to fire.** While a trigger is held its preview is drawn in the world (world-space lines in the
+  neutral blue, `HoneyguideCrew.Preview.cs`); letting go fires it. **Both triggers down at once cancels**: on a phone that
+  is both thumbs lifted. A pull that would find no target draws nothing, and its release fizzles and keeps its use.
+- **RT, Space**: **Peck**, a burst of `peckBurst` (3) shots through the hull's own gun (`peckAction`, now 10 a second so
+  the burst lasts a quarter of a second), every `peckCooldown` (1 s).
+- **LT, Charge**: **Flit**, an 18 u dart that strikes every rival vessel and creature within `flitStrikeRadius` (8 u) of
+  its lane, every 2 s.
+- **A strike** on a rival vessel is a scored `CombatHitClass.Strike` (petals only, admitted by `CombatHitDrain`, decided
+  on the shooter's owner, `GameDataSO.OnCombatHitLanded` raised); on a creature it is a joust (`Fauna.Jousted`).
+- **An upgrade card banks `usesPerCard` (3) uses** on its trigger each time it is made. The bank is a stack: the newest
+  banked ability is current and fires first; the same ability banked again moves to the top with its uses added. When the
+  bank is empty the base power is back. The chip beside the small board shows the current ability and one `tickGlyph` a
+  banked use. After any fire a trigger waits `postFireCooldown` (0.25 s).
+- **No boost button.** A card's boost burns at once, as before. The prefab's Button2 boost and the AIPilot's boost are gone.
+- **Mass is a passive**: every `massHiveSeconds` (45 s, faster by `massHiveLevelGain` a Mass level) a hive is planted in
+  the cell at least `hiveMinDistance` (150 u) away, marked by a turning hexagonal frame (`HoneyguideCrew.MassHive.cs`).
+  Flying within `hiveReach` (25 u) opens hive mode there, the omnicrystal's path. The strip counts it too.
+- **Time is the Slip**, the base the others build on.
 
-| Card | Trigger | Use | What it does |
+The `upgrades` table is the lab's `ACTIVES8`, held to it by `author_honeyguide_assets.py` (trigger, reach, preview):
+
+| Card | Trigger | Preview | What the release does |
 |---|---|---|---|
-| Hard Light Lasso | RT | press | Hooks the nearest hostile prism ahead (90 u, 30°) and reels the hull in, ploughing; a burst where it arrives |
-| Genesis Lance | RT | press | Shatters the line 120 u ahead and lays a lane of the newest charge's domain along it |
-| Little Bang Grenade | RT | press | Lobbed 55 u ahead; bursts 0.6 s later (22 u) |
-| Sepia Drone | RT | press | Zaps the nearest hostile prism within 50 u three times a second, for 8 s |
-| Particle Harmonizer | RT | hold | Turns hostile prisms in a 20° cone to the newest charge's domain, 8 a second |
-| Fugacity Discharger | RT | charge | Let go: shatters hostile prisms within 12 to 40 u by charge; 0.05 s of boost each (up to 1.5 s) |
-| Hexapod Eyelet Jet | LT | press | A 50 u jet in a quarter of a second, ploughing |
-| Thruster Swarm | LT | press | A quick 20 u thrust, again every 0.4 s, ploughing |
-| Blink Drive | LT | press | Blinks 60 u ahead |
-| All Terrain Portals | LT | press | 30 u ahead; landing in empty space goes 30 u again |
-| Rosen Bridge | LT | press | To the farthest prism of the newest charge's domain within 300 u and 35° |
-| FTL Chromatool | LT | press | Swaps with the nearest prism ahead within 60 u; it becomes a charge |
-| Monte Cannon | LT | press | Three hops, each to the farthest prism ahead within 40 u |
+| Genesis Lance | RT | line 120 u | Shatters the line and lays a lane of the newest charge's domain along it |
+| Little Bang Grenade | RT | landing ring | Lands 55 u ahead and bursts 0.6 s later (22 u) |
+| Particle Harmonizer | RT | 20° cone, 55 u | Up to 12 hostile prisms in the cone, nearest first, turn to your domain |
+| Fugacity Discharger | RT | 40 u ring | Every hostile prism inside shatters; 0.05 s of boost each (up to 1.5 s) |
+| Sepia Drone | RT | 50 u ring | Zaps the nearest hostile prism three times a second, for 8 s |
+| Thruster Swarm | RT | three thrusts | Three ploughing 20 u thrusts, 0.4 s apart |
+| Hexapod Eyelet Jet | RT | line 50 u | A ploughing jet in a quarter of a second |
+| Hard Light Lasso | LT | rope to its target | Hooks the nearest rival vessel or creature (90 u, 30°), reels in, strikes within 12 u on arrival |
+| Blink Drive | LT | landing + strike ring | Blinks 60 u ahead; strikes within 12 u |
+| All Terrain Portals | LT | landing + strike ring | 30 u ahead (60 u into empty space); strikes within 12 u |
+| Rosen Bridge | LT | landing + strike ring | To the farthest prism of the newest charge's domain within 300 u; strikes within 12 u |
+| FTL Chromatool | LT | landing + strike ring | Swaps with the nearest prism ahead within 60 u (it becomes a charge); strikes within 12 u |
+| Monte Cannon | LT | every hop + ring | Three hops to the farthest prism ahead within 40 u; strikes within 12 u at every landing |
 
-While an AI flies the hull (an AI crew, or you on the Ratel's seat) the crew presses the triggers itself, input-only: the
-lab's `activeWanted`, with "ahead" standing in for the lab's destination (freestyle has none).
+While an AI flies the hull (an AI crew, or you on the Ratel's seat) the crew pulls the triggers itself, input-only: the
+lab's `wanted8`, holding each pull `aiPreviewSeconds`, with "ahead" standing in for the lab's destination (freestyle has
+none). The AI pilot does not yet steer to a Mass hive (a follow-up).
 
 ## Choices made in the port (not in the lab)
 
@@ -199,14 +217,17 @@ lab's `activeWanted`, with "ahead" standing in for the lab's destination (freest
   teleports; the jumps (Blink, Portals, Rosen, FTL, Monte) are `SetPose`, as in the lab.
 - **A boost effect fires at once** (`IsBoosting` for its seconds, capped at `boostCap`).
 - **Fractal Frame** recolours the hull's own trail prisms as the prism controller lays them (`OnBlockSpawned`).
-- **The Space card is the Slip**, and at Space 5 Pecks pierce (the gun's own Space upgrade). The Time card is the Sparrow's
-  Afterburner, unchanged.
+- **The four cards (round 8)**: Charge is Flit on LT, Mass the hive, Space Peck on RT (at Space 5 Pecks pierce, the gun's
+  own Space upgrade), Time the Slip. The ability-row icons are still the Sparrow's (`SparrowHUDVariant`): a Honeyguide HUD
+  variant with its own icons is a follow-up.
+- **The previews and the hive marker are lines in the world**, drawn only for the pilot on this screen; their look
+  (`previewMaterial`, `previewColour`, `hiveMarkerColour`) is a placeholder until the art pass.
 - **No new visual effects yet.** A shattered prism shows the game's own break; the lance's lane and the harmonizer's
   recolour show as prisms. The grenade, drone, lasso rope and lance beam have no effect of their own (a team task).
 - **Local only, as the Wrasse's seat is.** The Dynamo, its AI and the effects run on the machine that flies the hull.
   Another player sees the hull fly, slip and lay prisms, but not the board. Networking the Ratel seat is a follow-up.
-- **FMOD:** `patternMadeSfx`, `slipSfx`, `jumpSfx`, `flitSfx`, `upgradeSfx`, `spinSfx`, `revealSfx` and each upgrade's
-  `sfx` ship empty, to be wired by the audio owner.
+- **FMOD:** `patternMadeSfx`, `slipSfx`, `jumpSfx`, `flitSfx`, `upgradeSfx` (now the bank), `spinSfx`, `revealSfx` and each
+  upgrade's `sfx` ship empty, to be wired by the audio owner.
 - **Effect numbers the lab keeps in code** (for example `lassoReelSpeed` 220, `noodleCount` 5 and `etiReach` 40) are
   fields on the config, set to the lab's values.
 
@@ -229,5 +250,6 @@ Still open there: a partial-colour reward, the reward size, the bees and the Mas
 ## Not verified in the Editor
 
 This port was compiled against Unity's reference assemblies (player and editor configs) but not opened in the Editor.
+Round 8 (2026-11-01) was NOT compiled: the session had no .NET SDK and no Editor.
 The parity gate, `author_honeyguide_assets.py --check` and the vessel gates pass.
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` lists what to check by hand.
