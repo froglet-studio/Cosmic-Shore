@@ -338,6 +338,7 @@ namespace CosmicShore.Gameplay
                             || placeholder && _doubleSided.TryGetValue(placeholder, out var c) && c == materials[i];
                         if (!isPlaceholder) continue;
                         materials[i] = ship;
+                        _shipMaterial = ship;
                         changed = true;
                         break;
                     }
@@ -352,12 +353,11 @@ namespace CosmicShore.Gameplay
         void AttachSolid()
         {
             Material body = null, window = null;
-            foreach (var renderer in _root.GetComponentsInChildren<Renderer>(true))
+            foreach (var kv in _doubleSided)
             {
-                var m = renderer.sharedMaterials;
-                if (m.Length > SlotBody && m[SlotBody]) body = m[SlotBody];
-                if (m.Length > SlotWindow && m[SlotWindow]) window = m[SlotWindow];
-                if (body) break;
+                var slot = SlotOf(kv.Key);
+                if (slot == SlotBody && !body) body = kv.Value;
+                if (slot == SlotWindow && !window) window = kv.Value;
             }
             Solid = ArkHullSolid.Attach(_ark, _root, _scale, body, window);
         }
@@ -367,6 +367,23 @@ namespace CosmicShore.Gameplay
 
         // The model's material slots (ArkReverse.fbx: 0 Domain, 1 Body, 2 Window, 3 Engine).
         const int SlotDomain = 0, SlotBody = 1, SlotWindow = 2, SlotEngine = 3;
+
+        /// <summary>Which slot a (source) material is: the import's submesh order is not the build's slot order, so
+        /// a material is known by what it is - the Domain placeholder or the domain's ship material, the Engine and
+        /// Window (Screen) vessel materials, else the Body.</summary>
+        int SlotOf(Material source)
+        {
+            if (!source) return SlotBody;
+            if (source == _shipMaterial) return SlotDomain;
+            for (int j = 0; j < _def.DomainReplacesMaterials.Count; j++)
+                if (_def.DomainReplacesMaterials[j] == source) return SlotDomain;
+            string n = source.name;
+            if (n.Contains("Engine")) return SlotEngine;
+            if (n.Contains("Screen") || n.Contains("Window")) return SlotWindow;
+            return SlotBody;
+        }
+
+        Material _shipMaterial;
         static readonly int ColorMultiplierId = Shader.PropertyToID("_ColorMultiplier");
 
         // ── Render both faces ────────────────────────────────────────────────
@@ -397,7 +414,7 @@ namespace CosmicShore.Gameplay
                         if (copy.HasProperty("_RenderFace")) copy.SetFloat("_RenderFace", 0f); // URP Lit: Both
                         MakeOpaque(copy);
                         if (copy.HasProperty(ColorMultiplierId))
-                            copy.SetFloat(ColorMultiplierId, copy.GetFloat(ColorMultiplierId) * SlotBrightness(i));
+                            copy.SetFloat(ColorMultiplierId, copy.GetFloat(ColorMultiplierId) * SlotBrightness(SlotOf(m)));
                         _doubleSided[m] = copy;
                     }
                     materials[i] = copy;
