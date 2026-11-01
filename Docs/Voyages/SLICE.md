@@ -107,8 +107,9 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
 - **AI wingmates escort the Ark**: one that ranges past the leash is brought back to its flank, and they are taken back
   when the voyage ends. Taking the helm of another seat is not built yet.
 
-- **The job cards' map is the Voyage Board's sea** (Garrett, 2026-11-01: "get this into unity"): the real Milky Way
-  around Tumult, the course cell by cell, a galaxy corner and the course line `CardCourse`. The lanes' cell counts still
+- **The Voyage window has one map, the Voyage Board's sea** (Garrett, 2026-11-01): the real Milky Way around Tumult,
+  above the job cards; OPEN on a card expands its brief (squad, mission, intensity, pay) with Set sail and focuses the
+  map on that course, cell by cell ([VOYAGE_BOARD.md](VOYAGE_BOARD.md) §3). The lanes' cell counts still
   set a leg's length in play; whether a leg should sail its real cells is open ([VOYAGE_BOARD.md](VOYAGE_BOARD.md) §5).
 - **The Voyage window's third voyage is the job cards** (Garrett, 2026-10-28: "put it in as the third voyage", then "it
   is confusing that it is still in the toybox"): `VoyageJobsView` on the window's Voyages list stands one

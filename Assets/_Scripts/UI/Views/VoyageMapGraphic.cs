@@ -30,6 +30,8 @@ namespace CosmicShore.UI
         const float HereSize = 16f;
         const string LabelName = "Label";
         const string CaptionName = "Course";
+        /// <summary>The least a focused map shows across, in light years, so a short course keeps its surroundings.</summary>
+        const float MinFocusLy = 360f;
 
         // The sea behind a charted map: one texture holding the framed water, the galaxy corner and a white strip the
         // solid shapes sample, so the whole map stays one mesh and one draw.
@@ -48,6 +50,7 @@ namespace CosmicShore.UI
         VoyageChart.Voyage _voyage;
         string _here;
         string _caption;
+        bool _focus;
         readonly List<string> _route = new();
         readonly List<TMP_Text> _labels = new();
         readonly List<bool> _labelShown = new();
@@ -73,10 +76,13 @@ namespace CosmicShore.UI
             Show(content, style, here, route, null);
 
         /// <summary>As <see cref="Show(VoyageContent, VoyageToyDefinitionSO, string, IReadOnlyList{string})"/>, with
-        /// <paramref name="caption"/> under the map (the course line; empty or null shows nothing).</summary>
+        /// <paramref name="caption"/> under the map (the course line; empty or null shows nothing). With
+        /// <paramref name="focus"/> the map frames the course (Garrett, 2026-11-01: "drilling into a card ... causes the
+        /// map to focus on that path, but the map remains"); without it, every place.</summary>
         public void Show(VoyageContent content, VoyageToyDefinitionSO style, string here, IReadOnlyList<string> route,
-            string caption)
+            string caption, bool focus = false)
         {
+            _focus = focus;
             _content = content;
             _style = style;
             _here = here;
@@ -105,16 +111,29 @@ namespace CosmicShore.UI
             _minX = _minZ = float.PositiveInfinity;
             _maxX = _maxZ = float.NegativeInfinity;
             if (_content?.Locations == null) return;
-            foreach (var l in _content.Locations)
+            if (_focus && _voyage != null)
             {
-                if (!Drawn(l)) continue;
-                var p = Pos(l, _chart != null);
-                _minX = Mathf.Min(_minX, p.x);
-                _maxX = Mathf.Max(_maxX, p.x);
-                _minZ = Mathf.Min(_minZ, p.y);
-                _maxZ = Mathf.Max(_maxZ, p.y);
+                foreach (var p in _voyage.Points) Include(Galaxy(p));
+                float half = MinFocusLy * 0.5f;
+                var c = Centre;
+                Include(c - new Vector2(half, half));
+                Include(c + new Vector2(half, half));
+                return;
             }
+            foreach (var l in _content.Locations)
+                if (Drawn(l)) Include(Pos(l, _chart != null));
         }
+
+        void Include(Vector2 p)
+        {
+            _minX = Mathf.Min(_minX, p.x);
+            _maxX = Mathf.Max(_maxX, p.x);
+            _minZ = Mathf.Min(_minZ, p.y);
+            _maxZ = Mathf.Max(_maxZ, p.y);
+        }
+
+        /// <summary>True when a place lies inside the framed map (a focused map leaves out the places beyond it).</summary>
+        bool InFrame(Vector2 rectPoint) => rectTransform.rect.Contains(rectPoint);
 
         float Scale()
         {
@@ -424,8 +443,10 @@ namespace CosmicShore.UI
             {
                 var l = _content.Locations[i];
                 if (!Drawn(l) || !_labels[i]) continue;
+                var at = At(l);
+                _labels[i].gameObject.SetActive(i < _labelShown.Count && _labelShown[i] && InFrame(at));
                 ((RectTransform)_labels[i].transform).anchoredPosition =
-                    At(l) - rectTransform.rect.center + new Vector2(0f, -MarkerSize);
+                    at - rectTransform.rect.center + new Vector2(0f, -MarkerSize);
             }
         }
     }
