@@ -7,10 +7,12 @@ description: The fast lane of the ship protocol - for a small, low-risk branch t
 
 **Read `.claude/skills/ship/SKILL.md` first.** This file only says what changes.
 
-**§0.05 applies here in full: there is no compiler and no CI in this environment.** Do not
-run `/verify-unity`, do not stand a compiler up, do not treat any `Tools/Build/check_*.py`
-or "CI is green" as a ship requirement, and do not wait on or watch checks. Report
-verification honestly as "not compiled" and name what a human must check in-editor.
+**§0.05 (the verify rule) applies here in full:** C# passes `unity_refcompile` plus `gates.sh`,
+and the `unity` CLI when an editor is open. `/verify-unity` is not required until that skill
+merges. Do not stand up a syntax-only compiler, do not treat "CI is green" as a ship requirement
+(`unity-ci.yml` has no runner), and do not wait on or watch checks. If neither refcompile nor the
+CLI ran, report verification honestly as "not compiled", add the checklist entry, and name what a
+human must check in-editor.
 
 Fast means *less review depth*, not *less verification*. The two things that make a
 branch unsafe to merge — a half-landed editor tool and an unresolved base merge — are
