@@ -381,3 +381,37 @@ the Stoat's other race, keeps its scene steering until its own races show the sa
   only in its `PER_INTENSITY_MODES` (Switchback, §3.7), and Slingshot and Warpline are not in it yet.
 - **Their four abilities** are prototyped in the Vessel Studio first (the Stoat studio round 28, the Meerkat studio round
   6) and reach Unity only on Yash's say-so (`/vessel` §3).
+
+## 9. Next: the Switchback Dolphin, Yash's brief (2026-11-01)
+
+The next AI session works on the Dolphin in Switchback alone. Yash's words:
+
+> "I want a very good switchback AI where the dolphins will actually drift towards the crystal while aiming at the
+> obstacles in switchback's intensities. And then while hitting the crystal, it will just blow with its own dolphin
+> blast. It will blow the obstacles. Then it will go towards the target ring in either little bit drifting and going
+> faster or directly straight. As a user, I can tell you that when I am spamming my drift little bit in few intervals,
+> then I can actually go drifting towards the target, which is faster than just using the thumbstick to go forward. And
+> yeah, so generally dolphin users, they in 1 second or 0.5 seconds, they keep spamming the triggers."
+
+**What already exists (read first).** Switchback is Blast Run since 2026-10-29 (`SWITCHBACK.md` "Switchback is Blast
+Run", "Blast Run", "AI: the blast planner", "AI: any prism in the way", "AI: the emergency sweep", "Watching the AI").
+`SwitchbackBlastPlanner` picks Direct / Thread / Blast at each blocked gate; `SwitchbackBlastAI` (server only) flies a
+Blast to the gate's key crystal with the nose held on the obstacle (`TryOverrideAim`, `TryOverrideDriftLook`), so the
+crystal's blast clears it. Switchback opts back in to crystals (`SwitchbackController.AIDetoursForCrystals` = true),
+the one exception to §6.1, because its key crystals are part of the course. The charge drive is
+`DolphinAIBoostPolicy_Switchback[_I<n>]` (§3.6-3.7).
+
+**What is new in the brief:**
+1. **Drift into the crystal with the nose on the obstacle**, at every intensity (the planner may still choose Thread or
+   Direct where no blast pays).
+2. **Drift-spam as the way to fly fast toward the target**: short drift presses every 0.5-1 s, which Yash says beats
+   holding the stick forward. Nothing in the AI does this today: the AI holds one commit drift per gate and discharges
+   on a straight (`ChargeBoostAIPolicySO`, `AIPilot` commit drift). Neither the learner nor any doc measures it.
+3. **After the blast, to the ring** by drift-spam or straight, whichever is faster there.
+
+**How to measure Yash's drift-spam (no new recording needed).** Every Switchback race already records each drift
+press and release at its exact time (`buttonEvents`: `[t, InputEvent, pressed]`, the input names in `buttonNames`) and
+the drifting state bit per 10 Hz sample (`state`, `stateBits.drifting`), plus speed, the next ring and crystals. The
+first step is a measure of the press period, the press length, the speed gained against holding straight, and where
+in a leg people spam; then a model of it in `switchback_dolphin_sim.py` before any AI change. Yash plays Switchback at
+each intensity as usual; the races reach the learner on their own (`AUTO_LEARNING.md`).
