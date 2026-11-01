@@ -65,6 +65,41 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play T1 and T3: Game Center sign-in on iOS, server-owned episode tokens (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **Game Center (T1):** `PlatformSignIn` picks Steam on PC or Game Center on iOS for `AuthenticationServiceFacade`
+  (the facade now asks only it). `GameCenterSignIn` mirrors `SteamSignIn`; `GameCenterPlatform` + the native
+  `Assets/Plugins/iOS/GameCenter/GameCenterSignIn.mm` get Apple's identity-verification signature without showing any
+  screen. `GameCenterCapability` (an iOS post-build step) adds the Game Center capability only while
+  `MobileSignInConfig.signInWithGameCenter` is ticked. Ships off.
+- **Episode tokens (T3):** `Tools/UGS/Commerce/entitlements.js` owns tokens and owned episodes (protected
+  `PLAYER_ENTITLEMENTS`); `ServerEntitlements` + `EpisodeTokenService.GrantTokensAsync` / `UnlockEpisodeAsync` /
+  `RefreshFromServer` (called from `PlayerDataService` at sign-in). `ServerEntitlementGate` ships off.
+
+**Verified without the editor:** entitlements tests 7 passed, three planted faults caught (replayed order credited
+twice, the client's token count trusted, the fake provider in production). `unity_refcompile` player and editor 0
+errors; the iOS-only code compiled with its guard forced on, and a planted error there was caught. Both fair-play gates
+clean (the new folders are registered: PlatformSignIn as fair play, Commerce as paid content, and the one `DllImport`
+as a reviewed exception). **Not compiled anywhere:** the `.mm` file (needs Xcode) and `GameCenterCapability`
+(needs the iOS build module).
+
+**Test (Game Center, an iOS device signed in to Game Center, the UGS Apple Game Center provider added):**
+1. An iOS build with `signInWithGameCenter` ticked: Xcode's Signing & Capabilities shows Game Center.
+2. A fresh install signs in with no screen; the dashboard's player shows an Apple Game Center identity.
+3. Delete and reinstall: the same UGS player id comes back.
+4. An install with an existing anonymous account: after sign-in, the account gains the Game Center identity and keeps
+   its progress.
+5. Sign out of Game Center in Settings and launch: the game signs in anonymously, no error dialog.
+
+**Test (tokens, `entitlements.js` deployed to development, `ServerEntitlementGate.Enabled = true` in a test build, the
+editor's fake provider on in an `EpisodeTokenConfig`):**
+1. Buy a token through the fake provider: the balance rises by the server's bundle size and the dashboard's
+   `PLAYER_ENTITLEMENTS` lists the order.
+2. Spend it on an episode: owned, balance 0; spending again on the same episode spends nothing.
+3. Edit `PLAYER_PROFILE.Economy.EpisodeTokenBalance` in the dashboard to 50, sign in again: the balance shows the
+   server's number.
+
 ### 🔴 Fair play T3: vessel and Hangar unlocks bought and recorded on the server (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `economy.js` sells vessels (`unlockVessel`) and Hangar levels (`upgradeHangar`) at the prices authored
@@ -19566,6 +19601,27 @@ compile has no errors in the changed files (player and editor).
 15. Do a job's work (crack a vault and stow its artifact). **Pass:** "JOB DONE ... LEAVE FREESTYLE TO CHOOSE YOUR NEXT
     VOYAGE". Leave freestyle and open the Voyage window: the cards now set out from the job's destination, the way home
     is one of them, and the news the job wrote shows as new work. Take the way home: docking keeps what was found.
+
+## 🔴 2026-11-01 — The Voyage Board in the game: the job cards draw the real Milky Way's sea and the course round the reefs (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md`. **Files:** `Data/Voyages/HyperSea.cs` (the board's sea model, ported line for
+line), `Data/Voyages/VoyageChart.cs` (the content's places and a job's course), `VoyageContent.cs` (`Charted`,
+`GalaxyX/Y/Z`), `VoyageContentSO.cs` (`CardCourse` and the five sea names), `UI/Views/VoyageMapGraphic.cs`,
+`VoyageJobCard.cs`, `VoyageJobsView.cs`, `Tests/Editor/HyperSeaTests.cs`; `VoyageContent.asset` from
+`author_voyage_assets.py` (which now also keeps `Toy_Voyage.asset`'s Ark escort wired). Affects: Garrett's voyage slice.
+Not compiled: the session had no Unity editor and no .NET SDK, so nothing here has been through a compiler.
+
+1. Open the project. **Pass:** no compile errors.
+2. Run `HyperSeaTests` and `VoyageRulesTests`. **Pass:** green (every `HyperSeaTests` number is the board's own output).
+3. Menu_Main, open the Voyage window. **Pass:** each job card's map is the sea around Tumult, blue-violet water with
+   orange reef patches; the slice's places sit on it with their names (one name, Celadon/Carmine/Aurum, where the
+   three harbours share Tumult); the job's course is a green line stepping cell by cell round the reefs, not a straight
+   lane; a small round galaxy sits in the top-right corner with a white dot (Sol) and a gold one (this water); under
+   the map a line such as "1,500 LY THROUGH WATER - LIGHT TAKES 1,500 YEARS".
+4. Edit `CardCourse` in `VoyageContent.asset` to empty. **Pass:** the line under the map disappears, nothing else changes.
+5. Open the window on a phone-sized Game view. **Pass:** the map, corner galaxy and line fit the card; opening the
+   window the first time takes no visible hitch (the sea is painted once and shared; courses are cached).
+6. Set sail on a card. **Pass:** the voyage plays as before (the lanes' cell counts still set the leg's length).
 
 ## Lavalamp wormhole lab: original lens + wall vs the new mobile water pipe, side by side (2026-10-28) - NOT EDITOR-VERIFIED
 
