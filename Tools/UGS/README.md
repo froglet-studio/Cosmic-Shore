@@ -37,8 +37,8 @@ at any time: nothing calls a script while its switch is off.
 deployed from **bleeding-edge**, development first.
 
 **With the button (no terminal):**
-1. Once: make a UGS service account (Unity Cloud dashboard > Administration > Service accounts > New, role Cloud Code
-   Editor, then Add key) and put its key id and secret in GitHub as repository secrets `UGS_CLI_SERVICE_KEY_ID` and
+1. Once: make a UGS service account (Unity Cloud dashboard > Administration > Service accounts > New; project roles
+   Unity Environments Admin, Cloud Code Script Publisher and Cloud Code Editor; then Add key) and put its key id and secret in GitHub as repository secrets `UGS_CLI_SERVICE_KEY_ID` and
    `UGS_CLI_SERVICE_SECRET_KEY` (repository Settings > Secrets and variables > Actions > New repository secret).
 2. GitHub > Actions > **Deploy UGS scripts** > Run workflow > branch `bleeding-edge`, environment `development` > Run.
    It tests every script, checks the vessel prices and uploads the five scripts (`.github/workflows/ugs-deploy.yml`).
@@ -186,8 +186,7 @@ starts and every player signs in anonymously. Code: `Assets/_Scripts/System/Stea
 What it does: a launch with no cached session (a first launch or a reinstall) signs in with Steam, so the player lands on
 the account tied to their Steam id. A launch with a cached anonymous session resumes it and links Steam to it. If that
 Steam id already belongs to another account, the session stays put and a warning is logged (no progress is moved).
-Every failure falls back to an anonymous sign-in. iOS is Game Center, below. Not done: Google Play Games on Android,
-which needs a dependency (the Play Games plugin, or Google's games library and a small Java bridge).
+Every failure falls back to an anonymous sign-in. iOS is Game Center and Android is Google Play Games, below.
 
 ## Switching on Game Center sign-in (T1, iOS)
 
@@ -207,6 +206,28 @@ the iOS Settings app, and the game never shows Game Center's sign-in screen.
 
 Same rules as Steam: no cached session signs in WITH Game Center; a cached anonymous session is kept and Game Center is
 linked to it; a Game Center account already tied to another UGS account is left alone; every failure is anonymous.
+
+## Switching on Google Play Games sign-in (T1, Android)
+
+Off in the game: `MobileSignInConfig` ships `signInWithPlayGames: 0` with both ids empty. Code:
+`Assets/_Scripts/System/PlatformSignIn/PlayGames*.cs` and the Android library
+`Assets/Plugins/Android/PlayGamesSignIn.androidlib` (a Java bridge plus one dependency, Google's
+`play-services-games-v2` 22.1.0). The library's own start-up provider is removed from the manifest, so Play Games
+starts only when the switch is on. It uses Play Games' automatic sign-in only and never shows a sign-in screen.
+
+1. **Google Play Console:** the app > Grow users > Play Games Services > Setup and management > Configuration. Create
+   the Play Games Services project. Add credentials:
+   - an **Android** credential for `com.FrogletGames.CosmicShore` with the app's signing-key SHA-1 (Play Console >
+     App integrity; add the upload key's SHA-1 too for test builds);
+   - a **Game server** credential: it makes an OAuth **web client** in Google Cloud. Note its client ID and secret.
+   Copy the Play Games **project ID** (digits) from the Configuration page.
+2. **UGS dashboard**, development environment: Player Authentication > Identity providers > Add > **Google Play Games**
+   with that web client ID and secret.
+3. **The game:** in `MobileSignInConfig`, fill `playGamesProjectId` and `playGamesWebClientId`, tick
+   `signInWithPlayGames`. The Android build then writes the project ID into the app's manifest (`PlayGamesAppId`).
+4. Build to an Android phone signed in to Play Games (a tester account on the Play Games Services testers list while
+   the project is unpublished) and run the "Play Games sign-in" checks in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+5. **Production:** publish the Play Games Services project, add the provider to production, ship with the config on.
 
 ## Switching on server-owned episode tokens (T3)
 

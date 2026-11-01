@@ -6,8 +6,9 @@
 # "development" and "production" are the UGS environments on Unity's servers, not git branches. Deploy to development,
 # test with a build there, then run it again with production.
 #
-# Needs two repository secrets (Settings > Secrets and variables > Actions), from a UGS service account with the Cloud
-# Code Editor role: UGS_CLI_SERVICE_KEY_ID and UGS_CLI_SERVICE_SECRET_KEY. Owner: Shombith (UGS and the backend).
+# Needs two repository secrets (Settings > Secrets and variables > Actions), from a UGS service account with the project
+# roles Unity Environments Admin (the CLI looks the environment up; without it: 403 on GetEnvironments), Cloud Code
+# Script Publisher and Cloud Code Editor: UGS_CLI_SERVICE_KEY_ID and UGS_CLI_SERVICE_SECRET_KEY. Owner: Shombith (UGS and the backend).
 name: Deploy UGS scripts
 
 on:

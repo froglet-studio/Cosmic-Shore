@@ -14,3 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   signInWithGameCenter: 0
   gameCenterTimeoutSeconds: 10
+  signInWithPlayGames: 0
+  playGamesProjectId: 
+  playGamesWebClientId: 
+  playGamesTimeoutSeconds: 10
