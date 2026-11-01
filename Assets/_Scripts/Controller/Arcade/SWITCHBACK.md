@@ -925,6 +925,42 @@ difficulty's clearance. Raise it if hulls still clip prism edges, lower it if th
 | `aiPlanGizmos` | on | Scene-view plan lines (select the controller) |
 | `aiSenseDebug` | off | Sense / sweep / dodge lines and Info-level dodge logs |
 
+## Offline: the Blast Run simulator (2026-11-01)
+
+`Tools/Build/switchback_sim_harness/run.sh` (eval / trace / selftest) compiles the SHIPPED `SwitchbackCourse`,
+`SwitchbackBlastRun` (keys, doors, block fields, movers posed off the clock), `SwitchbackBlastPlanner` and
+`SwitchbackPrismAvoidance` against the Skim Race harness's Unity shim, and races one AI Dolphin through them with the
+executor ported from `SwitchbackBlastAI` (plan, setup / strike, drift look, the sense, the emergency sweep),
+`GateRaceController` (the Regatta steering, lanes at open gates), `AIPilot` (commit drift, orbit break, nose lag) and
+`ChargeBoostAIPolicySO` (the `DolphinAIBoostPolicy_Switchback_I<n>` numbers). Prism hits are what
+`DolphinImpactorDataContainer` applies: a plain prism x0.5 easing back over 1 s, a Danger prism a dead stop easing back
+over 3 s, the charge halved, the prism destroyed, no bounce. A key is taken within 12 u (the 10 u skimmer); its blast
+destroys what `SwitchbackBlastSlot.Default` covers from the key down the nose, gape along the hull's up (roll is not
+flown). 20 gates on the shipped shell; seeds 45501-45504 (the fixed seeds) and 1-8.
+
+**Not modelled:** rivals and trails (the AI is alone), the danger prism's elemental debuff, the asset's real cone (the
+planner's narrower slot is used; `cone=1` widens it), physics contact shapes (a 3 u hull sphere against each prism's box).
+It is a model: Unity decides.
+
+**What it found (one AI alone, median seconds over 12 courses; 2026-11-01, the AI as shipped that day):**
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Shipped AI: Easy / Medium / Hard / Legendary | 93 / 89 / 95 / 99 | 146 / 160 / 192 / 183 | 198 / 201 / 245 / 254 | 257 / 210 / 411 (10 of 12 finish) / 541 (4 of 12) |
+| Sense and emergency sweep off (Easy / Legendary) | 74 / 80 | 121 / 128 | 133 / 135 | 128 / 144 |
+| Planner, sense and sweep all off (Easy / Legendary) | 74 / 77 | 121 / 124 | 133 / 135 | 128 / 120 |
+| Sense and sweep see only Danger prisms (Easy / Legendary) | 71 / 94 | 124 / 137 | 156 / 176 | 141 / 232 |
+
+1. **The dodging costs the most, and more the harder the AI.** Each dodge pulls the Dolphin off its line; it then
+   misses the ring (18 u eye at a blocked gate) and loops back. A harder level senses further and dodges more, so it is
+   SLOWER: at I4 Legendary 1,084 emergency dodges and 598 missed rings over 12 races.
+2. **A plain prism hit is cheap** (about 0.25 s of lost distance), a Danger one about 1.5 s. Flying straight through a
+   field costs less than going round it.
+3. **The blast, as flown, does not pay yet.** With dodging off, the planner on and off finish within a few seconds
+   of each other: the blasts remove prisms (fewer hits), and the setup turn behind the key costs about as much. The
+   planner's `HitPenalty` (0.6 s a prism) is over twice the measured plain-hit cost, which makes it blast and dodge more
+   than it should.
+
 ## Watching the AI: the AI Diagnose panel (2026-11-01)
 
 The old FrogletTools ▸ AI ▸ Third Eye window (a second camera, rendered twice) is gone. The code still lives in

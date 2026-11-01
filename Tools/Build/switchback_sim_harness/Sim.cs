@@ -108,6 +108,7 @@ sealed class Opts
     public float Dt = 1f / 60f;
     public float MaxSeconds = 600f;
     public bool Planner = true, Sense = true, Emergency = true, Drive = true, NoLayout, RealCone, FlyRoll;
+    public bool DangerOnly;   // a what-if: the sense and the emergency sweep see only Danger prisms (plain hits are cheap)
     public HitModel Hit = HitModel.Default;
     public float PickupRadius = 12f;     // Dolphin EnergySkimmer: radius 0.5 x scale 20 = 10 u, plus the crystal's own
     public float HullRadius = 3f;        // SwitchbackPrismAvoidance.ShipRadius
@@ -141,6 +142,7 @@ sealed class Opts
                 case "drive": o.Drive = v != "0"; break;
                 case "cone": o.RealCone = v != "0"; break;
                 case "roll": o.FlyRoll = v != "0"; break;
+                case "dangerOnly": o.DangerOnly = v != "0"; break;
                 case "pickup": o.PickupRadius = float.Parse(v); break;
                 case "hull": o.HullRadius = float.Parse(v); break;
                 case "hit.slow": o.Hit.SlowFactor = float.Parse(v); break;
@@ -614,6 +616,7 @@ sealed class Race
             foreach (int k in w.Query)
             {
                 if (n >= pts.Length) break;
+                if (o.DangerOnly && w.L.Prisms[k].Kind != PrismKind.Danger) continue;
                 w.Pose(k, t, out Vector3 c, out _);
                 if (SegPointDist(s0, s1, c) - w.Extent(k) > probe) continue;
                 pts[n] = c; radii[n] = w.Extent(k); n++;
@@ -686,6 +689,7 @@ sealed class Race
             bool any = false;
             foreach (int k in w.Query)
             {
+                if (o.DangerOnly && w.L.Prisms[k].Kind != PrismKind.Danger) continue;
                 w.Pose(k, t, out Vector3 c, out _);
                 float along = Vector3.Dot(c - p0, dir);
                 if (along < 0f || along > dist + w.Extent(k)) continue;

@@ -415,3 +415,11 @@ the drifting state bit per 10 Hz sample (`state`, `stateBits.drifting`), plus sp
 first step is a measure of the press period, the press length, the speed gained against holding straight, and where
 in a leg people spam; then a model of it in `switchback_dolphin_sim.py` before any AI change. Yash plays Switchback at
 each intensity as usual; the races reach the learner on their own (`AUTO_LEARNING.md`).
+
+**Measured offline (2026-11-01, `SWITCHBACK.md` "Offline: the Blast Run simulator").** The shipped AI, alone, median of
+12 courses: I1 about 90-100 s, I2 145-185 s, I3 200-255 s, I4 210-540 s (Hard and Legendary do not always finish I4).
+A harder level is slower: its prism dodging pulls it off line and it loops back for missed rings. With dodging off it
+finishes I4 in about 120-145 s at every level. Blasting as flown today saves about as much as its setup turn costs. The
+plan that follows from it, in order: dodge only what costs (Danger prisms, never inside the last stretch to a ring);
+make the blast free (fly THROUGH the key on the racing line with the nose drifted onto the door, no setup turn behind
+it); set the planner's hit costs from the measured ones; then drift-spam, from Yash's Blast Run races.
