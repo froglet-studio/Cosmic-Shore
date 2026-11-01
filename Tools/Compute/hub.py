@@ -45,7 +45,43 @@ import manual_runs as R
 
 MAX_BODY = 256 * 1024
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def installer(name, url, key, flags):
+    """(text, content type, file name) of the double-click installer for `name` (windows | mac | linux), or (None, ..)."""
+    import setup
+    ref = setup.APP_REF if L.git_ok("cat-file", "-e", "origin/bleeding-edge:Tools/Compute/setup.py") is None else "bleeding-edge"
+    opts = " ".join([f"--hub {url}", f"--hub-key {key}", *flags])
+    if name == "windows.bat":
+        text = "\r\n".join([
+            "@echo off", "setlocal",
+            "echo Froglet Compute: putting this PC on the team console.",
+            "where git >nul 2>&1 || (echo Git is not installed. Install Git for Windows, then run this again. & pause & exit /b 1)",
+            "where python >nul 2>&1 || (echo Python is not installed. Install Python 3 from python.org, then run this again. & pause & exit /b 1)",
+            'set "REPO=%~dp0"',
+            'if not exist "%REPO%.git" set /p "REPO=Path to your Cosmic-Shore folder (the one you open in Unity): "',
+            'cd /d "%REPO%" || (echo That folder does not exist. & pause & exit /b 1)',
+            'if not exist ".git" (echo That is not the Cosmic-Shore folder. & pause & exit /b 1)',
+            f"git fetch origin {ref} || (echo Could not fetch from GitHub. & pause & exit /b 1)",
+            f"git show origin/{ref}:Tools/Compute/setup.py | python - {opts}",
+            "echo.", f"echo Done. This PC shows on {url} within a minute.", "pause", ""])
+        return text, "application/x-bat", "froglet-compute-setup.bat"
+    if name in ("mac.sh", "linux.sh"):
+        text = "\n".join([
+            "#!/bin/bash", "set -e",
+            "echo 'Froglet Compute: putting this computer on the team console.'",
+            "command -v git >/dev/null || { echo 'git is not installed.'; exit 1; }",
+            "command -v python3 >/dev/null || { echo 'python3 is not installed.'; exit 1; }",
+            'REPO="$(cd "$(dirname "$0")" && pwd)"',
+            'if [ ! -d "$REPO/.git" ]; then read -r -p "Path to your Cosmic-Shore folder (the one you open in Unity): " REPO; fi',
+            'cd "$REPO" && [ -d .git ] || { echo "That is not the Cosmic-Shore folder."; exit 1; }',
+            f"git fetch origin {ref}",
+            f"git show origin/{ref}:Tools/Compute/setup.py | python3 - {opts}",
+            f"echo; echo 'Done. This computer shows on {url} within a minute.'", ""])
+        return text, "text/x-shellscript", "froglet-compute-setup.sh"
+    return None, None, None
 AI_SYNC_EVERY = 3600                 # seconds between the VM's ai-branch syncs
+CODE_CHECK_EVERY = 600               # seconds between the VM's looks for newer code on its branch
 
 
 class Hub:
@@ -62,6 +98,7 @@ class Hub:
         self.posts = {}
         self.ai_sync, self.ai_sync_at = None, 0.0        # the hourly ai-branch sync (the VM only): its last result
         self.updates = {}                                # Update AI: vessel -> {state, by, note, at} (archive_update.py)
+        self.code_check_at = time.time()                 # the VM's self-restart on newer code (restart_if_code_moved)
 
     # ── the snapshot ──
     def build_once(self, fetch=True):
@@ -103,7 +140,31 @@ class Hub:
                 continue
             if self.syncs_ai() and time.time() - self.ai_sync_at > AI_SYNC_EVERY:
                 self.sync_ai()
+            if not self.app and time.time() - self.code_check_at > CODE_CHECK_EVERY:
+                self.code_check_at = time.time()
+                self.restart_if_code_moved()
             time.sleep(self.rebuild)
+
+    def restart_if_code_moved(self):
+        """The VM: when the checkout's upstream branch has newer Tools/Compute, pull it and exit; systemd restarts the
+        hub on the new code within seconds (Restart=always). Nobody types a restart (Shombith, 2026-11-01)."""
+        try:
+            up = (L.git_ok("rev-parse", "--abbrev-ref", "@{u}") or "").strip()
+            if not up.startswith("origin/"):
+                return
+            ref = up[len("origin/"):]
+            L.git_ok("fetch", "--quiet", "--no-tags", "origin", f"+refs/heads/{ref}:refs/remotes/origin/{ref}")
+            mine = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip()
+            theirs = (L.git_ok("rev-parse", f"origin/{ref}:Tools/Compute") or "").strip()
+            if not mine or not theirs or mine == theirs:
+                return
+            L.git_ok("pull", "--ff-only", "--quiet")
+            if (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip() != theirs:
+                return
+            L.log(f"hub: origin/{ref} has newer Froglet Compute: pulled it, restarting", self.quiet)
+            os._exit(0)
+        except Exception as e:
+            L.log(f"hub: could not look for newer code ({e})", self.quiet)
 
     # ── the ai branch: the VM keeps it current, so nobody runs a sync by hand (README section 15) ──
     def syncs_ai(self):
@@ -289,6 +350,28 @@ def handler(hub, page):
         def log_message(self, fmt, *a):
             pass
 
+        def _send_installer(self, name):
+            """The one-file installer a person double-clicks (README section 17): the hub's address and the team key
+            are written into it, so it is served only to a request that carries the key (the page keeps it)."""
+            from urllib.parse import parse_qs, urlparse
+            q = parse_qs(urlparse(self.path).query)
+            if not hub.allowed((q.get("key") or [""])[0]):
+                return self._send(401, {"error": "the team key is missing or wrong"})
+            flags = [f for f in ("--nights", "--always") if (q.get(f.strip("-")) or [""])[0] == "1"]
+            if (q.get("remote") or ["1"])[0] == "1":
+                flags.append("--allow-remote-start")
+            text, ctype, fname = installer(name, hub.url or f"http://{self.headers.get('Host', '')}", hub.key, flags)
+            if text is None:
+                return self._send(404, {"error": "no such installer"})
+            raw = text.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+
         def _send(self, code, body, ctype="application/json"):
             raw = body if isinstance(body, bytes) else json.dumps(body, default=float).encode()
             self.send_response(code)
@@ -313,6 +396,8 @@ def handler(hub, page):
                 return self._send(403, {"error": "this app answers its own computer only"})
             if path in ("/", "/index.html"):
                 return self._send(200, page(), "text/html; charset=utf-8")
+            if path.startswith("/install/"):
+                return self._send_installer(path[9:])
             if path.startswith("/stills/") and re.fullmatch(r"[a-z0-9-]+\.jpg", path[8:]):
                 still = os.path.join(os.path.dirname(C.PAGE), "stills", path[8:])
                 if os.path.isfile(still):

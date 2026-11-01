@@ -1090,6 +1090,23 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
       sheet.appendChild(h("div", { class: "seg", role: "group", "aria-label": "Your computer" }, [["mac", "macOS"], ["windows", "Windows"], ["linux", "Linux"]].map(function (o) {
         return h("button", { type: "button", "aria-pressed": OS === o[0] ? "true" : "false", onclick: function () { OS = o[0]; draw(); }, text: o[1] }); })));
       var cmd = installCommand();
+      if (LIVE && !APP) {
+        var dl = h("div", { class: "step" }, [h("b", { text: "The easy way: one file, double-click it" })]);
+        if (!KEY) { dl.appendChild(h("p", { class: "note", text: "Enter the team key first (the Save button below), then the installer appears here." })); dl.appendChild(askKey(function () { draw(); })); }
+        else {
+          var qs = "?key=" + encodeURIComponent(KEY) + (IOPT.nights ? "&nights=1" : "") + (IOPT.always ? "&always=1" : "");
+          var file = OS === "windows" ? "install/windows.bat" : (OS === "mac" ? "install/mac.sh" : "install/linux.sh");
+          dl.appendChild(h("p", { class: "note", text: OS === "windows"
+            ? "Save it into your Cosmic-Shore folder (the one you open in Unity) and double-click it. It checks Git and Python, joins this PC to the console with the team key already filled in, and keeps itself up to date from then on. Windows may ask once whether to run a downloaded file."
+            : "Save it into your Cosmic-Shore folder, then run it once: open Terminal, type bash, a space, drag the file in, press Return. It joins this computer with the team key already filled in and keeps itself up to date from then on." }));
+          dl.appendChild(h("div", { class: "opts" }, [
+            h("label", null, [h("input", { type: "checkbox", checked: IOPT.nights || null, onchange: function (e) { IOPT.nights = e.target.checked; draw(); } }), "Only at night (22:00–07:00)"]),
+            h("label", null, [h("input", { type: "checkbox", checked: IOPT.always || null, onchange: function (e) { IOPT.always = e.target.checked; draw(); } }), "Nobody uses this computer (work all the time)"])]));
+          dl.appendChild(h("a", { class: "btn cta", href: file + qs, download: OS === "windows" ? "froglet-compute-setup.bat" : "froglet-compute-setup.sh" }, [svgIcon("M12 4v12|M6 10l6 6 6-6|M4 20h16", 14), "Download the installer for " + (OS === "windows" ? "Windows" : OS === "mac" ? "macOS" : "Linux")]));
+        }
+        sheet.appendChild(dl);
+        sheet.appendChild(h("div", { class: "sec", text: "Or the line, if you prefer a terminal" }));
+      }
       sheet.appendChild(h("ol", { class: "isteps" }, [
         h("li", null, [h("b", { text: "Open " + term }), h("p", { text: OS === "mac" ? "Press ⌘ Space, type Terminal, press Return." : (OS === "windows" ? "Press the Windows key, type PowerShell, press Enter." : "Open your terminal.") })]),
         h("li", null, [h("b", { text: "Go to your Cosmic-Shore folder" }), h("p", { text: "The folder you open in Unity. For example:" }), h("div", { class: "cmdline" }, [h("code", { text: OS === "windows" ? "cd C:\\path\\to\\Cosmic-Shore" : "cd ~/path/to/Cosmic-Shore" })])]),

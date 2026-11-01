@@ -341,6 +341,13 @@ data from git every minute, lays every computer's heartbeat on top the moment it
 every ~20 s), and files manual runs on `compute-queue` from any browser or phone, guarded by the team key. The page
 notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refreshes every 15 s.
 
+**Nobody types a command to join or to update** (Shombith, 2026-11-01: "every time I have to paste a command, and restart
+the VM"): the live console's Add a computer offers **one file to double-click** (`/install/windows.bat`, `mac.sh`,
+`linux.sh`, served only with the team key, the address and key written in; saved into the Cosmic-Shore folder, or
+it asks for the folder), which joins the computer; and **the VM updates itself**: the hub looks at its branch every
+10 minutes and, when `Tools/Compute` moved, pulls and exits so systemd restarts it on the new code; the VM's worker
+(the agent, running from the checkout) does the same. The SSH restart is history.
+
 **The agent keeps up with the branch by itself** (2026-11-01: a run at two intensities sat "waiting" because
 dragonsweapon's agent still ran the code from before intensity lists and skipped it as invalid): every half hour the
 resident agent fetches the install ref, and when its `Tools/Compute` differs from the copy it runs, it exports the

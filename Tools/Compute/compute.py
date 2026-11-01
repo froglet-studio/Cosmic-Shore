@@ -94,6 +94,9 @@ def _home_worktree(ref):
     return L.export_tree(L.rev(ref), ["Tools/Compute/"], parent, "compute")
 
 
+CODE_CHECK_SECONDS = 600       # the agent looks for newer code on its branch this often (README section 17)
+
+
 def cmd_run(args):
     import worker as W
     if getattr(args, "watch", False):
@@ -146,15 +149,22 @@ def cmd_run(args):
 
     while True:
         idle = L.idle_seconds()
-        if not args.once and code_ref and time.time() - last_code >= 1800:
+        if not args.once and code_ref and time.time() - last_code >= CODE_CHECK_SECONDS:
             last_code = time.time()
-            fresh = _fresh_copy(code_ref, code_tree)
-            if fresh:
-                L.log(f"agent: origin/{code_ref} has newer Froglet Compute: handing over to it ({fresh})", args.quiet)
-                A.unlock()
-                subprocess.Popen([sys.executable, fresh, *sys.argv[1:]], cwd=L.REPO,
-                                 env=dict(os.environ, FROGLET_COMPUTE_NO_REFRESH="1", FROGLET_COMPUTE_REPO=L.REPO), **L.NO_WINDOW)
-                return 0
+            if _in_checkout():
+                # The VM: pull the branch and stop; systemd restarts the service on the new code (Restart=always).
+                if _checkout_moved(code_ref, code_tree):
+                    L.log(f"agent: origin/{code_ref} has newer Froglet Compute: pulled it, restarting", args.quiet)
+                    A.unlock()
+                    return 0
+            else:
+                fresh = _fresh_copy(code_ref, code_tree)
+                if fresh:
+                    L.log(f"agent: origin/{code_ref} has newer Froglet Compute: handing over to it ({fresh})", args.quiet)
+                    A.unlock()
+                    subprocess.Popen([sys.executable, fresh, *sys.argv[1:]], cwd=L.REPO,
+                                     env=dict(os.environ, FROGLET_COMPUTE_NO_REFRESH="1", FROGLET_COMPUTE_REPO=L.REPO), **L.NO_WINDOW)
+                    return 0
         if not args.once and time.time() - last_poll >= poll_every:
             last_poll = time.time()
             try:
@@ -436,12 +446,24 @@ def _newest_copy(argv):
     return subprocess.run([sys.executable, os.path.join(root, "Tools", "Compute", "compute.py"), *argv], env=env).returncode
 
 
+def _in_checkout():
+    """True when this process runs from the repository itself (the VM's services), not from the app copy."""
+    here = os.path.normcase(os.path.realpath(HERE))
+    return here.startswith(os.path.normcase(os.path.realpath(L.REPO)) + os.sep)
+
+
 def _code_ref_and_tree():
-    """(the install ref, the Tools/Compute tree id this process runs): what the agent compares origin against."""
+    """(the ref to follow, the Tools/Compute tree id this process runs): what the agent compares origin against.
+    The app copy follows the install ref (config.json); a checkout (the VM) follows its own upstream branch."""
     ref = (L.read_json(os.path.join(L.cache_dir(), "config.json"), {}) or {}).get("ref") or ""
     ref = ref.replace("origin/", "")
+    if not ref and _in_checkout():
+        up = (L.git_ok("rev-parse", "--abbrev-ref", "@{u}") or "").strip()
+        ref = up.replace("origin/", "") if up.startswith("origin/") else ""
     if not ref:
         return "", ""
+    if _in_checkout():
+        return ref, (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip()
     here = os.path.normcase(os.path.realpath(HERE))
     stamp = os.path.join(os.path.dirname(os.path.dirname(here)), ".tree")      # the app copy's stamp (setup.py)
     mine = (open(stamp).read().strip() if os.path.exists(stamp) else "")
@@ -449,6 +471,20 @@ def _code_ref_and_tree():
         L.git_ok("fetch", "--quiet", "--no-tags", "origin", f"+refs/heads/{ref}:refs/remotes/origin/{ref}")
         mine = (L.git_ok("rev-parse", f"origin/{ref}:Tools/Compute") or "").strip()      # a fresh copy: origin as of now
     return ref, mine
+
+
+def _checkout_moved(ref, tree):
+    """A checkout (the VM): fetch and fast-forward the branch; True when Tools/Compute changed, so the caller restarts."""
+    try:
+        L.git_ok("fetch", "--quiet", "--no-tags", "origin", f"+refs/heads/{ref}:refs/remotes/origin/{ref}")
+        now = (L.git_ok("rev-parse", f"origin/{ref}:Tools/Compute") or "").strip()
+        if not now or now == tree:
+            return False
+        L.git_ok("pull", "--ff-only", "--quiet")
+        return (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip() == now
+    except Exception as e:
+        L.log(f"agent: could not look for newer code ({e})", True)
+        return False
 
 
 def _fresh_copy(ref, tree):
