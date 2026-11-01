@@ -76,6 +76,7 @@ SCENE_FOR_MODE = {
     73: 'MinigameSerpentTime',
     74: 'MinigameBrittleStarTime',
     77: 'MinigameSerpentGulag',
+    78: 'MinigameSpeedPainter',
 }
 
 

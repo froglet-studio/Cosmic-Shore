@@ -117,6 +117,7 @@ SOURCES = [
     f"{_AR}/ScarabRally/ScarabRallyCourse.cs",
     f"{_AR}/SerpentTime/SerpentTimeCourse.cs",
     f"{_AR}/BrittleStarTime/BrittleStarTimeCourse.cs",
+    f"{_AR}/SpeedPainter/SpeedPainterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -745,6 +746,9 @@ CAMERAS = {
     # five circuits above.
     "SerpentTime": (80, 48, 0.9, 42),
     "BrittleStarTime": (340, 26, 0.9, 42),
+    # SpeedPainter: the circuit with its two mass clusters a leg glowing on each ring's line, shot from above so the
+    # stepping stones read as the path painted through the rings.
+    "SpeedPainter": (120, 34, 0.85, 44),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
     # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
@@ -804,7 +808,7 @@ def recipe(stem, card_path, pal, ends):
         layers.append(node)
         nucleus()
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Breakwater", "ScarabRally", "SerpentTime", "BrittleStarTime"):
+               "WrasseRun", "Breakwater", "ScarabRally", "SerpentTime", "BrittleStarTime", "SpeedPainter"):
         # GateRaceController.BuildCourse, mirrored: the shell comes off the scene's controller and
         # the cell's nucleus (ResolveShell), the gate count off EndConditionOverrides.
         tier = "COURSE"
@@ -826,7 +830,8 @@ def recipe(stem, card_path, pal, ends):
                        "ThresherTime": "thresherTimeGateTarget",
                        "WrasseRun": "wrasseRunGateTarget",
                        "SerpentTime": "serpentTimeGateTarget",
-                       "BrittleStarTime": "brittleStarTimeGateTarget"}.get(s, f"{s.lower()}GateTarget")
+                       "BrittleStarTime": "brittleStarTimeGateTarget",
+                       "SpeedPainter": "speedPainterGateTarget"}.get(s, f"{s.lower()}GateTarget")
                 target = ends.get(key, 24)
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
             # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse): the same generator.
@@ -841,7 +846,8 @@ def recipe(stem, card_path, pal, ends):
                                      "WrasseRun": [0.3, 1.25, 1.45],
                                      "ScarabRally": [1.55, 0.75, 0.2],
                                      "SerpentTime": [1.3, 0.3, 1.1],
-                                     "BrittleStarTime": [0.85, 0.35, 1.6]}[s]})
+                                     "BrittleStarTime": [0.85, 0.35, 1.6],
+                                     "SpeedPainter": [0.35, 1.1, 1.35]}[s]})
             nucleus()
     elif s == "Waystation":
         # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_tower_course.py), whose own --compile proves
@@ -1074,7 +1080,7 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime"):
+               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "SpeedPainter"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1321,7 +1327,7 @@ def end_conditions():
     out = {}
     for k in ("switchbackGateTarget", "breakwaterStationTarget", "breakwaterLaps", "waystationRingTarget",
               "grizzlyTimeGateTarget", "thresherTimeGateTarget", "scarabRallyGateTarget",
-              "serpentTimeGateTarget", "brittleStarTimeGateTarget"):
+              "serpentTimeGateTarget", "brittleStarTimeGateTarget", "speedPainterGateTarget"):
         m = re.search(rf"^  {k}: (\d+)", body, re.M)
         if m:
             out[k] = int(m.group(1))

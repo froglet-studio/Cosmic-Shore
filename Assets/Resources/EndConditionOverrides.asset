@@ -62,6 +62,7 @@ MonoBehaviour:
   scarabRallyGateTarget: 24
   serpentTimeGateTarget: 16
   brittleStarTimeGateTarget: 16
+  speedPainterGateTarget: 16
   regattaGateTarget: 24
   hijackStealTarget: 500
   hexRaceCrystalCountBuild: 0
@@ -114,6 +115,7 @@ MonoBehaviour:
   scarabRallyGateTargetBuild: 24
   serpentTimeGateTargetBuild: 16
   brittleStarTimeGateTargetBuild: 16
+  speedPainterGateTargetBuild: 16
   regattaGateTargetBuild: 24
   hijackStealTargetBuild: 500
   autoRestoreBuildValuesBeforeBuild: 1

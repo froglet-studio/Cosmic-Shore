@@ -375,8 +375,16 @@ namespace CosmicShore.Data
         // and 76 was WaystationPrototype's (folded into Waystation, reserved). See _Scripts/Controller/Arcade/SERPENTGULAG.md.
         SerpentGulag = 77,
 
+        // SpeedPainter (78): the Angler's TIME race - a lapped circuit (the shared HeadlongCircuit solver) where every
+        // leg carries TWO prism MASS clusters, one for each of the Angler's two groups: paint the near cluster and throw
+        // one group, paint the far one (past the next ring) and throw the other, then dash to each in turn - you paint
+        // your path and zoom along it. The clusters grow back. Beside Garrett's in-flight Lantern Run (75, the same idea
+        // with one lantern a ring, cece/confident-goodall-6cpxan), which it does not touch. See
+        // _Scripts/Controller/Arcade/SPEEDPAINTER.md.
+        SpeedPainter = 78,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 70) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 71) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

@@ -254,6 +254,10 @@ namespace CosmicShore.ScriptableObjects
         /// Read by <c>BrittleStarTimeController</c> to size the course and, through it, by the turn monitor.</summary>
         public const int DefaultBrittleStarTimeGateTarget = 16;
 
+        /// <summary>SpeedPainter RACE length used when <see cref="speedPainterGateTarget"/> is 0 - gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit.
+        /// Read by <c>SpeedPainterController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultSpeedPainterGateTarget = 16;
+
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
         /// per lap are a property of the ARENA (RegattaCourse.RingsPerLap - the rails are laid
@@ -425,6 +429,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Brittle Star Time: gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit. 0 uses the default.")]
         [Min(0)] public int brittleStarTimeGateTarget = 16;
 
+        [Tooltip("SpeedPainter race length in gate threadings (laps x rings). 0 = use the default (16).")]
+        [Min(0)] public int speedPainterGateTarget = 16;
+
 
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
@@ -520,6 +527,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int scarabRallyGateTargetBuild = 24;
         [Min(0)] public int serpentTimeGateTargetBuild = 16;
         [Min(0)] public int brittleStarTimeGateTargetBuild = 16;
+        [Min(0)] public int speedPainterGateTargetBuild = 16;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 500;
         [Min(0)] public int tollwayTollTargetBuild = 3;
@@ -820,6 +828,11 @@ namespace CosmicShore.ScriptableObjects
         public int GetBrittleStarTimeGateTarget() =>
             brittleStarTimeGateTarget > 0 ? brittleStarTimeGateTarget : DefaultBrittleStarTimeGateTarget;
 
+        /// <summary>SpeedPainter race length (laps x rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultSpeedPainterGateTarget"/>.</summary>
+        public int GetSpeedPainterGateTarget() =>
+            speedPainterGateTarget > 0 ? speedPainterGateTarget : DefaultSpeedPainterGateTarget;
+
         /// <summary>
         /// Burrow Run race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultBurrowRunGateTarget"/>. Read by
@@ -978,6 +991,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ScarabRally               => GetScarabRallyGateTarget(),
                 GameModes.SerpentTime               => GetSerpentTimeGateTarget(),
                 GameModes.BrittleStarTime           => GetBrittleStarTimeGateTarget(),
+                GameModes.SpeedPainter              => GetSpeedPainterGateTarget(),
                 // GameModes.Waystation has no row: its finish line is the rings the course lays (towers vary with the
                 // gaps), auto-calculated from the track like a SkimRace with a 0 count.
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
@@ -1050,6 +1064,7 @@ namespace CosmicShore.ScriptableObjects
             scarabRallyGateTarget == scarabRallyGateTargetBuild &&
             serpentTimeGateTarget == serpentTimeGateTargetBuild &&
             brittleStarTimeGateTarget == brittleStarTimeGateTargetBuild &&
+            speedPainterGateTarget == speedPainterGateTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
@@ -1098,6 +1113,7 @@ namespace CosmicShore.ScriptableObjects
             scarabRallyGateTarget = scarabRallyGateTargetBuild;
             serpentTimeGateTarget = serpentTimeGateTargetBuild;
             brittleStarTimeGateTarget = brittleStarTimeGateTargetBuild;
+            speedPainterGateTarget = speedPainterGateTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
@@ -1147,6 +1163,7 @@ namespace CosmicShore.ScriptableObjects
             scarabRallyGateTargetBuild = scarabRallyGateTarget;
             serpentTimeGateTargetBuild = serpentTimeGateTarget;
             brittleStarTimeGateTargetBuild = brittleStarTimeGateTarget;
+            speedPainterGateTargetBuild = speedPainterGateTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
