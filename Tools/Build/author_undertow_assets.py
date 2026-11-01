@@ -80,8 +80,9 @@ for i in range(1, 5):
 # the plate's container and what it already carries (edited in place, never minted)
 CONTAINER_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
                   "ScarabCavitationExplosionImpactorDataContainer.asset")
+# the Scarab recut (2026-10-29) retired Cavitation Shear: the plate now carries the Shove debuff in that slot
 EXISTING["ScarabCavitationDebuffEffect"] = lib.existing_guid(
-    "Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabCavitationDebuffByExplosionEffect.asset")
+    "Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabShoveDebuffByExplosionEffect.asset")
 EXISTING["ScarabBallForgeEffect"] = lib.existing_guid(
     "Assets/_SO_Assets/Effects/Explosion Crystal Effects/ScarabBallForgeByExplosionEffect.asset")
 # the SOAP channel a landed vessel-vs-vessel hit travels on
@@ -326,7 +327,7 @@ if sc.count("  - vesselClass: 12\n") != 4 or "  - vesselClass: 2\n" in sc:
     errors.append("cloned scene does not carry exactly 4 Scarab AI templates")
 
 cont = g.files[CONTAINER_PATH]
-for name, gd in (("cavitation debuff", EXISTING["ScarabCavitationDebuffEffect"]),
+for name, gd in (("shove debuff", EXISTING["ScarabCavitationDebuffEffect"]),
                  ("combat-hit report", G_ASSET["VesselCombatHitByCavitation"]),
                  ("ball forge", EXISTING["ScarabBallForgeEffect"]),
                  ("wither-lifeform kill", G_ASSET["ScarabCavitationWitherLifeformEffect"])):
