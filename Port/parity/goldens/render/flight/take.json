@@ -1,0 +1,19 @@
+{
+  "scene": "Assets/_Scenes/Game_TestDesign/RenderParityFlight.unity",
+  "fps": 60,
+  "warmupFrames": 90,
+  "takeFrames": 300,
+  "width": 1280,
+  "height": 720,
+  "msaa": 1,
+  "frameFile": "frames/f<Frame>.png (the Recorder's <Frame>: 4 digits, the first Play frame is 0000)",
+  "movie": "take.mp4",
+  "unity": "6000.3.17f1",
+  "git": "7e5a0b1b5f044d2601aa15daddc74cc115e5b554+dirty",
+  "recorded": "2026-11-01T21:03:39Z",
+  "post": "off",
+  "keyframes": [
+    {"frame": 0, "position": [5, 3.5, -8], "lookAt": [5, 0, 35]},
+    {"frame": 299, "position": [5, 3.5, -8], "lookAt": [5, 0, 35]}
+  ]
+}
