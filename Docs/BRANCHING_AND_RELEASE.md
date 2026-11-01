@@ -331,21 +331,29 @@ build" all depend on it.
 
 ### R4. Nothing actually compiles before the UGS build
 
-**The problem.** `unity-ci.yml` is written but inert, because no runner is
+**Partly fixed, 2026-11-01.** `bleeding-edge-guard.yml` compiles every push to
+`bleeding-edge` and `development` on GitHub-hosted runners (GameCI's Unity image,
+no self-hosted runner) and fails on any `error CS`. Until a Unity licence is in the
+`unity-ci` GitHub Environment it runs the reference compile, which catches C# errors
+in project code but not asset or editor-assembly breaks
+(`Docs/BUILD_AND_DELIVERY.md` §10.1 lists the secrets). What is still open is the
+player build: `unity-ci.yml`'s IL2CPP tiers and `build-branch-ci.yml` still need a
+self-hosted runner, so the first IL2CPP build of a cycle is still the UGS build.
+
+**The problem (as it was).** `unity-ci.yml` is written but inert, because no runner is
 configured — the self-hosted runner was removed on 2026-10-13 and
 `UNITY_RUNNER_LABEL` deleted. Check 1 catches mechanical errors; only a real
-compile catches the rest. Today the first true compile of a cycle is the UGS
-build itself.
+compile catches the rest.
 
-**The fix.**
+**The fix for the player-build tiers.**
 
 1. Attach a runner on a dedicated, isolated machine or VM that meets the rule
    below, using the runbook in `Docs/BUILD_AND_DELIVERY.md` §10.2. Self-hosted
    is still the best fit: no license secrets, no minute costs, and `Library/`
    stays warm so builds are incremental. Alternatives in §10 of that file.
 2. Set repository variables `UNITY_RUNNER_LABEL` and `UNITY_PATH`.
-   `unity-ci.yml`, `bleeding-edge-guard.yml` and `build-branch-ci.yml` all pick
-   them up with no edits.
+   `unity-ci.yml` and `build-branch-ci.yml` pick them up with no edits
+   (`bleeding-edge-guard.yml` no longer reads them).
 3. Once the edit-mode suite is green, set `BUILD_PROMOTION_REQUIRES_GREEN=true`
    so a red commit cannot be promoted at all.
 
@@ -401,7 +409,8 @@ bug to fix.
 | `.github/workflows/sync-build-branches.yml` | Test build promotion, Wednesday every 3 weeks |
 | `.github/workflows/tag-internal-build.yml` | Tags `bleeding-edge` every Friday |
 | `.github/workflows/build-branch-ci.yml` | Verifies what landed on `build/**`, autofix |
-| `.github/workflows/unity-ci.yml` | Tiered compile verification (inert, needs a runner) |
+| `.github/workflows/unity-ci.yml` | Tiered compile verification (Unity tiers inert, need a runner) |
+| `.github/workflows/bleeding-edge-guard.yml` | Every push to bleeding-edge / development: static checks, then a compile on hosted runners |
 | `Tools/CI/validate_project.py` | The static checks |
 | `Tools/CI/test_validate_project.py` | Self-test for the above, 25 cases |
 
@@ -411,7 +420,8 @@ bug to fix.
 |---|---|---|---|
 | `BUILD_SOURCE_BRANCH` | Variable | `development` | Which branch test builds come from |
 | `BUILD_PROMOTION_REQUIRES_GREEN` | Variable | off | Refuse to promote a commit with red or missing CI. Leave off until R4. |
-| `UNITY_RUNNER_LABEL` | Variable | unset | Runner for Unity jobs. While unset those jobs are **skipped**, not queued. |
+| `UNITY_RUNNER_LABEL` | Variable | unset | Runner for the `unity-ci.yml` / `build-branch-ci.yml` Unity jobs. While unset those jobs are **skipped**, not queued. The guard does not use it. |
+| `UNITY_EMAIL`, `UNITY_PASSWORD`, `UNITY_SERIAL` or `UNITY_LICENSE` | Secrets, `unity-ci` environment | unset | The guard's Unity licence. While unset its compile is the reference compile. `Docs/BUILD_AND_DELIVERY.md` §10.1 |
 | `UNITY_PATH` | Variable | unset | Path to the Unity 6000.3.17f1 executable |
 | `ANTHROPIC_API_KEY` | Secret | unset | Enables autofix |
 

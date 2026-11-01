@@ -209,9 +209,9 @@ a mode. `/arcadegame` §6.
 
 Workflows in `.github/workflows/` (2026-10-29):
 
-- `unity-ci.yml` (Unity CI): compile / mono / il2cpp / static tiers. **No Unity runner has been attached since 2026-10-13**, so the `unity` job is skipped while `UNITY_RUNNER_LABEL` is unset; only the static tier does real work. A green run here is not a Unity compile.
+- `unity-ci.yml` (Unity CI): compile / mono / il2cpp / static tiers. Its Unity tiers still need a self-hosted runner and **none has been attached since 2026-10-13**, so its `unity` job is skipped while `UNITY_RUNNER_LABEL` is unset; only its static tier does real work. A green run here is not a Unity compile.
 - `amoebius-parity-ci.yml` (Amoebius parity CI): on every bleeding-edge push, compiles the port, runs the engine tests and smoke-runs scenes.
-- `bleeding-edge-guard.yml` (Bleeding-edge guard): verifies every commit landing on `bleeding-edge` / `development` and attempts a repair.
+- `bleeding-edge-guard.yml` (Bleeding-edge guard): verifies every commit landing on `bleeding-edge` / `development` and attempts a repair. **Its compile job runs on every push that touches code (since 2026-11-01)**, on GitHub-hosted runners in GameCI's Unity image (no self-hosted runner), and fails on any `error CS`. It is a real Unity compile plus the edit-mode suite once the `unity-ci` environment holds a Unity licence; until then it runs `Tools/Build/unity_refcompile`, which catches `error CS` in project code but is not a Unity compile; the run says which (`Docs/BUILD_AND_DELIVERY.md` §10.1).
 - `build-branch-ci.yml` (Build branch CI): verifies `build/android` and `build/windows`.
 - `ios-testflight.yml` (iOS TestFlight): Xcode sign + upload, no Unity step.
 - `perf-daily.yml` (perf-daily): daily perf gates plus Amoebius allocations.
