@@ -31,6 +31,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, "Tools", "Build"))
+sys.path.insert(0, HERE)
 
 MIN_FLIGHTS = 2        # races of this pair before any gene is written
 LINE_FLIGHTS = 5       # the people's lines: this many of their best races of the pair (most rings, then longest)
@@ -177,6 +178,10 @@ def seed(records, mode, vessel, intensity=None):
 
 def records_for(mode, vessel, token=None, fetch=True):
     import learn_from_flights as F
+    import compute_lib as L
+    # The sweep's git helper runs git with a console: under the agent (no window, Windows) every call opened one, and
+    # a seed makes hundreds (one per branch and per flight file). Compute's helper runs them hidden (NO_WINDOW).
+    F.git = lambda *args: L.git_ok(*[a for a in args if a not in ("-C", F.REPO)])
     if fetch:
         F.git("fetch", "-q", "origin", "+refs/heads/bugledger/*:refs/remotes/origin/bugledger/*")
     out = []
