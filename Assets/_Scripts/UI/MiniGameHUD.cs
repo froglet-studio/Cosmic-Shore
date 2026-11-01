@@ -965,10 +965,13 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Returns the avatar sprite for an AI player from the assigned AI profile.
-        /// Returns null if no AI profile is assigned for this player name.
+        /// Returns null if no AI profile is assigned for this player name, or the player has no
+        /// name yet: a seat a client is still reclaiming shows up before its name syncs, and a
+        /// null key made every domain-panel rebuild throw (B46, 1,636 times on one client).
         /// </summary>
         protected Sprite ResolveAIAvatarSprite(string playerName)
         {
+            if (string.IsNullOrEmpty(playerName)) return null;
             if (_assignedAIProfiles.TryGetValue(playerName, out var profile))
                 return profile.AvatarSprite;
             return null;

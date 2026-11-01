@@ -53,6 +53,8 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B43 | A HOST with others in its party who presses Join or Spectate ends the party for all of them without a word (Caleb's spectate bounced Shombith; his join bounced Yash and Shombith) | Fixed 2026-10-31: refused before teardown with an authored toast (`PartyInviteController.leavePartyFirstToast`); accepting an invite is unchanged | 🟡 |
 | B44 | `NullReferenceException` in `PartyMemberService.SyncFromSession` 0.1 s after a join starts (belac x2, 2026-10-30) | Fixed 2026-10-31: the refresh reads the session after its await and stops when a transition has let it go | 🟡 |
 | B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein, one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine; the other three did the same swap in 1.2-2.4 s) | Investigated 2026-10-31 (section below): not the prism lay's own work and not its clone watchdog; the frames are spent outside anything the game measures. Each stall now records focus, memory against RAM and async clones in flight (`stallContext`), so the next one names its cause. Open | 🔴 |
+| B46 | `ArgumentNullException` (Dictionary key) every time a match HUD rebuilds its domain panels while a seat has no name yet: 1,636 times on Garrett's client after Yash rejoined a Serpent match (2026-10-31, `gradi+shombith+yskha-20261031_173835`; Bug Ledger `E-376e5a6f8d`) | Fixed 2026-11-01: `MiniGameHUD.ResolveAIAvatarSprite` answers null for an empty name. Why the reclaimed seat had no name on another client is open (B47) | 🟡 |
+| B47 | A rejoin reclaims the seat (`clientApproved 4 rejoin`, `seatReclaimed ys1`) but the rejoining client logs `Double initialization not allowed!` from `VesselController.Initialize`, and another client sees that seat with no name (B46); the rejoiner left again 35 s later (same test) | Open: one occurrence; the next rejoin in a test log says whether it repeats | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2480,6 +2482,23 @@ button and has no report; it is unchanged.
 joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery failed` error in the console after
 Play stops.
 Ticket: T-20261025-6541 (#1527).
+
+## B46-B47 and B36 again - the tests of 2026-10-31 and 2026-11-01 (multiplayer sweep, 2026-11-01)
+
+Read: `gradi+shombith+yskha-20261031_173835` (three machines, Skim Race, Thresher and Serpent time trials),
+`shombith+gradi-20261031_180511` (two, Grizzly and Serpent), `gradi-20261101_033303` and `gradi-20261101_183654` (solo).
+
+- **The recovery work holds.** Joins, invites and returns to the menu worked on every machine; one config hash on
+  all of them (`1b02b809ee878c3d`); 1-9 rate-limited reads per test. Garrett's presence lobby dropped him once
+  (1 Nov 03:33, 474 s) and he was back in his party within 9 s; a host leaving bounced him and he re-hosted in 3 s.
+- **A rejoin worked, with two faults.** Yash's client lost its connection mid-Serpent (window unfocused, "Baselib
+  failed to send" for 6 s before the bounce: his network, not the game). He pressed REJOIN, Shombith's host gave him
+  his seat back, and then B47 and B46 above.
+- **B36 at boot, a fourth time.** Garrett, 1 Nov 18:36 on `bleeding-edge` `be1f4d5821`: the boot's menu load froze
+  one frame for 21.75 s, Relay answered no BIND, bounce. His 03:33 boot also reached a 13.2 s frame. The fix is still
+  the boot-order decision (host after the menu is up).
+- **The Amoebius edit-mode suite no longer builds**: code merged since 29 Oct (Third Eye HUD, Game Center and Play
+  Games sign-in, Fulmen, the multiplayer debug overlay) uses 102 engine APIs the port lacks. Not filled in this sweep.
 
 ## B39-B45 - the four-player session of 2026-10-30 (Yash, Caleb, Shombith, Garrett)
 

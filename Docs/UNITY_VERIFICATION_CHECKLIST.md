@@ -20170,3 +20170,14 @@ compile first. Design: `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` "T
 7. Wait 45 s in freestyle. **Pass:** a turning hexagonal frame appears far off in the cell; flying through it opens hive mode.
 8. Button2 does nothing on the Honeyguide (no boost button); an AI Honeyguide still flies and uses its triggers.
 
+## Match HUD: no exception when a seat has no name yet (B46, 2026-11-01) - NOT EDITOR-VERIFIED
+
+**File:** `Assets/_Scripts/UI/MiniGameHUD.cs` (`ResolveAIAvatarSprite`). `/verify-unity` did not run (no editor in the
+session); reference compile (player and editor) and the gates pass.
+
+1. Three machines in one party start a time trial (Serpent or Thresher). One client stops its network for ~10 s (or
+   unfocuses until it bounces), then presses REJOIN. **Pass:** the other clients' consoles show no
+   `ArgumentNullException ... Parameter name: key` from `MiniGameHUD.ResolveAIAvatarSprite`; the domain panels still
+   draw every teammate's icon.
+2. Note whether the rejoiner logs `Double initialization not allowed!` (B47) and whether its name shows on the others.
+
