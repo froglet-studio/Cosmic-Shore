@@ -256,7 +256,23 @@ namespace Cysharp.Threading.Tasks
                 while (stopwatch.Elapsed < span);
                 return;
             }
-            await GameTask.Delay((float)span.TotalSeconds, type == DelayType.UnscaledDeltaTime, cancellationToken);
+            // Upstream's DelayPromise: from the frame after the call, add each frame's delta time and complete
+            // once the sum reaches the delay (a float). A target of "now + delay" on the clock looks the same but
+            // lands a frame late whenever the clock's float rounding falls short: 0.2 s at 60 Hz took 13 frames
+            // instead of 12 from about Time.time 0.4 on, so every blast (AOEExplosion's ExplosionDelay) started a
+            // frame behind Unity's (render parity, 2026-11-01).
+            // A yield taken during Update resumes later in the SAME frame (the scheduler runs after Update), so
+            // the creation frame is skipped by its frame count, as upstream's initialFrame check does.
+            float target = (float)span.TotalSeconds, elapsed = 0f;
+            bool unscaled = type == DelayType.UnscaledDeltaTime;
+            int initialFrame = EngineTime.frameCount;
+            do
+            {
+                await GameTask.Yield(cancellationToken);
+                if (EngineTime.frameCount == initialFrame) continue;
+                elapsed += unscaled ? EngineTime.unscaledDeltaTime : EngineTime.deltaTime;
+            }
+            while (elapsed < target);
         }
 
         static async UniTask WaitUntilCore(Func<bool> predicate, CancellationToken cancellationToken)

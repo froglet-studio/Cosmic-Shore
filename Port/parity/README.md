@@ -163,6 +163,7 @@ Unity golden exists. `run.json` records where the cut landed (`cut`) as well as 
 | the prism destruction's fragments (`PrismCollisionBurst.shader`, family 12) fly instead of standing still | **0.0372** | 0.0192 | 0.964 |
 | (tried, not kept) the built-in Sphere as Unity's 24x16 UV sphere instead of the icosphere | 0.0393 | 0.0199 | 0.961 |
 | (tried, not kept, lossless golden) Unity's exact 439-vertex built-in Sphere | 0.0291 | 0.0162 | 0.974 |
+| (lossless golden, from 0.0278) `UniTask.Delay` counts frames like upstream, so the blast starts on Unity's frame | **0.0199** | 0.0109 | 0.982 |
 
 What each one is:
 - **The golden has no post.** Stars fitted between the two engines (a KD-tree over detected stars, a similarity
@@ -194,6 +195,14 @@ What each one is:
   The first 100 frames sit at rmse 0.005; frames 200-300 at 0.032 carry almost all of what is left, 89% of it inside
   the blast, mostly the debris streaks. The two clocks agree (Amoebius's take frame 0 is at 0.52 s, Unity's near
   0.47 s), so the shell's texture phase is not the gap.
-- **What is left** is the last 100 frames: the blast's debris placement, and the shell, which is greener, more
-  opaque and more jagged in Unity at the same width. Early frames sit near rmse 0.01, mostly the codec.
+- **The blast's start frame (2026-11-01).** The debris was a frame young: probing its age in the shader, one frame
+  older scored 0.0206, two frames 0.0278. The cause was the compat `UniTask.Delay(DeltaTime)`, which waited for
+  the clock to pass "now + delay": the float clock's rounding made 0.2 s take 13 frames at 60 Hz from about
+  Time.time 0.4 on, so `AOEExplosion`'s `ExplosionDelay` started every blast a frame after Unity's. It now adds
+  each frame's delta time from the frame after the call, as upstream's `DelayPromise` does, including its skip
+  of the creation frame (the engine scheduler runs after Update, so a delay made in Update would otherwise count
+  its own frame and land a frame early, which scored 0.0273). Two tests in `GameLoopAndTasksTests` hold both
+  edges and fail without the fix. Shell and debris now start on Unity's frame: loss 0.0199.
+- **What is left** is the shell, which is greener, more opaque and more jagged in Unity, and the debris's
+  sub-pixel detail. The worst frames now sit near rmse 0.021, against 0.042 before the start frame was fixed.
 

@@ -135,6 +135,63 @@ public class GameTaskTests
     }
 
     [Fact]
+    public void UniTaskDelay_DeltaTime_CountsFramesLikeUpstream()
+    {
+        // Upstream's DelayPromise adds each frame's delta time from the frame after the call: 0.2 s at
+        // 60 Hz is 12 frames however late the clock is. A "now + delay" target on the float clock took 13
+        // from about Time.time 0.4 on, which started every blast a frame behind Unity's.
+        using var loop = new GameLoop();
+        loop.Run(600, 1f / 60f); // ten seconds in: the clock's float rounding is coarse here
+        bool done = false;
+
+        async Task Routine()
+        {
+            await Cysharp.Threading.Tasks.UniTask.Delay(TimeSpan.FromSeconds(0.2),
+                Cysharp.Threading.Tasks.DelayType.DeltaTime, Cysharp.Threading.Tasks.PlayerLoopTiming.Update);
+            done = true;
+        }
+
+        // Started outside a frame, as from a script's Update the frame before: twelve frames later.
+        Routine().Forget();
+        loop.Run(11, 1f / 60f);
+        Assert.False(done);
+        loop.Run(1, 1f / 60f);
+        Assert.True(done);
+    }
+
+    class DelayStarter : MonoBehaviour
+    {
+        public bool Started, Done;
+        void Update()
+        {
+            if (Started) return;
+            Started = true;
+            Run().Forget();
+        }
+        async Task Run()
+        {
+            await Cysharp.Threading.Tasks.UniTask.Delay(TimeSpan.FromSeconds(0.2),
+                Cysharp.Threading.Tasks.DelayType.DeltaTime, Cysharp.Threading.Tasks.PlayerLoopTiming.Update);
+            Done = true;
+        }
+    }
+
+    [Fact]
+    public void UniTaskDelay_StartedInUpdate_SkipsTheCreationFrame()
+    {
+        // Upstream's DelayPromise skips the frame it was made on; the engine scheduler runs after Update,
+        // so a delay made in Update would otherwise count its own frame and land one early.
+        using var loop = new GameLoop();
+        loop.Run(600, 1f / 60f);
+        var starter = new GameObject("starter").AddComponent<DelayStarter>();
+        loop.Run(12, 1f / 60f); // the creation frame plus eleven
+        Assert.True(starter.Started);
+        Assert.False(starter.Done);
+        loop.Run(1, 1f / 60f);
+        Assert.True(starter.Done);
+    }
+
+    [Fact]
     public void Delay_RespectsTimeScale()
     {
         using var loop = new GameLoop();
