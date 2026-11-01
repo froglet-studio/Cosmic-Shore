@@ -17,7 +17,7 @@ the Decisions tab. The Unity port (phase 2) starts only after that.
 - **Live page:** https://claude.ai/artifact/4B7oZwb5aYxFJR7XKyWx7v (private to the owner until shared; decisions recorded
   there land in the shared log Claude reads at the start of each round).
 - **Round 1** (the brief's rules) is kept as `Docs/Studios/HoneyguideLab.round1.html`.
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 7).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 8).
 - **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` holds `DynamoCore.cs` to the lab's core, the Engineer AI
   included (PASS 2026-10-29, round 7: 16,824 steps over 24 rule sets, 1,649 AI moves chosen alike, 72 ability offers,
   48 port sets, 400 slips).
@@ -48,6 +48,154 @@ mate, decision log, platform detection) is the Crew Vessel Lab's, rebuilt around
   would land.
 - **Rules tab:** Garrett's round 2 rules, each a box you can turn off (a control). **Patterns tab:** all 39 patterns and
   the passive each gives.
+
+## Round 8 (2026-11-01): RT Space and LT Charge, pulled to preview and released to fire; upgrades bank uses
+
+Garrett, 2026-11-01:
+
+> "6. Slip is time. right trigger should be a space active ability that get upgraded periodically by the ratel. left
+> trigger should be charge active ability that gets upgraded by the trigger. they can both enhance mobility at times, but
+> charge should always be able to attack vessels and fauna. space should always be able to reduce opposing prism volume.
+> the hive production is the passive mass ability. these abilities are always activated by the triggers and never analog
+> trigger controlled, the ability has a preview when pulled and then completes when released. this will maintain a mobile
+> compatibility so the only have two active abilites on a two thumb flyer, aim by lifting a thumb ( getting a prieview,
+> and going into 1 thumb flying), fire by touching back down. so we will need an icon for each ability that can take over,
+> and we will want to load them like a que. so each pattern grants uses that pile up. so if the ability hasn't been used
+> and another of them same pattern comes in, they get another banked usage, denoted as a tick on the card. if a new ability
+> comes in it should bank that too but change the icon (to current) and the tick color on the tick queue (stay in the
+> neutral Blue domain)."
+
+The decision log was empty when this round started. The Dynamo is unchanged (its `dynamo-core` block is byte-identical;
+`Tools/Build/dynamo_lab/parity.cjs` PASS). Round 7 is kept as the "The triggers" setting's other choice, so the scorecard
+compares them.
+
+### The element map
+
+| Element | Ability | Kind |
+|---|---|---|
+| Time | **Slip** | passive (as before) |
+| Space | **RT**: Peck, or the newest banked Space upgrade | active: pull to preview, release to fire; always cuts opposing prism volume |
+| Charge | **LT**: Flit, or the newest banked Charge upgrade | active: pull to preview, release to fire; always strikes rival vessels and creatures |
+| Mass | **Hive** | passive: every `massHiveSeconds` (45 s) one hive of all three domains appears in the cytoplasm; reaching it opens hive mode |
+
+No boost button any more (two actives only): a card that gives boost burns it at once.
+
+### The abilities (the list the icon fork and the Unity port copy)
+
+| Trigger | Ability | Pull shows | Release does |
+|---|---|---|---|
+| RT, Space | **Peck** (base) | the aim line, 45 u | three quick shots; each shatters the first hostile prism it meets. Every 1 s. |
+| RT, Space | **Genesis Lance** | the line, 120 u | shatters every hostile prism on it and lays a trail of the newest charge's domain to slip on |
+| RT, Space | **Little Bang Grenade** | the landing ring, 55 u ahead, 22 u wide | the grenade bursts there 0.6 s later, shattering every hostile prism within 22 u |
+| RT, Space | **Particle Harmonizer** | a 20 degree cone, 55 u | up to 12 hostile prisms in it turn to our domain |
+| RT, Space | **Fugacity Discharger** | the 40 u ring round the hull | every hostile prism inside shatters; 0.05 s of boost each, up to 1.5 s |
+| RT, Space | **Sepia Drone** | the drone's 50 u ring | a drone circles for 8 s, zapping the nearest hostile prism 3 times a second |
+| RT, Space, mobility | **Thruster Swarm** | three 20 u thrusts | three thrusts 0.4 s apart, shattering every hostile prism crossed |
+| RT, Space, mobility | **Hexapod Eyelet Jet** | the 50 u line | a 0.25 s jet along it, shattering every hostile prism on the way |
+| LT, Charge | **Flit** (base) | an 18 u dart and its strike lane | the dart; every rival vessel and creature within 8 u of it is struck. Every 2 s. |
+| LT, Charge | **Hard Light Lasso** | the rope to the nearest rival vessel or creature ahead (90 u, 30 degrees) | reels in and strikes it, and everything within 12 u, on arrival |
+| LT, Charge, mobility | **Blink Drive** | the landing 60 u ahead and its strike ring | blink there, striking everything within 12 u |
+| LT, Charge, mobility | **All Terrain Portals** | the landing 30 u ahead (60 u over empty space) | teleport there, striking everything within 12 u |
+| LT, Charge, mobility | **Rosen Bridge** | the farthest prism of the newest charge's domain within 300 u and 35 degrees | teleport to it, striking everything within 12 u |
+| LT, Charge, mobility | **FTL Chromatool** | the nearest prism ahead within 60 u | swap places with it (it becomes a charge), striking everything within 12 u |
+| LT, Charge, mobility | **Monte Cannon** | three hops, each to the farthest prism ahead within 40 u | the hops, striking everything within 12 u at every landing |
+
+"Struck" is a scored Strike on a rival vessel in the game (petals only) and a joust on a creature.
+
+### The queue
+
+- Every made upgrade card **banks** `usesPerCard` (1) use on its trigger: a tick on the card.
+- The same ability again adds a tick. Any ability banked becomes **current**: its icon on the card. A stack: the current one
+  fires first; when its ticks run out the next most recent banked one is current; with none banked, Peck or Flit.
+- Nothing expires.
+- Each tick is drawn in its ability's own shade of the neutral blue (`TICK_BLUE`), never a domain's colour.
+- A release with no target (a lasso with nothing ahead, a jump with no landing) fizzles and keeps its tick.
+
+### Controls
+
+- **Phone**: fly with two thumbs (in the lab a thumb steers by how far it has slid sideways from where it touched). Lift
+  the **left** thumb: LT's preview, and you fly on with the right; touch it back down: LT fires. The **right** thumb does
+  the same for RT. Lift both: the preview is cancelled.
+- **Keyboard**: hold E or K (RT) or Q or J (LT) to preview; let go to fire; hold X as you let go to cancel.
+- **Mouse**: press the RT or LT card to preview; let go to fire.
+- **Gamepad**: the triggers are buttons (pulled past 0.3); pull to preview, let go to fire.
+
+### Scorecard (12 seeds × 180 s, `window.__lab.runBatch`, hard pilot unless named)
+
+Legs/min SE about ±0.14, so a difference under about 0.3 is noise. The solo row is round 8's (it detours to hives too).
+
+| Variant | Legs/min | Slips/min | Volume cut/min | Rivals struck/min | Jousts/min | Upgrade uses/min | Banked at end | Preview ms | Fizzles/min | Hives/min |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Solo (no Ratel) | 3.83 | 0 | 9.07 | 0.22 | 0.33 | 0 | 0 | 167 | 0 | 0.78 |
+| **Round 8, hard Ratel** | **4.58** | 3.70 | 13.82 | 0.89 | 0.28 | 1.44 | 0 | 167 | 0.14 | 0.61 |
+| Round 8, easy Ratel | 4.15 | 2.61 | 10.49 | 0.61 | 0.44 | 1.09 | 0.08 | 167 | 0.03 | 0.53 |
+| Round 8, rookie pilot | 4.25 | 3.11 | 8.87 | 0.25 | 0.17 | 1.41 | 0.08 | 500 | 1.97 | 0.70 |
+| Round 8, no upgrades (Peck and Flit only) | 4.53 | 3.61 | 12.76 | 0.95 | 0.36 | 0 | 0 | 167 | 0 | 0.69 |
+| Round 8, no hives | 5.32 | 3.78 | 13.06 | 0.83 | 0.28 | 1.44 | 0 | 167 | 0.11 | 0 |
+| Round 8, no creatures | 4.93 | 3.75 | 11.22 | 0.94 | 0 | 1.44 | 0 | 167 | 0.11 | 0.56 |
+| Round 8, 3 uses per card | 4.86 | 3.69 | 19.05 | 0.75 | 0.50 | 4.31 | 0.08 | 167 | 0.28 | 0.64 |
+| Round 8, 3 uses per card, no hives | 5.46 | 3.81 | 17.78 | 0.67 | 0.28 | 4.33 | 0 | 167 | 0.30 | 0 |
+| **Round 7** (timed upgrades, boost button) | 5.06 | 3.61 | 19.67 | 0 | 0 | 6.42 | – | – | – | – |
+
+### Read as (Garrett: correct any of these)
+
+1. Time is the Slip, unchanged. The Afterburner boost button is gone; the boost a card gives burns at once.
+2. Mass is a passive hive: one at a time, every 45 s, somewhere in the cytoplasm at least 150 u from the hull; the Mass
+   level shortening that is a game rule the lab does not model. Reaching it opens hive mode in the game (the Ratel Raid
+   Lab); the lab counts it and plants the next. The Ratel's strip shows it as a hex and its distance.
+3. The seven Space upgrades and six Charge upgrades are the thirteen trigger cards, re-sorted: the lasso moved to Charge
+   (it now hooks a vessel or creature, not a prism), Thruster Swarm and Eyelet Jet moved to Space (their thrusts shatter
+   prisms). Every LT jump strikes at its landing (12 u); Monte Cannon at each hop.
+4. Hold and charge abilities became pull and release: Particle Harmonizer turns up to 12 prisms at once (to our domain,
+   which is what makes it cut opposing volume; round 7 turned them to the newest charge's domain); Fugacity Discharger
+   always fires at full reach (40 u); Thruster Swarm is three thrusts per use; Sepia Drone launches on release.
+5. A level from repeating a card is gone: a repeat is a banked tick instead.
+6. Peck is a 3-shot burst per release, every 1 s; Flit is a striking dart every 2 s.
+7. The queue is a stack: the newest banked ability is current and fires first.
+8. "Both thumbs lifted" cancels the preview; a cancelled preview keeps its tick.
+9. A gamepad trigger is a button: pulled past 0.3 it previews, let go it fires.
+
+### Found (round 8)
+
+- **One use per card makes the upgrades rare.** With `usesPerCard` 1 the hard crew banks and spends 1.44 upgrade uses a
+  minute, against 6.42 uses a minute in round 7 (a 20 s upgrade is used again and again). Round 8 with no upgrades at
+  all races the same (4.53 against 4.58 legs a minute): the upgrades add nothing measurable at one use per card. At 3
+  uses per card they are used 4.31 times a minute and the volume cut reaches round 7's (19.05 against 19.67).
+- **The race yardstick charges for the hive**: 4.58 legs a minute with hives against 5.32 without, because the AI flies
+  to a hive the race does not score. The hive's worth is in hive mode (the Raid Lab), which this lab does not model, so
+  read the hive rows for the detour's cost, not its value. Without hives round 8 races at least as well as round 7
+  (5.32 against 5.06, about one SE apart).
+- **LT strikes are rare for a racing pilot**: under 1 rival and under half a creature a minute. The race does not ask the
+  pilot to hunt; a Charge mode would.
+- **The rookie's previews fizzle**: 1.97 releases a minute with no target, against 0.14 for the hard pilot. Pull and
+  release lets a wasted press keep its tick, so it costs time, not a use.
+- No bug found in the Dynamo or the earlier rounds' code.
+
+### Checked
+
+- `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html`: PASS (desktop and iPhone 13); desktop
+  and phone screenshots read, plus a staged one with banked ticks and both previews drawn.
+- `window.__lab.selfTest8()`: 9 of 9 pass: the same ability banks a tick; a new one becomes current; a re-banked one moves
+  to current with its ticks; a pull previews without firing; the release fires and spends the tick; a cancelled release
+  keeps it; Peck fires its burst; Flit strikes a creature on its lane; a lasso with no target fizzles and keeps its tick;
+  the lasso reels to a creature and strikes it. Planted defects (no cancel; a re-bank that drops its ticks) fail 3 cases.
+- `node Tools/Build/dynamo_lab/parity.cjs`: PASS (the Dynamo is unchanged).
+
+### Not modelled (round 8)
+
+- Strikes are counted, not scored: no petals move, rivals do not fight back or dodge, a jousted creature is reborn
+  elsewhere.
+- Element levels: the Mass level shortening the hive cadence, and every other element scaling.
+- The two-thumb touch is a 2D stand-in for the game's two sticks.
+- The icons are two-letter placeholders (the ability icons are made by `/ability-icon`).
+- Hive mode itself (the Ratel Raid Lab and Unity have it).
+
+### Decisions needed (Garrett)
+
+- **Uses per card**: 1 (as built), or more? At 1 the upgrades barely show; at 3 they match round 7's volume.
+- The list above: each ability's trigger, preview and release, and the conversions in "Read as".
+- The Peck burst (3 shots, every 1 s), the Flit strike lane (8 u), the landing strike (12 u) and the hive cadence (45 s).
+- Whether a cancelled preview should keep its tick (as built).
 
 ## 2026-10-31: the spin bar shrinks from both sides to the centre
 

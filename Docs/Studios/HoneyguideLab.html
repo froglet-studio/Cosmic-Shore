@@ -566,7 +566,7 @@
   // ================= (1) LAB meta + the shipped numbers =================
   // A READER of the shipped numbers. The pilot hull is the Sparrow (the donor airframe, as the Wrasse's is); the Dynamo,
   // Slip, weapon and passive numbers are proposals: nothing in the game has them yet.
-  const LAB = { name: 'Honeyguide Lab', branch: 'claude/honeyguide-ratel', round: 6, doc: 'Docs/Studios/HONEYGUIDE_LAB.md' };
+  const LAB = { name: 'Honeyguide Lab', branch: 'cece/jolly-lovelace-t8y3a1', round: 8, doc: 'Docs/Studios/HONEYGUIDE_LAB.md' };
   const SHIPPED = {
     // The Honeyguide's airframe: the Sparrow (Assets/_Prefabs/Spacevessels/Sparrow.prefab), as in the Crew Vessel Lab
     minSpeed: 10,          // VesselTransformer.DefaultMinimumSpeed
@@ -619,6 +619,17 @@
     flitCooldown: 2,       // proposal: seconds between Flits
     activeSeconds: 20,     // proposal: how long an active stays on its button before it goes away
     activeLevelGain: 0.25, // proposal: a repeat of the same active refreshes it and grows its reach this much a level
+    // Round 8 (Garrett 2026-11-01): RT is a Space active and LT a Charge active, pulled to preview and released to fire (never
+    // analog); the upgrade cards BANK uses on them, newest first. Time is the Slip; Mass is the passive hive. No boost button.
+    usesPerCard: 1,        // proposal: uses (ticks) one made upgrade card banks on its trigger
+    peckBurst: 3,          // proposal: shots one Peck release fires (RT, Space)
+    peckCooldown: 1,       // proposal: seconds between Peck releases
+    flitStrikeRadius: 8,   // proposal: Flit strikes every rival vessel and creature within this of its dart (LT, Charge)
+    strikeRadius: 12,      // proposal: an LT landing's strike reaches this far (the jumps, the lasso's arrival)
+    massHiveSeconds: 45,   // proposal: the Mass passive plants one hive this often (the Mass level shortens it in the game)
+    hiveReach: 25,         // lab: reach a hive by passing within this (u)
+    creatureCount: 6,      // lab: creatures drifting in the arena (LT's second kind of target)
+    creatureSpeed: 14,     // lab: their drift speed (u/s)
     // Round 4's two triggers: kept only for the "round 4 guns" control (opts.guns); the candidate has no guns
     boltRate: 5,           // proposal: RT Bolt shots a second
     boltSpeed: 160,        // proposal: RT Bolt shot speed (u/s)
@@ -659,7 +670,16 @@
     ['Triggers', 'flitDistance', 5, 60, 1, 'Flit (u)', 'LT\'s base power, a short hop ahead.'],
     ['Triggers', 'flitCooldown', 0.25, 6, 0.25, 'Flit cooldown (s)', 'Seconds between Flits.'],
     ['Triggers', 'activeSeconds', 5, 60, 1, 'Upgrade lasts (s)', 'How long an upgrade card holds its trigger before the base power comes back. A repeat refreshes it.'],
-    ['Triggers', 'activeLevelGain', 0, 1, 0.05, 'Reach per level', 'A repeat of the same active raises its level; each level grows its reach this much.'],
+    ['Triggers', 'activeLevelGain', 0, 1, 0.05, 'Reach per level', 'Round 7 control only: a repeat of the same active raises its level; each level grows its reach this much.'],
+    ['Triggers', 'usesPerCard', 1, 6, 1, 'Uses per card (r8)', 'Round 8: ticks one made upgrade card banks on its trigger.'],
+    ['Triggers', 'peckBurst', 1, 8, 1, 'Peck shots (r8)', 'Round 8: shots one Peck release fires.'],
+    ['Triggers', 'peckCooldown', 0.25, 4, 0.25, 'Peck cooldown (s, r8)', 'Round 8: seconds between Peck releases.'],
+    ['Triggers', 'flitStrikeRadius', 2, 30, 1, 'Flit strike (u, r8)', 'Round 8: Flit strikes every rival vessel and creature within this of its dart.'],
+    ['Triggers', 'strikeRadius', 4, 40, 1, 'Landing strike (u, r8)', 'Round 8: an LT jump or the lasso\'s arrival strikes every rival vessel and creature within this.'],
+    ['Mass', 'massHiveSeconds', 10, 180, 5, 'Hive every (s)', 'Round 8: the Mass passive plants one hive (all three domains) this often. The Mass level shortens it in the game.'],
+    ['Mass', 'hiveReach', 10, 60, 1, 'Hive reach (u)', 'Pass within this of a hive to reach it (in the game, hive mode opens: the Ratel Raid Lab).'],
+    ['World', 'creatureCount', 0, 20, 1, 'Creatures', 'Creatures drifting in the arena: LT strikes them (a joust).'],
+    ['World', 'creatureSpeed', 0, 60, 1, 'Creature speed (u/s)', 'How fast the creatures drift.'],
     ['Guns (r4)', 'boltRate', 1, 15, 0.5, 'Bolt rate (/s)', 'Round 4 control only: RT shots a second.'],
     ['Guns (r4)', 'boltSpeed', 40, 400, 10, 'Bolt speed (u/s)', 'RT: shot speed.'],
     ['Guns (r4)', 'boltRange', 30, 300, 5, 'Bolt range (u)', 'RT: how far a shot flies.'],
@@ -735,6 +755,38 @@
   };
   const JUMP_KEYS = ['blink', 'portals', 'rosen', 'ftl', 'monte'];
   const ACTIVE_KEYS = Object.keys(ACTIVES);
+  // Round 8 (Garrett 2026-11-01): "right trigger should be a space active ability ... left trigger should be charge active
+  // ability ... charge should always be able to attack vessels and fauna. space should always be able to reduce opposing
+  // prism volume ... the ability has a preview when pulled and then completes when released." btn 0 = RT (Space), 1 = LT
+  // (Charge). Each upgrade card BANKS one use (a tick) on its trigger; the newest banked ability is current and fires
+  // first; with none banked the base ability fires. pv names what the pull previews (drawn in the arena).
+  const ACTIVES8 = {
+    lance: { btn: 0, reach: 120, glyph: 'GL', pv: 'line', text: 'RT, Space. Pull: the line 120 u ahead. Release: a lance shatters every hostile prism on it and lays a trail of your newest charge\'s domain along it to slip on.' },
+    littlebang: { btn: 0, reach: 22, glyph: 'LB', pv: 'lob', text: 'RT, Space. Pull: the landing ring 55 u ahead. Release: a grenade lands there and bursts 0.6 s later, shattering every hostile prism within 22 u.' },
+    harmonizer: { btn: 0, reach: 55, glyph: 'PH', pv: 'cone', text: 'RT, Space. Pull: a 20 degree cone 55 u ahead. Release: up to 12 hostile prisms in it turn to your domain (opposing volume becomes yours).' },
+    fugacity: { btn: 0, reach: 40, glyph: 'FD', pv: 'ring', text: 'RT, Space. Pull: the 40 u ring round you. Release: every hostile prism inside shatters; 0.05 s of boost for each (up to 1.5 s).' },
+    sepia: { btn: 0, reach: 50, glyph: 'SD', pv: 'ring', text: 'RT, Space. Pull: the drone\'s 50 u ring. Release: a drone circles you for 8 s and zaps the nearest hostile prism three times a second.' },
+    thruster: { btn: 0, reach: 20, glyph: 'TS', pv: 'thrust', text: 'RT, Space, mobility. Pull: three 20 u thrusts ahead. Release: three thrusts 0.4 s apart, shattering every hostile prism the hull crosses.' },
+    eyelet: { btn: 0, reach: 50, glyph: 'EJ', pv: 'line', text: 'RT, Space, mobility. Pull: the 50 u line. Release: jet along it in a quarter of a second, shattering every hostile prism on the way.' },
+    lasso: { btn: 1, reach: 90, glyph: 'HL', pv: 'hook', text: 'LT, Charge. Pull: the rope finds the nearest rival vessel or creature ahead (90 u, 30 degrees). Release: reel in and strike it, and everything within 12 u, on arrival.' },
+    blink: { btn: 1, reach: 60, glyph: 'BD', pv: 'land', text: 'LT, Charge, mobility. Pull: the landing 60 u ahead and its strike ring. Release: blink there and strike every rival vessel and creature within 12 u.' },
+    portals: { btn: 1, reach: 30, glyph: 'AP', pv: 'land', text: 'LT, Charge, mobility. Pull: the landing 30 u ahead (60 u when it is empty space). Release: teleport there and strike everything within 12 u.' },
+    rosen: { btn: 1, reach: 300, glyph: 'RB', pv: 'land', text: 'LT, Charge, mobility. Pull: the farthest prism of your newest charge\'s domain within 300 u and 35 degrees. Release: teleport to it and strike everything within 12 u.' },
+    ftl: { btn: 1, reach: 60, glyph: 'FT', pv: 'land', text: 'LT, Charge, mobility. Pull: the nearest prism ahead within 60 u. Release: swap places with it (it becomes a charge of its domain) and strike everything within 12 u.' },
+    monte: { btn: 1, reach: 40, glyph: 'MC', pv: 'hops', text: 'LT, Charge, mobility. Pull: three hops, each to the farthest prism ahead within 40 u. Release: hop, striking everything within 12 u at every landing.' },
+  };
+  const BASE8 = [
+    { key: 'peck', name: 'Peck', glyph: 'Pk', pv: 'line', text: 'RT, Space. Pull: the aim line 45 u ahead. Release: three quick shots; each shatters the first hostile prism it meets.' },
+    { key: 'flit', name: 'Flit', glyph: 'Fl', pv: 'dart', text: 'LT, Charge. Pull: an 18 u dart ahead and its strike lane. Release: dart there; every rival vessel and creature within 8 u of the dart is struck.' },
+  ];
+  // Each ability's tick colour: a shade of the neutral blue, never a domain's colour (Garrett: "stay in the neutral Blue").
+  const TICK_BLUE = (() => {
+    const o = {}, keys = Object.keys(ACTIVES8);
+    keys.forEach((k, j) => { const f = j / (keys.length - 1); o[k] = 'hsl(' + Math.round(196 + 32 * f) + ',' + Math.round(85 - 25 * ((j * 5) % 7) / 6) + '%,' + Math.round(48 + 32 * ((j * 3) % 5) / 4) + '%)'; });
+    return o;
+  })();
+  const name8 = (key) => (key === 'peck' ? 'Peck' : key === 'flit' ? 'Flit' : EFFECT_NAME[key]);
+  const def8 = (key) => (key === 'peck' ? BASE8[0] : key === 'flit' ? BASE8[1] : ACTIVES8[key]);
   // Every pattern's own effect, converted from its tabletop card (its text, or its name where the text has no real-time
   // reading). Garrett 2026-10-21: keep the tabletop names; make abilities that convert from the old.
   // seat: who it helps (triggers / hull / slip / ratel). time: a timed effect lasts passiveSeconds and a repeat raises its
@@ -745,22 +797,22 @@
     amanita: { seat: 'hull', text: 'Burns one more prism on the Dynamo for 3 s of boost.' },
     plankter: { seat: 'slip', text: 'Your next slip needs no charge and rides a trail of any domain, at half reach, then 1 s of boost.' },
     skipper: { seat: 'hull', time: true, mech: { skip: 1 }, text: 'Touching a prism of a different domain from the last gives 0.4 s of boost a level.' },
-    fugacity: { seat: 'active', active: true, text: ACTIVES.fugacity.text },
-    thruster: { seat: 'active', active: true, text: ACTIVES.thruster.text },
-    lasso: { seat: 'active', active: true, text: ACTIVES.lasso.text },
+    fugacity: { seat: 'active', active: true, text: ACTIVES8.fugacity.text },
+    thruster: { seat: 'active', active: true, text: ACTIVES8.thruster.text },
+    lasso: { seat: 'active', active: true, text: ACTIVES8.lasso.text },
     bigred: { seat: 'hull', text: 'Destroys every other Dynamo prism of the battery prism\'s colour; 0.5 s of boost for each.' },
     eigen: { seat: 'hull', time: true, mech: { agile: 2 }, text: 'Turn 60% faster a level.' },
     saddle: { seat: 'hull', text: 'Drains the whole battery into boost: 1.5 s for each charge.' },
     watt: { seat: 'hull', time: true, mech: { watt: 1 }, text: 'Flying alongside a trail (within 14 u, heading within 30 degrees of it): +30% speed a level.' },
-    eyelet: { seat: 'active', active: true, text: ACTIVES.eyelet.text },
+    eyelet: { seat: 'active', active: true, text: ACTIVES8.eyelet.text },
     detangler: { seat: 'slip', text: 'The next 3 prisms you touch turn your newest charge\'s domain: new slip lanes, and they do not slow you.' },
     condenser: { seat: 'slip', text: 'Lays a 6-prism trail of your newest charge\'s domain ahead of you.' },
-    sepia: { seat: 'active', active: true, text: ACTIVES.sepia.text },
+    sepia: { seat: 'active', active: true, text: ACTIVES8.sepia.text },
     zeropoint: { seat: 'ratel', text: 'Fires the effect of another pattern in the Ratel\'s hand, and drains your oldest charge into 1.5 s of boost.' },
     noodley: { seat: 'hull', text: 'The next 5 hostile prisms in your path are pushed aside instead of hitting you.' },
     triplesynth: { seat: 'ratel', text: 'Places a touching Ruby, Jade and Gold prism on empty Dynamo cells.' },
-    harmonizer: { seat: 'active', active: true, text: ACTIVES.harmonizer.text },
-    lance: { seat: 'active', active: true, text: ACTIVES.lance.text },
+    harmonizer: { seat: 'active', active: true, text: ACTIVES8.harmonizer.text },
+    lance: { seat: 'active', active: true, text: ACTIVES8.lance.text },
     translator: { seat: 'ratel', text: 'The Ratel gets a free prism of a random domain: tap an empty cell.' },
     anode: { seat: 'slip', text: '+1 charge of each colour.' },
     printer5d: { seat: 'ratel', text: 'The Ratel gets 2 free prisms of random domains.' },
@@ -769,16 +821,16 @@
     chrono: { seat: 'ratel', text: 'The Ratel banks 1 extra AP and the spin bar winds back 5 s.' },
     meta: { seat: 'ratel', text: 'Fires the effect of the last pattern replaced (or else the last other pattern made).' },
     eti: { seat: 'slip', text: '+1 charge for each domain with a trail within 40 u of you.' },
-    ftl: { seat: 'active', active: true, text: ACTIVES.ftl.text },
-    littlebang: { seat: 'active', active: true, text: ACTIVES.littlebang.text },
+    ftl: { seat: 'active', active: true, text: ACTIVES8.ftl.text },
+    littlebang: { seat: 'active', active: true, text: ACTIVES8.littlebang.text },
     vorticity: { seat: 'ratel', text: 'The injection ports turn back 60 degrees and the spin bar refills.' },
     gravity: { seat: 'slip', time: true, mech: { magnet: 1, gravity: 1 }, text: 'Slips catch trails 3 u farther away and end with 1 s of boost, a level.' },
-    portals: { seat: 'active', active: true, text: ACTIVES.portals.text },
-    rosen: { seat: 'active', active: true, text: ACTIVES.rosen.text },
+    portals: { seat: 'active', active: true, text: ACTIVES8.portals.text },
+    rosen: { seat: 'active', active: true, text: ACTIVES8.rosen.text },
     frame: { seat: 'slip', time: true, mech: { wake: 1 }, text: 'Your trail is laid in your newest charge\'s domain: a slip lane behind you.' },
     voidjumper: { seat: 'slip', time: true, mech: { void: 1 }, text: 'Slip on trails of any domain (each slip spends your oldest charge).' },
-    blink: { seat: 'active', active: true, text: ACTIVES.blink.text },
-    monte: { seat: 'active', active: true, text: ACTIVES.monte.text },
+    blink: { seat: 'active', active: true, text: ACTIVES8.blink.text },
+    monte: { seat: 'active', active: true, text: ACTIVES8.monte.text },
   };
   // Round 4's versions of the thirteen upgrade cards: seven changed what the guns' shots did, five stored a jump on the
   // Slip card, Thruster Swarm threw the hull on boost presses. They are trigger upgrades now (ACTIVES); the controls
@@ -891,14 +943,15 @@
     return out;
   })();
 
-  const OPT_SHIPPED = { arming: 'axis', exit: 'align', portsCount: true, rotatable: true, replace: true, shuffle: true, passives: true, base: true, actives: true, guns: false, deal: 'cards', slip: true, ability: 'random', letters: false };
+  const OPT_SHIPPED = { arming: 'axis', exit: 'align', portsCount: true, rotatable: true, replace: true, shuffle: true, passives: true, base: true, actives: true, guns: false, deal: 'cards', slip: true, ability: 'random', letters: false, triggers: 'r8' };
   const OPT_LABELS = {
     arming: { axis: 'Nose within the cone of a 1-D trail prism\'s axis (Garrett, round 2)', hold: 'Hold to arm (round 1 candidate)', always: 'Always armed (the brief)' },
     exit: { align: 'Exit aligned to the trail (the brief)', keep: 'Exit keeps your facing' },
     deal: { cards: 'Only the thirteen upgrade cards upgrade a trigger (every card unique)', every: 'Every pattern made also deals a random upgrade (round 5)' },
+    triggers: { r8: 'Round 8: RT Space and LT Charge, pull to preview and release to fire; upgrades bank uses (a queue); Mass plants hives; no boost button', r7: 'Round 7: RT attack and LT move, upgrades hold a trigger 20 s; the boost button' },
   };
 
-  const LS = 'lab:' + LAB.name + ':r6:';
+  const LS = 'lab:' + LAB.name + ':r8:';
   const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
   const P = Object.assign({}, SHIPPED, lsGet('P', {}));
@@ -915,9 +968,9 @@
 
   // Difficulty changes belief and pace, never the stick or the rules (/vessel-ai).
   const PSKILL = {   // the Honeyguide's pilot AI
-    easy: { think: 0.6, steerNoise: 0.35, sees: 140, minGain: 90, avoid: 0.3, trigger: 0.4, actSense: 0.35 },
-    medium: { think: 0.3, steerNoise: 0.15, sees: 240, minGain: 50, avoid: 0.7, trigger: 0.75, actSense: 0.75 },
-    hard: { think: 0.15, steerNoise: 0.04, sees: 360, minGain: 30, avoid: 1, trigger: 1, actSense: 1 },
+    easy: { think: 0.6, steerNoise: 0.35, sees: 140, minGain: 90, avoid: 0.3, trigger: 0.4, actSense: 0.35, previewHold: 0.45 },
+    medium: { think: 0.3, steerNoise: 0.15, sees: 240, minGain: 50, avoid: 0.7, trigger: 0.75, actSense: 0.75, previewHold: 0.25 },
+    hard: { think: 0.15, steerNoise: 0.04, sees: 360, minGain: 30, avoid: 1, trigger: 1, actSense: 1, previewHold: 0.12 },
   };
   const ESKILL = {   // the Ratel's engineer AI
     easy: { think: 1.6, top: 4, blunder: 0.25, noise: 400 },
@@ -940,7 +993,8 @@
   function makeHull(id, dom, x, z, h, honey) {
     return { id, dom, x, z, h, speed: 0, boostE: 0, slowT: 0, honey, trail: null, dist: 0, ignoreTrail: -1, ignoreT: 0, roam: null, pass: {}, mech: {}, cdR: 0, cdL: 0, boosting: false,
       jumps: [], dashes: 0, sail: 0, recolour: 0, noodles: 0, lastSkip: null, droneCd: 0, boostWas: false, jumpWas: false, lance: null,
-      act: [null, null], btnWas: [false, false], reel: null, jet: 0, jetPlow: false, flitCd: 0, drone: 0, harmAcc: 0, harmOn: false, fug: 0 };
+      act: [null, null], btnWas: [false, false], reel: null, jet: 0, jetPlow: false, flitCd: 0, drone: 0, harmAcc: 0, harmOn: false, fug: 0,
+      q: [[], []], pv: [null, null], cd8: [0, 0], thrusts: 0, thrustCd: 0 };
   }
   function makeWorld(seed, cfg) {
     const rng = mulberry32(seed), Pw = cfg.P;
@@ -949,7 +1003,8 @@
       hulls: [], trails: [], nextTrail: 1, S: dynamoSettings(cfg), dyn: null, dest: null, shots: [], grid: new Map(), gone: new Set(), patchT: 0,
       seats: { pilot: Object.assign({ think: 0, cmd: { steer: 0, boost: false, lt: false, rt: false, arm: false }, goal: null, want: [false, false], base: [false, false] }, cfg.pilot), eng: Object.assign({ think: 0 }, cfg.eng) },
       swapT: 0, orientT: 0, effects: [], log: [],
-      m: { dests: 0, slips: 0, slipDist: 0, slipGain: 0, badSlips: 0, aimed: 0, aimedGain: 0, patterns: 0, charges: 0, used: 0, emptyT: 0, apGiven: 0, hits: 0, kills: 0, turned: 0, passT: 0, swaps: 0, clipped: 0, shuffles: 0, retired: 0, freeSlips: 0, jumps: 0, activesGot: 0, activeUses: 0, activeT: 0, flits: 0, made: {} },
+      m: { dests: 0, slips: 0, slipDist: 0, slipGain: 0, badSlips: 0, aimed: 0, aimedGain: 0, patterns: 0, charges: 0, used: 0, emptyT: 0, apGiven: 0, hits: 0, kills: 0, turned: 0, passT: 0, swaps: 0, clipped: 0, shuffles: 0, retired: 0, freeSlips: 0, jumps: 0, activesGot: 0, activeUses: 0, activeT: 0, flits: 0, made: {}, rivalHits: 0, jousts: 0, banked: 0, pvT: 0, pvN: 0, cancelled: 0, fizzles: 0, hives: 0, hivesMade: 0 },
+      rngC: mulberry32(seed ^ 0x1d872b41), creatures: [], hive: null, hiveT: 0,
     };
     w.dyn = D.create(w.S, seed);
     w.hulls.push(makeHull(0, OUR_DOMAIN, 0, 0, -Math.PI / 2, true));
@@ -962,6 +1017,8 @@
     for (let k = 0; k < 360; k++) for (const hl of w.hulls) if (!hl.honey) { rivalStep(w, hl, 1 / 15); }
     w.dest = spawnDest(w);
     w.legStart = hypot2(w.dest.x, w.dest.z);
+    for (let k = 0; k < Pw.creatureCount; k++) w.creatures.push(newCreature(w));
+    w.hiveT = Pw.massHiveSeconds;
     return w;
   }
   // A 2-D prismscape: a flat bed of prisms 6 u apart (closer than the 1-D test's link), one domain.
@@ -1296,8 +1353,8 @@
     }
     if (ef.jump) { if (hull.jumps.length >= 3) hull.jumps.shift(); hull.jumps.push(key); }
     // opts.onlyActive (scorecard only) deals one active every time, which is how each active's lift is measured
-    if (ef.active) { grantActive(w, hull, w.cfg.opts.onlyActive || key); return; }
-    if (depth === 0 && w.cfg.opts.actives && w.cfg.opts.deal === 'every') { const r = w.rngA(); grantActive(w, hull, w.cfg.opts.onlyActive || ACTIVE_KEYS[Math.floor(r * ACTIVE_KEYS.length)]); }
+    if (ef.active) { if (w.cfg.opts.triggers === 'r8') bank8(w, hull, w.cfg.opts.onlyActive || key); else grantActive(w, hull, w.cfg.opts.onlyActive || key); return; }
+    if (depth === 0 && w.cfg.opts.actives && w.cfg.opts.deal === 'every') { const r = w.rngA(), k = w.cfg.opts.onlyActive || ACTIVE_KEYS[Math.floor(r * ACTIVE_KEYS.length)]; if (w.cfg.opts.triggers === 'r8') bank8(w, hull, k); else grantActive(w, hull, k); }
     switch (key) {
       case 'plow': boost(1); break;
       case 'amanita': D.boardEffect(st, S, 'burn', 1); boost(3); break;
@@ -1479,6 +1536,7 @@
   }
   // Every step: the buttons, the timers, and what a running active does.
   function stepActives(w, hull, cmd, dt) {
+    if (w.cfg.opts.triggers === 'r8') { triggers8(w, hull, cmd, dt); stepRunning(w, hull, dt); return; }
     let any = false;
     hull.harmOn = false;
     hull.flitCd -= dt;
@@ -1518,14 +1576,25 @@
         best.t.doms[best.i] = newest; w.m.turned++;
       }
     } else hull.harmAcc = 0;
-    // Hard Light Lasso: the reel ends at the hooked prism (moveHull flies it)
+    stepRunning(w, hull, dt);
+  }
+  // What a fired ability keeps doing (both rounds): the lasso's reel, the jets and thrusts, the drone, grenades in flight.
+  function stepRunning(w, hull, dt) {
+    // Hard Light Lasso: the reel ends at the hooked prism (round 7) or the hooked vessel or creature (round 8), which moveHull flies to
     if (hull.reel) {
-      hull.reel.T -= dt;
-      if (hypot2(hull.reel.x - hull.x, hull.reel.z - hull.z) < 6 || hull.reel.T <= 0) {
-        shatter(w, hull, hull.reel.x, hull.reel.z, hull.reel.r);
-        w.effects.push({ k: 'blast', x: hull.reel.x, z: hull.reel.z, r: hull.reel.r, col: DOM.ruby.color, t: 0.45 });
+      const rl = hull.reel;
+      if (rl.tgt) { rl.x = rl.tgt.x; rl.z = rl.tgt.z; }
+      rl.T -= dt;
+      if (hypot2(rl.x - hull.x, rl.z - hull.z) < 6 || rl.T <= 0) {
+        if (rl.tgt) strike(w, hull, rl.x, rl.z, rl.r); else shatter(w, hull, rl.x, rl.z, rl.r);
+        w.effects.push({ k: 'blast', x: rl.x, z: rl.z, r: rl.r, col: rl.tgt ? ELEMENT_COL.charge : DOM.ruby.color, t: 0.45 });
         hull.reel = null;
       }
+    }
+    // Thruster Swarm (round 8): three thrusts, 0.4 s apart
+    if (hull.thrusts > 0) {
+      hull.thrustCd -= dt;
+      if (hull.thrustCd <= 0) { hull.thrustCd = 0.4; hull.thrusts--; hull.jet = 0.12; hull.jetSpeed = ACTIVES8.thruster.reach / 0.12; hull.jetPlow = true; }
     }
     if (hull.jet > 0) hull.jet -= dt;
     // Sepia Drone: zaps the nearest hostile prism, three times a second
@@ -1546,6 +1615,168 @@
     }
     if (w.bombs.length) w.bombs = w.bombs.filter((b) => b.t > 0);
   }
+  // ---- round 8: the queue, the pull-and-release triggers, the strikes, creatures and the Mass hive ----
+  // A made upgrade card banks one use on its trigger. The same ability again adds a tick; any ability banked becomes the
+  // newest, i.e. current (its icon on the card); a stack: the current one fires first, then the next most recent.
+  function bank8(w, hull, key) {
+    const k = ACTIVES8[key].btn, q = hull.q[k], at = q.findIndex((e) => e.key === key);
+    let n = Math.max(1, Math.round(w.P.usesPerCard));
+    if (at >= 0) { n += q[at].n; q.splice(at, 1); }
+    q.push({ key, n });
+    w.m.banked++; w.m.activesGot++;
+    w.effects.push({ k: 'banner', text: EFFECT_NAME[key] + ' on ' + BUTTON_NAME[k] + (n > 1 ? ' ×' + n : ''), col: TICK_BLUE[key], t: 1.8 });
+  }
+  const current8 = (hull, k) => { const q = hull.q[k]; return q.length ? q[q.length - 1].key : BASE8[k].key; };
+  const ticks8 = (hull, k) => hull.q[k].reduce((s, e) => s + e.n, 0);
+  // Digital: a pull starts the preview, a release fires it. cmd.cancel (both thumbs lifted) drops a preview unfired.
+  function triggers8(w, hull, cmd, dt) {
+    for (let k = 0; k < 2; k++) {
+      const down = !!cmd[BUTTONS[k]], was = hull.btnWas[k];
+      hull.btnWas[k] = down;
+      hull.cd8[k] -= dt;
+      if (down && !was && !hull.pv[k] && hull.cd8[k] <= 0) hull.pv[k] = { key: current8(hull, k), t: 0 };
+      const pv = hull.pv[k];
+      if (!pv) continue;
+      pv.key = current8(hull, k); pv.t += dt;
+      if (down) continue;
+      hull.pv[k] = null;
+      w.m.pvT += pv.t; w.m.pvN++;
+      if (cmd.cancel) { w.m.cancelled++; continue; }
+      fire8(w, hull, k, pv.key);
+    }
+  }
+  // A rival vessel or creature: the nearest within `reach` and `cone` degrees of the nose (the lasso's hook).
+  function strikeTargetAhead(w, hull, reach, cone) {
+    const f0 = Math.cos(hull.h), f1 = Math.sin(hull.h), c = Math.cos(cone * Math.PI / 180);
+    let best = null, bd = 1e9;
+    const look = (o) => { const dx = o.x - hull.x, dz = o.z - hull.z, d = hypot2(dx, dz); if (d > 6 && d <= reach && (dx * f0 + dz * f1) / d >= c && d < bd) { bd = d; best = o; } };
+    for (let i = 1; i < w.hulls.length; i++) look(w.hulls[i]);
+    for (const cr of w.creatures) look(cr);
+    return best;
+  }
+  // A strike (LT, Charge): every rival vessel within r is hit (in the game a scored Strike: petals only) and every creature
+  // within r is jousted (in the lab it is reborn elsewhere). `seen` keeps one strike per target per use.
+  function strike(w, hull, x, z, r, seen) {
+    let n = 0;
+    for (let i = 1; i < w.hulls.length; i++) { const hl = w.hulls[i]; if (hypot2(hl.x - x, hl.z - z) <= r && !(seen && seen.has(hl))) { if (seen) seen.add(hl); w.m.rivalHits++; n++; w.effects.push({ k: 'ring', x: hl.x, z: hl.z, col: ELEMENT_COL.charge, t: 0.6 }); } }
+    for (let j = 0; j < w.creatures.length; j++) { const cr = w.creatures[j]; if (hypot2(cr.x - x, cr.z - z) <= r && !(seen && seen.has(cr))) { if (seen) seen.add(cr); w.m.jousts++; n++; w.effects.push({ k: 'ring', x: cr.x, z: cr.z, col: ELEMENT_COL.charge, t: 0.6 }); w.creatures[j] = newCreature(w); } }
+    return n;
+  }
+  function monteHops(w, hull) {
+    const f0 = Math.cos(hull.h), f1 = Math.sin(hull.h), hops = [];
+    let x = hull.x, z = hull.z;
+    for (let k = 0; k < 3; k++) {
+      let best = null, bd = -1;
+      near(w, x, z, 40, (t, i) => { if (t.owner === hull.id) return true; const p = t.pts[i], dx = p[0] - x, dz = p[2] - z, d = hypot2(dx, dz); if (d > 8 && (dx * f0 + dz * f1) / d >= Math.cos(35 * Math.PI / 180) && d > bd) { bd = d; best = p; } return true; });
+      if (!best) break;
+      x = best[0]; z = best[2]; hops.push({ x, z });
+    }
+    return hops;
+  }
+  // One release. A banked ability spends a tick only when it does something (no target: it fizzles and keeps the tick).
+  function fire8(w, hull, k, key) {
+    const Pw = w.P, f0 = Math.cos(hull.h), f1 = Math.sin(hull.h);
+    let did = true;
+    switch (key) {
+      case 'peck':
+        for (let j = 0; j < Pw.peckBurst; j++) w.shots.push({ x: hull.x + f0 * (4 - 7 * j), z: hull.z + f1 * (4 - 7 * j), vx: f0 * Pw.peckSpeed, vz: f1 * Pw.peckSpeed, life: (Pw.peckRange + 7 * j) / Pw.peckSpeed, pierce: 0, kind: 'peck', hit: false });
+        hull.cd8[0] = Pw.peckCooldown; w.m.pecks = (w.m.pecks || 0) + 1;
+        return;
+      case 'flit': {
+        const L = Pw.flitDistance, seen = new Set();
+        for (let d = 0; d <= L; d += 3) strike(w, hull, hull.x + f0 * d, hull.z + f1 * d, Pw.flitStrikeRadius, seen);
+        hull.jet = 0.15; hull.jetSpeed = L / 0.15; hull.jetPlow = false;
+        hull.cd8[1] = Pw.flitCooldown; w.m.flits++;
+        return;
+      }
+      case 'lance': case 'littlebang': case 'eyelet': case 'sepia': case 'fugacity':
+        fireActive(w, hull, { key, lvl: 1, cd: 0, charge: 1.2 });
+        break;
+      case 'thruster': hull.thrusts = 3; hull.thrustCd = 0; w.m.activeUses++; break;
+      case 'harmonizer': {
+        const c = Math.cos(20 * Math.PI / 180), R = ACTIVES8.harmonizer.reach, list = [];
+        near(w, hull.x, hull.z, R, (t, i, d2) => { if (!hostileAt(w, hull, t, i)) return true; const p = t.pts[i], dx = p[0] - hull.x, dz = p[2] - hull.z, d = Math.sqrt(d2); if (d > 4 && (dx * f0 + dz * f1) / d >= c) list.push({ t, i, d }); return true; });
+        list.sort((a, b) => a.d - b.d);
+        for (const e of list.slice(0, 12)) { e.t.doms[e.i] = hull.dom; w.m.turned++; }
+        w.effects.push({ k: 'beam', x0: hull.x, z0: hull.z, x1: hull.x + f0 * R, z1: hull.z + f1 * R, col: DOM[hull.dom].color, t: 0.5 });
+        w.m.activeUses++;
+        break;
+      }
+      case 'lasso': {
+        const tg = strikeTargetAhead(w, hull, ACTIVES8.lasso.reach, 30);
+        if (!tg) { did = false; break; }
+        hull.reel = { x: tg.x, z: tg.z, T: 1.5, r: Pw.strikeRadius, tgt: tg };
+        w.m.activeUses++;
+        break;
+      }
+      case 'monte': {
+        const hops = monteHops(w, hull);
+        if (!hops.length) { did = false; break; }
+        const seen = new Set(), x0 = hull.x, z0 = hull.z;
+        for (const h of hops) { setPose(w, hull, h.x, h.z, null); strike(w, hull, h.x, h.z, Pw.strikeRadius, seen); }
+        w.m.jumps++; w.m.activeUses++;
+        w.effects.push({ k: 'slip', x0, z0, x1: hull.x, z1: hull.z, col: ELEMENT_COL.charge, t: 0.9 });
+        break;
+      }
+      case 'blink': case 'portals': case 'rosen': case 'ftl':
+        if (!jumpTo(w, hull, key)) { did = false; break; }
+        strike(w, hull, hull.x, hull.z, Pw.strikeRadius);
+        w.effects.push({ k: 'blast', x: hull.x, z: hull.z, r: Pw.strikeRadius, col: ELEMENT_COL.charge, t: 0.45 });
+        w.m.activeUses++;
+        break;
+    }
+    if (!did) { w.m.fizzles++; w.effects.push({ k: 'banner', text: 'No target', col: '#8a96a6', t: 1.0 }); return; }
+    const q = hull.q[k], top = q[q.length - 1];
+    if (top && top.key === key) { top.n--; if (top.n <= 0) q.pop(); }
+    hull.cd8[k] = Math.max(hull.cd8[k], 0.25);
+  }
+  function newCreature(w) {
+    const a = w.rngC() * Math.PI * 2, r = (w.P.arenaRadius - 40) * Math.sqrt(w.rngC());
+    return { x: Math.cos(a) * r, z: Math.sin(a) * r, h: w.rngC() * Math.PI * 2 };
+  }
+  function stepCreatures(w, dt) {
+    for (const cr of w.creatures) {
+      cr.h += (w.rngC() - 0.5) * 1.2 * dt;
+      cr.x += Math.cos(cr.h) * w.P.creatureSpeed * dt; cr.z += Math.sin(cr.h) * w.P.creatureSpeed * dt;
+      const r = hypot2(cr.x, cr.z);
+      if (r > w.P.arenaRadius - 20) { cr.h = Math.atan2(-cr.z, -cr.x); }
+    }
+  }
+  // The Mass passive (round 8): one hive of all three domains, planted somewhere in the cytoplasm every massHiveSeconds;
+  // reaching it opens hive mode in the game (the Ratel Raid Lab). The lab counts it and plants the next.
+  function stepHive(w, hull, dt) {
+    if (!w.hive) {
+      w.hiveT -= dt;
+      if (w.hiveT <= 0) {
+        const R = w.P.arenaRadius - 40;
+        for (let k = 0; k < 40; k++) { const a = w.rngC() * Math.PI * 2, r = R * Math.sqrt(w.rngC()), x = Math.cos(a) * r, z = Math.sin(a) * r; if (hypot2(x - hull.x, z - hull.z) > 150 || k === 39) { w.hive = { x, z, born: w.t }; break; } }
+        w.m.hivesMade++;
+      }
+      return;
+    }
+    if (hypot2(w.hive.x - hull.x, w.hive.z - hull.z) < w.P.hiveReach) {
+      w.m.hives++;
+      w.effects.push({ k: 'ring', x: w.hive.x, z: w.hive.z, col: '#ffd27a', t: 0.9 });
+      w.effects.push({ k: 'banner', text: 'Hive reached: hive mode (Ratel Raid Lab)', col: '#ffd27a', t: 1.6 });
+      w.hive = null; w.hiveT = w.P.massHiveSeconds;
+    }
+  }
+  // The pilot AI's read of the current ability on trigger k: is now a good moment? (input-only)
+  function wanted8(w, hull, k, key) {
+    const dest = w.dest, dd = hypot2(dest.x - hull.x, dest.z - hull.z), toDest = Math.abs(wrapAng(Math.atan2(dest.z - hull.z, dest.x - hull.x) - hull.h));
+    const strikeNear = (x, z, r) => { for (let i = 1; i < w.hulls.length; i++) if (hypot2(w.hulls[i].x - x, w.hulls[i].z - z) <= r) return true; for (const cr of w.creatures) if (hypot2(cr.x - x, cr.z - z) <= r) return true; return false; };
+    switch (key) {
+      case 'peck': return targetsAhead(w, hull, w.P.peckRange, 8) > 0;
+      case 'flit': { const f0 = Math.cos(hull.h), f1 = Math.sin(hull.h); for (let d = 0; d <= w.P.flitDistance; d += 6) if (strikeNear(hull.x + f0 * d, hull.z + f1 * d, w.P.flitStrikeRadius)) return true; return toDest < 0.26 && dd > 40; }
+      case 'lasso': return !!strikeTargetAhead(w, hull, ACTIVES8.lasso.reach, 30);
+      case 'harmonizer': { let n = 0; const f0 = Math.cos(hull.h), f1 = Math.sin(hull.h), c = Math.cos(20 * Math.PI / 180); near(w, hull.x, hull.z, 55, (t, i, d2) => { if (!hostileAt(w, hull, t, i)) return true; const p = t.pts[i], d = Math.sqrt(d2); if (d > 4 && ((p[0] - hull.x) * f0 + (p[2] - hull.z) * f1) / d >= c) n++; return n < 3; }); return n >= 3; }
+      case 'fugacity': return countHostile(w, hull, hull.x, hull.z, 40) >= 3;
+      case 'monte': { const h = monteHops(w, hull); if (!h.length) return false; const e = h[h.length - 1]; return dd - hypot2(dest.x - e.x, dest.z - e.z) > 20 || h.some((p) => strikeNear(p.x, p.z, w.P.strikeRadius)); }
+      case 'blink': case 'portals': case 'rosen': case 'ftl': { const land = jumpLanding(w, hull, key); return !!land && (dd - hypot2(dest.x - land.x, dest.z - land.z) > 20 || strikeNear(land.x, land.z, w.P.strikeRadius)); }
+      default: return activeWanted(w, hull, { key, lvl: 1, t: 99, cd: 0, charge: 0 });
+    }
+  }
+
   // The pilot AI's read of an active: is now a good moment? (input-only: it answers with a button, never an effect)
   function activeWanted(w, hull, a) {
     const def = ACTIVES[a.key], mul = actMul(w, a), dest = w.dest, dd = hypot2(dest.x - hull.x, dest.z - hull.z);
@@ -1589,8 +1820,13 @@
         for (const dom of slipDomains(w, hull)) { const g = slipGain(w, hull, dom, S.sees); if (g && (!best || g.gain > best.gain)) best = g; }
         if (best && best.gain > S.minGain) goal = { x: best.x, z: best.z, fx: best.fx, fz: best.fz, axis: best.axis, slip: true };
       }
+      if (w.cfg.opts.triggers === 'r8' && w.hive && !goal.slip && hypot2(w.hive.x - hull.x, w.hive.z - hull.z) < hypot2(w.dest.x - hull.x, w.dest.z - hull.z)) goal = { x: w.hive.x, z: w.hive.z, slip: false };
       seat.goal = goal;
       seat.noise = gauss(w.rngP) * S.steerNoise;
+      if (w.cfg.opts.triggers === 'r8') {   // round 8: pull when the current ability on a trigger has a good moment (a rookie often just pulls)
+        seat.want8 = seat.want8 || [false, false];
+        for (let k = 0; k < 2; k++) { const key = current8(hull, k); seat.want8[k] = (k === 0 || key !== 'flit' || w.cfg.opts.base) && (key !== 'peck' || w.cfg.opts.base) && (w.rngP() < S.actSense ? wanted8(w, hull, k, key) : w.rngP() < 0.25); }
+      }
       const wantFire = w.cfg.opts.guns && w.rngP() < S.trigger;
       // the actives on its buttons: a skilled pilot judges the moment; a rookie often just presses what is ready
       for (let k = 0; k < 2; k++) { const a = hull.act[k]; seat.want[k] = !!a && (w.rngP() < S.actSense ? activeWanted(w, hull, a) : w.rngP() < 0.25); }
@@ -1627,6 +1863,19 @@
     cmd.steer = clamp(err * 2.5, -1, 1);
     cmd.boost = hull.boostE > 0 && Math.abs(err) < 0.45;
     if (hull.dashes > 0 && Math.abs(err) < 0.2) cmd.boost = !hull.boostWas;   // Thruster Swarm: tap boost for each dash
+    if (w.cfg.opts.triggers === 'r8') {   // pull (the preview), hold it previewHold, release (fire); never both at once
+      seat.hold = seat.hold || [0, 0];
+      cmd.cancel = false;
+      for (let k = 0; k < 2; k++) {
+        const b = BUTTONS[k];
+        if (seat.hold[k] > 0) { seat.hold[k] -= dt; cmd[b] = seat.hold[k] > 0; continue; }
+        cmd[b] = false;
+        if (seat.want8 && seat.want8[k] && !hull.btnWas[k] && !hull.pv[k] && hull.cd8[k] <= 0 && seat.hold[1 - k] <= 0) { seat.hold[k] = S.previewHold; seat.want8[k] = false; cmd[b] = true; }
+      }
+      cmd.arm = !!(seat.goal && seat.goal.slip);
+      cmd.jump = false;
+      return;
+    }
     cmd.rt = !!seat.fireR; cmd.lt = !!seat.fireL;
     if (!hull.act[0] && seat.base[0]) cmd.rt = true;
     if (!hull.act[1] && seat.base[1]) cmd.lt = hull.flitCd <= 0 && !hull.btnWas[1];
@@ -1668,7 +1917,11 @@
     else if (seats.pilot.who === 'human' && live) cmd = live.pilot;
     else cmd = { steer: 0, boost: false, lt: false, rt: false, arm: false, jump: false };
     if (w.orientT > 0 && seats.pilot.who !== 'human') cmd = { steer: 0, boost: false, lt: false, rt: false, arm: cmd.arm, jump: false };
+    const r8 = w.cfg.opts.triggers === 'r8';
+    if (r8) cmd = Object.assign({}, cmd, { boost: hull.boostE > 0 });   // round 8: no boost button; a card's boost burns at once
+    stepCreatures(w, dt);
     moveHull(w, hull, cmd.steer, cmd.boost, dt);
+    if (r8) stepHive(w, hull, dt);
     if (cmd.jump && !hull.jumpWas) doJump(w, hull);
     hull.jumpWas = !!cmd.jump;
     stepPassives(w, hull, dt);
@@ -1709,6 +1962,8 @@
       engIdle: m.apGiven ? +(100 * w.dyn.wasted / (m.apGiven + w.S.apPerTick)).toFixed(1) : 0,
       waiting: +(100 * m.emptyT / Math.max(1e-9, w.t)).toFixed(1), hitRate: m.charges ? +(100 * m.used / m.charges).toFixed(1) : 0,
       chargesPerMin: +(m.charges / min).toFixed(2), activesPerMin: +(m.activesGot / min).toFixed(2), activeUp: +(100 * m.activeT / Math.max(1e-9, w.t)).toFixed(0), usesPerMin: +(m.activeUses / min).toFixed(1), clipped: m.slips ? +(100 * m.clipped / m.slips).toFixed(0) : 0, hitsPerMin: +(m.hits / min).toFixed(2), shufflesPerMin: +(m.shuffles / min).toFixed(2),
+      rivalHitsPerMin: +(m.rivalHits / min).toFixed(2), joustsPerMin: +(m.jousts / min).toFixed(2), volumePerMin: +((m.kills + m.turned) / min).toFixed(1),
+      bankedPerMin: +(m.banked / min).toFixed(2), bankLeft: ticks8(w.hulls[0], 0) + ticks8(w.hulls[0], 1), previewMs: m.pvN ? Math.round(1000 * m.pvT / m.pvN) : 0, fizzlesPerMin: +(m.fizzles / min).toFixed(2), hivesPerMin: +(m.hives / min).toFixed(2),
     };
   }
   function cfgFrom(opts, pilotSkill, engWho, engSkill, extraP) {
@@ -1740,6 +1995,11 @@
     { name: 'Bank 6, random ability', opts: {}, P: { abilityChoices: 1 } },
     { name: 'Bank 3, pick of three', opts: {}, P: { apBank: 3 } },
     { name: 'No reveal pause', opts: {}, P: { revealAbility: 0, revealPorts: 0 } },
+    { name: 'Round 7: RT attack / LT move, timed upgrades, boost button', opts: { triggers: 'r7' } },
+    { name: 'Round 8, no hives (Mass passive off)', opts: {}, P: { massHiveSeconds: 100000 } },
+    { name: 'Round 8, no creatures', opts: {}, P: { creatureCount: 0 } },
+    { name: 'Round 8, 3 uses per card', opts: {}, P: { usesPerCard: 3 } },
+    { name: 'Round 8, 3 uses per card, no hives', opts: {}, P: { usesPerCard: 3, massHiveSeconds: 100000 } },
   ];
   const COLS = [
     ['destsPerMin', 'Legs/min', 'Race legs a minute: destinations reached, plus the share of the last leg flown. Higher is better.'],
@@ -1760,6 +2020,14 @@
     ['hitRate', 'Hit rate %', 'Charges that were slipped on, of all charges made (the battery prism is drawn at random).'],
     ['clipped', 'Clipped %', 'Slips the reach cap cut short.'],
     ['shufflesPerMin', 'New abilities/min', 'How often the Ratel drew a new ability and port pattern.'],
+    ['rivalHitsPerMin', 'Rivals struck/min', 'Round 8: rival vessels struck by LT (in the game a scored Strike, petals only).'],
+    ['joustsPerMin', 'Jousts/min', 'Round 8: creatures struck by LT.'],
+    ['volumePerMin', 'Volume cut/min', 'Hostile prisms shattered or turned to your domain a minute (RT, and the Plough card).'],
+    ['bankedPerMin', 'Banked/min', 'Round 8: upgrade uses banked on the triggers a minute.'],
+    ['bankLeft', 'Banked at end', 'Round 8: ticks still banked when the run ends (unspent, nothing expires).'],
+    ['previewMs', 'Preview ms', 'Round 8: mean time between a pull and its release.'],
+    ['fizzlesPerMin', 'Fizzles/min', 'Round 8: releases with no target (the tick is kept).'],
+    ['hivesPerMin', 'Hives/min', 'Round 8: hives the Mass passive planted that the Honeyguide reached.'],
   ];
   function runBatch(opts) {
     opts = opts || {};
@@ -1837,9 +2105,18 @@
     }
     if (ui.cardDown.rt) rt = true;
     if (ui.cardDown.lt) lt = true;
+    let cancel = keys.has('KeyX');   // round 8: X held at the release drops the preview unfired
+    const T = ui.th;
+    if (T.used && OPT.triggers === 'r8') {   // round 8's two thumbs: lift one to preview its trigger, touch back down to fire
+      if (!T.L && !T.R && (T.lifted.L || T.lifted.R)) { cancel = true; T.lifted.L = T.lifted.R = false; T.armed.L = T.armed.R = false; }
+      else { if (T.lifted.L) lt = true; if (T.lifted.R) rt = true; }
+      let sum = 0, n = 0;
+      for (const z of ['L', 'R']) if (T[z]) { sum += clamp((T[z].x - T[z].x0) / 40, -1, 1); n++; }
+      if (n) steer = sum / n;
+    }
     if (ui.cardDown.boost) boost = true;
     if (ui.cardDown.slip) jump = true;
-    live.pilot = { steer, boost, lt, rt, arm, jump };
+    live.pilot = { steer, boost, lt, rt, arm, jump, cancel };
   }
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; ui.toastT = 1.8; }
   function requestSwap(how) {
@@ -1852,7 +2129,8 @@
 
   // ================= drawing =================
   const canvas = $('stage'), ctx = canvas.getContext('2d');
-  const ui = { drag: null, toastT: 0, layout: null, steerTouch: null, cardDown: {}, cardRects: [], freeColour: 0, lastPipTap: 0 };
+  const ui = { drag: null, toastT: 0, layout: null, steerTouch: null, cardDown: {}, cardRects: [], freeColour: 0, lastPipTap: 0,
+    th: { L: null, R: null, armed: { L: false, R: false }, lifted: { L: false, R: false }, used: false } };   // round 8: two thumbs on the flight view
   const PRISM_INK = { 1: '#2a0029', 2: '#003b38', 3: '#3d2600' };
   const ELEMENT_COL = { charge: '#ffc23d', mass: '#4f8dff', space: '#a46bff', time: '#2fd6c3' };   // AbilityLockupStyleSO element colours (Rev 3)
   function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
@@ -1866,7 +2144,7 @@
   }
   // the Dynamo panel's geometry: header (2 rows), board, slot cards
   function dynLayout(L, small) {
-    const pad = 6, top = small ? 30 : 46, slotsH = small ? Math.max(34, L.h * 0.2) : Math.max(64, Math.min(110, L.h * 0.17));
+    const pad = 6, top = small ? 30 : 46 + (world && world.cfg.opts.triggers === 'r8' ? 14 : 0), slotsH = small ? Math.max(34, L.h * 0.2) : Math.max(64, Math.min(110, L.h * 0.17));
     const bw = L.w - 2 * pad, bh = L.h - top - slotsH - 2 * pad;
     const size = Math.max(6, Math.min(bw / (7 * Math.sqrt(3)), bh / 11));
     const cx = L.x + L.w / 2, cy = L.y + top + pad + bh / 2;
@@ -1919,6 +2197,15 @@
       ctx.textAlign = 'left'; ctx.fillStyle = '#9fe6ff'; ctx.fillText(ab[0], L.x + 10, L.y + 36);
       ctx.font = sfs - 1 + 'px system-ui, sans-serif'; ctx.fillStyle = '#8a96a6';
       ctx.fillText(fitText(ab[1], L.w - 30 - nw), L.x + 18 + nw, L.y + 36);
+    }
+    // round 8: the Ratel's strip - the Honeyguide's hive (the Mass passive) as a symbol and its distance; a thin band, cheap
+    if (!small && w.cfg.opts.triggers === 'r8') {
+      const sy = L.y + 47, hull = w.hulls[0];
+      ctx.fillStyle = '#10151c'; ctx.fillRect(L.x + 4, sy, L.w - 8, 12);
+      ctx.font = '600 10px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffd27a';
+      hexPath(L.x + 14, sy + 6, 5, Math.PI / 6); ctx.fillStyle = w.hive ? '#ffd27a' : '#4a5566'; ctx.fill();
+      ctx.fillStyle = w.hive ? '#e8edf3' : '#8a96a6';
+      ctx.fillText(w.hive ? 'Honeyguide → hive ' + Math.round(hypot2(w.hive.x - hull.x, w.hive.z - hull.z)) + ' u' : 'Next hive in ' + Math.ceil(w.hiveT) + ' s', L.x + 24, sy + 6.5);
     }
     // the time to the next spin: a bar across the top that shrinks from both sides to the centre (no number; Garrett
     // 2026-10-31, the Ratel Raid Lab's bar). It stands still during a reveal.
@@ -2097,6 +2384,14 @@
       else if (fx.k === 'beam' || fx.k === 'zap') { ctx.beginPath(); ctx.moveTo(X(fx.x0), Y(fx.z0)); ctx.lineTo(X(fx.x1), Y(fx.z1)); ctx.strokeStyle = hexA(fx.col, a); ctx.lineWidth = fx.k === 'beam' ? 4 * a + 1 : 1.5; ctx.stroke(); }
       else if (fx.k === 'blast') { ctx.beginPath(); ctx.arc(X(fx.x), Y(fx.z), fx.r * sc * (1.1 - 0.4 * a), 0, 7); ctx.fillStyle = hexA(fx.col, 0.25 * a); ctx.fill(); ctx.strokeStyle = hexA(fx.col, a); ctx.lineWidth = 2; ctx.stroke(); }
     }
+    // round 8: creatures (LT's other target), the Mass passive's hive, and each pulled trigger's preview
+    for (const cr of w.creatures) { ctx.beginPath(); ctx.arc(X(cr.x), Y(cr.z), 4, 0, 7); ctx.fillStyle = '#9fd36b'; ctx.fill(); ctx.beginPath(); ctx.moveTo(X(cr.x), Y(cr.z)); ctx.lineTo(X(cr.x - Math.cos(cr.h) * 7), Y(cr.z - Math.sin(cr.h) * 7)); ctx.strokeStyle = '#6f9a4a'; ctx.lineWidth = 1.5; ctx.stroke(); }
+    if (w.hive) {
+      const hx = X(w.hive.x), hz = Y(w.hive.z), hs = 9, pulse = 0.5 + 0.5 * Math.sin(w.t * 3);
+      for (let j = 0; j < 3; j++) { ctx.beginPath(); ctx.moveTo(hx, hz); for (let q = 0; q <= 2; q++) { const a = Math.PI / 3 * (2 * j + q) - Math.PI / 2; ctx.lineTo(hx + hs * Math.cos(a), hz + hs * Math.sin(a)); } ctx.closePath(); ctx.fillStyle = [DOM.ruby.color, DOM.jade.color, DOM.gold.color][j]; ctx.fill(); }
+      ctx.beginPath(); ctx.arc(hx, hz, w.P.hiveReach * sc * (1 + 0.15 * pulse), 0, 7); ctx.strokeStyle = 'rgba(255,210,122,.6)'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    for (let k = 0; k < 2; k++) if (hull.pv[k]) drawPreview8(w, hull, k, hull.pv[k].key, X, Y, sc);
     // the actives at work: grenades in flight, the lasso's rope, the drone, the harmonizer's beam, the discharger's charge
     for (const b of w.bombs) { const k = clamp(1 - b.t / 0.6, 0, 1), bx = b.x0 + (b.x - b.x0) * k, bz = b.z0 + (b.z - b.z0) * k; ctx.beginPath(); ctx.arc(X(bx), Y(bz), 3 + 4 * Math.sin(Math.PI * k), 0, 7); ctx.fillStyle = '#ffb21f'; ctx.fill(); ctx.beginPath(); ctx.arc(X(b.x), Y(b.z), b.r * sc, 0, 7); ctx.strokeStyle = 'rgba(255,178,31,.35)'; ctx.setLineDash([3, 4]); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]); }
     if (hull.reel) { ctx.beginPath(); ctx.moveTo(X(hull.x), Y(hull.z)); ctx.lineTo(X(hull.reel.x), Y(hull.reel.z)); ctx.strokeStyle = '#ff8cf9'; ctx.lineWidth = 2.5; ctx.stroke(); }
@@ -2129,6 +2424,7 @@
       ctx.fillStyle = '#e8edf3'; ctx.fillText(txt, cx + 6, cy); cx += tw + 4;
     }
     for (const fx of w.effects) if (fx.k === 'banner') { ctx.globalAlpha = clamp(fx.t, 0, 1); ctx.fillStyle = fx.col; ctx.font = '700 ' + (fs + 3) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(fx.text, L.x + L.w / 2, L.y + L.h * 0.3); ctx.textAlign = 'left'; ctx.globalAlpha = 1; break; }
+    if (w.cfg.opts.triggers === 'r8') { drawCards8(w, hull, L, compact); ui.arenaView = { L, sc, ox, oy }; ctx.restore(); return; }
     // The triggers first (RT Peck and LT Flit, or the upgrade holding each, its time running out along the bottom; round 4's
     // guns in that control), then Boost and the Slip.
     const nAct = 2, nCards = nAct + 2, human = world.seats.pilot.who === 'human';
@@ -2161,6 +2457,63 @@
     });
     ui.arenaView = { L, sc, ox, oy };
     ctx.restore();
+  }
+  // Round 8: what a pull previews (nothing happens until the release). Space RT in its colour, Charge LT in its.
+  function drawPreview8(w, hull, k, key, X, Y, sc) {
+    const col = k === 0 ? ELEMENT_COL.space : ELEMENT_COL.charge, f0 = Math.cos(hull.h), f1 = Math.sin(hull.h), d = def8(key), Pw = w.P;
+    const line = (L, width) => { ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(X(hull.x), Y(hull.z)); ctx.lineTo(X(hull.x + f0 * L), Y(hull.z + f1 * L)); ctx.strokeStyle = hexA(col, 0.85); ctx.lineWidth = width || 2; ctx.stroke(); ctx.setLineDash([]); };
+    const ring = (x, z, r, fill) => { ctx.beginPath(); ctx.arc(X(x), Y(z), r * sc, 0, 7); if (fill) { ctx.fillStyle = hexA(col, 0.14); ctx.fill(); } ctx.strokeStyle = hexA(col, 0.85); ctx.lineWidth = 1.5; ctx.stroke(); };
+    const none = () => { const x = X(hull.x + f0 * 30), z = Y(hull.z + f1 * 30); ctx.beginPath(); ctx.moveTo(x - 5, z - 5); ctx.lineTo(x + 5, z + 5); ctx.moveTo(x + 5, z - 5); ctx.lineTo(x - 5, z + 5); ctx.strokeStyle = '#8a96a6'; ctx.lineWidth = 2; ctx.stroke(); };
+    switch (d.pv) {
+      case 'line': line(key === 'peck' ? Pw.peckRange : d.reach); break;
+      case 'lob': line(55, 1); ring(hull.x + f0 * 55, hull.z + f1 * 55, d.reach, true); break;
+      case 'cone': { const a0 = hull.h - 20 * Math.PI / 180, a1 = hull.h + 20 * Math.PI / 180; ctx.beginPath(); ctx.moveTo(X(hull.x), Y(hull.z)); ctx.arc(X(hull.x), Y(hull.z), d.reach * sc, a0, a1); ctx.closePath(); ctx.fillStyle = hexA(col, 0.18); ctx.fill(); ctx.strokeStyle = hexA(col, 0.85); ctx.stroke(); break; }
+      case 'ring': ring(hull.x, hull.z, d.reach, true); break;
+      case 'thrust': line(3 * d.reach); for (let j = 1; j <= 3; j++) ring(hull.x + f0 * d.reach * j, hull.z + f1 * d.reach * j, 3); break;
+      case 'dart': line(Pw.flitDistance, Math.max(2, 2 * Pw.flitStrikeRadius * sc)); ring(hull.x + f0 * Pw.flitDistance, hull.z + f1 * Pw.flitStrikeRadius * 0 + f1 * Pw.flitDistance, Pw.flitStrikeRadius); break;
+      case 'hook': { const tg = strikeTargetAhead(w, hull, d.reach, 30); if (!tg) { none(); break; } ctx.beginPath(); ctx.moveTo(X(hull.x), Y(hull.z)); ctx.lineTo(X(tg.x), Y(tg.z)); ctx.strokeStyle = hexA(col, 0.85); ctx.lineWidth = 2; ctx.stroke(); ring(tg.x, tg.z, Pw.strikeRadius, true); break; }
+      case 'land': { const land = jumpLanding(w, hull, key); if (!land) { none(); break; } ctx.setLineDash([3, 5]); ctx.beginPath(); ctx.moveTo(X(hull.x), Y(hull.z)); ctx.lineTo(X(land.x), Y(land.z)); ctx.strokeStyle = hexA(col, 0.6); ctx.stroke(); ctx.setLineDash([]); ring(land.x, land.z, Pw.strikeRadius, true); break; }
+      case 'hops': { const hops = monteHops(w, hull); if (!hops.length) { none(); break; } let px = hull.x, pz = hull.z; for (const h of hops) { ctx.beginPath(); ctx.moveTo(X(px), Y(pz)); ctx.lineTo(X(h.x), Y(h.z)); ctx.strokeStyle = hexA(col, 0.6); ctx.stroke(); ring(h.x, h.z, Pw.strikeRadius, true); px = h.x; pz = h.z; } break; }
+    }
+  }
+  // Round 8's cards: RT (Space) and LT (Charge) each show the current ability's icon and the tick queue (one tick per banked
+  // use, newest first, each in its ability's blue); then the Mass hive and the Time slip. Pressing RT / LT on a card is a pull;
+  // letting go fires.
+  function drawCards8(w, hull, L, compact) {
+    const nC = 4, cw = compact ? 50 : Math.min(86, (L.w - 24) / (nC + 0.4)), ch = compact ? 46 : 66, human = world.seats.pilot.who === 'human';
+    ui.cardRects = [];
+    const defs = [{ key: 'rt', el: 'space', k: 0, tag: 'RT Space' }, { key: 'lt', el: 'charge', k: 1, tag: 'LT Charge' }, { key: 'mass', el: 'mass', tag: 'Mass' }, { key: 'slip', el: 'time', tag: 'Time' }];
+    defs.forEach((c, j) => {
+      const r = { x: L.x + L.w - 8 - (nC - j) * (cw + 4), y: L.y + L.h - ch - 8, w: cw, h: ch }, col = ELEMENT_COL[c.el];
+      const live = c.k != null && (hull.pv[c.k] || ui.cardDown[c.key]);
+      ctx.fillStyle = live ? hexA(col, 0.4) : 'rgba(12,16,22,.86)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = col; ctx.fillRect(r.x, r.y, r.w, 3);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#8a96a6'; ctx.font = (compact ? 8 : 9) + 'px system-ui, sans-serif'; ctx.fillText(c.tag, r.x + r.w / 2, r.y + 9);
+      const icx = r.x + r.w / 2, icy = r.y + (compact ? 21 : 27), rad = compact ? 8 : 11;
+      if (c.k != null) {
+        const key = current8(hull, c.k), d = def8(key), banked = key !== BASE8[c.k].key;
+        ctx.beginPath(); ctx.arc(icx, icy, rad, 0, 7); ctx.fillStyle = banked ? TICK_BLUE[key] : hexA(col, 0.3); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.font = '700 ' + (compact ? 8 : 10) + 'px system-ui, sans-serif'; ctx.fillText(d.glyph, icx, icy + 0.5);
+        ctx.fillStyle = '#e8edf3'; ctx.font = '600 ' + (compact ? 8 : 10) + 'px system-ui, sans-serif'; ctx.fillText(fitText(name8(key), r.w - 4), icx, icy + rad + (compact ? 6 : 8));
+        // the tick queue: newest first, each tick its ability's blue
+        const ticks = []; for (let q = hull.q[c.k].length - 1; q >= 0; q--) { const e = hull.q[c.k][q]; for (let n = 0; n < e.n; n++) ticks.push(e.key); }
+        const tw = compact ? 4 : 5, gap = 2, max = Math.floor((r.w - 6) / (tw + gap));
+        for (let n = 0; n < Math.min(ticks.length, max); n++) { ctx.fillStyle = TICK_BLUE[ticks[n]]; ctx.fillRect(r.x + 3 + n * (tw + gap), r.y + r.h - 7, tw, 4); }
+        if (ticks.length > max) { ctx.fillStyle = '#e8edf3'; ctx.font = '8px system-ui, sans-serif'; ctx.fillText('+' + (ticks.length - max + 1), r.x + r.w - 8, r.y + r.h - 12); }
+        if (hull.cd8[c.k] > 0 && !banked) { const cd = c.k === 0 ? w.P.peckCooldown : w.P.flitCooldown; ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(r.x, r.y + 3, r.w, (r.h - 6) * clamp(hull.cd8[c.k] / cd, 0, 1)); }
+        if (human) ui.cardRects.push({ r, key: c.key });
+      } else if (c.key === 'mass') {
+        hexPath(icx, icy, rad, Math.PI / 6); ctx.fillStyle = hexA(col, 0.35); ctx.fill(); ctx.strokeStyle = col; ctx.stroke();
+        ctx.fillStyle = '#e8edf3'; ctx.font = '600 ' + (compact ? 8 : 10) + 'px system-ui, sans-serif'; ctx.fillText('Hive', icx, icy + rad + (compact ? 6 : 8));
+        ctx.fillStyle = '#8a96a6'; ctx.font = (compact ? 8 : 9) + 'px system-ui, sans-serif';
+        ctx.fillText(w.hive ? Math.round(hypot2(w.hive.x - hull.x, w.hive.z - hull.z)) + ' u' : 'in ' + Math.ceil(w.hiveT) + ' s', icx, r.y + r.h - 8);
+      } else {
+        ctx.fillStyle = '#e8edf3'; ctx.font = '600 ' + (compact ? 8 : 10) + 'px system-ui, sans-serif'; ctx.fillText('Slip', icx, icy);
+        const b = w.dyn.battery, n = Math.max(1, b.length); for (let q = 0; q < b.length; q++) { ctx.beginPath(); ctx.arc(icx + (q - (n - 1) / 2) * 10, r.y + r.h - 10, 3.5, 0, 7); ctx.fillStyle = colourOf(b[q]); ctx.fill(); }
+      }
+      ctx.textAlign = 'left';
+    });
   }
   function seatTag(L, text) { ctx.font = '600 11px system-ui, sans-serif'; ctx.fillStyle = 'rgba(0,0,0,.55)'; const tw = ctx.measureText(text).width + 12; ctx.fillRect(L.x + 6, L.y + L.h - 22, tw, 17); ctx.fillStyle = '#ddd'; ctx.textBaseline = 'middle'; ctx.fillText(text, L.x + 12, L.y + L.h - 13); }
   function whoText(seat) { return seat.who === 'human' ? 'you' : seat.who === 'ai' ? 'AI ' + seat.skill : 'empty'; }
@@ -2206,6 +2559,13 @@
     const card = cardAt(x, y);
     pointers.set(ev.pointerId, { x, y, card });
     if (card) { ui.cardDown[card] = true; return; }
+    if (inRect(L.arena, x, y) && world.seats.pilot.who === 'human' && OPT.triggers === 'r8' && ev.pointerType === 'touch') {
+      const T = ui.th, z = x < L.arena.x + L.arena.w / 2 ? 'L' : 'R';
+      T.used = true; T[z] = { id: ev.pointerId, x0: x, x }; T.armed[z] = true;
+      if (T.lifted[z]) T.lifted[z] = false;   // touching back down releases this trigger: it fires
+      pointers.get(ev.pointerId).thumb = z;
+      return;
+    }
     if (inRect(L.arena, x, y) && world.seats.pilot.who === 'human') setSteer();
   });
   function setSteer() {
@@ -2228,6 +2588,7 @@
   canvas.addEventListener('pointermove', (ev) => {
     const [x, y] = pt(ev);
     const p = pointers.get(ev.pointerId); if (p) { p.x = x; p.y = y; }
+    if (p && p.thumb && ui.th[p.thumb]) { ui.th[p.thumb].x = x; return; }
     if (ui.drag) { ui.drag.x = x; ui.drag.y = y; }
     else if (world && world.seats.pilot.who === 'human' && p && !p.card) setSteer();
   });
@@ -2235,6 +2596,7 @@
     const [x, y] = pt(ev), p = pointers.get(ev.pointerId);
     pointers.delete(ev.pointerId);
     if (p && p.card) ui.cardDown[p.card] = false;
+    if (p && p.thumb) { const T = ui.th, z = p.thumb; T[z] = null; if (T.armed[z]) T.lifted[z] = true; return; }   // a lifted thumb: its trigger's preview
     if (ui.drag) {
       const d = ui.drag; ui.drag = null;
       const to = pxCell(ui.dynG, x, y);
@@ -2293,7 +2655,7 @@
   function checkField(label, key) { const f = document.createElement('label'); f.className = 'check'; f.innerHTML = '<input type="checkbox"><span></span>'; f.lastChild.textContent = label; const c = f.firstChild; c.checked = !!OPT[key]; c.onchange = () => setOpt(key, c.checked); return f; }
   function rulesPanel() {
     const box = document.createElement('div');
-    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Every box below starts on the round 6 candidate (Garrett\'s rules from rounds 2 to 6). Turning one off is a control the scorecard measures. Changing one restarts the match.'; box.appendChild(p);
+    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Every box below starts on the round 8 candidate (Garrett\'s rules from rounds 2 to 8). Turning one off is a control the scorecard measures. Changing one restarts the match.'; box.appendChild(p);
     box.appendChild(selectField('Slip arming', 'arming', OPT_LABELS.arming));
     box.appendChild(selectField('Slip exit facing', 'exit', OPT_LABELS.exit));
     box.appendChild(selectField('Ratel ability', 'ability', Object.assign({ random: 'Random, redrawn every few patterns (Garrett)' }, Object.fromEntries(Object.entries(ABILITY_TEXT).map(([k, v]) => [k, 'Always ' + v[0] + ': ' + v[1]])))));
@@ -2304,6 +2666,7 @@
     box.appendChild(checkField('Every pattern fires its own effect (from its tabletop card)', 'passives'));
     box.appendChild(checkField('RT is always Peck (a weak attack) and LT always Flit (a short move) (round 6)', 'base'));
     box.appendChild(checkField('Upgrade cards take a trigger over for a while (rounds 5 and 6)', 'actives'));
+    box.appendChild(selectField('The triggers', 'triggers', OPT_LABELS.triggers));
     box.appendChild(selectField('Which patterns upgrade a trigger', 'deal', OPT_LABELS.deal));
     box.appendChild(checkField('Round 4\'s guns on LT / RT (a control; an upgrade on the trigger wins)', 'guns'));
     box.appendChild(checkField('The Slip is on', 'slip'));
@@ -2342,7 +2705,7 @@
       case 'Ratel abilities': return o.ability === 'random' ? (P.abilityChoices > 1 ? 'Pick one of ' + P.abilityChoices + ' (never ' + RETIRED_ABILITIES.map((a) => ABILITY_TEXT[a][0]).join(', ') + ') every ' + P.patternsPerShuffle + ' patterns, the clock stopped' + (P.pickSeconds > 0 ? ' up to ' + P.pickSeconds + ' s' : '') + '; then ' + P.revealPorts + ' s for the new ports' : 'Random (never ' + RETIRED_ABILITIES.map((a) => ABILITY_TEXT[a][0]).join(', ') + '), redrawn with the ports every ' + P.patternsPerShuffle + ' patterns; the clock stops ' + P.revealAbility + ' s to show the ability, then ' + P.revealPorts + ' s for the ports') : 'Always ' + ABILITY_TEXT[o.ability][0];
       case 'Pattern replacement': return o.replace ? 'Replaced after ' + P.usesPerPattern + ' makes' : 'Never replaced';
       case 'Pattern effects': return 'Each pattern fires its own effect, converted from its tabletop card; timed ones last ' + P.passiveSeconds + ' s and stack to level ' + P.passiveMaxLevel + '; the thirteen upgrade cards take over RT or LT for ' + P.activeSeconds + ' s';
-      case 'The triggers': return (o.base ? 'RT Peck (' + P.peckRate + '/s, ' + P.peckRange + ' u), LT Flit (' + P.flitDistance + ' u every ' + P.flitCooldown + ' s). ' : 'No base powers. ') + (o.actives ? OPT_LABELS.deal[o.deal] + '; an upgrade holds its trigger ' + P.activeSeconds + ' s' : o.guns ? 'Round 4: the guns' : 'No upgrades');
+      case 'The triggers': return o.triggers === 'r8' ? 'Round 8: RT Space (Peck, ' + P.peckBurst + ' shots, every ' + P.peckCooldown + ' s) and LT Charge (Flit ' + P.flitDistance + ' u, strikes within ' + P.flitStrikeRadius + ' u, every ' + P.flitCooldown + ' s); pull to preview, release to fire; upgrades bank uses, newest first' : (o.base ? 'RT Peck (' + P.peckRate + '/s, ' + P.peckRange + ' u), LT Flit (' + P.flitDistance + ' u every ' + P.flitCooldown + ' s). ' : 'No base powers. ') + (o.actives ? OPT_LABELS.deal[o.deal] + '; an upgrade holds its trigger ' + P.activeSeconds + ' s' : o.guns ? 'Round 4: the guns' : 'No upgrades');
       case 'Tick / AP / battery': return 'Spin ' + P.tickSeconds + ' s, ' + P.apPerTick + ' AP (bank ' + P.apBank + '), battery ' + P.batteryCap;
       case 'Sign-off': return 'This is fun: build the Honeyguide and Ratel in Unity with these settings.';
       default: return 'Settings: ' + JSON.stringify(Object.assign({}, diffOnly(), optDiff()));
@@ -2405,7 +2768,7 @@
       const c = document.createElement('div'); c.className = 'card';
       const b = document.createElement('b'); b.textContent = pat.name; c.appendChild(b);
       const f = document.createElement('span'); f.className = 'fam'; f.style.color = DOM[COLOUR_DOM[pat.family]].color; f.textContent = DOM[COLOUR_DOM[pat.family]].name + ' family · ' + pat.cells.length + ' cells · ' + pat.cells.map((x) => COLOUR_LETTER[x[2]] + '(' + x[0] + ',' + x[1] + ')').join(' '); c.appendChild(f);
-      const ef = EFFECTS[pat.effect], e = document.createElement('div'); e.textContent = (ef.active ? (ACTIVES[pat.effect].btn ? 'Move upgrade' : 'Attack upgrade') + ' for ' + P.activeSeconds + ' s. ' : '') + ef.text + (ef.time ? ' (' + P.passiveSeconds + ' s; a repeat raises its level)' : ''); e.style.fontSize = '12px'; c.appendChild(e);
+      const ef = EFFECTS[pat.effect], e = document.createElement('div'); e.textContent = (ef.active ? (OPT.triggers === 'r8' ? (ACTIVES8[pat.effect].btn ? 'LT (Charge) upgrade, banked: ' : 'RT (Space) upgrade, banked: ') : (ACTIVES[pat.effect].btn ? 'Move upgrade' : 'Attack upgrade') + ' for ' + P.activeSeconds + ' s. ') : '') + ef.text + (ef.time ? ' (' + P.passiveSeconds + ' s; a repeat raises its level)' : ''); e.style.fontSize = '12px'; c.appendChild(e);
       grid.appendChild(c);
     });
     box.appendChild(grid);
@@ -2414,11 +2777,14 @@
   function aboutPanel() {
     const box = document.createElement('div');
     box.innerHTML = '<p id="aboutHead"></p>' +
+      '<p><b>Round 8 (Garrett, 2026-11-01).</b> Time is the Slip (passive). RT is a Space active that always cuts opposing prism volume; LT is a Charge active that always strikes rival vessels and creatures. Both are digital: pull to see a preview, release to fire. On a phone fly with two thumbs (drag either thumb sideways to steer); lift your LEFT thumb to preview LT, touch it back down to fire; lift your RIGHT thumb for RT; lift both to cancel. Keyboard: hold E or K (RT) or Q or J (LT) to preview, let go to fire, hold X as you let go to cancel. Each upgrade card the Ratel makes BANKS a use on its trigger: a tick on the card; the newest ability is current (its icon on the card) and fires first. Mass is a passive: every ' + P.massHiveSeconds + ' s a hive of all three domains appears to fly to (hive mode itself is the Ratel Raid Lab). No boost button: a card\'s boost burns at once. Round 7 is the "The triggers" setting\'s other choice.</p>' +
       '<p><b>The question.</b> Is the handoff fun? The Ratel builds patterns on a hex Dynamo whose injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery (a slip charge in its domain) and fires the card\'s own effect. The Honeyguide is not a Sparrow: RT is always Peck (a weak attack) and LT always Flit (a short move). Its Time ability is the Slip: touch a trail of a domain you hold, nose within 45 degrees of the trail\'s line, and ride it to the end you point at. Round 6 (Garrett: "the right trigger should always be a weak attack power that gets upgraded sometimes. the left should be a movement power that works similar. the 39 patterns should still be unique") gives every card its own effect: six attack upgrades take RT for 20 s, seven move upgrades take LT for 20 s, and the other 26 are timed passives or one-off effects. Sign off on a phone, as the Engineer, on the Decisions tab ("this is fun").</p>' +
       '<p><b>What this lab does NOT model.</b></p><ul class="plain">' +
       '<li>The world is a flat 2D disc, not the 3D cell. A prism\'s z axis is its trail\'s direction in the plane; "1-D" is measured locally (at most two neighbours within 1.5 prism spacings), so a crossing of two trails is 2-D where they cross. The 2-D beds stand in for walls, flora and the cell\'s structures.</li>' +
       '<li>The race (reach the next destination ring) is the lab\'s yardstick; no game mode is modelled. Kills count hostile prisms destroyed; nothing scores them.</li>' +
-      '<li>Peck, Flit and the upgrades only shatter, recolour or lay prisms, or move the hull, in 2D. No rival vessels to fight (PvP is petals only in the game), no aiming in 3D, no camera, sound or VFX beyond the lab\'s lines and rings, and no element costs. Their reaches, cooldowns and the 20 s life are proposals.</li>' +
+      '<li>Peck, Flit and the upgrades only shatter, recolour or lay prisms, move the hull, or count a strike, in 2D. A strike on a rival vessel is counted, not scored (in the game a Strike moves petals, PvP is petals only); a struck creature is reborn elsewhere. The rivals do not fight back or dodge. No aiming in 3D, no camera, sound or VFX beyond the lab\'s lines and rings, and no element costs or levels (the Mass level shortening the hive cadence is not modelled). Every reach, cooldown and count is a proposal.</li>' +
+      '<li>The two-thumb touch is a 2D stand-in: a thumb steers by how far it has slid sideways from where it touched; the game flies two real sticks and drops to one-thumb flying on the remaining stick.</li>' +
+      '<li>The icons on the cards are two-letter placeholders; the ability icons are made by /ability-icon.</li>' +
       '<li>A shattered prism is simply gone. In the game a prism is cut, ploughed or scattered by its own rules, and the mass goes somewhere.</li>' +
       '<li>The pattern effects and their numbers, and the Ratel\'s abilities, are proposals. Time, Space, Mass and Charge scaling and the L5 upgrades are fixed numbers here.</li>' +
       '<li>Two players on one device only; no networking. A real thumb tires and misses; the AIs only have speed, noise and reaction time.</li></ul>' +
@@ -2460,6 +2826,47 @@
   window.__lab = {
     LAB, SHIPPED, SPEC, P, OPT, PLATFORM, VARIANTS, PATTERNS, EFFECTS, PORT_SETS, core: D,
     grant: (key) => grantActive(world, world.hulls[0], key), ACTIVES,
+    // round 8: bank an upgrade use, read the queues, and a self-test of the pull/release rules on a fresh headless world
+    bank: (key) => bank8(world, world.hulls[0], key), ACTIVES8, BASE8, TICK_BLUE,
+    queues: () => world.hulls[0].q.map((q) => q.map((e) => ({ key: e.key, n: e.n }))),
+    selfTest8: () => {
+      const out = [], ok = (name, pass, got) => out.push({ name, pass: !!pass, got });
+      const fresh = () => { const w = makeWorld(11, cfgFrom({}, 'hard', 'none', 'hard')); w.seats.pilot.who = 'none'; return w; };
+      const step = (w, cmd) => { const c = Object.assign({ steer: 0, boost: false, lt: false, rt: false, arm: false, jump: false, cancel: false }, cmd); stepActives(w, w.hulls[0], c, 1 / 30); stepRunning; };
+      // the queue: the same ability again adds a tick; a new one becomes current; the stack fires newest first
+      let w = fresh(), h = w.hulls[0];
+      bank8(w, h, 'lance'); bank8(w, h, 'lance'); bank8(w, h, 'littlebang');
+      ok('same ability banks a tick; a new one becomes current', current8(h, 0) === 'littlebang' && h.q[0].length === 2 && h.q[0][0].n === 2 && ticks8(h, 0) === 3, JSON.stringify(h.q[0]));
+      bank8(w, h, 'lance');
+      ok('banking an ability already queued moves it to current with its ticks', current8(h, 0) === 'lance' && h.q[0][h.q[0].length - 1].n === 3, JSON.stringify(h.q[0]));
+      // a pull previews and does nothing; the release fires and spends one tick
+      w = fresh(); h = w.hulls[0]; bank8(w, h, 'littlebang');
+      step(w, { rt: true });
+      ok('a pull previews without firing', h.pv[0] && h.pv[0].key === 'littlebang' && w.bombs.length === 0 && ticks8(h, 0) === 1, JSON.stringify(h.pv[0]));
+      step(w, { rt: true }); step(w, { rt: false });
+      ok('the release fires and spends the tick', w.bombs.length === 1 && ticks8(h, 0) === 0 && !h.pv[0], w.bombs.length + ' bombs, ' + ticks8(h, 0) + ' ticks');
+      // cancel: both thumbs lifted at the release
+      w = fresh(); h = w.hulls[0]; bank8(w, h, 'littlebang');
+      step(w, { rt: true }); step(w, { rt: false, cancel: true });
+      ok('a cancelled release fires nothing and keeps the tick', w.bombs.length === 0 && ticks8(h, 0) === 1 && w.m.cancelled === 1, w.m.cancelled);
+      // the base: Peck fires a burst of shots; nothing banked, nothing spent
+      w = fresh(); h = w.hulls[0];
+      step(w, { rt: true }); step(w, { rt: false });
+      ok('Peck: one release fires peckBurst shots', w.shots.filter((x) => x.kind === 'peck').length === w.P.peckBurst, w.shots.length);
+      // Flit strikes a creature on its lane; a lasso with no target fizzles and keeps its tick
+      w = fresh(); h = w.hulls[0]; w.creatures = [{ x: h.x + Math.cos(h.h) * 10, z: h.z + Math.sin(h.h) * 10, h: 0 }];
+      step(w, { lt: true }); step(w, { lt: false });
+      ok('Flit strikes a creature on its lane', w.m.jousts === 1, w.m.jousts);
+      w = fresh(); h = w.hulls[0]; w.creatures = []; for (let i = 1; i < w.hulls.length; i++) { w.hulls[i].x = 900; w.hulls[i].z = 900; }
+      bank8(w, h, 'lasso'); step(w, { lt: true }); step(w, { lt: false });
+      ok('a lasso with no target fizzles and keeps its tick', ticks8(h, 1) === 1 && w.m.fizzles === 1 && !h.reel, ticks8(h, 1));
+      // the lasso hooks a creature and strikes it on arrival
+      w = fresh(); h = w.hulls[0]; w.creatures = [{ x: h.x + Math.cos(h.h) * 60, z: h.z + Math.sin(h.h) * 60, h: 0 }];
+      bank8(w, h, 'lasso'); step(w, { lt: true }); step(w, { lt: false });
+      for (let i = 0; i < 90 && h.reel; i++) { moveHull(w, h, 0, false, 1 / 30); stepRunning(w, h, 1 / 30); }
+      ok('the lasso reels to a creature and strikes it', w.m.jousts === 1 && ticks8(h, 1) === 0, w.m.jousts);
+      return { pass: out.every((x) => x.pass), cases: out };
+    },
     // which cards the hard crew makes: { effect: makes } summed over seeds (headless)
     made: (seeds, seconds) => { const out = {}; for (const sd of seeds || [1, 2, 3, 4, 5, 6]) { const w = makeWorld(sd, cfgFrom({}, 'hard', 'ai', 'hard')); for (let i = 0; i < Math.round((seconds || 120) * 30); i++) simStepWorld(w, 1 / 30, null); for (const [k, v] of Object.entries(w.m.made)) out[k] = (out[k] || 0) + v; } return out; },
     effect: (pid) => applyEffect(world, pid, world.dyn.battery.length ? world.dyn.battery[world.dyn.battery.length - 1] : 1, 0),
@@ -2471,7 +2878,7 @@
     engInput: (inp) => engInput(inp),
     cellPx: (i) => (ui.dynG ? cellPx(ui.dynG, i) : null), slotRect: (k) => (ui.slotRects ? ui.slotRects[k] : null), hexSize: () => (ui.dynG ? ui.dynG.size : 0),
     world: () => world,
-    state: () => ({ t: world.t, seed, digest: D.digest(world.dyn), ability: world.dyn.ability, battery: world.dyn.battery.slice(), passives: Object.fromEntries(Object.entries(world.hulls[0].pass).map(([k, v]) => [k, v.lvl])), actives: world.hulls[0].act.map((x) => (x ? { key: x.key, lvl: x.lvl, t: +x.t.toFixed(2) } : null)), hull: { x: world.hulls[0].x, z: world.hulls[0].z, h: world.hulls[0].h }, m: Object.assign({}, world.m), seats: { pilot: world.seats.pilot.who, eng: world.seats.eng.who } }),
+    state: () => ({ t: world.t, seed, digest: D.digest(world.dyn), ability: world.dyn.ability, battery: world.dyn.battery.slice(), passives: Object.fromEntries(Object.entries(world.hulls[0].pass).map(([k, v]) => [k, v.lvl])), actives: world.hulls[0].act.map((x) => (x ? { key: x.key, lvl: x.lvl, t: +x.t.toFixed(2) } : null)), queues: world.hulls[0].q.map((q) => q.map((e) => e.key + 'x' + e.n)), previews: world.hulls[0].pv.map((x) => (x ? x.key : null)), hull: { x: world.hulls[0].x, z: world.hulls[0].z, h: world.hulls[0].h }, m: Object.assign({}, world.m), seats: { pilot: world.seats.pilot.who, eng: world.seats.eng.who } }),
   };
   window.__honeyguideLab = window.__lab;
 })();
