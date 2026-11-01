@@ -494,6 +494,9 @@ namespace CosmicShore.Gameplay
                     speedMult = Mathf.Clamp(arrivalMult, 1f, Mathf.Max(1f, huntSpeedMultiplier));
                 }
             }
+            // A THROW (the leash asks for more than this boid's own top speed): the leash owns the motion (ANGLER.md
+            // follow-up 11, the same guard as LightFauna's).
+            if (LeashOwnsSpeed(maxSpeed * speedMult)) return;
             currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed * speedMult, maxSpeed * speedMult);
 
             desiredRotation = SafeLookRotation.TryGet(currentVelocity, SteeringUpFor(currentVelocity), out var desiredRot, this) ? desiredRot : transform.rotation;

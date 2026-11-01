@@ -47,7 +47,8 @@ ELEMENT_CS = "Assets/_Scripts/Data/Enums/Element.cs"
 LINES_FIELDS = ["VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "HoldProgress", "Done",
                 "Failed", "Stowed", "Extracted", "ArkLost", "NoWork", "Following",
                 "ChooseNext", "CardRoute", "CardHomeRoute", "CardUnderway", "CardCourse",
-                "SeaSpray", "SeaFroth", "SeaWater", "SeaThick", "SeaReef"]
+                "SeaSpray", "SeaFroth", "SeaWater", "SeaThick", "SeaReef", "CardOpen", "CardClose", "CardDetails",
+                "CardHomeDetails", "CardSquadSeat", "CardSquadSeparator"]
 
 
 def guid_for(name):

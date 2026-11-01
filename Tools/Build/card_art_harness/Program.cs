@@ -114,6 +114,7 @@ static class Program
             case "scarabrally":
             case "serpenttime":
             case "brittlestartime":
+            case "lanternrun":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -130,6 +131,7 @@ static class Program
                     "scarabrally" => SwitchbackCourse.Generate(seed, Apply(ScarabRallyCourse.ForIntensity(intensity), layer)),
                     "serpenttime" => HeadlongCircuit.Generate(seed, Apply(SerpentTimeCourse.ForIntensity(intensity), layer)),
                     "brittlestartime" => HeadlongCircuit.Generate(seed, Apply(BrittleStarTimeCourse.ForIntensity(intensity), layer)),
+                    "lanternrun" => HeadlongCircuit.Generate(seed, Apply(LanternRunCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -141,6 +143,7 @@ static class Program
                     DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback" && kind != "scarabrally", pal, layer);
                 if (kind == "threshertime") StageSling(scene, gates);
                 if (kind == "wrasserun") StageKite(scene, gates);
+                if (kind == "lanternrun") StageClusters(scene, gates, intensity);
                 return 0;
             }
             case "breakwater":
@@ -299,6 +302,21 @@ static class Program
                 scene.Box(c, f * 6, r * 1.2, u * 1.2, m, false);
             }
         }
+    }
+
+    /// <summary>LanternRun's signature: the mass clusters themselves at the SHIPPED layout (LanternRunCourse.Clusters),
+    /// glowing balls before and past their rings, with a dotted dash line from the first leg's near cluster through its
+    /// ring to its far one - the path the Angler paints and zooms along. Card-scale sizes, not the game's.</summary>
+    static void StageClusters(Scene scene, List<RaceGate> gates, int intensity)
+    {
+        var glow = new Material { Base = new V3(0.05, 0.18, 0.25), Rim = new V3(0.5, 1.6, 1.9), Emissive = new V3(0.35, 1.1, 1.3), EdgeGlow = 0.35, RimPower = 1.4 };
+        var dot = new Material { Base = new V3(0.25, 0.22, 0.05), Rim = new V3(1.8, 1.5, 0.4), Emissive = new V3(1.2, 1.0, 0.3), EdgeGlow = 0.2 };
+        foreach (var c in LanternRunCourse.Clusters(gates, intensity))
+            scene.Sphere(ToV(c.Centre), LanternRunCourse.ClusterRadius(intensity) * 2.2, glow, 20, 40, false);
+        if (!LanternRunCourse.HasCluster(0, LanternRunCourse.ClusterRole.Near, intensity)) return;
+        V3 near = ToV(LanternRunCourse.ClusterCentre(gates, 0, LanternRunCourse.ClusterRole.Near, intensity));
+        V3 far = ToV(LanternRunCourse.ClusterCentre(gates, 0, LanternRunCourse.ClusterRole.Far, intensity));
+        for (int j = 0; j < 22; j++) scene.Sphere(near + (far - near) * (j / 21.0), 3.0, dot, 8, 16, false);
     }
 
     /// <summary>
