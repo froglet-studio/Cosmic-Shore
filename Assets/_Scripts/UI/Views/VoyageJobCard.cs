@@ -37,16 +37,18 @@ namespace CosmicShore.UI
 
         void OnSetSail() => _onSetSail?.Invoke();
 
-        /// <summary>Draw the card. A null <paramref name="onSetSail"/> leaves Set sail dark (nothing to set out on).</summary>
+        /// <summary>Draw the card. A null <paramref name="onSetSail"/> leaves Set sail dark (nothing to set out on);
+        /// <paramref name="course"/> is the line under the map (the course's light years and water), null shows none.</summary>
         public void Show(VoyageContent content, VoyageToyDefinitionSO style, string here,
-            System.Collections.Generic.IReadOnlyList<string> route, string eyebrow, string title, Action onSetSail)
+            System.Collections.Generic.IReadOnlyList<string> route, string eyebrow, string title, Action onSetSail,
+            string course = null)
         {
             if (eyebrowText) eyebrowText.text = eyebrow ?? string.Empty;
             if (titleText) titleText.text = title ?? string.Empty;
             _onSetSail = onSetSail;
             if (setSailButton) setSailButton.interactable = onSetSail != null;
             var map = Map();
-            if (map) map.Show(content, style, here, route);
+            if (map) map.Show(content, style, here, route, course);
         }
 
         Button _lower, _raise;
