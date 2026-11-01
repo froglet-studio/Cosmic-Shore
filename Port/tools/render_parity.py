@@ -40,6 +40,9 @@ import numpy as np
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SCENE = "Assets/_Scenes/Game_TestDesign/RenderParity.unity"
+# Each take's scene (Tools/Build/author_render_parity_scene.py writes both): the control take (a prism grid, its
+# blast, gyroids and a Manta at rest) and the flight take (four hulls racing through each other's prism trails).
+SCENES = {"control": SCENE, "flight": "Assets/_Scenes/Game_TestDesign/RenderParityFlight.unity"}
 GOLDENS = os.path.join(ROOT, "Port", "parity", "goldens", "render")
 RESULTS = os.path.join(ROOT, "Port", "parity", "results", "render")
 PLAYER_DLL = os.path.join(ROOT, "Port", "src", "CosmicShore.Player", "bin", "Debug", "net10.0", "CosmicShore.dll")
@@ -59,7 +62,8 @@ def take_settings(take):
         return json.load(open(p))
     sys.path.insert(0, os.path.join(ROOT, "Tools", "Build"))
     import author_render_parity_scene as a
-    return {"fps": a.FPS, "warmupFrames": a.WARMUP, "takeFrames": a.FRAMES, "width": a.W, "height": a.H, "msaa": 4}
+    warm = a.FLIGHT_WARMUP if take == "flight" else a.WARMUP
+    return {"fps": a.FPS, "warmupFrames": warm, "takeFrames": a.FRAMES, "width": a.W, "height": a.H, "msaa": 4}
 
 
 # ---------------------------------------------------------------- record
@@ -84,7 +88,7 @@ def record(take, out, port=47990, post=None):
     post = str(post or ts.get("post", "on")).lower()
     if post == "on": os.environ.pop("COSMIC_SHORE_POST_OFF", None)
     else: os.environ["COSMIC_SHORE_POST_OFF"] = "all" if post == "off" else post
-    extra = ["--scene", SCENE, "--step-hz", str(fps), "--msaa", str(ts.get("msaa", 4)), "--render-scale", "1", "--render-from", "999999999"]
+    extra = ["--scene", SCENES.get(take, SCENE), "--step-hz", str(fps), "--msaa", str(ts.get("msaa", 4)), "--render-scale", "1", "--render-from", "999999999"]
     # Pin the graphics settings the golden was recorded under (Desktop, High, no adaptive drop). Left to
     # itself the profile's first run auto-detects a software GL as Low, and adaptive performance drops
     # it there anyway on a slow frame: Low bakes the sky into a panorama, turns HDR off and caps the

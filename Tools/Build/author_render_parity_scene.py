@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Author the render-parity CONTROL SCENE: the one scene Unity and Amoebius both render, frame for frame.
+"""Author the render-parity scenes: the scenes Unity and Amoebius both render, frame for frame.
 
     python3 Tools/Build/author_render_parity_scene.py            # writes the scene and its grid config
     python3 Tools/Build/author_render_parity_scene.py --check    # drift gate: exits 1 if disk differs
@@ -16,6 +16,11 @@ Assets/Resources/RenderParityGridConfig.asset (+ .meta). The scene is determinis
   - twelve GyroidBranch spindles in an arc (the flora limbs' shader);
   - the Manta hull at rest (its mesh and its four hull materials, no vessel components);
   - the RenderParityTake: 30 warm-up frames, 300 take frames at 60 fps, 1280x720, a slow arc of a camera.
+
+A second scene, the FLIGHT TAKE (Assets/_Scenes/Game_TestDesign/RenderParityFlight.unity), is the footage highlight
+reels are cut from: four hulls racing through each other's prism trails (RenderParityFlight: closed-form paths of the
+frame index, each laying its domain's trail through PrismTrailBuilder.LayOne), the camera chasing the lead Manta.
+90 warm-up frames (the trails exist by take frame 0), 300 take frames at 60 fps, 1280x720.
 
 Garrett (2026-10-29): "make a tool in unity that will use the unity recorder in a constructed scene ... then
 create the exact same scene and video in amoebius ... your loss function will be based on sampling pixel
@@ -46,6 +51,9 @@ THEME_DATA = "d45a23e6bd2da304988606fba6c97628"
 HARNESS_SCRIPT = "073aad2d2c4c494f9ae322d3d37f8ebc"         # PrismGridExplosionHarness.cs
 GRID_CONFIG_SCRIPT = "5cd132ed964743619915a3b1038018e2"     # PrismGridTestConfigSO.cs
 TAKE_SCRIPT = "7c2e1a9d4b5f4e0c8a1d2f3e4b5c6d70"            # RenderParityTake.cs
+FLIGHT_SCRIPT = "7c2e1a9d4b5f4e0c8a1d2f3e4b5c6d72"          # RenderParityFlight.cs
+FLIGHT_SCENE = "Assets/_Scenes/Game_TestDesign/RenderParityFlight.unity"
+FLIGHT_SCENE_GUID = "7c2e1a9d4b5f4e0c8a1d2f3e4b5c6d82"
 GYROID_BRANCH_PREFAB = "932f1e7dbf4a4c04824d09eb4510cafc"   # Assets/_Prefabs/FloraAndFauna/Spindles/GyroidBranch.prefab
 DOLPHIN_PRISM_PREFAB = ("4563009547826722997", "4e280247faa1d154fa25d1e92df405dc")
 DOLPHIN_BLAST_PREFAB = ("3479271500403630839", "4a855af160021d241b8c1ac70cf2d792")
@@ -59,6 +67,7 @@ CHECKED_GUIDS = {
     HARNESS_SCRIPT: "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
     GRID_CONFIG_SCRIPT: "Assets/_Scripts/ScriptableObjects/PrismGridTestConfigSO.cs",
     TAKE_SCRIPT: "Assets/_Scripts/Utility/Parity/RenderParityTake.cs",
+    FLIGHT_SCRIPT: "Assets/_Scripts/Utility/Parity/RenderParityFlight.cs",
     STANDALONE_MARKER_SCRIPT: "Assets/_Scripts/Utility/StandaloneSceneMarker.cs",
     GYROID_BRANCH_PREFAB: "Assets/_Prefabs/FloraAndFauna/Spindles/GyroidBranch.prefab",
     DOLPHIN_PRISM_PREFAB[1]: "Assets/_Prefabs/Trails/Prisms With Pools/Dolphin Prism.prefab",
@@ -77,6 +86,20 @@ EVENTS = [(-28, "spawn"), (150, "explode")]
 GRID_COUNTS, GRID_GAPS = (9, 5, 9), (30, 30, 30)
 MANTA_POSE = ((-110, 40, -150), (0, 0.7071068, 0, 0.7071068), (1, 1, 1))   # position, rotation (facing +x), scale
 GYROIDS = [((70 + 14 * i, -30 + 9 * (i % 4), -100 - 10 * (i % 3)), (0, 0.3826834 * (i % 2), 0, 0.9238795 if i % 2 else 1.0), (1, 1, 1)) for i in range(12)]
+
+
+# The flight take: (domain, origin at the flight's first frame, velocity, sway amplitude, frequency Hz, phase cycles).
+# Domains: 1 Jade, 2 Ruby, 3 Blue, 4 Gold. The lead (the chased Manta) is first; the rivals run ahead of it and
+# sway across its line, so it flies through their trails.
+FLIGHT_WARMUP, FLIGHT_START = 90, -90
+FLYERS = [
+    (1, (0, 0, -100), (0, 0, 70), (6, 3, 0), (0.23, 0.31, 0), (0, 0.25, 0)),
+    (2, (14, 4, -60), (0, 0, 68), (10, 5, 0), (0.17, 0.27, 0), (0.4, 0.1, 0)),
+    (3, (-12, -5, -40), (1, 0, 71), (8, 6, 0), (0.29, 0.19, 0), (0.7, 0.6, 0)),
+    (4, (4, 10, -20), (-0.5, -0.3, 69.5), (12, 4, 0), (0.13, 0.37, 0), (0.2, 0.8, 0)),
+]
+FLIGHT_KEYFRAMES = [(0, (5, 3.5, -8), (5, 0, 35)), (299, (5, 3.5, -8), (5, 0, 35))]   # the warm-up pose only: the chase takes over at 0
+FLIGHT_GYROIDS = [((-90 if i % 2 else 90, -20 + 12 * (i % 3), 40 + 60 * i), (0, 0.3826834 * (i % 2), 0, 0.9238795 if i % 2 else 1.0), (1, 1, 1)) for i in range(6)]
 
 
 def root_transform_id(prefab_rel):
@@ -577,6 +600,65 @@ def build_scene():
     return "".join(out)
 
 
+def build_flight_scene():
+    ids = Ids()
+    out = [header()]
+    cam_go, cam_t, cam_c, cam_al, cam_urp = (ids.next() for _ in range(5))
+    out.append(game_object(cam_go, "Main Camera", [cam_t, cam_c, cam_al, cam_urp], tag="MainCamera"))
+    out.append(transform(cam_t, cam_go, pos=FLIGHT_KEYFRAMES[0][1]))
+    out.append(camera(cam_c, cam_go))
+    out.append(audio_listener(cam_al, cam_go))
+    out.append(urp_camera_data(cam_urp, cam_go))
+    instance_roots = []
+    for guid, prefab in ((POSTPROCESSING_PREFAB, "Assets/_Prefabs/Environment/PostProcessing.prefab"), (PRISM_MANAGERS_PREFAB, "Assets/_Prefabs/Environment/PrismManagers.prefab")):
+        pid, tid = ids.next(), ids.next()
+        out.append(prefab_instance(pid, tid, guid, root_transform_id(prefab)))
+        instance_roots.append(tid)
+    sa_go, sa_t, sa_c = (ids.next() for _ in range(3))
+    out.append(game_object(sa_go, "[StandaloneScene]", [sa_t, sa_c]))
+    out.append(transform(sa_t, sa_go))
+    out.append(mono(sa_c, sa_go, STANDALONE_MARKER_SCRIPT, ""))
+    tm_go, tm_t, tm_c = (ids.next() for _ in range(3))
+    out.append(game_object(tm_go, "[ThemeManager]", [tm_t, tm_c]))
+    out.append(transform(tm_t, tm_go))
+    out.append(mono(tm_c, tm_go, THEME_MANAGER_SCRIPT, f"  _dataContainer: {{fileID: 11400000, guid: {THEME_DATA}, type: 2}}\n"))
+    # The hulls: the Manta's mesh and hull materials, posed by the flight every frame
+    hulls = []
+    names = {1: "Jade", 2: "Ruby", 3: "Blue", 4: "Gold"}
+    for i, (dom, origin, *_rest) in enumerate(FLYERS):
+        h_go, h_t, h_f, h_r = (ids.next() for _ in range(4))
+        out.append(game_object(h_go, f"Hull {i} ({names[dom]})", [h_t, h_f, h_r]))
+        out.append(transform(h_t, h_go, origin))
+        out.append(mesh_filter(h_f, h_go, MANTA_MESH))
+        out.append(mesh_renderer(h_r, h_go, MANTA_MATERIALS))
+        hulls.append(h_t)
+    gyroid_root = root_transform_id("Assets/_Prefabs/FloraAndFauna/Spindles/GyroidBranch.prefab")
+    for pos, rot, scale in FLIGHT_GYROIDS:
+        pid, tid = ids.next(), ids.next()
+        out.append(prefab_instance(pid, tid, GYROID_BRANCH_PREFAB, gyroid_root, pos, rot, scale))
+        instance_roots.append(tid)
+    # The take (no harness, no events) and the flight
+    tk_go, tk_t, tk_c, fl_c = (ids.next() for _ in range(4))
+    out.append(game_object(tk_go, "[RenderParityTake]", [tk_t, tk_c, fl_c]))
+    out.append(transform(tk_t, tk_go))
+    kf = "".join(f"  - frame: {fr}\n    position: {vec3(p)}\n    lookAt: {vec3(l)}\n" for fr, p, l in FLIGHT_KEYFRAMES)
+    body = (f"  fps: {FPS}\n  warmupFrames: {FLIGHT_WARMUP}\n  takeFrames: {FRAMES}\n  width: {W}\n  height: {H}\n"
+            f"  viewCamera: {{fileID: {cam_c}}}\n  harness: {{fileID: 0}}\n  keyframes:\n{kf}  events: []\n")
+    out.append(mono(tk_c, tk_go, TAKE_SCRIPT, body))
+    fly = "".join(
+        f"  - hull: {{fileID: {hulls[i]}}}\n    domain: {dom}\n    origin: {vec3(o)}\n    velocity: {vec3(v)}\n"
+        f"    swayAmplitude: {vec3(a)}\n    swayFrequency: {vec3(fq)}\n    swayPhase: {vec3(ph)}\n"
+        for i, (dom, o, v, a, fq, ph) in enumerate(FLYERS))
+    body = (f"  take: {{fileID: {tk_c}}}\n  startFrame: {FLIGHT_START}\n"
+            f"  prismPrefab: {{fileID: {DOLPHIN_PRISM_PREFAB[0]}, guid: {DOLPHIN_PRISM_PREFAB[1]}, type: 3}}\n"
+            f"  layEveryFrames: 2\n  layBehind: 6\n  prismScale: {{x: 3, y: 1.5, z: 8}}\n  flyers:\n{fly}"
+            f"  chase: 0\n  chaseOffset: {{x: 0, y: 3.5, z: -13}}\n  lookAhead: 30\n")
+    out.append(mono(fl_c, tk_go, FLIGHT_SCRIPT, body))
+    roots = [sa_t, cam_t] + instance_roots[:2] + [tm_t] + hulls + instance_roots[2:] + [tk_t]
+    out.append("--- !u!1660057539 &9223372036854775807\nSceneRoots:\n  m_ObjectHideFlags: 0\n  m_Roots:\n" + "".join(f"  - {{fileID: {r}}}\n" for r in roots))
+    return "".join(out)
+
+
 def build_config():
     return f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -627,6 +709,7 @@ def main(argv=None):
     files = {
         SCENE: build_scene(), SCENE + ".meta": meta(SCENE_GUID, "scene"),
         CONFIG: build_config(), CONFIG + ".meta": meta(CONFIG_GUID, "asset"),
+        FLIGHT_SCENE: build_flight_scene(), FLIGHT_SCENE + ".meta": meta(FLIGHT_SCENE_GUID, "scene"),
     }
     drift = []
     for rel, text in files.items():

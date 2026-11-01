@@ -39,6 +39,10 @@ namespace CosmicShore.Editor.Parity
     public static class RenderParityRecorder
     {
         public const string ScenePath = "Assets/_Scenes/Game_TestDesign/RenderParity.unity";
+        public const string FlightScenePath = "Assets/_Scenes/Game_TestDesign/RenderParityFlight.unity";
+
+        /// <summary>The scene a take plays: "flight" the trail race, anything else the control scene.</summary>
+        public static string ScenePathFor(string take) => take == "flight" ? FlightScenePath : ScenePath;
         public const string GoldensRoot = "Port/parity/goldens/render";
         const string KeyActive = "CosmicShore.RenderParity.Active";
         const string KeyTake = "CosmicShore.RenderParity.Take";
@@ -50,6 +54,11 @@ namespace CosmicShore.Editor.Parity
         [FrogletTool(FrogletToolCategory.Build, Importance = 4,
             Description = "Record the render-parity control take with the Unity Recorder (the golden Amoebius is scored against).")]
         public static void RecordControlTake() => Record("control");
+
+        [MenuItem("FrogletTools/Amoebius/Render Parity: Record Flight Take", false, 320)]
+        [FrogletTool(FrogletToolCategory.Build, Importance = 3,
+            Description = "Record the render-parity flight take (four hulls racing through prism trails) with the Unity Recorder.")]
+        public static void RecordFlightTake() => Record("flight");
 
         [MenuItem("FrogletTools/Amoebius/Render Parity: Cancel Recording", false, 321)]
         public static void Cancel()
@@ -100,13 +109,14 @@ namespace CosmicShore.Editor.Parity
         public static void Record(string take)
         {
             if (EditorApplication.isPlaying) { Debug.LogError("[RenderParity] exit Play mode first"); return; }
-            if (!File.Exists(ScenePath))
+            string scenePath = ScenePathFor(take);
+            if (!File.Exists(scenePath))
             {
-                Debug.LogError($"[RenderParity] no control scene at {ScenePath}: run `python3 Tools/Build/author_render_parity_scene.py`");
+                Debug.LogError($"[RenderParity] no scene for take '{take}' at {scenePath}: run `python3 Tools/Build/author_render_parity_scene.py`");
                 return;
             }
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
             SessionState.SetBool(KeyActive, true);
             SessionState.SetString(KeyTake, take);
             // Play the control scene itself - suppress SceneBootstrapper's Bootstrap redirect for the
@@ -255,7 +265,7 @@ namespace CosmicShore.Editor.Parity
                 if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp) msaa = urp.msaaSampleCount;
                 var sb = new StringBuilder();
                 sb.Append("{\n");
-                sb.Append($"  \"scene\": \"{ScenePath}\",\n");
+                sb.Append($"  \"scene\": \"{ScenePathFor(SessionState.GetString(KeyTake, "control"))}\",\n");
                 sb.Append($"  \"fps\": {s_take.Fps},\n  \"warmupFrames\": {s_take.WarmupFrames},\n  \"takeFrames\": {s_take.TakeFrames},\n");
                 sb.Append($"  \"width\": {s_take.Width},\n  \"height\": {s_take.Height},\n  \"msaa\": {msaa},\n");
                 sb.Append($"  \"frameFile\": \"frames/f<Frame>.png (the Recorder's <Frame>: 4 digits, the first Play frame is 0000)\",\n");
