@@ -17,7 +17,7 @@
  "cores": 11,
  "current": {},
  "host": "dragonsweapon",
- "idle_seconds": 2.875,
+ "idle_seconds": 27.031,
  "last": {
   "count": null,
   "epoch": "7dbc6703ac71",
@@ -199,11 +199,11 @@
  ],
  "specs": {
   "cores": 12,
-  "disk_free_gb": 65.6,
+  "disk_free_gb": 65.7,
   "os": "windows",
   "os_name": "Windows 10",
   "python": "3.11.9",
-  "ram_free_gb": 19.1,
+  "ram_free_gb": 23.6,
   "ram_gb": 31.9,
   "unity": true,
   "unity_open": true
@@ -212,7 +212,7 @@
  "totals": {
   "sessions": 14
  },
- "updated": 1793539258,
+ "updated": 1793544921,
  "user": "shombithofficial",
  "version": "1"
 }
