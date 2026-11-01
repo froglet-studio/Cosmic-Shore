@@ -65,6 +65,128 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play T1 and T3: Game Center sign-in on iOS, server-owned episode tokens (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **Game Center (T1):** `PlatformSignIn` picks Steam on PC or Game Center on iOS for `AuthenticationServiceFacade`
+  (the facade now asks only it). `GameCenterSignIn` mirrors `SteamSignIn`; `GameCenterPlatform` + the native
+  `Assets/Plugins/iOS/GameCenter/GameCenterSignIn.mm` get Apple's identity-verification signature without showing any
+  screen. `GameCenterCapability` (an iOS post-build step) adds the Game Center capability only while
+  `MobileSignInConfig.signInWithGameCenter` is ticked. Ships off.
+- **Episode tokens (T3):** `Tools/UGS/Commerce/entitlements.js` owns tokens and owned episodes (protected
+  `PLAYER_ENTITLEMENTS`); `ServerEntitlements` + `EpisodeTokenService.GrantTokensAsync` / `UnlockEpisodeAsync` /
+  `RefreshFromServer` (called from `PlayerDataService` at sign-in). `ServerEntitlementGate` ships off.
+
+**Verified without the editor:** entitlements tests 7 passed, three planted faults caught (replayed order credited
+twice, the client's token count trusted, the fake provider in production). `unity_refcompile` player and editor 0
+errors; the iOS-only code compiled with its guard forced on, and a planted error there was caught. Both fair-play gates
+clean (the new folders are registered: PlatformSignIn as fair play, Commerce as paid content, and the one `DllImport`
+as a reviewed exception). **Not compiled anywhere:** the `.mm` file (needs Xcode) and `GameCenterCapability`
+(needs the iOS build module).
+
+**Test (Game Center, an iOS device signed in to Game Center, the UGS Apple Game Center provider added):**
+1. An iOS build with `signInWithGameCenter` ticked: Xcode's Signing & Capabilities shows Game Center.
+2. A fresh install signs in with no screen; the dashboard's player shows an Apple Game Center identity.
+3. Delete and reinstall: the same UGS player id comes back.
+4. An install with an existing anonymous account: after sign-in, the account gains the Game Center identity and keeps
+   its progress.
+5. Sign out of Game Center in Settings and launch: the game signs in anonymously, no error dialog.
+
+**Test (tokens, `entitlements.js` deployed to development, `ServerEntitlementGate.Enabled = true` in a test build, the
+editor's fake provider on in an `EpisodeTokenConfig`):**
+1. Buy a token through the fake provider: the balance rises by the server's bundle size and the dashboard's
+   `PLAYER_ENTITLEMENTS` lists the order.
+2. Spend it on an episode: owned, balance 0; spending again on the same episode spends nothing.
+3. Edit `PLAYER_PROFILE.Economy.EpisodeTokenBalance` in the dashboard to 50, sign in again: the balance shows the
+   server's number.
+
+### 🔴 Fair play T3: vessel and Hangar unlocks bought and recorded on the server (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `economy.js` sells vessels (`unlockVessel`) and Hangar levels (`upgradeHangar`) at the prices authored
+in Unity (its CATALOG block, written by `Tools/Build/author_economy_catalog.py`, `--check` in the bleeding-edge guard)
+and records them in the protected wallet in the same write; `migrateUnlocks` brings an account's old unlocks across
+once, capped at 20,000 crystals of value. Client: `PlayerDataService.TryBuyVessel` / `TryBuyHangarLevel` (used by
+`VesselUnlockSystem.TryPurchaseVessel` and `HangarUpgradesPage`) spend locally at once and ask the server; the
+server's answer replaces the local vessels and Hangar levels (`VesselUnlockSystem.ApplyServerOwnership`), after the
+one-time migration. **Gated off** with the wallet (`ServerEconomyGate`): with it off, buying works exactly as before.
+Affects Shombith's backend (`UGSDataService.VesselList` getter) and the Hangar page (one call).
+
+**Verified without the editor:** economy tests 16 passed (5 new); planted faults caught (a vessel price changed in its
+asset fails `--check` naming the line; dropping "already owned" fails a test). `unity_refcompile` player and editor 0
+errors, a planted error caught; Amoebius 0 errors.
+
+**Test in the editor (economy.js redeployed to development, `ServerEconomyGate.Enabled = true` in a test build):**
+1. A fresh account: the first sign-in sends `migrateUnlocks` with nothing; starters stay unlocked.
+2. Buy a 100-crystal vessel in the Hangar: crystals drop at once, the vessel unlocks, and the dashboard's
+   `PLAYER_ECONOMY` shows it in `vessels` with a `vessel:<Name>` spend.
+3. Buy two Hangar levels: 100 then 200 crystals; `PLAYER_ECONOMY.hangar` shows `"<vessel>:<element>": 2`.
+4. Edit `HANGAR_DATA` in the dashboard to unlock a 4000-crystal vessel by hand, sign in again: it is locked again.
+5. An account with unlocks from before (gate off, then on): its first sign-in keeps them (up to the cap).
+
+### 🔴 Fair play phase B: the trust record, the Undertow, the shadow board, the notice and appeal (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `Tools/UGS/CloudCode/trust.js` (the trust record and ladder; Tools/UGS/README.md "Switching on the trust
+record"). Client: `FairPlayTrust` (`ServerTrust.cs`, gate `FairPlayTrustGate.Enabled = false`) asks `status` at sign-in,
+before the presence lobby join (`HostConnectionService.EnsureInitializedAsync`); `PresenceLobbyService` finds and
+creates its lobby under `PRESENCE_LOBBY` + the suffix (empty on the shore); `WeeklyChallengeLeaderboardService` splices
+the account's own row from `<board>_undertow` into the public page (`WeeklyChallengeRanking.SpliceOwnRow`);
+`FairPlayNoticeOverlay` (built at runtime like the privacy overlay; words in `Resources/FairPlayNoticeConfig.asset`)
+shows the notice and sends an appeal. **Gated off**: with the shipped gate nothing changes. Affects the party layer
+(Shombith's UGS; Yash's hardening) and the weekly board (Yash's leaderboards): one call each, a no-op while off.
+
+**Verified without the editor:** Cloud Code tests trust 14, match-report 22, weekly-score 7 passed; planted faults
+caught (a minor sent to the Undertow, the stage leaking to the client, the shadow board bypassed). `unity_refcompile`
+player, editor and webgl: 0 errors in project code; planted errors in the overlay and the splice caught.
+`FairPlayPhaseBTests` compile. Amoebius `dotnet build Port/src/CosmicShore.Live`: 0 errors. Nothing run in Play mode.
+
+**Test in the editor (with match reports and trust.js deployed to development, gate on, two MPPM players):**
+1. `FairPlayPhaseBTests` pass.
+2. A clean account: Party logs show the presence lobby query and create under `PRESENCE_LOBBY` exactly as before.
+3. Move a test account to the Undertow (dashboard: add three `host_result_mismatch` signals to its `FAIRPLAY_SIGNALS`
+   with `at` = now in ms, birth year 1990 in `FAIRPLAY_AGE`) and sign in: it joins `PRESENCE_LOBBY_u1`, sees only other
+   Undertow accounts in presence, its parties fill with AI; the clean account does not see it.
+4. Play three matches with it: on the next sign-in the notice appears (title, body naming rule 1, "automated checks",
+   the paid-content line); OK closes it; Appeal with a few words shows "Your appeal is with our team" and the record
+   in `fp-<id>` shows `appeal.state: open`; the account appears in the `fairplay-review` queue.
+5. Its weekly time: posted to `weekly_challenge_undertow`; its own leaderboard panel still shows its row at its rank;
+   the clean account's panel does not.
+6. Reviewer: add `review: {decision: "clear"}` to its record; next sign-in it is back in `PRESENCE_LOBBY`, no notice,
+   out of the queue. `restrict` with an `until` date: the notice shows at once with the date.
+7. Pad: A/B work on the notice; Esc closes it unless the appeal text box is focused.
+8. Pool pass (added 2026-10-26): with a shore host and a test client forced into the Undertow, make the Undertow client
+   join the shore host's party anyway (edit its lobby suffix to empty in the debugger): the host's Party log shows
+   `pool check: OtherPool - removing` and the guest leaves the party; the guest's `FAIRPLAY_SIGNALS` gains `pool_bypass`.
+   A normal shore guest shows `pool check: SamePool` and stays.
+9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
+   boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
+   (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
+### 🔴 Brittle Star ability row recut (Charge, Mass, Space, Time) and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
+`chargeStarIcon`, `cordsOffAlpha` and `SetCords(cordsOut01, pull01, domain)`; `readyColor` is gone; the controller injects
+`GameDataSO` for the domain colour; `BrittleStarExecutor.CordPull01` is new.
+
+**Verify in editor**
+- [ ] It compiles; `BrittleStarHUDVariant.prefab` shows the three Charge parts wired on the view, no missing references.
+- [ ] Fly the Brittle Star: the Charge card is the hull nose-on in your domain colour with five dim whips; Y (Charge Mode)
+      brings the whips to full white; pulling RT crossfades them to five straight sabers, releasing brings the whips back.
+- [ ] No card turns lime when its mode is on; the Space plate still goes hot while overheated.
+- [ ] Mass card: the star seen from behind (domain) with five lines of prisms coming at you, dim until B (Creation)
+      turns them white; as Mass levels up the blocks fatten (crossfade to `BrittleStar_MassTrailsFat`).
+      New: `massTrailsIcon`, `massTrailsFatIcon`, `massStarIcon`, `trailsOffAlpha`, `SetCreationTrails`,
+      `BrittleStarExecutor.BlockGirth01`.
+- [ ] Space card: the star flying right with five rounds; with the aim stick centred they meet ahead, pushed they splay;
+      dim until X (Space Mode); overheated they dim and the plate goes hot; at high Space the splayed rounds sit further
+      out. New: `spaceRoundsIcon`, `spaceRoundsMeetIcon`, `spaceRoundsFarIcon`, `spaceStarIcon`, `SetGuns`,
+      `BrittleStarExecutor.Splay01` / `Range01`.
+- [ ] Time card: dim gapped blocks behind the star; A (Speed Mode) stretches them into one joined line, longer at high
+      Time. New: `timeTrailCruiseIcon`, `timeTrailFastIcon`, `timeTrailFasterIcon`, `timeStarIcon`, `SetSpeedTrail`,
+      `BrittleStarExecutor.SpeedBoost01`.
+- [ ] Omni card: the star over two empty ring slots at the start; each crystal fills one (solid), a throw (LT) empties
+      one. New: `omniStock0Sprite`..`omniStock2Sprite`, `SetSpareRings`, and on the shared base
+      `VesselHUDView.SetOmniAbilitySprite` (protected, additive; no other hull calls it).
+
+
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Compiled against Unity references (`unity_refcompile`, player + editor: 0 errors in project code); not opened in the editor.
@@ -19479,6 +19601,27 @@ compile has no errors in the changed files (player and editor).
 15. Do a job's work (crack a vault and stow its artifact). **Pass:** "JOB DONE ... LEAVE FREESTYLE TO CHOOSE YOUR NEXT
     VOYAGE". Leave freestyle and open the Voyage window: the cards now set out from the job's destination, the way home
     is one of them, and the news the job wrote shows as new work. Take the way home: docking keeps what was found.
+
+## 🔴 2026-11-01 — The Voyage Board in the game: the job cards draw the real Milky Way's sea and the course round the reefs (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md`. **Files:** `Data/Voyages/HyperSea.cs` (the board's sea model, ported line for
+line), `Data/Voyages/VoyageChart.cs` (the content's places and a job's course), `VoyageContent.cs` (`Charted`,
+`GalaxyX/Y/Z`), `VoyageContentSO.cs` (`CardCourse` and the five sea names), `UI/Views/VoyageMapGraphic.cs`,
+`VoyageJobCard.cs`, `VoyageJobsView.cs`, `Tests/Editor/HyperSeaTests.cs`; `VoyageContent.asset` from
+`author_voyage_assets.py` (which now also keeps `Toy_Voyage.asset`'s Ark escort wired). Affects: Garrett's voyage slice.
+Not compiled: the session had no Unity editor and no .NET SDK, so nothing here has been through a compiler.
+
+1. Open the project. **Pass:** no compile errors.
+2. Run `HyperSeaTests` and `VoyageRulesTests`. **Pass:** green (every `HyperSeaTests` number is the board's own output).
+3. Menu_Main, open the Voyage window. **Pass:** each job card's map is the sea around Tumult, blue-violet water with
+   orange reef patches; the slice's places sit on it with their names (one name, Celadon/Carmine/Aurum, where the
+   three harbours share Tumult); the job's course is a green line stepping cell by cell round the reefs, not a straight
+   lane; a small round galaxy sits in the top-right corner with a white dot (Sol) and a gold one (this water); under
+   the map a line such as "1,500 LY THROUGH WATER - LIGHT TAKES 1,500 YEARS".
+4. Edit `CardCourse` in `VoyageContent.asset` to empty. **Pass:** the line under the map disappears, nothing else changes.
+5. Open the window on a phone-sized Game view. **Pass:** the map, corner galaxy and line fit the card; opening the
+   window the first time takes no visible hitch (the sea is painted once and shared; courses are cached).
+6. Set sail on a card. **Pass:** the voyage plays as before (the lanes' cell counts still set the leg's length).
 
 ## Lavalamp wormhole lab: original lens + wall vs the new mobile water pipe, side by side (2026-10-28) - NOT EDITOR-VERIFIED
 

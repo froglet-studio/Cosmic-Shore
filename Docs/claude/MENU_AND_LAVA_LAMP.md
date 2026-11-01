@@ -63,7 +63,7 @@ public interface IScreen
 
 #### Reusable UI Components
 
-- **`ProfileDisplayWidget`** (`Assets/_Scripts/UI/Elements/ProfileDisplayWidget.cs`) — Displays player name + avatar. Uses `[Inject] PlayerDataService` and subscribes to `OnProfileChanged`. Drop onto any menu screen that needs profile display — replaces inline profile display logic. (retired 2026-10-25: on no scene or asset, `Docs/Reports/DEAD_CODE_M8.md`)
+- **`ProfileDisplayWidget`** — RETIRED 2026-10-25 (on no scene or asset, deleted with the M8 dead-code pass, `Docs/Reports/DEAD_CODE_M8.md`). It displayed player name + avatar from `[Inject] PlayerDataService` / `OnProfileChanged`; do not look for it under `Assets/_Scripts/UI/Elements/`.
 - **`NavLink` / `NavGroup`** (`Assets/_Scripts/UI/Elements/`) — Tab navigation within a screen. `NavGroup` discovers child `NavLink` components and manages selection state with crossfade animations.
 - **`ModalWindowManager`** (`Assets/_Scripts/UI/Modals/ModalWindowManager.cs`) — Base class for modal windows. Caches `ScreenSwitcher` reference at startup. Handles open/close animations, audio, and modal stack integration.
 

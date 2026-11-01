@@ -446,6 +446,17 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     serializes (an earlier part's `...Icon` reference is safe), and after a rebind grep the prefab for every new field.
     On the Time card Garrett took H, "the jump" (a ghost where the hull was, the hull where the dash puts it), over a
     dashed path or a speed wedge: the set distance is what the dash is, and only the before/after pair shows it.
+75. **The CTA lime is never a card's "on" colour; the lit parts already say it.** The Brittle Star's four plates turned
+    lime while each mode was on, and on the Charge card the lime plate under white whips was "too much" (Garrett,
+    2026-11-01). The plate keeps its resting gauge colour whatever the mode does; only a warning state (overheat's hot
+    colour) changes it. Say "on" with the parts: the whips white at full alpha, dim (0.25) with the mode off. When an
+    ability has an analog input (RT's pull), give the two ends their own parts and let the view crossfade them on the
+    input (whips out, sabers in), so the card moves with the trigger instead of flipping.
+76. **An omni card can count, by shape.** The omni card is one sprite tinted one colour, so a resource the crystal
+    adds (the Brittle Star's spare rings, 0-2) is drawn as slots: a solid shape per unit held, an outline per empty slot,
+    one sprite per amount, swapped at runtime (`VesselHUDView.SetOmniAbilitySprite`). Garrett picked this over a
+    picture of the gift (2026-11-01: "I like that c can display the resource amount held"): offer a counting option
+    whenever the crystal fills a stock.
 
 ## 2026-11-01 - the Honeyguide: seventeen icons in one round, for a trigger that swaps its ability
 

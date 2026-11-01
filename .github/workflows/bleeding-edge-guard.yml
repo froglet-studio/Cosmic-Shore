@@ -188,6 +188,14 @@ jobs:
           python3 Tools/Build/check_fairplay_device_reads.py --self-test
           python3 Tools/Build/check_fairplay_device_reads.py
 
+      # The server sells vessels and Hangar levels at the prices authored in Unity (economy.js CATALOG, written by
+      # author_economy_catalog.py). A price changed in an asset without re-running it would be charged the old price.
+      - name: Check the server's shop prices match the shipped assets
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/author_economy_catalog.py --self-test
+          python3 Tools/Build/author_economy_catalog.py --check
+
       # Every arcade card in every SO_GameList must name a scene that exists AND
       # is enabled in the build settings. A card that fails this renders normally
       # and dies at the moment a player commits to it, and nothing in the Editor
@@ -607,6 +615,7 @@ jobs:
               python3 Tools/Build/check_fairplay_paid_content.py
               python3 Tools/Build/check_fairplay_device_reads.py --self-test
               python3 Tools/Build/check_fairplay_device_reads.py
+              python3 Tools/Build/author_economy_catalog.py --check
               python3 Tools/Build/check_gamelist_scenes.py
               python3 Tools/Build/check_hud_onscreen.py
               python3 Tools/Build/audit_vessel_skimmers.py --self-test

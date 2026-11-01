@@ -427,6 +427,18 @@ namespace CosmicShore.UI
             _omniAbilityIcon.color = tint;
         }
 
+        /// <summary>
+        /// Swaps the omni card's lower-plate art at runtime, for a hull whose card shows a COUNT (the Brittle Star's
+        /// spare-ring stock, one sprite per amount held). The card keeps its tint and any running collect flash; a null
+        /// sprite is ignored. Before the card exists this does nothing (the authored <c>omniAbilitySprite</c> is what
+        /// <see cref="EnsureOmniCrystalCard"/> draws first).
+        /// </summary>
+        protected void SetOmniAbilitySprite(Sprite sprite)
+        {
+            if (!sprite || !_omniAbilityIcon || _omniAbilityIcon.sprite == sprite) return;
+            _omniAbilityIcon.sprite = sprite;
+        }
+
         [Header("Omni crystal card - collect juice")]
         [Tooltip("Scale the omni card's icon punches to when this hull collects an omni crystal.")]
         [SerializeField] private float omniCollectPunchScale = 1.35f;

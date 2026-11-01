@@ -393,7 +393,7 @@ namespace CosmicShore.Gameplay
             // The party size, which is also the session's seat count (B25) - see PresenceLobbyService.
             int partyMax   = _connectionData.MaxPartySlots;
 
-            return new Dictionary<string, PlayerProperty>
+            var props = new Dictionary<string, PlayerProperty>
             {
                 // Written on EVERY join (empty for a member) so a stale "1" can never survive a
                 // re-join of the same identity as a member.
@@ -406,6 +406,13 @@ namespace CosmicShore.Gameplay
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
+
+            // Fair play (phase B): this account's pool pass, shown only to this party, so its host can check the
+            // account belongs in its pool (HostConnectionService.CheckJoinedMemberPoolAsync). Absent while the gate is off.
+            if (CosmicShore.Core.FairPlayTrustGate.Enabled && !string.IsNullOrEmpty(CosmicShore.Core.FairPlayTrust.Pass))
+                props[CosmicShore.Core.FairPlayTrust.PassPropertyKey] =
+                    new PlayerProperty(CosmicShore.Core.FairPlayTrust.Pass, VisibilityPropertyOptions.Member);
+            return props;
         }
     }
 }

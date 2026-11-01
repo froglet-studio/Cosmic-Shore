@@ -65,6 +65,13 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
+
+        /// <summary>
+        /// The game mode this account's presence lobby is found and created under: <c>PRESENCE_LOBBY</c> on the shore,
+        /// with the fair-play pool's suffix appended when the server put the account in the Undertow or the quitters'
+        /// pool (<see cref="CosmicShore.Core.FairPlayTrust"/>, phase B). With the trust gate off it is always the shore.
+        /// </summary>
+        private static string PresenceGameMode => CosmicShore.Core.FairPlayTrust.PresenceGameMode(PRESENCE_LOBBY_GAME_MODE);
         private const string DISPLAY_NAME_KEY         = "displayName";
         private const string AVATAR_ID_KEY            = "avatarId";
         private const string PARTY_COUNT_KEY          = "partyCount";
@@ -218,7 +225,7 @@ namespace CosmicShore.Gameplay
             // Query the full presence-lobby set (rate-limit aware, like the join path).
             var queryOptions = new QuerySessionsOptions();
             queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
+                new FilterOption(FilterField.StringIndex1, PresenceGameMode, FilterOperation.Equal));
 
             IList<ISessionInfo> sessions;
             try
@@ -472,7 +479,7 @@ namespace CosmicShore.Gameplay
         {
             var queryOptions = new QuerySessionsOptions();
             queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
+                new FilterOption(FilterField.StringIndex1, PresenceGameMode, FilterOperation.Equal));
 
             var results = await _policy.ExecuteAsync("presence:query",
                 async () => await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread());
@@ -532,7 +539,7 @@ namespace CosmicShore.Gameplay
                         {
                             "gameMode",
                             new SessionProperty(
-                                PRESENCE_LOBBY_GAME_MODE,
+                                PresenceGameMode,
                                 VisibilityPropertyOptions.Public,
                                 PropertyIndex.String1)
                         }
