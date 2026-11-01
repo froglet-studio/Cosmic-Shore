@@ -15,7 +15,8 @@ this pass.** The fixes belong to the areas' owners and are listed in section 4.
      compile: 16 errors in `Assets/_Scripts` code the port's Unity shims do not cover. Before the code stopped
      compiling, 1-3 engine tests failed. **perf-daily** builds the same port, so its `amoebius` job fails the same way.
 - **CI shows only one of the four generator failures.** The loop runs under `set -e` in alphabetical order, so it stops
-  at **Angler** and never runs Meerkat, Regatta or Undertow. Fixing Angler alone leaves the guard red.
+  at **Angler** and never runs Meerkat, Regatta or Undertow. Fixing Angler alone leaves the guard red. (Fixed on
+  `claude/ci-runs-failing-i6u77f`; see section 4, step 1.)
 - **Each break merged while the guard was already red,** so no new failure showed up. The guard has been red since
   2026-10-28 23:28 UTC (Meerkat, #1630). The Undertow, Angler and Regatta breaks merged after that and never appeared as
   new signals. The tracking issue
@@ -109,9 +110,12 @@ from CI run 41336210737.
 
 ## 4. What it takes to go green, in order
 
-1. **Make the generator loop report every failure, not just the first.** The guard's own autofix block already does
-   this with `|| echo "GENERATOR RED: $f"` (`bleeding-edge-guard.yml:626`). Doing the same in the guard and Unity CI
-   (collect, then fail at the end) stops three breaks from hiding behind one. Tooling: Shombith.
+1. **Make the generator loop report every failure, not just the first.** *Done on `claude/ci-runs-failing-i6u77f`
+   (not yet on bleeding-edge).* `Tools/CI/check_generators.sh` runs the whole family and names every red generator in
+   the log, as one `::error` annotation each, in the run's step summary and in the step output `red`. The guard and
+   Unity CI both call it, the guard's tracking issue now lists the red generators, and the autofix prompt runs the same
+   script. Measured on `be1f4d582`: exit 1 with all four (Angler, Meerkat, Regatta, Undertow) named; exit 0 on two
+   passing generators; exit 1 on a misspelt path.
 2. **Meerkat:** restore `onCombatHitLanded` to `Event_CombatHitStats` in `MeerkatWormholeConfig.asset`. This is a
    behaviour bug, not just drift. Owner: Yash.
 3. **Angler:** update `ICON_SWAP` / the HUD check to the recut icons. Owner: the icon session's author with Garrett.
