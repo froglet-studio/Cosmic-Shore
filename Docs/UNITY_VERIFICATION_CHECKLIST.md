@@ -65,6 +65,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Brittle Star Charge card: whips to sabers on RT, and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
+`chargeStarIcon`, `cordsOffAlpha` and `SetCords(cordsOut01, pull01, domain)`; `readyColor` is gone; the controller injects
+`GameDataSO` for the domain colour; `BrittleStarExecutor.CordPull01` is new.
+
+**Verify in editor**
+- [ ] It compiles; `BrittleStarHUDVariant.prefab` shows the three Charge parts wired on the view, no missing references.
+- [ ] Fly the Brittle Star: the Charge card is the hull nose-on in your domain colour with five dim whips; Y (Charge Mode)
+      brings the whips to full white; pulling RT crossfades them to five straight sabers, releasing brings the whips back.
+- [ ] No card turns lime when its mode is on; the Space plate still goes hot while overheated.
+
+
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Compiled against Unity references (`unity_refcompile`, player + editor: 0 errors in project code); not opened in the editor.

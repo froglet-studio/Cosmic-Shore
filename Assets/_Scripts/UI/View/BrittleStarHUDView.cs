@@ -8,8 +8,9 @@ namespace CosmicShore.UI
     /// The Brittle Star's HUD readouts (design: <c>R_VesselActions/BRITTLE_STAR.md</c> §4). The row order IS the element
     /// map: <b>Charge Mode (charge) · Creation Mode (mass) · Space Mode (space) · Speed Mode (time)</b>.
     ///
-    /// <para>One gauge per card, each answering the one question its card poses; every card turns the READY colour
-    /// while its mode is on:</para>
+    /// <para>One gauge per card, each answering the one question its card poses. No card turns the CTA lime for "on"
+    /// (Garrett, 2026-11-01: "i don't put the CTA color as the on color, it's too much"): the card's own parts say the
+    /// mode is on, and a gauge keeps its resting colour unless something is wrong (the guns overheated).</para>
     /// <list type="number">
     /// <item><b>Charge</b> — how many rings can I throw? The spare-ring stock (0, half, full of two).</item>
     /// <item><b>Space</b> — how hot are the guns? Heat 0..1, in the HOT colour while overheated.</item>
@@ -31,11 +32,19 @@ namespace CosmicShore.UI
         [Tooltip("Time card: Speed Mode's switch.")]
         [SerializeField] Image speedGauge;
 
+        [Header("Charge card: the five cords (icon_kit specs/brittlestar.py, Garrett picked C 2026-11-01)")]
+        [Tooltip("The cords loose, a whip each (BrittleStar_ChargeWhips), white: fades out as RT pulls.")]
+        [SerializeField] Image chargeWhipsIcon;
+        [Tooltip("The cords pulled straight (BrittleStar_ChargeSabers), white: fades in as RT pulls.")]
+        [SerializeField] Image chargeSabersIcon;
+        [Tooltip("The Brittle Star nose-on (BrittleStar_ChargeStar), the domain colour.")]
+        [SerializeField] Image chargeStarIcon;
+        [Tooltip("Alpha of the cords while Charge Mode is off.")]
+        [SerializeField, Range(0f, 1f)] float cordsOffAlpha = 0.25f;
+
         [Header("Colours")]
         [Tooltip("Every gauge's resting colour.")]
         [SerializeField] Color gaugeColor = new(0.59f, 0.65f, 0.76f, 1f);
-        [Tooltip("The card's mode is on — the palette's CTA lime.")]
-        [SerializeField] Color readyColor = new(157f / 255f, 1f, 46f / 255f, 1f);
         [Tooltip("The guns are overheated (the Space card).")]
         [SerializeField] Color hotColor = new(1f, 0.32f, 0.18f, 1f);
         [Tooltip("How fast a gauge eases to its colour (1/s, exponential, unscaled time).")]
@@ -48,6 +57,7 @@ namespace CosmicShore.UI
             Seat(creationGauge, 0f);
             Seat(destructionGauge, 0f);
             Seat(speedGauge, 0f);
+            SetCords(0f, 0f, new Color(0f, 0f, 0f, 0f));
         }
 
         void Seat(Image gauge, float fill)
@@ -57,11 +67,29 @@ namespace CosmicShore.UI
             gauge.color = gaugeColor;
         }
 
-        public void SetCharge(float spareStock01, bool on) => Push(ringGauge, spareStock01, on ? readyColor : gaugeColor);
-        public void SetCreation(float on01) => Push(creationGauge, on01, on01 >= 1f ? readyColor : gaugeColor);
+        public void SetCharge(float spareStock01, bool on) => Push(ringGauge, spareStock01, gaugeColor);
+        public void SetCreation(float on01) => Push(creationGauge, on01, gaugeColor);
         public void SetSpace(float heat01, bool on, bool overheated) =>
-            Push(destructionGauge, heat01, overheated ? hotColor : on ? readyColor : gaugeColor);
-        public void SetSpeed(float on01) => Push(speedGauge, on01, on01 >= 1f ? readyColor : gaugeColor);
+            Push(destructionGauge, heat01, overheated ? hotColor : gaugeColor);
+        public void SetSpeed(float on01) => Push(speedGauge, on01, gaugeColor);
+
+        /// <summary>
+        /// The Charge card's cords: whips while Charge Mode is on and RT is loose, crossfading into sabers as RT pulls
+        /// (<paramref name="pull01"/>, <c>BrittleStarExecutor.CordPull01</c>); dim whips with the mode off
+        /// (<paramref name="cordsOut01"/>, the cords' eased presence). The star wears <paramref name="domain"/>
+        /// (alpha 0 = not resolved yet, keep the last).
+        /// </summary>
+        public void SetCords(float cordsOut01, float pull01, Color domain)
+        {
+            if (domain.a > 0f) _domain = domain;
+            float out01 = Mathf.Clamp01(cordsOut01), pull = Mathf.Clamp01(pull01) * out01;
+            float cords = Mathf.Lerp(cordsOffAlpha, 1f, out01);
+            if (chargeWhipsIcon) chargeWhipsIcon.color = new Color(1f, 1f, 1f, cords * (1f - pull));
+            if (chargeSabersIcon) chargeSabersIcon.color = new Color(1f, 1f, 1f, cords * pull);
+            if (chargeStarIcon) chargeStarIcon.color = _domain;
+        }
+
+        Color _domain = Color.white;
 
         void Push(Image gauge, float fill01, Color color)
         {

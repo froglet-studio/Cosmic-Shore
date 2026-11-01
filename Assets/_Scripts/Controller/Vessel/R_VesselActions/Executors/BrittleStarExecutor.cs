@@ -156,6 +156,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Eased 0..1: Charge Mode's cords from whip (0) toward rigid (1), following the RT pull. A full pull
         /// reaches <c>cordMaxRigidity</c>, never 1.</summary>
         public float CordRigidity01 => config ? _cordPull01 * config.CordMaxRigidity : _cordPull01;
+        /// <summary>Eased 0..1: the RT pull itself (0 = whips, 1 = a full pull), before the rigidity cap. The Charge card
+        /// crossfades its whips into sabers on it.</summary>
+        public float CordPull01 => _cordPull01;
         /// <summary>The ring's firing rotation about the nose axis, radians. The animation draws it.</summary>
         public float RingPhase => _ringPhase;
         public bool IsFiring => _firing;

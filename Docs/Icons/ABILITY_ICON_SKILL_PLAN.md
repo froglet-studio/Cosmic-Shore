@@ -322,6 +322,12 @@ hull was and the hull where the dash puts it, 75% of the way, turned to it. Six 
 `AnglerCommandExecutor.DashGroup` / `Dashing`. The plate stays empty (a full lime plate drowned the white parts). The
 same change wires the Mass and Space parts, whose view fields the rebind had silently dropped (LESSONS 65). The Angler
 is done; next Butterfly, then Brittle Star.
+**Brittle Star Charge (Charge Mode) DONE 2026-11-01** (`claude/brittlestar-icons`, Garrett picked C of A/B/C, "whip to
+saber"): the hull NOSE-ON (yaw 90, pitch -90, a pentagon point up) in the domain colour, a whip out of each of the five
+turrets; RT's pull crossfades them to five straight sabers (`BrittleStarHUDView.SetCords` from
+`BrittleStarExecutor.CordsOut01` / `CordPull01`); the whips dim to 0.25 while the mode is off. Replaces the Ring Detonation
+icon (BRITTLE_STAR.md F12). The CTA lime came off all four Brittle Star plates (LESSONS 75); only overheat keeps the hot
+colour. Next: Mass (Creation), Space (Space Mode), Time (Speed) and the omni card.
 
 | Round | What | Why first |
 |---|---|---|

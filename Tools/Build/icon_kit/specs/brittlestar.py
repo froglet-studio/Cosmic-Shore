@@ -129,25 +129,36 @@ def a_star():
 
 
 CHARGE_BEFORE = ICON_DIR + "BrittleStar_RingDetonation.png"
-CHARGE_GAUGE = {"Charge Mode on": (1.0, (157, 255, 46, 255)), "RT pulled": (1.0, (157, 255, 46, 255)), "off": (1.0, None)}
+# Garrett picked C (2026-11-01: "i like C, but i don't but the CTA color as the on color is too much"): the whips at rest,
+# the sabers as RT pulls - the HUD crossfades the two parts on the pull. The plate keeps the spare-ring stock in its
+# resting colour: no lime for "on" (the lit cords already say it).
+CHARGE_PARTS = [("ChargeWhips", "BrittleStar_ChargeWhips", "chargeWhipsIcon", whips,
+                 "the five cords loose, a whip each (white; fades as RT pulls; dim with the mode off)"),
+                ("ChargeSabers", "BrittleStar_ChargeSabers", "chargeSabersIcon", lambda: sabers(24),
+                 "the five cords pulled straight, sabers (white; comes in as RT pulls)"),
+                ("ChargeStar", "BrittleStar_ChargeStar", "chargeStarIcon", C_STAR, "the Brittle Star nose-on (domain)")]
+ICONS += [dict(name=i, element="Charge", act="Charge Mode: " + act, draw=draw, subdir="Parts", family=False,
+               exempt={"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+                       "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part",
+                       "specks": "a part"})
+          for _n, i, _f, draw, act in CHARGE_PARTS]
+CHARGE_GAUGE = {"Charge Mode on": (1.0, None), "RT pulled": (1.0, None), "off": (1.0, None)}
+CHARGE_ON = [("whip", "white"), ("star", "domain")]
 CARDS += [
-    dict(name="charge_a", group="charge", element="Charge", before=CHARGE_BEFORE, before_gauge=True, gauge=CHARGE_GAUGE,
-         title="A  the whips: the Brittle Star nose-on, a loose cord swinging out of each of its five turrets",
-         parts=dict(star=C_STAR, cords=whips),
-         states=[("Charge Mode on", [("cords", "white"), ("star", "domain")]),
-                 ("off", [("cords", "white", 0.25), ("star", "domain")])],
-         lockup_state=0),
-    dict(name="charge_b", group="charge", element="Charge", before=CHARGE_BEFORE, before_gauge=True, gauge=CHARGE_GAUGE,
-         title="B  the sabers: five straight cords, one cutting a prism in two",
-         parts=dict(star=C_STAR, cords=lambda: _clear_of(sabers(28), sliced_prism(), px=0) | sabers(14), prism=sliced_prism),
-         states=[("Charge Mode on", [("cords", "white"), ("prism", "domain"), ("star", "domain")]),
-                 ("off", [("cords", "white", 0.25), ("prism", "domain", 0.25), ("star", "domain")])],
-         lockup_state=0),
-    dict(name="charge_c", group="charge", element="Charge", before=CHARGE_BEFORE, before_gauge=True, gauge=CHARGE_GAUGE,
-         title="C  whip to saber: the whips at rest, the HUD swaps in the sabers as RT pulls (the analog trigger)",
+    dict(name="charge", element="Charge", before=CHARGE_BEFORE, before_gauge=True, gauge=CHARGE_GAUGE,
+         title="Charge Mode (Charge, picked C): the Brittle Star nose-on, a whip out of each turret; RT pulls them into "
+               "sabers; the plate is the spare-ring stock, never lime",
          parts=dict(star=C_STAR, whip=whips, saber=lambda: sabers(24)),
-         states=[("Charge Mode on", [("whip", "white"), ("star", "domain")]),
+         states=[("Charge Mode on", CHARGE_ON),
                  ("RT pulled", [("saber", "white"), ("star", "domain")]),
                  ("off", [("whip", "white", 0.25), ("star", "domain")])],
          lockup_state=0),
+]
+LOCKUP["Charge"] = dict(parts=dict(star=C_STAR, whip=whips), state=CHARGE_ON, gauge=1.0)
+VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/BrittleStarHUDVariant.prefab"
+VIEW = "5875684227236902712"            # BrittleStarHUDView
+CHARGE_ICON = "7700000000000001105"     # the Charge slot's icon Image (was BrittleStar_RingDetonation)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=CHARGE_ICON, view=VIEW, after="speedGauge",
+                                 children=[(n, i, f) for n, i, f, _d, _a in CHARGE_PARTS])),
 ]

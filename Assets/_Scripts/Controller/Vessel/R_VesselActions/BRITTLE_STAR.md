@@ -338,12 +338,14 @@ The class document predates the rule *"no other pvp in the game … we should on
 
 ## 4. HUD (`BrittleStarHUDController` / `BrittleStarHUDView`, `BrittleStarHUDVariant.prefab`)
 
-The four-icon row, charge → mass → space → time: **Charge Mode · Creation · Space Mode · Speed**. One gauge per card, the
-CTA lime while that card's mode is on: the **Charge** card is the spare-ring stock (0, half, full of two); the **Space**
+The four-icon row, charge → mass → space → time: **Charge Mode · Creation · Space Mode · Speed**. One gauge per card, never
+the CTA lime (Garrett 2026-11-01: lime for "on" is too much; the lit parts say it): the **Charge** card is the spare-ring stock (0, half, full of two); the **Space**
 card is the guns' heat, in the hot colour (`hotColor`) while overheated; **Creation** and **Speed** are each mode's eased
 switch. The controller polls this vessel's own executor (a serialized reference, rule 14) behind the local-pilot gate.
 The view keeps its serialized field names (`ringGauge` is the Charge card, `destructionGauge` the Space card) so the
-variant's wiring holds. The Charge card still wears the Ring Detonation icon (follow-up F12).
+variant's wiring holds. The Charge card is Charge Mode's own icon (F12, done 2026-11-01): the hull nose-on in the domain
+colour with a whip out of each turret, crossfading to five straight sabers as RT pulls (`BrittleStarHUDView.SetCords`
+from `CordsOut01` / `CordPull01`), the whips dim while the mode is off.
 
 ## 5. The elemental map and level 5 (`Resources/ElementalAbilityMaps/BrittleStar.asset`)
 
@@ -499,7 +501,7 @@ None of that is a play test. In order:
    crystal, the ring's own pentagon growing with crystal knots, and a faceted torus front with five crests where the arms
    meet it - all still turning with the ring's spin. Nothing in it should read flat from any angle; a new ring blooms back on the hull over 3 s
    and the card drops a step. The hull is never ringless; the modes drop out only for those three seconds.
-9. **HUD**: four cards, charge → mass → space → time; each turns lime while its mode is on. Run **FrogletTools ▸ Vessels
+9. **HUD**: four cards, charge → mass → space → time; each plate fills while its mode is on (no lime). Run **FrogletTools ▸ Vessels
    ▸ Audit Vessel Ability Rows**, **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (expect: blend shapes on the model, four
    elements) and **Audit Vessel Construction**.
 10. **Element morphs**: raise each element (crystals, or the debug element tool): Mass grows the cockpit pod, Charge the
@@ -563,8 +565,8 @@ None of that is a play test. In order:
   vertices a frame for 0.7 s (`BrittleStarBlastForm` through `BrittleStarExecutor.BuildBand`; lists are reused, so the
   cost is the mesh upload). Capture several AI Brittle Stars throwing rings together. If it shows, the levers are
   `FrontSegments` (120), `ArmSegments` (12), or rebuilding every other frame.
-- **F12 — the Charge card's icon** still shows Ring Detonation (`author_brittlestar_icons.py`): Charge Mode's cords need
-  their own icon; the card's gauge (the spare-ring stock) already fits the ring.
+- ~~**F12 — the Charge card's icon**~~ done 2026-11-01 (`/ability-icon`, `Tools/Build/icon_kit/specs/brittlestar.py`):
+  whips to sabers on the RT pull.
 - **F13 — replicate RT's depth** (two bytes a frame) so remote copies fire, heat and stiffen at the owner's real pull;
   today they read a press as a full pull (the Thresher has the same gap).
 - **F10 — the studio** (`Docs/Studios/BRITTLE_STAR.md` §5.2): publish the page into the one Vessel Studio artifact
