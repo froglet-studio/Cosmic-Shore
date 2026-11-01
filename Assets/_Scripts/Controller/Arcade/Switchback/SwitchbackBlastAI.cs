@@ -41,6 +41,7 @@ namespace CosmicShore.Gameplay
             public float EmergHoldUntil, HotUntil;
             public Vector3 EmergSteer;
             public int Emergencies;
+            public float LastEmergAt = -99f, LastSenseAt = -99f;
             // Debug view: the last sense tube and the last sweep.
             public Vector3 SenseFrom, SenseTo, SweepFrom, SweepTo, SweepHit;
             public float SenseRadius, SweepRadius;
@@ -106,6 +107,7 @@ namespace CosmicShore.Gameplay
             _raceLength = raceLength;
             _skillFor = skillFor;
             _seed = seed;
+            SwitchbackHitStats.Context = HitContext;
             _keyPresent = new bool[planner.Layout.Stations.Count];
             for (int i = 0; i < _keyPresent.Length; i++) _keyPresent[i] = true;
         }
@@ -255,6 +257,7 @@ namespace CosmicShore.Gameplay
                 if (st.Avoid != SwitchbackAvoidAction.Avoid) return false;
                 aim = self + st.AvoidAim; return true;
             }
+            st.LastSenseAt = Time.time;
             st.NextSense = Time.time + skill.ReactionSeconds * (0.85f + 0.3f * ((st.Seed >> 8 & 0xFF) / 255f));
 
             Vector3 to = goal - self;
@@ -376,7 +379,7 @@ namespace CosmicShore.Gameplay
                 if (DebugSense) CSDebug.Log(line); else CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, line);
                 }
             }
-            st.EmergOn = true;
+            st.EmergOn = true; st.LastEmergAt = now;
             steer = pos + st.EmergSteer * EmergSteerDistance;
             return true;
         }
@@ -395,6 +398,26 @@ namespace CosmicShore.Gameplay
                 hitDist = h.distance; centre = h.collider.bounds.center; normal = h.normal; any = true;
             }
             return any;
+        }
+
+        /// <summary>The hit counter's per-hit context: speed, drift, emergency, sense age, approach angle, prism size, plan.</summary>
+        string HitContext(IPlayer p, Prism prism)
+        {
+            if (p == null || !_pilots.TryGetValue(p, out var st)) return "";
+            var vs = p.Vessel?.VesselStatus;
+            var tf = p.Vessel?.Transform;
+            float now = Time.time;
+            string ang = "-", size = "-", dist = "-";
+            if (tf != null && prism != null)
+            {
+                Vector3 to = prism.transform.position - tf.position;
+                ang = Vector3.Angle(tf.forward, to).ToString("F0");
+                dist = to.magnitude.ToString("F1");
+            }
+            if (prism != null) size = prism.transform.lossyScale.ToString("F1");
+            return $"speed={(vs?.Speed ?? 0f):F0} drifting={vs?.IsDrifting} boosting={vs?.IsBoosting} emerg={st.EmergOn} " +
+                   $"sinceEmerg={now - st.LastEmergAt:F2} sinceSense={now - st.LastSenseAt:F2} avoid={st.Avoid} " +
+                   $"plan={st.D.Plan} phase={st.Phase} angle={ang} dist={dist} scale={size} level={_levelFor(p)}";
         }
 
         static int ManagedCrystals()
