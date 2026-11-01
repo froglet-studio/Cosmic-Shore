@@ -26,3 +26,4 @@ MonoBehaviour:
   vesselSpaceCrystalEffects: []
   vesselTimeCrystalEffects: []
   vesselSkimmerEffects: []
+  omniCrystalRetirement: {fileID: 11400000, guid: c62807b520fd4bbb8569dd7b68924156, type: 2}
