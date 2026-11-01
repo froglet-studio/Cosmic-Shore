@@ -183,7 +183,7 @@
         "Performance"
       ],
       "test": [
-        "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, leave the Third Eye off (F2).",
+        "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, leave the AI Diagnose camera and overlays off.",
         "Play, Cell Selector > Lattice, wait 8 minutes.",
         "Keep playing: the editor captures S2 by itself at 8 minutes (the Scene view badge counts down and says Saved).",
         "Stop playing: the capture goes to Claude by itself.",

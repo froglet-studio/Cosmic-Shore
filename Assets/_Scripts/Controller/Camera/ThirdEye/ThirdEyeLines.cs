@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Debug views a game system offers the Third Eye's Overlays list (F3 panel). A system registers a name and a draw
+    /// Debug views a game system offers the Third Eye's Overlays list (the AI Diagnose panel, F2). A system registers a name and a draw
     /// callback; the Third Eye calls it each frame only while the overlay is switched on, into the Game-view line
     /// buffer. Registering is a list add, so it is safe in every build; only dev / editor builds have a Third Eye to
     /// call it.

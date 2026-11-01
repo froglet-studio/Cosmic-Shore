@@ -5,7 +5,8 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Third Eye's IMGUI: the F3 panel (camera, pilots with the You / AI toggle, overlays, settings), the
+    /// The AI Diagnose panel's IMGUI (F2): camera buttons, pilots with the You / AI toggle, overlays, settings and a
+    /// command field (DiagnosticsHUD's console), plus the
     /// watched pilot's info strip, pilot labels and the hint bar. A separate component so the
     /// <see cref="ThirdEye"/> can switch it off - Unity calls OnGUI (and allocates for it) on every enabled
     /// behaviour that has one, so it is enabled only while the camera, the panel or labels are on.
@@ -14,7 +15,13 @@ namespace CosmicShore.Gameplay
     {
         public ThirdEye Eye;
 
-        Rect _window = new(12f, 60f, 360f, 560f);
+        Rect _window = new(12f, 60f, 380f, 620f);
+        string _command = "";
+        string _reply;
+        const string CommandControl = "aidiag.command";
+
+        /// <summary>The command field has keyboard focus: keys belong to it, not to flight or the vessel.</summary>
+        public bool TypingCommand { get; private set; }
         Vector2 _scroll;
         bool _showSettings, _dirty;
         GUIStyle _label, _small, _pill;
@@ -22,7 +29,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The mouse is over the panel, so drag / wheel belong to it, not the camera.</summary>
         public bool MouseOverPanel { get; private set; }
 
-        void OnDisable() => MouseOverPanel = false;
+        void OnDisable() { MouseOverPanel = false; TypingCommand = false; }
 
         void Styles()
         {
@@ -40,15 +47,15 @@ namespace CosmicShore.Gameplay
 
             if (s.ShowLabels) DrawLabels();
             if (Eye.Driving) DrawInfoStrip();
-            if (Eye.Driving || Eye.PanelOpen) DrawHint();
+            DrawHint();
 
             if (Eye.PanelOpen)
             {
-                _window = GUILayout.Window(0x3E7E, _window, DrawPanel, "Third Eye  (F3)");
+                _window = GUILayout.Window(0x3E7E, _window, DrawPanel, "AI Diagnose  (F2 closes)");
                 Vector2 m = Event.current.mousePosition;
                 if (Event.current.type == EventType.Repaint) MouseOverPanel = _window.Contains(m);
             }
-            else MouseOverPanel = false;
+            else { MouseOverPanel = false; TypingCommand = false; }
         }
 
         void DrawPanel(int id)
@@ -58,16 +65,30 @@ namespace CosmicShore.Gameplay
 
             // Camera
             GUILayout.Label("<b>Camera</b>", _label);
-            bool driving = GUILayout.Toggle(Eye.Driving, " Third Eye drives the game camera (F2)");
-            if (driving != Eye.Driving) Eye.SetDriving(driving);
+            if (GUILayout.Button(Eye.Driving ? "Release camera (back to the game's)" : "Take camera")) Eye.SetDriving(!Eye.Driving);
             GUILayout.BeginHorizontal();
-            if (GUILayout.Toggle(s.Mode == ThirdEyeCameraMode.Chase, "Chase", "Button") && s.Mode != ThirdEyeCameraMode.Chase) Eye.SetMode(ThirdEyeCameraMode.Chase);
-            if (GUILayout.Toggle(s.Mode == ThirdEyeCameraMode.Follow, "Follow", "Button") && s.Mode != ThirdEyeCameraMode.Follow) Eye.SetMode(ThirdEyeCameraMode.Follow);
-            bool fly = s.Mode == ThirdEyeCameraMode.Free && s.FreeMode == ThirdEyeFreeMode.Fly;
-            bool orbit = s.Mode == ThirdEyeCameraMode.Free && s.FreeMode == ThirdEyeFreeMode.Orbit;
-            if (GUILayout.Toggle(fly, "Free fly", "Button") && !fly) { Eye.SetFreeMode(ThirdEyeFreeMode.Fly); Eye.SetMode(ThirdEyeCameraMode.Free); }
-            if (GUILayout.Toggle(orbit, "Orbit", "Button") && !orbit) { Eye.SetFreeMode(ThirdEyeFreeMode.Orbit); Eye.SetMode(ThirdEyeCameraMode.Free); }
+            bool chase = Eye.Driving && s.Mode == ThirdEyeCameraMode.Chase;
+            bool follow = Eye.Driving && s.Mode == ThirdEyeCameraMode.Follow;
+            bool fly = Eye.Driving && s.Mode == ThirdEyeCameraMode.Free && s.FreeMode == ThirdEyeFreeMode.Fly;
+            bool orbit = Eye.Driving && s.Mode == ThirdEyeCameraMode.Free && s.FreeMode == ThirdEyeFreeMode.Orbit;
+            if (GUILayout.Toggle(chase, "Chase", "Button") && !chase) { Eye.SetDriving(true); Eye.SetMode(ThirdEyeCameraMode.Chase); }
+            if (GUILayout.Toggle(follow, "Follow", "Button") && !follow) { Eye.SetDriving(true); Eye.SetMode(ThirdEyeCameraMode.Follow); }
+            if (GUILayout.Toggle(fly, "Free fly", "Button") && !fly) { Eye.SetDriving(true); Eye.SetFreeMode(ThirdEyeFreeMode.Fly); Eye.SetMode(ThirdEyeCameraMode.Free); }
+            if (GUILayout.Toggle(orbit, "Orbit", "Button") && !orbit) { Eye.SetDriving(true); Eye.SetFreeMode(ThirdEyeFreeMode.Orbit); Eye.SetMode(ThirdEyeCameraMode.Free); }
             GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("◀ Prev pilot")) Eye.Step(-1);
+            if (GUILayout.Button("Next pilot ▶")) Eye.Step(+1);
+            if (GUILayout.Button("Frame pilot")) { Eye.SetDriving(true); Eye.Frame(); }
+            GUILayout.EndHorizontal();
+            if (fly)
+            {
+                GUILayout.Label("Free fly = the lava lamp's god mode: WASD, E/Space up, Q/Ctrl down, hold RMB look, Shift fast, " +
+                                "Alt slow, wheel speed. Your vessel's input is paused while flying.", _small);
+                float sp = Eye.Fly.Speed;
+                if (Slider("Fly speed", ref sp, Eye.Fly.moveSpeedRange.x, Eye.Fly.moveSpeedRange.y)) Eye.Fly.Speed = sp;
+            }
+            else if (orbit) GUILayout.Label("Orbit: hold RMB and drag to circle the pilot; distance in Settings.", _small);
 
             // Pilots
             GUILayout.Space(6f);
@@ -102,7 +123,7 @@ namespace CosmicShore.Gameplay
 
             // Overlays
             GUILayout.Space(6f);
-            GUILayout.Label("<b>Overlays</b>  (Game view; F4 = the first three)", _label);
+            GUILayout.Label("<b>Overlays</b>  (drawn in the Game view)", _label);
             bool changed = false;
             changed |= Toggle(ref s.ShowThinking, "AI thinking (aim line, target rings)");
             changed |= Toggle(ref s.ShowTrails, "Trails");
@@ -131,8 +152,6 @@ namespace CosmicShore.Gameplay
                 c |= Slider("Follow distance", ref s.FollowDistance, 5f, 1000f);
                 c |= Slider("Follow height", ref s.FollowHeight, -200f, 500f);
                 c |= Slider("Follow smoothing", ref s.FollowSmoothing, 0.5f, 30f);
-                c |= Slider("Free speed", ref s.FreeSpeed, 1f, 2000f);
-                c |= Slider("Shift multiplier", ref s.FastMultiplier, 1f, 20f);
                 c |= Slider("Orbit distance", ref s.OrbitDistance, 2f, 2000f);
                 c |= Slider("Look sensitivity", ref s.LookSensitivity, 0.02f, 2f);
                 c |= Slider("Trail seconds", ref s.TrailSeconds, 1f, 30f);
@@ -142,7 +161,35 @@ namespace CosmicShore.Gameplay
             }
 
             GUILayout.EndScrollView();
+
+            // Command (DiagnosticsHUD's console: fps, timescale, diag, ... and aidiag)
+            GUILayout.Space(4f);
+            GUILayout.Label("<b>Command</b>  (\"help\" lists them)", _label);
+            bool focused = GUI.GetNameOfFocusedControl() == CommandControl;
+            var e = Event.current;
+            bool enter = focused && e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter);
+            if (enter) e.Use();
+            GUILayout.BeginHorizontal();
+            GUI.SetNextControlName(CommandControl);
+            _command = GUILayout.TextField(_command ?? "", GUILayout.MinWidth(220f));
+            bool send = GUILayout.Button("Send", GUILayout.Width(60f)) || enter;
+            GUILayout.EndHorizontal();
+            if (send) SendCommand();
+            if (!string.IsNullOrEmpty(_reply)) GUILayout.Label(_reply, _small);
+            if (e.type == EventType.Repaint) TypingCommand = GUI.GetNameOfFocusedControl() == CommandControl;
+
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
+        }
+
+        void SendCommand()
+        {
+            string raw = (_command ?? "").Trim();
+            if (raw.Length == 0) return;
+            _reply = raw.Equals("help", System.StringComparison.OrdinalIgnoreCase)
+                ? "commands: " + string.Join(", ", Utility.PerformanceBenchmark.DiagnosticsHUD.CommandNames) +
+                  "  ·  aidiag alone shows its usage"
+                : $"› {raw}\n{Utility.PerformanceBenchmark.DiagnosticsHUD.RunCommand(raw)}";
+            _command = "";
         }
 
         static bool Toggle(ref bool value, string label)
@@ -185,11 +232,12 @@ namespace CosmicShore.Gameplay
 
         void DrawHint()
         {
+            if (!Eye.Driving) return;
             var s = Eye.Settings;
-            string mode = !Eye.Driving ? "camera off" : s.Mode == ThirdEyeCameraMode.Free ? $"Free {s.FreeMode}" : s.Mode.ToString();
-            string text = Eye.Driving
-                ? $"THIRD EYE [{mode}]  F2 off · F3 panel · F4 overlays · C camera · V fly/orbit · Tab/[ ] pilot · F frame · RMB look (+WASD/QE fly, Shift fast) · wheel speed/distance"
-                : "THIRD EYE  F2 camera · F3 panel · F4 overlays";
+            string mode = s.Mode == ThirdEyeCameraMode.Free ? $"Free {s.FreeMode}" : s.Mode.ToString();
+            string text = s.Mode == ThirdEyeCameraMode.Free && s.FreeMode == ThirdEyeFreeMode.Fly
+                ? $"AI DIAGNOSE [{mode}]  F2 panel · WASD move · E/Space up Q/Ctrl down · RMB look · Shift fast Alt slow · wheel speed {Eye.Fly.Speed:0.#}"
+                : $"AI DIAGNOSE [{mode}]  F2 panel" + (s.FreeMode == ThirdEyeFreeMode.Orbit && s.Mode == ThirdEyeCameraMode.Free ? " · RMB drag orbit" : "");
             GUI.Label(new Rect(10f, Screen.height - 28f, Screen.width - 20f, 24f), text, _pill);
         }
 

@@ -642,7 +642,7 @@ Tell the user what ran, one line per job.
 |---|---|---|
 | A. Web studio | A JavaScript copy built from the shipped numbers | This artifact; its live mirror (`mirror`, §3.5); Amoebius VESSEL STUDIO ▸ OPEN IN AMOEBIUS / OPEN IN BROWSER (the checkout's build, served, D34) and the live mirror link |
 | B. PLAY IN ENGINE | The game's own vessel in its own mode | Amoebius VESSEL STUDIO (`engineMode` → `--arcade MODE`, `ArcadeAutoStart`) |
-| A2. **Third Eye** (Unity) | The game itself, the main camera taken over while you play (F2, panel F3): the studio's Chase / Follow / Free cameras and its AI-thinking colours on the game's own AI | in game (editor / development builds); `/vessel-ai` §4 |
+| A2. **Third Eye** (Unity) | The game itself, the main camera taken over while you play (F2 opens the AI Diagnose panel; its buttons take the camera): the studio's Chase / Follow / Free cameras and its AI-thinking colours on the game's own AI | in game (editor / development builds); `/vessel-ai` §4 |
 | C. Vessel Test Range | The real mode scenes with AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look | Unity + Amoebius; **plan only**: `Docs/Studios/VESSEL_TEST_RANGE_PLAN.md` |
 
 C is shared infrastructure: one dev-only harness for every vessel, installed into the real mode

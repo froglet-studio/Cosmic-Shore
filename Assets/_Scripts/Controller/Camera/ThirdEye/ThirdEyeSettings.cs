@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     public enum ThirdEyeFreeMode { Fly, Orbit }
 
     /// <summary>
-    /// The Third Eye's tuning, per machine: saved as JSON in PlayerPrefs (<see cref="Key"/>), never in an asset.
+    /// The AI Diagnose panel's (Third Eye's) tuning, per machine: saved as JSON in PlayerPrefs (<see cref="Key"/>), never in an asset.
     /// Every overlay starts OFF so a fresh install costs nothing until you ask for it.
     /// </summary>
     [Serializable]
@@ -21,7 +21,8 @@ namespace CosmicShore.Gameplay
         public float Fov = 70f;
         public float ChaseDistance = 30f, ChaseHeight = 8f, ChaseLookAhead = 40f, ChaseSmoothing = 8f;
         public float FollowDistance = 90f, FollowHeight = 35f, FollowSmoothing = 3f;
-        public float FreeSpeed = 120f, FastMultiplier = 4f, OrbitDistance = 80f, LookSensitivity = 0.15f;
+        // Free fly is the lava lamp's FreeFlyCamera (its own speeds); these are orbit's.
+        public float OrbitDistance = 80f, LookSensitivity = 0.15f;
 
         public bool ShowThinking, ShowLabels, ShowTrails;
         public float TrailSeconds = 8f;
@@ -36,8 +37,6 @@ namespace CosmicShore.Gameplay
             FollowDistance = Mathf.Clamp(FollowDistance, 5f, 1000f);
             FollowHeight = Mathf.Clamp(FollowHeight, -200f, 500f);
             FollowSmoothing = Mathf.Clamp(FollowSmoothing, 0.5f, 30f);
-            FreeSpeed = Mathf.Clamp(FreeSpeed, 1f, 5000f);
-            FastMultiplier = Mathf.Clamp(FastMultiplier, 1f, 20f);
             OrbitDistance = Mathf.Clamp(OrbitDistance, 2f, 2000f);
             LookSensitivity = Mathf.Clamp(LookSensitivity, 0.02f, 2f);
             TrailSeconds = Mathf.Clamp(TrailSeconds, 1f, 30f);

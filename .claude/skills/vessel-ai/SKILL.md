@@ -1,6 +1,6 @@
 ---
 name: vessel-ai
-description: The rules and the test kit for ANY vessel AI in Cosmic Shore - making a new AI for a vessel, changing how an existing one flies, adding or tuning difficulty levels (Easy / Medium / Hard), setting or checking finish / place times, wiring an AI into a mode (backfill seats, GateRaceController steering, a replacement pilot), and testing an AI by WATCHING it from a third eye - the in-game Third Eye (F2 takes the main camera, F3 its panel, editor and development builds: Chase / Follow / Free cameras on any pilot while you play, with each AI's aim and mode gizmos drawn in the Game view) and the Vessel Studio artifact (the same cameras and AI-thinking colours in a browser). Loads the non-negotiables (input-only, difficulty edits belief never the stick, the AIPilot getter trap), the common requirements every new AI owes, the testing ladder from unit test to user playtest, and the shared colour vocabulary. Trigger on Assets/_Scripts/Controller/AI/**, AIPilot, SkimRacePilot / SkimRaceDriver, an IsAutopilotDriven / AutoPilotEnabled branch in an executor, AIDifficulty / AIDifficultyRules, a *DifficultySO or *Handicap, ServerPlayerVesselInitializerWithAI, a mode's SetExternalTargetProvider, Assets/_Scripts/Controller/Camera/ThirdEye/**, Docs/AI_SYSTEM/**, or "the AI flies wrong / is too easy / too hard / test the AI / watch the AI".
+description: The rules and the test kit for ANY vessel AI in Cosmic Shore - making a new AI for a vessel, changing how an existing one flies, adding or tuning difficulty levels (Easy / Medium / Hard), setting or checking finish / place times, wiring an AI into a mode (backfill seats, GateRaceController steering, a replacement pilot), and testing an AI by WATCHING it from a third eye - the in-game AI Diagnose panel (F2 opens/closes it; buttons take the main camera, editor and development builds: Chase / Follow / Free cameras on any pilot while you play, with each AI's aim and mode gizmos drawn in the Game view) and the Vessel Studio artifact (the same cameras and AI-thinking colours in a browser). Loads the non-negotiables (input-only, difficulty edits belief never the stick, the AIPilot getter trap), the common requirements every new AI owes, the testing ladder from unit test to user playtest, and the shared colour vocabulary. Trigger on Assets/_Scripts/Controller/AI/**, AIPilot, SkimRacePilot / SkimRaceDriver, an IsAutopilotDriven / AutoPilotEnabled branch in an executor, AIDifficulty / AIDifficultyRules, a *DifficultySO or *Handicap, ServerPlayerVesselInitializerWithAI, a mode's SetExternalTargetProvider, Assets/_Scripts/Controller/Camera/ThirdEye/**, Docs/AI_SYSTEM/**, or "the AI flies wrong / is too easy / too hard / test the AI / watch the AI".
 ---
 
 # Vessel AI: the rules every AI follows, and how to test one
@@ -140,15 +140,14 @@ The Third Eye is a camera tool INSIDE the game view (`Assets/_Scripts/Controller
 the old `FrogletTools > AI > Third Eye` window and its second render are gone). It drives the MAIN camera, so
 nothing is rendered twice. Compiled only into the editor and development builds; a release build has none of it.
 
-| Key | Does |
+| Control | Does |
 |---|---|
-| **F2** | Take / release the main camera (Free fly first; the gameplay camera snaps back on release). Ignored while the menu's god-mode camera is up. |
-| **F3** | The Third Eye panel: camera, Pilots (You / AI), Overlays, Settings |
-| **F4** | Quick overlays: AI thinking + trails + labels on / off |
-| C / V | Cycle Chase, Follow, Free / switch Free between Fly and Orbit (while driving) |
-| Tab or `]`, `[` | Next / previous pilot: you first, then other humans, then the AI |
-| F | Frame the watched pilot |
-| Hold RMB | Look (cursor locked). In Fly, WASD + E/Space up, Q/Ctrl down, Shift fast move ONLY while RMB is held (your hull still reads WASD: hand it to the AI first). Wheel = fly speed / orbit distance |
+| **F2** | Open / close the **AI Diagnose** panel (the ONLY hotkey; ignored while the menu's god-mode camera is up or a text field has focus) |
+| Panel: Camera | Take / Release camera; Chase, Follow, Free fly, Orbit; Prev / Next / Frame pilot; Fly speed slider |
+| Panel: Pilots / Overlays / Settings | You / AI per pilot; AI thinking, trails, labels, mode gizmos |
+| Panel: Command + Send | Any DiagnosticsHUD console command (Enter also sends; `help` lists them), e.g. `aidiag cam on`, `aidiag fly`, `aidiag next`, `aidiag thinking on`, `aidiag overlay trails off`, `timescale 0.5` |
+| Free fly | Lavalamp's `FreeFlyCamera` (shared with `MenuGodModeCamera`): RMB look, WASD, E/Space up, Q/Ctrl down, Shift fast, Alt slow, wheel speed, gamepad. Your hull's input is paused while it flies. |
+| Orbit | Drag RMB round the watched pilot |
 
 - **AI thinking** (overlay): a line from each AI hull to its aim point, coloured by state, a ring on the crystal
   it is really after; the bottom strip reads the watched AI's state, heading error, recoveries, difficulty mistakes

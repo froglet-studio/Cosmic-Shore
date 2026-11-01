@@ -9,21 +9,21 @@ using UnityEngine.InputSystem;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Third Eye, in the game: a dev tool that takes over the game's OWN main camera to watch any pilot (Chase,
-    /// Follow, Free fly, Free orbit), plus a panel (F3) for who flies each hull (You / AI), the camera settings and the
-    /// Game-view debug overlays (each AI's aim, trails, labels, and whatever systems register in
-    /// <see cref="ThirdEyeOverlays"/> - Switchback's AI plan / AI sense). It replaces the old editor window, which ran a
-    /// second camera into a RenderTexture: everything here draws once, on the camera the game already renders.
+    /// The AI Diagnose panel (the Third Eye, in the game): a dev tool that can take over the game's OWN main camera to
+    /// watch any pilot (Chase, Follow, Free fly, Free orbit), choose who flies each hull (You / AI), toggle the Game-view
+    /// debug overlays (each AI's aim, trails, labels, and whatever systems register in <see cref="ThirdEyeOverlays"/> -
+    /// Switchback's AI plan / AI sense) and run console commands (<c>DiagnosticsHUD.RunCommand</c>).
     ///
-    /// <para><b>Hotkeys</b> (keyboard): <b>F2</b> camera on / off (in the menu's lava lamp F2 stays the god-mode
-    /// camera's); <b>F3</b> panel; <b>F4</b> quick overlays (thinking + trails + labels) on / off. While the camera is
-    /// on: <b>C</b> cycles Chase / Follow / Free, <b>V</b> Free fly / orbit, <b>Tab</b> or <b>]</b> next pilot,
-    /// <b>[</b> previous, <b>F</b> frame the watched pilot (free fly), hold <b>RMB</b> to look (and, in free fly, to
-    /// move with WASD, E / Space up, Q / Ctrl down, Shift fast), mouse wheel = speed (fly) or distance.</para>
+    /// <para><b>One hotkey</b>: <b>F2</b> opens / closes the panel (in the menu's lava lamp F2 stays the god-mode
+    /// camera's). Everything else is a button in the panel (Yash, 2026-11-01: "Dont keep so many hotkeys"). The only
+    /// other keys are the lava lamp's own fly controls, while the camera is in Free fly (<see cref="FreeFlyCamera"/>,
+    /// the same class and defaults as <see cref="MenuGodModeCamera"/>): WASD, E / Space up, Q / Ctrl down, hold RMB
+    /// to look, Shift fast, Alt slow, wheel = cruise speed. While Free fly drives, your vessel's input is paused, as the
+    /// lava lamp's is (hand it to the AI in Pilots if it should keep racing). Orbit looks with RMB drag.</para>
     ///
-    /// <para>Compiled only into the editor and development builds (the whole file is #if-ed); a release build has no code,
-    /// so no cost. With the camera off, the panel closed and every overlay off, Update returns after three key reads
-    /// and LateUpdate does nothing: no scan, no allocation, no pipeline callback.</para>
+    /// <para>Compiled only into the editor and development builds (the whole file is #if-ed). With the panel closed,
+    /// the camera off and every overlay off, Update reads one key and returns: no scan, no allocation, no OnGUI, no
+    /// pipeline callback.</para>
     /// </summary>
     [DefaultExecutionOrder(31000)] // after every gameplay camera script
     public sealed class ThirdEye : MonoBehaviour
@@ -58,12 +58,26 @@ namespace CosmicShore.Gameplay
 
         ThirdEyeRig.Pose _pose = new(Vector3.zero, Quaternion.identity);
         Vector3 _chaseOffset, _chaseUp, _followOffset, _followHeading;
-        float _yaw, _pitch, _orbitYaw, _orbitPitch, _speedScale = 1f;
+        float _yaw, _pitch, _orbitYaw, _orbitPitch;
         bool _snap;
 
         bool _cursorCaptured;
         CursorLockMode _savedLock;
         bool _savedVisible;
+
+        // The lava lamp's fly model (MenuGodModeCamera's FreeFlyCamera, same defaults).
+        readonly FreeFlyCamera _fly = new();
+        public FreeFlyCamera Fly => _fly;
+
+        // The panel shows the cursor (gameplay may hide / lock it); restored on close.
+        bool _panelCursor;
+        CursorLockMode _panelSavedLock;
+        bool _panelSavedVisible;
+
+        // Your vessel's input, paused while Free fly drives or the command field has focus (WASD would steer it).
+        Player _heldInputOf;
+
+        public const string CommandName = "aidiag";
 
         ThirdEyeHud _hud;
         string _note;
@@ -94,12 +108,16 @@ namespace CosmicShore.Gameplay
             _hud = gameObject.AddComponent<ThirdEyeHud>();
             _hud.Eye = this;
             _hud.enabled = false;
+            Utility.PerformanceBenchmark.DiagnosticsHUD.RegisterCommand(CommandName, HandleCommand);
         }
 
         void OnDestroy()
         {
             if (Instance != this) return;
             StopDriving();
+            SetPanel(false);
+            HoldInput(false);
+            Utility.PerformanceBenchmark.DiagnosticsHUD.UnregisterCommand(CommandName);
             ThirdEyeLines.Instance.Shutdown();
             Instance = null;
         }
@@ -108,21 +126,15 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             var kb = Keyboard.current;
-            if (kb != null && !TextFieldHasFocus())
-            {
-                if (kb.f2Key.wasPressedThisFrame && MenuGodModeCamera.Current == null) SetDriving(!_driving);
-                if (kb.f3Key.wasPressedThisFrame) SetPanel(!_panel);
-                if (kb.f4Key.wasPressedThisFrame) QuickOverlays();
+            if (kb != null && kb.f2Key.wasPressedThisFrame && !TextFieldHasFocus() && MenuGodModeCamera.Current == null)
+                SetPanel(!_panel);
 
-                if (_driving)
-                {
-                    if (kb.cKey.wasPressedThisFrame) SetMode((ThirdEyeCameraMode)(((int)Settings.Mode + 1) % 3));
-                    if (kb.vKey.wasPressedThisFrame)
-                        SetFreeMode(Settings.FreeMode == ThirdEyeFreeMode.Fly ? ThirdEyeFreeMode.Orbit : ThirdEyeFreeMode.Fly);
-                    if (kb.tabKey.wasPressedThisFrame || kb.rightBracketKey.wasPressedThisFrame) Step(+1);
-                    if (kb.leftBracketKey.wasPressedThisFrame) Step(-1);
-                    if (kb.fKey.wasPressedThisFrame) Frame();
-                }
+            bool flying = _driving && Settings.Mode == ThirdEyeCameraMode.Free && Settings.FreeMode == ThirdEyeFreeMode.Fly;
+            if (_heldInputOf || flying || _hud.TypingCommand) HoldInput(flying || _hud.TypingCommand);
+            if (_panelCursor && !_cursorCaptured && !(Mouse.current != null && Mouse.current.rightButton.isPressed))
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
             }
 
             bool busy = _driving || _panel || AnyOverlay;
@@ -149,7 +161,43 @@ namespace CosmicShore.Gameplay
         }
 
         // ── Public controls (hotkeys and the panel) ──────────────────────────
-        public void SetPanel(bool open) => _panel = open;
+        public void SetPanel(bool open)
+        {
+            if (open == _panel) return;
+            _panel = open;
+            if (open && !_panelCursor)
+            {
+                _panelCursor = true;
+                _panelSavedLock = Cursor.lockState;
+                _panelSavedVisible = Cursor.visible;
+            }
+            else if (!open && _panelCursor)
+            {
+                _panelCursor = false;
+                Cursor.lockState = _panelSavedLock;
+                Cursor.visible = _panelSavedVisible;
+            }
+        }
+
+        // Pause / resume the local human's flight input (InputController.SetPause, as PilotControl does). On resume it
+        // goes back to paused only if the AI is holding the hull (PilotControl's own pause).
+        void HoldInput(bool hold)
+        {
+            if (hold == (_heldInputOf != null)) return;
+            if (hold)
+            {
+                var you = LocalHuman();
+                if (!you || you.InputController == null) return;
+                you.InputController.SetPause(true);
+                _heldInputOf = you;
+            }
+            else
+            {
+                var you = _heldInputOf;
+                _heldInputOf = null;
+                if (you && you.InputController != null) you.InputController.SetPause(PilotControl.IsHeldByAI(you));
+            }
+        }
 
         public void SetDriving(bool on)
         {
@@ -171,13 +219,6 @@ namespace CosmicShore.Gameplay
             EnterMode();
         }
 
-        public void QuickOverlays()
-        {
-            var s = Settings;
-            bool on = !(s.ShowThinking || s.ShowTrails || s.ShowLabels);
-            s.ShowThinking = s.ShowTrails = s.ShowLabels = on;
-            s.Save();
-        }
 
         public ThirdEyePilot Watched
         {
@@ -218,6 +259,7 @@ namespace CosmicShore.Gameplay
             _pose = ThirdEyeRig.Follow(w.Hull.position, w.Hull.rotation, ref offset, ref heading,
                                        s.FollowDistance, s.FollowHeight, s.FollowSmoothing, 0f, snap: true);
             ThirdEyeRig.YawPitch(_pose.Rotation, out _yaw, out _pitch);
+            _fly.Begin(_pose.Rotation);
             if (Settings.Mode == ThirdEyeCameraMode.Free && Settings.FreeMode == ThirdEyeFreeMode.Orbit) EnterMode();
         }
 
@@ -275,7 +317,9 @@ namespace CosmicShore.Gameplay
         {
             if (!_driving) return;
             _driving = false;
+            _fly.End();
             ReleaseCursor();
+            HoldInput(false);
             Release();
         }
 
@@ -316,7 +360,7 @@ namespace CosmicShore.Gameplay
                 ThirdEyeRig.YawPitch(Quaternion.LookRotation(toHull), out _orbitYaw, out _orbitPitch);
             }
             else if (Settings.Mode == ThirdEyeCameraMode.Free)
-                ThirdEyeRig.YawPitch(_pose.Rotation, out _yaw, out _pitch);
+                _fly.Begin(_pose.Rotation);
         }
 
         void LateUpdate()
@@ -344,14 +388,7 @@ namespace CosmicShore.Gameplay
 
             float dt = Time.unscaledDeltaTime; // keeps working while the game is paused
             var s = Settings;
-            var mouse = Mouse.current;
-            var kb = Keyboard.current;
-            bool look = mouse != null && mouse.rightButton.isPressed && !(_panel && _hud.MouseOverPanel);
-            if (look) CaptureCursor(); else ReleaseCursor();
-            Vector2 delta = look ? mouse.delta.ReadValue() * s.LookSensitivity : Vector2.zero;
-            float wheel = mouse != null && !(_panel && _hud.MouseOverPanel) ? mouse.scroll.ReadValue().y : 0f;
-            float wheelStep = wheel > 0f ? 1.1f : wheel < 0f ? 1f / 1.1f : 1f;
-
+            bool overPanel = _panel && _hud.MouseOverPanel;
             var w = Watched;
             var mode = s.Mode;
             if (mode != ThirdEyeCameraMode.Free && w == null) mode = ThirdEyeCameraMode.Free; // nobody to watch
@@ -359,46 +396,39 @@ namespace CosmicShore.Gameplay
             switch (mode)
             {
                 case ThirdEyeCameraMode.Chase:
-                    if (wheelStep != 1f) s.ChaseDistance = Mathf.Clamp(s.ChaseDistance / wheelStep, 2f, 400f);
+                    ReleaseCursor();
                     _pose = ThirdEyeRig.Chase(w.Hull.position, w.Hull.rotation, ref _chaseOffset, ref _chaseUp,
                         s.ChaseDistance, s.ChaseHeight, s.ChaseLookAhead, s.ChaseSmoothing, dt, _snap);
                     break;
                 case ThirdEyeCameraMode.Follow:
-                    if (wheelStep != 1f) s.FollowDistance = Mathf.Clamp(s.FollowDistance / wheelStep, 5f, 1000f);
+                    ReleaseCursor();
                     _pose = ThirdEyeRig.Follow(w.Hull.position, w.Hull.rotation, ref _followOffset, ref _followHeading,
                         s.FollowDistance, s.FollowHeight, s.FollowSmoothing, dt, _snap);
                     break;
                 default:
                     if (s.FreeMode == ThirdEyeFreeMode.Orbit && w != null)
                     {
-                        if (wheelStep != 1f) s.OrbitDistance = Mathf.Clamp(s.OrbitDistance / wheelStep, 2f, 2000f);
+                        var mouse = Mouse.current;
+                        bool look = mouse != null && mouse.rightButton.isPressed && !overPanel;
+                        if (look) CaptureCursor(); else ReleaseCursor();
+                        Vector2 delta = look ? mouse.delta.ReadValue() * s.LookSensitivity : Vector2.zero;
                         _orbitYaw += delta.x;
                         _orbitPitch = Mathf.Clamp(_orbitPitch - delta.y, -89f, 89f);
                         _pose = ThirdEyeRig.Orbit(w.Hull.position, _orbitYaw, _orbitPitch, s.OrbitDistance);
                     }
                     else
                     {
-                        if (wheelStep != 1f) _speedScale = Mathf.Clamp(_speedScale * wheelStep, 0.05f, 20f);
-                        _yaw += delta.x;
-                        _pitch = Mathf.Clamp(_pitch - delta.y, -89f, 89f);
-                        // Moving needs RMB held: WASD also reaches a vessel you fly (hand it to the AI in the panel).
-                        Vector3 move = look && kb != null ? FlyInput(kb) : Vector3.zero;
-                        float speed = s.FreeSpeed * _speedScale * (kb != null && kb.shiftKey.isPressed ? s.FastMultiplier : 1f);
-                        _pose = ThirdEyeRig.FreeFly(_pose.Position, _yaw, _pitch, move, speed, dt);
+                        // The lava lamp's god-mode flight, unchanged (FreeFlyCamera).
+                        ReleaseCursor();
+                        Vector3 pos = _pose.Position;
+                        _fly.Tick(dt, keys: !_hud.TypingCommand, look: !overPanel, wheel: !overPanel, ref pos, out Quaternion rot);
+                        _pose = new ThirdEyeRig.Pose(pos, rot);
                     }
                     break;
             }
             _snap = false;
             _cam.transform.SetPositionAndRotation(_pose.Position, _pose.Rotation);
             _cam.fieldOfView = s.Fov;
-        }
-
-        static Vector3 FlyInput(Keyboard kb)
-        {
-            float x = (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f);
-            float z = (kb.wKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed ? 1f : 0f);
-            float y = (kb.eKey.isPressed || kb.spaceKey.isPressed ? 1f : 0f) - (kb.qKey.isPressed || kb.ctrlKey.isPressed ? 1f : 0f);
-            return new Vector3(x, y, z);
         }
 
         void CaptureCursor()
@@ -417,6 +447,59 @@ namespace CosmicShore.Gameplay
             _cursorCaptured = false;
             Cursor.lockState = _savedLock;
             Cursor.visible = _savedVisible;
+        }
+
+        // ── Console command (the panel's command field, or the diagnostics HUD's) ──
+        string HandleCommand(string[] a)
+        {
+            const string Usage = "aidiag panel|cam [on|off] · chase|follow|fly|orbit · next|prev|frame · " +
+                                 "thinking|trails|labels [on|off] · overlay <name> [on|off] · you|ai (watched pilot)";
+            if (a.Length == 0) return Usage;
+            string verb = a[0].ToLowerInvariant();
+            bool? arg = a.Length > 1 ? a[1].ToLowerInvariant() switch { "on" or "1" or "true" => true, "off" or "0" or "false" => false, _ => null } : null;
+            var s = Settings;
+            switch (verb)
+            {
+                case "panel": SetPanel(arg ?? !_panel); return $"panel {(_panel ? "open" : "closed")}";
+                case "cam": case "camera": SetDriving(arg ?? !_driving); return $"camera {(_driving ? "on" : "off")}";
+                case "chase": SetDriving(true); SetMode(ThirdEyeCameraMode.Chase); return "chase";
+                case "follow": SetDriving(true); SetMode(ThirdEyeCameraMode.Follow); return "follow";
+                case "fly": SetDriving(true); SetFreeMode(ThirdEyeFreeMode.Fly); SetMode(ThirdEyeCameraMode.Free); return "free fly";
+                case "orbit": SetDriving(true); SetFreeMode(ThirdEyeFreeMode.Orbit); SetMode(ThirdEyeCameraMode.Free); return "orbit";
+                case "next": ThirdEyePilots.Scan(_pilots); Step(+1); return Watched?.Label ?? "no pilot";
+                case "prev": ThirdEyePilots.Scan(_pilots); Step(-1); return Watched?.Label ?? "no pilot";
+                case "frame": Frame(); return Watched?.Label ?? "no pilot";
+                case "thinking": s.ShowThinking = arg ?? !s.ShowThinking; s.Save(); return $"AI thinking {(s.ShowThinking ? "on" : "off")}";
+                case "trails": s.ShowTrails = arg ?? !s.ShowTrails; s.Save(); return $"trails {(s.ShowTrails ? "on" : "off")}";
+                case "labels": s.ShowLabels = arg ?? !s.ShowLabels; s.Save(); return $"labels {(s.ShowLabels ? "on" : "off")}";
+                case "overlay":
+                {
+                    if (a.Length < 2) return "overlays: " + OverlayNames();
+                    bool? on = a.Length > 2 ? a[a.Length - 1].ToLowerInvariant() switch { "on" => true, "off" => false, _ => null } : null;
+                    string q = string.Join(" ", a, 1, a.Length - 1 - (on.HasValue ? 1 : 0)).ToLowerInvariant();
+                    foreach (var o in ThirdEyeOverlays.All)
+                        if (o.Name.ToLowerInvariant().Contains(q)) { o.On = on ?? !o.On; return $"{o.Name} {(o.On ? "on" : "off")}"; }
+                    return $"no overlay '{q}' - overlays: {OverlayNames()}";
+                }
+                case "you": case "ai":
+                {
+                    ThirdEyePilots.Scan(_pilots);
+                    var w = Watched;
+                    if (w == null) return "no pilot";
+                    SetFlier(w, youFly: verb == "you");
+                    return _note ?? $"{w.Label}: {verb}";
+                }
+                default: return Usage;
+            }
+        }
+
+        static string OverlayNames()
+        {
+            var all = ThirdEyeOverlays.All;
+            if (all.Count == 0) return "(none in this mode)";
+            var names = new string[all.Count];
+            for (int i = 0; i < all.Count; i++) names[i] = all[i].Name;
+            return string.Join(", ", names);
         }
 
         // ── Overlays (Game view, one GL pass on the main camera) ─────────────
