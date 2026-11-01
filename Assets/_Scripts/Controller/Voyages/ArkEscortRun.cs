@@ -257,9 +257,12 @@ namespace CosmicShore.Gameplay
             int mySeat = Mathf.Clamp(_squad.MySeat, 0, SavedSquad.SlotCount - 1);
             SquadDeployment.Deploy(_squad, mySeat);
 
+            // The pilot sails in the vessel they are flying. Swapping it for the squad seat's hull mid-hand-off left the
+            // player in a vessel they could not control (a Manta seat, 2026-10-31); only the AI simulation, which owns
+            // every seat, still takes its seat's hull.
             var mine = _squad.GetSlot(mySeat);
             var swapper = _context?.VesselInitializer;
-            if (swapper && VesselRequirement.IsConcrete(mine.Vessel) && mine.Vessel != local.VesselType)
+            if (_aiLocal && swapper && VesselRequirement.IsConcrete(mine.Vessel) && mine.Vessel != local.VesselType)
                 swapper.RequestSwap(mine.Vessel);
 
             if (!swapper || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
@@ -502,6 +505,9 @@ namespace CosmicShore.Gameplay
                     local.Vessel.ToggleAIPilot(true);
                     Escort(local.Vessel, Mathf.Clamp(_squad.MySeat, 0, SavedSquad.SlotCount - 1));
                 }
+                // A human seat is the human's: drop any autopilot left over from the menu's attract flight.
+                else if (!_aiLocal && local.Vessel != null && local.AutoPilotEnabled)
+                    local.Vessel.ToggleAIPilot(false);
             }
             for (int i = _wingmates.Count - 1; i >= 0; i--)
             {
