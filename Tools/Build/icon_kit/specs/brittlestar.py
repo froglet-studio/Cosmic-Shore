@@ -162,3 +162,116 @@ REBIND += [
     dict(file=VARIANT, pair=dict(container=CHARGE_ICON, view=VIEW, after="speedGauge",
                                  children=[(n, i, f) for n, i, f, _d, _a in CHARGE_PARTS])),
 ]
+
+
+# ---- Mass: Creation Mode, the five corner trails (options, 2026-11-01) ----------------------------------------------------
+# WHO: the Brittle Star (domain). WHAT: a line of prisms laid behind each of the five ring corners, twisting as the ring
+# turns; Mass makes every block fatter (x and y x1 -> x2). A prism is a square with a negative-space X (never the rhombus).
+def prism_sq(cx, cy, s, cut=None):
+    """A square prism, side 2s, with a negative-space X (motifs.prism_square_x on the Tiger Moth branch)."""
+    cut = cut if cut is not None else max(1.2, s * 0.28)
+    sq = fill([(cx - s, cy - s), (cx + s, cy - s), (cx + s, cy + s), (cx - s, cy + s)])
+    x = stroke([(cx - s, cy - s), (cx + s, cy + s)], w=cut) | stroke([(cx + s, cy - s), (cx - s, cy + s)], w=cut)
+    return sq & ~x
+
+
+def _rows(points_sizes, girth=1.0):
+    out = empty()
+    for x, y, s in points_sizes:
+        out |= prism_sq(x, y, s * girth)
+    return out
+
+
+# A  the tunnel: seen from behind, the star small at the centre and each corner's line of prisms coming at you, bigger
+#    the nearer they are.
+A_BOX = 32.0
+A_STAR = star(A_BOX)
+A_CR = CORNER_R * A_BOX / HULL_BOX
+
+
+def a_trails(girth=1.0):
+    pts = []
+    for k in range(5):
+        a = math.radians(-90 + 72 * k + 8)              # a little turned: the ring twists the lines
+        for j, (r, s) in enumerate([(A_CR + 10, 3.6), (A_CR + 24, 5.4), (A_CR + 41, 7.4)]):
+            aj = a + math.radians(6 * j)
+            pts.append((64 + r * math.cos(aj), 64 + r * math.sin(aj), s))
+    return _clear_of(_rows(pts, girth), A_STAR(), px=2.0)
+
+
+# B  the braid: the star nose-on at the right, flying right; its five lines of prisms trail left and twist round each
+#    other (the ring turning as it builds).
+B_BOX, B_CX = 44.0, 98.0
+B_STAR = star(B_BOX, cx=B_CX)
+B_CR = CORNER_R * B_BOX / HULL_BOX
+
+
+def _braid_pts(k, n=3):
+    out = []
+    for j in range(n):
+        t = (j + 1) / n
+        x = B_CX - 24 - 27 * j
+        th = math.radians(-90 + 72 * k) + t * 1.4
+        y = 64 + B_CR * 0.95 * math.sin(th)
+        out.append((x, y, math.cos(th)))
+    return out
+
+
+def b_trails(girth=1.0):
+    pts = []
+    for k in range(5):
+        for x, y, depth in _braid_pts(k):
+            pts.append((x, y, 4.6 + 1.0 * depth))
+    return _clear_of(_rows(pts, girth), B_STAR(), px=2.0)
+
+
+def b_lines():
+    out = empty()
+    for k in range(5):
+        p = [(B_CX + B_CR * 0.0, 64 + B_CR * 0.95 * math.sin(math.radians(-90 + 72 * k)))]
+        p = [(B_CX - 6, p[0][1])] + [(x, y) for x, y, _d in _braid_pts(k)]
+        out |= stroke(p, w=1.6)
+    return out
+
+
+# C  the rake: the star nose-on at the top, flying up the card; a line of prisms falls straight back from each corner,
+#    five lines, the slow mode's tidy build.
+C_BOX, C_CY = 44.0, 30.0
+C_STAR2 = star(C_BOX, cy=C_CY)
+C_CR = CORNER_R * C_BOX / HULL_BOX
+
+
+def c_trails(girth=1.0):
+    pts = []
+    for k in range(5):
+        a = math.radians(-90 + 72 * k)
+        x0, y0 = 64 + C_CR * math.cos(a), C_CY + C_CR * math.sin(a)
+        if k == 0:
+            continue                                     # the top corner's line runs behind the star
+        for j in range(3):
+            pts.append((64 + (x0 - 64) * (1 + 0.28 * j), y0 + 20 + 22 * j, 4.4 + 1.2 * j))
+    return _clear_of(_rows(pts, girth), C_STAR2(), px=2.0)
+
+
+MASS_BEFORE = ICON_DIR + "BrittleStar_CreationMode.png"
+MASS_GAUGE = {"Creation on": (1.0, None), "Mass 10 (fat blocks)": (1.0, None), "off": (0.0, None)}
+
+
+def _mass_states(star_key="star"):
+    return [("Creation on", [("trail", "white"), (star_key, "domain")]),
+            ("Mass 10 (fat blocks)", [("fat", "white"), (star_key, "domain")]),
+            ("off", [("trail", "white", 0.25), (star_key, "domain")])]
+
+
+CARDS += [
+    dict(name="mass_a", group="mass", element="Mass", before=MASS_BEFORE, before_gauge=True, gauge=MASS_GAUGE,
+         title="A  the tunnel: seen from behind, the star (domain) and each corner's line of prisms (white) coming at you",
+         parts=dict(star=A_STAR, trail=a_trails, fat=lambda: a_trails(1.45)), states=_mass_states(), lockup_state=0),
+    dict(name="mass_b", group="mass", element="Mass", before=MASS_BEFORE, before_gauge=True, gauge=MASS_GAUGE,
+         title="B  the braid: the star (domain) flying right, its five lines of prisms (white) twisting round each other",
+         parts=dict(star=B_STAR, trail=lambda: b_trails() | b_lines(), fat=lambda: b_trails(1.45) | b_lines()),
+         states=_mass_states(), lockup_state=0),
+    dict(name="mass_c", group="mass", element="Mass", before=MASS_BEFORE, before_gauge=True, gauge=MASS_GAUGE,
+         title="C  the rake: the star (domain) flying up, a line of prisms (white) falling straight back from each corner",
+         parts=dict(star=C_STAR2, trail=c_trails, fat=lambda: c_trails(1.4)), states=_mass_states(), lockup_state=0),
+]
