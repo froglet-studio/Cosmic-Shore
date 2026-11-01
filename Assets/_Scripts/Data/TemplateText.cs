@@ -6,6 +6,7 @@ namespace CosmicShore.UI
     /// </summary>
     public static class TemplateText
     {
+        static int CiNegativeControl() => undefinedSymbolForCi; // deliberate break: CI negative control, never merge
         /// <summary>Replaces each "{token}" with its value; <paramref name="pairs"/> is token, value, token, value...</summary>
         public static string Fill(string template, params string[] pairs)
         {
