@@ -5,7 +5,7 @@ Every vessel AI in Cosmic Shore is reviewed, restructured, diagnosed, tested and
 retired). Others keep writing AI on `bleeding-edge`; it is pulled in, taken in, and diagnosed one AI at a
 time. Performance testing runs in parallel on `perf/performance-optimization`, and the branches exchange
 work by merge. Testing an AI visually: the one Vessel Studio artifact (`/vessel-studio`) in a browser, and the **Third Eye**
-window in Unity (FrogletTools > AI > Third Eye). The rules every AI follows, difficulty, finish times and the
+tool in the game view (F2 drives the main camera, F3 its panel; editor and development builds). The rules every AI follows, difficulty, finish times and the
 test ladder: the **`/vessel-ai`** skill.
 
 **Yash's sessions, any area: build on `Ys-bleeding-edge`, PR into it, and never push or open a PR into `bleeding-edge`**
