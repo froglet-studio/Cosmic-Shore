@@ -101,6 +101,7 @@ namespace CosmicShore.UI
             StampSessionLifecycle();
             ApplyPendingDebugCrystals();
             if (ServerEconomyGate.Enabled) ConfirmWithServer(ServerEconomy.StateAsync());
+            if (ServerEntitlementGate.Enabled) EpisodeTokenService.RefreshFromServer().Forget();
 
             if (_ugsDataService.ProfileRepo != null)
             {
