@@ -20,8 +20,8 @@
   "count": null,
   "epoch": "754c681331e3",
   "job": "unity-train~r20261102-005148-167f",
-  "rc": null,
-  "stopped": "budget",
+  "rc": 1,
+  "stopped": "stopped from the console",
   "unit": "serpenttime-serpent-i3"
  },
  "runs": [
@@ -196,20 +196,20 @@
   {
    "best_end": null,
    "best_start": null,
-   "end": 1793561776,
+   "end": 1793562037,
    "epoch": "754c681331e3",
    "evals": null,
    "job": "unity-train~r20261102-005148-167f",
    "request": "r20261102-005148-167f",
-   "start": 1793561487,
-   "stopped": "budget",
+   "start": 1793561515,
+   "stopped": "stopped from the console",
    "unit": "serpenttime-serpent-i3"
   }
  ],
  "totals": {
   "sessions": 15
  },
- "updated": 1793561776,
+ "updated": 1793562037,
  "user": "shombithofficial",
  "version": "1"
 }

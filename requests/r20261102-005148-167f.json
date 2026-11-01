@@ -4,7 +4,7 @@
  "epoch": "754c681331e3",
  "id": "r20261102-005148-167f",
  "job": "unity-train",
- "stopped": "budget",
+ "stopped": "stopped from the console",
  "tries": 0,
- "updated": 1793561776
+ "updated": 1793562037
 }
