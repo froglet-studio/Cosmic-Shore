@@ -56,11 +56,18 @@ body > * { position: relative; z-index: 1; }
 /* the silver screen: one still of the game behind each view (Tools/Compute/console/stills/<view>.jpg, the mode's card
    art in black and white), faded into the ground so the lists stay readable; nothing when the file is not served */
 .scroll { position: relative; }
-.filmstill { position: absolute; left: 0; right: 0; top: 0; height: 420px; pointer-events: none; z-index: 0;
-  background-size: cover; background-position: center 30%; filter: grayscale(1) contrast(1.1); opacity: 0.22;
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0) 100%); mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0) 100%); }
-:root[data-theme="light"] .filmstill { opacity: 0.12; }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .filmstill { opacity: 0.12; } }
+/* the marquee (design board Rev 42 A, picked 2026-11-01): each view opens on its still with the title set in it; the
+   first block of the view overlaps the still's bottom edge */
+.hero { position: relative; height: 300px; margin: -20px -24px 0; overflow: hidden; }
+.hero .pic { position: absolute; inset: 0; background-size: cover; background-position: center 30%; filter: grayscale(1) contrast(1.1); opacity: 0.55; }
+.hero .fade { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.15), var(--bg) 96%); }
+:root[data-theme="light"] .hero .pic { opacity: 0.35; } :root[data-theme="light"] .hero .fade { background: linear-gradient(to bottom, rgba(255,255,255,0.1), var(--bg) 96%); }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .hero .pic { opacity: 0.35; } :root:not([data-theme="dark"]) .hero .fade { background: linear-gradient(to bottom, rgba(255,255,255,0.1), var(--bg) 96%); } }
+.hero .words { position: absolute; left: 24px; right: 24px; bottom: 104px; }
+.hero h1 { font-size: 88px; line-height: 0.9; letter-spacing: 0.02em; }
+.hero .sub { display: block; margin-top: 10px; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.hero + * { margin-top: -96px; position: relative; z-index: 1; }
+@media (max-width: 720px) { .hero { height: 200px; margin: -16px -16px 0; } .hero .words { left: 16px; bottom: 72px; } .hero h1 { font-size: 52px; } .hero + * { margin-top: -60px; } }
 .pane { position: relative; z-index: 1; }
 .card .stillband { height: 96px; background-size: cover; background-position: center 35%; filter: grayscale(1) contrast(1.1); opacity: 0.55; border-bottom: 1px solid var(--line); }
 h1, h2, h3, .sec, .step > b, .step > summary, .tile b, .topbar h1, .side .brand, #ptitle { font-family: var(--head); font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -447,7 +454,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
       <button class="btn pri" type="button" id="b-newrun"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New run</button>
     </header>
     <div class="content">
-      <div class="scroll" id="scroll"><div class="filmstill" id="filmstill" aria-hidden="true"></div><div class="pane" id="main"><div class="empty"><b>Loading</b><span>The console reads console.json, published next to it.</span></div></div></div>
+      <div class="scroll" id="scroll"><div class="pane" id="main"><div class="empty"><b>Loading</b><span>The console reads console.json, published next to it.</span></div></div></div>
       <div>
         <section class="term" id="term" hidden aria-label="Terminal">
           <div class="termbar"><span class="tab"><span class="led on"></span>compute — console</span><span class="sp"></span>
@@ -522,9 +529,18 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     var base = String((r && r.job) || "").split("~")[0], t = (r && r.title) || (jobById(base) || {}).title || base;
     return String(t).replace(/^Manual run: /, "").replace(/ \(\d+ vessel x mode pairs\)$/, "");
   }
-  function title(t) {
+  function title(t, sub) {
     var el = document.getElementById("ptitle"); if (el) el.textContent = t;      // the top bar carries the title
-    return document.createComment(" " + t + " ");
+    var pic = h("div", { class: "pic", "aria-hidden": "true" }); pic.style.backgroundImage = "url(" + stillFor(VIEW) + ")";
+    return h("div", { class: "hero" }, [pic, h("div", { class: "fade" }), h("div", { class: "words" }, [h("h1", { text: t }), h("span", { class: "sub", text: sub || heroLine() })])]);
+  }
+  function heroLine() {
+    var d = DATA || {}, ms = d.machines || [], act = ((d.runs || {}).active || []).length, c = fleet();
+    var live = ms.filter(function (m) { return mstatus(m) !== "offline"; }).length;
+    return { home: "the team's idle computers, training the game's AI · " + live + " computer" + (live === 1 ? "" : "s") + " live · " + act + " run" + (act === 1 ? "" : "s") + " going",
+      runs: act + " running · " + ((d.manual || []).filter(function (m) { return m.state === "open"; }).length) + " waiting · " + (((d.runs || {}).recent || []).length) + " finished",
+      searches: (d.jobs || []).length + " searches · " + (d.jobs || []).filter(function (j) { return j.converged && j.status !== "promoted"; }).length + " ready for a yes",
+      machines: ms.length + " computers · " + (c.working || 0) + " working · " + (c.free || 0) + " free · " + (c["in use"] || 0) + " in use" }[VIEW] || "";
   }
   function stopped(s) {
     return ({ "max evals": "finished its budget", "budget": "its time was up", "the person came back": "stopped: its person came back", "finished": "finished", "every unit is done or taken": "nothing left to take" })[s] || (s || "–");
@@ -1820,7 +1836,6 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   function stillFor(view) { return "stills/" + (view === "queue" ? "searches" : view) + ".jpg"; }
   function render() {
     var root = document.getElementById("main"); root.textContent = "";
-    var st = document.getElementById("filmstill"); if (st) st.style.backgroundImage = "url(" + stillFor(VIEW) + ")";
     renderChrome();
     ({ home: renderHome, runs: renderRuns, searches: renderSearches, machines: renderMachines, recordings: renderRecordings, ai: renderAi, vessels: renderVessels })[VIEW](root);
     if (!LIVE) root.appendChild(h("p", { class: "note foot", text: "Snapshot of " + new Date(DATA.generated * 1000).toLocaleString() + (DATA.sync_every ? " · updates every " + DATA.sync_every : "") }));

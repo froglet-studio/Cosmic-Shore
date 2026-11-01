@@ -5178,7 +5178,7 @@ chip, and At a time shows what follows the time (when free, or at once); Serpent
 Time are on the vessel x mode grid (the trainer's catalog, the regenerated chart). R41NewRun stays the record of the
 Where fix; the sheet's later shape is the built page.
 
-## 111. Rev 42 mockups: the Compute console, three looks for the Silver Screen (2026-11-01, awaiting a pick)
+## 111. Rev 42 mockups: the Compute console, three looks for the Silver Screen (2026-11-01; Shombith picked A, built)
 
 **Asked (Shombith, 2026-11-01):** "I feel the console app can look better", after the Silver Screen theme (his site's
 look) and the film stills behind each view (section 110's follow-up).
@@ -5197,4 +5197,11 @@ whole in each, the same data (the live console's of 2026-11-01), the stills as c
 
 **Differs from the build:** A changes the top of each view (a hero with the still and the title); B the cards' headers
 and the tiles; C the ground, the type colour and the row density. The sidebar, the top bar, the lists, the type and
-the one accent stay in all three. Nothing is built until Shombith picks.
+the one accent stay in all three.
+
+**Picked (Shombith, 2026-11-01): "Go with A."** Built the same hour in `Tools/Compute/console/index.html`: every view
+opens on a `.hero` (300 px, its still at 0.55 through a grayscale filter, a fade into the ground, the title at 88 px
+Bebas with a one-line mono subtitle from the data: computers live and runs going, runs running and waiting, searches
+ready, the fleet), and the view's first block overlaps the still's bottom edge by 96 px; 200 px and 52 px on a phone.
+The faded backdrop of section 110's follow-up is gone (the hero replaced it); the Vessel AIs card bands stay. Checked
+in Chromium at 1360 and 390 px: no script errors, no sideways scroll.

@@ -389,7 +389,7 @@ arguments and exits. The Install line is for joining and for changing flags, nev
 cast in the chrome, movie-poster headings (Bebas Neue), typewriter labels (Space Mono), the one accent kept for the
 primary action and live data, the status colours kept so a dot still reads, a still silver halo on the ground. One
 stylesheet at the top of `index.html`; light follows the system in greys. **The film stills** (Shombith, 2026-11-01: "where
-are the background images"): one still of the game behind each view and a band on every Vessel AIs card, the mode's
+are the background images"; the Marquee, design board Rev 42 A, section 111, picked the same day): each view opens on its still with the title set in it, and a band on every Vessel AIs card, the mode's
 card art in black and white (`Tools/Compute/console/stills/<view>.jpg`, made from `Assets/_Graphics/ARCADE/CardBackgrounds`
 with Pillow: grayscale, autocontrast, 1152 px wide, 30-55 KB each), faded into the ground so the lists stay readable.
 The hub serves them beside the page; the claude.ai snapshot carries them as published files; a page without them
