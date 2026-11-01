@@ -25,7 +25,7 @@ namespace CosmicShore.Content.Models
     ///    child is COLLAPSED onto the prefab root (preserveHierarchy off), keeping that
     ///    node's transform. Siblings are sorted by name (sortHierarchyByName).
     ///  • MESHES are named after their node, split per unique (position, normal, uv, color)
-    ///    with welding, one submesh per used material index, n-gons fan-triangulated
+    ///    with welding, one submesh per used material index (in the polygons' first-use order), n-gons fan-triangulated
     ///    (ear-clipped when concave), and an n-gon with a zero-length edge DISCARDED as
     ///    Unity does ("... is self-intersecting and has been discarded").
     /// </summary>
@@ -207,6 +207,22 @@ namespace CosmicShore.Content.Models
             }
         }
 
+        /// <summary>Material index → its triangles, enumerated in first-use order (a Dictionary keeps insertion order only until a removal; this never removes).</summary>
+        sealed class OrderedSubmeshes : IEnumerable<KeyValuePair<int, List<int>>>
+        {
+            readonly Dictionary<int, List<int>> _byIndex = new();
+            readonly List<KeyValuePair<int, List<int>>> _ordered = new();
+            public int Count => _ordered.Count;
+            public IEnumerable<List<int>> Values { get { foreach (var kv in _ordered) yield return kv.Value; } }
+            public bool TryGetValue(int index, out List<int> tris) => _byIndex.TryGetValue(index, out tris);
+            public List<int> this[int index]
+            {
+                set { _byIndex.Add(index, value); _ordered.Add(new KeyValuePair<int, List<int>>(index, value)); }
+            }
+            public IEnumerator<KeyValuePair<int, List<int>>> GetEnumerator() => _ordered.GetEnumerator();
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
         static IEnumerable<FbxNode> LayerNodes(FbxNode geometry, string name)
         {
             var list = new List<FbxNode>(geometry.ChildrenNamed(name));
@@ -376,8 +392,11 @@ namespace CosmicShore.Content.Models
                 }
             }
 
-            // Triangulate into submeshes by material index.
-            var bySubmesh = new SortedDictionary<int, List<int>>();
+            // Triangulate into submeshes by material index, in the order the polygons first use each
+            // index (Unity's order, NOT the index's: the Manta's polygons use BASE (1) first, so Unity's
+            // submesh 0 is the body and its prefab's slot 0 material lands there; measured against the
+            // Unity render-parity flight golden, Port/parity/README.md). Unused materials get no submesh.
+            var bySubmesh = new OrderedSubmeshes();
             foreach (int p in kept)
             {
                 int mat = 0;

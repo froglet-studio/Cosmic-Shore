@@ -59,6 +59,22 @@ namespace CosmicShore.Tests
         }
 
         [Fact]
+        public void SubmeshesFollowThePolygonsFirstUseOfEachMaterial()
+        {
+            if (ContentYamlTests.ProjectRoot == null) return;
+            // Manta_shapekey_rigged.fbx connects its materials accent, BASE, windsheild, N, but its
+            // polygons use BASE first, then windsheild, accent and N. Unity orders the submeshes by
+            // that first use, so the prefab's slot 0 (GreenAccent) paints the body cyan: the Unity
+            // render-parity flight golden shows it, and the index order painted it BlueBase grey.
+            var manta = Db.LoadModel("77a38b23d33b195469fe407e2207bbdf").FindNode("manta");
+            Assert.Equal(new[] { "BASE", "windsheild", "accent", "N" }, manta.Materials);
+            var mesh = manta.Mesh.Mesh;
+            Assert.Equal(4, mesh.subMeshCount);
+            // ByPolygon counts {accent 174, BASE 2057, windsheild 38, N 887}: submesh 0 is the body.
+            Assert.True(mesh.GetTriangles(0).Length > mesh.GetTriangles(1).Length + mesh.GetTriangles(2).Length + mesh.GetTriangles(3).Length);
+        }
+
+        [Fact]
         public void FbxSourceExpandsIntoTheModelPrefabWithOverrides()
         {
             if (ContentYamlTests.ProjectRoot == null) return;
