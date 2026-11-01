@@ -64,6 +64,9 @@ namespace CosmicShore.Gameplay
             sim.LoadParams(Arg(args, ParamsArg));
             if (Array.IndexOf(args, VerboseArg) >= 0) CSDebug.VerboseChannels |= CSLogChannel.ToyBox;
             IsRunning = true;
+            string shots = Arg(args, ArkEscortShots.ShotsArg);
+            if (!string.IsNullOrEmpty(shots))
+                ArkEscortShots.Install(shots, Array.IndexOf(args, ArkEscortShots.ShotsOnlyArg) >= 0);
             sim.RunAsync(sim.GetCancellationTokenOnDestroy()).Forget();
         }
 
