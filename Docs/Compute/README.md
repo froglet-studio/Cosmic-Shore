@@ -346,7 +346,10 @@ the VM"): the live console's Add a computer offers **one file to double-click** 
 `linux.sh`, served only with the team key, the address and key written in; saved into the Cosmic-Shore folder, or
 it asks for the folder), which joins the computer; and **the VM updates itself**: the hub looks at its branch every
 10 minutes and, when `Tools/Compute` moved, pulls and exits so systemd restarts it on the new code; the VM's worker
-(the agent, running from the checkout) does the same. The SSH restart is history.
+(the agent, running from the checkout) does the same. The SSH restart is history. The installer (and the paste line under it) asks **when the computer should work**:
+whenever its person is away (the default), only at night, every day between two hours (`--between`), only when
+someone sends a run from the console (`--only-sent`: it stays free and never picks queue work), or all the time; and
+whether a sent run may start at once while the person is at the computer. Weekly schedules are not there yet.
 
 **The agent keeps up with the branch by itself** (2026-11-01: a run at two intensities sat "waiting" because
 dragonsweapon's agent still ran the code from before intensity lists and skipped it as invalid): every half hour the

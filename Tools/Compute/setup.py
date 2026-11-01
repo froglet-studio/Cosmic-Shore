@@ -9,6 +9,8 @@
 
 Options go after the dash (`... | python3 - --nights`):
     --nights          work only 22:00-07:00 instead of whenever you are away
+    --between A-B     work only inside these local hours, e.g. --between 20:00-06:00
+    --only-sent       never pick work by itself: only runs someone sends from the console
     --always          a computer nobody sits at (a VM): work all the time
     --allow-remote-start   let a run sent from the console start at once, even while you use this computer
                       (without it, a run sent here waits until you are away; change it later with
@@ -120,8 +122,12 @@ def main(argv):
     args += ["--queue", *queue]
     if "--nights" in opts:
         args += ["--between", "22:00-07:00"]
+    elif "--between" in argv and argv.index("--between") + 1 < len(argv):
+        args += ["--between", argv[argv.index("--between") + 1]]
     if "--always" in opts:
         args += ["--always"]
+    if "--only-sent" in opts:
+        args += ["--only-sent"]
     say("3. registering the worker: " + " ".join(args[2:]))
     if not dry:                     # so commands typed by hand (compute.py run --request ...) find this checkout
         cfg_path = os.path.join(os.path.dirname(APP), "config.json")

@@ -189,6 +189,11 @@ def cmd_run(args):
             time.sleep(30)
             continue
         said = False
+        if getattr(args, "only_sent", False):
+            # Only what the console sends: the computer stays free (and says so) instead of picking queue work.
+            beacon.tick("free", idle)
+            time.sleep(30)
+            continue
         if not args.once:
             beacon.tick("working", idle, force=True)
         rc = session(None)
@@ -528,6 +533,7 @@ def main(argv=None):
     common(p)
     p.add_argument("--when-idle", type=float, default=10.0, help="minutes of no input before working (default 10)")
     p.add_argument("--always", action="store_true", help="a dedicated box: do not wait for idle")
+    p.add_argument("--only-sent", action="store_true", help="never pick work by itself: only runs sent from the console")
     p.add_argument("--between", help="only work inside these local hours, e.g. 22:00-07:00 (with or without --always)")
     p.add_argument("--on-battery", action="store_true", help="also work on battery power")
     p.add_argument("--cores", type=int, default=0, help="worker processes (default: all cores but one)")
@@ -550,6 +556,7 @@ def main(argv=None):
     p.add_argument("--when-idle", type=float, default=10.0)
     p.add_argument("--between", help="only work inside these local hours, e.g. 22:00-07:00")
     p.add_argument("--always", action="store_true", help="a dedicated box (a VM): work without waiting for idle")
+    p.add_argument("--only-sent", action="store_true", help="never pick work by itself: only runs sent from the console")
     p.add_argument("--home", help="where the worker's own code comes from (default origin/bleeding-edge)")
     p.add_argument("--repo", help="the Cosmic-Shore checkout, when this code runs from a copy outside it")
     p.add_argument("--queue", nargs="*", help="queue refs (default: bleeding-edge, ai, compute-queue)")
@@ -669,7 +676,7 @@ def main(argv=None):
     if args.cmd == "install":
         import install
         return install.install(args.when_idle, dry=args.dry_run, between=args.between, always=args.always,
-                               home=args.home, repo=args.repo, queue=args.queue)
+                               home=args.home, repo=args.repo, queue=args.queue, only_sent=args.only_sent)
     if args.cmd == "uninstall":
         import install
         return install.uninstall()

@@ -357,7 +357,11 @@ def handler(hub, page):
             q = parse_qs(urlparse(self.path).query)
             if not hub.allowed((q.get("key") or [""])[0]):
                 return self._send(401, {"error": "the team key is missing or wrong"})
-            flags = [f for f in ("--nights", "--always") if (q.get(f.strip("-")) or [""])[0] == "1"]
+            flags = [f for f in ("--nights", "--always", "--only-sent") if (q.get(f.strip("-").replace("-", "_")) or [""])[0] == "1"
+                     or (q.get(f.strip("-")) or [""])[0] == "1"]
+            between = (q.get("between") or [""])[0]
+            if re.fullmatch(r"\d{1,2}:\d{2}-\d{1,2}:\d{2}", between):
+                flags += ["--between", between]
             if (q.get("remote") or ["1"])[0] == "1":
                 flags.append("--allow-remote-start")
             text, ctype, fname = installer(name, hub.url or f"http://{self.headers.get('Host', '')}", hub.key, flags)

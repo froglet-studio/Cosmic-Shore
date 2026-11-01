@@ -25,12 +25,14 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 LABEL = "studio.froglet.compute"
 
 
-def _cmd(minutes, between=None, always=False, home=None, repo=None, queue=None):
+def _cmd(minutes, between=None, always=False, home=None, repo=None, queue=None, only_sent=False):
     cmd = [sys.executable, os.path.join(HERE, "compute.py"), "run", "--when-idle", str(minutes), "--quiet"]
     if between:
         cmd += ["--between", between]
     if always:
         cmd += ["--always"]
+    if only_sent:
+        cmd += ["--only-sent"]
     if home:
         cmd += ["--home", home]
     if repo:
@@ -88,7 +90,7 @@ def _stop_windows_agents():
     subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, creationflags=0x08000000)
 
 
-def install(minutes=10, dry=False, between=None, always=False, home=None, repo=None, queue=None):
+def install(minutes=10, dry=False, between=None, always=False, home=None, repo=None, queue=None, only_sent=False):
     system = platform.system()
     if between:
         import compute_lib
@@ -97,7 +99,7 @@ def install(minutes=10, dry=False, between=None, always=False, home=None, repo=N
         except ValueError as e:
             print(e)
             return 2
-    cmd = _cmd(minutes, between, always, home, repo, queue)
+    cmd = _cmd(minutes, between, always, home, repo, queue, only_sent)
     workdir = os.path.abspath(repo) if repo else REPO
     log = os.path.join(os.path.expanduser("~"), ".froglet-compute", "worker.log")
     os.makedirs(os.path.dirname(log), exist_ok=True)

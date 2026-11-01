@@ -1063,10 +1063,11 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
 
   // ── install sheet ──
   var OS = /Win/.test(navigator.platform || navigator.userAgent) ? "windows" : (/Mac/.test(navigator.platform || navigator.userAgent) ? "mac" : "linux");
-  var IOPT = { nights: false, always: false };
+  var IOPT = { when: "away", remote: true };
   function installCommand() {
     var i = DATA.install || {}, base = OS === "windows" ? i.windows : i.unix, extra = [];
-    if (IOPT.nights) extra.push("--nights"); if (IOPT.always) extra.push("--always");
+    if (IOPT.when === "nights") extra.push("--nights"); if (IOPT.when === "always") extra.push("--always"); if (IOPT.when === "sent") extra.push("--only-sent");
+    if (IOPT.when === "hours") extra.push("--between " + (IOPT.from || "20:00") + "-" + (IOPT.to || "06:00")); if (IOPT.remote !== false) extra.push("--allow-remote-start");
     if (LIVE && KEY) extra.push("--hub " + location.origin + " --hub-key " + KEY);
     return (base || "") + (extra.length ? " " + extra.join(" ") : "");
   }
@@ -1094,14 +1095,18 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
         var dl = h("div", { class: "step" }, [h("b", { text: "The easy way: one file, double-click it" })]);
         if (!KEY) { dl.appendChild(h("p", { class: "note", text: "Enter the team key first (the Save button below), then the installer appears here." })); dl.appendChild(askKey(function () { draw(); })); }
         else {
-          var qs = "?key=" + encodeURIComponent(KEY) + (IOPT.nights ? "&nights=1" : "") + (IOPT.always ? "&always=1" : "");
+          var qs = "?key=" + encodeURIComponent(KEY) + (IOPT.when === "nights" ? "&nights=1" : "") + (IOPT.when === "always" ? "&always=1" : "")
+            + (IOPT.when === "sent" ? "&only-sent=1" : "") + (IOPT.when === "hours" ? "&between=" + encodeURIComponent((IOPT.from || "20:00") + "-" + (IOPT.to || "06:00")) : "") + (IOPT.remote === false ? "&remote=0" : "");
           var file = OS === "windows" ? "install/windows.bat" : (OS === "mac" ? "install/mac.sh" : "install/linux.sh");
           dl.appendChild(h("p", { class: "note", text: OS === "windows"
             ? "Save it into your Cosmic-Shore folder (the one you open in Unity) and double-click it. It checks Git and Python, joins this PC to the console with the team key already filled in, and keeps itself up to date from then on. Windows may ask once whether to run a downloaded file."
             : "Save it into your Cosmic-Shore folder, then run it once: open Terminal, type bash, a space, drag the file in, press Return. It joins this computer with the team key already filled in and keeps itself up to date from then on." }));
-          dl.appendChild(h("div", { class: "opts" }, [
-            h("label", null, [h("input", { type: "checkbox", checked: IOPT.nights || null, onchange: function (e) { IOPT.nights = e.target.checked; draw(); } }), "Only at night (22:00–07:00)"]),
-            h("label", null, [h("input", { type: "checkbox", checked: IOPT.always || null, onchange: function (e) { IOPT.always = e.target.checked; draw(); } }), "Nobody uses this computer (work all the time)"])]));
+          dl.appendChild(h("b", { class: "sec", text: "When should it work?" }));
+          dl.appendChild(h("div", { class: "picks" }, [["away", "Whenever I'm away", "10 minutes idle, on mains power"], ["nights", "Only at night", "22:00 to 07:00"], ["hours", "Every day between…", "hours you pick"], ["sent", "Only when someone sends a run", "never picks work by itself"], ["always", "All the time", "nobody uses this computer"]].map(function (o) {
+            return chip(o[1], (IOPT.when || "away") === o[0], "where", function () { IOPT.when = o[0]; draw(); }, o[2]); })));
+          if (IOPT.when === "hours") dl.appendChild(h("div", { class: "srow" }, [h("span", { class: "note", text: "from" }), h("input", { class: "field num", type: "time", value: IOPT.from || "20:00", onchange: function (e) { IOPT.from = e.target.value; } }), h("span", { class: "note", text: "to" }), h("input", { class: "field num", type: "time", value: IOPT.to || "06:00", onchange: function (e) { IOPT.to = e.target.value; } })]));
+          dl.appendChild(h("label", { class: "note", style: "display:block;margin-top:8px" }, [h("input", { type: "checkbox", checked: IOPT.remote !== false ? true : null, onchange: function (e) { IOPT.remote = e.target.checked; draw(); } }), " A run sent from the console may start at once, even while I use this computer"]));
+          dl.appendChild(h("p", { class: "note", text: "Weekly schedules are not there yet: pick a daily window and leave the computer on those days." }));
           dl.appendChild(h("a", { class: "btn cta", href: file + qs, download: OS === "windows" ? "froglet-compute-setup.bat" : "froglet-compute-setup.sh" }, [svgIcon("M12 4v12|M6 10l6 6 6-6|M4 20h16", 14), "Download the installer for " + (OS === "windows" ? "Windows" : OS === "mac" ? "macOS" : "Linux")]));
         }
         sheet.appendChild(dl);
