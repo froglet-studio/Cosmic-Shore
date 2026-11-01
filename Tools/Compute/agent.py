@@ -274,6 +274,21 @@ def single_instance():
     return True
 
 
+def unlock():
+    """Releases the single-instance lock, so a replacement agent (newer code) can take it before this one exits."""
+    global _LOCK
+    if _LOCK is not None:
+        try:
+            if os.name == "nt":
+                import msvcrt
+                _LOCK.seek(0)
+                msvcrt.locking(_LOCK.fileno(), msvcrt.LK_UNLCK, 1)
+            _LOCK.close()
+        except OSError:
+            pass
+        _LOCK = None
+
+
 def machine_status(hb, now=None, live=False):
     """What the console shows for a computer from its last heartbeat: working, free, in use, outside hours, offline.
     A heartbeat older than 3 minutes (live) or 45 minutes (git) means offline; one from before the agent existed

@@ -31,6 +31,7 @@ import hmac
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -312,6 +313,12 @@ def handler(hub, page):
                 return self._send(403, {"error": "this app answers its own computer only"})
             if path in ("/", "/index.html"):
                 return self._send(200, page(), "text/html; charset=utf-8")
+            if path.startswith("/stills/") and re.fullmatch(r"[a-z0-9-]+\.jpg", path[8:]):
+                still = os.path.join(os.path.dirname(C.PAGE), "stills", path[8:])
+                if os.path.isfile(still):
+                    with open(still, "rb") as fh:
+                        return self._send(200, fh.read(), "image/jpeg")
+                return self._send(404, {"error": "no such still"})
             if path == "/console.json":
                 d = hub.snapshot()
                 return self._send(200, d) if d else self._send(503, {

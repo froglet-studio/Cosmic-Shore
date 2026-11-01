@@ -341,10 +341,21 @@ data from git every minute, lays every computer's heartbeat on top the moment it
 every ~20 s), and files manual runs on `compute-queue` from any browser or phone, guarded by the team key. The page
 notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refreshes every 15 s.
 
+**The agent keeps up with the branch by itself** (2026-11-01: a run at two intensities sat "waiting" because
+dragonsweapon's agent still ran the code from before intensity lists and skipped it as invalid): every half hour the
+resident agent fetches the install ref, and when its `Tools/Compute` differs from the copy it runs, it exports the
+newer one under `~/.froglet-compute/fresh`, releases its single-instance lock, starts that copy with the same
+arguments and exits. The Install line is for joining and for changing flags, never for keeping up.
+
 **The look is Silver Screen** (Shombith, 2026-11-01, his site's theme): black and white like a film still, no colour
 cast in the chrome, movie-poster headings (Bebas Neue), typewriter labels (Space Mono), the one accent kept for the
 primary action and live data, the status colours kept so a dot still reads, a still silver halo on the ground. One
-stylesheet at the top of `index.html`; light follows the system in greys.
+stylesheet at the top of `index.html`; light follows the system in greys. **The film stills** (Shombith, 2026-11-01: "where
+are the background images"): one still of the game behind each view and a band on every Vessel AIs card, the mode's
+card art in black and white (`Tools/Compute/console/stills/<view>.jpg`, made from `Assets/_Graphics/ARCADE/CardBackgrounds`
+with Pillow: grayscale, autocontrast, 1152 px wide, 30-55 KB each), faded into the ground so the lists stay readable.
+The hub serves them beside the page; the claude.ai snapshot carries them as published files; a page without them
+shows the plain ground.
 
 **What a sent run looks like, from Send to its first report** (Shombith, 2026-10-31: "there is no live bar"; design
 board Rev 41, `Docs/MENU_REDESIGN_B.md` section 110): Send closes the sheet and opens Runs with one line saying where

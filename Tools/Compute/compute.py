@@ -121,6 +121,12 @@ def cmd_run(args):
     beacon = A.Beacon(ident, quiet=args.quiet, push=not args.no_push)
     poll_every = int(os.environ.get("FROGLET_COMPUTE_AGENT_POLL") or (60 if L.hub_config()[0] else 180))
     last_poll = 0.0
+    # The agent is resident: it keeps the code it started with until it restarts, so a request shaped by newer code
+    # (an intensity list, 2026-11-01) is one it skips as invalid for ever. Every half hour it looks at the install
+    # ref; newer Tools/Compute there means it hands over to a fresh copy of itself (the single-instance lock released
+    # first) and exits, so a PC never needs the Install line again just to keep up with the branch.
+    code_ref, code_tree = _code_ref_and_tree()
+    last_code = time.time()
 
     def session(extra):
         if not args.no_fetch:
@@ -140,6 +146,15 @@ def cmd_run(args):
 
     while True:
         idle = L.idle_seconds()
+        if not args.once and code_ref and time.time() - last_code >= 1800:
+            last_code = time.time()
+            fresh = _fresh_copy(code_ref, code_tree)
+            if fresh:
+                L.log(f"agent: origin/{code_ref} has newer Froglet Compute: handing over to it ({fresh})", args.quiet)
+                A.unlock()
+                subprocess.Popen([sys.executable, fresh, *sys.argv[1:]], cwd=L.REPO,
+                                 env=dict(os.environ, FROGLET_COMPUTE_NO_REFRESH="1", FROGLET_COMPUTE_REPO=L.REPO), **L.NO_WINDOW)
+                return 0
         if not args.once and time.time() - last_poll >= poll_every:
             last_poll = time.time()
             try:
@@ -419,6 +434,38 @@ def _newest_copy(argv):
           "Run the Install line again to update the installed copy too.", False)
     env = dict(os.environ, FROGLET_COMPUTE_NO_REFRESH="1", FROGLET_COMPUTE_REPO=L.REPO)
     return subprocess.run([sys.executable, os.path.join(root, "Tools", "Compute", "compute.py"), *argv], env=env).returncode
+
+
+def _code_ref_and_tree():
+    """(the install ref, the Tools/Compute tree id this process runs): what the agent compares origin against."""
+    ref = (L.read_json(os.path.join(L.cache_dir(), "config.json"), {}) or {}).get("ref") or ""
+    ref = ref.replace("origin/", "")
+    if not ref:
+        return "", ""
+    here = os.path.normcase(os.path.realpath(HERE))
+    stamp = os.path.join(os.path.dirname(os.path.dirname(here)), ".tree")      # the app copy's stamp (setup.py)
+    mine = (open(stamp).read().strip() if os.path.exists(stamp) else "")
+    if not mine:
+        L.git_ok("fetch", "--quiet", "--no-tags", "origin", f"+refs/heads/{ref}:refs/remotes/origin/{ref}")
+        mine = (L.git_ok("rev-parse", f"origin/{ref}:Tools/Compute") or "").strip()      # a fresh copy: origin as of now
+    return ref, mine
+
+
+def _fresh_copy(ref, tree):
+    """The path of a fresh export's compute.py when origin/<ref>'s Tools/Compute differs from `tree`, else None."""
+    try:
+        L.git_ok("fetch", "--quiet", "--no-tags", "origin", f"+refs/heads/{ref}:refs/remotes/origin/{ref}")
+        sha = L.rev(f"origin/{ref}")
+        now = (L.git_ok("rev-parse", f"origin/{ref}:Tools/Compute") or "").strip()
+        if not sha or not now or now == tree:
+            return None
+        root = L.export_tree(sha, ["Tools/Compute/"], os.path.join(L.cache_dir(), "fresh"), "compute", keep=2)
+        with open(os.path.join(root, ".tree"), "w", encoding="utf-8") as fh:
+            fh.write(now)
+        return os.path.join(root, "Tools", "Compute", "compute.py")
+    except Exception as e:
+        L.log(f"agent: could not look for newer code ({e})", True)
+        return None
 
 
 def main(argv=None):
