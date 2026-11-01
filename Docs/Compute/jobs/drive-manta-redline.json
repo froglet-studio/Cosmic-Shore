@@ -1,0 +1,71 @@
+{
+ "after": [],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "area_owner": "Yash (vessel AI)",
+ "asked_by": "Garrett 2026-10-26 (the Regatta balance plan; Yash follows it)",
+ "convergence": {
+  "min_evals": 1500,
+  "min_improvement": 0.002,
+  "window_evals": 1200
+ },
+ "evaluator": {
+  "args": {
+   "hull": "Manta",
+   "intensities": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "limit": 400,
+   "mode": "Redline",
+   "model": "manta_drive",
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "shipped": ""
+  },
+  "module": "drive_fit"
+ },
+ "goal": "Stage 1 of the Regatta balance plan: an AI that races the Manta's own Time game well at every intensity, learned where people do not play.",
+ "id": "drive-manta-redline",
+ "kind": "search",
+ "paths": [
+  "Tools/Build/",
+  "Assets/Resources/AIBoostPolicies/",
+  "Assets/Resources/RaceLines/",
+  "Assets/_Prefabs/Spacevessels/"
+ ],
+ "plan": "regatta-balance",
+ "promote": "A PROPOSAL for the AI owner (Yash): if they agree, write the best fields into Assets/Resources/AIBoostPolicies/<the Manta's policy>_Redline.asset with the learner's writer (learn_drives_from_flights.py), never by hand; the AI learning sweep keeps imitating people on top of it.",
+ "ref": "origin/ai",
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "schema": "froglet-compute/job/1",
+ "space": [
+  {
+   "hi": 1.0,
+   "init": 0.35,
+   "lo": 0.05,
+   "name": "BoostStickBand"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.75,
+   "lo": 0.3,
+   "name": "YastriStickBand"
+  }
+ ],
+ "stage": 1,
+ "status": "ready",
+ "title": "Manta AI drive for Redline, I1-I4 (self-play)",
+ "updated": "2026-10-28",
+ "value": 9
+}

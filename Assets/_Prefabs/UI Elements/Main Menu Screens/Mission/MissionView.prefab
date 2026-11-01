@@ -443,6 +443,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   template: {fileID: 5936424660689771298}
+  vessels: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
+  mapHeight: 360
 --- !u!224 &910671954835986914
 RectTransform:
   m_ObjectHideFlags: 0

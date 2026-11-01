@@ -218,6 +218,10 @@ namespace CosmicShore.Data
         // 128-130 (DomainRaceToasts); a snipe is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
         SerpentGulagScopeHint = 157,    // once, at the start: hold LT to scope, RT to fire; the field reloads you
 
+        // LanternRun, the Angler's Time race (_Scripts/Controller/Arcade/LANTERNRUN.md). Its race beats are the shared
+        // 129-132 (DomainRaceToasts). Posted to the LOCAL pilot only.
+        LanternRunPaintHint = 158,    // once, at the start: paint the two clusters, throw both groups, dash after them
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

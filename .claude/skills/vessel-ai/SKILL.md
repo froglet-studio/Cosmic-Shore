@@ -129,7 +129,7 @@ Climb it in order; each rung catches what the one below cannot.
 |---|---|---|
 | 1 | Gates + compile (`unity_refcompile`, `/asset-surgery` §4) | Does it build, is it input-only, does it allocate |
 | 2 | Edit-mode tests of the decision math | Is the decision right on the cases a playtest would argue about |
-| 3 | Offline simulator / harness (only if needed) | Finish-time distributions, difficulty ladder |
+| 3 | Offline simulator / harness (only if needed); wrapped as a compute job it SEARCHES too (§7) | Finish-time distributions, difficulty ladder, the best drive the model can find |
 | 4 | **Watch it**: the Vessel Studio (browser) and the **Third Eye** (Unity, §4.1) | Does it LOOK right: aim, line, recoveries, mistakes |
 | 5 | Profile (`diag` / `prof` console, the AI's markers) | What it costs per frame, per seat |
 | 6 | The user's playtest script (`UNITY_VERIFICATION_CHECKLIST.md`) | Does it feel right against a human |
@@ -214,3 +214,14 @@ the same source as the studios' `studio-domains.js`): game Ruby is magenta, neve
 When an AI lands or changes: its roster and status-board rows, its numbers in its own doc, a branch in
 `ThirdEyePilots.Read` if it has a new diagnostics shape, and a costly trap added to §5 here. This is the
 only AI skill: fold new AI guidance in here (studio-page rules stay in `/vessel-studio`).
+
+## 7. Self-play where nobody plays: the compute queue
+
+People's races teach the AI wherever people play (the hourly AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`).
+An intensity or a minigame nobody plays never gets a race to imitate; there, an offline race model plus a search is
+the only teacher. `/compute` runs those searches on the team's idle machines (`drive_fit`: a drive's asset fields x
+mean ln race seconds over I1-I4), `/compute-scout`'s coverage lens lists every vessel x Time game x intensity and
+which have neither races nor a model, and `/regatta-balance` is the plan they serve. Rules: a searched drive is a
+PROPOSAL for the AI owner (Yash), written into `<policy>_<Mode>` only with his yes and the learner's own writer; when
+imitation and search disagree, show both. A new offline model (`*_drive_sim.py`) becomes searchable by adding it to
+`Tools/Compute/evaluators/race_models.py` (`/compute-job` section 5).

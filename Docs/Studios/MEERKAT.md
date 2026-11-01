@@ -13,38 +13,56 @@ gone. Sections below that mention them are history. Every field, default and com
 Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Test hook `window.__meerkatStudio` (and `__lab`).
 **Owner:** Yash (the Vessel Studio). **Status:** in the game since 2026-10-27 (see "In the game" below).
 
-## Where it stands now (2026-10-28, Ys-bleeding-edge; the artifact at version 89+)
+## Where it stands now (updated 2026-11-01, Ys-bleeding-edge)
 
-The round notes below are newest first. In one place, what the Meerkat is today, in the artifact and in Unity:
+The round notes below are newest first. Rounds 1-26 were designed here in the artifact; since 2026-10-29 Yash has
+changed the Meerkat further in Unity, so the game and this page now differ in the ride, the look and some numbers.
+
+**In both the artifact and the game:**
 - **A wormhole** (RT): its centreline is one oval arc that bends round its middle, more oval as it gets longer (round
-  22).
-  - Its width is Garrett's surface area, set by the Space level: a longer wormhole is thinner (round 23).
-  - Yash's Unity tuning is the shipped shape: bend radius 10, throat 20, mouth 40 (round 26).
-- **Slid, not carried** (round 24): inside any wormhole you cruise at `rootCruise`, RT pushes you faster up to
-  `rootMaxSpeed`, the left stick moves you round the tube and its wall bounces you. You come out at `rideExitMultiplier`
-  × your speed before it. The old automatic ride's `rideEntryMultiplier` and `rideMidMultiplier` are retired.
-- **The network** (the omnicrystal; round 26): a network of wormholes flown the same way.
-  - Its size is set by Mass, from half the cell at Mass 0 to the whole cell at Mass 10.
-  - It looks like the wormhole: no tree, roots or soil (they ship off).
-  - Any omni crystal the Meerkat collects grows it, the game's own included (round 25, Unity).
-- **Another dimension** (round 25): a hull inside a tube is phased. Nothing outside touches it, it collects nothing,
-  and it is solid again when it comes out.
+  22). Its width is Garrett's surface area, set by the Space level: a longer wormhole is thinner (round 23).
+- **The network** (the omnicrystal, round 26) is sized by Mass, from half the cell at Mass 0 to the whole cell at Mass
+  10. It has no tree, roots or soil.
 - **The swallow** (rounds 23 and 25):
-  - prisms and crystals within `suckRadius` of a standing wormhole's way in are pulled in;
-  - they are carried through stretched and twisted, at the slide's top speed, first in first out behind any rider;
+  - prisms and crystals near a standing wormhole's way in are pulled in;
+  - they are carried through stretched and twisted, first in first out behind any rider;
   - they are fired out of the far mouth as moving prisms (`Docs/PRISM_MOTION.md`).
-- **Garrett's kit, the four abilities** (approved by Yash 2026-10-28; Unity `R_VesselActions/MEERKAT.md` §10):
+- **Garrett's kit, the four abilities** (approved by Yash 2026-10-28):
   - Space: the Soliton (RT);
   - Time: Faster Ride (passive);
   - Charge: Sentinel Mode (Y);
   - Mass: Exit Portal (passive).
-- **Open:**
-  - none of the Unity work is editor-verified yet (the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`);
-  - the slide is slower than round 23's automatic ride (Garrett's kit, Hard, Warpline I1-I4: about 78 / 78 / 99 / 78 s
-    against 68 / 67 / 88 / 69 s); the lever is `rootMaxSpeed`;
-  - the Mix's Space L5 Burial no longer lands, because a rider is phased;
-  - a real Meerkat hull and its four icons are still to be made.
-- **Report:** `Docs/Reports/MEERKAT.md`.
+
+**In the game only (Unity, Yash, 2026-10-29 to 11-01; `R_VesselActions/MEERKAT.md`):**
+- **Soliton Tunnels.** The wormhole is a **Soliton Tunnel** and the network a **Soliton Network**, an environmental
+  fundamental any vessel or scene can use (`Controller/Environment/SolitonTunnel/`). Each kind has its own
+  `SolitonTunnelConfigSO`, edited in FrogletTools > Environment > Environmental Fundamentals.
+- **The ride is a slip-and-slide** (`SolitonTunnelRider`):
+  - radial gravity presses you to the inner wall and you slide along it, bouncing now and then;
+  - there is no left stick;
+  - RT gives a small push;
+  - you leave at the speed you carry × `exitMultiplier`.
+
+  This replaced round 24's left-stick slide; the page's `root*` flight keys are marked retired.
+- **The look is a plain wormhole** (2026-11-01, `Docs/Shaders/WORMHOLE_SHADERS.md` §16): bent space, a lensing mouth
+  with an Einstein ring, and a stretch inside. The earlier looks are deleted, with restore steps in §12-§15.
+- **Phased** (round 25, game only): a hull inside a tube touches nothing and is touched by nothing until it is out. Any
+  omni crystal the Meerkat takes grows its Soliton Network, the game's own included (the Soliton Network omni ability,
+  2026-10-29).
+- **Yash's Unity tuning.** 14 numbers differ from this page (`studio_to_unity.py --check`, 2026-11-01):
+  - the tunnel's throat (7.1) and mouth (44);
+  - the network's forks, openings, radius, spread, diameters (10.5 and 18), tip and gnarl;
+  - its top speed (119);
+  - `suckRadius` (40).
+
+**Open:**
+- None of the Unity work is editor-verified yet (the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`; two of
+  them are marked SUPERSEDED).
+- Bring the slip-and-slide and Yash's 14 numbers back into this page, or leave the page as the round-26 record.
+- The Mix's Space L5 Burial no longer lands, because a rider is phased.
+- A real Meerkat hull and its four icons are still to be made.
+
+**Report:** `Docs/Reports/MEERKAT.md`.
 
 ## Where it came from
 
@@ -1116,6 +1134,10 @@ animation at beginning of travel)"*):
 
 ## Two kits: Garrett's and the Mix (round 18, 2026-10-28, for Yash to judge)
 
+> **Since 2026-10-28 Garrett's element definition is LOCKED** (§ "Garrett's direction" above) and is the one built in
+> Unity (`R_VesselActions/MEERKAT.md` §10). The Mix's level-5 swaps (Chain Dig on Time, Cave-in on Space) gave way to it;
+> both kits stay in the studio's Kit dropdown as the record of the comparison.
+
 > **Since 2026-10-28 the element definition is locked to Garrett's** (§ Garrett's direction). In the table below, D1's
 > Chain Dig and D4's Cave-in give way to it: Time L5 is Boost out, and Space L5 is **Steal** (§ "Space L5, Steal", a
 > later message of 2026-10-27 that this table predates; it reads the slot as "L5 open"). D2, D5, D6, the roots and every number are not element
@@ -1313,7 +1335,7 @@ high glint. Each sound keeps its Play, On, Volume, Pitch, Length, Brightness and
 | Group | Sounds | Wired in the page |
 |---|---|---|
 | Wormhole | reticle hum (loop, rises with the bend), tunnel forms, ride rush (loop, follows the ride speed), out of the tunnel, tunnel collapses | yes (rivals' tunnels by distance and side) |
-| Omnicrystal: labyrinth | collected, armed, digs, slide in, take a fork (panned to the side), out of an opening, falls in | yes |
+| Omnicrystal: network | collected, armed, forms, slide in, take a fork (panned to the side), out of an opening, collapses | yes |
 | Space: soliton | swallow, fire, annihilate, shielded bounce, surface area, Cave-in | yes, at the kit's own events (`kitSnd`: `sndAt`'s pan and distance) |
 | Time | Boost out, Chain Dig | yes, at the kit's own events |
 | Charge: sentinel | stands up, zap (rate-limited for ~5 a second), shields a prism, lost, alarm call, hop, seat swap | yes, at the kit's own events |

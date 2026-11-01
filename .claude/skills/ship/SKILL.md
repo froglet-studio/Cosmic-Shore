@@ -67,7 +67,10 @@ script did — so a gate printing `FAIL` in the very output you are reading come
 0". That is this file's own *"a gate that ABORTS looks exactly like a gate that passes"*,
 produced by the measurement rather than by the gate, and it is worse than the original
 because you have the failure text on screen and a number telling you to ignore it. Run the
-script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. Do this on the
+script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. **A command substitution in the SAME
+`echo` resets it too:** `check; echo "$gen @ $(git rev-parse --short HEAD): exit $?"` prints `git`'s status, so an A/B
+of a red generator against its merge's parent read "exit 0" on BOTH sides, twice in one session
+(`claude/ci-runs-failing-i6u77f`, 2026-11-01). Capture first: `check; rc=$?; echo "... exit $rc"`. Do this on the
 negative control too: a `--check` you have only ever watched SUCCEED is a `--check` you have
 not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
 restore and confirm the tree is clean (`git status --short` on the asset path).
@@ -961,6 +964,26 @@ node .claude/skills/labmaker/verify_lab.cjs <lab.html> --out <scratch>
 
 **Report**: labs touched, the verifier verdict per lab, the CATALOG rows changed, the LEARNINGS
 ids added and anything promoted, or an explicit "lab touched, nothing new learned: <why>".
+
+## 3.57 Compute capture (any branch that touched a search or a model — feeds `/compute`)
+
+The team's idle machines search whatever is queued in `Docs/Compute/jobs/` (`Docs/Compute/README.md`). A branch
+feeds that queue, or breaks it, in three ways; check each:
+
+```sh
+git diff --name-only <merge-base>..HEAD | grep -E '^(Tools/Compute/|Docs/Compute/jobs/)'      # the system itself
+git diff --name-only <merge-base>..HEAD | grep -E '^Tools/Build/[^/]*(_sim|_balance|_budget)\.py$'   # a model a job imports
+git diff <merge-base>..HEAD -- 'Tools/Build/*.py' | grep -cE '^\+.*(--sweep|itertools\.product\()'   # a new hand-rolled search
+```
+
+- **The system or a job file changed**: `python3 Tools/Compute/compute.py self-test` and `validate` are green
+  before the PR; a changed loss bumped its evaluator's `VERSION`.
+- **A model a job imports changed** (`race_models.py` names them): its jobs start a new epoch by themselves (the
+  inputs hash); say so in the PR, because the board's numbers reset for those jobs.
+- **A new hand-rolled search**: one line in the PR ("a candidate compute job: <script>"); `/compute-scout`'s
+  `sweeps` lens will list it. Converting it is a `/compute-job`, never part of this branch unless it asked.
+
+**Report**: the three answers, or "no compute surface touched".
 
 ## 3.6 Refactor-opportunity pass (§3.5 for DEBT — rows only, never edits)
 

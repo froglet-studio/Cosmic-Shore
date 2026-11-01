@@ -149,6 +149,7 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs",
     "Controller/Environment/FloraAndFauna/PaintedPrey.cs",
     "Controller/Animation/AnglerAnimation.cs",
+    "Controller/AI/Boost/AnglerLeapfrogAIPolicySO.cs",
 ))
 SCRIPT = {os.path.basename(rel)[:-3]: guid for rel, guid in NEW_SCRIPTS}
 
@@ -184,7 +185,11 @@ EXECUTOR_ID = "4417001122334455001"
 
 # ---- fleet guids ---------------------------------------------------------------------------------------------------
 TURN_END_CHANNEL = "498a06d44bde9184f985c938c803b2a1"
-SKIM_RING_POLICY = "c691910cb0114ea7aeb572bc51b71a6a"         # StoatAIBoostPolicy.asset (SkimRingAIPolicySO)
+SKIM_RING_POLICY = "c691910cb0114ea7aeb572bc51b71a6a"         # StoatAIBoostPolicy.asset (SkimRingAIPolicySO), the donor's
+# The Angler's own autopilot drive (2026-10-29, Lantern Run): paint, throw, dash after the school. Replaces the donor's
+# skim-ring policy, which binds nothing on an Angler (ANGLER.md follow-up 2).
+LEAPFROG_POLICY = A("_SO_Assets", "AI Boost Policies", "AnglerAIBoostPolicy.asset")
+LEAPFROG_POLICY_GUID = guid_for("AnglerAIBoostPolicy.asset")
 SO_VESSEL_SCRIPT = "0309a5343d820c14abd73b35f6fa50f1"
 CAMERA_SCRIPT = "fd4e6f3597f7439ba7333b35a3a9e164"
 # The Stoat's four icon sprites (charge, mass, space, time) and the Angler's that replace them in the HUD variant.
@@ -192,6 +197,13 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": I.guid_for("Angler_Command.png"
              "783faf75777a15c5b2241cfc3e2691d3": I.guid_for("Angler_Leash.png"),
              "586d56db81bb568c940094830cd59abb": I.guid_for("Angler_Lure.png"),
              "669089ec7ad29ed295eccc53d8615225": I.guid_for("Angler_Tame.png")}
+# A card the icon kit has recut (Tools/Build/icon_kit/specs/angler.py, Garrett's ability icon polish) wears kit PARTS on
+# child Images and its slot Image carries no sprite, so the round-1 sprite is gone on purpose: the first part's view
+# field stands in (the BrittleStar's KIT_RECUT, author_brittlestar_assets.py).
+KIT_RECUT = {"ebdd346798d474b5a5ab2364683a8725": "lockSchoolIcon",    # Charge (was Angler_Command): the lock-on parts
+             "783faf75777a15c5b2241cfc3e2691d3": "lureHullIcon",      # Mass (was Angler_Leash): the lure parts
+             "586d56db81bb568c940094830cd59abb": "paintGroupAIcon",   # Space (was Angler_Lure): the paint parts
+             "669089ec7ad29ed295eccc53d8615225": "dashGroupAIcon"}    # Time (was Angler_Tame): the dash parts
 CARD_ACTIVE, CARD_INACTIVE = I.guid_for(I.CARD_ACTIVE), I.guid_for(I.CARD_INACTIVE)
 # the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
 # names a new PNG md5("cosmic-shore-card:" + its repo path); Angler.png / Angler_Inactive.png keep the guids above
@@ -371,6 +383,8 @@ def patch_prefab(text: str) -> str:
                         f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {IMPACT_CONTAINER_GUID}, type: 2}}")
     text = re.sub(r"  _inputEventShipActions:(?:.*\n)*?(?=  _onButtonPressed:)", lambda _: bindings(), text, count=1)
     text = re.sub(r"  squadLabelTemplate: .*\n", "", text)   # the retired squad label (2026-10-21)
+    text = text.replace(f"boostPolicy: {{fileID: 11400000, guid: {SKIM_RING_POLICY}, type: 2}}",
+                        f"boostPolicy: {{fileID: 11400000, guid: {LEAPFROG_POLICY_GUID}, type: 2}}")
     head, docs = S.split_docs(text)
     if any(fid == EXECUTOR_ID for fid, _ in docs):
         S.set_doc(docs, EXECUTOR_ID, executor_block())
@@ -581,6 +595,17 @@ def prefab_meta(guid: str) -> str:
     return S.prefab_meta().replace(S.PREFAB_GUID, guid)
 
 
+def leapfrog_policy_asset() -> str:
+    """The Angler's autopilot drive (AnglerLeapfrogAIPolicySO). The base straight/runway fields are unused by this
+    policy and stay at their defaults; requireAIPlayer keeps it off the menu's lava-lamp autopilot (a throw leaves
+    creatures in the world)."""
+    return (S.so_header(SCRIPT["AnglerLeapfrogAIPolicySO"], "AnglerAIBoostPolicy") +
+            "  alignDegrees: 12\n  releaseAlignDegrees: 25\n  stickBand: 0.35\n  releaseStickBand: 0.6\n"
+            "  engageRunwaySeconds: 1.5\n  releaseRunwaySeconds: 0.5\n  disabledInModes: []\n  requireAIPlayer: 1\n"
+            "  throwAlignDegrees: 4\n  minThrowDistance: 120\n  holdSeconds: 0.45\n  throwIntervalSeconds: 0.6\n"
+            "  minDashDistance: 40\n  dashAheadDegrees: 50\n")
+
+
 def owned_files() -> "dict[str, str]":
     out = {
         CLASS_ASSET: class_asset(), CLASS_ASSET + ".meta": S.asset_meta(CLASS_GUID),
@@ -593,6 +618,7 @@ def owned_files() -> "dict[str, str]":
         OMNI_EFFECT: omni_effect_asset(), OMNI_EFFECT + ".meta": S.asset_meta(OMNI_EFFECT_GUID),
         IMPACT_CONTAINER + ".meta": S.asset_meta(IMPACT_CONTAINER_GUID),
         MAP: map_asset(), MAP + ".meta": S.asset_meta(MAP_GUID),
+        LEAPFROG_POLICY: leapfrog_policy_asset(), LEAPFROG_POLICY + ".meta": S.asset_meta(LEAPFROG_POLICY_GUID),
     }
     for name, value, _ in CONTROLS + TOUCH_CONTROLS:
         path = os.path.join(ACTIONS_DIR, name + ".asset")
@@ -699,8 +725,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(omni and f"guid: {OMNI_EFFECT_GUID}" in omni.group(1) and STOAT_OVERCLOCK not in container,
          "AnglerImpactorDataContainer's omni list does not run the Angler's mass tame (or still runs the Stoat's Overclock)")
     need("  abilities: []\n" in d.get(AI_PILOT_ID, ""), "the AIPilot runs a blind ability cycle (the Angler has no autopilot yet)")
-    need(f"boostPolicy: {{fileID: 11400000, guid: {SKIM_RING_POLICY}, type: 2}}" in d.get(AI_PILOT_ID, ""),
-         "the AIPilot's boost policy is not the donor's SkimRingAIPolicy (inert without a Squirrel tube; the shared-channel gate wants it wired)")
+    need(f"boostPolicy: {{fileID: 11400000, guid: {LEAPFROG_POLICY_GUID}, type: 2}}" in d.get(AI_PILOT_ID, ""),
+         "the AIPilot's boost policy is not AnglerAIBoostPolicy (AnglerLeapfrogAIPolicySO: paint, throw, dash)")
     handler = d.get(HANDLER_ID, "")
     for name, _, event in CONTROLS:
         need(re.search(r"  - InputEvent: %d\n    ShipActions:\n    - \{fileID: 11400000, guid: %s, type: 2\}" % (event, CONTROL_GUID[name]), handler),
@@ -728,7 +754,9 @@ def check(files: "dict[str, str]") -> "list[str]":
             # the round-2 key until Unity re-saves the variant, the element-named one after (FormerlySerializedAs)
             need(re.search(r"  (%s|%s): \{fileID: [1-9]\d*\}" % (field, renamed), hud), f"HUD view field {renamed} is not wired")
         for old, new in ICON_SWAP.items():
-            need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+            recut = KIT_RECUT.get(old)
+            done = new in hud or (recut and re.search(r"  %s: \{fileID: [1-9]\d*\}" % recut, hud))
+            need(old not in hud and done, f"HUD icon {new} not swapped in")
         need(f"  seedSprite: {{fileID: 21300000, guid: {SEED_SPRITE}, type: 3}}\n" in hud,
              "AnglerHUDView.seedSprite is not wired (the omni card's seed, round 4)")
 
@@ -846,6 +874,7 @@ def self_test() -> int:
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.Angler", "")),
         "the element map drifted": (MAP, lambda t: t.replace("Input: 7", "Input: 14")),
         "the combat-hit channel unwired": (PREFAB, lambda t: t.replace(f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}", "  onCombatHitLanded: {fileID: 0}")),
+        "a recut card's parts unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  lureHullIcon: \{fileID: \d+\}", "  lureHullIcon: {fileID: 0}", t)),
         "the seed sprite unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  seedSprite: .*\n", "", t)),
         "the camera back in": (CAMERA, lambda t: t.replace(f"z: -{CHASE_BACK}", "z: -40")),
         "the dash unbound": (PREFAB, lambda t: t.replace("  - InputEvent: 7\n", "  - InputEvent: 13\n")),

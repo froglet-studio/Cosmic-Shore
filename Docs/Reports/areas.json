@@ -636,6 +636,58 @@
         "Steam upload, once an app id exists: ./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal"
       ]
     },
+    "compute": {
+      "title": "Froglet Compute (idle-hardware learning)",
+      "aliases": [
+        "compute",
+        "idle compute",
+        "compute queue",
+        "compute board",
+        "froglet compute",
+        "regatta balance plan",
+        "bioform forge"
+      ],
+      "owner": "Shombith",
+      "people": [
+        "Garrett",
+        "Yash"
+      ],
+      "audience": [
+        "everyone"
+      ],
+      "branch": "cece/clever-ritchie-q8270q",
+      "branchNote": "until merged into bleeding-edge; then the queue lives on bleeding-edge, Ys-bleeding-edge and compute-queue",
+      "summary": "A queue of learning searches (AI drives per vessel and intensity, the Regatta course and elemental balance plan, swarm bioforms, NCA creature trainings) that every collaborator's computer works through when idle, merged on one board, with a scout that finds what to search next. Asked for by Garrett 2026-10-26; tooling, so changes go through Shombith (CLAUDE.md).",
+      "paths": [
+        "Tools/Compute",
+        "Docs/Compute",
+        ".claude/skills/compute",
+        ".claude/skills/compute-job",
+        ".claude/skills/compute-scout",
+        ".claude/skills/regatta-balance",
+        ".claude/skills/bioform-forge",
+        "Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md"
+      ],
+      "docs": [
+        "Docs/Compute/README.md",
+        "Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md",
+        "Docs/Compute/BOARD.md",
+        "Docs/Compute/OPPORTUNITIES.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/COMPUTE.md",
+      "taskAreas": [
+        "Compute",
+        "Regatta AI",
+        "AI training"
+      ],
+      "test": [
+        "python3 Tools/Compute/compute.py self-test",
+        "python3 Tools/Compute/compute.py doctor, then top --why",
+        "python3 Tools/Compute/compute.py run --once (on a Windows or macOS machine: the first real run there)",
+        "python3 Tools/Compute/compute.py board"
+      ]
+    },
     "attribution": {
       "title": "Attribution audit",
       "aliases": [
@@ -698,7 +750,7 @@
       ],
       "branch": "Ys-bleeding-edge",
       "branchNote": "for testing; it goes to bleeding-edge once Yash has played it in the editor",
-      "summary": "The wormhole vessel: an oval wormhole sized by Garrett's surface area, slid with the left stick like the omnicrystal's network of wormholes, phased inside any tube, swallowing prisms and crystals at its way in and firing them out of the far mouth, with Garrett's four abilities (Soliton, Faster Ride, Sentinel Mode, Exit Portal). Designed in the Vessel Studio artifact first, cloned to Unity.",
+      "summary": "The wormhole vessel: an oval wormhole sized by Garrett's surface area, now a Soliton Tunnel (an environmental fundamental) ridden as a slip-and-slide, with the omnicrystal's Soliton Network sized by Mass, the plain-wormhole look (lensing mouths), phased inside any tube, swallowing prisms and crystals at its way in and firing them out of the far mouth, and Garrett's four abilities (Soliton, Faster Ride, Sentinel Mode, Exit Portal). Designed in the Vessel Studio artifact (rounds 1-26), cloned to Unity, then changed further in Unity (2026-10-29 to 11-01).",
       "paths": [
         "Assets/_Scripts/Controller/Vessel/R_VesselActions/Meerkat",
         "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/Meerkat",
@@ -740,10 +792,58 @@
       ],
       "test": [
         "Pull Ys-bleeding-edge, open Unity, wait for the compile.",
-        "Toybox (Lava Lamp), Vessel Changer: the Meerkat. Release LT and pull RT for a short, fat wormhole; inside, push the left stick (you bounce off the wall), hold RT (faster), and fly out of the far mouth.",
+        "Toybox (Lava Lamp), Vessel Changer: the Meerkat. RT a short, fat wormhole: inside you drop onto the wall and slide (no left stick); hold RT for a small push; fly out of the far mouth a little faster than you went in.",
+        "From outside, the world round a wormhole's mouth bends into a ring; inside, the view streams toward the way out.",
         "Form a wormhole next to prisms: they are pulled in, stretched through, and fired out of the far mouth; none catches you inside, and you lose no petal in the tube.",
-        "Fly into an omni crystal: the network of wormholes opens round you, sized by your Mass; an AI Meerkat's opens when it takes one.",
+        "Fly into an omni crystal: a Soliton Network opens round you, sized by your Mass; an AI Meerkat's opens when it takes one.",
         "Burrow Run (the Meerkat's Time mini-game): the AI forms wormholes, slides them and threads its rings."
+      ]
+    },
+    "ci": {
+      "title": "CI (GitHub Actions)",
+      "aliases": [
+        "ci",
+        "ci runs",
+        "github actions",
+        "workflows",
+        "bleeding-edge guard",
+        "guard",
+        "unity ci",
+        "amoebius parity ci",
+        "parity ci",
+        "perf-daily",
+        "why is ci red",
+        "ci failing"
+      ],
+      "owner": "Shombith",
+      "people": [
+        "Yash",
+        "Garrett"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "bleeding-edge",
+      "branchNote": "the workflows run from bleeding-edge; the report is measured against a named commit",
+      "summary": "Every GitHub Actions workflow and why it is red: four stale asset generators (Angler, Meerkat, Regatta, Undertow) fail the bleeding-edge guard, Unity CI and every PR; the Amoebius port has never passed parity CI and today does not compile (16 missing Unity APIs), which also fails perf-daily.",
+      "paths": [
+        ".github/workflows",
+        "Tools/CI",
+        "Tools/Build/arcade_mode_lib.py"
+      ],
+      "docs": [
+        "CLAUDE.md",
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/CI.md",
+      "taskAreas": [
+        "CI"
+      ],
+      "test": [
+        "git fetch origin && git checkout --detach origin/bleeding-edge",
+        "Run every Tools/Build/author_*_assets.py --check (Docs/Reports/CI.md section 5); each RED line is a failing gate.",
+        "Read the latest Amoebius parity CI run for the port's compile errors."
       ]
     }
   }

@@ -312,6 +312,116 @@ Space rebinds had silently dropped (#1650, #1652). No Unity and no .NET: not com
 - [ ] The Time plate stays empty throughout.
 - [ ] Mass and Space cards now tint (re-run their #1650 / #1652 lines above).
 
+
+### 🔴 The AI trainer covers every multiplayer card: 22 more scenarios, gate races seek the next ring (`claude/eager-franklin-e6g77h`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `TrainingModeCatalog` +22 rows (13 gate races, Broadside, Dustup, Undertow, Sirocco, Wrecking Ball,
+Bloomrush, Hijack, Tapestry, Tollway); `FitnessProfileSO.MetricRecipes` (each mode's own ScoringMetric through
+`ScoringMetrics.Read`, three new kinds `SwitchesThreaded` 20, `PrismsStolen` 21, `VolumeRemaining` 22, plus the time
+penalty); `TargetSensor.TargetMode.NextGate` (4) reads `GateRaceController.TryGetNextRing`; 22 scenario/profile pairs
+written by `Tools/Build/author_training_scenarios.py` (`--check`). The twelve existing scenarios are unchanged.
+Affects: the AI trainer's owners (studyholic, Garrett, Shombith).
+
+**Verified without the editor:** `unity_refcompile` (editor and player configs, see the commit); the generator's
+self-test (a fresh pair passes; a drifted TargetMode, a missing profile and a recipe without a row each fail);
+`author_training_scenarios.py --check` over all 34 rows.
+
+**Test in the editor:**
+1. `AITrainingCoreTests`: `Catalog_EveryLiveMode_HasScenarioAndProfileMatchingApplyFor` (now 34 rows),
+   `MetricRecipes_OnePerMode_EachInTheCatalog_AndNoScoreRow`, `TargetSensor_NextGate_NoRace_HasNoTarget` pass.
+2. FrogletTools > AI > AI Training: the Mode list shows the new cards. Pick **Headlong · Rhino · I4**, Target
+   episodes 6, Learn: the AIs fly toward the next ring (not crystals), the gate count climbs, fitness is positive
+   after a match. Repeat with **Regatta** (arena: hull Manta) and **Broadside** (combat points move).
+3. **Wrasse Run** (a crew hull): note whether the trainer drives the pilot seat at all.
+4. The first real run (Switchback, Dolphin, I2, 32 matches through Froglet Compute) scored 0 gates on every AI: a pilot
+   new to the match kept the default "closest crystal" target because the runner sets `TargetMode` after
+   `BindVessel` built the sensors. `TrainingPilot.BeginEpisode` now applies it (test
+   `Pilot_TargetModeSetAfterBind_AppliesAtBeginEpisode`). Re-run Switchback with "Show the game": the Dolphins should
+   head for the rings.
+
+### 🔴 Froglet Compute runs the AI trainer in a Unity with no window (`claude/eager-franklin-e6g77h`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `Tools/Compute/unity/FrogletComputeTraining.cs`, an editor batch entry that is NOT part of the game:
+`Tools/Compute/unity_run.py` copies it into Froglet Compute's own copy of the project (`~/.froglet-compute/unity/`,
+never the person's checkout) and starts `Unity -batchmode -executeMethod
+CosmicShore.Utility.AITraining.Editor.FrogletComputeTraining.Run`. It does what the AI Training window's Learn button
+does (control asset, AutoStartOnPlay, Play from Bootstrap) with the overnight batch flags on, writes `status.json` /
+`result.json` / `genome.json`, and quits at the target, the deadline or a stop file. No file under `Assets/` changes.
+Affects: the AI trainer's owners (studyholic, Garrett, Shombith) - it drives their trainer unchanged.
+
+**Verified without the editor:** `unity_refcompile --config editor`: the file compiles against the real Unity
+references with 0 errors (it was the one gated file); a planted wrong method name in it failed the same run.
+`check_conditional_compilation.py`: OK. `compute.py self-test` "unity runs": a fake Unity following the same contract
+- a queued unit done and published, resume from a saved session, Ctrl-C stops cleanly, a compile error stops the run,
+an automatic run waits while the person's Unity is open, a missing Unity is reported; a planted skip of the copy step
+fails it.
+
+**Test on a PC with Unity 6000.3.17f1 (Unity Hub):**
+1. `python Tools/Compute/compute.py unity --find` names the editor.
+2. From the console's New run, pick Squirrel > Skim Race (purple), I4, 10 matches, This computer; paste the line.
+   The first run imports the project into `~/.froglet-compute/unity/Cosmic-Shore` (an hour or more, once).
+3. `~/.froglet-compute/runs/unity-train~<id>/<unit>/status.json` moves through "loading the match" to "training" and
+   `episodes_total` climbs; `unity.log` there shows `[FrogletCompute]` lines and the trainer's own.
+4. It ends with `result.json` (`ok: true`) and `genome.json`; Runs on the console shows the request done.
+5. Your own project is unchanged (`git status` clean) and your open Unity was never disturbed.
+If Play never reaches a match (sign-in, the menu), the run stops after 15 minutes with exit 3 and the reason in
+`result.json`: send `unity.log`.
+
+**Added 2026-10-29: the game's own recorders and the Third Eye** (`Docs/Compute/README.md` section 16). Compiled with
+`unity_refcompile --config editor` (0 errors; a planted error in the file failed the same run). Not run in the editor.
+- [ ] After a run: `<out>/replays` holds at most two replay pairs (`.cstheater` + `.replay.json`, each with a
+      `.compute.json`), `replays/best` holds the match where the best fitness rose, and `recordings.json` lists them
+      with `replays_setup: "on"`.
+- [ ] `Documents/CosmicShore Diagnostics/Flights` gains no new `flight_*.json` during the run (list it before and
+      after); `<out>/ai-flights` holds `aiflight_*.json` instead.
+- [ ] MY REPLAYS on another device does not list the training matches (the run's ReplayConfig lists none in Cloud Save).
+- [ ] Show the game: the Third Eye opens on the match once Play reaches it; `recordings.json` says `third_eye: "open..."`.
+- [ ] Copy a `replays/best` pair into the project's `Recordings` folder: MY REPLAYS > WATCH plays it, Y or Tab gives
+      the free camera.
+- [ ] Next run: the copy's `TheaterConfig.asset` is back to its tracked value and the untracked `ReplayConfig.asset` is gone.
+- [ ] (2026-10-29) An AI Training run (the window's Learn, or Compute): the Console shows no "AI training record not
+      stored" warning per match and Documents' Flights gains nothing; a race you fly yourself is still stored, with
+      `"pilot":"human"` in its header (`"mixed"` after a You / AI toggle).
+- [ ] Third Eye during an AI Training run: the trainer's hull draws a lime aim line to its target ("AI trainer:
+      Seeking Waypoint" in the readout), the You / AI toggle on it says "the AI trainer is flying this hull".
+- [ ] A watched Compute run writes `<out>/stills/still_*.png` about every minute and a `best_*.png` when the best
+      fitness rises: the picture is the Third Eye's view with the trails and aim lines drawn in, the right way up.
+- [ ] `ThirdEyeStillTests` pass (Test Runner, edit mode).
+- [ ] (2026-11-01) New run > Thresher > Thresher Time > All 4 > 1 match > Show the game > dragonsweapon > Now, sent
+  from the live console: Runs shows four runs one after another (I1 first), each of one match; Unity opens with its
+  window on dragonsweapon for each.
+- [ ] (2026-11-01) During a watched run, about 20 s into the match and every 5 minutes: the DiagnosticsHUD's status
+  line says it is recording (`diag froglet-compute-<scenario> 60`), and `Documents/CosmicShore Diagnostics` gains a
+  `diag_<scene>_froglet-compute-<scenario>_<stamp>.json` and `.txt` a minute later; `status.json`'s `diagnostics`
+  field holds the HUD's answer.
+- [ ] (2026-11-01) When a watched run ends: Unity stays open up to three minutes while the bug ledger sends, then
+  quits; `<out>/bugledger.json` says `Sent` (or `NothingNew`) and names `bugledger/<user>`; that branch's
+  `BugLedger/shared/reports/<user>/perf/` holds the diag reports. A headless run writes no `bugledger.json`.
+- [ ] (2026-11-01, the people's seed) A Unity run of a pair you have raced at least twice in the editor (Squirrel in
+  Skim Race): `<out>/seed.json` exists, `status.json`'s `seed` reads "N gene(s) from the people's races: ..." and
+  `unity.log` shows the first population's genomes carrying those values (the AI Training window's population
+  view: throttle.base and boost.min_charge equal the seed's, not the registry defaults 0.65 / 0.5). A second run of
+  the same unit (a resume) says "not applied: resuming this scenario's own population".
+- [ ] (2026-11-01, the tray) After the installer runs on a Windows PC: a Froglet Compute icon is in the tray (or a small
+  window when pystray could not be installed), the schedule window opened by itself, and Save re-registers the agent
+  (the Computers page shows the PC again within a minute). Pause: the console shows the PC as Paused and a sent run
+  waits; Resume: it starts. Uninstall: the tray and the agent are gone from the Startup folder and the processes list.
+- [ ] (2026-11-01, the right hulls) A Compute run of Serpent in Serpentine straight after a Dolphin in Switchback run:
+  every seat in the match is a Serpent (the Third Eye's Pilots list), none a Dolphin or Sparrow; the host seat's hull
+  is the Serpent too. `TrainingAutoLauncher` now syncs the mode's card before launching (the allowed-hull list the
+  spawner clamps to used to be the previous run's).
+- [ ] (2026-11-01, where people fly) `PeopleLineTests` pass (Test Runner, edit mode). A Unity run of a pair with
+  people's races: `status.json`'s `people_line` reads "N points from M race(s)" and the AI Training window's fitness
+  breakdown shows a PeopleLine row (a negative number, small against the gates); a pair nobody raced shows 0 there.
+- [ ] (2026-11-01, Update AI) On the console's Vessel AIs page press Update AI for a vessel, say yes as one of the core
+  four: `origin/ai` gains a `chore(ai): <Vessel>'s AI from Froglet Compute` commit touching only
+  `Assets/_SO_Assets/AI Training/Archive.asset`; pull `ai` into a checkout: Unity imports the asset without a warning,
+  the Archive's inspector lists the new entry with its Notes, and a normal match of that mode on an AI seat with
+  `TrainingControl.DeployArchiveInNormalPlay` on installs a TrainingPilot (the Third Eye reads "AI trainer" on it).
+- [ ] (2026-11-01) New run lists Serpent > Serpentine, Scarab > Scarab Rally and BrittleStar > Brittle Star Time as
+  purple (in the game); a one-match run of each starts, plays and reports gates threaded (`status.json`
+  `best_fitness` finite after the match). **These three scenarios were authored from the catalog
+  (`author_training_scenarios.py`) and compiled against the Unity references, never played: the first run tells.**
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
@@ -1254,10 +1364,11 @@ abstract-member gates pass. `/verify-unity` was not available (no editor in the 
 - The artifact's kit races finish.
 
 **Verify in editor:**
-1. Lava Lamp, the Meerkat: fly into the cell's omni crystal. Its roots grow round you at once and you are inside them.
-   Watch an AI Meerkat take one: its roots grow too.
-2. Form a tunnel whose mouth is next to prisms and ride it. The prisms pulled in behind you never catch you, and your
-   hull loses no petal and breaks nothing inside the tunnel.
+1. Lava Lamp, the Meerkat: fly into the cell's omni crystal. A Soliton Network grows round you at once and you are
+   inside it. Watch an AI Meerkat take one: its network grows too. (Updated 2026-11-01: the "roots" are the Soliton
+   Network since 2026-10-29.)
+2. Form a tunnel whose mouth is next to prisms and ride it (the slip-and-slide: you need not steer). The prisms
+   pulled in behind you never catch you, and your hull loses no petal and breaks nothing inside the tunnel.
 3. Form a tunnel straight through a wall of prisms: you pass through it untouched, and the wall stays standing.
 4. Out of the far mouth you are solid again: hit a prism and it breaks as usual.
 5. Burrow Run: a ring threaded while inside a tunnel still counts.
@@ -1430,7 +1541,25 @@ soliton; sentinels zapping sentinels; the Meerkat's own icons; the sound (five e
 
 ---
 
-### 🔴 The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+### ⚪ SUPERSEDED — The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28)
+
+> **Superseded 2026-10-29 by Soliton Tunnels** (`a8c7d6b073`, `R_VesselActions/MEERKAT.md`, `Docs/Shaders/WORMHOLE_SHADERS.md`
+> §15). The ride below (left stick, `rootCruise` / `rootThrust` / `rootMaxSpeed`) no longer exists, so do not test it. The
+> tunnel and the network are now a **slip-and-slide** (`SolitonTunnelRider`): radial gravity presses you to the inner
+> wall and you slide along it with an occasional bounce; there is no left stick and no nose lock; RT gives a small push;
+> you leave at the speed you carry × `exitMultiplier` (the slingshot). Its numbers are per tube in `SolitonTunnelConfigSO`
+> (Ride: Slip and Slide: `wallGravity`, `bounce`, `wallFriction`, `thrustOn`, `thrust`, `minSpeed`, `exitMultiplier`).
+> What still holds from this entry: one flight for a tunnel and the network (a tunnel is a network of one,
+> `SolitonTunnelMath.Single` / `ITubePath`), and the AI's tunnel plans ride at the slide's speed.
+>
+> **Verify in editor instead:**
+> 1. Toybox, Meerkat: RT a short, fat tunnel. Inside, the hull drops onto the inner wall and slides along it, bouncing a
+>    little; the left stick does nothing. Hold RT: a small push along the tube. It never stalls (`minSpeed`).
+> 2. Out of the far mouth: you leave along the way you were going, a little faster (`exitMultiplier`), and the reticle
+>    comes back.
+> 3. Burrow Run: the AI forms tunnels, slides them and threads its rings.
+
+(The original entry, kept as history:)
 
 **What landed:** the automatic ride is gone. The main tunnel is now a network of one channel flown by the roots' own
 flight (`SolitonTunnelMath.Step` through `ITubePath`, `MeerkatSolitonExecutor.StepRide`):
@@ -1557,7 +1686,16 @@ brute force, 400 random tubes). Reference compile clean.
 
 ---
 
-### 🔴 The Meerkat's tree and the Omnicrystal's roots, flown on the left stick (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+### ⚪ SUPERSEDED — The Meerkat's tree and the Omnicrystal's roots, flown on the left stick (`claude/adoring-cerf-m94x1o`, 2026-10-28)
+
+> **Superseded, do not test.** The tree went off in round 26 (2026-10-28), and its files were deleted on 2026-10-29
+> (`2ad5882115`: `MeerkatTreeMesh`, `MeerkatTreeView`, `MeerkatTree.shader`, `MeerkatRootInside.shader`; restore:
+> `Docs/Shaders/WORMHOLE_SHADERS.md` §12). The roots are now the **Soliton Network** with the slip-and-slide ride
+> (no left stick), and the look is the plain wormhole of `WORMHOLE_SHADERS.md` §16 (2026-11-01). The network's own hand
+> tests are the entries "The Meerkat's network of wormholes" and "Omni-crystal abilities: the Soliton Network on the
+> Meerkat".
+
+(The original entry, kept as history:)
 
 **What landed:**
 - The tree round every formed tunnel: trunk, bore, cut faces and branches (`MeerkatTreeMesh`, `MeerkatTreeView`,
@@ -19216,6 +19354,12 @@ gate race and the Skim Race pilot. EditMode: `PerSeatAIDifficultyTests`, `Arcade
    and press Easy: every AI reads "Easy AI". Launch with AI 1 Easy, AI 2 Legendary: AI 2 flies visibly cleaner.
 6. Same Arcade card as a guest: the pedestals show each AI's level and cannot be pressed for it.
 
+**Status (2026-11-01):** still unverified. Checked on `Ys-bleeding-edge` at `4f875bd14c`: the code is intact (nothing in the
+725 commits since `9f6db7cc49` touched the difficulty paths); the refcompile and `gates.sh` passed at push time. No
+screenshot of the real window exists yet; the only images made were mockups drawn on the Rev 20 G / Rev 25 B boards.
+A local session with Unity open should capture: an Arcade card (Scurry) with three AI, no AI selected, then AI 1 and
+AI 2 each selected with different levels; and an Arena card (Regatta) with an AI selected (the vessel strip follows it).
+
 ## 🔴 2026-10-27 — Stoat flies Slingshot, Meerkat flies Warpline; the Time Race Prototyper (unverified: no Unity editor in the session)
 
 **Files:** `ArcadeGameWarpline.asset` + `ModePreview_Warpline.asset` (Vessels / preview: the Meerkat; `author_warpline_assets.py`),
@@ -19699,6 +19843,29 @@ Not compiled: the session had no Unity editor and no .NET SDK, so nothing here h
 5. Open the window on a phone-sized Game view. **Pass:** the map, corner galaxy and line fit the card; opening the
    window the first time takes no visible hitch (the sea is painted once and shared; courses are cached).
 6. Set sail on a card. **Pass:** the voyage plays as before (the lanes' cell counts still set the leg's length).
+
+## 🔴 2026-11-01 — The Voyage window: one galaxy map, job cards that open to their brief (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md` §3. **Files:** `UI/Views/VoyageJobsView.cs`, `VoyageJobCard.cs`,
+`VoyageMapGraphic.cs`, `VoyageContentSO.cs` (`CardOpen`, `CardClose`, `CardDetails`, `CardHomeDetails`, `CardSquadSeat`,
+`CardSquadSeparator`), `VoyageContent.asset` from `author_voyage_assets.py`, two lines on `MissionView.prefab`'s
+`VoyageJobsView` (`vessels`, `mapHeight`). Affects: Garrett's voyage slice; `MissionView.prefab` (generated by
+`author_menu_mission.py`, which already reported drift before this change). Not compiled: no Unity editor and no .NET
+SDK in the session.
+
+1. Open the project. **Pass:** no compile errors.
+2. Menu_Main, open the Voyage window, scroll to the jobs. **Pass:** after Tandava and Severing, ONE galaxy map (the sea
+   around Tumult, the places named, the galaxy corner), then one closed card per job: OPEN chip, route and pilot, title,
+   course line. No card shows a picture.
+3. Press OPEN on a card. **Pass:** the card grows to its brief (the job, the destination's line, SQUAD with your three
+   hulls and pilots, INTENSITY I1-I4, PAYS n CRYSTALS, who brought it) with SET SAIL; the chip reads Close; the map
+   above zooms to that job's course, a green line stepping round the reefs, and its course line shows under the map.
+4. Press OPEN on another card. **Pass:** the first closes, the second opens, the map moves to the new course. Press
+   Close. **Pass:** the card closes and the map shows every place again.
+5. Press anywhere on a closed card (not the chip). **Pass:** it opens too.
+6. Press SET SAIL on an open card. **Pass:** into freestyle and the voyage sails, as before.
+7. The way home card (away from home). **Pass:** its brief has no pay line.
+8. The Ark escort card. **Pass:** always open, its difficulty stepper either side of SET SAIL, as before.
 
 ## Lavalamp wormhole lab: original lens + wall vs the new mobile water pipe, side by side (2026-10-28) - NOT EDITOR-VERIFIED
 
@@ -20185,3 +20352,40 @@ session); reference compile (player and editor) and the gates pass.
    draw every teammate's icon.
 2. Note whether the rejoiner logs `Double initialization not allowed!` (B47) and whether its name shows on the others.
 
+
+## Lantern Run (75): the Angler's Time race - two mass clusters a leg, paint, throw, dash (`claude/intelligent-lovelace-ynskrg`, 2026-11-01) - NOT EDITOR-VERIFIED
+
+A new mode. Authored in a cloud session with no
+Unity editor, so the `unity` CLI did not run. What did run:
+- `LanternRunCourseTests`: 8 of 8 pass outside the editor (the card harness's UnityShim and a small NUnit stand-in),
+  400 seeds x 4 intensities.
+- `author_lantern_run_assets.py --check` passes, with a watched negative control (a changed card field is named).
+- The `/arcadegame` §4 gates pass. `author_card_backgrounds --strict` fails only on the orphaned `Tandava.png`, and
+  `render_card_backgrounds.py --check` (all cards) stops on `BurrowRun: no recipe`; bleeding-edge fails both the same way.
+- `unity_refcompile`, player and editor configs: RESULT OK, no errors in project code.
+- `/ship` gates (`gates.sh`): all pass except `author_angler_assets.py --check` (4 HUD icon findings), which fails the
+  same way on a clean bleeding-edge.
+
+Also on this branch: `Fauna.LeashOwnsSpeed` (the throw keeps
+150 u/s) and `AnglerLeapfrogAIPolicySO` on `Angler.prefab` (the Angler's AI).
+
+Doc: `Assets/_Scripts/Controller/Arcade/LANTERNRUN.md`.
+
+1. **Compile.** Open the project. **Pass:** no errors in `LanternRunCourse.cs`, `LanternRunCourseSource.cs`,
+   `LanternRunController.cs`, `AnglerLeapfrogAIPolicySO.cs`, `Fauna.cs`, `LightFauna.cs`, `Boid.cs`,
+   `EndConditionOverridesSO.cs`, `EndConditionOverridesWindow.cs` or `MiniGameHUD.cs`.
+2. **Edit-mode tests.** Run `LanternRunCourseTests`, `EnumIntegrityTests` (71 members, `LanternRun` = 75) and
+   `RaceCourseSourceTests`. **Pass:** all green.
+3. **Open and save the scene.** Open `MinigameLanternRun.unity` and save it (it is a text clone of Thresher Time's).
+   Commit it, then re-run `python3 Tools/Build/author_lantern_run_assets.py --check`. **Pass:** OK. The controller shows
+   Cluster Prefab = SpawnablePrism and Nucleus Margin = 30.
+4. **Fly it at I1.** Arcade grid, LanternRun, I1, with 1-2 Angler AIs.
+   - **Pass:** every leg has a ball of blue prisms before its ring and one past it, both on the ring's line.
+   - Hold RT on the near ball, let go; hold RT through the ring on the far ball, let go; press B twice.
+     **Pass:** a throw flies at about 150 u/s (not ~30), the second dash carries you through the ring and the ring counts.
+5. **Regrowth.** Watch a ball your school ate. **Pass:** it grows back one prism about every second (I1).
+6. **AI.** **Pass:** the AI Anglers throw and dash, and finish; they do not just cruise at 40 u/s.
+7. **Ladder.** Repeat at I2 (the two balls sit to opposite sides of the line), I3 (only the far ball) and I4 (far ball
+   every leg off the line, near ball every second leg, tight rings). **Pass:** as described.
+8. **Two players.** Host and client. **Pass:** both see the same balls. Known gap: a CLIENT pilot cannot dash (ANGLER.md
+   follow-up 7).
