@@ -66,7 +66,7 @@ day after the channel it referred to had been deleted.
 | Urchin | 4/4 | 4/4 | 4/4 |
 | Manta | 4/4 | 4/4 | 3/4 |
 | Serpent | 4/4 | 4/4 | 3/4 |  *(Mass filled 2026-10-09 — Seed Wall / Lockdown; Time L5 still open)*
-| Scarab | 4/4 | 4/4 | 2/4 |
+| Scarab | 4/4 | 4/4 | 4/4 |  *(recut 2026-10-29: Sun Cores and Core Breaker fill Mass and Space)*
 | Rhino | 4/4 | 4/4 | 4/4 | *(was 2/4 · 3/4 · 1/4 — Breaker landed 2026-10-13 on a row with no ability; the other three rows and both missing abilities were designed and shipped 2026-10-16, 0 disagreements)* |
 | Grizzly | 4/4 | 3/4 | 3/4 | *(the one vessel `--gaps` still lists — see below)* |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22; `Butterfly.prefab` shipped afterwards and its one-shot builder was retired 2026-10-14)* |
@@ -82,8 +82,8 @@ of its rows: every one still carries the RETIRED generic map multiplier (`ELEMEN
 its Mass (Weapon Systems) changes no number, and its Charge L5 (Battle Sight) is prose with no live
 `IsUpgradeActive` gate. The Rhino's Charge and Space rows and the Serpent's Mass, which this paragraph
 used to list as the open design gaps, are filled (Rhino 2026-10-16, Serpent 2026-10-09). The open
-slots the tool does NOT flag — an `L5 -` on the Serpent's and Manta's Time and the Scarab's Mass and
-Space — are declared-empty upgrades, not disagreements. The full list, with what each one would cost
+slots the tool does NOT flag — an `L5 -` on the Serpent's and Manta's Time (the Scarab's Mass and Space were
+filled 2026-10-29) — are declared-empty upgrades, not disagreements. The full list, with what each one would cost
 to fill, is **`FLEET_GAPS.md`**.
 
 **Re-run the tool rather than reading this table** — it is a transcription and it went stale
@@ -382,10 +382,10 @@ Element assignment and the right-trigger resolution were confirmed in the same s
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
-| Mass | **Seed Wall** — the cloak's super-shielded seed (or the stopped stance's plain-shielded one) grows a symmetric herringbone of 2:1 bricks spaced so shielded octahedra point long vertex at short vertex with half a short side of air; it steals from its EDGE (Space sets the reach; the Space upgrade takes shielded prisms) and keeps growing until the cloak seed's super-shield breaks, or, for the stance's wall, until the Serpent flies again; MASS sets brick SIZE and SPACING together, snapshotted at placement (`SeedWallAction.asset`, ×2 at Mass 10). Every crystal beams to every growing wall's seed and ripples a shield through its wall. Garrett, 2026-10-09 (`R_VesselActions/SERPENT_SEED_WALL.md`) | **Lockdown** — a crystal collected while the Mass upgrade is active seals every square hole of every live wall with a same-size flat danger panel, an even crack short of the shields (no twist since 2026-10-13; replaces the Fortified Wall proposal) |
-| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`); it also lets the Seed Wall steal opponents' SHIELDED prisms (2026-10-13, `SERPENT_SEED_WALL.md`) |
-| Time | **Solid Fuel Pellets** on A — burn DURATION per pellet: ×1 at rest → ×1.6 at Time 10 (`ConsumeBoostAction.asset`). Restored 2026-09-25: one press burns one pellet, burns overlap additively, the fuel tank refills at a fixed rate and holds four (`R_VesselActions/SERPENT_FUEL_PELLETS.md`) | *(open)* — the old **Endless Coil** proposal ("chains without the reload pause") is void: the reload no longer exists |
+| Charge | **Scope** on LT (the eyepiece; one fixed 12° zoom, no element scaling) — Charge sets the SNIPER's RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`). Recut by Garrett 2026-10-30 | **Hunter's Sight** — while scoped, every rival in range leaves afterimages (one per 0.25 s, each standing 1 s); a sniper round through one strips the real pilot (`ScopeAfterimages`, gated on `IsUpgradeActive(Charge)`). Replaces Pierce: armour is a target from the start |
+| Mass | **Seed Wall** — the cloak's super-shielded seed (or the stopped stance's plain-shielded one) grows a symmetric herringbone of 2:1 bricks spaced so shielded octahedra point long vertex at short vertex with half a short side of air; it steals from its EDGE (Space sets the reach; the Space upgrade takes shielded prisms) and keeps growing until the cloak seed's super-shield breaks, or, for the stance's wall, until the Serpent flies again; MASS sets brick SIZE and SPACING together, snapshotted at placement (`SeedWallAction.asset`, ×2 at Mass 10). Every crystal beams to every growing wall's seed and ripples a shield through its wall. Garrett, 2026-10-09 (`R_VesselActions/SERPENT_SEED_WALL.md`) | **Lockdown** — every square hole whose four surrounding bricks have closed is sealed with a flat danger panel the moment its fourth brick lands, an even crack short of the shields (Garrett 2026-10-29; crystals only shield the wall now; replaces the Fortified Wall proposal) |
+| Space | **Cloak / Sniper Shot** on RT — the card shows the cloak unscoped and the sniper while the scope is held. The round destroys every hostile prism in its 1.5° cone, super-shielded mass included. Space sets the Seed Wall's steal reach (×1 → ×2) | **Shield Steal** — the Seed Wall also steals opponents' SHIELDED prisms (kept from Deep Focus, whose zoom step was retired; the Space 5 choice is open with Garrett, 2026-10-30) |
+| Time | **Solid Fuel Pellets** on A — burn DURATION per pellet: ×1 at rest → ×1.6 at Time 10 (`ConsumeBoostAction.asset`). Restored 2026-09-25: one press burns one pellet, burns overlap additively, the fuel tank refills at a fixed rate and holds four (`R_VesselActions/SERPENT_FUEL_PELLETS.md`) | **Fifth Pellet** — the pellet costs 0.2 of the tank instead of 0.25, so it holds five; each burns and boosts as before (`ConsumeBoostAction.asset` `upgradeResourceCost`, gated on `IsUpgradeActive(Time)`; Garrett 2026-10-30) |
 
 Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
 proposal *skimmer scale* / **Coil Reach**. `VesselPrismController.EnableDangerMode` is still
@@ -570,12 +570,16 @@ no serialized field, so its carrier is a `static readonly ElementalFloat` in C#
 (`BallSizeScale`, ×1 → ×4 floored ×0.5). It is the one row `element_ability_table.py` cannot see,
 because that tool reads assets.
 
-| Element | Quantitative | L5 upgrade |
-|---|---|---|
-| Charge | cavitation-blast **cooldown** (`ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at L10 — the authored-cooldown idiom) | **Cavitation Shear** — the blast destroys SHIELDED prisms outright instead of only shedding shields (`AOEExplosion.InitializeStruct.DevastatingOverride`, per-use snapshot) |
-| Mass | switch structure size — ring aperture + interior fill span (`switchScale` ElementalFloat 1→2.5) | **Armored Switch** — the switch is built from SHIELDED prisms, snapshotted at placement, so an opposing ball caroms off and sheds one shield per prism |
-| Space | forged **ball size**, ×1 → **×4 at L10** (`ScarabBallForge.BallSizeScale`, floored ×0.5; stamped once at forge time) | *(open — the notes name no Space upgrade; do not invent one)* |
-| Time | top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled). **Shipped band 216 → 324** (`ScarabVesselTransformer.baseTopSpeed` 216, raised 20% from 180 on 2026-09-09); note that base is authored in the C# INITIALIZER, because the prefab's transformer block predates the field and carries no override for it — `SCARAB.md §13` | **Snap Dash** — double-tap the THROTTLE (RT) for a burst gap closer (detected off the RT `RightStickAction` edges, no new input plumbing) |
+> **RECUT 2026-10-29 (Garrett).** The table below is the shipped map now; the 2026-08-15 rows it replaced
+> (Charge = blast cooldown + Cavitation Shear, Space = forged ball size, Mass 5 = Armored Switch) are in git history.
+> The Ball Forge is the OMNI crystal ability (no element sizes a forged ball) and the Drift has a core card.
+
+| Element | Ability | Quantitative | L5 upgrade |
+|---|---|---|---|
+| Charge | **Shove** (the dash's plate; the class is still `ScarabCavitationBlast`) | the shove's elemental **debuff**, ×1 → **×2.5 at L10** (`magnitudeAtFullCharge` on `ScarabShoveDebuffByExplosionEffect`, read off the shover's replicated Charge level). Cooldown is a flat 2.5 s | **Backdraft** — the plate claims its mirror image behind the hull: push AND pull, the cylinder doubled (`ScarabCavitationBlast.PlateMirrors`, per fire) |
+| Mass | **Switch** | ring aperture (`switchScale` ElementalFloat 1→2.5) | **Sun Cores** — a scored switch's dais rises WITH its super-shielded suns (`ScarabSwitch.LaysDaisElement`, snapshot at placement) |
+| Space | **Nucleus Seeding** (balls of your domain embedded in the nucleus membrane) | seeded **ball size**, ×1 → **×4 at L10** (`ScarabBallForge.SizeScaleFor`, a `static readonly ElementalFloat`) | **Core Breaker** — your balls destroy super-shielded prisms and fly on (`AstroLeagueBall` replicated stamp, set when the ball is seeded or forged) |
+| Time | **Throttle** | top speed of the throttle ramp (`ThrottleScalerMultiplier` 1→1.5; shipped band 216 → 324) | **Snap Dash** — double-tap the throttle: 500 u/s along the nose (5× the old 100), 5 s cooldown |
 
 **The right-stick dash is base kit and has no cooldown** — it is not a map row. Only the
 cavitation blast riding it is paced, which is the Charge row. Snap Dash is the *throttle's*

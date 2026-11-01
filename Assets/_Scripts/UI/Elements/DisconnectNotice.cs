@@ -1,5 +1,7 @@
 using System;
 using CosmicShore.Core;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -46,7 +48,14 @@ namespace CosmicShore.UI
         ReconnectService _reconnect;
 
         CanvasGroup _group;
-        TMP_Text _title, _body, _reconnectLabel;
+        TMP_Text _title, _body, _reconnectLabel, _dismissLabel;
+
+        // Section 103: the same window asks to rejoin a match this player dropped out of, or says its host left.
+        enum Mode { Connection = 0, Rejoin = 1, HostLeft = 2 }
+        Mode _mode;
+        PartyPlayerData _rejoinVia;
+        float _nextRejoinCheck;
+        float _presenceOnlineFor;
         Button _reconnectButton, _dismissButton;
         bool _subscribed, _launching, _dismissed, _busy;
         float _targetAlpha;
@@ -133,12 +142,13 @@ namespace CosmicShore.UI
         {
             if (_config.SuppressDuringLaunch && _launching) return;
             _dismissed = false;
+            SetMode(Mode.Connection);
             Show(_config.TitleConnectionLost, _config.BodyConnectionLost, offerReconnect: true);
         }
 
         void HandleFound()
         {
-            if (_targetAlpha <= 0f) return;      // never surfaced; nothing to resolve
+            if (_targetAlpha <= 0f || _mode != Mode.Connection) return;      // never surfaced; nothing to resolve
             Show(_config.TitleConnectionRestored, string.Empty, offerReconnect: false);
             HideAfterAsync(_config.RestoredDwellSeconds).Forget();
         }
@@ -203,6 +213,7 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            CheckRejoin();
             if (_group == null) return;
             var step = _config.FadeSeconds <= 0f
                 ? 1f
@@ -212,12 +223,24 @@ namespace CosmicShore.UI
 
         void OnDismiss()
         {
+            if (_mode != Mode.Connection)
+            {
+                MatchRejoin.Forget();          // NOT NOW / BACK TO HOME: the match is not offered again
+                SetMode(Mode.Connection);
+                Hide();
+                return;
+            }
             _dismissed = true;
             Hide();
         }
 
         async void OnReconnect()
         {
+            if (_mode == Mode.Rejoin)
+            {
+                Rejoin();
+                return;
+            }
             if (_busy || _reconnect == null) return;
             _busy = true;
             if (_reconnectButton != null) _reconnectButton.interactable = false;
@@ -240,6 +263,105 @@ namespace CosmicShore.UI
                 if (_gameData != null && !_gameData.IsOfflineSession) Hide();
             }
         }
+        // ---- rejoin (section 103) --------------------------------------------------------
+
+        /// <summary>
+        /// On the menu, while a match is remembered (<see cref="MatchRejoin"/>): when a party mate still advertises that
+        /// match, offer to rejoin it; when nobody has for a while, give it up - saying "The host left" after a drop, since
+        /// the host is a player and its match ends with it.
+        /// </summary>
+        void CheckRejoin()
+        {
+            if (Time.unscaledTime < _nextRejoinCheck) return;
+            _nextRejoinCheck = Time.unscaledTime + _config.RejoinCheckSeconds;
+            if (_targetAlpha > 0f || _launching || _busy) return;
+            if (!MatchRejoin.TryLoad(out var record)) { _presenceOnlineFor = 0f; return; }
+
+            var hcs = HostConnectionService.Instance;
+            if (hcs == null || PartyInviteController.Instance == null || _gameData == null || _gameData.IsOfflineSession) return;
+            // Not while the bounce that brought us here is still running: a Rejoin pressed then was ignored
+            // ("Already transitioning", 2026-10-30). The offer comes on the first check after it ends.
+            if (PartyInviteController.Instance.IsTransitioning) return;
+            // Already in that match (this client never left it, or it just rejoined).
+            if (_gameData.ActiveSession != null && _gameData.ActiveSession.Id == record.sessionId) return;
+
+            var online = hcs.ConnectionData != null ? hcs.ConnectionData.OnlinePlayers : null;
+            if (online != null)
+            {
+                foreach (var member in online)
+                {
+                    if (member.PartySessionId != record.sessionId || !member.IsInMatch) continue;
+                    _rejoinVia = member;
+                    ShowRejoin(record);
+                    return;
+                }
+            }
+
+            _presenceOnlineFor += _config.RejoinCheckSeconds;
+            if (_presenceOnlineFor < _config.RejoinGiveUpSeconds) return;
+            _presenceOnlineFor = 0f;
+            if (record.Dropped)
+            {
+                SetMode(Mode.HostLeft);
+                Show(_config.TitleHostLeft, _config.BodyHostLeft, offerReconnect: false);
+                if (_dismissButton != null) _dismissButton.gameObject.SetActive(true);
+                Select(_dismissButton);
+            }
+            MatchRejoin.Forget();
+        }
+
+        void ShowRejoin(MatchRejoin.Record record)
+        {
+            string mode = ModeName(record.Mode);
+            bool recent = record.Dropped &&
+                          (DateTime.UtcNow - new DateTime(record.droppedAtUtcTicks, DateTimeKind.Utc)).TotalSeconds <= _config.DroppedOutRecentSeconds;
+            SetMode(Mode.Rejoin);
+            _dismissed = false;
+            Show(TemplateText.Fill(recent ? _config.TitleDroppedOut : _config.TitleRejoin, "mode", mode),
+                 TemplateText.Fill(recent ? _config.BodyDroppedOut : _config.BodyRejoin, "mode", mode),
+                 offerReconnect: true);
+            if (_reconnectButton != null) _reconnectButton.gameObject.SetActive(true);
+            Select(_reconnectButton);
+        }
+
+        void Rejoin()
+        {
+            var controller = PartyInviteController.Instance;
+            string ugsId = Unity.Services.Authentication.AuthenticationService.Instance?.PlayerId;
+            SetMode(Mode.Connection);
+            Hide();
+            if (controller == null || string.IsNullOrEmpty(ugsId))
+            {
+                MatchRejoin.Forget();
+                return;
+            }
+            controller.RejoinMatchAsync(_rejoinVia, ugsId).Forget();
+        }
+
+        void SetMode(Mode mode)
+        {
+            _mode = mode;
+            if (_reconnectLabel != null)
+                _reconnectLabel.text = mode == Mode.Rejoin ? _config.RejoinLabel : _config.ReconnectLabel;
+            if (_dismissLabel != null)
+                _dismissLabel.text = mode switch
+                {
+                    Mode.Rejoin => _config.NotNowLabel,
+                    Mode.HostLeft => _config.BackHomeLabel,
+                    _ => _config.DismissLabel,
+                };
+        }
+
+        static void Select(Button button)
+        {
+            if (button != null && button.gameObject.activeSelf && EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(button.gameObject);
+        }
+
+        // A GameModes member's words, "SkimRace" -> "Skim Race" (the cards' authored titles live in each scene's list).
+        static string ModeName(GameModes mode) =>
+            System.Text.RegularExpressions.Regex.Replace(mode.ToString(), "(?<=[a-z])(?=[A-Z])", " ");
+
         // ---- construction -----------------------------------------------------------------
 
         void BuildUI()
@@ -292,7 +414,7 @@ namespace CosmicShore.UI
             _reconnectButton.onClick.AddListener(OnReconnect);
 
             _dismissButton = AddButton(panel, "DismissButton", _config.DismissLabel,
-                                       _config.SecondaryButtonColor, new Vector2(150f, 56f), out _);
+                                       _config.SecondaryButtonColor, new Vector2(150f, 56f), out _dismissLabel);
             _dismissButton.onClick.AddListener(OnDismiss);
         }
 
@@ -316,7 +438,8 @@ namespace CosmicShore.UI
             _reconnectLabel = view.ReconnectLabel;
             _dismissButton = view.DismissButton;
             if (_reconnectLabel != null) _reconnectLabel.text = _config.ReconnectLabel;
-            if (view.DismissLabel != null) view.DismissLabel.text = _config.DismissLabel;
+            _dismissLabel = view.DismissLabel;
+            if (_dismissLabel != null) _dismissLabel.text = _config.DismissLabel;
             if (_reconnectButton != null) _reconnectButton.onClick.AddListener(OnReconnect);
             if (_dismissButton != null) _dismissButton.onClick.AddListener(OnDismiss);
         }

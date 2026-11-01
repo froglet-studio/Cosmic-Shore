@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a3df3b3f49925c9dbe6aecf3db8e329, type: 3}
+  m_Name: SerpentGulagSettings
+  m_EditorClassIdentifier:
+  progressSampleSeconds: 0.5
+  fieldCrystalCount: 24
+  fieldRadius: 380
+  fieldRegrowSeconds: 8
+  fieldSeed: 77
+  aiRetargetSeconds:
+  - 1.2
+  - 0.9
+  - 0.6
+  - 0.4
+  aiAimErrorDegrees:
+  - 3
+  - 2
+  - 1.2
+  - 0.5
+  aiScopeSettleSeconds:
+  - 1
+  - 0.6
+  - 0.3
+  - 0.15
+  aiHuntRange:
+  - 1500
+  - 2000
+  - 2500
+  - 3000
+  aiForageMinCooldownSeconds:
+  - 999
+  - 7
+  - 5
+  - 3.5
+  aiPreferredRange:
+  - 1400
+  - 1700
+  - 2000
+  - 900
+  aiKeepAwayDistance:
+  - 700
+  - 900
+  - 1100
+  - 350
+  aiHoldSeconds:
+  - 8
+  - 12
+  - 16
+  - 5
+  aiCloakAfterShotChance:
+  - 0
+  - 0.25
+  - 0.5
+  - 0.75
+  aiPostArrivalRadius: 70
+  aiBehindNestDistance: 75
+  aiRangeBand: 350
+  aiStanceRetrySeconds: 1
+  aiScopeOpenAngle: 15
+  aiShotGiveUpSeconds: 3
+  aiLeadSeconds: 0.25
+  aiHumanFocus: 2

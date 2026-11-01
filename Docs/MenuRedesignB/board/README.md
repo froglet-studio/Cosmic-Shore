@@ -16,9 +16,41 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-28 from canvas version `1793216666-7774`: Rev 3 to Rev 36, 309 boards on 37 pages. The canvas's launch page is `rev36`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-10-31 from canvas version `1793448867-3e1e`: Rev 3 to Rev 39, 332 boards on 40 pages. The canvas's launch page is `rev39`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
+
+### Rev 39-40 - Friends tray: a calmer party, rows that never overlap  (page `rev39`)
+
+- [`R39Compare.dc.html`](R39Compare.dc.html) - Rev 39 - compare: the party piece of A, B and C side by side, and one online row in its four states (Invite, Join, Spectate, Invited - cancel) at the tray's width
+- [`R39A.dc.html`](R39A.dc.html) - Rev 39 A - Seat row: the four seats in one row, no bonds; one action per online row in a fixed slot (recommended) - interactive
+- [`R39B.dc.html`](R39B.dc.html) - Rev 39 B - Roster list: the party as four stacked seat lines; online rows with two fixed action slots - interactive
+- [`R39C.dc.html`](R39C.dc.html) - Rev 39 C - Squad tiles: the party as a 2x2 tile grid; online pilots as compact cards - interactive
+- [`R39Notes.dc.html`](R39Notes.dc.html) - Rev 39 - notes: what changes against the built drawer, why A, what the build touches
+- [`R40D.dc.html`](R40D.dc.html) - Rev 40 D - Pilot rail: closed, a 72-wide rail keeps the four seats on screen; open, a 440 tray - interactive
+- [`R40E.dc.html`](R40E.dc.html) - Rev 40 E - Grouped by verb: online pilots under what you can do with them; the party as one card - interactive
+- [`R40F.dc.html`](R40F.dc.html) - Rev 40 F - Tabs: Party and Online share the tray, one at a time, at full size - interactive
+- [`R40Notes.dc.html`](R40Notes.dc.html) - Rev 40 - notes: what each adds against Rev 39, the pick across both rounds
+
+### Rev 38 - Computer artifact  (page `rev38`)
+
+- [`R38Home.dc.html`](R38Home.dc.html) - Rev 38 Home - Home: what is running and what needs you
+- [`R38Computers.dc.html`](R38Computers.dc.html) - Rev 38 Computers - Computers: the machine list (Tailscale-style), filters and a row menu - interactive
+- [`R38Runs.dc.html`](R38Runs.dc.html) - Rev 38 Runs - Runs: running, sent, finished, each tagged by kind
+- [`R38Searches.dc.html`](R38Searches.dc.html) - Rev 38 Searches - Searches: list and an Optuna-style detail panel
+- [`R38NewRun.dc.html`](R38NewRun.dc.html) - Rev 38 NewRun - New run: vessel, mode, where, when
+- [`R38Notes.dc.html`](R38Notes.dc.html) - Rev 38 - Notes: what changes and why
+
+### Rev 37 - Connection: lost, reconnecting, back online, rejoin  (page `rev37`)
+
+- [`R37Flow.dc.html`](R37Flow.dc.html) - Rev 37 Flow - every state in one board: pick a state to play it (interactive) - interactive
+- [`R37Lost.dc.html`](R37Lost.dc.html) - Rev 37 Lost - menu: Connection Lost, RECONNECT or CONTINUE OFFLINE
+- [`R37Reconnecting.dc.html`](R37Reconnecting.dc.html) - Rev 37 Reconnecting - reconnecting: the line runs, the buttons wait
+- [`R37Online.dc.html`](R37Online.dc.html) - Rev 37 Online - back online: the window closes itself
+- [`R37Match.dc.html`](R37Match.dc.html) - Rev 37 Match - lost in a match: over the HUD, your seat is held for a while
+- [`R37HostLeft.dc.html`](R37HostLeft.dc.html) - Rev 37 HostLeft - the host left: the match is over, back to Home
+- [`R37Rejoin.dc.html`](R37Rejoin.dc.html) - Rev 37 Rejoin - boot while your match still runs: REJOIN or NOT NOW
+- [`R37Notes.dc.html`](R37Notes.dc.html) - Rev 37 - notes: every state, its words, the rejoin rules and the build
 
 ### Rev 36 - FTUE, redrawn: the captain arrives  (page `rev36`)
 

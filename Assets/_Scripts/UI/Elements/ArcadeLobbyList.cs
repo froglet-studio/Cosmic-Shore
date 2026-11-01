@@ -74,7 +74,31 @@ namespace CosmicShore.UI
                  "in the party, instead of showing a Leave that does nothing.")]
         [SerializeField] private CanvasGroup leaveGroup;
 
-        [Header("Party molecule (optional)")]
+        [Header("Party card (Rev 40 E, Docs/MENU_REDESIGN_B.md section 107; optional)")]
+        [Tooltip("The seated pilots' names in seat order, joined by Names Separator (\"Kai, Vireo, Nova\").")]
+        [SerializeField] private KitText partyNamesText;
+        [Tooltip("Between two names on the names line.")]
+        [SerializeField] private string namesSeparator = ", ";
+        [Tooltip("Who hosts and how many seats are open (\"You host · 1 seat open\").")]
+        [SerializeField] private KitText partySummaryText;
+        [Tooltip("The summary line: {host} is the host phrase, {seats} the seats phrase. Empty shows nothing.")]
+        [SerializeField] private string summaryTemplate = "{host} · {seats}";
+        [Tooltip("The host phrase when you host.")]
+        [SerializeField] private string youHostText = "You host";
+        [Tooltip("The host phrase when someone else hosts; {name} is the host's name.")]
+        [SerializeField] private string otherHostsTemplate = "{name} hosts";
+        [Tooltip("The seats phrase with one seat open.")]
+        [SerializeField] private string oneSeatOpenText = "1 seat open";
+        [Tooltip("The seats phrase with several open; {count} is how many.")]
+        [SerializeField] private string seatsOpenTemplate = "{count} seats open";
+        [Tooltip("The seats phrase with every seat taken.")]
+        [SerializeField] private string partyFullText = "Party full";
+        [Tooltip("The card's Invite button: moves focus into the online list, as an open seat does.")]
+        [SerializeField] private Button inviteButton;
+        [Tooltip("The Invite button's group, hidden while every seat is taken.")]
+        [SerializeField] private CanvasGroup inviteGroup;
+
+        [Header("Party molecule (optional; section 45.4, made to grow in section 109)")]
         [Tooltip("Rev 6 (Docs/MENU_REDESIGN_B.md §45.4): the bond drawn from the centre seat to each seat, index-aligned " +
                  "with Slots (the centre seat's entry stays empty). A seated pilot's bond takes their domain colour, " +
                  "Space while it is not known yet; an open seat's bond is Space, dimmed to Open Bond Alpha.")]
@@ -83,6 +107,16 @@ namespace CosmicShore.UI
         [SerializeField, Range(0f, 1f)] private float openBondAlpha = 0.35f;
         [Tooltip("The chrome theme, for the bonds' Space colour.")]
         [SerializeField] private UIThemeSO theme;
+        [Tooltip("The molecule grows with the party (Shombith, 2026-10-31: \"expandable with the host and its there\"): slot 0, " +
+                 "the host, stays where it is authored; the ring shows the members plus one open socket, evenly round the " +
+                 "host, and every other slot and its bond hide. Off: the slots stay where they are authored.")]
+        [SerializeField] private bool expandingMolecule;
+        [Tooltip("From the host's avatar to a ring seat's (canvas units). The bonds are this long.")]
+        [SerializeField] private float ringRadius = 120f;
+        [Tooltip("A seat's centre sits this far below its avatar's (the name under it).")]
+        [SerializeField] private float seatAvatarOffset = 20f;
+        [Tooltip("The ring's angles start here (degrees counter-clockwise from the right), half a step round.")]
+        [SerializeField] private float firstAngle = 90f;
 
         /// <summary>Max slots rendered - the party size, <c>HostConnectionDataSO.MaxPartySlots</c> (4).</summary>
         const int MAX_SLOTS = 4;
@@ -157,6 +191,8 @@ namespace CosmicShore.UI
         {
             if (leaveButton)
                 leaveButton.onClick.AddListener(OnLeaveButtonPressed);
+            if (inviteButton)
+                inviteButton.onClick.AddListener(OnAddSlotPressed);
 
             // Wire every empty slot's add button to open the FriendsListPanel.
             if (slots != null)
@@ -402,6 +438,7 @@ namespace CosmicShore.UI
 
             if (partyCountText)
                 partyCountText.SetText($"{seatCount} / {slotCount}");
+            DrawPartyCard(seatCount, slotCount);
 
             _drawnSeats = seatCount;
             for (int i = seatCount; i < MAX_SLOTS; i++)
@@ -413,9 +450,72 @@ namespace CosmicShore.UI
             _seatedFingerprint = _netFingerprint;
             _hasSeated         = true;
 
+            LayoutMolecule(seatCount, slotCount);
             PushDomainGlows();
             TintBonds();
             PresenceChanged?.Invoke();
+        }
+
+        Vector2 _hostAvatar;
+        bool _hostCaptured;
+
+        /// <summary>
+        /// Section 109: the molecule grows from the host. The ring holds every seated member and, while a seat is free, ONE
+        /// open socket, spread evenly round the host (<see cref="MoleculeAngle"/>); each shown seat's bond points at it,
+        /// and the slots and bonds beyond the ring hide. A party of one is the host and one socket; a full party has no
+        /// socket. Nothing here is fixed to four: the ring is computed from the slots the panel has.
+        /// </summary>
+        void LayoutMolecule(int seatCount, int slotCount)
+        {
+            if (!expandingMolecule || slots == null || slots.Length == 0 || !slots[0]) return;
+            if (!_hostCaptured && slots[0].transform is RectTransform hostRect)
+            {
+                // The host seat's REST pose: its entrance may be lifting it right now (KitEntrance.RestPosition).
+                var rest = hostRect.TryGetComponent(out KitEntrance rise) ? rise.RestPosition : hostRect.anchoredPosition;
+                _hostAvatar = rest + new Vector2(0f, seatAvatarOffset);
+                _hostCaptured = true;
+            }
+
+            int ring = RingSeats(seatCount, slotCount);
+            for (int i = 1; i < slots.Length; i++)
+            {
+                var slot = slots[i];
+                var bond = seatBonds != null && i < seatBonds.Length ? seatBonds[i] : null;
+                bool shown = i <= ring;
+                if (slot && slot.TryGetComponent(out CanvasGroup group)) KitVisibility.SetShown(group, shown);
+                if (bond) bond.enabled = shown;
+                if (!shown || !slot || !(slot.transform is RectTransform rect)) continue;
+
+                float a = MoleculeAngle(i - 1, ring, firstAngle) * Mathf.Deg2Rad;
+                var avatar = _hostAvatar + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * ringRadius;
+                rect.anchoredPosition = avatar - new Vector2(0f, seatAvatarOffset);
+                if (bond && bond.transform is RectTransform bondRect)
+                {
+                    bondRect.anchoredPosition = _hostAvatar;
+                    bondRect.localEulerAngles = new Vector3(0f, 0f, a * Mathf.Rad2Deg);
+                    bondRect.sizeDelta = new Vector2(ringRadius, bondRect.sizeDelta.y);
+                }
+            }
+        }
+
+        /// <summary>How many seats the ring shows round the host: the other members and one open socket while a seat is free.</summary>
+        internal static int RingSeats(int seatCount, int slotCount)
+        {
+            int members = Mathf.Max(0, seatCount - 1);
+            int open = seatCount < slotCount ? 1 : 0;
+            return Mathf.Clamp(members + open, 0, Mathf.Max(0, slotCount - 1));
+        }
+
+        /// <summary>
+        /// Ring seat <paramref name="k"/> of <paramref name="n"/>, degrees counter-clockwise from the right: evenly spread,
+        /// half a step past <paramref name="first"/> (one seat sits straight below the host; three make the old triangle).
+        /// Mirrored by author_menu_arcade.ring_angle. Pure, so it is tested without a panel.
+        /// </summary>
+        internal static float MoleculeAngle(int k, int n, float first = 90f)
+        {
+            if (n <= 0) return first;
+            float a = (first + 360f * (k + 0.5f) / n) % 360f;
+            return a < 0f ? a + 360f : a;
         }
 
         /// <summary>
@@ -453,6 +553,47 @@ namespace CosmicShore.UI
                 _seats.RemoveAt(localIdx);
                 _seats.Insert(drawable - 1, local);
             }
+        }
+
+        /// <summary>
+        /// The Rev 40 E party card's words: the seated names in seat order, and who hosts with how many seats are open.
+        /// Every word is authored on this component; code supplies the facts (CLAUDE.md, player-facing text).
+        /// </summary>
+        void DrawPartyCard(int seatCount, int slotCount)
+        {
+            bool full = seatCount >= slotCount;
+            KitVisibility.SetShown(inviteGroup, !full);
+            if (inviteButton) inviteButton.interactable = !full;
+            if (!partyNamesText && !partySummaryText) return;
+
+            var names = new List<string>(seatCount);
+            string hostName = null;
+            bool localHosts = false;
+            for (int i = 0; i < seatCount && i < _seats.Count; i++)
+            {
+                var seat = _seats[i];
+                string name = seat.IsLocal ? connectionData.LocalDisplayName : seat.Member.DisplayName;
+                if (!string.IsNullOrEmpty(name)) names.Add(name);
+                if (!seat.IsHost) continue;
+                hostName = name;
+                localHosts = seat.IsLocal;
+            }
+
+            if (partyNamesText) partyNamesText.SetText(string.Join(namesSeparator ?? string.Empty, names));
+            if (partySummaryText)
+                partySummaryText.SetText(PartySummary(summaryTemplate, localHosts ? youHostText
+                        : TemplateText.Fill(otherHostsTemplate, "name", hostName ?? string.Empty),
+                    slotCount - seatCount, oneSeatOpenText, seatsOpenTemplate, partyFullText));
+        }
+
+        /// <summary>The summary line from its authored parts. Pure, so it is tested without a party.</summary>
+        internal static string PartySummary(string template, string hostPhrase, int openSeats,
+                                            string oneOpen, string manyOpenTemplate, string full)
+        {
+            string seats = openSeats <= 0 ? full
+                         : openSeats == 1 ? oneOpen
+                         : TemplateText.Fill(manyOpenTemplate, "count", openSeats.ToString());
+            return TemplateText.Fill(template, "host", hostPhrase ?? string.Empty, "seats", seats ?? string.Empty);
         }
 
         Sprite PopulateLocalSlot(FriendInfoSlot slot)

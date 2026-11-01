@@ -979,6 +979,9 @@ MonoBehaviour:
     - 71
     - 66
     - 68
+    - 72
+    - 73
+    - 74
     - 56
     sequences:
     - name: Flat out
@@ -3434,6 +3437,665 @@ MonoBehaviour:
         height1: 110
         angle0: 0
         angle1: 50
+        path: 0
+        pathStart: 0
+        pathEnd: 0
+        pathOffset: {x: 0, y: 0, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 58
+        fov1: 58
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 2
+          at: 0.2
+          duration: 1.6
+        flashes: []
+    - name: Hairpin
+      designedFor: 72
+      shots:
+      - name: Throttle down
+        kind: 2
+        duration: 2.6
+        ease: 4
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 0
+        radius1: 0
+        height0: 0
+        height1: 0
+        angle0: 0
+        angle1: 0
+        path: 0
+        pathStart: 0
+        pathEnd: 0.25
+        pathOffset: {x: 0, y: 3, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 1.2
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 60
+        fov1: 78
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 0
+          at: 0.3
+          duration: 1.8
+        flashes: []
+      - name: The drift
+        kind: 1
+        duration: 2
+        ease: 2
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 6
+          index: 2
+          offset: {x: 0, y: 0, z: 0}
+          space: 2
+        radius0: 80
+        radius1: 80
+        height0: 22
+        height1: 22
+        angle0: 0
+        angle1: 140
+        path: 0
+        pathStart: 0
+        pathEnd: 0
+        pathOffset: {x: 0, y: 0, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 56
+        fov1: 56
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 1
+          at: 0.3
+          duration: 1.7
+        flashes: []
+      - name: The course
+        kind: 1
+        duration: 1.8
+        ease: 2
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 220
+        radius1: 220
+        height0: 120
+        height1: 120
+        angle0: 200
+        angle1: 250
+        path: 0
+        pathStart: 0
+        pathEnd: 0
+        pathOffset: {x: 0, y: 0, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 58
+        fov1: 58
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 2
+          at: 0.2
+          duration: 1.6
+        flashes: []
+    - name: Pellet stack
+      designedFor: 73
+      shots:
+      - name: Burn
+        kind: 2
+        duration: 2.4
+        ease: 5
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 0
+        radius1: 0
+        height0: 0
+        height1: 0
+        angle0: 0
+        angle1: 0
+        path: 0
+        pathStart: 0.05
+        pathEnd: 0.3
+        pathOffset: {x: 0, y: 3, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 1
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 70
+        fov1: 96
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 0
+          at: 0.3
+          duration: 1.7
+        flashes:
+        - at: 0
+          duration: 0.3
+      - name: Lit ring
+        kind: 1
+        duration: 2
+        ease: 0
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 6
+          index: 3
+          offset: {x: 0, y: 0, z: 0}
+          space: 2
+        radius0: 90
+        radius1: 90
+        height0: 24
+        height1: 24
+        angle0: 20
+        angle1: 110
+        path: 0
+        pathStart: 0
+        pathEnd: 0
+        pathOffset: {x: 0, y: 0, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 56
+        fov1: 56
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 1
+          at: 0.3
+          duration: 1.7
+        flashes: []
+      - name: The circuit
+        kind: 1
+        duration: 1.8
+        ease: 2
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 220
+        radius1: 220
+        height0: 120
+        height1: 120
+        angle0: 90
+        angle1: 140
+        path: 0
+        pathStart: 0
+        pathEnd: 0
+        pathOffset: {x: 0, y: 0, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 58
+        fov1: 58
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 2
+          at: 0.2
+          duration: 1.6
+        flashes: []
+    - name: Five arms
+      designedFor: 74
+      shots:
+      - name: Speed Mode
+        kind: 1
+        duration: 2.2
+        ease: 4
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 1
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 44
+        radius1: 18
+        height0: 6
+        height1: 3
+        angle0: 0
+        angle1: 300
+        path: 0
+        pathStart: 0
+        pathEnd: 0
+        pathOffset: {x: 0, y: 0, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 1
+        fov0: 58
+        fov1: 76
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 0
+          at: 0.3
+          duration: 1.7
+        flashes: []
+      - name: Wide corner
+        kind: 2
+        duration: 2.2
+        ease: 2
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 0
+        radius1: 0
+        height0: 0
+        height1: 0
+        angle0: 0
+        angle1: 0
+        path: 0
+        pathStart: 0.1
+        pathEnd: 0.35
+        pathOffset: {x: 0, y: 3, z: 0}
+        pathAhead: 0.03
+        pathLookUp: 0.6
+        bank: 0.8
+        ringRadius: 150
+        ringHeight: 0
+        vertigoTarget:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        vertigoDirection: {x: 0, y: 0, z: -1}
+        distance0: 0
+        distance1: 0
+        cutAnchor: 0
+        cutCount: 5
+        cutDistance: 30
+        cutPush: 6
+        cutZoom: 4
+        distanceSpace: 0
+        fov0: 74
+        fov1: 74
+        roll0: 0
+        roll1: 0
+        spin: 0
+        fovWaveAmplitude: 0
+        fovWaveFrequency: 0
+        shake: 0
+        shakeDecay: 0
+        cues:
+        - slot: 1
+          at: 0.3
+          duration: 1.7
+        flashes: []
+      - name: The circuit
+        kind: 1
+        duration: 1.8
+        ease: 2
+        from:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        to:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookFrom:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        lookTo:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        orbitCenter:
+          anchor: 0
+          index: 0
+          offset: {x: 0, y: 0, z: 0}
+          space: 0
+        radius0: 220
+        radius1: 220
+        height0: 120
+        height1: 120
+        angle0: 300
+        angle1: 350
         path: 0
         pathStart: 0
         pathEnd: 0
@@ -8088,7 +8750,7 @@ MonoBehaviour:
     title: Waystation
     tagline: Thread the last ring on the line you want to leave on.
     objective: Lead runner home wins
-    pilots: Butterfly
+    pilots: Tiger Moth
   - mode: 63
     title: Grizzly Time
     tagline: Your speed is your bombs.
@@ -8119,6 +8781,21 @@ MonoBehaviour:
     tagline: The Grouper flies the plane. The Wrasse takes the ring.
     objective: Only the Wrasse counts
     pilots: Wrasse and Grouper
+  - mode: 72
+    title: Scarab Rally
+    tagline: Hold the throttle. Drift the hairpin. Juke in.
+    objective: No ball, just rings
+    pilots: Scarab
+  - mode: 73
+    title: Serpent Time
+    tagline: Burn a pellet. Stack another.
+    objective: Against the clock
+    pilots: Serpent
+  - mode: 74
+    title: Brittle Star Time
+    tagline: Speed Mode lights all five arms.
+    objective: Against the clock
+    pilots: Brittle Star
   - mode: 56
     title: Regatta
     tagline: Every hull. One circuit. Three laps.
@@ -8138,7 +8815,7 @@ MonoBehaviour:
     title: Dustup
     tagline: No guns. Fly over them.
     objective: First domain to the target
-    pilots: Butterfly
+    pilots: Tiger Moth
   - mode: 57
     title: Broadside
     tagline: Every hull that can fight, each with its own weapon.
@@ -8158,7 +8835,7 @@ MonoBehaviour:
     title: Sirocco
     tagline: Your dust is your blade.
     objective: First domain to the prism target
-    pilots: Butterfly
+    pilots: Tiger Moth
   - mode: 54
     title: Wrecking Ball
     tagline: Every bright crystal is a ball. Plow the forest.
@@ -8208,7 +8885,7 @@ MonoBehaviour:
     title: Tapestry
     tagline: Paint the sky. Raid what they paint.
     objective: Most mass standing wins
-    pilots: Butterfly
+    pilots: Tiger Moth
   - mode: 37
     title: Astro League
     tagline: Hypersea soccer. Played with a sword.

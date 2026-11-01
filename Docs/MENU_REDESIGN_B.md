@@ -4817,7 +4817,7 @@ player least.
   with invariants (clear at both sides, solid on the centre line, leans the right way).
 - The existing hover tints stay: KitButton's fill lift and KitHoverTint's word lift.
 
-## 102. Rev 36 mockups: FTUE, redrawn - the captain arrives (2026-10-28, awaiting a pick)
+## 102. Rev 36 mockups: FTUE, redrawn - the captain arrives (2026-10-28; Shombith picked B)
 
 **Asked (Shombith, 2026-10-28):** "for the ftue I do not like them once bit. Up your game bhai", then "Leave that ref,
 just make it good".
@@ -4850,10 +4850,241 @@ entrance per step.
 - **R36Compare:** the three options at rest on Home, Configure and the first race. **R36Notes:** the critique of
   Rev 34, the timings, the build.
 
-**Why A:** her vessel does the game's own move (a skim trail), and the trail is the pointer, so the eye follows it to
+**Picked (Shombith, 2026-10-29):** "Lets go with B" (Comms).
+
+**Why A was recommended:** her vessel does the game's own move (a skim trail), and the trail is the pointer, so the eye follows it to
 the control without an arrow. B suits in-match lines, since it covers least. C has the most character.
 
 **Differs from the build:**
 - The words go in the guide asset (MainQuest), one line per step, with the speaker from the pilot roster.
 - The entrance, the trail and the spotlight hole are new view work on `MainMenuDialogueView`.
 - Open (Shombith, Caleb): her voice, and her name.
+
+### 102.1 Rev 36 B (Comms), built (2026-10-29, awaiting in-editor approval)
+
+The captain's comms window rides on the existing guided path (`MenuGuide` + `MenuSpotlight`, the LOCKED rule: one lit
+control, everything else dimmed and dead except Settings and Skip).
+- **`GuideSpeakerSO`** (new, `Assets/_Scripts/UI/Guide/`) holds who speaks: name, title, eyebrow, portrait, the comms
+  prefab, 45 characters a second, a 0.5 s dock. `GuideSpeaker_Trace.asset` is Trace with her roster portrait.
+- **`GuideCommsView`** (new) behaves like the board:
+  - it docks on the screen edge away from the lit control, and moves to the top when it would cover it;
+  - the line types once the window has landed, the 18 voice bars move while it types, then the prompt (keycap and
+    action) fades in;
+  - a lime line runs from the window to the control.
+
+  A new line replays the entrance. Every graphic is raycast-off, so the dim still decides what a press reaches.
+- **`MenuSpotlight.Show`** gains a speaker overload. With a speaker, the comms window replaces the caption pill.
+- **`QuestGuideToMicrogameNode`** gains `speaker`, one prompt per step (Arcade / Open / Fly) and `actionKeycap`.
+  `MainQuest_Phase0_FirstLogin.asset` now speaks in Trace's voice.
+- **Written by `Tools/Build/author_guide_comms.py`** (`--check`, `--self-test` with 5 plants): the prefab
+  (`Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab`), the speaker asset and the phase-asset fields.
+- **Not covered yet:** the in-race and finish steps (4-5 on the board). The first-login guide stops at the Lesson; those
+  steps need their own nodes.
+
+## 103. Rev 37: connection states and rejoin (2026-10-29; approved by Shombith, built in 103.1)
+
+**Asked (Shombith, 2026-10-29):** "where are the others like the connections lost and reconnect ones?" and "If some one
+leaves a game and then they boot up while the game is running the game should ask the user if they want to rejoin that
+game".
+
+**On the canvas:** page "Rev 37 - Connection: lost, reconnecting, back online, rejoin"; the copies are
+`Docs/MenuRedesignB/board/R37*.dc.html`. This is a states round for the window built in section 100.2
+(`DisconnectNoticeView`), which until now had no board.
+- **R37Flow (interactive):** every state, picked from a strip.
+- **R37Lost, R37Reconnecting, R37Online:** the three states that are already built. Words come from
+  `DisconnectNoticeConfig`; Back Online closes itself after 2.5 s.
+- **R37Match, "You dropped out" (new):** a guest whose link breaks is sent back to their own Home
+  (`PartyInviteController.HandleHostLossAsync`) while the host hands their vessel to an AI pilot
+  (`ServerPlayerVesselInitializer.ConvertPlayerToAI`). The game already does both; nothing tells the player. Offers
+  REJOIN (lime, A) and NOT NOW (B).
+- **R37HostLeft (new):** the host is a player, so the match ends with them. One line and BACK TO HOME; no rejoin.
+- **R37Rejoin (new):** after sign-in, if the match you left is still running, Home opens with the mode's card, who
+  is in it, "AI flying it now" on your seat, REJOIN and NOT NOW.
+- **R37Notes:** the rules (lime only on the action that puts you back, nothing red) and the build.
+
+**What the game does today** (read 2026-10-29; Block 6 "reconnection grace" in
+`Docs/prompts/MULTIPLAYER_HARDENING_PROMPT.md`, not started):
+- The party session is the match session: a UGS Multiplayer session with Relay, hosted by the party host.
+- Nothing persists which match a player was in.
+- Connection approval approves everyone and creates a new Player. A returning player would get a second vessel while
+  the old one stays AI-flown, because `ConvertPlayerToAI` is one-way.
+- `ReconnectService` takes an offline session back online by re-running the boot chain. It is not a match rejoin.
+
+**What the rejoin build needs:**
+1. Remember `{session id, mode}` locally while in a match as a guest; clear it on a normal end or leave.
+2. On Home, ask presence whether a party mate still advertises that session in a match, and show R37Rejoin.
+3. REJOIN joins by session id through the existing client-join path, with a rejoin token (the player's UGS id) in the
+   approval payload, as spectators already do.
+4. The host hands the AI-flown Player and vessel back to the returning client: ownership, `NetIsAI = false`, AI pilot
+   off, client pairing re-run. It must not spawn a second one.
+
+**Approved (Shombith, 2026-10-29):** "Go ahead with rev 37 I approve".
+
+### 103.1 Rejoin, built (2026-10-29, awaiting a two-client test)
+
+- **`MatchRejoin`** (new, `Assets/_Scripts/Controller/Multiplayer/`) is the shared piece:
+  - the remembered match (PlayerPrefs `{session id, mode, saved, dropped}`, given up after 30 minutes);
+  - the approval token `cosmicshore.rejoin.v1:<ugs id>`;
+  - the host's pending rejoins;
+  - `FindReclaimableSeat`: a spawned, AI-flown Player with the returning player's UGS id.
+- **When the record is kept and dropped:**
+  - Kept: a guest remembers the match when the host's config arrives in the game scene
+    (`SyncGameConfigToClients_ClientRpc`). A drop (`HandleHostLossAsync`) marks it dropped and keeps it.
+  - Forgotten: the match's end (`SyncGameEnd_ClientRpc`), a deliberate return (`SceneLoader.ReturnToMainMenu`),
+    leaving the party, and NOT NOW / BACK TO HOME.
+- **The window** is `DisconnectNotice`, the same style-B prefab. On Home it looks every 2 s for a party mate still
+  advertising the remembered session in a match:
+  - one found: it shows "You dropped out" (a drop under 3 minutes old) or "Rejoin {mode}?", with REJOIN and NOT NOW;
+  - nobody for 20 s after a drop: "The host left", with BACK TO HOME;
+  - nobody after a restart: the record is quietly forgotten.
+
+  All the words are in `DisconnectNoticeConfig` (written by `author_disconnect_notice.py`).
+- **REJOIN** calls `PartyInviteController.RejoinMatchAsync`: the same join as JOIN, with the rejoin token armed.
+- **The host:** approval makes no Player for a rejoin with a seat to give back, and refuses one without. On connect, or
+  on the client's roster request if that comes first, `TryReclaimSeat`:
+  - returns ownership of the Player and vessel;
+  - sets `NetIsAI` false and switches the AI pilot off;
+  - tells that client (`SeatReclaimed_ClientRpc`), and sends the roster.
+- **The client:** once ownership and the human flag land, it claims the Player as its own (`GameDataSO.ClaimLocalPlayer`,
+  with no reset), re-initialises the pair (camera and input), frees input if the turn is running, and raises client
+  ready.
+- **Tests:** `MatchRejoinTests` (payload, record, expiry).
+- **Not built, and the risks** (named for the two-client test):
+  - no silent no-menu reconnect;
+  - a crashed client may still hold its UGS membership, so the join fails "already a member";
+  - re-initialising a vessel that is already initialised is new;
+  - the game-scene guards for a client that joins from the menu mid-match are untested;
+  - a host can never rejoin.
+
+## 106. Rev 39 mockups: the friends tray, a calmer party and rows that never overlap (2026-10-31; superseded by the Rev 40 pick, section 107)
+
+**Asked (Shombith, 2026-10-31, after the four-player test of 30 Oct):** "Change the UI of friends just the look and the
+center of the branch like animation, also the invite and other buttons overlap ... keep the feature where it extends as
+a tray into game cards."
+
+**On the canvas:** page "Rev 39 - Friends tray: a calmer party, rows that never overlap" (copies in
+`Docs/MenuRedesignB/board/R39*.dc.html`). Each option board is the Arcade window with the friends tray open, and has
+TRAY OPEN / TRAY CLOSED states so the cards can be seen moving with the tray (the one motion the round keeps).
+- **A, Seat row (recommended):** the four seats in one row (octagon avatar in its domain ring, name, role, an open seat
+  with Invite); each online row has ONE action slot, 128 wide, whose verb the row's state picks (Invite, Join, Spectate,
+  Cancel). The closed handle is a 236 x 64 tab: the people glyph, four seat pips in domain colour, "5 online".
+- **B, Roster list:** the party as four stacked lines (a thin domain bar, the host's crown, the host-only remove); online
+  rows have two fixed 104 slots, the second used only where a second verb exists (a pilot in another party: Invite and
+  Join). The closed handle is a vertical tab on the left edge.
+- **C, Squad tiles:** the party as a 2 x 2 grid of tiles; online pilots as compact cards with a full-width action foot.
+  The closed handle is a 100 x 100 tile of the four seats.
+- **Compare:** the three party pieces side by side, one online row in its four states for each option at the tray's
+  width, and today's row with INVITE running over SPECTATE.
+- **Why A:** one verb per row is the only layout that cannot overlap at any label length, and the row's state already
+  decides the verb; one row of seats reads at a glance. B keeps two verbs at the cost of the name's width; C shows four
+  online pilots before scrolling, not five.
+
+**Differs from the build:** the party molecule (the leader in the centre, three seats bonded at 155 / 25 / 270 degrees
+with flowing Bond dashes, section 45.4) and the orb's turning orbit go; no idle motion is left. Every row's buttons get
+fixed slots, so a button never takes its width from its label (the section 81 fix sized one slot; the two-button case
+still overflows). The tray's docking (section 68, `FriendsDrawerDock`) stays as built. After a pick:
+`author_menu_friends_drawer.py` (seats, the handle in place of the orb, slot widths, a no-overlap gate per row state),
+`ArcadeLobbyList` / `KitPartySlot` layout only, `OnlineInfoEntry` / `KitOnlineRow` slot choice; no change to invite,
+join, spectate, cancel or seating logic.
+
+## 107. Rev 40 mockups: three more friends trays, on the sea lines (2026-10-31; Shombith picked E, with the current orb)
+
+**Asked (Shombith, 2026-10-31, on Rev 39):** "Good mockups send me a few more use the sea lines bg".
+
+**On the canvas:** on the Rev 39 page (renamed "Rev 39-40 - Friends tray ..."; the canvas holds at most 40 pages and
+was full), the row under Rev 39 (copies `Docs/MenuRedesignB/board/R40*.dc.html`). Rev 39's brief and content are
+unchanged; every board is drawn over the sea lines (Rev 33's three drifting wave layers) instead of the photo backdrop.
+- **D, Pilot rail:** the tray never fully closes. Closed, a 72-wide rail on the left edge shows the four seats in their
+  domain rings and the online count; open, a 440 tray with each seat as a line carrying its hull.
+- **E, Grouped by verb:** online pilots sit under what can be done with them (Join their party, In the menu, In a
+  match, You invited), so each group's buttons share one column and one word; the party is one card (overlapping seats,
+  names, Invite, Leave).
+- **F, Tabs:** Party and Online share the tray one at a time; the party as four large seat cards (avatar, name, role,
+  hull), Online as Rev 39 A's list. The board's PARTY TAB / ONLINE TAB / TRAY CLOSED states switch them.
+- **Recommendation across both rounds:** Rev 39 A's tray with D's rail as its closed state.
+
+**Differs from the build:** as section 106; D replaces the orb with the rail, E adds authored group headers to the
+ONLINE list, F adds a tab strip.
+
+**Picked (Shombith, 2026-10-31):** "I dont like this part [D's rail] current friends icon is okay, we can keep it rest
+we can go with E". So: **E's open tray** (the party as one card with overlapping seats, names, Invite and Leave; the
+online pilots grouped by what can be done with them, one verb column per group) and **the built orb stays as the closed
+handle** (section 45.4), unchanged. Rev 39's options and D's rail and F are not built.
+
+### 107.1 Built (2026-10-31, awaiting in-editor approval)
+
+- **The party card** (`PartyPanel`, `author_menu_arcade.build_panel`): the molecule and its bonds are gone. Under "Your
+  party n / 4" and the online line, one framed card: the four `PartySlot`s in a row at `seat_x(i)` (62 px seats, each
+  14 over the one before, so later seats draw on top and the host's kick sits on a seat's top-left), the names line
+  (`ArcadeLobbyList.partyNamesText`, seat order, ", " between), the summary (`partySummaryText`, "{host} - {seats}":
+  "You host" / "{name} hosts", "1 seat open" / "{count} seats open" / "Party full"), then INVITE (focus into the list,
+  hidden when full) and LEAVE PARTY (hidden while solo). Every word is an authored field. The board's middle dot is
+  " - ": the generators keep prefab text ASCII.
+- **A seat** (`PartySlot`): the avatar in its domain ring, no name or role under it (the card's names line carries
+  them; the seat keeps its name in a hidden text, which the profile card reads). The open seat is an outlined octagon
+  with a +, a tile with no border at rest.
+- **The rows** (`PartyOnlineRow`): one fixed 120 x 32 slot at the right holds Invite, Join and Cancel, one at a time
+  (`KitOnlineRow.oneVerbPerRow`), each button 120 wide whatever its word. `FriendsListPanel.oneVerbPerRow` picks the
+  verb by status (in the menu Invite, in a party Join, in a match Spectate, invited Cancel). Name over status, as the
+  build's rows were, not the board's one line.
+- **The groups**: JOIN THEIR PARTY, IN THE MENU, IN A MATCH, YOU INVITED, each a header over its own list, shown only
+  while it has rows (`KitListCounter`); `FriendsListPanel.onlineGroups` parents each row and moves it when its state
+  changes; the empty line shows while all four are empty (`onlineEmptyLine`).
+- **Unchanged:** the orb and the drawer (`author_menu_friends_drawer.py --check` OK), the docking.
+- **The profile card, fixed the same day** (Shombith's screenshot: one unreadable button, "there is no join button"):
+  REPORT and BLOCK (and the three report reasons) were runtime copies of INVITE, and a copy keeps the original's place,
+  so INVITE, REPORT and BLOCK drew as one button. The card is now 336 tall with JOIN / INVITE on one row and REPORT /
+  BLOCK under them, all authored slots 172 wide (`author_menu_friends_drawer.CARD_ACTIONS`; the reasons take the same
+  slots, `FriendProfilePopup.reasonGroups`); the drawer generator fails if two actions shown together overlap. JOIN was
+  missing because the one-verb rows hid Join for a pilot alone in the menu: the row still says INVITE, but its state
+  keeps Join, so their card offers JOIN and INVITE.
+- **Gates:** `author_menu_arcade.py --self-test` (check_card: seats in a row, no bonds, authored words, one-verb rows in
+  one shared slot with the fitter off, the four groups wired in order; 8 new planted defects); `author_ui_lattice.py
+  --self-test` (its two bond plants retargeted); `PartyTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 108. A mode's preview: FULL SCREEN extends as a tray (2026-10-31, awaiting in-editor approval)
+
+**Asked (Shombith, 2026-10-31):** "during the preview of each game mode when we press fullscreen it goes actual full
+screen rather the play area should extend as a tray and the other parts of the UI (right side) should get hidden".
+Built straight from the words (no board round): the same tray as the friends drawer's, applied to the preview.
+
+- **What changes** (`ConfigureView` and `ConfigureArenaView`, `author_menu_configure.py`): FULL SCREEN (while flying)
+  no longer grows the preview to the whole window and fades everything. The preview's right edge slides out 700 units
+  (x 1160 to 1860 at 1920 x 1080, the settings column's right edge) over `fadeSeconds`, and only the right side fades:
+  the controls panel, the settings card, the status line and START (`ConfigureCinema.extendAsTray`, `trayExtend`,
+  `rightSide`). The header, the briefing under the preview and the fly row stay. The objective bar rides the preview's
+  right edge (`followTray`). Pressing it again, or handing the stick back, slides the tray home.
+- **No stretched picture.** A live preview texture cannot be swapped mid-session, so the preview renders a texture as
+  wide as the open tray from the start (`ModePreviewWindow.textureWidthScale`, 1800 / 1100) and shows the centre that
+  fits its frame (`RawImage.uvRect`, `VisibleWidth`). The framed view is the same picture as before; the tray reveals
+  more arena at the sides. Cost: the preview renders 1.64x as many pixels while the window is open (the measured
+  height is unchanged, capped at 720).
+- **Unchanged:** the Maelstrom window (no flying, no FULL SCREEN); every other `ModePreviewWindow` (scale 1).
+- **Gates:** `author_menu_configure.py` checks the tray wiring, the texture scale and that the tray ends at the column's
+  edge; three new planted defects (FULL SCREEN back to the whole window, a frame-sized texture, START left on screen).
+  `PreviewTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 109. The party molecule back, and it grows from the host (2026-10-31, awaiting in-editor approval)
+
+**Asked (Shombith, 2026-10-31, after E shipped):** "we liked the old plasma kind design for the lobby with connected tree but
+it locked it for 4 players only do something where it is expandable with the host and its there, also decrease the tone of
+the blue a little bit on the bg". Built straight from the words; E's online rows, groups and profile card stay.
+
+- **The molecule is back** in E's party card (`PartyPanel`, `author_menu_arcade.build_panel`): the host in the centre, the
+  members bonded to it with the flowing bonds (`Bond_Party.mat`), each seat the avatar in its domain ring over the name
+  and role (the Rev 6 `PartySlot`, §45.4). Under it: "You host - 1 seat open", then INVITE and LEAVE PARTY.
+- **It grows** (`ArcadeLobbyList.expandingMolecule`, `LayoutMolecule`): the ring shows the seated members plus ONE open
+  socket while a seat is free, spread evenly round the host (`MoleculeAngle`: one seat straight below; two left and
+  right; three the old triangle), and re-lays every time the party changes; the other slots and their bonds hide. The
+  ring is computed from the slots the panel has (`RingSeats`), not from three fixed angles, so a bigger panel grows
+  further; the party itself stays 4 (`Docs/MULTIPLAYER_START_HERE.md` §2). The prefab is authored at the full party
+  (`MOL_ANGLES` = the computed three-seat ring), and the gate checks the runtime numbers match the generator's.
+- **The background's blue is lower**: the drawer window's SurfaceDark wash over its black is 0.45 (was 0.6,
+  `author_menu_friends_drawer.WINDOW_TINT`); the pilot record keeps 0.6.
+- **Fixed on the way:** E's party card read `CARD_H`, which the arcade game card redefines lower in the same generator, so
+  it came out 296 tall instead of its own height; the card's constants are now `PCARD_*`.
+- **Gates:** `author_menu_arcade.py --self-test` 36/36 (check_molecule: bonds start at the host and end at their seats,
+  each with KitRimMesh; the growing fields; plants "the molecule locked again", the old bond plants);
+  `author_menu_friends_drawer.py`, `author_ui_lattice.py` and the other Menu_Main generators `--check` OK;
+  `PartyTrayTests` (ring size and angles). Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+

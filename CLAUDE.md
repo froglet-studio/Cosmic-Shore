@@ -57,7 +57,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Status (the item table); one numbered section per round (what was asked, drawn, picked, built; numbers claimed at commit)
 - [`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`](Docs/claude/VESSEL_HUD_AND_ELEMENTS.md): Elemental bars, hull morphs, rigged-model swap, the LOCKED four-icon ability row.
   Sections: Elemental Bars (per-vessel buff/debuff display); Elemental Hull Morphs (the vessel model is an element display); The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
-- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino, and the Ark: `ArkReverse.md` is the Arkway's Ark, its rig table and its fixed-rate omni regrowth) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
+- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino, and the Ark: `ArkReverse.md` is the Arkway's Ark, its rig table and its fixed-rate omni regrowth) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), `COLOR_DOMAINS.md` + `colour_domains.json` there are the SOURCE OF TRUTH for which of the six families (Fire, Gold, Lime, Jade, Blue, Ruby) a colour belongs to and where the forbidden band lies (`colour_domains.py --check`, shaped in the Colour Domains lab), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
   Sections: the table of dossiers; how to regenerate a number
 - [`Docs/Icons/ABILITY_ICON_SKILL_PLAN.md`](Docs/Icons/ABILITY_ICON_SKILL_PLAN.md): **The ability-row ICONS are made by `/ability-icon`**
   (`Tools/Build/icon_kit/`: a hull's real mesh projected or skinned into its takes, parts a HUD tints / swaps / turns,
@@ -182,6 +182,15 @@ to `Ys-bleeding-edge`. **Never ask a person to run a learner, a report or a test
 to the sweep. A new learner joins `ai_learn.py`. **The AIs train in each vessel's OWN minigames (its Time minigame
 first), never in Regatta**; the arena games are rebuilt later from those skills (Yash, 2026-10-27,
 `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`). Details and what is not automatic yet: `Docs/AI_SYSTEM/AUTO_LEARNING.md`.
+
+## A game mode never changes the vessel (LOCKED rule, Shombith, 2026-10-31)
+
+"The vessel kit as designed always stays the same, we just make the game mode interesting." A mode makes itself
+interesting with its **track, environment and AI**, never by changing what a vessel's ability does: no rationing an
+ability (Serpent Time's crystal-bought sniper rounds), no press vetoes, no added contact effects (its walls that cost
+speed), no per-mode rescaling, no edits to vessel code or assets for one mode. Both of those Serpent Time rules were built
+and retired for this. A kit change is a vessel change and goes to the vessel's owner (`who_works_where.py`), never through
+a mode. `/arcadegame` §6.
 
 ## Testing
 
@@ -340,7 +349,7 @@ can judge (the final look, feel, audio). A clip never replaces `/verify-unity` o
   - **Never** put a C# string literal that reaches a `TMP_Text`, toast, dialogue or button label.
   - Text whose facts are computed is an **authored template with tokens** (`Hold {glyph:Time} to
     boost`). Code fills the tokens; a human owns the sentence. `TemplateText.Fill(template, "token", value, ...)`
-    (`Assets/_Scripts/UI/TemplateText.cs`) is the one filler; it returns empty for an empty template.
+    (`Assets/_Scripts/Data/TemplateText.cs`) is the one filler; it returns empty for an empty template.
   - An empty field shows nothing. That is how a line is deleted, so never fall back to a hardcoded
     default.
   - **Excluded:** logs, dev/diagnostic overlays and editor-tool UI.

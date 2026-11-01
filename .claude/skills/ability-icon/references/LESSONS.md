@@ -393,9 +393,63 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     mass. The HUD scales that one part about its own centre (rebind.py's point-anchored child). Garrett took it in one
     round.
 
+60. **Draw a game object from its own mesh, never from a generic idea of it.** The Ball Forge options drew the omni
+    crystal as a gem (a hexagonal bipyramid), and Garrett's answer was "that is not the omni crystal". The omni crystal
+    is an exploded rhombicosidodecahedron (`Assets/_Models/OmniCrystalExport1_8-21-25.fbx`, 122 plates). Project its
+    outer plate faces down a pentagon's axis, keep the pentagon, its five squares and the five triangles, and shrink
+    each plate about its own centre so the gaps read at icon size. That matches `ElementIcons/OmniCrystal_Active.png`
+    (`specs/scarab.py` `omni_crystal`). Before drawing any crystal, prism, ball or creature, find its FBX or its
+    shipped mark first.
+
+61. **A structure the ability BUILDS is drawn from its own geometry code, at its real proportions, and each card shows
+    only the state that card owns.** The Seed Wall options drew a generic pinwheel; Garrett: "use the actual dimensions
+    of the wall. only show the shielded prisms in the omnicrystal icon. use the base prisms and danger prisms to denote
+    the upgrade with their actual positioning and scales." So the Mass card takes every number from
+    `SerpentWallLattice` (bricks 1 x 2 short sides on a pitch of 5, alternating up / right, the panel the exact tilted
+    square `CellPanel` returns): the wall as BUILT (base bricks, domain), the seed (white), and the level-5 state as the
+    danger panels where the game lays them. The shielded look belongs to what shields it - the crystal - so the
+    vessel's OMNI card shows the same wall with every brick shielded and nothing else (`specs/serpent.py`). Include
+    the omni card in a hull's analysis from the start: it is the fifth card, and the one an element card must not
+    duplicate. The real proportions may run the wall to the card's edge and leave thin bricks; argue `in_box` and
+    `coverage` in the spec rather than distort the lattice.
+
+## 2026-10-31 - the Angler's Charge card (Erase / Lock-on)
+
+62. **A creature is drawn from its own prefab, in the view that keeps it whole.** The Angler's school is fauna, and the
+    QuadFish (`QuadFish.prefab`: a crystal core and four HealthBlock fins at (+-0.908, +-0.738), each turned 51 deg) is
+    its commonest. Side-on, the fin pairs overlap into a ball with two loose fins that read as an "S" at 60 px; the
+    codex portrait's look - the core with its four fins in an X - reads as the creature at every size. Look at the
+    codex portrait (`Assets/_Graphics/Codex/fauna_*.png`) before picking a creature's view, and say in the spec which
+    liberty the drawing takes. Garrett picked B ("the spend", "B is fine"): when an ability COSTS something (a lock
+    spends a creature), the card shows the cost - the school left behind in the domain colour, the spent one white.
+
+63. **A hull's side view can come out keel-up: check where a known point lands before drawing.** `mesh_silhouette`'s
+    pitch 90 drew the Angler upside down (its esca hung below the keel); `project_point` on the bulb (the mesh's
+    furthest-forward vertex) put it below the centre, and pitch -90 set it upright. Project one point you know (a mast,
+    a fin, the nose) and confirm it lands where the ship has it before any option goes out. On the Mass card Garrett took
+    the close-up (B) over the to-scale light (A): the hull and its lit esca ARE the Angler, so a true-size speck lost
+    the identity the card is for (contrast the Scarab's bubble, LESSONS 56, where the volume was the act).
+
+64. **When the ability alternates between two of something, the card shows both, how many, and whose turn it is.** The
+    Angler's paint sends one of two groups per throw, A then B. Garrett on the first Paint options: "it would be nice if
+    I could see how many were in group A and group B. It should alternate which is highlighted so the player knows which
+    they are sending." D took it: each group keeps a fixed place (A above, B below) with its live count as HUD text
+    beside it, the next to send white and the waiting one dim in the domain colour. A fixed place lets the highlight
+    move without anything else on the card moving. Look for a turn-taking state in the executor (`SendGroup`) before
+    drawing the act alone.
+
+65. **A rebind step that cannot find its `after=` anchor must fail, never drop the field.** The Angler's Mass and Space
+    steps anchored on `lockWakeAlpha` and `lureJoinedSeconds`, view fields with C# defaults that Unity had never
+    serialized into the prefab, so `rebind.py` created every part Image and wrote none of the `lure*Icon` /
+    `paint*Icon` fields: two cards merged with parts the HUD never tints, and `--check` reported no drift because the
+    rebuilt output matched. `rebind.py` now raises when an anchor is missing. Anchor on a field the prefab already
+    serializes (an earlier part's `...Icon` reference is safe), and after a rebind grep the prefab for every new field.
+    On the Time card Garrett took H, "the jump" (a ghost where the hull was, the hull where the dash puts it), over a
+    dashed path or a speed wedge: the set distance is what the dash is, and only the before/after pair shows it.
+
 ## 2026-11-01 - the Honeyguide: seventeen icons in one round, for a trigger that swaps its ability
 
-60. **A trigger whose ability is swapped needs a family, not four cards.** Garrett: "we will need an icon for each
+66. **A trigger whose ability is swapped needs a family, not four cards.** Garrett: "we will need an icon for each
     ability that can take over" - the Honeyguide's RT and LT each show whichever banked ability is current, so the
     thirteen upgrades are drawn as one family with the base icons (`Upgrades/` subfolder, still under the 24 px
     distinct gate, which holds them apart). Two things the first draft got wrong at 40 px: a loop with a straight tether

@@ -757,9 +757,10 @@ def preview_window(root, kind):
            f"  focusButton: {ref(ctx.c('Preview/Focus', 'button'))}\n"
            f"  focusHint: {ref(ctx.go('Fly/Hint'))}\n"
            "  renderHeight: 360\n  maxRenderHeight: 720\n"
+           + (f"  textureWidthScale: {TRAY_TEXTURE_SCALE:.6g}\n" if kind in G_KINDS else "")
            # Full-bleed behind the settings: one stray tap must not launch the player (the owner,
            # 2026-10-17: "one tap in the screen is taking me into the game, it should be double tap").
-           "  doubleTapToFocus: 1\n  doubleTapSeconds: 0.4\n"
+           + "  doubleTapToFocus: 1\n  doubleTapSeconds: 0.4\n"
            # The first-login guide's Preview step spotlights this: the full-bleed surface would be a
            # hole the size of the screen with its caption pushed off the bottom.
            f"  guideTarget: {ref(ctx.rt('Fly/Button'))}\n"))
@@ -1165,6 +1166,13 @@ def steps_row(chrome, kind):
 # --------------------------------------------------------------------------------------------
 
 G_KINDS = ("arcade", "arena")
+# Section 108 (Shombith, 2026-10-31: "when we press fullscreen it goes actual full screen rather the play area should
+# extend as a tray and the other parts of the UI (right side) should get hidden"): FULL SCREEN slides the preview's right
+# edge across the settings column, which fades (ConfigureCinema.extendAsTray); the preview renders that wide from the
+# start and shows its centre (ModePreviewWindow.textureWidthScale), so the tray shows more arena, never a stretched one.
+TRAY_EXTEND = SET_GAP + SET_W                        # the preview's right edge goes to the column's: 1160 -> 1860
+TRAY_TEXTURE_SCALE = (PV_W + TRAY_EXTEND) / PV_W
+TRAY_RIGHT_SIDE = ("ControlsPanel", "Steps", "Status", "Start")
 # Rev 25 round 2 (Shombith 2026-10-26: "Bring the old preview card size. The controls tab does not need to be that big. We
 # can make the detail view bigger also see texts are overlapping with images"): the preview is 1100 x 620 again and the
 # right column 680; the controls are one compact panel and the card takes the rest of the column.
@@ -1600,6 +1608,7 @@ def g_footer(chrome):
     host is waiting for the others. No summary chips and no "Ready to launch" (Rev 19: the chips repeated what the
     window already shows)."""
     status = chrome.child(N("Status", "Status", TL(G_SET_X, G_STATUS_TOP, G_SET_W, G_STATUS_H)))
+    status.add("cg", 225, canvas_group(True))     # the tray fades the whole right side (section 108)
     why = status.child(N("Status/Reason", "Reason", STRETCH))
     why.add("cg", 225, canvas_group(False))
     label_e(why, "", "Body", "Danger", align="center")   # why it cannot launch: a problem, so fire (never the spend gold)
@@ -1731,7 +1740,11 @@ def build_view(kind):
                  f"  previewRect: {ref(ctx.rt('Preview'))}\n"
                  f"  chrome: {ref(ctx.c('Chrome', 'cg'))}\n"
                  f"  flyingHint: {ref(ctx.c('FlyingHint', 'cg'))}\n"
-                 "  fadeSeconds: 0.35\n  fullOffsetMin: {x: 0, y: 0}\n  fullOffsetMax: {x: 0, y: -84}\n"))
+                 "  fadeSeconds: 0.35\n  fullOffsetMin: {x: 0, y: 0}\n  fullOffsetMax: {x: 0, y: -84}\n"
+                 + (f"  extendAsTray: 1\n  trayExtend: {TRAY_EXTEND}\n"
+                    + A.refs("rightSide", [ctx.c(k, "cg") for k in TRAY_RIGHT_SIDE])
+                    + A.refs("followTray", [ctx.rt("Objective")])
+                    if kind in G_KINDS else "")))
 
     root.add("panel", 114, lambda ctx, go: panel_body(ctx, go, kind))
     return root
@@ -2662,6 +2675,20 @@ def validate_prefabs(files):
             for field, want in (("preview", V("Preview#window")), ("previewRect", V("Preview#rt")), ("chrome", V("Chrome#cg")),
                                 ("flyingHint", V("FlyingHint#cg"))):
                 assert f"  {field}: {{fileID: {want}}}" in cin, f"{view}: ConfigureCinema.{field} is not wired"
+            if kind in G_KINDS:
+                # Section 108: FULL SCREEN is a tray - the preview's right edge slides over the settings column, which
+                # fades; the preview's texture is that wide from the start, so the tray never stretches the picture.
+                assert "  extendAsTray: 1\n" in cin and f"  trayExtend: {TRAY_EXTEND}\n" in cin, \
+                    f"{view}: FULL SCREEN fills the window again instead of extending as a tray"
+                block = re.match(r"(?:  - .*\n)*", cin.split("  rightSide:\n")[1]).group(0)
+                assert re.findall(r"fileID: (-?\d+)", block) == [str(V(f"{k}#cg")) for k in TRAY_RIGHT_SIDE], \
+                    f"{view}: the tray must fade exactly the right side ({', '.join(TRAY_RIGHT_SIDE)})"
+                assert f"  followTray:\n  - {{fileID: {V('Objective#rt')}}}\n" in cin, \
+                    f"{view}: the objective bar must ride the preview's right edge"
+                _, win = comp_doc(text, V("Preview#window"))
+                assert f"  textureWidthScale: {TRAY_TEXTURE_SCALE:.6g}\n" in win, \
+                    f"{view}: the preview's texture is not as wide as the tray: FULL SCREEN would stretch the arena"
+                assert abs(MARGIN + PV_W + TRAY_EXTEND - (G_SET_X + G_SET_W)) < 0.5, "the tray stops short of the column's edge"
         _, back = comp_doc(text, V("Back#button"))
         assert back and A.doc_of(text, V("Back#close"))[0] == 114 and "m_Calls: []" in back, \
             f"{view}: Back must close through ModalWindowCloseButton, not a persistent call"
@@ -2920,6 +2947,12 @@ def self_test(files):
          validate_prefabs),
         ("FULL SCREEN calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: ToggleFullScreen", "m_MethodName: Hide", 1)),
          validate_prefabs),
+        ("FULL SCREEN back to the whole window", lambda f: f.__setitem__(view, f[view].replace(
+            "  extendAsTray: 1\n", "  extendAsTray: 0\n", 1)), validate_prefabs),
+        ("the tray stretching a frame-sized texture", lambda f: f.__setitem__(view, re.sub(
+            r"  textureWidthScale: [\d.]+\n", "", f[view], count=1)), validate_prefabs),
+        ("the tray leaving START on screen", lambda f: f.__setitem__(view, f[view].replace(
+            f"  - {{fileID: {V('Start#cg')}}}\n  followTray:", "  followTray:", 1)), validate_prefabs),
         ("the cinema fading nothing", lambda f: f.__setitem__(view, f[view].replace(
             f"  chrome: {{fileID: {V('Chrome#cg')}}}\n", "  chrome: {fileID: 0}\n", 1)), validate_prefabs),
         ("the preview drawn over the settings", lambda f: f.__setitem__(view, f[view].replace(

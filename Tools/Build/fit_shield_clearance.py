@@ -118,7 +118,7 @@ import mass_armour_lib as armour  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 LIFEFORMS = ROOT / "Assets/_SO_Assets/Lifeforms"
-OCTAHEDRON_CS = ROOT / "Assets/_Scripts/Utility/OctahedronMeshGenerator.cs"
+OCTAHEDRON_CS = ROOT / "Assets/_Scripts/Utility/Foundation/OctahedronMeshGenerator.cs"
 HEALTH_BLOCK = ROOT / "Assets/_Prefabs/Trails/HealthBlock.prefab"
 VARIANT_CS = ROOT / "Assets/_Scripts/Utility/DataContainers/FloraConfigurationSO.cs"
 FLORA_CS = ROOT / "Assets/_Scripts/Controller/Environment/FloraAndFauna/Flora.cs"

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -55,10 +56,19 @@ namespace CosmicShore.UI
             var lines = voyage.Lines;
             var style = harbour.Definition;
 
+            var escort = style ? style.ArkEscort : null;
+            if (harbour.IsEscorting && escort)
+            {
+                var card = Use(1)[0];
+                ShowEscort(card, content, style, escort, harbour.EscortDifficulty, sail: false);
+                return;
+            }
+
             if (harbour.IsUnderway)
             {
                 var job = harbour.CurrentJob;
                 var cards = Use(1);
+                cards[0].ShowStepper(null, null, null, null);
                 if (job == null)
                 {
                     cards[0].Show(content, style, null, null, string.Empty, lines.VoyageName, null);
@@ -73,13 +83,18 @@ namespace CosmicShore.UI
 
             var jobs = harbour.Board(out var state);
             string here = state?.At;
+            int extra = escort ? 1 : 0;
             if (jobs.Count == 0)
             {
-                Use(1)[0].Show(content, style, here, null, string.Empty, lines.NoWork, null);
+                var none = Use(1 + extra);
+                none[0].ShowStepper(null, null, null, null);
+                none[0].Show(content, style, here, null, string.Empty, lines.NoWork, null);
+                if (escort) ShowEscort(none[1], content, style, escort, Difficulty, sail: true);
                 return;
             }
 
-            var shown = Use(jobs.Count);
+            var shown = Use(jobs.Count + extra);
+            if (escort) ShowEscort(shown[jobs.Count], content, style, escort, Difficulty, sail: true);
             for (int i = 0; i < jobs.Count; i++)
             {
                 var job = jobs[i];
@@ -88,9 +103,46 @@ namespace CosmicShore.UI
                 string eyebrow = VoyageRules.Fill(job.IsReturn ? lines.CardHomeRoute : lines.CardRoute, from, to, to,
                     content.Person(job.PilotId));
                 var taken = job;
+                shown[i].ShowStepper(null, null, null, null);
                 shown[i].Show(content, style, here, VoyageRules.Route(content, job.From, job.To), eyebrow, job.Title,
                     () => SetSail(taken));
             }
+        }
+
+        const string DifficultyKey = "ArkEscort.Difficulty";
+        const int DefaultDifficulty = 3;
+
+        /// <summary>The escort difficulty this viewer last picked (a per-device convenience).</summary>
+        static int Difficulty
+        {
+            get => Mathf.Clamp(PlayerPrefs.GetInt(DifficultyKey, DefaultDifficulty),
+                ArkEscortSO.MinDifficulty, ArkEscortSO.MaxDifficulty);
+            set => PlayerPrefs.SetInt(DifficultyKey,
+                Mathf.Clamp(value, ArkEscortSO.MinDifficulty, ArkEscortSO.MaxDifficulty));
+        }
+
+        /// <summary>The Ark escort's card: its title at the picked difficulty, a stepper to change it, and Set sail.</summary>
+        void ShowEscort(VoyageJobCard card, VoyageContent content, VoyageToyDefinitionSO style, ArkEscortSO escort,
+            int difficulty, bool sail)
+        {
+            string d = difficulty.ToString();
+            string legs = escort.Legs.Count.ToString();
+            card.Show(content, style, null, null,
+                TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", d),
+                TemplateText.Fill(escort.CardTitle, "difficulty", d, "legs", legs),
+                sail ? () => SetSailEscort(difficulty) : null);
+            if (sail)
+                card.ShowStepper(escort.LowerLabel, escort.RaiseLabel,
+                    () => { Difficulty = difficulty - 1; Refresh(); },
+                    () => { Difficulty = difficulty + 1; Refresh(); });
+            else card.ShowStepper(null, null, null, null);
+        }
+
+        static void SetSailEscort(int difficulty)
+        {
+            var harbour = VoyageHarbour.Current;
+            if (!harbour) return;
+            harbour.SetSailEscort(difficulty, FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
         }
 
         static void SetSail(VoyageJob job)
@@ -110,6 +162,9 @@ namespace CosmicShore.UI
             {
                 var copy = Instantiate(template, template.transform.parent);
                 copy.name = template.name + "_" + _cards.Count;
+                // A copy of a card that showed the escort's stepper carries its buttons, unowned: the copy makes its own.
+                foreach (var b in copy.GetComponentsInChildren<UnityEngine.UI.Button>(true))
+                    if (b.name is "StepDown" or "StepUp") Destroy(b.gameObject);
                 copy.transform.SetSiblingIndex(template.transform.GetSiblingIndex() + _cards.Count);
                 _cards.Add(copy);
             }

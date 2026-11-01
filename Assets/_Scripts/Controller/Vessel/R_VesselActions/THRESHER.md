@@ -31,6 +31,7 @@ from the Thresher Plant Lab round 2, `Docs/Studios/THRESHER_PLANT_LAB.md`; physi
 | **LT eased below `letGoBelow`** (0.9) | Let go: fly off along the tangent, or (launch view up) arm the aimed launch — exactly the old LT-up. A ball let go while still stopping keeps its own speed. |
 | **RT depth** (Winch) | The chain's **rigidity**, flipped from the old winch: **released = slack** (a soft bungee the turns and the spin carry the ball, or a planted ship, out on), **pulled = rigid**. Tightening reels the ball in and spins it up by angular momentum — the old crack — at most `rigiditySlew` 2/s of the trigger's travel per second. There is no READY cue: when a tightening will crack past smash speed is left to feel (Garrett, 2026-10-20). |
 | **Both at a full pull, planted** | The camera switches to the launch view (§5a) — only then. Easing RT below `letGoBelow` for `spectateDropSeconds` 0.25 hands it back (a shorter sag is ridden out). |
+| **Both pulled FAST** (the snap, 2026-10-30) | LT from rest to both triggers full inside `snapAimSeconds` 0.25 s: the crosshair keeps the line you were **flying before the pull**, and the camera goes straight into the launch view along it instead of riding the hook and spin (§5a "Snap aim"). Every depth on the way still brakes, anchors and stiffens exactly as above. |
 
 A device with no analog trigger channel (touch, the one-thumb mouse) and every remote replica read a
 press as a FULL pull and a release as none (`ThresherExecutor.PollTriggers`). On a phone, both thumbs off a
@@ -304,7 +305,7 @@ holds the lab page's solver to this C# frame by frame on 4 digital and 5 analog 
 - **Measured** (lab scorecard, 60 Hz, 6 seeds × 3 flights; shipped digital → analog): ball stop 24 → 7 u/s
   in one frame; hull jolt at the catch 6 100 → 2 200–3 900 °/s²; on leaving 65 000 → 4 700–5 500; on the
   wind-in 59 000 → 9 300–11 000; camera 14 400 → ~1 500; catch time 0.95 → 0.51–1.59 s (by pilot);
-  exit drift 0.5 → 7–9° (the release wind-down's cost).
+  exit drift 0.5 → 7–9° (the release wind-down's cost; aimed launches no longer wind down since 2026-10-30, §5a).
 
 ## 5. Feedback and look
 
@@ -457,6 +458,44 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     yanked along the aim; the transformer faces the hull along it (`TryConsumeReleaseDirection`) and
     grip puts the momentum on the nose. Re-pressing LT while armed does not cancel it (re-releasing
     re-arms with the same aim).
+  - **The exit buff** (2026-10-30, Garrett: "come out of a dual trigger swing with a speed buff that makes the exit
+    speed 3x what it would be with the current physics, this can decay over 3 seconds. this will compensate for the
+    time lost staying still"); retuned the same day to **×2 over 8 s** ("lets go down to 2x, but have it decay over 8
+    seconds"). For `launchExitSeconds` **8** after an aimed launch the hull TRAVELS
+    `launchExitSpeedMultiplier` **×2** what the chain physics gives it, easing linearly back to ×1
+    (`ThresherChainSolver.LaunchExitMultiplier`, the fleet's `ModifyThrottle` shape). It rides the fleet's output-only
+    channel (`throttleMultiplier`, scaled in `ThresherVesselTransformer.ComputeExternalAcceleration` on the frame it
+    is rebuilt for), so the momentum, grip and throttle step are today's; the published `Speed` carries it (trail
+    spacing, the speed tunnel). **The rig is carried with it**: after each move the extra travel moves the ball, any
+    pivot and every chain link with the hull (`ThresherExecutor.CarryRig`, `ThresherChainSolver.Carry`,
+    `ThresherChainLinks.Carry`), and the ball's carried stretch is swept (prisms, Mass Mode's trail, enemy hulls).
+    Without that the chain saw only the hull run ahead and braked the physics to its 42 u/s floor within a quarter
+    second (measured at the first tuning, ×3 over 3 s: RT held 532 u today → 579 u uncarried → 1 272 u carried; RT
+    released 655 → 622 → 1 570 u). At ×2 over 8 s the carried buff covers **1.67×** today's ground in its 8 s (RT held
+    871 → 1 453 u), with the physics speed within 1% of today's frame for frame. Only an aimed launch (the crosshair)
+    gets it; a plain release, the autopilot and a remote replica's release do not. A new plant ends it (an orbit
+    cannot travel faster than its own chord). Tests: `ThresherAnalogTriggerTests.ExitBuff_*`,
+    `ChainLinks_CarriedWithTheHull_GainNoVelocity`; three mutations (no ball carry, no decay, links carried without
+    their previous positions) each fail one. **Multiplayer, not handled:** remote peers simulate their own copy of the
+    ball from the hull's replicated motion and do not know about the buff, so on their screens the ball can trail
+    further behind (and re-seed beside the hull past 3 chain lengths) during the buff. **Not yet flown in Unity.**
+  - **No wind-down, no lead: the launch leaves exactly on the crosshair** (2026-10-30, Garrett: "there was still some
+    jerky exits. with the timing controlled to only let players go at the right time this should always feel smooth
+    and accurately and consistently shoot players at their target"). An aimed launch used to wind its spin down like
+    a plain release (`releaseSpinDownSeconds`): it left early along the orbit (`LaunchLeadRadians`) and the hull kept
+    turning up to 30° onto the aim — 7-9° of exit drift, a path bent off the crosshair's line, and a chase pose still
+    swinging under the launch camera's exit. At the launch point the orbit's tangent IS the aim, so there is no spin
+    to wind down: the solver times the release (the frame the ship reaches its point), it leaves along the aim, and
+    the transformer faces the hull along it at once. The wind-down stays for PLAIN releases. Measured on the shipped
+    solver (`AimedLaunch_FliesTheCrosshairsOwnLine_AtAnyFrameRate`): at 30, 60 and 144 fps, RT held or released,
+    normal or Time-raised spin, the ship flies within **2 u** of the crosshair's line (the line through the launch
+    point along the aim) and 3° of its heading for 1.5 s. (The plant lab still leads the launch; its parity gate does
+    not cover the transformer.)
+  - **The launch camera's exit travels with the ship** (2026-10-30, the same "jerky exits"). The exit eased from the
+    launch vantage, held still where the launch happened, to the live chase pose: the ship shot off at the boosted,
+    buffed speed and the camera then swooped after it. After a launch the ease's start pose is now carried with the
+    hull's travel (`ThresherExecutor.TickExit`); at the launch the vantage is already behind the ship on its line, so
+    it only settles into the chase pose. Exits that are not launches (the spin falling away) are unchanged.
   - **The launch flies the crosshair's line** (2026-10-21, Garrett: "if I release the ball and keep the
     tension it doesn't always shoot me at the cross hair"). The ball is left at the old pivot (`yank` 0),
     so the chain used to swing the ship back round it: the launch fires as LT passes `letGoBelow`, with
@@ -501,6 +540,41 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   and every machine pauses the same trail; the owner's camera now switches on its edges, so crosshair
   on == trail off by construction. The trail comes back on the launch frame (the plant ends). Mass
   Mode's ball trail is untouched (it lays only off the plant anyway).
+- **Snap aim — both triggers pulled fast** (2026-10-30, Garrett: "when we pull both triggers fast we want to be
+  able to aim and shoot ourselves like Marvel's Thor … the transition to spinning and aiming is preceded by the ball
+  receiving friction and the cord receiving stiffness … a disorienting weakness"). A fast pull passes through every
+  partial depth on its way to full, and for those frames the brake and the sliding anchor do what they do for a
+  partial pull: the ship is bent off its line (measured on the shipped solver, chain harness pilot: 0-14° by the
+  frame the plant begins, most when the pull starts mid-turn). The plant's hook and spin then rode the chase camera
+  round for the 0.35-0.6 s the launch view takes to qualify (the chain's rigidity slew, the spin threshold, the
+  engage delay), and the view eased it back. `ThresherSnapAim` (pure, `Controller/Vessel/ThresherSnapAim.cs`):
+  - **The snap.** LT leaving rest (`snapAimRestDepth` 0.1) and LT and RT both reaching `fullPull` within
+    `snapAimSeconds` **0.25 s**. RT already held counts (the decision is the frame both are full). A slow squeeze, a
+    brake feathered and then committed, or RT arriving after the window is not a snap and plants exactly as before.
+    0 turns it off. A phone's both-thumbs-off (§1 "On a phone") reads as both full, so lifting both thumbs in quick
+    succession is a snap too.
+  - **The aim** is the hull's FLIGHT DIRECTION (its velocity) on the last frame LT was at rest — before the pull
+    touched the ship — and the orbit plane is TILTED onto it (`ThresherCameraFraming.PitchAim`, at `aimPitchRate`
+    120 °/s so the circling ship is never re-laid in one frame), so the crosshair is that line itself, pitch included,
+    not its shadow on the orbit. (The slow path keeps the camera's facing at the plant, laid into the orbit plane.)
+  - **The camera holds it.** From the snap, the camera stops riding the hull and eases into the launch camera along
+    that line at once (the same ease, `spectateEnterSeconds`); the world stays still while the ship hooks on and
+    spins up in front of it. The **crosshair and the aimed release still wait for `LaunchViewUp`**: a let-go before
+    the view qualifies is a plain release on the tangent, as before. The hold ends when the view takes over (it never
+    comes back after), when either trigger falls under `letGoBelow` for `spectateDropSeconds`, when the plant ends,
+    or after `snapAimHoldSeconds` 1.5 s; then the camera eases back to the chase pose.
+  - **The sticks ease in, never drop out.** A pilot who snaps mid-turn still has the stick over, and the aim turns at
+    180 °/s. A first cut latched the sticks until they centred; Garrett flew it the same day: "it sometimes disengages
+    the controls when they should smoothly transition to aiming with the joysticks. i had to return it to home position
+    and move the sticks again". Now every aim (snap or not) ramps the sticks' authority in from 0 to full over
+    `aimStickEaseSeconds` 0.3 s (`ThresherCameraFraming.AimStickAuthority`, SmoothStep): a held stick starts aiming on
+    the first frame and reaches full rate by 0.3 s. During the aim the sticks never lean the orbit.
+  - **The physics is untouched**: the snap only READS the depths and the hull's velocity, so every partial pull flies
+    exactly as it did and every peer simulates the same chain. It changes only the local pilot's camera and the aim it
+    seeds (already local). The plant lab does not model it.
+  - Tests: `ThresherAnalogTriggerTests.Snap_*` and `PitchAim_*` fly it with the real solver (the chain harness runs
+    them offline); five mutations of the rule (no window, the heading read at the plant, no hand-over to the view, no
+    latch, no drop) each fail one. **Not yet flown in Unity.**
 - **Analog triggers** (shipped 2026-10-13): the camera switches only with the ball STOPPED and LT and the
   chain's rigidity both at `fullPull`; RT eased below `letGoBelow` hands it back unless a launch is armed.
   The entry keeps the camera's own turn and glides it to a stop over `spectateCarrySeconds` 0.35 (the old
@@ -691,8 +765,8 @@ the drift expression it was extracted from; here: 0 while planted). Also `Comput
 2026-10-13 also: `hullFollowsPlantedVelocity` (planted, the hull turns with the frame's own velocity change
 after the move, as towing does — it used to face the PREVIOUS frame's velocity and not turn at all on the
 frame a plant began); and `releaseSpinDownSeconds` 0.3 (leaving an orbit, the hull keeps turning about the
-orbit's axis and eases to a stop, capped at `releaseSpinDownMaxDegrees` 30°, instead of stopping dead; an
-armed launch leaves early by `LaunchLeadRadians` so it lands on the aim). These are the Gibbon prototype's seams
+orbit's axis and eases to a stop, capped at `releaseSpinDownMaxDegrees` 30°, instead of stopping dead; since
+2026-10-30 plain releases only — an aimed launch leaves with no lead, exactly along the aim, §5a). These are the Gibbon prototype's seams
 (`cece/hopeful-bardeen-rmqhmd`, 720507e), re-cut; whichever branch lands second adopts the other's.
 
 ## 7. Networking
@@ -944,6 +1018,29 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 `massTrailSpacing` (trail density). Windmill: `windmillSeconds`, `windmillSpeed`.
 
 ## Follow-ups
+
+### Refactor rows (2026-10-30 snap-aim + exit-buff ship pass, `cece/sweet-newton-78wr4o` — rows only)
+
+- **`ThresherChainSolver.LaunchLeadRadians` has no game caller now (debt CREATED).** Aimed launches leave with no
+  lead since 2026-10-30, and `ThresherExecutor.SetLaunchLead` was removed with its one caller, but the solver keeps
+  the lead (`TryLaunch`'s chord branch) because `ArmedLaunchWithALead_LeavesAlongTheOrbit_WithoutALead_AlongTheAim`
+  pins it and the plant lab still leads its launch. Retire it with the lab's next round, or keep it as the lab's.
+  Measure: `grep -rn "LaunchLeadRadians" Assets/_Scripts --include=*.cs | grep -v Tests/` → the solver alone.
+- **The plant lab flies a different aimed launch than the game (debt CREATED; incompleteness of a lab, a report).**
+  The lab still winds an aimed launch's spin down with a lead, has no snap aim, no stick ease and no exit buff.
+  `parity.cjs` passes because it covers the solver, not the transformer or the camera. Port the four when the lab
+  next runs a round. Measure: `grep -n "rlSpinDown\|armLaunch(" Docs/Studios/ThresherPlantLab.html`.
+- **Remote copies do not know the exit buff (debt CREATED).** A guest's machine steps the host's ball from the hull's
+  replicated motion (the `LateUpdate` fallback), which now includes the buff's extra travel, while its own chain
+  physics does not carry the rig: the guest's copy of the ball can trail far behind or re-seed beside the hull
+  (past 3 chain lengths) during the 8 s. Same shape as the "remote replica never arms" row below. Measure in MPPM:
+  host makes an aimed launch, guest watches the host's ball for 8 s.
+- **Three `author_*` generators are red on bleeding-edge itself (debt WALKED PAST, not this branch's).** `gates.sh`
+  on this branch and on a clean `origin/bleeding-edge` (45871264) worktree fail identically:
+  `author_meerkat_assets.py` (`MeerkatWormholeConfig.asset: onCombatHitLanded is not Event_CombatHitStats`),
+  `author_undertow_assets.py` (`ScarabCavitationExplosionImpactorDataContainer.asset` line 16 differs) and
+  `author_voyage_assets.py` (`Toy_Voyage.asset` drifted). Each needs its owner to say whether the asset or the
+  generator is right. Measure: `python3 Tools/Build/author_<name>_assets.py --check`.
 
 ### Refactor rows (2026-10-21 launch-view ship pass, `cece/youthful-johnson-hccyzf` — rows only)
 

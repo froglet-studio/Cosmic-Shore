@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
@@ -65,6 +66,24 @@ namespace CosmicShore.Gameplay
                  "on its own terms regardless of who is travelling faster.")]
         [SerializeField] bool requireFasterThanVictim;
 
+        [Header("Standing contact")]
+        [Tooltip("Run again every frame a rival stays inside the skimmer, not only when it enters " +
+                 "(the skimmer's owner must call SkimmerImpactor.ReapplyVesselEffectsToOverlapping; " +
+                 "the Tiger Moth's ButterflyDustField does). ON for the Tiger Moth's dust, whose " +
+                 "shred takes a petal on a Charge-scaled clock for as long as the rival is in it. " +
+                 "The latch window still paces it.")]
+        [SerializeField] bool repeatWhileInside;
+
+        public override bool RepeatsWhileInside => repeatWhileInside;
+
+        // Petals a PACED take has moved per (shooter, victim) since it last scored: a paced take is
+        // priced in petals, and one hit of this class is scored per CombatHitDrain.PetalsFor(hitClass)
+        // of them. Only the deciding machine writes it.
+        static readonly Dictionary<(string shooter, string victim), float> _petalsTowardScore = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _petalsTowardScore.Clear();
+
         /// <summary>
         /// NOTE the argument order, shared with every other skimmer effect and inverted from
         /// what the names suggest: <c>impactor</c> is the vessel that was SWEPT (the victim) and
@@ -89,6 +108,15 @@ namespace CosmicShore.Gameplay
             if (requireOwningMachine && shooterStatus.Player is { IsNetworkOwner: false }) return;
 
             if (requireFasterThanVictim && shooterStatus.Speed <= victimStatus.Speed) return;
+
+            // A take that sets its own pace and price (the Tiger Moth's shred) is admitted, taken
+            // and scored per PETAL, not per hit class.
+            var paced = PacedSibling(impactee);
+            if (paced != null)
+            {
+                ExecutePaced(paced, victimStatus, shooterStatus, impactor, impactee);
+                return;
+            }
 
             // One gate for the score and the petals: a warded victim is neither scored on nor
             // robbed (CombatHitDrain.TryAdmit). Contact is the VesselContact class, the same one
@@ -116,6 +144,50 @@ namespace CosmicShore.Gameplay
                 HitClass = hitClass,
                 SupersededRank = supersededRank,
             });
+        }
+
+        /// <summary>
+        /// The paced form of a contact hit: the take's own window, a silence and a score priced on the
+        /// petals it moves. A victim with nothing to take is not admitted at all, so the window is not
+        /// claimed and nothing is silenced or scored for a take that could move nothing.
+        /// </summary>
+        void ExecutePaced(IPacedContactPetalTake paced, IVesselStatus victim, IVesselStatus shooter,
+                          VesselImpactor impactor, SkimmerImpactor impactee)
+        {
+            if (!paced.CanTakeFrom(victim)) return;
+            float petals = paced.PetalsPerTake;
+            if (!CombatHitDrain.TryAdmitPetals(victim, shooter, hitClass, paced.SameVictimCooldownSeconds(shooter),
+                                               ElementalDebuffSources.VesselContact, petals))
+                return;
+
+            paced.TakeFrom(victim, shooter, impactor, impactee);
+
+            float perHit = CombatHitDrain.PetalsFor(hitClass);
+            if (perHit <= 0f) return;
+            var key = (shooter.PlayerName, victim.PlayerName);
+            _petalsTowardScore.TryGetValue(key, out float owed);
+            owed += petals;
+            while (owed >= perHit - 1e-4f)
+            {
+                owed -= perHit;
+                onCombatHitLanded.Raise(new CombatHitStats
+                {
+                    ShooterName = shooter.PlayerName,
+                    VictimName = victim.PlayerName,
+                    HitClass = hitClass,
+                });
+            }
+            _petalsTowardScore[key] = Mathf.Max(0f, owed);
+        }
+
+        static IPacedContactPetalTake PacedSibling(SkimmerImpactor impactee)
+        {
+            var container = impactee ? impactee.EffectContainer : null;
+            var siblings = container ? container.VesselSkimmerEffects : null;
+            if (siblings == null) return null;
+            for (int i = 0; i < siblings.Length; i++)
+                if (siblings[i] is IPacedContactPetalTake paced) return paced;
+            return null;
         }
 
         bool TakeThroughSiblings(IVesselStatus victim, IVesselStatus attacker,

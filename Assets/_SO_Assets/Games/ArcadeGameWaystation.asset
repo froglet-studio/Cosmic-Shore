@@ -15,18 +15,18 @@ MonoBehaviour:
   Mode: 58
   IsMultiplayer: 1
   DisplayName: Waystation
-  Description: 'Butterflies only. The rings come in clusters - weave the coil, line up on the gate at
-    the far end, then FOLD across the gap to the next one. The fold has one degree of
-    freedom, the heading you leave on, so the exit gate is the aiming device: thread it on
-    the right line and the jump is free. First team to put a pilot through the last ring
-    takes it.'
+  Description: 'Tiger Moths only. Weave each cluster of rings, then climb down the Drop Tower to the
+    next: short hops through floor plates, each ring just past its plate. Tap too short and
+    you land on the plate; hold too long and the pipe ahead meets you before the Drop is
+    back. Plates are mostly plain at low intensity, more of them danger as it climbs. The
+    last gap is one long drop, and it leaves a wormhole for whoever follows.'
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 5f369710bf604859820aa9aeb3301a12, type: 3}
   GolfScoring: 1
   SceneName: MinigameWaystation
   Vessels:
-  - {fileID: 11400000, guid: fe4abf38579d7f84baf16a532ed4a015, type: 2}
+  - {fileID: 11400000, guid: d46d96ae184a444faf9a09a2b793a07d, type: 2}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
@@ -35,4 +35,4 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.64
+  ComebackRatePerScoreDeficit: 0.4

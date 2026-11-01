@@ -317,6 +317,12 @@ namespace CosmicShore.Core
 
             _sceneTransitionManager?.FadeFromBlack().Forget();
 
+            // The lava lamp is up: from now on this player is listed online on every other machine
+            // (LavaLampPresence; before this they were still booting and could not be invited).
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            if (SceneManager.GetActiveScene().name == menuScene)
+                LavaLampPresence.MarkShown();
+
             // The menu is on screen: a return-to-menu or boot load recording (B36) ends here. A launch recording
             // ends elsewhere (MiniGameHUD), so only the kinds that end at the menu are closed.
             if (LoadInsights.IsRecordingMenuLoad)
@@ -334,6 +340,10 @@ namespace CosmicShore.Core
             // transition; the screen is covered by SetFadeImmediate below within the same
             // frame, so no un-paused gameplay is ever visible.
             PauseSystem.TogglePauseGame(false);
+
+            // A deliberate return (the pause menu, the match's end, the host ending the session): nothing to rejoin.
+            // A dropped link never comes through here - it bounces (PartyInviteController.HandleHostLossAsync).
+            MatchRejoin.Forget();
 
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
 

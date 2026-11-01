@@ -342,6 +342,22 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Die exactly once, from a path that did not come through <see cref="CheckIfDead"/> or <see cref="Jousted"/>
+        /// (a replicated mirror, a plant that never grew a leaf). Those two latch <c>dying</c> before they call
+        /// <see cref="Die"/>; a bare <c>Die()</c> does not, and <see cref="Die"/> itself re-enters: its destruction
+        /// damages every remaining prism and withers every spindle, each of which reports back through
+        /// <see cref="RemoveHealthBlock"/> / <see cref="RemoveSpindle"/> to <see cref="CheckIfDead"/>, which, finding
+        /// <c>dying</c> still false, ran the whole death a SECOND time: the death event again (attributed to the
+        /// destruction's "Guy Fawkes"), the heart again, the cell's unregister and destroyed-lifeform event again.
+        /// </summary>
+        protected void DieOnce(string killerName = "")
+        {
+            if (dying || isCleaningUp) return;
+            dying = true;
+            Die(killerName);
+        }
+
         protected virtual void Die(string killerName = "")
         {
             if (isCleaningUp) return;
