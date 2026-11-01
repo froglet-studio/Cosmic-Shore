@@ -1,3 +1,4 @@
+using UnityEngine;
 using System;
 using System.Globalization;
 using CosmicShore.Data;
@@ -29,6 +30,11 @@ namespace CosmicShore.Editor
         public static void Run()
         {
             SessionState.SetBool(PendingKey, true);
+            // Soak offline (local host on 127.0.0.1): a Relay hiccup mid-race bounces the host to the solo menu
+            // and voids the race. The player's own preference is put back when the soak ends.
+            SessionState.SetInt(OfflineWasKey, PlayerPrefs.GetInt(OfflineKey, 0));
+            PlayerPrefs.SetInt(OfflineKey, 1);
+            PlayerPrefs.Save();
             EditorSceneManager.OpenScene("Assets/_Scenes/Bootstrap.unity", OpenSceneMode.Single);
             EditorApplication.isPlaying = true;
         }
@@ -58,8 +64,13 @@ namespace CosmicShore.Editor
             SwitchbackSoakRunner.Launch(s);
         }
 
+        const string OfflineKey = "CosmicShore.OfflinePreferred";
+        const string OfflineWasKey = "SwitchbackSoak.OfflineWas";
+
         static void OnDone(bool ok)
         {
+            PlayerPrefs.SetInt(OfflineKey, SessionState.GetInt(OfflineWasKey, 0));
+            PlayerPrefs.Save();
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "-sbSoakQuit") < 0) return;
             double giveUp = EditorApplication.timeSinceStartup + 60.0;
             int code = ok ? 0 : 1;
