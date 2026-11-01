@@ -37,8 +37,8 @@ at any time: nothing calls a script while its switch is off.
 deployed from **bleeding-edge**, development first.
 
 **With the button (no terminal):**
-1. Once: make a UGS service account (Unity Cloud dashboard > Administration > Service accounts > New, role Cloud Code
-   Editor, then Add key) and put its key id and secret in GitHub as repository secrets `UGS_CLI_SERVICE_KEY_ID` and
+1. Once: make a UGS service account (Unity Cloud dashboard > Administration > Service accounts > New; project roles
+   Unity Environments Admin, Cloud Code Script Publisher and Cloud Code Editor; then Add key) and put its key id and secret in GitHub as repository secrets `UGS_CLI_SERVICE_KEY_ID` and
    `UGS_CLI_SERVICE_SECRET_KEY` (repository Settings > Secrets and variables > Actions > New repository secret).
 2. GitHub > Actions > **Deploy UGS scripts** > Run workflow > branch `bleeding-edge`, environment `development` > Run.
    It tests every script, checks the vessel prices and uploads the five scripts (`.github/workflows/ugs-deploy.yml`).
