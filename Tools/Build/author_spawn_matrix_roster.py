@@ -143,6 +143,8 @@ FAUNA = [
     ("Fortress Builders", ["Cell Configs/Swarm Cell/Swarm Fortress Builder Fauna Config Data.asset"]),
     ("Thief Nest", ["Cell Configs/Swarm Cell/Swarm Thief Nest Builder Fauna Config Data.asset"]),
     ("Wearer Builders", ["Cell Configs/Swarm Cell/Swarm Wearer Builder Fauna Config Data.asset"]),
+    # the pollinator (Docs/ECOSYSTEM.md 66): released without a hive a bee pollinates wherever it is; a hive raises its own
+    ("Bee", [f"Lifeforms/Bee Fauna {e}.asset" for e in ELEMENTS]),
 ]
 
 FLORA = [
@@ -158,6 +160,8 @@ FLORA = [
     ("SchwarzP Topiary", ["Cell Configs/Hesperides Cell/Hesperides SchwarzP Topiary Config Data.asset"]),
     ("Physarum", ["Threat Flora/Swarm Physarum Flora Space Config Data.asset"]),
     ("Snap Trap", ["Threat Flora/Swarm Snap Trap Flora Time Config Data.asset"]),
+    # a flora slot that raises fauna: the hive is the plant, its bees its members (author_bee_assets.py)
+    ("Bee Hive", lifeform_set("Bee Hive")),
 ]
 
 # ── Species descriptions ───────────────────────────────────────────────────────
@@ -254,6 +258,11 @@ DESCRIPTIONS = {
                 "down the cables, and your wake repels it.",
     "Snap Trap": "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, "
                  "then snap shut on danger teeth.",
+    "Bee Hive": "A comb of hexagonal cells and the bees it raises. The bees pollinate plants of every colour, which "
+                "then grow faster, and sting opposing creatures near the hive, carrying their mass home: the comb is "
+                "built from it, in the colours they brought. They eat no plants.",
+    "Bee": "A pollinator. It eats no plants: it makes the plants it visits, of every colour, grow faster. Released "
+           "on its own it pollinates wherever it is; predators hunt it.",
     "Gyroid Topiary": "A clipped gyroid specimen for garden beds: 30-prism tiles with smaller leaves in "
                       "Mass slabs, a colony that stops at eight instead of sprawling into a lattice.",
     "SchwarzP Topiary": "A clipped Schwarz-P specimen for garden beds: 36-prism tiles with smaller leaves "

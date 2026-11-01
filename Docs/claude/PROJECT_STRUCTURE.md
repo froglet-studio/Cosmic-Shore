@@ -6,8 +6,8 @@
 
 ```
 Assets/
-├── _Scripts/                  # All first-party code (~1,100 C# files)
-│   ├── Controller/            # Gameplay systems (~536 files)
+├── _Scripts/                  # All first-party code (3,061 C# files, 2026-11-01)
+│   ├── Controller/            # Gameplay systems (1,373 files)
 │   │   ├── Vessel/            # Vessel core: VesselStatus, Prism, Trail, VesselPrismController, VesselActions/, R_VesselActions/
 │   │   ├── Environment/       # Cells, crystals, flora/fauna, flow fields, warp fields, spawning
 │   │   ├── ImpactEffects/     # Impactors (11 types) + Effect SOs (20+ types)
@@ -27,7 +27,7 @@ Assets/
 │   │   ├── ECS/               # DOTS entity components
 │   │   ├── XP/                # Experience point controllers
 │   │   └── Settings/          # Runtime settings
-│   ├── System/                # Application-level systems (~126 files)
+│   ├── System/                # Application-level systems (157 files)
 │   │   ├── Bootstrap/         # BootstrapConfigSO, SceneTransitionManager, ApplicationLifecycleManager
 │   │   ├── Economy/           # CatalogManager, CaptainManager, Inventory, StoreShelve, VirtualItem, ItemPrice
 │   │   ├── PlayerData/        # PlayerProfile, PlayerSession
@@ -44,7 +44,7 @@ Assets/
 │   │   ├── Favorites/         # Favorites system
 │   │   ├── Ads/               # Ad integration
 │   │   └── Architectures/     # Shared architectural base classes
-│   ├── UI/                    # Game & app UI (~188 files)
+│   ├── UI/                    # Game & app UI (460 files)
 │   │   ├── Controller/        # VesselHUD controllers (Manta, Rhino, Serpent, Sparrow)
 │   │   ├── View/              # VesselHUD views (all vessel types + Minigame, Multiplayer)
 │   │   ├── Interfaces/        # IVesselHUDController, IVesselHUDView, IMinigameHUDController, IScreen
@@ -57,10 +57,10 @@ Assets/
 │   │   ├── GameToastSystem/   # In-game toast feed (situation SOs, per-mode configs, idle hints)
 │   │   ├── FX/                # UI visual effects
 │   │   └── Animations/        # UI animations
-│   ├── Data/                  # Models & enums (~29 files)
+│   ├── Data/                  # Models & enums (81 files)
 │   │   ├── Enums/             # VesselClassType, Domains, ResourceType, ShipActions, InputEvents, etc.
 │   │   └── Structs/           # DailyChallenge, GameplayReward, TrainingGameProgress
-│   ├── ScriptableObjects/     # SO definitions & SOAP types (~70 files)
+│   ├── ScriptableObjects/     # SO definitions & SOAP types (171 files)
 │   │   ├── SOAP/              # Custom SOAP types (16 subdirectories)
 │   │   └── SO_*.cs            # Game data SOs (Captain, Vessel, Game, ArcadeGame, Element, etc.)
 │   ├── Utility/               # Effects, PoolsAndBuffers, DataContainers, DataPersistence, ClassExtensions
@@ -93,13 +93,16 @@ Note: `_Scripts/Game/` is **not vestigial — do not delete it.** This line prev
 
 Most first-party code still compiles in Unity's default assembly, `Assembly-CSharp`. **That is a
 state being actively unwound, not the design.** The monolith means every one-line edit recompiles
-~1,481 files, and nothing enforces a dependency direction. The split proceeds bottom-up, one leaf
+~2,300 runtime files, and nothing enforces a dependency direction. The split proceeds bottom-up, one leaf
 assembly at a time — full plan, measurement protocol and phase-2 candidates:
 **`Docs/ASSEMBLY_SPLIT.md`**.
 
 | Assembly | Scope |
 |---|---|
 | `CosmicShore.Data` | `_Scripts/Data/` — enums, structs, small interfaces. The first extracted leaf: depends on no first-party code |
+| `CosmicShore.DisplayName` | `_Scripts/Utility/DisplayName/` — the display-name validator and its config SO. References `Data` |
+| `CosmicShore.SOAP` | `_Scripts/ScriptableObjects/SOAP/` — SOAP events, variables and listeners with plain-data payloads. References `Data`, `DisplayName`, `Obvious.Soap`. **A channel whose payload is a gameplay type (vessel, HUD, anything from `Controller/` or `UI/`) goes in `_Scripts/ScriptableObjects/SOAPGameplay/`**, which stays in `Assembly-CSharp` |
+| `CosmicShore.Foundation` | `_Scripts/Utility/Foundation/` — logging (`CSDebug`), math/geometry and mesh helpers, small general helpers. References `Data`, `UniTask`, `Unity.Mathematics` |
 
 **The rule that makes extraction safe, and safe in only one direction:** a predefined assembly
 (`Assembly-CSharp`, `Assembly-CSharp-Editor`) **automatically references every auto-referenced
@@ -146,7 +149,7 @@ reference `Assembly-CSharp`, so such a test would be blind to the very types it 
 constraint is almost certainly why the three documented assemblies above were never created.
 
 **The constraint is a function of where the code under test lives, not a permanent law.** A suite
-whose dependencies are *entirely* inside extracted assemblies (`CosmicShore.Data` today) can have a
+whose dependencies are *entirely* inside extracted assemblies (`CosmicShore.Data`, `.DisplayName`, `.SOAP`, `.Foundation` today) can have a
 real test asmdef referencing those plus the test-runner assemblies. `CosmicShore.PlayFabTests` used
 to be the worked example of that shape; it was deleted with PlayFab, so there is currently no suite
 in the project with its own runtime-facing asmdef. Take that per-suite as dependencies come out;

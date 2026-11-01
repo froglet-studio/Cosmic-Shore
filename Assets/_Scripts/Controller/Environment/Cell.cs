@@ -1685,8 +1685,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Live herbivores still eligible as prey - the prey signal for predator
-        /// seeding (a real herbivore count, not the prism-mass proxy).
+        /// Live fauna still eligible as prey - herbivores and pollinators (FaunaDiets.IsPrey) - the prey signal for
+        /// predator seeding (a real prey count, not the prism-mass proxy).
         /// </summary>
         public int GetLiveHerbivoreCount()
         {
@@ -1694,7 +1694,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < liveFauna.Count; i++)
             {
                 var f = liveFauna[i];
-                if (f && f.Diet == FaunaDiet.Herbivore && f.IsAlivePrey) n++;
+                if (f && FaunaDiets.IsPrey(f.Diet) && f.IsAlivePrey) n++;
             }
             return n;
         }

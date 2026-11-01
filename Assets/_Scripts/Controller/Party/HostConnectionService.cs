@@ -545,6 +545,7 @@ namespace CosmicShore.Gameplay
             UnsubscribeFromGameLaunch();
             UnsubscribeFromRosterChanges();
             UnsubscribeFromPartySessionEvents();
+            UnsubscribeFromFairPlayGuard();
 
             if (bootStatusRetryRequestedEvent != null)
                 bootStatusRetryRequestedEvent.OnRaised -= HandleBootStatusRetryRequested;
@@ -746,9 +747,14 @@ namespace CosmicShore.Gameplay
                 SubscribeToGameLaunch();
                 SubscribeToRosterChanges();
                 SubscribeToPartySessionEvents();
+                SubscribeToFairPlayGuard();
 
                 await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
                 SyncLocalIdentity();
+
+                // Fair play (phase B): which presence lobby this account joins. A no-op while the trust gate is
+                // off; on failure it keeps the last answer, so it never blocks the join.
+                await CosmicShore.Core.FairPlayTrust.RefreshAsync();
 
                 await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
 
@@ -2960,6 +2966,52 @@ namespace CosmicShore.Gameplay
             if (!connectionData.IsPartyHost) return;
             _ = ClearOutgoingInviteIfPresentAsync(playerId, "party-leave");
             ReconcilePartyMembersNow();
+        }
+
+        // ── Fair play (phase B): a host checks each guest belongs in its pool ─────────────────────────────────
+        // A guest shows its pool pass to the party (PartySessionService, a member-only property). The host asks the
+        // server about that pass (FairPlayTrust.VerifyGuestAsync) and removes a guest the server places in another
+        // pool, so a modified client that joined the shore lobby from the Undertow cannot sit in a shore party. Nothing
+        // here while the trust gate is off.
+
+        private bool _fairPlayGuardSubscribed;
+
+        private void SubscribeToFairPlayGuard()
+        {
+            if (_fairPlayGuardSubscribed || !CosmicShore.Core.FairPlayTrustGate.Enabled) return;
+            connectionData.OnPartyMemberJoined.OnRaised += HandleMemberJoinedFairPlay;
+            _fairPlayGuardSubscribed = true;
+        }
+
+        private void UnsubscribeFromFairPlayGuard()
+        {
+            if (!_fairPlayGuardSubscribed) return;
+            connectionData.OnPartyMemberJoined.OnRaised -= HandleMemberJoinedFairPlay;
+            _fairPlayGuardSubscribed = false;
+        }
+
+        private void HandleMemberJoinedFairPlay(PartyPlayerData member) =>
+            CheckJoinedMemberPoolAsync(member.PlayerId).Forget();
+
+        private async UniTaskVoid CheckJoinedMemberPoolAsync(string playerId)
+        {
+            if (!connectionData.IsPartyHost || string.IsNullOrEmpty(playerId) || playerId == connectionData.LocalPlayerId) return;
+            var session = _partySessionService.ActiveSession;
+            if (session == null) return;
+
+            string pass = null;
+            foreach (var p in session.Players)
+                if (p.Id == playerId && p.Properties != null &&
+                    p.Properties.TryGetValue(CosmicShore.Core.FairPlayTrust.PassPropertyKey, out var prop))
+                    pass = prop.Value;
+
+            var check = await CosmicShore.Core.FairPlayTrust.VerifyGuestAsync(playerId, pass);
+            bool remove = check == CosmicShore.Core.FairPlayTrust.GuestCheck.OtherPool ||
+                          (check == CosmicShore.Core.FairPlayTrust.GuestCheck.Unverified &&
+                           CosmicShore.Core.FairPlayTrustGate.RemoveUnverifiedGuests);
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[FairPlay] Guest {playerId} pool check: {check}{(remove ? " - removing" : "")}.");
+            if (remove && connectionData.IsPartyHost)
+                await KickPartyMemberAsync(playerId);
         }
 
         private void SubscribeToGameLaunch()

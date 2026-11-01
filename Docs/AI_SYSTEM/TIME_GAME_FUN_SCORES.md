@@ -21,7 +21,8 @@ against a mode, not for it.
 | Stoat | Warpline | 9 | 7 | 5 | 4 | 3 | 7 | **5.8** | 3 Rivals |
 | Sparrow | Breakwater | 6 | 6 | 7 | 4 | 4 | 7 | **5.7** | 4 Rivals/Feedback |
 | Manta | Redline | 9 | 7 | 8 | 4 | 2 | 3 | **5.5** | 2 Rivals |
-| Butterfly | Waystation | 9 | 6 | 7 | 4 | 3 | 4 | **5.5** | 3 Rivals |
+| Butterfly | Waystation (clusters only, before 2026-11-01) | 9 | 6 | 7 | 4 | 3 | 4 | **5.5** | 3 Rivals |
+| Tiger Moth | Waystation, the Drop Tower course (est. 2026-11-01; replaced the row above, `Docs/Studios/TIGER_MOTH_TIME.md`) | 9 | 7 | 7 | 5 | 3 | 4 | **5.8** | 3 Rivals |
 | Thresher | Thresher Time | 6 | 7 | 7 | 5 | 4 | 4 | **5.5** | 4 Verb/Rivals |
 | Rhino | Headlong | 9 | 7 | 7 | 3 | 1 | 2 | **4.8** | 1 Rivals |
 | Grizzly | Grizzly Time | 8 | 7 | 7 | 3 | 2 | 2 | **4.8** | 2 Rivals |

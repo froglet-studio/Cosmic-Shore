@@ -1,11 +1,9 @@
-# Fair play: hand-offs waiting to be filed
+# Fair play: hand-offs (filed)
 
-These are what `claude/vigilant-archimedes-euoz8z` leaves for people: the deploys, the editor checks and the
-decisions behind `README.md` §8b. They were written on the old markdown board. That board moved to **Froglet Tasks**
-(GitHub issues labelled `team-task`, `Docs/TEAM.md` rule 9) while this branch was open, and under its rules a session
-files a ticket only when its person approves, as **one ticket per branch** with these as its checklist lines. So they
-wait here, outside the board, until Shombith says yes; then they are filed with `/team-tasks add`, and this file
-shrinks to a pointer at the ticket.
+**Filed 2026-10-26 as Froglet Tasks ticket T-20261026-4918 (issue #1565), with Shombith's approval**: one ticket for
+`claude/vigilant-archimedes-euoz8z`, one checklist line per hand-off below. Take, tick and close it there (the
+`/team-tasks` skill or the Froglet Tasks page, https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f). The records below are
+the originals the ticket was made from, kept because the docs cite their ids.
 
 The ids are the ones the docs cite (`README.md` §8b, `Tools/UGS/README.md`, the verification checklist). Each "Who can
 take it" says what the work needs, never a person (rule 9). Who owns the area is a different fact and stays in

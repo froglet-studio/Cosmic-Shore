@@ -3785,6 +3785,9 @@ speed.
    leave *something* behind, the question to answer first is what a danger prism does in a skeleton
    — stay dangerous forever, shed its danger state on detach, or be the one prism kind the skeleton
    drops. Do not "just enable it".
+   **Answered for danger (Garrett, 2026-11-01)**: "danger prisms are left behind without need for exceptions": a
+   skeleton keeps its danger prisms as they are. The worm colony still keeps its suction death for the other reason
+   above (a kaiju skeleton is a wall); turning it into a skeleton is a separate decision, not taken.
 2. **Flora deaths other than the joust still detonate** (`DamageAll` + `ForceWitherAll`). That is
    deliberate for now — a plant grazed to its lethal threshold has been actively eaten — but if the
    skeleton reads well in play, making it universal for flora is a one-line change to the branch in
@@ -12559,7 +12562,8 @@ place:
 Only what the ELEMENT changed is undone on a pooled body's next life. What the prefab authored (the worm head's shielded
 plate cage, the teeth) is never touched.
 
-Mouths, jaws and the Space erosion's "a tooth keeps its size" read `Fauna.IsAuthoredDanger`. On a Charge creature every
+Mouths and jaws read `Fauna.IsAuthoredDanger` (the Space erosion read it too, for "a tooth keeps its size", until
+Garrett, 2026-11-01: "the stinger can thin on space. the stinger is just a danger prism. danger prisms are left behind without need for exceptions"; every prism is now refit on Space, teeth and stingers included). On a Charge creature every
 prism is dangerous, and a mouth at the centroid of its whole body would be no mouth.
 
 At the §64.8 body scales the Mass shark, QuadFish, Clawfish and Brittlestar keep their 12.44 u swing clear of every
@@ -12707,3 +12711,165 @@ outgrow the band (`Docs/SWARM_FAUNA.md` §14.2). The Spawn Matrix's "Swarm Borro
 Time forks; the canonical Borromean row still offers Mass. Found by sweeping every `author_*.py --check` at ship
 time, not only the ones the gates run. The Wrecking Ball's Borromean forks (Rampage's, re-armoured on this branch) and
 the Clawfish anatomy generator (whose seat predated the body scale) had drifted the same silent way.
+
+## 66. THE BEES — a fauna that produces, and the hive that takes a flora slot (Garrett, 2026-10-31)
+
+Garrett, 2026-10-31:
+
+> "go ahead and invest in making us some proper bees that can be native fauna independent of the ratel and honeyguide's
+> presence as well (they will still bring about their presence with their mass and omnicrystal abilities, but bees
+> should be a fauna available for cells that interact positively with flora instead of the typical consumption
+> behavior.) the mutualistic and productive nature of bees places them as a fauna that acts more like a flora in terms
+> of their effect on the ecology. thus thery can take the slot of a productive flora instead of a consuming fauna. this
+> is a new class of fauna that expands out fundamental understanding of their affect on ecology. please fit them in and
+> enable them to be a premier fuana so this vessel pair can showcase them."
+
+Earlier the same day, about the hive the Ratel leaves: "after the hive is left it should spawn bee fauna in the
+player's domain that protect it pull mass out of opposing fauna to bring back mass to grow the hive."
+
+### 66.1 The class: POLLINATOR
+
+`FaunaDiet.Pollinator = 2` is the third fauna role, beside the two consumers (Herbivore 0, Predator 1). Curated as an
+EXTENSION of the Flora & Fauna fundamental, not a new one (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`): a fauna's role
+is not fixed by its kingdom. A pollinator IS prey (round 2, Garrett 2026-11-01: predators may eat bees): every predation
+site asks one predicate, `FaunaDiets.IsPrey` (every diet but Predator; `LightFauna`'s three, `VirtualFauna`'s two,
+`Cell.GetLiveHerbivoreCount`'s prey signal), so a bee eaten is ordinary consumption and its body prisms' mass goes the
+way every prey's does. It is not leashable (`Fauna.CanBeLeashed` reads `Diet == Herbivore`).
+
+### 66.2 The hive is the flora; the bees are its members
+
+`BeeHiveFlora` (a `Flora`) is what a cell lists, in `SpawnProfileSO.SupportedFloras`, so a cell grows bees by planting
+hives, and the bee population counts against the FLORA budget and caps, never the fauna spawner's. The hive raises its
+bees itself (one per `Cell.CurrentFaunaSpawnPeriod` × `hatchPeriodScale`, the period every population reads, so it is
+right under both spawners; the clock is stamped before the can-I-hatch gates), `BeeMath.BeesFor`: 3 bees for the seed
+comb, +1 per 9 cells past it, at most 8. Hatching stops with the cell's production freeze (`FloraPlantingEnabled`), as
+planting does. A bee config (`Bee Fauna <Element>`) has no seed count, no feeds and no cap: nothing but a hive makes bees.
+
+**The comb.** A stack of hex combs (`BeeMath.CellPosition`: 19 cells a comb, combs alternately in front of and behind
+the first), laid as a spiral outward one cell at a time (every cell touches one already laid), round the heart, which
+sits in the first comb's centre cell. 57 cells at most (2.4 × 2.4 × 6 prisms).
+
+**Mass: the comb past its seed is a TRANSFER, domain for domain** (round 2, Garrett 2026-11-01: "build a structure made from
+all three"). The first 12 cells grow the way any plant grows (a producer), in the hive's own domain. Every cell after them
+is built from `BeeMath.HoneyLedger`: a store kept PER DOMAIN that only bees deposit into (each deposit the volume of body
+prisms they stung off opposing fauna, filed under the domain it was stung from) and a cell is paid by ONE domain's mass
+and LAID IN THAT DOMAIN (`LifeForm.NewBlockDomain`, read by `AddHealthBlock` before the cell files the prism in its
+per-domain grids), so `Deposited == Spent + Stored` holds in total and per domain (a laid-and-failed cell is refunded to
+its own domain). The comb is therefore made of all three domains in exactly the proportion the bees brought home, and
+nothing is minted or re-coloured; a hive with no prey near it stops at its seed. The hive stays ONE plant of one domain
+for the cell's accounting (its flora slot, its cap, its heart): it is the comb's prisms that carry three domains, each
+counted where it belongs (a Ruby comb cell is Ruby mass: Ruby's herbivores leave it, the others may graze it). Checked
+against the invariants: the per-domain grids are filed at add time with the cell's own domain (the tracker's
+ChangeTeam-before-AddBlock order is kept), the element armour reads the hive's ELEMENT, not a domain, and the heart is the
+hive's. `LifeForm.SetTeam` (a lifeform changing domain) would still re-team every comb cell to one domain: no system
+re-teams a hive today; say so if one starts to. A hive buds a daughter (a swarm) through the one flora offspring path, one per full comb's growth
+(`GrowthPerOffspring` = 57), under the cell's cap and cooldown.
+
+### 66.3 What a bee does (`BeeFauna`, a `Boid`)
+
+A bee flies as a Boid (the school's steering; its body prisms are registered, moving mass) with `forager` off and no
+collision effects, so the boid never eats. It never starves (`starvationSeconds 0`): a producer, like its slot. Every
+0.4 s it decides (`BeeMath.Decide`):
+
+- **Pollinate**: fly to a flower within the hive's 420 u, of ANY of the three domains (mutualism, not a team fight;
+  Garrett 2026-11-01: "they should pollinate all three"), and land on it: `Flora.Hasten(1.6, 10 s)`, the plant's OWN
+  growth path (the door the Angler's lure uses), so a pollinated plant grows faster under all its own budgets and gates.
+  Bees fan out (`BeeMath.PickIndex`), 3 visits a trip.
+- **Raid**: an opposing creature within the hive's 260 u is flown at and stung: its nearest unshielded body prism is
+  consumed toward the bee (`Prism.Consume`, attributed to the bee) and its volume carried, by the domain it was stung
+  from. Bees still GUARD only against the other domains (`f.Domain != domain`): pollination is for every domain,
+  defence is for the hive's. Defending the hive and
+  feeding it are one act. Shielded body prisms are passed over (`Fauna.IsShieldedMass`), as every forager passes them.
+- **Return**: home with the load (or full at 32): `BeeHiveFlora.Deposit`.
+
+A bee whose hive dies keeps pollinating round where it is; nothing times it out.
+
+### 66.4 The body: a celestial lifeform, built from its spec (Garrett, 2026-11-01)
+
+> "fauna have rules like bodies made of spindles that are wireframe inspired structures suitable for the space element
+> to make thinner. there must be a long skinny danger prism as a stinger. other health prisms around its body. it isn't
+> actually a bee. it is a celestial etherion based life form. it doesn't really have a sense of up"
+
+The bee is not an Earth insect. Its body obeys the `/fauna-creation` skill's laws and is BUILT FROM ITS SPEC,
+`Tools/Build/fauna_kit/specs/bee.py`, by the kit's generic builder `Tools/Build/fauna_kit/build.py` (through
+`author_bee_assets.py`); `celestial.py bee` checks the laws and the generator's `--check` reads the prefab BACK against the
+spec (`build.read_back`: every part's world pose and size from the prefab's own transforms and overrides).
+
+- **The Etherion leads** at the origin; the body trails behind it (−z). The root is identity rotation and scale 1 (the
+  tadpole's rotated, 0.4-scaled root is no longer inherited), so the spec's numbers are world units.
+- **A wireframe of five braid spindles**, each a plain GameObject with a `Spindle` and a `Braid` child drawing the shipped
+  braid mesh (`bonita.fbx` `BezierCurve.001`, `SpindleMaterial`), scaled uniformly to span its limb: the **Spine**
+  (−1.5 → −11 on the axis), three **Vanes** sweeping back from it at 120° (to a 7 u radius at −6.5), and the **Sting**
+  off its end. Every spindle is the transform child of its parent (`parentSpindle` wired): the path to the heart.
+- **Seven prisms, each a direct child of its limb**: three **Ribs** round the Spine (0.8 × 0.8 × 3.2, `DynamicHealthBlock`),
+  a **VanePlate** on each vane (0.5 × 2.0 × 3.6), and the **Stinger**: one long skinny `DangerBlock`, 0.5 × 0.5 × 6, at the
+  trailing extremity. Each prism's local y is radial, so the three copies are exact copies.
+- **No up.** Three-fold round its travel axis, and it steers with a CARRIED up: `Boid.SteeringUpFor` (world +y for every
+  other boid) is overridden by `BeeFauna` with `CelestialFrame.CarryUp` (parallel transport: the minimal rotation between
+  headings carries the body's own up; no flip at the poles, never righted to the world; `CelestialFrameTests`).
+- **The vanes beat**: `BeeVaneDriver` (the CPU driver tier, `localRotation` only) strokes each vane ±24° about its root's
+  tangent, 9 times a second, the three a third of a beat apart (a wave round the spine). It replaces `BeeWingDriver`.
+- **The element forms** (`Bee Fauna <Element>.asset`, from the spec's table): Charge and Time at body scale 1 (Charge:
+  every prism danger); **Mass 3.82**: the heart's 12.44 u swing must clear every plate's and rib's SHIELD octahedron
+  (1.5 × the prism's size), and the nearest, a vane plate's, sits 3.263 u out at scale 1, so 3.812 is the floor (the first
+  spec said 2.5, measured to the prism boxes: that would have put a Mass bee's heart inside its own shields; the checker now
+  measures the octahedra and `--self-test` plants the 2.5); **Space 6.2942** (1.6477 × Mass) with `ErodeSpindle: 1`, the
+  stinger thinned with the rest (Garrett 2026-11-01, below); **Time** the base body at scale 1, its speed band 1.4 × the
+  bee's (19.6-36.4 u/s against 14-26: "time makes them faster, but it is the base essentially"; 1.4 is the shipped
+  tadpole's Time:base band, 17.5 / 12.5).
+- **Decided (Garrett, 2026-11-01)**: "the stinger can thin on space. the stinger is just a danger prism. danger prisms are left behind without need for exceptions". `Fauna.ErodeSpindle` no longer skips authored danger (this reaches every
+  eroded species: the Space shark's teeth and the brittlestar's spines thin as needles too). A skeleton already leaves
+  every body prism, danger included (`Fauna.LeaveSkeleton`), so nothing changes there. Three-fold symmetry stays.
+- **The mouth**: a bee does not eat (`mouth: none`). It is a `Boid`, and the authored-danger mouth is `LightFauna`'s, so
+  the stinger never becomes a mouth; `BeeFauna.Sting` stings with its own reach.
+
+**Retired**: round 2's Earth insect (`Bee.fbx`, its import meta and `Tools/Build/bee_model/build_bee.py`: a sculpted
+thorax, six jointed legs, compound eyes, antennae, a striped belly and four wings with a dihedral "up") and its
+`BeeModel` spindle. It broke every law the skill now holds (a solid skin instead of spindles, an up, no prism stinger).
+
+**Colliders: 7 body prisms + 1 heart a bee** (was 3 + 1). At the Hesperides caps (4 hives × 8 bees = 32 bees) that is
+224 bee prisms + 32 hearts (was 96 + 32): **+128 prism colliders at the cap**, beside the hives' 228 comb prisms.
+
+### 66.5 Where bees are native
+
+The **Hesperides** garden (terraced beds of eight flowering species and two topiaries): 2 hives seeded, cap 4, the four
+elements spread from the palette. A garden is where pollination shows. Its spawn profile is owned by
+`Tools/ecosim/gen_hesperides_assets.py`, which now lists the hive by the guid `author_bee_assets.py` mints; that script
+owns the config and `--check` fails if the profile drops it. No other cell has bees natively (Garrett, 2026-11-01: "that
+was is fine").
+
+**Every list a cell, a toy or the codex picks lifeforms from** (round 2, "be sure to add them to the various lists"):
+- **a new cell's spawn profile**: the canonical element palette in `_SO_Assets/Lifeforms` (`Bee Hive Flora <Element>`
+  in `SupportedFloras`; `Bee Fauna <Element>` exists, but a cell grows bees through hives, never the fauna spawner);
+- **the Spawn Matrix (the freestyle lifeform bench)**: a **Bee Hive** flora row and, new, a **Bee** fauna row (a bee
+  released without a hive pollinates where it is) - `author_spawn_matrix_roster.py`, which also gives both their Toy
+  Box descriptions;
+- **the Codex**: harvested from the configs and the roster names (`CodexHarvester`), so both species are picked up by
+  the next FrogletTools > UI > Codex > Scan & Merge; its `GrowthModel` and `BehaviourModel` now name `BeeHiveFlora` and
+  `BeeFauna` instead of printing the class name. The shipped `Codex.asset` rows are written by that editor scan
+  (not run here);
+- **the gates that enumerate lifeforms by prefab** (`author_lifeform_heart_collection.py`, `audit_lifeform_crystals.py`)
+  already found both prefabs in round 1.
+
+**Colliders at the Hesperides caps:** 228 comb prisms + 4 hive hearts (flora prisms, LOD-culled like every plant's),
+96 bee prisms + 32 bee hearts (32 bees). The bees' senses ride the hive's shared read (`senseSeconds` 0.5: the cell's
+live fauna list and the flora heart registry, no physics query) and one spatial-index sphere per sting.
+
+### 66.6 The entry point for the Ratel and the Honeyguide
+
+```csharp
+BeeHiveFlora.SeedAt(cell, hiveConfig, position, domain, adopt: standingPrisms);
+```
+
+founds a hive through the canonical flora spawn path (`CellLifeSpawnerBase.SpawnFlora`, so the cap, the registry and the
+variant apply) and hands `adopt` (standing prisms: what the Ratel left of a raided hive) over as its first comb
+(reparented, counted against the seed, and since round 2 each KEEPING its own domain: the hive is made of all three). The Honeyguide's Mass power is the same call with no `adopt`.
+
+### 66.7 Not verified, and open
+
+Nothing here has run in the Editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). Round 2 (Garrett, 2026-11-01) settled four
+of round 1's questions: the numbers stand ("a fine start"), predators eat bees, bees pollinate all three domains and build
+from all three, Hesperides stays the native cell. Open: the bee's COLOUR (one material slot draws it in the spindle's
+domain colour, so the stripes are grooves, not yellow and black; a second slot would need the spindle LOD to own two
+materials), whether a client's hive should replicate its three-domain comb (store-paid cells are laid where the bees
+sting, on the simulation's authority), and how the model reads at gameplay distance in the Editor.

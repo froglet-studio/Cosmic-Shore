@@ -76,8 +76,9 @@ MonoBehaviour:
       tank - and every pellet burns for its own duration. Press again while one is still burning
       and a second lights beside it: the burns overlap and each adds the same increment of speed,
       so four pellets at once is four times the effect of one (3x cruise for one, 9x for four). The
-      tank refills at a fixed rate and holds exactly four pellets, so it is a resource to manage -
-      keep some in hand or dump all four for one overlap. Time sets how long a pellet BURNS
+      tank holds exactly four pellets and never refills on its own: a pellet comes back for every
+      2 s your Seed Wall spends eating your own trail (fly out at cruise in plane with a wall and
+      the trail is pulled into it). A pellet burns 6 s at rest. Time sets how long a pellet BURNS
       (ConsumeBoostActionSO.timeDurationMultiplier, x1 at rest to x1.6 at Time 10, floored at
       x0.25), never how fast.'
     Input: 6

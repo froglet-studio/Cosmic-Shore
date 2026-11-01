@@ -152,7 +152,9 @@ def orb_node(parent):
     return o
 
 
-WINDOW_TINT = 0.6   # the same wash as author_menu_profile.RECORD_TINT
+# The window's blue wash over its black. 0.6 was the pilot record's (author_menu_profile.RECORD_TINT); 0.45 since
+# 2026-10-31 (Shombith, on the friends tray: "decrease the tone of the blue a little bit on the bg"). The record keeps 0.6.
+WINDOW_TINT = 0.45
 
 
 def window_node(parent):
@@ -185,7 +187,20 @@ def window_node(parent):
 
 # Rev 7 (section 47.3): an online pilot's profile card, popped beside the drawer's window level with the avatar the
 # pointer rests on (the approved "Friend profile" board).
-CARD_W, CARD_H = 400, 292
+CARD_W, CARD_H = 400, 336
+# The card's actions (2026-10-31, Shombith: the card's one button read as garble, and JOIN was missing): JOIN and INVITE on
+# one row, REPORT and BLOCK on the row under it, each in its own slot. Report and Block were runtime copies of INVITE, and
+# a copy keeps the original's place, so three words drew over each other in one button. Choosing a report reason swaps
+# the four for the three reasons in the same slots (FriendProfilePopup.reasonGroups).
+ACT_W, ACT_H, ACT_GAP = 172, 36, 12                 # 172: "OFFENSIVE NAME" needs 166; two fit the 400 card
+ACT_X = (20, 20 + ACT_W + ACT_GAP)
+ACT_Y = (20 + ACT_H + 8, 20)                         # from the card's bottom: the upper row, the lower row
+# (key, column, row, variant, caption): the words on REPORT, BLOCK and the reasons are replaced from
+# Resources/PlayerReportConfig when the card starts; these captions are what the editor shows before that.
+CARD_ACTIONS = (("Join", 0, 0, "Cta", "JOIN"), ("Invite", 1, 0, "Default", "INVITE"),
+                ("Report", 0, 1, "Default", "REPORT"), ("Block", 1, 1, "Cancel", "BLOCK"),
+                ("Reason0", 0, 0, "Default", "CHEATING"), ("Reason1", 1, 0, "Default", "OFFENSIVE NAME"),
+                ("Reason2", 0, 1, "Default", "TROLLING"))
 CARD_AVATAR = 84
 PK = "Drawer/Profile/Card"
 
@@ -229,8 +244,8 @@ def profile_node(parent):
     AR.label_e(game.child(N(f"{PK}/Game/Value", "Value", TR(20, 4, 240, 28))), "", "Body", "TextLight",
                driven=True, align="right")
     # JOIN in Time (where you go next), INVITE in Space (people), as the board; the popup swaps JOIN for SPECTATE.
-    for key, x, variant, caption in (("Join", 20, "Cta", "JOIN"), ("Invite", 196, "Default", "INVITE")):
-        slot = card.child(N(f"{PK}/{key}Slot", f"{key}Slot", R((0, 0), None, (x, 20), (164, 36), (0, 0))))
+    for key, col, row, variant, caption in CARD_ACTIONS:
+        slot = card.child(N(f"{PK}/{key}Slot", f"{key}Slot", R((0, 0), None, (ACT_X[col], ACT_Y[row]), (ACT_W, ACT_H), (0, 0))))
         slot.add("cg", 225, H.canvas_group(False))
         slot.children.append(P.kit_button(f"{PK}/{key}", f"{key}Button", variant, caption, STRETCH, opaque=False, small=True))
     pr.add("popup", 114, lambda ctx, go: mono(go, S["popup"],
@@ -246,7 +261,12 @@ def profile_node(parent):
            f"  inviteButton: {ref(ctx.iref(f'{PK}/Invite', 'root#button'))}\n"
            f"  inviteLabel: {ref(ctx.iref(f'{PK}/Invite', 'Label#kt'))}\n  inviteGroup: {ref(ctx.c(f'{PK}/InviteSlot', 'cg'))}\n"
            f"  closeButton: {ref(ctx.c(f'{PK}/Close', 'button'))}\n"
-           "  onlineWord: Online\n  inLobbyWord: In a lobby\n  inYourPartyWord: In your party\n"
+           f"  reportButton: {ref(ctx.iref(f'{PK}/Report', 'root#button'))}\n"
+           f"  reportLabel: {ref(ctx.iref(f'{PK}/Report', 'Label#kt'))}\n  reportGroup: {ref(ctx.c(f'{PK}/ReportSlot', 'cg'))}\n"
+           f"  blockButton: {ref(ctx.iref(f'{PK}/Block', 'root#button'))}\n"
+           f"  blockLabel: {ref(ctx.iref(f'{PK}/Block', 'Label#kt'))}\n  blockGroup: {ref(ctx.c(f'{PK}/BlockSlot', 'cg'))}\n"
+           + "  reasonGroups:\n" + "".join(f"  - {ref(ctx.c(f'{PK}/Reason{i}Slot', 'cg'))}\n" for i in range(3))
+           + "  onlineWord: Online\n  inLobbyWord: In a lobby\n  inYourPartyWord: In your party\n"
            "  partyFullWord: Party full\n  inMatchWord: In a match\n  countTemplate: '{count} / {max}'\n"
            "  joinWord: Join\n  spectateWord: Spectate\n  inviteWord: Invite\n  invitedWord: Invited\n"
            "  showDelay: 0.3\n  hideDelay: 0.25\n  gap: 16\n"))
@@ -423,13 +443,28 @@ def validate_profile(sc, ctx):
     assert f"  edge: {{fileID: {ctx.rt('Drawer/Window')}}}\n" in pop, "the card does not sit beside the drawer's window"
     assert f"  friendsData: {{fileID: 11400000, guid: {AR.FRIENDS_DATA}, type: 2}}\n" in pop, "the card cannot tell a friend"
     for f in ("group", "card", "avatar", "ring", "nameText", "friendTag", "stateLabel", "stateValue", "gameRow", "gameValue",
-              "joinButton", "joinLabel", "joinGroup", "inviteButton", "inviteLabel", "inviteGroup", "closeButton"):
+              "joinButton", "joinLabel", "joinGroup", "inviteButton", "inviteLabel", "inviteGroup", "closeButton",
+              "reportButton", "reportLabel", "reportGroup", "blockButton", "blockLabel", "blockGroup"):
         m = re.search(rf"^  {f}: \{{fileID: (-?\d+)\}}", pop, re.M)
         assert m and m.group(1) != "0", f"FriendProfilePopup.{f} is not wired"
     for f in ("onlineWord", "inLobbyWord", "inYourPartyWord", "partyFullWord", "inMatchWord", "joinWord", "spectateWord",
               "inviteWord", "invitedWord"):
         assert re.search(rf"^  {f}: \S", pop, re.M), f"FriendProfilePopup.{f} is blank (the card would show nothing there)"
     assert "  countTemplate: '{count} / {max}'\n" in pop, "the party size template lost a token"
+    reasons = re.findall(r"^  - \{fileID: (-?\d+)\}", pop.split("  reasonGroups:\n")[1], re.M)[:3] if "  reasonGroups:\n" in pop else []
+    assert reasons == [str(ctx.c(f"{PK}/Reason{i}Slot", "cg")) for i in range(3)], \
+        "the three report reasons are not authored slots (copies of INVITE land on INVITE)"
+    # The actions shown together never share a place (2026-10-31: REPORT, BLOCK and INVITE drew as one button).
+    def box(key):
+        rt = sc.docs[str(ctx.rt(f"{PK}/{key}Slot"))]
+        return _vec(rt, "m_AnchoredPosition") + _vec(rt, "m_SizeDelta")
+    for together in (("Join", "Invite", "Report", "Block"), ("Reason0", "Reason1", "Reason2")):
+        boxes = [box(k) for k in together]
+        for i in range(len(boxes)):
+            for j in range(i + 1, len(boxes)):
+                (ax, ay, aw, ah), (bx, by, bw, bh) = boxes[i], boxes[j]
+                assert ax + aw <= bx or bx + bw <= ax or ay + ah <= by or by + bh <= ay, \
+                    f"the card's {together[i]} and {together[j]} overlap: they would draw as one button"
     card = sc.docs[str(ctx.c(f"{PK}/Fill", "img"))]
     assert "  m_RaycastTarget: 1\n" in card, "the card does not take the pointer (it would close as you reach for JOIN)"
 
@@ -531,6 +566,11 @@ def self_test(files):
             f"  - {{fileID: {ctx.rt('Drawer/Profile')}}}\n  - {{fileID: {ctx.rt('Drawer/Window')}}}\n"))),
         ("the profile card's JOIN word blanked", lambda f: f.__setitem__(SCENE, in_doc(
             f[SCENE], ctx.c("Drawer/Profile", "popup"), "  joinWord: Join\n", "  joinWord: \n"))),
+        ("REPORT on INVITE's place again (one unreadable button)", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.rt(f"{PK}/ReportSlot"), f"m_AnchoredPosition: {K.v2(ACT_X[0], ACT_Y[1])}",
+            f"m_AnchoredPosition: {K.v2(ACT_X[1], ACT_Y[0])}"))),
+        ("the report reasons back to copies of INVITE", lambda f: f.__setitem__(SCENE, re.sub(
+            r"  reasonGroups:\n(  - \{fileID: -?\d+\}\n)+", "  reasonGroups: []\n", f[SCENE], count=1))),
         ("the profile card's friend list unwired", lambda f: f.__setitem__(SCENE, in_doc(
             f[SCENE], ctx.c("Drawer/Profile", "popup"), f"guid: {AR.FRIENDS_DATA}", "guid: " + "0" * 32))),
     ]

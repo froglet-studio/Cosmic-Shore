@@ -92,6 +92,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **MinigameWaystation** | `_Scenes/Multiplayer Scenes/` | `Waystation (58)` | `WaystationController` |
 | **MinigameDustup** | `_Scenes/Multiplayer Scenes/` | `Dustup (59)` | `DustupController` |
+| **MinigameSerpentGulag** | `_Scenes/Multiplayer Scenes/` | `SerpentGulag (77)` | `SerpentGulagController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
 | **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
@@ -329,8 +330,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 74 | `BrittleStarTime` | MP | MinigameBrittleStarTime | `BrittleStarTimeController` (see `BRITTLESTARTIME.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
-| 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (Butterfly migration race — clusters you weave, folds between them; a teleport threads nothing. See `WAYSTATION.md`) |
+| 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (the Tiger Moth's Time race — clusters you weave, a Drop Tower of short hops through plain/danger plates in every gap but the last, one long drop to finish. See `WAYSTATION.md`; 76 was its prototype, retired and reserved) |
 | 59 | `Dustup` | MP | MinigameDustup | `DustupController` (Butterfly dust duel, Charge — a pass OVER a rival is one Strike point; Boneyard. See `DUSTUP.md`) |
+| 77 | `SerpentGulag` | MP | MinigameSerpentGulag | `SerpentGulagController` (Serpent sniper duel, Charge - a snipe on a rival pilot is one Debuff point; a 3,600 u cell, a crystal field in the middle, nests and cell blocks at I2-I4. See `SERPENTGULAG.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
 | 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |
@@ -580,6 +582,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `UndertowPointTurnMonitor` | `TurnMonitors/` | A domain's bends (CombatPoints) plus creature kills reach the Undertow target (on `CombatPointTurnMonitorBase`) |
 | `BroadsidePointTurnMonitor` | `TurnMonitors/` | A domain's summed CombatPoints reach the Broadside target, every hull paying in through its own verb (on `CombatPointTurnMonitorBase`) |
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
+| `SerpentGulagSnipeTurnMonitor` | `TurnMonitors/` | A domain's summed snipes (Debuff-class CombatPoints) reach the Serpent Gulag target (on `CombatPointTurnMonitorBase`) |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
 | `TandavaTurnMonitor` | `TurnMonitors/` | Server-side: the turn ends the moment the swarm's outcome stops being Running (the cycle completed, or it was shattered, starved, or its dance broken - there is no clock), read off `TandavaScoringRuleSO`; the goal stack draws the mode's own rows (`TandavaController` is its `IGoalSource`: the form and its progress, what it is doing and its body, the halo and the drum) and this monitor's display is what rebuilds it each tick |

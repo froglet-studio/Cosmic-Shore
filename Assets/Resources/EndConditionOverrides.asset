@@ -39,6 +39,7 @@ MonoBehaviour:
   wreckingBallPrismTarget: 650
   undertowPointTarget: 12
   dustupPointTarget: 4
+  serpentGulagSnipeTarget: 3
   tapestryRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
@@ -46,7 +47,7 @@ MonoBehaviour:
   tandavaHaloRingsToBreak: 9
   salvoPrismTarget: 700
   switchbackGateTarget: 26
-  waystationRingTarget: 15
+  waystationClusterTarget: 5
   breakwaterStationTarget: 15
   breakwaterLaps: 2
   skeinRingTarget: 24
@@ -90,6 +91,7 @@ MonoBehaviour:
   wreckingBallPrismTargetBuild: 650
   undertowPointTargetBuild: 12
   dustupPointTargetBuild: 4
+  serpentGulagSnipeTargetBuild: 3
   tapestryRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
@@ -97,7 +99,7 @@ MonoBehaviour:
   tandavaHaloRingsToBreakBuild: 9
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 26
-  waystationRingTargetBuild: 15
+  waystationClusterTargetBuild: 5
   breakwaterStationTargetBuild: 15
   breakwaterLapsBuild: 2
   skeinRingTargetBuild: 24

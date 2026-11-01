@@ -120,6 +120,10 @@ Waystation's autopilot aims its BELLY at the next ring before a long gap and dro
 `ButterflyAnimation`, `ButterflyHUDView`, `ButterflySpreadWingsAction`, the `Butterfly.fbx` model): the Tiger Moth is
 built from them, and renaming them is a separate refactor.
 
+**Waystation is the Drop Tower race since 2026-11-01**: the clusters with a staircase of SHORT HOPS through floor plates
+in every gap but the last (built as Waystation Prototype, 76, and folded in). It changes nothing in this kit
+(`WAYSTATION.md` "The Drop Tower", `Docs/Studios/TIGER_MOTH_TIME.md`).
+
 ### 3.1 Waystation's AI aims its belly (2026-10-29)
 
 Garrett: "make the waystation AI aim its belly at the rings". `WaystationController.TryOverrideAim`, two phases, only

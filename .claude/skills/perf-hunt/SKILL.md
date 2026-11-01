@@ -124,8 +124,8 @@ where they disagree (`Docs/claude/PLUGINS_AND_CONNECTORS.md`). Before writing co
   Noise is ±5-10 %; a smaller claimed win needs repeats.
 - Amoebius: `perf_hunt.py amoebius --no-build` before and after; allocations repeat to ~1 %, so a KB/frame win there
   is real on day one. Milliseconds there only order things.
-- The gates: `perf_hunt.py gates` green; `unity_refcompile --config player-dev` for the C#; `/verify-unity` when the
-  CLI exists, else say so and file the check in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+- The gates: `perf_hunt.py gates` green; `unity_refcompile --config player-dev` for the C#; the `unity` CLI when an
+  editor is open (`CLAUDE.md` verify rule); if neither ran, say so and file the check in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 - Write the delta into `Docs/PERFORMANCE_OPTIMIZATION.md` §2 (the dated row: what, the before/after numbers, the
   protocol, the commit). A number without its protocol is not a result.
 

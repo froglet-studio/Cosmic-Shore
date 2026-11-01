@@ -8,9 +8,9 @@ description: The thorough lane of the ship protocol - for a large branch, a LOCK
 **Read `.claude/skills/ship/SKILL.md` first and run all of it.** This file adds passes;
 it replaces nothing. Run them after §2 and before the §4 go/no-go.
 
-**§0.05 applies here in full, and depth does not buy an exception: there is no compiler and
-no CI in this environment.** Every pass below is a READING and GREP discipline — none of it
-needs `/verify-unity`, a `Tools/Build/check_*.py` run, or a green build, and "deep" must not
+**§0.05 (the verify rule) applies here in full, and depth does not buy an exception.** Every
+pass below is a READING and GREP discipline on top of it — none of it needs `/verify-unity`
+(not required until that skill merges), an extra `Tools/Build/check_*.py` run, or a green CI build, and "deep" must not
 be read as licence to go install one. Depth here means more eyes on the diff, not a
 manufactured compile. D5's matrix carries "not compiled" as a first-class row value.
 

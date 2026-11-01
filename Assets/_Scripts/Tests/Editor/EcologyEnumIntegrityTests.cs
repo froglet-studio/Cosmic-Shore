@@ -21,6 +21,7 @@ namespace CosmicShore.Tests
         [Test]
         [TestCase(FaunaDiet.Herbivore, 0)]
         [TestCase(FaunaDiet.Predator, 1)]
+        [TestCase(FaunaDiet.Pollinator, 2)]
         public void FaunaDiet_HasCorrectIntegerValue(FaunaDiet diet, int expected)
         {
             Assert.AreEqual(expected, (int)diet,
@@ -30,8 +31,17 @@ namespace CosmicShore.Tests
         [Test]
         public void FaunaDiet_HasExpectedMemberCount()
         {
-            Assert.AreEqual(2, Enum.GetValues(typeof(FaunaDiet)).Length,
+            Assert.AreEqual(3, Enum.GetValues(typeof(FaunaDiet)).Length,
                 "FaunaDiet member count changed - update tests + any diet switch logic.");
+        }
+
+        // Garrett 2026-11-01: predators may eat bees. The one predicate every predation site asks.
+        [TestCase(FaunaDiet.Herbivore, true)]
+        [TestCase(FaunaDiet.Pollinator, true)]
+        [TestCase(FaunaDiet.Predator, false)]
+        public void FaunaDiets_IsPrey_EveryDietButThePredators(FaunaDiet diet, bool prey)
+        {
+            Assert.AreEqual(prey, FaunaDiets.IsPrey(diet), $"{diet}: prey should be {prey}");
         }
 
         // ---- CellPhase (drives flora growth + fauna aggression) ----

@@ -347,7 +347,7 @@ primary action and live data, the status colours kept so a dot still reads, a st
 stylesheet at the top of `index.html`; light follows the system in greys.
 
 **What a sent run looks like, from Send to its first report** (Shombith, 2026-10-31: "there is no live bar"; design
-board Rev 41, `Docs/MENU_REDESIGN_B.md` section 109): Send closes the sheet and opens Runs with one line saying where
+board Rev 41, `Docs/MENU_REDESIGN_B.md` section 110): Send closes the sheet and opens Runs with one line saying where
 the run went. The agent that takes it posts a heartbeat at once with `phase: starting` and the unit, so the run is on
 Runs within a minute as **Starting** with a sliding bar until the first evaluation or match reports (a Unity run spends
 its first minute or two opening Unity); the computer shows **Starting** too, never "Working" over "Nothing is running".

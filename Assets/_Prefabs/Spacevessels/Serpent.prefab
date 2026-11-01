@@ -574,13 +574,16 @@ GameObject:
   - component: {fileID: 8327945780447036418}
   - component: {fileID: 1866540621624778926}
   - component: {fileID: 874579554510349383}
+  - component: {fileID: 4417203385218867712}
+  - component: {fileID: 4417203385218867713}
+  - component: {fileID: 4417203385218867714}
   m_Layer: 7
   m_Name: VacuumSkimmer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &282447970148362685
 Transform:
   m_ObjectHideFlags: 0
@@ -621,7 +624,7 @@ SphereCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
@@ -637,7 +640,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  onSkimmerShipImpact: {fileID: 0}
+  onSkimmerShipImpact: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
+    type: 2}
   vaccumAmount: 50
   vacuumCrystal: 1
   affectSelf: 0
@@ -653,6 +657,63 @@ MonoBehaviour:
   AOEPrefab: {fileID: 0}
   AOEPeriod: 0
   lineMaterial: {fileID: 0}
+--- !u!54 &4417203385218867712
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.08
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &4417203385218867713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1731f6481c2493aa107099246bb1af8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  skimmerImpactorDataContainer: {fileID: 11400000, guid: cc9edf207f70a36851019007e8632cd9,
+    type: 2}
+  skimmer: {fileID: 874579554510349383}
+  CombinedWeight: 0
+  SqrSweetSpot: 0
+--- !u!114 &4417203385218867714
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  impactorObject: {fileID: 4417203385218867713}
 --- !u!1 &2969734681862394597
 GameObject:
   m_ObjectHideFlags: 0
@@ -1938,8 +1999,8 @@ MonoBehaviour:
   boostMultiplier: 4
   _name: Serpent
   vesselType: 7
-  _nearFieldSkimmer: {fileID: 874579554510349383}
-  _farFieldSkimmer: {fileID: 0}
+  _nearFieldSkimmer: {fileID: 0}
+  _farFieldSkimmer: {fileID: 874579554510349383}
   orientationHandle: {fileID: 1878660672777590133}
 --- !u!114 &8900747579718772804
 MonoBehaviour:
@@ -2025,8 +2086,8 @@ MonoBehaviour:
     maxAmount: 1
     initialAmount: 0.75
   - Name: Boost
-    initialResourceGainRate: 0.4
-    resourceGainRate: 0.07
+    initialResourceGainRate: 0
+    resourceGainRate: 0
     maxAmount: 1
     initialAmount: 1
   ChargeTestHarness: 0

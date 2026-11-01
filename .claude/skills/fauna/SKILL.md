@@ -10,6 +10,12 @@ the collider budget. **This skill owns the CREATURE**: what one animal has to be
 what makes it move, where its heart goes, and the specific ways a species has shipped
 looking finished while being dead.
 
+**Designing a NEW creature, or reshaping a body? Load `/fauna-creation` first.** A creature here is a celestial,
+Etherion-based lifeform, not an Earth animal: a wireframe of braid spindles grown from its Etherion, health prisms round
+it, a long skinny danger-prism stinger, no sense of up (Garrett, 2026-11-01). That skill holds the laws and the
+spec-first build (`Tools/Build/fauna_kit/celestial.py` says no before anything is built); this one holds the contract a
+built creature must meet to be alive. (The roster below predates the Bee, `Assets/_Prefabs/FloraAndFauna/Bees/`.)
+
 **Run `/ecology` first for anything that changes the SYSTEM** (spawn counts, caps, diet
 rules, reproduction, phase thresholds). The invariants it loads are LOCKED and this skill
 does not restate them; it assumes them.
