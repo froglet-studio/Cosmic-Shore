@@ -331,7 +331,7 @@ Movement cheats in a friends-only co-op game are low priority.
 
 | # | Step | Why | Rough effort |
 |---|---|---|---|
-| 1 | **Finish the lobby / presence fixes and run the bug-hunt checklist** (`Docs/PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md`) | If you can't find or join friends reliably, nothing else matters | 1–2 days of testing + fixes |
+| 1 | **Finish the lobby / presence fixes and run the bug-hunt checklist** (`Docs/Multiplayer/TEST_CHECKLIST.md`) | If you can't find or join friends reliably, nothing else matters | 1–2 days of testing + fixes |
 | 2 | **RTT everywhere**: host measures per client via `GetCurrentRtt`, replicates it on `Player`, and shows it on the party panel, scoreboard and overlay; poor-connection warning; Relay region by QoS | Makes the network visible; drives every later decision | 1–2 days |
 | 3 | **NetworkTransform tuning + Network Simulator profile**: drop scale, quaternion + compression, half floats where safe, unreliable deltas, pack input floats, `EnableTimeResync`; record bytes/s and jitter at 0/100/200 ms and 2 % loss | Smoother remote ships, less bandwidth, a repeatable test bench | 2–3 days |
 | 4 | **Score integrity**: host re-derives or clamps prism volume, rate-limits report RPCs, posts leaderboard scores via Cloud Code | Scores and weekly challenges are the only place cheating hurts others | 3–5 days |
@@ -351,6 +351,6 @@ Movement cheats in a friends-only co-op game are low priority.
 | 4. Score integrity | **Done (host guard); Cloud Code pre-existing, gated off** | `Controller/Multiplayer/HitReportGuard.cs`: per-player token bucket (600 burst, 300/s) and a per-report volume cap of 10 000. It is applied in `ReportEnvironmentPrismDestroyed_ServerRpc` and `ReportPrismStolen_ServerRpc`, and the clamped volume is also what is debited from a steal victim. Turning on `ServerScoreGate` needs the Cloud Code script and the Access Control deploy (follow-up). |
 | 5. Mid-match rejoin | **Already implemented** | See §2.11. No code change; checklist §5 cases 7-9 verify it. |
 
-Tests: `Tests/Editor/ConnectionQualityTests.cs`, `Tests/Editor/HitReportGuardTests.cs`, plus the existing `MatchRejoinTests`. Manual: `Docs/PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md` §5.
+Tests: `Tests/Editor/ConnectionQualityTests.cs`, `Tests/Editor/HitReportGuardTests.cs`, plus the existing `MatchRejoinTests`. Manual: `Docs/Multiplayer/TEST_CHECKLIST.md` §5.
 
 Paths and settings cited in this doc were re-verified on 2026-11-02: `Controller/Party/HostConnectionService.cs`, `Docs/PartySystem/`, `Docs/ARCADE_MATCH_LENGTH.md`, and `UseCMBService: 0` in `NetworkManager.prefab` all exist as stated.

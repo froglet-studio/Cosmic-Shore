@@ -18,7 +18,7 @@ ask; never touch the live UGS project (anything on UGS or the backend goes throu
 2. Read, in this order: `CLAUDE.md`; `Docs/MULTIPLAYER_START_HERE.md` (all of it: rules §2, the sweep §3.1, state §4,
    hand tests §5, next steps §6); `Docs/PartySystem/BUGS.md` (index table, then B36, B39-B47);
    `Docs/PartySystem/SWEEP_LOG.md` (newest rows); `Docs/Multiplayer/README.md` (the doc index);
-   `Docs/PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md` (the hand bug-hunt checklist and the Ctrl+Shift+M overlay);
+   `Docs/Multiplayer/TEST_CHECKLIST.md` (the hand bug-hunt checklist and the Ctrl+Shift+M overlay);
    `Docs/unity-cli-setup.md`.
 3. Get the Unity CLI working against the open Editor (`unity --help` for the installed version is the authority; never
    assume flags). Prove it once: a compile, entering and leaving Play mode, reading the console. If it cannot connect,
@@ -46,7 +46,7 @@ ask; never touch the live UGS project (anything on UGS or the backend goes throu
    B46 (`MiniGameHUD.ResolveAIAvatarSprite` null name), the Cell swap trail return (B36, `Cell.ReturnRetiredTrailToPool`),
    the boot-load timing (`LoadInsights.BeginBootLoad`), and the 1 Nov batch (8 s watched poll, second converge at +7 s,
    Friends Offline on quit, arcade lobby AI roster resync, RTT badge, `HitReportGuard`, vessel transform tuning).
-   Then run `Docs/PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md` end to end. Each failure becomes a fix (below) or a
+   Then run `Docs/Multiplayer/TEST_CHECKLIST.md` end to end. Each failure becomes a fix (below) or a
    BUGS.md entry.
 2. **B47**: a mid-match rejoin reclaims the seat but the rejoiner logs `Double initialization not allowed!`
    (`VesselController.Initialize`), and other clients see the seat with no name. Reproduce with MPPM (drop a client

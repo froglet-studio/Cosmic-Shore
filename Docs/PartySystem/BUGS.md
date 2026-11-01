@@ -1,5 +1,7 @@
 # Party System — Open Bugs
 
+> One-line status of every multiplayer bug: [`Docs/Multiplayer/BUGS.md`](../Multiplayer/BUGS.md). Full entries stay here.
+
 Living tracker for party-side issues found in MPPM testing. Companion
 to `ARCHITECTURE.md` (locked design), `REFACTOR.md` (active refactor
 queue), and `../NetworkDiagnostics/ARCHITECTURE.md` (catch-block diagnostics).

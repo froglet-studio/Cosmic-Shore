@@ -64,7 +64,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | A multiplayer test's logs, every player, one timeline (sent by the after-test "Send to Claude") | `python3 Tools/Build/net_logs.py collect` / `show 1`; `Docs/DIAGNOSTICS.md` § "Multiplayer test logs" |
 | Party architecture | `Docs/PartySystem/ARCHITECTURE.md`, `Docs/MultiplayerArchitecture/` |
 | Netcode concepts, verdicts and status (authority, tick, RTT, interpolation, transform tuning, score guard, rejoin) and the index of every multiplayer doc | `Docs/Multiplayer/MULTIPLAYER_ARCHITECTURE.md`, `Docs/Multiplayer/README.md` |
-| Hand bug-hunt checklist and the debug overlay (Ctrl+Shift+M) | `Docs/PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md` |
+| Hand bug-hunt checklist and the debug overlay (Ctrl+Shift+M) | `Docs/Multiplayer/TEST_CHECKLIST.md` |
 | Party and lobby work on other branches (August's push design, Garrett's part J): what to take, what was deleted | `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` |
 | Who sits where: every person's seat and hull (`Player.NetStation`), the one swap ring (seats, then the domain's hulls), riders on another person's crew vessel, the crew relay RPCs | `Docs/CREW_STATIONS.md`, `Assets/_Scripts/Controller/Multiplayer/CrewStations.cs` |
 | Five-player scenario harness (runs the real game code in Amoebius, no Unity; down until it moves to the UGS stand-ins, §4) | `Tools/Build/prisma_party_scenarios/` (README) |
