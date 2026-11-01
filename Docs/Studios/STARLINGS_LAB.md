@@ -71,6 +71,45 @@ You never steer the starlings. They roam the whole cell in 3D on their own.
 
 Each element's build wins its own column, as the element jobs intend.
 
+## The Time trail (proposal, 2026-11-01, `feature/starlings-time-game`)
+
+The pilot never steers, so a Starlings time game cannot be a race the player drives. The proposal: the mode lays each
+phase's objective at its own **station** on a course (a wall of CLUSTER+10 enemy prisms at each Mass station, Y+3
+crystals at each Elemental one, the omnicrystal and the rivals near theirs), and the clock runs until the swarm has
+worked all 8 stations, two laps of the cycle. Every leg still ends early on its goal or late on its timer, so each
+element shortens a different leg. The vessel is unchanged (the LOCKED rule): only the course belongs to the mode.
+Pick *Time trail* in the Game menu; the Scorecard tab has **Run the time trail**; `__lab.runTrail({ seeds })` is the
+headless form.
+
+Measured on 30 courses (seeds 11-40), every element at level 5, AI picks a card and then the draw element by the row's
+rule. Lower wins. Legs are seconds spent on that kind of station, summed over both laps.
+
+| Build | Trail (s) | Omni | Elemental | Vessel | Mass | Hands | Wins (of 30) |
+|---|---|---|---|---|---|---|---|
+| No cards | 88.9 | 6.9 | 11.9 | 35.8 | 34.2 | 4.7 | |
+| Random picks | 78.4 | 7.3 | 11.6 | 29.9 | 29.6 | 4.2 | |
+| Mass first | 86.3 | 7.1 | 12.2 | 33.8 | 33.2 | 4.4 | 1 |
+| Time first | 81.3 | 7.2 | 11.1 | 30.4 | 32.6 | 4.5 | 3 |
+| Space first | 81.0 | 7.7 | 12.1 | 39.4 | **21.8** | 5.6 | 9 |
+| Charge first | **65.9** | 7.1 | 11.9 | **18.5** | 28.3 | 3.6 | 17 |
+| Rotate elements | 75.1 | 7.6 | 11.4 | 28.9 | 27.3 | 4.5 | |
+
+What it shows:
+
+1. **Time is no longer the only answer.** Time first wins 3 courses of 30. With element hands, the draw element is a
+   real choice, which was the point of PR #1677.
+2. **Charge is the new default.** The Opposing vessels legs are the longest (36 s of 89 with no cards) and only Charge
+   shortens them, halving them to 18.5 s. Space halves nothing but takes 12 s off the Mass legs. These two are the
+   real contest.
+3. **Mass and Time have no leg of their own.** Mass makes nothing shorter (survival is not timed), and the Elemental
+   and Omni legs are already short (12 s and 7 s over both laps), so Time's Hurry Up has little to cut.
+4. Mixing pays: Rotate elements (75 s) beats every single-element build except Charge.
+
+Levers that stay within the rule (track, environment, AI, never the kit): longer travel between stations (Time's
+speed cards pay), a hazard leg that costs birds and a bird count needed to finish (Mass pays), fewer or slower rivals
+at Vessel stations (Charge's edge shrinks), and courses that vary which legs are long so the right build changes per
+course.
+
 ## Found
 
 1. **Space first gets more than twice the hands (11.3 against about 5).** Space cards meet the Opposing mass goal early, so the cycle comes round faster and deals more hands. In this design, the element that ends phases early also earns cards fastest. That makes it the strongest pick for a player who wants more picks. Either the hand rate needs a cap, or the other phases need cards that end them early too.
@@ -95,4 +134,5 @@ Each element's build wins its own column, as the element jobs intend.
 
 ## Round log
 
+- **Time trail (2026-11-01, `feature/starlings-time-game`):** the Game menu's Time trail, stations drawn on the stage, `runTrail` and its scorecard; measured on 30 courses (above).
 - **Round 1 (2026-10-20, `claude/project-thread-pkoq70`):** the first build covers the passive 3D swarm, the joystick view, the four-phase cycle, hands of 4 with level stacking, the protected minimum, 24 wired cards, I1 to I4, a six-build scorecard and the decision log.
