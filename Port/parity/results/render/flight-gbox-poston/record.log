@@ -1,0 +1,6 @@
+prefs C:\Users\gradi\.local\share\CosmicShore-parity\prefs.json: already cinematic
+post-processing: on
+take frame -90 now; recording from warm-up frame -10 through the take
+[mv] scheduled frame 82: record Port/parity/results/render/flight-gbox\frames 310 1 1
+310 frames recorded (lead 10, take 300, cut at frame 8) -> Port/parity/results/render/flight-gbox\frames
+  warning: the cut landed on frame 8, not 10; the comparison aligns on the cut anyway

@@ -48,7 +48,9 @@ class Player:
         dotnet_root = os.path.dirname(DOTNET)
         env.setdefault("DOTNET_ROOT", dotnet_root)
         env["PATH"] = dotnet_root + os.pathsep + env.get("PATH", "")
-        cmd = ["xvfb-run", "-a", "-s", "-screen 0 4200x2400x24", DOTNET, dll,
+        # Windows has no xvfb: the window opens on the real desktop
+        xvfb = ["xvfb-run", "-a", "-s", "-screen 0 4200x2400x24"] if shutil.which("xvfb-run") else []
+        cmd = [*xvfb, DOTNET, dll,
                "--control-port", str(port), "--size", size, "--frames", "4000000", "--render-from", "999999999", *extra]
         self.proc = subprocess.Popen(cmd, stdout=self.log, stderr=subprocess.STDOUT, cwd=ROOT, env=env)
 
