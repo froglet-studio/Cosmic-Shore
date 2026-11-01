@@ -65,6 +65,9 @@ namespace CosmicShore.Utility.AITraining
         /// called yet. Fitness components and the runner read this between Update ticks.
         /// </summary>
         public DecisionContext GetCurrentContextOrNull() => _episodeActive ? _ctx : null;
+
+        /// <summary>What the target sensor seeks this episode (it follows <see cref="TargetMode"/> at BeginEpisode).</summary>
+        public TargetSensor.TargetMode ActiveTargetMode => _targetSensor != null ? _targetSensor.Mode : TargetMode;
         public DecisionContext GetCurrentContext() => _ctx;
 
         public delegate void EpisodeFrameCallback(DecisionContext ctx);
@@ -142,6 +145,10 @@ namespace CosmicShore.Utility.AITraining
             if (_genome == null) _genome = TrainingGenome.FromRegistryDefaults();
 
             BuildPolicies();
+            // The runner binds the vessel (which builds the sensors) and only then sets TargetMode, so a pilot new to
+            // this match would seek crystals whatever the scenario asked: a gate race's AIs never saw a ring
+            // (Switchback, 2026-10-28: 32 matches, 0 gates). The scenario's mode applies from here on.
+            if (_targetSensor != null) _targetSensor.Mode = TargetMode;
             foreach (var p in _activePolicies) p.OnEpisodeStart(_genome);
             foreach (var s in _sensors) s.OnEpisodeStart();
 

@@ -4956,6 +4956,46 @@ game".
   - the game-scene guards for a client that joins from the menu mid-match are untested;
   - a host can never rejoin.
 
+## 104. Rev 38 mockups: Computer artifact, the Compute console as an application (2026-10-29, awaiting board approval)
+
+**Asked** (Shombith): "The artifact and the UI is noisy make it look like an application." The references he picked:
+"Go with Tailscale and Linear, plus Optuna for searches." He also asked to "Show me the mockup while you do it" and to
+"Create another page called computer artifact". This is not a game screen: it is the team's Froglet Compute console
+(`Tools/Compute/console/index.html`, `Docs/Compute/README.md`), published as its own artifact. It sits on this board
+because every UI is drawn and approved here first.
+
+**On the canvas:** page "Rev 38 - Computer artifact"; copies in `Docs/MenuRedesignB/board/R38*.dc.html`.
+- `R38Home`: four counts, Needs you, Recent activity with a kind tag on every row, and a small computers list.
+- `R38Computers` (interactive): the machine list in the shape of Tailscale's Machines page.
+  - Filter tabs with counts; one row per computer: status dot and how long since it was last heard from, OS,
+    hardware, Unity, remote start, last run.
+  - A row menu holds Send a run, Start now, Stop and Copy name.
+- `R38Runs`: a legend for the three kinds, Running, and a Finished table.
+- `R38Searches`: Optuna's study view.
+  - A list of searches on the left.
+  - The picked search on the right: its optimization history (best score after each try, today's AI as a dashed
+    line), the settings found against today's, and race time per intensity.
+  - Approve and Decline sit in the panel header.
+- `R38NewRun`: the New run dialog as a form (vessel, mode, plays in, intensity, matches, where, when) over the
+  Computers page.
+- `R38Notes`: the brief and the rules.
+
+**The kit:** an app kit, not the menu's.
+- Inter, a neutral dark ground, the game's Jade cyan as the only accent.
+- Status as a dot and a word.
+- No idle motion and no glow.
+- Every number is from the console snapshot of 2026-10-29.
+
+**Differs from the build:** the published console (Rev 38's predecessor) has:
+- a website-style top nav with gradient headings;
+- cards with a button on every card, and explanatory paragraphs.
+
+The build replaces those with a sidebar shell, tables and row menus, and the Optuna panel.
+
+Pain points read from BOINC Manager and Folding@home users carry into the build:
+- **Stopping:** keep "finish this run, then stop" apart from "stop now". Never stop work from a dismiss.
+- **Freshness:** every row says how fresh its data is, and "can't reach it" is kept apart from "not working".
+- **One list:** every computer sits in one dense list.
 ## 106. Rev 39 mockups: the friends tray, a calmer party and rows that never overlap (2026-10-31; superseded by the Rev 40 pick, section 107)
 
 **Asked (Shombith, 2026-10-31, after the four-player test of 30 Oct):** "Change the UI of friends just the look and the
@@ -5088,3 +5128,80 @@ the blue a little bit on the bg". Built straight from the words; E's online rows
   `author_menu_friends_drawer.py`, `author_ui_lattice.py` and the other Menu_Main generators `--check` OK;
   `PartyTrayTests` (ring size and angles). Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+
+## 110. Rev 41 mockups: the Compute console, a run you can see start (2026-10-31, built; awaiting board approval)
+
+**Asked (Shombith, 2026-10-31, on the live console at the VM):** "Half of the run does not make sense, can you please
+create some mockups of how they look and also the buttons dont work, registering a PC does not work that well there is
+no live bar". Measured on the live console before drawing: two runs sent to dragonsweapon at 22:48 were taken by its
+agent and stopped 44 s later, and in those 44 s the page showed nothing (a run reports only after its first match, and
+a Unity run spends its first minute opening Unity); the VM read "Working" over "Nothing is running"; New run opened on
+"This computer" (a line to paste), the wrong default on the live console; the `ai` branch sat 105 commits behind
+because nothing ran its sync.
+
+**On the canvas:** the Rev 38 page (`rev38`, the console's page; the canvas holds 40 pages and all 40 are taken, so the
+round sits under Rev 38's boards at y 3600). Copies: `Docs/MenuRedesignB/board/R41*.dc.html`. A states round of one
+design, the same kit as Rev 38 (Inter, the dark ground, Jade cyan as the one accent):
+- **R41Runs**: the line after Send ("Sent to dragonsweapon. It shows below as Starting within a minute…"), the run as
+  **Starting** with the sliding bar (the one motion on the page; off under reduced motion) beside a working run with
+  its real bar, a Sent run that says why it waits ("dragonsweapon is on another run: this one starts after it"), the
+  Finished table.
+- **R41NewRun**: Where lists the computers first with their status and "starts at once" / "starts when free", the best
+  one picked (free, else in use with a start allowed, else the team queue), "This computer · paste a line" last; the
+  button reads "Start on dragonsweapon now · Thresher in Thresher Time".
+- **R41Computers**: **Starting** as a status of its own (the agent took a run, nothing has reported yet) with the run
+  and "Unity is opening" under it; Working always names what runs; the row menu's Stop names the run and asks first.
+- **R41Notes**: what was wrong, measured, and what each fix changes.
+
+**Built in the same push** (`Tools/Compute/`): the agent posts a heartbeat with `phase: starting` and the unit the
+moment it takes a sent run (`Beacon.starting`); `machine_status` returns `starting` for a working heartbeat with no
+run; the worker posts the same before a command session; `console.runs` carries the phase; the page shows Starting
+(bar, status word, fleet counts, the empty-state line), the waiting reason (`waitReason`), the default place
+(`bestPlace`, until the person picks one), the button text, the notice after a send, a confirm before Stop, and a run
+shown as Running is not listed again under Sent runs. The hub syncs the `ai` branch every hour with its token
+(`Hub.sync_ai`; `Docs/Compute/README.md` section 15) and the AI branch page says when it last did. Gates:
+`compute.py self-test` (the agent's new case), the page in Chromium at 1360 and 390 px with a hub stub: Send closes the
+sheet, Runs shows the notice and the Starting box, Stop asks and shows Stopping.
+
+**Differs from the build:** nothing; the boards are the built page with the console's data of 2026-10-31. Waits on
+Shombith's look at the live console once the VM has pulled.
+
+**Follow-up, built from the words, no board round (Shombith, 2026-11-01, on R41NewRun's sheet):** "we should have the
+option to select all intensities and also to make just one match available too. Also latest like serpentine and
+other game modes are not here already ... show the game for another pc as well ... so the game collects performance
+data using the bug reporting tool", and the sheet showed Now and At a time both lit. Built: the seven steps numbered
+the same for every run (1 Vessel, 2 Game mode, 3 Intensity, 4 How many matches, 5 Show the game, 6 Where, 7 When);
+Intensity is a set with an "All 4" chip (one run per level, in order); matches go down to 1 with a number field
+beside the slider; Show the game is a step for every Where, and a watched run records the game's diagnostics and
+sends them with its console errors through the bug ledger (`Docs/Compute/README.md` section 16); When lights one
+chip, and At a time shows what follows the time (when free, or at once); Serpentine, Scarab Rally and Brittle Star
+Time are on the vessel x mode grid (the trainer's catalog, the regenerated chart). R41NewRun stays the record of the
+Where fix; the sheet's later shape is the built page.
+
+## 111. Rev 42 mockups: the Compute console, three looks for the Silver Screen (2026-11-01; Shombith picked A, built)
+
+**Asked (Shombith, 2026-11-01):** "I feel the console app can look better", after the Silver Screen theme (his site's
+look) and the film stills behind each view (section 110's follow-up).
+
+**On the canvas:** the Rev 38 page (`rev38`, the console's page; the canvas holds 40 pages and all are taken, so the
+round sits under Rev 41 at y 6120). Copies: `Docs/MenuRedesignB/board/R42*.dc.html`. An options round, the Home page
+whole in each, the same data (the live console's of 2026-11-01), the stills as canvas assets:
+- **R42A · Marquee (recommended):** each view opens on a full-width still with the title set in it, as a film poster;
+  the stat tiles overlap the still's bottom edge; the lists follow unchanged. Recommended because it gives the pages
+  the cinema the theme promises without touching a row: a stylesheet change and one hero block per view.
+- **R42B · Poster cards:** no hero; every card wears its still as a 96 px band with its title set over it; the tiles
+  become posters with the number set large. More picture per screen; every card then needs a still that fits.
+- **R42C · Ledger:** the light edition, paper grey and ink, the stills as thin bands, denser rows; the light theme the
+  page already has, made deliberate.
+- **R42Compare:** the Home page's top in A, B and C side by side at the same scale. **R42Notes:** what each changes.
+
+**Differs from the build:** A changes the top of each view (a hero with the still and the title); B the cards' headers
+and the tiles; C the ground, the type colour and the row density. The sidebar, the top bar, the lists, the type and
+the one accent stay in all three.
+
+**Picked (Shombith, 2026-11-01): "Go with A."** Built the same hour in `Tools/Compute/console/index.html`: every view
+opens on a `.hero` (300 px, its still at 0.55 through a grayscale filter, a fade into the ground, the title at 88 px
+Bebas with a one-line mono subtitle from the data: computers live and runs going, runs running and waiting, searches
+ready, the fleet), and the view's first block overlaps the still's bottom edge by 96 px; 200 px and 52 px on a phone.
+The faded backdrop of section 110's follow-up is gone (the hero replaced it); the Vessel AIs card bands stay. Checked
+in Chromium at 1360 and 390 px: no script errors, no sideways scroll.

@@ -20,6 +20,10 @@ built creature must meet to be alive. (The roster below predates the Bee, `Asset
 rules, reproduction, phase thresholds). The invariants it loads are LOCKED and this skill
 does not restate them; it assumes them.
 
+**New BODIES for swarms, or new NCA creatures, are grown by search**: `/bioform-forge` (MAP-Elites over a body
+genome, baked to the plan schema `SwarmPlanLibrary` loads, and to NCA training targets the team's idle machines
+train, `/compute`).
+
 ---
 
 ## 1. The roster, measured

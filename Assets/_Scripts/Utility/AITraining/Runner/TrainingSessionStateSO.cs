@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Utility.AITraining
@@ -29,6 +30,25 @@ namespace CosmicShore.Utility.AITraining
 
         [Header("Best Found")]
         public TrainingGenome HallOfFameBest;
+
+        /// <summary>
+        /// The genome the NEXT fresh population starts from instead of the registry defaults: the genes measured
+        /// from the people's own recorded races of this pair (Froglet Compute's <c>people_seed.py</c>, written by
+        /// <c>unity_run.py</c> before the run and handed over as <c>-trainSeed</c>). Taken once by
+        /// <see cref="ResetForScenario"/> and cleared, so a resumed population is never reset by it.
+        /// </summary>
+        public TrainingGenome PendingSeed;
+        public bool HasPendingSeed;
+        public string PendingSeedNote = "";
+
+        /// <summary>
+        /// The people's recorded lines of this pair (the seed file's <c>linePoints</c> / <c>lineStarts</c>), kept for
+        /// the whole run (a resume keeps them too) and published to <see cref="PeopleLine"/> by the runner's
+        /// Configure, so <c>PeopleLineFitness</c> can prefer the AI that flies where people fly. Empty: no term.
+        /// </summary>
+        public List<Vector3> PeopleLinePoints = new();
+        public List<int> PeopleLineStarts = new();
+        public string PeopleLineNote = "";
         public float HallOfFameBestFitness;
 
         [Header("Recent Fitness History (for charts)")]
@@ -118,7 +138,9 @@ namespace CosmicShore.Utility.AITraining
                 Population.StructuralMutationRate = scenario.StructuralMutationRate;
                 Population.NoveltyWeight = scenario.NoveltyWeight;
             }
-            Population.Initialize(TrainingGenome.FromRegistryDefaults());
+            Population.Initialize(HasPendingSeed && PendingSeed != null ? PendingSeed : TrainingGenome.FromRegistryDefaults());
+            HasPendingSeed = false;
+            PendingSeed = null;
             LastWriteUtc = DateTime.UtcNow.ToString("o");
 
             ScheduleIndex = scheduleIndex;

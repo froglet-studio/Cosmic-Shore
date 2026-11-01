@@ -37,6 +37,7 @@ import re
 import statistics
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -69,8 +70,36 @@ def git(*args):
     return r.stdout if r.returncode == 0 else None
 
 
-def flights_on_branches():
-    """Every flight file on every origin branch (deduped by blob): (name, json)."""
+# Flights no learner may read as a person's: the AI trainer flew them. The recorder now marks a trainer-flown hull as
+# held and never stores a match the trainer flew alone, and writes "pilot" into every record (PilotControl.IsHeldByTrainer,
+# HumanFlightRecorder, 2026-10-29); these were stored before that, as hand-flown, by Froglet Compute's first Unity run
+# (Switchback I2 on Shombith's PC, 2026-10-28: a 103 s race every ~35 s of wall time, the game at about 3x).
+NOT_A_PERSON = {
+    name: "the AI trainer flew it (Froglet Compute's first Unity run, 2026-10-28), not a person"
+    for name in ("flight_Switchback_Dolphin_20261028_211556.json", "flight_Switchback_Dolphin_20261028_211632.json",
+                 "flight_Switchback_Dolphin_20261028_211706.json", "flight_Switchback_Dolphin_20261028_211740.json",
+                 "flight_Switchback_Dolphin_20261028_211815.json", "flight_Switchback_Dolphin_20261028_211849.json",
+                 "flight_Switchback_Dolphin_20261028_211928.json")
+}
+PILOT = re.compile(r'"pilot"\s*:\s*"([^"]*)"')
+PERSON_PILOTS = ("human", "mixed")   # "mixed": the AI held the hull for part of it; those rows carry held = 1
+
+
+def not_a_person(name, text):
+    """Why no learner may read this flight as a person's, or None. The header's "pilot" (written since 2026-10-29) and
+    the named records stored before it; a record without the field is a person's, as every record was before."""
+    known = NOT_A_PERSON.get(os.path.basename(name))
+    if known:
+        return known
+    m = PILOT.search(text[:4096])
+    if m and m.group(1) not in PERSON_PILOTS:
+        return f"flown by {m.group(1) or 'nobody'}, not a person"
+    return None
+
+
+def flights_on_branches(include_not_a_person=False):
+    """Every flight file on every origin branch (deduped by blob): (name, json). Flights a person did not fly are left
+    out (not_a_person), unless asked for: ai_learn.py lists them as waiting, with the reason."""
     out, seen = [], set()
     refs = (git("for-each-ref", "--format=%(refname:short)", "refs/remotes/origin") or "").split()
     for ref in refs:
@@ -86,16 +115,18 @@ def flights_on_branches():
                 continue
             seen.add(blob)
             text = git("cat-file", "-p", blob)
-            if text:
+            if text and (include_not_a_person or not not_a_person(path, text)):
                 out.append((path, text))
     return out
 
 
-def flights_in_dir(folder):
+def flights_in_dir(folder, include_not_a_person=False):
     out = []
     for path in sorted(glob.glob(os.path.join(folder, "flight_*.json"))):
         with open(path, encoding="utf-8") as fh:
-            out.append((path, fh.read()))
+            text = fh.read()
+        if include_not_a_person or not not_a_person(path, text):
+            out.append((path, text))
     return out
 
 
@@ -510,7 +541,21 @@ def run(sources, write):
 
 
 def self_test():
-    import tempfile
+    # Who flew it (2026-10-29): a trainer-flown record and a named one from before the field are not a person's;
+    # a person's ("human", "mixed" or no field at all) is. Negative control: the same record marked human is read.
+    trainer = '{"schema":"cosmic-shore.flight/3","mode":"Switchback","pilot":"trainer","samples":[]}'
+    assert not_a_person("x/flight_Switchback_Dolphin_1.json", trainer), "a trainer-flown record was read as a person's"
+    assert not not_a_person("x/flight_Switchback_Dolphin_1.json", trainer.replace('"trainer"', '"human"')), \
+        "negative control: a person's record was refused"
+    assert not not_a_person("x/flight_a.json", '{"pilot":"mixed"}') and not not_a_person("x/flight_a.json", "{}")
+    assert not_a_person("BugLedger/shared/reports/shombith/flights/flight_Switchback_Dolphin_20261028_211556.json", "{}")
+    with tempfile.TemporaryDirectory() as tmp:
+        for n, t in (("flight_A_B_1.json", trainer), ("flight_A_B_2.json", trainer.replace('"trainer"', '"human"'))):
+            with open(os.path.join(tmp, n), "w", encoding="utf-8") as fh:
+                fh.write(t)
+        names = [os.path.basename(p) for p, _ in flights_in_dir(tmp)]
+        assert names == ["flight_A_B_2.json"], ("flights_in_dir must leave the trainer's record out", names)
+        assert len(flights_in_dir(tmp, include_not_a_person=True)) == 2
     # A circular rail of radius 300 with up pointing outward; the human flies 11 u outside it, steering a little.
     lane, n = [], 240
     for i in range(n):
