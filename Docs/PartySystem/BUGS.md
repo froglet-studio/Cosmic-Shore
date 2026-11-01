@@ -43,7 +43,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
 | B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
-| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile | 🟠 |
+| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile. **Boot drop fixed 2026-11-01:** the boot loads Menu_Main before its Relay host starts (the bounce paths' order), so the cold-first-Play menu load (10-62 s frames) no longer runs with a live Relay. Drops after a freeze in a match or a return to the menu remain | 🟠 |
 | B37 | "Could not create presence lobby: Object reference not set..." then "[INVITE-SEND] ABORT - presence lobby is null" (Bug Ledger E-6b79cd07f1, E-ca3bc5cbe1; Gradi and Shombith, 2-11 Sep) | Fixed 2026-10-25 (cause likely, not proven: the log kept only the message): the join waits for Unity Services and a sign-in; a create failure the rejoin recovers from is a warning, anything else is logged with its stack; an invite with no presence lobby tells the player. The lobby-less session itself was fixed 2026-10-08 (the boot-time rejoin) | 🟡 |
 | B38 | "[PartyInviteController] Recovery failed" after Play stops: "This can only be used during play mode" or "Value cannot be null. Parameter name: asyncOperation" (Bug Ledger E-41b7610878, belac 19 Oct; E-0de9ec6c70, Gradi, Sep) | Root-caused & fixed 2026-10-25: the recovery and the leave-lobby flow awaited the party leave and the Netcode shutdown, and loaded Menu_Main after Play had stopped. Each step after an await now stops once Play has ended or the controller is gone | 🟡 |
 | B39 | The ONLINE list shows a player who has only pressed Play: they sit in the presence lobby 7-24 s before their menu is up (the four-player test of 2026-10-30), and an invite or join sent then goes nowhere | Fixed 2026-10-31: a player publishes `ready` the first time their lava lamp is shown (`LavaLampPresence`), and only players with it are listed. Needs a two-machine retest | 🟡 |
@@ -2400,6 +2400,38 @@ warnings: first-run compilation and asset loading), not every boot. A player bui
 there it is likely far shorter, but no build has been measured yet. The real fix is a boot-order decision for whoever owns
 the boot: start the Relay host after the menu is up, so no long load runs with a live Relay. Until then a cold first
 Play in the Editor costs a bounce and a re-host (about 17 s).
+
+**The boot drop, fixed (2026-11-01, Shombith's decision as the boot's owner).** Measured again on Garrett's machine
+the same day (`gradi-20261101_191458`, `gradi-20261101_183654`, on `be1f4d5821`): the boot's menu load froze one frame
+for **22.1 s, 51.9 s and 62.3 s** (Load Time Insights: "Unattributed (engine & other)" 48-144 s of the load), with
+`stallContext focused yes`, 2.3 GB reserved of 32 GB RAM and no prism clones waiting, so neither focus nor memory nor the
+pool. Each was followed by the three red lines `Failed to establish connection with the Relay server (server didn't
+answer any BIND message)`, `Transport failure! Relay allocation needs to be recreated` and `Host is shutting down due
+to network transport failure` (Bug Ledger `E-a2a3f23a3c`/`E-ced2f8d740`, `E-e5ff2abb8c`, `E-e6054bc064`), then a
+bounce. Shombith saw the same three after one game on 1 Nov.
+
+What changed: the boot now uses the order the leave-party, bounce and recovery paths already used (load the menu
+with Unity's SceneManager, then `EnsurePartySessionAsync`), so no load runs with a live Relay host on the way in.
+- `AuthenticationSceneController.LoadMainMenuNetworkedAsync`: on the Relay path with no host listening yet
+  (`LoadsMenuBeforeHost`), it loads Menu_Main locally FIRST, then walks the same three Relay attempts and the same
+  offline fallback. The load destroys the controller, so the rest runs on `Application.exitCancellationToken`
+  (cancelled when Play stops, B38). Without Relay attempts (offline chosen, no network, the browser Toybox) nothing
+  changed: a loopback host starts first and the menu loads through Netcode, since a loopback host cannot time out.
+  A host already listening also keeps the Netcode load.
+- `HostConnectionService`: the presence join no longer starts the party session while the boot has not loaded
+  Menu_Main (`HoldsPartySessionForBootMenu`: not since the last Bootstrap/Authentication load, and the active scene
+  is one of those two); `OnSceneLoaded(Menu_Main)` starts it. `EnsurePartySessionAsync` already sweeps the menu's
+  stray NetworkObjects before the host starts (B16), as on every re-host.
+- Held by `BootMenuBeforeRelayTests` (12 cases).
+
+**Hand test (Editor, cold first Play after a pull):** Play from Bootstrap online. Expected: no `BIND`, transport
+failure or host-shutdown lines, no "Connection lost" bounce; the splash stays up until the menu vessel spawns, as
+before. `net_logs.py show` should list the boot's load and, if a frame still passes 9 s, no `relayDrop` after it.
+Also: Play with the offline toggle on (unchanged path), and Play with UGS unreachable but the network up (the three
+attempts now run with the menu loaded behind the splash, then the offline notice and the loopback host).
+
+**Still open:** a 10 s freeze during a match or on the return to the menu (B45) still drops a live Relay host; this
+change only takes the boot out of that window. The cold-Play freeze itself is unexplained (engine-side, unattributed).
 
 ## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
 

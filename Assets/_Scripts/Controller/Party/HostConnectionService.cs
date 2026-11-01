@@ -204,6 +204,16 @@ namespace CosmicShore.Gameplay
 
         private bool   _joining;
         private bool   _profileSubscribed;
+
+        // B36 (Docs/PartySystem/BUGS.md): the boot loads Menu_Main BEFORE this machine's Relay host starts.
+        // Relay drops a host it has not heard from for about 10 s, and the boot's menu load froze the Editor
+        // for 10-62 s on a cold first Play, so a host started in the Authentication scene was dropped on its
+        // way to the menu. The leave-party and bounce paths already run in this order (load the menu, then
+        // EnsurePartySessionAsync). _menuLoadedSinceBoot: Menu_Main has loaded since the last Bootstrap /
+        // Authentication scene. _partySessionAwaitsMenu: the presence join finished first and left the
+        // party session for the menu load to start.
+        private bool   _menuLoadedSinceBoot;
+        private bool   _partySessionAwaitsMenu;
         private bool   _gameLaunchSubscribed;
 
         // Block 5 step 6: the party roster moved since our last publish. Set by PartyMembers' own change
@@ -678,6 +688,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            if (mode == LoadSceneMode.Single)
+            {
+                if (IsBootSceneName(scene.name))
+                    _menuLoadedSinceBoot = false;
+                else if (scene.name == "Menu_Main")
+                {
+                    _menuLoadedSinceBoot = true;
+                    StartPartySessionHeldForMenu();
+                }
+            }
+
             if (scene.name != "Menu_Main")
             {
                 // A game scene just became active. The launch-time publish (HandleGameLaunch)
@@ -692,6 +713,29 @@ namespace CosmicShore.Gameplay
             _lastFiredInvite     = null;
             _lastInviteResolved  = false;
             PublishPresenceImmediateAsync().Forget();
+        }
+
+        static bool IsBootSceneName(string sceneName) => sceneName == "Authentication" || sceneName == "Bootstrap";
+
+        /// <summary>
+        /// The boot hold (B36): true while the boot has not loaded Menu_Main yet, so the party session (and
+        /// with it the Relay host) waits for the menu load and no long load runs with a live Relay host.
+        /// Both facts are needed: a Play started straight in Menu_Main never saw a boot scene and must not wait.
+        /// </summary>
+        internal static bool HoldsPartySessionForBootMenu(bool menuLoadedSinceBoot, string activeSceneName)
+            => !menuLoadedSinceBoot && IsBootSceneName(activeSceneName);
+
+        /// <summary><see cref="HoldsPartySessionForBootMenu"/> for this service. Main thread only.</summary>
+        private bool PartySessionWaitsForBootMenu()
+            => HoldsPartySessionForBootMenu(_menuLoadedSinceBoot, SceneManager.GetActiveScene().name);
+
+        /// <summary>Starts the party session the presence join held back for the boot's menu load (B36).</summary>
+        private void StartPartySessionHeldForMenu()
+        {
+            if (!_partySessionAwaitsMenu) return;
+            _partySessionAwaitsMenu = false;
+            CSDebug.LogVerbose(CSLogChannel.Party, "[HostConnectionService] Menu_Main loaded - starting the party session the boot held back.");
+            EnsurePartySessionAsync().Forget();
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -709,6 +753,7 @@ namespace CosmicShore.Gameplay
             // Sign-out is the "emergency exit" - always allowed regardless of current state.
             // Transition flips IsInitialized to false (replaces the old _initialized boolean).
             _stateMachine.TryTransition(PartyState.Disconnected);
+            _partySessionAwaitsMenu = false;
             connectionData.ResetRuntimeData();
             await _lobbyService.LeaveAsync();
             _eventBus.RaiseHostConnectionLost();
@@ -784,6 +829,15 @@ namespace CosmicShore.Gameplay
 
                 // Every player always hosts their own solo Relay party session from menu entry.
                 // Creates Relay session and starts NM - vessel spawns when NM is up.
+                // At boot, "menu entry" is literal: the session waits until Menu_Main has loaded (B36),
+                // and OnSceneLoaded starts it. Read and set on the main thread, as OnSceneLoaded runs.
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
+                if (PartySessionWaitsForBootMenu())
+                {
+                    _partySessionAwaitsMenu = true;
+                    CSDebug.LogVerbose(CSLogChannel.Party, "[HostConnectionService] Party session held until the boot has loaded Menu_Main (B36).");
+                    return;
+                }
                 await EnsurePartySessionAsync();
             }
             finally { _joining = false; }

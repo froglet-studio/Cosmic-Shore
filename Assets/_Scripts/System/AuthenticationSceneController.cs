@@ -873,13 +873,22 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Waits for HostConnectionService to confirm a live Relay session (state InParty),
-        /// then loads Menu_Main through Netcode.  Retries up to 3 times; each attempt waits
-        /// up to <see cref="networkHostTimeout"/> seconds.
+        /// Brings the player into Menu_Main with a session. Online (the Relay path), the menu loads
+        /// FIRST, locally, and the Relay host starts after it (B36, Docs/PartySystem/BUGS.md): Relay
+        /// drops a host it has not heard from for about 10 s, and this load froze a cold first Play
+        /// for 10-62 s. That is the order the leave-party and bounce paths already use. Then it waits
+        /// for HostConnectionService to confirm a live Relay session (state InParty), up to 3 attempts
+        /// of <see cref="networkHostTimeout"/> seconds each, and falls back to the offline local host.
+        /// Without Relay attempts (offline chosen, no network, the browser Toybox) it starts the
+        /// loopback host first and loads the menu through Netcode, as before: a loopback host
+        /// cannot time out.
         ///
-        /// Keeps the splash overlay opaque until Menu_Main starts loading - the overlay
-        /// stays opaque through the scene transition and is released by
+        /// The splash stays opaque throughout and is released by
         /// <see cref="SceneLoader.FadeFromSplashOnReady"/> when <c>OnClientReady</c> fires.
+        ///
+        /// On the Relay path the menu load destroys this controller, so everything after it runs
+        /// on <see cref="Application.exitCancellationToken"/> (cancelled when Play stops, B38) and
+        /// touches only persistent services, SOAP assets and Unity-null-checked scene fields.
         /// </summary>
         async UniTaskVoid LoadMainMenuNetworkedAsync(CancellationToken ct)
         {
@@ -903,6 +912,30 @@ namespace CosmicShore.Core
 
             if (offlinePreferred)
                 CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Offline preferred by the player - going straight to the local host.");
+
+            // B36: load the menu before the Relay host exists. HostConnectionService holds the party
+            // session until Menu_Main has loaded and starts it from there. If a host is somehow already
+            // listening (a session started before the hold existed for it), loading the menu locally
+            // would pull the scene out from under it, so that case keeps the Netcode load below.
+            bool menuFirst = LoadsMenuBeforeHost(attemptRelay, NetworkManager.Singleton is { IsListening: true });
+            if (menuFirst)
+            {
+                _sceneTransitionManager?.SetFadeImmediate(1f);
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Loading {menuScene} before the Relay host starts (B36)...");
+                CosmicShore.Utility.PerformanceBenchmark.LoadInsights.BeginBootLoad(
+                    $"Boot - {SceneManager.GetActiveScene().name} -> {menuScene}");
+                // This scene and its cancellation source end with this load; the rest of the boot lives
+                // as long as Play does.
+                ct = Application.exitCancellationToken;
+                try
+                {
+                    await SceneManager.LoadSceneAsync(menuScene, LoadSceneMode.Single).ToUniTask(cancellationToken: ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    return; // Play stopped during the load
+                }
+            }
 
             for (int attempt = 1; attempt <= maxAttempts && !networkReady && attemptRelay; attempt++)
             {
@@ -1033,18 +1066,31 @@ namespace CosmicShore.Core
                 }
             }
 
+            // On the Relay path the menu is already loaded: the host that just came up spawns the
+            // player's vessel into it, and SceneLoader fades the splash on OnClientReady.
+            if (menuFirst) return;
+
             // Keep the splash opaque through the scene transition.  SceneLoader.OnSceneLoaded
             // will re-assert this on the Menu_Main side and subscribe FadeFromSplashOnReady
             // to OnClientReady so the overlay fades once the vessel spawns.
             _sceneTransitionManager?.SetFadeImmediate(1f);
 
             CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Loading {menuScene} via network scene management...");
-            // Timed when online (B36): this load runs with the Relay host already up, and on 26 Oct one frame of it
-            // lasted 10.4 s and Relay dropped the host. SceneLoader ends the recording when the menu shows.
+            // Timed when online: before the menu-first boot (B36) this load ran with the Relay host already up, and
+            // on 26 Oct one frame of it lasted 10.4 s and Relay dropped the host. Now it runs over a loopback host
+            // (or a host that was already up). SceneLoader ends the recording when the menu shows.
             CosmicShore.Utility.PerformanceBenchmark.LoadInsights.BeginBootLoad(
                 $"Boot - {SceneManager.GetActiveScene().name} -> {menuScene}");
             NetworkManager.Singleton.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
         }
+
+        /// <summary>
+        /// B36: whether the boot loads Menu_Main locally BEFORE any host starts. Only on the Relay path (a
+        /// Relay host drops after ~10 s without traffic; a loopback host cannot), and only while no host is
+        /// listening yet (a live host must get its menu through Netcode's scene manager).
+        /// </summary>
+        internal static bool LoadsMenuBeforeHost(bool attemptRelay, bool hostListening)
+            => attemptRelay && !hostListening;
 
         /// <summary>What the boot gate does about the network. See <see cref="PlanBootNetwork"/>.</summary>
         internal readonly struct BootNetworkPlan
