@@ -458,3 +458,11 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     real meshes in one icon fragment into many components at small boxes; a ghost copy at 0.6 with `close_px` 2 keeps
     each hull one piece. Not reviewed by the owner yet.
 
+
+77. **A prism is never a rhombus; the fix lives in the motif, not in each card.** The Time petal owns the rhombus, so a
+    shielded prism drawn as a diamond read as Time (Garrett, 2026-11-01). `motifs.prism` (and `prism_lit`) now draw two
+    close triangles, the diamond cut along its long axis with a gap of 0.16 of the half-diagonal, so every hull that
+    called it was recut by re-running `author.py` (Angler, Manta, Scarab, Sparrow, Squirrel); hand-drawn rhombi (the
+    Serpent's shielded bricks, `author_squirrel_shielded_ring_icon.py`) were cut the same way. Small halves fail `thin`
+    and `gap`: exempt them with that reason rather than growing the prism. A bare prism stays a square (or a square with a
+    negative-space X).
