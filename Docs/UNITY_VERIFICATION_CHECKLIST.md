@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 UgsRequestPolicyTests: the B34 test's fake SDK frame pinned against inlining (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `[MethodImpl(MethodImplOptions.NoInlining)]` on the test's fake `LobbyChannel.UnsubscribeAsync` in
+`Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs`. `UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown` is
+unchanged: it still needs both "LobbyChannel" and "UnsubscribeAsync" in the stack trace.
+
+**Why:** `LobbyUnsubscribeAfterWireTeardown_MatchesOnlyTheSdkFrame` failed in the editor (Unity 6000.3.17f1; 163 of 164
+multiplayer edit-mode tests passed). The likely cause, consistent with the evidence but not proven: Mono inlined the
+one-line thrower into `LobbyChannel.Throw`, so the trace named only `LobbyChannel.Throw`. The sibling test that matches
+on the class name alone (`LobbyPatcher`) passed, which fits that reading.
+
+**Verified without the editor:** `unity_refcompile --config editor` compiled the file with 0 errors. Not run anywhere.
+
+**Test (editor):**
+1. Window > General > Test Runner > EditMode, run `UgsRequestPolicyTests`. Expected: all pass, including
+   `LobbyUnsubscribeAfterWireTeardown_MatchesOnlyTheSdkFrame`.
+2. Run the whole multiplayer edit-mode set again. Expected: 164 of 164.
+3. If step 1 still fails, the inlining reading is wrong: put a breakpoint in the test, read `LobbyChannel.Throw().StackTrace`
+   and paste it back. Do not loosen the rule in `UgsRequestPolicy.cs`.
+
 ### 🔴 Fair play T1: Google Play Games sign-in on Android (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `PlayGamesSignIn` (mirrors `GameCenterSignIn`), `PlayGamesPlatform` (C#, calls the Java bridge),
