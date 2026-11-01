@@ -17,10 +17,10 @@
  "current": {
   "job": "unity-train~r20261102-005148-167f",
   "max_evals": 2,
-  "minutes": 3.0,
+  "minutes": 60.0,
   "phase": "starting",
   "request": "r20261102-005148-167f",
-  "since": 1793561487,
+  "since": 1793561515,
   "unit": "serpenttime-serpent-i3"
  },
  "host": "dragonsweapon",
@@ -197,7 +197,7 @@
  "totals": {
   "sessions": 14
  },
- "updated": 1793561487,
+ "updated": 1793561516,
  "user": "shombithofficial",
  "version": "1"
 }
