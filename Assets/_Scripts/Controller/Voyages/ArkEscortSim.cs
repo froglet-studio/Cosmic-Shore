@@ -211,7 +211,9 @@ namespace CosmicShore.Gameplay
             var privacy = CosmicShore.UI.PrivacyConsentOverlay.Current;
             if (!privacy) return;
             log?.Invoke("the privacy overlay is up - closing it unanswered (nothing granted; analytics stays off)");
-            Destroy(privacy.gameObject);
+            // Through the overlay's own close, so the boot waiting on it hears it end (a bare Destroy left the
+            // Authentication scene waiting on a destroyed overlay forever).
+            privacy.CloseUnanswered();
         }
 
         /// <summary>The voyage scene loaded and its harbour sailed the escort.</summary>
