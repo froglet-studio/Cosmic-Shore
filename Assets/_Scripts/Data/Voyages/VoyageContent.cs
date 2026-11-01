@@ -138,6 +138,12 @@ namespace CosmicShore.Data
         public Domains Home = Domains.Blue;
         /// <summary>Where it sits on the chart, in chart units (the chart scales them).</summary>
         public float ChartX, ChartY, ChartZ;
+        /// <summary>True when the place has a position on the real HyperSea (<see cref="HyperSea"/>): the Voyage
+        /// window's map then draws it on the Milky Way's own sea, and a job's course is sailed cell by cell.</summary>
+        public bool Charted;
+        /// <summary>Its position on the real HyperSea, in light years: the galactic centre at the origin, Sol at
+        /// (0, 26,000), z the height above the midplane (Docs/Voyages/VOYAGE_BOARD.md §1).</summary>
+        public float GalaxyX, GalaxyY, GalaxyZ;
         /// <summary>The location's own world: an index into the content asset's cell pool.</summary>
         public int Cell;
         /// <summary>Vault shells standing on each visit (vault fields).</summary>
