@@ -82,6 +82,23 @@ finishes all 24, I4 Legendary 0 of 24 -> median 205 s; `SWITCHBACK.md` "Step 1")
    slower than Easy, and course hits taken while dodging (`emerg=True` in the per-hit log) mostly disappear.
 3. Switchback I3 / I4 against AI Dolphins (AI Diagnose panel, "AI sense" overlay): they fly through plain blocks, swerve
    only for red Danger blocks, and never swerve in the last stretch before a ring.
+### 🔴 Switchback: PilotControl calls guarded so a release build compiles (`claude/switchback-pilotcontrol-guard`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `PilotControl` is compiled only under `UNITY_EDITOR || DEVELOPMENT_BUILD`, and Switchback's hit counter
+(`SwitchbackController.NoteHits`) and soak runner (`SwitchbackSoakRunner`) called it unguarded, so every release player
+build failed (CS0103 at `SwitchbackController.cs:197`, `SwitchbackSoakRunner.cs:168`; from `95631f4129`). Both calls are
+now inside the same guard (`Docs/CONDITIONAL_COMPILATION.md` Pattern 1). In a release build the hit counter counts a pilot
+as AI only by `IsInitializedAsAI` (no hull can be handed to the AI there), and the soak runner logs that it cannot hand
+the host seat over. Editor and development builds behave exactly as before.
+
+**Verified without the editor:** `unity_refcompile` player (was failing), player-dev, editor and webgl configs: 0 errors
+in project code. `check_conditional_compilation.py` OK; ship gates all OK.
+
+**Test (editor):**
+1. Play a Switchback race; toggle your hull to AI with the Third Eye's You / AI switch partway. Expected: the race summary
+   log and AI Diagnose hit readout count your seat as AI after the toggle, as before.
+2. Run the Switchback soak (`SwitchbackSoakLauncher`). Expected: every seat AI, no "host seat not handed to the AI" error.
+3. Make a release (non-development) player build of any platform. Expected: it compiles past the scripts step.
 
 ### 🔴 B47: a rejoin hands the reclaimed hull to the rejoiner with ChangePlayer, not a second Initialize (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
 
