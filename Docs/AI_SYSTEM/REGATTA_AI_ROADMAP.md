@@ -296,5 +296,5 @@ model instead of `skimrace_sim_harness`'s hand model (`Sim.cs`):
 
 ## 6. What the user tests, per step
 
-The Third Eye (in game: F2, panel F3) on the hull being built, in Regatta, Easy and Hard. Each step
+The AI Diagnose panel (in game: F2) on the hull being built, in Regatta, Easy and Hard. Each step
 files its script in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

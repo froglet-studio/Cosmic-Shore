@@ -1820,9 +1820,9 @@ Race was calibrated on.
 
 ### 15.1 Tuning the skim in Unity, watched in the Third Eye
 
-1. Open `MinigameRegatta`, put Squirrels on AI seats, and press **F2** (Third Eye, F3 for its panel) beside
+1. Open `MinigameRegatta`, put Squirrels on AI seats, and press **F2** (the AI Diagnose panel; Take camera in it) beside
    the Game view. Press Play.
-2. Pick an AI Squirrel in the Third Eye (`[` `]` or Tab), camera **Chase** or **Follow**, Trails on.
+2. Pick an AI Squirrel in the AI Diagnose panel (Prev / Next, or `aidiag next`), camera **Chase** or **Follow**, Trails on.
 3. Read the third line of the info strip (the skim readout):
    `shell gap` (distance to its own rail's contact shell: it skims below 7.5, strikes at 0),
    `off line` (distance from its skim line), `boost`, `mass in view` (rival-rail prisms the guard is

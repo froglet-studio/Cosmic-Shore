@@ -134,7 +134,7 @@ Climb it in order; each rung catches what the one below cannot.
 | 5 | Profile (`diag` / `prof` console, the AI's markers) | What it costs per frame, per seat |
 | 6 | The user's playtest script (`UNITY_VERIFICATION_CHECKLIST.md`) | Does it feel right against a human |
 
-### 4.1 The Third Eye (in the game scene, editor + development builds)
+### 4.1 The AI Diagnose panel (code name Third Eye; in the game scene, editor + development builds)
 
 The Third Eye is a camera tool INSIDE the game view (`Assets/_Scripts/Controller/Camera/ThirdEye/`, 2026-11-01;
 the old `FrogletTools > AI > Third Eye` window and its second render are gone). It drives the MAIN camera, so
@@ -158,9 +158,14 @@ nothing is rendered twice. Compiled only into the editor and development builds;
   *AI sense*, drawn in the Game view by the same code as its scene gizmos (`IDebugLineSink`).
 - **Pilots**: every pilot with **You / AI** (host / solo only, `PilotControl`). Same rules as before: your hull on AI
   hands it to the mode's AI; You on an AI's hull takes it over and the AI flies the hull you left.
-- All overlays are OFF by default; with the tool idle it allocates nothing (its HUD component is disabled).
-- Works while paused (unscaled time). Settings (distances, smoothing, FOV, speeds) are saved in PlayerPrefs
-  (`CosmicShore.ThirdEye.Settings`).
+- **The default cameras are untouched.** The game starts on its own camera (gameplay chase, Lavalamp follow); the
+  panel never opens or takes the camera by itself. Diagnose cameras and overlays exist ONLY while the panel is open:
+  closing it (F2, `aidiag panel off`, a scene unloading at match end, quit, editor Play stop) releases the camera
+  (its driver and FOV restored) and turns every overlay off. Any `aidiag` camera/overlay command opens the panel.
+- With the panel closed it costs nothing (HUD disabled, no scan). Works while paused (unscaled time).
+- Only slider tuning (FOV, distances, smoothing, look, trail length) is saved (PlayerPrefs `CosmicShore.ThirdEye.Settings`);
+  camera mode, open state and overlay toggles are session-only and reset on every Play / domain reload.
+- F2 is ignored while Lavalamp god mode (`MenuGodModeCamera`) is up or a text field has focus.
 
 **What to look for** (each one has been a real defect somewhere):
 - The aim point **behind** the hull, or jumping between two points every frame: the planner is flip-flopping.

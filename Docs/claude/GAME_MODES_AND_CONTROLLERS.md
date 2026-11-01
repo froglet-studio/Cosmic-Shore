@@ -564,7 +564,7 @@ external target provider, per the Rampage rule); the objective arrow reuses
 `RampageObjectiveProvider` (nearest managed omni crystal — here the reload, there the blast
 trigger). See `_Scripts/Controller/Arcade/SALVO.md`.
 
-`Switchback(45)` is the **Dolphin-only gate race** — a course of **randomly placed and randomly
+`Switchback(45)` is the **Dolphin-only gate race** *(since 2026-10-29 every intensity is **Blast Run**: 3D prism block fields with clock-driven movers, blocked-ring stations and key crystals, no flora/fauna, a Dolphin AI blast planner; `SWITCHBACK.md` "Switchback is Blast Run")* — a course of **randomly placed and randomly
 ORIENTED** switch rings scattered through the cell, flown in ORDER by every pilot, and the first
 DOMAIN whose **LEAD RUNNER** threads the last gate wins. It is the third Dolphin mode and the one
 that asks the vessel for nothing but flying: no target, no weapon of its own — skim to bank

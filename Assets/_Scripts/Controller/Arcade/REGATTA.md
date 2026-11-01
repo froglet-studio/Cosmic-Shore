@@ -274,7 +274,7 @@ raced three laps 1.5-2 s faster at every intensity; Manta flights replace it). S
 (`SkimRaceAIConfig_Regatta`) and the Manta fly Regatta numbers; the Rhino, the Dolphin and the Stoat fly their shipped
 numbers.
 
-**Watching them:** FrogletTools ▸ AI ▸ Third Eye. Every pilot now leaves a **trail** of its last seconds of flight
+**Watching them:** the in-game AI Diagnose panel (F2; until 2026-11-01 the FrogletTools ▸ AI ▸ Third Eye window). Every pilot now leaves a **trail** of its last seconds of flight
 (toolbar *Trails*, length in Settings), and each AI's readout names its phase (Approach / Through ring N, Crystal on
 the way, Not noticed yet, Misjudged, Riding the rail, Heading for its own rail, Finished), its lap, the ring it is
 after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolphin's charge).

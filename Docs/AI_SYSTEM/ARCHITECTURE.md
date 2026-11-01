@@ -9,7 +9,7 @@ re-measured on `Ys-bleeding-edge` on 2026-10-17.
 Rules every AI on this branch obeys (unchanged, enforced by gates):
 - **Input-only.** An AI reads what a pilot could see and writes only the vessel's input channels. It never
   writes game state a human could not. Gated by `Tools/Build/check_ai_no_state_writes.py --check` — today
-  only for four folders: `Controller/AI/SkimRace`, `Utility/AITraining`, `Editor/AI` (the Third Eye) and
+  only for four folders: `Controller/AI/SkimRace`, `Utility/AITraining`, `Editor/AI`, `Controller/Camera/ThirdEye` (the in-game AI Diagnose panel, since 2026-11-01) and
   `Controller/Arcade/Preview/Drill` (§3 item 6). `AIPilot` and `Controller/AI/Boost` are not gated.
 - **No per-frame allocation**: no 3-argument `Mathf.Min/Max` (`MathfNoAlloc`, `check_mathf_params_alloc.py`),
   no closures or LINQ in a tick, `NonAlloc` physics queries.

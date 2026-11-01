@@ -20106,6 +20106,10 @@ SwitchbackController in the hierarchy to see the gizmos.
 
 ### 🔴 Third Eye moved into the game scene (`Ys-bleeding-edge`, 2026-11-01) — NOT EDITOR-VERIFIED
 
+> **Superseded hotkeys (later 2026-11-01):** F3, F4, C, V, Tab, `[` `]` and F are gone. F2 is the only hotkey and opens
+> the AI Diagnose panel; camera, pilot and overlay steps are panel buttons or `aidiag` commands. See the AI Diagnose
+> entries below and `/vessel-ai` §4.1.
+
 **What landed:** the FrogletTools ▸ AI ▸ Third Eye window (a second camera and RenderTexture) is gone. The Third Eye
 now drives the MAIN camera in the Game view, in the editor and development builds only
 (`Assets/_Scripts/Controller/Camera/ThirdEye/`). Refcompile player + editor OK, `ThirdEyeRigTests` unchanged.

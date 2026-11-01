@@ -7,6 +7,12 @@
 
 ## Overview
 
+> **Current state (2026-11-01).** Every intensity is **Blast Run** ("Switchback is Blast Run" below): prism block
+> fields, clock-driven movers, 100 fps budgets, fixed seeds and the seed picker; flora/fauna, worlds, sweepers, jaws and
+> hunter packs are removed. The AI is the blast planner + prism sense + per-frame emergency sweep (below), watched in
+> the in-game AI Diagnose panel. The overview that follows describes the original random-gate race; its course,
+> scoring and replication rules still hold, but read the Blast Run sections for the layout.
+
 Switchback is the **Dolphin-only gate race**. A course of **randomly placed and randomly
 oriented** switch rings is scattered through the cell, and every pilot flies the **same course in
 order**: thread your next gate, or turn around and go back for it. The first **DOMAIN** whose
@@ -882,6 +888,7 @@ level; a weaving trail 8 -> 0. Real hull/turn dynamics are not modelled - verify
   keys, inherited from a mode whose vessel lays a different trail. A Dolphin trail here has not
   been measured against that ladder; if fauna never hunt, or the cell pins at Frenzy, that is
   where to look.
+  *(Note 2026-11-01: Blast Run spawns no flora/fauna, so this only applies if they come back.)*
 
 ### AI: the emergency sweep (2026-10-29, "dolphins eat prisms stupidly")
 
@@ -905,3 +912,50 @@ after a hit; the dodge is held 0.18 s. On a strike only hits before the crystal 
 max(SenseRange, speed x (1.2 + reaction)). The sense runs on every course. Controller `aiSenseDebug` draws it
 (sense tube green/yellow, sweep cyan/red, hit magenta, dodge white, avoid orange) and logs dodges at Info level.
 Startup: `[Switchback AI] sense active mask=2048 layer=11 stations=N`.
+
+Tuning: the hull radius is `SwitchbackPrismAvoidance.ShipRadius = 3f`; the sweep radius is ShipRadius + 0.3 x the
+difficulty's clearance. Raise it if hulls still clip prism edges, lower it if they dodge gaps they fit through.
+
+### Inspector flags (SwitchbackController)
+
+| Flag | Default | Does |
+|---|---|---|
+| `aiBlastPlanner` | on | Server AIs use the Direct / Thread / Blast planner (off = the generic gate AI) |
+| `aiSkillOverride` + `aiSkills` | off | Replace the intensity-to-skill mapping with four hand-set skills (I1-I4) |
+| `aiPlanGizmos` | on | Scene-view plan lines (select the controller) |
+| `aiSenseDebug` | off | Sense / sweep / dodge lines and Info-level dodge logs |
+
+## Watching the AI: the AI Diagnose panel (2026-11-01)
+
+The old FrogletTools ▸ AI ▸ Third Eye window (a second camera, rendered twice) is gone. The code still lives in
+`Controller/Camera/ThirdEye/`, but the tool is now the in-game **AI Diagnose panel** (editor + development builds only):
+
+- **F2 is the only hotkey**: open / close. Everything else is a panel button or a console command (`aidiag cam on`,
+  `aidiag fly`, `aidiag next`, `aidiag overlay ...`; `help` lists them).
+- Cameras (Chase / Follow / Free fly / Orbit) drive the MAIN camera only while the panel is open. Free fly is
+  `FreeFlyCamera`, the same class Lavalamp god mode uses. The default gameplay chase camera is unchanged and is what
+  every match starts on.
+- Switchback registers two overlays: **AI plan (Switchback)** (= `aiPlanGizmos` in the Game view) and **AI sense
+  (Switchback)** (turns on `aiSenseDebug` lines and logs).
+- Closing the panel (F2, scene unload at match end, quit, Play stop) restores the default camera and turns every
+  overlay off. Only slider tuning persists; nothing else survives a session or domain reload. Full controls:
+  `/vessel-ai` §4.1.
+
+## Performance (2026-10-30 .. 11-01, "make Switchback very performant")
+
+Targets for a Release capture of Switchback I2 / Blast Run I4 (`perf_hunt.py` scenarios `Switchback`,
+`SwitchbackBlast`): **CPU busy under 10 ms, about 300 draw calls, GC under 50 KB** per capture window.
+
+What was found:
+- **The Third Eye window rendered the world a second time** (post, shadows, AA). Fixed by moving it into the game
+  (it drives the main camera; no second render).
+- **Editor GC** is the editor's, not the game's: Debug code optimization, deep profile, a visible Scene view and
+  inspector repaint all allocate. Judge GC only from a clean capture.
+- **Background creatures** (flora/fauna) cost CPU every frame for nothing the race uses; Blast Run spawns none.
+- Code: the mover scan matches prisms through a laid-position hash and a reused buffer, with profiler markers on
+  `TickMovers` and the scan (414581980); AI log strings are built only while ArcadeMatch verbose is on, through
+  `CSDebug` (d9816f400).
+
+**Clean capture:** Code Optimization = Release; Profiler deep profile off; no visible Scene view; Game view <= 1440p
+and focused; AI Diagnose panel closed (camera and overlays off); `aiSenseDebug` off; fps uncapped; 2 AI at I2 (or
+3 AI at I4), 90 s, and let the editor auto-capture. Then `python3 Tools/Build/perf_capture_report.py`.

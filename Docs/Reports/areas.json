@@ -51,7 +51,7 @@
       "test": [
         "Pull Ys-bleeding-edge, open Unity, wait for the compile.",
         "Arcade > Regatta, solo, Hard. Tap the AI chips to seat Squirrel, Manta, Rhino, Urchin and Dolphin. Launch.",
-        "the Third Eye (F2, panel F3), Trails on: each AI reads Approach then Through near a ring; after a missed ring it reads break-off and comes straight back.",
+        "the AI Diagnose panel (F2), Trails on: each AI reads Approach then Through near a ring; after a missed ring it reads break-off and comes straight back.",
         "Every hull finishes three laps at I1; repeat at I3. Note any hull that does not, and at which ring."
       ]
     },
