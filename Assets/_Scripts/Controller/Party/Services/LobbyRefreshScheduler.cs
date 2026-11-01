@@ -81,6 +81,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public const float INTERVAL_JITTER_FRACTION = 0.1f;
 
+        /// <summary>
+        /// Seconds between safety polls while someone is LOOKING at the online list (the friends panel is
+        /// open, see <see cref="PresenceWatchDemand"/>). A quit that sent no leave (Editor Stop, a crash, a
+        /// killed process) is only seen by the poll: two absent reads at 20 s held a ghost row for up to
+        /// ~70 s after UGS's own reap. At 8 s it is ~16 s after the reap. Still ~0.25 GETs/s, under UGS
+        /// Lobby's 1 GET/s/player, and only while the panel is open.
+        /// </summary>
+        public const float WATCHED_POLL_SECONDS = 8f;
+
         // ─────────────────────────────────────────────────────────────────────
         // Private state
         // ─────────────────────────────────────────────────────────────────────
@@ -137,6 +146,8 @@ namespace CosmicShore.Gameplay
         {
             _timer += unscaledDeltaTime;
             if (_currentInterval <= 0f) _currentInterval = RollInterval();
+            // The panel opened mid-cycle: do not wait out the long interval already rolled.
+            if (_currentInterval > CurrentBaseInterval * (1f + INTERVAL_JITTER_FRACTION)) _currentInterval = RollInterval();
             if (_timer < _currentInterval) return false;
             _timer = 0f;
             _currentInterval = RollInterval();
@@ -151,9 +162,21 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private float RollInterval()
         {
-            float span = _defaultInterval * INTERVAL_JITTER_FRACTION;
-            return _defaultInterval - span + (float)_jitter.NextDouble() * (2f * span);
+            float baseInterval = CurrentBaseInterval;
+            float span = baseInterval * INTERVAL_JITTER_FRACTION;
+            return baseInterval - span + (float)_jitter.NextDouble() * (2f * span);
         }
+
+        /// <summary>The interval jittered around now: <see cref="WATCHED_POLL_SECONDS"/> while the online
+        /// list is watched (and that is shorter than the default), otherwise the default.</summary>
+        public float CurrentBaseInterval =>
+            PresenceWatchDemand.IsWatched ? Mathf.Min(_defaultInterval, WATCHED_POLL_SECONDS) : _defaultInterval;
+
+        /// <summary>Seconds accumulated toward the next fire (negative while deferred). Diagnostics only.</summary>
+        public float ElapsedSeconds => _timer;
+
+        /// <summary>The interval the current cycle must reach. Diagnostics only.</summary>
+        public float CurrentIntervalSeconds => _currentInterval;
 
         /// <summary>
         /// Makes the next fire come <paramref name="seconds"/> from now (sooner than the interval would).
