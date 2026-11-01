@@ -162,6 +162,7 @@ Unity golden exists. `run.json` records where the cut landed (`cut`) as well as 
 | quality pinned to High (`PINNED_PREFS`), post off, grey Scene Color | 0.0387 | 0.0189 | 0.960 |
 | the prism destruction's fragments (`PrismCollisionBurst.shader`, family 12) fly instead of standing still | **0.0372** | 0.0192 | 0.964 |
 | (tried, not kept) the built-in Sphere as Unity's 24x16 UV sphere instead of the icosphere | 0.0393 | 0.0199 | 0.961 |
+| (tried, not kept, lossless golden) Unity's exact 439-vertex built-in Sphere | 0.0291 | 0.0162 | 0.974 |
 
 What each one is:
 - **The golden has no post.** Stars fitted between the two engines (a KD-tree over detected stars, a similarity
@@ -183,11 +184,16 @@ What each one is:
   (`PrismBurstFragmentPose`, TEXCOORD2 bound at location 10); the roll, the suction and the lab kinds still draw at rest.
 - **The shell's sphere.** The blast shell (RippleGraph) pushes each vertex out by noise of its position, so Unity's
   UV sphere gives it a spikier edge than Amoebius's icosphere. A 24x16 UV sphere matched the look but scored worse,
-  since the spikes land on different vertices; matching it needs Unity's exact sphere mesh.
+  since the spikes land on different vertices. Unity's exact built-in Sphere (439 vertices, exported from 6000.3.17f1
+  on Gbox, branch `claude/unity-builtin-meshes-handoff`) scored worse too, 0.0291 against the lossless golden: the
+  spike height is a legacy-sine hash of the vertex position times 500 (arguments near 20,000), so a GPU's `sin`
+  precision decides it and no mesh can land the same spikes. The icosphere stays.
 - **Against the lossless golden (2026-11-01).** The PNG frames were recorded again on Gbox (same commit, same
   settings) after the first set was lost, and scored without the H.264 decode: **loss 0.0278** (rmse 0.0157, ssim
   0.976) for the current engine, against 0.0329 before the fragments were drawn and 0.0302 with the UV sphere.
-  The first 100 frames sit at rmse 0.005; frames 200-300 at 0.032 carry almost all of what is left.
+  The first 100 frames sit at rmse 0.005; frames 200-300 at 0.032 carry almost all of what is left, 89% of it inside
+  the blast, mostly the debris streaks. The two clocks agree (Amoebius's take frame 0 is at 0.52 s, Unity's near
+  0.47 s), so the shell's texture phase is not the gap.
 - **What is left** is the last 100 frames: the blast's debris placement, and the shell, which is greener, more
   opaque and more jagged in Unity at the same width. Early frames sit near rmse 0.01, mostly the codec.
 
