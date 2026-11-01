@@ -35,10 +35,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The emergency sweep's look-ahead in seconds of real flight (reach = speed x this, at least
-        /// <see cref="SwitchbackPrismAvoidance.EmergencyMinReach"/>): Easy sees an impact 0.35 s out, Legendary 0.9 s.
+        /// <see cref="SwitchbackPrismAvoidance.EmergencyMinReach"/>): Easy sees an impact 0.45 s out, Legendary 1.0 s (each +0.1 s after the Nov 2026 hit soak).
         /// Present at every level - only how early it sees changes.
         /// </summary>
-        public static float EmergencySeconds(int level) => level switch { 1 => 0.35f, 3 => 0.7f, 4 => 0.9f, _ => 0.5f };
+        public static float EmergencySeconds(int level) => level switch { 1 => 0.45f, 3 => 0.8f, 4 => 1.0f, _ => 0.6f };
 
         public static SwitchbackAvoidSkill ForLevel(int level) => level switch
         {

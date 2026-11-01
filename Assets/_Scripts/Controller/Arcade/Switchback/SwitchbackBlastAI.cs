@@ -324,8 +324,8 @@ namespace CosmicShore.Gameplay
             var st = StateFor(p);
             float now = Time.time;
             if (st.EmergOn && now < st.EmergHoldUntil) { steer = pos + st.EmergSteer * EmergSteerDistance; return true; }
-            bool hot = now < st.HotUntil;
-            if (!hot && ((Time.frameCount + (int)(st.Seed & 1u)) & 1) != 0) { st.EmergOn = false; return false; }
+            // Every frame (was every other frame when cold): the soak showed hulls meeting prisms the skipped frame saw
+            // first. One sphere cast per AI per frame; HotSeconds still extends the hold after a hit.
 
             float speed = vel.magnitude;
             if (speed < 1f) { st.EmergOn = false; return false; }
@@ -333,7 +333,7 @@ namespace CosmicShore.Gameplay
             int level = _levelFor(p);
             var skill = _avoidFor(p);
             float reach = SwitchbackPrismAvoidance.EmergencyReach(speed, SwitchbackAvoidSkill.EmergencySeconds(level));
-            float radius = SwitchbackPrismAvoidance.ShipRadius + skill.Clearance * 0.3f;
+            float radius = SwitchbackPrismAvoidance.ShipRadius + skill.Clearance * 0.4f;
             if (s_prismMask < 0) s_prismMask = LayerMask.GetMask("TrailBlocks");
 
             // On a strike the crystal is the point: only what is in front of it is in the way.
@@ -343,7 +343,8 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 c = st.Avoid == SwitchbackAvoidAction.Blast ? st.BlastCrystal : st.D.Key;
                 float along = Vector3.Dot(c - pos, dir);
-                if (along > 0f) limit = Mathf.Min(limit, along - 2f);
+                // Only while the crystal is still there to blast: a key someone else took clears nothing.
+                if (along > 0f && CrystalAt(c)) limit = Mathf.Min(limit, along - 2f);
             }
 
             bool hit = Sweep(pos, dir, radius, limit, out float hitDist, out Vector3 hitAt, out Vector3 normal);
