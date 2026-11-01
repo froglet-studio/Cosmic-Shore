@@ -164,10 +164,12 @@ def run(hull, check=False, preview=False):
     for icon, im in rendered:
         folder = os.path.join(out_dir, icon.get("subdir", ""))
         os.makedirs(folder, exist_ok=True)
-        folder_meta = folder.rstrip("/") + ".meta"
-        if not os.path.exists(folder_meta):
-            open(folder_meta, "w").write(FOLDER_META.format(guid=guid_for(spec.HULL, os.path.relpath(folder, ICON_ROOT) + ".folder")))
-            print(f"  wrote {os.path.relpath(folder_meta, ROOT)} (new folder guid)")
+        # every new folder down from the hull's needs its .meta (a first hull with only Parts/ missed its own)
+        for f in {out_dir, folder}:
+            folder_meta = f.rstrip("/") + ".meta"
+            if not os.path.exists(folder_meta):
+                open(folder_meta, "w").write(FOLDER_META.format(guid=guid_for(spec.HULL, os.path.relpath(f, ICON_ROOT) + ".folder")))
+                print(f"  wrote {os.path.relpath(folder_meta, ROOT)} (new folder guid)")
         png = os.path.join(folder, icon["name"] + ".png")
         im.save(png, optimize=True)
         meta = png + ".meta"

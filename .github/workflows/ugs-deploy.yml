@@ -1,0 +1,54 @@
+# Uploads the game's Cloud Code scripts to UGS from bleeding-edge, with a button: GitHub > Actions > "Deploy UGS
+# scripts" > Run workflow (Tools/UGS/README.md, "Deploying the scripts"). Runs Tools/UGS/deploy.sh, which tests every
+# script, checks the vessel prices, then uploads economy, weekly-score, match-report, trust and entitlements. It never
+# applies the access policies.
+#
+# "development" and "production" are the UGS environments on Unity's servers, not git branches. Deploy to development,
+# test with a build there, then run it again with production.
+#
+# Needs two repository secrets (Settings > Secrets and variables > Actions), from a UGS service account with the project
+# roles Unity Environments Admin (the CLI looks the environment up; without it: 403 on GetEnvironments), Cloud Code
+# Script Publisher and Cloud Code Editor: UGS_CLI_SERVICE_KEY_ID and UGS_CLI_SERVICE_SECRET_KEY. Owner: Shombith (UGS and the backend).
+name: Deploy UGS scripts
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: UGS environment to upload to
+        type: choice
+        options: [development, production]
+        default: development
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ugs-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only from bleeding-edge
+        if: github.ref != 'refs/heads/bleeding-edge'
+        run: |
+          echo "::error::Run this from bleeding-edge (the branch picker on the Run workflow button), not ${GITHUB_REF#refs/heads/}."
+          exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install the UGS CLI
+        run: npm install -g ugs
+      - name: Test and deploy
+        env:
+          UGS_CLI_SERVICE_KEY_ID: ${{ secrets.UGS_CLI_SERVICE_KEY_ID }}
+          UGS_CLI_SERVICE_SECRET_KEY: ${{ secrets.UGS_CLI_SERVICE_SECRET_KEY }}
+        run: |
+          if [ -z "$UGS_CLI_SERVICE_KEY_ID" ] || [ -z "$UGS_CLI_SERVICE_SECRET_KEY" ]; then
+            echo "::error::Add the UGS_CLI_SERVICE_KEY_ID and UGS_CLI_SERVICE_SECRET_KEY repository secrets first (Tools/UGS/README.md)."
+            exit 1
+          fi
+          bash Tools/UGS/deploy.sh "${{ inputs.environment }}"

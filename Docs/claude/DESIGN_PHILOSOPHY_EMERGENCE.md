@@ -98,7 +98,18 @@ ones.
   box budget, schedules `PrismMotion.ContactJob` (spheres)** — never its own overlap test.
 - **Flora & Fauna** — populations that live on and respond to the
   fundamentals above (e.g. fauna attraction to prisms, flora growth on
-  cells).
+  cells). **A fauna's ROLE is not fixed by its kingdom** (Garrett, 2026-10-31, `Docs/ECOSYSTEM.md` §66): besides the
+  CONSUMERS (`FaunaDiet.Herbivore` eats prism mass, `Predator` eats herbivores) there are **POLLINATORS**
+  (`FaunaDiet.Pollinator`, the bees), fauna whose effect is PRODUCTIVE. A pollinator eats no flora and no mass; its
+  visits hasten the flora's own growth (`Flora.Hasten`), what it carries is a TRANSFER (mass stung off opposing fauna,
+  built into its home), and its population is raised by its HOME, a flora (`BeeHiveFlora`) that takes a FLORA slot in
+  the spawn profile and the flora budget. So a pollinator population sits on the producer side of the ledger, like a
+  plant, and never starves. It is still PREY (Garrett, 2026-11-01: predators eat bees; `FaunaDiets.IsPrey`), it
+  pollinates flora of every domain, and its home is built from all three domains, each comb cell in the domain of the
+  mass that paid for it (a transfer domain for domain). Run through the curation process as an EXTENSION of this entry, not a new fundamental:
+  it is a third role inside Flora & Fauna, composing with Mass (transfer, never minted), Domain (it defends its own),
+  Elementals (one heart per bee, its hive's element), Cells (the production freeze and caps) and Vessels (the Ratel's
+  raided hive and the Honeyguide's Mass power found hives through `BeeHiveFlora.SeedAt`).
 - **Vessels** — the player/AI actors whose class-specific abilities compose
   with the fundamentals above.
 - **Toys** — interactive world-space stations the player's **Vessel** flies into,

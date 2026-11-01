@@ -65,6 +65,154 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play T1: Google Play Games sign-in on Android (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `PlayGamesSignIn` (mirrors `GameCenterSignIn`), `PlayGamesPlatform` (C#, calls the Java bridge),
+`Assets/Plugins/Android/PlayGamesSignIn.androidlib` (the bridge, its `build.gradle` with the one dependency
+`com.google.android.gms:play-services-games-v2:22.1.0`, and a manifest that removes the library's start-up provider), and
+`PlayGamesAppId` (an Android build step that writes the Play Games project ID into the manifest while the switch is on).
+`PlatformSignIn` now also picks Play Games on Android. `MobileSignInConfig` ships with the switch off and both ids empty.
+
+**Verified without the editor:** the Java bridge compiled against the real `play-services-games-v2` 22.1.0 and
+`play-services-tasks` 18.2.0 classes (a wrong API call planted in it was caught). `unity_refcompile` player and editor 0
+errors; the Android-only C# compiled with its guard forced on, and a planted error there was caught. The device-read gate
+lists the three Java-bridge calls as reviewed exceptions (4 findings without them). **Not checked anywhere:** a Gradle
+build of the `.androidlib` (Unity's Android build), and `PlayGamesAppId` (needs the Android module).
+
+**Test (Android):**
+1. With the switch OFF, make an Android build: it builds, launches and signs in anonymously as before. In the built APK
+   (Android Studio > Analyze APK, or `apkanalyzer manifest print`), `PlayGamesInitProvider` is absent and there is no
+   `com.google.android.gms.games.APP_ID` meta-data.
+2. Set up the Play Console project and the UGS provider (Tools/UGS/README.md), fill both ids, tick the switch, build to a
+   phone signed in to Play Games as a tester: first launch signs in with no screen; the UGS player shows a Google Play
+   Games identity.
+3. Clear the app's data and launch again: the same UGS player id comes back.
+4. An install with an existing anonymous account: after sign-in, the account gains the Play Games identity and keeps its
+   progress.
+5. A phone not signed in to Play Games: the game signs in anonymously, no error dialog.
+
+### 🔴 Fair play T1 and T3: Game Center sign-in on iOS, server-owned episode tokens (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **Game Center (T1):** `PlatformSignIn` picks Steam on PC or Game Center on iOS for `AuthenticationServiceFacade`
+  (the facade now asks only it). `GameCenterSignIn` mirrors `SteamSignIn`; `GameCenterPlatform` + the native
+  `Assets/Plugins/iOS/GameCenter/GameCenterSignIn.mm` get Apple's identity-verification signature without showing any
+  screen. `GameCenterCapability` (an iOS post-build step) adds the Game Center capability only while
+  `MobileSignInConfig.signInWithGameCenter` is ticked. Ships off.
+- **Episode tokens (T3):** `Tools/UGS/Commerce/entitlements.js` owns tokens and owned episodes (protected
+  `PLAYER_ENTITLEMENTS`); `ServerEntitlements` + `EpisodeTokenService.GrantTokensAsync` / `UnlockEpisodeAsync` /
+  `RefreshFromServer` (called from `PlayerDataService` at sign-in). `ServerEntitlementGate` ships off.
+
+**Verified without the editor:** entitlements tests 7 passed, three planted faults caught (replayed order credited
+twice, the client's token count trusted, the fake provider in production). `unity_refcompile` player and editor 0
+errors; the iOS-only code compiled with its guard forced on, and a planted error there was caught. Both fair-play gates
+clean (the new folders are registered: PlatformSignIn as fair play, Commerce as paid content, and the one `DllImport`
+as a reviewed exception). **Not compiled anywhere:** the `.mm` file (needs Xcode) and `GameCenterCapability`
+(needs the iOS build module).
+
+**Test (Game Center, an iOS device signed in to Game Center, the UGS Apple Game Center provider added):**
+1. An iOS build with `signInWithGameCenter` ticked: Xcode's Signing & Capabilities shows Game Center.
+2. A fresh install signs in with no screen; the dashboard's player shows an Apple Game Center identity.
+3. Delete and reinstall: the same UGS player id comes back.
+4. An install with an existing anonymous account: after sign-in, the account gains the Game Center identity and keeps
+   its progress.
+5. Sign out of Game Center in Settings and launch: the game signs in anonymously, no error dialog.
+
+**Test (tokens, `entitlements.js` deployed to development, `ServerEntitlementGate.Enabled = true` in a test build, the
+editor's fake provider on in an `EpisodeTokenConfig`):**
+1. Buy a token through the fake provider: the balance rises by the server's bundle size and the dashboard's
+   `PLAYER_ENTITLEMENTS` lists the order.
+2. Spend it on an episode: owned, balance 0; spending again on the same episode spends nothing.
+3. Edit `PLAYER_PROFILE.Economy.EpisodeTokenBalance` in the dashboard to 50, sign in again: the balance shows the
+   server's number.
+
+### 🔴 Fair play T3: vessel and Hangar unlocks bought and recorded on the server (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `economy.js` sells vessels (`unlockVessel`) and Hangar levels (`upgradeHangar`) at the prices authored
+in Unity (its CATALOG block, written by `Tools/Build/author_economy_catalog.py`, `--check` in the bleeding-edge guard)
+and records them in the protected wallet in the same write; `migrateUnlocks` brings an account's old unlocks across
+once, capped at 20,000 crystals of value. Client: `PlayerDataService.TryBuyVessel` / `TryBuyHangarLevel` (used by
+`VesselUnlockSystem.TryPurchaseVessel` and `HangarUpgradesPage`) spend locally at once and ask the server; the
+server's answer replaces the local vessels and Hangar levels (`VesselUnlockSystem.ApplyServerOwnership`), after the
+one-time migration. **Gated off** with the wallet (`ServerEconomyGate`): with it off, buying works exactly as before.
+Affects Shombith's backend (`UGSDataService.VesselList` getter) and the Hangar page (one call).
+
+**Verified without the editor:** economy tests 16 passed (5 new); planted faults caught (a vessel price changed in its
+asset fails `--check` naming the line; dropping "already owned" fails a test). `unity_refcompile` player and editor 0
+errors, a planted error caught; Amoebius 0 errors.
+
+**Test in the editor (economy.js redeployed to development, `ServerEconomyGate.Enabled = true` in a test build):**
+1. A fresh account: the first sign-in sends `migrateUnlocks` with nothing; starters stay unlocked.
+2. Buy a 100-crystal vessel in the Hangar: crystals drop at once, the vessel unlocks, and the dashboard's
+   `PLAYER_ECONOMY` shows it in `vessels` with a `vessel:<Name>` spend.
+3. Buy two Hangar levels: 100 then 200 crystals; `PLAYER_ECONOMY.hangar` shows `"<vessel>:<element>": 2`.
+4. Edit `HANGAR_DATA` in the dashboard to unlock a 4000-crystal vessel by hand, sign in again: it is locked again.
+5. An account with unlocks from before (gate off, then on): its first sign-in keeps them (up to the cap).
+
+### 🔴 Fair play phase B: the trust record, the Undertow, the shadow board, the notice and appeal (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `Tools/UGS/CloudCode/trust.js` (the trust record and ladder; Tools/UGS/README.md "Switching on the trust
+record"). Client: `FairPlayTrust` (`ServerTrust.cs`, gate `FairPlayTrustGate.Enabled = false`) asks `status` at sign-in,
+before the presence lobby join (`HostConnectionService.EnsureInitializedAsync`); `PresenceLobbyService` finds and
+creates its lobby under `PRESENCE_LOBBY` + the suffix (empty on the shore); `WeeklyChallengeLeaderboardService` splices
+the account's own row from `<board>_undertow` into the public page (`WeeklyChallengeRanking.SpliceOwnRow`);
+`FairPlayNoticeOverlay` (built at runtime like the privacy overlay; words in `Resources/FairPlayNoticeConfig.asset`)
+shows the notice and sends an appeal. **Gated off**: with the shipped gate nothing changes. Affects the party layer
+(Shombith's UGS; Yash's hardening) and the weekly board (Yash's leaderboards): one call each, a no-op while off.
+
+**Verified without the editor:** Cloud Code tests trust 14, match-report 22, weekly-score 7 passed; planted faults
+caught (a minor sent to the Undertow, the stage leaking to the client, the shadow board bypassed). `unity_refcompile`
+player, editor and webgl: 0 errors in project code; planted errors in the overlay and the splice caught.
+`FairPlayPhaseBTests` compile. Amoebius `dotnet build Port/src/CosmicShore.Live`: 0 errors. Nothing run in Play mode.
+
+**Test in the editor (with match reports and trust.js deployed to development, gate on, two MPPM players):**
+1. `FairPlayPhaseBTests` pass.
+2. A clean account: Party logs show the presence lobby query and create under `PRESENCE_LOBBY` exactly as before.
+3. Move a test account to the Undertow (dashboard: add three `host_result_mismatch` signals to its `FAIRPLAY_SIGNALS`
+   with `at` = now in ms, birth year 1990 in `FAIRPLAY_AGE`) and sign in: it joins `PRESENCE_LOBBY_u1`, sees only other
+   Undertow accounts in presence, its parties fill with AI; the clean account does not see it.
+4. Play three matches with it: on the next sign-in the notice appears (title, body naming rule 1, "automated checks",
+   the paid-content line); OK closes it; Appeal with a few words shows "Your appeal is with our team" and the record
+   in `fp-<id>` shows `appeal.state: open`; the account appears in the `fairplay-review` queue.
+5. Its weekly time: posted to `weekly_challenge_undertow`; its own leaderboard panel still shows its row at its rank;
+   the clean account's panel does not.
+6. Reviewer: add `review: {decision: "clear"}` to its record; next sign-in it is back in `PRESENCE_LOBBY`, no notice,
+   out of the queue. `restrict` with an `until` date: the notice shows at once with the date.
+7. Pad: A/B work on the notice; Esc closes it unless the appeal text box is focused.
+8. Pool pass (added 2026-10-26): with a shore host and a test client forced into the Undertow, make the Undertow client
+   join the shore host's party anyway (edit its lobby suffix to empty in the debugger): the host's Party log shows
+   `pool check: OtherPool - removing` and the guest leaves the party; the guest's `FAIRPLAY_SIGNALS` gains `pool_bypass`.
+   A normal shore guest shows `pool check: SamePool` and stays.
+9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
+   boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
+   (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
+### 🔴 Brittle Star ability row recut (Charge, Mass, Space, Time) and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
+`chargeStarIcon`, `cordsOffAlpha` and `SetCords(cordsOut01, pull01, domain)`; `readyColor` is gone; the controller injects
+`GameDataSO` for the domain colour; `BrittleStarExecutor.CordPull01` is new.
+
+**Verify in editor**
+- [ ] It compiles; `BrittleStarHUDVariant.prefab` shows the three Charge parts wired on the view, no missing references.
+- [ ] Fly the Brittle Star: the Charge card is the hull nose-on in your domain colour with five dim whips; Y (Charge Mode)
+      brings the whips to full white; pulling RT crossfades them to five straight sabers, releasing brings the whips back.
+- [ ] No card turns lime when its mode is on; the Space plate still goes hot while overheated.
+- [ ] Mass card: the star seen from behind (domain) with five lines of prisms coming at you, dim until B (Creation)
+      turns them white; as Mass levels up the blocks fatten (crossfade to `BrittleStar_MassTrailsFat`).
+      New: `massTrailsIcon`, `massTrailsFatIcon`, `massStarIcon`, `trailsOffAlpha`, `SetCreationTrails`,
+      `BrittleStarExecutor.BlockGirth01`.
+- [ ] Space card: the star flying right with five rounds; with the aim stick centred they meet ahead, pushed they splay;
+      dim until X (Space Mode); overheated they dim and the plate goes hot; at high Space the splayed rounds sit further
+      out. New: `spaceRoundsIcon`, `spaceRoundsMeetIcon`, `spaceRoundsFarIcon`, `spaceStarIcon`, `SetGuns`,
+      `BrittleStarExecutor.Splay01` / `Range01`.
+- [ ] Time card: dim gapped blocks behind the star; A (Speed Mode) stretches them into one joined line, longer at high
+      Time. New: `timeTrailCruiseIcon`, `timeTrailFastIcon`, `timeTrailFasterIcon`, `timeStarIcon`, `SetSpeedTrail`,
+      `BrittleStarExecutor.SpeedBoost01`.
+- [ ] Omni card: the star over two empty ring slots at the start; each crystal fills one (solid), a throw (LT) empties
+      one. New: `omniStock0Sprite`..`omniStock2Sprite`, `SetSpareRings`, and on the shared base
+      `VesselHUDView.SetOmniAbilitySprite` (protected, additive; no other hull calls it).
+
+
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Compiled against Unity references (`unity_refcompile`, player + editor: 0 errors in project code); not opened in the editor.
@@ -784,6 +932,136 @@ Compiled against the Unity reference assemblies (player and editor configs, 0 pr
 - [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
 
 First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+### 🔴 Honeyguide and Ratel: hive mode (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Garrett: "this is good lets push these ratel changes to unity including the way the timer subtract from both sides to the
+center." `HiveCore.cs` (new, engine-free), `HoneyguideCrew.Hive.cs` (new), `HoneyguideOmniCrystalEffectSO` +
+`HoneyguideImpactorDataContainer` (the prefab's VesselImpactor now points at it), `HoneyguideDynamoView` (the comb, the
+strip, Leave, the crystal glow, the centred bars), `HoneyguideConfigSO` + asset (the hive's numbers, words, five empty FMOD
+slots), `DynamoCore.SpinNow` / `ReadState(out end)`. `/verify-unity` was unavailable (no Editor, no `unity` binary). Green:
+the headless reference compile, player and editor (0 errors in project code); `Tools/Build/hive_lab/parity.cjs` and
+`dynamo_lab/parity.cjs` PASS; `HiveCoreTests`' bodies run against the core with .NET (8/8); `author_honeyguide_assets.py
+--check` / `--self-test`; console-logging and conditional-compilation checks.
+
+1. Run `HiveCoreTests` (all 9; the config test needs the Editor) and `HoneyguideTests`.
+2. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. The strip over the board names the nearest
+   omnicrystal's distance; the diamond slides along it as the AI flies closer.
+3. When the hull takes the omnicrystal: the board's edge flashes amber, the comb replaces the Dynamo, the bar across the
+   top is amber and shrinks from both sides; a comb of super-shielded prisms stands about 40 u behind where the crystal
+   was. Look for: the comb clear of the hull, its cells in the board's colours.
+4. Drag 3 touching cells of one other colour and let go: their prisms break in the world. Drag back over the last cell:
+   it drops out. Drag into a red danger cell: the chain breaks, a sting toast, the thumb waits a second. A white-ringed
+   (shielded) cell needs two chains.
+5. Clear both colours (or wait 15 s, or tap Leave): the toast names the rewards; the reward prisms appear on the Dynamo
+   beside its largest crystal, which lights; the battery gains the charges; a fresh spin starts. What is left of the comb
+   is ordinary mass (shields and danger where they were).
+6. While in hive mode, let a rival hit the hull: no petals lost, no silence.
+7. Fly instead (the AI Ratel plays): the small board shows the comb and the AI clears it (Hard: no stings).
+8. A phone held portrait: the comb's cells, the Leave button and the strip are thumb-sized and nothing overlaps.
+9. Two machines (a rider on the Ratel): the rider's drags reach the hull's machine and both see the same comb.
+10. Bees: when hive mode ends, a bee hive appears 12 u behind the comb in our domain; within a few seconds its first bees
+    hatch and patrol the comb, and an opposing creature that comes near is stung (see the Bees entry for what to look for).
+
+**First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
+Medium hive skill (a proposal between the lab's rookie and skilled).
+### 🔴 Bees: a celestial body built from its spec, no up, vanes and a stinger (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+Garrett: "it isn't actually a bee. it is a celestial etherion based life form. it doesn't really have a sense of up ...
+then apply those learnings to the bee". `BeeFauna.prefab`'s body is built from `Tools/Build/fauna_kit/specs/bee.py` by
+`Tools/Build/fauna_kit/build.py` (the `/fauna-creation` skill): five braid spindles (Spine, Vane0-2, Sting), seven prisms
+(Rib0-2, VanePlate0-2, the Stinger, a 0.5 x 0.5 x 6 `DangerBlock`), the root identity and scale 1; `BeeVaneDriver`
+replaces `BeeWingDriver`; `Boid.SteeringUpFor` (world +y for every other boid) and `BeeFauna`'s carried up
+(`CelestialFrame`); Mass body scale 3.82, Space 6.2942 + `ErodeSpindle`. `Bee.fbx` and `bee_model/build_bee.py` are
+retired, so round 2's steps 1-3 below are superseded. `/verify-unity` unavailable (no Editor). Green: reference compile
+player and editor (0 errors in project code); `celestial.py bee` and `--self-test`; `author_bee_assets.py --check` and
+`--self-test` (7/7, the prefab read back against the spec); `CelestialFrameTests` under .NET 8 (5/5); heart collection,
+spindle sway, spawn roster, console logging and the C# gates. An offline render of the built prefab (`fauna_kit/
+render_prefab.py`) reads three-fold with the needle trailing.
+
+1. Open `BeeFauna.prefab`: the heart crystal at the origin; behind it a braided spine with three vanes sweeping back at
+   120 degrees, each carrying a plate; three rib prisms round the spine; a short braid at the tail carrying a long red
+   needle. Nothing ahead of the heart, no part on one side only. The braids' splayed ends: check which end of the
+   `BezierCurve.001` mesh is its tip (the builder assumes the mesh trails along its -z from its origin with a 0.55 stub
+   ahead, as the tadpole's does) and that no braid pokes through the heart.
+2. Play (Hesperides, or the Spawn Matrix Bee row): the vanes beat as a wave round the spine; a bee turning straight up or
+   down does not flip or snap level (it keeps whatever roll it had); a swarm reads as busy, not as insects.
+3. The four elements side by side (Spawn Matrix): Charge all red; a Mass bee about 3.8x the size with every plate and rib
+   shielded and its heart's swing clear of every shield; a Space bee 1.65x the Mass bee, its braids thinned where thickest,
+   the stinger unchanged; Time as Charge's size.
+4. `Fauna.ErodeSpindle` picks the skin with the most vertices as the body: all five braids tie, so check the Space bee
+   erodes along the Spine (not a vane) and the plates and ribs refit to their limbs.
+5. A bee is hunted and eaten by a predator (round 2's step 4) and its seven prisms leave as a skeleton when it starves.
+
+### 🔴 Bees round 2: a real bee model; predators eat bees; three-domain pollination and comb (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+Garrett: "2. yes. 3 they should pollinate all three and build a structure made from all three. 4. ... be sure to add them
+to the variuous list ... 5. make a real bee model with /fauna". `Bee.fbx` (`Tools/Build/bee_model/build_bee.py`), the
+prefab's `BeeModel` spindle, `BeeWingDriver` (four model wings + two vein prisms), `FaunaDiets.IsPrey`, `BeeMath.HoneyLedger`,
+`LifeForm.NewBlockDomain`, the Spawn Matrix's Bee row, the Codex's bee lines (`Docs/ECOSYSTEM.md` §66). `/verify-unity`
+unavailable (no Editor). Green: reference compile player and editor (0 errors in project code); `author_bee_assets.py
+--check` and `--self-test` (6/6); the bee and prey test bodies under .NET 8 (11/11); the fauna, ecology and C# gates.
+
+1. Unity imports `Assets/_Models/Fauna/Bee.fbx` at 1:1 with the head toward +z and no Animator; its `BeeBody` slot shows
+   `SpindleMaterial` and `BeeWing` the membrane material (the remap is by name in the .meta).
+2. Open `BeeFauna.prefab`: the model sits behind the heart crystal (the heart is the face, the eyes flank it), the abdomen
+   prism is inside the abdomen, the two vein prisms lie along the forewings' leading edges and tilt UP like the wings.
+3. Play: the four wings and the veins beat together; bees read as bees at gameplay distance (the stripes are grooves in
+   the domain colour - judge whether a yellow/black slot is wanted).
+4. Release a predator near a hive (Spawn Matrix): it hunts bees and eats them.
+5. Watch a hive grow past its seed: comb cells appear in the domains of the creatures its bees stung (a Jade hive grows
+   Ruby and Gold cells), and bees land on flowers of every domain.
+6. Spawn Matrix: the **Bee** row releases a lone bee that pollinates where it is; Codex > Scan & Merge lists the bee and
+   the hive with their behaviour lines.
+
+### 🔴 Bees: the pollinator fauna and its hive, a flora slot (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Garrett: "proper bees ... a fauna that acts more like a flora ... take the slot of a productive flora". New:
+`FaunaDiet.Pollinator`, `BeeFauna` (a Boid that never eats), `BeeHiveFlora` (the hive, a Flora listed in
+SupportedFloras), `BeeWingDriver`, `BeeMath`; assets by `Tools/Build/author_bee_assets.py` (`--check`, `--self-test`
+4/4): `BeeFauna.prefab`, `BeeHive.prefab`, eight Lifeforms configs, the Hesperides hive config (listed by
+`Tools/ecosim/gen_hesperides_assets.py`), the network prefab entry, the Spawn Matrix "Bee Hive" row. Record:
+`Docs/ECOSYSTEM.md` §66. `/verify-unity` was unavailable (no Editor). Green: the headless reference compile, player and
+editor configs (0 errors in project code); `BeeMathTests` (7) run against `BeeMath.cs` under .NET 8;
+`author_flora_armour.py`, `author_lifeform_heart_collection.py`, `verify_fauna_heart_seat.py`,
+`author_spawn_matrix_roster.py` `--check`.
+
+1. Run the edit-mode tests `BeeMathTests` and `EcologyEnumIntegrityTests`.
+2. Let Unity import: `BeeFauna.prefab` must open with three body prisms (BeeAbdomen, BeeWingL, BeeWingR), the wings'
+   tadpole skin hidden, `BeeWingDriver` on the root; `BeeHive.prefab` with its four bee configs wired. If the
+   NetworkObject regenerates its `GlobalObjectIdHash` on import, re-save and note it.
+3. Cell Selector → **Hesperides**. Two hives grow a comb of hex tubes round their heart; within about a spawn period,
+   three bees hatch near each and fly to the flowers. Watch a visited plant: it grows faster for ~10 s.
+4. Release a herbivore (Spawn Matrix, Tadpole) of another domain near a hive: the bees fly at it, sting prisms off it,
+   fly home; the hive lays a new comb cell once the store holds 34.6 (one cell's volume).
+5. Spawn Matrix → **Bee Hive** (flora row), each element: the bees wear the element (Mass shielded, Charge danger).
+6. Shoot a bee: it dies, drops its heart. Kill a hive: its bees keep pollinating where they are.
+7. Perf: Hesperides with 4 hives and 32 bees: no allocation spike from the bees' 0.4 s think.
+
+### 🔴 Honeyguide and Ratel round 7: AP bank 6, the Ratel picks one of three abilities (`cece/jolly-lovelace-t8y3a1`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Garrett: "lets have the ap cap go to 6. lets do the 3 ability pick as well." `DynamoCore` (the pick input, the Offer event,
+`AIPickOrder`, the reveal's offers in `WriteState` / `ReadState` and the digest), `HoneyguideConfigSO` (`apBank` 6,
+`abilityChoices` 3, `pickSeconds` 10, `pickAbilityTitle`), `HoneyguideDynamoView` (three tappable cards over the dimmed
+board, the time left under them), `HoneyguideCrew` (the Offer event). `/verify-unity` was unavailable (no Editor, no
+`unity` binary). Green: the headless reference compile, player and editor configs (0 errors in project code); `Tools/Build/dynamo_lab/parity.cjs` PASS (lab = C#, 13 planted controls caught);
+`author_honeyguide_assets.py --check` and `--self-test`; the new `HoneyguideTests` bodies run against the core with .NET 8
+(the tests themselves, which load the asset, need the Editor).
+
+1. Run the edit-mode tests: `HoneyguideTests.Config_CarriesRound7_ApBankSix_AndAPickOfThree`,
+   `Ratel_IsOfferedThreeAbilities_TheClockWaitsForItsPick_AndItGetsTheOneItPicked`, `Ratel_WhoDoesNotPickInTime_GetsTheFirstOffer`,
+   `TheAIRatel_PicksByItsOrder`, `TheBank_KeepsUnspentAP_UpToSix`, and the existing `RatelBoard_CopiedToAnotherMachine_...`.
+2. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. Let a spin pass without moving: the AP row shows 6
+   pips lit. Let another pass: still 6.
+3. Make a fourth pattern: the board dims, a heading reads "Pick the Ratel's next ability" and three cards name an ability
+   and what it does; a line under them runs down over 10 s. The spin bar does not move. Tap one: the toast names it, it
+   is the ability under the AP row, and the new ports are shown.
+4. Make a fourth pattern again and do not tap: after 10 s the top card's ability is taken.
+5. On a phone held portrait: the three cards fit inside the board and each is big enough for a thumb.
+6. Fly the Honeyguide (the AI plays the Ratel): every fourth pattern, the small board shows the three names briefly and
+   the AI takes one within about half a second.
+7. Two machines (a rider on the Ratel): the rider sees the offers, its tap reaches the hull's machine, and both boards
+   show the ability taken.
+
 ### 🔴 God mode in the lava lamp: a free inspection camera on F2 / L3 (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** `MenuGodModeCamera` on Menu_Main's Game object. F2 (or L3) swaps the lava-lamp camera for a free-fly
@@ -19401,6 +19679,27 @@ compile has no errors in the changed files (player and editor).
     VOYAGE". Leave freestyle and open the Voyage window: the cards now set out from the job's destination, the way home
     is one of them, and the news the job wrote shows as new work. Take the way home: docking keeps what was found.
 
+## 🔴 2026-11-01 — The Voyage Board in the game: the job cards draw the real Milky Way's sea and the course round the reefs (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md`. **Files:** `Data/Voyages/HyperSea.cs` (the board's sea model, ported line for
+line), `Data/Voyages/VoyageChart.cs` (the content's places and a job's course), `VoyageContent.cs` (`Charted`,
+`GalaxyX/Y/Z`), `VoyageContentSO.cs` (`CardCourse` and the five sea names), `UI/Views/VoyageMapGraphic.cs`,
+`VoyageJobCard.cs`, `VoyageJobsView.cs`, `Tests/Editor/HyperSeaTests.cs`; `VoyageContent.asset` from
+`author_voyage_assets.py` (which now also keeps `Toy_Voyage.asset`'s Ark escort wired). Affects: Garrett's voyage slice.
+Not compiled: the session had no Unity editor and no .NET SDK, so nothing here has been through a compiler.
+
+1. Open the project. **Pass:** no compile errors.
+2. Run `HyperSeaTests` and `VoyageRulesTests`. **Pass:** green (every `HyperSeaTests` number is the board's own output).
+3. Menu_Main, open the Voyage window. **Pass:** each job card's map is the sea around Tumult, blue-violet water with
+   orange reef patches; the slice's places sit on it with their names (one name, Celadon/Carmine/Aurum, where the
+   three harbours share Tumult); the job's course is a green line stepping cell by cell round the reefs, not a straight
+   lane; a small round galaxy sits in the top-right corner with a white dot (Sol) and a gold one (this water); under
+   the map a line such as "1,500 LY THROUGH WATER - LIGHT TAKES 1,500 YEARS".
+4. Edit `CardCourse` in `VoyageContent.asset` to empty. **Pass:** the line under the map disappears, nothing else changes.
+5. Open the window on a phone-sized Game view. **Pass:** the map, corner galaxy and line fit the card; opening the
+   window the first time takes no visible hitch (the sea is painted once and shared; courses are cached).
+6. Set sail on a card. **Pass:** the voyage plays as before (the lanes' cell counts still set the leg's length).
+
 ## Lavalamp wormhole lab: original lens + wall vs the new mobile water pipe, side by side (2026-10-28) - NOT EDITOR-VERIFIED
 
 **Files:** `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` + `LavalampWormholeLab.cs` (the lab, runtime
@@ -19852,3 +20151,22 @@ overlays off. Camera mode and overlay toggles are no longer saved; statics reset
 2. F2 → Free fly → F2: chase camera back exactly (FOV too), overlays gone.
 3. Panel open with Orbit + trails, end the match / go to menu: panel closed, default camera.
 4. Panel open, stop Play, press Play: panel closed, default camera, overlays off.
+
+## Honeyguide round 8: banked triggers, pull to preview, Mass hive (2026-11-01) - NOT EDITOR-VERIFIED, NOT COMPILED
+
+**Files:** `HoneyguideCrew.Triggers.cs` (rewritten), `HoneyguideCrew.Preview.cs` and `HoneyguideCrew.MassHive.cs` (new),
+`HoneyguideCrew.Pilot.cs`, `.Zip.cs`, `.Hive.cs`, `HoneyguideDynamoView.cs`, `HoneyguideConfigSO.cs`, `HoneyguideConfig.asset`,
+`HoneyguidePeckAction.asset` (firingRate 10), `Honeyguide.prefab` (no boost), `ElementalAbilityMaps/Honeyguide.asset`,
+`TouchControlProfiles.asset` (RT glyph on Space). The session had no Editor and no .NET SDK, so the C# was not compiled:
+compile first. Design: `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` "The triggers (lab round 8)".
+
+1. Compile. **Pass:** no errors in the Honeyguide files; EditMode `HoneyguideTests` pass.
+2. Toybox Vessel Changer -> Honeyguide and Ratel. Hold RT. **Pass:** a blue aim line 45 u ahead; let go: three quick shots.
+3. Hold LT. **Pass:** a dart line and ring 18 u ahead; let go: the hull darts; a rival or creature in the ring is struck.
+4. Make an upgrade card on the Ratel (or let its AI). **Pass:** a toast "... on RT x3"; the chip shows the card's name and
+   three dots; three releases spend them, then Peck/Flit return. Making it again before they are spent adds three.
+5. Hold RT and LT together, let go. **Pass:** nothing fires (cancel). On a phone: lift both thumbs, touch down.
+6. With the Lasso banked and nothing ahead: the pull draws nothing; the release toasts "No target" and keeps the use.
+7. Wait 45 s in freestyle. **Pass:** a turning hexagonal frame appears far off in the cell; flying through it opens hive mode.
+8. Button2 does nothing on the Honeyguide (no boost button); an AI Honeyguide still flies and uses its triggers.
+

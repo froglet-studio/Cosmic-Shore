@@ -222,6 +222,42 @@ namespace CosmicShore.Data
             }
         }
 
+        /// <summary>
+        /// Puts the local player's own row into a page read from the PUBLIC board, where it is not, because the
+        /// server posts an account in the fair-play Undertow to a twin board instead (phase B,
+        /// <c>Tools/UGS/CloudCode/weekly-score.js</c>). The page then reads to that player as it would have: their
+        /// time among the others, ranked where it falls. Nobody else's page changes.
+        ///
+        /// <para>Any row already marked local is replaced. The row goes where its time falls (rows are fastest
+        /// first) and takes the rank of the row it lands on; every row below it moves down one. A time slower than a
+        /// full page is left off, exactly as it would be on the public board.</para>
+        /// </summary>
+        public static void SpliceOwnRow(List<WeeklyChallengeRanking> rows, WeeklyChallengeRanking own, int limit)
+        {
+            if (rows == null || limit <= 0) return;
+            rows.RemoveAll(r => r.IsLocalPlayer);
+            own.IsLocalPlayer = true;
+
+            int at = rows.FindIndex(r => r.Seconds > own.Seconds);
+            if (at < 0)
+            {
+                if (rows.Count >= limit) return;
+                own.Rank = rows.Count > 0 ? rows[rows.Count - 1].Rank + 1 : 1;
+                rows.Add(own);
+                return;
+            }
+
+            own.Rank = rows[at].Rank;
+            rows.Insert(at, own);
+            for (int i = at + 1; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                row.Rank += 1;
+                rows[i] = row;
+            }
+            if (rows.Count > limit) rows.RemoveRange(limit, rows.Count - limit);
+        }
+
         /// <summary>mm:ss.cc — the reading a race time wants.</summary>
         public string FormatTime() => FormatSeconds(Seconds);
 

@@ -1,4 +1,6 @@
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -20,11 +22,14 @@ namespace CosmicShore.UI
         [Tooltip("This vessel's executor: the spare rings, the guns' heat and the modes.")]
         [SerializeField] BrittleStarExecutor star;
 
+        [Inject] GameDataSO _gameData;
+        IVesselStatus _status;
         bool _isLocalPilotHud;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
+            _status = vesselStatus;
 
             if (!view) view = GetComponentInChildren<BrittleStarHUDView>(true);
 
@@ -39,8 +44,22 @@ namespace CosmicShore.UI
             if (!_isLocalPilotHud || !view || !star) return;
             view.SetCharge(star.SpareRings / (float)Mathf.Max(1, star.MaxSpareRings), star.Charge01 >= 1f);
             view.SetCreation(star.Creation01);
+            view.SetCreationTrails(star.Creation01, star.BlockGirth01, ResolveDomainSignalColor());
             view.SetSpace(star.Heat01, star.Destruction01 >= 1f, star.Overheated);
             view.SetSpeed(star.Speed01);
+            view.SetGuns(star.Destruction01, star.Splay01, star.Range01, star.Overheated, ResolveDomainSignalColor());
+            view.SetSpeedTrail(star.Speed01, star.SpeedBoost01, ResolveDomainSignalColor());
+            view.SetSpareRings(star.SpareRings);
+            view.SetCords(star.CordsOut01, star.CordPull01, ResolveDomainSignalColor());
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Tiger Moth's and
+        /// the Angler's HUDs read it; alpha 0 until the palette resolves (the view keeps its last colour).</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return new Color(0f, 0f, 0f, 0f);
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
     }
 }
