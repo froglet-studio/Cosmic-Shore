@@ -1,35 +1,30 @@
 using System.Collections.Generic;
-using System.Threading;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Where voyages set out from (<see cref="VoyageToyDefinitionSO"/>). It stands in freestyle with the toybox but is
-    /// no toy: nothing to fly through, nothing in the Toy Box. The app shell's Voyage window asks it for the jobs on offer
-    /// (<see cref="Board"/>) and sets sail on the one the player picks (<see cref="SetSail"/>), which enters freestyle
-    /// and hands the job to the run (<see cref="VoyageRun"/>), a sibling under the toybox root.
+    /// Where a voyage sets out from: the runner of <c>Voyage.unity</c>, stood by <see cref="VoyageScene"/> with the
+    /// voyage's settings (<see cref="VoyageToyDefinitionSO"/>). It sails the job or the Ark escort the app shell's Voyage
+    /// window asked for (<see cref="VoyageLaunch"/>) and owns the run (<see cref="VoyageRun"/>, <see cref="ArkEscortRun"/>),
+    /// a sibling under the scene's voyage root. Freestyle has no harbour: the two modes are not connected.
     ///
     /// <para>Each job is a voyage of its own (Garrett, 2026-10-28: "the jobs should be the different voyages"): the run
-    /// ends when the player leaves freestyle, anchored at the job's destination once it got there, and the window then
-    /// offers the jobs from that spot.</para>
+    /// ends when the player leaves the voyage, anchored at the job's destination once it got there, and the Voyage window
+    /// then offers the jobs from that spot (<see cref="Board(VoyageToyDefinitionSO, SavedSquad, Domains, out VoyageState)"/>).</para>
     /// </summary>
     public sealed class VoyageHarbour : MonoBehaviour
     {
-        const float FreestyleHandoffSeconds = 8f;
-
         static VoyageHarbour s_current;
 
         VoyageToyDefinitionSO _def;
         ToyContext _context;
         VoyageRun _run;
         ArkEscortRun _escort;
-        CancellationTokenSource _handoff;
         float _nextListen;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -39,7 +34,7 @@ namespace CosmicShore.Gameplay
             Changed = null;
         }
 
-        /// <summary>The harbour standing now, or null (no toybox built yet, or a cell swap tore it down).</summary>
+        /// <summary>The harbour standing now (in the voyage scene), or null.</summary>
         public static VoyageHarbour Current => s_current;
 
         /// <summary>Raised when a voyage sets out, arrives, or ends, so an open window can redraw.</summary>
@@ -87,81 +82,45 @@ namespace CosmicShore.Gameplay
         public List<VoyageJob> Board(out VoyageState state)
         {
             state = null;
-            var content = Content;
-            if (!content || content.Content == null || IsUnderway) return new List<VoyageJob>();
-            state = VoyageRun.LoadOrBegin(content.Content, LiveDomain());
-            return VoyageRules.Board(state, content.Content, VoyageRun.SeatedPilots(VoyageRun.ActiveSquad(_context)));
+            if (IsUnderway) return new List<VoyageJob>();
+            return Board(_def, VoyageRun.ActiveSquad(_context), LiveDomain(), out state);
         }
 
-        /// <summary>
-        /// Set sail on <paramref name="job"/>: into freestyle first (the menu closes as it opens), then the squad deploys
-        /// and the Ark sails for the job's destination.
-        /// </summary>
-        public void SetSail(VoyageJob job, MenuCrystalClickHandler freestyle)
+        /// <summary>The jobs on offer for <paramref name="squad"/> from where the last voyage left the Ark (the Voyage
+        /// window's board, read in the menu where no harbour stands).</summary>
+        public static List<VoyageJob> Board(VoyageToyDefinitionSO settings, SavedSquad squad, Domains home,
+            out VoyageState state)
+        {
+            state = null;
+            var content = settings ? settings.Content : VoyageContentSO.Load();
+            if (!content || content.Content == null) return new List<VoyageJob>();
+            state = VoyageRun.LoadOrBegin(content.Content, home);
+            return VoyageRules.Board(state, content.Content, VoyageRun.SeatedPilots(squad));
+        }
+
+        /// <summary>Set sail on <paramref name="job"/>: the squad deploys and the Ark sails for the job's destination.</summary>
+        public void SetSail(VoyageJob job)
         {
             if (job == null || IsUnderway) return;
-            CancelHandoff();
-            if (!freestyle || freestyle.IsInFreestyle)
-            {
-                Sail(job);
-                return;
-            }
-            _handoff = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-            freestyle.ToggleTransition();
-            SailOnceFlying(job, freestyle, _handoff.Token).Forget();
-        }
-
-        async UniTaskVoid SailOnceFlying(VoyageJob job, MenuCrystalClickHandler freestyle, CancellationToken ct)
-        {
-            float deadline = Time.unscaledTime + FreestyleHandoffSeconds;
-            while (freestyle && (!freestyle.IsInFreestyle || freestyle.IsTransitioning))
-            {
-                if (Time.unscaledTime > deadline)
-                {
-                    CSDebug.LogWarning($"[VoyageHarbour] Freestyle did not settle within {FreestyleHandoffSeconds:0}s - " +
-                                       "the voyage did not set sail.");
-                    return;
-                }
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
-            }
-            if (!ct.IsCancellationRequested) Sail(job);
+            Sail(job);
         }
 
         /// <summary>
         /// Set sail on the Ark escort at <paramref name="difficulty"/> (1-9) with <paramref name="squad"/> (null: the
-        /// active squad): into freestyle first, then the squad deploys and the Ark sails the escort's worlds.
-        /// <paramref name="aiLocal"/> hands the local seat to the AI as well (the escort sim).
+        /// active squad): the squad deploys and the Ark sails the escort's worlds. <paramref name="aiLocal"/> hands the
+        /// local seat to the AI as well (the escort sim).
         /// </summary>
-        public void SetSailEscort(int difficulty, MenuCrystalClickHandler freestyle, SavedSquad squad = null,
-            bool aiLocal = false)
+        public void SetSailEscort(int difficulty, SavedSquad squad = null, bool aiLocal = false)
         {
             if (IsUnderway || !_def || !_def.ArkEscort) return;
-            CancelHandoff();
-            if (!freestyle || freestyle.IsInFreestyle)
-            {
-                SailEscort(difficulty, squad, aiLocal);
-                return;
-            }
-            _handoff = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-            freestyle.ToggleTransition();
-            EscortOnceFlying(difficulty, squad, aiLocal, freestyle, _handoff.Token).Forget();
+            SailEscort(difficulty, squad, aiLocal);
         }
 
-        async UniTaskVoid EscortOnceFlying(int difficulty, SavedSquad squad, bool aiLocal,
-            MenuCrystalClickHandler freestyle, CancellationToken ct)
+        /// <summary>End whatever voyage is out (the player left the voyage scene).</summary>
+        public void GiveUp(string reason)
         {
-            float deadline = Time.unscaledTime + FreestyleHandoffSeconds;
-            while (freestyle && (!freestyle.IsInFreestyle || freestyle.IsTransitioning))
-            {
-                if (Time.unscaledTime > deadline)
-                {
-                    CSDebug.LogWarning($"[VoyageHarbour] Freestyle did not settle within {FreestyleHandoffSeconds:0}s - " +
-                                       "the escort did not set sail.");
-                    return;
-                }
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
-            }
-            if (!ct.IsCancellationRequested) SailEscort(difficulty, squad, aiLocal);
+            if (_escort && _escort.IsActive) _escort.GiveUp(reason);
+            if (_run && _run.IsActive) _run.GiveUp(reason);
         }
 
         void SailEscort(int difficulty, SavedSquad squad, bool aiLocal)
@@ -220,14 +179,6 @@ namespace CosmicShore.Gameplay
             _run.Configure(_def, _context, transform.parent, RaiseChanged);
         }
 
-        void CancelHandoff()
-        {
-            if (_handoff == null) return;
-            _handoff.Cancel();
-            _handoff.Dispose();
-            _handoff = null;
-        }
-
         Domains LiveDomain() => VoyageRun.LiveDomain(_context);
 
         static IVesselStatus Alive(IVessel vessel)
@@ -239,7 +190,6 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
-            CancelHandoff();
             VoyageCourseLink.Stop(OnCourse);
             if (s_current == this) s_current = null;
         }

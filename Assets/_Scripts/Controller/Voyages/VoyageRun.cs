@@ -197,11 +197,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The squad that sails: the one a party launch named, else the player's active squad, else the hull
         /// they are flying in every seat (a player who has never built a squad can still voyage).</summary>
-        public static SavedSquad ActiveSquad(ToyContext context)
+        public static SavedSquad ActiveSquad(ToyContext context) => ActiveSquad(context?.GameData);
+
+        /// <inheritdoc cref="ActiveSquad(ToyContext)"/>
+        public static SavedSquad ActiveSquad(GameDataSO gameData)
         {
             var squad = SquadLaunchIntent.Squad ?? UGSDataService.Instance?.SquadRepo?.Data?.Book?.GetActive();
             if (squad != null) return squad;
-            var hull = Alive(context?.GameData?.LocalPlayer?.Vessel)?.VesselType ?? default;
+            var hull = Alive(gameData ? gameData.LocalPlayer?.Vessel : null)?.VesselType ?? default;
             return new SavedSquad(string.Empty, new SquadSlot(hull, Element.None), new SquadSlot(hull, Element.None),
                 new SquadSlot(hull, Element.None));
         }
@@ -236,11 +239,10 @@ namespace CosmicShore.Gameplay
             SquadDeployment.Deploy(_squad, mySeat);
 
 
-            // The pilot flies their seat's vessel (the swap lands a moment later; the new hull reads its slot then).
-            var mine = _squad.GetSlot(mySeat);
+            // The pilot sails in the vessel they are flying: no swap to the seat's hull on deploy (a swap mid-hand-off left
+            // the player in a vessel they could not control, a Manta seat, 2026-10-31). The voyage scene spawns the hull
+            // the pilot flew in the menu (VoyageLaunch).
             var swapper = _context?.VesselInitializer;
-            if (swapper && VesselRequirement.IsConcrete(mine.Vessel) && mine.Vessel != local.VesselType)
-                swapper.RequestSwap(mine.Vessel);
 
             // Every other seat is an AI wingmate, released by the host (a party client's voyage waits for step 5).
             if (!swapper || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
@@ -640,9 +642,12 @@ namespace CosmicShore.Gameplay
             return worlds.Count;
         }
 
-        public static Domains LiveDomain(ToyContext context)
+        public static Domains LiveDomain(ToyContext context) => LiveDomain(context?.GameData);
+
+        /// <inheritdoc cref="LiveDomain(ToyContext)"/>
+        public static Domains LiveDomain(GameDataSO gameData)
         {
-            var domain = context?.GameData?.LocalPlayer?.Domain ?? Domains.Jade;
+            var domain = (gameData ? gameData.LocalPlayer?.Domain : null) ?? Domains.Jade;
             return domain == Domains.Blue ? Domains.Jade : domain;
         }
 

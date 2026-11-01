@@ -9,12 +9,11 @@ namespace CosmicShore.UI
     /// <summary>
     /// The voyage's jobs on the Voyage window (Garrett, 2026-10-28: "the jobs should be the different voyages"): one
     /// voyage card per job the squad's pilots bring from where the Ark is now, and the way home when it is away, each
-    /// drawn over the galaxy map. Set sail enters freestyle and sails that job (<see cref="VoyageHarbour.SetSail"/>).
-    /// When the job is done the player leaves freestyle and this window offers the next jobs, from the job's destination,
-    /// grown from the news the last outcome wrote.
+    /// drawn over the galaxy map, then the Ark escort's card with its difficulty. Set sail loads the voyage scene with the
+    /// choice (<see cref="VoyageLaunch"/>); freestyle is not involved. When the voyage is over the scene returns to the
+    /// menu and this window offers the next jobs, from where the squad anchored, grown from the news the last outcome wrote.
     ///
-    /// <para>The first card is the prefab's own (<see cref="template"/>); the rest are copies of it, made here. While a
-    /// voyage is out the one card is the job under way, its Set sail dark.</para>
+    /// <para>The first card is the prefab's own (<see cref="template"/>); the rest are copies of it, made here.</para>
     /// </summary>
     public class VoyageJobsView : MonoBehaviour
     {
@@ -26,7 +25,6 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            VoyageHarbour.Changed += Refresh;
             // The window is shown and hidden by its canvas group, so it is re-read on every open: the squad (and so the
             // pilots bringing jobs) may have changed since.
             _window = GetComponentInParent<ModalWindowManager>(true);
@@ -36,7 +34,6 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            VoyageHarbour.Changed -= Refresh;
             if (_window) _window.OnModalOpened -= Refresh;
             _window = null;
         }
@@ -45,43 +42,20 @@ namespace CosmicShore.UI
         public void Refresh()
         {
             if (!template) return;
-            var harbour = VoyageHarbour.Current;
-            var voyage = harbour ? harbour.Content : null;
-            if (!harbour || !voyage || voyage.Content == null)
+            var style = VoyageToyDefinitionSO.Load();
+            var voyage = style ? style.Content : VoyageContentSO.Load();
+            if (!voyage || voyage.Content == null)
             {
                 Use(0);
                 return;
             }
             var content = voyage.Content;
             var lines = voyage.Lines;
-            var style = harbour.Definition;
-
             var escort = style ? style.ArkEscort : null;
-            if (harbour.IsEscorting && escort)
-            {
-                var card = Use(1)[0];
-                ShowEscort(card, content, style, escort, harbour.EscortDifficulty, sail: false);
-                return;
-            }
+            var gameData = VoyageLaunch.ResolveGameData();
 
-            if (harbour.IsUnderway)
-            {
-                var job = harbour.CurrentJob;
-                var cards = Use(1);
-                cards[0].ShowStepper(null, null, null, null);
-                if (job == null)
-                {
-                    cards[0].Show(content, style, null, null, string.Empty, lines.VoyageName, null);
-                    return;
-                }
-                var to = content.Location(job.To);
-                cards[0].Show(content, style, job.From, VoyageRules.Route(content, job.From, job.To),
-                    VoyageRules.Fill(lines.CardUnderway, content.Location(job.From), to, to, content.Person(job.PilotId)),
-                    job.Title, null);
-                return;
-            }
-
-            var jobs = harbour.Board(out var state);
+            var jobs = VoyageHarbour.Board(style, VoyageRun.ActiveSquad(gameData), VoyageRun.LiveDomain(gameData),
+                out var state);
             string here = state?.At;
             int extra = escort ? 1 : 0;
             if (jobs.Count == 0)
@@ -126,8 +100,8 @@ namespace CosmicShore.UI
             int difficulty, bool sail)
         {
             string d = difficulty.ToString();
-            // The voyage this escort sails (or will): its worlds in order and its modifiers, under the card's line.
-            var voyage = sail ? ArkEscortRun.PreviewVoyage(escort, difficulty) : VoyageHarbour.Current?.EscortVoyage;
+            // The voyage this escort will sail: its worlds in order and its modifiers, under the card's line.
+            var voyage = sail ? ArkEscortRun.PreviewVoyage(escort, difficulty) : null;
             string legs = (voyage is { Legs: { Count: > 0 } } ? voyage.Legs.Count : escort.Legs.Count).ToString();
             string line = TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", d);
             if (voyage is { WorldNames: { Count: > 0 } }) line += "\n" + voyage.Describe();
@@ -142,19 +116,11 @@ namespace CosmicShore.UI
             else card.ShowStepper(null, null, null, null);
         }
 
-        static void SetSailEscort(int difficulty)
-        {
-            var harbour = VoyageHarbour.Current;
-            if (!harbour) return;
-            harbour.SetSailEscort(difficulty, FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
-        }
+        static void SetSailEscort(int difficulty) =>
+            VoyageLaunch.Begin(VoyageLaunchRequest.ForEscort(difficulty));
 
-        static void SetSail(VoyageJob job)
-        {
-            var harbour = VoyageHarbour.Current;
-            if (!harbour) return;
-            harbour.SetSail(job, FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
-        }
+        static void SetSail(VoyageJob job) =>
+            VoyageLaunch.Begin(VoyageLaunchRequest.ForJob(job));
 
         /// <summary><paramref name="count"/> cards showing (the template first, then copies after it), the rest hidden;
         /// at least the template stands, so the window never loses its third voyage.</summary>
