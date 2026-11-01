@@ -639,6 +639,24 @@ namespace CosmicShore.Gameplay
         static bool IsCreditableVolume(float volume) =>
             volume >= 0f && !float.IsInfinity(volume);
 
+        readonly HitReportGuard _hitReportGuard = new();
+
+        /// <summary>
+        /// Host: rate-limit this player's prism reports and cap the volume each may claim
+        /// (<see cref="HitReportGuard"/>). Returns false when the report must be dropped.
+        /// </summary>
+        bool PassesHitReportGuard(ref float volume)
+        {
+            if (!_hitReportGuard.TryConsume(Time.unscaledTimeAsDouble))
+            {
+                if (_hitReportGuard.Throttled % 100 == 1)
+                    CSDebug.LogWarning($"[Player] Prism reports from {NetName.Value} throttled ({_hitReportGuard.Throttled} dropped so far).");
+                return false;
+            }
+            volume = HitReportGuard.ClampVolume(volume);
+            return true;
+        }
+
         [ServerRpc]
         public void ReportFaunaKill_ServerRpc()
         {
@@ -749,6 +767,7 @@ namespace CosmicShore.Gameplay
 
             if (!CanCreditReport()) return;
             if (!IsCreditableVolume(volume)) return;
+            if (!PassesHitReportGuard(ref volume)) return;
 
             var resolved = System.Enum.IsDefined(typeof(Domains), prismDomain)
                 ? (Domains)prismDomain
@@ -827,6 +846,7 @@ namespace CosmicShore.Gameplay
 
             if (!CanCreditReport()) return;
             if (!IsCreditableVolume(volume)) return;
+            if (!PassesHitReportGuard(ref volume)) return;
 
             StatsManager.CreditPrismSteal(RoundStats, volume);
 
