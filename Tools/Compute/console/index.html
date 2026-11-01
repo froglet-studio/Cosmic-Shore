@@ -1128,6 +1128,11 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
           dl.appendChild(h("label", { class: "note", style: "display:block;margin-top:8px" }, [h("input", { type: "checkbox", checked: IOPT.remote !== false ? true : null, onchange: function (e) { IOPT.remote = e.target.checked; draw(); } }), " A run sent from the console may start at once, even while I use this computer"]));
           dl.appendChild(h("p", { class: "note", text: "Weekly schedules are not there yet: pick a daily window and leave the computer on those days." }));
           dl.appendChild(h("a", { class: "btn cta", href: file + qs, download: OS === "windows" ? "froglet-compute-setup.bat" : "froglet-compute-setup.sh" }, [svgIcon("M12 4v12|M6 10l6 6 6-6|M4 20h16", 14), "Download the installer for " + (OS === "windows" ? "Windows" : OS === "mac" ? "macOS" : "Linux")]));
+          var teamLink = location.origin + "/install" + qs;
+          var row = h("div", { class: "cmdline" }, [h("code", { text: teamLink })]); row.appendChild(copyBtn(function () { return teamLink; }));
+          dl.appendChild(h("b", { class: "sec", text: "The team link (one link for everybody)" }));
+          dl.appendChild(h("p", { class: "note", text: "Opened on any computer, it downloads the right installer for it, with the schedule chosen above. It carries the team key: send it by email, never in a public channel." }));
+          dl.appendChild(row);
         }
         sheet.appendChild(dl);
         sheet.appendChild(h("div", { class: "sec", text: "Or the line, if you prefer a terminal" }));

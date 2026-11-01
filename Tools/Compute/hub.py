@@ -47,6 +47,17 @@ MAX_BODY = 256 * 1024
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
+def installer_for(user_agent):
+    """The installer file a browser gets from the ONE team link (`/install?key=...`): picked from its User-Agent, so one
+    link in one email serves every computer (Shombith, 2026-11-01: "one link for everybody")."""
+    ua = (user_agent or "").lower()
+    if "windows" in ua:
+        return "windows.bat"
+    if "mac os" in ua or "macintosh" in ua or "darwin" in ua:
+        return "mac.sh"
+    return "linux.sh"
+
+
 def installer(name, url, key, flags):
     """(text, content type, file name) of the double-click installer for `name` (windows | mac | linux), or (None, ..)."""
     import setup
@@ -459,6 +470,8 @@ def handler(hub, page):
                 return self._send(403, {"error": "this app answers its own computer only"})
             if path in ("/", "/index.html"):
                 return self._send(200, page(), "text/html; charset=utf-8")
+            if path in ("/install", "/install/"):
+                return self._send_installer(installer_for(self.headers.get("User-Agent")))
             if path.startswith("/install/"):
                 return self._send_installer(path[9:])
             if path.startswith("/stills/") and re.fullmatch(r"[a-z0-9-]+\.jpg", path[8:]):

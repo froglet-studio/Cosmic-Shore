@@ -344,7 +344,9 @@ notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refre
 **Nobody types a command to join or to update** (Shombith, 2026-11-01: "every time I have to paste a command, and restart
 the VM"): the live console's Add a computer offers **one file to double-click** (`/install/windows.bat`, `mac.sh`,
 `linux.sh`, served only with the team key, the address and key written in; saved into the Cosmic-Shore folder, or
-it asks for the folder), which joins the computer; and **the VM updates itself**: the hub looks at its branch every
+it asks for the folder), which joins the computer, and **one team link**, `<console>/install?key=<team key>` (the
+sheet's Copy button), that picks the file from the browser's operating system, so one link in one email serves
+every computer (it carries the key: email only, never a public channel); and **the VM updates itself**: the hub looks at its branch every
 10 minutes and, when `Tools/Compute` moved, pulls and exits so systemd restarts it on the new code; the VM's worker
 (the agent, running from the checkout) does the same. The SSH restart is history. The installer (and the paste line under it) asks **when the computer should work**:
 whenever its person is away (the default), only at night, every day between two hours (`--between`), only when
