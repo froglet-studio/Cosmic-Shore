@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Compiles the SHIPPED CrystalMorphMeshBuilder + IcosphereMeshGenerator and BOTH shipped
-       edit-mode suites (hull + panel census) against UnityStub.cs, and runs them with NUnitLite.
+       edit-mode suites (hull + panel census), the Dolphin's cone cast suite, against UnityStub.cs, and runs them with NUnitLite.
        Also the elemental crystal's hull fusion geometry (CrystalHullFusionGeometry + its suite).
        Nothing under Assets/ is copied or edited: the files are included by path. -->
   <PropertyGroup>
@@ -15,10 +15,12 @@
   <ItemGroup>
     <Compile Include="UnityStub.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="ElementPlatesShim.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/CrystalMorphMeshBuilder.cs" />
-    <Compile Include="../../../Assets/_Scripts/Utility/IcosphereMeshGenerator.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/Foundation/IcosphereMeshGenerator.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalMorphMeshBuilderTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalMorphPanelCensusTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/DolphinCrystalMorphGeometryTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/CrystalHullFusionGeometry.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalHullFusionGeometryTests.cs" />
   </ItemGroup>
