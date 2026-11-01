@@ -4,11 +4,22 @@ Cloned from the Vessel Studio (2026-10-27, `/artifact-to-unity`): the Meerkat pa
 (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa, source `Docs/Studios/VesselStudio/meerkat.html`, design
 `Docs/Studios/MEERKAT.md`). The artifact is the source of truth: tune there, then clone (`studio_to_unity.py`).
 
-**Where it stands (2026-10-28, Ys-bleeding-edge):** rounds 1-26 of the artifact are cloned. Every wormhole is slid with the
-left stick like the network (§1, round 24); inside any tube the hull is phased (§9, round 25); Space's surface area sizes
-a wormhole (§8, round 23) and Mass sizes the network (§7a, round 26); Garrett's four abilities are in (§10). Nothing here
-is editor-verified yet: the open hand tests are the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the
-report is `Docs/Reports/MEERKAT.md`.
+**Where it stands (updated 2026-11-01, Ys-bleeding-edge):**
+- **Cloned from the artifact:** rounds 1-26.
+- **Changed in Unity since (Yash, 2026-10-29 to 11-01), see the paragraphs below:**
+  - the wormhole is a **Soliton Tunnel**, an environmental fundamental, and the omnicrystal grows a **Soliton Network**;
+  - both ride as a **slip-and-slide** (`SolitonTunnelRider`, no left stick; this replaced round 24's left-stick slide);
+  - the look is the **plain wormhole** of `Docs/Shaders/WORMHOLE_SHADERS.md` §16 (2026-11-01).
+- **Still as built here:**
+  - inside any tube the hull is phased (§9, round 25);
+  - Space's surface area sizes a wormhole (§8, round 23), and the swallow carries things first in first out;
+  - Mass sizes the network (§7a, round 26);
+  - Garrett's four abilities are in (§10).
+- **Unity tuning not in the artifact:** `studio_to_unity.py --check` reads 69 mapped, 14 drift. These are Yash's Unity
+  values for the tunnel's throat and mouth, the network's size, forks, diameters, tip and gnarl, its top speed, and
+  `suckRadius`. The decision is in `Docs/Reports/MEERKAT.md` §5.
+- **Nothing here is editor-verified yet.** The open hand tests are the Meerkat entries in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`; two of them are marked SUPERSEDED. The report is `Docs/Reports/MEERKAT.md`.
 
 **Wormhole look, 2026-10-29 (`feat/wormhole-pc-unified`, PR #1624, the calm-jelly round):** ONE look ships, the same
 for the trunk (a formed tunnel) and the root (an omnicrystal network's channel), each with its own numbers. It is a clear,
@@ -18,6 +29,14 @@ Ride, Kit, and Miscellaneous (`SolitonTunnelLook.cs`, `SolitonTunnel.shader`). T
 GARRETT'S presets (`MeerkatWormholeHQ`), and the earlier bridge, warp, calm wall, water pipe, tree and root inside are all
 gone. Sections below that mention them are history. Every field, default and comfort tip:
 `Docs/Shaders/WORMHOLE_SHADERS.md` §14. Restore steps: §13 (from `0c8c5218c`) and §12.
+
+**The look now, 2026-11-01 (Yash: "I want the wormhole effect back, that looks realistic ... plain worm hole with wider mouth
+looking cool from outside and inside, bending and warping of space time"):** a plain wormhole, one full-screen pass
+(`SolitonTunnel.shader`, `SolitonTunnelLensPass`). It has a wall bend, a gravitational-lens mouth with an Einstein ring and
+a throat shadow, and a throat stretch inside. Wider mouths: `mouthDiameter` 44 and `networkMouthDiameter` 18. The network
+shimmer and pulses and the spindle bridge over formed tubes are removed; the reticle keeps its frame. Every field and the
+tuning tips: `Docs/Shaders/WORMHOLE_SHADERS.md` §16. This supersedes the jelly-look paragraph above and the "jelly lens
+plus the additive spindle bridge" in the next one.
 
 **Soliton Tunnels, 2026-10-29 (Yash; supersedes the trunk / root / labyrinth wording below, which is history):** the
 Meerkat's wormhole is a **Soliton Tunnel**, an environmental fundamental (`Assets/_Scripts/Controller/Environment/SolitonTunnel/`,
@@ -231,12 +250,12 @@ line for line:
 | HUD | `UI/Controller/MeerkatHUDController.cs` |
 | Prefab and registrations | `Tools/Build/author_meerkat_assets.py` (`--check`, `--self-test`) |
 | The roots (§7) | `SolitonTunnelMath.cs`, `SolitonNetwork.cs`, `MeerkatOmnicrystalField.cs`, `Tests/Editor/SolitonTunnelMathTests.cs` |
-| The tree and the roots' look (§7) | `MeerkatTreeMesh.cs`, `MeerkatTreeView.cs`, `_Graphics/Materials/Graphs/MeerkatTree.shader`, `MeerkatRootInside.shader`, `Resources/MeerkatTree.mat`, `Resources/MeerkatRootInside.mat` |
-| The network's tube look (§7a) | `MeerkatTubeWallView.cs`, `MeerkatTreeMesh.BuildTubeWall`, `_Graphics/Materials/Graphs/MeerkatTubeWall.shader`, `Resources/MeerkatTubeWall.mat`; the channels in `SolitonTunnelView.Tube` and `SolitonTunnelLensPass` (`MWChannel`) |
+| ~~The tree and the roots' look (§7)~~ deleted 2026-10-29 (`2ad5882115`; restore: `Docs/Shaders/WORMHOLE_SHADERS.md` §12) | `MeerkatTreeMesh.cs`, `MeerkatTreeView.cs`, `_Graphics/Materials/Graphs/MeerkatTree.shader`, `MeerkatRootInside.shader`, `Resources/MeerkatTree.mat`, `Resources/MeerkatRootInside.mat` |
+| ~~The network's tube look (§7a)~~ deleted 2026-10-29 (`2ad5882115`; the look now: `WORMHOLE_SHADERS.md` §16) | `MeerkatTubeWallView.cs`, `MeerkatTreeMesh.BuildTubeWall`, `_Graphics/Materials/Graphs/MeerkatTubeWall.shader`, `Resources/MeerkatTubeWall.mat`; the channels in `SolitonTunnelView.Tube` and `SolitonTunnelLensPass` (`MWChannel`) |
 | The swallow (§8) | `Executors/MeerkatSwallow.cs` (run by the executor; its arithmetic is `SolitonTunnelShapeMath.PullVelocity` / `CarryDistortion` / `SurfaceAreaThroat` / `TubeAdvance`) |
-| The slide (§1, round 24) | `SolitonTunnelMath.ITubePath` / `Single` / `Step` (one flight for a wormhole and the network), `SolitonTunnelShapeMath.NearestAlong`, `MeerkatSolitonExecutor.StepRide` / `SlideAutopilot` |
+| The ride (round 24's one flight; since 2026-10-29 a slip-and-slide) | `Controller/Environment/SolitonTunnel/SolitonTunnelRider.cs` (`SlidePath`), `SolitonTunnelMath.ITubePath` / `Single` / `Step` (a tunnel is a network of one), `SolitonTunnelShapeMath.NearestAlong`, `MeerkatSolitonExecutor.StepRide` / `StepNetwork`; numbers per tube in `SolitonTunnelConfigSO` (Ride: Slip and Slide) |
 | Phased inside a tube (§9, round 25) | `MeerkatVesselTransformer.Phased` (the hull's `IHullContactGate`), `SkimmerImpactor.HullTakesPrisms`; the game's omni crystal arms the network through `OmniCrystalImpactor.CollectedByVessel` |
-| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (108 keys, `--check` 0 drift) |
+| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (69 mapped; `--check` 14 drift on 2026-11-01: Yash's Unity tuning, `Docs/Reports/MEERKAT.md` §5) |
 | Garrett's kit (§10) | `Executors/MeerkatSolitonKit.cs` (the kit, its four L5 gates, the zap), `MeerkatSentinels.cs`, `MeerkatExitPortal.cs`, `MeerkatSolitonMath.cs` + `Tests/Editor/MeerkatSolitonMathTests.cs` (run outside Unity: `Tools/Build/meerkat_kit_harness/run.sh --self-test`), `Data Containers/MeerkatSentinelModeActionSO.cs`, `_SO_Assets/VesselActions/Meerkat/MeerkatSentinelModeAction.asset`; Space L5 Steal hooks `MeerkatSwallow` |
 
 ## 7. The tree and the roots (cloned 2026-10-28 from the artifact's rounds 13-21)

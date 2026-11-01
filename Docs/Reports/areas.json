@@ -698,7 +698,7 @@
       ],
       "branch": "Ys-bleeding-edge",
       "branchNote": "for testing; it goes to bleeding-edge once Yash has played it in the editor",
-      "summary": "The wormhole vessel: an oval wormhole sized by Garrett's surface area, slid with the left stick like the omnicrystal's network of wormholes, phased inside any tube, swallowing prisms and crystals at its way in and firing them out of the far mouth, with Garrett's four abilities (Soliton, Faster Ride, Sentinel Mode, Exit Portal). Designed in the Vessel Studio artifact first, cloned to Unity.",
+      "summary": "The wormhole vessel: an oval wormhole sized by Garrett's surface area, now a Soliton Tunnel (an environmental fundamental) ridden as a slip-and-slide, with the omnicrystal's Soliton Network sized by Mass, the plain-wormhole look (lensing mouths), phased inside any tube, swallowing prisms and crystals at its way in and firing them out of the far mouth, and Garrett's four abilities (Soliton, Faster Ride, Sentinel Mode, Exit Portal). Designed in the Vessel Studio artifact (rounds 1-26), cloned to Unity, then changed further in Unity (2026-10-29 to 11-01).",
       "paths": [
         "Assets/_Scripts/Controller/Vessel/R_VesselActions/Meerkat",
         "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/Meerkat",
@@ -740,9 +740,10 @@
       ],
       "test": [
         "Pull Ys-bleeding-edge, open Unity, wait for the compile.",
-        "Toybox (Lava Lamp), Vessel Changer: the Meerkat. Release LT and pull RT for a short, fat wormhole; inside, push the left stick (you bounce off the wall), hold RT (faster), and fly out of the far mouth.",
+        "Toybox (Lava Lamp), Vessel Changer: the Meerkat. RT a short, fat wormhole: inside you drop onto the wall and slide (no left stick); hold RT for a small push; fly out of the far mouth a little faster than you went in.",
+        "From outside, the world round a wormhole's mouth bends into a ring; inside, the view streams toward the way out.",
         "Form a wormhole next to prisms: they are pulled in, stretched through, and fired out of the far mouth; none catches you inside, and you lose no petal in the tube.",
-        "Fly into an omni crystal: the network of wormholes opens round you, sized by your Mass; an AI Meerkat's opens when it takes one.",
+        "Fly into an omni crystal: a Soliton Network opens round you, sized by your Mass; an AI Meerkat's opens when it takes one.",
         "Burrow Run (the Meerkat's Time mini-game): the AI forms wormholes, slides them and threads its rings."
       ]
     }

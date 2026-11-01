@@ -98,7 +98,7 @@ namespace CosmicShore.ScriptableObjects
         // studio_to_unity.py (Tools/Build/studio_to_unity/meerkat.json); each ElementalFloat is the page's L0 -> L10 pair
         // (rushL0/rushL10, zapPetalsL0/zapPetalsL10, portalSizeL0/portalSizeL10), authored once by author_meerkat_assets.py.
         // Read through MeerkatSolitonKit. Space (the surface area, the swallow and fire) is round 23's section above
-        // (areaL0 / areaL10, suck*, swallowShare, carrySpeed, fireSpeed, fireGlideSeconds; MeerkatSwallow).
+        // (areaL0 / areaL10, suck*, swallowShare, fireSpeed, fireGlideSeconds; MeerkatSwallow; carrySpeed is retired, round 25).
         [Header("Kit · Time, the ride (the artifact's Kit > Time)")]
         [Tooltip("The rush: the throat's speed ×, Time L0 -> ...at Time L10 (every soliton's ride, its own or anyone's)")]
         [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 1.4f, Element.Time, 0.05f);

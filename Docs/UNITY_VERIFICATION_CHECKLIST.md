@@ -1254,10 +1254,11 @@ abstract-member gates pass. `/verify-unity` was not available (no editor in the 
 - The artifact's kit races finish.
 
 **Verify in editor:**
-1. Lava Lamp, the Meerkat: fly into the cell's omni crystal. Its roots grow round you at once and you are inside them.
-   Watch an AI Meerkat take one: its roots grow too.
-2. Form a tunnel whose mouth is next to prisms and ride it. The prisms pulled in behind you never catch you, and your
-   hull loses no petal and breaks nothing inside the tunnel.
+1. Lava Lamp, the Meerkat: fly into the cell's omni crystal. A Soliton Network grows round you at once and you are
+   inside it. Watch an AI Meerkat take one: its network grows too. (Updated 2026-11-01: the "roots" are the Soliton
+   Network since 2026-10-29.)
+2. Form a tunnel whose mouth is next to prisms and ride it (the slip-and-slide: you need not steer). The prisms
+   pulled in behind you never catch you, and your hull loses no petal and breaks nothing inside the tunnel.
 3. Form a tunnel straight through a wall of prisms: you pass through it untouched, and the wall stays standing.
 4. Out of the far mouth you are solid again: hit a prism and it breaks as usual.
 5. Burrow Run: a ring threaded while inside a tunnel still counts.
@@ -1430,7 +1431,25 @@ soliton; sentinels zapping sentinels; the Meerkat's own icons; the sound (five e
 
 ---
 
-### 🔴 The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+### ⚪ SUPERSEDED — The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28)
+
+> **Superseded 2026-10-29 by Soliton Tunnels** (`a8c7d6b073`, `R_VesselActions/MEERKAT.md`, `Docs/Shaders/WORMHOLE_SHADERS.md`
+> §15). The ride below (left stick, `rootCruise` / `rootThrust` / `rootMaxSpeed`) no longer exists, so do not test it. The
+> tunnel and the network are now a **slip-and-slide** (`SolitonTunnelRider`): radial gravity presses you to the inner
+> wall and you slide along it with an occasional bounce; there is no left stick and no nose lock; RT gives a small push;
+> you leave at the speed you carry × `exitMultiplier` (the slingshot). Its numbers are per tube in `SolitonTunnelConfigSO`
+> (Ride: Slip and Slide: `wallGravity`, `bounce`, `wallFriction`, `thrustOn`, `thrust`, `minSpeed`, `exitMultiplier`).
+> What still holds from this entry: one flight for a tunnel and the network (a tunnel is a network of one,
+> `SolitonTunnelMath.Single` / `ITubePath`), and the AI's tunnel plans ride at the slide's speed.
+>
+> **Verify in editor instead:**
+> 1. Toybox, Meerkat: RT a short, fat tunnel. Inside, the hull drops onto the inner wall and slides along it, bouncing a
+>    little; the left stick does nothing. Hold RT: a small push along the tube. It never stalls (`minSpeed`).
+> 2. Out of the far mouth: you leave along the way you were going, a little faster (`exitMultiplier`), and the reticle
+>    comes back.
+> 3. Burrow Run: the AI forms tunnels, slides them and threads its rings.
+
+(The original entry, kept as history:)
 
 **What landed:** the automatic ride is gone. The main tunnel is now a network of one channel flown by the roots' own
 flight (`SolitonTunnelMath.Step` through `ITubePath`, `MeerkatSolitonExecutor.StepRide`):
@@ -1557,7 +1576,16 @@ brute force, 400 random tubes). Reference compile clean.
 
 ---
 
-### 🔴 The Meerkat's tree and the Omnicrystal's roots, flown on the left stick (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+### ⚪ SUPERSEDED — The Meerkat's tree and the Omnicrystal's roots, flown on the left stick (`claude/adoring-cerf-m94x1o`, 2026-10-28)
+
+> **Superseded, do not test.** The tree went off in round 26 (2026-10-28), and its files were deleted on 2026-10-29
+> (`2ad5882115`: `MeerkatTreeMesh`, `MeerkatTreeView`, `MeerkatTree.shader`, `MeerkatRootInside.shader`; restore:
+> `Docs/Shaders/WORMHOLE_SHADERS.md` §12). The roots are now the **Soliton Network** with the slip-and-slide ride
+> (no left stick), and the look is the plain wormhole of `WORMHOLE_SHADERS.md` §16 (2026-11-01). The network's own hand
+> tests are the entries "The Meerkat's network of wormholes" and "Omni-crystal abilities: the Soliton Network on the
+> Meerkat".
+
+(The original entry, kept as history:)
 
 **What landed:**
 - The tree round every formed tunnel: trunk, bore, cut faces and branches (`MeerkatTreeMesh`, `MeerkatTreeView`,
