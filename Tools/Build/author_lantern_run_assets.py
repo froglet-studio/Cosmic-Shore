@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset SpeedPainter needs (GameModes.SpeedPainter, the id READ from GameModes.cs). The shared
+Authors every serialized asset Lantern Run needs (GameModes.LanternRun, the id READ from GameModes.cs). The shared
 work is hull_time_race.author; this file is the Angler's spec.
 
-Run from the repo root:  python3 Tools/Build/author_speed_painter_assets.py [--check]
+Run from the repo root:  python3 Tools/Build/author_lantern_run_assets.py [--check]
 
 WHAT THIS MODE IS. The Angler's TIME card (Shombith, 2026-11-01: "as per the abilities of the angler it can paint at two
 places where there is prism mass clusters and the fauna will go there to eat it and that way angler can zoom towards
 where its fauna is and he has two of these ... so he can in a way paint its path and zoom towards it"). A lapped circuit
 on the shared HeadlongCircuit solver where every leg carries TWO prism mass clusters, one for each of the Angler's two
-groups (SpeedPainterCourse). The vessel is the shipped Angler - the mode lays the clusters and nothing else. See
-Assets/_Scripts/Controller/Arcade/SPEEDPAINTER.md.
+groups (LanternRunCourse). The vessel is the shipped Angler - the mode lays the clusters and nothing else. See
+Assets/_Scripts/Controller/Arcade/LANTERNRUN.md.
 
-THE SHAPE IS GARRETT'S LANTERN RUN (GameModes 75, cece/confident-goodall-6cpxan, in flight), with two clusters a leg for
-the two groups. Nothing of Lantern Run's is touched or named here; the Angler AI (AnglerLeapfrogAIPolicySO) and the throw
-fix (Fauna.LeashOwnsSpeed) came over from that branch unchanged and are the HULL's, authored by author_angler_assets.py.
+The Angler AI (AnglerLeapfrogAIPolicySO) and the throw fix (Fauna.LeashOwnsSpeed) are the HULL's, authored by
+author_angler_assets.py.
 
 THE DONOR IS THRESHER TIME'S SCENE. The clone swaps the controller script, the scoring rule, the detection clamp (a dash
-moves the hull at up to ~2,000 u/s) and the Netcode ids, and adds the cluster prism (SpeedPainterController.clusterPrefab).
+moves the hull at up to ~2,000 u/s) and the Netcode ids, and adds the cluster prism (LanternRunController.clusterPrefab).
 """
 import os
 import sys
@@ -25,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib  # noqa: E402
 import hull_time_race as htr  # noqa: E402
 
-MODE_DIR = "Assets/_Scripts/Controller/Arcade/SpeedPainter"
+MODE_DIR = "Assets/_Scripts/Controller/Arcade/LanternRun"
 # Assets/_Prefabs/Trails/SpawnablePrism.prefab (its Prism component is fileID 4563009547826722997): the pooled
 # environment prism Serpentine's gate debris is laid from.
 SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
@@ -53,14 +52,14 @@ if "clusters" not in HINT or "dash" not in HINT:
     errors.append("the start hint no longer teaches the loop (paint two clusters, dash)")
 
 htr.author(dict(
-    member="SpeedPainter", display="SpeedPainter", hull="Angler", class_id=17,
+    member="LanternRun", display="Lantern Run", hull="Angler", class_id=17,
     scripts={
-        "SpeedPainterController":   f"{MODE_DIR}/SpeedPainterController.cs",
-        "SpeedPainterCourse":       f"{MODE_DIR}/SpeedPainterCourse.cs",
-        "SpeedPainterCourseSource": f"{MODE_DIR}/SpeedPainterCourseSource.cs",
-        "SpeedPainterCourseTests":  "Assets/_Scripts/Tests/Editor/SpeedPainterCourseTests.cs",
+        "LanternRunController":   f"{MODE_DIR}/LanternRunController.cs",
+        "LanternRunCourse":       f"{MODE_DIR}/LanternRunCourse.cs",
+        "LanternRunCourseSource": f"{MODE_DIR}/LanternRunCourseSource.cs",
+        "LanternRunCourseTests":  "Assets/_Scripts/Tests/Editor/LanternRunCourseTests.cs",
     },
-    doc="Assets/_Scripts/Controller/Arcade/SPEEDPAINTER.md",
+    doc="Assets/_Scripts/Controller/Arcade/LANTERNRUN.md",
     donor_scene=f"{lib.SCENES_DIR}/MinigameThresherTime.unity",
     donor_controller_guid=lib.guid("script/ThresherTimeController"),
     donor_rule_guid=lib.guid("asset/ThresherTimeScoringRule"),
@@ -71,7 +70,7 @@ htr.author(dict(
     new_field_lines=(f"  clusterPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
                      "  nucleusMargin: 30\n"),
     max_speed=2700,
-    target=16, laps=2, target_key="speedPainterGateTarget", target_after="brittleStarTimeGateTarget",
+    target=16, laps=2, target_key="lanternRunGateTarget", target_after="brittleStarTimeGateTarget",
     # A quarter-of-race deficit (4 gates) x 0.45 = 1.8 element levels. The Angler's Time doubles its tamed fauna's
     # speed (x1 -> x2), so a throw - and the hull that dashes after it - goes faster: the buff lands on the race's axis.
     comeback=0.45,
@@ -82,7 +81,7 @@ htr.author(dict(
     domain home wins.""",
     preview_objective="Paint two clusters, throw both halves, dash through the ring",
     preview_notes="OPEN-ENDED, shell-only: Headlong''s solver cut for the Angler, laid as rings and mass clusters at match start, so a preview has no gates. It teaches the two-group leapfrog.",
-    # SpeedPainter's own beat (SpeedPainterController posts it to the local pilot; GameToastSituation 158).
+    # LanternRun's own beat (LanternRunController posts it to the local pilot; GameToastSituation 158).
     extra_toasts=[
         (158, HINT, dict(domain_names=0)),
     ],

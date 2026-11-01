@@ -1,4 +1,4 @@
-# SpeedPainter - Technical Documentation
+# Lantern Run - Technical Documentation
 
 > **Status.** Authored headless on 2026-11-01 (`claude/intelligent-lovelace-ynskrg`). The course, its clusters and
 > their tests were compiled and RUN outside the editor (400 seeds per intensity, against the card-art harness's Unity
@@ -6,7 +6,7 @@
 
 ## Overview
 
-`GameModes.SpeedPainter = 78` is the **Angler's Time card**. Shombith, 2026-11-01: *"as per the abilities of the angler
+`GameModes.LanternRun = 75` is the **Angler's Time card**. Shombith, 2026-11-01: *"as per the abilities of the angler
 it can paint at two places where there is prism mass clusters and the fauna will go there to eat it and that way angler
 can zoom towards where its fauna is and he has two of these as you know so he can in a way paint its path and zoom
 towards it. SO a time game would be arena where rings are closer to where mass prism clusters are and we can do a lap
@@ -15,11 +15,7 @@ around it."*
 It is a two-lap circuit of eight rings on Headlong's shared solver (`HeadlongCircuit`). The first DOMAIN whose lead
 runner threads the last ring wins (golf: finish time).
 
-**Built beside Garrett's Lantern Run** (`GameModes.LanternRun = 75`, `cece/confident-goodall-6cpxan`, PR #1644, not
-merged), the same idea with one lantern a ring. SpeedPainter takes its own id and its own classes and touches nothing of
-Lantern Run's, as Serpent Gulag did beside Serpent Charge (`/arcadegame` §3b). Two pieces of that branch are the
-ANGLER's, not the mode's, and SpeedPainter needs them, so they came over **unchanged** (byte-identical hunks, so the two
-branches merge cleanly):
+Two Angler pieces ship with this mode (they are the HULL's, not the mode's):
 
 - **The throw keeps its speed.** `Fauna.LeashOwnsSpeed` stops `LightFauna` and `Boid` clamping a thrown creature back to
   its wild ~30 u/s (ANGLER.md follow-up 11).
@@ -27,8 +23,6 @@ branches merge cleanly):
   input-only: lined up within 4 degrees of the next ring it holds RT 0.45 s and lets go, and it presses Dash whenever the
   next dash carries it 40 u or more within 50 degrees of the objective. `AnglerCommandExecutor.TryGetDashPoint` is the read
   it uses.
-
-Whether to keep both Angler Time races, or fold one into the other, is for Garrett and Shombith to decide.
 
 ## The loop: paint your path, zoom along it
 
@@ -54,7 +48,7 @@ same line. So one leg is:
 4. Dash again: to B. This dash runs **through the ring**, and lands past it.
 
 The second dash lands 75% of the way from A to B, which is past the ring whenever `0.25 x (300 + 150) < 150` - the
-constants hold it, and `SpeedPainterCourseTests` asserts it on every leg of 400 courses per intensity.
+constants hold it, and `LanternRunCourseTests` asserts it on every leg of 400 courses per intensity.
 
 **The clusters sit on the ring's axis, not on the chord from the last ring.** The circuit presents a ring up to 76
 degrees off that chord. On the chord, the near-to-far line crossed the ring's plane up to **four mouths** off centre at
@@ -68,7 +62,7 @@ ring wants you to fly.
 **The clusters grow back.** Every `RegrowSeconds`, a cluster with an empty slot grows one prism back into it (the
 first empty slot, so the ball refills in the same shape on every peer). Every racer, on both laps, has mass to paint.
 
-## The ladder (`SpeedPainterCourse`, asserted by `SpeedPainterCourseTests`)
+## The ladder (`LanternRunCourse`, asserted by `LanternRunCourseTests`)
 
 | | I1 Two strokes | I2 Zigzag | I3 One stroke | I4 Sparse |
 |---|---|---|---|---|
@@ -88,25 +82,25 @@ I1, 31 of 6,400 at I2, 21 of 4,800 at I4). Such a leg has one cluster.
 
 ## What the mode adds, and what it reuses
 
-- **New:** `SpeedPainterCourse` (the cut and the clusters, pure), `SpeedPainterCourseSource`, `SpeedPainterController` (lays
+- **New:** `LanternRunCourse` (the cut and the clusters, pure), `LanternRunCourseSource`, `LanternRunController` (lays
   the clusters on every peer from the broadcast course in `OnCourseRaised`, regrows them in `LateUpdate`, posts the start
-  hint), `SpeedPainterCourseTests`; `GameToastSituation.SpeedPainterPaintHint = 158`; the
-  `speedPainterGateTarget` end condition (16); the `MiniGameHUD` case; the card's art recipe.
+  hint), `LanternRunCourseTests`; `GameToastSituation.LanternRunPaintHint = 158`; the
+  `lanternRunGateTarget` end condition (16); the `MiniGameHUD` case; the card's art recipe.
 - **Reused:** `GateRaceController`, `HeadlongCircuit`, `RaceGateTurnMonitor`, `GateRaceScoringRuleSO` (metric 9, golf),
   `RaceGateObjectiveProvider`, the race-beat toasts, the barren race cell, and Serpentine's way of laying and regrowing
   mode prisms (`PrismTrailBuilder.LayOne`, the first cohort behind the connecting panel, regrown ones as live ribbons).
-- **All the assets come from `Tools/Build/author_speed_painter_assets.py`** (on `hull_time_race.py`): the scene (cloned from
+- **All the assets come from `Tools/Build/author_lantern_run_assets.py`** (on `hull_time_race.py`): the scene (cloned from
   `MinigameThresherTime`), the card, the rule, the preview, the toasts and the registrations.
 
 ## Verification
 
-- `SpeedPainterCourseTests`: 8 of 8 pass outside the editor (UnityShim + a small NUnit stand-in, 400 seeds x 4 intensities).
+- `LanternRunCourseTests`: 8 of 8 pass outside the editor (UnityShim + a small NUnit stand-in, 400 seeds x 4 intensities).
   A first cut that hung the clusters on the chord from the last ring FAILED the dash-through-the-mouth test (I2 seed 1 missed
   by 6 u), which is why they sit on the ring's axis.
-- `author_speed_painter_assets.py --check` passes; changing one field of the card makes it fail and name the file.
+- `author_lantern_run_assets.py --check` passes; changing one field of the card makes it fail and name the file.
 - The C# gates pass (switch labels, enum members, console logging, conditional compilation, using directives,
   self-referential locals, game-list scenes, preview spawns, prism bakes).
-- **Not run in the Unity editor.** The editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under SpeedPainter.
+- **Not run in the Unity editor.** The editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under Lantern Run.
 
 ## Known limitations
 

@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
-  m_Name: ArcadeGameSpeedPainter
+  m_Name: ArcadeGameLanternRun
   m_EditorClassIdentifier:
-  Mode: 78
+  Mode: 75
   IsMultiplayer: 1
-  DisplayName: SpeedPainter
+  DisplayName: Lantern Run
   Description: Anglers only, and you paint your own path. Every leg holds two clusters of
     prism mass, one for each half of your school. Hold RT on the near one and let go to
     throw, paint the far one past the ring and throw again, then dash after each half
@@ -22,9 +22,9 @@ MonoBehaviour:
     domain home wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
-  CardBackground: {fileID: 21300000, guid: 00c0d795a4ff4200b4a523fad8ecda3b, type: 3}
+  CardBackground: {fileID: 21300000, guid: 57c0df5c8591406199babeab98472139, type: 3}
   GolfScoring: 1
-  SceneName: MinigameSpeedPainter
+  SceneName: MinigameLanternRun
   Vessels:
   - {fileID: 11400000, guid: ea422bbe0d1aef61993692999cee50ea, type: 2}
   MinPlayersAllowed: 2

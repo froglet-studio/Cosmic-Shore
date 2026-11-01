@@ -502,10 +502,10 @@ namespace CosmicShore.UI
                 case GameModes.BrittleStarTime:
                     // ...and on the Brittle Star's Speed Mode circuit.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BrittleStarTime");
-                case GameModes.SpeedPainter:
+                case GameModes.LanternRun:
                     // ...and on the Angler's paint-and-dash circuit: the arrow names the next ring, the clusters are
                     // what the pilot paints on the way.
-                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SpeedPainter");
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_LanternRun");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which

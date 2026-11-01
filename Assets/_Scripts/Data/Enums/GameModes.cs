@@ -367,6 +367,12 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/BRITTLESTARTIME.md.
         BrittleStarTime = 74,
 
+        // LanternRun (75): the Angler's TIME race - a lapped circuit (the shared HeadlongCircuit solver) where every leg
+        // carries TWO regrowing prism MASS clusters on the ring's axis, one for each of the Angler's two groups: paint the
+        // near cluster and throw one group, paint the far one (past the ring) and throw the other, then dash to each in
+        // turn - you paint your path and zoom along it. See _Scripts/Controller/Arcade/LANTERNRUN.md.
+        LanternRun = 75,
+
         // SerpentGulag (77): the Serpent's CHARGE game, a SNIPER DUEL at range in a 3,600 u cell. Pilots spawn far
         // apart; a field of elemental crystals floats in the middle (Charge shortens the rifle's recovery, so the
         // field is the risk and the reward); intensities 2-4 add sniper nests and barred cell blocks. A snipe (a
@@ -374,14 +380,6 @@ namespace CosmicShore.Data
         // in-flight SerpentCharge (67, cece/vibrant-archimedes-n3xn3x), which it does not touch. 75 is LanternRun's
         // and 76 was WaystationPrototype's (folded into Waystation, reserved). See _Scripts/Controller/Arcade/SERPENTGULAG.md.
         SerpentGulag = 77,
-
-        // SpeedPainter (78): the Angler's TIME race - a lapped circuit (the shared HeadlongCircuit solver) where every
-        // leg carries TWO prism MASS clusters, one for each of the Angler's two groups: paint the near cluster and throw
-        // one group, paint the far one (past the next ring) and throw the other, then dash to each in turn - you paint
-        // your path and zoom along it. The clusters grow back. Beside Garrett's in-flight Lantern Run (75, the same idea
-        // with one lantern a ring, cece/confident-goodall-6cpxan), which it does not touch. See
-        // _Scripts/Controller/Arcade/SPEEDPAINTER.md.
-        SpeedPainter = 78,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 71) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved

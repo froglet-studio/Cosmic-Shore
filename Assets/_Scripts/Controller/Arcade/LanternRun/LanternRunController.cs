@@ -8,11 +8,11 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// SpeedPainter - the Angler-only circuit race, and the Angler's TIME card. A closed loop of rings is flown in LAPS; the
+    /// LanternRun - the Angler-only circuit race, and the Angler's TIME card. A closed loop of rings is flown in LAPS; the
     /// first domain whose lead runner threads the last gate of the last lap wins (golf: finish time).
     ///
     /// <para><b>Paint your path, zoom along it.</b> The Angler cruises at 40 u/s; it RACES with its two groups
-    /// (ANGLER.md §1m): every leg carries two prism MASS clusters (<see cref="SpeedPainterCourse.Clusters"/>) - one on the
+    /// (ANGLER.md §1m): every leg carries two prism MASS clusters (<see cref="LanternRunCourse.Clusters"/>) - one on the
     /// leg, one past the next ring. Paint the near one and let go (one group is thrown at it), paint the far one and let
     /// go (the other group), then dash to each group in turn: the second dash runs through the ring. The creatures eat
     /// what they reach, so each cluster grows back a prism at a time.</para>
@@ -20,35 +20,34 @@ namespace CosmicShore.Gameplay
     /// <para><b>What the mode adds:</b> the clusters, laid on every peer from the broadcast course in
     /// <see cref="OnCourseRaised"/> and regrown in <see cref="LateUpdate"/>, and the start hint. The vessel is the shipped
     /// Angler (its AI, <see cref="AnglerLeapfrogAIPolicySO"/>, is the hull's). Everything else is the gate-race platform.
-    /// The shape is Garrett's Lantern Run (one lantern a ring, cece/confident-goodall-6cpxan), with two clusters a leg
-    /// for the two groups. See SPEEDPAINTER.md.</para>
+    /// See LANTERNRUN.md.</para>
     /// </summary>
-    public class SpeedPainterController : GateRaceController
+    public class LanternRunController : GateRaceController
     {
-        [Header("SpeedPainter circuit")]
+        [Header("LanternRun circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE length, so the circuit " +
                  "is laid with target/laps rings - one number authored once, in the end-condition overrides.")]
-        [SerializeField, Min(1)] int laps = SpeedPainterCourseSource.DefaultLaps;
+        [SerializeField, Min(1)] int laps = LanternRunCourseSource.DefaultLaps;
 
         [Header("Mass clusters")]
         [Tooltip("The prism every cluster is laid from: the environment prism (SpawnablePrism). Authored by " +
-                 "Tools/Build/author_speed_painter_assets.py. Unset = no clusters (nothing to paint), and an error.")]
+                 "Tools/Build/author_lantern_run_assets.py. Unset = no clusters (nothing to paint), and an error.")]
         [SerializeField] Prism clusterPrefab;
 
         [Tooltip("u a cluster keeps outside the nucleus.")]
         [SerializeField, Min(0f)] float nucleusMargin = 30f;
 
-        protected override string ModeName => "SpeedPainter";
+        protected override string ModeName => "Lantern Run";
 
         /// <summary>Regatta's gate steering: commit from the approach point, aim through the ring's centre.</summary>
         protected override bool AICommitFromApproachPoint => true;
 
-        protected override RaceCourseSource CreateCourseSource() => new SpeedPainterCourseSource { Laps = laps };
+        protected override RaceCourseSource CreateCourseSource() => new LanternRunCourseSource { Laps = laps };
 
         /// <summary>Owner id no pilot carries: the clusters are nobody's trail, and only prisms still carrying it count.</summary>
-        const string ClusterOwnerId = "SpeedPainterCluster";
+        const string ClusterOwnerId = "LanternRunCluster";
 
-        static readonly ProfilerMarker s_tickMarker = new("SpeedPainter.Tick");
+        static readonly ProfilerMarker s_tickMarker = new("LanternRun.Tick");
 
         /// <summary>One laid cluster: its slots, the prism in each (null = eaten, waiting to grow back), its regrow clock.</summary>
         sealed class LaidCluster
@@ -80,19 +79,19 @@ namespace CosmicShore.Gameplay
             ClearClusters();
             if (!clusterPrefab)
             {
-                CSDebug.LogError("[SpeedPainter] No cluster prefab on the controller - the race has nothing to paint. " +
-                                 "Re-run Tools/Build/author_speed_painter_assets.py.");
+                CSDebug.LogError("[Lantern Run] No cluster prefab on the controller - the race has nothing to paint. " +
+                                 "Re-run Tools/Build/author_lantern_run_assets.py.");
                 return;
             }
 
             ResolveShell(out float inner, out _);
-            var clusters = SpeedPainterCourse.Clusters(_course, Intensity, ResolveCellCentre(),
+            var clusters = LanternRunCourse.Clusters(_course, Intensity, ResolveCellCentre(),
                                                        inner / innerRadiusNucleusFactor + nucleusMargin);
-            _regrowSeconds = SpeedPainterCourse.RegrowSeconds(Intensity);
+            _regrowSeconds = LanternRunCourse.RegrowSeconds(Intensity);
 
             // At the scene root, at world identity: a laid prism's position is local to its parent, and the course is
             // already in world coordinates.
-            _clusterRoot = new GameObject("SpeedPainterClusters").transform;
+            _clusterRoot = new GameObject("LanternRunClusters").transform;
             for (int c = 0; c < clusters.Count; c++)
             {
                 var laid = new LaidCluster
@@ -117,7 +116,7 @@ namespace CosmicShore.Gameplay
             // A regrown prism comes mid-race, so it must not hold the arena-ready gate (a continuous source can never
             // all-clear it).
             var prism = PrismTrailBuilder.LayOne(clusterPrefab,
-                new PrismLay(new SpawnPoint(at, rotation, SpeedPainterCourse.ClusterPrismScale), Domains.Blue),
+                new PrismLay(new SpawnPoint(at, rotation, LanternRunCourse.ClusterPrismScale), Domains.Blue),
                 _clusterRoot, cluster.Trail, ClusterOwnerId, watchForReveal: forReveal);
             if (!prism) return;
             if (!forReveal) prism.CompletesAsLiveRibbon = true;
@@ -139,16 +138,16 @@ namespace CosmicShore.Gameplay
             {
                 _hintPosted = true;
                 var local = gameData.LocalPlayer;
-                if (local != null) GameToastAPI.Post(GameToastSituation.SpeedPainterPaintHint, local.Domain);
+                if (local != null) GameToastAPI.Post(GameToastSituation.LanternRunPaintHint, local.Domain);
             }
 
             TickRegrow();
         }
 
         /// <summary>
-        /// The clusters grow back: every <see cref="SpeedPainterCourse.RegrowSeconds"/>, each cluster with an empty slot
+        /// The clusters grow back: every <see cref="LanternRunCourse.RegrowSeconds"/>, each cluster with an empty slot
         /// grows one prism into its first empty slot. Every peer regrows from what it saw eaten, as Serpentine's debris
-        /// does; the fauna eat on the host, so a client may draw a prism the host has already lost (SPEEDPAINTER.md).
+        /// does; the fauna eat on the host, so a client may draw a prism the host has already lost (LANTERNRUN.md).
         /// </summary>
         void TickRegrow()
         {

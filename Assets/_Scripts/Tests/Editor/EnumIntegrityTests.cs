@@ -187,7 +187,7 @@ namespace CosmicShore.Tests
             // 70 -> 71 on 2026-10-31: SerpentGulag (77), the Serpent's sniper duel (67 is still SerpentCharge's and
             // 75 LanternRun's, both in flight).
             // 71 -> 70 on 2026-11-01: WaystationPrototype (76) folded into Waystation (58); 76 is retired and reserved.
-            // 70 -> 71 on 2026-11-01: SpeedPainter (78), the Angler's Time race (75 is still LanternRun's, in flight).
+            // 70 -> 71 on 2026-11-01: LanternRun (75), the Angler's Time race.
             var values = Enum.GetValues(typeof(GameModes));
             Assert.AreEqual(71, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");

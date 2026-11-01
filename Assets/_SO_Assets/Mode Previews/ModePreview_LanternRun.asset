@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
-  m_Name: ModePreview_SpeedPainter
+  m_Name: ModePreview_LanternRun
   m_EditorClassIdentifier:
-  Mode: 78
+  Mode: 75
   Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut for the Angler, laid as rings and mass clusters at match start, so a preview has no gates. It teaches the two-group leapfrog.'
   PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
   PreviewCellsByIntensity: []

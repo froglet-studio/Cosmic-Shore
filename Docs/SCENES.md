@@ -88,7 +88,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameScarabRally** | `_Scenes/Multiplayer Scenes/` | `ScarabRally (72)` | `ScarabRallyController` |
 | **MinigameSerpentTime** | `_Scenes/Multiplayer Scenes/` | `SerpentTime (73)` | `SerpentTimeController` |
 | **MinigameBrittleStarTime** | `_Scenes/Multiplayer Scenes/` | `BrittleStarTime (74)` | `BrittleStarTimeController` |
-| **MinigameSpeedPainter** | `_Scenes/Multiplayer Scenes/` | `SpeedPainter (78)` | `SpeedPainterController` |
+| **MinigameLanternRun** | `_Scenes/Multiplayer Scenes/` | `Lantern Run (75)` | `LanternRunController` |
 | **MinigameRegatta** | `_Scenes/Multiplayer Scenes/` | `Regatta (56)` | `RegattaController` |
 | **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **MinigameWaystation** | `_Scenes/Multiplayer Scenes/` | `Waystation (58)` | `WaystationController` |
@@ -329,7 +329,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 72 | `ScarabRally` | MP | MinigameScarabRally | `ScarabRallyController` (see `SCARABRALLY.md`) |
 | 73 | `SerpentTime` | MP | MinigameSerpentTime | `SerpentTimeController` (see `SERPENTTIME.md`) |
 | 74 | `BrittleStarTime` | MP | MinigameBrittleStarTime | `BrittleStarTimeController` (see `BRITTLESTARTIME.md`) |
-| 78 | `SpeedPainter` | MP | MinigameSpeedPainter | `SpeedPainterController` (the Angler's Time race - two regrowing prism mass clusters a leg, one per group; paint, throw, dash through the ring. See `SPEEDPAINTER.md`) |
+| 75 | `LanternRun` | MP | MinigameLanternRun | `LanternRunController` (the Angler's Time race - two regrowing prism mass clusters a leg, one per group; paint, throw, dash through the ring. See `LANTERNRUN.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (the Tiger Moth's Time race — clusters you weave, a Drop Tower of short hops through plain/danger plates in every gap but the last, one long drop to finish. See `WAYSTATION.md`; 76 was its prototype, retired and reserved) |

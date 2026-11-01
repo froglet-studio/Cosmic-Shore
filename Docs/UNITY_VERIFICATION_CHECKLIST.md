@@ -19974,33 +19974,33 @@ compile first. Design: `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` "T
 8. Button2 does nothing on the Honeyguide (no boost button); an AI Honeyguide still flies and uses its triggers.
 
 
-## SpeedPainter (78): the Angler's Time race - two mass clusters a leg, paint, throw, dash (`claude/intelligent-lovelace-ynskrg`, 2026-11-01) - NOT EDITOR-VERIFIED
+## Lantern Run (75): the Angler's Time race - two mass clusters a leg, paint, throw, dash (`claude/intelligent-lovelace-ynskrg`, 2026-11-01) - NOT EDITOR-VERIFIED
 
-A new mode beside Garrett's in-flight Lantern Run (75), which it does not touch. Authored in a cloud session with no
+A new mode. Authored in a cloud session with no
 Unity editor, so the `unity` CLI did not run. What did run:
-- `SpeedPainterCourseTests`: 8 of 8 pass outside the editor (the card harness's UnityShim and a small NUnit stand-in),
+- `LanternRunCourseTests`: 8 of 8 pass outside the editor (the card harness's UnityShim and a small NUnit stand-in),
   400 seeds x 4 intensities.
-- `author_speed_painter_assets.py --check` passes, with a watched negative control (a changed card field is named).
+- `author_lantern_run_assets.py --check` passes, with a watched negative control (a changed card field is named).
 - The `/arcadegame` §4 gates pass. `author_card_backgrounds --strict` fails only on the orphaned `Tandava.png`, and
   `render_card_backgrounds.py --check` (all cards) stops on `BurrowRun: no recipe`; bleeding-edge fails both the same way.
 - `unity_refcompile`, player and editor configs: RESULT OK, no errors in project code.
 - `/ship` gates (`gates.sh`): all pass except `author_angler_assets.py --check` (4 HUD icon findings), which fails the
   same way on a clean bleeding-edge.
 
-Also on this branch, byte-identical to Garrett's `cece/confident-goodall-6cpxan`: `Fauna.LeashOwnsSpeed` (the throw keeps
+Also on this branch: `Fauna.LeashOwnsSpeed` (the throw keeps
 150 u/s) and `AnglerLeapfrogAIPolicySO` on `Angler.prefab` (the Angler's AI).
 
-Doc: `Assets/_Scripts/Controller/Arcade/SPEEDPAINTER.md`.
+Doc: `Assets/_Scripts/Controller/Arcade/LANTERNRUN.md`.
 
-1. **Compile.** Open the project. **Pass:** no errors in `SpeedPainterCourse.cs`, `SpeedPainterCourseSource.cs`,
-   `SpeedPainterController.cs`, `AnglerLeapfrogAIPolicySO.cs`, `Fauna.cs`, `LightFauna.cs`, `Boid.cs`,
+1. **Compile.** Open the project. **Pass:** no errors in `LanternRunCourse.cs`, `LanternRunCourseSource.cs`,
+   `LanternRunController.cs`, `AnglerLeapfrogAIPolicySO.cs`, `Fauna.cs`, `LightFauna.cs`, `Boid.cs`,
    `EndConditionOverridesSO.cs`, `EndConditionOverridesWindow.cs` or `MiniGameHUD.cs`.
-2. **Edit-mode tests.** Run `SpeedPainterCourseTests`, `EnumIntegrityTests` (71 members, `SpeedPainter` = 78) and
+2. **Edit-mode tests.** Run `LanternRunCourseTests`, `EnumIntegrityTests` (71 members, `LanternRun` = 75) and
    `RaceCourseSourceTests`. **Pass:** all green.
-3. **Open and save the scene.** Open `MinigameSpeedPainter.unity` and save it (it is a text clone of Thresher Time's).
-   Commit it, then re-run `python3 Tools/Build/author_speed_painter_assets.py --check`. **Pass:** OK. The controller shows
+3. **Open and save the scene.** Open `MinigameLanternRun.unity` and save it (it is a text clone of Thresher Time's).
+   Commit it, then re-run `python3 Tools/Build/author_lantern_run_assets.py --check`. **Pass:** OK. The controller shows
    Cluster Prefab = SpawnablePrism and Nucleus Margin = 30.
-4. **Fly it at I1.** Arcade grid, SpeedPainter, I1, with 1-2 Angler AIs.
+4. **Fly it at I1.** Arcade grid, LanternRun, I1, with 1-2 Angler AIs.
    - **Pass:** every leg has a ball of blue prisms before its ring and one past it, both on the ring's line.
    - Hold RT on the near ball, let go; hold RT through the ring on the far ball, let go; press B twice.
      **Pass:** a throw flies at about 150 u/s (not ~30), the second dash carries you through the ring and the ring counts.

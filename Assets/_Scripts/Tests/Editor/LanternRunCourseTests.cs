@@ -4,17 +4,17 @@ using System.Text.RegularExpressions;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
 using UnityEngine;
-using Role = CosmicShore.Gameplay.SpeedPainterCourse.ClusterRole;
+using Role = CosmicShore.Gameplay.LanternRunCourse.ClusterRole;
 
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The SpeedPainter contract: the shared circuit on the Angler's cut generates at every intensity; each leg carries
+    /// The LanternRun contract: the shared circuit on the Angler's cut generates at every intensity; each leg carries
     /// the clusters the ladder names (both / both zigzagged / far only / far zigzagged and near every second leg); no
     /// cluster prism sits in a mouth; the near-to-far dash runs THROUGH the ring and lands past it wherever a leg has both
     /// clusters; and the Angler numbers the course is stated against are still the shipped ones. Swept over 400 seeds.
     /// </summary>
-    public class SpeedPainterCourseTests
+    public class LanternRunCourseTests
     {
         const float Inner = 480f;
         const float Outer = 1080f;
@@ -22,7 +22,7 @@ namespace CosmicShore.Tests
 
         static HeadlongCircuitSettings Settings(int intensity)
         {
-            var s = SpeedPainterCourse.ForIntensity(intensity);
+            var s = LanternRunCourse.ForIntensity(intensity);
             s.InnerRadius = Inner;
             s.OuterRadius = Outer;
             s.FirstGateDirection = Vector3.up;
@@ -44,14 +44,14 @@ namespace CosmicShore.Tests
         {
             const string prefab = "Assets/_Prefabs/Spacevessels/Angler.prefab";
             const string config = "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset";
-            const string why = " moved - SpeedPainterCourse is stated against it; update the constant and re-read SPEEDPAINTER.md.";
-            Assert.AreEqual(SpeedPainterCourse.CruiseSpeed, AssetFloat(prefab, "DefaultThrottleScaler"), 1e-4f, "cruise" + why);
-            Assert.AreEqual(SpeedPainterCourse.TurnScaler, Mathf.Min(AssetFloat(prefab, "PitchScaler"), AssetFloat(prefab, "YawScaler")), 1e-4f, "turn" + why);
-            Assert.AreEqual(SpeedPainterCourse.SlingSpeed, AssetFloat(config, "slingSpeed"), 1e-4f, "slingSpeed" + why);
-            Assert.AreEqual(SpeedPainterCourse.DashFrac, AssetFloat(config, "dashFrac"), 1e-4f, "dashFrac" + why);
-            Assert.AreEqual(SpeedPainterCourse.DashTime, AssetFloat(config, "dashTime"), 1e-4f, "dashTime" + why);
-            Assert.AreEqual(SpeedPainterCourse.PaintCone, AssetFloat(config, "paintCone"), 1e-4f, "paintCone" + why);
-            Assert.AreEqual(SpeedPainterCourse.PaintRange, AssetFloat(config, "paintRange"), 1e-4f, "paintRange" + why);
+            const string why = " moved - LanternRunCourse is stated against it; update the constant and re-read LANTERNRUN.md.";
+            Assert.AreEqual(LanternRunCourse.CruiseSpeed, AssetFloat(prefab, "DefaultThrottleScaler"), 1e-4f, "cruise" + why);
+            Assert.AreEqual(LanternRunCourse.TurnScaler, Mathf.Min(AssetFloat(prefab, "PitchScaler"), AssetFloat(prefab, "YawScaler")), 1e-4f, "turn" + why);
+            Assert.AreEqual(LanternRunCourse.SlingSpeed, AssetFloat(config, "slingSpeed"), 1e-4f, "slingSpeed" + why);
+            Assert.AreEqual(LanternRunCourse.DashFrac, AssetFloat(config, "dashFrac"), 1e-4f, "dashFrac" + why);
+            Assert.AreEqual(LanternRunCourse.DashTime, AssetFloat(config, "dashTime"), 1e-4f, "dashTime" + why);
+            Assert.AreEqual(LanternRunCourse.PaintCone, AssetFloat(config, "paintCone"), 1e-4f, "paintCone" + why);
+            Assert.AreEqual(LanternRunCourse.PaintRange, AssetFloat(config, "paintRange"), 1e-4f, "paintRange" + why);
         }
 
         [Test]
@@ -60,7 +60,7 @@ namespace CosmicShore.Tests
             for (int intensity = 1; intensity <= 4; intensity++)
             {
                 var s = Settings(intensity);
-                Assert.Greater(s.CornerFloorRadius, 1.5f * SpeedPainterCourse.CruiseRadius, $"i{intensity}: floor under the cruise circle");
+                Assert.Greater(s.CornerFloorRadius, 1.5f * LanternRunCourse.CruiseRadius, $"i{intensity}: floor under the cruise circle");
                 for (int seed = 1; seed <= Seeds; seed++)
                 {
                     var c = Circuit(intensity, seed);
@@ -83,10 +83,10 @@ namespace CosmicShore.Tests
             for (int intensity = 1; intensity <= 4; intensity++)
                 for (int seed = 1; seed <= 50; seed++)
                 {
-                    var clusters = SpeedPainterCourse.Clusters(Circuit(intensity, seed), intensity);
+                    var clusters = LanternRunCourse.Clusters(Circuit(intensity, seed), intensity);
                     Assert.AreEqual(expected[intensity], clusters.Count, $"i{intensity} seed {seed}: cluster count");
                     foreach (var cl in clusters)
-                        Assert.GreaterOrEqual(cl.Slots.Length, SpeedPainterCourse.ClusterPrisms(intensity) * 3 / 4,
+                        Assert.GreaterOrEqual(cl.Slots.Length, LanternRunCourse.ClusterPrisms(intensity) * 3 / 4,
                             $"i{intensity} seed {seed}: more than a quarter of a cluster was dropped");
                 }
         }
@@ -98,10 +98,10 @@ namespace CosmicShore.Tests
                 for (int seed = 1; seed <= Seeds; seed++)
                 {
                     var c = Circuit(intensity, seed);
-                    foreach (var cl in SpeedPainterCourse.Clusters(c, intensity))
+                    foreach (var cl in LanternRunCourse.Clusters(c, intensity))
                         foreach (var p in cl.Slots)
                             foreach (var g in c)
-                                Assert.GreaterOrEqual((p - g.Position).magnitude, g.Radius + SpeedPainterCourse.MouthClearance - 0.01f,
+                                Assert.GreaterOrEqual((p - g.Position).magnitude, g.Radius + LanternRunCourse.MouthClearance - 0.01f,
                                     $"i{intensity} seed {seed}: a cluster prism in a mouth");
                 }
         }
@@ -111,21 +111,21 @@ namespace CosmicShore.Tests
         {
             // The second dash of a leg goes from the near group to the far one. Its line must cross the ring's plane
             // inside the mouth, and its landing (75% of the way) must already be past the plane: dash, and the ring counts.
-            Assert.Less((1f - SpeedPainterCourse.DashFrac) * (SpeedPainterCourse.NearBefore + SpeedPainterCourse.FarPast),
-                        SpeedPainterCourse.FarPast, "the far cluster is too close: the dash lands short of the ring");
+            Assert.Less((1f - LanternRunCourse.DashFrac) * (LanternRunCourse.NearBefore + LanternRunCourse.FarPast),
+                        LanternRunCourse.FarPast, "the far cluster is too close: the dash lands short of the ring");
             for (int intensity = 1; intensity <= 4; intensity++)
                 for (int seed = 1; seed <= Seeds; seed++)
                 {
                     var c = Circuit(intensity, seed);
                     for (int leg = 0; leg < c.Count; leg++)
                     {
-                        if (!SpeedPainterCourse.HasCluster(leg, Role.Near, intensity)) continue;
-                        Vector3 near = SpeedPainterCourse.ClusterCentre(c, leg, Role.Near, intensity);
-                        Vector3 far = SpeedPainterCourse.ClusterCentre(c, leg, Role.Far, intensity);
-                        Assert.IsTrue(SpeedPainterCourse.CrossesPlaneAt(near, far, c[leg], out float miss),
+                        if (!LanternRunCourse.HasCluster(leg, Role.Near, intensity)) continue;
+                        Vector3 near = LanternRunCourse.ClusterCentre(c, leg, Role.Near, intensity);
+                        Vector3 far = LanternRunCourse.ClusterCentre(c, leg, Role.Far, intensity);
+                        Assert.IsTrue(LanternRunCourse.CrossesPlaneAt(near, far, c[leg], out float miss),
                             $"i{intensity} seed {seed} leg {leg}: the near-to-far line never reaches the ring");
                         Assert.Less(miss, c[leg].Radius, $"i{intensity} seed {seed} leg {leg}: the dash line misses the mouth by {miss - c[leg].Radius:F1} u");
-                        Vector3 land = SpeedPainterCourse.DashLanding(near, far);
+                        Vector3 land = LanternRunCourse.DashLanding(near, far);
                         Assert.Greater(Vector3.Dot(land - c[leg].Position, c[leg].Axis), 0f,
                             $"i{intensity} seed {seed} leg {leg}: the dash lands short of the ring");
                     }
@@ -143,9 +143,9 @@ namespace CosmicShore.Tests
                     var c = Circuit(intensity, seed);
                     Vector3 arrive = c[0].Axis;
                     Vector3 from = c[0].Position - arrive * 400f;
-                    float off = Vector3.Angle(arrive, SpeedPainterCourse.ClusterCentre(c, 0, Role.Far, intensity) - from);
-                    if (intensity == 1) Assert.Less(off, SpeedPainterCourse.PaintCone, $"seed {seed}: I1 cluster off the brush");
-                    else Assert.Greater(off, SpeedPainterCourse.PaintCone, $"seed {seed}: I2 cluster should need aiming");
+                    float off = Vector3.Angle(arrive, LanternRunCourse.ClusterCentre(c, 0, Role.Far, intensity) - from);
+                    if (intensity == 1) Assert.Less(off, LanternRunCourse.PaintCone, $"seed {seed}: I1 cluster off the brush");
+                    else Assert.Greater(off, LanternRunCourse.PaintCone, $"seed {seed}: I2 cluster should need aiming");
                 }
         }
 
@@ -155,8 +155,8 @@ namespace CosmicShore.Tests
             for (int i = 2; i <= 4; i++)
             {
                 Assert.Less(Settings(i).RingRadius, Settings(i - 1).RingRadius, $"i{i}: mouths must tighten");
-                Assert.Less(SpeedPainterCourse.ClusterPrisms(i), SpeedPainterCourse.ClusterPrisms(i - 1), $"i{i}: clusters must shrink");
-                Assert.Greater(SpeedPainterCourse.RegrowSeconds(i), SpeedPainterCourse.RegrowSeconds(i - 1), $"i{i}: regrowth must slow");
+                Assert.Less(LanternRunCourse.ClusterPrisms(i), LanternRunCourse.ClusterPrisms(i - 1), $"i{i}: clusters must shrink");
+                Assert.Greater(LanternRunCourse.RegrowSeconds(i), LanternRunCourse.RegrowSeconds(i - 1), $"i{i}: regrowth must slow");
             }
         }
 
@@ -165,7 +165,7 @@ namespace CosmicShore.Tests
         {
             // From 300 u (the near cluster's distance) the whole ball lies inside the 3-degree brush around its centre.
             for (int i = 1; i <= 4; i++)
-                Assert.Less(SpeedPainterCourse.ClusterRadius(i), 300f * Mathf.Tan(SpeedPainterCourse.PaintCone * Mathf.Deg2Rad),
+                Assert.Less(LanternRunCourse.ClusterRadius(i), 300f * Mathf.Tan(LanternRunCourse.PaintCone * Mathf.Deg2Rad),
                     $"i{i}: cluster wider than the brush");
         }
     }

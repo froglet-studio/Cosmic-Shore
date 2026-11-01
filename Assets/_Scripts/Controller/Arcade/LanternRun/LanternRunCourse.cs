@@ -4,8 +4,8 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// SpeedPainter's circuit and its prism MASS CLUSTERS, stated against the ANGLER (Angler.prefab, AnglerConfig.asset;
-    /// SpeedPainterCourseTests reads them back). The solver is <see cref="HeadlongCircuit"/>, shared.
+    /// LanternRun's circuit and its prism MASS CLUSTERS, stated against the ANGLER (Angler.prefab, AnglerConfig.asset;
+    /// LanternRunCourseTests reads them back). The solver is <see cref="HeadlongCircuit"/>, shared.
     ///
     /// <para><b>The Angler's speed is its school.</b> It cruises at 40 u/s. Everything faster is its own kit
     /// (ANGLER.md §1, §1f, §1m): hold RT and the group whose turn it is balls up at the nose while the brush paints what
@@ -42,9 +42,9 @@ namespace CosmicShore.Gameplay
     /// <para>Every function is pure and draws no random numbers, so every peer lays the same prisms from the same
     /// broadcast course.</para>
     /// </summary>
-    public static class SpeedPainterCourse
+    public static class LanternRunCourse
     {
-        // ── The vessel this course is cut for (SpeedPainterCourseTests reads each back off its asset) ──
+        // ── The vessel this course is cut for (LanternRunCourseTests reads each back off its asset) ──
 
         /// <summary>`DefaultThrottleScaler` on Angler.prefab: cruise, u/s.</summary>
         public const float CruiseSpeed = 40f;
