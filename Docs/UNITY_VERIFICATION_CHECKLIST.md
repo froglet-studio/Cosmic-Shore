@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
+`omniCrystalRetirement`), hooks on `AOEConicExplosion` (`Initialized`, `SetMorphStandIn`, `TryGetConeLocalToWorldAt`,
+`TryGetConeColours`), and a `sourceCentre` overload of `CrystalMorphMeshBuilder`'s hull cast. Record:
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_MORPH.md`.
+
+**Verified without the editor:** `crystal_morph_harness` 54/54 (negative-controlled); `unity_refcompile` player and editor
+0 errors in changed files (a planted error caught).
+
+**Test:** `DOLPHIN_CRYSTAL_MORPH.md` §7 — fly a Dolphin through an omni crystal: no husk spray, the cage bursts onto a cone
+down the nose and the cone takes over (~0.44 s); prisms ahead still break from the first frame; Squirrel and Scarab morphs
+unchanged; other hulls still spray; MPPM plays it on both peers.
+
 ### 🔴 B47: a rejoin hands the reclaimed hull to the rejoiner with ChangePlayer, not a second Initialize (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync` no longer calls `Initialize` on the reclaimed
