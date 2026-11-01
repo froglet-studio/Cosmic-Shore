@@ -1,0 +1,3 @@
+2026-11-01T21:33:06.982Z editor load: play=False capture=True minPlay=15s issues=0
+2026-11-01T23:03:03.351Z editor load: play=False capture=True minPlay=15s issues=1
+2026-11-01T23:18:34.718Z PlayMode session ended (777s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-3ee1363957 E-b42fd87192 E-483668db78 E-19c8b69ad1 E-faea489c7c E-69d1930020 E-c3b976bb15 E-f4e51ecfaa E-35c8e08e94 E-a95825d4fa
