@@ -47,6 +47,15 @@ namespace CosmicShore.Utility.AITraining
             CombatPoints = 18,
             // ScoringMetric.Goals.
             GoalsScored = 19,
+            // ScoringMetric.SwitchesThreaded: gates this pilot threaded in order (every gate race).
+            SwitchesThreaded = 20,
+            // ScoringMetric.PrismsStolen (Hijack).
+            PrismsStolen = 21,
+            // ScoringMetric.VolumeRemaining: standing volume, a live stock (Tapestry).
+            VolumeRemaining = 22,
+            // Where people fly: minus the mean distance (units) from the pilot's path to the people's recorded lines
+            // of this pair (PeopleLine, loaded by Froglet Compute's seed); 0 when no line is loaded.
+            PeopleLine = 23,
         }
 
         [Serializable]
@@ -150,8 +159,73 @@ namespace CosmicShore.Utility.AITraining
                 case GameModes.Salvo: ApplySalvoDefaults(); break;
                 case GameModes.BroodRush: ApplyNucleusRushDefaults(); break;
                 case GameModes.AstroLeague: ApplyAstroLeagueDefaults(); break;
-                default: ApplyRacingDefaults(); break;
+                default:
+                    if (!TryApplyMetricRecipe(mode)) ApplyRacingDefaults();
+                    break;
             }
+        }
+
+        /// <summary>One mode's metric recipe: its ScoringMetric's component, weighted, plus the time penalty.</summary>
+        public readonly struct MetricRecipe
+        {
+            public readonly GameModes Mode;
+            public readonly ComponentKind Kind;
+            public readonly float Weight;
+            public readonly string Label;
+            public readonly string Description;
+
+            public MetricRecipe(GameModes mode, ComponentKind kind, float weight, string label, string description)
+            {
+                Mode = mode; Kind = kind; Weight = weight; Label = label; Description = description;
+            }
+        }
+
+        /// <summary>
+        /// The modes added 2026-10-28 so Froglet Compute can train every card (Docs/Compute/README.md section 16).
+        /// The heavy row is the ScoringMetric each mode's ScoringRule asset scores; Score is not weighted
+        /// (the sign of a golf Score differs by mode, and the per-pilot metric already separates pilots).
+        /// Tools/Build/author_training_scenarios.py reads this table to write each mode's assets: one row per
+        /// line. Weights are first passes, scaled to the metric's points per event.
+        /// </summary>
+        public static readonly MetricRecipe[] MetricRecipes =
+        {
+            new(GameModes.Regatta, ComponentKind.SwitchesThreaded, 100f, "Gates", "Regatta: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Headlong, ComponentKind.SwitchesThreaded, 100f, "Gates", "Headlong: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Redline, ComponentKind.SwitchesThreaded, 100f, "Gates", "Redline: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Switchback, ComponentKind.SwitchesThreaded, 100f, "Gates", "Switchback: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Breakwater, ComponentKind.SwitchesThreaded, 100f, "Gates", "Breakwater: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Skein, ComponentKind.SwitchesThreaded, 100f, "Gates", "Skein: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Waystation, ComponentKind.SwitchesThreaded, 100f, "Gates", "Waystation: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.GrizzlyTime, ComponentKind.SwitchesThreaded, 100f, "Gates", "Grizzly Time: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Slingshot, ComponentKind.SwitchesThreaded, 100f, "Gates", "Slingshot: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Warpline, ComponentKind.SwitchesThreaded, 100f, "Gates", "Warpline: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.ThresherTime, ComponentKind.SwitchesThreaded, 100f, "Gates", "Thresher Time: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.WrasseRun, ComponentKind.SwitchesThreaded, 100f, "Gates", "Wrasse Run: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.BurrowRun, ComponentKind.SwitchesThreaded, 100f, "Gates", "Burrow Run: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.SerpentTime, ComponentKind.SwitchesThreaded, 100f, "Gates", "Serpentine (Serpent Time): rings this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.ScarabRally, ComponentKind.SwitchesThreaded, 100f, "Gates", "Scarab Rally: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.BrittleStarTime, ComponentKind.SwitchesThreaded, 100f, "Gates", "Brittle Star Time: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Broadside, ComponentKind.CombatPoints, 1f, "CombatPoints", "Broadside: this pilot's CombatPoints (hits already weighted by the mode's ScoringRule: a bullet 1, a missile blast 20)."),
+            new(GameModes.Dustup, ComponentKind.CombatPoints, 10f, "DustHits", "Dustup: this pilot's CombatPoints (one dust hit is one point)."),
+            new(GameModes.Undertow, ComponentKind.CombatPoints, 30f, "CombatPoints", "Undertow: this pilot's CombatPoints (a bend is 3 points, a kill 1)."),
+            new(GameModes.Sirocco, ComponentKind.HostilePrismsDestroyed, 1f, "HostilePrisms", "Sirocco: this pilot's HostilePrismsDestroyed (ScoringMetric.PrismsDestroyed)."),
+            new(GameModes.WreckingBall, ComponentKind.HostilePrismsDestroyed, 1f, "HostilePrisms", "Wrecking Ball: this pilot's HostilePrismsDestroyed (ScoringMetric.PrismsDestroyed)."),
+            new(GameModes.Bloomrush, ComponentKind.VolumeDestroyedHostile, 1f, "HostileVolume", "Bloomrush: hostile volume this pilot destroyed (ScoringMetric.VolumeDestroyed)."),
+            new(GameModes.Hijack, ComponentKind.PrismsStolen, 10f, "PrismsStolen", "Hijack: prisms this pilot stole (ScoringMetric.PrismsStolen)."),
+            new(GameModes.Tapestry, ComponentKind.VolumeRemaining, 1f, "VolumeStanding", "Tapestry: this pilot's standing volume at the end (ScoringMetric.VolumeRemaining, a live stock)."),
+            new(GameModes.Tollway, ComponentKind.GoalsScored, 100f, "Goals", "Tollway: this pilot's GoalsScored (ScoringMetric.Goals)."),
+        };
+
+        public bool TryApplyMetricRecipe(GameModes mode)
+        {
+            for (int i = 0; i < MetricRecipes.Length; i++)
+            {
+                var r = MetricRecipes[i];
+                if (r.Mode != mode) continue;
+                SetPersonalMetricRecipe(r.Description, r.Kind, r.Weight, r.Label);
+                return true;
+            }
+            return false;
         }
 
         public void ApplyCrystalCaptureDefaults()

@@ -1,0 +1,6 @@
+{
+ "_doc": "Game modes Froglet Compute leaves out of every job, the console's vessel x mode grid and the scout (README section 16). The game keeps them; only Compute skips them.",
+ "modes": {
+  "AstroLeague": "not needed for the AI work any more (Shombith, 2026-10-29)"
+ }
+}
