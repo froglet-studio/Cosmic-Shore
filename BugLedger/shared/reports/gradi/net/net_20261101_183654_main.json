@@ -1,0 +1,161 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "main",
+  "isVirtualPlayer": false,
+  "why": "bounce",
+  "user": "gradi",
+  "unityVersion": "6000.3.17f1",
+  "branch": "bleeding-edge",
+  "commit": "be1f4d5821",
+  "playStartedUtc": "2026-11-01T18:36:54.9466612Z",
+  "playEndedUtc": "2026-11-01T18:39:17.5352077Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-01T18:38:31.8407566Z",
+    "durationSeconds": 45.63039779663086,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "none",
+    "counters": {
+        "requests": 14,
+        "lobbyReads": 8,
+        "retries": 3,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 3,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 0,
+        "presenceForceReset": 0,
+        "offlineFallback": 0,
+        "partyRosterPush": 0,
+        "presencePush": 1,
+        "lobbyReadsPerSecond": 0.17532172799110413
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 0,
+        "budgetExhaustions": 0,
+        "rateLimited": 3
+    },
+    "lifecycle": [
+        {
+            "t": 0.00011100000119768083,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 0.0012544000055640936,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 11.518816947937012,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 11.633513450622559,
+            "e": "netConfig",
+            "detail": "hash=2885305291825a9c prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 515096987:Grizzly 532772460:Honeyguide 720707912:Falcon 758961507:StatsManager 873610668:Urchin 881736717:Termite 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2720972683:QuadFish 3190346835:Player 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3827091966:Scarab 3965112327:MassBrittlestarFauna 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 12.395697593688965,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 34.513877868652347,
+            "e": "stall",
+            "detail": "22.1s in Authentication"
+        },
+        {
+            "t": 34.51428985595703,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 2378 MB, managed 2123 MB, of 32619 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 34.66095733642578,
+            "e": "relayDrop",
+            "detail": "after a 22.1 s freeze 0.1 s earlier"
+        },
+        {
+            "t": 34.664154052734378,
+            "e": "bounce",
+            "detail": "Connection lost"
+        }
+    ],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 7,
+    "warnings": 24,
+    "dropped": 0,
+    "lines": [
+      {"t": 20.761, "type": "warning", "msg": "Editor is not in automated mode. Modal Pop up might break continuous command workflow. Start the editor with -automated", "at": "Unity.Pipeline.Editor.EditorPipelineServer:ServerStarted () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineServer.cs:88)"},
+      {"t": 27.064, "type": "log", "msg": "Reflex LogLevel set to Info"},
+      {"t": 56.611, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 61.606, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "Unity.Debug:LogWarning (object) (at ./Library/PackageCache/com.unity.entities@f6e02210e263/Unity.Entities/Stubs/Unity/Debug.cs:13)"},
+      {"t": 62.042, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "CosmicShore.Core.DeveloperUnlockGate:AnnounceOnce () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/Progression/DeveloperUnlockGate.cs:147)"},
+      {"t": 62.189, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 62.194, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 62.198, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 63.945, "type": "warning", "msg": "[PrismTimerManager] No instance found in scene - auto-created. Consider adding one to the scene to avoid this overhead.", "at": "CosmicShore.Gameplay.PrismTimerManager:EnsureInstance () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Managers/PrismTimerManager.cs:66)"},
+      {"t": 66.926, "type": "exception", "msg": "CommandInvokationFailure: Unity Remote requirements check failed\nC:\\Unity\\6000.3.17f1\\Editor\\Data\\PlaybackEngines\\AndroidPlayer\\SDK\\platform-tools\\adb.exe forward tcp:7201 tcp:7201\n\nEnvironment Variables:\nUSERDOMAIN = GBOX\r\nProgramFiles = C:\\Program Files\r\nTMP = C:\\Users\\gradi\\AppData\\Local\\Temp\r\nJetBrains Rider = C:\\Program Files\\JetBrains\\JetBrains Rider 2025.2.4\\bin\r\nNVCUDASAMPLES_ROOT = C:\\ProgramData\\NVIDIA Corporation\\CUDA Samples\\v11.4\r\nPROCESSOR_REVISION = a701\r\nALLUSERSPROFILE = C:\\ProgramData\r\nOS = Windows_NT\r\nCHROME_CRASHPAD_PIPE_NAME = \\\\.\\pipe\\crashpad_7260_TLGXOWPHTBJJUFQA\r\nPROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel\r\nCUDA_PATH_V11_4 = C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.4\r\nCUDA_PATH = C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.4\r\nProgramW6432 = C:\\Program Files\r\nUSERPROFILE = C:\\Users\\gradi\r\nCommonProgramFiles = C:\\Program Files\\Common Files\r\nMSMPI_BENCHMARKS = C:\\Program Files\\Microsoft MPI\\Benchmarks\\\r\nComSp...", "at": "UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)"},
+      {"t": 68.088, "type": "exception", "msg": "[Vivox]: System.ArgumentException: 'server' is null or empty\r\nParameter name: server", "at": "Unity.Services.Vivox.VivoxLogger:LogException (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Runtime/SDK/Utils/VivoxLogger.cs:16)"},
+      {"t": 68.788, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/DailyChallengeSystem.cs:146)"},
+      {"t": 68.795, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."},
+      {"t": 76.08, "type": "warning", "msg": "Account API did not become accessible within 30 seconds. This may be due to network issues or editor focus.", "at": "Unity.AI.Toolkit.Accounts.Services.States.ApiAccessibleState/<WaitForCloudProjectSettings>d__3:MoveNext () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Toolkit.Accounts/Services/States/ApiAccessibleState.cs:32)"},
+      {"t": 78.75, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 82.164, "type": "log", "msg": "Container Bootstrap (1016399563) disposed"},
+      {"t": 86.034, "type": "log", "msg": "Scene (Authentication) Bindings Installed"},
+      {"t": 87.13, "type": "warning", "msg": "[FriendsInitializer] Friends service did not come up; will retry on the next sign-in event.", "at": "CosmicShore.Gameplay.FriendsInitializer/<InitializeFriendsAsync>d__22:MoveNext () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Party/FriendsInitializer.cs:249)"},
+      {"t": 87.132, "type": "warning", "msg": "[AppState] Invalid transition: None → MainMenu", "at": "CosmicShore.Core.ApplicationStateMachine:LogWarning (string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/ApplicationStateMachine.cs:274)"},
+      {"t": 101.04, "type": "error", "msg": "System.Exception: HTTP/1.1 403 Forbidden", "at": "Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)"},
+      {"t": 102.478, "type": "warning", "msg": "[AuthScene] Relay session not ready (attempt 1/3) - retrying HCS init...", "at": "CosmicShore.Core.AuthenticationSceneController/<LoadMainMenuNetworkedAsync>d__68:MoveNext () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/AuthenticationSceneController.cs:935)"},
+      {"t": 106.693, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 106.697, "type": "log", "msg": "QosJob: send to 35.200.5.172:7778 took 2ms"},
+      {"t": 106.7, "type": "log", "msg": "QosJob: send to 34.93.31.77:7778 took 2ms"},
+      {"t": 106.701, "type": "log", "msg": "QosJob: send to 34.124.138.42:7778 took 0ms"},
+      {"t": 106.703, "type": "log", "msg": "QosJob: send to 34.151.83.253:7778 took 3ms"},
+      {"t": 106.704, "type": "log", "msg": "QosJob: send to 34.116.181.88:7778 took 0ms"},
+      {"t": 106.706, "type": "log", "msg": "QosJob: send to 34.88.79.163:7778 took 2ms"},
+      {"t": 106.707, "type": "log", "msg": "QosJob: send to 35.204.68.24:7778 took 0ms"},
+      {"t": 106.709, "type": "log", "msg": "QosJob: send to 34.95.231.177:7778 took 3ms"},
+      {"t": 106.709, "type": "log", "msg": "QosJob: send to 34.55.12.160:7778 took 0ms"},
+      {"t": 106.71, "type": "log", "msg": "QosJob: send to 34.75.250.9:7778 took 1ms"},
+      {"t": 106.71, "type": "log", "msg": "QosJob: send to 34.82.227.179:7778 took 0ms"},
+      {"t": 107.21, "type": "log", "msg": "QosJob: not enough time to receive 25 outstanding responses"},
+      {"t": 107.21, "type": "log", "msg": "QosJob: received 30 responses of 30/55 in 500ms waiting avg 17ms per response"},
+      {"t": 107.211, "type": "log", "msg": "QosJob: took 518ms to process 11 servers"},
+      {"t": 109.396, "type": "log", "msg": "[LoadInsights] ● Recording load — Boot - Authentication -> Menu_Main"},
+      {"t": 131.407, "type": "error", "msg": "Failed to establish connection with the Relay server (server didn't answer any BIND message).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 131.409, "type": "warning", "msg": "[Net] The game froze for 22.1 s in Authentication while online. Unity Relay drops a connection after about 10 s without traffic, so this session may end with 'player timed out due to inactivity' (Docs/PartySystem/BUGS.md B36).", "at": "CosmicShore.Utility.FrameStallWatch:ObserveFrame (string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/FrameStallWatch.cs:96)"},
+      {"t": 131.529, "type": "error", "msg": "Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.OnTransportFailure to be notified of such events programmatically.", "at": "Unity.Netcode.Transports.UTP.UnityTransport:OnEarlyUpdate () (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Transports/UTP/UnityTransport.cs:1184)"},
+      {"t": 131.531, "type": "error", "msg": "[Netcode] Host is shutting down due to network transport failure of UnityTransport!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 131.533, "type": "warning", "msg": "[Net] Transport failure - bouncing to solo menu.", "at": "CosmicShore.Gameplay.MultiplayerSetup/<OnTransportFailure>d__38:MoveNext () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs:623)"},
+      {"t": 131.558, "type": "warning", "msg": "[PartyInviteController] Bouncing to solo menu: Connection lost", "at": "CosmicShore.Gameplay.PartyInviteController/<BounceToSoloMenuAsync>d__40:MoveNext () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Party/PartyInviteController.cs:755)"},
+      {"t": 132.999, "type": "error", "msg": "System.Exception: HTTP/1.1 403 Forbidden", "at": "Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)"},
+      {"t": 133.666, "type": "log", "msg": "Container Authentication (1926985963) disposed"},
+      {"t": 135.528, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 135.529, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 135.53, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 135.531, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 135.532, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 135.533, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 135.604, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 135.605, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 135.606, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 137.388, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/GameCard.cs:162)"},
+      {"t": 137.399, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/GameCard.cs:162)"},
+      {"t": 137.4, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/GameCard.cs:162)"},
+      {"t": 137.401, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/UI/Elements/GameCard.cs:162)"},
+      {"t": 137.557, "type": "log", "msg": "[GameModeProgressionService] ProgressionBackendGate closed — cloud record ignored; progression is session-local and starts fresh each launch."}
+    ]
+  }
+}
