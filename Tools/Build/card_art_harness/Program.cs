@@ -304,12 +304,6 @@ static class Program
         }
     }
 
-    /// <summary>
-    /// Thresher Time's signature act, STAGED (not simulated): the wrecking ball planted inside the
-    /// lap's tightest corner with the ship's orbit round it drawn as a dotted circle and the chain
-    /// from ball to ship - the sling that corner asks for. Sizes are card-scale, not the game's
-    /// (the real ball is ~3 u across, invisible at 313x208); the corner is the shipped course's own.
-    /// </summary>
     /// <summary>LanternRun's signature: the mass clusters themselves at the SHIPPED layout (LanternRunCourse.Clusters),
     /// glowing balls before and past their rings, with a dotted dash line from the first leg's near cluster through its
     /// ring to its far one - the path the Angler paints and zooms along. Card-scale sizes, not the game's.</summary>
@@ -325,6 +319,12 @@ static class Program
         for (int j = 0; j < 22; j++) scene.Sphere(near + (far - near) * (j / 21.0), 3.0, dot, 8, 16, false);
     }
 
+    /// <summary>
+    /// Thresher Time's signature act, STAGED (not simulated): the wrecking ball planted inside the
+    /// lap's tightest corner with the ship's orbit round it drawn as a dotted circle and the chain
+    /// from ball to ship - the sling that corner asks for. Sizes are card-scale, not the game's
+    /// (the real ball is ~3 u across, invisible at 313x208); the corner is the shipped course's own.
+    /// </summary>
     static void StageSling(Scene scene, List<RaceGate> gates)
     {
         int n = gates.Count, k = 0;
