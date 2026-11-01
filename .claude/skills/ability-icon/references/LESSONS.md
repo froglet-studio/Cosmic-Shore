@@ -446,3 +446,15 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     serializes (an earlier part's `...Icon` reference is safe), and after a rebind grep the prefab for every new field.
     On the Time card Garrett took H, "the jump" (a ghost where the hull was, the hull where the dash puts it), over a
     dashed path or a speed wedge: the set distance is what the dash is, and only the before/after pair shows it.
+
+## 2026-11-01 - the Honeyguide: seventeen icons in one round, for a trigger that swaps its ability
+
+66. **A trigger whose ability is swapped needs a family, not four cards.** Garrett: "we will need an icon for each
+    ability that can take over" - the Honeyguide's RT and LT each show whichever banked ability is current, so the
+    thirteen upgrades are drawn as one family with the base icons (`Upgrades/` subfolder, still under the 24 px
+    distinct gate, which holds them apart). Two things the first draft got wrong at 40 px: a loop with a straight tether
+    reads as a MAGNIFYING GLASS (the lasso's rope must curve and leave the loop tangentially), and an even-spiked ring
+    reads as a GEAR (vary the spike lengths and put the act's subject, here the hull, in the hole). Several hulls'
+    real meshes in one icon fragment into many components at small boxes; a ghost copy at 0.6 with `close_px` 2 keeps
+    each hull one piece. Not reviewed by the owner yet.
+
