@@ -1,5 +1,4 @@
 {
- "agent": true,
  "caps": {
   "bash": true,
   "caps_version": 2,
@@ -15,18 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {},
- "host": "dragonsweapon",
- "idle_seconds": 0.015,
- "last": {
-  "count": null,
-  "epoch": "7dbc6703ac71",
-  "job": "unity-train~r20261031-224826-16e9",
-  "rc": 1,
-  "stopped": "stopped from the console",
-  "unit": "threshertime-thresher-i1"
+ "current": {
+  "job": "unity-train~r20261102-005148-167f",
+  "max_evals": 2,
+  "minutes": 3.0,
+  "phase": "starting",
+  "request": "r20261102-005148-167f",
+  "since": 1793561487,
+  "unit": "serpenttime-serpent-i3"
  },
- "remote_start": true,
+ "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -197,22 +194,10 @@
    "unit": "threshertime-thresher-i1"
   }
  ],
- "specs": {
-  "cores": 12,
-  "disk_free_gb": 62.1,
-  "os": "windows",
-  "os_name": "Windows 10",
-  "python": "3.11.9",
-  "ram_free_gb": 5.5,
-  "ram_gb": 31.9,
-  "unity": true,
-  "unity_open": true
- },
- "status": "in use",
  "totals": {
   "sessions": 14
  },
- "updated": 1793560543,
+ "updated": 1793561487,
  "user": "shombithofficial",
  "version": "1"
 }
