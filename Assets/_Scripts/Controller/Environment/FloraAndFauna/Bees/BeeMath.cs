@@ -101,6 +101,47 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The store kept PER DOMAIN (Garrett, 2026-11-01: "build a structure made from all three"). Mass carried home keeps
+        /// the domain it was stung from, and a comb cell is paid for by ONE domain's mass and laid in that domain - so the
+        /// comb is built from the three domains in exactly the proportion its bees brought them home, and mass is conserved
+        /// per domain as well as in total. <see cref="TrySpend"/> pays from the domain holding the most that can pay alone
+        /// (ties: the lower domain value), so the comb grows in the colours it has most of.
+        /// </summary>
+        public sealed class HoneyLedger
+        {
+            public const int Slots = 5;   // indexed by the Domains value (Jade 1, Ruby 2, Blue 3, Gold 4)
+            readonly HoneyStore[] _by = new HoneyStore[Slots];
+
+            public float Stored { get { float s = 0f; for (int d = 0; d < Slots; d++) s += _by[d].Stored; return s; } }
+            public float Deposited { get { float s = 0f; for (int d = 0; d < Slots; d++) s += _by[d].Deposited; return s; } }
+            public float Spent { get { float s = 0f; for (int d = 0; d < Slots; d++) s += _by[d].Spent; return s; } }
+            public HoneyStore Of(int domain) => domain >= 0 && domain < Slots ? _by[domain] : default;
+
+            public void Deposit(int domain, float volume)
+            {
+                if (domain < 0 || domain >= Slots) return;
+                _by[domain].Deposit(volume);
+            }
+
+            /// <summary>Pay one cell's <paramref name="cost"/> from one domain; false (nothing spent) when no domain can pay alone.</summary>
+            public bool TrySpend(float cost, out int domain)
+            {
+                domain = -1;
+                float best = -1f;
+                for (int d = 0; d < Slots; d++)
+                    if (_by[d].Stored + 1e-4f >= cost && _by[d].Stored > best) { best = _by[d].Stored; domain = d; }
+                if (domain < 0 || !_by[domain].TrySpend(cost)) { domain = -1; return false; }
+                return true;
+            }
+
+            public void Refund(int domain, float cost)
+            {
+                if (domain < 0 || domain >= Slots) return;
+                _by[domain].Refund(cost);
+            }
+        }
+
         // ------------------------------------------------------------------ the colony
 
         /// <summary>

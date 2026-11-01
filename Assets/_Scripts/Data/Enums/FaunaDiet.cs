@@ -16,8 +16,9 @@ namespace CosmicShore.Data
     //               and what it carries home is mass stung off OPPOSING fauna (a transfer). A
     //               pollinator population is raised by its HIVE, which takes a FLORA slot in the
     //               spawn profile, so it counts against the flora budget, not the fauna one, and it
-    //               never starves (a producer, like a plant). It is neither herbivore prey signal
-    //               nor leashable (both read Diet == Herbivore).
+    //               never starves (a producer, like a plant). It IS prey (Garrett, 2026-11-01: predators
+    //               may eat bees - FaunaDiets.IsPrey), and it is not leashable (the leash reads
+    //               Diet == Herbivore).
     //
     // Both diets share the same starvation-based population bound, so layering a Predator
     // on top of Herbivores yields a two-tier food web (flora -> herbivores -> predators)
@@ -29,5 +30,15 @@ namespace CosmicShore.Data
         Herbivore = 0,
         Predator = 1,
         Pollinator = 2,
+    }
+
+    public static class FaunaDiets
+    {
+        /// <summary>
+        /// What a predator may hunt: every diet but its own. Herbivores always were; pollinators are too (Garrett,
+        /// 2026-11-01: "yes", predators eat bees). Predators do not cannibalise. The one predicate every predation site
+        /// asks, so a new diet is prey or not in one place.
+        /// </summary>
+        public static bool IsPrey(FaunaDiet diet) => diet != FaunaDiet.Predator;
     }
 }

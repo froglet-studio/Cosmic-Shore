@@ -15,13 +15,14 @@ namespace CosmicShore.Gameplay
     /// <para>What it does, decided by <see cref="BeeMath.Decide"/> on its own clock:</para>
     /// <list type="bullet">
     /// <item><b>Pollinate</b>: fly to a flower near the hive and land on it: the plant grows faster for a while, through its
-    /// OWN growth path (<see cref="Flora.Hasten"/>, the same door the Angler's lure uses), never a parallel one.</item>
+    /// OWN growth path (<see cref="Flora.Hasten"/>, the same door the Angler's lure uses), never a parallel one. Flowers of
+    /// ALL THREE domains (Garrett, 2026-11-01): pollination is mutualism, not a team fight.</item>
     /// <item><b>Raid</b>: an opposing creature near the hive is flown at and stung: one of its body prisms is consumed toward
     /// the bee (the ordinary <see cref="Prism.Consume"/> path, attributed to the bee), and its volume is carried. That is
     /// how a hive is fed and how it is defended, in one act. Shielded body prisms are passed over, as every forager
     /// passes them.</item>
-    /// <item><b>Return</b>: the load is handed to the hive's store, which builds comb from exactly that much
-    /// (<see cref="BeeHiveFlora.Deposit"/>).</item>
+    /// <item><b>Return</b>: the load is handed to the hive's store, which builds comb from exactly that much, each domain's
+    /// share into comb of that domain (<see cref="BeeHiveFlora.Deposit"/>, Garrett 2026-11-01).</item>
     /// </list>
     /// <para>A bee whose hive is gone keeps pollinating round where it is and carries what it holds; nothing times it out.</para>
     /// </summary>
@@ -52,6 +53,8 @@ namespace CosmicShore.Gameplay
         BeeHiveFlora _hive;
         BeeIntent _intent;
         float _carried;
+        // what the load is made of, by the domain it was stung from (Domains value): the hive builds each domain's comb from it
+        readonly float[] _carriedBy = new float[BeeMath.HoneyLedger.Slots];
         int _visits, _trip, _salt;
         Flora _flower;
         Fauna _quarry;
@@ -144,7 +147,10 @@ namespace CosmicShore.Gameplay
                     Sting(_quarry);
                     break;
                 case BeeIntent.Return:
-                    if (_hive && _carried > 0f) _hive.Deposit(_carried);
+                    if (_hive)
+                        for (int d = 0; d < _carriedBy.Length; d++)
+                            if (_carriedBy[d] > 0f) _hive.Deposit(_carriedBy[d], (Domains)d);
+                    System.Array.Clear(_carriedBy, 0, _carriedBy.Length);
                     _carried = 0f;
                     _visits = 0;
                     _trip++;
@@ -187,8 +193,10 @@ namespace CosmicShore.Gameplay
             if (!bite) return;
             _nextStingAt = Time.time + stingCooldown;
             float volume = Mathf.Max(0f, bite.Volume);
+            int from = (int)bite.Domain;
             bite.Consume(transform, domain, _stingerName, false, true);
             _carried += volume;
+            if (from >= 0 && from < _carriedBy.Length) _carriedBy[from] += volume;
             Play(stingSfx, transform.position);
         }
 

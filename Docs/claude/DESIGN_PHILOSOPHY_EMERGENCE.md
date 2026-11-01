@@ -104,7 +104,9 @@ ones.
   visits hasten the flora's own growth (`Flora.Hasten`), what it carries is a TRANSFER (mass stung off opposing fauna,
   built into its home), and its population is raised by its HOME, a flora (`BeeHiveFlora`) that takes a FLORA slot in
   the spawn profile and the flora budget. So a pollinator population sits on the producer side of the ledger, like a
-  plant, and never starves. Run through the curation process as an EXTENSION of this entry, not a new fundamental:
+  plant, and never starves. It is still PREY (Garrett, 2026-11-01: predators eat bees; `FaunaDiets.IsPrey`), it
+  pollinates flora of every domain, and its home is built from all three domains, each comb cell in the domain of the
+  mass that paid for it (a transfer domain for domain). Run through the curation process as an EXTENSION of this entry, not a new fundamental:
   it is a third role inside Flora & Fauna, composing with Mass (transfer, never minted), Domain (it defends its own),
   Elementals (one heart per bee, its hive's element), Cells (the production freeze and caps) and Vessels (the Ratel's
   raided hive and the Honeyguide's Mass power found hives through `BeeHiveFlora.SeedAt`).

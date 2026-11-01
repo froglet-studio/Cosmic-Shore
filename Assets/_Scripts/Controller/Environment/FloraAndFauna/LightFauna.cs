@@ -436,7 +436,7 @@ namespace CosmicShore.Gameplay
             {
                 var f = fauna[i];
                 if (!f || f == this) continue;
-                if (f.Diet != FaunaDiet.Herbivore || !f.IsAlivePrey || f.IsPredationImmune) continue;
+                if (!FaunaDiets.IsPrey(f.Diet) || !f.IsAlivePrey || f.IsPredationImmune) continue;
 
                 float d = (f.transform.position - origin).sqrMagnitude;
                 if (d < bestSqr && d <= maxSqr) { bestSqr = d; best = f; }
@@ -676,7 +676,7 @@ namespace CosmicShore.Gameplay
                     // - LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
                     // nearest Fauna ancestor of its body prisms, so managers (also Fauna,
                     // but with no body in the scene) are never returned. A predator's own body
-                    // resolves to `this` and is skipped; other predators (Diet != Herbivore)
+                    // resolves to `this` and is skipped; other predators (FaunaDiets.IsPrey false)
                     // are neighbors, not prey, so predators don't cannibalize. Predation
                     // ignores domain - it is a diet relationship, not a team fight - so
                     // predators always have prey even in a single-domain cell.
@@ -686,7 +686,7 @@ namespace CosmicShore.Gameplay
                         // per neighbor per tick; the walk-and-backfill fallback preserves
                         // the nearest-Fauna-ancestor semantics for unstamped species.
                         var prey = preyBody.ResolveOwnerFauna();
-                        if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
+                        if (prey && prey != this && FaunaDiets.IsPrey(prey.Diet))
                         {
                             // Prey bodies never repel a hunting predator — a shark doesn't
                             // avoid its dinner. Environment prisms (flora / trails / other
@@ -1105,7 +1105,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < fauna.Count; i++)
             {
                 var f = fauna[i];
-                if (!f || f == this || f.Diet != FaunaDiet.Herbivore) continue;
+                if (!f || f == this || !FaunaDiets.IsPrey(f.Diet)) continue;
                 if (!f.IsAlivePrey || f.IsPredationImmune) continue;
                 if ((f.transform.position - mouthPos).sqrMagnitude > attackRangeSqr) continue;
 

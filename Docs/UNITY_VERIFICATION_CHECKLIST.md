@@ -97,6 +97,27 @@ the headless reference compile, player and editor (0 errors in project code); `T
 
 **First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
 Medium hive skill (a proposal between the lab's rookie and skilled).
+### 🔴 Bees round 2: a real bee model; predators eat bees; three-domain pollination and comb (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+Garrett: "2. yes. 3 they should pollinate all three and build a structure made from all three. 4. ... be sure to add them
+to the variuous list ... 5. make a real bee model with /fauna". `Bee.fbx` (`Tools/Build/bee_model/build_bee.py`), the
+prefab's `BeeModel` spindle, `BeeWingDriver` (four model wings + two vein prisms), `FaunaDiets.IsPrey`, `BeeMath.HoneyLedger`,
+`LifeForm.NewBlockDomain`, the Spawn Matrix's Bee row, the Codex's bee lines (`Docs/ECOSYSTEM.md` §66). `/verify-unity`
+unavailable (no Editor). Green: reference compile player and editor (0 errors in project code); `author_bee_assets.py
+--check` and `--self-test` (6/6); the bee and prey test bodies under .NET 8 (11/11); the fauna, ecology and C# gates.
+
+1. Unity imports `Assets/_Models/Fauna/Bee.fbx` at 1:1 with the head toward +z and no Animator; its `BeeBody` slot shows
+   `SpindleMaterial` and `BeeWing` the membrane material (the remap is by name in the .meta).
+2. Open `BeeFauna.prefab`: the model sits behind the heart crystal (the heart is the face, the eyes flank it), the abdomen
+   prism is inside the abdomen, the two vein prisms lie along the forewings' leading edges and tilt UP like the wings.
+3. Play: the four wings and the veins beat together; bees read as bees at gameplay distance (the stripes are grooves in
+   the domain colour - judge whether a yellow/black slot is wanted).
+4. Release a predator near a hive (Spawn Matrix): it hunts bees and eats them.
+5. Watch a hive grow past its seed: comb cells appear in the domains of the creatures its bees stung (a Jade hive grows
+   Ruby and Gold cells), and bees land on flowers of every domain.
+6. Spawn Matrix: the **Bee** row releases a lone bee that pollinates where it is; Codex > Scan & Merge lists the bee and
+   the hive with their behaviour lines.
+
 ### 🔴 Bees: the pollinator fauna and its hive, a flora slot (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Garrett: "proper bees ... a fauna that acts more like a flora ... take the slot of a productive flora". New:

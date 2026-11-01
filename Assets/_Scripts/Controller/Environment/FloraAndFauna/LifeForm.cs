@@ -262,8 +262,12 @@ namespace CosmicShore.Gameplay
         public virtual void AddHealthBlock(HealthPrism healthPrism)
         {
             if (!healthPrism) return;
-            healthTracker.Add(healthPrism, this, domain);
+            healthTracker.Add(healthPrism, this, NewBlockDomain);
         }
+
+        /// <summary>The domain a prism this lifeform takes on is filed in (before the cell files it in its per-domain grids).
+        /// Its own domain, except a lifeform built from several domains' mass (the bee hive's comb, Docs/ECOSYSTEM.md §66).</summary>
+        protected virtual Domains NewBlockDomain => domain;
 
         public virtual void RemoveHealthBlock(HealthPrism healthPrism, string killerName = "")
         {

@@ -24,7 +24,15 @@ What it owns (one owner per file):
   * the Hesperides garden's hive: Cell Configs/Hesperides Cell/Hesperides Bee Hive Flora Config Data.asset (the four
     elements spread from the palette). The garden's spawn profile is Tools/ecosim/gen_hesperides_assets.py's: it lists
     this config by the guid minted here, and --check fails if the shipped profile does not;
-  * the bee prefab's entry in Assets/DefaultNetworkPrefabs.asset (a hatched bee is a networked fauna).
+  * the bee prefab's entry in Assets/DefaultNetworkPrefabs.asset (a hatched bee is a networked fauna);
+  * Assets/_Models/Fauna/Bee.fbx.meta (the model's import settings and its material remap: BeeBody -> the shared
+    SpindleMaterial, BeeWing -> BranchingMembraneMaterial) and the model's place in the bee (round 2, Garrett 2026-11-01:
+    "make a real bee model with /fauna"): a `BeeModel` GameObject carrying a Spindle with the Bee.fbx instance under it
+    (the Clawfish's pattern: the spindle resolves the model's body renderer itself). The FBX is built by
+    Tools/Build/bee_model/build_bee.py (Blender-as-a-module); this script checks it is there and carries the parts the
+    prefab and BeeWingDriver name. The tadpole skin of the abdomen instance is hidden: the model is the body, and the
+    abdomen's prism (the bee's conserved mass) sits inside the model's abdomen, the two "wing" prisms are the forewings'
+    leading-edge veins.
 
 It does NOT write the Spawn Matrix toy (author_spawn_matrix_roster.py owns it and lists "Bee Hive") or the flora
 populations of other species (author_flora_populations.py hands "Bee Hive" to this script by name).
@@ -50,6 +58,13 @@ NETWORK = A("DefaultNetworkPrefabs.asset")
 TEST = A("_Scripts", "Tests", "Editor", "BeeMathTests.cs")
 
 TADPOLE = A("_Prefabs", "FloraAndFauna", "TadPoleFauna.prefab")
+MODEL = A("_Models", "Fauna", "Bee.fbx")
+MODEL_ROOT_TR = -8679921383154817045                      # an FBX's root transform (the same id in every model)
+MODEL_ROOT_GO = 919132149155446097                        # an FBX's root GameObject
+MODEL_PARTS = ("Bee_Body", "Bee_WingFL", "Bee_WingFR", "Bee_WingHL", "Bee_WingHR")
+SPINDLE_SCRIPT = "8ec45d1233573f9409107a25ab23b0c9"       # Spindle.cs
+SPINDLE_MATERIAL = "4f44fa5c7514a2c45b5af7f45bc51acd"     # SpindleMaterial.mat (the Clawfish's body takes it too)
+MEMBRANE_MATERIAL = "BranchingMembraneMaterial"           # resolved from its .meta
 BOID_SCRIPT = "19b38987ca9e2974083abe50717ed186"          # Boid.cs
 TADPOLE_ROOT_GO = "5119337659833296837"
 TADPOLE_ROOT_TR = "5494491424606190975"
@@ -80,8 +95,11 @@ HIVE_GROW_PERIOD = 2
 BEE_SPEED = (14, 26)          # min / max (u/s): quicker than a tadpole (10 / 15)
 BEE_BEHAVIOUR_RATE = 0.6      # s between flock steering ticks (a tadpole's 1.5)
 BEE_BODY_SCALE = 3            # the root, uniform (the body is scaled to the one heart size, §64.4; the tadpole's 3)
-ABDOMEN = dict(target=(2.2, 2.2, 3.2), z=-5.0)
-WING = dict(target=(3.6, 0.25, 2.0), pivot=(1.4, 1.1, -1.2), reach=2.4, tilt_deg=18)
+# the abdomen's prism sits at the model abdomen's widest point (build_bee.ABDOMEN: start -3.95, end -8.2, bulge at 0.42)
+ABDOMEN = dict(target=(2.0, 2.0, 2.8), z=-5.7)
+# each "wing" prism is its forewing's leading-edge vein: on the model forewing's pivot (build_bee.FOREWING.pivot, in
+# Unity's frame), along its span, the same dihedral (build_bee.FOREWING.dihedral_deg)
+WING = dict(target=(3.9, 0.22, 0.28), pivot=(1.4, 1.1, -1.2), reach=2.15, tilt_deg=9)
 HESPERIDES_HIVES = dict(initial=2, cap=4)
 BENCH_HIVE_CAP = 3
 
@@ -230,7 +248,7 @@ def wing_docs(body_docs, added, side):
     # a dihedral: each wing is tilted up about the body's axis
     import math
     half = math.radians(WING["tilt_deg"]) / 2
-    text = set_mod(text, SP_ROOT_TR, "m_LocalRotation.z", _g(round(sign * -math.sin(half), 6)))
+    text = set_mod(text, SP_ROOT_TR, "m_LocalRotation.z", _g(round(sign * math.sin(half), 6)))   # up (round 1 had it down)
     text = set_mod(text, SP_ROOT_TR, "m_LocalRotation.w", _g(round(math.cos(half), 6)))
     text = set_mod(text, SP_PRISM_TR, "m_LocalPosition.x", _g(sign * WING["reach"]))
     text = set_mod(text, SP_PRISM_TR, "m_LocalPosition.z", "0")
@@ -255,7 +273,10 @@ def bee_prefab():
     for axis, v in zip("xyz", ABDOMEN["target"]):
         nb = set_mod(nb, SP_PRISM_MB, f"TargetScale.{axis}", _g(v))
     nb = set_mod(nb, SP_PRISM_TR, "m_LocalPosition.z", _g(ABDOMEN["z"]))
+    for axis, v in zip("xyz", ABDOMEN["target"]):
+        nb = set_mod(nb, SP_PRISM_TR, f"m_LocalScale.{axis}", _g(v))
     nb = set_mod(nb, SP_GO_NAMED, "m_Name", "BeeAbdomen")
+    nb = set_mod(nb, SP_RENDERER, "m_Enabled", "0")         # the model is the body; the tadpole skin is not drawn
     t = t.replace(body, nb, 1)
 
     t = replace_once(t, "  m_Name: MassTadPoleFauna\n", "  m_Name: BeeFauna\n", "root name")
@@ -296,11 +317,73 @@ def bee_prefab():
     driver = (f"--- !u!114 &{wd}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
               f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {TADPOLE_ROOT_GO}}}\n"
               f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {script_guid('BeeWingDriver')}, type: 3}}\n"
-              f"  m_Name: \n  m_EditorClassIdentifier: \n  leftWingName: BeeWingL\n  rightWingName: BeeWingR\n"
-              f"  beatsPerSecond: 9\n  strokeDegrees: 38\n")
+              f"  m_Name: \n  m_EditorClassIdentifier: \n  leftWings:\n  - BeeWingL\n  - Bee_WingFL\n  - Bee_WingHL\n"
+              f"  rightWings:\n  - BeeWingR\n  - Bee_WingFR\n  - Bee_WingHR\n  beatsPerSecond: 9\n  strokeDegrees: 38\n")
+    # the model: a Spindle on its own GameObject with the Bee.fbx instance under it
+    model_go, model_tr, model_sp, model_inst = (str(fid(x)) for x in ("model-go", "model-tr", "model-spindle", "model-instance"))
+    model_stripped = str((int(model_inst) ^ (MODEL_ROOT_TR & 0xFFFFFFFFFFFFFFFF)) & 0x7FFFFFFFFFFFFFFF)
+    mg = guid(rel(MODEL))
+    t = t[:children.end(2) + sum(len(f"  - {{fileID: {x}}}\n") for x in wing_tr)] + f"  - {{fileID: {model_tr}}}\n" + \
+        t[children.end(2) + sum(len(f"  - {{fileID: {x}}}\n") for x in wing_tr):]
+    mods = "".join(f"    - target: {{fileID: {MODEL_ROOT_TR}, guid: {mg},\n        type: 3}}\n      propertyPath: {k}\n"
+                   f"      value: {v}\n      objectReference: {{fileID: 0}}\n"
+                   for k, v in (("m_LocalPosition.x", 0), ("m_LocalPosition.y", 0), ("m_LocalPosition.z", 0),
+                                ("m_LocalRotation.w", 1), ("m_LocalRotation.x", 0), ("m_LocalRotation.y", 0),
+                                ("m_LocalRotation.z", 0), ("m_LocalEulerAnglesHint.x", 0),
+                                ("m_LocalEulerAnglesHint.y", 0), ("m_LocalEulerAnglesHint.z", 0)))
+    mods += (f"    - target: {{fileID: {MODEL_ROOT_GO}, guid: {mg},\n        type: 3}}\n      propertyPath: m_Name\n"
+             f"      value: Bee\n      objectReference: {{fileID: 0}}\n")
+    model = (f"--- !u!1 &{model_go}\nGameObject:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+             f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  serializedVersion: 6\n  m_Component:\n"
+             f"  - component: {{fileID: {model_tr}}}\n  - component: {{fileID: {model_sp}}}\n  m_Layer: 0\n  m_Name: BeeModel\n"
+             f"  m_TagString: Untagged\n  m_Icon: {{fileID: 0}}\n  m_NavMeshLayer: 0\n  m_StaticEditorFlags: 0\n  m_IsActive: 1\n"
+             f"--- !u!4 &{model_tr}\nTransform:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+             f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {model_go}}}\n"
+             f"  serializedVersion: 2\n  m_LocalRotation: {{x: 0, y: 0, z: 0, w: 1}}\n  m_LocalPosition: {{x: 0, y: 0, z: 0}}\n"
+             f"  m_LocalScale: {{x: 1, y: 1, z: 1}}\n  m_ConstrainProportionsScale: 0\n  m_Children:\n  - {{fileID: {model_stripped}}}\n"
+             f"  m_Father: {{fileID: {TADPOLE_ROOT_TR}}}\n  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}\n"
+             f"--- !u!114 &{model_sp}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+             f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {model_go}}}\n"
+             f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {SPINDLE_SCRIPT}, type: 3}}\n"
+             f"  m_Name: \n  m_EditorClassIdentifier: \n  RenderedObject: {{fileID: 0}}\n  additionalRenderedObjects: []\n"
+             f"  parentSpindle: {{fileID: 0}}\n  LifeForm: {{fileID: 0}}\n  retainSpindle: 0\n  permanentWither: 1\n"
+             f"--- !u!1001 &{model_inst}\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n  m_Modification:\n"
+             f"    serializedVersion: 3\n    m_TransformParent: {{fileID: {model_tr}}}\n    m_Modifications:\n{mods}"
+             f"    m_RemovedComponents: []\n    m_RemovedGameObjects: []\n    m_AddedGameObjects: []\n    m_AddedComponents: []\n"
+             f"  m_SourcePrefab: {{fileID: 100100000, guid: {mg}, type: 3}}\n"
+             f"--- !u!4 &{model_stripped} stripped\nTransform:\n  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_TR}, guid: {mg},\n"
+             f"    type: 3}}\n  m_PrefabInstance: {{fileID: {model_inst}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
     if not t.endswith("\n"):
         t += "\n"
-    return t + driver + "".join(wings)
+    return t + driver + "".join(wings) + model
+
+
+def model_meta():
+    """Bee.fbx's import settings: the Clawfish model's (a nested fauna body, 1:1, readable), with the bee's two material
+    slots remapped by NAME (headless-safe: the remap is keyed by material name, not by an fbx-internal fileID)."""
+    src = read(A("_Models", "Fauna", "ClawfishTest.fbx.meta"))
+    src = re.sub(r"(?m)^guid: \w+$", f"guid: {guid(rel(MODEL))}", src, count=1)
+    membrane = file_guid(A("_Graphics", "Materials", MEMBRANE_MATERIAL + ".mat"))
+    remap = "".join(f"  - first:\n      type: UnityEngine:Material\n      assembly: UnityEngine.CoreModule\n      name: {n}\n"
+                    f"    second: {{fileID: 2100000, guid: {g}, type: 2}}\n"
+                    for n, g in (("BeeBody", SPINDLE_MATERIAL), ("BeeWing", membrane)))
+    src, n = re.subn(r"(?ms)^  externalObjects:\n(?:  - first:\n.*?\n    second: [^\n]*\n)+", "  externalObjects:\n" + remap, src, count=1)
+    if n != 1:
+        raise SystemExit("ClawfishTest.fbx.meta: the externalObjects block this script copies has moved")
+    # no rig, no takes: a bee's motion is the boid's and BeeWingDriver's, so no Animator rides on every bee
+    for key, value in (("importAnimation", "0"), ("animationType", "0")):
+        src, n = re.subn(r"(?m)^(\s+%s: )\d+$" % key, r"\g<1>" + value, src, count=1)
+        if n != 1:
+            raise SystemExit(f"ClawfishTest.fbx.meta: {key} has moved")
+    return src
+
+
+def model_parts_present():
+    """The node names the prefab and BeeWingDriver rely on, read straight from the FBX's bytes (no Blender here)."""
+    if not os.path.exists(MODEL):
+        return list(MODEL_PARTS)
+    data = open(MODEL, "rb").read()
+    return [p for p in MODEL_PARTS if p.encode() not in data]
 
 
 # ── the hive prefab ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -409,6 +492,7 @@ def emit():
     for p in [bee_cfg_path(e) for e, _ in ELEMENTS] + [hive_cfg_path(e) for e, _ in ELEMENTS] + [hesp_hive_path()]:
         out[p + ".meta"] = ASSET_META % guid(rel(p))
     out[NETWORK] = network_with_bee(read(NETWORK))
+    out[MODEL + ".meta"] = model_meta()
     return out
 
 
@@ -444,13 +528,25 @@ def verify(out):
     for want, why in ((f"guid: {script_guid('BeeFauna')}", "runs BeeFauna"), ("  diet: 2\n", "is a Pollinator"),
                       ("  forager: 0\n", "never forages"), ("  starvationSeconds: 0\n", "never starves"),
                       ("value: BeeWingL", "has a left wing"), ("value: BeeWingR", "has a right wing"),
-                      (f"guid: {script_guid('BeeWingDriver')}", "flaps its wings")):
+                      (f"guid: {script_guid('BeeWingDriver')}", "flaps its wings"),
+                      (f"m_SourcePrefab: {{fileID: 100100000, guid: {guid(rel(MODEL))}, type: 3}}", "nests the real model"),
+                      (f"guid: {SPINDLE_SCRIPT}, type: 3}}\n  m_Name: \n  m_EditorClassIdentifier: \n  RenderedObject: {{fileID: 0}}",
+                       "puts the model under a Spindle"),
+                      ("  - Bee_WingFL\n  - Bee_WingHL\n", "flaps the model's left wings"),
+                      ("  - Bee_WingFR\n  - Bee_WingHR\n", "flaps the model's right wings")):
         if want not in bee:
             problems.append(f"BeeFauna.prefab {why}: missing {want.strip()}")
     if BOID_SCRIPT in bee:
         problems.append("BeeFauna.prefab still runs Boid")
-    if bee.count(f"target: {{fileID: {SP_RENDERER}, guid: {SPINDLE_PREFAB},\n        type: 3}}\n      propertyPath: m_Enabled\n      value: 0") != 2:
-        problems.append("BeeFauna.prefab: both wing skins should be hidden (and only they)")
+    if bee.count(f"target: {{fileID: {SP_RENDERER}, guid: {SPINDLE_PREFAB},\n        type: 3}}\n      propertyPath: m_Enabled\n      value: 0") != 3:
+        problems.append("BeeFauna.prefab: the tadpole skin of the abdomen and both wings should be hidden (the model is the body)")
+    for part in model_parts_present():
+        problems.append(f"Bee.fbx: no node {part} (build it: Tools/Build/bee_model/build_bee.py)")
+    meta = out.get(MODEL + ".meta", "")
+    if "  animationType: 0\n" not in meta or "  importAnimation: 0\n" not in meta:
+        problems.append("Bee.fbx.meta imports an Animator (a rig or takes): the bee has neither")
+    if f"second: {{fileID: 2100000, guid: {SPINDLE_MATERIAL}, type: 2}}" not in meta or "name: BeeWing\n" not in meta:
+        problems.append("Bee.fbx.meta does not remap BeeBody to SpindleMaterial and BeeWing to the membrane")
     tad_hash = re.search(r"GlobalObjectIdHash: (\d+)", read(TADPOLE)).group(1)
     if f"GlobalObjectIdHash: {tad_hash}\n" in bee:
         problems.append("BeeFauna.prefab copies the tadpole's Netcode hash (they would collide)")
@@ -492,6 +588,9 @@ def self_test():
         ("a wing reference dangles", lambda o: o.__setitem__(prefab_path("BeeFauna"),
             o[prefab_path("BeeFauna")] + "  stray: {fileID: 123456789}\n")),
         ("forager on", lambda o: o.__setitem__(prefab_path("BeeFauna"), o[prefab_path("BeeFauna")].replace("  forager: 0\n", "  forager: 1\n"))),
+        ("the model unnested", lambda o: o.__setitem__(prefab_path("BeeFauna"), o[prefab_path("BeeFauna")].replace(
+            f"guid: {guid(rel(MODEL))}, type: 3}}", "guid: 00000000000000000000000000000000, type: 3}"))),
+        ("the body material unmapped", lambda o: o.__setitem__(MODEL + ".meta", o[MODEL + ".meta"].replace(SPINDLE_MATERIAL, "0" * 32))),
         ("hive unlisted", lambda o: o.__setitem__(HESP_PROFILE, read(HESP_PROFILE).replace(
             f"  - {{fileID: 11400000, guid: {guid(rel(hesp_hive_path()))}, type: 2}}\n", ""))),
     ]
