@@ -458,7 +458,7 @@ project, so it is slow; the job's timeout is 180 minutes. Later runs restore `Li
 | `UNITY_LICENSE` | Personal, instead of `UNITY_SERIAL` | the full contents of `Unity_lic.ulf` from a machine where that Unity ID activated a Personal licence (Windows `C:\ProgramData\Unity\Unity_lic.ulf`, macOS `/Library/Application Support/Unity/Unity_lic.ulf`, Linux `~/.local/share/unity3d/Unity/Unity_lic.ulf`) |
 
 Nothing else is needed: `UNITY_PATH` and `UNITY_RUNNER_LABEL` no longer affect this workflow.
-`UNITY_TESTS_BLOCKING` (a repository variable) works as before.
+`UNITY_TESTS_BLOCKING` (a repository variable) works as before. **It is set to `false` today** (read from run 642), so once Unity runs, a red edit-mode test is a warning and only a compile break fails the job. Remove it once the suite is green.
 
 ### Verify it took
 
