@@ -17,6 +17,11 @@ name: Bleeding-edge guard
 #   which fires no pull_request event at all. unity-ci.yml therefore never sees
 #   those commits. This does.
 #
+# And a pull_request trigger as well (2026-11-01): the same validate and unity
+# jobs run on every PR into bleeding-edge, claude/** heads included, so the
+# "Protect trunks" ruleset can REQUIRE them before a merge instead of this
+# workflow only reporting a break after it landed. Docs/BRANCH_PROTECTION.md.
+#
 # Defence in depth, cheapest first:
 #   1. validate  - static checks, ubuntu, seconds, no Unity and no license. Also
 #                  decides whether stage 2 is warranted at all (see the scope
@@ -59,6 +64,14 @@ on:
     # promotion reads, and BUILD_PROMOTION_REQUIRES_GREEN gates on check-runs
     # against THAT commit - without CI here that gate can never be switched on.
     branches: [bleeding-edge, development]
+  # The GATE. A pull request into bleeding-edge runs the same validate and unity
+  # jobs, so the "Protect trunks" ruleset can require "Static validation" and
+  # "Unity compile" before a merge (Docs/BRANCH_PROTECTION.md). No path filter:
+  # a required check whose workflow never starts stays "Expected" forever and
+  # blocks the merge. On a pull request the report and autofix jobs stand down
+  # (no tracking issue, no repair PR): the PR's own red check is the report.
+  pull_request:
+    branches: [bleeding-edge]
   workflow_dispatch:
 
 permissions:
@@ -117,14 +130,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
-          SHA: ${{ github.sha }}
+          # On a pull request the range is the PR's base...head (three dots: what the
+          # PR adds since it left the base), on a push the pushed range.
+          BEFORE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           set -uo pipefail
           run_it() { echo "unity_relevant=true"  >> "$GITHUB_OUTPUT"; echo "Unity compile: RUN ($1)"; exit 0; }
           skip_it(){ echo "unity_relevant=false" >> "$GITHUB_OUTPUT"; echo "Unity compile: SKIP ($1)"; exit 0; }
 
-          [ "$EVENT" = "push" ] || run_it "not a push event"
+          [ "$EVENT" = "push" ] || [ "$EVENT" = "pull_request" ] || run_it "not a push or pull request event"
           case "$BEFORE" in
             ''|0000000000000000000000000000000000000000) run_it "no usable before-SHA (new branch or force-push)" ;;
           esac
@@ -294,8 +309,13 @@ jobs:
     # Two gates. No runner configured -> skip cleanly rather than queue forever
     # against a label nobody answers. Nothing a build reads was touched -> skip,
     # because this stage costs minutes of a single machine that IL2CPP player
-    # builds also queue behind.
-    if: vars.UNITY_RUNNER_LABEL != '' && needs.validate.outputs.unity_relevant == 'true'
+    # builds also queue behind. A pull request from a FORK never reaches the
+    # self-hosted runner (see SECURITY above); its skipped job reads as passed,
+    # so a reviewer must not take a fork PR's "Unity compile" as a compile.
+    if: >-
+      vars.UNITY_RUNNER_LABEL != '' &&
+      needs.validate.outputs.unity_relevant == 'true' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
     timeout-minutes: 60
     outputs:
@@ -442,7 +462,9 @@ jobs:
   report:
     name: Report status
     needs: [validate, unity]
-    if: always()
+    # Pushes and dispatches only: a pull request's red check is its own report, and
+    # its ref_name ("123/merge") would open a tracking issue nobody looks for.
+    if: always() && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -552,8 +574,10 @@ jobs:
     # `always()` is required because a needs-failure would otherwise skip this
     # job outright. A skipped `unity` job yields an empty output, so the second
     # clause is false and this stays correct while no runner is configured.
+    # Never on a pull request: the PR's author fixes their own branch, and a repair
+    # PR aimed at a PR's merge ref would land nowhere.
     if: >-
-      always() && (
+      always() && github.event_name != 'pull_request' && (
         needs.validate.result == 'failure' ||
         needs.unity.outputs.failure_kind == 'compile'
       )
