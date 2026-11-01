@@ -36,8 +36,9 @@ namespace CosmicShore.ScriptableObjects
                                                 "not a lamp; the domain's colour still reads (owner, 2026-11-01: 'the ark is far too bright').")]
         float domainBrightness = 0.45f;
 
-        [SerializeField, Range(0f, 2f), Tooltip("The Body slot (the gunmetal hull).")]
-        float bodyBrightness = 1f;
+        [SerializeField, Range(0f, 2f), Tooltip("The Body slot (the gunmetal hull). At 1 the hull's rim colour reads pale, nearly " +
+                                                "white, at escort range; 0.45 reads as a dark hull (checked on the escort sim's renders).")]
+        float bodyBrightness = 0.45f;
 
         [SerializeField, Range(0f, 2f), Tooltip("The Window slot (port slits, the bridge visor, the lights).")]
         float windowBrightness = 0.55f;

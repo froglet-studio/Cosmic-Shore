@@ -460,6 +460,15 @@ namespace CosmicShore.Gameplay
                     }
                 }
             }
+            // Face AFT (away from the hinge), where it is seen from: the hull's unlit shader shades by the facing of
+            // the normal, and a wall seen from its back draws in its rim colour, bright.
+            var n0 = Vector3.Cross(verts[1] - verts[0], verts[2] - verts[0]);
+            var aft = new Vector3(verts[0].x, 0f, verts[0].z - 44f);
+            if (Vector3.Dot(n0, aft) < 0f)
+            {
+                Flip(wallTris);
+                Flip(portTris);
+            }
             var mesh = new Mesh { name = "ArkBulkhead" };
             mesh.SetVertices(verts);
             mesh.subMeshCount = 2;
@@ -468,6 +477,11 @@ namespace CosmicShore.Gameplay
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;
+        }
+
+        static void Flip(List<int> tris)
+        {
+            for (int i = 0; i + 2 < tris.Count; i += 3) (tris[i + 1], tris[i + 2]) = (tris[i + 2], tris[i + 1]);
         }
 
         static void AddPort(List<Vector3> verts, List<int> tris, float phi, float rho, float z, float halfDeg, float halfH)

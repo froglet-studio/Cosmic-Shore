@@ -98,6 +98,9 @@ namespace CosmicShore.Tests
             Assert.AreEqual(2, mesh.subMeshCount);
             Assert.Greater(mesh.GetTriangles(0).Length, 0, "the wall");
             Assert.Greater(mesh.GetTriangles(1).Length, 0, "the ports");
+            var v0 = mesh.vertices[0];
+            Assert.Greater(Vector3.Dot(mesh.normals[0], new Vector3(v0.x, 0f, v0.z - 44f)), 0f,
+                "the wall faces aft, where it is seen from (a back face draws in the bright rim colour)");
             foreach (var v in mesh.vertices)
             {
                 // Unity -> the hinge frame: rho from the hinge at z 44, every vertex on the wall's radius
