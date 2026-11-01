@@ -19996,3 +19996,40 @@ compile first. Design: `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` "T
 7. Wait 45 s in freestyle. **Pass:** a turning hexagonal frame appears far off in the cell; flying through it opens hive mode.
 8. Button2 does nothing on the Honeyguide (no boost button); an AI Honeyguide still flies and uses its triggers.
 
+
+## Lantern Run (75): the Angler's Time race - two mass clusters a leg, paint, throw, dash (`claude/intelligent-lovelace-ynskrg`, 2026-11-01) - NOT EDITOR-VERIFIED
+
+A new mode. Authored in a cloud session with no
+Unity editor, so the `unity` CLI did not run. What did run:
+- `LanternRunCourseTests`: 8 of 8 pass outside the editor (the card harness's UnityShim and a small NUnit stand-in),
+  400 seeds x 4 intensities.
+- `author_lantern_run_assets.py --check` passes, with a watched negative control (a changed card field is named).
+- The `/arcadegame` §4 gates pass. `author_card_backgrounds --strict` fails only on the orphaned `Tandava.png`, and
+  `render_card_backgrounds.py --check` (all cards) stops on `BurrowRun: no recipe`; bleeding-edge fails both the same way.
+- `unity_refcompile`, player and editor configs: RESULT OK, no errors in project code.
+- `/ship` gates (`gates.sh`): all pass except `author_angler_assets.py --check` (4 HUD icon findings), which fails the
+  same way on a clean bleeding-edge.
+
+Also on this branch: `Fauna.LeashOwnsSpeed` (the throw keeps
+150 u/s) and `AnglerLeapfrogAIPolicySO` on `Angler.prefab` (the Angler's AI).
+
+Doc: `Assets/_Scripts/Controller/Arcade/LANTERNRUN.md`.
+
+1. **Compile.** Open the project. **Pass:** no errors in `LanternRunCourse.cs`, `LanternRunCourseSource.cs`,
+   `LanternRunController.cs`, `AnglerLeapfrogAIPolicySO.cs`, `Fauna.cs`, `LightFauna.cs`, `Boid.cs`,
+   `EndConditionOverridesSO.cs`, `EndConditionOverridesWindow.cs` or `MiniGameHUD.cs`.
+2. **Edit-mode tests.** Run `LanternRunCourseTests`, `EnumIntegrityTests` (71 members, `LanternRun` = 75) and
+   `RaceCourseSourceTests`. **Pass:** all green.
+3. **Open and save the scene.** Open `MinigameLanternRun.unity` and save it (it is a text clone of Thresher Time's).
+   Commit it, then re-run `python3 Tools/Build/author_lantern_run_assets.py --check`. **Pass:** OK. The controller shows
+   Cluster Prefab = SpawnablePrism and Nucleus Margin = 30.
+4. **Fly it at I1.** Arcade grid, LanternRun, I1, with 1-2 Angler AIs.
+   - **Pass:** every leg has a ball of blue prisms before its ring and one past it, both on the ring's line.
+   - Hold RT on the near ball, let go; hold RT through the ring on the far ball, let go; press B twice.
+     **Pass:** a throw flies at about 150 u/s (not ~30), the second dash carries you through the ring and the ring counts.
+5. **Regrowth.** Watch a ball your school ate. **Pass:** it grows back one prism about every second (I1).
+6. **AI.** **Pass:** the AI Anglers throw and dash, and finish; they do not just cruise at 40 u/s.
+7. **Ladder.** Repeat at I2 (the two balls sit to opposite sides of the line), I3 (only the far ball) and I4 (far ball
+   every leg off the line, near ball every second leg, tight rings). **Pass:** as described.
+8. **Two players.** Host and client. **Pass:** both see the same balls. Known gap: a CLIENT pilot cannot dash (ANGLER.md
+   follow-up 7).
