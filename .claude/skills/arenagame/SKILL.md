@@ -159,6 +159,13 @@ python3 Tools/Build/render_card_backgrounds.py --check   # after ANY arena/cours
 python3 Tools/Build/bake_prism_layouts.py --check       # a CellEnvironmentSpawnableBase arena loads from its bake (ECOSYSTEM §62.2b)
 ```
 
+**Search the levers instead of hand-solving them.** The balance model is a loss function: the course
+(lever 2) and the starting elements (lever 1) are spaces. Regatta does it in three stages - trained AIs,
+then the course that levels them, then the smallest elemental tuning that closes the rest
+(`/regatta-balance`, `Tools/Compute/evaluators/regatta_course.py` and `regatta_elements.py`). A new mixed-fleet
+card copies that shape: its `<mode>_balance.py` becomes an evaluator (`/compute-job`) and the team's idle
+machines search it (`/compute`).
+
 **A VESSEL change turns an arena card's gate red without anyone touching the arena.** The balance
 model reads each hull's economy off its assets, so when a vessel's sustain is designed away the
 spread gate fails on the next run of the card's generator. Measured 2026-10-31
