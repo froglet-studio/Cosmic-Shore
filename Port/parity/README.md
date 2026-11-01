@@ -184,6 +184,10 @@ What each one is:
 - **The shell's sphere.** The blast shell (RippleGraph) pushes each vertex out by noise of its position, so Unity's
   UV sphere gives it a spikier edge than Amoebius's icosphere. A 24x16 UV sphere matched the look but scored worse,
   since the spikes land on different vertices; matching it needs Unity's exact sphere mesh.
+- **Against the lossless golden (2026-11-01).** The PNG frames were recorded again on Gbox (same commit, same
+  settings) after the first set was lost, and scored without the H.264 decode: **loss 0.0278** (rmse 0.0157, ssim
+  0.976) for the current engine, against 0.0329 before the fragments were drawn and 0.0302 with the UV sphere.
+  The first 100 frames sit at rmse 0.005; frames 200-300 at 0.032 carry almost all of what is left.
 - **What is left** is the last 100 frames: the blast's debris placement, and the shell, which is greener, more
   opaque and more jagged in Unity at the same width. Early frames sit near rmse 0.01, mostly the codec.
 
