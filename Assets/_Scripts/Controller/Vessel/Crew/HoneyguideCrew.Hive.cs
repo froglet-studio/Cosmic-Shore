@@ -83,6 +83,9 @@ namespace CosmicShore.Gameplay
             _hive = null;
         }
 
+        /// <summary>True while hive mode is open: an omnicrystal taken now opens no second hive.</summary>
+        public bool HiveOpen => _hive != null;
+
         /// <summary>An omnicrystal the hull collected (<see cref="HoneyguideOmniCrystalEffectSO"/>): hive mode opens at its pose
         /// on the next step, once any pick of three in progress is done.</summary>
         public void OnOmniCrystal(Vector3 at)
@@ -276,6 +279,31 @@ namespace CosmicShore.Gameplay
         // is; ours belong to the pilot, the other domains' to nobody.
         Vector3 _combAt, _combNormal;
 
+        /// <summary>
+        /// Raised on the hull's machine once a comb is laid, with its live prisms (empty cells left out). The omni-crystal
+        /// morph (<see cref="HoneyguideCrystalMorph"/>, <c>R_VesselActions/HONEYGUIDE_CRYSTAL_MORPH.md</c>) listens so the
+        /// crystal spreads onto the comb instead of shattering. A listener that throws is isolated: a visual never costs the
+        /// pilot the hive.
+        /// </summary>
+        public static event System.Action<IVesselStatus, IReadOnlyList<Prism>> CombLaid;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetCombLaid() => CombLaid = null;
+
+        void AnnounceComb()
+        {
+            var laid = CombLaid;
+            if (laid == null || _comb == null || _status == null) return;
+            var prisms = new List<Prism>(_comb.Length);
+            foreach (var p in _comb) if (p) prisms.Add(p);
+            if (prisms.Count == 0) return;
+            foreach (System.Action<IVesselStatus, IReadOnlyList<Prism>> listener in laid.GetInvocationList())
+            {
+                try { listener(_status, prisms); }
+                catch (System.Exception e) { CSDebug.LogError($"[Honeyguide] a CombLaid listener threw: {e}. The hive is unaffected."); }
+            }
+        }
+
         void LayComb(Vector3 at)
         {
             _comb = new Prism[DynamoCore.CellCount];
@@ -317,6 +345,7 @@ namespace CosmicShore.Gameplay
                 prism.ActivateSuperShield();
                 _comb[i] = prism;
             }
+            AnnounceComb();
         }
 
         // A chain broke this cell: its prism comes off the hive (the super shield is dropped first, the sanctioned order),

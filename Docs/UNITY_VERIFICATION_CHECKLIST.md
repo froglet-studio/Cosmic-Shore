@@ -116,6 +116,19 @@ on the class name alone (`LobbyPatcher`) passed, which fits that reading.
 3. If step 1 still fails, the inlining reading is wrong: put a breakpoint in the test, read `LobbyChannel.Throw().StackTrace`
    and paste it back. Do not loosen the rule in `UgsRequestPolicy.cs`.
 
+### 🔴 Honeyguide omni-crystal morph: the crystal breaks into the hive comb (`claude/honeyguide-hive-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+`HoneyguideCrystalMorphByCrystal.asset` in `HoneyguideImpactorDataContainer` replaces the husk spray: the crystal's 64
+panels land on the eight cells at the heart of the comb the pickup lays. Record: `R_VesselActions/HONEYGUIDE_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `HoneyguideCrystalMorphGeometryTests` green.
+- [ ] Omni crystal: no husk spray; the crystal flies back about 40 u and breaks into the middle of the comb; the rest of the comb blooms as before.
+- [ ] The eight heart cells' spikes sprouting at the hand-off reads acceptably (if not, see the doc's §2).
+- [ ] The hive works as before: super shields, chains, debuff immunity, the reward.
+- [ ] An omni crystal taken while a hive is open: no second hive, the crystal fades with no warning.
+- [ ] During a pick of three: the hive opens when the pick ends; if that is over 1.5 s, the crystal fades with a warning.
+
 ### 🔴 Shrike omni-crystal morph: the crystal folds into its nest flora (`claude/shrike-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 `ShrikeCrystalMorphByCrystal.asset` (wired by `author_shrike_assets.py`) replaces the husk spray: the cage lands on the
