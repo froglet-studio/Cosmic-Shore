@@ -350,6 +350,13 @@ trigger card with its base and three banked uppers as the current icon). Nothing
 trigger redesign binds them and adds the card's tick queue (one tick per banked use, each in its ability's shade of the
 HUD blue), which the kit's `card.py` does not draw yet.
 
+**Rhombus recut DONE 2026-11-01** (`claude/prism-recut`; Garrett: "you need to stop using the rhombuses for shielded
+prisms, that shape is owned by the time petal"): `motifs.prism` / `prism_lit` are two close triangles now, and every
+card that drew one was re-authored with its guid kept (Angler Paint parts, Manta Yastri, Scarab Cavitation Blast,
+Sparrow's shielded stance rounds, Squirrel's drift trail and Sharp Drift), plus the Serpent's shielded bricks (Wall
+Shield omni card) and the Squirrel's shielded-ring card (`author_squirrel_shielded_ring_icon.py`). No C# changed. The
+Rhino's super-shielded prism stays the stella octangula (its own shape, not a rhombus).
+
 | Round | What | Why first |
 |---|---|---|
 | 0 | `ICON_LANGUAGE.md` draft (section 4) to Garrett and Shombith; settle round vs angular | everything downstream draws with it |

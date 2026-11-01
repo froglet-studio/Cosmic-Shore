@@ -674,7 +674,10 @@ the CIRCUMSCRIBING octahedron (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`, r
 C#), and an octahedron's cross-section perpendicular to one axis is exactly the box's square turned
 45° and grown to the octahedron's own reach. So a shielded prism reads as a **diamond** where a bare
 one reads as a **square**, and the icon says "shielded" by drawing the armour rather than by being
-told to. Measured at the shipped numbers (8 prisms, radius 8.2, leaf 1.8, scale 3): diamond
+told to. **Since 2026-11-01 each diamond is drawn as two close triangles**, cut along its long
+axis (`HALVES_GAP` 0.16 of the long half-diagonal): Garrett, "stop using the rhombuses for shielded
+prisms, that shape is owned by the time petal ... cut the rhombus in half". The geometry and the
+clearance below are unchanged; only the cut is new. Measured at the shipped numbers (8 prisms, radius 8.2, leaf 1.8, scale 3): diamond
 half-diagonal **2.7**, minimum gap between neighbouring shields **1.287** world units — which is
 simultaneously a statement about the icon and about the ability, since two octahedra that
 interpenetrate on screen are what `fit_shield_clearance.py` exists to prevent.
