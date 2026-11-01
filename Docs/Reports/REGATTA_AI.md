@@ -15,7 +15,7 @@ AI changes has been played in the Unity editor.** That is the next step (section
   Urchin, Dolphin.
 - **All five AIs were audited, and the race-breakers were fixed in Unity.** The Rhino ramps, the Urchin finds its own
   lane, the Dolphin aims its boost at the ring, and every AI races at full throttle.
-- **You can watch every AI's path in the Third Eye** (FrogletTools ▸ AI ▸ Third Eye). Trails show where each pilot flew,
+- **You can watch every AI's path in the Third Eye** (the AI Diagnose panel (F2)). Trails show where each pilot flew,
   and each AI's readout says what it is doing.
 - **A browser lab found a steering bug, and the fix is in Unity.** AIs turned in too early on Regatta's short legs,
   missed the ring, then circled it. With the fix, the lab's AIs finish **30 of 32** hard races instead of **17**. In
@@ -84,13 +84,13 @@ AI changes has been played in the Unity editor.** That is the next step (section
 ## 2. Try it
 
 **The browser lab (Training AI for Regatta) was deleted on 2026-10-16**; everything is tried in the Unity editor:
-Regatta, solo, five hulls seated (six with the Stoat), FrogletTools ▸ AI ▸ Third Eye with Trails on, and its Pilots panel to fly any hull or
+Regatta, solo, five hulls seated (six with the Stoat), the AI Diagnose panel (F2) with Trails on, and its Pilots panel to fly any hull or
 hand yours to the AI.
 
 **Unity:**
 1. Pull `bleeding-edge` (or `Ys-bleeding-edge`), open the project and wait for the compile.
 2. Start Arcade ▸ Regatta, solo, Hard. Tap the AI chips to seat the five hulls, then launch.
-3. Open FrogletTools ▸ AI ▸ Third Eye and turn *Trails* on. Near a ring, each AI should read *Approach* then *Through*.
+3. Open the AI Diagnose panel (F2) and turn *Trails* on. Near a ring, each AI should read *Approach* then *Through*.
    After a missed ring it should read *break-off* and come straight back, not loop round the far side.
 4. Every hull should finish three laps at I1. Repeat at I3, and note any hull that does not, and at which ring.
 
@@ -164,6 +164,9 @@ hand yours to the AI.
 - The learned Squirrel AI in Regatta: does it hit the rail less? (T-20261016-39e6).
 - The recorder checks: 24/24 on a finish, button presses, the hull named (checklist, 2026-10-16).
 - The You / AI toggle (T-20261015-e266).
+- Each AI its own difficulty (2026-10-27, `Ys-bleeding-edge`, not yet in `bleeding-edge`): press an AI's podium on the
+  Regatta card (or any card with AI) and Easy / Medium / Hard / Legendary sets that AI only. Not yet run in the editor
+  and no screenshot of the real window yet; checklist entry "Each AI seat its own difficulty".
 - The checklist entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md` (Regatta, 2026-10-14 to 2026-10-16).
 
 **Flights of the other hulls** (Yash, T-20261016-89ed): the Manta has learned. The Rhino needs **one more finished

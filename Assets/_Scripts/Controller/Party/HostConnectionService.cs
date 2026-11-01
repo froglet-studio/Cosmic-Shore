@@ -217,6 +217,12 @@ namespace CosmicShore.Gameplay
         // list's strikes live here; the party list's live in PartyMemberService. The departure sets are
         // per-diff scratch, filled from each service's push.
         private readonly AbsenceStrikes   _onlineAbsences   = new();
+
+        /// <summary>A presence-lobby join is waiting for its second converge (see ApplyPostLobbyJoinState).</summary>
+        private bool _followUpPollPending;
+
+        /// <summary><c>Time.realtimeSinceStartup</c> of the last safety poll fired (0 before the first). Diagnostics.</summary>
+        public float LastSafetyPollAtRealtime { get; private set; }
         private readonly HashSet<string>  _onlineDepartures = new();
         private readonly HashSet<string>  _partyDepartures  = new();
         private bool   _partyLeaveSubscribed;
@@ -396,10 +402,33 @@ namespace CosmicShore.Gameplay
             // when they run, by which time Reflex has filled them).
             ApplicationLifecycleManager.OnAppQuitRequested += HandleAppQuitRequested;
             ApplicationLifecycleManager.OnAppPaused        += HandleAppPaused;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+#endif
 
             if (bootStatusRetryRequestedEvent != null)
                 bootStatusRetryRequestedEvent.OnRaised += HandleBootStatusRetryRequested;
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Stopping Play never raises <c>Application.wantsToQuit</c>, so <see cref="HandleAppQuitRequested"/>
+        /// never ran in the Editor and the only leave was OnDestroy's teardown await, which rarely lands: the
+        /// player stayed a ghost row on every peer until UGS reaped them (~30 s) plus two absent reads.
+        /// ExitingPlayMode fires while the player loop is still alive, so the leave request goes out a frame
+        /// earlier than OnDestroy. It is started, not awaited: blocking the main thread here would deadlock the
+        /// SDK's main-thread continuations. PresenceLobbyService.LeaveAsync's own guard makes OnDestroy's
+        /// backstop a no-op once this leave is in flight.
+        /// </summary>
+        private void HandlePlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+        {
+            if (state != UnityEditor.PlayModeStateChange.ExitingPlayMode || Instance != this) return;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[HostConnectionService] ExitingPlayMode: leaving presence lobby {_lobbyService?.ActiveLobby?.Id ?? "(none)"} " +
+                $"and party {_partySessionService?.ActiveSession?.Id ?? "(none)"}.");
+            HandleAppQuitRequested().Forget();
+        }
+#endif
 
         void Start()
         {
@@ -521,7 +550,16 @@ namespace CosmicShore.Gameplay
             // 10 s tick because the menu's 1.5 s one was too busy for it; at 20 s one cadence serves both
             // (in a match it keeps "in game", who is online and the outgoing invites current).
             if (_scheduler.ShouldFireNow(Time.unscaledDeltaTime))
+            {
+                LastSafetyPollAtRealtime = Time.realtimeSinceStartup;
                 RefreshAsync().Forget();
+                if (_followUpPollPending)
+                {
+                    // The join's second converge (FOLLOW_UP_POLL_AFTER_JOIN_SECONDS), then the normal cadence.
+                    _followUpPollPending = false;
+                    _scheduler.FireAfter(LobbyRefreshScheduler.FOLLOW_UP_POLL_AFTER_JOIN_SECONDS);
+                }
+            }
         }
 
         async void OnDestroy()
@@ -539,6 +577,9 @@ namespace CosmicShore.Gameplay
             LavaLampPresence.Shown   -= HandleLavaLampShown;
             ApplicationLifecycleManager.OnAppQuitRequested -= HandleAppQuitRequested;
             ApplicationLifecycleManager.OnAppPaused        -= HandleAppPaused;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+#endif
             if (authenticationDataVariable != null)
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnsubscribeFromProfileChanges();
@@ -2156,6 +2197,65 @@ namespace CosmicShore.Gameplay
             p.Properties.TryGetValue(READY_KEY, out var ready) &&
             ready?.Value == "1";
 
+        /// <summary>Makes the next frame run a full server poll + converge (the overlay's "Poll now").</summary>
+        public void RequestDiagnosticRefresh() => _scheduler?.FireAfter(0f);
+
+        /// <summary>
+        /// A plain-text dump of the presence state for the multiplayer debug overlay
+        /// (<c>MultiplayerDebugOverlay</c>): lobby id and converge outcome, each lobby player's ready flag,
+        /// listing and absence strikes, pending departures, and the safety-poll timer. Read-only.
+        /// </summary>
+        public string BuildPresenceDiagnostics()
+        {
+            var sb  = new System.Text.StringBuilder(512);
+            var now = Time.realtimeSinceStartup;
+            var lobby = _lobbyService?.ActiveLobby;
+
+            sb.Append("Presence lobby: ").Append(lobby?.Id ?? "(none)");
+            if (lobby != null) sb.Append(lobby.IsHost ? "  [host]" : "  [member]").Append("  players=").Append(lobby.Players?.Count ?? 0);
+            sb.AppendLine();
+
+            if (_lobbyService is PresenceLobbyService pls && pls.LastConvergeStatus != null)
+                sb.Append("Converge: ").Append(pls.LastConvergeStatus)
+                  .Append("  lobbies visible=").Append(pls.LastConvergeVisibleLobbies)
+                  .Append("  ").Append((now - pls.LastConvergeAtRealtime).ToString("F0")).AppendLine("s ago");
+            else
+                sb.AppendLine("Converge: (not run yet)");
+
+            if (_scheduler != null)
+                sb.Append("Safety poll: ").Append(_scheduler.ElapsedSeconds.ToString("F1")).Append('/')
+                  .Append(_scheduler.CurrentIntervalSeconds.ToString("F1")).Append("s  last fired ")
+                  .Append(LastSafetyPollAtRealtime > 0 ? (now - LastSafetyPollAtRealtime).ToString("F0") + "s ago" : "never")
+                  .Append("  watchers=").Append(PresenceWatchDemand.Holders)
+                  .Append(_followUpPollPending ? "  (join follow-up pending)" : "").AppendLine();
+
+            if (lobby?.Players != null)
+            {
+                sb.AppendLine("Lobby players (ready / listed / strikes):");
+                foreach (var p in lobby.Players)
+                {
+                    string name = p.Properties != null && p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) ? dn?.Value : null;
+                    string ready = p.Properties != null && p.Properties.TryGetValue(READY_KEY, out var r) ? r?.Value ?? "-" : "-";
+                    sb.Append("  ").Append(name ?? "?").Append(" (").Append(Short(p.Id)).Append(")  ready=").Append(ready)
+                      .Append("  listed=").Append(ContainsOnlinePlayer(p.Id) ? "Y" : "N")
+                      .Append("  strikes=").Append(_onlineAbsences.StrikesFor(p.Id));
+                    if (p.Id == connectionData?.LocalPlayerId) sb.Append("  (me)");
+                    sb.AppendLine();
+                }
+            }
+
+            sb.Append("Online list: ").Append(connectionData?.OnlinePlayers?.Count ?? 0).Append(" rows");
+            if (connectionData?.OnlinePlayers != null)
+                foreach (var op in connectionData.OnlinePlayers)
+                    sb.Append("  ").Append(op.DisplayName).Append(" s=").Append(_onlineAbsences.StrikesFor(op.PlayerId));
+            sb.AppendLine();
+
+            sb.Append("Pending departures: ").Append(_onlineDepartures.Count == 0 ? "none" : string.Join(", ", _onlineDepartures)).AppendLine();
+            return sb.ToString();
+
+            static string Short(string id) => string.IsNullOrEmpty(id) || id.Length <= 6 ? id : id.Substring(0, 6);
+        }
+
         private bool ContainsOnlinePlayer(string playerId)
         {
             foreach (var p in connectionData.OnlinePlayers)
@@ -2606,6 +2706,11 @@ namespace CosmicShore.Gameplay
             // The join raises no push for the players already in the lobby, and a simultaneous-create
             // split heals in that tick's converge.
             _scheduler.FireAfter(LobbyRefreshScheduler.FIRST_POLL_AFTER_JOIN_SECONDS);
+            _followUpPollPending = true;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[HostConnectionService] In presence lobby {lobby.Id} (host={lobby.IsHost}, players={lobby.Players?.Count ?? 0}); " +
+                $"converge at +{LobbyRefreshScheduler.FIRST_POLL_AFTER_JOIN_SECONDS}s and " +
+                $"+{LobbyRefreshScheduler.FIRST_POLL_AFTER_JOIN_SECONDS + LobbyRefreshScheduler.FOLLOW_UP_POLL_AFTER_JOIN_SECONDS}s.");
 
             _eventBus.RaiseHostConnectionEstablished();
         }

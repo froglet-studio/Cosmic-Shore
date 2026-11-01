@@ -42,6 +42,7 @@ namespace CosmicShore.Gameplay
         RampBoostActionSO _activeSO;
         RampBoostActionSO _lastSO;   // the asset that last armed us - the top-speed yardstick between ramps
         float _restingMultiplier = 1f;
+        GameplaySFXCategory _engagedSFX;   // the held engage sound Begin started; End stops it
 
         public bool IsEngaged => _activeSO != null;
 
@@ -116,7 +117,10 @@ namespace CosmicShore.Gameplay
             if (transformer != null)
                 transformer.SetSpeedTrackingRate(ClimbRate(so));
 
-            _audioSystem.PlayGameplaySFX(so.EngageSFX);
+            // Held for the whole ramp: the default EngageSFX (Boost Activate) is a looping bed
+            // that the one-shot path refuses. End() stops it; a one-shot category still just plays.
+            _engagedSFX = so.EngageSFX;
+            HeldVesselSfx.Begin(_audioSystem, _engagedSFX, this, status);
         }
 
         /// <summary>
@@ -138,6 +142,7 @@ namespace CosmicShore.Gameplay
             var so = _activeSO;
             _activeSO = null;
             Straightness01 = 0f;
+            HeldVesselSfx.End(_audioSystem, _engagedSFX, this);
 
             if (_status == null) return;
 

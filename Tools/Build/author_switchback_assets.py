@@ -64,7 +64,6 @@ G_SCRIPT = {
     # The I3 skim walls and I4 danger prisms (MINIGAME_TRAINING_PLAN.md §3.3, 2026-10-26).
     "SwitchbackFeatures":          guid("script/SwitchbackFeatures"),
     "SpawnableSwitchbackFeatures": guid("script/SpawnableSwitchbackFeatures"),
-    "SwitchbackFeaturesTests":     guid("script/SwitchbackFeaturesTests"),
 }
 
 # ── New asset GUIDs ──────────────────────────────────────────────────────────
@@ -245,7 +244,6 @@ SCRIPT_PATHS = {
     "SwitchbackFeatures":          "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackFeatures.cs",
     "SpawnableSwitchbackFeatures":
         "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSwitchbackFeatures.cs",
-    "SwitchbackFeaturesTests":     "Assets/_Scripts/Tests/Editor/SwitchbackFeaturesTests.cs",
 }
 for k, p in SCRIPT_PATHS.items():
     emit(p + ".meta", meta(G_SCRIPT[k]))
@@ -263,11 +261,11 @@ emit("Assets/_Scripts/Controller/Arcade/Switchback.meta",
      f"  assetBundleVariant:\n")
 
 
-# ── 1b. The course-features prefab (intensity 3 skim walls, intensity 4 danger prisms) ─────
+# ── 1b. The course-features prefab (Blast Run's doors and block fields) ─────
 #
 # domain 3 = Domains.Blue, as Breakwater: a feature of the course hands no domain anything.
 # layAcrossFrames 0: the walls are part of the course and must exist when the race starts.
-# The layout is a pure function of the course (SwitchbackFeatures.Layout), so the prefab carries
+# The layout is a pure function of the course (SwitchbackBlastRun.Layout), so the prefab carries
 # only the base spawnable fields; the seed is never consulted.
 emit("Assets/_Prefabs/Spawnables/SpawnableSwitchbackFeatures.prefab", f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:

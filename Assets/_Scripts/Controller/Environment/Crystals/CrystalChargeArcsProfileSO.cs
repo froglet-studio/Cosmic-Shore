@@ -91,13 +91,41 @@ namespace CosmicShore.Gameplay
         [Tooltip("A crystal whose radius on screen is under this many pixels sleeps: its bolts and lit plates are not " +
                  "rebuilt (the clock keeps running, so it wakes mid-beat). The bolts are a few hundredths of the radius " +
                  "wide, so below this they are under a pixel. The lava lamp sees every crystal at 1-11 px, and rebuilding " +
-                 "them all cost more than every other menu script together (2026-10-15). It wakes at 1.25x this. 0 = never sleep.")]
-        [SerializeField, Range(0f, 200f)] float sleepBelowScreenRadiusPixels = 24f;
+                 "them all cost more than every other menu script together (2026-10-15). It wakes at 1.25x this. 0 = never sleep. Raised 24 -> 32 on 2026-11-02 (Switchback): at 32 px a bolt core is ~0.4 px.")]
+        [SerializeField, Range(0f, 200f)] float sleepBelowScreenRadiusPixels = 32f;
 
         [Tooltip("Between the sleep size and this many pixels of radius, a crystal rebuilds its light every OTHER frame " +
                  "(staggered across crystals), so a mid-distance omni writhes at half the rate it is drawn - at that " +
                  "size a bolt is a pixel or two wide. Decided 2026-10-16 with the 24 px sleep. 0 = always every frame.")]
         [SerializeField, Range(0f, 400f)] float halfRateBelowScreenRadiusPixels = 64f;
+
+        [Tooltip("Below this many pixels of radius (and above the sleep size) a crystal rebuilds its light every FOURTH frame " +
+                 "(staggered across crystals): a far-mid omni whose bolts are about a pixel wide. 0 = never quarter rate. " +
+                 "Switchback perf pass 2026-11-02: 31 omnis cost 2.6 ms/frame of LateUpdate.")]
+        [SerializeField, Range(0f, 400f)] float quarterRateBelowScreenRadiusPixels = 40f;
+
+        [Tooltip("Most crystals whose light is rebuilt in one frame; the largest on screen go first and one left waiting " +
+                 "climbs the queue each frame it waits, so none starves. 0 = no cap.")]
+        [SerializeField, Range(0, 64)] int maxRebuildsPerFrame = 8;
+
+        [Tooltip("Milliseconds of main thread the crystals' light may take in one frame before the rest wait a frame " +
+                 "(the first rebuild always runs). 0 = no budget.")]
+        [SerializeField, Range(0f, 5f)] float rebuildBudgetMs = 0.75f;
+
+        [Tooltip("Most sleeping crystals that wake (a full rebuild each) in one frame, so a camera cut does not wake them all at once.")]
+        [SerializeField, Range(1, 32)] int maxWakesPerFrame = 2;
+
+        /// <summary>Radius on screen, in pixels, under which the light rebuilds every fourth frame (0 = never).</summary>
+        public float QuarterRateBelowScreenRadiusPixels => quarterRateBelowScreenRadiusPixels;
+
+        /// <summary>Most rebuilds in one frame (0 = no cap).</summary>
+        public int MaxRebuildsPerFrame => maxRebuildsPerFrame;
+
+        /// <summary>Main-thread milliseconds the rebuilds may take in one frame (0 = no budget).</summary>
+        public float RebuildBudgetMs => rebuildBudgetMs;
+
+        /// <summary>Most wakes in one frame.</summary>
+        public int MaxWakesPerFrame => Mathf.Max(1, maxWakesPerFrame);
 
         /// <summary>Radius on screen, in pixels, under which the light rebuilds every other frame (0 = never).</summary>
         public float HalfRateBelowScreenRadiusPixels => halfRateBelowScreenRadiusPixels;
