@@ -19,8 +19,9 @@ is what decides which jobs that pilot brings; joining, captains and emissaries w
 2. **Pick a voyage in the Voyage window** (the app shell, never the Toy Box or the world; Garrett, 2026-10-28: "the
    galaxy map should be in the app shell not the game. the jobs should be the different voyages"). Each pilot seated
    in the squad drums up one job from the news the squad's port holds, so the three pilots you seat decide the three
-   jobs you are offered; each job is a voyage card drawn over the **galaxy map** (the locations, the lanes, where you
-   are, the job's course), with the way home as one more card when you are away.
+   jobs you are offered; each job is a voyage card in a grid under the **galaxy map** (the locations, the lanes, where
+   you are; pan, zoom and tap it to choose where to go), with the way home as one more card when you are away. Opening a
+   card expands it over the others and frames its course on the map (the window's layout: `VOYAGE_BOARD.md` §3).
 3. **Set sail.** The game enters freestyle and your squad deploys: you fly your seat's vessel, friends who joined fly
    theirs, and every other seat is an AI wingmate flying its slot's vessel.
 4. **(retired)** The in-world job board and the floating 3D chart were removed on 2026-10-28: Garrett could not tell
