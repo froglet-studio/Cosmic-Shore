@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Brittle Star Charge and Mass cards: whips to sabers on RT, the Creation tunnel, and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
+### 🔴 Brittle Star ability row recut (Charge, Mass, Space, Time) and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
 `chargeStarIcon`, `cordsOffAlpha` and `SetCords(cordsOut01, pull01, domain)`; `readyColor` is gone; the controller injects
@@ -80,6 +80,13 @@ No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `c
       turns them white; as Mass levels up the blocks fatten (crossfade to `BrittleStar_MassTrailsFat`).
       New: `massTrailsIcon`, `massTrailsFatIcon`, `massStarIcon`, `trailsOffAlpha`, `SetCreationTrails`,
       `BrittleStarExecutor.BlockGirth01`.
+- [ ] Space card: the star flying right with five rounds; with the aim stick centred they meet ahead, pushed they splay;
+      dim until X (Space Mode); overheated they dim and the plate goes hot; at high Space the splayed rounds sit further
+      out. New: `spaceRoundsIcon`, `spaceRoundsMeetIcon`, `spaceRoundsFarIcon`, `spaceStarIcon`, `SetGuns`,
+      `BrittleStarExecutor.Splay01` / `Range01`.
+- [ ] Time card: dim gapped blocks behind the star; A (Speed Mode) stretches them into one joined line, longer at high
+      Time. New: `timeTrailCruiseIcon`, `timeTrailFastIcon`, `timeTrailFasterIcon`, `timeStarIcon`, `SetSpeedTrail`,
+      `BrittleStarExecutor.SpeedBoost01`.
 
 
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED

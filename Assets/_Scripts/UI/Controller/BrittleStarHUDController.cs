@@ -47,6 +47,8 @@ namespace CosmicShore.UI
             view.SetCreationTrails(star.Creation01, star.BlockGirth01, ResolveDomainSignalColor());
             view.SetSpace(star.Heat01, star.Destruction01 >= 1f, star.Overheated);
             view.SetSpeed(star.Speed01);
+            view.SetGuns(star.Destruction01, star.Splay01, star.Range01, star.Overheated, ResolveDomainSignalColor());
+            view.SetSpeedTrail(star.Speed01, star.SpeedBoost01, ResolveDomainSignalColor());
             view.SetCords(star.CordsOut01, star.CordPull01, ResolveDomainSignalColor());
         }
 

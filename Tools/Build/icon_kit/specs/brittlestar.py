@@ -494,3 +494,57 @@ CARDS += [
                  ("Time 10 (x8)", [("faster", "white"), ("star", "domain")]),
                  ("off (cruise)", [("slow", "white", 0.4), ("star", "domain")])], lockup_state=0),
 ]
+
+
+PART_EXEMPT = {"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+               "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part", "specks": "a part"}
+
+
+def _pick(group, winner, name, title, element, parts_spec, lockup, icon, after):
+    """Ship the owner's pick: its parts into the slot's container, its states card, the losers' sheets gone."""
+    global ICONS, CARDS, REBIND
+    ICONS += [dict(name=i, element=element, act=act, draw=draw, subdir="Parts", family=False, exempt=PART_EXEMPT)
+              for _n, i, _f, draw, act in parts_spec]
+    for c in CARDS:
+        if c["name"] == winner:
+            CARDS.append(dict(c, name=name, group=None, title=title))
+            break
+    CARDS[:] = [c for c in CARDS if c.get("group") != group]
+    LOCKUP[element] = lockup
+    REBIND += [dict(file=VARIANT, pair=dict(container=icon, view=VIEW, after=after,
+                                            children=[(n, i, f) for n, i, f, _d, _a in parts_spec]))]
+
+
+# ---- Space in the game: A, the fan (Garrett picked A, 2026-11-01: "a is good") ----------------------------------------
+# Four parts, shown by BrittleStarHUDView.SetGuns: the star (domain); the rounds splayed (stick pushed), meeting (stick
+# centred), and splayed at Space's doubled range; dim with the mode off or the guns overheated.
+SPACE_PARTS = [("SpaceRounds", "BrittleStar_SpaceRounds", "spaceRoundsIcon", sa_rounds,
+                "Space Mode: the five rounds splayed (white; the stick pushed)"),
+               ("SpaceRoundsMeet", "BrittleStar_SpaceRoundsMeet", "spaceRoundsMeetIcon", lambda: sa_rounds(meet=True),
+                "Space Mode: the five rounds meeting ahead (white; the stick centred)"),
+               ("SpaceRoundsFar", "BrittleStar_SpaceRoundsFar", "spaceRoundsFarIcon", lambda: sa_rounds(reach=2.0),
+                "Space Mode: the rounds splayed at Space's doubled range (white)"),
+               ("SpaceStar", "BrittleStar_SpaceStar", "spaceStarIcon", SA_STAR, "Space Mode: the Brittle Star (domain)")]
+SPACE_ICON = "7700000000000001125"      # the Space slot's icon Image (was BrittleStar_DestructionMode)
+_pick("space", "space_a", "space",
+      "Space Mode (Space, picked A): the star (domain) flying right, a round (white) out of each turret, splayed or "
+      "meeting; the plate is the heat, hot while overheated", "Space", SPACE_PARTS,
+      dict(parts=dict(star=SA_STAR, rounds=sa_rounds), state=[("rounds", "white"), ("star", "domain")], gauge=0.35),
+      SPACE_ICON, "massStarIcon")
+
+# ---- Time in the game: A, the stretch (Garrett picked A, 2026-11-01: "a is good") -------------------------------------
+# Four parts, shown by BrittleStarHUDView.SetSpeedTrail: the star (domain); the gapped cruise blocks (dim, mode off); the
+# stretched joined line (mode on), longer as Time raises the speed x6 -> x8.
+TIME_PARTS = [("TimeTrailCruise", "BrittleStar_TimeTrailCruise", "timeTrailCruiseIcon", t_trail,
+               "Speed Mode: the cruise trail, short blocks with gaps (white, dim; the mode off)"),
+              ("TimeTrailFast", "BrittleStar_TimeTrailFast", "timeTrailFastIcon", lambda: t_trail(2.3),
+               "Speed Mode: the blocks stretched into one joined line (white; the mode on)"),
+              ("TimeTrailFaster", "BrittleStar_TimeTrailFaster", "timeTrailFasterIcon", lambda: t_trail(3.0),
+               "Speed Mode: stretched further at Time's x8 (white)"),
+              ("TimeStar", "BrittleStar_TimeStar", "timeStarIcon", T_STAR, "Speed Mode: the Brittle Star (domain)")]
+TIME_ICON = "7700000000000001135"       # the Time slot's icon Image (was BrittleStar_SpeedMode)
+_pick("time", "time_a", "time",
+      "Speed Mode (Time, picked A): the star (domain) flying right, its gapped cruise blocks (white) stretched into one "
+      "joined line; the plate is the mode's switch", "Time", TIME_PARTS,
+      dict(parts=dict(star=T_STAR, fast=lambda: t_trail(2.3)), state=[("fast", "white"), ("star", "domain")], gauge=1.0),
+      TIME_ICON, "spaceStarIcon")

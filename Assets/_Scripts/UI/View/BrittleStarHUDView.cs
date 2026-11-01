@@ -52,6 +52,30 @@ namespace CosmicShore.UI
         [Tooltip("Alpha of the trails while Creation Mode is off.")]
         [SerializeField, Range(0f, 1f)] float trailsOffAlpha = 0.25f;
 
+        [Header("Space card: the five guns (icon_kit specs/brittlestar.py, Garrett picked A 2026-11-01)")]
+        [Tooltip("The rounds splayed (BrittleStar_SpaceRounds), white: the aim stick pushed.")]
+        [SerializeField] Image spaceRoundsIcon;
+        [Tooltip("The rounds meeting ahead (BrittleStar_SpaceRoundsMeet), white: the aim stick centred.")]
+        [SerializeField] Image spaceRoundsMeetIcon;
+        [Tooltip("The rounds splayed at Space's doubled range (BrittleStar_SpaceRoundsFar), white.")]
+        [SerializeField] Image spaceRoundsFarIcon;
+        [Tooltip("The Brittle Star flying right (BrittleStar_SpaceStar), the domain colour.")]
+        [SerializeField] Image spaceStarIcon;
+        [Tooltip("Alpha of the rounds while Space Mode is off or the guns are overheated.")]
+        [SerializeField, Range(0f, 1f)] float roundsOffAlpha = 0.25f;
+
+        [Header("Time card: the stretch (icon_kit specs/brittlestar.py, Garrett picked A 2026-11-01)")]
+        [Tooltip("The cruise trail, short blocks with gaps (BrittleStar_TimeTrailCruise), white: shown dim while Speed Mode is off.")]
+        [SerializeField] Image timeTrailCruiseIcon;
+        [Tooltip("The blocks stretched into one joined line (BrittleStar_TimeTrailFast), white: Speed Mode on.")]
+        [SerializeField] Image timeTrailFastIcon;
+        [Tooltip("Stretched further at Time's x8 (BrittleStar_TimeTrailFaster), white.")]
+        [SerializeField] Image timeTrailFasterIcon;
+        [Tooltip("The Brittle Star flying right (BrittleStar_TimeStar), the domain colour.")]
+        [SerializeField] Image timeStarIcon;
+        [Tooltip("Alpha of the cruise trail while Speed Mode is off.")]
+        [SerializeField, Range(0f, 1f)] float cruiseTrailAlpha = 0.4f;
+
         [Header("Colours")]
         [Tooltip("Every gauge's resting colour.")]
         [SerializeField] Color gaugeColor = new(0.59f, 0.65f, 0.76f, 1f);
@@ -69,6 +93,8 @@ namespace CosmicShore.UI
             Seat(speedGauge, 0f);
             SetCords(0f, 0f, new Color(0f, 0f, 0f, 0f));
             SetCreationTrails(0f, 0f, new Color(0f, 0f, 0f, 0f));
+            SetGuns(0f, 0f, 0f, false, new Color(0f, 0f, 0f, 0f));
+            SetSpeedTrail(0f, 0f, new Color(0f, 0f, 0f, 0f));
         }
 
         void Seat(Image gauge, float fill)
@@ -112,6 +138,37 @@ namespace CosmicShore.UI
             if (massTrailsIcon) massTrailsIcon.color = new Color(1f, 1f, 1f, trails * (1f - fat));
             if (massTrailsFatIcon) massTrailsFatIcon.color = new Color(1f, 1f, 1f, trails * fat);
             if (massStarIcon) massStarIcon.color = _domain;
+        }
+
+        /// <summary>
+        /// The Space card's guns: the rounds meeting ahead with the aim stick centred, splayed as it is pushed
+        /// (<paramref name="splay01"/>), the splayed rounds further out as Space doubles the range (<paramref name="range01"/>);
+        /// dim with Space Mode off (<paramref name="on01"/>) or the guns <paramref name="overheated"/> (the plate goes hot).
+        /// </summary>
+        public void SetGuns(float on01, float splay01, float range01, bool overheated, Color domain)
+        {
+            if (domain.a > 0f) _domain = domain;
+            float a = overheated ? roundsOffAlpha : Mathf.Lerp(roundsOffAlpha, 1f, Mathf.Clamp01(on01));
+            float splay = Mathf.Clamp01(splay01), far = Mathf.Clamp01(range01);
+            if (spaceRoundsMeetIcon) spaceRoundsMeetIcon.color = new Color(1f, 1f, 1f, a * (1f - splay));
+            if (spaceRoundsIcon) spaceRoundsIcon.color = new Color(1f, 1f, 1f, a * splay * (1f - far));
+            if (spaceRoundsFarIcon) spaceRoundsFarIcon.color = new Color(1f, 1f, 1f, a * splay * far);
+            if (spaceStarIcon) spaceStarIcon.color = _domain;
+        }
+
+        /// <summary>
+        /// The Time card's trail: the gapped cruise blocks (dim) while Speed Mode is off, the stretched joined line as it
+        /// comes on (<paramref name="on01"/>, its eased switch), stretched further as Time raises it x6 -> x8
+        /// (<paramref name="boost01"/>).
+        /// </summary>
+        public void SetSpeedTrail(float on01, float boost01, Color domain)
+        {
+            if (domain.a > 0f) _domain = domain;
+            float on = Mathf.Clamp01(on01), boost = Mathf.Clamp01(boost01);
+            if (timeTrailCruiseIcon) timeTrailCruiseIcon.color = new Color(1f, 1f, 1f, cruiseTrailAlpha * (1f - on));
+            if (timeTrailFastIcon) timeTrailFastIcon.color = new Color(1f, 1f, 1f, on * (1f - boost));
+            if (timeTrailFasterIcon) timeTrailFasterIcon.color = new Color(1f, 1f, 1f, on * boost);
+            if (timeStarIcon) timeStarIcon.color = _domain;
         }
 
         Color _domain = Color.white;

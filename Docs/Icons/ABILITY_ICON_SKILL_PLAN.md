@@ -330,7 +330,13 @@ icon (BRITTLE_STAR.md F12). The CTA lime came off all four Brittle Star plates (
 colour. **Mass (Creation) DONE 2026-11-01** (Garrett picked A of A/B/C, "the tunnel"): the star seen from behind in the
 domain colour, each corner's line of prisms (squares with a negative-space X) coming at you; dim with the mode off, and
 crossfading to fat blocks as Mass widens them x1 -> x2 (`BrittleStarHUDView.SetCreationTrails` from
-`BrittleStarExecutor.Creation01` / `BlockGirth01`). Next: Space (Space Mode), Time (Speed) and the omni card.
+`BrittleStarExecutor.Creation01` / `BlockGirth01`). **Space (Space Mode) DONE 2026-11-01** (picked A, "the fan"): the
+star flying right, a round (a disc with a short streak, never a rhombus) out of each turret, meeting ahead with the aim
+stick centred and splayed as it is pushed, further out as Space doubles the range; dim with the mode off or overheated,
+the plate the heat (`SetGuns` from `Destruction01` / `Splay01` / `Range01` / `Overheated`). **Time (Speed) DONE
+2026-11-01** (picked A, "the stretch"): the star flying right, its gapped cruise blocks (dim, mode off) stretched into one
+joined line of long square-X prisms, longer at Time's x8 (`SetSpeedTrail` from `Speed01` / `SpeedBoost01`). Next: the omni
+card.
 
 | Round | What | Why first |
 |---|---|---|
