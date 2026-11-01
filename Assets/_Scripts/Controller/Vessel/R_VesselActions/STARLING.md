@@ -29,14 +29,19 @@ SHIPPED too), with the flock's separation on a grid so its cost stays linear in 
 | Both sticks together (the sums) | LS + RS | one thumb | **Turns the view** about its own up and right axes (`viewTurnRate`, 90°/s at full tilt). It stops when you let go. The view follows the swarm's centroid (`followRate`). |
 | x-diff (sticks spread apart / squeezed) | LS-x vs RS-x | **pinch** | **Zooms**: spread = in, squeezed = out, at `zoomRate`; a pinch zooms 1:1 with the fingers. Held between `zoomNearest` (0.35) and `zoomFarthest` (2.5) times the camera's authored distance. |
 | y-diff (one stick up, the other down) | LS-y vs RS-y | **two-finger spin** | **Rolls the camera** about the view's axis at `rollRate` (90°/s); a spin rolls 1:1 with the fingers. The camera rolls AGAINST y-diff and the spin, so the world turns the way a hull rolls in flight and with the fingers (Garrett, 2026-10-21: the first cut turned it the flipped way). The sums keep turning the view while two thumbs are down, as in flight. |
-| Pick the Mass card | A | tap the Mass card | Takes the hand's Mass card, on RELEASE. |
-| Pick the Time card | B | tap the Time card | Takes the hand's Time card. |
-| Pick the Charge card | X | tap the Charge card | Takes the hand's Charge card. |
-| Pick the Space card | Y | tap the Space card | Takes the hand's Space card. |
+| Pick the Mass card | A | tap the Mass card | A spread hand (one card per element): takes the hand's Mass card, on RELEASE. |
+| Pick the Time card | B | tap the Time card | A spread hand: takes the hand's Time card. |
+| Pick the Charge card | X | tap the Charge card | A spread hand: takes the hand's Charge card. |
+| Pick the Space card | Y | tap the Space card | A spread hand: takes the hand's Space card. |
+| Choose the next draw's element | A/B/X/Y with no hand up | tap that element's icon | The next hand is five cards of that element (§2). Not choosing keeps the old one. |
+| Move along an element hand | X (left) / B (right) | — | Moves the highlight along the five cards, wrapping at the ends. |
+| Take the highlighted card | A | tap any card in the row | Takes it. Y does nothing in an element hand. |
 | Card details | a trigger held + A/B/X/Y, or hold A/B/X/Y | **long press** on a card | Shows that card's details (§5) for as long as it is held, and picks nothing. A press held past `detailsHoldTime` (0.45 s) or made with a trigger past `detailsTrigger` opens them. |
 | Browse the details | while they are open, press another of A/B/X/Y | touch another card | Turns the open details to that element and picks nothing (Garrett, 2026-10-21: "peruse all your abilities"). They stay open while any pick button is down and close with the last one. |
 
-Mass on A and Time on B are the Sparrow's and the Angler's layout. A pick with no hand dealt does nothing. Boost does
+Mass on A and Time on B are the Sparrow's and the Angler's layout. With no hand dealt a quick press chooses the next
+draw's element instead of picking (Garrett, 2026-11-01). In an element hand the details card shows the highlighted card,
+whichever button opened it. Boost does
 nothing: the carrier has speed 0, so it lays no trail. x-diff and y-diff inside `diffDeadZone` do nothing, so a resting
 pad never drifts. On a phone the diffs are read only from the pinch and spin (the touch mix holds x-diff after a thumb
 lifts, which as a rate would keep zooming). The camera is written only by the local pilot while this hull is the
@@ -46,9 +51,18 @@ camera's target, and handed back to its authored distance only if nobody else mo
 
 Omnicrystal (30 s) → Elemental crystals (25 s, goal 5) → Opposing vessels (25 s) → Opposing mass (25 s, goal 30), then
 round again. A phase ends on its timer or when its goal is met. The swarm's target in each phase is the nearest omni
-crystal, elemental crystal, rival vessel or rival prism. **A hand of four cards, one per element, is dealt when the
-Omnicrystal phase ends**, with a crystal or without one. The swarm keeps going while you read. A card you already hold
-adds its level, up to 15. An AI Starling picks on its own 2 s after a hand arrives.
+crystal, elemental crystal, rival vessel or rival prism. **A hand is dealt when the Omnicrystal phase ends**, with a
+crystal or without one, and when the swarm collects an omnicrystal in any other phase. The swarm keeps going while you
+read. A card you already hold adds its level, up to 15.
+
+**The draw element** (Garrett, 2026-11-01: "after picking a card you pick an element or it keeps the old one. when you
+get an omnicrystal draw (or the timeout draw) it is 5 cards in that element, not 1 of each... this will make the class a
+significantly more interesting, and enable a time game to feel like it has meaningful choices"). Before any draw element
+is set, a hand is the **spread** hand: one card per element. The first pick sets the draw element to the picked card's
+element, and with no hand up the pilot can change it at any time. From then on every hand is an **element** hand: five
+different wired cards of the draw element (fewer if the element wires fewer), each at that element's level. Without it
+there was one strategy, always take Time; now the choice is which element to dig into and which of its five cards to
+take. An AI Starling picks a random card 2 s after a hand arrives, then draws its next hand from a random element.
 
 ## 3. What the swarm does (the game's own things)
 
@@ -81,6 +95,11 @@ Over each icon the offered card's name, under it the level it arrives at; the ic
 while it is offered. With no hand, the icons dim and the label shows what you hold of that element. Above the row: the
 phase and its seconds left, and the swarm's size. Every word is an authored field on the view (`phaseNames` and five
 templates; tokens `{name}` `{level}` `{phase}` `{seconds}` `{count}` `{cap}`); the card names are the deck's.
+
+**The element hand** (2026-11-01) is a row of up to five cards above the icon row (built on the root canvas), each
+with its name and the level it arrives at (`Lv 3 → 7` when held); the highlighted card rises, grows and takes the
+element's colour, and a hint line sits under the row (`handHint`). A tap on a card takes it. With no spread hand up, the
+icon of the draw element carries `nextDrawLabel` ("Next draw"), and its gauge lights while its element hand is up.
 
 **The objective card** (2026-10-21) sits directly left of the omnicrystal's card: a core card,
 `CoreAbility.Objective`, with no control chip. Its glyph is the phase's target (`objectiveIcons`): the game's own omnicrystal icon,

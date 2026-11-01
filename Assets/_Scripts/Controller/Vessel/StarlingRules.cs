@@ -68,15 +68,26 @@ namespace CosmicShore.Gameplay
     /// a rival, X enemy prisms removed. The omnicrystal phase deals a hand when it ends, crystal or not; an omnicrystal the
     /// swarm collects in any other phase deals one too.</para>
     ///
-    /// <para><b>The hand.</b> One card per element, drawn from that element's wired cards, at the element's level. A pick
-    /// adds the card's level to what you hold of it, capped at 15; a new hand replaces an unpicked one.</para>
+    /// <para><b>The hand.</b> Until a draw element is set, one card per element (the <i>spread</i> hand), drawn from that
+    /// element's wired cards, at the element's level. A pick adds the card's level to what you hold of it, capped at 15; a
+    /// new hand replaces an unpicked one.</para>
+    ///
+    /// <para><b>The draw element</b> (Garrett, 2026-11-01: "after picking a card you pick an element or it keeps the old
+    /// one. when you get an omnicrystal draw (or the timeout draw) it is 5 cards in that element, not 1 of each"). With no
+    /// hand up the pilot may set <see cref="DrawElement"/>; the first pick sets it to the picked card's element when none
+    /// is set, so there is always an old one to keep. Once set, every hand is an <i>element</i> hand: up to
+    /// <see cref="ElementHandSize"/> different wired cards of that element, at its level, and the pilot takes one by
+    /// moving <see cref="Focus"/> and picking it (<see cref="PickAt"/>).</para>
     /// </summary>
     public sealed class StarlingRules
     {
         /// <summary>The level no card can pass.</summary>
         public const int MaxLevel = 15;
 
-        /// <summary>The hand's slots, in the HUD's four-icon order (charge, mass, space, time).</summary>
+        /// <summary>The most cards an element hand offers.</summary>
+        public const int ElementHandSize = 5;
+
+        /// <summary>The spread hand's slots, in the HUD's four-icon order (charge, mass, space, time).</summary>
         public static readonly Element[] HandOrder = { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
         /// <summary>The Big Family card's baselines the lab subtracts (its level-1 swarm is the shipped cap + 6).</summary>
@@ -84,7 +95,7 @@ namespace CosmicShore.Gameplay
 
         readonly StarlingConfigSO _config;
         readonly Dictionary<string, int> _held = new();
-        readonly StarlingHandCard[] _hand = new StarlingHandCard[4];
+        readonly StarlingHandCard[] _hand = new StarlingHandCard[ElementHandSize];
         readonly List<StarlingCard> _scratch = new();
         uint _seed;
         uint _draws;
@@ -97,6 +108,21 @@ namespace CosmicShore.Gameplay
         public int HandsDealt { get; private set; }
         public bool HasHand { get; private set; }
         public bool BlackHoleUsed { get; set; }
+
+        /// <summary>The element the next hand is drawn from; <see cref="Element.None"/> deals the spread hand.</summary>
+        public Element DrawElement { get; private set; } = Element.None;
+
+        /// <summary>The element of the hand up now; <see cref="Element.None"/> for a spread hand or no hand.</summary>
+        public Element HandElement { get; private set; } = Element.None;
+
+        /// <summary>True while an element hand is up (pick by <see cref="Focus"/> and <see cref="PickAt"/>).</summary>
+        public bool IsElementHand => HasHand && HandElement != Element.None;
+
+        /// <summary>How many cards the hand up now has (4 for a spread hand); 0 with no hand.</summary>
+        public int HandSize { get; private set; }
+
+        /// <summary>The card of an element hand the pilot has highlighted (0-based); 0 on every new hand.</summary>
+        public int Focus { get; private set; }
 
         /// <summary>Raised after the cycle moves on: (the phase that ended, whether it ended on its goal).</summary>
         public event System.Action<StarlingPhase, bool> PhaseEnded;
@@ -113,9 +139,9 @@ namespace CosmicShore.Gameplay
             _seed = seed;
             _draws = 0;
             _held.Clear();
-            for (int i = 0; i < _hand.Length; i++) _hand[i] = default;
-            HasHand = false;
+            ClearHand();
             HandsDealt = 0;
+            DrawElement = Element.None;
             Phase = StarlingPhase.Omnicrystal;
             ClearPhaseProgress();
             BlackHoleUsed = false;
@@ -176,38 +202,95 @@ namespace CosmicShore.Gameplay
 
         // ---- the hand ----
 
-        /// <summary>The card in hand slot <paramref name="slot"/> (<see cref="HandOrder"/>); empty with no hand.</summary>
-        public StarlingHandCard HandCard(int slot) => HasHand && slot >= 0 && slot < _hand.Length ? _hand[slot] : default;
+        /// <summary>Card <paramref name="index"/> of the hand up now: for a spread hand the index is the
+        /// <see cref="HandOrder"/> slot; for an element hand it is the card's place in the row. Empty with no hand.</summary>
+        public StarlingHandCard HandCard(int index) => HasHand && index >= 0 && index < HandSize ? _hand[index] : default;
 
         /// <summary>The hand slot of <paramref name="element"/>, or -1.</summary>
         public static int SlotOf(Element element) => System.Array.IndexOf(HandOrder, element);
 
-        /// <summary>Deal a hand (the lab's <c>dealHand</c>): one wired card per element, at the element's level.</summary>
+        /// <summary>Deal a hand (the lab's <c>dealHand</c>): with no <see cref="DrawElement"/>, one wired card per element;
+        /// with one, up to <see cref="ElementHandSize"/> different wired cards of it. Either way at the element's level.</summary>
         public void DealHand()
         {
             HandsDealt++;
             HasHand = true;
-            for (int i = 0; i < HandOrder.Length; i++)
+            Focus = 0;
+            for (int i = 0; i < _hand.Length; i++) _hand[i] = default;
+            if (DrawElement == Element.None)
             {
-                var element = HandOrder[i];
-                _scratch.Clear();
-                if (_config.Deck) _config.Deck.Wired(element, _scratch);
-                var card = _scratch.Count > 0 ? _scratch[Mathf.Min(_scratch.Count - 1, (int)(Next01() * _scratch.Count))] : null;
-                _hand[i] = new StarlingHandCard(card, Mathf.Clamp(_config.LevelFor(element), 1, MaxLevel));
+                HandElement = Element.None;
+                HandSize = HandOrder.Length;
+                for (int i = 0; i < HandOrder.Length; i++)
+                {
+                    var element = HandOrder[i];
+                    _scratch.Clear();
+                    if (_config.Deck) _config.Deck.Wired(element, _scratch);
+                    var card = _scratch.Count > 0 ? _scratch[Mathf.Min(_scratch.Count - 1, (int)(Next01() * _scratch.Count))] : null;
+                    _hand[i] = new StarlingHandCard(card, LevelOf(element));
+                }
+                return;
             }
+
+            // An element hand: a partial shuffle of the element's wired cards, so no card is offered twice.
+            HandElement = DrawElement;
+            _scratch.Clear();
+            if (_config.Deck) _config.Deck.Wired(DrawElement, _scratch);
+            HandSize = Mathf.Min(ElementHandSize, _scratch.Count);
+            for (int i = 0; i < HandSize; i++)
+            {
+                int j = i + Mathf.Min(_scratch.Count - i - 1, (int)(Next01() * (_scratch.Count - i)));
+                (_scratch[i], _scratch[j]) = (_scratch[j], _scratch[i]);
+                _hand[i] = new StarlingHandCard(_scratch[i], LevelOf(DrawElement));
+            }
+            if (HandSize == 0) ClearHand();   // nothing wired in the element: no hand rather than an empty one
         }
 
-        /// <summary>Pick the card of <paramref name="element"/> from the hand (the lab's <c>pick</c>). Returns false when
-        /// there is no hand or that slot is empty; the hand is spent either way only on a real pick.</summary>
-        public bool Pick(Element element)
+        int LevelOf(Element element) => Mathf.Clamp(_config.LevelFor(element), 1, MaxLevel);
+
+        /// <summary>Pick the card of <paramref name="element"/> from a spread hand (the lab's <c>pick</c>). False when there
+        /// is no spread hand or that slot is empty.</summary>
+        public bool Pick(Element element) => !IsElementHand && PickAt(SlotOf(element));
+
+        /// <summary>Pick card <paramref name="index"/> of the hand up now (<see cref="HandCard"/>). False when there is no
+        /// hand or that card is empty; the hand is spent only on a real pick. The first pick sets the draw element to the
+        /// card's element when none is set.</summary>
+        public bool PickAt(int index)
         {
-            int slot = SlotOf(element);
-            if (!HasHand || slot < 0 || _hand[slot].IsEmpty) return false;
-            var c = _hand[slot];
+            if (!HasHand || index < 0 || index >= HandSize || _hand[index].IsEmpty) return false;
+            var c = _hand[index];
             _held[c.Card.Id] = Mathf.Min(MaxLevel, Level(c.Card.Id) + c.Level);
-            HasHand = false;
-            for (int i = 0; i < _hand.Length; i++) _hand[i] = default;
+            if (DrawElement == Element.None) DrawElement = c.Card.Element;
+            ClearHand();
             return true;
+        }
+
+        /// <summary>Take the highlighted card of an element hand.</summary>
+        public bool PickFocus() => IsElementHand && PickAt(Focus);
+
+        /// <summary>Move the highlight along an element hand by <paramref name="step"/>, wrapping at the ends.</summary>
+        public void MoveFocus(int step)
+        {
+            if (!IsElementHand || HandSize <= 0) return;
+            Focus = ((Focus + step) % HandSize + HandSize) % HandSize;
+        }
+
+        /// <summary>Set the element the next hand is drawn from. Only with no hand up (a hand up is picked from first);
+        /// false otherwise, or for an element that is not one of the four.</summary>
+        public bool ChooseDrawElement(Element element)
+        {
+            if (HasHand || SlotOf(element) < 0) return false;
+            DrawElement = element;
+            return true;
+        }
+
+        void ClearHand()
+        {
+            for (int i = 0; i < _hand.Length; i++) _hand[i] = default;
+            HasHand = false;
+            HandElement = Element.None;
+            HandSize = 0;
+            Focus = 0;
         }
 
         /// <summary>The level held of the hand slot's card's element, summed (what the HUD shows on a slot with no hand).</summary>
