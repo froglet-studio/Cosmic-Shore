@@ -71,6 +71,30 @@ namespace CosmicShore.UI
                  "panel shows them in its seats directly above, so it turns this off.")]
         [SerializeField] private bool listPartyMembers = true;
 
+        [Header("Rev 40 E: one verb per row, rows grouped by it (Docs/MENU_REDESIGN_B.md section 107)")]
+        [Tooltip("Each online row offers ONE thing to do, chosen by what the pilot is doing: in the menu, Invite; in " +
+                 "another party, Join (dimmed while it is full); in a match, Spectate; invited by you, Cancel. Off, a " +
+                 "row offers every verb that applies (a solo pilot in the menu showed INVITE and JOIN side by side).")]
+        [SerializeField] private bool oneVerbPerRow;
+        [Tooltip("Where each kind of row goes. A row moves when its state changes (an invite sent or cancelled, a " +
+                 "party filled, a match started). A kind with no group stays in Online Content. Each group's " +
+                 "header hides itself while its list is empty (KitListCounter on the group's content).")]
+        [SerializeField] private OnlineGroup[] onlineGroups = { };
+        [Tooltip("The line shown while nobody else is online (the groups are all empty). Optional.")]
+        [SerializeField] private CanvasGroup onlineEmptyLine;
+
+        /// <summary>What can be done with an online pilot: the group their row sits in.</summary>
+        public enum OnlineGroupKind { JoinTheirParty = 0, InTheMenu = 1, InAMatch = 2, YouInvited = 3 }
+
+        [Serializable]
+        public struct OnlineGroup
+        {
+            [Tooltip("Which rows this group holds.")]
+            public OnlineGroupKind kind;
+            [Tooltip("The group's list: rows are parented here.")]
+            public Transform content;
+        }
+
         [Header("Audio")]
         [Tooltip("Category played when a party invite is received.")]
         [SerializeField] private MenuAudioCategory inviteReceivedAudio = MenuAudioCategory.Confirmed;
@@ -347,6 +371,7 @@ namespace CosmicShore.UI
         void PopulateOnlineSection()
         {
             ClearSpawned(_spawnedOnline);
+            UpdateOnlineEmpty();
             if (!connectionData || !onlineContent || !onlineInfoPrefab) return;
 
             string localId = connectionData.LocalPlayerId;
@@ -363,7 +388,60 @@ namespace CosmicShore.UI
         {
             var entry = Instantiate(onlineInfoPrefab, onlineContent);
             _spawnedOnline.Add(entry.gameObject);
+            // Every state change the row draws (populate, invite sent, invite cleared) moves it to its group.
+            entry.ProfileChanged += () => PlaceInGroup(entry);
             PopulateOnlineEntry(entry, player);
+            UpdateOnlineEmpty();
+        }
+
+        /// <summary>The group a row belongs in, from what it draws. Pure, so it is tested without rows.</summary>
+        internal static OnlineGroupKind GroupFor(OnlineInfoEntry.Status status, bool invitePending)
+        {
+            if (invitePending) return OnlineGroupKind.YouInvited;
+            return status switch
+            {
+                OnlineInfoEntry.Status.InMatch => OnlineGroupKind.InAMatch,
+                OnlineInfoEntry.Status.InLobby or OnlineInfoEntry.Status.LobbyFull => OnlineGroupKind.JoinTheirParty,
+                _ => OnlineGroupKind.InTheMenu,
+            };
+        }
+
+        void PlaceInGroup(OnlineInfoEntry entry)
+        {
+            if (!entry || onlineGroups == null || onlineGroups.Length == 0) return;
+            var kind = GroupFor(entry.CurrentStatus, entry.IsInvitePending);
+            foreach (var group in onlineGroups)
+            {
+                if (group.kind != kind || !group.content) continue;
+                if (entry.transform.parent != group.content) entry.transform.SetParent(group.content, false);
+                return;
+            }
+        }
+
+        void UpdateOnlineEmpty()
+        {
+            if (!onlineEmptyLine) return;
+            int live = 0;
+            foreach (var go in _spawnedOnline) if (go) live++;
+            KitVisibility.SetShown(onlineEmptyLine, live == 0);
+        }
+
+        /// <summary>
+        /// The one verb a row offers (<see cref="oneVerbPerRow"/>): whether it may invite and what its join button does,
+        /// by the pilot's status. Pure, so it is tested without a panel.
+        /// </summary>
+        internal static (bool invite, OnlineInfoEntry.JoinMode join) OneVerb(OnlineInfoEntry.Status status, OnlineInfoEntry.JoinMode join)
+        {
+            return status switch
+            {
+                // A pilot alone in the menu hosts their own party: the row's one verb is Invite (KitOnlineRow shows it
+                // over Join for this status), but Join stays on the row's state so their profile card offers it too
+                // (Shombith, 2026-10-31: "there is no join button").
+                OnlineInfoEntry.Status.Online => (true, join),
+                OnlineInfoEntry.Status.InLobby or OnlineInfoEntry.Status.LobbyFull => (false, join),
+                OnlineInfoEntry.Status.InMatch => (false, join),
+                _ => (false, OnlineInfoEntry.JoinMode.Hidden),
+            };
         }
 
         void PopulateOnlineEntry(OnlineInfoEntry entry, PartyPlayerData player)
@@ -381,6 +459,15 @@ namespace CosmicShore.UI
             // repopulates the section), so rows free up when someone leaves.
             bool localPartyFull = connectionData != null && !connectionData.HasOpenSlots;
 
+            var joinMode = ResolveJoinMode(player, status);
+            bool mayInvite = !localPartyFull;
+            if (oneVerbPerRow)
+            {
+                var (invite, join) = OneVerb(status, joinMode);
+                mayInvite &= invite;
+                joinMode = join;
+            }
+
             entry.Populate(
                 player.PlayerId,
                 player.DisplayName,
@@ -389,10 +476,10 @@ namespace CosmicShore.UI
                 memberCount,
                 maxSlots,
                 matchName,
-                onInvite: localPartyFull ? null : OnInviteClicked,
+                onInvite: mayInvite ? OnInviteClicked : null,
                 onCancel: OnCancelInviteClicked,
                 onKick: canKick ? OnKickMemberClicked : null,
-                joinMode: ResolveJoinMode(player, status),
+                joinMode: joinMode,
                 onJoin: OnJoinClicked,
                 onSpectate: OnSpectateClicked);
 
@@ -505,6 +592,7 @@ namespace CosmicShore.UI
             if (!listPartyMembers && IsInSameParty(player.PlayerId))
             {
                 RemoveEntryByPlayerId(_spawnedOnline, player.PlayerId);
+                UpdateOnlineEmpty();
                 return;
             }
 
@@ -519,11 +607,13 @@ namespace CosmicShore.UI
         void HandleOnlinePlayerRemoved(PartyPlayerData player)
         {
             RemoveEntryByPlayerId(_spawnedOnline, player.PlayerId);
+            UpdateOnlineEmpty();
         }
 
         void HandleOnlinePlayersCleared()
         {
             ClearSpawned(_spawnedOnline);
+            UpdateOnlineEmpty();
         }
 
         /// <summary>

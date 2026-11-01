@@ -384,6 +384,16 @@ instead of opening an overlay. Seating, invite, join, spectate, kick, leave and 
 as above - the kit rows only override how a state is drawn. Arena, Toy Box and Mission keep the
 legacy pair until item 8.
 
+**Rev 40 E (2026-10-31, `Docs/MENU_REDESIGN_B.md` section 107) reshaped it:** the seats are one row of
+overlapping avatars on a party card with the names, "You host - 1 seat open" and INVITE / LEAVE PARTY
+(all authored on `ArcadeLobbyList`; a seat no longer shows its name or role); each online row offers ONE
+verb in one fixed slot (`FriendsListPanel.oneVerbPerRow` + `KitOnlineRow.oneVerbPerRow`: in the menu Invite,
+in a party Join, in a match Spectate, invited Cancel); and ONLINE is four groups (`onlineGroups`: Join their
+party, In the menu, In a match, You invited) that a row moves between as its state changes. The orb is unchanged.
+**Section 109 (the same day)** brought the Rev 6 molecule back inside that card and made it GROW: the host in the centre,
+the members plus one open socket on a ring re-laid at runtime (`ArcadeLobbyList.expandingMolecule`, `RingSeats`,
+`MoleculeAngle`), so the seats show names and roles again and the card's separate names line is gone.
+
 **The party panel's SEATING is synced, not local** — `PartyRoster` puts the host in the
 first slot and the clients behind it in join order, the same on every device, by ordering on
 Netcode's replicated `OwnerClientId` rather than on `HostConnectionDataSO.PartyMembers`,
@@ -436,6 +446,14 @@ checklist (panels, row prefabs, SO references) is in
 - **Lobby-only session**: Presence lobby uses no Relay — coexists with active NetworkManager.
 - **UniTask + CancellationToken**: All async transitions use `UniTask` with linked CTS for timeouts.
 - **Dedup guard**: `_lastFiredInvite` prevents re-firing the same invite on repeated refreshes.
+- **Listed online only once the lava lamp is up** (B39, 2026-10-31): a player joins the presence lobby at sign-in, during
+  the boot, but publishes `ready` only when `SceneLoader` first fades the menu in (`LavaLampPresence`); the ONLINE list
+  skips anyone without it. Carry `ready` through every rejoin (`BuildLivePresenceProperties`).
+- **A failed join leaves nothing behind** (B40-B43): every party and presence join goes through `StaleLobbyMembership`
+  ("already a member" clears the stale membership and joins again; a failed party join removes us); a session a join
+  found Gone is offered to nobody on that machine for 5 min (`DeadPartySessions`); a join pressed during a transition
+  waits for it, and a host loss during one is acted on when it ends; a host with others in its party cannot Join or
+  Spectate away (`PartyInviteController.WouldEndOwnParty`).
 - **Client autopilot**: `MainMenuController.HandleMenuReady()` calls `ActivateLocalPlayerAutopilot()` for the local player's vessel, ensuring both host and joining clients start in autopilot mode. For hosts this is redundant with `MenuServerPlayerVesselInitializer.ActivateAutopilot()`, but for remote clients it is the primary activation path.
 - **Non-owner vessel activation**: `MainMenuController.HandleMenuReady()` calls `gameData.SetNonOwnerPlayersActiveInNewClient()` so joining clients see and render existing players' vessels.
 - **Local-only freestyle toggle**: `MenuCrystalClickHandler` toggles autopilot ↔ freestyle per-client with `IsLocalUser` guard. No network RPC needed — vessel behavior replicates automatically via Netcode.

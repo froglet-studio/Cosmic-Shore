@@ -16,7 +16,8 @@ namespace CosmicShore.UI
     /// <item><term>Charge</term><description>Lock (Y / F; lit while it holds a lock) | Snap (X / Q; lit while held,
     /// the veil is its cooldown)</description></item>
     /// <item><term>Mass</term><description>perches made, as a count (passive; it flashes on each perch) | prisms in the
-    /// dens, as a count; Back (Y / F) lit while heading back</description></item>
+    /// dens, as a count, and the Pistol's energy as the gauge (what its next den is built from); Back (Y / F) lit while
+    /// heading back</description></item>
     /// <item><term>Space</term><description>the undertow's reach, as the gauge (passive) | Ghost (B / T; lit while
     /// ghosting, the veil is its cooldown), the same reach gauge</description></item>
     /// <item><term>Time</term><description>Dart (X / Q; the gauge is the held charge, the veil its cooldown) | the dive
@@ -96,7 +97,7 @@ namespace CosmicShore.UI
                 view.SetAbilityCooldown(Element.Charge, 0f);
                 view.SetAbilityCooldown(Element.Space, 0f);
                 view.SetAbilityCooldown(Element.Time, duo.DartCooldown01);
-                if (_view) _view.SetTimeGauge(duo.DartCharge01);
+                if (_view) { _view.SetTimeGauge(duo.DartCharge01); _view.SetMassGauge(0f); }
                 PaintCount(duo.PerchCount, perchCountTemplate);
             }
             else
@@ -108,7 +109,7 @@ namespace CosmicShore.UI
                 view.SetAbilityCooldown(Element.Charge, duo.SnapCooldown01);
                 view.SetAbilityCooldown(Element.Space, duo.GhostCooldown01);
                 view.SetAbilityCooldown(Element.Time, 0f);
-                if (_view) _view.SetTimeGauge(duo.Speed01);
+                if (_view) { _view.SetTimeGauge(duo.Speed01); _view.SetMassGauge(duo.Energy01); }
                 PaintCount(duo.DenPrisms, denCountTemplate);
             }
             if (_view) _view.SetSpaceGauge(duo.PullReach01);

@@ -28,6 +28,7 @@ namespace CosmicShore.Gameplay
         VoyageToyDefinitionSO _def;
         ToyContext _context;
         VoyageRun _run;
+        ArkEscortRun _escort;
         CancellationTokenSource _handoff;
         float _nextListen;
 
@@ -51,11 +52,17 @@ namespace CosmicShore.Gameplay
         /// <summary>The map, crew, jobs and lines.</summary>
         public VoyageContentSO Content => _def ? _def.Content : VoyageContentSO.Load();
 
-        /// <summary>True while a voyage is out (sailing, at a stop, or following the host's).</summary>
-        public bool IsUnderway => _run && _run.IsActive;
+        /// <summary>True while a voyage is out (sailing, at a stop, or following the host's), an Ark escort included.</summary>
+        public bool IsUnderway => _run && _run.IsActive || IsEscorting;
+
+        /// <summary>True while an Ark escort is out.</summary>
+        public bool IsEscorting => _escort && _escort.IsActive;
+
+        /// <summary>The Ark escort's difficulty while one is out, else 0.</summary>
+        public int EscortDifficulty => IsEscorting ? _escort.Difficulty : 0;
 
         /// <summary>The job the running voyage sails, or null.</summary>
-        public VoyageJob CurrentJob => IsUnderway ? _run.CurrentJob : null;
+        public VoyageJob CurrentJob => _run && _run.IsActive ? _run.CurrentJob : null;
 
         public static VoyageHarbour Create(VoyageToyDefinitionSO definition, Transform parent, ToyContext context)
         {
@@ -115,6 +122,62 @@ namespace CosmicShore.Gameplay
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
             if (!ct.IsCancellationRequested) Sail(job);
+        }
+
+        /// <summary>
+        /// Set sail on the Ark escort at <paramref name="difficulty"/> (1-9) with <paramref name="squad"/> (null: the
+        /// active squad): into freestyle first, then the squad deploys and the Ark sails the escort's worlds.
+        /// <paramref name="aiLocal"/> hands the local seat to the AI as well (the escort sim).
+        /// </summary>
+        public void SetSailEscort(int difficulty, MenuCrystalClickHandler freestyle, SavedSquad squad = null,
+            bool aiLocal = false)
+        {
+            if (IsUnderway || !_def || !_def.ArkEscort) return;
+            CancelHandoff();
+            if (!freestyle || freestyle.IsInFreestyle)
+            {
+                SailEscort(difficulty, squad, aiLocal);
+                return;
+            }
+            _handoff = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            freestyle.ToggleTransition();
+            EscortOnceFlying(difficulty, squad, aiLocal, freestyle, _handoff.Token).Forget();
+        }
+
+        async UniTaskVoid EscortOnceFlying(int difficulty, SavedSquad squad, bool aiLocal,
+            MenuCrystalClickHandler freestyle, CancellationToken ct)
+        {
+            float deadline = Time.unscaledTime + FreestyleHandoffSeconds;
+            while (freestyle && (!freestyle.IsInFreestyle || freestyle.IsTransitioning))
+            {
+                if (Time.unscaledTime > deadline)
+                {
+                    CSDebug.LogWarning($"[VoyageHarbour] Freestyle did not settle within {FreestyleHandoffSeconds:0}s - " +
+                                       "the escort did not set sail.");
+                    return;
+                }
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            if (!ct.IsCancellationRequested) SailEscort(difficulty, squad, aiLocal);
+        }
+
+        void SailEscort(int difficulty, SavedSquad squad, bool aiLocal)
+        {
+            var vessel = Alive(_context?.GameData?.LocalPlayer?.Vessel);
+            if (vessel?.Transform == null)
+            {
+                CSDebug.LogWarning("[VoyageHarbour] No local vessel to escort the Ark with.");
+                return;
+            }
+            if (!_escort)
+            {
+                var go = new GameObject("ArkEscortRun");
+                go.transform.SetParent(transform.parent, false);
+                _escort = go.AddComponent<ArkEscortRun>();
+                _escort.Configure(_def, _def.ArkEscort, _context, transform.parent, RaiseChanged);
+            }
+            _escort.SetSail(vessel, squad ?? VoyageRun.ActiveSquad(_context), difficulty, aiLocal);
+            RaiseChanged();
         }
 
         void Sail(VoyageJob job)

@@ -95,11 +95,13 @@ public static class Driver
         return gates;
     }
 
+    // Waystation is no longer a pure move (2026-11-01: the Drop Tower course replaced the cluster-only one), so its
+    // "legacy" is the course as WaystationTower builds it from the cluster target: the source must hand back exactly
+    // that, and report the rings it laid as its target afterwards.
     static int LegacyWaystationTarget(int Intensity)
     {
-        int asked = EndConditionOverridesSO.DefaultWaystationRingTarget;
         int per = WaystationCourseSettings.ForIntensity(Intensity).RingsPerCluster;
-        return WaystationCourse.ClusterCount(asked, per) * Mathf.Max(1, per);
+        return EndConditionOverridesSO.DefaultWaystationClusterTarget * Mathf.Max(1, per);
     }
 
     static List<RaceGate> LegacyWaystation(int seed, int gateCount, float inner, float outer, int Intensity)
@@ -107,9 +109,9 @@ public static class Driver
         var settings = WaystationCourseSettings.ForIntensity(Intensity);
         settings.InnerRadius = inner;
         settings.OuterRadius = outer;
-        settings.RingTarget = Mathf.Max(settings.RingsPerCluster, gateCount);
+        settings.RingTarget = LegacyWaystationTarget(Intensity);
         settings.FirstClusterDirection = Vector3.up;
-        var course = WaystationCourse.Generate(seed, settings);
+        var course = WaystationTower.Build(seed, settings, Intensity, out _);
         return course != null && course.Count > 0 ? course : null;
     }
 
@@ -197,10 +199,11 @@ public static class Driver
                 var src = RaceCourseSource.For(GameModes.Waystation);
                 src.ResolveShell(nucleus, out float i1, out float o1);
                 int target = src.AuthoredGateTarget(intensity);
-                Check(target == LegacyWaystationTarget(intensity), "waystation target");
+                Check(target == LegacyWaystationTarget(intensity), "waystation target before a course");
                 var got = src.Build(new RaceCourseRequest(seed, intensity, target, i1, o1, null), out _);
                 var want = LegacyWaystation(seed, target, i1, o1, intensity);
                 Check(Same(got, want), $"waystation seed {seed} I{intensity} n={nucleus}");
+                Check(got != null && src.AuthoredGateTarget(intensity) == got.Count, "waystation target after the course");
                 compared++; gates += got?.Count ?? 0;
             }
         }

@@ -11,15 +11,62 @@ from canvas import (W_PRIMARY, W_SECONDARY, band, disc, empty, fill, ngon, rect,
 
 
 def prism(cx, cy, s):
-    """A prism corner-on: a diamond (the trail's block, the Thresher's `prism()`, the Starlings' Mass mark)."""
-    return fill([(cx, cy - s), (cx + s * 0.8, cy), (cx, cy + s), (cx - s * 0.8, cy)])
+    """A prism corner-on: TWO CLOSE TRIANGLES, the old diamond cut in half top to bottom (Garrett, 2026-11-01: never the
+    rhombus for a prism, the Time petal owns that shape; "cut the rhombus in half when you can so it is two close
+    triangles"). The gap grows with the prism so the cut still reads at 40 px. The trail's block, a shielded prism, the
+    Starlings' Mass mark."""
+    return prism_halves(cx, cy, s, gap=max(1.6, s * 0.16))
 
 
 def prism_lit(cx, cy, s):
-    """The diamond with its upper-left face cut lighter: a sliver of negative space, so it reads as a solid."""
-    m = prism(cx, cy, s)
-    cut = fill([(cx - s * 0.55, cy - s * 0.1), (cx - s * 0.1, cy - s * 0.65), (cx - s * 0.02, cy - s * 0.5), (cx - s * 0.45, cy - s * 0.0)])
-    return m & ~cut
+    """The large prism: the two halves (the cut already reads as a solid's edge; the lit-facet sliver was the diamond's)."""
+    return prism(cx, cy, s)
+
+
+def prism_halves(cx, cy, s, gap=1.6, vertical=True):
+    """A prism as TWO CLOSE TRIANGLES: the diamond cut in half along its long axis, the halves `gap` px apart (Garrett,
+    2026-11-01: "stop using the rhombuses for shielded prisms, that shape is owned by the time petal ... prisms are mass so
+    cut the rhombus in half when you can so it is two close triangles"). `vertical` cuts top to bottom (left and right
+    halves); False cuts side to side."""
+    w = s * 0.8
+    g = gap / 2
+    if vertical:
+        return (fill([(cx - g, cy - s), (cx - g, cy + s), (cx - g - w, cy)]) |
+                fill([(cx + g, cy - s), (cx + g, cy + s), (cx + g + w, cy)]))
+    return (fill([(cx - w, cy - g), (cx + w, cy - g), (cx, cy - g - s)]) |
+            fill([(cx - w, cy + g), (cx + w, cy + g), (cx, cy + g + s)]))
+
+
+def prism_square_x(cx, cy, s, cut=2.2):
+    """A prism as a SQUARE with a negative-space X (how a prism reads at distance, and the X is mass's triangles again);
+    `cut` is the X's stroke width. The other prism form Garrett allowed on 2026-11-01, "when it feels right"."""
+    from canvas import stroke
+    sq = fill([(cx - s, cy - s), (cx + s, cy - s), (cx + s, cy + s), (cx - s, cy + s)])
+    x = stroke([(cx - s, cy - s), (cx + s, cy + s)], w=cut) | stroke([(cx + s, cy - s), (cx - s, cy + s)], w=cut)
+    return sq & ~x
+
+
+def prism_halves(cx, cy, s, gap=1.6, vertical=True):
+    """A prism as TWO CLOSE TRIANGLES: the diamond cut in half along its long axis, the halves `gap` px apart (Garrett,
+    2026-11-01: "stop using the rhombuses for shielded prisms, that shape is owned by the time petal ... prisms are mass so
+    cut the rhombus in half when you can so it is two close triangles"). `vertical` cuts top to bottom (left and right
+    halves); False cuts side to side."""
+    w = s * 0.8
+    g = gap / 2
+    if vertical:
+        return (fill([(cx - g, cy - s), (cx - g, cy + s), (cx - g - w, cy)]) |
+                fill([(cx + g, cy - s), (cx + g, cy + s), (cx + g + w, cy)]))
+    return (fill([(cx - w, cy - g), (cx + w, cy - g), (cx, cy - g - s)]) |
+            fill([(cx - w, cy + g), (cx + w, cy + g), (cx, cy + g + s)]))
+
+
+def prism_square_x(cx, cy, s, cut=2.2):
+    """A prism as a SQUARE with a negative-space X (how a prism reads at distance, and the X is mass's triangles again);
+    `cut` is the X's stroke width. The other prism form Garrett allowed on 2026-11-01, "when it feels right"."""
+    from canvas import stroke
+    sq = fill([(cx - s, cy - s), (cx + s, cy - s), (cx + s, cy + s), (cx - s, cy + s)])
+    x = stroke([(cx - s, cy - s), (cx + s, cy + s)], w=cut) | stroke([(cx + s, cy - s), (cx - s, cy + s)], w=cut)
+    return sq & ~x
 
 
 def hull(cx, cy, s, heading=0.0):

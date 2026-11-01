@@ -50,10 +50,11 @@ namespace CosmicShore.Gameplay
     /// (Docs/PRISM_ANIMATION.md §4.8.1). Nothing pops out of existence and mass is conserved.</para>
     ///
     /// <para><b>Element → parameter: CHARGE sets the RECOVERY</b> (how long between shots), read at
-    /// use time. Its level-5 upgrade is <b>Pierce</b> — the round no longer stops at the first
-    /// prism — and that one gates on the REPLICATED <c>IsUpgradeActive(Element.Charge)</c> rather
-    /// than a local level read, because it decides how much mass dies and every peer must agree
-    /// (CLAUDE.md, the outcome-affecting-upgrade rule).</para>
+    /// use time. The round breaks SUPER-SHIELDED mass at every level (Garrett, 2026-10-30: "lets
+    /// have the sniper shot destroy supershields from the beginning"); the old Charge-5 Pierce is
+    /// retired. Charge 5 is now <b>Hunter's Sight</b> on the scope: a round through a rival's
+    /// afterimage strips that rival (<see cref="ScopeAfterimages"/>, <see cref="StripVessels"/>).
+    /// The shot itself rides the SPACE card (the cloak's trigger, scoped).</para>
     ///
     /// <para><b>Known limitation — the cooldown's element scaling is owner-local.</b> Element
     /// levels never replicate, so a remote replica cannot derive the owner's Charge-scaled
@@ -98,6 +99,7 @@ namespace CosmicShore.Gameplay
         readonly List<(Prism prism, int virtualId, float distance)> _ordered = new();
         readonly List<int> _virtualIds = new();
         readonly List<Transform> _vesselScratch = new();
+        readonly List<IVesselStatus> _victims = new();
 
         /// <summary>Seconds until the next shot is available, 0 when ready. Read by the HUD.</summary>
         public float CooldownRemaining => Mathf.Max(0f, _cooldownEndTime - Time.time);
@@ -342,6 +344,13 @@ namespace CosmicShore.Gameplay
             // decides a strip and scores it (the same machine the transfer below settles from).
             bool decidedHere = ElementalTransfer.IsDecidedHere(_status);
 
+            _victims.Clear();
+
+            // Hunter's Sight (Charge 5): a round through a rival's afterimage counts as through the
+            // rival. The afterimages exist only where the strip is decided, so no other peer adds any.
+            if (decidedHere && scope != null)
+                scope.Afterimages.CollectHits(origin, direction, reach, tanHalf, so.MinPathRadius, _victims);
+
             VesselVisionShading.CollectStampedVessels(_vesselScratch);
             for (int i = 0; i < _vesselScratch.Count; i++)
             {
@@ -368,6 +377,16 @@ namespace CosmicShore.Gameplay
                 if (!PrismSpatialIndex.ConeContains(component.transform.position, origin, direction,
                                                     reach, tanHalf, so.MinPathRadius))
                     continue;
+
+                if (!_victims.Contains(victim)) _victims.Add(victim);
+            }
+            _vesselScratch.Clear();
+
+            for (int i = 0; i < _victims.Count; i++)
+            {
+                // An afterimage can outlive its pilot; an interface compare misses a destroyed Object.
+                var victim = _victims[i];
+                if (victim == null || victim is Object dead && !dead) continue;
 
                 // A strip IS a scored hit (2026-10-10): one gate for both, so a warded pilot is
                 // neither stripped nor scored on, and only the Serpent's owner decides.
@@ -397,7 +416,7 @@ namespace CosmicShore.Gameplay
                     SupersededRank = supersededRank,
                 });
             }
-            _vesselScratch.Clear();
+            _victims.Clear();
         }
 
         /// <summary>
@@ -450,16 +469,8 @@ namespace CosmicShore.Gameplay
             // Domains.Blue is the neutral sentinel and stays hostile to everyone.
             if (prism.Domain == _status.Domain) return false;
 
-            // ARMOUR IS A TARGET ONLY AT CHARGE 5, and this is what that upgrade now buys. Below
-            // it a super-shielded prism is not a target at all, so the round passes THROUGH it and
-            // carries on to whatever is behind - rather than stopping on mass it cannot break,
-            // which is what an ordinary damage call would do to it silently (Prism.Damage
-            // hard-ignores super-shielded mass, so the round would end its life there having
-            // destroyed nothing). "Pierce" therefore names a CAPABILITY rather than a count: how
-            // many prisms the round goes through is the weapon's own authored budget at every
-            // tier, and what it can go through is the element's.
-            if (!IsPierceUnlocked && prism.prismProperties is { IsSuperShielded: true }) return false;
-
+            // Armour is a target at every level (2026-10-30): DestroyPrism drops a super-shield
+            // first, the one sanctioned teardown, so nothing here has to ask.
             return true;
         }
 
@@ -491,22 +502,6 @@ namespace CosmicShore.Gameplay
             // shield would make an armoured prism take two shots on a twelve-second cooldown.
             prism.Damage(impact, _status.Domain, _status.PlayerName,
                          devastate: true, debrisSpeedLimit: so.DebrisSpeedLimit);
-        }
-
-        /// <summary>
-        /// The Charge-5 <b>Pierce</b> upgrade: whether this round may break SUPER-SHIELDED mass.
-        /// Below it armour is not a target and the round flies past it (see
-        /// <see cref="IsValidTarget"/>); at it, the sanctioned teardown in
-        /// <see cref="DestroyPrism"/> runs and the Serpent is the fleet's second force that can
-        /// take armour off, after the Rhino's energised blade.
-        /// </summary>
-        bool IsPierceUnlocked
-        {
-            get
-            {
-                var elemental = _status?.ElementalAbilityHandler;
-                return elemental != null && elemental.IsUpgradeActive(Element.Charge);
-            }
         }
 
         /// <summary>

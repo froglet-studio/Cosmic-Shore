@@ -96,6 +96,11 @@ namespace CosmicShore.ScriptableObjects
         /// editor match had not reached it by 211 s).</summary>
         public const int DefaultDustupPointTarget = 4;
 
+        /// <summary>Serpent Gulag snipe target used when <see cref="serpentGulagSnipeTarget"/> is 0. One
+        /// SNIPE - a Sniper Shot that strips a rival pilot (a Debuff-class combat hit) - is one point
+        /// (SerpentGulagScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultSerpentGulagSnipeTarget = 3;
+
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
         /// "most standing at the whistle" is the only honest end condition.</summary>
@@ -145,12 +150,12 @@ namespace CosmicShore.ScriptableObjects
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
         public const int DefaultSwitchbackGateTarget = 26;
 
-        /// <summary>Waystation course length used when <see cref="waystationRingTarget"/> is 0
-        /// (auto/default) - how many switch rings a pilot must thread, which is also how many are
-        /// LAID. The rings are dealt into CLUSTERS, so this is the total across every cluster and
-        /// the course rounds it up to a whole number of them: what a pilot flies and what their
-        /// goal row counts to are the same authority, asked twice.</summary>
-        public const int DefaultWaystationRingTarget = 15;
+        /// <summary>Waystation race length used when <see cref="waystationClusterTarget"/> is 0 - CLUSTERS, not rings:
+        /// the race is that many clusters with a Drop Tower between each pair but the last (Docs/Studios/TIGER_MOTH_TIME.md).
+        /// Five gives every intensity three towers and the long wormhole drop as the finale. The ring count the race ends
+        /// on is the course's own (towers vary with the gaps), which <c>RaceGateTurnMonitor</c> takes from the laid course.
+        /// Replaced the 15-ring target when the Drop Tower course replaced the cluster-only one (2026-11-01).</summary>
+        public const int DefaultWaystationClusterTarget = 5;
 
         /// <summary>Breakwater course length used when <see cref="breakwaterStationTarget"/> is 0
         /// (auto/default) - how many stations are LAID: a polar START GATE plus a fourteen-station
@@ -236,6 +241,18 @@ namespace CosmicShore.ScriptableObjects
         /// Read by <c>BurrowRunCourseSource</c> both to size the circuit and (through it) by the turn
         /// monitor for the finish line, so the two cannot drift.</summary>
         public const int DefaultBurrowRunGateTarget = 16;
+
+        /// <summary>Scarab Rally RACE length used when <see cref="scarabRallyGateTarget"/> is 0 - gate threadings - an OPEN chain flown once (Switchback's shape), so this is the number of rings laid. 24 ~ a 90 s experienced run at the Scarab's 216 u/s.
+        /// Read by <c>ScarabRallyController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultScarabRallyGateTarget = 24;
+
+        /// <summary>Serpent Time RACE length used when <see cref="serpentTimeGateTarget"/> is 0 - gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit.
+        /// Read by <c>SerpentTimeController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultSerpentTimeGateTarget = 16;
+
+        /// <summary>Brittle Star Time RACE length used when <see cref="brittleStarTimeGateTarget"/> is 0 - gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit.
+        /// Read by <c>BrittleStarTimeController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultBrittleStarTimeGateTarget = 16;
 
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
@@ -341,12 +358,9 @@ namespace CosmicShore.ScriptableObjects
                  "shorten it. 0 = default (26).")]
         [Min(0)] public int switchbackGateTarget = 26;
 
-        [Tooltip("Waystation: rings in the course, which is both how many a pilot must thread " +
-                 "to finish and how many are laid. They are dealt into CLUSTERS of " +
-                 "RingsPerCluster (per intensity), and the course rounds UP to a whole number " +
-                 "of clusters - a half-built cluster would end the race in the middle of one. " +
-                 "Compared against a domain's LEAD RUNNER, not a sum. 0 = default (15).")]
-        [Min(0)] public int waystationRingTarget = 15;
+        [Tooltip("Waystation: CLUSTERS in the race, with a Drop Tower in every gap but the last. The finish line is " +
+                 "every ring the course lays, towers included, measured against a domain's LEAD RUNNER. 0 = default (5).")]
+        [Min(0)] public int waystationClusterTarget = 5;
 
         [Tooltip("Breakwater: how many stations are LAID - a polar start gate plus a closed " +
                  "circuit of the rest. Each is 117-257 prisms of arena, so raising this raises " +
@@ -402,6 +416,15 @@ namespace CosmicShore.ScriptableObjects
                  "controller lays target/laps rings, so this one number is both the finish line " +
                  "and the size of the circuit. 16 = two laps of eight. 0 uses the default.")]
         [Min(0)] public int burrowRunGateTarget = 16;
+        [Tooltip("Scarab Rally: gate threadings - an OPEN chain flown once (Switchback's shape), so this is the number of rings laid. 24 ~ a 90 s experienced run at the Scarab's 216 u/s. 0 uses the default.")]
+        [Min(0)] public int scarabRallyGateTarget = 24;
+
+        [Tooltip("Serpent Time: gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit. 0 uses the default.")]
+        [Min(0)] public int serpentTimeGateTarget = 16;
+
+        [Tooltip("Brittle Star Time: gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit. 0 uses the default.")]
+        [Min(0)] public int brittleStarTimeGateTarget = 16;
+
 
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
@@ -430,6 +453,10 @@ namespace CosmicShore.ScriptableObjects
                  "Butterfly passing through your Scale Dust - is one point, summed across the " +
                  "domain's pilots. 0 = default (4).")]
         [Min(0)] public int dustupPointTarget = 4;
+
+        [Tooltip("Serpent Gulag: SNIPES a DOMAIN needs to win (race to N). One Sniper Shot that " +
+                 "strips a rival pilot is one snipe, summed across the domain's pilots. 0 = default (3).")]
+        [Min(0)] public int serpentGulagSnipeTarget = 3;
 
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
@@ -478,7 +505,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 26;
         [Min(0)] public int breakwaterStationTargetBuild = 15;
-        [Min(0)] public int waystationRingTargetBuild = 15;
+        [Min(0)] public int waystationClusterTargetBuild = 5;
 
         [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
         [Min(0)] public int skeinRingTargetBuild = 24;
@@ -490,12 +517,16 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int thresherTimeGateTargetBuild = 16;
         [Min(0)] public int wrasseRunGateTargetBuild = 16;
         [Min(0)] public int burrowRunGateTargetBuild = 16;
+        [Min(0)] public int scarabRallyGateTargetBuild = 24;
+        [Min(0)] public int serpentTimeGateTargetBuild = 16;
+        [Min(0)] public int brittleStarTimeGateTargetBuild = 16;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 500;
         [Min(0)] public int tollwayTollTargetBuild = 3;
         [Min(0)] public int wreckingBallPrismTargetBuild = 650;
         [Min(0)] public int undertowPointTargetBuild = 12;
         [Min(0)] public int dustupPointTargetBuild = 4;
+        [Min(0)] public int serpentGulagSnipeTargetBuild = 3;
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
@@ -677,14 +708,12 @@ namespace CosmicShore.ScriptableObjects
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
 
         /// <summary>
-        /// Waystation course length ("thread all N rings"): the configured value when &gt; 0,
-        /// otherwise <see cref="DefaultWaystationRingTarget"/>. Read twice on purpose - by
-        /// <c>RaceGateTurnMonitor</c> for the target and by <c>WaystationController</c> for how
-        /// many rings to deal into clusters - so the course a pilot flies and the number their
-        /// goal row counts to are the same authority.
+        /// Waystation race length in CLUSTERS: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultWaystationClusterTarget"/>. Read by <c>WaystationCourseSource</c>, which lays that many
+        /// clusters (towers between them) and reports the rings it laid as the finish line.
         /// </summary>
-        public int GetWaystationRingTarget() =>
-            waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget;
+        public int GetWaystationClusterTarget() =>
+            waystationClusterTarget > 0 ? waystationClusterTarget : DefaultWaystationClusterTarget;
 
         /// <summary>Skein course length ("thread all N rings"). Read on purpose by every party
         /// that needs it - <c>RaceGateTurnMonitor</c> for the target (through the controller),
@@ -776,6 +805,21 @@ namespace CosmicShore.ScriptableObjects
         public int GetWrasseRunGateTarget() =>
             wrasseRunGateTarget > 0 ? wrasseRunGateTarget : DefaultWrasseRunGateTarget;
 
+        /// <summary>Scarab Rally race length: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultScarabRallyGateTarget"/>.</summary>
+        public int GetScarabRallyGateTarget() =>
+            scarabRallyGateTarget > 0 ? scarabRallyGateTarget : DefaultScarabRallyGateTarget;
+
+        /// <summary>Serpent Time race length: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultSerpentTimeGateTarget"/>.</summary>
+        public int GetSerpentTimeGateTarget() =>
+            serpentTimeGateTarget > 0 ? serpentTimeGateTarget : DefaultSerpentTimeGateTarget;
+
+        /// <summary>Brittle Star Time race length: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBrittleStarTimeGateTarget"/>.</summary>
+        public int GetBrittleStarTimeGateTarget() =>
+            brittleStarTimeGateTarget > 0 ? brittleStarTimeGateTarget : DefaultBrittleStarTimeGateTarget;
+
         /// <summary>
         /// Burrow Run race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultBurrowRunGateTarget"/>. Read by
@@ -831,6 +875,14 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetDustupPointTarget() =>
             dustupPointTarget > 0 ? dustupPointTarget : DefaultDustupPointTarget;
+
+        /// <summary>
+        /// Serpent Gulag snipe target ("first domain to N snipes"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultSerpentGulagSnipeTarget"/>. Compared against a DOMAIN's summed
+        /// CombatPoints.
+        /// </summary>
+        public int GetSerpentGulagSnipeTarget() =>
+            serpentGulagSnipeTarget > 0 ? serpentGulagSnipeTarget : DefaultSerpentGulagSnipeTarget;
 
         /// <summary>
         /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
@@ -913,7 +965,6 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.AstroLeague               => GetAstroLeagueGoalLimit(),
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
-                GameModes.Waystation                => waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget,
                 GameModes.Breakwater                => GetBreakwaterCrossingTarget(),
                 GameModes.Skein                     => skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget,
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
@@ -924,12 +975,18 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ThresherTime              => GetThresherTimeGateTarget(),
                 GameModes.WrasseRun                 => GetWrasseRunGateTarget(),
                 GameModes.BurrowRun                 => GetBurrowRunGateTarget(),
+                GameModes.ScarabRally               => GetScarabRallyGateTarget(),
+                GameModes.SerpentTime               => GetSerpentTimeGateTarget(),
+                GameModes.BrittleStarTime           => GetBrittleStarTimeGateTarget(),
+                // GameModes.Waystation has no row: its finish line is the rings the course lays (towers vary with the
+                // gaps), auto-calculated from the track like a SkimRace with a 0 count.
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
                 GameModes.Dustup                    => GetDustupPointTarget(),
+                GameModes.SerpentGulag              => GetSerpentGulagSnipeTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush.
@@ -978,7 +1035,7 @@ namespace CosmicShore.ScriptableObjects
             astroLeagueGoalLimit == astroLeagueGoalLimitBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
-            waystationRingTarget == waystationRingTargetBuild &&
+            waystationClusterTarget == waystationClusterTargetBuild &&
             breakwaterStationTarget == breakwaterStationTargetBuild &&
             breakwaterLaps == breakwaterLapsBuild &&
             skeinRingTarget == skeinRingTargetBuild &&
@@ -990,12 +1047,16 @@ namespace CosmicShore.ScriptableObjects
             thresherTimeGateTarget == thresherTimeGateTargetBuild &&
             wrasseRunGateTarget == wrasseRunGateTargetBuild &&
             burrowRunGateTarget == burrowRunGateTargetBuild &&
+            scarabRallyGateTarget == scarabRallyGateTargetBuild &&
+            serpentTimeGateTarget == serpentTimeGateTargetBuild &&
+            brittleStarTimeGateTarget == brittleStarTimeGateTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
             wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
             undertowPointTarget == undertowPointTargetBuild &&
             dustupPointTarget == dustupPointTargetBuild &&
+            serpentGulagSnipeTarget == serpentGulagSnipeTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
@@ -1022,7 +1083,7 @@ namespace CosmicShore.ScriptableObjects
             astroLeagueGoalLimit = astroLeagueGoalLimitBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
-            waystationRingTarget = waystationRingTargetBuild;
+            waystationClusterTarget = waystationClusterTargetBuild;
             breakwaterStationTarget = breakwaterStationTargetBuild;
             breakwaterLaps = breakwaterLapsBuild;
             skeinRingTarget = skeinRingTargetBuild;
@@ -1034,12 +1095,16 @@ namespace CosmicShore.ScriptableObjects
             thresherTimeGateTarget = thresherTimeGateTargetBuild;
             wrasseRunGateTarget = wrasseRunGateTargetBuild;
             burrowRunGateTarget = burrowRunGateTargetBuild;
+            scarabRallyGateTarget = scarabRallyGateTargetBuild;
+            serpentTimeGateTarget = serpentTimeGateTargetBuild;
+            brittleStarTimeGateTarget = brittleStarTimeGateTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
             wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
             undertowPointTarget = undertowPointTargetBuild;
             dustupPointTarget = dustupPointTargetBuild;
+            serpentGulagSnipeTarget = serpentGulagSnipeTargetBuild;
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
@@ -1067,7 +1132,7 @@ namespace CosmicShore.ScriptableObjects
             astroLeagueGoalLimitBuild = astroLeagueGoalLimit;
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
-            waystationRingTargetBuild = waystationRingTarget;
+            waystationClusterTargetBuild = waystationClusterTarget;
             breakwaterStationTargetBuild = breakwaterStationTarget;
             breakwaterLapsBuild = breakwaterLaps;
             skeinRingTargetBuild = skeinRingTarget;
@@ -1079,12 +1144,16 @@ namespace CosmicShore.ScriptableObjects
             thresherTimeGateTargetBuild = thresherTimeGateTarget;
             wrasseRunGateTargetBuild = wrasseRunGateTarget;
             burrowRunGateTargetBuild = burrowRunGateTarget;
+            scarabRallyGateTargetBuild = scarabRallyGateTarget;
+            serpentTimeGateTargetBuild = serpentTimeGateTarget;
+            brittleStarTimeGateTargetBuild = brittleStarTimeGateTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
             wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
             undertowPointTargetBuild = undertowPointTarget;
             dustupPointTargetBuild = dustupPointTarget;
+            serpentGulagSnipeTargetBuild = serpentGulagSnipeTarget;
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;

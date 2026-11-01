@@ -1,13 +1,31 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Waystation — the Butterfly-only migration race. The course is a chain of CLUSTERS: tight
-    /// knots of switch rings, laid a FOLD apart. Inside a cluster you FLY; between clusters you
-    /// FOLD. The first domain whose lead runner threads the last ring wins.
+    /// Waystation — the Tiger Moth's Time race. The course is a chain of CLUSTERS, tight knots of switch rings, with
+    /// a DROP TOWER in every gap but the last (<see cref="WaystationTower"/>, Docs/Studios/TIGER_MOTH_TIME.md): a
+    /// staircase of short hops, each ring just past a floor plate you drop through and a pipe beyond the next press
+    /// point, so the skill is how long you hold. The last gap stays the long drop that leaves the Drop's wormhole. The
+    /// first domain whose lead runner threads the last ring wins.
+    ///
+    /// <para><b>Since 2026-11-01 the Drop Tower race IS Waystation</b> (Shombith: "make Waystation Prototype as
+    /// Waystation"). It was built as Waystation Prototype (GameModes 76, retired and reserved) beside this mode, then
+    /// folded in: this class gained the tower walls and the hop autopilot, the course source lays the towers, and
+    /// <see cref="aiFoldMinDistance"/> rose from 420 to 700 so the long-drop autopilot below stands down on every tower
+    /// link. Garrett's clusters, square exit gates and belly-aim autopilot are unchanged. The paragraphs below keep the
+    /// Butterfly- and Fold-era record.</para>
+    ///
+    /// <para><b>The walls do not change the vessel</b> (LOCKED, Shombith 2026-10-31): a wall is an ordinary environment
+    /// prism, plain or danger, and a hull that lands in or flies into one gets what any hull gets from that kind of
+    /// prism. The Drop's fall is incorporeal, so a plate costs nothing to drop through.</para>
+    ///
+    /// <para>The Fold-era design: the course is a chain of CLUSTERS, tight knots of switch rings laid a FOLD apart.
+    /// Inside a cluster you FLY; between clusters you FOLD.</para>
     ///
     /// <para>Everything about running a gate race — the broadcast, the rings, the crossing
     /// detection, the optimistic report/reconcile round trip, the AI steering and the final
@@ -79,10 +97,11 @@ namespace CosmicShore.Gameplay
         // ── The autopilot's Fold ──────────────────────────────────────────
 
         [Header("Autopilot fold")]
-        [Tooltip("Shortest gap an autopilot will spend a fold on. Under this it simply flies - a " +
-                 "fold costs the whole hold plus the wither and the bloom, so folding a short " +
-                 "gap is slower than crossing it.")]
-        [SerializeField, Min(0f)] float aiFoldMinDistance = 420f;
+        [Tooltip("Shortest gap the LONG-drop autopilot spends a drop on. Under this it leaves the ring to the hop autopilot " +
+                 "(a tower ring) or flies (a cluster ring). 700 sits above every Drop Tower link (worst 601 u, measured by " +
+                 "Tools/Build/waystation_tower_course.py's standdown check) and below the long last gap (1000 u or more); " +
+                 "it was 420 before the towers.")]
+        [SerializeField, Min(0f)] float aiFoldMinDistance = 700f;
 
         [Tooltip("Let go this many units SHORT of the ring's plane, so the hull flies through the mouth after the fold " +
                  "(a crossing inside the fold's own step is not counted - GateRaceController declines it).")]
@@ -123,6 +142,47 @@ namespace CosmicShore.Gameplay
         /// lead the pilot steers by (OverrideAimIsLead), never a place it reaches.</summary>
         const float BellyAimLead = 500f;
 
+        [Header("Drop Tower walls")]
+        [Tooltip("The prism every wall tile is laid from: the environment prism (SpawnablePrism). Authored by " +
+                 "Tools/Build/author_waystation_assets.py. Unset = no walls, and a warning.")]
+        [SerializeField] Prism wallPrefab;
+
+        [Tooltip("Every this many seconds, each plate grows ONE missing tile back, so a hole a pilot punched closes " +
+                 "before the next pilot arrives.")]
+        [SerializeField, Min(0.1f)] float wallRegrowSeconds = 1.5f;
+
+        [Header("Autopilot hops (the tower)")]
+        [Tooltip("How closely the BELLY must be on a tower ring's drop line before the autopilot presses.")]
+        [SerializeField, Range(1f, 30f)] float aiHopBellyDegrees = 8f;
+
+        [Tooltip("How far off the ring's centre (as a share of its radius) the drop line may pass when the autopilot " +
+                 "presses. The pilot cruises over the ring, so this is the press's timing window.")]
+        [SerializeField, Range(0.1f, 0.9f)] float aiHopLineShare = 0.45f;
+
+        [Tooltip("How far ahead of the press point the autopilot steers along the line it arrives on (u): it flies the " +
+                 "cruise line over the ring rather than at the ring, which sits under a plate.")]
+        [SerializeField, Min(10f)] float aiHopLookahead = 150f;
+
+        const string WallOwnerId = "WaystationTowerWall";
+
+        sealed class WallPlate
+        {
+            public readonly List<WaystationTowerTile> Tiles = new();
+            public Prism[] Pieces;
+            public readonly Trail Trail = new();
+            public int NextTile;
+        }
+
+        readonly List<WallPlate> _plates = new();
+        static readonly List<WaystationTowerTile> s_tiles = new(2048);
+        Transform _wallRoot;
+        float _nextRegrowAt;
+        bool _warnedNoPrefab;
+
+        readonly Dictionary<IPlayer, float> _hopReleaseAt = new();
+        readonly HashSet<IPlayer> _hopRolls = new();
+        readonly Dictionary<Transform, TigerMothDropExecutor> _hopExecutors = new();
+
         readonly Dictionary<IPlayer, float> _bellyAimSince = new();
         readonly Dictionary<IPlayer, Vector3> _bellyPitchNose = new();   // the held pitch-up point, once the nose was on
         readonly HashSet<IPlayer> _bellyRolls = new();                    // lining up by ROLL (the ring is abeam)
@@ -148,13 +208,19 @@ namespace CosmicShore.Gameplay
                 // A held fold outlives the whistle otherwise: the executor would keep the vessel
                 // stopped, its wings shut and its trail penned for the rest of the scene.
                 if (_aiFoldReleaseAt.Count > 0) ReleaseEveryAutopilotFold();
+                if (_hopReleaseAt.Count > 0) ReleaseEveryHop();
                 return;
             }
 
             TickAutopilotFolds();
+            TickHops();
         }
 
-        void OnDisable() => ReleaseEveryAutopilotFold();
+        void OnDisable()
+        {
+            ReleaseEveryAutopilotFold();
+            ReleaseEveryHop();
+        }
 
         void ReleaseEveryAutopilotFold()
         {
@@ -181,6 +247,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
         {
+            if (TryHopAim(pilot, out target)) return true;
             target = default;
             var status = pilot?.Vessel?.VesselStatus;
             if (status == null || !BellyAimWanted(pilot, status, out var toGate))
@@ -215,6 +282,7 @@ namespace CosmicShore.Gameplay
 
         protected override bool OverrideBellyTarget(IPlayer pilot, out Vector3 worldDirection)
         {
+            if (TryHopBelly(pilot, out worldDirection)) return true;
             worldDirection = default;
             var status = pilot?.Vessel?.VesselStatus;
             if (status == null || !_bellyRolls.Contains(pilot) || !TryGetNextGate(pilot, out var gate) || gate == null)
@@ -342,6 +410,236 @@ namespace CosmicShore.Gameplay
         void ReleaseFold(IPlayer pilot)
         {
             _aiFoldReleaseAt.Remove(pilot);
+            var handler = pilot?.Vessel?.VesselStatus?.ActionHandler;
+            if (handler == null) return;
+            if (handler.TryGetBoundAction<TigerMothDropActionSO>(out _, out var input))
+                handler.StopShipControllerActionsReplicated(input);
+        }
+
+        // ── Lifecycle ─────────────────────────────────────────────────────
+
+        public override void OnNetworkDespawn()
+        {
+            ReleaseEveryHop();
+            ClearWalls();
+            base.OnNetworkDespawn();
+        }
+
+        // ── Walls (every peer) ────────────────────────────────────────────
+
+        /// <summary>Lay the tower walls from the course this peer was sent, behind the connecting panel.</summary>
+        protected override void OnCourseRaised()
+        {
+            base.OnCourseRaised();
+            ClearWalls();
+            if (!wallPrefab)
+            {
+                if (!_warnedNoPrefab)
+                {
+                    _warnedNoPrefab = true;
+                    CSDebug.LogWarning($"[{ModeName}] wallPrefab is unset - the towers stand with no walls. Re-run " +
+                                       "Tools/Build/author_waystation_assets.py.");
+                }
+                return;
+            }
+
+            WaystationTower.Walls(_course, Intensity, s_tiles);
+            if (s_tiles.Count == 0) return;
+            _wallRoot = new GameObject($"{ModeName}Walls").transform;
+            _wallRoot.SetParent(transform, false);   // the rings' frame: the course is laid in the controller's space
+
+            WallPlate plate = null;
+            for (int i = 0; i < s_tiles.Count; i++)
+            {
+                var tile = s_tiles[i];
+                if (plate == null || plate.Tiles[0].Gate != tile.Gate || plate.Tiles[0].Wall != tile.Wall)
+                {
+                    plate = new WallPlate();
+                    _plates.Add(plate);
+                }
+                plate.Tiles.Add(tile);
+            }
+            foreach (var p in _plates)
+            {
+                p.Pieces = new Prism[p.Tiles.Count];
+                for (int t = 0; t < p.Tiles.Count; t++) LayTile(p, t, forReveal: true);
+            }
+            _nextRegrowAt = Time.time + wallRegrowSeconds;
+        }
+
+        void LayTile(WallPlate plate, int index, bool forReveal)
+        {
+            var tile = plate.Tiles[index];
+            var prism = PrismTrailBuilder.LayOne(wallPrefab,
+                new PrismLay(new SpawnPoint(tile.Position, tile.Rotation, tile.Scale), Domains.Blue,
+                             tile.Danger ? PrismKind.Danger : PrismKind.Plain),
+                _wallRoot, plate.Trail, WallOwnerId, watchForReveal: forReveal);
+            if (!prism) return;
+            if (!forReveal) prism.CompletesAsLiveRibbon = true;   // a regrown tile must not hold the arena-ready gate
+            plate.Pieces[index] = prism;
+        }
+
+        static bool IsStanding(Prism prism) =>
+            prism && !prism.destroyed && prism.ownerID == WallOwnerId && prism.Domain == Domains.Blue;
+
+        /// <summary>Each plate grows one missing tile back per <see cref="wallRegrowSeconds"/>, walking its tiles.</summary>
+        void TickWallRegrow()
+        {
+            if (_plates.Count == 0 || !wallPrefab || Time.time < _nextRegrowAt) return;
+            _nextRegrowAt = Time.time + wallRegrowSeconds;
+            foreach (var plate in _plates)
+            {
+                for (int step = 0; step < plate.Pieces.Length; step++)
+                {
+                    int t = (plate.NextTile + step) % plate.Pieces.Length;
+                    if (IsStanding(plate.Pieces[t])) continue;
+                    LayTile(plate, t, forReveal: false);
+                    plate.NextTile = t + 1;
+                    break;
+                }
+            }
+        }
+
+        void ClearWalls()
+        {
+            foreach (var plate in _plates)
+            {
+                if (plate.Pieces == null) continue;
+                foreach (var piece in plate.Pieces)
+                    if (IsStanding(piece) && !EnvironmentPrismPool.TryRelease(piece))
+                        Destroy(piece.gameObject);
+            }
+            _plates.Clear();
+            if (_wallRoot && _wallRoot.childCount == 0) Destroy(_wallRoot.gameObject);
+            _wallRoot = null;
+        }
+
+        // GateRaceController.Update runs the race and a subclass must not declare Update; LateUpdate is free.
+        void LateUpdate()
+        {
+            if (!IsSpawned || gameData == null || !gameData.IsTurnRunning) return;
+            TickWallRegrow();
+        }
+
+        // ── The hop autopilot (server) ────────────────────────────────────
+
+        /// <summary>The pilot's next gate when it is a tower ring, in world space; false otherwise.</summary>
+        bool TryNextTowerRing(IPlayer pilot, out int index, out Vector3 ring, out Vector3 drop, out Vector3 press,
+                              out Vector3 cruise)
+        {
+            index = -1;
+            ring = drop = press = cruise = default;
+            if (pilot?.RoundStats == null || gameData == null) return false;
+            index = pilot.RoundStats.SwitchesThreaded;
+            if (index < 1 || index >= _course.Count) return false;
+            var s = WaystationTowerSettings.ForIntensity(Intensity);
+            if (!WaystationTower.IsTowerRing(_course[index], s)) return false;
+
+            ring = transform.TransformPoint(_course[index].Position);
+            drop = transform.TransformDirection(_course[index].Axis);
+            press = transform.TransformPoint(WaystationTower.PressOf(_course, index, s));
+            Vector3 arrive = transform.TransformDirection(_course[index - 1].Axis);
+            cruise = RaceCourseGeometry.SafeNormalize(Vector3.ProjectOnPlane(arrive, drop),
+                                                      RaceCourseGeometry.Perpendicular(drop));
+            return true;
+        }
+
+        /// <summary>
+        /// On a tower, fly the cruise line the ring hangs under - not at the ring, which sits behind a floor plate - and
+        /// roll the belly onto the ring's drop line (<see cref="TryHopBelly"/>). False on any other ring, which the belly
+        /// aim below answers.
+        /// </summary>
+        bool TryHopAim(IPlayer pilot, out Vector3 target)
+        {
+            target = default;
+            var status = pilot?.Vessel?.VesselStatus;
+            if (status != null && TryNextTowerRing(pilot, out _, out _, out _, out Vector3 press, out Vector3 cruise))
+            {
+                Vector3 hull = status.Transform.position;
+                float along = Mathf.Max(0f, Vector3.Dot(hull - press, cruise));
+                target = press + cruise * (along + aiHopLookahead);
+                _hopRolls.Add(pilot);
+                return true;
+            }
+            if (pilot != null) _hopRolls.Remove(pilot);
+            return false;
+        }
+
+        bool TryHopBelly(IPlayer pilot, out Vector3 worldDirection)
+        {
+            worldDirection = default;
+            return _hopRolls.Contains(pilot) && TryNextTowerRing(pilot, out _, out _, out worldDirection, out _, out _);
+        }
+
+        void TickHops()
+        {
+            float now = Time.time;
+            var players = gameData.Players;
+            if (players == null) return;
+            var s = WaystationTowerSettings.ForIntensity(Intensity);
+
+            for (int i = 0; i < players.Count; i++)
+            {
+                var pilot = players[i];
+                var status = pilot?.Vessel?.VesselStatus;
+                var handler = status?.ActionHandler;
+                if (handler == null) continue;
+
+                // An AUTOPILOT, not merely an AI player. TryGetComponent, never VesselStatus.AIPilot: that getter ADDS an
+                // autopilot, and this loop reads every player every server tick (vessel-ai skill §1.7).
+                if (!(status is Component statusComponent) || !statusComponent.TryGetComponent(out AIPilot autopilot)
+                    || !autopilot.AutoPilotEnabled)
+                {
+                    if (_hopReleaseAt.ContainsKey(pilot)) ReleaseHop(pilot);
+                    continue;
+                }
+
+                if (_hopReleaseAt.TryGetValue(pilot, out float releaseAt))
+                {
+                    if (now >= releaseAt) ReleaseHop(pilot);
+                    continue;
+                }
+
+                if (!TryNextTowerRing(pilot, out int index, out Vector3 ring, out Vector3 drop, out _, out _)) continue;
+                if (!handler.TryGetBoundAction<TigerMothDropActionSO>(out _, out var input)) continue;
+                var executor = ExecutorOf(status.Transform);
+                if (!executor || executor.IsDropping || !executor.IsReady) continue;
+
+                Transform hull = status.Transform;
+                if (TigerMothDropMath.BellyAimError(hull.rotation, drop) > aiHopBellyDegrees) continue;
+                Vector3 toRing = ring - hull.position;
+                float along = Vector3.Dot(toRing, drop);
+                if (along <= 0f) continue;
+                if (Vector3.ProjectOnPlane(toRing, drop).magnitude > _course[index].Radius * aiHopLineShare) continue;
+
+                // Through the ring to the middle of the window beyond it: the plunge ring sits deeper, and the same
+                // margin past it lands the hull in the plunge's own clear water.
+                float travel = along + (s.WindowCentre - s.RingDepth);
+                _hopReleaseAt[pilot] = now + WaystationTower.HoldForTravel(travel);
+                handler.PerformShipControllerActionsReplicated(input);
+            }
+        }
+
+        TigerMothDropExecutor ExecutorOf(Transform hull)
+        {
+            if (!hull) return null;
+            if (_hopExecutors.TryGetValue(hull, out var cached) && cached) return cached;
+            var found = hull.GetComponentInChildren<TigerMothDropExecutor>(true);
+            _hopExecutors[hull] = found;
+            return found;
+        }
+
+        void ReleaseEveryHop()
+        {
+            foreach (var pilot in new List<IPlayer>(_hopReleaseAt.Keys)) ReleaseHop(pilot);
+            _hopReleaseAt.Clear();
+            _hopRolls.Clear();
+            _hopExecutors.Clear();
+        }
+
+        void ReleaseHop(IPlayer pilot)
+        {
+            _hopReleaseAt.Remove(pilot);
             var handler = pilot?.Vessel?.VesselStatus?.ActionHandler;
             if (handler == null) return;
             if (handler.TryGetBoundAction<TigerMothDropActionSO>(out _, out var input))

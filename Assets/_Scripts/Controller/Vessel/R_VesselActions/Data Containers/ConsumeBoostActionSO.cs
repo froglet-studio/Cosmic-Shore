@@ -7,9 +7,11 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Serpent's SOLID FUEL PELLETS (Time). One press burns one pellet - <see cref="ResourceCost"/>
     /// of the fuel resource at <see cref="ResourceIndex"/> - and burns overlap, each adding the same
-    /// increment of speed for its own duration. The fuel resource IS the tank: its authored
-    /// <c>resourceGainRate</c> is the refill rate and its <c>maxAmount / resourceCost</c> is the
-    /// pellet capacity (4 on the shipped Serpent). Behaviour lives on
+    /// increment of speed for its own duration. The fuel resource IS the tank: its
+    /// <c>maxAmount / resourceCost</c> is the pellet capacity (4 on the shipped Serpent). It does NOT
+    /// refill on a clock (the resource's <c>resourceGainRate</c> is 0): a pellet comes back only while
+    /// the Serpent's own wall is eating its own trail, one pellet per
+    /// <see cref="SecondsOfWallBuildingPerPellet"/> of that building. Behaviour lives on
     /// <see cref="ConsumeBoostActionExecutor"/>; this asset is stateless and shared.
     /// See <c>R_VesselActions/SERPENT_FUEL_PELLETS.md</c>.
     /// </summary>
@@ -23,7 +25,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float boostMultiplier = 3f;
 
         [Tooltip("Seconds one pellet burns at the resting Time level, before Time scales it.")]
-        [SerializeField] private float boostDuration = 4f;
+        [SerializeField] private float boostDuration = 6f;
 
         /// <summary>TIME -> burn duration: x1 at the resting level, x1.6 at level 10, floored at x0.25.
         /// Migrated verbatim from the retired ElementalAbilityMapSO generic
@@ -45,7 +47,26 @@ namespace CosmicShore.Gameplay
                  "the resource's maxAmount divided by this - 0.25 of a 1.0 tank is four pellets.")]
         [SerializeField] private float resourceCost = 0.25f;
 
+        [Tooltip("Time 5: the pellet's fuel cost once the upgrade is active (Garrett, 2026-10-30: " +
+                 "\"Time L5 lets give players a fifth pellet\"). 0.2 of a 1.0 tank is five pellets; " +
+                 "each still burns and boosts exactly as before. 0 = no upgrade (the base cost holds).")]
+        [SerializeField, Min(0f)] private float upgradeResourceCost = 0.2f;
+
+        [Header("Refill - the wall eats the trail")]
+        [Tooltip("Seconds of the Serpent's wall eating the Serpent's OWN trail that refill one pellet " +
+                 "(Garrett, 2026-10-31: \"1 pellet for 2 seconds of building\"). Flying out at cruise " +
+                 "in plane with a wall pulls the trail into it; nothing else refills the tank.")]
+        [SerializeField, Min(0.1f)] private float secondsOfWallBuildingPerPellet = 2f;
+
+        [Tooltip("Longest gap between two of the Serpent's own trail prisms landing in its wall that " +
+                 "still counts as the wall building. A longer gap starts a new stretch of building " +
+                 "and credits nothing for the pause. Keep it at or above the wall's steal sweep " +
+                 "interval (SeedWallAction.stealSweepInterval, 0.3 s), or a steady stream reads as stalls.")]
+        [SerializeField, Min(0.05f)] private float wallBuildingGapSeconds = 0.4f;
+
         public float BoostMultiplier => boostMultiplier;
+        public float SecondsOfWallBuildingPerPellet => secondsOfWallBuildingPerPellet;
+        public float WallBuildingGapSeconds => wallBuildingGapSeconds;
         public float BoostDuration => boostDuration;
 
         /// <summary>The live TIME multiplier on one pellet's burn duration.</summary>
@@ -53,6 +74,15 @@ namespace CosmicShore.Gameplay
             => timeDurationMultiplier.EvaluateLive(status);
         public int ResourceIndex => resourceIndex;
         public float ResourceCost => resourceCost;
+        public float UpgradeResourceCost => upgradeResourceCost;
+
+        /// <summary>The pellet's cost for this pilot right now: the upgrade's while Time 5 is active.</summary>
+        public float ResourceCostFor(IVesselStatus status)
+        {
+            if (upgradeResourceCost <= 0f) return resourceCost;
+            var elemental = status?.ElementalAbilityHandler;
+            return elemental != null && elemental.IsUpgradeActive(Element.Time) ? upgradeResourceCost : resourceCost;
+        }
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<ConsumeBoostActionExecutor>()?.Consume(this, vesselStatus);

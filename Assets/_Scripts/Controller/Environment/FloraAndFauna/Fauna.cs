@@ -1005,13 +1005,19 @@ namespace CosmicShore.Gameplay
         {
             RestoreSpindle();   // a pooled body is measured from the prefab's seats, never its last life's
 
+            // the body is the skin with the most vertices; where several share one mesh (a body built of braids, the
+            // /fauna-creation kit's), the one that spans furthest in the world - the spine
             Component body = null;
+            float bodySpan = 0f;
             var skins = SpindleMeshes();
             _authoredSpindleMeshes ??= new Dictionary<Component, Mesh>();
             foreach (var skin in skins)
             {
                 if (!_authoredSpindleMeshes.ContainsKey(skin)) _authoredSpindleMeshes[skin] = MeshOf(skin);
-                if (!body || _authoredSpindleMeshes[skin].vertexCount > _authoredSpindleMeshes[body].vertexCount) body = skin;
+                var m = _authoredSpindleMeshes[skin];
+                float span = m ? RestMeshToWorld(skin, m).MultiplyVector(m.bounds.size).magnitude : 0f;
+                int count = m ? m.vertexCount : 0, bodyCount = body ? _authoredSpindleMeshes[body].vertexCount : -1;
+                if (!body || count > bodyCount || (count == bodyCount && span > bodySpan)) { body = skin; bodySpan = span; }
             }
             if (!body) return;
 
@@ -1062,13 +1068,13 @@ namespace CosmicShore.Gameplay
                 int host = -1; float nearest = float.MaxValue;
                 for (int h = 0; h < hosts.Count; h++)
                 {
-                    var toMesh = hosts[h].toWorld.inverse;
-                    var p = toMesh.MultiplyPoint3x4(centre);
-                    float unit = ((Vector3)hosts[h].toWorld.GetColumn(0)).magnitude;
+                    // measured in the WORLD: a braid stretched along its length only (the shipped Branch, the tadpole's,
+                    // a /fauna-creation body) has no single unit, and one axis's would misjudge the nearest host
+                    var toWorld = hosts[h].toWorld;
                     var verts = hosts[h].spindle.Vertices;
                     for (int i = 0; i < verts.Length; i++)
                     {
-                        float d = (verts[i] - p).sqrMagnitude * unit * unit;
+                        float d = (toWorld.MultiplyPoint3x4(verts[i]) - centre).sqrMagnitude;
                         if (d < nearest) { nearest = d; host = h; }
                     }
                 }
@@ -1078,7 +1084,8 @@ namespace CosmicShore.Gameplay
                 var local = worldToMesh.MultiplyPoint3x4(centre);
                 hp.transform.position = meshToWorld.MultiplyPoint3x4(seat.Map.Map(local) + seat.Shift);
 
-                if (IsAuthoredDanger(hp)) continue;   // a tooth keeps its size, at its new seat (never a Charge body's armed prism)
+                // every prism is refit, authored danger too: "the stinger can thin on space. the stinger is just a danger
+                // prism" (Garrett 2026-11-01). A tooth or a stinger is a prism like any other; there is no danger exception.
 
                 var authored = hp.AuthoredScale;
                 var parent = hp.transform.parent.localToWorldMatrix;

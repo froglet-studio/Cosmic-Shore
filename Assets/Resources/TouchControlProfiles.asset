@@ -218,7 +218,7 @@ MonoBehaviour:
     glyphs:
     - element: 1
       glyph: 1
-    - element: 2
+    - element: 3
       glyph: 2
     coreGlyphs: []
   - vessel: 4

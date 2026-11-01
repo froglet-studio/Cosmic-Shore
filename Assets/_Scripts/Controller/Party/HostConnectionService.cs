@@ -93,6 +93,15 @@ namespace CosmicShore.Gameplay
         /// See Docs/PartySystem/SPECTATOR.md.
         /// </summary>
         private const string PARTY_SESSION_KEY       = "partySession";
+        /// <summary>
+        /// "1" once this player's lava-lamp menu has been on screen in this Play (<see cref="LavaLampPresence"/>),
+        /// empty before. A player is LISTED online only with it: one who is still booting signed into the
+        /// presence lobby seconds before their menu was up, every other player saw their name, and an invite or
+        /// a join sent to them in that window went nowhere (the four-player test of 2026-10-30). Seeded empty by
+        /// <see cref="PresenceLobbyService.BuildLocalPlayerProperties"/> and carried across every lobby rejoin by
+        /// <see cref="BuildLivePresenceProperties"/>, so a converge migration never hides a player who is up.
+        /// </summary>
+        internal const string READY_KEY             = "ready";
 
         // The HOST's clock starts at SEND, while the recipient's starts when their lobby poll
         // OBSERVES the invite - a refresh interval plus RTT plus any 429 backoff later. At 10s
@@ -230,6 +239,7 @@ namespace CosmicShore.Gameplay
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
         private string _publishedPartySessionId = "<UNSET>";
+        private bool?  _publishedReady;
         // Identity (displayName/avatarId) rides the same change-gated per-tick
         // publish so a rename is GUARANTEED to reach the lobby even when the
         // event-driven RepublishLocalIdentityAsync no-ops (lobby ref null during
@@ -380,6 +390,7 @@ namespace CosmicShore.Gameplay
             // [Inject] fields are populated by Reflex between Awake and Start.
             // Do not access service fields here - use Start() instead.
             SceneManager.sceneLoaded += OnSceneLoaded;
+            LavaLampPresence.Shown   += HandleLavaLampShown;
 
             // Block 5 step 9: leave explicitly on quit and background (the handlers read the services only
             // when they run, by which time Reflex has filled them).
@@ -449,6 +460,9 @@ namespace CosmicShore.Gameplay
             string partySessionId = ResolvePublishedPartySessionId();
             if (!string.IsNullOrEmpty(partySessionId))
                 live[PARTY_SESSION_KEY] = partySessionId;
+
+            if (LavaLampPresence.IsShown)
+                live[READY_KEY] = "1";
 
             return live;
         }
@@ -522,6 +536,7 @@ namespace CosmicShore.Gameplay
 
             // Unsubscribes are no-ops if we never subscribed.
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            LavaLampPresence.Shown   -= HandleLavaLampShown;
             ApplicationLifecycleManager.OnAppQuitRequested -= HandleAppQuitRequested;
             ApplicationLifecycleManager.OnAppPaused        -= HandleAppPaused;
             if (authenticationDataVariable != null)
@@ -2048,6 +2063,9 @@ namespace CosmicShore.Gameplay
             foreach (var p in _lobbyService.ActiveLobby.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
+                // Still booting (no lava lamp yet): not listed. Read as absent, so a player whose rejoin
+                // briefly dropped the flag is kept by the same two-read rule as a short read.
+                if (!IsListedOnline(p)) continue;
                 freshPlayerIds.Add(p.Id);
 
                 var playerData = ReadOnlinePlayerData(p);
@@ -2123,6 +2141,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Whether a presence-lobby player belongs on the ONLINE list: their game is up (READY_KEY). Pure on the
+        /// player's properties, so it is tested without a lobby.
+        /// </summary>
+        internal static bool IsListedOnline(IReadOnlyPlayer p) =>
+            p?.Properties != null &&
+            p.Properties.TryGetValue(READY_KEY, out var ready) &&
+            ready?.Value == "1";
+
         private bool ContainsOnlinePlayer(string playerId)
         {
             foreach (var p in connectionData.OnlinePlayers)
@@ -2155,6 +2182,9 @@ namespace CosmicShore.Gameplay
             string partySessionId = string.Empty;
             if (p.Properties.TryGetValue(PARTY_SESSION_KEY, out var ps))
                 partySessionId = ps.Value ?? string.Empty;
+            // A session a join on this machine already found dead (its host froze past Relay's limit or quit, and the
+            // row outlived it) is offered to nobody here: no Join, Spectate or Rejoin into it (DeadPartySessions).
+            partySessionId = DeadPartySessions.Live(partySessionId);
 
             return new PartyPlayerData(p.Id, displayName, avatarId, partyCount, partyMax, matchName, partySessionId);
         }
@@ -2360,9 +2390,15 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(localId))
                 return;
 
+            // The session is read AFTER the refresh's await: a join or leave that started meanwhile has already let it go
+            // (belac, 2026-10-30: a NullReferenceException in SyncFromSession 0.1 s after each InParty->JoiningParty).
+            // Nothing to reconcile then - the transition owns the roster.
+            var session = _partySessionService.ActiveSession;
+            if (session == null) return;
+
             _partySessionService.TakeDepartures(_partyDepartures);
             var joinedPlayerIds = _memberService.SyncFromSession(
-                _partySessionService.ActiveSession, localId, _partyDepartures, serverRead);
+                session, localId, _partyDepartures, serverRead);
 
             foreach (var joinedId in joinedPlayerIds)
                 await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join", callerHoldsLobbyMutex: true);   // RefreshPartyMembersAsync always runs under the lobby mutex
@@ -2664,12 +2700,14 @@ namespace CosmicShore.Gameplay
             string currentName   = connectionData.LocalDisplayName ?? "Pilot";
             int    currentAvatar = connectionData.LocalAvatarId;
             string currentSession = ResolvePublishedPartySessionId();
+            bool   currentReady   = LavaLampPresence.IsShown;
 
             if (currentCount   == _publishedPartyCount &&
                 currentMatch   == _publishedMatchName &&
                 currentName    == _publishedDisplayName &&
                 currentAvatar  == _publishedAvatarId &&
-                currentSession == _publishedPartySessionId) return;
+                currentSession == _publishedPartySessionId &&
+                currentReady   == _publishedReady) return;
 
             try
             {
@@ -2690,6 +2728,9 @@ namespace CosmicShore.Gameplay
                 // The joinable/spectatable session id - see PARTY_SESSION_KEY.
                 lobby.CurrentPlayer.SetProperty(PARTY_SESSION_KEY,
                     new PlayerProperty(currentSession ?? string.Empty, VisibilityPropertyOptions.Public));
+                // Listed online from here on - see READY_KEY.
+                lobby.CurrentPlayer.SetProperty(READY_KEY,
+                    new PlayerProperty(currentReady ? "1" : string.Empty, VisibilityPropertyOptions.Public));
 
                 await _propertyWriter.SaveAsync(lobby);
                 _publishedPartyCount     = currentCount;
@@ -2697,6 +2738,7 @@ namespace CosmicShore.Gameplay
                 _publishedDisplayName    = currentName;
                 _publishedAvatarId       = currentAvatar;
                 _publishedPartySessionId = currentSession;
+                _publishedReady          = currentReady;
             }
             catch (Exception e)
             {
@@ -2935,6 +2977,9 @@ namespace CosmicShore.Gameplay
         }
 
         private void HandleGameLaunch() => PublishPresenceImmediateAsync().Forget();
+
+        /// <summary>The lava lamp is up: publish READY_KEY now so the other players list us at once.</summary>
+        private void HandleLavaLampShown() => PublishPresenceImmediateAsync().Forget();
 
         /// <summary>
         /// Block 5 step 6: republish when the party roster moves. Subscribed once; the list is a project
