@@ -80,8 +80,11 @@ for i in range(1, 5):
 # the plate's container and what it already carries (edited in place, never minted)
 CONTAINER_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
                   "ScarabCavitationExplosionImpactorDataContainer.asset")
-EXISTING["ScarabCavitationDebuffEffect"] = lib.existing_guid(
-    "Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabCavitationDebuffByExplosionEffect.asset")
+# The plate's debuff is the Scarab-only, Charge-scaled shove debuff since Garrett's recut (e846e71e,
+# SCARAB.md section 7 RECUT 2026-10-29) replaced ScarabCavitationDebuffByExplosionEffect in this container.
+# The container on disk is the source of truth; this generator follows it.
+EXISTING["ScarabPlateDebuffEffect"] = lib.existing_guid(
+    "Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabShoveDebuffByExplosionEffect.asset")
 EXISTING["ScarabBallForgeEffect"] = lib.existing_guid(
     "Assets/_SO_Assets/Effects/Explosion Crystal Effects/ScarabBallForgeByExplosionEffect.asset")
 # the SOAP channel a landed vessel-vs-vessel hit travels on
@@ -148,7 +151,7 @@ g.emit_asset("Assets/_SO_Assets/Effects/Explosion Crystal Effects/ScarabCavitati
 g.emit(CONTAINER_PATH,
        lib.header_for(EXISTING["ExplosionImpactorDataContainerSO"], "ScarabCavitationExplosionImpactorDataContainer") +
        f"""  vesselExplosionEffects:
-  - {{fileID: 11400000, guid: {EXISTING['ScarabCavitationDebuffEffect']}, type: 2}}
+  - {{fileID: 11400000, guid: {EXISTING['ScarabPlateDebuffEffect']}, type: 2}}
   - {{fileID: 11400000, guid: {G_ASSET['VesselCombatHitByCavitation']}, type: 2}}
   explosionPrismEffects: []
   explosionCrystalEffects:
@@ -326,7 +329,7 @@ if sc.count("  - vesselClass: 12\n") != 4 or "  - vesselClass: 2\n" in sc:
     errors.append("cloned scene does not carry exactly 4 Scarab AI templates")
 
 cont = g.files[CONTAINER_PATH]
-for name, gd in (("cavitation debuff", EXISTING["ScarabCavitationDebuffEffect"]),
+for name, gd in (("plate (shove) debuff", EXISTING["ScarabPlateDebuffEffect"]),
                  ("combat-hit report", G_ASSET["VesselCombatHitByCavitation"]),
                  ("ball forge", EXISTING["ScarabBallForgeEffect"]),
                  ("wither-lifeform kill", G_ASSET["ScarabCavitationWitherLifeformEffect"])):

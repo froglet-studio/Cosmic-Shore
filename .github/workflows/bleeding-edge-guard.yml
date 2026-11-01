@@ -251,12 +251,16 @@ jobs:
       # The call-to-action badge surface is retired (F7). This fails if any of it comes
       # back - the components, the indicator objects, or the two prefabs.
       - name: Check the call-to-action surface stays retired
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
         run: python3 Tools/Build/retire_call_to_action.py --check
 
       # JetBrains Junie reads skills only from .junie/skills, which is a symlink to
       # .claude/skills. A real directory there is a second hand-maintained copy, and
       # the last one drifted 3,920 diff lines before anybody noticed. See AGENTS.md.
       - name: Check .junie/skills is a link, not a copy
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
         run: python3 Tools/Build/check_junie_skills.py
 
       # Authoritative --check gates for shader families the C# clock validator
@@ -266,6 +270,8 @@ jobs:
       # No Unity licence; seconds. A graph revert that the edit-mode suite would
       # also catch still fails here on a machine with no Editor.
       - name: Check prism shader wiring
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
           python3 Tools/Shaders/wire_prism_backface_fade.py --check

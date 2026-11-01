@@ -283,6 +283,8 @@ jobs:
         run: bash Tools/CI/check_generators.sh
 
       - name: Check prism shader wiring
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
           python3 Tools/Shaders/wire_prism_backface_fade.py --check

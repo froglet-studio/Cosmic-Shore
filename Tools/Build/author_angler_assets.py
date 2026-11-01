@@ -193,6 +193,25 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": I.guid_for("Angler_Command.png"
              "586d56db81bb568c940094830cd59abb": I.guid_for("Angler_Lure.png"),
              "669089ec7ad29ed295eccc53d8615225": I.guid_for("Angler_Tame.png")}
 CARD_ACTIVE, CARD_INACTIVE = I.guid_for(I.CARD_ACTIVE), I.guid_for(I.CARD_INACTIVE)
+# The four ability cards the icon kit draws from parts (Charge Lock-on, Mass Lure, Space Paint, Time Dash), keyed by the
+# part-name prefix under AbilityIcons/Angler/Parts. The guids are read from the parts' .metas, so the icon kit owns them.
+ICON_PARTS_DIR = A("_Graphics", "Icons", "AbilityIcons", "Angler", "Parts")
+ICON_KIT_CARDS = ("Lock", "Lure", "Paint", "Dash")
+
+
+def icon_kit_cards_missing(hud: str) -> "dict[str, bool]":
+    """card -> True when the HUD variant references none of that card's part sprites."""
+    out = {}
+    for card in ICON_KIT_CARDS:
+        guids = set()
+        if os.path.isdir(ICON_PARTS_DIR):
+            for name in os.listdir(ICON_PARTS_DIR):
+                if name.startswith(f"Angler_{card}") and name.endswith(".png.meta"):
+                    m = re.search(r"^guid: ([0-9a-f]{32})", open(os.path.join(ICON_PARTS_DIR, name), encoding="utf-8").read(), re.M)
+                    if m:
+                        guids.add(m.group(1))
+        out[card] = not any(f"guid: {g}, type: 3}}" in hud for g in guids)
+    return out
 # the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
 # names a new PNG md5("cosmic-shore-card:" + its repo path); Angler.png / Angler_Inactive.png keep the guids above
 def _model_card(rel):
@@ -727,8 +746,13 @@ def check(files: "dict[str, str]") -> "list[str]":
         for (_, field, _, _), renamed in zip(GAUGES, ("chargeGauge", "massGauge", "spaceGauge", "timeGauge")):
             # the round-2 key until Unity re-saves the variant, the element-named one after (FormerlySerializedAs)
             need(re.search(r"  (%s|%s): \{fileID: [1-9]\d*\}" % (field, renamed), hud), f"HUD view field {renamed} is not wired")
-        for old, new in ICON_SWAP.items():
-            need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+        # The Stoat's four icons must be gone. What replaces them is the icon kit's, not this tool's: since the 2026-10-31
+        # recut (#1649-#1653, Tools/Build/icon_kit/specs/angler.py) each card is drawn from its parts in
+        # AbilityIcons/Angler/Parts, so ICON_SWAP's flat Angler_*.png only bootstraps a variant built from scratch.
+        for old in ICON_SWAP:
+            need(old not in hud, f"the Stoat's HUD icon {old} is still on the Angler's HUD")
+        for card, missing in icon_kit_cards_missing(hud).items():
+            need(not missing, f"the {card} card carries none of its icon-kit parts (AbilityIcons/Angler/Parts/Angler_{card}*.png)")
         need(f"  seedSprite: {{fileID: 21300000, guid: {SEED_SPRITE}, type: 3}}\n" in hud,
              "AnglerHUDView.seedSprite is not wired (the omni card's seed, round 4)")
 
@@ -824,6 +848,16 @@ def author() -> None:
             print("registered in", os.path.relpath(path, ROOT))
 
 
+def _strip_card_parts(hud: str, card: str) -> str:
+    """The HUD with every sprite of one icon-kit card swapped for a guid no asset carries (a negative control)."""
+    for name in os.listdir(ICON_PARTS_DIR):
+        if name.startswith(f"Angler_{card}") and name.endswith(".png.meta"):
+            m = re.search(r"^guid: ([0-9a-f]{32})", open(os.path.join(ICON_PARTS_DIR, name), encoding="utf-8").read(), re.M)
+            if m:
+                hud = hud.replace(m.group(1), "0" * 32)
+    return hud
+
+
 def self_test() -> int:
     files = read_all()
     base = check(files)
@@ -847,6 +881,8 @@ def self_test() -> int:
         "the element map drifted": (MAP, lambda t: t.replace("Input: 7", "Input: 14")),
         "the combat-hit channel unwired": (PREFAB, lambda t: t.replace(f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}", "  onCombatHitLanded: {fileID: 0}")),
         "the seed sprite unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  seedSprite: .*\n", "", t)),
+        "a Stoat icon back on the HUD": (HUD_VARIANT_PATH, lambda t: t + f"  m_Sprite: {{fileID: 21300000, guid: {next(iter(ICON_SWAP))}, type: 3}}\n"),
+        "the Paint card's parts gone": (HUD_VARIANT_PATH, lambda t: _strip_card_parts(t, "Paint")),
         "the camera back in": (CAMERA, lambda t: t.replace(f"z: -{CHASE_BACK}", "z: -40")),
         "the dash unbound": (PREFAB, lambda t: t.replace("  - InputEvent: 7\n", "  - InputEvent: 13\n")),
         "the recall bound again": (PREFAB, lambda t: t.replace("  _resourceEventClassActions:", "  - InputEvent: 14\n    ShipActions: []\n  _resourceEventClassActions:", 1)),

@@ -107,6 +107,9 @@ from CI run 41336210737.
 - Every job warns that its actions target Node.js 20 (`actions/checkout@v4`, `setup-dotnet@v4`, `setup-python@v5`,
   `upload-artifact@v4`) and are forced onto Node 24. Nothing breaks today.
 - The bleeding-edge guard's `Unity compile` job and Unity CI's `unity` job are skipped on every run (no runner).
+- In the guard, the checks after the generator step (call-to-action, `.junie`, prism shader wiring) were skipped
+  whenever it failed; Unity CI's prism step likewise. They now run with `if: ${{ !cancelled() }}` (on
+  `claude/ci-runs-failing-i6u77f`).
 
 ## 4. What it takes to go green, in order
 
@@ -120,8 +123,15 @@ from CI run 41336210737.
    ran all 60 and named all four, each with its own annotation. The guard's half runs only on a bleeding-edge push.
 2. **Meerkat:** restore `onCombatHitLanded` to `Event_CombatHitStats` in `MeerkatWormholeConfig.asset`. This is a
    behaviour bug, not just drift. Owner: Yash.
-3. **Angler:** update `ICON_SWAP` / the HUD check to the recut icons. Owner: the icon session's author with Garrett.
-4. **Undertow:** Yash and Garrett pick the container's first vessel effect, then the generator emits that one.
+3. **Angler:** *done on `claude/ci-runs-failing-i6u77f` (Shombith's call, 2026-11-01).* The HUD check no longer
+   expects the flat `Angler_*.png` icons from before the recut. It requires that the Stoat's four icons are gone and
+   that each of the four icon-kit cards (Lock, Lure, Paint, Dash) carries its own parts from
+   `AbilityIcons/Angler/Parts`, reading their guids from the parts' `.meta` files, so the icon kit owns them. Two new
+   negative controls in `--self-test` (27/27 fire).
+4. **Undertow:** *done on `claude/ci-runs-failing-i6u77f` (Shombith's call, 2026-11-01: the asset is current, the
+   generator was out of date).* The generator now emits Garrett's recut debuff (`ScarabShoveDebuffByExplosionEffect`) as
+   the plate's first effect, so the container on disk is left as it is. Negative control: putting the old debuff back
+   into the asset makes `--check` fail.
 5. **Regatta:** re-derive the starting elements (`regatta_balance.py`), or settle the Serpent's place on the Regatta
    card with its owner.
 6. **Amoebius:** add the 16 missing shims (or `#if` the platform sign-in files out of the port), then see whether the
