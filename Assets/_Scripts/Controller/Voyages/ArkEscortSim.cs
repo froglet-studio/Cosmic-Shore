@@ -181,8 +181,19 @@ namespace CosmicShore.Gameplay
         {
             float deadline = Time.unscaledTime + ReadyTimeoutSeconds;
             bool asked = false;
+            bool dismissed = false;
             while (Time.unscaledTime < deadline)
             {
+                // The first-run privacy overlay (age gate, consent) holds the boot until a person answers it, and a sim
+                // has no person. It is closed UNANSWERED: nothing is granted, analytics stays off (the safe default),
+                // and the overlay asks again on the next ordinary launch.
+                var privacy = CosmicShore.UI.PrivacyConsentOverlay.Current;
+                if (privacy && !dismissed)
+                {
+                    dismissed = true;
+                    Log("the privacy overlay is up - closing it unanswered (nothing granted; analytics stays off)");
+                    Destroy(privacy.gameObject);
+                }
                 var freestyle = FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include);
                 var harbour = VoyageHarbour.Current;
                 if (harbour && freestyle)
