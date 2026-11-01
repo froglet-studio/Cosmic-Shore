@@ -341,6 +341,11 @@ data from git every minute, lays every computer's heartbeat on top the moment it
 every ~20 s), and files manual runs on `compute-queue` from any browser or phone, guarded by the team key. The page
 notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refreshes every 15 s.
 
+**The look is Silver Screen** (Shombith, 2026-11-01, his site's theme): black and white like a film still, no colour
+cast in the chrome, movie-poster headings (Bebas Neue), typewriter labels (Space Mono), the one accent kept for the
+primary action and live data, the status colours kept so a dot still reads, a still silver halo on the ground. One
+stylesheet at the top of `index.html`; light follows the system in greys.
+
 **What a sent run looks like, from Send to its first report** (Shombith, 2026-10-31: "there is no live bar"; design
 board Rev 41, `Docs/MENU_REDESIGN_B.md` section 109): Send closes the sheet and opens Runs with one line saying where
 the run went. The agent that takes it posts a heartbeat at once with `phase: starting` and the unit, so the run is on
