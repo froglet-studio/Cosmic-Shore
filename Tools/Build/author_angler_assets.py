@@ -192,6 +192,25 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": I.guid_for("Angler_Command.png"
              "783faf75777a15c5b2241cfc3e2691d3": I.guid_for("Angler_Leash.png"),
              "586d56db81bb568c940094830cd59abb": I.guid_for("Angler_Lure.png"),
              "669089ec7ad29ed295eccc53d8615225": I.guid_for("Angler_Tame.png")}
+# The icon kit (/ability-icon, Tools/Build/icon_kit/rebind.py) later took each card over: it blanks the round-1 sprite
+# above and draws the card from these parts (2026-10-31: Lock-on, Lure, Paint, Dash). A card is wired when it shows
+# either its round-1 sprite or every one of its kit parts; icon_kit/author.py angler --check owns the parts' pixels.
+ICON_PARTS_DIR = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons", "Angler", "Parts")
+ICON_KIT_PARTS = {I.guid_for("Angler_Command.png"): "Angler_Lock", I.guid_for("Angler_Leash.png"): "Angler_Lure",
+                  I.guid_for("Angler_Lure.png"): "Angler_Paint", I.guid_for("Angler_Tame.png"): "Angler_Dash"}
+
+
+def kit_part_guids(prefix: str) -> list:
+    """The guids of the icon kit's part PNGs named <prefix>*.png (empty when the kit has not drawn that card)."""
+    if not os.path.isdir(ICON_PARTS_DIR):
+        return []
+    out = []
+    for name in sorted(os.listdir(ICON_PARTS_DIR)):
+        if name.startswith(prefix) and name.endswith(".png.meta"):
+            m = re.search(r"^guid: ([0-9a-f]{32})", open(os.path.join(ICON_PARTS_DIR, name), encoding="utf-8").read(), re.M)
+            if m:
+                out.append(m.group(1))
+    return out
 CARD_ACTIVE, CARD_INACTIVE = I.guid_for(I.CARD_ACTIVE), I.guid_for(I.CARD_INACTIVE)
 # the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
 # names a new PNG md5("cosmic-shore-card:" + its repo path); Angler.png / Angler_Inactive.png keep the guids above
@@ -728,7 +747,10 @@ def check(files: "dict[str, str]") -> "list[str]":
             # the round-2 key until Unity re-saves the variant, the element-named one after (FormerlySerializedAs)
             need(re.search(r"  (%s|%s): \{fileID: [1-9]\d*\}" % (field, renamed), hud), f"HUD view field {renamed} is not wired")
         for old, new in ICON_SWAP.items():
-            need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+            parts = kit_part_guids(ICON_KIT_PARTS[new])
+            kit_drawn = bool(parts) and all(g in hud for g in parts)
+            need(old not in hud and (new in hud or kit_drawn),
+                 f"HUD icon {new} not swapped in (nor its icon-kit parts {ICON_KIT_PARTS[new]}*)")
         need(f"  seedSprite: {{fileID: 21300000, guid: {SEED_SPRITE}, type: 3}}\n" in hud,
              "AnglerHUDView.seedSprite is not wired (the omni card's seed, round 4)")
 
