@@ -53,8 +53,16 @@ def _clear_of(mask, *others, px=2.5):
     return keep
 
 
+_STARS = {}
+
+
 def star(box, cx=64.0, cy=64.0):
-    return lambda: mesh_silhouette.silhouette(FBX, box=box, cx=cx, cy=cy, **NOSE_ON)
+    def draw():
+        key = (box, cx, cy)
+        if key not in _STARS:
+            _STARS[key] = mesh_silhouette.silhouette(FBX, box=box, cx=cx, cy=cy, **NOSE_ON)
+        return _STARS[key].copy()
+    return draw
 
 
 ICONS = []
@@ -302,4 +310,116 @@ MASS_ICON = "7700000000000001115"       # the Mass slot's icon Image (was Brittl
 REBIND += [
     dict(file=VARIANT, pair=dict(container=MASS_ICON, view=VIEW, after="chargeStarIcon",
                                  children=[(n, i, f) for n, i, f, _d, _a in MASS_PARTS])),
+]
+
+
+# ---- Space: Space Mode, the five guns (options, 2026-11-01) ---------------------------------------------------------------
+# WHO: the Brittle Star (domain). WHAT: all five guns fire along their arms - stick out they splay 25 deg, stick in they meet
+# ahead; heat climbs, and overheated the hull lays DANGER prisms. Space doubles every gun's range. A round is a little
+# disc with a short streak behind it (never a rhombus); a danger prism is two close triangles.
+def round_shot(x, y, r, dx, dy, tail=2.6):
+    n = math.hypot(dx, dy) or 1.0
+    ux, uy = dx / n, dy / n
+    return disc(x, y, r) | stroke([(x - ux * r * tail, y - uy * r * tail), (x, y)], w=r * 0.9)
+
+
+def prism_pair(cx, cy, s, gap=1.6):
+    """A prism as two close triangles, cut along a vertical (motifs.prism_halves on the Tiger Moth branch)."""
+    return (fill([(cx - gap / 2, cy - s), (cx - gap / 2, cy + s), (cx - gap / 2 - s * 0.9, cy)]) |
+            fill([(cx + gap / 2, cy - s), (cx + gap / 2, cy + s), (cx + gap / 2 + s * 0.9, cy)]))
+
+
+from canvas import disc  # noqa: E402  (the round's head)
+
+# A  the fan: the star at the left flying right; a round out of each of its five turrets, the five splayed (stick out) or
+#    meeting ahead (stick in). Overheated, a danger prism behind it.
+SA_BOX, SA_CX = 56.0, 32.0
+SA_STAR = star(SA_BOX, cx=SA_CX)
+SA_CR = CORNER_R * SA_BOX / HULL_BOX
+
+
+def _sa_corner_y(k):
+    return 64 + SA_CR * math.sin(math.radians(-90 + 72 * k))
+
+
+def sa_rounds(meet=False, reach=1.0):
+    out = empty()
+    for k in range(5):
+        y0 = _sa_corner_y(k)
+        for j, t in enumerate((0.3, 0.9)):
+            x = SA_CX + 30 + (44 if reach <= 1 else 62) * t
+            spread = (y0 - 64) * (1.0 + (0.9 if not meet else -0.8) * t)
+            y = 64 + spread
+            out |= round_shot(x, y, 6.0, x - SA_CX, spread - (y0 - 64), tail=1.8)
+    return _clear_of(out, SA_STAR(), px=1.5)
+
+
+def sa_hot():
+    return prism_pair(SA_CX - 0.0, 108, 7.0)
+
+
+# B  the tunnel (the Mass card's view): the star seen from behind, its five rounds flying away from you along the splayed
+#    arms, smaller as they go.
+SB_STAR = A_STAR
+
+
+def sb_rounds(reach=1.0):
+    out = empty()
+    for k in range(5):
+        a = math.radians(-90 + 72 * k)
+        ux, uy = math.cos(a), math.sin(a)
+        for j, (r, s) in enumerate([(A_CR + 15, 8.0), (A_CR + 31 * reach, 6.0), (A_CR + 44 * reach, 4.4)]):
+            if r > 60:
+                continue
+            out |= disc(64 + ux * r, 64 + uy * r, s)
+    return _clear_of(out, SB_STAR(), px=2.0)
+
+
+def sb_hot():
+    return prism_pair(64, 112, 6.5)
+
+
+# C  the converge: the star at the left flying right, the five rounds' lines meeting at one point ahead (stick in), a
+#    burst where they meet.
+def sc_lines(reach=1.0):
+    out = empty()
+    tx = 100 if reach <= 1 else 122
+    for k in range(5):
+        y0 = _sa_corner_y(k)
+        x0 = SA_CX + 8
+        pts = [(x0 + (tx - x0) * t, y0 + (64 - y0) * t) for t in np.linspace(0.25, 0.9, 8)]
+        out |= stroke(pts, w=3.4)
+        x, y = pts[4]
+        out |= round_shot(x, y, 6.0, tx - x0, 64 - y0, tail=1.2)
+    return _clear_of(out, SA_STAR(), px=1.5)
+
+
+SPACE_BEFORE = ICON_DIR + "BrittleStar_DestructionMode.png"
+SPACE_GAUGE = {"Space Mode, stick out": (0.35, None), "stick in": (0.55, None), "Space 10 (range x2)": (0.35, None),
+               "overheated": (1.0, (255, 82, 46, 255)), "off": (0.0, None)}
+
+
+def _space_states(meet_key):
+    return [("Space Mode, stick out", [("rounds", "white"), ("star", "domain")]),
+            ("stick in", [(meet_key, "white"), ("star", "domain")]),
+            ("Space 10 (range x2)", [("far", "white"), ("star", "domain")]),
+            ("overheated", [("rounds", "white", 0.25), ("star", "domain")]),
+            ("off", [("rounds", "white", 0.25), ("star", "domain")])]
+
+
+CARDS += [
+    dict(name="space_a", group="space", element="Space", before=SPACE_BEFORE, before_gauge=True, gauge=SPACE_GAUGE,
+         title="A  the fan: the star (domain) flying right, a round (white) out of each turret, splayed (stick "
+               "out) or meeting (stick in)",
+         parts=dict(star=SA_STAR, rounds=sa_rounds, meet=lambda: sa_rounds(meet=True), far=lambda: sa_rounds(reach=2.0),
+                    hot=sa_hot),
+         states=_space_states("meet"), lockup_state=0),
+    dict(name="space_b", group="space", element="Space", before=SPACE_BEFORE, before_gauge=True, gauge=SPACE_GAUGE,
+         title="B  the tunnel: the star (domain) seen from behind, its five rounds (white) flying away along the arms",
+         parts=dict(star=SB_STAR, rounds=sb_rounds, meet=lambda: sb_rounds(0.6), far=lambda: sb_rounds(1.35), hot=sb_hot),
+         states=_space_states("meet"), lockup_state=0),
+    dict(name="space_c", group="space", element="Space", before=SPACE_BEFORE, before_gauge=True, gauge=SPACE_GAUGE,
+         title="C  the converge: the star (domain) flying right, the five guns' lines (white) meeting at one point ahead",
+         parts=dict(star=SA_STAR, rounds=sc_lines, meet=sc_lines, far=lambda: sc_lines(2.0), hot=sa_hot),
+         states=_space_states("meet"), lockup_state=0),
 ]
