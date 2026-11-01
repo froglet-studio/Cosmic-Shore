@@ -356,6 +356,11 @@ saw when opening Wrecking Ball). The gate names the exact using to add; it only 
   Documentation Index row; and any platform rule the mode changed, where that rule lives.
 - `Docs/SCENES.md` (two tables + the turn-monitor table), `GAME_TOASTS.md` (situations + config
   rows), the hull's `R_VesselActions/<HULL>.md` if the mode touched the vessel.
+- **A race (Time-genre) mode is a training ground.** Its hull's AI learns it from people's races where they
+  play, and from self-play where they do not (`/compute`). The second needs an OFFLINE race model of the
+  mode: a pure course generator (ported and parity-gated like `Tools/Compute/evaluators/course_port.py`)
+  and the hull's drive sim. Without one, the mode shows up in `/compute-scout`'s coverage lens as a cell
+  nothing can teach; say in `<MODE>.md` whether it has one.
 
 ## 6. What a mode must NEVER do
 

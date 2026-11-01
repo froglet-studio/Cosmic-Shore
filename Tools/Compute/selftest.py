@@ -1,0 +1,777 @@
+"""`compute.py self-test`: every piece, then the whole pipe end to end against a throwaway git remote.
+
+    1. the searchers (optimizers.self_test: they search, they resume, a negative control fails)
+    2. the course port's parity with the C# harness (course_port.self_test)
+    3. every evaluator's own self-test
+    4. every job file validates and names an evaluator that imports
+    5. end to end (skipped by --quick): a scratch repo + bare remote; two "machines" run the toy job; the remote must
+       hold both results branches, the second machine must start from the first one's best, the board must merge
+       them, and the scratch repo's own checkout must be untouched (no dirty file, not made sparse, no worktree
+       added, no extension written to its config). The second machine runs through the self-updating supervisor, so the
+       export of Tools/Compute from bleeding-edge is exercised too.
+    6. the trust rules (compute_lib.untrusted): what a queue ref may make a worker execute, with negative controls
+    7. the ai branch sync (ai_branch.self_test): AI changes come over from Ys-bleeding-edge, non-AI changes do not
+    8. Unity runs (skipped by --quick): the unity-train job against a fake Unity (unity_end_to_end)
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path[:0] = [HERE, os.path.join(HERE, "evaluators")]
+REPO = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, os.path.join(REPO, "Tools", "Build"))
+
+import compute_lib as L  # noqa: E402
+
+EVALUATORS = ("toy", "drive_fit", "regatta_course", "regatta_elements", "bioform_forms")
+
+
+def _git(*a, cwd, env=None):
+    p = subprocess.run(["git", *a], cwd=cwd, capture_output=True, text=True, env=env)
+    if p.returncode:
+        raise RuntimeError(f"git {' '.join(a)}: {p.stderr}")
+    return p.stdout
+
+
+def app_end_to_end(tmp, work, remote, script, env0):
+    """The app (compute.py app, README section 18): its page carries its key, it answers its own computer only, it
+    refuses a run without the key or outside its search, and a good run starts HERE at once, reports to it live and
+    finishes; the desktop launcher points at it."""
+    import socket
+    import time as _t
+    import urllib.error
+    import urllib.request
+    import manual_runs as R
+    bad = []
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+    home = os.path.join(tmp, "cache-app")
+    enva = dict(env0, FROGLET_COMPUTE_HOME=home, FROGLET_COMPUTE_USER="selftest", FROGLET_COMPUTE_HOST="app")
+    app = subprocess.Popen([sys.executable, script, "app", "--port", str(port), "--rebuild", "2", "--quiet", "--no-browser",
+                            "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=enva,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    base = f"http://127.0.0.1:{port}"
+
+    def call(path, body=None, key=None, host=None):
+        hd = {"Content-Type": "application/json", **({"X-Compute-Key": key} if key else {}), **({"Host": host} if host else {})}
+        r = urllib.request.Request(base + path, data=json.dumps(body).encode() if body is not None else None,
+                                   method="POST" if body is not None else "GET", headers=hd)
+        try:
+            with urllib.request.urlopen(r, timeout=30) as resp:
+                raw = resp.read().decode()
+                return resp.status, (json.loads(raw or "{}") if path != "/" else raw)
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read().decode() or "{}")
+    try:
+        for _ in range(120):
+            try:
+                if call("/api/status")[1].get("built"):
+                    break
+            except Exception:
+                pass
+            _t.sleep(0.5)
+        key = (L.read_json(os.path.join(home, "hub.json"), {}) or {}).get("key") or ""
+        st, page = call("/")
+        if st != 200 or "window.FC_APP" not in page or key not in page:
+            bad.append("app: its page does not carry its key")
+        if call("/api/status", host="evil.example:80")[0] != 403:
+            bad.append("app: a request addressed to another name was answered (DNS rebinding)")
+        good = R.build("toy-smoke", 12, note="started in the app")
+        if call("/api/run-here", {"token": R.token(good)})[0] != 401:
+            bad.append("app: a run without the key was started")
+        if call("/api/run-here", {"token": R.token(R.build("toy-smoke", 12, fix=["x0=99"]))}, key)[0] != 400:
+            bad.append("app: a run outside its search's bounds was started")
+        code, ans = call("/api/run-here", {"token": R.token(good)}, key)
+        if code != 201:
+            bad.append(f"app: a good run did not start here ({code} {ans})")
+        here = []
+        for _ in range(240):
+            here = (call("/api/status")[1] or {}).get("here") or []
+            if here and not here[0]["running"]:
+                break
+            _t.sleep(0.5)
+        if not here or here[0]["running"] or here[0]["exit"] != 0:
+            log = here[0]["log"] if here else ""
+            tail = open(log, encoding="utf-8", errors="replace").read()[-400:] if log and os.path.exists(log) else ""
+            bad.append(f"app: the run started here did not finish cleanly ({here}) {tail}")
+        d = call("/console.json")[1] or {}
+        if "selftest/app" not in (d.get("live") or {}).get("machines", []):
+            bad.append(f"app: the run started here did not report to the app live: {d.get('live')}")
+        desk = os.path.join(tmp, "desk-home")
+        out = subprocess.run([sys.executable, script, "app", "--shortcut", "--port", str(port)], cwd=work,
+                             env=dict(enva, HOME=desk, USERPROFILE=desk), capture_output=True, text=True)
+        made = [f for f in (os.listdir(os.path.join(desk, "Desktop")) if os.path.isdir(os.path.join(desk, "Desktop")) else [])]
+        body = open(os.path.join(desk, "Desktop", made[0]), encoding="utf-8").read() if made else ""
+        if out.returncode or f"app --port {port}" not in body:
+            bad.append(f"app: the desktop launcher was not made ({out.stdout} {out.stderr})")
+    finally:
+        app.terminate()
+        app.wait(timeout=10)
+    return bad
+
+
+def hub_end_to_end(tmp, work, remote, script, env0):
+    """The hub: a wrong key is refused, a run outside its search is refused, a good one is filed on compute-queue, and
+    a worker that reports to the hub shows up live in /console.json."""
+    import socket
+    import time as _t
+    import urllib.error
+    import urllib.request
+    import manual_runs as R
+    bad = []
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+    home = os.path.join(tmp, "cache-hub")
+    envh = dict(env0, FROGLET_COMPUTE_HOME=home, FROGLET_COMPUTE_USER="selftest", FROGLET_COMPUTE_HOST="hub")
+    hub = subprocess.Popen([sys.executable, script, "hub", "--port", str(port), "--rebuild", "2", "--quiet",
+                            "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=envh,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    base = f"http://127.0.0.1:{port}"
+
+    def call(path, body=None, key=None):
+        r = urllib.request.Request(base + path, data=json.dumps(body).encode() if body is not None else None,
+                                   method="POST" if body is not None else "GET",
+                                   headers={"Content-Type": "application/json", **({"X-Compute-Key": key} if key else {})})
+        try:
+            with urllib.request.urlopen(r, timeout=30) as resp:
+                return resp.status, json.loads(resp.read().decode() or "{}")
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read().decode() or "{}")
+    try:
+        for _ in range(120):
+            try:
+                if call("/api/status")[1].get("built"):
+                    break
+            except Exception:
+                pass
+            _t.sleep(0.5)
+        key = (L.read_json(os.path.join(home, "hub.json"), {}) or {}).get("key")
+        good = R.build("toy-smoke", 20, fix=["x3=0.0"], note="from a phone")
+        if call("/api/requests", good, "wrong")[0] != 401:
+            bad.append("hub: a wrong team key was accepted")
+        if call("/api/requests", R.build("toy-smoke", 20, fix=["x0=99"]), key)[0] != 400:
+            bad.append("hub: a run outside its search's bounds was accepted")
+        code, ans = call("/api/requests", {"token": R.token(good)}, key)
+        if code != 201 or subprocess.run(["git", "cat-file", "-e", f"refs/heads/compute-queue:Docs/Compute/requests/{good['id']}.json"],
+                                         cwd=remote).returncode:
+            bad.append(f"hub: a good run was not filed on compute-queue ({code} {ans})")
+        envw = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-live"), FROGLET_COMPUTE_USER="selftest",
+                    FROGLET_COMPUTE_HOST="live", FROGLET_COMPUTE_HUB=base, FROGLET_COMPUTE_HUB_KEY=key or "")
+        subprocess.run([sys.executable, script, "run", "--no-update", "--always", "--once", "--no-push", "--cores", "2",
+                        "--max-evals", "16", "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=envw,
+                       capture_output=True, text=True, timeout=600)
+        _t.sleep(1.5)
+        d = call("/console.json")[1]
+        if "selftest/live" not in (d.get("live") or {}).get("machines", []):
+            bad.append(f"hub: a worker reporting to the hub did not show up live: {d.get('live')}")
+        # The mothership: an agent (the supervisor loop) outside its hours shows as such, takes a run started from the
+        # console at once (its owner allowed remote starts), and stops a run when it is stopped from the console.
+        if call("/api/requests")[0] != 401 or call("/api/cancel", {"id": good["id"]}, "wrong")[0] != 401:
+            bad.append("hub: the runs list or a stop answered without the team key")
+        listed = [r["id"] for r in (call("/api/requests", None, key)[1] or {}).get("requests", [])] if key else []
+        ahome = os.path.join(tmp, "cache-agent")
+        os.makedirs(ahome, exist_ok=True)
+        L.write_json(os.path.join(ahome, "config.json"), {"remote_start": True})
+        enva = dict(env0, FROGLET_COMPUTE_HOME=ahome, FROGLET_COMPUTE_USER="selftest", FROGLET_COMPUTE_HOST="agent",
+                    FROGLET_COMPUTE_HUB=base, FROGLET_COMPUTE_HUB_KEY=key or "", FROGLET_COMPUTE_AGENT_POLL="2",
+                    FROGLET_COMPUTE_STOP_CHECK="2")
+        hour = _t.localtime().tm_hour
+        closed = f"{(hour + 2) % 24:02d}:00-{(hour + 3) % 24:02d}:00"          # a window that is not now
+        agent = subprocess.Popen([sys.executable, script, "run", "--home", "origin/bleeding-edge", "--between", closed,
+                                  "--cores", "2", "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=enva,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            def machine(name):
+                for m in (call("/console.json")[1] or {}).get("machines") or []:
+                    if m.get("machine") == name:
+                        return m
+                return {}
+            st = None
+            for _ in range(60):
+                st = machine("selftest/agent").get("status")
+                if st == "outside hours":
+                    break
+                _t.sleep(0.5)
+            if st != "outside hours":
+                bad.append(f"agent: a computer outside its hours should show so live (got {st})")
+            now_run = R.build("toy-smoke", 12, machine="selftest/agent", start="now", note="started from the console")
+            call("/api/requests", now_run, key)
+            state = None
+            for _ in range(240):
+                rows = {m["id"]: m for m in (call("/console.json")[1] or {}).get("manual") or []}
+                state = (rows.get(now_run["id"]) or {}).get("state")
+                if state == "done":
+                    break
+                _t.sleep(0.5)
+            if state != "done":
+                bad.append(f"agent: a run started from the console was not run at once (state {state})")
+            long_run = R.build("toy-smoke", 100000, machine="selftest/agent", start="now", note="to be stopped")
+            call("/api/requests", long_run, key)
+            for _ in range(240):
+                if machine("selftest/agent").get("status") == "working":
+                    break
+                _t.sleep(0.5)
+            code, _ans = call("/api/cancel", {"id": long_run["id"]}, key)
+            stopped = False
+            for _ in range(120):
+                if (machine("selftest/agent").get("last") or {}).get("stopped") == "stopped from the console":
+                    stopped = True
+                    break
+                _t.sleep(0.5)
+            if code != 200 or not stopped:
+                bad.append(f"agent: a run stopped from the console did not stop ({code}, {machine('selftest/agent').get('last')})")
+            if listed and good["id"] not in listed:
+                bad.append("hub: the runs list did not include an open run")
+        finally:
+            agent.terminate()
+            agent.wait(timeout=20)
+    finally:
+        hub.terminate()
+        hub.wait(timeout=10)
+    return bad
+
+
+def end_to_end():
+    bad = []
+    tmp = tempfile.mkdtemp(prefix="froglet-compute-selftest-")
+    try:
+        remote = os.path.join(tmp, "remote.git")
+        work = os.path.join(tmp, "work")
+        _git("init", "--bare", "-q", remote, cwd=tmp)
+        _git("init", "-q", "-b", "bleeding-edge", work, cwd=tmp)
+        shutil.copytree(HERE, os.path.join(work, "Tools", "Compute"),
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        jobs = os.path.join(work, "Docs", "Compute", "jobs")
+        os.makedirs(jobs)
+        job = {"schema": L.SCHEMA, "id": "toy-smoke", "title": "self-test", "goal": "prove the pipe", "kind": "search",
+               "status": "ready", "value": 5, "updated": "2026-01-01", "ref": "origin/bleeding-edge",
+               "paths": ["Tools/Compute/"], "requires": ["python3"],
+               "evaluator": {"module": "toy", "args": {"target": 1.5}},
+               "space": [{"name": f"x{i}", "lo": -5.0, "hi": 5.0, "init": -4.0} for i in range(4)],
+               "algorithm": {"name": "sep-cmaes", "popsize": 8}}
+        with open(os.path.join(jobs, "toy-smoke.json"), "w") as fh:
+            json.dump(job, fh)
+        env0 = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+        _git("add", "-A", cwd=work, env=env0)
+        _git("commit", "-qm", "init", cwd=work, env=env0)
+        _git("remote", "add", "origin", remote, cwd=work)
+        _git("push", "-q", "origin", "bleeding-edge", cwd=work)
+        _git("fetch", "-q", "origin", cwd=work)
+        script = os.path.join(work, "Tools", "Compute", "compute.py")
+        outs = []
+        for host in ("box1", "box2"):
+            env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-" + host), FROGLET_COMPUTE_USER="selftest",
+                       FROGLET_COMPUTE_HOST=host)
+            update = ["--no-update"] if host == "box1" else ["--home", "origin/bleeding-edge"]
+            p = subprocess.run([sys.executable, script, "run", *update, "--always", "--once", "--job", "toy-smoke",
+                                "--max-evals", "160", "--cores", "2", "--queue", "bleeding-edge"],
+                               cwd=work, env=env, capture_output=True, text=True, timeout=600)
+            outs.append(p.stdout + p.stderr)
+            if p.returncode != 0:
+                bad.append(f"end to end: worker {host} exited {p.returncode}:\n{p.stdout[-1500:]}{p.stderr[-1500:]}")
+                return bad
+        heads = _git("ls-remote", "--heads", remote, cwd=tmp)
+        for host in ("box1", "box2"):
+            if f"refs/heads/compute/selftest/{host}" not in heads:
+                bad.append(f"end to end: no results branch for {host} on the remote")
+        if "starting from the team's best" not in outs[1]:
+            bad.append("end to end: the second machine did not start from the first one's best")
+        if _git("status", "--porcelain", cwd=work).strip():
+            bad.append("end to end: the worker dirtied the checkout it was started from:\n" + _git("status", "--porcelain", cwd=work))
+        if subprocess.run(["git", "config", "--get", "core.sparseCheckout"], cwd=work, capture_output=True, text=True).stdout.strip() == "true":
+            bad.append("end to end: the worker made the person's own checkout sparse")
+        if subprocess.run(["git", "config", "--get", "extensions.worktreeConfig"], cwd=work, capture_output=True, text=True).stdout.strip():
+            bad.append("end to end: the worker wrote extensions.worktreeConfig into the person's repository config")
+        if _git("worktree", "list", "--porcelain", cwd=work).count("worktree ") != 1:
+            bad.append("end to end: the worker added a worktree to the person's repository:\n" + _git("worktree", "list", cwd=work))
+        home = os.path.join(tmp, "cache-box2", "home")
+        if not (os.path.isdir(home) and any(os.path.isfile(os.path.join(home, d, "Tools", "Compute", "compute.py"))
+                                            for d in os.listdir(home))):
+            bad.append("end to end: the supervisor did not run box2 from an export of bleeding-edge's Tools/Compute")
+        if not os.path.isfile(os.path.join(work, "Docs", "Compute", "jobs", "toy-smoke.json")):
+            bad.append("end to end: the person's checkout lost files")
+        # A second session on the same machine gets its own --max-evals budget (it used to count the machine's total
+        # and stop at once), and the runs log the console shows records it.
+        env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-box1"), FROGLET_COMPUTE_USER="selftest",
+                   FROGLET_COMPUTE_HOST="box1")
+        subprocess.run([sys.executable, script, "run", "--no-update", "--always", "--once", "--job", "toy-smoke",
+                        "--max-evals", "40", "--cores", "2", "--queue", "bleeding-edge"], cwd=work, env=env,
+                       capture_output=True, text=True, timeout=600)
+        hb = L.read_json(os.path.join(tmp, "cache-box1", "results", "selftest", "box1", "heartbeat.json"), {}) or {}
+        runs = hb.get("runs") or []
+        if len(runs) < 2 or int(runs[-1].get("evals") or 0) < 40:
+            bad.append(f"end to end: a second session did not get its own budget or was not logged: {runs[-1:] or 'no runs log'}")
+        # Manual runs: a request filed on compute-queue is taken before the automatic queue, its result is recorded,
+        # and `request list` shows it done; a token from the console runs at once on this computer.
+        envr = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-req"), FROGLET_COMPUTE_USER="selftest",
+                    FROGLET_COMPUTE_HOST="box3")
+        p = subprocess.run([sys.executable, script, "request", "new", "toy-smoke", "--tries", "24", "--fix", "x0=0.5",
+                            "--range", "x1=0:3", "--note", "self-test", "--push"], cwd=work, env=envr,
+                           capture_output=True, text=True, timeout=300)
+        rid = (p.stdout.split("request ", 1)[1].split(":", 1)[0] if "request r" in p.stdout else None)
+        if p.returncode or not rid:
+            bad.append(f"manual runs: request new --push failed:\n{p.stdout[-800:]}{p.stderr[-800:]}")
+        else:
+            subprocess.run([sys.executable, script, "run", "--no-update", "--always", "--once", "--cores", "2",
+                            "--max-evals", "40", "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=envr,
+                           capture_output=True, text=True, timeout=600)
+            got = _git("show", f"refs/heads/compute/selftest/box3:requests/{rid}.json", cwd=remote) if \
+                subprocess.run(["git", "cat-file", "-e", f"refs/heads/compute/selftest/box3:requests/{rid}.json"],
+                               cwd=remote).returncode == 0 else ""
+            res = json.loads(got) if got else {}
+            if int(res.get("tries", 0)) < 24:
+                bad.append(f"manual runs: the worker did not take the request before the automatic queue: {res or 'no result'}")
+            p = subprocess.run([sys.executable, script, "request", "list"], cwd=work, env=envr, capture_output=True,
+                               text=True, timeout=300)
+            if rid not in p.stdout or " done " not in p.stdout:
+                bad.append(f"manual runs: request list does not show it done:\n{p.stdout[-600:]}")
+        import manual_runs as R
+        tok = R.token(R.build("toy-smoke", 16, fix=["x2=1.0"], note="now"))
+        p = subprocess.run([sys.executable, script, "run", "--no-push", "--request", tok, "--cores", "2",
+                            "--queue", "bleeding-edge"], cwd=work, env=envr, capture_output=True, text=True, timeout=600)
+        if p.returncode or "manual run" not in p.stdout:
+            bad.append(f"manual runs: a token did not run at once:\n{p.stdout[-800:]}{p.stderr[-400:]}")
+        # A token run started on its computer goes on the queue too (aimed there, `here`), so Stop reaches it.
+        here = R.build("toy-smoke", 8, note="here")
+        p = subprocess.run([sys.executable, script, "run", "--request", R.token(here), "--cores", "2",
+                            "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=envr, capture_output=True, text=True, timeout=600)
+        filed = _git("show", f"refs/heads/compute-queue:Docs/Compute/requests/{here['id']}.json", cwd=remote) if \
+            subprocess.run(["git", "cat-file", "-e", f"refs/heads/compute-queue:Docs/Compute/requests/{here['id']}.json"],
+                           cwd=remote).returncode == 0 else ""
+        filed = json.loads(filed) if filed else {}
+        if not (filed.get("here") and filed.get("machine") == "selftest/box3"):
+            bad.append(f"stop: a token run was not put on the queue for its own computer: {filed or p.stdout[-600:]}")
+        if filed:
+            jobs_w, caps_w = L.load_jobs(local=True, cwd=work), L.capabilities()
+            if R.pick({here["id"]: filed}, jobs_w, [], "selftest/box3", caps_w):
+                bad.append("stop: an agent would pick up a run started by hand on its computer")
+            if not R.pick({here["id"]: dict(filed, here=False)}, jobs_w, [], "selftest/box3", caps_w):
+                bad.append("stop: the negative control failed (the same run without `here` should be picked)")
+        # The claude.ai console's outbox: a run and a stop sent from the page are filed; junk is refused; filed items
+        # are not filed twice.
+        later = R.build("toy-smoke", 12, note="from the outbox")
+        box = [{"id": "viewer1", "data": {"items": {"item-run-1": {"kind": "run", "token": R.token(later), "at": 1},
+                                                    "item-stop-1": {"kind": "stop", "id": here["id"], "at": 2},
+                                                    "item-junk-1": {"kind": "run", "token": "not a token", "at": 3}}}}]
+        bf, of = os.path.join(tmp, "outbox.json"), os.path.join(tmp, "sent.json")
+        L.write_json(bf, box)
+        L.write_json(os.path.join(tmp, "names.json"), {"viewer1": "shombith"})
+        p = subprocess.run([sys.executable, script, "request", "outbox", bf, "--names", os.path.join(tmp, "names.json"),
+                            "--out", of, "--push"], cwd=work, env=envr, capture_output=True, text=True, timeout=300)
+        sent = L.read_json(of, {}) or {}
+        queued = R.load(["refs/heads/compute-queue"], cwd=remote)
+        if not ((sent.get("item-run-1") or {}).get("ok") and (queued.get(later["id"]) or {}).get("by") == "shombith"):
+            bad.append(f"outbox: a run sent from the page was not filed under its sender:\n{p.stdout[-600:]}{p.stderr[-600:]}")
+        if not ((sent.get("item-stop-1") or {}).get("ok") and (queued.get(here["id"]) or {}).get("cancelled")):
+            bad.append(f"outbox: a stop sent from the page did not cancel its run: {sent.get('item-stop-1')}")
+        if (sent.get("item-junk-1") or {}).get("ok", True):
+            bad.append("outbox: a junk item was filed")
+        p = subprocess.run([sys.executable, script, "request", "outbox", bf, "--sent", of], cwd=work, env=envr,
+                           capture_output=True, text=True, timeout=300)
+        if "nothing new" not in p.stdout:
+            bad.append(f"outbox: items already filed were filed again:\n{p.stdout[-400:]}")
+        bad += hub_end_to_end(tmp, work, remote, script, env0)
+        bad += app_end_to_end(tmp, work, remote, script, env0)
+        env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-board"))
+        p = subprocess.run([sys.executable, script, "board", "--queue", "bleeding-edge"], cwd=work, env=env,
+                           capture_output=True, text=True, timeout=300)
+        if "toy-smoke" not in p.stdout or "selftest/box1" not in p.stdout:
+            bad.append("end to end: the board does not show both machines' results:\n" + p.stdout[-1500:] + p.stderr[-800:])
+        else:
+            row = next(l for l in p.stdout.splitlines() if "`toy-smoke`" in l)
+            cells = [c.strip() for c in row.split("|")]
+            best, base = cells[5].split(" (")
+            if not float(best) < float(base.rstrip(")")):
+                bad.append(f"end to end: the best ({best}) is not better than the shipped values ({base})")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return bad
+
+
+def schedule_window():
+    """--between: inside, outside, and a window that wraps past midnight; a bad spec is refused."""
+    import time as _t
+    bad = []
+    at = lambda h, m: _t.struct_time((2026, 10, 28, h, m, 0, 2, 301, -1))
+    night, day = L.parse_window("22:00-07:00"), L.parse_window("09:30-17:00")
+    for window, h, m, want in ((night, 23, 0, True), (night, 3, 0, True), (night, 12, 0, False), (night, 7, 0, False),
+                               (day, 9, 30, True), (day, 16, 59, True), (day, 17, 0, False), (day, 8, 0, False)):
+        if L.in_window(window, at(h, m)) != want:
+            bad.append(f"schedule: {h:02d}:{m:02d} in {window} should be {want}")
+    if not L.in_window(None):
+        bad.append("schedule: no window should mean always")
+    try:
+        L.parse_window("10pm-7am")
+        bad.append("schedule: a malformed --between was accepted")
+    except ValueError:
+        pass
+    return bad
+
+
+def windows_task():
+    """The Task Scheduler line fits in 261 characters with a Microsoft Store Python and a long user name, and the
+    launcher is valid Python that runs the worker without --quiet (its log is the only output)."""
+    import install
+    bad = []
+    py = "C:\\Users\\Alexandra.Konstantinopoulou\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\\pythonw.exe"
+    home = "C:\\Users\\Alexandra.Konstantinopoulou\\.froglet-compute"
+    cmd = install._cmd(10.0, "22:00-07:00", False, "origin/claude/eager-franklin-e6g77h", "C:\\Users\\Alexandra.Konstantinopoulou\\Documents\\GitHub\\Cosmic-Shore",
+                       ["bleeding-edge", "ai", "compute-queue", "claude/eager-franklin-e6g77h"])
+    launcher, text, tr = install.windows_task(cmd, home, py)
+    old = " ".join(f'"{c}"' for c in cmd)
+    if len(tr) > 261:
+        bad.append(f"windows: the task line is {len(tr)} characters (Task Scheduler takes 261)")
+    if len(old) <= 261:
+        bad.append("windows: the negative control (the full command on the task line) should be over 261")
+    try:
+        compile(text, launcher, "exec")
+    except SyntaxError as e:
+        bad.append(f"windows: the launcher is not valid Python: {e}")
+    if "--quiet" in text or "--between" not in text:
+        bad.append("windows: the launcher's argv is wrong")
+    vbs, vtext = install.windows_startup(py, launcher)
+    if not vbs.endswith("FrogletCompute.vbs") or "Startup" not in vbs or f'""{py}""' not in vtext or ", 0, False" not in vtext:
+        bad.append(f"windows: the Startup launcher should run the agent hidden ({vbs}: {vtext!r})")
+    return bad
+
+
+def trust_rules():
+    """What a queue ref may make a worker execute. Each case is (job, why it must or must not run)."""
+    bad = []
+    search = {"kind": "search", "ref": L.AI_REF}
+    command = {"kind": "command"}
+    cases = [
+        (dict(search, _ref="origin/compute-queue"), True, "a search job from compute-queue on a code ref"),
+        (dict(search, _ref="origin/bleeding-edge", ref="origin/cece/some-branch"), False, "a job whose code ref is a personal branch"),
+        (dict(search, _ref="origin/compute-queue", ref="origin/compute/x/y"), False, "a job whose code ref is a results branch"),
+        (dict(command, _ref="origin/bleeding-edge"), True, "a command job from bleeding-edge"),
+        (dict(command, _ref="origin/compute-queue"), False, "a command job from compute-queue"),
+        (dict(command, _ref=L.AI_REF), False, "a command job from the ai branch"),
+        (dict(search, _ref="origin/bleeding-edge", ref="origin/Ys-bleeding-edge"), False, "a job whose code is a person's own branch"),
+        (dict(command, ref="origin/cece/some-branch"), True, "a job from the person's own working tree (--local)"),
+    ]
+    for job, runs, what in cases:
+        if (L.untrusted(job) is None) != runs:
+            bad.append(f"trust: {what} should {'run' if runs else 'be refused'} ({L.untrusted(job)})")
+    # The installed app's own ref (config.json "ref"): its command jobs run on that computer, no other branch's do.
+    old_env = os.environ.get("FROGLET_COMPUTE_APP_REF")
+    os.environ["FROGLET_COMPUTE_APP_REF"] = "claude/compute-branch"
+    try:
+        for job, runs, what in [
+            (dict(command, ref=L.AI_REF, _ref="origin/claude/compute-branch"), True, "a command job from this computer's install ref"),
+            (dict(command, ref=L.AI_REF, _ref="origin/claude/other-branch"), False, "a command job from another branch"),
+            (dict(command, ref="origin/claude/compute-branch", _ref="origin/claude/compute-branch"), False,
+             "a command job from the install ref whose CODE ref is a personal branch"),
+        ]:
+            if (L.untrusted(job) is None) != runs:
+                bad.append(f"trust: {what} should {'run' if runs else 'be refused'} ({L.untrusted(job)})")
+    finally:
+        if old_env is None:
+            os.environ.pop("FROGLET_COMPUTE_APP_REF", None)
+        else:
+            os.environ["FROGLET_COMPUTE_APP_REF"] = old_env
+    return bad
+
+
+FAKE_UNITY = r"""
+import json, os, sys, time
+a = sys.argv[1:]
+def arg(n, d=None):
+    return a[a.index(n) + 1] if n in a else d
+out, proj, log = arg("-frogletTrain"), arg("-projectPath"), arg("-logFile")
+mode = os.environ.get("FAKE_UNITY_MODE", "ok")
+json.dump(a, open(os.path.join(out, "argv.json"), "w"))
+with open(log, "a") as fh:
+    fh.write("fake unity " + " ".join(a) + "\n")
+    if mode == "compile":
+        fh.write("Assets/X.cs(1,1): error CS0103: The name 'x' does not exist\n")
+        fh.flush()
+        time.sleep(120)
+        sys.exit(1)
+inj = os.path.join(proj, "Assets", "Editor", "FrogletCompute", "FrogletComputeTraining.cs")
+if not os.path.exists(inj) or "-executeMethod" not in a:
+    open(os.path.join(out, "result.json"), "w").write(json.dumps({"schema": "froglet-compute/unity-train/1", "ok": False, "reason": "not injected"}))
+    sys.exit(1)
+state = os.path.join(proj, "Assets", "_SO_Assets", "AI Training", "SessionState.asset")
+k = int(open(state).read().split(":")[1]) if os.path.exists(state) else 0
+k0, target, reason = k, int(arg("-trainEpisodes")), "finished: the target episodes are done"
+def status(phase):
+    json.dump({"phase": phase, "episodes_total": k, "unit_episodes": target, "episodes": k - k0, "generation": k // 3,
+               "best_fitness": 10.0 + k, "loss": -(10.0 + k)}, open(os.path.join(out, "status.json"), "w"))
+while k < target:
+    if os.path.exists(os.path.join(out, "stop")):
+        reason = "stopped by Froglet Compute"
+        break
+    time.sleep(1.0 if mode == "slow" else 0.1)
+    k += 1
+    open(state, "w").write("EpisodesCompleted: %d" % k)
+    status("training")
+json.dump({"schema": "froglet-compute/unity-train/1", "ok": True, "reason": reason, "episodes": k - k0,
+           "episodes_total": k, "best_fitness": 10.0 + k}, open(os.path.join(out, "result.json"), "w"))
+json.dump({"genes": [k]}, open(os.path.join(out, "genome.json"), "w"))
+"""
+
+
+def unity_end_to_end():
+    """The unity-train job against a FAKE Unity (a script that follows FrogletComputeTraining.cs's contract): the worker
+    runs a unit from the queue into Froglet Compute's own project copy and publishes it; the wrapper resumes a saved
+    session, stops cleanly on Ctrl-C, stops on a compile error, waits while the person's Unity is open, and says when
+    Unity is missing. Skipped on Windows (the fake is a shell script)."""
+    if os.name == "nt":
+        return []
+    import signal
+    import time
+    bad = []
+    tmp = tempfile.mkdtemp(prefix="froglet-compute-unity-")
+    try:
+        remote, work = os.path.join(tmp, "remote.git"), os.path.join(tmp, "work")
+        _git("init", "--bare", "-q", remote, cwd=tmp)
+        _git("init", "-q", "-b", "bleeding-edge", work, cwd=tmp)
+        shutil.copytree(HERE, os.path.join(work, "Tools", "Compute"), ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        os.makedirs(os.path.join(work, "ProjectSettings"))
+        open(os.path.join(work, "ProjectSettings", "ProjectVersion.txt"), "w").write("m_EditorVersion: 6000.3.17f1\n")
+        st = os.path.join(work, "Assets", "_SO_Assets", "AI Training")
+        os.makedirs(st)
+        open(os.path.join(st, "SessionState.asset"), "w").write("EpisodesCompleted: 0")
+        os.makedirs(os.path.join(work, "Docs", "Compute", "jobs"))
+        job = json.load(open(os.path.join(REPO, "Docs", "Compute", "jobs", "unity-train.json")))
+        job.update(status="ready", ref="origin/bleeding-edge")
+        job["command"]["units"] = [{"id": "skimrace-squirrel-i4", "args": {"mode": "HexRace", "vessel": "Squirrel", "intensity": 4, "episodes": 5}}]
+        json.dump(job, open(os.path.join(work, "Docs", "Compute", "jobs", "unity-train.json"), "w"))
+        open(os.path.join(work, ".gitignore"), "w").write("Temp/\n")
+        env0 = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+        _git("add", "-A", cwd=work, env=env0)
+        _git("commit", "-qm", "init", cwd=work, env=env0)
+        _git("remote", "add", "origin", remote, cwd=work)
+        _git("push", "-q", "origin", "bleeding-edge", cwd=work)
+        _git("fetch", "-q", "origin", cwd=work)
+        fake_py = os.path.join(tmp, "fake_unity.py")
+        open(fake_py, "w").write(FAKE_UNITY)
+        fake = os.path.join(tmp, "Unity")
+        open(fake, "w").write(f"#!/bin/sh\nexec {sys.executable} {fake_py} \"$@\"\n")
+        os.chmod(fake, 0o755)
+        home = os.path.join(tmp, "home")
+        env = dict(env0, FROGLET_COMPUTE_HOME=home, FROGLET_COMPUTE_USER="selftest", FROGLET_COMPUTE_HOST="unitybox",
+                   FROGLET_COMPUTE_UNITY=fake, FROGLET_COMPUTE_UNITY_POLL="0.5")
+        script = os.path.join(work, "Tools", "Compute", "compute.py")
+        # 1. the worker takes the unit from the queue and finishes it
+        p = subprocess.run([sys.executable, script, "run", "--no-update", "--always", "--once", "--job", "unity-train",
+                            "--queue", "bleeding-edge"], cwd=work, env=env, capture_output=True, text=True, timeout=300)
+        if p.returncode != 0:
+            return [f"unity: worker exited {p.returncode}:\n{p.stdout[-1500:]}{p.stderr[-1500:]}"]
+        ref = "refs/heads/compute/selftest/unitybox"
+        listing = _git("ls-tree", "-r", "--name-only", ref, cwd=remote)
+        unit = [x for x in listing.split() if x.endswith("unit-skimrace-squirrel-i4.json")]
+        if not unit:
+            bad.append("unity: no unit result was published")
+        else:
+            u = json.loads(_git("show", f"{ref}:{unit[0]}", cwd=remote))
+            if not (u.get("done") and u.get("progress") == 1.0 and u.get("score") == -15.0):
+                bad.append(f"unity: the unit should be done at 5/5 with loss -15 ({u})")
+            for f in ("genome.json", "SessionState.asset", "status.json", "result.json"):
+                if f not in (u.get("files") or []):
+                    bad.append(f"unity: {f} was not kept")
+        proj = os.path.join(home, "unity", "Cosmic-Shore")
+        if not os.path.exists(os.path.join(proj, "Assets", "Editor", "FrogletCompute", "FrogletComputeTraining.cs")):
+            bad.append("unity: the batch entry was not copied into the project copy")
+        if _git("status", "--porcelain", cwd=work).strip():
+            bad.append("unity: the person's checkout was changed")
+        if os.path.exists(os.path.join(work, "Assets", "Editor")):
+            bad.append("unity: the batch entry leaked into the person's checkout")
+        sha = _git("rev-parse", "HEAD", cwd=work).strip()
+        runner = os.path.join(work, "Tools", "Compute", "unity_run.py")
+
+        def wrap(out, extra_env=None, episodes=5, wait=True):
+            argv = [sys.executable, runner, "--sha", sha, "--out", out, "--mode", "HexRace", "--vessel", "Squirrel",
+                    "--episodes", str(episodes), "--minutes", "5", "--quiet"]
+            e = dict(env, **(extra_env or {}))
+            if wait:
+                return subprocess.run(argv, cwd=work, env=e, capture_output=True, text=True, timeout=120)
+            return subprocess.Popen(argv, cwd=work, env=e, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # 2. resume: a saved session at 3 of 5 plays the last 2
+        out = os.path.join(tmp, "resume")
+        os.makedirs(out)
+        open(os.path.join(out, "SessionState.asset"), "w").write("EpisodesCompleted: 3")
+        p = wrap(out)
+        r = L.read_json(os.path.join(out, "result.json"), {}) or {}
+        if p.returncode != 0 or r.get("episodes") != 2 or r.get("episodes_total") != 5:
+            bad.append(f"unity: resume should play 2 more matches to 5 ({p.returncode}, {r})")
+        argv0 = L.read_json(os.path.join(out, "argv.json"), []) or []
+        if "-batchmode" not in argv0 or "-trainWatch" in argv0:
+            bad.append(f"unity: an ordinary run should be -batchmode without -trainWatch ({argv0})")
+        out = os.path.join(tmp, "watch")
+        p = wrap(out, {"FROGLET_COMPUTE_UNITY_WATCH": "1"}, episodes=1)
+        argv1 = L.read_json(os.path.join(out, "argv.json"), []) or []
+        if p.returncode != 0 or "-batchmode" in argv1 or "-trainWatch" not in argv1 or \
+                argv1[argv1.index("-trainTimeScale") + 1] != "1.0":
+            bad.append(f"unity: --watch should open Unity with its window at game speed ({p.returncode}, {argv1})")
+        # 3. Ctrl-C stops Unity cleanly and keeps the session
+        out = os.path.join(tmp, "stop")
+        proc = wrap(out, {"FAKE_UNITY_MODE": "slow"}, episodes=100, wait=False)
+        t0 = time.time()
+        while time.time() - t0 < 30 and ((L.read_json(os.path.join(out, "status.json"), {}) or {}).get("episodes_total") or 0) < 2:
+            time.sleep(0.3)
+        proc.send_signal(signal.SIGINT)
+        try:
+            rc = proc.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            rc = "hung"
+        r = L.read_json(os.path.join(out, "result.json"), {}) or {}
+        if rc != 0 or "stopped" not in str(r.get("reason")) or not os.path.exists(os.path.join(out, "SessionState.asset")):
+            bad.append(f"unity: Ctrl-C should stop cleanly and keep the session ({rc}, {r})")
+        # 4. a project that does not compile stops at once
+        out = os.path.join(tmp, "compile")
+        t0 = time.time()
+        p = wrap(out, {"FAKE_UNITY_MODE": "compile"})
+        if p.returncode != 6 or time.time() - t0 > 60:
+            bad.append(f"unity: a compile error should stop the run with exit 6 ({p.returncode}, {time.time() - t0:.0f} s)")
+        # 5. the person's own Unity open: an automatic run waits, a manual one goes ahead
+        os.makedirs(os.path.join(work, "Temp"), exist_ok=True)
+        open(os.path.join(work, "Temp", "UnityLockfile"), "w").close()
+        p = wrap(os.path.join(tmp, "locked"))
+        if p.returncode != 75:
+            bad.append(f"unity: with the person's Unity open an automatic run should wait (exit 75, got {p.returncode})")
+        p = wrap(os.path.join(tmp, "locked-manual"), {"FROGLET_COMPUTE_MANUAL": "1"})
+        if p.returncode != 0:
+            bad.append(f"unity: a manual run should go ahead while the person's Unity is open ({p.returncode})")
+        shutil.rmtree(os.path.join(work, "Temp"))
+        # 6. the overlay: the install ref's trainer folder is laid over the code while the code has not touched it
+        trainer = os.path.join(work, "Assets", "Trainer")
+        os.makedirs(trainer)
+        open(os.path.join(trainer, "Catalog.cs"), "w").write("old")
+        _git("add", "-A", cwd=work, env=env0)
+        _git("commit", "-qm", "trainer", cwd=work, env=env0)
+        _git("push", "-q", "origin", "bleeding-edge", cwd=work)
+        _git("checkout", "-q", "-b", "install", cwd=work)
+        open(os.path.join(trainer, "Catalog.cs"), "w").write("new rows")
+        _git("commit", "-qam", "new rows", cwd=work, env=env0)
+        _git("push", "-q", "origin", "install", cwd=work)
+        _git("checkout", "-q", "bleeding-edge", cwd=work)
+        _git("fetch", "-q", "origin", cwd=work)
+        sha = _git("rev-parse", "origin/bleeding-edge", cwd=work).strip()
+        copy_file = os.path.join(proj, "Assets", "Trainer", "Catalog.cs")
+
+        def overlaid(tag):
+            out_dir = os.path.join(tmp, tag)
+            argv = [sys.executable, runner, "--sha", sha, "--out", out_dir, "--mode", "HexRace", "--episodes", "2",
+                    "--minutes", "5", "--quiet", "--overlay-ref", "origin/install", "--overlay", "Assets/Trainer/"]
+            subprocess.run(argv, cwd=work, env=env, capture_output=True, text=True, timeout=120)
+            return open(copy_file).read() if os.path.exists(copy_file) else None
+        if overlaid("overlay-on") != "new rows":
+            bad.append("unity: the install ref's trainer was not laid over an untouched code ref")
+        open(os.path.join(trainer, "Catalog.cs"), "w").write("newer on the code ref")
+        _git("commit", "-qam", "newer", cwd=work, env=env0)
+        _git("push", "-q", "origin", "bleeding-edge", cwd=work)
+        _git("fetch", "-q", "origin", cwd=work)
+        sha = _git("rev-parse", "origin/bleeding-edge", cwd=work).strip()
+        if overlaid("overlay-off") != "newer on the code ref":
+            bad.append("unity: the overlay replaced newer work on the code ref")
+        # 7. no Unity: says so (negative control for the capability)
+        p = wrap(os.path.join(tmp, "nounity"), {"FROGLET_COMPUTE_UNITY": os.path.join(tmp, "nope")})
+        if p.returncode != 4:
+            bad.append(f"unity: a missing Unity should exit 4 ({p.returncode})")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return bad
+
+
+def run(quick=False):
+    import importlib
+    import optimizers
+    import course_port
+    failures = []
+    failures += optimizers.self_test()
+    print("searchers: " + ("ok" if not failures else "FAILED"))
+    if course_port.self_test():
+        failures.append("course_port parity")
+    for name in EVALUATORS:
+        m = importlib.import_module(name)
+        f = m.self_test() if hasattr(m, "self_test") else []
+        print(f"evaluator {name}: " + ("ok" if not f else "FAILED " + "; ".join(f)))
+        failures += f
+    jobs = L.load_jobs(local=True)
+    for jid, j in sorted(jobs.items()):
+        p = L.validate_job(j)
+        if j.get("kind") == "search" and not p:
+            try:
+                importlib.import_module("evaluators." + j["evaluator"]["module"])
+            except Exception as e:
+                p.append(f"evaluator does not import: {e}")
+        for d in j.get("after") or []:
+            if d not in jobs:
+                p.append(f"after: {d} is not a job")
+        if p:
+            failures.append(f"job {jid}: " + "; ".join(p))
+    print(f"jobs: {len(jobs)} " + ("ok" if not any(f.startswith("job ") for f in failures) else "FAILED"))
+    try:
+        import make_unity_job
+        job = jobs.get("unity-train")
+        if job is not None:
+            clean = {k: v for k, v in job.items() if not k.startswith("_")}
+            if make_unity_job.build(clean) != clean:
+                failures.append("job unity-train: its units differ from the trainer's catalog (python3 Tools/Compute/make_unity_job.py)")
+    except FileNotFoundError:
+        pass                    # an install without the game's sources (the VM's sparse clone): nothing to compare
+    win = windows_task()
+    print("windows task line: " + ("ok" if not win else "FAILED"))
+    failures += win
+    trust = trust_rules()
+    print("trust rules: " + ("ok" if not trust else "FAILED"))
+    failures += trust
+    import console as _console
+    con = _console.self_test()
+    print("console: " + ("ok (approvals: core four only, same epoch, same best)" if not con else "FAILED"))
+    failures += con
+    import manual_runs
+    mr = manual_runs.self_test()
+    print("manual runs: " + ("ok (refuses everything outside its search, narrows and fixes, tokens round-trip)" if not mr else "FAILED"))
+    failures += mr
+    import agent as _agent
+    ag = _agent.self_test()
+    print("agent: " + ("ok (status from a heartbeat's age; a run starts at once only with its owner's consent)" if not ag else "FAILED"))
+    failures += ag
+    sched = schedule_window()
+    print("schedule window: " + ("ok" if not sched else "FAILED"))
+    failures += sched
+    if not quick:
+        import contextlib
+        import io
+        import ai_branch
+        with contextlib.redirect_stdout(io.StringIO()):
+            ai = ai_branch.self_test()
+        print("ai branch sync: " + ("ok (AI changes come over, others do not, conflicts stop it)" if not ai else "FAILED"))
+        failures += ai
+    import people_seed, archive_update
+    ps = people_seed.self_test()
+    print("people seed: " + ("ok (two races seed the throttle and boost genes; one race, AI-held samples and two presses do not)" if not ps else "FAILED\n  " + "\n  ".join(ps)))
+    failures += ps
+    import tray
+    tr = tray.self_test()
+    print("tray: " + ("ok (the schedule's flags, the status line from a heartbeat)" if not tr else "FAILED\n  " + "\n  ".join(tr)))
+    failures += tr
+    import forget
+    fg = forget.self_test()
+    print("forget: " + ("ok (a run's folders leave a results branch, the checkout untouched; bad names refused)" if not fg else "FAILED\n  " + "\n  ".join(fg)))
+    failures += fg
+    au = archive_update.self_test()
+    print("update AI: " + ("ok (entries round-trip in Unity's shape, the best epoch wins, only the core four promote)" if not au else "FAILED\n  " + "\n  ".join(au)))
+    failures += au
+    if not quick:
+        e2e = end_to_end()
+        print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched; the hub; the app starts a run here; an agent shows live, runs what the console starts, stops when stopped)" if not e2e else "FAILED"))
+        failures += e2e
+        ue = unity_end_to_end()
+        print("unity runs: " + ("ok (a fake Unity: queued unit done and published, resume, Ctrl-C, compile error, your Unity open, the trainer overlay, no Unity)"
+                                if not ue else "FAILED"))
+        failures += ue
+    print("\ncompute self-test: " + ("ok" if not failures else "FAILED\n  " + "\n  ".join(failures)))
+    return 1 if failures else 0
