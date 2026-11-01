@@ -92,5 +92,19 @@ namespace CosmicShore.ScriptableObjects
         public string SeaWater = "WATER";
         public string SeaThick = "THICK WATER";
         public string SeaReef = "REEF";
+        [Tooltip("A voyage card's chip that opens it to its brief, and closes it again.")]
+        public string CardOpen = "Open";
+        public string CardClose = "Close";
+        [Tooltip("An open voyage card's brief. Tokens: {summary} the job, {to} and {place} the destination and its line, " +
+                 "{squad} the seats, {intensity} the course's I1-I4, {reward} the crystals it pays, {pilot} and {story} " +
+                 "who brought it. <br> breaks a line.")]
+        [TextArea] public string CardDetails =
+            "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}";
+        [Tooltip("The way home's brief (the same tokens; it pays nothing itself).")]
+        [TextArea] public string CardHomeDetails = "{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}";
+        [Tooltip("One seat of the squad in a brief's {squad}: {vessel} its hull, {pilot} its pilot.")]
+        public string CardSquadSeat = "{vessel} ({pilot})";
+        [Tooltip("What stands between two seats in {squad}.")]
+        public string CardSquadSeparator = ", ";
     }
 }
