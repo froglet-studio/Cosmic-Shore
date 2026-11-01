@@ -51,3 +51,10 @@ after totals per race (3 AIs summed):
 
 ## Verdict
 With N=1 race per combo, the after soak only got through I1D1. The total there was the same as before (35 vs 35). Rival-trail hits fell from 11 to 2, but course-prism hits rose from 22 to 27. **The 9a03fe6f7 fixes have not shown an overall reduction yet.** Course prisms are the main source (about 65% of hits). Next step: make course-prism avoidance look further ahead, then run a full I1–4×D1–4 soak with N≥3.
+
+## Per-hit diagnosis (real Unity, I1 D1, 3 AI Dolphins, 1 race, code 9a03fe6f7 + per-hit log)
+The log line is `[Switchback AI] hit pilot=… src=… speed drifting boosting emerg sinceEmerg sinceSense avoid plan phase angle dist scale`. That race had 56 hits: course 38, rival 7, own 11.
+- **Course (38):** in 35 of the 38 the emergency dodge was already active (`emerg=True`), with an avoid running and a Thread plan. Drift was on in only 1, and no blast plan was involved. Contact angles were 40–110° off the nose, so these are side-swipes, not head-on hits. About half were the long 3×3×23–54 rods. The hard emergency break (up to about 90° lateral) swings the hull into the prism next to the one it is dodging. The sweep also skips prisms already beside the hull (start overlap), and the sense pass sizes a rod from its centre with an extent capped at 12, so a 54 u rod looks small.
+- **Repeat stall hits:** many course hits come in pairs 0.2–0.6 s apart, the second at a speed of 1–35 after the first impact.
+- **Own trail (11):** every one came at a speed of 1–9 and 100–170° off the nose. The ship had already crashed and slowed, then backed into its own fresh trail. These come from crashes, not from the self-trail filter.
+- **Fix written, not yet measured in Unity:** see `soak_SwitchbackBlastAI.fix.diff`. It sizes rods from their closest point, uses the contact point and not the collider centre, pushes off prisms beside the hull, and picks a clear escape direction. The run failed because the disk filled up (125 of 125 GB, "No space left on device").

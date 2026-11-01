@@ -31,6 +31,8 @@ namespace CosmicShore.Gameplay
         }
 
         public const float RepeatSeconds = 0.5f;
+        /// <summary>Optional per-hit context (the AI fills it): logged on every counted hit as <c>[Switchback AI] hit ...</c>.</summary>
+        public static Func<IPlayer, Prism, string> Context;
 
         /// <summary>The last finished race's rows (the soak runner and <c>aidiag hits</c> read it after the scene goes).</summary>
         public static IReadOnlyList<Row> LastRace => s_last;
@@ -88,7 +90,10 @@ namespace CosmicShore.Gameplay
             if (_lastTouch.TryGetValue(key, out float last) && now - last < RepeatSeconds) { _lastTouch[key] = now; return; }
             _lastTouch[key] = now;
             if (_lastTouch.Count > 4096) _lastTouch.Clear();
-            RowFor(player).Hits[(int)Classify(prism, vessel.PlayerName)]++;
+            var src = Classify(prism, vessel.PlayerName);
+            RowFor(player).Hits[(int)src]++;
+            if (Context != null)
+                CSDebug.Log($"[Switchback AI] hit pilot={player.Name} src={src} t={now - _start:F1} {Context(player, prism)}");
         }
 
         public Source Classify(Prism prism, string pilotName)
@@ -149,6 +154,6 @@ namespace CosmicShore.Gameplay
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() { s_last.Clear(); LastSummary = ""; Current = null; RaceEnded = null; }
+        static void ResetStatics() { s_last.Clear(); LastSummary = ""; Current = null; RaceEnded = null; Context = null; }
     }
 }
