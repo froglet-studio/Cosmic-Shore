@@ -19473,6 +19473,14 @@ screenshot of the real window exists yet; the only images made were mockups draw
 A local session with Unity open should capture: an Arcade card (Scurry) with three AI, no AI selected, then AI 1 and
 AI 2 each selected with different levels; and an Arena card (Regatta) with an AI selected (the vessel strip follows it).
 
+**Status (2026-11-02):** still unverified; nothing above was confirmed and nothing failed. A local session tried to capture
+those screenshots on `Ys-bleeding-edge` at `a873da1100` (with local prefab edits in the tree), but took no screenshot: its
+one Play mode was ended, apparently by another session's test run on the shared editor. Yash called the
+capture off, because this will be covered in the wider testing under way. Two things for the next session: `unity` CLI
+1.0.0-beta.13 refuses any command with arguments against `com.unity.pipeline` 0.5.0-exp.1 (it wants 0.6.0-exp.1), so
+clicking the modal needs a temporary editor script; and `unity recompile` reported `up_to_date` while an ILPP
+out-of-memory failure stood, so read the console as well.
+
 ## 🔴 2026-10-27 — Stoat flies Slingshot, Meerkat flies Warpline; the Time Race Prototyper (unverified: no Unity editor in the session)
 
 **Files:** `ArcadeGameWarpline.asset` + `ModePreview_Warpline.asset` (Vessels / preview: the Meerkat; `author_warpline_assets.py`),
