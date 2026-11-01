@@ -471,7 +471,17 @@ Nothing else is needed: `UNITY_PATH` and `UNITY_RUNNER_LABEL` no longer affect t
 
 ### Proof (2026-11-01)
 
-RUNS_PLACEHOLDER
+Before any licence was added, so every run used the reference compile. They were dispatched on
+branches outside the guarded pair, before the environment's branch rule was set.
+
+| Run | Branch | Unity compile job | What it showed |
+|---|---|---|---|
+| [#642](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41359298510) | `claude/ci-hosted-unity-compile` | **success**, 3 min (cold cache) | `RESULT: OK - no errors in project code (92 assemblies)`; report and autofix skipped (not a guarded branch) |
+| [#644](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41360054662) | `ci-scratch/unity-compile-negative-control` (one deliberately broken line in `TemplateText.cs`) | **failure**, `failure_kind=compile` | first error listed: `Assets/_Scripts/Data/TemplateText.cs(9,43): error CS0103: The name 'undefinedSymbolForCi' does not exist`; log attached as `editmode-results-41360054662` |
+
+The scratch branch was deleted afterwards; the broken line never reached any other branch.
+**The `unity` path (licence, container, `Library/` cache) has not run yet**: it needs the secrets
+above. Its first run is the real proof, and a cold import will be slow.
 
 ### Security note
 
