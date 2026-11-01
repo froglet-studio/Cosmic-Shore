@@ -479,7 +479,7 @@ branches outside the guarded pair, before the environment's branch rule was set.
 | [#642](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41359298510) | `claude/ci-hosted-unity-compile` | **success**, 3 min (cold cache) | `RESULT: OK - no errors in project code (92 assemblies)`; report and autofix skipped (not a guarded branch) |
 | [#644](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41360054662) | `ci-scratch/unity-compile-negative-control` (one deliberately broken line in `TemplateText.cs`) | **failure**, `failure_kind=compile` | first error listed: `Assets/_Scripts/Data/TemplateText.cs(9,43): error CS0103: The name 'undefinedSymbolForCi' does not exist`; log attached as `editmode-results-41360054662` |
 
-The scratch branch was deleted afterwards; the broken line never reached any other branch.
+The broken line was then reverted on the scratch branch (`ef11d94bf`); it never reached any other branch. The scratch branch can be deleted.
 **The `unity` path (licence, container, `Library/` cache) has not run yet**: it needs the secrets
 above. Its first run is the real proof, and a cold import will be slow.
 
