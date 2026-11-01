@@ -423,3 +423,74 @@ CARDS += [
          parts=dict(star=SA_STAR, rounds=sc_lines, meet=sc_lines, far=lambda: sc_lines(2.0), hot=sa_hot),
          states=_space_states("meet"), lockup_state=0),
 ]
+
+
+# ---- Time: Speed Mode (options, 2026-11-01) -------------------------------------------------------------------------------
+# WHO: the Brittle Star (domain). WHAT: the fastest mode, x6 -> x8 of cruise with Time; the prisms it lays stretch so the
+# trail still joins up. A stretched prism is a long rectangle with its negative-space X (never the rhombus).
+def prism_long(cx, cy, hl, hh, cut=2.0):
+    box_ = fill([(cx - hl, cy - hh), (cx + hl, cy - hh), (cx + hl, cy + hh), (cx - hl, cy + hh)])
+    x = stroke([(cx - hl, cy - hh), (cx + hl, cy + hh)], w=cut) | stroke([(cx + hl, cy - hh), (cx - hl, cy + hh)], w=cut)
+    return box_ & ~x
+
+
+T_BOX, T_CX = 50.0, 96.0
+T_STAR = star(T_BOX, cx=T_CX)
+
+
+def t_trail(stretch=1.0):
+    """The trail behind the star (left): short cruise blocks with gaps at 1, long joined blocks as Speed stretches them."""
+    hl, gap = {1.0: (4.0, 7.0), 2.3: (9.0, 2.2), 3.0: (13.0, 1.6)}[stretch]
+    out = empty()
+    right = T_CX - 22
+    while right > 12:
+        left = max(6.0, right - 2 * hl)
+        out |= prism_long((left + right) / 2, 64, (right - left) / 2, 8.0, cut=2.6)
+        right = left - gap
+    return _clear_of(out, T_STAR(), px=2.0)
+
+
+def t_lines(n=3, length=30.0):
+    out = empty()
+    for y, l in list(zip((40, 88, 64), (length, length * 0.8, length * 1.2)))[:n]:
+        if y == 64:
+            continue
+        out |= stroke([(T_CX - 26 - l, y), (T_CX - 26, y)], w=3.4)
+    return out
+
+
+# A  the stretch: the star flying right, its trail behind it; the gapped cruise blocks stretch into one joined line.
+# B  the stretch + streaks: A with two speed streaks above and below the trail.
+# C  the warp: seen from behind (the Mass card's view), streaks rushing out past the star from its centre.
+def c_warp(length=1.0):
+    out = empty()
+    for k in range(10):
+        a = math.radians(-90 + 36 * k + 18)
+        r0, r1 = A_CR + 14, A_CR + 14 + 22 * length
+        out |= stroke([(64 + r0 * math.cos(a), 64 + r0 * math.sin(a)),
+                       (64 + min(r1, 62) * math.cos(a), 64 + min(r1, 62) * math.sin(a))], w=3.2)
+    return _clear_of(out, A_STAR(), px=2.0)
+
+
+TIME_BEFORE = ICON_DIR + "BrittleStar_SpeedMode.png"
+TIME_GAUGE = {"Speed Mode on": (1.0, None), "Time 10 (x8)": (1.0, None), "off (cruise)": (0.0, None)}
+CARDS += [
+    dict(name="time_a", group="time", element="Time", before=TIME_BEFORE, before_gauge=True, gauge=TIME_GAUGE,
+         title="A  the stretch: the star (domain) flying right; its gapped cruise blocks (white) stretch into one joined line",
+         parts=dict(star=T_STAR, slow=t_trail, fast=lambda: t_trail(2.3), faster=lambda: t_trail(3.0)),
+         states=[("Speed Mode on", [("fast", "white"), ("star", "domain")]),
+                 ("Time 10 (x8)", [("faster", "white"), ("star", "domain")]),
+                 ("off (cruise)", [("slow", "white", 0.4), ("star", "domain")])], lockup_state=0),
+    dict(name="time_b", group="time", element="Time", before=TIME_BEFORE, before_gauge=True, gauge=TIME_GAUGE,
+         title="B  the stretch and streaks: A, with two speed streaks (white) beside the joined line",
+         parts=dict(star=T_STAR, slow=t_trail, fast=lambda: t_trail(2.3) | t_lines(), faster=lambda: t_trail(3.0) | t_lines(length=44)),
+         states=[("Speed Mode on", [("fast", "white"), ("star", "domain")]),
+                 ("Time 10 (x8)", [("faster", "white"), ("star", "domain")]),
+                 ("off (cruise)", [("slow", "white", 0.4), ("star", "domain")])], lockup_state=0),
+    dict(name="time_c", group="time", element="Time", before=TIME_BEFORE, before_gauge=True, gauge=TIME_GAUGE,
+         title="C  the warp: the star (domain) seen from behind, streaks (white) rushing out past it",
+         parts=dict(star=A_STAR, slow=lambda: c_warp(0.35), fast=c_warp, faster=lambda: c_warp(1.5)),
+         states=[("Speed Mode on", [("fast", "white"), ("star", "domain")]),
+                 ("Time 10 (x8)", [("faster", "white"), ("star", "domain")]),
+                 ("off (cruise)", [("slow", "white", 0.4), ("star", "domain")])], lockup_state=0),
+]
