@@ -80,7 +80,8 @@ for i in range(1, 5):
 # the plate's container and what it already carries (edited in place, never minted)
 CONTAINER_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
                   "ScarabCavitationExplosionImpactorDataContainer.asset")
-# the Scarab recut (2026-10-29) retired Cavitation Shear: the plate now carries the Shove debuff in that slot
+# The Scarab's own shove debuff since the 2026-10-29 recut (e846e71e8, Garrett): its bite is Charge-scaled, so it left
+# the shared ScarabCavitationDebuffByExplosionEffect (now the Dolphin cone's) for an asset of its own.
 EXISTING["ScarabCavitationDebuffEffect"] = lib.existing_guid(
     "Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabShoveDebuffByExplosionEffect.asset")
 EXISTING["ScarabBallForgeEffect"] = lib.existing_guid(
@@ -327,7 +328,7 @@ if sc.count("  - vesselClass: 12\n") != 4 or "  - vesselClass: 2\n" in sc:
     errors.append("cloned scene does not carry exactly 4 Scarab AI templates")
 
 cont = g.files[CONTAINER_PATH]
-for name, gd in (("shove debuff", EXISTING["ScarabCavitationDebuffEffect"]),
+for name, gd in (("cavitation debuff", EXISTING["ScarabCavitationDebuffEffect"]),
                  ("combat-hit report", G_ASSET["VesselCombatHitByCavitation"]),
                  ("ball forge", EXISTING["ScarabBallForgeEffect"]),
                  ("wither-lifeform kill", G_ASSET["ScarabCavitationWitherLifeformEffect"])):
