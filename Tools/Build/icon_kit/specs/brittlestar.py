@@ -548,3 +548,51 @@ _pick("time", "time_a", "time",
       "joined line; the plate is the mode's switch", "Time", TIME_PARTS,
       dict(parts=dict(star=T_STAR, fast=lambda: t_trail(2.3)), state=[("fast", "white"), ("star", "domain")], gauge=1.0),
       TIME_ICON, "spaceStarIcon")
+
+
+# ---- the OMNI crystal card (options, 2026-11-01) ---------------------------------------------------------------------------
+# BRITTLE_STAR.md 3.5: every crystal, the omni one included, adds ONE SPARE RING (up to two); throwing the ring (LT) needs a
+# spare, and the thrown ring detonates (the five-fold blast). The card is VesselHUDView.omniAbilitySprite: ONE sprite,
+# white (the lockup tints nothing on the omni card).
+from canvas import ngon  # noqa: E402
+import motifs  # noqa: E402
+
+
+def spare_ring(cx, cy, r, w=3.4):
+    """A ring: the pentagon outline, a point up (the support ring without its hull)."""
+    return stroke(ngon(5, r, cx, cy, rot=-90), w=w, closed=True)
+
+
+O_A_STAR = star(56.0, cx=50, cy=72)
+O_C_STAR = star(56.0, cy=46)
+O_B_STAR = star(38.0, cx=24)
+
+
+def omni_a():
+    # A  the spare: the star with a new ring floating up beside it - the crystal's gift.
+    return O_A_STAR() | spare_ring(98, 34, 20, w=4.2)
+
+
+def omni_b():
+    # B  what the spare buys: the star, its ring thrown ahead, and the ring's five-fold blast.
+    ring = spare_ring(64, 64, 15, w=4.0)
+    trail_ = stroke([(38, 64), (46, 64)], w=3.0)
+    blast = motifs.burst(102, 64, 24, spikes=10, inner=0.5, rot=-90)
+    return O_B_STAR() | ring | _clear_of(trail_, O_B_STAR(), px=2) | blast
+
+
+def omni_c():
+    # C  the stock: the star and the two spare rings it can hold, stacked under it.
+    return O_C_STAR() | spare_ring(42, 102, 16, w=4.0) | spare_ring(86, 102, 16, w=4.0)
+
+
+OMNI_BEFORE = None
+CARDS += [
+    dict(name="omni_a", group="omni", element="Omni", title="A  the spare: a new ring (white) floating up beside the star",
+         parts=dict(i=omni_a), states=[("a crystal collected", [("i", "white")])]),
+    dict(name="omni_b", group="omni", element="Omni",
+         title="B  what it buys: the star, its ring thrown ahead, the ring's five-fold blast",
+         parts=dict(i=omni_b), states=[("a crystal collected", [("i", "white")])]),
+    dict(name="omni_c", group="omni", element="Omni", title="C  the stock: the star and the two spare rings it can hold",
+         parts=dict(i=omni_c), states=[("a crystal collected", [("i", "white")])]),
+]

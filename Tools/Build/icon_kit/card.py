@@ -18,6 +18,8 @@ from PIL import Image, ImageDraw
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 STYLE = os.path.join(ROOT, "Assets", "Resources", "AbilityLockupStyle.asset")
 PETALS = os.path.join(ROOT, "Assets", "Resources", "ElementPetals")
+# The omni crystal card's upper plate wears this emblem, not a flower (AbilityLockupStyle.coreAbilityEmblems).
+OMNI_EMBLEM = os.path.join(ROOT, "Assets", "_Graphics", "ElementIcons", "OmniCrystal_Active.png")
 SS = 4   # supersample for the plate edges
 
 
@@ -62,6 +64,11 @@ def flower(element, size):
     approximation of ElementalBarsView's radial layout - the petal ladder's fill state is not modelled)."""
     path = os.path.join(PETALS, f"{element.lower()}_petal.png")
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    if element == "Omni":
+        if os.path.exists(OMNI_EMBLEM):
+            e = Image.open(OMNI_EMBLEM).convert("RGBA").resize((int(size * 0.8), int(size * 0.8)), Image.LANCZOS)
+            canvas.alpha_composite(e, ((size - e.width) // 2, (size - e.height) // 2))
+        return canvas
     if not os.path.exists(path):
         return canvas
     petal = Image.open(path).convert("RGBA")
