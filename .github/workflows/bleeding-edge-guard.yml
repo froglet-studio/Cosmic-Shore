@@ -21,36 +21,33 @@ name: Bleeding-edge guard
 #   1. validate  - static checks, ubuntu, seconds, no Unity and no license. Also
 #                  decides whether stage 2 is warranted at all (see the scope
 #                  step): a docs-only push cannot break a Unity build.
-#   2. unity     - a real compile (edit-mode tests force one). This is the only
-#                  stage that can see the failures Python cannot: package-level
-#                  compile errors, asset import breakage, AOT/IL2CPP problems.
+#   2. unity     - a real compile (edit-mode tests force one), on a GitHub-hosted
+#                  ubuntu runner in GameCI's Unity image, licensed from the
+#                  `unity-ci` GitHub Environment. The only stage that can see the
+#                  failures Python cannot: package-level compile errors, editor
+#                  assemblies, asset import breakage. While that environment holds
+#                  no Unity licence it runs the reference compile
+#                  (Tools/Build/unity_refcompile) instead and says so: that catches
+#                  `error CS` in project code but is not a Unity compile.
 #   3. report    - one self-closing tracking issue PER BRANCH saying whether
-#                  that branch is broken right now.
+#                  that branch is broken right now (bleeding-edge and development
+#                  only; a dispatch on any other branch reports in the run alone).
 #   4. autofix   - Claude repairs the mechanical classes of failure and opens a
 #                  PR. It NEVER pushes to the guarded branch directly; a bad
 #                  autofix landing unreviewed on trunk is worse than the break.
+#                  Guarded branches only.
 #
-# The unity job stays SKIPPED until the repository variable UNITY_RUNNER_LABEL
-# is set, exactly as in unity-ci.yml and build-branch-ci.yml. Skipping rather
-# than defaulting to a label matters: a job queued against a runner that does
-# not exist sits as a permanently pending check and GitHub only reaps it after
-# roughly 24 hours. Until that variable is set, only stage 1 runs and this
-# workflow cannot catch a compile break. See Docs/BUILD_AND_DELIVERY.md section 10.
-# That is the state today: the self-hosted runner was removed on 2026-10-13 and
-# the variable deleted, so the unity job skips until a runner is attached.
+# History: until 2026-10-13 stage 2 ran on a self-hosted runner (label
+# cosmic-build-win) on a developer's everyday PC. It was removed because this
+# repository is public, and nothing compiled the game on push until this job
+# moved to GitHub-hosted runners (2026-11-01). Docs/BUILD_AND_DELIVERY.md 10.1.
 #
-# SECURITY: this repository is public. Being push-only does NOT keep a
-# self-hosted runner away from untrusted code. This file also has
-# workflow_dispatch, so any writer can run it on their own branch, and any
-# workflow in any pushed branch or fork pull request can request the runner's
-# label whatever this file's triggers say: reachability belongs to the RUNNER,
-# not to a workflow. So a runner for UNITY_RUNNER_LABEL may only be an isolated
-# machine or VM holding no credentials, signing material, personal accounts or
-# browser sessions - never anyone's everyday PC - with its service on a
-# dedicated low-privilege local account, and only after fork pull request
-# approval is set to "Require approval for all external contributors" and the
-# default branches are protected. Docs/BUILD_AND_DELIVERY.md section 10
-# (Security) and the section 10.2 checklist.
+# SECURITY: this repository is public. No self-hosted runner is used here. The
+# Unity licence is in the `unity-ci` Environment, whose deployment branches must
+# be limited to bleeding-edge and development, so a workflow on any other branch
+# (or a fork pull request, which never receives secrets anyway) cannot read it.
+# Every third-party action is pinned to a commit SHA and the Unity image to a
+# digest. Docs/BUILD_AND_DELIVERY.md section 10.1 (Secrets).
 
 on:
   push:
@@ -97,14 +94,13 @@ jobs:
       # Read by the report job so the tracking issue names each one.
       red_generators: ${{ steps.generators.outputs.red }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           lfs: false        # source-only checks; binary assets are not needed
           fetch-depth: 1
 
-      # A docs-, workflow- or tooling-only push cannot break a Unity build, and
-      # proving that costs minutes of the single self-hosted runner that IL2CPP
-      # builds also queue behind. Compare the pushed range through the API
+      # A docs-only push cannot break a Unity build, and proving that costs tens
+      # of minutes of a hosted runner and a Unity licence activation. Compare the pushed range through the API
       # rather than deepening the checkout: this is a ~2.8 GB repository and
       # fetch-depth 0 would cost more than the compile being avoided.
       #
@@ -287,139 +283,270 @@ jobs:
 
   # ──────────────────────────────────────────────
   #  2. Unity compile - the only stage that sees a real build break
+  #
+  #  GitHub-hosted ubuntu, in GameCI's Unity image (pinned by digest in UNITY_IMAGE),
+  #  licensed from the `unity-ci` GitHub Environment. No self-hosted runner, so nothing
+  #  persistent for a public repository's jobs to reach: every run gets a fresh VM that
+  #  is discarded afterwards. Docs/BUILD_AND_DELIVERY.md section 10.1.
+  #
+  #  Two compilers, chosen per run by which secrets the environment holds:
+  #    unity       the real editor: licence activated, edit-mode suite run (forces a
+  #                full compile of runtime, editor and test assemblies), licence returned.
+  #    refcompile  Tools/Build/unity_refcompile, used ONLY while no Unity licence is in
+  #                the environment. Compiles the player config against real Unity
+  #                reference assemblies with Roslyn. It catches `error CS` in project
+  #                code but is NOT a Unity compile (no asset import, no editor
+  #                assemblies, no tests); the run says so in a warning and the report.
   # ──────────────────────────────────────────────
   unity:
     name: Unity compile
     needs: validate
-    # Two gates. No runner configured -> skip cleanly rather than queue forever
-    # against a label nobody answers. Nothing a build reads was touched -> skip,
-    # because this stage costs minutes of a single machine that IL2CPP player
-    # builds also queue behind.
-    if: vars.UNITY_RUNNER_LABEL != '' && needs.validate.outputs.unity_relevant == 'true'
-    runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
-    timeout-minutes: 60
+    # Nothing a build reads was touched -> skip. A docs-only push cannot break a build.
+    # Runs even when a static check failed: trunk can stay red on one generator for
+    # days (Docs/Reports/CI.md), and a compile that waits for green static checks
+    # would not run at all for that whole time. The scope output is written by the
+    # validate job's first step, so it is set whenever a later check failed.
+    if: ${{ !cancelled() && needs.validate.outputs.unity_relevant == 'true' }}
+    runs-on: ubuntu-latest
+    # A cold Library (first run, or a packages-lock change) imports the whole project.
+    timeout-minutes: 180
+    # The licence lives here, never in repository secrets or this file. Restrict the
+    # environment's deployment branches to bleeding-edge and development so no other
+    # branch's copy of a workflow can read the licence (section 10.1, Secrets).
+    environment: unity-ci
+    env:
+      # GameCI's editor image for the project's exact version, pinned by digest so a
+      # retag upstream cannot change what runs here. The version check below fails the
+      # job when ProjectSettings/ProjectVersion.txt moves on, so an upgrade re-pins this.
+      UNITY_VERSION: 6000.3.17f1
+      UNITY_IMAGE: unityci/editor:ubuntu-6000.3.17f1-base-3.2.2@sha256:05833b20f5b696c30a9ff2cbcf87dce201f5bf4be46b8fe8409a3085aacd6407
     outputs:
-      # 'compile' | 'tests' | 'ok' - read by the autofix job, which only acts on
-      # a compile break.
-      failure_kind: ${{ steps.compile.outputs.failure_kind }}
+      # 'compile' | 'tests' | 'infra' | 'ok' - read by the report and autofix jobs;
+      # autofix only acts on 'compile'.
+      failure_kind: ${{ steps.classify.outputs.failure_kind }}
+      # 'unity' | 'refcompile' - which compiler ran; the report names it.
+      compile_mode: ${{ steps.mode.outputs.mode }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true         # the project stores binary assets in Git LFS
-          fetch-depth: 1
-          # Do NOT clean. The default runs `git clean -ffdx`, which deletes
-          # Library/ every run and forces a full asset reimport - that is what
-          # made the first compile take 18 minutes, and it would have taken 18
-          # minutes on every push forever. A warm Library is the whole reason
-          # this job runs on an owned machine. Tracked files are force-reset by
-          # the checkout; UNTRACKED ones are not - see the next step.
-          clean: false
+      - name: Choose the compiler
+        id: mode
+        env:
+          # Through env, never interpolated into the script.
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ] && { [ -n "$UNITY_SERIAL" ] || [ -n "$UNITY_LICENSE" ]; }; then
+            echo "mode=unity" >> "$GITHUB_OUTPUT"
+            echo "Compiler: Unity $UNITY_VERSION (licence found in the unity-ci environment)."
+          else
+            echo "mode=refcompile" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Not a Unity compile::No Unity licence in the unity-ci environment (UNITY_EMAIL + UNITY_PASSWORD + UNITY_SERIAL or UNITY_LICENSE), so this run uses the reference compile (Tools/Build/unity_refcompile). It catches C# errors in project code; it does not import assets, compile editor assemblies or run tests. Docs/BUILD_AND_DELIVERY.md section 10.1."
+          fi
 
-      # `clean: false` preserves Library/ (the point) and also preserves any file
-      # that became untracked in this workspace (not the point). A ghost copy of
-      # the renamed Assets/_Scripts/Tests/EditMode/ folder survived that way and
-      # broke the IL2CPP build against a commit that does not contain it. Sweep
-      # the Unity source tree only, so Library/ at the repo root is untouched.
-      - name: Purge stale untracked files from the source tree
-        shell: bash
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          lfs: true         # 25 native plugin binaries; the editor loads the Linux ones
+          fetch-depth: 1
+
+      - name: Check the pinned editor matches the project
         run: |
           set -euo pipefail
-          # `git -c safe.directory='*'` is REQUIRED, not belt-and-braces.
-          # actions/checkout grants itself the safe.directory exception in a
-          # TEMPORARY global config (it overrides HOME for the duration of its
-          # own steps) and revokes it in post-job, so every later step runs
-          # under the real HOME with no exception at all. The workspace is owned
-          # by BUILTIN\Administrators while the runner service is
-          # NT AUTHORITY\NETWORK SERVICE, so bare git dies with
-          # "detected dubious ownership" and exit 128 - which is exactly how
-          # this step failed the first time it ran. Same trap that once killed
-          # `git rev-parse HEAD` here; the fix there was to stop calling git,
-          # and this step cannot. Scoped to the invocation, so nothing is
-          # written to the machine's global git config.
-          GIT=(git -c safe.directory='*')
-          "${GIT[@]}" clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
-          "${GIT[@]}" clean -ffd -- Assets Packages ProjectSettings
+          EXPECTED="$(grep '^m_EditorVersion:' ProjectSettings/ProjectVersion.txt | awk '{print $2}')"
+          echo "Project expects Unity $EXPECTED; this job pins $UNITY_VERSION."
+          case "$UNITY_IMAGE" in
+            *"ubuntu-$EXPECTED-"*) ;;
+            *) echo "::error::UNITY_IMAGE does not match ProjectSettings/ProjectVersion.txt ($EXPECTED). Re-pin UNITY_VERSION and UNITY_IMAGE (tag and digest from hub.docker.com/r/unityci/editor) in bleeding-edge-guard.yml."
+               exit 1 ;;
+          esac
+          [ "$EXPECTED" = "$UNITY_VERSION" ] || { echo "::error::UNITY_VERSION ($UNITY_VERSION) does not match the project ($EXPECTED)."; exit 1; }
 
-      - name: Compile check
-        id: compile
-        shell: bash
+      # ── unity mode ──────────────────────────────
+      # The image is ~5 GB compressed and Library/ for this project is large. The
+      # runner's preinstalled SDKs this job never uses are deleted to make room.
+      - name: Free disk space
+        if: steps.mode.outputs.mode == 'unity'
         run: |
-          # `set +e` is REQUIRED and must be explicit. GitHub invokes `shell: bash`
-          # as `bash --noprofile --norc -e -o pipefail {0}`, passing -e as a shell
-          # FLAG. `set -uo pipefail` sets u and pipefail but does NOT clear an
-          # inherited -e, so the step aborted the instant Unity exited non-zero:
-          # before PIPESTATUS was read, before compile-vs-tests was decided, and
-          # before UNITY_TESTS_BLOCKING was ever consulted. The symptom was a bare
-          # "Process completed with exit code 2" and a red job no repository
-          # variable could soften. Here the exit code IS the signal, not an abort.
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+                      /opt/hostedtoolcache/CodeQL /usr/share/swift /usr/local/share/boost || true
+          sudo docker image prune --all --force > /dev/null || true
+          df -h /
+
+      # One Library per day per packages-lock: saved by the first run of the day,
+      # restored (newest first) by every later one. A day key, not a commit key, so a
+      # branch that sees dozens of pushes a day does not churn the repository's 10 GB
+      # cache budget with near-identical multi-GB entries.
+      - name: Name the Library cache
+        if: steps.mode.outputs.mode == 'unity'
+        id: libkey
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Library
+        if: steps.mode.outputs.mode == 'unity'
+        id: lib
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: Library
+          key: unity-library-${{ env.UNITY_VERSION }}-${{ hashFiles('Packages/packages-lock.json') }}-${{ steps.libkey.outputs.day }}
+          restore-keys: |
+            unity-library-${{ env.UNITY_VERSION }}-${{ hashFiles('Packages/packages-lock.json') }}-
+            unity-library-${{ env.UNITY_VERSION }}-
+
+      - name: Read the serial from a Personal licence file
+        if: steps.mode.outputs.mode == 'unity'
+        id: serial
+        env:
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          # A Pro/Plus seat gives UNITY_SERIAL directly. A Personal licence is the
+          # Unity_lic.ulf file's contents in UNITY_LICENSE; its serial is the base64
+          # DeveloperData value minus a 4-byte prefix (GameCI's own conversion).
+          # Written to a file under RUNNER_TEMP, masked, never echoed.
+          set -euo pipefail
+          umask 077
+          if [ -n "$UNITY_SERIAL" ]; then
+            printf '%s' "$UNITY_SERIAL" > "$RUNNER_TEMP/unity-serial"
+          else
+            python3 -I -c 'import base64,os,re,sys
+          m = re.search(r"<DeveloperData Value=\"([^\"]+)\"", os.environ["UNITY_LICENSE"])
+          if not m: sys.exit("UNITY_LICENSE does not look like a Unity_lic.ulf (no DeveloperData)")
+          sys.stdout.write(base64.b64decode(m.group(1)).decode("latin-1")[4:])' > "$RUNNER_TEMP/unity-serial"
+          fi
+          echo "::add-mask::$(cat "$RUNNER_TEMP/unity-serial")"
+
+      - name: Compile with Unity
+        if: steps.mode.outputs.mode == 'unity'
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          set -uo pipefail
+          # The serial reaches the container through the environment, never argv.
+          UNITY_SERIAL="$(cat "$RUNNER_TEMP/unity-serial")"; export UNITY_SERIAL
+          rm -f "$RUNNER_TEMP/unity-serial"
+          docker run --rm \
+            --workdir /github/workspace \
+            --env UNITY_EMAIL --env UNITY_PASSWORD --env UNITY_SERIAL \
+            --env GITHUB_WORKSPACE=/github/workspace \
+            --volume "$GITHUB_WORKSPACE:/github/workspace" \
+            "$UNITY_IMAGE" \
+            bash /github/workspace/Tools/CI/unity_compile_in_container.sh
+          echo "Container exited with $?."
+          # The container ran as root; hand its output back to the runner user so the
+          # cache save and artifact upload can read it.
+          sudo chown -R "$(id -u):$(id -g)" Library editmode-results.xml unity-editmode.log unity-exit-code.txt 2>/dev/null || true
+
+      # Saved even when the compile or the tests failed: the imported assets are
+      # still good, and a cold import is the expensive part. Not on an exact hit.
+      - name: Save Library
+        if: always() && steps.mode.outputs.mode == 'unity' && steps.lib.outputs.cache-hit != 'true' && hashFiles('Library/ArtifactDB') != ''
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: Library
+          key: unity-library-${{ env.UNITY_VERSION }}-${{ hashFiles('Packages/packages-lock.json') }}-${{ steps.libkey.outputs.day }}
+
+      # ── refcompile mode ─────────────────────────
+      - name: Restore the reference-compile cache
+        if: steps.mode.outputs.mode == 'refcompile'
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        id: refcache
+        with:
+          path: ~/.cache/unity_refcompile
+          key: unity-refcompile-${{ hashFiles('Packages/packages-lock.json', 'Tools/Build/unity_refcompile/fetch.py', 'Tools/Build/unity_refcompile/source_patches.json') }}
+          restore-keys: unity-refcompile-
+
+      - name: Reference compile (no Unity licence)
+        if: steps.mode.outputs.mode == 'refcompile'
+        run: |
           set +e
           set -uo pipefail
-          UNITY="${UNITY_PATH:-${{ vars.UNITY_PATH }}}"
-          if [ -z "$UNITY" ]; then
-            echo "::error::UNITY_PATH is not set. Point it at the Unity 6000.3.17f1 executable on the runner."
+          export UNITY_REFCOMPILE_CACHE="$HOME/.cache/unity_refcompile"
+          export DOTNET_ROOT=/usr/share/dotnet
+          bash Tools/Build/unity_refcompile/run.sh --quiet-buckets 2>&1 | tee unity-editmode.log
+          echo "${PIPESTATUS[0]}" > unity-exit-code.txt
+          echo "Reference compile exited with $(cat unity-exit-code.txt)."
+
+      - name: Save the reference-compile cache
+        if: always() && steps.mode.outputs.mode == 'refcompile' && steps.refcache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/unity_refcompile
+          key: unity-refcompile-${{ hashFiles('Packages/packages-lock.json', 'Tools/Build/unity_refcompile/fetch.py', 'Tools/Build/unity_refcompile/source_patches.json') }}
+
+      # ── both modes ──────────────────────────────
+      - name: Classify the result
+        id: classify
+        if: always()
+        env:
+          MODE: ${{ steps.mode.outputs.mode }}
+          TESTS_BLOCKING: ${{ vars.UNITY_TESTS_BLOCKING }}
+        run: |
+          # `set +e` is REQUIRED and must be explicit: GitHub runs bash with -e as a
+          # flag, and here exit codes are the signal, not an abort.
+          set +e
+          set -uo pipefail
+          LOG=unity-editmode.log
+          CODE="$(cat unity-exit-code.txt 2>/dev/null)"
+          [ -n "$CODE" ] || CODE=none
+          echo "Compiler: $MODE, exit code: $CODE"
+
+          # Any `error CS` is a compile break, whatever the exit code says.
+          # Listed in the compiler's own order, deduplicated, NOT sorted: refcompile
+          # lists errors in files changed since bleeding-edge first ([CHANGED-TONIGHT]),
+          # and a sort pushed the one line that matters below 40 cascade errors.
+          # (refcompile lists only project-code errors; its unverifiable buckets are counted, not listed.)
+          if [ -f "$LOG" ] && grep -qE '\berror CS[0-9]+' "$LOG"; then
+            echo "failure_kind=compile" >> "$GITHUB_OUTPUT"
+            echo "::error::The project did not compile ($MODE). This is what breaks the Windows build."
+            grep -E '\berror CS[0-9]+' "$LOG" | awk '!seen[$0]++' | head -40
+            {
+              echo "### The project did not compile ($MODE)"; echo; echo '```'
+              grep -E '\berror CS[0-9]+' "$LOG" | awk '!seen[$0]++' | head -40
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          if [ ! -x "$UNITY" ]; then
-            echo "::error::UNITY_PATH is not executable: $UNITY"
-            exit 1
-          fi
 
-          EXPECTED="$(grep '^m_EditorVersion:' ProjectSettings/ProjectVersion.txt | awk '{print $2}')"
-          echo "Project expects Unity $EXPECTED"
-
-          RESULTS="$GITHUB_WORKSPACE/editmode-results.xml"
-          LOG="$GITHUB_WORKSPACE/unity-editmode.log"
-          rm -f "$RESULTS" "$LOG"
-
-          # Edit-mode tests force a full compile of runtime, editor, and test
-          # assemblies, which is what we actually care about here. -runTests must
-          # NOT be combined with -quit.
-          "$UNITY" -batchmode -nographics \
-            -projectPath "$GITHUB_WORKSPACE" \
-            -runTests -testPlatform EditMode \
-            -testResults "$RESULTS" \
-            -logFile - | tee "$LOG"
-          CODE=${PIPESTATUS[0]}
-
-          # A non-zero exit means EITHER the project did not compile OR tests
-          # failed, and those are very different signals: a compile break is the
-          # thing that stops a Windows build and must always block, whereas a red
-          # test is a separate problem that should not trigger an autofix on
-          # gameplay code. Two independent discriminators, either one is enough:
-          #   - 'error CS' in the log is the definitive compiler marker
-          #   - no results XML means the run never reached the test phase
-          COMPILE_ERRORS=0
-          grep -qE '\berror CS[0-9]+' "$LOG" && COMPILE_ERRORS=1
-          [ -f "$RESULTS" ] || COMPILE_ERRORS=1
-
-          if [ "$CODE" -eq 0 ]; then
+          if [ "$CODE" = "0" ]; then
             echo "failure_kind=ok" >> "$GITHUB_OUTPUT"
-            echo "Compile clean, edit-mode tests green."
+            if [ "$MODE" = unity ]; then echo "Compile clean, edit-mode tests green."
+            else echo "Reference compile clean (not a Unity compile)."; fi
+            echo "Compile clean ($MODE)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
-          if [ "$COMPILE_ERRORS" -eq 1 ]; then
-            echo "failure_kind=compile" >> "$GITHUB_OUTPUT"
-            echo "::error::The project did not compile. This is what breaks the Windows build."
-            grep -E '\berror CS[0-9]+' "$LOG" | head -40 || true
+          if [ "$MODE" = refcompile ]; then
+            # Exit 2 = offline with no cache; anything else without an `error CS`
+            # line is the tool failing, not the project.
+            echo "failure_kind=infra" >> "$GITHUB_OUTPUT"
+            echo "::error::The reference compile could not run (exit $CODE). This is the tool or the network, not the project. Read the log above."
+            exit 1
+          fi
+
+          # unity mode, no `error CS`: no results XML means the editor never reached
+          # the test phase (activation, import or a crash) - not a classified break.
+          if [ ! -f editmode-results.xml ]; then
+            echo "failure_kind=infra" >> "$GITHUB_OUTPUT"
+            echo "::error::Unity did not reach the test phase (exit $CODE) and printed no compiler error: licence activation, asset import or an editor crash. Read the editor log artifact."
             exit 1
           fi
 
           echo "failure_kind=tests" >> "$GITHUB_OUTPUT"
           # Tests, not compilation. Blocking is a repo-variable decision, matching
           # the UNITY_TESTS_BLOCKING convention already used by unity-ci.yml.
-          if [ "${{ vars.UNITY_TESTS_BLOCKING }}" = "false" ]; then
+          if [ "$TESTS_BLOCKING" = "false" ]; then
             echo "::warning::Edit-mode tests failed, but UNITY_TESTS_BLOCKING is 'false', so this run is not being failed. The project DID compile."
             exit 0
           fi
           echo "::error::Edit-mode tests failed. The project compiled, so this is not a build break. Set UNITY_TESTS_BLOCKING=false to downgrade this to a warning while the suite is greened up."
           exit 1
 
-      # Only on failure. Nobody has ever opened the editor log of a green run,
-      # and uploading ~1 MB per push on a branch that sees dozens a day is pure
-      # noise. When it IS needed, it is the artifact the autofix reads.
-      - uses: actions/upload-artifact@v4
-        if: failure()
+      # Every run, green or red: the log is what the autofix reads on a break, and on
+      # a green run it is where a new warning is found. A few MB; kept 14 days.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
         with:
           name: editmode-results-${{ github.run_id }}
           path: |
@@ -442,7 +569,9 @@ jobs:
   report:
     name: Report status
     needs: [validate, unity]
-    if: always()
+    # Guarded branches only: a dispatch on a scratch branch must not open a
+    # "<branch> is broken" issue that notifies everyone watching the repository.
+    if: always() && (github.ref == 'refs/heads/bleeding-edge' || github.ref == 'refs/heads/development')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -455,6 +584,7 @@ jobs:
           VALIDATE: ${{ needs.validate.result }}
           UNITY: ${{ needs.unity.result }}
           KIND: ${{ needs.unity.outputs.failure_kind }}
+          MODE: ${{ needs.unity.outputs.compile_mode }}
           RED_GENERATORS: ${{ needs.validate.outputs.red_generators }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SHA: ${{ github.sha }}
@@ -464,8 +594,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Classify. A skipped unity job means no runner is configured, which is
-          # a gap rather than a break, so it must not raise an alarm.
+          # Classify. A skipped unity job means nothing a build reads changed, so
+          # it must not raise an alarm.
           broken=false
           summary=""
           if [ "$VALIDATE" = "failure" ]; then
@@ -476,9 +606,15 @@ jobs:
             fi
           elif [ "$UNITY" = "failure" ]; then
             broken=true
+            case "$MODE" in
+              unity)      compiler="Unity" ;;
+              refcompile) compiler="the reference compile (no Unity licence in the unity-ci environment)" ;;
+              *)          compiler="the compile job" ;;
+            esac
             case "$KIND" in
-              compile) summary="**The project did not compile.** This is what breaks the Windows build." ;;
+              compile) summary="**The project did not compile** ($compiler). This is what breaks the Windows build." ;;
               tests)   summary="Edit-mode tests failed. The project DID compile, so this is not a build break." ;;
+              infra)   summary="The compile job could not run ($compiler): licence activation, the network, an asset import or an editor crash. Not classified as a code break." ;;
               *)       summary="The Unity job failed before it could classify the failure." ;;
             esac
           fi
@@ -520,7 +656,7 @@ jobs:
           | Pushed by | @$ACTOR |
           | Run | $RUN_URL |
           | Static validation | $VALIDATE |
-          | Unity compile | $UNITY${KIND:+ ($KIND)} |
+          | Unity compile | $UNITY${KIND:+ ($KIND)}${MODE:+, compiler: $MODE} |
 
           Open the run above for the failing output. A compile break prints its
           \`error CS\` lines inline and attaches the full editor log as an artifact.
@@ -551,9 +687,12 @@ jobs:
     # and must not send Claude editing gameplay code to make a test pass.
     # `always()` is required because a needs-failure would otherwise skip this
     # job outright. A skipped `unity` job yields an empty output, so the second
-    # clause is false and this stays correct while no runner is configured.
+    # clause is false on a docs-only push.
+    # Guarded branches only, like the report: a scratch-branch dispatch (the
+    # negative control in section 10.1) must not spend a Claude run or open a PR.
     if: >-
-      always() && (
+      always() &&
+      (github.ref == 'refs/heads/bleeding-edge' || github.ref == 'refs/heads/development') && (
         needs.validate.result == 'failure' ||
         needs.unity.outputs.failure_kind == 'compile'
       )
@@ -594,7 +733,7 @@ jobs:
             echo "have=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         if: steps.key.outputs.have == 'true'
         with:
           lfs: false
@@ -652,8 +791,10 @@ jobs:
             has not taken yet, and re-running the generator would erase the
             first. Name the generator or the failing control and stop.
             If those pass, the failure came from the Unity compile stage instead.
-            Read the "Unity compile" job's log in this workflow run; it prints the
-            first 40 `error CS...` lines directly, and the full editor log is
+            Read the "Unity compile" job's log in this workflow run; its
+            "Classify the result" step prints the first 40 `error CS...` lines
+            (and says whether Unity or the reference compile produced them), and
+            the full log is
             attached to this run as the `editmode-results-${{ github.run_id }}`
             artifact.
 

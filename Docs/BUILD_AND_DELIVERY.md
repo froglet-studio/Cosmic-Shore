@@ -20,7 +20,7 @@ Owner: Shombith. Related: `Docs/STEAM_EA_INVESTOR_CHECKPOINT.pdf`, `Tools/Steam/
 | B6 | Crash reporting behind consent | **Done** — `CrashReportingService`, gated by the existing analytics consent. |
 | B7 | Steam overlay verification | **Blocked** — needs a real Steam build on the Playtest child app's `internal` branch (`Docs/STEAM_PLAYTEST_RUNBOOK.md` A4 step 6). Do it before Wave 0 (E7). |
 | — | Scheduled build verification (CI) | **Authored, static checks only** — `.github/workflows/unity-ci.yml`. Every Unity tier is skipped: there has been **no runner since 2026-10-13**, when the self-hosted one was removed. Stays skipped until a runner that meets §10 *Security* is attached. |
-| — | Bleeding-edge landing guard | **Authored, static half running** — `.github/workflows/bleeding-edge-guard.yml`. Checks every commit that lands on trunk and autofixes; the compile half has had no runner since 2026-10-13 and is skipped, see §10.1. |
+| — | Bleeding-edge landing guard | **Running, both halves** — `.github/workflows/bleeding-edge-guard.yml`. Checks every commit that lands on trunk and autofixes. Since 2026-11-01 its compile half runs on GitHub-hosted runners (GameCI's Unity image), no self-hosted runner. **Until the `unity-ci` environment holds a Unity licence it runs the reference compile instead**, which catches `error CS` but is not a Unity compile; see §10.1. |
 | — | Test build promotion | **Authored** — `.github/workflows/sync-build-branches.yml`. Moves `development` into `build/android` and `build/windows` every 3 weeks, Wednesday 06:00 PT, see §11. |
 | — | Internal build tagging | **Authored** — `.github/workflows/tag-internal-build.yml`. Tags `bleeding-edge` every Friday 06:00 PT; UGS builds that branch directly. |
 
@@ -300,11 +300,14 @@ A human can still run any of them on a `claude/**` branch from the Actions tab (
 
 ### No runner is attached
 
+**This section is about `unity-ci.yml` and `build-branch-ci.yml`.** The bleeding-edge guard no longer
+needs a runner: its compile moved to GitHub-hosted runners on 2026-11-01 (§10.1).
+
 **State since 2026-10-13: no runner.** The self-hosted runner that served the Unity jobs was removed
 that day — unregistered, and the `UNITY_RUNNER_LABEL` variable deleted — because it ran as a
 persistent service on a developer's everyday PC, which a public repository cannot allow (see
-*Security* below). The Unity compile stage in all three workflows stays skipped until a runner that
-meets that rule is attached.
+*Security* below). The Unity jobs in `unity-ci.yml` and `build-branch-ci.yml` stay skipped until a runner that
+meets that rule is attached (or they move to hosted runners the way the guard did).
 
 The `unity` job is **skipped entirely while the repository variable `UNITY_RUNNER_LABEL` is unset**,
 and when set it targets whatever runner label it names. Skipping rather than defaulting to a label is
@@ -394,45 +397,106 @@ completely unverified, and the first thing to notice was a human running a Windo
 
 | # | Job | Runs on | Gate | Catches |
 |---|---|---|---|---|
-| 1 | `validate` | `ubuntu-latest`, seconds, free | always | Editor-only API in player code, guard mistakes, `MonoBehaviour` name/file mismatch, missing `.meta` |
-| 2 | `unity` | `UNITY_RUNNER_LABEL` | skipped while that variable is unset | **Everything a real compile sees** — package-level errors, asset import breakage, AOT/IL2CPP |
-| 3 | `autofix` | `ubuntu-latest` | on failure of 1 or 2, and only if `ANTHROPIC_API_KEY` is set | Repairs the mechanical failure classes and opens a PR |
+| 1 | `validate` | `ubuntu-latest`, seconds, free | always | Editor-only API in player code, guard mistakes, `MonoBehaviour` name/file mismatch, missing `.meta`, generator drift |
+| 2 | `unity` (**Unity compile**) | `ubuntu-latest`, in GameCI's Unity image | the push touched `Assets/`, `Packages/`, `ProjectSettings/`, `Tools/CI/`, `Tools/Build/` or a workflow; runs **even when stage 1 is red** | Any `error CS` in runtime, editor and test assemblies, then the edit-mode suite |
+| 3 | `report` | `ubuntu-latest` | always, **bleeding-edge and development only** | One self-closing `<branch> is broken` issue per branch |
+| 4 | `autofix` | `ubuntu-latest` | stage 1 failed or stage 2 was a compile break, a credential is set, **guarded branches only** | Repairs the mechanical failure classes and opens a PR |
 
-### The load-bearing caveat
+### How the compile runs (since 2026-11-01)
 
-**Stage 2 is the only stage that can see a build break, and it is skipped until `UNITY_RUNNER_LABEL`
-is set.** Until then this workflow catches the static classes only, and a red Windows build can still
-reach trunk. That is the same gate as §10 and it is the single configuration change that turns all
-three workflows on at once. **It is the state today:** the runner was removed on 2026-10-13 and the
-variable deleted (§10, "No runner is attached").
+No self-hosted runner. The job runs on a fresh GitHub-hosted VM, which is discarded afterwards.
 
-Verify the state at any time by opening a recent **Unity CI** run and reading the job list: if
-`unity` shows *skipped*, no Unity has compiled the project in CI and every green check on that run
-came from the Python checkers alone.
+1. **It chooses the compiler** from the secrets in the `unity-ci` GitHub Environment:
+   - **`unity`** when `UNITY_EMAIL`, `UNITY_PASSWORD` and either `UNITY_SERIAL` or `UNITY_LICENSE`
+     are set. It pulls `unityci/editor:ubuntu-6000.3.17f1-base-3.2.2`, **pinned by digest** in
+     the workflow's `UNITY_IMAGE`, frees runner disk, restores `Library/` from the Actions cache, and
+     runs `Tools/CI/unity_compile_in_container.sh` in the container. That script activates the
+     licence the GameCI way (a throwaway blank project, four tries with backoff), runs the edit-mode
+     suite (which compiles runtime, editor and test assemblies), and **returns the licence on
+     exit**, whatever happened. `Library/` is saved once a day per `packages-lock.json` hash, so
+     dozens of pushes a day do not churn the 10 GB cache budget.
+   - **`refcompile`** while the environment holds no licence: `Tools/Build/unity_refcompile`
+     (player config), compiled against real Unity reference assemblies. It catches `error CS` in
+     project code. **It is not a Unity compile**: no asset import, no editor assemblies, no tests.
+     The run says so in a warning, in the step summary and in the tracking issue
+     (`compiler: refcompile`).
+2. **It checks the pinned image matches `ProjectSettings/ProjectVersion.txt`**, and fails with a
+   re-pin message when the project's Unity version moves on.
+3. **It classifies the result.** Any `error CS` line in the log is `compile`: it always blocks, and
+   the first 40 lines go to the log and the step summary. Exit 0 is `ok`. No results XML and no
+   compiler error is `infra` (licence, network, import or crash), which is not sent to autofix.
+   Anything else is `tests`, which blocks unless `UNITY_TESTS_BLOCKING=false`.
+4. **It attaches the log on every run** as the artifact `editmode-results-<run id>`
+   (`unity-editmode.log`, plus `editmode-results.xml` when Unity ran), kept 14 days.
 
-### Autofix rules
+The first Unity run (and the first after a `packages-lock.json` change) imports the whole
+project, so it is slow; the job's timeout is 180 minutes. Later runs restore `Library/`.
 
-- It opens a **pull request against `bleeding-edge`** and never pushes to the branch. An unreviewed
-  autofix landing on the integration trunk is worse than the break it was meant to repair.
-- It reuses an existing open `autofix/bleeding-edge*` PR rather than opening a second one, so a
-  repeated failure updates one PR instead of spawning a queue of them.
-- It is instructed to stop and explain when the failure is not one of the known mechanical classes,
-  rather than guessing at gameplay code.
-- With no `ANTHROPIC_API_KEY` configured the job warns and exits cleanly; verification still fails,
-  it simply is not repaired automatically.
+### The options that were compared (2026-11-01)
+
+| Option | Cost | Licence needed | Security on a public repo | Verdict |
+|---|---|---|---|---|
+| **GameCI image on GitHub-hosted runners** | Standard hosted runners are free for public repositories; the `Library/` cache fits inside the free 10 GB | A Unity seat for a CI Unity ID: a Pro/Plus serial, or a Personal `.ulf` if Froglet is eligible for Personal. Activated per run and returned | Fresh VM per job, nothing persists. Secrets sit in an environment limited to the guarded branches; fork PRs never get secrets; the image is pinned by digest and actions by SHA | **Chosen.** The cold import is slow; the daily `Library/` cache covers it |
+| Unity Build Automation, triggered from Actions | UGS build minutes, billed by Unity (the team already uses it for the internal and test builds) | None in GitHub; a UGS service-account key in an Actions secret to start builds | Builds run on Unity's machines; the key can start and cancel builds, so it needs an environment too | A full player build per push (20-60 min), sharing the queue with the internal builds. The result lives in UGS, so `error CS` and the log must be fetched back through the API |
+| Isolated self-hosted runner | A dedicated machine or VM, on all the time, plus its upkeep | A Unity seat on that machine | A runner takes **any** job that asks for its label, from any branch or fork workflow, so every point in §10 *Security* must hold | Fastest (warm `Library/`), but the most risk and upkeep. It is what was removed on 2026-10-13 |
+
+### Secrets: what to add, and where
+
+**Settings → Environments → `unity-ci`** (the first run that referenced it created it, empty):
+
+1. **Deployment branches and tags → Selected branches and tags**: add `bleeding-edge` and
+   `development`. After this, a run on any other branch (a scratch-branch dispatch included) is
+   refused at the environment and cannot read the licence.
+2. **Environment secrets**, one of these two sets, for a **Unity ID made for CI** (not a person's
+   account; activation cannot answer a two-factor prompt headless):
+
+| Secret | When | Value |
+|---|---|---|
+| `UNITY_EMAIL` | always | the CI Unity ID's email |
+| `UNITY_PASSWORD` | always | its password |
+| `UNITY_SERIAL` | Pro / Plus seat | the seat's serial key (Unity ID → Subscriptions). Each run activates it and returns it |
+| `UNITY_LICENSE` | Personal, instead of `UNITY_SERIAL` | the full contents of `Unity_lic.ulf` from a machine where that Unity ID activated a Personal licence (Windows `C:\ProgramData\Unity\Unity_lic.ulf`, macOS `/Library/Application Support/Unity/Unity_lic.ulf`, Linux `~/.local/share/unity3d/Unity/Unity_lic.ulf`) |
+
+Nothing else is needed: `UNITY_PATH` and `UNITY_RUNNER_LABEL` no longer affect this workflow.
+`UNITY_TESTS_BLOCKING` (a repository variable) works as before. **It is set to `false` today** (read from run 642), so once Unity runs, a red edit-mode test is a warning and only a compile break fails the job. Remove it once the suite is green.
+
+### Verify it took
+
+**Actions → Bleeding-edge guard → Run workflow** on `bleeding-edge`, then open the **Unity compile** job:
+
+- *Choose the compiler* prints `Compiler: Unity 6000.3.17f1`: the real compile is live.
+- It prints the **Not a Unity compile** warning: the environment's secrets are missing or misnamed.
+- The job is refused with a deployment-branch message: you ran it on a branch the environment does
+  not allow, which is the rule working.
+
+### Proof (2026-11-01)
+
+Before any licence was added, so every run used the reference compile. They were dispatched on
+branches outside the guarded pair, before the environment's branch rule was set.
+
+| Run | Branch | Unity compile job | What it showed |
+|---|---|---|---|
+| [#642](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41359298510) | `claude/ci-hosted-unity-compile` | **success**, 3 min (cold cache) | `RESULT: OK - no errors in project code (92 assemblies)`; report and autofix skipped (not a guarded branch) |
+| [#644](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41360054662) | `ci-scratch/unity-compile-negative-control` (one deliberately broken line in `TemplateText.cs`) | **failure**, `failure_kind=compile` | first error listed: `Assets/_Scripts/Data/TemplateText.cs(9,43): error CS0103: The name 'undefinedSymbolForCi' does not exist`; log attached as `editmode-results-41360054662` |
+
+The broken line was then reverted on the scratch branch (`ef11d94bf`); it never reached any other branch. The scratch branch can be deleted.
+**The `unity` path (licence, container, `Library/` cache) has not run yet**: it needs the secrets
+above. Its first run is the real proof, and a cold import will be slow.
 
 ### Security note
 
-This repository is **public**. Being push-triggered does **not** keep a self-hosted runner away from
-untrusted code: the guard also has `workflow_dispatch`, so any writer can run it on their own branch,
-and any workflow in any branch or fork pull request can request the runner's label whatever this
-file's triggers are. Whether a runner is safe is decided by the runner and the repository settings,
-not by this workflow — the rule is §10 *Security*, and no runner goes back on this stage until every
-point in it holds.
+The guard uses **no self-hosted runner**. Fork pull requests never trigger it (push and dispatch
+only) and never receive secrets; the licence is readable only by jobs that pass the `unity-ci`
+environment's branch rule. The self-hosted tiers of the other workflows still follow §10 *Security*.
 
 ---
 
 ## 10.2 Turning the compile stage on — self-hosted runner runbook
+
+> **The bleeding-edge guard no longer uses this.** Since 2026-11-01 it compiles on GitHub-hosted
+> runners (§10.1). This runbook applies only to the self-hosted tiers of `unity-ci.yml` (`il2cpp`,
+> `mono`, `compile`) and `build-branch-ci.yml`, and setting `UNITY_RUNNER_LABEL` no longer changes
+> the guard.
 
 **Decision (2026-08-07, revised 2026-10-13): self-hosted, on a dedicated, isolated Windows machine
 or VM.** No license secrets in GitHub, no billed minutes, and `Library/` stays warm between runs so a
