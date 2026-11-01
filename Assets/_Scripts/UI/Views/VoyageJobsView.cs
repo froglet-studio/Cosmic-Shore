@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -75,9 +76,10 @@ namespace CosmicShore.UI
                     return;
                 }
                 var to = content.Location(job.To);
-                cards[0].Show(content, style, job.From, VoyageRules.Route(content, job.From, job.To),
+                var underway = VoyageRules.Route(content, job.From, job.To);
+                cards[0].Show(content, style, job.From, underway,
                     VoyageRules.Fill(lines.CardUnderway, content.Location(job.From), to, to, content.Person(job.PilotId)),
-                    job.Title, null);
+                    job.Title, null, CourseLine(content, lines, underway));
                 return;
             }
 
@@ -103,11 +105,40 @@ namespace CosmicShore.UI
                 string eyebrow = VoyageRules.Fill(job.IsReturn ? lines.CardHomeRoute : lines.CardRoute, from, to, to,
                     content.Person(job.PilotId));
                 var taken = job;
+                var route = VoyageRules.Route(content, job.From, job.To);
                 shown[i].ShowStepper(null, null, null, null);
-                shown[i].Show(content, style, here, VoyageRules.Route(content, job.From, job.To), eyebrow, job.Title,
-                    () => SetSail(taken));
+                shown[i].Show(content, style, here, route, eyebrow, job.Title, () => SetSail(taken),
+                    CourseLine(content, lines, route));
             }
         }
+
+        /// <summary>
+        /// The card's course line on the real HyperSea (Docs/Voyages/VOYAGE_BOARD.md): how many light years the Ark
+        /// sails (light takes as many years), the thickest water on the way and how rough the course is, filled into the
+        /// content's authored <see cref="VoyageLines.CardCourse"/>. Null when the content is not charted.
+        /// </summary>
+        static string CourseLine(VoyageContent content, VoyageLines lines, IReadOnlyList<string> route)
+        {
+            if (lines == null || string.IsNullOrEmpty(lines.CardCourse)) return null;
+            var voyage = VoyageChart.For(content)?.Along(route);
+            if (voyage == null) return null;
+            string ly = voyage.LightYears.ToString("N0", CultureInfo.InvariantCulture);
+            return TemplateText.Fill(lines.CardCourse,
+                "ly", ly,
+                "years", ly,
+                "minutes", voyage.Minutes.ToString("N0", CultureInfo.InvariantCulture),
+                "sea", SeaName(lines, voyage.ThickestSea),
+                "intensity", voyage.Intensity.ToString(CultureInfo.InvariantCulture));
+        }
+
+        static string SeaName(VoyageLines lines, SeaKind sea) => sea switch
+        {
+            SeaKind.Spray => lines.SeaSpray,
+            SeaKind.Froth => lines.SeaFroth,
+            SeaKind.Water => lines.SeaWater,
+            SeaKind.Thick => lines.SeaThick,
+            _ => lines.SeaReef,
+        };
 
         const string DifficultyKey = "ArkEscort.Difficulty";
         const int DefaultDifficulty = 3;

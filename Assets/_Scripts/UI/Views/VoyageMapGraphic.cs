@@ -12,6 +12,12 @@ namespace CosmicShore.UI
     /// the HyperSea's locations and lanes seen from above, where the squad is, and the course a job sails. Drawn flat, as
     /// the UI's look is, into one mesh; each location's name is a label whose text is the content's own. Colours are the
     /// voyage harbour's (<see cref="VoyageToyDefinitionSO"/>).
+    ///
+    /// <para>When the content's locations are charted on the real HyperSea (the Voyage Board,
+    /// Docs/Voyages/VOYAGE_BOARD.md), the map is the Milky Way's own sea around them, coloured by how thick the water
+    /// is (<see cref="HyperSea.SeaColor"/>), the course is the one an Ark sails cell by cell round the reefs
+    /// (<see cref="VoyageChart"/>), a corner shows the whole galaxy with where this water is and Sol, and the caption
+    /// under the map is the job's course line (authored, filled by the caller). Uncharted content draws as before.</para>
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public class VoyageMapGraphic : MaskableGraphic
@@ -19,35 +25,80 @@ namespace CosmicShore.UI
         const float Pad = 0.12f;
         const float LaneWidth = 2f;
         const float RouteWidth = 5f;
+        const float CourseWidth = 3.5f;
         const float MarkerSize = 9f;
         const float HereSize = 16f;
+        const string LabelName = "Label";
+        const string CaptionName = "Course";
+
+        // The sea behind a charted map: one texture holding the framed water, the galaxy corner and a white strip the
+        // solid shapes sample, so the whole map stays one mesh and one draw.
+        const int SeaTexWidth = 128;
+        const int InsetTex = 64;
+        const int WhiteRows = 2;
+        const float InsetShare = 0.3f;
+        const float InsetMargin = 6f;
+        const double GalaxyHalf = 50000;
+        static readonly Color SeaTint = new(1f, 1f, 1f, 0.92f);
+        static readonly Color SolColor = new(1f, 1f, 1f, 0.95f);
 
         VoyageContent _content;
         VoyageToyDefinitionSO _style;
+        VoyageChart _chart;
+        VoyageChart.Voyage _voyage;
         string _here;
+        string _caption;
         readonly List<string> _route = new();
         readonly List<TMP_Text> _labels = new();
+        readonly List<bool> _labelShown = new();
         TMP_Text _labelTemplate;
+        TMP_Text _captionText;
         float _minX, _maxX, _minZ, _maxZ;
         Vector2 _placedFor;
+
+        static Texture2D s_Atlas;
+        static string s_AtlasKey;
+        Vector2 _white;
+        int _seaTexHeight;
+        bool _painted;
+
+        public override Texture mainTexture => _painted && _chart != null && s_Atlas ? s_Atlas : s_WhiteTexture;
 
         /// <summary>The text whose font, size and colour every location's label copies.</summary>
         public void SetLabelTemplate(TMP_Text template) => _labelTemplate = template;
 
         /// <summary>Draw <paramref name="content"/>'s map with the squad at <paramref name="here"/> and
         /// <paramref name="route"/> (location ids, in order) as the course. Null route: no course.</summary>
-        public void Show(VoyageContent content, VoyageToyDefinitionSO style, string here, IReadOnlyList<string> route)
+        public void Show(VoyageContent content, VoyageToyDefinitionSO style, string here, IReadOnlyList<string> route) =>
+            Show(content, style, here, route, null);
+
+        /// <summary>As <see cref="Show(VoyageContent, VoyageToyDefinitionSO, string, IReadOnlyList{string})"/>, with
+        /// <paramref name="caption"/> under the map (the course line; empty or null shows nothing).</summary>
+        public void Show(VoyageContent content, VoyageToyDefinitionSO style, string here, IReadOnlyList<string> route,
+            string caption)
         {
             _content = content;
             _style = style;
             _here = here;
+            _caption = caption;
             _route.Clear();
             if (route != null) _route.AddRange(route);
+            _chart = VoyageChart.For(content);
+            _voyage = _chart?.Along(_route);
             raycastTarget = false;
             Bounds();
             Label();
-            SetVerticesDirty();
+            Caption();
+            _placedFor = Vector2.zero;
+            Relayout();
         }
+
+        // On a charted map the board's y runs toward Sol and the screen's up, so it flips.
+        static Vector2 Pos(VoyageLocation l, bool charted) =>
+            charted ? new Vector2(l.GalaxyX, -l.GalaxyY) : new Vector2(l.ChartX, l.ChartZ);
+
+        /// <summary>A charted map draws only the charted locations.</summary>
+        bool Drawn(VoyageLocation l) => l != null && (_chart == null || l.Charted);
 
         void Bounds()
         {
@@ -56,57 +107,188 @@ namespace CosmicShore.UI
             if (_content?.Locations == null) return;
             foreach (var l in _content.Locations)
             {
-                if (l == null) continue;
-                _minX = Mathf.Min(_minX, l.ChartX);
-                _maxX = Mathf.Max(_maxX, l.ChartX);
-                _minZ = Mathf.Min(_minZ, l.ChartZ);
-                _maxZ = Mathf.Max(_maxZ, l.ChartZ);
+                if (!Drawn(l)) continue;
+                var p = Pos(l, _chart != null);
+                _minX = Mathf.Min(_minX, p.x);
+                _maxX = Mathf.Max(_maxX, p.x);
+                _minZ = Mathf.Min(_minZ, p.y);
+                _maxZ = Mathf.Max(_maxZ, p.y);
             }
         }
 
-        Vector2 At(VoyageLocation l)
+        float Scale()
         {
             var r = rectTransform.rect;
             float w = Mathf.Max(1e-3f, _maxX - _minX), h = Mathf.Max(1e-3f, _maxZ - _minZ);
-            float scale = Mathf.Min(r.width * (1f - 2f * Pad) / w, r.height * (1f - 2f * Pad) / h);
-            var centre = new Vector2((_minX + _maxX) * 0.5f, (_minZ + _maxZ) * 0.5f);
-            return r.center + new Vector2(l.ChartX - centre.x, l.ChartZ - centre.y) * scale;
+            return Mathf.Max(1e-6f, Mathf.Min(r.width * (1f - 2f * Pad) / w, r.height * (1f - 2f * Pad) / h));
         }
 
-        // The labels follow the map's size. Watched here rather than by overriding OnRectTransformDimensionsChange, whose
-        // access differs between the shipped uGUI (protected) and the compile gate's publicized reference (public).
+        Vector2 Centre => new((_minX + _maxX) * 0.5f, (_minZ + _maxZ) * 0.5f);
+
+        /// <summary>A map point (chart units, or light years with y flipped) in the rect.</summary>
+        Vector2 ToRect(Vector2 p) => rectTransform.rect.center + (p - Centre) * Scale();
+
+        /// <summary>A point in the rect back on the map.</summary>
+        Vector2 FromRect(Vector2 p) => Centre + (p - rectTransform.rect.center) / Scale();
+
+        Vector2 At(VoyageLocation l) => ToRect(Pos(l, _chart != null));
+
+        // The labels and the sea follow the map's size. Watched here rather than by overriding
+        // OnRectTransformDimensionsChange, whose access differs between the shipped uGUI (protected) and the compile
+        // gate's publicized reference (public).
         void LateUpdate()
         {
-            var size = rectTransform.rect.size;
-            if (size == _placedFor) return;
-            _placedFor = size;
-            PlaceLabels();
+            if (rectTransform.rect.size == _placedFor) return;
+            Relayout();
         }
+
+        void Relayout()
+        {
+            _placedFor = rectTransform.rect.size;
+            PaintSea();
+            PlaceLabels();
+            SetVerticesDirty();
+            SetMaterialDirty();
+        }
+
+        // ── The sea behind a charted map ─────────────────────────────────────
+
+        void PaintSea()
+        {
+            _painted = false;
+            if (_chart == null || float.IsInfinity(_minX)) return;
+            var r = rectTransform.rect;
+            if (r.width < 1f || r.height < 1f) return;
+            _seaTexHeight = Mathf.Clamp(Mathf.RoundToInt(SeaTexWidth * r.height / r.width), 16, 256);
+            int w = SeaTexWidth + InsetTex, h = Mathf.Max(_seaTexHeight, InsetTex) + WhiteRows;
+            _white = new Vector2((w - 0.5f) / w, (h - 0.5f) / h);
+
+            // Every card of the same content and size shares one texture: the sea is the same water on each.
+            var lo = FromRect(r.min);
+            var hi = FromRect(r.max);
+            string key = $"{_content.GetHashCode()}:{w}x{h}:{lo.x:F0},{lo.y:F0},{hi.x:F0},{hi.y:F0}";
+            _painted = true;
+            if (s_Atlas && s_AtlasKey == key) return;
+
+            if (!s_Atlas || s_Atlas.width != w || s_Atlas.height != h)
+            {
+                if (s_Atlas) Destroy(s_Atlas);
+                s_Atlas = new Texture2D(w, h, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Bilinear,
+                    hideFlags = HideFlags.HideAndDontSave,
+                    name = "VoyageSea",
+                };
+            }
+            var px = new Color32[w * h];
+            // The framed water: each texel the column density at its point.
+            for (int y = 0; y < _seaTexHeight; y++)
+            for (int x = 0; x < SeaTexWidth; x++)
+            {
+                double gx = lo.x + (hi.x - lo.x) * (x + 0.5) / SeaTexWidth;
+                double gy = -(lo.y + (hi.y - lo.y) * (y + 0.5) / _seaTexHeight);
+                px[y * w + x] = Sea(HyperSea.Density(gx, gy), 255);
+            }
+            // The whole galaxy, 100,000 ly across, clear outside the disk.
+            for (int y = 0; y < InsetTex; y++)
+            for (int x = 0; x < InsetTex; x++)
+            {
+                double gx = -GalaxyHalf + 2 * GalaxyHalf * (x + 0.5) / InsetTex;
+                double gy = -(-GalaxyHalf + 2 * GalaxyHalf * (y + 0.5) / InsetTex);
+                double rr = System.Math.Sqrt(gx * gx + gy * gy) / GalaxyHalf;
+                byte a = (byte)Mathf.RoundToInt(255f * Mathf.Clamp01((float)(1.0 - rr) * 12f));
+                px[y * w + SeaTexWidth + x] = Sea(HyperSea.Density(gx, gy), a);
+            }
+            for (int y = h - WhiteRows; y < h; y++)
+            for (int x = 0; x < w; x++)
+                px[y * w + x] = new Color32(255, 255, 255, 255);
+            s_Atlas.SetPixels32(px);
+            s_Atlas.Apply(false);
+            s_AtlasKey = key;
+        }
+
+        static Color32 Sea(double n, byte alpha)
+        {
+            var (r, g, b) = HyperSea.SeaColor(n);
+            return new Color32((byte)r, (byte)g, (byte)b, alpha);
+        }
+
+        Vector2 Uv(int x, int y) => new((float)x / s_Atlas.width, (float)y / s_Atlas.height);
+
+        Rect InsetRect()
+        {
+            var r = rectTransform.rect;
+            float size = Mathf.Min(r.width, r.height) * InsetShare;
+            return new Rect(r.xMax - size - InsetMargin, r.yMax - size - InsetMargin, size, size);
+        }
+
+        // ── The mesh ─────────────────────────────────────────────────────────
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
             if (_content?.Locations == null || _style == null || float.IsInfinity(_minX)) return;
+            bool sea = _painted && _chart != null && s_Atlas;
+            var white = sea ? _white : Vector2.zero;
+
+            if (sea)
+            {
+                var r = rectTransform.rect;
+                Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax),
+                    new Vector2(r.xMax, r.yMin), SeaTint, Uv(0, 0), Uv(0, _seaTexHeight), Uv(SeaTexWidth, _seaTexHeight),
+                    Uv(SeaTexWidth, 0));
+                // Under the lanes and places, so a place in the corner still shows over it.
+                Inset(vh, white);
+            }
 
             foreach (var lane in _content.Lanes ?? new List<VoyageLane>())
             {
                 var a = _content.Location(lane?.From);
                 var b = _content.Location(lane?.To);
-                if (a != null && b != null) Line(vh, At(a), At(b), LaneWidth, _style.LaneColor);
+                if (Drawn(a) && Drawn(b)) Line(vh, At(a), At(b), LaneWidth, _style.LaneColor, white);
             }
-            for (int i = 1; i < _route.Count; i++)
+
+            if (_voyage != null)
             {
-                var a = _content.Location(_route[i - 1]);
-                var b = _content.Location(_route[i]);
-                if (a != null && b != null) Line(vh, At(a), At(b), RouteWidth, _style.RouteColor);
+                // The course an Ark sails: cell by cell, round the reefs.
+                for (int i = 1; i < _voyage.Points.Count; i++)
+                    Line(vh, ToRect(Galaxy(_voyage.Points[i - 1])), ToRect(Galaxy(_voyage.Points[i])), CourseWidth,
+                        _style.RouteColor, white);
             }
+            else
+            {
+                for (int i = 1; i < _route.Count; i++)
+                {
+                    var a = _content.Location(_route[i - 1]);
+                    var b = _content.Location(_route[i]);
+                    if (Drawn(a) && Drawn(b)) Line(vh, At(a), At(b), RouteWidth, _style.RouteColor, white);
+                }
+            }
+
             foreach (var l in _content.Locations)
             {
-                if (l == null) continue;
-                if (l.Id == _here) Diamond(vh, At(l), HereSize, _style.HereColor);
+                if (!Drawn(l)) continue;
+                if (l.Id == _here) Diamond(vh, At(l), HereSize, _style.HereColor, white);
                 bool target = _route.Count > 0 && _route[^1] == l.Id;
-                Diamond(vh, At(l), target ? MarkerSize * 1.4f : MarkerSize, target ? _style.RouteColor : MarkerColor(l));
+                Diamond(vh, At(l), target ? MarkerSize * 1.4f : MarkerSize, target ? _style.RouteColor : MarkerColor(l),
+                    white);
             }
+
+        }
+
+        static Vector2 Galaxy((double x, double y) p) => new((float)p.x, (float)-p.y);
+
+        /// <summary>The whole galaxy in the corner, with Sol and where this map's water is.</summary>
+        void Inset(VertexHelper vh, Vector2 white)
+        {
+            var box = InsetRect();
+            Quad(vh, new Vector2(box.xMin, box.yMin), new Vector2(box.xMin, box.yMax), new Vector2(box.xMax, box.yMax),
+                new Vector2(box.xMax, box.yMin), Color.white, Uv(SeaTexWidth, 0), Uv(SeaTexWidth, InsetTex),
+                Uv(SeaTexWidth + InsetTex, InsetTex), Uv(SeaTexWidth + InsetTex, 0));
+            Vector2 InBox(Vector2 g) => box.center + g / (float)(2 * GalaxyHalf) * box.width;
+            Diamond(vh, InBox(new Vector2(0f, -(float)HyperSea.SolRadius)), 5f, SolColor, white);
+            Diamond(vh, InBox(Centre), 7f, _style.HereColor, white);
         }
 
         Color MarkerColor(VoyageLocation l) => l.Experience switch
@@ -116,34 +298,53 @@ namespace CosmicShore.UI
             _ => _style.PortColor,
         };
 
-        static void Line(VertexHelper vh, Vector2 a, Vector2 b, float width, Color c)
+        static void Line(VertexHelper vh, Vector2 a, Vector2 b, float width, Color c, Vector2 uv)
         {
             var d = b - a;
             if (d.sqrMagnitude < 1e-4f) return;
             var n = new Vector2(-d.y, d.x).normalized * (width * 0.5f);
-            Quad(vh, a - n, a + n, b + n, b - n, c);
+            Quad(vh, a - n, a + n, b + n, b - n, c, uv, uv, uv, uv);
         }
 
-        static void Diamond(VertexHelper vh, Vector2 p, float size, Color c)
+        static void Diamond(VertexHelper vh, Vector2 p, float size, Color c, Vector2 uv)
         {
             float s = size * 0.5f;
-            Quad(vh, p + new Vector2(0f, s), p + new Vector2(s, 0f), p + new Vector2(0f, -s), p + new Vector2(-s, 0f), c);
+            Quad(vh, p + new Vector2(0f, s), p + new Vector2(s, 0f), p + new Vector2(0f, -s), p + new Vector2(-s, 0f), c,
+                uv, uv, uv, uv);
         }
 
-        static void Quad(VertexHelper vh, Vector2 a, Vector2 b, Vector2 c, Vector2 d, Color color)
+        static void Quad(VertexHelper vh, Vector2 a, Vector2 b, Vector2 c, Vector2 d, Color color,
+            Vector2 ua, Vector2 ub, Vector2 uc, Vector2 ud)
         {
             int i = vh.currentVertCount;
             var v = UIVertex.simpleVert;
             v.color = color;
-            v.position = a; vh.AddVert(v);
-            v.position = b; vh.AddVert(v);
-            v.position = c; vh.AddVert(v);
-            v.position = d; vh.AddVert(v);
+            v.position = a; v.uv0 = ua; vh.AddVert(v);
+            v.position = b; v.uv0 = ub; vh.AddVert(v);
+            v.position = c; v.uv0 = uc; vh.AddVert(v);
+            v.position = d; v.uv0 = ud; vh.AddVert(v);
             vh.AddTriangle(i, i + 1, i + 2);
             vh.AddTriangle(i, i + 2, i + 3);
         }
 
-        // ── Labels: each location's own name ─────────────────────────────────
+        // ── Labels: each location's own name, and the course line ─────────────
+
+        TextMeshProUGUI NewText(string name, float sizeShare)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(transform, false);
+            var t = go.AddComponent<TextMeshProUGUI>();
+            if (_labelTemplate)
+            {
+                t.font = _labelTemplate.font;
+                t.fontSharedMaterial = _labelTemplate.fontSharedMaterial;
+                t.fontSize = _labelTemplate.fontSize * sizeShare;
+                t.color = _labelTemplate.color;
+            }
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            t.raycastTarget = false;
+            return t;
+        }
 
         void Label()
         {
@@ -151,32 +352,69 @@ namespace CosmicShore.UI
             // A copied card brings its labels along; adopt them rather than standing a second set.
             if (_labels.Count == 0)
                 foreach (Transform child in transform)
-                    if (child.TryGetComponent(out TMP_Text existing)) _labels.Add(existing);
+                    if (child.name == LabelName && child.TryGetComponent(out TMP_Text existing)) _labels.Add(existing);
             while (_labels.Count < n)
             {
-                var go = new GameObject("Label", typeof(RectTransform));
-                go.transform.SetParent(transform, false);
-                var t = go.AddComponent<TextMeshProUGUI>();
-                if (_labelTemplate)
-                {
-                    t.font = _labelTemplate.font;
-                    t.fontSharedMaterial = _labelTemplate.fontSharedMaterial;
-                    t.fontSize = _labelTemplate.fontSize * 0.6f;
-                    t.color = _labelTemplate.color;
-                }
+                var t = NewText(LabelName, 0.6f);
                 t.alignment = TextAlignmentOptions.Top;
-                t.textWrappingMode = TextWrappingModes.NoWrap;
-                t.raycastTarget = false;
-                ((RectTransform)go.transform).sizeDelta = new Vector2(160f, 24f);
+                ((RectTransform)t.transform).sizeDelta = new Vector2(160f, 24f);
                 _labels.Add(t);
             }
+
+            // Places on one spot (the three harbours ride Tumult's rim) show one name: where the squad is, else the
+            // course's end, else the first.
+            _labelShown.Clear();
             for (int i = 0; i < _labels.Count; i++)
             {
                 var l = i < n ? _content.Locations[i] : null;
-                _labels[i].gameObject.SetActive(l != null);
-                if (l != null) _labels[i].text = l.Name;
+                _labelShown.Add(Drawn(l));
             }
-            PlaceLabels();
+            string end = _route.Count > 0 ? _route[^1] : null;
+            for (int i = 0; i < n; i++)
+            {
+                if (!_labelShown[i]) continue;
+                var a = _content.Locations[i];
+                for (int j = i + 1; j < n; j++)
+                {
+                    if (!_labelShown[j]) continue;
+                    var b = _content.Locations[j];
+                    if ((Pos(a, _chart != null) - Pos(b, _chart != null)).sqrMagnitude > 1f) continue;
+                    bool keepB = b.Id == _here || (b.Id == end && a.Id != _here);
+                    if (keepB) { _labelShown[i] = false; break; }
+                    _labelShown[j] = false;
+                }
+            }
+
+            for (int i = 0; i < _labels.Count; i++)
+            {
+                var l = i < n ? _content.Locations[i] : null;
+                _labels[i].gameObject.SetActive(_labelShown[i]);
+                if (_labelShown[i]) _labels[i].text = l.Name;
+            }
+        }
+
+        void Caption()
+        {
+            if (!_captionText)
+            {
+                var existing = transform.Find(CaptionName);
+                if (existing) existing.TryGetComponent(out _captionText);
+            }
+            bool show = !string.IsNullOrEmpty(_caption);
+            if (!_captionText && !show) return;
+            if (!_captionText)
+            {
+                _captionText = NewText(CaptionName, 0.55f);
+                _captionText.alignment = TextAlignmentOptions.BottomLeft;
+                var rt = (RectTransform)_captionText.transform;
+                rt.anchorMin = new Vector2(0f, 0f);
+                rt.anchorMax = new Vector2(1f, 0f);
+                rt.pivot = new Vector2(0f, 0f);
+                rt.sizeDelta = new Vector2(-2f * InsetMargin, 24f);
+                rt.anchoredPosition = new Vector2(InsetMargin, InsetMargin);
+            }
+            _captionText.gameObject.SetActive(show);
+            if (show) _captionText.text = _caption;
         }
 
         void PlaceLabels()
@@ -185,7 +423,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < _labels.Count && i < _content.Locations.Count; i++)
             {
                 var l = _content.Locations[i];
-                if (l == null || !_labels[i]) continue;
+                if (!Drawn(l) || !_labels[i]) continue;
                 ((RectTransform)_labels[i].transform).anchoredPosition =
                     At(l) - rectTransform.rect.center + new Vector2(0f, -MarkerSize);
             }

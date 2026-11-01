@@ -83,5 +83,14 @@ namespace CosmicShore.ScriptableObjects
         public string CardHomeRoute = "{from} TO {to}";
         [Tooltip("The Voyage window's card for the job under way.")]
         public string CardUnderway = "UNDER WAY TO {to}";
+        [Tooltip("A voyage card's course line on the galaxy map: {ly} light years sailed (and light takes as many years: " +
+                 "{years}), {minutes} at a minute a cell, {sea} the thickest water crossed, {intensity} the course's I1-I4.")]
+        public string CardCourse = "{ly} LY THROUGH {sea} - LIGHT TAKES {years} YEARS";
+        [Tooltip("The sea's names, thinnest to thickest, for {sea}.")]
+        public string SeaSpray = "SPRAY";
+        public string SeaFroth = "FROTH";
+        public string SeaWater = "WATER";
+        public string SeaThick = "THICK WATER";
+        public string SeaReef = "REEF";
     }
 }

@@ -19567,6 +19567,27 @@ compile has no errors in the changed files (player and editor).
     VOYAGE". Leave freestyle and open the Voyage window: the cards now set out from the job's destination, the way home
     is one of them, and the news the job wrote shows as new work. Take the way home: docking keeps what was found.
 
+## 🔴 2026-11-01 — The Voyage Board in the game: the job cards draw the real Milky Way's sea and the course round the reefs (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md`. **Files:** `Data/Voyages/HyperSea.cs` (the board's sea model, ported line for
+line), `Data/Voyages/VoyageChart.cs` (the content's places and a job's course), `VoyageContent.cs` (`Charted`,
+`GalaxyX/Y/Z`), `VoyageContentSO.cs` (`CardCourse` and the five sea names), `UI/Views/VoyageMapGraphic.cs`,
+`VoyageJobCard.cs`, `VoyageJobsView.cs`, `Tests/Editor/HyperSeaTests.cs`; `VoyageContent.asset` from
+`author_voyage_assets.py` (which now also keeps `Toy_Voyage.asset`'s Ark escort wired). Affects: Garrett's voyage slice.
+Not compiled: the session had no Unity editor and no .NET SDK, so nothing here has been through a compiler.
+
+1. Open the project. **Pass:** no compile errors.
+2. Run `HyperSeaTests` and `VoyageRulesTests`. **Pass:** green (every `HyperSeaTests` number is the board's own output).
+3. Menu_Main, open the Voyage window. **Pass:** each job card's map is the sea around Tumult, blue-violet water with
+   orange reef patches; the slice's places sit on it with their names (one name, Celadon/Carmine/Aurum, where the
+   three harbours share Tumult); the job's course is a green line stepping cell by cell round the reefs, not a straight
+   lane; a small round galaxy sits in the top-right corner with a white dot (Sol) and a gold one (this water); under
+   the map a line such as "1,500 LY THROUGH WATER - LIGHT TAKES 1,500 YEARS".
+4. Edit `CardCourse` in `VoyageContent.asset` to empty. **Pass:** the line under the map disappears, nothing else changes.
+5. Open the window on a phone-sized Game view. **Pass:** the map, corner galaxy and line fit the card; opening the
+   window the first time takes no visible hitch (the sea is painted once and shared; courses are cached).
+6. Set sail on a card. **Pass:** the voyage plays as before (the lanes' cell counts still set the leg's length).
+
 ## Lavalamp wormhole lab: original lens + wall vs the new mobile water pipe, side by side (2026-10-28) - NOT EDITOR-VERIFIED
 
 **Files:** `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` + `LavalampWormholeLab.cs` (the lab, runtime
