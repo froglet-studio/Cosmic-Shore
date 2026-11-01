@@ -1,6 +1,6 @@
 # AI learning: what the last races taught
 
-Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-11-01 19:23 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
+Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-11-01 22:25 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
 
 **317 new flight(s)** since the last learn.
 
@@ -442,7 +442,7 @@ The person, every recorded race in this mode:
 | Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
 |---|---|---:|---:|---:|---:|---|
 | Dolphin | I1 | 12 | 7 | 58 s | 2 of 5 | 2026-10-29 04:18 |
-| Dolphin | I2 | 25 | 12 | 80 s | 7 of 8 | 2026-11-01 17:43 |
+| Dolphin | I2 | 18 | 12 | 80 s | 7 of 8 | 2026-11-01 17:43 |
 | Dolphin | I3 | 3 | 0 | - | 0 of 2 | 2026-10-29 07:13 |
 | Dolphin | I4 | 11 | 4 | 106 s | 1 of 3 | 2026-10-29 22:27 |
 
@@ -450,7 +450,7 @@ The AI rivals in those races (`regatta_rival_report.py`; judge only races flown 
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-dolphin      116      8    3.1    70       5%     1%   10/116  0: 113, 3: 29, 7: 27, 1: 23
+dolphin       95     11    5.4    74       5%     1%   10/95   0: 92, 3: 29, 7: 27, 1: 23
 ```
 
 ## Tandava
@@ -618,59 +618,11 @@ hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (ind
 
 ## Files the learners changed
 
-- `Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset`
-- `Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback_I2.asset`
-- `Assets/Resources/AIBoostPolicies/SerpentAIBoostPolicy_SerpentTime.asset`
-- `Assets/Resources/AIBoostPolicies/SerpentAIBoostPolicy_SerpentTime.asset.meta`
-- `Assets/Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset`
-- `Assets/Resources/AIBoostPolicies/ThresherAIBoostPolicy_ThresherTime.asset`
-- `Assets/Resources/AIBoostPolicies/ThresherAIBoostPolicy_ThresherTime.asset.meta`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Bloomrush.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Breakwater.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Broadside.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Cleave.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Scurry.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_SerpentGulag.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_SerpentTime.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Slingshot.md`
 - `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Tandava.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_ThresherTime.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Warpline.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_WreckingBall.md`
-- `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS_SkimRace.md`
 
-## What the sweep judged (2026-11-01 19:45 UTC)
+## What the sweep judged (2026-11-01 22:40 UTC)
 
-The sweep was down from 2026-10-29 13:20 to 2026-11-01 19:20 UTC: this session's worker kept restarting. This run
-covers everything that came in meanwhile. Yash's learner change (4e29d7da6b, "Switchback: Blast Run is the only
-intensity type") changed the learners' fingerprint, so every flight was learned again: 332 on the branches, about 75
-of them new.
-
-- **Switchback (Dolphin), now Blast Run only:** 6 Blast Run flights so far, all Yash's.
-  - The learner rewrote the mode-wide and I2 variants from the Blast Run races only (Classic races are left out).
-  - **The AI is far behind in Blast Run.** In the 3 Legendary I2 races Yash finished 26 rings in 195-224 s. The AIs
-    got 19 and 24, 10 and 13, then 11 and 11: 3.5 rings a minute, 11% circling.
-  - They stall mostly at gates 4 and 8, which are blocked gates at I2 (every even gate from 2,
-    `SwitchbackBlastRun.IsBlocked`). They also stall at gate 9, which is not blocked. So the AI loses its time getting
-    the key crystal and going through the door, which the learned boost numbers cannot fix.
-  - Yash is working on the Switchback AI now (d9816f4001, 414581980a), so this goes under "Waiting on", not into
-    a change here.
-- **ThresherTime (Thresher):** first variant learned (`ThresherAIBoostPolicy_ThresherTime`), from 3 finished races
-  at last. The AIs: 7.0 rings a minute, 1% circling, 1% stuck. Yash won 4 of 7 at I1, 1 of 3 at I2 and 1 of 3 at I4.
-  Close races: the numbers are the job.
-- **SerpentTime (Serpent):** first variant learned (`SerpentAIBoostPolicy_SerpentTime`). The AIs: 8.1 rings a
-  minute, 1% circling, 3% stuck. Yash won 9 of 13 at I1 and 1 of 5 at I3. The new numbers come from his races; the
-  next ones show whether they close the I1 gap.
-- **Breakwater (Sparrow):** variant refreshed from 12 races. None is newer than 2026-10-31, and all are I1-I4
-  Garrett-course races. The learner's own output; the rocket-range note under "Waiting on" still stands.
-- **SerpentGulag, Slingshot, Cleave, Scurry, the others:** no learned asset changed (too few finished races, or a
-  learner that reports only).
-
-## Waiting on
-
-- **Switchback Blast Run AI (Yash, in progress):** the AI Dolphins stall at the blocked gates (the key crystal and
-  the door) and reach about half the rings Yash does at Legendary I2. Numbers alone will not close that.
-- The Breakwater rocket max range (about 679 u, past its 229 u reach) waits on whoever owns the Breakwater rocket.
-- The flight-recording question from 2026-10-28 (Shombith's Switchback flights on `bleeding-edge` 2d2d01ab0e record
-  a ring list nobody flew near) is moot for learning now: those flights predate Blast Run and are left out.
+- **Every flight was learned again; no race was new.** b079ef27d9 / fc4ef88ce7 (2026-10-29, learners skip the
+  flights no person flew, such as a trainer's) changed the learners' fingerprint, so `ai_learn.py` relearned all 332
+  flights, 7 of which no person flew. No learned asset changed; only the date in `LEARNED_DRIVES_Switchback.md`
+  moved. The 2026-11-01 19:45 UTC verdicts and "Waiting on" stand.
