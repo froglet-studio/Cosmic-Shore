@@ -1,0 +1,165 @@
+{"schema": "froglet-compute/unity-recordings/1", "replays_setup": "on", "replays_folder": "C:\\Users\\Shombith\\.froglet-compute\\runs\\unity-train~r20261102-012159-e345\\serpenttime-serpent-i3\\replays", "replays": [{"file": "SerpentTime_2026-11-02_01-30.cstheater", "kept": "last", "bytes": 1623022, "match": {"episodes_total": 4, "best_fitness": -152.53842163085938, "best_rose": false, "seen": 1793563372.555}, "summary": {
+    "Schema": "cosmic-shore.replay-summary/1",
+    "RecordingFile": "SerpentTime_2026-11-02_01-30.cstheater",
+    "GameMode": 73,
+    "GameModeName": "SerpentTime",
+    "SceneName": "MinigameSerpentTime",
+    "Intensity": 3,
+    "ArenaOrigin": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "RecordedAtUtcTicks": 639291600480021381,
+    "DurationSeconds": 113.32255554199219,
+    "EndedBecause": "",
+    "HasResults": false,
+    "WinnerName": "",
+    "WinnerDomain": 0,
+    "Pilots": [
+        {
+            "Name": "Iggy",
+            "Domain": 2,
+            "VesselType": 2,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Cassian",
+            "Domain": 4,
+            "VesselType": 2,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Bob",
+            "Domain": 2,
+            "VesselType": 2,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Dragon",
+            "Domain": 1,
+            "VesselType": 7,
+            "IsAI": false,
+            "IsLocal": true
+        }
+    ],
+    "Results": [],
+    "Gates": [
+        {
+            "Index": 0,
+            "Position": {
+                "x": 0.000009012427653942723,
+                "y": 1074.47607421875,
+                "z": 0.000013997937458043452
+            },
+            "Axis": {
+                "x": -0.9309431910514832,
+                "y": -0.03765832632780075,
+                "z": -0.3632170855998993
+            },
+            "Radius": 50.0
+        },
+        {
+            "Index": 1,
+            "Position": {
+                "x": -110.31839752197266,
+                "y": 634.9063110351563,
+                "z": -59.438560485839847
+            },
+            "Axis": {
+                "x": -0.5706527233123779,
+                "y": -0.6792667508125305,
+                "z": -0.461467444896698
+            },
+            "Radius": 50.0
+        },
+        {
+            "Index": 2,
+            "Position": {
+                "x": -443.0445556640625,
+                "y": -15.311939239501954,
+                "z": -458.0147705078125
+            },
+            "Axis": {
+                "x": -0.09005102515220642,
+                "y": -0.8231818675994873,
+                "z": 0.5605911016464233
+            },
+            "Radius": 50.0
+        },
+        {
+            "Index": 3,
+            "Position": {
+                "x": -216.75535583496095,
+                "y": -594.4461059570313,
+                "z": 73.874267578125
+            },
+            "Axis": {
+                "x": 0.8049229383468628,
+                "y": 0.30325183272361758,
+                "z": 0.5100367665290833
+            },
+            "Radius": 50.0
+        },
+        {
+            "Index": 4,
+            "Position": {
+                "x": 463.759765625,
+                "y": -248.33421325683595,
+                "z": 354.9642028808594
+            },
+            "Axis": {
+                "x": 0.0669151321053505,
+                "y": 0.9836974740028381,
+                "z": 0.16691815853118897
+            },
+            "Radius": 50.0
+        },
+        {
+            "Index": 5,
+            "Position": {
+                "x": 287.199462890625,
+                "y": 530.8265380859375,
+                "z": 203.0352325439453
+            },
+            "Axis": {
+                "x": 0.01754053682088852,
+                "y": 0.9551014304161072,
+                "z": -0.29575932025909426
+            },
+            "Radius": 50.0
+        },
+        {
+            "Index": 6,
+            "Position": {
+                "x": 536.4180908203125,
+                "y": 926.2556762695313,
+                "z": -24.17789649963379
+            },
+            "Axis": {
+                "x": -0.6553861498832703,
+                "y": 0.23650909960269929,
+                "z": -0.7173091769218445
+            },
+            "Radius": 50.0
+        },
+        {
+            "Index": 7,
+            "Position": {
+                "x": 147.4921875,
+                "y": 615.3026733398438,
+                "z": 12.878132820129395
+            },
+            "Axis": {
+                "x": -0.9160593748092651,
+                "y": 0.28081801533699038,
+                "z": 0.286315381526947
+            },
+            "Radius": 50.0
+        }
+    ],
+    "CourseSeed": 221765572
+}}], "flights_folder": "C:\\Users\\Shombith\\.froglet-compute\\runs\\unity-train~r20261102-012159-e345\\serpenttime-serpent-i3\\ai-flights", "flights": [{"file": "aiflight_SerpentTime_Dolphin_20261102_013250.json", "bytes": 588050, "pilot": "trainer", "note": "flown by the trainer's AI, saved by a version of the game whose recorder took the trainer's seat for a person's (newer versions store none): never learn from it"}], "third_eye": "open: the first pilot, Chase; ] or Tab picks the next, C the camera", "stills": [], "stills_note": "this version's Third Eye cannot save its view", "updated": 1793563372.566}

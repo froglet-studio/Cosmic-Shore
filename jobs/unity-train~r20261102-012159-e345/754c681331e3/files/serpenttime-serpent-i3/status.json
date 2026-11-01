@@ -1,0 +1,14 @@
+{
+ "best_fitness": -152.53842163085938,
+ "diagnostics": "recording 60s as 'froglet-compute-Serpent_SerpentTime_I3' \u00b7 51 markers timed \u00b7 path ON \u00b7 ents=2246 meshes=5 mats=9",
+ "episodes": 4,
+ "episodes_total": 4,
+ "generation": 0,
+ "loss": 152.53842163085938,
+ "people_line": "3000 points from 5 race(s)",
+ "phase": "done",
+ "scenario": "Serpent_SerpentTime_I3",
+ "seed": "1 gene(s) from the people's races: 27 race(s) by gradi, owner, shombith: boost.min_charge; 5 line(s), 3000 points",
+ "unit_episodes": 1,
+ "updated": 1793563382.400434
+}

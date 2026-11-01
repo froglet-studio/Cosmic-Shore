@@ -1,0 +1,5901 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3dd9dff9d6f4d4e8c2d6f74378d739d, type: 3}
+  m_Name: SessionState
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Utility.AITraining.TrainingSessionStateSO
+  ScenarioKey: Serpent_SerpentTime_I3
+  LastWriteUtc: 2026-11-01T20:02:44.0013636Z
+  EpisodesCompleted: 4
+  EpisodesRequested: 1
+  Population:
+    populationSize: 24
+    eliteCount: 4
+    numericMutationRate: 0.3
+    numericMutationStrength: 0.18
+    structuralMutationRate: 0.04
+    noveltyWeight: 0.15
+    tournamentSize: 3
+    generation: 0
+    evaluationsThisGen: 4
+    nextCheckoutIndex: 4
+    population:
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 100
+      - 0.97
+      - 0.25
+      - 0.9
+      - 40
+      - 0.18
+      - 10
+      - 0.4
+      - 0.6
+      - 0.65
+      - 0.005
+      - 0.2
+      - 12
+      - 0.5
+      - 0.94
+      - 0.9
+      - 1
+      - 5
+      - 12
+      - 80
+      - 0.1
+      - 1
+      - 1
+      - 30
+      - 0.95
+      - 1
+      - 2
+      - 4
+      - 0.6
+      - 0.4
+      - 0.92
+      - 4
+      - 0.6
+      - 0.4
+      - 0.92
+      - 4
+      - 0.6
+      - 0.4
+      - 0.92
+      - 0.4
+      - 0.3
+      - 0.3
+      - 80
+      - 0.5
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      GenerationBorn: 0
+      EvaluationCount: 1
+      Fitness: -454.44144
+      NoveltyScore: 1
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 62.520416
+      - 0.9847082
+      - 0.57114685
+      - 0.51390165
+      - 101.23841
+      - 0.57103974
+      - 25.570713
+      - 0.2620856
+      - 0.5706494
+      - 0.91248083
+      - 0.035514053
+      - 0.25546637
+      - 8.583589
+      - 0.19392669
+      - 0.9555064
+      - 0.93383354
+      - 2.1582968
+      - 26.247238
+      - 15.242575
+      - 107.480194
+      - 0.13947858
+      - 0.5910292
+      - 0.14280951
+      - 5.086233
+      - 0.98925567
+      - 1.0997912
+      - 3.8515158
+      - 7.6415696
+      - 0.9487983
+      - 0.37015563
+      - 0.76777816
+      - 7.720296
+      - 0.18347037
+      - 0.34943813
+      - 0.94157356
+      - 11.740879
+      - 0.9784118
+      - 0.15939152
+      - 0.88486254
+      - 1.0488192
+      - 0.7176595
+      - 0.37564474
+      - 167.65852
+      - 0.12337406
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 1
+      Fitness: -297.1457
+      NoveltyScore: 17
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 184.5856
+      - 0.97213817
+      - 1.2117609
+      - 0.83415794
+      - 102.75876
+      - 0.5019568
+      - 4.2723117
+      - 0.749936
+      - 0.12516578
+      - 0.93983084
+      - 0.013295981
+      - 0.05821247
+      - 38.146782
+      - 0.9793879
+      - 0.9438283
+      - 0.863712
+      - 0.35942554
+      - 19.495712
+      - 19.722631
+      - 114.933754
+      - 0.22942787
+      - 0.5033433
+      - 0.50885767
+      - 58.41934
+      - 0.87344736
+      - 0.23314695
+      - 1.383676
+      - 8.6791725
+      - 0.8595458
+      - 0.89699316
+      - 0.7340815
+      - 2.1438398
+      - 0.46907824
+      - 0.74574697
+      - 0.74167776
+      - 8.2237625
+      - 0.034145236
+      - 0.7177104
+      - 0.8358836
+      - 0.6084303
+      - 0.6381407
+      - 0.38429946
+      - 122.61232
+      - 0.11514719
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 1
+      Fitness: -152.53842
+      NoveltyScore: 17.5
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 84.95365
+      - 0.9408796
+      - 1.230551
+      - 0.92853737
+      - 59.894753
+      - 0.11785311
+      - 17.686697
+      - 0.0063507673
+      - 0.7793053
+      - 0.6622387
+      - 0.048108257
+      - 0.3915095
+      - 2.228427
+      - 0.4797303
+      - 0.70376253
+      - 0.9424021
+      - 0.744166
+      - 4.0850616
+      - 14.50885
+      - 46.35
+      - 0.01097281
+      - 0.38198167
+      - 0.6760342
+      - 35.28178
+      - 0.97843295
+      - 1.5473628
+      - 5.0484405
+      - 9.653167
+      - 0.2773394
+      - 0.500601
+      - 0.98287886
+      - 14.15301
+      - 0.38611788
+      - 0.016941547
+      - 0.8065102
+      - 11.603858
+      - 0.8778324
+      - 0.23908913
+      - 0.9570864
+      - 0.44813997
+      - 0.99978554
+      - 0.061749816
+      - 82.30949
+      - 0.7577139
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 1
+      Fitness: -1427.764
+      NoveltyScore: 15.666667
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 187.73792
+      - 0.9520134
+      - 0.6712147
+      - 0.71985435
+      - 115.01687
+      - 0.25774112
+      - 2.084014
+      - 0.7322139
+      - 0.9185822
+      - 0.9474329
+      - 0.045528848
+      - 0.3725032
+      - 22.097233
+      - 0.31804758
+      - 0.8266487
+      - 0.8822892
+      - 1.4606829
+      - 7.4452186
+      - 17.885794
+      - 109.9184
+      - 0.12141365
+      - 0.30762154
+      - 0.3193546
+      - 23.768332
+      - 0.87947553
+      - 2.084684
+      - 3.5088186
+      - 11.818935
+      - 0.018303514
+      - 0.8599832
+      - 0.8472998
+      - 10.361767
+      - 0.27578503
+      - 0.026307225
+      - 0.8175332
+      - 12.061404
+      - 0.46845132
+      - 0.000054478645
+      - 0.7426417
+      - 1.3601131
+      - 0.8899481
+      - 0.75534546
+      - 121.71689
+      - 0.66236925
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 85.470436
+      - 0.980798
+      - 1.1233726
+      - 0.4693169
+      - 17.718155
+      - 0.27964282
+      - 25.785389
+      - 0.77106595
+      - 0.6141589
+      - 0.51011384
+      - 0.037868507
+      - 0.06216507
+      - 8.111715
+      - 0.15803087
+      - 0.8760705
+      - 0.9592486
+      - 1.0587986
+      - 3.043667
+      - 23.561571
+      - 176.63579
+      - 0.27223015
+      - 0.033759475
+      - 0.7997849
+      - 73.05656
+      - 0.9000834
+      - 1.5896558
+      - 4.474966
+      - 3.906529
+      - 0.8051083
+      - 0.32883996
+      - 0.8545402
+      - 14.420884
+      - 0.8220562
+      - 0.6192182
+      - 0.8458478
+      - 0.6006716
+      - 0.038613915
+      - 0.9933952
+      - 0.9832476
+      - 1.4233797
+      - 0.8429748
+      - 0.5907869
+      - 133.81241
+      - 0.3646724
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 33.77413
+      - 0.9725255
+      - 0.69871056
+      - 0.98179924
+      - 114.47665
+      - 0.12485485
+      - 28.576775
+      - 0.08786772
+      - 0.4243021
+      - 0.95203596
+      - 0.046524566
+      - 0.3285761
+      - 37.734207
+      - 0.05391085
+      - 0.9650419
+      - 0.91952896
+      - 2.743013
+      - 8.772503
+      - 12.544613
+      - 156.71982
+      - 0.28146076
+      - 0.38974577
+      - 0.5116213
+      - 18.651335
+      - 0.85947895
+      - 1.3248372
+      - 4.596548
+      - 5.824441
+      - 0.27170712
+      - 0.3062138
+      - 0.72150886
+      - 12.201206
+      - 0.91707194
+      - 0.120868206
+      - 0.7207086
+      - 14.967448
+      - 0.5966007
+      - 0.56287235
+      - 0.91482896
+      - 1.3179581
+      - 0.9408355
+      - 0.09579134
+      - 76.63556
+      - 0.13054156
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 128.08649
+      - 0.94579744
+      - 0.94525176
+      - 0.93886155
+      - 34.510887
+      - 0.47037962
+      - 16.63505
+      - 0.072335646
+      - 0.41676646
+      - 0.5982324
+      - 0.014663753
+      - 0.31610385
+      - 10.002491
+      - 0.62562835
+      - 0.8963212
+      - 0.9342828
+      - 0.62515694
+      - 2.3889327
+      - 17.195074
+      - 125.55545
+      - 0.019695712
+      - 0.027448773
+      - 0.21766579
+      - 37.07273
+      - 0.9006396
+      - 1.7762847
+      - 5.975964
+      - 2.6836321
+      - 0.5577794
+      - 0.82887375
+      - 0.9770463
+      - 12.343234
+      - 0.8324659
+      - 0.7338743
+      - 0.75341284
+      - 9.455112
+      - 0.96777594
+      - 0.6836926
+      - 0.96814007
+      - 1.2747942
+      - 0.25211853
+      - 0.37820333
+      - 184.9901
+      - 0.92078125
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 178.3474
+      - 0.95291233
+      - 0.6685829
+      - 0.7458881
+      - 46.035297
+      - 0.15632884
+      - 23.00064
+      - 0.94376415
+      - 0.99455243
+      - 0.5514005
+      - 0.040777016
+      - 0.3910365
+      - 19.9774
+      - 0.5874842
+      - 0.7948013
+      - 0.92946076
+      - 2.5506725
+      - 29.763008
+      - 11.021328
+      - 31.301304
+      - 0.2780037
+      - 0.49532968
+      - 0.7705002
+      - 54.145824
+      - 0.9806411
+      - 2.1128218
+      - 5.961322
+      - 11.628787
+      - 0.3214149
+      - 0.119965315
+      - 0.8134621
+      - 2.7743626
+      - 0.022437215
+      - 0.026668906
+      - 0.7738855
+      - 0.9429353
+      - 0.9650785
+      - 0.872352
+      - 0.9141841
+      - 1.1381747
+      - 0.22035742
+      - 0.5577788
+      - 136.68098
+      - 0.23876655
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 70.78568
+      - 0.9641067
+      - 0.96526587
+      - 0.6271185
+      - 89.06823
+      - 0.5377075
+      - 4.5883536
+      - 0.43323332
+      - 0.52653885
+      - 0.5729723
+      - 0.048228797
+      - 0.09139385
+      - 13.006819
+      - 0.24899936
+      - 0.822649
+      - 0.8883667
+      - 2.6320896
+      - 26.659151
+      - 5.6818066
+      - 107.92229
+      - 0.19939904
+      - 0.31326932
+      - 0.91185486
+      - 33.51524
+      - 0.8592184
+      - 0.4336335
+      - 1.9837695
+      - 10.042829
+      - 0.70279825
+      - 0.91248405
+      - 0.9187111
+      - 1.5526068
+      - 0.14497066
+      - 0.6517327
+      - 0.9674916
+      - 6.105238
+      - 0.98150945
+      - 0.03559053
+      - 0.79700506
+      - 0.7817301
+      - 0.7952522
+      - 0.20674562
+      - 45.78268
+      - 0.9125026
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 69.46301
+      - 0.9728663
+      - 1.0372977
+      - 0.99442166
+      - 64.43742
+      - 0.4966671
+      - 27.622036
+      - 0.6422959
+      - 0.384489
+      - 0.49664524
+      - 0.015790163
+      - 0.21924078
+      - 29.741879
+      - 0.79096186
+      - 0.8234068
+      - 0.9057106
+      - 2.2282434
+      - 29.400173
+      - 16.716728
+      - 162.24536
+      - 0.18277472
+      - 0.44134837
+      - 0.92098117
+      - 49.744358
+      - 0.9329536
+      - 1.3628312
+      - 2.1986165
+      - 10.375496
+      - 0.22191215
+      - 0.6847402
+      - 0.941582
+      - 10.996811
+      - 0.44625884
+      - 0.78345585
+      - 0.741472
+      - 5.4591513
+      - 0.35555083
+      - 0.0026289225
+      - 0.8756722
+      - 0.42527297
+      - 0.22290528
+      - 0.8857392
+      - 176.48186
+      - 0.63369936
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 132.1001
+      - 0.992239
+      - 0.7561363
+      - 0.43440223
+      - 57.094242
+      - 0.48032603
+      - 2.33423
+      - 0.7665069
+      - 0.119542256
+      - 0.33127627
+      - 0.036400583
+      - 0.053377103
+      - 13.274757
+      - 0.04468751
+      - 0.9491787
+      - 0.968025
+      - 2.8263748
+      - 16.860138
+      - 5.108611
+      - 150.01064
+      - 0.07782829
+      - 0.2054944
+      - 0.660751
+      - 48.071594
+      - 0.99474484
+      - 2.3407018
+      - 3.9569125
+      - 7.922792
+      - 0.34298438
+      - 0.95063746
+      - 0.75137675
+      - 0.9216086
+      - 0.96897984
+      - 0.674402
+      - 0.8888071
+      - 4.4695444
+      - 0.5701204
+      - 0.63753486
+      - 0.7874558
+      - 1.2983062
+      - 0.25658816
+      - 0.98572135
+      - 198.03493
+      - 0.8258124
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 32.90181
+      - 0.9302105
+      - 0.8231393
+      - 0.6425032
+      - 57.450382
+      - 0.021520972
+      - 24.045593
+      - 0.81469005
+      - 0.72005653
+      - 0.34497082
+      - 0.02735121
+      - 0.3840209
+      - 19.040926
+      - 0.75163805
+      - 0.97817767
+      - 0.9858334
+      - 0.45383024
+      - 1.0612857
+      - 20.587626
+      - 55.659218
+      - 0.26330814
+      - 0.51397794
+      - 0.18701017
+      - 68.55833
+      - 0.88512355
+      - 1.9466497
+      - 1.7582102
+      - 11.59671
+      - 0.18355131
+      - 0.7181926
+      - 0.9457108
+      - 13.587789
+      - 0.94460917
+      - 0.057955384
+      - 0.93924767
+      - 12.506064
+      - 0.6464832
+      - 0.4741171
+      - 0.86142087
+      - 0.47987226
+      - 0.4808845
+      - 0.094545126
+      - 119.875305
+      - 0.18217301
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 109.54983
+      - 0.9522935
+      - 0.8327682
+      - 0.5855869
+      - 119.32487
+      - 0.53418994
+      - 26.490269
+      - 0.5261428
+      - 0.19910999
+      - 0.9040812
+      - 0.033683907
+      - 0.058869172
+      - 18.271797
+      - 0.5269484
+      - 0.8550394
+      - 0.97044706
+      - 1.4802859
+      - 14.387457
+      - 25.053381
+      - 111.257835
+      - 0.2834915
+      - 0.09174073
+      - 0.27514726
+      - 32.18718
+      - 0.9627515
+      - 1.8045852
+      - 4.609157
+      - 6.7046437
+      - 0.31201285
+      - 0.3820824
+      - 0.8059324
+      - 8.492157
+      - 0.090027094
+      - 0.29735464
+      - 0.92755115
+      - 3.5812702
+      - 0.8909607
+      - 0.58523256
+      - 0.8498585
+      - 1.4561329
+      - 0.9896685
+      - 0.93345296
+      - 112.69039
+      - 0.92981786
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 35.57917
+      - 0.9599031
+      - 1.4656203
+      - 0.64359754
+      - 84.36071
+      - 0.39155015
+      - 17.036364
+      - 0.35862285
+      - 0.280191
+      - 0.5821421
+      - 0.033451345
+      - 0.3627739
+      - 39.320415
+      - 0.3832577
+      - 0.84647536
+      - 0.88997304
+      - 1.4796023
+      - 8.447716
+      - 15.067868
+      - 76.62785
+      - 0.004518843
+      - 0.49812704
+      - 0.70038986
+      - 73.37908
+      - 0.88259447
+      - 0.23240662
+      - 4.358401
+      - 9.473085
+      - 0.82874775
+      - 0.6694287
+      - 0.8525715
+      - 14.822769
+      - 0.9649917
+      - 0.044659734
+      - 0.7240932
+      - 9.0046215
+      - 0.38676542
+      - 0.09618187
+      - 0.7715299
+      - 0.24178846
+      - 0.0030652285
+      - 0.35384482
+      - 167.4335
+      - 0.562363
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 170.45784
+      - 0.99314
+      - 0.0015156269
+      - 0.766508
+      - 109.93228
+      - 0.105022274
+      - 4.412495
+      - 0.27111128
+      - 0.10510757
+      - 0.5668657
+      - 0.040434152
+      - 0.1726547
+      - 0.28885365
+      - 0.12940586
+      - 0.9866067
+      - 0.957801
+      - 0.6393298
+      - 19.898619
+      - 7.7067866
+      - 27.789627
+      - 0.047946993
+      - 0.12265921
+      - 0.13979673
+      - 6.0311484
+      - 0.9543762
+      - 0.49474442
+      - 5.6681914
+      - 12.701483
+      - 0.5105509
+      - 0.5011682
+      - 0.79977417
+      - 11.165652
+      - 0.12650108
+      - 0.85399973
+      - 0.8733119
+      - 8.102127
+      - 0.11488867
+      - 0.35222358
+      - 0.92477345
+      - 0.38058218
+      - 0.8457192
+      - 0.2465353
+      - 80.09079
+      - 0.56401086
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 150.80951
+      - 0.99605954
+      - 0.6856103
+      - 0.5829519
+      - 80.52903
+      - 0.5589797
+      - 18.24483
+      - 0.67348826
+      - 0.82295626
+      - 0.9596991
+      - 0.022308258
+      - 0.012563658
+      - 31.526085
+      - 0.074249744
+      - 0.9526076
+      - 0.91882473
+      - 1.0468343
+      - 14.771488
+      - 5.760706
+      - 40.742596
+      - 0.25289136
+      - 0.5182964
+      - 0.2923419
+      - 71.05729
+      - 0.89980054
+      - 1.5702091
+      - 2.0484555
+      - 4.5502205
+      - 0.07213819
+      - 0.284118
+      - 0.9627753
+      - 7.76082
+      - 0.18682814
+      - 0.49006444
+      - 0.9642794
+      - 3.2413266
+      - 0.12824297
+      - 0.045876145
+      - 0.7449413
+      - 1.0608464
+      - 0.5297099
+      - 0.49423665
+      - 155.87898
+      - 0.8151313
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 156.45596
+      - 0.93444544
+      - 0.008832693
+      - 0.3539609
+      - 68.42466
+      - 0.0979276
+      - 4.9209914
+      - 0.8504177
+      - 0.20353037
+      - 0.6152847
+      - 0.017391458
+      - 0.1640271
+      - 4.345646
+      - 0.91180634
+      - 0.9186093
+      - 0.89980567
+      - 1.5756794
+      - 24.026066
+      - 17.664345
+      - 183.34065
+      - 0.13694525
+      - 0.98797786
+      - 0.26898533
+      - 35.225864
+      - 0.9241382
+      - 0.9753463
+      - 5.578142
+      - 7.429987
+      - 0.8855454
+      - 0.18905258
+      - 0.95877826
+      - 9.539965
+      - 0.061255574
+      - 0.8938843
+      - 0.7064302
+      - 13.093625
+      - 0.36342317
+      - 0.26745063
+      - 0.97838557
+      - 0.10670443
+      - 0.3961174
+      - 0.46056193
+      - 155.8474
+      - 0.575139
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 56.079124
+      - 0.96487224
+      - 1.1035857
+      - 0.79515254
+      - 62.695667
+      - 0.5115205
+      - 13.043409
+      - 0.161755
+      - 0.54848856
+      - 0.58242005
+      - 0.039928056
+      - 0.09806194
+      - 8.141289
+      - 0.47931725
+      - 0.8479688
+      - 0.8590636
+      - 2.6936398
+      - 6.182449
+      - 25.073072
+      - 183.86954
+      - 0.23507439
+      - 0.41975147
+      - 0.5267697
+      - 28.375216
+      - 0.8851259
+      - 0.3145584
+      - 0.5631333
+      - 4.8913383
+      - 0.06975114
+      - 0.21831703
+      - 0.7833278
+      - 14.114076
+      - 0.74932396
+      - 0.765641
+      - 0.88911307
+      - 12.4724
+      - 0.31346363
+      - 0.70177424
+      - 0.97877365
+      - 0.5035235
+      - 0.78689086
+      - 0.35799628
+      - 70.742874
+      - 0.5074361
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 111.41079
+      - 0.950874
+      - 0.7434832
+      - 0.57644075
+      - 18.934374
+      - 0.28093722
+      - 22.512058
+      - 0.12988769
+      - 0.74341476
+      - 0.42848325
+      - 0.036321755
+      - 0.17409961
+      - 18.883999
+      - 0.4537744
+      - 0.8256254
+      - 0.8846133
+      - 2.950181
+      - 2.938478
+      - 12.260237
+      - 180.11363
+      - 0.014249111
+      - 0.7737187
+      - 0.19751823
+      - 15.190061
+      - 0.96204835
+      - 0.6330927
+      - 3.3550816
+      - 4.1159945
+      - 0.5204844
+      - 0.55359703
+      - 0.9334786
+      - 10.31089
+      - 0.5387574
+      - 0.24397743
+      - 0.7397237
+      - 11.38071
+      - 0.65265226
+      - 0.9945779
+      - 0.8339145
+      - 1.1084132
+      - 0.78460383
+      - 0.64254904
+      - 101.70651
+      - 0.34605658
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 33.567726
+      - 0.93989855
+      - 0.79790413
+      - 0.56446165
+      - 87.11133
+      - 0.4663758
+      - 5.3128595
+      - 0.77212435
+      - 0.7906757
+      - 0.6433539
+      - 0.028989175
+      - 0.28988114
+      - 1.7286396
+      - 0.739583
+      - 0.9891844
+      - 0.9717504
+      - 2.1765852
+      - 21.162333
+      - 23.73579
+      - 24.706955
+      - 0.19936489
+      - 0.019572496
+      - 0.88531864
+      - 73.16988
+      - 0.9953431
+      - 1.2506647
+      - 3.9740872
+      - 13.492483
+      - 0.7414744
+      - 0.9753463
+      - 0.8650565
+      - 11.740314
+      - 0.53397614
+      - 0.9377612
+      - 0.9440477
+      - 7.960659
+      - 0.6066434
+      - 0.1322943
+      - 0.810159
+      - 0.63619107
+      - 0.11128962
+      - 0.34772223
+      - 147.82718
+      - 0.71546185
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 150.9065
+      - 0.9648818
+      - 0.6183348
+      - 0.74262106
+      - 77.6788
+      - 0.13910234
+      - 9.091706
+      - 0.79324484
+      - 0.11980511
+      - 0.32803378
+      - 0.039904237
+      - 0.28742644
+      - 34.53625
+      - 0.39655966
+      - 0.81714857
+      - 0.9331268
+      - 2.9369469
+      - 6.283082
+      - 9.215612
+      - 143.33034
+      - 0.10401831
+      - 0.6105036
+      - 0.49892896
+      - 9.363677
+      - 0.995158
+      - 1.9976482
+      - 3.253179
+      - 5.8529825
+      - 0.39488322
+      - 0.5503648
+      - 0.70032656
+      - 5.9743414
+      - 0.73745775
+      - 0.8091116
+      - 0.7331848
+      - 14.810545
+      - 0.27552956
+      - 0.5826742
+      - 0.93367153
+      - 1.0222399
+      - 0.5271552
+      - 0.9259951
+      - 109.178566
+      - 0.28323403
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 58.121357
+      - 0.9957494
+      - 1.1417495
+      - 0.83913743
+      - 14.178242
+      - 0.060036115
+      - 23.122093
+      - 0.7512113
+      - 0.6401281
+      - 0.8718558
+      - 0.03458624
+      - 0.3702708
+      - 22.27811
+      - 0.899619
+      - 0.7199272
+      - 0.9681912
+      - 2.728578
+      - 16.936167
+      - 20.115486
+      - 147.5205
+      - 0.23150115
+      - 0.81777275
+      - 0.33406097
+      - 14.663418
+      - 0.9678391
+      - 1.8553841
+      - 5.669851
+      - 9.990477
+      - 0.31277138
+      - 0.15880716
+      - 0.9284836
+      - 3.349327
+      - 0.952196
+      - 0.100613356
+      - 0.90740186
+      - 14.290369
+      - 0.04956281
+      - 0.6250671
+      - 0.8478864
+      - 1.0327804
+      - 0.8263662
+      - 0.47663206
+      - 131.0997
+      - 0.917449
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 164.64717
+      - 0.9821759
+      - 1.0159224
+      - 0.45518833
+      - 119.27569
+      - 0.39000946
+      - 11.098408
+      - 0.21367256
+      - 0.91645056
+      - 0.84546036
+      - 0.008542955
+      - 0.12926792
+      - 23.951427
+      - 0.19664466
+      - 0.95417964
+      - 0.89456046
+      - 0.8667903
+      - 29.210798
+      - 26.677605
+      - 50.41842
+      - 0.024139203
+      - 0.14671612
+      - 0.6188393
+      - 31.367817
+      - 0.88435215
+      - 1.6705806
+      - 2.862814
+      - 14.150365
+      - 0.5848684
+      - 0.94577396
+      - 0.83611685
+      - 6.503124
+      - 0.45032424
+      - 0.447671
+      - 0.74630845
+      - 5.265917
+      - 0.031027675
+      - 0.80610347
+      - 0.76018643
+      - 0.878341
+      - 0.20459652
+      - 0.036569476
+      - 44.76348
+      - 0.28027213
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      GenerationBorn: 0
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: 
+    behaviorArchive: 375e5ba2c3dc235b92a35893c31bde2e
+  HallOfFameBest:
+    geneNames:
+    - target.aggressiveness
+    - target.deadzone
+    - target.lead_seconds
+    - target.steer_weight
+    - avoid.radius
+    - avoid.strength
+    - avoid.standoff
+    - avoid.arc_dot
+    - avoid.steer_weight
+    - throttle.base
+    - throttle.ramp_per_second
+    - throttle.ramp_cap
+    - throttle.brake_distance
+    - throttle.brake_strength
+    - throttle.ram_dot
+    - drift.enter_dot
+    - drift.exit_seconds
+    - drift.speed_floor
+    - skim.standoff
+    - skim.radius
+    - skim.strength
+    - skim.friendly_only
+    - boost.min_charge
+    - boost.min_clear_distance
+    - boost.lock_dot
+    - boost.hold_seconds
+    - boost.cooldown
+    - ability.btn1.cooldown
+    - ability.btn1.fire_locked
+    - ability.btn1.fire_threatened
+    - ability.btn1.lock_dot
+    - ability.btn2.cooldown
+    - ability.btn2.fire_locked
+    - ability.btn2.fire_threatened
+    - ability.btn2.lock_dot
+    - ability.btn3.cooldown
+    - ability.btn3.fire_locked
+    - ability.btn3.fire_threatened
+    - ability.btn3.lock_dot
+    - ability.hold_seconds
+    - threat.engage
+    - threat.evade
+    - threat.engagement_range
+    - threat.steer_weight
+    geneValues:
+    - 184.5856
+    - 0.97213817
+    - 1.2117609
+    - 0.83415794
+    - 102.75876
+    - 0.5019568
+    - 4.2723117
+    - 0.749936
+    - 0.12516578
+    - 0.93983084
+    - 0.013295981
+    - 0.05821247
+    - 38.146782
+    - 0.9793879
+    - 0.9438283
+    - 0.863712
+    - 0.35942554
+    - 19.495712
+    - 19.722631
+    - 114.933754
+    - 0.22942787
+    - 0.5033433
+    - 0.50885767
+    - 58.41934
+    - 0.87344736
+    - 0.23314695
+    - 1.383676
+    - 8.6791725
+    - 0.8595458
+    - 0.89699316
+    - 0.7340815
+    - 2.1438398
+    - 0.46907824
+    - 0.74574697
+    - 0.74167776
+    - 8.2237625
+    - 0.034145236
+    - 0.7177104
+    - 0.8358836
+    - 0.6084303
+    - 0.6381407
+    - 0.38429946
+    - 122.61232
+    - 0.11514719
+    enabledModules:
+    - TargetSeeking
+    - ObstacleAvoidance
+    - ThrottleControl
+    - Drift
+    - Skim
+    - BoostManagement
+    - AbilityScheduler
+    - ThreatEngagement
+    GenerationBorn: 0
+    EvaluationCount: 0
+    Fitness: 0
+    NoveltyScore: 0
+    Lineage: 
+  PendingSeed:
+    geneNames: []
+    geneValues: []
+    enabledModules: []
+    GenerationBorn: 0
+    EvaluationCount: 0
+    Fitness: 0
+    NoveltyScore: 0
+    Lineage: 
+  HasPendingSeed: 0
+  PendingSeedNote: '27 race(s) by gradi, owner, shombith: boost.min_charge; 5 line(s),
+    3000 points'
+  PeopleLinePoints:
+  - {x: -239.05, y: 831.5, z: 44.83}
+  - {x: -218.7, y: 814.7, z: 41.01}
+  - {x: -198.35, y: 797.9, z: 37.2}
+  - {x: -177.99, y: 781.1, z: 33.38}
+  - {x: -157.64, y: 764.3, z: 29.56}
+  - {x: -137.29, y: 747.5, z: 25.75}
+  - {x: -116.98, y: 730.65, z: 21.93}
+  - {x: -97.27, y: 713.11, z: 18.11}
+  - {x: -78.68, y: 694.4, z: 14.27}
+  - {x: -60.94, y: 674.88, z: 10.37}
+  - {x: -43.57, y: 655.02, z: 6.47}
+  - {x: -25.65, y: 635.65, z: 2.64}
+  - {x: -6.22, y: 617.79, z: -1.06}
+  - {x: 14.51, y: 601.44, z: -4.72}
+  - {x: 36.23, y: 586.36, z: -8.13}
+  - {x: 58.74, y: 572.31, z: -10.51}
+  - {x: 81.95, y: 559.25, z: -10.73}
+  - {x: 105.55, y: 547.37, z: -7.64}
+  - {x: 129.03, y: 536.82, z: -0.99}
+  - {x: 151.57, y: 528.31, z: 10.18}
+  - {x: 172.3, y: 522.22, z: 25.55}
+  - {x: 189.98, y: 519.4, z: 45.12}
+  - {x: 203.88, y: 520.2, z: 67.72}
+  - {x: 213.94, y: 524.3, z: 91.97}
+  - {x: 220.06, y: 531.38, z: 116.85}
+  - {x: 221.37, y: 541.6, z: 141.37}
+  - {x: 216.32, y: 555.15, z: 163.67}
+  - {x: 206.39, y: 570.57, z: 182.91}
+  - {x: 192.45, y: 586.82, z: 198.67}
+  - {x: 175.51, y: 603.2, z: 211.08}
+  - {x: 156.4, y: 618.91, z: 220.96}
+  - {x: 134.31, y: 631.84, z: 228.26}
+  - {x: 110.04, y: 641.87, z: 232.46}
+  - {x: 84.24, y: 648.16, z: 231.29}
+  - {x: 58.74, y: 650.89, z: 224.56}
+  - {x: 35.78, y: 649.31, z: 211.38}
+  - {x: 17.51, y: 643.84, z: 193.03}
+  - {x: 6.34, y: 634.82, z: 170.72}
+  - {x: 4.05, y: 622.95, z: 147.18}
+  - {x: 8.94, y: 608.51, z: 125.45}
+  - {x: 18.73, y: 590.64, z: 108.38}
+  - {x: 30.57, y: 570.06, z: 96.46}
+  - {x: 44.51, y: 548.23, z: 90.48}
+  - {x: 60.9, y: 527.36, z: 90.93}
+  - {x: 79.48, y: 509.35, z: 96.96}
+  - {x: 100.32, y: 496.17, z: 106.83}
+  - {x: 123.15, y: 488.03, z: 117.81}
+  - {x: 147.07, y: 486.03, z: 129.25}
+  - {x: 170.38, y: 489.64, z: 141.47}
+  - {x: 190.68, y: 500.47, z: 154.75}
+  - {x: 205.06, y: 517.8, z: 168.66}
+  - {x: 210.46, y: 539.17, z: 183.3}
+  - {x: 204.42, y: 560.48, z: 197.67}
+  - {x: 187.21, y: 578.4, z: 206.67}
+  - {x: 166.23, y: 594.69, z: 207.44}
+  - {x: 145.79, y: 611, z: 202.46}
+  - {x: 126.01, y: 626.71, z: 193.97}
+  - {x: 105.75, y: 640.47, z: 183.48}
+  - {x: 84.85, y: 651.66, z: 171.3}
+  - {x: 63.81, y: 659.95, z: 157.23}
+  - {x: 43.71, y: 665.12, z: 140.58}
+  - {x: 25.92, y: 666.58, z: 120.87}
+  - {x: 12.04, y: 664.1, z: 98.36}
+  - {x: 3.23, y: 658.08, z: 74.01}
+  - {x: 1.55, y: 648.6, z: 49.26}
+  - {x: 6.27, y: 636.99, z: 25.88}
+  - {x: 18.54, y: 623.87, z: 6.35}
+  - {x: 36.25, y: 610.46, z: -8.13}
+  - {x: 57.94, y: 597.63, z: -16.73}
+  - {x: 80.85, y: 585.3, z: -22.54}
+  - {x: 103.84, y: 572.83, z: -27.7}
+  - {x: 126.03, y: 559.57, z: -34.17}
+  - {x: 146.71, y: 545.26, z: -42.98}
+  - {x: 165.84, y: 530.2, z: -53.83}
+  - {x: 183.68, y: 514.52, z: -65.94}
+  - {x: 200.43, y: 497.76, z: -78.15}
+  - {x: 216.32, y: 479.94, z: -90.02}
+  - {x: 231.78, y: 461.63, z: -101.7}
+  - {x: 248.07, y: 444.16, z: -113.53}
+  - {x: 265.95, y: 428.56, z: -125.66}
+  - {x: 284.74, y: 414.1, z: -137.87}
+  - {x: 303.51, y: 399.37, z: -149.76}
+  - {x: 322.1, y: 384.19, z: -161.38}
+  - {x: 339.74, y: 367.54, z: -172.43}
+  - {x: 356.08, y: 349.25, z: -182.88}
+  - {x: 371.08, y: 329.57, z: -192.8}
+  - {x: 385.68, y: 309.49, z: -202.51}
+  - {x: 400.81, y: 289.82, z: -212.28}
+  - {x: 416.5, y: 270.64, z: -222.12}
+  - {x: 432.67, y: 251.9, z: -232.04}
+  - {x: 449.23, y: 233.55, z: -242.02}
+  - {x: 466.1, y: 215.5, z: -252.06}
+  - {x: 483.16, y: 197.65, z: -262.13}
+  - {x: 499.38, y: 179.11, z: -272.32}
+  - {x: 514.48, y: 159.77, z: -282.75}
+  - {x: 528.87, y: 139.97, z: -293.33}
+  - {x: 542.49, y: 119.66, z: -303.95}
+  - {x: 554.28, y: 98.32, z: -314.69}
+  - {x: 562.76, y: 75.96, z: -326.43}
+  - {x: 567.57, y: 52.73, z: -338.51}
+  - {x: 568.68, y: 28.55, z: -349.62}
+  - {x: 565.9, y: 3.52, z: -358.25}
+  - {x: 560, y: -21.85, z: -363.7}
+  - {x: 551.81, y: -47.17, z: -364.14}
+  - {x: 543.33, y: -72.08, z: -360.17}
+  - {x: 535.31, y: -96.19, z: -352.17}
+  - {x: 527.58, y: -119.45, z: -341.71}
+  - {x: 519.63, y: -141.74, z: -329.44}
+  - {x: 510.96, y: -163.05, z: -315.97}
+  - {x: 501.51, y: -183.36, z: -301.52}
+  - {x: 491.47, y: -202.92, z: -286.43}
+  - {x: 481.01, y: -221.97, z: -270.99}
+  - {x: 470.41, y: -241.23, z: -255.9}
+  - {x: 459.9, y: -261.16, z: -241.65}
+  - {x: 449.51, y: -281.68, z: -228.15}
+  - {x: 439.24, y: -302.66, z: -215.31}
+  - {x: 428.99, y: -323.85, z: -202.79}
+  - {x: 418.64, y: -344.94, z: -190.17}
+  - {x: 408.02, y: -365.54, z: -176.99}
+  - {x: 397.06, y: -385.43, z: -163.03}
+  - {x: 385.82, y: -404.61, z: -148.32}
+  - {x: 374.7, y: -423.26, z: -132.85}
+  - {x: 364.65, y: -441.53, z: -116.26}
+  - {x: 356.16, y: -459.54, z: -98.55}
+  - {x: 349.11, y: -477.26, z: -79.93}
+  - {x: 342.82, y: -494.6, z: -60.68}
+  - {x: 336.22, y: -511.47, z: -41.12}
+  - {x: 328.92, y: -527.9, z: -21.43}
+  - {x: 320.93, y: -543.85, z: -1.61}
+  - {x: 312.31, y: -559.08, z: 18.49}
+  - {x: 302.91, y: -572.85, z: 39.27}
+  - {x: 292.38, y: -584.19, z: 60.93}
+  - {x: 280.1, y: -592.73, z: 82.93}
+  - {x: 265, y: -598.46, z: 104.06}
+  - {x: 246.69, y: -601.98, z: 123.04}
+  - {x: 225.55, y: -603.71, z: 139.16}
+  - {x: 200.51, y: -602.38, z: 145.97}
+  - {x: 174.37, y: -599.23, z: 150.03}
+  - {x: 149.05, y: -595.17, z: 157.25}
+  - {x: 124.69, y: -590.55, z: 167.04}
+  - {x: 100.42, y: -585.55, z: 176.89}
+  - {x: 75.67, y: -580.21, z: 185.23}
+  - {x: 50.58, y: -574.69, z: 192.35}
+  - {x: 25.24, y: -569.05, z: 198.43}
+  - {x: -0.26, y: -563.35, z: 203.75}
+  - {x: -25.86, y: -557.58, z: 208.49}
+  - {x: -51.46, y: -551.52, z: 212.81}
+  - {x: -77.03, y: -545.06, z: 216.72}
+  - {x: -102.53, y: -538.12, z: 220.32}
+  - {x: -127.79, y: -530.34, z: 223.77}
+  - {x: -152.75, y: -521.69, z: 227.41}
+  - {x: -177.42, y: -512.33, z: 231.22}
+  - {x: -201.85, y: -502.4, z: 235.18}
+  - {x: -226.05, y: -491.97, z: 239.28}
+  - {x: -250.04, y: -481.11, z: 243.47}
+  - {x: -273.87, y: -469.95, z: 247.76}
+  - {x: -297.56, y: -458.51, z: 252.11}
+  - {x: -321.19, y: -449.26, z: 246.22}
+  - {x: -344.2, y: -441.38, z: 235.29}
+  - {x: -366.65, y: -433.52, z: 223.26}
+  - {x: -388.97, y: -424.81, z: 211.57}
+  - {x: -411.53, y: -414.75, z: 201.61}
+  - {x: -434.57, y: -403.22, z: 194.91}
+  - {x: -458.01, y: -390.74, z: 193.57}
+  - {x: -481.2, y: -378.77, z: 198.52}
+  - {x: -503.16, y: -368.8, z: 209.6}
+  - {x: -522.33, y: -362.04, z: 226.73}
+  - {x: -537.46, y: -357.93, z: 248.14}
+  - {x: -546.4, y: -355.92, z: 273.03}
+  - {x: -546.35, y: -355.78, z: 299.49}
+  - {x: -534.67, y: -358.23, z: 322.99}
+  - {x: -512.84, y: -364, z: 336.3}
+  - {x: -488.46, y: -372.68, z: 333.01}
+  - {x: -472.77, y: -381.01, z: 313.97}
+  - {x: -467.41, y: -382.98, z: 288.1}
+  - {x: -461.41, y: -379, z: 262.53}
+  - {x: -447.15, y: -372.05, z: 241.4}
+  - {x: -425.74, y: -368.31, z: 226.24}
+  - {x: -401.69, y: -374.07, z: 217.15}
+  - {x: -380.69, y: -389.99, z: 216.56}
+  - {x: -368.41, y: -412.45, z: 222.95}
+  - {x: -369.15, y: -437.02, z: 232.4}
+  - {x: -380.55, y: -455.45, z: 247.39}
+  - {x: -394.53, y: -463.69, z: 268.35}
+  - {x: -409.22, y: -463.34, z: 290.44}
+  - {x: -423.82, y: -455.14, z: 311.01}
+  - {x: -436.85, y: -439.86, z: 328.37}
+  - {x: -447.21, y: -419.8, z: 342.41}
+  - {x: -454.9, y: -396.94, z: 353.71}
+  - {x: -460.36, y: -372.48, z: 362.76}
+  - {x: -464.55, y: -347.08, z: 369.61}
+  - {x: -467.9, y: -321.03, z: 374.1}
+  - {x: -470.42, y: -294.59, z: 376.35}
+  - {x: -471.53, y: -267.96, z: 376.62}
+  - {x: -470.31, y: -241.36, z: 375.33}
+  - {x: -467.34, y: -214.97, z: 373.03}
+  - {x: -463.02, y: -188.85, z: 369.89}
+  - {x: -458.25, y: -162.97, z: 365.59}
+  - {x: -454.43, y: -137.19, z: 359.96}
+  - {x: -451.99, y: -111.51, z: 353.21}
+  - {x: -450.67, y: -85.98, z: 345.62}
+  - {x: -450.38, y: -60.64, z: 337.34}
+  - {x: -450.39, y: -35.42, z: 328.68}
+  - {x: -449.8, y: -10.22, z: 319.98}
+  - {x: -448.4, y: 14.98, z: 311.39}
+  - {x: -446.32, y: 40.16, z: 302.87}
+  - {x: -443.64, y: 65.33, z: 294.47}
+  - {x: -440.5, y: 90.49, z: 286.23}
+  - {x: -436.99, y: 115.67, z: 278.19}
+  - {x: -433.32, y: 140.98, z: 270.63}
+  - {x: -429.89, y: 166.54, z: 263.88}
+  - {x: -426.69, y: 192.31, z: 257.81}
+  - {x: -423.71, y: 218.24, z: 252.36}
+  - {x: -421.32, y: 244.28, z: 247.16}
+  - {x: -420.06, y: 270.37, z: 241.81}
+  - {x: -419.66, y: 296.49, z: 236.45}
+  - {x: -420.19, y: 322.74, z: 231.89}
+  - {x: -421.71, y: 349.18, z: 228.84}
+  - {x: -423.59, y: 375.72, z: 227.1}
+  - {x: -424.48, y: 402.37, z: 227.12}
+  - {x: -424.61, y: 428.97, z: 228.7}
+  - {x: -424.55, y: 455.26, z: 233.01}
+  - {x: -424.19, y: 480.79, z: 240.59}
+  - {x: -423.52, y: 505.37, z: 250.88}
+  - {x: -422.07, y: 529.37, z: 262.4}
+  - {x: -419, y: 553.6, z: 273.05}
+  - {x: -413.07, y: 578.34, z: 280.9}
+  - {x: -403.79, y: 602.95, z: 284.5}
+  - {x: -390.93, y: 626.12, z: 282.77}
+  - {x: -374.97, y: 645.99, z: 275.34}
+  - {x: -357.21, y: 661.82, z: 263.51}
+  - {x: -338.63, y: 671.73, z: 247.46}
+  - {x: -320.32, y: 674.53, z: 228.42}
+  - {x: -302.84, y: 672.55, z: 208.41}
+  - {x: -287.4, y: 668.74, z: 187.05}
+  - {x: -276.81, y: 666.98, z: 162.78}
+  - {x: -274.08, y: 671.61, z: 136.93}
+  - {x: -281.33, y: 684.41, z: 115.03}
+  - {x: -297.58, y: 699.05, z: 100.15}
+  - {x: -320.03, y: 711.59, z: 93.7}
+  - {x: -343.38, y: 724.35, z: 93.97}
+  - {x: -366.29, y: 737.3, z: 98.22}
+  - {x: -388.65, y: 750.26, z: 104.75}
+  - {x: -410.89, y: 763.02, z: 112.09}
+  - {x: -433.06, y: 775.62, z: 119.87}
+  - {x: -455.2, y: 788.1, z: 127.95}
+  - {x: -477.29, y: 800.49, z: 136.26}
+  - {x: -499.42, y: 812.77, z: 144.67}
+  - {x: -522.02, y: 824.53, z: 152.52}
+  - {x: -545.54, y: 835.08, z: 159.26}
+  - {x: -570.05, y: 843.61, z: 165.34}
+  - {x: -595.29, y: 849.82, z: 171.24}
+  - {x: -620.83, y: 854.34, z: 177.43}
+  - {x: -646.18, y: 857.95, z: 184.85}
+  - {x: -671.1, y: 861, z: 193.82}
+  - {x: -695.6, y: 863.54, z: 204.02}
+  - {x: -719.59, y: 864.81, z: 215.6}
+  - {x: -742.79, y: 863.8, z: 228.66}
+  - {x: -764.76, y: 859.77, z: 243.16}
+  - {x: -784.7, y: 851.98, z: 258.95}
+  - {x: -801.64, y: 840.04, z: 275.62}
+  - {x: -813.8, y: 823.39, z: 292.41}
+  - {x: -819.82, y: 802.79, z: 307.99}
+  - {x: -819.38, y: 779.69, z: 320.92}
+  - {x: -813, y: 755.68, z: 330.18}
+  - {x: -801.03, y: 732.43, z: 334.96}
+  - {x: -785.47, y: 710.89, z: 336.23}
+  - {x: -767.35, y: 691.47, z: 334.54}
+  - {x: -747.54, y: 674.09, z: 330.57}
+  - {x: -726.79, y: 658.29, z: 325.12}
+  - {x: -705.49, y: 643.62, z: 318.62}
+  - {x: -683.79, y: 630.03, z: 311.18}
+  - {x: -661.85, y: 617.21, z: 303.12}
+  - {x: -639.56, y: 605.26, z: 294.69}
+  - {x: -616.25, y: 595.23, z: 286.55}
+  - {x: -591.9, y: 587.87, z: 278.63}
+  - {x: -567.02, y: 583.3, z: 270.23}
+  - {x: -542.17, y: 580.41, z: 261.02}
+  - {x: -517.49, y: 578.88, z: 251.06}
+  - {x: -493.01, y: 578.48, z: 240.5}
+  - {x: -468.59, y: 579.08, z: 229.8}
+  - {x: -443.82, y: 580.65, z: 220.07}
+  - {x: -418.54, y: 583.07, z: 211.94}
+  - {x: -392.92, y: 586.13, z: 205.22}
+  - {x: -367.11, y: 589.56, z: 199.47}
+  - {x: -341.22, y: 593.12, z: 194.18}
+  - {x: -315.36, y: 596.22, z: 188.49}
+  - {x: -289.54, y: 598.85, z: 182.35}
+  - {x: -263.77, y: 601.07, z: 175.87}
+  - {x: -238.02, y: 602.41, z: 169.1}
+  - {x: -212.29, y: 602.09, z: 162.19}
+  - {x: -186.69, y: 599.58, z: 155.24}
+  - {x: -161.33, y: 595.25, z: 148.27}
+  - {x: -136.19, y: 589.99, z: 141.11}
+  - {x: -111.18, y: 585.01, z: 133.32}
+  - {x: -86.27, y: 581.79, z: 124.41}
+  - {x: -61.78, y: 581.48, z: 113.96}
+  - {x: -38.3, y: 584.51, z: 101.8}
+  - {x: -16.3, y: 590.59, z: 88.08}
+  - {x: 3.69, y: 599.5, z: 72.9}
+  - {x: 21.33, y: 610.68, z: 56.4}
+  - {x: 34.86, y: 624.88, z: 38.49}
+  - {x: 41.82, y: 642.54, z: 20}
+  - {x: 39.51, y: 663.01, z: 3.45}
+  - {x: 28.35, y: 684.71, z: -6.67}
+  - {x: 14.26, y: 707.11, z: -6.8}
+  - {x: 1.57, y: 729.32, z: 0.51}
+  - {x: -9.49, y: 751.26, z: 10.85}
+  - {x: -18.16, y: 774.15, z: 21.35}
+  - {x: -24.15, y: 798.23, z: 31.07}
+  - {x: -27.96, y: 823.02, z: 40.11}
+  - {x: -30.76, y: 848.06, z: 48.84}
+  - {x: -34.37, y: 872.88, z: 57.85}
+  - {x: -39.74, y: 897.17, z: 67.45}
+  - {x: -46.43, y: 920.98, z: 77.41}
+  - {x: -54.41, y: 944.3, z: 87.56}
+  - {x: -64.13, y: 967.09, z: 97.4}
+  - {x: -75.79, y: 989.18, z: 106.72}
+  - {x: -88.77, y: 1010.7, z: 115.61}
+  - {x: -102.72, y: 1031.75, z: 124.17}
+  - {x: -117.72, y: 1052.02, z: 132.82}
+  - {x: -133.81, y: 1071.14, z: 142.09}
+  - {x: -150.75, y: 1089.19, z: 151.96}
+  - {x: -169.01, y: 1105.46, z: 162.57}
+  - {x: -188.88, y: 1119.18, z: 173.82}
+  - {x: -210.61, y: 1129.03, z: 185.61}
+  - {x: -233.92, y: 1133.6, z: 197.56}
+  - {x: -257.78, y: 1131.36, z: 208.95}
+  - {x: -280.58, y: 1122.31, z: 218.94}
+  - {x: -300.52, y: 1106.61, z: 226.58}
+  - {x: -315.85, y: 1085.42, z: 231.14}
+  - {x: -326.56, y: 1061.14, z: 233}
+  - {x: -332.74, y: 1035.27, z: 232.44}
+  - {x: -333.32, y: 1008.87, z: 229.11}
+  - {x: -330.08, y: 982.94, z: 224.03}
+  - {x: -323.32, y: 958.04, z: 217.42}
+  - {x: -313.51, y: 934.56, z: 209.56}
+  - {x: -299.57, y: 913.98, z: 200.14}
+  - {x: -282.08, y: 896.98, z: 189.5}
+  - {x: -262.57, y: 882.72, z: 178.22}
+  - {x: -243.86, y: 867.39, z: 167.05}
+  - {x: -226.8, y: 849.99, z: 156.23}
+  - {x: -209.44, y: 833.15, z: 145.02}
+  - {x: -191.51, y: 817.35, z: 133.2}
+  - {x: -173.29, y: 802.16, z: 121.03}
+  - {x: -154.93, y: 787.27, z: 108.68}
+  - {x: -136.93, y: 771.95, z: 96.35}
+  - {x: -120.07, y: 755.2, z: 84.28}
+  - {x: -104.21, y: 737.33, z: 72.46}
+  - {x: -88.79, y: 719.11, z: 60.57}
+  - {x: -73.55, y: 700.84, z: 48.52}
+  - {x: -58.52, y: 682.5, z: 36.32}
+  - {x: -43.76, y: 664.09, z: 23.91}
+  - {x: -29.04, y: 645.67, z: 11.47}
+  - {x: -14.03, y: 627.17, z: -0.49}
+  - {x: 1.97, y: 608.66, z: -11.08}
+  - {x: 19.15, y: 590.4, z: -20.14}
+  - {x: 37.13, y: 572.33, z: -27.95}
+  - {x: 54.83, y: 553.53, z: -34.57}
+  - {x: 71.31, y: 533.44, z: -40.52}
+  - {x: 86.53, y: 512.72, z: -47.54}
+  - {x: 100.87, y: 492.33, z: -56.99}
+  - {x: 114.91, y: 472.86, z: -68.57}
+  - {x: 128.72, y: 454.08, z: -81.51}
+  - {x: 142.28, y: 435.88, z: -95.51}
+  - {x: 155.73, y: 418.09, z: -110.11}
+  - {x: 170.11, y: 400.5, z: -124.06}
+  - {x: 185.76, y: 383, z: -136.68}
+  - {x: 202.59, y: 365.75, z: -148.09}
+  - {x: 220.5, y: 349.49, z: -159.29}
+  - {x: 239.54, y: 334.81, z: -170.79}
+  - {x: 259.33, y: 321.27, z: -182.46}
+  - {x: 279.97, y: 308.41, z: -193.39}
+  - {x: 301.23, y: 295.34, z: -202.76}
+  - {x: 322.85, y: 281.82, z: -210.53}
+  - {x: 344.66, y: 267.92, z: -217}
+  - {x: 366.57, y: 253.7, z: -222.35}
+  - {x: 388.46, y: 239.28, z: -227.26}
+  - {x: 410.29, y: 224.97, z: -232.7}
+  - {x: 432.07, y: 210.75, z: -238.54}
+  - {x: 453.78, y: 196.62, z: -244.86}
+  - {x: 475.3, y: 182.55, z: -251.95}
+  - {x: 496.69, y: 168.54, z: -259.51}
+  - {x: 518.08, y: 154.4, z: -266.81}
+  - {x: 539.4, y: 139.56, z: -272.8}
+  - {x: 560.28, y: 123.77, z: -277.82}
+  - {x: 579.43, y: 105.69, z: -281.83}
+  - {x: 594.91, y: 84.26, z: -284.59}
+  - {x: 605.36, y: 59.86, z: -285.96}
+  - {x: 608.42, y: 33.51, z: -285.53}
+  - {x: 605.36, y: 7.23, z: -283.26}
+  - {x: 596.86, y: -17.5, z: -278.42}
+  - {x: 585.19, y: -40.31, z: -271.18}
+  - {x: 572.28, y: -61.78, z: -262.07}
+  - {x: 560.14, y: -83.38, z: -252.23}
+  - {x: 549.87, y: -106.01, z: -242.59}
+  - {x: 540.95, y: -129.37, z: -233.36}
+  - {x: 532.7, y: -152.92, z: -223.96}
+  - {x: 524.57, y: -176.17, z: -213.74}
+  - {x: 516.43, y: -199.08, z: -202.78}
+  - {x: 508.05, y: -221.66, z: -191.36}
+  - {x: 498.18, y: -243.78, z: -180.22}
+  - {x: 486.95, y: -265.47, z: -169.54}
+  - {x: 474.5, y: -286.73, z: -159.34}
+  - {x: 461.28, y: -307.65, z: -149.43}
+  - {x: 447.84, y: -328.35, z: -139.33}
+  - {x: 434.49, y: -348.86, z: -128.74}
+  - {x: 421.22, y: -369.2, z: -117.73}
+  - {x: 408.03, y: -389.4, z: -106.38}
+  - {x: 394.88, y: -409.48, z: -94.77}
+  - {x: 381.77, y: -429.47, z: -82.96}
+  - {x: 368.69, y: -449.39, z: -70.99}
+  - {x: 355.64, y: -469.26, z: -58.9}
+  - {x: 342.6, y: -489.07, z: -46.72}
+  - {x: 329.58, y: -508.83, z: -34.43}
+  - {x: 316.39, y: -528.24, z: -21.77}
+  - {x: 303.01, y: -547.21, z: -8.66}
+  - {x: 289.34, y: -565.55, z: 5.04}
+  - {x: 275.07, y: -582.26, z: 20.1}
+  - {x: 260.05, y: -596.58, z: 36.82}
+  - {x: 244.43, y: -608.83, z: 54.6}
+  - {x: 228.01, y: -618.39, z: 73.27}
+  - {x: 210.5, y: -625.08, z: 92.21}
+  - {x: 191.3, y: -628.03, z: 110.41}
+  - {x: 170.28, y: -626.98, z: 126.66}
+  - {x: 147.62, y: -621.73, z: 139.59}
+  - {x: 124.16, y: -613.71, z: 149.3}
+  - {x: 100.3, y: -604.18, z: 156.39}
+  - {x: 76.17, y: -593.99, z: 161.35}
+  - {x: 51.93, y: -583.41, z: 164.65}
+  - {x: 27.61, y: -572.71, z: 166.92}
+  - {x: 3.17, y: -562.39, z: 169.53}
+  - {x: -21.39, y: -552.66, z: 173.14}
+  - {x: -46.02, y: -543.44, z: 177.57}
+  - {x: -70.66, y: -534.59, z: 182.59}
+  - {x: -95.27, y: -525.66, z: 187.68}
+  - {x: -119.75, y: -516.08, z: 192.1}
+  - {x: -144.12, y: -505.97, z: 195.96}
+  - {x: -168.4, y: -495.51, z: 199.45}
+  - {x: -192.63, y: -484.86, z: 202.7}
+  - {x: -216.83, y: -474.11, z: 205.86}
+  - {x: -241.03, y: -463.38, z: 209.05}
+  - {x: -265.23, y: -452.66, z: 212.26}
+  - {x: -289.44, y: -441.95, z: 215.48}
+  - {x: -313.64, y: -431.24, z: 218.71}
+  - {x: -337.85, y: -420.54, z: 221.95}
+  - {x: -362.04, y: -409.81, z: 225.23}
+  - {x: -386.2, y: -399.03, z: 228.57}
+  - {x: -410.34, y: -388.22, z: 231.96}
+  - {x: -434.46, y: -377.39, z: 235.39}
+  - {x: -458.58, y: -366.55, z: 238.84}
+  - {x: -482.68, y: -355.68, z: 242.31}
+  - {x: -506.73, y: -344.66, z: 245.63}
+  - {x: -530.67, y: -333.29, z: 248.55}
+  - {x: -554.5, y: -321.6, z: 251.08}
+  - {x: -578.23, y: -309.65, z: 253.32}
+  - {x: -601.56, y: -296.85, z: 254.91}
+  - {x: -623.88, y: -282.31, z: 255.35}
+  - {x: -644.51, y: -265.51, z: 254.4}
+  - {x: -662.47, y: -246.05, z: 251.85}
+  - {x: -677.11, y: -224.23, z: 247.68}
+  - {x: -686.28, y: -200.01, z: 241.58}
+  - {x: -690.62, y: -174.74, z: 234.55}
+  - {x: -689.91, y: -149.09, z: 227.45}
+  - {x: -686.12, y: -123.25, z: 222.25}
+  - {x: -680.55, y: -97.29, z: 220.42}
+  - {x: -673.82, y: -71.55, z: 221.79}
+  - {x: -665.79, y: -46.35, z: 225.14}
+  - {x: -656.4, y: -21.64, z: 228.6}
+  - {x: -645.78, y: 2.59, z: 231.95}
+  - {x: -634.31, y: 26.49, z: 234.69}
+  - {x: -622.36, y: 50.3, z: 235.66}
+  - {x: -610.21, y: 74.02, z: 234.87}
+  - {x: -597.99, y: 97.62, z: 232.72}
+  - {x: -585.77, y: 121.1, z: 229.52}
+  - {x: -573.53, y: 144.46, z: 225.61}
+  - {x: -561.07, y: 167.77, z: 222.14}
+  - {x: -548.17, y: 191.06, z: 220.86}
+  - {x: -535.04, y: 214.26, z: 221.27}
+  - {x: -521.85, y: 237.41, z: 222.16}
+  - {x: -508.65, y: 260.58, z: 222.84}
+  - {x: -495.47, y: 283.75, z: 223.35}
+  - {x: -482.29, y: 306.93, z: 223.69}
+  - {x: -469.26, y: 330.18, z: 223.25}
+  - {x: -456.65, y: 353.59, z: 221.36}
+  - {x: -444.47, y: 377.11, z: 218.26}
+  - {x: -432.49, y: 400.68, z: 214.86}
+  - {x: -420.46, y: 424.33, z: 212.16}
+  - {x: -408.33, y: 448.07, z: 212.17}
+  - {x: -396.18, y: 471.81, z: 212.31}
+  - {x: -383.83, y: 495.4, z: 211.3}
+  - {x: -371.13, y: 518.42, z: 206.97}
+  - {x: -360.22, y: 541.67, z: 199.94}
+  - {x: -355.85, y: 566.6, z: 192.08}
+  - {x: -361.82, y: 591.78, z: 186.59}
+  - {x: -374.35, y: 615.24, z: 185.37}
+  - {x: -388.53, y: 637.82, z: 184.95}
+  - {x: -402.96, y: 660.23, z: 184.44}
+  - {x: -417.53, y: 682.55, z: 183.87}
+  - {x: -432.19, y: 704.82, z: 183.26}
+  - {x: -446.91, y: 727.05, z: 182.63}
+  - {x: -461.67, y: 749.25, z: 181.97}
+  - {x: -476.47, y: 771.41, z: 181.31}
+  - {x: -492.14, y: 792.98, z: 180.95}
+  - {x: -509.69, y: 813.03, z: 181.3}
+  - {x: -528.86, y: 831.51, z: 182.31}
+  - {x: -549.14, y: 848.75, z: 183.81}
+  - {x: -570.8, y: 864.13, z: 185.87}
+  - {x: -594.16, y: 876.61, z: 188.61}
+  - {x: -619.5, y: 883.77, z: 192.34}
+  - {x: -645.64, y: 885.05, z: 196.96}
+  - {x: -670.73, y: 878.45, z: 202.47}
+  - {x: -692.78, y: 865.08, z: 208.46}
+  - {x: -708.39, y: 844.51, z: 214.29}
+  - {x: -714.93, y: 819.27, z: 218.66}
+  - {x: -710.45, y: 793.33, z: 220.64}
+  - {x: -695.18, y: 771.81, z: 219.95}
+  - {x: -672.97, y: 757.38, z: 217.93}
+  - {x: -648.06, y: 748.29, z: 215.42}
+  - {x: -622.45, y: 741.11, z: 213.69}
+  - {x: -596.91, y: 733.45, z: 213.4}
+  - {x: -571.5, y: 725.39, z: 213.73}
+  - {x: -545.79, y: 718.37, z: 213.11}
+  - {x: -519.91, y: 712.26, z: 211.16}
+  - {x: -494.24, y: 705.74, z: 208.11}
+  - {x: -469.53, y: 696.57, z: 204.26}
+  - {x: -445.95, y: 684.82, z: 200.28}
+  - {x: -423.43, y: 671.15, z: 196.2}
+  - {x: -401.4, y: 656.93, z: 191.37}
+  - {x: -379.15, y: 643.63, z: 185.17}
+  - {x: -356.48, y: 631.82, z: 177.65}
+  - {x: -333.49, y: 621.38, z: 169.09}
+  - {x: -310.25, y: 612.33, z: 159.67}
+  - {x: -286.77, y: 604.35, z: 149.9}
+  - {x: -262.95, y: 597.45, z: 140.11}
+  - {x: -238.79, y: 591.56, z: 130.5}
+  - {x: -214.37, y: 586.48, z: 121.07}
+  - {x: -189.78, y: 582.13, z: 111.71}
+  - {x: -165.42, y: 578.29, z: 101.6}
+  - {x: -141.77, y: 574.58, z: 89.93}
+  - {x: -119.75, y: 570.58, z: 75.52}
+  - {x: -100.16, y: 565.44, z: 58.23}
+  - {x: -83.94, y: 557.48, z: 38.72}
+  - {x: -71.24, y: 545.69, z: 18.56}
+  - {x: -62.13, y: 529.83, z: -0.72}
+  - {x: -57.81, y: 509.5, z: -17.36}
+  - {x: -58.75, y: 486.26, z: -30.22}
+  - {x: -64.68, y: 461.8, z: -38.74}
+  - {x: -75.45, y: 437.76, z: -41.85}
+  - {x: -90.49, y: 416.17, z: -38.36}
+  - {x: -108.06, y: 400.2, z: -26.75}
+  - {x: -124.26, y: 392.75, z: -7.4}
+  - {x: -134.42, y: 394.67, z: 16.86}
+  - {x: -139.5, y: 403.42, z: 41.5}
+  - {x: -143.23, y: 411.8, z: 66.5}
+  - {x: -145.03, y: 417.54, z: 92.47}
+  - {x: -145.41, y: 426.37, z: 117.52}
+  - {x: -139.07, y: 441.19, z: 138.4}
+  - {x: -124.23, y: 460.39, z: 148.23}
+  - {x: -105.6, y: 477.42, z: 141.49}
+  - {x: -90.86, y: 483.96, z: 120.92}
+  - {x: -83.35, y: 478.24, z: 96.3}
+  - {x: -77.96, y: 460.75, z: 77.4}
+  - {x: -75.02, y: 435.57, z: 70.56}
+  - {x: -75.76, y: 410.3, z: 77.77}
+  - {x: -84.26, y: 390.69, z: 93.39}
+  - {x: -97.7, y: 375.3, z: 110.49}
+  - {x: -110.81, y: 362.55, z: 129.83}
+  - {x: -120.19, y: 352.13, z: 152.37}
+  - {x: -125.26, y: 344.21, z: 177.26}
+  - {x: -125.21, y: 340.37, z: 203.56}
+  - {x: -121.01, y: 341.23, z: 229.76}
+  - {x: -112.94, y: 347.99, z: 254.16}
+  - {x: -102.06, y: 360.65, z: 274.68}
+  - {x: -90.17, y: 378.33, z: 290.52}
+  - {x: -79.98, y: 400.4, z: 301.12}
+  - {x: -73.45, y: 425.39, z: 307.32}
+  - {x: -73.26, y: 451.88, z: 309.19}
+  - {x: -78.77, y: 477.87, z: 308.06}
+  - {x: -87.32, y: 502.85, z: 304.42}
+  - {x: -95.78, y: 527.54, z: 298.98}
+  - {x: -102.32, y: 552.47, z: 292.24}
+  - {x: -106.87, y: 577.63, z: 284.72}
+  - {x: -109.76, y: 602.88, z: 276.69}
+  - {x: -112.12, y: 628.13, z: 268.47}
+  - {x: -115.17, y: 653.44, z: 260.63}
+  - {x: -118.9, y: 678.81, z: 253.33}
+  - {x: -122.81, y: 704.32, z: 246.65}
+  - {x: -125.5, y: 730.19, z: 240.84}
+  - {x: -126.81, y: 756.34, z: 235.83}
+  - {x: -126.77, y: 782.68, z: 231.7}
+  - {x: -125.98, y: 809.09, z: 228.13}
+  - {x: -125.53, y: 835.51, z: 224.53}
+  - {x: -125.98, y: 861.88, z: 220.61}
+  - {x: -126.93, y: 888.19, z: 216.41}
+  - {x: -128.24, y: 914.27, z: 211.09}
+  - {x: -129.47, y: 939.84, z: 203.72}
+  - {x: -130.44, y: 964.91, z: 194.75}
+  - {x: -131.13, y: 989.04, z: 183.44}
+  - {x: -131.92, y: 1012.79, z: 171.35}
+  - {x: -136.34, y: 822.07, z: 209.59}
+  - {x: -126.28, y: 809.72, z: 195.26}
+  - {x: -117.08, y: 796.71, z: 180.93}
+  - {x: -108.67, y: 783.15, z: 166.62}
+  - {x: -100.66, y: 769.35, z: 152.31}
+  - {x: -92.29, y: 755.76, z: 138}
+  - {x: -83.25, y: 742.61, z: 123.7}
+  - {x: -73.54, y: 729.95, z: 109.39}
+  - {x: -63.42, y: 717.6, z: 95.09}
+  - {x: -53.06, y: 705.43, z: 80.81}
+  - {x: -42.62, y: 693.34, z: 66.52}
+  - {x: -32.1, y: 681.3, z: 52.25}
+  - {x: -21.23, y: 668.89, z: 38.56}
+  - {x: -9.96, y: 656, z: 25.68}
+  - {x: 1.7, y: 642.69, z: 13.6}
+  - {x: 13.59, y: 629.12, z: 2.02}
+  - {x: 25.55, y: 615.46, z: -9.36}
+  - {x: 37.34, y: 602.06, z: -21.24}
+  - {x: 48.92, y: 588.94, z: -33.6}
+  - {x: 60.34, y: 576.04, z: -46.36}
+  - {x: 71.63, y: 563.31, z: -59.39}
+  - {x: 82.93, y: 550.6, z: -72.43}
+  - {x: 94.43, y: 537.61, z: -85.01}
+  - {x: 106.22, y: 524.26, z: -96.93}
+  - {x: 118.29, y: 510.56, z: -108.16}
+  - {x: 130.56, y: 496.62, z: -118.86}
+  - {x: 142.9, y: 482.56, z: -129.31}
+  - {x: 155.17, y: 468.6, z: -139.99}
+  - {x: 167.26, y: 454.85, z: -151.12}
+  - {x: 179.15, y: 441.33, z: -162.76}
+  - {x: 190.82, y: 428.04, z: -174.86}
+  - {x: 202.3, y: 414.97, z: -187.39}
+  - {x: 213.64, y: 402.06, z: -200.19}
+  - {x: 224.86, y: 389.28, z: -213.22}
+  - {x: 235.97, y: 376.63, z: -226.49}
+  - {x: 246.98, y: 364.09, z: -239.95}
+  - {x: 258.03, y: 351.49, z: -253.3}
+  - {x: 269.19, y: 338.73, z: -266.41}
+  - {x: 280.68, y: 325.53, z: -278.79}
+  - {x: 292.37, y: 312.06, z: -290.67}
+  - {x: 304.24, y: 298.33, z: -302.07}
+  - {x: 316.27, y: 284.4, z: -313.05}
+  - {x: 328.39, y: 270.33, z: -323.74}
+  - {x: 340.4, y: 256.41, z: -334.76}
+  - {x: 352.24, y: 242.71, z: -346.22}
+  - {x: 363.88, y: 229.26, z: -358.18}
+  - {x: 375.25, y: 216.16, z: -370.77}
+  - {x: 386.45, y: 203.3, z: -383.75}
+  - {x: 397.47, y: 190.6, z: -397.04}
+  - {x: 408.28, y: 178.03, z: -410.63}
+  - {x: 418.3, y: 165.14, z: -424.51}
+  - {x: 427.52, y: 151.71, z: -438.41}
+  - {x: 435.78, y: 137.54, z: -452.19}
+  - {x: 442.99, y: 122.46, z: -465.59}
+  - {x: 449.07, y: 106.05, z: -477.96}
+  - {x: 454.39, y: 88.34, z: -488.78}
+  - {x: 459.22, y: 69.47, z: -497.67}
+  - {x: 464.22, y: 49.88, z: -504.75}
+  - {x: 470.05, y: 30.03, z: -510.29}
+  - {x: 477.13, y: 10.3, z: -514.72}
+  - {x: 485.95, y: -8.86, z: -518.5}
+  - {x: 496.68, y: -27.06, z: -522.12}
+  - {x: 508.87, y: -44.28, z: -525.86}
+  - {x: 521.59, y: -61, z: -530.1}
+  - {x: 534.15, y: -77.57, z: -535.25}
+  - {x: 546.32, y: -93.84, z: -542.03}
+  - {x: 557.97, y: -109.12, z: -551.44}
+  - {x: 568.55, y: -122.6, z: -564.25}
+  - {x: 577.02, y: -133.45, z: -580.59}
+  - {x: 582.33, y: -140.47, z: -600.04}
+  - {x: 583.82, y: -141.57, z: -621.27}
+  - {x: 583.83, y: -136.33, z: -641.98}
+  - {x: 584.69, y: -127.35, z: -661.39}
+  - {x: 586.77, y: -115.28, z: -678.95}
+  - {x: 590.36, y: -101.77, z: -695.19}
+  - {x: 595.35, y: -88.04, z: -710.87}
+  - {x: 601.01, y: -74.32, z: -726.33}
+  - {x: 606.36, y: -61.4, z: -742.57}
+  - {x: 611.36, y: -49.15, z: -759.43}
+  - {x: 616.16, y: -37.32, z: -776.64}
+  - {x: 620.38, y: -25.46, z: -793.98}
+  - {x: 623.07, y: -12.95, z: -811.17}
+  - {x: 624.94, y: -0.09, z: -828.21}
+  - {x: 626.36, y: 12.97, z: -845.15}
+  - {x: 627.45, y: 26.17, z: -862}
+  - {x: 628.02, y: 39.62, z: -878.68}
+  - {x: 627.64, y: 53.6, z: -894.91}
+  - {x: 626.28, y: 68.14, z: -910.59}
+  - {x: 624.17, y: 83.11, z: -925.78}
+  - {x: 621.61, y: 98.28, z: -940.71}
+  - {x: 619.01, y: 113.18, z: -955.89}
+  - {x: 616.62, y: 127.37, z: -971.78}
+  - {x: 614.55, y: 140.45, z: -988.62}
+  - {x: 612.78, y: 152.02, z: -1006.56}
+  - {x: 611.12, y: 161.63, z: -1025.61}
+  - {x: 609.29, y: 169.1, z: -1045.55}
+  - {x: 607.12, y: 174.22, z: -1066.19}
+  - {x: 604.41, y: 176.54, z: -1087.32}
+  - {x: 600.87, y: 174.91, z: -1108.39}
+  - {x: 596.75, y: 170.08, z: -1128.78}
+  - {x: 592.06, y: 161.53, z: -1147.72}
+  - {x: 587.03, y: 150.09, z: -1164.97}
+  - {x: 581.8, y: 135.82, z: -1180.08}
+  - {x: 576.73, y: 118.78, z: -1192.02}
+  - {x: 571.91, y: 100.42, z: -1201.81}
+  - {x: 567.39, y: 81.04, z: -1209.67}
+  - {x: 563.24, y: 60.83, z: -1215.41}
+  - {x: 559.3, y: 40.08, z: -1219.09}
+  - {x: 554.76, y: 19.2, z: -1220.57}
+  - {x: 549.4, y: -1.53, z: -1220.08}
+  - {x: 543.24, y: -21.89, z: -1217.66}
+  - {x: 536.47, y: -41.79, z: -1213.63}
+  - {x: 529.4, y: -61.19, z: -1207.95}
+  - {x: 522.7, y: -80.25, z: -1200.84}
+  - {x: 517.12, y: -99.07, z: -1192.3}
+  - {x: 513.27, y: -117.43, z: -1182}
+  - {x: 511.44, y: -134.71, z: -1169.55}
+  - {x: 511.9, y: -150.17, z: -1154.8}
+  - {x: 515.06, y: -162.68, z: -1137.8}
+  - {x: 521.28, y: -170.36, z: -1118.88}
+  - {x: 528.92, y: -172.59, z: -1099.11}
+  - {x: 535.46, y: -168.68, z: -1079.19}
+  - {x: 539.51, y: -159.38, z: -1060.39}
+  - {x: 542.92, y: -145.56, z: -1044.48}
+  - {x: 546.78, y: -127.06, z: -1034.69}
+  - {x: 551.07, y: -106.32, z: -1033.99}
+  - {x: 552.7, y: -86.81, z: -1042.17}
+  - {x: 548.61, y: -71.64, z: -1056.41}
+  - {x: 540.92, y: -64.74, z: -1074.9}
+  - {x: 532.57, y: -68.88, z: -1093.88}
+  - {x: 525.85, y: -83.4, z: -1107.72}
+  - {x: 519.44, y: -103.07, z: -1112.26}
+  - {x: 514.11, y: -122.67, z: -1106.22}
+  - {x: 512.54, y: -137.48, z: -1091.14}
+  - {x: 512.38, y: -143.79, z: -1070.89}
+  - {x: 510.61, y: -142.97, z: -1049.6}
+  - {x: 508.87, y: -139.42, z: -1028.54}
+  - {x: 508.11, y: -135.53, z: -1007.49}
+  - {x: 507.43, y: -132.79, z: -986.25}
+  - {x: 506.33, y: -131.28, z: -964.9}
+  - {x: 504.8, y: -130.56, z: -943.53}
+  - {x: 502.92, y: -129.73, z: -922.2}
+  - {x: 500.68, y: -128.3, z: -900.93}
+  - {x: 497.82, y: -125.92, z: -879.83}
+  - {x: 494.23, y: -122.7, z: -858.95}
+  - {x: 489.87, y: -118.99, z: -838.3}
+  - {x: 484.95, y: -115.32, z: -817.77}
+  - {x: 479.75, y: -112.63, z: -797.16}
+  - {x: 474.54, y: -110.27, z: -776.5}
+  - {x: 469.39, y: -108.83, z: -755.75}
+  - {x: 464.27, y: -108.15, z: -734.95}
+  - {x: 459.16, y: -108.02, z: -714.13}
+  - {x: 454.07, y: -108.37, z: -693.32}
+  - {x: 449, y: -109.12, z: -672.51}
+  - {x: 443.93, y: -110.23, z: -651.71}
+  - {x: 438.98, y: -111.5, z: -630.9}
+  - {x: 434.38, y: -112.26, z: -609.98}
+  - {x: 430.25, y: -112.23, z: -588.97}
+  - {x: 426.69, y: -111.2, z: -567.86}
+  - {x: 423.73, y: -109.15, z: -546.73}
+  - {x: 421.34, y: -106.18, z: -525.64}
+  - {x: 419.05, y: -102.89, z: -504.59}
+  - {x: 416.58, y: -99.59, z: -483.56}
+  - {x: 413.59, y: -96.7, z: -462.54}
+  - {x: 409.64, y: -94.86, z: -441.56}
+  - {x: 404.33, y: -94.81, z: -420.8}
+  - {x: 397.5, y: -97.09, z: -400.63}
+  - {x: 389.21, y: -101.87, z: -381.48}
+  - {x: 379.27, y: -109.92, z: -364.29}
+  - {x: 368.05, y: -121.15, z: -349.95}
+  - {x: 355.94, y: -135.23, z: -339.41}
+  - {x: 343.36, y: -151.03, z: -332.49}
+  - {x: 330.5, y: -167.84, z: -329.7}
+  - {x: 317.56, y: -184.82, z: -330.76}
+  - {x: 304.77, y: -201.1, z: -336.03}
+  - {x: 292.56, y: -215.54, z: -346.02}
+  - {x: 282.29, y: -226.63, z: -361.1}
+  - {x: 276.27, y: -233.35, z: -380.34}
+  - {x: 276.91, y: -235.17, z: -401.51}
+  - {x: 284.1, y: -232.43, z: -421.36}
+  - {x: 295.66, y: -224.48, z: -437.39}
+  - {x: 308.99, y: -211.15, z: -447.3}
+  - {x: 322.76, y: -195.28, z: -451.3}
+  - {x: 336.82, y: -179.15, z: -452.25}
+  - {x: 351.36, y: -163.43, z: -451.44}
+  - {x: 367.02, y: -148.84, z: -450.49}
+  - {x: 383.9, y: -135.66, z: -450.6}
+  - {x: 401.83, y: -124.2, z: -452.84}
+  - {x: 420.25, y: -114.85, z: -458.34}
+  - {x: 438.36, y: -107.45, z: -466.94}
+  - {x: 455.19, y: -102.46, z: -479.14}
+  - {x: 469.91, y: -100.14, z: -494.46}
+  - {x: 482.65, y: -100.46, z: -511.63}
+  - {x: 493.28, y: -103.73, z: -529.9}
+  - {x: 501.41, y: -110.29, z: -548.54}
+  - {x: 506.66, y: -120.05, z: -566.82}
+  - {x: 508.93, y: -132.39, z: -584.13}
+  - {x: 508.68, y: -146.78, z: -599.97}
+  - {x: 507.1, y: -162.87, z: -614.01}
+  - {x: 505.23, y: -180.48, z: -626.03}
+  - {x: 503.52, y: -199.49, z: -635.71}
+  - {x: 501.92, y: -219.71, z: -642.58}
+  - {x: 500.12, y: -240.44, z: -647.73}
+  - {x: 497.83, y: -261.2, z: -652.53}
+  - {x: 494.79, y: -281.45, z: -658.8}
+  - {x: 490.57, y: -300.45, z: -667.66}
+  - {x: 484.27, y: -317.03, z: -679.56}
+  - {x: 476, y: -330.5, z: -693.99}
+  - {x: 467.53, y: -341.64, z: -710.21}
+  - {x: 459.41, y: -350.97, z: -727.7}
+  - {x: 451.58, y: -358.94, z: -745.99}
+  - {x: 444.84, y: -367.33, z: -764.51}
+  - {x: 439.43, y: -376.79, z: -782.96}
+  - {x: 433.96, y: -385.81, z: -801.6}
+  - {x: 425.93, y: -390.66, z: -820.76}
+  - {x: 415.93, y: -390.84, z: -839.71}
+  - {x: 406.51, y: -392.43, z: -858.85}
+  - {x: 400.31, y: -399.77, z: -877.84}
+  - {x: 400.17, y: -413.28, z: -894.19}
+  - {x: 405.54, y: -430.89, z: -904.84}
+  - {x: 413.52, y: -450.41, z: -907.61}
+  - {x: 421.5, y: -468.93, z: -901.04}
+  - {x: 427.62, y: -482.3, z: -885.83}
+  - {x: 430.59, y: -487.68, z: -865.47}
+  - {x: 430.77, y: -486.26, z: -844.16}
+  - {x: 429.47, y: -480.73, z: -823.5}
+  - {x: 428.1, y: -473.94, z: -803.22}
+  - {x: 427.63, y: -467.17, z: -782.9}
+  - {x: 428.9, y: -460.8, z: -762.48}
+  - {x: 431.77, y: -454.83, z: -742.1}
+  - {x: 435.47, y: -449.2, z: -721.76}
+  - {x: 439.09, y: -443.92, z: -701.31}
+  - {x: 442.04, y: -438.96, z: -680.67}
+  - {x: 443.97, y: -434.37, z: -659.83}
+  - {x: 444.97, y: -430.15, z: -638.84}
+  - {x: 445.31, y: -426.23, z: -617.77}
+  - {x: 445.6, y: -422.42, z: -596.68}
+  - {x: 446.34, y: -418.52, z: -575.62}
+  - {x: 447.67, y: -414.47, z: -554.62}
+  - {x: 449.8, y: -410.22, z: -533.72}
+  - {x: 452.4, y: -405.84, z: -512.91}
+  - {x: 455.11, y: -401.05, z: -492.2}
+  - {x: 457.9, y: -395.61, z: -471.66}
+  - {x: 460.7, y: -389.48, z: -451.31}
+  - {x: 463.48, y: -382.56, z: -431.22}
+  - {x: 466.25, y: -375.23, z: -411.27}
+  - {x: 469.03, y: -367.48, z: -391.48}
+  - {x: 471.81, y: -359.27, z: -371.88}
+  - {x: 474.58, y: -350.73, z: -352.42}
+  - {x: 477.36, y: -341.92, z: -333.08}
+  - {x: 479.83, y: -332.81, z: -313.85}
+  - {x: 481.27, y: -323.47, z: -294.61}
+  - {x: 482.53, y: -314.15, z: -275.36}
+  - {x: 480.6, y: -305.61, z: -255.91}
+  - {x: 476.35, y: -297.98, z: -236.33}
+  - {x: 470.63, y: -291.3, z: -216.88}
+  - {x: 462.32, y: -286.51, z: -197.76}
+  - {x: 452.05, y: -283.63, z: -179.21}
+  - {x: 440.42, y: -282.38, z: -161.28}
+  - {x: 427.82, y: -282.58, z: -143.95}
+  - {x: 414.92, y: -283.26, z: -126.85}
+  - {x: 401.86, y: -284.2, z: -109.88}
+  - {x: 388.3, y: -286.08, z: -93.41}
+  - {x: 373.92, y: -289.85, z: -78}
+  - {x: 358.93, y: -295.73, z: -63.87}
+  - {x: 343.7, y: -303.28, z: -50.83}
+  - {x: 328.42, y: -312.07, z: -38.64}
+  - {x: 313.17, y: -321.53, z: -26.93}
+  - {x: 297.99, y: -331.49, z: -15.54}
+  - {x: 282.86, y: -341.74, z: -4.34}
+  - {x: 267.9, y: -352.29, z: 6.81}
+  - {x: 253.13, y: -363.09, z: 17.97}
+  - {x: 238.51, y: -374.06, z: 29.16}
+  - {x: 224.04, y: -384.94, z: 40.63}
+  - {x: 209.73, y: -395.56, z: 52.54}
+  - {x: 195.57, y: -405.92, z: 64.84}
+  - {x: 181.54, y: -416.08, z: 77.47}
+  - {x: 167.61, y: -426.08, z: 90.33}
+  - {x: 153.77, y: -435.96, z: 103.38}
+  - {x: 140, y: -445.74, z: 116.57}
+  - {x: 126.3, y: -455.43, z: 129.9}
+  - {x: 112.64, y: -465.05, z: 143.32}
+  - {x: 99.02, y: -474.61, z: 156.84}
+  - {x: 85.45, y: -484.13, z: 170.42}
+  - {x: 71.89, y: -493.67, z: 184.01}
+  - {x: 58.35, y: -503.4, z: 197.48}
+  - {x: 44.82, y: -513.37, z: 210.78}
+  - {x: 31.25, y: -523.58, z: 223.85}
+  - {x: 17.39, y: -534.13, z: 236.34}
+  - {x: 2.96, y: -545.12, z: 247.75}
+  - {x: -11.85, y: -556.43, z: 258.34}
+  - {x: -26.96, y: -568.01, z: 268.18}
+  - {x: -42.29, y: -579.8, z: 277.41}
+  - {x: -57.81, y: -591.53, z: 286.39}
+  - {x: -73.87, y: -600.98, z: 296.92}
+  - {x: -91, y: -606.36, z: 308.55}
+  - {x: -109.43, y: -606.17, z: 319.28}
+  - {x: -125.79, y: -598.22, z: 330.31}
+  - {x: -137.48, y: -583.39, z: 340.09}
+  - {x: -145.13, y: -564.71, z: 347.18}
+  - {x: -151.52, y: -544.94, z: 352.37}
+  - {x: -157.36, y: -524.72, z: 356.44}
+  - {x: -163.59, y: -504.49, z: 359.78}
+  - {x: -170.55, y: -484.45, z: 362.8}
+  - {x: -178.15, y: -464.6, z: 365.57}
+  - {x: -186.2, y: -444.91, z: 368.16}
+  - {x: -194.51, y: -425.32, z: 370.73}
+  - {x: -202.82, y: -405.77, z: 373.59}
+  - {x: -211.08, y: -386.24, z: 376.73}
+  - {x: -219.3, y: -366.74, z: 380.09}
+  - {x: -227.49, y: -347.25, z: 383.64}
+  - {x: -235.66, y: -327.78, z: 387.32}
+  - {x: -243.81, y: -308.33, z: 391.13}
+  - {x: -251.94, y: -288.88, z: 395.03}
+  - {x: -260.06, y: -269.45, z: 399}
+  - {x: -268.18, y: -250.02, z: 403.03}
+  - {x: -276.28, y: -230.61, z: 407.12}
+  - {x: -284.4, y: -211.2, z: 411.23}
+  - {x: -292.55, y: -191.81, z: 415.35}
+  - {x: -300.71, y: -172.42, z: 419.45}
+  - {x: -308.88, y: -153.02, z: 423.47}
+  - {x: -317.05, y: -133.59, z: 427.39}
+  - {x: -325.35, y: -114.18, z: 431.07}
+  - {x: -334.25, y: -94.9, z: 433.95}
+  - {x: -343.82, y: -75.81, z: 435.7}
+  - {x: -353.94, y: -56.93, z: 436.47}
+  - {x: -364.47, y: -38.27, z: 436.5}
+  - {x: -375.23, y: -19.73, z: 436.14}
+  - {x: -385.77, y: -1.08, z: 435.75}
+  - {x: -395.12, y: 18.2, z: 436.01}
+  - {x: -403.17, y: 38.03, z: 437.08}
+  - {x: -410.38, y: 58.14, z: 438.73}
+  - {x: -416.94, y: 78.43, z: 440.87}
+  - {x: -423, y: 98.83, z: 443.41}
+  - {x: -428.67, y: 119.32, z: 446.17}
+  - {x: -433.5, y: 140.06, z: 448.51}
+  - {x: -437.59, y: 161.02, z: 450.14}
+  - {x: -440.27, y: 182.26, z: 450.24}
+  - {x: -441.46, y: 203.54, z: 448.62}
+  - {x: -441.42, y: 224.75, z: 445.59}
+  - {x: -439.65, y: 245.52, z: 440.61}
+  - {x: -436.27, y: 265.55, z: 433.85}
+  - {x: -431.31, y: 284.53, z: 425.38}
+  - {x: -424.98, y: 302.37, z: 415.43}
+  - {x: -417.43, y: 319.01, z: 404.24}
+  - {x: -407.73, y: 332.74, z: 390.98}
+  - {x: -397.85, y: 346.22, z: 377.56}
+  - {x: -387.81, y: 359.43, z: 364.01}
+  - {x: -377.06, y: 371.43, z: 349.87}
+  - {x: -365.74, y: 382.78, z: 335.65}
+  - {x: -353.89, y: 393.87, z: 321.67}
+  - {x: -341.26, y: 404.75, z: 308.2}
+  - {x: -327.65, y: 415.79, z: 295.87}
+  - {x: -313.72, y: 426.97, z: 284.06}
+  - {x: -299.07, y: 438.57, z: 273.55}
+  - {x: -283.97, y: 450.52, z: 264.2}
+  - {x: -268.53, y: 462.67, z: 255.63}
+  - {x: -252.88, y: 474.81, z: 247.45}
+  - {x: -237.22, y: 486.95, z: 239.27}
+  - {x: -221.64, y: 498.95, z: 230.77}
+  - {x: -206.21, y: 510.63, z: 221.55}
+  - {x: -191.96, y: 521.55, z: 209.93}
+  - {x: -178.06, y: 532.25, z: 197.63}
+  - {x: -164.18, y: 542.94, z: 185.27}
+  - {x: -151.94, y: 552.98, z: 170.86}
+  - {x: -140.79, y: 562.65, z: 155.32}
+  - {x: -129.78, y: 572.29, z: 139.67}
+  - {x: -119.94, y: 581.54, z: 123.02}
+  - {x: -110.23, y: 590.54, z: 106.18}
+  - {x: -99.81, y: 599.03, z: 89.47}
+  - {x: -89.05, y: 607.4, z: 72.96}
+  - {x: -76.78, y: 615.3, z: 57.27}
+  - {x: -62.27, y: 622.67, z: 43.32}
+  - {x: -46.65, y: 629.78, z: 30.49}
+  - {x: -29.77, y: 636.29, z: 19.02}
+  - {x: -12.05, y: 641.89, z: 8.38}
+  - {x: 6.15, y: 646.88, z: -1.77}
+  - {x: 24.89, y: 651.08, z: -11.28}
+  - {x: 44.2, y: 654, z: -20.1}
+  - {x: 63.77, y: 655.66, z: -28.6}
+  - {x: 83.56, y: 654.93, z: -36.63}
+  - {x: 103.17, y: 650.67, z: -44.06}
+  - {x: 122.07, y: 643.45, z: -50.93}
+  - {x: 138.6, y: 631.3, z: -56.79}
+  - {x: 152.75, y: 616.23, z: -61.98}
+  - {x: 161.81, y: 597.38, z: -66.27}
+  - {x: 167.39, y: 577.1, z: -70.22}
+  - {x: 171.46, y: 556.56, z: -74.76}
+  - {x: 177.11, y: 537.01, z: -81.37}
+  - {x: 185.25, y: 519.4, z: -90.4}
+  - {x: 194.32, y: 504.01, z: -102.19}
+  - {x: 204.01, y: 490.28, z: -115.48}
+  - {x: 214.63, y: 477.31, z: -128.84}
+  - {x: 225.69, y: 464.7, z: -142.18}
+  - {x: 237.03, y: 452.33, z: -155.51}
+  - {x: 248.38, y: 439.88, z: -168.75}
+  - {x: 259.6, y: 427.21, z: -181.9}
+  - {x: 270.67, y: 414.3, z: -194.95}
+  - {x: 281.64, y: 401.25, z: -207.94}
+  - {x: 292.56, y: 388.11, z: -220.88}
+  - {x: 303.4, y: 374.84, z: -233.77}
+  - {x: 314.21, y: 361.55, z: -246.64}
+  - {x: 324.98, y: 348.19, z: -259.48}
+  - {x: 335.71, y: 334.76, z: -272.28}
+  - {x: 346.42, y: 321.32, z: -285.08}
+  - {x: 357.11, y: 307.84, z: -297.87}
+  - {x: 367.77, y: 294.32, z: -310.64}
+  - {x: 378.42, y: 280.77, z: -323.39}
+  - {x: 389.05, y: 267.21, z: -336.13}
+  - {x: 399.66, y: 253.62, z: -348.86}
+  - {x: 409.94, y: 239.63, z: -361.43}
+  - {x: 420.21, y: 225.63, z: -373.99}
+  - {x: 429.84, y: 210.91, z: -386.23}
+  - {x: 438.21, y: 195.02, z: -397.79}
+  - {x: 445.18, y: 177.86, z: -408.57}
+  - {x: 451.61, y: 160.32, z: -419.02}
+  - {x: 456.75, y: 141.89, z: -428.67}
+  - {x: 460.7, y: 122.78, z: -437.52}
+  - {x: 464.42, y: 103.55, z: -446.24}
+  - {x: 468.08, y: 84.3, z: -454.91}
+  - {x: 471.38, y: 64.87, z: -463.33}
+  - {x: 473.83, y: 45.05, z: -471.11}
+  - {x: 476.04, y: 25.15, z: -478.72}
+  - {x: 476.76, y: 4.74, z: -485.12}
+  - {x: 475.42, y: -16.13, z: -489.81}
+  - {x: 473.64, y: -37.04, z: -494.11}
+  - {x: 471.14, y: -58.01, z: -497.76}
+  - {x: 468.69, y: -78.98, z: -501.46}
+  - {x: 467.17, y: -99.88, z: -505.95}
+  - {x: 468.49, y: -120.12, z: -512.77}
+  - {x: 471.61, y: -139.6, z: -520.98}
+  - {x: 479.27, y: -155.98, z: -532.38}
+  - {x: 490.9, y: -167.31, z: -545.89}
+  - {x: 505.63, y: -172.1, z: -560.28}
+  - {x: 521.86, y: -167.02, z: -573.14}
+  - {x: 536.36, y: -154.95, z: -583.28}
+  - {x: 550.05, y: -141.85, z: -593.27}
+  - {x: 563.57, y: -131.65, z: -606.28}
+  - {x: 575, y: -125.85, z: -623.34}
+  - {x: 583.97, y: -122.46, z: -642.5}
+  - {x: 592.08, y: -117.22, z: -661.6}
+  - {x: 597.46, y: -108.93, z: -680.52}
+  - {x: 598.38, y: -97.76, z: -698.74}
+  - {x: 597.85, y: -85.66, z: -716.42}
+  - {x: 598.63, y: -74.18, z: -734.5}
+  - {x: 600.35, y: -63.15, z: -752.8}
+  - {x: 602.51, y: -52.36, z: -771.19}
+  - {x: 604.94, y: -41.7, z: -789.62}
+  - {x: 607.35, y: -31, z: -808.04}
+  - {x: 609.14, y: -19.86, z: -826.26}
+  - {x: 609.41, y: -7.51, z: -843.75}
+  - {x: 608.47, y: 5.87, z: -860.46}
+  - {x: 607.22, y: 19.64, z: -876.83}
+  - {x: 606.3, y: 35.45, z: -891.18}
+  - {x: 605.83, y: 52.4, z: -904.25}
+  - {x: 605.72, y: 71.39, z: -913.9}
+  - {x: 605.37, y: 91.61, z: -921.02}
+  - {x: 604.51, y: 112.44, z: -925.36}
+  - {x: 602.81, y: 133.78, z: -924.41}
+  - {x: 601.3, y: 154.48, z: -919.86}
+  - {x: 600.74, y: 173.15, z: -909.59}
+  - {x: 600.54, y: 191.1, z: -897.92}
+  - {x: 602.37, y: 205.15, z: -882.04}
+  - {x: 605.07, y: 217.58, z: -864.79}
+  - {x: 609.17, y: 227.3, z: -846.21}
+  - {x: 614.11, y: 234.14, z: -826.5}
+  - {x: 619.04, y: 239.83, z: -806.47}
+  - {x: 622.68, y: 241.18, z: -785.42}
+  - {x: 625.04, y: 240.15, z: -764.28}
+  - {x: 624.77, y: 235.33, z: -743.43}
+  - {x: 620.46, y: 226, z: -724.72}
+  - {x: 613.21, y: 213.32, z: -709.14}
+  - {x: 604.4, y: 198.56, z: -696.4}
+  - {x: 594.8, y: 182.54, z: -685.92}
+  - {x: 585.06, y: 166.05, z: -676.3}
+  - {x: 575.49, y: 149.56, z: -666.51}
+  - {x: 566.23, y: 133.37, z: -655.95}
+  - {x: 557.2, y: 117.43, z: -644.83}
+  - {x: 548.3, y: 101.64, z: -633.39}
+  - {x: 539.48, y: 85.94, z: -621.77}
+  - {x: 530.7, y: 70.29, z: -610.05}
+  - {x: 521.95, y: 54.66, z: -598.27}
+  - {x: 513.21, y: 39.05, z: -586.47}
+  - {x: 504.47, y: 23.46, z: -574.65}
+  - {x: 495.74, y: 7.87, z: -562.81}
+  - {x: 487.02, y: -7.72, z: -550.96}
+  - {x: 478.3, y: -23.31, z: -539.11}
+  - {x: 469.58, y: -38.89, z: -527.26}
+  - {x: 460.49, y: -55.09, z: -516.58}
+  - {x: 451.31, y: -71.44, z: -506.21}
+  - {x: 441.87, y: -88.2, z: -496.79}
+  - {x: 432.05, y: -105.59, z: -489.04}
+  - {x: 422.14, y: -123.15, z: -481.78}
+  - {x: 412.13, y: -140.84, z: -475.01}
+  - {x: 401.84, y: -158.96, z: -470.32}
+  - {x: 391.29, y: -177.48, z: -468.08}
+  - {x: 380.74, y: -196, z: -465.94}
+  - {x: 370.1, y: -214.6, z: -466.32}
+  - {x: 359.53, y: -233, z: -469.18}
+  - {x: 348.99, y: -251.35, z: -472.55}
+  - {x: 338.53, y: -269.52, z: -476.91}
+  - {x: 328.45, y: -286.96, z: -483.77}
+  - {x: 319.06, y: -303.09, z: -494.3}
+  - {x: 309.67, y: -319.23, z: -504.82}
+  - {x: 301.14, y: -333.78, z: -517.92}
+  - {x: 294.85, y: -344.47, z: -534.99}
+  - {x: 289.71, y: -353.19, z: -553.88}
+  - {x: 284.89, y: -361.36, z: -573.02}
+  - {x: 282.21, y: -365.93, z: -593.75}
+  - {x: 282.69, y: -365.18, z: -615.16}
+  - {x: 283.16, y: -364.44, z: -636.58}
+  - {x: 285.08, y: -361.25, z: -657.63}
+  - {x: 288.83, y: -354.99, z: -677.66}
+  - {x: 293.38, y: -347.38, z: -697.18}
+  - {x: 298.59, y: -338.78, z: -716.07}
+  - {x: 305.85, y: -327.47, z: -732.61}
+  - {x: 313.94, y: -315.12, z: -748.14}
+  - {x: 323.36, y: -301.04, z: -761.21}
+  - {x: 334.8, y: -284.17, z: -767.78}
+  - {x: 346.64, y: -266.78, z: -771.27}
+  - {x: 358.35, y: -249.7, z: -765.88}
+  - {x: 367.63, y: -234.95, z: -754.12}
+  - {x: 373.58, y: -223.44, z: -737.26}
+  - {x: 376.03, y: -216.5, z: -717.17}
+  - {x: 379.14, y: -215.34, z: -696.03}
+  - {x: 386.72, y: -220.11, z: -676.67}
+  - {x: 400.29, y: -229.68, z: -663.37}
+  - {x: 417.37, y: -241.59, z: -659.08}
+  - {x: 432.94, y: -255.34, z: -663.25}
+  - {x: 442.58, y: -270.15, z: -674.75}
+  - {x: 443.58, y: -282.88, z: -691.51}
+  - {x: 438.66, y: -291.21, z: -710.56}
+  - {x: 434.41, y: -298.49, z: -730.24}
+  - {x: 433.75, y: -307.9, z: -749.45}
+  - {x: 433.7, y: -319.02, z: -767.76}
+  - {x: 431.41, y: -329.99, z: -786.01}
+  - {x: 427.61, y: -340.84, z: -804.1}
+  - {x: 423.19, y: -351.78, z: -822}
+  - {x: 419.51, y: -363.24, z: -839.72}
+  - {x: 417.99, y: -375.84, z: -856.98}
+  - {x: 417.86, y: -389.21, z: -873.73}
+  - {x: 417.71, y: -403.72, z: -889.47}
+  - {x: 416.81, y: -420.56, z: -902.55}
+  - {x: 414.93, y: -440.53, z: -909.56}
+  - {x: 413.52, y: -461.48, z: -906.81}
+  - {x: 415.2, y: -478.4, z: -894.13}
+  - {x: 418.6, y: -487.9, z: -875.42}
+  - {x: 418.99, y: -491.02, z: -854.29}
+  - {x: 417.08, y: -491.09, z: -832.95}
+  - {x: 413.56, y: -488.77, z: -811.94}
+  - {x: 409.71, y: -485.71, z: -791.1}
+  - {x: 405.48, y: -481.56, z: -770.5}
+  - {x: 401.89, y: -476.59, z: -749.98}
+  - {x: 399.04, y: -470.87, z: -729.52}
+  - {x: 397.33, y: -464.49, z: -709.18}
+  - {x: 397.35, y: -457.23, z: -689.01}
+  - {x: 397.73, y: -449.85, z: -668.9}
+  - {x: 401.39, y: -441.6, z: -649.5}
+  - {x: 405.61, y: -433.23, z: -630.22}
+  - {x: 410.16, y: -424.81, z: -611.06}
+  - {x: 414.45, y: -416.2, z: -591.91}
+  - {x: 418.42, y: -407.57, z: -572.69}
+  - {x: 422.31, y: -398.95, z: -553.46}
+  - {x: 423.73, y: -390.8, z: -533.75}
+  - {x: 423.3, y: -383.13, z: -513.74}
+  - {x: 422.88, y: -375.46, z: -493.73}
+  - {x: 421.79, y: -368.05, z: -473.66}
+  - {x: 420.68, y: -362.01, z: -453.13}
+  - {x: 419.66, y: -356.19, z: -432.53}
+  - {x: 418.64, y: -350.37, z: -411.93}
+  - {x: 419.04, y: -345.66, z: -391.06}
+  - {x: 421.18, y: -342.15, z: -370.03}
+  - {x: 423.31, y: -338.65, z: -348.99}
+  - {x: 425.53, y: -335.2, z: -327.95}
+  - {x: 429.31, y: -333.01, z: -306.98}
+  - {x: 433.46, y: -331.11, z: -286.04}
+  - {x: 437.61, y: -329.21, z: -265.1}
+  - {x: 441.82, y: -327.79, z: -244.15}
+  - {x: 444.72, y: -327.45, z: -222.91}
+  - {x: 447.62, y: -327.1, z: -201.68}
+  - {x: 449.32, y: -327.36, z: -180.41}
+  - {x: 446.02, y: -330.05, z: -159.4}
+  - {x: 442.73, y: -332.74, z: -138.39}
+  - {x: 436.65, y: -337.07, z: -118.47}
+  - {x: 427.46, y: -343.32, z: -100.15}
+  - {x: 418.14, y: -349.68, z: -81.94}
+  - {x: 405.44, y: -357.03, z: -66.42}
+  - {x: 391.77, y: -364.43, z: -51.67}
+  - {x: 376.39, y: -372.31, z: -39.41}
+  - {x: 358.71, y: -381.27, z: -31.25}
+  - {x: 341.18, y: -392.27, z: -27.86}
+  - {x: 324.58, y: -405.63, z: -29.71}
+  - {x: 314.56, y: -422.28, z: -38.69}
+  - {x: 326.08, y: -428.36, z: -49.72}
+  - {x: 343.61, y: -430.52, z: -61.84}
+  - {x: 360.04, y: -430.15, z: -75.45}
+  - {x: 374.59, y: -425.93, z: -90.51}
+  - {x: 386.37, y: -419.2, z: -107.04}
+  - {x: 394.42, y: -411.04, z: -125.07}
+  - {x: 401.04, y: -403.11, z: -143.84}
+  - {x: -142.77, y: 831.51, z: 196.92}
+  - {x: -150.09, y: 830.03, z: 222.52}
+  - {x: -169.81, y: 825.15, z: 239.67}
+  - {x: -194.32, y: 815.3, z: 241.19}
+  - {x: -210.39, y: 800.36, z: 226.48}
+  - {x: -208.37, y: 784.01, z: 205.77}
+  - {x: -192.63, y: 770.43, z: 188.66}
+  - {x: -175.53, y: 756.46, z: 173.12}
+  - {x: -159.98, y: 740, z: 158.34}
+  - {x: -143.35, y: 725.24, z: 142.96}
+  - {x: -125.82, y: 712.1, z: 127.12}
+  - {x: -107.6, y: 700.51, z: 110.84}
+  - {x: -89.09, y: 689.78, z: 94.3}
+  - {x: -70.37, y: 679.46, z: 77.74}
+  - {x: -50.44, y: 668.28, z: 63.31}
+  - {x: -30.32, y: 656.13, z: 49.93}
+  - {x: -10.53, y: 643.68, z: 36.35}
+  - {x: 9.19, y: 631.04, z: 22.83}
+  - {x: 29.33, y: 617.71, z: 10.68}
+  - {x: 49.37, y: 603, z: 0.07}
+  - {x: 69, y: 586.84, z: -9.14}
+  - {x: 88.2, y: 569.62, z: -17.24}
+  - {x: 106.9, y: 551.52, z: -24.57}
+  - {x: 124.34, y: 531.97, z: -31.18}
+  - {x: 139.54, y: 510.35, z: -36.72}
+  - {x: 152.25, y: 486.88, z: -40.73}
+  - {x: 162.48, y: 461.98, z: -42.61}
+  - {x: 170.34, y: 436.17, z: -41.89}
+  - {x: 175.54, y: 409.99, z: -37.98}
+  - {x: 178.16, y: 384.07, z: -31.05}
+  - {x: 177.66, y: 358.99, z: -21.15}
+  - {x: 172.72, y: 335.44, z: -9.03}
+  - {x: 163.37, y: 313.78, z: 3.99}
+  - {x: 149.51, y: 294.81, z: 17.24}
+  - {x: 131.72, y: 279.09, z: 30.13}
+  - {x: 110.66, y: 267.06, z: 42.05}
+  - {x: 87.24, y: 258.73, z: 52.62}
+  - {x: 62.32, y: 254.03, z: 61.9}
+  - {x: 36.86, y: 252.07, z: 70.72}
+  - {x: 11.4, y: 253.09, z: 79.71}
+  - {x: -13.33, y: 257.67, z: 89.53}
+  - {x: -36.4, y: 266.32, z: 100.5}
+  - {x: -56.94, y: 278.61, z: 112.93}
+  - {x: -74.14, y: 293.4, z: 127.53}
+  - {x: -87, y: 309.49, z: 144.96}
+  - {x: -94.14, y: 327.08, z: 164.1}
+  - {x: -94.99, y: 347.15, z: 181.98}
+  - {x: -88.36, y: 369.88, z: 194.53}
+  - {x: -74.77, y: 392.76, z: 196.74}
+  - {x: -58.14, y: 410.77, z: 186.04}
+  - {x: -42.24, y: 419.32, z: 166.38}
+  - {x: -29.88, y: 413.74, z: 143.49}
+  - {x: -24.44, y: 394.72, z: 125.77}
+  - {x: -28.78, y: 369.07, z: 121.01}
+  - {x: -41.58, y: 348.96, z: 132.31}
+  - {x: -55.61, y: 344.84, z: 154.21}
+  - {x: -62.85, y: 359.28, z: 175.01}
+  - {x: -62.13, y: 384.57, z: 182.93}
+  - {x: -54.63, y: 409.45, z: 176.87}
+  - {x: -38.83, y: 425.47, z: 162.68}
+  - {x: -17.84, y: 427.39, z: 146.3}
+  - {x: 2.62, y: 419.3, z: 130.66}
+  - {x: 21.59, y: 407.07, z: 115.83}
+  - {x: 36.42, y: 389.05, z: 102.38}
+  - {x: 46.18, y: 366.94, z: 90.36}
+  - {x: 53.7, y: 343.51, z: 79.14}
+  - {x: 61.39, y: 320.32, z: 67.56}
+  - {x: 70.58, y: 298.05, z: 55.32}
+  - {x: 82.99, y: 278.23, z: 41.8}
+  - {x: 97.67, y: 260.64, z: 27.47}
+  - {x: 114.15, y: 245.23, z: 12.58}
+  - {x: 131.7, y: 231.32, z: -2.57}
+  - {x: 150.06, y: 218.7, z: -17.88}
+  - {x: 169.03, y: 207.13, z: -33.29}
+  - {x: 188.37, y: 196.23, z: -48.74}
+  - {x: 207.95, y: 185.74, z: -64.16}
+  - {x: 227.61, y: 175.26, z: -79.49}
+  - {x: 247.36, y: 164.72, z: -94.65}
+  - {x: 267.27, y: 154.22, z: -109.66}
+  - {x: 287.49, y: 144.19, z: -124.54}
+  - {x: 308.13, y: 134.91, z: -139.35}
+  - {x: 329.08, y: 126.25, z: -154.09}
+  - {x: 350.3, y: 118.15, z: -168.76}
+  - {x: 371.76, y: 110.62, z: -183.39}
+  - {x: 393.55, y: 103.97, z: -197.96}
+  - {x: 415.67, y: 98.45, z: -212.49}
+  - {x: 438.2, y: 94.75, z: -226.94}
+  - {x: 461.12, y: 93.66, z: -241.21}
+  - {x: 484.21, y: 95.28, z: -255.18}
+  - {x: 507.24, y: 99.24, z: -268.76}
+  - {x: 529.81, y: 106.31, z: -281.8}
+  - {x: 551.23, y: 117.41, z: -293.92}
+  - {x: 569.98, y: 133.41, z: -304.92}
+  - {x: 585.5, y: 153.05, z: -314.91}
+  - {x: 595.37, y: 177.14, z: -321.82}
+  - {x: 597.33, y: 203.88, z: -322.54}
+  - {x: 590.65, y: 229.04, z: -316.02}
+  - {x: 578.4, y: 251.01, z: -306.16}
+  - {x: 561.95, y: 271, z: -298.71}
+  - {x: 539.74, y: 285.95, z: -297.15}
+  - {x: 514.21, y: 293.17, z: -301.87}
+  - {x: 487.41, y: 293.4, z: -303.86}
+  - {x: 462.35, y: 285.49, z: -298.41}
+  - {x: 440.08, y: 272.94, z: -289.64}
+  - {x: 419.31, y: 258.52, z: -280.05}
+  - {x: 399.49, y: 243.08, z: -270.06}
+  - {x: 380.36, y: 226.92, z: -259.83}
+  - {x: 361.72, y: 210.31, z: -249.46}
+  - {x: 343.45, y: 193.35, z: -238.97}
+  - {x: 325.63, y: 176.03, z: -228.3}
+  - {x: 308.49, y: 158.24, z: -217.32}
+  - {x: 292.31, y: 139.84, z: -205.88}
+  - {x: 277.34, y: 120.78, z: -193.88}
+  - {x: 264.36, y: 100.73, z: -181.23}
+  - {x: 254.52, y: 79.19, z: -168.26}
+  - {x: 248.95, y: 55.93, z: -155.74}
+  - {x: 247.39, y: 31.25, z: -144.88}
+  - {x: 247.56, y: 5.58, z: -136.44}
+  - {x: 247.95, y: -20.75, z: -130.34}
+  - {x: 248.83, y: -47.45, z: -126.15}
+  - {x: 250.16, y: -74.31, z: -123.3}
+  - {x: 252.04, y: -101.22, z: -121.54}
+  - {x: 254.54, y: -128.12, z: -120.3}
+  - {x: 257.6, y: -154.98, z: -119.37}
+  - {x: 261.11, y: -181.78, z: -118.67}
+  - {x: 265, y: -208.54, z: -118.16}
+  - {x: 269.17, y: -235.26, z: -117.74}
+  - {x: 273.63, y: -261.92, z: -117.12}
+  - {x: 278.52, y: -288.45, z: -115.3}
+  - {x: 283.6, y: -314.69, z: -111.31}
+  - {x: 288.57, y: -340.37, z: -104.5}
+  - {x: 293.29, y: -365.44, z: -95.57}
+  - {x: 297.68, y: -389.98, z: -85.09}
+  - {x: 301.7, y: -414.06, z: -73.48}
+  - {x: 305.4, y: -437.75, z: -60.98}
+  - {x: 308.83, y: -461.12, z: -47.81}
+  - {x: 311.96, y: -484.18, z: -34.03}
+  - {x: 314.65, y: -506.83, z: -19.52}
+  - {x: 316.57, y: -528.86, z: -3.96}
+  - {x: 316.94, y: -549.65, z: 13.33}
+  - {x: 315.29, y: -568.67, z: 32.43}
+  - {x: 311.84, y: -585.98, z: 52.79}
+  - {x: 306.1, y: -601.02, z: 74.43}
+  - {x: 297.57, y: -613.11, z: 97.04}
+  - {x: 285.87, y: -621.63, z: 119.89}
+  - {x: 271.66, y: -626.72, z: 142.22}
+  - {x: 255.44, y: -628.66, z: 163.63}
+  - {x: 237.17, y: -626.96, z: 183.36}
+  - {x: 217.55, y: -622.63, z: 201.38}
+  - {x: 196.79, y: -615.74, z: 217.22}
+  - {x: 175.34, y: -607.15, z: 231.24}
+  - {x: 153.27, y: -597.14, z: 243.26}
+  - {x: 130.35, y: -586.87, z: 253.28}
+  - {x: 106.68, y: -577, z: 261.8}
+  - {x: 82.4, y: -567.5, z: 268.93}
+  - {x: 57.66, y: -558.06, z: 274.35}
+  - {x: 32.79, y: -548.14, z: 278}
+  - {x: 8.04, y: -537.39, z: 279.46}
+  - {x: -16.46, y: -525.98, z: 279.14}
+  - {x: -40.66, y: -514.06, z: 277.35}
+  - {x: -64.59, y: -501.8, z: 274.48}
+  - {x: -88.25, y: -489.28, z: 270.66}
+  - {x: -111.73, y: -476.59, z: 266.3}
+  - {x: -135.23, y: -463.88, z: 262.14}
+  - {x: -158.96, y: -451.38, z: 258.74}
+  - {x: -183.11, y: -439.45, z: 256.36}
+  - {x: -207.92, y: -428.75, z: 255.34}
+  - {x: -233.33, y: -419.51, z: 255.05}
+  - {x: -259.09, y: -411.33, z: 254.57}
+  - {x: -285.01, y: -403.72, z: 253.33}
+  - {x: -310.85, y: -395.98, z: 251.42}
+  - {x: -336.55, y: -387.85, z: 249.29}
+  - {x: -362.18, y: -379.35, z: 247.78}
+  - {x: -387.94, y: -371.13, z: 247.69}
+  - {x: -414.04, y: -364.19, z: 248.84}
+  - {x: -440.36, y: -358.39, z: 251}
+  - {x: -466.62, y: -352.91, z: 254.33}
+  - {x: -492.55, y: -346.71, z: 258.77}
+  - {x: -517.68, y: -338.65, z: 264.49}
+  - {x: -541.46, y: -327.82, z: 271.22}
+  - {x: -563.27, y: -313.73, z: 278.46}
+  - {x: -582.24, y: -295.93, z: 285.43}
+  - {x: -597.85, y: -274.8, z: 291.3}
+  - {x: -609.24, y: -250.7, z: 295.22}
+  - {x: -616.56, y: -224.79, z: 297.15}
+  - {x: -619.52, y: -197.9, z: 297.09}
+  - {x: -618.07, y: -171.1, z: 294.06}
+  - {x: -613.4, y: -145.18, z: 288.21}
+  - {x: -606.5, y: -120.22, z: 280.58}
+  - {x: -597.81, y: -96.04, z: 272.16}
+  - {x: -587.96, y: -72.08, z: 264.41}
+  - {x: -577.69, y: -47.87, z: 258.12}
+  - {x: -567.22, y: -23.53, z: 252.72}
+  - {x: -556.58, y: 0.82, z: 247.69}
+  - {x: -545.8, y: 25.15, z: 242.89}
+  - {x: -535.05, y: 49.55, z: 238.35}
+  - {x: -525.02, y: 74.31, z: 234.18}
+  - {x: -516.01, y: 99.56, z: 230.64}
+  - {x: -507.85, y: 125.18, z: 227.78}
+  - {x: -500.46, y: 151.1, z: 225.58}
+  - {x: -493.63, y: 177.21, z: 223.87}
+  - {x: -487.13, y: 203.42, z: 222.45}
+  - {x: -480.58, y: 229.62, z: 221.02}
+  - {x: -473.93, y: 255.79, z: 219.53}
+  - {x: -467.2, y: 281.94, z: 217.97}
+  - {x: -460.4, y: 308.07, z: 216.37}
+  - {x: -453.5, y: 334.16, z: 214.74}
+  - {x: -446.38, y: 360.2, z: 213.06}
+  - {x: -438.71, y: 386.07, z: 211.3}
+  - {x: -430.36, y: 411.72, z: 209.45}
+  - {x: -420.88, y: 436.97, z: 207.41}
+  - {x: -409.79, y: 461.51, z: 205.08}
+  - {x: -396.29, y: 484.76, z: 202.4}
+  - {x: -378.67, y: 504.89, z: 199.29}
+  - {x: -356.21, y: 519.24, z: 195.56}
+  - {x: -331.16, y: 527.78, z: 190.19}
+  - {x: -305.6, y: 532.28, z: 182.71}
+  - {x: -280.68, y: 535.54, z: 172.76}
+  - {x: -256.89, y: 540.44, z: 160.91}
+  - {x: -234.55, y: 548.19, z: 147.88}
+  - {x: -213.88, y: 558.99, z: 134.24}
+  - {x: -194.39, y: 571.41, z: 120.19}
+  - {x: -174.72, y: 582.84, z: 105.58}
+  - {x: -154.5, y: 592.61, z: 90.53}
+  - {x: -133.67, y: 600.42, z: 75.16}
+  - {x: -112.18, y: 605.62, z: 59.62}
+  - {x: -90.55, y: 610.14, z: 44.03}
+  - {x: -68.91, y: 615.13, z: 28.58}
+  - {x: -46.89, y: 618.9, z: 13.37}
+  - {x: -24.24, y: 618.88, z: -1.31}
+  - {x: -1.47, y: 614.04, z: -14.92}
+  - {x: 20.12, y: 602.47, z: -26.19}
+  - {x: 38.7, y: 584.71, z: -34.07}
+  - {x: 52.65, y: 562.01, z: -37.85}
+  - {x: 61.23, y: 536.46, z: -37.55}
+  - {x: 64.5, y: 509.95, z: -33.79}
+  - {x: 61.52, y: 483.91, z: -27.37}
+  - {x: 52.86, y: 459.84, z: -18.87}
+  - {x: 38.84, y: 439.22, z: -8.51}
+  - {x: 22.89, y: 420.99, z: 3.46}
+  - {x: 10.57, y: 404.08, z: 20.39}
+  - {x: -0.13, y: 392.92, z: 42.45}
+  - {x: -13.2, y: 388.14, z: 65.52}
+  - {x: -28.64, y: 390.35, z: 87.49}
+  - {x: -45.2, y: 399.96, z: 106.45}
+  - {x: -61.7, y: 416.28, z: 120.16}
+  - {x: -78.17, y: 436.59, z: 126.54}
+  - {x: -94.87, y: 457.58, z: 125.27}
+  - {x: -110.33, y: 477.72, z: 116.26}
+  - {x: -122.26, y: 496.92, z: 101.57}
+  - {x: -129.99, y: 516.39, z: 84.53}
+  - {x: -132.77, y: 537.5, z: 67.95}
+  - {x: -131.55, y: 560.13, z: 53.35}
+  - {x: -126.17, y: 583.4, z: 40.82}
+  - {x: -116.48, y: 606.06, z: 29.83}
+  - {x: -102.41, y: 626.9, z: 19.92}
+  - {x: -84.36, y: 644.77, z: 10.66}
+  - {x: -62.89, y: 658.57, z: 1.81}
+  - {x: -39.03, y: 667.67, z: -6.88}
+  - {x: -13.83, y: 671.6, z: -15.57}
+  - {x: 11.52, y: 669.55, z: -24.34}
+  - {x: 35.68, y: 661.68, z: -33.11}
+  - {x: 56.87, y: 647.52, z: -41.71}
+  - {x: 73.4, y: 627.94, z: -49.96}
+  - {x: 82.51, y: 603.79, z: -57.54}
+  - {x: 84.63, y: 577.81, z: -64.03}
+  - {x: 80.29, y: 551.58, z: -68.38}
+  - {x: 71.64, y: 526.04, z: -68.9}
+  - {x: 60.32, y: 501.93, z: -64.97}
+  - {x: 45.83, y: 481.1, z: -55.85}
+  - {x: 28.66, y: 464.92, z: -42.82}
+  - {x: 8.62, y: 455.66, z: -27.41}
+  - {x: -13.29, y: 452.9, z: -12.01}
+  - {x: -35.9, y: 458.53, z: 1.38}
+  - {x: -56.61, y: 472.61, z: 10.85}
+  - {x: -72.88, y: 493.81, z: 13.23}
+  - {x: -84.95, y: 517.75, z: 9.83}
+  - {x: -97.84, y: 541.04, z: 5.23}
+  - {x: -113.34, y: 563.08, z: 3.13}
+  - {x: -130.04, y: 584.34, z: 3.02}
+  - {x: -147.45, y: 605.01, z: 4.07}
+  - {x: -165.4, y: 625.12, z: 6.17}
+  - {x: -183.9, y: 644.39, z: 10.26}
+  - {x: -202.77, y: 662.8, z: 16.25}
+  - {x: -221.93, y: 680.35, z: 23.74}
+  - {x: -241.24, y: 697.29, z: 32.2}
+  - {x: -260.66, y: 713.74, z: 41.33}
+  - {x: -280.21, y: 729.83, z: 50.85}
+  - {x: -300.1, y: 745.4, z: 60.51}
+  - {x: -320.48, y: 760.34, z: 70.14}
+  - {x: -341.37, y: 774.59, z: 79.71}
+  - {x: -362.78, y: 788.1, z: 89.23}
+  - {x: -384.72, y: 800.79, z: 98.65}
+  - {x: -407.24, y: 812.46, z: 108.01}
+  - {x: -430.27, y: 823.17, z: 117.3}
+  - {x: -453.73, y: 832.98, z: 126.52}
+  - {x: -477.51, y: 841.94, z: 135.74}
+  - {x: -501.67, y: 849.57, z: 145.21}
+  - {x: -526.25, y: 854.75, z: 155.21}
+  - {x: -551.09, y: 856.86, z: 165.65}
+  - {x: -575.97, y: 855.76, z: 176.13}
+  - {x: -600.68, y: 851.97, z: 186.42}
+  - {x: -625.09, y: 845.5, z: 196.05}
+  - {x: -648.87, y: 835.66, z: 204.28}
+  - {x: -671.14, y: 822.22, z: 211.54}
+  - {x: -691.31, y: 805.78, z: 218.73}
+  - {x: -707.87, y: 785.97, z: 226.54}
+  - {x: -720.17, y: 763.51, z: 235.01}
+  - {x: -726.45, y: 738.78, z: 243.53}
+  - {x: -726.1, y: 712.88, z: 250.79}
+  - {x: -718.87, y: 687.32, z: 254.9}
+  - {x: -706.16, y: 663.55, z: 254.59}
+  - {x: -689.53, y: 642.72, z: 250.48}
+  - {x: -668.57, y: 626.73, z: 244.99}
+  - {x: -643.88, y: 617.58, z: 239.21}
+  - {x: -617.98, y: 613.09, z: 232.9}
+  - {x: -592, y: 610.14, z: 226.01}
+  - {x: -566.12, y: 607.51, z: 218.62}
+  - {x: -540.3, y: 604.97, z: 210.97}
+  - {x: -514.53, y: 602.23, z: 203.26}
+  - {x: -488.77, y: 599.13, z: 195.62}
+  - {x: -463.04, y: 595.54, z: 188.12}
+  - {x: -437.32, y: 591.52, z: 180.79}
+  - {x: -411.63, y: 587.17, z: 173.55}
+  - {x: -385.93, y: 582.64, z: 166.44}
+  - {x: -360.22, y: 578.09, z: 159.41}
+  - {x: -334.48, y: 573.55, z: 152.45}
+  - {x: -308.68, y: 569.27, z: 145.58}
+  - {x: -282.8, y: 565.32, z: 138.78}
+  - {x: -256.86, y: 561.68, z: 132.06}
+  - {x: -230.84, y: 558.47, z: 125.41}
+  - {x: -204.7, y: 556.15, z: 118.89}
+  - {x: -178.47, y: 554.83, z: 112.48}
+  - {x: -152.23, y: 554.42, z: 105.94}
+  - {x: -126.17, y: 554.71, z: 98.73}
+  - {x: -100.6, y: 556.39, z: 90.13}
+  - {x: -76.21, y: 560.01, z: 79.12}
+  - {x: -53.65, y: 564.5, z: 64.98}
+  - {x: -34.04, y: 567.95, z: 46.77}
+  - {x: -17.61, y: 568.98, z: 25.39}
+  - {x: -5.45, y: 565.51, z: 1.57}
+  - {x: 3.17, y: 556.97, z: -22.48}
+  - {x: 8.5, y: 542.17, z: -44.35}
+  - {x: 11.73, y: 522.64, z: -62.63}
+  - {x: 13.2, y: 498.79, z: -75.14}
+  - {x: 14.02, y: 472.95, z: -82.91}
+  - {x: 15.21, y: 446.23, z: -86.77}
+  - {x: 17.89, y: 419.38, z: -88.11}
+  - {x: 22.93, y: 392.82, z: -88.01}
+  - {x: 30.71, y: 366.97, z: -86.75}
+  - {x: 40.04, y: 341.82, z: -83.52}
+  - {x: 49.37, y: 317.71, z: -75.72}
+  - {x: 55.56, y: 295.47, z: -61.85}
+  - {x: 54.97, y: 276.9, z: -42.49}
+  - {x: 44.9, y: 265.33, z: -20.55}
+  - {x: 26.41, y: 264.14, z: -1.32}
+  - {x: 4.88, y: 274.16, z: 10.98}
+  - {x: -13.09, y: 293.22, z: 16.8}
+  - {x: -20.82, y: 318.66, z: 19.13}
+  - {x: -13.68, y: 344.25, z: 17.77}
+  - {x: 6.87, y: 359.75, z: 11.65}
+  - {x: 31.83, y: 359.21, z: 2.2}
+  - {x: 52.47, y: 345.33, z: -7.55}
+  - {x: 65.55, y: 323.15, z: -15.15}
+  - {x: 71.13, y: 297.11, z: -19.44}
+  - {x: 70.4, y: 270.17, z: -20.81}
+  - {x: 64.05, y: 243.98, z: -19.61}
+  - {x: 52.72, y: 219.78, z: -16.15}
+  - {x: 36.8, y: 198.74, z: -10.55}
+  - {x: 16.31, y: 183.18, z: -2.69}
+  - {x: -7.21, y: 174.59, z: 6.92}
+  - {x: -31.83, y: 175.01, z: 17.64}
+  - {x: -54.79, y: 183.85, z: 28.36}
+  - {x: -73.83, y: 200.26, z: 38.16}
+  - {x: -90.36, y: 219.61, z: 47.26}
+  - {x: -106.11, y: 239.72, z: 56.14}
+  - {x: -121.88, y: 259.79, z: 65.08}
+  - {x: -137.86, y: 279.64, z: 74.12}
+  - {x: -154.36, y: 298.96, z: 83.37}
+  - {x: -172.25, y: 316.7, z: 93.11}
+  - {x: -191.71, y: 332.4, z: 103.36}
+  - {x: -212.74, y: 345.59, z: 114.07}
+  - {x: -234.4, y: 357.6, z: 124.94}
+  - {x: -256.01, y: 369.74, z: 135.75}
+  - {x: -277.39, y: 382.38, z: 146.45}
+  - {x: -298.91, y: 394.74, z: 157.19}
+  - {x: -321.03, y: 405.73, z: 168.18}
+  - {x: -343.66, y: 415.44, z: 179.36}
+  - {x: -366.66, y: 423.98, z: 190.71}
+  - {x: -389.62, y: 432.46, z: 202.22}
+  - {x: -411.84, y: 442.49, z: 213.91}
+  - {x: -432.59, y: 455.12, z: 225.72}
+  - {x: -451, y: 470.97, z: 237.44}
+  - {x: -466.43, y: 489.92, z: 248.81}
+  - {x: -477.72, y: 511.98, z: 259.4}
+  - {x: -483.95, y: 536.47, z: 268.72}
+  - {x: -484.42, y: 562.27, z: 276.3}
+  - {x: -478.95, y: 587.99, z: 281.75}
+  - {x: -467.79, y: 612.21, z: 284.87}
+  - {x: -450.95, y: 633.17, z: 285.09}
+  - {x: -430.25, y: 650.13, z: 282.17}
+  - {x: -407.23, y: 662.27, z: 274.95}
+  - {x: -384.2, y: 670.64, z: 263.62}
+  - {x: -362.47, y: 676.2, z: 248.54}
+  - {x: -342.21, y: 681.02, z: 231.31}
+  - {x: -323.31, y: 686.66, z: 212.82}
+  - {x: -305.74, y: 694.61, z: 193.9}
+  - {x: -289.16, y: 705.5, z: 175.56}
+  - {x: -273.08, y: 719.26, z: 158.78}
+  - {x: -257.36, y: 736.23, z: 144.9}
+  - {x: -242.34, y: 756.18, z: 134.68}
+  - {x: -229.04, y: 779, z: 129.3}
+  - {x: -217.76, y: 803.52, z: 127.99}
+  - {x: -208.23, y: 828.8, z: 129.01}
+  - {x: -200.25, y: 854.51, z: 131.51}
+  - {x: -193.54, y: 880.47, z: 134.96}
+  - {x: -187.44, y: 906.6, z: 138.35}
+  - {x: -181.53, y: 932.87, z: 140.86}
+  - {x: -175.72, y: 959.22, z: 142.63}
+  - {x: -169.43, y: 985.5, z: 143.31}
+  - {x: -161.45, y: 1011.27, z: 141.83}
+  - {x: -150.68, y: 1035.48, z: 136.78}
+  - {x: -137.29, y: 1057.17, z: 127.91}
+  - {x: -121.47, y: 1074.45, z: 114.52}
+  - {x: -104.56, y: 1086.71, z: 97.53}
+  - {x: -87.43, y: 1092.74, z: 77.6}
+  - {x: -70.61, y: 1092.75, z: 56.57}
+  - {x: -54.4, y: 1086.09, z: 36.09}
+  - {x: -39.55, y: 1072.84, z: 17.99}
+  - {x: -27.25, y: 1053.44, z: 3.93}
+  - {x: -19.32, y: 1029.1, z: -4.23}
+  - {x: -15.77, y: 1002.54, z: -7.3}
+  - {x: -15.08, y: 975.53, z: -7.78}
+  - {x: -15.73, y: 948.5, z: -7.55}
+  - {x: -17.2, y: 921.5, z: -7.02}
+  - {x: -19.31, y: 894.55, z: -6.33}
+  - {x: -21.16, y: 867.57, z: -6.16}
+  - {x: -22.39, y: 840.56, z: -6.7}
+  - {x: -22.98, y: 813.55, z: -7.94}
+  - {x: -23.14, y: 786.56, z: -9.6}
+  - {x: -22.85, y: 759.59, z: -11.59}
+  - {x: -22.17, y: 732.65, z: -13.86}
+  - {x: -20.8, y: 705.77, z: -16.49}
+  - {x: -18.58, y: 678.99, z: -19.45}
+  - {x: -15.63, y: 652.26, z: -22.36}
+  - {x: -12.03, y: 625.56, z: -24.7}
+  - {x: -8.68, y: 598.76, z: -25.87}
+  - {x: -7.1, y: 571.8, z: -25.23}
+  - {x: -8.96, y: 545.06, z: -21.88}
+  - {x: -13.39, y: 518.95, z: -16.55}
+  - {x: -21.59, y: 494.49, z: -8.6}
+  - {x: -33.35, y: 472.32, z: 1.32}
+  - {x: -49.18, y: 453.58, z: 12.53}
+  - {x: -68.67, y: 439.25, z: 24.44}
+  - {x: -90.64, y: 429.26, z: 36.54}
+  - {x: -114.06, y: 422.93, z: 48.47}
+  - {x: -138.13, y: 418.07, z: 59.78}
+  - {x: -162.39, y: 412, z: 70.03}
+  - {x: -186.19, y: 402.83, z: 78.91}
+  - {x: -208.37, y: 389.56, z: 86.81}
+  - {x: -229.16, y: 374.36, z: 95.03}
+  - {x: -249.63, y: 359.3, z: 104.26}
+  - {x: -270.76, y: 346.51, z: 115.17}
+  - {x: -292.65, y: 337.34, z: 128.03}
+  - {x: -314.67, y: 334.18, z: 143.25}
+  - {x: -335.55, y: 337.36, z: 159.99}
+  - {x: -353.15, y: 348.59, z: 176.97}
+  - {x: -366.65, y: 365.93, z: 192.44}
+  - {x: -374.71, y: 388.41, z: 204.96}
+  - {x: -378.48, y: 413.25, z: 214.77}
+  - {x: -378.39, y: 439.25, z: 222.08}
+  - {x: -374.06, y: 465.42, z: 226.97}
+  - {x: -364.73, y: 490.67, z: 228.77}
+  - {x: -352.1, y: 514.54, z: 228.21}
+  - {x: -337.25, y: 536.91, z: 225.21}
+  - {x: -320.63, y: 557.37, z: 219.43}
+  - {x: -301.66, y: 574.12, z: 210.09}
+  - {x: -281.15, y: 586.91, z: 198.08}
+  - {x: -259.67, y: 594.04, z: 183.44}
+  - {x: -238.27, y: 596.26, z: 167.15}
+  - {x: -217.89, y: 593.58, z: 149.62}
+  - {x: -198.61, y: 588.05, z: 131.51}
+  - {x: -179.88, y: 580.43, z: 113.56}
+  - {x: -160.49, y: 572.77, z: 96.35}
+  - {x: -139.95, y: 566.27, z: 80.01}
+  - {x: -118.34, y: 560.21, z: 64.94}
+  - {x: -96.04, y: 553.75, z: 51.08}
+  - {x: -73.85, y: 544.88, z: 38.5}
+  - {x: -52.77, y: 532.25, z: 27.37}
+  - {x: -34.29, y: 514.86, z: 18.4}
+  - {x: -20.19, y: 492.7, z: 12.52}
+  - {x: -11.9, y: 467.23, z: 10.39}
+  - {x: -9.76, y: 440.42, z: 12.16}
+  - {x: -13.12, y: 414.22, z: 17.37}
+  - {x: -22.92, y: 390.92, z: 26.43}
+  - {x: -40.18, y: 375.32, z: 39.57}
+  - {x: -62.16, y: 373.12, z: 54.43}
+  - {x: -83.65, y: 382.57, z: 67.62}
+  - {x: -102.89, y: 398.24, z: 78.12}
+  - {x: -117.44, y: 420.17, z: 83.87}
+  - {x: -129.53, y: 444.24, z: 86.16}
+  - {x: -142.29, y: 468.08, z: 86.21}
+  - {x: -155.49, y: 491.66, z: 85.33}
+  - {x: -168.99, y: 515.06, z: 84.08}
+  - {x: -183.21, y: 538.03, z: 82.96}
+  - {x: -199.38, y: 559.69, z: 83.01}
+  - {x: -217.34, y: 579.86, z: 84.34}
+  - {x: -236.45, y: 598.85, z: 86.56}
+  - {x: -256.36, y: 616.92, z: 89.43}
+  - {x: -276.86, y: 634.24, z: 92.8}
+  - {x: -297.51, y: 651.35, z: 96.29}
+  - {x: -317.5, y: 669.26, z: 99.58}
+  - {x: -336.33, y: 688.31, z: 103.26}
+  - {x: -354.29, y: 708.12, z: 107.3}
+  - {x: -371.62, y: 728.42, z: 111.65}
+  - {x: -388.59, y: 748.93, z: 116.38}
+  - {x: -405.73, y: 769.18, z: 121.63}
+  - {x: -423.74, y: 788.51, z: 127.35}
+  - {x: -443.24, y: 806.22, z: 133.4}
+  - {x: -464.29, y: 821.96, z: 139.68}
+  - {x: -486.53, y: 835.88, z: 146.18}
+  - {x: -509.88, y: 847.67, z: 152.98}
+  - {x: -534.26, y: 856.8, z: 160.17}
+  - {x: -559.35, y: 863.28, z: 167.78}
+  - {x: -584.9, y: 866.05, z: 176.11}
+  - {x: -610.21, y: 864.82, z: 185.38}
+  - {x: -634.17, y: 858.24, z: 195.89}
+  - {x: -655.07, y: 845.81, z: 207.51}
+  - {x: -671.67, y: 828.41, z: 219.63}
+  - {x: -682.18, y: 806.65, z: 231.5}
+  - {x: -685.72, y: 782.3, z: 242.46}
+  - {x: -683.37, y: 757.36, z: 252.41}
+  - {x: -675.66, y: 733.07, z: 261.33}
+  - {x: -664.37, y: 709.94, z: 269.49}
+  - {x: -650.05, y: 688.27, z: 276.97}
+  - {x: -633.77, y: 667.86, z: 283.98}
+  - {x: -615.74, y: 648.8, z: 290.51}
+  - {x: -596.43, y: 630.8, z: 296.34}
+  - {x: -575.77, y: 613.97, z: 300.85}
+  - {x: -553.93, y: 598.28, z: 303.69}
+  - {x: -531.06, y: 583.89, z: 304.06}
+  - {x: -507.44, y: 571.06, z: 301.45}
+  - {x: -483.53, y: 560.91, z: 294.23}
+  - {x: -460.32, y: 554.88, z: 281.99}
+  - {x: -439.25, y: 554.13, z: 265.24}
+  - {x: -421.65, y: 558.12, z: 245.19}
+  - {x: -408.97, y: 565.22, z: 222.44}
+  - {x: -401.85, y: 573.83, z: 197.91}
+  - {x: -399.59, y: 583.52, z: 172.81}
+  - {x: -401.19, y: 594.07, z: 147.99}
+  - {x: -405.2, y: 604.13, z: 123.22}
+  - {x: -410.66, y: 611.1, z: 97.71}
+  - {x: -416.35, y: 613.59, z: 71.46}
+  - {x: -420.84, y: 609.51, z: 45.21}
+  - {x: -422.78, y: 599.15, z: 20.42}
+  - {x: -420.05, y: 582.39, z: -0.46}
+  - {x: -412.14, y: 562.04, z: -16.13}
+  - {x: -398.39, y: 540.73, z: -25.16}
+  - {x: -380.83, y: 520.69, z: -29.34}
+  - {x: -360.2, y: 503.27, z: -29.17}
+  - {x: -337.94, y: 488.25, z: -26.38}
+  - {x: -314.42, y: 475.94, z: -21.33}
+  - {x: -290.11, y: 466.21, z: -14.61}
+  - {x: -265.35, y: 458.9, z: -6.65}
+  - {x: -240.41, y: 455.71, z: 3.16}
+  - {x: -216.05, y: 457.07, z: 14.78}
+  - {x: -192.55, y: 461.11, z: 27.52}
+  - {x: -169.63, y: 466.11, z: 40.96}
+  - {x: -146.77, y: 469.96, z: 54.89}
+  - {x: -123.78, y: 470.95, z: 69.07}
+  - {x: -100.78, y: 468.71, z: 83.04}
+  - {x: -77.93, y: 463.24, z: 96.31}
+  - {x: -55.47, y: 454.23, z: 108.28}
+  - {x: -33.69, y: 441.82, z: 118.29}
+  - {x: -12.92, y: 426.29, z: 125.71}
+  - {x: 6.7, y: 408.33, z: 130.23}
+  - {x: 24.88, y: 388.39, z: 131.13}
+  - {x: 41.52, y: 367.5, z: 127.17}
+  - {x: 57.18, y: 347.07, z: 119.22}
+  - {x: 71.79, y: 328.65, z: 106.06}
+  - {x: 85.64, y: 313.07, z: 89.01}
+  - {x: 98.45, y: 301.78, z: 68.17}
+  - {x: 109.85, y: 296.16, z: 44.57}
+  - {x: 119.89, y: 297.34, z: 19.49}
+  - {x: 129.31, y: 303.3, z: -4.94}
+  - {x: 138.25, y: 315.33, z: -27.21}
+  - {x: 147.07, y: 332.24, z: -46.09}
+  - {x: 156, y: 353.44, z: -59.96}
+  - {x: 165.12, y: 377.01, z: -69.14}
+  - {x: 174.44, y: 401.79, z: -74.52}
+  - {x: 184.12, y: 426.92, z: -76.97}
+  - {x: 194.55, y: 451.85, z: -77.93}
+  - {x: 206.21, y: 476.25, z: -78.47}
+  - {x: 219.77, y: 499.62, z: -79.07}
+  - {x: 235.99, y: 521.2, z: -79.95}
+  - {x: 255.17, y: 540.15, z: -81.03}
+  - {x: 277.36, y: 555.42, z: -82.11}
+  - {x: 302.35, y: 565.42, z: -82.78}
+  - {x: 329.17, y: 567.85, z: -82.05}
+  - {x: 355.26, y: 561.95, z: -78.95}
+  - {x: -168.69, y: 1064.49, z: 263.66}
+  - {x: -158.99, y: 1065.11, z: 248.5}
+  - {x: -149.29, y: 1065.73, z: 233.35}
+  - {x: -139.6, y: 1066.36, z: 218.19}
+  - {x: -129.9, y: 1066.98, z: 203.04}
+  - {x: -120.21, y: 1067.6, z: 187.88}
+  - {x: -110.51, y: 1068.23, z: 172.72}
+  - {x: -100.88, y: 1068.97, z: 157.53}
+  - {x: -91.66, y: 1070.21, z: 142.12}
+  - {x: -82.82, y: 1071.9, z: 126.53}
+  - {x: -74.19, y: 1073.86, z: 110.85}
+  - {x: -65.42, y: 1075.85, z: 95.26}
+  - {x: -56.35, y: 1077.76, z: 79.83}
+  - {x: -46.99, y: 1079.53, z: 64.55}
+  - {x: -37.38, y: 1080.69, z: 49.37}
+  - {x: -27.53, y: 1080.68, z: 34.31}
+  - {x: -17.55, y: 1079.6, z: 19.38}
+  - {x: -7.51, y: 1077.57, z: 4.58}
+  - {x: 2.55, y: 1074.76, z: -10.08}
+  - {x: 12.58, y: 1071.3, z: -24.62}
+  - {x: 22.6, y: 1067.29, z: -39.04}
+  - {x: 32.57, y: 1062.84, z: -53.35}
+  - {x: 42.5, y: 1058, z: -67.56}
+  - {x: 52.38, y: 1052.84, z: -81.7}
+  - {x: 62.22, y: 1047.42, z: -95.76}
+  - {x: 72.01, y: 1041.66, z: -109.73}
+  - {x: 81.68, y: 1035.22, z: -123.47}
+  - {x: 91.08, y: 1027.57, z: -136.77}
+  - {x: 100.01, y: 1018.42, z: -149.42}
+  - {x: 108.06, y: 1007.32, z: -161.05}
+  - {x: 115.09, y: 994.48, z: -171.49}
+  - {x: 121.05, y: 980, z: -180.34}
+  - {x: 126.24, y: 964.21, z: -187.2}
+  - {x: 130.99, y: 947.52, z: -191.92}
+  - {x: 135.46, y: 930.25, z: -194.19}
+  - {x: 139.58, y: 912.74, z: -193.8}
+  - {x: 143.05, y: 895.28, z: -191.18}
+  - {x: 145.57, y: 878.03, z: -186.74}
+  - {x: 146.85, y: 861.01, z: -181.05}
+  - {x: 146.81, y: 844.14, z: -174.77}
+  - {x: 145.32, y: 827.43, z: -168.27}
+  - {x: 142.7, y: 810.89, z: -161.68}
+  - {x: 138.91, y: 794.57, z: -155.13}
+  - {x: 133.83, y: 778.51, z: -148.8}
+  - {x: 127.61, y: 762.74, z: -142.77}
+  - {x: 120.41, y: 747.25, z: -137.09}
+  - {x: 112.38, y: 731.97, z: -132.02}
+  - {x: 103.58, y: 716.87, z: -127.74}
+  - {x: 94.1, y: 701.92, z: -124.49}
+  - {x: 83.99, y: 687.14, z: -122.76}
+  - {x: 73.45, y: 672.57, z: -122.53}
+  - {x: 62.54, y: 658.29, z: -123.54}
+  - {x: 51.02, y: 644.56, z: -125.22}
+  - {x: 38.38, y: 631.85, z: -126.84}
+  - {x: 24.72, y: 620.21, z: -128.13}
+  - {x: 10.24, y: 609.58, z: -129.29}
+  - {x: -4.17, y: 598.98, z: -131.2}
+  - {x: -17.48, y: 587.41, z: -134.72}
+  - {x: -29.17, y: 574.51, z: -139.23}
+  - {x: -38.95, y: 559.83, z: -142.69}
+  - {x: -46.63, y: 543.62, z: -143.45}
+  - {x: -52.38, y: 526.92, z: -140.3}
+  - {x: -56.67, y: 511.29, z: -132.64}
+  - {x: -59.41, y: 498.6, z: -120.32}
+  - {x: -59.98, y: 490.82, z: -104.21}
+  - {x: -58.17, y: 489.66, z: -86.48}
+  - {x: -54.5, y: 494.63, z: -69.66}
+  - {x: -49.56, y: 503.51, z: -54.87}
+  - {x: -43.75, y: 515.94, z: -43.36}
+  - {x: -37.5, y: 531.68, z: -37.61}
+  - {x: -31.47, y: 548.39, z: -39.37}
+  - {x: -26.52, y: 562.72, z: -48.71}
+  - {x: -23.47, y: 571.43, z: -63.91}
+  - {x: -22.57, y: 573.03, z: -81.7}
+  - {x: -23.26, y: 569.1, z: -99.2}
+  - {x: -25.48, y: 560.33, z: -114.66}
+  - {x: -27.71, y: 547.07, z: -126.49}
+  - {x: -26.84, y: 531.42, z: -135.18}
+  - {x: -21.38, y: 515.21, z: -140.54}
+  - {x: -12.49, y: 499.67, z: -141.1}
+  - {x: -2.23, y: 485.5, z: -137.07}
+  - {x: 7.79, y: 472.16, z: -130.34}
+  - {x: 15.43, y: 458.04, z: -122.27}
+  - {x: 19.44, y: 443.19, z: -113.01}
+  - {x: 19.28, y: 429.67, z: -101.28}
+  - {x: 15.3, y: 419.24, z: -87.28}
+  - {x: 8.59, y: 412.27, z: -72.16}
+  - {x: -0.32, y: 409.65, z: -56.8}
+  - {x: -10.18, y: 410.76, z: -41.85}
+  - {x: -20.37, y: 415.57, z: -27.88}
+  - {x: -30.39, y: 423.31, z: -15.11}
+  - {x: -40.13, y: 432.39, z: -2.99}
+  - {x: -49.62, y: 441.84, z: 9.04}
+  - {x: -59.1, y: 451, z: 21.29}
+  - {x: -69.1, y: 459.49, z: 33.62}
+  - {x: -80.08, y: 467.06, z: 45.7}
+  - {x: -92.46, y: 473.27, z: 57.18}
+  - {x: -106.23, y: 477.87, z: 67.79}
+  - {x: -121.32, y: 480.42, z: 77.24}
+  - {x: -137.4, y: 480.68, z: 85.29}
+  - {x: -154.12, y: 478.93, z: 91.67}
+  - {x: -171.25, y: 475.81, z: 96.19}
+  - {x: -188.61, y: 471.78, z: 98.55}
+  - {x: -205.97, y: 467.15, z: 98.34}
+  - {x: -222.93, y: 462.14, z: 95.24}
+  - {x: -238.99, y: 456.93, z: 89.21}
+  - {x: -253.54, y: 451.65, z: 80.17}
+  - {x: -265.76, y: 446.41, z: 68.17}
+  - {x: -275.07, y: 441.36, z: 53.74}
+  - {x: -280.92, y: 436.62, z: 37.49}
+  - {x: -281.77, y: 432.46, z: 20.12}
+  - {x: -279.29, y: 428.78, z: 2.81}
+  - {x: -272.58, y: 425.83, z: -13.53}
+  - {x: -262.63, y: 423.51, z: -28.26}
+  - {x: -250.32, y: 421.41, z: -41.17}
+  - {x: -236.46, y: 418.89, z: -52.33}
+  - {x: -221.68, y: 415.37, z: -61.96}
+  - {x: -206.62, y: 410.45, z: -70.48}
+  - {x: -191.76, y: 404.12, z: -78.42}
+  - {x: -177.29, y: 396.62, z: -86.04}
+  - {x: -163.25, y: 388.06, z: -93.37}
+  - {x: -149.6, y: 378.66, z: -100.4}
+  - {x: -136.07, y: 368.67, z: -106.81}
+  - {x: -122.33, y: 358.27, z: -112.01}
+  - {x: -108.19, y: 347.69, z: -115.46}
+  - {x: -93.62, y: 337.21, z: -116.62}
+  - {x: -78.79, y: 327.2, z: -115.05}
+  - {x: -64.05, y: 318.1, z: -110.37}
+  - {x: -49.82, y: 310.14, z: -102.86}
+  - {x: -36.46, y: 303.48, z: -92.85}
+  - {x: -24.18, y: 298.1, z: -80.85}
+  - {x: -12.82, y: 293.61, z: -67.63}
+  - {x: -1.89, y: 289.44, z: -53.94}
+  - {x: 9.09, y: 285.08, z: -40.36}
+  - {x: 20.51, y: 280.12, z: -27.37}
+  - {x: 32.72, y: 274.13, z: -15.6}
+  - {x: 45.83, y: 266.89, z: -5.69}
+  - {x: 59.87, y: 258.1, z: 1.19}
+  - {x: 74.34, y: 247.86, z: 3.94}
+  - {x: 88.29, y: 236.76, z: 1.98}
+  - {x: 101.08, y: 225.52, z: -3.74}
+  - {x: 112.49, y: 214.57, z: -12.28}
+  - {x: 122.5, y: 204.11, z: -22.96}
+  - {x: 130.84, y: 194.41, z: -35.58}
+  - {x: 136.94, y: 185.93, z: -50.22}
+  - {x: 141.12, y: 178.67, z: -66.14}
+  - {x: 144.61, y: 172.89, z: -82.81}
+  - {x: 148.21, y: 168.85, z: -99.98}
+  - {x: 152.18, y: 165.26, z: -117.17}
+  - {x: 156.46, y: 161.62, z: -134.27}
+  - {x: 160.76, y: 157.61, z: -151.29}
+  - {x: 165.02, y: 153.24, z: -168.23}
+  - {x: 169.27, y: 148.55, z: -185.08}
+  - {x: 173.76, y: 143.51, z: -201.77}
+  - {x: 178.45, y: 138.22, z: -218.32}
+  - {x: 183.25, y: 132.76, z: -234.79}
+  - {x: 188.13, y: 127.2, z: -251.21}
+  - {x: 193.04, y: 121.59, z: -267.59}
+  - {x: 197.58, y: 116.14, z: -284.14}
+  - {x: 201.64, y: 110.92, z: -300.88}
+  - {x: 205.41, y: 105.84, z: -317.74}
+  - {x: 209.21, y: 100.74, z: -334.58}
+  - {x: 213.38, y: 95.43, z: -351.27}
+  - {x: 217.71, y: 89.78, z: -367.8}
+  - {x: 222.05, y: 83.77, z: -384.21}
+  - {x: 226.4, y: 77.55, z: -400.53}
+  - {x: 230.75, y: 71.18, z: -416.8}
+  - {x: 235.09, y: 64.73, z: -433.04}
+  - {x: 239.34, y: 58.07, z: -449.21}
+  - {x: 242.45, y: 49.84, z: -464.9}
+  - {x: 244.95, y: 40.82, z: -480.28}
+  - {x: 248.95, y: 33.66, z: -496.27}
+  - {x: 254.5, y: 28.98, z: -512.73}
+  - {x: 260.64, y: 25.48, z: -529.28}
+  - {x: 266, y: 20.48, z: -545.7}
+  - {x: 269.25, y: 12.44, z: -561.42}
+  - {x: 268.76, y: 0.87, z: -575.07}
+  - {x: 263.74, y: -13.01, z: -585.18}
+  - {x: 255.76, y: -28.11, z: -590.64}
+  - {x: 246.75, y: -43.62, z: -591.7}
+  - {x: 237.43, y: -58.82, z: -589.42}
+  - {x: 228.58, y: -73.58, z: -584.19}
+  - {x: 220.15, y: -87.75, z: -576.99}
+  - {x: 211.93, y: -101.42, z: -568.65}
+  - {x: 203.66, y: -114.71, z: -559.74}
+  - {x: 194.81, y: -127.57, z: -550.78}
+  - {x: 185.31, y: -140.06, z: -541.97}
+  - {x: 175.46, y: -152.38, z: -533.3}
+  - {x: 165.53, y: -164.73, z: -524.75}
+  - {x: 155.58, y: -177.12, z: -516.29}
+  - {x: 145.67, y: -189.59, z: -507.9}
+  - {x: 136.19, y: -202.51, z: -499.7}
+  - {x: 127.08, y: -215.77, z: -491.63}
+  - {x: 118.2, y: -229.25, z: -483.66}
+  - {x: 109.47, y: -242.87, z: -475.76}
+  - {x: 100.84, y: -256.59, z: -467.91}
+  - {x: 92.28, y: -270.35, z: -460.08}
+  - {x: 83.75, y: -284.15, z: -452.27}
+  - {x: 75.14, y: -297.86, z: -444.39}
+  - {x: 66.39, y: -311.41, z: -436.39}
+  - {x: 57.53, y: -324.84, z: -428.31}
+  - {x: 48.56, y: -338.15, z: -420.16}
+  - {x: 39.52, y: -351.39, z: -411.98}
+  - {x: 30.43, y: -364.56, z: -403.72}
+  - {x: 21.31, y: -377.67, z: -395.42}
+  - {x: 12.17, y: -390.74, z: -387.07}
+  - {x: 3.13, y: -403.59, z: -378.28}
+  - {x: -5.83, y: -416.06, z: -368.88}
+  - {x: -15.12, y: -428.12, z: -359.27}
+  - {x: -24.84, y: -439.97, z: -349.83}
+  - {x: -34.98, y: -451.78, z: -340.77}
+  - {x: -45.38, y: -463.53, z: -331.96}
+  - {x: -55.95, y: -475.26, z: -323.31}
+  - {x: -66.63, y: -486.97, z: -314.77}
+  - {x: -77.36, y: -498.67, z: -306.29}
+  - {x: -88.15, y: -510.37, z: -297.86}
+  - {x: -98.96, y: -522.05, z: -289.45}
+  - {x: -109.79, y: -533.73, z: -281.06}
+  - {x: -120.62, y: -545.42, z: -272.68}
+  - {x: -131.45, y: -557.09, z: -264.29}
+  - {x: -142.16, y: -568.7, z: -255.65}
+  - {x: -152.35, y: -580.01, z: -246.06}
+  - {x: -161.47, y: -590.68, z: -234.81}
+  - {x: -169.16, y: -600.38, z: -221.79}
+  - {x: -174.88, y: -608.63, z: -206.9}
+  - {x: -178.34, y: -615.09, z: -190.52}
+  - {x: -179.17, y: -619.32, z: -173.1}
+  - {x: -177.65, y: -621.15, z: -155.29}
+  - {x: -174.51, y: -620.01, z: -137.61}
+  - {x: -171.04, y: -616.39, z: -120.34}
+  - {x: -167.94, y: -610.87, z: -103.49}
+  - {x: -165.81, y: -604.24, z: -86.9}
+  - {x: -164.91, y: -597.26, z: -70.34}
+  - {x: -165.6, y: -590.51, z: -53.68}
+  - {x: -167.86, y: -584.24, z: -36.98}
+  - {x: -171.52, y: -578.44, z: -20.34}
+  - {x: -176.36, y: -572.93, z: -3.91}
+  - {x: -182.35, y: -567.32, z: 12.11}
+  - {x: -189.31, y: -561.29, z: 27.56}
+  - {x: -197.17, y: -554.78, z: 42.39}
+  - {x: -205.77, y: -547.91, z: 56.63}
+  - {x: -214.99, y: -540.75, z: 70.33}
+  - {x: -224.5, y: -533.14, z: 83.59}
+  - {x: -234.12, y: -525.03, z: 96.46}
+  - {x: -243.81, y: -516.46, z: 108.97}
+  - {x: -253.57, y: -507.51, z: 121.17}
+  - {x: -263.38, y: -498.27, z: 133.11}
+  - {x: -273.23, y: -488.77, z: 144.81}
+  - {x: -283.11, y: -479.06, z: 156.31}
+  - {x: -293.01, y: -469.17, z: 167.63}
+  - {x: -302.84, y: -458.92, z: 178.69}
+  - {x: -312.57, y: -448.27, z: 189.47}
+  - {x: -322.17, y: -437.26, z: 199.99}
+  - {x: -331.69, y: -425.98, z: 210.3}
+  - {x: -341.14, y: -414.47, z: 220.41}
+  - {x: -350.57, y: -402.77, z: 230.33}
+  - {x: -359.98, y: -390.92, z: 240.08}
+  - {x: -369.38, y: -378.93, z: 249.68}
+  - {x: -378.76, y: -366.84, z: 259.15}
+  - {x: -388.14, y: -354.66, z: 268.52}
+  - {x: -397.51, y: -342.41, z: 277.81}
+  - {x: -406.87, y: -330.1, z: 287.02}
+  - {x: -416.23, y: -317.74, z: 296.18}
+  - {x: -425.58, y: -305.35, z: 305.3}
+  - {x: -434.92, y: -292.93, z: 314.38}
+  - {x: -444.27, y: -280.48, z: 323.42}
+  - {x: -453.61, y: -267.99, z: 332.43}
+  - {x: -462.94, y: -255.5, z: 341.41}
+  - {x: -472.28, y: -242.98, z: 350.38}
+  - {x: -481.61, y: -230.45, z: 359.32}
+  - {x: -490.94, y: -217.89, z: 368.23}
+  - {x: -500.22, y: -205.28, z: 377.11}
+  - {x: -509.37, y: -192.47, z: 385.84}
+  - {x: -518.06, y: -179.08, z: 394.15}
+  - {x: -526.26, y: -165.14, z: 402.03}
+  - {x: -533.63, y: -150.38, z: 409.19}
+  - {x: -539.8, y: -134.65, z: 415.4}
+  - {x: -544.04, y: -117.8, z: 420.13}
+  - {x: -546.51, y: -100.34, z: 423.5}
+  - {x: -546.64, y: -82.49, z: 425.1}
+  - {x: -544.41, y: -64.73, z: 424.86}
+  - {x: -539.75, y: -47.55, z: 422.7}
+  - {x: -532.58, y: -31.65, z: 418.47}
+  - {x: -523.62, y: -17.19, z: 412.69}
+  - {x: -513.23, y: -4.33, z: 405.59}
+  - {x: -501.79, y: 6.94, z: 397.47}
+  - {x: -489.74, y: 17.1, z: 388.78}
+  - {x: -477.4, y: 26.8, z: 379.95}
+  - {x: -465, y: 36.61, z: 371.35}
+  - {x: -452.73, y: 47.06, z: 363.33}
+  - {x: -440.77, y: 58.42, z: 356.14}
+  - {x: -429.16, y: 70.61, z: 349.76}
+  - {x: -417.9, y: 83.48, z: 344.15}
+  - {x: -406.82, y: 96.87, z: 339.45}
+  - {x: -395.71, y: 110.56, z: 335.86}
+  - {x: -384.53, y: 124.47, z: 333.51}
+  - {x: -373.37, y: 138.53, z: 332.24}
+  - {x: -362.27, y: 152.69, z: 331.82}
+  - {x: -351.26, y: 166.93, z: 332.17}
+  - {x: -340.35, y: 181.22, z: 333.13}
+  - {x: -329.55, y: 195.54, z: 334.66}
+  - {x: -318.87, y: 209.9, z: 336.64}
+  - {x: -308.28, y: 224.26, z: 338.98}
+  - {x: -297.78, y: 238.64, z: 341.64}
+  - {x: -287.34, y: 253.02, z: 344.57}
+  - {x: -276.96, y: 267.38, z: 347.72}
+  - {x: -266.62, y: 281.74, z: 351.05}
+  - {x: -256.2, y: 296.01, z: 354.48}
+  - {x: -245.38, y: 310, z: 357.82}
+  - {x: -233.98, y: 323.59, z: 360.91}
+  - {x: -222.1, y: 336.8, z: 363.76}
+  - {x: -209.77, y: 349.66, z: 366.39}
+  - {x: -197.13, y: 362.23, z: 368.86}
+  - {x: -184.19, y: 374.53, z: 371.16}
+  - {x: -171.02, y: 386.61, z: 373.34}
+  - {x: -157.64, y: 398.49, z: 375.39}
+  - {x: -144.11, y: 410.2, z: 377.36}
+  - {x: -130.44, y: 421.76, z: 379.23}
+  - {x: -116.67, y: 433.21, z: 381.05}
+  - {x: -102.8, y: 444.55, z: 382.82}
+  - {x: -88.85, y: 455.8, z: 384.52}
+  - {x: -74.83, y: 466.97, z: 386.18}
+  - {x: -60.74, y: 478.07, z: 387.8}
+  - {x: -46.78, y: 489.34, z: 389.23}
+  - {x: -33.52, y: 501.47, z: 390.09}
+  - {x: -21.91, y: 515.19, z: 389.99}
+  - {x: -13.05, y: 530.73, z: 388.39}
+  - {x: -7.72, y: 547.35, z: 384.3}
+  - {x: -6.81, y: 563.98, z: 377.66}
+  - {x: -9.94, y: 580.27, z: 370.74}
+  - {x: -15.93, y: 596.33, z: 365.29}
+  - {x: -23.21, y: 612.34, z: 361.51}
+  - {x: -30.53, y: 628.67, z: 359.61}
+  - {x: -37.81, y: 645.12, z: 358.97}
+  - {x: -44.64, y: 661.76, z: 359.43}
+  - {x: -50.31, y: 678.74, z: 361.26}
+  - {x: -55.14, y: 695.85, z: 364.04}
+  - {x: -59.83, y: 712.95, z: 367.15}
+  - {x: -65.43, y: 729.88, z: 369.67}
+  - {x: -71.72, y: 746.62, z: 371.72}
+  - {x: -78.36, y: 763.25, z: 373.55}
+  - {x: -84.29, y: 780.07, z: 375.96}
+  - {x: -89.44, y: 797.06, z: 378.97}
+  - {x: -94.17, y: 814.11, z: 382.3}
+  - {x: -98.84, y: 831.24, z: 385.22}
+  - {x: -103.69, y: 848.45, z: 387.28}
+  - {x: -108.69, y: 865.69, z: 388.76}
+  - {x: -113.78, y: 882.92, z: 389.89}
+  - {x: -118.9, y: 900.15, z: 390.79}
+  - {x: -124.08, y: 917.38, z: 391.54}
+  - {x: -129.31, y: 934.59, z: 392.26}
+  - {x: -134.62, y: 951.78, z: 393.01}
+  - {x: -139.99, y: 968.94, z: 393.8}
+  - {x: -145.39, y: 986.1, z: 394.59}
+  - {x: -150.8, y: 1003.25, z: 395.35}
+  - {x: -155.61, y: 1020.58, z: 395.02}
+  - {x: -158.38, y: 1037.91, z: 391.34}
+  - {x: -157.57, y: 1053.72, z: 383.03}
+  - {x: -152.56, y: 1065.42, z: 370.55}
+  - {x: -143.88, y: 1070.56, z: 355.81}
+  - {x: -133.74, y: 1070.03, z: 341}
+  - {x: -123.8, y: 1066.45, z: 326.44}
+  - {x: -114.19, y: 1060.93, z: 312.26}
+  - {x: -104.93, y: 1052.79, z: 299.21}
+  - {x: -96.49, y: 1040.71, z: 288.96}
+  - {x: -89.18, y: 1025.99, z: 281.68}
+  - {x: -83.03, y: 1010.01, z: 276.13}
+  - {x: -77.88, y: 993.42, z: 271.42}
+  - {x: -73.48, y: 976.52, z: 267.04}
+  - {x: -69.69, y: 959.49, z: 262.63}
+  - {x: -66.94, y: 942.5, z: 257.36}
+  - {x: -65.13, y: 925.72, z: 251.11}
+  - {x: -63.79, y: 909.12, z: 244.28}
+  - {x: -61.92, y: 892.78, z: 236.96}
+  - {x: -59.4, y: 876.68, z: 229.32}
+  - {x: -56.48, y: 860.75, z: 221.46}
+  - {x: -53.29, y: 844.93, z: 213.47}
+  - {x: -49.95, y: 829.19, z: 205.4}
+  - {x: -46.5, y: 813.5, z: 197.28}
+  - {x: -42.98, y: 797.84, z: 189.12}
+  - {x: -39.43, y: 782.2, z: 180.94}
+  - {x: -35.85, y: 766.57, z: 172.75}
+  - {x: -32.24, y: 750.96, z: 164.55}
+  - {x: -28.88, y: 735.07, z: 156.79}
+  - {x: -26, y: 718.67, z: 149.95}
+  - {x: -23.75, y: 701.75, z: 144.26}
+  - {x: -22.25, y: 684.33, z: 139.99}
+  - {x: -21.24, y: 666.67, z: 136.63}
+  - {x: -20.53, y: 648.9, z: 133.85}
+  - {x: -20.02, y: 631.06, z: 131.46}
+  - {x: -19.65, y: 613.19, z: 129.33}
+  - {x: -19.35, y: 595.3, z: 127.33}
+  - {x: -19.13, y: 577.4, z: 125.47}
+  - {x: -19.43, y: 559.42, z: 124.63}
+  - {x: -20.53, y: 541.47, z: 125.33}
+  - {x: -22.14, y: 523.62, z: 126.97}
+  - {x: -24.38, y: 505.84, z: 128.66}
+  - {x: -27.54, y: 488.14, z: 129.54}
+  - {x: -31.86, y: 470.67, z: 129.44}
+  - {x: -37.18, y: 453.49, z: 128.74}
+  - {x: -43.37, y: 436.6, z: 128.01}
+  - {x: -50.11, y: 419.92, z: 127.29}
+  - {x: -57.19, y: 403.39, z: 126.56}
+  - {x: -64.62, y: 387, z: 125.89}
+  - {x: -71.16, y: 370.24, z: 125.66}
+  - {x: -76.84, y: 353.16, z: 125.81}
+  - {x: -81.97, y: 335.9, z: 126.18}
+  - {x: -86.73, y: 318.55, z: 126.71}
+  - {x: -91.26, y: 301.14, z: 127.33}
+  - {x: -95.7, y: 283.7, z: 127.97}
+  - {x: -100.12, y: 266.26, z: 128.59}
+  - {x: -104.57, y: 248.83, z: 129.17}
+  - {x: -109.04, y: 231.39, z: 129.74}
+  - {x: -113.52, y: 213.97, z: 130.29}
+  - {x: -118.02, y: 196.54, z: 130.83}
+  - {x: -122.51, y: 179.12, z: 131.36}
+  - {x: -127.01, y: 161.7, z: 131.9}
+  - {x: -131.52, y: 144.27, z: 132.43}
+  - {x: -136.02, y: 126.85, z: 132.96}
+  - {x: -140.38, y: 109.4, z: 133.58}
+  - {x: -142.8, y: 91.67, z: 135.25}
+  - {x: -142.19, y: 73.95, z: 138.27}
+  - {x: -139.46, y: 56.55, z: 141.94}
+  - {x: -135.21, y: 39.44, z: 145.57}
+  - {x: -129.98, y: 22.59, z: 149.13}
+  - {x: -124.34, y: 5.99, z: 153.22}
+  - {x: -118.49, y: -10.4, z: 157.83}
+  - {x: -112.59, y: -26.65, z: 162.86}
+  - {x: -106.97, y: -42.97, z: 167.98}
+  - {x: -101.66, y: -59.4, z: 173.05}
+  - {x: -96.8, y: -76.06, z: 177.85}
+  - {x: -91.69, y: -92.69, z: 182.48}
+  - {x: -85.56, y: -108.93, z: 187.24}
+  - {x: -78.88, y: -124.95, z: 192.02}
+  - {x: -72.71, y: -141.21, z: 196.65}
+  - {x: -68.07, y: -158.06, z: 200.92}
+  - {x: -64.52, y: -175.26, z: 204.89}
+  - {x: -61.68, y: -192.64, z: 208.61}
+  - {x: -58.84, y: -210.02, z: 212.34}
+  - {x: -54.38, y: -226.94, z: 216.54}
+  - {x: -48.64, y: -243.39, z: 221.07}
+  - {x: -41.84, y: -259.37, z: 225.79}
+  - {x: -32.39, y: -273.79, z: 230.78}
+  - {x: -18.86, y: -284.57, z: 235.41}
+  - {x: -1.91, y: -289.57, z: 238.11}
+  - {x: 15.88, y: -288.08, z: 237.88}
+  - {x: 31.65, y: -280.49, z: 234.33}
+  - {x: 43.22, y: -268.67, z: 227.49}
+  - {x: 51.07, y: -255.87, z: 217.62}
+  - {x: 57.64, y: -245.45, z: 204.58}
+  - {x: 63.89, y: -238.21, z: 189.35}
+  - {x: 68.94, y: -231.62, z: 173.39}
+  - {x: 72.42, y: -224.1, z: 157.41}
+  - {x: 73.3, y: -216.04, z: 142.33}
+  - {x: 58.82, y: -208.33, z: 134.93}
+  - {x: 44.34, y: -200.61, z: 127.52}
+  - {x: 29.88, y: -193.28, z: 119.72}
+  - {x: 15.53, y: -186.99, z: 110.85}
+  - {x: 1.2, y: -181.59, z: 101.39}
+  - {x: -13.12, y: -177.14, z: 91.44}
+  - {x: -27.01, y: -174.7, z: 80.28}
+  - {x: -40.63, y: -174.64, z: 68.54}
+  - {x: -54.63, y: -177.63, z: 57.66}
+  - {x: -68.29, y: -182.27, z: 46.9}
+  - {x: -80.99, y: -186.86, z: 35.01}
+  - {x: -93.4, y: -191.97, z: 23.02}
+  - {x: -106.18, y: -198.66, z: 12.25}
+  - {x: -119.1, y: -206.46, z: 2.45}
+  - {x: -132.36, y: -214.71, z: -6.51}
+  - {x: -146.02, y: -223.05, z: -14.73}
+  - {x: -159.02, y: -232.18, z: -23.17}
+  - {x: -169.51, y: -243.44, z: -32.46}
+  - {x: -177.55, y: -256.53, z: -41.81}
+  - {x: -182.54, y: -270.77, z: -51.56}
+  - {x: -184.49, y: -285.42, z: -61.81}
+  - {x: -185.65, y: -300.24, z: -71.96}
+  - {x: -187.94, y: -315.8, z: -80.67}
+  - {x: -190.01, y: -332.67, z: -86.51}
+  - {x: -189.91, y: -350.13, z: -90.86}
+  - {x: -188.5, y: -367, z: -96.89}
+  - {x: -186.9, y: -382.13, z: -106.42}
+  - {x: -187.09, y: -395.3, z: -118.64}
+  - {x: -191.6, y: -406.45, z: -131.93}
+  - {x: -201.62, y: -414.23, z: -144.53}
+  - {x: -216.27, y: -416.92, z: -154.3}
+  - {x: -233.04, y: -413.42, z: -159.23}
+  - {x: -247.93, y: -403.7, z: -158.14}
+  - {x: -257.3, y: -389.95, z: -151.89}
+  - {x: -259.29, y: -375.04, z: -142.27}
+  - {x: -256.63, y: -359.98, z: -132.82}
+  - {x: -253.12, y: -343.96, z: -125.45}
+  - {x: -252.03, y: -326.76, z: -120.44}
+  - {x: -253.93, y: -309.04, z: -118.08}
+  - {x: -255.44, y: -291.14, z: -116.97}
+  - {x: -254.7, y: -273.25, z: -118.16}
+  - {x: -253.23, y: -256.11, z: -123.32}
+  - {x: -253.57, y: -239.74, z: -130.76}
+  - {x: -255.12, y: -223.16, z: -137.6}
+  - {x: -257.24, y: -205.92, z: -142.2}
+  - {x: -259.34, y: -188.2, z: -144.57}
+  - {x: -259.88, y: -170.34, z: -146.66}
+  - {x: -259.32, y: -152.44, z: -148.52}
+  - {x: -259.44, y: -134.5, z: -147.9}
+  - {x: -261.65, y: -117.39, z: -143}
+  - {x: -265.1, y: -102.62, z: -133.42}
+  - {x: -268.15, y: -91.76, z: -119.51}
+  - {x: -269.11, y: -86.19, z: -102.57}
+  - {x: -267.07, y: -87.23, z: -84.88}
+  - {x: -262.05, y: -95.43, z: -69.87}
+  - {x: -255.22, y: -109.3, z: -61.1}
+  - {x: -248.44, y: -125.71, z: -60.9}
+  - {x: -243.64, y: -140.6, z: -69.36}
+  - {x: -242.44, y: -149.72, z: -84.56}
+  - {x: -245.02, y: -151.02, z: -102.1}
+  - {x: -249.57, y: -146, z: -118.72}
+  - {x: -254.31, y: -137.67, z: -133.94}
+  - {x: -259.12, y: -127.2, z: -147.74}
+  - {x: -264.3, y: -114.45, z: -159.3}
+  - {x: -270.17, y: -99.7, z: -167.69}
+  - {x: -277, y: -83.49, z: -170.93}
+  - {x: -284.43, y: -67.59, z: -167.61}
+  - {x: -292.57, y: -54.26, z: -158.78}
+  - {x: -301.09, y: -43.61, z: -147.06}
+  - {x: -308.8, y: -33.02, z: -134.72}
+  - {x: -315.67, y: -20.42, z: -123.92}
+  - {x: -322.05, y: -5.21, z: -116.89}
+  - {x: -327.94, y: 11.37, z: -113.09}
+  - {x: -332.85, y: 28.05, z: -108.52}
+  - {x: -336.41, y: 43.86, z: -100.75}
+  - {x: -338.67, y: 58.82, z: -91.01}
+  - {x: -339.75, y: 73.82, z: -81.12}
+  - {x: -340.62, y: 89.6, z: -72.55}
+  - {x: -342.09, y: 106.51, z: -66.61}
+  - {x: -344.05, y: 123.97, z: -62.7}
+  - {x: -346.23, y: 141.65, z: -60.15}
+  - {x: -347.12, y: 159.57, z: -59.01}
+  - {x: -344.25, y: 177.21, z: -60.23}
+  - {x: -336.75, y: 192.8, z: -64.84}
+  - {x: -326.43, y: 205.41, z: -72.41}
+  - {x: -315.52, y: 216.64, z: -81.29}
+  - {x: -303.85, y: 226.93, z: -90.32}
+  - {x: -289.93, y: 235.13, z: -98.14}
+  - {x: -273.51, y: 239.92, z: -103.47}
+  - {x: -255.66, y: 239.89, z: -104.73}
+  - {x: -238.95, y: 234.59, z: -101.44}
+  - {x: -226.19, y: 224.42, z: -94.19}
+  - {x: -220.29, y: 210.75, z: -84.36}
+  - {x: -222.71, y: 196.6, z: -73.85}
+  - {x: -232.86, y: 185.08, z: -64.79}
+  - {x: -246.71, y: 175.98, z: -57.77}
+  - {x: -260.55, y: 166.38, z: -51.46}
+  - {x: -272.37, y: 154.37, z: -45.23}
+  - {x: -282.26, y: 140.1, z: -40.6}
+  - {x: -291.57, y: 124.81, z: -38.99}
+  - {x: -300.59, y: 109.24, z: -39.2}
+  - {x: -309.48, y: 93.75, z: -41.32}
+  - {x: -319.46, y: 79.35, z: -45.41}
+  - {x: -330.49, y: 65.84, z: -49.88}
+  - {x: -340.85, y: 51.53, z: -53.28}
+  - {x: -350.25, y: 36.34, z: -55.48}
+  - {x: -358.96, y: 20.65, z: -56.88}
+  - {x: -367.24, y: 4.69, z: -57.75}
+  - {x: -375.31, y: -11.38, z: -58.6}
+  - {x: -383.91, y: -27.11, z: -60.19}
+  - {x: -391.23, y: -32.18, z: -59.33}
+  - {x: -390.86, y: -16.3, z: -50.88}
+  - {x: -388.9, y: 0.67, z: -45.38}
+  - {x: -386.1, y: 18.3, z: -43.22}
+  - {x: -385.17, y: 36.24, z: -43.28}
+  - {x: -388.86, y: 53.75, z: -44.3}
+  - {x: -397.19, y: 69.35, z: -47.16}
+  - {x: -408.69, y: 81.51, z: -53.47}
+  - {x: -422.57, y: 88.22, z: -62.49}
+  - {x: -436.77, y: 87.99, z: -73.31}
+  - {x: -448.3, y: 80.28, z: -84.47}
+  - {x: -454.7, y: 66.42, z: -93.63}
+  - {x: -454.3, y: 49.21, z: -98.21}
+  - {x: -447.12, y: 32.96, z: -97.27}
+  - {x: -435.26, y: 20.49, z: -92.31}
+  - {x: -421.73, y: 10.55, z: -85.83}
+  - {x: -407.39, y: 2.87, z: -78.19}
+  - {x: -392.69, y: -1.41, z: -68.79}
+  - {x: -378.62, y: -2.98, z: -57.71}
+  - {x: -365.78, y: -2.91, z: -45.11}
+  - {x: -353.87, y: -1.82, z: -31.66}
+  - {x: -342.65, y: -0.03, z: -17.7}
+  - {x: -331.96, y: 2.33, z: -3.4}
+  - {x: -321.72, y: 5.01, z: 11.15}
+  - {x: -311.98, y: 7.76, z: 26.04}
+  - {x: -304.48, y: 9.36, z: 42.28}
+  - {x: -301.21, y: 8.1, z: 59.83}
+  - {x: -303.12, y: 2.55, z: 76.68}
+  - {x: -309.45, y: -7.89, z: 89.7}
+  - {x: -317.67, y: -22.2, z: 96.68}
+  - {x: -325.65, y: -38.01, z: 99.82}
+  - {x: -332.89, y: -54.17, z: 103.03}
+  - {x: -339.31, y: -69.57, z: 109.62}
+  - {x: -344.1, y: -82.71, z: 120.81}
+  - {x: -347.53, y: -92.19, z: 135.66}
+  - {x: -350.01, y: -98.87, z: 152.18}
+  - {x: 97.73, y: 959.25, z: 278.48}
+  - {x: 91.13, y: 966.32, z: 259.7}
+  - {x: 84.54, y: 973.38, z: 240.92}
+  - {x: 77.96, y: 980.46, z: 222.13}
+  - {x: 71.36, y: 987.53, z: 203.35}
+  - {x: 64.77, y: 994.6, z: 184.57}
+  - {x: 58.18, y: 1001.66, z: 165.79}
+  - {x: 51.58, y: 1008.73, z: 147.01}
+  - {x: 44.97, y: 1015.79, z: 128.22}
+  - {x: 38.36, y: 1022.83, z: 109.44}
+  - {x: 31.74, y: 1029.87, z: 90.66}
+  - {x: 25.11, y: 1036.91, z: 71.88}
+  - {x: 18.47, y: 1043.95, z: 53.1}
+  - {x: 11.69, y: 1051.12, z: 34.43}
+  - {x: 4.36, y: 1058.72, z: 16.14}
+  - {x: -3.79, y: 1067, z: -1.48}
+  - {x: -12.82, y: 1075.97, z: -18.32}
+  - {x: -22.76, y: 1085.47, z: -34.35}
+  - {x: -33.93, y: 1095.06, z: -49.49}
+  - {x: -46.66, y: 1104.11, z: -63.71}
+  - {x: -60.72, y: 1112.38, z: -77.08}
+  - {x: -76.14, y: 1119.91, z: -89.33}
+  - {x: -92.94, y: 1126.79, z: -100.06}
+  - {x: -110.94, y: 1133.23, z: -109.04}
+  - {x: -130.25, y: 1139.16, z: -115.18}
+  - {x: -150.15, y: 1144.65, z: -119.47}
+  - {x: -170.49, y: 1149.63, z: -122}
+  - {x: -191.1, y: 1154.05, z: -122.61}
+  - {x: -211.82, y: 1157.99, z: -121.3}
+  - {x: -232.24, y: 1161.38, z: -117.27}
+  - {x: -252.17, y: 1164.3, z: -111.1}
+  - {x: -271.43, y: 1166.7, z: -102.86}
+  - {x: -289.83, y: 1168.52, z: -92.68}
+  - {x: -307.19, y: 1169.72, z: -80.73}
+  - {x: -323.22, y: 1170.23, z: -66.98}
+  - {x: -337.31, y: 1169.87, z: -51.27}
+  - {x: -348.94, y: 1168.66, z: -33.74}
+  - {x: -357.94, y: 1166.69, z: -14.79}
+  - {x: -364.17, y: 1163.98, z: 5.18}
+  - {x: -367.95, y: 1160.67, z: 25.68}
+  - {x: -369.64, y: 1156.66, z: 46.33}
+  - {x: -369.47, y: 1150.92, z: 66.64}
+  - {x: -367.92, y: 1142.31, z: 85.81}
+  - {x: -365.36, y: 1130.17, z: 102.79}
+  - {x: -361.84, y: 1114.21, z: 116.04}
+  - {x: -356.85, y: 1095.27, z: 123.64}
+  - {x: -350.02, y: 1075.45, z: 124.27}
+  - {x: -341.88, y: 1057.07, z: 118.04}
+  - {x: -332.66, y: 1040.68, z: 108.46}
+  - {x: -322.58, y: 1025.86, z: 97.3}
+  - {x: -311.92, y: 1011.65, z: 85.87}
+  - {x: -300.87, y: 997.22, z: 75.11}
+  - {x: -289.57, y: 982.5, z: 65.03}
+  - {x: -277.69, y: 967.75, z: 55.67}
+  - {x: -265.03, y: 953.26, z: 46.99}
+  - {x: -251.67, y: 939.02, z: 38.92}
+  - {x: -237.84, y: 925, z: 31.28}
+  - {x: -223.79, y: 911.15, z: 23.75}
+  - {x: -209.79, y: 897.44, z: 15.87}
+  - {x: -196.05, y: 883.84, z: 7.34}
+  - {x: -182.57, y: 870.33, z: -1.7}
+  - {x: -169.3, y: 856.89, z: -11.16}
+  - {x: -156.23, y: 843.51, z: -20.97}
+  - {x: -143.4, y: 830.13, z: -31.09}
+  - {x: -131.09, y: 816.6, z: -41.64}
+  - {x: -119.98, y: 802.58, z: -52.87}
+  - {x: -109.96, y: 788.12, z: -64.55}
+  - {x: -100.69, y: 773.39, z: -76.5}
+  - {x: -92.23, y: 758.37, z: -88.7}
+  - {x: -83.92, y: 743.25, z: -100.89}
+  - {x: -75.39, y: 728.15, z: -112.95}
+  - {x: -66.41, y: 713.13, z: -124.78}
+  - {x: -56.18, y: 698.41, z: -135.94}
+  - {x: -45.4, y: 683.84, z: -146.75}
+  - {x: -33.28, y: 669.66, z: -156.67}
+  - {x: -20.5, y: 655.71, z: -166.02}
+  - {x: -7.13, y: 641.96, z: -174.86}
+  - {x: 7, y: 628.48, z: -182.91}
+  - {x: 21.23, y: 614.98, z: -190.75}
+  - {x: 35.48, y: 601.39, z: -198.38}
+  - {x: 49.04, y: 587.25, z: -206.29}
+  - {x: 62.2, y: 572.86, z: -214.36}
+  - {x: 73.83, y: 557.54, z: -223.09}
+  - {x: 83.8, y: 541.41, z: -232.31}
+  - {x: 92.19, y: 524.61, z: -241.86}
+  - {x: 98.11, y: 506.88, z: -251.71}
+  - {x: 100.46, y: 488.24, z: -261.26}
+  - {x: 100.84, y: 469.29, z: -270.32}
+  - {x: 98.17, y: 449.98, z: -278.45}
+  - {x: 91.79, y: 430.83, z: -284.54}
+  - {x: 83.01, y: 412.19, z: -288.52}
+  - {x: 72.18, y: 394.23, z: -289.91}
+  - {x: 59.9, y: 377.21, z: -288.04}
+  - {x: 47.17, y: 361.18, z: -282.84}
+  - {x: 34.9, y: 346.18, z: -274.42}
+  - {x: 23.61, y: 331.85, z: -263.82}
+  - {x: 13.57, y: 317.96, z: -251.5}
+  - {x: 4.89, y: 304.19, z: -238.06}
+  - {x: -2.62, y: 290.17, z: -224.17}
+  - {x: -8.92, y: 275.52, z: -210.33}
+  - {x: -14.02, y: 260.19, z: -196.73}
+  - {x: -18.09, y: 244.7, z: -182.97}
+  - {x: -21.44, y: 229.78, z: -168.4}
+  - {x: -24.38, y: 216.3, z: -152.43}
+  - {x: -27.16, y: 205.03, z: -134.81}
+  - {x: -29.78, y: 197.45, z: -115.35}
+  - {x: -31.99, y: 194.72, z: -94.62}
+  - {x: -33.59, y: 197.78, z: -73.86}
+  - {x: -35.97, y: 205.96, z: -54.62}
+  - {x: -40.86, y: 218.45, z: -38.44}
+  - {x: -49.35, y: 234.75, z: -28.37}
+  - {x: -60.33, y: 252.46, z: -27.33}
+  - {x: -71.12, y: 268.14, z: -36.03}
+  - {x: -79.12, y: 279.93, z: -51.43}
+  - {x: -80.78, y: 289.39, z: -70.08}
+  - {x: -74.15, y: 298.23, z: -87.9}
+  - {x: -60.78, y: 302.98, z: -103.35}
+  - {x: -43.88, y: 300.62, z: -115.47}
+  - {x: -27.1, y: 290.24, z: -122.33}
+  - {x: -14.68, y: 273.5, z: -121.67}
+  - {x: -10.09, y: 254.71, z: -113.74}
+  - {x: -12.52, y: 237.21, z: -102.33}
+  - {x: -19.95, y: 220.97, z: -91.13}
+  - {x: -31.24, y: 205.37, z: -82.61}
+  - {x: -45.09, y: 189.91, z: -78.96}
+  - {x: -60.38, y: 175.39, z: -79.15}
+  - {x: -76.43, y: 161.91, z: -81.67}
+  - {x: -92.76, y: 149.08, z: -85.51}
+  - {x: -109.31, y: 137.08, z: -90.81}
+  - {x: -125.9, y: 126.1, z: -97.88}
+  - {x: -142.34, y: 116.21, z: -106.69}
+  - {x: -158.82, y: 107.5, z: -116.61}
+  - {x: -175.61, y: 100.38, z: -127.25}
+  - {x: -192.63, y: 94.75, z: -138.42}
+  - {x: -209.73, y: 90.22, z: -149.95}
+  - {x: -226.85, y: 86.52, z: -161.75}
+  - {x: -243.93, y: 83.32, z: -173.77}
+  - {x: -260.93, y: 79.92, z: -185.83}
+  - {x: -277.99, y: 75.9, z: -197.61}
+  - {x: -295.07, y: 71.17, z: -209.11}
+  - {x: -312.11, y: 65.74, z: -220.33}
+  - {x: -329.11, y: 59.88, z: -231.41}
+  - {x: -346.02, y: 53.82, z: -242.53}
+  - {x: -362.74, y: 47.96, z: -254.03}
+  - {x: -379.15, y: 42.66, z: -266.23}
+  - {x: -395.35, y: 37.7, z: -278.83}
+  - {x: -411.34, y: 33.06, z: -291.83}
+  - {x: -427.1, y: 28.76, z: -305.23}
+  - {x: -442.6, y: 24.77, z: -319.01}
+  - {x: -457.85, y: 21.06, z: -333.14}
+  - {x: -472.83, y: 17.67, z: -347.64}
+  - {x: -487.81, y: 14.28, z: -362.15}
+  - {x: -502.68, y: 11, z: -376.78}
+  - {x: -517.39, y: 7.88, z: -391.62}
+  - {x: -531.98, y: 4.88, z: -406.6}
+  - {x: -546.42, y: 2.02, z: -421.74}
+  - {x: -560.76, y: -0.78, z: -437}
+  - {x: -574.93, y: -3.93, z: -452.35}
+  - {x: -588.82, y: -8.15, z: -467.68}
+  - {x: -602.18, y: -14.35, z: -482.81}
+  - {x: -614.66, y: -23.15, z: -497.38}
+  - {x: -625.83, y: -34.81, z: -510.94}
+  - {x: -635.1, y: -49.5, z: -522.86}
+  - {x: -641.57, y: -67.2, z: -532.22}
+  - {x: -644.32, y: -87.18, z: -538.07}
+  - {x: -642.24, y: -108.06, z: -539.23}
+  - {x: -635.3, y: -127.57, z: -535.86}
+  - {x: -623.98, y: -143.99, z: -529.18}
+  - {x: -609.99, y: -156.88, z: -520.09}
+  - {x: -596.04, y: -167.94, z: -508.74}
+  - {x: -583.1, y: -178.4, z: -495.75}
+  - {x: -571, y: -188.4, z: -481.62}
+  - {x: -559.47, y: -198.44, z: -467.05}
+  - {x: -548.13, y: -209.08, z: -452.75}
+  - {x: -536.92, y: -220.27, z: -438.78}
+  - {x: -525.84, y: -231.89, z: -425.05}
+  - {x: -514.86, y: -243.86, z: -411.55}
+  - {x: -503.96, y: -256.06, z: -398.19}
+  - {x: -493.11, y: -268.44, z: -384.95}
+  - {x: -482.31, y: -280.97, z: -371.81}
+  - {x: -471.56, y: -293.61, z: -358.75}
+  - {x: -460.84, y: -306.37, z: -345.76}
+  - {x: -450.17, y: -319.22, z: -332.84}
+  - {x: -439.56, y: -332.17, z: -319.96}
+  - {x: -429.03, y: -345.21, z: -307.1}
+  - {x: -418.6, y: -358.36, z: -294.27}
+  - {x: -408.24, y: -371.59, z: -281.48}
+  - {x: -397.95, y: -384.9, z: -268.7}
+  - {x: -387.71, y: -398.26, z: -255.95}
+  - {x: -377.51, y: -411.66, z: -243.19}
+  - {x: -367.39, y: -424.9, z: -230.21}
+  - {x: -357.35, y: -437.58, z: -216.63}
+  - {x: -347.41, y: -449.51, z: -202.33}
+  - {x: -337.56, y: -460.95, z: -187.55}
+  - {x: -327.83, y: -471.7, z: -172.2}
+  - {x: -318.09, y: -481.81, z: -156.42}
+  - {x: -308.07, y: -491.5, z: -140.55}
+  - {x: -297.57, y: -500.86, z: -124.8}
+  - {x: -286.31, y: -510.2, z: -109.56}
+  - {x: -274.54, y: -519.56, z: -94.73}
+  - {x: -262.16, y: -528.94, z: -80.41}
+  - {x: -249.4, y: -538.3, z: -66.43}
+  - {x: -236.23, y: -547.62, z: -52.8}
+  - {x: -222.73, y: -556.91, z: -39.47}
+  - {x: -208.96, y: -566.14, z: -26.39}
+  - {x: -194.94, y: -575.34, z: -13.54}
+  - {x: -180.72, y: -584.49, z: -0.88}
+  - {x: -166.31, y: -593.61, z: 11.59}
+  - {x: -151.56, y: -603.02, z: 23.42}
+  - {x: -136.41, y: -613.06, z: 34.16}
+  - {x: -120.89, y: -623.74, z: 43.72}
+  - {x: -105.14, y: -634.88, z: 52.3}
+  - {x: -89.22, y: -646.37, z: 60.11}
+  - {x: -73.1, y: -658.11, z: 67.04}
+  - {x: -54.67, y: -667.45, z: 71.35}
+  - {x: -36.47, y: -676.81, z: 76.19}
+  - {x: -20.82, y: -684.82, z: 87.8}
+  - {x: -6.09, y: -692.12, z: 101.07}
+  - {x: 8.53, y: -699.34, z: 114.5}
+  - {x: 23.15, y: -706.55, z: 127.93}
+  - {x: 25.97, y: -706.75, z: 125.74}
+  - {x: 15.4, y: -696.85, z: 110.45}
+  - {x: 3.32, y: -684.18, z: 98.71}
+  - {x: -10.54, y: -670.89, z: 90.03}
+  - {x: -26.5, y: -658.36, z: 84.26}
+  - {x: -43.85, y: -647.27, z: 79.61}
+  - {x: -62.1, y: -637.83, z: 74.74}
+  - {x: -81.04, y: -629.89, z: 69.85}
+  - {x: -101.19, y: -624.57, z: 66.69}
+  - {x: -121.98, y: -621.83, z: 68.28}
+  - {x: -141.12, y: -621.61, z: 76.8}
+  - {x: -155.07, y: -624.25, z: 92.12}
+  - {x: -160.43, y: -629.85, z: 111.51}
+  - {x: -157.67, y: -637.42, z: 130.91}
+  - {x: -147.96, y: -646.08, z: 147.46}
+  - {x: -134.1, y: -655.02, z: 160.52}
+  - {x: -116.55, y: -663.76, z: 168.17}
+  - {x: -97.37, y: -671.96, z: 171.06}
+  - {x: -77.63, y: -679.27, z: 169.93}
+  - {x: -57.63, y: -684.83, z: 166.16}
+  - {x: -37.36, y: -687.94, z: 161.26}
+  - {x: -16.87, y: -687.87, z: 156.29}
+  - {x: 3.48, y: -683.91, z: 152.49}
+  - {x: 23.1, y: -676.42, z: 150.8}
+  - {x: 41.75, y: -666.57, z: 150.97}
+  - {x: 59.11, y: -654.75, z: 153.01}
+  - {x: 75.21, y: -641.56, z: 156.59}
+  - {x: 90.23, y: -627.51, z: 161.31}
+  - {x: 104.36, y: -612.85, z: 166.92}
+  - {x: 117.71, y: -597.77, z: 173.26}
+  - {x: 130.47, y: -582.4, z: 180.12}
+  - {x: 142.77, y: -566.9, z: 187.5}
+  - {x: 154.8, y: -551.53, z: 195.58}
+  - {x: 166.9, y: -536.82, z: 204.71}
+  - {x: 179.22, y: -523, z: 214.87}
+  - {x: 191.65, y: -509.83, z: 225.73}
+  - {x: 204.04, y: -496.91, z: 236.94}
+  - {x: 216.18, y: -483.69, z: 248.07}
+  - {x: 227.87, y: -469.64, z: 258.62}
+  - {x: 239.09, y: -454.44, z: 268.04}
+  - {x: 250.3, y: -438.45, z: 276.06}
+  - {x: 262.15, y: -422.33, z: 282.8}
+  - {x: 275.03, y: -406.67, z: 288.69}
+  - {x: 288.99, y: -391.73, z: 293.95}
+  - {x: 303.66, y: -377.38, z: 298.95}
+  - {x: 318.39, y: -363.22, z: 304.31}
+  - {x: 332.75, y: -349.02, z: 310.47}
+  - {x: 346.64, y: -334.72, z: 317.47}
+  - {x: 359.53, y: -320.19, z: 325.72}
+  - {x: 371.01, y: -305.51, z: 335.6}
+  - {x: 380.93, y: -290.92, z: 347.19}
+  - {x: 389.98, y: -276.47, z: 359.65}
+  - {x: 398.9, y: -261.93, z: 372.11}
+  - {x: 408.35, y: -247.07, z: 383.78}
+  - {x: 418.67, y: -231.73, z: 393.99}
+  - {x: 429.29, y: -215.72, z: 402.72}
+  - {x: 439.72, y: -198.63, z: 409.42}
+  - {x: 449.27, y: -180.3, z: 413.72}
+  - {x: 457.13, y: -160.81, z: 415.67}
+  - {x: 462.6, y: -140.44, z: 415.7}
+  - {x: 465.42, y: -119.58, z: 414.27}
+  - {x: 465.64, y: -98.66, z: 411.52}
+  - {x: 463.87, y: -77.97, z: 407.74}
+  - {x: 460.7, y: -57.68, z: 402.86}
+  - {x: 457.13, y: -37.85, z: 396.57}
+  - {x: 453.61, y: -18.48, z: 388.93}
+  - {x: 450.21, y: 0.48, z: 380.28}
+  - {x: 446.94, y: 19, z: 370.67}
+  - {x: 443.78, y: 37.2, z: 360.44}
+  - {x: 440.7, y: 55.12, z: 349.69}
+  - {x: 437.66, y: 72.88, z: 338.66}
+  - {x: 434.66, y: 90.54, z: 327.47}
+  - {x: 431.71, y: 108.11, z: 316.12}
+  - {x: 428.83, y: 125.67, z: 304.75}
+  - {x: 426.05, y: 143.27, z: 293.4}
+  - {x: 423.38, y: 160.92, z: 282.1}
+  - {x: 420.83, y: 178.63, z: 270.87}
+  - {x: 418.45, y: 196.49, z: 259.86}
+  - {x: 416.35, y: 214.64, z: 249.26}
+  - {x: 414.53, y: 233.07, z: 239.11}
+  - {x: 413.06, y: 251.84, z: 229.54}
+  - {x: 411.86, y: 270.86, z: 220.42}
+  - {x: 410.84, y: 290.03, z: 211.63}
+  - {x: 410.02, y: 309.37, z: 203.17}
+  - {x: 409.41, y: 328.86, z: 195.05}
+  - {x: 408.97, y: 348.49, z: 187.25}
+  - {x: 408.67, y: 368.21, z: 179.69}
+  - {x: 408.48, y: 388.01, z: 172.33}
+  - {x: 408.1, y: 407.71, z: 164.73}
+  - {x: 407.39, y: 427.22, z: 156.68}
+  - {x: 406.24, y: 446.48, z: 148.09}
+  - {x: 404.76, y: 465.63, z: 139.3}
+  - {x: 403.09, y: 484.95, z: 130.94}
+  - {x: 401.39, y: 504.61, z: 123.4}
+  - {x: 399.72, y: 524.58, z: 116.72}
+  - {x: 398.09, y: 544.77, z: 110.76}
+  - {x: 396, y: 565.16, z: 105.66}
+  - {x: 392.8, y: 585.59, z: 101.4}
+  - {x: 388.48, y: 605.99, z: 98.02}
+  - {x: 382.7, y: 626.06, z: 94.94}
+  - {x: 373.96, y: 644.96, z: 91.74}
+  - {x: 361.01, y: 661.49, z: 90.27}
+  - {x: 344.78, y: 674.92, z: 91.26}
+  - {x: 326.23, y: 684.85, z: 92.69}
+  - {x: 306.38, y: 691.91, z: 93.81}
+  - {x: 285.9, y: 696.94, z: 94.87}
+  - {x: 265.04, y: 699.81, z: 96.35}
+  - {x: 244.1, y: 700.54, z: 98.81}
+  - {x: 223.39, y: 698.99, z: 102.55}
+  - {x: 203.14, y: 695.42, z: 107.35}
+  - {x: 183.39, y: 690.38, z: 112.84}
+  - {x: 163.88, y: 684.71, z: 118.62}
+  - {x: 144.25, y: 679.06, z: 124.01}
+  - {x: 124.17, y: 673.78, z: 127.8}
+  - {x: 103.75, y: 668.69, z: 129.39}
+  - {x: 83.33, y: 663.38, z: 128.75}
+  - {x: 63.11, y: 657.86, z: 126.22}
+  - {x: 43.04, y: 652.53, z: 122.34}
+  - {x: 23.02, y: 647.57, z: 117.8}
+  - {x: 3.06, y: 642.86, z: 112.76}
+  - {x: -16.73, y: 638.08, z: 107.14}
+  - {x: -35.96, y: 632.54, z: 100.42}
+  - {x: -54.09, y: 625.69, z: 92.08}
+  - {x: -70.33, y: 617.57, z: 81.34}
+  - {x: -84.01, y: 609.35, z: 67.58}
+  - {x: -94.12, y: 601.94, z: 50.72}
+  - {x: -99, y: 596.12, z: 31.15}
+  - {x: -97.28, y: 592.91, z: 10.5}
+  - {x: -88.18, y: 592.9, z: -8.37}
+  - {x: -71.99, y: 596.05, z: -21.2}
+  - {x: -52.23, y: 601.2, z: -26.15}
+  - {x: -32.12, y: 607.26, z: -28.38}
+  - {x: -12.48, y: 613.25, z: -33.21}
+  - {x: 6.91, y: 619.35, z: -38.94}
+  - {x: 26.42, y: 627.01, z: -40.59}
+  - {x: 44.18, y: 636.91, z: -35.51}
+  - {x: 56.64, y: 648.68, z: -23.5}
+  - {x: 60.26, y: 660.67, z: -6.76}
+  - {x: 53.59, y: 669.74, z: 10.77}
+  - {x: 38.13, y: 672.55, z: 24.38}
+  - {x: 18.68, y: 667.67, z: 29.95}
+  - {x: 0.74, y: 656.76, z: 28.85}
+  - {x: -15.08, y: 643.21, z: 25.42}
+  - {x: -29.64, y: 628.48, z: 21.31}
+  - {x: -44.04, y: 613.63, z: 17.05}
+  - {x: -58.92, y: 599.22, z: 12.9}
+  - {x: -73.14, y: 583.96, z: 9.64}
+  - {x: -86.12, y: 567.46, z: 7.42}
+  - {x: -96.8, y: 549.77, z: 3.37}
+  - {x: -103.69, y: 531.33, z: -4.17}
+  - {x: -105.96, y: 511.86, z: -11.92}
+  - {x: -104.79, y: 491.81, z: -18.38}
+  - {x: -103.51, y: 471.05, z: -21.83}
+  - {x: -103.6, y: 449.94, z: -22.35}
+  - {x: -104.42, y: 428.86, z: -21.44}
+  - {x: -106, y: 407.81, z: -20.67}
+  - {x: -108.02, y: 386.8, z: -21.24}
+  - {x: -109.34, y: 365.93, z: -24.08}
+  - {x: -109.04, y: 345.52, z: -29.35}
+  - {x: -106.36, y: 326.29, z: -37.57}
+  - {x: -101, y: 309.26, z: -48.72}
+  - {x: -93.2, y: 295.23, z: -62.32}
+  - {x: -83.01, y: 285.62, z: -77.99}
+  - {x: -71.01, y: 281.73, z: -94.81}
+  - {x: -58.32, y: 283.2, z: -111.46}
+  - {x: -45.69, y: 290.26, z: -126.65}
+  - {x: -33.61, y: 301.95, z: -139.28}
+  - {x: -22.54, y: 317.96, z: -147.24}
+  - {x: -12.2, y: 335.91, z: -150.96}
+  - {x: -2.74, y: 354.71, z: -150.12}
+  - {x: 4.7, y: 374.01, z: -145.88}
+  - {x: 10.3, y: 393.68, z: -140.7}
+  - {x: 12.7, y: 414.01, z: -135.56}
+  - {x: 11.86, y: 434.76, z: -132.02}
+  - {x: 8.2, y: 455.45, z: -130.59}
+  - {x: 1.21, y: 475.28, z: -131.84}
+  - {x: -9.47, y: 492.94, z: -135.98}
+  - {x: -23.46, y: 507.2, z: -142.52}
+  - {x: -40.44, y: 515.87, z: -151.35}
+  - {x: -58.31, y: 517.05, z: -162.21}
+  - {x: -74.9, y: 510.39, z: -173.15}
+  - {x: -88.36, y: 496.33, z: -180.9}
+  - {x: -99.18, y: 478.46, z: -183.02}
+  - {x: -106.12, y: 459.02, z: -179.14}
+  - {x: -108.63, y: 439.69, z: -171.13}
+  - {x: -107.98, y: 421.35, z: -160.72}
+  - {x: -104.72, y: 403.39, z: -150.15}
+  - {x: -98.67, y: 384.36, z: -143.54}
+  - {x: -87.95, y: 366.42, z: -141.45}
+  - {x: -78.42, y: 367.99, z: -135.89}
+  - {x: -75.44, y: 384.91, z: -123.6}
+  - {x: -73.5, y: 401.68, z: -110.91}
+  - {x: -72.12, y: 418.36, z: -98.02}
+  - {x: -71.04, y: 434.97, z: -85.02}
+  - {x: -70.18, y: 451.54, z: -71.95}
+  - {x: -69.47, y: 468.09, z: -58.84}
+  - {x: -68.87, y: 484.61, z: -45.69}
+  - {x: -68.36, y: 501.11, z: -32.51}
+  - {x: -67.91, y: 517.61, z: -19.33}
+  - {x: -67.5, y: 534.09, z: -6.12}
+  - {x: -67.15, y: 550.55, z: 7.11}
+  - {x: -66.84, y: 567.02, z: 20.33}
+  - {x: -66.56, y: 583.47, z: 33.58}
+  - {x: -64.85, y: 599.81, z: 46.85}
+  - {x: -63, y: 616.14, z: 60.12}
+  - {x: -60.92, y: 632.41, z: 73.41}
+  - {x: -56.98, y: 648.24, z: 86.83}
+  - {x: -51.51, y: 663.44, z: 100.4}
+  - {x: -43.22, y: 676.89, z: 114.28}
+  - {x: -33.68, y: 689.49, z: 128.3}
+  - {x: -22.16, y: 699.86, z: 142.51}
+  - {x: -8.8, y: 707.37, z: 156.89}
+  - {x: 5.85, y: 711.62, z: 171.33}
+  - {x: 21.24, y: 712.67, z: 185.77}
+  - {x: 36.38, y: 709.59, z: 199.98}
+  - {x: 50.65, y: 703.26, z: 213.89}
+  - {x: 63.22, y: 692.84, z: 227.29}
+  - {x: 73.63, y: 679.83, z: 239.97}
+  - {x: 82.06, y: 664.67, z: 251.89}
+  - {x: 87.66, y: 647.2, z: 262.36}
+  - {x: 91.24, y: 628.44, z: 271.29}
+  - {x: 93.39, y: 608.92, z: 278.83}
+  - {x: 94.09, y: 588.68, z: 284.83}
+  - {x: 92.2, y: 567.81, z: 287.49}
+  - {x: 88.85, y: 547.03, z: 288.5}
+  - {x: 84.11, y: 526.5, z: 288.05}
+  - {x: 77.1, y: 506.77, z: 285.65}
+  - {x: 68.83, y: 487.62, z: 282.32}
+  - {x: 59.1, y: 469.38, z: 278.1}
+  - {x: 48.03, y: 452.09, z: 273.2}
+  - {x: 35.88, y: 435.67, z: 267.86}
+  - {x: 22.95, y: 419.95, z: 262.26}
+  - {x: 9, y: 405.2, z: 256.41}
+  - {x: -5.46, y: 391.05, z: 250.35}
+  - {x: -19.83, y: 377.27, z: 243.31}
+  - {x: -33.42, y: 363.33, z: 235.14}
+  - {x: -46.11, y: 349.21, z: 225.89}
+  - {x: -57.98, y: 334.97, z: 215.77}
+  - {x: -68.48, y: 320.13, z: 205.04}
+  - {x: -76.82, y: 304.15, z: 194.07}
+  - {x: -83.25, y: 287.42, z: 182.94}
+  - {x: -86.15, y: 269.75, z: 171.76}
+  - {x: -86.51, y: 251.66, z: 160.88}
+  - {x: -83.91, y: 233.09, z: 151.21}
+  - {x: -79.36, y: 214.34, z: 142.63}
+  - {x: -73.7, y: 195.59, z: 134.72}
+  - {x: -67.42, y: 176.88, z: 127.22}
+  - {x: -60.77, y: 158.15, z: 120.05}
+  - {x: -54.64, y: 139.09, z: 113.34}
+  - {x: -49.85, y: 119.47, z: 107.17}
+  - {x: -47.2, y: 99.38, z: 101.28}
+  - {x: -47.18, y: 79.21, z: 95.03}
+  - {x: -50.06, y: 59.51, z: 88.05}
+  - {x: -57.53, y: 41.67, z: 79.8}
+  - {x: -66.88, y: 24.91, z: 71.1}
+  - {x: -79.33, y: 10.59, z: 61.96}
+  - {x: -93.46, y: -2.06, z: 52.73}
+  - {x: -109.27, y: -12.66, z: 43.61}
+  - {x: -126.34, y: -21.38, z: 34.73}
+  - {x: -144.04, y: -28.79, z: 25.95}
+  - {x: -162.6, y: -33.27, z: 17.06}
+  - {x: -181.5, y: -35.99, z: 8.11}
+  - {x: -200.59, y: -35.82, z: -0.86}
+  - {x: -219.64, y: -33.96, z: -9.77}
+  - {x: -238.49, y: -30.33, z: -18.56}
+  - {x: -257.08, y: -25.28, z: -27.22}
+  - {x: -275.26, y: -18.87, z: -35.84}
+  - {x: -292.32, y: -10.18, z: -44.67}
+  - {x: -308.06, y: 0.46, z: -53.83}
+  - {x: -321.25, y: 13.71, z: -63.58}
+  - {x: -332.23, y: 28.61, z: -73.71}
+  - {x: -340.8, y: 44.82, z: -84.18}
+  - {x: -346.55, y: 61.8, z: -95.27}
+  - {x: -348, y: 79.61, z: -106.39}
+  - {x: -343.14, y: 98.04, z: -115.14}
+  - {x: -331.78, y: 115.17, z: -119.4}
+  - {x: -316.77, y: 129.92, z: -120.14}
+  - {x: -300.69, y: 142.97, z: -116.43}
+  - {x: -284.58, y: 152.38, z: -106.93}
+  - {x: -269.8, y: 155.25, z: -92.36}
+  - {x: -256.72, y: 154.45, z: -75.8}
+  - {x: -243.09, y: 155.92, z: -59.8}
+  - {x: -228.33, y: 161.97, z: -46.02}
+  - {x: -213.29, y: 171.16, z: -34.4}
+  - {x: -198.35, y: 182.29, z: -24.5}
+  - {x: -183.88, y: 196.01, z: -17.63}
+  - {x: -169.84, y: 210.96, z: -12.58}
+  - {x: -155.35, y: 225.05, z: -6.44}
+  - {x: -140.31, y: 238.1, z: 0.57}
+  - {x: -123.96, y: 249.99, z: 6.67}
+  - {x: -106.43, y: 260.82, z: 11.25}
+  - {x: -87.83, y: 270.31, z: 14.36}
+  - {x: -68.94, y: 279.36, z: 17.11}
+  - {x: -50.2, y: 288.58, z: 20.24}
+  - {x: -32.16, y: 298.76, z: 24.31}
+  - {x: -15.48, y: 310.8, z: 29.06}
+  - {x: 0.13, y: 324.36, z: 33.33}
+  - {x: 15.09, y: 338.73, z: 37.28}
+  - {x: 29.55, y: 353.68, z: 40.96}
+  - {x: 43.6, y: 369.06, z: 44.47}
+  - {x: 56.87, y: 385.05, z: 48.25}
+  - {x: 69.18, y: 401.65, z: 52.55}
+  - {x: 80.28, y: 418.94, z: 57.43}
+  - {x: 90.61, y: 436.62, z: 62.63}
+  - {x: 100.25, y: 454.6, z: 68.09}
+  - {x: 109.4, y: 472.79, z: 73.7}
+  - {x: 118.65, y: 490.96, z: 79.22}
+  - {x: 128.46, y: 508.93, z: 84.41}
+  - {x: 139.06, y: 526.58, z: 89.13}
+  - {x: 150.1, y: 544.03, z: 93.55}
+  - {x: 161.72, y: 561.2, z: 97.56}
+  - {x: 173.81, y: 578.13, z: 101.22}
+  - {x: 186.2, y: 594.89, z: 104.64}
+  - {x: 198.77, y: 611.56, z: 107.86}
+  - {x: 211.14, y: 628.38, z: 111.05}
+  - {x: 223.32, y: 645.34, z: 114.26}
+  - {x: 235.27, y: 662.45, z: 117.5}
+  - {x: 246.95, y: 679.78, z: 120.58}
+  - {x: 258.57, y: 697.18, z: 123.5}
+  - {x: 270.18, y: 714.58, z: 126.41}
+  - {x: 282.01, y: 731.89, z: 128.89}
+  - {x: 294.15, y: 749.08, z: 130.74}
+  - {x: 306.53, y: 766.14, z: 131.97}
+  - {x: 319.14, y: 783.07, z: 132.63}
+  - {x: 332.04, y: 799.79, z: 132.41}
+  - {x: 344.95, y: 816.51, z: 132.18}
+  - {x: 358.01, y: 833.09, z: 131.38}
+  - {x: 370.98, y: 849.74, z: 130.46}
+  - {x: 383.65, y: 866.62, z: 129.61}
+  - {x: 395.71, y: 883.94, z: 129.26}
+  - {x: 407.33, y: 901.58, z: 129.27}
+  - {x: 417.71, y: 919.92, z: 130.19}
+  - {x: 427.41, y: 938.62, z: 131.58}
+  - {x: 435.29, y: 958.07, z: 133.98}
+  - {x: 442.41, y: 977.76, z: 136.72}
+  - {x: 448.64, y: 997.69, z: 139.81}
+  - {x: 453.87, y: 1017.86, z: 143.27}
+  - {x: 457.79, y: 1038.24, z: 147.09}
+  - {x: 460.7, y: 1058.75, z: 151.17}
+  - {x: 461.92, y: 1079.36, z: 155.6}
+  - {x: 460.9, y: 1099.89, z: 160.23}
+  - {x: 457.35, y: 1120.04, z: 164.81}
+  - {x: 449.46, y: 1139.19, z: 168.93}
+  - {x: 441.53, y: 1158.33, z: 173.03}
+  - {x: 428.96, y: 1175.16, z: 175.29}
+  - {x: 414.64, y: 1190.34, z: 176.03}
+  - {x: 398.14, y: 1203.47, z: 174.9}
+  - {x: 380.11, y: 1213.65, z: 170.98}
+  - {x: 361.67, y: 1221.98, z: 165.43}
+  - {x: 345.91, y: 1229.92, z: 157.69}
+  - {x: 348.21, y: 1248.72, z: 148.33}
+  - {x: 351.78, y: 1267.28, z: 138.9}
+  - {x: 355.99, y: 1285.39, z: 128.89}
+  - {x: 360.06, y: 1302.66, z: 117.46}
+  - {x: 363.58, y: 1319, z: 104.57}
+  - {x: 365.54, y: 1333.63, z: 89.5}
+  - {x: 365.05, y: 1346.25, z: 72.65}
+  - {x: 361.04, y: 1356.32, z: 54.61}
+  - {x: 352.43, y: 1362.53, z: 36.49}
+  - {x: 338.4, y: 1361.53, z: 21.12}
+  - {x: 322.35, y: 1354.63, z: 9.75}
+  - {x: 307.34, y: 1340.74, z: 5.49}
+  - {x: 297.36, y: 1322.49, z: 8.05}
+  - {x: 292.47, y: 1303.05, z: 14.54}
+  - {x: 291.57, y: 1283.63, z: 22.66}
+  - {x: 294.48, y: 1264.25, z: 30.45}
+  - {x: 299.96, y: 1245.16, z: 37.62}
+  - {x: 306.96, y: 1226.39, z: 44.3}
+  - {x: 314.85, y: 1207.86, z: 50.67}
+  - {x: 323.23, y: 1189.48, z: 56.84}
+  - {x: 331.9, y: 1171.2, z: 62.91}
+  - {x: 340.72, y: 1152.97, z: 68.89}
+  - {x: 349.64, y: 1134.77, z: 74.86}
+  - {x: 358.58, y: 1116.58, z: 80.8}
+  - {x: 367.56, y: 1098.41, z: 86.74}
+  - {x: 376.56, y: 1080.24, z: 92.67}
+  - {x: 385.57, y: 1062.08, z: 98.6}
+  - {x: 394.6, y: 1043.92, z: 104.51}
+  - {x: 403.63, y: 1025.76, z: 110.43}
+  - {x: 412.67, y: 1007.61, z: 116.34}
+  PeopleLineStarts: 0000000058020000b00400000807000060090000
+  PeopleLineNote: 3000 points from 5 race(s)
+  HallOfFameBestFitness: -152.53842
+  FitnessHistory:
+    Capacity: 256
+    Head: 4
+    Count: 4
+    Values:
+    - -454.44144
+    - -297.1457
+    - -152.53842
+    - -1427.764
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    Generations: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  ScheduleIndex: 0
+  ScheduleSlotEpisodes: 0
+  ScheduleSlotElapsedSeconds: 0
+  ScheduleSlotAttempts: 0
