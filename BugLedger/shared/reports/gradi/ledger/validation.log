@@ -593,3 +593,4 @@
 2026-11-01T23:12:58.041Z editor load: play=True capture=True minPlay=15s issues=118
 2026-11-01T23:21:38.956Z PlayMode session ended (451s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-33876f4909 E-ced2f8d740 E-e5ff2abb8c E-e6054bc064
 2026-11-01T23:26:44.408Z PlayMode session ended (219s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-01T23:55:35.715Z PlayMode session ended (1s play run, exiting play mode): not counted (capture=True, long enough=False)

@@ -1,0 +1,747 @@
+{
+    "schemaVersion": 1,
+    "reportId": "367cbc360003",
+    "timestamp": "2026-10-31T08:31:47.9290478Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "claude/voyage-escort-roles",
+    "gitCommitHash": "e899ab0e4",
+    "trigger": "Boot - Authentication -> Menu_Main",
+    "loadKind": "boot",
+    "completionReason": "Menu shown - the splash fades",
+    "interrupted": false,
+    "sceneFrom": "Authentication",
+    "sceneTo": "Menu_Main",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 615837.3125,
+    "visualReadyMs": 605825.6875,
+    "waitMs": 57364.875,
+    "humanWaitMs": 0.0,
+    "workMs": 558472.4375,
+    "unattributedMs": 510875.125,
+    "framesDuringLoad": 23980,
+    "avgFpsDuringLoad": 38.9388542175293,
+    "worstFrameMs": 58024.94921875,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 510875.125,
+            "endMs": 615006.0625,
+            "durationMs": 104130.9375,
+            "exclusiveMs": 9163.625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": 0,
+            "depth": 1,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 510876.25,
+            "endMs": 558278.125,
+            "durationMs": 47401.875,
+            "exclusiveMs": 47369.625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 551075.375,
+            "endMs": 551102.5625,
+            "durationMs": 27.1875,
+            "exclusiveMs": 27.1875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 551102.625,
+            "endMs": 551107.6875,
+            "durationMs": 5.0625,
+            "exclusiveMs": 5.0625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 558295.3125,
+            "endMs": 563618.8125,
+            "durationMs": 5323.5,
+            "exclusiveMs": 5322.3125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 4,
+            "depth": 2,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 560910.125,
+            "endMs": 560911.3125,
+            "durationMs": 1.1875,
+            "exclusiveMs": 1.1875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Pair init - inject + vessel.Initialize (Kyoki)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 563619.1875,
+            "endMs": 605825.4375,
+            "durationMs": 42206.25,
+            "exclusiveMs": 42206.25,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 605830.6875,
+            "endMs": 605861.3125,
+            "durationMs": 30.625,
+            "exclusiveMs": 30.625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 605861.9375,
+            "endMs": 605866.625,
+            "durationMs": 4.6875,
+            "exclusiveMs": 4.6875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 0,
+            "depth": 1,
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 615005.6875,
+            "endMs": 615837.3125,
+            "durationMs": 831.625,
+            "exclusiveMs": 831.625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 510875.125,
+            "percent": 82.95618438720703,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 57364.875,
+            "percent": 9.314939498901368,
+            "spanCount": 3,
+            "waitMs": 57364.875
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 47528.5625,
+            "percent": 7.717713832855225,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 36.9375,
+            "percent": 0.005997931584715843,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": 9,
+            "name": "Crystals",
+            "attributedMs": 30.625,
+            "percent": 0.004972904454916716,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 10,
+            "name": "Pooling & Prewarm",
+            "attributedMs": 1.1875,
+            "percent": 0.00019282690482214093,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 2,
+            "totalMs": 151532.8125,
+            "exclusiveMs": 56533.25,
+            "maxSingleMs": 104130.9375,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Kyoki)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 42206.25,
+            "exclusiveMs": 42206.25,
+            "maxSingleMs": 42206.25,
+            "isWait": false
+        },
+        {
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 5323.5,
+            "exclusiveMs": 5322.3125,
+            "maxSingleMs": 5323.5,
+            "isWait": false
+        },
+        {
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 831.625,
+            "exclusiveMs": 831.625,
+            "maxSingleMs": 831.625,
+            "isWait": true
+        },
+        {
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "count": 1,
+            "totalMs": 30.625,
+            "exclusiveMs": 30.625,
+            "maxSingleMs": 30.625,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 27.1875,
+            "exclusiveMs": 27.1875,
+            "maxSingleMs": 27.1875,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 5.0625,
+            "exclusiveMs": 5.0625,
+            "maxSingleMs": 5.0625,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 4.6875,
+            "exclusiveMs": 4.6875,
+            "maxSingleMs": 4.6875,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 1,
+            "totalMs": 1.1875,
+            "exclusiveMs": 1.1875,
+            "maxSingleMs": 1.1875,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 615837.3125,
+            "durationMs": 58024.94921875,
+            "during": "Pair init - inject + vessel.Initialize (Kyoki)"
+        },
+        {
+            "atMs": 615007.9375,
+            "durationMs": 51828.74609375,
+            "during": "Pair init - inject + vessel.Initialize (Kyoki)"
+        },
+        {
+            "atMs": 132260.640625,
+            "durationMs": 5620.96435546875,
+            "during": "—"
+        },
+        {
+            "atMs": 494542.40625,
+            "durationMs": 4098.51708984375,
+            "during": "—"
+        },
+        {
+            "atMs": 78933.265625,
+            "durationMs": 3521.0068359375,
+            "during": "—"
+        },
+        {
+            "atMs": 62828.48046875,
+            "durationMs": 2635.419677734375,
+            "during": "—"
+        },
+        {
+            "atMs": 157620.0625,
+            "durationMs": 2555.4716796875,
+            "during": "—"
+        },
+        {
+            "atMs": 136672.46875,
+            "durationMs": 2427.927734375,
+            "during": "—"
+        },
+        {
+            "atMs": 121891.0859375,
+            "durationMs": 2365.235107421875,
+            "during": "—"
+        },
+        {
+            "atMs": 113649.6171875,
+            "durationMs": 2142.564453125,
+            "during": "—"
+        },
+        {
+            "atMs": 105352.09375,
+            "durationMs": 2113.08349609375,
+            "during": "—"
+        },
+        {
+            "atMs": 97189.2421875,
+            "durationMs": 1818.9029541015625,
+            "during": "—"
+        },
+        {
+            "atMs": 289652.78125,
+            "durationMs": 1597.3065185546875,
+            "during": "—"
+        },
+        {
+            "atMs": 116490.6015625,
+            "durationMs": 1555.4560546875,
+            "during": "—"
+        },
+        {
+            "atMs": 485327.125,
+            "durationMs": 1442.25732421875,
+            "during": "—"
+        },
+        {
+            "atMs": 288030.84375,
+            "durationMs": 1355.4541015625,
+            "during": "—"
+        },
+        {
+            "atMs": 213051.5625,
+            "durationMs": 1265.208740234375,
+            "during": "—"
+        },
+        {
+            "atMs": 389526.5,
+            "durationMs": 1251.2867431640625,
+            "during": "—"
+        },
+        {
+            "atMs": 108514.359375,
+            "durationMs": 1079.166748046875,
+            "during": "—"
+        },
+        {
+            "atMs": 57336.828125,
+            "durationMs": 1039.6756591796875,
+            "during": "—"
+        },
+        {
+            "atMs": 459646.53125,
+            "durationMs": 1016.9976806640625,
+            "during": "—"
+        },
+        {
+            "atMs": 228485.421875,
+            "durationMs": 938.6432495117188,
+            "during": "—"
+        },
+        {
+            "atMs": 88827.640625,
+            "durationMs": 902.6892700195313,
+            "during": "—"
+        },
+        {
+            "atMs": 336806.40625,
+            "durationMs": 871.8531494140625,
+            "during": "—"
+        },
+        {
+            "atMs": 41988.234375,
+            "durationMs": 869.4063720703125,
+            "during": "—"
+        },
+        {
+            "atMs": 286652.96875,
+            "durationMs": 847.2142944335938,
+            "during": "—"
+        },
+        {
+            "atMs": 257853.390625,
+            "durationMs": 809.6469116210938,
+            "during": "—"
+        },
+        {
+            "atMs": 91690.984375,
+            "durationMs": 769.9935913085938,
+            "during": "—"
+        },
+        {
+            "atMs": 140835.546875,
+            "durationMs": 762.3131103515625,
+            "during": "—"
+        },
+        {
+            "atMs": 461704.0625,
+            "durationMs": 754.0128173828125,
+            "during": "—"
+        },
+        {
+            "atMs": 173437.9375,
+            "durationMs": 740.0635986328125,
+            "during": "—"
+        },
+        {
+            "atMs": 271776.46875,
+            "durationMs": 721.9863891601563,
+            "during": "—"
+        },
+        {
+            "atMs": 313734.03125,
+            "durationMs": 713.0886840820313,
+            "during": "—"
+        },
+        {
+            "atMs": 60032.22265625,
+            "durationMs": 703.0159912109375,
+            "during": "—"
+        },
+        {
+            "atMs": 335918.75,
+            "durationMs": 696.7570190429688,
+            "during": "—"
+        },
+        {
+            "atMs": 351017.78125,
+            "durationMs": 693.5173950195313,
+            "during": "—"
+        },
+        {
+            "atMs": 459649.9375,
+            "durationMs": 691.9990844726563,
+            "during": "—"
+        },
+        {
+            "atMs": 243301.953125,
+            "durationMs": 685.1488647460938,
+            "during": "—"
+        },
+        {
+            "atMs": 204204.890625,
+            "durationMs": 683.4623413085938,
+            "during": "—"
+        },
+        {
+            "atMs": 221109.140625,
+            "durationMs": 678.5468139648438,
+            "during": "—"
+        },
+        {
+            "atMs": 402451.25,
+            "durationMs": 675.3271484375,
+            "during": "—"
+        },
+        {
+            "atMs": 196221.0,
+            "durationMs": 671.1082153320313,
+            "during": "—"
+        },
+        {
+            "atMs": 451521.84375,
+            "durationMs": 671.0687255859375,
+            "during": "—"
+        },
+        {
+            "atMs": 279722.40625,
+            "durationMs": 668.1358642578125,
+            "during": "—"
+        },
+        {
+            "atMs": 395099.21875,
+            "durationMs": 663.8001708984375,
+            "during": "—"
+        },
+        {
+            "atMs": 311959.21875,
+            "durationMs": 656.8719482421875,
+            "during": "—"
+        },
+        {
+            "atMs": 220414.421875,
+            "durationMs": 653.4603881835938,
+            "during": "—"
+        },
+        {
+            "atMs": 423431.5,
+            "durationMs": 641.5341186523438,
+            "during": "—"
+        },
+        {
+            "atMs": 188555.640625,
+            "durationMs": 634.9164428710938,
+            "during": "—"
+        },
+        {
+            "atMs": 460941.84375,
+            "durationMs": 631.4374389648438,
+            "during": "—"
+        },
+        {
+            "atMs": 166011.65625,
+            "durationMs": 621.5718994140625,
+            "during": "—"
+        },
+        {
+            "atMs": 213690.390625,
+            "durationMs": 620.8572998046875,
+            "during": "—"
+        },
+        {
+            "atMs": 304533.46875,
+            "durationMs": 615.9911499023438,
+            "during": "—"
+        },
+        {
+            "atMs": 320807.09375,
+            "durationMs": 614.8170166015625,
+            "during": "—"
+        },
+        {
+            "atMs": 34125.21875,
+            "durationMs": 614.6567993164063,
+            "during": "—"
+        },
+        {
+            "atMs": 303887.125,
+            "durationMs": 614.0385131835938,
+            "during": "—"
+        },
+        {
+            "atMs": 148351.3125,
+            "durationMs": 608.3344116210938,
+            "during": "—"
+        },
+        {
+            "atMs": 272405.53125,
+            "durationMs": 604.793212890625,
+            "during": "—"
+        },
+        {
+            "atMs": 165381.84375,
+            "durationMs": 595.9365844726563,
+            "during": "—"
+        },
+        {
+            "atMs": 174050.234375,
+            "durationMs": 595.1347045898438,
+            "during": "—"
+        },
+        {
+            "atMs": 125026.8515625,
+            "durationMs": 592.4796142578125,
+            "during": "—"
+        },
+        {
+            "atMs": 328465.03125,
+            "durationMs": 592.309326171875,
+            "during": "—"
+        },
+        {
+            "atMs": 187893.1875,
+            "durationMs": 586.6488037109375,
+            "during": "—"
+        },
+        {
+            "atMs": 424037.09375,
+            "durationMs": 580.57861328125,
+            "during": "—"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Boot - Authentication -> Menu_Main"
+        },
+        {
+            "atMs": 11.000800132751465,
+            "label": "Netcode scene load begins: Menu_Main"
+        },
+        {
+            "atMs": 121912.125,
+            "label": "Netcode scene load completed on ALL clients: Menu_Main"
+        },
+        {
+            "atMs": 510766.9375,
+            "label": "Unity scene loaded: Menu_Main (Single)"
+        },
+        {
+            "atMs": 510885.375,
+            "label": "Netcode scene load complete: Menu_Main (client 0)"
+        },
+        {
+            "atMs": 510886.0625,
+            "label": "Netcode scene load completed on ALL clients: Menu_Main"
+        },
+        {
+            "atMs": 605825.6875,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 605868.9375,
+            "label": "Flora/fauna spawner started (cell 0, RandomLifeSpawner)"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Pool objects prewarmed during load",
+            "value": 10
+        },
+        {
+            "name": "Vessels spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Crystals spawned during load",
+            "value": 1
+        }
+    ],
+    "accumulators": [],
+    "errors": [],
+    "hints": [
+        {
+            "id": "load-very-long",
+            "severity": 2,
+            "title": "Load exceeds a minute",
+            "finding": "This load took 615.8s — most players force-quit long before this.",
+            "fixAdvice": "Attack the biggest slices below; anything over ~15s needs structural fixes, not tuning.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "57.4s (9%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 58.0s during \"Pair init - inject + vessel.Initialize (Kyoki)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "unattributed",
+            "severity": 0,
+            "title": "A large share of the load is unattributed",
+            "finding": "510.9s (83%) had no active span.",
+            "fixAdvice": "Add LoadInsights.Measure(...) spans around the code that runs there (check the stalls list and timeline gaps for where).",
+            "matchedMarker": ""
+        }
+    ]
+}
