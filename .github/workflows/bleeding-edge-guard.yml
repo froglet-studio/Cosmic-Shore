@@ -493,14 +493,17 @@ jobs:
           echo "Compiler: $MODE, exit code: $CODE"
 
           # Any `error CS` is a compile break, whatever the exit code says.
+          # Listed in the compiler's own order, deduplicated, NOT sorted: refcompile
+          # lists errors in files changed since bleeding-edge first ([CHANGED-TONIGHT]),
+          # and a sort pushed the one line that matters below 40 cascade errors.
           # (refcompile lists only project-code errors; its unverifiable buckets are counted, not listed.)
           if [ -f "$LOG" ] && grep -qE '\berror CS[0-9]+' "$LOG"; then
             echo "failure_kind=compile" >> "$GITHUB_OUTPUT"
             echo "::error::The project did not compile ($MODE). This is what breaks the Windows build."
-            grep -E '\berror CS[0-9]+' "$LOG" | sort -u | head -40
+            grep -E '\berror CS[0-9]+' "$LOG" | awk '!seen[$0]++' | head -40
             {
               echo "### The project did not compile ($MODE)"; echo; echo '```'
-              grep -E '\berror CS[0-9]+' "$LOG" | sort -u | head -40
+              grep -E '\berror CS[0-9]+' "$LOG" | awk '!seen[$0]++' | head -40
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
