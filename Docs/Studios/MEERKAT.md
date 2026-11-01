@@ -1116,6 +1116,10 @@ animation at beginning of travel)"*):
 
 ## Two kits: Garrett's and the Mix (round 18, 2026-10-28, for Yash to judge)
 
+> **Since 2026-10-28 Garrett's element definition is LOCKED** (§ "Garrett's direction" above) and is the one built in
+> Unity (`R_VesselActions/MEERKAT.md` §10). The Mix's level-5 swaps (Chain Dig on Time, Cave-in on Space) gave way to it;
+> both kits stay in the studio's Kit dropdown as the record of the comparison.
+
 > **Since 2026-10-28 the element definition is locked to Garrett's** (§ Garrett's direction). In the table below, D1's
 > Chain Dig and D4's Cave-in give way to it: Time L5 is Boost out, and Space L5 is **Steal** (§ "Space L5, Steal", a
 > later message of 2026-10-27 that this table predates; it reads the slot as "L5 open"). D2, D5, D6, the roots and every number are not element
@@ -1313,7 +1317,7 @@ high glint. Each sound keeps its Play, On, Volume, Pitch, Length, Brightness and
 | Group | Sounds | Wired in the page |
 |---|---|---|
 | Wormhole | reticle hum (loop, rises with the bend), tunnel forms, ride rush (loop, follows the ride speed), out of the tunnel, tunnel collapses | yes (rivals' tunnels by distance and side) |
-| Omnicrystal: labyrinth | collected, armed, digs, slide in, take a fork (panned to the side), out of an opening, falls in | yes |
+| Omnicrystal: network | collected, armed, forms, slide in, take a fork (panned to the side), out of an opening, collapses | yes |
 | Space: soliton | swallow, fire, annihilate, shielded bounce, surface area, Cave-in | yes, at the kit's own events (`kitSnd`: `sndAt`'s pan and distance) |
 | Time | Boost out, Chain Dig | yes, at the kit's own events |
 | Charge: sentinel | stands up, zap (rate-limited for ~5 a second), shields a prism, lost, alarm call, hop, seat swap | yes, at the kit's own events |
